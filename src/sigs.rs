@@ -1,3 +1,5 @@
+//! Signature databases and informational IR shape hashes.
+
 use std::path::Path;
 
 use serde::{Deserialize, Serialize};
@@ -6,34 +8,58 @@ use crate::error::{Error, Result};
 use crate::ir::{BinOp, Expr, FunctionIr, Stmt};
 use crate::loader::Isa;
 
+mod bytes;
+pub use bytes::build;
+pub(crate) use bytes::identify;
 const TOKEN_LIMIT: usize = 128;
-const VERSION: u32 = 2;
+const VERSION: u32 = 3;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+/// A named instruction signature or informational IR shape.
 pub struct Entry {
+    /// Function name from the source symbol table.
     pub name: String,
+    /// Instruction set used to decode the body.
     pub isa: Isa,
+    /// Function body length in bytes.
     pub size: u64,
+    /// Informational IR shape digest; empty for instruction signatures.
     pub hash: String,
+    /// Informational IR shape tokens; empty for instruction signatures.
     pub tokens: Vec<String>,
+    /// Normalized instruction bytes; empty for an IR-only entry.
+    #[serde(default)]
+    pub bytes: Vec<u8>,
+    /// Direct destination names in instruction order.
+    #[serde(default)]
+    pub calls: Vec<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+/// Versioned signatures and the input files from which they were built.
 pub struct Database {
+    /// Serialization format version.
     pub version: u32,
+    /// Candidate function signatures.
     pub entries: Vec<Entry>,
+    /// Input file names and archive member names.
+    #[serde(default)]
+    pub sources: Vec<String>,
 }
 
 impl Database {
+    /// Creates a database sorted by function name.
     #[must_use]
     pub fn new(mut entries: Vec<Entry>) -> Self {
         entries.sort_by(|a, b| a.name.cmp(&b.name));
         Self {
             version: VERSION,
             entries,
+            sources: Vec::new(),
         }
     }
 
+    /// Reads and validates a JSON database, reporting its path on read or parse errors.
     pub fn load(path: &Path) -> Result<Self> {
         let text = std::fs::read_to_string(path).map_err(|source| Error::Io {
             path: path.to_owned(),
@@ -46,6 +72,7 @@ impl Database {
         Self::from_json(value)
     }
 
+    /// Validates the format version and deserializes a database.
     pub fn from_json(value: serde_json::Value) -> Result<Self> {
         let found = value.get("version").and_then(serde_json::Value::as_u64);
         if found != Some(u64::from(VERSION)) {
@@ -57,6 +84,7 @@ impl Database {
         serde_json::from_value(value).map_err(Error::SignatureData)
     }
 
+    /// Finds an unambiguous informational IR shape; does not identify library functions.
     #[must_use]
     pub fn lookup(&self, ir: &FunctionIr) -> Option<&Entry> {
         let tokens = tokens(ir);
@@ -64,7 +92,18 @@ impl Database {
             return None;
         }
         let digest = hash(&tokens);
-        self.entries.iter().find(|entry| entry.hash == digest)
+        let mut matches = self.entries.iter().filter(|entry| {
+            entry.bytes.is_empty()
+                && entry.isa == ir.isa
+                && entry.hash == digest
+                && entry.tokens == tokens
+        });
+        let Some(first) = matches.next() else {
+            return None;
+        };
+        matches
+            .all(|entry| entry.name == first.name)
+            .then_some(first)
     }
 }
 
@@ -78,9 +117,12 @@ pub fn entry(name: &str, size: Option<u64>, ir: &FunctionIr) -> Option<Entry> {
         size: size.unwrap_or(0),
         hash: hash(&tokens),
         tokens,
+        bytes: Vec::new(),
+        calls: Vec::new(),
     })
 }
 
+/// Computes an informational digest of the lifted IR shape.
 #[must_use]
 pub fn shape_hash(ir: &FunctionIr) -> String {
     hash(&tokens(ir))

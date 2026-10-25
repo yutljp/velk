@@ -1,6 +1,8 @@
 declare const velk: {
   /** Loads an ELF, PE or Mach-O file; reopening an unchanged file reuses the cached analysis. */
   open(path: string): Binary;
+  /** Builds instruction signatures from a binary, static archive, or Rust rlib. */
+  buildSignatures(path: string): { database: SignatureDb; failures: Failure[] };
 };
 
 interface Binary {
@@ -32,10 +34,11 @@ interface Binary {
    */
   getFunction(nameOrAddr: string | number): Func;
 
-  /** A signature database built from this binary's named functions. */
+  /** Instruction signatures from named functions at least 32 bytes long. */
   buildSignatures(): { database: SignatureDb; failures: Failure[] };
 
-  /** Functions whose shape matches an entry of the database (or of the JSON file at that path). */
+  /** Unique instruction matches with agreeing direct calls. Applies names to unnamed functions
+   * and invalidates the function-list cache; subsequent decompilations use the names. */
   identify(signatures: SignatureDb | string): { matches: Match[]; failures: Failure[] };
 }
 

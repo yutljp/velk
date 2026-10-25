@@ -69,3 +69,44 @@ references come from the lifted IR. Scalar constants equal to mapped addresses
 can appear as address references. Constant search scans decoded immediates in
 executable sections, excludes branch displacements, and does not reconstruct
 values assembled by multiple instructions.
+
+## Library signatures
+
+Build a JSON database from a named binary, object file, static `.a` archive, or
+Rust `.rlib`, then apply it to a binary of the same instruction set:
+
+```sh
+velk --build-signatures library.a --output signatures.json
+velk --identify stripped.bin --signatures signatures.json
+velk --decompile stripped.bin 0x1000 --signatures signatures.json
+velk --card stripped.bin 0x1000 --signatures signatures.json
+```
+
+Scripts can build a database without opening the archive as a binary:
+
+```js
+const database = velk.buildSignatures("library.a").database;
+const binary = velk.open("stripped.bin");
+const result = binary.identify(database);
+result.matches.map(match => binary.getFunction(match.addr).decompile());
+```
+
+`binary.buildSignatures()` builds from the opened binary. `identify` accepts a
+database object or its JSON file path, returns `matches` and `failures`, and names
+unnamed functions. Existing names are preserved; subsequent function listings,
+lookups, and decompilation use the inferred names. CLI `--signatures` applies
+matches before card or decompilation analysis. Without a database, those operations
+do no signature scanning. Source file and archive member names are recorded in
+`database.sources`.
+
+A match requires identical normalized instruction bytes, a unique candidate name,
+and agreement of direct call destinations with independently matched functions.
+Only encoded direct call and external jump destinations are normalized. Bodies
+must contain at least 32 bytes after trailing alignment padding is removed and
+24 non-padding instruction bytes outside encoded destinations. Short, ambiguous,
+unsupported, or unresolved functions are skipped. Indirect control flow,
+PC-relative data references, unsupported relocations, and external conditional
+branches prevent matching. A skipped callee can also prevent its callers from
+matching. Matches identify compiler output, not semantic equivalence; different
+compiler versions or options can reduce coverage. `shapeHash()` is informational
+and is not used for library identification.

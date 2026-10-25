@@ -49,7 +49,8 @@ interface Signature {
 
 interface SignatureDb {
   version: number;
-  entries: { name: string; isa: string; size: number; hash: string; tokens: string[] }[];
+  entries: { name: string; isa: string; size: number; hash: string; tokens: string[]; bytes: number[]; calls: string[] }[];
+  sources: string[];
 }
 
 interface Match {

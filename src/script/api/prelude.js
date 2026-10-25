@@ -51,7 +51,7 @@
       return new Func(this.#id, call("find", { bin: this.#id, target: String(address(target)) }));
     }
     buildSignatures() { return call("buildSignatures", { bin: this.#id }); }
-    identify(signatures) { return call("identify", { bin: this.#id, signatures }); }
+    identify(signatures) { const result = call("identify", { bin: this.#id, signatures }); this.#functions = undefined; return result; }
     xrefs(target, { from = false } = {}) { return call("navigate", { bin: this.#id, query: { kind: "xrefs", target: String(address(target)), from } }); }
     callers(target, { depth = 1 } = {}) { return call("navigate", { bin: this.#id, query: { kind: "callers", target: String(address(target)), depth } }); }
     callees(target, { depth = 1 } = {}) { return call("navigate", { bin: this.#id, query: { kind: "callees", target: String(address(target)), depth } }); }
@@ -68,7 +68,7 @@
   const log = (...values) => { output.push(values.map(show).join(" ")); };
 
   globalThis.console = Object.freeze({ log, info: log, warn: log, error: log });
-  globalThis.velk = Object.freeze({ open: (path) => new Binary(call("open", { path })) });
+  globalThis.velk = Object.freeze({ open: (path) => new Binary(call("open", { path })), buildSignatures: (path) => call("buildSignatures", { bin: path }) });
   // The logged output, and the result's text unless showing it fails: then
   // the failure is left in __velkFinishError and the log still returned.
   globalThis.__velkFinish = (value) => {

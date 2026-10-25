@@ -26,6 +26,10 @@ use crate::loader::discover::x86_prologues;
 use crate::loader::symbols::demangle;
 use object::read::{File as ObjFile, Object, ObjectSection, ObjectSymbol};
 
+pub(crate) fn demangle_name(name: &str) -> String {
+    symbols::demangle(name).unwrap_or_else(|| name.to_owned())
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "lowercase")]
 pub enum Format {
@@ -104,6 +108,7 @@ pub enum NameSource {
     Objc,
     Plt,
     Prologue,
+    Signature,
 }
 
 impl fmt::Display for NameSource {
@@ -120,6 +125,7 @@ impl fmt::Display for NameSource {
             NameSource::Objc => "objc",
             NameSource::Plt => "plt",
             NameSource::Prologue => "prologue",
+            NameSource::Signature => "signature",
         })
     }
 }

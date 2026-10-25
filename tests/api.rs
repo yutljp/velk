@@ -370,14 +370,15 @@ fn a_result_that_cannot_be_shown_is_an_error() {
     assert!(outcome.output.contains("before"), "{:?}", outcome.output);
 }
 
-/// The time allowed stops an operation over the whole binary too.
+/// The time allowed stops repeated operations over the whole binary too.
+/// A single instruction-signature build can finish before the deadline.
 #[test]
 fn a_timeout_stops_an_operation_over_the_binary() {
     let path = common::fixtures_dir().join("go_probe");
     let engine = Engine::new().expect("an engine");
     let started = std::time::Instant::now();
     let outcome = engine.run(
-        &format!("velk.open({path:?}).buildSignatures().database.entries.length"),
+        &format!("const b = velk.open({path:?}); while (true) b.buildSignatures();"),
         Some(std::time::Duration::from_millis(500)),
     );
     assert!(outcome.error.is_some(), "{:?}", outcome.output);

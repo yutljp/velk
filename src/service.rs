@@ -275,6 +275,17 @@ impl Binary {
         if !self.image.functions.contains_key(&addr) {
             return Err(Error::NoFunctionAt(addr));
         }
+        let identified = match signatures {
+            Some(database) => match self.identify(database, deadline) {
+                Ok(result) => result
+                    .matches
+                    .into_iter()
+                    .find(|matched| matched.addr == addr)
+                    .map(|matched| matched.matched),
+                Err(error) => return Err(error),
+            },
+            None => None,
+        };
         if let Err(error) = self.prepare_structures(addr, deadline) {
             return Err(error);
         }
@@ -285,7 +296,6 @@ impl Binary {
             Ok(analyzed) => analyzed.as_ref(),
             Err(error) => return Err(error),
         };
-        let identified = identify(signatures, analysis);
         if let Err(error) = passed(deadline) {
             return Err(error);
         }
@@ -319,6 +329,17 @@ impl Binary {
         if !self.image.functions.contains_key(&addr) {
             return Err(Error::NoFunctionAt(addr));
         }
+        let identified = match signatures {
+            Some(database) => match self.identify(database, deadline) {
+                Ok(result) => result
+                    .matches
+                    .into_iter()
+                    .find(|matched| matched.addr == addr)
+                    .map(|matched| matched.matched),
+                Err(error) => return Err(error),
+            },
+            None => None,
+        };
         if let Err(error) = self.prepare_structures(addr, deadline) {
             return Err(error);
         }
@@ -348,10 +369,11 @@ impl Binary {
             0,
             &render::seh::comments(&self.image.exception_handlers, addr),
         );
-        if let Some(name) = identify(signatures, Ok(analysis)) {
-            rendered
-                .code
-                .insert_str(0, &format!("/* identified: {name} */\n"));
+        if let Some(name) = identified {
+            rendered.code.insert_str(
+                0,
+                &format!("/* identified: {} */\n", name.replace("*/", "* /")),
+            );
         }
         Ok(rendered)
     }
@@ -459,55 +481,59 @@ impl Binary {
 
     /// Signatures of the named functions; Err once `deadline` passes.
     pub fn build_signatures(&mut self, deadline: Option<Instant>) -> Result<SignatureBuild> {
-        let mut entries = Vec::new();
-        let mut failures = Vec::new();
-        for function in self.image.functions.values() {
-            let Some(name) = &function.name else {
-                continue;
-            };
-            passed(deadline)?;
-            match cached(&mut self.analyses, &self.image, function, deadline)? {
-                Ok(analysis) => entries.extend(sigs::entry(name, function.size, &analysis.ir)),
-                Err(error) => failures.push(Failure {
-                    addr: function.addr,
-                    error: error.clone(),
-                }),
-            }
+        if let Err(error) = passed(deadline) {
+            return Err(error);
         }
+        let database = match sigs::build(&self.path, deadline) {
+            Ok(database) => database,
+            Err(error) => return Err(error),
+        };
         Ok(SignatureBuild {
-            database: Database::new(entries),
-            failures,
+            database,
+            failures: Vec::new(),
         })
     }
 
-    /// The functions `database` names; Err once `deadline` passes.
+    /// Matches instruction signatures and names unnamed functions; Err once `deadline` passes.
     pub fn identify(
         &mut self,
         database: &Database,
         deadline: Option<Instant>,
     ) -> Result<Identification> {
+        let identified = match sigs::identify(&self.image, database, deadline) {
+            Ok(identified) => identified,
+            Err(error) => return Err(error),
+        };
         let mut matches = Vec::new();
-        let mut failures = Vec::new();
-        for function in self.image.functions.values() {
-            passed(deadline)?;
-            match cached(&mut self.analyses, &self.image, function, deadline)? {
-                Ok(analysis) => {
-                    if let Some(entry) = database.lookup(&analysis.ir) {
-                        matches.push(Match {
-                            addr: function.addr,
-                            size: function.size,
-                            current: function.name.clone(),
-                            matched: entry.name.clone(),
-                        });
-                    }
-                }
-                Err(error) => failures.push(Failure {
-                    addr: function.addr,
-                    error: error.clone(),
-                }),
+        let mut changed = false;
+        for (addr, matched) in identified {
+            let Some(function) = self.image.functions.get_mut(&addr) else {
+                continue;
+            };
+            let current = function.name.clone();
+            matches.push(Match {
+                addr,
+                size: function.size,
+                current: current.clone(),
+                matched: matched.clone(),
+            });
+            if current.is_none() {
+                function.name = Some(matched);
+                function.sources.push(loader::NameSource::Signature);
+                changed = true;
             }
         }
-        Ok(Identification { matches, failures })
+        if changed {
+            self.image.summaries = Default::default();
+            self.navigation = None;
+            self.symbols = render::callee_names(&self.image);
+            self.analyses.clear();
+            self.shared_analyses.clear();
+        }
+        Ok(Identification {
+            matches,
+            failures: Vec::new(),
+        })
     }
 }
 
@@ -536,13 +562,6 @@ fn names(function: &Function) -> impl Iterator<Item = &str> {
         .iter()
         .chain(&function.aliases)
         .map(String::as_str)
-}
-
-fn identify(
-    signatures: Option<&Database>,
-    analysis: Result<&Analysis, &LiftError>,
-) -> Option<String> {
-    Some(signatures?.lookup(&analysis.ok()?.ir)?.name.clone())
 }
 
 fn modified(path: &Path) -> Result<SystemTime> {
@@ -637,7 +656,7 @@ mod tests {
     }
 
     #[test]
-    fn decompile_keeps_dependencies_and_identification_from_cached_analysis() {
+    fn decompile_keeps_dependencies_from_cached_analysis() {
         let mut binary = fixture("x64_div.o");
         let addr = binary.find("smod3x").expect("fixture function").addr;
         let mut ir = FunctionIr::single_block(
@@ -651,7 +670,6 @@ mod tests {
         );
         ir.addr = addr;
         ir.ret_type = CType::U64;
-        let signatures = Database::new(vec![sigs::entry("segment_reader", None, &ir).unwrap()]);
         binary.analyses.insert(
             addr,
             Ok(Analysis {
@@ -660,7 +678,7 @@ mod tests {
             }),
         );
         let rendered = binary
-            .decompile_with_dependencies(addr, Some(&signatures), None)
+            .decompile_with_dependencies(addr, None, None)
             .expect("typed decompilation");
         assert_eq!(rendered.segment_bases.len(), 1);
         let dependency = &rendered.segment_bases[0];
@@ -670,14 +688,6 @@ mod tests {
                 .code
                 .contains(&format!("uint64_t {}(void);", dependency.provider))
         );
-        assert!(
-            rendered
-                .code
-                .starts_with("/* identified: segment_reader */\n")
-        );
-        assert_eq!(
-            binary.decompile(addr, Some(&signatures), None).unwrap(),
-            rendered.code
-        );
+        assert_eq!(binary.decompile(addr, None, None).unwrap(), rendered.code);
     }
 }

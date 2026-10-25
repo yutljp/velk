@@ -473,17 +473,16 @@ fn run(command: Command) -> Result<ExitCode> {
             print_code(&binary, addr, &function, &code, Language::Ir);
         }
         Command::BuildSignatures { path, output } => {
-            let build = Binary::open(&path)?.build_signatures(None)?;
-            write_json(&output, &json!(build.database))?;
+            let database = velk::sigs::build(&path, None)?;
+            write_json(&output, &json!(database))?;
             eprintln!(
                 "{}",
                 Terminal::stderr().success(&format!(
                     "{} entries -> {}",
-                    build.database.entries.len(),
+                    database.entries.len(),
                     output.display(),
                 )),
             );
-            report_failures(&build.failures);
         }
         Command::Identify {
             path,

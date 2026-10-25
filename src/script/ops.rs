@@ -204,8 +204,11 @@ pub fn handle(
             session.open(&bin)?.shape_hash(parse(&addr)?, deadline)?
         )),
         Request::BuildSignatures { bin } => {
-            let build = session.open(&bin)?.build_signatures(deadline)?;
-            Ok(json!({ "database": build.database, "failures": failures(&build.failures) }))
+            let database = match crate::sigs::build(&bin, deadline) {
+                Ok(database) => database,
+                Err(error) => return Err(error),
+            };
+            Ok(json!({ "database": database, "failures": [] }))
         }
         Request::Identify { bin, signatures } => {
             let database = match signatures {

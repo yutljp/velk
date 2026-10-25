@@ -527,14 +527,15 @@ echo "$x86_c" | grep -q "int32_t reg_add(int32_t a0, int32_t a1)" || fail "x86 d
 echo "$x86_c" | grep -q "return a0 + a1;"         || fail "x86 decompile return"
 ok "x86 decompile"
 
-# 7) build-signatures and identify (match same-shape functions under other names)
+# 7) instruction signatures reject short functions and match full bodies
 "$BIN" --build-signatures $FIX/arm64.o --output $SIGS 2>/dev/null
 [ -s $SIGS ]                          || fail "build-signatures output"
-grep -q '"name": "sum3"' $SIGS        || fail "build-signatures entry sum3"
+grep -q '"name": "helper"' $SIGS      || fail "build-signatures entry helper"
+if grep -q '"name": "sum3"' $SIGS; then fail "short signature accepted"; fi
 ident=$("$BIN" --identify $FIX/alt.o --signatures $SIGS 2>/dev/null)
-echo "$ident" | grep -q "sum3"                      || fail "identify sum3 shape"
-echo "$ident" | grep -q "helper"                    || fail "identify helper shape"
-echo "$ident" | grep -q "identified 2 of 2"         || fail "identify count"
+if echo "$ident" | grep -q "sum3"; then fail "short match accepted"; fi
+echo "$ident" | grep -q "helper"                    || fail "identify helper instructions"
+echo "$ident" | grep -q "identified 1 of 2"         || fail "identify count"
 ok "build-signatures / identify"
 
 # 8) while structuring (header condition and back edge)
@@ -574,10 +575,10 @@ ok "adrp / string reference"
 
 # 12) applying a signature database (--signatures)
 "$BIN" --build-signatures $FIX/arm64.o --output $SIGS 2>/dev/null
-applied=$("$BIN" --decompile $FIX/alt.o alt_sum3 --signatures $SIGS 2>/dev/null)
-echo "$applied" | grep -q "identified: sum3"  || fail "decompile signature matching"
-applied_card=$("$BIN" --card $FIX/alt.o alt_sum3 --signatures $SIGS 2>/dev/null)
-echo "$applied_card" | grep -q '"identified": "sum3"' || fail "card signature matching"
+applied=$("$BIN" --decompile $FIX/alt.o alt_helper --signatures $SIGS 2>/dev/null)
+echo "$applied" | grep -q "identified: helper"  || fail "decompile signature matching"
+applied_card=$("$BIN" --card $FIX/alt.o alt_helper --signatures $SIGS 2>/dev/null)
+echo "$applied_card" | grep -q '"identified": "helper"' || fail "card signature matching"
 ok "signature application"
 
 # 13) typed pointer parameters and the script API (shape hash, signature)
