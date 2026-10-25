@@ -1,0 +1,313 @@
+# arm32/integers.thumb.O2.elf: elf arm32 no entry, 9 functions, 0 lift failures, 3 unsupported, 0 gotos
+0x20124 6 narrow_add symtab,dwarf
+0x2012c 4 widen_mul symtab,dwarf
+0x20130 10 mixed_sign symtab,dwarf
+0x2013c 26 in_range symtab,dwarf
+0x20158 6 rotate_left symtab,dwarf
+0x20160 56 popcount symtab,dwarf
+0x20198 4 byte_swap symtab,dwarf
+0x2019c 14 min3 symtab,dwarf
+0x201ac 8 labs_value symtab,dwarf
+
+== 0x20124 narrow_add
+-- decompile
+/* velk pseudo-C: narrow_add @ 0x20124 */
+signed char narrow_add(signed char a, signed char b) {
+    return a + b;
+}
+-- signature
+signed char (signed char a, signed char b)
+-- references
+
+-- ir
+fn narrow_add @ 0x20124 (size 6)
+  blk0 @ 0x20124:
+    ret (sext8(((r0 + r1) & #0xffffffff)) & #0xffffffff)
+-- card
+{"addr":"0x20124","approxTokens":114,"blocks":1,"hardReasons":[],"name":"narrow_add","nameSources":["symtab","dwarf"],"section":".text","size":6,"unsupported":0}
+
+== 0x2012c widen_mul
+-- decompile
+/* velk pseudo-C: widen_mul @ 0x2012c */
+unsigned short widen_mul(unsigned char a, unsigned char b) {
+    return b * a;
+}
+-- signature
+unsigned short (unsigned char a, unsigned char b)
+-- references
+
+-- ir
+fn widen_mul @ 0x2012c (size 4)
+  blk0 @ 0x2012c:
+    ret ((r1 * r0) & #0xffffffff)
+-- card
+{"addr":"0x2012c","approxTokens":108,"blocks":1,"hardReasons":[],"name":"widen_mul","nameSources":["symtab","dwarf"],"section":".text","size":4,"unsupported":0}
+
+== 0x20130 mixed_sign
+-- decompile
+/* velk pseudo-C: mixed_sign @ 0x20130 */
+int32_t mixed_sign(int32_t a0, int32_t a1) {
+    /* unsupported: AAPCS32 multiword, floating-point or aggregate declaration */
+    int32_t t1 = a0 >> 31;
+    int32_t v1 = t1;
+    int32_t v2 = a0 - a1;
+    /* unsupported: ARM sbc r1, r2, 0x0 at 0x20134 */
+    return a0;
+}
+-- signature
+int32_t (int32_t a0, int32_t a1)
+-- references
+
+-- ir
+fn mixed_sign @ 0x20130 (size 10)
+  blk0 @ 0x20130:
+    unsupported: AAPCS32 multiword, floating-point or aggregate declaration
+    t1 = (sext32(r0) >>> #0x1f)
+    v1 = (t1 & #0xffffffff)
+    v2 = ((r0 - r1) & #0xffffffff)
+    unsupported: ARM sbc r1, r2, 0x0 at 0x20134
+    ret r0
+-- card
+{"addr":"0x20130","approxTokens":120,"blocks":1,"hardReasons":[],"name":"mixed_sign","nameSources":["symtab","dwarf"],"section":".text","size":10,"unsupported":2}
+
+== 0x2013c in_range
+-- decompile
+/* velk pseudo-C: in_range @ 0x2013c */
+_Bool in_range(int x, int lo, int hi) {
+    uint8_t v2 = 0;
+    uint8_t v3 = 0;
+    if (x >= lo) {
+        v3 = 1;
+    }
+    if (x > hi) {
+        return v3 & v2;
+    }
+    v2 = 1;
+    return v3 & v2;
+}
+-- signature
+_Bool (int x, int lo, int hi)
+-- references
+
+-- ir
+fn in_range @ 0x2013c (size 26)
+  blk0 @ 0x2013c:
+    v2 = #0x0
+    v3 = #0x0
+    brif lt r0, r1 -> 0x2014a
+  blk1 @ 0x20149:
+    v3 = #0x1
+  blk2 @ 0x2014a:
+    brif gt r0, r2 -> 0x20150
+  blk3 @ 0x2014f:
+    v2 = #0x1
+  blk4 @ 0x20150:
+    ret (v3 & v2)
+-- card
+{"addr":"0x2013c","approxTokens":156,"blocks":5,"hardReasons":[],"name":"in_range","nameSources":["symtab","dwarf"],"section":".text","size":26,"unsupported":0}
+
+== 0x20158 rotate_left
+-- decompile
+/* velk pseudo-C: rotate_left @ 0x20158 */
+unsigned int rotate_left(unsigned int x, unsigned int k) {
+    uint8_t t1 = -k & 0x1f;
+    return x >> t1 | x << (32 - t1 & 0x1f);
+}
+-- signature
+unsigned int (unsigned int x, unsigned int k)
+-- references
+
+-- ir
+fn rotate_left @ 0x20158 (size 6)
+  blk0 @ 0x20158:
+    t1 = ((#0x0 - r1) & #0x1f)
+    ret (((r0 >> t1) | (r0 << ((#0x20 - t1) & #0x1f))) & #0xffffffff)
+-- card
+{"addr":"0x20158","approxTokens":114,"blocks":1,"hardReasons":[],"name":"rotate_left","nameSources":["symtab","dwarf"],"section":".text","size":6,"unsupported":0}
+
+== 0x20160 popcount
+-- decompile
+/* velk pseudo-C: popcount @ 0x20160 */
+int popcount(unsigned int x) {
+    int32_t v3;
+    int32_t v4;
+    int32_t v5;
+    int32_t v7;
+
+    int32_t v1 = x;
+    int32_t v2 = 0;
+    if (x == 0) {
+        x = 0;
+    }
+    if (v1 != v2) {
+        v3 = x;
+        v4 = 1;
+        while (true) {
+            v5 = v3 - 1;
+            v7 = v3 & v5;
+            if ((v3 & v5) == 0) break;
+            v5 = v7 - 2;
+            v3 = v7 & v5;
+            if ((v7 & v5) == 0) {
+                return v4 + 1;
+            }
+            v5 = v3 - 2;
+            v7 = v3 & v5;
+            v1 = v3 & v5;
+            if (v1 == 0) {
+                v4 += 2;
+            }
+            if (v1 == 0) {
+                return v4;
+            }
+            v5 = v7 - 2;
+            v3 = v7 & v5;
+            v4 += 4;
+            v1 = v7 & v5;
+            if (v1 == 0) {
+                --v4;
+            }
+            if (v1 == 0) {
+                return v4;
+            }
+        }
+        return v4;
+    }
+    return x;
+}
+-- signature
+int (unsigned int x)
+-- references
+
+-- ir
+fn popcount @ 0x20160 (size 56)
+  blk0 @ 0x20160:
+    v1 = (r0 & #0xffffffff)
+    v2 = #0x0
+    brif ne r0, #0x0 -> 0x20166
+  blk1 @ 0x20165:
+    r0 = #0x0
+  blk2 @ 0x20166:
+    brif ne v1, v2 -> 0x20168
+  blk3 @ 0x20167:
+    ret r0
+  blk4 @ 0x20168:
+    v3 = r0
+    v4 = #0x1
+  blk5 @ 0x2016c:
+    v5 = (v3 - #0x1)
+    v7 = (v3 & v5)
+    brif ne (v3 & v5), #0x0 -> 0x20174
+  blk6 @ 0x20173:
+    ret v4
+  blk7 @ 0x20174:
+    v5 = (v7 - #0x2)
+    v3 = (v7 & v5)
+    brif ne (v7 & v5), #0x0 -> 0x2017a
+  blk8 @ 0x20179:
+    br 0x20194
+  blk9 @ 0x2017a:
+    v5 = (v3 - #0x2)
+    v7 = (v3 & v5)
+    v1 = (v3 & v5)
+    brif ne v1, #0x0 -> 0x20182
+  blk10 @ 0x20181:
+    v4 = ((v4 + #0x2) & #0xffffffff)
+  blk11 @ 0x20182:
+    brif ne v1, #0x0 -> 0x20184
+  blk12 @ 0x20183:
+    ret v4
+  blk13 @ 0x20184:
+    v5 = (v7 - #0x2)
+    v3 = (v7 & v5)
+    v4 = ((v4 + #0x4) & #0xffffffff)
+    v1 = (v7 & v5)
+    brif ne v1, #0x0 -> 0x20190
+  blk14 @ 0x2018f:
+    v4 = ((v4 - #0x1) & #0xffffffff)
+  blk15 @ 0x20190:
+    brif ne v1, #0x0 -> 0x20192
+  blk16 @ 0x20191:
+    ret v4
+  blk17 @ 0x20192:
+    br 0x2016c
+  blk18 @ 0x20194:
+    ret ((v4 + #0x1) & #0xffffffff)
+-- card
+{"addr":"0x20160","approxTokens":240,"blocks":19,"hardReasons":[],"name":"popcount","nameSources":["symtab","dwarf"],"section":".text","size":56,"unsupported":0}
+
+== 0x20198 byte_swap
+-- decompile
+/* velk pseudo-C: byte_swap @ 0x20198 */
+unsigned int byte_swap(unsigned int x) {
+    /* unsupported: ARM rev r0, r0 at 0x20198 */
+    return x;
+}
+-- signature
+unsigned int (unsigned int x)
+-- references
+
+-- ir
+fn byte_swap @ 0x20198 (size 4)
+  blk0 @ 0x20198:
+    unsupported: ARM rev r0, r0 at 0x20198
+    ret r0
+-- card
+{"addr":"0x20198","approxTokens":108,"blocks":1,"hardReasons":[],"name":"byte_swap","nameSources":["symtab","dwarf"],"section":".text","size":4,"unsupported":1}
+
+== 0x2019c min3
+-- decompile
+/* velk pseudo-C: min3 @ 0x2019c */
+int min3(int a, int b, int c) {
+    if (a >= b) {
+        a = b;
+    }
+    if (a < c) {
+        return a;
+    }
+    a = c;
+    return a;
+}
+-- signature
+int (int a, int b, int c)
+-- references
+
+-- ir
+fn min3 @ 0x2019c (size 14)
+  blk0 @ 0x2019c:
+    brif lt r0, r1 -> 0x201a2
+  blk1 @ 0x201a1:
+    r0 = r1
+  blk2 @ 0x201a2:
+    brif lt r0, r2 -> 0x201a8
+  blk3 @ 0x201a7:
+    r0 = r2
+  blk4 @ 0x201a8:
+    ret r0
+-- card
+{"addr":"0x2019c","approxTokens":138,"blocks":5,"hardReasons":[],"name":"min3","nameSources":["symtab","dwarf"],"section":".text","size":14,"unsupported":0}
+
+== 0x201ac labs_value
+-- decompile
+/* velk pseudo-C: labs_value @ 0x201ac */
+int32_t labs_value(int32_t x) {
+    if (x >= 0) {
+        return x;
+    }
+    x = -x;
+    return x;
+}
+-- signature
+int32_t (int32_t x)
+-- references
+
+-- ir
+fn labs_value @ 0x201ac (size 8)
+  blk0 @ 0x201ac:
+    brif ge r0, #0x0 -> 0x201b2
+  blk1 @ 0x201b1:
+    r0 = (#0x0 - r0)
+  blk2 @ 0x201b2:
+    ret r0
+-- card
+{"addr":"0x201ac","approxTokens":120,"blocks":3,"hardReasons":[],"name":"labs_value","nameSources":["symtab","dwarf"],"section":".text","size":8,"unsupported":0}

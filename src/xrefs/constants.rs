@@ -1,11 +1,12 @@
 //! Decoded instruction immediates, excluding data and branch displacements.
 use crate::deadline::passed;
 use crate::error::Result;
-use crate::loader::{Image, Isa};
+use crate::loader::{ArmMode, Image, Isa};
 use iced_x86::{Decoder, DecoderOptions, OpKind};
 use serde::Serialize;
 use std::time::Instant;
 use yaxpeax_arch::{Decoder as _, ReaderBuilder};
+use yaxpeax_arm::armv7::{self, Opcode, Operand};
 use yaxpeax_arm::armv8::a64;
 
 #[derive(Debug, Serialize)]
@@ -108,6 +109,59 @@ pub fn search(image: &Image, value: u64, deadline: Option<Instant>) -> Result<Ve
                             }
                             _ => {}
                         }
+                    }
+                }
+            }
+            Isa::Arm32 => {
+                let mut offset = 0usize;
+                while offset < bytes.len() {
+                    if let Err(error) = passed(deadline) {
+                        return Err(error);
+                    }
+                    let Some(pc) = section.vaddr.checked_add(offset as u64) else {
+                        break;
+                    };
+                    let mode = image.arm_mode(pc);
+                    if mode == ArmMode::Data {
+                        offset += 1;
+                        continue;
+                    }
+                    let decoder = armv7::InstDecoder::default()
+                        .allow_nonconforming(false)
+                        .with_thumb_mode(mode == ArmMode::Thumb);
+                    let mut reader = ReaderBuilder::<u32, u8>::read_at(&bytes[offset..], 0);
+                    let Ok(instruction) = decoder.decode(&mut reader) else {
+                        offset += if mode == ArmMode::Thumb { 2 } else { 4 };
+                        continue;
+                    };
+                    offset += if instruction.thumb && !instruction.wide {
+                        2
+                    } else {
+                        4
+                    };
+                    if matches!(
+                        instruction.opcode,
+                        Opcode::B
+                            | Opcode::BL
+                            | Opcode::BLX
+                            | Opcode::CBZ
+                            | Opcode::CBNZ
+                            | Opcode::IT
+                    ) {
+                        continue;
+                    }
+                    for (operand, arg) in instruction.operands.iter().enumerate() {
+                        let immediate = match arg {
+                            Operand::Imm12(value) => u64::from(*value),
+                            Operand::Imm32(value) => u64::from(*value),
+                            _ => continue,
+                        };
+                        let immediate = if instruction.opcode == Opcode::MOVT {
+                            immediate << 16
+                        } else {
+                            immediate
+                        };
+                        add(pc, operand, immediate);
                     }
                 }
             }

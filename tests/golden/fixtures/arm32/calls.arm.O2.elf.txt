@@ -1,0 +1,412 @@
+# arm32/calls.arm.O2.elf: elf arm32 no entry, 11 functions, 0 lift failures, 4 unsupported, 0 gotos
+0x20140 8 twice symtab,dwarf
+0x20148 8 square symtab,dwarf
+0x20150 40 pick_op symtab,dwarf
+0x20178 52 apply_table symtab,dwarf
+0x201ac 24 apply_pointer symtab,dwarf
+0x201d0 144 factorial symtab,dwarf
+0x20260 20 is_odd symtab,dwarf
+0x20274 20 is_even symtab,dwarf
+0x20288 56 sum9 symtab,dwarf
+0x202c0 64 call_sum9 symtab,dwarf
+0x20300 256 sum_varargs symtab,dwarf
+/* velk prelude */
+uint64_t velk_entry_stack_pointer(void); /* target entry stack pointer */
+/* end velk prelude */
+
+== 0x20140 twice
+-- decompile
+/* velk pseudo-C: twice @ 0x20140 */
+int twice(int x) {
+    return (uint64_t)x << 1;
+}
+-- signature
+int (int x)
+-- references
+
+-- ir
+fn twice @ 0x20140 (size 8)
+  blk0 @ 0x20140:
+    ret ((r0 << #0x1) & #0xffffffff)
+-- card
+{"addr":"0x20140","approxTokens":108,"blocks":1,"hardReasons":[],"name":"twice","nameSources":["symtab","dwarf"],"section":".text","size":8,"unsupported":0}
+
+== 0x20148 square
+-- decompile
+/* velk pseudo-C: square @ 0x20148 */
+int square(int x) {
+    return x * x;
+}
+-- signature
+int (int x)
+-- references
+
+-- ir
+fn square @ 0x20148 (size 8)
+  blk0 @ 0x20148:
+    ret ((r0 * r0) & #0xffffffff)
+-- card
+{"addr":"0x20148","approxTokens":108,"blocks":1,"hardReasons":[],"name":"square","nameSources":["symtab","dwarf"],"section":".text","size":8,"unsupported":0}
+
+== 0x20150 pick_op
+-- decompile
+/* velk pseudo-C: pick_op @ 0x20150 */
+void *pick_op(int which) {
+    int32_t v1 = 0x20164 + *(uint32_t *)(0x20170);
+    int32_t result = 0x20168 + *(uint32_t *)(0x20174);
+    if (which == 0) {
+        return (void *)(uint32_t)result;
+    }
+    return (void *)(uint32_t)v1;
+}
+-- signature
+void * (int which)
+-- references
+
+-- ir
+fn pick_op @ 0x20150 (size 40)
+  blk0 @ 0x20150:
+    v1 = (#0x20164 + load32(#0x20170))
+    v2 = (#0x20168 + load32(#0x20174))
+    brif eq r0, #0x0 -> 0x20168
+  blk1 @ 0x20165:
+    v2 = v1
+  blk2 @ 0x20168:
+    ret v2
+-- card
+{"addr":"0x20150","approxTokens":144,"blocks":3,"hardReasons":[],"name":"pick_op","nameSources":["symtab","dwarf"],"section":".text","size":40,"unsupported":0}
+
+== 0x20178 apply_table
+-- decompile
+/* velk pseudo-C: apply_table @ 0x20178 */
+int apply_table(unsigned int index, int x) {
+    uint32_t v6;
+
+    /* unsupported: ARM umull r2, r3, r0, r2 at 0x20180 */
+    int32_t v3 = v6 >> 1;
+    int32_t v4 = v3 * 3;
+    int32_t v5 = index - v4;
+    if (v5 + v4 != v4 && v5 == 1) {
+        return ((int32_t)(square((uint32_t)x)));
+    }
+    return ((int32_t)(twice((uint32_t)x)));
+}
+-- signature
+int (unsigned int index, int x)
+-- references
+
+-- ir
+fn apply_table @ 0x20178 (size 52)
+  blk0 @ 0x20178:
+    v1 = #0xaaab
+    v2 = #0xaaaaaaab
+    unsupported: ARM umull r2, r3, r0, r2 at 0x20180
+    v3 = ((r3 >> #0x1) & #0xffffffff)
+    v4 = ((v3 * #0x3) & #0xffffffff)
+    v5 = ((r0 - v4) & #0xffffffff)
+    brif ne (v5 + v4), v4 -> 0x20194
+  blk1 @ 0x20191:
+    br 0x201a4
+  blk2 @ 0x20194:
+    brif eq v5, #0x1 -> 0x2019c
+  blk3 @ 0x20199:
+    br 0x201a4
+  blk4 @ 0x2019c:
+    v7:r0 = call 0x20148(r1)
+    ret v7
+  blk5 @ 0x201a4:
+    v9:r0 = call 0x20140(r1)
+    ret v9
+-- card
+{"addr":"0x20178","approxTokens":174,"blocks":6,"hardReasons":[],"name":"apply_table","nameSources":["symtab","dwarf"],"section":".text","size":52,"unsupported":1}
+
+== 0x201ac apply_pointer
+-- decompile
+/* velk pseudo-C: apply_pointer @ 0x201ac */
+int apply_pointer(void *f, int x) {
+    return ((int32_t)(((uint32_t (*)())(uint32_t)(uintptr_t)f)((uint32_t)x))) + 1;
+}
+-- signature
+int (void * f, int x)
+-- references
+
+-- ir
+fn apply_pointer @ 0x201ac (size 24)
+  blk0 @ 0x201ac:
+    v4:r0, r1 = call *r0(r1)
+    ret ((v4 + #0x1) & #0xffffffff)
+-- card
+{"addr":"0x201ac","approxTokens":132,"blocks":1,"hardReasons":[],"name":"apply_pointer","nameSources":["symtab","dwarf"],"section":".text","size":24,"unsupported":0}
+
+== 0x201d0 factorial
+-- decompile
+/* velk pseudo-C: factorial @ 0x201d0 */
+int factorial(int n) {
+    uint64_t v4;
+    int32_t v1;
+    int32_t v2;
+
+    v4 = 1;
+    if (n < 2) {
+        v1 = (uint32_t)(sub_20248());
+        return v1;
+    }
+    if ((uint32_t)n < 5) {
+        v2 = (uint32_t)(sub_20234());
+        return v2;
+    }
+    /* unsupported: ARM adr r1, pc, 0x64 at 0x201e4 */
+    int32_t v3 = n - 1;
+    /* unsupported: undecodable ARM instruction at 0x201ec: incomplete decoder */
+}
+-- signature
+int (int n)
+-- references
+
+-- ir
+fn factorial @ 0x201d0 (size 144)
+  blk0 @ 0x201d0:
+    r1 = #0x1
+    brif ge r0, #0x2 -> 0x201dc
+  blk1 @ 0x201d9:
+    v1:r0 = call 0x20248
+    ret v1
+  blk2 @ 0x201dc:
+    brif cs r0, #0x5 -> 0x201e4
+  blk3 @ 0x201e1:
+    v2:r0, r1 = call 0x20234
+    ret v2
+  blk4 @ 0x201e4:
+    unsupported: ARM adr r1, pc, 0x64 at 0x201e4
+    v3 = ((r0 - #0x1) & #0xffffffff)
+    unsupported: undecodable ARM instruction at 0x201ec: incomplete decoder
+-- card
+{"addr":"0x201d0","approxTokens":144,"blocks":5,"hardReasons":[],"name":"factorial","nameSources":["symtab","dwarf"],"section":".text","size":144,"unsupported":2}
+
+== 0x20260 is_odd
+-- decompile
+/* velk pseudo-C: is_odd @ 0x20260 */
+int is_odd(int n) {
+    int32_t v1 = n;
+    int32_t v2 = 0;
+    if (n == 0) {
+        n = 0;
+    }
+    if (v1 != v2) {
+        return ((int32_t)(is_even((n - 1) & 0xffffffff)));
+    }
+    return n;
+}
+-- signature
+int (int n)
+-- references
+
+-- ir
+fn is_odd @ 0x20260 (size 20)
+  blk0 @ 0x20260:
+    v1 = r0
+    v2 = #0x0
+    brif ne r0, #0x0 -> 0x20268
+  blk1 @ 0x20265:
+    r0 = #0x0
+  blk2 @ 0x20268:
+    brif ne v1, v2 -> 0x2026c
+  blk3 @ 0x20269:
+    ret r0
+  blk4 @ 0x2026c:
+    v4:r0, r1 = call 0x20274(((r0 - #0x1) & #0xffffffff))
+    ret v4
+-- card
+{"addr":"0x20260","approxTokens":126,"blocks":5,"hardReasons":[],"name":"is_odd","nameSources":["symtab","dwarf"],"section":".text","size":20,"unsupported":0}
+
+== 0x20274 is_even
+-- decompile
+/* velk pseudo-C: is_even @ 0x20274 */
+int is_even(int n) {
+    int32_t v1 = n;
+    int32_t v2 = 0;
+    if (n == 0) {
+        n = 1;
+    }
+    if (v1 != v2) {
+        return ((int32_t)(is_odd((n - 1) & 0xffffffff)));
+    }
+    return n;
+}
+-- signature
+int (int n)
+-- references
+
+-- ir
+fn is_even @ 0x20274 (size 20)
+  blk0 @ 0x20274:
+    v1 = r0
+    v2 = #0x0
+    brif ne r0, #0x0 -> 0x2027c
+  blk1 @ 0x20279:
+    r0 = #0x1
+  blk2 @ 0x2027c:
+    brif ne v1, v2 -> 0x20280
+  blk3 @ 0x2027d:
+    ret r0
+  blk4 @ 0x20280:
+    v4:r0, r1 = call 0x20260(((r0 - #0x1) & #0xffffffff))
+    ret v4
+-- card
+{"addr":"0x20274","approxTokens":126,"blocks":5,"hardReasons":[],"name":"is_even","nameSources":["symtab","dwarf"],"section":".text","size":20,"unsupported":0}
+
+== 0x20288 sum9
+-- decompile
+/* velk pseudo-C: sum9 @ 0x20288 */
+struct S1 { int32_t field_0x0; int32_t field_0x4; int32_t field_0x8; };
+int32_t sum9(int32_t a, int32_t b, int32_t c, int32_t d, int32_t e, int32_t f, int32_t g, int32_t h, int32_t i) {
+    uint64_t sp = velk_entry_stack_pointer();
+    uint64_t v1;
+    uint32_t local_0; /* [sp-4] */
+
+    local_0 = v1;
+    struct S1 *v3 = (struct S1 *)((sp - 16 + 16) & 0xffffffff);
+    int32_t v4 = b + a + c + d;
+    v4 += v3->field_0x0;
+    v4 += v3->field_0x4;
+    v4 += v3->field_0x8;
+    v4 += h;
+    return v4 + i;
+}
+-- signature
+int32_t (int32_t a, int32_t b, int32_t c, int32_t d)
+-- references
+
+-- ir
+fn sum9 @ 0x20288 (size 56)
+  blk0 @ 0x20288:
+    store32(lr, (sp + #0xfffffffffffffffc))
+    v3 = (((sp + #0xfffffffffffffff0) + #0x10) & #0xffffffff)
+    v4 = ((((r1 + r0) + r2) & #0xffffffff) + r3)
+    v4 = (v4 + load32(v3))
+    v4 = (v4 + load32((v3 + #0x4)))
+    v4 = (v4 + load32((v3 + #0x8)))
+    v4 = (v4 + load32((sp + #0xc)))
+    ret ((v4 + load32((sp + #0x10))) & #0xffffffff)
+-- card
+{"addr":"0x20288","approxTokens":180,"blocks":1,"hardReasons":[],"name":"sum9","nameSources":["symtab","dwarf"],"section":".text","size":56,"structures":["struct S1 { int32_t field_0x0; int32_t field_0x4; int32_t field_0x8; };"],"unsupported":0}
+
+== 0x202c0 call_sum9
+-- decompile
+/* velk pseudo-C: call_sum9 @ 0x202c0 */
+int32_t call_sum9(int32_t x) {
+    return sum9((uint32_t)x, 1, 2, 3, 4, 5, 6, 7, 8);
+}
+-- signature
+int32_t (int32_t x)
+-- references
+
+-- ir
+fn call_sum9 @ 0x202c0 (size 64)
+  blk0 @ 0x202c0:
+    v1:r0 = call 0x20288(r0, #0x1, #0x2, #0x3, #0x4, #0x5, #0x6, #0x7, #0x8)
+    ret v1
+-- card
+{"addr":"0x202c0","approxTokens":192,"blocks":1,"hardReasons":[],"name":"call_sum9","nameSources":["symtab","dwarf"],"section":".text","size":64,"unsupported":0}
+
+== 0x20300 sum_varargs
+-- decompile
+/* velk pseudo-C: sum_varargs @ 0x20300 */
+int sum_varargs(int count, ...) {
+    uint64_t sp = velk_entry_stack_pointer();
+    uint64_t v10;
+    uint32_t v11;
+    uint32_t v12;
+    uint32_t v13;
+    uint32_t v14;
+    int32_t v2;
+    int32_t v4;
+    int32_t v8;
+    uint32_t local_0; /* [sp-14] */
+    uint32_t local_1; /* [sp-10] */
+    uint32_t local_2; /* [sp-18] */
+
+    local_0 = v13;
+    local_1 = v14;
+    int32_t v1 = sp - 24 + 12;
+    *(uint32_t *)((uint32_t)v1) = v10;
+    *(uint32_t *)((uint64_t)(uint32_t)v1 + 0x4) = v11;
+    *(uint32_t *)((uint64_t)(uint32_t)v1 + 0x8) = v12;
+    v10 = (sp - 24 + 12) & 0xffffffff;
+    local_2 = v10;
+    if (count < 1) {
+        v2 = (uint32_t)(sub_203d8());
+        return v2;
+    }
+    v12 = local_2;
+    if ((uint32_t)count < 8) {
+        v4 = (uint32_t)(sub_203ac());
+        return v4;
+    }
+    v10 = (v12 + ((uint64_t)count << 2)) & 0xffffffff;
+    uint32_t v5 = (uintptr_t)&local_2;
+    uint32_t v6 = v5;
+    uint32_t v7 = v10;
+    if (v5 < v10) {
+        v10 = v5 + 4;
+    }
+    if (v6 < v7) {
+        v6 = v12;
+        v7 = v10;
+    }
+    if (v6 < v7) {
+        v8 = (uint32_t)(sub_203ac());
+        return v8;
+    }
+    int32_t v9 = count & 0x7ffffffc;
+    /* unsupported: undecodable ARM instruction at 0x20350: incomplete decoder */
+}
+-- signature
+int (int count)
+-- references
+
+-- ir
+fn sum_varargs @ 0x20300 (size 256)
+  blk0 @ 0x20300:
+    store32(r11, (sp + #0xffffffffffffffec))
+    store32(lr, (sp + #0xfffffffffffffff0))
+    v1 = (((sp + #0xffffffffffffffe8) + #0xc) & #0xffffffff)
+    store32(r1, v1)
+    store32(r2, (v1 + #0x4))
+    store32(r3, (v1 + #0x8))
+    r1 = (((sp + #0xffffffffffffffe8) + #0xc) & #0xffffffff)
+    store32(r1, (sp + #0xffffffffffffffe8))
+    brif ge r0, #0x1 -> 0x20324
+  blk1 @ 0x20321:
+    v2:r0, r1 = call 0x203d8
+    ret v2
+  blk2 @ 0x20324:
+    r3 = load32((sp + #0xffffffffffffffe8))
+    v3 = #0x0
+    brif cs r0, #0x8 -> 0x20334
+  blk3 @ 0x20331:
+    v4:r0, r1 = call 0x203ac
+    ret v4
+  blk4 @ 0x20334:
+    r1 = ((r3 + (r0 << #0x2)) & #0xffffffff)
+    v5 = ((sp + #0xffffffffffffffe8) & #0xffffffff)
+    v6 = v5
+    v7 = r1
+    brif cs v5, r1 -> 0x20344
+  blk5 @ 0x20341:
+    r1 = ((v5 + #0x4) & #0xffffffff)
+  blk6 @ 0x20344:
+    brif cs v6, v7 -> 0x20348
+  blk7 @ 0x20345:
+    v6 = r3
+    v7 = r1
+  blk8 @ 0x20348:
+    brif cs v6, v7 -> 0x2034c
+  blk9 @ 0x20349:
+    v8:r0, r1 = call 0x203ac
+    ret v8
+  blk10 @ 0x2034c:
+    v9 = (r0 & #0x7ffffffc)
+    unsupported: undecodable ARM instruction at 0x20350: incomplete decoder
+-- card
+{"addr":"0x20300","approxTokens":222,"blocks":11,"hardReasons":[],"name":"sum_varargs","nameSources":["symtab","dwarf"],"section":".text","size":256,"unsupported":1}

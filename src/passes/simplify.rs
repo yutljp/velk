@@ -4,10 +4,24 @@ use crate::ir::{BinOp, Expr, FunctionIr, Stmt};
 
 /// Propagates constants within a basic block and simplifies expressions.
 pub fn simplify(ir: &mut FunctionIr) {
+    let starts: std::collections::HashSet<_> = if ir.isa == crate::loader::Isa::Arm32 {
+        ir.blocks.iter().map(|block| block.start).collect()
+    } else {
+        std::collections::HashSet::new()
+    };
     for block in &mut ir.blocks {
         let mut constants: HashMap<u16, u64> = HashMap::new();
         for stmt in &mut block.stmts {
             simplify_stmt(stmt, &mut constants);
+            if let Stmt::BrIndirect {
+                target: Expr::Const(target),
+            } = stmt
+                && starts.contains(&crate::arch::code_address(ir.isa, *target))
+            {
+                *stmt = Stmt::Br {
+                    target: Some(crate::arch::code_address(ir.isa, *target)),
+                };
+            }
         }
     }
 }

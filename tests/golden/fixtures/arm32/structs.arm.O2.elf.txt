@@ -1,0 +1,214 @@
+# arm32/structs.arm.O2.elf: elf arm32 no entry, 8 functions, 2 lift failures, 3 unsupported, 0 gotos
+0x2011c 24 rect_area symtab,dwarf
+0x20134 48 record_total symtab,dwarf
+0x20164 24 point_add symtab,dwarf
+0x2017c 28 big_make symtab,dwarf
+0x20198 16 big_sum symtab,dwarf
+0x201a8 8 word_low_byte symtab,dwarf
+0x201b0 20 flags_level symtab,dwarf
+0x201c4 24 flags_set_mode symtab,dwarf
+/* velk prelude */
+uint64_t velk_entry_stack_pointer(void); /* target entry stack pointer */
+/* end velk prelude */
+
+== 0x2011c rect_area
+-- decompile
+/* velk pseudo-C: rect_area @ 0x2011c */
+int rect_area(struct rect *r) {
+    return (*(uint32_t *)((uint32_t)(uintptr_t)r + 12) - *(uint32_t *)((uint64_t)(uint32_t)(uintptr_t)r + 0x4)) * (*(uint32_t *)((uint64_t)(uint32_t)(uintptr_t)r + 0x8) - *(uint32_t *)((uint32_t)(uintptr_t)r));
+}
+-- signature
+int (struct rect * r)
+-- references
+
+-- ir
+fn rect_area @ 0x2011c (size 24)
+  blk0 @ 0x2011c:
+    ret (((load32(((r0 + #0xc) & #0xffffffff)) - load32((r0 + #0x4))) * (load32((r0 + #0x8)) - load32(r0))) & #0xffffffff)
+-- card
+{"addr":"0x2011c","approxTokens":132,"blocks":1,"hardReasons":[],"name":"rect_area","nameSources":["symtab","dwarf"],"section":".text","size":24,"unsupported":0}
+
+== 0x20134 record_total
+-- decompile
+/* velk pseudo-C: record_total @ 0x20134 */
+int32_t record_total(struct record *items, int n) {
+    int32_t v1;
+    int32_t v2;
+    int32_t v3;
+    int32_t v4;
+
+    if (n >= 1) {
+        v1 = (uint32_t)(uintptr_t)items + 4;
+        v2 = 0;
+        while (true) {
+            v3 = *(int16_t *)((v1 + 4) & 0xffffffff);
+            --n;
+            v4 = *(uint32_t *)((uint32_t)v1);
+            v1 += 12;
+            v2 += v4 * v3;
+            if (n == 0) break;
+        }
+        return v2;
+    }
+    return 0;
+}
+-- signature
+int32_t (struct record * items, int n)
+-- references
+
+-- ir
+fn record_total @ 0x20134 (size 48)
+  blk0 @ 0x20134:
+    brif ge r1, #0x1 -> 0x2013c
+  blk1 @ 0x20139:
+    br 0x2015c
+  blk2 @ 0x2013c:
+    v1 = (r0 + #0x4)
+    v2 = #0x0
+  blk3 @ 0x20144:
+    v3 = load16(((v1 + #0x4) & #0xffffffff))s
+    r1 = (r1 - #0x1)
+    v4 = load32(v1)
+    v1 = (v1 + #0xc)
+    v2 = ((v2 + (v4 * v3)) & #0xffffffff)
+    brif eq r1, #0x0 -> 0x20158
+  blk4 @ 0x20155:
+    br 0x20144
+  blk5 @ 0x20158:
+    ret v2
+  blk6 @ 0x2015c:
+    ret #0x0
+-- card
+{"addr":"0x20134","approxTokens":168,"blocks":7,"hardReasons":[],"name":"record_total","nameSources":["symtab","dwarf"],"section":".text","size":48,"unsupported":0}
+
+== 0x20164 point_add
+-- decompile
+/* velk pseudo-C: point_add @ 0x20164 */
+int32_t point_add(int32_t a0, int32_t a1, int32_t a2, int32_t a3) {
+    uint64_t sp = velk_entry_stack_pointer();
+    uint32_t v4;
+    uint32_t v5;
+    uint32_t v6;
+
+    /* unsupported: AAPCS32 multiword, floating-point or aggregate declaration */
+    *(uint32_t *)(sp - 0x10) = v4;
+    *(uint32_t *)(sp - 0xc) = v5;
+    *(uint32_t *)(sp - 0x8) = v6;
+    int32_t v1 = *(uint32_t *)(sp);
+    *(uint32_t *)((uint32_t)a0) = a3 + a1;
+    *(uint32_t *)((uint64_t)(uint32_t)a0 + 0x4) = v1 + a2;
+    int32_t v2 = *(uint32_t *)(sp - 0x10);
+    int32_t v3 = *(uint32_t *)(sp - 0xc);
+    v6 = *(uint32_t *)(sp - 0x8);
+    return a0;
+}
+-- signature
+int32_t (int32_t a0, int32_t a1, int32_t a2, int32_t a3)
+-- references
+
+-- ir
+fn point_add @ 0x20164 (size 24)
+  blk0 @ 0x20164:
+    unsupported: AAPCS32 multiword, floating-point or aggregate declaration
+    store32(r4, (sp + #0xfffffffffffffff0))
+    store32(r5, (sp + #0xfffffffffffffff4))
+    store32(r11, (sp + #0xfffffffffffffff8))
+    v1 = load32(sp)
+    store32((r3 + r1), r0)
+    store32((v1 + r2), (r0 + #0x4))
+    v2 = load32((sp + #0xfffffffffffffff0))
+    v3 = load32((sp + #0xfffffffffffffff4))
+    r11 = load32((sp + #0xfffffffffffffff8))
+    ret r0
+-- card
+{"addr":"0x20164","approxTokens":132,"blocks":1,"hardReasons":[],"name":"point_add","nameSources":["symtab","dwarf"],"section":".text","size":24,"unsupported":1}
+
+== 0x2017c big_make
+-- decompile
+/* velk pseudo-C: big_make @ 0x2017c */
+int32_t big_make(uint32_t *a0, int32_t a1) {
+    /* unsupported: AAPCS32 multiword, floating-point or aggregate declaration */
+    int32_t v1 = (uint64_t)a1 << 1;
+    int32_t v2 = a1 * 3;
+    int32_t v3 = a1 + 1;
+    *(uint32_t *)((uint32_t)(uintptr_t)a0) = a1;
+    *(uint32_t *)((uint64_t)(uint32_t)(uintptr_t)a0 + 0x4) = v3;
+    *(uint32_t *)((uint32_t)(uintptr_t)a0 + 8) = v1;
+    *(uint32_t *)((uint32_t)(uintptr_t)a0 + 12) = v2;
+    return (uint32_t)(uintptr_t)a0;
+}
+-- signature
+int32_t (uint32_t * a0, int32_t a1)
+-- references
+
+-- ir
+fn big_make @ 0x2017c (size 28)
+  blk0 @ 0x2017c:
+    unsupported: AAPCS32 multiword, floating-point or aggregate declaration
+    v1 = ((r1 << #0x1) & #0xffffffff)
+    v2 = ((r1 * #0x3) & #0xffffffff)
+    v3 = ((r1 + #0x1) & #0xffffffff)
+    store32(r1, r0)
+    store32(v3, (r0 + #0x4))
+    store32(v1, ((r0 + #0x8) & #0xffffffff))
+    store32(v2, ((r0 + #0xc) & #0xffffffff))
+    ret r0
+-- card
+{"accesses":["a0 +0x0:uint32_t, +0x4:uint32_t"],"addr":"0x2017c","approxTokens":138,"blocks":1,"hardReasons":[],"name":"big_make","nameSources":["symtab","dwarf"],"section":".text","size":28,"unsupported":1}
+
+== 0x20198 big_sum
+-- decompile
+/* velk pseudo-C: big_sum @ 0x20198 */
+int32_t big_sum(int32_t a0, int32_t a1, int32_t a2, int32_t a3) {
+    /* unsupported: AAPCS32 multiword, floating-point or aggregate declaration */
+    int32_t v1 = a0 + a1;
+    int32_t v2 = v1 + a2;
+    int32_t v3 = v2 + a3;
+    return v3;
+}
+-- signature
+int32_t (int32_t a0, int32_t a1, int32_t a2, int32_t a3)
+-- references
+
+-- ir
+fn big_sum @ 0x20198 (size 16)
+  blk0 @ 0x20198:
+    unsupported: AAPCS32 multiword, floating-point or aggregate declaration
+    v1 = ((r0 + r1) & #0xffffffff)
+    v2 = ((v1 + r2) & #0xffffffff)
+    v3 = ((v2 + r3) & #0xffffffff)
+    ret v3
+-- card
+{"addr":"0x20198","approxTokens":120,"blocks":1,"hardReasons":[],"name":"big_sum","nameSources":["symtab","dwarf"],"section":".text","size":16,"unsupported":1}
+
+== 0x201a8 word_low_byte
+-- decompile
+error: function at 0x201a8: no instruction could be decoded
+-- card
+{"addr":"0x201a8","approxTokens":102,"hardReasons":[],"liftError":"no instruction could be decoded","name":"word_low_byte","nameSources":["symtab","dwarf"],"section":".text","size":8}
+
+== 0x201b0 flags_level
+-- decompile
+error: function at 0x201b0: no instruction could be decoded
+-- card
+{"addr":"0x201b0","approxTokens":102,"hardReasons":[],"liftError":"no instruction could be decoded","name":"flags_level","nameSources":["symtab","dwarf"],"section":".text","size":20}
+
+== 0x201c4 flags_set_mode
+-- decompile
+/* velk pseudo-C: flags_set_mode @ 0x201c4 */
+void flags_set_mode(struct flags *f, unsigned int mode) {
+    uint8_t v1 = *(uint8_t *)((uint32_t)(uintptr_t)f);
+    *(uint8_t *)((uint32_t)(uintptr_t)f) = v1 & 0xf1 | (mode & 0x7) << 1;
+}
+-- signature
+void (struct flags * f, unsigned int mode)
+-- references
+
+-- ir
+fn flags_set_mode @ 0x201c4 (size 24)
+  blk0 @ 0x201c4:
+    v1 = load8(r0)
+    store8(((v1 & #0xf1) | ((r1 & #0x7) << #0x1)), r0)
+    ret #0x0
+-- card
+{"addr":"0x201c4","approxTokens":132,"blocks":1,"hardReasons":[],"name":"flags_set_mode","nameSources":["symtab","dwarf"],"section":".text","size":24,"unsupported":0}

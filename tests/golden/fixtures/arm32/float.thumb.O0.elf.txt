@@ -1,0 +1,310 @@
+# arm32/float.thumb.O0.elf: elf arm32 no entry, 5 functions, 0 lift failures, 5 unsupported, 0 gotos
+0x20104 122 average symtab,dwarf
+0x20180 36 lerp symtab,dwarf
+0x201a4 20 truncate_to_int symtab,dwarf
+0x201b8 28 widen symtab,dwarf
+0x201d4 64 compare_doubles symtab,dwarf
+/* velk prelude */
+uint64_t velk_entry_stack_pointer(void); /* target entry stack pointer */
+/* end velk prelude */
+
+== 0x20104 average
+-- decompile
+/* velk pseudo-C: average @ 0x20104 */
+double average(int32_t a0, int32_t a1) {
+    uint64_t sp = velk_entry_stack_pointer();
+    uint64_t v5;
+    uint32_t v2;
+    uint32_t v4;
+    int32_t v10;
+    int32_t v11;
+    int32_t v13;
+    int32_t v14;
+    int32_t v19;
+    int32_t v20;
+    int32_t i; /* [sp-1c] */
+
+    /* unsupported: AAPCS32 multiword, floating-point or aggregate declaration */
+    *(uint32_t *)(sp - 0x8) = v2;
+    *(uint32_t *)(sp - 0x14) = 0;
+    *(uint32_t *)(sp - 0x18) = 0;
+    *(uint32_t *)(sp - 0x1c) = 0;
+    while (*(int32_t *)(sp - 0x1c) < a1) {
+        v4 = *(uint32_t *)(sp - 0x1c);
+        v10 = (uint32_t)(sub_20136(*(uint32_t *)(sp - 0x18), *(uint32_t *)(sp - 0x14), *(uint32_t *)(a0 + (v4 << 3)), *(uint32_t *)(a0 + (v4 << 3) + 4)));
+        v11 = (uint32_t)(v5); /* also returned by the call */
+        *(uint32_t *)(sp - 0x14) = v11;
+        *(uint32_t *)(sp - 0x18) = v10;
+        *(uint32_t *)(sp - 0x1c) = *(uint32_t *)(sp - 0x1c) + 1;
+    }
+    if (a1 >= 1) {
+        v13 = (uint32_t)(sub_2015a((uint32_t)a1));
+        v14 = (uint32_t)(v5); /* also returned by the call */
+        v19 = (uint32_t)(sub_20166(*(uint32_t *)(sp - 0x18), *(uint32_t *)(sp - 0x14), (uint32_t)v13, (uint32_t)v14));
+        v20 = (uint32_t)(v5); /* also returned by the call */
+        *(uint32_t *)(sp - 0x24) = v19;
+        *(uint32_t *)(sp - 0x20) = v20;
+        return *(uint32_t *)(sp - 0x24);
+    }
+    *(uint32_t *)(sp - 0x24) = 0;
+    *(uint32_t *)(sp - 0x20) = 0;
+    return *(uint32_t *)(sp - 0x24);
+}
+-- signature
+double (int32_t a0, int32_t a1)
+-- references
+
+-- ir
+fn average @ 0x20104 (size 122)
+  blk0 @ 0x20104:
+    unsupported: AAPCS32 multiword, floating-point or aggregate declaration
+    store32(r7, (sp + #0xfffffffffffffff8))
+    store32(r0, (sp + #0xfffffffffffffff4))
+    store32(r1, (sp + #0xfffffffffffffff0))
+    v1 = #0x0
+    store32(#0x0, (sp + #0xffffffffffffffec))
+    store32(#0x0, (sp + #0xffffffffffffffe8))
+    store32(#0x0, (sp + #0xffffffffffffffe4))
+    br 0x20116
+  blk1 @ 0x20116:
+    brif lt load32((sp + #0xffffffffffffffe4)), load32((sp + #0xfffffffffffffff0)) -> 0x2011e
+  blk2 @ 0x2011d:
+    br 0x20144
+  blk3 @ 0x2011e:
+    br 0x20120
+  blk4 @ 0x20120:
+    v3 = load32((sp + #0xfffffffffffffff4))
+    v4 = load32((sp + #0xffffffffffffffe4))
+    v10:r0, v11:r1 = call 0x20136(load32((sp + #0xffffffffffffffe8)), load32((sp + #0xffffffffffffffec)), load32(((v3 + (v4 << #0x3)) & #0xffffffff)), load32((((v3 + (v4 << #0x3)) + #0x4) & #0xffffffff)))
+    store32(v11, (sp + #0xffffffffffffffec))
+    store32(v10, (sp + #0xffffffffffffffe8))
+    br 0x2013c
+  blk5 @ 0x2013c:
+    store32((load32((sp + #0xffffffffffffffe4)) + #0x1), (sp + #0xffffffffffffffe4))
+    br 0x20116
+  blk6 @ 0x20144:
+    brif ge load32((sp + #0xfffffffffffffff0)), #0x1 -> 0x2014a
+  blk7 @ 0x20149:
+    br 0x2016c
+  blk8 @ 0x2014a:
+    br 0x2014c
+  blk9 @ 0x2014c:
+    v13:r0, v14:r1 = call 0x2015a(load32((sp + #0xfffffffffffffff0)))
+    v19:r0, v20:r1 = call 0x20166(load32((sp + #0xffffffffffffffe8)), load32((sp + #0xffffffffffffffec)), v13, v14)
+    store32(v19, (sp + #0xffffffffffffffdc))
+    store32(v20, (sp + #0xffffffffffffffe0))
+    br 0x20176
+  blk10 @ 0x2016c:
+    store32(#0x0, (sp + #0xffffffffffffffdc))
+    store32(#0x0, (sp + #0xffffffffffffffe0))
+    br 0x20176
+  blk11 @ 0x20176:
+    ret load32((sp + #0xffffffffffffffdc))
+-- card
+{"addr":"0x20104","approxTokens":240,"blocks":12,"hardReasons":[],"name":"average","nameSources":["symtab","dwarf"],"section":".text","size":122,"unsupported":1}
+
+== 0x20180 lerp
+-- decompile
+/* velk pseudo-C: lerp @ 0x20180 */
+float lerp(int32_t a0, int32_t a1, int32_t a2) {
+    uint64_t v12;
+    uint32_t v1;
+    uint32_t v5;
+    float v10;
+
+    /* unsupported: AAPCS32 multiword, floating-point or aggregate declaration */
+    int32_t v2 = a1;
+    int32_t v4 = (uint32_t)(sub_20194((uint32_t)v2, (uint32_t)a0, (uint32_t)a2, v1));
+    int32_t v7 = (uint32_t)(sub_2019a((uint32_t)v4, (uint32_t)a2));
+    {
+        uint64_t call_values[2];
+        call_values[0] = sub_201a0((uint32_t)v7, (uint32_t)a0);
+        call_values[1] = v12; /* also returned by the call */
+        v10 = ((union { uint32_t bits; float value; }){ .bits = (uint32_t)(call_values[0]) }).value;
+        a1 = (uint32_t)(call_values[1]);
+    }
+    int32_t v11 = v5;
+    return v10;
+}
+-- signature
+float (int32_t a0, int32_t a1, int32_t a2)
+-- references
+
+-- ir
+fn lerp @ 0x20180 (size 36)
+  blk0 @ 0x20180:
+    unsupported: AAPCS32 multiword, floating-point or aggregate declaration
+    store32(r2, (sp + #0xffffffffffffffec))
+    v1 = r0
+    v2 = r1
+    v3 = #0x20195
+    v4:r0, r1 = call 0x20194(v2, v1, r2, r3)
+    v5 = load32((sp + #0xffffffffffffffec))
+    v6 = #0x2019b
+    v7:r0, r1 = call 0x2019a(v4, v5)
+    v8 = v1
+    v9 = #0x201a1
+    v10:r0, r1 = call 0x201a0(v7, v8)
+    v11 = r7
+    ret v10
+-- card
+{"addr":"0x20180","approxTokens":186,"blocks":1,"hardReasons":[],"name":"lerp","nameSources":["symtab","dwarf"],"section":".text","size":36,"unsupported":1}
+
+== 0x201a4 truncate_to_int
+-- decompile
+/* velk pseudo-C: truncate_to_int @ 0x201a4 */
+int32_t truncate_to_int(int32_t a0, int32_t a1) {
+    uint64_t v9;
+    uint32_t v1;
+    uint32_t v6;
+    uint32_t v7;
+    int32_t v4;
+
+    /* unsupported: AAPCS32 multiword, floating-point or aggregate declaration */
+    int32_t v2 = a1;
+    {
+        uint64_t call_values[2];
+        call_values[0] = sub_201b4((uint32_t)a0, (uint32_t)v2, v1, v6);
+        call_values[1] = v9; /* also returned by the call */
+        v4 = (uint32_t)(call_values[0]);
+        a1 = (uint32_t)(call_values[1]);
+    }
+    int32_t v5 = v7;
+    return v4;
+}
+-- signature
+int32_t (int32_t a0, int32_t a1)
+-- references
+
+-- ir
+fn truncate_to_int @ 0x201a4 (size 20)
+  blk0 @ 0x201a4:
+    unsupported: AAPCS32 multiword, floating-point or aggregate declaration
+    v1 = r0
+    v2 = r1
+    v3 = #0x201b5
+    v4:r0, r1 = call 0x201b4(v1, v2, r2, r3)
+    v5 = r7
+    ret v4
+-- card
+{"addr":"0x201a4","approxTokens":150,"blocks":1,"hardReasons":[],"name":"truncate_to_int","nameSources":["symtab","dwarf"],"section":".text","size":20,"unsupported":1}
+
+== 0x201b8 widen
+-- decompile
+/* velk pseudo-C: widen @ 0x201b8 */
+double widen(int32_t a0) {
+    uint64_t v1;
+    uint32_t v12;
+    uint32_t v13;
+    uint32_t v14;
+    int32_t v4;
+    double v10;
+
+    /* unsupported: AAPCS32 multiword, floating-point or aggregate declaration */
+    int32_t v3 = (uint32_t)(sub_201c4((uint32_t)a0, v1, v12, v13));
+    v4 = (uint32_t)(v1); /* also returned by the call */
+    int32_t v5 = v3;
+    int32_t v6 = v4;
+    int32_t v7 = v5;
+    int32_t v8 = v6;
+    {
+        uint64_t call_values[2];
+        call_values[0] = sub_201d0((uint32_t)v7, (uint32_t)v8);
+        call_values[1] = v1; /* also returned by the call */
+        v10 = ((union { uint64_t bits; double value; }){ .bits = (uint32_t)(call_values[0]) }).value;
+        v1 = (uint32_t)(call_values[1]);
+    }
+    int32_t v11 = v14;
+    return v10;
+}
+-- signature
+double (int32_t a0)
+-- references
+
+-- ir
+fn widen @ 0x201b8 (size 28)
+  blk0 @ 0x201b8:
+    unsupported: AAPCS32 multiword, floating-point or aggregate declaration
+    v1 = r0
+    v2 = #0x201c5
+    v3:r0, v4:r1 = call 0x201c4(v1, r1, r2, r3)
+    v5 = (v3 & #0xffffffff)
+    v6 = (v4 & #0xffffffff)
+    v7 = (v5 & #0xffffffff)
+    v8 = (v6 & #0xffffffff)
+    v9 = #0x201d1
+    v10:r0, r1 = call 0x201d0(v7, v8)
+    v11 = r7
+    ret v10
+-- card
+{"addr":"0x201b8","approxTokens":168,"blocks":1,"hardReasons":[],"name":"widen","nameSources":["symtab","dwarf"],"section":".text","size":28,"unsupported":1}
+
+== 0x201d4 compare_doubles
+-- decompile
+/* velk pseudo-C: compare_doubles @ 0x201d4 */
+int32_t compare_doubles(int32_t a0, int32_t a1, int32_t a2, int32_t a3) {
+    uint64_t sp = velk_entry_stack_pointer();
+    uint64_t v4;
+    uint32_t v1;
+    int32_t v6;
+    int32_t v11;
+
+    /* unsupported: AAPCS32 multiword, floating-point or aggregate declaration */
+    *(uint32_t *)(sp - 0x8) = v1;
+    *(uint32_t *)(sp - 0xc) = a1;
+    int32_t v2 = a1;
+    {
+        uint64_t call_values[2];
+        call_values[0] = sub_201ec((uint32_t)a0, (uint32_t)v2, (uint32_t)a2, (uint32_t)a3);
+        call_values[1] = v4; /* also returned by the call */
+        v6 = (uint32_t)(call_values[0]);
+        a1 = (uint32_t)(call_values[1]);
+    }
+    if (v6 == 0) {
+        v11 = (uint32_t)(sub_20204((uint32_t)a0, *(uint32_t *)(sp - 0xc), (uint32_t)a2, (uint32_t)a3));
+        if (v11 != 0) {
+            v11 = 1;
+        }
+        *(uint32_t *)(sp - 0x1c) = v11;
+        return *(uint32_t *)(sp - 0x1c);
+    }
+    *(uint32_t *)(sp - 0x1c) = 0xffffffff;
+    return *(uint32_t *)(sp - 0x1c);
+}
+-- signature
+int32_t (int32_t a0, int32_t a1, int32_t a2, int32_t a3)
+-- references
+
+-- ir
+fn compare_doubles @ 0x201d4 (size 64)
+  blk0 @ 0x201d4:
+    unsupported: AAPCS32 multiword, floating-point or aggregate declaration
+    store32(r7, (sp + #0xfffffffffffffff8))
+    store32(r1, (sp + #0xfffffffffffffff4))
+    store32(r0, (sp + #0xfffffffffffffff0))
+    store32(r3, (sp + #0xffffffffffffffec))
+    store32(r2, (sp + #0xffffffffffffffe8))
+    v1 = r0
+    v2 = r1
+    v3 = r2
+    v4 = r3
+    v5 = #0x201ed
+    v6:r0, r1 = call 0x201ec(v1, v2, v3, v4)
+    brif eq v6, #0x0 -> 0x201f8
+  blk1 @ 0x201ee:
+    br 0x201f0
+  blk2 @ 0x201f0:
+    store32(#0xffffffff, (sp + #0xffffffffffffffe4))
+    br 0x2020e
+  blk3 @ 0x201f8:
+    v11:r0, r1 = call 0x20204(load32((sp + #0xfffffffffffffff0)), load32((sp + #0xfffffffffffffff4)), load32((sp + #0xffffffffffffffe8)), load32((sp + #0xffffffffffffffec)))
+    brif eq v11, #0x0 -> 0x2020a
+  blk4 @ 0x20209:
+    v11 = #0x1
+  blk5 @ 0x2020a:
+    store32(v11, (sp + #0xffffffffffffffe4))
+    br 0x2020e
+  blk6 @ 0x2020e:
+    ret load32((sp + #0xffffffffffffffe4))
+-- card
+{"addr":"0x201d4","approxTokens":240,"blocks":7,"hardReasons":[],"name":"compare_doubles","nameSources":["symtab","dwarf"],"section":".text","size":64,"unsupported":1}

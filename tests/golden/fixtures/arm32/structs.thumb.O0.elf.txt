@@ -1,0 +1,265 @@
+# arm32/structs.thumb.O0.elf: elf arm32 no entry, 8 functions, 0 lift failures, 6 unsupported, 0 gotos
+0x2011c 24 rect_area symtab,dwarf
+0x20134 66 record_total symtab,dwarf
+0x20178 40 point_add symtab,dwarf
+0x201a0 38 big_make symtab,dwarf
+0x201c8 28 big_sum symtab,dwarf
+0x201e4 12 word_low_byte symtab,dwarf
+0x201f0 42 flags_level symtab,dwarf
+0x2021c 32 flags_set_mode symtab,dwarf
+/* velk prelude */
+uint64_t velk_entry_stack_pointer(void); /* target entry stack pointer */
+/* end velk prelude */
+
+== 0x2011c rect_area
+-- decompile
+/* velk pseudo-C: rect_area @ 0x2011c */
+int rect_area(struct rect *r) {
+    int32_t v1 = (uint32_t)(uintptr_t)r;
+    return (*(uint32_t *)((v1 + 12) & 0xffffffff) - *(uint32_t *)((v1 + 4) & 0xffffffff)) * (*(uint32_t *)((v1 + 8) & 0xffffffff) - *(uint32_t *)((uint32_t)v1));
+}
+-- signature
+int (struct rect * r)
+-- references
+
+-- ir
+fn rect_area @ 0x2011c (size 24)
+  blk0 @ 0x2011c:
+    v1 = r0
+    ret (((load32(((v1 + #0xc) & #0xffffffff)) - load32(((v1 + #0x4) & #0xffffffff))) * (load32(((v1 + #0x8) & #0xffffffff)) - load32(v1))) & #0xffffffff)
+-- card
+{"addr":"0x2011c","approxTokens":168,"blocks":1,"hardReasons":[],"name":"rect_area","nameSources":["symtab","dwarf"],"section":".text","size":24,"unsupported":0}
+
+== 0x20134 record_total
+-- decompile
+/* velk pseudo-C: record_total @ 0x20134 */
+int32_t record_total(struct record *items, int n) {
+    int32_t v3;
+    uint32_t result; /* [sp-c] */
+    int32_t i; /* [sp-10] */
+
+    result = 0;
+    for (i = 0; i < n; i++) {
+        v3 = (uint32_t)(uintptr_t)items + ((uint64_t)(i * 3) << 2);
+        result += *(uint32_t *)((v3 + 4) & 0xffffffff) * *(int16_t *)((v3 + 8) & 0xffffffff);
+    }
+    return result;
+}
+-- signature
+int32_t (struct record * items, int n)
+-- references
+
+-- ir
+fn record_total @ 0x20134 (size 66)
+  blk0 @ 0x20134:
+    store32(#0x0, (sp + #0xfffffffffffffff4))
+    store32(#0x0, (sp + #0xfffffffffffffff0))
+    br 0x20142
+  blk1 @ 0x20142:
+    brif lt load32((sp + #0xfffffffffffffff0)), r1 -> 0x2014a
+  blk2 @ 0x20149:
+    br 0x20170
+  blk3 @ 0x2014a:
+    br 0x2014c
+  blk4 @ 0x2014c:
+    v3 = (r0 + ((((load32((sp + #0xfffffffffffffff0)) * #0x3) & #0xffffffff) << #0x2) & #0xffffffff))
+    store32((load32((sp + #0xfffffffffffffff4)) + (load32(((v3 + #0x4) & #0xffffffff)) * (load16(((v3 + #0x8) & #0xffffffff))s & #0xffffffff))), (sp + #0xfffffffffffffff4))
+    br 0x20168
+  blk5 @ 0x20168:
+    store32((load32((sp + #0xfffffffffffffff0)) + #0x1), (sp + #0xfffffffffffffff0))
+    br 0x20142
+  blk6 @ 0x20170:
+    ret load32((sp + #0xfffffffffffffff4))
+-- card
+{"addr":"0x20134","approxTokens":240,"blocks":7,"hardReasons":[],"name":"record_total","nameSources":["symtab","dwarf"],"section":".text","size":66,"unsupported":0}
+
+== 0x20178 point_add
+-- decompile
+/* velk pseudo-C: point_add @ 0x20178 */
+int32_t point_add(int32_t a0, int32_t a1, int32_t a2, int32_t a3) {
+    uint64_t sp = velk_entry_stack_pointer();
+
+    /* unsupported: AAPCS32 multiword, floating-point or aggregate declaration */
+    int32_t v4 = *(uint32_t *)(sp);
+    *(uint32_t *)(sp - 0xc) = v4;
+    *(uint32_t *)((uint32_t)a0) = a1 + a3;
+    int32_t v6 = *(uint32_t *)(sp - 0xc);
+    int32_t v7 = a2 + v6;
+    *(uint32_t *)((a0 + 4) & 0xffffffff) = v7;
+    return v7;
+}
+-- signature
+int32_t (int32_t a0, int32_t a1, int32_t a2, int32_t a3)
+-- references
+
+-- ir
+fn point_add @ 0x20178 (size 40)
+  blk0 @ 0x20178:
+    unsupported: AAPCS32 multiword, floating-point or aggregate declaration
+    v1 = (r2 & #0xffffffff)
+    v2 = (r1 & #0xffffffff)
+    v3 = (r0 & #0xffffffff)
+    v4 = load32(sp)
+    store32(v1, (sp + #0xfffffffffffffffc))
+    store32(v4, (sp + #0xfffffffffffffff4))
+    v5 = v2
+    store32((v5 + r3), v3)
+    v6 = load32((sp + #0xfffffffffffffff4))
+    v7 = ((load32((sp + #0xfffffffffffffffc)) + v6) & #0xffffffff)
+    store32(v7, ((v3 + #0x4) & #0xffffffff))
+    ret v7
+-- card
+{"addr":"0x20178","approxTokens":210,"blocks":1,"hardReasons":[],"name":"point_add","nameSources":["symtab","dwarf"],"section":".text","size":40,"unsupported":1}
+
+== 0x201a0 big_make
+-- decompile
+/* velk pseudo-C: big_make @ 0x201a0 */
+int32_t big_make(int32_t a0, int32_t a1) {
+    /* unsupported: AAPCS32 multiword, floating-point or aggregate declaration */
+    *(uint32_t *)((uint32_t)a0) = a1;
+    *(uint32_t *)((a0 + 4) & 0xffffffff) = a1 + 1;
+    *(uint32_t *)((a0 + 8) & 0xffffffff) = (uint64_t)a1 << 1;
+    int32_t v4 = a1 * 3;
+    *(uint32_t *)((a0 + 12) & 0xffffffff) = v4;
+    return v4;
+}
+-- signature
+int32_t (int32_t a0, int32_t a1)
+-- references
+
+-- ir
+fn big_make @ 0x201a0 (size 38)
+  blk0 @ 0x201a0:
+    unsupported: AAPCS32 multiword, floating-point or aggregate declaration
+    v1 = (r0 & #0xffffffff)
+    v2 = r1
+    store32(v2, (sp + #0xfffffffffffffffc))
+    store32(v2, v1)
+    store32((load32((sp + #0xfffffffffffffffc)) + #0x1), ((v1 + #0x4) & #0xffffffff))
+    store32((load32((sp + #0xfffffffffffffffc)) << #0x1), ((v1 + #0x8) & #0xffffffff))
+    v3 = load32((sp + #0xfffffffffffffffc))
+    v4 = ((v3 * #0x3) & #0xffffffff)
+    store32(v4, ((v1 + #0xc) & #0xffffffff))
+    ret v4
+-- card
+{"addr":"0x201a0","approxTokens":204,"blocks":1,"hardReasons":[],"name":"big_make","nameSources":["symtab","dwarf"],"section":".text","size":38,"unsupported":1}
+
+== 0x201c8 big_sum
+-- decompile
+/* velk pseudo-C: big_sum @ 0x201c8 */
+int32_t big_sum(int32_t a0, int32_t a1, int32_t a2, int32_t a3) {
+    /* unsupported: AAPCS32 multiword, floating-point or aggregate declaration */
+    int32_t v5 = a0 + a1;
+    int32_t v6 = v5 + a2;
+    int32_t v7 = v6 + a3;
+    return v7;
+}
+-- signature
+int32_t (int32_t a0, int32_t a1, int32_t a2, int32_t a3)
+-- references
+
+-- ir
+fn big_sum @ 0x201c8 (size 28)
+  blk0 @ 0x201c8:
+    unsupported: AAPCS32 multiword, floating-point or aggregate declaration
+    v1 = r0
+    v2 = r1
+    v3 = r2
+    v4 = r3
+    v5 = ((v1 + v2) & #0xffffffff)
+    v6 = ((v5 + v3) & #0xffffffff)
+    v7 = ((v6 + v4) & #0xffffffff)
+    ret v7
+-- card
+{"addr":"0x201c8","approxTokens":180,"blocks":1,"hardReasons":[],"name":"big_sum","nameSources":["symtab","dwarf"],"section":".text","size":28,"unsupported":1}
+
+== 0x201e4 word_low_byte
+-- decompile
+/* velk pseudo-C: word_low_byte @ 0x201e4 */
+int32_t word_low_byte(int32_t a0) {
+    /* unsupported: AAPCS32 multiword, floating-point or aggregate declaration */
+    int32_t v1 = (uint8_t)a0;
+    return v1;
+}
+-- signature
+int32_t (int32_t a0)
+-- references
+
+-- ir
+fn word_low_byte @ 0x201e4 (size 12)
+  blk0 @ 0x201e4:
+    unsupported: AAPCS32 multiword, floating-point or aggregate declaration
+    store32(r0, (sp + #0xfffffffffffffffc))
+    v1 = (load8((sp + #0xfffffffffffffffc)) & #0xffffffff)
+    ret v1
+-- card
+{"addr":"0x201e4","approxTokens":126,"blocks":1,"hardReasons":[],"name":"word_low_byte","nameSources":["symtab","dwarf"],"section":".text","size":12,"unsupported":1}
+
+== 0x201f0 flags_level
+-- decompile
+/* velk pseudo-C: flags_level @ 0x201f0 */
+int32_t flags_level(int32_t a0) {
+    uint64_t sp = velk_entry_stack_pointer();
+    int32_t v2;
+
+    /* unsupported: AAPCS32 multiword, floating-point or aggregate declaration */
+    int32_t v1 = (uint64_t)a0 << 31;
+    if (v1 == 0) {
+        v2 = (uint8_t)a0;
+        /* unsupported: ARM ubfx r0, r0, 0x1, 0x3 at 0x2020c */
+        *(uint32_t *)(sp - 0x8) = a0;
+        return *(uint32_t *)(sp - 0x8);
+    }
+    *(uint32_t *)(sp - 0x8) = (uint8_t)a0 >> 4;
+    return *(uint32_t *)(sp - 0x8);
+}
+-- signature
+int32_t (int32_t a0)
+-- references
+
+-- ir
+fn flags_level @ 0x201f0 (size 42)
+  blk0 @ 0x201f0:
+    unsupported: AAPCS32 multiword, floating-point or aggregate declaration
+    store32(r0, (sp + #0xfffffffffffffffc))
+    v1 = (((load8((sp + #0xfffffffffffffffc)) & #0xffffffff) << #0x1f) & #0xffffffff)
+    brif eq v1, #0x0 -> 0x20208
+  blk1 @ 0x201fc:
+    br 0x201fe
+  blk2 @ 0x201fe:
+    store32(((load8((sp + #0xfffffffffffffffc)) & #0xffffffff) >> #0x4), (sp + #0xfffffffffffffff8))
+    br 0x20214
+  blk3 @ 0x20208:
+    v2 = (load8((sp + #0xfffffffffffffffc)) & #0xffffffff)
+    unsupported: ARM ubfx r0, r0, 0x1, 0x3 at 0x2020c
+    store32(r0, (sp + #0xfffffffffffffff8))
+    br 0x20214
+  blk4 @ 0x20214:
+    ret load32((sp + #0xfffffffffffffff8))
+-- card
+{"addr":"0x201f0","approxTokens":198,"blocks":5,"hardReasons":[],"name":"flags_level","nameSources":["symtab","dwarf"],"section":".text","size":42,"unsupported":2}
+
+== 0x2021c flags_set_mode
+-- decompile
+/* velk pseudo-C: flags_set_mode @ 0x2021c */
+void flags_set_mode(struct flags *f, unsigned int mode) {
+    uint8_t v1 = mode;
+    int32_t v2 = (uint32_t)(uintptr_t)f;
+    uint8_t v3 = *(uint8_t *)((uint32_t)v2);
+    *(uint8_t *)((uint32_t)v2) = v3 & 0xf1 | (v1 & 0x7) << 1;
+}
+-- signature
+void (struct flags * f, unsigned int mode)
+-- references
+
+-- ir
+fn flags_set_mode @ 0x2021c (size 32)
+  blk0 @ 0x2021c:
+    store32(r1, (sp + #0xfffffffffffffff8))
+    v1 = load8((sp + #0xfffffffffffffff8))
+    v2 = r0
+    v3 = load8(v2)
+    store8(((v3 & #0xf1) | ((v1 & #0x7) << #0x1)), v2)
+    ret #0x0
+-- card
+{"addr":"0x2021c","approxTokens":168,"blocks":1,"hardReasons":[],"name":"flags_set_mode","nameSources":["symtab","dwarf"],"section":".text","size":32,"unsupported":0}

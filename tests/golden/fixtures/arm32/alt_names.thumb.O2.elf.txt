@@ -1,0 +1,91 @@
+# arm32/alt_names.thumb.O2.elf: elf arm32 no entry, 2 functions, 0 lift failures, 2 unsupported, 0 gotos
+0x200ec 6 alt_sum3 symtab,dwarf
+0x200f4 56 alt_helper symtab,dwarf
+
+== 0x200ec alt_sum3
+-- decompile
+/* velk pseudo-C: alt_sum3 @ 0x200ec */
+int alt_sum3(int a, int b, int c) {
+    return a + b + c;
+}
+-- signature
+int (int a, int b, int c)
+-- references
+
+-- ir
+fn alt_sum3 @ 0x200ec (size 6)
+  blk0 @ 0x200ec:
+    ret (((r0 + r1) + r2) & #0xffffffff)
+-- card
+{"addr":"0x200ec","approxTokens":114,"blocks":1,"hardReasons":[],"name":"alt_sum3","nameSources":["symtab","dwarf"],"section":".text","size":6,"unsupported":0}
+
+== 0x200f4 alt_helper
+-- decompile
+/* velk pseudo-C: alt_helper @ 0x200f4 */
+int alt_helper(int x) {
+    uint32_t v14;
+    uint32_t v15;
+    int32_t v3;
+    int32_t v4;
+    uint32_t v5;
+    int32_t v7;
+    int32_t v9;
+    int32_t v10;
+    int32_t v11;
+    int32_t v12;
+    int32_t v13;
+
+    int32_t v1 = x;
+    int32_t v2 = 1;
+    if (x < 1) {
+        x = 0;
+    }
+    if (v1 >= v2) {
+        v3 = x - 1;
+        v4 = x - 2;
+        /* unsupported: ARM umull.w r1, r2, r1, r2 at 0x20100 */
+        v5 = v15 & 0x1;
+        v7 = v14 * (x - 3) >> 1;
+        v9 = x + v7 * 0x55555556;
+        v10 = v5 >> 1;
+        /* unsupported: ARM rrx r1, r1 at 0x2011e */
+        v11 = v14 * 3;
+        v12 = x + v11;
+        v13 = v12 - 1;
+        return v13;
+    }
+    return x;
+}
+-- signature
+int (int x)
+-- references
+
+-- ir
+fn alt_helper @ 0x200f4 (size 56)
+  blk0 @ 0x200f4:
+    v1 = r0
+    v2 = #0x1
+    brif ge r0, #0x1 -> 0x200fa
+  blk1 @ 0x200f9:
+    r0 = #0x0
+  blk2 @ 0x200fa:
+    brif ge v1, v2 -> 0x200fc
+  blk3 @ 0x200fb:
+    ret r0
+  blk4 @ 0x200fc:
+    v3 = ((r0 - #0x1) & #0xffffffff)
+    v4 = ((r0 - #0x2) & #0xffffffff)
+    unsupported: ARM umull.w r1, r2, r1, r2 at 0x20100
+    v5 = (r2 & #0x1)
+    v6 = #0x5556
+    v7 = ((((r1 * (r0 - #0x3)) & #0xffffffff) >> #0x1) & #0xffffffff)
+    v8 = #0x55555556
+    v9 = ((r0 + (v7 * #0x55555556)) & #0xffffffff)
+    v10 = ((v5 >> #0x1) & #0xffffffff)
+    unsupported: ARM rrx r1, r1 at 0x2011e
+    v11 = ((r1 * #0x3) & #0xffffffff)
+    v12 = ((r0 + v11) & #0xffffffff)
+    v13 = ((v12 - #0x1) & #0xffffffff)
+    ret v13
+-- card
+{"addr":"0x200f4","approxTokens":216,"blocks":5,"hardReasons":[],"name":"alt_helper","nameSources":["symtab","dwarf"],"section":".text","size":56,"unsupported":2}

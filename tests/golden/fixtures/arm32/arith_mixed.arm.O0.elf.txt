@@ -1,0 +1,114 @@
+# arm32/arith_mixed.arm.O0.elf: elf arm32 no entry, 4 functions, 0 lift failures, 0 unsupported, 0 gotos
+0x200fc 52 sum3 symtab,dwarf
+0x20130 100 helper symtab,dwarf
+0x20194 44 pair_sum symtab,dwarf
+0x201c0 108 sum_arr symtab,dwarf
+
+== 0x200fc sum3
+-- decompile
+/* velk pseudo-C: sum3 @ 0x200fc */
+int sum3(int a, int b, int c) {
+    return a + b + c;
+}
+-- signature
+int (int a, int b, int c)
+-- references
+
+-- ir
+fn sum3 @ 0x200fc (size 52)
+  blk0 @ 0x200fc:
+    ret (((r0 + r1) + r2) & #0xffffffff)
+-- card
+{"addr":"0x200fc","approxTokens":174,"blocks":1,"hardReasons":[],"name":"sum3","nameSources":["symtab","dwarf"],"section":".text","size":52,"unsupported":0}
+
+== 0x20130 helper
+-- decompile
+/* velk pseudo-C: helper @ 0x20130 */
+int helper(int x) {
+    uint32_t result; /* [sp-10] */
+    int32_t i; /* [sp-14] */
+
+    result = 0;
+    for (i = 0; i < x; i++) {
+        result += i * i;
+    }
+    return result;
+}
+-- signature
+int (int x)
+-- references
+
+-- ir
+fn helper @ 0x20130 (size 100)
+  blk0 @ 0x20130:
+    store32(r0, (sp + #0xfffffffffffffff4))
+    store32(#0x0, (sp + #0xfffffffffffffff0))
+    store32(#0x0, (sp + #0xffffffffffffffec))
+  blk1 @ 0x20150:
+    brif lt load32((sp + #0xffffffffffffffec)), load32((sp + #0xfffffffffffffff4)) -> 0x20160
+  blk2 @ 0x2015d:
+    br 0x20188
+  blk3 @ 0x20160:
+    store32((load32((sp + #0xfffffffffffffff0)) + (load32((sp + #0xffffffffffffffec)) * load32((sp + #0xffffffffffffffec)))), (sp + #0xfffffffffffffff0))
+    store32((load32((sp + #0xffffffffffffffec)) + #0x1), (sp + #0xffffffffffffffec))
+    br 0x20150
+  blk4 @ 0x20188:
+    ret load32((sp + #0xfffffffffffffff0))
+-- card
+{"addr":"0x20130","approxTokens":240,"blocks":5,"hardReasons":[],"name":"helper","nameSources":["symtab","dwarf"],"section":".text","size":100,"unsupported":0}
+
+== 0x20194 pair_sum
+-- decompile
+/* velk pseudo-C: pair_sum @ 0x20194 */
+int pair_sum(struct pair *p) {
+    return *(uint32_t *)((uint32_t)(uintptr_t)p) + *(uint32_t *)((uint32_t)(uintptr_t)p + 4);
+}
+-- signature
+int (struct pair * p)
+-- references
+
+-- ir
+fn pair_sum @ 0x20194 (size 44)
+  blk0 @ 0x20194:
+    ret ((load32(r0) + load32(((r0 + #0x4) & #0xffffffff))) & #0xffffffff)
+-- card
+{"addr":"0x20194","approxTokens":162,"blocks":1,"hardReasons":[],"name":"pair_sum","nameSources":["symtab","dwarf"],"section":".text","size":44,"unsupported":0}
+
+== 0x201c0 sum_arr
+-- decompile
+/* velk pseudo-C: sum_arr @ 0x201c0 */
+int sum_arr(int *p, int n) {
+    uint32_t local_0; /* [sp-c] */
+    uint32_t result; /* [sp-14] */
+    int32_t i; /* [sp-18] */
+
+    local_0 = (uint32_t)(uintptr_t)p;
+    result = 0;
+    for (i = 0; i < n; i++) {
+        result += *(uint32_t *)((local_0 + ((uint64_t)i << 2)) & 0xffffffff);
+    }
+    return result;
+}
+-- signature
+int (int * p, int n)
+-- references
+
+-- ir
+fn sum_arr @ 0x201c0 (size 108)
+  blk0 @ 0x201c0:
+    store32(r0, (sp + #0xfffffffffffffff4))
+    store32(r1, (sp + #0xfffffffffffffff0))
+    store32(#0x0, (sp + #0xffffffffffffffec))
+    store32(#0x0, (sp + #0xffffffffffffffe8))
+  blk1 @ 0x201e4:
+    brif lt load32((sp + #0xffffffffffffffe8)), load32((sp + #0xfffffffffffffff0)) -> 0x201f4
+  blk2 @ 0x201f1:
+    br 0x20220
+  blk3 @ 0x201f4:
+    store32((load32((sp + #0xffffffffffffffec)) + load32(((load32((sp + #0xfffffffffffffff4)) + (load32((sp + #0xffffffffffffffe8)) << #0x2)) & #0xffffffff))), (sp + #0xffffffffffffffec))
+    store32((load32((sp + #0xffffffffffffffe8)) + #0x1), (sp + #0xffffffffffffffe8))
+    br 0x201e4
+  blk4 @ 0x20220:
+    ret load32((sp + #0xffffffffffffffec))
+-- card
+{"addr":"0x201c0","approxTokens":240,"blocks":5,"hardReasons":[],"name":"sum_arr","nameSources":["symtab","dwarf"],"section":".text","size":108,"unsupported":0}

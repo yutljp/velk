@@ -133,6 +133,22 @@ const REGION: u64 = 0x3000_0000_0000;
 const REGION_SIZE: u64 = 0x1_0000;
 const FRAME_BASE: u64 = 0x3100_0000_0000;
 
+fn region_start(isa: Isa) -> u64 {
+    if isa == Isa::Arm32 {
+        0x3000_0000
+    } else {
+        REGION
+    }
+}
+
+fn frame_base(isa: Isa) -> u64 {
+    if isa == Isa::Arm32 {
+        0x3100_0000
+    } else {
+        FRAME_BASE
+    }
+}
+
 /// Which functions a pass compares: those computing on registers alone, or
 /// those reading and writing memory too.
 #[derive(Clone, Copy, PartialEq)]
@@ -5316,7 +5332,9 @@ fn prepare(fixture: &Path, mode: Mode) -> Fixture {
                     .map(|(position, param)| {
                         // A pointer points into the region, each its own part.
                         if param.ty.is_pointer() {
-                            return REGION + 0x2000 + 0x2000 * (position as u64 % 6);
+                            return region_start(image.isa)
+                                + 0x2000
+                                + 0x2000 * (position as u64 % 6);
                         }
                         registers
                             .iter()
@@ -5643,6 +5661,15 @@ fn check_batch(
     mode: Mode,
     compiler_args: &[&str],
 ) -> Findings {
+    let mut arguments = compiler_args.to_vec();
+    if cfg!(target_os = "macos")
+        && candidates
+            .first()
+            .is_some_and(|candidate| candidate.ir.isa == Isa::Arm32)
+    {
+        arguments.extend(["-arch", "x86_64", "-Wl,-pagezero_size,0x1000"]);
+    }
+    let compiler_args = arguments.as_slice();
     let started = std::time::Instant::now();
     let mut result = Findings::default();
     let initial_memory = vec![fixture.initial_memory.as_slice(); candidates.len()];
@@ -5736,7 +5763,8 @@ fn check_batch(
                     function: index,
                     trial,
                     arguments,
-                    checksum: (mode == Mode::Memory).then(|| region_checksum(&outcome, trial)),
+                    checksum: (mode == Mode::Memory)
+                        .then(|| region_checksum(&outcome, trial, candidate.ir.isa)),
                     outcome,
                 }),
                 Err(reason) => *result.skipped.entry(reason).or_default() += 1,
@@ -6266,7 +6294,8 @@ fn interpret(
     // The region holds what the trial's seed hashes, whatever seed reads
     // the rest, so a second seed tells registers apart and not memory.
     if mode == Mode::Memory {
-        memory.extend((REGION..REGION + REGION_SIZE).step_by(8).map(|addr| {
+        let region = region_start(candidate.ir.isa);
+        memory.extend((region..region + REGION_SIZE).step_by(8).map(|addr| {
             let word = (0..8).fold(0, |word, byte| {
                 word | (eval::hash(trial, addr + byte) & 0xff) << (8 * byte)
             });
@@ -6323,7 +6352,7 @@ fn interpret(
             for value in stmt.operands_mut() {
                 *value = velk::ir::visit::substitute_values(
                     value.clone(),
-                    &[(sp, Expr::Const(FRAME_BASE))],
+                    &[(sp, Expr::Const(frame_base(candidate.ir.isa)))],
                 );
             }
         }
@@ -6413,12 +6442,13 @@ fn parse_ran(line: &str) -> Ran {
 
 /// The checksum the driver prints of the region after a run: FNV-1a over
 /// its bytes, as the run leaves them.
-fn region_checksum(outcome: &Outcome, trial: u64) -> u64 {
+fn region_checksum(outcome: &Outcome, trial: u64, isa: Isa) -> u64 {
+    let region = region_start(isa);
     let memory = match outcome {
         Outcome::Return { memory, .. } | Outcome::Trap { memory, .. } => memory,
         Outcome::Unknown(_) => return 0,
     };
-    (REGION..REGION + REGION_SIZE).fold(0xcbf2_9ce4_8422_2325, |sum, addr| {
+    (region..region + REGION_SIZE).fold(0xcbf2_9ce4_8422_2325, |sum, addr| {
         let byte = memory
             .get(&addr)
             .copied()
@@ -6772,6 +6802,11 @@ fn program(
     mode: Mode,
 ) -> Program {
     assert_eq!(candidates.len(), initial_memory.len());
+    let isa = candidates
+        .first()
+        .map_or(Isa::Unsupported, |candidate| candidate.ir.isa);
+    let region = region_start(isa);
+    let frame = frame_base(isa);
     let mut text = String::from(HEADER);
     let frame_providers: BTreeSet<_> = alive
         .iter()
@@ -6787,7 +6822,7 @@ fn program(
         writeln!(
             text,
             "uint64_t *{provider}(void) {{ return (uint64_t *)(uintptr_t)0x{:x}ULL; }}",
-            FRAME_BASE
+            frame
         )
         .unwrap();
     }
@@ -6803,14 +6838,14 @@ fn program(
     for provider in stack_providers {
         writeln!(
             text,
-            "uint64_t {provider}(void) {{ return 0x{FRAME_BASE:x}ULL; }}"
+            "uint64_t {provider}(void) {{ return 0x{frame:x}ULL; }}"
         )
         .unwrap();
     }
     if mode == Mode::Memory {
         writeln!(
             text,
-            "#define REGION_START 0x{REGION:x}ULL\n#define REGION_BYTES 0x{REGION_SIZE:x}ULL"
+            "#define REGION_START 0x{region:x}ULL\n#define REGION_BYTES 0x{REGION_SIZE:x}ULL"
         )
         .expect("writing to a String");
     }

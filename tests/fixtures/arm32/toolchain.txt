@@ -1,0 +1,2 @@
+Homebrew clang version 23.1.4
+Homebrew LLD 23.1.4 (compatible with GNU linkers)

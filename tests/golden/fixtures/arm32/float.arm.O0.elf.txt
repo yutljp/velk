@@ -1,0 +1,150 @@
+# arm32/float.arm.O0.elf: elf arm32 no entry, 5 functions, 0 lift failures, 10 unsupported, 0 gotos
+0x20108 168 average symtab,dwarf
+0x201b0 56 lerp symtab,dwarf
+0x201e8 36 truncate_to_int symtab,dwarf
+0x2020c 40 widen symtab,dwarf
+0x20234 104 compare_doubles symtab,dwarf
+/* velk prelude */
+uint64_t velk_entry_stack_pointer(void); /* target entry stack pointer */
+/* end velk prelude */
+
+== 0x20108 average
+-- decompile
+/* velk pseudo-C: average @ 0x20108 */
+double average(int32_t a0, int32_t a1) {
+    uint64_t sp = velk_entry_stack_pointer();
+    uint64_t v1;
+    uint32_t v2;
+
+    /* unsupported: AAPCS32 multiword, floating-point or aggregate declaration */
+    *(uint32_t *)(sp - 0x8) = v1;
+    *(uint32_t *)(sp - 0x4) = v2;
+    v1 = sp - 8;
+    *(uint32_t *)(v1 - 0x4) = a0;
+    *(uint32_t *)(v1 - 0x8) = a1;
+    /* unsupported: undecodable ARM instruction at 0x2011c: incomplete decoder */
+}
+-- signature
+double (int32_t a0, int32_t a1)
+-- references
+
+-- ir
+fn average @ 0x20108 (size 168)
+  blk0 @ 0x20108:
+    unsupported: AAPCS32 multiword, floating-point or aggregate declaration
+    store32(r11, (sp + #0xfffffffffffffff8))
+    store32(lr, (sp + #0xfffffffffffffffc))
+    r11 = (sp + #0xfffffffffffffff8)
+    store32(r0, (r11 - #0x4))
+    store32(r1, (r11 - #0x8))
+    unsupported: undecodable ARM instruction at 0x2011c: incomplete decoder
+-- card
+{"addr":"0x20108","approxTokens":132,"blocks":1,"hardReasons":[],"name":"average","nameSources":["symtab","dwarf"],"section":".text","size":168,"unsupported":2}
+
+== 0x201b0 lerp
+-- decompile
+/* velk pseudo-C: lerp @ 0x201b0 */
+float lerp(void) {
+    uint64_t sp = velk_entry_stack_pointer();
+    uint32_t v1;
+    uint32_t v2;
+
+    /* unsupported: AAPCS32 multiword, floating-point or aggregate declaration */
+    *(uint32_t *)(sp - 0x8) = v1;
+    *(uint32_t *)(sp - 0x4) = v2;
+    /* unsupported: undecodable ARM instruction at 0x201bc: incomplete decoder */
+}
+-- signature
+float ()
+-- references
+
+-- ir
+fn lerp @ 0x201b0 (size 56)
+  blk0 @ 0x201b0:
+    unsupported: AAPCS32 multiword, floating-point or aggregate declaration
+    store32(r11, (sp + #0xfffffffffffffff8))
+    store32(lr, (sp + #0xfffffffffffffffc))
+    unsupported: undecodable ARM instruction at 0x201bc: incomplete decoder
+-- card
+{"addr":"0x201b0","approxTokens":120,"blocks":1,"hardReasons":[],"name":"lerp","nameSources":["symtab","dwarf"],"section":".text","size":56,"unsupported":2}
+
+== 0x201e8 truncate_to_int
+-- decompile
+/* velk pseudo-C: truncate_to_int @ 0x201e8 */
+int32_t truncate_to_int(void) {
+    uint64_t sp = velk_entry_stack_pointer();
+    uint32_t v1;
+    uint32_t v2;
+
+    /* unsupported: AAPCS32 multiword, floating-point or aggregate declaration */
+    *(uint32_t *)(sp - 0x8) = v1;
+    *(uint32_t *)(sp - 0x4) = v2;
+    /* unsupported: undecodable ARM instruction at 0x201f4: incomplete decoder */
+}
+-- signature
+int32_t ()
+-- references
+
+-- ir
+fn truncate_to_int @ 0x201e8 (size 36)
+  blk0 @ 0x201e8:
+    unsupported: AAPCS32 multiword, floating-point or aggregate declaration
+    store32(r11, (sp + #0xfffffffffffffff8))
+    store32(lr, (sp + #0xfffffffffffffffc))
+    unsupported: undecodable ARM instruction at 0x201f4: incomplete decoder
+-- card
+{"addr":"0x201e8","approxTokens":120,"blocks":1,"hardReasons":[],"name":"truncate_to_int","nameSources":["symtab","dwarf"],"section":".text","size":36,"unsupported":2}
+
+== 0x2020c widen
+-- decompile
+/* velk pseudo-C: widen @ 0x2020c */
+double widen(void) {
+    uint64_t sp = velk_entry_stack_pointer();
+    uint32_t v1;
+    uint32_t v2;
+
+    /* unsupported: AAPCS32 multiword, floating-point or aggregate declaration */
+    *(uint32_t *)(sp - 0x8) = v1;
+    *(uint32_t *)(sp - 0x4) = v2;
+    /* unsupported: undecodable ARM instruction at 0x20218: incomplete decoder */
+}
+-- signature
+double ()
+-- references
+
+-- ir
+fn widen @ 0x2020c (size 40)
+  blk0 @ 0x2020c:
+    unsupported: AAPCS32 multiword, floating-point or aggregate declaration
+    store32(r11, (sp + #0xfffffffffffffff8))
+    store32(lr, (sp + #0xfffffffffffffffc))
+    unsupported: undecodable ARM instruction at 0x20218: incomplete decoder
+-- card
+{"addr":"0x2020c","approxTokens":120,"blocks":1,"hardReasons":[],"name":"widen","nameSources":["symtab","dwarf"],"section":".text","size":40,"unsupported":2}
+
+== 0x20234 compare_doubles
+-- decompile
+/* velk pseudo-C: compare_doubles @ 0x20234 */
+int32_t compare_doubles(void) {
+    uint64_t sp = velk_entry_stack_pointer();
+    uint32_t v1;
+    uint32_t v2;
+
+    /* unsupported: AAPCS32 multiword, floating-point or aggregate declaration */
+    *(uint32_t *)(sp - 0x8) = v1;
+    *(uint32_t *)(sp - 0x4) = v2;
+    /* unsupported: undecodable ARM instruction at 0x20240: incomplete decoder */
+}
+-- signature
+int32_t ()
+-- references
+
+-- ir
+fn compare_doubles @ 0x20234 (size 104)
+  blk0 @ 0x20234:
+    unsupported: AAPCS32 multiword, floating-point or aggregate declaration
+    store32(r11, (sp + #0xfffffffffffffff8))
+    store32(lr, (sp + #0xfffffffffffffffc))
+    unsupported: undecodable ARM instruction at 0x20240: incomplete decoder
+-- card
+{"addr":"0x20234","approxTokens":120,"blocks":1,"hardReasons":[],"name":"compare_doubles","nameSources":["symtab","dwarf"],"section":".text","size":104,"unsupported":2}

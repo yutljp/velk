@@ -1,0 +1,187 @@
+# arm32/l2_loop.arm.O0.elf: elf arm32 no entry, 4 functions, 0 lift failures, 0 unsupported, 0 gotos
+0x2011c 112 sum_while symtab,dwarf
+0x2018c 96 count_down symtab,dwarf
+0x201ec 132 sum_skip_odd symtab,dwarf
+0x20270 128 find_first symtab,dwarf
+
+== 0x2011c sum_while
+-- decompile
+/* velk pseudo-C: sum_while @ 0x2011c */
+int sum_while(int n) {
+    int32_t v1;
+    uint32_t result; /* [sp-10] */
+    int32_t i; /* [sp-14] */
+
+    result = 0;
+    for (i = 0; i < n; i++) {
+        v1 = result + i;
+        result = v1;
+        *(uint32_t *)(0x2016c + *(uint32_t *)(0x20188)) = v1;
+    }
+    return result;
+}
+-- signature
+int (int n)
+-- references
+
+-- ir
+fn sum_while @ 0x2011c (size 112)
+  blk0 @ 0x2011c:
+    store32(r0, (sp + #0xfffffffffffffff4))
+    store32(#0x0, (sp + #0xfffffffffffffff0))
+    store32(#0x0, (sp + #0xffffffffffffffec))
+  blk1 @ 0x2013c:
+    brif lt load32((sp + #0xffffffffffffffec)), load32((sp + #0xfffffffffffffff4)) -> 0x2014c
+  blk2 @ 0x20149:
+    br 0x2017c
+  blk3 @ 0x2014c:
+    v1 = ((load32((sp + #0xfffffffffffffff0)) + load32((sp + #0xffffffffffffffec))) & #0xffffffff)
+    store32(v1, (sp + #0xfffffffffffffff0))
+    store32(v1, ((#0x2016c + load32(#0x20188)) & #0xffffffff))
+    store32((load32((sp + #0xffffffffffffffec)) + #0x1), (sp + #0xffffffffffffffec))
+    br 0x2013c
+  blk4 @ 0x2017c:
+    ret load32((sp + #0xfffffffffffffff0))
+-- card
+{"addr":"0x2011c","approxTokens":240,"blocks":5,"hardReasons":[],"name":"sum_while","nameSources":["symtab","dwarf"],"section":".text","size":112,"unsupported":0}
+
+== 0x2018c count_down
+-- decompile
+/* velk pseudo-C: count_down @ 0x2018c */
+int count_down(int n) {
+    int32_t local_0; /* [sp-c] */
+    uint32_t result; /* [sp-10] */
+
+    local_0 = n;
+    result = 0;
+    while (true) {
+        result += 1;
+        local_0 += 0xffffffff;
+        *(uint32_t *)(0x201d0 + *(uint32_t *)(0x201e8)) = result;
+        if (local_0 <= 0) break;
+    }
+    return result;
+}
+-- signature
+int (int n)
+-- references
+
+-- ir
+fn count_down @ 0x2018c (size 96)
+  blk0 @ 0x2018c:
+    store32(r0, (sp + #0xfffffffffffffff4))
+    store32(#0x0, (sp + #0xfffffffffffffff0))
+  blk1 @ 0x201a4:
+    store32((load32((sp + #0xfffffffffffffff0)) + #0x1), (sp + #0xfffffffffffffff0))
+    store32((load32((sp + #0xfffffffffffffff4)) + #0xffffffff), (sp + #0xfffffffffffffff4))
+    store32(load32((sp + #0xfffffffffffffff0)), ((#0x201d0 + load32(#0x201e8)) & #0xffffffff))
+    brif le load32((sp + #0xfffffffffffffff4)), #0x0 -> 0x201dc
+  blk2 @ 0x201d9:
+    br 0x201a4
+  blk3 @ 0x201dc:
+    ret load32((sp + #0xfffffffffffffff0))
+-- card
+{"addr":"0x2018c","approxTokens":234,"blocks":4,"hardReasons":[],"name":"count_down","nameSources":["symtab","dwarf"],"section":".text","size":96,"unsupported":0}
+
+== 0x201ec sum_skip_odd
+-- decompile
+/* velk pseudo-C: sum_skip_odd @ 0x201ec */
+int sum_skip_odd(int n) {
+    int32_t v1;
+    uint32_t result; /* [sp-10] */
+    int32_t i; /* [sp-14] */
+
+    result = 0;
+    for (i = 0; i < n; i++) {
+        if ((i & 0x1) == 0) {
+        } else {
+            v1 = result + i;
+            result = v1;
+            *(uint32_t *)(0x20250 + *(uint32_t *)(0x2026c)) = v1;
+        }
+    }
+    return result;
+}
+-- signature
+int (int n)
+-- references
+
+-- ir
+fn sum_skip_odd @ 0x201ec (size 132)
+  blk0 @ 0x201ec:
+    store32(r0, (sp + #0xfffffffffffffff4))
+    store32(#0x0, (sp + #0xfffffffffffffff0))
+    store32(#0x0, (sp + #0xffffffffffffffec))
+  blk1 @ 0x2020c:
+    brif lt load32((sp + #0xffffffffffffffec)), load32((sp + #0xfffffffffffffff4)) -> 0x2021c
+  blk2 @ 0x20219:
+    br 0x20260
+  blk3 @ 0x2021c:
+    brif eq (load32((sp + #0xffffffffffffffec)) & #0x1), #0x0 -> 0x2022c
+  blk4 @ 0x20229:
+    br 0x20230
+  blk5 @ 0x2022c:
+    br 0x20250
+  blk6 @ 0x20230:
+    v1 = ((load32((sp + #0xfffffffffffffff0)) + load32((sp + #0xffffffffffffffec))) & #0xffffffff)
+    store32(v1, (sp + #0xfffffffffffffff0))
+    store32(v1, ((#0x20250 + load32(#0x2026c)) & #0xffffffff))
+  blk7 @ 0x20250:
+    store32((load32((sp + #0xffffffffffffffec)) + #0x1), (sp + #0xffffffffffffffec))
+    br 0x2020c
+  blk8 @ 0x20260:
+    ret load32((sp + #0xfffffffffffffff0))
+-- card
+{"addr":"0x201ec","approxTokens":240,"blocks":9,"hardReasons":[],"name":"sum_skip_odd","nameSources":["symtab","dwarf"],"section":".text","size":132,"unsupported":0}
+
+== 0x20270 find_first
+-- decompile
+/* velk pseudo-C: find_first @ 0x20270 */
+int find_first(int *p, int n, int v) {
+    uint32_t local_0; /* [sp-10] */
+    int32_t i; /* [sp-1c] */
+    uint32_t result; /* [sp-c] */
+
+    local_0 = (uint32_t)(uintptr_t)p;
+    for (i = 0; i < n; i++) {
+        if (*(uint32_t *)((local_0 + ((uint64_t)i << 2)) & 0xffffffff) == v) {
+            result = i;
+            return result;
+        }
+    }
+    result = 0xffffffff;
+    return result;
+}
+-- signature
+int (int * p, int n, int v)
+-- references
+
+-- ir
+fn find_first @ 0x20270 (size 128)
+  blk0 @ 0x20270:
+    store32(r0, (sp + #0xfffffffffffffff0))
+    store32(r1, (sp + #0xffffffffffffffec))
+    store32(r2, (sp + #0xffffffffffffffe8))
+    store32(#0x0, (sp + #0xffffffffffffffe4))
+  blk1 @ 0x20290:
+    brif lt load32((sp + #0xffffffffffffffe4)), load32((sp + #0xffffffffffffffec)) -> 0x202a0
+  blk2 @ 0x2029d:
+    br 0x202dc
+  blk3 @ 0x202a0:
+    brif eq load32(((load32((sp + #0xfffffffffffffff0)) + (load32((sp + #0xffffffffffffffe4)) << #0x2)) & #0xffffffff)), load32((sp + #0xffffffffffffffe8)) -> 0x202bc
+  blk4 @ 0x202b9:
+    br 0x202c8
+  blk5 @ 0x202bc:
+    store32(load32((sp + #0xffffffffffffffe4)), (sp + #0xfffffffffffffff4))
+    br 0x202e4
+  blk6 @ 0x202c8:
+    br 0x202cc
+  blk7 @ 0x202cc:
+    store32((load32((sp + #0xffffffffffffffe4)) + #0x1), (sp + #0xffffffffffffffe4))
+    br 0x20290
+  blk8 @ 0x202dc:
+    store32(#0xffffffff, (sp + #0xfffffffffffffff4))
+  blk9 @ 0x202e4:
+    ret load32((sp + #0xfffffffffffffff4))
+-- card
+{"addr":"0x20270","approxTokens":240,"blocks":10,"hardReasons":[],"name":"find_first","nameSources":["symtab","dwarf"],"section":".text","size":128,"unsupported":0}

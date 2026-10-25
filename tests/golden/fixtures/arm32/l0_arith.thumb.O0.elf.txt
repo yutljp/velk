@@ -1,0 +1,88 @@
+# arm32/l0_arith.thumb.O0.elf: elf arm32 no entry, 4 functions, 0 lift failures, 0 unsupported, 0 gotos
+0x200fc 22 add3 symtab,dwarf
+0x20114 16 scale symtab,dwarf
+0x20124 34 pick symtab,dwarf
+0x20148 12 negate symtab,dwarf
+
+== 0x200fc add3
+-- decompile
+/* velk pseudo-C: add3 @ 0x200fc */
+int add3(int a, int b, int c) {
+    return a + b + c;
+}
+-- signature
+int (int a, int b, int c)
+-- references
+
+-- ir
+fn add3 @ 0x200fc (size 22)
+  blk0 @ 0x200fc:
+    ret (((r0 + r1) + r2) & #0xffffffff)
+-- card
+{"addr":"0x200fc","approxTokens":162,"blocks":1,"hardReasons":[],"name":"add3","nameSources":["symtab","dwarf"],"section":".text","size":22,"unsupported":0}
+
+== 0x20114 scale
+-- decompile
+/* velk pseudo-C: scale @ 0x20114 */
+int scale(int x) {
+    return x * 7 + 3;
+}
+-- signature
+int (int x)
+-- references
+
+-- ir
+fn scale @ 0x20114 (size 16)
+  blk0 @ 0x20114:
+    ret (((r0 * #0x7) + #0x3) & #0xffffffff)
+-- card
+{"addr":"0x20114","approxTokens":138,"blocks":1,"hardReasons":[],"name":"scale","nameSources":["symtab","dwarf"],"section":".text","size":16,"unsupported":0}
+
+== 0x20124 pick
+-- decompile
+/* velk pseudo-C: pick @ 0x20124 */
+int pick(int a, int b) {
+    if (a > b) {
+        return a;
+    }
+    return b;
+}
+-- signature
+int (int a, int b)
+-- references
+
+-- ir
+fn pick @ 0x20124 (size 34)
+  blk0 @ 0x20124:
+    brif gt r0, r1 -> 0x20132
+  blk1 @ 0x20131:
+    br 0x2013a
+  blk2 @ 0x20132:
+    br 0x20134
+  blk3 @ 0x20134:
+    v1 = r0
+    br 0x20140
+  blk4 @ 0x2013a:
+    v1 = r1
+    br 0x20140
+  blk5 @ 0x20140:
+    ret v1
+-- card
+{"addr":"0x20124","approxTokens":198,"blocks":6,"hardReasons":[],"name":"pick","nameSources":["symtab","dwarf"],"section":".text","size":34,"unsupported":0}
+
+== 0x20148 negate
+-- decompile
+/* velk pseudo-C: negate @ 0x20148 */
+int negate(int x) {
+    return -x;
+}
+-- signature
+int (int x)
+-- references
+
+-- ir
+fn negate @ 0x20148 (size 12)
+  blk0 @ 0x20148:
+    ret ((#0x0 - r0) & #0xffffffff)
+-- card
+{"addr":"0x20148","approxTokens":132,"blocks":1,"hardReasons":[],"name":"negate","nameSources":["symtab","dwarf"],"section":".text","size":12,"unsupported":0}

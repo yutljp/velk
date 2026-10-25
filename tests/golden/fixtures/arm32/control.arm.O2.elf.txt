@@ -1,0 +1,493 @@
+# arm32/control.arm.O2.elf: elf arm32 no entry, 7 functions, 0 lift failures, 2 unsupported, 0 gotos
+0x20118 80 matrix_trace symtab,dwarf
+0x20168 52 cleanup_on_error symtab,dwarf
+0x2019c 32 fallthrough symtab,dwarf
+0x201bc 68 sparse symtab,dwarf
+0x20200 64 short_circuit symtab,dwarf
+0x20240 136 skip_negatives symtab,dwarf
+0x202c8 140 find_pair symtab,dwarf
+
+== 0x20118 matrix_trace
+-- decompile
+/* velk pseudo-C: matrix_trace @ 0x20118 */
+int matrix_trace(int *m, int n) {
+    uint32_t v1;
+    int32_t v3;
+    int32_t v4;
+    uint32_t v5;
+    int32_t v6;
+    int32_t v7;
+    int32_t v9;
+
+    int32_t v2 = 1;
+    if (n < 1) {
+        m = 0x0;
+    }
+    if (n >= v2) {
+        v3 = (uint32_t)(uintptr_t)m;
+        v4 = 0;
+        v5 = 0;
+        for (;;) {
+            v6 = v3 + (v5 * n << 2);
+            v7 = 0;
+            for (;;) {
+                ++v7;
+                v9 = v7 - 1;
+                if (v5 == v7 - 1) {
+                    v1 = *(uint32_t *)(v6 + (v5 << 2));
+                }
+                if (v5 == v9) {
+                    v4 = v1 + v4;
+                }
+                if (n == v7) {
+                    break;
+                }
+            }
+            ++v5;
+            if (v5 == n) {
+                return v4;
+            }
+        }
+    }
+    return (uint32_t)(uintptr_t)m;
+}
+-- signature
+int (int * m, int n)
+-- references
+
+-- ir
+fn matrix_trace @ 0x20118 (size 80)
+  blk0 @ 0x20118:
+    v1 = r1
+    v2 = #0x1
+    brif ge r1, #0x1 -> 0x20120
+  blk1 @ 0x2011d:
+    r0 = #0x0
+  blk2 @ 0x20120:
+    brif ge v1, v2 -> 0x20124
+  blk3 @ 0x20121:
+    ret r0
+  blk4 @ 0x20124:
+    v3 = r0
+    v4 = #0x0
+    v5 = #0x0
+  blk5 @ 0x20134:
+    v6 = (v3 + ((((v5 * r1) & #0xffffffff) << #0x2) & #0xffffffff))
+    v7 = #0x0
+  blk6 @ 0x20140:
+    v7 = ((v7 + #0x1) & #0xffffffff)
+    v9 = (v7 - #0x1)
+    brif ne v5, (v7 - #0x1) -> 0x2014c
+  blk7 @ 0x20149:
+    r4 = load32(((v6 + (v5 << #0x2)) & #0xffffffff))
+  blk8 @ 0x2014c:
+    brif ne v5, v9 -> 0x20150
+  blk9 @ 0x2014d:
+    v4 = ((r4 + v4) & #0xffffffff)
+  blk10 @ 0x20150:
+    brif eq r1, v7 -> 0x20158
+  blk11 @ 0x20155:
+    br 0x20140
+  blk12 @ 0x20158:
+    v5 = ((v5 + #0x1) & #0xffffffff)
+    brif eq v5, r1 -> 0x20164
+  blk13 @ 0x20161:
+    br 0x20134
+  blk14 @ 0x20164:
+    ret v4
+-- card
+{"addr":"0x20118","approxTokens":216,"blocks":15,"hardReasons":[],"name":"matrix_trace","nameSources":["symtab","dwarf"],"section":".text","size":80,"unsupported":0}
+
+== 0x20168 cleanup_on_error
+-- decompile
+/* velk pseudo-C: cleanup_on_error @ 0x20168 */
+int cleanup_on_error(int a, int b, int *out) {
+    int32_t v1 = (uint32_t)(uintptr_t)out;
+    int32_t v3 = -1;
+    if (a >= 0) {
+        if (b != 0) {
+            v3 = (uint32_t)(sub_20190((uint32_t)a));
+            *(uint32_t *)((uint32_t)v1) = v3;
+            return 0;
+        }
+        return -1;
+    }
+    return v3;
+}
+-- signature
+int (int a, int b, int * out)
+-- references
+
+-- ir
+fn cleanup_on_error @ 0x20168 (size 52)
+  blk0 @ 0x20168:
+    v1 = r2
+    v2 = (r0 & #0xffffffff)
+    v3 = #0xffffffff
+    brif ge v2, #0x0 -> 0x20180
+  blk1 @ 0x2017d:
+    br 0x20198
+  blk2 @ 0x20180:
+    brif ne r1, #0x0 -> 0x20188
+  blk3 @ 0x20185:
+    ret #0xffffffff
+  blk4 @ 0x20188:
+    v3:r0, r1 = call 0x20190(v2)
+    store32(v3, v1)
+    v3 = #0x0
+  blk5 @ 0x20198:
+    ret v3
+-- card
+{"addr":"0x20168","approxTokens":174,"blocks":6,"hardReasons":[],"name":"cleanup_on_error","nameSources":["symtab","dwarf"],"section":".text","size":52,"unsupported":0}
+
+== 0x2019c fallthrough
+-- decompile
+/* velk pseudo-C: fallthrough @ 0x2019c */
+int fallthrough(int x) {
+    int32_t result = -1;
+    uint32_t v4 = 3;
+    if ((uint32_t)x <= 3) {
+        result = *(uint32_t *)(0x201b8);
+    }
+    if (x <= v4) {
+        result = 0x201b4 + result;
+    }
+    if (x > v4) {
+        return result;
+    }
+    result = *(uint8_t *)((result + x) & 0xffffffff);
+    return result;
+}
+-- signature
+int (int x)
+-- references
+
+-- ir
+fn fallthrough @ 0x2019c (size 32)
+  blk0 @ 0x2019c:
+    v2 = #0xffffffff
+    v1 = r0
+    v4 = #0x3
+    brif hi v1, #0x3 -> 0x201ac
+  blk1 @ 0x201a9:
+    v2 = load32(#0x201b8)
+  blk2 @ 0x201ac:
+    brif hi v1, v4 -> 0x201b0
+  blk3 @ 0x201ad:
+    v2 = ((#0x201b4 + v2) & #0xffffffff)
+  blk4 @ 0x201b0:
+    brif hi v1, v4 -> 0x201b4
+  blk5 @ 0x201b1:
+    v2 = (load8(((v2 + v1) & #0xffffffff)) & #0xffffffff)
+  blk6 @ 0x201b4:
+    ret v2
+-- card
+{"addr":"0x2019c","approxTokens":138,"blocks":7,"hardReasons":[],"name":"fallthrough","nameSources":["symtab","dwarf"],"section":".text","size":32,"unsupported":0}
+
+== 0x201bc sparse
+-- decompile
+/* velk pseudo-C: sparse @ 0x201bc */
+int sparse(int x) {
+    int32_t v1 = x;
+    int32_t v2 = 1000;
+    if (x < 1000) {
+        v1 = x;
+        v2 = 1;
+        if (x == 1) {
+            x = 10;
+        }
+        if (v1 != v2) {
+            v1 = x;
+            v2 = 100;
+            if (x == 100) {
+                x = 20;
+            }
+            if (v1 != v2) {
+                return 0;
+            }
+            return x;
+        }
+        return x;
+    }
+    if (v1 == v2) {
+        x = 30;
+    }
+    if (v1 != v2) {
+        v1 = x;
+        v2 = 10000;
+        if (x == 10000) {
+            x = 40;
+        }
+        if (v1 != v2) {
+            return 0;
+        }
+        return x;
+    }
+    return x;
+}
+-- signature
+int (int x)
+-- references
+
+-- ir
+fn sparse @ 0x201bc (size 68)
+  blk0 @ 0x201bc:
+    v1 = r0
+    v2 = #0x3e8
+    brif lt r0, #0x3e8 -> 0x201c4
+  blk1 @ 0x201c1:
+    br 0x201e4
+  blk2 @ 0x201c4:
+    v1 = r0
+    v2 = #0x1
+    brif ne r0, #0x1 -> 0x201cc
+  blk3 @ 0x201c9:
+    r0 = #0xa
+  blk4 @ 0x201cc:
+    brif ne v1, v2 -> 0x201d0
+  blk5 @ 0x201cd:
+    ret r0
+  blk6 @ 0x201d0:
+    v1 = r0
+    v2 = #0x64
+    brif ne r0, #0x64 -> 0x201d8
+  blk7 @ 0x201d5:
+    r0 = #0x14
+  blk8 @ 0x201d8:
+    brif ne v1, v2 -> 0x201dc
+  blk9 @ 0x201d9:
+    ret r0
+  blk10 @ 0x201dc:
+    ret #0x0
+  blk11 @ 0x201e4:
+    brif ne v1, v2 -> 0x201e8
+  blk12 @ 0x201e5:
+    r0 = #0x1e
+  blk13 @ 0x201e8:
+    brif ne v1, v2 -> 0x201ec
+  blk14 @ 0x201e9:
+    ret r0
+  blk15 @ 0x201ec:
+    v1 = r0
+    v2 = #0x2710
+    brif ne r0, #0x2710 -> 0x201f8
+  blk16 @ 0x201f5:
+    r0 = #0x28
+  blk17 @ 0x201f8:
+    brif ne v1, v2 -> 0x201fc
+  blk18 @ 0x201f9:
+    ret r0
+  blk19 @ 0x201fc:
+    br 0x201dc
+-- card
+{"addr":"0x201bc","approxTokens":198,"blocks":20,"hardReasons":[],"name":"sparse","nameSources":["symtab","dwarf"],"section":".text","size":68,"unsupported":0}
+
+== 0x20200 short_circuit
+-- decompile
+/* velk pseudo-C: short_circuit @ 0x20200 */
+int short_circuit(int *p, int n) {
+    int32_t v3;
+    int32_t v5;
+
+    int32_t v1 = (uint32_t)(uintptr_t)p;
+    int32_t v2 = 0;
+    if (v1 != 0) {
+        if (n >= 1) {
+            v3 = *(uint32_t *)((uint32_t)v1);
+            if (v3 != 1) {
+                v5 = *(uint32_t *)((v1 + ((uint64_t)n << 2) - 4) & 0xffffffff) - 1;
+                /* unsupported: ARM clz r0, r0 at 0x20234 */
+                v2 = (uint32_t)(uintptr_t)p >> 5;
+                return v2;
+            }
+            return 1;
+        }
+        return v2;
+    }
+    return v2;
+}
+-- signature
+int (int * p, int n)
+-- references
+
+-- ir
+fn short_circuit @ 0x20200 (size 64)
+  blk0 @ 0x20200:
+    v1 = (r0 & #0xffffffff)
+    v2 = #0x0
+    brif ne v1, #0x0 -> 0x20210
+  blk1 @ 0x2020d:
+    br 0x2023c
+  blk2 @ 0x20210:
+    brif ge r1, #0x1 -> 0x20218
+  blk3 @ 0x20215:
+    br 0x2023c
+  blk4 @ 0x20218:
+    v3 = load32(v1)
+    v4 = #0x1
+    brif ne v3, #0x1 -> 0x20228
+  blk5 @ 0x20225:
+    ret #0x1
+  blk6 @ 0x20228:
+    v5 = ((load32((((v1 + (r1 << #0x2)) - #0x4) & #0xffffffff)) - #0x1) & #0xffffffff)
+    unsupported: ARM clz r0, r0 at 0x20234
+    v2 = ((r0 >> #0x5) & #0xffffffff)
+  blk7 @ 0x2023c:
+    ret v2
+-- card
+{"addr":"0x20200","approxTokens":192,"blocks":8,"hardReasons":[],"name":"short_circuit","nameSources":["symtab","dwarf"],"section":".text","size":64,"unsupported":1}
+
+== 0x20240 skip_negatives
+-- decompile
+/* velk pseudo-C: skip_negatives @ 0x20240 */
+int skip_negatives(int *p, int n) {
+    int32_t v1;
+    int32_t v3;
+
+    if (n < 1) {
+        v1 = (uint32_t)(sub_202bc());
+        return v1;
+    }
+    uint32_t v5 = 0;
+    if ((uint32_t)n < 4) {
+        v3 = (uint32_t)(sub_20298());
+        return v3;
+    }
+    int32_t v4 = n & 0x7ffffffc;
+    /* unsupported: undecodable ARM instruction at 0x2025c: incomplete decoder */
+}
+-- signature
+int (int * p, int n)
+-- references
+
+-- ir
+fn skip_negatives @ 0x20240 (size 136)
+  blk0 @ 0x20240:
+    brif ge r1, #0x1 -> 0x20248
+  blk1 @ 0x20245:
+    v1:r0 = call 0x202bc
+    ret v1
+  blk2 @ 0x20248:
+    v2 = #0x0
+    r2 = #0x0
+    brif cs r1, #0x4 -> 0x20258
+  blk3 @ 0x20255:
+    v3:r0, r1 = call 0x20298
+    ret v3
+  blk4 @ 0x20258:
+    v4 = (r1 & #0x7ffffffc)
+    unsupported: undecodable ARM instruction at 0x2025c: incomplete decoder
+-- card
+{"addr":"0x20240","approxTokens":144,"blocks":5,"hardReasons":[],"name":"skip_negatives","nameSources":["symtab","dwarf"],"section":".text","size":136,"unsupported":1}
+
+== 0x202c8 find_pair
+-- decompile
+/* velk pseudo-C: find_pair @ 0x202c8 */
+int find_pair(int *p, int n, int target) {
+    int32_t v3;
+    int32_t v4;
+    int32_t v5;
+    int32_t v6;
+    int32_t v7;
+    uint32_t v8;
+    int32_t v9;
+    int32_t v10;
+    int32_t v11;
+    int32_t v12;
+    int32_t v13;
+
+    int32_t v1 = (uint32_t)(uintptr_t)p;
+    int32_t v2 = -1;
+    if (n >= 1) {
+        v3 = v1 + 4;
+        v4 = n - 1;
+        v5 = n + 1;
+        v6 = 0;
+        v7 = 1;
+        do {
+            v8 = v6;
+            ++v6;
+            if (v6 < n) {
+                v9 = *(uint32_t *)(v1 + (v8 << 2));
+                v10 = v3;
+                v11 = v4;
+                v12 = v7;
+                for (;;) {
+                    v13 = *(uint32_t *)((uint32_t)v10);
+                    v10 += 4;
+                    if (v13 + v9 == target) {
+                        v2 = v12;
+                        return v2;
+                    }
+                    ++v12;
+                    --v11;
+                    if (v11 == 0) {
+                        break;
+                    }
+                }
+            }
+            v7 += v5;
+            v3 += 4;
+            --v4;
+        } while (v6 != n);
+        return v2;
+    }
+    return -1;
+}
+-- signature
+int (int * p, int n, int target)
+-- references
+
+-- ir
+fn find_pair @ 0x202c8 (size 140)
+  blk0 @ 0x202c8:
+    v1 = r0
+    v2 = #0xffffffff
+    brif ge r1, #0x1 -> 0x202d8
+  blk1 @ 0x202d5:
+    ret #0xffffffff
+  blk2 @ 0x202d8:
+    v3 = (v1 + #0x4)
+    v4 = (r1 - #0x1)
+    v5 = (r1 + #0x1)
+    v6 = #0x0
+    v7 = #0x1
+    br 0x20308
+  blk3 @ 0x202f4:
+    v7 = ((v7 + v5) & #0xffffffff)
+    v3 = (v3 + #0x4)
+    v4 = (v4 - #0x1)
+    brif ne v6, r1 -> 0x20308
+  blk4 @ 0x20305:
+    br 0x2034c
+  blk5 @ 0x20308:
+    v8 = v6
+    v6 = ((v6 + #0x1) & #0xffffffff)
+    brif lt v6, r1 -> 0x20318
+  blk6 @ 0x20315:
+    br 0x202f4
+  blk7 @ 0x20318:
+    v9 = load32(((v1 + (v8 << #0x2)) & #0xffffffff))
+    v10 = v3
+    v11 = v4
+    v12 = v7
+  blk8 @ 0x20328:
+    v13 = load32(v10)
+    v10 = (v10 + #0x4)
+    brif ne ((v13 + v9) & #0xffffffff), r2 -> 0x20338
+  blk9 @ 0x20335:
+    br 0x20348
+  blk10 @ 0x20338:
+    v12 = (v12 + #0x1)
+    v11 = (v11 - #0x1)
+    brif eq v11, #0x0 -> 0x20344
+  blk11 @ 0x20341:
+    br 0x20328
+  blk12 @ 0x20344:
+    br 0x202f4
+  blk13 @ 0x20348:
+    v2 = v12
+  blk14 @ 0x2034c:
+    ret v2
+-- card
+{"addr":"0x202c8","approxTokens":240,"blocks":15,"hardReasons":[],"name":"find_pair","nameSources":["symtab","dwarf"],"section":".text","size":140,"unsupported":0}

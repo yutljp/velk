@@ -1,0 +1,56 @@
+# arm32/tail_calls.thumb.O0.elf: elf arm32 no entry, 3 functions, 0 lift failures, 0 unsupported, 0 gotos
+0x200f4 20 tail_one symtab,dwarf
+0x20108 18 tail_two symtab,dwarf
+0x2011c 16 tail_three symtab,dwarf
+
+== 0x200f4 tail_one
+-- decompile
+/* velk pseudo-C: tail_one @ 0x200f4 */
+int tail_one(int x) {
+    return x + ((uint64_t)x << 1) + 1;
+}
+-- signature
+int (int x)
+-- references
+
+-- ir
+fn tail_one @ 0x200f4 (size 20)
+  blk0 @ 0x200f4:
+    ret (((r0 + (r0 << #0x1)) + #0x1) & #0xffffffff)
+-- card
+{"addr":"0x200f4","approxTokens":150,"blocks":1,"hardReasons":[],"name":"tail_one","nameSources":["symtab","dwarf"],"section":".text","size":20,"unsupported":0}
+
+== 0x20108 tail_two
+-- decompile
+/* velk pseudo-C: tail_two @ 0x20108 */
+int tail_two(int x) {
+    return tail_one((x + 2) & 0xffffffff);
+}
+-- signature
+int (int x)
+-- references
+
+-- ir
+fn tail_two @ 0x20108 (size 18)
+  blk0 @ 0x20108:
+    v3:r0 = call 0x200f4(((r0 + #0x2) & #0xffffffff))
+    ret v3
+-- card
+{"addr":"0x20108","approxTokens":144,"blocks":1,"hardReasons":[],"name":"tail_two","nameSources":["symtab","dwarf"],"section":".text","size":18,"unsupported":0}
+
+== 0x2011c tail_three
+-- decompile
+/* velk pseudo-C: tail_three @ 0x2011c */
+int tail_three(int x) {
+    return x - 7;
+}
+-- signature
+int (int x)
+-- references
+
+-- ir
+fn tail_three @ 0x2011c (size 16)
+  blk0 @ 0x2011c:
+    ret ((r0 - #0x7) & #0xffffffff)
+-- card
+{"addr":"0x2011c","approxTokens":144,"blocks":1,"hardReasons":[],"name":"tail_three","nameSources":["symtab","dwarf"],"section":".text","size":16,"unsupported":0}

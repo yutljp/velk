@@ -1,0 +1,106 @@
+# arm32/l4_memory.thumb.O0.elf: elf arm32 no entry, 4 functions, 0 lift failures, 0 unsupported, 0 gotos
+0x20128 28 point_dot symtab,dwarf
+0x20144 54 array_sum symtab,dwarf
+0x2017c 16 bump symtab,dwarf
+0x2018c 14 banner_first symtab,dwarf
+
+== 0x20128 point_dot
+-- decompile
+/* velk pseudo-C: point_dot @ 0x20128 */
+int point_dot(struct point *a, struct point *b) {
+    int32_t v1 = (uint32_t)(uintptr_t)a;
+    int32_t v2 = (uint32_t)(uintptr_t)b;
+    return *(uint32_t *)((v2 + 4) & 0xffffffff) * *(uint32_t *)((v1 + 4) & 0xffffffff) + *(uint32_t *)((uint32_t)v1) * *(uint32_t *)((uint32_t)v2);
+}
+-- signature
+int (struct point * a, struct point * b)
+-- references
+
+-- ir
+fn point_dot @ 0x20128 (size 28)
+  blk0 @ 0x20128:
+    v1 = r0
+    v2 = r1
+    ret (((load32(((v2 + #0x4) & #0xffffffff)) * load32(((v1 + #0x4) & #0xffffffff))) + (load32(v1) * load32(v2))) & #0xffffffff)
+-- card
+{"addr":"0x20128","approxTokens":174,"blocks":1,"hardReasons":[],"name":"point_dot","nameSources":["symtab","dwarf"],"section":".text","size":28,"unsupported":0}
+
+== 0x20144 array_sum
+-- decompile
+/* velk pseudo-C: array_sum @ 0x20144 */
+int array_sum(int *a, int n) {
+    uint32_t result; /* [sp-c] */
+    int32_t i; /* [sp-10] */
+
+    result = 0;
+    for (i = 0; i < n; i++) {
+        result += *(uint32_t *)(((uint32_t)(uintptr_t)a + ((uint64_t)i << 2)) & 0xffffffff);
+    }
+    return result;
+}
+-- signature
+int (int * a, int n)
+-- references
+
+-- ir
+fn array_sum @ 0x20144 (size 54)
+  blk0 @ 0x20144:
+    store32(#0x0, (sp + #0xfffffffffffffff4))
+    store32(#0x0, (sp + #0xfffffffffffffff0))
+    br 0x20152
+  blk1 @ 0x20152:
+    brif lt load32((sp + #0xfffffffffffffff0)), r1 -> 0x2015a
+  blk2 @ 0x20159:
+    br 0x20174
+  blk3 @ 0x2015a:
+    br 0x2015c
+  blk4 @ 0x2015c:
+    store32((load32((sp + #0xfffffffffffffff4)) + load32(((r0 + (load32((sp + #0xfffffffffffffff0)) << #0x2)) & #0xffffffff))), (sp + #0xfffffffffffffff4))
+    br 0x2016c
+  blk5 @ 0x2016c:
+    store32((load32((sp + #0xfffffffffffffff0)) + #0x1), (sp + #0xfffffffffffffff0))
+    br 0x20152
+  blk6 @ 0x20174:
+    ret load32((sp + #0xfffffffffffffff4))
+-- card
+{"addr":"0x20144","approxTokens":240,"blocks":7,"hardReasons":[],"name":"array_sum","nameSources":["symtab","dwarf"],"section":".text","size":54,"unsupported":0}
+
+== 0x2017c bump
+-- decompile
+/* velk pseudo-C: bump @ 0x2017c */
+/* ref: 0x301a0 .bss */
+extern int g_counter;
+void bump(void) {
+    g_counter += 1;
+}
+-- signature
+void ()
+-- references
+0x301a0 .bss
+-- ir
+fn bump @ 0x2017c (size 16)
+  blk0 @ 0x2017c:
+    store32((load32(#0x301a0) + #0x1), #0x301a0)
+    ret #0x0
+-- card
+{"addr":"0x2017c","approxTokens":132,"blocks":1,"hardReasons":[],"name":"bump","nameSources":["symtab","dwarf"],"section":".text","size":16,"unsupported":0}
+
+== 0x2018c banner_first
+-- decompile
+/* velk pseudo-C: banner_first @ 0x2018c */
+/* ref: 0x3019c .data */
+int banner_first(void) {
+    uint32_t *const banner = (uint32_t *)0x3019cULL;
+
+    return *(uint8_t *)(*banner);
+}
+-- signature
+int ()
+-- references
+0x3019c .data
+-- ir
+fn banner_first @ 0x2018c (size 14)
+  blk0 @ 0x2018c:
+    ret (load8(load32(#0x3019c)) & #0xffffffff)
+-- card
+{"addr":"0x2018c","approxTokens":126,"blocks":1,"hardReasons":[],"name":"banner_first","nameSources":["symtab","dwarf"],"section":".text","size":14,"unsupported":0}

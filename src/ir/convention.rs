@@ -5,6 +5,7 @@ use super::{Expr, Registers};
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Convention {
     Aapcs64,
+    Aapcs32,
     SysV,
     Win64,
     /// Go's internal register ABI on x86-64.
@@ -28,6 +29,7 @@ impl Convention {
         use crate::loader::{Format, Isa};
         match isa {
             Isa::AArch64 => Self::Aapcs64,
+            Isa::Arm32 => Self::Aapcs32,
             _ if go => Self::GoAmd64,
             _ if matches!(format, Format::Pe | Format::Coff) => Self::Win64,
             _ => Self::SysV,
@@ -38,6 +40,7 @@ impl Convention {
     pub fn arguments(self) -> &'static [u16] {
         match self {
             Self::Aapcs64 => &[0, 1, 2, 3, 4, 5, 6, 7],
+            Self::Aapcs32 => &[0, 1, 2, 3],
             Self::SysV => &[7, 6, 2, 1, 8, 9],
             Self::Win64 => &[1, 2, 8, 9],
             // rax, rbx, rcx, rdi, rsi, r8, r9, r10, r11.
@@ -55,7 +58,7 @@ impl Convention {
         match self {
             Self::SysV => Some(8),
             Self::Win64 => Some(40),
-            Self::Aapcs64 => Some(0),
+            Self::Aapcs64 | Self::Aapcs32 => Some(0),
             Self::GoAbi0 | Self::GoAmd64 => Some(8),
             Self::SyscallX86 | Self::SyscallArm | Self::GoWriteBarrier => None,
         }
@@ -64,7 +67,7 @@ impl Convention {
     /// Bytes a call pushes before the callee runs: the return address.
     pub fn pushed_by_call(self) -> i64 {
         match self {
-            Self::Aapcs64 | Self::SyscallX86 | Self::SyscallArm => 0,
+            Self::Aapcs32 | Self::Aapcs64 | Self::SyscallX86 | Self::SyscallArm => 0,
             Self::SysV | Self::Win64 | Self::GoAmd64 | Self::GoWriteBarrier | Self::GoAbi0 => 8,
         }
     }
@@ -77,7 +80,11 @@ impl Convention {
             Self::SysV => &[18, 20, 22, 24, 26, 28, 30, 32],
             Self::Win64 => &[18, 20, 22, 24],
             Self::GoAmd64 => &[18, 20, 22, 24, 26, 28, 30, 32, 34, 36, 38, 40, 42, 44, 46],
-            Self::SyscallX86 | Self::SyscallArm | Self::GoWriteBarrier | Self::GoAbi0 => &[],
+            Self::Aapcs32
+            | Self::SyscallX86
+            | Self::SyscallArm
+            | Self::GoWriteBarrier
+            | Self::GoAbi0 => &[],
         }
     }
 
@@ -142,7 +149,8 @@ impl Convention {
         match self {
             Self::Aapcs64 => &[8],
             Self::SysV => &[0],
-            Self::Win64
+            Self::Aapcs32
+            | Self::Win64
             | Self::GoAmd64
             | Self::SyscallX86
             | Self::SyscallArm
@@ -161,6 +169,7 @@ impl Convention {
             Self::SysV => &[0, 2, 18, 20],
             Self::Win64 => &[0, 18],
             Self::Aapcs64 => &[0, 1, 32, 34],
+            Self::Aapcs32 => &[0, 1],
             Self::GoAmd64 => &[0, 3, 1, 7, 6, 8, 9, 10, 11, 18, 20, 22, 24],
             Self::SyscallX86 | Self::SyscallArm => &[0],
             Self::GoWriteBarrier => &[11],
@@ -183,6 +192,7 @@ impl Convention {
     pub fn fixed(self) -> &'static [u16] {
         match self {
             Self::GoAmd64 => &[4, 14, 48, 49],
+            Self::Aapcs32 => &[13],
             Self::Aapcs64 | Self::SyscallArm => &[31],
             Self::SysV | Self::Win64 | Self::SyscallX86 | Self::GoWriteBarrier | Self::GoAbi0 => {
                 &[4]
@@ -222,6 +232,7 @@ impl Convention {
                 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72,
                 73, 74, 75, 76, 77, 78, 79, 80, 81,
             ],
+            Self::Aapcs32 => &[0, 1, 2, 3, 12, 14],
             Self::SyscallX86 => &[0, 1, 11],
             Self::SyscallArm => &[0],
             Self::GoWriteBarrier => &[11],
@@ -248,7 +259,7 @@ impl CallKind {
     pub fn push_bytes(self, isa: crate::loader::Isa, convention: Convention) -> Option<i64> {
         use crate::loader::Isa;
         let syscall = match (isa, convention) {
-            (Isa::AArch64, Convention::Aapcs64) => false,
+            (Isa::AArch64, Convention::Aapcs64) | (Isa::Arm32, Convention::Aapcs32) => false,
             (
                 Isa::X86_64,
                 Convention::SysV

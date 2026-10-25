@@ -393,7 +393,7 @@ pub(crate) fn addressed(image: &Image) -> std::collections::HashSet<u64> {
                     );
                 }
             }
-            crate::loader::Isa::Unsupported => {}
+            crate::loader::Isa::Arm32 | crate::loader::Isa::Unsupported => {}
         }
     }
     out

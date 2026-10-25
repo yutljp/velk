@@ -1008,9 +1008,14 @@ fn place_parameters(types: &crate::loader::dwarf::FunctionTypes, ir: &mut Functi
     let mut stack = match convention {
         Convention::SysV => 8,
         Convention::Win64 => 40,
-        Convention::Aapcs64 | Convention::GoAmd64 => 0,
+        Convention::Aapcs32 | Convention::Aapcs64 | Convention::GoAmd64 => 0,
         Convention::SyscallX86 | Convention::SyscallArm | Convention::GoWriteBarrier => return,
         Convention::GoAbi0 => 8,
+    };
+    let slot_bytes = if convention == Convention::Aapcs32 {
+        4
+    } else {
+        8
     };
     let mut params = Vec::new();
     let mut stack_params = Vec::new();
@@ -1044,12 +1049,12 @@ fn place_parameters(types: &crate::loader::dwarf::FunctionTypes, ir: &mut Functi
             None => {
                 stack_params.push(StackParam {
                     offset: stack,
-                    size: 8,
+                    size: slot_bytes,
                     name,
                     ty,
                     position: index,
                 });
-                stack += 8;
+                stack += slot_bytes as i64;
             }
         }
     }
@@ -1080,6 +1085,9 @@ pub(crate) fn apply_dwarf_types(
     ir.members = types.members.clone();
     ir.debug_globals = types.globals.clone();
     ir.definitions = types.definitions.clone();
+    if ir.convention == crate::ir::Convention::Aapcs32 && !super::abi::aapcs32_words(&types) {
+        return;
+    }
     if super::abi::has_aggregate(&types) {
         return;
     }

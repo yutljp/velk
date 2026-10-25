@@ -86,7 +86,14 @@ fn address_escapes(ir: &FunctionIr, frames: &[Option<i64>]) -> bool {
 /// restore the caller's value on the way out. Returns whether it rewrote.
 fn substitute_frame_pointer(ir: &mut FunctionIr, frames: &[Option<i64>]) -> bool {
     let sp = stack_pointer(ir.isa);
-    let fp = crate::arch::frame_pointer(ir.isa);
+    let fp = if ir.isa == crate::loader::Isa::Arm32
+        && ir.blocks.iter().flat_map(|block| &block.stmts).any(|stmt| {
+            matches!(stmt, Stmt::Assign { dest, value } if dest.index == 7 && frame_slot(value, 0, sp).is_some())
+        }) {
+        7
+    } else {
+        crate::arch::frame_pointer(ir.isa)
+    };
     // The setup, its block, and the entry-frame offset it gives the frame
     // pointer: in the entry block, or later where the prologue waits past
     // an early return.

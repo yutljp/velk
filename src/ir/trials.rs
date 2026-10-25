@@ -38,6 +38,10 @@ pub fn initial_memory(image: &Image) -> Vec<(u64, u64)> {
 /// The calling convention of the image's code.
 pub fn convention(image: &Image) -> Convention<'static> {
     match image.isa {
+        Isa::Arm32 => Convention {
+            arguments: &[0, 1, 2, 3],
+            clobbered: &[0, 1, 2, 3, 12, 14],
+        },
         Isa::AArch64 => Convention {
             arguments: &[0, 1, 2, 3, 4, 5, 6, 7],
             clobbered: &[

@@ -1,0 +1,503 @@
+# arm32/l2_loop.thumb.O2.elf: elf arm32 no entry, 4 functions, 0 lift failures, 0 unsupported, 1 gotos
+0x2011c 110 sum_while symtab,dwarf
+0x2018c 102 count_down symtab,dwarf
+0x201f4 142 sum_skip_odd symtab,dwarf
+0x20284 100 find_first symtab,dwarf
+
+== 0x2011c sum_while
+-- decompile
+/* velk pseudo-C: sum_while @ 0x2011c */
+/* ref: 0x302e8 .bss */
+int sum_while(int n) {
+    uint32_t *const sink = (uint32_t *)0x302e8ULL;
+    int32_t v4;
+    int32_t v5;
+    int32_t v6;
+
+    int32_t v1 = n;
+    int32_t v2 = 1;
+    if (n < 1) {
+        n = 0;
+    }
+    if (v1 >= v2) {
+        v1 = n & 0x3;
+        if ((uint32_t)n < 4) {
+            v4 = 0;
+            v5 = 0;
+        } else {
+            v6 = 0x7ffffffc & n;
+            v4 = 0;
+            v5 = 0;
+            while (true) {
+                v5 += v4;
+                *sink = v5;
+                v5 += v4;
+                ++v5;
+                *sink = v5;
+                v5 += v4;
+                v5 += 2;
+                *sink = v5;
+                v5 += v4;
+                v4 += 4;
+                v5 += 3;
+                *sink = v5;
+                if (v6 == v4) break;
+            }
+            if (v1 == 0) {
+                return v5;
+            }
+        }
+        v5 += v4;
+        *sink = v5;
+        if (v1 != 1) {
+            v5 = v5 + v4 + 1;
+            *sink = v5;
+            v2 = 2;
+            if (v1 != 2) {
+                v5 += v4;
+            }
+            if (v1 != v2) {
+                v5 += 2;
+            }
+            if (v1 == v2) {
+                return v5;
+            }
+            *sink = v5;
+            return v5;
+        }
+        return v5;
+    }
+    return n;
+}
+-- signature
+int (int n)
+-- references
+0x302e8 .bss
+-- ir
+fn sum_while @ 0x2011c (size 110)
+  blk0 @ 0x2011c:
+    v1 = r0
+    v2 = #0x1
+    brif ge r0, #0x1 -> 0x20122
+  blk1 @ 0x20121:
+    r0 = #0x0
+  blk2 @ 0x20122:
+    brif ge v1, v2 -> 0x20124
+  blk3 @ 0x20123:
+    ret r0
+  blk4 @ 0x20124:
+    v1 = (r0 & #0x3)
+    brif cc r0, #0x4 -> 0x20134
+  blk5 @ 0x20133:
+    br 0x2013a
+  blk6 @ 0x20134:
+    v4 = #0x0
+    v5 = #0x0
+    br 0x2016c
+  blk7 @ 0x2013a:
+    v6 = ((#0x7ffffffc & r0) & #0xffffffff)
+    v4 = #0x0
+    v5 = #0x0
+  blk8 @ 0x20148:
+    v5 = ((v5 + v4) & #0xffffffff)
+    store32(v5, #0x302e8)
+    v5 = ((v5 + v4) & #0xffffffff)
+    v5 = ((v5 + #0x1) & #0xffffffff)
+    store32(v5, #0x302e8)
+    v5 = ((v5 + v4) & #0xffffffff)
+    v5 = ((v5 + #0x2) & #0xffffffff)
+    store32(v5, #0x302e8)
+    v5 = ((v5 + v4) & #0xffffffff)
+    v4 = ((v4 + #0x4) & #0xffffffff)
+    v5 = ((v5 + #0x3) & #0xffffffff)
+    store32(v5, #0x302e8)
+    brif eq v6, v4 -> 0x20164
+  blk9 @ 0x20163:
+    br 0x20148
+  blk10 @ 0x20164:
+    brif ne v1, #0x0 -> 0x2016c
+  blk11 @ 0x2016b:
+    ret v5
+  blk12 @ 0x2016c:
+    v5 = ((v5 + v4) & #0xffffffff)
+    store32(v5, #0x302e8)
+    brif ne v1, #0x1 -> 0x20176
+  blk13 @ 0x20175:
+    br 0x20188
+  blk14 @ 0x20176:
+    v5 = (((v5 + v4) + #0x1) & #0xffffffff)
+    store32(v5, #0x302e8)
+    v2 = #0x2
+    brif eq v1, #0x2 -> 0x20184
+  blk15 @ 0x20183:
+    v5 = ((v5 + v4) & #0xffffffff)
+  blk16 @ 0x20184:
+    brif eq v1, v2 -> 0x20186
+  blk17 @ 0x20185:
+    v5 = ((v5 + #0x2) & #0xffffffff)
+  blk18 @ 0x20186:
+    brif eq v1, v2 -> 0x20188
+  blk19 @ 0x20187:
+    store32(v5, #0x302e8)
+  blk20 @ 0x20188:
+    ret v5
+-- card
+{"addr":"0x2011c","approxTokens":240,"blocks":21,"hardReasons":[],"name":"sum_while","nameSources":["symtab","dwarf"],"section":".text","size":110,"unsupported":0}
+
+== 0x2018c count_down
+-- decompile
+/* velk pseudo-C: count_down @ 0x2018c */
+/* ref: 0x302e8 .bss */
+int count_down(int n) {
+    uint32_t *const sink = (uint32_t *)0x302e8ULL;
+    uint64_t v2;
+    int32_t v4;
+    int32_t v5;
+    int32_t v6;
+    int32_t v10;
+    uint32_t local_0; /* [sp-4] */
+
+    int32_t v1 = n;
+    if (n <= 1) {
+        n = 1;
+    }
+    int32_t v3 = n & 0x3;
+    if (v1 < 4) {
+        v4 = 0;
+    } else {
+        local_0 = v2;
+        v5 = n & 0x7ffffffc;
+        v4 = 0;
+        while (true) {
+            *sink = v4 + 1;
+            *sink = v4 + 2;
+            v6 = v4 + 3;
+            v4 += 4;
+            *sink = v6;
+            *sink = v4;
+            if (v5 == v4) break;
+        }
+        if (v3 == 0) {
+            return n;
+        }
+    }
+    *sink = v4 + 1;
+    if (v3 != 1) {
+        v6 = v4 + 2;
+        *sink = v6;
+        v10 = 2;
+        if (v3 != 2) {
+            v6 = v4 + 3;
+        }
+        if (v3 == v10) {
+            return n;
+        }
+        *sink = v6;
+        return n;
+    }
+    return n;
+}
+-- signature
+int (int n)
+-- references
+0x302e8 .bss
+-- ir
+fn count_down @ 0x2018c (size 102)
+  blk0 @ 0x2018c:
+    v1 = (r0 & #0xffffffff)
+    brif gt r0, #0x1 -> 0x20194
+  blk1 @ 0x20193:
+    r0 = #0x1
+  blk2 @ 0x20194:
+    v3 = (r0 & #0x3)
+    brif lt v1, #0x4 -> 0x201a4
+  blk3 @ 0x201a3:
+    br 0x201a8
+  blk4 @ 0x201a4:
+    v4 = #0x0
+    br 0x201d8
+  blk5 @ 0x201a8:
+    store32(lr, (sp + #0xfffffffffffffffc))
+    v5 = (r0 & #0x7ffffffc)
+    v4 = #0x0
+  blk6 @ 0x201b8:
+    store32((v4 + #0x1), #0x302e8)
+    store32((v4 + #0x2), #0x302e8)
+    v6 = ((v4 + #0x3) & #0xffffffff)
+    v4 = ((v4 + #0x4) & #0xffffffff)
+    store32(v6, #0x302e8)
+    store32(v4, #0x302e8)
+    brif eq v5, v4 -> 0x201cc
+  blk7 @ 0x201cb:
+    br 0x201b8
+  blk8 @ 0x201cc:
+    brif ne v3, #0x0 -> 0x201d8
+  blk9 @ 0x201d7:
+    ret r0
+  blk10 @ 0x201d8:
+    store32((v4 + #0x1), #0x302e8)
+    brif ne v3, #0x1 -> 0x201e2
+  blk11 @ 0x201e1:
+    br 0x201f0
+  blk12 @ 0x201e2:
+    v6 = ((v4 + #0x2) & #0xffffffff)
+    store32(v6, #0x302e8)
+    v10 = #0x2
+    brif eq v3, #0x2 -> 0x201ee
+  blk13 @ 0x201ed:
+    v6 = ((v4 + #0x3) & #0xffffffff)
+  blk14 @ 0x201ee:
+    brif eq v3, v10 -> 0x201f0
+  blk15 @ 0x201ef:
+    store32(v6, #0x302e8)
+  blk16 @ 0x201f0:
+    ret r0
+-- card
+{"addr":"0x2018c","approxTokens":240,"blocks":17,"hardReasons":[],"name":"count_down","nameSources":["symtab","dwarf"],"section":".text","size":102,"unsupported":0}
+
+== 0x201f4 sum_skip_odd
+-- decompile
+/* velk pseudo-C: sum_skip_odd @ 0x201f4 */
+/* ref: 0x302e8 .bss */
+int sum_skip_odd(int n) {
+    uint32_t *const sink = (uint32_t *)0x302e8ULL;
+    int32_t v3;
+    int32_t v4;
+    int32_t v5;
+    int32_t v6;
+
+    int32_t v1 = n;
+    int32_t v2 = 1;
+    if (n < 1) {
+        n = 0;
+    }
+    if (v1 >= v2) {
+        v3 = n & 0x3;
+        if ((uint32_t)n < 4) {
+            v4 = 0;
+            v5 = 0;
+        } else {
+            v6 = n & 0x7ffffffc;
+            v4 = 0;
+            v5 = 0;
+            while (true) {
+                v5 += v4;
+                ++v5;
+                *sink = v5;
+                v5 += v4;
+                v4 += 4;
+                v5 += 3;
+                *sink = v5;
+                if (v6 == v4) break;
+            }
+            if (v3 == 0) {
+                return v5;
+            }
+        }
+        if (v3 != 1) {
+            v5 += (v4 + 1);
+            *sink = v5;
+            if (v3 != 2) {
+            }
+            if (/* eq */ true) { goto L_20270; }
+            v5 += (v4 + 2);
+            *sink = v5;
+            return v5;
+        }
+        return v5;
+    L_20270:
+        return v5;
+    }
+    return n;
+}
+-- signature
+int (int n)
+-- references
+0x302e8 .bss
+-- ir
+fn sum_skip_odd @ 0x201f4 (size 142)
+  blk0 @ 0x201f4:
+    v1 = r0
+    v2 = #0x1
+    brif ge r0, #0x1 -> 0x201fa
+  blk1 @ 0x201f9:
+    r0 = #0x0
+  blk2 @ 0x201fa:
+    brif ge v1, v2 -> 0x201fc
+  blk3 @ 0x201fb:
+    ret r0
+  blk4 @ 0x201fc:
+    v3 = (r0 & #0x3)
+    brif cc r0, #0x4 -> 0x20204
+  blk5 @ 0x20203:
+    br 0x2020a
+  blk6 @ 0x20204:
+    v4 = #0x0
+    v5 = #0x0
+    br 0x2023c
+  blk7 @ 0x2020a:
+    v6 = (r0 & #0x7ffffffc)
+    v4 = #0x0
+    v5 = #0x0
+  blk8 @ 0x20224:
+    v5 = ((v5 + v4) & #0xffffffff)
+    v5 = ((v5 + #0x1) & #0xffffffff)
+    store32(v5, #0x302e8)
+    v5 = ((v5 + v4) & #0xffffffff)
+    v4 = ((v4 + #0x4) & #0xffffffff)
+    v5 = ((v5 + #0x3) & #0xffffffff)
+    store32(v5, #0x302e8)
+    brif eq v6, v4 -> 0x20236
+  blk9 @ 0x20235:
+    br 0x20224
+  blk10 @ 0x20236:
+    brif ne v3, #0x0 -> 0x2023c
+  blk11 @ 0x2023b:
+    br 0x20270
+  blk12 @ 0x2023c:
+  blk13 @ 0x2023f:
+    br 0x2024c
+  blk14 @ 0x2024c:
+    brif ne v3, #0x1 -> 0x20254
+  blk15 @ 0x20253:
+    ret v5
+  blk16 @ 0x20254:
+  blk17 @ 0x20256:
+    v5 = ((v5 + (v4 + #0x1)) & #0xffffffff)
+    store32(v5, #0x302e8)
+  blk18 @ 0x20264:
+    brif eq v3, #0x2 -> 0x2026e
+  blk19 @ 0x2026b:
+  blk20 @ 0x2026e:
+    brif eq -> 0x20270
+  blk21 @ 0x2026f:
+    br 0x20272
+  blk22 @ 0x20270:
+    ret v5
+  blk23 @ 0x20272:
+    v5 = ((v5 + (v4 + #0x2)) & #0xffffffff)
+    store32(v5, #0x302e8)
+    ret v5
+-- card
+{"addr":"0x201f4","approxTokens":240,"blocks":24,"hardReasons":[],"name":"sum_skip_odd","nameSources":["symtab","dwarf"],"section":".text","size":142,"unsupported":0}
+
+== 0x20284 find_first
+-- decompile
+/* velk pseudo-C: find_first @ 0x20284 */
+int find_first(int *p, int n, int v) {
+    int32_t v3;
+    int32_t v4;
+    int32_t v5;
+    uint32_t v6;
+    int32_t v7;
+    int32_t v8;
+
+    int32_t v2 = 1;
+    if (n < 1) {
+        p = (int *)0xffffffff;
+    }
+    if (n >= v2) {
+        v3 = (uint32_t)(uintptr_t)p;
+        v4 = -n;
+        v5 = (uint32_t)(uintptr_t)p + 12;
+        v6 = 0;
+        while (*(uint32_t *)((v5 - 12) & 0xffffffff) != v) {
+            v7 = v4 + v6;
+            if (v7 == 0xffffffff) {
+                return -1;
+            }
+            v8 = v3 + (v6 << 2);
+            if (*(uint32_t *)((v8 + 4) & 0xffffffff) == v) {
+                return v6 + 1;
+            }
+            if (v7 == 0xfffffffe) {
+                return -1;
+            }
+            if (*(uint32_t *)((v8 + 8) & 0xffffffff) == v) {
+                return v6 + 2;
+            }
+            if (v7 + 3 == 0) {
+                return -1;
+            }
+            v7 = *(uint32_t *)((uint32_t)v5);
+            v5 += 16;
+            if (v7 == v) {
+                return v6 + 3;
+            }
+            v6 += 4;
+            if (v4 == -v6) {
+                return -1;
+            }
+        }
+        return v6;
+    }
+    return (uint32_t)(uintptr_t)p;
+}
+-- signature
+int (int * p, int n, int v)
+-- references
+
+-- ir
+fn find_first @ 0x20284 (size 100)
+  blk0 @ 0x20284:
+    v1 = r1
+    v2 = #0x1
+    brif ge r1, #0x1 -> 0x2028c
+  blk1 @ 0x20289:
+    r0 = #0xffffffff
+  blk2 @ 0x2028c:
+    brif ge v1, v2 -> 0x2028e
+  blk3 @ 0x2028d:
+    ret r0
+  blk4 @ 0x2028e:
+    v3 = r0
+    v4 = (#0x0 - r1)
+    v5 = (r0 + #0xc)
+    v6 = #0x0
+  blk5 @ 0x2029c:
+    brif ne load32(((v5 - #0xc) & #0xffffffff)), r2 -> 0x202a6
+  blk6 @ 0x202a5:
+    ret v6
+  blk7 @ 0x202a6:
+    v7 = (v4 + v6)
+    brif ne v7, #0xffffffff -> 0x202ae
+  blk8 @ 0x202ad:
+    br 0x202d6
+  blk9 @ 0x202ae:
+    v8 = (v3 + ((v6 << #0x2) & #0xffffffff))
+    brif ne load32(((v8 + #0x4) & #0xffffffff)), r2 -> 0x202b8
+  blk10 @ 0x202b7:
+    br 0x202dc
+  blk11 @ 0x202b8:
+    brif ne v7, #0xfffffffe -> 0x202bc
+  blk12 @ 0x202bb:
+    br 0x202d6
+  blk13 @ 0x202bc:
+    brif ne load32(((v8 + #0x8) & #0xffffffff)), r2 -> 0x202c2
+  blk14 @ 0x202c1:
+    br 0x202e0
+  blk15 @ 0x202c2:
+    brif ne ((v7 + #0x3) & #0xffffffff), #0x0 -> 0x202c6
+  blk16 @ 0x202c5:
+    br 0x202d6
+  blk17 @ 0x202c6:
+    v7 = load32(v5)
+    v5 = (v5 + #0x10)
+    brif ne v7, r2 -> 0x202ce
+  blk18 @ 0x202cd:
+    br 0x202e4
+  blk19 @ 0x202ce:
+    v6 = ((v6 + #0x4) & #0xffffffff)
+    brif eq v4, (#0x0 - v6) -> 0x202d6
+  blk20 @ 0x202d5:
+    br 0x2029c
+  blk21 @ 0x202d6:
+    ret #0xffffffff
+  blk22 @ 0x202dc:
+    ret ((v6 + #0x1) & #0xffffffff)
+  blk23 @ 0x202e0:
+    ret ((v6 + #0x2) & #0xffffffff)
+  blk24 @ 0x202e4:
+    ret ((v6 + #0x3) & #0xffffffff)
+-- card
+{"addr":"0x20284","approxTokens":240,"blocks":25,"hardReasons":[],"name":"find_first","nameSources":["symtab","dwarf"],"section":".text","size":100,"unsupported":0}

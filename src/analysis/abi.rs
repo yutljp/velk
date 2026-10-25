@@ -7,6 +7,20 @@ use crate::ir::{
 };
 use crate::loader::dwarf::FunctionTypes;
 
+pub(crate) fn aapcs32_words(types: &FunctionTypes) -> bool {
+    let word = |ty: &CType| {
+        (ty.is_narrow() && !ty.is_sse_float()) || ty.is_pointer() || *ty == CType::Void
+    };
+    types
+        .params
+        .iter()
+        .filter_map(|(_, ty)| ty.as_ref())
+        .chain(types.ret.iter())
+        .all(word)
+        && types.ret_aggregate_size.is_none()
+        && types.param_aggregate_sizes.iter().all(Option::is_none)
+}
+
 fn aggregate(layout: &TypeLayout) -> bool {
     matches!(
         layout.kind,

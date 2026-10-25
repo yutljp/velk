@@ -267,3 +267,38 @@ fn tail_calls_do_not_propagate_addresses_to_the_next_block() {
     ];
     assert!(crate::analysis::navigation::constants(&blocks, &image)[1].is_empty());
 }
+
+#[test]
+fn arm32_immediates_follow_modes_and_exclude_data_and_branches() {
+    use crate::loader::ArmMode;
+
+    // A32 modified immediate, MOVW, MOVT; T32 MOVS, modified immediate, MOVW, MOVT.
+    let mut code = vec![
+        0xff, 0x04, 0xa0, 0xe3, 0x34, 0x02, 0x01, 0xe3, 0x78, 0x06, 0x45, 0xe3, 0x2a, 0x20, 0x4f,
+        0xf0, 0xff, 0x20, 0x41, 0xf2, 0x34, 0x20, 0xc5, 0xf2, 0x78, 0x60,
+    ];
+    code.extend([0x2a, 0x20]); // Data that resembles MOVS.
+    code.extend([0x2a, 0xe0]); // Thumb branch displacement.
+    let mut image = Image::from_code(Isa::Arm32, 0x1000, code);
+    image.arm_modes.insert(0x100c, ArmMode::Thumb);
+    image.arm_modes.insert(0x101a, ArmMode::Data);
+    image.arm_modes.insert(0x101c, ArmMode::Thumb);
+    for (value, addresses) in [
+        (0xff000000, vec![0x1000]),
+        (0x1234, vec![0x1004, 0x1012]),
+        (0x56780000, vec![0x1008, 0x1016]),
+        (42, vec![0x100c]),
+        (0xff00ff00, vec![0x100e]),
+        (0x5678, vec![]),
+    ] {
+        let found = constants::search(&image, value, None).unwrap();
+        assert_eq!(
+            found
+                .iter()
+                .map(|entry| entry.instruction)
+                .collect::<Vec<_>>(),
+            addresses
+        );
+    }
+    assert!(constants::search(&image, 1, Some(std::time::Instant::now())).is_err());
+}

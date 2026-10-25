@@ -33,10 +33,20 @@ fn disassemble(
     max_lines: usize,
     extent: Extent,
 ) -> Result<Vec<String>, LiftError> {
-    let bytes = image.read_vaddr(addr, len).ok_or(LiftError::Unreadable)?;
+    let addr = image.code_address(addr);
+    let Some(bytes) = image.read_vaddr(addr, len) else {
+        return Err(LiftError::Unreadable);
+    };
     match image.isa {
         Isa::X86_64 => Ok(x86_64(bytes, addr, max_lines, extent)),
         Isa::AArch64 => Ok(aarch64(bytes, addr, max_lines, extent)),
+        Isa::Arm32
+            if image.format == crate::loader::Format::Elf
+                && image.byte_order() == Some(object::Endianness::Little) =>
+        {
+            Ok(crate::lift::arm32_listing(image, bytes, addr, max_lines))
+        }
+        Isa::Arm32 => Err(LiftError::UnsupportedIsa),
         Isa::Unsupported => Err(LiftError::UnsupportedIsa),
     }
 }

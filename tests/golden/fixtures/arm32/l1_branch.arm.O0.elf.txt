@@ -1,0 +1,148 @@
+# arm32/l1_branch.arm.O0.elf: elf arm32 no entry, 3 functions, 0 lift failures, 0 unsupported, 0 gotos
+0x200f4 84 classify symtab,dwarf
+0x20148 100 clamp symtab,dwarf
+0x201ac 84 sign_of symtab,dwarf
+
+== 0x200f4 classify
+-- decompile
+/* velk pseudo-C: classify @ 0x200f4 */
+int classify(int x) {
+    uint32_t result; /* [sp-c] */
+
+    if (x < 0) {
+        result = 0xffffffff;
+        return result;
+    }
+    if (x == 0) {
+        result = 0;
+        return result;
+    }
+    result = 1;
+    return result;
+}
+-- signature
+int (int x)
+-- references
+
+-- ir
+fn classify @ 0x200f4 (size 84)
+  blk0 @ 0x200f4:
+    store32(r0, (sp + #0xfffffffffffffff0))
+    brif lt r0, #0x0 -> 0x20110
+  blk1 @ 0x2010d:
+    br 0x2011c
+  blk2 @ 0x20110:
+    store32(#0xffffffff, (sp + #0xfffffffffffffff4))
+    br 0x2013c
+  blk3 @ 0x2011c:
+    brif eq load32((sp + #0xfffffffffffffff0)), #0x0 -> 0x20128
+  blk4 @ 0x20125:
+    br 0x20134
+  blk5 @ 0x20128:
+    store32(#0x0, (sp + #0xfffffffffffffff4))
+    br 0x2013c
+  blk6 @ 0x20134:
+    store32(#0x1, (sp + #0xfffffffffffffff4))
+  blk7 @ 0x2013c:
+    ret load32((sp + #0xfffffffffffffff4))
+-- card
+{"addr":"0x200f4","approxTokens":222,"blocks":8,"hardReasons":[],"name":"classify","nameSources":["symtab","dwarf"],"section":".text","size":84,"unsupported":0}
+
+== 0x20148 clamp
+-- decompile
+/* velk pseudo-C: clamp @ 0x20148 */
+int clamp(int x, int lo, int hi) {
+    uint32_t result; /* [sp-c] */
+
+    if (x < lo) {
+        result = lo;
+        return result;
+    }
+    if (x > hi) {
+        result = hi;
+        return result;
+    }
+    result = x;
+    return result;
+}
+-- signature
+int (int x, int lo, int hi)
+-- references
+
+-- ir
+fn clamp @ 0x20148 (size 100)
+  blk0 @ 0x20148:
+    store32(r0, (sp + #0xfffffffffffffff0))
+    store32(r1, (sp + #0xffffffffffffffec))
+    store32(r2, (sp + #0xffffffffffffffe8))
+    brif lt r0, r1 -> 0x20170
+  blk1 @ 0x2016d:
+    br 0x2017c
+  blk2 @ 0x20170:
+    store32(load32((sp + #0xffffffffffffffec)), (sp + #0xfffffffffffffff4))
+    br 0x201a0
+  blk3 @ 0x2017c:
+    brif gt load32((sp + #0xfffffffffffffff0)), load32((sp + #0xffffffffffffffe8)) -> 0x2018c
+  blk4 @ 0x20189:
+    br 0x20198
+  blk5 @ 0x2018c:
+    store32(load32((sp + #0xffffffffffffffe8)), (sp + #0xfffffffffffffff4))
+    br 0x201a0
+  blk6 @ 0x20198:
+    store32(load32((sp + #0xfffffffffffffff0)), (sp + #0xfffffffffffffff4))
+  blk7 @ 0x201a0:
+    ret load32((sp + #0xfffffffffffffff4))
+-- card
+{"addr":"0x20148","approxTokens":240,"blocks":8,"hardReasons":[],"name":"clamp","nameSources":["symtab","dwarf"],"section":".text","size":100,"unsupported":0}
+
+== 0x201ac sign_of
+-- decompile
+/* velk pseudo-C: sign_of @ 0x201ac */
+int sign_of(int x) {
+    uint32_t result; /* [sp-10] */
+
+    if (x > 0) {
+        result = 1;
+        return result;
+    }
+    int32_t v1 = 0;
+    if (x < 0) {
+        v1 = 1;
+    }
+    int32_t v2 = -1;
+    if (v1 == 0) {
+        v2 = 0;
+    }
+    result = v2;
+    return result;
+}
+-- signature
+int (int x)
+-- references
+
+-- ir
+fn sign_of @ 0x201ac (size 84)
+  blk0 @ 0x201ac:
+    store32(r0, (sp + #0xfffffffffffffff4))
+    brif gt r0, #0x0 -> 0x201c8
+  blk1 @ 0x201c5:
+    br 0x201d4
+  blk2 @ 0x201c8:
+    store32(#0x1, (sp + #0xfffffffffffffff0))
+    br 0x201f4
+  blk3 @ 0x201d4:
+    v1 = #0x0
+    brif ge load32((sp + #0xfffffffffffffff4)), #0x0 -> 0x201e4
+  blk4 @ 0x201e1:
+    v1 = #0x1
+  blk5 @ 0x201e4:
+    v2 = #0xffffffff
+    brif ne v1, #0x0 -> 0x201f0
+  blk6 @ 0x201ed:
+    v2 = #0x0
+  blk7 @ 0x201f0:
+    store32(v2, (sp + #0xfffffffffffffff0))
+  blk8 @ 0x201f4:
+    ret load32((sp + #0xfffffffffffffff0))
+-- card
+{"addr":"0x201ac","approxTokens":222,"blocks":9,"hardReasons":[],"name":"sign_of","nameSources":["symtab","dwarf"],"section":".text","size":84,"unsupported":0}

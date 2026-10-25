@@ -41,13 +41,21 @@ names and sizes, data symbols, and imports.
 
 ## Lifting (`src/lift/`)
 
-The lifters for x86-64 and AArch64 decode each instruction and translate it into IR statements. Supported
+The lifters for x86-64, AArch64 and ARM32 decode each instruction and translate it into IR statements. Supported
 instructions are translated exactly, including flags, partial register writes, vector (SIMD) operations and atomic
 operations. Instructions that read machine state C cannot express (for example `cpuid` or `rdtsc`) are printed as
 compiler intrinsics such as `__rdtsc()`. An instruction velk cannot translate yet is printed as `unsupported`.
 
+The ARM32 lifter handles A32 and T32, conditional execution, and AAPCS register and stack arguments.
+Function address bits, `bx` / `blx`, and `$a` / `$t` / `$d` mapping symbols select code modes and data.
+ARM32 floating-point, SIMD and system instructions and declared 64-bit or aggregate arguments and results
+remain unsupported.
+
 The instruction semantics are checked against the real CPU (`src/lift/hardware/`): the same instruction runs on
 the processor and through the IR interpreter with many inputs, and the results must match.
+
+ARM32 integer instruction results are also compared with ARM Linux execution through Docker (`linux/arm/v7`);
+the check prints a skip message when that platform is unavailable.
 
 ## Intermediate representation (`src/ir/`)
 

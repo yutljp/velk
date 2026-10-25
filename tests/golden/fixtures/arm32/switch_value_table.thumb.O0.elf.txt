@@ -1,0 +1,59 @@
+# arm32/switch_value_table.thumb.O0.elf: elf arm32 no entry, 1 functions, 0 lift failures, 1 unsupported, 0 gotos
+0x200e4 70 dispatch symtab,dwarf
+
+== 0x200e4 dispatch
+-- decompile
+/* velk pseudo-C: dispatch @ 0x200e4 */
+int dispatch(int x) {
+    uint64_t v1;
+    uint32_t v6;
+    uint32_t v7;
+    int32_t v4;
+    int32_t v5;
+    uint32_t local_0; /* [sp-c] */
+    uint32_t local_1; /* [sp-4] */
+
+    uint32_t v2 = x - 10;
+    int32_t v3 = v2;
+    local_0 = v3;
+    if (v2 <= 4) {
+        v4 = local_0;
+        /* unsupported: ARM tbb [pc, r1] at 0x200f6 */
+        {
+            uint64_t call_values[2];
+            call_values[0] = sub_200fa((uint32_t)x, v1, v6, v7);
+            call_values[1] = v1; /* also returned by the call */
+            v5 = (uint32_t)(call_values[0]);
+            v1 = (uint32_t)(call_values[1]);
+        }
+        return v5;
+    }
+    local_1 = 0;
+    return local_1;
+}
+-- signature
+int (int x)
+-- references
+
+-- ir
+fn dispatch @ 0x200e4 (size 70)
+  blk0 @ 0x200e4:
+    v1 = r0
+    v2 = ((v1 - #0xa) & #0xffffffff)
+    v3 = (v2 & #0xffffffff)
+    store32(v3, (sp + #0xfffffffffffffff4))
+    brif ls v2, #0x4 -> 0x200f4
+  blk1 @ 0x200f3:
+    br 0x2011e
+  blk2 @ 0x200f4:
+    v4 = load32((sp + #0xfffffffffffffff4))
+    unsupported: ARM tbb [pc, r1] at 0x200f6
+    v5:r0, r1 = call 0x200fa(r0, r1, r2, r3)
+    ret v5
+  blk3 @ 0x2011e:
+    store32(#0x0, (sp + #0xfffffffffffffffc))
+    br 0x20124
+  blk4 @ 0x20124:
+    ret load32((sp + #0xfffffffffffffffc))
+-- card
+{"addr":"0x200e4","approxTokens":240,"blocks":5,"hardReasons":[],"name":"dispatch","nameSources":["symtab","dwarf"],"section":".text","size":70,"unsupported":1}

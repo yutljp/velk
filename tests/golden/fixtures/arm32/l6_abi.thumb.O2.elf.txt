@@ -1,0 +1,99 @@
+# arm32/l6_abi.thumb.O2.elf: elf arm32 no entry, 5 functions, 0 lift failures, 2 unsupported, 0 gotos
+0x20104 16 tail_target symtab,dwarf
+0x20114 6 tail_direct symtab,dwarf
+0x2011c 6 tail_indirect symtab,dwarf
+0x20124 18 six_args symtab,dwarf
+0x20138 6 wide_add symtab,dwarf
+
+== 0x20104 tail_target
+-- decompile
+/* velk pseudo-C: tail_target @ 0x20104 */
+int tail_target(int x) {
+    return x + ((uint64_t)x << 1) + 1;
+}
+-- signature
+int (int x)
+-- references
+
+-- ir
+fn tail_target @ 0x20104 (size 16)
+  blk0 @ 0x20104:
+    ret (((r0 + (r0 << #0x1)) + #0x1) & #0xffffffff)
+-- card
+{"addr":"0x20104","approxTokens":138,"blocks":1,"hardReasons":[],"name":"tail_target","nameSources":["symtab","dwarf"],"section":".text","size":16,"unsupported":0}
+
+== 0x20114 tail_direct
+-- decompile
+/* velk pseudo-C: tail_direct @ 0x20114 */
+int tail_direct(int x) {
+    return ((int32_t)(tail_target((x + 2) & 0xffffffff)));
+}
+-- signature
+int (int x)
+-- references
+
+-- ir
+fn tail_direct @ 0x20114 (size 6)
+  blk0 @ 0x20114:
+    v2:r0 = call 0x20104(((r0 + #0x2) & #0xffffffff))
+    ret v2
+-- card
+{"addr":"0x20114","approxTokens":108,"blocks":1,"hardReasons":[],"name":"tail_direct","nameSources":["symtab","dwarf"],"section":".text","size":6,"unsupported":0}
+
+== 0x2011c tail_indirect
+-- decompile
+/* velk pseudo-C: tail_indirect @ 0x2011c */
+int tail_indirect(void *f, int x) {
+    return ((int32_t)(((uint32_t (*)())(uint32_t)(uintptr_t)f)((x + 1) & 0xffffffff)));
+}
+-- signature
+int (void * f, int x)
+-- references
+
+-- ir
+fn tail_indirect @ 0x2011c (size 6)
+  blk0 @ 0x2011c:
+    v3:r0, r1 = call *r0(((r1 + #0x1) & #0xffffffff))
+    ret v3
+-- card
+{"addr":"0x2011c","approxTokens":114,"blocks":1,"hardReasons":[],"name":"tail_indirect","nameSources":["symtab","dwarf"],"section":".text","size":6,"unsupported":0}
+
+== 0x20124 six_args
+-- decompile
+/* velk pseudo-C: six_args @ 0x20124 */
+int six_args(int a, int b, int c, int d, int e, int f) {
+    return a + b + c + d + e + f;
+}
+-- signature
+int (int a, int b, int c, int d)
+-- references
+
+-- ir
+fn six_args @ 0x20124 (size 18)
+  blk0 @ 0x20124:
+    ret ((((((r0 + r1) + r2) + r3) + load32(sp)) + load32((sp + #0x4))) & #0xffffffff)
+-- card
+{"addr":"0x20124","approxTokens":144,"blocks":1,"hardReasons":[],"name":"six_args","nameSources":["symtab","dwarf"],"section":".text","size":18,"unsupported":0}
+
+== 0x20138 wide_add
+-- decompile
+/* velk pseudo-C: wide_add @ 0x20138 */
+int32_t wide_add(int32_t a0, int64_t a1, int32_t a2) {
+    /* unsupported: AAPCS32 multiword, floating-point or aggregate declaration */
+    int32_t v1 = a0 + a2;
+    /* unsupported: ARM adcs r1, r3 at 0x2013a */
+    return a0;
+}
+-- signature
+int32_t (int32_t a0, int64_t a1, int32_t a2)
+-- references
+
+-- ir
+fn wide_add @ 0x20138 (size 6)
+  blk0 @ 0x20138:
+    unsupported: AAPCS32 multiword, floating-point or aggregate declaration
+    v1 = ((r0 + r2) & #0xffffffff)
+    unsupported: ARM adcs r1, r3 at 0x2013a
+    ret r0
+-- card
+{"addr":"0x20138","approxTokens":114,"blocks":1,"hardReasons":[],"name":"wide_add","nameSources":["symtab","dwarf"],"section":".text","size":6,"unsupported":2}

@@ -1,0 +1,154 @@
+# arm32/arith_mixed.arm.O2.elf: elf arm32 no entry, 4 functions, 0 lift failures, 3 unsupported, 0 gotos
+0x200fc 12 sum3 symtab,dwarf
+0x20108 76 helper symtab,dwarf
+0x20154 12 pair_sum symtab,dwarf
+0x20160 124 sum_arr symtab,dwarf
+
+== 0x200fc sum3
+-- decompile
+/* velk pseudo-C: sum3 @ 0x200fc */
+int sum3(int a, int b, int c) {
+    return b + a + c;
+}
+-- signature
+int (int a, int b, int c)
+-- references
+
+-- ir
+fn sum3 @ 0x200fc (size 12)
+  blk0 @ 0x200fc:
+    ret (((r1 + r0) + r2) & #0xffffffff)
+-- card
+{"addr":"0x200fc","approxTokens":114,"blocks":1,"hardReasons":[],"name":"sum3","nameSources":["symtab","dwarf"],"section":".text","size":12,"unsupported":0}
+
+== 0x20108 helper
+-- decompile
+/* velk pseudo-C: helper @ 0x20108 */
+int helper(int x) {
+    uint32_t v14;
+    uint32_t v15;
+    uint32_t v16;
+    int32_t v3;
+    int32_t v4;
+    int32_t v5;
+    uint32_t v8;
+    int32_t v9;
+    int32_t v10;
+    int32_t v11;
+    int32_t v12;
+    int32_t v13;
+
+    int32_t v1 = x;
+    int32_t v2 = 1;
+    if (x < 1) {
+        x = 0;
+    }
+    if (v1 >= v2) {
+        v3 = x - 2;
+        v4 = x - 1;
+        v5 = x - 3;
+        /* unsupported: ARM umull r1, ip, r2, r1 at 0x20120 */
+        v8 = v14 * v15;
+        v9 = x + (v8 >> 1) * 0x55555556;
+        v10 = (v16 & 0x1) >> 1;
+        /* unsupported: ARM mov r1, r1, rrx at 0x20140 */
+        v11 = v14 * 3;
+        v12 = x + v11;
+        v13 = v12 - 1;
+        return v13;
+    }
+    return x;
+}
+-- signature
+int (int x)
+-- references
+
+-- ir
+fn helper @ 0x20108 (size 76)
+  blk0 @ 0x20108:
+    v1 = r0
+    v2 = #0x1
+    brif ge r0, #0x1 -> 0x20110
+  blk1 @ 0x2010d:
+    r0 = #0x0
+  blk2 @ 0x20110:
+    brif ge v1, v2 -> 0x20114
+  blk3 @ 0x20111:
+    ret r0
+  blk4 @ 0x20114:
+    v3 = ((r0 - #0x2) & #0xffffffff)
+    v4 = ((r0 - #0x1) & #0xffffffff)
+    v5 = ((r0 - #0x3) & #0xffffffff)
+    unsupported: ARM umull r1, ip, r2, r1 at 0x20120
+    v6 = #0x5556
+    v7 = #0x55555556
+    v8 = ((r1 * r3) & #0xffffffff)
+    v9 = ((r0 + ((v8 >> #0x1) * #0x55555556)) & #0xffffffff)
+    v10 = (((r12 & #0x1) >> #0x1) & #0xffffffff)
+    unsupported: ARM mov r1, r1, rrx at 0x20140
+    v11 = ((r1 * #0x3) & #0xffffffff)
+    v12 = ((r0 + v11) & #0xffffffff)
+    v13 = ((v12 - #0x1) & #0xffffffff)
+    ret v13
+-- card
+{"addr":"0x20108","approxTokens":210,"blocks":5,"hardReasons":[],"name":"helper","nameSources":["symtab","dwarf"],"section":".text","size":76,"unsupported":2}
+
+== 0x20154 pair_sum
+-- decompile
+/* velk pseudo-C: pair_sum @ 0x20154 */
+int pair_sum(struct pair *p) {
+    return *(uint32_t *)((uint64_t)(uint32_t)(uintptr_t)p + 0x4) + *(uint32_t *)((uint32_t)(uintptr_t)p);
+}
+-- signature
+int (struct pair * p)
+-- references
+
+-- ir
+fn pair_sum @ 0x20154 (size 12)
+  blk0 @ 0x20154:
+    ret ((load32((r0 + #0x4)) + load32(r0)) & #0xffffffff)
+-- card
+{"addr":"0x20154","approxTokens":114,"blocks":1,"hardReasons":[],"name":"pair_sum","nameSources":["symtab","dwarf"],"section":".text","size":12,"unsupported":0}
+
+== 0x20160 sum_arr
+-- decompile
+/* velk pseudo-C: sum_arr @ 0x20160 */
+int sum_arr(int *p, int n) {
+    int32_t v1;
+    int32_t v3;
+
+    if (n < 1) {
+        v1 = (uint32_t)(sub_201d0());
+        return v1;
+    }
+    uint32_t v5 = 0;
+    if ((uint32_t)n < 4) {
+        v3 = (uint32_t)(sub_201b0());
+        return v3;
+    }
+    int32_t v4 = n & 0x7ffffffc;
+    /* unsupported: undecodable ARM instruction at 0x2017c: incomplete decoder */
+}
+-- signature
+int (int * p, int n)
+-- references
+
+-- ir
+fn sum_arr @ 0x20160 (size 124)
+  blk0 @ 0x20160:
+    brif ge r1, #0x1 -> 0x20168
+  blk1 @ 0x20165:
+    v1:r0 = call 0x201d0
+    ret v1
+  blk2 @ 0x20168:
+    v2 = #0x0
+    r2 = #0x0
+    brif cs r1, #0x4 -> 0x20178
+  blk3 @ 0x20175:
+    v3:r0, r1 = call 0x201b0
+    ret v3
+  blk4 @ 0x20178:
+    v4 = (r1 & #0x7ffffffc)
+    unsupported: undecodable ARM instruction at 0x2017c: incomplete decoder
+-- card
+{"addr":"0x20160","approxTokens":144,"blocks":5,"hardReasons":[],"name":"sum_arr","nameSources":["symtab","dwarf"],"section":".text","size":124,"unsupported":1}

@@ -907,8 +907,11 @@ fn decide(
     let image = tracker.image;
     let mut loads = 0;
     match tracker.eval(state, through, site, &mut loads) {
-        Value::Const(target, from) if image.functions.contains_key(&target) => {
-            Some(Decision::Direct(target, via(image, from)))
+        Value::Const(target, from) if image.functions.contains_key(&image.code_address(target)) => {
+            Some(Decision::Direct(
+                image.code_address(target),
+                via(image, from),
+            ))
         }
         Value::Import(slot) => Some(Decision::Import(slot)),
         // A slot of the table the object starts with.
@@ -981,7 +984,7 @@ mod tests {
                     .flat_map(u32::to_le_bytes)
                     .collect(),
             ),
-            Isa::Unsupported => unreachable!(),
+            Isa::Arm32 | Isa::Unsupported => unreachable!(),
         };
         let mut code = vec![0; 0x90];
         code[..caller.len()].copy_from_slice(&caller);
@@ -1034,7 +1037,7 @@ mod tests {
                 .into_iter()
                 .flat_map(u32::to_le_bytes)
                 .collect(),
-            Isa::Unsupported => unreachable!(),
+            Isa::Arm32 | Isa::Unsupported => unreachable!(),
         }
     }
 

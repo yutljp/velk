@@ -70,7 +70,7 @@ fn float_return_slot(isa: crate::loader::Isa) -> Option<u16> {
     match isa {
         crate::loader::Isa::X86_64 => Some(crate::arch::x86::XMM0),
         crate::loader::Isa::AArch64 => Some(crate::arch::aarch64::V0),
-        crate::loader::Isa::Unsupported => None,
+        crate::loader::Isa::Arm32 | crate::loader::Isa::Unsupported => None,
     }
 }
 
@@ -230,7 +230,21 @@ fn tail_calls_through_pointers(
         let mut pointer = matches!(target, Expr::Load { .. });
         let mut copied = target;
         let mut earlier = block.stmts.iter().rev().skip(1);
-        while let Expr::Reg { index, .. } = copied {
+        loop {
+            if image.isa == crate::loader::Isa::Arm32
+                && let Expr::Bin {
+                    op: crate::ir::BinOp::And,
+                    lhs,
+                    rhs,
+                } = copied
+                && matches!(rhs.as_ref(), Expr::Const(0xffff_ffff | 0xffff_fffe))
+            {
+                copied = lhs;
+                continue;
+            }
+            let Expr::Reg { index, .. } = copied else {
+                break;
+            };
             match earlier.find_map(|stmt| match stmt {
                 Stmt::Assign { dest, value } if dest.index == *index => Some(value),
                 _ => None,
@@ -279,7 +293,7 @@ fn receive_exceptions(
     let (exception, selector) = match isa {
         crate::loader::Isa::X86_64 => (0, 2),
         crate::loader::Isa::AArch64 => (0, 1),
-        crate::loader::Isa::Unsupported => return,
+        crate::loader::Isa::Arm32 | crate::loader::Isa::Unsupported => return,
     };
     for block in blocks
         .iter_mut()
@@ -643,7 +657,16 @@ fn set_up_arguments(ir: &mut FunctionIr, types: Option<&crate::loader::dwarf::Fu
                 *args = Some(
                     registers[..=last]
                         .iter()
-                        .map(|register| crate::ir::Expr::reg(*register, 64))
+                        .map(|register| {
+                            crate::ir::Expr::reg(
+                                *register,
+                                if *convention == crate::ir::Convention::Aapcs32 {
+                                    32
+                                } else {
+                                    64
+                                },
+                            )
+                        })
                         .collect(),
                 );
             }
@@ -1246,7 +1269,11 @@ fn lift_function(image: &Image, function: &Function) -> Result<Lifted, LiftError
                 };
                 crate::ir::StackParam {
                     offset: *offset,
-                    size: 8,
+                    size: if image.isa == crate::loader::Isa::Arm32 {
+                        4
+                    } else {
+                        8
+                    },
                     name: format!("a{position}"),
                     ty,
                     position,

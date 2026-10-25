@@ -1,0 +1,190 @@
+# arm32/loops.arm.O0.elf: elf arm32 no entry, 4 functions, 0 lift failures, 0 unsupported, 0 gotos
+0x200fc 84 count_bits symtab,dwarf
+0x20150 92 sum_until symtab,dwarf
+0x201ac 132 sum_till_neg symtab,dwarf
+0x20230 164 sum_until_zero symtab,dwarf
+
+== 0x200fc count_bits
+-- decompile
+/* velk pseudo-C: count_bits @ 0x200fc */
+int count_bits(unsigned int x) {
+    uint32_t local_0; /* [sp-c] */
+    uint32_t result; /* [sp-10] */
+
+    local_0 = x;
+    result = 0;
+    while (local_0 != 0) {
+        result += local_0 & 0x1;
+        local_0 >>= 1;
+    }
+    return result;
+}
+-- signature
+int (unsigned int x)
+-- references
+
+-- ir
+fn count_bits @ 0x200fc (size 84)
+  blk0 @ 0x200fc:
+    store32(r0, (sp + #0xfffffffffffffff4))
+    store32(#0x0, (sp + #0xfffffffffffffff0))
+  blk1 @ 0x20114:
+    brif ne load32((sp + #0xfffffffffffffff4)), #0x0 -> 0x20120
+  blk2 @ 0x2011d:
+    br 0x20144
+  blk3 @ 0x20120:
+    store32((load32((sp + #0xfffffffffffffff0)) + (load32((sp + #0xfffffffffffffff4)) & #0x1)), (sp + #0xfffffffffffffff0))
+    store32((load32((sp + #0xfffffffffffffff4)) >> #0x1), (sp + #0xfffffffffffffff4))
+    br 0x20114
+  blk4 @ 0x20144:
+    ret load32((sp + #0xfffffffffffffff0))
+-- card
+{"addr":"0x200fc","approxTokens":222,"blocks":5,"hardReasons":[],"name":"count_bits","nameSources":["symtab","dwarf"],"section":".text","size":84,"unsupported":0}
+
+== 0x20150 sum_until
+-- decompile
+/* velk pseudo-C: sum_until @ 0x20150 */
+int sum_until(int limit) {
+    uint32_t result; /* [sp-10] */
+    int32_t i; /* [sp-14] */
+
+    result = 0;
+    for (i = 1; i <= limit; i++) {
+        result += i;
+    }
+    return result;
+}
+-- signature
+int (int limit)
+-- references
+
+-- ir
+fn sum_until @ 0x20150 (size 92)
+  blk0 @ 0x20150:
+    store32(r0, (sp + #0xfffffffffffffff4))
+    store32(#0x0, (sp + #0xfffffffffffffff0))
+    store32(#0x1, (sp + #0xffffffffffffffec))
+  blk1 @ 0x20170:
+    brif le load32((sp + #0xffffffffffffffec)), load32((sp + #0xfffffffffffffff4)) -> 0x20180
+  blk2 @ 0x2017d:
+    br 0x201a0
+  blk3 @ 0x20180:
+    store32((load32((sp + #0xfffffffffffffff0)) + load32((sp + #0xffffffffffffffec))), (sp + #0xfffffffffffffff0))
+    store32((load32((sp + #0xffffffffffffffec)) + #0x1), (sp + #0xffffffffffffffec))
+    br 0x20170
+  blk4 @ 0x201a0:
+    ret load32((sp + #0xfffffffffffffff0))
+-- card
+{"addr":"0x20150","approxTokens":234,"blocks":5,"hardReasons":[],"name":"sum_until","nameSources":["symtab","dwarf"],"section":".text","size":92,"unsupported":0}
+
+== 0x201ac sum_till_neg
+-- decompile
+/* velk pseudo-C: sum_till_neg @ 0x201ac */
+int sum_till_neg(int *p, int n) {
+    int32_t v1;
+    uint32_t local_0; /* [sp-c] */
+    uint32_t result; /* [sp-14] */
+    int32_t i; /* [sp-18] */
+    uint32_t local_3; /* [sp-1c] */
+
+    local_0 = (uint32_t)(uintptr_t)p;
+    result = 0;
+    for (i = 0; i < n; i++) {
+        v1 = *(uint32_t *)((local_0 + ((uint64_t)i << 2)) & 0xffffffff);
+        local_3 = v1;
+        if (v1 < 0) {
+            return result;
+        }
+        result += local_3;
+    }
+    return result;
+}
+-- signature
+int (int * p, int n)
+-- references
+
+-- ir
+fn sum_till_neg @ 0x201ac (size 132)
+  blk0 @ 0x201ac:
+    store32(r0, (sp + #0xfffffffffffffff4))
+    store32(r1, (sp + #0xfffffffffffffff0))
+    store32(#0x0, (sp + #0xffffffffffffffec))
+    store32(#0x0, (sp + #0xffffffffffffffe8))
+  blk1 @ 0x201d0:
+    brif lt load32((sp + #0xffffffffffffffe8)), load32((sp + #0xfffffffffffffff0)) -> 0x201e0
+  blk2 @ 0x201dd:
+    br 0x20224
+  blk3 @ 0x201e0:
+    v1 = load32(((load32((sp + #0xfffffffffffffff4)) + (load32((sp + #0xffffffffffffffe8)) << #0x2)) & #0xffffffff))
+    store32(v1, (sp + #0xffffffffffffffe4))
+    brif lt v1, #0x0 -> 0x20200
+  blk4 @ 0x201fd:
+    br 0x20204
+  blk5 @ 0x20200:
+    br 0x20224
+  blk6 @ 0x20204:
+    store32((load32((sp + #0xffffffffffffffec)) + load32((sp + #0xffffffffffffffe4))), (sp + #0xffffffffffffffec))
+    store32((load32((sp + #0xffffffffffffffe8)) + #0x1), (sp + #0xffffffffffffffe8))
+    br 0x201d0
+  blk7 @ 0x20224:
+    ret load32((sp + #0xffffffffffffffec))
+-- card
+{"addr":"0x201ac","approxTokens":240,"blocks":8,"hardReasons":[],"name":"sum_till_neg","nameSources":["symtab","dwarf"],"section":".text","size":132,"unsupported":0}
+
+== 0x20230 sum_until_zero
+-- decompile
+/* velk pseudo-C: sum_until_zero @ 0x20230 */
+int sum_until_zero(int *p, int n) {
+    uint32_t local_0; /* [sp-c] */
+    uint32_t result; /* [sp-14] */
+    int32_t i; /* [sp-18] */
+
+    local_0 = (uint32_t)(uintptr_t)p;
+    result = 0;
+    for (i = 0; i < n; i++) {
+        if (*(uint32_t *)((local_0 + ((uint64_t)i << 2)) & 0xffffffff) == 0) {
+            return result;
+        }
+        if (*(int32_t *)((local_0 + ((uint64_t)i << 2)) & 0xffffffff) < 0) {
+        } else {
+            result += *(uint32_t *)((local_0 + ((uint64_t)i << 2)) & 0xffffffff);
+        }
+    }
+    return result;
+}
+-- signature
+int (int * p, int n)
+-- references
+
+-- ir
+fn sum_until_zero @ 0x20230 (size 164)
+  blk0 @ 0x20230:
+    store32(r0, (sp + #0xfffffffffffffff4))
+    store32(r1, (sp + #0xfffffffffffffff0))
+    store32(#0x0, (sp + #0xffffffffffffffec))
+    store32(#0x0, (sp + #0xffffffffffffffe8))
+  blk1 @ 0x20254:
+    brif lt load32((sp + #0xffffffffffffffe8)), load32((sp + #0xfffffffffffffff0)) -> 0x20264
+  blk2 @ 0x20261:
+    br 0x202c8
+  blk3 @ 0x20264:
+    brif eq load32(((load32((sp + #0xfffffffffffffff4)) + (load32((sp + #0xffffffffffffffe8)) << #0x2)) & #0xffffffff)), #0x0 -> 0x2027c
+  blk4 @ 0x20279:
+    br 0x20280
+  blk5 @ 0x2027c:
+    br 0x202c8
+  blk6 @ 0x20280:
+    brif lt load32(((load32((sp + #0xfffffffffffffff4)) + (load32((sp + #0xffffffffffffffe8)) << #0x2)) & #0xffffffff)), #0x0 -> 0x20298
+  blk7 @ 0x20295:
+    br 0x2029c
+  blk8 @ 0x20298:
+    br 0x202b8
+  blk9 @ 0x2029c:
+    store32((load32((sp + #0xffffffffffffffec)) + load32(((load32((sp + #0xfffffffffffffff4)) + (load32((sp + #0xffffffffffffffe8)) << #0x2)) & #0xffffffff))), (sp + #0xffffffffffffffec))
+  blk10 @ 0x202b8:
+    store32((load32((sp + #0xffffffffffffffe8)) + #0x1), (sp + #0xffffffffffffffe8))
+    br 0x20254
+  blk11 @ 0x202c8:
+    ret load32((sp + #0xffffffffffffffec))
+-- card
+{"addr":"0x20230","approxTokens":240,"blocks":12,"hardReasons":[],"name":"sum_until_zero","nameSources":["symtab","dwarf"],"section":".text","size":164,"unsupported":0}

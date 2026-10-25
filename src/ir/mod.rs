@@ -582,7 +582,11 @@ pub fn fallback_call_outputs(
             register,
             dest: RegRef {
                 index: register,
-                width: 64,
+                width: if convention == Convention::Aapcs32 {
+                    32
+                } else {
+                    64
+                },
             },
         })
         .collect()

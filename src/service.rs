@@ -232,6 +232,7 @@ impl Binary {
     }
 
     pub fn function(&self, addr: u64) -> Result<&Function> {
+        let addr = self.image.code_address(addr);
         self.image
             .functions
             .get(&addr)
@@ -239,6 +240,7 @@ impl Binary {
     }
 
     pub fn analysis(&mut self, addr: u64, deadline: Option<Instant>) -> Result<&Analysis> {
+        let addr = self.image.code_address(addr);
         if !self.image.functions.contains_key(&addr) {
             return Err(Error::NoFunctionAt(addr));
         }
@@ -265,6 +267,7 @@ impl Binary {
         signatures: Option<&Database>,
         deadline: Option<Instant>,
     ) -> Result<Card> {
+        let addr = self.image.code_address(addr);
         if !self.image.functions.contains_key(&addr) {
             return Err(Error::NoFunctionAt(addr));
         }
@@ -308,6 +311,7 @@ impl Binary {
         signatures: Option<&Database>,
         deadline: Option<Instant>,
     ) -> Result<render::Rendered> {
+        let addr = self.image.code_address(addr);
         if !self.image.functions.contains_key(&addr) {
             return Err(Error::NoFunctionAt(addr));
         }
@@ -435,7 +439,11 @@ impl Binary {
     }
 
     pub fn disasm(&self, addr: u64, max_lines: usize) -> Result<Vec<String>> {
-        let function = self.function(addr)?;
+        let addr = self.image.code_address(addr);
+        let function = match self.function(addr) {
+            Ok(function) => function,
+            Err(error) => return Err(error),
+        };
         let len = function.size.unwrap_or(analysis::UNKNOWN_SIZE);
         disasm::listing(&self.image, addr, len, max_lines)
             .map_err(|source| Error::Lift { addr, source })

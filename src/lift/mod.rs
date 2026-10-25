@@ -1,4 +1,6 @@
 mod aarch64;
+mod arm32;
+pub(crate) use arm32::listing as arm32_listing;
 #[cfg(test)]
 mod atomic_tests;
 mod exits;
@@ -188,10 +190,12 @@ pub fn lift_with(
     summaries: Summaries<'_>,
 ) -> Result<Vec<Block>, LiftError> {
     let summaries: Summaries<'_> = &|target| calling(summaries(target));
+    let addr = image.code_address(addr);
     let Some(bytes) = image.read_vaddr(addr, size) else {
         return Err(LiftError::Unreadable);
     };
     let lifted = match image.isa {
+        Isa::Arm32 => arm32::lift(image, addr, bytes, extra_targets, summaries),
         Isa::AArch64 => {
             let mut blocks = match lift_continuing(
                 image,
@@ -199,7 +203,7 @@ pub fn lift_with(
                 || aarch64::Lifter::new(image, summaries),
                 addr,
                 bytes,
-                aarch64::decode,
+                &aarch64::decode,
                 extra_targets,
             ) {
                 Ok(blocks) => blocks,
@@ -215,7 +219,7 @@ pub fn lift_with(
                 || x86_64::Lifter::new(image, summaries),
                 addr,
                 bytes,
-                x86_64::decode,
+                &x86_64::decode,
                 extra_targets,
             ) {
                 Ok(result) => result,
@@ -308,7 +312,7 @@ fn drop_stack_probes(blocks: &mut [Block], image: &Image) {
                 crate::loader::Format::MachO => match image.isa {
                     Isa::X86_64 => name == Some("____chkstk_darwin"),
                     Isa::AArch64 => name == Some("___chkstk_darwin"),
-                    Isa::Unsupported => false,
+                    Isa::Arm32 | Isa::Unsupported => false,
                 },
                 crate::loader::Format::Pe if image.isa == crate::loader::Isa::X86_64 => {
                     name == Some("__chkstk")
@@ -493,7 +497,7 @@ fn reverse_bytes(value: Expr, width: u8, chunk: u8) -> Expr {
         .unwrap_or(value)
 }
 
-type Decoder<I> = fn(&[u8], u64) -> (Vec<Decoded<I>>, Option<String>);
+type Decoder<'a, I> = &'a dyn Fn(&[u8], u64) -> (Vec<Decoded<I>>, Option<String>);
 
 /// The function's blocks, lifted again with the code its branches out
 /// continue in, which is no tail call, until no more such code turns up.
@@ -503,7 +507,7 @@ fn lift_continuing<M: Machine>(
     machine: impl Fn() -> M,
     addr: u64,
     bytes: &[u8],
-    decode: Decoder<M::Instruction>,
+    decode: Decoder<'_, M::Instruction>,
     extra_targets: &HashSet<u64>,
 ) -> Result<Vec<Block>, LiftError> {
     let mut pulled = exits::Pulled::new();
@@ -540,7 +544,7 @@ fn decode_with_fragments<M: Machine>(
     machine: &M,
     addr: u64,
     bytes: &[u8],
-    decode: Decoder<M::Instruction>,
+    decode: Decoder<'_, M::Instruction>,
     pulled: &exits::Pulled,
 ) -> (Vec<Decoded<M::Instruction>>, Option<String>) {
     let (mut decoded, stop) = decode(bytes, addr);
@@ -670,7 +674,7 @@ pub(crate) fn arguments(
     }
     let mut args: Vec<Expr> = convention.arguments()[..count.min(convention.arguments().len())]
         .iter()
-        .map(|register| Expr::reg(*register, 64))
+        .map(|register| Expr::reg(*register, if isa == Isa::Arm32 { 32 } else { 64 }))
         .collect();
     if let Some(start) = convention.stack_arguments() {
         let sp = crate::arch::stack_pointer(isa);
@@ -679,7 +683,7 @@ pub(crate) fn arguments(
             // at the call or jump.
             let Some(offset) = i64::try_from(slot)
                 .ok()
-                .and_then(|slot| slot.checked_mul(8))
+                .and_then(|slot| slot.checked_mul(if isa == Isa::Arm32 { 4 } else { 8 }))
                 .and_then(|slot| start.checked_add(slot))
                 .and_then(|callee| kind.stack_offset(isa, convention, callee))
             else {
@@ -691,7 +695,7 @@ pub(crate) fn arguments(
                     Expr::reg(sp, 64),
                     Expr::Const(offset as u64),
                 )),
-                width: 8,
+                width: if isa == Isa::Arm32 { 4 } else { 8 },
                 signed: false,
             });
         }
@@ -2312,7 +2316,7 @@ mod tests {
     /// Random bytes may decode to anything; analysis and rendering must still finish.
     #[test]
     fn random_code_never_panics() {
-        for isa in [Isa::AArch64, Isa::X86_64] {
+        for isa in [Isa::AArch64, Isa::X86_64, Isa::Arm32] {
             for seed in 0..300u64 {
                 let len = 4 + (hash(seed, 0) % 508) as usize;
                 let code: Vec<u8> = (0..len as u64)

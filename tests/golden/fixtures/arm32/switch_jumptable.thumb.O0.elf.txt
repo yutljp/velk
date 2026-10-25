@@ -1,0 +1,52 @@
+# arm32/switch_jumptable.thumb.O0.elf: elf arm32 no entry, 1 functions, 0 lift failures, 1 unsupported, 0 gotos
+0x20104 480 d7 symtab,dwarf
+
+== 0x20104 d7
+-- decompile
+/* velk pseudo-C: d7 @ 0x20104 */
+/* ref: 0x302e4 .bss */
+int d7(int x) {
+    uint32_t *const g = (uint32_t *)0x302e4ULL;
+    uint64_t v1;
+    uint32_t v2;
+    uint32_t v4;
+    int32_t v3;
+
+    if ((uint32_t)x <= 9) {
+        /* unsupported: ARM tbb [pc, r1] at 0x20114 */
+        {
+            uint64_t call_values[2];
+            call_values[0] = sub_20118((uint32_t)x, v1, v2, v4);
+            call_values[1] = v1; /* also returned by the call */
+            v3 = (uint32_t)(call_values[0]);
+            v1 = (uint32_t)(call_values[1]);
+        }
+        return v3;
+    }
+    *g = 0xffffffff;
+    return *g;
+}
+-- signature
+int (int x)
+-- references
+0x302e4 .bss
+-- ir
+fn d7 @ 0x20104 (size 480)
+  blk0 @ 0x20104:
+    v1 = r0
+    store32(v1, (sp + #0xffffffffffffffd0))
+    brif ls v1, #0x9 -> 0x20112
+  blk1 @ 0x2010f:
+    br 0x202c6
+  blk2 @ 0x20112:
+    v2 = load32((sp + #0xffffffffffffffd0))
+    unsupported: ARM tbb [pc, r1] at 0x20114
+    v3:r0, r1 = call 0x20118(r0, r1, r2, r3)
+    ret v3
+  blk3 @ 0x202c6:
+    store32(#0xffffffff, #0x302e4)
+    br 0x202d6
+  blk4 @ 0x202d6:
+    ret load32(#0x302e4)
+-- card
+{"addr":"0x20104","approxTokens":240,"blocks":5,"hardReasons":[],"name":"d7","nameSources":["symtab","dwarf"],"section":".text","size":480,"unsupported":1}

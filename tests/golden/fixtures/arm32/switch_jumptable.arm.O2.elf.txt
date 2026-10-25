@@ -1,0 +1,46 @@
+# arm32/switch_jumptable.arm.O2.elf: elf arm32 no entry, 1 functions, 0 lift failures, 2 unsupported, 0 gotos
+0x20104 1156 d7 symtab,dwarf
+
+== 0x20104 d7
+-- decompile
+/* velk pseudo-C: d7 @ 0x20104 */
+int d7(int x) {
+    uint32_t v4;
+    uint32_t v5;
+    uint32_t v6;
+    int32_t v2;
+
+    int32_t v1 = 0x20114 + *(uint32_t *)(0x204a4);
+    if ((uint32_t)x <= 9) {
+        /* unsupported: ARM adr r2, pc, 0x4 at 0x20114 */
+        v2 = *(uint32_t *)((v5 + ((uint64_t)x << 2)) & 0xffffffff);
+        /* unsupported: ARM add pc, r2, r0 at 0x2011c */
+        return ((int32_t)(sub_20120((uint32_t)x, v4, v5, v6)));
+    }
+    *(uint32_t *)((uint32_t)v1) = 0xffffffff;
+    return *(uint32_t *)(0x204a4 + *(uint32_t *)(0x20584));
+}
+-- signature
+int (int x)
+-- references
+
+-- ir
+fn d7 @ 0x20104 (size 1156)
+  blk0 @ 0x20104:
+    v1 = ((#0x20114 + load32(#0x204a4)) & #0xffffffff)
+    brif ls r0, #0x9 -> 0x20114
+  blk1 @ 0x20111:
+    br 0x20404
+  blk2 @ 0x20114:
+    unsupported: ARM adr r2, pc, 0x4 at 0x20114
+    v2 = load32(((r2 + (r0 << #0x2)) & #0xffffffff))
+    unsupported: ARM add pc, r2, r0 at 0x2011c
+    v3:r0 = call 0x20120(r0, r1, r2, r3)
+    ret v3
+  blk3 @ 0x20404:
+    br 0x20494
+  blk4 @ 0x20494:
+    store32(#0xffffffff, v1)
+    ret load32(((#0x204a4 + load32(#0x20584)) & #0xffffffff))
+-- card
+{"addr":"0x20104","approxTokens":240,"blocks":5,"hardReasons":[],"name":"d7","nameSources":["symtab","dwarf"],"section":".text","size":1156,"unsupported":2}

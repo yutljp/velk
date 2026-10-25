@@ -1,0 +1,245 @@
+# arm32/loops.arm.O2.elf: elf arm32 no entry, 4 functions, 0 lift failures, 2 unsupported, 0 gotos
+0x200fc 40 count_bits symtab,dwarf
+0x20124 48 sum_until symtab,dwarf
+0x20154 60 sum_till_neg symtab,dwarf
+0x20190 56 sum_until_zero symtab,dwarf
+
+== 0x200fc count_bits
+-- decompile
+/* velk pseudo-C: count_bits @ 0x200fc */
+int count_bits(unsigned int x) {
+    uint32_t v3;
+    int32_t v4;
+    int32_t v5;
+    int32_t v6;
+
+    int32_t v1 = x;
+    int32_t v2 = 0;
+    if (x == 0) {
+        x = 0;
+    }
+    if (v1 != v2) {
+        v3 = x;
+        v4 = 0;
+        while (true) {
+            v5 = v3 & 0x1;
+            v6 = v3 >> 1;
+            v3 >>= 1;
+            v4 += v5;
+            if (v6 == 0) break;
+        }
+        return v4;
+    }
+    return x;
+}
+-- signature
+int (unsigned int x)
+-- references
+
+-- ir
+fn count_bits @ 0x200fc (size 40)
+  blk0 @ 0x200fc:
+    v1 = r0
+    v2 = #0x0
+    brif ne r0, #0x0 -> 0x20104
+  blk1 @ 0x20101:
+    r0 = #0x0
+  blk2 @ 0x20104:
+    brif ne v1, v2 -> 0x20108
+  blk3 @ 0x20105:
+    ret r0
+  blk4 @ 0x20108:
+    v3 = r0
+    v4 = #0x0
+  blk5 @ 0x20110:
+    v5 = (v3 & #0x1)
+    v6 = (v3 >> #0x1)
+    v3 = (v3 >> #0x1)
+    v4 = ((v4 + v5) & #0xffffffff)
+    brif eq v6, #0x0 -> 0x20120
+  blk6 @ 0x2011d:
+    br 0x20110
+  blk7 @ 0x20120:
+    ret v4
+-- card
+{"addr":"0x200fc","approxTokens":156,"blocks":8,"hardReasons":[],"name":"count_bits","nameSources":["symtab","dwarf"],"section":".text","size":40,"unsupported":0}
+
+== 0x20124 sum_until
+-- decompile
+/* velk pseudo-C: sum_until @ 0x20124 */
+int sum_until(int limit) {
+    uint32_t v9;
+    uint32_t v10;
+    int32_t v3;
+    int32_t v4;
+    uint32_t v5;
+    int32_t v6;
+    int32_t v7;
+    int32_t v8;
+
+    int32_t v1 = limit;
+    int32_t v2 = 1;
+    if (limit < 1) {
+        limit = 0;
+    }
+    if (v1 >= v2) {
+        v3 = limit - 2;
+        v4 = limit - 1;
+        /* unsupported: ARM umull r1, r2, r2, r1 at 0x20138 */
+        v5 = v10 & 0x1;
+        v6 = v5 >> 1;
+        /* unsupported: ARM mov r1, r1, rrx at 0x20144 */
+        v7 = v9 + ((uint64_t)limit << 1);
+        v8 = v7 - 1;
+        return v8;
+    }
+    return limit;
+}
+-- signature
+int (int limit)
+-- references
+
+-- ir
+fn sum_until @ 0x20124 (size 48)
+  blk0 @ 0x20124:
+    v1 = r0
+    v2 = #0x1
+    brif ge r0, #0x1 -> 0x2012c
+  blk1 @ 0x20129:
+    r0 = #0x0
+  blk2 @ 0x2012c:
+    brif ge v1, v2 -> 0x20130
+  blk3 @ 0x2012d:
+    ret r0
+  blk4 @ 0x20130:
+    v3 = ((r0 - #0x2) & #0xffffffff)
+    v4 = ((r0 - #0x1) & #0xffffffff)
+    unsupported: ARM umull r1, r2, r2, r1 at 0x20138
+    v5 = (r2 & #0x1)
+    v6 = ((v5 >> #0x1) & #0xffffffff)
+    unsupported: ARM mov r1, r1, rrx at 0x20144
+    v7 = ((r1 + (r0 << #0x1)) & #0xffffffff)
+    v8 = ((v7 - #0x1) & #0xffffffff)
+    ret v8
+-- card
+{"addr":"0x20124","approxTokens":168,"blocks":5,"hardReasons":[],"name":"sum_until","nameSources":["symtab","dwarf"],"section":".text","size":48,"unsupported":2}
+
+== 0x20154 sum_till_neg
+-- decompile
+/* velk pseudo-C: sum_till_neg @ 0x20154 */
+int sum_till_neg(int *p, int n) {
+    int32_t v1;
+    int32_t v2;
+    int32_t v3;
+    int32_t v4;
+
+    if (n >= 1) {
+        v1 = (uint32_t)(uintptr_t)p;
+        v2 = n;
+        v3 = 0;
+        while (true) {
+            v4 = *(uint32_t *)((uint32_t)v1);
+            v1 += 4;
+            if (v4 == -1 || (v4 + 1 ^ (v4 ^ v4 + 1) & (0x1 ^ v4 + 1)) < 0) break;
+            v3 = v4 + v3;
+            --v2;
+            if (v2 == 0) {
+                return v3;
+            }
+        }
+        return v3;
+    }
+    return 0;
+}
+-- signature
+int (int * p, int n)
+-- references
+
+-- ir
+fn sum_till_neg @ 0x20154 (size 60)
+  blk0 @ 0x20154:
+    brif ge r1, #0x1 -> 0x2015c
+  blk1 @ 0x20159:
+    br 0x20188
+  blk2 @ 0x2015c:
+    v1 = r0
+    v2 = r1
+    v3 = #0x0
+    br 0x20178
+  blk3 @ 0x2016c:
+    v3 = ((v4 + v3) & #0xffffffff)
+    v2 = (v2 - #0x1)
+    brif ne v2, #0x0 -> 0x20178
+  blk4 @ 0x20175:
+    ret v3
+  blk5 @ 0x20178:
+    v4 = load32(v1)
+    v1 = (v1 + #0x4)
+    brif eq select ne v4, #0xffffffffffffffff ? select ge ((v4 + #0x1) ^ ((v4 ^ (v4 + #0x1)) & (#0x1 ^ (v4 + #0x1)))), #0x0 ? #0x1, #0x0, #0x0, #0x0 -> 0x20184
+  blk6 @ 0x20181:
+    br 0x2016c
+  blk7 @ 0x20184:
+    ret v3
+  blk8 @ 0x20188:
+    ret #0x0
+-- card
+{"addr":"0x20154","approxTokens":186,"blocks":9,"hardReasons":[],"name":"sum_till_neg","nameSources":["symtab","dwarf"],"section":".text","size":60,"unsupported":0}
+
+== 0x20190 sum_until_zero
+-- decompile
+/* velk pseudo-C: sum_until_zero @ 0x20190 */
+int sum_until_zero(int *p, int n) {
+    int32_t v1;
+    int32_t result;
+    int32_t v3;
+
+    if (n >= 1) {
+        v1 = (uint32_t)(uintptr_t)p;
+        result = 0;
+        while (true) {
+            v3 = *(uint32_t *)((uint32_t)v1);
+            v1 += 4;
+            if (v3 == 0) break;
+            --n;
+            result = (v3 & (v3 >> 31 ^ 0xffffffff)) + result;
+            if (n == 0) {
+                return result;
+            }
+        }
+        return result;
+    }
+    return 0;
+}
+-- signature
+int (int * p, int n)
+-- references
+
+-- ir
+fn sum_until_zero @ 0x20190 (size 56)
+  blk0 @ 0x20190:
+    brif ge r1, #0x1 -> 0x20198
+  blk1 @ 0x20195:
+    br 0x201c0
+  blk2 @ 0x20198:
+    v1 = r0
+    v2 = #0x0
+  blk3 @ 0x201a0:
+    v3 = load32(v1)
+    v1 = (v1 + #0x4)
+    brif ne v3, #0x0 -> 0x201ac
+  blk4 @ 0x201a9:
+    br 0x201c4
+  blk5 @ 0x201ac:
+    r1 = (r1 - #0x1)
+    v2 = (((v3 & (((sext32(v3) >>> #0x1f) & #0xffffffff) ^ #0xffffffff)) + v2) & #0xffffffff)
+    brif ne r1, #0x0 -> 0x201bc
+  blk6 @ 0x201b9:
+    ret v2
+  blk7 @ 0x201bc:
+    br 0x201a0
+  blk8 @ 0x201c0:
+    v2 = #0x0
+  blk9 @ 0x201c4:
+    ret v2
+-- card
+{"addr":"0x20190","approxTokens":180,"blocks":10,"hardReasons":[],"name":"sum_until_zero","nameSources":["symtab","dwarf"],"section":".text","size":56,"unsupported":0}

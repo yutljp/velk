@@ -1,0 +1,122 @@
+# arm32/l1_branch.thumb.O0.elf: elf arm32 no entry, 3 functions, 0 lift failures, 0 unsupported, 0 gotos
+0x200f4 46 classify symtab,dwarf
+0x20124 52 clamp symtab,dwarf
+0x20158 32 sign_of symtab,dwarf
+
+== 0x200f4 classify
+-- decompile
+/* velk pseudo-C: classify @ 0x200f4 */
+int classify(int x) {
+    if (x <= -1) {
+        return -1;
+    }
+    if (x != 0) {
+        return 1;
+    }
+    return 0;
+}
+-- signature
+int (int x)
+-- references
+
+-- ir
+fn classify @ 0x200f4 (size 46)
+  blk0 @ 0x200f4:
+    brif le r0, #0xffffffff -> 0x20100
+  blk1 @ 0x200ff:
+    br 0x2010a
+  blk2 @ 0x20100:
+    br 0x20102
+  blk3 @ 0x20102:
+    v1 = #0xffffffff
+    br 0x2011c
+  blk4 @ 0x2010a:
+    brif ne r0, #0x0 -> 0x20116
+  blk5 @ 0x2010e:
+    br 0x20110
+  blk6 @ 0x20110:
+    v1 = #0x0
+    br 0x2011c
+  blk7 @ 0x20116:
+    v1 = #0x1
+    br 0x2011c
+  blk8 @ 0x2011c:
+    ret v1
+-- card
+{"addr":"0x200f4","approxTokens":222,"blocks":9,"hardReasons":[],"name":"classify","nameSources":["symtab","dwarf"],"section":".text","size":46,"unsupported":0}
+
+== 0x20124 clamp
+-- decompile
+/* velk pseudo-C: clamp @ 0x20124 */
+int clamp(int x, int lo, int hi) {
+    if (x < lo) {
+        return lo;
+    }
+    if (x > hi) {
+        return hi;
+    }
+    return x;
+}
+-- signature
+int (int x, int lo, int hi)
+-- references
+
+-- ir
+fn clamp @ 0x20124 (size 52)
+  blk0 @ 0x20124:
+    brif lt r0, r1 -> 0x20134
+  blk1 @ 0x20133:
+    br 0x2013c
+  blk2 @ 0x20134:
+    br 0x20136
+  blk3 @ 0x20136:
+    v1 = r1
+    br 0x20152
+  blk4 @ 0x2013c:
+    brif gt r0, r2 -> 0x20144
+  blk5 @ 0x20143:
+    br 0x2014c
+  blk6 @ 0x20144:
+    br 0x20146
+  blk7 @ 0x20146:
+    v1 = r2
+    br 0x20152
+  blk8 @ 0x2014c:
+    v1 = r0
+    br 0x20152
+  blk9 @ 0x20152:
+    ret v1
+-- card
+{"addr":"0x20124","approxTokens":240,"blocks":10,"hardReasons":[],"name":"clamp","nameSources":["symtab","dwarf"],"section":".text","size":52,"unsupported":0}
+
+== 0x20158 sign_of
+-- decompile
+/* velk pseudo-C: sign_of @ 0x20158 */
+int sign_of(int x) {
+    if (x >= 1) {
+        return 1;
+    }
+    return x >> 31;
+}
+-- signature
+int (int x)
+-- references
+
+-- ir
+fn sign_of @ 0x20158 (size 32)
+  blk0 @ 0x20158:
+    brif ge r0, #0x1 -> 0x20162
+  blk1 @ 0x20161:
+    br 0x2016a
+  blk2 @ 0x20162:
+    br 0x20164
+  blk3 @ 0x20164:
+    v1 = #0x1
+    br 0x20172
+  blk4 @ 0x2016a:
+    v1 = ((sext32(r0) >>> #0x1f) & #0xffffffff)
+    br 0x20172
+  blk5 @ 0x20172:
+    ret v1
+-- card
+{"addr":"0x20158","approxTokens":192,"blocks":6,"hardReasons":[],"name":"sign_of","nameSources":["symtab","dwarf"],"section":".text","size":32,"unsupported":0}

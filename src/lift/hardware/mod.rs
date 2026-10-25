@@ -8,6 +8,8 @@
 
 #[cfg(all(target_arch = "aarch64", target_os = "macos"))]
 mod aarch64;
+mod arm32;
+
 #[cfg(any(
     all(target_arch = "aarch64", target_os = "macos"),
     all(target_arch = "x86_64", unix)

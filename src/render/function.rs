@@ -1578,6 +1578,7 @@ fn machine_registers(
     let general = match ir.isa {
         crate::loader::Isa::X86_64 => 0..16,
         crate::loader::Isa::AArch64 => 0..31,
+        crate::loader::Isa::Arm32 => 0..15,
         crate::loader::Isa::Unsupported => 0..0,
     };
     let mut used = std::collections::HashSet::new();

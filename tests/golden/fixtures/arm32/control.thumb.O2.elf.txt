@@ -1,0 +1,1123 @@
+# arm32/control.thumb.O2.elf: elf arm32 no entry, 7 functions, 0 lift failures, 2 unsupported, 2 gotos
+0x20118 418 matrix_trace symtab,dwarf
+0x202bc 26 cleanup_on_error symtab,dwarf
+0x202d8 20 fallthrough symtab,dwarf
+0x202ec 46 sparse symtab,dwarf
+0x2031c 44 short_circuit symtab,dwarf
+0x20348 136 skip_negatives symtab,dwarf
+0x203d0 146 find_pair symtab,dwarf
+/* velk prelude */
+uint64_t velk_entry_stack_pointer(void); /* target entry stack pointer */
+/* end velk prelude */
+
+== 0x20118 matrix_trace
+-- decompile
+/* velk pseudo-C: matrix_trace @ 0x20118 */
+int matrix_trace(int *m, int n) {
+    uint32_t v1;
+    uint32_t v11;
+    int32_t v3;
+    uint32_t v4;
+    int32_t v5;
+    int32_t v6;
+    int32_t v7;
+    int32_t v8;
+    uint32_t v9;
+    int32_t v10;
+    int32_t v13;
+    int32_t v15;
+    int32_t v19;
+    uint32_t v28;
+    int32_t v30;
+    int32_t v40;
+    int32_t v44;
+    int32_t v55;
+
+    int32_t v2 = 1;
+    if (n < 1) {
+        m = 0x0;
+    }
+    if (n >= v2) {
+        v3 = (uint32_t)(uintptr_t)m;
+        if (n == v2) {
+            v4 = 0;
+            v5 = 0;
+        } else {
+            v6 = n & 0x7ffffffe;
+            v7 = n & 0x3;
+            v8 = n & 0x7ffffffc;
+            v4 = 0;
+            v5 = 0;
+            do {
+                v9 = v4 * n;
+                v10 = v3 + (v9 << 2);
+                if ((uint32_t)n < 4) {
+                    v2 = 0;
+                } else {
+                    v2 = 0;
+                    for (;;) {
+                        v13 = v2;
+                        v15 = v13 + 2;
+                        if (v4 == v2) {
+                            v9 = *(uint32_t *)(v10 + (v4 << 2));
+                        }
+                        if (v4 == v2) {
+                            v5 += v9;
+                        }
+                        v2 = v15 + 2;
+                        v19 = v2 - 2;
+                        if (v4 == v2 - 2) {
+                            v9 = *(uint32_t *)(v10 + (v4 << 2));
+                        }
+                        if (v4 == v19) {
+                            v5 += v9;
+                        }
+                        if (v2 == v8) {
+                            break;
+                        }
+                    }
+                    if (v7 == 0) {
+                        goto L_201c0;
+                    }
+                    v2 = v13 + 4;
+                }
+                if (v4 == v2) {
+                    v9 = *(uint32_t *)(v10 + (v4 << 2));
+                }
+                if (v4 == v2) {
+                    v5 += v9;
+                }
+                if (v7 != 1) {
+                    v9 = v2 + 1;
+                    v15 = v9;
+                    if (v4 == v9) {
+                        v9 = *(uint32_t *)(v10 + (v4 << 2));
+                    }
+                    if (v4 == v15) {
+                        v5 += v9;
+                    }
+                    if (v7 != 2) {
+                        v9 = v2 + 2;
+                        v2 = v9;
+                        if (v4 == v9) {
+                            v9 = *(uint32_t *)(v10 + (v4 << 2));
+                        }
+                        if (v4 == v2) {
+                            v5 += v9;
+                        }
+                    }
+                }
+            L_201c0:
+                v28 = v4 | 0x1;
+                v9 = v28 * n;
+                v30 = v3 + (v9 << 2);
+                if ((uint32_t)n < 4) {
+                    v11 = 0;
+                } else {
+                    v9 = 0;
+                    for (;;) {
+                        v11 = v9;
+                        v2 = v9;
+                        if (v4 == v9) {
+                            v9 = *(uint32_t *)(v30 + (v28 << 2));
+                        }
+                        if (v4 == v2) {
+                            v5 += v9;
+                        }
+                        v9 = v11 + 4;
+                        v19 = v9 - 2;
+                        if (v4 == v9 - 2) {
+                            v1 = *(uint32_t *)(v30 + (v28 << 2));
+                        }
+                        if (v4 == v19) {
+                            v5 += v1;
+                        }
+                        if (v9 == v8) {
+                            break;
+                        }
+                    }
+                    if (v7 == 0) {
+                        goto L_2014c;
+                    }
+                    v11 += 4;
+                }
+                if (v7 != 1) {
+                    v2 = v11;
+                    if (v4 == v11) {
+                        v9 = *(uint32_t *)(v30 + (v28 << 2));
+                    }
+                    if (v4 == v2) {
+                        v5 += v9;
+                    }
+                    if (v7 != 2) {
+                        v9 = v11 + 1;
+                        v2 = v9;
+                        if (v4 == v9) {
+                            v9 = *(uint32_t *)(v30 + (v28 << 2));
+                        }
+                        if (v4 == v2) {
+                            v5 += v9;
+                        }
+                    }
+                }
+            L_2014c:
+                v4 += 2;
+            } while (v4 != v6);
+            if ((uint32_t)((uint64_t)n << 31) == 0) {
+                return v5;
+            }
+        }
+        v40 = v3 + (v4 * n << 2);
+        if ((uint32_t)n < 4) {
+            v2 = 0;
+        } else {
+            v11 = 0x7ffffffc;
+            v13 = n & 0x7ffffffc;
+            v2 = 0;
+            for (;;) {
+                v44 = v2;
+                if (v4 == v2) {
+                    v11 = *(uint32_t *)(v40 + (v4 << 2));
+                }
+                if (v4 == v2) {
+                    v5 += v11;
+                }
+                v15 = v44 + 1;
+                if (v4 == v15) {
+                    v2 = *(uint32_t *)(v40 + (v4 << 2));
+                }
+                if (v4 == v15) {
+                    v5 += v2;
+                }
+                ++v15;
+                if (v4 == v15) {
+                    v2 = *(uint32_t *)(v40 + (v4 << 2));
+                }
+                if (v4 == v15) {
+                    v5 += v2;
+                }
+                v11 = v15 + 1;
+                v15 = v11;
+                if (v4 == v11) {
+                    v2 = *(uint32_t *)(v40 + (v4 << 2));
+                }
+                if (v4 == v15) {
+                    v5 += v2;
+                }
+                v2 = v11 + 1;
+                if (v2 == v13) {
+                    break;
+                }
+            }
+            v2 = v44 + 4;
+        }
+        v55 = n & 0x3;
+        if (v4 == v2) {
+            v11 = *(uint32_t *)(v40 + (v4 << 2));
+        }
+        if (v4 == v2) {
+            v5 += v11;
+        }
+        if (v55 != 1) {
+            v55 = v2 + 1;
+            v15 = v55;
+            if (v4 == v55) {
+                v55 = *(uint32_t *)(v40 + (v4 << 2));
+            }
+            if (v4 == v15) {
+                v5 += v55;
+            }
+            v55 = v2 + 2;
+            v2 = v55;
+            if (v4 == v55) {
+                v55 = *(uint32_t *)(v40 + (v4 << 2));
+            }
+            if (v4 != v2) {
+                return v5;
+            }
+            v5 += v55;
+            return v5;
+        }
+        return v5;
+    }
+    return (uint32_t)(uintptr_t)m;
+}
+-- signature
+int (int * m, int n)
+-- references
+
+-- ir
+fn matrix_trace @ 0x20118 (size 418)
+  blk0 @ 0x20118:
+    v1 = r1
+    v2 = #0x1
+    brif ge r1, #0x1 -> 0x2011e
+  blk1 @ 0x2011d:
+    r0 = #0x0
+  blk2 @ 0x2011e:
+    brif ge v1, v2 -> 0x20120
+  blk3 @ 0x2011f:
+    ret r0
+  blk4 @ 0x20120:
+    v3 = r0
+    brif eq v1, v2 -> 0x20128
+  blk5 @ 0x20127:
+    br 0x2012e
+  blk6 @ 0x20128:
+    v4 = #0x0
+    v5 = #0x0
+    br 0x20230
+  blk7 @ 0x2012e:
+    v6 = (r1 & #0x7ffffffe)
+    v7 = (r1 & #0x3)
+    v8 = (r1 & #0x7ffffffc)
+    v4 = #0x0
+    v5 = #0x0
+    br 0x20152
+  blk8 @ 0x2014c:
+    v4 = ((v4 + #0x2) & #0xffffffff)
+    brif ne v4, v6 -> 0x20152
+  blk9 @ 0x20151:
+    br 0x2022c
+  blk10 @ 0x20152:
+    v9 = ((v4 * r1) & #0xffffffff)
+    v10 = ((v3 + (v9 << #0x2)) & #0xffffffff)
+    brif cc r1, #0x4 -> 0x2015e
+  blk11 @ 0x2015d:
+    br 0x20164
+  blk12 @ 0x2015e:
+    v2 = #0x0
+    br 0x20192
+  blk13 @ 0x20164:
+    v2 = #0x0
+  blk14 @ 0x20168:
+    v13 = (v2 & #0xffffffff)
+    v15 = ((v13 + #0x2) & #0xffffffff)
+    brif ne v4, v2 -> 0x20176
+  blk15 @ 0x20173:
+    v9 = load32(((v10 + (v4 << #0x2)) & #0xffffffff))
+  blk16 @ 0x20176:
+    brif ne v4, v2 -> 0x20178
+  blk17 @ 0x20177:
+    v5 = ((v5 + v9) & #0xffffffff)
+  blk18 @ 0x20178:
+    v2 = ((v15 + #0x2) & #0xffffffff)
+    v19 = (v2 - #0x2)
+    brif ne v4, (v2 - #0x2) -> 0x20184
+  blk19 @ 0x20181:
+    v9 = load32(((v10 + (v4 << #0x2)) & #0xffffffff))
+  blk20 @ 0x20184:
+    brif ne v4, v19 -> 0x20186
+  blk21 @ 0x20185:
+    v5 = ((v5 + v9) & #0xffffffff)
+  blk22 @ 0x20186:
+    brif eq v2, v8 -> 0x2018a
+  blk23 @ 0x20189:
+    br 0x20168
+  blk24 @ 0x2018a:
+    brif ne v7, #0x0 -> 0x20190
+  blk25 @ 0x2018f:
+    br 0x201c0
+  blk26 @ 0x20190:
+    v2 = ((v13 + #0x4) & #0xffffffff)
+  blk27 @ 0x20192:
+    brif ne v4, v2 -> 0x2019a
+  blk28 @ 0x20197:
+    v9 = load32(((v10 + (v4 << #0x2)) & #0xffffffff))
+  blk29 @ 0x2019a:
+    brif ne v4, v2 -> 0x2019c
+  blk30 @ 0x2019b:
+    v5 = ((v5 + v9) & #0xffffffff)
+  blk31 @ 0x2019c:
+    brif ne v7, #0x1 -> 0x201a2
+  blk32 @ 0x201a1:
+    br 0x201c0
+  blk33 @ 0x201a2:
+    v9 = ((v2 + #0x1) & #0xffffffff)
+    v15 = (v9 & #0xffffffff)
+    brif ne v4, v9 -> 0x201ac
+  blk34 @ 0x201a9:
+    v9 = load32(((v10 + (v4 << #0x2)) & #0xffffffff))
+  blk35 @ 0x201ac:
+    brif ne v4, v15 -> 0x201ae
+  blk36 @ 0x201ad:
+    v5 = ((v5 + v9) & #0xffffffff)
+  blk37 @ 0x201ae:
+    brif ne v7, #0x2 -> 0x201b4
+  blk38 @ 0x201b3:
+    br 0x201c0
+  blk39 @ 0x201b4:
+    v9 = ((v2 + #0x2) & #0xffffffff)
+    v2 = (v9 & #0xffffffff)
+    brif ne v4, v9 -> 0x201be
+  blk40 @ 0x201bb:
+    v9 = load32(((v10 + (v4 << #0x2)) & #0xffffffff))
+  blk41 @ 0x201be:
+    brif ne v4, v2 -> 0x201c0
+  blk42 @ 0x201bf:
+    v5 = ((v5 + v9) & #0xffffffff)
+  blk43 @ 0x201c0:
+    v28 = ((v4 | #0x1) & #0xffffffff)
+    v9 = ((v28 * r1) & #0xffffffff)
+    v30 = ((v3 + (v9 << #0x2)) & #0xffffffff)
+    brif cc r1, #0x4 -> 0x201d0
+  blk44 @ 0x201cf:
+    br 0x201dc
+  blk45 @ 0x201d0:
+    r7 = #0x0
+    brif ne v7, #0x1 -> 0x201d8
+  blk46 @ 0x201d7:
+    br 0x2014c
+  blk47 @ 0x201d8:
+    br 0x2020e
+  blk48 @ 0x201dc:
+    v9 = #0x0
+  blk49 @ 0x201e0:
+    r7 = (v9 & #0xffffffff)
+    v2 = (v9 & #0xffffffff)
+    brif ne v4, v9 -> 0x201ea
+  blk50 @ 0x201e7:
+    v9 = load32(((v30 + (v28 << #0x2)) & #0xffffffff))
+  blk51 @ 0x201ea:
+    brif ne v4, v2 -> 0x201ec
+  blk52 @ 0x201eb:
+    v5 = ((v5 + v9) & #0xffffffff)
+  blk53 @ 0x201ec:
+    v9 = ((r7 + #0x4) & #0xffffffff)
+    v19 = (v9 - #0x2)
+    brif ne v4, (v9 - #0x2) -> 0x201fa
+  blk54 @ 0x201f7:
+    r4 = load32(((v30 + (v28 << #0x2)) & #0xffffffff))
+  blk55 @ 0x201fa:
+    brif ne v4, v19 -> 0x201fc
+  blk56 @ 0x201fb:
+    v5 = ((v5 + r4) & #0xffffffff)
+  blk57 @ 0x201fc:
+    brif eq v9, v8 -> 0x20200
+  blk58 @ 0x201ff:
+    br 0x201e0
+  blk59 @ 0x20200:
+    brif ne v7, #0x0 -> 0x20206
+  blk60 @ 0x20205:
+    br 0x2014c
+  blk61 @ 0x20206:
+    r7 = ((r7 + #0x4) & #0xffffffff)
+    brif ne v7, #0x1 -> 0x2020e
+  blk62 @ 0x2020d:
+    br 0x2014c
+  blk63 @ 0x2020e:
+    v2 = (r7 & #0xffffffff)
+    brif ne v4, r7 -> 0x20216
+  blk64 @ 0x20213:
+    v9 = load32(((v30 + (v28 << #0x2)) & #0xffffffff))
+  blk65 @ 0x20216:
+    brif ne v4, v2 -> 0x20218
+  blk66 @ 0x20217:
+    v5 = ((v5 + v9) & #0xffffffff)
+  blk67 @ 0x20218:
+    brif ne v7, #0x2 -> 0x2021e
+  blk68 @ 0x2021d:
+    br 0x2014c
+  blk69 @ 0x2021e:
+    v9 = ((r7 + #0x1) & #0xffffffff)
+    v2 = (v9 & #0xffffffff)
+    brif ne v4, v9 -> 0x20228
+  blk70 @ 0x20225:
+    v9 = load32(((v30 + (v28 << #0x2)) & #0xffffffff))
+  blk71 @ 0x20228:
+    brif ne v4, v2 -> 0x2022a
+  blk72 @ 0x20229:
+    v5 = ((v5 + v9) & #0xffffffff)
+  blk73 @ 0x2022a:
+    br 0x2014c
+  blk74 @ 0x2022c:
+    brif ne ((r1 << #0x1f) & #0xffffffff), #0x0 -> 0x20230
+  blk75 @ 0x2022f:
+    br 0x202b6
+  blk76 @ 0x20230:
+    v40 = ((v3 + (((v4 * r1) & #0xffffffff) << #0x2)) & #0xffffffff)
+    brif cc r1, #0x4 -> 0x2023c
+  blk77 @ 0x2023b:
+    br 0x20240
+  blk78 @ 0x2023c:
+    v2 = #0x0
+    br 0x20288
+  blk79 @ 0x20240:
+    r7 = #0x7ffffffc
+    v13 = (r1 & #0x7ffffffc)
+    v2 = #0x0
+  blk80 @ 0x20250:
+    v44 = v2
+    brif ne v4, v2 -> 0x2025a
+  blk81 @ 0x20257:
+    r7 = load32(((v40 + (v4 << #0x2)) & #0xffffffff))
+  blk82 @ 0x2025a:
+    brif ne v4, v2 -> 0x2025c
+  blk83 @ 0x2025b:
+    v5 = ((v5 + r7) & #0xffffffff)
+  blk84 @ 0x2025c:
+    v15 = ((v44 + #0x1) & #0xffffffff)
+    brif ne v4, v15 -> 0x20266
+  blk85 @ 0x20263:
+    v2 = load32(((v40 + (v4 << #0x2)) & #0xffffffff))
+  blk86 @ 0x20266:
+    brif ne v4, v15 -> 0x20268
+  blk87 @ 0x20267:
+    v5 = ((v5 + v2) & #0xffffffff)
+  blk88 @ 0x20268:
+    v15 = ((v15 + #0x1) & #0xffffffff)
+    brif ne v4, v15 -> 0x20272
+  blk89 @ 0x2026f:
+    v2 = load32(((v40 + (v4 << #0x2)) & #0xffffffff))
+  blk90 @ 0x20272:
+    brif ne v4, v15 -> 0x20274
+  blk91 @ 0x20273:
+    v5 = ((v5 + v2) & #0xffffffff)
+  blk92 @ 0x20274:
+    r7 = ((v15 + #0x1) & #0xffffffff)
+    v15 = (r7 & #0xffffffff)
+    brif ne v4, r7 -> 0x2027e
+  blk93 @ 0x2027b:
+    v2 = load32(((v40 + (v4 << #0x2)) & #0xffffffff))
+  blk94 @ 0x2027e:
+    brif ne v4, v15 -> 0x20280
+  blk95 @ 0x2027f:
+    v5 = ((v5 + v2) & #0xffffffff)
+  blk96 @ 0x20280:
+    v2 = ((r7 + #0x1) & #0xffffffff)
+    brif eq v2, v13 -> 0x20286
+  blk97 @ 0x20285:
+    br 0x20250
+  blk98 @ 0x20286:
+    v2 = ((v44 + #0x4) & #0xffffffff)
+  blk99 @ 0x20288:
+    v55 = (r1 & #0x3)
+    brif ne v4, v2 -> 0x20294
+  blk100 @ 0x20291:
+    r7 = load32(((v40 + (v4 << #0x2)) & #0xffffffff))
+  blk101 @ 0x20294:
+    brif ne v4, v2 -> 0x20296
+  blk102 @ 0x20295:
+    v5 = ((v5 + r7) & #0xffffffff)
+  blk103 @ 0x20296:
+    brif ne v55, #0x1 -> 0x2029e
+  blk104 @ 0x2029b:
+    ret v5
+  blk105 @ 0x2029e:
+    v55 = (v2 + #0x1)
+    v15 = v55
+    brif ne v4, v55 -> 0x202a8
+  blk106 @ 0x202a5:
+    v55 = load32(((v40 + (v4 << #0x2)) & #0xffffffff))
+  blk107 @ 0x202a8:
+    brif ne v4, v15 -> 0x202aa
+  blk108 @ 0x202a9:
+    v5 = ((v5 + v55) & #0xffffffff)
+  blk109 @ 0x202aa:
+    v55 = (v2 + #0x2)
+    v2 = v55
+    brif ne v4, v55 -> 0x202b4
+  blk110 @ 0x202b1:
+    v55 = load32(((v40 + (v4 << #0x2)) & #0xffffffff))
+  blk111 @ 0x202b4:
+    brif ne v4, v2 -> 0x202b6
+  blk112 @ 0x202b5:
+    v5 = ((v5 + v55) & #0xffffffff)
+  blk113 @ 0x202b6:
+    ret v5
+-- card
+{"addr":"0x20118","approxTokens":240,"blocks":114,"hardReasons":[],"name":"matrix_trace","nameSources":["symtab","dwarf"],"section":".text","size":418,"unsupported":0}
+
+== 0x202bc cleanup_on_error
+-- decompile
+/* velk pseudo-C: cleanup_on_error @ 0x202bc */
+int cleanup_on_error(int a, int b, int *out) {
+    int32_t v3 = -1;
+    if (a >= 0) {
+        if (b != 0) {
+            *(uint32_t *)((uint32_t)(uintptr_t)out) = (b == 0 ? 0 : a / b);
+            return 0;
+        }
+        return -1;
+    }
+    return v3;
+}
+-- signature
+int (int a, int b, int * out)
+-- references
+
+-- ir
+fn cleanup_on_error @ 0x202bc (size 26)
+  blk0 @ 0x202bc:
+    v1 = r0
+    v3 = #0xffffffff
+    brif ge r0, #0x0 -> 0x202c6
+  blk1 @ 0x202c5:
+    br 0x202d4
+  blk2 @ 0x202c6:
+    brif ne r1, #0x0 -> 0x202cc
+  blk3 @ 0x202cb:
+    ret #0xffffffff
+  blk4 @ 0x202cc:
+    store32(select eq r1, #0x0 ? #0x0, (v1 / r1), r2)
+    v3 = #0x0
+  blk5 @ 0x202d4:
+    ret v3
+-- card
+{"addr":"0x202bc","approxTokens":162,"blocks":6,"hardReasons":[],"name":"cleanup_on_error","nameSources":["symtab","dwarf"],"section":".text","size":26,"unsupported":0}
+
+== 0x202d8 fallthrough
+-- decompile
+/* velk pseudo-C: fallthrough @ 0x202d8 */
+int fallthrough(int x) {
+    uint32_t v3;
+
+    uint32_t v1 = x;
+    uint32_t v2 = 3;
+    if ((uint32_t)x > 3) {
+        x = -1;
+    }
+    if (v1 <= v2) {
+        v3 = 0x114;
+    }
+    if (v1 <= v2) {
+        v3 = v3 & 0xffff | 0x10000;
+    }
+    if (v1 > v2) {
+        return x;
+    }
+    x = *(uint8_t *)(v3 + x);
+    return x;
+}
+-- signature
+int (int x)
+-- references
+
+-- ir
+fn fallthrough @ 0x202d8 (size 20)
+  blk0 @ 0x202d8:
+    v1 = r0
+    v2 = #0x3
+    brif ls r0, #0x3 -> 0x202e0
+  blk1 @ 0x202dd:
+    r0 = #0xffffffff
+  blk2 @ 0x202e0:
+    brif hi v1, v2 -> 0x202e4
+  blk3 @ 0x202e1:
+    r1 = #0x114
+  blk4 @ 0x202e4:
+    brif hi v1, v2 -> 0x202e8
+  blk5 @ 0x202e5:
+    r1 = (((r1 & #0xffff) | #0x10000) & #0xffffffff)
+  blk6 @ 0x202e8:
+    brif hi v1, v2 -> 0x202ea
+  blk7 @ 0x202e9:
+    r0 = (load8(((r1 + r0) & #0xffffffff)) & #0xffffffff)
+  blk8 @ 0x202ea:
+    ret r0
+-- card
+{"addr":"0x202d8","approxTokens":138,"blocks":9,"hardReasons":[],"name":"fallthrough","nameSources":["symtab","dwarf"],"section":".text","size":20,"unsupported":0}
+
+== 0x202ec sparse
+-- decompile
+/* velk pseudo-C: sparse @ 0x202ec */
+int sparse(int x) {
+    int32_t v1 = x;
+    int32_t v2 = 1000;
+    if (x < 1000) {
+        v1 = x;
+        v2 = 1;
+        if (x == 1) {
+            x = 10;
+        }
+        if (v1 != v2) {
+            v1 = x;
+            v2 = 100;
+            if (x == 100) {
+                x = 20;
+            }
+            if (v1 != v2) {
+                return 0;
+            }
+            return x;
+        }
+        return x;
+    }
+    if (v1 == v2) {
+        x = 30;
+    }
+    if (v1 != v2) {
+        v1 = x;
+        v2 = 10000;
+        if (x == 10000) {
+            x = 40;
+        }
+        if (v1 != v2) {
+            return 0;
+        }
+        return x;
+    }
+    return x;
+}
+-- signature
+int (int x)
+-- references
+
+-- ir
+fn sparse @ 0x202ec (size 46)
+  blk0 @ 0x202ec:
+    v1 = r0
+    v2 = #0x3e8
+    brif lt r0, #0x3e8 -> 0x202f2
+  blk1 @ 0x202f1:
+    br 0x20306
+  blk2 @ 0x202f2:
+    v1 = r0
+    v2 = #0x1
+    brif ne r0, #0x1 -> 0x202f8
+  blk3 @ 0x202f7:
+    r0 = #0xa
+  blk4 @ 0x202f8:
+    brif ne v1, v2 -> 0x202fa
+  blk5 @ 0x202f9:
+    ret r0
+  blk6 @ 0x202fa:
+    v1 = r0
+    v2 = #0x64
+    brif ne r0, #0x64 -> 0x20300
+  blk7 @ 0x202ff:
+    r0 = #0x14
+  blk8 @ 0x20300:
+    brif ne v1, v2 -> 0x20302
+  blk9 @ 0x20301:
+    ret r0
+  blk10 @ 0x20302:
+    ret #0x0
+  blk11 @ 0x20306:
+    brif ne v1, v2 -> 0x2030a
+  blk12 @ 0x20309:
+    r0 = #0x1e
+  blk13 @ 0x2030a:
+    brif ne v1, v2 -> 0x2030c
+  blk14 @ 0x2030b:
+    ret r0
+  blk15 @ 0x2030c:
+    v1 = r0
+    v2 = #0x2710
+    brif ne r0, #0x2710 -> 0x20316
+  blk16 @ 0x20315:
+    r0 = #0x28
+  blk17 @ 0x20316:
+    brif ne v1, v2 -> 0x20318
+  blk18 @ 0x20317:
+    ret r0
+  blk19 @ 0x20318:
+    br 0x20302
+-- card
+{"addr":"0x202ec","approxTokens":222,"blocks":20,"hardReasons":[],"name":"sparse","nameSources":["symtab","dwarf"],"section":".text","size":46,"unsupported":0}
+
+== 0x2031c short_circuit
+-- decompile
+/* velk pseudo-C: short_circuit @ 0x2031c */
+int short_circuit(int *p, int n) {
+    int32_t v4;
+    int32_t v5;
+    int32_t v6;
+    int32_t v7;
+    int32_t v8;
+
+    int32_t v1 = (uint32_t)(uintptr_t)p;
+    int32_t v2 = (uint32_t)(uintptr_t)p;
+    int32_t v3 = 0;
+    if (v2 != 0) {
+        if (n >= 1) {
+            v4 = *(uint32_t *)((uint32_t)v1);
+            v5 = v4;
+            v6 = 1;
+            if (v4 == 1) {
+                v4 = 1;
+            }
+            if (v5 != v6) {
+                v7 = *(uint32_t *)((v1 + ((uint64_t)n << 2) - 4) & 0xffffffff) - 1;
+                /* unsupported: ARM clz.w r0, r0 at 0x20340 */
+                v8 = (uint32_t)(uintptr_t)p >> 5;
+                v3 = (uint32_t)(uintptr_t)p >> 5;
+                return v3;
+            }
+            return v4;
+        }
+        return v3;
+    }
+    return 0;
+}
+-- signature
+int (int * p, int n)
+-- references
+
+-- ir
+fn short_circuit @ 0x2031c (size 44)
+  blk0 @ 0x2031c:
+    v1 = (r0 & #0xffffffff)
+    v2 = r0
+    v3 = #0x0
+    brif ne v2, #0x0 -> 0x20328
+  blk1 @ 0x20327:
+    ret #0x0
+  blk2 @ 0x20328:
+    brif ge r1, #0x1 -> 0x2032c
+  blk3 @ 0x2032b:
+    br 0x20346
+  blk4 @ 0x2032c:
+    v4 = load32(v1)
+    v5 = v4
+    v6 = #0x1
+    brif ne v4, #0x1 -> 0x20334
+  blk5 @ 0x20333:
+    v4 = #0x1
+  blk6 @ 0x20334:
+    brif ne v5, v6 -> 0x20336
+  blk7 @ 0x20335:
+    ret v4
+  blk8 @ 0x20336:
+    v7 = ((load32((((v1 + (r1 << #0x2)) - #0x4) & #0xffffffff)) - #0x1) & #0xffffffff)
+    unsupported: ARM clz.w r0, r0 at 0x20340
+    v8 = (r0 >> #0x5)
+    v3 = ((r0 >> #0x5) & #0xffffffff)
+  blk9 @ 0x20346:
+    ret v3
+-- card
+{"addr":"0x2031c","approxTokens":204,"blocks":10,"hardReasons":[],"name":"short_circuit","nameSources":["symtab","dwarf"],"section":".text","size":44,"unsupported":1}
+
+== 0x20348 skip_negatives
+-- decompile
+/* velk pseudo-C: skip_negatives @ 0x20348 */
+int skip_negatives(int *p, int n) {
+    uint64_t sp = velk_entry_stack_pointer();
+    uint32_t v1;
+    uint32_t v16;
+    uint32_t v17;
+    uint32_t v18;
+    uint32_t v19;
+    uint32_t v24;
+    uint32_t v25;
+    int32_t t1;
+    int32_t v3;
+    uint32_t v4;
+    int32_t v5;
+    int32_t v6;
+    int32_t v7;
+    int32_t v8;
+    int32_t v9;
+    int32_t v10;
+    int32_t v11;
+    int32_t v12;
+    int32_t v13;
+    int32_t v14;
+    int32_t v15;
+    int32_t v20;
+    int32_t v21;
+    int32_t v22;
+    int32_t v23;
+
+    int32_t v2 = 1;
+    if (n < 1) {
+        p = 0x0;
+    }
+    if (n >= v2) {
+        v24 = n & 0x3;
+        v3 = (uint32_t)n >> 2;
+        v4 = (uint32_t)n >> 2;
+        v16 = 0;
+        if (v3 != 0) {
+            *(uint32_t *)(sp - 0x10) = v17;
+            *(uint32_t *)(sp - 0xc) = v18;
+            *(uint32_t *)(sp - 0x8) = v19;
+            *(uint32_t *)(sp - 0x4) = v25;
+            v1 = (uint32_t)(uintptr_t)p - 16;
+            v5 = -(v4 << 2);
+            v6 = 0;
+            for (;;) {
+                v7 = *(uint32_t *)(v1 + 16);
+                v8 = v16 - 4;
+                t1 = v7 >> 31;
+                v9 = v1 + 20;
+                v10 = v6 + (v7 & (t1 ^ 0xffffffff));
+                /* unsupported: ARM ldm r6, {r4, r5, r6} at 0x2037a */
+                t1 = (int32_t)v17 >> 31;
+                v11 = v17 & (t1 ^ 0xffffffff);
+                v12 = n + v11;
+                t1 = (int32_t)v18 >> 31;
+                v13 = v18 & (t1 ^ 0xffffffff);
+                v14 = v12 + v13;
+                t1 = (int32_t)v19 >> 31;
+                v15 = v19 & (t1 ^ 0xffffffff);
+                v6 = v14 + v15;
+                if (v25 == v16) {
+                    break;
+                }
+            }
+            if (v24 == 0) {
+                return v6;
+            }
+            v16 = -v16;
+        } else {
+            v6 = 0;
+        }
+        v20 = *(uint32_t *)((uint32_t)(uintptr_t)p + (v16 << 2));
+        t1 = v20 >> 31;
+        v6 += (v20 & (t1 ^ 0xffffffff));
+        if (v24 != 1) {
+            v21 = (uint32_t)(uintptr_t)p + (v16 << 2);
+            v22 = *(uint32_t *)((v21 + 4) & 0xffffffff);
+            t1 = v22 >> 31;
+            v6 += (v22 & (t1 ^ 0xffffffff));
+            if (v24 != 2) {
+                v23 = *(uint32_t *)((v21 + 8) & 0xffffffff);
+                t1 = v23 >> 31;
+                v6 += (v23 & (t1 ^ 0xffffffff));
+                return v6;
+            }
+            return v6;
+        }
+        return v6;
+    }
+    return (uint32_t)(uintptr_t)p;
+}
+-- signature
+int (int * p, int n)
+-- references
+
+-- ir
+fn skip_negatives @ 0x20348 (size 136)
+  blk0 @ 0x20348:
+    v1 = r1
+    v2 = #0x1
+    brif ge r1, #0x1 -> 0x2034e
+  blk1 @ 0x2034d:
+    r0 = #0x0
+  blk2 @ 0x2034e:
+    brif ge v1, v2 -> 0x20350
+  blk3 @ 0x2034f:
+    ret r0
+  blk4 @ 0x20350:
+    r12 = (r1 & #0x3)
+    v3 = (r1 >> #0x2)
+    v4 = ((r1 >> #0x2) & #0xffffffff)
+    r3 = #0x0
+    brif ne v3, #0x0 -> 0x2035c
+  blk5 @ 0x2035b:
+    br 0x203a0
+  blk6 @ 0x2035c:
+    store32(r4, (sp + #0xfffffffffffffff0))
+    store32(r5, (sp + #0xfffffffffffffff4))
+    store32(r6, (sp + #0xfffffffffffffff8))
+    store32(lr, (sp + #0xfffffffffffffffc))
+    r2 = ((r0 - #0x10) & #0xffffffff)
+    v5 = ((#0x0 - (v4 << #0x2)) & #0xffffffff)
+    v6 = #0x0
+  blk7 @ 0x2036c:
+    v7 = load32(((r2 + #0x10) & #0xffffffff))
+    v8 = ((r3 - #0x4) & #0xffffffff)
+    t1 = (sext32(v7) >>> #0x1f)
+    v9 = ((r2 + #0x14) & #0xffffffff)
+    v10 = ((v6 + (v7 & ((t1 & #0xffffffff) ^ #0xffffffff))) & #0xffffffff)
+    unsupported: ARM ldm r6, {r4, r5, r6} at 0x2037a
+    t1 = (sext32(r4) >>> #0x1f)
+    v11 = ((r4 & ((t1 & #0xffffffff) ^ #0xffffffff)) & #0xffffffff)
+    v12 = ((r1 + v11) & #0xffffffff)
+    t1 = (sext32(r5) >>> #0x1f)
+    v13 = ((r5 & ((t1 & #0xffffffff) ^ #0xffffffff)) & #0xffffffff)
+    v14 = ((v12 + v13) & #0xffffffff)
+    t1 = (sext32(r6) >>> #0x1f)
+    v15 = ((r6 & ((t1 & #0xffffffff) ^ #0xffffffff)) & #0xffffffff)
+    v6 = ((v14 + v15) & #0xffffffff)
+    brif eq lr, r3 -> 0x20392
+  blk8 @ 0x20391:
+    br 0x2036c
+  blk9 @ 0x20392:
+    brif ne r12, #0x0 -> 0x2039c
+  blk10 @ 0x2039b:
+    br 0x203cc
+  blk11 @ 0x2039c:
+    r3 = ((#0x0 - r3) & #0xffffffff)
+    br 0x203a2
+  blk12 @ 0x203a0:
+    v6 = #0x0
+  blk13 @ 0x203a2:
+    v20 = load32(((r0 + (r3 << #0x2)) & #0xffffffff))
+    t1 = (sext32(v20) >>> #0x1f)
+    v6 = ((v6 + (v20 & ((t1 & #0xffffffff) ^ #0xffffffff))) & #0xffffffff)
+    brif ne r12, #0x1 -> 0x203b2
+  blk14 @ 0x203b1:
+    br 0x203cc
+  blk15 @ 0x203b2:
+    v21 = ((r0 + (r3 << #0x2)) & #0xffffffff)
+    v22 = load32(((v21 + #0x4) & #0xffffffff))
+    t1 = (sext32(v22) >>> #0x1f)
+    v6 = ((v6 + (v22 & ((t1 & #0xffffffff) ^ #0xffffffff))) & #0xffffffff)
+    brif ne r12, #0x2 -> 0x203c4
+  blk16 @ 0x203c3:
+    br 0x203cc
+  blk17 @ 0x203c4:
+    v23 = load32(((v21 + #0x8) & #0xffffffff))
+    t1 = (sext32(v23) >>> #0x1f)
+    v6 = ((v6 + (v23 & ((t1 & #0xffffffff) ^ #0xffffffff))) & #0xffffffff)
+  blk18 @ 0x203cc:
+    ret (v6 & #0xffffffff)
+-- card
+{"addr":"0x20348","approxTokens":240,"blocks":19,"hardReasons":[],"name":"skip_negatives","nameSources":["symtab","dwarf"],"section":".text","size":136,"unsupported":1}
+
+== 0x203d0 find_pair
+-- decompile
+/* velk pseudo-C: find_pair @ 0x203d0 */
+struct S1 {
+    uint8_t gap_0x0[0x4];
+    int32_t field_0x4;
+    int32_t field_0x8;
+    int32_t field_0xc;
+    int32_t field_0x10;
+};
+int find_pair(int *p, int n, int target) {
+    int32_t v3;
+    int32_t v4;
+    uint32_t v5;
+    int32_t v6;
+    int32_t v7;
+    uint32_t v8;
+    struct S1 *v9;
+    int32_t v10;
+
+    int32_t v2 = 1;
+    if (n < 1) {
+        p = (int *)0xffffffff;
+    }
+    if (n >= v2) {
+        v3 = n - 1;
+        v4 = -n;
+        v5 = 0;
+        do {
+            v6 = v5 + 1;
+            if (v6 < n) {
+                v7 = *(uint32_t *)((uint32_t)(uintptr_t)p + (v5 << 2));
+                v8 = v5;
+                for (;;) {
+                    v9 = (struct S1 *)((uint32_t)(uintptr_t)p + (v8 << 2));
+                    if (v9->field_0x4 + v7 != target) {
+                        v10 = v4 + v8;
+                        if (v10 == 0xfffffffe) {
+                            break;
+                        }
+                        if (v9->field_0x8 + v7 == target) {
+                            return v8 + 2 + v5 * n;
+                        }
+                        if (v10 != 0xfffffffd) {
+                            if (v9->field_0xc + v7 == target) {
+                                return v8 + 3 + v5 * n;
+                            }
+                            if (v10 + 4 != 0) {
+                                v8 += 4;
+                                if (v9->field_0x10 + v7 == target) {
+                                    return v8 + v5 * n;
+                                }
+                                if (v3 == v8) {
+                                    break;
+                                }
+                                continue;
+                            }
+                            break;
+                        }
+                        break;
+                    }
+                    ++v8;
+                    return v8 + v5 * n;
+                }
+            }
+            v5 = v6;
+        } while (v6 != n);
+        return -1;
+    }
+    return (uint32_t)(uintptr_t)p;
+}
+-- signature
+int (int * p, int n, int target)
+-- references
+
+-- ir
+fn find_pair @ 0x203d0 (size 146)
+  blk0 @ 0x203d0:
+    v1 = r1
+    v2 = #0x1
+    brif ge r1, #0x1 -> 0x203d8
+  blk1 @ 0x203d5:
+    r0 = #0xffffffff
+  blk2 @ 0x203d8:
+    brif ge v1, v2 -> 0x203da
+  blk3 @ 0x203d9:
+    ret r0
+  blk4 @ 0x203da:
+    v3 = (r1 - #0x1)
+    v4 = (#0x0 - r1)
+    v5 = #0x0
+    br 0x203f2
+  blk5 @ 0x203ec:
+    v5 = v6
+    brif ne v6, r1 -> 0x203f2
+  blk6 @ 0x203f1:
+    br 0x2045a
+  blk7 @ 0x203f2:
+    v6 = (v5 + #0x1)
+    brif lt v6, r1 -> 0x203fa
+  blk8 @ 0x203f9:
+    br 0x203ec
+  blk9 @ 0x203fa:
+    v7 = load32(((r0 + (v5 << #0x2)) & #0xffffffff))
+    v8 = v5
+  blk10 @ 0x20400:
+    v9 = ((r0 + (v8 << #0x2)) & #0xffffffff)
+    brif ne ((load32((v9 + #0x4)) + v7) & #0xffffffff), r2 -> 0x2040c
+  blk11 @ 0x2040b:
+    br 0x2043c
+  blk12 @ 0x2040c:
+    v10 = (v4 + v8)
+    brif ne v10, #0xfffffffe -> 0x20414
+  blk13 @ 0x20413:
+    br 0x203ec
+  blk14 @ 0x20414:
+    brif ne ((load32((v9 + #0x8)) + v7) & #0xffffffff), r2 -> 0x2041c
+  blk15 @ 0x2041b:
+    br 0x20446
+  blk16 @ 0x2041c:
+    brif ne v10, #0xfffffffd -> 0x20420
+  blk17 @ 0x2041f:
+    br 0x203ec
+  blk18 @ 0x20420:
+    brif ne ((load32((v9 + #0xc)) + v7) & #0xffffffff), r2 -> 0x20428
+  blk19 @ 0x20427:
+    br 0x20450
+  blk20 @ 0x20428:
+    brif ne ((v10 + #0x4) & #0xffffffff), #0x0 -> 0x2042c
+  blk21 @ 0x2042b:
+    br 0x203ec
+  blk22 @ 0x2042c:
+    v8 = (v8 + #0x4)
+    brif ne ((load32((v9 + #0x10)) + v7) & #0xffffffff), r2 -> 0x20436
+  blk23 @ 0x20435:
+    br 0x2043e
+  blk24 @ 0x20436:
+    brif eq v3, v8 -> 0x2043a
+  blk25 @ 0x20439:
+    br 0x20400
+  blk26 @ 0x2043a:
+    br 0x203ec
+  blk27 @ 0x2043c:
+    v8 = (v8 + #0x1)
+  blk28 @ 0x2043e:
+    ret ((v8 + (v5 * r1)) & #0xffffffff)
+  blk29 @ 0x20446:
+    ret (((v8 + #0x2) + (v5 * r1)) & #0xffffffff)
+  blk30 @ 0x20450:
+    ret (((v8 + #0x3) + (v5 * r1)) & #0xffffffff)
+  blk31 @ 0x2045a:
+    ret #0xffffffff
+-- card
+{"addr":"0x203d0","approxTokens":240,"blocks":32,"hardReasons":[],"name":"find_pair","nameSources":["symtab","dwarf"],"section":".text","size":146,"structures":["struct S1 {\n    uint8_t gap_0x0[0x4];\n    int32_t field_0x4;\n    int32_t field_0x8;\n    int32_t field_0xc;\n    int32_t field_0x10;\n};"],"unsupported":0}

@@ -54,6 +54,8 @@ pub enum Isa {
     X86_64,
     #[serde(rename = "aarch64")]
     AArch64,
+    #[serde(rename = "arm32")]
+    Arm32,
     #[serde(rename = "unsupported")]
     Unsupported,
 }
@@ -63,6 +65,7 @@ impl fmt::Display for Isa {
         f.write_str(match self {
             Isa::X86_64 => "x86_64",
             Isa::AArch64 => "aarch64",
+            Isa::Arm32 => "arm32",
             Isa::Unsupported => "unsupported",
         })
     }
@@ -196,6 +199,8 @@ pub struct Image {
     codeview: codeview::Data,
     pub format: Format,
     pub isa: Isa,
+    /// ARM mapping symbols and function entry modes, keyed by physical address.
+    pub arm_modes: BTreeMap<u64, ArmMode>,
     /// The byte order of the file's data, which its debug information
     /// is read in; None when unknown.
     byte_order: Option<object::Endianness>,
@@ -252,7 +257,30 @@ pub struct Image {
     pub installs: std::sync::Mutex<HashMap<u64, Option<u64>>>,
 }
 
+/// The instruction mode or data selected by ARM mapping symbols.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ArmMode {
+    Arm,
+    Thumb,
+    Data,
+}
+
 impl Image {
+    pub(crate) fn code_address(&self, address: u64) -> u64 {
+        crate::arch::code_address(self.isa, address)
+    }
+
+    /// The ARM instruction mode at an address, including its Thumb bit.
+    pub fn arm_mode(&self, address: u64) -> ArmMode {
+        if address & 1 != 0 {
+            return ArmMode::Thumb;
+        }
+        self.arm_modes
+            .range(..=address)
+            .next_back()
+            .map_or(ArmMode::Arm, |(_, mode)| *mode)
+    }
+
     pub(crate) fn byte_order(&self) -> Option<object::Endianness> {
         self.byte_order
     }
@@ -344,8 +372,9 @@ impl Image {
             codeview: Default::default(),
             format: Format::Elf,
             isa,
+            arm_modes: BTreeMap::new(),
             byte_order: match isa {
-                Isa::X86_64 | Isa::AArch64 => Some(object::Endianness::Little),
+                Isa::X86_64 | Isa::AArch64 | Isa::Arm32 => Some(object::Endianness::Little),
                 Isa::Unsupported => None,
             },
             entry: None,
@@ -424,7 +453,7 @@ impl Image {
                     aarch64_prologues(bytes, section.vaddr, &self.relocated_branches())
                 }
                 crate::loader::Isa::X86_64 => x86_prologues(bytes, section.vaddr),
-                crate::loader::Isa::Unsupported => continue,
+                crate::loader::Isa::Arm32 | crate::loader::Isa::Unsupported => continue,
             };
             // Code begins with a function unless padding opens the section.
             let opens = match self.isa {
@@ -625,6 +654,7 @@ fn isa_of(arch: object::Architecture) -> Isa {
     match arch {
         object::Architecture::X86_64 => Isa::X86_64,
         object::Architecture::Aarch64 => Isa::AArch64,
+        object::Architecture::Arm => Isa::Arm32,
         _ => Isa::Unsupported,
     }
 }
@@ -744,10 +774,23 @@ pub fn load(path: &Path) -> Result<Image> {
             .copied()
             .unwrap_or(section.address());
         for (offset, relocation) in section.relocations() {
-            if !matches!(
-                relocation.kind(),
-                object::RelocationKind::Relative | object::RelocationKind::PltRelative
-            ) {
+            let arm_branch = isa_of(file.architecture()) == Isa::Arm32
+                && matches!(
+                    relocation.flags(),
+                    object::RelocationFlags::Elf {
+                        r_type: object::elf::R_ARM_CALL
+                            | object::elf::R_ARM_JUMP24
+                            | object::elf::R_ARM_THM_PC22
+                            | object::elf::R_ARM_THM_JUMP24
+                            | object::elf::R_ARM_PC24
+                    }
+                );
+            if !arm_branch
+                && !matches!(
+                    relocation.kind(),
+                    object::RelocationKind::Relative | object::RelocationKind::PltRelative
+                )
+            {
                 continue;
             }
             let object::RelocationTarget::Symbol(index) = relocation.target() else {
@@ -800,6 +843,36 @@ pub fn load(path: &Path) -> Result<Image> {
         }
     }
 
+    let arm = isa_of(file.architecture()) == Isa::Arm32;
+    let mut arm_modes = BTreeMap::new();
+    if arm {
+        for sym in file.symbols().chain(file.dynamic_symbols()) {
+            let address = relocate::symbol_address(&sym, &bases);
+            if sym.kind() == object::SymbolKind::Text && !sym.is_undefined() {
+                arm_modes.insert(
+                    address & !1,
+                    if address & 1 == 0 {
+                        ArmMode::Arm
+                    } else {
+                        ArmMode::Thumb
+                    },
+                );
+            }
+        }
+        for sym in file.symbols() {
+            let address = relocate::symbol_address(&sym, &bases);
+            let mode = match sym.name().unwrap_or("").split('.').next().unwrap_or("") {
+                "$a" => Some(ArmMode::Arm),
+                "$t" => Some(ArmMode::Thumb),
+                "$d" => Some(ArmMode::Data),
+                _ => None,
+            };
+            if let Some(mode) = mode {
+                arm_modes.insert(address & !1, mode);
+            }
+        }
+    }
+    let physical = |address: u64| if arm { address & !1 } else { address };
     let mut functions = BTreeMap::new();
     for sym in file.symbols() {
         if sym.kind() != object::SymbolKind::Text || sym.is_undefined() {
@@ -807,7 +880,7 @@ pub fn load(path: &Path) -> Result<Image> {
         }
         upsert(
             &mut functions,
-            relocate::symbol_address(&sym, &bases),
+            physical(relocate::symbol_address(&sym, &bases)),
             symbol_name(&sym),
             (sym.size() > 0).then_some(sym.size()),
             NameSource::Symtab,
@@ -822,7 +895,7 @@ pub fn load(path: &Path) -> Result<Image> {
         }
         upsert(
             &mut functions,
-            sym.address(),
+            physical(sym.address()),
             symbol_name(&sym),
             (sym.size() > 0).then_some(sym.size()),
             NameSource::Dynamic,
@@ -844,8 +917,17 @@ pub fn load(path: &Path) -> Result<Image> {
         }
     }
 
-    let address = file.entry();
-    let entry = (address != 0
+    if arm && file.entry() != 0 {
+        arm_modes
+            .entry(file.entry() & !1)
+            .or_insert(if file.entry() & 1 == 0 {
+                ArmMode::Arm
+            } else {
+                ArmMode::Thumb
+            });
+    }
+    let address = physical(file.entry());
+    let entry = (file.entry() != 0
         && !(format_of(kind) == Format::Pe && address == file.relative_address_base()))
     .then_some(address);
     if let Some(entry) = entry {
@@ -866,6 +948,7 @@ pub fn load(path: &Path) -> Result<Image> {
         codeview,
         format: format_of(kind),
         isa: isa_of(file.architecture()),
+        arm_modes,
         byte_order: Some(if file.is_little_endian() {
             object::Endianness::Little
         } else {

@@ -1,0 +1,80 @@
+# arm32/switch_value_table.arm.O0.elf: elf arm32 no entry, 1 functions, 0 lift failures, 2 unsupported, 0 gotos
+0x200e4 152 dispatch symtab,dwarf
+/* velk prelude */
+uint64_t velk_entry_stack_pointer(void); /* target entry stack pointer */
+/* end velk prelude */
+
+== 0x200e4 dispatch
+-- decompile
+/* velk pseudo-C: dispatch @ 0x200e4 */
+int dispatch(int x) {
+    uint64_t sp = velk_entry_stack_pointer();
+    uint64_t v1;
+    uint64_t v8;
+    uint32_t v6;
+    uint32_t v7;
+    uint32_t v9;
+    int32_t v3;
+    int32_t v4;
+    int32_t v5;
+    uint32_t local_0; /* [sp-8] */
+    uint32_t local_1; /* [sp-4] */
+    uint32_t local_2; /* [sp-10] */
+
+    local_0 = v8;
+    local_1 = v9;
+    sp = sp - 0x8;
+    v8 = sp;
+    sp = sp - 0xc;
+    local_2 = x;
+    uint32_t v2 = x - 10;
+    *(uint32_t *)(sp) = v2;
+    if (v2 <= 4) {
+        v3 = *(uint32_t *)(sp);
+        /* unsupported: ARM adr r0, pc, 0x4 at 0x2010c */
+        v4 = *(uint32_t *)((x + (v1 << 2)) & 0xffffffff);
+        /* unsupported: ARM add pc, r0, r1 at 0x20114 */
+        {
+            uint64_t call_values[2];
+            call_values[0] = sub_20118((uint32_t)x, v1, v6, v7);
+            call_values[1] = v1; /* also returned by the call */
+            v5 = (uint32_t)(call_values[0]);
+            v1 = (uint32_t)(call_values[1]);
+        }
+        return v5;
+    }
+    *(uint32_t *)(v8 - 0x4) = 0;
+    return *(uint32_t *)(v8 - 0x4);
+}
+-- signature
+int (int x)
+-- references
+
+-- ir
+fn dispatch @ 0x200e4 (size 152)
+  blk0 @ 0x200e4:
+    store32(r11, (sp + #0xfffffffffffffff8))
+    store32(lr, (sp + #0xfffffffffffffffc))
+    sp = (sp + #0xfffffffffffffff8)
+    r11 = sp
+    sp = (sp - #0xc)
+    store32(r0, (sp + #0x4))
+    v1 = r0
+    v2 = ((v1 - #0xa) & #0xffffffff)
+    store32(v2, sp)
+    brif ls v2, #0x4 -> 0x20108
+  blk1 @ 0x20105:
+    br 0x20168
+  blk2 @ 0x20108:
+    v3 = load32(sp)
+    unsupported: ARM adr r0, pc, 0x4 at 0x2010c
+    v4 = load32(((r0 + (r1 << #0x2)) & #0xffffffff))
+    unsupported: ARM add pc, r0, r1 at 0x20114
+    v5:r0, r1 = call 0x20118(r0, r1, r2, r3)
+    ret v5
+  blk3 @ 0x20168:
+    store32(#0x0, (r11 - #0x4))
+  blk4 @ 0x20170:
+    ret load32((r11 - #0x4))
+-- card
+{"addr":"0x200e4","approxTokens":240,"blocks":5,"hardReasons":[],"name":"dispatch","nameSources":["symtab","dwarf"],"section":".text","size":152,"unsupported":2}

@@ -1,0 +1,1517 @@
+//! Decodes and lifts little-endian A32 and T32 instructions.
+
+use std::collections::HashSet;
+
+use yaxpeax_arm::armv7::{self, Instruction, Opcode, Operand, RegShiftStyle, ShiftStyle};
+
+use super::flags::{Flags, Test};
+use super::{Decoded, Machine, Summaries, Write};
+use crate::error::LiftError;
+use crate::ir::{BinOp, Block, CallKind, Cond, Expr, RegRef, Stmt};
+use crate::loader::{ArmMode, Image, Isa};
+
+pub(super) enum Step {
+    Guard {
+        condition: Cond,
+        target: u64,
+    },
+    Execute {
+        instruction: Instruction,
+        pc: u64,
+        next: u64,
+        target: Option<u64>,
+    },
+}
+
+fn signed(value: u32, bits: u32) -> i64 {
+    i64::from((value << (32 - bits)) as i32 >> (32 - bits))
+}
+
+fn target(instruction: &Instruction, bytes: &[u8], pc: u64) -> Option<u64> {
+    if !matches!(
+        instruction.opcode,
+        Opcode::B | Opcode::BL | Opcode::BLX | Opcode::CBZ | Opcode::CBNZ
+    ) {
+        return None;
+    }
+    if matches!(instruction.operands[0], Operand::Reg(_))
+        && !matches!(instruction.opcode, Opcode::CBZ | Opcode::CBNZ)
+    {
+        return None;
+    }
+    let [first, second, ..] = bytes else {
+        return None;
+    };
+    let half = u32::from(u16::from_le_bytes([*first, *second]));
+    let offset = if !instruction.thumb {
+        let [a, b, c, d, ..] = bytes else {
+            return None;
+        };
+        let word = u32::from_le_bytes([*a, *b, *c, *d]);
+        signed((word & 0xffffff) << 2, 26)
+            + 8
+            + if instruction.opcode == Opcode::BLX {
+                i64::from((word >> 23) & 2)
+            } else {
+                0
+            }
+    } else if !instruction.wide {
+        if matches!(instruction.opcode, Opcode::CBZ | Opcode::CBNZ) {
+            i64::from(((half >> 3) & 0x1f) * 2 + ((half >> 9) & 1) * 64) + 4
+        } else if half & 0xf000 == 0xd000 {
+            signed((half & 255) << 1, 9) + 4
+        } else {
+            signed((half & 2047) << 1, 12) + 4
+        }
+    } else {
+        let [_, _, third, fourth, ..] = bytes else {
+            return None;
+        };
+        let low = u32::from(u16::from_le_bytes([*third, *fourth]));
+        let s = (half >> 10) & 1;
+        let j1 = (low >> 13) & 1;
+        let j2 = (low >> 11) & 1;
+        if low & 0xd000 == 0x8000 {
+            signed(
+                s << 20 | j2 << 19 | j1 << 18 | (half & 63) << 12 | (low & 2047) << 1,
+                21,
+            ) + 4
+        } else {
+            signed(
+                s << 24
+                    | (1 ^ j1 ^ s) << 23
+                    | (1 ^ j2 ^ s) << 22
+                    | (half & 1023) << 12
+                    | (low & 2047) << 1,
+                25,
+            ) + 4
+        }
+    };
+    let base = if instruction.thumb && instruction.opcode == Opcode::BLX {
+        pc & !3
+    } else {
+        pc
+    };
+    Some((base as u32).wrapping_add(offset as u32) as u64 & !1)
+}
+
+fn decode(image: &Image, bytes: &[u8], addr: u64) -> (Vec<Decoded<Step>>, Option<String>) {
+    use yaxpeax_arch::{Decoder, ReaderBuilder};
+
+    let mut decoded = Vec::new();
+    let mut offset = 0;
+    let mut it = 0u8;
+    while offset < bytes.len() {
+        let Some(pc) = addr.checked_add(offset as u64) else {
+            return (decoded, Some("ARM instruction address overflow".into()));
+        };
+        let mode = image.arm_mode(pc & !1);
+        if mode == ArmMode::Data {
+            offset += 1;
+            continue;
+        }
+        let decoder = armv7::InstDecoder::default()
+            .allow_nonconforming(false)
+            .with_thumb_mode(mode == ArmMode::Thumb);
+        let mut reader = ReaderBuilder::<u32, u8>::read_at(&bytes[offset..], 0);
+        let mut instruction = match decoder.decode(&mut reader) {
+            Ok(instruction) => instruction,
+            Err(error) => {
+                return (
+                    decoded,
+                    Some(format!("undecodable ARM instruction at 0x{pc:x}: {error}")),
+                );
+            }
+        };
+        let len = if instruction.thumb && !instruction.wide {
+            2
+        } else {
+            4
+        };
+        let Some(next) = pc.checked_add(len as u64) else {
+            return (
+                decoded,
+                Some(format!("ARM instruction address overflow at 0x{pc:x}")),
+            );
+        };
+        let mut condition = Cond::from_code(instruction.condition as u8);
+        if instruction.opcode == Opcode::IT {
+            if it != 0 {
+                return (decoded, Some(format!("nested IT at 0x{pc:x}")));
+            }
+            let [Operand::Imm32(cond), Operand::Imm32(mask), ..] = instruction.operands else {
+                return (decoded, Some(format!("invalid IT at 0x{pc:x}")));
+            };
+            it = ((cond << 4) | mask) as u8;
+        } else if it != 0 {
+            condition = Cond::from_code(it >> 4);
+            // Narrow Thumb arithmetic implicitly sets flags only outside IT.
+            if !instruction.wide
+                && !matches!(instruction.opcode, Opcode::CMP | Opcode::CMN | Opcode::TST)
+            {
+                instruction.s = false;
+            }
+            it = if it & 7 == 0 {
+                0
+            } else {
+                (it & 0xe0) | ((it << 1) & 0x1f)
+            };
+        }
+        let destination = image
+            .relocations
+            .get(&pc)
+            .map(|value| value & !1)
+            .or_else(|| target(&instruction, &bytes[offset..], pc));
+        let body = if let Some(cond) = condition {
+            decoded.push(Decoded {
+                pc,
+                next: pc + 1,
+                instruction: Step::Guard {
+                    condition: cond.invert(),
+                    target: next,
+                },
+            });
+            pc + 1
+        } else {
+            pc
+        };
+        decoded.push(Decoded {
+            pc: body,
+            next,
+            instruction: Step::Execute {
+                instruction,
+                pc,
+                next,
+                target: destination,
+            },
+        });
+        offset += len;
+    }
+    let stop = (it != 0).then(|| "truncated ARM IT block".into());
+    (decoded, stop)
+}
+
+pub(super) fn lift(
+    image: &Image,
+    addr: u64,
+    bytes: &[u8],
+    targets: &HashSet<u64>,
+    summaries: Summaries<'_>,
+) -> Result<Vec<Block>, LiftError> {
+    if image.format != crate::loader::Format::Elf
+        || image.byte_order() != Some(object::Endianness::Little)
+        || addr > u64::from(u32::MAX)
+        || addr
+            .checked_add(bytes.len() as u64)
+            .is_none_or(|end| end > u64::from(u32::MAX) + 1)
+    {
+        return Err(LiftError::UnsupportedIsa);
+    }
+    let blocks = super::lift_continuing(
+        image,
+        summaries,
+        || Lifter {
+            image,
+            summaries,
+            stmts: Vec::new(),
+            flags: None,
+            touched: false,
+        },
+        addr,
+        bytes,
+        &|bytes, address| decode(image, bytes, address),
+        targets,
+    );
+    match blocks {
+        Ok(mut blocks) => {
+            if unsupported_declaration(image, addr)
+                && let Some(entry) = blocks.first_mut()
+            {
+                entry.stmts.insert(
+                    0,
+                    Stmt::unsupported("AAPCS32 multiword, floating-point or aggregate declaration"),
+                );
+            }
+            Ok(blocks)
+        }
+        Err(error) => Err(error),
+    }
+}
+
+fn unsupported_declaration(image: &Image, address: u64) -> bool {
+    let Some(types) = crate::loader::dwarf::function_types(image, address) else {
+        return false;
+    };
+    !crate::analysis::abi::aapcs32_words(&types)
+}
+
+pub(crate) fn listing(image: &Image, bytes: &[u8], addr: u64, max: usize) -> Vec<String> {
+    let (decoded, stop) = decode(image, bytes, addr);
+    let mut lines: Vec<_> = decoded
+        .iter()
+        .filter_map(|d| match &d.instruction {
+            Step::Execute {
+                instruction, pc, ..
+            } => Some(format!("0x{pc:<12x} {instruction}")),
+            _ => None,
+        })
+        .take(max)
+        .collect();
+    if lines.len() < max
+        && let Some(stop) = stop
+    {
+        lines.push(stop);
+    }
+    lines
+}
+
+struct Lifter<'a> {
+    image: &'a Image,
+    summaries: Summaries<'a>,
+    stmts: Vec<Stmt>,
+    flags: Option<Flags>,
+    touched: bool,
+}
+
+fn low(value: Expr) -> Expr {
+    Expr::bin(BinOp::And, value, Expr::constant(0xffff_ffff))
+}
+
+impl Lifter<'_> {
+    fn read(index: u8, pc: u64, thumb: bool) -> Expr {
+        if index == 15 {
+            Expr::constant((pc as u32).wrapping_add(if thumb { 4 } else { 8 }) as u64)
+        } else {
+            Expr::reg(u16::from(index), if index == 13 { 64 } else { 32 })
+        }
+    }
+
+    fn operand(&self, op: Operand, pc: u64, thumb: bool) -> Option<Expr> {
+        Self::operand_value(op, pc, thumb)
+    }
+
+    fn operand_value(op: Operand, pc: u64, thumb: bool) -> Option<Expr> {
+        match op {
+            Operand::Reg(reg) => Some(Self::read(reg.number(), pc, thumb)),
+            Operand::Imm12(value) => Some(Expr::constant(u64::from(value))),
+            Operand::Imm32(value) => Some(Expr::constant(u64::from(value))),
+            Operand::RegShift(shift) => {
+                let (reg, style, amount) = match shift.into_shift() {
+                    RegShiftStyle::RegImm(shift) => (
+                        shift.shiftee(),
+                        shift.stype(),
+                        Expr::constant(u64::from(shift.imm())),
+                    ),
+                    RegShiftStyle::RegReg(shift) => (
+                        shift.shiftee(),
+                        shift.stype(),
+                        Expr::bin(
+                            BinOp::And,
+                            Self::read(shift.shifter().number(), pc, thumb),
+                            Expr::constant(255),
+                        ),
+                    ),
+                };
+                shift_value(Self::read(reg.number(), pc, thumb), style, amount)
+            }
+            _ => None,
+        }
+    }
+
+    fn assign(&mut self, index: u8, value: Expr) {
+        let index = u16::from(index);
+        super::preserve_compare(
+            &mut self.flags,
+            Write::Register(index, Some(&value)),
+            &mut self.stmts,
+        );
+        // Stack analysis uses full-width IR registers; ARM values remain 32-bit.
+        let frame = matches!(index, 7 | 11)
+            && match &value {
+                Expr::Reg {
+                    index: 13,
+                    width: 64,
+                } => true,
+                Expr::Bin { lhs, .. } => matches!(
+                    lhs.as_ref(),
+                    Expr::Reg {
+                        index: 13,
+                        width: 64
+                    }
+                ),
+                _ => false,
+            };
+        let value = if index == 13 || frame {
+            value
+        } else {
+            low(value)
+        };
+        self.stmts.push(Stmt::Assign {
+            dest: RegRef { index, width: 64 },
+            value,
+        });
+    }
+
+    fn memory(&self, op: Operand, pc: u64, thumb: bool) -> Option<(Expr, Option<(u8, Expr)>)> {
+        let (base, offset, add, pre, back) = match op {
+            Operand::RegDeref(reg) => (reg, Expr::constant(0), true, true, false),
+            Operand::RegDerefPreindexOffset(reg, offset, add, back) => {
+                (reg, Expr::constant(u64::from(offset)), add, true, back)
+            }
+            Operand::RegDerefPostindexOffset(reg, offset, add, _) => {
+                (reg, Expr::constant(u64::from(offset)), add, false, true)
+            }
+            Operand::RegDerefPreindexReg(reg, offset, add, back) => {
+                (reg, Self::read(offset.number(), pc, thumb), add, true, back)
+            }
+            Operand::RegDerefPostindexReg(reg, offset, add, _) => (
+                reg,
+                Self::read(offset.number(), pc, thumb),
+                add,
+                false,
+                true,
+            ),
+            Operand::RegDerefPreindexRegShift(reg, offset, add, back) => {
+                let Some(offset) = self.operand(Operand::RegShift(offset), pc, thumb) else {
+                    return None;
+                };
+                (reg, offset, add, true, back)
+            }
+            Operand::RegDerefPostindexRegShift(reg, offset, add, _) => {
+                let Some(offset) = self.operand(Operand::RegShift(offset), pc, thumb) else {
+                    return None;
+                };
+                (reg, offset, add, false, true)
+            }
+            _ => return None,
+        };
+        let number = base.number();
+        let base = if matches!(number, 7 | 11 | 13) {
+            Expr::reg(u16::from(number), 64)
+        } else if number == 15 && thumb {
+            Expr::constant(u64::from((pc as u32).wrapping_add(4) & !3))
+        } else {
+            Self::read(number, pc, thumb)
+        };
+        let adjusted = Expr::bin(
+            if add { BinOp::Add } else { BinOp::Sub },
+            base.clone(),
+            offset,
+        );
+        let adjusted = if matches!(number, 7 | 11 | 13) {
+            adjusted
+        } else {
+            low(adjusted)
+        };
+        Some((
+            if pre { adjusted.clone() } else { base },
+            back.then_some((number, adjusted)),
+        ))
+    }
+
+    // Failure here rejects this entire instruction; step discards any partial statements.
+    fn execute(
+        &mut self,
+        instruction: &Instruction,
+        pc: u64,
+        next: u64,
+        target: Option<u64>,
+    ) -> Option<bool> {
+        let [a, b, c, d] = instruction.operands;
+        let operand = |op| Self::operand_value(op, pc, instruction.thumb);
+        match instruction.opcode {
+            Opcode::NOP | Opcode::IT => {}
+            Opcode::B => {
+                self.stmts.push(Stmt::Br { target });
+                return Some(true);
+            }
+            Opcode::CBZ | Opcode::CBNZ => {
+                let (Some(lhs), Some(target)) = (operand(a), target) else {
+                    return None;
+                };
+                self.stmts.push(Stmt::Brif {
+                    cond: if instruction.opcode == Opcode::CBZ {
+                        Cond::Eq
+                    } else {
+                        Cond::Ne
+                    },
+                    lhs,
+                    rhs: Expr::constant(0),
+                    target,
+                });
+                return Some(true);
+            }
+            Opcode::BX if matches!(a, Operand::Reg(reg) if reg.number() == 14) => {
+                self.stmts.push(Stmt::Ret {
+                    value: Expr::reg(0, 32),
+                });
+                return Some(true);
+            }
+            Opcode::BX => {
+                let Some(value) = operand(a) else {
+                    return None;
+                };
+                self.stmts.push(Stmt::BrIndirect { target: low(value) });
+                return Some(true);
+            }
+            Opcode::BL | Opcode::BLX => {
+                if target.is_some_and(|target| unsupported_declaration(self.image, target)) {
+                    self.stmts
+                        .push(Stmt::unsupported("AAPCS32 callee declaration"));
+                }
+                let through = if target.is_none() {
+                    let Some(value) = operand(a) else {
+                        return None;
+                    };
+                    Some(low(value))
+                } else {
+                    None
+                };
+                let kind = if instruction.opcode == Opcode::BX {
+                    CallKind::Tail
+                } else {
+                    CallKind::Invoke
+                };
+                if let Some(through) = through {
+                    // Capture a target in lr before the call writes its link.
+                    self.assign_temp(through);
+                    if kind == CallKind::Invoke {
+                        self.assign(14, Expr::constant(next | u64::from(instruction.thumb)));
+                    }
+                    self.stmts.push(super::call_through(
+                        kind,
+                        self.image,
+                        Expr::reg(crate::ir::EXCHANGE, 64),
+                    ));
+                } else {
+                    if kind == CallKind::Invoke {
+                        self.assign(14, Expr::constant(next | u64::from(instruction.thumb)));
+                    }
+                    self.stmts
+                        .push(super::call(kind, self.image, self.summaries, target));
+                }
+                self.flags = None;
+                self.touched = true;
+                if kind == CallKind::Tail {
+                    self.stmts.push(Stmt::Ret {
+                        value: Expr::reg(0, 32),
+                    });
+                    return Some(true);
+                }
+            }
+            Opcode::MOV | Opcode::MVN | Opcode::MOVT => {
+                let Operand::Reg(reg) = a else {
+                    return None;
+                };
+                if reg.number() == 15 {
+                    if matches!(b, Operand::Reg(reg) if reg.number() == 14)
+                        && instruction.opcode == Opcode::MOV
+                        && !instruction.s
+                    {
+                        self.stmts.push(Stmt::Ret {
+                            value: Expr::reg(0, 32),
+                        });
+                        return Some(true);
+                    }
+                    return None;
+                }
+                let source = if instruction.opcode == Opcode::MVN && c != Operand::Nothing {
+                    c
+                } else {
+                    b
+                };
+                let Some(mut value) = operand(source) else {
+                    return None;
+                };
+                if instruction.opcode == Opcode::MVN {
+                    value = Expr::bin(BinOp::Xor, value, Expr::constant(0xffff_ffff));
+                }
+                if instruction.opcode == Opcode::MOVT {
+                    value = Expr::bin(
+                        BinOp::Or,
+                        Expr::bin(
+                            BinOp::And,
+                            Self::read(reg.number(), pc, instruction.thumb),
+                            Expr::constant(65535),
+                        ),
+                        Expr::bin(BinOp::Shl, value, Expr::constant(16)),
+                    );
+                }
+                if instruction.s {
+                    self.set_flags(Flags::result(low(value.clone())));
+                }
+                self.assign(reg.number(), value);
+            }
+            Opcode::ADD
+            | Opcode::SUB
+            | Opcode::RSB
+            | Opcode::AND
+            | Opcode::ORR
+            | Opcode::EOR
+            | Opcode::BIC
+            | Opcode::MUL
+            | Opcode::CMP
+            | Opcode::CMN
+            | Opcode::TST
+            | Opcode::TEQ
+            | Opcode::LSL
+            | Opcode::LSR
+            | Opcode::ASR
+            | Opcode::ROR => {
+                let compare = matches!(
+                    instruction.opcode,
+                    Opcode::CMP | Opcode::CMN | Opcode::TST | Opcode::TEQ
+                );
+                let (left, right) = if compare || c == Operand::Nothing {
+                    (a, b)
+                } else {
+                    (b, c)
+                };
+                let Some(lhs) = operand(left) else {
+                    return None;
+                };
+                let lhs = low(lhs);
+                let Some(rhs) = operand(right) else {
+                    return None;
+                };
+                let rhs = if matches!(
+                    instruction.opcode,
+                    Opcode::LSL | Opcode::LSR | Opcode::ASR | Opcode::ROR
+                ) && matches!(right, Operand::Reg(_))
+                {
+                    Expr::bin(BinOp::And, rhs, Expr::constant(255))
+                } else {
+                    low(rhs)
+                };
+                let op = match instruction.opcode {
+                    Opcode::ADD | Opcode::CMN => BinOp::Add,
+                    Opcode::SUB | Opcode::CMP | Opcode::RSB => BinOp::Sub,
+                    Opcode::AND | Opcode::BIC | Opcode::TST => BinOp::And,
+                    Opcode::ORR => BinOp::Or,
+                    Opcode::EOR | Opcode::TEQ => BinOp::Xor,
+                    Opcode::MUL => BinOp::Mul,
+                    Opcode::LSL => BinOp::Shl,
+                    Opcode::LSR => BinOp::Shr,
+                    Opcode::ASR => BinOp::Sar,
+                    _ => BinOp::Or,
+                };
+                let (lhs, rhs) = if instruction.opcode == Opcode::RSB {
+                    (rhs, lhs)
+                } else {
+                    (lhs, rhs)
+                };
+                let value = match instruction.opcode {
+                    Opcode::LSL | Opcode::LSR | Opcode::ASR | Opcode::ROR => {
+                        let Some(value) = shift_value(
+                            lhs.clone(),
+                            match instruction.opcode {
+                                Opcode::LSL => ShiftStyle::LSL,
+                                Opcode::LSR => ShiftStyle::LSR,
+                                Opcode::ASR => ShiftStyle::ASR,
+                                _ => ShiftStyle::ROR,
+                            },
+                            rhs.clone(),
+                        ) else {
+                            return None;
+                        };
+                        value
+                    }
+                    Opcode::BIC => Expr::bin(
+                        op,
+                        lhs.clone(),
+                        Expr::bin(BinOp::Xor, rhs.clone(), Expr::constant(0xffff_ffff)),
+                    ),
+                    _ => Expr::bin(op, lhs.clone(), rhs.clone()),
+                };
+                if instruction.s || compare {
+                    let flags = match op {
+                        BinOp::Add => Flags::sum(lhs, rhs),
+                        BinOp::Sub => Flags::difference(lhs, rhs),
+                        _ => Flags::result(low(value.clone())),
+                    };
+                    self.set_flags(flags);
+                }
+                if !compare {
+                    let Operand::Reg(reg) = a else {
+                        return None;
+                    };
+                    if reg.number() == 15 {
+                        return None;
+                    }
+                    let value = if reg.number() == 13 && matches!(op, BinOp::Add | BinOp::Sub) {
+                        let left = if matches!(left, Operand::Reg(reg) if reg.number() == 13) {
+                            Expr::reg(13, 64)
+                        } else {
+                            let Some(value) = operand(left) else {
+                                return None;
+                            };
+                            value
+                        };
+                        let Some(right) = operand(right) else {
+                            return None;
+                        };
+                        Expr::bin(op, left, right)
+                    } else {
+                        value
+                    };
+                    self.assign(reg.number(), value);
+                }
+            }
+            Opcode::SDIV | Opcode::UDIV => {
+                let Operand::Reg(reg) = a else {
+                    return None;
+                };
+                if reg.number() == 15 {
+                    return None;
+                }
+                let (Some(lhs), Some(rhs)) = (operand(b), operand(c)) else {
+                    return None;
+                };
+                let value = Expr::Select {
+                    cond: Cond::Eq,
+                    lhs: Box::new(rhs.clone()),
+                    rhs: Box::new(Expr::constant(0)),
+                    then: Box::new(Expr::constant(0)),
+                    els: Box::new(Expr::bin(
+                        if instruction.opcode == Opcode::SDIV {
+                            BinOp::DivS
+                        } else {
+                            BinOp::DivU
+                        },
+                        low(lhs),
+                        low(rhs),
+                    )),
+                };
+                self.assign(reg.number(), value);
+            }
+            Opcode::MLA | Opcode::MLS => {
+                let Operand::Reg(reg) = a else {
+                    return None;
+                };
+                if reg.number() == 15 || instruction.s {
+                    return None;
+                }
+                let (Some(left), Some(right), Some(addend)) = (operand(b), operand(c), operand(d))
+                else {
+                    return None;
+                };
+                let product = Expr::bin(BinOp::Mul, left, right);
+                let value = Expr::bin(
+                    if instruction.opcode == Opcode::MLS {
+                        BinOp::Sub
+                    } else {
+                        BinOp::Add
+                    },
+                    addend,
+                    product,
+                );
+                self.assign(reg.number(), value);
+            }
+            Opcode::UXTB | Opcode::UXTH | Opcode::SXTB | Opcode::SXTH => {
+                let Operand::Reg(reg) = a else {
+                    return None;
+                };
+                if reg.number() == 15 || c != Operand::Nothing {
+                    return None;
+                }
+                let width = if matches!(instruction.opcode, Opcode::UXTB | Opcode::SXTB) {
+                    1
+                } else {
+                    2
+                };
+                let Some(value) = operand(b) else {
+                    return None;
+                };
+                let value = if matches!(instruction.opcode, Opcode::SXTB | Opcode::SXTH) {
+                    Expr::SignExtend {
+                        value: Box::new(value),
+                        width,
+                    }
+                } else {
+                    Expr::bin(BinOp::And, value, Expr::constant((1 << (8 * width)) - 1))
+                };
+                self.assign(reg.number(), value);
+            }
+            Opcode::LDRD | Opcode::STRD => {
+                let (Operand::Reg(first), Operand::Reg(second)) = (a, b) else {
+                    return None;
+                };
+                if first.number() == 15 || second.number() == 15 || first == second {
+                    return None;
+                }
+                let Some((mut addr, back)) = self.memory(c, pc, instruction.thumb) else {
+                    return None;
+                };
+                let load = instruction.opcode == Opcode::LDRD;
+                if load {
+                    let mut reads = HashSet::new();
+                    if let Some((base, value)) = &back {
+                        crate::ir::visit::collect_reads(value, &mut reads);
+                        if *base == first.number()
+                            || *base == second.number()
+                            || reads.contains(&u16::from(first.number()))
+                            || reads.contains(&u16::from(second.number()))
+                        {
+                            return None;
+                        }
+                    }
+                    reads.clear();
+                    crate::ir::visit::collect_reads(&addr, &mut reads);
+                    if reads.contains(&u16::from(first.number())) {
+                        self.assign_temp(addr);
+                        addr = Expr::reg(crate::ir::EXCHANGE, 64);
+                    }
+                }
+                let registers = [first, second].into_iter().enumerate();
+                for (position, register) in registers {
+                    let address = Expr::bin(
+                        BinOp::Add,
+                        addr.clone(),
+                        Expr::constant(position as u64 * 4),
+                    );
+                    if load {
+                        self.assign(
+                            register.number(),
+                            Expr::Load {
+                                addr: Box::new(address),
+                                width: 4,
+                                signed: false,
+                            },
+                        );
+                    } else {
+                        super::preserve_compare(&mut self.flags, Write::Memory, &mut self.stmts);
+                        self.stmts.push(Stmt::Store {
+                            addr: address,
+                            value: Self::read(register.number(), pc, instruction.thumb),
+                            width: 4,
+                        });
+                    }
+                }
+                if let Some((base, value)) = back {
+                    self.assign(base, value);
+                }
+            }
+            Opcode::LDR
+            | Opcode::LDRB
+            | Opcode::LDRH
+            | Opcode::LDRSB
+            | Opcode::LDRSH
+            | Opcode::STR
+            | Opcode::STRB
+            | Opcode::STRH => {
+                let Operand::Reg(reg) = a else {
+                    return None;
+                };
+                let Some((addr, back)) = self.memory(b, pc, instruction.thumb) else {
+                    return None;
+                };
+                let load = matches!(
+                    instruction.opcode,
+                    Opcode::LDR | Opcode::LDRB | Opcode::LDRH | Opcode::LDRSB | Opcode::LDRSH
+                );
+                let width = match instruction.opcode {
+                    Opcode::LDRB | Opcode::LDRSB | Opcode::STRB => 1,
+                    Opcode::LDRH | Opcode::LDRSH | Opcode::STRH => 2,
+                    _ => 4,
+                };
+                if load {
+                    if reg.number() == 15 {
+                        return None;
+                    }
+                    if let Some((_, value)) = &back {
+                        let mut reads = HashSet::new();
+                        crate::ir::visit::collect_reads(value, &mut reads);
+                        if reads.contains(&u16::from(reg.number())) {
+                            return None;
+                        }
+                    }
+                    let value = Expr::Load {
+                        addr: Box::new(addr),
+                        width,
+                        signed: matches!(instruction.opcode, Opcode::LDRSB | Opcode::LDRSH),
+                    };
+                    self.assign(reg.number(), value);
+                    if let Some((base, value)) = back {
+                        self.assign(base, value);
+                    }
+                } else {
+                    let Some(value) = operand(a) else {
+                        return None;
+                    };
+                    super::preserve_compare(&mut self.flags, Write::Memory, &mut self.stmts);
+                    self.stmts.push(Stmt::Store { addr, value, width });
+                    if let Some((base, value)) = back {
+                        self.assign(base, value);
+                    }
+                }
+            }
+            Opcode::PUSH | Opcode::POP | Opcode::LDM(..) | Opcode::STM(..) => {
+                let (base, list, load, add, pre, back) = match instruction.opcode {
+                    Opcode::PUSH | Opcode::POP => {
+                        let Operand::RegList(list) = a else {
+                            return None;
+                        };
+                        (
+                            13,
+                            list,
+                            instruction.opcode == Opcode::POP,
+                            instruction.opcode == Opcode::POP,
+                            instruction.opcode == Opcode::PUSH,
+                            true,
+                        )
+                    }
+                    Opcode::LDM(add, pre, false, false) | Opcode::STM(add, pre, false, false) => {
+                        let (Operand::RegWBack(reg, back), Operand::RegList(list)) = (a, b) else {
+                            return None;
+                        };
+                        (
+                            reg.number(),
+                            list,
+                            matches!(instruction.opcode, Opcode::LDM(..)),
+                            add,
+                            pre,
+                            back,
+                        )
+                    }
+                    _ => return None,
+                };
+                if list == 0
+                    || base == 15
+                    || (list & (1 << base) != 0 && back)
+                    || (!load && list & 0x8000 != 0)
+                {
+                    return None;
+                }
+                let count = i64::from(list.count_ones()) * 4;
+                let first = if add {
+                    if pre { 4 } else { 0 }
+                } else {
+                    -count + if pre { 0 } else { 4 }
+                };
+                let mut address = if base == 13 {
+                    Expr::reg(13, 64)
+                } else {
+                    Self::read(base, pc, instruction.thumb)
+                };
+                if list & (1 << base) != 0 {
+                    self.assign_temp(address);
+                    address = Expr::reg(crate::ir::EXCHANGE, 64);
+                }
+                let mut offset = first;
+                for index in 0..16u8 {
+                    if list & (1 << index) == 0 {
+                        continue;
+                    }
+                    let addr =
+                        Expr::bin(BinOp::Add, address.clone(), Expr::constant(offset as u64));
+                    if load {
+                        if index != 15 {
+                            self.assign(
+                                index,
+                                Expr::Load {
+                                    addr: Box::new(addr),
+                                    width: 4,
+                                    signed: false,
+                                },
+                            );
+                        }
+                    } else {
+                        super::preserve_compare(&mut self.flags, Write::Memory, &mut self.stmts);
+                        self.stmts.push(Stmt::Store {
+                            addr,
+                            value: Self::read(index, pc, instruction.thumb),
+                            width: 4,
+                        });
+                    }
+                    offset += 4;
+                }
+                if back {
+                    self.assign(
+                        base,
+                        Expr::bin(
+                            BinOp::Add,
+                            address,
+                            Expr::constant(if add { count } else { -count } as u64),
+                        ),
+                    );
+                }
+                if load && list & 0x8000 != 0 {
+                    // A stack return restores the caller's pc; other computed loads need indirect control flow.
+                    if base != 13 {
+                        return None;
+                    }
+                    self.stmts.push(Stmt::Ret {
+                        value: Expr::reg(0, 32),
+                    });
+                    return Some(true);
+                }
+            }
+            Opcode::UDF | Opcode::BKPT => {
+                self.stmts.push(Stmt::Trap);
+                return Some(true);
+            }
+            _ => return None,
+        }
+        Some(false)
+    }
+
+    fn assign_temp(&mut self, value: Expr) {
+        super::preserve_compare(
+            &mut self.flags,
+            Write::Register(crate::ir::EXCHANGE, Some(&value)),
+            &mut self.stmts,
+        );
+        self.stmts.push(Stmt::Assign {
+            dest: RegRef {
+                index: crate::ir::EXCHANGE,
+                width: 64,
+            },
+            value,
+        });
+    }
+
+    fn set_flags(&mut self, mut flags: Flags) {
+        for operand in flags.operands_mut() {
+            if matches!(operand, Expr::Const(_)) {
+                // Carried flags must keep constant operands at the instruction's width.
+                *operand = Expr::Bin {
+                    op: BinOp::And,
+                    lhs: Box::new(operand.clone()),
+                    rhs: Box::new(Expr::constant(0xffff_ffff)),
+                };
+            }
+        }
+        flags.width = Some(32);
+        self.flags = Some(flags);
+        self.touched = true;
+    }
+}
+
+fn shift_value(value: Expr, style: ShiftStyle, amount: Expr) -> Option<Expr> {
+    let value = if style == ShiftStyle::ASR {
+        Expr::SignExtend {
+            value: Box::new(value),
+            width: 4,
+        }
+    } else {
+        value
+    };
+    match style {
+        ShiftStyle::LSL | ShiftStyle::LSR | ShiftStyle::ASR => {
+            let op = match style {
+                ShiftStyle::LSL => BinOp::Shl,
+                ShiftStyle::LSR => BinOp::Shr,
+                _ => BinOp::Sar,
+            };
+            let beyond = if style == ShiftStyle::ASR {
+                Expr::bin(BinOp::Sar, value.clone(), Expr::constant(31))
+            } else {
+                Expr::constant(0)
+            };
+            Some(Expr::Select {
+                cond: Cond::Cs,
+                lhs: Box::new(amount.clone()),
+                rhs: Box::new(Expr::constant(32)),
+                then: Box::new(beyond),
+                els: Box::new(Expr::bin(op, value, amount)),
+            })
+        }
+        ShiftStyle::ROR => Some(super::rotate(value, amount, 32, /* right */ true)),
+        ShiftStyle::RRX => None,
+    }
+}
+
+impl Machine for Lifter<'_> {
+    type Instruction = Step;
+    fn branch_target(&self, instruction: &Step, _: u64) -> Option<u64> {
+        match instruction {
+            Step::Guard { target, .. } => Some(*target),
+            Step::Execute {
+                target,
+                instruction,
+                ..
+            } if matches!(instruction.opcode, Opcode::B | Opcode::CBZ | Opcode::CBNZ) => *target,
+            _ => None,
+        }
+    }
+    fn step(&mut self, instruction: &Step, _: u64) -> bool {
+        match instruction {
+            Step::Guard { condition, target } => {
+                let test = self
+                    .flags
+                    .as_ref()
+                    .map_or(Test::Unknown, |flags| flags.test(*condition, Isa::Arm32));
+                if let Some(branch) = test.branch(*condition, *target) {
+                    self.stmts.push(branch);
+                    return true;
+                }
+                false
+            }
+            Step::Execute {
+                instruction,
+                pc,
+                next,
+                target,
+            } => {
+                let first = self.stmts.len();
+                // Operand failures discard every partial effect of this instruction.
+                match self.execute(instruction, *pc, *next, *target) {
+                    Some(ended) => ended,
+                    None => {
+                        self.stmts.truncate(first);
+                        self.stmts
+                            .push(Stmt::unsupported(format!("ARM {instruction} at 0x{pc:x}")));
+                        self.flags = None;
+                        self.touched = true;
+                        false
+                    }
+                }
+            }
+        }
+    }
+    fn take_statements(&mut self) -> Vec<Stmt> {
+        std::mem::take(&mut self.stmts)
+    }
+    fn block_ended(&mut self) {
+        self.flags = None;
+    }
+    fn block_split(&mut self) {
+        self.flags = None;
+    }
+    fn exit_flags(&self) -> Option<Flags> {
+        self.flags.clone()
+    }
+    fn flags_touched(&self) -> bool {
+        self.touched
+    }
+    fn enter_block(&mut self, flags: Option<Flags>) {
+        self.flags = flags;
+        self.touched = false;
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::ir::{FunctionIr, eval};
+
+    fn run(code: Vec<u8>, thumb: bool, registers: &[(u16, u64)], memory: &[(u64, u64)]) -> u64 {
+        let size = code.len() as u64;
+        let mut image = Image::from_code(Isa::Arm32, 0, code);
+        image
+            .arm_modes
+            .insert(0, if thumb { ArmMode::Thumb } else { ArmMode::Arm });
+        let mut ir = FunctionIr::single_block(Isa::Arm32, Vec::new());
+        ir.blocks = super::lift(
+            &image,
+            0,
+            image.read_vaddr(0, size).unwrap(),
+            &HashSet::new(),
+            &|_| Default::default(),
+        )
+        .unwrap();
+        let setup = eval::Setup {
+            seed: 0,
+            convention: eval::Convention {
+                arguments: &[0, 1, 2, 3],
+                clobbered: &[0, 1, 2, 3, 12, 14],
+            },
+            registers,
+            memory,
+            step_limit: 200,
+        };
+        match eval::run(&ir, &setup) {
+            eval::Outcome::Return { value, .. } => value,
+            other => panic!("{other:?}\n{}", ir.render()),
+        }
+    }
+
+    fn words(words: &[u32]) -> Vec<u8> {
+        words.iter().flat_map(|word| word.to_le_bytes()).collect()
+    }
+    fn halves(words: &[u16]) -> Vec<u8> {
+        words.iter().flat_map(|word| word.to_le_bytes()).collect()
+    }
+
+    #[test]
+    fn arm_arithmetic_wraps_at_32_bits() {
+        for value in [0, 1, 0x7fff_ffff, 0xffff_ffff, u64::MAX] {
+            assert_eq!(
+                run(
+                    words(&[0xe2800001, 0xe12fff1e]),
+                    /* thumb */ false,
+                    &[(0, value)],
+                    &[]
+                ),
+                u64::from((value as u32).wrapping_add(1))
+            );
+        }
+    }
+
+    #[test]
+    fn predicated_writes_and_returns_use_the_comparison() {
+        // cmp r0, r1; movlt r0, r1; bx lr
+        for (a, b) in [(1, 3), (3, 1), (0x8000_0000, 1), (0xffff_ffff, 0)] {
+            assert_eq!(
+                run(
+                    words(&[0xe1500001, 0xb1a00001, 0xe12fff1e]),
+                    /* thumb */ false,
+                    &[(0, a), (1, b)],
+                    &[]
+                ),
+                if (a as i32) < (b as i32) { b } else { a }
+            );
+        }
+        // cmp r0, #0; bxeq lr; add r0, r0, #1; bx lr
+        for a in [0, 1, 0xffff_ffff] {
+            assert_eq!(
+                run(
+                    words(&[0xe3500000, 0x012fff1e, 0xe2800001, 0xe12fff1e]),
+                    /* thumb */ false,
+                    &[(0, a)],
+                    &[]
+                ),
+                if a == 0 {
+                    0
+                } else {
+                    u64::from((a as u32).wrapping_add(1))
+                }
+            );
+        }
+        let image = Image::from_code(Isa::Arm32, 0, words(&[0xb1a00001]));
+        let lines = super::listing(&image, image.read_vaddr(0, 4).unwrap(), 0, 1);
+        assert!(lines[0].contains("movlt"), "{lines:?}");
+    }
+
+    #[test]
+    fn conditional_moves_keep_addition_carry_and_overflow() {
+        for (a, b) in [
+            (0u32, 0u32),
+            (1, 2),
+            (u32::MAX, 1),
+            (0x7fff_ffff, 1),
+            (0x8000_0000, 0x8000_0000),
+        ] {
+            let registers = [(0, u64::from(a)), (1, u64::from(b))];
+            let sum = a.wrapping_add(b);
+            let carry = u64::from(u64::from(a) + u64::from(b) > u64::from(u32::MAX));
+            let overflow = u64::from((a ^ sum) & (b ^ sum) & 0x8000_0000 != 0);
+            assert_eq!(
+                run(
+                    words(&[0xe0902001, 0x23a00001, 0x33a00000, 0xe12fff1e]),
+                    /* thumb */ false,
+                    &registers,
+                    &[]
+                ),
+                carry
+            );
+            assert_eq!(
+                run(
+                    words(&[0xe0902001, 0x63a00001, 0x73a00000, 0xe12fff1e]),
+                    /* thumb */ false,
+                    &registers,
+                    &[]
+                ),
+                overflow
+            );
+        }
+    }
+
+    #[test]
+    fn immediate_flag_results_test_bit_31() {
+        for (instruction, expected) in [(0xe3b00102, 1), (0xe3b0007f, 0), (0xe3b00000, 0)] {
+            let code = words(&[instruction, 0x43a00001, 0x53a00000, 0xe12fff1e]);
+            assert_eq!(run(code.clone(), /* thumb */ false, &[], &[]), expected);
+            let image = Image::from_code(Isa::Arm32, 0, code);
+            let mut ir = FunctionIr::single_block(Isa::Arm32, Vec::new());
+            ir.blocks = super::lift(
+                &image,
+                0,
+                image.read_vaddr(0, 16).unwrap(),
+                &HashSet::new(),
+                &|_| Default::default(),
+            )
+            .unwrap();
+            ir.name = Some("flag_sign".into());
+            let printed = crate::render::render(&ir, &[], &crate::render::Symbols::default(), &[]);
+            crate::lift::atomic_tests::compile_run(
+                &format!(
+                    "#include <stdint.h>\n{printed}\nint main(void) {{ return flag_sign() != {expected}; }}"
+                ),
+                &format!("arm32_flag_sign_{instruction:x}"),
+            );
+        }
+    }
+
+    #[test]
+    fn thumb_register_shifts_use_eight_bit_counts_and_saturate() {
+        for amount in [0u32, 1, 31, 32, 33, 63, 64, 255, 256] {
+            let count = amount & 255;
+            let registers = [(0, 0x8000_0001), (1, u64::from(amount))];
+            let left = if count >= 32 {
+                0
+            } else {
+                0x8000_0001u32 << count
+            };
+            let right = (0x8000_0001u32 as i32 >> count.min(31)) as u32;
+            assert_eq!(
+                run(
+                    halves(&[0x4088, 0x4770]),
+                    /* thumb */ true,
+                    &registers,
+                    &[]
+                ),
+                u64::from(left)
+            );
+            assert_eq!(
+                run(
+                    halves(&[0x4108, 0x4770]),
+                    /* thumb */ true,
+                    &registers,
+                    &[]
+                ),
+                u64::from(right)
+            );
+        }
+    }
+
+    #[test]
+    fn thumb_it_and_branches_use_physical_addresses() {
+        // cmp r0, r1; it lt; movlt r0, r1; bx lr
+        for (a, b) in [(1, 3), (3, 1), (0xffff_ffff, 0)] {
+            assert_eq!(
+                run(
+                    halves(&[0x4288, 0xbfb8, 0x4608, 0x4770]),
+                    /* thumb */ true,
+                    &[(0, a), (1, b)],
+                    &[]
+                ),
+                if (a as i32) < (b as i32) { b } else { a }
+            );
+        }
+        // b +4; movs r0, #9; movs r0, #7; bx lr
+        assert_eq!(
+            run(
+                halves(&[0xe000, 0x2009, 0x2007, 0x4770]),
+                /* thumb */ true,
+                &[],
+                &[]
+            ),
+            7
+        );
+    }
+
+    #[test]
+    fn stack_saves_and_stack_arguments_are_four_bytes() {
+        // push {r4, lr}; ldr r0, [sp, #8]; pop {r4, pc}
+        assert_eq!(
+            run(
+                words(&[0xe92d4010, 0xe59d0008, 0xe8bd8010]),
+                /* thumb */ false,
+                &[(13, 0x1000), (4, 7), (14, 0x2001)],
+                &[(eval::stack_top(Isa::Arm32), 0x12345678)]
+            ),
+            0x12345678
+        );
+        // push {r4, lr}; ldr r0, [sp, #8]; pop {r4, pc}
+        assert_eq!(
+            run(
+                halves(&[0xb510, 0x9802, 0xbd10]),
+                /* thumb */ true,
+                &[(13, 0x1000), (4, 7), (14, 0x2001)],
+                &[(eval::stack_top(Isa::Arm32), 0x12345678)]
+            ),
+            0x12345678
+        );
+    }
+
+    #[test]
+    fn halfword_post_indexed_transfers_update_the_base() {
+        for instruction in [0xe0d100b2, 0xe0c100b2] {
+            assert_eq!(
+                run(
+                    words(&[instruction, 0xe1a00001, 0xe12fff1e]),
+                    /* thumb */ false,
+                    &[(0, 7), (1, 0x1000)],
+                    &[(0x1000, 0x1234)]
+                ),
+                0x1002
+            );
+        }
+        assert_eq!(
+            run(
+                words(&[0xe09100b2, 0xe1a00001, 0xe12fff1e]),
+                /* thumb */ false,
+                &[(1, 0x1000), (2, 4)],
+                &[(0x1000, 0x1234)]
+            ),
+            0x1004
+        );
+        for (instruction, expected) in [
+            (0xe0d100b2, 0x2236),
+            (0xe09100b2, 0x2238),
+            (0xe5b10004, 0x667c),
+        ] {
+            assert_eq!(
+                run(
+                    words(&[instruction, 0xe0800001, 0xe12fff1e]),
+                    /* thumb */ false,
+                    &[(1, 0x1000), (2, 4)],
+                    &[(0x1000, 0x0000_5678_0000_1234)]
+                ),
+                expected
+            );
+        }
+    }
+
+    #[test]
+    fn calls_define_the_link_and_use_word_stack_slots() {
+        for thumb in [false, true] {
+            let code = if thumb {
+                halves(&[0xf000, 0xf800, 0x4770])
+            } else {
+                words(&[0xeb000000, 0xe12fff1e])
+            };
+            let mut image = Image::from_code(Isa::Arm32, 0, code);
+            image
+                .arm_modes
+                .insert(0, if thumb { ArmMode::Thumb } else { ArmMode::Arm });
+            let summary = |_| crate::loader::Summary {
+                arity: Some(4),
+                stack: 2,
+                ..Default::default()
+            };
+            let bytes = image.read_vaddr(0, if thumb { 6 } else { 8 }).unwrap();
+            let blocks = super::lift(&image, 0, bytes, &HashSet::new(), &summary).unwrap();
+            let statements: Vec<_> = blocks.iter().flat_map(|block| &block.stmts).collect();
+            assert!(statements.iter().any(|stmt| matches!(stmt, Stmt::Assign { dest, value: Expr::Const(value) } if dest.index == 14 && *value == if thumb { 5 } else { 4 })));
+            let args = statements
+                .iter()
+                .find_map(|stmt| match stmt {
+                    Stmt::Call { args, .. } => args.as_ref(),
+                    _ => None,
+                })
+                .unwrap();
+            assert_eq!(args.len(), 6);
+            for arg in &args[..4] {
+                assert!(matches!(arg, Expr::Reg { width: 32, .. }));
+            }
+            let stack_args = args[4..].iter().enumerate();
+            for (slot, arg) in stack_args {
+                let Expr::Load { addr, width: 4, .. } = arg else {
+                    panic!("{arg:?}");
+                };
+                assert_eq!(
+                    addr.as_ref(),
+                    &Expr::bin(
+                        BinOp::Add,
+                        Expr::reg(13, 64),
+                        Expr::constant(slot as u64 * 4)
+                    )
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn blx_reads_the_old_link_register_before_defining_the_return_address() {
+        for thumb in [false, true] {
+            let code = if thumb {
+                halves(&[0x47f0])
+            } else {
+                words(&[0xe12fff3e])
+            };
+            let size = code.len() as u64;
+            let mut image = Image::from_code(Isa::Arm32, 0, code);
+            image
+                .arm_modes
+                .insert(0, if thumb { ArmMode::Thumb } else { ArmMode::Arm });
+            let mut ir = FunctionIr::single_block(Isa::Arm32, Vec::new());
+            ir.blocks = super::lift(
+                &image,
+                0,
+                image.read_vaddr(0, size).unwrap(),
+                &HashSet::new(),
+                &|_| Default::default(),
+            )
+            .unwrap();
+            let setup = eval::Setup {
+                seed: 0,
+                convention: eval::Convention {
+                    arguments: &[],
+                    clobbered: &[],
+                },
+                registers: &[(14, 0x2001)],
+                memory: &[],
+                step_limit: 20,
+            };
+            let outcome = eval::run(&ir, &setup);
+            let eval::Outcome::Trap { calls, .. } = outcome else {
+                panic!("{outcome:?}");
+            };
+            assert_eq!(calls.len(), 1);
+            assert_eq!(calls[0].target, Some(0x2000));
+            assert!(
+                calls[0]
+                    .arguments
+                    .iter()
+                    .all(|value| *value <= u64::from(u32::MAX))
+            );
+        }
+    }
+
+    #[test]
+    fn register_exchange_reaches_thumb_code_in_the_same_function() {
+        let mut image =
+            Image::from_code(Isa::Arm32, 0, words(&[0xe3a03009, 0xe12fff13, 0x47702007]));
+        image
+            .arm_modes
+            .extend([(0, ArmMode::Arm), (8, ArmMode::Thumb)]);
+        let bytes = image.read_vaddr(0, 12).unwrap();
+        let mut ir = FunctionIr::single_block(Isa::Arm32, Vec::new());
+        ir.blocks =
+            super::lift(&image, 0, bytes, &HashSet::new(), &|_| Default::default()).unwrap();
+        let setup = eval::Setup {
+            seed: 0,
+            convention: eval::Convention {
+                arguments: &[],
+                clobbered: &[],
+            },
+            registers: &[],
+            memory: &[],
+            step_limit: 20,
+        };
+        assert!(matches!(
+            eval::run(&ir, &setup),
+            eval::Outcome::Return { value: 7, .. }
+        ));
+        crate::passes::simplify::simplify(&mut ir);
+        assert!(
+            !ir.blocks
+                .iter()
+                .flat_map(|block| &block.stmts)
+                .any(|stmt| matches!(stmt, Stmt::BrIndirect { .. }))
+        );
+        ir.name = Some("exchange".into());
+        let code = crate::render::render(&ir, &[], &crate::render::Symbols::default(), &[]);
+        assert!(code.contains("return 7;"), "{code}");
+        crate::lift::atomic_tests::compile_run(
+            &format!("#include <stdint.h>\n{code}\nint main(void) {{ return exchange() != 7; }}"),
+            "arm32_exchange",
+        );
+    }
+
+    #[test]
+    fn mapping_symbols_skip_data_and_switch_instruction_sets() {
+        let mut image =
+            Image::from_code(Isa::Arm32, 0, words(&[0xea000000, 0xffff_ffff, 0x47702007]));
+        image
+            .arm_modes
+            .extend([(0, ArmMode::Arm), (4, ArmMode::Data), (8, ArmMode::Thumb)]);
+        let bytes = image.read_vaddr(0, 12).unwrap();
+        let (decoded, stop) = decode(&image, bytes, 0);
+        assert!(stop.is_none());
+        assert_eq!(decoded.iter().map(|d| d.pc).collect::<Vec<_>>(), [0, 8, 10]);
+        assert_eq!(image.arm_mode(1), ArmMode::Thumb);
+    }
+}

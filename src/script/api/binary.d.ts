@@ -7,7 +7,7 @@ interface Binary {
   /** Absolute path of the file. */
   path: string;
   format: "elf" | "pe" | "coff" | "macho" | "other";
-  arch: "x86_64" | "aarch64" | "unsupported";
+  arch: "x86_64" | "aarch64" | "arm32" | "unsupported";
   entry: Addr | null;
 
   sections(): Section[];

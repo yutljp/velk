@@ -1,0 +1,241 @@
+# arm32/memory.thumb.O0.elf: elf arm32 no entry, 8 functions, 0 lift failures, 0 unsupported, 0 gotos
+0x2013c 48 copy_bytes symtab,dwarf
+0x2016c 50 fill_bytes symtab,dwarf
+0x201a0 34 string_length symtab,dwarf
+0x201c4 38 grid_get symtab,dwarf
+0x201ec 42 grid_set symtab,dwarf
+0x20218 18 pointer_distance symtab,dwarf
+0x2022c 26 read_volatile symtab,dwarf
+0x20248 30 swap_ints symtab,dwarf
+
+== 0x2013c copy_bytes
+-- decompile
+/* velk pseudo-C: copy_bytes @ 0x2013c */
+void copy_bytes(unsigned char *dst, unsigned char *src, uint32_t n) {
+    int32_t v1;
+    uint32_t local_0; /* [sp-4] */
+    uint32_t local_1; /* [sp-8] */
+    uint32_t i; /* [sp-10] */
+
+    local_0 = (uint32_t)(uintptr_t)dst;
+    local_1 = (uint32_t)(uintptr_t)src;
+    for (i = 0; i < n; i++) {
+        v1 = i;
+        *(uint8_t *)(local_0 + v1) = *(uint8_t *)(local_1 + v1);
+    }
+}
+-- signature
+void (unsigned char * dst, unsigned char * src, uint32_t n)
+-- references
+
+-- ir
+fn copy_bytes @ 0x2013c (size 48)
+  blk0 @ 0x2013c:
+    store32(r0, (sp + #0xfffffffffffffffc))
+    store32(r1, (sp + #0xfffffffffffffff8))
+    store32(r2, (sp + #0xfffffffffffffff4))
+    store32(#0x0, (sp + #0xfffffffffffffff0))
+    br 0x2014a
+  blk1 @ 0x2014a:
+    brif cc load32((sp + #0xfffffffffffffff0)), load32((sp + #0xfffffffffffffff4)) -> 0x20152
+  blk2 @ 0x20151:
+    br 0x20168
+  blk3 @ 0x20152:
+    br 0x20154
+  blk4 @ 0x20154:
+    v1 = load32((sp + #0xfffffffffffffff0))
+    store8(load8(((load32((sp + #0xfffffffffffffff8)) + v1) & #0xffffffff)), ((load32((sp + #0xfffffffffffffffc)) + v1) & #0xffffffff))
+    br 0x20160
+  blk5 @ 0x20160:
+    store32((load32((sp + #0xfffffffffffffff0)) + #0x1), (sp + #0xfffffffffffffff0))
+    br 0x2014a
+  blk6 @ 0x20168:
+    ret #0x0
+-- card
+{"addr":"0x2013c","approxTokens":240,"blocks":7,"hardReasons":[],"name":"copy_bytes","nameSources":["symtab","dwarf"],"section":".text","size":48,"unsupported":0}
+
+== 0x2016c fill_bytes
+-- decompile
+/* velk pseudo-C: fill_bytes @ 0x2016c */
+void fill_bytes(unsigned char *dst, unsigned char value, uint32_t n) {
+    uint32_t local_0; /* [sp-4] */
+    uint32_t i; /* [sp-10] */
+
+    local_0 = (uint32_t)(uintptr_t)dst;
+    for (i = 0; i < n; i++) {
+        *(uint8_t *)(local_0 + i) = value;
+    }
+}
+-- signature
+void (unsigned char * dst, unsigned char value, uint32_t n)
+-- references
+
+-- ir
+fn fill_bytes @ 0x2016c (size 50)
+  blk0 @ 0x2016c:
+    store32(r0, (sp + #0xfffffffffffffffc))
+    store8(r1, (sp + #0xfffffffffffffffb))
+    store32(r2, (sp + #0xfffffffffffffff4))
+    store32(#0x0, (sp + #0xfffffffffffffff0))
+    br 0x2017c
+  blk1 @ 0x2017c:
+    brif cc load32((sp + #0xfffffffffffffff0)), load32((sp + #0xfffffffffffffff4)) -> 0x20184
+  blk2 @ 0x20183:
+    br 0x2019a
+  blk3 @ 0x20184:
+    br 0x20186
+  blk4 @ 0x20186:
+    store8(load8((sp + #0xfffffffffffffffb)), ((load32((sp + #0xfffffffffffffffc)) + load32((sp + #0xfffffffffffffff0))) & #0xffffffff))
+    br 0x20192
+  blk5 @ 0x20192:
+    store32((load32((sp + #0xfffffffffffffff0)) + #0x1), (sp + #0xfffffffffffffff0))
+    br 0x2017c
+  blk6 @ 0x2019a:
+    ret #0x0
+-- card
+{"addr":"0x2016c","approxTokens":234,"blocks":7,"hardReasons":[],"name":"fill_bytes","nameSources":["symtab","dwarf"],"section":".text","size":50,"unsupported":0}
+
+== 0x201a0 string_length
+-- decompile
+/* velk pseudo-C: string_length @ 0x201a0 */
+uint32_t string_length(char *s) {
+    uint32_t i; /* [sp-8] */
+
+    for (i = 0; *(uint8_t *)((uint32_t)(uintptr_t)s + i) != 0; i++) {
+    }
+    return i;
+}
+-- signature
+uint32_t (char * s)
+-- references
+
+-- ir
+fn string_length @ 0x201a0 (size 34)
+  blk0 @ 0x201a0:
+    store32(#0x0, (sp + #0xfffffffffffffff8))
+    br 0x201aa
+  blk1 @ 0x201aa:
+    brif eq (load8(((r0 + load32((sp + #0xfffffffffffffff8))) & #0xffffffff)) & #0xffffffff), #0x0 -> 0x201bc
+  blk2 @ 0x201b2:
+    br 0x201b4
+  blk3 @ 0x201b4:
+    store32((load32((sp + #0xfffffffffffffff8)) + #0x1), (sp + #0xfffffffffffffff8))
+    br 0x201aa
+  blk4 @ 0x201bc:
+    ret load32((sp + #0xfffffffffffffff8))
+-- card
+{"addr":"0x201a0","approxTokens":198,"blocks":5,"hardReasons":[],"name":"string_length","nameSources":["symtab","dwarf"],"section":".text","size":34,"unsupported":0}
+
+== 0x201c4 grid_get
+-- decompile
+/* velk pseudo-C: grid_get @ 0x201c4 */
+/* ref: 0x30268 .bss */
+int grid_get(int row, int col) {
+    return *(uint32_t *)(0x30268 + ((row & 0x3) << 5) + ((col & 0x7) << 2));
+}
+-- signature
+int (int row, int col)
+-- references
+0x30268 .bss
+-- ir
+fn grid_get @ 0x201c4 (size 38)
+  blk0 @ 0x201c4:
+    ret load32((((#0x30268 + ((r0 & #0x3) << #0x5)) & #0xffffffff) + ((r1 & #0x7) << #0x2)))
+-- card
+{"addr":"0x201c4","approxTokens":174,"blocks":1,"hardReasons":[],"name":"grid_get","nameSources":["symtab","dwarf"],"section":".text","size":38,"unsupported":0}
+
+== 0x201ec grid_set
+-- decompile
+/* velk pseudo-C: grid_set @ 0x201ec */
+/* ref: 0x30268 .bss */
+extern int grid[];
+void grid_set(int row, int col, int value) {
+    grid[(row & 0x3) * 8 + (col & 0x7)] = value;
+}
+-- signature
+void (int row, int col, int value)
+-- references
+0x30268 .bss
+-- ir
+fn grid_set @ 0x201ec (size 42)
+  blk0 @ 0x201ec:
+    store32(r0, (sp + #0xfffffffffffffffc))
+    store32(r1, (sp + #0xfffffffffffffff8))
+    store32(r2, ((#0x30268 + ((load32((sp + #0xfffffffffffffffc)) & #0x3) << #0x5)) + ((load32((sp + #0xfffffffffffffff8)) & #0x7) << #0x2)))
+    ret #0x0
+-- card
+{"addr":"0x201ec","approxTokens":186,"blocks":1,"hardReasons":[],"name":"grid_set","nameSources":["symtab","dwarf"],"section":".text","size":42,"unsupported":0}
+
+== 0x20218 pointer_distance
+-- decompile
+/* velk pseudo-C: pointer_distance @ 0x20218 */
+int32_t pointer_distance(int *begin, int *end) {
+    return (int32_t)((uint32_t)(uintptr_t)end - (uint32_t)(uintptr_t)begin) >> 2;
+}
+-- signature
+int32_t (int * begin, int * end)
+-- references
+
+-- ir
+fn pointer_distance @ 0x20218 (size 18)
+  blk0 @ 0x20218:
+    ret ((sext32((r1 - r0)) >>> #0x2) & #0xffffffff)
+-- card
+{"addr":"0x20218","approxTokens":150,"blocks":1,"hardReasons":[],"name":"pointer_distance","nameSources":["symtab","dwarf"],"section":".text","size":18,"unsupported":0}
+
+== 0x2022c read_volatile
+-- decompile
+/* velk pseudo-C: read_volatile @ 0x2022c */
+int read_volatile(int *p) {
+    uint32_t local_0; /* [sp-4] */
+    uint32_t local_1; /* [sp-8] */
+    uint32_t local_2; /* [sp-c] */
+
+    local_0 = (uint32_t)(uintptr_t)p;
+    local_1 = *(uint32_t *)((uint32_t)(uintptr_t)p);
+    local_2 = *(uint32_t *)(local_0);
+    return local_1 + local_2;
+}
+-- signature
+int (int * p)
+-- references
+
+-- ir
+fn read_volatile @ 0x2022c (size 26)
+  blk0 @ 0x2022c:
+    store32(r0, (sp + #0xfffffffffffffffc))
+    store32(load32(r0), (sp + #0xfffffffffffffff8))
+    store32(load32(load32((sp + #0xfffffffffffffffc))), (sp + #0xfffffffffffffff4))
+    ret ((load32((sp + #0xfffffffffffffff8)) + load32((sp + #0xfffffffffffffff4))) & #0xffffffff)
+-- card
+{"addr":"0x2022c","approxTokens":174,"blocks":1,"hardReasons":[],"name":"read_volatile","nameSources":["symtab","dwarf"],"section":".text","size":26,"unsupported":0}
+
+== 0x20248 swap_ints
+-- decompile
+/* velk pseudo-C: swap_ints @ 0x20248 */
+void swap_ints(int *a, int *b) {
+    uint32_t local_0; /* [sp-4] */
+    uint32_t local_1; /* [sp-8] */
+    uint32_t local_2; /* [sp-c] */
+
+    local_0 = (uint32_t)(uintptr_t)a;
+    local_1 = (uint32_t)(uintptr_t)b;
+    local_2 = *(uint32_t *)((uint32_t)(uintptr_t)a);
+    *(uint32_t *)(local_0) = *(uint32_t *)((uint32_t)(uintptr_t)b);
+    *(uint32_t *)(local_1) = local_2;
+}
+-- signature
+void (int * a, int * b)
+-- references
+
+-- ir
+fn swap_ints @ 0x20248 (size 30)
+  blk0 @ 0x20248:
+    store32(r0, (sp + #0xfffffffffffffffc))
+    store32(r1, (sp + #0xfffffffffffffff8))
+    store32(load32(r0), (sp + #0xfffffffffffffff4))
+    store32(load32(r1), load32((sp + #0xfffffffffffffffc)))
+    store32(load32((sp + #0xfffffffffffffff4)), load32((sp + #0xfffffffffffffff8)))
+    ret #0x0
+-- card
+{"addr":"0x20248","approxTokens":186,"blocks":1,"hardReasons":[],"name":"swap_ints","nameSources":["symtab","dwarf"],"section":".text","size":30,"unsupported":0}

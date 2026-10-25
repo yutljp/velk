@@ -1,0 +1,110 @@
+# arm32/l1_branch.arm.O2.elf: elf arm32 no entry, 3 functions, 0 lift failures, 0 unsupported, 0 gotos
+0x200f4 16 classify symtab,dwarf
+0x20104 24 clamp symtab,dwarf
+0x2011c 16 sign_of symtab,dwarf
+
+== 0x200f4 classify
+-- decompile
+/* velk pseudo-C: classify @ 0x200f4 */
+int classify(int x) {
+    int32_t result = x;
+    int32_t v2 = result;
+    int32_t v3 = 0;
+    if (result > 0) {
+        result = 1;
+    }
+    if (v2 >= v3) {
+        return result;
+    }
+    return -1;
+}
+-- signature
+int (int x)
+-- references
+
+-- ir
+fn classify @ 0x200f4 (size 16)
+  blk0 @ 0x200f4:
+    v1 = (r0 & #0xffffffff)
+    v2 = v1
+    v3 = #0x0
+    brif le v1, #0x0 -> 0x200fc
+  blk1 @ 0x200f9:
+    v1 = #0x1
+  blk2 @ 0x200fc:
+    brif ge v2, v3 -> 0x20100
+  blk3 @ 0x200fd:
+    v1 = #0xffffffff
+  blk4 @ 0x20100:
+    ret v1
+-- card
+{"addr":"0x200f4","approxTokens":120,"blocks":5,"hardReasons":[],"name":"classify","nameSources":["symtab","dwarf"],"section":".text","size":16,"unsupported":0}
+
+== 0x20104 clamp
+-- decompile
+/* velk pseudo-C: clamp @ 0x20104 */
+int clamp(int x, int lo, int hi) {
+    if (x < hi) {
+        hi = x;
+    }
+    if (x >= lo) {
+        return hi;
+    }
+    hi = lo;
+    return hi;
+}
+-- signature
+int (int x, int lo, int hi)
+-- references
+
+-- ir
+fn clamp @ 0x20104 (size 24)
+  blk0 @ 0x20104:
+    brif ge r0, r2 -> 0x2010c
+  blk1 @ 0x20109:
+    r2 = r0
+  blk2 @ 0x2010c:
+    brif ge r0, r1 -> 0x20114
+  blk3 @ 0x20111:
+    r2 = r1
+  blk4 @ 0x20114:
+    ret r2
+-- card
+{"addr":"0x20104","approxTokens":132,"blocks":5,"hardReasons":[],"name":"clamp","nameSources":["symtab","dwarf"],"section":".text","size":24,"unsupported":0}
+
+== 0x2011c sign_of
+-- decompile
+/* velk pseudo-C: sign_of @ 0x2011c */
+int sign_of(int x) {
+    int32_t result = x;
+    int32_t v2 = result;
+    int32_t v3 = 0;
+    if (result > 0) {
+        result = 1;
+    }
+    if (v2 >= v3) {
+        return result;
+    }
+    return -1;
+}
+-- signature
+int (int x)
+-- references
+
+-- ir
+fn sign_of @ 0x2011c (size 16)
+  blk0 @ 0x2011c:
+    v1 = (r0 & #0xffffffff)
+    v2 = v1
+    v3 = #0x0
+    brif le v1, #0x0 -> 0x20124
+  blk1 @ 0x20121:
+    v1 = #0x1
+  blk2 @ 0x20124:
+    brif ge v2, v3 -> 0x20128
+  blk3 @ 0x20125:
+    v1 = #0xffffffff
+  blk4 @ 0x20128:
+    ret v1
+-- card
+{"addr":"0x2011c","approxTokens":120,"blocks":5,"hardReasons":[],"name":"sign_of","nameSources":["symtab","dwarf"],"section":".text","size":16,"unsupported":0}

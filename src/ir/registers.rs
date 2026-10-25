@@ -214,6 +214,12 @@ pub fn reg_name(isa: Isa, index: u16, width: u8) -> String {
                 base.to_owned()
             }
         }
+        Isa::Arm32 => match index {
+            13 => "sp".into(),
+            14 => "lr".into(),
+            15 => "pc".into(),
+            _ => format!("r{index}"),
+        },
         Isa::Unsupported => format!("reg{index}"),
     }
 }

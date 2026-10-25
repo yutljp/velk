@@ -324,7 +324,7 @@ fn branches(image: &Image) -> HashMap<u64, Vec<u64>> {
                         .push(site);
                 }
             }
-            Isa::Unsupported => {}
+            Isa::Arm32 | Isa::Unsupported => {}
         }
     }
     for (site, target) in &image.relocations {

@@ -49,7 +49,7 @@ pub(crate) fn frames(image: &Image) -> Vec<Frame> {
     let (stack, return_address) = match image.isa {
         Isa::X86_64 => (Register(7), Register(16)),
         Isa::AArch64 => (Register(31), Register(30)),
-        Isa::Unsupported => return Vec::new(),
+        Isa::Arm32 | Isa::Unsupported => return Vec::new(),
     };
     let mut eh_frame = EhFrame::new(data, LittleEndian);
     eh_frame.set_address_size(8);
@@ -129,7 +129,7 @@ pub(crate) fn stack_rows(image: &Image) -> Vec<StackRow> {
     let stack = match image.isa {
         Isa::X86_64 => Register(7),
         Isa::AArch64 => Register(31),
-        Isa::Unsupported => return Vec::new(),
+        Isa::Arm32 | Isa::Unsupported => return Vec::new(),
     };
     let entry_offset = if image.isa == Isa::X86_64 { 8 } else { 0 };
     let mut eh_frame = EhFrame::new(data, LittleEndian);

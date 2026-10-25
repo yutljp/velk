@@ -1,0 +1,205 @@
+# arm32/memory.arm.O2.elf: elf arm32 no entry, 8 functions, 0 lift failures, 1 unsupported, 0 gotos
+0x2013c 112 copy_bytes symtab,dwarf
+0x201ac 12 fill_bytes symtab,dwarf
+0x201b8 4 string_length symtab,dwarf
+0x201bc 32 grid_get symtab,dwarf
+0x201dc 32 grid_set symtab,dwarf
+0x201fc 12 pointer_distance symtab,dwarf
+0x20208 16 read_volatile symtab,dwarf
+0x20218 20 swap_ints symtab,dwarf
+
+== 0x2013c copy_bytes
+-- decompile
+/* velk pseudo-C: copy_bytes @ 0x2013c */
+void copy_bytes(unsigned char *dst, unsigned char *src, uint32_t n) {
+    uint32_t v6;
+    uint32_t v7;
+    uint32_t local_0; /* [sp-8] */
+    uint32_t local_1; /* [sp-4] */
+
+    if (n == 0) {
+        return;
+    }
+    local_0 = v6;
+    local_1 = v7;
+    if (n < 16) {
+        sub_20188();
+        return;
+    }
+    uint32_t v5 = (uint32_t)(uintptr_t)src - (uint32_t)(uintptr_t)dst;
+    if (v5 > 0xffffffef && v5 != -16) {
+        sub_20188();
+        return;
+    }
+    int32_t v2 = (uint32_t)(uintptr_t)src;
+    int32_t v3 = (uint32_t)(uintptr_t)dst;
+    int32_t v4 = n & 0xfffffff0;
+    /* unsupported: undecodable ARM instruction at 0x20170: incomplete decoder */
+}
+-- signature
+void (unsigned char * dst, unsigned char * src, uint32_t n)
+-- references
+
+-- ir
+fn copy_bytes @ 0x2013c (size 112)
+  blk0 @ 0x2013c:
+    brif ne r2, #0x0 -> 0x20144
+  blk1 @ 0x20141:
+    ret #0x0
+  blk2 @ 0x20144:
+    store32(r4, (sp + #0xfffffffffffffff8))
+    store32(lr, (sp + #0xfffffffffffffffc))
+    v1 = #0x0
+    brif cs r2, #0x10 -> 0x20154
+  blk3 @ 0x20151:
+    r0, r1 = call 0x20188
+    ret #0x0
+  blk4 @ 0x20154:
+    r3 = ((r1 - r0) & #0xffffffff)
+    brif eq select hi r3, #0xffffffef ? select ne r3, #0xfffffffffffffff0 ? #0x1, #0x0, #0x0, #0x0 -> 0x20160
+  blk5 @ 0x2015d:
+    r0, r1 = call 0x20188
+    ret #0x0
+  blk6 @ 0x20160:
+    v2 = (r1 & #0xffffffff)
+    v3 = (r0 & #0xffffffff)
+    v4 = (r2 & #0xfffffff0)
+    unsupported: undecodable ARM instruction at 0x20170: incomplete decoder
+-- card
+{"addr":"0x2013c","approxTokens":180,"blocks":7,"hardReasons":[],"name":"copy_bytes","nameSources":["symtab","dwarf"],"section":".text","size":112,"unsupported":1}
+
+== 0x201ac fill_bytes
+-- decompile
+/* velk pseudo-C: fill_bytes @ 0x201ac */
+void fill_bytes(unsigned char *dst, unsigned char value, uint32_t n) {
+    if (n != 0) {
+        string_length((uint32_t)(uintptr_t)dst, value);
+        return;
+    }
+}
+-- signature
+void (unsigned char * dst, unsigned char value, uint32_t n)
+-- references
+
+-- ir
+fn fill_bytes @ 0x201ac (size 12)
+  blk0 @ 0x201ac:
+    brif ne r2, #0x0 -> 0x201b4
+  blk1 @ 0x201b1:
+    ret #0x0
+  blk2 @ 0x201b4:
+    r0, r1 = call 0x201b8(r0, r1)
+    ret #0x0
+-- card
+{"addr":"0x201ac","approxTokens":114,"blocks":3,"hardReasons":[],"name":"fill_bytes","nameSources":["symtab","dwarf"],"section":".text","size":12,"unsupported":0}
+
+== 0x201b8 string_length
+-- decompile
+/* velk pseudo-C: string_length @ 0x201b8 */
+uint32_t string_length(char *s) {
+    uint64_t v2;
+
+    return ((int32_t)(grid_get((uint32_t)(uintptr_t)s, v2)));
+}
+-- signature
+uint32_t (char * s)
+-- references
+
+-- ir
+fn string_length @ 0x201b8 (size 4)
+  blk0 @ 0x201b8:
+    v1:r0, r1 = call 0x201bc(r0, r1)
+    ret v1
+-- card
+{"addr":"0x201b8","approxTokens":102,"blocks":1,"hardReasons":[],"name":"string_length","nameSources":["symtab","dwarf"],"section":".text","size":4,"unsupported":0}
+
+== 0x201bc grid_get
+-- decompile
+/* velk pseudo-C: grid_get @ 0x201bc */
+int grid_get(int row, int col) {
+    return *(uint32_t *)(0x201d0 + *(uint32_t *)(0x201d8) + ((row & 0x3) << 5) + ((col & 0x7) << 2));
+}
+-- signature
+int (int row, int col)
+-- references
+
+-- ir
+fn grid_get @ 0x201bc (size 32)
+  blk0 @ 0x201bc:
+    ret load32(((((#0x201d0 + load32(#0x201d8)) + ((r0 & #0x3) << #0x5)) + ((r1 & #0x7) << #0x2)) & #0xffffffff))
+-- card
+{"addr":"0x201bc","approxTokens":138,"blocks":1,"hardReasons":[],"name":"grid_get","nameSources":["symtab","dwarf"],"section":".text","size":32,"unsupported":0}
+
+== 0x201dc grid_set
+-- decompile
+/* velk pseudo-C: grid_set @ 0x201dc */
+void grid_set(int row, int col, int value) {
+    *(uint32_t *)(0x201f0 + *(uint32_t *)(0x201f8) + ((row & 0x3) << 5) + ((col & 0x7) << 2)) = value;
+}
+-- signature
+void (int row, int col, int value)
+-- references
+
+-- ir
+fn grid_set @ 0x201dc (size 32)
+  blk0 @ 0x201dc:
+    store32(r2, ((((#0x201f0 + load32(#0x201f8)) + ((r0 & #0x3) << #0x5)) + ((r1 & #0x7) << #0x2)) & #0xffffffff))
+    ret #0x0
+-- card
+{"addr":"0x201dc","approxTokens":138,"blocks":1,"hardReasons":[],"name":"grid_set","nameSources":["symtab","dwarf"],"section":".text","size":32,"unsupported":0}
+
+== 0x201fc pointer_distance
+-- decompile
+/* velk pseudo-C: pointer_distance @ 0x201fc */
+int32_t pointer_distance(int *begin, int *end) {
+    return (int32_t)((uint32_t)(uintptr_t)end - (uint32_t)(uintptr_t)begin) >> 2;
+}
+-- signature
+int32_t (int * begin, int * end)
+-- references
+
+-- ir
+fn pointer_distance @ 0x201fc (size 12)
+  blk0 @ 0x201fc:
+    ret ((sext32((r1 - r0)) >>> #0x2) & #0xffffffff)
+-- card
+{"addr":"0x201fc","approxTokens":114,"blocks":1,"hardReasons":[],"name":"pointer_distance","nameSources":["symtab","dwarf"],"section":".text","size":12,"unsupported":0}
+
+== 0x20208 read_volatile
+-- decompile
+/* velk pseudo-C: read_volatile @ 0x20208 */
+int read_volatile(int *p) {
+    return *(uint32_t *)((uint32_t)(uintptr_t)p) + *(uint32_t *)((uint32_t)(uintptr_t)p);
+}
+-- signature
+int (int * p)
+-- references
+
+-- ir
+fn read_volatile @ 0x20208 (size 16)
+  blk0 @ 0x20208:
+    ret ((load32(r0) + load32(r0)) & #0xffffffff)
+-- card
+{"addr":"0x20208","approxTokens":120,"blocks":1,"hardReasons":[],"name":"read_volatile","nameSources":["symtab","dwarf"],"section":".text","size":16,"unsupported":0}
+
+== 0x20218 swap_ints
+-- decompile
+/* velk pseudo-C: swap_ints @ 0x20218 */
+void swap_ints(int *a, int *b) {
+    int32_t v1 = *(uint32_t *)((uint32_t)(uintptr_t)a);
+    *(uint32_t *)((uint32_t)(uintptr_t)a) = *(uint32_t *)((uint32_t)(uintptr_t)b);
+    *(uint32_t *)((uint32_t)(uintptr_t)b) = v1;
+}
+-- signature
+void (int * a, int * b)
+-- references
+
+-- ir
+fn swap_ints @ 0x20218 (size 20)
+  blk0 @ 0x20218:
+    v1 = load32(r0)
+    store32(load32(r1), r0)
+    store32(v1, r1)
+    ret #0x0
+-- card
+{"addr":"0x20218","approxTokens":126,"blocks":1,"hardReasons":[],"name":"swap_ints","nameSources":["symtab","dwarf"],"section":".text","size":20,"unsupported":0}

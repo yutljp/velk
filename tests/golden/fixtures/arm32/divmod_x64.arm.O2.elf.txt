@@ -1,0 +1,577 @@
+# arm32/divmod_x64.arm.O2.elf: elf arm32 no entry, 18 functions, 0 lift failures, 28 unsupported, 0 gotos
+0x2016c 20 l3 symtab,dwarf
+0x20180 20 l10 symtab,dwarf
+0x20194 68 h3 symtab,dwarf
+0x201d8 80 h10 symtab,dwarf
+0x20228 20 u64 symtab,dwarf
+0x2023c 16 sdiv16x symtab,dwarf
+0x2024c 28 ldiv16x symtab,dwarf
+0x20268 28 umod3x symtab,dwarf
+0x20284 28 smod3x symtab,dwarf
+0x202a0 8 pmod8x symtab,dwarf
+0x202a8 20 pmod8s symtab,dwarf
+0x202bc 28 pmod16l symtab,dwarf
+0x202d8 28 pdiv16l symtab,dwarf
+0x202f4 28 lmod10x symtab,dwarf
+0x20310 56 umod10x symtab,dwarf
+0x20348 16 pdiv64 symtab,dwarf
+0x20358 28 qdiv64 symtab,dwarf
+0x20374 24 pdiv10 symtab,dwarf
+/* velk prelude */
+uint64_t velk_entry_stack_pointer(void); /* target entry stack pointer */
+/* end velk prelude */
+
+== 0x2016c l3
+-- decompile
+/* velk pseudo-C: l3 @ 0x2016c */
+int32_t l3(void) {
+    uint64_t v6;
+    uint64_t v7;
+    uint32_t v8;
+    int32_t v4;
+
+    /* unsupported: AAPCS32 multiword, floating-point or aggregate declaration */
+    {
+        uint64_t call_values[2];
+        call_values[0] = sub_2017c((uint32_t)v6, v7, 3, 0);
+        call_values[1] = v7; /* also returned by the call */
+        v4 = (uint32_t)(call_values[0]);
+        v7 = (uint32_t)(call_values[1]);
+    }
+    int32_t v5 = v8;
+    return v4;
+}
+-- signature
+int32_t ()
+-- references
+
+-- ir
+fn l3 @ 0x2016c (size 20)
+  blk0 @ 0x2016c:
+    unsupported: AAPCS32 multiword, floating-point or aggregate declaration
+    v1 = #0x3
+    v2 = #0x0
+    v3 = #0x2017c
+    v4:r0, r1 = call 0x2017c(r0, r1, #0x3, #0x0)
+    v5 = r11
+    ret v4
+-- card
+{"addr":"0x2016c","approxTokens":126,"blocks":1,"hardReasons":[],"name":"l3","nameSources":["symtab","dwarf"],"section":".text","size":20,"unsupported":1}
+
+== 0x20180 l10
+-- decompile
+/* velk pseudo-C: l10 @ 0x20180 */
+int32_t l10(void) {
+    uint64_t v6;
+    uint64_t v7;
+    uint32_t v8;
+    int32_t v4;
+
+    /* unsupported: AAPCS32 multiword, floating-point or aggregate declaration */
+    {
+        uint64_t call_values[2];
+        call_values[0] = sub_20190((uint32_t)v6, v7, 10, 0);
+        call_values[1] = v7; /* also returned by the call */
+        v4 = (uint32_t)(call_values[0]);
+        v7 = (uint32_t)(call_values[1]);
+    }
+    int32_t v5 = v8;
+    return v4;
+}
+-- signature
+int32_t ()
+-- references
+
+-- ir
+fn l10 @ 0x20180 (size 20)
+  blk0 @ 0x20180:
+    unsupported: AAPCS32 multiword, floating-point or aggregate declaration
+    v1 = #0xa
+    v2 = #0x0
+    v3 = #0x20190
+    v4:r0, r1 = call 0x20190(r0, r1, #0xa, #0x0)
+    v5 = r11
+    ret v4
+-- card
+{"addr":"0x20180","approxTokens":126,"blocks":1,"hardReasons":[],"name":"l10","nameSources":["symtab","dwarf"],"section":".text","size":20,"unsupported":1}
+
+== 0x20194 h3
+-- decompile
+/* velk pseudo-C: h3 @ 0x20194 */
+int32_t h3(int32_t a0, int32_t a1) {
+    uint64_t sp = velk_entry_stack_pointer();
+    uint32_t v12;
+    uint32_t v13;
+    uint32_t v14;
+    uint32_t v15;
+    uint32_t v16;
+
+    /* unsupported: AAPCS32 multiword, floating-point or aggregate declaration */
+    *(uint32_t *)(sp - 0x8) = v14;
+    int32_t v1 = a0 + a1;
+    /* unsupported: ARM adc lr, r2, 0x0 at 0x201a0 */
+    int32_t v3 = v15 & 0xffff | 0xaaaa0000;
+    /* unsupported: ARM umull r3, r2, lr, ip at 0x201a8 */
+    int32_t v4 = v12 & 0xfffffffe;
+    int32_t v5 = v4 + (v12 >> 1);
+    int32_t v7 = v16 - v5;
+    int32_t v9 = a0 - v7;
+    /* unsupported (2 steps): ARM sbc r1, r1, 0x0 at 0x201c4, ARM umull r0, lr, r2, ip at 0x201c8 */
+    int32_t v10 = v16 + v12 * v13;
+    int32_t v11 = v10 + a1 * v15;
+    v14 = *(uint32_t *)(sp - 0x8);
+    return a0;
+}
+-- signature
+int32_t (int32_t a0, int32_t a1)
+-- references
+
+-- ir
+fn h3 @ 0x20194 (size 68)
+  blk0 @ 0x20194:
+    unsupported: AAPCS32 multiword, floating-point or aggregate declaration
+    store32(r11, (sp + #0xfffffffffffffff8))
+    v1 = ((r0 + r1) & #0xffffffff)
+    v2 = #0xaaab
+    unsupported: ARM adc lr, r2, 0x0 at 0x201a0
+    v3 = (((r12 & #0xffff) | #0xaaaa0000) & #0xffffffff)
+    unsupported: ARM umull r3, r2, lr, ip at 0x201a8
+    v4 = (r2 & #0xfffffffe)
+    v5 = ((v4 + (r2 >> #0x1)) & #0xffffffff)
+    v6 = #0xaaaa
+    v7 = ((lr - v5) & #0xffffffff)
+    v8 = #0xaaaaaaaa
+    v9 = ((r0 - v7) & #0xffffffff)
+    unsupported: ARM sbc r1, r1, 0x0 at 0x201c4
+    unsupported: ARM umull r0, lr, r2, ip at 0x201c8
+    v10 = ((lr + (r2 * r3)) & #0xffffffff)
+    v11 = ((v10 + (r1 * r12)) & #0xffffffff)
+    r11 = load32((sp + #0xfffffffffffffff8))
+    ret r0
+-- card
+{"addr":"0x20194","approxTokens":198,"blocks":1,"hardReasons":[],"name":"h3","nameSources":["symtab","dwarf"],"section":".text","size":68,"unsupported":5}
+
+== 0x201d8 h10
+-- decompile
+/* velk pseudo-C: h10 @ 0x201d8 */
+int32_t h10(uint32_t a0, uint32_t a1) {
+    uint64_t sp = velk_entry_stack_pointer();
+    uint32_t v13;
+    uint32_t v14;
+    uint32_t v15;
+    uint32_t v16;
+    uint32_t v17;
+
+    /* unsupported: AAPCS32 multiword, floating-point or aggregate declaration */
+    *(uint32_t *)(sp - 0x8) = v15;
+    int32_t v1 = (a0 >> 1 | a1 << 31) + (a1 >> 1);
+    /* unsupported: ARM adc r2, r2, 0x0 at 0x201ec */
+    int32_t v3 = v16 & 0xffff | 0xcccc0000;
+    /* unsupported: ARM umull r3, r0, r2, ip at 0x201f4 */
+    int32_t v4 = a0 & 0xfffffffc;
+    int32_t v5 = v4 + (a0 >> 2);
+    int32_t v7 = v13 - v5;
+    int32_t v9 = v17 - v7;
+    /* unsupported: ARM umull r0, lr, r2, ip at 0x20210 */
+    int32_t v10 = v17 + v13 * v14;
+    /* unsupported: ARM rsc r1, r3, r1, lsr 1 at 0x2021c */
+    int32_t v12 = v13 + a1 * v16;
+    v15 = *(uint32_t *)(sp - 0x8);
+    return a0;
+}
+-- signature
+int32_t (uint32_t a0, uint32_t a1)
+-- references
+
+-- ir
+fn h10 @ 0x201d8 (size 80)
+  blk0 @ 0x201d8:
+    unsupported: AAPCS32 multiword, floating-point or aggregate declaration
+    store32(r11, (sp + #0xfffffffffffffff8))
+    v1 = ((((r0 >> #0x1) | (r1 << #0x1f)) + (r1 >> #0x1)) & #0xffffffff)
+    v2 = #0xcccd
+    unsupported: ARM adc r2, r2, 0x0 at 0x201ec
+    v3 = (((r12 & #0xffff) | #0xcccc0000) & #0xffffffff)
+    unsupported: ARM umull r3, r0, r2, ip at 0x201f4
+    v4 = (r0 & #0xfffffffc)
+    v5 = ((v4 + (r0 >> #0x2)) & #0xffffffff)
+    v6 = #0xcccc
+    v7 = ((r2 - v5) & #0xffffffff)
+    v8 = #0xcccccccc
+    v9 = ((lr - v7) & #0xffffffff)
+    unsupported: ARM umull r0, lr, r2, ip at 0x20210
+    v10 = ((lr + (r2 * r3)) & #0xffffffff)
+    v11 = #0x0
+    unsupported: ARM rsc r1, r3, r1, lsr 1 at 0x2021c
+    v12 = ((r2 + (r1 * r12)) & #0xffffffff)
+    r11 = load32((sp + #0xfffffffffffffff8))
+    ret r0
+-- card
+{"addr":"0x201d8","approxTokens":216,"blocks":1,"hardReasons":[],"name":"h10","nameSources":["symtab","dwarf"],"section":".text","size":80,"unsupported":5}
+
+== 0x20228 u64
+-- decompile
+/* velk pseudo-C: u64 @ 0x20228 */
+unsigned int u64(unsigned int x) {
+    uint32_t v4;
+
+    /* unsupported: ARM umull r0, r1, r0, r1 at 0x20230 */
+    int32_t v3 = v4 >> 1;
+    return v3;
+}
+-- signature
+unsigned int (unsigned int x)
+-- references
+
+-- ir
+fn u64 @ 0x20228 (size 20)
+  blk0 @ 0x20228:
+    v1 = #0xaaab
+    v2 = #0xaaaaaaab
+    unsupported: ARM umull r0, r1, r0, r1 at 0x20230
+    v3 = ((r1 >> #0x1) & #0xffffffff)
+    ret v3
+-- card
+{"addr":"0x20228","approxTokens":126,"blocks":1,"hardReasons":[],"name":"u64","nameSources":["symtab","dwarf"],"section":".text","size":20,"unsupported":1}
+
+== 0x2023c sdiv16x
+-- decompile
+/* velk pseudo-C: sdiv16x @ 0x2023c */
+int sdiv16x(int x) {
+    return (int32_t)(x + (((x >> 31) & 0xffffffff) >> 28)) >> 4;
+}
+-- signature
+int (int x)
+-- references
+
+-- ir
+fn sdiv16x @ 0x2023c (size 16)
+  blk0 @ 0x2023c:
+    ret ((sext32((r0 + (((sext32(r0) >>> #0x1f) & #0xffffffff) >> #0x1c))) >>> #0x4) & #0xffffffff)
+-- card
+{"addr":"0x2023c","approxTokens":120,"blocks":1,"hardReasons":[],"name":"sdiv16x","nameSources":["symtab","dwarf"],"section":".text","size":16,"unsupported":0}
+
+== 0x2024c ldiv16x
+-- decompile
+/* velk pseudo-C: ldiv16x @ 0x2024c */
+int32_t ldiv16x(uint32_t a0, int32_t a1) {
+    /* unsupported: AAPCS32 multiword, floating-point or aggregate declaration */
+    int64_t t1 = a1 >> 31;
+    int32_t v1 = a0 + ((t1 & 0xffffffff) >> 28);
+    /* unsupported: ARM adc r1, r1, 0x0 at 0x20254 */
+    int32_t v2 = a0 >> 4;
+    int32_t v3 = v2 | (uint64_t)a1 << 28;
+    t1 = a1;
+    int32_t v4 = t1 >> 4;
+    return v3;
+}
+-- signature
+int32_t (uint32_t a0, int32_t a1)
+-- references
+
+-- ir
+fn ldiv16x @ 0x2024c (size 28)
+  blk0 @ 0x2024c:
+    unsupported: AAPCS32 multiword, floating-point or aggregate declaration
+    t1 = (sext32(r1) >>> #0x1f)
+    v1 = ((r0 + ((t1 & #0xffffffff) >> #0x1c)) & #0xffffffff)
+    unsupported: ARM adc r1, r1, 0x0 at 0x20254
+    v2 = ((r0 >> #0x4) & #0xffffffff)
+    v3 = ((v2 | (r1 << #0x1c)) & #0xffffffff)
+    t1 = sext32(r1)
+    v4 = ((t1 >>> #0x4) & #0xffffffff)
+    ret v3
+-- card
+{"addr":"0x2024c","approxTokens":138,"blocks":1,"hardReasons":[],"name":"ldiv16x","nameSources":["symtab","dwarf"],"section":".text","size":28,"unsupported":2}
+
+== 0x20268 umod3x
+-- decompile
+/* velk pseudo-C: umod3x @ 0x20268 */
+int umod3x(unsigned int x) {
+    uint32_t v6;
+
+    /* unsupported: ARM umull r1, r2, r0, r1 at 0x20270 */
+    int32_t v3 = v6 >> 1;
+    int32_t v4 = v3 * 3;
+    int32_t v5 = x - v4;
+    return v5;
+}
+-- signature
+int (unsigned int x)
+-- references
+
+-- ir
+fn umod3x @ 0x20268 (size 28)
+  blk0 @ 0x20268:
+    v1 = #0xaaab
+    v2 = #0xaaaaaaab
+    unsupported: ARM umull r1, r2, r0, r1 at 0x20270
+    v3 = ((r2 >> #0x1) & #0xffffffff)
+    v4 = ((v3 * #0x3) & #0xffffffff)
+    v5 = ((r0 - v4) & #0xffffffff)
+    ret v5
+-- card
+{"addr":"0x20268","approxTokens":138,"blocks":1,"hardReasons":[],"name":"umod3x","nameSources":["symtab","dwarf"],"section":".text","size":28,"unsupported":1}
+
+== 0x20284 smod3x
+-- decompile
+/* velk pseudo-C: smod3x @ 0x20284 */
+int smod3x(int x) {
+    /* unsupported: undecodable ARM instruction at 0x2028c: incomplete decoder */
+}
+-- signature
+int (int x)
+-- references
+
+-- ir
+fn smod3x @ 0x20284 (size 28)
+  blk0 @ 0x20284:
+    v1 = #0x5556
+    v2 = #0x55555556
+    unsupported: undecodable ARM instruction at 0x2028c: incomplete decoder
+-- card
+{"addr":"0x20284","approxTokens":114,"blocks":1,"hardReasons":[],"name":"smod3x","nameSources":["symtab","dwarf"],"section":".text","size":28,"unsupported":1}
+
+== 0x202a0 pmod8x
+-- decompile
+/* velk pseudo-C: pmod8x @ 0x202a0 */
+unsigned int pmod8x(unsigned int x) {
+    return x & 0x7;
+}
+-- signature
+unsigned int (unsigned int x)
+-- references
+
+-- ir
+fn pmod8x @ 0x202a0 (size 8)
+  blk0 @ 0x202a0:
+    ret (r0 & #0x7)
+-- card
+{"addr":"0x202a0","approxTokens":108,"blocks":1,"hardReasons":[],"name":"pmod8x","nameSources":["symtab","dwarf"],"section":".text","size":8,"unsupported":0}
+
+== 0x202a8 pmod8s
+-- decompile
+/* velk pseudo-C: pmod8s @ 0x202a8 */
+int pmod8s(int x) {
+    return x - (x + (((x >> 31) & 0xffffffff) >> 29) & 0xfffffff8);
+}
+-- signature
+int (int x)
+-- references
+
+-- ir
+fn pmod8s @ 0x202a8 (size 20)
+  blk0 @ 0x202a8:
+    ret ((r0 - ((r0 + (((sext32(r0) >>> #0x1f) & #0xffffffff) >> #0x1d)) & #0xfffffff8)) & #0xffffffff)
+-- card
+{"addr":"0x202a8","approxTokens":126,"blocks":1,"hardReasons":[],"name":"pmod8s","nameSources":["symtab","dwarf"],"section":".text","size":20,"unsupported":0}
+
+== 0x202bc pmod16l
+-- decompile
+/* velk pseudo-C: pmod16l @ 0x202bc */
+int32_t pmod16l(int32_t a0, int32_t a1) {
+    uint32_t v3;
+
+    /* unsupported: AAPCS32 multiword, floating-point or aggregate declaration */
+    uint32_t t1 = a1 >> 31;
+    int32_t v1 = a0 + (t1 >> 28) & 0xfffffff0;
+    /* unsupported: ARM adc r3, r1, 0x0 at 0x202c8 */
+    int32_t v2 = a0 - v3;
+    /* unsupported: ARM sbc r1, r1, r3 at 0x202d0 */
+    return a0;
+}
+-- signature
+int32_t (int32_t a0, int32_t a1)
+-- references
+
+-- ir
+fn pmod16l @ 0x202bc (size 28)
+  blk0 @ 0x202bc:
+    unsupported: AAPCS32 multiword, floating-point or aggregate declaration
+    t1 = (sext32(r1) >>> #0x1f)
+    v1 = ((r0 + ((t1 & #0xffffffff) >> #0x1c)) & #0xfffffff0)
+    unsupported: ARM adc r3, r1, 0x0 at 0x202c8
+    v2 = ((r0 - r2) & #0xffffffff)
+    unsupported: ARM sbc r1, r1, r3 at 0x202d0
+    ret r0
+-- card
+{"addr":"0x202bc","approxTokens":138,"blocks":1,"hardReasons":[],"name":"pmod16l","nameSources":["symtab","dwarf"],"section":".text","size":28,"unsupported":3}
+
+== 0x202d8 pdiv16l
+-- decompile
+/* velk pseudo-C: pdiv16l @ 0x202d8 */
+int32_t pdiv16l(uint32_t a0, int32_t a1) {
+    /* unsupported: AAPCS32 multiword, floating-point or aggregate declaration */
+    int64_t t1 = a1 >> 31;
+    int32_t v1 = a0 + ((t1 & 0xffffffff) >> 28);
+    /* unsupported: ARM adc r1, r1, 0x0 at 0x202e0 */
+    int32_t v2 = a0 >> 4;
+    int32_t v3 = v2 | (uint64_t)a1 << 28;
+    t1 = a1;
+    int32_t v4 = t1 >> 4;
+    return v3;
+}
+-- signature
+int32_t (uint32_t a0, int32_t a1)
+-- references
+
+-- ir
+fn pdiv16l @ 0x202d8 (size 28)
+  blk0 @ 0x202d8:
+    unsupported: AAPCS32 multiword, floating-point or aggregate declaration
+    t1 = (sext32(r1) >>> #0x1f)
+    v1 = ((r0 + ((t1 & #0xffffffff) >> #0x1c)) & #0xffffffff)
+    unsupported: ARM adc r1, r1, 0x0 at 0x202e0
+    v2 = ((r0 >> #0x4) & #0xffffffff)
+    v3 = ((v2 | (r1 << #0x1c)) & #0xffffffff)
+    t1 = sext32(r1)
+    v4 = ((t1 >>> #0x4) & #0xffffffff)
+    ret v3
+-- card
+{"addr":"0x202d8","approxTokens":138,"blocks":1,"hardReasons":[],"name":"pdiv16l","nameSources":["symtab","dwarf"],"section":".text","size":28,"unsupported":2}
+
+== 0x202f4 lmod10x
+-- decompile
+/* velk pseudo-C: lmod10x @ 0x202f4 */
+int32_t lmod10x(void) {
+    uint64_t v7;
+    uint64_t v8;
+    uint32_t v9;
+
+    /* unsupported: AAPCS32 multiword, floating-point or aggregate declaration */
+    {
+        uint64_t call_values[2];
+        call_values[0] = sub_20304(v7, v8, 10, 0);
+        call_values[1] = v8; /* also returned by the call */
+        v7 = (uint32_t)(call_values[0]);
+        v8 = (uint32_t)(call_values[1]);
+    }
+    int32_t v6 = v9;
+    return 0;
+}
+-- signature
+int32_t ()
+-- references
+
+-- ir
+fn lmod10x @ 0x202f4 (size 28)
+  blk0 @ 0x202f4:
+    unsupported: AAPCS32 multiword, floating-point or aggregate declaration
+    v1 = #0xa
+    v2 = #0x0
+    v3 = #0x20304
+    r0, r1 = call 0x20304(r0, r1, #0xa, #0x0)
+    v4 = #0x0
+    v5 = #0x0
+    v6 = r11
+    ret #0x0
+-- card
+{"addr":"0x202f4","approxTokens":138,"blocks":1,"hardReasons":[],"name":"lmod10x","nameSources":["symtab","dwarf"],"section":".text","size":28,"unsupported":1}
+
+== 0x20310 umod10x
+-- decompile
+/* velk pseudo-C: umod10x @ 0x20310 */
+int32_t umod10x(uint32_t a0, uint32_t a1, int32_t a2, uint32_t a3) {
+    /* unsupported: AAPCS32 multiword, floating-point or aggregate declaration */
+    int32_t v1 = a0 >> 1;
+    int32_t v2 = a0 & 0x1;
+    int32_t v3 = v1 | a1 << 31;
+    int32_t v4 = v3 + (a1 >> 1);
+    /* unsupported: ARM adc r1, r1, 0x0 at 0x20324 */
+    int32_t v6 = a2 & 0xffff | 0xcccc0000;
+    /* unsupported: ARM umull r2, r3, r1, r2 at 0x2032c */
+    uint32_t v7 = (a3 & 0xfffffffc) + (a3 >> 2);
+    int32_t v8 = a0 | (a1 - v7) << 1;
+    return v8;
+}
+-- signature
+int32_t (uint32_t a0, uint32_t a1, int32_t a2, uint32_t a3)
+-- references
+
+-- ir
+fn umod10x @ 0x20310 (size 56)
+  blk0 @ 0x20310:
+    unsupported: AAPCS32 multiword, floating-point or aggregate declaration
+    v1 = ((r0 >> #0x1) & #0xffffffff)
+    v2 = (r0 & #0x1)
+    v3 = ((v1 | (r1 << #0x1f)) & #0xffffffff)
+    v4 = ((v3 + (r1 >> #0x1)) & #0xffffffff)
+    v5 = #0xcccd
+    unsupported: ARM adc r1, r1, 0x0 at 0x20324
+    v6 = (((r2 & #0xffff) | #0xcccc0000) & #0xffffffff)
+    unsupported: ARM umull r2, r3, r1, r2 at 0x2032c
+    v7 = (((r3 & #0xfffffffc) + (r3 >> #0x2)) & #0xffffffff)
+    v8 = ((r0 | (((r1 - v7) & #0xffffffff) << #0x1)) & #0xffffffff)
+    v9 = #0x0
+    ret v8
+-- card
+{"addr":"0x20310","approxTokens":180,"blocks":1,"hardReasons":[],"name":"umod10x","nameSources":["symtab","dwarf"],"section":".text","size":56,"unsupported":3}
+
+== 0x20348 pdiv64
+-- decompile
+/* velk pseudo-C: pdiv64 @ 0x20348 */
+int pdiv64(int x) {
+    return (int32_t)(x + (((x >> 31) & 0xffffffff) >> 26)) >> 6;
+}
+-- signature
+int (int x)
+-- references
+
+-- ir
+fn pdiv64 @ 0x20348 (size 16)
+  blk0 @ 0x20348:
+    ret ((sext32((r0 + (((sext32(r0) >>> #0x1f) & #0xffffffff) >> #0x1a))) >>> #0x6) & #0xffffffff)
+-- card
+{"addr":"0x20348","approxTokens":120,"blocks":1,"hardReasons":[],"name":"pdiv64","nameSources":["symtab","dwarf"],"section":".text","size":16,"unsupported":0}
+
+== 0x20358 qdiv64
+-- decompile
+/* velk pseudo-C: qdiv64 @ 0x20358 */
+int32_t qdiv64(uint32_t a0, int32_t a1) {
+    /* unsupported: AAPCS32 multiword, floating-point or aggregate declaration */
+    int64_t t1 = a1 >> 31;
+    int32_t v1 = a0 + ((t1 & 0xffffffff) >> 26);
+    /* unsupported: ARM adc r1, r1, 0x0 at 0x20360 */
+    int32_t v2 = a0 >> 6;
+    int32_t v3 = v2 | (uint64_t)a1 << 26;
+    t1 = a1;
+    int32_t v4 = t1 >> 6;
+    return v3;
+}
+-- signature
+int32_t (uint32_t a0, int32_t a1)
+-- references
+
+-- ir
+fn qdiv64 @ 0x20358 (size 28)
+  blk0 @ 0x20358:
+    unsupported: AAPCS32 multiword, floating-point or aggregate declaration
+    t1 = (sext32(r1) >>> #0x1f)
+    v1 = ((r0 + ((t1 & #0xffffffff) >> #0x1a)) & #0xffffffff)
+    unsupported: ARM adc r1, r1, 0x0 at 0x20360
+    v2 = ((r0 >> #0x6) & #0xffffffff)
+    v3 = ((v2 | (r1 << #0x1a)) & #0xffffffff)
+    t1 = sext32(r1)
+    v4 = ((t1 >>> #0x6) & #0xffffffff)
+    ret v3
+-- card
+{"addr":"0x20358","approxTokens":138,"blocks":1,"hardReasons":[],"name":"qdiv64","nameSources":["symtab","dwarf"],"section":".text","size":28,"unsupported":2}
+
+== 0x20374 pdiv10
+-- decompile
+/* velk pseudo-C: pdiv10 @ 0x20374 */
+int pdiv10(int x) {
+    /* unsupported: undecodable ARM instruction at 0x2037c: incomplete decoder */
+}
+-- signature
+int (int x)
+-- references
+
+-- ir
+fn pdiv10 @ 0x20374 (size 24)
+  blk0 @ 0x20374:
+    v1 = #0x6667
+    v2 = #0x66666667
+    unsupported: undecodable ARM instruction at 0x2037c: incomplete decoder
+-- card
+{"addr":"0x20374","approxTokens":114,"blocks":1,"hardReasons":[],"name":"pdiv10","nameSources":["symtab","dwarf"],"section":".text","size":24,"unsupported":1}

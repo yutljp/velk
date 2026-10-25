@@ -1,0 +1,56 @@
+# arm32/switch_value_table.thumb.O2.elf: elf arm32 no entry, 1 functions, 0 lift failures, 0 unsupported, 0 gotos
+0x200ec 20 dispatch symtab,dwarf
+
+== 0x200ec dispatch
+-- decompile
+/* velk pseudo-C: dispatch @ 0x200ec */
+int dispatch(int x) {
+    uint32_t v4;
+
+    uint32_t result = x - 10;
+    uint32_t v2 = result;
+    uint32_t v3 = 4;
+    if (result > 4) {
+        result = 0;
+    }
+    if (v2 <= v3) {
+        v4 = 228;
+    }
+    if (v2 <= v3) {
+        v4 = v4 & 0xffff | 0x10000;
+    }
+    if (v2 > v3) {
+        return result;
+    }
+    result = *(uint8_t *)(v4 + result);
+    return result;
+}
+-- signature
+int (int x)
+-- references
+
+-- ir
+fn dispatch @ 0x200ec (size 20)
+  blk0 @ 0x200ec:
+    v1 = ((r0 - #0xa) & #0xffffffff)
+    v2 = v1
+    v3 = #0x4
+    brif ls v1, #0x4 -> 0x200f4
+  blk1 @ 0x200f3:
+    v1 = #0x0
+  blk2 @ 0x200f4:
+    brif hi v2, v3 -> 0x200f8
+  blk3 @ 0x200f5:
+    r1 = #0xe4
+  blk4 @ 0x200f8:
+    brif hi v2, v3 -> 0x200fc
+  blk5 @ 0x200f9:
+    r1 = (((r1 & #0xffff) | #0x10000) & #0xffffffff)
+  blk6 @ 0x200fc:
+    brif hi v2, v3 -> 0x200fe
+  blk7 @ 0x200fd:
+    v1 = (load8(((r1 + v1) & #0xffffffff)) & #0xffffffff)
+  blk8 @ 0x200fe:
+    ret v1
+-- card
+{"addr":"0x200ec","approxTokens":144,"blocks":9,"hardReasons":[],"name":"dispatch","nameSources":["symtab","dwarf"],"section":".text","size":20,"unsupported":0}

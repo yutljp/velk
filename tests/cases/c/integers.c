@@ -28,6 +28,9 @@ int min3(int a, int b, int c) {
 
 long labs_value(long x) { return x < 0 ? -x : x; }
 
+#if defined(__SIZEOF_INT128__)
 unsigned long long mul_high(unsigned long long a, unsigned long long b) {
     return (unsigned long long)(((unsigned __int128)a * b) >> 64);
 }
+
+#endif

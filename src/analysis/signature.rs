@@ -394,8 +394,8 @@ pub fn recover_with(
         }
     }
 
-    let returns_argument =
-        convention != Convention::Aapcs64 && arguments.contains(&crate::arch::RETURN);
+    let returns_argument = !matches!(convention, Convention::Aapcs64 | Convention::Aapcs32)
+        && arguments.contains(&crate::arch::RETURN);
     let effects = blocks.iter().flat_map(|block| &block.stmts).any(|stmt| {
         matches!(stmt, Stmt::Store { .. } | Stmt::Call { .. })
             || matches!(
@@ -936,7 +936,9 @@ pub fn recover_with(
         .iter()
         .all(|register| params.iter().any(|param| param.index == *register));
     let frame = match (registers_full, isa) {
-        (_, Isa::AArch64) if convention == Convention::Aapcs64 => {
+        (_, Isa::AArch64 | Isa::Arm32)
+            if matches!(convention, Convention::Aapcs64 | Convention::Aapcs32) =>
+        {
             stack_arguments(blocks, landing_pads, isa, convention)
         }
         (true, Isa::X86_64) => stack_arguments(blocks, landing_pads, isa, convention),
@@ -1045,10 +1047,14 @@ fn stack_arguments(
     let Some(start) = convention.stack_arguments() else {
         return StackFrame::default();
     };
+    let slot_bytes = if isa == Isa::Arm32 { 4 } else { 8 };
     let sp = crate::arch::stack_pointer(isa);
     let fp = crate::arch::frame_pointer(isa);
     let results = convention == Convention::GoAbi0;
-    let incoming = matches!(convention, Convention::Aapcs64 | Convention::GoAmd64);
+    let incoming = matches!(
+        convention,
+        Convention::Aapcs32 | Convention::Aapcs64 | Convention::GoAmd64
+    );
     // The registers holding a known offset from the stack pointer on entry,
     // as each block starts: the stack pointer and the frame pointer, and
     // under Go's assembly ABI, whose code may keep the stack pointer in
@@ -1056,7 +1062,9 @@ fn stack_arguments(
     const STACK_SLOTS: usize = 64;
     type Frame = std::collections::BTreeMap<u16, i64>;
     type Written = [u8; STACK_SLOTS];
-    let tracked = |register: u16| register == sp || register == fp || results;
+    let tracked = |register: u16| {
+        register == sp || register == fp || (isa == Isa::Arm32 && register == 7) || results
+    };
     let mut entry: Vec<Option<Frame>> = vec![None; blocks.len()];
     let mut written_entry = vec![[0; STACK_SLOTS]; blocks.len()];
     if blocks.is_empty() {
@@ -1270,7 +1278,7 @@ fn stack_arguments(
     // that it passes to a call.
     let mut extent: HashMap<i64, i64> = HashMap::new();
     let (mut written, mut handed): (Vec<(i64, i64)>, Vec<i64>) = (Vec::new(), Vec::new());
-    let slot = |at: i64| at - (at - start).rem_euclid(8);
+    let slot = |at: i64| at - (at - start).rem_euclid(slot_bytes);
     let mut scan = |block: &Block, mut frame: Frame, mut initialized: Written, effects: bool| {
         // Registers the block sets to an address in the caller's frame, as
         // an argument structure's address the body reads it through.
@@ -1302,7 +1310,7 @@ fn stack_arguments(
                     {
                         last = last.max(Some(slot(needed)));
                     }
-                } else if (at - start) % 8 == 0 {
+                } else if (at - start) % slot_bytes == 0 {
                     last = last.max(Some(at));
                 }
                 if results {
@@ -1353,15 +1361,15 @@ fn stack_arguments(
         )
         .min();
     let offsets: Vec<i64> = match (first, last) {
-        (Some(first), _) => (start..first).step_by(8).collect(),
-        (None, Some(last)) => (start..=last).step_by(8).collect(),
+        (Some(first), _) => (start..first).step_by(slot_bytes as usize).collect(),
+        (None, Some(last)) => (start..=last).step_by(slot_bytes as usize).collect(),
         (None, None) => Vec::new(),
     };
     let widths = offsets
         .iter()
         .map(|at| match extent.get(at) {
             Some(reach) => (*reach as u64).next_power_of_two().min(8) as u8,
-            None => 8,
+            None => slot_bytes as u8,
         })
         .collect();
     let results = first.map_or_else(Vec::new, |first| {

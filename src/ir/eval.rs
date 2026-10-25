@@ -14,6 +14,15 @@ use super::{BinOp, Block, Expr, FunctionIr, RegRef, Stmt};
 pub const STACK_TOP: u64 = 0x7fff_ff00_0000;
 pub(crate) const STACK_SPAN: u64 = 1 << 24;
 
+/// The initial stack address, within the architecture's address space.
+pub fn stack_top(isa: crate::loader::Isa) -> u64 {
+    if isa == crate::loader::Isa::Arm32 {
+        0x7f00_0000
+    } else {
+        STACK_TOP
+    }
+}
+
 /// The registers a call reads its arguments from and the ones it may overwrite.
 pub struct Convention<'a> {
     pub arguments: &'a [u16],
@@ -85,11 +94,11 @@ pub fn run_with_machine(ir: &FunctionIr, setup: &Setup<'_>, source: &MachineSour
         Ok(Some(value)) => Outcome::Return {
             value,
             calls: machine.calls,
-            memory: visible(&machine.memory),
+            memory: visible(&machine.memory, ir.isa),
         },
         Ok(None) => Outcome::Trap {
             calls: machine.calls,
-            memory: visible(&machine.memory),
+            memory: visible(&machine.memory, ir.isa),
         },
         Err(reason) => Outcome::Unknown(reason),
     }
@@ -146,7 +155,7 @@ impl<'a> Machine<'a> {
         };
         machine
             .registers
-            .insert(crate::arch::stack_pointer(ir.isa), STACK_TOP);
+            .insert(crate::arch::stack_pointer(ir.isa), stack_top(ir.isa));
         for (addr, value) in setup.memory {
             machine.store(*addr, *value, 8);
         }
@@ -154,10 +163,11 @@ impl<'a> Machine<'a> {
     }
 }
 
-fn visible(memory: &HashMap<u64, u8>) -> BTreeMap<u64, u8> {
+fn visible(memory: &HashMap<u64, u8>, isa: crate::loader::Isa) -> BTreeMap<u64, u8> {
+    let top = stack_top(isa);
     memory
         .iter()
-        .filter(|(addr, _)| !(STACK_TOP - STACK_SPAN..STACK_TOP + STACK_SPAN).contains(*addr))
+        .filter(|(addr, _)| !(top - STACK_SPAN..top + STACK_SPAN).contains(*addr))
         .map(|(addr, byte)| (*addr, *byte))
         .collect()
 }
@@ -211,10 +221,16 @@ pub fn hash(seed: u64, key: u64) -> u64 {
 
 impl Machine<'_> {
     fn register(&self, index: u16) -> u64 {
-        self.registers
+        let value = self
+            .registers
             .get(&index)
             .copied()
-            .unwrap_or_else(|| hash(self.seed, 0x1_0000 + u64::from(index)))
+            .unwrap_or_else(|| hash(self.seed, 0x1_0000 + u64::from(index)));
+        if self.isa == crate::loader::Isa::Arm32 && index < 16 {
+            value & 0xffff_ffff
+        } else {
+            value
+        }
     }
 
     fn byte(&self, addr: u64) -> u8 {
@@ -339,6 +355,7 @@ impl Machine<'_> {
     /// A call the code leaves by, passing what the convention passes; it
     /// changes what the convention lets it.
     fn call(&mut self, target: Option<u64>) {
+        let target = target.map(|target| crate::arch::code_address(self.isa, target));
         let arguments = self
             .convention
             .arguments
@@ -441,15 +458,19 @@ impl Machine<'_> {
                         break;
                     }
                     Stmt::Br { target: None } => return Err("dynamic branch"),
-                    // A jump through a register the analysis could not
-                    // resolve leaves the function, whatever address it holds.
                     Stmt::BrIndirect { target } => {
                         let target = match self.eval(target) {
                             Ok(value) => value,
                             Err(reason) => return Err(reason),
                         };
-                        self.call(Some(target));
-                        return Ok(Some(self.register(crate::arch::RETURN)));
+                        let target = crate::arch::code_address(self.isa, target);
+                        match self.jump(target) {
+                            Flow::Block(index) => {
+                                next = index;
+                                break;
+                            }
+                            Flow::Return(value) => return Ok(Some(value)),
+                        }
                     }
                     Stmt::Switch {
                         index,
@@ -490,7 +511,8 @@ impl Machine<'_> {
                                 Err(reason) => return Err(reason),
                             }),
                             None => *target,
-                        };
+                        }
+                        .map(|target| crate::arch::code_address(self.isa, target));
                         let arguments = match args {
                             Some(args) => {
                                 match args

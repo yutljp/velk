@@ -1,0 +1,60 @@
+# arm32/float.arm.O2.elf: elf arm32 no entry, 5 functions, 4 lift failures, 2 unsupported, 0 gotos
+0x20104 56 average symtab,dwarf
+0x2013c 12 lerp symtab,dwarf
+0x20148 12 truncate_to_int symtab,dwarf
+0x20154 12 widen symtab,dwarf
+0x20160 24 compare_doubles symtab,dwarf
+
+== 0x20104 average
+-- decompile
+/* velk pseudo-C: average @ 0x20104 */
+double average(int64_t a0, int32_t a1) {
+    double v1;
+
+    /* unsupported: AAPCS32 multiword, floating-point or aggregate declaration */
+    if (a1 < 1) {
+        v1 = ((union { uint64_t bits; double value; }){ .bits = (uint32_t)(sub_20134()) }).value;
+        return v1;
+    }
+    /* unsupported: undecodable ARM instruction at 0x2010c: incomplete decoder */
+}
+-- signature
+double (int64_t a0, int32_t a1)
+-- references
+
+-- ir
+fn average @ 0x20104 (size 56)
+  blk0 @ 0x20104:
+    unsupported: AAPCS32 multiword, floating-point or aggregate declaration
+    brif ge r1, #0x1 -> 0x2010c
+  blk1 @ 0x20109:
+    v1:r0, r1 = call 0x20134
+    ret v1
+  blk2 @ 0x2010c:
+    unsupported: undecodable ARM instruction at 0x2010c: incomplete decoder
+-- card
+{"addr":"0x20104","approxTokens":114,"blocks":3,"hardReasons":[],"name":"average","nameSources":["symtab","dwarf"],"section":".text","size":56,"unsupported":2}
+
+== 0x2013c lerp
+-- decompile
+error: function at 0x2013c: no instruction could be decoded
+-- card
+{"addr":"0x2013c","approxTokens":102,"hardReasons":[],"liftError":"no instruction could be decoded","name":"lerp","nameSources":["symtab","dwarf"],"section":".text","size":12}
+
+== 0x20148 truncate_to_int
+-- decompile
+error: function at 0x20148: no instruction could be decoded
+-- card
+{"addr":"0x20148","approxTokens":102,"hardReasons":[],"liftError":"no instruction could be decoded","name":"truncate_to_int","nameSources":["symtab","dwarf"],"section":".text","size":12}
+
+== 0x20154 widen
+-- decompile
+error: function at 0x20154: no instruction could be decoded
+-- card
+{"addr":"0x20154","approxTokens":102,"hardReasons":[],"liftError":"no instruction could be decoded","name":"widen","nameSources":["symtab","dwarf"],"section":".text","size":12}
+
+== 0x20160 compare_doubles
+-- decompile
+error: function at 0x20160: no instruction could be decoded
+-- card
+{"addr":"0x20160","approxTokens":102,"hardReasons":[],"liftError":"no instruction could be decoded","name":"compare_doubles","nameSources":["symtab","dwarf"],"section":".text","size":24}

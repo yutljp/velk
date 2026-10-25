@@ -43,7 +43,7 @@ pub fn vector_half(isa: Isa, index: u16) -> Option<bool> {
     let base = match isa {
         Isa::X86_64 => x86::XMM0,
         Isa::AArch64 => aarch64::V0,
-        Isa::Unsupported => return None,
+        Isa::Arm32 | Isa::Unsupported => return None,
     };
     (base..base + 64)
         .contains(&index)
@@ -53,6 +53,7 @@ pub fn vector_half(isa: Isa, index: u16) -> Option<bool> {
 pub fn frame_pointer(isa: Isa) -> u16 {
     match isa {
         Isa::AArch64 => 29,
+        Isa::Arm32 => 11,
         Isa::X86_64 | Isa::Unsupported => 5,
     }
 }
@@ -60,6 +61,15 @@ pub fn frame_pointer(isa: Isa) -> u16 {
 pub fn stack_pointer(isa: Isa) -> u16 {
     match isa {
         Isa::AArch64 => aarch64::SP,
+        Isa::Arm32 => 13,
         Isa::X86_64 | Isa::Unsupported => x86::RSP,
+    }
+}
+
+pub(crate) fn code_address(isa: Isa, address: u64) -> u64 {
+    if isa == Isa::Arm32 {
+        address & !1
+    } else {
+        address
     }
 }

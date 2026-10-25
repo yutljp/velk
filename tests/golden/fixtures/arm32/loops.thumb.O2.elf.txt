@@ -1,0 +1,440 @@
+# arm32/loops.thumb.O2.elf: elf arm32 no entry, 4 functions, 0 lift failures, 2 unsupported, 0 gotos
+0x200fc 60 count_bits symtab,dwarf
+0x20138 36 sum_until symtab,dwarf
+0x2015c 108 sum_till_neg symtab,dwarf
+0x201c8 112 sum_until_zero symtab,dwarf
+
+== 0x200fc count_bits
+-- decompile
+/* velk pseudo-C: count_bits @ 0x200fc */
+int count_bits(unsigned int x) {
+    uint32_t v3;
+    int32_t v4;
+    uint8_t v6;
+    int32_t v8;
+    uint8_t v11;
+
+    int32_t v1 = x;
+    int32_t v2 = 0;
+    if (x == 0) {
+        x = 0;
+    }
+    if (v1 != v2) {
+        v3 = x;
+        v4 = 0;
+        while (true) {
+            v6 = v3 >> 1;
+            v4 += (v3 & 0x1);
+            if (v3 >> 1 == 0) break;
+            v11 = v3 >> 2;
+            v4 += (v6 & 0x1);
+            if (v3 >> 2 == 0) {
+                return v4;
+            }
+            v6 = v3 >> 3;
+            v4 += (v11 & 0x1);
+            if (v3 >> 3 == 0) {
+                return v4;
+            }
+            v8 = v3 >> 4;
+            v3 >>= 4;
+            v4 += (v6 & 0x1);
+            if (v8 == 0) {
+                return v4;
+            }
+        }
+        return v4;
+    }
+    return x;
+}
+-- signature
+int (unsigned int x)
+-- references
+
+-- ir
+fn count_bits @ 0x200fc (size 60)
+  blk0 @ 0x200fc:
+    v1 = r0
+    v2 = #0x0
+    brif ne r0, #0x0 -> 0x20102
+  blk1 @ 0x20101:
+    r0 = #0x0
+  blk2 @ 0x20102:
+    brif ne v1, v2 -> 0x20104
+  blk3 @ 0x20103:
+    ret r0
+  blk4 @ 0x20104:
+    v3 = r0
+    v4 = #0x0
+    br 0x20122
+  blk5 @ 0x2010c:
+    v6 = (v3 >> #0x3)
+    v4 = ((v4 + (v11 & #0x1)) & #0xffffffff)
+    brif ne (v3 >> #0x3), #0x0 -> 0x20118
+  blk6 @ 0x20117:
+    ret v4
+  blk7 @ 0x20118:
+    v8 = (v3 >> #0x4)
+    v3 = (v3 >> #0x4)
+    v4 = ((v4 + (v6 & #0x1)) & #0xffffffff)
+    brif ne v8, #0x0 -> 0x20122
+  blk8 @ 0x20121:
+    br 0x20136
+  blk9 @ 0x20122:
+    v6 = (v3 >> #0x1)
+    v4 = ((v4 + (v3 & #0x1)) & #0xffffffff)
+    brif ne (v3 >> #0x1), #0x0 -> 0x2012c
+  blk10 @ 0x2012b:
+    br 0x20136
+  blk11 @ 0x2012c:
+    v11 = (v3 >> #0x2)
+    v4 = ((v4 + (v6 & #0x1)) & #0xffffffff)
+    brif eq (v3 >> #0x2), #0x0 -> 0x20136
+  blk12 @ 0x20135:
+    br 0x2010c
+  blk13 @ 0x20136:
+    ret v4
+-- card
+{"addr":"0x200fc","approxTokens":240,"blocks":14,"hardReasons":[],"name":"count_bits","nameSources":["symtab","dwarf"],"section":".text","size":60,"unsupported":0}
+
+== 0x20138 sum_until
+-- decompile
+/* velk pseudo-C: sum_until @ 0x20138 */
+int sum_until(int limit) {
+    uint32_t v9;
+    uint32_t v10;
+    int32_t v3;
+    int32_t v4;
+    uint32_t v5;
+    int32_t v6;
+    int32_t v7;
+    int32_t v8;
+
+    int32_t v1 = limit;
+    int32_t v2 = 1;
+    if (limit < 1) {
+        limit = 0;
+    }
+    if (v1 >= v2) {
+        v3 = limit - 1;
+        v4 = limit - 2;
+        /* unsupported: ARM umull.w r1, r2, r1, r2 at 0x20144 */
+        v5 = v10 & 0x1;
+        v6 = v5 >> 1;
+        /* unsupported: ARM rrx r1, r1 at 0x20150 */
+        v7 = v9 + ((uint64_t)limit << 1);
+        v8 = v7 - 1;
+        return v8;
+    }
+    return limit;
+}
+-- signature
+int (int limit)
+-- references
+
+-- ir
+fn sum_until @ 0x20138 (size 36)
+  blk0 @ 0x20138:
+    v1 = r0
+    v2 = #0x1
+    brif ge r0, #0x1 -> 0x2013e
+  blk1 @ 0x2013d:
+    r0 = #0x0
+  blk2 @ 0x2013e:
+    brif ge v1, v2 -> 0x20140
+  blk3 @ 0x2013f:
+    ret r0
+  blk4 @ 0x20140:
+    v3 = ((r0 - #0x1) & #0xffffffff)
+    v4 = ((r0 - #0x2) & #0xffffffff)
+    unsupported: ARM umull.w r1, r2, r1, r2 at 0x20144
+    v5 = (r2 & #0x1)
+    v6 = ((v5 >> #0x1) & #0xffffffff)
+    unsupported: ARM rrx r1, r1 at 0x20150
+    v7 = ((r1 + (r0 << #0x1)) & #0xffffffff)
+    v8 = ((v7 - #0x1) & #0xffffffff)
+    ret v8
+-- card
+{"addr":"0x20138","approxTokens":174,"blocks":5,"hardReasons":[],"name":"sum_until","nameSources":["symtab","dwarf"],"section":".text","size":36,"unsupported":2}
+
+== 0x2015c sum_till_neg
+-- decompile
+/* velk pseudo-C: sum_till_neg @ 0x2015c */
+int sum_till_neg(int *p, int n) {
+    int32_t v4;
+    int32_t v5;
+    int32_t v6;
+    int32_t v7;
+    int32_t v8;
+    uint32_t v9;
+    int32_t v10;
+    int32_t v11;
+    int32_t v12;
+    int32_t v13;
+
+    int32_t v2 = 1;
+    if (n < 1) {
+        p = 0x0;
+    }
+    if (n >= v2) {
+        v4 = (uint32_t)(uintptr_t)p;
+        v5 = -n;
+        v6 = (uint32_t)(uintptr_t)p + 12;
+        v7 = n - 1;
+        v8 = 0;
+        v9 = 0;
+        while (true) {
+            v13 = *(uint32_t *)((v6 - 12) & 0xffffffff);
+            if (v13 <= -1) break;
+            v8 += v13;
+            if (v7 == v9) {
+                return v8;
+            }
+            v10 = v4 + (v9 << 2);
+            v11 = *(uint32_t *)((v10 + 4) & 0xffffffff);
+            if (v11 < 0) {
+                return v8;
+            }
+            v12 = v5 + v9;
+            v8 += v11;
+            if (v12 == 0xfffffffe) {
+                return v8;
+            }
+            v13 = *(uint32_t *)((v10 + 8) & 0xffffffff);
+            if (v13 < 0) {
+                return v8;
+            }
+            v8 += v13;
+            if (v12 == 0xfffffffd) {
+                return v8;
+            }
+            v13 = *(uint32_t *)((uint32_t)v6);
+            v6 += 16;
+            if (v13 < 0) {
+                return v8;
+            }
+            v9 += 4;
+            v8 += v13;
+            if (n == v9) {
+                return v8;
+            }
+        }
+        return v8;
+    }
+    return (uint32_t)(uintptr_t)p;
+}
+-- signature
+int (int * p, int n)
+-- references
+
+-- ir
+fn sum_till_neg @ 0x2015c (size 108)
+  blk0 @ 0x2015c:
+    v1 = r1
+    v2 = #0x1
+    brif ge r1, #0x1 -> 0x20162
+  blk1 @ 0x20161:
+    r0 = #0x0
+  blk2 @ 0x20162:
+    brif ge v1, v2 -> 0x20164
+  blk3 @ 0x20163:
+    ret r0
+  blk4 @ 0x20164:
+    v3 = r1
+    v4 = r0
+    v5 = (#0x0 - v3)
+    v6 = (r0 + #0xc)
+    v7 = (v3 - #0x1)
+    v8 = #0x0
+    v9 = #0x0
+    br 0x201ba
+  blk5 @ 0x20180:
+    v8 = ((v8 + v13) & #0xffffffff)
+    brif ne v7, v9 -> 0x20186
+  blk6 @ 0x20185:
+    br 0x201c4
+  blk7 @ 0x20186:
+    v10 = (v4 + ((v9 << #0x2) & #0xffffffff))
+    v11 = load32(((v10 + #0x4) & #0xffffffff))
+    brif ge v11, #0x0 -> 0x20190
+  blk8 @ 0x2018f:
+    br 0x201c4
+  blk9 @ 0x20190:
+    v12 = (v5 + v9)
+    v8 = ((v8 + v11) & #0xffffffff)
+    brif ne v12, #0xfffffffe -> 0x2019a
+  blk10 @ 0x20199:
+    br 0x201c4
+  blk11 @ 0x2019a:
+    v13 = load32(((v10 + #0x8) & #0xffffffff))
+    brif ge v13, #0x0 -> 0x201a0
+  blk12 @ 0x2019f:
+    br 0x201c4
+  blk13 @ 0x201a0:
+    v8 = ((v8 + v13) & #0xffffffff)
+    brif ne v12, #0xfffffffd -> 0x201a6
+  blk14 @ 0x201a5:
+    br 0x201c4
+  blk15 @ 0x201a6:
+    v13 = load32(v6)
+    v6 = (v6 + #0x10)
+    brif ge v13, #0x0 -> 0x201ae
+  blk16 @ 0x201ad:
+    br 0x201c4
+  blk17 @ 0x201ae:
+    v9 = ((v9 + #0x4) & #0xffffffff)
+    v8 = ((v8 + v13) & #0xffffffff)
+    brif ne v3, v9 -> 0x201ba
+  blk18 @ 0x201b7:
+    ret v8
+  blk19 @ 0x201ba:
+    v13 = load32(((v6 - #0xc) & #0xffffffff))
+    brif le v13, #0xffffffff -> 0x201c4
+  blk20 @ 0x201c3:
+    br 0x20180
+  blk21 @ 0x201c4:
+    ret v8
+-- card
+{"addr":"0x2015c","approxTokens":240,"blocks":22,"hardReasons":[],"name":"sum_till_neg","nameSources":["symtab","dwarf"],"section":".text","size":108,"unsupported":0}
+
+== 0x201c8 sum_until_zero
+-- decompile
+/* velk pseudo-C: sum_until_zero @ 0x201c8 */
+int sum_until_zero(int *p, int n) {
+    int32_t t1;
+    int32_t v3;
+    int32_t v4;
+    int32_t v5;
+    int32_t v6;
+    int32_t v7;
+    uint32_t v8;
+    int32_t v9;
+    int32_t v11;
+    int32_t v12;
+    int32_t v14;
+
+    int32_t v2 = 1;
+    if (n < 1) {
+        p = 0x0;
+    }
+    if (n >= v2) {
+        v3 = (uint32_t)(uintptr_t)p;
+        v4 = -n;
+        v5 = (uint32_t)(uintptr_t)p + 12;
+        v6 = n - 1;
+        v7 = 0;
+        v8 = 0;
+        while (true) {
+            v9 = *(uint32_t *)((v5 - 12) & 0xffffffff);
+            if (v9 == 0) break;
+            t1 = v9 >> 31;
+            v7 += (v9 & (t1 ^ 0xffffffff));
+            if (v6 == v8) {
+                return v7;
+            }
+            v11 = v3 + (v8 << 2);
+            v12 = *(uint32_t *)((v11 + 4) & 0xffffffff);
+            if (v12 == 0) {
+                break;
+            }
+            t1 = v12 >> 31;
+            v14 = v4 + v8;
+            v7 += (v12 & (t1 ^ 0xffffffff));
+            if (v14 == 0xfffffffe) {
+                return v7;
+            }
+            v9 = *(uint32_t *)((v11 + 8) & 0xffffffff);
+            if (v9 == 0) {
+                break;
+            }
+            t1 = v9 >> 31;
+            v7 += (v9 & (t1 ^ 0xffffffff));
+            if (v14 == 0xfffffffd) {
+                break;
+            }
+            v9 = *(uint32_t *)((uint32_t)v5);
+            v5 += 16;
+            if (v9 == 0) {
+                return v7;
+            }
+            t1 = v9 >> 31;
+            v8 += 4;
+            v7 += (v9 & (t1 ^ 0xffffffff));
+            if (n == v8) {
+                return v7;
+            }
+        }
+        return v7;
+    }
+    return (uint32_t)(uintptr_t)p;
+}
+-- signature
+int (int * p, int n)
+-- references
+
+-- ir
+fn sum_until_zero @ 0x201c8 (size 112)
+  blk0 @ 0x201c8:
+    v1 = r1
+    v2 = #0x1
+    brif ge r1, #0x1 -> 0x201ce
+  blk1 @ 0x201cd:
+    r0 = #0x0
+  blk2 @ 0x201ce:
+    brif ge v1, v2 -> 0x201d0
+  blk3 @ 0x201cf:
+    ret r0
+  blk4 @ 0x201d0:
+    v3 = r0
+    v4 = (#0x0 - r1)
+    v5 = (r0 + #0xc)
+    v6 = (r1 - #0x1)
+    v7 = #0x0
+    v8 = #0x0
+    br 0x20200
+  blk5 @ 0x201e8:
+    v9 = load32(v5)
+    v5 = (v5 + #0x10)
+    brif ne v9, #0x0 -> 0x201f4
+  blk6 @ 0x201f1:
+    ret v7
+  blk7 @ 0x201f4:
+    t1 = (sext32(v9) >>> #0x1f)
+    v8 = ((v8 + #0x4) & #0xffffffff)
+    v7 = ((v7 + (v9 & ((t1 & #0xffffffff) ^ #0xffffffff))) & #0xffffffff)
+    brif ne r1, v8 -> 0x20200
+  blk8 @ 0x201ff:
+    br 0x20234
+  blk9 @ 0x20200:
+    v9 = load32(((v5 - #0xc) & #0xffffffff))
+    brif eq v9, #0x0 -> 0x20234
+  blk10 @ 0x20206:
+    t1 = (sext32(v9) >>> #0x1f)
+    v7 = ((v7 + (v9 & ((t1 & #0xffffffff) ^ #0xffffffff))) & #0xffffffff)
+    brif ne v6, v8 -> 0x20210
+  blk11 @ 0x2020f:
+    br 0x20234
+  blk12 @ 0x20210:
+    v11 = (v3 + ((v8 << #0x2) & #0xffffffff))
+    v12 = load32(((v11 + #0x4) & #0xffffffff))
+    brif eq v12, #0x0 -> 0x20234
+  blk13 @ 0x20218:
+    t1 = (sext32(v12) >>> #0x1f)
+    v14 = (v4 + v8)
+    v7 = ((v7 + (v12 & ((t1 & #0xffffffff) ^ #0xffffffff))) & #0xffffffff)
+    brif ne v14, #0xfffffffe -> 0x20226
+  blk14 @ 0x20225:
+    br 0x20234
+  blk15 @ 0x20226:
+    v9 = load32(((v11 + #0x8) & #0xffffffff))
+    brif eq v9, #0x0 -> 0x20234
+  blk16 @ 0x2022a:
+    t1 = (sext32(v9) >>> #0x1f)
+    v7 = ((v7 + (v9 & ((t1 & #0xffffffff) ^ #0xffffffff))) & #0xffffffff)
+    brif eq v14, #0xfffffffd -> 0x20234
+  blk17 @ 0x20233:
+    br 0x201e8
+  blk18 @ 0x20234:
+    ret v7
+-- card
+{"addr":"0x201c8","approxTokens":240,"blocks":19,"hardReasons":[],"name":"sum_until_zero","nameSources":["symtab","dwarf"],"section":".text","size":112,"unsupported":0}

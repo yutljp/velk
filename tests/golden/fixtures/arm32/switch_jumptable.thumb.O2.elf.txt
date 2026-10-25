@@ -1,0 +1,42 @@
+# arm32/switch_jumptable.thumb.O2.elf: elf arm32 no entry, 1 functions, 0 lift failures, 1 unsupported, 0 gotos
+0x20104 348 d7 symtab,dwarf
+
+== 0x20104 d7
+-- decompile
+/* velk pseudo-C: d7 @ 0x20104 */
+/* ref: 0x30260 .bss */
+int d7(int x) {
+    uint32_t *const g = (uint32_t *)0x30260ULL;
+    uint32_t v3;
+    uint32_t v4;
+    uint32_t v5;
+
+    if ((uint32_t)x <= 9) {
+        /* unsupported: ARM tbb [pc, r0] at 0x20112 */
+        return ((int32_t)(sub_20116((uint32_t)x, v3, v4, v5)));
+    }
+    *g = 0xffffffff;
+    return -1;
+}
+-- signature
+int (int x)
+-- references
+0x30260 .bss
+-- ir
+fn d7 @ 0x20104 (size 348)
+  blk0 @ 0x20104:
+    v1 = #0x30260
+    brif ls r0, #0x9 -> 0x20112
+  blk1 @ 0x2010f:
+    br 0x20222
+  blk2 @ 0x20112:
+    unsupported: ARM tbb [pc, r0] at 0x20112
+    v2:r0 = call 0x20116(r0, r1, r2, r3)
+    ret v2
+  blk3 @ 0x20222:
+    br 0x2025a
+  blk4 @ 0x2025a:
+    store32(#0xffffffff, #0x30260)
+    ret #0xffffffff
+-- card
+{"addr":"0x20104","approxTokens":240,"blocks":5,"hardReasons":[],"name":"d7","nameSources":["symtab","dwarf"],"section":".text","size":348,"unsupported":1}

@@ -313,6 +313,11 @@ pub(super) fn expression(call: &Stmt, ctx: &Ctx<'_>) -> String {
     if let (Some(name), Some(first)) = (number, args.first_mut()) {
         *first = format!("{first} /* SYS_{name} */");
     }
+    let word_type = if *convention == crate::ir::Convention::Aapcs32 {
+        "uint32_t"
+    } else {
+        "uint64_t"
+    };
     let callee = if let Some(callee) = ctx.virtual_tables.callee(call, ctx) {
         callee
     } else {
@@ -333,9 +338,9 @@ pub(super) fn expression(call: &Stmt, ctx: &Ctx<'_>) -> String {
             (Some(through), _) => {
                 let text = super::render_value(through, ctx);
                 if text.contains(char::is_whitespace) {
-                    format!("((uint64_t (*)())({text}))")
+                    format!("(({word_type} (*)())({text}))")
                 } else {
-                    format!("((uint64_t (*)()){text})")
+                    format!("(({word_type} (*)()){text})")
                 }
             }
             (None, Some(target)) => ctx
@@ -344,7 +349,7 @@ pub(super) fn expression(call: &Stmt, ctx: &Ctx<'_>) -> String {
                 .get(target)
                 .map_or_else(|| format!("sub_{target:x}"), |name| super::sanitize(name)),
             (None, None) => format!(
-                "((uint64_t (*)())(uintptr_t){}())",
+                "(({word_type} (*)())(uintptr_t){}())",
                 ctx.call_outputs.dynamic_target
             ),
         }

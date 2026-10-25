@@ -1,0 +1,38 @@
+# arm32/tail_indirect.arm.O2.elf: elf arm32 no entry, 2 functions, 0 lift failures, 0 unsupported, 0 gotos
+0x200ec 12 via_ptr symtab,dwarf
+0x200f8 24 after_ptr symtab,dwarf
+
+== 0x200ec via_ptr
+-- decompile
+/* velk pseudo-C: via_ptr @ 0x200ec */
+int via_ptr(void *f, int x) {
+    return ((int32_t)(((uint32_t (*)())(uint32_t)(uintptr_t)f)((x + 1) & 0xffffffff)));
+}
+-- signature
+int (void * f, int x)
+-- references
+
+-- ir
+fn via_ptr @ 0x200ec (size 12)
+  blk0 @ 0x200ec:
+    v3:r0, r1 = call *r0(((r1 + #0x1) & #0xffffffff))
+    ret v3
+-- card
+{"addr":"0x200ec","approxTokens":114,"blocks":1,"hardReasons":[],"name":"via_ptr","nameSources":["symtab","dwarf"],"section":".text","size":12,"unsupported":0}
+
+== 0x200f8 after_ptr
+-- decompile
+/* velk pseudo-C: after_ptr @ 0x200f8 */
+int after_ptr(int x) {
+    return x + 5;
+}
+-- signature
+int (int x)
+-- references
+
+-- ir
+fn after_ptr @ 0x200f8 (size 24)
+  blk0 @ 0x200f8:
+    ret ((r0 + #0x5) & #0xffffffff)
+-- card
+{"addr":"0x200f8","approxTokens":132,"blocks":1,"hardReasons":[],"name":"after_ptr","nameSources":["symtab","dwarf"],"section":".text","size":24,"unsupported":0}

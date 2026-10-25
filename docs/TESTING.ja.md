@@ -31,7 +31,8 @@ BIN=target/release/velk sh tests/ladder.sh
 ## テストが確認すること
 
 - **命令の意味。** lift した各命令を CPU 上と IR インタプリタで多数の入力に対して実行し、結果が一致することを確かめます。
-  同じアーキテクチャのホスト (Apple シリコンで x86-64 を試す場合は Rosetta) が必要です。
+  同じアーキテクチャのホスト (Apple シリコンで x86-64 を試す場合は Rosetta) が必要です。ARM32 の整数命令のチェックは Docker の
+  `linux/arm/v7` と ARM 対応の clang、`ld.lld` を使い、Docker の実行環境が利用できない場合は理由を表示してスキップします。
 - **最適化パス。** テスト用バイナリのすべての関数を最適化の前後でインタプリタ実行し、結果が一致することを確かめます
   (`tests/golden/semantics.txt` が空であること)。
 - **再コンパイル。** 各テスト関数の出力した C をコンパイルして実行し、レジスタの結果とメモリへの影響の両方を IR インタプリタと
@@ -79,6 +80,9 @@ C API 型ライブラリは `UV_CACHE_DIR=target/uv-cache uv run tests/generate_
 (CodeView / PDB)、`tests/make_seh_fixtures.sh` (Windows SEH)、`tests/make_objc_fixtures.sh` (Objective-C)、
 `tests/make_arm64_lang_fixtures.sh` (AArch64 の Rust と Go) です。再生成は意図して行い、変わったバイトと記録された
 ツールチェーンのバージョンを確認してください。
+
+ARM32 の A32/T32 フィクスチャ（`-O0` / `-O2`）は `sh tests/make_arm32_fixtures.sh` で再生成します。
+ARM ターゲット対応の clang と `ld.lld` が必要です。
 
 ## 性能
 

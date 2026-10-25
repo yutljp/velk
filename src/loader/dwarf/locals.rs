@@ -86,7 +86,7 @@ fn stack_offset(
     let (sp, entry_offset) = match image.isa {
         Isa::X86_64 => (Register(7), 8i64),
         Isa::AArch64 => (Register(31), 0i64),
-        Isa::Unsupported => return None,
+        Isa::Arm32 | Isa::Unsupported => return None,
     };
     if image.stack_at_entry(start) != Some(true) {
         return None;

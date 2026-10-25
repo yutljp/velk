@@ -1,0 +1,132 @@
+# arm32/l6_abi.arm.O0.elf: elf arm32 no entry, 5 functions, 0 lift failures, 2 unsupported, 0 gotos
+0x20104 48 tail_target symtab,dwarf
+0x20134 36 tail_direct symtab,dwarf
+0x20158 44 tail_indirect symtab,dwarf
+0x20184 88 six_args symtab,dwarf
+0x201dc 60 wide_add symtab,dwarf
+/* velk prelude */
+uint64_t velk_entry_stack_pointer(void); /* target entry stack pointer */
+/* end velk prelude */
+
+== 0x20104 tail_target
+-- decompile
+/* velk pseudo-C: tail_target @ 0x20104 */
+int tail_target(int x) {
+    return x * 3 + 1;
+}
+-- signature
+int (int x)
+-- references
+
+-- ir
+fn tail_target @ 0x20104 (size 48)
+  blk0 @ 0x20104:
+    ret (((r0 * #0x3) + #0x1) & #0xffffffff)
+-- card
+{"addr":"0x20104","approxTokens":168,"blocks":1,"hardReasons":[],"name":"tail_target","nameSources":["symtab","dwarf"],"section":".text","size":48,"unsupported":0}
+
+== 0x20134 tail_direct
+-- decompile
+/* velk pseudo-C: tail_direct @ 0x20134 */
+int tail_direct(int x) {
+    return tail_target((x + 2) & 0xffffffff);
+}
+-- signature
+int (int x)
+-- references
+
+-- ir
+fn tail_direct @ 0x20134 (size 36)
+  blk0 @ 0x20134:
+    v3:r0, r1 = call 0x20104(((r0 + #0x2) & #0xffffffff))
+    ret v3
+-- card
+{"addr":"0x20134","approxTokens":150,"blocks":1,"hardReasons":[],"name":"tail_direct","nameSources":["symtab","dwarf"],"section":".text","size":36,"unsupported":0}
+
+== 0x20158 tail_indirect
+-- decompile
+/* velk pseudo-C: tail_indirect @ 0x20158 */
+int tail_indirect(void *f, int x) {
+    return ((uint32_t (*)())(uint32_t)(uintptr_t)f)((x + 1) & 0xffffffff);
+}
+-- signature
+int (void * f, int x)
+-- references
+
+-- ir
+fn tail_indirect @ 0x20158 (size 44)
+  blk0 @ 0x20158:
+    v4:r0, r1 = call *r0(((r1 + #0x1) & #0xffffffff))
+    ret v4
+-- card
+{"addr":"0x20158","approxTokens":162,"blocks":1,"hardReasons":[],"name":"tail_indirect","nameSources":["symtab","dwarf"],"section":".text","size":44,"unsupported":0}
+
+== 0x20184 six_args
+-- decompile
+/* velk pseudo-C: six_args @ 0x20184 */
+int six_args(int a, int b, int c, int d, int e, int f) {
+    return a + b + c + d + e + f;
+}
+-- signature
+int (int a, int b, int c, int d)
+-- references
+
+-- ir
+fn six_args @ 0x20184 (size 88)
+  blk0 @ 0x20184:
+    ret (((((((r0 + r1) & #0xffffffff) + r2) + r3) + load32(sp)) + load32((sp + #0x4))) & #0xffffffff)
+-- card
+{"addr":"0x20184","approxTokens":228,"blocks":1,"hardReasons":[],"name":"six_args","nameSources":["symtab","dwarf"],"section":".text","size":88,"unsupported":0}
+
+== 0x201dc wide_add
+-- decompile
+/* velk pseudo-C: wide_add @ 0x201dc */
+int32_t wide_add(int32_t a0, int32_t a1, int32_t a2, int32_t a3) {
+    uint64_t sp = velk_entry_stack_pointer();
+    uint32_t v1;
+    uint32_t v2;
+
+    /* unsupported: AAPCS32 multiword, floating-point or aggregate declaration */
+    *(uint32_t *)(sp - 0x8) = v1;
+    *(uint32_t *)(sp - 0x4) = v2;
+    sp = sp - 0x8;
+    sp = sp - 0x10;
+    *(uint32_t *)(sp + 0x8) = a0;
+    *(uint32_t *)(sp + 0xc) = a1;
+    *(uint32_t *)(sp + 0x4) = a3;
+    *(uint32_t *)(sp) = a2;
+    int32_t v5 = a0 + a2;
+    /* unsupported: ARM adc r1, r1, r2 at 0x2020c */
+    sp = v1;
+    v1 = *(uint32_t *)(sp);
+    sp = sp + 0x8;
+    return a0;
+}
+-- signature
+int32_t (int32_t a0, int32_t a1, int32_t a2, int32_t a3)
+-- references
+
+-- ir
+fn wide_add @ 0x201dc (size 60)
+  blk0 @ 0x201dc:
+    unsupported: AAPCS32 multiword, floating-point or aggregate declaration
+    store32(r11, (sp + #0xfffffffffffffff8))
+    store32(lr, (sp + #0xfffffffffffffffc))
+    sp = (sp + #0xfffffffffffffff8)
+    sp = (sp - #0x10)
+    store32(r0, (sp + #0x8))
+    store32(r1, (sp + #0xc))
+    store32(r3, (sp + #0x4))
+    store32(r2, sp)
+    v1 = r0
+    v2 = r1
+    v3 = r2
+    v4 = r3
+    v5 = ((v1 + v3) & #0xffffffff)
+    unsupported: ARM adc r1, r1, r2 at 0x2020c
+    sp = r11
+    r11 = load32(sp)
+    sp = (sp + #0x8)
+    ret r0
+-- card
+{"addr":"0x201dc","approxTokens":186,"blocks":1,"hardReasons":[],"name":"wide_add","nameSources":["symtab","dwarf"],"section":".text","size":60,"unsupported":2}
