@@ -772,3 +772,120 @@ fn printed_wrapping_frame_indices_add_as_integer_addresses() {
         &[],
     );
 }
+
+#[test]
+fn printed_stack_indexes_include_subtracted_terms() {
+    let index = Expr::reg(7, 64);
+    let mut statements = vec![
+        store(-64, 0x0706050403020100, 8),
+        store(-56, 0x0f0e0d0c0b0a0908, 8),
+        store(-48, 0x1716151413121110, 8),
+    ];
+    statements.push(Stmt::Ret {
+        value: Expr::Load {
+            addr: Box::new(Expr::bin(
+                BinOp::Add,
+                Expr::bin(BinOp::Sub, slot(-64), index.clone()),
+                Expr::bin(BinOp::Shl, index, Expr::Const(3)),
+            )),
+            width: 1,
+            signed: false,
+        },
+    });
+    let ir = synthetic_ir(
+        "stack_stride_seven",
+        vec![Param {
+            index: 7,
+            name: "index".into(),
+            ty: CType::U64,
+        }],
+        CType::U32,
+        statements,
+    );
+    let code = velk::render::render(&ir, &[], &Default::default(), &[]);
+    assert!(!code.contains("velk_entry_stack_pointer"), "{code}");
+    syntax::run_printed(
+        &code,
+        "",
+        "for(unsigned i=0;i<4;++i) if(stack_stride_seven(i)!=7*i) return 1;",
+    );
+}
+
+#[test]
+fn printed_stack_pointer_loops_share_backward_indexed_storage() {
+    let pointer = VARIABLE_BASE;
+    let count = pointer + 1;
+    let mut statements: Vec<Stmt> = (-64..=-24).step_by(8).map(|at| store(at, 0, 8)).collect();
+    statements.extend([
+        Stmt::Assign {
+            dest: RegRef {
+                index: pointer,
+                width: 64,
+            },
+            value: slot(-24),
+        },
+        Stmt::Assign {
+            dest: RegRef {
+                index: count,
+                width: 64,
+            },
+            value: Expr::Const(0),
+        },
+        Stmt::Br { target: Some(16) },
+    ]);
+    let mut ir = synthetic_ir("stack_backward_rows", vec![], CType::U32, statements);
+    let mut body = Vec::new();
+    for offset in [0i64, -16, -32] {
+        body.push(Stmt::Store {
+            addr: Expr::bin(
+                BinOp::Add,
+                Expr::reg(pointer, 64),
+                Expr::Const(offset as u64),
+            ),
+            value: Expr::Const(0x1234),
+            width: 2,
+        });
+    }
+    body.extend([
+        Stmt::Assign {
+            dest: RegRef {
+                index: pointer,
+                width: 64,
+            },
+            value: Expr::bin(BinOp::Add, Expr::reg(pointer, 64), Expr::Const(2)),
+        },
+        Stmt::Assign {
+            dest: RegRef {
+                index: count,
+                width: 64,
+            },
+            value: Expr::bin(BinOp::Add, Expr::reg(count, 64), Expr::Const(1)),
+        },
+        Stmt::Brif {
+            cond: Cond::Ne,
+            lhs: Expr::reg(count, 64),
+            rhs: Expr::Const(3),
+            target: 16,
+        },
+    ]);
+    ir.blocks.push(Block {
+        start: 16,
+        stmts: body,
+    });
+    let reads = [-56i64, -40, -24].map(|at| Expr::Load {
+        addr: Box::new(slot(at)),
+        width: 2,
+        signed: false,
+    });
+    ir.blocks.push(Block {
+        start: 32,
+        stmts: vec![Stmt::Ret {
+            value: reads
+                .into_iter()
+                .reduce(|a, b| Expr::bin(BinOp::Add, a, b))
+                .unwrap(),
+        }],
+    });
+    let code = velk::render::render(&ir, &[], &Default::default(), &[]);
+    syntax::run_printed(&code, "", "if(stack_backward_rows()!=3*0x1234) return 1;");
+}

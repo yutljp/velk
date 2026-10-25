@@ -310,7 +310,6 @@ pub(crate) fn local_plus_offset(value: &Expr, ctx: &Ctx<'_>) -> Option<String> {
     };
     let Some(mut rest) = rest
         .into_iter()
-        .cloned()
         .reduce(|sum, term| Expr::bin(BinOp::Add, sum, term))
     else {
         return None;

@@ -333,6 +333,30 @@ pub(super) fn lift_conditional_compare(lifter: &mut Lifter, ops: [Operand; 4], s
         _ => Test::Unknown,
     };
     lifter.last_compare = None;
+    // The new comparison may reuse the slots that preserve the old
+    // operands. Keep its condition separate before those slots are written.
+    let earlier = match earlier {
+        Test::Compare(cond, lhs, rhs)
+            if {
+                let mut reads = std::collections::HashSet::new();
+                crate::ir::visit::collect_reads(&lhs, &mut reads);
+                crate::ir::visit::collect_reads(&rhs, &mut reads);
+                reads
+                    .iter()
+                    .any(|index| crate::ir::FLAG_OPERANDS.contains(index))
+            } =>
+        {
+            let value = lifter.hold(Expr::Select {
+                cond,
+                lhs: Box::new(lhs),
+                rhs: Box::new(rhs),
+                then: Box::new(Expr::constant(1)),
+                els: Box::new(Expr::constant(0)),
+            });
+            Test::Compare(crate::ir::Cond::Ne, value, Expr::constant(0))
+        }
+        other => other,
+    };
     let Some(width) = register_width(ops[0]) else {
         return;
     };

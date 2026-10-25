@@ -16,6 +16,28 @@ compare_wide:
     cset w0, gt
     ret
 .size compare_wide, .-compare_wide
+.globl conditional_compare
+.type conditional_compare,@function
+conditional_compare:
+    ldr w8, [x0]
+    cmp w8, #0
+    ldr x8, [x1]
+    ccmp x8, #8, #2, ne
+    cset w8, lo
+    mov w0, w8
+    ret
+.size conditional_compare, .-conditional_compare
+.globl conditional_sum
+.type conditional_sum,@function
+conditional_sum:
+    ldr w8, [x0]
+    cmp w8, #0
+    ldr x8, [x1]
+    ccmn x8, #1, #0, ne
+    cset w8, eq
+    mov w0, w8
+    ret
+.size conditional_sum, .-conditional_sum
 .globl preserve_argument
 .type preserve_argument,@function
 preserve_argument:
@@ -96,6 +118,20 @@ only_third:
         &code,
         "",
         "int64_t inputs[] = {0,1,2,INT64_C(0x100000000),INT64_C(0x100000001),INT64_MAX,INT64_MIN,-1}; for(unsigned i=0;i<sizeof inputs/sizeof *inputs;++i) if(compare_wide(inputs[i])!=(inputs[i]>1)) return 1;",
+    );
+    let address = binary.find("conditional_compare").unwrap().addr;
+    let code = binary.decompile(address, None, None).unwrap();
+    syntax::run_printed(
+        &code,
+        "",
+        "uint64_t values[] = {0,1,7,8,UINT64_C(0x100000000),UINT64_MAX}; for(uint32_t first=0;first<3;++first) for(unsigned i=0;i<sizeof values/sizeof *values;++i) if(conditional_compare(&first,&values[i])!=(first!=0 && values[i]<8)) return 1;",
+    );
+    let address = binary.find("conditional_sum").unwrap().addr;
+    let code = binary.decompile(address, None, None).unwrap();
+    syntax::run_printed(
+        &code,
+        "",
+        "uint64_t values[] = {0,1,7,8,UINT64_C(0x100000000),UINT64_MAX}; for(uint32_t first=0;first<3;++first) for(unsigned i=0;i<sizeof values/sizeof *values;++i) if(conditional_sum(&first,&values[i])!=(first!=0 && values[i]==UINT64_MAX)) return 1;",
     );
     let address = binary.find("preserve_argument").unwrap().addr;
     let code = binary.decompile(address, None, None).unwrap();

@@ -1,4 +1,5 @@
 mod debug;
+mod indexed;
 
 use crate::arch::stack_pointer;
 use std::collections::HashMap;
@@ -1831,6 +1832,7 @@ fn frame_accesses(
             }
         }
     }
+    indexed::extend(ir, sp, frames, &mut accesses);
     (accesses, elements)
 }
 
@@ -1840,32 +1842,48 @@ pub(crate) const BUFFER_REACH: i64 = 16;
 
 /// A sum of the stack pointer, constants and other terms, split into the
 /// stack pointer plus the constants and the other terms.
-pub(crate) fn offset_local(expr: &Expr, sp: u16) -> Option<(Expr, Vec<&Expr>)> {
-    fn terms<'a>(expr: &'a Expr, out: &mut Vec<&'a Expr>) {
+pub(crate) fn offset_local(expr: &Expr, sp: u16) -> Option<(Expr, Vec<Expr>)> {
+    fn terms(expr: &Expr, subtract: bool, out: &mut Vec<Expr>) {
         match expr {
             Expr::Bin {
                 op: BinOp::Add,
                 lhs,
                 rhs,
             } => {
-                terms(lhs, out);
-                terms(rhs, out);
+                terms(lhs, subtract, out);
+                terms(rhs, subtract, out);
             }
-            other => out.push(other),
+            Expr::Bin {
+                op: BinOp::Sub,
+                lhs,
+                rhs,
+            } => {
+                terms(lhs, subtract, out);
+                terms(rhs, !subtract, out);
+            }
+            Expr::Const(value) if subtract => out.push(Expr::Const(value.wrapping_neg())),
+            other if subtract => out.push(Expr::bin(BinOp::Sub, Expr::Const(0), other.clone())),
+            other => out.push(other.clone()),
         }
     }
-    if !matches!(expr, Expr::Bin { op: BinOp::Add, .. }) {
+    if !matches!(
+        expr,
+        Expr::Bin {
+            op: BinOp::Add | BinOp::Sub,
+            ..
+        }
+    ) {
         return None;
     }
     let mut parts = Vec::new();
-    terms(expr, &mut parts);
+    terms(expr, false, &mut parts);
     let mut base = None;
     let mut offset = 0u64;
     let mut rest = Vec::new();
     for part in parts {
         match part {
-            Expr::Reg { index, width: 64 } if *index == sp && base.is_none() => base = Some(part),
-            Expr::Const(value) => offset = offset.wrapping_add(*value),
+            Expr::Reg { index, width: 64 } if index == sp && base.is_none() => base = Some(part),
+            Expr::Const(value) => offset = offset.wrapping_add(value),
             other => rest.push(other),
         }
     }
@@ -1875,11 +1893,10 @@ pub(crate) fn offset_local(expr: &Expr, sp: u16) -> Option<(Expr, Vec<&Expr>)> {
     Some((
         Expr::bin(
             BinOp::Add,
-            (match base {
+            match base {
                 Some(value) => value,
                 None => return None,
-            })
-            .clone(),
+            },
             Expr::Const(offset),
         ),
         rest,
@@ -1911,7 +1928,7 @@ fn frame_addresses(
             out.push((base, slot, true, access));
         }
         for term in rest {
-            frame_addresses(term, frame, sp, None, home, out);
+            frame_addresses(&term, frame, sp, None, home, out);
         }
         return;
     }
