@@ -316,12 +316,13 @@ int main(void) {
     std::fs::write(&source, &code).unwrap();
     for mocked in [false, true] {
         let printed = if mocked {
-            String::from(
+            format!(
+                "{}{}",
                 "#include <stdint.h>\n#define VELK_MACHINE_TEST_VALUES\nstatic uint64_t test_rdtsc(void) { return 0x98765432fedcba98ULL; }\nstatic uint64_t test_xgetbv(unsigned int n) { (void)n; return 0x98765432fedcba98ULL; }\nstatic uint64_t test_rdtscp(unsigned int *aux) { *aux = 0x81234567U; return 0x98765432fedcba98ULL; }\n",
-            ) + &code
-                .replace("__rdtsc()", "test_rdtsc()")
-                .replace("_xgetbv(", "test_xgetbv(")
-                .replace("__rdtscp(&aux)", "test_rdtscp(&aux)")
+                code.replace("__rdtsc()", "test_rdtsc()")
+                    .replace("_xgetbv(", "test_xgetbv(")
+                    .replace("__rdtscp(&aux)", "test_rdtscp(&aux)")
+            )
         } else {
             code.clone()
         };

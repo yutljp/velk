@@ -11,12 +11,12 @@
 //! address holding the bytes the interpreter's memory holds, and any other
 //! page the compiled code touches is mapped and filled the same way when
 //! it first faults; the region's bytes after the run are compared too, in
-//! tests/golden/recompile_memory.txt.
+//! `tests/golden/recompile_memory.txt`.
 //!
 //! Compiler and driver results for batches of at most 32 functions are cached
 //! under target/recompile-cache; IR expectations and comparisons are recomputed.
 //! Batches run in parallel, with results collected in fixture and batch order.
-//! Set VELK_RECOMPILE_NO_CACHE=1 to compile and run every batch again.
+//! Set `VELK_RECOMPILE_NO_CACHE=1` to compile and run every batch again.
 
 #[path = "recompile/arm64_results.rs"]
 mod arm64_results;
@@ -2255,10 +2255,10 @@ fn assert_scalar_stack_render_control(ir: &FunctionIr) {
     let abi = ir
         .declared_signature
         .as_ref()
-        .unwrap()
+        .expect("the scalar stack test requires a declared signature")
         .abi
         .as_ref()
-        .unwrap();
+        .expect("the scalar stack test requires a valid ABI");
     assert!(
         abi.arguments
             .iter()
@@ -6740,27 +6740,27 @@ fn segment_support(
 /// The C program holding the functions in `alive`.
 fn aggregate_call(text: &mut String, candidate: &Candidate, index: usize, call: &AggregateCall) {
     let abi = call.signature.abi.as_ref().expect("a supported ABI");
-    writeln!(text, "    case {index}: {{").unwrap();
+    writeln!(text, "    case {index}: {{").expect("formatting into a String cannot fail");
     let mut cursor = 0;
     let mut arguments = Vec::new();
     for (position, ((_, ty), value)) in call.signature.params.iter().zip(&abi.arguments).enumerate()
     {
         let ty = scoped_type(&ty.to_string(), &candidate.code, index);
         let local = format!("velk_arg{position}");
-        writeln!(text, "        {ty} {local};").unwrap();
+        writeln!(text, "        {ty} {local};").expect("formatting into a String cannot fail");
         writeln!(
             text,
             "        _Static_assert(sizeof({local}) == {}, \"argument size\");",
             value.size
         )
-        .unwrap();
+        .expect("formatting into a String cannot fail");
         writeln!(
             text,
             "        _Static_assert(_Alignof({ty}) == {}, \"argument alignment\");",
             value.alignment
         )
-        .unwrap();
-        writeln!(text, "        for (unsigned byte = 0; byte < {}; byte++) ((unsigned char *)&{local})[byte] = (unsigned char)(a[{cursor} + byte / 8] >> (8 * (byte % 8)));", value.size).unwrap();
+        .expect("formatting into a String cannot fail");
+        writeln!(text, "        for (unsigned byte = 0; byte < {}; byte++) ((unsigned char *)&{local})[byte] = (unsigned char)(a[{cursor} + byte / 8] >> (8 * (byte % 8)));", value.size).expect("formatting into a String cannot fail");
         cursor += value.size.div_ceil(8) as usize;
         arguments.push(local);
     }
@@ -6771,27 +6771,28 @@ fn aggregate_call(text: &mut String, candidate: &Candidate, index: usize, call: 
         "        {ty} velk_result = velk_f{index}({});",
         arguments.join(", ")
     )
-    .unwrap();
+    .expect("formatting into a String cannot fail");
     writeln!(
         text,
         "        _Static_assert(sizeof(velk_result) == {}, \"result size\");",
         result.size
     )
-    .unwrap();
+    .expect("formatting into a String cannot fail");
     writeln!(
         text,
         "        _Static_assert(_Alignof({ty}) == {}, \"result alignment\");",
         result.alignment
     )
-    .unwrap();
-    writeln!(text, "        uint64_t velk_word = 0;").unwrap();
-    writeln!(text, "        for (unsigned byte = 0; byte < {}; byte++) velk_word |= (uint64_t)((const unsigned char *)&velk_result)[{} + byte] << (8 * byte);", call.result.bytes, call.result.offset).unwrap();
+    .expect("formatting into a String cannot fail");
+    writeln!(text, "        uint64_t velk_word = 0;")
+        .expect("formatting into a String cannot fail");
+    writeln!(text, "        for (unsigned byte = 0; byte < {}; byte++) velk_word |= (uint64_t)((const unsigned char *)&velk_result)[{} + byte] << (8 * byte);", call.result.bytes, call.result.offset).expect("formatting into a String cannot fail");
     writeln!(
         text,
         "        return velk_word & 0x{:x}ULL;\n    }}",
         call.result.mask
     )
-    .unwrap();
+    .expect("formatting into a String cannot fail");
 }
 
 /// The C program holding the functions in `alive`.
@@ -6824,7 +6825,7 @@ fn program(
             "uint64_t *{provider}(void) {{ return (uint64_t *)(uintptr_t)0x{:x}ULL; }}",
             frame
         )
-        .unwrap();
+        .expect("formatting into a String cannot fail");
     }
     let stack_providers: BTreeSet<_> = alive
         .iter()
@@ -6840,7 +6841,7 @@ fn program(
             text,
             "uint64_t {provider}(void) {{ return 0x{frame:x}ULL; }}"
         )
-        .unwrap();
+        .expect("formatting into a String cannot fail");
     }
     if mode == Mode::Memory {
         writeln!(
@@ -6914,7 +6915,8 @@ fn program(
         write!(text, "    case {index}:").expect("writing to a String");
         if candidates[index].marshalling.is_some() {
             for position in 0..candidates[index].params.len() {
-                write!(text, " c[{position}] = a[{position}];").unwrap();
+                write!(text, " c[{position}] = a[{position}];")
+                    .expect("formatting into a String cannot fail");
             }
             text.push_str(" break;\n");
             continue;
@@ -9949,7 +9951,7 @@ fn check_printed_unary_floating_negation(constants: bool) {
                 let text = velk::render::render(&ir, &[], &Default::default(), &[]);
                 assert!(text.contains(&format!("{name}({ty} input)")), "{text}");
                 source.push_str(&text);
-                writeln!(body, "{{ {storage} raw = UINT64_C({input}); {ty} input; memcpy(&input, &raw, sizeof(input)); {ty} result = {name}(input); {storage} bits; memcpy(&bits, &result, sizeof(bits)); if (bits != UINT64_C({expected})) {{ fprintf(stderr, \"{name}: %\" PRIu64 \"\\n\", (uint64_t)bits); return 1; }} }}").unwrap();
+                writeln!(body, "{{ {storage} raw = UINT64_C({input}); {ty} input; memcpy(&input, &raw, sizeof(input)); {ty} result = {name}(input); {storage} bits; memcpy(&bits, &result, sizeof(bits)); if (bits != UINT64_C({expected})) {{ fprintf(stderr, \"{name}: %\" PRIu64 \"\\n\", (uint64_t)bits); return 1; }} }}").expect("formatting into a String cannot fail");
                 checked += 1;
             }
         }
@@ -9961,7 +9963,7 @@ fn check_printed_unary_floating_negation(constants: bool) {
         body,
         "puts(\"{expected_count} unary floating cases passed\");\nreturn 0;\n}}"
     )
-    .unwrap();
+    .expect("formatting into a String cannot fail");
     source.push_str(&body);
     let source = Program {
         text: source,

@@ -1,6 +1,9 @@
 //! Operations whose effects depend on processor state outside the registers.
 
-use super::*;
+use super::{
+    Expr, Instruction, Lifter, Operand, RegRef, Stmt, Write, a64, destination, memory,
+    preserve_compare, register_width,
+};
 use crate::ir::MachineInstruction;
 
 pub(super) fn lift(lifter: &mut Lifter, ins: &Instruction) -> bool {

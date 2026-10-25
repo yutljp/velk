@@ -506,7 +506,7 @@ fn printed_local_offsets_preserve_operator_precedence() {
     let or = Expr::bin(BinOp::Or, a.clone(), Expr::Const(1));
     let select = Expr::Select {
         cond: Cond::Eq,
-        lhs: Box::new(a.clone()),
+        lhs: Box::new(a),
         rhs: Box::new(Expr::Const(0)),
         then: Box::new(Expr::Const(2)),
         els: Box::new(Expr::Const(0)),

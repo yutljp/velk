@@ -41,7 +41,13 @@ pub struct FunctionTypes {
     pub(crate) param_layouts: Vec<Result<TypeLayout, AbiIssue>>,
     pub(crate) ret_layout: Result<Option<TypeLayout>, AbiIssue>,
     pub(crate) abi_profile: Result<AbiProfile, AbiIssue>,
-    #[cfg_attr(not(test), allow(dead_code))]
+    #[cfg_attr(
+        not(test),
+        allow(
+            dead_code,
+            reason = "Declaration origins are currently inspected only by tests."
+        )
+    )]
     pub(crate) source: FunctionSource,
 }
 

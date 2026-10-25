@@ -117,6 +117,7 @@ pub fn entry_state(image: &Image) -> Vec<(u16, u64)> {
     goroutine.into_iter().chain(zero).collect()
 }
 
+#[must_use]
 pub fn return_bits(ret: &CType) -> Option<u32> {
     match ret {
         CType::Void => None,

@@ -26,6 +26,12 @@ pub struct Fact {
     pub hi: u64,
 }
 
+#[derive(Clone, Copy)]
+enum Widening {
+    Enabled,
+    Disabled,
+}
+
 impl Fact {
     pub const TOP: Fact = Fact {
         zeros: 0,
@@ -34,6 +40,7 @@ impl Fact {
         hi: u64::MAX,
     };
 
+    #[must_use]
     pub fn constant(value: u64) -> Fact {
         Fact {
             zeros: !value,
@@ -44,6 +51,7 @@ impl Fact {
     }
 
     /// The values satisfying both views, or None when there are none.
+    #[must_use]
     pub fn new(zeros: u64, ones: u64, lo: u64, hi: u64) -> Option<Fact> {
         let (mut zeros, mut ones, mut lo, mut hi) = (zeros, ones, lo, hi);
         for _ in 0..2 {
@@ -70,23 +78,28 @@ impl Fact {
         })
     }
 
+    #[must_use]
     pub fn range(lo: u64, hi: u64) -> Option<Fact> {
         Fact::new(0, 0, lo, hi)
     }
 
+    #[must_use]
     pub fn bits(zeros: u64, ones: u64) -> Option<Fact> {
         Fact::new(zeros, ones, 0, u64::MAX)
     }
 
     /// Any value below `2^bits`.
+    #[must_use]
     pub fn width(bits: u32) -> Fact {
         Fact::TOP.truncate(bits)
     }
 
+    #[must_use]
     pub fn singleton(self) -> Option<u64> {
         (self.lo == self.hi).then_some(self.lo)
     }
 
+    #[must_use]
     pub fn contains(self, value: u64) -> bool {
         self.lo <= value
             && value <= self.hi
@@ -95,11 +108,13 @@ impl Fact {
     }
 
     /// The bits the value may have set.
+    #[must_use]
     pub fn possible(self) -> u64 {
         !self.zeros
     }
 
     /// Every value either fact allows.
+    #[must_use]
     pub fn join(self, other: Fact) -> Fact {
         Fact::new(
             self.zeros & other.zeros,
@@ -111,6 +126,7 @@ impl Fact {
     }
 
     /// The values both facts allow.
+    #[must_use]
     pub fn meet(self, other: Fact) -> Option<Fact> {
         Fact::new(
             self.zeros | other.zeros,
@@ -121,6 +137,7 @@ impl Fact {
     }
 
     /// The low `bits` of the value.
+    #[must_use]
     pub fn truncate(self, bits: u32) -> Fact {
         if bits >= 64 {
             return self;
@@ -142,6 +159,7 @@ impl Fact {
     }
 
     /// The low `bits` of the value, their top bit copied into the bits above.
+    #[must_use]
     pub fn sign_extend(self, bits: u32) -> Fact {
         let low = self.truncate(bits);
         if bits >= 64 || bits == 0 {
@@ -437,12 +455,14 @@ fn applied(op: Operation) -> Fact {
 }
 
 /// What `expr` may hold whatever the registers it reads hold.
+#[must_use]
 pub fn of(expr: &Expr) -> Fact {
     expression(expr, &|_, bits| Some(Fact::width(bits))).unwrap_or(Fact::TOP)
 }
 
 /// Whether `cond` holds between values of the two facts at `bits`, when
 /// every pair of them decides it the same way.
+#[must_use]
 pub fn decide(cond: Cond, lhs: Fact, rhs: Fact, bits: u32) -> Option<bool> {
     let (a, b) = (lhs.truncate(bits), rhs.truncate(bits));
     let (sa, sb) = (a.signed(bits), b.signed(bits));
@@ -475,6 +495,7 @@ pub fn decide(cond: Cond, lhs: Fact, rhs: Fact, bits: u32) -> Option<bool> {
 
 /// What the left operand may hold, as `bits` wide, where `cond` holds
 /// between it and the right one; None when no value lets it hold.
+#[must_use]
 pub fn refine(cond: Cond, lhs: Fact, rhs: Fact, bits: u32) -> Option<Fact> {
     let (a, b) = (lhs.truncate(bits), rhs.truncate(bits));
     let top = mask(bits);
@@ -823,7 +844,8 @@ impl<'a> Ranges<'a> {
         }
     }
 
-    fn set(&mut self, value: u16, fact: Fact, widen: bool, narrowing: bool) -> bool {
+    fn set(&mut self, value: u16, fact: Fact, widen: Widening, narrowing: bool) -> bool {
+        let widen = matches!(widen, Widening::Enabled);
         let Some(index) = Self::index(value) else {
             return false;
         };
@@ -947,7 +969,7 @@ impl<'a> Ranges<'a> {
                     }
                 }
                 if let Some(joined) = joined {
-                    changed |= self.set(phi.value, joined, true, narrowing);
+                    changed |= self.set(phi.value, joined, Widening::Enabled, narrowing);
                 }
             }
             for stmt in &ssa.ir.blocks[block].stmts {
@@ -955,7 +977,7 @@ impl<'a> Ranges<'a> {
                     && let Some(fact) = self.eval(value, block, DEPTH)
                 {
                     let fact = fact.truncate(u32::from(dest.width));
-                    changed |= self.set(dest.index, fact, false, narrowing);
+                    changed |= self.set(dest.index, fact, Widening::Disabled, narrowing);
                 }
             }
             for next in self.live_successors(block) {
@@ -983,6 +1005,7 @@ impl<'a> Ranges<'a> {
     }
 
     /// Solves the facts of every value; None when they do not settle.
+    #[must_use]
     pub fn solve(ssa: &'a Ssa) -> Option<Ranges<'a>> {
         let count = ssa.ir.blocks.len();
         if count == 0 {

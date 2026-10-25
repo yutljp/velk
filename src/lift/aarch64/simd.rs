@@ -1,6 +1,9 @@
 //! Table lookup, variable shifts, and AES transformations.
 
-use super::*;
+use super::{
+    BinOp, Cond, Expr, Instruction, LaneOp, Lifter, Operand, Operation, a64, by_halves, halves,
+    lane_value, lanewise, vector,
+};
 
 pub(super) fn lift(lifter: &mut Lifter, ins: &Instruction) -> bool {
     use a64::Opcode as O;

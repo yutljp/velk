@@ -10,7 +10,7 @@
 //! simplifications: a pointer to a function is written `void (*)(...)` and
 //! taken for a pointer to code, an array parameter is written as the pointer
 //! it decays to, and a typedef is used only where its width and sign agree
-//! between Linux on x86-64 and AArch64 and macOS on arm64.
+//! between Linux on x86-64 and `AArch64` and macOS on arm64.
 
 use std::collections::HashMap;
 use std::sync::OnceLock;
@@ -38,11 +38,13 @@ pub struct Prototype {
 impl Prototype {
     /// How many integer and pointer arguments it takes before any variadic
     /// ones.
+    #[must_use]
     pub fn fixed(&self) -> usize {
         self.params.iter().filter(|ty| !ty.is_sse_float()).count()
     }
 
     /// How many floating-point arguments it takes.
+    #[must_use]
     pub fn floats(&self) -> usize {
         self.params.iter().filter(|ty| ty.is_sse_float()).count()
     }
@@ -54,6 +56,7 @@ impl Prototype {
     }
 
     /// The integer arguments it takes as pointers, one bit for each.
+    #[must_use]
     pub fn pointers(&self) -> u32 {
         self.integer_params()
             .enumerate()
@@ -64,6 +67,7 @@ impl Prototype {
 
     /// It returns a 32-bit integer, which leaves the upper half of the
     /// return register unspecified.
+    #[must_use]
     pub fn narrow_return(&self) -> bool {
         self.ret.integer().is_some_and(|(bits, _)| bits == 32)
     }
@@ -780,6 +784,7 @@ fn undecorated(name: &str, macho: bool) -> &str {
 
 /// The prototype a library function's name gives, whatever symbol
 /// decorations it carries.
+#[must_use]
 pub fn of(name: &str, macho: bool) -> Option<&'static Prototype> {
     let name = undecorated(name, macho);
     let c_name = if macho {
@@ -803,6 +808,7 @@ pub fn of(name: &str, macho: bool) -> Option<&'static Prototype> {
 }
 
 /// The prototype of a function of the Go or Rust runtime, by its name.
+#[must_use]
 pub fn runtime(name: &str) -> Option<&'static Prototype> {
     let name = name.strip_prefix("__rustc::").unwrap_or(name);
     runtime_table().get(name)
@@ -861,6 +867,7 @@ pub(crate) fn scalar_call_output<'a>(
 }
 
 /// The members of a structure whose layout is known, by offset.
+#[must_use]
 pub fn layout(structure: &str) -> Option<&'static [(i64, &'static str)]> {
     LAYOUTS
         .iter()
@@ -870,6 +877,7 @@ pub fn layout(structure: &str) -> Option<&'static [(i64, &'static str)]> {
 
 /// The type that says more of a value two uses give a type: a pointer to
 /// something rather than to nothing in particular; otherwise the first.
+#[must_use]
 pub fn preferred(first: CType, second: &CType) -> CType {
     if void_pointer(&first) && second.is_pointer() {
         second.clone()
@@ -879,6 +887,7 @@ pub fn preferred(first: CType, second: &CType) -> CType {
 }
 
 /// `void *` or `const void *`, which say only that a value is a pointer.
+#[must_use]
 pub fn void_pointer(ty: &CType) -> bool {
     match ty {
         CType::Pointer(target) => match target.as_ref() {
@@ -895,6 +904,7 @@ pub fn void_pointer(ty: &CType) -> bool {
 /// `%%` takes none, and a floating-point value goes in a vector register
 /// rather than an argument register. The conversions of a function that
 /// `scans` its input take pointers to what they read.
+#[must_use]
 pub fn conversion_types(format: &str, scans: bool) -> Vec<CType> {
     let named = |name: &str| CType::Named(name.to_owned());
     let mut types = Vec::new();

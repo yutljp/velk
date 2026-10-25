@@ -1,7 +1,13 @@
 //! What a callee's debug-information declaration says of a call: the
 //! types it names and where the call passes each parameter and result.
 // Calls are not yet given these records outside tests.
-#![cfg_attr(not(test), allow(dead_code))]
+#![cfg_attr(
+    not(test),
+    allow(
+        dead_code,
+        reason = "Debug call records are currently consumed only by tests."
+    )
+)]
 
 use std::collections::BTreeMap;
 use std::sync::Arc;

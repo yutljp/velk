@@ -1,7 +1,7 @@
 use super::{
-    BinOp, Expr, Flags, Instruction, Lifter, Operand, Operation, Precision, RegRef, Rounding, Stmt,
-    a64, destination, immediate_lane, lane, lane_value, mask_bits, register_width, replicated,
-    shift_count, simd, source_halves, unzip, vector, write_narrow,
+    BinOp, Expr, Flags, Instruction, LaneParity, Lifter, Operand, Operation, Precision, RegRef,
+    Rounding, Stmt, a64, destination, immediate_lane, lane, lane_value, mask_bits, register_width,
+    replicated, shift_count, simd, source_halves, unzip, vector, write_narrow,
 };
 
 /// `2^exponent` as a float of `precision`.
@@ -261,8 +261,8 @@ pub(super) fn lift_vector_float(lifter: &mut Lifter, ins: &Instruction) -> Optio
                 (add(vec![pair.0, pair.1]), Expr::constant(0))
             } else {
                 let b = source(ops[2])?;
-                let even = unzip(a.clone(), b.clone(), dest.2, dest.1, false);
-                let odd = unzip(a, b, dest.2, dest.1, true);
+                let even = unzip(a.clone(), b.clone(), dest.2, dest.1, LaneParity::Even);
+                let odd = unzip(a, b, dest.2, dest.1, LaneParity::Odd);
                 float_lanes(shape, &[even, odd], add)
             }
         }

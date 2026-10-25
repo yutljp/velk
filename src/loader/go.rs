@@ -148,9 +148,8 @@ pub fn functions(image: &Image) -> Vec<GoFunction> {
             break;
         };
         let function = pclntable.wrapping_add(func_off as i64 as u64);
-        let name_off = match i32_at(image, function + 4) {
-            Some(value) => value,
-            None => continue,
+        let Some(name_off) = i32_at(image, function + 4) else {
+            continue;
         };
         if name_off < 0 || name_off as u64 >= names_len {
             continue;

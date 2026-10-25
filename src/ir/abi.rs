@@ -376,16 +376,14 @@ fn inspect(
     if !layout.trivial {
         return Err(AbiIssue::NonTrivial);
     }
-    let alignment = match layout.alignment {
-        Some(value) => value,
-        None => return Err(AbiIssue::UnknownLayout),
+    let Some(alignment) = layout.alignment else {
+        return Err(AbiIssue::UnknownLayout);
     };
     if layout.size == 0 || !alignment.is_power_of_two() || !layout.size.is_multiple_of(alignment) {
         return Err(AbiIssue::UnknownLayout);
     }
-    let bits = match layout.size.checked_mul(8) {
-        Some(value) => value,
-        None => return Err(AbiIssue::UnknownLayout),
+    let Some(bits) = layout.size.checked_mul(8) else {
+        return Err(AbiIssue::UnknownLayout);
     };
     if offset.checked_add(bits).is_none() {
         return Err(AbiIssue::UnknownLayout);
@@ -451,9 +449,8 @@ fn inspect(
                         Some(value) => value,
                         None => return Err(AbiIssue::UnknownLayout),
                     });
-                let field_end = match field.bit_offset.checked_add(field_bits) {
-                    Some(value) => value,
-                    None => return Err(AbiIssue::UnknownLayout),
+                let Some(field_end) = field.bit_offset.checked_add(field_bits) else {
+                    return Err(AbiIssue::UnknownLayout);
                 };
                 if field_end > bits
                     || (!union && field.bit_offset < end)
@@ -467,13 +464,11 @@ fn inspect(
                     if !field.layout.trivial {
                         return Err(AbiIssue::NonTrivial);
                     }
-                    let storage_bits = match field.layout.size.checked_mul(8) {
-                        Some(value) => value,
-                        None => return Err(AbiIssue::UnknownLayout),
+                    let Some(storage_bits) = field.layout.size.checked_mul(8) else {
+                        return Err(AbiIssue::UnknownLayout);
                     };
-                    let alignment = match field.layout.alignment {
-                        Some(value) => value,
-                        None => return Err(AbiIssue::UnknownLayout),
+                    let Some(alignment) = field.layout.alignment else {
+                        return Err(AbiIssue::UnknownLayout);
                     };
                     if field.layout.size == 0
                         || !alignment.is_power_of_two()

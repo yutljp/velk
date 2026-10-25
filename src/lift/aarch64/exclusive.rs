@@ -1,6 +1,9 @@
 //! Accesses whose success depends on the processor's exclusive monitor.
 
-use super::*;
+use super::{
+    Expr, Instruction, Lifter, Operand, RegRef, Stmt, Write, a64, destination, memory,
+    preserve_compare, register_width,
+};
 use crate::ir::MachineInstruction;
 
 pub(super) fn lift(lifter: &mut Lifter, ins: &Instruction) -> bool {

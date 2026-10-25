@@ -24,7 +24,7 @@ fn check_against_original_with_flags(
     let scratch = scratch_dir(pass);
     let original = scratch.join("original.c");
     let executable = scratch.join("original");
-    std::fs::write(&original, source).unwrap();
+    std::fs::write(&original, source).expect("the generated test files must be writable");
     let compiled = Command::new(compiler())
         .args(["-O0", "-fno-stack-protector"])
         .args(flags)
@@ -32,9 +32,9 @@ fn check_against_original_with_flags(
         .arg("-o")
         .arg(&executable)
         .output()
-        .unwrap();
+        .expect("the test compiler must be executable");
     assert!(compiled.status.success(), "{compiled:?}");
-    let mut binary = Binary::open(&executable).unwrap();
+    let mut binary = Binary::open(&executable).expect("the compiled fixture must be readable");
     let prefix = if cfg!(target_os = "macos") { "_" } else { "" };
     let mut text = String::from(HEADER);
     text.push_str(&source.replace("int main(", "int original_main("));
@@ -42,11 +42,20 @@ fn check_against_original_with_flags(
     let mut printed_code = Vec::new();
     let addresses: Vec<u64> = functions
         .iter()
-        .map(|function| binary.find(&format!("{prefix}{function}")).unwrap().addr)
+        .map(|function| {
+            binary
+                .find(&format!("{prefix}{function}"))
+                .expect("the compiled fixture must contain the requested function")
+                .addr
+        })
         .collect();
     for (function, address) in functions.iter().zip(&addresses) {
         let address = *address;
-        let mut ir = binary.analysis(address, None).unwrap().ir.clone();
+        let mut ir = binary
+            .analysis(address, None)
+            .expect("the compiled fixture must support analysis")
+            .ir
+            .clone();
         let printed = format!("printed_{function}");
         ir.name = Some(printed.clone());
         let mut others = velk::render::Symbols::default();
@@ -93,7 +102,7 @@ fn check_against_original_with_flags(
                 checks,
                 "if ((uint32_t){printed}({arguments}) != {function}({arguments})"
             )
-            .unwrap();
+            .expect("formatting into a String cannot fail");
             // What a call returns is the interpreter's guess.
             if calls.is_empty() {
                 write!(
@@ -101,7 +110,7 @@ fn check_against_original_with_flags(
                     " || (uint32_t){printed}({arguments}) != UINT32_C({})",
                     value as u32
                 )
-                .unwrap();
+                .expect("formatting into a String cannot fail");
             }
             checks.push_str(") return 1;\n");
         }

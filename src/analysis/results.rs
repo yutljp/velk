@@ -185,6 +185,10 @@ enum Fate {
 
 /// The body without its callees' summaries, which would take lifting
 /// everything they reach: a call then names no arguments.
+#[expect(
+    clippy::rc_buffer,
+    reason = "Shared blocks retain Vec ownership so an unshared lift can be taken without cloning its blocks."
+)]
 fn body(image: &Image, addr: u64) -> Option<std::sync::Arc<Vec<Block>>> {
     if image
         .functions

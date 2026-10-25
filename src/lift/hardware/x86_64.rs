@@ -1,6 +1,6 @@
 //! x86-64 instructions that read and write only general registers and
 //! flags, run by a small program built for x86-64 (`x86_64.c`). On an
-//! AArch64 Mac the system runs that program by translation.
+//! `AArch64` Mac the system runs that program by translation.
 
 use std::io::Write as _;
 use std::path::PathBuf;

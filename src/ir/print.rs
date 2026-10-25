@@ -218,14 +218,14 @@ fn render_stmt(stmt: &Stmt, isa: Isa) -> String {
         } => {
             let args: Vec<String> = args.iter().map(|arg| arg.render(isa)).collect();
             let assigned = render_call_outputs(isa, outputs);
-            assigned
-                + &match (target, through) {
-                    (Some(target), _) => format!("call 0x{target:x}({})", args.join(", ")),
-                    (None, Some(through)) => {
-                        format!("call *{}({})", through.render(isa), args.join(", "))
-                    }
-                    (None, None) => format!("call <dynamic>({})", args.join(", ")),
+            let call = match (target, through) {
+                (Some(target), _) => format!("call 0x{target:x}({})", args.join(", ")),
+                (None, Some(through)) => {
+                    format!("call *{}({})", through.render(isa), args.join(", "))
                 }
+                (None, None) => format!("call <dynamic>({})", args.join(", ")),
+            };
+            format!("{assigned}{call}")
         }
         Stmt::Call {
             target,
@@ -233,12 +233,13 @@ fn render_stmt(stmt: &Stmt, isa: Isa) -> String {
             outputs,
             ..
         } => {
-            render_call_outputs(isa, outputs)
-                + &match (target, through) {
-                    (Some(target), _) => format!("call 0x{target:x}"),
-                    (None, Some(through)) => format!("call *{}", through.render(isa)),
-                    (None, None) => "call <dynamic>".to_owned(),
-                }
+            let assigned = render_call_outputs(isa, outputs);
+            let call = match (target, through) {
+                (Some(target), _) => format!("call 0x{target:x}"),
+                (None, Some(through)) => format!("call *{}", through.render(isa)),
+                (None, None) => "call <dynamic>".to_owned(),
+            };
+            format!("{assigned}{call}")
         }
         Stmt::Ret { value } => format!("ret {}", value.render(isa)),
         Stmt::Machine {
@@ -279,6 +280,7 @@ fn render_call_outputs(isa: Isa, outputs: &[CallOutput]) -> String {
 }
 
 impl Expr {
+    #[must_use]
     pub fn render(&self, isa: crate::loader::Isa) -> String {
         match self {
             Expr::Reg { index, width } => reg_name(isa, *index, *width),
@@ -332,6 +334,7 @@ impl Expr {
 
 impl FunctionIr {
     /// Each pointer parameter's fields, as `a0 +0x8:uint32_t, +0x10:uint64_t`.
+    #[must_use]
     pub fn access_lines(&self) -> Vec<String> {
         self.accesses
             .iter()
@@ -356,6 +359,7 @@ impl FunctionIr {
 }
 
 impl FunctionIr {
+    #[must_use]
     pub fn render(&self) -> String {
         let mut out = String::new();
         let name = self.name.as_deref().unwrap_or("<unnamed>");

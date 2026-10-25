@@ -40,6 +40,36 @@ use crate::ir::{
     BinOp, CallKind, Cond, Expr, LaneOp, Operation, Precision, RegRef, Rounding, Stmt,
 };
 
+#[derive(Clone, Copy)]
+pub(super) enum LaneParity {
+    Odd,
+    Even,
+}
+
+#[derive(Clone, Copy)]
+pub(super) enum VectorHalf {
+    Upper,
+    Lower,
+}
+
+#[derive(Clone, Copy)]
+pub(super) enum MemoryAccess {
+    Store,
+    Load,
+}
+
+#[derive(Clone, Copy)]
+pub(super) enum FlagUpdate {
+    Set,
+    Preserve,
+}
+
+#[derive(Clone, Copy)]
+pub(super) enum Signedness {
+    Signed,
+    Unsigned,
+}
+
 pub(super) struct Lifter<'a> {
     stmts: Vec<Stmt>,
     /// Whether an operand of the instruction being lifted was one the
@@ -459,16 +489,20 @@ fn lift_instruction(lifter: &mut Lifter, ins: &Instruction, pc: u64) -> bool {
         O::CSEL => lift_csel(lifter, ops),
         O::CSINC | O::CSINV | O::CSNEG => lift_cs_family(lifter, ops, ins.opcode),
         O::MSUB => lift_msub(lifter, ops),
-        O::UMADDL => lift_long_multiply(lifter, ops, false, false),
-        O::SMADDL => lift_long_multiply(lifter, ops, true, false),
-        O::UMSUBL => lift_long_multiply(lifter, ops, false, true),
-        O::SMSUBL => lift_long_multiply(lifter, ops, true, true),
+        O::UMADDL => {
+            lift_long_multiply(lifter, ops, Signedness::Unsigned, /* subtract */ false)
+        }
+        O::SMADDL => lift_long_multiply(lifter, ops, Signedness::Signed, /* subtract */ false),
+        O::UMSUBL => {
+            lift_long_multiply(lifter, ops, Signedness::Unsigned, /* subtract */ true)
+        }
+        O::SMSUBL => lift_long_multiply(lifter, ops, Signedness::Signed, /* subtract */ true),
         O::CCMP => lift_conditional_compare(lifter, ops, false),
         O::CCMN => lift_conditional_compare(lifter, ops, true),
-        O::ADC => lift_with_carry(lifter, ops, false, false),
-        O::ADCS => lift_with_carry(lifter, ops, false, true),
-        O::SBC => lift_with_carry(lifter, ops, true, false),
-        O::SBCS => lift_with_carry(lifter, ops, true, true),
+        O::ADC => lift_with_carry(lifter, ops, /* subtract */ false, FlagUpdate::Preserve),
+        O::ADCS => lift_with_carry(lifter, ops, /* subtract */ false, FlagUpdate::Set),
+        O::SBC => lift_with_carry(lifter, ops, /* subtract */ true, FlagUpdate::Preserve),
+        O::SBCS => lift_with_carry(lifter, ops, /* subtract */ true, FlagUpdate::Set),
         O::BFM => lift_bitfield_insert(lifter, ops),
         O::MOVZ => lift_mov(lifter, ops, false),
         O::MOVN => lift_mov(lifter, ops, true),
@@ -507,9 +541,9 @@ fn lift_instruction(lifter: &mut Lifter, ins: &Instruction, pc: u64) -> bool {
         O::STURH => lift_store(lifter, ops, O::STRH),
         O::SDIV => lift_alu(lifter, ops, BinOp::DivS, false),
         O::UDIV => lift_alu(lifter, ops, BinOp::DivU, false),
-        O::LDP | O::LDNP => lift_pair(lifter, ops, false, false),
-        O::LDPSW => lift_pair(lifter, ops, false, true),
-        O::STP | O::STNP => lift_pair(lifter, ops, true, false),
+        O::LDP | O::LDNP => lift_pair(lifter, ops, MemoryAccess::Load, /* signed */ false),
+        O::LDPSW => lift_pair(lifter, ops, MemoryAccess::Load, /* signed */ true),
+        O::STP | O::STNP => lift_pair(lifter, ops, MemoryAccess::Store, /* signed */ false),
         O::B => {
             let target = lifter.target_of(ops[0], pc);
             // In an object a branch to itself is an unresolved reference to
@@ -811,14 +845,21 @@ mod tests {
         values[index % values.len()] as u64 & ((1u64 << bits) - 1)
     }
 
+    #[derive(Clone, Copy)]
+    enum TestOperand {
+        Second,
+        First,
+    }
+
     fn fill(
         registers: &mut [(u16, u64)],
         number: u16,
         bits: u8,
         full: bool,
         row: usize,
-        second: bool,
+        second: TestOperand,
     ) {
+        let second = matches!(second, TestOperand::Second);
         for half in 0..if full { 2 } else { 1 } {
             let mut value = 0;
             for lane in 0..64 / usize::from(bits) {
@@ -895,9 +936,9 @@ mod tests {
                         .chain(V0..V0 + 64)
                         .map(|index| (index, 0x8877_6655_4433_2211 ^ (u64::from(index) << 32)))
                         .collect();
-                    fill(&mut registers, n, bits, full, row, false);
+                    fill(&mut registers, n, bits, full, row, TestOperand::First);
                     if n != m {
-                        fill(&mut registers, m, bits, full, row, true);
+                        fill(&mut registers, m, bits, full, row, TestOperand::Second);
                     }
                     let before = |index| {
                         registers

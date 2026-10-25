@@ -1,4 +1,4 @@
-//! AArch64 data-processing instructions, run natively from a code page.
+//! `AArch64` data-processing instructions, run natively from a code page.
 
 use std::cell::Cell;
 use std::ffi::c_void;
@@ -173,8 +173,9 @@ impl Page {
                 mask: 0,
                 flags: SA_SIGINFO,
             };
-            // SAFETY: installs a handler that only touches the case's state.
             for signal in [SIGILL, SIGBUS, SIGSEGV] {
+                // SAFETY: action is valid for this call and the handler touches only
+                // the case's state. Installing signal handlers requires the OS API.
                 unsafe { sigaction(signal, &action, std::ptr::null_mut()) };
             }
         });

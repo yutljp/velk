@@ -14,7 +14,8 @@ fn check_result(debug: bool) {
     let scratch = scratch_dir(&format!("ignored-result-{debug}"));
     let original = scratch.join("original.c");
     let executable = scratch.join("original");
-    std::fs::write(&original, include_str!("ignored_result.c")).unwrap();
+    std::fs::write(&original, include_str!("ignored_result.c"))
+        .expect("the generated test files must be writable");
     let compiled = Command::new(compiler())
         .args(["-O2", "-fno-inline"])
         .args(if debug {
@@ -31,17 +32,27 @@ fn check_result(debug: bool) {
         .arg("-o")
         .arg(&executable)
         .output()
-        .unwrap();
+        .expect("the test compiler must be executable");
     assert!(compiled.status.success(), "{compiled:?}");
-    let mut binary = Binary::open(&executable).unwrap();
+    let mut binary = Binary::open(&executable).expect("the compiled fixture must be readable");
     let prefix = if cfg!(target_os = "macos") && !debug {
         "_"
     } else {
         ""
     };
-    let address = binary.find(&format!("{prefix}final_byte")).unwrap().addr;
-    let effect = binary.find(&format!("{prefix}effect")).unwrap().addr;
-    let mut ir = binary.analysis(address, None).unwrap().ir.clone();
+    let address = binary
+        .find(&format!("{prefix}final_byte"))
+        .expect("the compiled fixture must contain the requested function")
+        .addr;
+    let effect = binary
+        .find(&format!("{prefix}effect"))
+        .expect("the compiled fixture must contain the requested function")
+        .addr;
+    let mut ir = binary
+        .analysis(address, None)
+        .expect("the compiled fixture must support analysis")
+        .ir
+        .clone();
     ir.name = Some("returned_byte".into());
     let symbols = velk::render::Symbols {
         functions: [(effect, "effect".into())].into(),
@@ -87,7 +98,7 @@ fn check_result(debug: bool) {
         assert_eq!(calls.len(), 1);
         let expected = value as u8 as i8 as i32 as u32;
         assert_eq!(result as u32, expected);
-        writeln!(source, "effects = 0; if ((uint32_t)returned_byte({value}) != UINT32_C({expected}) || effects != 1) return 1;").unwrap();
+        writeln!(source, "effects = 0; if ((uint32_t)returned_byte({value}) != UINT32_C({expected}) || effects != 1) return 1;").expect("formatting into a String cannot fail");
     }
     source.push_str("return 0;\n}\n");
     let program = Program {

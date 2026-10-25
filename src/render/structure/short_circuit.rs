@@ -509,9 +509,11 @@ mod tests {
     fn reads(expr: &Expr, out: &mut Vec<u16>) {
         match expr {
             Expr::Reg { index, .. } => out.push(*index),
-            _ => crate::ir::visit::children(expr)
-                .into_iter()
-                .for_each(|child| reads(child, out)),
+            _ => {
+                for child in crate::ir::visit::children(expr) {
+                    reads(child, out);
+                }
+            }
         }
     }
 

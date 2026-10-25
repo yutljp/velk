@@ -1,4 +1,6 @@
-use super::{BinOp, Expr, LaneOp, Lifter, Operand, Operation, RegRef, a64, mask_bits};
+use super::{
+    BinOp, Expr, LaneOp, LaneParity, Lifter, Operand, Operation, RegRef, VectorHalf, a64, mask_bits,
+};
 
 /// A vector register used whole or as a scalar: its low slot and its width
 /// in bits.
@@ -202,10 +204,11 @@ pub(super) fn by_halves(
 /// second-half forms, each extended to twice `bits`, as two halves.
 pub(super) fn widened(
     (low, high): (Expr, Expr),
-    upper: bool,
+    upper: VectorHalf,
     bits: u8,
     signed: bool,
 ) -> (Expr, Expr) {
+    let upper = matches!(upper, VectorHalf::Upper);
     let half = if upper { high } else { low };
     let widen = |high| Expr::apply(Operation::Widen { bits, signed, high }, vec![half.clone()]);
     (widen(false), widen(true))
@@ -217,8 +220,18 @@ pub(super) fn narrowed((low, high): (Expr, Expr), from: u8) -> Expr {
 
 pub(super) fn doubling_mul_high(a: Expr, b: Expr, bits: u8) -> Expr {
     let wide = bits * 2;
-    let a = widened((a, Expr::constant(0)), false, bits, true);
-    let b = widened((b, Expr::constant(0)), false, bits, true);
+    let a = widened(
+        (a, Expr::constant(0)),
+        VectorHalf::Lower,
+        bits,
+        /* signed */ true,
+    );
+    let b = widened(
+        (b, Expr::constant(0)),
+        VectorHalf::Lower,
+        bits,
+        /* signed */ true,
+    );
     let limit = Expr::constant(replicated((1u64 << (bits - 1)) - 1, wide));
     let product = |a, b| {
         let multiplied = lanewise(LaneOp::Mul, wide, a, b);
@@ -241,8 +254,9 @@ pub(super) fn unzip(
     b: (Expr, Expr),
     bits: u8,
     full: bool,
-    odd: bool,
+    odd: LaneParity,
 ) -> (Expr, Expr) {
+    let odd = matches!(odd, LaneParity::Odd);
     if bits == 64 {
         return if odd { (a.1, b.1) } else { (a.0, b.0) };
     }

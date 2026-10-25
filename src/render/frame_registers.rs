@@ -170,7 +170,18 @@ fn unspill(ir: &mut FunctionIr, sp: u16) {
             }
             for value in stmt.operands() {
                 let address = matches!(stmt, Stmt::Store { addr, .. } if std::ptr::eq(value, addr));
-                frame_uses(value, &state, address, true, &mut accesses, &mut taken);
+                frame_uses(
+                    value,
+                    &state,
+                    if address {
+                        OperandUse::Address
+                    } else {
+                        OperandUse::Value
+                    },
+                    /* pointer */ true,
+                    &mut accesses,
+                    &mut taken,
+                );
             }
             transfer(stmt, &mut state);
         }
@@ -214,6 +225,12 @@ fn unspill(ir: &mut FunctionIr, sp: u16) {
     }
 }
 
+#[derive(Clone, Copy)]
+enum OperandUse {
+    Address,
+    Value,
+}
+
 /// Notes the frame offsets an operand loads from, and those whose address
 /// it takes as a value rather than to load through. A slot loaded where
 /// its value could not be rewritten as an address, as under a mask, counts
@@ -221,11 +238,12 @@ fn unspill(ir: &mut FunctionIr, sp: u16) {
 fn frame_uses(
     expr: &Expr,
     state: &Origins,
-    address: bool,
+    address: OperandUse,
     pointer: bool,
     accesses: &mut Vec<(i64, u8, Option<Option<i64>>)>,
     taken: &mut HashSet<i64>,
 ) {
+    let address = matches!(address, OperandUse::Address);
     if let Expr::Load { addr, width, .. } = expr {
         if let Some(Some(offset)) = origin(addr, state) {
             accesses.push((offset, *width, None));
@@ -234,7 +252,14 @@ fn frame_uses(
             }
             return;
         }
-        frame_uses(addr, state, true, true, accesses, taken);
+        frame_uses(
+            addr,
+            state,
+            OperandUse::Address,
+            /* pointer */ true,
+            accesses,
+            taken,
+        );
         return;
     }
     if !address && let Some(Some(offset)) = origin(expr, state) {
@@ -244,7 +269,14 @@ fn frame_uses(
     let offset = matches!(expr, Expr::Bin { op: BinOp::Add, lhs, rhs }
         if matches!(lhs.as_ref(), Expr::Const(_)) || matches!(rhs.as_ref(), Expr::Const(_)));
     for child in crate::ir::visit::children(expr) {
-        frame_uses(child, state, false, pointer && offset, accesses, taken);
+        frame_uses(
+            child,
+            state,
+            OperandUse::Value,
+            pointer && offset,
+            accesses,
+            taken,
+        );
     }
 }
 

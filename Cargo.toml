@@ -22,6 +22,34 @@ yaxpeax-arm = "0.5.0"
 
 [lints.clippy]
 question_mark = "allow"
+expect_used = "allow"
+unreadable_literal = "allow"
+exhaustive_enums = "allow"
+
+borrowed_box = "deny"
+disallowed_methods = "deny"
+doc_markdown = "deny"
+expl_impl_clone_on_copy = "deny"
+inefficient_to_string = "deny"
+len_without_is_empty = "deny"
+must_use_candidate = "deny"
+ptr_arg = "deny"
+redundant_clone = "deny"
+ref_option = "deny"
+ref_option_ref = "deny"
+unnecessary_unwrap = "deny"
+unwrap_used = "deny"
+wildcard_imports = "deny"
+wrong_self_convention = "deny"
+
+allow_attributes_without_reason = "deny"
+fn_params_excessive_bools = "deny"
+manual_let_else = "deny"
+missing_panics_doc = "deny"
+needless_for_each = "deny"
+rc_buffer = "deny"
+string_add = "deny"
+undocumented_unsafe_blocks = "deny"
 
 [profile.test]
 opt-level = 2

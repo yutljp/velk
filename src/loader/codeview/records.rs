@@ -1,4 +1,4 @@
-//! Bounded little-endian CodeView record access.
+//! Bounded little-endian `CodeView` record access.
 
 pub(super) struct Reader<'a>(pub &'a [u8]);
 

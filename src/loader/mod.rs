@@ -180,7 +180,7 @@ pub struct Summary {
     /// ABI, in order: offset from the first argument, and width in bytes.
     /// A zero width ends them.
     pub stack_results: [(u16, u8); 9],
-    /// It reads AArch64's indirect result register: it returns through
+    /// It reads `AArch64`'s indirect result register: it returns through
     /// memory the caller points it at.
     pub indirect_result: bool,
     /// Every value it returns is 32 bits wide: a call to it writes only

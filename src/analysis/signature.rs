@@ -25,7 +25,7 @@ pub struct Signature {
     /// assembly ABI writes in its caller's frame: offset from the stack
     /// pointer on entry, and width.
     pub stack_results: Vec<(i64, u8)>,
-    /// The body reads AArch64's indirect result register before writing it.
+    /// The body reads `AArch64`'s indirect result register before writing it.
     pub indirect_result: bool,
     /// The stack arguments come while argument registers are left free:
     /// they are one structure passed by value.
@@ -361,7 +361,7 @@ pub fn recover_with(
                 .collect()
         })
         .collect();
-    let mut entry: Vec<HashSet<u16>> = vec![universe.clone(); blocks.len()];
+    let mut entry: Vec<HashSet<u16>> = vec![universe; blocks.len()];
     if !entry.is_empty() {
         entry[0] = HashSet::new();
     }

@@ -1,4 +1,4 @@
-//! Procedure declarations and fixed storage from CodeView symbols.
+//! Procedure declarations and fixed storage from `CodeView` symbols.
 
 use super::{
     Data, Procedure, locations,

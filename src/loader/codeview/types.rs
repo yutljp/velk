@@ -1,4 +1,4 @@
-//! CodeView types and verified C structure layouts.
+//! `CodeView` types and verified C structure layouts.
 
 use super::records::{Reader, records};
 use crate::ir::abi::{LayoutField, LayoutKind, TypeLayout};

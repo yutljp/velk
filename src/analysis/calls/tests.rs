@@ -373,7 +373,7 @@ mod declarations {
                     defined: true,
                     layout: integer.clone(),
                 }]),
-                ..integer.clone()
+                ..integer
             }
         } else {
             integer

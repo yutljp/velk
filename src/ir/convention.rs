@@ -13,7 +13,7 @@ pub enum Convention {
     /// A Linux system call on x86-64: the number in rax, then the
     /// arguments; it overwrites rax, rcx and r11.
     SyscallX86,
-    /// A Linux system call on AArch64: the number in x8, then the
+    /// A Linux system call on `AArch64`: the number in x8, then the
     /// arguments; it overwrites x0.
     SyscallArm,
     /// Go's write barrier on x86-64: it takes nothing, keeps every other
@@ -25,6 +25,7 @@ pub enum Convention {
 }
 
 impl Convention {
+    #[must_use]
     pub fn of(isa: crate::loader::Isa, format: crate::loader::Format, go: bool) -> Self {
         use crate::loader::{Format, Isa};
         match isa {
@@ -37,6 +38,7 @@ impl Convention {
     }
 
     /// Integer argument registers, in order.
+    #[must_use]
     pub fn arguments(self) -> &'static [u16] {
         match self {
             Self::Aapcs64 => &[0, 1, 2, 3, 4, 5, 6, 7],
@@ -54,6 +56,7 @@ impl Convention {
     /// Where the arguments past the registers start, from the stack pointer
     /// on entry: past the return address on x86-64, and past the space
     /// Windows reserves for the register ones.
+    #[must_use]
     pub fn stack_arguments(self) -> Option<i64> {
         match self {
             Self::SysV => Some(8),
@@ -65,6 +68,7 @@ impl Convention {
     }
 
     /// Bytes a call pushes before the callee runs: the return address.
+    #[must_use]
     pub fn pushed_by_call(self) -> i64 {
         match self {
             Self::Aapcs32 | Self::Aapcs64 | Self::SyscallX86 | Self::SyscallArm => 0,
@@ -74,6 +78,7 @@ impl Convention {
 
     /// Floating-point argument registers, in order: the low halves of xmm0
     /// to xmm7 (xmm3 on Windows, xmm14 in Go's ABI), or of v0 to v7.
+    #[must_use]
     pub fn float_arguments(self) -> &'static [u16] {
         match self {
             Self::Aapcs64 => &[32, 34, 36, 38, 40, 42, 44, 46],
@@ -102,6 +107,7 @@ impl Convention {
     /// One holding the address called is no vector count: a variadic call
     /// sets al after choosing another register for the address.
     /// With `floats_named`, the floating-point arguments are named apart.
+    #[must_use]
     pub fn call_reads_through(self, through: Option<&Expr>, floats_named: bool) -> Vec<u16> {
         let mut addressing = std::collections::HashSet::new();
         if let Some(through) = through {
@@ -126,10 +132,11 @@ impl Convention {
     }
 
     /// Registers a call whose integer arguments are named still reads: the
-    /// floating-point arguments and AArch64's indirect result register.
-    /// SysV's vector count in al is left out: only a variadic callee reads
+    /// floating-point arguments and `AArch64`'s indirect result register.
+    /// `SysV`'s vector count in al is left out: only a variadic callee reads
     /// it, and the pseudo-C leaves its setting out. With `floats_named`, the
     /// floating-point arguments are named too.
+    #[must_use]
     pub fn unnamed_reads(self, floats_named: bool) -> Vec<u16> {
         let extra: &[u16] = match self {
             Self::SysV => &[],
@@ -143,8 +150,9 @@ impl Convention {
         floats.iter().chain(extra).copied().collect()
     }
 
-    /// Registers a call may read besides its arguments: AArch64's indirect
-    /// result register and the vector count a variadic SysV call takes in al.
+    /// Registers a call may read besides its arguments: `AArch64`'s indirect
+    /// result register and the vector count a variadic `SysV` call takes in al.
+    #[must_use]
     pub fn call_extra(self) -> &'static [u16] {
         match self {
             Self::Aapcs64 => &[8],
@@ -164,6 +172,7 @@ impl Convention {
     /// call into Go's assembly ABI returns on the stack; the lifter moves
     /// its results there from the registers Go's register ABI returns
     /// integers in, which the call leaves changed.
+    #[must_use]
     pub fn results(self) -> &'static [u16] {
         match self {
             Self::SysV => &[0, 2, 18, 20],
@@ -179,6 +188,7 @@ impl Convention {
 
     /// Registers a call may leave changed: those the callee's summary
     /// names, when it knows them, or else those the convention lets it.
+    #[must_use]
     pub fn clobbered_by(self, known: Option<Registers>) -> Vec<u16> {
         match known {
             Some(known) => known.iter().collect(),
@@ -189,6 +199,7 @@ impl Convention {
     /// Registers the convention keeps whatever the callee does: the stack
     /// pointer, and under Go's register ABI the goroutine in r14 and the
     /// zero in xmm15.
+    #[must_use]
     pub fn fixed(self) -> &'static [u16] {
         match self {
             Self::GoAmd64 => &[4, 14, 48, 49],
@@ -201,6 +212,7 @@ impl Convention {
     }
 
     /// Registers a call may leave changed.
+    #[must_use]
     pub fn clobbered(self) -> &'static [u16] {
         match self {
             // And the link register x30, v0 to v7 and v16 to v31, and the
@@ -256,6 +268,7 @@ pub enum CallKind {
 impl CallKind {
     /// Bytes the transfer pushes before the callee runs; None when the kind
     /// does not go with the ISA and convention.
+    #[must_use]
     pub fn push_bytes(self, isa: crate::loader::Isa, convention: Convention) -> Option<i64> {
         use crate::loader::Isa;
         let syscall = match (isa, convention) {
@@ -281,6 +294,7 @@ impl CallKind {
     /// Where the stack slot the callee finds at `callee_offset` from its
     /// entry stack pointer lies from the stack pointer at the transfer;
     /// None for a system call, a kind that does not fit, or an overflow.
+    #[must_use]
     pub fn stack_offset(
         self,
         isa: crate::loader::Isa,

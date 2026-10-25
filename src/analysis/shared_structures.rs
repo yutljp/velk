@@ -371,9 +371,14 @@ pub(crate) fn share(functions: &mut [&mut FunctionIr], data_ranges: &[(u64, u64)
                     && !owner.starts_with(|c: char| c.is_ascii_digit())
                     && !crate::render::reserved_identifier(owner)
             })
-            && !reserved.contains(&format!("struct {}", owners.first().unwrap()))
-        {
-            owners.first().unwrap().clone()
+            && !reserved.contains(&format!(
+                "struct {}",
+                owners.first().expect("exactly one owner was checked above")
+            )) {
+            owners
+                .first()
+                .expect("exactly one owner was checked above")
+                .clone()
         } else {
             loop {
                 let name = format!("S{serial}");
@@ -448,9 +453,8 @@ pub(crate) fn share(functions: &mut [&mut FunctionIr], data_ranges: &[(u64, u64)
         }
         // Functions with only a partial access still need the shared declaration.
         for node in nodes {
-            let i = match *node {
-                Node::Register(i, _) | Node::Return(i) => i,
-                _ => continue,
+            let (Node::Register(i, _) | Node::Return(i)) = *node else {
+                continue;
             };
             let ir = &mut functions[i];
             if (ir.params.iter().any(|param| param.ty == ty)

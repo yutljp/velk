@@ -1,6 +1,7 @@
 mod debug;
 mod indexed;
 
+use super::unions::MemberIndex;
 use crate::arch::stack_pointer;
 use std::collections::HashMap;
 
@@ -864,7 +865,16 @@ fn region_field(
             let indexed = group
                 .iter()
                 .any(|(other, size)| size == width && *other != start);
-            let name = super::unions::member(*width, signed, slot - start, indexed);
+            let name = super::unions::member(
+                *width,
+                signed,
+                slot - start,
+                if indexed {
+                    MemberIndex::Array
+                } else {
+                    MemberIndex::Scalar
+                },
+            );
             Local {
                 name,
                 slot: *slot,
@@ -2172,7 +2182,14 @@ mod tests {
         assert!(locals.parts.is_empty());
         assert!(locals.parameter_addresses.is_empty());
     }
-    fn address_value_binding(dynamic: bool, indexed: bool) -> super::Locals {
+    #[derive(Clone, Copy)]
+    enum FrameBase {
+        Dynamic,
+        Fixed,
+    }
+
+    fn address_value_binding(dynamic: FrameBase, indexed: bool) -> super::Locals {
+        let dynamic = matches!(dynamic, FrameBase::Dynamic);
         let mut ir = scalar_stack_binding(
             dynamic.then(|| Expr::bin(BinOp::Sub, Expr::reg(31, 64), Expr::reg(0, 64))),
             3,
@@ -2201,27 +2218,27 @@ mod tests {
 
     #[test]
     fn legacy_stack_binding_rejects_a_dynamic_address_value_origin() {
-        let locals = address_value_binding(true, false);
+        let locals = address_value_binding(FrameBase::Dynamic, /* indexed */ false);
         assert!(locals.slots.is_empty(), "{:?}", locals.slots);
         assert!(locals.parts.is_empty());
     }
 
     #[test]
     fn legacy_stack_binding_keeps_a_stable_address_value_origin() {
-        let locals = address_value_binding(false, false);
+        let locals = address_value_binding(FrameBase::Fixed, /* indexed */ false);
         assert!(locals.slots.values().any(|name| name == "incoming_2"));
     }
 
     #[test]
     fn legacy_stack_binding_rejects_a_dynamic_indexed_address_origin() {
-        let locals = address_value_binding(true, true);
+        let locals = address_value_binding(FrameBase::Dynamic, /* indexed */ true);
         assert!(locals.slots.is_empty(), "{:?}", locals.slots);
         assert!(locals.parts.is_empty());
     }
 
     #[test]
     fn legacy_stack_binding_keeps_a_stable_indexed_address_origin() {
-        let locals = address_value_binding(false, true);
+        let locals = address_value_binding(FrameBase::Fixed, /* indexed */ true);
         assert!(locals.slots.values().any(|name| name == "incoming_2"));
     }
 

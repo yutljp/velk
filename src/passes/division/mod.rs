@@ -837,7 +837,7 @@ mod tests {
         assert!(!ir.contains("% #0x3"), "{ir}");
     }
 
-    /// AArch64 `x % 3` for signed `x`, multiplying the quotient back by `1 + 2^shift`.
+    /// `AArch64` `x % 3` for signed `x`, multiplying the quotient back by `1 + 2^shift`.
     fn signed_mod_three(shift: u32) -> String {
         let words: [u32; 9] = [
             0x528a_aac8,                 // mov  w8, #0x5556

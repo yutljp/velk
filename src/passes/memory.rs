@@ -11,6 +11,10 @@ pub fn promote_frame_slots(ir: &mut FunctionIr) {
 
 /// Replaces a load with the value stored to the same address earlier in the
 /// block: `*(u32 *)&local_3 = w8; x8 = *(u32 *)&local_3;` leaves `x8 = w8;`.
+///
+/// # Panics
+///
+/// Panics if a call has no write definitions after they were computed for the block.
 pub fn forward_stored_values(ir: &mut FunctionIr) {
     frame_values::forward(ir);
     let sp = stack_pointer(ir.isa);

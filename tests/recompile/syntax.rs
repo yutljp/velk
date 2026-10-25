@@ -64,7 +64,7 @@ pub(super) fn run_printed(code: &str, support: &str, assertions: &str) {
         &source,
         format!("{HEADER}{code}\n{support}\nint main(void) {{ {assertions} }}"),
     )
-    .unwrap();
+    .expect("the generated test files must be writable");
     for level in LEVELS {
         let executable = scratch.join(format!("values{level}"));
         let output = Command::new(compiler())
@@ -74,14 +74,17 @@ pub(super) fn run_printed(code: &str, support: &str, assertions: &str) {
             .arg("-o")
             .arg(&executable)
             .output()
-            .unwrap();
+            .expect("the test compiler must be executable");
         assert!(
             output.status.success(),
             "{}\n{code}",
             String::from_utf8_lossy(&output.stderr)
         );
         assert!(
-            Command::new(&executable).status().unwrap().success(),
+            Command::new(&executable)
+                .status()
+                .expect("the compiled test program must be executable")
+                .success(),
             "{code}"
         );
     }
@@ -739,7 +742,7 @@ fn syntax_source(
     source.push_str("#include <stdlib.h>\ntypedef struct syntax_file FILE;\ntypedef struct syntax_directory DIR;\ntypedef struct syntax_mutex pthread_mutex_t;\ntypedef struct syntax_mutex_attributes pthread_mutexattr_t;\ntypedef intptr_t off_t;\ntypedef intptr_t ssize_t;\ntypedef uintptr_t pthread_t;\ntypedef uint32_t pthread_key_t;\ntypedef int32_t pid_t;\n");
     for name in declarations {
         let ty = returns.get(name).cloned().unwrap_or(CType::U64);
-        writeln!(source, "{ty} {name}();").unwrap();
+        writeln!(source, "{ty} {name}();").expect("formatting into a String cannot fail");
     }
     source.push_str(&prelude.render());
     source.push_str(body);
@@ -922,12 +925,15 @@ fn large_fixture_syntax_with_compiler(compiler: &Path, name: &str) {
             ],
         ),
     ] {
-        let mut binary = Binary::open(&common::fixtures_dir().join(fixture)).unwrap();
+        let mut binary = Binary::open(&common::fixtures_dir().join(fixture))
+            .expect("the compiled fixture must be readable");
         let symbols = velk::render::callee_names(binary.image());
         let returns = return_types(&symbols);
         let scratch = scratch_dir(&format!("syntax-{name}-{fixture}"));
         for address in addresses {
-            let code = binary.decompile(address, None, None).unwrap();
+            let code = binary
+                .decompile(address, None, None)
+                .expect("the compiled fixture must support decompilation");
             let error = check_with_compiler(&code, &scratch.join("function.c"), &returns, compiler);
             assert!(error.is_none(), "{fixture} 0x{address:x}: {error:?}");
         }
@@ -1059,9 +1065,11 @@ pub(super) fn scan(fixtures: &[PathBuf], name: &str) {
     let mut unavailable_total = 0;
     for (fixture, (compiled, total, unavailable, errors)) in fixtures.iter().zip(results) {
         for (address, error, path) in errors {
-            writeln!(report, "{} 0x{address:x}: {error}", fixture.display()).unwrap();
+            writeln!(report, "{} 0x{address:x}: {error}", fixture.display())
+                .expect("formatting into a String cannot fail");
             if let Some(path) = path {
-                std::fs::copy(path, scratch.join(format!("failure-{failed}.c"))).unwrap();
+                std::fs::copy(path, scratch.join(format!("failure-{failed}.c")))
+                    .expect("the failing test source must be preserved for diagnosis");
                 failed += 1;
             }
         }
@@ -1070,8 +1078,9 @@ pub(super) fn scan(fixtures: &[PathBuf], name: &str) {
             fixture.display(),
         );
         eprintln!("{summary}");
-        writeln!(report, "{summary}").unwrap();
-        std::fs::write(scratch.join("report.txt"), &report).unwrap();
+        writeln!(report, "{summary}").expect("formatting into a String cannot fail");
+        std::fs::write(scratch.join("report.txt"), &report)
+            .expect("the generated test files must be writable");
         unavailable_total += unavailable;
     }
     assert_eq!(unavailable_total, 0, "{report}");

@@ -4,7 +4,7 @@ use crate::loader::Function;
 use crate::loader::NameSource;
 use crate::loader::Section;
 
-/// Function starts in a stripped AArch64 image: the first non-padding
+/// Function starts in a stripped `AArch64` image: the first non-padding
 /// instruction after a return, trap or tail call, unless a branch targets it.
 pub(crate) fn aarch64_prologues(
     bytes: &[u8],

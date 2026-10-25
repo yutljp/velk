@@ -540,6 +540,11 @@ fn chain_is_available(blocks: &[u64], head: u64, entry: u64, accepted: &[ChainSw
 }
 
 /// Rebuilds every compare tree that is a complete switch over one value.
+///
+/// # Panics
+///
+/// Panics if an accepted switch has no cases despite requiring at least two.
+#[must_use]
 pub fn recover_chains(ir: &FunctionIr) -> Vec<ChainSwitch> {
     let position: std::collections::HashMap<u64, usize> = ir
         .blocks
@@ -623,8 +628,16 @@ pub fn recover_chains(ir: &FunctionIr) -> Vec<ChainSwitch> {
         if targets.len() < 2 {
             continue;
         }
-        let case_lo = *walk.cases.keys().next().unwrap();
-        let case_hi = *walk.cases.keys().next_back().unwrap();
+        let case_lo = *walk
+            .cases
+            .keys()
+            .next()
+            .expect("at least two switch cases were required above");
+        let case_hi = *walk
+            .cases
+            .keys()
+            .next_back()
+            .expect("at least two switch cases were required above");
         if case_hi - case_lo + 1 != walk.cases.len() as i64 {
             continue;
         }
@@ -1088,7 +1101,7 @@ mod tests {
             ir.blocks[1].stmts.insert(0, effect);
             assert!(equality_only(&ir).is_none());
         }
-        let mut ir = original.clone();
+        let mut ir = original;
         ir.blocks.push(Block {
             start: 0x20000,
             stmts: vec![Stmt::Br { target: Some(0x20) }],

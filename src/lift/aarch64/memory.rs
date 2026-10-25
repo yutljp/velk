@@ -1,6 +1,6 @@
 use super::{
-    BinOp, Expr, Lifter, Operand, RegRef, SizeCode, Stmt, a64, destination, extend_shift,
-    register_width, simd,
+    BinOp, Expr, Lifter, MemoryAccess, Operand, RegRef, SizeCode, Stmt, a64, destination,
+    extend_shift, register_width, simd,
 };
 
 pub(super) struct Memory {
@@ -209,7 +209,8 @@ pub(super) fn lift_store(lifter: &mut Lifter, ops: [Operand; 4], opcode: a64::Op
     write_back(lifter, mem.writeback);
 }
 
-pub(super) fn lift_pair(lifter: &mut Lifter, ops: [Operand; 4], store: bool, signed: bool) {
+pub(super) fn lift_pair(lifter: &mut Lifter, ops: [Operand; 4], store: MemoryAccess, signed: bool) {
+    let store = matches!(store, MemoryAccess::Store);
     if let (Some((first, bits)), Some((second, _))) = (simd(ops[0]), simd(ops[1])) {
         let Some(mem) = memory(lifter, ops[2], (bits / 8) as u8) else {
             return;

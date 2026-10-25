@@ -132,21 +132,21 @@ fn instruction_image(code: &[u8], architecture: &str) -> Image {
             ".text\n.globl code\n.type code,@function\ncode:\n.byte {bytes}\n.size code, .-code\n"
         ),
     )
-    .unwrap();
+    .expect("the generated test files must be writable");
     let result = Command::new(compiler())
         .args([&format!("--target={architecture}-unknown-linux-gnu"), "-c"])
         .arg(&source)
         .arg("-o")
         .arg(&object)
         .output()
-        .unwrap();
+        .expect("the test compiler must be executable");
     assert!(
         result.status.success(),
         "{}",
         String::from_utf8_lossy(&result.stderr)
     );
-    let image = velk::loader::load(&object).unwrap();
-    std::fs::remove_dir_all(scratch).unwrap();
+    let image = velk::loader::load(&object).expect("the compiled fixture must be readable");
+    std::fs::remove_dir_all(scratch).expect("the temporary fixture directory must be removable");
     image
 }
 

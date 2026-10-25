@@ -269,6 +269,7 @@ fn replace(expr: &mut Expr, constants: &HashMap<u16, u64>) {
 /// Propagates constants through the function in SSA form; true when it
 /// changed anything.
 /// The constant each value holds on every path that can run.
+#[must_use]
 pub fn constants(ssa: &Ssa) -> HashMap<u16, u64> {
     if ssa.ir.blocks.is_empty() {
         return HashMap::new();

@@ -1,7 +1,7 @@
-//! Variadic functions. Under SysV and AArch64 a function taking further
+//! Variadic functions. Under `SysV` and `AArch64` a function taking further
 //! arguments saves, on entry, every argument register past its named
 //! parameters to a block of its frame, and the floating-point ones too
-//! (SysV only when al says a vector register holds an argument), where
+//! (`SysV` only when al says a vector register holds an argument), where
 //! the code `va_arg` expands to finds them. Those registers are no
 //! parameters, and the pseudo-C reads `...` for them instead of their saves.
 
@@ -16,7 +16,7 @@ pub(crate) struct RegisterSaves {
     /// The statements saving them and the floating-point ones, by block and
     /// position.
     pub stores: Vec<(usize, usize)>,
-    /// SysV's branch around the floating-point saves when al is zero, at
+    /// `SysV`'s branch around the floating-point saves when al is zero, at
     /// the end of the entry block.
     pub guard: bool,
 }
@@ -203,7 +203,7 @@ pub(crate) fn mark_variadic(ir: &mut FunctionIr) {
 }
 
 /// Leaves out the saves of a variadic function's further arguments, and
-/// SysV's test of al around them, which the `...` of its declaration stands
+/// `SysV`'s test of al around them, which the `...` of its declaration stands
 /// for.
 pub(crate) fn drop_register_saves(ir: &mut FunctionIr) {
     if !ir.variadic {
@@ -225,7 +225,7 @@ mod tests {
     use crate::ir::{BinOp, CType, Expr, FunctionIr, Param, Stmt};
     use crate::loader::Isa;
 
-    /// An AArch64 entry saving x`from`..x7 and every vector argument register.
+    /// An `AArch64` entry saving x`from`..x7 and every vector argument register.
     fn saving_from(from: u16) -> FunctionIr {
         let sp = crate::arch::stack_pointer(Isa::AArch64);
         let store = |register: u16, offset: i64| Stmt::Store {

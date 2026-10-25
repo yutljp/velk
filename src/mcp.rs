@@ -1,3 +1,6 @@
+//! Serves analysis requests over the Model Context Protocol.
+#![deny(missing_docs)]
+
 use std::io::{BufRead, Write};
 use std::time::Duration;
 
@@ -34,6 +37,7 @@ const TOPICS: [(&str, &str); 3] = [
     ("types", include_str!("script/api/types.d.ts")),
 ];
 
+/// Serves newline-delimited JSON-RPC requests on standard input and output.
 pub fn serve() -> Result<()> {
     let engine = Engine::new()?;
     let mut stdout = std::io::stdout().lock();

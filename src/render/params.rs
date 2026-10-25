@@ -359,9 +359,9 @@ fn replace_loads(stmt: &mut Stmt, held: &impl Fn(&Expr) -> bool, param: u16) {
             };
             return;
         }
-        crate::ir::visit::children_mut(expr)
-            .into_iter()
-            .for_each(|child| walk(child, held, param));
+        for child in crate::ir::visit::children_mut(expr) {
+            walk(child, held, param);
+        }
     }
     for expr in stmt.operands_mut() {
         walk(expr, held, param);

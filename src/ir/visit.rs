@@ -99,7 +99,11 @@ pub fn collect_reads(expr: &Expr, out: &mut std::collections::HashSet<u16>) {
 pub(crate) fn replace_reads(stmt: &mut Stmt, values: &[(u16, Expr)]) {
     let replace = |expr: &mut Expr| *expr = substitute_values(expr.clone(), values);
     match stmt {
-        Stmt::Machine { inputs, .. } => inputs.iter_mut().for_each(replace),
+        Stmt::Machine { inputs, .. } => {
+            for input in inputs {
+                replace(input);
+            }
+        }
         Stmt::Assign { value, .. } | Stmt::Ret { value } => replace(value),
         Stmt::Store { addr, value, .. } => {
             replace(addr);
@@ -123,6 +127,7 @@ pub(crate) fn replace_reads(stmt: &mut Stmt, values: &[(u16, Expr)]) {
     }
 }
 
+#[must_use]
 pub fn substitute_values(expr: Expr, values: &[(u16, Expr)]) -> Expr {
     match expr {
         Expr::Reg { index, width } => match values.iter().find(|(reg, _)| *reg == index) {
@@ -171,6 +176,7 @@ pub fn substitute_values(expr: Expr, values: &[(u16, Expr)]) -> Expr {
     }
 }
 
+#[must_use]
 pub fn statement_reads(stmt: &Stmt) -> std::collections::HashSet<u16> {
     statement_registers(stmt).1
 }

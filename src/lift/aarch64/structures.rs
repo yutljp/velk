@@ -1,6 +1,9 @@
 //! SIMD structure loads, stores, and load-and-replicate forms.
 
-use super::*;
+use super::{
+    BinOp, Expr, Instruction, Lifter, Operand, RegRef, Stmt, Write, a64, lane_value, mask_bits,
+    memory, preserve_compare,
+};
 
 pub(super) fn lift(lifter: &mut Lifter, ins: &Instruction) -> bool {
     use a64::Opcode as O;

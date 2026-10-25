@@ -1,5 +1,8 @@
 // Each test binary uses a different subset of these helpers.
-#![allow(dead_code)]
+#![allow(
+    dead_code,
+    reason = "Integration test targets use different subsets of these shared helpers."
+)]
 
 use std::path::{Path, PathBuf};
 

@@ -21,7 +21,7 @@ fn header_prototypes_print_arguments_results_and_record_fields() {
         let address = binary.find("library_group_at").unwrap().addr;
         let indexed = binary.decompile(address, None, None).unwrap();
         assert!(indexed.contains(".gr_gid"), "{indexed}");
-        let combined = velk::render::combine(&(group + &indexed));
+        let combined = velk::render::combine(&format!("{group}{indexed}"));
         assert_eq!(combined.matches("struct group {").count(), 1, "{combined}");
         syntax::run_printed(
             &format!(

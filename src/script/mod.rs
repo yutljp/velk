@@ -1,3 +1,6 @@
+//! Runs JavaScript analysis scripts in a bounded runtime.
+#![deny(missing_docs)]
+
 pub mod ops;
 
 use std::cell::{Cell, RefCell};
@@ -17,18 +20,23 @@ const MEMORY_LIMIT: usize = 512 << 20;
 const SCRIPT_NAME: &str = "script";
 const PRELUDE_NAME: &str = "velk-prelude";
 
+/// A JavaScript runtime with a persistent binary analysis session.
 pub struct Engine {
     runtime: Runtime,
     session: Rc<RefCell<Session>>,
     deadline: Rc<Cell<Option<Instant>>>,
 }
 
+/// Captured output and any failure from one script evaluation.
 pub struct Outcome {
+    /// Text emitted by the script and its final value.
     pub output: String,
+    /// Evaluation failure or timeout, when one occurred.
     pub error: Option<String>,
 }
 
 impl Engine {
+    /// Creates a runtime with a memory limit and an empty analysis session.
     pub fn new() -> Result<Self> {
         let runtime = Runtime::new().map_err(Error::Engine)?;
         runtime.set_memory_limit(MEMORY_LIMIT);
@@ -46,6 +54,8 @@ impl Engine {
         })
     }
 
+    /// Evaluates code, stopping at interrupt or analysis boundaries after the timeout.
+    #[must_use]
     pub fn run(&self, code: &str, timeout: Option<Duration>) -> Outcome {
         let context = match Context::full(&self.runtime) {
             Ok(context) => context,

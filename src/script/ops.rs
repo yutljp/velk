@@ -1,3 +1,5 @@
+//! Deserializes and executes the operations exposed to analysis scripts.
+
 use std::path::PathBuf;
 
 use serde::Deserialize;
@@ -10,66 +12,109 @@ use crate::error::{Error, Result};
 use crate::service::{Binary, Failure, Session};
 use crate::sigs::Database;
 
+/// An analysis operation and its arguments.
 #[derive(Deserialize)]
 #[serde(tag = "op", rename_all = "camelCase", deny_unknown_fields)]
 pub enum Request {
+    /// Resolves a navigation query.
     Navigate {
+        /// Path identifying the binary to analyze.
         bin: PathBuf,
+        /// Navigation target and result options.
         query: crate::xrefs::query::Query,
     },
+    /// Opens a binary and returns its metadata.
     Open {
+        /// Path of the binary to open.
         path: PathBuf,
     },
+    /// Lists the binary sections.
     Sections {
+        /// Path identifying the binary to analyze.
         bin: PathBuf,
     },
+    /// Lists discovered functions.
     Functions {
+        /// Path identifying the binary to analyze.
         bin: PathBuf,
     },
+    /// Resolves a function name or address.
     Find {
+        /// Path identifying the binary to analyze.
         bin: PathBuf,
+        /// Function name or address to resolve.
         target: String,
     },
+    /// Builds a bounded function summary.
     Card {
+        /// Path identifying the binary to analyze.
         bin: PathBuf,
+        /// Function address in hexadecimal or decimal.
         addr: String,
+        /// Maximum summary size; absence uses the default budget.
         budget: Option<usize>,
     },
+    /// Renders a function as C.
     Decompile {
+        /// Path identifying the binary to analyze.
         bin: PathBuf,
+        /// Function address in hexadecimal or decimal.
         addr: String,
     },
+    /// Lists decoded instructions.
     Disasm {
+        /// Path identifying the binary to analyze.
         bin: PathBuf,
+        /// Function address in hexadecimal or decimal.
         addr: String,
+        /// Maximum instruction count; absence leaves it unlimited.
         limit: Option<usize>,
     },
+    /// Renders a function in the intermediate representation.
     Ir {
+        /// Path identifying the binary to analyze.
         bin: PathBuf,
+        /// Function address in hexadecimal or decimal.
         addr: String,
     },
+    /// Builds a function signature.
     Signature {
+        /// Path identifying the binary to analyze.
         bin: PathBuf,
+        /// Function address in hexadecimal or decimal.
         addr: String,
     },
+    /// Lists references to a function.
     References {
+        /// Path identifying the binary to analyze.
         bin: PathBuf,
+        /// Function address in hexadecimal or decimal.
         addr: String,
     },
+    /// Lists strings referenced by a function.
     Strings {
+        /// Path identifying the binary to analyze.
         bin: PathBuf,
+        /// Function address in hexadecimal or decimal.
         addr: String,
     },
+    /// Computes a function structure hash.
     ShapeHash {
+        /// Path identifying the binary to analyze.
         bin: PathBuf,
+        /// Function address in hexadecimal or decimal.
         addr: String,
     },
+    /// Builds a signature database for a binary.
     BuildSignatures {
+        /// Path identifying the binary to analyze.
         bin: PathBuf,
     },
     /// `signatures` is either a database or the path to its JSON file.
     Identify {
+        /// Path identifying the binary to analyze.
         bin: PathBuf,
+        /// Signature database or path to its JSON file.
         signatures: Value,
     },
 }

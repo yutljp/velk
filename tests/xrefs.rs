@@ -6,7 +6,8 @@ use velk::service::Binary;
 use velk::xrefs::Kind;
 
 fn fixture(name: &str) -> Binary {
-    Binary::open(&common::fixtures_dir().join(name)).unwrap()
+    Binary::open(&common::fixtures_dir().join(name))
+        .expect("the compiled navigation fixture must be readable")
 }
 
 #[test]

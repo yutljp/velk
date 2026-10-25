@@ -31,6 +31,7 @@ impl Prelude {
         body
     }
 
+    #[must_use]
     pub fn render(&self) -> String {
         if self.definitions.is_empty() {
             return String::new();
@@ -58,10 +59,11 @@ pub(super) fn section(definitions: &str) -> String {
 }
 
 /// Combine standalone outputs with their support definitions printed once.
+#[must_use]
 pub fn combine(code: &str) -> String {
     let mut prelude = Prelude::default();
     let body = prelude.extract(code);
-    prelude.render() + &body
+    format!("{}{body}", prelude.render())
 }
 
 #[cfg(test)]
@@ -70,11 +72,12 @@ mod tests {
 
     #[test]
     fn shared_definitions_precede_all_bodies() {
-        let first = section("#include <cpuid.h>\n\n") + "void f(void) {}\n";
-        let second =
+        let first = format!("{}void f(void) {{}}\n", section("#include <cpuid.h>\n\n"));
+        let second = format!(
+            "{}int g(void) {{ return helper(); }}\n",
             section("#include <cpuid.h>\n\nstatic inline int helper(void) { return 1; }\n\n")
-                + "int g(void) { return helper(); }\n";
-        let combined = combine(&(first + &second));
+        );
+        let combined = combine(&format!("{first}{second}"));
         assert_eq!(combined.matches("#include <cpuid.h>").count(), 1);
         assert_eq!(combined.matches(START).count(), 1);
         assert!(combined.find("static inline").unwrap() < combined.find("void f").unwrap());

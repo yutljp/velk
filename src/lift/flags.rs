@@ -27,7 +27,7 @@ pub(super) enum Source {
     /// An x86 shift's result `lhs`, with the carry the bit `rhs` it shifted
     /// out last; overflow is unknown.
     Shift,
-    /// Set to the given N, Z, C and V bits, from high to low (AArch64).
+    /// Set to the given N, Z, C and V bits, from high to low (`AArch64`).
     Fixed(u8),
     /// Only the carry is known, equal to the bit `lhs` (x86 `bt`).
     Carry,
@@ -35,7 +35,7 @@ pub(super) enum Source {
     /// nonzero (an x86 multiply whose product did not fit).
     CarryOverflow,
     /// A floating-point comparison of `lhs` with `rhs`: x86 `ucomisd`,
-    /// AArch64 `fcmp`.
+    /// `AArch64` `fcmp`.
     FloatCompare(Precision),
     /// Loaded from the byte `lhs` as x86 `sahf` loads them: sign from bit
     /// 7, zero 6, adjust 4, parity 2 and carry 0. Overflow, which the byte
@@ -380,7 +380,7 @@ impl Flags {
                     Cond::Hi | Cond::Ls if self.source == Source::Shift => {
                         let above = both(
                             Test::Compare(Cond::Eq, b.clone(), zero.clone()),
-                            Test::Compare(Cond::Ne, a.clone(), zero.clone()),
+                            Test::Compare(Cond::Ne, a.clone(), zero),
                         );
                         if cond == Cond::Hi { above } else { not(above) }
                     }
@@ -469,7 +469,7 @@ fn holds(op: Operation, a: &Expr, b: &Expr) -> Test {
 
 /// `cond` after comparing the floats `a` and `b`. On x86 a NaN sets zero,
 /// parity and carry, and a smaller `a` the carry, while sign and overflow
-/// are clear; on AArch64 a smaller `a` sets N, an equal one Z and C, a
+/// are clear; on `AArch64` a smaller `a` sets N, an equal one Z and C, a
 /// larger one C, and a NaN C and V.
 fn float_test(a: &Expr, b: &Expr, precision: Precision, cond: Cond, isa: Isa) -> Test {
     let less = |x, y| holds(Operation::FloatLess(precision), x, y);
@@ -701,7 +701,7 @@ impl Test {
     }
 }
 
-/// Whether `cond` holds for AArch64 flags N, Z, C, V given as four bits.
+/// Whether `cond` holds for `AArch64` flags N, Z, C, V given as four bits.
 fn fixed_holds(cond: Cond, nzcv: u8) -> bool {
     let (n, z, c, v) = (nzcv & 8 != 0, nzcv & 4 != 0, nzcv & 2 != 0, nzcv & 1 != 0);
     match cond {
@@ -756,7 +756,7 @@ mod tests {
         Cond::Le,
     ];
 
-    /// N, Z, C and V as four bits, with C as AArch64 means it: a
+    /// N, Z, C and V as four bits, with C as `AArch64` means it: a
     /// difference's "no borrow" and a sum's carry. x86 keeps a borrow and
     /// a carry, which the conditions read inverted.
     fn reference(kind: u8, a: u64, b: u64, bits: u32, isa: Isa) -> u8 {

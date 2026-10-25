@@ -101,6 +101,10 @@ type LiftKey = (u64, u64, Vec<u64>);
 type Kept = Vec<Arc<Recorded>>;
 
 #[derive(Debug)]
+#[expect(
+    clippy::rc_buffer,
+    reason = "Shared blocks retain Vec ownership so an unshared lift can be taken without cloning its blocks."
+)]
 struct Recorded {
     answers: Vec<(u64, Summary)>,
     blocks: Result<Arc<Vec<Block>>, LiftError>,
@@ -121,6 +125,10 @@ pub fn lift_shared(
     lift_shared_with_targets(image, addr, size, &HashSet::new(), summaries)
 }
 
+#[expect(
+    clippy::rc_buffer,
+    reason = "Shared blocks retain Vec ownership so an unshared lift can be taken without cloning its blocks."
+)]
 pub(crate) fn lift_shared_with_targets(
     image: &Image,
     addr: u64,
@@ -1491,7 +1499,10 @@ fn finish_block<M: Machine>(
 /// in.
 type Built = (Vec<Block>, HashMap<u64, Exit>, exits::Pulled);
 
-#[allow(clippy::too_many_arguments)]
+#[expect(
+    clippy::too_many_arguments,
+    reason = "Block construction needs the decoded instructions, branch targets, and incoming machine state together."
+)]
 fn build<M: Machine>(
     image: &Image,
     summaries: Summaries<'_>,
@@ -2332,7 +2343,7 @@ mod tests {
                 };
                 let image = Image::from_code(isa, 0, code);
                 if let Ok(analysis) = analyze(&image, &function, None) {
-                    crate::render::render(
+                    let _ = crate::render::render(
                         &analysis.ir,
                         &analysis.references,
                         &crate::render::Symbols::default(),

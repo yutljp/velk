@@ -76,9 +76,8 @@ impl ValueAbi {
         {
             return Err(AbiIssue::UnknownLayout);
         }
-        let bits = match self.size.checked_mul(8) {
-            Some(value) => value,
-            None => return Err(AbiIssue::UnknownLayout),
+        let Some(bits) = self.size.checked_mul(8) else {
+            return Err(AbiIssue::UnknownLayout);
         };
         let mut end = 0;
         for &(offset, count) in &self.defined_bits {
@@ -168,20 +167,24 @@ impl CType {
     };
 
     /// The integer type of an access `bytes` wide; unusual widths read as 64 bits.
+    #[must_use]
     pub fn int(bytes: u8, signed: bool) -> Self {
         let bytes = if matches!(bytes, 1 | 2 | 4) { bytes } else { 8 };
         CType::Int { bytes, signed }
     }
 
+    #[must_use]
     pub fn pointer_to(target: CType) -> Self {
         CType::Pointer(Box::new(target))
     }
 
+    #[must_use]
     pub fn is_pointer(&self) -> bool {
         matches!(self, CType::Pointer(_))
     }
 
     /// True for `float` and `double`, which SSE registers carry.
+    #[must_use]
     pub fn is_sse_float(&self) -> bool {
         let CType::Named(name) = self else {
             return false;
@@ -190,11 +193,13 @@ impl CType {
         (words.contains(&"float") || words.contains(&"double")) && !words.contains(&"long")
     }
 
+    #[must_use]
     pub fn is_32_bit_int(&self) -> bool {
         matches!(self, CType::Int { bytes: 4, .. })
     }
 
     /// True for a type whose values fit in 32 bits.
+    #[must_use]
     pub fn is_narrow(&self) -> bool {
         match self {
             CType::Int { bytes, .. } => *bytes <= 4,
@@ -208,6 +213,7 @@ impl CType {
 
     /// The width in bits and the sign of an integer type, None for any
     /// other type or one whose width is not known.
+    #[must_use]
     pub fn integer(&self) -> Option<(u32, bool)> {
         match self {
             CType::Int { bytes, signed } => Some((u32::from(*bytes) * 8, *signed)),
@@ -252,6 +258,7 @@ impl CType {
     }
 
     /// The size of the scalar a pointer points at: 4 for `int *`.
+    #[must_use]
     pub fn pointee_size(&self) -> Option<u8> {
         let CType::Pointer(target) = self else {
             return None;

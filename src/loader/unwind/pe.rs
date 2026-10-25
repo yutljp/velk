@@ -21,7 +21,9 @@ pub(super) fn frames(image: &Image) -> Vec<Frame> {
     for entry in data.as_chunks::<12>().0 {
         let rva = |offset| {
             u64::from(u32::from_le_bytes(
-                entry[offset..offset + 4].try_into().unwrap(),
+                entry[offset..offset + 4]
+                    .try_into()
+                    .expect("each field is a four-byte slice of a twelve-byte entry"),
             ))
         };
         let (Some(start), Some(end), Some(unwind)) = (

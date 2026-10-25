@@ -9,7 +9,13 @@ pub struct Recovered {
     pub default: Option<u64>,
     /// Where the table lies and how many bytes it takes, which the tests
     /// read the cases' targets from.
-    #[cfg_attr(not(test), allow(dead_code))]
+    #[cfg_attr(
+        not(test),
+        allow(
+            dead_code,
+            reason = "The table location is inspected only by recovery tests."
+        )
+    )]
     pub table: (u64, u64),
 }
 

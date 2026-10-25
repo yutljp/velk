@@ -235,9 +235,8 @@ fn first_test(
                 }
                 // A positive bound is nonzero, with either signedness.
                 if cond == crate::ir::Cond::Ne {
-                    let bound = match (&lhs, &rhs) {
-                        (Expr::Const(0), bound) | (bound, Expr::Const(0)) => bound,
-                        _ => return false,
+                    let ((Expr::Const(0), bound) | (bound, Expr::Const(0))) = (&lhs, &rhs) else {
+                        return false;
                     };
                     return matches!(
                         inverted,
@@ -668,7 +667,8 @@ pub(super) fn render_nodes(nodes: &[Node], depth: usize, out: &mut String, ctx: 
 /// the call's result.
 fn fused_call(call: &Stmt, next: &Stmt, ctx: &Ctx<'_>) -> Option<String> {
     if let Stmt::Ret { value } = next {
-        return calls::returned(call, value, ctx).map(|text| text + &via_comment(call, ctx));
+        return calls::returned(call, value, ctx)
+            .map(|text| format!("{text}{}", via_comment(call, ctx)));
     }
     let Some(result) = calls::scalar_fusion(call, ctx) else {
         return None;
@@ -768,7 +768,7 @@ pub(super) fn render_node(node: &Node, depth: usize, out: &mut String, ctx: &Ctx
     }
     match node {
         Node::Stmt(stmt) => {
-            let text = render_stmt(stmt, ctx) + &via_comment(stmt, ctx);
+            let text = format!("{}{}", render_stmt(stmt, ctx), via_comment(stmt, ctx));
             if !text.is_empty() {
                 for line in text.lines() {
                     indent(depth, out);

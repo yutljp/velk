@@ -1,5 +1,6 @@
 use super::{
-    BinOp, Cond, Expr, Flags, Lifter, Operand, Operation, RegRef, SizeCode, Stmt, Test, a64,
+    BinOp, Cond, Expr, FlagUpdate, Flags, Lifter, Operand, Operation, RegRef, Signedness, SizeCode,
+    Stmt, Test, a64,
 };
 
 fn shift_expr(style: a64::ShiftStyle, amount: u64, value: Expr) -> Option<Expr> {
@@ -295,9 +296,10 @@ pub(super) fn lift_msub(lifter: &mut Lifter, ops: [Operand; 4]) {
 pub(super) fn lift_long_multiply(
     lifter: &mut Lifter,
     ops: [Operand; 4],
-    signed: bool,
+    signed: Signedness,
     subtract: bool,
 ) {
+    let signed = matches!(signed, Signedness::Signed);
     let Some(dest) = destination(ops[0]) else {
         return;
     };
@@ -378,7 +380,13 @@ pub(super) fn lift_conditional_compare(lifter: &mut Lifter, ops: [Operand; 4], s
 /// `adc`, `sbc` and their flag-setting forms: a sum with the carry, or a
 /// difference less its complement. The flag-setting forms keep only the
 /// carry they produce.
-pub(super) fn lift_with_carry(lifter: &mut Lifter, ops: [Operand; 4], subtract: bool, flags: bool) {
+pub(super) fn lift_with_carry(
+    lifter: &mut Lifter,
+    ops: [Operand; 4],
+    subtract: bool,
+    flags: FlagUpdate,
+) {
+    let flags = matches!(flags, FlagUpdate::Set);
     let carry = lifter
         .test(Cond::Cs)
         .select(Expr::constant(1), Expr::constant(0));
@@ -683,8 +691,8 @@ pub(super) fn lift_cs_family(lifter: &mut Lifter, ops: [Operand; 4], opcode: a64
             _ => Expr::bin(BinOp::Sub, Expr::constant(0), expr),
         }
     };
-    let mut then_value = a.clone();
-    let mut els_value = decorate(b.clone());
+    let mut then_value = a;
+    let mut els_value = decorate(b);
     let mut test = lifter.test_code(code);
     // `cset` encodes the inverted condition with zero as the true value;
     // swap back so the condition matches the comparison.

@@ -235,9 +235,8 @@ fn process(
             let pending: Vec<_> = loads
                 .iter()
                 .filter_map(|(addr, width)| {
-                    let offset = match frame_slot(addr, *frame, sp) {
-                        Some(offset) => offset,
-                        None => return None,
+                    let Some(offset) = frame_slot(addr, *frame, sp) else {
+                        return None;
                     };
                     let Some((_, _, value)) = values.iter().find(|(stored, stored_width, _)| {
                         *stored == offset && stored_width == width
@@ -403,9 +402,8 @@ fn promote_slots(
             let pending: Vec<_> = loads
                 .iter()
                 .filter_map(|(addr, width)| {
-                    let offset = match frame_slot(addr, *frame, sp) {
-                        Some(offset) => offset,
-                        None => return None,
+                    let Some(offset) = frame_slot(addr, *frame, sp) else {
+                        return None;
                     };
                     selected
                         .iter()

@@ -1,3 +1,5 @@
+#![cfg_attr(not(test), deny(clippy::missing_assert_message))]
+
 pub mod addr;
 pub mod analysis;
 pub mod arch;

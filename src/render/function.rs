@@ -1,3 +1,4 @@
+use super::unions::MemberIndex;
 use super::{
     CType, Ctx, Expr, FunctionIr, HashMap, Locals, Node, Reference, Rendered, SegmentBase,
     SegmentBaseRead, Stmt, Symbols, abi, block_frames, calls, expr, globals, indent, int, naming,
@@ -5,6 +6,7 @@ use super::{
     type_of, variables,
 };
 
+#[must_use]
 pub fn render(
     ir: &FunctionIr,
     references: &[Reference],
@@ -15,6 +17,7 @@ pub fn render(
 }
 
 /// Print entry segment reads as external providers without choosing their values.
+#[must_use]
 pub fn render_with_dependencies(
     ir: &FunctionIr,
     references: &[Reference],
@@ -526,7 +529,16 @@ fn render_with(
                 let indexed = views
                     .iter()
                     .any(|(other, size, _)| size == width && *other != 0);
-                let member = super::unions::member(*width, *signed, *offset, indexed);
+                let member = super::unions::member(
+                    *width,
+                    *signed,
+                    *offset,
+                    if indexed {
+                        MemberIndex::Array
+                    } else {
+                        MemberIndex::Scalar
+                    },
+                );
                 let at = start.saturating_add(*offset);
                 member_views
                     .entry((structure.name.clone(), at))
@@ -1244,7 +1256,11 @@ fn render_with(
                         if offset > end {
                             fields.push(format!("uint8_t gap_{end:x}[0x{:x}];", offset - end));
                         }
-                        let name = field.name.rsplit('.').next().unwrap();
+                        let name = field
+                            .name
+                            .rsplit('.')
+                            .next()
+                            .expect("splitting a string always yields at least one component");
                         fields.push(format!(
                             "{};",
                             match &field.ty {
@@ -1452,13 +1468,13 @@ fn union_views(start: u64, fields: &[(u64, CType)]) -> Vec<(i64, u8, bool)> {
 fn defined(name: &str, members: &[String]) -> String {
     let line = format!("{name} {{ {} }};", members.join(" "));
     if line.len() <= STRUCTURE_LINE {
-        return line + "\n";
+        return format!("{line}\n");
     }
     let mut text = format!("{name} {{\n");
     for member in members {
         text.push_str(&format!("    {member}\n"));
     }
-    text + "};\n"
+    format!("{text}}};\n")
 }
 
 /// The definitions from the debug info that the printed code needs to
@@ -1527,7 +1543,7 @@ fn debug_definitions(
             if definition.name.starts_with("struct go_")
                 || (macho && crate::analysis::prototypes::is_library_record(definition))
             {
-                super::prelude::section(&(text + "\n"))
+                super::prelude::section(&format!("{text}\n"))
             } else {
                 text
             }

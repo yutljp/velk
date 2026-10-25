@@ -29,9 +29,9 @@ fn integer_lists_recompile_across_target_abis() {
 
 fn integer_lists_recompile(directory: &str, targets: &[(&str, &str, &str)]) {
     let dir = common::root().join("target").join(directory);
-    fs::create_dir_all(&dir).unwrap();
+    fs::create_dir_all(&dir).expect("the test output directory must be creatable");
     let source = dir.join("input.c");
-    fs::write(&source, SOURCE).unwrap();
+    fs::write(&source, SOURCE).expect("the generated test files must be writable");
     for &(name, target, optimization) in targets {
         let object = dir.join(format!("{name}.o"));
         let output = Command::new("clang")
@@ -40,20 +40,23 @@ fn integer_lists_recompile(directory: &str, targets: &[(&str, &str, &str)]) {
             .arg("-o")
             .arg(&object)
             .output()
-            .unwrap();
+            .expect("the test compiler must be executable");
         assert!(
             output.status.success(),
             "{}",
             String::from_utf8_lossy(&output.stderr)
         );
-        let mut binary = Binary::open(&object).unwrap();
+        let mut binary = Binary::open(&object).expect("the compiled fixture must be readable");
         let address = binary
             .find("sum")
             .or_else(|_| binary.find("_sum"))
-            .unwrap()
+            .expect("the compiled fixture must contain the requested function")
             .addr;
-        let code = binary.decompile(address, None, None).unwrap();
-        fs::write(dir.join(format!("{name}.c")), &code).unwrap();
+        let code = binary
+            .decompile(address, None, None)
+            .expect("the compiled fixture must support decompilation");
+        fs::write(dir.join(format!("{name}.c")), &code)
+            .expect("the generated test files must be writable");
         assert!(code.contains("va_start("), "{name}: {code}");
         assert!(code.contains("va_arg("), "{name}: {code}");
         assert!(code.contains("va_end("), "{name}: {code}");
@@ -79,7 +82,7 @@ int main(void) {{
 "#
         );
         let driver_path = dir.join(format!("{name}-driver.c"));
-        fs::write(&driver_path, driver).unwrap();
+        fs::write(&driver_path, driver).expect("the generated test files must be writable");
         for level in ["-O0", "-O2"] {
             let executable = dir.join(format!("{name}{level}"));
             let output = Command::new("clang")
@@ -93,14 +96,17 @@ int main(void) {{
                 .arg("-o")
                 .arg(&executable)
                 .output()
-                .unwrap();
+                .expect("the test compiler must be executable");
             assert!(
                 output.status.success(),
                 "{name}: {}",
                 String::from_utf8_lossy(&output.stderr)
             );
             assert!(
-                Command::new(executable).status().unwrap().success(),
+                Command::new(executable)
+                    .status()
+                    .expect("the compiled test program must be executable")
+                    .success(),
                 "{name} {level}"
             );
         }

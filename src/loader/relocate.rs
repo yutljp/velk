@@ -208,7 +208,7 @@ fn patch(bytes: &mut [u8], place: usize, pc: u64, symbol: u64, relocation: &obje
     }
 }
 
-/// The AArch64 instruction relocations: page and low-12-bit address parts,
+/// The `AArch64` instruction relocations: page and low-12-bit address parts,
 /// and branch displacements.
 fn patch_aarch64(
     bytes: &mut [u8],

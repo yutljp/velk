@@ -103,6 +103,10 @@ impl Binary {
     }
 
     /// Builds the navigation index once; interrupted builds are never cached.
+    ///
+    /// # Panics
+    ///
+    /// Panics if a successful index build leaves the navigation cache empty.
     pub fn navigation(&mut self, deadline: Option<Instant>) -> Result<&crate::xrefs::Index> {
         if let Err(error) = passed(deadline) {
             return Err(error);

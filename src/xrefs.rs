@@ -230,6 +230,7 @@ impl Index {
         Ok(index)
     }
 
+    #[must_use]
     pub fn to(&self, target: u64) -> Vec<&Xref> {
         self.incoming
             .get(&target)
@@ -239,6 +240,7 @@ impl Index {
             .collect()
     }
 
+    #[must_use]
     pub fn from(&self, function: u64) -> Vec<&Xref> {
         self.outgoing
             .get(&function)
@@ -248,6 +250,7 @@ impl Index {
             .collect()
     }
 
+    #[must_use]
     pub fn strings(&self) -> &[StringLiteral] {
         &self.strings
     }
@@ -265,6 +268,7 @@ impl Index {
     }
 
     /// Breadth-first traversal; depth zero returns no neighbors.
+    #[must_use]
     pub fn graph(&self, function: u64, callers: bool, depth: usize) -> Vec<u64> {
         let mut seen = BTreeSet::from([function]);
         let mut emitted = BTreeSet::new();
@@ -287,6 +291,7 @@ impl Index {
     }
 
     /// A shortest call path, including both endpoints; empty when unreachable.
+    #[must_use]
     pub fn path(&self, from: u64, to: u64, depth: usize) -> Vec<u64> {
         let mut previous = BTreeMap::from([(from, from)]);
         let mut pending = VecDeque::from([(from, 0usize)]);

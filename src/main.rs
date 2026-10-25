@@ -1,3 +1,5 @@
+#![cfg_attr(not(test), deny(clippy::missing_assert_message))]
+
 mod terminal;
 
 use std::path::{Path, PathBuf};
@@ -358,7 +360,8 @@ fn exit_on_closed_pipe() {
     unsafe extern "C" {
         fn signal(signum: i32, handler: usize) -> usize;
     }
-    // SIGPIPE is 13 and the default action 0 on Linux and macOS.
+    // SAFETY: SIGPIPE is 13 and SIG_DFL is 0 on Linux and macOS; no Rust
+    // handler or pointer is passed. The standard library has no signal API.
     unsafe {
         signal(13, 0);
     }

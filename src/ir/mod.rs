@@ -66,6 +66,7 @@ pub enum Cond {
 }
 
 impl Cond {
+    #[must_use]
     pub fn from_code(code: u8) -> Option<Cond> {
         Some(match code & 0xf {
             0 => Cond::Eq,
@@ -87,6 +88,7 @@ impl Cond {
     }
 
     /// The complementary predicate (`!gt` is `le`).
+    #[must_use]
     pub fn invert(self) -> Cond {
         match self {
             Cond::Eq => Cond::Ne,
@@ -106,6 +108,7 @@ impl Cond {
         }
     }
 
+    #[must_use]
     pub fn text(self) -> &'static str {
         match self {
             Cond::Eq => "eq",
@@ -135,6 +138,7 @@ pub enum Precision {
 }
 
 impl Precision {
+    #[must_use]
     pub fn bits(self) -> u8 {
         match self {
             Precision::Single => 32,
@@ -236,7 +240,7 @@ pub enum Operation {
         to: Precision,
     },
     /// A float rounded to an integer of `bits`. Out of range, or for a NaN,
-    /// it saturates (NaN to zero) when `saturating` is set, as AArch64 does,
+    /// it saturates (NaN to zero) when `saturating` is set, as `AArch64` does,
     /// and otherwise gives the lowest signed value, as x86 does.
     FloatToInt {
         signed: bool,
@@ -326,6 +330,7 @@ pub enum Operation {
 
 impl Operation {
     /// The precision of the float the operation computes, if it computes one.
+    #[must_use]
     pub fn result_precision(self) -> Option<Precision> {
         match self {
             Operation::FloatAdd(p)
@@ -344,6 +349,7 @@ impl Operation {
     }
 
     /// The precision of the floats the operation reads, if it reads any.
+    #[must_use]
     pub fn argument_precision(self) -> Option<Precision> {
         match self {
             Operation::FloatAdd(p)
@@ -365,6 +371,7 @@ impl Operation {
         }
     }
 
+    #[must_use]
     pub fn arity(self) -> usize {
         match self {
             Operation::FloatSqrt(_)
@@ -424,19 +431,27 @@ pub enum Expr {
 }
 
 impl Expr {
+    #[must_use]
     pub fn apply(op: Operation, args: Vec<Expr>) -> Self {
-        debug_assert_eq!(args.len(), op.arity());
+        debug_assert_eq!(
+            args.len(),
+            op.arity(),
+            "operation operands must match its arity"
+        );
         Expr::Apply { op, args }
     }
 
+    #[must_use]
     pub fn constant(value: u64) -> Self {
         Expr::Const(value)
     }
 
+    #[must_use]
     pub fn reg(index: u16, width: u8) -> Self {
         Expr::Reg { index, width }
     }
 
+    #[must_use]
     pub fn bin(op: BinOp, lhs: Expr, rhs: Expr) -> Self {
         if let (Expr::Const(a), Expr::Const(b)) = (&lhs, &rhs) {
             let value = match op {
@@ -568,6 +583,7 @@ pub struct CallOutput {
     pub dest: RegRef,
 }
 
+#[must_use]
 pub fn fallback_call_outputs(
     convention: Convention,
     clobbers: Option<Registers>,
@@ -594,13 +610,13 @@ pub fn fallback_call_outputs(
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum MachineInstruction {
-    /// AArch64 system register encoded as o0:op1:CRn:CRm:op2.
+    /// `AArch64` system register encoded as o0:op1:CRn:CRm:op2.
     ArmSystem { register: u16, write: bool },
-    /// AArch64 DMB (0), DSB (1), or ISB (2), with its domain/type option.
+    /// `AArch64` DMB (0), DSB (1), or ISB (2), with its domain/type option.
     ArmBarrier { kind: u8, option: u8 },
     /// DC ZVA: zero the cache block containing the input address.
     ArmCacheZero,
-    /// RCpc acquire load: address input, zero-extended value output.
+    /// `RCpc` acquire load: address input, zero-extended value output.
     ArmLoadAcquire { width: u8 },
     /// Exclusive-monitor memory access. Loads return one or two values;
     /// stores take address and values, and return the architectural status.
@@ -625,7 +641,7 @@ pub enum MachineInstruction {
     Xgetbv,
     /// One 64-bit timestamp output.
     Rdtsc,
-    /// A 64-bit timestamp and the 32-bit IA32_TSC_AUX value.
+    /// A 64-bit timestamp and the 32-bit `IA32_TSC_AUX` value.
     Rdtscp,
     /// Mask and replacement-bit inputs; an RFLAGS output with RF and VM clear.
     ReadFlags,
@@ -746,6 +762,7 @@ pub enum Stmt {
 impl Stmt {
     /// The registers a call's declaration reads besides its arguments: its
     /// parameters' registers and the stack pointer.
+    #[must_use]
     pub fn declared_call_reads(&self) -> &[u16] {
         match self {
             Stmt::Call { abi: Some(abi), .. } => &abi.dependencies,
@@ -753,16 +770,19 @@ impl Stmt {
         }
     }
 
+    #[must_use]
     pub fn has_declared_call(&self) -> bool {
         matches!(self, Stmt::Call { abi: Some(_), .. })
     }
 
     /// Whether a declared call passes something through memory: a stack
     /// argument, or an object or result by address.
+    #[must_use]
     pub fn has_deferred_call_memory(&self) -> bool {
         matches!(self, Stmt::Call { abi: Some(abi), .. } if abi.deferred_memory)
     }
 
+    #[must_use]
     pub fn call_outputs(&self) -> &[CallOutput] {
         match self {
             Stmt::Call { outputs, .. } => outputs,
@@ -777,6 +797,7 @@ impl Stmt {
         }
     }
 
+    #[must_use]
     pub fn primary_call_output(&self) -> Option<&CallOutput> {
         let Stmt::Call {
             convention,
@@ -790,6 +811,7 @@ impl Stmt {
         outputs.iter().find(|output| output.register == *primary)
     }
 
+    #[must_use]
     pub fn preserved_output_sources(&self) -> Vec<(usize, u16)> {
         let changed = self.call_clobbers();
         self.call_outputs()
@@ -801,6 +823,7 @@ impl Stmt {
     }
 
     /// The registers a call may leave changed; none for another statement.
+    #[must_use]
     pub fn call_clobbers(&self) -> Vec<u16> {
         match self {
             Stmt::Call {
@@ -813,6 +836,7 @@ impl Stmt {
     }
 
     /// The registers a call reads besides those its expressions name.
+    #[must_use]
     pub fn unnamed_call_reads(&self) -> Vec<u16> {
         match self {
             // The register a call goes through holds the callee's address,
@@ -855,6 +879,7 @@ impl Stmt {
     }
 
     /// Every expression the statement reads, in order.
+    #[must_use]
     pub fn operands(&self) -> Vec<&Expr> {
         match self {
             Stmt::Machine { inputs, .. } => inputs.iter().collect(),

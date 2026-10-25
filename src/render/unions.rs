@@ -25,10 +25,17 @@ pub(crate) fn cell(group: &[(i64, u8)]) -> Option<u8> {
         .then_some(size)
 }
 
+#[derive(Clone, Copy)]
+pub(crate) enum MemberIndex {
+    Array,
+    Scalar,
+}
+
 /// The member of a cell's union that names an access of `width` bytes at
 /// `offset` into the cell: `as_u32`, or `as_u32[1]` where accesses of that
 /// width are read past the cell's start.
-pub(crate) fn member(width: u8, signed: bool, offset: i64, indexed: bool) -> String {
+pub(crate) fn member(width: u8, signed: bool, offset: i64, indexed: MemberIndex) -> String {
+    let indexed = matches!(indexed, MemberIndex::Array);
     let base = format!(
         "as_{}{}",
         if signed { "i" } else { "u" },
@@ -53,11 +60,11 @@ pub(crate) fn members(size: u8, views: &[(i64, u8, bool)]) -> Vec<String> {
         let declared = if indexed {
             format!(
                 "{ty} {}[{}];",
-                member(*width, *signed, 0, false),
+                member(*width, *signed, 0, MemberIndex::Scalar),
                 size / width
             )
         } else {
-            format!("{ty} {};", member(*width, *signed, 0, false))
+            format!("{ty} {};", member(*width, *signed, 0, MemberIndex::Scalar))
         };
         if !members.iter().any(|(_, known)| *known == declared) {
             members.push((*width, declared));

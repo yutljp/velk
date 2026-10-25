@@ -100,6 +100,10 @@ fn runtime_noreturn(name: &str) -> bool {
 
 /// The summary of the function at `addr`, computing it and those of every
 /// function it reaches on first use.
+///
+/// # Panics
+///
+/// Panics if a summaries or lift cache lock was poisoned by another thread.
 pub fn summary(image: &Image, addr: u64) -> Summary {
     if let Some(known) = image.summaries.read().expect("summaries lock").get(&addr) {
         return *known;
@@ -176,6 +180,10 @@ fn callees(image: &Image, addr: u64) -> (Vec<u64>, bool) {
     (out, calls_itself)
 }
 
+#[expect(
+    clippy::rc_buffer,
+    reason = "Shared blocks retain Vec ownership so an unshared lift can be taken without cloning its blocks."
+)]
 pub(super) fn body(
     image: &Image,
     addr: u64,

@@ -446,7 +446,7 @@ pub(crate) fn signed_select_chain(
             select_index,
             adjusted_def,
             1u64 << shift,
-            leaf.clone(),
+            leaf,
             domain,
         ));
     }

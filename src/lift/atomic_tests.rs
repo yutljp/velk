@@ -138,7 +138,7 @@ fn x86_atomic_families_print_compile_and_execute() {
     }
     assert!(code.contains("__ATOMIC_SEQ_CST"));
     main.push_str("return 0; }\n");
-    compile_run(&(code + &main), "x86");
+    compile_run(&format!("{code}{main}"), "x86");
 }
 
 #[test]
@@ -172,7 +172,7 @@ fn arm_atomic_families_print_compile_and_execute() {
         assert!(code.contains(&format!("__ATOMIC_{order}")), "{code}");
     }
     main.push_str("return 0; }\n");
-    compile_run(&(code + &main), "arm");
+    compile_run(&format!("{code}{main}"), "arm");
 }
 
 #[test]
@@ -243,7 +243,7 @@ fn exchange_results_compare_failure_and_flags_survive_optimization() {
         ));
     }
     main.push_str("return 0; }\n");
-    compile_run(&(code + &main), "results");
+    compile_run(&format!("{code}{main}"), "results");
 }
 
 #[test]
@@ -257,9 +257,9 @@ fn ordinary_memory_values_are_not_forwarded_across_atomic_accesses() {
     let ir = lifted(Isa::X86_64, &bytes, Expr::reg(0, 64));
     let printed = check(ir, &[7, 6, 0], 5, 3, 1, "barrier");
     compile_run(
-        &(String::from("#include <stdint.h>\n")
-            + &printed
-            + "\nint main(void) { uint64_t v = 5; return barrier((uint64_t)&v, 3, 5) != 1 || v != 8; }\n"),
+        &format!(
+            "#include <stdint.h>\n{printed}\nint main(void) {{ uint64_t v = 5; return barrier((uint64_t)&v, 3, 5) != 1 || v != 8; }}\n"
+        ),
         "barrier",
     );
 }
@@ -350,9 +350,9 @@ fn exclusive_retry_loop_becomes_one_atomic_update() {
     );
     assert!(printed.contains("__ATOMIC_ACQ_REL"), "{printed}");
     compile_run(
-        &(String::from("#include <stdint.h>\n")
-            + &printed
-            + "\nint main(void) { uint64_t v = 5; return exclusive_loop((uint64_t)&v, 3, 5) != 8 || v != 8; }\n"),
+        &format!(
+            "#include <stdint.h>\n{printed}\nint main(void) {{ uint64_t v = 5; return exclusive_loop((uint64_t)&v, 3, 5) != 8 || v != 8; }}\n"
+        ),
         "exclusive",
     );
 }
@@ -378,9 +378,9 @@ fn exclusive_retry_can_test_the_zero_extended_status_register() {
     );
     assert!(printed.contains("__ATOMIC_ACQ_REL"), "{printed}");
     compile_run(
-        &(String::from("#include <stdint.h>\n")
-            + &printed
-            + "\nint main(void) { uint64_t v = 5; return wide_status_loop((uint64_t)&v, 3, 5) != 8 || v != 8; }\n"),
+        &format!(
+            "#include <stdint.h>\n{printed}\nint main(void) {{ uint64_t v = 5; return wide_status_loop((uint64_t)&v, 3, 5) != 8 || v != 8; }}\n"
+        ),
         "wide_status_exclusive",
     );
 }

@@ -58,10 +58,12 @@ pub struct Ssa {
 }
 
 impl Ssa {
+    #[must_use]
     pub fn register_of(&self, value: u16) -> u16 {
         self.origin[usize::from(value - VALUE_BASE)]
     }
 
+    #[must_use]
     pub fn is_value(index: u16) -> bool {
         index >= VALUE_BASE
     }
@@ -187,6 +189,11 @@ impl Builder {
 
 /// Puts the function into SSA form, or None when it has more definitions
 /// than value indices.
+///
+/// # Panics
+///
+/// Panics if a renamed definition has no register stack to unwind.
+#[must_use]
 pub fn build(ir: &FunctionIr) -> Option<Ssa> {
     for stmt in ir.blocks.iter().flat_map(|block| &block.stmts) {
         let mut destinations = HashSet::new();
@@ -555,6 +562,7 @@ pub fn propagate_constants(ir: &mut FunctionIr) {
 /// Leaves SSA form by giving every value its register back. Correct as long
 /// as each value's register still holds it wherever it is read, as it does
 /// after transformations that only rewrite reads into equal expressions.
+#[must_use]
 pub fn lower(ssa: &Ssa) -> FunctionIr {
     lower_with(ssa, &HashMap::new())
 }
@@ -1161,7 +1169,7 @@ mod tests {
                 },
             ],
         );
-        let mut forwarded = ir.clone();
+        let mut forwarded = ir;
         super::take_results_directly(&mut forwarded);
         assert_eq!(forwarded.blocks[0].stmts[0].call_outputs()[0].dest.index, 0);
         assert_eq!(forwarded.blocks[0].stmts.len(), 4);
@@ -1914,7 +1922,7 @@ mod tests {
         let mut ir = FunctionIr::single_block(
             Isa::X86_64,
             vec![
-                assign(11, Expr::bin(BinOp::Or, keep.clone(), Expr::Const(4))),
+                assign(11, Expr::bin(BinOp::Or, keep, Expr::Const(4))),
                 Stmt::Store {
                     addr: Expr::reg(7, 64),
                     value: Expr::reg(11, 64),
@@ -2080,7 +2088,7 @@ mod tests {
             assert!(ssa.implicit_reads[&(0, 0)].contains(&(register, ssa.entry[&register])));
             assert_eq!(entry_demands(&ir, &[]).unwrap()[&register], u64::MAX);
         }
-        let mut fallback = ir.clone();
+        let mut fallback = ir;
         let Stmt::Call { abi, .. } = &mut fallback.blocks[0].stmts[0] else {
             unreachable!()
         };

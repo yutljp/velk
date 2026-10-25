@@ -17,6 +17,7 @@ pub struct Reference {
 }
 
 impl Reference {
+    #[must_use]
     pub fn describe(&self) -> String {
         match (&self.text, self.pointer) {
             (Some(text), Some(pointer)) => {
@@ -55,6 +56,7 @@ fn strings_at(image: &Image, addr: u64) -> Option<String> {
     Some(String::from_utf8_lossy(text).into_owned())
 }
 
+#[must_use]
 pub fn name_hints(strings: &[String]) -> Vec<String> {
     let mut hints = Vec::new();
     for text in strings {

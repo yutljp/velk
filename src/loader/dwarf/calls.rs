@@ -214,9 +214,10 @@ fn call_function_types(
     let mut param_aggregate_sizes = Vec::new();
     for offset in children {
         let origins = call_origins(unit, offset)?;
-        let offset = match call_attribute(unit, &origins, gimli::DW_AT_type)? {
-            Some(AttributeValue::UnitRef(offset)) => offset,
-            _ => return Err(AbiIssue::UnknownLayout),
+        let Some(AttributeValue::UnitRef(offset)) =
+            call_attribute(unit, &origins, gimli::DW_AT_type)?
+        else {
+            return Err(AbiIssue::UnknownLayout);
         };
         let name = origins.iter().find_map(|offset| {
             unit.entry(*offset)

@@ -164,13 +164,48 @@ fn patch(dies: &mut [u8], at: usize, target: usize) {
     dies[at..at + 4].copy_from_slice(&u32::try_from(target).unwrap().to_le_bytes());
 }
 
+#[derive(Clone, Copy)]
+enum Origin {
+    Cyclic,
+    Declaration,
+}
+
+#[derive(Clone, Copy)]
+enum UnitReference {
+    CrossUnit,
+    Local,
+}
+
+#[derive(Clone, Copy)]
+enum Parameters {
+    Extra,
+    Inherited,
+}
+
+#[derive(Clone, Copy)]
+enum Prototype {
+    Present,
+    Absent,
+}
+
+#[derive(Clone, Copy)]
+enum CallingConvention {
+    Normal,
+    Unsupported,
+}
+
 fn inherited(
-    cycle: bool,
-    cross_unit: bool,
-    extra_parameter: bool,
-    prototyped: bool,
-    normal: bool,
+    cycle: Origin,
+    cross_unit: UnitReference,
+    extra_parameter: Parameters,
+    prototyped: Prototype,
+    normal: CallingConvention,
 ) -> (Vec<u8>, gimli::UnitOffset<usize>, gimli::UnitOffset<usize>) {
+    let normal = matches!(normal, CallingConvention::Normal);
+    let prototyped = matches!(prototyped, Prototype::Present);
+    let extra_parameter = matches!(extra_parameter, Parameters::Extra);
+    let cross_unit = matches!(cross_unit, UnitReference::CrossUnit);
+    let cycle = matches!(cycle, Origin::Cyclic);
     let mut dies = vec![1, 2, 0];
     let declaration = dies.len() + 11;
     dies.extend([3, u8::from(prototyped)]);
@@ -217,7 +252,13 @@ fn inherited(
 
 #[test]
 fn inherited_call_declaration_keeps_return_and_parameter_types() {
-    let (info, function, integer) = inherited(false, false, false, true, true);
+    let (info, function, integer) = inherited(
+        Origin::Declaration,
+        UnitReference::Local,
+        Parameters::Inherited,
+        Prototype::Present,
+        CallingConvention::Normal,
+    );
     let abbrev = abbreviations();
     let dwarf = dwarf(&info, &abbrev, &[]);
     let unit = dwarf.unit(dwarf.units().next().unwrap().unwrap()).unwrap();
@@ -235,7 +276,21 @@ fn inherited_call_declaration_keeps_return_and_parameter_types() {
 #[test]
 fn cyclic_and_cross_unit_origins_do_not_become_void_declarations() {
     for (cycle, cross_unit) in [(true, false), (false, true)] {
-        let (info, function, _) = inherited(cycle, cross_unit, false, true, true);
+        let (info, function, _) = inherited(
+            if cycle {
+                Origin::Cyclic
+            } else {
+                Origin::Declaration
+            },
+            if cross_unit {
+                UnitReference::CrossUnit
+            } else {
+                UnitReference::Local
+            },
+            Parameters::Inherited,
+            Prototype::Present,
+            CallingConvention::Normal,
+        );
         let abbrev = abbreviations();
         let dwarf = dwarf(&info, &abbrev, &[]);
         let unit = dwarf.unit(dwarf.units().next().unwrap().unwrap()).unwrap();
@@ -249,7 +304,13 @@ fn cyclic_and_cross_unit_origins_do_not_become_void_declarations() {
 
 #[test]
 fn inconsistent_inherited_parameter_lists_are_unknown() {
-    let (info, function, _) = inherited(false, false, true, true, true);
+    let (info, function, _) = inherited(
+        Origin::Declaration,
+        UnitReference::Local,
+        Parameters::Extra,
+        Prototype::Present,
+        CallingConvention::Normal,
+    );
     let abbrev = abbreviations();
     let dwarf = dwarf(&info, &abbrev, &[]);
     let unit = dwarf.unit(dwarf.units().next().unwrap().unwrap()).unwrap();
@@ -263,7 +324,21 @@ fn inconsistent_inherited_parameter_lists_are_unknown() {
 #[test]
 fn inherited_prototype_and_calling_convention_remain_required() {
     for (prototyped, normal) in [(false, true), (true, false)] {
-        let (info, function, _) = inherited(false, false, false, prototyped, normal);
+        let (info, function, _) = inherited(
+            Origin::Declaration,
+            UnitReference::Local,
+            Parameters::Inherited,
+            if prototyped {
+                Prototype::Present
+            } else {
+                Prototype::Absent
+            },
+            if normal {
+                CallingConvention::Normal
+            } else {
+                CallingConvention::Unsupported
+            },
+        );
         let abbrev = abbreviations();
         let dwarf = dwarf(&info, &abbrev, &[]);
         let unit = dwarf.unit(dwarf.units().next().unwrap().unwrap()).unwrap();

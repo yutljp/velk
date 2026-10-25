@@ -778,7 +778,7 @@ pub(super) fn render(call: &Stmt, ctx: &Ctx<'_>) -> String {
     match scalar_at {
         Some((at, _)) => lines.push(format!(
             "    {temporary}[{at}] = {};",
-            bits(text.clone(), &scalar_type)
+            bits(text, &scalar_type)
         )),
         None => lines.push(format!("    {text};")),
     }
@@ -1335,7 +1335,7 @@ mod tests {
             step_limit: 100,
         };
         let state = crate::ir::eval::registers_after(&ir, &setup).expect("call must return");
-        let mut wide = ir.clone();
+        let mut wide = ir;
         wide.blocks[0].stmts[0].call_outputs_mut()[0].dest.width = 64;
         let wide_state =
             crate::ir::eval::registers_after(&wide, &setup).expect("wide call must return");

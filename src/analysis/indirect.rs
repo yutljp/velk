@@ -1385,14 +1385,14 @@ mod tests {
             },
         );
         assert_eq!(returned_from(&image, 0x40, 0x50, 0, &conflict), None);
-        let mut unreached = valid.clone();
+        let mut unreached = valid;
         unreached.push(Block {
             start: 0x4c,
             stmts: vec![ret.clone()],
         });
         assert_eq!(returned_from(&image, 0x40, 0x50, 0, &unreached), None);
         for stmts in [
-            vec![assign.clone()],
+            vec![assign],
             vec![Stmt::Trap],
             vec![],
             vec![ret.clone(), ret],

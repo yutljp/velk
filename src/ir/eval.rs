@@ -15,6 +15,7 @@ pub const STACK_TOP: u64 = 0x7fff_ff00_0000;
 pub(crate) const STACK_SPAN: u64 = 1 << 24;
 
 /// The initial stack address, within the architecture's address space.
+#[must_use]
 pub fn stack_top(isa: crate::loader::Isa) -> u64 {
     if isa == crate::loader::Isa::Arm32 {
         0x7f00_0000
@@ -78,11 +79,12 @@ struct Machine<'a> {
     starts: HashMap<u64, usize>,
 }
 
-/// Supplies raw instruction outputs in their declared order. For WriteFlags,
+/// Supplies raw instruction outputs in their declared order. For `WriteFlags`,
 /// return the effective flags after privilege and reserved-bit restrictions.
 pub type MachineSource<'a> =
     dyn Fn(super::MachineInstruction, &[u64]) -> Result<Vec<u64>, &'static str> + 'a;
 
+#[must_use]
 pub fn run(ir: &FunctionIr, setup: &Setup<'_>) -> Outcome {
     run_with_machine(ir, setup, &|_, _| Err("machine state unavailable"))
 }
@@ -177,14 +179,14 @@ fn visible(memory: &HashMap<u64, u8>, isa: crate::loader::Isa) -> BTreeMap<u64, 
 /// the negative quiet NaN x86 calls indefinite.
 fn x86_nan(op: super::Operation, args: &[u64], result: u64) -> u64 {
     use super::{Operation, Precision};
-    let precision = match op {
-        Operation::FloatAdd(p)
-        | Operation::FloatSub(p)
-        | Operation::FloatMul(p)
-        | Operation::FloatDiv(p)
-        | Operation::FloatSqrt(p)
-        | Operation::FloatMulAdd(p) => p,
-        _ => return result,
+    let (Operation::FloatAdd(precision)
+    | Operation::FloatSub(precision)
+    | Operation::FloatMul(precision)
+    | Operation::FloatDiv(precision)
+    | Operation::FloatSqrt(precision)
+    | Operation::FloatMulAdd(precision)) = op
+    else {
+        return result;
     };
     let (nan, quiet, indefinite) = match precision {
         Precision::Double => (
@@ -212,6 +214,7 @@ fn x86_nan(op: super::Operation, args: &[u64], result: u64) -> u64 {
 }
 
 /// A well-mixed 64-bit value derived from the seed and `key`.
+#[must_use]
 pub fn hash(seed: u64, key: u64) -> u64 {
     let mut value = seed ^ key.wrapping_mul(0x9e37_79b9_7f4a_7c15);
     value = (value ^ (value >> 30)).wrapping_mul(0xbf58_476d_1ce4_e5b9);
@@ -481,14 +484,13 @@ impl Machine<'_> {
                             Ok(value) => value,
                             Err(reason) => return Err(reason),
                         } as i64;
-                        let target = match cases
+                        let Some(target) = cases
                             .iter()
                             .find(|(value, _)| *value == index)
                             .map(|(_, target)| *target)
                             .or(*default)
-                        {
-                            Some(target) => target,
-                            None => return Err("switch without a matching case"),
+                        else {
+                            return Err("switch without a matching case");
                         };
                         next = match self.jump(target) {
                             Flow::Block(index) => index,

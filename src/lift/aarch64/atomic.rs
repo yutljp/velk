@@ -1,4 +1,7 @@
-use super::*;
+use super::{
+    BinOp, Expr, Instruction, Lifter, Operand, RegRef, SizeCode, Stmt, Write, a64, destination,
+    lift_alu, memory, preserve_compare, relative_target,
+};
 use crate::ir::{AtomicOp, MachineInstruction, Ordering};
 
 /// A retry loop containing only a load, pure update, exclusive store and

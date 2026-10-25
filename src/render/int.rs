@@ -313,7 +313,9 @@ pub(crate) fn value_bits(ir: &FunctionIr) -> HashMap<u16, u32> {
             return known;
         }
     }
-    known.values_mut().for_each(|bits| *bits = 64);
+    for bits in known.values_mut() {
+        *bits = 64;
+    }
     known
 }
 

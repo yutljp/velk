@@ -1,4 +1,7 @@
-use super::*;
+use super::{
+    BinOp, Cond, Expr, Flags, Instruction, Lifter, Mnemonic, OpKind, RAX, RDX, RegRef, Stmt, Write,
+    memory_address, memory_width, operand, preserve_compare, write_operand,
+};
 use crate::ir::{AtomicOp, MachineInstruction, Ordering};
 
 const OUTPUT: u16 = crate::ir::TEMP_BASE + 0x60;
@@ -125,7 +128,7 @@ pub(super) fn lift(lifter: &mut Lifter, ins: &Instruction) -> bool {
             Expr::constant(1),
         )));
     } else if op == AtomicOp::CompareExchange {
-        lifter.set_flags(Flags::difference(expected.clone(), old.clone()));
+        lifter.set_flags(Flags::difference(expected, old.clone()));
         // EAX is zero-extended even when a 32-bit comparison succeeds.
         lifter.assign(RAX, bits, old);
     } else if op == AtomicOp::Exchange {
@@ -139,8 +142,8 @@ pub(super) fn lift(lifter: &mut Lifter, ins: &Instruction) -> bool {
             _ => BinOp::Xor,
         };
         let flags = match op {
-            AtomicOp::Add => Flags::sum(old.clone(), source.clone()),
-            AtomicOp::Sub => Flags::difference(old.clone(), source.clone()),
+            AtomicOp::Add => Flags::sum(old.clone(), source),
+            AtomicOp::Sub => Flags::difference(old.clone(), source),
             _ => Flags::logic_at(Expr::bin(binary, old.clone(), source), u32::from(bits)),
         };
         lifter.set_flags(if matches!(ins.mnemonic(), Mnemonic::Inc | Mnemonic::Dec) {

@@ -1,8 +1,9 @@
 use super::{
-    BinOp, Expr, Instruction, LaneOp, Lifter, Operand, Operation, a64, absolute_difference,
-    by_halves, complement, doubling_mul_high, halves, immediate_lane, immediates, lane, lane_shift,
-    lane_value, lanewise, mask_bits, narrowed, replicate, replicated, reverse_lanes,
-    rounding_shift, shift_count, simd, source_halves, unzip, vector, widened, window, write_narrow,
+    BinOp, Expr, Instruction, LaneOp, LaneParity, Lifter, Operand, Operation, VectorHalf, a64,
+    absolute_difference, by_halves, complement, doubling_mul_high, halves, immediate_lane,
+    immediates, lane, lane_shift, lane_value, lanewise, mask_bits, narrowed, replicate, replicated,
+    reverse_lanes, rounding_shift, shift_count, simd, source_halves, unzip, vector, widened,
+    window, write_narrow,
 };
 
 /// What a widening instruction does with the lanes it extends.
@@ -418,8 +419,8 @@ pub(super) fn lift_vector(lifter: &mut Lifter, ins: &Instruction) -> Option<()> 
             let dest = vector(ops[0])?;
             let bits = dest.2;
             let (a, b) = (halves(vector(ops[1])?), halves(vector(ops[2])?));
-            let even = unzip(a.clone(), b.clone(), bits, dest.1, false);
-            let odd = unzip(a, b, bits, dest.1, true);
+            let even = unzip(a.clone(), b.clone(), bits, dest.1, LaneParity::Even);
+            let odd = unzip(a, b, bits, dest.1, LaneParity::Odd);
             let op = match ins.opcode {
                 O::ADDP => LaneOp::Add,
                 O::SMAXP => LaneOp::MaxSigned,
@@ -585,7 +586,17 @@ pub(super) fn lift_vector(lifter: &mut Lifter, ins: &Instruction) -> Option<()> 
         O::UZP1 | O::UZP2 => {
             let dest = vector(ops[0])?;
             let (a, b) = (halves(vector(ops[1])?), halves(vector(ops[2])?));
-            let (low, high) = unzip(a, b, dest.2, dest.1, ins.opcode == O::UZP2);
+            let (low, high) = unzip(
+                a,
+                b,
+                dest.2,
+                dest.1,
+                if ins.opcode == O::UZP2 {
+                    LaneParity::Odd
+                } else {
+                    LaneParity::Even
+                },
+            );
             lifter.write_vector(dest, low, high);
         }
         // The even (or odd) lanes of each pair, the first source's in the
@@ -636,7 +647,16 @@ pub(super) fn lift_vector(lifter: &mut Lifter, ins: &Instruction) -> Option<()> 
             let count = shift_count(ops[2]).unwrap_or(u64::from(bits));
             let upper = matches!(ins.opcode, O::SSHLL2 | O::USHLL2 | O::SHLL2);
             let signed = matches!(ins.opcode, O::SSHLL | O::SSHLL2);
-            let (low, high) = widened(halves(vector(ops[1])?), upper, bits, signed);
+            let (low, high) = widened(
+                halves(vector(ops[1])?),
+                if upper {
+                    VectorHalf::Upper
+                } else {
+                    VectorHalf::Lower
+                },
+                bits,
+                signed,
+            );
             let shift = |x: Expr| {
                 if count == 0 {
                     x
@@ -653,7 +673,18 @@ pub(super) fn lift_vector(lifter: &mut Lifter, ins: &Instruction) -> Option<()> 
         {
             let dest = vector(ops[0])?;
             let wide = dest.2;
-            let extend = |operand: (Expr, Expr)| widened(operand, upper, wide / 2, signed);
+            let extend = |operand: (Expr, Expr)| {
+                widened(
+                    operand,
+                    if upper {
+                        VectorHalf::Upper
+                    } else {
+                        VectorHalf::Lower
+                    },
+                    wide / 2,
+                    signed,
+                )
+            };
             let first = halves(vector(ops[1])?);
             let first = if matches!(form, Widening::AddWide | Widening::SubWide) {
                 first

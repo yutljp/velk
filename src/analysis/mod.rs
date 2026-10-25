@@ -38,6 +38,7 @@ pub struct Analysis {
 }
 
 impl Analysis {
+    #[must_use]
     pub fn strings(&self) -> Vec<String> {
         self.references
             .iter()
@@ -78,7 +79,7 @@ fn float_return_slot(isa: crate::loader::Isa) -> Option<u16> {
 /// every path to a return writes the float return register, and either
 /// some path leaves the integer one as it came in, or every path writes it
 /// before the float one. On x86-64 an untouched integer register means
-/// nothing, and on AArch64 it is the first argument, which a function
+/// nothing, and on `AArch64` it is the first argument, which a function
 /// returning a float does not return. A float is a single when the last
 /// write on every path that says computes or loads one.
 fn float_result(
@@ -176,7 +177,7 @@ fn float_result(
 
 /// The precision of the float a write to the vector register `slot` puts
 /// in its low half: what an operation computes or a load reads. x86 merges
-/// a single into the register's other bits, and AArch64 clears them.
+/// a single into the register's other bits, and `AArch64` clears them.
 fn written_precision(value: &crate::ir::Expr, slot: u16) -> Option<crate::ir::Precision> {
     use crate::ir::{BinOp, Expr, Precision};
     match value {
@@ -882,7 +883,7 @@ fn name_indirect_result(ir: &mut FunctionIr) {
     }
 }
 
-/// Drops each value AArch64 code leaves in x8, its indirect result
+/// Drops each value `AArch64` code leaves in x8, its indirect result
 /// register, that no path reads before the register changes: a call reads
 /// it unnamed only when its callee may return through memory, so a
 /// compiler's scratch there, as a jump table's computed target, is dead
@@ -1067,7 +1068,7 @@ fn lift_function(image: &Image, function: &Function) -> Result<Lifted, LiftError
     };
     let mut tables = jump_table::recover(&blocks, image, extent.clone());
     // Cases start blocks of their own, which may hold further tables.
-    let mut targets: HashSet<u64> = starts.clone();
+    let mut targets: HashSet<u64> = starts;
     for _ in 0..4 {
         let found: HashSet<u64> = tables
             .iter()

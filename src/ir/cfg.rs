@@ -230,7 +230,7 @@ pub(crate) fn live_in(ir: &FunctionIr) -> Vec<HashSet<u16>> {
             }
         }
         if opaque(block) {
-            uses[index].iter_mut().for_each(|word| *word = u64::MAX);
+            uses[index].fill(u64::MAX);
         }
     }
     let successors: Vec<Vec<usize>> = (0..count).map(|index| successors(ir, index)).collect();

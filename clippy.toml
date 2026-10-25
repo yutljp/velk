@@ -1,0 +1,8 @@
+allow-unwrap-in-tests = true
+allow-unwrap-in-consts = false
+max-fn-params-bools = 1
+check-private-items = false
+
+[[disallowed-methods]]
+path = "std::panic::catch_unwind"
+reason = "Handle recoverable failures explicitly instead of catching panics."

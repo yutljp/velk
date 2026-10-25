@@ -232,7 +232,11 @@ pub(crate) fn variable_types(
                 ty,
                 given,
                 narrow.contains(&index),
-                uses.arithmetic.contains(&index),
+                if uses.arithmetic.contains(&index) {
+                    PointerUse::Arithmetic
+                } else {
+                    PointerUse::Access
+                },
             ),
             None => ty,
         };
@@ -437,10 +441,17 @@ fn integer_reads(expr: &Expr, reads: &mut HashSet<u16>) {
     }
 }
 
+#[derive(Clone, Copy)]
+enum PointerUse {
+    Arithmetic,
+    Access,
+}
+
 /// The type a prototype gives a variable where it agrees with how the body
 /// uses it: a pointer the body does no arithmetic on, and that the
 /// accesses through it say no more of; an integer as wide as its reads.
-fn agreeing(used: CType, given: &CType, narrow: bool, arithmetic: bool) -> CType {
+fn agreeing(used: CType, given: &CType, narrow: bool, arithmetic: PointerUse) -> CType {
+    let arithmetic = matches!(arithmetic, PointerUse::Arithmetic);
     if used.is_sse_float() || used.pointee_struct().is_some() {
         return used;
     }

@@ -424,7 +424,7 @@ fn declaration_compatibility_preserves_every_defined_bit() {
     };
     let generated = TypeLayout {
         kind: LayoutKind::Union(vec![field(0, boolean)]),
-        ..original.clone()
+        ..original
     };
     for profile in [AbiProfile::SysV, AbiProfile::Aapcs64, AbiProfile::Win64] {
         assert_eq!(

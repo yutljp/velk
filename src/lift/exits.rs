@@ -82,9 +82,8 @@ pub(super) fn resolve_exits(
     }
     for index in jumps {
         let stmts = &mut blocks[index].stmts;
-        let target = match stmts.pop() {
-            Some(Stmt::Br { target }) => target,
-            _ => unreachable!("a jump ends the block"),
+        let Some(Stmt::Br { target }) = stmts.pop() else {
+            unreachable!("a jump ends the block")
         };
         stmts.extend(tail_call(image, summaries, target));
     }

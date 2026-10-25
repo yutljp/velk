@@ -413,7 +413,7 @@ fn shift(op: BinOp, lhs: &Expr, rhs: &Expr, ctx: &Ctx<'_>, bits: u32) -> Printed
         };
     if !safe {
         value = if matches!(lhs, Expr::Const(_)) {
-            widen(value, true, true)
+            widen(value, /* constant */ true, WidenSign::Unsigned)
         } else {
             let exact = converted(&value, Int::U64);
             value.cast(64, false, exact)
@@ -656,9 +656,9 @@ fn unfitted(value: &Expr, ctx: &Ctx<'_>, bits: u32, usage: ConstantUse) -> Print
             };
             if whole(&dividend, &divisor) < ALL && dividend.exact >= 64 && divisor.exact >= 64 {
                 if matches!(lhs.as_ref(), Expr::Const(_)) {
-                    divisor = widen(divisor, true, true);
+                    divisor = widen(divisor, /* constant */ true, WidenSign::Unsigned);
                 } else {
-                    dividend = widen(dividend, false, true);
+                    dividend = widen(dividend, /* constant */ false, WidenSign::Unsigned);
                 }
             }
             let ty = dividend.ty.common(divisor.ty);
@@ -870,9 +870,9 @@ fn selected(
     };
     if keeps(&chosen, &other) < bits && chosen.ty.common(other.ty).bits < 64 {
         if matches!(then, Expr::Const(_)) {
-            other = widen(other, matches!(els, Expr::Const(_)), false);
+            other = widen(other, matches!(els, Expr::Const(_)), WidenSign::Preserve);
         } else {
-            chosen = widen(chosen, false, false);
+            chosen = widen(chosen, /* constant */ false, WidenSign::Preserve);
         }
     }
     let exact = keeps(&chosen, &other);
@@ -958,9 +958,9 @@ fn binary(
             constant_right
         };
         if widen_left {
-            lhs = widen(lhs, constant_left, false);
+            lhs = widen(lhs, constant_left, WidenSign::Preserve);
         } else {
-            rhs = widen(rhs, constant_right, false);
+            rhs = widen(rhs, constant_right, WidenSign::Preserve);
         }
     }
     let exact = keeps(&lhs, &rhs);
@@ -978,20 +978,27 @@ fn binary(
     )
 }
 
+#[derive(Clone, Copy)]
+enum WidenSign {
+    Unsigned,
+    Preserve,
+}
+
 /// `printed` computed on at 64 bits when what `keeps` says the result
 /// keeps falls short of the reader's `bits`.
 fn widened(printed: Printed, expr: &Expr, bits: u32, keeps: impl Fn(&Printed) -> u32) -> Printed {
     if keeps(&printed) >= bits || printed.ty.bits >= 64 {
         printed
     } else {
-        widen(printed, matches!(expr, Expr::Const(_)), false)
+        widen(printed, matches!(expr, Expr::Const(_)), WidenSign::Preserve)
     }
 }
 
 /// `printed` converted to the 64-bit type of its sign, so that C computes
 /// on it at 64 bits: a constant takes a suffix, which is unsigned when
 /// `unsigned` asks for it.
-fn widen(printed: Printed, constant: bool, unsigned: bool) -> Printed {
+fn widen(printed: Printed, constant: bool, unsigned: WidenSign) -> Printed {
+    let unsigned = matches!(unsigned, WidenSign::Unsigned);
     let exact = printed.exact;
     if constant {
         let signed = printed.ty.signed && !unsigned;
@@ -1398,13 +1405,11 @@ mod tests {
                     width: 8,
                 },
                 Stmt::Store {
-                    addr: slot.clone(),
+                    addr: slot,
                     value: Expr::bin(BinOp::Sar, load.clone(), Expr::Const(3)),
                     width: 8,
                 },
-                Stmt::Ret {
-                    value: load.clone(),
-                },
+                Stmt::Ret { value: load },
             ],
             &[CType::U64],
         );

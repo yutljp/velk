@@ -11,6 +11,7 @@ impl Registers {
         }
     }
 
+    #[must_use]
     pub fn contains(self, index: u16) -> bool {
         index < 128 && self.0 & 1 << index != 0
     }
@@ -158,14 +159,17 @@ pub const VARIABLE_BASE: u16 = TEMP_BASE + 0x100;
 /// Register indices from here up are SSA values, printed as `s<n>`.
 pub const VALUE_BASE: u16 = 0x2000;
 
+#[must_use]
 pub fn is_temp(index: u16) -> bool {
     index >= TEMP_BASE
 }
 
+#[must_use]
 pub fn temp_id(index: u16) -> u64 {
     u64::from(index - TEMP_BASE) + 1
 }
 
+#[must_use]
 pub fn reg_name(isa: Isa, index: u16, width: u8) -> String {
     let _ = (isa, width);
     if index >= VALUE_BASE {

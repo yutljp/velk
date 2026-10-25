@@ -246,7 +246,18 @@ fn copy_propagate_with(ir: &mut FunctionIr, avoid_duplication: bool) {
         }
         let mut outer = reads_elsewhere(&reads, index);
         outer.extend(live_out[index].iter().copied());
-        copy_propagate_block(block, &outer, &params, avoid_duplication, sp, private_frame);
+        copy_propagate_block(
+            block,
+            &outer,
+            &params,
+            if avoid_duplication {
+                Duplication::Avoid
+            } else {
+                Duplication::Permit
+            },
+            sp,
+            private_frame,
+        );
     }
 }
 
@@ -292,14 +303,21 @@ fn parameters(ir: &FunctionIr) -> std::collections::HashSet<u16> {
     ir.params.iter().map(|param| param.index).collect()
 }
 
+#[derive(Clone, Copy)]
+enum Duplication {
+    Avoid,
+    Permit,
+}
+
 fn copy_propagate_block(
     block: &mut crate::ir::Block,
     outer_reads: &std::collections::HashSet<u16>,
     params: &std::collections::HashSet<u16>,
-    avoid_duplication: bool,
+    avoid_duplication: Duplication,
     sp: u16,
     private_frame: bool,
 ) {
+    let avoid_duplication = matches!(avoid_duplication, Duplication::Avoid);
     let mut index = 0;
     while index < block.stmts.len() {
         let copy = match &block.stmts[index] {

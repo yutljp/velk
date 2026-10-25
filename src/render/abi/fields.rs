@@ -337,8 +337,10 @@ pub(super) fn project(
     {
         return;
     }
-    plan.result.as_mut().unwrap().fields =
-        members.iter().map(|member| member.name.clone()).collect();
+    plan.result
+        .as_mut()
+        .expect("the result was required before validating its fields")
+        .fields = members.iter().map(|member| member.name.clone()).collect();
     ir.params = captures
         .iter()
         .map(|capture| Param {

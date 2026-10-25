@@ -24,7 +24,11 @@ pub(crate) struct Scope {
 }
 
 fn word(bytes: &[u8], offset: usize) -> u32 {
-    u32::from_le_bytes(bytes[offset..offset + 4].try_into().unwrap())
+    u32::from_le_bytes(
+        bytes[offset..offset + 4]
+            .try_into()
+            .expect("a four-byte slice always fits a u32"),
+    )
 }
 
 fn read_bytes(image: &Image, address: u64, size: u64) -> Option<&[u8]> {

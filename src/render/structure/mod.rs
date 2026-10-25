@@ -64,6 +64,7 @@ pub enum Node {
 /// those the fewest gotos. A function
 /// that tree cannot cover, such as one with code only an indirect jump
 /// reaches, is structured in address order instead.
+#[must_use]
 pub fn structure_best(ir: &FunctionIr) -> Vec<Node> {
     best_structure(ir).0
 }
@@ -350,6 +351,7 @@ fn label_count(nodes: &[Node]) -> usize {
         .sum()
 }
 
+#[must_use]
 pub fn structure(ir: &FunctionIr) -> Vec<Node> {
     structure_with(ir, false)
 }

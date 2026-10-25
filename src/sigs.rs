@@ -25,6 +25,7 @@ pub struct Database {
 }
 
 impl Database {
+    #[must_use]
     pub fn new(mut entries: Vec<Entry>) -> Self {
         entries.sort_by(|a, b| a.name.cmp(&b.name));
         Self {
@@ -56,6 +57,7 @@ impl Database {
         serde_json::from_value(value).map_err(Error::SignatureData)
     }
 
+    #[must_use]
     pub fn lookup(&self, ir: &FunctionIr) -> Option<&Entry> {
         let tokens = tokens(ir);
         if tokens.is_empty() {
@@ -67,6 +69,7 @@ impl Database {
 }
 
 /// The database entry for a named function, or `None` when its body has no shape to match.
+#[must_use]
 pub fn entry(name: &str, size: Option<u64>, ir: &FunctionIr) -> Option<Entry> {
     let tokens = tokens(ir);
     (!tokens.is_empty()).then(|| Entry {
@@ -78,6 +81,7 @@ pub fn entry(name: &str, size: Option<u64>, ir: &FunctionIr) -> Option<Entry> {
     })
 }
 
+#[must_use]
 pub fn shape_hash(ir: &FunctionIr) -> String {
     hash(&tokens(ir))
 }
