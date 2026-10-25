@@ -18,6 +18,7 @@ use std::sync::OnceLock;
 use crate::ir::{CType, Stmt};
 use crate::loader::{Image, NameSource};
 
+pub(crate) mod effects;
 mod generated;
 pub(crate) use generated::{apply_records, i386_import, is_library_record, record_name};
 

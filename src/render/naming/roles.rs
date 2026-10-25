@@ -190,22 +190,12 @@ pub(in crate::render) fn infer_with_nodes(
             continue;
         };
         let name = name.strip_prefix('_').unwrap_or(name);
-        let (params, result): (&[&str], Option<&str>) = match name {
-            "strlen" => (&["s"], Some("len")),
-            "strnlen" => (&["s", "n"], Some("len")),
-            "memcpy" | "memmove" => (&["dst", "src", "n"], None),
-            "memset" => (&["dst", "c", "n"], None),
-            "strcmp" => (&["s1", "s2"], None),
-            "strncmp" => (&["s1", "s2", "n"], None),
-            "malloc" => (&["size"], Some("p")),
-            "calloc" => (&["n", "size"], Some("buf")),
-            "realloc" => (&["ptr", "size"], Some("buf")),
-            "free" => (&["ptr"], None),
-            "open" => (&["path", "flags"], Some("fd")),
-            "read" => (&["fd", "buf", "n"], Some("n")),
-            "write" => (&["fd", "buf", "n"], Some("n")),
-            _ => continue,
+        let Some(hints) = crate::analysis::prototypes::effects::lookup(name)
+            .and_then(|effects| effects.naming.as_ref())
+        else {
+            continue;
         };
+        let (params, result) = (hints.parameters, hints.result);
         if let Some(args) = args {
             for (arg, name) in args.iter().zip(params) {
                 if let Some(counter) = value(arg) {

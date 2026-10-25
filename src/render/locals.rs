@@ -1160,24 +1160,13 @@ fn buffer_extents(
                     _ => None,
                 };
                 let name = name.map(|name| name.trim_start_matches('_'));
-                let size = if matches!(
-                    name,
-                    Some(
-                        "memset"
-                            | "memcpy"
-                            | "memmove"
-                            | "memset_pattern16"
-                            | "memset_pattern8"
-                            | "memset_pattern4"
-                    )
-                ) {
-                    match args.get(2) {
-                        Some(Expr::Const(size)) => i64::try_from(*size).ok(),
-                        _ => None,
-                    }
-                } else {
-                    None
-                };
+                let buffer = name
+                    .and_then(crate::analysis::prototypes::effects::lookup)
+                    .and_then(|effects| effects.buffer.as_ref());
+                let size = buffer.and_then(|buffer| match args.get(buffer.size) {
+                    Some(Expr::Const(size)) => i64::try_from(*size).ok(),
+                    _ => None,
+                });
                 for (index, arg) in args.iter().enumerate() {
                     let Some(Some(slot)) = origin(arg, &state) else {
                         continue;
@@ -1187,8 +1176,7 @@ fn buffer_extents(
                     }
                     let end = match size {
                         Some(size)
-                            if index == 0
-                                || (index == 1 && matches!(name, Some("memcpy" | "memmove"))) =>
+                            if buffer.is_some_and(|buffer| buffer.arguments.contains(&index)) =>
                         {
                             slot.checked_add(size).filter(|end| *end <= 0)
                         }

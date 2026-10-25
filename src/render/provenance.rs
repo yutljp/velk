@@ -231,26 +231,11 @@ impl Facts {
 
 pub(super) fn allocator(name: &str) -> Option<bool> {
     let name = name.strip_prefix("__rustc::").unwrap_or(name);
-    match name.trim_start_matches('_') {
-        "malloc"
-        | "calloc"
-        | "rust_alloc"
-        | "rust_alloc_zeroed"
-        | "rdl_alloc"
-        | "rdl_alloc_zeroed"
-        | "runtime.mallocgc"
-        | "runtime.newobject"
-        | "Znwm"
-        | "Znam"
-        | "Znwj"
-        | "Znaj"
-        | "operator new(unsigned long)"
-        | "operator new[](unsigned long)"
-        | "operator new(unsigned int)"
-        | "operator new[](unsigned int)" => Some(false),
-        "realloc" | "rust_realloc" | "rdl_realloc" => Some(true),
-        _ => None,
-    }
+    crate::analysis::prototypes::effects::lookup(name.trim_start_matches('_'))
+        .and_then(|effects| effects.allocation)
+        .map(|allocation| {
+            allocation == crate::analysis::prototypes::effects::Allocation::Reallocated
+        })
 }
 
 pub(super) fn frame_origins(ir: &crate::ir::FunctionIr) -> HashMap<u16, i64> {
@@ -308,14 +293,48 @@ fn allocation_size(name: &str, args: Option<&[Expr]>, facts: &Facts) -> Option<u
         .strip_prefix("__rustc::")
         .unwrap_or(name)
         .trim_start_matches('_');
-    match name {
-        "calloc" => match (constant(0), constant(1)) {
+    use crate::analysis::prototypes::effects::{self, SizeRule};
+    let rule = effects::lookup(name).map_or(SizeRule::Argument(0), |effects| effects.size);
+    match rule {
+        SizeRule::Product(first, second) => match (constant(first), constant(second)) {
             (Some(count), Some(size)) => count.checked_mul(size),
             _ => None,
         },
-        "realloc" => constant(1),
-        "rust_realloc" | "rdl_realloc" => constant(3),
-        "runtime.newobject" => None,
-        _ => constant(0),
+        SizeRule::Argument(index) => constant(index),
+        SizeRule::Unknown => None,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn allocation_effects_preserve_sizes_and_symbol_handling() {
+        let facts = Facts {
+            values: HashMap::new(),
+        };
+        let args = [
+            Expr::Const(7),
+            Expr::Const(11),
+            Expr::Const(13),
+            Expr::Const(17),
+        ];
+        for (name, reallocated, size) in [
+            ("___malloc", false, Some(7)),
+            ("calloc", false, Some(77)),
+            ("realloc", true, Some(11)),
+            ("__rustc::__rust_realloc", true, Some(17)),
+            ("rdl_realloc", true, Some(17)),
+            ("runtime.newobject", false, None),
+        ] {
+            assert_eq!(allocator(name), Some(reallocated));
+            assert_eq!(allocation_size(name, Some(&args), &facts), size);
+        }
+        assert_eq!(allocator("unknown"), None);
+        assert_eq!(allocation_size("unknown", Some(&args), &facts), Some(7));
+        assert_eq!(allocation_size("malloc", None, &facts), None);
+        let overflow = [Expr::Const(u64::MAX), Expr::Const(2)];
+        assert_eq!(allocation_size("calloc", Some(&overflow), &facts), None);
     }
 }
