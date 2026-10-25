@@ -98,7 +98,7 @@ pub(in crate::lift) fn recover_atomic_loops(
             continue;
         }
         let mut lifter = Lifter::new(image, summaries);
-        let Some(mem) = memory::memory(&mut lifter, load.operands[1], 64) else {
+        let Some(mem) = memory::memory(load.operands[1], 64) else {
             continue;
         };
         let Some(argument) = lifter.operand(update.operands[2], new.width) else {
@@ -179,7 +179,7 @@ pub(super) fn lift(lifter: &mut Lifter, ins: &Instruction) -> bool {
     };
     let width = if bytes == 0 { first.width / 8 } else { bytes };
     let simple = matches!(op, AtomicOp::Load | AtomicOp::Store);
-    let Some(mem) = memory::memory(lifter, ops[if simple { 1 } else { 2 }], width * 8) else {
+    let Some(mem) = memory::memory(ops[if simple { 1 } else { 2 }], width * 8) else {
         lifter.stmts.push(Stmt::unsupported("atomic address"));
         return true;
     };

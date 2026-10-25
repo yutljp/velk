@@ -49,7 +49,7 @@ pub(super) fn lift(lifter: &mut Lifter, ins: &Instruction) -> bool {
             return true;
         }
     }
-    let Some(mem) = memory::memory(lifter, ins.operands[address_operand], 64) else {
+    let Some(mem) = memory::memory(ins.operands[address_operand], 64) else {
         lifter.incomplete.set(true);
         return true;
     };

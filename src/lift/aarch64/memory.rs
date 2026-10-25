@@ -9,14 +9,10 @@ pub(super) struct Memory {
 }
 
 fn read_base(operand: u16) -> Expr {
-    if operand == 31 {
-        Expr::reg(31, 64)
-    } else {
-        Expr::reg(operand, 64)
-    }
+    Expr::reg(operand, 64)
 }
 
-pub(super) fn memory(_lifter: &mut Lifter, operand: Operand, width: u8) -> Option<Memory> {
+pub(super) fn memory(operand: Operand, width: u8) -> Option<Memory> {
     match operand {
         Operand::RegPreIndex(reg, offset, writeback) => {
             let base = read_base(reg);
@@ -111,18 +107,18 @@ pub(super) fn lift_load(lifter: &mut Lifter, ops: [Operand; 4], opcode: a64::Opc
     } else {
         None
     };
-    let load_memory = |lifter: &mut Lifter, width| {
+    let load_memory = |width| {
         if let Some(address) = literal {
             Some(Memory {
                 address: Expr::constant(address),
                 writeback: None,
             })
         } else {
-            memory(lifter, ops[1], width)
+            memory(ops[1], width)
         }
     };
     if let Some((slot, bits)) = simd(ops[0]) {
-        let Some(mem) = load_memory(lifter, (bits / 8) as u8) else {
+        let Some(mem) = load_memory((bits / 8) as u8) else {
             lifter
                 .stmts
                 .push(Stmt::unsupported("load address".to_owned()));
@@ -137,7 +133,7 @@ pub(super) fn lift_load(lifter: &mut Lifter, ops: [Operand; 4], opcode: a64::Opc
     // back its base.
     let Some(dest) = destination(ops[0]) else {
         let bytes = register_width(ops[0]).map_or(8, |bits| bits / 8);
-        if let Some(mem) = load_memory(lifter, bytes) {
+        if let Some(mem) = load_memory(bytes) {
             write_back(lifter, mem.writeback);
         }
         return;
@@ -151,7 +147,7 @@ pub(super) fn lift_load(lifter: &mut Lifter, ops: [Operand; 4], opcode: a64::Opc
         a64::Opcode::LDRSW => (4, true),
         _ => (4, false),
     };
-    let Some(mem) = load_memory(lifter, dest.width / 8) else {
+    let Some(mem) = load_memory(dest.width / 8) else {
         lifter
             .stmts
             .push(Stmt::unsupported("load address".to_owned()));
@@ -168,7 +164,7 @@ pub(super) fn lift_load(lifter: &mut Lifter, ops: [Operand; 4], opcode: a64::Opc
 
 pub(super) fn lift_store(lifter: &mut Lifter, ops: [Operand; 4], opcode: a64::Opcode) {
     if let Some((slot, bits)) = simd(ops[0]) {
-        let Some(mem) = memory(lifter, ops[1], (bits / 8) as u8) else {
+        let Some(mem) = memory(ops[1], (bits / 8) as u8) else {
             lifter
                 .stmts
                 .push(Stmt::unsupported("store address".to_owned()));
@@ -195,7 +191,7 @@ pub(super) fn lift_store(lifter: &mut Lifter, ops: [Operand; 4], opcode: a64::Op
     let Some(value) = lifter.operand(ops[0], value_width) else {
         return;
     };
-    let Some(mem) = memory(lifter, ops[1], width) else {
+    let Some(mem) = memory(ops[1], width) else {
         lifter
             .stmts
             .push(Stmt::unsupported("store address".to_owned()));
@@ -212,7 +208,7 @@ pub(super) fn lift_store(lifter: &mut Lifter, ops: [Operand; 4], opcode: a64::Op
 pub(super) fn lift_pair(lifter: &mut Lifter, ops: [Operand; 4], store: MemoryAccess, signed: bool) {
     let store = matches!(store, MemoryAccess::Store);
     if let (Some((first, bits)), Some((second, _))) = (simd(ops[0]), simd(ops[1])) {
-        let Some(mem) = memory(lifter, ops[2], (bits / 8) as u8) else {
+        let Some(mem) = memory(ops[2], (bits / 8) as u8) else {
             return;
         };
         let second_addr = Expr::bin(
@@ -242,7 +238,7 @@ pub(super) fn lift_pair(lifter: &mut Lifter, ops: [Operand; 4], store: MemoryAcc
         }));
         return;
     };
-    let Some(mem) = memory(lifter, ops[2], 8) else {
+    let Some(mem) = memory(ops[2], 8) else {
         return;
     };
     // ldpsw's elements are 32 bits, sign-extended into 64-bit registers.

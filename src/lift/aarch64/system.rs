@@ -32,7 +32,7 @@ pub(super) fn lift(lifter: &mut Lifter, ins: &Instruction) -> bool {
                 O::LDAPRH | O::LDAPURH => 2,
                 _ => register / 8,
             };
-            let Some(mem) = memory::memory(lifter, ins.operands[1], 64) else {
+            let Some(mem) = memory::memory(ins.operands[1], 64) else {
                 return false;
             };
             inputs.push(mem.address);

@@ -51,7 +51,7 @@ pub(super) fn lift(lifter: &mut Lifter, ins: &Instruction) -> bool {
         lifter.incomplete.set(true);
         return true;
     }
-    let Some(mem) = memory::memory(lifter, ins.operands[1], 64) else {
+    let Some(mem) = memory::memory(ins.operands[1], 64) else {
         lifter.incomplete.set(true);
         return true;
     };
