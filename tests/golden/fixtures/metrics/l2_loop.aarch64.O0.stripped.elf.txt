@@ -3,20 +3,22 @@
 0x210238 84 - unwind,prologue
 0x21028c 116 - unwind,prologue
 0x210300 128 - unwind,prologue
+/* velk prelude */
+extern uint32_t g_220380; /* address: 0x220380 */
+/* end velk prelude */
 
 == 0x2101d4 -
 -- decompile
 /* velk pseudo-C: sub_2101d4 @ 0x2101d4 */
 /* ref: 0x220380 .bss */
 int32_t sub_2101d4(int32_t a0) {
-    uint32_t *const dword_220380 = (uint32_t *)0x220380ULL;
     uint32_t result; /* [sp-8] */
     int32_t i; /* [sp-c] */
 
     result = 0;
     for (i = 0; i < a0; i++) {
         result += i;
-        *dword_220380 = result;
+        g_220380 = result;
     }
     return result;
 }
@@ -53,7 +55,6 @@ fn <unnamed> @ 0x2101d4 (size 100)
 /* velk pseudo-C: sub_210238 @ 0x210238 */
 /* ref: 0x220380 .bss */
 int32_t sub_210238(int32_t a0) {
-    uint32_t *const dword_220380 = (uint32_t *)0x220380ULL;
     int32_t local_0; /* [sp-4] */
     uint32_t result; /* [sp-8] */
 
@@ -62,7 +63,7 @@ int32_t sub_210238(int32_t a0) {
     do {
         result += 1;
         local_0 -= 1;
-        *dword_220380 = result;
+        g_220380 = result;
     } while (local_0 > 0);
     return result;
 }
@@ -95,7 +96,6 @@ fn <unnamed> @ 0x210238 (size 84)
 /* velk pseudo-C: sub_21028c @ 0x21028c */
 /* ref: 0x220380 .bss */
 int32_t sub_21028c(int32_t a0) {
-    uint32_t *const dword_220380 = (uint32_t *)0x220380ULL;
     uint32_t result; /* [sp-8] */
     int32_t i; /* [sp-c] */
 
@@ -103,7 +103,7 @@ int32_t sub_21028c(int32_t a0) {
     for (i = 0; i < a0; i++) {
         if ((i & 0x1) != 0) {
             result += i;
-            *dword_220380 = result;
+            g_220380 = result;
         }
     }
     return result;

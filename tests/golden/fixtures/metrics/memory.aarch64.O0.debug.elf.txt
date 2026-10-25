@@ -7,6 +7,9 @@
 0x2103bc 40 pointer_distance symtab,dwarf,unwind
 0x2103e4 52 read_volatile symtab,dwarf,unwind
 0x210418 60 swap_ints symtab,dwarf,unwind
+/* velk prelude */
+extern int grid[]; /* address: 0x220454 */
+/* end velk prelude */
 
 == 0x210234 copy_bytes
 -- decompile
@@ -117,7 +120,6 @@ fn string_length @ 0x2102f8 (size 68)
 -- decompile
 /* velk pseudo-C: grid_get @ 0x21033c */
 /* ref: 0x220454 .bss */
-extern int grid[];
 int grid_get(int row, int col) {
     return grid[(row & 0x3) * 8 + (col & 0x7)];
 }
@@ -136,7 +138,6 @@ fn grid_get @ 0x21033c (size 60)
 -- decompile
 /* velk pseudo-C: grid_set @ 0x210378 */
 /* ref: 0x220454 .bss */
-extern int grid[];
 void grid_set(int row, int col, int value) {
     grid[(row & 0x3) * 8 + (col & 0x7)] = value;
 }

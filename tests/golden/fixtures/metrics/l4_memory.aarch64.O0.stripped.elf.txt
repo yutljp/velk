@@ -3,6 +3,11 @@
 0x21021c 100 - unwind,prologue
 0x210280 20 - unwind,prologue
 0x210294 16 - unwind,prologue
+/* velk prelude */
+extern uint32_t g_2202b0; /* address: 0x2202b0 */
+
+extern uint64_t g_2202a8; /* address: 0x2202a8 */
+/* end velk prelude */
 
 == 0x2101dc -
 -- decompile
@@ -66,9 +71,7 @@ fn <unnamed> @ 0x21021c (size 100)
 /* velk pseudo-C: sub_210280 @ 0x210280 */
 /* ref: 0x2202b0 .bss */
 int64_t sub_210280(int64_t a0) {
-    uint32_t *const dword_2202b0 = (uint32_t *)0x2202b0ULL;
-
-    *dword_2202b0 += 1;
+    g_2202b0 += 1;
     return a0;
 }
 -- signature
@@ -88,9 +91,7 @@ fn <unnamed> @ 0x210280 (size 20)
 /* velk pseudo-C: sub_210294 @ 0x210294 */
 /* ref: 0x2202a8 -> 0x200158 "velk ladder" */
 int32_t sub_210294(void) {
-    uint64_t *const qword_2202a8 = (uint64_t *)0x2202a8ULL;
-
-    return *(uint8_t *)(*qword_2202a8);
+    return *(uint8_t *)(g_2202a8);
 }
 -- signature
 int32_t ()

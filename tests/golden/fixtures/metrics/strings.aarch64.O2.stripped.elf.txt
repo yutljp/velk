@@ -1,14 +1,15 @@
 # metrics/strings.aarch64.O2.stripped.elf: elf aarch64 no entry, 1 functions, 0 lift failures, 0 unsupported, 0 gotos
 0x21019c 16 - unwind,prologue
+/* velk prelude */
+extern uint64_t g_2201b0; /* address: 0x2201b0 */
+/* end velk prelude */
 
 == 0x21019c -
 -- decompile
 /* velk pseudo-C: sub_21019c @ 0x21019c */
 /* ref: 0x2201b0 -> 0x200158 "velk-aarch64-string" */
 int32_t sub_21019c(void) {
-    uint64_t *const qword_2201b0 = (uint64_t *)0x2201b0ULL;
-
-    return *(uint8_t *)(*qword_2201b0 + 0x2);
+    return *(uint8_t *)(g_2201b0 + 0x2);
 }
 -- signature
 int32_t ()

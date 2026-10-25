@@ -361,7 +361,7 @@ fn data_page_bases_use_the_data_address() {
     assert!(!printed.contains("0x100001000"), "{printed}");
     assert!(printed.contains("0x1000019d0"), "{printed}");
     syntax::run_printed(
-        &printed,
+        &bound_globals(&printed),
         "",
         "if (data_page() != UINT64_C(0x100001000)) __builtin_trap();",
     );

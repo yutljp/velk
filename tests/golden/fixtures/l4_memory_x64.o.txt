@@ -3,6 +3,11 @@
 0x10 31 array_sum symtab,unwind
 0x30 7 bump symtab,unwind
 0x40 11 banner_first symtab,unwind
+/* velk prelude */
+extern uint32_t g_counter; /* address: 0x4c */
+
+extern uint64_t banner; /* address: 0x60 */
+/* end velk prelude */
 
 == 0x0 point_dot
 -- decompile
@@ -63,9 +68,7 @@ fn array_sum @ 0x10 (size 31)
 -- decompile
 /* velk pseudo-C: bump @ 0x30 */
 void bump(void) {
-    uint32_t *const g_counter = (uint32_t *)0x4cULL;
-
-    *g_counter += 1;
+    g_counter += 1;
 }
 -- signature
 void ()
@@ -83,9 +86,7 @@ fn bump @ 0x30 (size 7)
 -- decompile
 /* velk pseudo-C: banner_first @ 0x40 */
 int32_t banner_first(void) {
-    uint64_t *const banner = (uint64_t *)0x60ULL;
-
-    return *(int8_t *)(*banner);
+    return *(int8_t *)(banner);
 }
 -- signature
 int32_t ()

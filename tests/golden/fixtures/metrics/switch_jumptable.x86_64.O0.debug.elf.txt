@@ -1,5 +1,8 @@
 # metrics/switch_jumptable.x86_64.O0.debug.elf: elf x86_64 no entry, 1 functions, 0 lift failures, 0 unsupported, 0 gotos
 0x2011c0 592 d7 symtab,dwarf,unwind
+/* velk prelude */
+extern uint32_t g; /* address: 0x202410 */
+/* end velk prelude */
 
 == 0x2011c0 d7
 -- decompile
@@ -7,7 +10,6 @@
 /* ref: 0x200158 .rodata */
 /* ref: 0x202410 .bss */
 int d7(int x) {
-    uint32_t *const g = (uint32_t *)0x202410ULL;
     int j; /* [sp-10] */
     int j_2; /* [sp-14] */
     int j_3; /* [sp-18] */
@@ -23,60 +25,60 @@ int d7(int x) {
         switch (x) {
         case 0:
             for (j = 0; j < 1; j++) {
-                *g += j;
+                g += j;
             }
-            return *g;
+            return g;
         case 1:
             for (j_2 = 0; j_2 < 2; j_2++) {
-                *g += j_2;
+                g += j_2;
             }
-            return *g;
+            return g;
         case 2:
             for (j_3 = 0; j_3 < 3; j_3++) {
-                *g += j_3;
+                g += j_3;
             }
-            return *g;
+            return g;
         case 3:
             for (j_4 = 0; j_4 < 4; j_4++) {
-                *g += j_4;
+                g += j_4;
             }
-            return *g;
+            return g;
         case 4:
             for (j_5 = 0; j_5 < 5; j_5++) {
-                *g += j_5;
+                g += j_5;
             }
-            return *g;
+            return g;
         case 5:
             for (j_6 = 0; j_6 < 6; j_6++) {
-                *g += j_6;
+                g += j_6;
             }
-            return *g;
+            return g;
         case 6:
             for (j_7 = 0; j_7 < 7; j_7++) {
-                *g += j_7;
+                g += j_7;
             }
-            return *g;
+            return g;
         case 7:
             for (j_8 = 0; j_8 < 8; j_8++) {
-                *g += j_8;
+                g += j_8;
             }
-            return *g;
+            return g;
         case 8:
             for (j_9 = 0; j_9 < 9; j_9++) {
-                *g += j_9;
+                g += j_9;
             }
-            return *g;
+            return g;
         case 9:
             for (j_10 = 0; j_10 < 10; j_10++) {
-                *g += j_10;
+                g += j_10;
             }
-            return *g;
+            return g;
         default:
             break;
         }
     }
-    *g = 0xffffffff;
-    return *g;
+    g = 0xffffffff;
+    return g;
 }
 -- signature
 int (int x)

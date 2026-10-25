@@ -17,6 +17,9 @@
 0x201550 1 - unwind,prologue
 0x201560 1 - unwind,prologue
 0x201570 1 - unwind,prologue
+/* velk prelude */
+extern uint64_t g_204610; /* address: 0x204610 */
+/* end velk prelude */
 
 == 0x2013a0 -
 -- decompile
@@ -41,10 +44,8 @@ fn <unnamed> @ 0x2013a0 (size 2)
 /* ref: 0x203610 .bss */
 /* ref: 0x204610 .bss */
 int64_t sub_2013b0(int64_t a0) {
-    uint64_t *const qword_204610 = (uint64_t *)0x204610ULL;
-
-    int64_t v1 = *qword_204610;
-    *qword_204610 = (a0 + 15 & 0xfffffffffffffff0) + v1;
+    int64_t v1 = g_204610;
+    g_204610 = (a0 + 15 & 0xfffffffffffffff0) + v1;
     return 0x203610 + v1;
 }
 -- signature
@@ -242,11 +243,9 @@ fn <unnamed> @ 0x201470 (size 12)
 /* ref: 0x204610 .bss */
 struct S1 { int64_t field_0x0; int32_t field_0x8; };
 int32_t sub_201480(int32_t a0) {
-    uint64_t *const qword_204610 = (uint64_t *)0x204610ULL;
-
-    int64_t v1 = *qword_204610;
+    int64_t v1 = g_204610;
     struct S1 *v2 = (struct S1 *)(0x203610 + v1);
-    *qword_204610 = v1 + 16;
+    g_204610 = v1 + 16;
     sub_201420(v2, a0 & 0xffffffff);
     int32_t v3 = sub_201430(v2); /* via vtable slot 2 */
     sub_201560(); /* via vtable slot 1 */
@@ -277,11 +276,9 @@ fn <unnamed> @ 0x201480 (size 81)
 /* ref: 0x204610 .bss */
 struct S1 { int64_t field_0x0; int32_t field_0x8; int32_t field_0xc; };
 int32_t sub_2014e0(int32_t a0, int32_t a1, int32_t a2) {
-    uint64_t *const qword_204610 = (uint64_t *)0x204610ULL;
-
-    int64_t v3 = *qword_204610;
+    int64_t v3 = g_204610;
     struct S1 *v4 = (struct S1 *)(0x203610 + v3);
-    *qword_204610 = v3 + 16;
+    g_204610 = v3 + 16;
     sub_201440(v4, a0 & 0xffffffff, a1 & 0xffffffff);
     return sub_201470(v4, a2 & 0xffffffff); /* via vtable slot 3 */
 }

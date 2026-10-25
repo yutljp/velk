@@ -1,54 +1,55 @@
 # metrics/switch_jumptable.aarch64.O2.stripped.elf: elf aarch64 no entry, 1 functions, 0 lift failures, 0 unsupported, 0 gotos
 0x210184 736 - unwind,prologue
+/* velk prelude */
+extern uint32_t g_220464; /* address: 0x220464 */
+/* end velk prelude */
 
 == 0x210184 -
 -- decompile
 /* velk pseudo-C: sub_210184 @ 0x210184 */
 /* ref: 0x220464 .bss */
 int32_t sub_210184(int32_t a0) {
-    uint32_t *const dword_220464 = (uint32_t *)0x220464ULL;
-
     int32_t v1 = -1;
     if ((uint32_t)a0 <= 9) {
-        v1 = *dword_220464;
+        v1 = g_220464;
         if ((uint32_t)a0 > 0) {
-            *dword_220464 = v1;
+            g_220464 = v1;
             ++v1;
         }
         if ((uint32_t)a0 > 1) {
-            *dword_220464 = v1;
+            g_220464 = v1;
             v1 += 2;
         }
         if ((uint32_t)a0 > 2) {
-            *dword_220464 = v1;
+            g_220464 = v1;
             v1 += 3;
         }
         if ((uint32_t)a0 > 3) {
-            *dword_220464 = v1;
+            g_220464 = v1;
             v1 += 4;
         }
         if ((uint32_t)a0 > 4) {
-            *dword_220464 = v1;
+            g_220464 = v1;
             v1 += 5;
         }
         if ((uint32_t)a0 > 5) {
-            *dword_220464 = v1;
+            g_220464 = v1;
             v1 += 6;
         }
         if ((uint32_t)a0 > 6) {
-            *dword_220464 = v1;
+            g_220464 = v1;
             v1 += 7;
         }
         if ((uint32_t)a0 > 7) {
-            *dword_220464 = v1;
+            g_220464 = v1;
             v1 += 8;
         }
         if ((uint32_t)a0 > 8) {
-            *dword_220464 = v1;
+            g_220464 = v1;
             v1 += 9;
         }
     }
-    *dword_220464 = v1;
+    g_220464 = v1;
     return v1;
 }
 -- signature

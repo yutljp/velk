@@ -12,6 +12,8 @@
 0x2105b0 316 - unwind,prologue
 /* velk prelude */
 #include <stdarg.h>
+
+extern uint64_t g_2206f0[]; /* address: 0x2206f0 */
 /* end velk prelude */
 
 == 0x21031c -
@@ -70,9 +72,7 @@ fn <unnamed> @ 0x210350 (size 44)
 /* velk pseudo-C: sub_21037c @ 0x21037c */
 /* ref: 0x2206f0 .data.rel.ro */
 int32_t sub_21037c(int32_t a0, int32_t a1) {
-    uint64_t *const qword_2206f0 = (uint64_t *)0x2206f0ULL;
-
-    int64_t v3 = qword_2206f0[(uint32_t)a0 % 3];
+    int64_t v3 = g_2206f0[(uint32_t)a0 % 3];
     return ((uint64_t (*)())v3)(a1 & 0xffffffff);
 }
 -- signature

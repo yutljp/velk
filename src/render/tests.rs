@@ -1775,9 +1775,9 @@ fn segment_bindings_keep_real_calls_parameters_and_data_distinct() {
         "fs_base = velk_x86_gs_base();",
         "    uint64_t fs_base_3 = velk_x86_fs_base_3();\n",
         "    uint64_t gs_base = velk_x86_gs_base_2();\n",
-        "    uint64_t *const fs_base_2 = (uint64_t *)0x1000ULL;\n",
+        "extern uint64_t fs_base_2; /* address: 0x1000 */\n",
         "fs_base_3 + fs_base",
-        "gs_base + *fs_base_2",
+        "gs_base + fs_base_2",
     ] {
         assert!(
             rendered.code.contains(text),
@@ -2044,8 +2044,8 @@ fn global_views_do_not_shadow_unnamed_functions() {
     let text = render(&ir, &[], &symbols, &[(0x1000, 8)]);
     assert!(text.contains("uint64_t sub_80(void) {\n"), "{text}");
     assert!(text.contains("    sub_40();\n"), "{text}");
-    assert!(text.contains("uint32_t *const sub_40_1000_u32 ="), "{text}");
-    assert!(text.contains("uint32_t *const sub_80_1004_u32 ="), "{text}");
+    assert!(text.contains("extern uint32_t sub_40_1000;"), "{text}");
+    assert!(text.contains("extern uint32_t sub_80_1004;"), "{text}");
 }
 
 #[test]

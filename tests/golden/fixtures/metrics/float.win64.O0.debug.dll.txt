@@ -4,6 +4,9 @@
 0x1800010d0 13 truncate_to_int symtab,dwarf,unwind
 0x1800010e0 31 widen symtab,dwarf,unwind
 0x180001100 84 compare_doubles symtab,dwarf,unwind
+/* velk prelude */
+extern double __real_4000000000000000; /* address: 0x180002000 */
+/* end velk prelude */
 
 == 0x180001000 average
 -- decompile
@@ -88,9 +91,7 @@ fn truncate_to_int @ 0x1800010d0 (size 13)
 /* velk pseudo-C: widen @ 0x1800010e0 */
 /* ref: 0x180002000 .rdata */
 double widen(float x) {
-    double *const __real_4000000000000000 = (double *)0x180002000ULL;
-
-    return x * *__real_4000000000000000;
+    return x * __real_4000000000000000;
 }
 -- signature
 double (float x)

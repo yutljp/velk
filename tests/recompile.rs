@@ -4543,20 +4543,22 @@ fn printed_address_literals_preserve_all_bits() {
         let printed = velk::render::render(&ir, &[], &Default::default(), &[(address, 1)]);
         let declaration = printed
             .lines()
-            .find(|line| line.contains("*const "))
+            .find(|line| line.starts_with("extern "))
             .unwrap_or_else(|| panic!("{printed}"));
         assert!(
-            declaration.contains(&format!("(uint64_t *)0x{address:x}ULL")),
+            declaration.contains(&format!("/* address: 0x{address:x} */")),
             "{printed}"
         );
         let name = declaration
-            .split("*const ")
-            .nth(1)
+            .strip_prefix("extern uint64_t ")
             .unwrap()
-            .split_whitespace()
+            .split(';')
             .next()
             .unwrap();
-        writeln!(text, "{{\n{declaration}\nif ((uint64_t){name} != 0x{address:x}ULL || {name} != (uint64_t *)(uintptr_t)0x{address:x}) return 1;\n}}").unwrap();
+        let check = bound_globals(&format!(
+            "{declaration}\nif ((uint64_t)(uintptr_t)&{name} != 0x{address:x}ULL || &{name} != (uint64_t *)(uintptr_t)0x{address:x}) return 1;"
+        ));
+        writeln!(text, "{{\n{check}\n}}").unwrap();
     }
     text.push_str("return 0;\n}\n");
     let source = Program {
@@ -6701,8 +6703,28 @@ fn fresh_name(reserved: &mut BTreeSet<String>, preferred: &str) -> String {
 fn replace_c_identifier(code: &str, from: &str, to: &str) -> String {
     let mut out = String::new();
     let mut index = 0;
+    let mut member = false;
+    let mut record_type = false;
+    let mut record_tag = false;
+    let mut record_braces = 0usize;
     while index < code.len() {
         let rest = &code[index..];
+        if (record_type || record_tag) && rest.starts_with("__attribute__(") {
+            let mut length = "__attribute__(".len();
+            let mut depth = 1usize;
+            while length < rest.len() && depth != 0 {
+                if rest.as_bytes()[length] == b'(' {
+                    depth += 1;
+                }
+                if rest.as_bytes()[length] == b')' {
+                    depth -= 1;
+                }
+                length += 1;
+            }
+            out.push_str(&rest[..length]);
+            index += length;
+            continue;
+        }
         let first = rest.chars().next().expect("remaining C");
         let length = if rest.starts_with("/*") {
             rest.find("*/").map_or(rest.len(), |end| end + 2)
@@ -6725,11 +6747,29 @@ fn replace_c_identifier(code: &str, from: &str, to: &str) -> String {
         } else if first.is_ascii_alphabetic() || first == '_' {
             rest.find(|ch: char| !ch.is_ascii_alphanumeric() && ch != '_')
                 .unwrap_or(rest.len())
+        } else if rest.starts_with("->") {
+            2
         } else {
             first.len_utf8()
         };
         let token = &rest[..length];
-        out.push_str(if token == from { to } else { token });
+        let identifier = first.is_ascii_alphabetic() || first == '_';
+        let replace = token == from && !member && !record_type && record_braces == 0;
+        out.push_str(if replace { to } else { token });
+        if token == "{" && (record_type || record_tag || record_braces != 0) {
+            record_braces += 1;
+            record_type = false;
+            record_tag = false;
+        } else if token == "}" && record_braces != 0 {
+            record_braces -= 1;
+        } else if identifier {
+            record_tag = record_type;
+            record_type = matches!(token, "struct" | "union");
+            member = false;
+        } else if !first.is_whitespace() && !rest.starts_with("/*") && !rest.starts_with("//") {
+            member = matches!(token, "." | "->");
+            record_tag = false;
+        }
         index += length;
     }
     out
@@ -6740,7 +6780,7 @@ fn bound_candidate(
     index: usize,
     reserved: &mut BTreeSet<String>,
 ) -> (String, Vec<(String, SegmentBase)>) {
-    let mut code = renamed(&candidate.code, index);
+    let mut code = bound_globals(&renamed(&candidate.code, index));
     let mut seen = BTreeMap::new();
     let mut providers = Vec::new();
     for dependency in &candidate.segment_bases {
@@ -6757,6 +6797,36 @@ fn bound_candidate(
         providers.push((name, dependency.segment));
     }
     (code, providers)
+}
+
+fn bound_globals(code: &str) -> String {
+    let mut bindings = Vec::new();
+    let mut output = String::new();
+    for line in code.lines() {
+        let Some((declaration, address)) = line.split_once("; /* address: 0x") else {
+            writeln!(output, "{line}").expect("writing to a String");
+            continue;
+        };
+        let Some(declaration) = declaration.strip_prefix("extern ") else {
+            panic!("invalid global declaration: {line}");
+        };
+        let Some(address) = address.strip_suffix(" */") else {
+            panic!("invalid global address: {line}");
+        };
+        let Some((ty, name)) = declaration.rsplit_once(' ') else {
+            panic!("invalid global type: {line}");
+        };
+        let (name, value) = if let Some(name) = name.strip_suffix("[]") {
+            (name, format!("(({ty} *)(uintptr_t)0x{address}ULL)"))
+        } else {
+            (name, format!("(*({ty} *)(uintptr_t)0x{address}ULL)"))
+        };
+        bindings.push((name, value));
+    }
+    for (name, value) in bindings {
+        output = replace_c_identifier(&output, name, &value);
+    }
+    output
 }
 
 fn write_memory_words(text: &mut String, words: &[(u64, u64)]) {

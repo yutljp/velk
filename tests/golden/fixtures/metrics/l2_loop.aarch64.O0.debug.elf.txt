@@ -3,20 +3,22 @@
 0x210238 84 count_down symtab,dwarf,unwind
 0x21028c 116 sum_skip_odd symtab,dwarf,unwind
 0x210300 128 find_first symtab,dwarf,unwind
+/* velk prelude */
+extern uint32_t sink; /* address: 0x220380 */
+/* end velk prelude */
 
 == 0x2101d4 sum_while
 -- decompile
 /* velk pseudo-C: sum_while @ 0x2101d4 */
 /* ref: 0x220380 .bss */
 int sum_while(int n) {
-    uint32_t *const sink = (uint32_t *)0x220380ULL;
     uint32_t s; /* [sp-8] */
     int i; /* [sp-c] */
 
     s = 0;
     for (i = 0; i < n; i++) {
         s += i;
-        *sink = s;
+        sink = s;
     }
     return s;
 }
@@ -53,7 +55,6 @@ fn sum_while @ 0x2101d4 (size 100)
 /* velk pseudo-C: count_down @ 0x210238 */
 /* ref: 0x220380 .bss */
 int count_down(int n) {
-    uint32_t *const sink = (uint32_t *)0x220380ULL;
     int n_2; /* [sp-4] */
     uint32_t c; /* [sp-8] */
 
@@ -62,7 +63,7 @@ int count_down(int n) {
     do {
         c += 1;
         n_2 -= 1;
-        *sink = c;
+        sink = c;
     } while (n_2 > 0);
     return c;
 }
@@ -95,7 +96,6 @@ fn count_down @ 0x210238 (size 84)
 /* velk pseudo-C: sum_skip_odd @ 0x21028c */
 /* ref: 0x220380 .bss */
 int sum_skip_odd(int n) {
-    uint32_t *const sink = (uint32_t *)0x220380ULL;
     uint32_t s; /* [sp-8] */
     int i; /* [sp-c] */
 
@@ -103,7 +103,7 @@ int sum_skip_odd(int n) {
     for (i = 0; i < n; i++) {
         if ((i & 0x1) != 0) {
             s += i;
-            *sink = s;
+            sink = s;
         }
     }
     return s;

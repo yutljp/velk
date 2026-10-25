@@ -25,10 +25,6 @@
 0x934 8 main symtab,unwind
 0x93c 20 _fini symtab
 /* velk prelude */
-int kill(int, int);
-
-int pthread_kill(unsigned long, int);
-
 struct group {
     _Alignas(8) char *gr_name;
     char *gr_passwd;
@@ -39,7 +35,21 @@ struct group {
 
 struct group; int getgrgid_r(unsigned int, struct group *, char *, size_t, struct group **);
 
+int kill(int, int);
+
+int pthread_kill(unsigned long, int);
+
 uint64_t velk_entry_stack_pointer(void); /* target entry stack pointer */
+
+extern uint64_t __cxa_finalize_1ffc8; /* address: 0x1ffc8 */
+
+extern uint64_t __dso_handle; /* address: 0x20058 */
+
+extern uint64_t __gmon_start___1ffd0; /* address: 0x1ffd0 */
+
+extern uint64_t g_1ffd8; /* address: 0x1ffd8 */
+
+extern uint8_t completed_0; /* address: 0x20060 */
 /* end velk prelude */
 
 == 0x6e0 _init
@@ -256,9 +266,8 @@ fn mprotect @ 0x7b0 (size 16)
 /* ref: 0x1ffd8 .got */
 int32_t _start(void *a0, int64_t a1) {
     uint64_t sp = velk_entry_stack_pointer();
-    uint64_t *const qword_1ffd8 = (uint64_t *)0x1ffd8ULL;
 
-    __libc_start_main((void *)*qword_1ffd8, a1, (char **)(sp + 8), 0x0, 0x0, a0, (void *)sp);
+    __libc_start_main((void *)g_1ffd8, a1, (char **)(sp + 8), 0x0, 0x0, a0, (void *)sp);
     abort();
 }
 -- signature
@@ -279,10 +288,9 @@ fn _start @ 0x7c0 (size 52)
 /* velk pseudo-C: call_weak_fn @ 0x7f4 */
 /* ref: 0x1ffd0 .got */
 int32_t call_weak_fn(void) {
-    uint64_t *const __gmon_start___1ffd0_u64 = (uint64_t *)0x1ffd0ULL;
     uint64_t v2;
 
-    v2 = *__gmon_start___1ffd0_u64;
+    v2 = __gmon_start___1ffd0;
     if (v2 == 0) {
         return 0;
     }
@@ -328,9 +336,7 @@ fn deregister_tm_clones @ 0x810 (size 48)
 /* velk pseudo-C: register_tm_clones @ 0x840 */
 /* ref: 0x20060 .bss */
 int32_t register_tm_clones(void) {
-    uint8_t *const completed_0 = (uint8_t *)0x20060ULL;
-
-    return (uintptr_t)completed_0;
+    return (uintptr_t)(&completed_0);
 }
 -- signature
 int32_t ()
@@ -353,9 +359,6 @@ fn register_tm_clones @ 0x840 (size 60)
 /* ref: 0x20058 .data */
 /* ref: 0x20060 .bss */
 int32_t __do_global_dtors_aux(void) {
-    uint64_t *const __cxa_finalize_1ffc8_u64 = (uint64_t *)0x1ffc8ULL;
-    uint64_t *const __dso_handle = (uint64_t *)0x20058ULL;
-    uint8_t *const completed_0 = (uint8_t *)0x20060ULL;
     uint64_t v1;
     uint64_t v8;
     uint64_t v9;
@@ -365,10 +368,10 @@ int32_t __do_global_dtors_aux(void) {
 
     /* unsupported: PACIASP at 0x880 */
     local_0 = v9;
-    int32_t result = *completed_0;
+    int32_t result = completed_0;
     if ((result & 0x1) == 0) {
-        if (*__cxa_finalize_1ffc8_u64 != 0) {
-            void *v3 = (void *)*__dso_handle;
+        if (__cxa_finalize_1ffc8 != 0) {
+            void *v3 = (void *)__dso_handle;
             __cxa_finalize(v3);
         }
         {
@@ -383,7 +386,7 @@ int32_t __do_global_dtors_aux(void) {
             int32_t v6 = call_values[3];
         }
         result = 1;
-        *completed_0 = 1;
+        completed_0 = 1;
     }
     int32_t v7 = local_0;
     /* unsupported: AUTIASP at 0x8c8 */

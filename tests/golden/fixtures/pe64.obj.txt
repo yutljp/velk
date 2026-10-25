@@ -9,6 +9,9 @@
 0x70 16 reg_div symtab
 0x80 16 reg_mod symtab
 0x90 30 entry symtab
+/* velk prelude */
+extern uint64_t kMsg; /* address: 0xb0 */
+/* end velk prelude */
 
 == 0x0 reg_add
 -- decompile
@@ -116,9 +119,7 @@ fn reg_abs @ 0x50 (size 16)
 -- decompile
 /* velk pseudo-C: msg_first @ 0x60 */
 int32_t msg_first(void) {
-    uint64_t *const kMsg = (uint64_t *)0xb0ULL;
-
-    return *(int8_t *)(*kMsg + 0x1);
+    return *(int8_t *)(kMsg + 0x1);
 }
 -- signature
 int32_t ()

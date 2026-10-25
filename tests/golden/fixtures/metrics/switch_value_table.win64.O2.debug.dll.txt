@@ -1,18 +1,19 @@
 # metrics/switch_value_table.win64.O2.debug.dll: pe x86_64 no entry, 1 functions, 0 lift failures, 0 unsupported, 0 gotos
 0x180001000 24 dispatch symtab,dwarf
+/* velk prelude */
+extern uint8_t g_180002000[]; /* address: 0x180002000 */
+/* end velk prelude */
 
 == 0x180001000 dispatch
 -- decompile
 /* velk pseudo-C: dispatch @ 0x180001000 */
 /* ref: 0x180002000 .rdata */
 int dispatch(int x) {
-    uint8_t *const byte_180002000 = (uint8_t *)0x180002000ULL;
-
     uint64_t v1 = (x - 10) & 0xffffffff;
     if (v1 > 4) {
         return 0;
     }
-    return byte_180002000[v1];
+    return g_180002000[v1];
 }
 -- signature
 int (int x)

@@ -38,6 +38,8 @@ static inline uint64_t greater_lanes32(uint64_t a, uint64_t b) {
 #endif
 
 struct velk_vector { union { uint64_t u64; int64_t s64; uint32_t u32; int32_t s32; uint16_t u16; int16_t s16; uint8_t u8; int8_t s8; float f32; double f64; } low, high; };
+
+extern uint8_t g_180002000[]; /* address: 0x180002000 */
 /* end velk prelude */
 
 == 0x180001000 matrix_trace
@@ -215,12 +217,10 @@ fn cleanup_on_error @ 0x180001110 (size 34)
 /* velk pseudo-C: fallthrough @ 0x180001140 */
 /* ref: 0x180002000 .rdata */
 int fallthrough(int x) {
-    uint8_t *const byte_180002000 = (uint8_t *)0x180002000ULL;
-
     if ((uint32_t)x > 3) {
         return -1;
     }
-    return byte_180002000[x & 0xffffffff];
+    return g_180002000[x & 0xffffffff];
 }
 -- signature
 int (int x)

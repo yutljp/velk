@@ -20,6 +20,10 @@ static inline uint64_t add_lanes32(uint64_t a, uint64_t b) {
 #endif
 
 struct velk_vector { union { uint64_t u64; int64_t s64; uint32_t u32; int32_t s32; uint16_t u16; int16_t s16; uint8_t u8; int8_t s8; float f32; double f64; } low, high; };
+
+extern uint32_t g_180003008; /* address: 0x180003008 */
+
+extern uint64_t g_180003000; /* address: 0x180003000 */
 /* end velk prelude */
 
 == 0x180001000 -
@@ -129,9 +133,7 @@ fn <unnamed> @ 0x180001020 (size 144)
 /* velk pseudo-C: sub_1800010b0 @ 0x1800010b0 */
 /* ref: 0x180003008 .data */
 void sub_1800010b0(void) {
-    uint32_t *const dword_180003008 = (uint32_t *)0x180003008ULL;
-
-    *dword_180003008 += 1;
+    g_180003008 += 1;
 }
 -- signature
 void ()
@@ -150,9 +152,7 @@ fn <unnamed> @ 0x1800010b0 (size 16)
 /* velk pseudo-C: sub_1800010c0 @ 0x1800010c0 */
 /* ref: 0x180003000 -> 0x180002000 "velk ladder" */
 int32_t sub_1800010c0(void) {
-    uint64_t *const qword_180003000 = (uint64_t *)0x180003000ULL;
-
-    return *(int8_t *)(*qword_180003000);
+    return *(int8_t *)(g_180003000);
 }
 -- signature
 int32_t ()

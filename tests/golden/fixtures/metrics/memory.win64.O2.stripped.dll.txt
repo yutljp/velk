@@ -20,6 +20,8 @@ static inline uint64_t interleave_low8(uint64_t a, uint64_t b) {
     return out;
 }
 #endif
+
+extern uint32_t g_180003000[]; /* address: 0x180003000 */
 /* end velk prelude */
 
 == 0x180001000 -
@@ -302,9 +304,7 @@ fn <unnamed> @ 0x1800011e0 (size 32)
 /* velk pseudo-C: sub_180001200 @ 0x180001200 */
 /* ref: 0x180003000 .data */
 int32_t sub_180001200(int32_t a0, int32_t a1) {
-    uint32_t *const dword_180003000 = (uint32_t *)0x180003000ULL;
-
-    return dword_180003000[(a0 & 0x3) * 8 + (a1 & 0x7)];
+    return g_180003000[(a0 & 0x3) * 8 + (a1 & 0x7)];
 }
 -- signature
 int32_t (int32_t a0, int32_t a1)

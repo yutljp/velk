@@ -52,6 +52,8 @@ static inline uint64_t interleave_low32(uint64_t a, uint64_t b) {
 }
 #endif
 
+struct velk_vector { union { uint64_t u64; int64_t s64; uint32_t u32; int32_t s32; uint16_t u16; int16_t s16; uint8_t u8; int8_t s8; float f32; double f64; } low, high; };
+
 int is_even(int);
 
 int is_odd(int);
@@ -62,9 +64,23 @@ int twice(int);
 
 int32_t sum9(int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t);
 
-struct velk_vector { union { uint64_t u64; int64_t s64; uint32_t u32; int32_t s32; uint16_t u16; int16_t s16; uint8_t u8; int8_t s8; float f32; double f64; } low, high; };
-
 uint64_t *velk_return_address_slot(void); /* target frame's return-address slot */
+
+extern uint64_t __xmm_00000001000000010000000100000001; /* address: 0x180002010 */
+
+extern uint64_t __xmm_fffffff8fffffff8fffffff8fffffff8; /* address: 0x180002030 */
+
+extern uint64_t __xmm_fffffffcfffffffcfffffffcfffffffc; /* address: 0x180002020 */
+
+extern uint64_t __xmm_fffffffdfffffffeffffffff00000000; /* address: 0x180002000 */
+
+extern uint64_t g_180002008; /* address: 0x180002008 */
+
+extern uint64_t g_180002018; /* address: 0x180002018 */
+
+extern uint64_t g_180002028; /* address: 0x180002028 */
+
+extern uint64_t g_180002038; /* address: 0x180002038 */
 /* end velk prelude */
 
 == 0x180001000 twice
@@ -180,14 +196,6 @@ fn apply_pointer @ 0x180001070 (size 18)
 /* ref: 0x180002030 .rdata */
 /* ref: 0x180002038 .rdata */
 int factorial(int n) {
-    uint64_t *const __xmm_fffffffdfffffffeffffffff00000000 = (uint64_t *)0x180002000ULL;
-    uint64_t *const qword_180002008 = (uint64_t *)0x180002008ULL;
-    uint64_t *const __xmm_00000001000000010000000100000001 = (uint64_t *)0x180002010ULL;
-    uint64_t *const qword_180002018 = (uint64_t *)0x180002018ULL;
-    uint64_t *const __xmm_fffffffcfffffffcfffffffcfffffffc = (uint64_t *)0x180002020ULL;
-    uint64_t *const qword_180002028 = (uint64_t *)0x180002028ULL;
-    uint64_t *const __xmm_fffffff8fffffff8fffffff8fffffff8 = (uint64_t *)0x180002030ULL;
-    uint64_t *const qword_180002038 = (uint64_t *)0x180002038ULL;
     uint32_t t1;
     uint32_t v52;
     struct velk_vector vector_5;
@@ -202,13 +210,13 @@ int factorial(int n) {
         int32_t v3 = v2 & 0xfffffffffffffff8;
         uint64_t v4 = n & 0xffffffff;
         n -= v3;
-        struct velk_vector vector = { .low.u64 = add_lanes32(v4 | v4 << 32, *__xmm_fffffffdfffffffeffffffff00000000), .high.u64 = add_lanes32(v4 | v4 << 32, *qword_180002008) };
-        struct velk_vector vector_2 = { .low.u64 = *__xmm_fffffffcfffffffcfffffffcfffffffc, .high.u64 = *qword_180002028 };
-        struct velk_vector vector_3 = { .low.u64 = *__xmm_fffffff8fffffff8fffffff8fffffff8, .high.u64 = *qword_180002038 };
+        struct velk_vector vector = { .low.u64 = add_lanes32(v4 | v4 << 32, __xmm_fffffffdfffffffeffffffff00000000), .high.u64 = add_lanes32(v4 | v4 << 32, g_180002008) };
+        struct velk_vector vector_2 = { .low.u64 = __xmm_fffffffcfffffffcfffffffcfffffffc, .high.u64 = g_180002028 };
+        struct velk_vector vector_3 = { .low.u64 = __xmm_fffffff8fffffff8fffffff8fffffff8, .high.u64 = g_180002038 };
         int32_t v53 = v3;
-        vector_5.low.u64 = *__xmm_00000001000000010000000100000001;
+        vector_5.low.u64 = __xmm_00000001000000010000000100000001;
         vector_7.low.u64 = vector_5.low.u64;
-        vector_5.high.u64 = *qword_180002018;
+        vector_5.high.u64 = g_180002018;
         vector_7.high.u64 = vector_5.high.u64;
         do {
             struct velk_vector vector_4 = { .low.u64 = add_lanes32(vector.low.u64, vector_2.low.u64), .high.u64 = add_lanes32(vector.high.u64, vector_2.high.u64) };

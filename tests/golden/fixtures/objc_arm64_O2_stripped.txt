@@ -8,6 +8,9 @@
 0x10000099c 8 - function-starts
 0x1000009a4 8 - entry,function-starts
 0x1000009ac 12 _objc_msgSend plt
+/* velk prelude */
+extern uint64_t g_100008138; /* address: 0x100008138 */
+/* end velk prelude */
 
 == 0x100000960 -[Counter add:with:]
 -- decompile
@@ -101,9 +104,7 @@ fn -[Counter twice:] @ 0x100000980 (size 8)
 /* velk pseudo-C: sub_100000988 @ 0x100000988 */
 /* ref: 0x100008138 -> 0x100000a7a "add:with:" */
 int32_t sub_100000988(int64_t a0, int64_t a1, int64_t a2) {
-    uint64_t *const qword_100008138 = (uint64_t *)0x100008138ULL;
-
-    return objc_msgSend(a0, *qword_100008138 /* @selector(add:with:) */, a1, a2);
+    return objc_msgSend(a0, g_100008138 /* @selector(add:with:) */, a1, a2);
 }
 -- signature
 int32_t (int64_t a0, int64_t a1, int64_t a2)

@@ -584,6 +584,10 @@ static inline uint64_t sign_bits8(uint64_t a) {
 #endif
 
 void memchr_raw__find_sse2(void);
+
+extern uint64_t g_55aa8; /* address: 0x55aa8 */
+
+extern uint64_t g_56140; /* address: 0x56140 */
 /* end velk prelude */
 
 == 0x14f90 rust_probe::main
@@ -591,13 +595,12 @@ void memchr_raw__find_sse2(void);
 /* velk pseudo-C: rust_probe::main @ 0x14f90 */
 /* ref: 0x55aa8 .got */
 void rust_probe__main(void) {
-    uint64_t *const qword_55aa8 = (uint64_t *)0x55aa8ULL;
     uint32_t local_0; /* [sp-14] */
     _Alignas(16) struct __attribute__((packed)) { uint32_t *f_0; int64_t f_8; } local_1; /* [sp-10] */
 
     local_0 = 3;
     local_1.f_0 = &local_0;
-    local_1.f_8 = *qword_55aa8;
+    local_1.f_8 = g_55aa8;
     stdio___print(0x5091, &local_1.f_0);
 }
 -- signature
@@ -620,10 +623,8 @@ fn rust_probe::main @ 0x14f90 (size 57)
 /* velk pseudo-C: memchr::arch::x86_64::memchr::memchr_raw::detect @ 0x43250 */
 /* ref: 0x56140 .got */
 void memchr_raw__detect(int32_t a0, uint8_t *a1, uint8_t *a2) {
-    uint64_t *const qword_56140 = (uint64_t *)0x56140ULL;
-
     uint64_t v2 = (uintptr_t)a1;
-    *(uint64_t *)(*qword_56140) = (uintptr_t)memchr_raw__find_sse2;
+    *(uint64_t *)(g_56140) = (uintptr_t)memchr_raw__find_sse2;
     if (v2 >= (uintptr_t)a2) {
         return;
     }

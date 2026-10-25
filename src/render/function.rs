@@ -1365,12 +1365,6 @@ fn render_with(
         out.push_str(&format!("uint64_t {snapshot} = {provider}();\n"));
         declared += 1;
     }
-    for declaration in ctx.globals.declarations(&body) {
-        indent(1, &mut out);
-        out.push_str(&declaration);
-        out.push('\n');
-        declared += 1;
-    }
     // A register the body uses beyond the parameters holds what it holds
     // on entry until the body sets it.
     for (index, name) in &machine {
@@ -1551,7 +1545,8 @@ fn render_with(
             out = out.replacen(&definition, "", 1);
         }
     }
-    out.insert_str(definitions_at, &ctx.globals.object_declarations(&body));
+    let globals = ctx.globals.finish(&body, &mut out);
+    out.insert_str(definitions_at, &super::prelude::section(&globals));
     let debug = debug_definitions(ir, &out, &ctx.arrays, &symbols.user_definitions);
     out.insert_str(definitions_at, &debug);
     if vector_groups
@@ -1771,6 +1766,7 @@ fn debug_definitions(
             let text = defined(&definition.name, &members);
             if definition.name.starts_with("struct go_")
                 || crate::analysis::prototypes::is_library_record(definition)
+                || code.contains("; /* address: 0x")
             {
                 super::prelude::section(&format!("{text}\n"))
             } else {

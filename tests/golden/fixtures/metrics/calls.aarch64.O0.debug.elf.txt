@@ -22,6 +22,8 @@ int square(int);
 int twice(int);
 
 long sum9(long, long, long, long, long, long, long, long, long);
+
+extern uint64_t table[]; /* address: 0x2206f0 */
 /* end velk prelude */
 
 == 0x21031c twice
@@ -80,8 +82,6 @@ fn pick_op @ 0x210350 (size 44)
 /* velk pseudo-C: apply_table @ 0x21037c */
 /* ref: 0x2206f0 .data.rel.ro */
 int apply_table(unsigned int index, int x) {
-    uint64_t *const table = (uint64_t *)0x2206f0ULL;
-
     int64_t v3 = table[index % 3];
     return ((uint64_t (*)())v3)(x & 0xffffffff);
 }

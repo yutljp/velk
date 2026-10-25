@@ -3,12 +3,14 @@
 0xf0 157 count_down symtab,unwind
 0x190 71 sum_skip_odd symtab,unwind
 0x1e0 33 find_first symtab,unwind
+/* velk prelude */
+extern uint32_t sink; /* address: 0x204 */
+/* end velk prelude */
 
 == 0x0 sum_while
 -- decompile
 /* velk pseudo-C: sum_while @ 0x0 */
 int32_t sum_while(int32_t a0) {
-    uint32_t *const sink = (uint32_t *)0x204ULL;
     int32_t v2;
     int32_t v3;
     int32_t v8;
@@ -24,20 +26,20 @@ int32_t sum_while(int32_t a0) {
         do {
             int32_t v7 = v2 + v3;
             v8 = v2;
-            *sink = v3 + v8 - 7;
+            sink = v3 + v8 - 7;
             int32_t v17 = v8 + v7 - 7;
-            *sink = v8 + v7 - 13;
+            sink = v8 + v7 - 13;
             int32_t v18 = v8 + v17 - 6;
-            *sink = v8 + v17 - 11;
+            sink = v8 + v17 - 11;
             int32_t v19 = v8 + v18 - 5;
-            *sink = v8 + v18 - 9;
+            sink = v8 + v18 - 9;
             int32_t v20 = v8 + v19 - 4;
-            *sink = v8 + v19 - 7;
+            sink = v8 + v19 - 7;
             v3 = v8 + v20 - 3;
-            *sink = v8 + v20 - 5;
-            *sink = v8 + v3 - 3;
+            sink = v8 + v20 - 5;
+            sink = v8 + v3 - 3;
             v3 = v8 + (v8 + v3 - 2) - 1;
-            *sink = v3;
+            sink = v3;
             v2 += 8;
         } while (v8 + v5 + 8 != 7);
         v2 = v2 - 7;
@@ -53,7 +55,7 @@ int32_t sum_while(int32_t a0) {
     }
     do {
         v3 += v2;
-        *sink = v3;
+        sink = v3;
         ++v2;
         --v1;
     } while (v1 != 0);
@@ -119,7 +121,6 @@ fn sum_while @ 0x0 (size 239)
 -- decompile
 /* velk pseudo-C: count_down @ 0xf0 */
 int32_t count_down(int32_t a0) {
-    uint32_t *const sink = (uint32_t *)0x204ULL;
     int32_t v6;
 
     int32_t v1 = (a0 >= 2 ? a0 : 1);
@@ -129,14 +130,14 @@ int32_t count_down(int32_t a0) {
         int32_t v4 = -(v1 & 0xfffffff8);
         v3 = 4;
         do {
-            *sink = v3 - 3;
-            *sink = v3 - 2;
-            *sink = v3 - 1;
-            *sink = v3;
-            *sink = v3 + 1;
-            *sink = v3 + 2;
-            *sink = v3 + 3;
-            *sink = v3 + 4;
+            sink = v3 - 3;
+            sink = v3 - 2;
+            sink = v3 - 1;
+            sink = v3;
+            sink = v3 + 1;
+            sink = v3 + 2;
+            sink = v3 + 3;
+            sink = v3 + 4;
             v6 = v3;
             v3 += 8;
         } while (v6 + v4 + 8 != 4);
@@ -147,7 +148,7 @@ int32_t count_down(int32_t a0) {
     }
     ++v3;
     do {
-        *sink = v3;
+        sink = v3;
         ++v3;
         --v2;
     } while (v2 != 0);
@@ -199,7 +200,6 @@ fn count_down @ 0xf0 (size 157)
 -- decompile
 /* velk pseudo-C: sum_skip_odd @ 0x190 */
 int32_t sum_skip_odd(int32_t a0) {
-    uint32_t *const sink = (uint32_t *)0x204ULL;
     int32_t v2;
 
     if (a0 <= 0) {
@@ -212,7 +212,7 @@ int32_t sum_skip_odd(int32_t a0) {
         do {
             v2 += v4;
             ++v2;
-            *sink = v2;
+            sink = v2;
             v4 += 2;
         } while (v3 != v4);
     } else {

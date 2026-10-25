@@ -1,5 +1,8 @@
 # metrics/switch_jumptable.win64.O2.debug.dll: pe x86_64 no entry, 1 functions, 0 lift failures, 0 unsupported, 0 gotos
 0x180001000 527 d7 symtab,dwarf
+/* velk prelude */
+extern uint32_t g; /* address: 0x180003000 */
+/* end velk prelude */
 
 == 0x180001000 d7
 -- decompile
@@ -7,7 +10,6 @@
 /* ref: 0x180002000 .rdata */
 /* ref: 0x180003000 .data */
 int d7(int x) {
-    uint32_t *const g = (uint32_t *)0x180003000ULL;
     int32_t v6;
 
     if ((uint32_t)x > 9) {
@@ -15,87 +17,87 @@ int d7(int x) {
     } else {
         switch (x) {
         case 0:
-            v6 = *g;
+            v6 = g;
             break;
         case 1:
-            *g = *g;
-            v6 = *g + 1;
+            g = g;
+            v6 = g + 1;
             break;
         case 2:
-            *g = *g;
-            *g += 1;
-            v6 = *g + 2;
+            g = g;
+            g += 1;
+            v6 = g + 2;
             break;
         case 3:
-            *g = *g;
-            *g += 1;
-            *g += 2;
-            v6 = *g + 3;
+            g = g;
+            g += 1;
+            g += 2;
+            v6 = g + 3;
             break;
         case 4:
-            *g = *g;
-            *g += 1;
-            *g += 2;
-            *g += 3;
-            v6 = *g + 4;
+            g = g;
+            g += 1;
+            g += 2;
+            g += 3;
+            v6 = g + 4;
             break;
         case 5:
-            *g = *g;
-            *g += 1;
-            *g += 2;
-            *g += 3;
-            *g += 4;
-            v6 = *g + 5;
+            g = g;
+            g += 1;
+            g += 2;
+            g += 3;
+            g += 4;
+            v6 = g + 5;
             break;
         case 6:
-            *g = *g;
-            *g += 1;
-            *g += 2;
-            *g += 3;
-            *g += 4;
-            *g += 5;
-            v6 = *g + 6;
+            g = g;
+            g += 1;
+            g += 2;
+            g += 3;
+            g += 4;
+            g += 5;
+            v6 = g + 6;
             break;
         case 7:
-            *g = *g;
-            *g += 1;
-            *g += 2;
-            *g += 3;
-            *g += 4;
-            *g += 5;
-            *g += 6;
-            v6 = *g + 7;
+            g = g;
+            g += 1;
+            g += 2;
+            g += 3;
+            g += 4;
+            g += 5;
+            g += 6;
+            v6 = g + 7;
             break;
         case 8:
-            *g = *g;
-            *g += 1;
-            *g += 2;
-            *g += 3;
-            *g += 4;
-            *g += 5;
-            *g += 6;
-            *g += 7;
-            v6 = *g + 8;
+            g = g;
+            g += 1;
+            g += 2;
+            g += 3;
+            g += 4;
+            g += 5;
+            g += 6;
+            g += 7;
+            v6 = g + 8;
             break;
         case 9:
-            *g = *g;
-            *g += 1;
-            *g += 2;
-            *g += 3;
-            *g += 4;
-            *g += 5;
-            *g += 6;
-            *g += 7;
-            *g += 8;
-            v6 = *g + 9;
+            g = g;
+            g += 1;
+            g += 2;
+            g += 3;
+            g += 4;
+            g += 5;
+            g += 6;
+            g += 7;
+            g += 8;
+            v6 = g + 9;
             break;
         default:
             v6 = -1;
             break;
         }
     }
-    *g = v6;
-    return *g;
+    g = v6;
+    return g;
 }
 -- signature
 int (int x)

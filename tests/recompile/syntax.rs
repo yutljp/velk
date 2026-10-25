@@ -1,6 +1,226 @@
 use super::*;
 
 #[test]
+fn mixed_global_array_views_keep_byte_offsets() {
+    let ir = synthetic_ir(
+        "mixed_offset",
+        vec![Param {
+            index: 7,
+            name: "offset".into(),
+            ty: CType::U64,
+        }],
+        CType::U64,
+        vec![
+            Stmt::Store {
+                addr: Expr::Const(0x2000),
+                width: 8,
+                value: Expr::Const(0x8877665544332211),
+            },
+            Stmt::Ret {
+                value: Expr::Load {
+                    addr: Box::new(Expr::bin(BinOp::Add, Expr::Const(0x2000), Expr::reg(7, 64))),
+                    width: 4,
+                    signed: false,
+                },
+            },
+        ],
+    );
+    let code = velk::render::render(&ir, &[], &Default::default(), &[(0x2000, 16)]);
+    assert_eq!(code.matches("/* address: 0x2000 */").count(), 1, "{code}");
+    run_printed(
+        &code,
+        "uint64_t g_2000[2];",
+        "return mixed_offset(4) != UINT64_C(0x88776655) || mixed_offset(0) != UINT64_C(0x44332211);",
+    );
+}
+
+#[test]
+fn global_accesses_wider_than_debug_objects_keep_neighboring_bytes() {
+    let mut ir = synthetic_ir(
+        "wide_object",
+        vec![],
+        CType::U64,
+        vec![
+            Stmt::Store {
+                addr: Expr::Const(0x2000),
+                width: 4,
+                value: Expr::Const(0x1234),
+            },
+            Stmt::Ret {
+                value: Expr::Load {
+                    addr: Box::new(Expr::Const(0x2000)),
+                    width: 8,
+                    signed: false,
+                },
+            },
+        ],
+    );
+    ir.debug_globals = vec![(0x2000, CType::I32, 4)];
+    let symbols = velk::render::Symbols {
+        data: [(0x2000, "object".into())].into(),
+        ..Default::default()
+    };
+    let code = velk::render::render(&ir, &[], &symbols, &[(0x2000, 8)]);
+    assert_eq!(code.matches("/* address: 0x2000 */").count(), 1, "{code}");
+    run_printed(
+        &code,
+        "uint64_t object = UINT64_C(0xabcdef9876543210);",
+        "return wide_object() != UINT64_C(0xabcdef9800001234);",
+    );
+}
+
+#[test]
+fn global_address_bindings_preserve_record_members() {
+    let code = "extern uint64_t value; /* address: 0x2000 */\nstruct __attribute__((packed)) record { uint64_t value; };\nuint64_t read_record(struct record *p) { return value + p->value; }\n";
+    let bound = bound_globals(code).replace("0x2000ULL", "(uintptr_t)&state");
+    run_printed(
+        &format!("uint64_t state = 73;\n{bound}"),
+        "",
+        "struct record record = {99}; return read_record(&record) != 172;",
+    );
+}
+
+#[test]
+fn named_globals_are_shared_by_standalone_and_combined_functions() {
+    let symbols = velk::render::Symbols {
+        data: [(0x2000, "counter".into())].into(),
+        ..Default::default()
+    };
+    let load = Expr::Load {
+        addr: Box::new(Expr::Const(0x2000)),
+        width: 4,
+        signed: false,
+    };
+    let mut combined = String::new();
+    for name in ["increment", "read_counter"] {
+        let mut stmts = Vec::new();
+        if name == "increment" {
+            stmts.push(Stmt::Store {
+                addr: Expr::Const(0x2000),
+                width: 4,
+                value: Expr::bin(BinOp::Add, load.clone(), Expr::Const(1)),
+            });
+        }
+        stmts.push(Stmt::Ret {
+            value: load.clone(),
+        });
+        let ir = synthetic_ir(name, vec![], CType::U64, stmts);
+        let code = velk::render::render(&ir, &[], &symbols, &[(0x2000, 4)]);
+        assert_eq!(
+            code.matches("extern uint32_t counter;").count(),
+            1,
+            "{code}"
+        );
+        assert!(!code.contains("*const"), "{code}");
+        assert!(!code.contains("*counter"), "{code}");
+        combined.push_str(&code);
+    }
+    let code = velk::render::combine(&combined);
+    assert_eq!(
+        code.matches("extern uint32_t counter;").count(),
+        1,
+        "{code}"
+    );
+    assert!(code.contains("counter += 1;"), "{code}");
+    run_printed(
+        &code,
+        "uint32_t counter = UINT32_MAX;",
+        "if (increment() != 0 || read_counter() != 0) return 1; counter = 73; return read_counter() != 73;",
+    );
+}
+
+#[test]
+fn inferred_global_arrays_have_no_invented_bound() {
+    let ir = synthetic_ir(
+        "read_table",
+        vec![Param {
+            index: 7,
+            name: "i".into(),
+            ty: CType::U64,
+        }],
+        CType::U64,
+        vec![Stmt::Ret {
+            value: Expr::Load {
+                addr: Box::new(Expr::bin(
+                    BinOp::Add,
+                    Expr::Const(0x2000),
+                    Expr::bin(BinOp::Mul, Expr::reg(7, 64), Expr::Const(4)),
+                )),
+                width: 4,
+                signed: false,
+            },
+        }],
+    );
+    let code = velk::render::render(&ir, &[], &Default::default(), &[(0x2000, 16)]);
+    assert!(
+        code.contains("extern uint32_t g_2000[]; /* address: 0x2000 */"),
+        "{code}"
+    );
+    assert!(code.contains("g_2000[i]"), "{code}");
+    run_printed(
+        &code,
+        "uint32_t g_2000[] = {13, 73, UINT32_MAX};",
+        "return read_table(0) != 13 || read_table(1) != 73 || read_table(2) != UINT32_MAX;",
+    );
+}
+
+#[test]
+fn combined_globals_reconcile_access_widths_arrays_and_local_names() {
+    let mut code = String::new();
+    for (declaration, function) in [
+        (
+            "extern uint8_t counter; /* address: 0x2000 */",
+            "uint64_t byte_value(void) { return counter; }",
+        ),
+        (
+            "extern uint64_t counter_2000; /* address: 0x2000 */",
+            "uint64_t word_value(uint64_t counter) { struct __attribute__((packed)) local { uint64_t counter_2000; } local = {1}; return counter_2000 + counter + local.counter_2000 - 1; }",
+        ),
+        (
+            "extern uint64_t counter[]; /* address: 0x2000 */",
+            "uint64_t array_value(void) { return counter[1]; }",
+        ),
+        (
+            "extern uint8_t middle; /* address: 0x2001 */",
+            "uint64_t offset_value(void) { return middle; }",
+        ),
+    ] {
+        code.push_str(&format!("/* velk prelude */\n{declaration}\n/* end velk prelude */\n/* velk pseudo-C: combined @ 0x0 */\n{function}\n"));
+    }
+    code.push_str("/* velk prelude */\n#include <stdint.h>\n/* end velk prelude */\nuint64_t forwarded(uint64_t counter) { return counter; }\n");
+    let code = velk::render::combine(&code);
+    assert_eq!(code.matches("/* address: 0x2000 */").count(), 1, "{code}");
+    assert!(code.contains("extern uint64_t counter_2000[];"), "{code}");
+    assert_eq!(velk::render::combine(&code), code);
+    run_printed(
+        &code,
+        "uint64_t counter_2000[] = {73, 99};",
+        "return byte_value() != 73 || word_value(1) != 74 || array_value() != 99 || offset_value() != 0 || forwarded(7) != 7;",
+    );
+}
+
+#[test]
+fn combined_global_record_arrays_share_types_in_dependency_order() {
+    let mut code = String::new();
+    for name in ["read_first", "read_second"] {
+        code.push_str(&format!("/* velk prelude */\nstruct outer {{ struct z_inner value; }};\n\nstruct z_inner {{ uint64_t number; }};\n\nextern struct outer objects[]; /* address: 0x2000 */\n/* end velk prelude */\nuint64_t {name}(void) {{ return objects[0].value.number; }}\n"));
+    }
+    let code = velk::render::combine(&code);
+    assert_eq!(code.matches("struct z_inner {").count(), 1, "{code}");
+    assert_eq!(
+        code.matches("extern struct outer objects[];").count(),
+        1,
+        "{code}"
+    );
+    assert!(code.find("struct z_inner {").unwrap() < code.find("struct outer {").unwrap());
+    run_printed(
+        &code,
+        "struct outer objects[] = {{{73}}};",
+        "return read_first() != 73 || read_second() != 73;",
+    );
+}
+
+#[test]
 fn recompile_binds_the_target_entry_stack_pointer() {
     for isa in [Isa::AArch64, Isa::X86_64] {
         let mut ir = synthetic_ir(
@@ -112,7 +332,7 @@ fn typed_global_objects_preserve_signed_bits_and_stores() {
         };
         let code = velk::render::render(&ir, &[], &symbols, &[(0x2000, 4)]);
         assert!(code.contains("extern int32_t object;"), "{code}");
-        assert!(!code.contains("0x2000"), "{code}");
+        assert!(code.contains("/* address: 0x2000 */"), "{code}");
         run_printed(
             &code,
             "int32_t object = -1;",

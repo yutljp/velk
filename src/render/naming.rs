@@ -139,9 +139,10 @@ pub(super) fn array_access_as(addr: &Expr, width: u8, view: View, ctx: &Ctx<'_>)
         other if span == 1 => other,
         _ => return None,
     };
-    let Some(name) = global_pointer(&Expr::Const(base), view, ctx) else {
+    let Some(_) = global_pointer(&Expr::Const(base), view, ctx) else {
         return None;
     };
+    let name = ctx.globals.array_pointer(base, view);
     Some(format!(
         "{}[{}]",
         name,
@@ -192,24 +193,13 @@ pub(super) fn flat_array_access_as(
     if terms.is_empty() {
         return None;
     }
-    if size == 1
-        && terms.len() == 1
-        && !matches!(
-            terms[0],
-            Expr::Bin {
-                op: BinOp::Mul | BinOp::Shl,
-                ..
-            }
-        )
-    {
-        return None;
-    }
     if ctx.globals.containing(base).is_some() {
         return None;
     }
-    let Some(name) = global_pointer(&Expr::Const(base), view, ctx) else {
+    let Some(_) = global_pointer(&Expr::Const(base), view, ctx) else {
         return None;
     };
+    let name = ctx.globals.array_pointer(base, view);
     // Each term as an index and how many elements one step of it moves; a
     // 32-bit mask on a term that fits changes nothing.
     let scaled = |term: &Expr| -> Option<(Expr, u64)> {
@@ -242,6 +232,7 @@ pub(super) fn flat_array_access_as(
                 (Expr::Const(step), index) | (index, Expr::Const(step)) => (index.clone(), *step),
                 _ => return None,
             },
+            _ if size == 1 => (term.clone(), 1),
             _ => return None,
         };
         (scale % size == 0).then_some((index, scale / size))
@@ -256,13 +247,7 @@ pub(super) fn flat_array_access_as(
             else {
                 return None;
             };
-            let address = if !ctx.symbols.data.contains_key(&base)
-                && !ctx.symbols.import_slots.contains_key(&base)
-            {
-                format!("{base:#x}ULL")
-            } else {
-                format!("(uintptr_t){name}")
-            };
+            let address = format!("(uintptr_t){name}");
             return Some(format!(
                 "*({} *)({address} + {})",
                 view.ty(),
@@ -296,15 +281,7 @@ pub(super) fn global_access(addr: &Expr, width: u8, ctx: &Ctx<'_>) -> Option<Str
 }
 
 pub(super) fn global_access_as(addr: &Expr, view: View, ctx: &Ctx<'_>) -> Option<String> {
-    global_pointer(addr, view, ctx).map(|name| {
-        match name
-            .strip_prefix("(&")
-            .and_then(|name| name.strip_suffix(')'))
-        {
-            Some(name) => name.to_owned(),
-            None => format!("*{name}"),
-        }
-    })
+    global_pointer(addr, view, ctx).map(|name| format!("*{name}"))
 }
 
 pub(super) fn global_pointer(addr: &Expr, view: View, ctx: &Ctx<'_>) -> Option<String> {

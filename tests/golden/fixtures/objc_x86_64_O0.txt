@@ -8,6 +8,11 @@
 0x100000990 48 _use_block symtab,dynamic,function-starts
 0x1000009c0 32 ___use_block_block_invoke symtab,function-starts
 0x1000009e0 15 _main symtab,dynamic,entry,function-starts
+/* velk prelude */
+extern uint64_t g_1000021e0; /* address: 0x1000021e0 */
+
+extern uint8_t __block_literal_global; /* address: 0x100001020 */
+/* end velk prelude */
 
 == 0x1000008b0 -[Counter add:with:]
 -- decompile
@@ -103,9 +108,7 @@ fn -[Counter(Extra) twice:] @ 0x100000930 (size 32)
 /* ref: 0x100001060 __got */
 /* ref: 0x1000021e0 -> 0x100000a15 "add:with:" */
 int32_t send_value(int64_t a0, int64_t a1, int64_t a2) {
-    uint64_t *const qword_1000021e0 = (uint64_t *)0x1000021e0ULL;
-
-    return objc_msgSend(a0, *qword_1000021e0 /* @selector(add:with:) */, a1, a2);
+    return objc_msgSend(a0, g_1000021e0 /* @selector(add:with:) */, a1, a2);
 }
 -- signature
 int32_t (int64_t a0, int64_t a1, int64_t a2)
@@ -125,9 +128,7 @@ fn _send_value @ 0x100000950 (size 64)
 /* velk pseudo-C: _use_block @ 0x100000990 */
 /* ref: 0x100001020 __const */
 int64_t use_block(int64_t a0) {
-    uint8_t *const __block_literal_global = (uint8_t *)0x100001020ULL;
-
-    return __use_block_block_invoke(__block_literal_global, a0); /* via pointer at 0x100001030 */
+    return __use_block_block_invoke((&__block_literal_global), a0); /* via pointer at 0x100001030 */
 }
 -- signature
 int64_t (int64_t a0)

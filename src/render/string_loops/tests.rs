@@ -370,6 +370,10 @@ fn object_provenance_preserves_printed_copy_behavior() {
         assert_eq!(code.contains("__builtin_memcpy"), builtin, "{name}\n{code}");
         // Absolute global addresses need backing storage in this execution harness.
         let code = code
+            .replace("extern uint8_t g_2000; /* address: 0x2000 */", "")
+            .replace("extern uint8_t g_2100; /* address: 0x2100 */", "")
+            .replace("(&g_2000)", "global_source")
+            .replace("(&g_2100)", "global_destination")
             .replace("0x2000", "(uint64_t)global_source")
             .replace("0x2100", "(uint64_t)global_destination");
         source.push_str(&code);

@@ -3,13 +3,15 @@
 0x1800010f0 31 count_down symtab,dwarf
 0x180001110 74 sum_skip_odd symtab,dwarf
 0x180001160 34 find_first symtab,dwarf
+/* velk prelude */
+extern uint32_t sink; /* address: 0x180003000 */
+/* end velk prelude */
 
 == 0x180001000 sum_while
 -- decompile
 /* velk pseudo-C: sum_while @ 0x180001000 */
 /* ref: 0x180003000 .data */
 int sum_while(int n) {
-    uint32_t *const sink = (uint32_t *)0x180003000ULL;
     int32_t v8;
 
     if (n <= 0) {
@@ -25,20 +27,20 @@ int sum_while(int n) {
         do {
             int32_t v7 = v2 + v3;
             v8 = v2;
-            *sink = v3 + v8 - 7;
+            sink = v3 + v8 - 7;
             int32_t v17 = v8 + v7 - 7;
-            *sink = v8 + v7 - 13;
+            sink = v8 + v7 - 13;
             int32_t v18 = v8 + v17 - 6;
-            *sink = v8 + v17 - 11;
+            sink = v8 + v17 - 11;
             int32_t v19 = v8 + v18 - 5;
-            *sink = v8 + v18 - 9;
+            sink = v8 + v18 - 9;
             int32_t v20 = v8 + v19 - 4;
-            *sink = v8 + v19 - 7;
+            sink = v8 + v19 - 7;
             v3 = v8 + v20 - 3;
-            *sink = v8 + v20 - 5;
-            *sink = v8 + v3 - 3;
+            sink = v8 + v20 - 5;
+            sink = v8 + v3 - 3;
             v3 = v8 + (v8 + v3 - 2) - 1;
-            *sink = v3;
+            sink = v3;
             v2 += 8;
         } while (v8 + v5 + 8 != 7);
         if (v1 == 0) {
@@ -48,7 +50,7 @@ int sum_while(int n) {
     }
     do {
         v3 += v2;
-        *sink = v3;
+        sink = v3;
         ++v2;
         --v1;
     } while (v1 != 0);
@@ -112,13 +114,11 @@ fn sum_while @ 0x180001000 (size 228)
 /* velk pseudo-C: count_down @ 0x1800010f0 */
 /* ref: 0x180003000 .data */
 int count_down(int n) {
-    uint32_t *const sink = (uint32_t *)0x180003000ULL;
-
     int32_t c = 0;
     do {
         ++c;
         --n;
-        *sink = c;
+        sink = c;
     } while (n > 0);
     return c;
 }
@@ -145,8 +145,6 @@ fn count_down @ 0x1800010f0 (size 31)
 /* velk pseudo-C: sum_skip_odd @ 0x180001110 */
 /* ref: 0x180003000 .data */
 int sum_skip_odd(int n) {
-    uint32_t *const sink = (uint32_t *)0x180003000ULL;
-
     if (n <= 0) {
         return 0;
     }
@@ -159,7 +157,7 @@ int sum_skip_odd(int n) {
     do {
         v6 += v4;
         ++v6;
-        *sink = v6;
+        sink = v6;
         v4 += 2;
     } while (v3 != v4);
     if ((n & 0x1) == 0) {

@@ -17,13 +17,15 @@
 0x20334 16 c14 symtab,dwarf
 0x20344 18 c15 symtab,dwarf
 0x20358 32 sparse symtab,dwarf
+/* velk prelude */
+extern uint32_t g_sink; /* address: 0x30378 */
+/* end velk prelude */
 
 == 0x2018c dense
 -- decompile
 /* velk pseudo-C: dense @ 0x2018c */
 /* ref: 0x30378 .bss */
 int dense(int x) {
-    uint32_t *const g_sink = (uint32_t *)0x30378ULL;
     uint64_t v2;
     uint32_t v4;
     uint32_t v5;
@@ -41,7 +43,7 @@ int dense(int x) {
         }
         return v3;
     }
-    *g_sink = 0;
+    g_sink = 0;
     return 0;
 }
 -- signature
@@ -71,9 +73,7 @@ fn dense @ 0x2018c (size 172)
 /* velk pseudo-C: c0 @ 0x20238 */
 /* ref: 0x30378 .bss */
 void c0(void) {
-    uint32_t *const g_sink = (uint32_t *)0x30378ULL;
-
-    *g_sink += 11;
+    g_sink += 11;
 }
 -- signature
 void ()
@@ -92,9 +92,7 @@ fn c0 @ 0x20238 (size 16)
 /* velk pseudo-C: c1 @ 0x20248 */
 /* ref: 0x30378 .bss */
 void c1(void) {
-    uint32_t *const g_sink = (uint32_t *)0x30378ULL;
-
-    *g_sink ^= 18;
+    g_sink ^= 18;
 }
 -- signature
 void ()
@@ -113,9 +111,7 @@ fn c1 @ 0x20248 (size 18)
 /* velk pseudo-C: c2 @ 0x2025c */
 /* ref: 0x30378 .bss */
 void c2(void) {
-    uint32_t *const g_sink = (uint32_t *)0x30378ULL;
-
-    *g_sink -= 25;
+    g_sink -= 25;
 }
 -- signature
 void ()
@@ -134,9 +130,7 @@ fn c2 @ 0x2025c (size 16)
 /* velk pseudo-C: c3 @ 0x2026c */
 /* ref: 0x30378 .bss */
 void c3(void) {
-    uint32_t *const g_sink = (uint32_t *)0x30378ULL;
-
-    *g_sink |= 32;
+    g_sink |= 32;
 }
 -- signature
 void ()
@@ -155,9 +149,7 @@ fn c3 @ 0x2026c (size 18)
 /* velk pseudo-C: c4 @ 0x20280 */
 /* ref: 0x30378 .bss */
 void c4(void) {
-    uint32_t *const g_sink = (uint32_t *)0x30378ULL;
-
-    *g_sink += 39;
+    g_sink += 39;
 }
 -- signature
 void ()
@@ -176,9 +168,7 @@ fn c4 @ 0x20280 (size 16)
 /* velk pseudo-C: c5 @ 0x20290 */
 /* ref: 0x30378 .bss */
 void c5(void) {
-    uint32_t *const g_sink = (uint32_t *)0x30378ULL;
-
-    *g_sink ^= 46;
+    g_sink ^= 46;
 }
 -- signature
 void ()
@@ -197,9 +187,7 @@ fn c5 @ 0x20290 (size 18)
 /* velk pseudo-C: c6 @ 0x202a4 */
 /* ref: 0x30378 .bss */
 void c6(void) {
-    uint32_t *const g_sink = (uint32_t *)0x30378ULL;
-
-    *g_sink -= 53;
+    g_sink -= 53;
 }
 -- signature
 void ()
@@ -218,9 +206,7 @@ fn c6 @ 0x202a4 (size 16)
 /* velk pseudo-C: c7 @ 0x202b4 */
 /* ref: 0x30378 .bss */
 void c7(void) {
-    uint32_t *const g_sink = (uint32_t *)0x30378ULL;
-
-    *g_sink |= 60;
+    g_sink |= 60;
 }
 -- signature
 void ()
@@ -239,9 +225,7 @@ fn c7 @ 0x202b4 (size 18)
 /* velk pseudo-C: c8 @ 0x202c8 */
 /* ref: 0x30378 .bss */
 void c8(void) {
-    uint32_t *const g_sink = (uint32_t *)0x30378ULL;
-
-    *g_sink += 67;
+    g_sink += 67;
 }
 -- signature
 void ()
@@ -260,9 +244,7 @@ fn c8 @ 0x202c8 (size 16)
 /* velk pseudo-C: c9 @ 0x202d8 */
 /* ref: 0x30378 .bss */
 void c9(void) {
-    uint32_t *const g_sink = (uint32_t *)0x30378ULL;
-
-    *g_sink ^= 74;
+    g_sink ^= 74;
 }
 -- signature
 void ()
@@ -281,9 +263,7 @@ fn c9 @ 0x202d8 (size 18)
 /* velk pseudo-C: c10 @ 0x202ec */
 /* ref: 0x30378 .bss */
 void c10(void) {
-    uint32_t *const g_sink = (uint32_t *)0x30378ULL;
-
-    *g_sink -= 81;
+    g_sink -= 81;
 }
 -- signature
 void ()
@@ -302,9 +282,7 @@ fn c10 @ 0x202ec (size 16)
 /* velk pseudo-C: c11 @ 0x202fc */
 /* ref: 0x30378 .bss */
 void c11(void) {
-    uint32_t *const g_sink = (uint32_t *)0x30378ULL;
-
-    *g_sink |= 88;
+    g_sink |= 88;
 }
 -- signature
 void ()
@@ -323,9 +301,7 @@ fn c11 @ 0x202fc (size 18)
 /* velk pseudo-C: c12 @ 0x20310 */
 /* ref: 0x30378 .bss */
 void c12(void) {
-    uint32_t *const g_sink = (uint32_t *)0x30378ULL;
-
-    *g_sink += 95;
+    g_sink += 95;
 }
 -- signature
 void ()
@@ -344,9 +320,7 @@ fn c12 @ 0x20310 (size 16)
 /* velk pseudo-C: c13 @ 0x20320 */
 /* ref: 0x30378 .bss */
 void c13(void) {
-    uint32_t *const g_sink = (uint32_t *)0x30378ULL;
-
-    *g_sink ^= 102;
+    g_sink ^= 102;
 }
 -- signature
 void ()
@@ -365,9 +339,7 @@ fn c13 @ 0x20320 (size 18)
 /* velk pseudo-C: c14 @ 0x20334 */
 /* ref: 0x30378 .bss */
 void c14(void) {
-    uint32_t *const g_sink = (uint32_t *)0x30378ULL;
-
-    *g_sink -= 109;
+    g_sink -= 109;
 }
 -- signature
 void ()
@@ -386,9 +358,7 @@ fn c14 @ 0x20334 (size 16)
 /* velk pseudo-C: c15 @ 0x20344 */
 /* ref: 0x30378 .bss */
 void c15(void) {
-    uint32_t *const g_sink = (uint32_t *)0x30378ULL;
-
-    *g_sink |= 116;
+    g_sink |= 116;
 }
 -- signature
 void ()

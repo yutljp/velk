@@ -43,6 +43,8 @@ static inline uint64_t mul_lanes32(uint64_t a, uint64_t b) {
 
 #include <stdarg.h>
 
+struct velk_vector { union { uint64_t u64; int64_t s64; uint32_t u32; int32_t s32; uint16_t u16; int16_t s16; uint8_t u8; int8_t s8; float f32; double f64; } low, high; };
+
 int is_even(int);
 
 int is_odd(int);
@@ -53,7 +55,11 @@ int twice(int);
 
 long sum9(long, long, long, long, long, long, long, long, long);
 
-struct velk_vector { union { uint64_t u64; int64_t s64; uint32_t u32; int32_t s32; uint16_t u16; int16_t s16; uint8_t u8; int8_t s8; float f32; double f64; } low, high; };
+extern uint64_t g_200190; /* address: 0x200190 */
+
+extern uint64_t g_200198; /* address: 0x200198 */
+
+extern uint64_t table[]; /* address: 0x220528 */
 /* end velk prelude */
 
 == 0x2102c4 twice
@@ -112,8 +118,6 @@ fn pick_op @ 0x2102d4 (size 28)
 /* velk pseudo-C: apply_table @ 0x2102f0 */
 /* ref: 0x220528 .data.rel.ro */
 int apply_table(unsigned int index, int x) {
-    uint64_t *const table = (uint64_t *)0x220528ULL;
-
     int64_t v3 = table[index % 3];
     return ((uint64_t (*)())v3)(x & 0xffffffff);
 }
@@ -154,8 +158,6 @@ fn apply_pointer @ 0x21031c (size 32)
 /* ref: 0x200190 .rodata */
 /* ref: 0x200198 .rodata */
 int factorial(int n) {
-    uint64_t *const qword_200190 = (uint64_t *)0x200190ULL;
-    uint64_t *const qword_200198 = (uint64_t *)0x200198ULL;
     uint32_t v1;
     int32_t v2;
 
@@ -164,7 +166,7 @@ int factorial(int n) {
             struct velk_vector vector = { .low.u64 = 0x100000001, .high.u64 = 0x100000001 };
             int32_t v5 = n - 1;
             int32_t v6 = v5 & 0xfffffff8;
-            struct velk_vector vector_2 = { .low.u64 = add_lanes32((n & 0xffffffff) * 0x100000001, *qword_200190), .high.u64 = add_lanes32((n & 0xffffffff) * 0x100000001, *qword_200198) };
+            struct velk_vector vector_2 = { .low.u64 = add_lanes32((n & 0xffffffff) * 0x100000001, g_200190), .high.u64 = add_lanes32((n & 0xffffffff) * 0x100000001, g_200198) };
             struct velk_vector vector_3 = { .low.u64 = 0x100000001, .high.u64 = 0x100000001 };
             v1 = n - v6;
             int32_t v11 = v6;

@@ -21,10 +21,6 @@
 0x1200 3 main symtab,unwind
 0x1204 13 _fini symtab
 /* velk prelude */
-int kill(int, int);
-
-int pthread_kill(unsigned long, int);
-
 struct group {
     _Alignas(8) char *gr_name;
     char *gr_passwd;
@@ -35,18 +31,28 @@ struct group {
 
 struct group; int getgrgid_r(unsigned int, struct group *, char *, size_t, struct group **);
 
+int kill(int, int);
+
+int pthread_kill(unsigned long, int);
+
 uint64_t main();
 
 uint64_t velk_entry_stack_pointer(void); /* target entry stack pointer */
+
+extern uint64_t __cxa_finalize_3fe0; /* address: 0x3fe0 */
+
+extern uint64_t __dso_handle; /* address: 0x4038 */
+
+extern uint64_t __gmon_start___3fd0; /* address: 0x3fd0 */
+
+extern uint8_t completed_0; /* address: 0x4040 */
 /* end velk prelude */
 
 == 0x1000 _init
 -- decompile
 /* velk pseudo-C: _init @ 0x1000 */
 int64_t _init(void) {
-    uint64_t *const __gmon_start___3fd0_u64 = (uint64_t *)0x3fd0ULL;
-
-    int64_t v1 = *__gmon_start___3fd0_u64;
+    int64_t v1 = __gmon_start___3fd0;
     if (v1 == 0) {
         return v1;
     }
@@ -227,9 +233,7 @@ fn _start @ 0x10a0 (size 38)
 -- decompile
 /* velk pseudo-C: deregister_tm_clones @ 0x10d0 */
 int32_t deregister_tm_clones(void) {
-    uint8_t *const completed_0 = (uint8_t *)0x4040ULL;
-
-    return (uintptr_t)completed_0;
+    return (uintptr_t)(&completed_0);
 }
 -- signature
 int32_t ()
@@ -267,18 +271,14 @@ fn register_tm_clones @ 0x1100 (size 64)
 -- decompile
 /* velk pseudo-C: __do_global_dtors_aux @ 0x1140 */
 void __do_global_dtors_aux(void) {
-    uint64_t *const __cxa_finalize_3fe0_u64 = (uint64_t *)0x3fe0ULL;
-    uint64_t *const __dso_handle = (uint64_t *)0x4038ULL;
-    uint8_t *const completed_0 = (uint8_t *)0x4040ULL;
-
-    if (*completed_0 != 0) {
+    if (completed_0 != 0) {
         return;
     }
-    if (*__cxa_finalize_3fe0_u64 != 0) {
-        __cxa_finalize((void *)*__dso_handle);
+    if (__cxa_finalize_3fe0 != 0) {
+        __cxa_finalize((void *)__dso_handle);
     }
     deregister_tm_clones();
-    *completed_0 = 1;
+    completed_0 = 1;
 }
 -- signature
 void ()

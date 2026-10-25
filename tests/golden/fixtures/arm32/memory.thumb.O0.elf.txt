@@ -7,6 +7,9 @@
 0x20218 18 pointer_distance symtab,dwarf
 0x2022c 26 read_volatile symtab,dwarf
 0x20248 30 swap_ints symtab,dwarf
+/* velk prelude */
+extern int grid[]; /* address: 0x30268 */
+/* end velk prelude */
 
 == 0x2013c copy_bytes
 -- decompile
@@ -147,7 +150,6 @@ fn grid_get @ 0x201c4 (size 38)
 -- decompile
 /* velk pseudo-C: grid_set @ 0x201ec */
 /* ref: 0x30268 .bss */
-extern int grid[];
 void grid_set(int row, int col, int value) {
     grid[(row & 0x3) * 8 + (col & 0x7)] = value;
 }

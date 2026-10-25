@@ -1,12 +1,14 @@
 # metrics/switch_jumptable.aarch64.O0.debug.elf: elf aarch64 no entry, 1 functions, 0 lift failures, 0 unsupported, 0 gotos
 0x21018c 880 d7 symtab,dwarf,unwind
+/* velk prelude */
+extern uint32_t g; /* address: 0x2204fc */
+/* end velk prelude */
 
 == 0x21018c d7
 -- decompile
 /* velk pseudo-C: d7 @ 0x21018c */
 /* ref: 0x2204fc .bss */
 int d7(int x) {
-    uint32_t *const g = (uint32_t *)0x2204fcULL;
     int j; /* [sp-8] */
     int j_2; /* [sp-c] */
     int j_3; /* [sp-10] */
@@ -20,66 +22,66 @@ int d7(int x) {
 
     if (x == 0) {
         for (j = 0; j < 1; j++) {
-            *g += j;
+            g += j;
         }
-        return *g;
+        return g;
     }
     if (x == 1) {
         for (j_2 = 0; j_2 < 2; j_2++) {
-            *g += j_2;
+            g += j_2;
         }
-        return *g;
+        return g;
     }
     if (x == 2) {
         for (j_3 = 0; j_3 < 3; j_3++) {
-            *g += j_3;
+            g += j_3;
         }
-        return *g;
+        return g;
     }
     if (x - 3 == 0) {
         for (j_4 = 0; j_4 < 4; j_4++) {
-            *g += j_4;
+            g += j_4;
         }
-        return *g;
+        return g;
     }
     if (x - 4 == 0) {
         for (j_5 = 0; j_5 < 5; j_5++) {
-            *g += j_5;
+            g += j_5;
         }
-        return *g;
+        return g;
     }
     if (x - 5 == 0) {
         for (j_6 = 0; j_6 < 6; j_6++) {
-            *g += j_6;
+            g += j_6;
         }
-        return *g;
+        return g;
     }
     if (x - 6 == 0) {
         for (j_7 = 0; j_7 < 7; j_7++) {
-            *g += j_7;
+            g += j_7;
         }
-        return *g;
+        return g;
     }
     if (x - 7 == 0) {
         for (j_8 = 0; j_8 < 8; j_8++) {
-            *g += j_8;
+            g += j_8;
         }
-        return *g;
+        return g;
     }
     if (x - 8 == 0) {
         for (j_9 = 0; j_9 < 9; j_9++) {
-            *g += j_9;
+            g += j_9;
         }
-        return *g;
+        return g;
     }
     if (x - 9 == 0) {
         for (j_10 = 0; j_10 < 10; j_10++) {
-            *g += j_10;
+            g += j_10;
         }
-        return *g;
+        return g;
     }
-    *g = 0xffffffff;
-    return *g;
+    g = 0xffffffff;
+    return g;
 }
 -- signature
 int (int x)

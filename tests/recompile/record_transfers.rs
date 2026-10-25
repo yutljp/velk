@@ -823,7 +823,7 @@ fn printed_global_fills_reuse_the_stored_words_address() {
         candidate.code
     );
     assert_eq!(
-        candidate.code.matches("*const counter").count(),
+        candidate.code.matches("extern uint64_t counter[];").count(),
         1,
         "{}",
         candidate.code

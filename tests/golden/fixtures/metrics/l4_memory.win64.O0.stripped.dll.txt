@@ -3,6 +3,11 @@
 0x180001040 77 - unwind,prologue
 0x180001090 16 - prologue
 0x1800010a0 12 - prologue
+/* velk prelude */
+extern uint32_t g_180003008; /* address: 0x180003008 */
+
+extern uint64_t g_180003000; /* address: 0x180003000 */
+/* end velk prelude */
 
 == 0x180001000 -
 -- decompile
@@ -61,10 +66,8 @@ fn <unnamed> @ 0x180001040 (size 77)
 /* velk pseudo-C: sub_180001090 @ 0x180001090 */
 /* ref: 0x180003008 .data */
 int32_t sub_180001090(void) {
-    uint32_t *const dword_180003008 = (uint32_t *)0x180003008ULL;
-
-    int32_t v1 = *dword_180003008 + 1;
-    *dword_180003008 = v1;
+    int32_t v1 = g_180003008 + 1;
+    g_180003008 = v1;
     return v1;
 }
 -- signature
@@ -85,9 +88,7 @@ fn <unnamed> @ 0x180001090 (size 16)
 /* velk pseudo-C: sub_1800010a0 @ 0x1800010a0 */
 /* ref: 0x180003000 -> 0x180002000 "velk ladder" */
 int32_t sub_1800010a0(void) {
-    uint64_t *const qword_180003000 = (uint64_t *)0x180003000ULL;
-
-    return *(int8_t *)(*qword_180003000);
+    return *(int8_t *)(g_180003000);
 }
 -- signature
 int32_t ()

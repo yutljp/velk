@@ -20,6 +20,10 @@ static inline uint64_t add_lanes32(uint64_t a, uint64_t b) {
 #endif
 
 struct velk_vector { union { uint64_t u64; int64_t s64; uint32_t u32; int32_t s32; uint16_t u16; int16_t s16; uint8_t u8; int8_t s8; float f32; double f64; } low, high; };
+
+extern uint32_t g_counter; /* address: 0xd8 */
+
+extern uint64_t banner; /* address: 0xd0 */
 /* end velk prelude */
 
 == 0x0 point_dot
@@ -127,9 +131,7 @@ fn array_sum @ 0x20 (size 140)
 -- decompile
 /* velk pseudo-C: bump @ 0xb0 */
 void bump(void) {
-    uint32_t *const g_counter = (uint32_t *)0xd8ULL;
-
-    *g_counter += 1;
+    g_counter += 1;
 }
 -- signature
 void ()
@@ -147,9 +149,7 @@ fn bump @ 0xb0 (size 7)
 -- decompile
 /* velk pseudo-C: banner_first @ 0xc0 */
 int32_t banner_first(void) {
-    uint64_t *const banner = (uint64_t *)0xd0ULL;
-
-    return *(int8_t *)(*banner);
+    return *(int8_t *)(banner);
 }
 -- signature
 int32_t ()

@@ -94,14 +94,41 @@ fn printed_codeview_names_and_types_compile_and_compute_source_results() {
                     "word_low_byte(",
                     "for(unsigned w=0;w<1000;++w)if(word_low_byte(w)!=(w&255))return 14;",
                 ),
-                ("l4_memory", "bump", "bump(", ""),
-                ("l4_memory", "banner_first", "banner_first(", ""),
+                (
+                    "l4_memory",
+                    "bump",
+                    "bump(",
+                    "bump(); if (g_counter != 42) return 15;",
+                ),
+                (
+                    "l4_memory",
+                    "banner_first",
+                    "banner_first(",
+                    "if (banner_first() != 'v') return 16;",
+                ),
             ] {
                 let fixture =
                     common::fixtures_dir().join(format!("codeview/{source}.O{level}.{extension}"));
                 let mut binary = Binary::open(&fixture).expect("fixture");
                 let addr = binary.find(name).expect("source function").addr;
                 let code = binary.decompile(addr, None, None).expect("printed C");
+                let binding = match name {
+                    "bump" => Some(("uint32_t", "g_counter")),
+                    "banner_first" => Some(("uint64_t", "banner")),
+                    _ => None,
+                };
+                let code = if let Some((ty, alias)) = binding {
+                    let prefix = format!("extern {ty} ");
+                    let global = code
+                        .lines()
+                        .find_map(|line| line.strip_prefix(&prefix))
+                        .and_then(|line| line.split_once(';'))
+                        .expect("the global needs a named declaration")
+                        .0;
+                    code.replace(global, alias)
+                } else {
+                    code
+                };
                 assert!(code.contains(expected), "{fixture:?}: {code}");
                 if name == "sum_until" && level == 0 {
                     assert!(code.contains("for (int32_t i = 1;"), "{code}");
@@ -123,7 +150,12 @@ fn printed_codeview_names_and_types_compile_and_compute_source_results() {
                 }
                 let file = scratch.join(format!("{name}.{level}.{extension}.c"));
                 let exe = file.with_extension("out");
-                std::fs::write(&file, format!("#include <stdint.h>\n#include <stdbool.h>\n#include <string.h>\n{code}\nint main(void){{ {driver} return 0; }}\n")).expect("printed source");
+                let globals = match name {
+                    "bump" => "uint32_t g_counter = 41;\n",
+                    "banner_first" => "uint64_t banner = (uintptr_t)\"velk ladder\";\n",
+                    _ => "",
+                };
+                std::fs::write(&file, format!("#include <stdint.h>\n#include <stdbool.h>\n#include <string.h>\n{globals}{code}\nint main(void){{ {driver} return 0; }}\n")).expect("printed source");
                 for optimization in ["-O0", "-O2"] {
                     let output = common::compiler::run(
                         Command::new("clang")

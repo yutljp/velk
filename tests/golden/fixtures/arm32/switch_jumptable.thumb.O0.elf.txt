@@ -1,12 +1,14 @@
 # arm32/switch_jumptable.thumb.O0.elf: elf arm32 no entry, 1 functions, 0 lift failures, 1 unsupported, 0 gotos
 0x20104 480 d7 symtab,dwarf
+/* velk prelude */
+extern uint32_t g; /* address: 0x302e4 */
+/* end velk prelude */
 
 == 0x20104 d7
 -- decompile
 /* velk pseudo-C: d7 @ 0x20104 */
 /* ref: 0x302e4 .bss */
 int d7(int x) {
-    uint32_t *const g = (uint32_t *)0x302e4ULL;
     uint64_t v1;
     uint32_t v2;
     uint32_t v4;
@@ -23,8 +25,8 @@ int d7(int x) {
         }
         return v3;
     }
-    *g = 0xffffffff;
-    return *g;
+    g = 0xffffffff;
+    return g;
 }
 -- signature
 int (int x)

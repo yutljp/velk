@@ -22,6 +22,8 @@ int twice(int);
 int32_t sum9(int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t);
 
 uint64_t *velk_return_address_slot(void); /* target frame's return-address slot */
+
+extern uint64_t table[]; /* address: 0x180002000 */
 /* end velk prelude */
 
 == 0x180001000 twice
@@ -80,8 +82,6 @@ fn pick_op @ 0x180001020 (size 32)
 /* velk pseudo-C: apply_table @ 0x180001040 */
 /* ref: 0x180002000 .rdata */
 int apply_table(unsigned int index, int x) {
-    uint64_t *const table = (uint64_t *)0x180002000ULL;
-
     uint32_t v1 = index % 3;
     int64_t v2 = table[v1];
     return ((uint64_t (*)())v2)(x & 0xffffffff);

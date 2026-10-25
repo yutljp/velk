@@ -39,7 +39,7 @@ impl Prelude {
         }
         let mut definitions: Vec<_> = self.definitions.iter().cloned().collect();
         definitions.sort_by_key(|definition| {
-            if definition.starts_with(PROJECT) {
+            if definition.starts_with(PROJECT) || definition.starts_with('#') {
                 0
             } else if [
                 "struct go_string {",
@@ -50,11 +50,59 @@ impl Prelude {
             .any(|prefix| definition.starts_with(prefix))
             {
                 1
-            } else {
+            } else if definition.starts_with("struct ") || definition.starts_with("union ") {
                 2
+            } else if definition.starts_with("extern ") {
+                4
+            } else {
+                3
             }
         });
-        format!("{START}{}\n{END}", definitions.join("\n\n"))
+        let mut dependencies = vec![0usize; definitions.len()];
+        let mut dependents = vec![Vec::new(); definitions.len()];
+        for (record, other) in definitions.iter().enumerate() {
+            let Some((name, _)) = other.split_once(" {") else {
+                continue;
+            };
+            if !name.starts_with("struct ") && !name.starts_with("union ") {
+                continue;
+            }
+            let prefix = format!("{name} ");
+            for (index, definition) in definitions.iter().enumerate() {
+                if index != record
+                    && definition.match_indices(&prefix).any(|(at, _)| {
+                        !definition[at + prefix.len()..]
+                            .trim_start()
+                            .starts_with('*')
+                    })
+                {
+                    dependencies[index] += 1;
+                    dependents[record].push(index);
+                }
+            }
+        }
+        let mut ready: BTreeSet<usize> = dependencies
+            .iter()
+            .enumerate()
+            .filter(|(_, count)| **count == 0)
+            .map(|(index, _)| index)
+            .collect();
+        let mut ordered = Vec::new();
+        while let Some(index) = ready.pop_first() {
+            ordered.push(definitions[index].as_str());
+            for dependent in &dependents[index] {
+                dependencies[*dependent] -= 1;
+                if dependencies[*dependent] == 0 {
+                    ready.insert(*dependent);
+                }
+            }
+        }
+        for (index, definition) in definitions.iter().enumerate() {
+            if dependencies[index] != 0 {
+                ordered.push(definition);
+            }
+        }
+        format!("{START}{}\n{END}", ordered.join("\n\n"))
     }
 }
 
@@ -73,8 +121,9 @@ pub(crate) fn project_section(declarations: &str) -> String {
 /// Combine standalone outputs with their support definitions printed once.
 #[must_use]
 pub fn combine(code: &str) -> String {
+    let code = super::globals::resolve(code);
     let mut prelude = Prelude::default();
-    let body = prelude.extract(code);
+    let body = prelude.extract(&code);
     format!("{}{body}", prelude.render())
 }
 

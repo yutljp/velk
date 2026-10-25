@@ -12,6 +12,8 @@
 0x201540 296 - unwind,prologue
 /* velk prelude */
 #include <stdarg.h>
+
+extern uint64_t g_202670[]; /* address: 0x202670 */
 /* end velk prelude */
 
 == 0x201310 -
@@ -70,10 +72,8 @@ fn <unnamed> @ 0x201330 (size 33)
 /* velk pseudo-C: sub_201360 @ 0x201360 */
 /* ref: 0x202670 .data.rel.ro */
 int32_t sub_201360(uint32_t a0, int32_t a1) {
-    uint64_t *const qword_202670 = (uint64_t *)0x202670ULL;
-
     uint32_t v1 = a0 % 3;
-    int64_t v3 = qword_202670[v1];
+    int64_t v3 = g_202670[v1];
     return ((uint64_t (*)())v3)(a1 & 0xffffffff);
 }
 -- signature

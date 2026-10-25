@@ -1,5 +1,8 @@
 # metrics/switch_jumptable.x86_64.O2.stripped.elf: elf x86_64 no entry, 1 functions, 0 lift failures, 0 unsupported, 0 gotos
 0x2011c0 527 - unwind,prologue
+/* velk prelude */
+extern uint32_t g_2023d0; /* address: 0x2023d0 */
+/* end velk prelude */
 
 == 0x2011c0 -
 -- decompile
@@ -7,7 +10,6 @@
 /* ref: 0x200158 .rodata */
 /* ref: 0x2023d0 .bss */
 int32_t sub_2011c0(int32_t a0) {
-    uint32_t *const dword_2023d0 = (uint32_t *)0x2023d0ULL;
     int32_t v2;
 
     if ((uint32_t)a0 > 9) {
@@ -15,86 +17,86 @@ int32_t sub_2011c0(int32_t a0) {
     } else {
         switch (a0) {
         case 0:
-            v2 = *dword_2023d0;
+            v2 = g_2023d0;
             break;
         case 1:
-            *dword_2023d0 = *dword_2023d0;
-            v2 = *dword_2023d0 + 1;
+            g_2023d0 = g_2023d0;
+            v2 = g_2023d0 + 1;
             break;
         case 2:
-            *dword_2023d0 = *dword_2023d0;
-            *dword_2023d0 += 1;
-            v2 = *dword_2023d0 + 2;
+            g_2023d0 = g_2023d0;
+            g_2023d0 += 1;
+            v2 = g_2023d0 + 2;
             break;
         case 3:
-            *dword_2023d0 = *dword_2023d0;
-            *dword_2023d0 += 1;
-            *dword_2023d0 += 2;
-            v2 = *dword_2023d0 + 3;
+            g_2023d0 = g_2023d0;
+            g_2023d0 += 1;
+            g_2023d0 += 2;
+            v2 = g_2023d0 + 3;
             break;
         case 4:
-            *dword_2023d0 = *dword_2023d0;
-            *dword_2023d0 += 1;
-            *dword_2023d0 += 2;
-            *dword_2023d0 += 3;
-            v2 = *dword_2023d0 + 4;
+            g_2023d0 = g_2023d0;
+            g_2023d0 += 1;
+            g_2023d0 += 2;
+            g_2023d0 += 3;
+            v2 = g_2023d0 + 4;
             break;
         case 5:
-            *dword_2023d0 = *dword_2023d0;
-            *dword_2023d0 += 1;
-            *dword_2023d0 += 2;
-            *dword_2023d0 += 3;
-            *dword_2023d0 += 4;
-            v2 = *dword_2023d0 + 5;
+            g_2023d0 = g_2023d0;
+            g_2023d0 += 1;
+            g_2023d0 += 2;
+            g_2023d0 += 3;
+            g_2023d0 += 4;
+            v2 = g_2023d0 + 5;
             break;
         case 6:
-            *dword_2023d0 = *dword_2023d0;
-            *dword_2023d0 += 1;
-            *dword_2023d0 += 2;
-            *dword_2023d0 += 3;
-            *dword_2023d0 += 4;
-            *dword_2023d0 += 5;
-            v2 = *dword_2023d0 + 6;
+            g_2023d0 = g_2023d0;
+            g_2023d0 += 1;
+            g_2023d0 += 2;
+            g_2023d0 += 3;
+            g_2023d0 += 4;
+            g_2023d0 += 5;
+            v2 = g_2023d0 + 6;
             break;
         case 7:
-            *dword_2023d0 = *dword_2023d0;
-            *dword_2023d0 += 1;
-            *dword_2023d0 += 2;
-            *dword_2023d0 += 3;
-            *dword_2023d0 += 4;
-            *dword_2023d0 += 5;
-            *dword_2023d0 += 6;
-            v2 = *dword_2023d0 + 7;
+            g_2023d0 = g_2023d0;
+            g_2023d0 += 1;
+            g_2023d0 += 2;
+            g_2023d0 += 3;
+            g_2023d0 += 4;
+            g_2023d0 += 5;
+            g_2023d0 += 6;
+            v2 = g_2023d0 + 7;
             break;
         case 8:
-            *dword_2023d0 = *dword_2023d0;
-            *dword_2023d0 += 1;
-            *dword_2023d0 += 2;
-            *dword_2023d0 += 3;
-            *dword_2023d0 += 4;
-            *dword_2023d0 += 5;
-            *dword_2023d0 += 6;
-            *dword_2023d0 += 7;
-            v2 = *dword_2023d0 + 8;
+            g_2023d0 = g_2023d0;
+            g_2023d0 += 1;
+            g_2023d0 += 2;
+            g_2023d0 += 3;
+            g_2023d0 += 4;
+            g_2023d0 += 5;
+            g_2023d0 += 6;
+            g_2023d0 += 7;
+            v2 = g_2023d0 + 8;
             break;
         case 9:
-            *dword_2023d0 = *dword_2023d0;
-            *dword_2023d0 += 1;
-            *dword_2023d0 += 2;
-            *dword_2023d0 += 3;
-            *dword_2023d0 += 4;
-            *dword_2023d0 += 5;
-            *dword_2023d0 += 6;
-            *dword_2023d0 += 7;
-            *dword_2023d0 += 8;
-            v2 = *dword_2023d0 + 9;
+            g_2023d0 = g_2023d0;
+            g_2023d0 += 1;
+            g_2023d0 += 2;
+            g_2023d0 += 3;
+            g_2023d0 += 4;
+            g_2023d0 += 5;
+            g_2023d0 += 6;
+            g_2023d0 += 7;
+            g_2023d0 += 8;
+            v2 = g_2023d0 + 9;
             break;
         default:
             __builtin_unreachable();
         }
     }
-    *dword_2023d0 = v2;
-    return *dword_2023d0;
+    g_2023d0 = v2;
+    return g_2023d0;
 }
 -- signature
 int32_t (int32_t a0)

@@ -1,14 +1,15 @@
 # arm32/strings.thumb.O0.elf: elf arm32 no entry, 1 functions, 0 lift failures, 0 unsupported, 0 gotos
 0x20118 14 pick symtab,dwarf
+/* velk prelude */
+extern uint32_t kName; /* address: 0x30128 */
+/* end velk prelude */
 
 == 0x20118 pick
 -- decompile
 /* velk pseudo-C: pick @ 0x20118 */
 /* ref: 0x30128 .data */
 int pick(void) {
-    uint32_t *const kName = (uint32_t *)0x30128ULL;
-
-    return *(uint8_t *)(*kName + 2);
+    return *(uint8_t *)(kName + 2);
 }
 -- signature
 int ()

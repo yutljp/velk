@@ -1,12 +1,14 @@
 # metrics/switch_jumptable.aarch64.O0.stripped.elf: elf aarch64 no entry, 1 functions, 0 lift failures, 0 unsupported, 0 gotos
 0x21018c 880 - unwind,prologue
+/* velk prelude */
+extern uint32_t g_2204fc; /* address: 0x2204fc */
+/* end velk prelude */
 
 == 0x21018c -
 -- decompile
 /* velk pseudo-C: sub_21018c @ 0x21018c */
 /* ref: 0x2204fc .bss */
 int32_t sub_21018c(int32_t a0) {
-    uint32_t *const dword_2204fc = (uint32_t *)0x2204fcULL;
     int32_t i; /* [sp-8] */
     int32_t i_2; /* [sp-c] */
     int32_t i_3; /* [sp-10] */
@@ -20,66 +22,66 @@ int32_t sub_21018c(int32_t a0) {
 
     if (a0 == 0) {
         for (i = 0; i < 1; i++) {
-            *dword_2204fc += i;
+            g_2204fc += i;
         }
-        return *dword_2204fc;
+        return g_2204fc;
     }
     if (a0 == 1) {
         for (i_2 = 0; i_2 < 2; i_2++) {
-            *dword_2204fc += i_2;
+            g_2204fc += i_2;
         }
-        return *dword_2204fc;
+        return g_2204fc;
     }
     if (a0 == 2) {
         for (i_3 = 0; i_3 < 3; i_3++) {
-            *dword_2204fc += i_3;
+            g_2204fc += i_3;
         }
-        return *dword_2204fc;
+        return g_2204fc;
     }
     if (a0 - 3 == 0) {
         for (i_4 = 0; i_4 < 4; i_4++) {
-            *dword_2204fc += i_4;
+            g_2204fc += i_4;
         }
-        return *dword_2204fc;
+        return g_2204fc;
     }
     if (a0 - 4 == 0) {
         for (i_5 = 0; i_5 < 5; i_5++) {
-            *dword_2204fc += i_5;
+            g_2204fc += i_5;
         }
-        return *dword_2204fc;
+        return g_2204fc;
     }
     if (a0 - 5 == 0) {
         for (i_6 = 0; i_6 < 6; i_6++) {
-            *dword_2204fc += i_6;
+            g_2204fc += i_6;
         }
-        return *dword_2204fc;
+        return g_2204fc;
     }
     if (a0 - 6 == 0) {
         for (i_7 = 0; i_7 < 7; i_7++) {
-            *dword_2204fc += i_7;
+            g_2204fc += i_7;
         }
-        return *dword_2204fc;
+        return g_2204fc;
     }
     if (a0 - 7 == 0) {
         for (i_8 = 0; i_8 < 8; i_8++) {
-            *dword_2204fc += i_8;
+            g_2204fc += i_8;
         }
-        return *dword_2204fc;
+        return g_2204fc;
     }
     if (a0 - 8 == 0) {
         for (i_9 = 0; i_9 < 9; i_9++) {
-            *dword_2204fc += i_9;
+            g_2204fc += i_9;
         }
-        return *dword_2204fc;
+        return g_2204fc;
     }
     if (a0 - 9 == 0) {
         for (i_10 = 0; i_10 < 10; i_10++) {
-            *dword_2204fc += i_10;
+            g_2204fc += i_10;
         }
-        return *dword_2204fc;
+        return g_2204fc;
     }
-    *dword_2204fc = 0xffffffff;
-    return *dword_2204fc;
+    g_2204fc = 0xffffffff;
+    return g_2204fc;
 }
 -- signature
 int32_t (int32_t a0)

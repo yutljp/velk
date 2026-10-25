@@ -8,6 +8,9 @@
 0x100000990 48 - function-starts
 0x1000009c0 32 - function-starts
 0x1000009e0 15 - entry,function-starts
+/* velk prelude */
+extern uint64_t g_1000021e0; /* address: 0x1000021e0 */
+/* end velk prelude */
 
 == 0x1000008b0 -[Counter add:with:]
 -- decompile
@@ -103,9 +106,7 @@ fn -[Counter twice:] @ 0x100000930 (size 32)
 /* ref: 0x100001060 __got */
 /* ref: 0x1000021e0 -> 0x100000a15 "add:with:" */
 int32_t sub_100000950(int64_t a0, int64_t a1, int64_t a2) {
-    uint64_t *const qword_1000021e0 = (uint64_t *)0x1000021e0ULL;
-
-    return objc_msgSend(a0, *qword_1000021e0 /* @selector(add:with:) */, a1, a2);
+    return objc_msgSend(a0, g_1000021e0 /* @selector(add:with:) */, a1, a2);
 }
 -- signature
 int32_t (int64_t a0, int64_t a1, int64_t a2)

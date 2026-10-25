@@ -1,5 +1,8 @@
 # metrics/switch_jumptable.x86_64.O0.stripped.elf: elf x86_64 no entry, 1 functions, 0 lift failures, 0 unsupported, 0 gotos
 0x2011c0 592 - unwind,prologue
+/* velk prelude */
+extern uint32_t g_202410; /* address: 0x202410 */
+/* end velk prelude */
 
 == 0x2011c0 -
 -- decompile
@@ -7,7 +10,6 @@
 /* ref: 0x200158 .rodata */
 /* ref: 0x202410 .bss */
 int32_t sub_2011c0(int32_t a0) {
-    uint32_t *const dword_202410 = (uint32_t *)0x202410ULL;
     int32_t i; /* [sp-10] */
     int32_t i_2; /* [sp-14] */
     int32_t i_3; /* [sp-18] */
@@ -23,60 +25,60 @@ int32_t sub_2011c0(int32_t a0) {
         switch (a0) {
         case 0:
             for (i = 0; i < 1; i++) {
-                *dword_202410 += i;
+                g_202410 += i;
             }
-            return *dword_202410;
+            return g_202410;
         case 1:
             for (i_2 = 0; i_2 < 2; i_2++) {
-                *dword_202410 += i_2;
+                g_202410 += i_2;
             }
-            return *dword_202410;
+            return g_202410;
         case 2:
             for (i_3 = 0; i_3 < 3; i_3++) {
-                *dword_202410 += i_3;
+                g_202410 += i_3;
             }
-            return *dword_202410;
+            return g_202410;
         case 3:
             for (i_4 = 0; i_4 < 4; i_4++) {
-                *dword_202410 += i_4;
+                g_202410 += i_4;
             }
-            return *dword_202410;
+            return g_202410;
         case 4:
             for (i_5 = 0; i_5 < 5; i_5++) {
-                *dword_202410 += i_5;
+                g_202410 += i_5;
             }
-            return *dword_202410;
+            return g_202410;
         case 5:
             for (i_6 = 0; i_6 < 6; i_6++) {
-                *dword_202410 += i_6;
+                g_202410 += i_6;
             }
-            return *dword_202410;
+            return g_202410;
         case 6:
             for (i_7 = 0; i_7 < 7; i_7++) {
-                *dword_202410 += i_7;
+                g_202410 += i_7;
             }
-            return *dword_202410;
+            return g_202410;
         case 7:
             for (i_8 = 0; i_8 < 8; i_8++) {
-                *dword_202410 += i_8;
+                g_202410 += i_8;
             }
-            return *dword_202410;
+            return g_202410;
         case 8:
             for (i_9 = 0; i_9 < 9; i_9++) {
-                *dword_202410 += i_9;
+                g_202410 += i_9;
             }
-            return *dword_202410;
+            return g_202410;
         case 9:
             for (i_10 = 0; i_10 < 10; i_10++) {
-                *dword_202410 += i_10;
+                g_202410 += i_10;
             }
-            return *dword_202410;
+            return g_202410;
         default:
             break;
         }
     }
-    *dword_202410 = 0xffffffff;
-    return *dword_202410;
+    g_202410 = 0xffffffff;
+    return g_202410;
 }
 -- signature
 int32_t (int32_t a0)

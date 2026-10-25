@@ -111,6 +111,9 @@ fn copy_address(value: &Expr, bytes: u64, view: View, ctx: &Ctx<'_>) -> Option<S
         return Some(pointer.clone());
     }
     if let Expr::Const(value) = value {
+        if bytes > view.width() {
+            return Some(ctx.globals.array_pointer(*value, view));
+        }
         return naming::global_pointer(&Expr::Const(*value), view, ctx);
     }
     let address = expr::print_address(value, ctx);

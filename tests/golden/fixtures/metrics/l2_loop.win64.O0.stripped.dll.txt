@@ -3,20 +3,22 @@
 0x180001050 51 - unwind,prologue
 0x180001090 94 - unwind,prologue
 0x1800010f0 97 - unwind,prologue
+/* velk prelude */
+extern uint32_t g_180003000; /* address: 0x180003000 */
+/* end velk prelude */
 
 == 0x180001000 -
 -- decompile
 /* velk pseudo-C: sub_180001000 @ 0x180001000 */
 /* ref: 0x180003000 .data */
 int32_t sub_180001000(int32_t a0) {
-    uint32_t *const dword_180003000 = (uint32_t *)0x180003000ULL;
     uint32_t result; /* [sp-8] */
     int32_t i; /* [sp-c] */
 
     result = 0;
     for (i = 0; i < a0; i++) {
         result += i;
-        *dword_180003000 = result;
+        g_180003000 = result;
     }
     return result;
 }
@@ -47,7 +49,6 @@ fn <unnamed> @ 0x180001000 (size 80)
 /* velk pseudo-C: sub_180001050 @ 0x180001050 */
 /* ref: 0x180003000 .data */
 int32_t sub_180001050(int32_t a0) {
-    uint32_t *const dword_180003000 = (uint32_t *)0x180003000ULL;
     int32_t local_0; /* [sp-4] */
     uint32_t result; /* [sp-8] */
 
@@ -56,7 +57,7 @@ int32_t sub_180001050(int32_t a0) {
     do {
         result += 1;
         local_0 -= 1;
-        *dword_180003000 = result;
+        g_180003000 = result;
     } while (local_0 > 0);
     return result;
 }
@@ -84,7 +85,6 @@ fn <unnamed> @ 0x180001050 (size 51)
 /* velk pseudo-C: sub_180001090 @ 0x180001090 */
 /* ref: 0x180003000 .data */
 int32_t sub_180001090(int32_t a0) {
-    uint32_t *const dword_180003000 = (uint32_t *)0x180003000ULL;
     uint32_t result; /* [sp-8] */
     int32_t i; /* [sp-c] */
 
@@ -92,7 +92,7 @@ int32_t sub_180001090(int32_t a0) {
     for (i = 0; i < a0; i++) {
         if ((i & 0x1) != 0) {
             result += i;
-            *dword_180003000 = result;
+            g_180003000 = result;
         }
     }
     return result;

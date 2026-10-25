@@ -4,6 +4,9 @@
 0x2012c0 16 truncate_to_int symtab,dwarf,unwind
 0x2012d0 32 widen symtab,dwarf,unwind
 0x2012f0 79 compare_doubles symtab,dwarf,unwind
+/* velk prelude */
+extern double g_200120; /* address: 0x200120 */
+/* end velk prelude */
 
 == 0x2011f0 average
 -- decompile
@@ -90,9 +93,7 @@ fn truncate_to_int @ 0x2012c0 (size 16)
 /* velk pseudo-C: widen @ 0x2012d0 */
 /* ref: 0x200120 .rodata */
 double widen(float x) {
-    double *const double_200120 = (double *)0x200120ULL;
-
-    return x * *double_200120;
+    return x * g_200120;
 }
 -- signature
 double (float x)

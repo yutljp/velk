@@ -3,6 +3,10 @@ use std::collections::{BTreeMap, HashMap, HashSet};
 
 use crate::ir::{CType, Precision};
 
+mod combined;
+
+pub(super) use combined::resolve;
+
 #[derive(Clone, Copy)]
 pub(super) enum View {
     Unsigned(u8),
@@ -10,6 +14,13 @@ pub(super) enum View {
 }
 
 impl View {
+    pub(super) fn width(self) -> u64 {
+        match self {
+            Self::Unsigned(width) => u64::from(width),
+            Self::Float(precision) => u64::from(precision.bits() / 8),
+        }
+    }
+
     fn key(self) -> u8 {
         match self {
             Self::Unsigned(width) => width,
@@ -36,11 +47,13 @@ impl View {
 struct Global {
     name: String,
     view: View,
+    array: bool,
 }
 
 #[derive(Default)]
 struct Used {
     objects: BTreeMap<u64, String>,
+    view_names: BTreeMap<u64, String>,
     views: BTreeMap<(u64, u8), Global>,
     names: HashSet<String>,
 }
@@ -105,27 +118,33 @@ impl Globals {
         {
             return pointer;
         }
+        if let Some((base, offset)) = self.containing(address)
+            && offset
+                .checked_add(view.width())
+                .is_some_and(|end| end <= self.sizes[&base])
+            && let Some(pointer) = self.object_pointer(base)
+        {
+            return if offset == 0 {
+                format!("(({} *){pointer})", view.ty())
+            } else {
+                format!("(({} *)((uint8_t *){pointer} + {offset}))", view.ty())
+            };
+        }
         let key = (address, view.key());
         let mut used = self.used.borrow_mut();
         if let Some(global) = used.views.get(&key) {
-            return global.name.clone();
+            return format!("(&{})", global.name);
         }
-        let base = self.names.get(&address).cloned().unwrap_or_else(|| {
-            let kind = match view {
-                View::Unsigned(1) => "byte",
-                View::Unsigned(2) => "word",
-                View::Unsigned(4) => "dword",
-                View::Unsigned(_) => "qword",
-                View::Float(Precision::Single) => "float",
-                View::Float(Precision::Double) => "double",
-            };
-            format!("{kind}_{address:x}")
-        });
+        let base = self
+            .names
+            .get(&address)
+            .cloned()
+            .unwrap_or_else(|| format!("g_{address:x}"));
         let mut name = base.clone();
-        if used.views.keys().any(|(other, _)| *other == address) {
-            name = format!("{base}_{}", view.suffix());
+        if let Some(name_at_address) = used.view_names.get(&address) {
+            name = format!("{name_at_address}_{}", view.suffix());
         } else if self.repeated.contains(&base) || used.names.contains(&name) {
-            name = format!("{base}_{address:x}_{}", view.suffix());
+            name = format!("{base}_{address:x}");
         }
         let candidate = name.clone();
         let mut suffix = 2;
@@ -134,14 +153,27 @@ impl Globals {
             suffix += 1;
         }
         used.names.insert(name.clone());
+        used.view_names
+            .entry(address)
+            .or_insert_with(|| name.clone());
         used.views.insert(
             key,
             Global {
                 name: name.clone(),
                 view,
+                array: false,
             },
         );
-        name
+        format!("(&{name})")
+    }
+
+    pub(super) fn array_pointer(&self, address: u64, view: View) -> String {
+        let pointer = self.pointer(address, view);
+        if let Some(global) = self.used.borrow_mut().views.get_mut(&(address, view.key())) {
+            global.array = true;
+            return global.name.clone();
+        }
+        pointer
     }
 
     pub(super) fn add_types(
@@ -248,10 +280,10 @@ impl Globals {
             .borrow()
             .objects
             .iter()
-            .filter(|(_, name)| super::variables::mentions(body, name))
+            .filter(|(_, name)| super::function::code_mentions(body, name))
             .map(|(address, name)| {
                 format!(
-                    "extern {};\n",
+                    "extern {}; /* address: 0x{address:x} */\n\n",
                     match &self.types[address] {
                         CType::Array(element) => format!("{element} {name}[]"),
                         ty => super::declaration(ty, name),
@@ -261,18 +293,196 @@ impl Globals {
             .collect()
     }
 
-    pub(super) fn declarations(&self, body: &str) -> Vec<String> {
-        self.used
-            .borrow()
-            .views
-            .iter()
-            .filter(|(_, global)| super::variables::mentions(body, &global.name))
-            .map(|((address, _), global)| {
-                let ty = global.view.ty();
-                format!("{ty} *const {} = ({ty} *)0x{address:x}ULL;", global.name)
-            })
-            .collect()
+    pub(super) fn finish(&self, body: &str, code: &mut String) -> String {
+        let used = self.used.borrow();
+        let mut groups: Vec<Vec<(u64, &Global)>> = Vec::new();
+        let mut end = 0;
+        for ((address, _), global) in &used.views {
+            if !super::function::code_mentions(body, &global.name) {
+                continue;
+            }
+            if groups.is_empty()
+                || (*address >= end
+                    && groups
+                        .last()
+                        .and_then(|group| group.last())
+                        .is_none_or(|(previous, _)| previous != address))
+            {
+                groups.push(Vec::new());
+            }
+            end = end.max(address.saturating_add(global.view.width()));
+            groups
+                .last_mut()
+                .expect("a group was just inserted")
+                .push((*address, global));
+        }
+        let mut declarations = self.object_declarations(body);
+        let mut replacements = HashMap::new();
+        for name in used.objects.values() {
+            replacements.insert(format!("*(&{name})"), name.clone());
+        }
+        for group in groups {
+            let (base, first) = group[0];
+            let mut primary = first;
+            let mut extent = 0;
+            let mut array = false;
+            for (address, global) in &group {
+                if *address == base && global.view.width() > primary.view.width() {
+                    primary = global;
+                }
+                extent = extent.max((address - base).saturating_add(global.view.width()));
+                array |= global.array;
+            }
+            let ty = if extent > primary.view.width() {
+                "uint8_t"
+            } else {
+                primary.view.ty()
+            };
+            array |= extent > primary.view.width();
+            let name = &used.view_names[&base];
+            let pointer = if array {
+                name.clone()
+            } else {
+                format!("(&{name})")
+            };
+            for (address, global) in &group {
+                let offset = address - base;
+                let view_pointer = if offset == 0 && global.view.ty() == ty {
+                    pointer.clone()
+                } else if offset == 0 {
+                    format!("(({} *){pointer})", global.view.ty())
+                } else {
+                    format!(
+                        "(({} *)((uint8_t *){pointer} + {offset}))",
+                        global.view.ty()
+                    )
+                };
+                if !array && offset == 0 && global.view.ty() == ty {
+                    replacements.insert(format!("*(&{})", global.name), name.clone());
+                } else if array && offset == 0 && global.view.ty() == ty {
+                    replacements.insert(format!("*(&{})", global.name), format!("{name}[0]"));
+                } else {
+                    replacements.insert(format!("*(&{})", global.name), format!("*{view_pointer}"));
+                }
+                replacements.insert(format!("(&{})", global.name), view_pointer.clone());
+                if global.array {
+                    replacements.insert(global.name.clone(), view_pointer.clone());
+                }
+                // Indexed accesses use the pointer without an address operator.
+                replacements.insert(format!("{}[", global.name), format!("{view_pointer}["));
+            }
+            let suffix = if array { "[]" } else { "" };
+            declarations.push_str(&format!(
+                "extern {ty} {name}{suffix}; /* address: 0x{base:x} */\n\n"
+            ));
+        }
+        *code = replace_expressions(code, &replacements);
+        declarations
     }
+}
+
+fn replace_expressions(code: &str, replacements: &HashMap<String, String>) -> String {
+    let mut output = String::new();
+    let bytes = code.as_bytes();
+    let mut at = 0;
+    let mut copied = 0;
+    let mut member = false;
+    let mut record_type = false;
+    let mut record_tag = false;
+    let mut record_braces = 0usize;
+    while at < bytes.len() {
+        if bytes[at..].starts_with(b"//") {
+            while at < bytes.len() && bytes[at] != b'\n' {
+                at += 1;
+            }
+        } else if bytes[at..].starts_with(b"/*") {
+            at += 2;
+            while at < bytes.len() && !bytes[at..].starts_with(b"*/") {
+                at += 1;
+            }
+            at = at.saturating_add(2).min(bytes.len());
+        } else if matches!(bytes[at], b'\'' | b'"') {
+            let quote = bytes[at];
+            at += 1;
+            while at < bytes.len() {
+                let next = bytes[at];
+                at += 1;
+                if next == b'\\' {
+                    at = at.saturating_add(1).min(bytes.len());
+                } else if next == quote {
+                    break;
+                }
+            }
+        } else if (record_type || record_tag) && bytes[at..].starts_with(b"__attribute__(") {
+            at += b"__attribute__(".len();
+            let mut depth = 1usize;
+            while at < bytes.len() && depth != 0 {
+                if bytes[at] == b'(' {
+                    depth += 1;
+                }
+                if bytes[at] == b')' {
+                    depth -= 1;
+                }
+                at += 1;
+            }
+        } else {
+            let start = at;
+            let was_member = member;
+            member = false;
+            if bytes[at..].starts_with(b"*(&") || bytes[at..].starts_with(b"(&") {
+                let prefix = if bytes[at] == b'*' { 3 } else { 2 };
+                at += prefix;
+                while at < bytes.len() && (bytes[at].is_ascii_alphanumeric() || bytes[at] == b'_') {
+                    at += 1;
+                }
+                if bytes.get(at) == Some(&b')') {
+                    at += 1;
+                }
+            } else if bytes[at].is_ascii_alphabetic() || bytes[at] == b'_' {
+                while at < bytes.len() && (bytes[at].is_ascii_alphanumeric() || bytes[at] == b'_') {
+                    at += 1;
+                }
+                if bytes.get(at) == Some(&b'[') {
+                    at += 1;
+                }
+            } else {
+                if bytes[at] == b'{' && (record_type || record_tag || record_braces != 0) {
+                    record_braces += 1;
+                    record_type = false;
+                } else if bytes[at] == b'}' && record_braces != 0 {
+                    record_braces -= 1;
+                }
+                if bytes[at..].starts_with(b"->") {
+                    member = true;
+                    at += 2;
+                    continue;
+                }
+                member = if bytes[at].is_ascii_whitespace() {
+                    was_member
+                } else {
+                    record_tag = false;
+                    bytes[at] == b'.'
+                };
+                at += 1;
+                continue;
+            }
+            if !was_member
+                && !record_type
+                && record_braces == 0
+                && let Some(to) = replacements.get(&code[start..at])
+            {
+                output.push_str(&code[copied..start]);
+                output.push_str(to);
+                copied = at;
+            }
+            if bytes[start].is_ascii_alphabetic() || bytes[start] == b'_' {
+                record_tag = record_type;
+                record_type = matches!(&code[start..at], "struct" | "union");
+            }
+        }
+    }
+    output.push_str(&code[copied..]);
+    output
 }
 
 fn identifier(name: &str) -> String {
@@ -401,14 +611,15 @@ mod tests {
         let float = globals.pointer(0x1000, View::Float(Precision::Single));
         let adjacent = globals.pointer(0x1001, View::Unsigned(1));
         assert_eq!(wide, globals.pointer(0x1000, View::Unsigned(8)));
-        let declarations = globals.declarations(&format!("{wide} {byte} {float} {adjacent}"));
-        assert_eq!(declarations.len(), 4);
-        assert!(declarations.contains(&format!("uint64_t *const {wide} = (uint64_t *)0x1000ULL;")));
-        assert!(declarations.contains(&format!("uint8_t *const {byte} = (uint8_t *)0x1000ULL;")));
-        assert!(declarations.contains(&format!("float *const {float} = (float *)0x1000ULL;")));
-        assert!(declarations.contains(&format!(
-            "uint8_t *const {adjacent} = (uint8_t *)0x1001ULL;"
-        )));
+        let body = format!("*{wide}; *{byte}; *{float}; *{adjacent};");
+        let mut code = body.clone();
+        let declarations = globals.finish(&body, &mut code);
+        assert_eq!(declarations.matches("extern ").count(), 1);
+        assert!(declarations.contains("extern uint64_t value; /* address: 0x1000 */"));
+        assert!(code.contains("value;"), "{code}");
+        assert!(code.contains("uint8_t *"), "{code}");
+        assert!(code.contains("float *"), "{code}");
+        assert!(code.contains("+ 1"), "{code}");
     }
 
     #[test]
@@ -424,15 +635,48 @@ mod tests {
             ]),
             ..Default::default()
         };
-        let globals = Globals::new(&symbols, ["value".to_owned(), "value_10_u32".to_owned()]);
+        let globals = Globals::new(&symbols, ["value".to_owned(), "value_10".to_owned()]);
         let view = globals.pointer(0x10, View::Unsigned(4));
-        assert_eq!(view, "value_10_u32_2");
-        assert_eq!(globals.pointer(0x20, View::Unsigned(4)), "same_name_20_u32");
-        assert_eq!(globals.pointer(0x30, View::Unsigned(4)), "same_name_30_u32");
-        assert_eq!(globals.pointer(0x40, View::Unsigned(4)), "data_return");
-        assert_eq!(globals.pointer(0x50, View::Unsigned(4)), "data_32bit");
-        assert_eq!(globals.pointer(0x60, View::Unsigned(4)), "data_uint32_t");
-        assert!(globals.declarations("value_10_u32_20").is_empty());
-        assert_eq!(globals.declarations(&view).len(), 1);
+        assert_eq!(view, "(&value_10_2)");
+        assert_eq!(globals.pointer(0x20, View::Unsigned(4)), "(&same_name_20)");
+        assert_eq!(globals.pointer(0x30, View::Unsigned(4)), "(&same_name_30)");
+        assert_eq!(globals.pointer(0x40, View::Unsigned(4)), "(&data_return)");
+        assert_eq!(globals.pointer(0x50, View::Unsigned(4)), "(&data_32bit)");
+        assert_eq!(globals.pointer(0x60, View::Unsigned(4)), "(&data_uint32_t)");
+        assert!(
+            globals
+                .finish("value_10_u32_20", &mut String::new())
+                .is_empty()
+        );
+        assert_eq!(
+            globals
+                .finish(&view, &mut String::new())
+                .matches("extern ")
+                .count(),
+            1
+        );
+    }
+
+    #[test]
+    fn view_replacement_is_simultaneous_and_leaves_literals_unchanged() {
+        let symbols = super::super::Symbols {
+            data: HashMap::from([(0x1000, "value".to_owned())]),
+            ..Default::default()
+        };
+        let globals = Globals::new(&symbols, []);
+        let float = globals.pointer(0x1000, View::Float(Precision::Single));
+        let wide = globals.pointer(0x1000, View::Unsigned(8));
+        let body = format!("*{float}; *{wide}; puts(\"*{wide} λ\"); /* *{float} */");
+        let mut code = body.clone();
+        let declarations = globals.finish(&body, &mut code);
+        assert!(
+            declarations.contains("extern uint64_t value;"),
+            "{declarations}"
+        );
+        assert!(code.starts_with("*((float *)(&value)); value;"), "{code}");
+        assert!(
+            code.contains(&format!("puts(\"*{wide} λ\"); /* *{float} */")),
+            "{code}"
+        );
     }
 }

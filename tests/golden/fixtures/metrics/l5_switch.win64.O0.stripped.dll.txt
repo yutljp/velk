@@ -17,6 +17,9 @@
 0x1800011a0 16 - prologue
 0x1800011b0 16 - prologue
 0x1800011c0 94 - unwind,prologue
+/* velk prelude */
+extern uint32_t g_180003000; /* address: 0x180003000 */
+/* end velk prelude */
 
 == 0x180001000 -
 -- decompile
@@ -24,7 +27,6 @@
 /* ref: 0x180002000 .rdata */
 /* ref: 0x180003000 .data */
 int32_t sub_180001000(int32_t a0) {
-    uint32_t *const dword_180003000 = (uint32_t *)0x180003000ULL;
     int64_t local_0; /* [sp-10] */
 
     uint32_t v1 = a0 - 10;
@@ -33,58 +35,58 @@ int32_t sub_180001000(int32_t a0) {
         switch (local_0 - 15) {
         case -15:
             sub_1800010c0();
-            return *dword_180003000;
+            return g_180003000;
         case -14:
             sub_1800010d0();
-            return *dword_180003000;
+            return g_180003000;
         case -13:
             sub_1800010e0();
-            return *dword_180003000;
+            return g_180003000;
         case -12:
             sub_1800010f0();
-            return *dword_180003000;
+            return g_180003000;
         case -11:
             sub_180001100();
-            return *dword_180003000;
+            return g_180003000;
         case -10:
             sub_180001110();
-            return *dword_180003000;
+            return g_180003000;
         case -9:
             sub_180001120();
-            return *dword_180003000;
+            return g_180003000;
         case -8:
             sub_180001130();
-            return *dword_180003000;
+            return g_180003000;
         case -7:
             sub_180001140();
-            return *dword_180003000;
+            return g_180003000;
         case -6:
             sub_180001150();
-            return *dword_180003000;
+            return g_180003000;
         case -5:
             sub_180001160();
-            return *dword_180003000;
+            return g_180003000;
         case -4:
             sub_180001170();
-            return *dword_180003000;
+            return g_180003000;
         case -3:
             sub_180001180();
-            return *dword_180003000;
+            return g_180003000;
         case -2:
             sub_180001190();
-            return *dword_180003000;
+            return g_180003000;
         case -1:
             sub_1800011a0();
-            return *dword_180003000;
+            return g_180003000;
         case 0:
             sub_1800011b0();
-            return *dword_180003000;
+            return g_180003000;
         default:
             break;
         }
     }
-    *dword_180003000 = 0;
-    return *dword_180003000;
+    g_180003000 = 0;
+    return g_180003000;
 }
 -- signature
 int32_t (int32_t a0)
@@ -160,9 +162,7 @@ fn <unnamed> @ 0x180001000 (size 185)
 /* velk pseudo-C: sub_1800010c0 @ 0x1800010c0 */
 /* ref: 0x180003000 .data */
 void sub_1800010c0(void) {
-    uint32_t *const dword_180003000 = (uint32_t *)0x180003000ULL;
-
-    *dword_180003000 += 11;
+    g_180003000 += 11;
 }
 -- signature
 void ()
@@ -181,9 +181,7 @@ fn <unnamed> @ 0x1800010c0 (size 16)
 /* velk pseudo-C: sub_1800010d0 @ 0x1800010d0 */
 /* ref: 0x180003000 .data */
 void sub_1800010d0(void) {
-    uint32_t *const dword_180003000 = (uint32_t *)0x180003000ULL;
-
-    *dword_180003000 ^= 18;
+    g_180003000 ^= 18;
 }
 -- signature
 void ()
@@ -202,9 +200,7 @@ fn <unnamed> @ 0x1800010d0 (size 16)
 /* velk pseudo-C: sub_1800010e0 @ 0x1800010e0 */
 /* ref: 0x180003000 .data */
 void sub_1800010e0(void) {
-    uint32_t *const dword_180003000 = (uint32_t *)0x180003000ULL;
-
-    *dword_180003000 += -25;
+    g_180003000 += -25;
 }
 -- signature
 void ()
@@ -223,9 +219,7 @@ fn <unnamed> @ 0x1800010e0 (size 16)
 /* velk pseudo-C: sub_1800010f0 @ 0x1800010f0 */
 /* ref: 0x180003000 .data */
 void sub_1800010f0(void) {
-    uint32_t *const dword_180003000 = (uint32_t *)0x180003000ULL;
-
-    *dword_180003000 |= 32;
+    g_180003000 |= 32;
 }
 -- signature
 void ()
@@ -244,9 +238,7 @@ fn <unnamed> @ 0x1800010f0 (size 16)
 /* velk pseudo-C: sub_180001100 @ 0x180001100 */
 /* ref: 0x180003000 .data */
 void sub_180001100(void) {
-    uint32_t *const dword_180003000 = (uint32_t *)0x180003000ULL;
-
-    *dword_180003000 += 39;
+    g_180003000 += 39;
 }
 -- signature
 void ()
@@ -265,9 +257,7 @@ fn <unnamed> @ 0x180001100 (size 16)
 /* velk pseudo-C: sub_180001110 @ 0x180001110 */
 /* ref: 0x180003000 .data */
 void sub_180001110(void) {
-    uint32_t *const dword_180003000 = (uint32_t *)0x180003000ULL;
-
-    *dword_180003000 ^= 46;
+    g_180003000 ^= 46;
 }
 -- signature
 void ()
@@ -286,9 +276,7 @@ fn <unnamed> @ 0x180001110 (size 16)
 /* velk pseudo-C: sub_180001120 @ 0x180001120 */
 /* ref: 0x180003000 .data */
 void sub_180001120(void) {
-    uint32_t *const dword_180003000 = (uint32_t *)0x180003000ULL;
-
-    *dword_180003000 += -53;
+    g_180003000 += -53;
 }
 -- signature
 void ()
@@ -307,9 +295,7 @@ fn <unnamed> @ 0x180001120 (size 16)
 /* velk pseudo-C: sub_180001130 @ 0x180001130 */
 /* ref: 0x180003000 .data */
 void sub_180001130(void) {
-    uint32_t *const dword_180003000 = (uint32_t *)0x180003000ULL;
-
-    *dword_180003000 |= 60;
+    g_180003000 |= 60;
 }
 -- signature
 void ()
@@ -328,9 +314,7 @@ fn <unnamed> @ 0x180001130 (size 16)
 /* velk pseudo-C: sub_180001140 @ 0x180001140 */
 /* ref: 0x180003000 .data */
 void sub_180001140(void) {
-    uint32_t *const dword_180003000 = (uint32_t *)0x180003000ULL;
-
-    *dword_180003000 += 67;
+    g_180003000 += 67;
 }
 -- signature
 void ()
@@ -349,9 +333,7 @@ fn <unnamed> @ 0x180001140 (size 16)
 /* velk pseudo-C: sub_180001150 @ 0x180001150 */
 /* ref: 0x180003000 .data */
 void sub_180001150(void) {
-    uint32_t *const dword_180003000 = (uint32_t *)0x180003000ULL;
-
-    *dword_180003000 ^= 74;
+    g_180003000 ^= 74;
 }
 -- signature
 void ()
@@ -370,9 +352,7 @@ fn <unnamed> @ 0x180001150 (size 16)
 /* velk pseudo-C: sub_180001160 @ 0x180001160 */
 /* ref: 0x180003000 .data */
 void sub_180001160(void) {
-    uint32_t *const dword_180003000 = (uint32_t *)0x180003000ULL;
-
-    *dword_180003000 += -81;
+    g_180003000 += -81;
 }
 -- signature
 void ()
@@ -391,9 +371,7 @@ fn <unnamed> @ 0x180001160 (size 16)
 /* velk pseudo-C: sub_180001170 @ 0x180001170 */
 /* ref: 0x180003000 .data */
 void sub_180001170(void) {
-    uint32_t *const dword_180003000 = (uint32_t *)0x180003000ULL;
-
-    *dword_180003000 |= 88;
+    g_180003000 |= 88;
 }
 -- signature
 void ()
@@ -412,9 +390,7 @@ fn <unnamed> @ 0x180001170 (size 16)
 /* velk pseudo-C: sub_180001180 @ 0x180001180 */
 /* ref: 0x180003000 .data */
 void sub_180001180(void) {
-    uint32_t *const dword_180003000 = (uint32_t *)0x180003000ULL;
-
-    *dword_180003000 += 95;
+    g_180003000 += 95;
 }
 -- signature
 void ()
@@ -433,9 +409,7 @@ fn <unnamed> @ 0x180001180 (size 16)
 /* velk pseudo-C: sub_180001190 @ 0x180001190 */
 /* ref: 0x180003000 .data */
 void sub_180001190(void) {
-    uint32_t *const dword_180003000 = (uint32_t *)0x180003000ULL;
-
-    *dword_180003000 ^= 102;
+    g_180003000 ^= 102;
 }
 -- signature
 void ()
@@ -454,9 +428,7 @@ fn <unnamed> @ 0x180001190 (size 16)
 /* velk pseudo-C: sub_1800011a0 @ 0x1800011a0 */
 /* ref: 0x180003000 .data */
 void sub_1800011a0(void) {
-    uint32_t *const dword_180003000 = (uint32_t *)0x180003000ULL;
-
-    *dword_180003000 += -109;
+    g_180003000 += -109;
 }
 -- signature
 void ()
@@ -475,9 +447,7 @@ fn <unnamed> @ 0x1800011a0 (size 16)
 /* velk pseudo-C: sub_1800011b0 @ 0x1800011b0 */
 /* ref: 0x180003000 .data */
 void sub_1800011b0(void) {
-    uint32_t *const dword_180003000 = (uint32_t *)0x180003000ULL;
-
-    *dword_180003000 |= 116;
+    g_180003000 |= 116;
 }
 -- signature
 void ()

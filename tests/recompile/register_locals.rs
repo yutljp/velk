@@ -50,7 +50,8 @@ fn printed_byte_loop_uses_named_narrow_locals() {
     assert!(code.contains("uint32_t v1;"), "{code}");
     assert!(!code.contains("0xffffffff"), "{code}");
     assert!(!code.contains("(int8_t)("), "{code}");
-    let code = code.replace(&format!("(uint8_t *)0x{global:x}ULL"), "&state");
+    let code = code.replace("extern uint8_t state_ptr;", "");
+    let code = replace_c_identifier(&code, "state_ptr", "state");
     let mut source = String::from(HEADER);
     source.push_str(
         "static uint8_t state;\nstatic unsigned effects;\nvoid effect(uint64_t ignored) { (void)ignored; ++effects; }\n",

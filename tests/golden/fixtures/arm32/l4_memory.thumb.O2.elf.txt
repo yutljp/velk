@@ -5,6 +5,10 @@
 0x201b0 14 banner_first symtab,dwarf
 /* velk prelude */
 uint64_t velk_entry_stack_pointer(void); /* target entry stack pointer */
+
+extern int g_counter; /* address: 0x301c4 */
+
+extern uint32_t banner; /* address: 0x301c0 */
 /* end velk prelude */
 
 == 0x20128 point_dot
@@ -180,7 +184,6 @@ fn array_sum @ 0x20134 (size 108)
 -- decompile
 /* velk pseudo-C: bump @ 0x201a0 */
 /* ref: 0x301c4 .bss */
-extern int g_counter;
 void bump(void) {
     g_counter += 1;
 }
@@ -201,9 +204,7 @@ fn bump @ 0x201a0 (size 16)
 /* velk pseudo-C: banner_first @ 0x201b0 */
 /* ref: 0x301c0 .data */
 int banner_first(void) {
-    uint32_t *const banner = (uint32_t *)0x301c0ULL;
-
-    return *(uint8_t *)(*banner);
+    return *(uint8_t *)(banner);
 }
 -- signature
 int ()

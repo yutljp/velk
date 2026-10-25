@@ -17,6 +17,9 @@
 0x2016b0 21 c14 symtab,dwarf,unwind
 0x2016d0 21 c15 symtab,dwarf,unwind
 0x2016f0 111 sparse symtab,dwarf,unwind
+/* velk prelude */
+extern uint32_t g_sink; /* address: 0x202760 */
+/* end velk prelude */
 
 == 0x201400 dense
 -- decompile
@@ -24,7 +27,6 @@
 /* ref: 0x200158 .rodata */
 /* ref: 0x202760 .bss */
 int dense(int x) {
-    uint32_t *const g_sink = (uint32_t *)0x202760ULL;
     int64_t local_0; /* [sp-18] */
 
     uint32_t v1 = x - 10;
@@ -33,58 +35,58 @@ int dense(int x) {
         switch (local_0 - 15) {
         case -15:
             c0();
-            return *g_sink;
+            return g_sink;
         case -14:
             c1();
-            return *g_sink;
+            return g_sink;
         case -13:
             c2();
-            return *g_sink;
+            return g_sink;
         case -12:
             c3();
-            return *g_sink;
+            return g_sink;
         case -11:
             c4();
-            return *g_sink;
+            return g_sink;
         case -10:
             c5();
-            return *g_sink;
+            return g_sink;
         case -9:
             c6();
-            return *g_sink;
+            return g_sink;
         case -8:
             c7();
-            return *g_sink;
+            return g_sink;
         case -7:
             c8();
-            return *g_sink;
+            return g_sink;
         case -6:
             c9();
-            return *g_sink;
+            return g_sink;
         case -5:
             c10();
-            return *g_sink;
+            return g_sink;
         case -4:
             c11();
-            return *g_sink;
+            return g_sink;
         case -3:
             c12();
-            return *g_sink;
+            return g_sink;
         case -2:
             c13();
-            return *g_sink;
+            return g_sink;
         case -1:
             c14();
-            return *g_sink;
+            return g_sink;
         case 0:
             c15();
-            return *g_sink;
+            return g_sink;
         default:
             break;
         }
     }
-    *g_sink = 0;
-    return *g_sink;
+    g_sink = 0;
+    return g_sink;
 }
 -- signature
 int (int x)
@@ -160,9 +162,7 @@ fn dense @ 0x201400 (size 234)
 /* velk pseudo-C: c0 @ 0x2014f0 */
 /* ref: 0x202760 .bss */
 void c0(void) {
-    uint32_t *const g_sink = (uint32_t *)0x202760ULL;
-
-    *g_sink += 11;
+    g_sink += 11;
 }
 -- signature
 void ()
@@ -181,9 +181,7 @@ fn c0 @ 0x2014f0 (size 21)
 /* velk pseudo-C: c1 @ 0x201510 */
 /* ref: 0x202760 .bss */
 void c1(void) {
-    uint32_t *const g_sink = (uint32_t *)0x202760ULL;
-
-    *g_sink ^= 18;
+    g_sink ^= 18;
 }
 -- signature
 void ()
@@ -202,9 +200,7 @@ fn c1 @ 0x201510 (size 21)
 /* velk pseudo-C: c2 @ 0x201530 */
 /* ref: 0x202760 .bss */
 void c2(void) {
-    uint32_t *const g_sink = (uint32_t *)0x202760ULL;
-
-    *g_sink -= 25;
+    g_sink -= 25;
 }
 -- signature
 void ()
@@ -223,9 +219,7 @@ fn c2 @ 0x201530 (size 21)
 /* velk pseudo-C: c3 @ 0x201550 */
 /* ref: 0x202760 .bss */
 void c3(void) {
-    uint32_t *const g_sink = (uint32_t *)0x202760ULL;
-
-    *g_sink |= 32;
+    g_sink |= 32;
 }
 -- signature
 void ()
@@ -244,9 +238,7 @@ fn c3 @ 0x201550 (size 21)
 /* velk pseudo-C: c4 @ 0x201570 */
 /* ref: 0x202760 .bss */
 void c4(void) {
-    uint32_t *const g_sink = (uint32_t *)0x202760ULL;
-
-    *g_sink += 39;
+    g_sink += 39;
 }
 -- signature
 void ()
@@ -265,9 +257,7 @@ fn c4 @ 0x201570 (size 21)
 /* velk pseudo-C: c5 @ 0x201590 */
 /* ref: 0x202760 .bss */
 void c5(void) {
-    uint32_t *const g_sink = (uint32_t *)0x202760ULL;
-
-    *g_sink ^= 46;
+    g_sink ^= 46;
 }
 -- signature
 void ()
@@ -286,9 +276,7 @@ fn c5 @ 0x201590 (size 21)
 /* velk pseudo-C: c6 @ 0x2015b0 */
 /* ref: 0x202760 .bss */
 void c6(void) {
-    uint32_t *const g_sink = (uint32_t *)0x202760ULL;
-
-    *g_sink -= 53;
+    g_sink -= 53;
 }
 -- signature
 void ()
@@ -307,9 +295,7 @@ fn c6 @ 0x2015b0 (size 21)
 /* velk pseudo-C: c7 @ 0x2015d0 */
 /* ref: 0x202760 .bss */
 void c7(void) {
-    uint32_t *const g_sink = (uint32_t *)0x202760ULL;
-
-    *g_sink |= 60;
+    g_sink |= 60;
 }
 -- signature
 void ()
@@ -328,9 +314,7 @@ fn c7 @ 0x2015d0 (size 21)
 /* velk pseudo-C: c8 @ 0x2015f0 */
 /* ref: 0x202760 .bss */
 void c8(void) {
-    uint32_t *const g_sink = (uint32_t *)0x202760ULL;
-
-    *g_sink += 67;
+    g_sink += 67;
 }
 -- signature
 void ()
@@ -349,9 +333,7 @@ fn c8 @ 0x2015f0 (size 21)
 /* velk pseudo-C: c9 @ 0x201610 */
 /* ref: 0x202760 .bss */
 void c9(void) {
-    uint32_t *const g_sink = (uint32_t *)0x202760ULL;
-
-    *g_sink ^= 74;
+    g_sink ^= 74;
 }
 -- signature
 void ()
@@ -370,9 +352,7 @@ fn c9 @ 0x201610 (size 21)
 /* velk pseudo-C: c10 @ 0x201630 */
 /* ref: 0x202760 .bss */
 void c10(void) {
-    uint32_t *const g_sink = (uint32_t *)0x202760ULL;
-
-    *g_sink -= 81;
+    g_sink -= 81;
 }
 -- signature
 void ()
@@ -391,9 +371,7 @@ fn c10 @ 0x201630 (size 21)
 /* velk pseudo-C: c11 @ 0x201650 */
 /* ref: 0x202760 .bss */
 void c11(void) {
-    uint32_t *const g_sink = (uint32_t *)0x202760ULL;
-
-    *g_sink |= 88;
+    g_sink |= 88;
 }
 -- signature
 void ()
@@ -412,9 +390,7 @@ fn c11 @ 0x201650 (size 21)
 /* velk pseudo-C: c12 @ 0x201670 */
 /* ref: 0x202760 .bss */
 void c12(void) {
-    uint32_t *const g_sink = (uint32_t *)0x202760ULL;
-
-    *g_sink += 95;
+    g_sink += 95;
 }
 -- signature
 void ()
@@ -433,9 +409,7 @@ fn c12 @ 0x201670 (size 21)
 /* velk pseudo-C: c13 @ 0x201690 */
 /* ref: 0x202760 .bss */
 void c13(void) {
-    uint32_t *const g_sink = (uint32_t *)0x202760ULL;
-
-    *g_sink ^= 102;
+    g_sink ^= 102;
 }
 -- signature
 void ()
@@ -454,9 +428,7 @@ fn c13 @ 0x201690 (size 21)
 /* velk pseudo-C: c14 @ 0x2016b0 */
 /* ref: 0x202760 .bss */
 void c14(void) {
-    uint32_t *const g_sink = (uint32_t *)0x202760ULL;
-
-    *g_sink -= 109;
+    g_sink -= 109;
 }
 -- signature
 void ()
@@ -475,9 +447,7 @@ fn c14 @ 0x2016b0 (size 21)
 /* velk pseudo-C: c15 @ 0x2016d0 */
 /* ref: 0x202760 .bss */
 void c15(void) {
-    uint32_t *const g_sink = (uint32_t *)0x202760ULL;
-
-    *g_sink |= 116;
+    g_sink |= 116;
 }
 -- signature
 void ()

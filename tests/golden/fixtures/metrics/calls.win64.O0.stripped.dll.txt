@@ -12,6 +12,8 @@
 0x180001210 104 - unwind,prologue
 /* velk prelude */
 uint64_t *velk_return_address_slot(void); /* target frame's return-address slot */
+
+extern uint64_t g_180002000[]; /* address: 0x180002000 */
 /* end velk prelude */
 
 == 0x180001000 -
@@ -70,10 +72,8 @@ fn <unnamed> @ 0x180001020 (size 32)
 /* velk pseudo-C: sub_180001040 @ 0x180001040 */
 /* ref: 0x180002000 .rdata */
 int32_t sub_180001040(uint32_t a0, int32_t a1) {
-    uint64_t *const qword_180002000 = (uint64_t *)0x180002000ULL;
-
     uint32_t v1 = a0 % 3;
-    int64_t v2 = qword_180002000[v1];
+    int64_t v2 = g_180002000[v1];
     return ((uint64_t (*)())v2)(a1 & 0xffffffff);
 }
 -- signature

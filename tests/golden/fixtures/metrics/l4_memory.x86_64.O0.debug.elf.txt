@@ -3,6 +3,11 @@
 0x201240 73 array_sum symtab,dwarf,unwind
 0x201290 21 bump symtab,dwarf,unwind
 0x2012b0 16 banner_first symtab,dwarf,unwind
+/* velk prelude */
+extern int g_counter; /* address: 0x2022c8 */
+
+extern uint64_t banner; /* address: 0x2022c0 */
+/* end velk prelude */
 
 == 0x201210 point_dot
 -- decompile
@@ -61,7 +66,6 @@ fn array_sum @ 0x201240 (size 73)
 -- decompile
 /* velk pseudo-C: bump @ 0x201290 */
 /* ref: 0x2022c8 .bss */
-extern int g_counter;
 void bump(void) {
     g_counter += 1;
 }
@@ -82,9 +86,7 @@ fn bump @ 0x201290 (size 21)
 /* velk pseudo-C: banner_first @ 0x2012b0 */
 /* ref: 0x2022c0 -> 0x200158 "velk ladder" */
 int banner_first(void) {
-    uint64_t *const banner = (uint64_t *)0x2022c0ULL;
-
-    return *(int8_t *)(*banner);
+    return *(int8_t *)(banner);
 }
 -- signature
 int ()

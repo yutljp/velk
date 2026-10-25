@@ -238,7 +238,7 @@ fn printed_global_offsets_keep_the_data_address_separate() {
             ],
         );
         let code = velk::render::render(&ir, &[], &Default::default(), &[(BASE, 512)]);
-        assert!(code.contains("0x100002000ULL"), "{code}");
+        assert!(code.contains("/* address: 0x100002000 */"), "{code}");
         if width != 1 {
             assert!(
                 !code.contains(&format!("0x{:x}]", BASE / u64::from(width))),
@@ -247,7 +247,7 @@ fn printed_global_offsets_keep_the_data_address_separate() {
         }
         let code = format!(
             "#include <string.h>\n_Alignas(16) static uint8_t data[256];\n{}",
-            code.replace("0x100002000ULL", "(uintptr_t)(data + 128)")
+            bound_globals(&code).replace("0x100002000ULL", "(uintptr_t)(data + 128)")
         );
         syntax::run_printed(
             &code,

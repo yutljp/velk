@@ -44,6 +44,12 @@ static inline uint64_t mul_lanes32(uint64_t a, uint64_t b) {
 #include <stdarg.h>
 
 struct velk_vector { union { uint64_t u64; int64_t s64; uint32_t u32; int32_t s32; uint16_t u16; int16_t s16; uint8_t u8; int8_t s8; float f32; double f64; } low, high; };
+
+extern uint64_t g_200190; /* address: 0x200190 */
+
+extern uint64_t g_200198; /* address: 0x200198 */
+
+extern uint64_t g_220528[]; /* address: 0x220528 */
 /* end velk prelude */
 
 == 0x2102c4 -
@@ -102,9 +108,7 @@ fn <unnamed> @ 0x2102d4 (size 28)
 /* velk pseudo-C: sub_2102f0 @ 0x2102f0 */
 /* ref: 0x220528 .data.rel.ro */
 int32_t sub_2102f0(uint32_t a0, int32_t a1) {
-    uint64_t *const qword_220528 = (uint64_t *)0x220528ULL;
-
-    int64_t v3 = qword_220528[a0 % 3];
+    int64_t v3 = g_220528[a0 % 3];
     return ((uint64_t (*)())v3)(a1 & 0xffffffff);
 }
 -- signature
@@ -144,8 +148,6 @@ fn <unnamed> @ 0x21031c (size 32)
 /* ref: 0x200190 .rodata */
 /* ref: 0x200198 .rodata */
 int32_t sub_21033c(int32_t a0) {
-    uint64_t *const qword_200190 = (uint64_t *)0x200190ULL;
-    uint64_t *const qword_200198 = (uint64_t *)0x200198ULL;
     uint32_t v1;
     int32_t v2;
 
@@ -154,7 +156,7 @@ int32_t sub_21033c(int32_t a0) {
             struct velk_vector vector = { .low.u64 = 0x100000001, .high.u64 = 0x100000001 };
             int32_t v5 = a0 - 1;
             int32_t v6 = v5 & 0xfffffff8;
-            struct velk_vector vector_2 = { .low.u64 = add_lanes32((a0 & 0xffffffff) * 0x100000001, *qword_200190), .high.u64 = add_lanes32((a0 & 0xffffffff) * 0x100000001, *qword_200198) };
+            struct velk_vector vector_2 = { .low.u64 = add_lanes32((a0 & 0xffffffff) * 0x100000001, g_200190), .high.u64 = add_lanes32((a0 & 0xffffffff) * 0x100000001, g_200198) };
             struct velk_vector vector_3 = { .low.u64 = 0x100000001, .high.u64 = 0x100000001 };
             v1 = a0 - v6;
             int32_t v11 = v6;

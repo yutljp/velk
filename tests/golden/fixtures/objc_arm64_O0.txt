@@ -8,6 +8,13 @@
 0x1000009a4 56 _use_block symtab,dynamic,function-starts
 0x1000009dc 36 ___use_block_block_invoke symtab,function-starts
 0x100000a00 20 _main symtab,dynamic,entry,function-starts
+/* velk prelude */
+extern uint64_t g_1000081e0; /* address: 0x1000081e0 */
+
+extern uint64_t objc_msgSend_100004060; /* address: 0x100004060 */
+
+extern uint8_t __block_literal_global; /* address: 0x100004020 */
+/* end velk prelude */
 
 == 0x1000008c0 -[Counter add:with:]
 -- decompile
@@ -104,12 +111,9 @@ fn -[Counter(Extra) twice:] @ 0x100000940 (size 32)
 /* ref: 0x100004060 __got */
 /* ref: 0x1000081e0 -> 0x100000a3a "add:with:" */
 int32_t send_value(int64_t a0, int64_t a1, int64_t a2) {
-    uint64_t *const objc_msgSend_100004060_u64 = (uint64_t *)0x100004060ULL;
-    uint64_t *const qword_1000081e0 = (uint64_t *)0x1000081e0ULL;
-
     int64_t v1 = a0;
-    int64_t v4 = *qword_1000081e0;
-    uint32_t v2 = *objc_msgSend_100004060_u64;
+    int64_t v4 = g_1000081e0;
+    uint32_t v2 = objc_msgSend_100004060;
     return objc_msgSend(v1, v4 /* @selector(add:with:) */, a1, a2);
 }
 -- signature
@@ -135,9 +139,7 @@ fn _send_value @ 0x100000960 (size 68)
 /* ref: 0x100004020 __const */
 /* struct: a0 +0x10:uint64_t */
 int64_t use_block(int64_t a0) {
-    uint8_t *const __block_literal_global = (uint8_t *)0x100004020ULL;
-
-    return __use_block_block_invoke(__block_literal_global, a0); /* via pointer at 0x100004030 */
+    return __use_block_block_invoke((&__block_literal_global), a0); /* via pointer at 0x100004030 */
 }
 -- signature
 int64_t (int64_t a0)

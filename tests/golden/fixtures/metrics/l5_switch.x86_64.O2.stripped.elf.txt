@@ -17,6 +17,9 @@
 0x2014c0 8 - unwind,prologue
 0x2014d0 8 - unwind,prologue
 0x2014e0 42 - unwind,prologue
+/* velk prelude */
+extern uint32_t g_20250c; /* address: 0x20250c */
+/* end velk prelude */
 
 == 0x201330 -
 -- decompile
@@ -24,66 +27,64 @@
 /* ref: 0x200158 .rodata */
 /* ref: 0x20250c .bss */
 int32_t sub_201330(int32_t a0) {
-    uint32_t *const dword_20250c = (uint32_t *)0x20250cULL;
-
     uint64_t v1 = (a0 - 10) & 0xffffffff;
     if (v1 > 15) {
-        *dword_20250c = 0;
-        return *dword_20250c;
+        g_20250c = 0;
+        return g_20250c;
     }
     switch (v1 + 10) {
     case 10:
         sub_2013e0();
-        return *dword_20250c;
+        return g_20250c;
     case 11:
         sub_2013f0();
-        return *dword_20250c;
+        return g_20250c;
     case 12:
         sub_201400();
-        return *dword_20250c;
+        return g_20250c;
     case 13:
         sub_201410();
-        return *dword_20250c;
+        return g_20250c;
     case 14:
         sub_201420();
-        return *dword_20250c;
+        return g_20250c;
     case 15:
         sub_201430();
-        return *dword_20250c;
+        return g_20250c;
     case 16:
         sub_201440();
-        return *dword_20250c;
+        return g_20250c;
     case 17:
         sub_201450();
-        return *dword_20250c;
+        return g_20250c;
     case 18:
         sub_201460();
-        return *dword_20250c;
+        return g_20250c;
     case 19:
         sub_201470();
-        return *dword_20250c;
+        return g_20250c;
     case 20:
         sub_201480();
-        return *dword_20250c;
+        return g_20250c;
     case 21:
         sub_201490();
-        return *dword_20250c;
+        return g_20250c;
     case 22:
         sub_2014a0();
-        return *dword_20250c;
+        return g_20250c;
     case 23:
         sub_2014b0();
-        return *dword_20250c;
+        return g_20250c;
     case 24:
         sub_2014c0();
-        return *dword_20250c;
+        return g_20250c;
     case 25:
         sub_2014d0();
-        return *dword_20250c;
+        return g_20250c;
     default:
         __builtin_unreachable();
     }
-    return *dword_20250c;
+    return g_20250c;
 }
 -- signature
 int32_t (int32_t a0)
@@ -157,9 +158,7 @@ fn <unnamed> @ 0x201330 (size 167)
 /* velk pseudo-C: sub_2013e0 @ 0x2013e0 */
 /* ref: 0x20250c .bss */
 void sub_2013e0(void) {
-    uint32_t *const dword_20250c = (uint32_t *)0x20250cULL;
-
-    *dword_20250c += 11;
+    g_20250c += 11;
 }
 -- signature
 void ()
@@ -178,9 +177,7 @@ fn <unnamed> @ 0x2013e0 (size 8)
 /* velk pseudo-C: sub_2013f0 @ 0x2013f0 */
 /* ref: 0x20250c .bss */
 void sub_2013f0(void) {
-    uint32_t *const dword_20250c = (uint32_t *)0x20250cULL;
-
-    *dword_20250c ^= 18;
+    g_20250c ^= 18;
 }
 -- signature
 void ()
@@ -199,9 +196,7 @@ fn <unnamed> @ 0x2013f0 (size 8)
 /* velk pseudo-C: sub_201400 @ 0x201400 */
 /* ref: 0x20250c .bss */
 void sub_201400(void) {
-    uint32_t *const dword_20250c = (uint32_t *)0x20250cULL;
-
-    *dword_20250c += -25;
+    g_20250c += -25;
 }
 -- signature
 void ()
@@ -220,9 +215,7 @@ fn <unnamed> @ 0x201400 (size 8)
 /* velk pseudo-C: sub_201410 @ 0x201410 */
 /* ref: 0x20250c .bss */
 void sub_201410(void) {
-    uint32_t *const dword_20250c = (uint32_t *)0x20250cULL;
-
-    *dword_20250c |= 32;
+    g_20250c |= 32;
 }
 -- signature
 void ()
@@ -241,9 +234,7 @@ fn <unnamed> @ 0x201410 (size 8)
 /* velk pseudo-C: sub_201420 @ 0x201420 */
 /* ref: 0x20250c .bss */
 void sub_201420(void) {
-    uint32_t *const dword_20250c = (uint32_t *)0x20250cULL;
-
-    *dword_20250c += 39;
+    g_20250c += 39;
 }
 -- signature
 void ()
@@ -262,9 +253,7 @@ fn <unnamed> @ 0x201420 (size 8)
 /* velk pseudo-C: sub_201430 @ 0x201430 */
 /* ref: 0x20250c .bss */
 void sub_201430(void) {
-    uint32_t *const dword_20250c = (uint32_t *)0x20250cULL;
-
-    *dword_20250c ^= 46;
+    g_20250c ^= 46;
 }
 -- signature
 void ()
@@ -283,9 +272,7 @@ fn <unnamed> @ 0x201430 (size 8)
 /* velk pseudo-C: sub_201440 @ 0x201440 */
 /* ref: 0x20250c .bss */
 void sub_201440(void) {
-    uint32_t *const dword_20250c = (uint32_t *)0x20250cULL;
-
-    *dword_20250c += -53;
+    g_20250c += -53;
 }
 -- signature
 void ()
@@ -304,9 +291,7 @@ fn <unnamed> @ 0x201440 (size 8)
 /* velk pseudo-C: sub_201450 @ 0x201450 */
 /* ref: 0x20250c .bss */
 void sub_201450(void) {
-    uint32_t *const dword_20250c = (uint32_t *)0x20250cULL;
-
-    *dword_20250c |= 60;
+    g_20250c |= 60;
 }
 -- signature
 void ()
@@ -325,9 +310,7 @@ fn <unnamed> @ 0x201450 (size 8)
 /* velk pseudo-C: sub_201460 @ 0x201460 */
 /* ref: 0x20250c .bss */
 void sub_201460(void) {
-    uint32_t *const dword_20250c = (uint32_t *)0x20250cULL;
-
-    *dword_20250c += 67;
+    g_20250c += 67;
 }
 -- signature
 void ()
@@ -346,9 +329,7 @@ fn <unnamed> @ 0x201460 (size 8)
 /* velk pseudo-C: sub_201470 @ 0x201470 */
 /* ref: 0x20250c .bss */
 void sub_201470(void) {
-    uint32_t *const dword_20250c = (uint32_t *)0x20250cULL;
-
-    *dword_20250c ^= 74;
+    g_20250c ^= 74;
 }
 -- signature
 void ()
@@ -367,9 +348,7 @@ fn <unnamed> @ 0x201470 (size 8)
 /* velk pseudo-C: sub_201480 @ 0x201480 */
 /* ref: 0x20250c .bss */
 void sub_201480(void) {
-    uint32_t *const dword_20250c = (uint32_t *)0x20250cULL;
-
-    *dword_20250c += -81;
+    g_20250c += -81;
 }
 -- signature
 void ()
@@ -388,9 +367,7 @@ fn <unnamed> @ 0x201480 (size 8)
 /* velk pseudo-C: sub_201490 @ 0x201490 */
 /* ref: 0x20250c .bss */
 void sub_201490(void) {
-    uint32_t *const dword_20250c = (uint32_t *)0x20250cULL;
-
-    *dword_20250c |= 88;
+    g_20250c |= 88;
 }
 -- signature
 void ()
@@ -409,9 +386,7 @@ fn <unnamed> @ 0x201490 (size 8)
 /* velk pseudo-C: sub_2014a0 @ 0x2014a0 */
 /* ref: 0x20250c .bss */
 void sub_2014a0(void) {
-    uint32_t *const dword_20250c = (uint32_t *)0x20250cULL;
-
-    *dword_20250c += 95;
+    g_20250c += 95;
 }
 -- signature
 void ()
@@ -430,9 +405,7 @@ fn <unnamed> @ 0x2014a0 (size 8)
 /* velk pseudo-C: sub_2014b0 @ 0x2014b0 */
 /* ref: 0x20250c .bss */
 void sub_2014b0(void) {
-    uint32_t *const dword_20250c = (uint32_t *)0x20250cULL;
-
-    *dword_20250c ^= 102;
+    g_20250c ^= 102;
 }
 -- signature
 void ()
@@ -451,9 +424,7 @@ fn <unnamed> @ 0x2014b0 (size 8)
 /* velk pseudo-C: sub_2014c0 @ 0x2014c0 */
 /* ref: 0x20250c .bss */
 void sub_2014c0(void) {
-    uint32_t *const dword_20250c = (uint32_t *)0x20250cULL;
-
-    *dword_20250c += -109;
+    g_20250c += -109;
 }
 -- signature
 void ()
@@ -472,9 +443,7 @@ fn <unnamed> @ 0x2014c0 (size 8)
 /* velk pseudo-C: sub_2014d0 @ 0x2014d0 */
 /* ref: 0x20250c .bss */
 void sub_2014d0(void) {
-    uint32_t *const dword_20250c = (uint32_t *)0x20250cULL;
-
-    *dword_20250c |= 116;
+    g_20250c |= 116;
 }
 -- signature
 void ()

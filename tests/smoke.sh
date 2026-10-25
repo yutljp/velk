@@ -439,7 +439,7 @@ echo "$pair_ir" | grep -q "a0->field_0x4"   || fail "member access at offset fou
 echo "$pair_ir" | grep -q "\*(uint32_t \*)" && fail "member access keeps the cast"
 ok "pointer members"
 msg_ir=$("$BIN" --decompile $FIX/pe64.exe msg_first 2>/dev/null)
-echo "$msg_ir" | grep -q "qword_140003000" || fail "global named by width and address"
+echo "$msg_ir" | grep -qF "extern uint64_t g_140003000;" || fail "global declaration by address"
 echo "$msg_ir" | grep -q "(0x140003000)" && fail "global name replaces the address"
 ok "named globals"
 bits_ir=$("$BIN" --decompile $FIX/arm64_loops0.o count_bits 2>/dev/null)
@@ -608,7 +608,7 @@ ok "script API"
 
 # 14) extend-and-shift addressing (value-table switch)
 sw=$("$BIN" --decompile $FIX/arm64_switch.elf dispatch 2>/dev/null)
-echo "$sw" | grep -q "dword_200120\[v1\]"   || fail "extend-shift addressing as a table"
+echo "$sw" | grep -q "g_200120\[v1\]"   || fail "extend-shift addressing as a table"
 echo "$sw" | grep -q "ref: 0x"                || fail "switch table reference"
 if echo "$sw" | grep -q "unsupported:"; then fail "switch table unsupported"; fi
 ok "table-driven switch"
@@ -616,7 +616,7 @@ ok "table-driven switch"
 # 15) switch recovery from an indirect-branch jump table
 jt=$("$BIN" --decompile $FIX/arm64_jumptable.elf d7 2>/dev/null)
 echo "$jt" | grep -Fq 'if ((uint32_t)a0 <= 9)' || fail "jump-table bounds"
-[ "$(echo "$jt" | grep -Fc 'v1 = *g;')" -eq 1 ] || fail "jump-table shared load"
+[ "$(echo "$jt" | grep -Fc 'v1 = g;')" -eq 1 ] || fail "jump-table shared load"
 for limit in {0..8}; do
   echo "$jt" | grep -Fq "if ((uint32_t)a0 > $limit)" || fail "jump-table case $limit"
 done

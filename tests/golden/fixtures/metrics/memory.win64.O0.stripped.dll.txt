@@ -7,6 +7,9 @@
 0x180001150 34 - unwind,prologue
 0x180001180 42 - unwind,prologue
 0x1800011b0 55 - unwind,prologue
+/* velk prelude */
+extern uint32_t g_180003000[]; /* address: 0x180003000 */
+/* end velk prelude */
 
 == 0x180001000 -
 -- decompile
@@ -121,9 +124,7 @@ fn <unnamed> @ 0x1800010a0 (size 54)
 /* velk pseudo-C: sub_1800010e0 @ 0x1800010e0 */
 /* ref: 0x180003000 .data */
 int32_t sub_1800010e0(int32_t a0, int32_t a1) {
-    uint32_t *const dword_180003000 = (uint32_t *)0x180003000ULL;
-
-    return dword_180003000[(a0 & 0x3) * 8 + (a1 & 0x7)];
+    return g_180003000[(a0 & 0x3) * 8 + (a1 & 0x7)];
 }
 -- signature
 int32_t (int32_t a0, int32_t a1)

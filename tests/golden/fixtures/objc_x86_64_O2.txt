@@ -7,6 +7,9 @@
 0x1000008b0 32 _send_value symtab,dynamic,function-starts
 0x1000008d0 16 _use_block symtab,dynamic,function-starts
 0x1000008e0 8 _main symtab,dynamic,entry,function-starts
+/* velk prelude */
+extern uint64_t g_100002130; /* address: 0x100002130 */
+/* end velk prelude */
 
 == 0x100000860 -[Counter add:with:]
 -- decompile
@@ -100,9 +103,7 @@ fn -[Counter(Extra) twice:] @ 0x1000008a0 (size 16)
 /* ref: 0x100001020 __got */
 /* ref: 0x100002130 -> 0x100000982 "add:with:" */
 int32_t send_value(int64_t a0, int64_t a1, int64_t a2) {
-    uint64_t *const qword_100002130 = (uint64_t *)0x100002130ULL;
-
-    return objc_msgSend(a0, *qword_100002130 /* @selector(add:with:) */, a1, a2);
+    return objc_msgSend(a0, g_100002130 /* @selector(add:with:) */, a1, a2);
 }
 -- signature
 int32_t (int64_t a0, int64_t a1, int64_t a2)

@@ -3,6 +3,11 @@
 0x201240 73 - unwind,prologue
 0x201290 21 - unwind,prologue
 0x2012b0 16 - unwind,prologue
+/* velk prelude */
+extern uint32_t g_2022c8; /* address: 0x2022c8 */
+
+extern uint64_t g_2022c0; /* address: 0x2022c0 */
+/* end velk prelude */
 
 == 0x201210 -
 -- decompile
@@ -63,10 +68,8 @@ fn <unnamed> @ 0x201240 (size 73)
 /* velk pseudo-C: sub_201290 @ 0x201290 */
 /* ref: 0x2022c8 .bss */
 int32_t sub_201290(void) {
-    uint32_t *const dword_2022c8 = (uint32_t *)0x2022c8ULL;
-
-    int32_t v1 = *dword_2022c8 + 1;
-    *dword_2022c8 = v1;
+    int32_t v1 = g_2022c8 + 1;
+    g_2022c8 = v1;
     return v1;
 }
 -- signature
@@ -87,9 +90,7 @@ fn <unnamed> @ 0x201290 (size 21)
 /* velk pseudo-C: sub_2012b0 @ 0x2012b0 */
 /* ref: 0x2022c0 -> 0x200158 "velk ladder" */
 int32_t sub_2012b0(void) {
-    uint64_t *const qword_2022c0 = (uint64_t *)0x2022c0ULL;
-
-    return *(int8_t *)(*qword_2022c0);
+    return *(int8_t *)(g_2022c0);
 }
 -- signature
 int32_t ()

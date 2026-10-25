@@ -1,14 +1,15 @@
 # metrics/strings.aarch64.O0.debug.elf: elf aarch64 no entry, 1 functions, 0 lift failures, 0 unsupported, 0 gotos
 0x21019c 16 pick symtab,dwarf,unwind
+/* velk prelude */
+extern uint64_t kName; /* address: 0x2201b0 */
+/* end velk prelude */
 
 == 0x21019c pick
 -- decompile
 /* velk pseudo-C: pick @ 0x21019c */
 /* ref: 0x2201b0 -> 0x200158 "velk-aarch64-string" */
 int pick(void) {
-    uint64_t *const kName = (uint64_t *)0x2201b0ULL;
-
-    return *(uint8_t *)(*kName + 0x2);
+    return *(uint8_t *)(kName + 0x2);
 }
 -- signature
 int ()

@@ -1,13 +1,14 @@
 # strings.o: elf aarch64 no entry, 1 functions, 0 lift failures, 0 unsupported, 0 gotos
 0x0 16 pick symtab,unwind
+/* velk prelude */
+extern uint64_t kName; /* address: 0x28 */
+/* end velk prelude */
 
 == 0x0 pick
 -- decompile
 /* velk pseudo-C: pick @ 0x0 */
 int32_t pick(void) {
-    uint64_t *const kName = (uint64_t *)0x28ULL;
-
-    return *(uint8_t *)(*kName + 0x2);
+    return *(uint8_t *)(kName + 0x2);
 }
 -- signature
 int32_t ()

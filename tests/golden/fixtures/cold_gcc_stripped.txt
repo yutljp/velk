@@ -16,15 +16,27 @@
 0x1380 13 - prologue
 /* velk prelude */
 uint64_t velk_entry_stack_pointer(void); /* target entry stack pointer */
+
+extern uint64_t __cxa_finalize_3ff8; /* address: 0x3ff8 */
+
+extern uint64_t __gmon_start___3fe8; /* address: 0x3fe8 */
+
+extern uint64_t g_2028; /* address: 0x2028 */
+
+extern uint64_t g_2030; /* address: 0x2030 */
+
+extern uint64_t g_4008; /* address: 0x4008 */
+
+extern uint64_t stderr; /* address: 0x4020 */
+
+extern uint8_t g_4028; /* address: 0x4028 */
 /* end velk prelude */
 
 == 0x1000 -
 -- decompile
 /* velk pseudo-C: sub_1000 @ 0x1000 */
 int64_t sub_1000(void) {
-    uint64_t *const __gmon_start___3fe8_u64 = (uint64_t *)0x3fe8ULL;
-
-    int64_t v1 = *__gmon_start___3fe8_u64;
+    int64_t v1 = __gmon_start___3fe8;
     if (v1 == 0) {
         return v1;
     }
@@ -152,15 +164,13 @@ fn __fprintf_chk @ 0x10d0 (size 16)
 -- decompile
 /* velk pseudo-C: sub_1120 @ 0x1120 */
 int64_t sub_1120(int32_t a0) {
-    uint64_t *const qword_2028 = (uint64_t *)0x2028ULL;
-    uint64_t *const qword_2030 = (uint64_t *)0x2030ULL;
     _Alignas(16) struct __attribute__((packed)) { int64_t f_0; int64_t f_8; int64_t f_10; int64_t f_18; int64_t f_20; int64_t f_28; uint8_t gap_30[0x18]; } local_0; /* [sp-48] */
 
-    int64_t v1 = *qword_2028;
+    int64_t v1 = g_2028;
     local_0.f_8 = 0x656e6f;
     local_0.f_10 = 0;
     local_0.f_0 = v1;
-    int64_t v4 = *qword_2030;
+    int64_t v4 = g_2030;
     local_0.f_20 = 0x6f7774;
     local_0.f_18 = v4;
     local_0.f_28 = 0;
@@ -259,18 +269,14 @@ fn <unnamed> @ 0x1200 (size 64)
 -- decompile
 /* velk pseudo-C: sub_1240 @ 0x1240 */
 void sub_1240(void) {
-    uint64_t *const __cxa_finalize_3ff8_u64 = (uint64_t *)0x3ff8ULL;
-    uint64_t *const qword_4008 = (uint64_t *)0x4008ULL;
-    uint8_t *const byte_4028 = (uint8_t *)0x4028ULL;
-
-    if (*byte_4028 != 0) {
+    if (g_4028 != 0) {
         return;
     }
-    if (*__cxa_finalize_3ff8_u64 != 0) {
-        __cxa_finalize((void *)*qword_4008);
+    if (__cxa_finalize_3ff8 != 0) {
+        __cxa_finalize((void *)g_4008);
     }
     sub_11d0();
-    *byte_4028 = 1;
+    g_4028 = 1;
 }
 -- signature
 void ()
@@ -317,7 +323,6 @@ fn <unnamed> @ 0x1280 (size 16)
 /* ref: 0x2004 "missing key %d among %d" */
 struct S1 { int32_t field_0x0; int32_t field_0x4; uint8_t gap_0x8[0x10]; };
 int32_t sub_1290(struct S1 *a0, int a1, int a2) {
-    uint64_t *const stderr = (uint64_t *)0x4020ULL;
     int64_t local_0; /* [sp-78] */
     _Alignas(16) uint8_t local_1[0x50]; /* [sp-68] */
 
@@ -325,7 +330,7 @@ int32_t sub_1290(struct S1 *a0, int a1, int a2) {
         void *v2 = local_1;
         local_0 = a1;
         __snprintf_chk((char *)(local_1), 64, 2, 64, (const char *)"missing key %d among %d", a2 & 0xffffffff, a1);
-        fputs((const char *)(local_1), (FILE *)*stderr);
+        fputs((const char *)(local_1), (FILE *)stderr);
         abort();
     }
     int64_t v16 = (uintptr_t)a0;
@@ -342,12 +347,12 @@ int32_t sub_1290(struct S1 *a0, int a1, int a2) {
     uint32_t *v8 = (uint32_t *)(v16 + 8);
     int64_t v17 = (uintptr_t)(v4 + (uint8_t *)v8);
     __snprintf_chk((char *)(local_1), 64, 2, 64, (const char *)"missing key %d among %d", a2 & 0xffffffff, a1);
-    fputs((const char *)(local_1), (FILE *)*stderr);
+    fputs((const char *)(local_1), (FILE *)stderr);
     do {
         uint32_t v11 = v8[-1];
         int64_t v18 = (uintptr_t)v8;
         v8 += 0x6;
-        __fprintf_chk((FILE *)*stderr, 2, (const char *)0x201c, v18, v11);
+        __fprintf_chk((FILE *)stderr, 2, (const char *)0x201c, v18, v11);
     } while ((uintptr_t)v8 != v17);
     abort();
 }

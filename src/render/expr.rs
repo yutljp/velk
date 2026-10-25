@@ -1509,9 +1509,9 @@ mod tests {
             CType::U64,
             &[CType::U64, CType::U64],
         );
-        assert!(text.contains("uint8_t *const counter"), "{text}");
+        assert!(text.contains("extern uint8_t counter;"), "{text}");
         assert!(
-            text.contains("return (a1 != 0 ? (uintptr_t)counter : 0);"),
+            text.contains("return (a1 != 0 ? (uintptr_t)(&counter) : 0);"),
             "{text}"
         );
     }
@@ -1540,7 +1540,7 @@ mod tests {
                 let text = global_returned(value, CType::U64, &[CType::U64]);
                 assert!(text.contains(&format!("({ty})")), "{text}");
                 assert!(
-                    text.contains(&format!("uint{}_t *const counter", width * 8)),
+                    text.contains(&format!("extern uint{}_t counter", width * 8)),
                     "{text}"
                 );
                 assert!(!text.contains(&format!("({ty})(uint64_t)")), "{text}");
@@ -1687,13 +1687,13 @@ mod tests {
                     CType::Named(ty.to_owned()),
                     &[CType::U64, CType::U64],
                 );
-                assert!(text.contains(&format!("{ty} *const counter")), "{text}");
+                assert!(text.contains(&format!("extern {ty} counter")), "{text}");
                 assert!(
-                    !text.contains(&format!("uint{}_t *const counter", width * 8)),
+                    !text.contains(&format!("extern uint{}_t counter", width * 8)),
                     "{text}"
                 );
                 assert!(
-                    text.contains("counter[") || text.contains("*counter +"),
+                    text.contains("counter[") || text.contains("counter +"),
                     "{text}"
                 );
             }
@@ -1703,8 +1703,11 @@ mod tests {
     #[test]
     fn named_data_address_values_keep_the_address_and_arithmetic_immediates_stay_numeric() {
         let address = global_returned(Expr::Const(0x1000), CType::U64, &[]);
-        assert!(address.contains("uint8_t *const counter"), "{address}");
-        assert!(address.contains("return (uintptr_t)counter;"), "{address}");
+        assert!(address.contains("extern uint8_t counter;"), "{address}");
+        assert!(
+            address.contains("return (uintptr_t)(&counter);"),
+            "{address}"
+        );
         assert!(!address.contains("void counter(void);"), "{address}");
 
         let arithmetic = global_returned(

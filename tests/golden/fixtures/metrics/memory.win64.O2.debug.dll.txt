@@ -20,6 +20,8 @@ static inline uint64_t interleave_low8(uint64_t a, uint64_t b) {
     return out;
 }
 #endif
+
+extern int grid[]; /* address: 0x180003000 */
 /* end velk prelude */
 
 == 0x180001000 copy_bytes
@@ -301,7 +303,6 @@ fn string_length @ 0x1800011e0 (size 29)
 -- decompile
 /* velk pseudo-C: grid_get @ 0x180001200 */
 /* ref: 0x180003000 .data */
-extern int grid[];
 int grid_get(int row, int col) {
     return grid[(row & 0x3) * 8 + (col & 0x7)];
 }
@@ -320,7 +321,6 @@ fn grid_get @ 0x180001200 (size 23)
 -- decompile
 /* velk pseudo-C: grid_set @ 0x180001220 */
 /* ref: 0x180003000 .data */
-extern int grid[];
 void grid_set(int row, int col, int value) {
     grid[(row & 0x3) * 8 + (col & 0x7)] = value;
 }
