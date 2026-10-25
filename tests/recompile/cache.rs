@@ -1,6 +1,6 @@
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::sync::OnceLock;
 use std::sync::atomic::{AtomicU64, Ordering};
@@ -63,6 +63,42 @@ fn compiler_identity() -> Option<String> {
     ))
 }
 
+const MAX_CACHE_BYTES: u64 = 1024 * 1024 * 1024;
+const MAX_ENTRY_BYTES: usize = 16 * 1024 * 1024;
+
+fn prune(root: &Path, limit: u64) {
+    let Ok(entries) = std::fs::read_dir(root) else {
+        return;
+    };
+    let mut files = Vec::new();
+    let mut bytes = 0_u64;
+    for entry in entries {
+        let Ok(entry) = entry else { continue };
+        let name = entry.file_name();
+        let name = name.to_string_lossy();
+        if name.len() != 16 || !name.bytes().all(|byte| byte.is_ascii_hexdigit()) {
+            continue;
+        }
+        let Ok(metadata) = entry.metadata() else {
+            continue;
+        };
+        if !metadata.is_file() {
+            continue;
+        }
+        bytes = bytes.saturating_add(metadata.len());
+        files.push((metadata.modified().ok(), entry.path(), metadata.len()));
+    }
+    files.sort();
+    for (_, path, size) in files {
+        if bytes <= limit {
+            break;
+        }
+        if std::fs::remove_file(path).is_ok() {
+            bytes = bytes.saturating_sub(size);
+        }
+    }
+}
+
 impl Cache {
     pub(super) fn new(program: &str, inputs: &impl Serialize, compiler_args: &[&str]) -> Self {
         static COMPILER: OnceLock<Option<String>> = OnceLock::new();
@@ -101,10 +137,12 @@ impl Cache {
                         .expect("serializable cache context")
                     })
             };
-        Self {
-            context,
-            root: super::common::root().join("target/recompile-cache"),
+        let root = super::common::root().join("target/recompile-cache");
+        if context.is_some() {
+            static PRUNED: OnceLock<()> = OnceLock::new();
+            PRUNED.get_or_init(|| prune(&root, MAX_CACHE_BYTES));
         }
+        Self { context, root }
     }
 
     pub(super) fn get_or_compute<T: Serialize + DeserializeOwned>(
@@ -135,6 +173,9 @@ impl Cache {
             output: text,
         };
         let bytes = serde_json::to_vec(&entry).expect("serializable cache entry");
+        if bytes.len() > MAX_ENTRY_BYTES {
+            return output;
+        }
         static NEXT: AtomicU64 = AtomicU64::new(0);
         let temporary = self.root.join(format!(
             ".{}-{}",
@@ -146,6 +187,11 @@ impl Cache {
                 let _ = std::fs::rename(&temporary, &path);
             }
             let _ = std::fs::remove_file(&temporary);
+            // Eviction only removes complete entries; concurrent readers can recompute a miss.
+            static WRITES: AtomicU64 = AtomicU64::new(0);
+            if WRITES.fetch_add(1, Ordering::Relaxed).is_multiple_of(16) {
+                prune(&self.root, MAX_CACHE_BYTES);
+            }
         }
         output
     }
@@ -259,5 +305,100 @@ fn a_printed_function_change_only_recompiles_its_fixture() {
     println!(
         "fixture cache: cold={cold}, warm=0, one changed fixture=3, restored=0 compiler calls"
     );
+    std::fs::remove_dir_all(scratch).unwrap();
+}
+
+#[test]
+fn eviction_preserves_temporary_files_and_limits_complete_entries() {
+    let root = super::scratch_dir("cache-eviction");
+    for index in 0..5 {
+        std::fs::write(root.join(format!("{index:016x}")), [0; 10]).unwrap();
+    }
+    let temporary = root.join(".pending");
+    std::fs::write(&temporary, [0; 10]).unwrap();
+    prune(&root, 20);
+    let mut bytes = 0;
+    for entry in std::fs::read_dir(&root).unwrap() {
+        let entry = entry.unwrap();
+        if entry.path() != temporary {
+            bytes += entry.metadata().unwrap().len();
+        }
+    }
+    assert_eq!(bytes, 20);
+    assert!(temporary.exists());
+    std::fs::remove_dir_all(root).unwrap();
+}
+
+#[test]
+fn batches_reuse_unchanged_code_and_detect_wrong_results_with_a_warm_cache() {
+    use super::*;
+    let scratch = scratch_dir("cache-batches");
+    let unique = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap()
+        .as_nanos();
+    for mode in [Mode::Registers, Mode::Memory] {
+        let batch_size = if mode == Mode::Registers { 32 } else { 1 };
+        let mut fixture = Fixture {
+            name: "cache_batches".into(),
+            convention: eval::Convention {
+                arguments: &[],
+                clobbered: &[],
+            },
+            entry_registers: Vec::new(),
+            initial_memory: Vec::new(),
+            functions: batch_size + 1,
+            excluded: BTreeMap::new(),
+            candidates: Vec::new(),
+        };
+        for index in 0..=batch_size {
+            let mut candidate = printed_candidate(
+                synthetic_ir(
+                    &format!("batch_{index}"),
+                    Vec::new(),
+                    CType::U64,
+                    vec![Stmt::Ret {
+                        value: Expr::Const(7),
+                    }],
+                ),
+                vec![Vec::new()],
+            );
+            writeln!(candidate.code, "/* {unique} {index} */").unwrap();
+            fixture.candidates.push(candidate);
+        }
+        let verify = |fixture: &Fixture| {
+            let mut results = Vec::new();
+            for candidates in fixture.candidates.chunks(batch_size) {
+                let candidates: Vec<&Candidate> = candidates.iter().collect();
+                results.push(check_batch(fixture, &candidates, &scratch, mode, &[]));
+            }
+            results
+        };
+        let before = COMPILATIONS.get();
+        let cold = verify(&fixture);
+        assert_comparison_runs(&cold[0], batch_size, batch_size);
+        assert_comparison_runs(&cold[1], 1, 1);
+        assert_eq!(COMPILATIONS.get() - before, 6);
+        verify(&fixture);
+        let warm = COMPILATIONS.get();
+        let disabled =
+            std::env::var_os("VELK_RECOMPILE_NO_CACHE").is_some_and(|value| value == "1");
+        if !disabled {
+            assert_eq!(warm - before, 6);
+        }
+        let original = fixture.candidates[0].code.clone();
+        fixture.candidates[0].code = original.replace("return 7;", "return 8;");
+        assert_ne!(fixture.candidates[0].code, original);
+        let wrong = verify(&fixture);
+        assert_eq!(wrong[0].differing, 1);
+        assert_eq!(wrong[0].runs, batch_size);
+        assert_comparison_runs(&wrong[1], 1, 1);
+        if !disabled {
+            assert_eq!(COMPILATIONS.get() - warm, 3);
+        }
+        fixture.candidates[0].code = original;
+        let parallel = check_parallel(std::slice::from_ref(&fixture), &scratch, mode);
+        assert_comparison_runs(&parallel[0], batch_size + 1, batch_size + 1);
+    }
     std::fs::remove_dir_all(scratch).unwrap();
 }

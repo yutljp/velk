@@ -13,9 +13,10 @@
 //! it first faults; the region's bytes after the run are compared too, in
 //! tests/golden/recompile_memory.txt.
 //!
-//! Each fixture's compiler and driver results are cached under
-//! target/recompile-cache; IR expectations and comparisons are recomputed.
-//! Set VELK_RECOMPILE_NO_CACHE=1 to compile and run every fixture again.
+//! Compiler and driver results for batches of at most 32 functions are cached
+//! under target/recompile-cache; IR expectations and comparisons are recomputed.
+//! Batches run in parallel, with results collected in fixture and batch order.
+//! Set VELK_RECOMPILE_NO_CACHE=1 to compile and run every batch again.
 
 #[path = "recompile/arm64_results.rs"]
 mod arm64_results;
@@ -5052,13 +5053,18 @@ fn compare(mode: Mode, golden: &str) {
         );
         return;
     }
+    let started = std::time::Instant::now();
     let fixtures = common::fixtures();
     let prepared = common::in_parallel(&fixtures, |fixture| prepare(fixture, mode));
+    eprintln!(
+        "recompile prepare {golden}: {:.3}s",
+        started.elapsed().as_secs_f64()
+    );
     let scratch = scratch_dir(match mode {
         Mode::Registers => "registers",
         Mode::Memory => "memory",
     });
-    let results = check(&prepared, &scratch, mode, &[]);
+    let results = check_parallel(&prepared, &scratch, mode);
     std::fs::remove_dir_all(&scratch).ok();
 
     let mut excluded: BTreeMap<&str, usize> = BTreeMap::new();
@@ -5574,9 +5580,7 @@ struct Expected {
     checksum: Option<u64>,
 }
 
-/// Compiles every fixture's functions into one program per optimization
-/// level, which keeps the compiler runs few, and compares their runs with
-/// the interpreter's.
+/// Compiles each group at both optimization levels and compares every run.
 fn check(
     fixtures: &[Fixture],
     scratch: &Path,
@@ -5589,16 +5593,58 @@ fn check(
         .collect()
 }
 
+fn check_parallel(fixtures: &[Fixture], scratch: &Path, mode: Mode) -> Vec<Findings> {
+    let mut batches = Vec::new();
+    for (index, fixture) in fixtures.iter().enumerate() {
+        for candidates in fixture.candidates.chunks(32) {
+            batches.push((index, candidates));
+        }
+    }
+    let indexed: Vec<_> = batches.iter().enumerate().collect();
+    let checked = common::in_parallel(&indexed, |(index, (fixture, candidates))| {
+        let directory = scratch.join(index.to_string());
+        std::fs::create_dir_all(&directory)
+            .unwrap_or_else(|error| panic!("{}: {error}", directory.display()));
+        let candidates: Vec<&Candidate> = candidates.iter().collect();
+        check_batch(&fixtures[*fixture], &candidates, &directory, mode, &[])
+    });
+    let mut results: Vec<Findings> = fixtures.iter().map(|_| Findings::default()).collect();
+    for ((index, _), batch) in batches.iter().zip(checked) {
+        let result = &mut results[*index];
+        result.compiled += batch.compiled;
+        result.failed += batch.failed;
+        result.compared += batch.compared;
+        result.runs += batch.runs;
+        result.differing += batch.differing;
+        for (reason, count) in batch.skipped {
+            *result.skipped.entry(reason).or_default() += count;
+        }
+        result.lines.extend(batch.lines);
+    }
+    results
+}
+
 fn check_fixture(
     fixture: &Fixture,
     scratch: &Path,
     mode: Mode,
     compiler_args: &[&str],
 ) -> Findings {
-    let mut result = Findings::default();
     let candidates: Vec<&Candidate> = fixture.candidates.iter().collect();
+    check_batch(fixture, &candidates, scratch, mode, compiler_args)
+}
+
+fn check_batch(
+    fixture: &Fixture,
+    candidates: &[&Candidate],
+    scratch: &Path,
+    mode: Mode,
+    compiler_args: &[&str],
+) -> Findings {
+    let started = std::time::Instant::now();
+    let mut result = Findings::default();
     let initial_memory = vec![fixture.initial_memory.as_slice(); candidates.len()];
-    for candidate in &candidates {
+    for candidate in candidates {
         for trial in 0..candidate.inputs.len() as u64 {
             segment_state(candidate, trial)
                 .unwrap_or_else(|reason| panic!("{}: {reason}", candidate.label));
@@ -5608,7 +5654,7 @@ fn check_fixture(
         return result;
     }
     let source = program(
-        &candidates,
+        candidates,
         &initial_memory,
         &(0..candidates.len()).collect::<Vec<_>>(),
         mode,
@@ -5618,9 +5664,11 @@ fn check_fixture(
         .map(|candidate| &candidate.inputs)
         .collect();
     let cache = cache::Cache::new(&source.text, &inputs, compiler_args);
+    let syntax_started = std::time::Instant::now();
     let (alive, failures) = cache.get_or_compute("syntax", &(), || {
-        compiles(&candidates, &initial_memory, &scratch.join("check.c"), mode)
+        compiles(candidates, &initial_memory, &scratch.join("check.c"), mode)
     });
+    let syntax_seconds = syntax_started.elapsed().as_secs_f64();
     for (index, message) in &failures {
         let candidate = candidates[*index];
         result.failed += 1;
@@ -5632,15 +5680,19 @@ fn check_fixture(
     if alive.is_empty() {
         return result;
     }
-    let source = program(&candidates, &initial_memory, &alive, mode);
+    let source = program(candidates, &initial_memory, &alive, mode);
+    let build_seconds = std::cell::Cell::new(0.0);
     let mut programs = None;
     let mut build_programs = || {
         programs
             .get_or_insert_with(|| {
-                LEVELS
+                let start = std::time::Instant::now();
+                let built = LEVELS
                     .iter()
                     .map(|level| build(&source, scratch, level, compiler_args))
-                    .collect::<Vec<_>>()
+                    .collect::<Vec<_>>();
+                build_seconds.set(build_seconds.get() + start.elapsed().as_secs_f64());
+                built
             })
             .clone()
     };
@@ -5652,9 +5704,12 @@ fn check_fixture(
             requests.push_str(&request('c', index, input));
         }
     }
+    let canonical_started = std::time::Instant::now();
     let printed = cache.get_or_compute("canonical", &(&source.text, &requests), || {
         run(&build_programs()[0], &requests)
     });
+    let canonical_seconds = canonical_started.elapsed().as_secs_f64();
+    let interpretation_started = std::time::Instant::now();
     let mut canonical = printed.lines().map(|line| {
         line.split_whitespace()
             .map(|word| u64::from_str_radix(word, 16).expect("a hex value"))
@@ -5687,6 +5742,8 @@ fn check_fixture(
         }
     }
 
+    let interpretation_seconds = interpretation_started.elapsed().as_secs_f64();
+    let execution_started = std::time::Instant::now();
     let mut requests = String::new();
     for run in &expected {
         let seed = (mode == Mode::Memory).then_some(run.trial);
@@ -5707,6 +5764,8 @@ fn check_fixture(
                 .map(|program| run(program, &requests))
                 .collect()
         });
+    let execution_seconds = execution_started.elapsed().as_secs_f64();
+    let comparison_started = std::time::Instant::now();
     let outputs: Vec<Vec<Ran>> = printed
         .iter()
         .map(|output| {
@@ -5771,6 +5830,13 @@ fn check_fixture(
         result.compared += 1;
         result.differing += usize::from(!same);
     }
+    eprintln!(
+        "recompile phase {}: total={:.3} syntax={syntax_seconds:.3} canonical={canonical_seconds:.3} interpret={interpretation_seconds:.3} execute={execution_seconds:.3} build={:.3} compare={:.3}",
+        fixture.name.display(),
+        started.elapsed().as_secs_f64(),
+        build_seconds.get(),
+        comparison_started.elapsed().as_secs_f64()
+    );
     result
 }
 
