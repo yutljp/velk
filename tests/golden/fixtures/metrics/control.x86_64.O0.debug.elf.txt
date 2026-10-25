@@ -71,8 +71,7 @@ int cleanup_on_error(int a, int b, int *out) {
     if (a >= 0) {
         if (b != 0) {
             *out = a / b;
-            status = 0;
-            return status;
+            return 0;
         }
         return status;
     }
@@ -120,21 +119,16 @@ int fallthrough(int x) {
         case 1:
             break;
         case 2:
-            total += 4;
-            return total;
+            return total + 4;
         case 3:
-            total = 8;
-            return total;
+            return 8;
         default:
-            total = 0xffffffff;
-            return total;
+            return -1;
         }
         total += 2;
-        total += 4;
-        return total;
+        return total + 4;
     }
-    total = 0xffffffff;
-    return total;
+    return -1;
 }
 -- signature
 int (int x)
@@ -341,18 +335,15 @@ fn skip_negatives @ 0x201480 (size 96)
 int find_pair(int *p, int n, int target) {
     int i; /* [sp-24] */
     int j; /* [sp-28] */
-    uint32_t result; /* [sp-c] */
 
     for (i = 0; i < n; i++) {
         for (j = i + 1; j < n; j++) {
             if (p[i] + p[j] == target) {
-                result = i * n + j;
-                return result;
+                return i * n + j;
             }
         }
     }
-    result = 0xffffffff;
-    return result;
+    return -1;
 }
 -- signature
 int (int * p, int n, int target)

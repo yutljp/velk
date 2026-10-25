@@ -40,8 +40,14 @@ pub fn fold_values_read_once(ir: &mut FunctionIr) {
     let chained = chained(ir);
     let predecessors = crate::render::structure::compare_chain::predecessors(ir);
     let mut uses = std::collections::HashMap::<u16, usize>::new();
+    let mut definitions = std::collections::HashMap::<u16, usize>::new();
     for stmt in ir.blocks.iter().flat_map(|block| &block.stmts) {
-        for register in statement_registers(stmt).1 {
+        let (writes, reads) = statement_registers(stmt);
+        for register in writes {
+            let count = definitions.entry(register).or_default();
+            *count = count.saturating_add(1);
+        }
+        for register in reads {
             let count = uses.entry(register).or_default();
             *count = count.saturating_add(count_operands(stmt, register).max(1));
         }
@@ -127,7 +133,22 @@ pub fn fold_values_read_once(ir: &mut FunctionIr) {
                 continue;
             };
             let mut folded = ir.blocks[at].stmts[reader].clone();
-            if !substitute(&mut folded, dest, &value) || !readable(&folded, sp) {
+            if !substitute(&mut folded, dest, &value) {
+                if definitions.get(&dest.index) != Some(&1)
+                    || !matches!(value, Expr::Load { .. } | Expr::Select { .. })
+                    || expr_width(&value) == Some(32)
+                    || crate::ssa::ranges::of(&value).hi
+                        > crate::ir::semantics::mask(u32::from(dest.width.min(32)))
+                {
+                    continue;
+                }
+                folded = ir.blocks[at].stmts[reader].clone();
+                let extended = Expr::bin(BinOp::And, value.clone(), Expr::Const(0xffff_ffff));
+                if !substitute(&mut folded, dest, &extended) {
+                    continue;
+                }
+            }
+            if !readable(&folded, sp) {
                 continue;
             }
             ir.blocks[at].stmts[reader] = folded;
@@ -212,12 +233,22 @@ fn reader(
     live_out: &[HashSet<u16>],
     sp: u16,
 ) -> Option<(usize, usize)> {
-    if expr_width(value).is_none() || size(value, sp) > VALUE_NODES || floats(value) {
+    if size(value, sp) > VALUE_NODES || floats(value) {
         return None;
     }
     let (mut block, index) = def;
     let mut sources = HashSet::new();
     collect_reads(value, &mut sources);
+    if expr_width(value).is_none()
+        && !(matches!(value, Expr::Select { then, els, .. }
+            if matches!(then.as_ref(), Expr::Const(0 | 1))
+                && matches!(els.as_ref(), Expr::Const(0 | 1)))
+            && sources.iter().all(|source| {
+                *source < TEMP_BASE && ir.params.iter().any(|param| param.index == *source)
+            }))
+    {
+        return None;
+    }
     // A register a call before left a further result in reads better as
     // the variable it was copied to.
     if sources.contains(&dest)

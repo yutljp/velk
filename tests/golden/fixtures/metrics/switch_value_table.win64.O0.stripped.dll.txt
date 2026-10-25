@@ -7,33 +7,26 @@
 /* ref: 0x180002000 .rdata */
 int32_t sub_180001000(int32_t a0) {
     int64_t local_0; /* [sp-10] */
-    uint32_t result; /* [sp-4] */
 
     uint32_t v1 = a0 - 10;
     local_0 = v1;
     if (v1 <= 4) {
         switch (local_0 - 4) {
         case -4:
-            result = 1;
-            return result;
+            return 1;
         case -3:
-            result = 3;
-            return result;
+            return 3;
         case -2:
-            result = 7;
-            return result;
+            return 7;
         case -1:
-            result = 9;
-            return result;
+            return 9;
         case 0:
-            result = 11;
-            return result;
+            return 11;
         default:
             break;
         }
     }
-    result = 0;
-    return result;
+    return 0;
 }
 -- signature
 int32_t (int32_t a0)

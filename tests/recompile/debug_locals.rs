@@ -577,3 +577,296 @@ fn debug_structure_fields_preserve_signed_values() {
         &[],
     );
 }
+
+#[test]
+fn bounded_narrow_copies_fold_without_changing_extended_values() {
+    let temp = velk::ir::VARIABLE_BASE;
+    let mut candidates = Vec::new();
+    for width in [8, 16, 32] {
+        for bounded in [false, true] {
+            let value = if bounded {
+                Expr::Select {
+                    cond: Cond::Lt,
+                    lhs: Box::new(Expr::reg(7, 32)),
+                    rhs: Box::new(Expr::Const(0)),
+                    then: Box::new(Expr::Const(1)),
+                    els: Box::new(Expr::Const(0)),
+                }
+            } else {
+                Expr::reg(7, 64)
+            };
+            let mut ir = synthetic_ir(
+                &format!("narrow_copy_{width}_{bounded}"),
+                vec![Param {
+                    index: 7,
+                    name: "input".into(),
+                    ty: CType::U64,
+                }],
+                CType::U64,
+                vec![
+                    Stmt::Assign {
+                        dest: velk::ir::RegRef { index: temp, width },
+                        value,
+                    },
+                    Stmt::Ret {
+                        value: Expr::reg(temp, 64),
+                    },
+                ],
+            );
+            ir.value_types.insert(temp, CType::int(width / 8, false));
+            let mut candidate = printed_candidate(
+                ir.clone(),
+                [0, 1, 255, 256, 65535, 65536, 0x8000_0000, u64::MAX]
+                    .into_iter()
+                    .map(|value| vec![value])
+                    .collect(),
+            );
+            velk::passes::read_once::fold_values_read_once(&mut ir);
+            candidate.code = velk::render::render(&ir, &[], &Default::default(), &[]);
+            if bounded {
+                assert!(!candidate.code.contains(" v1"), "{}", candidate.code);
+                assert!(candidate.code.contains("return "), "{}", candidate.code);
+            }
+            candidates.push(candidate);
+        }
+    }
+    check_candidates("bounded-narrow-copies", candidates, Mode::Registers, &[]);
+}
+
+#[test]
+fn private_return_slots_fold_only_at_the_return_width() {
+    let mut candidates = Vec::new();
+    for width in [1, 2, 4, 8] {
+        for widened in [false, true] {
+            let ir = synthetic_ir(
+                &format!("return_slot_{width}_{widened}"),
+                vec![Param {
+                    index: 7,
+                    name: "input".into(),
+                    ty: CType::U64,
+                }],
+                if widened {
+                    CType::U64
+                } else {
+                    CType::int(width, false)
+                },
+                vec![
+                    Stmt::Store {
+                        addr: slot(-16),
+                        value: Expr::reg(7, 64),
+                        width,
+                    },
+                    Stmt::Ret {
+                        value: Expr::Load {
+                            addr: Box::new(slot(-16)),
+                            width,
+                            signed: false,
+                        },
+                    },
+                ],
+            );
+            let candidate = printed_candidate(
+                ir,
+                [0, 1, 255, 256, 65535, 65536, 0xffff_ffff, u64::MAX]
+                    .into_iter()
+                    .map(|value| vec![value])
+                    .collect(),
+            );
+            assert_eq!(
+                candidate.code.contains("local_"),
+                widened && width != 8,
+                "{}",
+                candidate.code
+            );
+            candidates.push(candidate);
+        }
+    }
+    check_candidates("private-return-slots", candidates, Mode::Registers, &[]);
+    let escaped = synthetic_ir(
+        "escaped_return_slot",
+        vec![Param {
+            index: 7,
+            name: "output".into(),
+            ty: CType::pointer_to(CType::U64),
+        }],
+        CType::U32,
+        vec![
+            Stmt::Store {
+                addr: Expr::reg(7, 64),
+                value: slot(-16),
+                width: 8,
+            },
+            Stmt::Store {
+                addr: slot(-16),
+                value: Expr::Const(19),
+                width: 4,
+            },
+            Stmt::Ret {
+                value: Expr::Load {
+                    addr: Box::new(slot(-16)),
+                    width: 4,
+                    signed: false,
+                },
+            },
+        ],
+    );
+    let code = velk::render::render(&escaped, &[], &Default::default(), &[]);
+    assert!(code.contains("local_"), "{code}");
+    for isa in ["x86_64", "aarch64"] {
+        let mut binary =
+            Binary::open(&common::fixtures_dir().join(format!("metrics/float.{isa}.O0.debug.elf")))
+                .unwrap();
+        let address = binary.find("average").unwrap().addr;
+        let code = binary.decompile(address, None, None).unwrap();
+        assert!(!code.contains("double result;"), "{code}");
+        syntax::run_printed(
+            &code,
+            "",
+            "double values[] = {1.0, 2.0, 3.0}; return average(values, 3) != 2.0 || average(values, 0) != 0.0;",
+        );
+    }
+}
+
+#[test]
+fn bounded_sign_extensions_do_not_widen_array_indices() {
+    for isa in ["x86_64", "aarch64"] {
+        let mut binary = Binary::open(
+            &common::fixtures_dir().join(format!("metrics/memory.{isa}.O0.debug.elf")),
+        )
+        .unwrap();
+        let address = binary.find("grid_get").unwrap().addr;
+        let code = binary.decompile(address, None, None).unwrap();
+        assert!(!code.contains("(int64_t)"), "{code}");
+        syntax::run_printed(
+            &code,
+            "int grid[32];",
+            "for (int i = 0; i < 32; ++i) grid[i] = i; for (int row = -16; row < 16; ++row) for (int col = -16; col < 16; ++col) if (grid_get(row, col) != (row & 3) * 8 + (col & 7)) return 1; return 0;",
+        );
+    }
+}
+
+#[test]
+fn shifted_structure_offsets_keep_named_fields_and_negative_indices() {
+    let mut binary =
+        Binary::open(&common::fixtures_dir().join("metrics/struct_arrays.x86_64.O0.debug.elf"))
+            .unwrap();
+    let address = binary.find("item_last_key").unwrap().addr;
+    let code = binary.decompile(address, None, None).unwrap();
+    assert!(code.contains(".count") && code.contains(".key"), "{code}");
+    assert!(!code.contains("(uint8_t *)"), "{code}");
+    syntax::run_printed(
+        &code,
+        "",
+        "struct item items[3] = {{.key=7,.count=1},{.key=11,.count=0},{.key=19,.count=1}}; return item_last_key(items,3) != 19 || item_last_key(items,2) != 7;",
+    );
+    let mut binary =
+        Binary::open(&common::fixtures_dir().join("metrics/struct_arrays.x86_64.O2.debug.elf"))
+            .unwrap();
+    let address = binary.find("item_weight").unwrap().addr;
+    let code = binary.decompile(address, None, None).unwrap();
+    assert!(code.contains(".kind") && code.contains(".count"), "{code}");
+    syntax::run_printed(
+        &code,
+        "",
+        "struct item items[3] = {{.count=3,.kind=-2},{.count=5,.kind=7},{.count=-11,.kind=13}}; return item_weight(items+1,-1) != -6 || item_weight(items+1,0) != 35 || item_weight(items+1,1) != -143;",
+    );
+}
+
+#[test]
+fn narrow_loads_keep_their_existing_single_use_substitutions() {
+    let temp = velk::ir::VARIABLE_BASE;
+    let mut candidates = Vec::new();
+    for width in [8, 16] {
+        for assigned in [width, 32, 64] {
+            let mut ir = synthetic_ir(
+                &format!("direct_narrow_load_{width}_{assigned}"),
+                vec![Param {
+                    index: 7,
+                    name: "input".into(),
+                    ty: CType::pointer_to(CType::int(width / 8, false)),
+                }],
+                CType::U64,
+                vec![
+                    Stmt::Assign {
+                        dest: velk::ir::RegRef {
+                            index: temp,
+                            width: assigned,
+                        },
+                        value: Expr::Load {
+                            addr: Box::new(Expr::reg(7, 64)),
+                            width: width / 8,
+                            signed: false,
+                        },
+                    },
+                    Stmt::Ret {
+                        value: Expr::reg(temp, width),
+                    },
+                ],
+            );
+            ir.value_types.insert(temp, CType::int(width / 8, false));
+            let mut candidate = printed_candidate(ir.clone(), vec![vec![REGION]]);
+            velk::passes::read_once::fold_values_read_once(&mut ir);
+            candidate.code = velk::render::render(&ir, &[], &Default::default(), &[]);
+            assert!(!candidate.code.contains(" v1"), "{}", candidate.code);
+            candidates.push(candidate);
+        }
+    }
+    check_candidates("direct-narrow-loads", candidates, Mode::Memory, &[]);
+}
+
+#[test]
+fn narrow_values_with_multiple_definitions_keep_their_snapshots() {
+    let temp = velk::ir::VARIABLE_BASE;
+    let load = |offset| Expr::Load {
+        addr: Box::new(Expr::bin(BinOp::Add, Expr::reg(7, 64), Expr::Const(offset))),
+        width: 1,
+        signed: false,
+    };
+    let mut ir = synthetic_ir(
+        "repeated_narrow_value",
+        vec![Param {
+            index: 7,
+            name: "input".into(),
+            ty: CType::pointer_to(CType::int(1, false)),
+        }],
+        CType::U64,
+        vec![
+            Stmt::Assign {
+                dest: velk::ir::RegRef {
+                    index: temp,
+                    width: 32,
+                },
+                value: load(0),
+            },
+            Stmt::Store {
+                addr: Expr::bin(BinOp::Add, Expr::reg(7, 64), Expr::Const(8)),
+                value: Expr::reg(temp, 64),
+                width: 1,
+            },
+            Stmt::Assign {
+                dest: velk::ir::RegRef {
+                    index: temp,
+                    width: 32,
+                },
+                value: load(1),
+            },
+            Stmt::Ret {
+                value: Expr::reg(temp, 64),
+            },
+        ],
+    );
+    ir.value_types.insert(temp, CType::int(1, false));
+    let mut candidate = printed_candidate(ir.clone(), vec![vec![REGION]]);
+    velk::passes::read_once::fold_values_read_once(&mut ir);
+    assert_eq!(ir.blocks[0].stmts.len(), 4);
+    candidate.code = velk::render::render(&ir, &[], &Default::default(), &[]);
+    assert!(
+        candidate
+            .code
+            .lines()
+            .any(|line| line.starts_with("    uint8_t ")),
+        "{}",
+        candidate.code
+    );
+    check_candidates("repeated-narrow-value", vec![candidate], Mode::Memory, &[]);
+}

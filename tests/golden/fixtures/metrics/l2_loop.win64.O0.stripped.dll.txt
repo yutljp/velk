@@ -129,16 +129,13 @@ fn <unnamed> @ 0x180001090 (size 94)
 /* velk pseudo-C: sub_1800010f0 @ 0x1800010f0 */
 int32_t sub_1800010f0(uint32_t *a0, int32_t a1, int32_t a2) {
     int32_t i; /* [sp-1c] */
-    uint32_t result; /* [sp-4] */
 
     for (i = 0; i < a1; i++) {
         if (a0[i] == a2) {
-            result = i;
-            return result;
+            return i;
         }
     }
-    result = 0xffffffff;
-    return result;
+    return -1;
 }
 -- signature
 int32_t (uint32_t * a0, int32_t a1, int32_t a2)

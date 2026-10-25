@@ -19,8 +19,7 @@ int32_t sub_180001000(uint8_t *a0, uint8_t *a1, int32_t a2) {
     while (true) {
         v1 = local_0;
         if (v1 >= a2) break;
-        uint8_t v2 = a1[local_0];
-        a0[local_0] = v2;
+        a0[local_0] = a1[local_0];
         local_0 += 1;
     }
     return v1;
@@ -40,8 +39,7 @@ fn <unnamed> @ 0x180001000 (size 79)
     v1 = load32((rsp + #0xffffffffffffffe4))
     brif cs (v1 & #0xffffffff), load32((rsp + #0xfffffffffffffffc)) -> 0x18000104a
   blk2 @ 0x180001025:
-    v2 = load8((load64((rsp + #0xfffffffffffffff0)) + load32((rsp + #0xffffffffffffffe4))))
-    store8(v2, (load64((rsp + #0xffffffffffffffe8)) + load32((rsp + #0xffffffffffffffe4))))
+    store8((load8((load64((rsp + #0xfffffffffffffff0)) + load32((rsp + #0xffffffffffffffe4)))) & #0xffffffff), (load64((rsp + #0xffffffffffffffe8)) + load32((rsp + #0xffffffffffffffe4))))
     store32((load32((rsp + #0xffffffffffffffe4)) + #0x1), (rsp + #0xffffffffffffffe4))
     br 0x18000101b
   blk3 @ 0x18000104a:
@@ -62,8 +60,7 @@ int32_t sub_180001050(uint8_t *a0, int32_t a1, int32_t a2) {
     while (true) {
         v1 = local_1;
         if (v1 >= a2) break;
-        uint8_t v2 = local_0;
-        a0[local_1] = v2;
+        a0[local_1] = local_0;
         local_1 += 1;
     }
     return v1;
@@ -83,8 +80,7 @@ fn <unnamed> @ 0x180001050 (size 70)
     v1 = load32((rsp + #0xffffffffffffffec))
     brif cs (v1 & #0xffffffff), load32((rsp + #0xfffffffffffffffc)) -> 0x180001091
   blk2 @ 0x180001074:
-    v2 = load8((rsp + #0xfffffffffffffffb))
-    store8(v2, (load64((rsp + #0xfffffffffffffff0)) + load32((rsp + #0xffffffffffffffec))))
+    store8((load8((rsp + #0xfffffffffffffffb)) & #0xffffffff), (load64((rsp + #0xfffffffffffffff0)) + load32((rsp + #0xffffffffffffffec))))
     store32((load32((rsp + #0xffffffffffffffec)) + #0x1), (rsp + #0xffffffffffffffec))
     br 0x18000106a
   blk3 @ 0x180001091:
@@ -127,7 +123,7 @@ fn <unnamed> @ 0x1800010a0 (size 54)
 int32_t sub_1800010e0(int32_t a0, int32_t a1) {
     uint32_t *const dword_180003000 = (uint32_t *)0x180003000ULL;
 
-    return dword_180003000[(a0 & 0x3) * 8 + (int64_t)(a1 & 0x7)];
+    return dword_180003000[(a0 & 0x3) * 8 + (a1 & 0x7)];
 }
 -- signature
 int32_t (int32_t a0, int32_t a1)

@@ -78,8 +78,7 @@ int cleanup_on_error(int a, int b, int *out) {
     if ((a & 0x80000000) == 0) {
         if (b != 0) {
             *out = a / b;
-            status = 0;
-            return status;
+            return 0;
         }
         return status;
     }
@@ -345,18 +344,15 @@ fn skip_negatives @ 0x2104c4 (size 124)
 int find_pair(int *p, int n, int target) {
     int32_t j;
     int i; /* [sp-1c] */
-    uint32_t result; /* [sp-4] */
 
     for (i = 0; i < n; i++) {
         for (j = i + 1; j < n; j++) {
             if (p[i] + p[j] == target) {
-                result = i * n + j;
-                return result;
+                return i * n + j;
             }
         }
     }
-    result = 0xffffffff;
-    return result;
+    return -1;
 }
 -- signature
 int (int * p, int n, int target)

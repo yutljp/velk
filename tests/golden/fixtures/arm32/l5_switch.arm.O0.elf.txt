@@ -385,22 +385,16 @@ fn c15 @ 0x2057c (size 48)
 -- decompile
 /* velk pseudo-C: sparse @ 0x205ac */
 int sparse(int x) {
-    uint32_t result; /* [sp-c] */
-
     if (x != 1) {
         if (x != 50) {
             if (x != 300) {
-                result = 0xffffffff;
-                return result;
+                return -1;
             }
-            result = 300;
-            return result;
+            return 300;
         }
-        result = 7;
-        return result;
+        return 7;
     }
-    result = 100;
-    return result;
+    return 100;
 }
 -- signature
 int (int x)

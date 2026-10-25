@@ -335,8 +335,7 @@ fn negate @ 0x201670 (size 14)
 -- decompile
 /* velk pseudo-C: is_neg @ 0x201680 */
 int is_neg(int x) {
-    uint8_t v2 = x < 0;
-    return v2;
+    return x < 0;
 }
 -- signature
 int (int x)
@@ -345,8 +344,7 @@ int (int x)
 -- ir
 fn is_neg @ 0x201680 (size 21)
   blk0 @ 0x201680:
-    v2 = select lt edi, #0x0 ? #0x1, #0x0
-    ret (v2 & #0xff)
+    ret (select lt edi, #0x0 ? #0x1, #0x0 & #0xff)
 -- card
 {"addr":"0x201680","approxTokens":150,"blocks":1,"hardReasons":[],"name":"is_neg","nameSources":["symtab","dwarf","unwind"],"section":".text","size":21,"unsupported":0}
 
@@ -354,8 +352,7 @@ fn is_neg @ 0x201680 (size 21)
 -- decompile
 /* velk pseudo-C: is_zero @ 0x2016a0 */
 int is_zero(int x) {
-    uint8_t v2 = x == 0;
-    return v2;
+    return x == 0;
 }
 -- signature
 int (int x)
@@ -364,8 +361,7 @@ int (int x)
 -- ir
 fn is_zero @ 0x2016a0 (size 21)
   blk0 @ 0x2016a0:
-    v2 = select eq edi, #0x0 ? #0x1, #0x0
-    ret (v2 & #0xff)
+    ret (select eq edi, #0x0 ? #0x1, #0x0 & #0xff)
 -- card
 {"addr":"0x2016a0","approxTokens":150,"blocks":1,"hardReasons":[],"name":"is_zero","nameSources":["symtab","dwarf","unwind"],"section":".text","size":21,"unsupported":0}
 
@@ -373,8 +369,7 @@ fn is_zero @ 0x2016a0 (size 21)
 -- decompile
 /* velk pseudo-C: is_pos @ 0x2016c0 */
 int is_pos(int x) {
-    uint8_t v2 = x > 0;
-    return v2;
+    return x > 0;
 }
 -- signature
 int (int x)
@@ -383,8 +378,7 @@ int (int x)
 -- ir
 fn is_pos @ 0x2016c0 (size 21)
   blk0 @ 0x2016c0:
-    v2 = select gt edi, #0x0 ? #0x1, #0x0
-    ret (v2 & #0xff)
+    ret (select gt edi, #0x0 ? #0x1, #0x0 & #0xff)
 -- card
 {"addr":"0x2016c0","approxTokens":150,"blocks":1,"hardReasons":[],"name":"is_pos","nameSources":["symtab","dwarf","unwind"],"section":".text","size":21,"unsupported":0}
 

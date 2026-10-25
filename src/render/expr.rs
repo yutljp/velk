@@ -1420,7 +1420,7 @@ mod tests {
             ],
             &[CType::U64],
         );
-        assert!(text.contains("result >>= 3;"), "{text}");
+        assert!(text.contains("return result >> 3;"), "{text}");
     }
 
     #[test]

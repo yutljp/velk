@@ -9,7 +9,7 @@
 struct item { _Alignas(8) long key; int count; short kind; uint8_t gap_0xe[0x2]; };
 int item_weight(struct item *items, int i) {
     int64_t v1 = (uint64_t)i << 4;
-    return *(int16_t *)((uint8_t *)items + v1 + 0xc) * *(uint32_t *)((uint8_t *)items + v1 + 0x8);
+    return items[v1 / 16].kind * items[v1 / 16].count;
 }
 -- signature
 int (struct item * items, int i)

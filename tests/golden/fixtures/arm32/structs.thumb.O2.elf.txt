@@ -301,8 +301,7 @@ fn flags_level @ 0x201fc (size 16)
 -- decompile
 /* velk pseudo-C: flags_set_mode @ 0x2020c */
 void flags_set_mode(struct flags *f, unsigned int mode) {
-    uint8_t v1 = *(uint8_t *)((uint32_t)(uintptr_t)f);
-    *(uint8_t *)((uint32_t)(uintptr_t)f) = v1 & 0xf1 | (mode & 0x7) << 1;
+    *(uint8_t *)((uint32_t)(uintptr_t)f) = *(uint8_t *)((uint32_t)(uintptr_t)f) & 0xf1 | (mode & 0x7) << 1;
 }
 -- signature
 void (struct flags * f, unsigned int mode)
@@ -311,8 +310,7 @@ void (struct flags * f, unsigned int mode)
 -- ir
 fn flags_set_mode @ 0x2020c (size 18)
   blk0 @ 0x2020c:
-    v1 = load8(r0)
-    store8(((v1 & #0xf1) | ((r1 & #0x7) << #0x1)), r0)
+    store8((((load8(r0) & #0xffffffff) & #0xf1) | ((r1 & #0x7) << #0x1)), r0)
     ret #0x0
 -- card
 {"addr":"0x2020c","approxTokens":132,"blocks":1,"hardReasons":[],"name":"flags_set_mode","nameSources":["symtab","dwarf"],"section":".text","size":18,"unsupported":0}

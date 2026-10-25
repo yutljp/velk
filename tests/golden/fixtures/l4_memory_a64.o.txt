@@ -102,7 +102,6 @@ int32_t ()
 -- ir
 fn banner_first @ 0x58 (size 16)
   blk0 @ 0x58:
-    v1 = load8(load64(#0x78))
-    ret v1
+    ret (load8(load64(#0x78)) & #0xffffffff)
 -- card
 {"addr":"0x58","approxTokens":120,"blocks":1,"hardReasons":[],"name":"banner_first","nameSources":["symtab","unwind"],"section":".text","size":16,"unsupported":0}

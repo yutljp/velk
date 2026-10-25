@@ -69,8 +69,7 @@ int32_t sub_180001090(int32_t a0, int32_t a1, uint32_t *a2) {
     if (a0 >= 0) {
         if (a1 != 0) {
             *a2 = a0 / a1;
-            result = 0;
-            return result;
+            return 0;
         }
         return result;
     }
@@ -115,21 +114,16 @@ int32_t sub_1800010e0(int32_t a0) {
         case 1:
             break;
         case 2:
-            result += 4;
-            return result;
+            return result + 4;
         case 3:
-            result = 8;
-            return result;
+            return 8;
         default:
-            result = 0xffffffff;
-            return result;
+            return -1;
         }
         result += 2;
-        result += 4;
-        return result;
+        return result + 4;
     }
-    result = 0xffffffff;
-    return result;
+    return -1;
 }
 -- signature
 int32_t (int32_t a0)
@@ -323,18 +317,15 @@ fn <unnamed> @ 0x180001240 (size 94)
 int32_t sub_1800012a0(uint32_t *a0, int32_t a1, int32_t a2) {
     int32_t j;
     int32_t i; /* [sp-1c] */
-    uint32_t result; /* [sp-4] */
 
     for (i = 0; i < a1; i++) {
         for (j = i + 1; j < a1; j++) {
             if (a0[i] + a0[j] == a2) {
-                result = i * a1 + j;
-                return result;
+                return i * a1 + j;
             }
         }
     }
-    result = 0xffffffff;
-    return result;
+    return -1;
 }
 -- signature
 int32_t (uint32_t * a0, int32_t a1, int32_t a2)

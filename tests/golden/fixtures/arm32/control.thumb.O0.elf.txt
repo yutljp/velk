@@ -90,8 +90,7 @@ int cleanup_on_error(int a, int b, int *out) {
     if (b != 0) {
         int64_t t1 = b;
         *(uint32_t *)((uint32_t)(uintptr_t)out) = (t1 == 0 ? 0 : (int64_t)a / t1);
-        result = 0;
-        return result;
+        return 0;
     }
     return result;
 }
@@ -374,19 +373,16 @@ int find_pair(int *p, int n, int target) {
     int32_t j;
     int32_t v2;
     int32_t i; /* [sp-14] */
-    uint32_t result; /* [sp-4] */
 
     for (i = 0; i < n; i++) {
         for (j = i + 1; j < n; j++) {
             v2 = (uint32_t)(uintptr_t)p;
             if (*(uint32_t *)((v2 + ((uint64_t)i << 2)) & 0xffffffff) + *(uint32_t *)((v2 + ((uint64_t)j << 2)) & 0xffffffff) == target) {
-                result = j + i * n;
-                return result;
+                return j + i * n;
             }
         }
     }
-    result = 0xffffffff;
-    return result;
+    return -1;
 }
 -- signature
 int (int * p, int n, int target)

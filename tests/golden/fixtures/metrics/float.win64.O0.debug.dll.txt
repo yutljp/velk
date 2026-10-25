@@ -11,18 +11,15 @@
 double average(double *values, int n) {
     double local_0; /* [sp-18] */
     int32_t i; /* [sp-1c] */
-    double result; /* [sp-28] */
 
     local_0 = 0.0;
     for (i = 0; i < n; i++) {
         local_0 = values[i] + local_0;
     }
     if (n <= 0) {
-        result = 0.0;
-        return result;
+        return 0.0;
     }
-    result = local_0 / (double)n;
-    return result;
+    return local_0 / (double)n;
 }
 -- signature
 double (double * values, int n)

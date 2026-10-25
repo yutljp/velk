@@ -15,8 +15,7 @@ void copy_bytes(unsigned char *dst, unsigned char *src, unsigned long n) {
     unsigned long i; /* [sp-28] */
 
     for (i = 0; i < n; i++) {
-        uint8_t v1 = src[i];
-        dst[i] = v1;
+        dst[i] = src[i];
     }
 }
 -- signature
@@ -33,8 +32,7 @@ fn copy_bytes @ 0x201280 (size 79)
   blk1 @ 0x201298:
     brif cs load64((rsp + #0xffffffffffffffd8)), load64((rsp + #0xffffffffffffffe0)) -> 0x2012cd
   blk2 @ 0x2012a6:
-    v1 = load8((load64((rsp + #0xffffffffffffffe8)) + load64((rsp + #0xffffffffffffffd8))))
-    store8(v1, (load64((rsp + #0xfffffffffffffff0)) + load64((rsp + #0xffffffffffffffd8))))
+    store8((load8((load64((rsp + #0xffffffffffffffe8)) + load64((rsp + #0xffffffffffffffd8)))) & #0xffffffff), (load64((rsp + #0xfffffffffffffff0)) + load64((rsp + #0xffffffffffffffd8))))
     store64((load64((rsp + #0xffffffffffffffd8)) + #0x1), (rsp + #0xffffffffffffffd8))
     br 0x201298
   blk3 @ 0x2012cd:
@@ -49,8 +47,7 @@ void fill_bytes(unsigned char *dst, unsigned char value, unsigned long n) {
     unsigned long i; /* [sp-28] */
 
     for (i = 0; i < n; i++) {
-        uint8_t v1 = value;
-        dst[i] = v1;
+        dst[i] = value;
     }
 }
 -- signature
@@ -67,8 +64,7 @@ fn fill_bytes @ 0x2012d0 (size 73)
   blk1 @ 0x2012ea:
     brif cs load64((rsp + #0xffffffffffffffd8)), load64((rsp + #0xffffffffffffffe0)) -> 0x201317
   blk2 @ 0x2012f8:
-    v1 = load8((rsp + #0xffffffffffffffef))
-    store8(v1, (load64((rsp + #0xfffffffffffffff0)) + load64((rsp + #0xffffffffffffffd8))))
+    store8((load8((rsp + #0xffffffffffffffef)) & #0xffffffff), (load64((rsp + #0xfffffffffffffff0)) + load64((rsp + #0xffffffffffffffd8))))
     store64((load64((rsp + #0xffffffffffffffd8)) + #0x1), (rsp + #0xffffffffffffffd8))
     br 0x2012ea
   blk3 @ 0x201317:
@@ -111,7 +107,7 @@ fn string_length @ 0x201320 (size 57)
 /* ref: 0x202450 .bss */
 extern int grid[];
 int grid_get(int row, int col) {
-    return grid[(int64_t)(row & 0x3) * 8 + (col & 0x7)];
+    return grid[(row & 0x3) * 8 + (col & 0x7)];
 }
 -- signature
 int (int row, int col)
@@ -130,7 +126,7 @@ fn grid_get @ 0x201360 (size 47)
 /* ref: 0x202450 .bss */
 extern int grid[];
 void grid_set(int row, int col, int value) {
-    grid[(int64_t)(row & 0x3) * 8 + (col & 0x7)] = value;
+    grid[(row & 0x3) * 8 + (col & 0x7)] = value;
 }
 -- signature
 void (int row, int col, int value)

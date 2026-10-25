@@ -11,18 +11,15 @@
 double sub_2011f0(double *a0, int32_t a1) {
     double local_0; /* [sp-20] */
     int32_t i; /* [sp-24] */
-    double result; /* [sp-30] */
 
     local_0 = 0.0;
     for (i = 0; i < a1; i++) {
         local_0 = a0[i] + local_0;
     }
     if (a1 <= 0) {
-        result = 0.0;
-        return result;
+        return 0.0;
     }
-    result = local_0 / (double)a1;
-    return result;
+    return local_0 / (double)a1;
 }
 -- signature
 double (double * a0, int32_t a1)

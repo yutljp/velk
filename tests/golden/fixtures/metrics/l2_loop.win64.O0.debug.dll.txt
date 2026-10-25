@@ -129,16 +129,13 @@ fn sum_skip_odd @ 0x180001090 (size 94)
 /* velk pseudo-C: find_first @ 0x1800010f0 */
 int find_first(int *p, int n, int v) {
     int32_t i; /* [sp-1c] */
-    uint32_t result; /* [sp-4] */
 
     for (i = 0; i < n; i++) {
         if (p[i] == v) {
-            result = i;
-            return result;
+            return i;
         }
     }
-    result = 0xffffffff;
-    return result;
+    return -1;
 }
 -- signature
 int (int * p, int n, int v)

@@ -41,8 +41,7 @@ int32_t seh_except(int32_t a0) {
     uint32_t local_1; /* [sp-c] */
 
     local_0 = ((int32_t)(imported_value(a0 & 0xffffffff)));
-    local_1 = local_0;
-    return local_1;
+    return local_0;
 L_18000102f:
     *(uint64_t *)(v3 - 0x18) = v1;
     *(uint32_t *)(v3 - 0xc) = *(uint64_t *)(v3 - 0x18);

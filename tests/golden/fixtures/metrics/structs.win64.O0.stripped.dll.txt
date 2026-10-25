@@ -167,11 +167,9 @@ int32_t sub_180001140(int32_t a0) {
     result = v1;
     *(uint32_t *)((uint8_t *)&result + 0x4) = a0;
     if ((a0 & 0x1) == 0) {
-        *(uint32_t *)&result = *(uint32_t *)((uint8_t *)&result + 0x4) >> 1 & 0x7;
-        return *(uint32_t *)&result;
+        return *(uint32_t *)((uint8_t *)&result + 0x4) >> 1 & 0x7;
     }
-    *(uint32_t *)&result = *(uint32_t *)((uint8_t *)&result + 0x4) >> 4 & 0xf;
-    return *(uint32_t *)&result;
+    return *(uint32_t *)((uint8_t *)&result + 0x4) >> 4 & 0xf;
 }
 -- signature
 int32_t (int32_t a0)

@@ -159,8 +159,7 @@ int32_t (int32_t a0)
 fn <unnamed> @ 0x21036c (size 24)
   blk0 @ 0x21036c:
     store32(w0, (sp + #0xfffffffffffffffc))
-    v2 = load8((sp + #0xfffffffffffffffc))
-    ret v2
+    ret (load8((sp + #0xfffffffffffffffc)) & #0xffffffff)
 -- card
 {"addr":"0x21036c","approxTokens":132,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":24,"unsupported":0}
 
@@ -206,8 +205,7 @@ fn <unnamed> @ 0x210384 (size 76)
 -- decompile
 /* velk pseudo-C: sub_2103d0 @ 0x2103d0 */
 uint8_t *sub_2103d0(uint8_t *a0, int32_t a1) {
-    uint8_t v2 = *a0;
-    *a0 = v2 & 0xfffffff1 | (a1 & 0x7) << 1;
+    *a0 = *a0 & 0xfffffff1 | (a1 & 0x7) << 1;
     return a0;
 }
 -- signature
@@ -218,8 +216,7 @@ uint8_t * (uint8_t * a0, int32_t a1)
 fn <unnamed> @ 0x2103d0 (size 48)
   blk0 @ 0x2103d0:
     v1 = x0
-    v2 = load8(v1)
-    store8(((v2 & #0xfffffff1) | ((w1 & #0x7) << #0x1)), v1)
+    store8((((load8(v1) & #0xffffffff) & #0xfffffff1) | ((w1 & #0x7) << #0x1)), v1)
     ret x0
 -- card
 {"addr":"0x2103d0","approxTokens":168,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":48,"unsupported":0}

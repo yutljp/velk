@@ -9,23 +9,29 @@ pub(in crate::render) fn registers(ir: &FunctionIr) -> HashMap<u16, u64> {
         for register in crate::ir::visit::statement_registers(stmt).0 {
             *writes.entry(register).or_default() += 1;
         }
-        let Stmt::Assign {
-            dest,
-            value:
-                Expr::Bin {
-                    op: BinOp::Mul,
-                    lhs,
-                    rhs,
-                },
-        } = stmt
-        else {
+        let Stmt::Assign { dest, value } = stmt else {
             continue;
         };
         if dest.index < VARIABLE_BASE || dest.width != 64 {
             continue;
         }
-        let (index, scale) = match (lhs.as_ref(), rhs.as_ref()) {
-            (index, Expr::Const(scale)) | (Expr::Const(scale), index) => (index, *scale),
+        let (index, scale) = match value {
+            Expr::Bin {
+                op: BinOp::Mul,
+                lhs,
+                rhs,
+            } => match (lhs.as_ref(), rhs.as_ref()) {
+                (index, Expr::Const(scale)) | (Expr::Const(scale), index) => (index, *scale),
+                _ => continue,
+            },
+            Expr::Bin {
+                op: BinOp::Shl,
+                lhs,
+                rhs,
+            } => match rhs.as_ref() {
+                Expr::Const(shift) if *shift < 31 => (lhs.as_ref(), 1u64 << shift),
+                _ => continue,
+            },
             _ => continue,
         };
         // A 32-bit index times this scale cannot wrap a signed 64-bit offset.

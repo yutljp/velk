@@ -138,7 +138,8 @@ fn render_prepared(
     let frames = block_frames(ir, stack_pointer(ir.isa));
     let variable_types =
         variables::variable_types(ir, &narrow_registers(ir), float_return(&ir.ret_type));
-    let (nodes, structured_ir) = super::structure::best_structure(ir);
+    let (mut nodes, structured_ir) = super::structure::best_structure(ir);
+    super::locals::fold_returns(ir, &mut nodes);
     let block_addresses = structured_ir
         .blocks
         .iter()

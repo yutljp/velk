@@ -14,14 +14,11 @@ int classify(int x) {
     *(uint32_t *)&local_0 = x;
     if (x >= 0) {
         if (*(uint32_t *)&local_0 != 0) {
-            *(uint32_t *)((uint8_t *)&local_0 + 0x4) = 1;
-            return *(uint32_t *)((uint8_t *)&local_0 + 0x4);
+            return 1;
         }
-        *(uint32_t *)((uint8_t *)&local_0 + 0x4) = 0;
-        return *(uint32_t *)((uint8_t *)&local_0 + 0x4);
+        return 0;
     }
-    *(uint32_t *)((uint8_t *)&local_0 + 0x4) = 0xffffffff;
-    return *(uint32_t *)((uint8_t *)&local_0 + 0x4);
+    return -1;
 }
 -- signature
 int (int x)
@@ -93,11 +90,9 @@ int sign_of(int x) {
     result = v1;
     *(uint32_t *)((uint8_t *)&result + 0x4) = x;
     if (x <= 0) {
-        *(uint32_t *)&result = (*(int32_t *)((uint8_t *)&result + 0x4) < 0 ? 0xffffffff : 0);
-        return *(uint32_t *)&result;
+        return (*(int32_t *)((uint8_t *)&result + 0x4) < 0 ? 0xffffffff : 0);
     }
-    *(uint32_t *)&result = 1;
-    return *(uint32_t *)&result;
+    return 1;
 }
 -- signature
 int (int x)

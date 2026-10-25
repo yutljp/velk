@@ -615,7 +615,9 @@ fn printed_frame_buffer_transfers_use_one_object_extent() {
     });
     let candidate = printed_candidate(ir, vec![vec![]]);
     assert!(
-        candidate.code.contains("__builtin_memmove"),
+        candidate.code.contains("uint64_t buffer[0x4]")
+            && !candidate.code.contains("local_")
+            && !candidate.code.contains("*(uint64_t *)"),
         "{}",
         candidate.code
     );

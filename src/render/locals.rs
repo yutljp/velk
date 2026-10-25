@@ -1,5 +1,8 @@
 mod debug;
 mod indexed;
+mod returns;
+
+pub(super) use returns::fold as fold_returns;
 
 use super::unions::MemberIndex;
 use crate::arch::stack_pointer;

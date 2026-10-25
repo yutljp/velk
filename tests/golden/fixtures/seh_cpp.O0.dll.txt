@@ -15,8 +15,7 @@ int32_t cpp_catch(int32_t a0) {
     uint32_t local_1; /* [sp-14] */
 
     local_0 = ((int32_t)(_imported_value__YAHH_Z(a0 & 0xffffffff)));
-    local_1 = local_0;
-    return local_1;
+    return local_0;
 L_18000102f:
     return local_1;
 L_180001031:

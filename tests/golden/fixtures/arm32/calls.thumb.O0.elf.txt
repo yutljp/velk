@@ -149,18 +149,15 @@ fn apply_pointer @ 0x201ac (size 20)
 -- decompile
 /* velk pseudo-C: factorial @ 0x201c0 */
 int factorial(int n) {
-    uint32_t result; /* [sp-10] */
     uint32_t local_1; /* [sp-14] */
 
     if (n <= 1) {
-        result = 1;
-        return result;
+        return 1;
     }
     int32_t v1 = n;
     local_1 = v1;
     v1 = (uint32_t)(factorial((uint64_t)(uint32_t)v1 - 1));
-    result = v1 * local_1;
-    return result;
+    return v1 * local_1;
 }
 -- signature
 int (int n)
@@ -192,14 +189,10 @@ fn factorial @ 0x201c0 (size 46)
 -- decompile
 /* velk pseudo-C: is_odd @ 0x201f0 */
 int is_odd(int n) {
-    uint32_t result; /* [sp-10] */
-
     if (n != 0) {
-        result = ((int32_t)(is_even((uint64_t)(uint32_t)n - 1)));
-        return result;
+        return is_even((uint64_t)(uint32_t)n - 1);
     }
-    result = 0;
-    return result;
+    return 0;
 }
 -- signature
 int (int n)
@@ -227,14 +220,10 @@ fn is_odd @ 0x201f0 (size 36)
 -- decompile
 /* velk pseudo-C: is_even @ 0x20214 */
 int is_even(int n) {
-    uint32_t result; /* [sp-10] */
-
     if (n != 0) {
-        result = ((int32_t)(is_odd((uint64_t)(uint32_t)n - 1)));
-        return result;
+        return is_odd((uint64_t)(uint32_t)n - 1);
     }
-    result = 1;
-    return result;
+    return 1;
 }
 -- signature
 int (int n)

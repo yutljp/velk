@@ -485,6 +485,12 @@ fn printed_stack_shifts_keep_the_stored_width() {
                     candidate.code
                 );
                 assert!(!candidate.code.contains(symbol), "{}", candidate.code);
+            } else if width == 8 {
+                assert!(
+                    candidate.code.contains("return result >> 1;"),
+                    "{}",
+                    candidate.code
+                );
             } else {
                 assert!(candidate.code.contains(symbol), "{}", candidate.code);
             }

@@ -88,8 +88,7 @@ int cleanup_on_error(int a, int b, int *out) {
     }
     int32_t v1 = (uint32_t)(sub_20218((uint32_t)a, local_0));
     *(uint32_t *)(local_1) = v1;
-    result = 0;
-    return result;
+    return 0;
 }
 -- signature
 int (int a, int b, int * out)
@@ -200,26 +199,19 @@ fn fallthrough @ 0x20234 (size 144)
 -- decompile
 /* velk pseudo-C: sparse @ 0x202c4 */
 int sparse(int x) {
-    uint32_t result; /* [sp-c] */
-
     if (x != 1) {
         if (x != 100) {
             if (x != 1000) {
                 if (x != 10000) {
-                    result = 0;
-                    return result;
+                    return 0;
                 }
-                result = 40;
-                return result;
+                return 40;
             }
-            result = 30;
-            return result;
+            return 30;
         }
-        result = 20;
-        return result;
+        return 20;
     }
-    result = 10;
-    return result;
+    return 10;
 }
 -- signature
 int (int x)
@@ -400,20 +392,17 @@ int find_pair(int *p, int n, int target) {
     uint32_t local_0; /* [sp-10] */
     int32_t i; /* [sp-1c] */
     int32_t j; /* [sp-20] */
-    uint32_t result; /* [sp-c] */
 
     local_0 = (uint32_t)(uintptr_t)p;
     for (i = 0; i < n; i++) {
         for (j = i + 1; j < n; j++) {
             v1 = local_0;
             if (*(uint32_t *)((v1 + ((uint64_t)i << 2)) & 0xffffffff) + *(uint32_t *)((v1 + ((uint64_t)j << 2)) & 0xffffffff) == target) {
-                result = i * n + j;
-                return result;
+                return i * n + j;
             }
         }
     }
-    result = 0xffffffff;
-    return result;
+    return -1;
 }
 -- signature
 int (int * p, int n, int target)

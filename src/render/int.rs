@@ -344,7 +344,14 @@ pub(super) fn zero_bits_in(expr: &Expr, known: &HashMap<u16, u32>) -> u32 {
                 u32::from(*width) * 8
             }
         }
-        Expr::SignExtend { .. } => 64,
+        Expr::SignExtend { value, width } => {
+            let zero = bits(value);
+            if zero < u32::from(*width) * 8 {
+                zero
+            } else {
+                64
+            }
+        }
         Expr::Bin { op, lhs, rhs } => match op {
             BinOp::And => bits(lhs).min(bits(rhs)),
             BinOp::Or | BinOp::Xor => bits(lhs).max(bits(rhs)),
