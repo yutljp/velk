@@ -1,13 +1,13 @@
 # functions left out:
 #   accesses memory: 199
-#   calls: 7682
+#   calls: 7690
 #   computes on floats or vectors: 1
 #   reads a register that is not a parameter: 5
-#   refers to data: 348
+#   refers to data: 327
 #   requires an external machine-state source: 2
-#   returns no integer: 249
+#   returns no integer: 255
 #   returns nothing: 557
-#   takes an argument that is no integer: 803
+#   takes an argument that is no integer: 820
 #   takes arguments on the stack: 70
 # runs left out:
 #   step limit: 43
@@ -260,6 +260,8 @@
 # tail_calls_stripped.o: 3 functions, 2 qualify, 2 compile, 0 do not, 2 compared (24 runs), 0 differ
 # tail_indirect.o: 2 functions, 1 qualify, 1 compile, 0 do not, 1 compared (12 runs), 0 differ
 # tail_indirect_stripped.o: 2 functions, 1 qualify, 1 compile, 0 do not, 1 compared (12 runs), 0 differ
+# type_library_arm64: 6 functions, 1 qualify, 1 compile, 0 do not, 1 compared (12 runs), 0 differ
+# type_library_x86_64: 6 functions, 1 qualify, 1 compile, 0 do not, 1 compared (12 runs), 0 differ
 # x64_div.o: 18 functions, 18 qualify, 18 compile, 0 do not, 18 compared (216 runs), 0 differ
 # x64_div_macho.o: 18 functions, 18 qualify, 18 compile, 0 do not, 18 compared (216 runs), 0 differ
 # x64_loops.o: 4 functions, 2 qualify, 2 compile, 0 do not, 2 compared (24 runs), 0 differ

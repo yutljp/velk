@@ -72,6 +72,9 @@ docker compose run --rm fixtures
 
 バージョンを固定した同じ Linux 環境でテストを実行するには `docker compose run --rm check` を使います。
 
+C API 型ライブラリは `UV_CACHE_DIR=target/uv-cache uv run tests/generate_type_library.py` で、
+その Mach-O フィクスチャは `sh tests/make_type_library_fixtures.sh` で再生成します。
+
 一部のグループには専用のスクリプトがあります。`tests/make_pe_fixtures.sh` (Windows PE)、`tests/make_codeview.sh`
 (CodeView / PDB)、`tests/make_seh_fixtures.sh` (Windows SEH)、`tests/make_objc_fixtures.sh` (Objective-C)、
 `tests/make_arm64_lang_fixtures.sh` (AArch64 の Rust と Go) です。再生成は意図して行い、変わったバイトと記録された

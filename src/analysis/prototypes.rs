@@ -3,6 +3,9 @@
 //! result. A variadic function that takes a format string names it, and its
 //! conversions count the arguments that follow.
 //!
+//! macOS declarations and record layouts come from the generated SDK library.
+//! Other targets and unsupported declarations use the tables below.
+//!
 //! The declarations are written as C declares them, apart from three
 //! simplifications: a pointer to a function is written `void (*)(...)` and
 //! taken for a pointer to code, an array parameter is written as the pointer
@@ -14,6 +17,9 @@ use std::sync::OnceLock;
 
 use crate::ir::{CType, Stmt};
 use crate::loader::{Image, NameSource};
+
+mod generated;
+pub(crate) use generated::{apply_records, is_library_record};
 
 /// What a function takes and returns.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -786,6 +792,9 @@ pub fn of(name: &str, macho: bool) -> Option<&'static Prototype> {
             .iter()
             .find(|(demangled, _)| *demangled == candidate)
             .map_or(candidate, |(_, mangled)| mangled);
+        if macho && let Some(prototype) = generated::of(candidate) {
+            return Some(prototype);
+        }
         if let Some(prototype) = library().get(candidate) {
             return Some(prototype);
         }
@@ -812,8 +821,15 @@ pub fn called(image: &Image, stmt: &Stmt) -> Option<&'static Prototype> {
     if let Some(through) = through {
         return crate::lift::import_name(image, through).and_then(|name| of(name, macho));
     }
-    let function = image.functions.get(&(*target)?)?;
-    let name = function.name.as_deref()?;
+    let Some(target) = target else {
+        return None;
+    };
+    let Some(function) = image.functions.get(target) else {
+        return None;
+    };
+    let Some(name) = function.name.as_deref() else {
+        return None;
+    };
     if function.sources.contains(&NameSource::Plt) {
         of(name, macho)
     } else {

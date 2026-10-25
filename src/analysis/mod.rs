@@ -1560,6 +1560,7 @@ fn optimize(image: &Image, lifted: Lifted, deadline: Option<Instant>) -> Result<
     ir.pointer_values = pointer_values;
     passed(deadline)?;
     typing::apply_prototypes(&mut ir, image);
+    prototypes::apply_records(&mut ir, image);
     passed(deadline)?;
     variadic::mark_variadic(&mut ir);
     passed(deadline)?;

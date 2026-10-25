@@ -65,6 +65,9 @@ function, and that the printed C computes the same results.
 - **Jump tables**: indirect jumps through a table become `switch` statements.
 - **Typing**: integer widths and signedness, pointers, recovered structures and the types from debug information.
 
+The C API type library supplies function prototypes and structure layouts generated from macOS SDK headers.
+It is loaded on first use and applied only to Mach-O inputs; other inputs use the handwritten prototypes.
+
 ## Optimization passes (`src/passes/`, `src/ssa/`)
 
 The passes simplify the IR without changing what it computes:

@@ -1,0 +1,130 @@
+# type_library_x86_64: macho x86_64 0x1000005d0, 6 functions, 0 lift failures, 0 unsupported, 0 gotos
+0x100000560 48 _library_group symtab,dynamic,function-starts
+0x100000590 16 _library_wide_length symtab,dynamic,function-starts
+0x1000005a0 48 _library_group_at symtab,dynamic,function-starts
+0x1000005d0 8 _main symtab,dynamic,entry,function-starts
+0x1000005d8 6 _getgrgid_r plt
+0x1000005de 6 _wcslen plt
+/* velk prelude */
+struct group {
+    _Alignas(8) char *gr_name;
+    char *gr_passwd;
+    unsigned int gr_gid;
+    uint8_t gap_0x14[0x4];
+    char **gr_mem;
+};
+/* end velk prelude */
+
+== 0x100000560 _library_group
+-- decompile
+/* velk pseudo-C: _library_group @ 0x100000560 */
+int32_t library_group(struct group *a0) {
+    getgrgid_r(7, a0, 0x0, 0, 0x0);
+    return a0->gr_gid;
+}
+-- signature
+int32_t (struct group * a0)
+-- references
+
+-- ir
+fn _library_group @ 0x100000560 (size 48)
+  blk0 @ 0x100000560:
+    v1 = rdi
+    rax, rdx, xmm0, xmm1 = call 0x1000005d8(#0x7, v1, #0x0, #0x0, #0x0)
+    ret load32((v1 + #0x10))
+-- card
+{"accesses":["a0 +0x10:uint32_t"],"addr":"0x100000560","approxTokens":192,"blocks":1,"hardReasons":[],"name":"_library_group","nameSources":["symtab","dynamic","function-starts"],"section":"__text","size":48,"unsupported":0}
+
+== 0x100000590 _library_wide_length
+-- decompile
+/* velk pseudo-C: _library_wide_length @ 0x100000590 */
+size_t library_wide_length(const int *a0) {
+    return wcslen(a0);
+}
+-- signature
+size_t (const int * a0)
+-- references
+
+-- ir
+fn _library_wide_length @ 0x100000590 (size 16)
+  blk0 @ 0x100000590:
+    v1:rax, rdx, xmm0, xmm1 = call 0x1000005de(rdi)
+    ret v1
+-- card
+{"addr":"0x100000590","approxTokens":120,"blocks":1,"hardReasons":[],"name":"_library_wide_length","nameSources":["symtab","dynamic","function-starts"],"section":"__text","size":16,"unsupported":0}
+
+== 0x1000005a0 _library_group_at
+-- decompile
+/* velk pseudo-C: _library_group_at @ 0x1000005a0 */
+int32_t library_group_at(struct group *a0, int64_t a1) {
+    getgrgid_r(7, a0, 0x0, 0, 0x0);
+    return a0[a1].gr_gid;
+}
+-- signature
+int32_t (struct group * a0, int64_t a1)
+-- references
+
+-- ir
+fn _library_group_at @ 0x1000005a0 (size 48)
+  blk0 @ 0x1000005a0:
+    v1 = rsi
+    v2 = rdi
+    eax, rdx, xmm0, xmm1 = call 0x1000005d8(#0x7, v2, #0x0, #0x0, #0x0)
+    ret load32(((v2 + (v1 << #0x5)) + #0x10))
+-- card
+{"addr":"0x1000005a0","approxTokens":204,"blocks":1,"hardReasons":[],"name":"_library_group_at","nameSources":["symtab","dynamic","function-starts"],"section":"__text","size":48,"unsupported":0}
+
+== 0x1000005d0 _main
+-- decompile
+/* velk pseudo-C: _main @ 0x1000005d0 */
+int32_t main(void) {
+    return 0;
+}
+-- signature
+int32_t ()
+-- references
+
+-- ir
+fn _main @ 0x1000005d0 (size 8)
+  blk0 @ 0x1000005d0:
+    ret #0x0
+-- card
+{"addr":"0x1000005d0","approxTokens":126,"blocks":1,"hardReasons":[],"name":"_main","nameSources":["symtab","dynamic","entry","function-starts"],"section":"__text","size":8,"unsupported":0}
+
+== 0x1000005d8 _getgrgid_r
+-- decompile
+/* velk pseudo-C: _getgrgid_r @ 0x1000005d8 */
+/* ref: 0x100002000 __la_symbol_ptr */
+int getgrgid_r(unsigned int a0, struct group *a1, char *a2, size_t a3, struct group **a4) {
+    return getgrgid_r(a0, a1, a2, a3, a4);
+}
+-- signature
+int (unsigned int a0, struct group * a1, char * a2, size_t a3, struct group ** a4)
+-- references
+0x100002000 __la_symbol_ptr
+-- ir
+fn _getgrgid_r @ 0x1000005d8 (size 6)
+  blk0 @ 0x1000005d8:
+    v1:rax, rdx, xmm0, xmm1 = call *load64(#0x100002000)(rdi, rsi, rdx, rcx, r8)
+    ret v1
+-- card
+{"addr":"0x1000005d8","approxTokens":102,"blocks":1,"hardReasons":[],"name":"_getgrgid_r","nameSources":["plt"],"section":"__stubs","size":6,"sizeEstimated":true,"unsupported":0}
+
+== 0x1000005de _wcslen
+-- decompile
+/* velk pseudo-C: _wcslen @ 0x1000005de */
+/* ref: 0x100002008 __la_symbol_ptr */
+size_t wcslen(const int *a0) {
+    return wcslen(a0);
+}
+-- signature
+size_t (const int * a0)
+-- references
+0x100002008 __la_symbol_ptr
+-- ir
+fn _wcslen @ 0x1000005de (size 6)
+  blk0 @ 0x1000005de:
+    v1:rax, rdx, xmm0, xmm1 = call *load64(#0x100002008)(rdi)
+    ret v1
+-- card
+{"addr":"0x1000005de","approxTokens":102,"blocks":1,"hardReasons":[],"name":"_wcslen","nameSources":["plt"],"section":"__stubs","size":6,"sizeEstimated":true,"unsupported":0}

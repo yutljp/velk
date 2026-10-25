@@ -36,10 +36,11 @@ use body::{indent, render_node, render_nodes, via_comment};
 use calls::system_call_name;
 #[cfg(test)]
 use function::code_mentions;
+pub(crate) use function::declaration;
 pub(crate) use function::structure_definition;
 pub(crate) use function::variable_types;
-use function::{declaration, vacant_name, variable_name};
 pub use function::{render, render_with_dependencies};
+use function::{vacant_name, variable_name};
 pub(crate) use globals::reserved_identifier;
 pub use prelude::{Prelude, combine};
 pub(crate) use stmt::render_stmt;

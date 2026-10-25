@@ -83,6 +83,8 @@ mod stack_arrays;
 mod switches;
 #[path = "recompile/syntax.rs"]
 mod syntax;
+#[path = "recompile/type_library.rs"]
+mod type_library;
 #[path = "recompile/unsupported.rs"]
 mod unsupported;
 #[path = "recompile/virtual_calls.rs"]

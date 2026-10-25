@@ -386,7 +386,10 @@ pub(super) fn expression(call: &Stmt, ctx: &Ctx<'_>) -> String {
                 }
             };
         }
-    } else if let Some(prototype) = crate::analysis::prototypes::of(&callee, false) {
+    } else if let Some(prototype) = crate::analysis::prototypes::of(
+        &callee,
+        ctx.symbols.target_format == Some(crate::loader::Format::MachO),
+    ) {
         for ((text, value), ty) in args
             .iter_mut()
             .zip(values.iter().flatten())

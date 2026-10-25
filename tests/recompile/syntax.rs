@@ -958,6 +958,7 @@ fn arm64_language_library_types_and_stack_addresses_compile() {
         0x100019894,
         0x1000358c4,
         0x1000359b4,
+        0x1000359cc,
     ] {
         let code = binary.decompile(address, None, None).unwrap();
         let error = check(&code, &scratch.join("function.c"), &return_types(&symbols));

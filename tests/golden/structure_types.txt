@@ -380,6 +380,8 @@ tail_calls.o: 0
 tail_calls_stripped.o: 0
 tail_indirect.o: 0
 tail_indirect_stripped.o: 0
+type_library_arm64: 0
+type_library_x86_64: 0
 x64_div.o: 0
 x64_div_macho.o: 0
 x64_loops.o: 0

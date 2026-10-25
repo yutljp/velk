@@ -76,6 +76,9 @@ docker compose run --rm fixtures
 
 To run the test suite in the same pinned Linux environment, use `docker compose run --rm check`.
 
+Regenerate the C API type library with `UV_CACHE_DIR=target/uv-cache uv run tests/generate_type_library.py`
+and its Mach-O fixtures with `sh tests/make_type_library_fixtures.sh`.
+
 Some groups have their own scripts: `tests/make_pe_fixtures.sh` (Windows PE), `tests/make_codeview.sh`
 (CodeView / PDB), `tests/make_seh_fixtures.sh` (Windows SEH), `tests/make_objc_fixtures.sh` (Objective-C) and
 `tests/make_arm64_lang_fixtures.sh` (AArch64 Rust and Go). Rebuild deliberately and review the changed bytes and

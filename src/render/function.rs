@@ -1309,7 +1309,12 @@ fn render_with(
         }
     }
     out.insert_str(definitions_at, &ctx.globals.object_declarations(&body));
-    let debug = debug_definitions(ir, &out, &ctx.arrays);
+    let debug = debug_definitions(
+        ir,
+        &out,
+        &ctx.arrays,
+        symbols.target_format == Some(crate::loader::Format::MachO),
+    );
     out.insert_str(definitions_at, &debug);
     Rendered {
         code: super::prelude::combine(&if variadic.is_some() {
@@ -1460,6 +1465,7 @@ fn debug_definitions(
     ir: &FunctionIr,
     code: &str,
     arrays: &HashMap<String, naming::Layout>,
+    macho: bool,
 ) -> String {
     let named = |name: &str| {
         code.match_indices(name).any(|(at, _)| {
@@ -1515,7 +1521,9 @@ fn debug_definitions(
                 *first = format!("_Alignas({alignment}) {first}");
             }
             let text = defined(&definition.name, &members);
-            if definition.name.starts_with("struct go_") {
+            if definition.name.starts_with("struct go_")
+                || (macho && crate::analysis::prototypes::is_library_record(definition))
+            {
                 super::prelude::section(&(text + "\n"))
             } else {
                 text
@@ -1684,7 +1692,7 @@ fn union_declaration(field: &super::locals::Local, name: &str) -> String {
 }
 
 /// `name` declared as `ty`, the star of a pointer next to the name.
-pub(super) fn declaration(ty: &CType, name: &str) -> String {
+pub(crate) fn declaration(ty: &CType, name: &str) -> String {
     if ty.is_pointer() {
         format!("{ty}{name}")
     } else {
