@@ -688,37 +688,9 @@ fn check_with_compiler(
     let body = renamed(&prelude.extract(code), 0);
     let mut declarations = BTreeSet::new();
     loop {
-        let mut source = HEADER
-            .lines()
-            .filter(|line| {
-                !line.starts_with("#include")
-                    || ["<inttypes.h>", "<stdbool.h>", "<stddef.h>", "<stdint.h>"]
-                        .iter()
-                        .any(|header| line.contains(header))
-            })
-            .map(|line| format!("{line}\n"))
-            .collect::<String>();
-        source.push_str("#include <stdlib.h>\ntypedef struct syntax_file FILE;\ntypedef struct syntax_directory DIR;\ntypedef struct syntax_mutex pthread_mutex_t;\ntypedef struct syntax_mutex_attributes pthread_mutexattr_t;\ntypedef intptr_t off_t;\ntypedef intptr_t ssize_t;\ntypedef uintptr_t pthread_t;\ntypedef uint32_t pthread_key_t;\ntypedef int32_t pid_t;\n");
-        for name in &declarations {
-            let ty = returns.get(name).cloned().unwrap_or(CType::U64);
-            writeln!(source, "{ty} {name}();").unwrap();
-        }
-        source.push_str(&prelude.render());
-        source.push_str(&body);
+        let source = syntax_source(&prelude, &body, &declarations, returns);
         std::fs::write(path, source).expect("saved syntax source");
-        let mut command = Command::new(compiler);
-        if cfg!(target_os = "macos") {
-            command.args(["-arch", "x86_64"]);
-        }
-        let output = command
-            .args(FLAGS)
-            .args([
-                "-std=gnu11",
-                "-fno-builtin",
-                "-fsyntax-only",
-                "-ferror-limit=0",
-                "-Werror=implicit-function-declaration",
-            ])
+        let output = syntax_command(compiler)
             .arg(path)
             .output()
             .expect("C compiler");
@@ -746,6 +718,47 @@ fn check_with_compiler(
             );
         }
     }
+}
+
+fn syntax_source(
+    prelude: &velk::render::Prelude,
+    body: &str,
+    declarations: &BTreeSet<String>,
+    returns: &BTreeMap<String, CType>,
+) -> String {
+    let mut source = HEADER
+        .lines()
+        .filter(|line| {
+            !line.starts_with("#include")
+                || ["<inttypes.h>", "<stdbool.h>", "<stddef.h>", "<stdint.h>"]
+                    .iter()
+                    .any(|header| line.contains(header))
+        })
+        .map(|line| format!("{line}\n"))
+        .collect::<String>();
+    source.push_str("#include <stdlib.h>\ntypedef struct syntax_file FILE;\ntypedef struct syntax_directory DIR;\ntypedef struct syntax_mutex pthread_mutex_t;\ntypedef struct syntax_mutex_attributes pthread_mutexattr_t;\ntypedef intptr_t off_t;\ntypedef intptr_t ssize_t;\ntypedef uintptr_t pthread_t;\ntypedef uint32_t pthread_key_t;\ntypedef int32_t pid_t;\n");
+    for name in declarations {
+        let ty = returns.get(name).cloned().unwrap_or(CType::U64);
+        writeln!(source, "{ty} {name}();").unwrap();
+    }
+    source.push_str(&prelude.render());
+    source.push_str(body);
+    source
+}
+
+fn syntax_command(compiler: &Path) -> Command {
+    let mut command = Command::new(compiler);
+    if cfg!(target_os = "macos") {
+        command.args(["-arch", "x86_64"]);
+    }
+    command.args(FLAGS).args([
+        "-std=gnu11",
+        "-fno-builtin",
+        "-fsyntax-only",
+        "-ferror-limit=0",
+        "-Werror=implicit-function-declaration",
+    ]);
+    command
 }
 
 #[test]
@@ -952,53 +965,108 @@ fn arm64_language_library_types_and_stack_addresses_compile() {
     }
 }
 
+fn check_batch(
+    codes: &[(u64, String)],
+    scratch: &Path,
+    returns: &BTreeMap<String, CType>,
+    compiler: &Path,
+) -> Vec<(u64, Option<String>)> {
+    let paths: Vec<_> = codes
+        .iter()
+        .map(|(address, code)| {
+            let mut prelude = velk::render::Prelude::default();
+            let body = renamed(&prelude.extract(code), 0);
+            let path = scratch.join(format!("function-{address:x}.c"));
+            std::fs::write(
+                &path,
+                syntax_source(&prelude, &body, &BTreeSet::new(), returns),
+            )
+            .expect("saved syntax source");
+            path
+        })
+        .collect();
+    let output = syntax_command(compiler)
+        .args(&paths)
+        .output()
+        .expect("C compiler");
+    codes
+        .iter()
+        .zip(paths)
+        .map(|((address, code), path)| {
+            let error = if output.status.success() {
+                None
+            } else {
+                check_with_compiler(code, &path, returns, compiler)
+            };
+            if error.is_none() {
+                std::fs::remove_file(path).expect("removed successful syntax source");
+            }
+            (*address, error)
+        })
+        .collect()
+}
+
 fn scan(fixtures: &[PathBuf], name: &str) {
     let scratch = scratch_dir(name);
-    let mut report = String::new();
-    let mut failed = 0;
-    let mut unavailable_total = 0;
-    for fixture in fixtures {
+    let compiler = compiler();
+    let mut fixtures = fixtures.to_vec();
+    fixtures.sort();
+    let indexed: Vec<_> = fixtures.iter().enumerate().collect();
+    let results = common::in_parallel(&indexed, |(index, fixture)| {
+        let directory = scratch.join(format!("fixture-{index}"));
+        std::fs::create_dir_all(&directory).expect("syntax fixture directory");
         let mut binary =
             Binary::open(&common::fixtures_dir().join(fixture)).expect("fixture opens");
-        let functions: Vec<_> = binary.image().functions.values().cloned().collect();
+        let mut functions: Vec<_> = binary.image().functions.values().cloned().collect();
+        functions.sort_by_key(|function| function.addr);
         let symbols = velk::render::callee_names(binary.image());
         let returns = return_types(&symbols);
         let mut compiled = 0;
         let mut unavailable = 0;
-        for function in &functions {
-            let code = match binary.decompile(function.addr, None, None) {
-                Ok(code) => code,
-                Err(error) => {
-                    writeln!(
-                        report,
-                        "{} 0x{:x}: unavailable: {error}",
-                        fixture.display(),
-                        function.addr
-                    )
-                    .unwrap();
-                    unavailable += 1;
-                    continue;
+        let mut errors = Vec::new();
+        for chunk in functions.chunks(16) {
+            let mut codes = Vec::new();
+            for function in chunk {
+                match binary.decompile(function.addr, None, None) {
+                    Ok(code) => codes.push((function.addr, code)),
+                    Err(error) => {
+                        errors.push((function.addr, format!("unavailable: {error}"), None));
+                        unavailable += 1;
+                    }
                 }
-            };
-            let path = scratch.join("function.c");
-            if let Some(error) = check(&code, &path, &returns) {
-                writeln!(
-                    report,
-                    "{} 0x{:x}: {error}",
-                    fixture.display(),
-                    function.addr
-                )
-                .unwrap();
-                std::fs::copy(&path, scratch.join(format!("failure-{failed}.c"))).unwrap();
+            }
+            if codes.is_empty() {
+                continue;
+            }
+            for (address, error) in check_batch(&codes, &directory, &returns, &compiler) {
+                if let Some(error) = error {
+                    errors.push((
+                        address,
+                        error,
+                        Some(directory.join(format!("function-{address:x}.c"))),
+                    ));
+                } else {
+                    compiled += 1;
+                }
+            }
+        }
+        errors.sort_by_key(|(address, _, _)| *address);
+        (compiled, functions.len(), unavailable, errors)
+    });
+    let mut report = String::new();
+    let mut failed = 0;
+    let mut unavailable_total = 0;
+    for (fixture, (compiled, total, unavailable, errors)) in fixtures.iter().zip(results) {
+        for (address, error, path) in errors {
+            writeln!(report, "{} 0x{address:x}: {error}", fixture.display()).unwrap();
+            if let Some(path) = path {
+                std::fs::copy(path, scratch.join(format!("failure-{failed}.c"))).unwrap();
                 failed += 1;
-            } else {
-                compiled += 1;
             }
         }
         let summary = format!(
-            "{}: {compiled}/{} compile, {unavailable} unavailable",
+            "{}: {compiled}/{total} compile, {unavailable} unavailable",
             fixture.display(),
-            functions.len()
         );
         eprintln!("{summary}");
         writeln!(report, "{summary}").unwrap();
@@ -1007,6 +1075,47 @@ fn scan(fixtures: &[PathBuf], name: &str) {
     }
     assert_eq!(unavailable_total, 0, "{report}");
     assert_eq!(failed, 0, "{report}");
+}
+
+#[test]
+fn syntax_batches_preserve_individual_failures() {
+    let scratch = scratch_dir("syntax-batch-failures");
+    let codes = vec![
+        (1, "uint64_t same(void) { return 1; }".into()),
+        (2, "uint64_t same(void) { return missing(2); }".into()),
+        (
+            3,
+            "uint64_t same(void) { return ; deliberate syntax error }".into(),
+        ),
+        (
+            4,
+            "uint64_t *same(void) { return pointer_result(); }".into(),
+        ),
+    ];
+    let returns = [("pointer_result".into(), CType::pointer_to(CType::U64))].into();
+    let compiler = compiler();
+    let results = check_batch(&codes, &scratch, &returns, &compiler);
+    assert!(results[2].1.is_some());
+    for ((address, code), (actual_address, actual)) in codes.iter().zip(results) {
+        assert_eq!(*address, actual_address);
+        let expected =
+            check_with_compiler(code, &scratch.join("individual.c"), &returns, &compiler);
+        assert_eq!(actual, expected);
+        let saved = scratch.join(format!("function-{address:x}.c"));
+        assert_eq!(saved.is_file(), actual.is_some());
+        if actual.is_some() {
+            assert!(
+                std::fs::read_to_string(saved)
+                    .unwrap()
+                    .contains("deliberate syntax error")
+            );
+        }
+    }
+    assert!(
+        check_batch(&codes[..1], &scratch, &returns, &compiler)[0]
+            .1
+            .is_none()
+    );
 }
 
 #[test]
