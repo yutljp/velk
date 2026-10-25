@@ -69,9 +69,8 @@ b.functions({ named: true }).slice(0, 5).map(f => ({ addr: f.addr, name: f.name 
 ## ドキュメント
 
 - [API の概要](src/script/api/index.md)
-- [アーキテクチャ](docs/ARCHITECTURE.md)
-- [ロードマップ](docs/ROADMAP.md)
-- [Testing](docs/TESTING.md)
+- [アーキテクチャ](docs/ARCHITECTURE.ja.md)
+- [テスト](docs/TESTING.ja.md)
 
 ## ライセンス
 

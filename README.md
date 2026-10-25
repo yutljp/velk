@@ -72,7 +72,6 @@ b.functions({ named: true }).slice(0, 5).map(f => ({ addr: f.addr, name: f.name 
 
 - [Scripting API](src/script/api/index.md)
 - [Architecture](docs/ARCHITECTURE.md)
-- [Roadmap](docs/ROADMAP.md)
 - [Testing](docs/TESTING.md)
 
 ## License
