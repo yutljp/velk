@@ -1,0 +1,61 @@
+# metrics/l1_branch.win32.O2.stripped.dll: pe i386 no entry, 3 functions, 0 lift failures, 0 unsupported, 0 gotos
+0x10001000 32 classify dynamic
+0x10001020 32 clamp dynamic
+0x10001040 17 sign_of dynamic
+
+== 0x10001000 classify
+-- decompile
+/* velk pseudo-C: classify @ 0x10001000 */
+int32_t classify(uint32_t a0) {
+    int8_t v1 = (int32_t)a0 > 0;
+    return (int8_t)(v1 - ((int32_t)a0 < 0));
+}
+-- signature
+int32_t ()
+-- references
+
+-- ir
+fn classify @ 0x10001000 (size 32)
+  blk0 @ 0x10001000:
+    v1 = (select gt load32((esp + #0x4)), #0x0 ? #0x1, #0x0 & #0xff)
+    ret (sext8(((v1 & #0xff) - (select lt load32((esp + #0x4)), #0x0 ? #0x1, #0x0 & #0xff))) & #0xffffffff)
+-- card
+{"addr":"0x10001000","approxTokens":132,"blocks":1,"hardReasons":[],"name":"classify","nameSources":["dynamic"],"section":".text","size":32,"sizeEstimated":true,"unsupported":0}
+
+== 0x10001020 clamp
+-- decompile
+/* velk pseudo-C: clamp @ 0x10001020 */
+int32_t clamp(uint32_t a0, uint32_t a1, uint32_t a2) {
+    int32_t v1 = a0;
+    return (v1 < (int32_t)a1 ? a1 : (v1 < (int32_t)a2 ? v1 : a2));
+}
+-- signature
+int32_t ()
+-- references
+
+-- ir
+fn clamp @ 0x10001020 (size 32)
+  blk0 @ 0x10001020:
+    v1 = load32((esp + #0x4))
+    ret select lt (v1 & #0xffffffff), load32((esp + #0x8)) ? load32((esp + #0x8)), select lt (v1 & #0xffffffff), load32((esp + #0xc)) ? (v1 & #0xffffffff), load32((esp + #0xc))
+-- card
+{"addr":"0x10001020","approxTokens":144,"blocks":1,"hardReasons":[],"name":"clamp","nameSources":["dynamic"],"section":".text","size":32,"sizeEstimated":true,"unsupported":0}
+
+== 0x10001040 sign_of
+-- decompile
+/* velk pseudo-C: sign_of @ 0x10001040 */
+int32_t sign_of(uint32_t a0) {
+    int8_t v1 = (int32_t)a0 > 0;
+    return (int8_t)(v1 - ((int32_t)a0 < 0));
+}
+-- signature
+int32_t ()
+-- references
+
+-- ir
+fn sign_of @ 0x10001040 (size 17)
+  blk0 @ 0x10001040:
+    v1 = (select gt load32((esp + #0x4)), #0x0 ? #0x1, #0x0 & #0xff)
+    ret (sext8(((v1 & #0xff) - (select lt load32((esp + #0x4)), #0x0 ? #0x1, #0x0 & #0xff))) & #0xffffffff)
+-- card
+{"addr":"0x10001040","approxTokens":132,"blocks":1,"hardReasons":[],"name":"sign_of","nameSources":["dynamic"],"section":".text","size":17,"sizeEstimated":true,"unsupported":0}

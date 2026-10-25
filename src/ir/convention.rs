@@ -8,6 +8,10 @@ pub enum Convention {
     Aapcs32,
     SysV,
     Win64,
+    Cdecl,
+    Stdcall,
+    Fastcall,
+    Thiscall,
     /// Go's internal register ABI on x86-64.
     GoAmd64,
     /// A Linux system call on x86-64: the number in rax, then the
@@ -31,6 +35,7 @@ impl Convention {
         match isa {
             Isa::AArch64 => Self::Aapcs64,
             Isa::Arm32 => Self::Aapcs32,
+            Isa::I386 => Self::Cdecl,
             _ if go => Self::GoAmd64,
             _ if matches!(format, Format::Pe | Format::Coff) => Self::Win64,
             _ => Self::SysV,
@@ -41,6 +46,9 @@ impl Convention {
     #[must_use]
     pub fn arguments(self) -> &'static [u16] {
         match self {
+            Self::Cdecl | Self::Stdcall => &[],
+            Self::Fastcall => &[1, 2],
+            Self::Thiscall => &[1],
             Self::Aapcs64 => &[0, 1, 2, 3, 4, 5, 6, 7],
             Self::Aapcs32 => &[0, 1, 2, 3],
             Self::SysV => &[7, 6, 2, 1, 8, 9],
@@ -59,6 +67,7 @@ impl Convention {
     #[must_use]
     pub fn stack_arguments(self) -> Option<i64> {
         match self {
+            Self::Cdecl | Self::Stdcall | Self::Fastcall | Self::Thiscall => Some(4),
             Self::SysV => Some(8),
             Self::Win64 => Some(40),
             Self::Aapcs64 | Self::Aapcs32 => Some(0),
@@ -71,6 +80,7 @@ impl Convention {
     #[must_use]
     pub fn pushed_by_call(self) -> i64 {
         match self {
+            Self::Cdecl | Self::Stdcall | Self::Fastcall | Self::Thiscall => 4,
             Self::Aapcs32 | Self::Aapcs64 | Self::SyscallX86 | Self::SyscallArm => 0,
             Self::SysV | Self::Win64 | Self::GoAmd64 | Self::GoWriteBarrier | Self::GoAbi0 => 8,
         }
@@ -85,7 +95,11 @@ impl Convention {
             Self::SysV => &[18, 20, 22, 24, 26, 28, 30, 32],
             Self::Win64 => &[18, 20, 22, 24],
             Self::GoAmd64 => &[18, 20, 22, 24, 26, 28, 30, 32, 34, 36, 38, 40, 42, 44, 46],
-            Self::Aapcs32
+            Self::Cdecl
+            | Self::Stdcall
+            | Self::Fastcall
+            | Self::Thiscall
+            | Self::Aapcs32
             | Self::SyscallX86
             | Self::SyscallArm
             | Self::GoWriteBarrier
@@ -157,7 +171,11 @@ impl Convention {
         match self {
             Self::Aapcs64 => &[8],
             Self::SysV => &[0],
-            Self::Aapcs32
+            Self::Cdecl
+            | Self::Stdcall
+            | Self::Fastcall
+            | Self::Thiscall
+            | Self::Aapcs32
             | Self::Win64
             | Self::GoAmd64
             | Self::SyscallX86
@@ -175,6 +193,7 @@ impl Convention {
     #[must_use]
     pub fn results(self) -> &'static [u16] {
         match self {
+            Self::Cdecl | Self::Stdcall | Self::Fastcall | Self::Thiscall => &[0, 2],
             Self::SysV => &[0, 2, 18, 20],
             Self::Win64 => &[0, 18],
             Self::Aapcs64 => &[0, 1, 32, 34],
@@ -202,6 +221,7 @@ impl Convention {
     #[must_use]
     pub fn fixed(self) -> &'static [u16] {
         match self {
+            Self::Cdecl | Self::Stdcall | Self::Fastcall | Self::Thiscall => &[4],
             Self::GoAmd64 => &[4, 14, 48, 49],
             Self::Aapcs32 => &[13],
             Self::Aapcs64 | Self::SyscallArm => &[31],
@@ -248,6 +268,9 @@ impl Convention {
                 0, 1, 2, 3, 12, 14, 64, 65, 66, 67, 68, 69, 70, 71, 80, 81, 82, 83, 84, 85, 86, 87,
                 88, 89, 90, 91, 92, 93, 94, 95,
             ],
+            Self::Cdecl | Self::Stdcall | Self::Fastcall | Self::Thiscall => &[
+                0, 1, 2, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33,
+            ],
             Self::SyscallX86 => &[0, 1, 11],
             Self::SyscallArm => &[0],
             Self::GoWriteBarrier => &[11],
@@ -276,6 +299,13 @@ impl CallKind {
         use crate::loader::Isa;
         let syscall = match (isa, convention) {
             (Isa::AArch64, Convention::Aapcs64) | (Isa::Arm32, Convention::Aapcs32) => false,
+            (
+                Isa::I386,
+                Convention::Cdecl
+                | Convention::Stdcall
+                | Convention::Fastcall
+                | Convention::Thiscall,
+            ) => false,
             (
                 Isa::X86_64,
                 Convention::SysV

@@ -941,6 +941,7 @@ pub fn recover_with(
         {
             stack_arguments(blocks, landing_pads, isa, convention)
         }
+        (_, Isa::I386) => stack_arguments(blocks, landing_pads, isa, convention),
         (true, Isa::X86_64) => stack_arguments(blocks, landing_pads, isa, convention),
         (false, Isa::X86_64) if matches!(convention, Convention::SysV | Convention::GoAmd64) => {
             stack_arguments(blocks, landing_pads, isa, convention)
@@ -1047,7 +1048,7 @@ fn stack_arguments(
     let Some(start) = convention.stack_arguments() else {
         return StackFrame::default();
     };
-    let slot_bytes = if isa == Isa::Arm32 { 4 } else { 8 };
+    let slot_bytes = i64::from(crate::arch::pointer_bytes(isa));
     let sp = crate::arch::stack_pointer(isa);
     let fp = crate::arch::frame_pointer(isa);
     let results = convention == Convention::GoAbi0;
@@ -1073,15 +1074,30 @@ fn stack_arguments(
     entry[0] = Some(Frame::from([(sp, 0)]));
     // A register plus constants, nested as the upper half of a vector load
     // adds its eight bytes.
-    fn based(expr: &Expr) -> Option<(u16, i64)> {
+    fn based(expr: &Expr, i386: bool) -> Option<(u16, i64)> {
         match expr {
             Expr::Reg { index, width: 64 } => Some((*index, 0)),
+            Expr::Bin {
+                op: crate::ir::BinOp::And,
+                lhs,
+                rhs,
+            } if i386 && matches!(rhs.as_ref(), Expr::Const(0xffff_ffff)) => based(lhs, i386),
+            Expr::Bin {
+                op: crate::ir::BinOp::Sub,
+                lhs,
+                rhs,
+            } if i386 => match rhs.as_ref() {
+                Expr::Const(delta) => based(lhs, i386).and_then(|(base, inner)| {
+                    inner.checked_sub(*delta as i64).map(|at| (base, at))
+                }),
+                _ => None,
+            },
             Expr::Bin {
                 op: crate::ir::BinOp::Add,
                 lhs,
                 rhs,
             } => match rhs.as_ref() {
-                Expr::Const(delta) => based(lhs).and_then(|(base, inner)| {
+                Expr::Const(delta) => based(lhs, i386).and_then(|(base, inner)| {
                     inner.checked_add(*delta as i64).map(|at| (base, at))
                 }),
                 _ => None,
@@ -1093,10 +1109,10 @@ fn stack_arguments(
         let (base, delta) = match expr {
             Expr::Reg { .. }
             | Expr::Bin {
-                op: crate::ir::BinOp::Add,
+                op: crate::ir::BinOp::Add | crate::ir::BinOp::And,
                 ..
             } => {
-                let Some(base) = based(expr) else {
+                let Some(base) = based(expr, isa == Isa::I386) else {
                     return None;
                 };
                 base
@@ -1122,7 +1138,7 @@ fn stack_arguments(
         frame.get(&base).and_then(|at| at.checked_add(delta))
     };
     let located = |addr: &Expr, frame: &Frame, held: &HashMap<u16, i64>| {
-        let through = based(addr)
+        let through = based(addr, isa == Isa::I386)
             .and_then(|(base, delta)| held.get(&base).and_then(|at| at.checked_add(delta)));
         offset_of(addr, frame)
             .or(through)

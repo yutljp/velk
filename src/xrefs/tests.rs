@@ -170,6 +170,30 @@ fn stub_calls_also_reference_the_named_import() {
 }
 
 #[test]
+fn i386_immediates_use_32_bit_operand_and_address_defaults() {
+    // inc eax; mov eax,0x12345678; add eax,-1; mov ax,0xabcd;
+    // mov eax,[0x12345678]; jmp +0x12; ret
+    let code = vec![
+        0x40, 0xb8, 0x78, 0x56, 0x34, 0x12, 0x83, 0xc0, 0xff, 0x66, 0xb8, 0xcd, 0xab, 0xa1, 0x78,
+        0x56, 0x34, 0x12, 0xeb, 0x12, 0xc3,
+    ];
+    let image = Image::from_code(Isa::I386, 0x1000, code);
+    for (value, address) in [
+        (0x12345678, 0x1001),
+        (0xffff_ffff, 0x1006),
+        (0xabcd, 0x1009),
+    ] {
+        let found = constants::search(&image, value, None).unwrap();
+        assert_eq!(found.len(), 1);
+        assert_eq!(found[0].instruction, address);
+        assert_eq!(found[0].operand, 1);
+    }
+    for value in [u64::MAX, 0x12, 0x1026] {
+        assert!(constants::search(&image, value, None).unwrap().is_empty());
+    }
+}
+
+#[test]
 fn aarch64_immediates_include_the_encoded_shift() {
     let code = [0xd2a24680u32, 0x91001400, 0xd65f03c0]
         .into_iter()

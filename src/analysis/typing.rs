@@ -1028,17 +1028,16 @@ fn place_parameters(types: &crate::loader::dwarf::FunctionTypes, ir: &mut Functi
         .collect();
     let (mut next_int, mut next_float) = (0usize, 0usize);
     let mut stack = match convention {
+        Convention::Cdecl | Convention::Stdcall | Convention::Fastcall | Convention::Thiscall => {
+            return;
+        }
         Convention::SysV => 8,
         Convention::Win64 => 40,
         Convention::Aapcs32 | Convention::Aapcs64 | Convention::GoAmd64 => 0,
         Convention::SyscallX86 | Convention::SyscallArm | Convention::GoWriteBarrier => return,
         Convention::GoAbi0 => 8,
     };
-    let slot_bytes = if convention == Convention::Aapcs32 {
-        4
-    } else {
-        8
-    };
+    let slot_bytes = u64::from(crate::arch::pointer_bytes(ir.isa));
     let mut params = Vec::new();
     let mut stack_params = Vec::new();
     for (index, (name, ty)) in types.params.iter().enumerate() {

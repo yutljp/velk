@@ -17,7 +17,7 @@ pub(crate) const STACK_SPAN: u64 = 1 << 24;
 /// The initial stack address, within the architecture's address space.
 #[must_use]
 pub fn stack_top(isa: crate::loader::Isa) -> u64 {
-    if isa == crate::loader::Isa::Arm32 {
+    if crate::arch::pointer_bytes(isa) == 4 {
         0x7f00_0000
     } else {
         STACK_TOP
@@ -229,7 +229,9 @@ impl Machine<'_> {
             .get(&index)
             .copied()
             .unwrap_or_else(|| hash(self.seed, 0x1_0000 + u64::from(index)));
-        if self.isa == crate::loader::Isa::Arm32 && index < 16 {
+        if (self.isa == crate::loader::Isa::Arm32 && index < 16)
+            || (self.isa == crate::loader::Isa::I386 && index < 8)
+        {
             value & 0xffff_ffff
         } else {
             value

@@ -2,6 +2,7 @@ mod codeview;
 mod discover;
 pub mod dwarf;
 pub mod go;
+mod i386;
 mod macho;
 mod objc;
 mod plt;
@@ -56,6 +57,8 @@ impl fmt::Display for Format {
 pub enum Isa {
     #[serde(rename = "x86_64")]
     X86_64,
+    #[serde(rename = "i386")]
+    I386,
     #[serde(rename = "aarch64")]
     AArch64,
     #[serde(rename = "arm32")]
@@ -68,6 +71,7 @@ impl fmt::Display for Isa {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_str(match self {
             Isa::X86_64 => "x86_64",
+            Isa::I386 => "i386",
             Isa::AArch64 => "aarch64",
             Isa::Arm32 => "arm32",
             Isa::Unsupported => "unsupported",
@@ -240,8 +244,8 @@ pub struct Image {
     pub result_reads: std::sync::Mutex<HashMap<u64, bool>>,
     /// The lifts made so far, shared by everything that lifts the same.
     pub lifts: crate::lift::Lifts,
-    /// Branch relocations the object left unapplied: instruction address to
-    /// the symbol address it calls.
+    /// Resolved targets from branch relocations and local linkage stubs,
+    /// keyed by instruction address.
     pub relocations: BTreeMap<u64, u64>,
     /// The file is a relocatable object, whose branches to other modules
     /// stay unresolved.
@@ -295,6 +299,9 @@ impl Image {
 
     /// The calling convention the function at `addr` follows.
     pub fn convention_of(&self, addr: u64) -> crate::ir::Convention {
+        if self.isa == Isa::I386 {
+            return i386::properties(self, addr).0;
+        }
         if self.go
             && self.isa == Isa::X86_64
             && self
@@ -305,6 +312,14 @@ impl Image {
             return crate::ir::Convention::GoAbi0;
         }
         crate::ir::Convention::of(self.isa, self.format, self.go)
+    }
+
+    pub(crate) fn callee_cleanup(&self, addr: u64) -> Option<u16> {
+        if self.isa == Isa::I386 {
+            i386::properties(self, addr).1
+        } else {
+            Some(0)
+        }
     }
 
     /// The targets of the direct calls `xorps xmm15, xmm15` follows: Go
@@ -382,7 +397,9 @@ impl Image {
             isa,
             arm_modes: BTreeMap::new(),
             byte_order: match isa {
-                Isa::X86_64 | Isa::AArch64 | Isa::Arm32 => Some(object::Endianness::Little),
+                Isa::I386 | Isa::X86_64 | Isa::AArch64 | Isa::Arm32 => {
+                    Some(object::Endianness::Little)
+                }
                 Isa::Unsupported => None,
             },
             entry: None,
@@ -461,7 +478,11 @@ impl Image {
                 crate::loader::Isa::AArch64 => {
                     aarch64_prologues(bytes, section.vaddr, &self.relocated_branches())
                 }
-                crate::loader::Isa::X86_64 => x86_prologues(bytes, section.vaddr),
+                crate::loader::Isa::I386 | crate::loader::Isa::X86_64 => x86_prologues(
+                    bytes,
+                    section.vaddr,
+                    if self.isa == Isa::I386 { 32 } else { 64 },
+                ),
                 crate::loader::Isa::Arm32 | crate::loader::Isa::Unsupported => continue,
             };
             // Code begins with a function unless padding opens the section.
@@ -662,6 +683,7 @@ impl Image {
 fn isa_of(arch: object::Architecture) -> Isa {
     match arch {
         object::Architecture::X86_64 => Isa::X86_64,
+        object::Architecture::I386 => Isa::I386,
         object::Architecture::Aarch64 => Isa::AArch64,
         object::Architecture::Arm => Isa::Arm32,
         _ => Isa::Unsupported,
@@ -811,8 +833,8 @@ pub fn load(path: &Path) -> Result<Image> {
             if symbol.is_undefined() {
                 continue;
             }
-            let address = if isa_of(file.architecture()) == Isa::X86_64 {
-                // x86-64 relocations point at the rel32 field, one byte after
+            let address = if matches!(isa_of(file.architecture()), Isa::I386 | Isa::X86_64) {
+                // x86 relocations point at the rel32 field, one byte after
                 // the E8/E9 opcode; key them by instruction address instead.
                 let Some((section_file_offset, _)) = section.file_range() else {
                     continue;
@@ -839,6 +861,8 @@ pub fn load(path: &Path) -> Result<Image> {
             relocations.insert(address, relocate::symbol_address(&symbol, &bases));
         }
     }
+
+    relocations.extend(plt::local_branches(&file));
 
     let mut data_symbols = BTreeMap::new();
     for sym in file.symbols().chain(file.dynamic_symbols()) {

@@ -38,7 +38,8 @@ fn disassemble(
         return Err(LiftError::Unreadable);
     };
     match image.isa {
-        Isa::X86_64 => Ok(x86_64(bytes, addr, max_lines, extent)),
+        Isa::I386 => Ok(x86_64(bytes, addr, max_lines, extent, 32)),
+        Isa::X86_64 => Ok(x86_64(bytes, addr, max_lines, extent, 64)),
         Isa::AArch64 => Ok(aarch64(bytes, addr, max_lines, extent)),
         Isa::Arm32
             if image.format == crate::loader::Format::Elf
@@ -51,8 +52,8 @@ fn disassemble(
     }
 }
 
-fn x86_64(bytes: &[u8], addr: u64, max_lines: usize, extent: Extent) -> Vec<String> {
-    let mut decoder = Decoder::with_ip(64, bytes, addr, DecoderOptions::NONE);
+fn x86_64(bytes: &[u8], addr: u64, max_lines: usize, extent: Extent, bitness: u32) -> Vec<String> {
+    let mut decoder = Decoder::with_ip(bitness, bytes, addr, DecoderOptions::NONE);
     let mut instruction = Instruction::default();
     let mut lines = Vec::new();
     while lines.len() < max_lines && decoder.can_decode() {

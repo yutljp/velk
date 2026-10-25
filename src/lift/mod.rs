@@ -220,14 +220,18 @@ pub fn lift_with(
             aarch64::recover_atomic_loops(image, summaries, &mut blocks);
             Ok(blocks)
         }
-        Isa::X86_64 => {
+        Isa::I386 | Isa::X86_64 => {
             let mut blocks = match lift_continuing(
                 image,
                 summaries,
                 || x86_64::Lifter::new(image, summaries),
                 addr,
                 bytes,
-                &x86_64::decode,
+                &if image.isa == Isa::I386 {
+                    x86_64::decode32
+                } else {
+                    x86_64::decode
+                },
                 extra_targets,
             ) {
                 Ok(result) => result,
@@ -320,7 +324,7 @@ fn drop_stack_probes(blocks: &mut [Block], image: &Image) {
                 crate::loader::Format::MachO => match image.isa {
                     Isa::X86_64 => name == Some("____chkstk_darwin"),
                     Isa::AArch64 => name == Some("___chkstk_darwin"),
-                    Isa::Arm32 | Isa::Unsupported => false,
+                    Isa::Arm32 | Isa::I386 | Isa::Unsupported => false,
                 },
                 crate::loader::Format::Pe if image.isa == crate::loader::Isa::X86_64 => {
                     name == Some("__chkstk")
@@ -680,9 +684,15 @@ pub(crate) fn arguments(
     if kind.push_bytes(isa, convention).is_none() {
         return None;
     }
+    let word = i64::from(crate::arch::pointer_bytes(isa));
+    let stack = if isa == Isa::I386 {
+        stack.max(count.saturating_sub(convention.arguments().len()))
+    } else {
+        stack
+    };
     let mut args: Vec<Expr> = convention.arguments()[..count.min(convention.arguments().len())]
         .iter()
-        .map(|register| Expr::reg(*register, if isa == Isa::Arm32 { 32 } else { 64 }))
+        .map(|register| Expr::reg(*register, crate::arch::pointer_bytes(isa) * 8))
         .collect();
     if let Some(start) = convention.stack_arguments() {
         let sp = crate::arch::stack_pointer(isa);
@@ -691,7 +701,7 @@ pub(crate) fn arguments(
             // at the call or jump.
             let Some(offset) = i64::try_from(slot)
                 .ok()
-                .and_then(|slot| slot.checked_mul(if isa == Isa::Arm32 { 4 } else { 8 }))
+                .and_then(|slot| slot.checked_mul(word))
                 .and_then(|slot| start.checked_add(slot))
                 .and_then(|callee| kind.stack_offset(isa, convention, callee))
             else {
@@ -703,7 +713,7 @@ pub(crate) fn arguments(
                     Expr::reg(sp, 64),
                     Expr::Const(offset as u64),
                 )),
-                width: if isa == Isa::Arm32 { 4 } else { 8 },
+                width: word as u8,
                 signed: false,
             });
         }
@@ -1094,26 +1104,47 @@ fn read_later(
 /// `call [slot]`, where the slot holds a known function's address and the
 /// program cannot write another there.
 pub(crate) fn pointer_target(image: &Image, through: &Expr) -> Option<u64> {
-    let Expr::Load { addr, width: 8, .. } = through else {
+    let Expr::Load { addr, width, .. } = through else {
         return None;
     };
+    if *width != crate::arch::pointer_bytes(image.isa) {
+        return None;
+    }
     let Expr::Const(slot) = addr.as_ref() else {
         return None;
     };
-    let section = image.section_at(*slot)?;
+    let Some(section) = image.section_at(*slot) else {
+        return None;
+    };
     if section.executable || !section.read_only {
         return None;
     }
-    let bytes = image.read_vaddr(*slot, 8)?;
-    let target = u64::from_le_bytes(bytes.try_into().ok()?);
+    let word = crate::arch::pointer_bytes(image.isa);
+    let Some(bytes) = image.read_vaddr(*slot, u64::from(word)) else {
+        return None;
+    };
+    let target = if word == 4 {
+        let Ok(bytes) = bytes.try_into() else {
+            return None;
+        };
+        u64::from(u32::from_le_bytes(bytes))
+    } else {
+        let Ok(bytes) = bytes.try_into() else {
+            return None;
+        };
+        u64::from_le_bytes(bytes)
+    };
     image.functions.contains_key(&target).then_some(target)
 }
 
 /// The name of the import whose slot `through` loads.
 pub(crate) fn import_name<'a>(image: &'a Image, through: &Expr) -> Option<&'a str> {
-    let Expr::Load { addr, width: 8, .. } = through else {
+    let Expr::Load { addr, width, .. } = through else {
         return None;
     };
+    if *width != crate::arch::pointer_bytes(image.isa) {
+        return None;
+    }
     let Expr::Const(slot) = addr.as_ref() else {
         return None;
     };
@@ -2524,3 +2555,6 @@ mod tests {
         }
     }
 }
+
+#[cfg(test)]
+mod i386_tests;

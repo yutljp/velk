@@ -55,6 +55,8 @@ pub enum LiftError {
     Unreadable,
     #[error("no instruction could be decoded")]
     NoInstructions,
+    #[error("the call argument count in the block at 0x{block:x} is unknown")]
+    UnknownArguments { block: u64 },
 }
 
 pub type Result<T, E = Error> = std::result::Result<T, E>;

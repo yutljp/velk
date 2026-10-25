@@ -13,23 +13,8 @@ use crate::loader;
 fn integer_instructions_match_arm_linux() {
     use std::fmt::Write as _;
 
-    let probe = Command::new("docker")
-        .args([
-            "run",
-            "--rm",
-            "--platform",
-            "linux/arm/v7",
-            "alpine:3.20",
-            "uname",
-            "-m",
-        ])
-        .output();
-    match probe {
-        Ok(output) if output.status.success() && output.stdout.starts_with(b"armv7") => {}
-        other => {
-            eprintln!("skipping ARM32 hardware check: Docker linux/arm/v7 unavailable: {other:?}");
-            return;
-        }
+    if !super::docker_available("linux/arm/v7", "alpine:3.20", "armv7") {
+        return;
     }
     let scratch = Path::new(env!("CARGO_MANIFEST_DIR")).join("target/arm32-hardware");
     fs::create_dir_all(&scratch).unwrap();
@@ -134,12 +119,12 @@ fn integer_instructions_match_arm_linux() {
             "{}",
             String::from_utf8_lossy(&build.stderr)
         );
-        let output = Command::new("docker")
-            .args(["run", "--rm", "--platform", "linux/arm/v7", "-v"])
-            .arg(format!("{}:/check:ro", scratch.display()))
-            .args(["alpine:3.20", &format!("/check/{mode}.elf")])
-            .output()
-            .unwrap();
+        let output = super::docker_run(
+            "linux/arm/v7",
+            "alpine:3.20",
+            &scratch,
+            &format!("{mode}.elf"),
+        );
         assert!(
             output.status.success(),
             "{mode}: {}",

@@ -1,0 +1,4 @@
+LIBRARY kernel32.dll
+EXPORTS
+GetFileType@4
+GetLastError@0

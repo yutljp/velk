@@ -1,3 +1,6 @@
+mod i386;
+pub(crate) use i386::settle as settle_i386;
+
 use crate::arch::stack_pointer;
 use std::collections::HashMap;
 
@@ -7,6 +10,9 @@ use crate::passes::{copies, frame};
 /// Rewrites every stack access against the entry frame and drops the
 /// adjustments, when the stack pointer is only ever a frame base.
 pub fn settle(ir: &mut FunctionIr) {
+    if ir.isa == crate::loader::Isa::I386 {
+        settle_i386(ir);
+    }
     // A declared call reads the stack pointer as it stands at the call.
     if ir
         .blocks

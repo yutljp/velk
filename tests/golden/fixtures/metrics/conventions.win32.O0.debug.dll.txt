@@ -1,0 +1,106 @@
+# metrics/conventions.win32.O0.debug.dll: pe i386 no entry, 5 functions, 0 lift failures, 0 unsupported, 0 gotos
+0x10001000 17 _cdecl_add symtab,dynamic,dwarf
+0x10001020 19 _stdcall_add@8 symtab,dynamic,dwarf
+0x10001040 31 @fastcall_add@12 symtab,dynamic,dwarf
+0x10001060 23 _thiscall_add symtab,dynamic,dwarf
+0x10001080 126 _call_conventions symtab,dynamic,dwarf
+
+== 0x10001000 _cdecl_add
+-- decompile
+/* velk pseudo-C: _cdecl_add @ 0x10001000 */
+int _cdecl_add(uint32_t a0, uint32_t a1) {
+    return a0 + a1;
+}
+-- signature
+int ()
+-- references
+
+-- ir
+fn _cdecl_add @ 0x10001000 (size 17)
+  blk0 @ 0x10001000:
+    ret ((load32((esp + #0x4)) + load32((esp + #0x8))) & #0xffffffff)
+-- card
+{"addr":"0x10001000","aliases":["cdecl_add"],"approxTokens":144,"blocks":1,"hardReasons":[],"name":"_cdecl_add","nameSources":["symtab","dynamic","dwarf"],"section":".text","size":17,"unsupported":0}
+
+== 0x10001020 _stdcall_add@8
+-- decompile
+/* velk pseudo-C: _stdcall_add@8 @ 0x10001020 */
+int _stdcall_add_8(uint32_t a0, uint32_t a1) {
+    return a0 + a1;
+}
+-- signature
+int ()
+-- references
+
+-- ir
+fn _stdcall_add@8 @ 0x10001020 (size 19)
+  blk0 @ 0x10001020:
+    ret ((load32((esp + #0x4)) + load32((esp + #0x8))) & #0xffffffff)
+-- card
+{"addr":"0x10001020","aliases":["stdcall_add"],"approxTokens":144,"blocks":1,"hardReasons":[],"name":"_stdcall_add@8","nameSources":["symtab","dynamic","dwarf"],"section":".text","size":19,"unsupported":0}
+
+== 0x10001040 @fastcall_add@12
+-- decompile
+/* velk pseudo-C: @fastcall_add@12 @ 0x10001040 */
+int _fastcall_add_12(int32_t a0, int32_t a1, uint32_t a2) {
+    return a0 + a1 + a2;
+}
+-- signature
+int (int32_t a0, int32_t a1)
+-- references
+
+-- ir
+fn @fastcall_add@12 @ 0x10001040 (size 31)
+  blk0 @ 0x10001040:
+    ret ((((ecx & #0xffffffff) + (edx & #0xffffffff)) + load32((esp + #0x4))) & #0xffffffff)
+-- card
+{"addr":"0x10001040","aliases":["fastcall_add"],"approxTokens":168,"blocks":1,"hardReasons":[],"name":"@fastcall_add@12","nameSources":["symtab","dynamic","dwarf"],"section":".text","size":31,"unsupported":0}
+
+== 0x10001060 _thiscall_add
+-- decompile
+/* velk pseudo-C: _thiscall_add @ 0x10001060 */
+int _thiscall_add(int32_t a0, uint32_t a1) {
+    return a0 + a1;
+}
+-- signature
+int (int32_t a0)
+-- references
+
+-- ir
+fn _thiscall_add @ 0x10001060 (size 23)
+  blk0 @ 0x10001060:
+    ret (((ecx & #0xffffffff) + load32((esp + #0x4))) & #0xffffffff)
+-- card
+{"addr":"0x10001060","aliases":["thiscall_add"],"approxTokens":156,"blocks":1,"hardReasons":[],"name":"_thiscall_add","nameSources":["symtab","dynamic","dwarf"],"section":".text","size":23,"unsupported":0}
+
+== 0x10001080 _call_conventions
+-- decompile
+/* velk pseudo-C: _call_conventions @ 0x10001080 */
+int _call_conventions(uint32_t a0) {
+    uint32_t local_0; /* [sp-c] */
+    uint32_t local_1; /* [sp-8] */
+
+    int32_t v1 = _cdecl_add(a0, 1);
+    int32_t v2 = _stdcall_add_8(a0, 2);
+    local_0 = v1 + v2;
+    v1 = _fastcall_add_12(a0, 3, 4);
+    local_1 = local_0 + v1;
+    v1 = _thiscall_add(a0, 5);
+    return local_1 + v1;
+}
+-- signature
+int ()
+-- references
+
+-- ir
+fn _call_conventions @ 0x10001080 (size 126)
+  blk0 @ 0x10001080:
+    v1:eax, edx = call 0x10001000(load32((esp + #0x4)), #0x1)
+    v2:eax, edx = call 0x10001020(load32((esp + #0x4)), #0x2)
+    store32((v1 + (v2 & #0xffffffff)), (esp + #0xfffffffffffffff4))
+    v1:eax, edx = call 0x10001040(load32((esp + #0x4)), #0x3, #0x4)
+    store32((load32((esp + #0xfffffffffffffff4)) + (v1 & #0xffffffff)), (esp + #0xfffffffffffffff8))
+    v1:eax, edx = call 0x10001060(load32((esp + #0x4)), #0x5)
+    ret ((load32((esp + #0xfffffffffffffff8)) + (v1 & #0xffffffff)) & #0xffffffff)
+-- card
+{"addr":"0x10001080","aliases":["call_conventions"],"approxTokens":240,"blocks":1,"hardReasons":[],"name":"_call_conventions","nameSources":["symtab","dynamic","dwarf"],"section":".text","size":126,"unsupported":0}

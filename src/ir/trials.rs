@@ -61,6 +61,10 @@ pub fn convention(image: &Image) -> Convention<'static> {
             arguments: &[7, 6, 2, 1, 8, 9],
             clobbered: &[0, 1, 2, 6, 7, 8, 9, 10, 11],
         },
+        Isa::I386 => Convention {
+            arguments: &[],
+            clobbered: &[0, 1, 2],
+        },
         Isa::Unsupported => Convention {
             arguments: &[],
             clobbered: &[],

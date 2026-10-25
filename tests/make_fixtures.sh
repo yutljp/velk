@@ -150,6 +150,7 @@ for source in "$CASES"/c/*.c; do
   done
 done
 
+bash tests/make_i386_fixtures.sh
 bash tests/make_pe_fixtures.sh
 bash tests/make_seh_fixtures.sh
 sh tests/make_type_library_fixtures.sh linux

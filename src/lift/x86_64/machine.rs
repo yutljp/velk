@@ -7,6 +7,11 @@ use iced_x86::Mnemonic;
 const OUTPUT: u16 = TEMP_BASE + 0x50;
 
 pub(super) fn lift(lifter: &mut Lifter<'_>, mnemonic: Mnemonic) {
+    let bytes = match mnemonic {
+        Mnemonic::Pushf | Mnemonic::Popf => 2,
+        Mnemonic::Pushfd | Mnemonic::Popfd => 4,
+        _ => 8,
+    };
     let (instruction, inputs, count) = match mnemonic {
         Mnemonic::Cpuid => (
             MachineInstruction::Cpuid,
@@ -16,7 +21,7 @@ pub(super) fn lift(lifter: &mut Lifter<'_>, mnemonic: Mnemonic) {
         Mnemonic::Xgetbv => (MachineInstruction::Xgetbv, vec![Lifter::read_reg(1, 32)], 1),
         Mnemonic::Rdtsc => (MachineInstruction::Rdtsc, vec![], 1),
         Mnemonic::Rdtscp => (MachineInstruction::Rdtscp, vec![], 2),
-        Mnemonic::Pushfq => {
+        Mnemonic::Pushf | Mnemonic::Pushfd | Mnemonic::Pushfq => {
             let mut mask = 1 << 10;
             let mut bits = Expr::bin(BinOp::Shl, Expr::reg(DIRECTION, 64), Expr::constant(10));
             if let Some(flags) = &lifter.last_compare {
@@ -40,11 +45,11 @@ pub(super) fn lift(lifter: &mut Lifter<'_>, mnemonic: Mnemonic) {
                 1,
             )
         }
-        Mnemonic::Popfq => (
+        Mnemonic::Popf | Mnemonic::Popfd | Mnemonic::Popfq => (
             MachineInstruction::WriteFlags,
             vec![Expr::Load {
                 addr: Box::new(Lifter::read_reg(RSP, 64)),
-                width: 8,
+                width: bytes,
                 signed: false,
             }],
             1,
@@ -93,7 +98,7 @@ pub(super) fn lift(lifter: &mut Lifter<'_>, mnemonic: Mnemonic) {
             }
         }
         MachineInstruction::ReadFlags => {
-            stack_adjust(lifter, -8);
+            stack_adjust(lifter, -i64::from(bytes));
             crate::lift::preserve_compare(
                 &mut lifter.last_compare,
                 crate::lift::Write::Memory,
@@ -102,11 +107,11 @@ pub(super) fn lift(lifter: &mut Lifter<'_>, mnemonic: Mnemonic) {
             lifter.stmts.push(Stmt::Store {
                 addr: Lifter::read_reg(RSP, 64),
                 value: output(0),
-                width: 8,
+                width: bytes,
             });
         }
         MachineInstruction::WriteFlags => {
-            stack_adjust(lifter, 8);
+            stack_adjust(lifter, i64::from(bytes));
             let overflow = Expr::bin(
                 BinOp::And,
                 Expr::bin(BinOp::Shr, output(0), Expr::constant(11)),

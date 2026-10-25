@@ -104,10 +104,20 @@ pub fn data_ranges(image: &crate::loader::Image) -> Vec<(u64, u64)> {
 /// the parameter list a demangled name ends in, when no other function has
 /// that name too.
 pub fn callee_names(image: &crate::loader::Image) -> Symbols {
+    let base_name = |function: &crate::loader::Function, name: &str| {
+        let base = sanitize(&short_name(name));
+        if image.isa == crate::loader::Isa::I386
+            && function.sources.contains(&crate::loader::NameSource::Plt)
+        {
+            format!("{base}_plt")
+        } else {
+            base
+        }
+    };
     let mut bases: HashMap<String, usize> = HashMap::new();
     for function in image.functions.values() {
         if let Some(name) = &function.name {
-            *bases.entry(sanitize(&short_name(name))).or_default() += 1;
+            *bases.entry(base_name(function, name)).or_default() += 1;
         }
     }
     let mut used = std::collections::HashSet::new();
@@ -118,7 +128,7 @@ pub fn callee_names(image: &crate::loader::Image) -> Symbols {
             let Some(name) = function.name.as_ref() else {
                 return None;
             };
-            let base = sanitize(&short_name(name));
+            let base = base_name(function, name);
             let mut name = base.clone();
             if bases.get(&base) != Some(&1) {
                 let candidate = format!("{base}_{address:x}");

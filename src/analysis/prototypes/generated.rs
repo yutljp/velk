@@ -4,7 +4,7 @@
 //! and record layouts are checked by the generator with the target compiler.
 //! Unsupported calling sequences remain with the handwritten declarations.
 //! Aggregate values, callbacks, variadic calls, and mixed integer/float parameters
-//! are excluded. Active lifters receive register arguments only. Unsupported typedef
+//! are excluded. Unsupported typedef
 //! spellings resolve to scalar or pointer types; their original spellings remain
 //! in the source data.
 
@@ -106,6 +106,10 @@ fn target_library(image: &Image) -> Option<&'static TargetLibrary> {
         return None;
     }
     let (libraries, name) = match (image.format, image.isa) {
+        (Format::Pe | Format::Coff, Isa::I386) => (
+            WINDOWS.get_or_init(|| targets(include_str!("windows.json"))),
+            "i686-w64-mingw32",
+        ),
         (Format::Pe | Format::Coff, Isa::X86_64) => (
             WINDOWS.get_or_init(|| targets(include_str!("windows.json"))),
             "x86_64-w64-mingw32",

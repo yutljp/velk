@@ -1,0 +1,61 @@
+# metrics/l1_branch.i386.O2.stripped.elf: elf i386 no entry, 3 functions, 0 lift failures, 0 unsupported, 0 gotos
+0x1220 17 classify dynamic,unwind
+0x1240 23 clamp dynamic,unwind
+0x1260 17 sign_of dynamic,unwind
+
+== 0x1220 classify
+-- decompile
+/* velk pseudo-C: classify @ 0x1220 */
+int32_t classify(uint32_t a0) {
+    int8_t v1 = (int32_t)a0 > 0;
+    return (int8_t)(v1 - ((int32_t)a0 < 0));
+}
+-- signature
+int32_t ()
+-- references
+
+-- ir
+fn classify @ 0x1220 (size 17)
+  blk0 @ 0x1220:
+    v1 = (select gt load32((esp + #0x4)), #0x0 ? #0x1, #0x0 & #0xff)
+    ret (sext8(((v1 & #0xff) - (select lt load32((esp + #0x4)), #0x0 ? #0x1, #0x0 & #0xff))) & #0xffffffff)
+-- card
+{"addr":"0x1220","approxTokens":132,"blocks":1,"hardReasons":[],"name":"classify","nameSources":["dynamic","unwind"],"section":".text","size":17,"unsupported":0}
+
+== 0x1240 clamp
+-- decompile
+/* velk pseudo-C: clamp @ 0x1240 */
+int32_t clamp(uint32_t a0, uint32_t a1, uint32_t a2) {
+    int32_t v1 = a0;
+    return (v1 < (int32_t)a1 ? a1 : (v1 < (int32_t)a2 ? v1 : a2));
+}
+-- signature
+int32_t ()
+-- references
+
+-- ir
+fn clamp @ 0x1240 (size 23)
+  blk0 @ 0x1240:
+    v1 = load32((esp + #0x4))
+    ret select lt (v1 & #0xffffffff), load32((esp + #0x8)) ? load32((esp + #0x8)), select lt (v1 & #0xffffffff), load32((esp + #0xc)) ? (v1 & #0xffffffff), load32((esp + #0xc))
+-- card
+{"addr":"0x1240","approxTokens":144,"blocks":1,"hardReasons":[],"name":"clamp","nameSources":["dynamic","unwind"],"section":".text","size":23,"unsupported":0}
+
+== 0x1260 sign_of
+-- decompile
+/* velk pseudo-C: sign_of @ 0x1260 */
+int32_t sign_of(uint32_t a0) {
+    int8_t v1 = (int32_t)a0 > 0;
+    return (int8_t)(v1 - ((int32_t)a0 < 0));
+}
+-- signature
+int32_t ()
+-- references
+
+-- ir
+fn sign_of @ 0x1260 (size 17)
+  blk0 @ 0x1260:
+    v1 = (select gt load32((esp + #0x4)), #0x0 ? #0x1, #0x0 & #0xff)
+    ret (sext8(((v1 & #0xff) - (select lt load32((esp + #0x4)), #0x0 ? #0x1, #0x0 & #0xff))) & #0xffffffff)
+-- card
+{"addr":"0x1260","approxTokens":132,"blocks":1,"hardReasons":[],"name":"sign_of","nameSources":["dynamic","unwind"],"section":".text","size":17,"unsupported":0}

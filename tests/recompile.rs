@@ -138,7 +138,7 @@ const REGION_SIZE: u64 = 0x1_0000;
 const FRAME_BASE: u64 = 0x3100_0000_0000;
 
 fn region_start(isa: Isa) -> u64 {
-    if isa == Isa::Arm32 {
+    if velk::arch::pointer_bytes(isa) == 4 {
         0x3000_0000
     } else {
         REGION
@@ -146,7 +146,7 @@ fn region_start(isa: Isa) -> u64 {
 }
 
 fn frame_base(isa: Isa) -> u64 {
-    if isa == Isa::Arm32 {
+    if velk::arch::pointer_bytes(isa) == 4 {
         0x3100_0000
     } else {
         FRAME_BASE
@@ -5681,7 +5681,7 @@ fn check_batch(
     if cfg!(target_os = "macos")
         && candidates
             .first()
-            .is_some_and(|candidate| candidate.ir.isa == Isa::Arm32)
+            .is_some_and(|candidate| velk::arch::pointer_bytes(candidate.ir.isa) == 4)
     {
         arguments.extend(["-arch", "x86_64", "-Wl,-pagezero_size,0x1000"]);
     }
@@ -6358,20 +6358,28 @@ fn interpret(
     if arguments.len() != candidate.params.len() {
         return Err("the driver gave no arguments");
     }
-    let (mut registers, aggregate_memory): EntryState = if let Some(call) = &candidate.marshalling {
-        aggregate_state(call, arguments, trial)
-    } else {
-        (
-            candidate
-                .ir
-                .params
-                .iter()
-                .map(|param| param.index)
-                .zip(arguments.iter().copied())
-                .collect(),
-            Vec::new(),
-        )
-    };
+    let (mut registers, mut aggregate_memory): EntryState =
+        if let Some(call) = &candidate.marshalling {
+            aggregate_state(call, arguments, trial)
+        } else {
+            (
+                candidate
+                    .ir
+                    .params
+                    .iter()
+                    .map(|param| param.index)
+                    .zip(arguments.iter().copied())
+                    .collect(),
+                Vec::new(),
+            )
+        };
+    if velk::arch::pointer_bytes(candidate.ir.isa) == 4 {
+        for (address, _) in &mut aggregate_memory {
+            *address = address
+                .wrapping_sub(eval::STACK_TOP)
+                .wrapping_add(eval::stack_top(candidate.ir.isa));
+        }
+    }
     registers.extend_from_slice(&fixture.entry_registers);
     let mut memory = Vec::new();
     // The region holds what the trial's seed hashes, whatever seed reads
@@ -7802,16 +7810,27 @@ fn physical_stack_signature(ir: &FunctionIr) -> Option<DeclaredSignature> {
     let profile = match (ir.isa, ir.convention) {
         (Isa::AArch64, Convention::Aapcs64) => AbiProfile::Aapcs64,
         (Isa::X86_64, Convention::SysV) => AbiProfile::SysV,
+        (
+            Isa::I386,
+            Convention::Cdecl | Convention::Stdcall | Convention::Fastcall | Convention::Thiscall,
+        ) => AbiProfile::SysV,
         (Isa::X86_64, Convention::Win64) => AbiProfile::Win64,
         _ => return None,
     };
-    let scalar64 = |ty: &CType| matches!(ty, CType::Int { bytes: 8, .. });
-    if ir.declared_signature.is_some()
+    let bytes = velk::arch::pointer_bytes(ir.isa);
+    let scalar_integer = |ty: &CType| {
+        if ir.isa == Isa::I386 {
+            ty.integer().is_some_and(|(bits, _)| bits == 32)
+        } else {
+            matches!(ty, CType::Int { bytes: width, .. } if *width == bytes)
+        }
+    };
+    if (ir.isa != Isa::I386 && ir.declared_signature.is_some())
         || ir.variadic
         || ir.stack_params.is_empty()
         || ir.params.len() + ir.stack_params.len() > 16
-        || !scalar64(&ir.ret_type)
-        || !ir.params.iter().all(|param| scalar64(&param.ty))
+        || !scalar_integer(&ir.ret_type)
+        || !ir.params.iter().all(|param| scalar_integer(&param.ty))
     {
         return None;
     }
@@ -7827,22 +7846,22 @@ fn physical_stack_signature(ir: &FunctionIr) -> Option<DeclaredSignature> {
         return None;
     };
     if !ir.stack_params.iter().enumerate().all(|(slot, param)| {
-        param.offset == start + slot as i64 * 8
-            && param.size == 8
-            && scalar64(&param.ty)
+        param.offset == start + slot as i64 * i64::from(bytes)
+            && param.size == u64::from(bytes)
+            && scalar_integer(&param.ty)
             && param.position == ir.params.len() + slot
     }) {
         return None;
     }
     let scalar = |location| ValueAbi {
         aggregate: false,
-        size: 8,
-        alignment: 8,
-        defined_bits: vec![(0, 64)],
+        size: u64::from(bytes),
+        alignment: u64::from(bytes),
+        defined_bits: vec![(0, u64::from(bytes) * 8)],
         passing: Passing::Direct(vec![AbiPiece {
             location,
             object_offset: 0,
-            bytes: 8,
+            bytes: u64::from(bytes),
             class: if matches!(location, AbiLocation::Register(_)) {
                 Some(RegisterClass::Integer)
             } else {
@@ -7882,12 +7901,20 @@ fn physical_stack_signature(ir: &FunctionIr) -> Option<DeclaredSignature> {
 }
 
 fn physical_stack_call(ir: &FunctionIr, rows: usize) -> Option<AggregateCall> {
+    let Some(signature) = physical_stack_signature(ir) else {
+        return None;
+    };
+    let bytes = velk::arch::pointer_bytes(ir.isa);
     Some(AggregateCall {
-        signature: physical_stack_signature(ir)?,
+        signature,
         result: ObjectSlice {
             offset: 0,
-            bytes: 8,
-            mask: u64::MAX,
+            bytes,
+            mask: if bytes == 4 {
+                u64::from(u32::MAX)
+            } else {
+                u64::MAX
+            },
         },
         upper_bits: vec![0; rows],
     })
@@ -10686,3 +10713,6 @@ mod comparison_inputs;
 mod vector_elements;
 #[path = "recompile/vector_extensions.rs"]
 mod vector_extensions;
+
+#[path = "recompile/i386.rs"]
+mod i386;

@@ -1,0 +1,41 @@
+# metrics/imports.win32.O2.stripped.dll: pe i386 no entry, 2 functions, 0 lift failures, 0 unsupported, 0 gotos
+0x10001000 17 import_call dynamic
+0x10001011 6 abs plt
+
+== 0x10001000 import_call
+-- decompile
+/* velk pseudo-C: import_call @ 0x10001000 */
+/* ref: 0x100020dc .rdata */
+int32_t import_call(uint32_t a0) {
+    return ((int32_t)(abs(a0))) + 3;
+}
+-- signature
+int32_t ()
+-- references
+0x100020dc .rdata
+-- ir
+fn import_call @ 0x10001000 (size 17)
+  blk0 @ 0x10001000:
+    v1:eax, edx = call *load32(#0x100020dc)(load32((esp + #0x4)))
+    ret (((v1 & #0xffffffff) + #0x3) & #0xffffffff)
+-- card
+{"addr":"0x10001000","approxTokens":126,"blocks":1,"hardReasons":[],"name":"import_call","nameSources":["dynamic"],"section":".text","size":17,"sizeEstimated":true,"unsupported":0}
+
+== 0x10001011 abs
+-- decompile
+/* velk pseudo-C: abs @ 0x10001011 */
+/* ref: 0x100020dc .rdata */
+int32_t abs_plt(uint32_t a0) {
+    return ((int32_t)(abs(a0)));
+}
+-- signature
+int32_t ()
+-- references
+0x100020dc .rdata
+-- ir
+fn abs @ 0x10001011 (size 6)
+  blk0 @ 0x10001011:
+    v1:eax, edx = call *load32(#0x100020dc)(load32((esp + #0x4)))
+    ret (v1 & #0xffffffff)
+-- card
+{"addr":"0x10001011","approxTokens":102,"blocks":1,"hardReasons":[],"name":"abs","nameSources":["plt"],"section":".text","size":6,"sizeEstimated":true,"unsupported":0}

@@ -204,10 +204,10 @@ pub fn reg_name(isa: Isa, index: u16, width: u8) -> String {
                 format!("x{index}")
             }
         }
-        Isa::X86_64 => {
+        Isa::I386 | Isa::X86_64 => {
             let index = index as usize;
             let base = X86_NAMES64.get(index).copied().unwrap_or("reg");
-            if width == 32 {
+            if width == 32 || (isa == Isa::I386 && index < 8) {
                 match index {
                     0..=7 => format!("e{}", &base[1..]),
                     8..=15 => format!("{base}d"),

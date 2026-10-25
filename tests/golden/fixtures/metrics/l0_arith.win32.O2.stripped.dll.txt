@@ -1,0 +1,75 @@
+# metrics/l0_arith.win32.O2.stripped.dll: pe i386 no entry, 4 functions, 0 lift failures, 0 unsupported, 0 gotos
+0x10001000 16 add3 dynamic
+0x10001010 32 scale dynamic
+0x10001030 16 pick dynamic
+0x10001040 7 negate dynamic
+
+== 0x10001000 add3
+-- decompile
+/* velk pseudo-C: add3 @ 0x10001000 */
+int32_t add3(uint32_t a0, uint32_t a1, uint32_t a2) {
+    return a1 + a0 + a2;
+}
+-- signature
+int32_t ()
+-- references
+
+-- ir
+fn add3 @ 0x10001000 (size 16)
+  blk0 @ 0x10001000:
+    ret (((load32((esp + #0x8)) + load32((esp + #0x4))) + load32((esp + #0xc))) & #0xffffffff)
+-- card
+{"addr":"0x10001000","approxTokens":120,"blocks":1,"hardReasons":[],"name":"add3","nameSources":["dynamic"],"section":".text","size":16,"sizeEstimated":true,"unsupported":0}
+
+== 0x10001010 scale
+-- decompile
+/* velk pseudo-C: scale @ 0x10001010 */
+int32_t scale(uint32_t a0) {
+    int32_t v1 = a0;
+    return v1 * 8 - v1 + 3;
+}
+-- signature
+int32_t ()
+-- references
+
+-- ir
+fn scale @ 0x10001010 (size 32)
+  blk0 @ 0x10001010:
+    v1 = load32((esp + #0x4))
+    ret (((((v1 & #0xffffffff) * #0x8) - (v1 & #0xffffffff)) + #0x3) & #0xffffffff)
+-- card
+{"addr":"0x10001010","approxTokens":126,"blocks":1,"hardReasons":[],"name":"scale","nameSources":["dynamic"],"section":".text","size":32,"sizeEstimated":true,"unsupported":0}
+
+== 0x10001030 pick
+-- decompile
+/* velk pseudo-C: pick @ 0x10001030 */
+int32_t pick(uint32_t a0, uint32_t a1) {
+    return ((int32_t)a0 > (int32_t)a1 ? a0 : a1);
+}
+-- signature
+int32_t ()
+-- references
+
+-- ir
+fn pick @ 0x10001030 (size 16)
+  blk0 @ 0x10001030:
+    ret select gt load32((esp + #0x4)), load32((esp + #0x8)) ? load32((esp + #0x4)), load32((esp + #0x8))
+-- card
+{"addr":"0x10001030","approxTokens":126,"blocks":1,"hardReasons":[],"name":"pick","nameSources":["dynamic"],"section":".text","size":16,"sizeEstimated":true,"unsupported":0}
+
+== 0x10001040 negate
+-- decompile
+/* velk pseudo-C: negate @ 0x10001040 */
+int32_t negate(uint32_t a0) {
+    return -a0;
+}
+-- signature
+int32_t ()
+-- references
+
+-- ir
+fn negate @ 0x10001040 (size 7)
+  blk0 @ 0x10001040:
+    ret ((#0x0 - load32((esp + #0x4))) & #0xffffffff)
+-- card
+{"addr":"0x10001040","approxTokens":114,"blocks":1,"hardReasons":[],"name":"negate","nameSources":["dynamic"],"section":".text","size":7,"sizeEstimated":true,"unsupported":0}

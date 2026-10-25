@@ -10,9 +10,10 @@ English | [日本語](README.ja.md)
 
 </div>
 
-velk is a decompiler for ELF, PE and Mach-O binaries (x86-64 and AArch64) and little-endian ELF32 binaries
-(ARM32: A32/T32). It prints C code that computes the same results as the original binary. You can use it from the
-command line, or from an LLM agent through its scripting API and MCP server.
+velk is a decompiler for ELF, PE and Mach-O binaries (x86-64 and AArch64), ELF and PE binaries
+(x86-32), and little-endian ELF32 binaries (ARM32: A32/T32). It prints C code that computes the same
+results as the original binary. You can use it from the command line, or from an LLM agent through
+its scripting API and MCP server.
 
 ```c
 int sum_until_zero(int *p, int n) {

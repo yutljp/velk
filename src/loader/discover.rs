@@ -125,7 +125,7 @@ pub(crate) fn is_aarch64_padding(word: u32) -> bool {
 }
 
 /// True when `target` decodes to padding, where an unresolved jump lands.
-fn x86_is_padding(bytes: &[u8], base: u64, target: u64) -> bool {
+fn x86_is_padding(bytes: &[u8], base: u64, target: u64, bitness: u32) -> bool {
     use iced_x86::{Decoder, DecoderOptions, Mnemonic};
     if target < base {
         return false;
@@ -134,24 +134,24 @@ fn x86_is_padding(bytes: &[u8], base: u64, target: u64) -> bool {
     let Some(rest) = bytes.get(offset..) else {
         return false;
     };
-    let mut decoder = Decoder::with_ip(64, rest, target, DecoderOptions::NONE);
+    let mut decoder = Decoder::with_ip(bitness, rest, target, DecoderOptions::NONE);
     if !decoder.can_decode() {
         return false;
     }
     matches!(decoder.decode().mnemonic(), Mnemonic::Nop | Mnemonic::Int3)
 }
 
-/// Function starts in a stripped x86-64 image: the first non-padding
+/// Function starts in a stripped x86 image: the first non-padding
 /// instruction after a return or tail jump, unless a branch targets it.
 /// An indirect jump ends a function unless it dispatches a jump table.
-pub(crate) fn x86_prologues(bytes: &[u8], base: u64) -> Vec<u64> {
+pub(crate) fn x86_prologues(bytes: &[u8], base: u64, bitness: u32) -> Vec<u64> {
     use iced_x86::{Decoder, DecoderOptions, FlowControl};
     // Every conditional branch target, wherever the branch: a later loop
     // may jump back into code an earlier return seemed to end.
     let mut targets = std::collections::HashSet::new();
     // Call targets are function starts, so a jump to one is a tail call.
     let mut called = std::collections::HashSet::new();
-    let mut decoder = Decoder::with_ip(64, bytes, base, DecoderOptions::NONE);
+    let mut decoder = Decoder::with_ip(bitness, bytes, base, DecoderOptions::NONE);
     while decoder.can_decode() {
         let instruction = decoder.decode();
         match instruction.flow_control() {
@@ -164,7 +164,7 @@ pub(crate) fn x86_prologues(bytes: &[u8], base: u64) -> Vec<u64> {
             _ => {}
         }
     }
-    let mut decoder = Decoder::with_ip(64, bytes, base, DecoderOptions::NONE);
+    let mut decoder = Decoder::with_ip(bitness, bytes, base, DecoderOptions::NONE);
     let mut starts = Vec::new();
     let mut closed = false;
     let mut previous: Option<iced_x86::Instruction> = None;
@@ -172,25 +172,25 @@ pub(crate) fn x86_prologues(bytes: &[u8], base: u64) -> Vec<u64> {
         let instruction = decoder.decode();
         let ip = instruction.ip();
         let continued = targets.contains(&ip) && !called.contains(&ip);
-        if closed && !continued && ip != base && !x86_is_padding(bytes, base, ip) {
+        if closed && !continued && ip != base && !x86_is_padding(bytes, base, ip, bitness) {
             starts.push(ip);
             closed = false;
-        } else if closed && continued && !x86_is_padding(bytes, base, ip) {
+        } else if closed && continued && !x86_is_padding(bytes, base, ip, bitness) {
             // A branch target of the previous function: it continues here.
             closed = false;
         }
         match instruction.flow_control() {
             FlowControl::UnconditionalBranch => {
                 let target = instruction.near_branch_target();
-                if !x86_is_padding(bytes, base, target) {
+                if !x86_is_padding(bytes, base, target, bitness) {
                     targets.insert(target);
                 }
                 // A jump to itself or to padding is unresolved; one leaving
                 // the section or to a called function is a tail call. All
                 // end the function.
                 if target == ip
-                    || !(base..base + bytes.len() as u64).contains(&target)
-                    || x86_is_padding(bytes, base, target)
+                    || !(base..base.saturating_add(bytes.len() as u64)).contains(&target)
+                    || x86_is_padding(bytes, base, target, bitness)
                     || called.contains(&target)
                 {
                     closed = true;
@@ -210,7 +210,7 @@ pub(crate) fn x86_prologues(bytes: &[u8], base: u64) -> Vec<u64> {
                 // Padding after it ends the function all the same: the
                 // table held functions, as for a call through a table.
                 closed = !(through_table || computed)
-                    || x86_is_padding(bytes, base, instruction.next_ip());
+                    || x86_is_padding(bytes, base, instruction.next_ip(), bitness);
             }
             FlowControl::Return => closed = true,
             // A trap or halt ends a function, as after a call that does not
@@ -280,27 +280,27 @@ mod tests {
     fn a_jump_table_case_after_the_dispatch_is_no_function() {
         // add rax, rcx; jmp rax; (case) ret; int3
         let code = [0x48, 0x01, 0xc8, 0xff, 0xe0, 0xc3, 0xcc];
-        assert!(x86_prologues(&code, 0).is_empty());
+        assert!(x86_prologues(&code, 0, 64).is_empty());
     }
 
     #[test]
     fn a_function_after_a_call_that_does_not_return_is_found() {
         // call 0; int3; (next function) ret
         let code = [0xe8, 0xfb, 0xff, 0xff, 0xff, 0xcc, 0xc3];
-        assert_eq!(x86_prologues(&code, 0), vec![6]);
+        assert_eq!(x86_prologues(&code, 0, 64), vec![6]);
     }
 
     #[test]
     fn a_function_after_a_halt_is_found() {
         // hlt; (next function) ret
-        assert_eq!(x86_prologues(&[0xf4, 0xc3], 0), vec![1]);
+        assert_eq!(x86_prologues(&[0xf4, 0xc3], 0, 64), vec![1]);
     }
 
     #[test]
     fn a_called_function_is_found_though_a_tail_jump_targets_it() {
         // jmp 3; int3; (3) ret; (4) call 3; ret
         let code = [0xeb, 0x01, 0xcc, 0xc3, 0xe8, 0xfa, 0xff, 0xff, 0xff, 0xc3];
-        assert_eq!(x86_prologues(&code, 0), vec![3, 4]);
+        assert_eq!(x86_prologues(&code, 0, 64), vec![3, 4]);
     }
 
     #[test]
@@ -316,5 +316,15 @@ mod tests {
         let code = words(&[0xd65f_03c0, 0xd280_0000, 0xb4ff_ffe0]);
         let starts = aarch64_prologues(&code, 0, &Default::default());
         assert!(!starts.contains(&4), "{starts:?}");
+    }
+}
+
+#[cfg(test)]
+mod i386_tests {
+    #[test]
+    fn function_discovery_decodes_legacy_increment_opcodes() {
+        let code = [0xc3, 0x40, 0x90, 0xc3];
+        assert_eq!(super::x86_prologues(&code, 0, 32), vec![1]);
+        assert_eq!(super::x86_prologues(&code, 0, 64), vec![3]);
     }
 }

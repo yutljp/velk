@@ -1,0 +1,106 @@
+# metrics/l1_branch.win32.O0.debug.dll: pe i386 no entry, 3 functions, 0 lift failures, 0 unsupported, 0 gotos
+0x10001000 52 _classify symtab,dynamic,dwarf
+0x10001040 59 _clamp symtab,dynamic,dwarf
+0x10001080 50 _sign_of symtab,dynamic,dwarf
+
+== 0x10001000 _classify
+-- decompile
+/* velk pseudo-C: _classify @ 0x10001000 */
+int _classify(uint32_t a0) {
+    if ((int32_t)a0 >= 0) {
+        if (a0 != 0) {
+            return 1;
+        }
+        return 0;
+    }
+    return -1;
+}
+-- signature
+int ()
+-- references
+
+-- ir
+fn _classify @ 0x10001000 (size 52)
+  blk0 @ 0x10001000:
+    brif ge load32((esp + #0x4)), #0x0 -> 0x10001016
+  blk1 @ 0x1000100d:
+    v2 = #0xffffffff
+    br 0x1000102c
+  blk2 @ 0x10001016:
+    brif ne load32((esp + #0x4)), #0x0 -> 0x10001025
+  blk3 @ 0x1000101c:
+    v2 = #0x0
+    br 0x1000102c
+  blk4 @ 0x10001025:
+    v2 = #0x1
+  blk5 @ 0x1000102c:
+    ret v2
+-- card
+{"addr":"0x10001000","aliases":["classify"],"approxTokens":144,"blocks":6,"hardReasons":[],"name":"_classify","nameSources":["symtab","dynamic","dwarf"],"section":".text","size":52,"unsupported":0}
+
+== 0x10001040 _clamp
+-- decompile
+/* velk pseudo-C: _clamp @ 0x10001040 */
+int _clamp(uint32_t a0, uint32_t a1, uint32_t a2) {
+    int32_t result;
+
+    if ((int32_t)a0 >= (int32_t)a1) {
+        if ((int32_t)a0 <= (int32_t)a2) {
+            result = a0;
+            return result;
+        }
+        result = a2;
+        return result;
+    }
+    result = a1;
+    return result;
+}
+-- signature
+int ()
+-- references
+
+-- ir
+fn _clamp @ 0x10001040 (size 59)
+  blk0 @ 0x10001040:
+    brif ge load32((esp + #0x4)), load32((esp + #0x8)) -> 0x1000105d
+  blk1 @ 0x10001055:
+    v1 = load32((esp + #0x8))
+    br 0x10001073
+  blk2 @ 0x1000105d:
+    brif le load32((esp + #0x4)), load32((esp + #0xc)) -> 0x1000106d
+  blk3 @ 0x10001065:
+    v1 = load32((esp + #0xc))
+    br 0x10001073
+  blk4 @ 0x1000106d:
+    v1 = load32((esp + #0x4))
+  blk5 @ 0x10001073:
+    ret v1
+-- card
+{"addr":"0x10001040","aliases":["clamp"],"approxTokens":168,"blocks":6,"hardReasons":[],"name":"_clamp","nameSources":["symtab","dynamic","dwarf"],"section":".text","size":59,"unsupported":0}
+
+== 0x10001080 _sign_of
+-- decompile
+/* velk pseudo-C: _sign_of @ 0x10001080 */
+int _sign_of(uint32_t a0) {
+    if ((int32_t)a0 <= 0) {
+        return ((int32_t)a0 < 0 ? 0xffffffff : 0);
+    }
+    return 1;
+}
+-- signature
+int ()
+-- references
+
+-- ir
+fn _sign_of @ 0x10001080 (size 50)
+  blk0 @ 0x10001080:
+    brif le load32((esp + #0x4)), #0x0 -> 0x10001097
+  blk1 @ 0x1000108d:
+    v2 = #0x1
+    br 0x100010aa
+  blk2 @ 0x10001097:
+    v2 = select lt load32((esp + #0x4)), #0x0 ? #0xffffffff, #0x0
+  blk3 @ 0x100010aa:
+    ret v2
+-- card
+{"addr":"0x10001080","aliases":["sign_of"],"approxTokens":150,"blocks":4,"hardReasons":[],"name":"_sign_of","nameSources":["symtab","dynamic","dwarf"],"section":".text","size":50,"unsupported":0}

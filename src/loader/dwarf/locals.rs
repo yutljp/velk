@@ -84,6 +84,7 @@ fn stack_offset(
     frame_base: bool,
 ) -> Option<i64> {
     let (sp, entry_offset) = match image.isa {
+        Isa::I386 => (Register(4), 4i64),
         Isa::X86_64 => (Register(7), 8i64),
         Isa::AArch64 => (Register(31), 0i64),
         Isa::Arm32 | Isa::Unsupported => return None,
@@ -196,6 +197,7 @@ pub(super) fn read<'a>(
         };
         if let Location::ValueRegister(reg) = loc {
             let register = match image.isa {
+                Isa::I386 if reg.0 < 8 => Some(reg.0),
                 Isa::X86_64 => [0, 2, 1, 3, 6, 7, 5, 4, 8, 9, 10, 11, 12, 13, 14, 15]
                     .get(usize::from(reg.0))
                     .copied(),

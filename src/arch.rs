@@ -49,7 +49,7 @@ pub fn machine_registers() -> std::ops::Range<u16> {
 #[must_use]
 pub fn vector_half(isa: Isa, index: u16) -> Option<bool> {
     let base = match isa {
-        Isa::X86_64 => x86::XMM0,
+        Isa::I386 | Isa::X86_64 => x86::XMM0,
         Isa::AArch64 => aarch64::V0,
         Isa::Arm32 => {
             return (arm32::D0..arm32::D0 + 32)
@@ -68,7 +68,7 @@ pub fn frame_pointer(isa: Isa) -> u16 {
     match isa {
         Isa::AArch64 => 29,
         Isa::Arm32 => 11,
-        Isa::X86_64 | Isa::Unsupported => 5,
+        Isa::I386 | Isa::X86_64 | Isa::Unsupported => 5,
     }
 }
 
@@ -77,7 +77,7 @@ pub fn stack_pointer(isa: Isa) -> u16 {
     match isa {
         Isa::AArch64 => aarch64::SP,
         Isa::Arm32 => 13,
-        Isa::X86_64 | Isa::Unsupported => x86::RSP,
+        Isa::I386 | Isa::X86_64 | Isa::Unsupported => x86::RSP,
     }
 }
 
@@ -86,5 +86,14 @@ pub(crate) fn code_address(isa: Isa, address: u64) -> u64 {
         address & !1
     } else {
         address
+    }
+}
+
+/// The size of a pointer and an integer stack slot, in bytes.
+#[must_use]
+pub fn pointer_bytes(isa: Isa) -> u8 {
+    match isa {
+        Isa::I386 | Isa::Arm32 => 4,
+        Isa::X86_64 | Isa::AArch64 | Isa::Unsupported => 8,
     }
 }

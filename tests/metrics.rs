@@ -175,7 +175,7 @@ fn summary_changes(before: &str, after: &str) -> String {
 }
 
 fn measure(dir: &Path, case: &str) -> (Vec<(&'static str, Score)>, Vec<String>) {
-    let extension = if case.contains(".win64.") {
+    let extension = if case.contains(".win64.") || case.contains(".win32.") {
         "dll"
     } else {
         "elf"

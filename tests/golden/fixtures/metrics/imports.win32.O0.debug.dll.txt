@@ -1,0 +1,41 @@
+# metrics/imports.win32.O0.debug.dll: pe i386 no entry, 2 functions, 0 lift failures, 0 unsupported, 0 gotos
+0x10001000 27 _import_call symtab,dynamic,dwarf
+0x1000101b 6 abs plt
+
+== 0x10001000 _import_call
+-- decompile
+/* velk pseudo-C: _import_call @ 0x10001000 */
+/* ref: 0x100020dc .rdata */
+int _import_call(uint32_t a0) {
+    return ((int32_t)(abs(a0))) + 3;
+}
+-- signature
+int ()
+-- references
+0x100020dc .rdata
+-- ir
+fn _import_call @ 0x10001000 (size 27)
+  blk0 @ 0x10001000:
+    v1:eax, edx = call *load32(#0x100020dc)(load32((esp + #0x4)))
+    ret (((v1 & #0xffffffff) + #0x3) & #0xffffffff)
+-- card
+{"addr":"0x10001000","aliases":["import_call"],"approxTokens":162,"blocks":1,"hardReasons":[],"name":"_import_call","nameSources":["symtab","dynamic","dwarf"],"section":".text","size":27,"unsupported":0}
+
+== 0x1000101b abs
+-- decompile
+/* velk pseudo-C: abs @ 0x1000101b */
+/* ref: 0x100020dc .rdata */
+int32_t abs_plt(uint32_t a0) {
+    return ((int32_t)(abs(a0)));
+}
+-- signature
+int32_t ()
+-- references
+0x100020dc .rdata
+-- ir
+fn abs @ 0x1000101b (size 6)
+  blk0 @ 0x1000101b:
+    v1:eax, edx = call *load32(#0x100020dc)(load32((esp + #0x4)))
+    ret (v1 & #0xffffffff)
+-- card
+{"addr":"0x1000101b","approxTokens":102,"blocks":1,"hardReasons":[],"name":"abs","nameSources":["plt"],"section":".text","size":6,"sizeEstimated":true,"unsupported":0}

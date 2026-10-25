@@ -128,43 +128,64 @@ pub(super) fn apply_dynamic(file: &ObjFile, bytes: &mut [u8]) {
     };
     let file_offset = |address: u64| {
         file.sections().find_map(|section| {
-            let (offset, size) = section.file_range()?;
-            (address >= section.address() && address - section.address() < size)
-                .then(|| offset + (address - section.address()))
+            let Some((offset, size)) = section.file_range() else {
+                return None;
+            };
+            if address < section.address() || address - section.address() >= size {
+                return None;
+            }
+            offset.checked_add(address - section.address())
         })
     };
     // The ELF types by machine: relative, then those holding a symbol's
-    // address (64-bit absolute, GOT entry, PLT slot).
+    // address (absolute, GOT entry, PLT slot).
     let (relative, absolute): (u32, &[u32]) = match file.architecture() {
+        object::Architecture::I386 => (8, &[1, 6, 7]),
         object::Architecture::X86_64 => (8, &[1, 6, 7]),
         object::Architecture::Aarch64 => (1027, &[257, 1025, 1026]),
         _ => return,
     };
+    let word = if file.is_64() { 8 } else { 4 };
     for (address, relocation) in relocations {
         let RelocationFlags::Elf { r_type } = relocation.flags() else {
             continue;
         };
         let r_type = r_type.0;
+        let Some(place) = file_offset(address).and_then(|offset| usize::try_from(offset).ok())
+        else {
+            continue;
+        };
+        let implicit = if relocation.has_implicit_addend() {
+            if word == 4 {
+                read_u32(bytes, place).map(u64::from)
+            } else {
+                read_u64(bytes, place)
+            }
+        } else {
+            Some(0)
+        };
+        let Some(implicit) = implicit else { continue };
+        let addend = if file.architecture() == object::Architecture::I386 && matches!(r_type, 6 | 7)
+        {
+            0
+        } else {
+            (relocation.addend() as u64).wrapping_add(implicit)
+        };
         let value = match relocation.target() {
-            _ if r_type == relative => relocation.addend() as u64,
+            _ if r_type == relative => addend,
             _ if !absolute.contains(&r_type) => continue,
             RelocationTarget::Symbol(index) => match symbols.symbol_by_index(index) {
                 Ok(symbol) if !symbol.is_undefined() && symbol.address() != 0 => {
-                    symbol.address().wrapping_add(relocation.addend() as u64)
+                    symbol.address().wrapping_add(addend)
                 }
                 _ => continue,
             },
             _ => continue,
         };
-        let Some(place) = file_offset(address).and_then(|offset| usize::try_from(offset).ok())
-        else {
-            continue;
-        };
-        if let Some(slot) = place
-            .checked_add(8)
-            .and_then(|end| bytes.get_mut(place..end))
-        {
-            slot.copy_from_slice(&value.to_le_bytes());
+        if word == 4 {
+            write_u32(bytes, place, value as u32);
+        } else {
+            write_u64(bytes, place, value);
         }
     }
 }

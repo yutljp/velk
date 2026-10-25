@@ -1,54 +1,90 @@
 # metric | config | correct/total
 functions found | aarch64.O0 | 162/162
 functions found | aarch64.O2 | 162/162
+functions found | i386.O0 | 10/10
+functions found | i386.O2 | 10/10
+functions found | win32.O0 | 13/13
+functions found | win32.O2 | 13/13
 functions found | win64.O0 | 167/167
 functions found | win64.O2 | 165/167
 functions found | x86_64.O0 | 162/162
 functions found | x86_64.O2 | 162/162
 extra functions | aarch64.O0 | 0/162
 extra functions | aarch64.O2 | 0/162
+extra functions | i386.O0 | 2/12
+extra functions | i386.O2 | 2/12
+extra functions | win32.O0 | 1/14
+extra functions | win32.O2 | 1/14
 extra functions | win64.O0 | 2/169
 extra functions | win64.O2 | 2/167
 extra functions | x86_64.O0 | 0/162
 extra functions | x86_64.O2 | 0/162
 parameter count | aarch64.O0 | 150/161
 parameter count | aarch64.O2 | 150/161
+parameter count | i386.O0 | 10/10
+parameter count | i386.O2 | 10/10
+parameter count | win32.O0 | 13/13
+parameter count | win32.O2 | 13/13
 parameter count | win64.O0 | 162/166
 parameter count | win64.O2 | 156/164
 parameter count | x86_64.O0 | 151/161
 parameter count | x86_64.O2 | 151/161
 parameter pointer | aarch64.O0 | 187/189
 parameter pointer | aarch64.O2 | 186/189
+parameter pointer | i386.O0 | 15/15
+parameter pointer | i386.O2 | 15/15
+parameter pointer | win32.O0 | 23/23
+parameter pointer | win32.O2 | 23/23
 parameter pointer | win64.O0 | 224/228
 parameter pointer | win64.O2 | 219/221
 parameter pointer | x86_64.O0 | 187/189
 parameter pointer | x86_64.O2 | 186/189
 parameter width | aarch64.O0 | 151/157
 parameter width | aarch64.O2 | 149/157
+parameter width | i386.O0 | 15/15
+parameter width | i386.O2 | 15/15
+parameter width | win32.O0 | 23/23
+parameter width | win32.O2 | 23/23
 parameter width | win64.O0 | 184/196
 parameter width | win64.O2 | 177/190
 parameter width | x86_64.O0 | 152/157
 parameter width | x86_64.O2 | 152/157
 parameter sign | aarch64.O0 | 139/151
 parameter sign | aarch64.O2 | 138/149
+parameter sign | i386.O0 | 0/15
+parameter sign | i386.O2 | 0/15
+parameter sign | win32.O0 | 3/23
+parameter sign | win32.O2 | 3/23
 parameter sign | win64.O0 | 135/184
 parameter sign | win64.O2 | 130/177
 parameter sign | x86_64.O0 | 140/152
 parameter sign | x86_64.O2 | 140/152
 return void | aarch64.O0 | 155/162
 return void | aarch64.O2 | 155/162
+return void | i386.O0 | 10/10
+return void | i386.O2 | 10/10
+return void | win32.O0 | 13/13
+return void | win32.O2 | 13/13
 return void | win64.O0 | 160/167
 return void | win64.O2 | 161/165
 return void | x86_64.O0 | 155/162
 return void | x86_64.O2 | 157/162
 return width | aarch64.O0 | 122/126
 return width | aarch64.O2 | 121/126
+return width | i386.O0 | 10/10
+return width | i386.O2 | 10/10
+return width | win32.O0 | 13/13
+return width | win32.O2 | 13/13
 return width | win64.O0 | 126/129
 return width | win64.O2 | 123/127
 return width | x86_64.O0 | 122/126
 return width | x86_64.O2 | 122/126
 float type | aarch64.O0 | 11/15
 float type | aarch64.O2 | 11/12
+float type | i386.O0 | 0/0
+float type | i386.O2 | 0/0
+float type | win32.O0 | 0/0
+float type | win32.O2 | 0/0
 float type | win64.O0 | 12/17
 float type | win64.O2 | 14/17
 float type | x86_64.O0 | 11/15
@@ -264,6 +300,16 @@ control.x86_64.O2 0x201360 sparse: ok
 control.x86_64.O2 0x2013a0 short_circuit: ok
 control.x86_64.O2 0x2013d0 skip_negatives: ok
 control.x86_64.O2 0x201490 find_pair: ok
+conventions.win32.O0 0x10001000 cdecl_add: parameter 0 signedness differs; parameter 1 signedness differs
+conventions.win32.O0 0x10001020 stdcall_add: parameter 0 signedness differs; parameter 1 signedness differs
+conventions.win32.O0 0x10001040 fastcall_add: parameter 2 signedness differs
+conventions.win32.O0 0x10001060 thiscall_add: parameter 1 signedness differs
+conventions.win32.O0 0x10001080 call_conventions: parameter 0 signedness differs
+conventions.win32.O2 0x10001000 cdecl_add: parameter 0 signedness differs; parameter 1 signedness differs
+conventions.win32.O2 0x10001010 stdcall_add: parameter 0 signedness differs; parameter 1 signedness differs
+conventions.win32.O2 0x10001020 fastcall_add: parameter 2 signedness differs
+conventions.win32.O2 0x10001030 thiscall_add: parameter 1 signedness differs
+conventions.win32.O2 0x10001040 call_conventions: parameter 0 signedness differs
 divmod_a64.aarch64.O0 0x210394 udiv3: ok
 divmod_a64.aarch64.O0 0x2103b0 udiv10: ok
 divmod_a64.aarch64.O0 0x2103cc udiv64: ok
@@ -552,6 +598,10 @@ float.x86_64.O2 0x201260 lerp: ok
 float.x86_64.O2 0x201270 truncate_to_int: ok
 float.x86_64.O2 0x201280 widen: ok
 float.x86_64.O2 0x201290 compare_doubles: ok
+imports.win32.O0 0x1000101b extra function
+imports.win32.O0 0x10001000 import_call: parameter 0 signedness differs
+imports.win32.O2 0x10001011 extra function
+imports.win32.O2 0x10001000 import_call: parameter 0 signedness differs
 integers.aarch64.O0 0x21022c narrow_add: parameter 0 is 4 bytes, expected 1; parameter 1 is 4 bytes, expected 1; returns 4 bytes, expected 1
 integers.aarch64.O0 0x21024c widen_mul: parameter 0 is 4 bytes, expected 1; parameter 1 is 4 bytes, expected 1; returns 4 bytes, expected 2
 integers.aarch64.O0 0x21026c mixed_sign: parameter 1 signedness differs
@@ -620,6 +670,22 @@ l0_arith.aarch64.O2 0x21018c add3: ok
 l0_arith.aarch64.O2 0x210198 scale: ok
 l0_arith.aarch64.O2 0x2101a8 pick: ok
 l0_arith.aarch64.O2 0x2101b4 negate: ok
+l0_arith.i386.O0 0x1280 add3: parameter 0 signedness differs; parameter 1 signedness differs; parameter 2 signedness differs
+l0_arith.i386.O0 0x12a0 scale: parameter 0 signedness differs
+l0_arith.i386.O0 0x12b0 pick: parameter 0 signedness differs; parameter 1 signedness differs
+l0_arith.i386.O0 0x12e0 negate: parameter 0 signedness differs
+l0_arith.i386.O2 0x1250 add3: parameter 0 signedness differs; parameter 1 signedness differs; parameter 2 signedness differs
+l0_arith.i386.O2 0x1260 scale: parameter 0 signedness differs
+l0_arith.i386.O2 0x1280 pick: parameter 0 signedness differs; parameter 1 signedness differs
+l0_arith.i386.O2 0x1290 negate: parameter 0 signedness differs
+l0_arith.win32.O0 0x10001000 add3: parameter 0 signedness differs; parameter 1 signedness differs; parameter 2 signedness differs
+l0_arith.win32.O0 0x10001020 scale: parameter 0 signedness differs
+l0_arith.win32.O0 0x10001030 pick: parameter 0 signedness differs; parameter 1 signedness differs
+l0_arith.win32.O0 0x10001060 negate: parameter 0 signedness differs
+l0_arith.win32.O2 0x10001000 add3: parameter 0 signedness differs; parameter 1 signedness differs; parameter 2 signedness differs
+l0_arith.win32.O2 0x10001010 scale: parameter 0 signedness differs
+l0_arith.win32.O2 0x10001030 pick: parameter 0 signedness differs; parameter 1 signedness differs
+l0_arith.win32.O2 0x10001040 negate: parameter 0 signedness differs
 l0_arith.win64.O0 0x180001000 add3: ok
 l0_arith.win64.O0 0x180001030 scale: ok
 l0_arith.win64.O0 0x180001040 pick: ok
@@ -642,6 +708,18 @@ l1_branch.aarch64.O0 0x210238 sign_of: ok
 l1_branch.aarch64.O2 0x210174 classify: ok
 l1_branch.aarch64.O2 0x210184 clamp: ok
 l1_branch.aarch64.O2 0x210198 sign_of: ok
+l1_branch.i386.O0 0x1240 classify: parameter 0 signedness differs
+l1_branch.i386.O0 0x1280 clamp: parameter 0 signedness differs; parameter 1 signedness differs; parameter 2 signedness differs
+l1_branch.i386.O0 0x12c0 sign_of: parameter 0 signedness differs
+l1_branch.i386.O2 0x1220 classify: parameter 0 signedness differs
+l1_branch.i386.O2 0x1240 clamp: parameter 0 signedness differs; parameter 1 signedness differs; parameter 2 signedness differs
+l1_branch.i386.O2 0x1260 sign_of: parameter 0 signedness differs
+l1_branch.win32.O0 0x10001000 classify: parameter 0 signedness differs
+l1_branch.win32.O0 0x10001040 clamp: parameter 0 signedness differs; parameter 1 signedness differs; parameter 2 signedness differs
+l1_branch.win32.O0 0x10001080 sign_of: parameter 0 signedness differs
+l1_branch.win32.O2 0x10001000 classify: parameter 0 signedness differs
+l1_branch.win32.O2 0x10001020 clamp: parameter 0 signedness differs; parameter 1 signedness differs; parameter 2 signedness differs
+l1_branch.win32.O2 0x10001040 sign_of: parameter 0 signedness differs
 l1_branch.win64.O0 0x180001000 classify: ok
 l1_branch.win64.O0 0x180001040 clamp: ok
 l1_branch.win64.O0 0x180001090 sign_of: ok
@@ -912,6 +990,16 @@ memory.x86_64.O2 0x201360 grid_set: returns int32_t, expected void
 memory.x86_64.O2 0x201380 pointer_distance: parameter 0 is a signed 8-byte integer, expected a pointer; parameter 1 is a signed 8-byte integer, expected a pointer
 memory.x86_64.O2 0x201390 read_volatile: ok
 memory.x86_64.O2 0x2013a0 swap_ints: returns int32_t, expected void
+relocations.i386.O0 0x1370 extra function
+relocations.i386.O0 0x1380 extra function
+relocations.i386.O0 0x12f0 add_bias: parameter 0 signedness differs
+relocations.i386.O0 0x1300 imported: parameter 0 signedness differs
+relocations.i386.O0 0x1330 via_plt: parameter 0 signedness differs
+relocations.i386.O2 0x1370 extra function
+relocations.i386.O2 0x1380 extra function
+relocations.i386.O2 0x12f0 add_bias: parameter 0 signedness differs
+relocations.i386.O2 0x1300 imported: parameter 0 signedness differs
+relocations.i386.O2 0x1330 via_plt: parameter 0 signedness differs
 strings.aarch64.O0 0x21019c pick: ok
 strings.aarch64.O2 0x21019c pick: ok
 strings.win64.O0 0x180001000 pick: ok

@@ -3,7 +3,7 @@
 
 mod pe;
 
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 
 use object::read::{File as ObjFile, Object, ObjectSection, ObjectSymbol, ObjectSymbolTable};
 use object::{RelocationTarget, SymbolIndex};
@@ -18,6 +18,9 @@ pub(super) fn is_stub_section(name: &str) -> bool {
 /// with the address of a symbol another module defines, by the symbol's
 /// name.
 pub(super) fn imports(file: &ObjFile) -> HashMap<u64, String> {
+    if let ObjFile::Pe32(pe) = file {
+        return self::pe::imports(pe);
+    }
     if let ObjFile::Pe64(pe) = file {
         return self::pe::imports(pe);
     }
@@ -40,6 +43,7 @@ pub(super) fn imports(file: &ObjFile) -> HashMap<u64, String> {
 
 pub(super) fn qualified_imports(file: &ObjFile) -> HashMap<u64, String> {
     match file {
+        ObjFile::Pe32(pe) => self::pe::qualified_imports(pe),
         ObjFile::Pe64(pe) => self::pe::qualified_imports(pe),
         _ => HashMap::new(),
     }
@@ -48,6 +52,9 @@ pub(super) fn qualified_imports(file: &ObjFile) -> HashMap<u64, String> {
 /// `(stub address, imported name)` for every stub that jumps through a slot
 /// a dynamic relocation names, or that Mach-O's indirect symbol table names.
 pub(super) fn stubs(file: &ObjFile) -> Vec<(u64, String)> {
+    if let ObjFile::Pe32(pe) = file {
+        return self::pe::stubs(pe);
+    }
     if let ObjFile::Pe64(pe) = file {
         return self::pe::stubs(pe);
     }
@@ -65,6 +72,14 @@ pub(super) fn stubs(file: &ObjFile) -> Vec<(u64, String)> {
             (!name.is_empty()).then(|| (slot, name.to_owned()))
         })
         .collect();
+    let got = file
+        .symbols()
+        .find(|symbol| symbol.name() == Ok("_GLOBAL_OFFSET_TABLE_"))
+        .map(|symbol| symbol.address())
+        .or_else(|| {
+            file.section_by_name(".got.plt")
+                .map(|section| section.address())
+        });
     let mut stubs = Vec::new();
     for section in file.sections() {
         let Ok(name) = section.name() else {
@@ -79,6 +94,7 @@ pub(super) fn stubs(file: &ObjFile) -> Vec<(u64, String)> {
         // `.plt.got` holds 8-byte stubs; the others 16-byte ones.
         let stride = if name == ".plt.got" { 8 } else { 16 };
         let found = match file.architecture() {
+            object::Architecture::I386 => x86_slots_mode(bytes, section.address(), 32, got),
             object::Architecture::X86_64 => x86_slots(bytes, section.address()),
             object::Architecture::Aarch64 => aarch64_slots(bytes, section.address()),
             _ => Vec::new(),
@@ -158,16 +174,38 @@ fn macho_entries(file: &ObjFile, stubs: bool) -> Vec<(u64, String)> {
 
 /// `(instruction address, slot)` for each `jmp [rip + displacement]`.
 fn x86_slots(bytes: &[u8], base: u64) -> Vec<(u64, u64)> {
+    x86_slots_mode(bytes, base, 64, None)
+}
+
+fn x86_slots_mode(bytes: &[u8], base: u64, bitness: u32, got: Option<u64>) -> Vec<(u64, u64)> {
     use iced_x86::{Decoder, DecoderOptions, Mnemonic, OpKind, Register};
-    let mut decoder = Decoder::with_ip(64, bytes, base, DecoderOptions::NONE);
+    let mut decoder = Decoder::with_ip(bitness, bytes, base, DecoderOptions::NONE);
     let mut slots = Vec::new();
     while decoder.can_decode() {
         let instruction = decoder.decode();
         if instruction.mnemonic() == Mnemonic::Jmp
             && instruction.op0_kind() == OpKind::Memory
-            && instruction.memory_base() == Register::RIP
+            && (instruction.memory_base() == Register::RIP
+                || (bitness == 32
+                    && instruction.memory_base() == Register::None
+                    && instruction.memory_index() == Register::None)
+                || (bitness == 32
+                    && got.is_some()
+                    && instruction.memory_base() == Register::EBX
+                    && instruction.memory_index() == Register::None))
         {
-            slots.push((instruction.ip(), instruction.ip_rel_memory_address()));
+            slots.push((
+                instruction.ip(),
+                if bitness == 32 && instruction.memory_base() == Register::EBX {
+                    got.unwrap_or(0)
+                        .wrapping_add_signed(i64::from(instruction.memory_displacement32() as i32))
+                        & 0xffff_ffff
+                } else if bitness == 32 {
+                    instruction.memory_displacement64()
+                } else {
+                    instruction.ip_rel_memory_address()
+                },
+            ));
         }
     }
     slots
@@ -196,6 +234,53 @@ fn aarch64_slots(bytes: &[u8], base: u64) -> Vec<(u64, u64)> {
         slots.push((pc, page + offset));
     }
     slots
+}
+
+pub(super) fn local_branches(file: &ObjFile) -> BTreeMap<u64, u64> {
+    if file.architecture() != object::Architecture::I386 {
+        return Default::default();
+    }
+    let definitions: HashMap<_, _> = file
+        .dynamic_symbols()
+        .filter_map(|symbol| {
+            if symbol.is_undefined() {
+                return None;
+            }
+            let Ok(name) = symbol.name() else { return None };
+            Some((name.to_owned(), symbol.address()))
+        })
+        .collect();
+    let targets: HashMap<_, _> = stubs(file)
+        .into_iter()
+        .filter_map(|(stub, name)| definitions.get(&name).copied().map(|target| (stub, target)))
+        .collect();
+    let mut branches: BTreeMap<_, _> = targets
+        .iter()
+        .map(|(stub, target)| (*stub, *target))
+        .collect();
+    for section in file
+        .sections()
+        .filter(|section| section.kind() == object::SectionKind::Text)
+    {
+        let Ok(bytes) = section.data() else { continue };
+        let decoder = iced_x86::Decoder::with_ip(
+            32,
+            bytes,
+            section.address(),
+            iced_x86::DecoderOptions::NONE,
+        );
+        for ins in decoder {
+            if matches!(
+                ins.flow_control(),
+                iced_x86::FlowControl::Call | iced_x86::FlowControl::UnconditionalBranch
+            ) && ins.op0_kind() == iced_x86::OpKind::NearBranch32
+                && let Some(target) = targets.get(&ins.near_branch_target())
+            {
+                branches.insert(ins.ip(), *target);
+            }
+        }
+    }
+    branches
 }
 
 #[cfg(test)]

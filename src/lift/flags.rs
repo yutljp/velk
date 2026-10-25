@@ -307,7 +307,7 @@ impl Flags {
             },
             Source::Carry => {
                 // On x86 "below" asks for a set carry, on AArch64 `hs`.
-                let set = if isa == Isa::X86_64 {
+                let set = if matches!(isa, Isa::I386 | Isa::X86_64) {
                     Cond::Cc
                 } else {
                     Cond::Cs
@@ -391,12 +391,10 @@ impl Flags {
                     // The carry is clear: on AArch64 that fails `hs`; on x86
                     // it passes "above or equal", and "above" asks for nonzero.
                     _ => match (isa, cond) {
-                        (Isa::X86_64, Cond::Cs) | (Isa::AArch64, Cond::Cc | Cond::Ls) => {
-                            Test::Always
-                        }
-                        (Isa::X86_64, Cond::Cc) | (Isa::AArch64, Cond::Cs | Cond::Hi) => {
-                            Test::Never
-                        }
+                        (Isa::I386 | Isa::X86_64, Cond::Cs)
+                        | (Isa::AArch64, Cond::Cc | Cond::Ls) => Test::Always,
+                        (Isa::I386 | Isa::X86_64, Cond::Cc)
+                        | (Isa::AArch64, Cond::Cs | Cond::Hi) => Test::Never,
                         (_, Cond::Hi) => compare(Cond::Ne, a, &zero),
                         _ => compare(Cond::Eq, a, &zero),
                     },
@@ -479,7 +477,7 @@ fn float_test(a: &Expr, b: &Expr, precision: Precision, cond: Cond, isa: Isa) ->
     // Equal, or not comparable.
     let equal_or_unordered = || not(both(not(equal.clone()), not(unordered.clone())));
     match isa {
-        Isa::X86_64 => match cond {
+        Isa::I386 | Isa::X86_64 => match cond {
             Cond::Eq | Cond::Le => equal_or_unordered(),
             Cond::Ne | Cond::Gt => not(equal_or_unordered()),
             Cond::Cc => not(less_equal(b, a)),
@@ -517,7 +515,7 @@ fn sum(a: &Expr, b: &Expr, bits: u32, cond: Cond, isa: Isa) -> Test {
         // that as a logical result, x86 as a compare with zero.
         if c == 0 {
             let flags = match isa {
-                Isa::X86_64 => Flags::difference(a.clone(), Expr::constant(0)),
+                Isa::I386 | Isa::X86_64 => Flags::difference(a.clone(), Expr::constant(0)),
                 _ => Flags::logic(a.clone()),
             };
             return flags.test(cond, isa);
@@ -532,8 +530,8 @@ fn sum(a: &Expr, b: &Expr, bits: u32, cond: Cond, isa: Isa) -> Test {
                 (_, Cond::Vs | Cond::Vc) => cond,
                 // On x86 the carry of a sum is set when `a >= -c`, which
                 // fails "above or equal" and "above".
-                (Isa::X86_64, Cond::Cs | Cond::Hi) => Cond::Cc,
-                (Isa::X86_64, Cond::Cc | Cond::Ls) => Cond::Cs,
+                (Isa::I386 | Isa::X86_64, Cond::Cs | Cond::Hi) => Cond::Cc,
+                (Isa::I386 | Isa::X86_64, Cond::Cc | Cond::Ls) => Cond::Cs,
                 (_, other) => other,
             };
             if !matches!(cond, Cond::Vs | Cond::Vc) {
@@ -552,7 +550,7 @@ fn sum(a: &Expr, b: &Expr, bits: u32, cond: Cond, isa: Isa) -> Test {
     let carry = Test::Compare(Cond::Hi, a.clone(), inverted);
     // The flags' carry: set by a carry on AArch64, clear on x86.
     let carry_flag = match isa {
-        Isa::X86_64 => not(carry),
+        Isa::I386 | Isa::X86_64 => not(carry),
         _ => carry,
     };
     // Overflow when both operands differ in sign from the sum.
@@ -770,10 +768,14 @@ mod tests {
             1 => {
                 let r = a.wrapping_add(b) & all;
                 let carry = u128::from(a) + u128::from(b) > u128::from(all);
-                let carry = if isa == Isa::X86_64 { !carry } else { carry };
+                let carry = if matches!(isa, Isa::I386 | Isa::X86_64) {
+                    !carry
+                } else {
+                    carry
+                };
                 (r, carry, ((a ^ r) & (b ^ r)) >> (bits - 1) & 1 == 1)
             }
-            _ => (a, isa == Isa::X86_64, false),
+            _ => (a, matches!(isa, Isa::I386 | Isa::X86_64), false),
         };
         let negative = sign_extend(result, bits) < 0;
         u8::from(negative) << 3

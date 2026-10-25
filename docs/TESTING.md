@@ -33,8 +33,8 @@ BIN=target/release/velk sh tests/ladder.sh
 
 - **Instruction semantics.** Each lifted instruction is run on the CPU and through the IR interpreter with many
   inputs; the results must match. These tests need a host of the same architecture (or Rosetta for x86-64 on Apple
-  silicon). ARM32 integer checks use Docker `linux/arm/v7`, ARM-capable clang and `ld.lld`; they print a skip
-  message when the Docker platform is unavailable.
+  silicon). ARM32 and x86-32 integer checks use Docker `linux/arm/v7` and `linux/386`, clang with the
+  corresponding targets and `ld.lld`; they print a skip message when the Docker platform is unavailable.
 - **Optimization passes.** Every function in the test binaries is interpreted before and after optimization; the
   results must match (`tests/golden/semantics.txt` must be empty).
 - **Recompilation.** The printed C of each test function is compiled and run, and its results are compared with
@@ -98,8 +98,8 @@ Some groups have their own scripts: `tests/make_pe_fixtures.sh` (Windows PE), `t
 `tests/make_arm64_lang_fixtures.sh` (AArch64 Rust and Go). Rebuild deliberately and review the changed bytes and
 the recorded toolchain versions.
 
-Regenerate ARM32 A32/T32 fixtures at `-O0` and `-O2` with `sh tests/make_arm32_fixtures.sh`
-(requires clang with ARM targets and `ld.lld`).
+Regenerate ARM32 A32/T32 fixtures with `sh tests/make_arm32_fixtures.sh` (requires clang with ARM targets
+and `ld.lld`) and x86-32 ELF/PE fixtures with `bash tests/make_i386_fixtures.sh`, both at `-O0` and `-O2`.
 
 ## Performance
 

@@ -300,7 +300,7 @@ fn branches(image: &Image) -> HashMap<u64, Vec<u64>> {
             continue;
         };
         match image.isa {
-            Isa::X86_64 => {
+            Isa::I386 | Isa::X86_64 => {
                 for at in 0..bytes.len().saturating_sub(4) {
                     if !matches!(bytes[at], 0xe8 | 0xe9) {
                         continue;

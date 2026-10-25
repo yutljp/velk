@@ -1,0 +1,87 @@
+# metrics/l0_arith.win32.O0.debug.dll: pe i386 no entry, 4 functions, 0 lift failures, 0 unsupported, 0 gotos
+0x10001000 23 _add3 symtab,dynamic,dwarf
+0x10001020 15 _scale symtab,dynamic,dwarf
+0x10001030 40 _pick symtab,dynamic,dwarf
+0x10001060 13 _negate symtab,dynamic,dwarf
+
+== 0x10001000 _add3
+-- decompile
+/* velk pseudo-C: _add3 @ 0x10001000 */
+int _add3(uint32_t a0, uint32_t a1, uint32_t a2) {
+    return a0 + a1 + a2;
+}
+-- signature
+int ()
+-- references
+
+-- ir
+fn _add3 @ 0x10001000 (size 23)
+  blk0 @ 0x10001000:
+    ret (((load32((esp + #0x4)) + load32((esp + #0x8))) + load32((esp + #0xc))) & #0xffffffff)
+-- card
+{"addr":"0x10001000","aliases":["add3"],"approxTokens":156,"blocks":1,"hardReasons":[],"name":"_add3","nameSources":["symtab","dynamic","dwarf"],"section":".text","size":23,"unsupported":0}
+
+== 0x10001020 _scale
+-- decompile
+/* velk pseudo-C: _scale @ 0x10001020 */
+int _scale(uint32_t a0) {
+    return a0 * 7 + 3;
+}
+-- signature
+int ()
+-- references
+
+-- ir
+fn _scale @ 0x10001020 (size 15)
+  blk0 @ 0x10001020:
+    ret (((load32((esp + #0x4)) * #0x7) + #0x3) & #0xffffffff)
+-- card
+{"addr":"0x10001020","aliases":["scale"],"approxTokens":138,"blocks":1,"hardReasons":[],"name":"_scale","nameSources":["symtab","dynamic","dwarf"],"section":".text","size":15,"unsupported":0}
+
+== 0x10001030 _pick
+-- decompile
+/* velk pseudo-C: _pick @ 0x10001030 */
+int _pick(uint32_t a0, uint32_t a1) {
+    int32_t result;
+
+    if ((int32_t)a0 <= (int32_t)a1) {
+        result = a1;
+        return result;
+    }
+    result = a0;
+    return result;
+}
+-- signature
+int ()
+-- references
+
+-- ir
+fn _pick @ 0x10001030 (size 40)
+  blk0 @ 0x10001030:
+    brif le load32((esp + #0x4)), load32((esp + #0x8)) -> 0x1000104a
+  blk1 @ 0x10001042:
+    v1 = load32((esp + #0x4))
+    br 0x10001050
+  blk2 @ 0x1000104a:
+    v1 = load32((esp + #0x8))
+  blk3 @ 0x10001050:
+    ret v1
+-- card
+{"addr":"0x10001030","aliases":["pick"],"approxTokens":162,"blocks":4,"hardReasons":[],"name":"_pick","nameSources":["symtab","dynamic","dwarf"],"section":".text","size":40,"unsupported":0}
+
+== 0x10001060 _negate
+-- decompile
+/* velk pseudo-C: _negate @ 0x10001060 */
+int _negate(uint32_t a0) {
+    return -a0;
+}
+-- signature
+int ()
+-- references
+
+-- ir
+fn _negate @ 0x10001060 (size 13)
+  blk0 @ 0x10001060:
+    ret ((#0x0 - load32((esp + #0x4))) & #0xffffffff)
+-- card
+{"addr":"0x10001060","aliases":["negate"],"approxTokens":138,"blocks":1,"hardReasons":[],"name":"_negate","nameSources":["symtab","dynamic","dwarf"],"section":".text","size":13,"unsupported":0}

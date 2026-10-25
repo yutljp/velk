@@ -9,7 +9,7 @@
 #[cfg(all(target_arch = "aarch64", target_os = "macos"))]
 mod aarch64;
 mod arm32;
-
+mod i386;
 #[cfg(any(
     all(target_arch = "aarch64", target_os = "macos"),
     all(target_arch = "x86_64", unix)
@@ -224,4 +224,35 @@ impl Findings {
             self.tried, self.undefined, self.unsupported
         );
     }
+}
+
+fn docker_available(platform: &str, image: &str, architecture: &str) -> bool {
+    let result = std::process::Command::new("docker")
+        .args(["run", "--rm", "--platform", platform, image, "uname", "-m"])
+        .output();
+    match result {
+        Ok(output)
+            if output.status.success() && output.stdout.starts_with(architecture.as_bytes()) =>
+        {
+            true
+        }
+        other => {
+            eprintln!("skipping {platform} hardware check: Docker unavailable: {other:?}");
+            false
+        }
+    }
+}
+
+fn docker_run(
+    platform: &str,
+    image: &str,
+    directory: &std::path::Path,
+    executable: &str,
+) -> std::process::Output {
+    std::process::Command::new("docker")
+        .args(["run", "--rm", "--platform", platform, "-v"])
+        .arg(format!("{}:/check:ro", directory.display()))
+        .args([image, &format!("/check/{executable}")])
+        .output()
+        .expect("Docker was available during the platform check")
 }

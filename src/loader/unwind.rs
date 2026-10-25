@@ -47,12 +47,13 @@ pub(crate) fn frames(image: &Image) -> Vec<Frame> {
     };
     // The stack pointer, and the column holding the return address.
     let (stack, return_address) = match image.isa {
+        Isa::I386 => (Register(4), Register(8)),
         Isa::X86_64 => (Register(7), Register(16)),
         Isa::AArch64 => (Register(31), Register(30)),
         Isa::Arm32 | Isa::Unsupported => return Vec::new(),
     };
     let mut eh_frame = EhFrame::new(data, LittleEndian);
-    eh_frame.set_address_size(8);
+    eh_frame.set_address_size(crate::arch::pointer_bytes(image.isa));
     let bases = BaseAddresses::default().set_eh_frame(section.vaddr);
     let mut context = Box::new(UnwindContext::new());
     let mut frames = Vec::new();
@@ -71,7 +72,11 @@ pub(crate) fn frames(image: &Image) -> Vec<Frame> {
             Ok(mut rows) => match rows.next_row() {
                 Ok(Some(row)) => {
                     // The call pushed the return address on x86-64.
-                    let entry_offset = if image.isa == Isa::X86_64 { 8 } else { 0 };
+                    let entry_offset = match image.isa {
+                        Isa::I386 => 4,
+                        Isa::X86_64 => 8,
+                        _ => 0,
+                    };
                     match row.cfa() {
                         CfaRule::RegisterAndOffset { register, offset }
                             if *register == stack
@@ -127,13 +132,18 @@ pub(crate) fn stack_rows(image: &Image) -> Vec<StackRow> {
         return Vec::new();
     };
     let stack = match image.isa {
+        Isa::I386 => Register(4),
         Isa::X86_64 => Register(7),
         Isa::AArch64 => Register(31),
         Isa::Arm32 | Isa::Unsupported => return Vec::new(),
     };
-    let entry_offset = if image.isa == Isa::X86_64 { 8 } else { 0 };
+    let entry_offset = match image.isa {
+        Isa::I386 => 4,
+        Isa::X86_64 => 8,
+        _ => 0,
+    };
     let mut eh_frame = EhFrame::new(data, LittleEndian);
-    eh_frame.set_address_size(8);
+    eh_frame.set_address_size(crate::arch::pointer_bytes(image.isa));
     let bases = BaseAddresses::default().set_eh_frame(section.vaddr);
     let mut context = Box::new(UnwindContext::new());
     let mut out = Vec::new();
@@ -185,7 +195,7 @@ pub(crate) fn landing_pads(image: &Image) -> std::collections::BTreeMap<u64, Vec
         return pads;
     };
     let mut eh_frame = EhFrame::new(data, LittleEndian);
-    eh_frame.set_address_size(8);
+    eh_frame.set_address_size(crate::arch::pointer_bytes(image.isa));
     let bases = BaseAddresses::default().set_eh_frame(section.vaddr);
     let mut entries = eh_frame.entries(&bases);
     while let Ok(Some(entry)) = entries.next() {

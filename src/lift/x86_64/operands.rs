@@ -98,11 +98,11 @@ pub(super) fn memory_address(ins: &Instruction) -> Option<Expr> {
         return Some(Expr::constant(ins.ip_rel_memory_address()));
     }
     let mut address: Option<Expr> = None;
-    if let Some((index, _)) = gpr(ins.memory_base()) {
-        address = Some(Expr::reg(index, 64));
+    if let Some((index, width)) = gpr(ins.memory_base()) {
+        address = Some(Lifter::read_reg(index, width));
     }
-    if let Some((index, _)) = gpr(ins.memory_index()) {
-        let mut value = Expr::reg(index, 64);
+    if let Some((index, width)) = gpr(ins.memory_index()) {
+        let mut value = Lifter::read_reg(index, width);
         let scale = ins.memory_index_scale();
         if scale > 1 {
             value = Expr::bin(BinOp::Mul, value, Expr::constant(scale as u64));
@@ -112,11 +112,34 @@ pub(super) fn memory_address(ins: &Instruction) -> Option<Expr> {
             None => value,
         });
     }
-    let displacement = ins.memory_displacement64();
+    let displacement = if ins.code_size() == iced_x86::CodeSize::Code32
+        && (ins.memory_base() != Register::None || ins.memory_index() != Register::None)
+    {
+        ins.memory_displacement32() as i32 as i64 as u64
+    } else {
+        ins.memory_displacement64()
+    };
     if displacement != 0 {
         address = Some(match address {
             Some(base) => Expr::bin(BinOp::Add, base, Expr::constant(displacement)),
             None => Expr::constant(displacement),
+        });
+    }
+    let address_bits = gpr(ins.memory_base())
+        .or_else(|| gpr(ins.memory_index()))
+        .map(|(_, width)| width)
+        .unwrap_or_else(|| match ins.code_size() {
+            iced_x86::CodeSize::Code32 => 32,
+            iced_x86::CodeSize::Code16 => 16,
+            _ => 64,
+        });
+    if address_bits < 64 {
+        address = address.map(|address| {
+            Expr::bin(
+                BinOp::And,
+                address,
+                Expr::constant(crate::ir::semantics::mask(u32::from(address_bits))),
+            )
         });
     }
     let segment = match ins.memory_segment() {
@@ -148,12 +171,33 @@ pub(super) fn load_at(addr: Expr, width: u8) -> Expr {
     }
 }
 
-fn load(ins: &Instruction) -> Option<Expr> {
-    Some(Expr::Load {
-        addr: Box::new(memory_address(ins)?),
-        width: memory_width(ins)?,
-        signed: false,
-    })
+fn load(lifter: &Lifter, ins: &Instruction) -> Option<Expr> {
+    let Some(mut address) = memory_address(ins) else {
+        return None;
+    };
+    if lifter.image.isa == crate::loader::Isa::I386
+        && ins.mnemonic() == iced_x86::Mnemonic::Jmp
+        && ins.memory_base() == Register::EBX
+        && ins.memory_index() == Register::None
+        && lifter.image.section_at(ins.ip()).is_some_and(|section| {
+            matches!(section.name.as_str(), ".plt" | ".plt.sec" | ".plt.got")
+        })
+        && let Some(got) = lifter
+            .image
+            .sections
+            .iter()
+            .find(|section| section.name == ".got.plt")
+    {
+        address = Expr::constant(
+            got.vaddr
+                .wrapping_add_signed(i64::from(ins.memory_displacement32() as i32))
+                & 0xffff_ffff,
+        );
+    }
+    let Some(width) = memory_width(ins) else {
+        return None;
+    };
+    Some(load_at(address, width))
 }
 
 fn immediate(ins: &Instruction, index: u32) -> Option<Expr> {
@@ -167,7 +211,9 @@ fn immediate(ins: &Instruction, index: u32) -> Option<Expr> {
         OpKind::Immediate32 => ins.immediate32() as u64,
         OpKind::Immediate32to64 => ins.immediate32to64() as u64,
         OpKind::Immediate64 => ins.immediate64(),
-        OpKind::NearBranch64 => ins.near_branch_target(),
+        OpKind::NearBranch16 | OpKind::NearBranch32 | OpKind::NearBranch64 => {
+            ins.near_branch_target()
+        }
         _ => return None,
     };
     Some(Expr::constant(value))
@@ -190,7 +236,7 @@ pub(super) fn operand(lifter: &mut Lifter, ins: &Instruction, index: u32) -> Opt
                 _ => None,
             }
         }
-        OpKind::Memory => load(ins),
+        OpKind::Memory => load(lifter, ins),
         _ if index >= ins.op_count() => return None,
         _ => immediate(ins, index),
     };

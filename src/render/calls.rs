@@ -313,7 +313,7 @@ pub(super) fn expression(call: &Stmt, ctx: &Ctx<'_>) -> String {
     if let (Some(name), Some(first)) = (number, args.first_mut()) {
         *first = format!("{first} /* SYS_{name} */");
     }
-    let word_type = if *convention == crate::ir::Convention::Aapcs32 {
+    let word_type = if crate::arch::pointer_bytes(ctx.isa) == 4 {
         "uint32_t"
     } else {
         "uint64_t"
@@ -329,8 +329,9 @@ pub(super) fn expression(call: &Stmt, ctx: &Ctx<'_>) -> String {
             {
                 "syscall".to_owned()
             }
-            (Some(Expr::Load { addr, width: 8, .. }), _)
-                if let Expr::Const(slot) = addr.as_ref()
+            (Some(Expr::Load { addr, width, .. }), _)
+                if *width == crate::arch::pointer_bytes(ctx.isa)
+                    && let Expr::Const(slot) = addr.as_ref()
                     && let Some(name) = ctx.symbols.import_slots.get(slot) =>
             {
                 super::sanitize(name)

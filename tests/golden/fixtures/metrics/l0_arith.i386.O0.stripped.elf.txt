@@ -1,0 +1,87 @@
+# metrics/l0_arith.i386.O0.stripped.elf: elf i386 no entry, 4 functions, 0 lift failures, 0 unsupported, 0 gotos
+0x1280 23 add3 dynamic,unwind
+0x12a0 15 scale dynamic,unwind
+0x12b0 40 pick dynamic,unwind
+0x12e0 13 negate dynamic,unwind
+
+== 0x1280 add3
+-- decompile
+/* velk pseudo-C: add3 @ 0x1280 */
+int32_t add3(uint32_t a0, uint32_t a1, uint32_t a2) {
+    return a0 + a1 + a2;
+}
+-- signature
+int32_t ()
+-- references
+
+-- ir
+fn add3 @ 0x1280 (size 23)
+  blk0 @ 0x1280:
+    ret (((load32((esp + #0x4)) + load32((esp + #0x8))) + load32((esp + #0xc))) & #0xffffffff)
+-- card
+{"addr":"0x1280","approxTokens":156,"blocks":1,"hardReasons":[],"name":"add3","nameSources":["dynamic","unwind"],"section":".text","size":23,"unsupported":0}
+
+== 0x12a0 scale
+-- decompile
+/* velk pseudo-C: scale @ 0x12a0 */
+int32_t scale(uint32_t a0) {
+    return a0 * 7 + 3;
+}
+-- signature
+int32_t ()
+-- references
+
+-- ir
+fn scale @ 0x12a0 (size 15)
+  blk0 @ 0x12a0:
+    ret (((load32((esp + #0x4)) * #0x7) + #0x3) & #0xffffffff)
+-- card
+{"addr":"0x12a0","approxTokens":138,"blocks":1,"hardReasons":[],"name":"scale","nameSources":["dynamic","unwind"],"section":".text","size":15,"unsupported":0}
+
+== 0x12b0 pick
+-- decompile
+/* velk pseudo-C: pick @ 0x12b0 */
+int32_t pick(uint32_t a0, uint32_t a1) {
+    int32_t result;
+
+    if ((int32_t)a0 <= (int32_t)a1) {
+        result = a1;
+        return result;
+    }
+    result = a0;
+    return result;
+}
+-- signature
+int32_t ()
+-- references
+
+-- ir
+fn pick @ 0x12b0 (size 40)
+  blk0 @ 0x12b0:
+    brif le load32((esp + #0x4)), load32((esp + #0x8)) -> 0x12ca
+  blk1 @ 0x12c2:
+    v1 = load32((esp + #0x4))
+    br 0x12d0
+  blk2 @ 0x12ca:
+    v1 = load32((esp + #0x8))
+  blk3 @ 0x12d0:
+    ret v1
+-- card
+{"addr":"0x12b0","approxTokens":162,"blocks":4,"hardReasons":[],"name":"pick","nameSources":["dynamic","unwind"],"section":".text","size":40,"unsupported":0}
+
+== 0x12e0 negate
+-- decompile
+/* velk pseudo-C: negate @ 0x12e0 */
+int32_t negate(uint32_t a0) {
+    return -a0;
+}
+-- signature
+int32_t ()
+-- references
+
+-- ir
+fn negate @ 0x12e0 (size 13)
+  blk0 @ 0x12e0:
+    ret ((#0x0 - load32((esp + #0x4))) & #0xffffffff)
+-- card
+{"addr":"0x12e0","approxTokens":138,"blocks":1,"hardReasons":[],"name":"negate","nameSources":["dynamic","unwind"],"section":".text","size":13,"unsupported":0}

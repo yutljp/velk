@@ -47,8 +47,10 @@ pub fn search(image: &Image, value: u64, deadline: Option<Instant>) -> Result<Ve
             });
         };
         match image.isa {
-            Isa::X86_64 => {
-                let mut decoder = Decoder::with_ip(64, bytes, section.vaddr, DecoderOptions::NONE);
+            Isa::I386 | Isa::X86_64 => {
+                let bitness = if image.isa == Isa::I386 { 32 } else { 64 };
+                let mut decoder =
+                    Decoder::with_ip(bitness, bytes, section.vaddr, DecoderOptions::NONE);
                 let mut count = 0usize;
                 while decoder.can_decode() {
                     if count.is_multiple_of(1024)

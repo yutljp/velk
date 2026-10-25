@@ -5,7 +5,9 @@ fn every_pe_function_compiles() {
     let fixtures: Vec<_> = common::fixtures()
         .into_iter()
         .filter(|path| {
-            path.to_string_lossy().contains(".win64.")
+            (path.to_string_lossy().contains(".win64.")
+                || path.to_string_lossy().contains(".win32.")
+                || path.to_string_lossy().contains(".pe32."))
                 || path.file_name().is_some_and(|name| {
                     name.to_string_lossy().starts_with("seh.")
                         || name.to_string_lossy().starts_with("seh_cpp.")
@@ -28,7 +30,7 @@ fn every_pe_function_compiles() {
                 .code;
             std::fs::write(
                 &source,
-                format!("#include <stdint.h>\n#include <stdbool.h>\n#include <stddef.h>\n{code}"),
+                format!("#include <stdint.h>\n#include <stdbool.h>\n#include <stddef.h>\n#include <stdlib.h>\n{code}"),
             )
             .unwrap();
             let output = Command::new(compiler())

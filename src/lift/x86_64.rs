@@ -87,6 +87,14 @@ impl<'a> Lifter<'a> {
         }
     }
 
+    fn word_bits(&self) -> u8 {
+        if self.image.isa == crate::loader::Isa::I386 {
+            32
+        } else {
+            64
+        }
+    }
+
     fn set_flags(&mut self, flags: Flags) {
         self.last_compare = Some(flags);
         self.flags_written = true;
@@ -474,15 +482,17 @@ fn lift_instruction(
             lifter.assign(RAX, width, quotient);
         }
         Mnemonic::Leave => {
-            let base = Lifter::read_reg(5, 64);
-            lifter.assign(RSP, 64, base.clone());
+            let bits = lifter.word_bits();
+            let bytes = bits / 8;
+            let base = Lifter::read_reg(5, bits);
+            lifter.assign(RSP, bits, base.clone());
             let value = Expr::Load {
                 addr: Box::new(base),
-                width: 8,
+                width: bytes,
                 signed: false,
             };
-            lifter.assign(5, 64, value);
-            stack_adjust(lifter, 8);
+            lifter.assign(5, bits, value);
+            stack_adjust(lifter, i64::from(bytes));
         }
         Mnemonic::Movzx => {
             if let Some(value) = operand(lifter, ins, 1) {
@@ -493,6 +503,19 @@ fn lift_instruction(
             }
         }
         Mnemonic::Call => {
+            if lifter.image.isa == crate::loader::Isa::I386
+                && ins.op0_kind() == OpKind::NearBranch32
+                && resolved_target(ins, relocation_target) == ins.next_ip()
+            {
+                stack_adjust(lifter, -4);
+                preserve_compare(&mut lifter.last_compare, Write::Memory, &mut lifter.stmts);
+                lifter.stmts.push(Stmt::Store {
+                    addr: Lifter::read_reg(RSP, 32),
+                    value: Expr::constant(ins.next_ip()),
+                    width: 4,
+                });
+                return false;
+            }
             // A call leaves the flags undefined: none of the compare before
             // it is read after it.
             lifter.last_compare = None;
@@ -512,6 +535,11 @@ fn lift_instruction(
                     lifter.stmts.push(Stmt::Trap);
                     return true;
                 }
+                if let Some(bytes) = lifter.image.callee_cleanup(target)
+                    && bytes != 0
+                {
+                    stack_adjust(lifter, i64::from(bytes));
+                }
                 lifter
                     .stmts
                     .extend(super::stack_results(lifter.image, lifter.summaries, target));
@@ -527,6 +555,11 @@ fn lift_instruction(
                     if (lifter.summaries)(target).noreturn {
                         lifter.stmts.push(Stmt::Trap);
                         return true;
+                    }
+                    if let Some(bytes) = lifter.image.callee_cleanup(target)
+                        && bytes != 0
+                    {
+                        stack_adjust(lifter, i64::from(bytes));
                     }
                     lifter.stmts.extend(super::stack_results(
                         lifter.image,
@@ -551,7 +584,12 @@ fn lift_instruction(
             lifter.assign(DIRECTION, 64, Expr::constant(0));
         }
         Mnemonic::Jmp => {
-            if ins.op0_kind() == OpKind::NearBranch64 {
+            if relocation_target.is_some()
+                || matches!(
+                    ins.op0_kind(),
+                    OpKind::NearBranch16 | OpKind::NearBranch32 | OpKind::NearBranch64
+                )
+            {
                 // Whether a jump out of the function is a tail call is
                 // decided once its blocks are known.
                 lifter.stmts.push(Stmt::Br {
@@ -573,7 +611,7 @@ fn lift_instruction(
                             Stmt::Trap
                         } else {
                             Stmt::Ret {
-                                value: Lifter::read_reg(RAX, 64),
+                                value: Lifter::read_reg(RAX, lifter.word_bits()),
                             }
                         });
                     }
@@ -584,7 +622,7 @@ fn lift_instruction(
         }
         Mnemonic::Ret => {
             lifter.stmts.push(Stmt::Ret {
-                value: Lifter::read_reg(RAX, 64),
+                value: Lifter::read_reg(RAX, lifter.word_bits()),
             });
             return true;
         }
@@ -592,40 +630,57 @@ fn lift_instruction(
         | Mnemonic::Xgetbv
         | Mnemonic::Rdtsc
         | Mnemonic::Rdtscp
+        | Mnemonic::Pushf
+        | Mnemonic::Pushfd
+        | Mnemonic::Popf
+        | Mnemonic::Popfd
         | Mnemonic::Pushfq
         | Mnemonic::Popfq => machine::lift(lifter, ins.mnemonic()),
         Mnemonic::Push => {
+            let bytes = match ins.stack_pointer_increment() {
+                -2 => 2,
+                -4 => 4,
+                -8 => 8,
+                _ => return false,
+            };
             let Some(value) = operand(lifter, ins, 0) else {
                 return false;
             };
             // The value is read before the stack pointer moves.
-            let value = stack_reads_before(value, 8);
-            stack_adjust(lifter, -8);
+            let value = stack_reads_before(value, u64::from(bytes));
+            stack_adjust(lifter, -i64::from(bytes));
             let address = Lifter::read_reg(RSP, 64);
             preserve_compare(&mut lifter.last_compare, Write::Memory, &mut lifter.stmts);
             lifter.stmts.push(Stmt::Store {
                 addr: address,
                 value,
-                width: 8,
+                width: bytes,
             });
         }
         Mnemonic::Pop => {
+            let bytes = operand_width(ins, 0).unwrap_or(lifter.word_bits()) / 8;
             let address = Lifter::read_reg(RSP, 64);
             let value = Expr::Load {
                 addr: Box::new(address),
-                width: 8,
+                width: bytes,
                 signed: false,
             };
             match gpr(ins.op0_register()) {
                 // `pop rsp` leaves the loaded value in place of the increment.
                 Some((RSP, width)) if ins.op0_kind() == OpKind::Register => {
-                    lifter.assign(RSP, width, value)
+                    let value = hold(lifter, value);
+                    stack_adjust(lifter, i64::from(bytes));
+                    lifter.assign(RSP, width, value);
                 }
                 Some((index, width)) if ins.op0_kind() == OpKind::Register => {
                     lifter.assign(index, width, value);
-                    stack_adjust(lifter, 8);
+                    stack_adjust(lifter, i64::from(bytes));
                 }
-                _ => stack_adjust(lifter, 8),
+                _ => {
+                    let value = hold(lifter, value);
+                    stack_adjust(lifter, i64::from(bytes));
+                    write_destination(lifter, ins, value);
+                }
             }
         }
         Mnemonic::Xchg | Mnemonic::Xadd | Mnemonic::Cmpxchg => lift_exchange(lifter, ins),
@@ -780,12 +835,25 @@ fn branch_target(ins: &Instruction, relocation_target: Option<u64>) -> Option<u6
         FlowControl::UnconditionalBranch | FlowControl::ConditionalBranch => {
             Some(resolved_target(ins, relocation_target))
         }
+        FlowControl::IndirectBranch => relocation_target,
         _ => None,
     }
 }
 
 pub(super) fn decode(bytes: &[u8], addr: u64) -> (Vec<Decoded<Instruction>>, Option<String>) {
-    let mut decoder = Decoder::with_ip(64, bytes, addr, DecoderOptions::NONE);
+    decode_mode(bytes, addr, 64)
+}
+
+pub(super) fn decode32(bytes: &[u8], addr: u64) -> (Vec<Decoded<Instruction>>, Option<String>) {
+    decode_mode(bytes, addr, 32)
+}
+
+pub(super) fn decode_mode(
+    bytes: &[u8],
+    addr: u64,
+    bitness: u32,
+) -> (Vec<Decoded<Instruction>>, Option<String>) {
+    let mut decoder = Decoder::with_ip(bitness, bytes, addr, DecoderOptions::NONE);
     let mut decoded = Vec::new();
     while decoder.can_decode() {
         let instruction = decoder.decode();

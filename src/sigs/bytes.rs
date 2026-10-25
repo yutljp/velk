@@ -220,7 +220,7 @@ fn normalize(isa: Isa, bytes: &[u8], addr: u64, relocated: &HashSet<usize>) -> O
                 body.bytes.truncate(last_code_end);
             }
         }
-        Isa::Arm32 | Isa::Unsupported => return None,
+        Isa::I386 | Isa::Arm32 | Isa::Unsupported => return None,
     }
     if body.bytes.len() < MIN_BYTES {
         return None;

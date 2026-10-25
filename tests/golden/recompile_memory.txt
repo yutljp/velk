@@ -1,8 +1,7 @@
 # functions left out:
-#   calls: 7949
+#   calls: 8008
 #   computes on floats or vectors: 102
-#   computes on registers alone: 1544
-#   does not lift: 16
+#   computes on registers alone: 1545
 #   has an unsupported instruction: 125
 #   reads a register that is not a parameter: 126
 #   refers to data: 829
@@ -139,6 +138,26 @@
 # metrics/control.x86_64.O0.stripped.elf: 7 functions, 5 qualify, 5 compile, 0 do not, 5 compared (54 runs), 0 differ
 # metrics/control.x86_64.O2.debug.elf: 7 functions, 4 qualify, 4 compile, 0 do not, 4 compared (44 runs), 0 differ
 # metrics/control.x86_64.O2.stripped.elf: 7 functions, 4 qualify, 4 compile, 0 do not, 4 compared (44 runs), 0 differ
+# metrics/conventions.win32.O0.debug.dll: 5 functions, 4 qualify, 4 compile, 0 do not, 4 compared (48 runs), 0 differ
+# metrics/conventions.win32.O0.stripped.dll: 5 functions, 4 qualify, 4 compile, 0 do not, 4 compared (48 runs), 0 differ
+# metrics/conventions.win32.O2.debug.dll: 5 functions, 4 qualify, 4 compile, 0 do not, 4 compared (48 runs), 0 differ
+# metrics/conventions.win32.O2.stripped.dll: 5 functions, 4 qualify, 4 compile, 0 do not, 4 compared (48 runs), 0 differ
+# metrics/l0_arith.i386.O0.debug.elf: 4 functions, 4 qualify, 4 compile, 0 do not, 4 compared (48 runs), 0 differ
+# metrics/l0_arith.i386.O0.stripped.elf: 4 functions, 4 qualify, 4 compile, 0 do not, 4 compared (48 runs), 0 differ
+# metrics/l0_arith.i386.O2.debug.elf: 4 functions, 4 qualify, 4 compile, 0 do not, 4 compared (48 runs), 0 differ
+# metrics/l0_arith.i386.O2.stripped.elf: 4 functions, 4 qualify, 4 compile, 0 do not, 4 compared (48 runs), 0 differ
+# metrics/l0_arith.win32.O0.debug.dll: 4 functions, 4 qualify, 4 compile, 0 do not, 4 compared (48 runs), 0 differ
+# metrics/l0_arith.win32.O0.stripped.dll: 4 functions, 4 qualify, 4 compile, 0 do not, 4 compared (48 runs), 0 differ
+# metrics/l0_arith.win32.O2.debug.dll: 4 functions, 4 qualify, 4 compile, 0 do not, 4 compared (48 runs), 0 differ
+# metrics/l0_arith.win32.O2.stripped.dll: 4 functions, 4 qualify, 4 compile, 0 do not, 4 compared (48 runs), 0 differ
+# metrics/l1_branch.i386.O0.debug.elf: 3 functions, 3 qualify, 3 compile, 0 do not, 3 compared (36 runs), 0 differ
+# metrics/l1_branch.i386.O0.stripped.elf: 3 functions, 3 qualify, 3 compile, 0 do not, 3 compared (36 runs), 0 differ
+# metrics/l1_branch.i386.O2.debug.elf: 3 functions, 3 qualify, 3 compile, 0 do not, 3 compared (36 runs), 0 differ
+# metrics/l1_branch.i386.O2.stripped.elf: 3 functions, 3 qualify, 3 compile, 0 do not, 3 compared (36 runs), 0 differ
+# metrics/l1_branch.win32.O0.debug.dll: 3 functions, 3 qualify, 3 compile, 0 do not, 3 compared (36 runs), 0 differ
+# metrics/l1_branch.win32.O0.stripped.dll: 3 functions, 3 qualify, 3 compile, 0 do not, 3 compared (36 runs), 0 differ
+# metrics/l1_branch.win32.O2.debug.dll: 3 functions, 3 qualify, 3 compile, 0 do not, 3 compared (36 runs), 0 differ
+# metrics/l1_branch.win32.O2.stripped.dll: 3 functions, 3 qualify, 3 compile, 0 do not, 3 compared (36 runs), 0 differ
 # metrics/l2_loop.aarch64.O0.debug.elf: 4 functions, 1 qualify, 1 compile, 0 do not, 1 compared (10 runs), 0 differ
 # metrics/l2_loop.aarch64.O0.stripped.elf: 4 functions, 1 qualify, 1 compile, 0 do not, 1 compared (10 runs), 0 differ
 # metrics/l2_loop.aarch64.O2.debug.elf: 4 functions, 1 qualify, 1 compile, 0 do not, 1 compared (10 runs), 0 differ
@@ -185,6 +204,10 @@
 # metrics/memory.x86_64.O0.stripped.elf: 8 functions, 5 qualify, 5 compile, 0 do not, 5 compared (46 runs), 0 differ
 # metrics/memory.x86_64.O2.debug.elf: 8 functions, 4 qualify, 4 compile, 0 do not, 4 compared (41 runs), 0 differ
 # metrics/memory.x86_64.O2.stripped.elf: 8 functions, 4 qualify, 4 compile, 0 do not, 4 compared (41 runs), 0 differ
+# metrics/relocations.i386.O0.debug.elf: 5 functions, 1 qualify, 1 compile, 0 do not, 1 compared (12 runs), 0 differ
+# metrics/relocations.i386.O0.stripped.elf: 5 functions, 1 qualify, 1 compile, 0 do not, 1 compared (12 runs), 0 differ
+# metrics/relocations.i386.O2.debug.elf: 5 functions, 1 qualify, 1 compile, 0 do not, 1 compared (12 runs), 0 differ
+# metrics/relocations.i386.O2.stripped.elf: 5 functions, 1 qualify, 1 compile, 0 do not, 1 compared (12 runs), 0 differ
 # metrics/struct_arrays.aarch64.O0.debug.elf: 3 functions, 3 qualify, 3 compile, 0 do not, 3 compared (23 runs), 0 differ
 # metrics/struct_arrays.aarch64.O0.stripped.elf: 3 functions, 3 qualify, 3 compile, 0 do not, 3 compared (23 runs), 0 differ
 # metrics/struct_arrays.aarch64.O2.debug.elf: 3 functions, 3 qualify, 3 compile, 0 do not, 3 compared (23 runs), 0 differ

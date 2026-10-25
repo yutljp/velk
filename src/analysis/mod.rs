@@ -71,7 +71,9 @@ fn float_return_slot(isa: crate::loader::Isa) -> Option<u16> {
     match isa {
         crate::loader::Isa::X86_64 => Some(crate::arch::x86::XMM0),
         crate::loader::Isa::AArch64 => Some(crate::arch::aarch64::V0),
-        crate::loader::Isa::Arm32 | crate::loader::Isa::Unsupported => None,
+        crate::loader::Isa::Arm32 | crate::loader::Isa::I386 | crate::loader::Isa::Unsupported => {
+            None
+        }
     }
 }
 
@@ -303,7 +305,7 @@ fn receive_exceptions(
     isa: crate::loader::Isa,
 ) {
     let (exception, selector) = match isa {
-        crate::loader::Isa::X86_64 => (0, 2),
+        crate::loader::Isa::I386 | crate::loader::Isa::X86_64 => (0, 2),
         crate::loader::Isa::AArch64 => (0, 1),
         crate::loader::Isa::Arm32 | crate::loader::Isa::Unsupported => return,
     };
@@ -1103,6 +1105,17 @@ fn lift_function(image: &Image, function: &Function) -> Result<Lifted, LiftError
     let switched: HashSet<u64> = tables.iter().map(|table| table.block_start).collect();
     tail_calls_through_pointers(&mut blocks, &switched, image);
     indirect::resolve(&mut blocks, &landing_pads, image);
+    if image.isa == crate::loader::Isa::I386 {
+        for block in &blocks {
+            if block
+                .stmts
+                .iter()
+                .any(|stmt| matches!(stmt, crate::ir::Stmt::Call { args: None, .. }))
+            {
+                return Err(LiftError::UnknownArguments { block: block.start });
+            }
+        }
+    }
     let types = crate::loader::dwarf::function_types(image, function.addr);
     let declared_signature = types.as_ref().and_then(abi::declaration);
     // A function returning a float returns it in xmm0 or v0.
@@ -1281,11 +1294,7 @@ fn lift_function(image: &Image, function: &Function) -> Result<Lifted, LiftError
                 };
                 crate::ir::StackParam {
                     offset: *offset,
-                    size: if image.isa == crate::loader::Isa::Arm32 {
-                        4
-                    } else {
-                        8
-                    },
+                    size: u64::from(crate::arch::pointer_bytes(image.isa)),
                     name: format!("a{position}"),
                     ty,
                     position,
@@ -1386,6 +1395,9 @@ fn optimize(image: &Image, lifted: Lifted, deadline: Option<Instant>) -> Result<
         has_jump_tables,
         types,
     } = lifted;
+    if ir.isa == crate::loader::Isa::I386 {
+        passes::frame_slots::settle_i386(&mut ir);
+    }
     let declared_return = types.as_ref().is_some_and(|types| types.ret.is_some());
     let uniform_32 = passes::widths::specialize_widths(&mut ir, &|target| {
         summary::summary(image, target).narrow_return

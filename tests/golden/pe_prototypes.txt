@@ -22,10 +22,10 @@ codeview/structs.O2.dll: imports 0/0
   calls 0/0, lift failures 0
 codeview/structs.O2.stripped.dll: imports 0/0
   calls 0/0, lift failures 0
-crt_windows.i686.exe: imports 9/15
-  msvcrt.dll!_close: unknown
-  msvcrt.dll!_errno: unknown
-  msvcrt.dll!_getpid: unknown
+crt_windows.i686.exe: imports 15/15
+  msvcrt.dll!_close: known
+  msvcrt.dll!_errno: known
+  msvcrt.dll!_getpid: known
   msvcrt.dll!calloc: known
   msvcrt.dll!fputs: known
   msvcrt.dll!isalpha: known
@@ -33,12 +33,26 @@ crt_windows.i686.exe: imports 9/15
   msvcrt.dll!setlocale: known
   msvcrt.dll!sin: known
   msvcrt.dll!strchr: known
-  msvcrt.dll!strcpy_s: unknown
+  msvcrt.dll!strcpy_s: known
   msvcrt.dll!strtol: known
   msvcrt.dll!time: known
-  msvcrt.dll!wcscpy_s: unknown
-  msvcrt.dll!wcslen: unknown
-  calls 0/0, lift failures 16
+  msvcrt.dll!wcscpy_s: known
+  msvcrt.dll!wcslen: known
+  calls 14/14, lift failures 1
+  0x401000:0: known
+  0x40101b:0: known
+  0x401036:0: known
+  0x401059:0: known
+  0x401074:0: known
+  0x401087:0: known
+  0x40109b:2: known
+  0x4010af:0: known
+  0x4010d3:0: known
+  0x4010f7:0: known
+  0x401104:0: known
+  0x401118:0: known
+  0x401125:0: known
+  0x401140:0: known
 crt_windows.x86_64.exe: imports 15/15
   msvcrt.dll!_close: known
   msvcrt.dll!_errno: known
@@ -133,6 +147,30 @@ metrics/control.win64.O2.debug.dll: imports 0/0
   calls 0/0, lift failures 0
 metrics/control.win64.O2.stripped.dll: imports 0/0
   calls 0/0, lift failures 0
+metrics/conventions.win32.O0.debug.dll: imports 0/0
+  calls 0/4, lift failures 0
+  0x10001080:0: unknown
+  0x10001080:1: unknown
+  0x10001080:3: unknown
+  0x10001080:5: unknown
+metrics/conventions.win32.O0.stripped.dll: imports 0/0
+  calls 0/4, lift failures 0
+  0x10001080:0: unknown
+  0x10001080:1: unknown
+  0x10001080:3: unknown
+  0x10001080:5: unknown
+metrics/conventions.win32.O2.debug.dll: imports 0/0
+  calls 0/4, lift failures 0
+  0x10001040:1: unknown
+  0x10001040:2: unknown
+  0x10001040:4: unknown
+  0x10001040:6: unknown
+metrics/conventions.win32.O2.stripped.dll: imports 0/0
+  calls 0/4, lift failures 0
+  0x10001040:1: unknown
+  0x10001040:2: unknown
+  0x10001040:4: unknown
+  0x10001040:6: unknown
 metrics/divmod_a64.win64.O0.debug.dll: imports 0/0
   calls 0/0, lift failures 0
 metrics/divmod_a64.win64.O0.stripped.dll: imports 0/0
@@ -157,6 +195,22 @@ metrics/float.win64.O2.debug.dll: imports 0/0
   calls 0/0, lift failures 0
 metrics/float.win64.O2.stripped.dll: imports 0/0
   calls 0/0, lift failures 0
+metrics/imports.win32.O0.debug.dll: imports 1/1
+  arithmetic.dll!abs: known
+  calls 1/1, lift failures 0
+  0x10001000:0: known
+metrics/imports.win32.O0.stripped.dll: imports 1/1
+  arithmetic.dll!abs: known
+  calls 1/1, lift failures 0
+  0x10001000:0: known
+metrics/imports.win32.O2.debug.dll: imports 1/1
+  arithmetic.dll!abs: known
+  calls 1/1, lift failures 0
+  0x10001000:0: known
+metrics/imports.win32.O2.stripped.dll: imports 1/1
+  arithmetic.dll!abs: known
+  calls 1/1, lift failures 0
+  0x10001000:0: known
 metrics/integers.win64.O0.debug.dll: imports 0/0
   calls 0/0, lift failures 0
 metrics/integers.win64.O0.stripped.dll: imports 0/0
@@ -165,6 +219,14 @@ metrics/integers.win64.O2.debug.dll: imports 0/0
   calls 0/0, lift failures 0
 metrics/integers.win64.O2.stripped.dll: imports 0/0
   calls 0/0, lift failures 0
+metrics/l0_arith.win32.O0.debug.dll: imports 0/0
+  calls 0/0, lift failures 0
+metrics/l0_arith.win32.O0.stripped.dll: imports 0/0
+  calls 0/0, lift failures 0
+metrics/l0_arith.win32.O2.debug.dll: imports 0/0
+  calls 0/0, lift failures 0
+metrics/l0_arith.win32.O2.stripped.dll: imports 0/0
+  calls 0/0, lift failures 0
 metrics/l0_arith.win64.O0.debug.dll: imports 0/0
   calls 0/0, lift failures 0
 metrics/l0_arith.win64.O0.stripped.dll: imports 0/0
@@ -172,6 +234,14 @@ metrics/l0_arith.win64.O0.stripped.dll: imports 0/0
 metrics/l0_arith.win64.O2.debug.dll: imports 0/0
   calls 0/0, lift failures 0
 metrics/l0_arith.win64.O2.stripped.dll: imports 0/0
+  calls 0/0, lift failures 0
+metrics/l1_branch.win32.O0.debug.dll: imports 0/0
+  calls 0/0, lift failures 0
+metrics/l1_branch.win32.O0.stripped.dll: imports 0/0
+  calls 0/0, lift failures 0
+metrics/l1_branch.win32.O2.debug.dll: imports 0/0
+  calls 0/0, lift failures 0
+metrics/l1_branch.win32.O2.stripped.dll: imports 0/0
   calls 0/0, lift failures 0
 metrics/l1_branch.win64.O0.debug.dll: imports 0/0
   calls 0/0, lift failures 0
@@ -441,3 +511,9 @@ type_library_windows.win64.exe: imports 7/7
   0x14000105d:0: known
   0x14000107c:0: known
   0x14000108b:1: known
+windows_types.pe32.dll: imports 2/2
+  kernel32.dll!GetFileType: known
+  kernel32.dll!GetLastError: known
+  calls 2/2, lift failures 0
+  0x10001000:0: known
+  0x10001010:0: known

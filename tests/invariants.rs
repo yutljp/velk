@@ -376,6 +376,7 @@ fn unassigned_reads(ir: &FunctionIr, isa: Isa) -> HashSet<u16> {
             31, 32, 33,
         ],
         Isa::Arm32 => &[4, 5, 6, 7, 8, 9, 10, 11, 13, 14],
+        Isa::I386 => &[0, 3, 4, 5, 6, 7, 16, 17],
         Isa::Unsupported => &[],
     };
     read.retain(|register| !written.contains(register) && !exempt.contains(register));

@@ -791,5 +791,5 @@ pub(super) fn stack_reads_before(value: Expr, delta: u64) -> Expr {
 pub(super) fn stack_adjust(lifter: &mut Lifter, delta: i64) {
     let current = Lifter::read_reg(RSP, 64);
     let value = Expr::bin(BinOp::Add, current, Expr::constant(delta as u64));
-    lifter.assign(RSP, 64, value);
+    lifter.assign(RSP, lifter.word_bits(), value);
 }

@@ -4,7 +4,7 @@ use super::{
 };
 
 /// The bytes a string instruction moves at a time; None for a form the
-/// lifter does not model, such as a 32-bit address size.
+/// lifter does not model, such as a 16-bit address size.
 pub(super) fn string_size(ins: &Instruction) -> Option<u8> {
     use Mnemonic::*;
     let size = match ins.mnemonic() {
@@ -15,8 +15,8 @@ pub(super) fn string_size(ins: &Instruction) -> Option<u8> {
         _ => return None,
     };
     let wide_addresses = (0..ins.op_count()).all(|index| match ins.op_kind(index) {
-        OpKind::MemorySegRSI | OpKind::MemorySegDI | OpKind::MemoryESRDI => true,
-        OpKind::MemoryESEDI | OpKind::MemorySegESI | OpKind::MemorySegEDI => false,
+        OpKind::MemorySegRSI | OpKind::MemoryESRDI => true,
+        OpKind::MemorySegDI | OpKind::MemorySegSI | OpKind::MemoryESDI => false,
         _ => true,
     });
     (wide_addresses && !ins.has_repne_prefix()).then_some(size)
@@ -30,6 +30,24 @@ pub(super) fn lift_string(lifter: &mut Lifter, ins: &Instruction) -> bool {
     use Mnemonic::*;
     let Some(size) = string_size(ins) else {
         return false;
+    };
+    let bits = if (0..ins.op_count()).any(|index| {
+        matches!(
+            ins.op_kind(index),
+            OpKind::MemoryESEDI | OpKind::MemorySegESI | OpKind::MemorySegEDI
+        )
+    }) {
+        32
+    } else {
+        64
+    };
+    let read = |index| Lifter::read_reg(index, bits);
+    let narrow = |value| {
+        if bits == 32 {
+            Expr::bin(BinOp::And, value, Expr::constant(0xffff_ffff))
+        } else {
+            value
+        }
     };
     let (rsi, rdi, rcx) = (6, 7, 1);
     // The pointers and the count may be what the flags were set from.
@@ -50,21 +68,21 @@ pub(super) fn lift_string(lifter: &mut Lifter, ins: &Instruction) -> bool {
     };
     let advance = |index: u16| Stmt::Assign {
         dest: RegRef { index, width: 64 },
-        value: Expr::bin(BinOp::Add, Expr::reg(index, 64), increment.clone()),
+        value: narrow(Expr::bin(BinOp::Add, read(index), increment.clone())),
     };
     let mut step = Vec::new();
     match ins.mnemonic() {
         Movsb | Movsw | Movsd | Movsq => {
             step.push(Stmt::Store {
-                addr: Expr::reg(rdi, 64),
-                value: load_at(Expr::reg(rsi, 64), size),
+                addr: read(rdi),
+                value: load_at(read(rsi), size),
                 width: size,
             });
             step.extend([advance(rsi), advance(rdi)]);
         }
         Stosb | Stosw | Stosd | Stosq => {
             step.push(Stmt::Store {
-                addr: Expr::reg(rdi, 64),
+                addr: read(rdi),
                 value: Lifter::read_reg(RAX, size * 8),
                 width: size,
             });
@@ -72,7 +90,7 @@ pub(super) fn lift_string(lifter: &mut Lifter, ins: &Instruction) -> bool {
         }
         _ => {
             let before = lifter.stmts.len();
-            lifter.assign(RAX, size * 8, load_at(Expr::reg(rsi, 64), size));
+            lifter.assign(RAX, size * 8, load_at(read(rsi), size));
             step.extend(lifter.stmts.drain(before..));
             step.push(advance(rsi));
         }
@@ -83,7 +101,7 @@ pub(super) fn lift_string(lifter: &mut Lifter, ins: &Instruction) -> bool {
     }
     lifter.stmts.push(Stmt::Brif {
         cond: Cond::Eq,
-        lhs: Expr::reg(rcx, 64),
+        lhs: read(rcx),
         rhs: Expr::constant(0),
         target: ins.next_ip(),
     });
@@ -92,7 +110,7 @@ pub(super) fn lift_string(lifter: &mut Lifter, ins: &Instruction) -> bool {
             index: rcx,
             width: 64,
         },
-        value: Expr::bin(BinOp::Sub, Expr::reg(rcx, 64), Expr::constant(1)),
+        value: narrow(Expr::bin(BinOp::Sub, read(rcx), Expr::constant(1))),
     });
     step.push(Stmt::Br {
         target: Some(ins.ip()),

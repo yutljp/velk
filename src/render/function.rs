@@ -1662,6 +1662,7 @@ fn machine_registers(
     std::collections::HashSet<u16>,
 ) {
     let general = match ir.isa {
+        crate::loader::Isa::I386 => 0..8,
         crate::loader::Isa::X86_64 => 0..16,
         crate::loader::Isa::AArch64 => 0..31,
         crate::loader::Isa::Arm32 => 0..15,

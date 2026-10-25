@@ -984,7 +984,7 @@ mod tests {
                     .flat_map(u32::to_le_bytes)
                     .collect(),
             ),
-            Isa::Arm32 | Isa::Unsupported => unreachable!(),
+            Isa::Arm32 | Isa::I386 | Isa::Unsupported => unreachable!(),
         };
         let mut code = vec![0; 0x90];
         code[..caller.len()].copy_from_slice(&caller);
@@ -1037,7 +1037,7 @@ mod tests {
                 .into_iter()
                 .flat_map(u32::to_le_bytes)
                 .collect(),
-            Isa::Arm32 | Isa::Unsupported => unreachable!(),
+            Isa::Arm32 | Isa::I386 | Isa::Unsupported => unreachable!(),
         }
     }
 
