@@ -30,6 +30,7 @@ struct CallKey {
 #[derive(Default)]
 pub(super) struct Outputs {
     live: HashMap<CallKey, HashSet<u16>>,
+    selector_slots: HashMap<u16, u64>,
     pub(super) sources: HashMap<u16, String>,
     pub(super) declarations: Vec<String>,
     pub(super) temporary: String,
@@ -169,6 +170,26 @@ impl Outputs {
             }
         }
         outputs
+    }
+
+    pub(super) fn find_selector_slots(&mut self, ir: &FunctionIr) {
+        let mut writes = HashMap::<u16, usize>::new();
+        for stmt in ir.blocks.iter().flat_map(|block| &block.stmts) {
+            for register in crate::ir::visit::statement_registers(stmt).0 {
+                *writes.entry(register).or_default() += 1;
+            }
+            if let Stmt::Assign {
+                dest,
+                value: Expr::Load { addr, width: 8, .. },
+            } = stmt
+                && dest.width == 64
+                && let Expr::Const(slot) = addr.as_ref()
+            {
+                self.selector_slots.insert(dest.index, *slot);
+            }
+        }
+        self.selector_slots
+            .retain(|register, _| writes.get(register) == Some(&1));
     }
 
     pub(super) fn used(&self, stmt: &Stmt, output: &CallOutput) -> bool {
@@ -378,6 +399,20 @@ pub(super) fn expression(call: &Stmt, ctx: &Ctx<'_>) -> String {
                 ctx,
             );
         }
+    }
+    let selector_slot = match values.as_ref().and_then(|args| args.get(1)) {
+        Some(Expr::Load { addr, width: 8, .. }) => match addr.as_ref() {
+            Expr::Const(slot) => Some(*slot),
+            _ => None,
+        },
+        Some(Expr::Reg { index, width: 64 }) => ctx.call_outputs.selector_slots.get(index).copied(),
+        _ => None,
+    };
+    if callee == "objc_msgSend"
+        && let Some(selector) = selector_slot.and_then(|slot| ctx.symbols.objc_selectors.get(&slot))
+        && let Some(text) = args.get_mut(1)
+    {
+        *text = format!("{text} /* @selector({selector}) */");
     }
     format!("{callee}({})", args.join(", "))
 }

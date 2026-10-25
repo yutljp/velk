@@ -3,6 +3,7 @@ mod discover;
 pub mod dwarf;
 pub mod go;
 mod macho;
+mod objc;
 mod plt;
 mod relocate;
 pub(crate) mod seh;
@@ -97,6 +98,7 @@ pub enum NameSource {
     Unwind,
     #[serde(rename = "function-starts")]
     FunctionStarts,
+    Objc,
     Plt,
     Prologue,
 }
@@ -112,6 +114,7 @@ impl fmt::Display for NameSource {
             NameSource::CodeView => "codeview",
             NameSource::Unwind => "unwind",
             NameSource::FunctionStarts => "function-starts",
+            NameSource::Objc => "objc",
             NameSource::Plt => "plt",
             NameSource::Prologue => "prologue",
         })
@@ -202,6 +205,7 @@ pub struct Image {
     pub functions: BTreeMap<u64, Function>,
     /// The names of the data objects the symbol tables define.
     pub data_symbols: BTreeMap<u64, String>,
+    pub objc_selectors: BTreeMap<u64, String>,
     /// Code split off a function, such as its cold part, by start and size:
     /// it belongs to the functions that branch into it.
     pub fragments: BTreeMap<u64, u64>,
@@ -357,6 +361,7 @@ impl Image {
             bytes: code,
             functions: BTreeMap::new(),
             data_symbols: BTreeMap::new(),
+            objc_selectors: BTreeMap::new(),
             fragments: BTreeMap::new(),
             summaries: Default::default(),
             call_declarations: Default::default(),
@@ -871,6 +876,7 @@ pub fn load(path: &Path) -> Result<Image> {
         sections,
         functions,
         data_symbols,
+        objc_selectors: BTreeMap::new(),
         fragments: BTreeMap::new(),
         summaries: Default::default(),
         call_declarations: Default::default(),
@@ -909,6 +915,7 @@ pub fn load(path: &Path) -> Result<Image> {
     }
     image.add_unwind_functions();
     macho::add_functions(&file, &mut image);
+    objc::read(&mut image);
     image.exception_handlers = seh::read(&image);
     seh::discover(&mut image);
     image.landing_pads = unwind::landing_pads(&image);
@@ -918,7 +925,7 @@ pub fn load(path: &Path) -> Result<Image> {
         function.sources.iter().all(|source| {
             matches!(
                 source,
-                NameSource::Entry | NameSource::Unwind | NameSource::Plt
+                NameSource::Entry | NameSource::Unwind | NameSource::Plt | NameSource::Objc
             )
         })
     }) {

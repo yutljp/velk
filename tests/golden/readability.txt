@@ -351,6 +351,14 @@ metrics/windows.win64.O0.debug.dll: 48 lines, 0 prelude lines, 6 variables, 10 c
 metrics/windows.win64.O0.stripped.dll: 45 lines, 0 prelude lines, 5 variables, 10 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
 metrics/windows.win64.O2.debug.dll: 44 lines, 0 prelude lines, 4 variables, 8 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
 metrics/windows.win64.O2.stripped.dll: 42 lines, 0 prelude lines, 4 variables, 7 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+objc_arm64_O0: 49 lines, 0 prelude lines, 6 variables, 4 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+objc_arm64_O0_stripped: 47 lines, 0 prelude lines, 5 variables, 3 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+objc_arm64_O2: 44 lines, 0 prelude lines, 3 variables, 3 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+objc_arm64_O2_stripped: 44 lines, 0 prelude lines, 3 variables, 3 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+objc_x86_64_O0: 44 lines, 0 prelude lines, 2 variables, 3 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+objc_x86_64_O0_stripped: 42 lines, 0 prelude lines, 1 variables, 2 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+objc_x86_64_O2: 36 lines, 0 prelude lines, 1 variables, 1 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+objc_x86_64_O2_stripped: 36 lines, 0 prelude lines, 1 variables, 1 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
 pe64.exe: 47 lines, 0 prelude lines, 2 variables, 8 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
 pe64.obj: 46 lines, 0 prelude lines, 2 variables, 8 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
 rust_demo: 59835 lines, 254 prelude lines, 6176 variables, 8723 casts, 12 registers, 0 unsigned, 30 traps, 1398 gotos, 130 indirect calls

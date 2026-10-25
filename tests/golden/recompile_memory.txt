@@ -1,10 +1,10 @@
 # functions left out:
-#   calls: 7738
+#   calls: 7750
 #   computes on floats or vectors: 102
-#   computes on registers alone: 1354
+#   computes on registers alone: 1394
 #   has an unsupported instruction: 4
 #   reads a register that is not a parameter: 122
-#   refers to data: 766
+#   refers to data: 768
 #   requires an external machine-state source: 4
 #   returns no integer: 141
 #   takes an argument that is no integer: 71
@@ -169,6 +169,14 @@
 # metrics/windows.win64.O0.stripped.dll: 7 functions, 3 qualify, 3 compile, 0 do not, 3 compared (36 runs), 0 differ
 # metrics/windows.win64.O2.debug.dll: 7 functions, 1 qualify, 1 compile, 0 do not, 1 compared (12 runs), 0 differ
 # metrics/windows.win64.O2.stripped.dll: 7 functions, 3 qualify, 3 compile, 0 do not, 3 compared (36 runs), 0 differ
+# objc_arm64_O0: 9 functions, 2 qualify, 2 compile, 0 do not, 2 compared (24 runs), 0 differ
+# objc_arm64_O0_stripped: 9 functions, 2 qualify, 2 compile, 0 do not, 2 compared (24 runs), 0 differ
+# objc_arm64_O2: 9 functions, 2 qualify, 2 compile, 0 do not, 2 compared (24 runs), 0 differ
+# objc_arm64_O2_stripped: 9 functions, 2 qualify, 2 compile, 0 do not, 2 compared (24 runs), 0 differ
+# objc_x86_64_O0: 9 functions, 2 qualify, 2 compile, 0 do not, 2 compared (24 runs), 0 differ
+# objc_x86_64_O0_stripped: 9 functions, 2 qualify, 2 compile, 0 do not, 2 compared (24 runs), 0 differ
+# objc_x86_64_O2: 8 functions, 2 qualify, 2 compile, 0 do not, 2 compared (24 runs), 0 differ
+# objc_x86_64_O2_stripped: 8 functions, 2 qualify, 2 compile, 0 do not, 2 compared (24 runs), 0 differ
 # pe64.exe: 10 functions, 1 qualify, 1 compile, 0 do not, 1 compared (12 runs), 0 differ
 # pe64.obj: 10 functions, 2 qualify, 2 compile, 0 do not, 1 compared (12 runs), 0 differ
 # rust_demo: 545 functions, 37 qualify, 37 compile, 0 do not, 19 compared (175 runs), 0 differ

@@ -746,7 +746,10 @@ fn render_with(
         .chain(symbols.reserved_names.iter().cloned())
         .chain(symbols.data.values().map(|name| sanitize(name)))
         .collect();
-    let call_outputs = calls::Outputs::new(ir, &machine, &mut call_reserved);
+    let mut call_outputs = calls::Outputs::new(ir, &machine, &mut call_reserved);
+    if !symbols.objc_selectors.is_empty() {
+        call_outputs.find_selector_slots(ir);
+    }
     if !call_outputs.temporary.is_empty() {
         reserved.push(call_outputs.temporary.clone());
     }

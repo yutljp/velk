@@ -131,6 +131,11 @@ pub fn callee_names(image: &crate::loader::Image) -> Symbols {
         })
         .collect();
     let mut symbols = Symbols {
+        objc_selectors: image
+            .objc_selectors
+            .iter()
+            .map(|(address, name)| (*address, name.clone()))
+            .collect(),
         target_format: (image.byte_order() == Some(object::Endianness::Little))
             .then_some(image.format),
         variadic_functions: crate::loader::dwarf::variadic::functions(image),

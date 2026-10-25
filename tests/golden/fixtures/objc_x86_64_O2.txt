@@ -1,0 +1,152 @@
+# objc_x86_64_O2: macho x86_64 0x1000008e0, 8 functions, 0 lift failures, 0 unsupported, 0 gotos
+0x100000860 16 -[Counter add:with:] symtab,function-starts,objc
+0x100000870 16 +[Counter answer] symtab,function-starts,objc
+0x100000880 16 -[Counter value] symtab,function-starts,objc
+0x100000890 16 -[Counter setValue:] symtab,function-starts,objc
+0x1000008a0 16 -[Counter(Extra) twice:] symtab,function-starts,objc
+0x1000008b0 32 _send_value symtab,dynamic,function-starts
+0x1000008d0 16 _use_block symtab,dynamic,function-starts
+0x1000008e0 8 _main symtab,dynamic,entry,function-starts
+
+== 0x100000860 -[Counter add:with:]
+-- decompile
+/* velk pseudo-C: -[Counter add:with:] @ 0x100000860 */
+int64_t _Counter_add_with__(int64_t a0, int64_t a1, int64_t a2, int64_t a3) {
+    return a2 + a3;
+}
+-- signature
+int64_t (int64_t a0, int64_t a1, int64_t a2, int64_t a3)
+-- references
+
+-- ir
+fn -[Counter add:with:] @ 0x100000860 (size 16)
+  blk0 @ 0x100000860:
+    ret (rdx + rcx)
+-- card
+{"addr":"0x100000860","approxTokens":126,"blocks":1,"hardReasons":[],"name":"-[Counter add:with:]","nameSources":["symtab","function-starts","objc"],"section":"__text","size":16,"unsupported":0}
+
+== 0x100000870 +[Counter answer]
+-- decompile
+/* velk pseudo-C: +[Counter answer] @ 0x100000870 */
+int32_t _Counter_answer_(void) {
+    return 42;
+}
+-- signature
+int32_t ()
+-- references
+
+-- ir
+fn +[Counter answer] @ 0x100000870 (size 16)
+  blk0 @ 0x100000870:
+    ret #0x2a
+-- card
+{"addr":"0x100000870","approxTokens":126,"blocks":1,"hardReasons":[],"name":"+[Counter answer]","nameSources":["symtab","function-starts","objc"],"section":"__text","size":16,"unsupported":0}
+
+== 0x100000880 -[Counter value]
+-- decompile
+/* velk pseudo-C: -[Counter value] @ 0x100000880 */
+int64_t _Counter_value_(uint64_t *a0) {
+    return *a0;
+}
+-- signature
+int64_t (uint64_t * a0)
+-- references
+
+-- ir
+fn -[Counter value] @ 0x100000880 (size 16)
+  blk0 @ 0x100000880:
+    ret load64(rdi)
+-- card
+{"accesses":["a0 +0x0:uint64_t"],"addr":"0x100000880","approxTokens":126,"blocks":1,"hardReasons":[],"name":"-[Counter value]","nameSources":["symtab","function-starts","objc"],"section":"__text","size":16,"unsupported":0}
+
+== 0x100000890 -[Counter setValue:]
+-- decompile
+/* velk pseudo-C: -[Counter setValue:] @ 0x100000890 */
+void _Counter_setValue__(uint64_t *a0, int64_t a1, int64_t a2) {
+    *a0 = a2;
+}
+-- signature
+void (uint64_t * a0, int64_t a1, int64_t a2)
+-- references
+
+-- ir
+fn -[Counter setValue:] @ 0x100000890 (size 16)
+  blk0 @ 0x100000890:
+    store64(rdx, rdi)
+    ret #0x0
+-- card
+{"accesses":["a0 +0x0:uint64_t"],"addr":"0x100000890","approxTokens":126,"blocks":1,"hardReasons":[],"name":"-[Counter setValue:]","nameSources":["symtab","function-starts","objc"],"section":"__text","size":16,"unsupported":0}
+
+== 0x1000008a0 -[Counter(Extra) twice:]
+-- decompile
+/* velk pseudo-C: -[Counter(Extra) twice:] @ 0x1000008a0 */
+int64_t _Counter_Extra__twice__(int64_t a0, int64_t a1, int64_t a2) {
+    return a2 * 2;
+}
+-- signature
+int64_t (int64_t a0, int64_t a1, int64_t a2)
+-- references
+
+-- ir
+fn -[Counter(Extra) twice:] @ 0x1000008a0 (size 16)
+  blk0 @ 0x1000008a0:
+    ret (rdx * #0x2)
+-- card
+{"addr":"0x1000008a0","aliases":["-[Counter twice:]"],"approxTokens":126,"blocks":1,"hardReasons":[],"name":"-[Counter(Extra) twice:]","nameSources":["symtab","function-starts","objc"],"section":"__text","size":16,"unsupported":0}
+
+== 0x1000008b0 _send_value
+-- decompile
+/* velk pseudo-C: _send_value @ 0x1000008b0 */
+/* ref: 0x100001020 __got */
+/* ref: 0x100002130 -> 0x100000982 "add:with:" */
+int32_t send_value(int64_t a0, int64_t a1, int64_t a2) {
+    uint64_t *const qword_100002130 = (uint64_t *)0x100002130ULL;
+
+    return objc_msgSend(a0, *qword_100002130 /* @selector(add:with:) */, a1, a2);
+}
+-- signature
+int32_t (int64_t a0, int64_t a1, int64_t a2)
+-- references
+0x100001020 __got
+0x100002130 -> 0x100000982 "add:with:"
+-- ir
+fn _send_value @ 0x1000008b0 (size 32)
+  blk0 @ 0x1000008b0:
+    v4:rax, rdx, xmm0, xmm1 = call *load64(#0x100001020)(rdi, load64(#0x100002130), rsi, rdx)
+    ret v4
+-- card
+{"addr":"0x1000008b0","approxTokens":144,"blocks":1,"hardReasons":[],"name":"_send_value","nameHints":["add_with"],"nameSources":["symtab","dynamic","function-starts"],"section":"__text","size":32,"strings":["add:with:"],"unsupported":0}
+
+== 0x1000008d0 _use_block
+-- decompile
+/* velk pseudo-C: _use_block @ 0x1000008d0 */
+int64_t use_block(int64_t a0) {
+    return a0 + 3;
+}
+-- signature
+int64_t (int64_t a0)
+-- references
+
+-- ir
+fn _use_block @ 0x1000008d0 (size 16)
+  blk0 @ 0x1000008d0:
+    ret (rdi + #0x3)
+-- card
+{"addr":"0x1000008d0","approxTokens":126,"blocks":1,"hardReasons":[],"name":"_use_block","nameSources":["symtab","dynamic","function-starts"],"section":"__text","size":16,"unsupported":0}
+
+== 0x1000008e0 _main
+-- decompile
+/* velk pseudo-C: _main @ 0x1000008e0 */
+int32_t main(void) {
+    return 0;
+}
+-- signature
+int32_t ()
+-- references
+
+-- ir
+fn _main @ 0x1000008e0 (size 8)
+  blk0 @ 0x1000008e0:
+    ret #0x0
+-- card
+{"addr":"0x1000008e0","approxTokens":126,"blocks":1,"hardReasons":[],"name":"_main","nameSources":["symtab","dynamic","entry","function-starts"],"section":"__text","size":8,"unsupported":0}

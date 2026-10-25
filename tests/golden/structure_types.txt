@@ -351,6 +351,14 @@ metrics/windows.win64.O0.debug.dll: 1
 metrics/windows.win64.O0.stripped.dll: 1
 metrics/windows.win64.O2.debug.dll: 1
 metrics/windows.win64.O2.stripped.dll: 1
+objc_arm64_O0: 0
+objc_arm64_O0_stripped: 0
+objc_arm64_O2: 0
+objc_arm64_O2_stripped: 0
+objc_x86_64_O0: 0
+objc_x86_64_O0_stripped: 0
+objc_x86_64_O2: 0
+objc_x86_64_O2_stripped: 0
 pe64.exe: 0
 pe64.obj: 0
 rust_demo: 438

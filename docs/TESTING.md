@@ -545,3 +545,25 @@ not executable fixtures. `tests/codeview.rs` compiles the printed C at O0/O2 and
 checks source results for fourteen functions, including structure values and
 pointer fields; the two functions that access globals are compiled separately. Loader unit tests cover truncated streams, cyclic types, invalid symbol
 records, fixed frame locations, and missing or mismatched sidecars.
+
+## Objective-C Mach-O metadata
+
+`sh tests/make_objc_fixtures.sh` uses clang and the macOS SDK to build
+`tests/objc_metadata.m` for arm64 and x86-64 at O0/O2, with stripped copies.
+O0 uses absolute method lists; O2 uses relative method lists. Category
+merging and selector-specific dispatch stubs are disabled so the fixtures
+retain category lists and calls through `objc_msgSend`. The source includes
+instance and class methods, a property, a category, a protocol, and a block.
+Compiler identification is recorded in `tests/fixtures/objc_toolchain.txt`.
+
+`tests/objc_metadata.rs` checks metadata-derived names and selector comments,
+compiles the printed message-send functions as C with an external dispatch
+declaration, and checks damaged metadata pointers. Loader unit tests cover
+absolute and relative list entries, direct relative selector names, oversized
+counts, invalid implementations, and invalid strings. Selector annotations
+are comments beside the original argument; they do not replace its value.
+Another loader test removes the function-start table and checks that method
+names do not suppress discovery of other functions.
+The loader reads plain 64-bit little-endian metadata pointers. Chained fixups,
+authenticated pointers, shared-cache selector tables, and categories whose
+class is supplied by another image are not decoded.
