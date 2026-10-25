@@ -36,6 +36,8 @@ static inline uint64_t greater_lanes32(uint64_t a, uint64_t b) {
     return out;
 }
 #endif
+
+struct velk_vector { union { uint64_t u64; int64_t i64; uint32_t u32; int32_t i32; uint16_t u16; int16_t i16; uint8_t u8; int8_t i8; float f32; double f64; } low, high; };
 /* end velk prelude */
 
 == 0x201220 matrix_trace
@@ -335,22 +337,18 @@ int skip_negatives(int *p, int n) {
         v2 = (uint32_t)n & 0x7ffffff8;
         int64_t v4 = (uint64_t)((n & 0xffffffff) >> 3) << 5;
         int64_t v6 = 0;
-        uint64_t v7 = 0;
-        uint64_t v8 = 0;
-        uint64_t v9 = 0;
-        uint64_t v10 = 0;
+        struct velk_vector vector = { .low.u64 = 0, .high.u64 = 0 };
+        struct velk_vector vector_2 = { .low.u64 = 0, .high.u64 = 0 };
         do {
-            uint64_t v11 = *(uint64_t *)((uint8_t *)p + v6);
-            uint64_t v12 = *(uint64_t *)((uint8_t *)p + v6 + 0x8);
-            uint64_t v13 = *(uint64_t *)((uint8_t *)p + v6 + 0x10);
-            uint64_t v14 = *(uint64_t *)((uint8_t *)p + v6 + 0x18);
-            v7 = add_lanes32(v7, greater_lanes32(v11, 0) & v11);
-            v8 = add_lanes32(v8, greater_lanes32(v12, 0) & v12);
-            v9 = add_lanes32(v9, greater_lanes32(v13, 0) & v13);
-            v10 = add_lanes32(v10, greater_lanes32(v14, 0) & v14);
+            struct velk_vector vector_3 = { .low.u64 = *(uint64_t *)((uint8_t *)p + v6), .high.u64 = *(uint64_t *)((uint8_t *)p + v6 + 0x8) };
+            struct velk_vector vector_4 = { .low.u64 = *(uint64_t *)((uint8_t *)p + v6 + 0x10), .high.u64 = *(uint64_t *)((uint8_t *)p + v6 + 0x18) };
+            vector.low.u64 = add_lanes32(vector.low.u64, greater_lanes32(vector_3.low.u64, 0) & vector_3.low.u64);
+            vector.high.u64 = add_lanes32(vector.high.u64, greater_lanes32(vector_3.high.u64, 0) & vector_3.high.u64);
+            vector_2.low.u64 = add_lanes32(vector_2.low.u64, greater_lanes32(vector_4.low.u64, 0) & vector_4.low.u64);
+            vector_2.high.u64 = add_lanes32(vector_2.high.u64, greater_lanes32(vector_4.high.u64, 0) & vector_4.high.u64);
             v6 += 32;
         } while (v4 != v6);
-        uint64_t v16 = add_lanes32(add_lanes32(v10, v8), add_lanes32(v9, v7));
+        uint64_t v16 = add_lanes32(add_lanes32(vector_2.high.u64, vector.high.u64), add_lanes32(vector_2.low.u64, vector.low.u64));
         v3 = add_lanes32(v16 >> 32 | v16 >> 32 << 32, v16);
         if (v2 == (uint32_t)n) {
             return v3;

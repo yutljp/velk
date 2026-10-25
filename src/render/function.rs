@@ -580,6 +580,12 @@ fn render_with(
         .collect::<HashMap<_, _>>();
     let go_groups =
         super::go_values::groups(ir, symbols, &mut variable_types, &mut machine_reserved);
+    let vector_groups = super::vector_values::groups(ir, &variable_types, &mut machine_reserved);
+    for group in &vector_groups {
+        for (index, name) in &group.fields {
+            names.insert(*index, name);
+        }
+    }
     for group in &go_groups {
         for (index, name, _) in &group.fields {
             names.insert(*index, name);
@@ -1147,6 +1153,9 @@ fn render_with(
             .filter(|local| local.size == 0 && local.fields.is_empty() && local.views.is_empty())
             .map(|local| local.name.clone()),
     );
+    if !vector_groups.is_empty() {
+        body = super::vector_values::whole_writes(&body, &vector_groups);
+    }
     let shared_call_values = ctx.call_outputs.shared_declaration(&mut body);
     let segment_bases: Vec<_> = segment_bases
         .iter()
@@ -1380,6 +1389,12 @@ fn render_with(
         declared += 1;
     }
     for (index, ty) in &variable_types {
+        if vector_groups
+            .iter()
+            .any(|group| group.fields.iter().any(|(field, _)| field == index))
+        {
+            continue;
+        }
         if go_groups
             .iter()
             .any(|group| group.fields.iter().any(|(field, _, _)| field == index))
@@ -1396,6 +1411,13 @@ fn render_with(
         indent(1, &mut out);
         out.push_str(&format!("{};\n", declaration(ty, &name)));
         declared += 1;
+    }
+    for group in &vector_groups {
+        if variables::mentions(&body, &group.name) {
+            indent(1, &mut out);
+            out.push_str(&format!("struct velk_vector {};\n", group.name));
+            declared += 1;
+        }
     }
     for local in &decls {
         if local.width == 0 || !body.contains(&local.name) {
@@ -1463,15 +1485,30 @@ fn render_with(
     if declared > 0 {
         out.push('\n');
     }
-    let candidates = variable_types.iter().filter_map(|(index, ty)| {
-        if matches!(ty, CType::Array(_)) {
-            return None;
-        }
-        let name = ctx.register(*index, 64);
-        Some((name.clone(), declaration(ty, &name)))
-    });
+    let candidates = variable_types
+        .iter()
+        .filter_map(|(index, ty)| {
+            if matches!(ty, CType::Array(_)) {
+                return None;
+            }
+            let name = ctx.register(*index, 64);
+            Some((name.clone(), declaration(ty, &name)))
+        })
+        .chain(vector_groups.iter().map(|group| {
+            (
+                group.name.clone(),
+                format!("struct velk_vector {}", group.name),
+            )
+        }));
     let mut declarations = out.split_off(declarations_at);
-    let initialized = super::initializers::fold(&mut declarations, &body, candidates, placement);
+    let mut initialized =
+        super::initializers::fold(&mut declarations, &body, candidates, placement);
+    for group in &vector_groups {
+        initialized = initialized.replace(
+            &format!("struct velk_vector {} = (struct velk_vector){{", group.name),
+            &format!("struct velk_vector {} = {{", group.name),
+        );
+    }
     if declarations.trim().is_empty() {
         declarations.clear();
     }
@@ -1487,6 +1524,15 @@ fn render_with(
     out.insert_str(definitions_at, &ctx.globals.object_declarations(&body));
     let debug = debug_definitions(ir, &out, &ctx.arrays, &symbols.user_definitions);
     out.insert_str(definitions_at, &debug);
+    if vector_groups
+        .iter()
+        .any(|group| variables::mentions(&body, &group.name))
+    {
+        out.insert_str(
+            0,
+            &super::prelude::section(super::vector_helpers::VALUE_DEFINITION),
+        );
+    }
     Rendered {
         code: super::prelude::combine(&if variadic.is_some() {
             format!("{}{out}", super::prelude::section("#include <stdarg.h>\n"))

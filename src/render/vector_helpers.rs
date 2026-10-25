@@ -4,6 +4,8 @@ use crate::ir::{Expr, FunctionIr, LaneOp, Operation};
 use std::collections::BTreeMap;
 mod aes;
 
+pub(super) const VALUE_DEFINITION: &str = "struct velk_vector { union { uint64_t u64; int64_t i64; uint32_t u32; int32_t i32; uint16_t u16; int16_t i16; uint8_t u8; int8_t i8; float f32; double f64; } low, high; };\n\n";
+
 pub(super) fn definitions(ir: &FunctionIr) -> String {
     fn collect(expr: &Expr, found: &mut BTreeMap<String, String>) {
         if let Expr::Apply { op, .. } = expr

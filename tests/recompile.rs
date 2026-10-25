@@ -91,6 +91,8 @@ mod syntax;
 mod type_library;
 #[path = "recompile/unsupported.rs"]
 mod unsupported;
+#[path = "recompile/vector_values.rs"]
+mod vector_values;
 #[path = "recompile/virtual_calls.rs"]
 mod virtual_calls;
 #[path = "recompile/x64_flags.rs"]

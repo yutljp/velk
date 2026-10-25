@@ -51,6 +51,8 @@ static inline uint64_t interleave_low32(uint64_t a, uint64_t b) {
 }
 #endif
 
+struct velk_vector { union { uint64_t u64; int64_t i64; uint32_t u32; int32_t i32; uint16_t u16; int16_t i16; uint8_t u8; int8_t i8; float f32; double f64; } low, high; };
+
 uint64_t *velk_return_address_slot(void); /* target frame's return-address slot */
 /* end velk prelude */
 
@@ -177,6 +179,8 @@ int32_t sub_180001090(int32_t a0) {
     uint64_t *const qword_180002038 = (uint64_t *)0x180002038ULL;
     uint32_t t1;
     uint32_t v52;
+    struct velk_vector vector_5;
+    struct velk_vector vector_7;
 
     int32_t v1 = 1;
     if (a0 < 2) {
@@ -187,46 +191,39 @@ int32_t sub_180001090(int32_t a0) {
         int32_t v3 = v2 & 0xfffffffffffffff8;
         uint64_t v4 = a0 & 0xffffffff;
         a0 -= v3;
-        uint64_t v6 = add_lanes32(v4 | v4 << 32, *qword_180002000);
-        uint64_t v8 = add_lanes32(v4 | v4 << 32, *qword_180002008);
-        uint64_t v11 = *qword_180002020;
-        uint64_t v12 = *qword_180002028;
-        uint64_t v13 = *qword_180002030;
-        uint64_t v14 = *qword_180002038;
+        struct velk_vector vector = { .low.u64 = add_lanes32(v4 | v4 << 32, *qword_180002000), .high.u64 = add_lanes32(v4 | v4 << 32, *qword_180002008) };
+        struct velk_vector vector_2 = { .low.u64 = *qword_180002020, .high.u64 = *qword_180002028 };
+        struct velk_vector vector_3 = { .low.u64 = *qword_180002030, .high.u64 = *qword_180002038 };
         int32_t v53 = v3;
-        uint64_t v9 = *qword_180002010;
-        uint64_t v16 = v9;
-        uint64_t v10 = *qword_180002018;
-        uint64_t v17 = v10;
+        vector_5.low.u64 = *qword_180002010;
+        vector_7.low.u64 = vector_5.low.u64;
+        vector_5.high.u64 = *qword_180002018;
+        vector_7.high.u64 = vector_5.high.u64;
         do {
-            uint64_t v18 = add_lanes32(v6, v11);
-            uint64_t v19 = add_lanes32(v8, v12);
-            uint32_t v20 = v6 * v9;
-            uint32_t v5 = v10 >> 32 | v10 >> 32 << 32;
-            uint64_t v24 = (v8 >> 32) * v5;
-            uint64_t v25 = ((v6 >> 32) * (v9 >> 32)) & 0xffffffff | v24 << 32;
-            uint64_t v26 = v20 | v8 * v10 << 32;
-            v9 = interleave_low32(v26, v25);
-            v10 = interleave_high32(v26, v25);
-            uint32_t v54 = v19 >> 32 | v19 >> 32 << 32;
-            t1 = v18 >> 32;
+            struct velk_vector vector_4 = { .low.u64 = add_lanes32(vector.low.u64, vector_2.low.u64), .high.u64 = add_lanes32(vector.high.u64, vector_2.high.u64) };
+            uint32_t v20 = vector.low.u64 * vector_5.low.u64;
+            uint32_t v5 = vector_5.high.u64 >> 32 | vector_5.high.u64 >> 32 << 32;
+            uint64_t v24 = (vector.high.u64 >> 32) * v5;
+            uint64_t v25 = ((vector.low.u64 >> 32) * (vector_5.low.u64 >> 32)) & 0xffffffff | v24 << 32;
+            uint64_t v26 = v20 | vector.high.u64 * vector_5.high.u64 << 32;
+            vector_5 = (struct velk_vector){ .low.u64 = interleave_low32(v26, v25), .high.u64 = interleave_high32(v26, v25) };
+            uint32_t v54 = vector_4.high.u64 >> 32 | vector_4.high.u64 >> 32 << 32;
+            t1 = vector_4.low.u64 >> 32;
             uint64_t v55 = t1 | (uint64_t)t1 << 32;
-            uint32_t v56 = v18 * v16;
-            uint64_t v57 = (v19 & 0xffffffff) * (v17 & 0xffffffff);
-            uint32_t v33 = v17 >> 32 | v17 >> 32 << 32;
-            t1 = v16 >> 32;
+            struct velk_vector vector_6 = { .low.u32 = vector_4.low.u64 * vector_7.low.u64, .high.u64 = (vector_4.high.u64 & 0xffffffff) * (vector_7.high.u64 & 0xffffffff) };
+            uint32_t v33 = vector_7.high.u64 >> 32 | vector_7.high.u64 >> 32 << 32;
+            t1 = vector_7.low.u64 >> 32;
             v55 = (t1 * v55) & 0xffffffff | (uint64_t)(v33 * v54) << 32;
-            uint64_t v36 = v56 | v57 << 32;
-            v16 = interleave_low32(v36, v55);
-            v17 = interleave_high32(v36, v55);
-            v6 = add_lanes32(v6, v13);
-            v8 = add_lanes32(v8, v14);
+            uint64_t v36 = vector_6.low.u32 | vector_6.high.u64 << 32;
+            vector_7 = (struct velk_vector){ .low.u64 = interleave_low32(v36, v55), .high.u64 = interleave_high32(v36, v55) };
+            vector.low.u64 = add_lanes32(vector.low.u64, vector_3.low.u64);
+            vector.high.u64 = add_lanes32(vector.high.u64, vector_3.high.u64);
             v53 = v53 - 8;
         } while (v53 != 0);
-        t1 = v16 >> 32;
-        uint64_t v58 = (v9 >> 32) * t1;
-        uint64_t v59 = (v10 >> 32) * (v17 >> 32);
-        v1 = v58 * v59 * (interleave_low32((v17 & 0xffffffff) * (v10 & 0xffffffff), v59) * interleave_low32((v16 & 0xffffffff) * (v9 & 0xffffffff), v58));
+        t1 = vector_7.low.u64 >> 32;
+        uint64_t v58 = (vector_5.low.u64 >> 32) * t1;
+        uint64_t v59 = (vector_5.high.u64 >> 32) * (vector_7.high.u64 >> 32);
+        v1 = v58 * v59 * (interleave_low32((vector_7.high.u64 & 0xffffffff) * (vector_5.high.u64 & 0xffffffff), v59) * interleave_low32((vector_7.low.u64 & 0xffffffff) * (vector_5.low.u64 & 0xffffffff), v58));
         if (v2 == v3) {
             return v1;
         }
@@ -429,24 +426,21 @@ int32_t sub_180001260(int32_t a0, int64_t a1, int64_t a2, int64_t a3) {
             uint8_t v30 = a0 & 0x3;
             v2 = (uint64_t)(uint32_t)a0 - (v30 != 0 ? v30 : 4);
             v29 = (uintptr_t)(v1 + v2);
-            uint64_t v9 = 0;
-            uint64_t v10 = 0;
+            struct velk_vector vector = { .low.u64 = 0, .high.u64 = 0 };
             int64_t v11 = v2;
-            uint64_t v12 = 0;
-            uint64_t v13 = 0;
+            struct velk_vector vector_2 = { .low.u64 = 0, .high.u64 = 0 };
             do {
                 uint64_t v14 = v1[1];
-                uint32_t v15 = v1[2];
-                uint64_t v16 = v1[3];
-                v12 = add_lanes32(v12, *v1 & 0xffffffff | v14 << 32);
-                v13 = add_lanes32(v13, v14);
-                v9 = add_lanes32(v9, v15 | v16 << 32);
-                v10 = add_lanes32(v10, v16);
+                struct velk_vector vector_3 = { .low.u32 = v1[2], .high.u64 = v1[3] };
+                vector_2.low.u64 = add_lanes32(vector_2.low.u64, *v1 & 0xffffffff | v14 << 32);
+                vector_2.high.u64 = add_lanes32(vector_2.high.u64, v14);
+                vector.low.u64 = add_lanes32(vector.low.u64, vector_3.low.u32 | vector_3.high.u64 << 32);
+                vector.high.u64 = add_lanes32(vector.high.u64, vector_3.high.u64);
                 v1 += 0x4;
                 v11 = v11 - 4;
             } while (v11 != 0);
             local_0 = (void *)v1;
-            uint64_t v31 = add_lanes32(v9, v12);
+            uint64_t v31 = add_lanes32(vector.low.u64, vector_2.low.u64);
             v5 = add_lanes32(v31 >> 32 | v31 >> 32 << 32, v31);
         } else {
             v5 = 0;

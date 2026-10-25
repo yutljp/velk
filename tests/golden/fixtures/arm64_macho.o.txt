@@ -29,6 +29,8 @@ static inline uint64_t sum_lanes32(uint64_t a, uint64_t b) {
     return out;
 }
 #endif
+
+struct velk_vector { union { uint64_t u64; int64_t i64; uint32_t u32; int32_t i32; uint16_t u16; int16_t i16; uint8_t u8; int8_t i8; float f32; double f64; } low, high; };
 /* end velk prelude */
 
 == 0x0 _sum3
@@ -121,23 +123,19 @@ int32_t sum_arr(uint32_t *a0, int32_t a1) {
         uint64_t v12 = 0;
         uint64_t v13 = 0;
         do {
-            uint64_t v14 = v4[-4];
-            uint64_t v15 = v4[-3];
-            uint64_t v16 = v4[-2];
-            uint64_t v17 = v4[-1];
-            uint64_t v18 = *v4;
-            uint64_t v19 = v4[1];
-            uint64_t v20 = v4[2];
-            uint64_t v21 = v4[3];
+            struct velk_vector vector = { .low.u64 = v4[-4], .high.u64 = v4[-3] };
+            struct velk_vector vector_2 = { .low.u64 = v4[-2], .high.u64 = v4[-1] };
+            struct velk_vector vector_3 = { .low.u64 = *v4, .high.u64 = v4[1] };
+            struct velk_vector vector_4 = { .low.u64 = v4[2], .high.u64 = v4[3] };
             v4 += 0x8;
-            v5 = add_lanes32(v14, v5);
-            v6 = add_lanes32(v15, v6);
-            v8 = add_lanes32(v16, v8);
-            v9 = add_lanes32(v17, v9);
-            v10 = add_lanes32(v18, v10);
-            v11 = add_lanes32(v19, v11);
-            v12 = add_lanes32(v20, v12);
-            v13 = add_lanes32(v21, v13);
+            v5 = add_lanes32(vector.low.u64, v5);
+            v6 = add_lanes32(vector.high.u64, v6);
+            v8 = add_lanes32(vector_2.low.u64, v8);
+            v9 = add_lanes32(vector_2.high.u64, v9);
+            v10 = add_lanes32(vector_3.low.u64, v10);
+            v11 = add_lanes32(vector_3.high.u64, v11);
+            v12 = add_lanes32(vector_4.low.u64, v12);
+            v13 = add_lanes32(vector_4.high.u64, v13);
             v7 -= 16;
         } while (v7 != 0);
         v3 = sum_lanes32(add_lanes32(v12, add_lanes32(v10, add_lanes32(v8, v5))), add_lanes32(v13, add_lanes32(v11, add_lanes32(v9, v6))));

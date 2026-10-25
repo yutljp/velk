@@ -31,6 +31,7 @@ pub(crate) mod unions;
 mod variables;
 mod variadic;
 mod vector_helpers;
+mod vector_values;
 mod virtual_calls;
 mod widths;
 

@@ -44,6 +44,8 @@ static inline uint64_t sum_lanes32(uint64_t a, uint64_t b) {
     return out;
 }
 #endif
+
+struct velk_vector { union { uint64_t u64; int64_t i64; uint32_t u32; int32_t i32; uint16_t u16; int16_t i16; uint8_t u8; int8_t i8; float f32; double f64; } low, high; };
 /* end velk prelude */
 
 == 0x2101d4 point_dot
@@ -85,16 +87,14 @@ int array_sum(int *a, int n) {
         v2 = (uint32_t)n & 0x7ffffff8;
         int64_t v9 = v2;
         do {
-            uint64_t v10 = v8[-2];
-            uint64_t v11 = v8[-1];
-            uint64_t v12 = *v8;
-            uint64_t v13 = v8[1];
+            struct velk_vector vector = { .low.u64 = v8[-2], .high.u64 = v8[-1] };
+            struct velk_vector vector_2 = { .low.u64 = *v8, .high.u64 = v8[1] };
             v9 -= 8;
             v8 += 0x4;
-            v4 = add_lanes32(v10, v4);
-            v5 = add_lanes32(v11, v5);
-            v6 = add_lanes32(v12, v6);
-            v7 = add_lanes32(v13, v7);
+            v4 = add_lanes32(vector.low.u64, v4);
+            v5 = add_lanes32(vector.high.u64, v5);
+            v6 = add_lanes32(vector_2.low.u64, v6);
+            v7 = add_lanes32(vector_2.high.u64, v7);
         } while (v9 != 0);
         v3 = sum_lanes32(add_lanes32(v6, v4), add_lanes32(v7, v5));
         if (v2 == (uint32_t)n) {
