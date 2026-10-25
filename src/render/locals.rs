@@ -1045,7 +1045,7 @@ fn indexed_start(
             || accesses.iter().any(|(at, _, width, _)| {
                 *at == Some(other)
                     && *width != 0
-                    && i64::from(*width) != element
+                    && i64::from(*width) > element
                     && !(matches!(width, 4 | 8 | 16) && i64::from(*width) % element == 0)
             });
         if foreign {
@@ -1114,7 +1114,7 @@ fn indexed_end(
             || accesses.iter().any(|(at, _, width, _)| {
                 *at == Some(other)
                     && *width != 0
-                    && i64::from(*width) != element
+                    && i64::from(*width) > element
                     && !(matches!(width, 4 | 8 | 16) && i64::from(*width) % element == 0)
             });
         if foreign {

@@ -20,7 +20,7 @@ pub(crate) fn ignored_by_callers(image: &Image, addr: u64) -> bool {
     let Some(blocks) = body(image, addr) else {
         return false;
     };
-    if blocks.iter().any(returns_value) || callers(image, addr).is_empty() {
+    if returns_value(&blocks) || callers(image, addr).is_empty() {
         return false;
     }
     !reads(image, addr, &mut HashSet::new()).0
@@ -244,7 +244,7 @@ fn reads(image: &Image, addr: u64, active: &mut HashSet<u64>) -> (bool, bool) {
         // returns a value: an explicit assignment, one its own callers read,
         // or, without callers, any value its body leaves in the register.
         if returned {
-            let returns_value = if blocks.iter().any(returns_value) {
+            let returns_value = if returns_value(&blocks) {
                 true
             } else if callers(image, caller).is_empty() {
                 writes_result(&blocks)
@@ -346,20 +346,46 @@ fn writes_result(blocks: &[Block]) -> bool {
     })
 }
 
-/// Whether the block returns a constant or assigns a value used only by its
+/// Whether a path returns a constant or assigns a value used only by its
 /// return. Known callers may discard a result even though others can use it.
-fn returns_value(block: &Block) -> bool {
-    if !matches!(block.stmts.last(), Some(Stmt::Ret { .. })) {
-        return false;
-    }
-    let mut used = false;
-    for stmt in block.stmts.iter().rev().skip(1) {
-        let (written, read) = crate::ir::visit::statement_registers(stmt);
-        if written.contains(&RETURN) {
-            return matches!(stmt, Stmt::Assign { value, .. }
-                if !used || matches!(value, Expr::Const(_)));
+fn returns_value(blocks: &[Block]) -> bool {
+    let mut predecessors = vec![Vec::new(); blocks.len()];
+    let mut pending = Vec::new();
+    for (index, block) in blocks.iter().enumerate() {
+        if matches!(block.stmts.last(), Some(Stmt::Ret { .. })) {
+            pending.push((index, false));
         }
-        used |= read.contains(&RETURN);
+        for next in crate::ir::cfg::block_successors(blocks, index) {
+            predecessors[next].push(index);
+        }
+    }
+    let mut seen = HashSet::new();
+    while let Some((index, mut used)) = pending.pop() {
+        if !seen.insert((index, used)) {
+            continue;
+        }
+        let mut defined = false;
+        for stmt in blocks[index].stmts.iter().rev() {
+            if matches!(stmt, Stmt::Ret { .. }) {
+                continue;
+            }
+            let (written, read) = crate::ir::visit::statement_registers(stmt);
+            if written.contains(&RETURN) {
+                if matches!(stmt, Stmt::Assign { value, .. }
+                    if !used || matches!(value, Expr::Const(_)))
+                {
+                    return true;
+                }
+                defined = true;
+                break;
+            }
+            used |= read.contains(&RETURN);
+        }
+        if !defined {
+            for previous in &predecessors[index] {
+                pending.push((*previous, used));
+            }
+        }
     }
     false
 }
@@ -485,7 +511,7 @@ mod tests {
             value: Expr::reg(crate::arch::RETURN, 64),
             width: 8,
         };
-        let block = |stmts| Block { start: 0, stmts };
+        let block = |stmts| [Block { start: 0, stmts }];
         assert!(super::returns_value(&block(vec![
             result.clone(),
             ret.clone()

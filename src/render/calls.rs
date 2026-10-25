@@ -620,7 +620,18 @@ pub(super) fn captured(call: &Stmt, ctx: &Ctx<'_>) -> Option<String> {
             super::type_of((declared.bits / 8) as u8, declared.signed)
         ));
     }
-    Some(assigned_value(output, value, &ty, ctx))
+    let value = assigned_value(output, value, &ty, ctx);
+    // Substitution must keep the integer promotion supplied by the temporary.
+    if let Some(declared) = ctx.declared.get(&dest.index)
+        && declared.integer
+        && declared.bits == 64
+        && return_type(call, ctx)
+            .and_then(crate::ir::CType::integer)
+            .is_none_or(|(bits, signed)| bits != declared.bits || signed != declared.signed)
+    {
+        return Some(format!("({})({value})", super::type_of(8, declared.signed)));
+    }
+    Some(value)
 }
 
 pub(super) fn returned(call: &Stmt, value: &Expr, ctx: &Ctx<'_>) -> Option<String> {
@@ -1306,7 +1317,10 @@ mod tests {
     #[test]
     fn a_result_read_once_reads_as_the_call() {
         let text = rendered(Expr::Const(1));
-        assert!(text.contains("sub_2000(sub_1000(a0), 1);"), "{text}");
+        assert!(
+            text.contains("sub_2000(((int64_t)(sub_1000(a0))), 1);"),
+            "{text}"
+        );
         assert!(!text.contains("v1"), "{text}");
     }
 

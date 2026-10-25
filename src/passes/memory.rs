@@ -484,6 +484,7 @@ fn fuse_block(
                 index,
                 dest,
                 &address,
+                &update,
                 live_out,
                 crosses_atomic(&update, sp, private_frame),
             )
@@ -503,6 +504,12 @@ fn fuse_block(
         // must be the update that rewrites it.
         let mut op_at = None;
         let mut clean = true;
+        let mut sources = std::collections::HashSet::new();
+        crate::ir::visit::collect_reads(&load, &mut sources);
+        if sources.contains(&dest) {
+            index += 1;
+            continue;
+        }
         for probe in index + 1..block.stmts.len().min(index + 8) {
             if block.stmts[probe].has_deferred_call_memory()
                 || atomic(&block.stmts[probe])
@@ -517,7 +524,7 @@ fn fuse_block(
                 op_at = Some(probe);
                 break;
             }
-            if reads.contains(&dest) {
+            if reads.contains(&dest) || fusion_barrier(&block.stmts[probe], &sources) {
                 clean = false;
                 break;
             }
@@ -530,10 +537,30 @@ fn fuse_block(
             index += 1;
             continue;
         }
-        let Some((op, rhs)) = update_of(&block.stmts[op_at], dest) else {
+        let Some((_, rhs)) = update_of(&block.stmts[op_at], dest) else {
             index += 1;
             continue;
         };
+        let Stmt::Assign {
+            dest: written,
+            value,
+        } = &block.stmts[op_at]
+        else {
+            index += 1;
+            continue;
+        };
+        let mut update = super::copies::truncated(value, written.width);
+        let mut valid = true;
+        super::copies::substitute_reg_inner(&mut update, dest, 64, &load, &mut valid);
+        if !valid {
+            index += 1;
+            continue;
+        }
+        crate::ir::visit::collect_reads(&rhs, &mut sources);
+        if sources.contains(&dest) {
+            index += 1;
+            continue;
+        }
         // Then the temporary must be stored back to the same address.
         let mut store_at = None;
         let mut blocked = false;
@@ -555,7 +582,10 @@ fn fuse_block(
                 store_at = Some(probe);
                 break;
             }
-            if reads.contains(&dest) || writes.contains(&dest) {
+            if reads.contains(&dest)
+                || writes.contains(&dest)
+                || fusion_barrier(&block.stmts[probe], &sources)
+            {
                 blocked = true;
                 break;
             }
@@ -574,7 +604,7 @@ fn fuse_block(
             continue;
         }
         if let Stmt::Store { addr, value, .. } = &mut block.stmts[store_at] {
-            *value = Expr::bin(op, load.clone(), rhs);
+            *value = update;
             let _ = addr;
         }
         fused.push(index);
@@ -602,7 +632,11 @@ fn temporary_load(stmt: &Stmt) -> Option<(u16, Expr, Expr)> {
     let Expr::Load { addr, .. } = inner else {
         return None;
     };
-    Some((dest.index, addr.as_ref().clone(), inner.clone()))
+    Some((
+        dest.index,
+        addr.as_ref().clone(),
+        super::copies::truncated(value, dest.width),
+    ))
 }
 
 /// `t = op(t, rhs)` as the operator and its other operand.
@@ -635,7 +669,7 @@ fn inline_update(stmt: &Stmt) -> Option<(u16, Expr, Expr)> {
     let Stmt::Assign { dest, value } = stmt else {
         return None;
     };
-    let Expr::Bin { op, lhs, rhs } = strip_mask(value) else {
+    let Expr::Bin { lhs, .. } = strip_mask(value) else {
         return None;
     };
     let read = strip_mask(lhs);
@@ -646,7 +680,7 @@ fn inline_update(stmt: &Stmt) -> Option<(u16, Expr, Expr)> {
     Some((
         dest.index,
         addr.as_ref().clone(),
-        Expr::bin(*op, read.clone(), rhs.as_ref().clone()),
+        super::copies::truncated(value, dest.width),
     ))
 }
 
@@ -657,10 +691,16 @@ fn store_back(
     index: usize,
     dest: u16,
     address: &Expr,
+    update: &Expr,
     live_out: &std::collections::HashSet<u16>,
     crosses: bool,
 ) -> Option<usize> {
     let mut store_at = None;
+    let mut sources = std::collections::HashSet::new();
+    crate::ir::visit::collect_reads(update, &mut sources);
+    if sources.contains(&dest) {
+        return None;
+    }
     for (probe, stmt) in stmts.iter().enumerate().take(index + 8).skip(index + 1) {
         if stmt.has_deferred_call_memory()
             || atomic(stmt) && (!crosses || !statement_registers(stmt).0.is_empty())
@@ -675,7 +715,7 @@ fn store_back(
             store_at = Some(probe);
             break;
         }
-        if reads.contains(&dest) || writes.contains(&dest) {
+        if reads.contains(&dest) || writes.contains(&dest) || fusion_barrier(stmt, &sources) {
             return None;
         }
     }
@@ -683,6 +723,16 @@ fn store_back(
         return None;
     };
     (!read_later(stmts, store_at + 1, dest, live_out)).then_some(store_at)
+}
+
+fn fusion_barrier(stmt: &Stmt, sources: &std::collections::HashSet<u16>) -> bool {
+    if !statement_registers(stmt).0.is_disjoint(sources) {
+        return true;
+    }
+    match stmt {
+        Stmt::Assign { value, .. } => super::copies::reads_memory(value),
+        _ => !atomic(stmt),
+    }
 }
 
 fn store_pair(stmt: &Stmt) -> Option<(&Expr, &Expr)> {

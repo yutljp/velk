@@ -1460,8 +1460,8 @@ int64_t main_main(void) {
     local_2.f_0 = 1;
     local_2.f_8 = 2;
     local_2.f_10 = 3;
-    local_3 = main_sumSlice(&local_2.f_0, 3);
-    local_2.f_18 = main_add(1, 2);
+    local_3 = ((int64_t)(main_sumSlice(&local_2.f_0, 3)));
+    local_2.f_18 = ((int64_t)(main_add(1, 2)));
     runtime_printlock();
     runtime_printint(local_3);
     runtime_printsp();
@@ -1472,7 +1472,7 @@ int64_t main_main(void) {
     runtime_printint(local_1);
     runtime_printnl();
     runtime_printunlock();
-    local_3 = main_kindName(0x46d400, 0x4967e8);
+    local_3 = ((int64_t)(main_kindName(0x46d400, 0x4967e8)));
     runtime_printlock();
     runtime_printint(local_3);
     runtime_printnl();

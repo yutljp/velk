@@ -1449,7 +1449,7 @@ int64_t main_main(int64_t a0, int64_t a1, int64_t a2) {
     local_3.f_0 = 1;
     local_3.f_8 = 2;
     local_3.f_10 = 3;
-    local_4 = main_sumSlice(&local_3.f_0, 3);
+    local_4 = ((int64_t)(main_sumSlice(&local_3.f_0, 3)));
     int64_t v30 = main_add(1, 2);
     local_3.f_18 = v30;
     runtime_printlock(v30, 2, 0 /* undefined */);

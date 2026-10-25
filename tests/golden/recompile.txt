@@ -4,11 +4,11 @@
 #   computes on floats or vectors: 1
 #   has an unsupported instruction: 106
 #   reads a register that is not a parameter: 5
-#   refers to data: 348
+#   refers to data: 350
 #   requires an external machine-state source: 2
 #   returns no integer: 290
-#   returns nothing: 653
-#   takes an argument that is no integer: 920
+#   returns nothing: 637
+#   takes an argument that is no integer: 934
 #   takes arguments on the stack: 81
 # runs left out:
 #   step limit: 47

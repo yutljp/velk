@@ -63,6 +63,8 @@ mod identical_exits;
 mod ignored_result;
 #[path = "recompile/initializers.rs"]
 mod initializers;
+#[path = "recompile/integer_storage.rs"]
+mod integer_storage;
 #[path = "recompile/local_expressions.rs"]
 mod local_expressions;
 #[path = "recompile/long_branches.rs"]

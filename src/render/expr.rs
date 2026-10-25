@@ -506,6 +506,32 @@ fn unfitted(value: &Expr, ctx: &Ctx<'_>, bits: u32, usage: ConstantUse) -> Print
     match value {
         Expr::Apply { op, args } => operation(*op, args, value, ctx),
         Expr::Reg { index, width } => register(*index, *width, ctx),
+        // An address page may start in code even when it addresses data
+        // later in the page. Express the base through that data object.
+        Expr::Const(page)
+            if ctx.isa == Isa::AArch64
+                && *page >= 0x1000
+                && page.is_multiple_of(0x1000)
+                && let Some(start) = ctx
+                    .data_ranges
+                    .iter()
+                    .map(|(start, _)| *start)
+                    .filter(|start| {
+                        start
+                            .checked_sub(*page)
+                            .is_some_and(|offset| offset < 0x1000)
+                    })
+                    .min()
+                && start > *page =>
+        {
+            let pointer = ctx.globals.pointer(start, View::Unsigned(1));
+            Printed::new(
+                format!("(uintptr_t){pointer} - 0x{:x}", start - page),
+                Int::U64,
+                ALL,
+                10,
+            )
+        }
         // An address in the image's data stays in hexadecimal, however
         // round it is in decimal: it names a place, not a number. Below a
         // page, as in an object file whose sections start at zero, a
