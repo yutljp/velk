@@ -111,7 +111,7 @@ int32_t seh_finally(int32_t a0) {
     result = a0;
     local_2 = ((int32_t)(imported_value(a0 & 0xffffffff)));
     result = local_2;
-    sub_180001100(0, local_3);
+    sub_180001100(0 /* undefined */, local_3);
     return result;
 }
 -- signature
@@ -128,7 +128,7 @@ fn seh_finally @ 0x1800010a0 (size 64)
     br 0x1800010c5
   blk1 @ 0x1800010c5:
     store32(load32((rsp + #0xffffffffffffffec)), (rsp + #0xfffffffffffffff0))
-    rax = call 0x180001100(#0x0, (rsp + #0xfffffffffffffff8))
+    rax = call 0x180001100(undefined(), (rsp + #0xfffffffffffffff8))
     ret load32((rsp + #0xfffffffffffffff0))
 -- card
 {"addr":"0x1800010a0","approxTokens":168,"blocks":2,"hardReasons":[],"name":"seh_finally","nameSources":["dynamic","unwind"],"section":".text","size":64,"unsupported":0}
@@ -187,13 +187,11 @@ int32_t seh_nested(int32_t a0) {
     uint32_t local_0; /* [sp-10] */
     uint32_t local_1; /* [sp-1c] */
     uint32_t local_2; /* [sp-c] */
-    uint32_t local_3; /* [sp-18] */
     _Alignas(16) uint8_t local_4[0x8]; /* [sp-8] */
 
     local_0 = a0;
     local_1 = ((int32_t)(imported_value(a0 & 0xffffffff)));
     local_2 = local_1;
-    local_3 = 1;
     sub_1800011c0(1, local_4);
     return local_2;
 L_180001171:

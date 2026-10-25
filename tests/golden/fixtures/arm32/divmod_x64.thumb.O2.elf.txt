@@ -454,8 +454,10 @@ int32_t lmod10x(void) {
         v1 = (uint32_t)(call_values[0]);
         v2 = (uint32_t)(call_values[1]);
     }
+    uint32_t v4 = 0 /* undefined */;
+    uint32_t v5 = 0 /* undefined */;
     int32_t v6 = v3;
-    return 0;
+    return v4;
 }
 -- signature
 int32_t ()
@@ -469,10 +471,10 @@ fn lmod10x @ 0x202a0 (size 16)
     v2 = #0x0
     v3 = #0x202ab
     r0, r1 = call 0x202aa(r0, r1, #0xa, #0x0)
-    v4 = #0x0
-    v5 = #0x0
+    v4 = undefined()
+    v5 = undefined()
     v6 = r7
-    ret #0x0
+    ret v4
 -- card
 {"addr":"0x202a0","approxTokens":138,"blocks":1,"hardReasons":[],"name":"lmod10x","nameSources":["symtab","dwarf"],"section":".text","size":16,"unsupported":1}
 

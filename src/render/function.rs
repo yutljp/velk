@@ -1140,6 +1140,13 @@ fn render_with(
     }
     ctx.read_once = calls::read_once(&nodes);
     render_nodes(&nodes, 1, &mut body, &ctx);
+    super::initializers::drop_unused_constants(
+        &mut body,
+        decls
+            .iter()
+            .filter(|local| local.size == 0 && local.fields.is_empty() && local.views.is_empty())
+            .map(|local| local.name.clone()),
+    );
     let shared_call_values = ctx.call_outputs.shared_declaration(&mut body);
     let segment_bases: Vec<_> = segment_bases
         .iter()

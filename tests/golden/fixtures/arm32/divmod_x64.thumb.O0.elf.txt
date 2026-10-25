@@ -451,8 +451,10 @@ int32_t lmod10x(int32_t a0, int32_t a1) {
         a0 = (uint32_t)(call_values[0]);
         a1 = (uint32_t)(call_values[1]);
     }
+    uint32_t v6 = 0 /* undefined */;
+    uint32_t v7 = 0 /* undefined */;
     int32_t v8 = v3;
-    return 0;
+    return v6;
 }
 -- signature
 int32_t (int32_t a0, int32_t a1)
@@ -468,10 +470,10 @@ fn lmod10x @ 0x20324 (size 28)
     v4 = #0x0
     v5 = #0x20339
     r0, r1 = call 0x20338(v1, v2, #0xa, #0x0)
-    v6 = #0x0
-    v7 = #0x0
+    v6 = undefined()
+    v7 = undefined()
     v8 = r7
-    ret #0x0
+    ret v6
 -- card
 {"addr":"0x20324","approxTokens":174,"blocks":1,"hardReasons":[],"name":"lmod10x","nameSources":["symtab","dwarf"],"section":".text","size":28,"unsupported":1}
 

@@ -320,11 +320,9 @@ int32_t sub_1290(struct S1 *a0, int a1, int a2) {
     uint64_t *const stderr = (uint64_t *)0x4020ULL;
     int64_t local_0; /* [sp-78] */
     _Alignas(16) uint8_t local_1[0x50]; /* [sp-68] */
-    int64_t local_2; /* [sp-70] */
 
     if (a1 <= 0) {
         void *v2 = (void *)(local_1);
-        local_2 = 0;
         local_0 = a1;
         __snprintf_chk((char *)(local_1), 64, 2, 64, (const char *)"missing key %d among %d", a2 & 0xffffffff, a1);
         fputs((const char *)(local_1), (FILE *)*stderr);

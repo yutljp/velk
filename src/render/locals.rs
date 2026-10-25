@@ -258,6 +258,7 @@ pub(super) fn stack_locals_with_roles(
     }
     debug::extend(ir, &mut slot_names);
     let extents = buffer_extents(ir, sp, symbols, &accesses);
+    let indexed_extents = indexed::extents(ir, sp);
     let buffers: std::collections::HashSet<i64> = accesses
         .iter()
         .filter(|(_, _, width, _)| *width == 0)
@@ -316,6 +317,7 @@ pub(super) fn stack_locals_with_roles(
             .map(|(_, end)| *end)
             .max();
         let end = proven.unwrap_or(next);
+        let end = end.max(indexed_extents.get(slot).copied().unwrap_or(end));
         if let Some(size) = end.checked_sub(*slot)
             && size >= i64::from(slot_names[slot].width)
             && (size > 8 || *signed == Some(false) || proven.is_some())

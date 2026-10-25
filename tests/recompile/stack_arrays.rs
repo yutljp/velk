@@ -945,3 +945,56 @@ fn printed_stack_pointer_loops_share_backward_indexed_storage() {
     let code = velk::render::render(&ir, &[], &Default::default(), &[]);
     syntax::run_printed(&code, "", "if(stack_backward_rows()!=3*0x1234) return 1;");
 }
+
+#[test]
+fn bounded_indices_share_storage_with_mixed_width_stack_slots() {
+    let scratch = scratch_dir("bounded-stack-slots");
+    let assembly = scratch.join("bounded.s");
+    let object = scratch.join("bounded.o");
+    std::fs::write(
+        &assembly,
+        ".text
+.globl bounded_slots
+.type bounded_slots,@function
+bounded_slots:
+subq $64, %rsp
+movl $9, 8(%rsp)
+movq $3, 16(%rsp)
+movq $0, 24(%rsp)
+movq $0, 32(%rsp)
+movl $7, %ecx
+1:
+movl %edi, 8(%rsp,%rcx,4)
+decq %rcx
+cmpq $5, %rcx
+jne 1b
+movzwl 16(%rsp), %eax
+addl 32(%rsp), %eax
+addl 36(%rsp), %eax
+addq $64, %rsp
+ret
+.size bounded_slots, .-bounded_slots
+",
+    )
+    .unwrap();
+    let compiled = Command::new(compiler())
+        .args(["--target=x86_64-unknown-linux-gnu", "-c"])
+        .arg(&assembly)
+        .arg("-o")
+        .arg(&object)
+        .output()
+        .unwrap();
+    assert!(compiled.status.success(), "{compiled:?}");
+    let mut binary = Binary::open(&object).unwrap();
+    let address = binary.find("bounded_slots").unwrap().addr;
+    let code = binary.decompile(address, None, None).unwrap();
+    assert!(!code.contains("uint8_t local_0[0x8]"), "{code}");
+    syntax::run_printed(
+        &code,
+        "",
+        "for (uint32_t x = 0; x < 50; ++x) {
+        if ((uint32_t)bounded_slots(x * 0x87654321U) != 3 + 2 * (x * 0x87654321U)) __builtin_trap();
+    }",
+    );
+    std::fs::remove_dir_all(scratch).ok();
+}

@@ -11,10 +11,8 @@
 /* velk pseudo-C: cpp_catch @ 0x180001000 */
 /* ref: 0x1800020a8 .rdata */
 int32_t cpp_catch(void) {
-    int64_t local_0; /* [sp-10] */
     uint32_t local_1; /* [sp-14] */
 
-    local_0 = -2;
     int32_t v1 = _imported_value__YAHH_Z();
     local_1 = v1;
     return v1;

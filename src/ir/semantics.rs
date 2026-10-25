@@ -142,7 +142,7 @@ pub(crate) fn evaluate(expr: &Expr, register: &dyn Fn(u16) -> Option<u64>) -> Op
                 .iter()
                 .map(|arg| evaluate(arg, register))
                 .collect::<Option<Vec<u64>>>()?;
-            apply(*op, &values)
+            return fold(*op, &values);
         }
         Expr::Bin { op, lhs, rhs } => {
             let (a, b) = (evaluate(lhs, register)?, evaluate(rhs, register)?);
@@ -699,6 +699,14 @@ fn aes_round(round: crate::ir::AesRound, state: u128) -> u128 {
 mod tests {
     use super::{apply, fold};
     use crate::ir::{AesRound, BinOp, Expr, FunctionIr, Operation, Stmt};
+
+    #[test]
+    fn undefined_values_are_not_evaluated_as_constants() {
+        let value = Expr::apply(Operation::Undefined, Vec::new());
+        assert_eq!(super::evaluate(&value, &|_| None), None);
+        let sum = Expr::bin(BinOp::Add, value, Expr::Const(0x44c));
+        assert_eq!(super::evaluate(&sum, &|_| None), None);
+    }
 
     #[test]
     fn result_groups_keep_every_value_when_their_children_fold() {

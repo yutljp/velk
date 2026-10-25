@@ -1452,40 +1452,40 @@ int64_t main_main(int64_t a0, int64_t a1, int64_t a2) {
     local_4 = main_sumSlice(&local_3.f_0, 3);
     int64_t v30 = main_add(1, 2);
     local_3.f_18 = v30;
-    runtime_printlock(v30, 2, 0);
+    runtime_printlock(v30, 2, 0 /* undefined */);
     int64_t v31 = v9; /* also returned by the call */
-    runtime_printint(local_4, v31, 0);
+    runtime_printint(local_4, v31, 0 /* undefined */);
     int64_t v32 = 0 /* undefined */;
     int64_t v33 = 0 /* undefined */;
-    runtime_printsp(v32, v33, 0);
+    runtime_printsp(v32, v33, 0 /* undefined */);
     int64_t v34 = v9; /* also returned by the call */
-    runtime_printint(local_3.f_18, v34, 0);
+    runtime_printint(local_3.f_18, v34, 0 /* undefined */);
     int64_t v35 = 0 /* undefined */;
     int64_t v36 = 0 /* undefined */;
-    runtime_printsp(v35, v36, 0);
+    runtime_printsp(v35, v36, 0 /* undefined */);
     int64_t v37 = v9; /* also returned by the call */
-    runtime_printint(local_1, v37, 0);
+    runtime_printint(local_1, v37, 0 /* undefined */);
     int64_t v38 = 0 /* undefined */;
     int64_t v39 = 0 /* undefined */;
-    runtime_printsp(v38, v39, 0);
+    runtime_printsp(v38, v39, 0 /* undefined */);
     int64_t v40 = v9; /* also returned by the call */
-    runtime_printint(local_2, v40, 0);
+    runtime_printint(local_2, v40, 0 /* undefined */);
     int64_t v41 = 0 /* undefined */;
     int64_t v42 = 0 /* undefined */;
-    int64_t v43 = runtime_printnl(v41, v42, 0);
+    int64_t v43 = runtime_printnl(v41, v42, 0 /* undefined */);
     int64_t v44 = v9; /* also returned by the call */
-    runtime_printunlock(v43, v44, 0);
+    runtime_printunlock(v43, v44, 0 /* undefined */);
     int64_t v45 = main_kindName(0x85420, 0xaf010);
     int64_t v46 = v9; /* also returned by the call */
     local_4 = v45;
-    runtime_printlock(v45, v46, 0);
+    runtime_printlock(v45, v46, 0 /* undefined */);
     int64_t v47 = v9; /* also returned by the call */
-    runtime_printint(local_4, v47, 0);
+    runtime_printint(local_4, v47, 0 /* undefined */);
     int64_t v48 = 0 /* undefined */;
     int64_t v49 = 0 /* undefined */;
-    int64_t v50 = runtime_printnl(v48, v49, 0);
+    int64_t v50 = runtime_printnl(v48, v49, 0 /* undefined */);
     int64_t v51 = v9; /* also returned by the call */
-    return runtime_printunlock(v50, v51, 0);
+    return runtime_printunlock(v50, v51, 0 /* undefined */);
 }
 -- signature
 int64_t (int64_t a0, int64_t a1, int64_t a2)
@@ -1509,22 +1509,22 @@ fn main.main @ 0x77530 (size 240)
     store64(v2, (sp + #0xffffffffffffffd0))
     v2:x0 = call 0x77420(#0x1, #0x2)
     store64(v2, (sp + #0xfffffffffffffff0))
-    x0, v3:x1, d0, d1 = call 0x40340(v2, #0x2, #0x0)
-    v2:x0, v3:x1, d0, d1 = call 0x409d0(load64((sp + #0xffffffffffffffd0)), v3, #0x0)
-    x0, v3:x1, d0, d1 = call 0x40530(v2, v3, #0x0)
-    v2:x0, v3:x1, d0, d1 = call 0x409d0(load64((sp + #0xfffffffffffffff0)), v3, #0x0)
-    x0, v3:x1, d0, d1 = call 0x40530(v2, v3, #0x0)
-    v2:x0, v3:x1, d0, d1 = call 0x409d0(load64((sp + #0xffffffffffffffc8)), v3, #0x0)
-    x0, v3:x1, d0, d1 = call 0x40530(v2, v3, #0x0)
-    v2:x0, v3:x1, d0, d1 = call 0x409d0(load64((sp + #0xffffffffffffffc0)), v3, #0x0)
-    v2:x0, v3:x1, d0, d1 = call 0x40570(v2, v3, #0x0)
-    x0, x1, d0, d1 = call 0x403c0(v2, v3, #0x0)
+    x0, v3:x1, d0, d1 = call 0x40340(v2, #0x2, undefined())
+    v2:x0, v3:x1, d0, d1 = call 0x409d0(load64((sp + #0xffffffffffffffd0)), v3, undefined())
+    x0, v3:x1, d0, d1 = call 0x40530(v2, v3, undefined())
+    v2:x0, v3:x1, d0, d1 = call 0x409d0(load64((sp + #0xfffffffffffffff0)), v3, undefined())
+    x0, v3:x1, d0, d1 = call 0x40530(v2, v3, undefined())
+    v2:x0, v3:x1, d0, d1 = call 0x409d0(load64((sp + #0xffffffffffffffc8)), v3, undefined())
+    x0, v3:x1, d0, d1 = call 0x40530(v2, v3, undefined())
+    v2:x0, v3:x1, d0, d1 = call 0x409d0(load64((sp + #0xffffffffffffffc0)), v3, undefined())
+    v2:x0, v3:x1, d0, d1 = call 0x40570(v2, v3, undefined())
+    x0, x1, d0, d1 = call 0x403c0(v2, v3, undefined())
     v2:x0, v3:x1 = call 0x774c0(#0x85420, #0xaf010)
     store64(v2, (sp + #0xffffffffffffffd0))
-    x0, v3:x1, d0, d1 = call 0x40340(v2, v3, #0x0)
-    v2:x0, v3:x1, d0, d1 = call 0x409d0(load64((sp + #0xffffffffffffffd0)), v3, #0x0)
-    v2:x0, v3:x1, d0, d1 = call 0x40570(v2, v3, #0x0)
-    v2:x0, x1, d0, d1 = call 0x403c0(v2, v3, #0x0)
+    x0, v3:x1, d0, d1 = call 0x40340(v2, v3, undefined())
+    v2:x0, v3:x1, d0, d1 = call 0x409d0(load64((sp + #0xffffffffffffffd0)), v3, undefined())
+    v2:x0, v3:x1, d0, d1 = call 0x40570(v2, v3, undefined())
+    v2:x0, x1, d0, d1 = call 0x403c0(v2, v3, undefined())
     ret v2
 -- card
 {"addr":"0x77530","approxTokens":240,"blocks":2,"hardReasons":[],"name":"main.main","nameSources":["pclntab"],"section":".text","size":240,"unsupported":0}

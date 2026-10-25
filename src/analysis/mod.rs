@@ -1,6 +1,7 @@
 pub(crate) mod abi;
 pub(crate) mod calls;
 mod clobbers;
+mod constant_spills;
 mod go_types;
 mod indirect;
 mod jump_table;
@@ -1428,6 +1429,7 @@ fn optimize(image: &Image, lifted: Lifted, deadline: Option<Instant>) -> Result<
     let reached = crate::ir::cfg::reached(&ir);
     passed(deadline)?;
     passes::optimize(&mut ir, has_jump_tables);
+    constant_spills::forward(&mut ir, image);
     passed(deadline)?;
     drop_folded_away(&mut ir, &reached);
     // Guessed register arguments do not bound a callee's stack arguments.

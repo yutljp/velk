@@ -484,7 +484,7 @@ fn smod10 @ 0x20420 (size 56)
 /* velk pseudo-C: lmod10 @ 0x20458 */
 int32_t lmod10(int32_t a0, int32_t a1) {
     uint64_t sp = velk_entry_stack_pointer();
-    uint64_t v6;
+    uint64_t v8;
     uint32_t v3;
     uint32_t v4;
 
@@ -501,14 +501,16 @@ int32_t lmod10(int32_t a0, int32_t a1) {
     {
         uint64_t call_values[2];
         call_values[0] = sub_20480((uint32_t)v1, (uint32_t)v2, 10, 0);
-        call_values[1] = v6; /* also returned by the call */
+        call_values[1] = v8; /* also returned by the call */
         a0 = (uint32_t)(call_values[0]);
         a1 = (uint32_t)(call_values[1]);
     }
+    uint32_t v6 = 0 /* undefined */;
+    uint32_t v7 = 0 /* undefined */;
     sp = v3;
     v3 = *(uint32_t *)(sp);
     sp = sp + 0x8;
-    return 0;
+    return v6;
 }
 -- signature
 int32_t (int32_t a0, int32_t a1)
@@ -531,12 +533,12 @@ fn lmod10 @ 0x20458 (size 56)
     v4 = #0x0
     v5 = #0x20480
     r0, r1 = call 0x20480(v1, v2, #0xa, #0x0)
-    v6 = #0x0
-    v7 = #0x0
+    v6 = undefined()
+    v7 = undefined()
     sp = r11
     r11 = load32(sp)
     sp = (sp + #0x8)
-    ret #0x0
+    ret v6
 -- card
 {"addr":"0x20458","approxTokens":180,"blocks":1,"hardReasons":[],"name":"lmod10","nameSources":["symtab","dwarf"],"section":".text","size":56,"unsupported":1}
 
@@ -807,7 +809,7 @@ fn lnegate @ 0x205f8 (size 36)
 /* velk pseudo-C: lmod3 @ 0x2061c */
 int32_t lmod3(int32_t a0, int32_t a1) {
     uint64_t sp = velk_entry_stack_pointer();
-    uint64_t v6;
+    uint64_t v8;
     uint32_t v3;
     uint32_t v4;
 
@@ -824,14 +826,16 @@ int32_t lmod3(int32_t a0, int32_t a1) {
     {
         uint64_t call_values[2];
         call_values[0] = sub_20644((uint32_t)v1, (uint32_t)v2, 3, 0);
-        call_values[1] = v6; /* also returned by the call */
+        call_values[1] = v8; /* also returned by the call */
         a0 = (uint32_t)(call_values[0]);
         a1 = (uint32_t)(call_values[1]);
     }
+    uint32_t v6 = 0 /* undefined */;
+    uint32_t v7 = 0 /* undefined */;
     sp = v3;
     v3 = *(uint32_t *)(sp);
     sp = sp + 0x8;
-    return 0;
+    return v6;
 }
 -- signature
 int32_t (int32_t a0, int32_t a1)
@@ -854,12 +858,12 @@ fn lmod3 @ 0x2061c (size 56)
     v4 = #0x0
     v5 = #0x20644
     r0, r1 = call 0x20644(v1, v2, #0x3, #0x0)
-    v6 = #0x0
-    v7 = #0x0
+    v6 = undefined()
+    v7 = undefined()
     sp = r11
     r11 = load32(sp)
     sp = (sp + #0x8)
-    ret #0x0
+    ret v6
 -- card
 {"addr":"0x2061c","approxTokens":180,"blocks":1,"hardReasons":[],"name":"lmod3","nameSources":["symtab","dwarf"],"section":".text","size":56,"unsupported":1}
 

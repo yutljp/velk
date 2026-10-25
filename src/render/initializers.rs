@@ -189,6 +189,38 @@ fn scoped_uses(body: &str, indentation: usize, name: &str) -> bool {
     true
 }
 
+/// Removes constant assignments to scalar locals whose values and addresses are unused.
+pub(super) fn drop_unused_constants(body: &mut String, names: impl Iterator<Item = String>) {
+    for name in names {
+        let prefix = format!("{name} = ");
+        let unused = body
+            .lines()
+            .filter(|line| super::function::code_mentions(line, &name))
+            .all(|line| {
+                let Some(value) = line
+                    .trim()
+                    .strip_prefix(&prefix)
+                    .and_then(|value| value.strip_suffix(';'))
+                else {
+                    return false;
+                };
+                let value = value.trim_end_matches(['U', 'L']).trim_start_matches('-');
+                match value.strip_prefix("0x") {
+                    Some(hex) => {
+                        !hex.is_empty() && hex.bytes().all(|byte| byte.is_ascii_hexdigit())
+                    }
+                    None => !value.is_empty() && value.bytes().all(|byte| byte.is_ascii_digit()),
+                }
+            });
+        if unused {
+            *body = body
+                .split_inclusive('\n')
+                .filter(|line| !super::function::code_mentions(line, &name))
+                .collect();
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     fn fold(
@@ -197,6 +229,23 @@ mod tests {
         candidates: impl Iterator<Item = (String, String)>,
     ) -> String {
         super::fold(declarations, body, candidates, super::Placement::Scoped)
+    }
+
+    #[test]
+    fn unused_constant_assignments_keep_addresses_reads_and_effects() {
+        let mut body = String::from(
+            "    unused = 0x1000;\n    used = 1;\n    keep(&used);\n    effect = call();\n    read = 2;\n    return read;\n",
+        );
+        super::drop_unused_constants(
+            &mut body,
+            ["unused", "used", "effect", "read"]
+                .into_iter()
+                .map(str::to_owned),
+        );
+        assert!(!body.contains("unused"));
+        assert!(body.contains("used = 1;"));
+        assert!(body.contains("effect = call();"));
+        assert!(body.contains("read = 2;"));
     }
 
     #[test]

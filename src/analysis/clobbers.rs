@@ -14,9 +14,9 @@ enum Value {
     Entry(u16),
     /// The stack pointer on entry, plus an offset.
     Frame(i64),
-    /// Computed from a frame address in a way not followed, so it may
-    /// point anywhere in the frame.
-    Derived,
+    /// Bits still computed from a frame address, possibly pointing anywhere in it.
+    Derived(u64),
+    Constant(u64),
     Other,
 }
 
@@ -88,7 +88,7 @@ impl State {
     /// reading memory through one.
     fn involves_frame(&self, expr: &Expr) -> bool {
         let (value, indexed) = self.class(expr);
-        indexed || matches!(value, Value::Frame(_) | Value::Derived)
+        indexed || matches!(value, Value::Frame(_) | Value::Derived(_))
     }
 
     /// What `expr` holds, and whether it is a frame address plus an index
@@ -97,21 +97,51 @@ impl State {
     /// follow.
     fn class(&self, expr: &Expr) -> (Value, bool) {
         match expr {
+            Expr::Const(value) => return (Value::Constant(*value), false),
             Expr::Bin {
-                op: BinOp::Or,
+                op: op @ (BinOp::And | BinOp::Or | BinOp::Xor),
                 lhs,
                 rhs,
-            } if let (base, Expr::Const(mask)) | (Expr::Const(mask), base) =
-                (lhs.as_ref(), rhs.as_ref()) =>
-            {
-                if let Value::Frame(at) = self.value(base) {
-                    let address = Expr::bin(BinOp::Or, Expr::reg(self.sp, 64), Expr::Const(*mask));
+            } => {
+                let left = self.class(lhs);
+                let right = self.class(rhs);
+                if let (Value::Constant(a), Value::Constant(b)) = (left.0, right.0) {
+                    let value = match op {
+                        BinOp::And => a & b,
+                        BinOp::Or => a | b,
+                        _ => a ^ b,
+                    };
+                    return (Value::Constant(value), false);
+                }
+                if *op == BinOp::Or
+                    && let (Value::Frame(at), Value::Constant(mask))
+                    | (Value::Constant(mask), Value::Frame(at)) = (left.0, right.0)
+                {
+                    let address = Expr::bin(BinOp::Or, Expr::reg(self.sp, 64), Expr::Const(mask));
                     if let Some(offset) =
                         crate::passes::frame_slots::frame_slot(&address, at, self.sp)
                     {
                         return (Value::Frame(offset), false);
                     }
                 }
+                let bits = |value| match value {
+                    (_, true) | (Value::Frame(_), _) => u64::MAX,
+                    (Value::Derived(bits), _) => bits,
+                    _ => 0,
+                };
+                let mut derived = bits(left) | bits(right);
+                if *op == BinOp::And {
+                    if let Value::Constant(mask) = right.0 {
+                        derived = bits(left) & mask;
+                    } else if let Value::Constant(mask) = left.0 {
+                        derived = bits(right) & mask;
+                    }
+                }
+                return if derived == 0 {
+                    (Value::Other, false)
+                } else {
+                    (Value::Derived(derived), false)
+                };
             }
             Expr::Reg { index, width: 64 } => return (self.register(*index), false),
             Expr::Load { addr, width, .. } => {
@@ -126,15 +156,15 @@ impl State {
                 let based =
                     |(value, indexed): (Value, bool)| indexed || matches!(value, Value::Frame(_));
                 let involved = |(value, indexed): (Value, bool)| {
-                    indexed || matches!(value, Value::Frame(_) | Value::Derived)
+                    indexed || matches!(value, Value::Frame(_) | Value::Derived(_))
                 };
-                match (op, left.0, rhs.as_ref(), right.0, lhs.as_ref()) {
-                    (BinOp::Add, Value::Frame(at), Expr::Const(delta), ..)
-                    | (BinOp::Add, _, _, Value::Frame(at), Expr::Const(delta)) => {
-                        return (Value::Frame(at.wrapping_add(*delta as i64)), false);
+                match (op, left.0, right.0) {
+                    (BinOp::Add, Value::Frame(at), Value::Constant(delta))
+                    | (BinOp::Add, Value::Constant(delta), Value::Frame(at)) => {
+                        return (Value::Frame(at.wrapping_add(delta as i64)), false);
                     }
-                    (BinOp::Sub, Value::Frame(at), Expr::Const(delta), ..) => {
-                        return (Value::Frame(at.wrapping_sub(*delta as i64)), false);
+                    (BinOp::Sub, Value::Frame(at), Value::Constant(delta)) => {
+                        return (Value::Frame(at.wrapping_sub(delta as i64)), false);
                     }
                     _ => {}
                 }
@@ -148,7 +178,7 @@ impl State {
                     return (Value::Other, true);
                 }
                 if involved(left) || involved(right) {
-                    return (Value::Derived, false);
+                    return (Value::Derived(u64::MAX), false);
                 }
                 return (Value::Other, false);
             }
@@ -156,11 +186,18 @@ impl State {
         }
         // Anything else computed from a frame address may still point into
         // the frame, at an offset the walk does not know.
+        let constant = |index| match self.register(index) {
+            Value::Constant(value) => Some(value),
+            _ => None,
+        };
+        if let Some(value) = crate::ir::semantics::evaluate(expr, &constant) {
+            return (Value::Constant(value), false);
+        }
         let derived = crate::ir::visit::children(expr)
             .into_iter()
             .any(|child| self.involves_frame(child));
         if derived {
-            (Value::Derived, false)
+            (Value::Derived(u64::MAX), false)
         } else {
             (Value::Other, false)
         }
@@ -180,8 +217,8 @@ impl State {
                     changed |= self.exposed.insert(at);
                 }
             }
-            let joined = if *held == Value::Derived || *came == Value::Derived {
-                Value::Derived
+            let joined = if matches!(held, Value::Derived(_)) || matches!(came, Value::Derived(_)) {
+                Value::Derived(u64::MAX)
             } else {
                 Value::Other
             };
@@ -210,7 +247,7 @@ impl State {
             for value in [a, b] {
                 match value {
                     Value::Frame(at) => changed |= self.exposed.insert(at),
-                    Value::Derived => lost = true,
+                    Value::Derived(_) => lost = true,
                     _ => {}
                 }
             }
@@ -259,7 +296,7 @@ impl State {
             Value::Frame(at) => {
                 self.exposed.insert(at);
             }
-            Value::Derived => self.lost = true,
+            Value::Derived(_) => self.lost = true,
             _ => {}
         }
     }
@@ -267,7 +304,7 @@ impl State {
     fn write_through(&mut self, addr: &Expr, width: u8, clobbered: &[u16]) {
         match self.value(addr) {
             Value::Frame(at) => self.forget_slots(at, width),
-            Value::Derived => self.slots.clear(),
+            Value::Derived(_) => self.slots.clear(),
             _ => self.write_unplaced(clobbered),
         }
     }

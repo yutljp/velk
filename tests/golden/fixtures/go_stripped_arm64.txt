@@ -1346,12 +1346,12 @@ int64_t main_main(int64_t a0, int64_t a1, int64_t a2) {
     int64_t v3 = v8; /* also returned by the call */
     runtime_printlock(v2, v3, a2);
     int64_t v10 = v8; /* also returned by the call */
-    runtime_printint(v2, v10, 0);
+    runtime_printint(v2, v10, 0 /* undefined */);
     int64_t v11 = 0 /* undefined */;
     int64_t v12 = 0 /* undefined */;
-    int64_t v13 = runtime_printnl(v11, v12, 0);
+    int64_t v13 = runtime_printnl(v11, v12, 0 /* undefined */);
     int64_t v14 = v8; /* also returned by the call */
-    return runtime_printunlock(v13, v14, 0);
+    return runtime_printunlock(v13, v14, 0 /* undefined */);
 }
 -- signature
 int64_t (int64_t a0, int64_t a1, int64_t a2)
@@ -1365,9 +1365,9 @@ fn main.main @ 0x77470 (size 80)
   blk1 @ 0x7747c:
     v2:x0, v3:x1 = call 0x77430(#0x15, x1, x2)
     x0, v3:x1, d0, d1 = call 0x40340(v2, v3, x2)
-    v2:x0, v3:x1, d0, d1 = call 0x409d0(v2, v3, #0x0)
-    v2:x0, v3:x1, d0, d1 = call 0x40570(v2, v3, #0x0)
-    v2:x0, x1, d0, d1 = call 0x403c0(v2, v3, #0x0)
+    v2:x0, v3:x1, d0, d1 = call 0x409d0(v2, v3, undefined())
+    v2:x0, v3:x1, d0, d1 = call 0x40570(v2, v3, undefined())
+    v2:x0, x1, d0, d1 = call 0x403c0(v2, v3, undefined())
     ret v2
 -- card
 {"addr":"0x77470","approxTokens":198,"blocks":2,"hardReasons":[],"name":"main.main","nameSources":["pclntab"],"section":".text","size":80,"unsupported":0}

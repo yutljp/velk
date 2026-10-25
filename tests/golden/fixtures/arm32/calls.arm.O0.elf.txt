@@ -319,11 +319,6 @@ int32_t call_sum9(int32_t x) {
     uint32_t local_4; /* [sp-8] */
     uint32_t local_5; /* [sp-4] */
     uint32_t local_6; /* [sp-1c] */
-    uint32_t local_7; /* [sp-30] */
-    uint32_t local_8; /* [sp-2c] */
-    uint32_t local_9; /* [sp-28] */
-    uint32_t local_10; /* [sp-24] */
-    uint32_t local_11; /* [sp-20] */
 
     *(uint32_t *)(sp - 0x18) = v3;
     local_1 = v4;
@@ -334,11 +329,6 @@ int32_t call_sum9(int32_t x) {
     sp = sp - 0x18;
     sp = sp - 0x18;
     local_6 = x;
-    local_7 = 4;
-    local_8 = 5;
-    local_9 = 6;
-    local_10 = 7;
-    local_11 = 8;
     return sum9((uint32_t)x, 1, 2, 3, 4, 5, 6, 7, 8);
 }
 -- signature

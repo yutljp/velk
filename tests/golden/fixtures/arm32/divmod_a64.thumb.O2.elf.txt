@@ -443,8 +443,10 @@ int32_t lmod10(void) {
         v1 = (uint32_t)(call_values[0]);
         v2 = (uint32_t)(call_values[1]);
     }
+    uint32_t v4 = 0 /* undefined */;
+    uint32_t v5 = 0 /* undefined */;
     int32_t v6 = v3;
-    return 0;
+    return v4;
 }
 -- signature
 int32_t ()
@@ -458,10 +460,10 @@ fn lmod10 @ 0x202f0 (size 16)
     v2 = #0x0
     v3 = #0x202fb
     r0, r1 = call 0x202fa(r0, r1, #0xa, #0x0)
-    v4 = #0x0
-    v5 = #0x0
+    v4 = undefined()
+    v5 = undefined()
     v6 = r7
-    ret #0x0
+    ret v4
 -- card
 {"addr":"0x202f0","approxTokens":138,"blocks":1,"hardReasons":[],"name":"lmod10","nameSources":["symtab","dwarf"],"section":".text","size":16,"unsupported":1}
 
@@ -663,8 +665,10 @@ int32_t lmod3(void) {
         v1 = (uint32_t)(call_values[0]);
         v2 = (uint32_t)(call_values[1]);
     }
+    uint32_t v4 = 0 /* undefined */;
+    uint32_t v5 = 0 /* undefined */;
     int32_t v6 = v3;
-    return 0;
+    return v4;
 }
 -- signature
 int32_t ()
@@ -678,10 +682,10 @@ fn lmod3 @ 0x20374 (size 16)
     v2 = #0x0
     v3 = #0x2037f
     r0, r1 = call 0x2037e(r0, r1, #0x3, #0x0)
-    v4 = #0x0
-    v5 = #0x0
+    v4 = undefined()
+    v5 = undefined()
     v6 = r7
-    ret #0x0
+    ret v4
 -- card
 {"addr":"0x20374","approxTokens":138,"blocks":1,"hardReasons":[],"name":"lmod3","nameSources":["symtab","dwarf"],"section":".text","size":16,"unsupported":1}
 
