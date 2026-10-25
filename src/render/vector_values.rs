@@ -94,13 +94,13 @@ pub(super) fn groups(
 fn member(ty: &CType) -> Option<&'static str> {
     match ty.integer() {
         Some((8, false)) => Some("u8"),
-        Some((8, true)) => Some("i8"),
+        Some((8, true)) => Some("s8"),
         Some((16, false)) => Some("u16"),
-        Some((16, true)) => Some("i16"),
+        Some((16, true)) => Some("s16"),
         Some((32, false)) => Some("u32"),
-        Some((32, true)) => Some("i32"),
+        Some((32, true)) => Some("s32"),
         Some((64, false)) => Some("u64"),
-        Some((64, true)) => Some("i64"),
+        Some((64, true)) => Some("s64"),
         _ => match ty.to_string().as_str() {
             "float" => Some("f32"),
             "double" => Some("f64"),

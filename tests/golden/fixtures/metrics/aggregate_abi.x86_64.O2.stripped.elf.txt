@@ -11,7 +11,7 @@
 0x2013c0 85 - unwind,prologue
 0x201420 126 - unwind,prologue
 /* velk prelude */
-struct velk_vector { union { uint64_t u64; int64_t i64; uint32_t u32; int32_t i32; uint16_t u16; int16_t i16; uint8_t u8; int8_t i8; float f32; double f64; } low, high; };
+struct velk_vector { union { uint64_t u64; int64_t s64; uint32_t u32; int32_t s32; uint16_t u16; int16_t s16; uint8_t u8; int8_t s8; float f32; double f64; } low, high; };
 /* end velk prelude */
 
 == 0x201220 -
@@ -88,9 +88,9 @@ struct sub_201260_a2 { int64_t field_0x0; int64_t field_0x8; int64_t field_0x10;
 struct S1 { int64_t field_0x0; int64_t field_0x8; int64_t field_0x10; };
 double sub_201260(struct S1 *a0, double a1, struct sub_201260_a2 a2) {
     *(uint64_t *)((uint8_t *)&a2 + 0x10) = ((union { double value; uint64_t bits; }){ .value = a1 + *(double *)&(*(uint64_t *)((uint8_t *)&a2 + 0x10)) }).bits;
-    struct velk_vector vector = { .low.f64 = *(double *)&(*(uint64_t *)((uint8_t *)&a2 + 0x0)), .high.i64 = *(uint64_t *)((uint8_t *)&a2 + 0x8) };
+    struct velk_vector vector = { .low.f64 = *(double *)&(*(uint64_t *)((uint8_t *)&a2 + 0x0)), .high.s64 = *(uint64_t *)((uint8_t *)&a2 + 0x8) };
     a0->field_0x0 = ((union { double value; uint64_t bits; }){ .value = vector.low.f64 }).bits;
-    a0->field_0x8 = vector.high.i64;
+    a0->field_0x8 = vector.high.s64;
     a0->field_0x10 = *(uint64_t *)((uint8_t *)&a2 + 0x10);
     return vector.low.f64;
 }
@@ -125,9 +125,9 @@ double sub_201290(double *a0, double a1, struct sub_201290_a2 a2) {
     int64_t v1 = *(uint64_t *)((uint8_t *)&a2 + 0x8);
     *(uint64_t *)(a0) = *(uint64_t *)((uint8_t *)&a2 + 0x0);
     *(uint64_t *)(a0 + 0x1) = v1;
-    struct velk_vector vector = { .low.f64 = *(double *)&(*(uint64_t *)((uint8_t *)&a2 + 0x10)), .high.i64 = *(uint64_t *)((uint8_t *)&a2 + 0x18) };
+    struct velk_vector vector = { .low.f64 = *(double *)&(*(uint64_t *)((uint8_t *)&a2 + 0x10)), .high.s64 = *(uint64_t *)((uint8_t *)&a2 + 0x18) };
     a0[2] = vector.low.f64;
-    *(uint64_t *)(a0 + 0x3) = vector.high.i64;
+    *(uint64_t *)(a0 + 0x3) = vector.high.s64;
     return vector.low.f64;
 }
 -- signature

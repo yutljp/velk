@@ -229,7 +229,9 @@ pub(super) fn load(addr: &Expr, width: u8, signed: bool, ctx: &Ctx<'_>) -> Print
                     format!(
                         "*({} *)({})",
                         type_of(width, signed),
-                        local_plus_offset(addr, ctx).unwrap_or(address)
+                        local_offset_integer(addr, ctx)
+                            .or_else(|| local_plus_offset(addr, ctx))
+                            .unwrap_or(address)
                     ),
                     signed,
                 ),

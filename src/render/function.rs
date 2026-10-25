@@ -77,7 +77,8 @@ fn render_unmerged(
     let variadic = super::variadic::prepare(&mut folded, symbols);
     crate::analysis::variadic::drop_register_saves(&mut folded);
     params::fold_saved_parameters(&mut folded);
-    let candidate = crate::passes::copies::integer_expression_candidate(&folded);
+    let candidate = crate::passes::copies::integer_expression_candidate(&folded)
+        .or_else(|| crate::passes::read_once::frame_load_candidate(&folded));
     let baseline = render_prepared(
         original,
         folded,

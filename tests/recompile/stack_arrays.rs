@@ -22,6 +22,114 @@ fn store(offset: i64, value: u64, width: u8) -> Stmt {
 }
 
 #[test]
+fn indexed_frame_accesses_convert_the_integer_address_directly() {
+    let mut candidates = Vec::new();
+    for width in [1, 2, 4, 8] {
+        for signed in [false, true] {
+            let address = Expr::bin(BinOp::Add, slot(-56), Expr::reg(7, 64));
+            let ir = synthetic_ir(
+                &format!("indexed_frame_{width}_{signed}"),
+                vec![Param {
+                    index: 7,
+                    name: "offset".into(),
+                    ty: CType::U64,
+                }],
+                CType::U64,
+                vec![
+                    store(-64, 0x807f_ffff_8000_0080, 8),
+                    store(-56, 0xffff_8000_ffff_ff80, 8),
+                    store(-48, 0x7fff_ffff_ffff_ff7f, 8),
+                    store(-40, 0, 8),
+                    Stmt::Store {
+                        addr: address.clone(),
+                        value: Expr::Const(0x80),
+                        width: 1,
+                    },
+                    Stmt::Ret {
+                        value: Expr::Load {
+                            addr: Box::new(address),
+                            width,
+                            signed,
+                        },
+                    },
+                ],
+            );
+            let candidate = printed_candidate(
+                ir,
+                [0, 8, (-8i64) as u64]
+                    .into_iter()
+                    .map(|offset| vec![offset])
+                    .collect(),
+            );
+            assert!(candidate.code.contains("(uintptr_t)"), "{}", candidate.code);
+            assert!(
+                !candidate.code.contains("*)((uint8_t *)"),
+                "{}",
+                candidate.code
+            );
+            candidates.push(candidate);
+        }
+    }
+    check_candidates(
+        "indexed-frame-conversions",
+        candidates,
+        Mode::Registers,
+        &[],
+    );
+}
+
+#[test]
+fn single_use_frame_loads_keep_overlapping_writes_in_order() {
+    let mut candidates = Vec::new();
+    for offset in [-16, -28] {
+        let mut ir = synthetic_ir(
+            &format!("frame_snapshot_{}", -offset),
+            vec![Param {
+                index: 7,
+                name: "input".into(),
+                ty: CType::U64,
+            }],
+            CType::U64,
+            vec![
+                Stmt::Store {
+                    addr: slot(-32),
+                    value: Expr::reg(7, 64),
+                    width: 8,
+                },
+                Stmt::Assign {
+                    dest: RegRef {
+                        index: VARIABLE_BASE,
+                        width: 64,
+                    },
+                    value: Expr::Load {
+                        addr: Box::new(slot(-32)),
+                        width: 8,
+                        signed: false,
+                    },
+                },
+                store(offset, 7, 8),
+                Stmt::Ret {
+                    value: Expr::reg(VARIABLE_BASE, 64),
+                },
+            ],
+        );
+        ir.frame_bottom = -64;
+        let candidate = printed_candidate(
+            ir,
+            [0, 1, 0x8000_0000_0000_0000, u64::MAX]
+                .into_iter()
+                .map(|x| vec![x])
+                .collect(),
+        );
+        if offset == -16 {
+            assert!(!candidate.code.contains(" v1"), "{}", candidate.code);
+        }
+        candidates.push(candidate);
+    }
+    check_candidates("frame-snapshot-order", candidates, Mode::Registers, &[]);
+}
+
+#[test]
 fn unused_frame_address_temporaries_disappear_after_rebasing() {
     let temporary = velk::ir::TEMP_BASE;
     let address = Expr::reg(temporary, 64);

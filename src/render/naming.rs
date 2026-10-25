@@ -259,8 +259,15 @@ pub(super) fn flat_array_access_as(
             else {
                 return None;
             };
+            let address = if !ctx.symbols.data.contains_key(&base)
+                && !ctx.symbols.import_slots.contains_key(&base)
+            {
+                format!("{base:#x}ULL")
+            } else {
+                format!("(uintptr_t){name}")
+            };
             return Some(format!(
-                "*({} *)((uintptr_t){name} + {})",
+                "*({} *)({address} + {})",
                 view.ty(),
                 crate::render::expr::integer_sum(&offset, ctx)
                     .address_integer()

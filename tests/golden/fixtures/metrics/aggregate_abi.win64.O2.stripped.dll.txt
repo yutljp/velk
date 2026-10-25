@@ -11,7 +11,7 @@
 0x1800011c0 96 - prologue
 0x180001220 132 - unwind,prologue
 /* velk prelude */
-struct velk_vector { union { uint64_t u64; int64_t i64; uint32_t u32; int32_t i32; uint16_t u16; int16_t i16; uint8_t u8; int8_t i8; float f32; double f64; } low, high; };
+struct velk_vector { union { uint64_t u64; int64_t s64; uint32_t u32; int32_t s32; uint16_t u16; int16_t s16; uint8_t u8; int8_t s8; float f32; double f64; } low, high; };
 /* end velk prelude */
 
 == 0x180001000 -
@@ -113,9 +113,9 @@ double sub_180001070(double *a0, double *a1, double a2) {
     double v1 = a2 + a1[2];
     a1[2] = v1;
     a0[2] = v1;
-    struct velk_vector vector = { .low.f64 = *a1, .high.i64 = *(uint64_t *)(a1 + 0x1) };
+    struct velk_vector vector = { .low.f64 = *a1, .high.s64 = *(uint64_t *)(a1 + 0x1) };
     *a0 = vector.low.f64;
-    *(uint64_t *)(a0 + 0x1) = vector.high.i64;
+    *(uint64_t *)(a0 + 0x1) = vector.high.s64;
     return vector.low.f64;
 }
 -- signature
@@ -143,9 +143,9 @@ fn <unnamed> @ 0x180001070 (size 32)
 double sub_180001090(int64_t a0, double *a1, double a2) {
     a1[3] = a2 + a1[3];
     __builtin_memmove((void *)(a0), a1, 16);
-    struct velk_vector vector = { .low.f64 = a1[2], .high.i64 = *(uint64_t *)(a1 + 0x3) };
+    struct velk_vector vector = { .low.f64 = a1[2], .high.s64 = *(uint64_t *)(a1 + 0x3) };
     *(uint64_t *)(a0 + 0x10) = ((union { double value; uint64_t bits; }){ .value = vector.low.f64 }).bits;
-    *(uint64_t *)(a0 + 0x18) = vector.high.i64;
+    *(uint64_t *)(a0 + 0x18) = vector.high.s64;
     return vector.low.f64;
 }
 -- signature

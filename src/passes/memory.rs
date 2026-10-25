@@ -321,8 +321,12 @@ fn disjoint(a: &Expr, a_width: u8, b: &Expr, b_width: u8) -> bool {
     if a_base != b_base {
         return false;
     }
-    let a_end = a_offset.wrapping_add(i64::from(a_width));
-    let b_end = b_offset.wrapping_add(i64::from(b_width));
+    let (Some(a_end), Some(b_end)) = (
+        a_offset.checked_add(i64::from(a_width)),
+        b_offset.checked_add(i64::from(b_width)),
+    ) else {
+        return false;
+    };
     a_end <= b_offset || b_end <= a_offset
 }
 

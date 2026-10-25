@@ -95,6 +95,11 @@ pub(super) fn conformed(
     pointer: Option<&str>,
     ctx: &Ctx<'_>,
 ) -> String {
+    if let Some(ty) = pointer
+        && let Some(address) = expr::local_offset_integer(value, ctx)
+    {
+        return format!("({ty})({address})");
+    }
     // Untyped memory may extend beyond the first string terminator.
     let raw_memory = pointer.is_some_and(|ty| matches!(ty.trim(), "void *" | "const void *"))
         && matches!(value, Expr::Const(addr) if ctx.strings.contains_key(addr));

@@ -272,6 +272,12 @@ pub(crate) fn print_value_at(value: &Expr, ctx: &Ctx<'_>, bits: u32, integer: bo
 }
 
 fn value_at(value: &Expr, ctx: &Ctx<'_>, bits: u32, integer: bool) -> Printed {
+    if integer
+        && bits == 64
+        && let Some(text) = local_offset_integer(value, ctx)
+    {
+        return Printed::new(text, Int::U64, ALL, 10);
+    }
     if let Some(text) = local_plus_offset(value, ctx) {
         return Printed::pointer(text, 10);
     }

@@ -1,6 +1,60 @@
 use super::*;
 
 #[test]
+fn anonymous_data_offsets_keep_integer_address_arithmetic() {
+    let mut candidates = Vec::new();
+    for width in [1, 2, 4, 8] {
+        for signed in [false, true] {
+            let address = Expr::bin(
+                BinOp::Add,
+                Expr::bin(BinOp::Add, Expr::reg(7, 64), Expr::Const(32)),
+                Expr::bin(BinOp::Mul, Expr::reg(6, 64), Expr::Const(8)),
+            );
+            let ir = synthetic_ir(
+                &format!("anonymous_offset_{width}_{signed}"),
+                vec![
+                    Param {
+                        index: 7,
+                        name: "p".into(),
+                        ty: CType::pointer_to(CType::int(1, false)),
+                    },
+                    Param {
+                        index: 6,
+                        name: "index".into(),
+                        ty: CType::U64,
+                    },
+                ],
+                CType::U64,
+                vec![Stmt::Ret {
+                    value: Expr::Load {
+                        addr: Box::new(address),
+                        width,
+                        signed,
+                    },
+                }],
+            );
+            let mut candidate = printed_candidate(
+                ir,
+                [0, 1, 2, u64::MAX]
+                    .into_iter()
+                    .map(|index| vec![REGION + 16, index])
+                    .collect(),
+            );
+            candidate.code =
+                velk::render::render(&candidate.ir, &[], &Default::default(), &[(0, 0x1000)]);
+            assert!(!candidate.code.contains("const "), "{}", candidate.code);
+            assert!(
+                candidate.code.contains("(uintptr_t)p"),
+                "{}",
+                candidate.code
+            );
+            candidates.push(candidate);
+        }
+    }
+    check_candidates("anonymous-data-offsets", candidates, Mode::Memory, &[]);
+}
+
+#[test]
 fn printed_signed_loads_preserve_extension_widths() {
     let mut candidates = Vec::new();
     for loaded in [1, 2, 4, 8] {

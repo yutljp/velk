@@ -31,6 +31,41 @@ const OPERAND_DEPTH: usize = 5;
 /// large for their reader stay, as do floats and structure pointers whose
 /// values read memory or may fault.
 pub fn fold_values_read_once(ir: &mut FunctionIr) {
+    fold(ir, FrameLoads::Ordered);
+}
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum FrameLoads {
+    Ordered,
+    Disjoint,
+}
+
+fn allocated_frame_load(value: &Expr, ir: &FunctionIr, sp: u16) -> bool {
+    matches!(value, Expr::Load { addr, width, .. }
+        if ir.debug_locals.is_empty()
+            && matches!(width, 1 | 2 | 4 | 8)
+            && super::memory::private_address(addr, *width, sp)
+            && crate::passes::frame_slots::frame_slot(addr, 0, sp)
+                .is_some_and(|offset| ir.frame_bottom < 0 && offset >= ir.frame_bottom))
+}
+
+/// Move single-use frame loads past independent memory accesses for the renderer
+/// to compare with its existing block transfers and aggregate assignments.
+pub(crate) fn frame_load_candidate(ir: &FunctionIr) -> Option<FunctionIr> {
+    let sp = crate::arch::stack_pointer(ir.isa);
+    if !ir.blocks.iter().flat_map(|block| &block.stmts).any(
+        |stmt| matches!(stmt, Stmt::Assign { value, .. } if allocated_frame_load(value, ir, sp)),
+    ) {
+        return None;
+    }
+    let statements: usize = ir.blocks.iter().map(|block| block.stmts.len()).sum();
+    let mut candidate = ir.clone();
+    fold(&mut candidate, FrameLoads::Disjoint);
+    let remaining: usize = candidate.blocks.iter().map(|block| block.stmts.len()).sum();
+    (remaining < statements).then_some(candidate)
+}
+
+fn fold(ir: &mut FunctionIr, frame_loads: FrameLoads) {
     let types = crate::render::variable_types(ir);
     let sp = crate::arch::stack_pointer(ir.isa);
     let live_in = live_in(ir);
@@ -128,7 +163,7 @@ pub fn fold_values_read_once(ir: &mut FunctionIr) {
                 dest.index,
                 &value,
                 &live_out,
-                sp,
+                frame_loads,
             ) else {
                 continue;
             };
@@ -231,8 +266,9 @@ fn reader(
     dest: u16,
     value: &Expr,
     live_out: &[HashSet<u16>],
-    sp: u16,
+    frame_loads: FrameLoads,
 ) -> Option<(usize, usize)> {
+    let sp = crate::arch::stack_pointer(ir.isa);
     if size(value, sp) > VALUE_NODES || floats(value) {
         return None;
     }
@@ -259,6 +295,7 @@ fn reader(
         return None;
     }
     let ordered = reads_memory(value) || faults(value);
+    let frame_load = frame_loads == FrameLoads::Disjoint && allocated_frame_load(value, ir, sp);
     let mut found = None;
     let mut start = index + 1;
     loop {
@@ -280,7 +317,10 @@ fn reader(
                 return None;
             }
             let quiet = match stmt {
-                Stmt::Assign { value, .. } => !reads_memory(value),
+                Stmt::Assign { value, .. } => !reads_memory(value) || frame_load,
+                Stmt::Store { addr, width, .. } if frame_load => {
+                    super::memory::loads_avoid(value, addr, *width)
+                }
                 Stmt::Br { .. } => true,
                 _ => false,
             };
@@ -577,6 +617,71 @@ mod tests {
         let mut ir = FunctionIr::single_block(Isa::X86_64, stmts);
         fold_values_read_once(&mut ir);
         ir.blocks.remove(0).stmts
+    }
+
+    #[test]
+    fn allocated_frame_loads_cross_only_nonoverlapping_stores() {
+        let slot =
+            |offset: i64| Expr::bin(BinOp::Add, Expr::reg(4, 64), Expr::Const(offset as u64));
+        for (offset, bottom, moves) in [
+            (-16, -64, true),
+            (-28, -64, false),
+            (-16, 0, false),
+            (i64::MAX - 3, -64, false),
+        ] {
+            let mut ir = FunctionIr::single_block(
+                Isa::X86_64,
+                vec![
+                    assign(V1, load(slot(-32))),
+                    Stmt::Store {
+                        addr: slot(offset),
+                        value: Expr::Const(7),
+                        width: 8,
+                    },
+                    Stmt::Ret {
+                        value: Expr::reg(V1, 64),
+                    },
+                ],
+            );
+            ir.frame_bottom = bottom;
+            let before = ir.clone();
+            super::fold(&mut ir, super::FrameLoads::Disjoint);
+            assert_eq!(ir.blocks[0].stmts.len(), if moves { 2 } else { 3 });
+            for value in [0, 1, 0x8000_0000_0000_0000, u64::MAX] {
+                let registers = [(4, 0x1000)];
+                let memory = [(0xfe0, value)];
+                assert_eq!(
+                    run(&ir, &registers, &memory),
+                    run(&before, &registers, &memory)
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn allocated_frame_loads_stay_before_calls_and_atomics() {
+        let address = Expr::bin(BinOp::Add, Expr::reg(4, 64), Expr::Const((-32i64) as u64));
+        for barrier in [
+            call(Vec::new()),
+            Stmt::Machine {
+                instruction: crate::ir::MachineInstruction::ArmBarrier { kind: 0, option: 0 },
+                inputs: Vec::new(),
+                outputs: Vec::new(),
+            },
+        ] {
+            let mut ir = FunctionIr::single_block(
+                Isa::X86_64,
+                vec![
+                    assign(V1, load(address.clone())),
+                    barrier,
+                    Stmt::Ret {
+                        value: Expr::reg(V1, 64),
+                    },
+                ],
+            );
+            ir.frame_bottom = -64;
+            assert!(super::frame_load_candidate(&ir).is_none());
+        }
     }
 
     fn run(ir: &FunctionIr, registers: &[(u16, u64)], memory: &[(u64, u64)]) -> Outcome {
