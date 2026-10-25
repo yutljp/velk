@@ -31,20 +31,20 @@ names and sizes, data symbols, and imports.
 
 - Relocatable object files (`.o`, `.obj`) are laid out the way a linker would and their relocations are applied,
   so calls and data references point at real addresses.
-- Functions are found from several sources, most reliable first: the symbol table and exports, debug information
+- Functions are found from several sources: the symbol table and exports, debug information
   (DWARF, CodeView / PDB), the Go function table, unwind tables (which also give exact function sizes), and finally
   the calls and code patterns found while lifting.
 - Language metadata gives better names: Rust and C++ symbol demangling, Go type descriptors, Objective-C class
-  and method lists, C++ vtables, and Windows exception (SEH) tables.
+  and method lists, and Windows exception (SEH) tables.
 - Debug information also provides the names and types of parameters, local variables and structure fields, which
   later stages use when printing.
 
 ## Lifting (`src/lift/`)
 
-The lifters for x86-64 and AArch64 decode each instruction and translate it into IR statements. Every instruction
-has an exact translation, including flags, partial register writes, vector (SIMD) operations and atomic
-operations. Instructions that read machine state C cannot express (for example `cpuid` or `rdtsc`) become explicit
-intrinsic calls. An instruction velk cannot translate yet is printed as `unsupported`.
+The lifters for x86-64 and AArch64 decode each instruction and translate it into IR statements. Supported
+instructions are translated exactly, including flags, partial register writes, vector (SIMD) operations and atomic
+operations. Instructions that read machine state C cannot express (for example `cpuid` or `rdtsc`) are printed as
+compiler intrinsics such as `__rdtsc()`. An instruction velk cannot translate yet is printed as `unsupported`.
 
 The instruction semantics are checked against the real CPU (`src/lift/hardware/`): the same instruction runs on
 the processor and through the IR interpreter with many inputs, and the results must match.
@@ -90,7 +90,7 @@ Rendering turns the optimized IR into C:
   `vN`.
 - **Memory**: stack objects are declared as structures, unions or arrays; pointers get element types so accesses
   print as `p->field` or `p[i]`. Array bounds are only assumed when they are proven.
-- **Calls**: callee prototypes come from debug information or a known-function table; variadic functions use
+- **Calls**: callee prototypes come from debug information or a built-in table of common library functions; variadic functions use
   `va_start` / `va_arg`.
 - **Output**: helper definitions and declarations the code needs are printed once, at the top of the file, so the
   output compiles on its own.

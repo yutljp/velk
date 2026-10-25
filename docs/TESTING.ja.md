@@ -9,9 +9,8 @@ velk の出力を変えるのは、以下のチェックがすべて通った場
 
 - Rust (stable) と C コンパイラ
 - 出力した C をコンパイルするチェック用の `clang`
-- [cargo-nextest](https://nexte.st/) を推奨します。`cargo test` でも動きます。
 - Python の補助スクリプト用の [uv](https://docs.astral.sh/uv/)
-- テスト用バイナリを再生成する場合のみ Docker
+- テスト用バイナリの再生成と、基準となる Linux 環境でのテスト実行には Docker
 
 ## チェックの実行
 
@@ -19,7 +18,7 @@ velk の出力を変えるのは、以下のチェックがすべて通った場
 
 ```bash
 cargo build --release
-cargo nextest run --release
+cargo test --release
 cargo fmt -- --check
 cargo clippy --release --all-targets -- -D warnings
 BIN=target/release/velk sh tests/smoke.sh
@@ -39,7 +38,7 @@ BIN=target/release/velk sh tests/ladder.sh
   比べます。`tests/golden/recompile.txt` と `tests/golden/recompile_memory.txt` の `differ` はすべて 0 でなければなりません。
 - **全関数のコンパイル。** すべてのテスト用バイナリのすべての関数について、出力した C を標準ヘッダと一緒にコンパイルします。
   時間がかかるため `#[ignore]` になっています。
-  `cargo nextest run --release --run-ignored all -E 'test(every_fixture_function_compiles)'` で実行します。
+  `cargo test --release --test recompile every_fixture_function_compiles -- --ignored` で実行します。
   通常のテストでは一部だけを高速に確認します。
 - **ゴールデン出力。** `tests/golden/` には各テスト用バイナリの期待出力と、読みやすさの指標 (行数、変数、キャスト、goto)
   が入っています。これらのファイルの変更はすべてレビューしてください。
@@ -52,15 +51,15 @@ C のチェックに使うコンパイラは `VELK_TEST_CC` で指定できま�
 出力の変更が意図したものであれば、ゴールデンファイルを再生成して差分を確認します。
 
 ```bash
-VELK_BLESS=1 cargo nextest run --release
+VELK_BLESS=1 cargo test --release
 git diff tests/golden
 ```
 
 ## 差分テスト
 
 テストスイートとは別に、ランダムに生成した C プログラムでもテストしています。プログラムをコンパイルし、関数を 1 つずつ
-velk の出力に置き換え、同じ結果を出力し続けることを確かめます。arm64 と x86-64 で実行しており、これまでに直した正しさの
-バグの多くはこの方法で見つかりました。
+velk の出力に置き換え、同じ結果を出力し続けることを確かめます。arm64 と x86-64 で実行しており、この方法で正しさのバグを
+多数見つけています。
 
 ## テスト用バイナリの再生成
 
@@ -70,6 +69,8 @@ velk の出力に置き換え、同じ結果を出力し続けることを確か
 ```bash
 docker compose run --rm fixtures
 ```
+
+バージョンを固定した同じ Linux 環境でテストを実行するには `docker compose run --rm check` を使います。
 
 一部のグループには専用のスクリプトがあります。`tests/make_pe_fixtures.sh` (Windows PE)、`tests/make_codeview.sh`
 (CodeView / PDB)、`tests/make_seh_fixtures.sh` (Windows SEH)、`tests/make_objc_fixtures.sh` (Objective-C)、

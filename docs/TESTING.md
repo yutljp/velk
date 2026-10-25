@@ -9,9 +9,8 @@ how to regenerate the test binaries.
 
 - Rust (stable) and a C compiler.
 - `clang` for the checks that compile the printed C.
-- [cargo-nextest](https://nexte.st/) is recommended; `cargo test` also works.
 - [uv](https://docs.astral.sh/uv/) for the Python helper scripts.
-- Docker only for regenerating the test binaries.
+- Docker for regenerating the test binaries and for running the tests in the reference Linux environment.
 
 ## Running the checks
 
@@ -19,7 +18,7 @@ From the repository root:
 
 ```bash
 cargo build --release
-cargo nextest run --release
+cargo test --release
 cargo fmt -- --check
 cargo clippy --release --all-targets -- -D warnings
 BIN=target/release/velk sh tests/smoke.sh
@@ -42,8 +41,8 @@ BIN=target/release/velk sh tests/ladder.sh
   `tests/golden/recompile.txt` and `tests/golden/recompile_memory.txt` must be 0.
 - **Compiling every function.** An exhaustive check compiles the printed C of every function in every test binary
   together with the standard headers. It is marked `#[ignore]` because it is slow; run it with
-  `cargo nextest run --release --run-ignored all -E 'test(every_fixture_function_compiles)'`. A fast subset runs in
-  the normal suite.
+  `cargo test --release --test recompile every_fixture_function_compiles -- --ignored`. A fast subset runs in the
+  normal suite.
 - **Golden output.** `tests/golden/` holds the expected output for each test binary and readability metrics
   (lines, variables, casts, gotos). Review every change to these files.
 
@@ -56,7 +55,7 @@ accept.
 When an output change is intended, regenerate the golden files and review the diff:
 
 ```bash
-VELK_BLESS=1 cargo nextest run --release
+VELK_BLESS=1 cargo test --release
 git diff tests/golden
 ```
 
@@ -64,7 +63,7 @@ git diff tests/golden
 
 Outside the test suite, velk is also tested with randomly generated C programs: each program is compiled, one
 function at a time is replaced by velk's output, and the program must still print the same result. This runs on
-arm64 and x86-64 and has found most of the correctness bugs fixed so far.
+arm64 and x86-64 and has found many correctness bugs.
 
 ## Regenerating test binaries
 
@@ -74,6 +73,8 @@ compiler and target. To rebuild them:
 ```bash
 docker compose run --rm fixtures
 ```
+
+To run the test suite in the same pinned Linux environment, use `docker compose run --rm check`.
 
 Some groups have their own scripts: `tests/make_pe_fixtures.sh` (Windows PE), `tests/make_codeview.sh`
 (CodeView / PDB), `tests/make_seh_fixtures.sh` (Windows SEH), `tests/make_objc_fixtures.sh` (Objective-C) and
