@@ -22,6 +22,10 @@
     references() { return this.#call("references"); }
     strings() { return this.#call("strings"); }
     shapeHash() { return this.#call("shapeHash"); }
+    summary() { return call("navigate", { bin: this.#bin, query: { kind: "summary", target: this.addr } }); }
+    xrefs({ from = false } = {}) { return call("navigate", { bin: this.#bin, query: { kind: "xrefs", target: this.addr, from } }); }
+    callers({ depth = 1 } = {}) { return call("navigate", { bin: this.#bin, query: { kind: "callers", target: this.addr, depth } }); }
+    callees({ depth = 1 } = {}) { return call("navigate", { bin: this.#bin, query: { kind: "callees", target: this.addr, depth } }); }
   }
 
   class Binary {
@@ -48,6 +52,15 @@
     }
     buildSignatures() { return call("buildSignatures", { bin: this.#id }); }
     identify(signatures) { return call("identify", { bin: this.#id, signatures }); }
+    xrefs(target, { from = false } = {}) { return call("navigate", { bin: this.#id, query: { kind: "xrefs", target: String(address(target)), from } }); }
+    callers(target, { depth = 1 } = {}) { return call("navigate", { bin: this.#id, query: { kind: "callers", target: String(address(target)), depth } }); }
+    callees(target, { depth = 1 } = {}) { return call("navigate", { bin: this.#id, query: { kind: "callees", target: String(address(target)), depth } }); }
+    callPath(from, to, { depth = 32 } = {}) { return call("navigate", { bin: this.#id, query: { kind: "path", from: String(address(from)), to: String(address(to)), depth } }); }
+    strings({ contains } = {}) { return call("navigate", { bin: this.#id, query: { kind: "strings", contains } }); }
+    constants(value) {
+      if (typeof value === "number" && (!Number.isSafeInteger(value) || value < 0)) throw new RangeError("use a decimal or hex string for a 64-bit constant");
+      return call("navigate", { bin: this.#id, query: { kind: "constants", value: String(address(value)) } });
+    }
   }
 
   const output = [];

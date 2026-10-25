@@ -13,6 +13,10 @@ use crate::sigs::Database;
 #[derive(Deserialize)]
 #[serde(tag = "op", rename_all = "camelCase", deny_unknown_fields)]
 pub enum Request {
+    Navigate {
+        bin: PathBuf,
+        query: crate::xrefs::query::Query,
+    },
     Open {
         path: PathBuf,
     },
@@ -77,6 +81,13 @@ pub fn handle(
     deadline: Option<std::time::Instant>,
 ) -> Result<Value> {
     match request {
+        Request::Navigate { bin, query } => {
+            let binary = match session.open(&bin) {
+                Ok(binary) => binary,
+                Err(error) => return Err(error),
+            };
+            crate::xrefs::query::run(binary, query, deadline)
+        }
         Request::Open { path } => {
             let binary = session.open(&path)?;
             let image = binary.image();

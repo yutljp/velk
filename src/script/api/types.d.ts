@@ -65,3 +65,70 @@ interface Failure {
   addr: Addr;
   error: string;
 }
+
+interface Xref {
+  function: Addr;
+  block: Addr;
+  statement: number;
+  target: Addr;
+  kind: "call" | "tailCall" | "resolvedCall" | "candidateCall" | "jumpTable" | "read" | "write" | "address";
+  name: string | null;
+}
+
+interface NavigationFailure {
+  function: Addr;
+  error: string;
+}
+
+interface XrefResult {
+  xrefs: Xref[];
+  failures: NavigationFailure[];
+}
+
+interface GraphResult {
+  functions: { addr: Addr; name: string | null }[];
+  failures: NavigationFailure[];
+}
+
+interface PathResult {
+  path: Addr[];
+  failures: NavigationFailure[];
+}
+
+interface StringLiteral {
+  addr: Addr;
+  section: string;
+  encoding: "ascii" | "utf8" | "utf16le";
+  text: string;
+  bytes: number;
+  xrefs: Xref[];
+}
+
+interface StringsResult {
+  strings: StringLiteral[];
+  failures: NavigationFailure[];
+}
+
+interface ConstantMatch {
+  instruction: Addr;
+  value: Addr;
+  operand: number;
+  function: Addr | null;
+}
+
+interface ConstantsResult {
+  matches: ConstantMatch[];
+}
+
+interface FunctionSummary {
+  addr: Addr;
+  name: string | null;
+  size: number | null;
+  signature: Signature;
+  callees: Addr[];
+  imports: string[];
+  strings: StringLiteral[];
+  incomingXrefs: number;
+  outgoingXrefs: number;
+  failures: NavigationFailure[];
+}

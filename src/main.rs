@@ -32,9 +32,11 @@ const HELP_STYLES: Styles = Styles::styled()
     override_usage = "velk <OPERATION> [OPTIONS] [INPUT] [FUNCTION]",
     group(ArgGroup::new("operation").required(true).multiple(false).args([
         "functions", "sections", "card", "decompile", "disasm", "ir",
-        "build_signatures", "identify", "run", "mcp"
+        "build_signatures", "identify", "run", "mcp", "xrefs", "callers", "callees", "path", "strings", "constants", "summary"
     ])),
-    after_help = "Examples:\n  velk -f app.elf\n  velk -D app.elf main\n  velk --disasm app.elf 0x401000 --limit 20\n  velk --build-signatures app.elf --output signatures.json\n  velk -r analysis.js\n\nChoose one operation. Use --help to list its arguments and options."
+    group(ArgGroup::new("multi_target").args(["decompile", "path"])),
+    group(ArgGroup::new("graph").args(["callers", "callees", "path"])),
+    after_help = "Examples:\n  velk -f app.elf\n  velk -D app.elf main\n  velk --disasm app.elf 0x401000 --limit 20\n  velk --build-signatures app.elf --output signatures.json\n  velk -r analysis.js\n  velk --xrefs app.elf main\n  velk --path app.elf main helper --depth 4\n  velk --strings app.elf --contains hello\n\nChoose one operation. Use --help to list its arguments and options."
 )]
 struct Cli {
     /// List the discovered functions.
@@ -67,6 +69,36 @@ struct Cli {
     /// Serve the script API over MCP on standard input and output.
     #[arg(short = 'm', long, help_heading = "Operations (choose one)")]
     mcp: bool,
+    /// Code and data references, as JSON.
+    #[arg(long, help_heading = "Operations (choose one)")]
+    xrefs: bool,
+    /// Callers (default depth: 1), as JSON.
+    #[arg(long, help_heading = "Operations (choose one)")]
+    callers: bool,
+    /// Callees (default depth: 1), as JSON.
+    #[arg(long, help_heading = "Operations (choose one)")]
+    callees: bool,
+    /// Shortest call path (default depth: 32), as JSON.
+    #[arg(long, help_heading = "Operations (choose one)")]
+    path: bool,
+    /// Detected strings with references, as JSON.
+    #[arg(long, help_heading = "Operations (choose one)")]
+    strings: bool,
+    /// Matching decoded instruction immediates, as JSON.
+    #[arg(long, help_heading = "Operations (choose one)")]
+    constants: bool,
+    /// Compact function summary, as JSON.
+    #[arg(long, help_heading = "Operations (choose one)")]
+    summary: bool,
+    /// References originating in the target function; only with --xrefs.
+    #[arg(long, requires = "xrefs", conflicts_with_all = ["functions", "sections", "card", "decompile", "disasm", "ir", "build_signatures", "identify", "run", "mcp", "callers", "callees", "path", "strings", "constants", "summary"])]
+    from: bool,
+    /// Maximum call depth; only with --callers, --callees or --path.
+    #[arg(long, requires = "graph", conflicts_with_all = ["functions", "sections", "card", "decompile", "disasm", "ir", "build_signatures", "identify", "run", "mcp", "xrefs", "strings", "constants", "summary"])]
+    depth: Option<usize>,
+    /// Case-sensitive substring; only with --strings.
+    #[arg(long, requires = "strings", conflicts_with_all = ["functions", "sections", "card", "decompile", "disasm", "ir", "build_signatures", "identify", "run", "mcp", "xrefs", "callers", "callees", "path", "constants", "summary"])]
+    contains: Option<String>,
     /// Binary file, or JavaScript file with --run; required except with --mcp.
     #[arg(
         value_name = "INPUT",
@@ -74,37 +106,44 @@ struct Cli {
         conflicts_with = "mcp"
     )]
     input: Option<PathBuf>,
-    /// Function name or address; required for --card, --decompile, --disasm, and --ir.
+    /// Function, address or constant; --path also needs a destination function.
     #[arg(
         value_name = "FUNCTION",
         required_if_eq_any([
             ("card", "true"), ("decompile", "true"),
-            ("disasm", "true"), ("ir", "true")
+            ("disasm", "true"), ("ir", "true"), ("xrefs", "true"), ("callers", "true"), ("callees", "true"), ("path", "true"), ("constants", "true"), ("summary", "true")
         ]),
-        conflicts_with_all = ["functions", "sections", "build_signatures", "identify", "run", "mcp"]
+        conflicts_with_all = ["functions", "sections", "build_signatures", "identify", "run", "mcp", "strings"]
     )]
     function: Option<String>,
+    /// Destination for --path, or a second function to decompile.
+    #[arg(
+        value_name = "FUNCTION",
+        requires = "multi_target",
+        required_if_eq("path", "true"),
+        conflicts_with_all = ["functions", "sections", "card", "disasm", "ir", "build_signatures", "identify", "run", "mcp", "xrefs", "callers", "callees", "strings", "constants", "summary"])]
+    destination: Option<String>,
     /// Additional functions to decompile; use '*' for all functions.
-    #[arg(value_name = "FUNCTION", requires = "decompile")]
+    #[arg(value_name = "FUNCTION", requires = "decompile", conflicts_with_all = ["functions", "sections", "card", "disasm", "ir", "build_signatures", "identify", "run", "mcp", "xrefs", "callers", "callees", "path", "strings", "constants", "summary"])]
     additional_functions: Vec<String>,
     /// Maximum functions (default: 40), matches (default: 100), or instructions (default: all).
     #[arg(
         long,
         value_name = "N",
-        conflicts_with_all = ["sections", "card", "decompile", "ir", "build_signatures", "run", "mcp"]
+        conflicts_with_all = ["xrefs", "callers", "callees", "path", "strings", "constants", "summary", "sections", "card", "decompile", "ir", "build_signatures", "run", "mcp"]
     )]
     limit: Option<usize>,
     #[arg(
         long,
         value_name = "TOKENS",
-        conflicts_with_all = ["functions", "sections", "decompile", "disasm", "ir", "build_signatures", "identify", "run", "mcp"],
+        conflicts_with_all = ["xrefs", "callers", "callees", "path", "strings", "constants", "summary", "functions", "sections", "decompile", "disasm", "ir", "build_signatures", "identify", "run", "mcp"],
         help = format!("Approximate card size in tokens (default: {}); only with --card", card::DEFAULT_BUDGET)
     )]
     budget: Option<usize>,
     /// Print the function list as JSON; only with --functions.
     #[arg(
         long,
-        conflicts_with_all = ["sections", "card", "decompile", "disasm", "ir", "build_signatures", "identify", "run", "mcp"]
+        conflicts_with_all = ["xrefs", "callers", "callees", "path", "strings", "constants", "summary", "sections", "card", "decompile", "disasm", "ir", "build_signatures", "identify", "run", "mcp"]
     )]
     json: bool,
     /// Signature database; required for --identify, optional for --card and --decompile.
@@ -112,7 +151,7 @@ struct Cli {
         long,
         value_name = "FILE",
         required_if_eq("identify", "true"),
-        conflicts_with_all = ["functions", "sections", "disasm", "ir", "build_signatures", "run", "mcp"]
+        conflicts_with_all = ["xrefs", "callers", "callees", "path", "strings", "constants", "summary", "functions", "sections", "disasm", "ir", "build_signatures", "run", "mcp"]
     )]
     signatures: Option<PathBuf>,
     /// Signature database to write; required with --build-signatures.
@@ -120,13 +159,17 @@ struct Cli {
         long,
         value_name = "FILE",
         required_if_eq("build_signatures", "true"),
-        conflicts_with_all = ["functions", "sections", "card", "decompile", "disasm", "ir", "identify", "run", "mcp"]
+        conflicts_with_all = ["xrefs", "callers", "callees", "path", "strings", "constants", "summary", "functions", "sections", "card", "decompile", "disasm", "ir", "identify", "run", "mcp"]
     )]
     output: Option<PathBuf>,
 }
 
 #[cfg_attr(test, derive(Debug, PartialEq, Eq))]
 enum Command {
+    Navigation {
+        path: PathBuf,
+        query: velk::xrefs::query::Query,
+    },
     Functions {
         path: PathBuf,
         limit: usize,
@@ -172,6 +215,51 @@ enum Command {
 
 impl Cli {
     fn into_command(self) -> Command {
+        if self.xrefs
+            || self.callers
+            || self.callees
+            || self.path
+            || self.strings
+            || self.constants
+            || self.summary
+        {
+            use velk::xrefs::query::Query;
+            let target = self.function.unwrap_or_default();
+            let query = if self.xrefs {
+                Query::Xrefs {
+                    target,
+                    from: self.from,
+                }
+            } else if self.callers {
+                Query::Callers {
+                    target,
+                    depth: self.depth.unwrap_or(1),
+                }
+            } else if self.callees {
+                Query::Callees {
+                    target,
+                    depth: self.depth.unwrap_or(1),
+                }
+            } else if self.path {
+                Query::Path {
+                    from: target,
+                    to: self.destination.expect("clap requires a destination"),
+                    depth: self.depth.unwrap_or(32),
+                }
+            } else if self.strings {
+                Query::Strings {
+                    contains: self.contains,
+                }
+            } else if self.constants {
+                Query::Constants { value: target }
+            } else {
+                Query::Summary { target }
+            };
+            return Command::Navigation {
+                path: self.input.expect("clap requires input"),
+                query,
+            };
+        }
         match self {
             Self {
                 functions: true,
@@ -206,12 +294,14 @@ impl Cli {
                 decompile: true,
                 input: Some(path),
                 function: Some(function),
+                destination,
                 additional_functions,
                 signatures,
                 ..
             } => Command::Decompile {
                 path,
                 functions: std::iter::once(function)
+                    .chain(destination)
                     .chain(additional_functions)
                     .collect(),
                 signatures,
@@ -288,6 +378,17 @@ fn main() -> ExitCode {
 
 fn run(command: Command) -> Result<ExitCode> {
     match command {
+        Command::Navigation { path, query } => {
+            let mut binary = match Binary::open(&path) {
+                Ok(binary) => binary,
+                Err(error) => return Err(error),
+            };
+            match velk::xrefs::query::run(&mut binary, query, None) {
+                Ok(value) => println!("{value:#}"),
+                Err(error) => return Err(error),
+            }
+        }
+
         Command::Functions { path, limit, json } => {
             let binary = Binary::open(&path)?;
             if json {
@@ -730,6 +831,65 @@ mod tests {
         match Cli::try_parse_from(std::iter::once("velk").chain(args.iter().copied())) {
             Ok(_) => panic!("expected invalid arguments: {args:?}"),
             Err(error) => error,
+        }
+    }
+
+    #[test]
+    fn navigation_operations_validate_arguments() {
+        use velk::xrefs::query::Query;
+        assert_eq!(
+            parse(&["--path", "binary", "a", "b"]),
+            Command::Navigation {
+                path: PathBuf::from("binary"),
+                query: Query::Path {
+                    from: "a".into(),
+                    to: "b".into(),
+                    depth: 32
+                },
+            }
+        );
+        assert_eq!(
+            parse(&["binary", "--xrefs", "a", "--from"]),
+            Command::Navigation {
+                path: PathBuf::from("binary"),
+                query: Query::Xrefs {
+                    target: "a".into(),
+                    from: true
+                },
+            }
+        );
+        for flag in [
+            "--xrefs",
+            "--callers",
+            "--callees",
+            "--path",
+            "--constants",
+            "--summary",
+        ] {
+            error(&[flag, "binary"]);
+            error(&[flag, "binary", "a", "--functions"]);
+            error(&[flag, "binary", "a", "--json"]);
+            error(&[flag, "binary", "a", "--limit", "2"]);
+            error(&[flag.trim_start_matches('-'), "binary", "a"]);
+        }
+        for args in [
+            vec!["--path", "binary", "a", "b", "c"],
+            vec!["--summary", "binary", "a", "b"],
+            vec!["--strings", "binary", "a"],
+            vec!["--strings", "binary", "--from"],
+            vec!["--summary", "binary", "a", "--depth", "2"],
+            vec!["--xrefs", "binary", "a", "--contains", "hi"],
+        ] {
+            error(&args);
+        }
+        for args in [
+            vec!["--callers", "binary", "a", "--depth", "0"],
+            vec!["--callees", "binary", "a"],
+            vec!["--strings", "binary", "--contains", "hi"],
+            vec!["--constants", "binary", "0x12"],
+            vec!["--summary", "binary", "a"],
+        ] {
+            parse(&args);
         }
     }
 

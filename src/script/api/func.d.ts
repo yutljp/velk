@@ -25,6 +25,10 @@ interface Func {
   strings(): string[];
   /** Hash of the function's normalized shape; equal shapes give equal hashes. */
   shapeHash(): string;
+  summary(): FunctionSummary;
+  xrefs(opts?: { from?: boolean }): XrefResult;
+  callers(opts?: { depth?: number }): GraphResult;
+  callees(opts?: { depth?: number }): GraphResult;
 }
 
 // const f = velk.open("a.out").getFunction("0x1e0");

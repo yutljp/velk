@@ -26,3 +26,46 @@ b.functions({ named: false, minSize: 200 }).slice(0, 5)
 ```
 
 Return a later slice to inspect another range, or retrieve one selected body with `b.getFunction("main").decompile()`.
+
+## Navigation queries
+
+Navigation commands print JSON:
+
+```sh
+velk --xrefs BIN TARGET [--from]
+velk --callers BIN TARGET [--depth N]
+velk --callees BIN TARGET [--depth N]
+velk --path BIN FROM TO [--depth N]
+velk --strings BIN [--contains TEXT]
+velk --constants BIN VALUE
+velk --summary BIN FUNCTION
+```
+
+Targets accept function names, import names, data symbols or addresses. Constants
+accept decimal or hexadecimal values. Callers and callees default to depth 1;
+paths default to 32 and include both endpoints. Depth 0 returns no neighbors.
+An unreachable path is an empty array.
+
+Scripts use `b.xrefs(target, {from})`, `b.callers(target, {depth})`,
+`b.callees(target, {depth})`, `b.callPath(from, to, {depth})`,
+`b.strings({contains})` and `b.constants(value)`. A `Func` also provides
+`xrefs({from})`, `callers({depth})`, `callees({depth})` and `summary()`.
+The navigation index is built once per opened binary and cached in the session.
+Summaries include the inferred signature, size, callees, imports, referenced
+strings and incoming/outgoing reference counts.
+
+A reference's `function` and `block` are virtual addresses; `statement` is a
+zero-based lifted IR statement ordinal, not an instruction address. Constant
+matches instead report the decoded instruction address and operand index.
+`candidateCall` references are possible indirect targets, excluded from call
+graph traversal. The `failures` field lists functions that could not be lifted;
+results can be incomplete even when a query succeeds. An interrupted index build
+is not cached and can be retried.
+
+String detection scans loaded non-executable sections for printable ASCII, UTF-8
+and UTF-16LE runs of at least four characters, including both UTF-16 alignments.
+These are heuristic candidates, not proof that the program uses text; string
+references come from the lifted IR. Scalar constants equal to mapped addresses
+can appear as address references. Constant search scans decoded immediates in
+executable sections, excludes branch displacements, and does not reconstruct
+values assembled by multiple instructions.

@@ -11,6 +11,14 @@ interface Binary {
   entry: Addr | null;
 
   sections(): Section[];
+  /** Navigation is indexed once per unchanged binary. Depth defaults to one. */
+  xrefs(target: string | number, opts?: { from?: boolean }): XrefResult;
+  callers(target: string | number, opts?: { depth?: number }): GraphResult;
+  callees(target: string | number, opts?: { depth?: number }): GraphResult;
+  callPath(from: string | number, to: string | number, opts?: { depth?: number }): PathResult;
+  strings(opts?: { contains?: string }): StringsResult;
+  /** Pass a hex string for integers larger than JavaScript's safe integer range. */
+  constants(value: string | number): ConstantsResult;
 
   /**
    * Every discovered function in address order, filtered by all given fields.

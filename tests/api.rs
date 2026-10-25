@@ -87,6 +87,18 @@ JSON.stringify({{
   references: f.references(),
   strings: f.strings(),
   shapeHash: f.shapeHash(),
+  navigation: {{
+    xrefs: b.xrefs(f.addr),
+    callers: b.callers(f.addr),
+    callees: b.callees(f.addr),
+    path: b.callPath(f.addr, f.addr, {{ depth: 0 }}),
+    constants: b.constants("0x1"),
+    strings: b.strings(),
+    summary: f.summary(),
+    functionXrefs: f.xrefs(),
+    functionCallers: f.callers(),
+    functionCallees: f.callees(),
+  }},
   signatures,
   identify: b.identify(signatures.database),
   functionCount: b.functions().length,
@@ -153,6 +165,39 @@ fn script_results_match_the_declarations() {
             &at("sections()[0]"),
         ));
         problems.extend(check(&interfaces, "Card", &result["card"], &at("card()")));
+        let navigation = &result["navigation"];
+        for (field, interface) in [
+            ("xrefs", "XrefResult"),
+            ("callers", "GraphResult"),
+            ("callees", "GraphResult"),
+            ("path", "PathResult"),
+            ("constants", "ConstantsResult"),
+            ("strings", "StringsResult"),
+            ("summary", "FunctionSummary"),
+            ("functionXrefs", "XrefResult"),
+            ("functionCallers", "GraphResult"),
+            ("functionCallees", "GraphResult"),
+        ] {
+            problems.extend(check(
+                &interfaces,
+                interface,
+                &navigation[field],
+                &at(field),
+            ));
+        }
+        for (field, array, interface) in [
+            ("xrefs", "xrefs", "Xref"),
+            ("constants", "matches", "ConstantMatch"),
+            ("strings", "strings", "StringLiteral"),
+        ] {
+            for value in navigation[field][array].as_array().into_iter().flatten() {
+                problems.extend(check(&interfaces, interface, value, &at(field)));
+            }
+        }
+        assert_eq!(
+            navigation["path"]["path"],
+            serde_json::json!([result["func"]["addr"]])
+        );
         problems.extend(check(
             &interfaces,
             "Card",

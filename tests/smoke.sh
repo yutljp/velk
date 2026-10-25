@@ -17,6 +17,19 @@ if [ -z "${BIN:-}" ]; then
 fi
 [ -x "$BIN" ] || fail "binary not built"
 
+# Navigation uses the same operation flags as the other commands.
+for operation in xrefs callers callees summary; do
+  navigation=$("$BIN" --"$operation" "$FIX/tail_calls.o" tail_one)
+  echo "$navigation" | grep -q '"failures": \[\]' || fail "$operation navigation"
+done
+navigation=$("$BIN" --path "$FIX/tail_calls.o" tail_two tail_one --depth 1)
+echo "$navigation" | grep -q '"path"' || fail "call path"
+navigation=$("$BIN" --strings "$FIX/arm64_linked.elf" --contains velk-aarch64-string)
+echo "$navigation" | grep -q 'velk-aarch64-string' || fail "string navigation"
+navigation=$("$BIN" --constants "$FIX/tail_calls.o" 0x1)
+echo "$navigation" | grep -q '"instruction"' || fail "constant navigation"
+ok "navigation flags"
+
 # 1) PE64: format, ISA, function count
 pe_json=$("$BIN" --functions $FIX/pe64.exe --json 2>/dev/null)
 echo "$pe_json" | grep -q '"format": "pe"'          || fail "PE format detect"

@@ -42,6 +42,7 @@ impl Session {
 }
 
 pub struct Binary {
+    navigation: Option<crate::xrefs::Index>,
     path: PathBuf,
     modified: SystemTime,
     image: Image,
@@ -82,6 +83,7 @@ impl Binary {
         let mut image = loader::load(path)?;
         crate::analysis::absorb_jump_table_cases(&mut image);
         Ok(Self {
+            navigation: None,
             path: path.to_owned(),
             modified,
             symbols: render::callee_names(&image),
@@ -98,6 +100,93 @@ impl Binary {
 
     pub fn image(&self) -> &Image {
         &self.image
+    }
+
+    /// Builds the navigation index once; interrupted builds are never cached.
+    pub fn navigation(&mut self, deadline: Option<Instant>) -> Result<&crate::xrefs::Index> {
+        if let Err(error) = passed(deadline) {
+            return Err(error);
+        }
+        if self.navigation.is_none() {
+            match crate::xrefs::Index::build(&self.image, deadline) {
+                Ok(index) => self.navigation = Some(index),
+                Err(error) => return Err(error),
+            }
+        }
+        Ok(self.navigation.as_ref().expect("index was inserted"))
+    }
+
+    /// Resolves a function, import slot, data symbol, or arbitrary address.
+    pub fn find_address(&self, target: &str) -> Result<u64> {
+        if let Some(addr) = crate::addr::parse(target) {
+            return Ok(addr);
+        }
+        let matches: std::collections::BTreeSet<_> = self
+            .image
+            .imports
+            .iter()
+            .chain(self.image.data_symbols.iter())
+            .filter(|(_, name)| name.as_str() == target)
+            .map(|(addr, _)| *addr)
+            .collect();
+        if let [addr] = matches.iter().copied().collect::<Vec<_>>().as_slice() {
+            return Ok(*addr);
+        }
+        if matches.len() > 1 {
+            return Err(Error::AmbiguousName {
+                name: target.to_owned(),
+                shown: matches
+                    .iter()
+                    .take(SHOWN_CANDIDATES)
+                    .map(|addr| crate::addr::format(*addr))
+                    .collect(),
+                total: matches.len(),
+            });
+        }
+        self.find(target).map(|function| function.addr)
+    }
+
+    pub fn summary(&mut self, addr: u64, deadline: Option<Instant>) -> Result<serde_json::Value> {
+        let function = match self.function(addr) {
+            Ok(function) => function.clone(),
+            Err(error) => return Err(error),
+        };
+        let ir = match self.analysis(addr, deadline) {
+            Ok(analysis) => &analysis.ir,
+            Err(error) => return Err(error),
+        };
+        let signature = serde_json::json!({
+            "return": ir.ret_type.to_string(),
+            "params": ir.params.iter().map(|p| serde_json::json!({"name": p.name, "type": p.ty.to_string()})).collect::<Vec<_>>(),
+        });
+        let imports: std::collections::BTreeMap<_, _> = self
+            .image
+            .imports
+            .iter()
+            .map(|(addr, name)| (*addr, name.clone()))
+            .chain(
+                self.image
+                    .functions
+                    .values()
+                    .filter(|f| f.sources.contains(&loader::NameSource::Plt))
+                    .filter_map(|f| f.name.clone().map(|name| (f.addr, name))),
+            )
+            .collect();
+        let index = match self.navigation(deadline) {
+            Ok(index) => index,
+            Err(error) => return Err(error),
+        };
+        let outgoing = index.from(addr);
+        Ok(serde_json::json!({
+            "addr": crate::addr::format(addr), "name": function.name, "size": function.size,
+            "signature": signature,
+            "callees": index.graph(addr, false, 1).into_iter().map(crate::addr::format).collect::<Vec<_>>(),
+            "imports": outgoing.iter().filter_map(|xref| imports.get(&xref.target))
+                .collect::<std::collections::BTreeSet<_>>(),
+            "strings": index.strings().iter().filter(|s| s.xrefs.iter().any(|xref| xref.function == addr)).collect::<Vec<_>>(),
+            "incomingXrefs": index.to(addr).len(), "outgoingXrefs": outgoing.len(),
+            "failures": index.failures,
+        }))
     }
 
     /// Resolves an address (`0x1e0` or decimal), an exact name, or a

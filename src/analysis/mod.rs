@@ -4,6 +4,7 @@ mod clobbers;
 mod go_types;
 mod indirect;
 mod jump_table;
+pub(crate) mod navigation;
 pub mod prototypes;
 pub mod refs;
 pub(crate) mod results;
