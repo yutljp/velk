@@ -49,12 +49,12 @@ fn widen_mul @ 0x20130 (size 8)
 -- decompile
 /* velk pseudo-C: mixed_sign @ 0x20138 */
 int32_t mixed_sign(int32_t a0, int32_t a1) {
-    uint32_t v4;
+    uint32_t v2;
 
     /* unsupported: AAPCS32 multiword, floating-point or aggregate declaration */
     int32_t v1 = a0 - a1;
     /* unsupported: ARM rsc r1, r3, r0, asr 31 at 0x20140 */
-    int32_t v3 = v4;
+    int32_t v3 = v2;
     return v3;
 }
 -- signature
@@ -85,8 +85,8 @@ _Bool in_range(int x, int lo, int hi) {
     if (x < lo) {
         return v3 & v2;
     }
-    v3 = 1;
-    return v3 & v2;
+    uint8_t v4 = 1;
+    return v4 & v2;
 }
 -- signature
 _Bool (int x, int lo, int hi)
@@ -132,19 +132,16 @@ fn rotate_left @ 0x2016c (size 12)
 -- decompile
 /* velk pseudo-C: popcount @ 0x20178 */
 int popcount(unsigned int x) {
-    int32_t v3;
-    int32_t v5;
-
     int32_t v1 = x;
     int32_t v2 = 0;
     if (x == 0) {
         x = 0;
     }
     if (v1 != v2) {
-        v3 = x;
+        int32_t v3 = x;
         int32_t v4 = 0;
         while (true) {
-            v5 = v3 - 1;
+            int32_t v5 = v3 - 1;
             ++v4;
             int32_t v6 = v5 & v3;
             v3 = v5 & v3;
@@ -213,8 +210,7 @@ int min3(int a, int b, int c) {
     if (a < c) {
         return a;
     }
-    a = c;
-    return a;
+    return c;
 }
 -- signature
 int (int a, int b, int c)

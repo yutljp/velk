@@ -14,95 +14,88 @@ uint64_t velk_entry_stack_pointer(void); /* target entry stack pointer */
 double average(int32_t a0, int32_t a1) {
     uint64_t sp = velk_entry_stack_pointer();
     uint64_t call_values[2];
-    uint64_t v41;
+    uint64_t v31;
+    uint32_t v1;
+    uint32_t v6;
+    uint32_t v7;
+    uint32_t v8;
+    uint32_t v11;
+    uint32_t v16;
+    uint32_t v21;
+    uint32_t v26;
     uint32_t v27;
     uint32_t v29;
-    uint32_t v30;
-    uint32_t v31;
-    uint32_t v32;
-    uint32_t v33;
-    uint32_t v34;
-    uint32_t v35;
-    uint32_t v36;
-    uint32_t v37;
-    int32_t v2;
     uint32_t v3;
     int32_t v4;
     int32_t v5;
-    int32_t v13;
-    int32_t v18;
-    int32_t v23;
-    int32_t v28;
-    int32_t v38;
-    int32_t v39;
 
     /* unsupported: AAPCS32 multiword, floating-point or aggregate declaration */
-    *(uint32_t *)(sp - 0x24) = v30;
-    *(uint32_t *)(sp - 0x20) = v31;
-    *(uint32_t *)(sp - 0x1c) = v32;
-    *(uint32_t *)(sp - 0x18) = v33;
-    *(uint32_t *)(sp - 0x14) = v34;
-    *(uint32_t *)(sp - 0x10) = v35;
-    *(uint32_t *)(sp - 0xc) = v36;
-    *(uint32_t *)(sp - 0x8) = v37;
-    v36 = a1;
+    *(uint32_t *)(sp - 0x24) = v7;
+    *(uint32_t *)(sp - 0x20) = v8;
+    *(uint32_t *)(sp - 0x1c) = v11;
+    *(uint32_t *)(sp - 0x18) = v16;
+    *(uint32_t *)(sp - 0x14) = v21;
+    *(uint32_t *)(sp - 0x10) = v26;
+    *(uint32_t *)(sp - 0xc) = v27;
+    *(uint32_t *)(sp - 0x8) = v29;
+    v27 = a1;
     if (a1 >= 1) {
-        v2 = a0;
-        v35 = v36 & 0x3;
-        if (v36 < 4) {
+        int32_t v2 = a0;
+        v26 = v27 & 0x3;
+        if (v27 < 4) {
             v3 = 0;
             v4 = 0;
             v5 = 0;
         } else {
-            v37 = v36 & 0x7ffffffc;
-            v34 = v2 - 32;
+            v29 = v27 & 0x7ffffffc;
+            v21 = v2 - 32;
             *(uint32_t *)(sp - 0x28) = v2;
             for (;;) {
-                int32_t v9 = *(uint32_t *)(v34 + 32);
-                int32_t v10 = v34 + 36;
+                int32_t v9 = *(uint32_t *)(v21 + 32);
+                int32_t v10 = v21 + 36;
                 /* unsupported: ARM ldm r7, {r3, r5, r6, r7} at 0x20150 */
-                int32_t v12 = (uint32_t)(sub_20156((uint32_t)a0, (uint32_t)a1, v27, v29));
-                v13 = (uint32_t)(v41); /* also returned by the call */
-                int32_t v14 = v31;
-                int32_t v15 = v32;
+                int32_t v12 = (uint32_t)(sub_20156((uint32_t)a0, (uint32_t)a1, v1, v6));
+                int32_t v13 = (uint32_t)(v31); /* also returned by the call */
+                int32_t v14 = v8;
+                int32_t v15 = v11;
                 int32_t v17 = (uint32_t)(sub_2015e((uint32_t)v12, (uint32_t)v13, (uint32_t)v14, (uint32_t)v15));
-                v18 = (uint32_t)(v41); /* also returned by the call */
-                int32_t v19 = *(uint32_t *)(v34 + 20);
-                int32_t v20 = v33;
+                int32_t v18 = (uint32_t)(v31); /* also returned by the call */
+                int32_t v19 = *(uint32_t *)(v21 + 20);
+                int32_t v20 = v16;
                 int32_t v22 = (uint32_t)(sub_20168((uint32_t)v17, (uint32_t)v18, (uint32_t)v20, (uint32_t)v19));
-                v23 = (uint32_t)(v41); /* also returned by the call */
-                int32_t v24 = *(uint32_t *)(v34 + 24);
-                int32_t v25 = *(uint32_t *)((uint64_t)(v34 + 24) + 0x4);
+                int32_t v23 = (uint32_t)(v31); /* also returned by the call */
+                int32_t v24 = *(uint32_t *)(v21 + 24);
+                int32_t v25 = *(uint32_t *)((uint64_t)(v21 + 24) + 0x4);
                 v4 = (uint32_t)(sub_20170((uint32_t)v22, (uint32_t)v23, (uint32_t)v24, (uint32_t)v25));
-                v5 = (uint32_t)(v41); /* also returned by the call */
-                v3 = v30 + 4;
-                if (v37 == v3) {
+                v5 = (uint32_t)(v31); /* also returned by the call */
+                v3 = v7 + 4;
+                if (v29 == v3) {
                     break;
                 }
             }
             v2 = *(uint32_t *)(sp - 0x28);
-            if (v35 == 0) {
+            if (v26 == 0) {
                 goto L_201ac;
             }
         }
-        v28 = v2 + (v3 << 3);
+        int32_t v28 = v2 + (v3 << 3);
         {
             call_values[0] = sub_20190((uint32_t)v4, (uint32_t)v5, *(uint32_t *)(v2 + (v3 << 3)), *(uint32_t *)((v28 + 4) & 0xffffffff));
-            call_values[1] = v41; /* also returned by the call */
+            call_values[1] = v31; /* also returned by the call */
             v4 = (uint32_t)(call_values[0]);
             v5 = (uint32_t)(call_values[1]);
         }
-        if (v35 != 1) {
+        if (v26 != 1) {
             {
                 call_values[0] = sub_2019e((uint32_t)v4, (uint32_t)v5, *(uint32_t *)((v28 + 8) & 0xffffffff), *(uint32_t *)((uint64_t)((v28 + 8) & 0xffffffff) + 0x4));
-                call_values[1] = v41; /* also returned by the call */
+                call_values[1] = v31; /* also returned by the call */
                 v4 = (uint32_t)(call_values[0]);
                 v5 = (uint32_t)(call_values[1]);
             }
-            if (v35 != 2) {
+            if (v26 != 2) {
                 {
                     call_values[0] = sub_201ac((uint32_t)v4, (uint32_t)v5, *(uint32_t *)((v28 + 16) & 0xffffffff), *(uint32_t *)((uint64_t)((v28 + 16) & 0xffffffff) + 0x4));
-                    call_values[1] = v41; /* also returned by the call */
+                    call_values[1] = v31; /* also returned by the call */
                     v4 = (uint32_t)(call_values[0]);
                     v5 = (uint32_t)(call_values[1]);
                 }
@@ -112,13 +105,13 @@ double average(int32_t a0, int32_t a1) {
         v4 = 0;
         v5 = 0;
     }
-L_201ac:
-    v38 = (uint32_t)(sub_201b6(v36));
-    v39 = (uint32_t)(v41); /* also returned by the call */
+L_201ac:;
+    int32_t v38 = (uint32_t)(sub_201b6(v27));
+    int32_t v39 = (uint32_t)(v31); /* also returned by the call */
     double v44 = ((union { uint64_t bits; double value; }){ .bits = (uint32_t)(sub_201c2((uint32_t)v4, (uint32_t)v5, (uint32_t)v38, (uint32_t)v39)) }).value;
-    int32_t v45 = v36;
+    int32_t v45 = v27;
     int32_t v46 = 0;
-    if ((int32_t)v36 <= 0) {
+    if ((int32_t)v27 <= 0) {
         v44 = 0.0;
     }
     if (v45 > v46) {
@@ -229,27 +222,27 @@ fn average @ 0x20104 (size 206)
 -- decompile
 /* velk pseudo-C: lerp @ 0x201d4 */
 float lerp(int32_t a0, int32_t a1, int32_t a2) {
-    uint64_t v16;
+    uint64_t v8;
     uint32_t v1;
     uint32_t v3;
     uint32_t v4;
-    uint32_t v7;
-    float v12;
+    uint32_t v5;
+    int32_t v6;
 
     /* unsupported: AAPCS32 multiword, floating-point or aggregate declaration */
     int32_t v2 = a1;
-    int32_t v6 = (uint32_t)(sub_201e2((uint32_t)v2, (uint32_t)a0, (uint32_t)a2, v1));
-    int32_t v9 = (uint32_t)(sub_201e8((uint32_t)v6, (uint32_t)a2));
     {
         uint64_t call_values[2];
-        call_values[0] = sub_201ee((uint32_t)v9, (uint32_t)a0);
-        call_values[1] = v16; /* also returned by the call */
-        v12 = ((union { uint32_t bits; float value; }){ .bits = (uint32_t)(call_values[0]) }).value;
+        call_values[0] = sub_201e2((uint32_t)v2, (uint32_t)a0, (uint32_t)a2, v1);
+        call_values[1] = v8; /* also returned by the call */
+        v6 = (uint32_t)(call_values[0]);
         a1 = (uint32_t)(call_values[1]);
     }
+    int32_t v9 = (uint32_t)(sub_201e8((uint32_t)v6, (uint32_t)a2));
+    float v12 = ((union { uint32_t bits; float value; }){ .bits = (uint32_t)(sub_201ee((uint32_t)v9, (uint32_t)a0)) }).value;
     int32_t v13 = v3;
     int32_t v14 = v4;
-    int32_t v15 = v7;
+    int32_t v15 = v5;
     return v12;
 }
 -- signature
@@ -283,22 +276,22 @@ fn lerp @ 0x201d4 (size 28)
 -- decompile
 /* velk pseudo-C: truncate_to_int @ 0x201f0 */
 int32_t truncate_to_int(void) {
+    uint64_t v1;
     uint64_t v4;
-    uint64_t v5;
+    uint32_t v5;
     uint32_t v6;
     uint32_t v7;
-    uint32_t v8;
     int32_t v2;
 
     /* unsupported: AAPCS32 multiword, floating-point or aggregate declaration */
     {
         uint64_t call_values[2];
-        call_values[0] = sub_201f6((uint32_t)v4, v5, v6, v7);
-        call_values[1] = v5; /* also returned by the call */
+        call_values[0] = sub_201f6((uint32_t)v1, v4, v5, v6);
+        call_values[1] = v4; /* also returned by the call */
         v2 = (uint32_t)(call_values[0]);
-        v5 = (uint32_t)(call_values[1]);
+        v4 = (uint32_t)(call_values[1]);
     }
-    int32_t v3 = v8;
+    int32_t v3 = v7;
     return v2;
 }
 -- signature
@@ -320,27 +313,19 @@ fn truncate_to_int @ 0x201f0 (size 8)
 -- decompile
 /* velk pseudo-C: widen @ 0x201f8 */
 double widen(void) {
-    uint64_t v9;
-    uint64_t v10;
+    uint64_t v1;
+    uint64_t v6;
+    uint32_t v9;
+    uint32_t v10;
     uint32_t v11;
-    uint32_t v12;
-    uint32_t v13;
-    int32_t v3;
-    double v7;
 
     /* unsupported: AAPCS32 multiword, floating-point or aggregate declaration */
-    int32_t v2 = (uint32_t)(sub_201fe((uint32_t)v9, v10, v11, v12));
-    v3 = (uint32_t)(v10); /* also returned by the call */
+    int32_t v2 = (uint32_t)(sub_201fe((uint32_t)v1, v6, v9, v10));
+    int32_t v3 = (uint32_t)(v6); /* also returned by the call */
     int32_t v4 = v2;
     int32_t v5 = v3;
-    {
-        uint64_t call_values[2];
-        call_values[0] = sub_20206((uint32_t)v2, (uint32_t)v3, (uint32_t)v4, (uint32_t)v5);
-        call_values[1] = v10; /* also returned by the call */
-        v7 = ((union { uint64_t bits; double value; }){ .bits = (uint32_t)(call_values[0]) }).value;
-        v10 = (uint32_t)(call_values[1]);
-    }
-    int32_t v8 = v13;
+    double v7 = ((union { uint64_t bits; double value; }){ .bits = (uint32_t)(sub_20206((uint32_t)v2, (uint32_t)v3, (uint32_t)v4, (uint32_t)v5)) }).value;
+    int32_t v8 = v11;
     return ((union { uint64_t bits; double value; }){ .bits = (uint32_t)((union { double value; uint64_t bits; }){ .value = v7 }).bits }).value;
 }
 -- signature
@@ -367,22 +352,30 @@ fn widen @ 0x201f8 (size 16)
 /* velk pseudo-C: compare_doubles @ 0x20208 */
 int32_t compare_doubles(int32_t a0, int32_t a1, int32_t a2, int32_t a3) {
     uint64_t sp = velk_entry_stack_pointer();
+    uint64_t v13;
     uint32_t v1;
     uint32_t v2;
     uint32_t v4;
+    uint32_t v5;
     uint32_t v10;
     uint32_t v11;
-    uint32_t v12;
+    int32_t v6;
 
     /* unsupported: AAPCS32 multiword, floating-point or aggregate declaration */
     *(uint32_t *)(sp - 0x18) = v1;
     *(uint32_t *)(sp - 0x14) = v2;
     *(uint32_t *)(sp - 0x10) = v4;
-    *(uint32_t *)(sp - 0xc) = v10;
-    *(uint32_t *)(sp - 0x8) = v11;
-    *(uint32_t *)(sp - 0x4) = v12;
+    *(uint32_t *)(sp - 0xc) = v5;
+    *(uint32_t *)(sp - 0x8) = v10;
+    *(uint32_t *)(sp - 0x4) = v11;
     int32_t v3 = a1;
-    int32_t v6 = (uint32_t)(sub_20218());
+    {
+        uint64_t call_values[2];
+        call_values[0] = sub_20218();
+        call_values[1] = v13; /* also returned by the call */
+        v6 = (uint32_t)(call_values[0]);
+        a1 = (uint32_t)(call_values[1]);
+    }
     int32_t v7 = v6;
     int32_t v8 = v6;
     a1 = v3;

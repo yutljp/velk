@@ -114,10 +114,8 @@ fn <unnamed> @ 0x201400 (size 2)
 -- decompile
 /* velk pseudo-C: sub_201410 @ 0x201410 */
 int32_t sub_201410(uint64_t *a0, int32_t a1) {
-    int32_t v3;
-
     uint64_t *v2 = (uint64_t *)*a0;
-    v3 = ((uint64_t (*)())v2[2])(a0); /* vtable slot 2: sub_201430, sub_201460 */
+    int32_t v3 = ((uint64_t (*)())v2[2])(a0); /* vtable slot 2: sub_201430, sub_201460 */
     return v3 * a1;
 }
 -- signature
@@ -245,13 +243,12 @@ fn <unnamed> @ 0x201470 (size 12)
 struct S1 { int64_t field_0x0; int32_t field_0x8; };
 int32_t sub_201480(int32_t a0) {
     uint64_t *const qword_204610 = (uint64_t *)0x204610ULL;
-    int32_t v3;
 
     int64_t v1 = *qword_204610;
     struct S1 *v2 = (struct S1 *)(0x203610 + v1);
     *qword_204610 = v1 + 16;
     sub_201420(v2, a0 & 0xffffffff);
-    v3 = sub_201430(v2); /* via vtable slot 2 */
+    int32_t v3 = sub_201430(v2); /* via vtable slot 2 */
     sub_201560(); /* via vtable slot 1 */
     return v3;
 }

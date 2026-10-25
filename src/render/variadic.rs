@@ -897,7 +897,7 @@ fn recover_access(ir: &mut FunctionIr, list: &List, start: usize, register: u16)
     }) {
         return false;
     }
-    let positions: HashSet<_> = accesses
+    let mut positions: HashSet<_> = accesses
         .iter()
         .flat_map(|access| access.positions.iter().copied())
         .collect();
@@ -914,6 +914,35 @@ fn recover_access(ir: &mut FunctionIr, list: &List, start: usize, register: u16)
         .collect();
     let stop = first.stop;
     let replacement = first.replacement.clone();
+    // A branch block that no valid offset takes can still enter the expansion.
+    // Include these empty paths in the checks for external predecessors.
+    let mut targets: HashSet<u64> = positions
+        .iter()
+        .filter(|(block, _)| *block != start)
+        .map(|(block, _)| ir.blocks[*block].start)
+        .chain(std::iter::once(ir.blocks[stop.0].start))
+        .collect();
+    loop {
+        let before = positions.len();
+        for (block, contents) in ir.blocks.iter().enumerate() {
+            if block == 0 || block == start || block == stop.0 {
+                continue;
+            }
+            if let [
+                Stmt::Br {
+                    target: Some(target),
+                },
+            ] = contents.stmts.as_slice()
+                && targets.contains(target)
+            {
+                positions.insert((block, 0));
+                targets.insert(contents.start);
+            }
+        }
+        if positions.len() == before {
+            break;
+        }
+    }
     // Every deleted definition must be used entirely inside the expansion.
     for (b, block) in ir.blocks.iter().enumerate() {
         for (p, stmt) in block.stmts.iter().enumerate() {

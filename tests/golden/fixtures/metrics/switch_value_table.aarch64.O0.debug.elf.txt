@@ -50,24 +50,24 @@ fn dispatch @ 0x210154 (size 172)
   blk9 @ 0x2101ac:
     br 0x2101ec
   blk10 @ 0x2101b0:
-    v2 = #0x1
+    v3 = #0x1
     br 0x2101f4
   blk11 @ 0x2101bc:
-    v2 = #0x3
+    v3 = #0x3
     br 0x2101f4
   blk12 @ 0x2101c8:
-    v2 = #0x7
+    v3 = #0x7
     br 0x2101f4
   blk13 @ 0x2101d4:
-    v2 = #0x9
+    v3 = #0x9
     br 0x2101f4
   blk14 @ 0x2101e0:
-    v2 = #0xb
+    v3 = #0xb
     br 0x2101f4
   blk15 @ 0x2101ec:
-    v2 = #0x0
+    v3 = #0x0
     br 0x2101f4
   blk16 @ 0x2101f4:
-    ret v2
+    ret v3
 -- card
 {"addr":"0x210154","approxTokens":240,"blocks":17,"hardReasons":[],"name":"dispatch","nameSources":["symtab","dwarf","unwind"],"section":".text","size":172,"unsupported":0}

@@ -108,8 +108,8 @@ int32_t sub_2011e0(uint32_t *a0, int32_t a1) {
             v9 = add_lanes32(v9, *(uint64_t *)((uint8_t *)a0 + v7 + 0x18));
             v7 += 32;
         } while (v4 != v7);
-        v5 = add_lanes32(add_lanes32(v9, v6), add_lanes32(v8, v5));
-        v3 = add_lanes32(v5 >> 32 | v5 >> 32 << 32, v5);
+        uint64_t v17 = add_lanes32(add_lanes32(v9, v6), add_lanes32(v8, v5));
+        v3 = add_lanes32(v17 >> 32 | v17 >> 32 << 32, v17);
         if (v2 == (uint32_t)a1) {
             return v3;
         }

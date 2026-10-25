@@ -25,9 +25,9 @@ fn sum3 @ 0x200fc (size 12)
 -- decompile
 /* velk pseudo-C: helper @ 0x20108 */
 int helper(int x) {
+    uint32_t v6;
+    uint32_t v7;
     uint32_t v14;
-    uint32_t v15;
-    uint32_t v16;
 
     int32_t v1 = x;
     int32_t v2 = 1;
@@ -39,11 +39,11 @@ int helper(int x) {
         int32_t v4 = x - 1;
         int32_t v5 = x - 3;
         /* unsupported: ARM umull r1, ip, r2, r1 at 0x20120 */
-        uint32_t v8 = v14 * v15;
+        uint32_t v8 = v6 * v7;
         int32_t v9 = x + (v8 >> 1) * 0x55555556;
-        int32_t v10 = (v16 & 0x1) >> 1;
+        int32_t v10 = (v14 & 0x1) >> 1;
         /* unsupported: ARM mov r1, r1, rrx at 0x20140 */
-        int32_t v11 = v14 * 3;
+        int32_t v11 = v6 * 3;
         int32_t v12 = x + v11;
         int32_t v13 = v12 - 1;
         return v13;
@@ -109,7 +109,7 @@ int sum_arr(int *p, int n) {
         int32_t v1 = (uint32_t)(sub_201d0());
         return v1;
     }
-    uint32_t v5 = 0;
+    uint32_t v2 = 0;
     if ((uint32_t)n < 4) {
         int32_t v3 = (uint32_t)(sub_201b0());
         return v3;

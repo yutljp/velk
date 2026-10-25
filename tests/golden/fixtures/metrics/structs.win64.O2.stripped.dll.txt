@@ -74,13 +74,13 @@ int32_t sub_180001010(uint16_t *a0, int32_t a1) {
         v4 = 0;
     }
     int64_t v10 = (uintptr_t)(a0 + (v3 * 0x6 + 0x4));
-    v3 = (v2 << 2) * 3;
+    uint8_t v14 = (v2 << 2) * 3;
     int64_t i = 0;
     do {
-        v1 = *(int16_t *)(v10 + i) * *(uint32_t *)(v10 + i - 0x4);
-        v4 += v1;
+        int32_t v15 = *(int16_t *)(v10 + i) * *(uint32_t *)(v10 + i - 0x4);
+        v4 += v15;
         i += 12;
-    } while (v3 != i);
+    } while (v14 != i);
     return v4;
 }
 -- signature

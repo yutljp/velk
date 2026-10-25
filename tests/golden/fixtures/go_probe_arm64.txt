@@ -1433,9 +1433,7 @@ fn main.kindName @ 0x774c0 (size 112)
 int64_t main_main(int64_t a0, int64_t a1, int64_t a2) {
     uint64_t v4;
     uint64_t v5;
-    uint64_t call_values[2];
     uint64_t v9;
-    int64_t v3;
     int64_t local_0; /* [sp-60] */
     int64_t local_1; /* [sp-38] */
     int64_t local_2; /* [sp-40] */
@@ -1445,90 +1443,49 @@ int64_t main_main(int64_t a0, int64_t a1, int64_t a2) {
     int32_t v1 = *(uint64_t *)(v4 + 0x10);
     local_0 = v5;
     int64_t v2 = main_divmod(7, 3, a2);
-    v3 = v9; /* also returned by the call */
+    int64_t v3 = v9; /* also returned by the call */
     local_1 = v2;
     local_2 = v3;
     local_3.f_0 = 1;
     local_3.f_8 = 2;
     local_3.f_10 = 3;
-    v2 = main_sumSlice(&local_3.f_0, 3);
-    local_4 = v2;
-    v2 = main_add(1, 2);
-    local_3.f_18 = v2;
-    runtime_printlock(v2, 2, 0);
-    v3 = v9; /* also returned by the call */
-    {
-        runtime_printint(local_4, v3, 0);
-        call_values[0] = 0 /* undefined */;
-        call_values[1] = 0 /* undefined */;
-        v2 = call_values[0];
-        v3 = call_values[1];
-    }
-    {
-        runtime_printsp(v2, v3, 0);
-        call_values[0] = v9; /* also returned by the call */
-        v3 = call_values[0];
-    }
-    {
-        runtime_printint(local_3.f_18, v3, 0);
-        call_values[0] = 0 /* undefined */;
-        call_values[1] = 0 /* undefined */;
-        v2 = call_values[0];
-        v3 = call_values[1];
-    }
-    {
-        runtime_printsp(v2, v3, 0);
-        call_values[0] = v9; /* also returned by the call */
-        v3 = call_values[0];
-    }
-    {
-        runtime_printint(local_1, v3, 0);
-        call_values[0] = 0 /* undefined */;
-        call_values[1] = 0 /* undefined */;
-        v2 = call_values[0];
-        v3 = call_values[1];
-    }
-    {
-        runtime_printsp(v2, v3, 0);
-        call_values[0] = v9; /* also returned by the call */
-        v3 = call_values[0];
-    }
-    {
-        runtime_printint(local_2, v3, 0);
-        call_values[0] = 0 /* undefined */;
-        call_values[1] = 0 /* undefined */;
-        v2 = call_values[0];
-        v3 = call_values[1];
-    }
-    {
-        call_values[0] = runtime_printnl(v2, v3, 0);
-        call_values[1] = v9; /* also returned by the call */
-        v2 = call_values[0];
-        v3 = call_values[1];
-    }
-    runtime_printunlock(v2, v3, 0);
-    v2 = main_kindName(0x85420, 0xaf010);
-    v3 = v9; /* also returned by the call */
-    local_4 = v2;
-    {
-        runtime_printlock(v2, v3, 0);
-        call_values[0] = v9; /* also returned by the call */
-        v3 = call_values[0];
-    }
-    {
-        runtime_printint(local_4, v3, 0);
-        call_values[0] = 0 /* undefined */;
-        call_values[1] = 0 /* undefined */;
-        v2 = call_values[0];
-        v3 = call_values[1];
-    }
-    {
-        call_values[0] = runtime_printnl(v2, v3, 0);
-        call_values[1] = v9; /* also returned by the call */
-        v2 = call_values[0];
-        v3 = call_values[1];
-    }
-    return runtime_printunlock(v2, v3, 0);
+    local_4 = main_sumSlice(&local_3.f_0, 3);
+    int64_t v30 = main_add(1, 2);
+    local_3.f_18 = v30;
+    runtime_printlock(v30, 2, 0);
+    int64_t v31 = v9; /* also returned by the call */
+    runtime_printint(local_4, v31, 0);
+    int64_t v32 = 0 /* undefined */;
+    int64_t v33 = 0 /* undefined */;
+    runtime_printsp(v32, v33, 0);
+    int64_t v34 = v9; /* also returned by the call */
+    runtime_printint(local_3.f_18, v34, 0);
+    int64_t v35 = 0 /* undefined */;
+    int64_t v36 = 0 /* undefined */;
+    runtime_printsp(v35, v36, 0);
+    int64_t v37 = v9; /* also returned by the call */
+    runtime_printint(local_1, v37, 0);
+    int64_t v38 = 0 /* undefined */;
+    int64_t v39 = 0 /* undefined */;
+    runtime_printsp(v38, v39, 0);
+    int64_t v40 = v9; /* also returned by the call */
+    runtime_printint(local_2, v40, 0);
+    int64_t v41 = 0 /* undefined */;
+    int64_t v42 = 0 /* undefined */;
+    int64_t v43 = runtime_printnl(v41, v42, 0);
+    int64_t v44 = v9; /* also returned by the call */
+    runtime_printunlock(v43, v44, 0);
+    int64_t v45 = main_kindName(0x85420, 0xaf010);
+    int64_t v46 = v9; /* also returned by the call */
+    local_4 = v45;
+    runtime_printlock(v45, v46, 0);
+    int64_t v47 = v9; /* also returned by the call */
+    runtime_printint(local_4, v47, 0);
+    int64_t v48 = 0 /* undefined */;
+    int64_t v49 = 0 /* undefined */;
+    int64_t v50 = runtime_printnl(v48, v49, 0);
+    int64_t v51 = v9; /* also returned by the call */
+    return runtime_printunlock(v50, v51, 0);
 }
 -- signature
 int64_t (int64_t a0, int64_t a1, int64_t a2)

@@ -231,3 +231,48 @@ fn local_initializers_keep_loads_on_each_side_of_a_store() {
         "uint32_t inputs[] = { 0, 1, UINT32_MAX }; for (unsigned i = 0; i < 3; ++i) { uint32_t value = inputs[i]; uint64_t expected = (uint64_t)value + (uint32_t)(value + 1); if (memory_initial_values(&value) != expected) __builtin_trap(); }",
     );
 }
+
+#[test]
+fn a_reused_parameter_keeps_its_debug_name_on_the_incoming_value() {
+    let mut ir = synthetic_ir(
+        "reused_parameter",
+        vec![
+            Param {
+                index: 6,
+                name: "dst".into(),
+                ty: CType::pointer_to(CType::I64),
+            },
+            Param {
+                index: 7,
+                name: "out".into(),
+                ty: CType::pointer_to(CType::U64),
+            },
+        ],
+        CType::U64,
+        vec![
+            Stmt::Store {
+                addr: Expr::reg(7, 64),
+                value: Expr::reg(6, 64),
+                width: 8,
+            },
+            Stmt::Assign {
+                dest: RegRef {
+                    index: 6,
+                    width: 64,
+                },
+                value: Expr::Const(7),
+            },
+            Stmt::Ret {
+                value: Expr::reg(6, 64),
+            },
+        ],
+    );
+    ir.debug_registers.push((6, "dst".into()));
+    let code = velk::render::render(&ir, &[], &Default::default(), &[]);
+    assert!(!code.contains("dst_2") && !code.contains("dst ="), "{code}");
+    syntax::run_printed(
+        &code,
+        "",
+        "uint64_t out = 0; int64_t value = 9; if (reused_parameter(&value, &out) != 7 || out != (uintptr_t)&value) __builtin_trap();",
+    );
+}

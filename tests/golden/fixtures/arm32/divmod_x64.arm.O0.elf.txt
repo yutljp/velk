@@ -26,14 +26,14 @@ uint64_t velk_entry_stack_pointer(void); /* target entry stack pointer */
 /* velk pseudo-C: l3 @ 0x2016c */
 int32_t l3(int32_t a0, int32_t a1) {
     uint64_t sp = velk_entry_stack_pointer();
-    uint64_t v9;
+    uint64_t v5;
     uint32_t v1;
-    uint32_t v7;
+    uint32_t v3;
     int32_t v6;
 
     /* unsupported: AAPCS32 multiword, floating-point or aggregate declaration */
     *(uint32_t *)(sp - 0x8) = v1;
-    *(uint32_t *)(sp - 0x4) = v7;
+    *(uint32_t *)(sp - 0x4) = v3;
     sp = sp - 0x8;
     v1 = sp;
     sp = sp - 0x8;
@@ -43,7 +43,7 @@ int32_t l3(int32_t a0, int32_t a1) {
     {
         uint64_t call_values[2];
         call_values[0] = sub_20194((uint32_t)a0, (uint32_t)v2, 3, 0);
-        call_values[1] = v9; /* also returned by the call */
+        call_values[1] = v5; /* also returned by the call */
         v6 = (uint32_t)(call_values[0]);
         a1 = (uint32_t)(call_values[1]);
     }
@@ -85,14 +85,14 @@ fn l3 @ 0x2016c (size 48)
 /* velk pseudo-C: l10 @ 0x2019c */
 int32_t l10(int32_t a0, int32_t a1) {
     uint64_t sp = velk_entry_stack_pointer();
-    uint64_t v9;
+    uint64_t v5;
     uint32_t v1;
-    uint32_t v7;
+    uint32_t v3;
     int32_t v6;
 
     /* unsupported: AAPCS32 multiword, floating-point or aggregate declaration */
     *(uint32_t *)(sp - 0x8) = v1;
-    *(uint32_t *)(sp - 0x4) = v7;
+    *(uint32_t *)(sp - 0x4) = v3;
     sp = sp - 0x8;
     v1 = sp;
     sp = sp - 0x8;
@@ -102,7 +102,7 @@ int32_t l10(int32_t a0, int32_t a1) {
     {
         uint64_t call_values[2];
         call_values[0] = sub_201c4((uint32_t)a0, (uint32_t)v2, 10, 0);
-        call_values[1] = v9; /* also returned by the call */
+        call_values[1] = v5; /* also returned by the call */
         v6 = (uint32_t)(call_values[0]);
         a1 = (uint32_t)(call_values[1]);
     }
@@ -144,26 +144,26 @@ fn l10 @ 0x2019c (size 48)
 /* velk pseudo-C: h3 @ 0x201cc */
 int32_t h3(int32_t a0, int32_t a1, int32_t a2, int32_t a3) {
     uint64_t sp = velk_entry_stack_pointer();
-    uint32_t v10;
-    uint32_t v11;
+    uint32_t v2;
+    uint32_t v3;
 
     /* unsupported: AAPCS32 multiword, floating-point or aggregate declaration */
-    *(uint32_t *)(sp - 0x8) = v10;
-    *(uint32_t *)(sp - 0x4) = v11;
+    *(uint32_t *)(sp - 0x8) = v2;
+    *(uint32_t *)(sp - 0x4) = v3;
     sp = sp - 0x8;
     sp = sp - 0x8;
     *(uint32_t *)(sp) = a0;
     *(uint32_t *)(sp + 0x4) = a1;
     int32_t v1 = a0 + a1;
     /* unsupported (2 steps): ARM adc r3, r2, 0x0 at 0x201ec, ARM umull ip, lr, r3, r2 at 0x201f8 */
-    int32_t v4 = a3 - ((v11 & 0xfffffffe) + (v11 >> 1));
+    int32_t v4 = a3 - ((v3 & 0xfffffffe) + (v3 >> 1));
     int32_t v5 = a0 - v4;
     /* unsupported: ARM umull r0, lr, r3, r2 at 0x2020c */
-    int32_t v8 = v11 + a3 * 0xaaaaaaaa;
+    int32_t v8 = v3 + a3 * 0xaaaaaaaa;
     /* unsupported: ARM sbc r1, r1, 0x0 at 0x2021c */
     int32_t v9 = a3 + a1 * a2;
-    sp = v10;
-    v10 = *(uint32_t *)(sp);
+    sp = v2;
+    v2 = *(uint32_t *)(sp);
     sp = sp + 0x8;
     return a0;
 }
@@ -208,12 +208,12 @@ int32_t h10(int32_t a0, int32_t a1) {
     uint64_t sp = velk_entry_stack_pointer();
     uint32_t v1;
     uint32_t v2;
-    uint32_t v14;
-    uint32_t v15;
+    uint32_t v5;
+    uint32_t v6;
 
     /* unsupported: AAPCS32 multiword, floating-point or aggregate declaration */
-    *(uint32_t *)(sp - 0x8) = v14;
-    *(uint32_t *)(sp - 0x4) = v15;
+    *(uint32_t *)(sp - 0x8) = v5;
+    *(uint32_t *)(sp - 0x4) = v6;
     sp = sp - 0x8;
     sp = sp - 0x8;
     *(uint32_t *)(sp) = a0;
@@ -221,14 +221,14 @@ int32_t h10(int32_t a0, int32_t a1) {
     int32_t v3 = (uint32_t)a0 >> 1;
     int32_t v4 = (v3 | (uint64_t)a1 << 31) + ((uint32_t)a1 >> 1);
     /* unsupported (2 steps): ARM adc r1, r1, 0x0 at 0x20254, ARM umull r3, lr, r1, r2 at 0x20260 */
-    int32_t v7 = a1 - ((v15 & 0xfffffffc) + (v15 >> 2));
+    int32_t v7 = a1 - ((v6 & 0xfffffffc) + (v6 >> 2));
     int32_t v8 = a0 - v7;
     /* unsupported: ARM umull r0, lr, r1, r2 at 0x20274 */
-    int32_t v11 = v15 + a1 * 0xcccccccc;
+    int32_t v11 = v6 + a1 * 0xcccccccc;
     /* unsupported: ARM rsc r1, r1, ip, lsr 1 at 0x20288 */
     int32_t v13 = v2 + a1 * v1;
-    sp = v14;
-    v14 = *(uint32_t *)(sp);
+    sp = v5;
+    v5 = *(uint32_t *)(sp);
     sp = sp + 0x8;
     return a0;
 }
@@ -368,20 +368,20 @@ fn ldiv16x @ 0x202e0 (size 60)
 int umod3x(unsigned int x) {
     uint64_t sp = velk_entry_stack_pointer();
     uint32_t v1;
-    uint32_t v7;
-    uint32_t v8;
+    uint32_t v2;
+    uint32_t v3;
     uint32_t local_0; /* [sp-8] */
 
-    local_0 = v7;
-    *(uint32_t *)(sp - 0x4) = v8;
+    local_0 = v2;
+    *(uint32_t *)(sp - 0x4) = v3;
     sp = sp - 0x8;
     *(uint32_t *)(sp - 0x4) = x;
     /* unsupported: ARM umull r2, r1, r0, r1 at 0x20338 */
     int32_t v4 = v1 >> 1;
     int32_t v5 = v4 * 3;
     int32_t v6 = x - v5;
-    sp = v7;
-    v7 = *(uint32_t *)(sp);
+    sp = v2;
+    v2 = *(uint32_t *)(sp);
     sp = sp + 0x8;
     return v6;
 }
@@ -415,12 +415,12 @@ fn umod3x @ 0x2031c (size 52)
 /* velk pseudo-C: smod3x @ 0x20350 */
 int smod3x(int x) {
     uint32_t v1;
-    uint32_t v4;
+    uint32_t v2;
     uint32_t local_0; /* [sp-8] */
     uint32_t local_1; /* [sp-4] */
 
     local_0 = v1;
-    local_1 = v4;
+    local_1 = v2;
     /* unsupported: undecodable ARM instruction at 0x2036c: incomplete decoder */
 }
 -- signature
@@ -588,15 +588,15 @@ fn pdiv16l @ 0x2040c (size 60)
 /* velk pseudo-C: lmod10x @ 0x20448 */
 int32_t lmod10x(int32_t a0, int32_t a1) {
     uint64_t sp = velk_entry_stack_pointer();
-    uint64_t v11;
-    uint32_t v8;
-    uint32_t v9;
+    uint64_t v6;
+    uint32_t v3;
+    uint32_t v4;
 
     /* unsupported: AAPCS32 multiword, floating-point or aggregate declaration */
-    *(uint32_t *)(sp - 0x8) = v8;
-    *(uint32_t *)(sp - 0x4) = v9;
+    *(uint32_t *)(sp - 0x8) = v3;
+    *(uint32_t *)(sp - 0x4) = v4;
     sp = sp - 0x8;
-    v8 = sp;
+    v3 = sp;
     sp = sp - 0x8;
     *(uint32_t *)(sp) = a0;
     *(uint32_t *)(sp + 0x4) = a1;
@@ -605,12 +605,12 @@ int32_t lmod10x(int32_t a0, int32_t a1) {
     {
         uint64_t call_values[2];
         call_values[0] = sub_20470((uint32_t)v1, (uint32_t)v2, 10, 0);
-        call_values[1] = v11; /* also returned by the call */
+        call_values[1] = v6; /* also returned by the call */
         a0 = (uint32_t)(call_values[0]);
         a1 = (uint32_t)(call_values[1]);
     }
-    sp = v8;
-    v8 = *(uint32_t *)(sp);
+    sp = v3;
+    v3 = *(uint32_t *)(sp);
     sp = sp + 0x8;
     return 0;
 }
@@ -650,11 +650,11 @@ fn lmod10x @ 0x20448 (size 56)
 int32_t umod10x(uint32_t a0, int32_t a1, int64_t a2, uint32_t a3) {
     uint64_t sp = velk_entry_stack_pointer();
     uint32_t v1;
-    uint32_t v9;
+    uint32_t v3;
 
     /* unsupported: AAPCS32 multiword, floating-point or aggregate declaration */
     *(uint32_t *)(sp - 0x8) = v1;
-    *(uint32_t *)(sp - 0x4) = v9;
+    *(uint32_t *)(sp - 0x4) = v3;
     sp = sp - 0x8;
     sp = sp - 0x8;
     *(uint32_t *)(sp) = a0;

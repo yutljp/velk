@@ -26,7 +26,7 @@ fn tail_target @ 0x0 (size 28)
 -- decompile
 /* velk pseudo-C: tail_direct @ 0x1c */
 int32_t tail_direct(int32_t a0) {
-    return ((int32_t)(tail_target((a0 + 2) & 0xffffffff)));
+    return tail_target((a0 + 2) & 0xffffffff);
 }
 -- signature
 int32_t (int32_t a0)

@@ -123,8 +123,8 @@ fn apply_pointer @ 0x180001080 (size 32)
 /* velk pseudo-C: factorial @ 0x1800010a0 */
 int factorial(int n) {
     if (n > 1) {
-        uint32_t v3 = n;
-        return v3 * factorial(n - 1);
+        uint32_t v5 = n;
+        return v5 * factorial(n - 1);
     }
     return 1;
 }
@@ -137,14 +137,14 @@ fn factorial @ 0x1800010a0 (size 68)
   blk0 @ 0x1800010a0:
     brif gt (rcx & #0xffffffff), #0x1 -> 0x1800010ba
   blk1 @ 0x1800010af:
-    v2 = #0x1
+    v4 = #0x1
     br 0x1800010db
   blk2 @ 0x1800010ba:
-    v3 = ecx
+    v5 = ecx
     v1:rax = call 0x1800010a0((ecx - #0x1))
-    v2 = ((v3 * (v1 & #0xffffffff)) & #0xffffffff)
+    v4 = ((v5 * (v1 & #0xffffffff)) & #0xffffffff)
   blk3 @ 0x1800010db:
-    ret v2
+    ret v4
 -- card
 {"addr":"0x1800010a0","approxTokens":138,"blocks":4,"hardReasons":[],"name":"factorial","nameSources":["symtab","dwarf","unwind"],"section":".text","size":68,"unsupported":0}
 
@@ -166,13 +166,13 @@ fn is_odd @ 0x1800010f0 (size 48)
   blk0 @ 0x1800010f0:
     brif ne (rcx & #0xffffffff), #0x0 -> 0x180001107
   blk1 @ 0x1800010ff:
-    v2 = #0x0
+    v3 = #0x0
     br 0x180001117
   blk2 @ 0x180001107:
     v1:rax = call 0x180001120((ecx - #0x1))
-    v2 = (v1 & #0xffffffff)
+    v3 = (v1 & #0xffffffff)
   blk3 @ 0x180001117:
-    ret v2
+    ret v3
 -- card
 {"addr":"0x1800010f0","approxTokens":138,"blocks":4,"hardReasons":[],"name":"is_odd","nameSources":["symtab","dwarf","unwind"],"section":".text","size":48,"unsupported":0}
 
@@ -194,13 +194,13 @@ fn is_even @ 0x180001120 (size 51)
   blk0 @ 0x180001120:
     brif ne (rcx & #0xffffffff), #0x0 -> 0x18000113a
   blk1 @ 0x18000112f:
-    v2 = #0x1
+    v3 = #0x1
     br 0x18000114a
   blk2 @ 0x18000113a:
     v1:rax = call 0x1800010f0((ecx - #0x1))
-    v2 = (v1 & #0xffffffff)
+    v3 = (v1 & #0xffffffff)
   blk3 @ 0x18000114a:
-    ret v2
+    ret v3
 -- card
 {"addr":"0x180001120","approxTokens":138,"blocks":4,"hardReasons":[],"name":"is_even","nameSources":["symtab","dwarf","unwind"],"section":".text","size":51,"unsupported":0}
 

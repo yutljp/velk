@@ -187,13 +187,13 @@ fn abi_hfa4_adjust @ 0x201a4 (size 8)
 /* velk pseudo-C: abi_exhaust_five @ 0x201ac */
 int32_t abi_exhaust_five(int32_t a0, int64_t a1, int32_t a2, int32_t a3) {
     uint64_t sp = velk_entry_stack_pointer();
-    uint32_t v42;
-    uint32_t v43;
-    uint32_t v44;
-    uint32_t v45;
-    uint32_t v46;
-    uint32_t v47;
-    uint32_t v48;
+    uint32_t v1;
+    uint32_t v4;
+    uint32_t v5;
+    uint32_t v14;
+    uint32_t v20;
+    uint32_t v24;
+    uint32_t v29;
 
     /* unsupported: AAPCS32 multiword, floating-point or aggregate declaration */
     int32_t v2 = *(uint32_t *)(sp + 0x20);
@@ -201,39 +201,39 @@ int32_t abi_exhaust_five(int32_t a0, int64_t a1, int32_t a2, int32_t a3) {
     int32_t v3 = *(uint32_t *)(sp + 0x40);
     /* unsupported: ARM umull lr, r8, ip, r2 at 0x201c8 */
     int32_t v6 = *(uint32_t *)(sp + 0x44);
-    int32_t v7 = v43 + a0;
+    int32_t v7 = v4 + a0;
     /* unsupported: ARM umull ip, r4, r4, r7 at 0x201d4 */
     int32_t v8 = *(uint32_t *)(sp + 0x1c);
-    int32_t v9 = v42 + a2 * v45;
+    int32_t v9 = v1 + a2 * v14;
     int32_t v10 = a3 * 3;
     int32_t v11 = *(uint32_t *)(sp + 0x18);
-    int32_t v12 = v44 + v10;
+    int32_t v12 = v5 + v10;
     int32_t v13 = v8 * 5;
     /* unsupported (2 steps): ARM adc r1, r2, r1 at 0x201f0, ARM umull r2, r3, r3, r2 at 0x201f8 */
     int32_t v15 = *(uint32_t *)(sp + 0x2c);
     int32_t v16 = a0 + a2;
     int32_t v17 = *(uint32_t *)(sp + 0x20);
-    int32_t v18 = a3 + v43;
+    int32_t v18 = a3 + v4;
     int32_t v19 = *(uint32_t *)(sp + 0x24);
     /* unsupported (2 steps): ARM adc r1, r1, r3 at 0x20210, ARM umull r2, r3, r2, r3 at 0x20218 */
     int32_t v21 = a0 + a2;
     int32_t v22 = *(uint32_t *)(sp + 0x28);
-    int32_t v23 = a3 + v43 * 7;
+    int32_t v23 = a3 + v4 * 7;
     /* unsupported (2 steps): ARM adc r1, r1, r3 at 0x2022c, ARM umull r2, r5, r2, r3 at 0x20234 */
-    int32_t v25 = v43 + v44 * a3;
+    int32_t v25 = v4 + v5 * a3;
     int32_t v26 = *(uint32_t *)(sp + 0x34);
     int32_t v27 = a0 + a2;
     int32_t v28 = *(uint32_t *)(sp + 0x30);
     /* unsupported (2 steps): ARM adc r1, r1, r3 at 0x20248, ARM umull r2, r5, r2, r3 at 0x20250 */
-    int32_t v30 = v43 + v44 * a3;
+    int32_t v30 = v4 + v5 * a3;
     int32_t v31 = a0 + a2;
     int32_t v32 = *(uint32_t *)(sp + 0x3c);
     int32_t v33 = v32 * 17;
     /* unsupported: ARM adc r1, r1, r3 at 0x20264 */
-    int32_t v34 = v46 + a2;
-    int32_t v35 = a0 + v48;
+    int32_t v34 = v20 + a2;
+    int32_t v35 = a0 + v29;
     /* unsupported: ARM adc r1, r1, r2 at 0x20270 */
-    int32_t v36 = a0 + v47;
+    int32_t v36 = a0 + v24;
     /* unsupported: ARM adc r1, r1, r4 at 0x20278 */
     int32_t v37 = *(uint32_t *)(sp);
     int32_t v38 = *(uint32_t *)(sp + 0x4);
@@ -314,55 +314,55 @@ fn abi_exhaust_five @ 0x201ac (size 212)
 /* velk pseudo-C: abi_exhaust_seven @ 0x20280 */
 int32_t abi_exhaust_seven(int32_t a0, int64_t a1, int32_t a2, int32_t a3) {
     uint64_t sp = velk_entry_stack_pointer();
-    uint32_t v53;
-    uint32_t v54;
-    uint32_t v55;
-    uint32_t v56;
-    uint32_t v57;
-    uint32_t v58;
-    uint32_t v59;
-    uint32_t v60;
-    uint32_t v61;
+    uint32_t v2;
+    uint32_t v4;
+    uint32_t v5;
+    uint32_t v10;
+    uint32_t v21;
+    uint32_t v25;
+    uint32_t v30;
+    uint32_t v37;
+    uint32_t v41;
 
     /* unsupported: AAPCS32 multiword, floating-point or aggregate declaration */
-    *(uint32_t *)(sp - 0x20) = v53;
-    *(uint32_t *)(sp - 0x1c) = v54;
-    *(uint32_t *)(sp - 0x18) = v55;
-    *(uint32_t *)(sp - 0x14) = v56;
-    *(uint32_t *)(sp - 0x10) = v57;
-    *(uint32_t *)(sp - 0xc) = v58;
-    *(uint32_t *)(sp - 0x8) = v59;
+    *(uint32_t *)(sp - 0x20) = v2;
+    *(uint32_t *)(sp - 0x1c) = v4;
+    *(uint32_t *)(sp - 0x18) = v5;
+    *(uint32_t *)(sp - 0x14) = v10;
+    *(uint32_t *)(sp - 0x10) = v21;
+    *(uint32_t *)(sp - 0xc) = v25;
+    *(uint32_t *)(sp - 0x8) = v30;
     int32_t v1 = *(uint32_t *)(sp + 0x30);
     int32_t v3 = *(uint32_t *)(sp + 0x38);
     /* unsupported (2 steps): ARM umull r10, r6, r2, r4 at 0x20290, ARM umull lr, r7, ip, sb at 0x2029c */
     int32_t v6 = *(uint32_t *)(sp + 0x3c);
     int32_t v7 = a3 * 3;
-    int32_t v8 = v55 + v7;
+    int32_t v8 = v5 + v7;
     /* unsupported: ARM umull ip, r4, r8, r2 at 0x202ac */
-    int32_t v9 = v59 + a0;
+    int32_t v9 = v30 + a0;
     /* unsupported: ARM adc r1, r3, r1 at 0x202b4 */
-    int32_t v11 = v53 + v54 * a2;
+    int32_t v11 = v2 + v4 * a2;
     int32_t v12 = *(uint32_t *)(sp);
     int32_t v13 = *(uint32_t *)(sp + 0x4);
     int32_t v14 = *(uint32_t *)(sp + 0x34);
     /* unsupported: ARM umull r3, r5, r5, r3 at 0x202cc */
-    int32_t v15 = v56 + v53 * v58;
+    int32_t v15 = v10 + v2 * v25;
     int32_t v16 = *(uint32_t *)(sp + 0x14);
     int32_t v17 = a0 + a3;
     int32_t v18 = *(uint32_t *)(sp + 0x8);
-    int32_t v19 = v54 + v55 * 5;
+    int32_t v19 = v4 + v5 * 5;
     int32_t v20 = *(uint32_t *)(sp + 0xc);
     /* unsupported (2 steps): ARM adc r1, r1, r5 at 0x202ec, ARM umull r3, r5, r3, r5 at 0x202f4 */
     int32_t v22 = a0 + a3;
     int32_t v23 = *(uint32_t *)(sp + 0x10);
-    int32_t v24 = v54 + v55 * 7;
+    int32_t v24 = v4 + v5 * 7;
     /* unsupported (2 steps): ARM adc r1, r1, r5 at 0x20308, ARM umull r3, r6, r3, r5 at 0x20310 */
-    int32_t v26 = v55 + v56 * v54;
+    int32_t v26 = v5 + v10 * v4;
     int32_t v27 = *(uint32_t *)(sp + 0x1c);
     int32_t v28 = a0 + a3;
     int32_t v29 = *(uint32_t *)(sp + 0x18);
     /* unsupported (2 steps): ARM adc r1, r1, r5 at 0x20324, ARM umull r3, r6, r3, r5 at 0x2032c */
-    int32_t v31 = v55 + v56 * v54;
+    int32_t v31 = v5 + v10 * v4;
     int32_t v32 = *(uint32_t *)(sp + 0x24);
     int32_t v33 = *(uint32_t *)(sp + 0x2c);
     int32_t v34 = a0 + a3;
@@ -371,14 +371,14 @@ int32_t abi_exhaust_seven(int32_t a0, int64_t a1, int32_t a2, int32_t a3) {
     /* unsupported (2 steps): ARM adc r1, r1, r5 at 0x20348, ARM umull r3, r5, r3, r5 at 0x20350 */
     int32_t v38 = a0 + a3;
     int32_t v39 = *(uint32_t *)(sp + 0x28);
-    int32_t v40 = v54 + v55;
+    int32_t v40 = v4 + v5;
     /* unsupported (2 steps): ARM adc r1, r1, r5 at 0x20360, ARM umull r3, r6, r3, r5 at 0x20368 */
-    int32_t v42 = v55 + v56 * v54;
+    int32_t v42 = v5 + v10 * v4;
     int32_t v43 = a0 + a3;
     /* unsupported: ARM adc r1, r1, r5 at 0x20374 */
-    int32_t v44 = a0 + v61;
+    int32_t v44 = a0 + v41;
     /* unsupported: ARM adc r1, r1, r4 at 0x2037c */
-    int32_t v45 = a0 + v60;
+    int32_t v45 = a0 + v37;
     /* unsupported: ARM adc r1, r1, r2 at 0x20384 */
     int32_t v46 = *(uint32_t *)(sp - 0x20);
     int32_t v47 = *(uint32_t *)(sp - 0x1c);
@@ -551,13 +551,13 @@ fn abi_indirect_make @ 0x2038c (size 64)
 /* velk pseudo-C: abi_exhaust_five_aligned @ 0x203cc */
 int32_t abi_exhaust_five_aligned(int32_t a0, int64_t a1, int32_t a2, int32_t a3) {
     uint64_t sp = velk_entry_stack_pointer();
-    uint32_t v42;
-    uint32_t v43;
-    uint32_t v44;
-    uint32_t v45;
-    uint32_t v46;
-    uint32_t v47;
-    uint32_t v48;
+    uint32_t v1;
+    uint32_t v4;
+    uint32_t v5;
+    uint32_t v14;
+    uint32_t v20;
+    uint32_t v24;
+    uint32_t v29;
 
     /* unsupported: AAPCS32 multiword, floating-point or aggregate declaration */
     int32_t v2 = *(uint32_t *)(sp + 0x20);
@@ -565,39 +565,39 @@ int32_t abi_exhaust_five_aligned(int32_t a0, int64_t a1, int32_t a2, int32_t a3)
     int32_t v3 = *(uint32_t *)(sp + 0x40);
     /* unsupported: ARM umull lr, r8, ip, r2 at 0x203e8 */
     int32_t v6 = *(uint32_t *)(sp + 0x44);
-    int32_t v7 = v43 + a0;
+    int32_t v7 = v4 + a0;
     /* unsupported: ARM umull ip, r4, r4, r7 at 0x203f4 */
     int32_t v8 = *(uint32_t *)(sp + 0x1c);
-    int32_t v9 = v42 + a2 * v45;
+    int32_t v9 = v1 + a2 * v14;
     int32_t v10 = a3 * 3;
     int32_t v11 = *(uint32_t *)(sp + 0x18);
-    int32_t v12 = v44 + v10;
+    int32_t v12 = v5 + v10;
     int32_t v13 = v8 * 5;
     /* unsupported (2 steps): ARM adc r1, r2, r1 at 0x20410, ARM umull r2, r3, r3, r2 at 0x20418 */
     int32_t v15 = *(uint32_t *)(sp + 0x2c);
     int32_t v16 = a0 + a2;
     int32_t v17 = *(uint32_t *)(sp + 0x20);
-    int32_t v18 = a3 + v43;
+    int32_t v18 = a3 + v4;
     int32_t v19 = *(uint32_t *)(sp + 0x24);
     /* unsupported (2 steps): ARM adc r1, r1, r3 at 0x20430, ARM umull r2, r3, r2, r3 at 0x20438 */
     int32_t v21 = a0 + a2;
     int32_t v22 = *(uint32_t *)(sp + 0x28);
-    int32_t v23 = a3 + v43 * 7;
+    int32_t v23 = a3 + v4 * 7;
     /* unsupported (2 steps): ARM adc r1, r1, r3 at 0x2044c, ARM umull r2, r5, r2, r3 at 0x20454 */
-    int32_t v25 = v43 + v44 * a3;
+    int32_t v25 = v4 + v5 * a3;
     int32_t v26 = *(uint32_t *)(sp + 0x34);
     int32_t v27 = a0 + a2;
     int32_t v28 = *(uint32_t *)(sp + 0x30);
     /* unsupported (2 steps): ARM adc r1, r1, r3 at 0x20468, ARM umull r2, r5, r2, r3 at 0x20470 */
-    int32_t v30 = v43 + v44 * a3;
+    int32_t v30 = v4 + v5 * a3;
     int32_t v31 = a0 + a2;
     int32_t v32 = *(uint32_t *)(sp + 0x3c);
     int32_t v33 = v32 * 17;
     /* unsupported: ARM adc r1, r1, r3 at 0x20484 */
-    int32_t v34 = v46 + a2;
-    int32_t v35 = a0 + v48;
+    int32_t v34 = v20 + a2;
+    int32_t v35 = a0 + v29;
     /* unsupported: ARM adc r1, r1, r2 at 0x20490 */
-    int32_t v36 = a0 + v47;
+    int32_t v36 = a0 + v24;
     /* unsupported: ARM adc r1, r1, r4 at 0x20498 */
     int32_t v37 = *(uint32_t *)(sp);
     int32_t v38 = *(uint32_t *)(sp + 0x4);
@@ -678,55 +678,55 @@ fn abi_exhaust_five_aligned @ 0x203cc (size 212)
 /* velk pseudo-C: abi_exhaust_seven_aligned @ 0x204a0 */
 int32_t abi_exhaust_seven_aligned(int32_t a0, int64_t a1, int32_t a2, int32_t a3) {
     uint64_t sp = velk_entry_stack_pointer();
-    uint32_t v53;
-    uint32_t v54;
-    uint32_t v55;
-    uint32_t v56;
-    uint32_t v57;
-    uint32_t v58;
-    uint32_t v59;
-    uint32_t v60;
-    uint32_t v61;
+    uint32_t v2;
+    uint32_t v4;
+    uint32_t v5;
+    uint32_t v10;
+    uint32_t v21;
+    uint32_t v25;
+    uint32_t v30;
+    uint32_t v37;
+    uint32_t v41;
 
     /* unsupported: AAPCS32 multiword, floating-point or aggregate declaration */
-    *(uint32_t *)(sp - 0x20) = v53;
-    *(uint32_t *)(sp - 0x1c) = v54;
-    *(uint32_t *)(sp - 0x18) = v55;
-    *(uint32_t *)(sp - 0x14) = v56;
-    *(uint32_t *)(sp - 0x10) = v57;
-    *(uint32_t *)(sp - 0xc) = v58;
-    *(uint32_t *)(sp - 0x8) = v59;
+    *(uint32_t *)(sp - 0x20) = v2;
+    *(uint32_t *)(sp - 0x1c) = v4;
+    *(uint32_t *)(sp - 0x18) = v5;
+    *(uint32_t *)(sp - 0x14) = v10;
+    *(uint32_t *)(sp - 0x10) = v21;
+    *(uint32_t *)(sp - 0xc) = v25;
+    *(uint32_t *)(sp - 0x8) = v30;
     int32_t v1 = *(uint32_t *)(sp + 0x30);
     int32_t v3 = *(uint32_t *)(sp + 0x38);
     /* unsupported (2 steps): ARM umull r10, r6, r2, r4 at 0x204b0, ARM umull lr, r7, ip, sb at 0x204bc */
     int32_t v6 = *(uint32_t *)(sp + 0x3c);
     int32_t v7 = a3 * 3;
-    int32_t v8 = v55 + v7;
+    int32_t v8 = v5 + v7;
     /* unsupported: ARM umull ip, r4, r8, r2 at 0x204cc */
-    int32_t v9 = v59 + a0;
+    int32_t v9 = v30 + a0;
     /* unsupported: ARM adc r1, r3, r1 at 0x204d4 */
-    int32_t v11 = v53 + v54 * a2;
+    int32_t v11 = v2 + v4 * a2;
     int32_t v12 = *(uint32_t *)(sp);
     int32_t v13 = *(uint32_t *)(sp + 0x4);
     int32_t v14 = *(uint32_t *)(sp + 0x34);
     /* unsupported: ARM umull r3, r5, r5, r3 at 0x204ec */
-    int32_t v15 = v56 + v53 * v58;
+    int32_t v15 = v10 + v2 * v25;
     int32_t v16 = *(uint32_t *)(sp + 0x14);
     int32_t v17 = a0 + a3;
     int32_t v18 = *(uint32_t *)(sp + 0x8);
-    int32_t v19 = v54 + v55 * 5;
+    int32_t v19 = v4 + v5 * 5;
     int32_t v20 = *(uint32_t *)(sp + 0xc);
     /* unsupported (2 steps): ARM adc r1, r1, r5 at 0x2050c, ARM umull r3, r5, r3, r5 at 0x20514 */
     int32_t v22 = a0 + a3;
     int32_t v23 = *(uint32_t *)(sp + 0x10);
-    int32_t v24 = v54 + v55 * 7;
+    int32_t v24 = v4 + v5 * 7;
     /* unsupported (2 steps): ARM adc r1, r1, r5 at 0x20528, ARM umull r3, r6, r3, r5 at 0x20530 */
-    int32_t v26 = v55 + v56 * v54;
+    int32_t v26 = v5 + v10 * v4;
     int32_t v27 = *(uint32_t *)(sp + 0x1c);
     int32_t v28 = a0 + a3;
     int32_t v29 = *(uint32_t *)(sp + 0x18);
     /* unsupported (2 steps): ARM adc r1, r1, r5 at 0x20544, ARM umull r3, r6, r3, r5 at 0x2054c */
-    int32_t v31 = v55 + v56 * v54;
+    int32_t v31 = v5 + v10 * v4;
     int32_t v32 = *(uint32_t *)(sp + 0x24);
     int32_t v33 = *(uint32_t *)(sp + 0x2c);
     int32_t v34 = a0 + a3;
@@ -735,14 +735,14 @@ int32_t abi_exhaust_seven_aligned(int32_t a0, int64_t a1, int32_t a2, int32_t a3
     /* unsupported (2 steps): ARM adc r1, r1, r5 at 0x20568, ARM umull r3, r5, r3, r5 at 0x20570 */
     int32_t v38 = a0 + a3;
     int32_t v39 = *(uint32_t *)(sp + 0x28);
-    int32_t v40 = v54 + v55;
+    int32_t v40 = v4 + v5;
     /* unsupported (2 steps): ARM adc r1, r1, r5 at 0x20580, ARM umull r3, r6, r3, r5 at 0x20588 */
-    int32_t v42 = v55 + v56 * v54;
+    int32_t v42 = v5 + v10 * v4;
     int32_t v43 = a0 + a3;
     /* unsupported: ARM adc r1, r1, r5 at 0x20594 */
-    int32_t v44 = a0 + v61;
+    int32_t v44 = a0 + v41;
     /* unsupported: ARM adc r1, r1, r4 at 0x2059c */
-    int32_t v45 = a0 + v60;
+    int32_t v45 = a0 + v37;
     /* unsupported: ARM adc r1, r1, r2 at 0x205a4 */
     int32_t v46 = *(uint32_t *)(sp - 0x20);
     int32_t v47 = *(uint32_t *)(sp - 0x1c);

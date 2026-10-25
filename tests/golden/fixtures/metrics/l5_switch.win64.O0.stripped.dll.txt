@@ -526,17 +526,17 @@ fn <unnamed> @ 0x1800011c0 (size 94)
   blk5 @ 0x1800011ed:
     br 0x18000120d
   blk6 @ 0x1800011ef:
-    v2 = #0x64
+    v3 = #0x64
     br 0x180001215
   blk7 @ 0x1800011f9:
-    v2 = #0x7
+    v3 = #0x7
     br 0x180001215
   blk8 @ 0x180001203:
-    v2 = #0x12c
+    v3 = #0x12c
     br 0x180001215
   blk9 @ 0x18000120d:
-    v2 = #0xffffffff
+    v3 = #0xffffffff
   blk10 @ 0x180001215:
-    ret v2
+    ret v3
 -- card
 {"addr":"0x1800011c0","approxTokens":138,"blocks":11,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":94,"unsupported":0}

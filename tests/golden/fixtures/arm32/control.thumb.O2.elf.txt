@@ -16,119 +16,113 @@ uint64_t velk_entry_stack_pointer(void); /* target entry stack pointer */
 int matrix_trace(int *m, int n) {
     uint32_t v1;
     uint32_t v11;
-    int32_t v3;
     uint32_t v4;
     int32_t v5;
-    int32_t v6;
-    int32_t v7;
-    int32_t v8;
-    uint32_t v9;
     int32_t v13;
-    int32_t v15;
-    int32_t v19;
-    uint32_t v28;
     int32_t v44;
+    int32_t v65;
+    int32_t v80;
 
     int32_t v2 = 1;
     if (n < 1) {
         m = 0x0;
     }
     if (n >= v2) {
-        v3 = (uint32_t)(uintptr_t)m;
+        int32_t v3 = (uint32_t)(uintptr_t)m;
         if (n == v2) {
             v4 = 0;
             v5 = 0;
         } else {
-            v6 = n & 0x7ffffffe;
-            v7 = n & 0x3;
-            v8 = n & 0x7ffffffc;
+            int32_t v6 = n & 0x7ffffffe;
+            int32_t v7 = n & 0x3;
+            int32_t v8 = n & 0x7ffffffc;
             v4 = 0;
             v5 = 0;
             do {
-                v9 = v4 * n;
+                uint32_t v9 = v4 * n;
                 int32_t v10 = v3 + (v9 << 2);
                 if ((uint32_t)n < 4) {
-                    v2 = 0;
+                    v65 = 0;
                 } else {
-                    v2 = 0;
+                    int32_t v64 = 0;
                     for (;;) {
-                        v13 = v2;
-                        v15 = v13 + 2;
-                        if (v4 == v2) {
+                        v13 = v64;
+                        int32_t v15 = v13 + 2;
+                        if (v4 == v64) {
                             v9 = *(uint32_t *)(v10 + (v4 << 2));
                         }
-                        if (v4 == v2) {
+                        if (v4 == v64) {
                             v5 += v9;
                         }
-                        v2 = v15 + 2;
-                        v19 = v2 - 2;
-                        if (v4 == v2 - 2) {
+                        v64 = v15 + 2;
+                        int32_t v19 = v64 - 2;
+                        if (v4 == v64 - 2) {
                             v9 = *(uint32_t *)(v10 + (v4 << 2));
                         }
                         if (v4 == v19) {
                             v5 += v9;
                         }
-                        if (v2 == v8) {
+                        if (v64 == v8) {
                             break;
                         }
                     }
                     if (v7 == 0) {
                         goto L_201c0;
                     }
-                    v2 = v13 + 4;
+                    v65 = v13 + 4;
                 }
-                if (v4 == v2) {
+                if (v4 == v65) {
                     v9 = *(uint32_t *)(v10 + (v4 << 2));
                 }
-                if (v4 == v2) {
+                if (v4 == v65) {
                     v5 += v9;
                 }
                 if (v7 != 1) {
-                    v9 = v2 + 1;
-                    v15 = v9;
-                    if (v4 == v9) {
-                        v9 = *(uint32_t *)(v10 + (v4 << 2));
+                    int32_t v66 = v65 + 1;
+                    int32_t v67 = v66;
+                    if (v4 == v66) {
+                        v66 = *(uint32_t *)(v10 + (v4 << 2));
                     }
-                    if (v4 == v15) {
-                        v5 += v9;
+                    if (v4 == v67) {
+                        v5 += v66;
                     }
                     if (v7 != 2) {
-                        v9 = v2 + 2;
-                        v2 = v9;
-                        if (v4 == v9) {
-                            v9 = *(uint32_t *)(v10 + (v4 << 2));
+                        int32_t v68 = v65 + 2;
+                        int32_t v69 = v68;
+                        if (v4 == v68) {
+                            v68 = *(uint32_t *)(v10 + (v4 << 2));
                         }
-                        if (v4 == v2) {
-                            v5 += v9;
+                        if (v4 == v69) {
+                            v5 += v68;
                         }
                     }
                 }
-            L_201c0:
-                v28 = v4 | 0x1;
-                v9 = v28 * n;
-                int32_t v30 = v3 + (v9 << 2);
+            L_201c0:;
+                uint32_t v28 = v4 | 0x1;
+                uint32_t v70 = v28 * n;
+                int32_t v30 = v3 + (v70 << 2);
                 if ((uint32_t)n < 4) {
                     v11 = 0;
                 } else {
-                    v9 = 0;
+                    v70 = 0;
                     for (;;) {
-                        v11 = v9;
-                        v2 = v9;
-                        if (v4 == v9) {
-                            v9 = *(uint32_t *)(v30 + (v28 << 2));
+                        v11 = v70;
+                        int32_t v71 = v70;
+                        if (v4 == v70) {
+                            v70 = *(uint32_t *)(v30 + (v28 << 2));
                         }
-                        if (v4 == v2) {
-                            v5 += v9;
+                        if (v4 == v71) {
+                            v5 += v70;
                         }
-                        v9 = v11 + 4;
-                        v19 = v9 - 2;
-                        if (v4 == v9 - 2) {
+                        v70 = v11 + 4;
+                        int32_t v72 = v70 - 2;
+                        if (v4 == v70 - 2) {
                             v1 = *(uint32_t *)(v30 + (v28 << 2));
                         }
-                        if (v4 == v19) {
+                        if (v4 == v72) {
                             v5 += v1;
                         }
-                        if (v9 == v8) {
+                        if (v70 == v8) {
                             break;
                         }
                     }
@@ -138,21 +132,21 @@ int matrix_trace(int *m, int n) {
                     v11 += 4;
                 }
                 if (v7 != 1) {
-                    v2 = v11;
+                    int32_t v73 = v11;
                     if (v4 == v11) {
-                        v9 = *(uint32_t *)(v30 + (v28 << 2));
+                        v70 = *(uint32_t *)(v30 + (v28 << 2));
                     }
-                    if (v4 == v2) {
-                        v5 += v9;
+                    if (v4 == v73) {
+                        v5 += v70;
                     }
                     if (v7 != 2) {
-                        v9 = v11 + 1;
-                        v2 = v9;
-                        if (v4 == v9) {
-                            v9 = *(uint32_t *)(v30 + (v28 << 2));
+                        int32_t v74 = v11 + 1;
+                        int32_t v75 = v74;
+                        if (v4 == v74) {
+                            v74 = *(uint32_t *)(v30 + (v28 << 2));
                         }
-                        if (v4 == v2) {
-                            v5 += v9;
+                        if (v4 == v75) {
+                            v5 += v74;
                         }
                     }
                 }
@@ -165,73 +159,73 @@ int matrix_trace(int *m, int n) {
         }
         int32_t v40 = v3 + (v4 * n << 2);
         if ((uint32_t)n < 4) {
-            v2 = 0;
+            v80 = 0;
         } else {
             v11 = 0x7ffffffc;
-            v13 = n & 0x7ffffffc;
-            v2 = 0;
+            int32_t v76 = n & 0x7ffffffc;
+            int32_t v77 = 0;
             for (;;) {
-                v44 = v2;
-                if (v4 == v2) {
+                v44 = v77;
+                if (v4 == v77) {
                     v11 = *(uint32_t *)(v40 + (v4 << 2));
                 }
-                if (v4 == v2) {
+                if (v4 == v77) {
                     v5 += v11;
                 }
-                v15 = v44 + 1;
-                if (v4 == v15) {
-                    v2 = *(uint32_t *)(v40 + (v4 << 2));
+                int32_t v78 = v44 + 1;
+                if (v4 == v78) {
+                    v77 = *(uint32_t *)(v40 + (v4 << 2));
                 }
-                if (v4 == v15) {
-                    v5 += v2;
+                if (v4 == v78) {
+                    v5 += v77;
                 }
-                ++v15;
-                if (v4 == v15) {
-                    v2 = *(uint32_t *)(v40 + (v4 << 2));
+                ++v78;
+                if (v4 == v78) {
+                    v77 = *(uint32_t *)(v40 + (v4 << 2));
                 }
-                if (v4 == v15) {
-                    v5 += v2;
+                if (v4 == v78) {
+                    v5 += v77;
                 }
-                v11 = v15 + 1;
-                v15 = v11;
+                v11 = v78 + 1;
+                int32_t v79 = v11;
                 if (v4 == v11) {
-                    v2 = *(uint32_t *)(v40 + (v4 << 2));
+                    v77 = *(uint32_t *)(v40 + (v4 << 2));
                 }
-                if (v4 == v15) {
-                    v5 += v2;
+                if (v4 == v79) {
+                    v5 += v77;
                 }
-                v2 = v11 + 1;
-                if (v2 == v13) {
+                v77 = v11 + 1;
+                if (v77 == v76) {
                     break;
                 }
             }
-            v2 = v44 + 4;
+            v80 = v44 + 4;
         }
         int32_t v55 = n & 0x3;
-        if (v4 == v2) {
+        if (v4 == v80) {
             v11 = *(uint32_t *)(v40 + (v4 << 2));
         }
-        if (v4 == v2) {
+        if (v4 == v80) {
             v5 += v11;
         }
         if (v55 != 1) {
-            v55 = v2 + 1;
-            v15 = v55;
-            if (v4 == v55) {
-                v55 = *(uint32_t *)(v40 + (v4 << 2));
+            int32_t v81 = v80 + 1;
+            int32_t v82 = v81;
+            if (v4 == v81) {
+                v81 = *(uint32_t *)(v40 + (v4 << 2));
             }
-            if (v4 == v15) {
-                v5 += v55;
+            if (v4 == v82) {
+                v5 += v81;
             }
-            v55 = v2 + 2;
-            v2 = v55;
-            if (v4 == v55) {
-                v55 = *(uint32_t *)(v40 + (v4 << 2));
+            int32_t v83 = v80 + 2;
+            int32_t v84 = v83;
+            if (v4 == v83) {
+                v83 = *(uint32_t *)(v40 + (v4 << 2));
             }
-            if (v4 != v2) {
+            if (v4 != v84) {
                 return v5;
             }
-            v5 += v55;
+            v5 += v83;
             return v5;
         }
         return v5;
@@ -621,18 +615,18 @@ int sparse(int x) {
     int32_t v1 = x;
     int32_t v2 = 1000;
     if (x < 1000) {
-        v1 = x;
-        v2 = 1;
+        int32_t v9 = x;
+        int32_t v10 = 1;
         if (x == 1) {
             x = 10;
         }
-        if (v1 != v2) {
-            v1 = x;
-            v2 = 100;
+        if (v9 != v10) {
+            int32_t v11 = x;
+            int32_t v12 = 100;
             if (x == 100) {
                 x = 20;
             }
-            if (v1 != v2) {
+            if (v11 != v12) {
                 return 0;
             }
             return x;
@@ -643,12 +637,12 @@ int sparse(int x) {
         x = 30;
     }
     if (v1 != v2) {
-        v1 = x;
-        v2 = 10000;
+        int32_t v13 = x;
+        int32_t v14 = 10000;
         if (x == 10000) {
             x = 40;
         }
-        if (v1 != v2) {
+        if (v13 != v14) {
             return 0;
         }
         return x;
@@ -731,8 +725,8 @@ int short_circuit(int *p, int n) {
                 int32_t v7 = *(uint32_t *)((v1 + ((uint64_t)n << 2) - 4) & 0xffffffff) - 1;
                 /* unsupported: ARM clz.w r0, r0 at 0x20340 */
                 int32_t v8 = (uint32_t)(uintptr_t)p >> 5;
-                v3 = (uint32_t)(uintptr_t)p >> 5;
-                return v3;
+                int32_t v9 = (uint32_t)(uintptr_t)p >> 5;
+                return v9;
             }
             return v4;
         }
@@ -789,11 +783,6 @@ int skip_negatives(int *p, int n) {
     uint32_t v25;
     int32_t t1;
     int32_t v6;
-    int32_t v7;
-    int32_t v20;
-    int32_t v21;
-    int32_t v22;
-    int32_t v23;
 
     int32_t v2 = 1;
     if (n < 1) {
@@ -813,7 +802,7 @@ int skip_negatives(int *p, int n) {
             int32_t v5 = -(v4 << 2);
             v6 = 0;
             for (;;) {
-                v7 = *(uint32_t *)(v1 + 16);
+                int32_t v7 = *(uint32_t *)(v1 + 16);
                 int32_t v8 = v16 - 4;
                 t1 = v7 >> 31;
                 int32_t v9 = v1 + 20;
@@ -839,16 +828,16 @@ int skip_negatives(int *p, int n) {
         } else {
             v6 = 0;
         }
-        v20 = *(uint32_t *)((uint32_t)(uintptr_t)p + (v16 << 2));
+        int32_t v20 = *(uint32_t *)((uint32_t)(uintptr_t)p + (v16 << 2));
         t1 = v20 >> 31;
         v6 += (v20 & (t1 ^ 0xffffffff));
         if (v24 != 1) {
-            v21 = (uint32_t)(uintptr_t)p + (v16 << 2);
-            v22 = *(uint32_t *)((v21 + 4) & 0xffffffff);
+            int32_t v21 = (uint32_t)(uintptr_t)p + (v16 << 2);
+            int32_t v22 = *(uint32_t *)((v21 + 4) & 0xffffffff);
             t1 = v22 >> 31;
             v6 += (v22 & (t1 ^ 0xffffffff));
             if (v24 != 2) {
-                v23 = *(uint32_t *)((v21 + 8) & 0xffffffff);
+                int32_t v23 = *(uint32_t *)((v21 + 8) & 0xffffffff);
                 t1 = v23 >> 31;
                 v6 += (v23 & (t1 ^ 0xffffffff));
                 return v6;
@@ -997,8 +986,8 @@ int find_pair(int *p, int n, int target) {
                         }
                         break;
                     }
-                    ++v8;
-                    return v8 + v5 * n;
+                    int32_t v11 = v8 + 1;
+                    return v11 + v5 * n;
                 }
             }
             v5 = v6;

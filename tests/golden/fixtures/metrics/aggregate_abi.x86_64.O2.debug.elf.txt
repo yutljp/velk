@@ -169,12 +169,8 @@ struct abi_hfa4 abi_hfa4_adjust(struct abi_hfa4 value, double bias) {
     uint8_t *result_address = (uint8_t *)&result;
 
     value.d = ((union { uint64_t bits; double value; }){ .bits = bias_bits }).value + value.d;
-    int64_t v1 = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, value_address + 0x8, 8);
-    __builtin_memcpy(result_address, &(uint64_t){*(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, value_address, 8)}, 8);
-    __builtin_memcpy(result_address + 0x8, &(uint64_t){v1}, 8);
-    v1 = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, value_address + 0x18, 8);
-    __builtin_memcpy(result_address + 0x10, &(uint64_t){*(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, value_address + 0x10, 8)}, 8);
-    __builtin_memcpy(result_address + 0x18, &(uint64_t){v1}, 8);
+    __builtin_memmove(result_address, value_address, 16);
+    __builtin_memmove(result_address + 0x10, value_address + 0x10, 16);
     return result;
 }
 -- signature

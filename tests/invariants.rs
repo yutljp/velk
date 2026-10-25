@@ -283,8 +283,19 @@ fn missing_labels(text: &str) -> Vec<String> {
     targets.dedup();
     targets
         .into_iter()
-        .filter(|target| !text.lines().any(|line| line.trim() == format!("{target}:")))
+        .filter(|target| {
+            !text
+                .lines()
+                .any(|line| line.trim().trim_end_matches(';') == format!("{target}:"))
+        })
         .collect()
+}
+
+#[test]
+fn labels_can_precede_a_null_statement() {
+    assert!(missing_labels("goto L_10;\nL_10:;\nint x = 1;\n").is_empty());
+    assert!(missing_labels("goto L_10;\nL_10:\nx = 1;\n").is_empty());
+    assert_eq!(missing_labels("goto L_10;\nL_11:;\n"), ["L_10"]);
 }
 
 /// Registers the body reads that are neither parameters nor assigned

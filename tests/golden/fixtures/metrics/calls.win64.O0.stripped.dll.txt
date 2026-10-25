@@ -113,9 +113,9 @@ fn <unnamed> @ 0x180001080 (size 32)
 /* velk pseudo-C: sub_1800010a0 @ 0x1800010a0 */
 int32_t sub_1800010a0(int32_t a0) {
     if (a0 > 1) {
-        uint32_t v3 = a0;
-        uint32_t result = v3 * ((int32_t)(sub_1800010a0((uint64_t)(uint32_t)a0 - 1)));
-        return result;
+        uint32_t v5 = a0;
+        uint32_t v4 = v5 * ((int32_t)(sub_1800010a0((uint64_t)(uint32_t)a0 - 1)));
+        return v4;
     }
     return 1;
 }
@@ -128,14 +128,14 @@ fn <unnamed> @ 0x1800010a0 (size 68)
   blk0 @ 0x1800010a0:
     brif gt (rcx & #0xffffffff), #0x1 -> 0x1800010ba
   blk1 @ 0x1800010af:
-    v2 = #0x1
+    v4 = #0x1
     br 0x1800010db
   blk2 @ 0x1800010ba:
-    v3 = ecx
+    v5 = ecx
     v1:rax = call 0x1800010a0((ecx - #0x1))
-    v2 = ((v3 * (v1 & #0xffffffff)) & #0xffffffff)
+    v4 = ((v5 * (v1 & #0xffffffff)) & #0xffffffff)
   blk3 @ 0x1800010db:
-    ret v2
+    ret v4
 -- card
 {"addr":"0x1800010a0","approxTokens":138,"blocks":4,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":68,"unsupported":0}
 
@@ -144,8 +144,8 @@ fn <unnamed> @ 0x1800010a0 (size 68)
 /* velk pseudo-C: sub_1800010f0 @ 0x1800010f0 */
 int32_t sub_1800010f0(int32_t a0) {
     if (a0 != 0) {
-        uint32_t result = ((int32_t)(sub_180001120((uint64_t)(uint32_t)a0 - 1)));
-        return result;
+        uint32_t v3 = ((int32_t)(sub_180001120((uint64_t)(uint32_t)a0 - 1)));
+        return v3;
     }
     return 0;
 }
@@ -158,13 +158,13 @@ fn <unnamed> @ 0x1800010f0 (size 48)
   blk0 @ 0x1800010f0:
     brif ne (rcx & #0xffffffff), #0x0 -> 0x180001107
   blk1 @ 0x1800010ff:
-    v2 = #0x0
+    v3 = #0x0
     br 0x180001117
   blk2 @ 0x180001107:
     v1:rax = call 0x180001120((ecx - #0x1))
-    v2 = (v1 & #0xffffffff)
+    v3 = (v1 & #0xffffffff)
   blk3 @ 0x180001117:
-    ret v2
+    ret v3
 -- card
 {"addr":"0x1800010f0","approxTokens":138,"blocks":4,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":48,"unsupported":0}
 
@@ -173,8 +173,8 @@ fn <unnamed> @ 0x1800010f0 (size 48)
 /* velk pseudo-C: sub_180001120 @ 0x180001120 */
 int32_t sub_180001120(int32_t a0) {
     if (a0 != 0) {
-        uint32_t result = ((int32_t)(sub_1800010f0((uint64_t)(uint32_t)a0 - 1)));
-        return result;
+        uint32_t v3 = ((int32_t)(sub_1800010f0((uint64_t)(uint32_t)a0 - 1)));
+        return v3;
     }
     return 1;
 }
@@ -187,13 +187,13 @@ fn <unnamed> @ 0x180001120 (size 51)
   blk0 @ 0x180001120:
     brif ne (rcx & #0xffffffff), #0x0 -> 0x18000113a
   blk1 @ 0x18000112f:
-    v2 = #0x1
+    v3 = #0x1
     br 0x18000114a
   blk2 @ 0x18000113a:
     v1:rax = call 0x1800010f0((ecx - #0x1))
-    v2 = (v1 & #0xffffffff)
+    v3 = (v1 & #0xffffffff)
   blk3 @ 0x18000114a:
-    ret v2
+    ret v3
 -- card
 {"addr":"0x180001120","approxTokens":138,"blocks":4,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":51,"unsupported":0}
 

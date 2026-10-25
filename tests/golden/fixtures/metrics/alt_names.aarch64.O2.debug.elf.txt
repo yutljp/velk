@@ -29,8 +29,8 @@ int alt_helper(int x) {
     }
     uint64_t v2 = (uint64_t)v1 * ((x - 2) & 0xffffffff);
     uint64_t v3 = v2 * ((x - 3) & 0xffffffff);
-    v2 >>= 1;
-    return (v3 >> 1) * 0x55555556 + x + (v2 + (v2 << 1)) - 1;
+    uint32_t v8 = v2 >> 1;
+    return (v3 >> 1) * 0x55555556 + x + (v8 + (v8 << 1)) - 1;
 }
 -- signature
 int (int x)

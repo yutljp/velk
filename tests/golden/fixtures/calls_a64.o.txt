@@ -145,13 +145,12 @@ int32_t factorial(int32_t a0) {
     uint64_t *const qword_288 = (uint64_t *)0x288ULL;
     uint32_t v1;
     int32_t v2;
-    int32_t v5;
 
     if (a0 >= 2) {
         if ((uint32_t)a0 >= 9) {
             uint64_t v3 = 0x100000001;
             uint64_t v4 = 0x100000001;
-            v5 = a0 - 1;
+            int32_t v5 = a0 - 1;
             int32_t v6 = v5 & 0xfffffff8;
             uint64_t v7 = add_lanes32((a0 & 0xffffffff) * 0x100000001, *qword_280);
             uint64_t v8 = add_lanes32((a0 & 0xffffffff) * 0x100000001, *qword_288);
@@ -170,9 +169,9 @@ int32_t factorial(int32_t a0) {
                 v3 = mul_lanes32(v12, v3);
                 v4 = mul_lanes32(v13, v4);
             } while (v11 != 0);
-            v9 = mul_lanes32(mul_lanes32(v3, v9), mul_lanes32(v4, v10));
-            v11 = v9 >> 32;
-            v2 = v9 * v11;
+            uint64_t v17 = mul_lanes32(mul_lanes32(v3, v9), mul_lanes32(v4, v10));
+            int32_t v18 = v17 >> 32;
+            v2 = v17 * v18;
             if (v5 == v6) {
                 return v2;
             }
@@ -246,14 +245,14 @@ fn factorial @ 0x78 (size 160)
 int32_t is_odd(int32_t a0) {
     uint32_t v1 = a0 - (a0 != 0) + 1;
     if (v1 >= 2) {
-        v1 = (v1 >> 1) + 1;
-        uint32_t v4 = v1 & 0xfffffffe;
+        int32_t v7 = (v1 >> 1) + 1;
+        uint32_t v4 = v7 & 0xfffffffe;
         a0 -= (v4 << 1);
         int32_t i = v4;
         do {
             i -= 2;
         } while (i != 0);
-        if (v1 == v4) {
+        if (v7 == v4) {
             return a0 + 2;
         }
     }

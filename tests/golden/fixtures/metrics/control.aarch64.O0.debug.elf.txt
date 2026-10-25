@@ -116,20 +116,20 @@ fn cleanup_on_error @ 0x2102a0 (size 96)
 -- decompile
 /* velk pseudo-C: fallthrough @ 0x210300 */
 int fallthrough(int x) {
-    int32_t result = 0;
+    int32_t v3 = 0;
     if (x == 0) {
-        result = 1;
+        v3 = 1;
     } else if (x != 1) {
         if (x == 2) {
-            return result + 4;
+            return v3 + 4;
         }
         if (x - 3 == 0) {
             return 8;
         }
         return -1;
     }
-    result += 2;
-    return result + 4;
+    int32_t v8 = v3 + 2;
+    return v8 + 4;
 }
 -- signature
 int (int x)
@@ -138,7 +138,7 @@ int (int x)
 -- ir
 fn fallthrough @ 0x210300 (size 160)
   blk0 @ 0x210300:
-    v2 = #0x0
+    v3 = #0x0
     v1 = w0
     brif eq (v1 & #0xffffffff), #0x0 -> 0x21034c
   blk1 @ 0x210318:
@@ -156,22 +156,22 @@ fn fallthrough @ 0x210300 (size 160)
   blk7 @ 0x210348:
     br 0x210388
   blk8 @ 0x21034c:
-    v2 = #0x1
+    v3 = #0x1
     br 0x21035c
   blk9 @ 0x21035c:
-    v2 = ((v2 + #0x2) & #0xffffffff)
+    v3 = ((v3 + #0x2) & #0xffffffff)
     br 0x21036c
   blk10 @ 0x21036c:
-    v2 = ((v2 + #0x4) & #0xffffffff)
+    v3 = ((v3 + #0x4) & #0xffffffff)
     br 0x210394
   blk11 @ 0x21037c:
-    v2 = #0x8
+    v3 = #0x8
     br 0x210394
   blk12 @ 0x210388:
-    v2 = #0xffffffff
+    v3 = #0xffffffff
     br 0x210394
   blk13 @ 0x210394:
-    ret v2
+    ret v3
 -- card
 {"addr":"0x210300","approxTokens":240,"blocks":14,"hardReasons":[],"name":"fallthrough","nameSources":["symtab","dwarf","unwind"],"section":".text","size":160,"unsupported":0}
 
@@ -217,22 +217,22 @@ fn sparse @ 0x2103a0 (size 148)
   blk7 @ 0x2103ec:
     br 0x210420
   blk8 @ 0x2103f0:
-    v2 = #0xa
+    v3 = #0xa
     br 0x210428
   blk9 @ 0x2103fc:
-    v2 = #0x14
+    v3 = #0x14
     br 0x210428
   blk10 @ 0x210408:
-    v2 = #0x1e
+    v3 = #0x1e
     br 0x210428
   blk11 @ 0x210414:
-    v2 = #0x28
+    v3 = #0x28
     br 0x210428
   blk12 @ 0x210420:
-    v2 = #0x0
+    v3 = #0x0
     br 0x210428
   blk13 @ 0x210428:
-    ret v2
+    ret v3
 -- card
 {"addr":"0x2103a0","approxTokens":240,"blocks":14,"hardReasons":[],"name":"sparse","nameSources":["symtab","dwarf","unwind"],"section":".text","size":148,"unsupported":0}
 
@@ -342,11 +342,10 @@ fn skip_negatives @ 0x2104c4 (size 124)
 -- decompile
 /* velk pseudo-C: find_pair @ 0x210540 */
 int find_pair(int *p, int n, int target) {
-    int32_t j;
     int i; /* [sp-1c] */
 
     for (i = 0; i < n; i++) {
-        for (j = i + 1; j < n; j++) {
+        for (int32_t j = i + 1; j < n; j++) {
             if (p[i] + p[j] == target) {
                 return i * n + j;
             }

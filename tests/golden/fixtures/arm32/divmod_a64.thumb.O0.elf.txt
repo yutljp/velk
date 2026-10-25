@@ -98,17 +98,17 @@ fn udiv64 @ 0x201d4 (size 12)
 /* velk pseudo-C: hdiv3 @ 0x201e0 */
 int32_t hdiv3(int32_t a0, int32_t a1, int32_t a2, int32_t a3) {
     uint64_t sp = velk_entry_stack_pointer();
-    uint32_t v10;
-    uint32_t v11;
+    uint32_t v2;
+    uint32_t v3;
 
     /* unsupported: AAPCS32 multiword, floating-point or aggregate declaration */
-    *(uint32_t *)(sp - 0x8) = v10;
+    *(uint32_t *)(sp - 0x8) = v2;
     int32_t v1 = a0 + a1;
     /* unsupported (2 steps): ARM adc r3, r2, 0x0 at 0x201ee, ARM umull.w ip, lr, r3, r2 at 0x201fa */
-    int32_t v4 = a3 - ((v11 & 0xfffffffe) + (v11 >> 1));
+    int32_t v4 = a3 - ((v3 & 0xfffffffe) + (v3 >> 1));
     int32_t v5 = a0 - v4;
     /* unsupported: ARM umull.w r0, lr, r3, r2 at 0x2020c */
-    int32_t v7 = v11 + a3 * 0xaaaaaaaa;
+    int32_t v7 = v3 + a3 * 0xaaaaaaaa;
     /* unsupported: ARM sbc r1, r1, 0x0 at 0x20218 */
     int32_t v8 = a3 + a1 * a2;
     int32_t v9 = *(uint32_t *)(sp - 0x8);
@@ -422,8 +422,8 @@ fn smod10 @ 0x20340 (size 36)
 -- decompile
 /* velk pseudo-C: lmod10 @ 0x20364 */
 int32_t lmod10(int32_t a0, int32_t a1) {
-    uint64_t v11;
-    uint32_t v9;
+    uint64_t v5;
+    uint32_t v3;
 
     /* unsupported: AAPCS32 multiword, floating-point or aggregate declaration */
     int32_t v1 = a0;
@@ -431,11 +431,11 @@ int32_t lmod10(int32_t a0, int32_t a1) {
     {
         uint64_t call_values[2];
         call_values[0] = sub_20378((uint32_t)v1, (uint32_t)v2, 10, 0);
-        call_values[1] = v11; /* also returned by the call */
+        call_values[1] = v5; /* also returned by the call */
         a0 = (uint32_t)(call_values[0]);
         a1 = (uint32_t)(call_values[1]);
     }
-    int32_t v8 = v9;
+    int32_t v8 = v3;
     return 0;
 }
 -- signature
@@ -644,8 +644,8 @@ fn lnegate @ 0x20430 (size 12)
 -- decompile
 /* velk pseudo-C: lmod3 @ 0x2043c */
 int32_t lmod3(int32_t a0, int32_t a1) {
-    uint64_t v11;
-    uint32_t v9;
+    uint64_t v5;
+    uint32_t v3;
 
     /* unsupported: AAPCS32 multiword, floating-point or aggregate declaration */
     int32_t v1 = a0;
@@ -653,11 +653,11 @@ int32_t lmod3(int32_t a0, int32_t a1) {
     {
         uint64_t call_values[2];
         call_values[0] = sub_20450((uint32_t)v1, (uint32_t)v2, 3, 0);
-        call_values[1] = v11; /* also returned by the call */
+        call_values[1] = v5; /* also returned by the call */
         a0 = (uint32_t)(call_values[0]);
         a1 = (uint32_t)(call_values[1]);
     }
-    int32_t v8 = v9;
+    int32_t v8 = v3;
     return 0;
 }
 -- signature
@@ -685,7 +685,7 @@ fn lmod3 @ 0x2043c (size 28)
 -- decompile
 /* velk pseudo-C: ldiv3 @ 0x20458 */
 int32_t ldiv3(int32_t a0, int32_t a1) {
-    uint64_t v9;
+    uint64_t v4;
     uint32_t v1;
     int32_t v6;
 
@@ -694,7 +694,7 @@ int32_t ldiv3(int32_t a0, int32_t a1) {
     {
         uint64_t call_values[2];
         call_values[0] = sub_2046c((uint32_t)a0, (uint32_t)v2, 3, 0);
-        call_values[1] = v9; /* also returned by the call */
+        call_values[1] = v4; /* also returned by the call */
         v6 = (uint32_t)(call_values[0]);
         a1 = (uint32_t)(call_values[1]);
     }
@@ -724,7 +724,7 @@ fn ldiv3 @ 0x20458 (size 24)
 -- decompile
 /* velk pseudo-C: ldiv10 @ 0x20470 */
 int32_t ldiv10(int32_t a0, int32_t a1) {
-    uint64_t v9;
+    uint64_t v4;
     uint32_t v1;
     int32_t v6;
 
@@ -733,7 +733,7 @@ int32_t ldiv10(int32_t a0, int32_t a1) {
     {
         uint64_t call_values[2];
         call_values[0] = sub_20484((uint32_t)a0, (uint32_t)v2, 10, 0);
-        call_values[1] = v9; /* also returned by the call */
+        call_values[1] = v4; /* also returned by the call */
         v6 = (uint32_t)(call_values[0]);
         a1 = (uint32_t)(call_values[1]);
     }

@@ -1339,32 +1339,19 @@ fn main.twice @ 0x77430 (size 64)
 /* velk pseudo-C: main.main @ 0x77470 */
 int64_t main_main(int64_t a0, int64_t a1, int64_t a2) {
     uint64_t v4;
-    uint64_t call_values[2];
     uint64_t v8;
-    int64_t v3;
 
     int32_t v1 = *(uint64_t *)(v4 + 0x10);
     int64_t v2 = main_twice(21, a1, a2);
-    v3 = v8; /* also returned by the call */
-    {
-        runtime_printlock(v2, v3, a2);
-        call_values[0] = v8; /* also returned by the call */
-        v3 = call_values[0];
-    }
-    {
-        runtime_printint(v2, v3, 0);
-        call_values[0] = 0 /* undefined */;
-        call_values[1] = 0 /* undefined */;
-        v2 = call_values[0];
-        v3 = call_values[1];
-    }
-    {
-        call_values[0] = runtime_printnl(v2, v3, 0);
-        call_values[1] = v8; /* also returned by the call */
-        v2 = call_values[0];
-        v3 = call_values[1];
-    }
-    return runtime_printunlock(v2, v3, 0);
+    int64_t v3 = v8; /* also returned by the call */
+    runtime_printlock(v2, v3, a2);
+    int64_t v10 = v8; /* also returned by the call */
+    runtime_printint(v2, v10, 0);
+    int64_t v11 = 0 /* undefined */;
+    int64_t v12 = 0 /* undefined */;
+    int64_t v13 = runtime_printnl(v11, v12, 0);
+    int64_t v14 = v8; /* also returned by the call */
+    return runtime_printunlock(v13, v14, 0);
 }
 -- signature
 int64_t (int64_t a0, int64_t a1, int64_t a2)

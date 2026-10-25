@@ -5,7 +5,6 @@ mod cleanup;
 pub mod compare_chain;
 mod dominance;
 mod duplicate;
-#[cfg(test)]
 pub(crate) mod lower;
 pub(super) mod merge_exits;
 mod motion;

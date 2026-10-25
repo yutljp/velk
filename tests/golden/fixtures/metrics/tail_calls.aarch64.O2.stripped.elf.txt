@@ -24,7 +24,7 @@ fn <unnamed> @ 0x21017c (size 28)
 -- decompile
 /* velk pseudo-C: sub_210198 @ 0x210198 */
 int32_t sub_210198(int32_t a0) {
-    return ((int32_t)(sub_21017c((a0 + 2) & 0xffffffff)));
+    return sub_21017c((a0 + 2) & 0xffffffff);
 }
 -- signature
 int32_t (int32_t a0)

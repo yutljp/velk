@@ -564,28 +564,46 @@ fn an_unsigned_comparison_of_a_sign_extended_value_reads_all_64_bits() {
 fn a_variable_read_narrower_than_declared_is_compared_by_that_part() {
     use crate::ir::Cond;
     let value = VARIABLE_BASE;
-    let copies = [(value, load(Expr::reg(7, 64), 8))];
-    let wide = Expr::bin(BinOp::Add, Expr::reg(value, 64), Expr::reg(value, 64));
-    // Read whole elsewhere, the variable is 64 bits wide.
-    let copies = [copies[0].clone(), (0, wide)];
-    let text = compared(
-        Isa::X86_64,
-        &[(7, CType::U64)],
-        &copies,
-        Cond::Eq,
-        Expr::reg(value, 32),
-        Expr::Const(5),
-    );
-    assert_eq!(text, "(uint32_t)v1 == 5");
-    let text = compared(
-        Isa::X86_64,
-        &[(7, CType::U64)],
-        &copies,
-        Cond::Lt,
-        Expr::reg(value, 32),
-        Expr::Const(5),
-    );
-    assert_eq!(text, "(int32_t)v1 < 5");
+    for (cond, expected) in [
+        (Cond::Eq, "(uint32_t)v1 == 5"),
+        (Cond::Lt, "(int32_t)v1 < 5"),
+    ] {
+        let mut ir = FunctionIr::single_block(
+            Isa::X86_64,
+            vec![
+                assign(value, load(Expr::reg(7, 64), 8)),
+                Stmt::Store {
+                    addr: Expr::reg(6, 64),
+                    value: Expr::reg(value, 64),
+                    width: 8,
+                },
+                Stmt::Ret {
+                    value: Expr::Select {
+                        cond,
+                        lhs: Box::new(Expr::reg(value, 32)),
+                        rhs: Box::new(Expr::Const(5)),
+                        then: Box::new(Expr::Const(1)),
+                        els: Box::new(Expr::Const(0)),
+                    },
+                },
+            ],
+        );
+        // The full-width store makes the variable's high bits observable.
+        ir.params = vec![
+            Param {
+                index: 7,
+                name: "a0".into(),
+                ty: CType::pointer_to(CType::U64),
+            },
+            Param {
+                index: 6,
+                name: "out".into(),
+                ty: CType::pointer_to(CType::U64),
+            },
+        ];
+        let text = rendered(&ir);
+        assert!(text.contains(&format!("return {expected};")), "{text}");
+    }
 }
 
 #[test]
@@ -2644,5 +2662,49 @@ fn a_structure_field_that_only_holds_pointers_is_a_pointer() {
         "    uint8_t *v1 = a0->field_0x8;\n",
     ] {
         assert!(text.contains(line), "{line:?} in {text}");
+    }
+}
+
+#[test]
+fn annotated_local_name_stays_on_its_first_value_after_splitting() {
+    for isa in [Isa::I386, Isa::X86_64] {
+        let width = crate::arch::pointer_bytes(isa) * 8;
+        let variable = VARIABLE_BASE;
+        let mut ir = FunctionIr::single_block(
+            isa,
+            vec![
+                Stmt::Assign {
+                    dest: RegRef {
+                        index: variable,
+                        width,
+                    },
+                    value: Expr::Const(7),
+                },
+                Stmt::Store {
+                    addr: Expr::reg(1, width),
+                    value: Expr::reg(variable, width),
+                    width: 4,
+                },
+                Stmt::Assign {
+                    dest: RegRef {
+                        index: variable,
+                        width,
+                    },
+                    value: Expr::Const(9),
+                },
+                Stmt::Ret {
+                    value: Expr::reg(variable, width),
+                },
+            ],
+        );
+        ir.variable_registers.insert(variable, 0);
+        let mut symbols = Symbols::default();
+        symbols
+            .variable_names
+            .insert((ir.addr, variable), "saved_value".into());
+        let text = render(&ir, &[], &symbols, &[]);
+        assert!(text.contains("saved_value = 7;"), "{text}");
+        assert!(!text.contains("saved_value = 9;"), "{text}");
+        assert!(!text.contains("return saved_value;"), "{text}");
     }
 }

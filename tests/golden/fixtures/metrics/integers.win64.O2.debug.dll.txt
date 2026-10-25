@@ -106,16 +106,16 @@ fn rotate_left @ 0x180001040 (size 7)
 int popcount(unsigned int x) {
     int32_t v2;
 
-    int32_t result = 0;
+    int32_t v1 = 0;
     if (x == 0) {
         return 0;
     }
     do {
-        ++result;
+        ++v1;
         v2 = x - 1 & x;
         x = v2;
     } while (v2 != 0);
-    return result;
+    return v1;
 }
 -- signature
 int (unsigned int x)

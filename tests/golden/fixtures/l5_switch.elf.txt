@@ -10,7 +10,6 @@
 int32_t dense(int32_t a0) {
     uint32_t *const g_sink = (uint32_t *)0x2202e8ULL;
     int32_t v4;
-    int32_t v8;
 
     if ((uint32_t)(a0 - 10) > 15) {
         v4 = 0;
@@ -51,7 +50,7 @@ int32_t dense(int32_t a0) {
             break;
         case 21:
             v4 = *g_sink;
-            v8 = 88;
+            int32_t v8 = 88;
             v4 |= v8;
             break;
         case 22:
@@ -65,8 +64,8 @@ int32_t dense(int32_t a0) {
             break;
         case 25:
             v4 = *g_sink;
-            v8 = 116;
-            v4 |= v8;
+            int32_t v26 = 116;
+            v4 |= v26;
             break;
         default:
             __builtin_unreachable();
@@ -158,8 +157,7 @@ int32_t sparse(int64_t a0) {
     case 300:
         return a0;
     default:
-        a0 = 0xffffffff;
-        return a0;
+        return -1;
     }
 }
 -- signature

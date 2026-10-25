@@ -26,16 +26,16 @@ int32_t sub_180001000(int32_t a0) {
             int32_t v7 = v2 + v3;
             v8 = v2;
             *dword_180003000 = v3 + v8 - 7;
-            v3 = v8 + v7 - 7;
+            int32_t v17 = v8 + v7 - 7;
             *dword_180003000 = v8 + v7 - 13;
-            v7 = v8 + v3 - 6;
-            *dword_180003000 = v8 + v3 - 11;
-            v3 = v8 + v7 - 5;
-            *dword_180003000 = v8 + v7 - 9;
-            v7 = v8 + v3 - 4;
-            *dword_180003000 = v8 + v3 - 7;
-            v3 = v8 + v7 - 3;
-            *dword_180003000 = v8 + v7 - 5;
+            int32_t v18 = v8 + v17 - 6;
+            *dword_180003000 = v8 + v17 - 11;
+            int32_t v19 = v8 + v18 - 5;
+            *dword_180003000 = v8 + v18 - 9;
+            int32_t v20 = v8 + v19 - 4;
+            *dword_180003000 = v8 + v19 - 7;
+            v3 = v8 + v20 - 3;
+            *dword_180003000 = v8 + v20 - 5;
             *dword_180003000 = v8 + v3 - 3;
             v3 = v8 + (v8 + v3 - 2) - 1;
             *dword_180003000 = v3;
@@ -156,17 +156,17 @@ int32_t sub_180001110(int32_t a0) {
     }
     int32_t v3 = a0 & 0x7ffffffe;
     int32_t v4 = 0;
-    v2 = 0;
+    int32_t v6 = 0;
     do {
-        v2 += v4;
-        ++v2;
-        *dword_180003000 = v2;
+        v6 += v4;
+        ++v6;
+        *dword_180003000 = v6;
         v4 += 2;
     } while (v3 != v4);
     if ((a0 & 0x1) == 0) {
-        return v2;
+        return v6;
     }
-    return v2;
+    return v6;
 }
 -- signature
 int32_t (int32_t a0)

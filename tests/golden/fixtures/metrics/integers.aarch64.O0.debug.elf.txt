@@ -65,9 +65,9 @@ fn mixed_sign @ 0x21026c (size 32)
 -- decompile
 /* velk pseudo-C: in_range @ 0x21028c */
 _Bool in_range(int x, int lo, int hi) {
-    uint8_t result = 0;
+    uint8_t v3 = 0;
     if (x < lo) {
-        return result;
+        return v3;
     }
     return x - hi + hi <= hi;
 }
@@ -78,15 +78,15 @@ _Bool (int x, int lo, int hi)
 -- ir
 fn in_range @ 0x21028c (size 84)
   blk0 @ 0x21028c:
-    v1 = #0x0
+    v3 = #0x0
     brif lt w0, w1 -> 0x2102d0
   blk1 @ 0x2102b4:
     br 0x2102b8
   blk2 @ 0x2102b8:
-    v1 = select le (((w0 - w2) & #0xffffffff) + w2), w2 ? #0x1, #0x0
+    v3 = select le (((w0 - w2) & #0xffffffff) + w2), w2 ? #0x1, #0x0
     br 0x2102d0
   blk3 @ 0x2102d0:
-    ret v1
+    ret v3
 -- card
 {"addr":"0x21028c","approxTokens":222,"blocks":4,"hardReasons":[],"name":"in_range","nameSources":["symtab","dwarf","unwind"],"section":".text","size":84,"unsupported":0}
 
@@ -111,10 +111,10 @@ fn rotate_left @ 0x2102e0 (size 64)
 -- decompile
 /* velk pseudo-C: popcount @ 0x210320 */
 int popcount(unsigned int x) {
-    int32_t v1 = x;
+    int32_t v2 = x;
     int32_t result = 0;
-    while (v1 != 0) {
-        v1 &= v1 - 1;
+    while (v2 != 0) {
+        v2 &= v2 - 1;
         ++result;
     }
     return result;
@@ -126,19 +126,19 @@ int (unsigned int x)
 -- ir
 fn popcount @ 0x210320 (size 76)
   blk0 @ 0x210320:
-    v1 = w0
-    v2 = #0x0
+    v2 = w0
+    v3 = #0x0
     br 0x210330
   blk1 @ 0x210330:
-    brif eq v1, #0x0 -> 0x210360
+    brif eq v2, #0x0 -> 0x210360
   blk2 @ 0x210338:
     br 0x21033c
   blk3 @ 0x21033c:
-    v1 = (v1 & (v1 - #0x1))
-    v2 = ((v2 + #0x1) & #0xffffffff)
+    v2 = (v2 & (v2 - #0x1))
+    v3 = ((v3 + #0x1) & #0xffffffff)
     br 0x210330
   blk4 @ 0x210360:
-    ret v2
+    ret v3
 -- card
 {"addr":"0x210320","approxTokens":210,"blocks":5,"hardReasons":[],"name":"popcount","nameSources":["symtab","dwarf","unwind"],"section":".text","size":76,"unsupported":0}
 
@@ -163,17 +163,17 @@ fn byte_swap @ 0x21036c (size 60)
 -- decompile
 /* velk pseudo-C: min3 @ 0x2103a8 */
 int min3(int a, int b, int c) {
-    int32_t result;
+    int32_t v2;
 
     if (a >= b) {
-        result = b;
+        v2 = b;
     } else {
-        result = a;
+        v2 = a;
     }
-    if (result >= c) {
+    if (v2 >= c) {
         return c;
     }
-    return result;
+    return v2;
 }
 -- signature
 int (int a, int b, int c)

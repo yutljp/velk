@@ -396,15 +396,15 @@ int32_t __do_global_dtors_aux(void) {
     uint64_t *const __cxa_finalize_1ffc8_u64 = (uint64_t *)0x1ffc8ULL;
     uint64_t *const __dso_handle = (uint64_t *)0x20058ULL;
     uint8_t *const completed_0 = (uint8_t *)0x20060ULL;
+    uint64_t v1;
     uint64_t v8;
     uint64_t v9;
     uint64_t v10;
     uint64_t v11;
-    uint64_t v12;
     int64_t local_0; /* [sp-18] */
 
     /* unsupported: PACIASP at 0x880 */
-    local_0 = v10;
+    local_0 = v9;
     int32_t result = *completed_0;
     if ((result & 0x1) == 0) {
         if (*__cxa_finalize_1ffc8_u64 != 0) {
@@ -414,10 +414,10 @@ int32_t __do_global_dtors_aux(void) {
         {
             uint64_t call_values[4];
             call_values[0] = deregister_tm_clones();
-            call_values[1] = v9; /* also returned by the call */
-            call_values[2] = v11; /* also returned by the call */
-            call_values[3] = v12; /* also returned by the call */
-            v8 = call_values[0];
+            call_values[1] = v8; /* also returned by the call */
+            call_values[2] = v10; /* also returned by the call */
+            call_values[3] = v11; /* also returned by the call */
+            v1 = call_values[0];
             int32_t v4 = call_values[1];
             int32_t v5 = call_values[2];
             int32_t v6 = call_values[3];

@@ -114,8 +114,8 @@ fn <unnamed> @ 0x2013a0 (size 33)
 int32_t sub_2013d0(int32_t a0) {
     uint32_t v3 = a0;
     if (a0 > 1) {
-        uint32_t result = v3 * ((int32_t)(sub_2013d0(v3 - 1)));
-        return result;
+        uint32_t v4 = v3 * ((int32_t)(sub_2013d0(v3 - 1)));
+        return v4;
     }
     return 1;
 }
@@ -145,8 +145,8 @@ fn <unnamed> @ 0x2013d0 (size 71)
 int32_t sub_201420(int32_t a0) {
     uint32_t v3 = a0;
     if (a0 != 0) {
-        uint32_t result = ((int32_t)(sub_201460(v3 - 1)));
-        return result;
+        uint32_t v4 = ((int32_t)(sub_201460(v3 - 1)));
+        return v4;
     }
     return 0;
 }
@@ -176,8 +176,8 @@ fn <unnamed> @ 0x201420 (size 54)
 int32_t sub_201460(int32_t a0) {
     uint32_t v3 = a0;
     if (a0 != 0) {
-        uint32_t result = ((int32_t)(sub_201420(v3 - 1)));
-        return result;
+        uint32_t v4 = ((int32_t)(sub_201420(v3 - 1)));
+        return v4;
     }
     return 1;
 }

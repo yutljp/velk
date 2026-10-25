@@ -13,31 +13,28 @@ uint64_t velk_entry_stack_pointer(void); /* target entry stack pointer */
 /* velk pseudo-C: average @ 0x20104 */
 double average(int32_t a0, int32_t a1) {
     uint64_t sp = velk_entry_stack_pointer();
-    uint64_t v5;
-    uint32_t v2;
-    int32_t v11;
-    int32_t v14;
-    int32_t v20;
+    uint64_t v3;
+    uint32_t v1;
     int32_t i; /* [sp-1c] */
 
     /* unsupported: AAPCS32 multiword, floating-point or aggregate declaration */
-    *(uint32_t *)(sp - 0x8) = v2;
+    *(uint32_t *)(sp - 0x8) = v1;
     *(uint32_t *)(sp - 0x14) = 0;
     *(uint32_t *)(sp - 0x18) = 0;
     *(uint32_t *)(sp - 0x1c) = 0;
     while (*(int32_t *)(sp - 0x1c) < a1) {
         uint32_t v4 = *(uint32_t *)(sp - 0x1c);
         int32_t v10 = (uint32_t)(sub_20136(*(uint32_t *)(sp - 0x18), *(uint32_t *)(sp - 0x14), *(uint32_t *)(a0 + (v4 << 3)), *(uint32_t *)(a0 + (v4 << 3) + 4)));
-        v11 = (uint32_t)(v5); /* also returned by the call */
+        int32_t v11 = (uint32_t)(v3); /* also returned by the call */
         *(uint32_t *)(sp - 0x14) = v11;
         *(uint32_t *)(sp - 0x18) = v10;
         *(uint32_t *)(sp - 0x1c) = *(uint32_t *)(sp - 0x1c) + 1;
     }
     if (a1 >= 1) {
         int32_t v13 = (uint32_t)(sub_2015a((uint32_t)a1));
-        v14 = (uint32_t)(v5); /* also returned by the call */
+        int32_t v14 = (uint32_t)(v3); /* also returned by the call */
         int32_t v19 = (uint32_t)(sub_20166(*(uint32_t *)(sp - 0x18), *(uint32_t *)(sp - 0x14), (uint32_t)v13, (uint32_t)v14));
-        v20 = (uint32_t)(v5); /* also returned by the call */
+        int32_t v20 = (uint32_t)(v3); /* also returned by the call */
         *(uint32_t *)(sp - 0x24) = v19;
         *(uint32_t *)(sp - 0x20) = v20;
         return ((union { uint64_t bits; double value; }){ .bits = *(uint32_t *)(sp - 0x24) }).value;
@@ -103,23 +100,23 @@ fn average @ 0x20104 (size 122)
 -- decompile
 /* velk pseudo-C: lerp @ 0x20180 */
 float lerp(int32_t a0, int32_t a1, int32_t a2) {
-    uint64_t v12;
+    uint64_t v6;
     uint32_t v1;
-    uint32_t v5;
-    float v10;
+    uint32_t v3;
+    int32_t v4;
 
     /* unsupported: AAPCS32 multiword, floating-point or aggregate declaration */
     int32_t v2 = a1;
-    int32_t v4 = (uint32_t)(sub_20194((uint32_t)v2, (uint32_t)a0, (uint32_t)a2, v1));
-    int32_t v7 = (uint32_t)(sub_2019a((uint32_t)v4, (uint32_t)a2));
     {
         uint64_t call_values[2];
-        call_values[0] = sub_201a0((uint32_t)v7, (uint32_t)a0);
-        call_values[1] = v12; /* also returned by the call */
-        v10 = ((union { uint32_t bits; float value; }){ .bits = (uint32_t)(call_values[0]) }).value;
+        call_values[0] = sub_20194((uint32_t)v2, (uint32_t)a0, (uint32_t)a2, v1);
+        call_values[1] = v6; /* also returned by the call */
+        v4 = (uint32_t)(call_values[0]);
         a1 = (uint32_t)(call_values[1]);
     }
-    int32_t v11 = v5;
+    int32_t v7 = (uint32_t)(sub_2019a((uint32_t)v4, (uint32_t)a2));
+    float v10 = ((union { uint32_t bits; float value; }){ .bits = (uint32_t)(sub_201a0((uint32_t)v7, (uint32_t)a0)) }).value;
+    int32_t v11 = v3;
     return v10;
 }
 -- signature
@@ -150,22 +147,22 @@ fn lerp @ 0x20180 (size 36)
 -- decompile
 /* velk pseudo-C: truncate_to_int @ 0x201a4 */
 int32_t truncate_to_int(int32_t a0, int32_t a1) {
-    uint64_t v9;
+    uint64_t v8;
     uint32_t v1;
+    uint32_t v3;
     uint32_t v6;
-    uint32_t v7;
     int32_t v4;
 
     /* unsupported: AAPCS32 multiword, floating-point or aggregate declaration */
     int32_t v2 = a1;
     {
         uint64_t call_values[2];
-        call_values[0] = sub_201b4((uint32_t)a0, (uint32_t)v2, v1, v6);
-        call_values[1] = v9; /* also returned by the call */
+        call_values[0] = sub_201b4((uint32_t)a0, (uint32_t)v2, v1, v3);
+        call_values[1] = v8; /* also returned by the call */
         v4 = (uint32_t)(call_values[0]);
         a1 = (uint32_t)(call_values[1]);
     }
-    int32_t v5 = v7;
+    int32_t v5 = v6;
     return v4;
 }
 -- signature
@@ -190,27 +187,19 @@ fn truncate_to_int @ 0x201a4 (size 20)
 /* velk pseudo-C: widen @ 0x201b8 */
 double widen(int32_t a0) {
     uint64_t v1;
+    uint32_t v2;
+    uint32_t v9;
     uint32_t v12;
-    uint32_t v13;
-    uint32_t v14;
-    int32_t v4;
-    double v10;
 
     /* unsupported: AAPCS32 multiword, floating-point or aggregate declaration */
-    int32_t v3 = (uint32_t)(sub_201c4((uint32_t)a0, v1, v12, v13));
-    v4 = (uint32_t)(v1); /* also returned by the call */
+    int32_t v3 = (uint32_t)(sub_201c4((uint32_t)a0, v1, v2, v9));
+    int32_t v4 = (uint32_t)(v1); /* also returned by the call */
     int32_t v5 = v3;
     int32_t v6 = v4;
     int32_t v7 = v5;
     int32_t v8 = v6;
-    {
-        uint64_t call_values[2];
-        call_values[0] = sub_201d0((uint32_t)v7, (uint32_t)v8);
-        call_values[1] = v1; /* also returned by the call */
-        v10 = ((union { uint64_t bits; double value; }){ .bits = (uint32_t)(call_values[0]) }).value;
-        v1 = (uint32_t)(call_values[1]);
-    }
-    int32_t v11 = v14;
+    double v10 = ((union { uint64_t bits; double value; }){ .bits = (uint32_t)(sub_201d0((uint32_t)v7, (uint32_t)v8)) }).value;
+    int32_t v11 = v12;
     return ((union { uint64_t bits; double value; }){ .bits = (uint32_t)((union { double value; uint64_t bits; }){ .value = v10 }).bits }).value;
 }
 -- signature

@@ -9,13 +9,12 @@
 -- decompile
 /* velk pseudo-C: average @ 0x2011b0 */
 double average(double *values, int n) {
-    uint32_t v3;
     int64_t i;
 
-    double result = 0.0;
+    int32_t v1 = 0;
     double v2 = 0.0;
     if (n > 0) {
-        v3 = n;
+        uint32_t v3 = n;
         uint8_t v4 = v3 & 0x7;
         if ((uint32_t)n >= 8) {
             v3 &= 0x7ffffff8;

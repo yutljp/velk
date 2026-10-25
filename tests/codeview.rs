@@ -104,7 +104,7 @@ fn printed_codeview_names_and_types_compile_and_compute_source_results() {
                 let code = binary.decompile(addr, None, None).expect("printed C");
                 assert!(code.contains(expected), "{fixture:?}: {code}");
                 if name == "sum_until" && level == 0 {
-                    assert!(code.contains("int32_t i;"), "{code}");
+                    assert!(code.contains("for (int32_t i = 1;"), "{code}");
                 }
                 if name == "point_dot" {
                     assert!(code.contains("a->x") && code.contains("b->y"), "{code}");

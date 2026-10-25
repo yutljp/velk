@@ -1,4 +1,6 @@
 #![cfg_attr(not(test), deny(clippy::missing_assert_message))]
+#[cfg(test)]
+extern crate self as velk;
 
 pub mod addr;
 pub mod analysis;

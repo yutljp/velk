@@ -276,12 +276,12 @@ int short_circuit(int *p, int n) {
     int32_t v1 = local_0;
     local_1 = 0;
     if (v1 != 0) {
-        v1 = n;
+        int32_t v6 = n;
         local_1 = 0;
-        if (v1 > 0) {
-            v1 = *(uint32_t *)(local_0);
+        if (v6 > 0) {
+            int32_t v7 = *(uint32_t *)(local_0);
             local_2 = 1;
-            if (v1 != 1) {
+            if (v7 != 1) {
                 int32_t v4 = 0;
                 if (*(uint32_t *)((local_0 + ((uint64_t)(n - 1) << 2)) & 0xffffffff) == 1) {
                     v4 = 1;
@@ -388,7 +388,6 @@ fn skip_negatives @ 0x203f4 (size 136)
 -- decompile
 /* velk pseudo-C: find_pair @ 0x2047c */
 int find_pair(int *p, int n, int target) {
-    int32_t v1;
     uint32_t local_0; /* [sp-10] */
     int32_t i; /* [sp-1c] */
     int32_t j; /* [sp-20] */
@@ -396,7 +395,7 @@ int find_pair(int *p, int n, int target) {
     local_0 = (uint32_t)(uintptr_t)p;
     for (i = 0; i < n; i++) {
         for (j = i + 1; j < n; j++) {
-            v1 = local_0;
+            int32_t v1 = local_0;
             if (*(uint32_t *)((v1 + ((uint64_t)i << 2)) & 0xffffffff) + *(uint32_t *)((v1 + ((uint64_t)j << 2)) & 0xffffffff) == target) {
                 return i * n + j;
             }

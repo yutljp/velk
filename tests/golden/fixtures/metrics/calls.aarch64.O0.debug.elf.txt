@@ -121,9 +121,9 @@ fn apply_pointer @ 0x2103c4 (size 48)
 -- decompile
 /* velk pseudo-C: factorial @ 0x2103f4 */
 int factorial(int n) {
-    uint32_t v4 = n;
+    uint32_t v5 = n;
     if (n > 1) {
-        return v4 * factorial(v4 - 1);
+        return v5 * factorial(v5 - 1);
     }
     return 1;
 }
@@ -134,19 +134,19 @@ int (int n)
 -- ir
 fn factorial @ 0x2103f4 (size 96)
   blk0 @ 0x2103f4:
-    v4 = (x0 & #0xffffffff)
+    v5 = (x0 & #0xffffffff)
     brif gt (x0 & #0xffffffff), #0x1 -> 0x210420
   blk1 @ 0x210410:
     br 0x210414
   blk2 @ 0x210414:
-    v5 = #0x1
+    v6 = #0x1
     br 0x210444
   blk3 @ 0x210420:
-    v3:x0 = call 0x2103f4(((v4 - #0x1) & #0xffffffff))
-    v5 = ((v4 * (v3 & #0xffffffff)) & #0xffffffff)
+    v3:x0 = call 0x2103f4(((v5 - #0x1) & #0xffffffff))
+    v6 = ((v5 * (v3 & #0xffffffff)) & #0xffffffff)
     br 0x210444
   blk4 @ 0x210444:
-    ret v5
+    ret v6
 -- card
 {"addr":"0x2103f4","approxTokens":240,"blocks":5,"hardReasons":[],"name":"factorial","nameSources":["symtab","dwarf","unwind"],"section":".text","size":96,"unsupported":0}
 
@@ -154,9 +154,9 @@ fn factorial @ 0x2103f4 (size 96)
 -- decompile
 /* velk pseudo-C: is_odd @ 0x210454 */
 int is_odd(int n) {
-    uint32_t v4 = n;
+    uint32_t v5 = n;
     if (n != 0) {
-        return is_even(v4 - 1);
+        return is_even(v5 - 1);
     }
     return 0;
 }
@@ -167,19 +167,19 @@ int (int n)
 -- ir
 fn is_odd @ 0x210454 (size 76)
   blk0 @ 0x210454:
-    v4 = (x0 & #0xffffffff)
+    v5 = (x0 & #0xffffffff)
     brif ne (x0 & #0xffffffff), #0x0 -> 0x21047c
   blk1 @ 0x21046c:
     br 0x210470
   blk2 @ 0x210470:
-    v5 = #0x0
+    v6 = #0x0
     br 0x210490
   blk3 @ 0x21047c:
-    v3:x0 = call 0x2104a0(((v4 - #0x1) & #0xffffffff))
-    v5 = (v3 & #0xffffffff)
+    v3:x0 = call 0x2104a0(((v5 - #0x1) & #0xffffffff))
+    v6 = (v3 & #0xffffffff)
     br 0x210490
   blk4 @ 0x210490:
-    ret v5
+    ret v6
 -- card
 {"addr":"0x210454","approxTokens":210,"blocks":5,"hardReasons":[],"name":"is_odd","nameSources":["symtab","dwarf","unwind"],"section":".text","size":76,"unsupported":0}
 
@@ -187,9 +187,9 @@ fn is_odd @ 0x210454 (size 76)
 -- decompile
 /* velk pseudo-C: is_even @ 0x2104a0 */
 int is_even(int n) {
-    uint32_t v4 = n;
+    uint32_t v5 = n;
     if (n != 0) {
-        return is_odd(v4 - 1);
+        return is_odd(v5 - 1);
     }
     return 1;
 }
@@ -200,19 +200,19 @@ int (int n)
 -- ir
 fn is_even @ 0x2104a0 (size 76)
   blk0 @ 0x2104a0:
-    v4 = (x0 & #0xffffffff)
+    v5 = (x0 & #0xffffffff)
     brif ne (x0 & #0xffffffff), #0x0 -> 0x2104c8
   blk1 @ 0x2104b8:
     br 0x2104bc
   blk2 @ 0x2104bc:
-    v5 = #0x1
+    v6 = #0x1
     br 0x2104dc
   blk3 @ 0x2104c8:
-    v3:x0 = call 0x210454(((v4 - #0x1) & #0xffffffff))
-    v5 = (v3 & #0xffffffff)
+    v3:x0 = call 0x210454(((v5 - #0x1) & #0xffffffff))
+    v6 = (v3 & #0xffffffff)
     br 0x2104dc
   blk4 @ 0x2104dc:
-    ret v5
+    ret v6
 -- card
 {"addr":"0x2104a0","approxTokens":210,"blocks":5,"hardReasons":[],"name":"is_even","nameSources":["symtab","dwarf","unwind"],"section":".text","size":76,"unsupported":0}
 

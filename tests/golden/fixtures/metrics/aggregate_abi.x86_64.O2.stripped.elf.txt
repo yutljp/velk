@@ -124,9 +124,9 @@ double sub_201290(double *a0, double a1, struct sub_201290_a2 a2) {
     *(uint64_t *)(a0) = *(uint64_t *)((uint8_t *)&a2 + 0x0);
     *(uint64_t *)(a0 + 0x1) = v1;
     double v2 = *(double *)&(*(uint64_t *)((uint8_t *)&a2 + 0x10));
-    v1 = *(uint64_t *)((uint8_t *)&a2 + 0x18);
+    int64_t v4 = *(uint64_t *)((uint8_t *)&a2 + 0x18);
     a0[2] = v2;
-    *(uint64_t *)(a0 + 0x3) = v1;
+    *(uint64_t *)(a0 + 0x3) = v4;
     return v2;
 }
 -- signature

@@ -12,21 +12,16 @@
 -- decompile
 /* velk pseudo-C: copy_bytes @ 0x210214 */
 void copy_bytes(unsigned char *dst, unsigned char *src, unsigned long n) {
-    uint64_t *v2;
-    uint64_t *v3;
-    int64_t v4;
-    int64_t v14;
-
     if (n == 0) {
         return;
     }
     int64_t v1 = 0;
     if (n >= 8 && (uintptr_t)dst - (uintptr_t)src >= 32) {
         if (n >= 32) {
-            v2 = (uint64_t *)(src + 0x10);
-            v3 = (uint64_t *)(dst + 0x10);
+            uint64_t *v2 = (uint64_t *)(src + 0x10);
+            uint64_t *v3 = (uint64_t *)(dst + 0x10);
             v1 = n & 0xffffffffffffffe0;
-            v4 = v1;
+            int64_t v4 = v1;
             do {
                 {
                     unsigned char transfer[32];
@@ -46,24 +41,24 @@ void copy_bytes(unsigned char *dst, unsigned char *src, unsigned long n) {
         } else {
             v1 = 0;
         }
-        v4 = v1;
+        int64_t v18 = v1;
         v1 = n & 0xfffffffffffffff8;
-        v2 = (uint64_t *)(src + v4);
-        v3 = (uint64_t *)(dst + v4);
-        v4 -= v1;
+        uint64_t *v19 = (uint64_t *)(src + v18);
+        uint64_t *v20 = (uint64_t *)(dst + v18);
+        v18 -= v1;
         do {
-            int64_t v5 = *v2;
-            ++v2;
-            v4 += 8;
-            *v3 = v5;
-            ++v3;
-        } while (v4 != 0);
+            int64_t v21 = *v19;
+            ++v19;
+            v18 += 8;
+            *v20 = v21;
+            ++v20;
+        } while (v18 != 0);
         if (v1 == n) {
             return;
         }
     }
-L_2102a4:
-    v14 = n - v1;
+L_2102a4:;
+    int64_t v14 = n - v1;
     uint8_t *v15 = (uint8_t *)(dst + v1);
     uint8_t *v16 = (uint8_t *)(src + v1);
     do {

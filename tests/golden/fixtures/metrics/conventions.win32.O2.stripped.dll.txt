@@ -80,10 +80,8 @@ int32_t call_conventions(uint32_t a0) {
     uint32_t v1 = a0;
     int32_t v2 = cdecl_add(v1, 1);
     int32_t v5 = ((int32_t)(_stdcall_add_8(v1, 2))) + v2;
-    v2 = _fastcall_add_12(v1, 3, 4);
-    int32_t v8 = v2 + v5;
-    v2 = thiscall_add(v1, 5);
-    return v2 + v8;
+    int32_t v8 = ((int32_t)(_fastcall_add_12(v1, 3, 4))) + v5;
+    return ((int32_t)(thiscall_add(v1, 5))) + v8;
 }
 -- signature
 int32_t ()

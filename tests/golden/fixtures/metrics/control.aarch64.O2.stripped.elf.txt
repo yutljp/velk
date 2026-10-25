@@ -53,17 +53,14 @@ static inline uint64_t sum_lanes32(uint64_t a, uint64_t b) {
 -- decompile
 /* velk pseudo-C: sub_2101d4 @ 0x2101d4 */
 int32_t sub_2101d4(uint32_t *a0, int32_t a1) {
-    uint64_t i;
-    int64_t j;
-
     if (a1 < 1) {
         return 0;
     }
     int32_t v2 = 0;
-    for (i = 0; (int64_t)i < (uint32_t)a1; i++) {
+    for (int64_t i = 0; i < (uint32_t)a1; i++) {
         uint32_t v4 = i * a1;
         uint32_t *v5 = a0 + i;
-        for (j = 0; j < (uint32_t)a1; j++) {
+        for (int64_t j = 0; j < (uint32_t)a1; j++) {
             if (i == j) {
                 v2 = v5[v4] + v2;
             }
@@ -257,7 +254,7 @@ fn <unnamed> @ 0x2102cc (size 60)
 -- decompile
 /* velk pseudo-C: sub_210308 @ 0x210308 */
 int32_t sub_210308(uint32_t *a0, int32_t a1) {
-    int64_t v2;
+    uint64_t v2;
     int32_t v3;
 
     if (a1 < 1) {
@@ -294,10 +291,10 @@ int32_t sub_210308(uint32_t *a0, int32_t a1) {
     uint32_t *v14 = a0 + v2;
     int64_t v15 = (uint32_t)a1 - v2;
     do {
-        v2 = *v14;
+        int32_t v17 = *v14;
         ++v14;
         --v15;
-        v3 = (v2 & ~((int32_t)v2 >> 31)) + v3;
+        v3 = (v17 & ~(v17 >> 31)) + v3;
     } while (v15 != 0);
     return v3;
 }

@@ -79,9 +79,9 @@ fn pick_op @ 0x20158 (size 32)
 /* ref: 0x10134 .rodata */
 int apply_table(unsigned int index, int x) {
     uint64_t sp = velk_entry_stack_pointer();
-    uint64_t v16;
+    uint64_t v7;
     uint32_t v1;
-    uint32_t v14;
+    uint32_t v2;
     int32_t v13;
 
     *(uint32_t *)(sp - 0x10) = x;
@@ -94,8 +94,8 @@ int apply_table(unsigned int index, int x) {
     uint32_t v11 = v9;
     {
         uint64_t call_values[2];
-        call_values[0] = ((uint32_t (*)())v11)((uint32_t)v10, (uint32_t)v9, v1, v14);
-        call_values[1] = v16; /* also returned by the call */
+        call_values[0] = ((uint32_t (*)())v11)((uint32_t)v10, (uint32_t)v9, v1, v2);
+        call_values[1] = v7; /* also returned by the call */
         v13 = (uint32_t)(call_values[0]);
         x = (uint32_t)(call_values[1]);
     }
@@ -156,8 +156,8 @@ int factorial(int n) {
     }
     int32_t v1 = n;
     local_1 = v1;
-    v1 = (uint32_t)(factorial((uint64_t)(uint32_t)v1 - 1));
-    return v1 * local_1;
+    int32_t v5 = (uint32_t)(factorial((uint64_t)(uint32_t)v1 - 1));
+    return v5 * local_1;
 }
 -- signature
 int (int n)

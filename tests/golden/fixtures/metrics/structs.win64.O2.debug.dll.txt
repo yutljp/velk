@@ -82,13 +82,13 @@ int32_t record_total(struct record *items, int n) {
         v4 = 0;
     }
     int64_t v10 = (uintptr_t)&items[v3].count;
-    v3 = (v2 << 2) * 3;
+    uint8_t v14 = (v2 << 2) * 3;
     int64_t i = 0;
     do {
-        v1 = *(int16_t *)(v10 + i) * *(uint32_t *)(v10 + i - 0x4);
-        v4 += v1;
+        int32_t v15 = *(int16_t *)(v10 + i) * *(uint32_t *)(v10 + i - 0x4);
+        v4 += v15;
         i += 12;
-    } while (v3 != i);
+    } while (v14 != i);
     return v4;
 }
 -- signature

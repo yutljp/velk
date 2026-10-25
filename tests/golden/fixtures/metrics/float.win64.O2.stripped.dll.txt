@@ -9,13 +9,12 @@
 -- decompile
 /* velk pseudo-C: sub_180001000 @ 0x180001000 */
 double sub_180001000(double *a0, int32_t a1) {
-    uint32_t v3;
     int64_t i;
 
-    double result = 0.0;
+    double v1 = 0.0;
     double v2 = 0.0;
     if (a1 > 0) {
-        v3 = a1;
+        uint32_t v3 = a1;
         uint8_t v4 = v3 & 0x7;
         if ((uint32_t)a1 >= 8) {
             v3 &= 0x7ffffff8;
@@ -48,7 +47,7 @@ double sub_180001000(double *a0, int32_t a1) {
         } while (v4 != i_2);
     }
     if (a1 <= 0) {
-        return result;
+        return v1;
     }
     return v2 / (double)a1;
 }

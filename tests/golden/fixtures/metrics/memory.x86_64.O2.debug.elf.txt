@@ -12,8 +12,6 @@
 -- decompile
 /* velk pseudo-C: copy_bytes @ 0x201220 */
 void copy_bytes(unsigned char *dst, unsigned char *src, unsigned long n) {
-    int64_t v9;
-
     if (n == 0) {
         return;
     }
@@ -45,8 +43,8 @@ void copy_bytes(unsigned char *dst, unsigned char *src, unsigned long n) {
             return;
         }
     }
-L_2012a6:
-    v9 = v1;
+L_2012a6:;
+    int64_t v9 = v1;
     int64_t v8 = n & 0x3;
     if (v8 != 0) {
         v9 = v1;

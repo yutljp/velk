@@ -87,7 +87,7 @@ fn assert_separate(mut ir: FunctionIr) {
 }
 
 #[test]
-fn disjoint_pointers_share_a_declaration_and_keep_element_steps() {
+fn disjoint_pointers_share_structuring_names_and_print_separately() {
     let mut ir = pointers();
     ir.pointer_values = vec![FIRST, SECOND];
     ir.value_types.insert(SECOND, CType::pointer_to(CType::U64));
@@ -105,7 +105,7 @@ fn disjoint_pointers_share_a_declaration_and_keep_element_steps() {
     ir.structures[0].elements.push(FIRST);
     reuse_pointers(&mut ir);
     let text = crate::render::render(&ir, &[], &Default::default(), &[]);
-    assert!(!text.contains("v2"), "{text}");
+    assert!(text.contains("uint64_t *v2 ="), "{text}");
     assert_eq!(ir.variable_registers.len(), 1);
     assert!(!ir.value_types.contains_key(&SECOND));
     assert_eq!(ir.pointer_values, [FIRST]);
@@ -116,8 +116,8 @@ fn disjoint_pointers_share_a_declaration_and_keep_element_steps() {
     reuse_pointers(&mut scalar);
     let text = crate::render::render(&scalar, &[], &Default::default(), &[]);
     assert!(text.contains("uint64_t *v1 ="), "{text}");
-    assert!(!text.contains("v2"), "{text}");
-    assert!(text.contains("++v1;"), "{text}");
+    assert!(text.contains("uint64_t *v2 ="), "{text}");
+    assert!(text.contains("++v2;"), "{text}");
 }
 
 #[test]

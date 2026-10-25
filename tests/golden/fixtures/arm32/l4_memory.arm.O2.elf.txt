@@ -29,7 +29,7 @@ int array_sum(int *a, int n) {
         int32_t v1 = (uint32_t)(sub_201b0());
         return v1;
     }
-    uint32_t v5 = 0;
+    uint32_t v2 = 0;
     if ((uint32_t)n < 4) {
         int32_t v3 = (uint32_t)(sub_20190());
         return v3;

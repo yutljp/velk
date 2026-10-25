@@ -142,9 +142,9 @@ double sub_180001090(int64_t a0, double *a1, double a2) {
     a1[3] = a2 + a1[3];
     __builtin_memmove((void *)(a0), a1, 16);
     double v2 = a1[2];
-    int64_t v1 = *(uint64_t *)(a1 + 0x3);
+    int64_t v4 = *(uint64_t *)(a1 + 0x3);
     *(uint64_t *)(a0 + 0x10) = ((union { double value; uint64_t bits; }){ .value = v2 }).bits;
-    *(uint64_t *)(a0 + 0x18) = v1;
+    *(uint64_t *)(a0 + 0x18) = v4;
     return v2;
 }
 -- signature

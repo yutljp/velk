@@ -12,8 +12,6 @@
 -- decompile
 /* velk pseudo-C: sub_201220 @ 0x201220 */
 void sub_201220(uint64_t *a0, uint64_t *a1, uint64_t a2) {
-    int64_t v9;
-
     if (a2 == 0) {
         return;
     }
@@ -45,8 +43,8 @@ void sub_201220(uint64_t *a0, uint64_t *a1, uint64_t a2) {
             return;
         }
     }
-L_2012a6:
-    v9 = v1;
+L_2012a6:;
+    int64_t v9 = v1;
     int64_t v8 = a2 & 0x3;
     if (v8 != 0) {
         v9 = v1;

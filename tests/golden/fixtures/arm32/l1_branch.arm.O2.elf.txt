@@ -7,14 +7,14 @@
 -- decompile
 /* velk pseudo-C: classify @ 0x200f4 */
 int classify(int x) {
-    int32_t result = x;
-    int32_t v2 = result;
+    int32_t v1 = x;
+    int32_t v2 = v1;
     int32_t v3 = 0;
-    if (result > 0) {
-        result = 1;
+    if (v1 > 0) {
+        v1 = 1;
     }
     if (v2 >= v3) {
-        return result;
+        return v1;
     }
     return -1;
 }
@@ -50,8 +50,7 @@ int clamp(int x, int lo, int hi) {
     if (x >= lo) {
         return hi;
     }
-    hi = lo;
-    return hi;
+    return lo;
 }
 -- signature
 int (int x, int lo, int hi)
@@ -76,14 +75,14 @@ fn clamp @ 0x20104 (size 24)
 -- decompile
 /* velk pseudo-C: sign_of @ 0x2011c */
 int sign_of(int x) {
-    int32_t result = x;
-    int32_t v2 = result;
+    int32_t v1 = x;
+    int32_t v2 = v1;
     int32_t v3 = 0;
-    if (result > 0) {
-        result = 1;
+    if (v1 > 0) {
+        v1 = 1;
     }
     if (v2 >= v3) {
-        return result;
+        return v1;
     }
     return -1;
 }

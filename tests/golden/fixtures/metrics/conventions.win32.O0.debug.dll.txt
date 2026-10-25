@@ -83,10 +83,10 @@ int _call_conventions(uint32_t a0) {
     int32_t v1 = _cdecl_add(a0, 1);
     int32_t v2 = _stdcall_add_8(a0, 2);
     local_0 = v1 + v2;
-    v1 = _fastcall_add_12(a0, 3, 4);
-    local_1 = local_0 + v1;
-    v1 = _thiscall_add(a0, 5);
-    return local_1 + v1;
+    int32_t v7 = _fastcall_add_12(a0, 3, 4);
+    local_1 = local_0 + v7;
+    int32_t v8 = _thiscall_add(a0, 5);
+    return local_1 + v8;
 }
 -- signature
 int ()

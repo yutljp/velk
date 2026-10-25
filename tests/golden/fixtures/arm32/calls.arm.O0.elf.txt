@@ -53,9 +53,9 @@ fn square @ 0x20194 (size 36)
 /* velk pseudo-C: pick_op @ 0x201b8 */
 void *pick_op(int which) {
     uint64_t sp = velk_entry_stack_pointer();
-    uint64_t v4;
+    uint64_t v5;
 
-    *(uint32_t *)(sp - 0x4) = v4;
+    *(uint32_t *)(sp - 0x4) = v5;
     sp = sp - 0x8;
     *(uint32_t *)(sp - 0x4) = which;
     int32_t v1 = 0;
@@ -63,9 +63,9 @@ void *pick_op(int which) {
         v1 = 1;
     }
     int32_t v2 = 0x201e4 + *(uint32_t *)(0x201f8);
-    int32_t result = 0x201ec + *(uint32_t *)(0x201fc);
+    int32_t v3 = 0x201ec + *(uint32_t *)(0x201fc);
     if (v1 == 0) {
-        return (void *)(uint32_t)result;
+        return (void *)(uint32_t)v3;
     }
     return (void *)(uint32_t)v2;
 }
@@ -99,17 +99,17 @@ fn pick_op @ 0x201b8 (size 72)
 /* velk pseudo-C: apply_table @ 0x20200 */
 int apply_table(unsigned int index, int x) {
     uint64_t sp = velk_entry_stack_pointer();
-    uint64_t v18;
+    uint64_t v15;
     uint32_t v2;
-    uint32_t v14;
-    uint32_t v15;
-    uint32_t v16;
+    uint32_t v3;
+    uint32_t v4;
+    uint32_t v12;
     int32_t v13;
     uint32_t local_1; /* [sp-4] */
     uint32_t local_2; /* [sp-c] */
 
-    *(uint32_t *)(sp - 0x8) = v15;
-    local_1 = v16;
+    *(uint32_t *)(sp - 0x8) = v4;
+    local_1 = v12;
     sp = sp - 0x8;
     sp = sp - 0x8;
     int32_t v1 = 0x20218 + *(uint32_t *)(0x20258);
@@ -125,13 +125,13 @@ int apply_table(unsigned int index, int x) {
     uint32_t v11 = v9;
     {
         uint64_t call_values[2];
-        call_values[0] = ((uint32_t (*)())v11)((uint32_t)v10, (uint32_t)v9, v2, v14);
-        call_values[1] = v18; /* also returned by the call */
+        call_values[0] = ((uint32_t (*)())v11)((uint32_t)v10, (uint32_t)v9, v2, v3);
+        call_values[1] = v15; /* also returned by the call */
         v13 = (uint32_t)(call_values[0]);
         x = (uint32_t)(call_values[1]);
     }
-    sp = v15;
-    v15 = *(uint32_t *)(sp);
+    sp = v4;
+    v4 = *(uint32_t *)(sp);
     sp = sp + 0x8;
     return v13;
 }

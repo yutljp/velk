@@ -1321,20 +1321,17 @@ fn main.add @ 0x466ca0 (size 32)
 -- decompile
 /* velk pseudo-C: main.divmod @ 0x466cc0 */
 int64_t main_divmod(int64_t a0, int64_t a1) {
-    uint64_t v1;
-    uint64_t v2;
-
     switch (a1) {
-    case -1:
-        v1 = -a0;
-        v2 = 0;
+    case -1:;
+        uint64_t v1 = -a0;
+        uint8_t v2 = 0;
         return v1; /* also returns v2 */
     case 0:
         runtime_panicdivide();
-    default:
-        v2 = a0 % a1;
-        v1 = a0 / a1;
-        return v1; /* also returns v2 */
+    default:;
+        uint64_t v3 = a0 % a1;
+        uint64_t v4 = a0 / a1;
+        return v4; /* also returns v3 */
     }
 }
 -- signature
@@ -1451,23 +1448,20 @@ fn main.kindName @ 0x466d20 (size 96)
 /* ref: 0x4967e8 .rodata */
 int64_t main_main(void) {
     uint64_t v5;
-    int64_t v2;
     int64_t local_0; /* [sp-38] */
     int64_t local_1; /* [sp-40] */
     _Alignas(16) struct __attribute__((packed)) { int64_t f_0; int64_t f_8; int64_t f_10; int64_t f_18; } local_2; /* [sp-28] */
     int64_t local_3; /* [sp-30] */
 
     int64_t v1 = main_divmod(7, 3);
-    v2 = v5; /* also returned by the call */
+    int64_t v2 = v5; /* also returned by the call */
     local_0 = v1;
     local_1 = v2;
     local_2.f_0 = 1;
     local_2.f_8 = 2;
     local_2.f_10 = 3;
-    v1 = main_sumSlice(&local_2.f_0, 3);
-    local_3 = v1;
-    v1 = main_add(1, 2);
-    local_2.f_18 = v1;
+    local_3 = main_sumSlice(&local_2.f_0, 3);
+    local_2.f_18 = main_add(1, 2);
     runtime_printlock();
     runtime_printint(local_3);
     runtime_printsp();
@@ -1478,8 +1472,7 @@ int64_t main_main(void) {
     runtime_printint(local_1);
     runtime_printnl();
     runtime_printunlock();
-    v1 = main_kindName(0x46d400, 0x4967e8);
-    local_3 = v1;
+    local_3 = main_kindName(0x46d400, 0x4967e8);
     runtime_printlock();
     runtime_printint(local_3);
     runtime_printnl();

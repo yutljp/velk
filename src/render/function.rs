@@ -25,11 +25,11 @@ pub fn render_with_dependencies(
     data_ranges: &[(u64, u64)],
 ) -> Rendered {
     crate::timing::scope!("render/function::render_with_dependencies");
-    let original = render_unmerged(ir, references, symbols, data_ranges);
     let Some(merged) = super::structure::merge_exits::merged(ir) else {
-        return original;
+        return render_unmerged(ir, references, symbols, data_ranges, Variables::Split);
     };
-    let candidate = render_unmerged(&merged, references, symbols, data_ranges);
+    let original = render_unmerged(ir, references, symbols, data_ranges, Variables::Merged);
+    let candidate = render_unmerged(&merged, references, symbols, data_ranges, Variables::Merged);
     let lines = candidate.code.lines().count();
     let gotos = candidate.code.matches("goto ").count();
     let original_lines = original.code.lines().count();
@@ -38,10 +38,16 @@ pub fn render_with_dependencies(
         && gotos <= original_gotos
         && (lines < original_lines || gotos < original_gotos)
     {
-        candidate
+        render_unmerged(&merged, references, symbols, data_ranges, Variables::Split)
     } else {
-        original
+        render_unmerged(ir, references, symbols, data_ranges, Variables::Split)
     }
+}
+
+#[derive(Clone, Copy)]
+enum Variables {
+    Merged,
+    Split,
 }
 
 fn render_unmerged(
@@ -49,6 +55,7 @@ fn render_unmerged(
     references: &[Reference],
     symbols: &Symbols,
     data_ranges: &[(u64, u64)],
+    variables: Variables,
 ) -> Rendered {
     let original = ir;
     let mut folded = ir.clone();
@@ -72,6 +79,7 @@ fn render_unmerged(
         symbols,
         data_ranges,
         variadic.as_ref(),
+        variables,
     );
     let Some(candidate) = candidate else {
         return baseline;
@@ -83,6 +91,7 @@ fn render_unmerged(
         symbols,
         data_ranges,
         variadic.as_ref(),
+        variables,
     );
     if super::cost::casts(&candidate.code) <= super::cost::casts(&baseline.code)
         && candidate.code.lines().count() <= baseline.code.lines().count()
@@ -101,6 +110,7 @@ fn render_prepared(
     symbols: &Symbols,
     data_ranges: &[(u64, u64)],
     variadic: Option<&super::variadic::Plan>,
+    variables: Variables,
 ) -> Rendered {
     // A saved parameter returned reads as the parameter now.
     crate::analysis::typing::apply_pointer_return(&mut folded);
@@ -135,9 +145,6 @@ fn render_prepared(
     );
     variables::pointer_fields(&mut folded, &types);
     let ir = &folded;
-    let frames = block_frames(ir, stack_pointer(ir.isa));
-    let variable_types =
-        variables::variable_types(ir, &narrow_registers(ir), float_return(&ir.ret_type));
     let (mut nodes, structured_ir) = super::structure::best_structure(ir);
     super::locals::fold_returns(ir, &mut nodes);
     let block_addresses = structured_ir
@@ -145,10 +152,25 @@ fn render_prepared(
         .iter()
         .map(|block| block.start)
         .collect();
+    let frames = block_frames(ir, stack_pointer(ir.isa));
+    let variable_types =
+        variables::variable_types(ir, &narrow_registers(ir), float_return(&ir.ret_type));
     let roles = naming::roles::infer_with_nodes(ir, symbols, &nodes);
     let mut locals =
         super::locals::stack_locals_with_roles(ir, &frames, &variable_types, symbols, &roles);
     locals.bind_register_tops(original);
+    let split = match variables {
+        Variables::Merged => folded.clone(),
+        Variables::Split => super::structure::lower::split_variables(&structured_ir, &mut nodes),
+    };
+    let placement = match variables {
+        Variables::Merged => super::initializers::Placement::Assignments,
+        Variables::Split => super::initializers::Placement::Scoped,
+    };
+    let ir = &split;
+    let variable_types =
+        variables::variable_types(ir, &narrow_registers(ir), float_return(&ir.ret_type));
+    let roles = naming::roles::infer_with_nodes(ir, symbols, &nodes);
     if let Some(logical) = &mut logical {
         let params: std::collections::HashSet<_> =
             ir.params.iter().map(|param| param.index).collect();
@@ -257,6 +279,8 @@ fn render_prepared(
             nodes,
             roles,
             block_addresses,
+            landing_pads: folded.landing_pads.clone(),
+            placement,
         },
     )
 }
@@ -298,7 +322,9 @@ struct EntryStorage<'a> {
 struct PreparedBody {
     nodes: Vec<Node>,
     block_addresses: std::collections::HashSet<u64>,
+    landing_pads: Vec<(u64, Vec<(u64, u64)>)>,
     roles: naming::roles::Roles,
+    placement: super::initializers::Placement,
 }
 
 fn render_with(
@@ -314,6 +340,8 @@ fn render_with(
         mut nodes,
         roles,
         block_addresses,
+        landing_pads,
+        placement,
     } = body;
     let EntryStorage {
         variadic,
@@ -442,6 +470,9 @@ fn render_with(
     }
     let mut debug_names = Vec::new();
     for (register, source_name) in &ir.debug_registers {
+        if ir.params.iter().any(|param| param.index == *register) {
+            continue;
+        }
         if ir
             .debug_registers
             .iter()
@@ -903,7 +934,7 @@ fn render_with(
         float_return,
         readonly_floats,
         names,
-        landing_pads: ir.landing_pads.iter().cloned().collect(),
+        landing_pads: landing_pads.into_iter().collect(),
         strings: references
             .iter()
             .filter(|reference| reference.pointer.is_none())
@@ -1427,7 +1458,7 @@ fn render_with(
         Some((name.clone(), declaration(ty, &name)))
     });
     let mut declarations = out.split_off(declarations_at);
-    let initialized = super::initializers::fold(&mut declarations, &body, candidates);
+    let initialized = super::initializers::fold(&mut declarations, &body, candidates, placement);
     if declarations.trim().is_empty() {
         declarations.clear();
     }

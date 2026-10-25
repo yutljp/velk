@@ -42,14 +42,12 @@ fn scale @ 0x12a0 (size 15)
 -- decompile
 /* velk pseudo-C: pick @ 0x12b0 */
 int32_t pick(uint32_t a0, uint32_t a1) {
-    int32_t result;
-
     if ((int32_t)a0 <= (int32_t)a1) {
-        result = a1;
-        return result;
+        int32_t v1 = a1;
+        return v1;
     }
-    result = a0;
-    return result;
+    int32_t v2 = a0;
+    return v2;
 }
 -- signature
 int32_t ()

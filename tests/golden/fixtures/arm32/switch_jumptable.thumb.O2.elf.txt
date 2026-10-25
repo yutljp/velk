@@ -7,13 +7,13 @@
 /* ref: 0x30260 .bss */
 int d7(int x) {
     uint32_t *const g = (uint32_t *)0x30260ULL;
+    uint32_t v1;
     uint32_t v3;
     uint32_t v4;
-    uint32_t v5;
 
     if ((uint32_t)x <= 9) {
         /* unsupported: ARM tbb [pc, r0] at 0x20112 */
-        return ((int32_t)(sub_20116((uint32_t)x, v3, v4, v5)));
+        return ((int32_t)(sub_20116((uint32_t)x, v1, v3, v4)));
     }
     *g = 0xffffffff;
     return -1;

@@ -7,7 +7,7 @@ mod common;
 #[path = "../src/render/cost.rs"]
 mod cost;
 
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 use std::fmt::Write as _;
 use std::path::Path;
 
@@ -35,7 +35,16 @@ fn analysis_output_matches_golden_files() {
     );
     let mut structure_types =
         String::from("# fixture: distinct printed structure types across all functions\n");
+    let mut groups: BTreeMap<String, (usize, usize, usize, usize, usize)> = BTreeMap::new();
+    let mut shapes = String::new();
     for (fixture, (actual, counts)) in fixtures.iter().zip(rendered) {
+        let total = groups.entry(counts.group.clone()).or_default();
+        total.0 += counts.variables;
+        total.1 += counts.casts;
+        total.2 += counts.lines + counts.prelude_lines;
+        total.3 += counts.gotos;
+        total.4 += counts.tokens;
+        shapes.push_str(&counts.shapes);
         writeln!(readability, "{}: {counts}", fixture.display()).expect("writing to a String");
         writeln!(
             structure_types,
@@ -65,6 +74,23 @@ fn analysis_output_matches_golden_files() {
         }
         expected_files.push(golden);
     }
+    let mut grouped =
+        String::from("# group: locals, casts, total lines, gotos, card approxTokens\n");
+    for (group, (locals, casts, lines, gotos, tokens)) in groups {
+        writeln!(
+            grouped,
+            "{group}: {locals}, {casts}, {lines}, {gotos}, {tokens}"
+        )
+        .expect("writing to a String");
+    }
+    failures.extend(common::check_expected(
+        &common::root().join("tests/golden/variable_groups.txt"),
+        &grouped,
+    ));
+    failures.extend(common::check_expected(
+        &common::root().join("tests/golden/variable_shapes.txt"),
+        &shapes,
+    ));
     failures.extend(stale_files(&golden_dir, &expected_files));
     failures.extend(common::check_expected(
         &common::root().join("tests/golden/readability.txt"),
@@ -122,7 +148,10 @@ fn render_fixture(path: &Path, fixture: &Path) -> (String, Readability) {
     let mut lift_failures = 0;
     let mut unsupported = 0;
     let mut gotos = 0;
-    let mut readability = Readability::default();
+    let mut readability = Readability {
+        group: common::fixture_group(fixture, binary.image()).to_owned(),
+        ..Readability::default()
+    };
     let mut details = String::new();
     let mut prelude = velk::render::Prelude::default();
     let mut details_prelude = velk::render::Prelude::default();
@@ -139,6 +168,47 @@ fn render_fixture(path: &Path, fixture: &Path) -> (String, Readability) {
         unsupported += decompiled.matches("/* unsupported").count();
         gotos += decompiled.matches("goto ").count();
         readability.add(&decompiled);
+        readability.tokens += binary
+            .card(function.addr, velk::card::DEFAULT_BUDGET, None, None)
+            .expect("fixture card")
+            .approx_tokens;
+        write!(
+            readability.shapes,
+            "{} {:#x}:",
+            fixture.display(),
+            function.addr
+        )
+        .expect("writing to a String");
+        for line in decompiled.lines() {
+            let text = line.trim();
+            let text = text.strip_prefix("} ").unwrap_or(text);
+            for token in [
+                "if (",
+                "else",
+                "else if (",
+                "for (",
+                "while (",
+                "do {",
+                "switch (",
+                "case ",
+                "default:",
+                "goto ",
+                "break;",
+                "continue;",
+            ] {
+                let found = text.starts_with(token) || (token == "goto " && text.contains(token));
+                if found {
+                    write!(
+                        readability.shapes,
+                        " {}{}",
+                        line.len() - line.trim_start().len(),
+                        token.trim()
+                    )
+                    .expect("writing to a String");
+                }
+            }
+        }
+        readability.shapes.push('\n');
         if recorded(fixture, function) {
             let decompiled = details_prelude.extract(&standalone);
             details.push_str(&render_function(&mut binary, function, &decompiled));
@@ -184,6 +254,9 @@ fn render_fixture(path: &Path, fixture: &Path) -> (String, Readability) {
 /// What makes pseudo-C harder to read, counted over a fixture's functions.
 #[derive(Default)]
 struct Readability {
+    tokens: usize,
+    shapes: String,
+    group: String,
     structures: BTreeSet<String>,
     lines: usize,
     prelude_lines: usize,
@@ -288,6 +361,11 @@ fn is_declaration(code: &str) -> bool {
         return false;
     };
     let body = body.trim_start();
+    if let Some(header) = body.strip_prefix("for (")
+        && let Some((init, _)) = header.split_once(';')
+    {
+        return is_declaration(&format!("    {init};"));
+    }
     if body.starts_with('{') || body.starts_with("return ") || body.starts_with("goto ") {
         return false;
     }
@@ -372,6 +450,7 @@ fn declarations_include_named_global_views() {
         "    bool ready = true;",
         "    unsigned long count = 8;",
         "    FILE *stream = source;",
+        "    for (int i = 0; i < n; i++) {",
     ] {
         assert!(is_declaration(code), "{code}");
     }
@@ -399,6 +478,7 @@ fn declarations_include_named_global_views() {
         "    goto L0;",
         "    goto local_0;",
         "    consume(counter);",
+        "    for (i = 0; i < n; i++) {",
         "uint32_t counter(void);",
     ] {
         assert!(!is_declaration(code), "{code}");
@@ -454,6 +534,9 @@ fn cast_classes_partition_casts() {
     assert_eq!(classes, [1, 1, 1, 1, 1]);
     assert_eq!(classes.iter().sum::<usize>(), cost::casts(code));
     assert_eq!(cost::casts("result(struct item *value, int32_t count)"), 0);
+    assert_eq!(cost::casts("(const void *)p + (const char *)q + (int)r"), 3);
+    assert_eq!(cost::casts("(volatile const uint32_t *)p"), 1);
+    assert_eq!(cost::casts("result(void)"), 0);
 }
 
 /// Calls through a pointer the analysis could not resolve, printed
@@ -489,7 +572,9 @@ fn recorded(fixture: &Path, function: &Function) -> bool {
     if name.starts_with("go_") {
         symbol.starts_with("main.") || symbol == "runtime.printstring"
     } else if name.starts_with("rust_") {
-        symbol.contains("rust_demo::") || symbol.contains("rust_probe::")
+        symbol.contains("rust_demo::")
+            || symbol.contains("rust_probe::")
+            || symbol.contains("memchr_raw::detect")
     } else {
         true
     }

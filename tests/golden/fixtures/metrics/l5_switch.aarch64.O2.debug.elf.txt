@@ -498,8 +498,7 @@ int sparse(int x) {
     case 300:
         return x;
     default:
-        x = -1;
-        return x;
+        return -1;
     }
 }
 -- signature

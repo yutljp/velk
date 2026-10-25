@@ -127,12 +127,12 @@ fn <unnamed> @ 0x2102bc (size 84)
   blk1 @ 0x2102d8:
     br 0x2102dc
   blk2 @ 0x2102dc:
-    v1 = #0xffffffff
+    v2 = #0xffffffff
     br 0x210304
   blk3 @ 0x2102e8:
-    v1 = select eq flt.d(d1, d0), #0x0 ? #0x0, #0x1
+    v2 = select eq flt.d(d1, d0), #0x0 ? #0x0, #0x1
     br 0x210304
   blk4 @ 0x210304:
-    ret v1
+    ret v2
 -- card
 {"addr":"0x2102bc","approxTokens":222,"blocks":5,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":84,"unsupported":0}

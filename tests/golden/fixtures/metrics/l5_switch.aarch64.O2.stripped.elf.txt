@@ -498,8 +498,7 @@ int32_t sub_210524(int64_t a0) {
     case 300:
         return a0;
     default:
-        a0 = 0xffffffff;
-        return a0;
+        return -1;
     }
 }
 -- signature

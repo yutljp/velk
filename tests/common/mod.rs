@@ -45,10 +45,10 @@ fn collect(dir: &Path, relative: &Path, found: &mut Vec<PathBuf>) {
     }
 }
 
-/// `work` applied to every item on all cores, results in the items' order.
+/// `work` applied in parallel, with results in the items' order.
 pub fn in_parallel<T: Sync, R: Send>(items: &[T], work: impl Fn(&T) -> R + Sync) -> Vec<R> {
     let next = std::sync::atomic::AtomicUsize::new(0);
-    let workers = std::thread::available_parallelism().map_or(4, |count| count.get());
+    let workers = std::thread::available_parallelism().map_or(3, |count| count.get().min(3));
     let mut results: Vec<(usize, R)> = std::thread::scope(|scope| {
         let handles: Vec<_> = (0..workers)
             .map(|_| {
@@ -120,5 +120,26 @@ pub fn check_expected(path: &Path, actual: &str) -> Option<String> {
                 ));
             }
         }
+    }
+}
+
+/// Fixture language groups, with C/C++ separated by available debug names.
+pub fn fixture_group(fixture: &Path, image: &velk::loader::Image) -> &'static str {
+    use velk::loader::NameSource;
+
+    let name = fixture.to_string_lossy();
+    if name.contains("rust_") {
+        "Rust"
+    } else if name.contains("go_") {
+        "Go"
+    } else if image.functions.values().any(|function| {
+        function
+            .sources
+            .iter()
+            .any(|source| matches!(source, NameSource::Dwarf | NameSource::CodeView))
+    }) {
+        "C/C++ debug"
+    } else {
+        "C/C++ stripped"
     }
 }

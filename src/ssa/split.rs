@@ -2,9 +2,15 @@ use super::{Phi, Ssa, build, dom, explicit_reads, lower_with, named, rename_read
 use crate::ir::{Expr, FunctionIr, Stmt, VALUE_BASE};
 use std::collections::{HashMap, HashSet};
 
+#[derive(Clone, Copy)]
+enum UpdateScope {
+    Locals,
+    Parameters,
+}
+
 /// The values joined through φs: each set is one variable of the program.
 /// A φ whose value nothing in `needed` reads joins nothing.
-fn congruence_classes(ssa: &Ssa, needed: &HashSet<u16>) -> Vec<usize> {
+fn congruence_classes(ssa: &Ssa, needed: &HashSet<u16>, scope: UpdateScope) -> Vec<usize> {
     let mut parent: Vec<usize> = (0..ssa.origin.len()).collect();
     fn find(parent: &mut [usize], mut index: usize) -> usize {
         while parent[index] != index {
@@ -24,6 +30,143 @@ fn congruence_classes(ssa: &Ssa, needed: &HashSet<u16>) -> Vec<usize> {
                 find(&mut parent, usize::from(arg - VALUE_BASE)),
             );
             parent[a] = b;
+        }
+    }
+    // Intermediate updates of a loop-carried local belong to that local too,
+    // including a value restored from a spill before the final increment.
+    let mut joined_phi = vec![false; parent.len()];
+    for phi in ssa.phis.iter().flatten() {
+        if needed.contains(&phi.value) {
+            let root = find(&mut parent, usize::from(phi.value - VALUE_BASE));
+            joined_phi[root] = true;
+        }
+    }
+    fn note_address(expr: &Expr, values: &mut HashSet<u16>) {
+        match expr {
+            Expr::Reg {
+                index,
+                width: 32 | 64,
+            } => {
+                values.insert(*index);
+            }
+            Expr::Bin {
+                op: crate::ir::BinOp::Add | crate::ir::BinOp::Sub,
+                lhs,
+                rhs,
+            } if matches!(rhs.as_ref(), Expr::Const(_)) => note_address(lhs, values),
+            _ => {}
+        }
+    }
+    fn memory_addresses(expr: &Expr, values: &mut HashSet<u16>) {
+        if let Expr::Load { addr, .. } = expr {
+            note_address(addr, values);
+        }
+        for child in crate::ir::visit::children(expr) {
+            memory_addresses(child, values);
+        }
+    }
+    let mut addresses = HashSet::new();
+    for stmt in ssa.ir.blocks.iter().flat_map(|block| &block.stmts) {
+        match stmt {
+            Stmt::Store { addr, .. } => note_address(addr, &mut addresses),
+            Stmt::Ret { value } if ssa.ir.ret_type.is_pointer() => {
+                note_address(value, &mut addresses)
+            }
+            _ => {}
+        }
+        for operand in stmt.operands() {
+            memory_addresses(operand, &mut addresses);
+        }
+    }
+    let mut addressed = vec![false; parent.len()];
+    for value in addresses {
+        let root = find(&mut parent, usize::from(value - VALUE_BASE));
+        addressed[root] = true;
+    }
+    let mut updates = Vec::new();
+    for stmt in ssa.ir.blocks.iter().flat_map(|block| &block.stmts) {
+        if let Stmt::Assign { dest, value } = stmt {
+            let defined = usize::from(dest.index - VALUE_BASE);
+            let origin = ssa.origin[defined];
+            let parameter = ssa.ir.params.iter().find(|param| param.index == origin);
+            if origin < crate::ir::VARIABLE_BASE
+                && (matches!(scope, UpdateScope::Locals) || parameter.is_none())
+            {
+                continue;
+            }
+            let pointer = parameter.is_some_and(|param| param.ty.is_pointer())
+                || ssa
+                    .ir
+                    .value_types
+                    .get(&origin)
+                    .is_some_and(crate::ir::CType::is_pointer)
+                || ssa.ir.pointer_values.contains(&origin)
+                || ssa
+                    .ir
+                    .structures
+                    .iter()
+                    .any(|structure| structure.elements.contains(&origin));
+            let updated = dest.width >= crate::arch::pointer_bytes(ssa.ir.isa) * 8
+                && match value {
+                    Expr::Bin {
+                        op: crate::ir::BinOp::And | crate::ir::BinOp::Or | crate::ir::BinOp::Xor,
+                        ..
+                    } => !pointer,
+                    Expr::Bin {
+                        op: crate::ir::BinOp::Add | crate::ir::BinOp::Sub,
+                        lhs,
+                        rhs,
+                    } if pointer => {
+                        matches!((lhs.as_ref(), rhs.as_ref()), (Expr::Reg { index, width }, Expr::Const(_)) if *width == dest.width && ssa.register_of(*index) == origin)
+                    }
+                    Expr::Bin { .. } if origin < crate::ir::VARIABLE_BASE && !pointer => true,
+                    _ => false,
+                };
+            for read in explicit_reads(stmt) {
+                let used = usize::from(read - VALUE_BASE);
+                if origin == ssa.origin[used] {
+                    updates.push((defined, used, pointer && updated));
+                    let entry_update = origin >= crate::ir::VARIABLE_BASE
+                        || pointer
+                        || matches!(
+                            value,
+                            Expr::Bin {
+                                op: crate::ir::BinOp::And
+                                    | crate::ir::BinOp::Or
+                                    | crate::ir::BinOp::Xor,
+                                ..
+                            }
+                        )
+                        || ssa.entry.get(&origin).is_some_and(|entry| {
+                            find(&mut parent, usize::from(*entry - VALUE_BASE))
+                                == find(&mut parent, used)
+                        });
+                    let address_update = !pointer || addressed[find(&mut parent, defined)];
+                    if updated && entry_update && address_update {
+                        let a = find(&mut parent, defined);
+                        let b = find(&mut parent, used);
+                        parent[b] = a;
+                        joined_phi[a] |= joined_phi[b];
+                        addressed[a] |= addressed[b];
+                    }
+                }
+            }
+        }
+    }
+    loop {
+        let mut changed = false;
+        for &(defined, used, pointer_update) in &updates {
+            let a = find(&mut parent, defined);
+            let b = find(&mut parent, used);
+            if a != b && (joined_phi[a] || (pointer_update && addressed[a])) {
+                parent[b] = a;
+                joined_phi[a] |= joined_phi[b];
+                addressed[a] |= addressed[b];
+                changed = true;
+            }
+        }
+        if !changed {
+            break;
         }
     }
     (0..parent.len())
@@ -208,6 +351,14 @@ fn apart(low: &Expr, high: &Expr) -> Option<i64> {
 /// variable holding the entry value keeps the register, and so does one a
 /// call reads or writes without naming it.
 pub fn split_variables(ir: &mut FunctionIr, registers: &[u16]) {
+    split(ir, registers, UpdateScope::Locals);
+}
+
+pub(crate) fn split_render_variables(ir: &mut FunctionIr, registers: &[u16]) {
+    split(ir, registers, UpdateScope::Parameters);
+}
+
+fn split(ir: &mut FunctionIr, registers: &[u16], scope: UpdateScope) {
     // An unknown successor could read any register.
     if ir
         .blocks
@@ -275,7 +426,7 @@ pub fn split_variables(ir: &mut FunctionIr, registers: &[u16]) {
             }
         }
     }
-    let class = congruence_classes(&ssa, &needed);
+    let class = congruence_classes(&ssa, &needed, scope);
     let mut kept: HashSet<usize> = ssa
         .entry
         .values()
@@ -310,7 +461,10 @@ pub fn split_variables(ir: &mut FunctionIr, registers: &[u16]) {
         .flat_map(Stmt::call_outputs)
     {
         let root = class[usize::from(output.dest.index - VALUE_BASE)];
-        if !read.contains(&root) {
+        if !read.contains(&root)
+            || (matches!(scope, UpdateScope::Parameters)
+                && ssa.origin[root] < crate::ir::VARIABLE_BASE)
+        {
             kept.insert(root);
         }
     }
@@ -359,11 +513,23 @@ pub fn split_variables(ir: &mut FunctionIr, registers: &[u16]) {
             }
         }
     }
+    // An already named local keeps its first defined web. Entry-only reads in
+    // disconnected handler blocks must still see the assignment under that name.
+    let mut existing: HashSet<u16> = needed
+        .iter()
+        .map(|value| class[usize::from(*value - VALUE_BASE)])
+        .filter(|root| kept.contains(root) && first.contains_key(root))
+        .map(|root| ssa.origin[root])
+        .collect();
     let mut order: Vec<(usize, (usize, usize, u16))> = first
         .into_iter()
         .filter(|(root, _)| registers.contains(&ssa.origin[*root]) && !kept.contains(root))
         .collect();
     order.sort_by_key(|(root, at)| (*at, *root));
+    order.retain(|(root, _)| {
+        let origin = ssa.origin[*root];
+        !ir.variable_registers.contains_key(&origin) || !existing.insert(origin)
+    });
     let next = ir
         .blocks
         .iter()
@@ -372,6 +538,7 @@ pub fn split_variables(ir: &mut FunctionIr, registers: &[u16]) {
             let (writes, reads) = crate::ir::visit::statement_registers(stmt);
             writes.into_iter().chain(reads)
         })
+        .chain(ir.variable_registers.keys().copied())
         .filter(|index| (crate::ir::VARIABLE_BASE..VALUE_BASE).contains(index))
         .max()
         .map_or(crate::ir::VARIABLE_BASE, |index| index.saturating_add(1));
@@ -388,7 +555,16 @@ pub fn split_variables(ir: &mut FunctionIr, registers: &[u16]) {
     }
     let origins: Vec<(u16, u16)> = names
         .iter()
-        .map(|(root, name)| (*name, ssa.origin[*root]))
+        .map(|(root, name)| {
+            let origin = ssa.origin[*root];
+            (
+                *name,
+                ir.variable_registers
+                    .get(&origin)
+                    .copied()
+                    .unwrap_or(origin),
+            )
+        })
         .collect();
     let renames: HashMap<u16, u16> = (0..ssa.origin.len())
         .filter_map(|index| {
@@ -555,6 +731,65 @@ mod split_tests {
             "{}",
             ir.render()
         );
+    }
+
+    #[test]
+    fn a_named_local_splits_again_when_its_phi_is_gone() {
+        let variable = VARIABLE_BASE;
+        let mut ir = function(vec![vec![
+            assign(variable, Expr::Const(7)),
+            Stmt::Store {
+                addr: Expr::reg(RSI, 64),
+                value: Expr::reg(variable, 64),
+                width: 8,
+            },
+            assign(
+                variable,
+                Expr::bin(BinOp::Add, Expr::reg(RSI, 64), Expr::Const(8)),
+            ),
+            Stmt::Ret {
+                value: Expr::Load {
+                    addr: Box::new(Expr::reg(variable, 64)),
+                    width: 1,
+                    signed: false,
+                },
+            },
+        ]]);
+        ir.variable_registers.insert(variable, 0);
+        split_variables(&mut ir, &[variable]);
+        assert!(
+            matches!(&ir.blocks[0].stmts[0], Stmt::Assign { dest, .. } if dest.index == variable)
+        );
+        assert!(
+            matches!(&ir.blocks[0].stmts[2], Stmt::Assign { dest, .. } if dest.index == variable + 1)
+        );
+        assert_eq!(ir.variable_registers.get(&(variable + 1)), Some(&0));
+        let text = crate::render::render(&ir, &[], &Default::default(), &[]);
+        assert!(text.contains("v1 = 7;"), "{text}");
+        assert!(text.contains("*v2"), "{text}");
+        let before = ir.render();
+        split_variables(&mut ir, &[variable, variable + 1]);
+        assert_eq!(ir.render(), before);
+    }
+
+    #[test]
+    fn disconnected_reads_keep_the_first_defined_local_name() {
+        let variable = VARIABLE_BASE;
+        let mut ir = function(vec![
+            vec![
+                assign(variable, Expr::Const(7)),
+                Stmt::Ret {
+                    value: Expr::reg(variable, 64),
+                },
+            ],
+            vec![Stmt::Ret {
+                value: Expr::reg(variable, 64),
+            }],
+        ]);
+        ir.variable_registers.insert(variable, 0);
+        let before = ir.render();
+        super::split_render_variables(&mut ir, &[variable]);
+        assert_eq!(ir.render(), before);
     }
 
     #[test]

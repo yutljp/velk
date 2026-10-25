@@ -168,9 +168,9 @@ int64_t main(int32_t a0) {
     local_0.f_8 = 0x656e6f;
     local_0.f_10 = 0;
     local_0.f_0 = v1;
-    v1 = *qword_2030;
+    int64_t v4 = *qword_2030;
     local_0.f_20 = 0x6f7774;
-    local_0.f_18 = v1;
+    local_0.f_18 = v4;
     local_0.f_28 = 0;
     return lookup(&local_0.f_0, 2, a0 & 0xffffffff);
 }
@@ -326,20 +326,19 @@ fn frame_dummy @ 0x1280 (size 16)
 struct S1 { int32_t field_0x0; int32_t field_0x4; uint8_t gap_0x8[0x10]; };
 int32_t lookup(struct S1 *a0, int a1, int a2) {
     uint64_t *const stderr_GLIBC_2_2_5 = (uint64_t *)0x4020ULL;
-    void *v2;
     int64_t local_0; /* [sp-78] */
     _Alignas(16) uint8_t local_1[0x50]; /* [sp-68] */
     int64_t local_2; /* [sp-70] */
 
     if (a1 <= 0) {
-        v2 = (void *)(local_1);
+        void *v2 = (void *)(local_1);
         local_2 = 0;
         local_0 = a1;
         __snprintf_chk((char *)(local_1), 64, 2, 64, (const char *)"missing key %d among %d", a2 & 0xffffffff, a1);
         fputs((const char *)(local_1), (FILE *)*stderr_GLIBC_2_2_5);
         abort();
     }
-    v2 = (void *)a0;
+    int64_t v16 = (uintptr_t)a0;
     struct S1 *v3 = a0;
     int64_t v4 = (uint64_t)((int64_t)a1 * 0x3) << 3;
     const char *v5 = (const char *)((uint8_t *)a0 + v4);
@@ -350,16 +349,16 @@ int32_t lookup(struct S1 *a0, int a1, int a2) {
         ++v3;
     } while (v3 != v5);
     local_0 = a1;
-    uint32_t *v8 = (uint32_t *)(v2 + 0x8);
-    v4 = (uintptr_t)(v4 + (uint8_t *)v8);
+    uint32_t *v8 = (uint32_t *)(v16 + 8);
+    int64_t v17 = (uintptr_t)(v4 + (uint8_t *)v8);
     __snprintf_chk((char *)(local_1), 64, 2, 64, (const char *)"missing key %d among %d", a2 & 0xffffffff, a1);
     fputs((const char *)(local_1), (FILE *)*stderr_GLIBC_2_2_5);
     do {
         uint32_t v11 = v8[-1];
-        v5 = (const char *)v8;
+        int64_t v18 = (uintptr_t)v8;
         v8 += 0x6;
-        __fprintf_chk((FILE *)*stderr_GLIBC_2_2_5, 2, (const char *)0x201c, v5, v11);
-    } while ((uintptr_t)v8 != v4);
+        __fprintf_chk((FILE *)*stderr_GLIBC_2_2_5, 2, (const char *)0x201c, v18, v11);
+    } while ((uintptr_t)v8 != v17);
     abort();
 }
 -- signature

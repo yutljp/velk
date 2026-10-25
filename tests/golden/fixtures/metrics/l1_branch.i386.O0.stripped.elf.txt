@@ -42,18 +42,16 @@ fn classify @ 0x1240 (size 52)
 -- decompile
 /* velk pseudo-C: clamp @ 0x1280 */
 int32_t clamp(uint32_t a0, uint32_t a1, uint32_t a2) {
-    int32_t result;
-
     if ((int32_t)a0 >= (int32_t)a1) {
         if ((int32_t)a0 <= (int32_t)a2) {
-            result = a0;
-            return result;
+            int32_t v1 = a0;
+            return v1;
         }
-        result = a2;
-        return result;
+        int32_t v2 = a2;
+        return v2;
     }
-    result = a1;
-    return result;
+    int32_t v3 = a1;
+    return v3;
 }
 -- signature
 int32_t ()
@@ -96,11 +94,11 @@ fn sign_of @ 0x12c0 (size 50)
   blk0 @ 0x12c0:
     brif le load32((esp + #0x4)), #0x0 -> 0x12d7
   blk1 @ 0x12cd:
-    v2 = #0x1
+    v3 = #0x1
     br 0x12ea
   blk2 @ 0x12d7:
-    v2 = select lt load32((esp + #0x4)), #0x0 ? #0xffffffff, #0x0
+    v3 = select lt load32((esp + #0x4)), #0x0 ? #0xffffffff, #0x0
   blk3 @ 0x12ea:
-    ret v2
+    ret v3
 -- card
 {"addr":"0x12c0","approxTokens":150,"blocks":4,"hardReasons":[],"name":"sign_of","nameSources":["dynamic","unwind"],"section":".text","size":50,"unsupported":0}

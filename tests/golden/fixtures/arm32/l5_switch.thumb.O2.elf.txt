@@ -24,9 +24,9 @@
 /* ref: 0x30378 .bss */
 int dense(int x) {
     uint32_t *const g_sink = (uint32_t *)0x30378ULL;
-    uint64_t v4;
+    uint64_t v2;
+    uint32_t v4;
     uint32_t v5;
-    uint32_t v6;
     int32_t v3;
 
     uint32_t v1 = x - 10;
@@ -34,10 +34,10 @@ int dense(int x) {
         /* unsupported: ARM tbb [pc, r0] at 0x2019c */
         {
             uint64_t call_values[2];
-            call_values[0] = sub_201a0((uint32_t)x, v4, v5, v6);
-            call_values[1] = v4; /* also returned by the call */
+            call_values[0] = sub_201a0((uint32_t)x, v2, v4, v5);
+            call_values[1] = v2; /* also returned by the call */
             v3 = (uint32_t)(call_values[0]);
-            v4 = (uint32_t)(call_values[1]);
+            v2 = (uint32_t)(call_values[1]);
         }
         return v3;
     }
@@ -412,22 +412,22 @@ int sparse(int x) {
         x = 100;
     }
     if (v1 != v2) {
-        v1 = x;
-        v2 = 300;
+        int32_t v7 = x;
+        int32_t v8 = 300;
         if (x == 300) {
             x = 300;
         }
-        if (v1 != v2) {
-            v1 = x;
-            v2 = 50;
+        if (v7 != v8) {
+            int32_t v9 = x;
+            int32_t v10 = 50;
             if (x != 50) {
                 x = -1;
             }
-            if (v1 != v2) {
+            if (v9 != v10) {
                 return x;
             }
-            x = 7;
-            return x;
+            int32_t v11 = 7;
+            return v11;
         }
         return x;
     }

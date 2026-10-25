@@ -627,6 +627,21 @@ pub(super) fn returned(call: &Stmt, value: &Expr, ctx: &Ctx<'_>) -> Option<Strin
     let Some(dest) = scalar_fusion(call, ctx) else {
         return None;
     };
+    if let Expr::Reg { index, width } = value
+        && *index == dest.index
+        && let Some(returned) = ctx.returned
+        && returned.integer
+        && returned.bits == 32
+        && u32::from(*width) >= returned.bits
+        && *width <= dest.width
+        && ctx
+            .declared
+            .get(index)
+            .is_some_and(|stored| stored.integer && stored.bits >= returned.bits)
+    {
+        let value = bits(expression(call, ctx), &ValueType::returned(call, ctx));
+        return Some(format!("return {value};"));
+    }
     if *value != Expr::reg(dest.index, dest.width) || ctx.void_return || ctx.float_return.is_some()
     {
         return None;

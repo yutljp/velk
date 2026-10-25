@@ -14,13 +14,13 @@ int count_bits(unsigned int x) {
         return x;
     }
     uint32_t v1 = x;
-    x = 0;
+    int32_t v4 = 0;
     do {
-        x += (v1 & 0x1);
+        v4 += (v1 & 0x1);
         v3 = v1;
         v1 >>= 1;
     } while (v3 > 1);
-    return x;
+    return v4;
 }
 -- signature
 int (unsigned int x)
@@ -119,8 +119,6 @@ fn sum_till_neg @ 0x2101dc (size 40)
 -- decompile
 /* velk pseudo-C: sum_until_zero @ 0x210204 */
 int sum_until_zero(int *p, int n) {
-    int32_t v4;
-
     if (n < 1) {
         return 0;
     }
@@ -128,7 +126,7 @@ int sum_until_zero(int *p, int n) {
     int32_t v2 = 0;
     int64_t v3 = (uint32_t)n;
     do {
-        v4 = *v1;
+        int32_t v4 = *v1;
         ++v1;
         if (v4 == 0) {
             break;

@@ -22,18 +22,18 @@ int (unsigned int x)
 -- ir
 fn count_bits @ 0x200fc (size 42)
   blk0 @ 0x200fc:
-    v1 = #0x0
+    v2 = #0x0
     br 0x20106
   blk1 @ 0x20106:
     brif eq r0, #0x0 -> 0x20120
   blk2 @ 0x2010a:
     br 0x2010c
   blk3 @ 0x2010c:
-    v1 = ((v1 + (r0 & #0x1)) & #0xffffffff)
+    v2 = ((v2 + (r0 & #0x1)) & #0xffffffff)
     r0 = ((r0 >> #0x1) & #0xffffffff)
     br 0x20106
   blk4 @ 0x20120:
-    ret v1
+    ret v2
 -- card
 {"addr":"0x200fc","approxTokens":216,"blocks":5,"hardReasons":[],"name":"count_bits","nameSources":["symtab","dwarf"],"section":".text","size":42,"unsupported":0}
 
@@ -41,10 +41,8 @@ fn count_bits @ 0x200fc (size 42)
 -- decompile
 /* velk pseudo-C: sum_until @ 0x20128 */
 int sum_until(int limit) {
-    int32_t i;
-
     int32_t result = 0;
-    for (i = 1; i <= limit; i++) {
+    for (int32_t i = 1; i <= limit; i++) {
         result += i;
     }
     return result;
@@ -56,23 +54,23 @@ int (int limit)
 -- ir
 fn sum_until @ 0x20128 (size 48)
   blk0 @ 0x20128:
-    v1 = #0x0
-    v2 = #0x1
+    v2 = #0x0
+    v3 = #0x1
     br 0x20136
   blk1 @ 0x20136:
-    brif le v2, r0 -> 0x2013e
+    brif le v3, r0 -> 0x2013e
   blk2 @ 0x2013d:
     br 0x20152
   blk3 @ 0x2013e:
     br 0x20140
   blk4 @ 0x20140:
-    v1 = ((v1 + v2) & #0xffffffff)
+    v2 = ((v2 + v3) & #0xffffffff)
     br 0x2014a
   blk5 @ 0x2014a:
-    v2 = ((v2 + #0x1) & #0xffffffff)
+    v3 = ((v3 + #0x1) & #0xffffffff)
     br 0x20136
   blk6 @ 0x20152:
-    ret v1
+    ret v2
 -- card
 {"addr":"0x20128","approxTokens":240,"blocks":7,"hardReasons":[],"name":"sum_until","nameSources":["symtab","dwarf"],"section":".text","size":48,"unsupported":0}
 

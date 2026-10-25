@@ -127,11 +127,11 @@ fn <unnamed> @ 0x180001100 (size 84)
   blk0 @ 0x180001100:
     brif eq flt.d(xmm0, xmm1), #0x0 -> 0x18000112d
   blk1 @ 0x180001122:
-    v1 = #0xffffffff
+    v2 = #0xffffffff
     br 0x18000114b
   blk2 @ 0x18000112d:
-    v1 = select ne flt.d(xmm1, xmm0), #0x0 ? #0x1, #0x0
+    v2 = select ne flt.d(xmm1, xmm0), #0x0 ? #0x1, #0x0
   blk3 @ 0x18000114b:
-    ret v1
+    ret v2
 -- card
 {"addr":"0x180001100","approxTokens":156,"blocks":4,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":84,"unsupported":0}

@@ -48,12 +48,9 @@ fn cell_set @ 0x2010c (size 20)
 -- decompile
 /* velk pseudo-C: item_last_key @ 0x20120 */
 int32_t item_last_key(struct item *items, int n) {
-    int32_t v1;
-    int32_t v2;
-
     if (n >= 1) {
-        v2 = 0;
-        v1 = (uint32_t)(uintptr_t)items + 4;
+        int32_t v2 = 0;
+        int32_t v1 = (uint32_t)(uintptr_t)items + 4;
         int32_t v3 = v1;
         for (;;) {
             int32_t v4 = *(uint32_t *)((uint32_t)v3);

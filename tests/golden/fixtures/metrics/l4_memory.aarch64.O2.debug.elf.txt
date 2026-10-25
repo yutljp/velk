@@ -107,10 +107,10 @@ int array_sum(int *a, int n) {
     int *v15 = a + v2;
     int64_t v16 = (uint32_t)n - v2;
     do {
-        v2 = (uint32_t)*v15;
+        int32_t v18 = *v15;
         ++v15;
         --v16;
-        v3 = v2 + v3;
+        v3 = v18 + v3;
     } while (v16 != 0);
     return v3;
 }

@@ -64,8 +64,8 @@ int32_t sub_180001020(uint32_t *a0, int32_t a1) {
             v6 = add_lanes32(v6, *(uint64_t *)((uint8_t *)a0 + v7 + 0x18));
             v7 += 32;
         } while (v4 != v7);
-        v8 = add_lanes32(add_lanes32(v6, v9), add_lanes32(v5, v8));
-        v3 = add_lanes32(v8 >> 32 | v8 >> 32 << 32, v8);
+        uint64_t v17 = add_lanes32(add_lanes32(v6, v9), add_lanes32(v5, v8));
+        v3 = add_lanes32(v17 >> 32 | v17 >> 32 << 32, v17);
         if ((uint32_t)v2 == (uint32_t)a1) {
             return v3;
         }

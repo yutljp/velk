@@ -23,10 +23,8 @@ fn <unnamed> @ 0x21016c (size 44)
 -- decompile
 /* velk pseudo-C: sub_210198 @ 0x210198 */
 int32_t sub_210198(int32_t a0) {
-    int32_t i;
-
     int32_t result = 0;
-    for (i = 0; i < a0; i++) {
+    for (int32_t i = 0; i < a0; i++) {
         result += i * i;
     }
     return result;
@@ -38,20 +36,20 @@ int32_t (int32_t a0)
 -- ir
 fn <unnamed> @ 0x210198 (size 96)
   blk0 @ 0x210198:
-    v1 = #0x0
     v2 = #0x0
+    v3 = #0x0
     br 0x2101ac
   blk1 @ 0x2101ac:
-    brif ge v2, w0 -> 0x2101ec
+    brif ge v3, w0 -> 0x2101ec
   blk2 @ 0x2101bc:
     br 0x2101c0
   blk3 @ 0x2101c0:
-    v1 = ((v1 + (v2 * v2)) & #0xffffffff)
+    v2 = ((v2 + (v3 * v3)) & #0xffffffff)
     br 0x2101dc
   blk4 @ 0x2101dc:
-    v2 = ((v2 + #0x1) & #0xffffffff)
+    v3 = ((v3 + #0x1) & #0xffffffff)
     br 0x2101ac
   blk5 @ 0x2101ec:
-    ret v1
+    ret v2
 -- card
 {"addr":"0x210198","approxTokens":240,"blocks":6,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":96,"unsupported":0}

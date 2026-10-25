@@ -13,6 +13,7 @@ mod split;
 use demand::demanded_bits;
 pub(crate) use demand::entry_demands;
 pub use demand::narrow_partial_writes;
+pub(crate) use split::split_render_variables;
 pub use split::split_variables;
 
 pub(crate) mod dom;

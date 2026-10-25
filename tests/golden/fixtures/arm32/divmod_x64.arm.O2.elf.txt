@@ -25,20 +25,20 @@ uint64_t velk_entry_stack_pointer(void); /* target entry stack pointer */
 -- decompile
 /* velk pseudo-C: l3 @ 0x2016c */
 int32_t l3(void) {
-    uint64_t v6;
-    uint64_t v7;
-    uint32_t v8;
+    uint64_t v1;
+    uint64_t v2;
+    uint32_t v3;
     int32_t v4;
 
     /* unsupported: AAPCS32 multiword, floating-point or aggregate declaration */
     {
         uint64_t call_values[2];
-        call_values[0] = sub_2017c((uint32_t)v6, v7, 3, 0);
-        call_values[1] = v7; /* also returned by the call */
+        call_values[0] = sub_2017c((uint32_t)v1, v2, 3, 0);
+        call_values[1] = v2; /* also returned by the call */
         v4 = (uint32_t)(call_values[0]);
-        v7 = (uint32_t)(call_values[1]);
+        v2 = (uint32_t)(call_values[1]);
     }
-    int32_t v5 = v8;
+    int32_t v5 = v3;
     return v4;
 }
 -- signature
@@ -62,20 +62,20 @@ fn l3 @ 0x2016c (size 20)
 -- decompile
 /* velk pseudo-C: l10 @ 0x20180 */
 int32_t l10(void) {
-    uint64_t v6;
-    uint64_t v7;
-    uint32_t v8;
+    uint64_t v1;
+    uint64_t v2;
+    uint32_t v3;
     int32_t v4;
 
     /* unsupported: AAPCS32 multiword, floating-point or aggregate declaration */
     {
         uint64_t call_values[2];
-        call_values[0] = sub_20190((uint32_t)v6, v7, 10, 0);
-        call_values[1] = v7; /* also returned by the call */
+        call_values[0] = sub_20190((uint32_t)v1, v2, 10, 0);
+        call_values[1] = v2; /* also returned by the call */
         v4 = (uint32_t)(call_values[0]);
-        v7 = (uint32_t)(call_values[1]);
+        v2 = (uint32_t)(call_values[1]);
     }
-    int32_t v5 = v8;
+    int32_t v5 = v3;
     return v4;
 }
 -- signature
@@ -100,26 +100,26 @@ fn l10 @ 0x20180 (size 20)
 /* velk pseudo-C: h3 @ 0x20194 */
 int32_t h3(int32_t a0, int32_t a1) {
     uint64_t sp = velk_entry_stack_pointer();
+    uint32_t v2;
+    uint32_t v6;
+    uint32_t v8;
     uint32_t v12;
     uint32_t v13;
-    uint32_t v14;
-    uint32_t v15;
-    uint32_t v16;
 
     /* unsupported: AAPCS32 multiword, floating-point or aggregate declaration */
-    *(uint32_t *)(sp - 0x8) = v14;
+    *(uint32_t *)(sp - 0x8) = v8;
     int32_t v1 = a0 + a1;
     /* unsupported: ARM adc lr, r2, 0x0 at 0x201a0 */
-    int32_t v3 = v15 & 0xffff | 0xaaaa0000;
+    int32_t v3 = v12 & 0xffff | 0xaaaa0000;
     /* unsupported: ARM umull r3, r2, lr, ip at 0x201a8 */
-    int32_t v4 = v12 & 0xfffffffe;
-    int32_t v5 = v4 + (v12 >> 1);
-    int32_t v7 = v16 - v5;
+    int32_t v4 = v2 & 0xfffffffe;
+    int32_t v5 = v4 + (v2 >> 1);
+    int32_t v7 = v13 - v5;
     int32_t v9 = a0 - v7;
     /* unsupported (2 steps): ARM sbc r1, r1, 0x0 at 0x201c4, ARM umull r0, lr, r2, ip at 0x201c8 */
-    int32_t v10 = v16 + v12 * v13;
-    int32_t v11 = v10 + a1 * v15;
-    v14 = *(uint32_t *)(sp - 0x8);
+    int32_t v10 = v13 + v2 * v6;
+    int32_t v11 = v10 + a1 * v12;
+    v8 = *(uint32_t *)(sp - 0x8);
     return a0;
 }
 -- signature
@@ -156,27 +156,27 @@ fn h3 @ 0x20194 (size 68)
 /* velk pseudo-C: h10 @ 0x201d8 */
 int32_t h10(uint32_t a0, uint32_t a1) {
     uint64_t sp = velk_entry_stack_pointer();
+    uint32_t v2;
+    uint32_t v6;
+    uint32_t v8;
+    uint32_t v11;
     uint32_t v13;
-    uint32_t v14;
-    uint32_t v15;
-    uint32_t v16;
-    uint32_t v17;
 
     /* unsupported: AAPCS32 multiword, floating-point or aggregate declaration */
-    *(uint32_t *)(sp - 0x8) = v15;
+    *(uint32_t *)(sp - 0x8) = v8;
     int32_t v1 = (a0 >> 1 | a1 << 31) + (a1 >> 1);
     /* unsupported: ARM adc r2, r2, 0x0 at 0x201ec */
-    int32_t v3 = v16 & 0xffff | 0xcccc0000;
+    int32_t v3 = v11 & 0xffff | 0xcccc0000;
     /* unsupported: ARM umull r3, r0, r2, ip at 0x201f4 */
     int32_t v4 = a0 & 0xfffffffc;
     int32_t v5 = v4 + (a0 >> 2);
-    int32_t v7 = v13 - v5;
-    int32_t v9 = v17 - v7;
+    int32_t v7 = v2 - v5;
+    int32_t v9 = v13 - v7;
     /* unsupported: ARM umull r0, lr, r2, ip at 0x20210 */
-    int32_t v10 = v17 + v13 * v14;
+    int32_t v10 = v13 + v2 * v6;
     /* unsupported: ARM rsc r1, r3, r1, lsr 1 at 0x2021c */
-    int32_t v12 = v13 + a1 * v16;
-    v15 = *(uint32_t *)(sp - 0x8);
+    int32_t v12 = v2 + a1 * v11;
+    v8 = *(uint32_t *)(sp - 0x8);
     return a0;
 }
 -- signature
@@ -213,10 +213,10 @@ fn h10 @ 0x201d8 (size 80)
 -- decompile
 /* velk pseudo-C: u64 @ 0x20228 */
 unsigned int u64(unsigned int x) {
-    uint32_t v4;
+    uint32_t v1;
 
     /* unsupported: ARM umull r0, r1, r0, r1 at 0x20230 */
-    int32_t v3 = v4 >> 1;
+    int32_t v3 = v1 >> 1;
     return v3;
 }
 -- signature
@@ -288,10 +288,10 @@ fn ldiv16x @ 0x2024c (size 28)
 -- decompile
 /* velk pseudo-C: umod3x @ 0x20268 */
 int umod3x(unsigned int x) {
-    uint32_t v6;
+    uint32_t v1;
 
     /* unsupported: ARM umull r1, r2, r0, r1 at 0x20270 */
-    int32_t v3 = v6 >> 1;
+    int32_t v3 = v1 >> 1;
     int32_t v4 = v3 * 3;
     int32_t v5 = x - v4;
     return v5;
@@ -434,19 +434,19 @@ fn pdiv16l @ 0x202d8 (size 28)
 -- decompile
 /* velk pseudo-C: lmod10x @ 0x202f4 */
 int32_t lmod10x(void) {
-    uint64_t v7;
-    uint64_t v8;
-    uint32_t v9;
+    uint64_t v1;
+    uint64_t v2;
+    uint32_t v3;
 
     /* unsupported: AAPCS32 multiword, floating-point or aggregate declaration */
     {
         uint64_t call_values[2];
-        call_values[0] = sub_20304(v7, v8, 10, 0);
-        call_values[1] = v8; /* also returned by the call */
-        v7 = (uint32_t)(call_values[0]);
-        v8 = (uint32_t)(call_values[1]);
+        call_values[0] = sub_20304(v1, v2, 10, 0);
+        call_values[1] = v2; /* also returned by the call */
+        v1 = (uint32_t)(call_values[0]);
+        v2 = (uint32_t)(call_values[1]);
     }
-    int32_t v6 = v9;
+    int32_t v6 = v3;
     return 0;
 }
 -- signature

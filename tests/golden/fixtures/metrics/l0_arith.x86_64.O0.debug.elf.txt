@@ -42,11 +42,11 @@ fn scale @ 0x2011e0 (size 16)
 -- decompile
 /* velk pseudo-C: pick @ 0x2011f0 */
 int pick(int a, int b) {
-    int32_t result = a;
+    int32_t v1 = a;
     if (a <= b) {
         return b;
     }
-    return result;
+    return v1;
 }
 -- signature
 int (int a, int b)

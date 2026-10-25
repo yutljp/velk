@@ -12,22 +12,22 @@
 -- decompile
 /* velk pseudo-C: copy_bytes @ 0x2013c */
 void copy_bytes(unsigned char *dst, unsigned char *src, uint32_t n) {
+    uint32_t v5;
     uint32_t v6;
-    uint32_t v7;
     uint32_t local_0; /* [sp-8] */
     uint32_t local_1; /* [sp-4] */
 
     if (n == 0) {
         return;
     }
-    local_0 = v6;
-    local_1 = v7;
+    local_0 = v5;
+    local_1 = v6;
     if (n < 16) {
         sub_20188();
         return;
     }
-    uint32_t v5 = (uint32_t)(uintptr_t)src - (uint32_t)(uintptr_t)dst;
-    if (v5 > 0xffffffef && v5 != -16) {
+    uint32_t v1 = (uint32_t)(uintptr_t)src - (uint32_t)(uintptr_t)dst;
+    if (v1 > 0xffffffef && v1 != -16) {
         sub_20188();
         return;
     }

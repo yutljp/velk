@@ -65,12 +65,12 @@ fn <unnamed> @ 0x180001040 (size 21)
 -- decompile
 /* velk pseudo-C: sub_180001060 @ 0x180001060 */
 uint8_t sub_180001060(int32_t a0, int32_t a1, int32_t a2) {
-    uint8_t result = 0;
+    uint8_t v3 = 0;
     if (a0 < a1) {
-        return result;
+        return v3;
     }
-    result = a0 <= a2;
-    return result;
+    uint8_t v5 = a0 <= a2;
+    return v5;
 }
 -- signature
 uint8_t (int32_t a0, int32_t a1, int32_t a2)
@@ -109,10 +109,10 @@ fn <unnamed> @ 0x1800010a0 (size 43)
 -- decompile
 /* velk pseudo-C: sub_1800010d0 @ 0x1800010d0 */
 int32_t sub_1800010d0(int32_t a0) {
-    int32_t v1 = a0;
+    int32_t v2 = a0;
     int32_t result = 0;
-    while (v1 != 0) {
-        v1 = v1 - 1 & v1;
+    while (v2 != 0) {
+        v2 = v2 - 1 & v2;
         ++result;
     }
     return result;
@@ -124,16 +124,16 @@ int32_t (int32_t a0)
 -- ir
 fn <unnamed> @ 0x1800010d0 (size 50)
   blk0 @ 0x1800010d0:
-    v1 = (rcx & #0xffffffff)
-    v2 = #0x0
+    v2 = (rcx & #0xffffffff)
+    v3 = #0x0
   blk1 @ 0x1800010dc:
-    brif eq v1, #0x0 -> 0x1800010fd
+    brif eq v2, #0x0 -> 0x1800010fd
   blk2 @ 0x1800010e3:
-    v1 = ((v1 - #0x1) & v1)
-    v2 = ((v2 + #0x1) & #0xffffffff)
+    v2 = ((v2 - #0x1) & v2)
+    v3 = ((v3 + #0x1) & #0xffffffff)
     br 0x1800010dc
   blk3 @ 0x1800010fd:
-    ret v2
+    ret v3
 -- card
 {"addr":"0x1800010d0","approxTokens":174,"blocks":4,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":50,"unsupported":0}
 
@@ -158,17 +158,17 @@ fn <unnamed> @ 0x180001110 (size 53)
 -- decompile
 /* velk pseudo-C: sub_180001150 @ 0x180001150 */
 int32_t sub_180001150(int32_t a0, int32_t a1, int32_t a2) {
-    int32_t result;
+    int32_t v1;
 
     if (a0 >= a1) {
-        result = a1;
+        v1 = a1;
     } else {
-        result = a0;
+        v1 = a0;
     }
-    if (result >= a2) {
+    if (v1 >= a2) {
         return a2;
     }
-    return result;
+    return v1;
 }
 -- signature
 int32_t (int32_t a0, int32_t a1, int32_t a2)

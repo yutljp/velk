@@ -42,11 +42,11 @@ fn <unnamed> @ 0x2011e0 (size 16)
 -- decompile
 /* velk pseudo-C: sub_2011f0 @ 0x2011f0 */
 int32_t sub_2011f0(int32_t a0, int32_t a1) {
-    int32_t result = a0;
+    int32_t v1 = a0;
     if (a0 <= a1) {
         return a1;
     }
-    return result;
+    return v1;
 }
 -- signature
 int32_t (int32_t a0, int32_t a1)

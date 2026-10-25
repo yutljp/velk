@@ -25,10 +25,8 @@ fn sum3 @ 0x200fc (size 22)
 -- decompile
 /* velk pseudo-C: helper @ 0x20114 */
 int helper(int x) {
-    int32_t i;
-
     int32_t result = 0;
-    for (i = 0; i < x; i++) {
+    for (int32_t i = 0; i < x; i++) {
         result += i * i;
     }
     return result;
@@ -40,23 +38,23 @@ int (int x)
 -- ir
 fn helper @ 0x20114 (size 48)
   blk0 @ 0x20114:
-    v2 = #0x0
     v3 = #0x0
+    v4 = #0x0
     br 0x20120
   blk1 @ 0x20120:
-    brif lt v3, r0 -> 0x20128
+    brif lt v4, r0 -> 0x20128
   blk2 @ 0x20127:
     br 0x2013e
   blk3 @ 0x20128:
     br 0x2012a
   blk4 @ 0x2012a:
-    v2 = ((v2 + (v3 * v3)) & #0xffffffff)
+    v3 = ((v3 + (v4 * v4)) & #0xffffffff)
     br 0x20136
   blk5 @ 0x20136:
-    v3 = ((v3 + #0x1) & #0xffffffff)
+    v4 = ((v4 + #0x1) & #0xffffffff)
     br 0x20120
   blk6 @ 0x2013e:
-    ret v2
+    ret v3
 -- card
 {"addr":"0x20114","approxTokens":234,"blocks":7,"hardReasons":[],"name":"helper","nameSources":["symtab","dwarf"],"section":".text","size":48,"unsupported":0}
 

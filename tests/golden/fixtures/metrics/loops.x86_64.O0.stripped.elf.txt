@@ -40,10 +40,8 @@ fn <unnamed> @ 0x2011c0 (size 54)
 -- decompile
 /* velk pseudo-C: sub_201200 @ 0x201200 */
 int32_t sub_201200(int32_t a0) {
-    int32_t i;
-
     int32_t result = 0;
-    for (i = 1; i <= a0; i++) {
+    for (int32_t i = 1; i <= a0; i++) {
         result = i + result;
     }
     return result;

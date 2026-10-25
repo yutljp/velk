@@ -120,14 +120,14 @@ int32_t compare_doubles(void) {
     /* unsupported: AAPCS32 multiword, floating-point or aggregate declaration */
     double t77 = ((union { uint64_t bits; double value; }){ .bits = v4 }).value;
     double t78 = ((union { uint64_t bits; double value; }){ .bits = v5 }).value;
-    int32_t result = 0;
+    int32_t v1 = 0;
     double v2 = t77;
     double v3 = t78;
     if (t78 < t77) {
-        result = 1;
+        v1 = 1;
     }
     if (!(v2 < v3)) {
-        return result;
+        return v1;
     }
     return -1;
 }

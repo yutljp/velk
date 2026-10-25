@@ -97,11 +97,9 @@ fn count_down @ 0x2015c (size 44)
 -- decompile
 /* velk pseudo-C: sum_skip_odd @ 0x20188 */
 int sum_skip_odd(int n) {
-    int32_t v3;
-
     if (n >= 1) {
         int32_t v2 = 0;
-        v3 = 0;
+        int32_t v3 = 0;
         int32_t v4 = 0x201a8 + *(uint32_t *)(0x201c8);
         for (;;) {
             int32_t v5 = v3 & 0x1;

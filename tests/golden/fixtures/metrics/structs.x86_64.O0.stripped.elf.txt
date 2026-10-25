@@ -186,12 +186,12 @@ fn <unnamed> @ 0x201380 (size 59)
     store32(edi, (rsp + #0xfffffffffffffff4))
     brif eq (load8((rsp + #0xfffffffffffffff4)) & #0x1), #0x0 -> 0x2013a9
   blk1 @ 0x201398:
-    v7 = (((load8((rsp + #0xfffffffffffffff4)) & #0xff) >> #0x4) & #0xff)
+    v9 = (((load8((rsp + #0xfffffffffffffff4)) & #0xff) >> #0x4) & #0xff)
     br 0x2013b6
   blk2 @ 0x2013a9:
-    v7 = (((load8((rsp + #0xfffffffffffffff4)) & #0xff) >> #0x1) & #0x7)
+    v9 = (((load8((rsp + #0xfffffffffffffff4)) & #0xff) >> #0x1) & #0x7)
   blk3 @ 0x2013b6:
-    ret v7
+    ret v9
 -- card
 {"addr":"0x201380","approxTokens":174,"blocks":4,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":59,"unsupported":0}
 

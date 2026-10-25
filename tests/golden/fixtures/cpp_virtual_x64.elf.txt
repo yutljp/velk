@@ -115,10 +115,8 @@ fn Shape::~Shape() @ 0x201400 (size 2)
 /* velk pseudo-C: Shape::scaled(int) const @ 0x201410 */
 struct velk_area_slot_2_vtable { uint64_t slots[2]; uint64_t (*area)(); };
 int32_t Shape__scaled(uint64_t *a0, int32_t a1) {
-    int32_t v3;
-
     uint64_t *v2 = (uint64_t *)*a0;
-    v3 = ((struct velk_area_slot_2_vtable *)(v2))->area(a0); /* vtable slot 2: Square__area, Rect__area */
+    int32_t v3 = ((struct velk_area_slot_2_vtable *)(v2))->area(a0); /* vtable slot 2: Square__area, Rect__area */
     return v3 * a1;
 }
 -- signature
@@ -246,13 +244,12 @@ fn Rect::scaled(int) const @ 0x201470 (size 12)
 struct Square { int64_t field_0x0; int32_t field_0x8; };
 int32_t square_area(int32_t a0) {
     uint64_t *const _ZL4used = (uint64_t *)0x204610ULL;
-    int32_t v3;
 
     int64_t v1 = *_ZL4used;
     struct Square *v2 = (struct Square *)(0x203610 + v1);
     *_ZL4used = v1 + 16;
     Square__Square(v2, a0 & 0xffffffff);
-    v3 = Square__area(v2); /* via vtable slot 2 */
+    int32_t v3 = Square__area(v2); /* via vtable slot 2 */
     Square___Square(); /* via vtable slot 1 */
     return v3;
 }

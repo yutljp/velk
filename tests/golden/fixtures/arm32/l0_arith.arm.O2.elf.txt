@@ -45,8 +45,7 @@ int pick(int a, int b) {
     if (a > b) {
         return a;
     }
-    a = b;
-    return a;
+    return b;
 }
 -- signature
 int (int a, int b)

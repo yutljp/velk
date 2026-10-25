@@ -499,7 +499,11 @@ mod tests {
                 },
             ];
             let text = crate::render::render(&ir, &[], &Symbols::default(), &[]);
-            assert!(text.contains("for (i = 0;"), "{text}");
+            assert!(
+                text.lines()
+                    .any(|line| line.trim_start().starts_with("for (") && line.contains("i = 0;")),
+                "{text}"
+            );
             assert!(text.contains("i++)"), "{text}");
         }
     }

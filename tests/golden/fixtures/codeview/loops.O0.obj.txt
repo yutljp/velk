@@ -8,11 +8,11 @@
 -- decompile
 /* velk pseudo-C: count_bits @ 0x0 */
 int32_t count_bits(uint32_t x) {
-    uint32_t v1 = x;
+    uint32_t v2 = x;
     int32_t result = 0;
-    while (v1 != 0) {
-        result = (v1 & 0x1) + result;
-        v1 >>= 1;
+    while (v2 != 0) {
+        result = (v2 & 0x1) + result;
+        v2 >>= 1;
     }
     return result;
 }
@@ -23,16 +23,16 @@ int32_t (uint32_t x)
 -- ir
 fn count_bits @ 0x0 (size 49)
   blk0 @ 0x0:
-    v1 = (rcx & #0xffffffff)
-    v2 = #0x0
+    v2 = (rcx & #0xffffffff)
+    v3 = #0x0
   blk1 @ 0xc:
-    brif eq v1, #0x0 -> 0x2c
+    brif eq v2, #0x0 -> 0x2c
   blk2 @ 0x13:
-    v2 = (((v1 & #0x1) + v2) & #0xffffffff)
-    v1 = (v1 >> #0x1)
+    v3 = (((v2 & #0x1) + v3) & #0xffffffff)
+    v2 = (v2 >> #0x1)
     br 0xc
   blk3 @ 0x2c:
-    ret v2
+    ret v3
 -- card
 {"addr":"0x0","approxTokens":174,"blocks":4,"hardReasons":[],"name":"count_bits","nameSources":["symtab","codeview"],"section":".text","size":49,"unsupported":0}
 
@@ -40,10 +40,8 @@ fn count_bits @ 0x0 (size 49)
 -- decompile
 /* velk pseudo-C: sum_until @ 0x40 */
 int32_t sum_until(int32_t limit) {
-    int32_t i;
-
     int32_t result = 0;
-    for (i = 1; i <= limit; i++) {
+    for (int32_t i = 1; i <= limit; i++) {
         result = i + result;
     }
     return result;
@@ -55,16 +53,16 @@ int32_t (int32_t limit)
 -- ir
 fn sum_until @ 0x40 (size 68)
   blk0 @ 0x40:
-    v1 = #0x0
-    v2 = #0x1
+    v2 = #0x0
+    v3 = #0x1
   blk1 @ 0x58:
-    brif gt v2, ecx -> 0x7b
+    brif gt v3, ecx -> 0x7b
   blk2 @ 0x62:
-    v1 = ((v2 + v1) & #0xffffffff)
-    v2 = ((v2 + #0x1) & #0xffffffff)
+    v2 = ((v3 + v2) & #0xffffffff)
+    v3 = ((v3 + #0x1) & #0xffffffff)
     br 0x58
   blk3 @ 0x7b:
-    ret v1
+    ret v2
 -- card
 {"addr":"0x40","approxTokens":180,"blocks":4,"hardReasons":[],"name":"sum_until","nameSources":["symtab","codeview"],"section":".text","size":68,"unsupported":0}
 

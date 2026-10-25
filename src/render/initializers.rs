@@ -1,49 +1,169 @@
 use std::collections::HashMap;
 
+pub(super) enum Placement {
+    Assignments,
+    Scoped,
+}
+
 /// Declare locals at their first assignment when all uses remain in its scope.
 pub(super) fn fold(
     declarations: &mut String,
     body: &str,
     candidates: impl Iterator<Item = (String, String)>,
+    placement: Placement,
 ) -> String {
-    let mut candidates: HashMap<_, _> = candidates.collect();
-    let mut result = String::with_capacity(body.len());
-    let mut prefix = String::new();
-    let mut consumed = 0;
-    let mut after_label = false;
-    for line in body.split_inclusive('\n') {
-        let indentation = line.len() - line.trim_start().len();
-        let straight = indentation >= 4 && !after_label && line.trim_end().ends_with(';');
-        consumed += line.len();
+    let candidates: HashMap<_, _> = candidates.collect();
+    let lines: Vec<&str> = body.split_inclusive('\n').collect();
+    let mut scopes = Vec::with_capacity(lines.len());
+    let mut stack = Vec::new();
+    let mut labels = HashMap::new();
+    let mut jumps = Vec::new();
+    for (position, line) in lines.iter().enumerate() {
         let text = line.trim();
-        if !text.is_empty() && !text.starts_with("/*") {
-            after_label = text.ends_with(':');
+        if text.starts_with('}') {
+            stack.pop();
         }
-        if straight
-            && let Some((name, value)) = line.trim_start().split_once(" = ")
-            && let Some(declaration) = candidates.remove(name)
-            && !super::variables::mentions(&prefix, name)
-            && !super::variables::mentions(value, name)
-            && (indentation == 4 || scoped_uses(&body[consumed..], indentation, name))
+        scopes.push(stack.clone());
+        if text.ends_with(':') {
+            labels.insert(text.trim_end_matches(':'), position);
+        }
+        for (at, _) in text.match_indices("goto ") {
+            let name = text[at + 5..].split(';').next().unwrap_or("");
+            jumps.push((position, name));
+        }
+        if text.ends_with('{') {
+            stack.push(position);
+        }
+    }
+    let mut replacements = HashMap::new();
+    for (name, declaration) in candidates {
+        let Some(position) = lines
+            .iter()
+            .position(|line| super::variables::mentions(line, &name))
+        else {
+            continue;
+        };
+        let line = lines[position];
+        let for_init = if matches!(placement, Placement::Scoped)
+            && line.trim_end().ends_with('{')
+            && line.matches(';').count() == 2
         {
-            let old = format!("    {declaration};\n");
-            if let Some(at) = declarations.find(&old) {
-                // Other initial declarations can take a local's address.
-                let mut others = declarations.clone();
-                others.replace_range(at..at + old.len(), "");
-                if !super::variables::mentions(&others, name) {
-                    declarations.replace_range(at..at + old.len(), "");
-                    result.push_str(&format!(
-                        "{}{declaration} = {value}",
-                        " ".repeat(indentation)
-                    ));
-                    prefix.push_str(line);
-                    continue;
-                }
+            line.trim_start()
+                .strip_prefix("for (")
+                .and_then(|header| header.split_once(';'))
+        } else {
+            None
+        };
+        let assignment = for_init.map_or(line.trim_start(), |(init, _)| init);
+        let Some(value) = assignment.strip_prefix(&format!("{name} = ")) else {
+            continue;
+        };
+        let terminated = for_init.is_some()
+            || line.trim_end().ends_with(';')
+            || (matches!(placement, Placement::Scoped)
+                && line
+                    .split_once("; /*")
+                    .is_some_and(|(_, comment)| comment.trim_end().ends_with("*/")));
+        if !terminated || super::variables::mentions(value, &name) {
+            continue;
+        }
+        if matches!(placement, Placement::Assignments) {
+            // Score exit merging with the existing assignment placement rules.
+            let indentation = line.len() - line.trim_start().len();
+            let after_label = lines[..position]
+                .iter()
+                .rev()
+                .find(|line| {
+                    let text = line.trim();
+                    !text.is_empty() && !text.starts_with("/*")
+                })
+                .is_some_and(|line| line.trim_end().ends_with(':'));
+            let consumed: usize = lines[..=position].iter().map(|line| line.len()).sum();
+            if indentation < 4
+                || after_label
+                || (indentation != 4 && !scoped_uses(&body[consumed..], indentation, &name))
+            {
+                continue;
+            }
+        } else {
+            let mut scope = scopes[position].clone();
+            if for_init.is_some() {
+                scope.push(position);
+            }
+            let scope = &scope;
+            // An escaped pointer can keep the object live beyond a nested block.
+            let address = format!("&{name}");
+            if !scope.is_empty()
+                && body.match_indices(&address).any(|(at, value)| {
+                    let tail = &body[at + value.len()..];
+                    !tail.starts_with(|c: char| c.is_ascii_alphanumeric() || c == '_')
+                        && !tail.starts_with("->")
+                        && !tail.starts_with('[')
+                })
+            {
+                continue;
+            }
+            if lines
+                .iter()
+                .enumerate()
+                .skip(position + 1)
+                .any(|(at, line)| {
+                    super::variables::mentions(line, &name) && !scopes[at].starts_with(scope)
+                })
+            {
+                continue;
+            }
+            let last_use = lines
+                .iter()
+                .rposition(|line| super::variables::mentions(line, &name))
+                .expect("first assignment mentions the local");
+            // A switch dispatch or a goto must not bypass the initializer.
+            if lines
+                .iter()
+                .enumerate()
+                .take(last_use + 1)
+                .skip(position + 1)
+                .any(|(at, line)| {
+                    let text = line.trim();
+                    scopes[at] == *scope && (text.starts_with("case ") || text == "default:")
+                })
+                || jumps.iter().any(|(source, target)| {
+                    labels.get(target).is_some_and(|target| {
+                        *target >= position
+                            && scopes[*target].starts_with(scope)
+                            && (*source < position || !scopes[*source].starts_with(scope))
+                    })
+                })
+            {
+                continue;
             }
         }
-        result.push_str(line);
-        prefix.push_str(line);
+        let old = format!("    {declaration};\n");
+        let Some(at) = declarations.find(&old) else {
+            continue;
+        };
+        let mut others = declarations.clone();
+        others.replace_range(at..at + old.len(), "");
+        if super::variables::mentions(&others, &name) {
+            continue;
+        }
+        declarations.replace_range(at..at + old.len(), "");
+        if for_init.is_none() && position > 0 && lines[position - 1].trim_end().ends_with(':') {
+            replacements.insert(
+                position - 1,
+                format!("{};\n", lines[position - 1].trim_end()),
+            );
+        }
+        let indent = &line[..line.len() - line.trim_start().len()];
+        let initialized = match for_init {
+            Some((_, rest)) => format!("{indent}for ({declaration} = {value};{rest}"),
+            None => format!("{indent}{declaration} = {value}"),
+        };
+        replacements.insert(position, initialized);
+    }
+    let mut result = String::with_capacity(body.len());
+    for (position, line) in lines.iter().enumerate() {
+        result.push_str(replacements.get(&position).map_or(*line, String::as_str));
     }
     result
 }
@@ -59,8 +179,6 @@ fn scoped_uses(body: &str, indentation: usize, name: &str) -> bool {
         {
             return !super::variables::mentions(&body[offset..], name);
         }
-        // Keep the object's lifetime when its address can escape or a jump
-        // can reenter the scope after the initializer.
         if text.trim_end().ends_with(':')
             || (line.contains('&') && super::variables::mentions(line, name))
         {
@@ -73,7 +191,13 @@ fn scoped_uses(body: &str, indentation: usize, name: &str) -> bool {
 
 #[cfg(test)]
 mod tests {
-    use super::fold;
+    fn fold(
+        declarations: &mut String,
+        body: &str,
+        candidates: impl Iterator<Item = (String, String)>,
+    ) -> String {
+        super::fold(declarations, body, candidates, super::Placement::Scoped)
+    }
 
     #[test]
     fn initializers_preserve_order_and_prior_uses() {
@@ -94,7 +218,14 @@ mod tests {
     fn declarations_keep_names_used_by_other_initializers_or_labels() {
         for (original, body) in [
             ("    int x;\n    int *p = &x;\n", "    x = 3;\n"),
-            ("    int x;\n", "label:\n    x = 3;\n"),
+            (
+                "    int x;\n",
+                "    if (flag) goto later;\nlabel:\n    x = 3;\nlater:\n    use(x);\n",
+            ),
+            (
+                "    int x;\n",
+                "    if (flag) {\n        x = 3;\n    }\n    use(x);\n",
+            ),
         ] {
             let mut declarations = original.to_owned();
             let actual = fold(
@@ -157,5 +288,114 @@ mod tests {
         );
         assert_eq!(declarations, "    int x;\n");
         assert_eq!(actual, body.replace("    y = 4;", "    int y = 4;"));
+    }
+
+    #[test]
+    fn nested_initializers_stay_in_scope_and_cannot_be_bypassed() {
+        for (body, folded) in [
+            (
+                "    if (flag) {\n        x = 3;\n        pointer = &x;\n    }\n    use(*pointer);\n",
+                false,
+            ),
+            (
+                "    if (flag) {\n        x = 3;\n        use(x);\n    }\n",
+                true,
+            ),
+            (
+                "    while (flag) {\n        x = next();\n        use(x);\n    }\n",
+                true,
+            ),
+            (
+                "    if (flag) {\n        x = 3;\n    }\n    use(x);\n",
+                false,
+            ),
+            (
+                "    if (flag) goto label;\n    x = 3;\nlabel:\n    use(x);\n",
+                false,
+            ),
+            (
+                "    switch (flag) {\n    case 1:\n        x = 3;\n    case 2:\n        use(x);\n    }\n",
+                false,
+            ),
+            (
+                "    x = 3;\nlabel:\n    use(x);\n    if (flag) goto label;\n",
+                true,
+            ),
+        ] {
+            let mut declarations = "    int x;\n".to_owned();
+            let actual = fold(
+                &mut declarations,
+                body,
+                std::iter::once(("x".into(), "int x".into())),
+            );
+            let expected = if folded {
+                body.replace("x = ", "int x = ")
+            } else {
+                body.to_owned()
+            };
+            assert_eq!(actual, expected, "{body}");
+            assert_eq!(declarations.is_empty(), folded, "{body}");
+        }
+        let body = "    if (flag) {\n        x = object;\n        pointer = &x->field;\n    }\n    use(pointer);\n";
+        let mut declarations = "    struct item *x;\n".to_owned();
+        let actual = fold(
+            &mut declarations,
+            body,
+            std::iter::once(("x".into(), "struct item *x".into())),
+        );
+        assert!(declarations.is_empty());
+        assert_eq!(
+            actual,
+            body.replace("x = object", "struct item *x = object")
+        );
+    }
+
+    #[test]
+    fn output_comments_allow_an_initializer() {
+        let body = "    x = result; /* also returned by the call */\n    use(x);\n";
+        let mut declarations = "    int x;\n".to_owned();
+        let actual = fold(
+            &mut declarations,
+            body,
+            std::iter::once(("x".into(), "int x".into())),
+        );
+        assert!(declarations.is_empty());
+        assert_eq!(actual, body.replace("x = result", "int x = result"));
+    }
+
+    #[test]
+    fn for_initializers_keep_uses_inside_the_loop() {
+        for (body, folded) in [
+            (
+                "    for (x = 0; x < n; ++x) {\n        use(x);\n    }\n",
+                true,
+            ),
+            (
+                "    for (x = 0; x < n; ++x) {\n        use(x);\n    }\n    use(x);\n",
+                false,
+            ),
+            (
+                "    for (x = x + 1; x < n; ++x) {\n        use(x);\n    }\n",
+                false,
+            ),
+            (
+                "    if (flag) goto loop_body;\n    for (x = 0; x < n; ++x) {\nloop_body:\n        use(x);\n    }\n",
+                false,
+            ),
+        ] {
+            let mut declarations = "    int x;\n".to_owned();
+            let actual = fold(
+                &mut declarations,
+                body,
+                std::iter::once(("x".into(), "int x".into())),
+            );
+            assert_eq!(declarations.is_empty(), folded, "{body}");
+            let expected = if folded {
+                body.replace("for (x =", "for (int x =")
+            } else {
+                body.to_owned()
+            };
+            assert_eq!(actual, expected);
+        }
     }
 }

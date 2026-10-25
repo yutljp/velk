@@ -544,6 +544,47 @@
 0x52b50 13 _fini symtab
 0x52b70 16 __cxa_finalize plt
 0x52b80 16 _Unwind_Resume plt
+/* velk prelude */
+#ifndef VELK_equal_lanes8
+#define VELK_equal_lanes8
+static inline uint64_t equal_lanes8(uint64_t a, uint64_t b) {
+    const uint64_t mask = UINT64_MAX >> 56;
+    uint64_t out = 0;
+    for (unsigned i = 0; i < 64; i += 8) {
+        uint64_t x = (a >> i) & mask, y = (b >> i) & mask;
+        __int128 sx = (int8_t)x, sy = (int8_t)y;
+        __int128 low = -((__int128)1 << (8 - 1)), high = -low - 1;
+        out |= ((uint64_t)(x == y ? mask : 0) & mask) << i;
+    }
+    return out;
+}
+#endif
+
+#ifndef VELK_interleave_low8
+#define VELK_interleave_low8
+static inline uint64_t interleave_low8(uint64_t a, uint64_t b) {
+    const uint64_t mask = UINT64_MAX >> 56;
+    uint64_t out = 0;
+    for (unsigned i = 0; i < 32 / 8; ++i) {
+        out |= ((a >> (0 + i * 8)) & mask) << (2 * i * 8);
+        out |= ((b >> (0 + i * 8)) & mask) << ((2 * i + 1) * 8);
+    }
+    return out;
+}
+#endif
+
+#ifndef VELK_sign_bits8
+#define VELK_sign_bits8
+static inline uint64_t sign_bits8(uint64_t a) {
+    const uint64_t mask = UINT64_MAX >> 56;
+    uint64_t out = 0;
+    for (unsigned i = 0; i < 64 / 8; ++i) out |= ((a >> ((i + 1) * 8 - 1)) & 1) << i;
+    return out;
+}
+#endif
+
+void memchr_raw__find_sse2(void);
+/* end velk prelude */
 
 == 0x14f90 rust_probe::main
 -- decompile
@@ -573,3 +614,162 @@ fn rust_probe::main @ 0x14f90 (size 57)
     ret #0x0
 -- card
 {"addr":"0x14f90","approxTokens":162,"blocks":1,"hardReasons":[],"name":"rust_probe::main","nameSources":["symtab","unwind"],"section":".text","size":57,"unsupported":0}
+
+== 0x43250 memchr::arch::x86_64::memchr::memchr_raw::detect
+-- decompile
+/* velk pseudo-C: memchr::arch::x86_64::memchr::memchr_raw::detect @ 0x43250 */
+/* ref: 0x56140 .got */
+void memchr_raw__detect(int32_t a0, uint8_t *a1, uint8_t *a2) {
+    uint64_t *const qword_56140 = (uint64_t *)0x56140ULL;
+
+    uint64_t v2 = (uintptr_t)a1;
+    *(uint64_t *)(*qword_56140) = (uintptr_t)memchr_raw__find_sse2;
+    if (v2 >= (uintptr_t)a2) {
+        return;
+    }
+    uint64_t v3 = (uintptr_t)(a2 - v2);
+    if (v3 > 15) {
+        uint64_t v6 = interleave_low8((uint32_t)a0, (uint32_t)a0);
+        v6 = v6 & 0xffff | (v6 & 0xffff) << 16 | (v6 & 0xffff) << 32 | v6 << 48;
+        if ((uint32_t)(sign_bits8(equal_lanes8(*(uint64_t *)(v2), v6)) | sign_bits8(equal_lanes8(*(uint64_t *)(v2 + 0x8), v6)) << 8) == 0) {
+            uint64_t *v11 = (uint64_t *)((v2 & 0xfffffffffffffff0) + 16);
+            uint64_t v13 = (uintptr_t)(a2 - 0x40);
+            if ((((uintptr_t)v11 <= v13) & (v3 >= 64)) == 1) {
+                v2 = v2 - (v2 & 0xf) + 32;
+                for (;;) {
+                    uint64_t v17 = equal_lanes8(*(uint64_t *)(v2 - 0x10), v6);
+                    uint64_t v18 = equal_lanes8(*(uint64_t *)(v2 - 0x8), v6);
+                    uint64_t v19 = equal_lanes8(*(uint64_t *)(v2), v6);
+                    uint64_t v20 = equal_lanes8(*(uint64_t *)(v2 + 0x8), v6);
+                    uint64_t v21 = equal_lanes8(*(uint64_t *)(v2 + 0x10), v6);
+                    uint64_t v22 = equal_lanes8(*(uint64_t *)(v2 + 0x18), v6);
+                    if ((uint32_t)(sign_bits8(v21 | equal_lanes8(*(uint64_t *)(v2 + 0x20), v6) | (v17 | v19)) | sign_bits8(v22 | equal_lanes8(*(uint64_t *)(v2 + 0x28), v6) | (v18 | v20)) << 8) != 0) {
+                        if ((uint32_t)(sign_bits8(v17) | sign_bits8(v18) << 8) == 0) {
+                            if ((uint32_t)(sign_bits8(v19) | sign_bits8(v20) << 8) != 0 || (uint32_t)(sign_bits8(v21) | sign_bits8(v22) << 8) == 0) {
+                                return;
+                            }
+                            return;
+                        }
+                        return;
+                    }
+                    uint64_t v25 = v2 - 16;
+                    v2 += 64;
+                    if (v25 + 64 > v13) {
+                        v11 = (uint64_t *)(v2 - 16);
+                        break;
+                    }
+                }
+            }
+            uint64_t v39 = (uintptr_t)(a2 - 0x10);
+            if ((uintptr_t)v11 <= v39) {
+                do {
+                    if ((uint32_t)(sign_bits8(equal_lanes8(*v11, v6)) | sign_bits8(equal_lanes8(v11[1], v6)) << 8) != 0) {
+                        return;
+                    }
+                    v11 += 0x2;
+                } while ((uintptr_t)v11 <= v39);
+                if ((uintptr_t)v11 >= (uintptr_t)a2) {
+                    return;
+                }
+                int32_t v24 = *(uint64_t *)(a2 - 0x8);
+                uint32_t v40 = equal_lanes8(v6, *(uint64_t *)(a2 - 0x10));
+                return;
+            }
+            if ((uintptr_t)v11 >= (uintptr_t)a2) {
+                return;
+            }
+            int32_t v41 = *(uint64_t *)(a2 - 0x8);
+            uint32_t v42 = equal_lanes8(v6, *(uint64_t *)(a2 - 0x10));
+            return;
+        }
+        return;
+    }
+    do {
+        if (*(uint8_t *)(v2) == (a0 & 0xff)) {
+            return;
+        }
+        ++v2;
+    } while (v2 != (uintptr_t)a2);
+}
+-- signature
+void (int32_t a0, uint8_t * a1, uint8_t * a2)
+-- references
+0x56140 .got
+-- ir
+fn memchr::arch::x86_64::memchr::memchr_raw::detect @ 0x43250 (size 463)
+  blk0 @ 0x43250:
+    v1 = rdx
+    v2 = rsi
+    store64(#0x43420, load64(#0x56140))
+    brif cs v2, v1 -> 0x433b4
+  blk1 @ 0x43270:
+    v3 = (v1 - v2)
+    brif hi v3, #0xf -> 0x432a1
+  blk2 @ 0x4327c:
+  blk3 @ 0x43290:
+    brif eq load8(v2), (rdi & #0xff) -> 0x432ca
+  blk4 @ 0x43295:
+    v2 = (v2 + #0x1)
+    brif ne v2, v1 -> 0x43290
+  blk5 @ 0x4329d:
+    ret #0x0
+  blk6 @ 0x432a1:
+    v5 = (rdi & #0xffffffff)
+    v6 = interleave_low8(v5, v5)
+    v6 = ((((v6 & #0xffff) | ((v6 & #0xffff) << #0x10)) | ((v6 & #0xffff) << #0x20)) | ((v6 & #0xffff) << #0x30))
+    brif eq ((sign_bits8(equal_lanes8(load64(v2), v6)) | (sign_bits8(equal_lanes8(load64((v2 + #0x8)), v6)) << #0x8)) & #0xffffffff), #0x0 -> 0x432d0
+  blk7 @ 0x432c3:
+  blk8 @ 0x432ca:
+    ret #0x0
+  blk9 @ 0x432d0:
+    v11 = ((v2 & #0xfffffffffffffff0) + #0x10)
+    v13 = (v1 + #0xffffffffffffffc0)
+    brif ne ((select ls v11, v13 ? #0x1, #0x0 & #0xff) & (select cs v3, #0x40 ? #0x1, #0x0 & #0xff)), #0x1 -> 0x43367
+  blk10 @ 0x432f7:
+    v2 = ((v2 - (v2 & #0xf)) + #0x20)
+  blk11 @ 0x43310:
+    v17 = equal_lanes8(load64((v2 + #0xfffffffffffffff0)), v6)
+    v18 = equal_lanes8(load64((v2 + #0xfffffffffffffff8)), v6)
+    v19 = equal_lanes8(load64(v2), v6)
+    v20 = equal_lanes8(load64((v2 + #0x8)), v6)
+    v21 = equal_lanes8(load64((v2 + #0x10)), v6)
+    v22 = equal_lanes8(load64((v2 + #0x18)), v6)
+    brif ne ((sign_bits8(((v21 | equal_lanes8(load64((v2 + #0x20)), v6)) | (v17 | v19))) | (sign_bits8(((v22 | equal_lanes8(load64((v2 + #0x28)), v6)) | (v18 | v20))) << #0x8)) & #0xffffffff), #0x0 -> 0x433b7
+  blk12 @ 0x4334f:
+    v25 = (v2 + #0xfffffffffffffff0)
+    v2 = (v2 + #0x40)
+    brif ls (v25 + #0x40), v13 -> 0x43310
+  blk13 @ 0x43360:
+    v11 = (v2 + #0xfffffffffffffff0)
+  blk14 @ 0x43367:
+    v13 = (v1 + #0xfffffffffffffff0)
+    brif hi v11, v13 -> 0x43389
+  blk15 @ 0x43370:
+    brif ne ((sign_bits8(equal_lanes8(load64(v11), v6)) | (sign_bits8(equal_lanes8(load64((v11 + #0x8)), v6)) << #0x8)) & #0xffffffff), #0x0 -> 0x433d0
+  blk16 @ 0x43380:
+    v11 = (v11 + #0x10)
+    brif ls v11, v13 -> 0x43370
+  blk17 @ 0x43389:
+    brif cs v11, v1 -> 0x433b4
+  blk18 @ 0x4338e:
+    v24 = load64((v1 + #0xfffffffffffffff8))
+    v6 = equal_lanes8(v6, load64((v1 + #0xfffffffffffffff0)))
+    ret #0x0
+  blk19 @ 0x433b4:
+    ret #0x0
+  blk20 @ 0x433b7:
+    brif eq ((sign_bits8(v17) | (sign_bits8(v18) << #0x8)) & #0xffffffff), #0x0 -> 0x433e0
+  blk21 @ 0x433bf:
+    ret #0x0
+  blk22 @ 0x433d0:
+    ret #0x0
+  blk23 @ 0x433e0:
+    brif ne ((sign_bits8(v19) | (sign_bits8(v20) << #0x8)) & #0xffffffff), #0x0 -> 0x432c3
+  blk24 @ 0x433ec:
+    brif eq ((sign_bits8(v21) | (sign_bits8(v22) << #0x8)) & #0xffffffff), #0x0 -> 0x43405
+  blk25 @ 0x433f4:
+    ret #0x0
+  blk26 @ 0x43405:
+    ret #0x0
+-- card
+{"accesses":["a2 +0xfffffffffffffff0:uint64_t, +0xfffffffffffffff8:uint64_t"],"addr":"0x43250","approxTokens":222,"blocks":27,"hardReasons":[],"name":"memchr::arch::x86_64::memchr::memchr_raw::detect","nameSources":["symtab","dwarf","unwind"],"section":".text","size":463,"unsupported":0}

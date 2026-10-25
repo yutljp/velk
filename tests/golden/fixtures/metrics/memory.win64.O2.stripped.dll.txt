@@ -27,7 +27,6 @@ static inline uint64_t interleave_low8(uint64_t a, uint64_t b) {
 /* velk pseudo-C: sub_180001000 @ 0x180001000 */
 void sub_180001000(uint32_t *a0, uint32_t *a1, uint32_t a2) {
     uint64_t v7;
-    int64_t v15;
 
     if (a2 == 0) {
         return;
@@ -64,8 +63,8 @@ void sub_180001000(uint32_t *a0, uint32_t *a1, uint32_t a2) {
     } else {
         v7 = 0;
     }
-L_1800010a6:
-    v15 = v7;
+L_1800010a6:;
+    int64_t v15 = v7;
     int64_t v16 = a2 & 0x3;
     if (v16 != 0) {
         v15 = v7;
@@ -165,7 +164,6 @@ fn <unnamed> @ 0x180001000 (size 288)
 /* velk pseudo-C: sub_180001120 @ 0x180001120 */
 void sub_180001120(uint8_t *a0, int32_t a1, uint32_t a2) {
     int64_t v2;
-    uint64_t v4;
 
     if (a2 == 0) {
         return;
@@ -174,7 +172,7 @@ void sub_180001120(uint8_t *a0, int32_t a1, uint32_t a2) {
         uint32_t v3 = a1 & 0xff;
         if (a2 >= 32) {
             v2 = a2 & 0xffffffe0;
-            v4 = interleave_low8(v3, v3);
+            uint64_t v4 = interleave_low8(v3, v3);
             v4 = v4 & 0xffff | (v4 & 0xffff) << 16 | (v4 & 0xffff) << 32 | v4 << 48;
             int64_t i = 0;
             do {
@@ -195,10 +193,10 @@ void sub_180001120(uint8_t *a0, int32_t a1, uint32_t a2) {
         }
         int64_t v8 = v2;
         v2 = a2 & 0xfffffffc;
-        v4 = interleave_low8(v3, v3);
-        v4 = v4 & 0xffff | (v4 & 0xffff) << 16 | (v4 & 0xffff) << 32 | v4 << 48;
+        uint32_t v11 = interleave_low8(v3, v3);
+        v11 = v11 & 0xffff | v11 << 16 | (uint64_t)v11 << 32 | (uint64_t)v11 << 48;
         do {
-            *(uint32_t *)(a0 + v8) = v4;
+            *(uint32_t *)(a0 + v8) = v11;
             v8 += 4;
         } while (v2 != v8);
         if ((uint32_t)v2 == a2) {

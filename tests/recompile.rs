@@ -7712,13 +7712,14 @@ fn printed_real_short_circuit_guards_preserve_memory_and_results() {
             candidate.code = binary.decompile(address, None, None).unwrap();
             if architecture == "aarch64" && name == "copy_bytes" {
                 let code = &candidate.code;
-                assert_eq!(
-                    code.lines()
-                        .filter(|line| line.trim_start().starts_with("uint64_t *v"))
-                        .count(),
-                    2,
-                    "{code}"
-                );
+                let mut pointers = Vec::new();
+                for line in code.lines() {
+                    if let Some(declaration) = line.trim_start().strip_prefix("uint64_t *v") {
+                        let suffix = declaration.split([' ', ';']).next().expect("pointer name");
+                        pointers.push(format!("v{suffix}"));
+                    }
+                }
+                assert_eq!(pointers.len(), 4, "{code}");
                 assert_eq!(
                     code.lines()
                         .filter(|line| line.trim_start().starts_with("uint8_t *v"))
@@ -7726,11 +7727,12 @@ fn printed_real_short_circuit_guards_preserve_memory_and_results() {
                     2,
                     "{code}"
                 );
-                for pointer in ["v2", "v3"] {
+                for pointer in &pointers[..2] {
                     assert!(code.contains(&format!("{pointer} += 0x4;")), "{code}");
+                }
+                for pointer in &pointers[2..] {
                     assert!(code.contains(&format!("++{pointer};")), "{code}");
                 }
-                assert!(!code.contains("v10") && !code.contains("v11"), "{code}");
             }
             candidate.label = format!("{architecture} {name}");
             let fixture = Fixture {

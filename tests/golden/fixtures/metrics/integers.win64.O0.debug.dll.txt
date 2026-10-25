@@ -65,12 +65,12 @@ fn mixed_sign @ 0x180001040 (size 21)
 -- decompile
 /* velk pseudo-C: in_range @ 0x180001060 */
 _Bool in_range(int x, int lo, int hi) {
-    uint8_t result = 0;
+    uint8_t v3 = 0;
     if (x < lo) {
-        return result;
+        return v3;
     }
-    result = x <= hi;
-    return result;
+    uint8_t v5 = x <= hi;
+    return v5;
 }
 -- signature
 _Bool (int x, int lo, int hi)
@@ -109,10 +109,10 @@ fn rotate_left @ 0x1800010a0 (size 43)
 -- decompile
 /* velk pseudo-C: popcount @ 0x1800010d0 */
 int popcount(unsigned int x) {
-    int32_t v1 = x;
+    int32_t v2 = x;
     int32_t result = 0;
-    while (v1 != 0) {
-        v1 = v1 - 1 & v1;
+    while (v2 != 0) {
+        v2 = v2 - 1 & v2;
         ++result;
     }
     return result;
@@ -124,16 +124,16 @@ int (unsigned int x)
 -- ir
 fn popcount @ 0x1800010d0 (size 50)
   blk0 @ 0x1800010d0:
-    v1 = (rcx & #0xffffffff)
-    v2 = #0x0
+    v2 = (rcx & #0xffffffff)
+    v3 = #0x0
   blk1 @ 0x1800010dc:
-    brif eq v1, #0x0 -> 0x1800010fd
+    brif eq v2, #0x0 -> 0x1800010fd
   blk2 @ 0x1800010e3:
-    v1 = ((v1 - #0x1) & v1)
-    v2 = ((v2 + #0x1) & #0xffffffff)
+    v2 = ((v2 - #0x1) & v2)
+    v3 = ((v3 + #0x1) & #0xffffffff)
     br 0x1800010dc
   blk3 @ 0x1800010fd:
-    ret v2
+    ret v3
 -- card
 {"addr":"0x1800010d0","approxTokens":174,"blocks":4,"hardReasons":[],"name":"popcount","nameSources":["symtab","dwarf","unwind"],"section":".text","size":50,"unsupported":0}
 
@@ -158,17 +158,17 @@ fn byte_swap @ 0x180001110 (size 53)
 -- decompile
 /* velk pseudo-C: min3 @ 0x180001150 */
 int min3(int a, int b, int c) {
-    int32_t result;
+    int32_t v1;
 
     if (a >= b) {
-        result = b;
+        v1 = b;
     } else {
-        result = a;
+        v1 = a;
     }
-    if (result >= c) {
+    if (v1 >= c) {
         return c;
     }
-    return result;
+    return v1;
 }
 -- signature
 int (int a, int b, int c)
