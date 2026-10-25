@@ -17,6 +17,17 @@ pub(crate) fn children(expr: &Expr) -> Vec<&Expr> {
     }
 }
 
+/// Counts occurrences of a register in an expression, including repeated reads.
+pub(crate) fn count_register(expr: &Expr, register: u16) -> usize {
+    match expr {
+        Expr::Reg { index, .. } => usize::from(*index == register),
+        _ => children(expr)
+            .into_iter()
+            .map(|child| count_register(child, register))
+            .sum(),
+    }
+}
+
 pub(crate) fn children_mut(expr: &mut Expr) -> Vec<&mut Expr> {
     match expr {
         Expr::Bin { lhs, rhs, .. } => vec![lhs.as_mut(), rhs.as_mut()],

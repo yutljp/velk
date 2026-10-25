@@ -2,7 +2,9 @@ use std::collections::HashSet;
 
 use crate::ir::cfg::{live_in, live_out, opaque, successors};
 
-use crate::ir::visit::{children, children_mut, collect_reads, expr_width, statement_registers};
+use crate::ir::visit::{
+    children, children_mut, collect_reads, count_register, expr_width, statement_registers,
+};
 use crate::ir::{
     BinOp, CType, Cond, Expr, FunctionIr, Operation, RegRef, Stmt, TEMP_BASE, VALUE_BASE,
     VARIABLE_BASE,
@@ -356,11 +358,13 @@ fn count_operands(stmt: &Stmt, dest: u16) -> usize {
             through,
             ..
         } => {
-            let through = through.as_ref().map_or(0, |through| count(through, dest));
+            let through = through
+                .as_ref()
+                .map_or(0, |through| count_register(through, dest));
             if through > 0 {
                 return 0;
             }
-            args.iter().map(|arg| count(arg, dest)).sum()
+            args.iter().map(|arg| count_register(arg, dest)).sum()
         }
         // What else a function returns reads as a note after the return.
         Stmt::Call { .. }
@@ -374,17 +378,7 @@ fn count_operands(stmt: &Stmt, dest: u16) -> usize {
         _ => stmt
             .operands()
             .into_iter()
-            .map(|operand| count(operand, dest))
-            .sum(),
-    }
-}
-
-fn count(expr: &Expr, register: u16) -> usize {
-    match expr {
-        Expr::Reg { index, .. } => usize::from(*index == register),
-        _ => children(expr)
-            .into_iter()
-            .map(|child| count(child, register))
+            .map(|operand| count_register(operand, dest))
             .sum(),
     }
 }
@@ -1112,6 +1106,13 @@ mod tests {
 
         let mut unattached = call(vec![Expr::reg(7, 64)]);
         assert_eq!(super::count_operands(&unattached, 7), 1);
+        if let Stmt::Call { through, .. } = &mut unattached {
+            *through = Some(Expr::bin(BinOp::Add, Expr::reg(7, 64), Expr::reg(7, 64)));
+        }
+        assert_eq!(super::count_operands(&unattached, 7), 0);
+        if let Stmt::Call { through, .. } = &mut unattached {
+            *through = None;
+        }
         assert!(super::substitute(&mut unattached, register, &field(6, 8)));
         assert!(matches!(unattached, Stmt::Call { args: Some(args), .. } if args == [field(6, 8)]));
     }

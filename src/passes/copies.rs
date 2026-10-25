@@ -1,6 +1,7 @@
 use crate::ir::cfg::{live_in, live_out, opaque};
 use crate::ir::visit::assign_of;
 use crate::ir::visit::children;
+use crate::ir::visit::count_register;
 use crate::ir::visit::expr_reads;
 use crate::ir::visit::expr_width;
 use crate::ir::visit::statement_reads;
@@ -541,15 +542,6 @@ fn contains_select(expr: &Expr) -> bool {
 
 /// How many times a statement reads one register.
 fn count_reg(stmt: &Stmt, reg: u16) -> usize {
-    fn count(expr: &Expr, reg: u16) -> usize {
-        match expr {
-            Expr::Reg { index, .. } if *index == reg => 1,
-            _ => children(expr)
-                .into_iter()
-                .map(|child| count(child, reg))
-                .sum(),
-        }
-    }
     let mut total = stmt
         .preserved_output_sources()
         .iter()
@@ -558,15 +550,18 @@ fn count_reg(stmt: &Stmt, reg: u16) -> usize {
     total += usize::from(stmt.declared_call_reads().contains(&reg));
     match stmt {
         Stmt::Machine { inputs, .. } => {
-            total += inputs.iter().map(|input| count(input, reg)).sum::<usize>()
+            total += inputs
+                .iter()
+                .map(|input| count_register(input, reg))
+                .sum::<usize>()
         }
-        Stmt::Assign { value, .. } => total += count(value, reg),
+        Stmt::Assign { value, .. } => total += count_register(value, reg),
         Stmt::Store { addr, value, .. } => {
-            total += count(addr, reg) + count(value, reg);
+            total += count_register(addr, reg) + count_register(value, reg);
         }
-        Stmt::Brif { lhs, rhs, .. } => total += count(lhs, reg) + count(rhs, reg),
-        Stmt::Ret { value } => total += count(value, reg),
-        Stmt::BrIndirect { target } => total += count(target, reg),
+        Stmt::Brif { lhs, rhs, .. } => total += count_register(lhs, reg) + count_register(rhs, reg),
+        Stmt::Ret { value } => total += count_register(value, reg),
+        Stmt::BrIndirect { target } => total += count_register(target, reg),
         Stmt::Call {
             convention,
             through,
@@ -574,9 +569,15 @@ fn count_reg(stmt: &Stmt, reg: u16) -> usize {
             floats_named,
             ..
         } => {
-            total += through.iter().map(|expr| count(expr, reg)).sum::<usize>();
+            total += through
+                .iter()
+                .map(|expr| count_register(expr, reg))
+                .sum::<usize>();
             total += match args {
-                Some(args) => args.iter().map(|arg| count(arg, reg)).sum::<usize>(),
+                Some(args) => args
+                    .iter()
+                    .map(|arg| count_register(arg, reg))
+                    .sum::<usize>(),
                 None => usize::from(
                     convention
                         .call_reads_through(through.as_ref(), *floats_named)
@@ -1508,6 +1509,13 @@ mod tests {
             *abi = None;
         }
         assert_eq!(super::count_reg(&call, 7), 1);
+        if let Stmt::Call { through, .. } = &mut call {
+            *through = Some(Expr::bin(BinOp::Add, Expr::reg(7, 64), Expr::reg(7, 64)));
+        }
+        assert_eq!(super::count_reg(&call, 7), 3);
+        if let Stmt::Call { through, .. } = &mut call {
+            *through = None;
+        }
         assert!(super::substitute_stmt(&mut call, 7, 64, &Expr::Const(9)));
         assert!(matches!(call, Stmt::Call { args: Some(args), .. } if args == [Expr::Const(9)]));
     }
