@@ -47,6 +47,8 @@ mod debug_locals;
 mod division;
 #[path = "recompile/forward_exits.rs"]
 mod forward_exits;
+#[path = "recompile/forwarding.rs"]
+mod forwarding;
 #[path = "recompile/frame_arrays.rs"]
 mod frame_arrays;
 #[path = "recompile/frame_values.rs"]

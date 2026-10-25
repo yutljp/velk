@@ -9,6 +9,14 @@ pub(super) fn properties(image: &Image, addr: u64) -> (Convention, Option<u16>) 
     let Some(function) = image.functions.get(&addr) else {
         return (Convention::Cdecl, None);
     };
+    if function.sources.contains(&super::NameSource::Plt)
+        && let Some(properties) = function
+            .name
+            .as_deref()
+            .and_then(|name| crate::analysis::prototypes::i386_import(image, name))
+    {
+        return (properties.0, Some(properties.1));
+    }
     let named = function
         .name
         .iter()

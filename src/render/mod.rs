@@ -5,6 +5,7 @@ mod body;
 mod calls;
 mod cost;
 mod expr;
+mod forwarding;
 mod frame_registers;
 mod function;
 mod globals;

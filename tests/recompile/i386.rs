@@ -232,3 +232,52 @@ fn generic_comparison_includes_debug_and_stripped_i386_integers() {
     assert_eq!(candidates, 76, "{excluded:?}");
     assert_eq!(excluded, BTreeMap::from([("calls", 28)]));
 }
+
+#[test]
+fn windows_crt_functions_compile() {
+    syntax::scan(
+        &[
+            PathBuf::from("crt_windows.i686.exe"),
+            PathBuf::from("crt_windows.x86_64.exe"),
+        ],
+        "windows-crt-syntax",
+    );
+}
+
+#[test]
+fn windows_crt_format_arguments_reach_the_printed_call() {
+    let mut binary = Binary::open(&common::fixtures_dir().join("crt_windows.i686.exe")).unwrap();
+    let address = binary.find("crt_format").unwrap().addr;
+    let code = binary.decompile(address, None, None).unwrap();
+    assert!(code.contains("printf_plt(0x402000, a0)"), "{code}");
+    syntax::run_printed(
+        &format!("int printf_plt(uint32_t, int);\n{code}"),
+        "int printf_plt(uint32_t format, int value) { return format == 0x402000 ? value : 999; }",
+        "return crt_format(-17) != -17 || crt_format(73) != 73;",
+    );
+    let address = binary.find("printf").unwrap().addr;
+    let code = binary.decompile(address, None, None).unwrap();
+    assert!(
+        code.contains("int printf_plt(const char *format, ...)"),
+        "{code}"
+    );
+    assert!(code.contains("vprintf(format, args)"), "{code}");
+    syntax::run_printed(
+        &format!("#include <stdio.h>\n{code}"),
+        "",
+        "return printf_plt(\"%s:%d\", \"x\", 7) != 3;",
+    );
+}
+
+#[test]
+fn windows_stdcall_imports_preserve_printed_arguments() {
+    let mut binary = Binary::open(&common::fixtures_dir().join("windows_types.pe32.dll")).unwrap();
+    let address = binary.find("windows_file").unwrap().addr;
+    let code = binary.decompile(address, None, None).unwrap();
+    assert!(code.contains("GetFileType("), "{code}");
+    syntax::run_printed(
+        &code,
+        "uint32_t GetFileType(void *file) { return (uintptr_t)file + 3; }",
+        "return windows_file(17) != 20 || windows_file(73) != 76;",
+    );
+}

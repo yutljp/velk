@@ -38,7 +38,7 @@ crt_windows.i686.exe: imports 15/15
   msvcrt.dll!time: known
   msvcrt.dll!wcscpy_s: known
   msvcrt.dll!wcslen: known
-  calls 14/14, lift failures 1
+  calls 15/15, lift failures 0
   0x401000:0: known
   0x40101b:0: known
   0x401036:0: known
@@ -53,6 +53,7 @@ crt_windows.i686.exe: imports 15/15
   0x401118:0: known
   0x401125:0: known
   0x401140:0: known
+  0x401154:0: known
 crt_windows.x86_64.exe: imports 15/15
   msvcrt.dll!_close: known
   msvcrt.dll!_errno: known

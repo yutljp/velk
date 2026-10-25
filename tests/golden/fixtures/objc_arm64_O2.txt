@@ -156,9 +156,6 @@ fn _main @ 0x1000009a4 (size 8)
 /* velk pseudo-C: _objc_msgSend @ 0x1000009ac */
 /* ref: 0x100008000 __la_symbol_ptr */
 int32_t objc_msgSend(void) {
-    uint64_t *const objc_msgSend_100008000_u64 = (uint64_t *)0x100008000ULL;
-
-    int32_t v1 = *objc_msgSend_100008000_u64;
     return objc_msgSend();
 }
 -- signature
@@ -168,8 +165,7 @@ int32_t ()
 -- ir
 fn _objc_msgSend @ 0x1000009ac (size 12)
   blk0 @ 0x1000009ac:
-    v1 = load64(#0x100008000)
-    v2:x0, x1, d0, d1 = call *load64(#0x100008000)
-    ret v2
+    v1:x0, x1, d0, d1 = call *load64(#0x100008000)
+    ret v1
 -- card
 {"addr":"0x1000009ac","approxTokens":114,"blocks":1,"hardReasons":[],"name":"_objc_msgSend","nameSources":["plt"],"section":"__stubs","size":12,"sizeEstimated":true,"unsupported":0}

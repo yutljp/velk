@@ -65,11 +65,17 @@ struct Target<'a> {
     records: HashMap<&'a str, Record<'a>>,
     #[serde(default, borrow)]
     imports: HashMap<&'a str, &'a str>,
+    #[serde(default, borrow)]
+    conventions: HashMap<&'a str, &'a str>,
+    #[serde(default, borrow)]
+    typedefs: HashMap<&'a str, &'a str>,
 }
 
 struct TargetLibrary {
     library: Library,
     imports: HashMap<&'static str, &'static str>,
+    conventions: HashMap<&'static str, &'static str>,
+    typedefs: HashMap<&'static str, &'static str>,
 }
 
 static WINDOWS: OnceLock<HashMap<&'static str, TargetLibrary>> = OnceLock::new();
@@ -95,6 +101,8 @@ fn targets(text: &'static str) -> HashMap<&'static str, TargetLibrary> {
                         records: target.records,
                     },
                     imports: target.imports,
+                    conventions: target.conventions,
+                    typedefs: target.typedefs,
                 },
             )
         })
@@ -137,8 +145,18 @@ pub(super) fn for_image(name: &str, image: &Image) -> Option<&'static Prototype>
             .functions
             .get(super::undecorated(name, false));
     }
+    let Some(qualified) = qualified_name(name, image) else {
+        return None;
+    };
+    let Some(name) = windows_import_name(target, qualified) else {
+        return None;
+    };
+    target.library.functions.get(name)
+}
+
+fn qualified_name<'a>(name: &'a str, image: &'a Image) -> Option<&'a str> {
     if name.contains('!') {
-        return windows_import(target, name);
+        return Some(name);
     }
     // A name alone cannot establish which DLL exports a Windows declaration.
     let mut qualified = None;
@@ -152,15 +170,64 @@ pub(super) fn for_image(name: &str, image: &Image) -> Option<&'static Prototype>
         if qualified.is_some_and(|previous| previous != full_name) {
             return None;
         }
-        qualified = Some(full_name);
+        qualified = Some(full_name.as_str());
     }
-    let Some(qualified) = qualified else {
-        return None;
-    };
-    windows_import(target, qualified)
+    qualified
 }
 
-fn windows_import<'a>(target: &'a TargetLibrary, name: &str) -> Option<&'a Prototype> {
+pub(crate) fn i386_import(image: &Image, name: &str) -> Option<(crate::ir::Convention, u16)> {
+    if image.isa != Isa::I386 {
+        return None;
+    }
+    let Some(target) = target_library(image) else {
+        return None;
+    };
+    let Some(qualified) = qualified_name(name, image) else {
+        return None;
+    };
+    let Some(name) = windows_import_name(target, qualified) else {
+        return None;
+    };
+    let Some(prototype) = target.library.functions.get(name) else {
+        return None;
+    };
+    let convention = match target.conventions.get(name).copied() {
+        Some("c") => crate::ir::Convention::Cdecl,
+        Some("stdcall") => crate::ir::Convention::Stdcall,
+        _ => return None,
+    };
+    if convention == crate::ir::Convention::Cdecl {
+        return Some((convention, 0));
+    }
+    let mut bytes = 0u16;
+    for ty in &prototype.params {
+        let size = match ty {
+            CType::Pointer(_) => 4,
+            CType::Int { bytes, .. } => u16::from(*bytes),
+            CType::Named(name) if name == "float" => 4,
+            CType::Named(name) if name == "double" => 8,
+            _ => {
+                let Some((bits, _)) = ty.integer() else {
+                    return None;
+                };
+                let Ok(bytes) = u16::try_from(bits / 8) else {
+                    return None;
+                };
+                bytes
+            }
+        };
+        let Some(total) = size
+            .checked_add(3)
+            .and_then(|size| bytes.checked_add(size & !3))
+        else {
+            return None;
+        };
+        bytes = total;
+    }
+    Some((convention, bytes))
+}
+
+fn windows_import_name(target: &TargetLibrary, name: &str) -> Option<&'static str> {
     let Some((dll, function)) = name.split_once('!') else {
         return None;
     };
@@ -170,7 +237,16 @@ fn windows_import<'a>(target: &'a TargetLibrary, name: &str) -> Option<&'a Proto
     let dll = dll.to_ascii_lowercase();
     let qualified = format!("{dll}!{function}");
     if let Some(name) = target.imports.get(qualified.as_str()) {
-        return target.library.functions.get(name);
+        return Some(name);
+    }
+    // The legacy CRT exports time with the target's native time_t width.
+    if dll == "msvcrt.dll" && function == "time" {
+        let declaration = match target.typedefs.get("time_t").copied() {
+            Some("long") => "_time32",
+            Some("long long") => "_time64",
+            _ => return None,
+        };
+        return Some(declaration);
     }
     let host = if dll.starts_with("api-ms-win-crt-") && dll.ends_with("-l1-1-0.dll") {
         "ucrtbase.dll"
@@ -182,10 +258,7 @@ fn windows_import<'a>(target: &'a TargetLibrary, name: &str) -> Option<&'a Proto
         dll.as_str()
     };
     let qualified = format!("{host}!{function}");
-    target
-        .imports
-        .get(qualified.as_str())
-        .and_then(|name| target.library.functions.get(name))
+    target.imports.get(qualified.as_str()).copied()
 }
 
 fn image_library(image: &Image) -> Option<&'static Library> {
@@ -348,6 +421,69 @@ mod tests {
     use super::*;
 
     #[test]
+    fn i386_stdcall_import_cleanup_preserves_following_arguments() {
+        let code = vec![
+            0x6a, 7, 0xff, 0x15, 0x00, 0x20, 0x00, 0x00, 0x8b, 0x44, 0x24, 0x04, 0x50, 0xff, 0x15,
+            0x00, 0x20, 0x00, 0x00, 0xc3,
+        ];
+        let size = code.len() as u64;
+        let mut image = Image::from_code(Isa::I386, 0x1000, code);
+        image.format = Format::Pe;
+        image.imports.insert(0x2000, "GetFileType".into());
+        image
+            .qualified_imports
+            .insert(0x2000, "kernel32.dll!GetFileType".into());
+        let function = crate::loader::Function {
+            addr: 0x1000,
+            size: Some(size),
+            size_estimated: false,
+            name: Some("two_calls".into()),
+            aliases: Vec::new(),
+            sources: Vec::new(),
+        };
+        image.functions.insert(function.addr, function.clone());
+        let analysis = crate::analysis::analyze(&image, &function, None).unwrap();
+        let code =
+            crate::render::render(&analysis.ir, &[], &crate::render::callee_names(&image), &[]);
+        assert!(code.contains("GetFileType((void *)0x7)"), "{code}");
+        assert!(code.contains("GetFileType((void *)a0)"), "{code}");
+        assert!(!code.contains("esp"), "{code}");
+    }
+
+    #[test]
+    fn i386_import_conventions_and_cleanup_use_the_target_library() {
+        let mut image = Image::from_code(Isa::I386, 0x1000, Vec::new());
+        image.format = Format::Pe;
+        assert_eq!(
+            i386_import(&image, "kernel32.dll!GetFileType"),
+            Some((crate::ir::Convention::Stdcall, 4))
+        );
+        assert_eq!(
+            i386_import(&image, "kernel32.dll!GetLastError"),
+            Some((crate::ir::Convention::Stdcall, 0))
+        );
+        assert_eq!(
+            i386_import(&image, "msvcrt.dll!calloc"),
+            Some((crate::ir::Convention::Cdecl, 0))
+        );
+        assert_eq!(
+            i386_import(&image, "kernel32.dll!VirtualAlloc"),
+            Some((crate::ir::Convention::Stdcall, 16))
+        );
+        assert_eq!(i386_import(&image, "other.dll!GetFileType"), None);
+        assert_eq!(
+            for_image("msvcrt.dll!time", &image).unwrap().ret.integer(),
+            Some((32, true))
+        );
+        image.isa = Isa::X86_64;
+        assert_eq!(
+            for_image("msvcrt.dll!time", &image).unwrap().ret.integer(),
+            Some((64, true))
+        );
+        assert_eq!(i386_import(&image, "kernel32.dll!GetFileType"), None);
+    }
+
+    #[test]
     fn target_libraries_do_not_cross_formats_or_architectures() {
         let mut image = Image::from_code(Isa::X86_64, 0x1000, Vec::new());
         assert_eq!(
@@ -430,7 +566,8 @@ mod tests {
         assert!(super::super::for_image("printf", &image).unwrap().variadic);
         let windows = WINDOWS.get().unwrap();
         let x86 = &windows["i686-w64-mingw32"];
-        let copy = windows_import(x86, "msvcrt.dll!wcscpy_s").unwrap();
+        let name = windows_import_name(x86, "msvcrt.dll!wcscpy_s").unwrap();
+        let copy = &x86.library.functions[name];
         assert_eq!(copy.params[1].integer(), Some((32, false)));
     }
 

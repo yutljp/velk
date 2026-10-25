@@ -30,6 +30,9 @@
 0x140001150 8 wcscpy_s plt
 0x140001158 8 wcslen plt
 /* velk prelude */
+#include <stdarg.h>
+#include <stdio.h>
+
 int *_errno(void);
 
 int _close(int);
@@ -478,10 +481,12 @@ fn isalpha @ 0x140001120 (size 8)
 
 == 0x140001128 printf
 -- decompile
-/* velk pseudo-C: printf @ 0x140001128 */
-/* ref: 0x1400022a4 .rdata */
-int printf(void) {
-    return printf();
+int printf(const char *format, ...) {
+    va_list args;
+    va_start(args, format);
+    int result = vprintf(format, args);
+    va_end(args);
+    return result;
 }
 -- signature
 int ()

@@ -65,9 +65,6 @@ fn _init @ 0x6e0 (size 24)
 /* velk pseudo-C: __libc_start_main @ 0x720 */
 /* ref: 0x20000 .got.plt */
 int __libc_start_main(void *a0, int a1, char **a2, void *a3, void *a4, void *a5, void *a6) {
-    uint64_t *const __libc_start_main_20000_u64 = (uint64_t *)0x20000ULL;
-
-    int32_t v1 = *__libc_start_main_20000_u64;
     return __libc_start_main(a0, a1, a2, a3, a4, a5, a6);
 }
 -- signature
@@ -77,9 +74,8 @@ int (void * a0, int a1, char ** a2, void * a3, void * a4, void * a5, void * a6)
 -- ir
 fn __libc_start_main @ 0x720 (size 16)
   blk0 @ 0x720:
-    v1 = load64(#0x20000)
-    v2:x0, x1, d0, d1 = call *load64(#0x20000)(x0, x1, x2, x3, x4, x5, x6)
-    ret v2
+    v1:x0, x1, d0, d1 = call *load64(#0x20000)(x0, x1, x2, x3, x4, x5, x6)
+    ret v1
 -- card
 {"addr":"0x720","approxTokens":120,"blocks":1,"hardReasons":[],"name":"__libc_start_main","nameSources":["plt"],"section":".plt","size":16,"sizeEstimated":true,"unsupported":0}
 
@@ -88,9 +84,6 @@ fn __libc_start_main @ 0x720 (size 16)
 /* velk pseudo-C: __cxa_finalize @ 0x730 */
 /* ref: 0x20008 .got.plt */
 void __cxa_finalize(void *a0) {
-    uint64_t *const __cxa_finalize_20008_u64 = (uint64_t *)0x20008ULL;
-
-    int32_t v1 = *__cxa_finalize_20008_u64;
     __cxa_finalize(a0);
 }
 -- signature
@@ -100,8 +93,7 @@ void (void * a0)
 -- ir
 fn __cxa_finalize @ 0x730 (size 16)
   blk0 @ 0x730:
-    v1 = load64(#0x20008)
-    v2:x0, x1, d0, d1 = call *load64(#0x20008)(x0)
+    v1:x0, x1, d0, d1 = call *load64(#0x20008)(x0)
     ret #0x0
 -- card
 {"addr":"0x730","approxTokens":120,"blocks":1,"hardReasons":[],"name":"__cxa_finalize","nameSources":["plt"],"section":".plt","size":16,"sizeEstimated":true,"unsupported":0}
@@ -111,9 +103,6 @@ fn __cxa_finalize @ 0x730 (size 16)
 /* velk pseudo-C: kill @ 0x740 */
 /* ref: 0x20010 .got.plt */
 int kill(int a0, int a1) {
-    uint64_t *const kill_20010_u64 = (uint64_t *)0x20010ULL;
-
-    int32_t v1 = *kill_20010_u64;
     return kill(a0, a1);
 }
 -- signature
@@ -123,9 +112,8 @@ int (int a0, int a1)
 -- ir
 fn kill @ 0x740 (size 16)
   blk0 @ 0x740:
-    v1 = load64(#0x20010)
-    v2:x0, x1, d0, d1 = call *load64(#0x20010)(x0, x1)
-    ret v2
+    v1:x0, x1, d0, d1 = call *load64(#0x20010)(x0, x1)
+    ret v1
 -- card
 {"addr":"0x740","approxTokens":120,"blocks":1,"hardReasons":[],"name":"kill","nameSources":["plt"],"section":".plt","size":16,"sizeEstimated":true,"unsupported":0}
 
@@ -134,9 +122,6 @@ fn kill @ 0x740 (size 16)
 /* velk pseudo-C: fsync @ 0x750 */
 /* ref: 0x20018 .got.plt */
 int fsync(int a0) {
-    uint64_t *const fsync_20018_u64 = (uint64_t *)0x20018ULL;
-
-    int32_t v1 = *fsync_20018_u64;
     return fsync(a0);
 }
 -- signature
@@ -146,9 +131,8 @@ int (int a0)
 -- ir
 fn fsync @ 0x750 (size 16)
   blk0 @ 0x750:
-    v1 = load64(#0x20018)
-    v2:x0, x1, d0, d1 = call *load64(#0x20018)(x0)
-    ret v2
+    v1:x0, x1, d0, d1 = call *load64(#0x20018)(x0)
+    ret v1
 -- card
 {"addr":"0x750","approxTokens":120,"blocks":1,"hardReasons":[],"name":"fsync","nameSources":["plt"],"section":".plt","size":16,"sizeEstimated":true,"unsupported":0}
 
@@ -157,9 +141,6 @@ fn fsync @ 0x750 (size 16)
 /* velk pseudo-C: pthread_kill @ 0x760 */
 /* ref: 0x20020 .got.plt */
 int pthread_kill(unsigned long a0, int a1) {
-    uint64_t *const pthread_kill_20020_u64 = (uint64_t *)0x20020ULL;
-
-    int32_t v1 = *pthread_kill_20020_u64;
     return pthread_kill(a0, a1);
 }
 -- signature
@@ -169,9 +150,8 @@ int (unsigned long a0, int a1)
 -- ir
 fn pthread_kill @ 0x760 (size 16)
   blk0 @ 0x760:
-    v1 = load64(#0x20020)
-    v2:x0, x1, d0, d1 = call *load64(#0x20020)(x0, x1)
-    ret v2
+    v1:x0, x1, d0, d1 = call *load64(#0x20020)(x0, x1)
+    ret v1
 -- card
 {"addr":"0x760","approxTokens":120,"blocks":1,"hardReasons":[],"name":"pthread_kill","nameSources":["plt"],"section":".plt","size":16,"sizeEstimated":true,"unsupported":0}
 
@@ -180,9 +160,6 @@ fn pthread_kill @ 0x760 (size 16)
 /* velk pseudo-C: shutdown @ 0x770 */
 /* ref: 0x20028 .got.plt */
 int shutdown(int a0, int a1) {
-    uint64_t *const shutdown_20028_u64 = (uint64_t *)0x20028ULL;
-
-    int32_t v1 = *shutdown_20028_u64;
     return shutdown(a0, a1);
 }
 -- signature
@@ -192,9 +169,8 @@ int (int a0, int a1)
 -- ir
 fn shutdown @ 0x770 (size 16)
   blk0 @ 0x770:
-    v1 = load64(#0x20028)
-    v2:x0, x1, d0, d1 = call *load64(#0x20028)(x0, x1)
-    ret v2
+    v1:x0, x1, d0, d1 = call *load64(#0x20028)(x0, x1)
+    ret v1
 -- card
 {"addr":"0x770","approxTokens":120,"blocks":1,"hardReasons":[],"name":"shutdown","nameSources":["plt"],"section":".plt","size":16,"sizeEstimated":true,"unsupported":0}
 
@@ -203,9 +179,6 @@ fn shutdown @ 0x770 (size 16)
 /* velk pseudo-C: __gmon_start__ @ 0x780 */
 /* ref: 0x20030 .got.plt */
 int32_t __gmon_start__(void) {
-    uint64_t *const __gmon_start___20030_u64 = (uint64_t *)0x20030ULL;
-
-    int32_t v1 = *__gmon_start___20030_u64;
     return __gmon_start__();
 }
 -- signature
@@ -215,9 +188,8 @@ int32_t ()
 -- ir
 fn __gmon_start__ @ 0x780 (size 16)
   blk0 @ 0x780:
-    v1 = load64(#0x20030)
-    v2:x0, x1, d0, d1 = call *load64(#0x20030)
-    ret v2
+    v1:x0, x1, d0, d1 = call *load64(#0x20030)
+    ret v1
 -- card
 {"addr":"0x780","approxTokens":120,"blocks":1,"hardReasons":[],"name":"__gmon_start__","nameSources":["plt"],"section":".plt","size":16,"sizeEstimated":true,"unsupported":0}
 
@@ -226,9 +198,6 @@ fn __gmon_start__ @ 0x780 (size 16)
 /* velk pseudo-C: abort @ 0x790 */
 /* ref: 0x20038 .got.plt */
 void abort(void) {
-    uint64_t *const abort_20038_u64 = (uint64_t *)0x20038ULL;
-
-    int32_t v1 = *abort_20038_u64;
     abort();
 }
 -- signature
@@ -238,8 +207,7 @@ void ()
 -- ir
 fn abort @ 0x790 (size 16)
   blk0 @ 0x790:
-    v1 = load64(#0x20038)
-    v2:x0, x1, d0, d1 = call *load64(#0x20038)()
+    v1:x0, x1, d0, d1 = call *load64(#0x20038)()
     ret #0x0
 -- card
 {"addr":"0x790","approxTokens":120,"blocks":1,"hardReasons":[],"name":"abort","nameSources":["plt"],"section":".plt","size":16,"sizeEstimated":true,"unsupported":0}
@@ -249,9 +217,6 @@ fn abort @ 0x790 (size 16)
 /* velk pseudo-C: getgrgid_r @ 0x7a0 */
 /* ref: 0x20040 .got.plt */
 int getgrgid_r(unsigned int a0, struct group *a1, char *a2, size_t a3, struct group **a4) {
-    uint64_t *const getgrgid_r_20040_u64 = (uint64_t *)0x20040ULL;
-
-    int32_t v1 = *getgrgid_r_20040_u64;
     return getgrgid_r(a0, a1, a2, a3, a4);
 }
 -- signature
@@ -261,9 +226,8 @@ int (unsigned int a0, struct group * a1, char * a2, size_t a3, struct group ** a
 -- ir
 fn getgrgid_r @ 0x7a0 (size 16)
   blk0 @ 0x7a0:
-    v1 = load64(#0x20040)
-    v2:x0, x1, d0, d1 = call *load64(#0x20040)(x0, x1, x2, x3, x4)
-    ret v2
+    v1:x0, x1, d0, d1 = call *load64(#0x20040)(x0, x1, x2, x3, x4)
+    ret v1
 -- card
 {"addr":"0x7a0","approxTokens":120,"blocks":1,"hardReasons":[],"name":"getgrgid_r","nameSources":["plt"],"section":".plt","size":16,"sizeEstimated":true,"unsupported":0}
 
@@ -272,9 +236,6 @@ fn getgrgid_r @ 0x7a0 (size 16)
 /* velk pseudo-C: mprotect @ 0x7b0 */
 /* ref: 0x20048 .got.plt */
 int mprotect(void *a0, size_t a1, int a2) {
-    uint64_t *const mprotect_20048_u64 = (uint64_t *)0x20048ULL;
-
-    int32_t v1 = *mprotect_20048_u64;
     return mprotect(a0, a1, a2);
 }
 -- signature
@@ -284,9 +245,8 @@ int (void * a0, size_t a1, int a2)
 -- ir
 fn mprotect @ 0x7b0 (size 16)
   blk0 @ 0x7b0:
-    v1 = load64(#0x20048)
-    v2:x0, x1, d0, d1 = call *load64(#0x20048)(x0, x1, x2)
-    ret v2
+    v1:x0, x1, d0, d1 = call *load64(#0x20048)(x0, x1, x2)
+    ret v1
 -- card
 {"addr":"0x7b0","approxTokens":120,"blocks":1,"hardReasons":[],"name":"mprotect","nameSources":["plt"],"section":".plt","size":16,"sizeEstimated":true,"unsupported":0}
 

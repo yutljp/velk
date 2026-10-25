@@ -569,9 +569,17 @@ fn lift_instruction(
                 } else {
                     let noreturn = super::import_called(lifter.image, &through)
                         .is_some_and(|summary| summary.noreturn);
+                    let cleanup = super::import_name(lifter.image, &through)
+                        .and_then(|name| {
+                            crate::analysis::prototypes::i386_import(lifter.image, name)
+                        })
+                        .map_or(0, |properties| properties.1);
                     lifter
                         .stmts
                         .push(call_through(CallKind::Invoke, lifter.image, through));
+                    if cleanup != 0 {
+                        stack_adjust(lifter, i64::from(cleanup));
+                    }
                     if noreturn {
                         lifter.stmts.push(Stmt::Trap);
                         return true;

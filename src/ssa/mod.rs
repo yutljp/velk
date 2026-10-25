@@ -8,6 +8,7 @@
 
 mod demand;
 mod split;
+mod variadic;
 
 #[cfg(test)]
 use demand::demanded_bits;
@@ -459,6 +460,10 @@ pub fn undefine_clobbered_reads(ir: &mut FunctionIr) {
 /// Gives each call to a variadic library function the arguments its format
 /// string's conversions take, where a constant format reaches the call.
 pub fn count_variadic_arguments(ir: &mut FunctionIr, image: &crate::loader::Image) {
+    if ir.isa == crate::loader::Isa::I386 {
+        variadic::count_i386(ir, image);
+        return;
+    }
     let variadic = |target: u64| {
         let Some(name) = image
             .functions

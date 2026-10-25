@@ -739,12 +739,29 @@ fn syntax_source(
         })
         .map(|line| format!("{line}\n"))
         .collect::<String>();
-    source.push_str("#include <stdlib.h>\ntypedef struct syntax_file FILE;\ntypedef struct syntax_directory DIR;\ntypedef struct syntax_mutex pthread_mutex_t;\ntypedef struct syntax_mutex_attributes pthread_mutexattr_t;\ntypedef intptr_t off_t;\ntypedef intptr_t ssize_t;\ntypedef uintptr_t pthread_t;\ntypedef uint32_t pthread_key_t;\ntypedef int32_t pid_t;\n");
+    let support = prelude.render();
+    // Target declarations can use a different data model from the host headers.
+    let mut hidden = Vec::new();
+    for name in ["calloc", "strtol"] {
+        if support.contains(&format!("{name}(")) {
+            writeln!(source, "#define {name} syntax_host_{name}")
+                .expect("formatting into a String cannot fail");
+            hidden.push(name);
+        }
+    }
+    source.push_str("#include <stdlib.h>\n");
+    for name in hidden {
+        writeln!(source, "#undef {name}").expect("formatting into a String cannot fail");
+    }
+    if !support.contains("#include <stdio.h>") && !support.contains("#include <wchar.h>") {
+        source.push_str("typedef struct syntax_file FILE;\ntypedef intptr_t off_t;\n");
+    }
+    source.push_str("typedef struct syntax_directory DIR;\ntypedef struct syntax_mutex pthread_mutex_t;\ntypedef struct syntax_mutex_attributes pthread_mutexattr_t;\ntypedef intptr_t ssize_t;\ntypedef uintptr_t pthread_t;\ntypedef uint32_t pthread_key_t;\ntypedef int32_t pid_t;\n");
     for name in declarations {
         let ty = returns.get(name).cloned().unwrap_or(CType::U64);
         writeln!(source, "{ty} {name}();").expect("formatting into a String cannot fail");
     }
-    source.push_str(&prelude.render());
+    source.push_str(&support);
     source.push_str(body);
     source
 }

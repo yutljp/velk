@@ -759,8 +759,18 @@ pub(crate) fn call(
             .is_some_and(|prototype| prototype.format.is_some())
     });
     let summary = target.filter(|_| !variadic).map(summaries);
-    let arity = summary.and_then(|summary| summary.arity);
-    let stack = summary.map_or(0, |summary| summary.stack);
+    let cleanup_slots = if convention == Convention::Stdcall {
+        target
+            .and_then(|target| image.callee_cleanup(target))
+            .filter(|bytes| bytes.is_multiple_of(4))
+            .map(|bytes| usize::from(bytes / 4))
+    } else {
+        None
+    };
+    let arity = summary.and_then(|summary| summary.arity).or(cleanup_slots);
+    let stack = summary
+        .map_or(0, |summary| summary.stack)
+        .max(cleanup_slots.unwrap_or(0));
     let mut args = arguments(kind, convention, image.isa, arity, stack);
     // Go's assembly ABI packs its arguments: the callee may read only the
     // low bytes of a slot.
@@ -1177,10 +1187,17 @@ fn append_float_arguments(
 /// A call to the address `through` computes. One through an import's slot
 /// passes the arguments its prototype takes.
 pub(crate) fn call_through(kind: CallKind, image: &Image, through: Expr) -> Stmt {
-    let convention = Convention::of(image.isa, image.format, image.go);
+    let convention = import_name(image, &through)
+        .and_then(|name| crate::analysis::prototypes::i386_import(image, name))
+        .map_or_else(
+            || Convention::of(image.isa, image.format, image.go),
+            |properties| properties.0,
+        );
     let variadic = crate::lift::import_name(image, &through)
         .and_then(|name| crate::analysis::prototypes::for_image(name, image))
-        .is_some_and(|prototype| prototype.format.is_some());
+        .is_some_and(|prototype| {
+            prototype.format.is_some() || (kind == CallKind::Tail && prototype.variadic)
+        });
     let summary = import_called(image, &through).filter(|_| !variadic);
     let arity = summary.as_ref().and_then(|summary| summary.arity);
     let mut args = arguments(kind, convention, image.isa, arity, 0);

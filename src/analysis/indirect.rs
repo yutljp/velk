@@ -805,12 +805,12 @@ pub(crate) fn resolve(blocks: &mut [Block], pads: &[(u64, Vec<(u64, u64)>)], ima
                 drop_feeding(stmts, position, &through);
             }
             Decision::Import(slot) => {
-                let through = Expr::Load {
+                let imported = Expr::Load {
                     addr: Box::new(Expr::Const(slot)),
-                    width: 8,
+                    width: crate::arch::pointer_bytes(image.isa),
                     signed: false,
                 };
-                stmts[position] = crate::lift::call_through(kind, image, through.clone());
+                stmts[position] = crate::lift::call_through(kind, image, imported);
                 drop_feeding(stmts, position, &through);
             }
             Decision::Slot(found) => {

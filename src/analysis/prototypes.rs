@@ -19,7 +19,7 @@ use crate::ir::{CType, Stmt};
 use crate::loader::{Image, NameSource};
 
 mod generated;
-pub(crate) use generated::{apply_records, is_library_record, record_name};
+pub(crate) use generated::{apply_records, i386_import, is_library_record, record_name};
 
 /// What a function takes and returns.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -71,6 +71,34 @@ impl Prototype {
     pub fn narrow_return(&self) -> bool {
         self.ret.integer().is_some_and(|(bits, _)| bits == 32)
     }
+}
+
+/// Standard library counterparts that accept the same fixed parameters and a `va_list`.
+pub(crate) fn va_list_counterpart(name: &str) -> Option<(&'static str, &'static str)> {
+    const PAIRS: &[(&str, &str, &str)] = &[
+        ("printf", "vprintf", "stdio.h"),
+        ("fprintf", "vfprintf", "stdio.h"),
+        ("sprintf", "vsprintf", "stdio.h"),
+        ("snprintf", "vsnprintf", "stdio.h"),
+        ("scanf", "vscanf", "stdio.h"),
+        ("fscanf", "vfscanf", "stdio.h"),
+        ("sscanf", "vsscanf", "stdio.h"),
+        ("wprintf", "vwprintf", "wchar.h"),
+        ("fwprintf", "vfwprintf", "wchar.h"),
+        ("swprintf", "vswprintf", "wchar.h"),
+        ("wscanf", "vwscanf", "wchar.h"),
+        ("fwscanf", "vfwscanf", "wchar.h"),
+        ("swscanf", "vswscanf", "wchar.h"),
+        ("dprintf", "vdprintf", "stdio.h"),
+        ("asprintf", "vasprintf", "stdio.h"),
+        ("syslog", "vsyslog", "syslog.h"),
+    ];
+    for &(variadic, counterpart, header) in PAIRS {
+        if name == variadic {
+            return Some((counterpart, header));
+        }
+    }
+    None
 }
 
 /// The C library and POSIX, and the entry points of the C++ runtime.
@@ -913,6 +941,12 @@ pub fn void_pointer(ty: &CType) -> bool {
 /// `scans` its input take pointers to what they read.
 #[must_use]
 pub fn conversion_types(format: &str, scans: bool) -> Vec<CType> {
+    let mut types = all_conversion_types(format, scans);
+    types.retain(|ty| !ty.is_sse_float() && *ty != CType::Named("long double".into()));
+    types
+}
+
+pub(crate) fn all_conversion_types(format: &str, scans: bool) -> Vec<CType> {
     let named = |name: &str| CType::Named(name.to_owned());
     let mut types = Vec::new();
     let mut chars = format.chars().peekable();
@@ -998,7 +1032,11 @@ pub fn conversion_types(format: &str, scans: bool) -> Vec<CType> {
                         types.push(CType::pointer_to(named(float)));
                         break;
                     }
-                    'f' | 'F' | 'e' | 'E' | 'g' | 'G' | 'a' | 'A' => break,
+                    'f' | 'F' | 'e' | 'E' | 'g' | 'G' | 'a' | 'A' => named(if length == "L" {
+                        "long double"
+                    } else {
+                        "double"
+                    }),
                     // Some other letter: an argument of no type known.
                     _ => CType::U64,
                 };
@@ -1097,6 +1135,18 @@ mod tests {
             Some("tv_nsec")
         );
         assert!(layout("stat").is_none());
+    }
+
+    #[test]
+    fn stack_format_types_include_floating_point_values() {
+        assert_eq!(
+            super::all_conversion_types("%d %f %Lf %lld", false),
+            ["int", "double", "long double", "long long"].map(|name| CType::Named(name.into()))
+        );
+        assert_eq!(
+            conversion_types("%d %f %Lf", false),
+            [CType::Named("int".into())]
+        );
     }
 
     #[test]

@@ -68,10 +68,7 @@ fn __cxa_finalize @ 0x1080 (size 16)
 
 == 0x1090 __snprintf_chk
 -- decompile
-/* velk pseudo-C: __snprintf_chk @ 0x1090 */
-int __snprintf_chk(void) {
-    return __snprintf_chk();
-}
+int __snprintf_chk(char *a0, size_t a1, int a2, size_t a3, const char *format, ...); /* Forwards all arguments to __snprintf_chk. */
 -- signature
 int ()
 -- references
@@ -140,10 +137,7 @@ fn fputs @ 0x10c0 (size 16)
 
 == 0x10d0 __fprintf_chk
 -- decompile
-/* velk pseudo-C: __fprintf_chk @ 0x10d0 */
-int __fprintf_chk(void) {
-    return __fprintf_chk();
-}
+int __fprintf_chk(FILE *a0, int a1, const char *format, ...); /* Forwards all arguments to __fprintf_chk. */
 -- signature
 int ()
 -- references

@@ -25,6 +25,12 @@ pub fn render_with_dependencies(
     data_ranges: &[(u64, u64)],
 ) -> Rendered {
     crate::timing::scope!("render/function::render_with_dependencies");
+    if let Some(code) = super::forwarding::render(ir, symbols) {
+        return Rendered {
+            code,
+            segment_bases: Vec::new(),
+        };
+    }
     let Some(merged) = super::structure::merge_exits::merged(ir) else {
         return render_unmerged(ir, references, symbols, data_ranges, Variables::Split);
     };

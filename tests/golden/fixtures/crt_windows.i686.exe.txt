@@ -1,4 +1,4 @@
-# crt_windows.i686.exe: pe i386 0x40116f, 30 functions, 2 lift failures, 1 unsupported, 0 gotos
+# crt_windows.i686.exe: pe i386 0x40116f, 30 functions, 0 lift failures, 1 unsupported, 0 gotos
 0x401000 27 crt_stdio dynamic
 0x40101b 27 crt_alloc dynamic
 0x401036 35 crt_number dynamic
@@ -30,6 +30,9 @@
 0x4011d0 8 wcscpy_s plt
 0x4011d8 8 wcslen plt
 /* velk prelude */
+#include <stdarg.h>
+#include <stdio.h>
+
 int *_errno(void);
 
 int _close(int);
@@ -41,6 +44,8 @@ int strcpy_s(char *, unsigned int, const char *);
 int wcscpy_s(unsigned short *, unsigned int, const unsigned short *);
 
 int32_t strtol(const char *, char **, int);
+
+int32_t time(int32_t *);
 
 uint32_t wcslen(const unsigned short *);
 
@@ -142,7 +147,7 @@ fn crt_wide @ 0x401074 (size 19)
 /* velk pseudo-C: crt_time @ 0x401087 */
 /* ref: 0x402230 .rdata */
 int32_t crt_time(uint32_t a0) {
-    return ((int32_t)(time((time_t *)a0)));
+    return ((int32_t)(time((int32_t *)a0)));
 }
 -- signature
 int32_t ()
@@ -312,9 +317,22 @@ fn crt_ctype @ 0x401140 (size 20)
 
 == 0x401154 crt_format
 -- decompile
-error: function at 0x401154: the call argument count in the block at 0x401154 is unknown
+/* velk pseudo-C: crt_format @ 0x401154 */
+/* ref: 0x402000 .rdata */
+int32_t crt_format(uint32_t a0) {
+    return printf_plt(0x402000, a0);
+}
+-- signature
+int32_t ()
+-- references
+0x402000 .rdata
+-- ir
+fn crt_format @ 0x401154 (size 27)
+  blk0 @ 0x401154:
+    v1:eax, edx = call 0x4011a0(#0x402000, load32((esp + #0x4)))
+    ret (v1 & #0xffffffff)
 -- card
-{"addr":"0x401154","approxTokens":138,"hardReasons":[],"liftError":"the call argument count in the block at 0x401154 is unknown","name":"crt_format","nameSources":["dynamic"],"section":".text","size":27,"sizeEstimated":true}
+{"addr":"0x401154","approxTokens":138,"blocks":1,"hardReasons":[],"name":"crt_format","nameSources":["dynamic"],"section":".text","size":27,"sizeEstimated":true,"unsupported":0}
 
 == 0x40116f -
 -- decompile
@@ -448,9 +466,24 @@ fn isalpha @ 0x401198 (size 8)
 
 == 0x4011a0 printf
 -- decompile
-error: function at 0x4011a0: the call argument count in the block at 0x4011a0 is unknown
+int printf_plt(const char *format, ...) {
+    va_list args;
+    va_start(args, format);
+    int result = vprintf(format, args);
+    va_end(args);
+    return result;
+}
+-- signature
+int32_t ()
+-- references
+0x402218 .rdata
+-- ir
+fn printf @ 0x4011a0 (size 8)
+  blk0 @ 0x4011a0:
+    v1:eax, edx = call *load32(#0x402218)
+    ret (v1 & #0xffffffff)
 -- card
-{"addr":"0x4011a0","approxTokens":114,"hardReasons":[],"liftError":"the call argument count in the block at 0x4011a0 is unknown","name":"printf","nameSources":["plt"],"section":".text","size":8,"sizeEstimated":true}
+{"addr":"0x4011a0","approxTokens":114,"blocks":1,"hardReasons":[],"name":"printf","nameSources":["plt"],"section":".text","size":8,"sizeEstimated":true,"unsupported":0}
 
 == 0x4011a8 setlocale
 -- decompile
@@ -533,7 +566,7 @@ fn strtol @ 0x4011c0 (size 8)
 /* velk pseudo-C: time @ 0x4011c8 */
 /* ref: 0x402230 .rdata */
 int32_t time_plt(uint32_t a0) {
-    return ((int32_t)(time((time_t *)a0)));
+    return ((int32_t)(time((int32_t *)a0)));
 }
 -- signature
 int32_t ()

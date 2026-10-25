@@ -1105,17 +1105,6 @@ fn lift_function(image: &Image, function: &Function) -> Result<Lifted, LiftError
     let switched: HashSet<u64> = tables.iter().map(|table| table.block_start).collect();
     tail_calls_through_pointers(&mut blocks, &switched, image);
     indirect::resolve(&mut blocks, &landing_pads, image);
-    if image.isa == crate::loader::Isa::I386 {
-        for block in &blocks {
-            if block
-                .stmts
-                .iter()
-                .any(|stmt| matches!(stmt, crate::ir::Stmt::Call { args: None, .. }))
-            {
-                return Err(LiftError::UnknownArguments { block: block.start });
-            }
-        }
-    }
     let types = crate::loader::dwarf::function_types(image, function.addr);
     let declared_signature = types.as_ref().and_then(abi::declaration);
     // A function returning a float returns it in xmm0 or v0.
@@ -1396,6 +1385,7 @@ fn optimize(image: &Image, lifted: Lifted, deadline: Option<Instant>) -> Result<
         types,
     } = lifted;
     if ir.isa == crate::loader::Isa::I386 {
+        crate::ssa::count_variadic_arguments(&mut ir, image);
         passes::frame_slots::settle_i386(&mut ir);
     }
     let declared_return = types.as_ref().is_some_and(|types| types.ret.is_some());
@@ -1405,7 +1395,34 @@ fn optimize(image: &Image, lifted: Lifted, deadline: Option<Instant>) -> Result<
     // Before the stack adjustments a call reads unseen, such as the push
     // of an argument, are dropped as dead.
     passed(deadline)?;
-    crate::ssa::count_variadic_arguments(&mut ir, image);
+    if ir.isa != crate::loader::Isa::I386 {
+        crate::ssa::count_variadic_arguments(&mut ir, image);
+    }
+    if ir.isa == crate::loader::Isa::I386 {
+        for block in &ir.blocks {
+            for stmt in &block.stmts {
+                if matches!(stmt, Stmt::Call { args: None, .. })
+                    && !(ir.blocks.len() == 1
+                        && block.stmts.len() == 2
+                        && matches!(
+                            stmt,
+                            Stmt::Call {
+                                kind: crate::ir::CallKind::Tail,
+                                through: Some(_),
+                                ..
+                            }
+                        )
+                        && prototypes::called(image, stmt)
+                            .is_some_and(|prototype| prototype.variadic))
+                {
+                    return Err(Error::Lift {
+                        addr: ir.addr,
+                        source: LiftError::UnknownArguments { block: block.start },
+                    });
+                }
+            }
+        }
+    }
     passed(deadline)?;
     crate::ssa::undefine_clobbered_reads(&mut ir);
     let reached = crate::ir::cfg::reached(&ir);
