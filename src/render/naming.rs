@@ -33,12 +33,9 @@ pub(crate) fn narrow_registers(ir: &FunctionIr) -> std::collections::HashSet<u16
                 Stmt::Ret { value } => scan_reads(value, &mut seen, &mut wide),
                 Stmt::BrIndirect { target } => scan_reads(target, &mut seen, &mut wide),
                 Stmt::Switch { index, .. } => scan_reads(index, &mut seen, &mut wide),
-                // A register passed whole takes the width the callee gives it.
                 Stmt::Call { .. } => {
                     for value in stmt.operands() {
-                        if !matches!(value, Expr::Reg { .. }) {
-                            scan_reads(value, &mut seen, &mut wide);
-                        }
+                        scan_reads(value, &mut seen, &mut wide);
                     }
                 }
                 _ => {}

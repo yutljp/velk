@@ -273,10 +273,11 @@ pub(super) fn lift_packed(lifter: &mut Lifter, ins: &Instruction) -> Option<()> 
             write(lifter, (half(false), half(true)))?;
         }
         // Narrowing two sources' lanes into one register, the first's low.
-        Packsswb | Packuswb | Packssdw => {
+        Packsswb | Packuswb | Packssdw | Packusdw => {
             let (from, unsigned) = match ins.mnemonic() {
                 Packsswb => (16, false),
                 Packuswb => (16, true),
+                Packusdw => (32, true),
                 _ => (32, false),
             };
             let (a, b) = (halves(0)?, halves(1)?);

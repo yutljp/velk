@@ -67,3 +67,58 @@ fn printed_packed_extensions_keep_every_lane_and_read_only_the_source_width() {
     }
     std::fs::remove_dir_all(scratch).ok();
 }
+
+#[test]
+fn unsigned_dword_packing_saturates_each_lane_and_preserves_the_callers_frame() {
+    let scratch = scratch_dir("unsigned-dword-packing");
+    let assembly = scratch.join("packing.s");
+    let object = scratch.join("packing.o");
+    let mut source = String::from(".text\n");
+    for (name, operand) in [("pack_register", "%xmm0"), ("pack_memory", "16(%rdi)")] {
+        writeln!(source, ".globl {name}\n.type {name},@function\n{name}:\npushq %rbp\nmovq %rsp, %rbp\nmovdqu (%rdi), %xmm0\npackusdw {operand}, %xmm0\nmovdqu %xmm0, (%rsi)\nmovl $7, %eax\npopq %rbp\nret\n.size {name}, .-{name}").unwrap();
+    }
+    source.push_str(".globl packing_caller\n.type packing_caller,@function\npacking_caller:\npushq %rbp\nmovq %rsp, %rbp\nsubq $16, %rsp\nmovq %rdx, -8(%rbp)\ncall pack_register\nmovq -8(%rbp), %rax\naddq $16, %rsp\npopq %rbp\nret\n.size packing_caller, .-packing_caller\n");
+    std::fs::write(&assembly, source).unwrap();
+    let compiled = Command::new(compiler())
+        .args(["--target=x86_64-unknown-linux-gnu", "-c"])
+        .arg(&assembly)
+        .arg("-o")
+        .arg(&object)
+        .output()
+        .unwrap();
+    assert!(compiled.status.success(), "{compiled:?}");
+    let mut binary = Binary::open(&object).unwrap();
+    let mut code = String::new();
+    for name in ["pack_register", "pack_memory", "packing_caller"] {
+        let address = binary.find(name).unwrap().addr;
+        let printed = binary.decompile(address, None, None).unwrap();
+        assert!(!printed.contains("unsupported"), "{printed}");
+        assert!(!printed.contains("undefined"), "{printed}");
+        code.push_str(&printed);
+    }
+    syntax::run_printed(
+        &code,
+        "#include <string.h>\n",
+        "int32_t input[8] = {INT32_MIN, -1, 0, 65535, 1, 65534, 65536, INT32_MAX};
+         uint16_t output[8]; uint16_t expected[8];
+         for (unsigned trial = 0; trial < 8; ++trial) {
+             for (unsigned i = 0; i < 8; ++i) {
+                 int32_t lane = input[i % 4];
+                 expected[i] = lane < 0 ? 0 : lane > 65535 ? 65535 : lane;
+             }
+             memset(output, 0xa5, sizeof output);
+             if (pack_register((uintptr_t)input, (uintptr_t)output) != 7 || memcmp(output, expected, 16)) return 1;
+             memset(output, 0xa5, sizeof output);
+             if ((uint32_t)packing_caller((uintptr_t)input, (uintptr_t)output, UINT64_C(0xfedcba9876543210)) != UINT32_C(0x76543210) || memcmp(output, expected, 16)) return 2;
+             for (unsigned i = 0; i < 8; ++i) {
+                 int32_t lane = input[i];
+                 expected[i] = lane < 0 ? 0 : lane > 65535 ? 65535 : lane;
+             }
+             if (pack_memory((struct S1 *)(void *)input, (uintptr_t)output) != 7 || memcmp(output, expected, 16)) return 3;
+             int32_t first = input[0];
+             memmove(input, input + 1, 7 * sizeof *input);
+             input[7] = first;
+         }",
+    );
+    std::fs::remove_dir_all(scratch).ok();
+}

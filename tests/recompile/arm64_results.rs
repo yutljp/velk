@@ -253,3 +253,61 @@ ret
     );
     std::fs::remove_dir_all(scratch).ok();
 }
+
+#[test]
+fn a_full_call_argument_keeps_bits_also_used_by_a_narrow_argument() {
+    let scratch = scratch_dir("arm64-mixed-arguments");
+    let assembly = scratch.join("arguments.s");
+    let object = scratch.join("arguments.o");
+    std::fs::write(
+        &assembly,
+        ".text
+.globl mixed_arguments
+.type mixed_arguments,@function
+mixed_arguments:
+stp x29, x30, [sp, #-16]!
+ldr x2, [x0]
+sxth w1, w2
+mov x0, #7
+bl consume_mixed
+ldp x29, x30, [sp], #16
+ret
+.size mixed_arguments, .-mixed_arguments
+.globl consume_mixed
+.type consume_mixed,@function
+consume_mixed:
+eor x0, x2, x1
+ret
+.size consume_mixed, .-consume_mixed
+",
+    )
+    .unwrap();
+    let compiled = Command::new(compiler())
+        .args(["--target=aarch64-unknown-linux-gnu", "-c"])
+        .arg(&assembly)
+        .arg("-o")
+        .arg(&object)
+        .output()
+        .unwrap();
+    assert!(compiled.status.success(), "{compiled:?}");
+    let mut binary = Binary::open(&object).unwrap();
+    let address = binary.find("mixed_arguments").unwrap().addr;
+    let printed = binary.decompile(address, None, None).unwrap();
+    assert!(
+        printed.contains("uint64_t v") || printed.contains("int64_t v"),
+        "{printed}"
+    );
+    let code = format!(
+        "static uint64_t consume_mixed(uint64_t a0, uint64_t a1, uint64_t a2) {{ (void)a0; return a2 ^ a1; }}\n{printed}"
+    );
+    syntax::run_printed(
+        &code,
+        "",
+        "uint64_t values[] = {0, 0xffff, 0x80000000, 0xffffffff, UINT64_C(0x8123456789abcdef), UINT64_MAX};
+         for (unsigned i = 0; i < 6; ++i) {
+             uint64_t expected = values[i] ^ (uint32_t)(int16_t)values[i];
+             if ((uint64_t)mixed_arguments(&values[i]) != expected) return 1;
+         }",
+    );
+    std::fs::remove_dir_all(scratch).ok();
+}
