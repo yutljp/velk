@@ -438,3 +438,40 @@ fn batch_decompilation_prints_one_prelude() {
     let end = outcome.output.find("/* end velk prelude */").unwrap();
     assert!(end < outcome.output.find("/* velk pseudo-C:").unwrap());
 }
+
+#[test]
+fn project_methods_persist_and_apply_annotations() {
+    let directory = common::root()
+        .join("target")
+        .join(format!("api-project-{}", std::process::id()));
+    std::fs::create_dir_all(&directory).unwrap();
+    let path = directory.join("app.o");
+    std::fs::copy(common::fixtures_dir().join("arm64.o"), &path).unwrap();
+    let script = format!(
+        r#"
+const b = velk.open({path:?}, {{project: {project:?}}});
+const f = b.getFunction("sum3");
+const target = {{kind:"function", address:f.addr}};
+b.projectSet({{target, name:"sum_values"}});
+if (b.projectGet(target).name !== "sum_values") throw Error("get");
+if (b.projectList().length !== 1) throw Error("list");
+const exported = b.projectExport();
+b.projectRemove(target);
+b.projectImport(exported);
+if (b.getFunction("sum_values").name !== "sum_values") throw Error("name");
+const parameter = f.origins().find(row => row.target.kind === "parameter");
+b.projectSet({{target:parameter.target, name:"first"}});
+if (!f.decompile().includes("int32_t first")) throw Error("applied parameter");
+if (f.signature().params[0].name !== "first") throw Error("applied signature metadata");
+try {{ b.projectSet({{target, name:"int"}}); throw Error("accepted keyword"); }}
+catch (error) {{ if (error.code !== "invalid_identifier") throw error; }}
+"#,
+        path = path.to_str().unwrap(),
+        project = directory.join("annotations.json").to_str().unwrap()
+    );
+    let outcome = Engine::new().unwrap().run(&script, None);
+    assert!(!velk::project::path(&path).exists());
+    assert!(directory.join("annotations.json").exists());
+    let _ = std::fs::remove_dir_all(directory);
+    assert!(outcome.error.is_none(), "{:?}", outcome.error);
+}

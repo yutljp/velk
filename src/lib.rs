@@ -12,6 +12,7 @@ pub mod lift;
 pub mod loader;
 pub mod mcp;
 pub mod passes;
+pub mod project;
 pub mod render;
 pub mod script;
 pub mod service;

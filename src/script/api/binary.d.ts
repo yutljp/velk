@@ -1,6 +1,6 @@
 declare const velk: {
   /** Loads an ELF, PE or Mach-O file; reopening an unchanged file reuses the cached analysis. */
-  open(path: string): Binary;
+  open(path: string, opts?: { project?: string }): Binary;
   /** Builds instruction signatures from a binary, static archive, or Rust rlib. */
   buildSignatures(path: string): { database: SignatureDb; failures: Failure[] };
 };
@@ -21,6 +21,12 @@ interface Binary {
   strings(opts?: { contains?: string }): StringsResult;
   /** Pass a hex string for integers larger than JavaScript's safe integer range. */
   constants(value: string | number): ConstantsResult;
+  projectSet(annotation: ProjectAnnotation): { ok: boolean };
+  projectGet(target: ProjectTarget): ProjectAnnotation | null;
+  projectList(): ProjectAnnotation[];
+  projectRemove(target: ProjectTarget): { removed: boolean };
+  projectExport(): AnalysisProject;
+  projectImport(project: AnalysisProject): { ok: boolean };
 
   /**
    * Every discovered function in address order, filtered by all given fields.
@@ -44,3 +50,15 @@ interface Binary {
 
 // const db = velk.open("libc.o").buildSignatures().database;
 // velk.open("stripped.bin").identify(db).matches.map((m) => `${m.addr} ${m.matched}`);
+
+type ProjectStorage =
+  | { kind: "register"; register: number }
+  | { kind: "stack"; offset: number }
+  | { kind: "definition"; register: number; block: Addr; statement: number };
+type ProjectTarget =
+  | { kind: "function" | "global" | "comment" | "classification"; address: Addr }
+  | { kind: "parameter" | "local"; function: Addr; storage: ProjectStorage }
+  | { kind: "signature"; function: Addr }
+  | { kind: "declaration"; name: string };
+type ProjectAnnotation = { target: ProjectTarget; name?: string; c_type?: string; text?: string };
+type AnalysisProject = { version: 1; binary_sha256: string; annotations: ProjectAnnotation[] };

@@ -33,14 +33,39 @@ const HELP_STYLES: Styles = Styles::styled()
     styles = HELP_STYLES,
     override_usage = "velk <OPERATION> [OPTIONS] [INPUT] [FUNCTION]",
     group(ArgGroup::new("operation").required(true).multiple(false).args([
+        "annotate", "annotation", "annotations", "unannotate", "export_project", "import_project", "origins",
         "functions", "sections", "card", "decompile", "disasm", "ir",
         "build_signatures", "identify", "run", "mcp", "xrefs", "callers", "callees", "path", "strings", "constants", "summary"
     ])),
     group(ArgGroup::new("multi_target").args(["decompile", "path"])),
     group(ArgGroup::new("graph").args(["callers", "callees", "path"])),
-    after_help = "Examples:\n  velk -f app.elf\n  velk -D app.elf main\n  velk --disasm app.elf 0x401000 --limit 20\n  velk --build-signatures app.elf --output signatures.json\n  velk -r analysis.js\n  velk --xrefs app.elf main\n  velk --path app.elf main helper --depth 4\n  velk --strings app.elf --contains hello\n\nChoose one operation. Use --help to list its arguments and options."
+    after_help = "Examples:\n  velk -f app.elf\n  velk -D app.elf main\n  velk --disasm app.elf 0x401000 --limit 20\n  velk --build-signatures app.elf --output signatures.json\n  velk -r analysis.js\n  velk --annotations app.elf\n  velk --xrefs app.elf main\n  velk --path app.elf main helper --depth 4\n  velk --strings app.elf --contains hello\n\nChoose one operation. Use --help to list its arguments and options."
 )]
 struct Cli {
+    /// Set one annotation from a JSON object.
+    #[arg(long, help_heading = "Operations (choose one)")]
+    annotate: bool,
+    /// Get one annotation by its JSON target.
+    #[arg(long, help_heading = "Operations (choose one)")]
+    annotation: bool,
+    /// List persistent annotations as JSON.
+    #[arg(long, help_heading = "Operations (choose one)")]
+    annotations: bool,
+    /// Remove one annotation by its JSON target.
+    #[arg(long, help_heading = "Operations (choose one)")]
+    unannotate: bool,
+    /// Export persistent annotations as JSON.
+    #[arg(long, help_heading = "Operations (choose one)")]
+    export_project: bool,
+    /// Import a project from a JSON file.
+    #[arg(long, help_heading = "Operations (choose one)")]
+    import_project: bool,
+    /// List stable parameter and local storage targets for a function.
+    #[arg(long, help_heading = "Operations (choose one)")]
+    origins: bool,
+    /// Annotation file location; defaults to <binary>.velk.json.
+    #[arg(long, value_name = "PATH", conflicts_with_all = ["run", "mcp"])]
+    project: Option<PathBuf>,
     /// List the discovered functions.
     #[arg(short = 'f', long, help_heading = "Operations (choose one)")]
     functions: bool,
@@ -108,14 +133,15 @@ struct Cli {
         conflicts_with = "mcp"
     )]
     input: Option<PathBuf>,
-    /// Function, address or constant; --path also needs a destination function.
+    /// Function, address, constant, annotation/target JSON, or project import file.
     #[arg(
         value_name = "FUNCTION",
         required_if_eq_any([
+            ("annotate", "true"), ("annotation", "true"), ("unannotate", "true"), ("import_project", "true"), ("origins", "true"),
             ("card", "true"), ("decompile", "true"),
             ("disasm", "true"), ("ir", "true"), ("xrefs", "true"), ("callers", "true"), ("callees", "true"), ("path", "true"), ("constants", "true"), ("summary", "true")
         ]),
-        conflicts_with_all = ["functions", "sections", "build_signatures", "identify", "run", "mcp", "strings"]
+        conflicts_with_all = ["functions", "sections", "build_signatures", "identify", "run", "mcp", "strings", "annotations", "export_project"]
     )]
     function: Option<String>,
     /// Destination for --path, or a second function to decompile.
@@ -132,20 +158,20 @@ struct Cli {
     #[arg(
         long,
         value_name = "N",
-        conflicts_with_all = ["xrefs", "callers", "callees", "path", "strings", "constants", "summary", "sections", "card", "decompile", "ir", "build_signatures", "run", "mcp"]
+        conflicts_with_all = ["annotate", "annotation", "annotations", "unannotate", "export_project", "import_project", "origins", "xrefs", "callers", "callees", "path", "strings", "constants", "summary", "sections", "card", "decompile", "ir", "build_signatures", "run", "mcp"]
     )]
     limit: Option<usize>,
     #[arg(
         long,
         value_name = "TOKENS",
-        conflicts_with_all = ["xrefs", "callers", "callees", "path", "strings", "constants", "summary", "functions", "sections", "decompile", "disasm", "ir", "build_signatures", "identify", "run", "mcp"],
+        conflicts_with_all = ["annotate", "annotation", "annotations", "unannotate", "export_project", "import_project", "origins", "xrefs", "callers", "callees", "path", "strings", "constants", "summary", "functions", "sections", "decompile", "disasm", "ir", "build_signatures", "identify", "run", "mcp"],
         help = format!("Approximate card size in tokens (default: {}); only with --card", card::DEFAULT_BUDGET)
     )]
     budget: Option<usize>,
     /// Print the function list as JSON; only with --functions.
     #[arg(
         long,
-        conflicts_with_all = ["xrefs", "callers", "callees", "path", "strings", "constants", "summary", "sections", "card", "decompile", "disasm", "ir", "build_signatures", "identify", "run", "mcp"]
+        conflicts_with_all = ["annotate", "annotation", "annotations", "unannotate", "export_project", "import_project", "origins", "xrefs", "callers", "callees", "path", "strings", "constants", "summary", "sections", "card", "decompile", "disasm", "ir", "build_signatures", "identify", "run", "mcp"]
     )]
     json: bool,
     /// Signature database; required for --identify, optional for --card and --decompile.
@@ -153,7 +179,7 @@ struct Cli {
         long,
         value_name = "FILE",
         required_if_eq("identify", "true"),
-        conflicts_with_all = ["xrefs", "callers", "callees", "path", "strings", "constants", "summary", "functions", "sections", "disasm", "ir", "build_signatures", "run", "mcp"]
+        conflicts_with_all = ["annotate", "annotation", "annotations", "unannotate", "export_project", "import_project", "origins", "xrefs", "callers", "callees", "path", "strings", "constants", "summary", "functions", "sections", "disasm", "ir", "build_signatures", "run", "mcp"]
     )]
     signatures: Option<PathBuf>,
     /// Signature database to write; required with --build-signatures.
@@ -161,7 +187,7 @@ struct Cli {
         long,
         value_name = "FILE",
         required_if_eq("build_signatures", "true"),
-        conflicts_with_all = ["xrefs", "callers", "callees", "path", "strings", "constants", "summary", "functions", "sections", "card", "decompile", "disasm", "ir", "identify", "run", "mcp"]
+        conflicts_with_all = ["annotate", "annotation", "annotations", "unannotate", "export_project", "import_project", "origins", "xrefs", "callers", "callees", "path", "strings", "constants", "summary", "functions", "sections", "card", "decompile", "disasm", "ir", "identify", "run", "mcp"]
     )]
     output: Option<PathBuf>,
 }
@@ -370,8 +396,79 @@ fn exit_on_closed_pipe() {
 fn main() -> ExitCode {
     #[cfg(unix)]
     exit_on_closed_pipe();
-    match run(Cli::parse().into_command()) {
+    let cli = match Cli::try_parse() {
+        Ok(cli) => cli,
+        Err(error)
+            if matches!(
+                error.kind(),
+                clap::error::ErrorKind::DisplayHelp | clap::error::ErrorKind::DisplayVersion
+            ) =>
+        {
+            let _ = error.print();
+            return ExitCode::SUCCESS;
+        }
+        Err(error) => {
+            eprintln!(
+                "{}",
+                json!({"code":"invalid_cli", "message":error.to_string()})
+            );
+            return ExitCode::FAILURE;
+        }
+    };
+    let project = cli.project.clone();
+    let operation = if cli.annotate {
+        Some(velk::project::cli::Command::Set {
+            json: cli.function.clone().unwrap_or_default(),
+        })
+    } else if cli.annotation {
+        Some(velk::project::cli::Command::Get {
+            target: cli.function.clone().unwrap_or_default(),
+        })
+    } else if cli.annotations {
+        Some(velk::project::cli::Command::List)
+    } else if cli.unannotate {
+        Some(velk::project::cli::Command::Remove {
+            target: cli.function.clone().unwrap_or_default(),
+        })
+    } else if cli.export_project {
+        Some(velk::project::cli::Command::Export)
+    } else if cli.import_project {
+        Some(velk::project::cli::Command::Import {
+            file: PathBuf::from(cli.function.clone().unwrap_or_default()),
+        })
+    } else if cli.origins {
+        Some(velk::project::cli::Command::Origins {
+            function: cli.function.clone().unwrap_or_default(),
+        })
+    } else {
+        None
+    };
+    if let Some(command) = operation {
+        return match velk::project::cli::execute(velk::project::cli::Cli {
+            binary: cli.input.expect("clap requires input"),
+            project,
+            command,
+        }) {
+            Ok(value) => {
+                println!("{value:#}");
+                ExitCode::SUCCESS
+            }
+            Err(error) => {
+                let value = match &error {
+                    Error::Project(detail) => json!(detail),
+                    _ => json!({"code": "analysis_error", "message": error.to_string()}),
+                };
+                eprintln!("{value}");
+                ExitCode::FAILURE
+            }
+        };
+    }
+    match run(cli.into_command(), project.as_deref()) {
         Ok(code) => code,
+        Err(Error::Project(detail)) => {
+            eprintln!("{}", json!(detail));
+            ExitCode::FAILURE
+        }
         Err(error) => {
             eprintln!("{} {error}", Terminal::stderr().error("error:"));
             ExitCode::FAILURE
@@ -379,10 +476,10 @@ fn main() -> ExitCode {
     }
 }
 
-fn run(command: Command) -> Result<ExitCode> {
+fn run(command: Command, project: Option<&Path>) -> Result<ExitCode> {
     match command {
         Command::Navigation { path, query } => {
-            let mut binary = match Binary::open(&path) {
+            let mut binary = match Binary::open_with_project(&path, project) {
                 Ok(binary) => binary,
                 Err(error) => return Err(error),
             };
@@ -393,14 +490,14 @@ fn run(command: Command) -> Result<ExitCode> {
         }
 
         Command::Functions { path, limit, json } => {
-            let binary = Binary::open(&path)?;
+            let binary = Binary::open_with_project(&path, project)?;
             if json {
                 print_functions_json(&binary, limit);
             } else {
                 print_functions(&binary, limit);
             }
         }
-        Command::Sections { path } => print_sections(&Binary::open(&path)?),
+        Command::Sections { path } => print_sections(&Binary::open_with_project(&path, project)?),
         Command::Card {
             path,
             function,
@@ -408,7 +505,7 @@ fn run(command: Command) -> Result<ExitCode> {
             signatures,
         } => {
             let signatures = signatures.as_deref().map(Database::load).transpose()?;
-            let mut binary = Binary::open(&path)?;
+            let mut binary = Binary::open_with_project(&path, project)?;
             let addr = binary.find(&function)?.addr;
             let card = binary.card(addr, budget, signatures.as_ref(), None)?;
             println!("{:#}", json!(card));
@@ -422,7 +519,7 @@ fn run(command: Command) -> Result<ExitCode> {
                 Ok(signatures) => signatures,
                 Err(error) => return Err(error),
             };
-            let mut binary = match Binary::open(&path) {
+            let mut binary = match Binary::open_with_project(&path, project) {
                 Ok(binary) => binary,
                 Err(error) => return Err(error),
             };
@@ -454,7 +551,7 @@ fn run(command: Command) -> Result<ExitCode> {
             function,
             limit,
         } => {
-            let binary = Binary::open(&path)?;
+            let binary = Binary::open_with_project(&path, project)?;
             let addr = binary.find(&function)?.addr;
             let listing = binary.disasm(addr, limit.unwrap_or(usize::MAX))?;
             if Terminal::stdout().interactive() {
@@ -467,7 +564,7 @@ fn run(command: Command) -> Result<ExitCode> {
             }
         }
         Command::Ir { path, function } => {
-            let mut binary = Binary::open(&path)?;
+            let mut binary = Binary::open_with_project(&path, project)?;
             let addr = binary.find(&function)?.addr;
             let code = binary.analysis(addr, None)?.ir.render();
             print_code(&binary, addr, &function, &code, Language::Ir);
@@ -490,7 +587,7 @@ fn run(command: Command) -> Result<ExitCode> {
             limit,
         } => {
             let database = Database::load(&signatures)?;
-            let mut binary = Binary::open(&path)?;
+            let mut binary = Binary::open_with_project(&path, project)?;
             let identification = binary.identify(&database, None)?;
             let terminal = Terminal::stdout();
             if terminal.interactive() {
@@ -600,10 +697,10 @@ fn print_code(binary: &Binary, addr: u64, requested: &str, code: &str, language:
         print!("{code}");
         return;
     }
-    let name = binary
-        .image()
-        .functions
-        .get(&addr)
+    let functions = binary.functions();
+    let name = functions
+        .iter()
+        .find(|function| function.addr == addr)
         .and_then(|function| function.name.as_deref())
         .unwrap_or(requested);
     let title = match language {
@@ -625,9 +722,9 @@ fn print_code(binary: &Binary, addr: u64, requested: &str, code: &str, language:
 
 fn print_functions_terminal(binary: &Binary, limit: usize, terminal: Terminal) {
     let image = binary.image();
-    let named = image
-        .functions
-        .values()
+    let functions = binary.functions();
+    let named = functions
+        .iter()
         .filter(|function| function.name.is_some())
         .count();
     println!(
@@ -659,7 +756,7 @@ fn print_functions_terminal(binary: &Binary, limit: usize, terminal: Terminal) {
             "Address", "Size", "Sources",
         ))
     );
-    for function in image.functions.values().take(limit) {
+    for function in functions.iter().take(limit) {
         let sources = function
             .sources
             .iter()
@@ -733,7 +830,7 @@ fn print_functions_json(binary: &Binary, limit: usize) {
         "entry": image.entry.map(addr::format),
         "sections": image.sections.len(),
         "functionCount": image.functions.len(),
-        "functions": image.functions.values().take(limit).collect::<Vec<_>>(),
+        "functions": binary.functions().iter().take(limit).collect::<Vec<_>>(),
     });
     println!("{summary:#}");
 }
@@ -745,6 +842,7 @@ fn print_functions(binary: &Binary, limit: usize) {
         return;
     }
     let image = binary.image();
+    let functions = binary.functions();
     println!(
         "format: {}, arch: {}, entry: {}, sections: {}, functions: {}, named: {}",
         image.format,
@@ -752,14 +850,10 @@ fn print_functions(binary: &Binary, limit: usize) {
         image.entry.map_or("-".to_owned(), addr::format),
         image.sections.len(),
         image.functions.len(),
-        image
-            .functions
-            .values()
-            .filter(|f| f.name.is_some())
-            .count(),
+        functions.iter().filter(|f| f.name.is_some()).count(),
     );
     println!("{:<14} {:>10} {:<26} sources", "addr", "size", "name");
-    for function in image.functions.values().take(limit) {
+    for function in functions.iter().take(limit) {
         let name: String = function
             .name
             .as_deref()
@@ -834,6 +928,46 @@ mod tests {
             Ok(_) => panic!("expected invalid arguments: {args:?}"),
             Err(error) => error,
         }
+    }
+
+    #[test]
+    fn project_flags_share_the_operation_parser() {
+        for flag in [
+            "--annotate",
+            "--annotation",
+            "--unannotate",
+            "--import-project",
+            "--origins",
+        ] {
+            assert!(
+                Cli::try_parse_from([
+                    "velk",
+                    flag,
+                    "binary",
+                    "value",
+                    "--project",
+                    "annotations.json"
+                ])
+                .is_ok()
+            );
+            assert!(Cli::try_parse_from(["velk", flag, "binary"]).is_err());
+        }
+        for flag in [
+            "--annotate",
+            "--annotation",
+            "--annotations",
+            "--unannotate",
+            "--export-project",
+            "--import-project",
+            "--origins",
+        ] {
+            assert!(Cli::try_parse_from(["velk", flag, "binary", "--functions"]).is_err());
+            assert!(Cli::try_parse_from(["velk", flag, "binary", "--json"]).is_err());
+            assert!(Cli::try_parse_from(["velk", flag, "binary", "--limit", "2"]).is_err());
+        }
+        assert!(Cli::try_parse_from(["velk", "--annotations", "binary"]).is_ok());
+        assert!(Cli::try_parse_from(["velk", "--export-project", "binary"]).is_ok());
+        assert!(Cli::try_parse_from(["velk", "project", "binary", "list"]).is_err());
     }
 
     #[test]

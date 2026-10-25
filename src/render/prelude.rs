@@ -4,6 +4,7 @@ use std::collections::BTreeSet;
 
 const START: &str = "/* velk prelude */\n";
 const END: &str = "/* end velk prelude */\n";
+const PROJECT: &str = "/* velk project declarations */\n";
 
 #[derive(Default)]
 pub struct Prelude {
@@ -38,13 +39,20 @@ impl Prelude {
         }
         let mut definitions: Vec<_> = self.definitions.iter().cloned().collect();
         definitions.sort_by_key(|definition| {
-            ![
+            if definition.starts_with(PROJECT) {
+                0
+            } else if [
                 "struct go_string {",
                 "struct go_slice {",
                 "struct go_iface {",
             ]
             .iter()
             .any(|prefix| definition.starts_with(prefix))
+            {
+                1
+            } else {
+                2
+            }
         });
         format!("{START}{}\n{END}", definitions.join("\n\n"))
     }
@@ -56,6 +64,10 @@ pub(super) fn section(definitions: &str) -> String {
     } else {
         format!("{START}{definitions}{END}")
     }
+}
+
+pub(crate) fn project_section(declarations: &str) -> String {
+    section(&format!("{PROJECT}#include <stdint.h>\n{declarations}\n"))
 }
 
 /// Combine standalone outputs with their support definitions printed once.

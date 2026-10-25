@@ -355,6 +355,13 @@ pub(super) fn expression(call: &Stmt, ctx: &Ctx<'_>) -> String {
             ),
         }
     };
+    let semantic_name = if through.is_none() {
+        target
+            .and_then(|target| ctx.symbols.original_functions.get(&target))
+            .map(|name| super::sanitize(name))
+    } else {
+        None
+    };
     // A callee whose declaration is known takes each argument as the type
     // it declares: an integer converts to its parameter's width as C
     // converts it, and a pointer is passed as one.
@@ -394,12 +401,12 @@ pub(super) fn expression(call: &Stmt, ctx: &Ctx<'_>) -> String {
         }
     } else if let Some(prototype) = ctx.symbols.library_prototypes.get(&callee).or_else(|| {
         crate::analysis::prototypes::of(
-            &callee,
+            semantic_name.as_deref().unwrap_or(&callee),
             ctx.symbols.target_format == Some(crate::loader::Format::MachO),
         )
     }) {
         let fallback = crate::analysis::prototypes::of(
-            &callee,
+            semantic_name.as_deref().unwrap_or(&callee),
             ctx.symbols.target_format == Some(crate::loader::Format::MachO),
         );
         for (index, ((text, value), ty)) in args

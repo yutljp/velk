@@ -2,6 +2,8 @@ use std::path::PathBuf;
 
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
+    #[error("{0}")]
+    Project(crate::project::ProjectError),
     #[error("{}: {source}", path.display())]
     Io {
         path: PathBuf,

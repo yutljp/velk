@@ -23,10 +23,22 @@ pub enum Request {
         /// Navigation target and result options.
         query: crate::xrefs::query::Query,
     },
+    /// Reads or updates persistent analysis annotations.
+    Project {
+        /// Path of the annotated binary.
+        bin: PathBuf,
+        /// Annotation operation to perform.
+        action: String,
+        /// Target or annotation supplied to the operation.
+        #[serde(default)]
+        value: Value,
+    },
     /// Opens a binary and returns its metadata.
     Open {
         /// Path of the binary to open.
         path: PathBuf,
+        /// Optional annotation file location.
+        project: Option<PathBuf>,
     },
     /// Lists the binary sections.
     Sections {
@@ -133,8 +145,79 @@ pub fn handle(
             };
             crate::xrefs::query::run(binary, query, deadline)
         }
-        Request::Open { path } => {
-            let binary = session.open(&path)?;
+        Request::Project { bin, action, value } => {
+            let binary = match session.open(&bin) {
+                Ok(binary) => binary,
+                Err(error) => return Err(error),
+            };
+            let destination = binary.project_path().to_owned();
+            let command = match action.as_str() {
+                "origins" => {
+                    let binary = match session.open(&bin) {
+                        Ok(binary) => binary,
+                        Err(cause) => return Err(cause),
+                    };
+                    let address = match binary.find(value.as_str().unwrap_or_default()) {
+                        Ok(function) => function.addr,
+                        Err(cause) => return Err(cause),
+                    };
+                    return match binary.analysis(address, deadline) {
+                        Ok(analysis) => Ok(json!(crate::project::origins(&analysis.ir))),
+                        Err(cause) => Err(cause),
+                    };
+                }
+                "set" => crate::project::cli::Command::Set {
+                    json: value.to_string(),
+                },
+                "get" => crate::project::cli::Command::Get {
+                    target: value.to_string(),
+                },
+                "remove" => crate::project::cli::Command::Remove {
+                    target: value.to_string(),
+                },
+                "list" => crate::project::cli::Command::List,
+                "export" => crate::project::cli::Command::Export,
+                "import" => {
+                    return crate::project::update_cached(
+                        &bin,
+                        &destination,
+                        &mut binary.project_digest,
+                        |project| {
+                            let imported = match serde_json::from_value(value) {
+                                Ok(imported) => imported,
+                                Err(cause) => {
+                                    return Err(crate::project::error(
+                                        "project_json",
+                                        cause.to_string(),
+                                    ));
+                                }
+                            };
+                            *project = imported;
+                            Ok(json!({"ok": true}))
+                        },
+                    );
+                }
+                _ => {
+                    return Err(crate::project::error(
+                        "invalid_operation",
+                        format!("unknown project action: {action}"),
+                    ));
+                }
+            };
+            crate::project::cli::execute_cached(
+                crate::project::cli::Cli {
+                    binary: bin,
+                    project: Some(destination),
+                    command,
+                },
+                &mut binary.project_digest,
+            )
+        }
+        Request::Open { path, project } => {
+            let binary = match session.open_with_project(&path, project.as_deref()) {
+                Ok(binary) => binary,
+                Err(error) => return Err(error),
+            };
             let image = binary.image();
             Ok(json!({
                 "id": binary.path(),
@@ -145,15 +228,23 @@ pub fn handle(
             }))
         }
         Request::Sections { bin } => Ok(json!(session.open(&bin)?.image().sections)),
-        Request::Functions { bin } => Ok(json!(
-            session
-                .open(&bin)?
-                .image()
-                .functions
-                .values()
-                .collect::<Vec<_>>()
-        )),
-        Request::Find { bin, target } => Ok(json!(session.open(&bin)?.find(&target)?)),
+        Request::Functions { bin } => Ok(json!(session.open(&bin)?.functions())),
+        Request::Find { bin, target } => {
+            let binary = match session.open(&bin) {
+                Ok(binary) => binary,
+                Err(error) => return Err(error),
+            };
+            let addr = match binary.find(&target) {
+                Ok(function) => function.addr,
+                Err(error) => return Err(error),
+            };
+            Ok(json!(
+                binary
+                    .functions()
+                    .into_iter()
+                    .find(|function| function.addr == addr)
+            ))
+        }
         Request::Card { bin, addr, budget } => {
             let card = session.open(&bin)?.card(
                 parse(&addr)?,
@@ -179,10 +270,29 @@ pub fn handle(
             Ok(json!(analysis.ir.render()))
         }
         Request::Signature { bin, addr } => {
-            let ir = &analysis(session, &bin, &addr, deadline)?.ir;
+            let binary = match session.open(&bin) {
+                Ok(binary) => binary,
+                Err(error) => return Err(error),
+            };
+            let address = match parse(&addr) {
+                Ok(address) => address,
+                Err(error) => return Err(error),
+            };
+            let ir = match binary.annotated_ir(address, deadline) {
+                Ok(ir) => ir,
+                Err(error) => return Err(error),
+            };
+            let params = match crate::project::scalar_parameters(&ir) {
+                Ok(params) => params,
+                Err(_) => ir
+                    .params
+                    .iter()
+                    .map(|param| (param.name.clone(), param.ty.clone()))
+                    .collect(),
+            };
             Ok(json!({
                 "return": ir.ret_type.to_string(),
-                "params": ir.params.iter().map(|p| json!({ "name": p.name, "type": p.ty.to_string() })).collect::<Vec<_>>(),
+                "params": params.iter().map(|(name, ty)| json!({ "name": name, "type": ty.to_string() })).collect::<Vec<_>>(),
             }))
         }
         Request::References { bin, addr } => Ok(analysis(session, &bin, &addr, deadline)?

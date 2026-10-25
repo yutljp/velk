@@ -43,6 +43,7 @@ pub(crate) use function::variable_types;
 pub use function::{render, render_with_dependencies};
 use function::{vacant_name, variable_name};
 pub(crate) use globals::reserved_identifier;
+pub(crate) use prelude::project_section;
 pub use prelude::{Prelude, combine};
 pub(crate) use stmt::render_stmt;
 use stmt::{argument, conformed, narrow_write, returned};
@@ -375,3 +376,37 @@ pub(crate) fn sanitize(name: &str) -> String {
 
 #[cfg(test)]
 mod tests;
+
+/// Inspect frame storage using the same layout that the renderer uses.
+pub(crate) fn project_locals(
+    ir: &crate::ir::FunctionIr,
+) -> Vec<(i64, String, crate::ir::CType, u64)> {
+    let types = variable_types(ir);
+    let frames = crate::passes::frame_slots::block_frames(ir, crate::arch::stack_pointer(ir.isa));
+    let roles = naming::roles::infer(ir, &Symbols::default());
+    let locals = locals::stack_locals_with_roles(ir, &frames, &types, &Symbols::default(), &roles);
+    let mut seen = std::collections::HashSet::new();
+    locals
+        .decls
+        .iter()
+        .flat_map(|local| local.named())
+        .filter(|local| seen.insert(local.slot))
+        .map(|local| {
+            (
+                local.slot,
+                local.name.clone(),
+                local
+                    .ty
+                    .clone()
+                    .unwrap_or_else(|| crate::ir::CType::int(local.width, local.signed)),
+                if local.views.is_empty() {
+                    u64::try_from(local.size)
+                        .unwrap_or(0)
+                        .max(u64::from(local.width))
+                } else {
+                    0
+                },
+            )
+        })
+        .collect()
+}

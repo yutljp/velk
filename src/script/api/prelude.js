@@ -2,7 +2,13 @@
 (() => {
   const native = globalThis.__velk;
   delete globalThis.__velk;
-  const call = (op, args) => JSON.parse(native(JSON.stringify({ op, ...args })));
+  const call = (op, args) => {
+    try { return JSON.parse(native(JSON.stringify({ op, ...args }))); }
+    catch (error) {
+      try { const detail = JSON.parse(error.message); if (detail.code) Object.assign(error, detail); } catch (_) {}
+      throw error;
+    }
+  };
   const address = (value) => (typeof value === "number" ? "0x" + value.toString(16) : value);
 
   class Func {
@@ -18,6 +24,7 @@
     decompile() { return this.#call("decompile"); }
     disasm({ limit } = {}) { return this.#call("disasm", { limit }); }
     ir() { return this.#call("ir"); }
+    origins() { return call("project", { bin: this.#bin, action: "origins", value: this.addr }); }
     signature() { return this.#call("signature"); }
     references() { return this.#call("references"); }
     strings() { return this.#call("strings"); }
@@ -50,6 +57,12 @@
     getFunction(target) {
       return new Func(this.#id, call("find", { bin: this.#id, target: String(address(target)) }));
     }
+    projectSet(annotation) { this.#functions = undefined; return call("project", { bin: this.#id, action: "set", value: annotation }); }
+    projectGet(target) { return call("project", { bin: this.#id, action: "get", value: target }); }
+    projectList() { return call("project", { bin: this.#id, action: "list" }); }
+    projectRemove(target) { this.#functions = undefined; return call("project", { bin: this.#id, action: "remove", value: target }); }
+    projectExport() { return call("project", { bin: this.#id, action: "export" }); }
+    projectImport(project) { this.#functions = undefined; return call("project", { bin: this.#id, action: "import", value: project }); }
     buildSignatures() { return call("buildSignatures", { bin: this.#id }); }
     identify(signatures) { const result = call("identify", { bin: this.#id, signatures }); this.#functions = undefined; return result; }
     xrefs(target, { from = false } = {}) { return call("navigate", { bin: this.#id, query: { kind: "xrefs", target: String(address(target)), from } }); }
@@ -68,7 +81,7 @@
   const log = (...values) => { output.push(values.map(show).join(" ")); };
 
   globalThis.console = Object.freeze({ log, info: log, warn: log, error: log });
-  globalThis.velk = Object.freeze({ open: (path) => new Binary(call("open", { path })), buildSignatures: (path) => call("buildSignatures", { bin: path }) });
+  globalThis.velk = Object.freeze({ open: (path, opts = {}) => new Binary(call("open", { path, project: opts.project })), buildSignatures: (path) => call("buildSignatures", { bin: path }) });
   // The logged output, and the result's text unless showing it fails: then
   // the failure is left in __velkFinishError and the log still returned.
   globalThis.__velkFinish = (value) => {

@@ -525,7 +525,39 @@ pub(super) fn stack_locals_with_roles(
             local.ty = None;
         }
     }
-    let debug_slots = debug::apply(ir, symbols, &mut slot_names, &accesses);
+    let mut debug_slots = debug::apply(ir, symbols, &mut slot_names, &accesses);
+    for ((function, offset), name) in &symbols.stack_names {
+        if *function != ir.addr {
+            continue;
+        }
+        if let Some(local) = slot_names.get_mut(offset) {
+            local.name = super::vacant_name(name, &mut reserved);
+            debug_slots.insert(*offset);
+        } else {
+            for local in slot_names.values_mut() {
+                if let Some(field) = local.fields.iter_mut().find(|field| field.slot == *offset) {
+                    field.name = super::vacant_name(name, &mut reserved);
+                    debug_slots.insert(local.slot);
+                }
+            }
+        }
+    }
+    for ((function, offset), ty) in &symbols.stack_types {
+        if *function != ir.addr {
+            continue;
+        }
+        if let Some(local) = slot_names.get_mut(offset) {
+            local.ty = Some(ty.clone());
+            local.signed = ty.integer().is_some_and(|(_, signed)| signed);
+        } else {
+            for local in slot_names.values_mut() {
+                if let Some(field) = local.fields.iter_mut().find(|field| field.slot == *offset) {
+                    field.ty = Some(ty.clone());
+                    field.signed = ty.integer().is_some_and(|(_, signed)| signed);
+                }
+            }
+        }
+    }
     reserved.extend(slot_names.values().map(|local| local.name.clone()));
     for slot in &order {
         if debug_slots.contains(slot) {
@@ -1119,7 +1151,7 @@ fn buffer_extents(
                     {
                         symbols.import_slots.get(slot)
                     }
-                    None => target.and_then(|target| symbols.functions.get(&target)),
+                    None => target.and_then(|target| symbols.semantic_function(target)),
                     _ => None,
                 };
                 let name = name.map(|name| name.trim_start_matches('_'));

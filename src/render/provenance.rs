@@ -83,7 +83,7 @@ impl Facts {
                             ctx.symbols
                                 .allocator_names
                                 .get(&target)
-                                .or_else(|| ctx.symbols.functions.get(&target))
+                                .or_else(|| ctx.symbols.semantic_function(target))
                         })
                         .or_else(|| {
                             via.as_ref()

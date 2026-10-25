@@ -20,21 +20,77 @@ pub struct Session {
 }
 
 impl Session {
+    pub(crate) fn open_with_project(
+        &mut self,
+        path: &Path,
+        project: Option<&Path>,
+    ) -> Result<&mut Binary> {
+        let path = match std::fs::canonicalize(path) {
+            Ok(path) => path,
+            Err(source) => {
+                return Err(Error::Io {
+                    path: path.to_owned(),
+                    source,
+                });
+            }
+        };
+        if let Some(project) = project {
+            let reuse = self
+                .binaries
+                .get(&path)
+                .is_some_and(|binary| binary.project_path == project);
+            if !reuse {
+                let binary = match Binary::open_with_project(&path, Some(project)) {
+                    Ok(binary) => binary,
+                    Err(error) => return Err(error),
+                };
+                self.binaries.insert(path.clone(), binary);
+            }
+        }
+        self.open(&path)
+    }
+
     /// Loads the file, or returns the cached binary when the file is unchanged.
     pub fn open(&mut self, path: &Path) -> Result<&mut Binary> {
-        let path = std::fs::canonicalize(path).map_err(|source| Error::Io {
-            path: path.to_owned(),
-            source,
-        })?;
-        let modified = modified(&path)?;
+        let path = match std::fs::canonicalize(path) {
+            Ok(path) => path,
+            Err(source) => {
+                return Err(Error::Io {
+                    path: path.to_owned(),
+                    source,
+                });
+            }
+        };
+        let modified = match modified(&path) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
         match self.binaries.entry(path) {
-            Entry::Occupied(entry) if entry.get().modified == modified => Ok(entry.into_mut()),
+            Entry::Occupied(entry) if entry.get().modified == modified => {
+                let binary = entry.into_mut();
+                match binary.refresh_project() {
+                    Ok(()) => Ok(binary),
+                    Err(error) => Err(error),
+                }
+            }
             Entry::Occupied(mut entry) => {
-                entry.insert(Binary::load(entry.key(), modified)?);
+                let binary = match Binary::load_project(
+                    entry.key(),
+                    modified,
+                    Some(&entry.get().project_path),
+                    None,
+                ) {
+                    Ok(binary) => binary,
+                    Err(error) => return Err(error),
+                };
+                entry.insert(binary);
                 Ok(entry.into_mut())
             }
             Entry::Vacant(entry) => {
-                let binary = Binary::load(entry.key(), modified)?;
+                let binary = match Binary::load(entry.key(), modified) {
+                    Ok(binary) => binary,
+                    Err(error) => return Err(error),
+                };
                 Ok(entry.insert(binary))
             }
         }
@@ -45,6 +101,9 @@ pub struct Binary {
     navigation: Option<crate::xrefs::Index>,
     path: PathBuf,
     modified: SystemTime,
+    project: Option<crate::project::Project>,
+    project_path: PathBuf,
+    pub(crate) project_digest: Option<String>,
     image: Image,
     symbols: render::Symbols,
     data_ranges: Vec<(u64, u64)>,
@@ -76,22 +135,116 @@ pub struct Match {
 
 impl Binary {
     pub fn open(path: &Path) -> Result<Self> {
-        Self::load(path, modified(path)?)
+        Self::open_with_project(path, None)
+    }
+
+    /// Opens a binary with an optional annotation file location.
+    pub fn open_with_project(path: &Path, project: Option<&Path>) -> Result<Self> {
+        let modified = match modified(path) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
+        Self::load_project(path, modified, project, None)
     }
 
     fn load(path: &Path, modified: SystemTime) -> Result<Self> {
-        let mut image = loader::load(path)?;
+        Self::load_project(path, modified, None, None)
+    }
+
+    fn load_project(
+        path: &Path,
+        modified: SystemTime,
+        project_path: Option<&Path>,
+        mut project_digest: Option<String>,
+    ) -> Result<Self> {
+        let path = match std::fs::canonicalize(path) {
+            Ok(path) => path,
+            Err(source) => {
+                return Err(Error::Io {
+                    path: path.to_owned(),
+                    source,
+                });
+            }
+        };
+        let project_path = project_path
+            .map(Path::to_owned)
+            .unwrap_or_else(|| crate::project::path(&path));
+        let project = match crate::project::load_at(&path, &project_path, &mut project_digest) {
+            Ok(project) => project,
+            Err(error) => return Err(error),
+        };
+        let mut image = match loader::load(&path) {
+            Ok(image) => image,
+            Err(error) => return Err(error),
+        };
         crate::analysis::absorb_jump_table_cases(&mut image);
+        if let Some(project) = &project
+            && let Err(error) = project.classify(&mut image)
+        {
+            return Err(error);
+        }
         Ok(Self {
             navigation: None,
             path: path.to_owned(),
             modified,
+            project,
+            project_path,
+            project_digest,
             symbols: render::callee_names(&image),
             data_ranges: render::data_ranges(&image),
             image,
             analyses: HashMap::new(),
             shared_analyses: HashMap::new(),
         })
+    }
+
+    fn refresh_project(&mut self) -> Result<()> {
+        if self.project.is_none()
+            && matches!(std::fs::symlink_metadata(&self.project_path), Err(error) if error.kind() == std::io::ErrorKind::NotFound)
+        {
+            return Ok(());
+        }
+        let current =
+            match crate::project::load_at(&self.path, &self.project_path, &mut self.project_digest)
+            {
+                Ok(project) => project,
+                Err(error) => return Err(error),
+            };
+        if current != self.project {
+            match Self::load_project(
+                &self.path,
+                self.modified,
+                Some(&self.project_path),
+                self.project_digest.clone(),
+            ) {
+                Ok(binary) => *self = binary,
+                Err(error) => return Err(error),
+            }
+        }
+        Ok(())
+    }
+
+    pub(crate) fn project_path(&self) -> &Path {
+        &self.project_path
+    }
+
+    /// Lists discovered functions with project names applied.
+    pub fn functions(&self) -> Vec<Function> {
+        self.image
+            .functions
+            .values()
+            .map(|function| {
+                let mut function = function.clone();
+                if let Some(project) = &self.project
+                    && let Some(annotation) = project.get(&crate::project::Target::Function {
+                        address: function.addr,
+                    })
+                {
+                    function.name = annotation.name.clone();
+                }
+                function
+            })
+            .collect()
     }
 
     pub fn path(&self) -> &Path {
@@ -199,6 +352,15 @@ impl Binary {
         if let Some(addr) = crate::addr::parse(target) {
             return self.function(addr);
         }
+        if let Some(project) = &self.project {
+            for annotation in &project.annotations {
+                if let crate::project::Target::Function { address } = annotation.target
+                    && annotation.name.as_deref() == Some(target)
+                {
+                    return self.function(address);
+                }
+            }
+        }
         let functions = self.image.functions.values();
         if let Some(found) = functions.clone().find(|f| names(f).any(|n| n == target)) {
             return Ok(found);
@@ -212,7 +374,17 @@ impl Binary {
         }
         let needle = target.to_lowercase();
         let partial: Vec<&Function> = functions
-            .filter(|f| names(f).any(|n| n.to_lowercase().contains(&needle)))
+            .filter(|f| {
+                names(f).any(|n| n.to_lowercase().contains(&needle))
+                    || self
+                        .project
+                        .as_ref()
+                        .and_then(|project| {
+                            project.get(&crate::project::Target::Function { address: f.addr })
+                        })
+                        .and_then(|entry| entry.name.as_ref())
+                        .is_some_and(|name| name.to_lowercase().contains(&needle))
+            })
             .collect();
         match partial.as_slice() {
             [] => Err(Error::NoFunctionNamed(target.to_owned())),
@@ -262,6 +434,23 @@ impl Binary {
             addr,
             source: source.clone(),
         })
+    }
+
+    pub(crate) fn annotated_ir(
+        &mut self,
+        addr: u64,
+        deadline: Option<Instant>,
+    ) -> Result<crate::ir::FunctionIr> {
+        let mut ir = match self.analysis(addr, deadline) {
+            Ok(analysis) => analysis.ir.clone(),
+            Err(error) => return Err(error),
+        };
+        if let Some(project) = &self.project
+            && let Err(error) = project.apply(&mut ir, &mut self.symbols.clone())
+        {
+            return Err(error);
+        }
+        Ok(ir)
     }
 
     pub fn card(
@@ -325,6 +514,13 @@ impl Binary {
         signatures: Option<&Database>,
         deadline: Option<Instant>,
     ) -> Result<render::Rendered> {
+        if let Err(error) = self.refresh_project() {
+            return Err(error);
+        }
+        let overrides = match self.project_signatures(deadline) {
+            Ok(overrides) => overrides,
+            Err(error) => return Err(error),
+        };
         let addr = self.image.code_address(addr);
         if !self.image.functions.contains_key(&addr) {
             return Err(Error::NoFunctionAt(addr));
@@ -359,12 +555,46 @@ impl Binary {
         if let Err(error) = passed(deadline) {
             return Err(error);
         }
+        let mut ir = std::borrow::Cow::Borrowed(&analysis.ir);
+        let mut symbols = std::borrow::Cow::Borrowed(&self.symbols);
+        if let Some(project) = &self.project {
+            if let Err(error) = project.apply(ir.to_mut(), symbols.to_mut()) {
+                return Err(error);
+            }
+            for (target, signature) in overrides {
+                let statements = ir.blocks.iter().flat_map(|block| &block.stmts);
+                for stmt in statements {
+                    if let crate::ir::Stmt::Call {
+                        target: Some(callee),
+                        through: None,
+                        args,
+                        ..
+                    } = stmt
+                        && *callee == target
+                        && args
+                            .as_ref()
+                            .is_none_or(|args| args.len() != signature.params.len())
+                    {
+                        return Err(crate::project::error(
+                            "unsupported_signature",
+                            format!("call to 0x{target:x} has an incompatible argument count"),
+                        ));
+                    }
+                }
+                ir.to_mut().callee_signatures.insert(target, signature);
+            }
+        }
         let mut rendered = render::render_with_dependencies(
-            &analysis.ir,
+            &ir,
             &analysis.references,
-            &self.symbols,
+            &symbols,
             &self.data_ranges,
         );
+        if let Some(project) = &self.project
+            && let Err(error) = project.validate_rendered_names(&ir, &rendered.code)
+        {
+            return Err(error);
+        }
         rendered.code.insert_str(
             0,
             &render::seh::comments(&self.image.exception_handlers, addr),
@@ -375,7 +605,61 @@ impl Binary {
                 &format!("/* identified: {} */\n", name.replace("*/", "* /")),
             );
         }
+        if let Some(project) = &self.project {
+            let declarations = match project.declarations() {
+                Ok(text) => text,
+                Err(error) => return Err(error),
+            };
+            rendered.code.insert_str(0, &project.comments(&ir));
+            rendered.code.insert_str(0, &declarations);
+        }
         Ok(rendered)
+    }
+
+    fn project_signatures(
+        &mut self,
+        deadline: Option<Instant>,
+    ) -> Result<std::collections::BTreeMap<u64, crate::ir::DeclaredSignature>> {
+        let Some(project) = self.project.clone() else {
+            return Ok(Default::default());
+        };
+        let targets: std::collections::BTreeSet<_> = project
+            .annotations
+            .iter()
+            .filter_map(|annotation| match annotation.target {
+                crate::project::Target::Parameter { function, .. }
+                    if annotation.c_type.is_some() =>
+                {
+                    Some(function)
+                }
+                crate::project::Target::Signature { function } => Some(function),
+                _ => None,
+            })
+            .collect();
+        let mut signatures = std::collections::BTreeMap::new();
+        for target in targets {
+            let mut ir = match self.analysis(target, deadline) {
+                Ok(analysis) => analysis.ir.clone(),
+                Err(error) => return Err(error),
+            };
+            if let Err(error) = project.apply(&mut ir, &mut self.symbols.clone()) {
+                return Err(error);
+            }
+            let parameters = match crate::project::scalar_parameters(&ir) {
+                Ok(parameters) => parameters,
+                Err(error) => return Err(error),
+            };
+            signatures.insert(
+                target,
+                crate::ir::DeclaredSignature {
+                    params: parameters,
+                    ret: ir.ret_type.clone(),
+                    variadic: false,
+                    abi: Err(crate::ir::AbiIssue::UnsupportedType),
+                },
+            );
+        }
+        Ok(signatures)
     }
 
     fn prepare_structures(&mut self, addr: u64, deadline: Option<Instant>) -> Result<()> {

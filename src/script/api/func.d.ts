@@ -14,6 +14,7 @@ interface Func {
   card(opts?: { budget?: number }): Card;
   /** Pseudo-C. Throws when the function cannot be lifted. */
   decompile(): string;
+  origins(): { target: ProjectTarget; name?: string; c_type?: string }[];
   /** One line per instruction across the whole function, up to `limit` lines. */
   disasm(opts?: { limit?: number }): string[];
   /** The optimized intermediate representation, as text. */

@@ -30,6 +30,19 @@ navigation=$("$BIN" --constants "$FIX/tail_calls.o" 0x1)
 echo "$navigation" | grep -q '"instruction"' || fail "constant navigation"
 ok "navigation flags"
 
+# Annotation flags and a writable project location.
+project_file=tests/out/smoke-project.json
+rm -f "$project_file"
+"$BIN" --export-project "$FIX/arm64.o" --project "$project_file" >/dev/null
+"$BIN" --annotations "$FIX/arm64.o" --project "$project_file" | grep -q '\[\]' || fail "empty annotations"
+"$BIN" --origins "$FIX/arm64.o" sum3 --project "$project_file" | grep -q '"target"' || fail "origins"
+"$BIN" --annotate "$FIX/arm64.o" '{"target":{"kind":"comment","address":"0x0"},"text":"analysis"}' --project "$project_file" >/dev/null
+"$BIN" --annotation "$FIX/arm64.o" '{"kind":"comment","address":"0x0"}' --project "$project_file" | grep -q analysis || fail "annotation"
+"$BIN" --import-project "$FIX/arm64.o" "$project_file" --project "$project_file" >/dev/null
+"$BIN" --unannotate "$FIX/arm64.o" '{"kind":"comment","address":"0x0"}' --project "$project_file" | grep -q true || fail "unannotate"
+rm -f "$project_file"
+ok "annotation flags"
+
 # 1) PE64: format, ISA, function count
 pe_json=$("$BIN" --functions $FIX/pe64.exe --json 2>/dev/null)
 echo "$pe_json" | grep -q '"format": "pe"'          || fail "PE format detect"

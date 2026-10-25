@@ -178,7 +178,7 @@ pub(in crate::render) fn infer_with_nodes(
             continue;
         };
         let name = target
-            .and_then(|address| symbols.functions.get(&address))
+            .and_then(|address| symbols.semantic_function(address))
             .or_else(|| match through {
                 Some(Expr::Load { addr, width: 8, .. }) => match addr.as_ref() {
                     Expr::Const(slot) => symbols.import_slots.get(slot),

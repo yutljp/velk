@@ -310,6 +310,7 @@ fn value_at(value: &Expr, ctx: &Ctx<'_>, bits: u32, integer: bool) -> Printed {
         // takes its address as a number.
         Expr::Const(address)
             if *address != 0
+                && !ctx.symbols.unnamed_functions.contains(address)
                 && let Some(name) = ctx.symbols.functions.get(address) =>
         {
             let name = sanitize(name);

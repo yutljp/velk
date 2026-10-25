@@ -1,7 +1,14 @@
 use std::collections::{HashMap, HashSet};
 
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub struct Symbols {
+    pub user_definitions: HashSet<String>,
+    pub unnamed_functions: HashSet<u64>,
+    pub original_functions: HashMap<u64, String>,
+    pub variable_names: HashMap<(u64, u16), String>,
+    pub variable_types: HashMap<(u64, u16), crate::ir::CType>,
+    pub stack_types: HashMap<(u64, i64), crate::ir::CType>,
+    pub stack_names: HashMap<(u64, i64), String>,
     /// Named parameter counts for functions declared variadic in debug information.
     pub variadic_functions: HashMap<u64, usize>,
     /// The object format of a known little-endian target.
@@ -26,6 +33,12 @@ pub struct Symbols {
 }
 
 impl Symbols {
+    pub(crate) fn semantic_function(&self, address: u64) -> Option<&String> {
+        self.original_functions
+            .get(&address)
+            .or_else(|| self.functions.get(&address))
+    }
+
     pub(super) fn use_macho_c_names(&mut self) {
         let names: HashSet<_> = self
             .functions

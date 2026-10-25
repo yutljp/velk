@@ -110,3 +110,62 @@ branches prevent matching. A skipped callee can also prevent its callers from
 matching. Matches identify compiler output, not semantic equivalence; different
 compiler versions or options can reduce coverage. `shapeHash()` is informational
 and is not used for library identification.
+
+## Persistent annotations
+
+The default project file is `<binary>.velk.json` beside the canonical binary.
+Use `--project PATH` or `velk.open(path, {project: "analysis.json"})` to store it
+in a writable directory. Ordinary analysis creates no project and reads no binary
+bytes for project hashing unless the project exists. A session hashes once.
+The UTF-8 JSON document contains `version: 1`, `binary_sha256` (lowercase SHA-256),
+and `annotations`. Unknown versions, fields, duplicate targets and hash mismatches fail.
+
+```sh
+velk --annotate BIN '{"target":{"kind":"function","address":"0x401000"},"name":"calculate"}'
+velk --annotation BIN '{"kind":"function","address":"0x401000"}'
+velk --annotations BIN
+velk --unannotate BIN '{"kind":"function","address":"0x401000"}'
+velk --export-project BIN
+velk --import-project BIN FILE
+velk --origins BIN FUNCTION
+```
+
+Commands emit JSON; errors include `code` and `message`. Set replaces one annotation;
+import replaces the document. Export creates an empty project if absent.
+`Binary` methods are `projectSet(annotation)`, `projectGet(target)`, `projectList()`,
+`projectRemove(target)`, `projectExport()` and `projectImport(document)`.
+`Func.origins()` returns stable storage selectors; use these instead of printed locals.
+Changes persist immediately and sessions invalidate analysis when projects change.
+A session selects one project per binary; reopening with a different explicit
+project switches subsequent requests for that binary to that file.
+
+Annotations have `target` and optional `name`, `c_type`, `text`. Targets are
+`function`/`global`/`comment`/`classification` with `address`, `parameter`/`local`
+with `function` and `storage`, `signature` with `function`, or `declaration` with
+`name`. Addresses accept hexadecimal strings or unsigned integers. Storage is
+`{kind:"register",register:N}`, `{kind:"stack",offset:N}`, or
+`{kind:"definition",register:N,block:ADDR,statement:N}`. Origins are stable across
+annotation edits and restarts with the same analysis version, not across upgrades.
+Function names use `name`; parameters, locals and globals use `name`/`c_type`;
+other kinds use `text`. Classification accepts `code` or `data` and adds/removes
+only the entry at that address; it does not rewrite instructions.
+
+Cooperating writers exclusively lock the binary inode, reread, validate, sync a
+temporary file beside the project, atomically rename it and sync the directory.
+Readers see complete JSON and concurrent edits are preserved. Keep the binary
+unchanged during a session. Direct editors must follow the same locking protocol.
+An interrupted write can leave a temporary file.
+
+Type annotations and declarations currently require a 64-bit target layout; ARM32
+projects support names, comments and classification. Types support fixed-width integers, signed/unsigned char, short, int and long long,
+void, pointers (up to 16 levels), naturally aligned structs, enums and typedefs. Arrays,
+bit-fields, qualifiers, floating types and arbitrary expressions are rejected.
+Declarations are processed in order; structure pointers may refer forward.
+Signature text uses a return type and parameter list, e.g. `int32_t (int32_t value)`.
+Signatures require the existing nonvariadic scalar argument count and known
+storage; parameter edits propagate to direct callers. Stack types must fit an
+existing object exactly. Ambiguous storage and name collisions fail during rendering.
+Names and comments preserve computation. **Declared types can change computation**
+through width, signedness, pointer arithmetic, layouts and return conversions;
+they are user assertions. Classification changes available entries. Comments
+appear above their owning function with unsafe delimiters escaped.

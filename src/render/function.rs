@@ -105,6 +105,11 @@ fn render_prepared(
     // A saved parameter returned reads as the parameter now.
     crate::analysis::typing::apply_pointer_return(&mut folded);
     naming::roles::name_parameters(&mut folded, symbols);
+    for param in &mut folded.params {
+        if let Some(name) = symbols.variable_names.get(&(folded.addr, param.index)) {
+            param.name = name.clone();
+        }
+    }
     let float_entries = physical_float_parameters(&mut folded);
     let mut logical = abi::prepare(&mut folded, symbols);
     let mut incoming = if logical.is_none() {
@@ -116,10 +121,17 @@ fn render_prepared(
     if crate::passes::copies::fold_debug_locals(&mut folded) {
         crate::passes::read_once::fold_values_read_once(&mut folded);
     }
-    let types = variables::variable_types(
+    let mut types = variables::variable_types(
         &folded,
         &narrow_registers(&folded),
         float_return(&folded.ret_type),
+    );
+    types.extend(
+        symbols
+            .variable_types
+            .iter()
+            .filter(|((addr, _), _)| *addr == folded.addr)
+            .map(|((_, index), ty)| (*index, ty.clone())),
     );
     variables::pointer_fields(&mut folded, &types);
     let ir = &folded;
@@ -335,6 +347,13 @@ fn render_with(
     let narrow_regs = narrow_registers(ir);
     let float_return = float_return(&ir.ret_type);
     let mut variable_types = variables::variable_types(ir, &narrow_regs, float_return);
+    variable_types.extend(
+        symbols
+            .variable_types
+            .iter()
+            .filter(|((addr, _), _)| *addr == ir.addr)
+            .map(|((_, index), ty)| (*index, ty.clone())),
+    );
     if let Some(incoming) = incoming {
         variable_types.remove(&incoming.register);
     }
@@ -409,6 +428,17 @@ fn render_with(
         .filter(|param| matches!(&param.ty, CType::Named(name) if name.split_whitespace().all(|word| matches!(word, "const" | "float" | "double"))))
         .filter_map(|param| self::float_return(&param.ty).map(|precision| (param.index, (param.name.clone(), precision))))
         .collect();
+    let project_names: Vec<_> = symbols
+        .variable_names
+        .iter()
+        .filter(|((addr, index), _)| {
+            *addr == ir.addr && variable_types.contains_key(index) && !names.contains_key(index)
+        })
+        .map(|((_, index), name)| (*index, vacant_name(name, &mut machine_reserved)))
+        .collect();
+    for (index, name) in &project_names {
+        names.insert(*index, name);
+    }
     let mut debug_names = Vec::new();
     for (register, source_name) in &ir.debug_registers {
         if ir
@@ -456,7 +486,9 @@ fn render_with(
         .into_iter()
         .filter(|index| !names.contains_key(index))
         .map(|index| {
-            let name = if index == 14 && ir.convention == crate::ir::Convention::GoAmd64 {
+            let name = if let Some(name) = symbols.variable_names.get(&(ir.addr, index)) {
+                vacant_name(name, &mut machine_reserved)
+            } else if index == 14 && ir.convention == crate::ir::Convention::GoAmd64 {
                 vacant_name("g", &mut machine_reserved)
             } else if let Some(role) = roles.register(index) {
                 vacant_name(role, &mut machine_reserved)
@@ -492,6 +524,13 @@ fn render_with(
     for (index, width) in machine_widths {
         variable_types.insert(index, CType::int((width.bits().max(32) / 8) as u8, false));
     }
+    variable_types.extend(
+        symbols
+            .variable_types
+            .iter()
+            .filter(|((addr, _), _)| *addr == ir.addr)
+            .map(|((_, index), ty)| (*index, ty.clone())),
+    );
     let original_word_types = variable_types
         .iter()
         .map(|(index, ty)| (*index, ty.clone()))
@@ -1401,7 +1440,7 @@ fn render_with(
         }
     }
     out.insert_str(definitions_at, &ctx.globals.object_declarations(&body));
-    let debug = debug_definitions(ir, &out, &ctx.arrays);
+    let debug = debug_definitions(ir, &out, &ctx.arrays, &symbols.user_definitions);
     out.insert_str(definitions_at, &debug);
     Rendered {
         code: super::prelude::combine(&if variadic.is_some() {
@@ -1552,6 +1591,7 @@ fn debug_definitions(
     ir: &FunctionIr,
     code: &str,
     arrays: &HashMap<String, naming::Layout>,
+    user_definitions: &std::collections::HashSet<String>,
 ) -> String {
     let named = |name: &str| {
         code.match_indices(name).any(|(at, _)| {
@@ -1597,6 +1637,7 @@ fn debug_definitions(
     }
     ordered
         .iter()
+        .filter(|definition| !user_definitions.contains(&definition.name))
         .map(|definition| {
             let mut members = definition.members.clone();
             if let Some(alignment) = definition.alignment
