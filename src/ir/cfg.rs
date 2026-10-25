@@ -86,10 +86,29 @@ pub(crate) fn reached(ir: &FunctionIr) -> HashSet<u64> {
 }
 
 pub(crate) fn block_successors(blocks: &[Block], index: usize) -> Vec<usize> {
-    let find = |address: u64| blocks.iter().position(|block| block.start == address);
-    let fallthrough = (index + 1 < blocks.len()).then_some(index + 1);
+    normal_successors(
+        blocks[index].stmts.last(),
+        (index + 1 < blocks.len()).then_some(index + 1),
+        |address| blocks.iter().position(|block| block.start == address),
+        UnknownBranch::Fallthrough,
+    )
+}
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub(crate) enum UnknownBranch {
+    Fallthrough,
+    Stop,
+}
+
+/// Normal edges in terminator order, retaining repeated destinations.
+pub(crate) fn normal_successors(
+    terminator: Option<&Stmt>,
+    fallthrough: Option<usize>,
+    find: impl Fn(u64) -> Option<usize>,
+    unknown_branch: UnknownBranch,
+) -> Vec<usize> {
     let mut out = Vec::new();
-    match blocks[index].stmts.last() {
+    match terminator {
         Some(Stmt::Br {
             target: Some(target),
         }) => out.extend(find(*target)),
@@ -106,6 +125,7 @@ pub(crate) fn block_successors(blocks: &[Block], index: usize) -> Vec<usize> {
             }
         }
         Some(Stmt::Ret { .. }) | Some(Stmt::BrIndirect { .. }) | Some(Stmt::Trap) => {}
+        Some(Stmt::Br { target: None }) if unknown_branch == UnknownBranch::Stop => {}
         _ => out.extend(fallthrough),
     }
     out
@@ -314,6 +334,51 @@ mod tests {
     use super::{block_successors_with_exceptions, successors};
     use crate::ir::{Block, Convention, Expr, FunctionIr, Stmt};
     use crate::loader::Isa;
+
+    #[test]
+    fn normal_edge_order_and_unknown_branch_policies() {
+        let mut blocks = vec![
+            Block {
+                start: 0,
+                stmts: vec![Stmt::Switch {
+                    index: Expr::reg(0, 64),
+                    cases: vec![(0, 16), (1, 8), (2, 16), (3, 99)],
+                    default: Some(8),
+                }],
+            },
+            Block {
+                start: 8,
+                stmts: Vec::new(),
+            },
+            Block {
+                start: 16,
+                stmts: Vec::new(),
+            },
+        ];
+        assert_eq!(super::block_successors(&blocks, 0), vec![2, 1, 2, 1]);
+        for branch in [
+            Stmt::Br { target: None },
+            Stmt::BrIndirect {
+                target: Expr::reg(0, 64),
+            },
+        ] {
+            let direct = matches!(branch, Stmt::Br { .. });
+            blocks[0].stmts = vec![branch];
+            assert_eq!(
+                super::block_successors(&blocks, 0),
+                if direct { vec![1] } else { vec![] }
+            );
+            assert_eq!(
+                super::normal_successors(
+                    blocks[0].stmts.last(),
+                    Some(1),
+                    |address| blocks.iter().position(|block| block.start == address),
+                    super::UnknownBranch::Stop,
+                ),
+                Vec::<usize>::new()
+            );
+        }
+    }
 
     fn call() -> Stmt {
         Stmt::Call {

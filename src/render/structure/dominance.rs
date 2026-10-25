@@ -38,27 +38,12 @@ struct Graph<'a> {
 }
 
 fn successors(blocks: &[Block], index: &HashMap<u64, usize>, block: usize) -> Vec<usize> {
-    let fallthrough = (block + 1 < blocks.len()).then_some(block + 1);
-    let find = |address: &u64| index.get(address).copied();
-    let mut out = Vec::new();
-    match blocks[block].stmts.last() {
-        Some(Stmt::Br {
-            target: Some(target),
-        }) => out.extend(find(target)),
-        Some(Stmt::Brif { target, .. }) | Some(Stmt::BrifFlags { target, .. }) => {
-            out.extend(find(target));
-            out.extend(fallthrough);
-        }
-        Some(Stmt::Switch { cases, default, .. }) => {
-            out.extend(cases.iter().filter_map(|(_, target)| find(target)));
-            out.extend(default.as_ref().and_then(find));
-        }
-        Some(
-            Stmt::Ret { .. } | Stmt::BrIndirect { .. } | Stmt::Trap | Stmt::Br { target: None },
-        ) => {}
-        _ => out.extend(fallthrough),
-    }
-    out
+    crate::ir::cfg::normal_successors(
+        blocks[block].stmts.last(),
+        (block + 1 < blocks.len()).then_some(block + 1),
+        |address| index.get(&address).copied(),
+        crate::ir::cfg::UnknownBranch::Stop,
+    )
 }
 
 impl<'a> Graph<'a> {
@@ -1188,6 +1173,38 @@ mod tests {
     use crate::ir::{BinOp, Block, Cond, Expr, FunctionIr, RegRef, Stmt};
     use crate::loader::Isa;
     use crate::render::structure::Node;
+
+    #[test]
+    fn indexed_edges_preserve_duplicates_and_stop_unknown_branches() {
+        let ir = function(vec![
+            (
+                0,
+                vec![Stmt::Switch {
+                    index: Expr::reg(0, 64),
+                    cases: vec![(0, 16), (1, 8), (2, 16), (3, 99)],
+                    default: Some(8),
+                }],
+            ),
+            (8, vec![Stmt::Br { target: None }]),
+            (16, vec![ret()]),
+        ]);
+        let index = ir
+            .blocks
+            .iter()
+            .enumerate()
+            .map(|(position, block)| (block.start, position))
+            .collect();
+        assert_eq!(super::successors(&ir.blocks, &index, 0), vec![2, 1, 2, 1]);
+        assert!(super::successors(&ir.blocks, &index, 1).is_empty());
+        assert_eq!(
+            crate::render::structure::compare_chain::successors(&ir, 0),
+            vec![2, 1, 2, 1]
+        );
+        assert_eq!(
+            crate::render::structure::compare_chain::successors(&ir, 1),
+            vec![2]
+        );
+    }
 
     fn function(blocks: Vec<(u64, Vec<Stmt>)>) -> FunctionIr {
         let mut ir = FunctionIr::single_block(Isa::X86_64, Vec::new());

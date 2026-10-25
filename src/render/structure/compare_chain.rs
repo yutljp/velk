@@ -48,29 +48,7 @@ fn same_value(left: &Expr, right: &Expr) -> bool {
 }
 
 pub(crate) fn successors(ir: &FunctionIr, index: usize) -> Vec<usize> {
-    let find = |address: u64| ir.blocks.iter().position(|block| block.start == address);
-    let fallthrough = (index + 1 < ir.blocks.len()).then_some(index + 1);
-    let mut out = Vec::new();
-    match ir.blocks[index].stmts.last() {
-        Some(Stmt::Br {
-            target: Some(target),
-        }) => out.extend(find(*target)),
-        Some(Stmt::Brif { target, .. }) | Some(Stmt::BrifFlags { target, .. }) => {
-            out.extend(find(*target));
-            out.extend(fallthrough);
-        }
-        Some(Stmt::Switch { cases, default, .. }) => {
-            for (_, target) in cases {
-                out.extend(find(*target));
-            }
-            if let Some(target) = default {
-                out.extend(find(*target));
-            }
-        }
-        Some(Stmt::Ret { .. }) | Some(Stmt::BrIndirect { .. }) | Some(Stmt::Trap) => {}
-        _ => out.extend(fallthrough),
-    }
-    out
+    crate::ir::cfg::block_successors(&ir.blocks, index)
 }
 
 pub(crate) fn predecessors(ir: &FunctionIr) -> std::collections::HashMap<u64, usize> {
