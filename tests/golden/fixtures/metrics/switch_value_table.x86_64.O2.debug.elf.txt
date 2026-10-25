@@ -7,11 +7,9 @@
 /* ref: 0x200120 .rodata */
 int dispatch(int x) {
     uint32_t *const dword_200120 = (uint32_t *)0x200120ULL;
-    uint32_t v1;
-    int32_t result;
 
-    v1 = x - 10;
-    result = 0;
+    uint32_t v1 = x - 10;
+    int32_t result = 0;
     if (v1 > 4) {
         return 0;
     }

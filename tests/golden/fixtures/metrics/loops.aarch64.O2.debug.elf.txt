@@ -48,10 +48,9 @@ fn count_bits @ 0x21018c (size 40)
 -- decompile
 /* velk pseudo-C: sum_until @ 0x2101b4 */
 int sum_until(int limit) {
-    uint32_t v1;
     uint64_t v2;
 
-    v1 = limit - 1;
+    uint32_t v1 = limit - 1;
     if (limit < 1) {
         return 0;
     }
@@ -79,20 +78,18 @@ fn sum_until @ 0x2101b4 (size 40)
 -- decompile
 /* velk pseudo-C: sum_till_neg @ 0x2101dc */
 int sum_till_neg(int *p, int n) {
-    int64_t v1;
-    int32_t v2;
     int32_t v3;
     uint32_t v4;
 
-    v1 = n & ~(n >> 31) & 0xffffffff;
-    v2 = 0;
+    int64_t v1 = n & ~(n >> 31) & 0xffffffff;
+    int32_t v2 = 0;
     do {
         v3 = v2;
         if (v1 == 0) {
             break;
         }
         v4 = *p;
-        p = p + 0x1;
+        ++p;
         --v1;
         v2 = v4 + v3;
     } while ((v4 & 0x80000000) == 0);
@@ -138,7 +135,7 @@ int sum_until_zero(int *p, int n) {
     v3 = (uint32_t)n;
     do {
         v4 = *v1;
-        v1 = v1 + 0x1;
+        ++v1;
         if (v4 == 0) {
             break;
         }

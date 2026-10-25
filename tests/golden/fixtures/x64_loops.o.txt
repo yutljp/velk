@@ -8,11 +8,10 @@
 -- decompile
 /* velk pseudo-C: count_bits @ 0x0 */
 int32_t count_bits(int32_t a0) {
-    int32_t result;
     uint32_t v2;
     uint32_t v4;
 
-    result = 0;
+    int32_t result = 0;
     if (a0 == 0) {
         return 0;
     }
@@ -75,15 +74,12 @@ fn sum_until @ 0x30 (size 26)
 -- decompile
 /* velk pseudo-C: sum_till_neg @ 0x50 */
 int32_t sum_till_neg(uint32_t *a0, int32_t a1) {
-    int64_t v1;
-    uint32_t v2;
-    int32_t v3;
     int32_t v4;
     int32_t v5;
 
-    v1 = 0;
-    v2 = (a1 <= 0 ? 0 : a1);
-    v3 = 0;
+    int64_t v1 = 0;
+    uint32_t v2 = (a1 <= 0 ? 0 : a1);
+    int32_t v3 = 0;
     do {
         v4 = v3;
         if (v2 == v1) {

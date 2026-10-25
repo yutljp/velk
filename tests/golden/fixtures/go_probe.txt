@@ -1366,12 +1366,10 @@ fn main.divmod @ 0x466cc0 (size 64)
 -- decompile
 /* velk pseudo-C: main.sumSlice @ 0x466d00 */
 int64_t main_sumSlice(uint64_t *a0, int64_t a1) {
-    int64_t v1;
-    int64_t result;
     int64_t v3;
 
-    v1 = 0;
-    result = 0;
+    int64_t v1 = 0;
+    int64_t result = 0;
     while (a1 > v1) {
         v3 = a0[v1];
         ++v1;
@@ -1457,14 +1455,13 @@ fn main.kindName @ 0x466d20 (size 96)
 /* ref: 0x4967e8 .rodata */
 int64_t main_main(void) {
     uint64_t v5;
-    int64_t v1;
     int64_t v2;
     int64_t local_0; /* [sp-38] */
     int64_t local_1; /* [sp-40] */
     _Alignas(16) struct __attribute__((packed)) { int64_t f_0; int64_t f_8; int64_t f_10; int64_t f_18; } local_2; /* [sp-28] */
     int64_t local_3; /* [sp-30] */
 
-    v1 = main_divmod(7, 3);
+    int64_t v1 = main_divmod(7, 3);
     v2 = v5; /* also returned by the call */
     local_0 = v1;
     local_1 = v2;

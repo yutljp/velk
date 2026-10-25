@@ -224,9 +224,7 @@ fn sparse @ 0x210278 (size 84)
 -- decompile
 /* velk pseudo-C: short_circuit @ 0x2102cc */
 int short_circuit(int *p, int n) {
-    int32_t v2;
-
-    v2 = 0;
+    int32_t v2 = 0;
     if (p == 0 || n < 1) {
         return 0;
     }
@@ -294,7 +292,7 @@ int skip_negatives(int *p, int n) {
             v12 = *v8;
             v13 = v8[1];
             v9 -= 8;
-            v8 = v8 + 0x4;
+            v8 += 0x4;
             v4 = add_lanes32(max_lanes32(v10, 0), v4);
             v5 = add_lanes32(max_lanes32(v11, 0), v5);
             v6 = add_lanes32(max_lanes32(v12, 0), v6);
@@ -312,7 +310,7 @@ int skip_negatives(int *p, int n) {
     v15 = (uint32_t)n - v2;
     do {
         v2 = (uint32_t)*v14;
-        v14 = v14 + 0x1;
+        ++v14;
         --v15;
         v3 = (v2 & ~((int32_t)v2 >> 31)) + v3;
     } while (v15 != 0);
@@ -403,7 +401,7 @@ int find_pair(int *p, int n, int target) {
                 v11 = v5;
                 do {
                     v12 = *v10;
-                    v10 = v10 + 0x1;
+                    ++v10;
                     if (v12 + v8 == target) {
                         return v11;
                     }

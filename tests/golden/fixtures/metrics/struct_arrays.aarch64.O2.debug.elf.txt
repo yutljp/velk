@@ -9,9 +9,7 @@
 struct item { _Alignas(8) long key; int count; short kind; uint8_t gap_0xe[0x2]; };
 struct S1 { uint8_t gap_0x0[0x8]; int32_t field_0x8; int16_t field_0xc; };
 int item_weight(struct item *items, int i) {
-    struct S1 *v1;
-
-    v1 = (struct S1 *)(items + i);
+    struct S1 *v1 = (struct S1 *)(items + i);
     return v1->field_0x8 * v1->field_0xc;
 }
 -- signature
@@ -32,9 +30,7 @@ fn item_weight @ 0x210174 (size 20)
 struct cell { _Alignas(4) int x; int y; int z; };
 struct S1 { int32_t field_0x0; uint8_t gap_0x4[0x4]; int32_t field_0x8; };
 void cell_set(struct cell *cells, long i, int v) {
-    struct S1 *v1;
-
-    v1 = (struct S1 *)(cells + i);
+    struct S1 *v1 = (struct S1 *)(cells + i);
     v1->field_0x0 = v;
     v1->field_0x8 = v + 1;
 }
@@ -57,14 +53,13 @@ fn cell_set @ 0x210188 (size 24)
 /* velk pseudo-C: item_last_key @ 0x2101a0 */
 struct item { _Alignas(8) long key; int count; short kind; uint8_t gap_0xe[0x2]; };
 long item_last_key(struct item *items, int n) {
-    int64_t result;
     int64_t v3;
     void *v4;
 
+    int64_t result = 0;
     if (n < 1) {
         return 0;
     }
-    result = 0;
     v3 = (uint32_t)n;
     v4 = (void *)&items->count;
     do {
@@ -72,7 +67,7 @@ long item_last_key(struct item *items, int n) {
             result = *(uint64_t *)(v4 - 0x8);
         }
         --v3;
-        v4 = v4 + 0x10;
+        v4 += 0x10;
     } while (v3 != 0);
     return result;
 }

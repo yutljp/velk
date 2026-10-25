@@ -81,11 +81,9 @@ fn pick_op @ 0x201330 (size 33)
 /* ref: 0x202670 .data.rel.ro */
 int apply_table(unsigned int index, int x) {
     uint64_t *const table = (uint64_t *)0x202670ULL;
-    uint32_t v1;
-    int64_t v3;
 
-    v1 = index % 3;
-    v3 = table[v1];
+    uint32_t v1 = index % 3;
+    int64_t v3 = table[v1];
     return ((uint64_t (*)())v3)(x & 0xffffffff);
 }
 -- signature
@@ -124,9 +122,7 @@ fn apply_pointer @ 0x2013a0 (size 33)
 -- decompile
 /* velk pseudo-C: factorial @ 0x2013d0 */
 int factorial(int n) {
-    uint32_t v3;
-
-    v3 = n;
+    uint32_t v3 = n;
     if (n > 1) {
         return v3 * factorial(v3 - 1);
     }
@@ -156,9 +152,7 @@ fn factorial @ 0x2013d0 (size 71)
 -- decompile
 /* velk pseudo-C: is_odd @ 0x201420 */
 int is_odd(int n) {
-    uint32_t v3;
-
-    v3 = n;
+    uint32_t v3 = n;
     if (n != 0) {
         return is_even(v3 - 1);
     }
@@ -188,9 +182,7 @@ fn is_odd @ 0x201420 (size 54)
 -- decompile
 /* velk pseudo-C: is_even @ 0x201460 */
 int is_even(int n) {
-    uint32_t v3;
-
-    v3 = n;
+    uint32_t v3 = n;
     if (n != 0) {
         return is_odd(v3 - 1);
     }

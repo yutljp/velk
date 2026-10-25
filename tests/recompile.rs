@@ -56,6 +56,8 @@ mod go_values;
 mod identical_exits;
 #[path = "recompile/ignored_result.rs"]
 mod ignored_result;
+#[path = "recompile/initializers.rs"]
+mod initializers;
 #[path = "recompile/long_branches.rs"]
 mod long_branches;
 #[path = "recompile/pe.rs"]
@@ -7477,12 +7479,8 @@ fn printed_real_short_circuit_guards_preserve_memory_and_results() {
                     "{code}"
                 );
                 for pointer in ["v2", "v3"] {
-                    for step in ["0x4", "0x1"] {
-                        assert!(
-                            code.contains(&format!("{pointer} = {pointer} + {step};")),
-                            "{code}"
-                        );
-                    }
+                    assert!(code.contains(&format!("{pointer} += 0x4;")), "{code}");
+                    assert!(code.contains(&format!("++{pointer};")), "{code}");
                 }
                 assert!(!code.contains("v10") && !code.contains("v11"), "{code}");
             }

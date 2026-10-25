@@ -117,9 +117,7 @@ fn <unnamed> @ 0x2102a0 (size 96)
 -- decompile
 /* velk pseudo-C: sub_210300 @ 0x210300 */
 int32_t sub_210300(int32_t a0) {
-    int32_t result;
-
-    result = 0;
+    int32_t result = 0;
     if (a0 == 0) {
         result = 1;
     } else if (a0 != 1) {

@@ -115,9 +115,9 @@ fn disjoint_pointers_share_a_declaration_and_keep_element_steps() {
     let mut scalar = pointers();
     reuse_pointers(&mut scalar);
     let text = crate::render::render(&scalar, &[], &Default::default(), &[]);
-    assert!(text.contains("uint64_t *v1;"), "{text}");
+    assert!(text.contains("uint64_t *v1 ="), "{text}");
     assert!(!text.contains("v2"), "{text}");
-    assert!(text.contains("v1 = v1 + 0x1;"), "{text}");
+    assert!(text.contains("++v1;"), "{text}");
 }
 
 #[test]

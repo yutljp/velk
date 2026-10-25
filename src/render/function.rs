@@ -1094,6 +1094,7 @@ fn render_with(
         prototypes_at,
         &super::prelude::section(&prototypes.replace("\n", "\n\n")),
     );
+    let declarations_at = out.len();
     let mut declared = 0;
     if let Some(plan) = variadic {
         out.push_str(&format!(
@@ -1272,7 +1273,20 @@ fn render_with(
     if declared > 0 {
         out.push('\n');
     }
-    out.push_str(&body);
+    let candidates = variable_types.iter().filter_map(|(index, ty)| {
+        if matches!(ty, CType::Array(_)) {
+            return None;
+        }
+        let name = ctx.register(*index, 64);
+        Some((name.clone(), declaration(ty, &name)))
+    });
+    let mut declarations = out.split_off(declarations_at);
+    let initialized = super::initializers::fold(&mut declarations, &body, candidates);
+    if declarations.trim().is_empty() {
+        declarations.clear();
+    }
+    out.push_str(&declarations);
+    out.push_str(&initialized);
     out.push_str("}\n");
     // The definition is the one place a structure nothing uses is named.
     for (name, definition) in definitions {

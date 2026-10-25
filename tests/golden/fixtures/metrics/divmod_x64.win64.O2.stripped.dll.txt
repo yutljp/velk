@@ -22,9 +22,7 @@
 -- decompile
 /* velk pseudo-C: sub_180001000 @ 0x180001000 */
 int64_t sub_180001000(int64_t a0) {
-    uint64_t v1;
-
-    v1 = __smulh(a0, 0x5555555555555556);
+    uint64_t v1 = __smulh(a0, 0x5555555555555556);
     return (v1 >> 63) + v1;
 }
 -- signature
@@ -43,9 +41,7 @@ fn <unnamed> @ 0x180001000 (size 32)
 -- decompile
 /* velk pseudo-C: sub_180001020 @ 0x180001020 */
 int64_t sub_180001020(int64_t a0) {
-    int64_t v1;
-
-    v1 = __smulh(a0, 0x6666666666666667);
+    int64_t v1 = __smulh(a0, 0x6666666666666667);
     return ((uint64_t)v1 >> 63) + (v1 >> 2);
 }
 -- signature
@@ -166,11 +162,8 @@ fn <unnamed> @ 0x1800010b0 (size 32)
 -- decompile
 /* velk pseudo-C: sub_1800010d0 @ 0x1800010d0 */
 int32_t sub_1800010d0(int32_t a0) {
-    int64_t v1;
-    uint64_t v2;
-
-    v1 = a0;
-    v2 = v1 * 0x55555556;
+    int64_t v1 = a0;
+    uint64_t v2 = v1 * 0x55555556;
     return v1 - ((v2 >> 32) + (v2 >> 63)) * 3;
 }
 -- signature
@@ -327,9 +320,7 @@ fn <unnamed> @ 0x1800011b0 (size 16)
 -- decompile
 /* velk pseudo-C: sub_1800011c0 @ 0x1800011c0 */
 int32_t sub_1800011c0(int32_t a0) {
-    int64_t v1;
-
-    v1 = (int64_t)a0 * 0x66666667;
+    int64_t v1 = (int64_t)a0 * 0x66666667;
     return (v1 >> 34) + ((uint64_t)v1 >> 63);
 }
 -- signature

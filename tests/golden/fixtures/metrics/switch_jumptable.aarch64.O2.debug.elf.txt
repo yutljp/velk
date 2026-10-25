@@ -7,9 +7,8 @@
 /* ref: 0x220464 .bss */
 int d7(int x) {
     uint32_t *const g = (uint32_t *)0x220464ULL;
-    int32_t v1;
 
-    v1 = -1;
+    int32_t v1 = -1;
     if ((uint32_t)x <= 9) {
         v1 = *g;
         if ((uint32_t)x > 0) {

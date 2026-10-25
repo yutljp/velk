@@ -117,9 +117,7 @@ fn cleanup_on_error @ 0x2102a0 (size 96)
 -- decompile
 /* velk pseudo-C: fallthrough @ 0x210300 */
 int fallthrough(int x) {
-    int32_t result;
-
-    result = 0;
+    int32_t result = 0;
     if (x == 0) {
         result = 1;
     } else if (x != 1) {

@@ -8,6 +8,7 @@ mod frame_registers;
 mod function;
 mod globals;
 mod go_values;
+mod initializers;
 mod int;
 mod jumps;
 mod layouts;

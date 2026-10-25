@@ -118,9 +118,8 @@ fn <unnamed> @ 0x180001000 (size 240)
 /* ref: 0x180003000 .data */
 int32_t sub_1800010f0(int32_t a0) {
     uint32_t *const dword_180003000 = (uint32_t *)0x180003000ULL;
-    int32_t result;
 
-    result = 0;
+    int32_t result = 0;
     do {
         ++result;
         --a0;

@@ -89,13 +89,11 @@ struct sub_2013a0_a2 { int64_t field_0x0; int64_t field_0x8; int64_t field_0x10;
 struct S1 { int64_t field_0x0; int64_t field_0x8; int64_t field_0x10; };
 double sub_2013a0(struct S1 *a0, double a1, struct sub_2013a0_a2 a2) {
     uint64_t rsp = velk_entry_stack_pointer();
-    struct S1 *v1;
-    double v2;
     double local_0; /* [sp-10] */
 
-    v1 = (struct S1 *)(rsp + 8);
+    struct S1 *v1 = (struct S1 *)(rsp + 8);
     local_0 = a1;
-    v2 = a1 + *(double *)((uint8_t *)v1 + 0x10);
+    double v2 = a1 + *(double *)((uint8_t *)v1 + 0x10);
     v1->field_0x10 = ((union { double value; uint64_t bits; }){ .value = v2 }).bits;
     a0->field_0x0 = v1->field_0x0;
     a0->field_0x8 = v1->field_0x8;
@@ -132,13 +130,11 @@ struct sub_2013e0_a2 {
 struct S1 { int64_t field_0x0; int64_t field_0x8; int64_t field_0x10; int64_t field_0x18; };
 double sub_2013e0(struct S1 *a0, double a1, struct sub_2013e0_a2 a2) {
     uint64_t rsp = velk_entry_stack_pointer();
-    struct S1 *v1;
-    double v2;
     double local_0; /* [sp-10] */
 
-    v1 = (struct S1 *)(rsp + 8);
+    struct S1 *v1 = (struct S1 *)(rsp + 8);
     local_0 = a1;
-    v2 = a1 + *(double *)((uint8_t *)v1 + 0x18);
+    double v2 = a1 + *(double *)((uint8_t *)v1 + 0x18);
     v1->field_0x18 = ((union { double value; uint64_t bits; }){ .value = v2 }).bits;
     a0->field_0x0 = v1->field_0x0;
     a0->field_0x8 = v1->field_0x8;
@@ -169,8 +165,6 @@ fn <unnamed> @ 0x2013e0 (size 63)
 -- decompile
 /* velk pseudo-C: sub_201420 @ 0x201420 */
 int64_t sub_201420(int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5, int64_t a6, int64_t a7) {
-    int64_t v3;
-    int64_t v4;
     int64_t local_0; /* [sp-10] */
     int64_t local_1; /* [sp-18] */
     int64_t local_2; /* [sp-20] */
@@ -184,8 +178,8 @@ int64_t sub_201420(int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, i
     local_3 = a3;
     local_4 = a4;
     local_5 = a5;
-    v3 = a6 * 13;
-    v4 = a0 + a1 * 3 + a2 * 5 + a3 * 7 + a4 * 11 + v3 + a7 * 17;
+    int64_t v3 = a6 * 13;
+    int64_t v4 = a0 + a1 * 3 + a2 * 5 + a3 * 7 + a4 * 11 + v3 + a7 * 17;
     return v4 + a5 * 19;
 }
 -- signature
@@ -212,8 +206,6 @@ fn <unnamed> @ 0x201420 (size 96)
 -- decompile
 /* velk pseudo-C: sub_201480 @ 0x201480 */
 int64_t sub_201480(int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5, int64_t a6, int64_t a7, int64_t a8, int64_t a9) {
-    int64_t v5;
-    int64_t v6;
     int64_t local_0; /* [sp-10] */
     int64_t local_1; /* [sp-18] */
     int64_t local_2; /* [sp-20] */
@@ -227,8 +219,8 @@ int64_t sub_201480(int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, i
     local_3 = a3;
     local_4 = a4;
     local_5 = a5;
-    v5 = a7 * 19;
-    v6 = a0 + a1 * 3 + a2 * 5 + a3 * 7 + a4 * 11 + a5 * 13 + a6 * 17 + v5 + a8 * 23;
+    int64_t v5 = a7 * 19;
+    int64_t v6 = a0 + a1 * 3 + a2 * 5 + a3 * 7 + a4 * 11 + a5 * 13 + a6 * 17 + v5 + a8 * 23;
     return v6 + a9 * 29;
 }
 -- signature
@@ -282,8 +274,6 @@ fn <unnamed> @ 0x201500 (size 56)
 -- decompile
 /* velk pseudo-C: sub_201540 @ 0x201540 */
 int64_t sub_201540(int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5, int64_t a6, int64_t a7) {
-    int64_t v3;
-    int64_t v4;
     int64_t local_0; /* [sp-10] */
     int64_t local_1; /* [sp-18] */
     int64_t local_2; /* [sp-20] */
@@ -297,8 +287,8 @@ int64_t sub_201540(int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, i
     local_3 = a3;
     local_4 = a4;
     local_5 = a5;
-    v3 = a6 * 13;
-    v4 = a0 + a1 * 3 + a2 * 5 + a3 * 7 + a4 * 11 + v3 + a7 * 17;
+    int64_t v3 = a6 * 13;
+    int64_t v4 = a0 + a1 * 3 + a2 * 5 + a3 * 7 + a4 * 11 + v3 + a7 * 17;
     return v4 + a5 * 19;
 }
 -- signature
@@ -325,8 +315,6 @@ fn <unnamed> @ 0x201540 (size 96)
 -- decompile
 /* velk pseudo-C: sub_2015a0 @ 0x2015a0 */
 int64_t sub_2015a0(int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5, int64_t a6, int64_t a7, int64_t a8, int64_t a9) {
-    int64_t v5;
-    int64_t v6;
     int64_t local_0; /* [sp-10] */
     int64_t local_1; /* [sp-18] */
     int64_t local_2; /* [sp-20] */
@@ -340,8 +328,8 @@ int64_t sub_2015a0(int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, i
     local_3 = a3;
     local_4 = a4;
     local_5 = a5;
-    v5 = a7 * 19;
-    v6 = a0 + a1 * 3 + a2 * 5 + a3 * 7 + a4 * 11 + a5 * 13 + a6 * 17 + v5 + a8 * 23;
+    int64_t v5 = a7 * 19;
+    int64_t v6 = a0 + a1 * 3 + a2 * 5 + a3 * 7 + a4 * 11 + a5 * 13 + a6 * 17 + v5 + a8 * 23;
     return v6 + a9 * 29;
 }
 -- signature

@@ -189,9 +189,7 @@ fn <unnamed> @ 0x180001000 (size 260)
 -- decompile
 /* velk pseudo-C: sub_180001110 @ 0x180001110 */
 int32_t sub_180001110(int32_t a0, int32_t a1, uint32_t *a2) {
-    uint8_t v2;
-
-    v2 = (a1 == 0) | (a0 < 0);
+    uint8_t v2 = (a1 == 0) | (a0 < 0);
     if (v2 != 0) {
         return -1;
     }
@@ -223,9 +221,8 @@ fn <unnamed> @ 0x180001110 (size 48)
 /* ref: 0x180002000 .rdata */
 int32_t sub_180001140(uint32_t a0) {
     uint8_t *const byte_180002000 = (uint8_t *)0x180002000ULL;
-    int32_t result;
 
-    result = -1;
+    int32_t result = -1;
     if (a0 > 3) {
         return -1;
     }
@@ -304,11 +301,8 @@ fn <unnamed> @ 0x180001160 (size 64)
 -- decompile
 /* velk pseudo-C: sub_1800011a0 @ 0x1800011a0 */
 int32_t sub_1800011a0(uint32_t *a0, int32_t a1) {
-    int32_t result;
-    uint8_t v2;
-
-    result = 0;
-    v2 = (a1 <= 0) | (a0 == 0);
+    int32_t result = 0;
+    uint8_t v2 = (a1 <= 0) | (a0 == 0);
     if (v2 != 0) {
         return 0;
     }
@@ -449,7 +443,6 @@ fn <unnamed> @ 0x1800011d0 (size 208)
 -- decompile
 /* velk pseudo-C: sub_1800012a0 @ 0x1800012a0 */
 int32_t sub_1800012a0(uint32_t *a0, int32_t a1, int32_t a2) {
-    int32_t result;
     int32_t v3;
     uint32_t *v4;
     int64_t v5;
@@ -459,7 +452,7 @@ int32_t sub_1800012a0(uint32_t *a0, int32_t a1, int32_t a2) {
     int32_t v9;
     int64_t j;
 
-    result = -1;
+    int32_t result = -1;
     if (a1 <= 0) {
         return -1;
     }
@@ -482,7 +475,7 @@ int32_t sub_1800012a0(uint32_t *a0, int32_t a1, int32_t a2) {
             } while (v5 != j);
         }
         v6 += v3;
-        v4 = v4 + 0x1;
+        ++v4;
         --v5;
     } while (v7 != (uint32_t)a1);
     return result;

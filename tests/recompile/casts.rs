@@ -153,14 +153,18 @@ fn printed_local_types_preserve_byte_values_and_integer_uses() {
         );
         let candidate = printed_candidate(ir, inputs.clone());
         if name == "byte_local" {
-            assert!(candidate.code.contains("uint8_t v1;"), "{}", candidate.code);
+            assert!(
+                candidate.code.contains("uint8_t v1 ="),
+                "{}",
+                candidate.code
+            );
         }
         if matches!(
             name,
             "shift_local" | "logical_shift_local" | "narrow_read_wide_local"
         ) {
             assert!(
-                candidate.code.contains("uint64_t v1;"),
+                candidate.code.contains("uint64_t v1 ="),
                 "{}",
                 candidate.code
             );
@@ -220,7 +224,11 @@ fn printed_byte_load_locals_extend_every_value_exactly() {
         );
         let candidate = printed_candidate(ir, (0..256).map(|value| vec![value]).collect());
         if !signed {
-            assert!(candidate.code.contains("uint8_t v1;"), "{}", candidate.code);
+            assert!(
+                candidate.code.contains("uint8_t v1 ="),
+                "{}",
+                candidate.code
+            );
         }
         candidates.push(candidate);
     }
@@ -588,7 +596,7 @@ fn printed_bitstream_ranges_preserve_bytes_shifts_and_wrapping() {
         ir.value_types.insert(VARIABLE_BASE, CType::int(8, true));
         let candidate = printed_candidate(ir, inputs.clone());
         assert!(
-            candidate.code.contains("\n    int64_t v1;"),
+            candidate.code.contains("\n    int64_t v1 ="),
             "{}",
             candidate.code
         );

@@ -101,9 +101,8 @@ fn <unnamed> @ 0x2102d4 (size 28)
 /* ref: 0x220528 .data.rel.ro */
 int32_t sub_2102f0(uint32_t a0, int32_t a1) {
     uint64_t *const qword_220528 = (uint64_t *)0x220528ULL;
-    int64_t v3;
 
-    v3 = qword_220528[a0 % 3];
+    int64_t v3 = qword_220528[a0 % 3];
     return ((uint64_t (*)())v3)(a1 & 0xffffffff);
 }
 -- signature

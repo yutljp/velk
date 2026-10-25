@@ -114,9 +114,7 @@ fn <unnamed> @ 0x180001050 (size 32)
 -- decompile
 /* velk pseudo-C: sub_180001070 @ 0x180001070 */
 uint32_t sub_180001070(int32_t a0) {
-    uint64_t v1;
-
-    v1 = (int64_t)a0 * 0x55555556;
+    uint64_t v1 = (int64_t)a0 * 0x55555556;
     return (v1 >> 32) + (v1 >> 63);
 }
 -- signature
@@ -135,9 +133,7 @@ fn <unnamed> @ 0x180001070 (size 32)
 -- decompile
 /* velk pseudo-C: sub_180001090 @ 0x180001090 */
 int32_t sub_180001090(int32_t a0) {
-    int64_t v1;
-
-    v1 = (int64_t)a0 * 0x66666667;
+    int64_t v1 = (int64_t)a0 * 0x66666667;
     return (v1 >> 34) + ((uint64_t)v1 >> 63);
 }
 -- signature
@@ -190,11 +186,8 @@ fn <unnamed> @ 0x1800010c0 (size 16)
 -- decompile
 /* velk pseudo-C: sub_1800010d0 @ 0x1800010d0 */
 int32_t sub_1800010d0(int32_t a0) {
-    int64_t v1;
-    uint64_t v2;
-
-    v1 = a0;
-    v2 = v1 * 0x55555556;
+    int64_t v1 = a0;
+    uint64_t v2 = v1 * 0x55555556;
     return v1 - ((v2 >> 32) + (v2 >> 63)) * 3;
 }
 -- signature
@@ -249,13 +242,9 @@ fn <unnamed> @ 0x180001110 (size 32)
 -- decompile
 /* velk pseudo-C: sub_180001130 @ 0x180001130 */
 int32_t sub_180001130(int32_t a0) {
-    int64_t v1;
-    int64_t v2;
-    int32_t v5;
-
-    v1 = a0;
-    v2 = v1 * 0x66666667;
-    v5 = (v2 >> 34) + ((uint64_t)v2 >> 63);
+    int64_t v1 = a0;
+    int64_t v2 = v1 * 0x66666667;
+    int32_t v5 = (v2 >> 34) + ((uint64_t)v2 >> 63);
     return v1 - (v5 + v5) * 5;
 }
 -- signature
@@ -447,9 +436,7 @@ fn <unnamed> @ 0x180001230 (size 48)
 -- decompile
 /* velk pseudo-C: sub_180001260 @ 0x180001260 */
 int64_t sub_180001260(int64_t a0) {
-    uint64_t v1;
-
-    v1 = __smulh(a0, 0x5555555555555556);
+    uint64_t v1 = __smulh(a0, 0x5555555555555556);
     return (v1 >> 63) + v1;
 }
 -- signature
@@ -468,9 +455,7 @@ fn <unnamed> @ 0x180001260 (size 32)
 -- decompile
 /* velk pseudo-C: sub_180001280 @ 0x180001280 */
 int64_t sub_180001280(int64_t a0) {
-    int64_t v1;
-
-    v1 = __smulh(a0, 0x6666666666666667);
+    int64_t v1 = __smulh(a0, 0x6666666666666667);
     return ((uint64_t)v1 >> 63) + (v1 >> 2);
 }
 -- signature

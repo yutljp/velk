@@ -25,10 +25,9 @@
 /* ref: 0x202760 .bss */
 int32_t sub_201400(int32_t a0) {
     uint32_t *const dword_202760 = (uint32_t *)0x202760ULL;
-    uint32_t v1;
     int64_t local_0; /* [sp-18] */
 
-    v1 = a0 - 10;
+    uint32_t v1 = a0 - 10;
     local_0 = v1;
     if (v1 <= 15) {
         switch (local_0 - 15) {

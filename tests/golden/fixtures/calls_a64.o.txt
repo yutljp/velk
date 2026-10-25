@@ -102,9 +102,8 @@ fn pick_op @ 0x10 (size 28)
 /* velk pseudo-C: apply_table @ 0x2c */
 int32_t apply_table(uint32_t a0, int32_t a1) {
     uint64_t *const table = (uint64_t *)0x290ULL;
-    int64_t v3;
 
-    v3 = table[a0 % 3];
+    int64_t v3 = table[a0 % 3];
     return ((uint64_t (*)())v3)(a1 & 0xffffffff);
 }
 -- signature
@@ -255,12 +254,11 @@ fn factorial @ 0x78 (size 160)
 -- decompile
 /* velk pseudo-C: is_odd @ 0x118 */
 int32_t is_odd(int32_t a0) {
-    uint32_t v1;
     uint32_t v4;
     int32_t i;
     uint32_t i_2;
 
-    v1 = a0 - (a0 != 0) + 1;
+    uint32_t v1 = a0 - (a0 != 0) + 1;
     if (v1 >= 2) {
         v1 = (v1 >> 1) + 1;
         v4 = v1 & 0xfffffffe;

@@ -103,9 +103,8 @@ fn <unnamed> @ 0x2102c0 (size 56)
 struct S1 { int64_t field_0x0; int64_t field_0x8; int64_t field_0x10; int64_t field_0x18; };
 int64_t sub_2102f8(int64_t a0) {
     uint64_t v2;
-    struct S1 *v1;
 
-    v1 = (struct S1 *)v2;
+    struct S1 *v1 = (struct S1 *)v2;
     v1->field_0x0 = a0;
     v1->field_0x8 = a0 + 1;
     v1->field_0x10 = (uint64_t)a0 << 1;
@@ -208,9 +207,7 @@ fn <unnamed> @ 0x210384 (size 76)
 -- decompile
 /* velk pseudo-C: sub_2103d0 @ 0x2103d0 */
 uint8_t *sub_2103d0(uint8_t *a0, int32_t a1) {
-    uint8_t v2;
-
-    v2 = *a0;
+    uint8_t v2 = *a0;
     *a0 = v2 & 0xfffffff1 | (a1 & 0x7) << 1;
     return a0;
 }

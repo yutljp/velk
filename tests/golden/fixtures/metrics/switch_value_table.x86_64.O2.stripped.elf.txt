@@ -7,11 +7,9 @@
 /* ref: 0x200120 .rodata */
 int32_t sub_201170(int32_t a0) {
     uint32_t *const dword_200120 = (uint32_t *)0x200120ULL;
-    uint32_t v1;
-    int32_t result;
 
-    v1 = a0 - 10;
-    result = 0;
+    uint32_t v1 = a0 - 10;
+    int32_t result = 0;
     if (v1 > 4) {
         return 0;
     }

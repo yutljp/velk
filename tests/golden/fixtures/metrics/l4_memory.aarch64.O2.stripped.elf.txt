@@ -50,9 +50,7 @@ static inline uint64_t sum_lanes32(uint64_t a, uint64_t b) {
 -- decompile
 /* velk pseudo-C: sub_2101d4 @ 0x2101d4 */
 uint32_t sub_2101d4(uint32_t *a0, uint32_t *a1) {
-    uint64_t v1;
-
-    v1 = mul_lanes32(*(uint64_t *)(a1), *(uint64_t *)(a0));
+    uint64_t v1 = mul_lanes32(*(uint64_t *)(a1), *(uint64_t *)(a0));
     return add_lanes32((v1 >> 32) * 0x100000001, v1);
 }
 -- signature
@@ -103,7 +101,7 @@ int32_t sub_2101f0(uint32_t *a0, int32_t a1) {
             v12 = *v8;
             v13 = v8[1];
             v9 -= 8;
-            v8 = v8 + 0x4;
+            v8 += 0x4;
             v4 = add_lanes32(v10, v4);
             v5 = add_lanes32(v11, v5);
             v6 = add_lanes32(v12, v6);
@@ -121,7 +119,7 @@ int32_t sub_2101f0(uint32_t *a0, int32_t a1) {
     v16 = (uint32_t)a1 - v2;
     do {
         v2 = *v15;
-        v15 = v15 + 0x1;
+        ++v15;
         --v16;
         v3 = v2 + v3;
     } while (v16 != 0);

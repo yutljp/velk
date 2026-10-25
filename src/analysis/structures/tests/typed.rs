@@ -256,7 +256,7 @@ fn scalar_array_types_extend_through_whole_copies() {
     ir.ret_type = CType::U64;
     recover(&mut ir);
     let text = crate::render::render(&ir, &[], &Default::default(), &[]);
-    assert!(text.contains("uint64_t *v1;"), "{text}");
+    assert!(text.contains("uint64_t *v1 ="), "{text}");
     assert!(text.contains("v2 = v1;"), "{text}");
     assert!(text.contains("return v2[index];"), "{text}");
     compile_and_run(

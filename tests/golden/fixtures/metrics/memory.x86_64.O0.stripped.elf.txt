@@ -148,9 +148,7 @@ fn <unnamed> @ 0x201360 (size 47)
 /* velk pseudo-C: sub_201390 @ 0x201390 */
 /* ref: 0x202450 .bss */
 int64_t sub_201390(int32_t a0, int32_t a1, int32_t a2) {
-    uint32_t *v1;
-
-    v1 = (uint32_t *)(0x202450 + ((uint64_t)(a0 & 0x3) << 5));
+    uint32_t *v1 = (uint32_t *)(0x202450 + ((uint64_t)(a0 & 0x3) << 5));
     v1[a1 & 0x7] = a2;
     return (uintptr_t)v1;
 }

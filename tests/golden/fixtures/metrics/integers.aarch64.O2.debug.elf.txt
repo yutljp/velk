@@ -134,9 +134,7 @@ fn byte_swap @ 0x210258 (size 8)
 -- decompile
 /* velk pseudo-C: min3 @ 0x210260 */
 int min3(int a, int b, int c) {
-    int32_t v1;
-
-    v1 = (a < b ? a : b);
+    int32_t v1 = (a < b ? a : b);
     return (v1 < c ? v1 : c);
 }
 -- signature

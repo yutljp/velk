@@ -6,9 +6,8 @@
 /* velk pseudo-C: d7 @ 0x0 */
 int32_t d7(int32_t a0) {
     uint32_t *const g = (uint32_t *)0x2e0ULL;
-    int32_t v1;
 
-    v1 = -1;
+    int32_t v1 = -1;
     if ((uint32_t)a0 <= 9) {
         v1 = *g;
         if ((uint32_t)a0 > 0) {

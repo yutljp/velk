@@ -806,7 +806,7 @@ mod tests {
                 "{observed:?}"
             );
             let output = super::super::render(&ir, &[], &Symbols::default(), &[]);
-            assert!(output.contains("double v1;"), "{output}");
+            assert!(output.contains("double v1 ="), "{output}");
             if masked {
                 assert!(output.contains("0xffffffff"), "{output}");
             } else {

@@ -23,10 +23,9 @@ fn <unnamed> @ 0x180001000 (size 34)
 -- decompile
 /* velk pseudo-C: sub_180001030 @ 0x180001030 */
 int32_t sub_180001030(int32_t a0) {
-    int32_t result;
     int32_t i;
 
-    result = 0;
+    int32_t result = 0;
     for (i = 0; i < a0; i++) {
         result = i * i + result;
     }

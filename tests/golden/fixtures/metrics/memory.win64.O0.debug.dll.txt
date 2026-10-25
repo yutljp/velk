@@ -189,9 +189,7 @@ fn read_volatile @ 0x180001180 (size 42)
 -- decompile
 /* velk pseudo-C: swap_ints @ 0x1800011b0 */
 void swap_ints(int *a, int *b) {
-    int32_t v1;
-
-    v1 = *a;
+    int32_t v1 = *a;
     *a = *b;
     *b = v1;
 }

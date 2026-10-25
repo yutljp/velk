@@ -282,10 +282,9 @@ fn <unnamed> @ 0x180001120 (size 192)
 -- decompile
 /* velk pseudo-C: sub_1800011e0 @ 0x1800011e0 */
 int32_t sub_1800011e0(uint8_t *a0) {
-    int32_t v1;
     uint32_t v2;
 
-    v1 = 0;
+    int32_t v1 = 0;
     do {
         v2 = v1;
         ++v1;
@@ -334,9 +333,7 @@ fn <unnamed> @ 0x180001200 (size 32)
 /* velk pseudo-C: sub_180001220 @ 0x180001220 */
 /* ref: 0x180003000 .data */
 int32_t sub_180001220(int32_t a0, int32_t a1, int32_t a2) {
-    uint32_t *v2;
-
-    v2 = (uint32_t *)(0x180003000 + ((a0 & 0x3) << 5));
+    uint32_t *v2 = (uint32_t *)(0x180003000 + ((a0 & 0x3) << 5));
     v2[a1 & 0x7] = a2;
     return (uintptr_t)v2;
 }
@@ -391,9 +388,7 @@ fn <unnamed> @ 0x180001250 (size 16)
 -- decompile
 /* velk pseudo-C: sub_180001260 @ 0x180001260 */
 int32_t sub_180001260(uint32_t *a0, uint32_t *a1) {
-    int32_t v1;
-
-    v1 = *a0;
+    int32_t v1 = *a0;
     *a0 = *a1;
     *a1 = v1;
     return v1;

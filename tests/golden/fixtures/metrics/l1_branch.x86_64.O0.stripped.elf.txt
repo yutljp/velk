@@ -43,9 +43,7 @@ fn <unnamed> @ 0x2011a0 (size 63)
 -- decompile
 /* velk pseudo-C: sub_2011e0 @ 0x2011e0 */
 int32_t sub_2011e0(int32_t a0, int32_t a1, int32_t a2) {
-    int32_t result;
-
-    result = a1;
+    int32_t result = a1;
     if (a0 >= a1) {
         if (a0 <= a2) {
             return a0;

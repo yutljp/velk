@@ -33,7 +33,7 @@ double sub_21019c(double *a0, int32_t a1) {
             v8 = *v4;
             v9 = v4[1];
             v5 -= 4;
-            v4 = v4 + 0x4;
+            v4 += 0x4;
             v1 = v1 + v6 + v7 + v8 + v9;
         } while (v5 != 0);
         if (v3 == (uint32_t)a1) {
@@ -46,7 +46,7 @@ double sub_21019c(double *a0, int32_t a1) {
     v14 = (uint32_t)a1 - v3;
     do {
         v6 = *v4;
-        v4 = v4 + 0x1;
+        ++v4;
         --v14;
         v1 = v1 + v6;
     } while (v14 != 0);
@@ -137,9 +137,7 @@ fn <unnamed> @ 0x210238 (size 8)
 -- decompile
 /* velk pseudo-C: sub_210240 @ 0x210240 */
 double sub_210240(float a0) {
-    double v1;
-
-    v1 = (double)a0;
+    double v1 = (double)a0;
     return v1 + v1;
 }
 -- signature

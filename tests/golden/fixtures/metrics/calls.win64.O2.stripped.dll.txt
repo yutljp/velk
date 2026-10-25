@@ -109,12 +109,10 @@ fn <unnamed> @ 0x180001020 (size 32)
 -- decompile
 /* velk pseudo-C: sub_180001040 @ 0x180001040 */
 int32_t sub_180001040(uint32_t a0, int32_t a1) {
-    int32_t v2;
-    int32_t v3;
     int32_t v5;
 
-    v2 = (0xaaaaaaab * (uint64_t)a0 >> 33) * 3;
-    v3 = a0 - v2;
+    int32_t v2 = (0xaaaaaaab * (uint64_t)a0 >> 33) * 3;
+    int32_t v3 = a0 - v2;
     if (v3 + v2 != v2 && v3 == 1) {
         v5 = sub_180001010((uint32_t)a1);
         return v5;
@@ -182,7 +180,6 @@ int32_t sub_180001090(int32_t a0) {
     uint64_t *const qword_180002030 = (uint64_t *)0x180002030ULL;
     uint64_t *const qword_180002038 = (uint64_t *)0x180002038ULL;
     uint32_t t1;
-    int32_t result;
     int32_t v2;
     int32_t v3;
     uint64_t v4;
@@ -207,7 +204,7 @@ int32_t sub_180001090(int32_t a0) {
     uint64_t v36;
     uint32_t v52;
 
-    result = 1;
+    int32_t result = 1;
     if (a0 < 2) {
         return 1;
     }
@@ -487,7 +484,7 @@ int32_t sub_180001260(int32_t a0, int64_t a1, int64_t a2, int64_t a3) {
                 v13 = add_lanes32(v13, v14);
                 v9 = add_lanes32(v9, v15 | v16 << 32);
                 v10 = add_lanes32(v10, v16);
-                v1 = v1 + 0x4;
+                v1 += 0x4;
                 v11 = v11 - 4;
             } while (v11 != 0);
             local_0 = (void *)v1;
@@ -527,7 +524,7 @@ int32_t sub_180001260(int32_t a0, int64_t a1, int64_t a2, int64_t a3) {
         v5 += *v24;
         local_0 = (void *)(v24 + 0x4);
         v5 += v24[2];
-        v24 = v24 + 0x8;
+        v24 += 0x8;
         v23 = v23 - 4;
     } while (v23 != 0);
     return v5;

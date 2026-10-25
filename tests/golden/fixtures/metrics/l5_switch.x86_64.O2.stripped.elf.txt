@@ -25,9 +25,8 @@
 /* ref: 0x20250c .bss */
 int32_t sub_201330(int32_t a0) {
     uint32_t *const dword_20250c = (uint32_t *)0x20250cULL;
-    uint64_t v1;
 
-    v1 = (a0 - 10) & 0xffffffff;
+    uint64_t v1 = (a0 - 10) & 0xffffffff;
     if (v1 > 15) {
         *dword_20250c = 0;
         return *dword_20250c;

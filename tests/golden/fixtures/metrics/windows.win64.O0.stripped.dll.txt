@@ -30,13 +30,12 @@ fn <unnamed> @ 0x180001000 (size 26)
 -- decompile
 /* velk pseudo-C: sub_180001020 @ 0x180001020 */
 int32_t sub_180001020(int32_t a0) {
-    int8_t v3;
     uint32_t local_0; /* [sp-4] */
     _Alignas(16) uint8_t local_1[0x2004]; /* [sp-2008] */
 
     local_0 = a0;
     *(uint8_t *)((uint8_t *)((uintptr_t)(local_1 + 0x4) + (a0 & 0x1fff))) = a0;
-    v3 = local_0 & 0x1f00 | *(uint8_t *)((uint8_t *)((uintptr_t)(local_1 + 0x4) + (local_0 & 0x1fff)));
+    int8_t v3 = local_0 & 0x1f00 | *(uint8_t *)((uint8_t *)((uintptr_t)(local_1 + 0x4) + (local_0 & 0x1fff)));
     return v3;
 }
 -- signature
@@ -60,11 +59,10 @@ fn <unnamed> @ 0x180001020 (size 65)
 /* ref: 0x1800020a0 .rdata */
 double sub_180001070(double a0) {
     uint64_t v1 = ((union { double value; uint64_t bits; }){ .value = a0 }).bits;
-    uint32_t v2;
     double local_0; /* [sp-10] */
 
     local_0 = ((union { uint64_t bits; double value; }){ .bits = (uint64_t)v1 }).value;
-    v2 = imported_value(7);
+    uint32_t v2 = imported_value(7);
     return local_0 + (double)(int32_t)v2;
 }
 -- signature

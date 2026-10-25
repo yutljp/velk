@@ -41,9 +41,7 @@ fn <unnamed> @ 0x180001000 (size 50)
 struct S1 { int64_t field_0x0; int64_t field_0x8; };
 struct S2 { int64_t field_0x0; int64_t field_0x8; };
 double sub_180001040(struct S1 *a0, struct S2 *a1, int64_t a2, double a3) {
-    double v1;
-
-    v1 = *(double *)(a1) + a3;
+    double v1 = *(double *)(a1) + a3;
     a0->field_0x0 = ((union { double value; uint64_t bits; }){ .value = v1 }).bits;
     a0->field_0x8 = a1->field_0x8 ^ a2;
     return v1;
@@ -86,9 +84,7 @@ fn <unnamed> @ 0x180001080 (size 51)
 struct S1 { int64_t field_0x0; int64_t field_0x8; };
 struct S2 { int64_t field_0x0; int64_t field_0x8; };
 double sub_1800010c0(struct S1 *a0, struct S2 *a1, double a2) {
-    double v1;
-
-    v1 = a2 + *(double *)((uint8_t *)a1 + 0x8);
+    double v1 = a2 + *(double *)((uint8_t *)a1 + 0x8);
     a1->field_0x8 = ((union { double value; uint64_t bits; }){ .value = v1 }).bits;
     a0->field_0x0 = a1->field_0x0;
     a0->field_0x8 = a1->field_0x8;
@@ -115,9 +111,7 @@ fn <unnamed> @ 0x1800010c0 (size 57)
 struct S1 { int64_t field_0x0; int64_t field_0x8; int64_t field_0x10; };
 struct S2 { int64_t field_0x0; int64_t field_0x8; int64_t field_0x10; };
 double sub_180001100(struct S1 *a0, struct S2 *a1, double a2) {
-    double v1;
-
-    v1 = a2 + *(double *)((uint8_t *)a1 + 0x10);
+    double v1 = a2 + *(double *)((uint8_t *)a1 + 0x10);
     a1->field_0x10 = ((union { double value; uint64_t bits; }){ .value = v1 }).bits;
     a0->field_0x0 = a1->field_0x0;
     a0->field_0x8 = a1->field_0x8;
@@ -146,9 +140,7 @@ fn <unnamed> @ 0x180001100 (size 65)
 struct S1 { int64_t field_0x0; int64_t field_0x8; int64_t field_0x10; int64_t field_0x18; };
 struct S2 { int64_t field_0x0; int64_t field_0x8; int64_t field_0x10; int64_t field_0x18; };
 double sub_180001150(struct S1 *a0, struct S2 *a1, double a2) {
-    double v1;
-
-    v1 = a2 + *(double *)((uint8_t *)a1 + 0x18);
+    double v1 = a2 + *(double *)((uint8_t *)a1 + 0x18);
     a1->field_0x18 = ((union { double value; uint64_t bits; }){ .value = v1 }).bits;
     a0->field_0x0 = a1->field_0x0;
     a0->field_0x8 = a1->field_0x8;
@@ -178,9 +170,7 @@ fn <unnamed> @ 0x180001150 (size 73)
 /* velk pseudo-C: sub_1800011a0 @ 0x1800011a0 */
 struct S1 { int64_t field_0x0; int64_t field_0x8; };
 int64_t sub_1800011a0(int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5, int64_t a6) {
-    struct S1 *v2;
-
-    v2 = (struct S1 *)a5;
+    struct S1 *v2 = (struct S1 *)a5;
     return a0 + a1 * 3 + a2 * 5 + a3 * 7 + a4 * 11 + v2->field_0x0 * 13 + v2->field_0x8 * 17 + a6 * 19;
 }
 -- signature
@@ -200,9 +190,7 @@ fn <unnamed> @ 0x1800011a0 (size 110)
 /* velk pseudo-C: sub_180001210 @ 0x180001210 */
 struct S1 { int64_t field_0x0; int64_t field_0x8; };
 int64_t sub_180001210(int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5, int64_t a6, int64_t a7, int64_t a8) {
-    struct S1 *v2;
-
-    v2 = (struct S1 *)a7;
+    struct S1 *v2 = (struct S1 *)a7;
     return a0 + a1 * 3 + a2 * 5 + a3 * 7 + a4 * 11 + a5 * 13 + a6 * 17 + v2->field_0x0 * 19 + v2->field_0x8 * 23 + a8 * 29;
 }
 -- signature
@@ -254,9 +242,7 @@ fn <unnamed> @ 0x1800012a0 (size 73)
 /* velk pseudo-C: sub_1800012f0 @ 0x1800012f0 */
 struct S1 { int64_t field_0x0; int64_t field_0x8; };
 int64_t sub_1800012f0(int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5, int64_t a6) {
-    struct S1 *v2;
-
-    v2 = (struct S1 *)a5;
+    struct S1 *v2 = (struct S1 *)a5;
     return a0 + a1 * 3 + a2 * 5 + a3 * 7 + a4 * 11 + v2->field_0x0 * 13 + v2->field_0x8 * 17 + a6 * 19;
 }
 -- signature
@@ -276,9 +262,7 @@ fn <unnamed> @ 0x1800012f0 (size 110)
 /* velk pseudo-C: sub_180001360 @ 0x180001360 */
 struct S1 { int64_t field_0x0; int64_t field_0x8; };
 int64_t sub_180001360(int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5, int64_t a6, int64_t a7, int64_t a8) {
-    struct S1 *v2;
-
-    v2 = (struct S1 *)a7;
+    struct S1 *v2 = (struct S1 *)a7;
     return a0 + a1 * 3 + a2 * 5 + a3 * 7 + a4 * 11 + a5 * 13 + a6 * 17 + v2->field_0x0 * 19 + v2->field_0x8 * 23 + a8 * 29;
 }
 -- signature

@@ -64,9 +64,8 @@ fn <unnamed> @ 0x201240 (size 73)
 /* ref: 0x2022c8 .bss */
 int32_t sub_201290(void) {
     uint32_t *const dword_2022c8 = (uint32_t *)0x2022c8ULL;
-    int32_t v1;
 
-    v1 = *dword_2022c8 + 1;
+    int32_t v1 = *dword_2022c8 + 1;
     *dword_2022c8 = v1;
     return v1;
 }

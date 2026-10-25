@@ -41,9 +41,7 @@ fn ns::mul(int, int) @ 0x8 (size 8)
 -- decompile
 /* velk pseudo-C: use(int) @ 0x10 */
 int32_t use(int32_t a0) {
-    uint32_t v2;
-
-    v2 = ns__mul(a0, 2);
+    uint32_t v2 = ns__mul(a0, 2);
     v2 = ns__add(a0 & 0xffffffff, v2);
     return v2;
 }

@@ -60,9 +60,7 @@ fn total_area(Shape const* const*, int) @ 0x0 (size 69)
 -- decompile
 /* velk pseudo-C: clamp_int(int) @ 0x50 */
 int32_t clamp_int(int32_t a0) {
-    int32_t v1;
-
-    v1 = (a0 < 255 ? a0 : 255);
+    int32_t v1 = (a0 < 255 ? a0 : 255);
     return (v1 > 0 ? v1 : 0);
 }
 -- signature
@@ -81,9 +79,7 @@ fn clamp_int(int) @ 0x50 (size 22)
 -- decompile
 /* velk pseudo-C: clamp_long(long) @ 0x70 */
 int64_t clamp_long(int64_t a0) {
-    int64_t v1;
-
-    v1 = (a0 < 1000 ? a0 : 1000);
+    int64_t v1 = (a0 < 1000 ? a0 : 1000);
     return (v1 >= -999 ? v1 : -1000);
 }
 -- signature

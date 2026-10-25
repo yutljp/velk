@@ -324,10 +324,16 @@ pub(crate) fn render_stmt(stmt: &Stmt, ctx: &Ctx<'_>) -> String {
             let printed = expr::print_declared_value(value, ctx, declared.copied());
             let pointer = ctx.pointer_types.get(&dest.index).map(String::as_str);
             let bits = declared.map_or(64, |declared| declared.bits);
-            if pointer.is_none()
-                && let Expr::Bin { op, lhs, .. } = without_update_mask(value, bits)
+            let printed_strength = printed.strength;
+            let text = conformed(value, printed, pointer, ctx);
+            if let Expr::Bin { op, lhs, .. } = without_update_mask(value, bits)
                 && matches!(without_update_mask(lhs, bits), Expr::Reg { index, .. } if *index == dest.index)
                 && let Some((symbol, strength)) = match op {
+                    BinOp::Add
+                        if pointer.is_some() && text.starts_with(&format!("{target} - ")) =>
+                    {
+                        Some(("-", 10))
+                    }
                     BinOp::Add => Some(("+", 10)),
                     BinOp::Sub => Some(("-", 10)),
                     BinOp::Mul => Some(("*", 11)),
@@ -338,17 +344,18 @@ pub(crate) fn render_stmt(stmt: &Stmt, ctx: &Ctx<'_>) -> String {
                     BinOp::Shr | BinOp::Sar => Some((">>", 9)),
                     _ => None,
                 }
-                && printed.strength == strength
-                && let Some(rhs) = printed.text.strip_prefix(&format!("{target} {symbol} "))
+                && (pointer.is_none() || matches!(op, BinOp::Add | BinOp::Sub))
+                && printed_strength == strength
+                && let Some(rhs) = text.strip_prefix(&format!("{target} {symbol} "))
             {
                 // Keep the arithmetic printer's casts, masks and parentheses.
                 return match (symbol, rhs) {
-                    ("+", "1") => format!("++{target};"),
-                    ("-", "1") => format!("--{target};"),
+                    ("+", "1" | "0x1") => format!("++{target};"),
+                    ("-", "1" | "0x1") => format!("--{target};"),
                     _ => format!("{target} {symbol}= {rhs};"),
                 };
             }
-            format!("{target} = {};", conformed(value, printed, pointer, ctx))
+            format!("{target} = {text};")
         }
         Stmt::Store { addr, value, width } => {
             // Memory keeps of the value the bits stored.

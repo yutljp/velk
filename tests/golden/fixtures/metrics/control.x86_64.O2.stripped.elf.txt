@@ -219,9 +219,8 @@ fn <unnamed> @ 0x201320 (size 26)
 /* ref: 0x200120 .rodata */
 int32_t sub_201340(uint32_t a0) {
     uint32_t *const dword_200120 = (uint32_t *)0x200120ULL;
-    int32_t result;
 
-    result = -1;
+    int32_t result = -1;
     if (a0 > 3) {
         return -1;
     }
@@ -300,9 +299,7 @@ fn <unnamed> @ 0x201360 (size 61)
 -- decompile
 /* velk pseudo-C: sub_2013a0 @ 0x2013a0 */
 int32_t sub_2013a0(uint32_t *a0, int32_t a1) {
-    int32_t result;
-
-    result = 0;
+    int32_t result = 0;
     if (a0 == 0 || a1 <= 0) {
         return 0;
     }
@@ -444,7 +441,6 @@ fn <unnamed> @ 0x2013d0 (size 183)
 -- decompile
 /* velk pseudo-C: sub_201490 @ 0x201490 */
 int32_t sub_201490(uint32_t *a0, int32_t a1, int32_t a2) {
-    int32_t result;
     int32_t v3;
     uint32_t *v4;
     int64_t v5;
@@ -454,7 +450,7 @@ int32_t sub_201490(uint32_t *a0, int32_t a1, int32_t a2) {
     int32_t v9;
     int64_t j;
 
-    result = -1;
+    int32_t result = -1;
     if (a1 <= 0) {
         return -1;
     }
@@ -477,7 +473,7 @@ int32_t sub_201490(uint32_t *a0, int32_t a1, int32_t a2) {
             } while (v5 != j);
         }
         v6 += v3;
-        v4 = v4 + 0x1;
+        ++v4;
         --v5;
     } while (v7 != (uint32_t)a1);
     return result;

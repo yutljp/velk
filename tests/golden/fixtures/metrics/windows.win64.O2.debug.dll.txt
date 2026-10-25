@@ -54,11 +54,9 @@ fn large_frame @ 0x180001020 (size 39)
 /* ref: 0x1800020a0 .rdata */
 double saved_xmm(double value) {
     uint64_t v2 = ((union { double value; uint64_t bits; }){ .value = value }).bits;
-    double v1;
-    uint32_t v3;
 
-    v1 = ((union { uint64_t bits; double value; }){ .bits = (uint64_t)v2 }).value;
-    v3 = imported_value(7);
+    double v1 = ((union { uint64_t bits; double value; }){ .bits = (uint64_t)v2 }).value;
+    uint32_t v3 = imported_value(7);
     return v1 + (double)(int32_t)v3;
 }
 -- signature

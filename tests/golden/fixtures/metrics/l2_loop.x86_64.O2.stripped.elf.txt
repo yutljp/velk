@@ -125,15 +125,12 @@ fn <unnamed> @ 0x2011d0 (size 239)
 /* ref: 0x2023d4 .bss */
 int32_t sub_2012c0(int32_t a0) {
     uint32_t *const dword_2023d4 = (uint32_t *)0x2023d4ULL;
-    int32_t v1;
-    int32_t v2;
-    int32_t v3;
     int32_t v4;
     int32_t v6;
 
-    v1 = (a0 >= 2 ? a0 : 1);
-    v2 = v1 & 0x7;
-    v3 = 0;
+    int32_t v1 = (a0 >= 2 ? a0 : 1);
+    int32_t v2 = v1 & 0x7;
+    int32_t v3 = 0;
     if (a0 >= 8) {
         v4 = -(v1 & 0xfffffff8);
         v3 = 4;

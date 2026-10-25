@@ -71,11 +71,9 @@ fn <unnamed> @ 0x201330 (size 33)
 /* ref: 0x202670 .data.rel.ro */
 int32_t sub_201360(uint32_t a0, int32_t a1) {
     uint64_t *const qword_202670 = (uint64_t *)0x202670ULL;
-    uint32_t v1;
-    int64_t v3;
 
-    v1 = a0 % 3;
-    v3 = qword_202670[v1];
+    uint32_t v1 = a0 % 3;
+    int64_t v3 = qword_202670[v1];
     return ((uint64_t (*)())v3)(a1 & 0xffffffff);
 }
 -- signature
@@ -114,10 +112,9 @@ fn <unnamed> @ 0x2013a0 (size 33)
 -- decompile
 /* velk pseudo-C: sub_2013d0 @ 0x2013d0 */
 int32_t sub_2013d0(int32_t a0) {
-    uint32_t v3;
     uint32_t result;
 
-    v3 = a0;
+    uint32_t v3 = a0;
     if (a0 > 1) {
         result = v3 * ((int32_t)(sub_2013d0(v3 - 1)));
         return result;
@@ -148,10 +145,9 @@ fn <unnamed> @ 0x2013d0 (size 71)
 -- decompile
 /* velk pseudo-C: sub_201420 @ 0x201420 */
 int32_t sub_201420(int32_t a0) {
-    uint32_t v3;
     uint32_t result;
 
-    v3 = a0;
+    uint32_t v3 = a0;
     if (a0 != 0) {
         result = ((int32_t)(sub_201460(v3 - 1)));
         return result;
@@ -182,10 +178,9 @@ fn <unnamed> @ 0x201420 (size 54)
 -- decompile
 /* velk pseudo-C: sub_201460 @ 0x201460 */
 int32_t sub_201460(int32_t a0) {
-    uint32_t v3;
     uint32_t result;
 
-    v3 = a0;
+    uint32_t v3 = a0;
     if (a0 != 0) {
         result = ((int32_t)(sub_201420(v3 - 1)));
         return result;

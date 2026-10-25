@@ -79,9 +79,7 @@ fn seh_except @ 0x180001010 (size 68)
 -- decompile
 /* velk pseudo-C: seh_except__except_filter_0 @ 0x180001060 */
 int32_t seh_except__except_filter_0(uint64_t *a0, uint32_t *a1) {
-    int32_t v1;
-
-    v1 = *a0;
+    int32_t v1 = *a0;
     return choose_filter(a1[14]);
 }
 -- signature
@@ -158,9 +156,7 @@ fn seh_finally__finally_0 @ 0x1800010e0 (size 31)
 -- decompile
 /* velk pseudo-C: sub_180001100 @ 0x180001100 */
 int32_t sub_180001100(int32_t a0, uint32_t *a1) {
-    int32_t v1;
-
-    v1 = a1[-2] + 3;
+    int32_t v1 = a1[-2] + 3;
     a1[-2] = v1;
     return v1;
 }

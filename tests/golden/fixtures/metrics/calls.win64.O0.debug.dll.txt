@@ -81,11 +81,9 @@ fn pick_op @ 0x180001020 (size 32)
 /* ref: 0x180002000 .rdata */
 int apply_table(unsigned int index, int x) {
     uint64_t *const table = (uint64_t *)0x180002000ULL;
-    uint32_t v1;
-    int64_t v2;
 
-    v1 = index % 3;
-    v2 = table[v1];
+    uint32_t v1 = index % 3;
+    int64_t v2 = table[v1];
     return ((uint64_t (*)())v2)(x & 0xffffffff);
 }
 -- signature

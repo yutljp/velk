@@ -285,33 +285,18 @@ fn is_declaration(code: &str) -> bool {
     let Some(body) = code.strip_prefix("    ") else {
         return false;
     };
-    let Some(body) = body.trim_end().strip_suffix(';') else {
-        return false;
-    };
-    if body.starts_with(' ') || body.starts_with("return ") || body.starts_with("goto ") {
+    if body.starts_with([' ', '{']) || body.starts_with("return ") || body.starts_with("goto ") {
         return false;
     }
     if let Some((declaration, _)) = body.split_once('=') {
-        let declaration = declaration.trim_end();
-        let Some((ty, name)) = declaration
-            .split_once('*')
-            .or_else(|| declaration.rsplit_once(' '))
-        else {
+        if declaration.contains('[') {
             return false;
-        };
-        let name = name.trim();
-        let name = name.strip_prefix("const ").unwrap_or(name);
-        return matches!(
-            ty.trim(),
-            "uint8_t" | "uint16_t" | "uint32_t" | "uint64_t" | "float" | "double"
-        ) && name
-            .bytes()
-            .next()
-            .is_some_and(|byte| byte.is_ascii_alphabetic() || byte == b'_')
-            && name
-                .bytes()
-                .all(|byte| byte.is_ascii_alphanumeric() || byte == b'_');
+        }
+        return is_declaration(&format!("    {};", declaration.trim_end()));
     }
+    let Some(body) = body.trim_end().strip_suffix(';') else {
+        return false;
+    };
     if body.contains('(') {
         return false;
     }
@@ -373,12 +358,27 @@ fn declarations_include_named_global_views() {
         "    uint64_t fs_base = velk_x86_fs_base();",
         "    uint64_t target_state = read_target_state();",
         "    float gain = 1.0f;",
+        "    int64_t result = 1;",
+        "    size_t n = 8;",
+        "    struct pair *v2 = source;",
+        "    uint64_t **v3 = source;",
+        "    int result = 1;",
+        "    long count = 8;",
+        "    const char *text = source;",
+        "    const void *address = source;",
+        "    bool ready = true;",
+        "    unsigned long count = 8;",
+        "    FILE *stream = source;",
     ] {
         assert!(is_declaration(code), "{code}");
     }
+    let mut counts = Readability::default();
+    counts.add("int f(void) {\n    const char *text = \"/*\";\n    int64_t value = 0 /* undefined */;\n    return text[0] + value;\n}\n");
+    assert_eq!(counts.variables, 2);
     for code in [
         "    uint64_t rax;",
         "    *counter = 1;",
+        "    { counter = 1; }",
         "    counter[0] = 1;",
         "    counter = (uint32_t *)(uintptr_t)0x1000;",
         "    counter *= 2;",

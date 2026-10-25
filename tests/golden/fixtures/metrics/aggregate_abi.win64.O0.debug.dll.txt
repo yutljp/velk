@@ -193,9 +193,7 @@ fn abi_hfa4_adjust @ 0x180001150 (size 73)
 /* velk pseudo-C: abi_exhaust_five @ 0x1800011a0 */
 struct S1 { int64_t field_0x0; int64_t field_0x8; };
 int64_t abi_exhaust_five(int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5, int64_t a6) {
-    struct S1 *v2;
-
-    v2 = (struct S1 *)a5;
+    struct S1 *v2 = (struct S1 *)a5;
     return a0 + a1 * 3 + a2 * 5 + a3 * 7 + a4 * 11 + v2->field_0x0 * 13 + v2->field_0x8 * 17 + a6 * 19; /* also returns  */
 }
 -- signature
@@ -215,9 +213,7 @@ fn abi_exhaust_five @ 0x1800011a0 (size 110)
 /* velk pseudo-C: abi_exhaust_seven @ 0x180001210 */
 struct S1 { int64_t field_0x0; int64_t field_0x8; };
 int64_t abi_exhaust_seven(int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5, int64_t a6, int64_t a7, int64_t a8) {
-    struct S1 *v2;
-
-    v2 = (struct S1 *)a7;
+    struct S1 *v2 = (struct S1 *)a7;
     return a0 + a1 * 3 + a2 * 5 + a3 * 7 + a4 * 11 + a5 * 13 + a6 * 17 + v2->field_0x0 * 19 + v2->field_0x8 * 23 + a8 * 29; /* also returns  */
 }
 -- signature
@@ -275,9 +271,7 @@ fn abi_indirect_make @ 0x1800012a0 (size 73)
 /* velk pseudo-C: abi_exhaust_five_aligned @ 0x1800012f0 */
 struct S1 { int64_t field_0x0; int64_t field_0x8; };
 int64_t abi_exhaust_five_aligned(int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5, int64_t a6) {
-    struct S1 *v2;
-
-    v2 = (struct S1 *)a5;
+    struct S1 *v2 = (struct S1 *)a5;
     return a0 + a1 * 3 + a2 * 5 + a3 * 7 + a4 * 11 + v2->field_0x0 * 13 + v2->field_0x8 * 17 + a6 * 19; /* also returns  */
 }
 -- signature
@@ -297,9 +291,7 @@ fn abi_exhaust_five_aligned @ 0x1800012f0 (size 110)
 /* velk pseudo-C: abi_exhaust_seven_aligned @ 0x180001360 */
 struct S1 { int64_t field_0x0; int64_t field_0x8; };
 int64_t abi_exhaust_seven_aligned(int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5, int64_t a6, int64_t a7, int64_t a8) {
-    struct S1 *v2;
-
-    v2 = (struct S1 *)a7;
+    struct S1 *v2 = (struct S1 *)a7;
     return a0 + a1 * 3 + a2 * 5 + a3 * 7 + a4 * 11 + a5 * 13 + a6 * 17 + v2->field_0x0 * 19 + v2->field_0x8 * 23 + a8 * 29; /* also returns  */
 }
 -- signature

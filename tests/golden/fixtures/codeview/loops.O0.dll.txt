@@ -8,11 +8,8 @@
 -- decompile
 /* velk pseudo-C: count_bits @ 0x180001000 */
 int32_t count_bits(uint32_t x) {
-    uint32_t v1;
-    int32_t result;
-
-    v1 = x;
-    result = 0;
+    uint32_t v1 = x;
+    int32_t result = 0;
     while (v1 != 0) {
         result = (v1 & 0x1) + result;
         v1 >>= 1;
@@ -43,10 +40,9 @@ fn count_bits @ 0x180001000 (size 49)
 -- decompile
 /* velk pseudo-C: sum_until @ 0x180001040 */
 int32_t sum_until(int32_t limit) {
-    int32_t result;
     int32_t i;
 
-    result = 0;
+    int32_t result = 0;
     for (i = 1; i <= limit; i++) {
         result = i + result;
     }

@@ -8,9 +8,7 @@
 -- decompile
 /* velk pseudo-C: sub_180001000 @ 0x180001000 */
 int32_t sub_180001000(uint32_t a0) {
-    int32_t result;
-
-    result = 0;
+    int32_t result = 0;
     if (a0 == 0) {
         return 0;
     }
@@ -76,13 +74,11 @@ fn <unnamed> @ 0x180001020 (size 64)
 -- decompile
 /* velk pseudo-C: sub_180001060 @ 0x180001060 */
 int32_t sub_180001060(uint32_t *a0, int32_t a1) {
-    int32_t result;
-    uint32_t v3;
     int64_t i;
     int32_t v5;
 
-    result = 0;
-    v3 = (a1 <= 0 ? 0 : a1);
+    int32_t result = 0;
+    uint32_t v3 = (a1 <= 0 ? 0 : a1);
     if (a1 <= 0) {
         return 0;
     }

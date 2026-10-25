@@ -123,11 +123,9 @@ fn pick_op @ 0x201310 (size 21)
 int apply_table(unsigned int index, int x) {
     uint8_t *const table = (uint8_t *)0x202610ULL;
     uint64_t *const table_u64 = (uint64_t *)0x202610ULL;
-    uint32_t v1;
-    int64_t v2;
 
-    v1 = 0xaaaaaaab * (uint64_t)index >> 33;
-    v2 = index - v1 * 3;
+    uint32_t v1 = 0xaaaaaaab * (uint64_t)index >> 33;
+    int64_t v2 = index - v1 * 3;
     return ((uint64_t (*)())table_u64[v2])(x & 0xffffffff, x, v1, table);
 }
 -- signature
@@ -183,7 +181,6 @@ int factorial(int n) {
     uint64_t *const qword_2001c0 = (uint64_t *)0x2001c0ULL;
     uint64_t *const qword_2001c8 = (uint64_t *)0x2001c8ULL;
     uint32_t t1;
-    int32_t result;
     int32_t v2;
     int32_t v3;
     uint64_t v4;
@@ -208,7 +205,7 @@ int factorial(int n) {
     uint64_t v36;
     uint32_t v46;
 
-    result = 1;
+    int32_t result = 1;
     if (n < 2) {
         return 1;
     }

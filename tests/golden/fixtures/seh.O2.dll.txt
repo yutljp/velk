@@ -85,12 +85,11 @@ fn seh_except__except_filter_0 @ 0x180001040 (size 32)
 /* velk pseudo-C: seh_finally @ 0x180001060 */
 /* ref: 0x1800020f0 .rdata */
 int32_t seh_finally(int32_t a0) {
-    int32_t v1;
     uint32_t result; /* [sp-c] */
     _Alignas(16) uint8_t local_1[0x8]; /* [sp-8] */
 
     result = a0;
-    v1 = imported_value();
+    int32_t v1 = imported_value();
     result = v1;
     sub_1800010b0(local_1);
     return result;
@@ -138,11 +137,8 @@ fn seh_finally__finally_0 @ 0x180001090 (size 29)
 /* velk pseudo-C: seh_nested @ 0x1800010c0 */
 /* ref: 0x1800020f0 .rdata */
 int32_t seh_nested(void) {
-    int32_t v1;
-    int32_t v2;
-
-    v1 = imported_value();
-    v2 = v1;
+    int32_t v1 = imported_value();
+    int32_t v2 = v1;
     sub_180001110();
     return v2;
 L_1800010da:

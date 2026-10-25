@@ -79,7 +79,7 @@ int32_t record_total(struct record *items, int32_t n) {
             v8 = *(int16_t *)(v6 - 0xc) * *(uint32_t *)(v6 - 0x10) + v7 + (v4 + *(int16_t *)(v6 - 0x24) * *(uint32_t *)(v6 - 0x28));
             v4 = *(int16_t *)(v6) * *(uint32_t *)(v6 - 0x4) + v8;
             v3 += 4;
-            v6 = v6 + 0x30;
+            v6 += 0x30;
         } while (v1 != v3);
         if (v2 == 0) {
             return v4;
@@ -209,9 +209,8 @@ fn big_make @ 0x1800010e0 (size 24)
 struct big { _Alignas(4) int32_t a; int32_t b; int32_t c; int32_t d; };
 int32_t big_sum(struct big value) {
     uint8_t *value_address = (uint8_t *)&value;
-    uint64_t v1;
 
-    v1 = add_lanes32(*(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, value_address + 0x8, 8), *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, value_address, 8));
+    uint64_t v1 = add_lanes32(*(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, value_address + 0x8, 8), *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, value_address, 8));
     return add_lanes32(v1 >> 32 | v1 >> 32 << 32, v1);
 }
 -- signature

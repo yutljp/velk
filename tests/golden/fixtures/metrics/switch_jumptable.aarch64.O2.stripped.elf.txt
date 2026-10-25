@@ -7,9 +7,8 @@
 /* ref: 0x220464 .bss */
 int32_t sub_210184(int32_t a0) {
     uint32_t *const dword_220464 = (uint32_t *)0x220464ULL;
-    int32_t v1;
 
-    v1 = -1;
+    int32_t v1 = -1;
     if ((uint32_t)a0 <= 9) {
         v1 = *dword_220464;
         if ((uint32_t)a0 > 0) {

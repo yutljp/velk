@@ -60,9 +60,8 @@ fn target @ 0x13f0 (size 10)
 /* velk pseudo-C: use_ptr @ 0x1400 */
 int32_t use_ptr(void) {
     uint64_t *const qword_24b0 = (uint64_t *)0x24b0ULL;
-    uint64_t *v1;
 
-    v1 = (uint64_t *)*qword_24b0;
+    uint64_t *v1 = (uint64_t *)*qword_24b0;
     return ((uint64_t (*)())*v1)();
 }
 -- signature

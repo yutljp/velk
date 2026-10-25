@@ -43,9 +43,7 @@ static inline uint64_t sub_lanes32(uint64_t a, uint64_t b) {
 -- decompile
 /* velk pseudo-C: rect_area @ 0x2101dc */
 int rect_area(struct rect *r) {
-    uint64_t v1;
-
-    v1 = sub_lanes32(*(uint64_t *)((uint8_t *)r + 0x8), *(uint64_t *)(r));
+    uint64_t v1 = sub_lanes32(*(uint64_t *)((uint8_t *)r + 0x8), *(uint64_t *)(r));
     return mul_lanes32(v1, (v1 >> 32) * 0x100000001);
 }
 -- signature
@@ -100,7 +98,7 @@ long record_total(struct record *items, int n) {
             v7 -= 2;
             v10 = *(uint64_t *)(v6);
             v11 = *(int16_t *)(v6 + 0x8);
-            v6 = v6 + 0x30;
+            v6 += 0x30;
             v3 = v8 * v9 + v3;
             v5 = v10 * v11 + v5;
         } while (v7 != 0);
@@ -118,7 +116,7 @@ long record_total(struct record *items, int n) {
         v14 = *(uint64_t *)(v13 - 0x8);
         v15 = *(int16_t *)(v13);
         --v12;
-        v13 = v13 + 0x18;
+        v13 += 0x18;
         v3 = v14 * v15 + v3;
     } while (v12 != 0);
     return v3;
@@ -208,9 +206,8 @@ struct big { _Alignas(8) long a; long b; long c; long d; };
 struct big big_make(long seed) {
     struct big result = {0};
     uint64_t seed_bits = seed;
-    int64_t v1;
 
-    v1 = seed_bits << 1;
+    int64_t v1 = seed_bits << 1;
     result.a = seed_bits;
     result.b = seed_bits + 1;
     result.c = v1;
@@ -296,9 +293,7 @@ fn flags_level @ 0x2102d8 (size 20)
 -- decompile
 /* velk pseudo-C: flags_set_mode @ 0x2102ec */
 void flags_set_mode(struct flags *f, unsigned int mode) {
-    uint8_t v1;
-
-    v1 = *(uint8_t *)(f);
+    uint8_t v1 = *(uint8_t *)(f);
     *(uint8_t *)(f) = v1 & 0xfffffff1 | (mode & 0x7) << 1;
 }
 -- signature

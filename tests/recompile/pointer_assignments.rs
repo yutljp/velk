@@ -69,7 +69,7 @@ fn printed_indexed_stack_pointer_assignments_preserve_byte_offsets() {
     );
     let candidate = printed_candidate(ir, (0..38).map(|index| vec![index]).collect());
     assert!(
-        candidate.code.contains("uint32_t *v1;"),
+        candidate.code.contains("uint32_t *v1 ="),
         "{}",
         candidate.code
     );
@@ -117,10 +117,74 @@ fn printed_variables_at_and_above_ssa_boundary_are_declared() {
     let candidate = printed_candidate(ir, vec![vec![0], vec![1], vec![u64::MAX]]);
     for name in ["v3840", "s0", "s1"] {
         assert!(
-            candidate.code.contains(&format!(" {name};")),
+            candidate.code.contains(&format!(" {name} =")),
             "{}",
             candidate.code
         );
     }
     check_candidates("many-variables", vec![candidate], Mode::Registers, &[]);
+}
+
+#[test]
+fn pointer_self_updates_preserve_element_and_byte_offsets() {
+    for (suffix, op, step, update) in [
+        ("elements", BinOp::Add, 8, Some("p += 0x2;")),
+        ("increment", BinOp::Add, 4, Some("++p;")),
+        ("decrement", BinOp::Sub, 4, Some("--p;")),
+        ("negative", BinOp::Add, u64::MAX - 3, Some("--p;")),
+        ("bytes", BinOp::Add, 8, None),
+    ] {
+        let pointer = Expr::reg(7, 64);
+        let mut params = vec![Param {
+            index: 7,
+            name: "p".into(),
+            ty: CType::pointer_to(CType::U32),
+        }];
+        let offset = if update.is_none() {
+            params.push(Param {
+                index: 6,
+                name: "offset".into(),
+                ty: CType::U64,
+            });
+            Expr::reg(6, 64)
+        } else {
+            Expr::Const(step)
+        };
+        let ir = synthetic_ir(
+            &format!("pointer_update_{suffix}"),
+            params,
+            CType::pointer_to(CType::U32),
+            vec![
+                Stmt::Assign {
+                    dest: RegRef {
+                        index: 7,
+                        width: 64,
+                    },
+                    value: Expr::bin(op, pointer.clone(), offset),
+                },
+                Stmt::Ret { value: pointer },
+            ],
+        );
+        let candidate = printed_candidate(ir, vec![]);
+        if let Some(update) = update {
+            assert!(candidate.code.contains(update), "{}", candidate.code);
+        } else {
+            assert!(!candidate.code.contains("p +="), "{}", candidate.code);
+        }
+        let negative = op == BinOp::Sub || step > i64::MAX as u64;
+        let sign = if negative { "-" } else { "+" };
+        let distance = if step > i64::MAX as u64 {
+            step.wrapping_neg()
+        } else {
+            step
+        };
+        let argument = if update.is_none() { ", 8" } else { "" };
+        syntax::run_printed(
+            &candidate.code,
+            "",
+            &format!(
+                "uint32_t values[8] = {{0}}; uint32_t *p = values + 2; if ((uintptr_t)pointer_update_{suffix}(p{argument}) != (uintptr_t)p {sign} {distance}) __builtin_trap();"
+            ),
+        );
+    }
 }

@@ -118,9 +118,8 @@ fn sum_while @ 0x180001000 (size 228)
 /* ref: 0x180003000 .data */
 int count_down(int n) {
     uint32_t *const sink = (uint32_t *)0x180003000ULL;
-    int32_t c;
 
-    c = 0;
+    int32_t c = 0;
     do {
         ++c;
         --n;

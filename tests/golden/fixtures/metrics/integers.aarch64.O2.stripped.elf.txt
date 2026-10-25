@@ -134,9 +134,7 @@ fn <unnamed> @ 0x210258 (size 8)
 -- decompile
 /* velk pseudo-C: sub_210260 @ 0x210260 */
 int32_t sub_210260(int32_t a0, int32_t a1, int32_t a2) {
-    int32_t v1;
-
-    v1 = (a0 < a1 ? a0 : a1);
+    int32_t v1 = (a0 < a1 ? a0 : a1);
     return (v1 < a2 ? v1 : a2);
 }
 -- signature

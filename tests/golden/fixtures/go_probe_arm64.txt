@@ -1276,9 +1276,8 @@
 /* velk pseudo-C: runtime.printstring @ 0x40bd0 */
 int64_t runtime_printstring(int64_t a0, int64_t a1) {
     uint64_t v2;
-    int32_t v1;
 
-    v1 = *(uint64_t *)(v2 + 0x10);
+    int32_t v1 = *(uint64_t *)(v2 + 0x10);
     return runtime_gwrite(a0, a1, a1);
 }
 -- signature
@@ -1318,9 +1317,8 @@ fn main.add @ 0x77420 (size 16)
 /* velk pseudo-C: main.divmod @ 0x77430 */
 int64_t main_divmod(int64_t a0, int64_t a1, int64_t a2) {
     uint64_t v2;
-    int32_t v1;
 
-    v1 = *(uint64_t *)(v2 + 0x10);
+    int32_t v1 = *(uint64_t *)(v2 + 0x10);
     if (a1 == 0) {
         runtime_panicdivide(a0, 0, a2);
     }
@@ -1349,12 +1347,10 @@ fn main.divmod @ 0x77430 (size 96)
 -- decompile
 /* velk pseudo-C: main.sumSlice @ 0x77490 */
 int64_t main_sumSlice(uint64_t *a0, int64_t a1) {
-    int64_t v1;
-    int64_t result;
     int64_t v3;
 
-    v1 = 0;
-    result = 0;
+    int64_t v1 = 0;
+    int64_t result = 0;
     while (a1 > v1) {
         v3 = a0[v1];
         ++v1;
@@ -1443,8 +1439,6 @@ int64_t main_main(int64_t a0, int64_t a1, int64_t a2) {
     uint64_t v5;
     uint64_t call_values[2];
     uint64_t v9;
-    int32_t v1;
-    int64_t v2;
     int64_t v3;
     int64_t local_0; /* [sp-60] */
     int64_t local_1; /* [sp-38] */
@@ -1452,9 +1446,9 @@ int64_t main_main(int64_t a0, int64_t a1, int64_t a2) {
     _Alignas(16) struct __attribute__((packed)) { int64_t f_0; int64_t f_8; int64_t f_10; int64_t f_18; uint8_t gap_20[0x8]; } local_3; /* [sp-28] */
     int64_t local_4; /* [sp-30] */
 
-    v1 = *(uint64_t *)(v4 + 0x10);
+    int32_t v1 = *(uint64_t *)(v4 + 0x10);
     local_0 = v5;
-    v2 = main_divmod(7, 3, a2);
+    int64_t v2 = main_divmod(7, 3, a2);
     v3 = v9; /* also returned by the call */
     local_1 = v2;
     local_2 = v3;

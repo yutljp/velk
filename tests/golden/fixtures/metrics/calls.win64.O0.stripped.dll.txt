@@ -71,11 +71,9 @@ fn <unnamed> @ 0x180001020 (size 32)
 /* ref: 0x180002000 .rdata */
 int32_t sub_180001040(uint32_t a0, int32_t a1) {
     uint64_t *const qword_180002000 = (uint64_t *)0x180002000ULL;
-    uint32_t v1;
-    int64_t v2;
 
-    v1 = a0 % 3;
-    v2 = qword_180002000[v1];
+    uint32_t v1 = a0 % 3;
+    int64_t v2 = qword_180002000[v1];
     return ((uint64_t (*)())v2)(a1 & 0xffffffff);
 }
 -- signature

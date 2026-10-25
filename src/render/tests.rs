@@ -617,9 +617,9 @@ fn variables_are_declared_with_the_types_their_uses_give() {
     );
     ir.ret_type = CType::Named("double".to_owned());
     let text = rendered(&ir);
-    assert!(text.contains("    double v1;\n"), "{text}");
-    assert!(text.contains("    double *v2;\n"), "{text}");
-    assert!(text.contains("    int64_t v3;\n"), "{text}");
+    assert!(text.contains("    double v1 ="), "{text}");
+    assert!(text.contains("    double *v2 ="), "{text}");
+    assert!(text.contains("    int64_t v3 ="), "{text}");
     // The pointer moved by bytes moves by bytes in C too.
     assert!(
         text.contains("v2 = (double *)((uint8_t *)v2 + v3);"),
@@ -663,13 +663,13 @@ fn a_counter_kept_to_32_bits_is_a_32_bit_variable() {
         ty: CType::pointer_to(CType::I64),
     }];
     let text = rendered(&ir);
-    assert!(text.contains("    int32_t result;\n"), "{text}");
+    assert!(text.contains("    int32_t result = 0;\n"), "{text}");
     assert!(text.contains("++result;"), "{text}");
     assert!(text.contains("*a0 = result;"), "{text}");
     ir.variable_registers.insert(counter, 0);
     ir.debug_registers.push((0, "total".to_owned()));
     let text = rendered(&ir);
-    assert!(text.contains("    int32_t total;\n"), "{text}");
+    assert!(text.contains("    int32_t total = 0;\n"), "{text}");
     assert!(text.contains("++total;"), "{text}");
     assert!(text.contains("*a0 = total;"), "{text}");
 }
@@ -706,7 +706,7 @@ fn a_32_bit_value_read_whole_is_a_32_bit_variable_without_a_sign() {
         },
     ];
     let text = rendered(&ir);
-    assert!(text.contains("    uint32_t v1;\n"), "{text}");
+    assert!(text.contains("    uint32_t v1 ="), "{text}");
     assert!(text.contains("v1 == a1"), "{text}");
 }
 
@@ -1246,7 +1246,7 @@ fn a_pointer_taken_as_an_integer_is_cast() {
     ir.ret_type = CType::U64;
     let text = rendered(&ir);
     for line in [
-        "    v1 = (uintptr_t)a0 & 0x7;\n",
+        "    uint8_t v1 = (uintptr_t)a0 & 0x7;\n",
         "    return (uintptr_t)(v1 != 0 ? a0 : 0);\n",
     ] {
         assert!(text.contains(line), "{line:?} in {text}");
@@ -1318,14 +1318,13 @@ fn an_array_of_structures_is_indexed_by_elements() {
     let text = rendered(&ir);
     for line in [
         "uint8_t gap_0xc[0x4]; };\n",
-        "    struct sub_0_a0 *v1;\n",
         "    a0[a1].field_0x8 = 0;\n",
         "    a0[2].field_0x8 = 0;\n",
         "    a0->field_0x8 = 0;\n",
-        "    v1 = a0 + a1;\n",
+        "    struct sub_0_a0 *v1 = a0 + a1;\n",
         "    v1->field_0x0 = 0;\n",
-        "    v1 = v1 + 0x2;\n",
-        "    v2 = (uintptr_t)&a0[a1].field_0x8;\n",
+        "    v1 += 0x2;\n",
+        "    int32_t v2 = (uintptr_t)&a0[a1].field_0x8;\n",
         "    return *(uint32_t *)((uint8_t *)a0 + ((uint64_t)a1 << 4) + 0xc);\n",
     ] {
         assert!(text.contains(line), "{line:?} in {text}");
@@ -2644,7 +2643,7 @@ fn a_structure_field_that_only_holds_pointers_is_a_pointer() {
     for line in [
         "int64_t field_0x0; uint8_t *field_0x8;",
         "    a0->field_0x8 = a1;\n",
-        "    v1 = a0->field_0x8;\n",
+        "    uint8_t *v1 = a0->field_0x8;\n",
     ] {
         assert!(text.contains(line), "{line:?} in {text}");
     }

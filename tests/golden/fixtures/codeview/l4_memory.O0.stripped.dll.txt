@@ -62,9 +62,8 @@ fn array_sum @ 0x180001040 (size 80)
 /* ref: 0x180003008 .data */
 int32_t bump(void) {
     uint32_t *const dword_180003008 = (uint32_t *)0x180003008ULL;
-    int32_t v1;
 
-    v1 = *dword_180003008 + 1;
+    int32_t v1 = *dword_180003008 + 1;
     *dword_180003008 = v1;
     return v1;
 }

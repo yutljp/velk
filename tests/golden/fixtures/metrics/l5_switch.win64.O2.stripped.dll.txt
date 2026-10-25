@@ -25,9 +25,8 @@
 /* ref: 0x180003000 .data */
 int32_t sub_180001000(int32_t a0) {
     uint32_t *const dword_180003000 = (uint32_t *)0x180003000ULL;
-    uint64_t v1;
 
-    v1 = (a0 - 10) & 0xffffffff;
+    uint64_t v1 = (a0 - 10) & 0xffffffff;
     if (v1 > 15) {
         *dword_180003000 = 0;
         return *dword_180003000;

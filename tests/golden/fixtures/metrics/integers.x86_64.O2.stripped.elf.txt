@@ -82,9 +82,7 @@ fn <unnamed> @ 0x201240 (size 13)
 -- decompile
 /* velk pseudo-C: sub_201250 @ 0x201250 */
 uint32_t sub_201250(uint32_t a0, int32_t a1) {
-    uint8_t t1;
-
-    t1 = a1 & 0x1f;
+    uint8_t t1 = a1 & 0x1f;
     return a0 << t1 | a0 >> (32 - t1 & 0x1f);
 }
 -- signature
@@ -103,10 +101,9 @@ fn <unnamed> @ 0x201250 (size 7)
 -- decompile
 /* velk pseudo-C: sub_201260 @ 0x201260 */
 int32_t sub_201260(int32_t a0) {
-    int32_t result;
     int32_t v2;
 
-    result = 0;
+    int32_t result = 0;
     if (a0 == 0) {
         return 0;
     }
@@ -157,9 +154,7 @@ fn <unnamed> @ 0x201280 (size 5)
 -- decompile
 /* velk pseudo-C: sub_201290 @ 0x201290 */
 int32_t sub_201290(int32_t a0, int32_t a1, int32_t a2) {
-    int32_t v1;
-
-    v1 = (a0 < a1 ? a0 : a1);
+    int32_t v1 = (a0 < a1 ? a0 : a1);
     return (v1 >= a2 ? a2 : v1);
 }
 -- signature

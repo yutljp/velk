@@ -37,10 +37,10 @@ void copy_bytes(unsigned char *dst, unsigned char *src, unsigned long n) {
                     unsigned char transfer[32];
                     __builtin_memcpy(transfer, (const void *)(v2 - 0x2), 32);
                     v4 -= 32;
-                    v2 = v2 + 0x4;
+                    v2 += 0x4;
                     __builtin_memcpy((void *)(v3 - 0x2), transfer, 32);
                 }
-                v3 = v3 + 0x4;
+                v3 += 0x4;
             } while (v4 != 0);
             if (v1 == n) {
                 return;
@@ -58,10 +58,10 @@ void copy_bytes(unsigned char *dst, unsigned char *src, unsigned long n) {
         v4 -= v1;
         do {
             v5 = *v2;
-            v2 = v2 + 0x1;
+            ++v2;
             v4 += 8;
             *v3 = v5;
-            v3 = v3 + 0x1;
+            ++v3;
         } while (v4 != 0);
         if (v1 == n) {
             return;
@@ -73,10 +73,10 @@ L_2102a4:
     v16 = (uint8_t *)(src + v1);
     do {
         v17 = *v16;
-        v16 = v16 + 0x1;
+        ++v16;
         --v14;
         *v15 = v17;
-        v15 = v15 + 0x1;
+        ++v15;
     } while (v14 != 0);
 }
 -- signature
@@ -177,10 +177,9 @@ fn fill_bytes @ 0x2102c4 (size 12)
 -- decompile
 /* velk pseudo-C: string_length @ 0x2102d0 */
 unsigned long string_length(char *s) {
-    int64_t v1;
     int32_t v2;
 
-    v1 = 0;
+    int64_t v1 = 0;
     do {
         v2 = (uint8_t)s[v1];
         ++v1;
@@ -281,9 +280,7 @@ fn read_volatile @ 0x21032c (size 16)
 -- decompile
 /* velk pseudo-C: swap_ints @ 0x21033c */
 void swap_ints(int *a, int *b) {
-    int32_t v1;
-
-    v1 = *a;
+    int32_t v1 = *a;
     *a = *b;
     *b = v1;
 }

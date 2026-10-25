@@ -170,10 +170,9 @@ fn <unnamed> @ 0x201310 (size 15)
 -- decompile
 /* velk pseudo-C: sub_201320 @ 0x201320 */
 int64_t sub_201320(uint8_t *a0) {
-    int64_t result;
     uint8_t v2;
 
-    result = -1;
+    int64_t result = -1;
     do {
         v2 = a0[result + 1];
         ++result;
@@ -222,9 +221,7 @@ fn <unnamed> @ 0x201340 (size 23)
 /* velk pseudo-C: sub_201360 @ 0x201360 */
 /* ref: 0x2023b0 .bss */
 int32_t sub_201360(int32_t a0, int32_t a1, int32_t a2) {
-    uint32_t *v2;
-
-    v2 = (uint32_t *)(0x2023b0 + ((a0 & 0x3) << 5));
+    uint32_t *v2 = (uint32_t *)(0x2023b0 + ((a0 & 0x3) << 5));
     v2[a1 & 0x7] = a2;
     return (uintptr_t)v2;
 }
@@ -279,9 +276,7 @@ fn <unnamed> @ 0x201390 (size 5)
 -- decompile
 /* velk pseudo-C: sub_2013a0 @ 0x2013a0 */
 int32_t sub_2013a0(uint32_t *a0, uint32_t *a1) {
-    int32_t v1;
-
-    v1 = *a0;
+    int32_t v1 = *a0;
     *a0 = *a1;
     *a1 = v1;
     return v1;

@@ -71,7 +71,7 @@ int32_t sub_180001010(uint16_t *a0, int32_t a1) {
             v8 = *(int16_t *)(v6 - 0xc) * *(uint32_t *)(v6 - 0x10) + v7 + (v4 + *(int16_t *)(v6 - 0x24) * *(uint32_t *)(v6 - 0x28));
             v4 = *(int16_t *)(v6) * *(uint32_t *)(v6 - 0x4) + v8;
             v3 += 4;
-            v6 = v6 + 0x30;
+            v6 += 0x30;
         } while (v1 != v3);
         if (v2 == 0) {
             return v4;
@@ -185,9 +185,7 @@ fn <unnamed> @ 0x1800010e0 (size 32)
 /* velk pseudo-C: sub_180001100 @ 0x180001100 */
 struct S1 { int64_t field_0x0; int64_t field_0x8; };
 uint32_t sub_180001100(struct S1 *a0) {
-    uint64_t v1;
-
-    v1 = add_lanes32(a0->field_0x8, a0->field_0x0);
+    uint64_t v1 = add_lanes32(a0->field_0x8, a0->field_0x0);
     return add_lanes32(v1 >> 32 | v1 >> 32 << 32, v1);
 }
 -- signature
@@ -240,9 +238,7 @@ fn <unnamed> @ 0x180001130 (size 32)
 -- decompile
 /* velk pseudo-C: sub_180001150 @ 0x180001150 */
 int32_t sub_180001150(uint32_t *a0, int32_t a1) {
-    int32_t v1;
-
-    v1 = (*a0 & 0xfffffff1) + (a1 & 0x7) * 2;
+    int32_t v1 = (*a0 & 0xfffffff1) + (a1 & 0x7) * 2;
     *a0 = v1;
     return v1;
 }

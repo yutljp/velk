@@ -438,7 +438,7 @@ mod tests {
             ],
         );
         let text = crate::render::render(&ir, &[], &Symbols::default(), &[]);
-        assert!(text.contains("int64_t result;"), "{text}");
+        assert!(text.contains("int64_t result = 1;"), "{text}");
         assert!(text.contains("return result + 2;"), "{text}");
     }
     #[test]

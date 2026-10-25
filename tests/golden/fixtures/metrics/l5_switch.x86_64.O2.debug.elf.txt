@@ -25,9 +25,8 @@
 /* ref: 0x20250c .bss */
 int dense(int x) {
     uint32_t *const g_sink = (uint32_t *)0x20250cULL;
-    uint64_t v1;
 
-    v1 = (x - 10) & 0xffffffff;
+    uint64_t v1 = (x - 10) & 0xffffffff;
     if (v1 > 15) {
         *g_sink = 0;
         return *g_sink;

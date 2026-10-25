@@ -42,9 +42,7 @@ fn scale @ 0x2011e0 (size 16)
 -- decompile
 /* velk pseudo-C: pick @ 0x2011f0 */
 int pick(int a, int b) {
-    int32_t result;
-
-    result = a;
+    int32_t result = a;
     if (a <= b) {
         return b;
     }

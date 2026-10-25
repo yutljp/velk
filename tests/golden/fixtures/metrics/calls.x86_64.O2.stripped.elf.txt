@@ -112,11 +112,9 @@ fn <unnamed> @ 0x201310 (size 21)
 /* ref: 0x202610 .data.rel.ro */
 int32_t sub_201330(uint32_t a0, int32_t a1) {
     uint64_t *const qword_202610 = (uint64_t *)0x202610ULL;
-    uint32_t v1;
-    int64_t v2;
 
-    v1 = 0xaaaaaaab * (uint64_t)a0 >> 33;
-    v2 = a0 - v1 * 3;
+    uint32_t v1 = 0xaaaaaaab * (uint64_t)a0 >> 33;
+    int64_t v2 = a0 - v1 * 3;
     return ((uint64_t (*)())qword_202610[v2])(a1 & 0xffffffff, a1, v1, 0x202610);
 }
 -- signature
@@ -172,7 +170,6 @@ int32_t sub_201370(int32_t a0) {
     uint64_t *const qword_2001c0 = (uint64_t *)0x2001c0ULL;
     uint64_t *const qword_2001c8 = (uint64_t *)0x2001c8ULL;
     uint32_t t1;
-    int32_t result;
     int32_t v2;
     int32_t v3;
     uint64_t v4;
@@ -197,7 +194,7 @@ int32_t sub_201370(int32_t a0) {
     uint64_t v36;
     uint32_t v46;
 
-    result = 1;
+    int32_t result = 1;
     if (a0 < 2) {
         return 1;
     }

@@ -282,10 +282,9 @@ fn fill_bytes @ 0x180001120 (size 189)
 -- decompile
 /* velk pseudo-C: string_length @ 0x1800011e0 */
 uint32_t string_length(char *s) {
-    int32_t n;
     uint32_t v2;
 
-    n = 0;
+    int32_t n = 0;
     do {
         v2 = n;
         ++n;
@@ -386,9 +385,7 @@ fn read_volatile @ 0x180001250 (size 7)
 -- decompile
 /* velk pseudo-C: swap_ints @ 0x180001260 */
 void swap_ints(int *a, int *b) {
-    int32_t v1;
-
-    v1 = *a;
+    int32_t v1 = *a;
     *a = *b;
     *b = v1;
 }

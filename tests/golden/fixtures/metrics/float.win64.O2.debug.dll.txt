@@ -9,16 +9,14 @@
 -- decompile
 /* velk pseudo-C: average @ 0x180001000 */
 double average(double *values, int n) {
-    double result;
-    double v2;
     uint32_t v3;
     uint8_t v4;
     int64_t i;
     double *v14;
     int64_t i_2;
 
-    result = 0.0;
-    v2 = 0.0;
+    double result = 0.0;
+    double v2 = 0.0;
     if (n > 0) {
         v3 = n;
         v4 = v3 & 0x7;
@@ -144,9 +142,7 @@ fn truncate_to_int @ 0x1800010c0 (size 5)
 -- decompile
 /* velk pseudo-C: widen @ 0x1800010d0 */
 double widen(float x) {
-    double v1;
-
-    v1 = (double)x;
+    double v1 = (double)x;
     return v1 + v1;
 }
 -- signature
@@ -165,9 +161,7 @@ fn widen @ 0x1800010d0 (size 9)
 -- decompile
 /* velk pseudo-C: compare_doubles @ 0x1800010e0 */
 int compare_doubles(double a, double b) {
-    int32_t v1;
-
-    v1 = b < a;
+    int32_t v1 = b < a;
     return (!(a < b) ? v1 : 0xffffffff);
 }
 -- signature

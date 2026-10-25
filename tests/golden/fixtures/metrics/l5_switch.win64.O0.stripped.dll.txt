@@ -25,10 +25,9 @@
 /* ref: 0x180003000 .data */
 int32_t sub_180001000(int32_t a0) {
     uint32_t *const dword_180003000 = (uint32_t *)0x180003000ULL;
-    uint32_t v1;
     int64_t local_0; /* [sp-10] */
 
-    v1 = a0 - 10;
+    uint32_t v1 = a0 - 10;
     local_0 = v1;
     if (v1 <= 15) {
         switch (local_0 - 15) {

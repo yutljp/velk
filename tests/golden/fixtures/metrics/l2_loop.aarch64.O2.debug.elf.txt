@@ -54,11 +54,9 @@ fn sum_while @ 0x2101c4 (size 60)
 /* ref: 0x220298 .bss */
 int count_down(int n) {
     uint32_t *const sink = (uint32_t *)0x220298ULL;
-    int32_t v1;
-    int32_t v2;
 
-    v1 = 0;
-    v2 = (n > 1 ? n : 1);
+    int32_t v1 = 0;
+    int32_t v2 = (n > 1 ? n : 1);
     do {
         ++v1;
         *sink = v1;

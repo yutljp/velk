@@ -65,9 +65,7 @@ fn <unnamed> @ 0x180001040 (size 21)
 -- decompile
 /* velk pseudo-C: sub_180001060 @ 0x180001060 */
 uint8_t sub_180001060(int32_t a0, int32_t a1, int32_t a2) {
-    uint8_t result;
-
-    result = 0;
+    uint8_t result = 0;
     if (a0 < a1) {
         return result;
     }
@@ -111,11 +109,8 @@ fn <unnamed> @ 0x1800010a0 (size 43)
 -- decompile
 /* velk pseudo-C: sub_1800010d0 @ 0x1800010d0 */
 int32_t sub_1800010d0(int32_t a0) {
-    int32_t v1;
-    int32_t result;
-
-    v1 = a0;
-    result = 0;
+    int32_t v1 = a0;
+    int32_t result = 0;
     while (v1 != 0) {
         v1 = v1 - 1 & v1;
         ++result;

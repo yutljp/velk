@@ -9,16 +9,14 @@
 -- decompile
 /* velk pseudo-C: sub_2011b0 @ 0x2011b0 */
 double sub_2011b0(double *a0, int32_t a1) {
-    double result;
-    double v2;
     uint32_t v3;
     uint8_t v4;
     int64_t i;
     double *v14;
     int64_t i_2;
 
-    result = 0.0;
-    v2 = 0.0;
+    double result = 0.0;
+    double v2 = 0.0;
     if (a1 > 0) {
         v3 = a1;
         v4 = v3 & 0x7;
@@ -140,9 +138,7 @@ fn <unnamed> @ 0x201270 (size 5)
 -- decompile
 /* velk pseudo-C: sub_201280 @ 0x201280 */
 double sub_201280(float a0) {
-    double v1;
-
-    v1 = (double)a0;
+    double v1 = (double)a0;
     return v1 + v1;
 }
 -- signature
@@ -161,9 +157,7 @@ fn <unnamed> @ 0x201280 (size 9)
 -- decompile
 /* velk pseudo-C: sub_201290 @ 0x201290 */
 int32_t sub_201290(double a0, double a1) {
-    int32_t v1;
-
-    v1 = a1 < a0;
+    int32_t v1 = a1 < a0;
     return (!(a0 < a1) ? v1 : 0xffffffff);
 }
 -- signature
