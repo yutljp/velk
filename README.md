@@ -10,7 +10,7 @@ English | [日本語](README.ja.md)
 
 </div>
 
-velk is a decompiler for ELF, PE and Mach-O binaries (x86-64 and AArch64), ELF and PE binaries
+velk is a decompiler for ELF, PE and Mach-O binaries (x86-64 and AArch64), ELF32 and PE32 binaries
 (x86-32), and little-endian ELF32 binaries (ARM32: A32/T32). It prints C code that computes the same
 results as the original binary. You can use it from the command line, or from an LLM agent through
 its scripting API and MCP server.
@@ -36,6 +36,14 @@ int sum_until_zero(int *p, int n) {
 }
 ```
 
+## Features
+
+- Cross references, call graphs, string and constant searches, and function summaries.
+- Byte signatures to identify stripped library functions.
+- Generated C API type libraries for macOS, Windows (Win32 and the C runtime), and Linux (glibc).
+- Persistent names, types and comments in project files (`--project`, `--annotate`).
+- Analysis of C++ virtual calls through vtables.
+
 ## Usage
 
 ```bash
@@ -45,6 +53,8 @@ velk --functions path/to/binary          # list functions
 velk --decompile path/to/binary main     # decompile one function
 velk --decompile path/to/binary '*'      # decompile all functions
 velk --disasm    path/to/binary 0x1000   # disassemble
+velk --xrefs     path/to/binary main     # references to main
+velk --strings   path/to/binary          # strings with references
 ```
 
 Run `velk --help` for all options.

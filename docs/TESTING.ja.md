@@ -18,7 +18,7 @@ velk の出力を変えるのは、以下のチェックがすべて通った場
 
 ```bash
 cargo build --release
-cargo test --release
+cargo test --release -- --test-threads 3
 cargo fmt -- --check
 cargo clippy --release --all-targets -- -D warnings
 BIN=target/release/velk sh tests/smoke.sh
@@ -39,7 +39,7 @@ BIN=target/release/velk sh tests/ladder.sh
   比べます。`tests/golden/recompile.txt` と `tests/golden/recompile_memory.txt` の `differ` はすべて 0 でなければなりません。
 - **全関数のコンパイル。** すべてのテスト用バイナリのすべての関数について、出力した C を標準ヘッダと一緒にコンパイルします。
   時間がかかるため `#[ignore]` になっています。
-  `cargo test --release --test recompile every_fixture_function_compiles -- --ignored` で実行します。
+  `cargo test --release --test recompile every_fixture_function_compiles -- --ignored --test-threads 3` で実行します。
   通常のテストでは一部だけを高速に確認します。
 - **ゴールデン出力。** `tests/golden/` には各テスト用バイナリの期待出力と、読みやすさの指標 (行数、変数、キャスト、goto)
   が入っています。これらのファイルの変更はすべてレビューしてください。
@@ -47,12 +47,15 @@ BIN=target/release/velk sh tests/ladder.sh
 C のチェックに使うコンパイラは `VELK_TEST_CC` で指定できます (既定は `clang`)。Homebrew の新しい clang がある場合は、
 一部のチェックをそれでも実行します。新しいコンパイラは古いものが受け付ける型変換の一部を拒否するためです。
 
+再コンパイルのチェックは関数をまとめてコンパイルし、最大 3 ワーカーで処理します。
+コンパイル・実行結果と IR の期待値を `target/recompile-cache/` にキャッシュし、入力が変わらない場合に再利用します。
+
 ## ゴールデンファイルの更新
 
 出力の変更が意図したものであれば、ゴールデンファイルを再生成して差分を確認します。
 
 ```bash
-VELK_BLESS=1 cargo test --release
+VELK_BLESS=1 cargo test --release -- --test-threads 3
 git diff tests/golden
 ```
 
@@ -85,7 +88,7 @@ docker compose run --rm fixtures uv run tests/generate_type_library.py --platfor
 docker compose run --rm fixtures sh tests/make_type_library_fixtures.sh linux
 ```
 
-Windows データは x86-64 と x86-32 を含み、現在のリフト対象は x86-64 です。
+Windows データとリフターは x86-64 と x86-32 に対応します。
 Linux のデータとフィクスチャは x86-64 と AArch64 を対象とします。各ターゲットの
 コンパイラーで宣言とパディングを含む構造体のサイズ、アラインメント、フィールドのオフセットを検証します。
 

@@ -26,8 +26,8 @@ C · disassembly · IR · function summary (JSON)
 
 ## Loader (`src/loader/`)
 
-The loader reads ELF, PE / COFF and Mach-O files and builds an `Image`: the sections, the functions with their
-names and sizes, data symbols, and imports.
+The loader reads ELF (including ELF32), PE / COFF (including PE32) and Mach-O files and builds
+an `Image`: the sections, the functions with their names and sizes, data symbols, and imports.
 
 - Relocatable object files (`.o`, `.obj`) are laid out the way a linker would and their relocations are applied,
   so calls and data references point at real addresses.
@@ -73,10 +73,11 @@ function, and that the printed C computes the same results.
 - **Function summaries**: which registers and stack slots a function reads as arguments, what it returns, and
   whether it returns at all. Summaries are computed over the call graph so that callers see accurate callees.
 - **Jump tables**: indirect jumps through a table become `switch` statements.
+- **Indirect calls**: recovered C++ vtable information narrows the targets of virtual calls.
 - **Typing**: integer widths and signedness, pointers, recovered structures and the types from debug information.
 
 The C API type library lazily loads compiler-checked declarations and layouts from macOS SDK headers
-for Mach-O, mingw-w64 headers for PE/COFF (using DLL-qualified imports), and glibc headers for ELF,
+for Mach-O, mingw-w64 and C runtime headers for PE/COFF (using DLL-qualified imports), and glibc headers for ELF,
 with separate target layouts.
 
 ## Optimization passes (`src/passes/`, `src/ssa/`)
@@ -115,6 +116,9 @@ Rendering turns the optimized IR into C:
   server all go through it.
 - `src/main.rs` is the command line; `src/script/` runs JavaScript against the scripting API; `src/mcp.rs` is the MCP server that
   exposes that API to agents.
+- `src/xrefs.rs` indexes cross references and the call graph, and provides string and constant queries and function summaries.
+- `src/sigs/bytes.rs` matches byte signatures to identify stripped library functions.
+- `src/project/` persists binary-bound names, types and comments as JSON and applies them to analysis and output.
 
 ## How correctness is checked
 

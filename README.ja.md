@@ -10,7 +10,7 @@
 
 </div>
 
-velk は ELF・PE・Mach-O（x86-64 / AArch64）、ELF・PE（x86-32）、リトルエンディアン ELF32（ARM32: A32/T32）を読み、
+velk は ELF・PE・Mach-O（x86-64 / AArch64）、ELF32・PE32（x86-32）、リトルエンディアン ELF32（ARM32: A32/T32）を読み、
 元のバイナリと同じ計算をする C を出力するデコンパイラです。
 コマンドラインのほか、LLM エージェント向けにスクリプト API と MCP サーバを備えています。
 
@@ -35,6 +35,14 @@ int sum_until_zero(int *p, int n) {
 }
 ```
 
+## 機能
+
+- クロスリファレンス、コールグラフ、文字列・定数の検索と関数の要約。
+- バイトシグネチャによる、シンボルを削除したライブラリ関数の識別。
+- macOS、Windows（Win32 と C ランタイム）、Linux（glibc）の生成済み C API 型ライブラリ。
+- プロジェクトファイルへの名前・型・コメントの永続化（`--project`、`--annotate`）。
+- vtable を通じた C++ 仮想呼び出しの解析。
+
 ## 使い方
 
 ```bash
@@ -44,6 +52,8 @@ velk --functions path/to/binary          # 関数の一覧
 velk --decompile path/to/binary main     # 疑似 C
 velk --decompile path/to/binary '*'      # すべての関数
 velk --disasm    path/to/binary 0x1000   # 逆アセンブル
+velk --xrefs     path/to/binary main     # main への参照
+velk --strings   path/to/binary          # 参照付きの文字列
 ```
 
 そのほかの操作は `velk --help` を参照してください。

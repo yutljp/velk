@@ -18,7 +18,7 @@ From the repository root:
 
 ```bash
 cargo build --release
-cargo test --release
+cargo test --release -- --test-threads 3
 cargo fmt -- --check
 cargo clippy --release --all-targets -- -D warnings
 BIN=target/release/velk sh tests/smoke.sh
@@ -42,7 +42,7 @@ BIN=target/release/velk sh tests/ladder.sh
   `tests/golden/recompile.txt` and `tests/golden/recompile_memory.txt` must be 0.
 - **Compiling every function.** An exhaustive check compiles the printed C of every function in every test binary
   together with the standard headers. It is marked `#[ignore]` because it is slow; run it with
-  `cargo test --release --test recompile every_fixture_function_compiles -- --ignored`. A fast subset runs in the
+  `cargo test --release --test recompile every_fixture_function_compiles -- --ignored --test-threads 3`. A fast subset runs in the
   normal suite.
 - **Golden output.** `tests/golden/` holds the expected output for each test binary and readability metrics
   (lines, variables, casts, gotos). Review every change to these files.
@@ -51,12 +51,16 @@ The compiler used by the C checks can be chosen with `VELK_TEST_CC` (default `cl
 installed, a subset of the checks also runs with it, because newer compilers reject some conversions older ones
 accept.
 
+Recompilation checks compile functions in batches and use up to three workers.
+Compilation and execution results and expected IR results are cached in `target/recompile-cache/`
+and reused when their inputs are unchanged.
+
 ## Updating golden files
 
 When an output change is intended, regenerate the golden files and review the diff:
 
 ```bash
-VELK_BLESS=1 cargo test --release
+VELK_BLESS=1 cargo test --release -- --test-threads 3
 git diff tests/golden
 ```
 
@@ -89,7 +93,7 @@ docker compose run --rm fixtures uv run tests/generate_type_library.py --platfor
 docker compose run --rm fixtures sh tests/make_type_library_fixtures.sh linux
 ```
 
-The Windows dataset includes x86-64 and x86-32; only x86-64 is currently lifted.
+The Windows dataset and lifters support x86-64 and x86-32.
 Linux data and fixtures cover x86-64 and AArch64. Each target's signatures and
 padded structure sizes, alignments, and field offsets are checked by its compiler.
 
