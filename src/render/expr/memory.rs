@@ -182,7 +182,8 @@ pub(super) fn load(addr: &Expr, width: u8, signed: bool, ctx: &Ctx<'_>) -> Print
     }
     let member = member_access(addr, width, ctx)
         .filter(|member| member.integer().is_some() || member.ty.is_pointer());
-    if crate::render::naming::object_member(addr, width, ctx).is_none()
+    if crate::render::naming::object_member(addr, width, ctx)
+        .is_none_or(|member| member.precision().is_some())
         && let Some(text) = copied_load(addr, width, ctx)
     {
         return global_load(text, width, signed, 12);

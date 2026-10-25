@@ -344,7 +344,7 @@ pub(super) fn project(
         .map(|capture| Param {
             index: capture.register,
             name: capture.name.clone(),
-            ty: crate::ir::CType::U64,
+            ty: crate::ir::CType::U32,
         })
         .collect();
     plan.captures = captures;

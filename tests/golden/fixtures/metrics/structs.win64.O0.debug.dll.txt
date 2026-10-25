@@ -73,14 +73,14 @@ fn record_total @ 0x180001030 (size 107)
 struct point { _Alignas(4) int x; int y; };
 struct point point_add(struct point a, struct point b) {
     struct point result = {0};
-    uint64_t a_x = (uint32_t)a.x;
-    uint64_t a_y = (uint32_t)a.y;
-    uint64_t b_x = (uint32_t)b.x;
-    uint64_t b_y = (uint32_t)b.y;
+    uint32_t a_x = a.x;
+    uint32_t a_y = a.y;
+    uint32_t b_x = b.x;
+    uint32_t b_y = b.y;
 
     {
-        result.x = (uint32_t)(a_x + b_x);
-        result.y = (uint32_t)(a_y + b_y);
+        result.x = a_x + b_x;
+        result.y = a_y + b_y;
         return result;
     }
 }
@@ -154,7 +154,8 @@ fn big_sum @ 0x180001110 (size 18)
 /* velk pseudo-C: word_low_byte @ 0x180001130 */
 union word { _Alignas(4) unsigned int u; float f; unsigned char bytes[4]; };
 unsigned char word_low_byte(union word w) {
-    uint64_t w_bits = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, (unsigned char *)&w + 0x0, 4);
+    uint64_t w_bits = 0;
+    __builtin_memcpy(&w_bits, &w, 4);
     uint64_t v1;
     int64_t local_0; /* [sp-8] */
 

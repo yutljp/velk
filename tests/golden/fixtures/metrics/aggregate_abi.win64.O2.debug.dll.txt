@@ -45,11 +45,10 @@ fn abi_pair_adjust @ 0x180001000 (size 21)
 struct abi_mixed { _Alignas(8) double floating; unsigned long long integer; };
 struct abi_mixed abi_mixed_adjust(struct abi_mixed value, unsigned long long delta, double bias) {
     struct abi_mixed result = {0};
-    uint64_t bias_bits = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, (unsigned char *)&bias + 0x0, 8);
-    uint8_t *value_address = (uint8_t *)&value;
-    uint8_t *result_address = (uint8_t *)&result;
+    uint64_t bias_bits = 0;
+    __builtin_memcpy(&bias_bits, &bias, 8);
 
-    __builtin_memcpy(result_address, &(uint64_t){((union { double value; uint64_t bits; }){ .value = ((union { uint64_t bits; double value; }){ .bits = (uint64_t)bias_bits }).value + ((union { uint64_t bits; double value; }){ .bits = (uint64_t)*(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, value_address, 8) }).value }).bits}, 8);
+    result.floating = ((union { uint64_t bits; double value; }){ .bits = bias_bits }).value + value.floating;
     result.integer = delta ^ value.integer;
     return result;
 }
@@ -72,12 +71,13 @@ fn abi_mixed_adjust @ 0x180001020 (size 20)
 struct abi_hfa1 { _Alignas(8) double a; };
 struct abi_hfa1 abi_hfa1_adjust(struct abi_hfa1 value, double bias) {
     struct abi_hfa1 result = {0};
-    uint64_t value_bits = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, (unsigned char *)&value + 0x0, 8);
-    uint64_t bias_bits = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, (unsigned char *)&bias + 0x0, 8);
+    uint64_t value_bits = 0;
+    __builtin_memcpy(&value_bits, &value, 8);
+    uint64_t bias_bits = 0;
+    __builtin_memcpy(&bias_bits, &bias, 8);
 
     {
-        uint64_t result_bits = ((union { double value; uint64_t bits; }){ .value = ((union { uint64_t bits; double value; }){ .bits = (uint64_t)value_bits }).value + ((union { uint64_t bits; double value; }){ .bits = (uint64_t)bias_bits }).value }).bits;
-        __builtin_memcpy((unsigned char *)&result + 0x0, &result_bits, 8);
+        result.a = ((union { uint64_t bits; double value; }){ .bits = value_bits }).value + ((union { uint64_t bits; double value; }){ .bits = bias_bits }).value;
         return result;
     }
 }
@@ -100,14 +100,15 @@ fn abi_hfa1_adjust @ 0x180001040 (size 15)
 struct abi_hfa2 { _Alignas(8) double a; double b; };
 struct abi_hfa2 abi_hfa2_adjust(struct abi_hfa2 value, double bias) {
     struct abi_hfa2 result = {0};
-    uint64_t bias_bits = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, (unsigned char *)&bias + 0x0, 8);
+    uint64_t bias_bits = 0;
+    __builtin_memcpy(&bias_bits, &bias, 8);
     uint8_t *value_address = (uint8_t *)&value;
     uint8_t *result_address = (uint8_t *)&result;
 
-    double v1 = ((union { uint64_t bits; double value; }){ .bits = (uint64_t)bias_bits }).value + ((union { uint64_t bits; double value; }){ .bits = (uint64_t)*(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, value_address + 0x8, 8) }).value;
-    __builtin_memcpy(value_address + 0x8, &(uint64_t){((union { double value; uint64_t bits; }){ .value = v1 }).bits}, 8);
+    double v1 = ((union { uint64_t bits; double value; }){ .bits = bias_bits }).value + value.b;
+    value.b = v1;
     __builtin_memcpy(result_address, &(uint64_t){*(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, value_address, 8)}, 8);
-    __builtin_memcpy(result_address + 0x8, &(uint64_t){((union { double value; uint64_t bits; }){ .value = v1 }).bits}, 8);
+    result.b = v1;
     return result;
 }
 -- signature
@@ -133,13 +134,14 @@ fn abi_hfa2_adjust @ 0x180001050 (size 20)
 struct abi_hfa3 { _Alignas(8) double a; double b; double c; };
 struct abi_hfa3 abi_hfa3_adjust(struct abi_hfa3 value, double bias) {
     struct abi_hfa3 result = {0};
-    uint64_t bias_bits = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, (unsigned char *)&bias + 0x0, 8);
+    uint64_t bias_bits = 0;
+    __builtin_memcpy(&bias_bits, &bias, 8);
     uint8_t *value_address = (uint8_t *)&value;
     uint8_t *result_address = (uint8_t *)&result;
 
-    double v1 = ((union { uint64_t bits; double value; }){ .bits = (uint64_t)bias_bits }).value + ((union { uint64_t bits; double value; }){ .bits = (uint64_t)*(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, value_address + 0x10, 8) }).value;
-    __builtin_memcpy(value_address + 0x10, &(uint64_t){((union { double value; uint64_t bits; }){ .value = v1 }).bits}, 8);
-    __builtin_memcpy(result_address + 0x10, &(uint64_t){((union { double value; uint64_t bits; }){ .value = v1 }).bits}, 8);
+    double v1 = ((union { uint64_t bits; double value; }){ .bits = bias_bits }).value + value.c;
+    value.c = v1;
+    result.c = v1;
     int64_t v2 = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, value_address + 0x8, 8);
     __builtin_memcpy(result_address, &(uint64_t){*(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, value_address, 8)}, 8);
     __builtin_memcpy(result_address + 0x8, &(uint64_t){v2}, 8);
@@ -170,11 +172,12 @@ fn abi_hfa3_adjust @ 0x180001070 (size 25)
 struct abi_hfa4 { _Alignas(8) double a; double b; double c; double d; };
 struct abi_hfa4 abi_hfa4_adjust(struct abi_hfa4 value, double bias) {
     struct abi_hfa4 result = {0};
-    uint64_t bias_bits = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, (unsigned char *)&bias + 0x0, 8);
+    uint64_t bias_bits = 0;
+    __builtin_memcpy(&bias_bits, &bias, 8);
     uint8_t *value_address = (uint8_t *)&value;
     uint8_t *result_address = (uint8_t *)&result;
 
-    __builtin_memcpy(value_address + 0x18, &(uint64_t){((union { double value; uint64_t bits; }){ .value = ((union { uint64_t bits; double value; }){ .bits = (uint64_t)bias_bits }).value + ((union { uint64_t bits; double value; }){ .bits = (uint64_t)*(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, value_address + 0x18, 8) }).value }).bits}, 8);
+    value.d = ((union { uint64_t bits; double value; }){ .bits = bias_bits }).value + value.d;
     int64_t v1 = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, value_address + 0x8, 8);
     __builtin_memcpy(result_address, &(uint64_t){*(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, value_address, 8)}, 8);
     __builtin_memcpy(result_address + 0x8, &(uint64_t){v1}, 8);

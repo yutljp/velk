@@ -13,7 +13,7 @@
 /* velk pseudo-C: copy_bytes @ 0x201280 */
 void copy_bytes(unsigned char *dst, unsigned char *src, unsigned long n) {
     uint8_t v1;
-    uint64_t i; /* [sp-28] */
+    unsigned long i; /* [sp-28] */
 
     for (i = 0; i < n; i++) {
         v1 = src[i];
@@ -48,7 +48,7 @@ fn copy_bytes @ 0x201280 (size 79)
 /* velk pseudo-C: fill_bytes @ 0x2012d0 */
 void fill_bytes(unsigned char *dst, unsigned char value, unsigned long n) {
     uint8_t v1;
-    uint64_t i; /* [sp-28] */
+    unsigned long i; /* [sp-28] */
 
     for (i = 0; i < n; i++) {
         v1 = value;
@@ -82,7 +82,7 @@ fn fill_bytes @ 0x2012d0 (size 73)
 -- decompile
 /* velk pseudo-C: string_length @ 0x201320 */
 unsigned long string_length(char *s) {
-    uint64_t n; /* [sp-18] */
+    unsigned long n; /* [sp-18] */
 
     for (n = 0; s[n] != 0; n++) {
     }

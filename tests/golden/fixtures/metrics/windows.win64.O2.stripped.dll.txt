@@ -56,7 +56,7 @@ fn <unnamed> @ 0x180001020 (size 39)
 double sub_180001050(double a0) {
     uint64_t v2 = ((union { double value; uint64_t bits; }){ .value = a0 }).bits;
 
-    double v1 = ((union { uint64_t bits; double value; }){ .bits = (uint64_t)v2 }).value;
+    double v1 = ((union { uint64_t bits; double value; }){ .bits = v2 }).value;
     uint32_t v3 = imported_value(7);
     return v1 + (double)(int32_t)v3;
 }

@@ -12,7 +12,7 @@ int sum_while(int n) {
     uint32_t *const sink = (uint32_t *)0x220380ULL;
     int32_t v2;
     uint32_t s; /* [sp-8] */
-    int32_t i; /* [sp-c] */
+    int i; /* [sp-c] */
 
     s = 0;
     for (i = 0; i < n; i++) {
@@ -56,7 +56,7 @@ fn sum_while @ 0x2101d4 (size 100)
 /* ref: 0x220380 .bss */
 int count_down(int n) {
     uint32_t *const sink = (uint32_t *)0x220380ULL;
-    int32_t n_2; /* [sp-4] */
+    int n_2; /* [sp-4] */
     uint32_t c; /* [sp-8] */
 
     n_2 = n;
@@ -100,7 +100,7 @@ int sum_skip_odd(int n) {
     uint32_t *const sink = (uint32_t *)0x220380ULL;
     int32_t v2;
     uint32_t s; /* [sp-8] */
-    int32_t i; /* [sp-c] */
+    int i; /* [sp-c] */
 
     s = 0;
     for (i = 0; i < n; i++) {
@@ -150,7 +150,7 @@ fn sum_skip_odd @ 0x21028c (size 116)
 -- decompile
 /* velk pseudo-C: find_first @ 0x210300 */
 int find_first(int *p, int n, int v) {
-    int32_t i; /* [sp-1c] */
+    int i; /* [sp-1c] */
     uint32_t result; /* [sp-4] */
 
     for (i = 0; i < n; i++) {

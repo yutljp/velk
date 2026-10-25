@@ -73,14 +73,14 @@ fn record_total @ 0x30 (size 107)
 struct point { _Alignas(4) int32_t x; int32_t y; };
 struct point point_add(struct point a, struct point b) {
     struct point result = {0};
-    uint64_t a_x = (uint32_t)a.x;
-    uint64_t a_y = (uint32_t)a.y;
-    uint64_t b_x = (uint32_t)b.x;
-    uint64_t b_y = (uint32_t)b.y;
+    uint32_t a_x = a.x;
+    uint32_t a_y = a.y;
+    uint32_t b_x = b.x;
+    uint32_t b_y = b.y;
 
     {
-        result.x = (uint32_t)(a_x + b_x);
-        result.y = (uint32_t)(a_y + b_y);
+        result.x = a_x + b_x;
+        result.y = a_y + b_y;
         return result;
     }
 }

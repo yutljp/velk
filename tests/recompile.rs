@@ -2779,6 +2779,7 @@ fn printed_aggregate_struct_fixtures_match_independent_oracles() {
                         }
                         assert!(!code.contains("__builtin_memcpy"), "{code}");
                         assert!(!code.contains("*(uint32_t *)"), "{code}");
+                        assert!(!code.contains("(uint32_t)"), "{code}");
                         assert!(!code.contains("local_"), "{code}");
                     }
                     let code = velk::render::render(&ir, &[], &Default::default(), &[]);
@@ -2965,7 +2966,7 @@ fn printed_aggregate_abi_fixtures_observe_every_result_piece() {
                 );
                 assert_abi_fixture_placement(name, abi);
                 let sizes: Vec<_> = abi.arguments.iter().map(|argument| argument.size).collect();
-                let (mut inputs, upper) = aggregate_inputs(&sizes, 12);
+                let (mut inputs, mut upper) = aggregate_inputs(&sizes, 12);
                 if name.starts_with("abi_hfa") {
                     let lanes = sizes[0] as usize / 8;
                     for (trial, input) in inputs.iter_mut().enumerate() {
@@ -2992,8 +2993,34 @@ fn printed_aggregate_abi_fixtures_observe_every_result_piece() {
                         .to_bits();
                     }
                 }
+                if name == "abi_hfa2_adjust" {
+                    for bits in [
+                        0,
+                        1 << 63,
+                        0x7ff0_0000_0000_0000,
+                        0x7ff0_0000_0000_0001,
+                        0x7ff8_0000_0000_1234,
+                    ] {
+                        let mut input = inputs[0].clone();
+                        input[0] = bits;
+                        inputs.push(input);
+                        upper.push(0);
+                    }
+                }
                 ir.name = Some(name.into());
                 let mut batch = aggregate_candidates(ir, inputs, upper);
+                if matches!(name, "abi_hfa1_adjust" | "abi_hfa2_adjust") {
+                    for candidate in &batch {
+                        assert!(candidate.code.contains("result.a ="), "{}", candidate.code);
+                        assert!(
+                            !candidate
+                                .code
+                                .contains("__builtin_memcpy((unsigned char *)&result"),
+                            "{}",
+                            candidate.code
+                        );
+                    }
+                }
                 assert_aggregate_oracle(&batch, |input, slice| {
                     abi_fixture_oracle(name, input, slice)
                 });
@@ -10332,10 +10359,7 @@ fn aggregate_field_projection_rejects_unverified_objects() {
             _ => unreachable!(),
         }
         let code = velk::render::render(&ir, &[], &Default::default(), &[]);
-        assert!(
-            !code.contains("result.x = (uint32_t)("),
-            "case {case}: {code}"
-        );
+        assert!(!code.contains("uint32_t a_x = a.x;"), "case {case}: {code}");
     }
 }
 
@@ -10359,10 +10383,7 @@ fn aggregate_field_names_preserve_c_type_names() {
     definition.fields[0] = "t".into();
     definition.members[0] = definition.members[0].replace(" x;", " t;");
     let code = velk::render::render(&ir, &[], &Default::default(), &[]);
-    assert!(
-        code.contains("uint64_t uint64_t_2 = (uint32_t)uint64.t;"),
-        "{code}"
-    );
+    assert!(code.contains("uint32_t uint64_t_2 = uint64.t;"), "{code}");
     let (inputs, upper) = aggregate_inputs(&[8, 8], 12);
     let candidates = aggregate_candidates(ir, inputs, upper);
     check_candidates("aggregate-field-names", candidates, Mode::Registers, &[]);

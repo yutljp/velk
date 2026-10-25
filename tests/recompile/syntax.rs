@@ -843,6 +843,22 @@ fn arm64_language_fixture_functions_compile() {
 }
 
 #[test]
+fn debug_fixture_functions_compile() {
+    let fixtures: Vec<_> = common::fixtures()
+        .into_iter()
+        .filter(|fixture| {
+            let name = fixture.to_string_lossy();
+            name.contains(".debug.")
+                || (name.starts_with("codeview/") && !name.contains(".stripped."))
+                || name.starts_with("arm64_debug")
+                || name.starts_with("member_types_")
+                || (name.starts_with("seh_") && name.ends_with(".dll"))
+        })
+        .collect();
+    scan(&fixtures, "debug-syntax");
+}
+
+#[test]
 fn small_fixture_functions_compile() {
     scan(
         &[

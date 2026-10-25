@@ -2546,7 +2546,7 @@ fn debug_stack_names_take_precedence_over_roles() {
         .addr;
     let text = binary.decompile(address, None, None).expect("decompile");
     assert!(text.contains("uint32_t total;"), "{text}");
-    assert!(text.contains("int32_t i;"), "{text}");
+    assert!(text.contains("int i;"), "{text}");
     assert!(text.contains("for (i = 0; i < n; i++)"), "{text}");
 }
 

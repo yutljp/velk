@@ -10,7 +10,7 @@
 /* velk pseudo-C: average @ 0x2011f0 */
 double average(double *values, int n) {
     double total; /* [sp-20] */
-    int32_t i; /* [sp-24] */
+    int i; /* [sp-24] */
     double result; /* [sp-30] */
 
     total = 0.0;

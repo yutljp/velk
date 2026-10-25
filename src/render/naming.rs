@@ -423,7 +423,6 @@ pub(super) fn object_member(addr: &Expr, width: u8, ctx: &Ctx<'_>) -> Option<Pla
                 ty: ty.clone(),
             })
             .scalar(u64::from(width))
-            && place.integer().is_some()
         {
             return Some(place);
         }
@@ -432,10 +431,6 @@ pub(super) fn object_member(addr: &Expr, width: u8, ctx: &Ctx<'_>) -> Option<Pla
             && ctx.arrays.contains_key(structure)
             && let Some(member) = ctx.members.get(&(structure.to_owned(), offset))
             && member.width == u64::from(width)
-            && member
-                .ty
-                .integer()
-                .is_some_and(|(bits, _)| bits == u32::from(width) * 8)
         {
             return Place {
                 text: format!("{}.{}", binding.object, member.name),

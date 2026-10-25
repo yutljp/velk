@@ -776,7 +776,14 @@ fn render_with(
         for capture in &logical.captures {
             declared_registers.insert(
                 capture.register,
-                declared(&CType::U64, false).expect("an integer"),
+                declared(
+                    &ir.params
+                        .iter()
+                        .find(|param| param.index == capture.register)
+                        .map_or(CType::U64, |param| param.ty.clone()),
+                    false,
+                )
+                .expect("an integer"),
             );
             value_bits.remove(&capture.register);
         }
@@ -851,7 +858,7 @@ fn render_with(
             .iter()
             .flat_map(|local| local.named())
             .filter(|local| match &local.ty {
-                Some(ty) => matches!(ty, CType::Int { signed: true, .. }),
+                Some(ty) => ty.integer().is_some_and(|(_, signed)| signed),
                 None => local.signed,
             })
             .map(|local| local.name.clone())

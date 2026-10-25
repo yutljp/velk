@@ -155,9 +155,18 @@ pub(super) fn apply(
         applied.insert(var.slot);
         if let Some((bits, signed)) = var.ty.integer() {
             if u64::from(bits) == var.size.saturating_mul(8) {
-                // Keep unsigned arithmetic when the recovered loads require it.
+                // Preserve unsigned arithmetic when the recovered loads require it.
                 local.signed &= signed;
-                local.ty = Some(CType::int(local.width, local.signed));
+                // Debug names such as Rust's i32 need C storage types.
+                local.ty = Some(
+                    if local.signed == signed
+                        && CType::pointer_to(var.ty.clone()).pointee_size() == Some(local.width)
+                    {
+                        var.ty.clone()
+                    } else {
+                        CType::int(local.width, local.signed)
+                    },
+                );
             }
         } else {
             local.ty = Some(var.ty.clone());

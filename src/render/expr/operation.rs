@@ -100,9 +100,6 @@ pub(crate) fn float_operand(
         }
         // Memory read as a float names the float type.
         Expr::Load { addr, width, .. } if u32::from(*width) * 8 == u32::from(precision.bits()) => {
-            if let Some(bits) = copied_load(addr, *width, ctx) {
-                return bits_float(Printed::opaque(bits, 12), precision);
-            }
             let float_type = match precision {
                 Precision::Single => "float",
                 Precision::Double => "double",
@@ -111,6 +108,9 @@ pub(crate) fn float_operand(
                 && member.precision() == Some(precision)
             {
                 return member.text;
+            }
+            if let Some(bits) = copied_load(addr, *width, ctx) {
+                return bits_float(Printed::opaque(bits, 12), precision);
             }
             let view = View::Float(precision);
             if let Some(indexed) = crate::render::naming::array_access_as(addr, *width, view, ctx)
@@ -138,8 +138,8 @@ pub(in crate::render) fn bits_float(bits: Printed, precision: Precision) -> Stri
         Precision::Single => ("float", "uint32_t"),
         Precision::Double => ("double", "uint64_t"),
     };
-    let bits = bits.within(12, false).text;
-    format!("((union {{ {integer} bits; {float} value; }}){{ .bits = ({integer}){bits} }}).value")
+    let bits = bits.address_integer().text;
+    format!("((union {{ {integer} bits; {float} value; }}){{ .bits = {bits} }}).value")
 }
 
 /// The C function that rounds a float to an integral value this way.

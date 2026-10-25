@@ -40,7 +40,11 @@ fn debug_local_types_preserve_signed_and_partial_loads() {
                 );
                 ir.debug_locals.push(velk::ir::DebugLocal {
                     name: "value".into(),
-                    ty: CType::int(width, declared_signed),
+                    ty: if width == 4 && declared_signed {
+                        CType::Named("int".into())
+                    } else {
+                        CType::int(width, declared_signed)
+                    },
                     slot: -16,
                     size: u64::from(width),
                 });
@@ -52,6 +56,10 @@ fn debug_local_types_preserve_signed_and_partial_loads() {
                             code.contains(&format!("uint{}_t value;", width * 8)),
                             "{code}"
                         );
+                    }
+                    if width == 4 && declared_signed && signed_load {
+                        assert!(code.contains("int value;"), "{code}");
+                        assert!(!code.contains("(int32_t)value"), "{code}");
                     }
                 }
                 let inputs: Vec<Vec<u64>> = [
@@ -70,6 +78,14 @@ fn debug_local_types_preserve_signed_and_partial_loads() {
                 .into_iter()
                 .map(|value| vec![value])
                 .collect();
+                if width == 4 && declared_signed {
+                    let mut rust = ir.clone();
+                    rust.name = Some(format!("debug_rust_integer_{signed_load}"));
+                    rust.debug_locals[0].ty = CType::Named("i32".into());
+                    let code = velk::render::render(&rust, &[], &Default::default(), &[]);
+                    assert!(!code.contains("i32 value;"), "{code}");
+                    candidates.push(printed_candidate(rust, inputs.clone()));
+                }
                 if width == 4 {
                     let mut named = ir.clone();
                     named.name = Some(format!("debug_parameter_{declared_signed}_{signed_load}"));

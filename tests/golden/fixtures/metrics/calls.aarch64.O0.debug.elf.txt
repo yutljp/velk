@@ -258,7 +258,7 @@ int sum_varargs(int count, ...) {
     va_list varargs;
     va_start(varargs, count);
     uint32_t total; /* [sp-3c] */
-    int32_t i; /* [sp-40] */
+    int i; /* [sp-40] */
 
     total = 0;
     for (i = 0; i < count; i++) {

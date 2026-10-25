@@ -32,7 +32,7 @@ fn <unnamed> @ 0x210214 (size 12)
 -- decompile
 /* velk pseudo-C: sub_210220 @ 0x210220 */
 int64_t sub_210220(int64_t a0, int64_t a1, int64_t a2, double a3) {
-    return ((union { double value; uint64_t bits; }){ .value = ((union { uint64_t bits; double value; }){ .bits = (uint64_t)a0 }).value + a3 }).bits;
+    return ((union { double value; uint64_t bits; }){ .value = ((union { uint64_t bits; double value; }){ .bits = a0 }).value + a3 }).bits;
 }
 -- signature
 int64_t (int64_t a0, int64_t a1, int64_t a2, double a3)

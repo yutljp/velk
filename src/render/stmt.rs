@@ -207,7 +207,7 @@ fn aggregate_return(value: &Expr, ctx: &Ctx<'_>) -> Option<String> {
         let mut lines = vec!["{".to_owned()];
         for (field, value) in result.fields.iter().zip(values) {
             lines.push(format!(
-                "    {}.{field} = (uint32_t)({});",
+                "    {}.{field} = {};",
                 result.name,
                 stored_value(value, 32, ctx).text
             ));
@@ -219,14 +219,55 @@ fn aggregate_return(value: &Expr, ctx: &Ctx<'_>) -> Option<String> {
     if values.len() != result.pieces.len() {
         return None;
     }
+    let float_members: Vec<_> = result
+        .pieces
+        .iter()
+        .map(|(piece, _)| {
+            let CType::Named(ty) = &result.ty else {
+                return None;
+            };
+            let Some(structure) = ty.strip_prefix("struct ") else {
+                return None;
+            };
+            if !ctx.arrays.contains_key(structure) {
+                return None;
+            }
+            let Ok(offset) = i64::try_from(piece.object_offset) else {
+                return None;
+            };
+            let Some(member) = ctx.members.get(&(structure.to_owned(), offset)) else {
+                return None;
+            };
+            let place = naming::Place {
+                text: format!("{}.{}", result.name, member.name),
+                ty: member.ty.clone(),
+            };
+            let Some(precision) = place.precision() else {
+                return None;
+            };
+            (member.width == piece.bytes
+                && u64::from(precision.bits()) == piece.bytes.saturating_mul(8))
+            .then_some((place.text, precision))
+        })
+        .collect();
     let mut lines = vec!["{".to_owned()];
-    for ((_, name), value) in result.pieces.iter().zip(values) {
+    for (index, ((_, name), value)) in result.pieces.iter().zip(values).enumerate() {
+        if let Some((target, precision)) = &float_members[index] {
+            lines.push(format!(
+                "    {target} = {};",
+                expr::float_operand(value, *precision, ctx, 0, false)
+            ));
+            continue;
+        }
         lines.push(format!(
             "    uint64_t {name} = {};",
             stored_value(value, 64, ctx).text
         ));
     }
     for (index, (piece, name)) in result.pieces.iter().enumerate() {
+        if float_members[index].is_some() {
+            continue;
+        }
         if let Some(members) = result
             .parts
             .get(index)
@@ -361,14 +402,15 @@ pub(crate) fn render_stmt(stmt: &Stmt, ctx: &Ctx<'_>) -> String {
             // Memory keeps of the value the bits stored.
             let stored = u32::from(*width) * 8;
             let member = member_access(addr, *width, ctx);
-            if naming::object_member(addr, *width, ctx).is_none()
-                && let Some(address) = expr::copy_address(addr, *width, ctx)
+            let precision = value_precision(value, ctx);
+            if naming::object_member(addr, *width, ctx).is_none_or(|member| {
+                member.precision().is_some() && member.precision() != precision
+            }) && let Some(address) = expr::copy_address(addr, *width, ctx)
             {
                 let ty = type_of(*width, false);
                 let value = conformed(value, stored_value(value, stored, ctx), None, ctx);
                 return format!("__builtin_memcpy({address}, &({ty}){{{value}}}, {width});");
             }
-            let precision = value_precision(value, ctx);
             let view = precision
                 .filter(|precision| u32::from(precision.bits()) == stored)
                 .map_or(globals::View::Unsigned(*width), globals::View::Float);

@@ -521,7 +521,7 @@ impl Plan {
             }
             if let Some(field) = &capture.field {
                 declarations.push(format!(
-                    "uint64_t {} = (uint32_t){}.{};",
+                    "uint32_t {} = {}.{};",
                     capture.name, capture.object, field
                 ));
                 continue;
@@ -574,12 +574,18 @@ impl Plan {
                 ));
                 continue;
             }
+            declarations.push(format!("uint64_t {} = 0;", capture.name));
+            let address = if capture.piece.object_offset == 0 {
+                format!("&{}", capture.object)
+            } else {
+                format!(
+                    "(unsigned char *)&{} + 0x{:x}",
+                    capture.object, capture.piece.object_offset
+                )
+            };
             declarations.push(format!(
-                "uint64_t {} = *(uint64_t *)__builtin_memcpy((uint64_t[1]){{0}}, (unsigned char *)&{} + 0x{:x}, {});",
-                capture.name,
-                capture.object,
-                capture.piece.object_offset,
-                capture.piece.bytes
+                "__builtin_memcpy(&{}, {address}, {});",
+                capture.name, capture.piece.bytes
             ));
         }
         for binding in &self.pointers {
@@ -652,12 +658,10 @@ mod tests {
         );
         let plan = prepare(&mut ir, &Symbols::default()).unwrap();
         assert_eq!(ir.params[0].ty, CType::U64);
-        assert!(
-            plan.declarations()[0]
-                .contains("__builtin_memcpy((uint64_t[1]){0}, (unsigned char *)&object + 0x0, 1)")
-        );
+        assert_eq!(plan.declarations()[0], "uint64_t object_bits = 0;");
+        assert!(plan.declarations()[1].contains("__builtin_memcpy(&object_bits, &object, 1)"));
         assert_eq!(
-            plan.declarations()[0].matches("__builtin_memcpy").count(),
+            plan.declarations()[1].matches("__builtin_memcpy").count(),
             1
         );
         let mut ir = function(1, Expr::reg(7, 64));

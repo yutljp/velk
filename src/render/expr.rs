@@ -1369,12 +1369,12 @@ mod tests {
     }
 
     #[test]
-    fn float_bit_casts_only_group_compound_operands() {
+    fn float_bits_use_the_union_members_implicit_conversion() {
         use crate::render::int::{ALL, Int, Printed};
         for (text, strength, expected) in [
-            ("x", 13, "(uint64_t)x"),
-            ("f()", 13, "(uint64_t)f()"),
-            ("a + b", 10, "(uint64_t)(a + b)"),
+            ("x", 13, ".bits = x"),
+            ("f()", 13, ".bits = f()"),
+            ("a + b", 10, ".bits = a + b"),
         ] {
             let value = Printed::new(text.to_owned(), Int::U64, ALL, strength);
             let text = super::operation::bits_float(value, Precision::Double);

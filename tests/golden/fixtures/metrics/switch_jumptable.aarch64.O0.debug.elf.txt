@@ -7,16 +7,16 @@
 /* ref: 0x2204fc .bss */
 int d7(int x) {
     uint32_t *const g = (uint32_t *)0x2204fcULL;
-    int32_t j; /* [sp-8] */
-    int32_t j_2; /* [sp-c] */
-    int32_t j_3; /* [sp-10] */
-    int32_t j_4; /* [sp-14] */
-    int32_t j_5; /* [sp-18] */
-    int32_t j_6; /* [sp-1c] */
-    int32_t j_7; /* [sp-20] */
-    int32_t j_8; /* [sp-24] */
-    int32_t j_9; /* [sp-28] */
-    int32_t j_10; /* [sp-2c] */
+    int j; /* [sp-8] */
+    int j_2; /* [sp-c] */
+    int j_3; /* [sp-10] */
+    int j_4; /* [sp-14] */
+    int j_5; /* [sp-18] */
+    int j_6; /* [sp-1c] */
+    int j_7; /* [sp-20] */
+    int j_8; /* [sp-24] */
+    int j_9; /* [sp-28] */
+    int j_10; /* [sp-2c] */
 
     if (x == 0) {
         for (j = 0; j < 1; j++) {

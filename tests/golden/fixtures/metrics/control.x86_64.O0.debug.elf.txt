@@ -12,8 +12,8 @@
 /* velk pseudo-C: matrix_trace @ 0x201230 */
 int matrix_trace(int *m, int n) {
     uint32_t total; /* [sp-18] */
-    int32_t i; /* [sp-1c] */
-    int32_t j; /* [sp-20] */
+    int i; /* [sp-1c] */
+    int j; /* [sp-20] */
 
     total = 0;
     for (i = 0; i < n; i++) {
@@ -299,7 +299,7 @@ fn short_circuit @ 0x201410 (size 99)
 /* velk pseudo-C: skip_negatives @ 0x201480 */
 int skip_negatives(int *p, int n) {
     uint32_t total; /* [sp-18] */
-    int32_t i; /* [sp-1c] */
+    int i; /* [sp-1c] */
 
     total = 0;
     for (i = 0; i < n; i++) {
@@ -340,8 +340,8 @@ fn skip_negatives @ 0x201480 (size 96)
 -- decompile
 /* velk pseudo-C: find_pair @ 0x2014e0 */
 int find_pair(int *p, int n, int target) {
-    int32_t i; /* [sp-24] */
-    int32_t j; /* [sp-28] */
+    int i; /* [sp-24] */
+    int j; /* [sp-28] */
     uint32_t result; /* [sp-c] */
 
     for (i = 0; i < n; i++) {

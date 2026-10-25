@@ -65,7 +65,7 @@ fn <unnamed> @ 0x180001040 (size 59)
 -- decompile
 /* velk pseudo-C: sub_180001080 @ 0x180001080 */
 int64_t sub_180001080(int64_t a0, double a1) {
-    return ((union { double value; uint64_t bits; }){ .value = a1 + ((union { uint64_t bits; double value; }){ .bits = (uint64_t)a0 }).value }).bits;
+    return ((union { double value; uint64_t bits; }){ .value = a1 + ((union { uint64_t bits; double value; }){ .bits = a0 }).value }).bits;
 }
 -- signature
 int64_t (int64_t a0, double a1)
