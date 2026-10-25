@@ -110,7 +110,12 @@ fn copy_address(value: &Expr, bytes: u64, ctx: &Ctx<'_>) -> Option<String> {
             ctx,
         );
     }
-    Some(expr::print_address(value, ctx).text)
+    let address = expr::print_address(value, ctx);
+    Some(if address.is_pointer() {
+        address.text
+    } else {
+        format!("(void *)({})", address.text)
+    })
 }
 
 fn address_terms(value: &Expr) -> Option<(Vec<&Expr>, i64)> {
@@ -359,7 +364,7 @@ pub(super) fn render(nodes: &[Node], ctx: &Ctx<'_>) -> Option<(usize, String)> {
         return Some((
             consumed,
             format!(
-                "{{\n    unsigned char {temporary}[{bytes}];\n    __builtin_memcpy({temporary}, (const void *)({source}), {bytes});\n    {statements}\n    __builtin_memcpy((void *)({destination}), {temporary}, {bytes});\n}}"
+                "{{\n    unsigned char {temporary}[{bytes}];\n    __builtin_memcpy({temporary}, {source}, {bytes});\n    {statements}\n    __builtin_memcpy({destination}, {temporary}, {bytes});\n}}"
             ),
         ));
     }
@@ -377,6 +382,6 @@ pub(super) fn render(nodes: &[Node], ctx: &Ctx<'_>) -> Option<(usize, String)> {
     }
     Some((
         consumed,
-        format!("__builtin_memmove((void *)({destination}), (const void *)({source}), {bytes});"),
+        format!("__builtin_memmove({destination}, {source}, {bytes});"),
     ))
 }

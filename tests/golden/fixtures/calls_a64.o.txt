@@ -256,7 +256,6 @@ fn factorial @ 0x78 (size 160)
 int32_t is_odd(int32_t a0) {
     uint32_t v4;
     int32_t i;
-    uint32_t i_2;
 
     uint32_t v1 = a0 - (a0 != 0) + 1;
     if (v1 >= 2) {
@@ -271,7 +270,7 @@ int32_t is_odd(int32_t a0) {
             return a0 + 2;
         }
     }
-    i_2 = a0 + 2;
+    uint32_t i_2 = a0 + 2;
     do {
         i_2 -= 2;
     } while (i_2 > 1);
@@ -372,12 +371,11 @@ fn call_sum9 @ 0x1bc (size 8)
 int32_t sum_varargs(int32_t a0, ...) {
     va_list varargs;
     va_start(varargs, a0);
-    int32_t v3;
 
     if (a0 < 1) {
         { uint64_t variadic_result = 0; va_end(varargs); return variadic_result; }
     }
-    v3 = 0;
+    int32_t v3 = 0;
     while (true) {
         --a0;
         v3 = va_arg(varargs, int) + v3;

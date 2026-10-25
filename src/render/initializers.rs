@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-/// Keep initial assignments in execution order, declaring their locals there.
+/// Declare locals at their first top-level assignment, in execution order.
 pub(super) fn fold(
     declarations: &mut String,
     body: &str,
@@ -11,17 +11,18 @@ pub(super) fn fold(
     let mut prefix = String::new();
     let mut consumed = 0;
     for line in body.split_inclusive('\n') {
-        // Stop before labels and control flow: a later jump can bypass a
-        // declaration, but it must not bypass an assignment it used to reach.
-        let straight = line.starts_with("    ")
-            && !line.starts_with("        ")
-            && line.trim_end().ends_with(';');
-        if !straight {
+        // Keep declarations before labels so a label never directly precedes
+        // a declaration in C11. Nested statements remain in their own scope.
+        if line.trim_end().ends_with(':') {
             result.push_str(&body[consumed..]);
             return result;
         }
+        let straight = line.starts_with("    ")
+            && !line.starts_with("        ")
+            && line.trim_end().ends_with(';');
         consumed += line.len();
-        if let Some((name, value)) = line.trim_start().split_once(" = ")
+        if straight
+            && let Some((name, value)) = line.trim_start().split_once(" = ")
             && let Some(declaration) = candidates.remove(name)
             && !super::variables::mentions(&prefix, name)
             && !super::variables::mentions(value, name)
@@ -80,5 +81,20 @@ mod tests {
             assert_eq!(declarations, original);
             assert_eq!(actual, body);
         }
+    }
+
+    #[test]
+    fn guards_allow_later_initializers_but_nested_uses_keep_declarations() {
+        let body = "    if (flag) {\n        consume(&x);\n        return;\n    }\n    x = 3;\n    y = 4;\n";
+        let mut declarations = "    int x;\n    int y;\n".to_owned();
+        let actual = fold(
+            &mut declarations,
+            body,
+            ["x", "y"]
+                .into_iter()
+                .map(|name| (name.into(), format!("int {name}"))),
+        );
+        assert_eq!(declarations, "    int x;\n");
+        assert_eq!(actual, body.replace("    y = 4;", "    int y = 4;"));
     }
 }

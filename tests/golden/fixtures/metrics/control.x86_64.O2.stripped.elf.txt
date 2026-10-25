@@ -42,12 +42,6 @@ static inline uint64_t greater_lanes32(uint64_t a, uint64_t b) {
 -- decompile
 /* velk pseudo-C: sub_201220 @ 0x201220 */
 int32_t sub_201220(uint32_t *a0, int32_t a1) {
-    int64_t v2;
-    uint32_t v3;
-    int64_t v4;
-    int64_t v5;
-    int64_t v6;
-    int32_t v7;
     int64_t v8;
     uint32_t *v9;
     int64_t v10;
@@ -56,12 +50,12 @@ int32_t sub_201220(uint32_t *a0, int32_t a1) {
     if (a1 <= 0) {
         return 0;
     }
-    v2 = a1 & 0x3;
-    v3 = a1 & 0x7ffffffc;
-    v4 = -v2;
-    v5 = 0;
-    v6 = 0;
-    v7 = 0;
+    int64_t v2 = a1 & 0x3;
+    uint32_t v3 = a1 & 0x7ffffffc;
+    int64_t v4 = -v2;
+    int64_t v5 = 0;
+    int64_t v6 = 0;
+    int32_t v7 = 0;
     do {
         v8 = (v6 * a1) & 0xffffffff;
         v9 = a0 + v6;
@@ -441,11 +435,6 @@ fn <unnamed> @ 0x2013d0 (size 183)
 -- decompile
 /* velk pseudo-C: sub_201490 @ 0x201490 */
 int32_t sub_201490(uint32_t *a0, int32_t a1, int32_t a2) {
-    int32_t v3;
-    uint32_t *v4;
-    int64_t v5;
-    int32_t v6;
-    uint64_t v7;
     int64_t v8;
     int32_t v9;
     int64_t j;
@@ -454,11 +443,11 @@ int32_t sub_201490(uint32_t *a0, int32_t a1, int32_t a2) {
     if (a1 <= 0) {
         return -1;
     }
-    v3 = a1 ^ 0xffffffff;
-    v4 = a0 + 0x1;
-    v5 = (uint64_t)(uint32_t)a1 - 1;
-    v6 = -1;
-    v7 = 0;
+    int32_t v3 = a1 ^ 0xffffffff;
+    uint32_t *v4 = a0 + 0x1;
+    int64_t v5 = (uint64_t)(uint32_t)a1 - 1;
+    int32_t v6 = -1;
+    uint64_t v7 = 0;
     do {
         v8 = v7;
         ++v7;

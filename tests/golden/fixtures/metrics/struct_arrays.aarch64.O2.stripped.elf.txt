@@ -52,15 +52,12 @@ fn <unnamed> @ 0x210188 (size 24)
 /* velk pseudo-C: sub_2101a0 @ 0x2101a0 */
 struct S1 { int64_t field_0x0; int32_t field_0x8; uint8_t gap_0xc[0x4]; };
 int32_t sub_2101a0(struct S1 *a0, int32_t a1) {
-    int64_t v3;
-    void *v4;
-
-    int32_t result = 0;
     if (a1 < 1) {
         return 0;
     }
-    v3 = (uint32_t)a1;
-    v4 = (void *)&a0->field_0x8;
+    int32_t result = 0;
+    int64_t v3 = (uint32_t)a1;
+    void *v4 = (void *)&a0->field_0x8;
     do {
         if (*(int32_t *)(v4) >= 1) {
             result = *(uint64_t *)(v4 - 0x8);

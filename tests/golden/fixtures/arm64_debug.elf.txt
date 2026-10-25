@@ -52,15 +52,12 @@ fn sum3 @ 0x21018c (size 12)
 -- decompile
 /* velk pseudo-C: helper @ 0x210198 */
 int helper(int x) {
-    uint64_t v2;
-    uint64_t v3;
-
     uint32_t v1 = x - 1;
     if (x < 1) {
         return 0;
     }
-    v2 = (uint64_t)v1 * ((x - 2) & 0xffffffff);
-    v3 = v2 * ((x - 3) & 0xffffffff);
+    uint64_t v2 = (uint64_t)v1 * ((x - 2) & 0xffffffff);
+    uint64_t v3 = v2 * ((x - 3) & 0xffffffff);
     v2 >>= 1;
     return (v3 >> 1) * 0x55555556 + x + (v2 + (v2 << 1)) - 1;
 }
@@ -117,8 +114,6 @@ int sum_arr(int *p, int n) {
     uint64_t v11;
     uint64_t v12;
     uint64_t v13;
-    int *v15;
-    int64_t v16;
 
     if (n < 1) {
         return 0;
@@ -151,8 +146,8 @@ int sum_arr(int *p, int n) {
         v2 = 0;
         v3 = 0;
     }
-    v15 = p + v2;
-    v16 = (uint32_t)n - v2;
+    int *v15 = p + v2;
+    int64_t v16 = (uint32_t)n - v2;
     do {
         v2 = (uint32_t)*v15;
         ++v15;

@@ -325,10 +325,6 @@ struct S1 { int32_t field_0x0; int32_t field_0x4; uint8_t gap_0x8[0x10]; };
 int32_t sub_1290(struct S1 *a0, int a1, int a2) {
     uint64_t *const stderr = (uint64_t *)0x4020ULL;
     void *v2;
-    struct S1 *v3;
-    int64_t v4;
-    const char *v5;
-    uint32_t *v8;
     uint32_t v11;
     int64_t local_0; /* [sp-78] */
     _Alignas(16) uint8_t local_1[0x50]; /* [sp-68] */
@@ -343,9 +339,9 @@ int32_t sub_1290(struct S1 *a0, int a1, int a2) {
         abort();
     }
     v2 = (void *)a0;
-    v3 = a0;
-    v4 = (uint64_t)((int64_t)a1 * 0x3) << 3;
-    v5 = (const char *)((uint8_t *)a0 + v4);
+    struct S1 *v3 = a0;
+    int64_t v4 = (uint64_t)((int64_t)a1 * 0x3) << 3;
+    const char *v5 = (const char *)((uint8_t *)a0 + v4);
     do {
         if (v3->field_0x0 == a2) {
             return v3->field_0x4;
@@ -353,7 +349,7 @@ int32_t sub_1290(struct S1 *a0, int a1, int a2) {
         ++v3;
     } while (v3 != v5);
     local_0 = a1;
-    v8 = (uint32_t *)(v2 + 0x8);
+    uint32_t *v8 = (uint32_t *)(v2 + 0x8);
     v4 = (uintptr_t)(v4 + (uint8_t *)v8);
     __snprintf_chk((char *)(local_1), 64, 2, 64, (const char *)"missing key %d among %d", a2 & 0xffffffff, a1);
     fputs((const char *)(local_1), (FILE *)*stderr);

@@ -46,21 +46,17 @@ fn rect_area @ 0x180001000 (size 16)
 -- decompile
 /* velk pseudo-C: record_total @ 0x180001010 */
 int32_t record_total(uint16_t *a0, int32_t a1) {
-    uint32_t v1;
-    uint8_t v2;
     int64_t v3;
     int32_t v4;
     void *v6;
     int32_t v7;
     int32_t v8;
-    int64_t v10;
-    int64_t i;
 
     if (a1 <= 0) {
         return 0;
     }
-    v1 = a1;
-    v2 = v1 & 0x3;
+    uint32_t v1 = a1;
+    uint8_t v2 = v1 & 0x3;
     if ((uint32_t)a1 >= 4) {
         v1 &= 0x7ffffffc;
         v6 = (void *)(a0 + 0x16);
@@ -80,9 +76,9 @@ int32_t record_total(uint16_t *a0, int32_t a1) {
         v3 = 0;
         v4 = 0;
     }
-    v10 = (uintptr_t)(a0 + (v3 * 0x6 + 0x4));
+    int64_t v10 = (uintptr_t)(a0 + (v3 * 0x6 + 0x4));
     v3 = (v2 << 2) * 3;
-    i = 0;
+    int64_t i = 0;
     do {
         v1 = *(int16_t *)(v10 + i) * *(uint32_t *)(v10 + i - 0x4);
         v4 += v1;

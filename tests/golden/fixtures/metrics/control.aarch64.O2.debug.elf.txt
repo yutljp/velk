@@ -54,7 +54,6 @@ static inline uint64_t sum_lanes32(uint64_t a, uint64_t b) {
 /* velk pseudo-C: matrix_trace @ 0x2101d4 */
 int matrix_trace(int *m, int n) {
     uint64_t i;
-    int32_t v2;
     uint32_t v4;
     int *v5;
     int64_t j;
@@ -62,7 +61,7 @@ int matrix_trace(int *m, int n) {
     if (n < 1) {
         return 0;
     }
-    v2 = 0;
+    int32_t v2 = 0;
     for (i = 0; (int64_t)i < (uint32_t)n; i++) {
         v4 = i * n;
         v5 = m + i;
@@ -272,8 +271,6 @@ int skip_negatives(int *p, int n) {
     uint64_t v11;
     uint64_t v12;
     uint64_t v13;
-    int *v14;
-    int64_t v15;
 
     if (n < 1) {
         return 0;
@@ -306,8 +303,8 @@ int skip_negatives(int *p, int n) {
         v2 = 0;
         v3 = 0;
     }
-    v14 = p + v2;
-    v15 = (uint32_t)n - v2;
+    int *v14 = p + v2;
+    int64_t v15 = (uint32_t)n - v2;
     do {
         v2 = (uint32_t)*v14;
         ++v14;

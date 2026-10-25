@@ -1404,12 +1404,10 @@ fn main.sumSlice @ 0x466d00 (size 32)
 /* ref: 0x46d1c0 .rodata */
 /* ref: 0x46d400 .rodata */
 int32_t main_kindName(uint32_t *a0, int64_t a1) {
-    int32_t v1;
-
     if (a0 == 0) {
         return 0;
     }
-    v1 = a0[4];
+    int32_t v1 = a0[4];
     if (v1 != 0x778cdb8) {
         if (v1 != 0xcb735792 || (uintptr_t)a0 != 0x46d400) {
             return 0;

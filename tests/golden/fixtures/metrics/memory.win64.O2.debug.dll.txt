@@ -26,9 +26,6 @@ static inline uint64_t interleave_low8(uint64_t a, uint64_t b) {
 -- decompile
 /* velk pseudo-C: copy_bytes @ 0x180001000 */
 void copy_bytes(unsigned char *dst, unsigned char *src, uint32_t n) {
-    uint8_t v2;
-    uint8_t v4;
-    uint8_t v5;
     uint64_t v7;
     int64_t i;
     int64_t v13;
@@ -38,15 +35,15 @@ void copy_bytes(unsigned char *dst, unsigned char *src, uint32_t n) {
     if (n == 0) {
         return;
     }
-    v2 = n < 4;
-    v4 = (uintptr_t)src - (uintptr_t)dst >= -31;
-    v5 = v4 | v2;
+    uint8_t v2 = n < 4;
+    uint8_t v4 = (uintptr_t)src - (uintptr_t)dst >= -31;
+    uint8_t v5 = v4 | v2;
     if (v5 == 0) {
         if (n >= 32) {
             v7 = n & 0xffffffe0;
             i = 0;
             do {
-                __builtin_memmove((void *)(dst + i), (const void *)(src + i), 32);
+                __builtin_memmove(dst + i, src + i, 32);
                 i += 32;
             } while (v7 != i);
             if (v7 == n) {

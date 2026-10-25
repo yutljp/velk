@@ -53,15 +53,12 @@ fn cell_set @ 0x210188 (size 24)
 /* velk pseudo-C: item_last_key @ 0x2101a0 */
 struct item { _Alignas(8) long key; int count; short kind; uint8_t gap_0xe[0x2]; };
 long item_last_key(struct item *items, int n) {
-    int64_t v3;
-    void *v4;
-
-    int64_t result = 0;
     if (n < 1) {
         return 0;
     }
-    v3 = (uint32_t)n;
-    v4 = (void *)&items->count;
+    int64_t result = 0;
+    int64_t v3 = (uint32_t)n;
+    void *v4 = (void *)&items->count;
     do {
         if (*(int32_t *)(v4) >= 1) {
             result = *(uint64_t *)(v4 - 0x8);

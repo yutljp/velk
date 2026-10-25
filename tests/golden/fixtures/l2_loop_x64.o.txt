@@ -9,7 +9,6 @@
 /* velk pseudo-C: sum_while @ 0x0 */
 int32_t sum_while(int32_t a0) {
     uint32_t *const sink = (uint32_t *)0x204ULL;
-    int32_t v1;
     int32_t v2;
     int32_t v3;
     int32_t v5;
@@ -19,7 +18,7 @@ int32_t sum_while(int32_t a0) {
     if (a0 <= 0) {
         return 0;
     }
-    v1 = a0 & 0x7;
+    int32_t v1 = a0 & 0x7;
     if ((uint32_t)a0 >= 8) {
         v5 = -(a0 & 0x7ffffff8);
         v3 = 0;
@@ -267,12 +266,10 @@ fn sum_skip_odd @ 0x190 (size 71)
 -- decompile
 /* velk pseudo-C: find_first @ 0x1e0 */
 int32_t find_first(uint32_t *a0, int32_t a1, int32_t a2) {
-    int64_t v2;
-
     if (a1 <= 0) {
         return -1;
     }
-    v2 = 0;
+    int64_t v2 = 0;
     while (a0[v2] != a2) {
         ++v2;
         if ((uint32_t)a1 == v2) {

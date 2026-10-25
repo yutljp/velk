@@ -57,12 +57,13 @@ fn printed_record_transfers_snapshot_overlapping_ranges() {
     let mut candidates = Vec::new();
     let arguments = Convention::SysV.arguments();
     for size in [16, 32] {
-        for (extra_read, typed, interleaved, separated) in [
-            (false, false, false, false),
-            (true, false, false, false),
-            (false, true, false, false),
-            (false, false, true, false),
-            (false, false, false, true),
+        for (extra_read, typed, interleaved, separated, integer) in [
+            (false, false, false, false, false),
+            (true, false, false, false, false),
+            (false, true, false, false, false),
+            (false, false, true, false, false),
+            (false, false, false, true, false),
+            (false, false, false, false, true),
         ] {
             let at = |register, offset| {
                 Expr::bin(BinOp::Add, Expr::reg(register, 64), Expr::Const(offset))
@@ -138,18 +139,24 @@ fn printed_record_transfers_snapshot_overlapping_ranges() {
                 },
             });
             let mut ir = synthetic_ir(
-                &format!("record_copy_{size}_{extra_read}_{typed}_{interleaved}_{separated}"),
+                &format!(
+                    "record_copy_{size}_{extra_read}_{typed}_{interleaved}_{separated}_{integer}"
+                ),
                 arguments[..2]
                     .iter()
                     .enumerate()
                     .map(|(part, index)| Param {
                         index: *index,
                         name: ["dst", "src"][part].into(),
-                        ty: CType::pointer_to(if typed {
-                            CType::Named(format!("struct record_{size}"))
+                        ty: if integer {
+                            CType::U64
                         } else {
-                            CType::int(1, false)
-                        }),
+                            CType::pointer_to(if typed {
+                                CType::Named(format!("struct record_{size}"))
+                            } else {
+                                CType::int(1, false)
+                            })
+                        },
                     })
                     .collect(),
                 CType::U64,
@@ -183,6 +190,14 @@ fn printed_record_transfers_snapshot_overlapping_ranges() {
                     "{}",
                     candidate.code
                 );
+            }
+            if !extra_read && !typed && !interleaved && !separated {
+                let arguments = if integer {
+                    "__builtin_memmove((void *)(dst), (void *)(src),"
+                } else {
+                    "__builtin_memmove(dst, src,"
+                };
+                assert!(candidate.code.contains(arguments), "{}", candidate.code);
             }
             candidates.push(candidate);
         }

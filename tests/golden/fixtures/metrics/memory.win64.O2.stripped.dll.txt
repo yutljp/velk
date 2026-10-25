@@ -26,9 +26,6 @@ static inline uint64_t interleave_low8(uint64_t a, uint64_t b) {
 -- decompile
 /* velk pseudo-C: sub_180001000 @ 0x180001000 */
 void sub_180001000(uint32_t *a0, uint32_t *a1, uint32_t a2) {
-    uint8_t v2;
-    uint8_t v4;
-    uint8_t v5;
     uint64_t v7;
     int64_t i;
     int64_t v13;
@@ -38,15 +35,15 @@ void sub_180001000(uint32_t *a0, uint32_t *a1, uint32_t a2) {
     if (a2 == 0) {
         return;
     }
-    v2 = a2 < 4;
-    v4 = (uintptr_t)a1 - (uintptr_t)a0 >= -31;
-    v5 = v4 | v2;
+    uint8_t v2 = a2 < 4;
+    uint8_t v4 = (uintptr_t)a1 - (uintptr_t)a0 >= -31;
+    uint8_t v5 = v4 | v2;
     if (v5 == 0) {
         if (a2 >= 32) {
             v7 = a2 & 0xffffffe0;
             i = 0;
             do {
-                __builtin_memmove((void *)((uint8_t *)a0 + i), (const void *)((uint8_t *)a1 + i), 32);
+                __builtin_memmove((uint8_t *)a0 + i, (uint8_t *)a1 + i, 32);
                 i += 32;
             } while (v7 != i);
             if (v7 == a2) {

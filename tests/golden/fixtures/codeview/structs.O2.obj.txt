@@ -54,21 +54,17 @@ struct record {
     uint8_t gap_0xa[0x2];
 };
 int32_t record_total(struct record *items, int32_t n) {
-    uint32_t v1;
-    uint8_t v2;
     int64_t v3;
     int32_t v4;
     void *v6;
     int32_t v7;
     int32_t v8;
-    int64_t v10;
-    int64_t i;
 
     if (n <= 0) {
         return 0;
     }
-    v1 = n;
-    v2 = v1 & 0x3;
+    uint32_t v1 = n;
+    uint8_t v2 = v1 & 0x3;
     if ((uint32_t)n >= 4) {
         v1 &= 0x7ffffffc;
         v6 = (void *)&items[3].count;
@@ -88,9 +84,9 @@ int32_t record_total(struct record *items, int32_t n) {
         v3 = 0;
         v4 = 0;
     }
-    v10 = (uintptr_t)&items[v3].count;
+    int64_t v10 = (uintptr_t)&items[v3].count;
     v3 = (v2 << 2) * 3;
-    i = 0;
+    int64_t i = 0;
     do {
         v1 = *(int16_t *)(v10 + i) * *(uint32_t *)(v10 + i - 0x4);
         v4 += v1;

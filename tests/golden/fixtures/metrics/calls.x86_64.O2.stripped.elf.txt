@@ -413,9 +413,6 @@ fn <unnamed> @ 0x2014b0 (size 49)
 /* velk pseudo-C: sub_2014f0 @ 0x2014f0 */
 int32_t sub_2014f0(int32_t a0, ...) {
     uint64_t rsp = velk_entry_stack_pointer();
-    uint64_t v1;
-    int64_t v2;
-    uint32_t *v3;
     int32_t v4;
     int32_t v6;
     uint32_t *v7;
@@ -430,9 +427,9 @@ int32_t sub_2014f0(int32_t a0, ...) {
     if (a0 <= 0) {
         return 0;
     }
-    v1 = *(uint32_t *)&local_3;
-    v2 = local_0;
-    v3 = local_2;
+    uint64_t v1 = *(uint32_t *)&local_3;
+    int64_t v2 = local_0;
+    uint32_t *v3 = local_2;
     if (a0 != 1) {
         v6 = a0 & 0x7ffffffe;
         v4 = 0;

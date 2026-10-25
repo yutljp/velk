@@ -42,12 +42,6 @@ static inline uint64_t greater_lanes32(uint64_t a, uint64_t b) {
 -- decompile
 /* velk pseudo-C: matrix_trace @ 0x201220 */
 int matrix_trace(int *m, int n) {
-    int64_t v2;
-    uint32_t v3;
-    int64_t v4;
-    int64_t v5;
-    int64_t v6;
-    int32_t v7;
     int64_t v8;
     int *v9;
     int64_t v10;
@@ -56,12 +50,12 @@ int matrix_trace(int *m, int n) {
     if (n <= 0) {
         return 0;
     }
-    v2 = n & 0x3;
-    v3 = n & 0x7ffffffc;
-    v4 = -v2;
-    v5 = 0;
-    v6 = 0;
-    v7 = 0;
+    int64_t v2 = n & 0x3;
+    uint32_t v3 = n & 0x7ffffffc;
+    int64_t v4 = -v2;
+    int64_t v5 = 0;
+    int64_t v6 = 0;
+    int32_t v7 = 0;
     do {
         v8 = (v6 * n) & 0xffffffff;
         v9 = m + v6;
@@ -441,11 +435,6 @@ fn skip_negatives @ 0x2013d0 (size 183)
 -- decompile
 /* velk pseudo-C: find_pair @ 0x201490 */
 int find_pair(int *p, int n, int target) {
-    int32_t v3;
-    int *v4;
-    int64_t v5;
-    int32_t v6;
-    uint64_t v7;
     int64_t v8;
     int32_t v9;
     int64_t j;
@@ -454,11 +443,11 @@ int find_pair(int *p, int n, int target) {
     if (n <= 0) {
         return -1;
     }
-    v3 = n ^ 0xffffffff;
-    v4 = p + 0x1;
-    v5 = (uint64_t)(uint32_t)n - 1;
-    v6 = -1;
-    v7 = 0;
+    int32_t v3 = n ^ 0xffffffff;
+    int *v4 = p + 0x1;
+    int64_t v5 = (uint64_t)(uint32_t)n - 1;
+    int32_t v6 = -1;
+    uint64_t v7 = 0;
     do {
         v8 = v7;
         ++v7;

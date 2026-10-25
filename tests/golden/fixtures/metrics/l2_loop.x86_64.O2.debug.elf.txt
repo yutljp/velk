@@ -10,7 +10,6 @@
 /* ref: 0x2023d4 .bss */
 int sum_while(int n) {
     uint32_t *const sink = (uint32_t *)0x2023d4ULL;
-    int32_t v1;
     int32_t v2;
     int32_t v3;
     int32_t v5;
@@ -20,7 +19,7 @@ int sum_while(int n) {
     if (n <= 0) {
         return 0;
     }
-    v1 = n & 0x7;
+    int32_t v1 = n & 0x7;
     if ((uint32_t)n >= 8) {
         v5 = -(n & 0x7ffffff8);
         v3 = 0;
@@ -270,12 +269,10 @@ fn sum_skip_odd @ 0x201360 (size 71)
 -- decompile
 /* velk pseudo-C: find_first @ 0x2013b0 */
 int find_first(int *p, int n, int v) {
-    int64_t v2;
-
     if (n <= 0) {
         return -1;
     }
-    v2 = 0;
+    int64_t v2 = 0;
     while (p[v2] != v) {
         ++v2;
         if ((uint32_t)n == v2) {

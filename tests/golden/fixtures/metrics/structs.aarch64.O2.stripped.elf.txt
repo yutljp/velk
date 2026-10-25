@@ -73,8 +73,6 @@ int64_t sub_2101f0(struct S1 *a0, int32_t a1) {
     int64_t v9;
     int64_t v10;
     int64_t v11;
-    int64_t v12;
-    void *v13;
     int64_t v14;
     int64_t v15;
 
@@ -105,8 +103,8 @@ int64_t sub_2101f0(struct S1 *a0, int32_t a1) {
         v2 = 0;
         v3 = 0;
     }
-    v12 = (uint32_t)a1 - v2;
-    v13 = (void *)&a0[v2].field_0x10;
+    int64_t v12 = (uint32_t)a1 - v2;
+    void *v13 = (void *)&a0[v2].field_0x10;
     do {
         v14 = *(uint64_t *)(v13 - 0x8);
         v15 = *(int16_t *)(v13);

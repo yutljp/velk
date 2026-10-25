@@ -343,12 +343,11 @@ fn <unnamed> @ 0x210428 (size 64)
 int32_t sub_210468(int32_t a0, ...) {
     va_list varargs;
     va_start(varargs, a0);
-    int32_t v3;
 
     if (a0 < 1) {
         { uint64_t variadic_result = 0; va_end(varargs); return variadic_result; }
     }
-    v3 = 0;
+    int32_t v3 = 0;
     while (true) {
         --a0;
         v3 = va_arg(varargs, int) + v3;

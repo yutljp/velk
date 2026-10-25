@@ -241,7 +241,6 @@ fn <unnamed> @ 0x2103a0 (size 148)
 -- decompile
 /* velk pseudo-C: sub_210434 @ 0x210434 */
 int32_t sub_210434(uint32_t *a0, int32_t a1) {
-    int32_t v1;
     uint32_t local_0; /* [sp-10] */
     uint32_t local_1; /* [sp-14] */
 
@@ -253,7 +252,7 @@ int32_t sub_210434(uint32_t *a0, int32_t a1) {
     if (a1 <= 0) {
         return local_0 & 0x1;
     }
-    v1 = *a0 - 1;
+    int32_t v1 = *a0 - 1;
     local_1 = 1;
     if (v1 != 0) {
         local_1 = a0[a1 - 1] - 1 + 1 == 1;
