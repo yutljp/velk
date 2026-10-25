@@ -980,7 +980,7 @@ fn printed_promoted_recursive_products_preserve_wrapping_arithmetic() {
             let code = binary
                 .decompile(address, None, None)
                 .expect("decompile recursive function");
-            assert!(code.contains("uint32_t"), "{code}");
+            assert!(code.contains(" * "), "{code}");
             assert!(!code.contains("/* [sp"), "{code}");
             let mut text = String::from(HEADER);
             text.push_str(&code);

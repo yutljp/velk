@@ -19,7 +19,7 @@ double average(double *values, int n) {
     if (n <= 0) {
         return 0.0;
     }
-    return total / (double)n;
+    return total / n;
 }
 -- signature
 double (double * values, int n)
@@ -94,7 +94,7 @@ fn truncate_to_int @ 0x210284 (size 24)
 -- decompile
 /* velk pseudo-C: widen @ 0x21029c */
 double widen(float x) {
-    return (double)x * 2.0;
+    return x * 2.0;
 }
 -- signature
 double (float x)

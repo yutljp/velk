@@ -77,7 +77,8 @@ fn render_unmerged(
     let variadic = super::variadic::prepare(&mut folded, symbols);
     crate::analysis::variadic::drop_register_saves(&mut folded);
     params::fold_saved_parameters(&mut folded);
-    let candidate = crate::passes::copies::integer_expression_candidate(&folded)
+    let candidate = params::integer_copy_candidate(&folded)
+        .or_else(|| crate::passes::copies::integer_expression_candidate(&folded))
         .or_else(|| crate::passes::read_once::frame_load_candidate(&folded));
     let baseline = render_prepared(
         original,
@@ -1152,7 +1153,16 @@ fn render_with(
         decls
             .iter()
             .filter(|local| local.size == 0 && local.fields.is_empty() && local.views.is_empty())
-            .map(|local| local.name.clone()),
+            .map(|local| local.name.clone())
+            .chain(variable_types.iter().filter_map(|(index, ty)| {
+                if ty.integer().is_none()
+                    || matches!(ty, CType::Named(name)
+                        if name.split_whitespace().any(|word| word == "volatile"))
+                {
+                    return None;
+                }
+                Some(ctx.register(*index, 64))
+            })),
     );
     if !vector_groups.is_empty() {
         body = super::vector_values::whole_writes(&body, &vector_groups);

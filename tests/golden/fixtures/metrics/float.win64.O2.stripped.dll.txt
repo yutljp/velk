@@ -34,7 +34,7 @@ double sub_180001000(double *a0, int32_t a1) {
                 if (a1 <= 0) {
                     return 0.0;
                 }
-                return v2 / (double)a1;
+                return v2 / a1;
             }
         } else {
             i = 0;
@@ -49,7 +49,7 @@ double sub_180001000(double *a0, int32_t a1) {
     if (a1 <= 0) {
         return v1;
     }
-    return v2 / (double)a1;
+    return v2 / a1;
 }
 -- signature
 double (double * a0, int32_t a1)

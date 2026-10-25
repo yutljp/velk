@@ -195,7 +195,7 @@ pub(super) fn drop_unused_constants(body: &mut String, names: impl Iterator<Item
         let prefix = format!("{name} = ");
         let unused = body
             .lines()
-            .filter(|line| super::function::code_mentions(line, &name))
+            .filter(|line| super::variables::mentions(line, &name))
             .all(|line| {
                 let Some(value) = line
                     .trim()
@@ -246,6 +246,14 @@ mod tests {
         assert!(body.contains("used = 1;"));
         assert!(body.contains("effect = call();"));
         assert!(body.contains("read = 2;"));
+    }
+
+    #[test]
+    fn additional_return_values_keep_their_initialization() {
+        let mut body = "    extra = 0;\n    return 1; /* also returns extra */\n".to_owned();
+        let original = body.clone();
+        super::drop_unused_constants(&mut body, std::iter::once("extra".to_owned()));
+        assert_eq!(body, original);
     }
 
     #[test]

@@ -13,8 +13,47 @@ use crate::passes::copies::left_by_call;
 pub(super) fn fold_saved_parameters(ir: &mut FunctionIr) {
     let params: Vec<u16> = ir.params.iter().map(|param| param.index).collect();
     for param in params {
-        fold(ir, param);
+        fold(ir, param, IntegerTypes::Exact);
     }
+}
+
+#[derive(Clone, Copy)]
+enum IntegerTypes {
+    Exact,
+    SameWidth,
+}
+
+/// Try copies with a different integer sign; the renderer checks conversion costs.
+pub(super) fn integer_copy_candidate(ir: &FunctionIr) -> Option<FunctionIr> {
+    if ir.params.iter().any(|param| {
+        matches!(&param.ty, crate::ir::CType::Named(name)
+            if name.split_whitespace().any(|word| word == "volatile"))
+    }) {
+        return None;
+    }
+    let params: Vec<u16> = ir
+        .params
+        .iter()
+        .filter_map(|param| {
+            let Some((bits, signed)) = param.ty.integer() else {
+                return None;
+            };
+            ir.value_types
+                .values()
+                .any(|ty| ty.integer() == Some((bits, !signed)))
+                .then_some(param.index)
+        })
+        .collect();
+    if params.is_empty() {
+        return None;
+    }
+    let mut candidate = ir.clone();
+    let before: usize = ir.blocks.iter().map(|block| block.stmts.len()).sum();
+    for param in params {
+        fold(&mut candidate, param, IntegerTypes::SameWidth);
+    }
+    let after: usize = candidate.blocks.iter().map(|block| block.stmts.len()).sum();
+    (after < before).then_some(candidate)
 }
 
 /// Where a copy comes from.
@@ -25,7 +64,7 @@ enum Source {
     Slot(u64),
 }
 
-fn fold(ir: &mut FunctionIr, param: u16) {
+fn fold(ir: &mut FunctionIr, param: u16, integer_types: IntegerTypes) {
     let sp = stack_pointer(ir.isa);
     let atomics = ir
         .blocks
@@ -83,7 +122,10 @@ fn fold(ir: &mut FunctionIr, param: u16) {
             lhs,
             rhs,
         } if narrow && matches!(rhs.as_ref(), Expr::Const(0xffff_ffff)) => match lhs.as_ref() {
-            Expr::Reg { index, .. } => Some(Source::Register(*index)),
+            Expr::Reg {
+                index,
+                width: 32 | 64,
+            } => Some(Source::Register(*index)),
             _ => None,
         },
         Expr::Load { addr, width: 8, .. } => slot_of(addr).map(Source::Slot),
@@ -274,7 +316,14 @@ fn fold(ir: &mut FunctionIr, param: u16) {
                 Source::Register(index) => {
                     *index >= VARIABLE_BASE
                         && ir.value_types.get(index).is_none_or(|ty| {
-                            ty.integer().is_none() || ty.integer() == parameter_integer
+                            let integer = ty.integer();
+                            integer.is_none()
+                                || integer == parameter_integer
+                                || (matches!(integer_types, IntegerTypes::SameWidth)
+                                    && integer.map(|(bits, _)| bits)
+                                        == parameter_integer.map(|(bits, _)| bits)
+                                    && !matches!(ty, crate::ir::CType::Named(name)
+                                        if name.split_whitespace().any(|word| matches!(word, "volatile" | "bool" | "_Bool"))))
                         })
                 }
                 Source::Slot(slot) => !mixed(*slot) && separate_input(*slot),

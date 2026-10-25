@@ -9,7 +9,6 @@ int dispatch(int x) {
     uint8_t *const byte_180002000 = (uint8_t *)0x180002000ULL;
 
     uint64_t v1 = (x - 10) & 0xffffffff;
-    int32_t v2 = 0;
     if (v1 > 4) {
         return 0;
     }

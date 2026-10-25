@@ -335,7 +335,6 @@ int skip_negatives(int *p, int n) {
         int32_t v1 = (uint32_t)(sub_202bc());
         return v1;
     }
-    uint32_t v2 = 0;
     if ((uint32_t)n < 4) {
         int32_t v3 = (uint32_t)(sub_20298());
         return v3;

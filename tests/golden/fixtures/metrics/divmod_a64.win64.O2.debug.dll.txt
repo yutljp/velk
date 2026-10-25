@@ -436,7 +436,7 @@ fn lmod3 @ 0x180001230 (size 37)
 -- decompile
 /* velk pseudo-C: ldiv3 @ 0x180001260 */
 long long ldiv3(long long x) {
-    uint64_t v1 = (int64_t)(((__int128)x * 0x5555555555555556) >> 64);
+    uint64_t v1 = ((__int128)x * 0x5555555555555556) >> 64;
     return (v1 >> 63) + v1;
 }
 -- signature
@@ -455,7 +455,7 @@ fn ldiv3 @ 0x180001260 (size 27)
 -- decompile
 /* velk pseudo-C: ldiv10 @ 0x180001280 */
 long long ldiv10(long long x) {
-    int64_t v1 = (int64_t)(((__int128)x * 0x6666666666666667) >> 64);
+    int64_t v1 = ((__int128)x * 0x6666666666666667) >> 64;
     return ((uint64_t)v1 >> 63) + (v1 >> 2);
 }
 -- signature

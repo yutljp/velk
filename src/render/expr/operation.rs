@@ -156,11 +156,22 @@ fn rounding_function(rounding: Rounding) -> &'static str {
 /// `op` applied to `args`, as C.
 pub(super) fn render_operation(op: Operation, args: &[Expr], ctx: &Ctx<'_>) -> String {
     let infix = |precision, symbol: &str, strength| {
-        format!(
-            "{} {symbol} {}",
+        let mut operands = [
             float_operand(&args[0], precision, ctx, strength, false),
-            float_operand(&args[1], precision, ctx, strength, true)
-        )
+            float_operand(&args[1], precision, ctx, strength, true),
+        ];
+        if precision == Precision::Double {
+            // Keep one double operand so C performs the operation in double.
+            for index in 0..2 {
+                if double_operand(&args[1 - index], ctx)
+                    && let Some(value) = implicit_double(&args[index], ctx, strength, index == 1)
+                {
+                    operands[index] = value;
+                    break;
+                }
+            }
+        }
+        format!("{} {symbol} {}", operands[0], operands[1])
     };
     let call = |name: &str, precision: Option<Precision>| {
         let parts: Vec<String> = args
@@ -313,6 +324,54 @@ pub(super) fn render_operation(op: Operation, args: &[Expr], ctx: &Ctx<'_>) -> S
                     .text
             )
         }
+    }
+}
+
+fn double_operand(expr: &Expr, ctx: &Ctx<'_>) -> bool {
+    match expr {
+        Expr::Const(_) => true,
+        Expr::Reg { index, .. } => ctx.floats.get(index) == Some(&Precision::Double),
+        Expr::Load { width: 8, .. } => true,
+        Expr::Apply { op, .. } => op.result_precision() == Some(Precision::Double),
+        _ => false,
+    }
+}
+
+fn implicit_double(expr: &Expr, ctx: &Ctx<'_>, parent: u8, right: bool) -> Option<String> {
+    let Expr::Apply { op, args } = expr else {
+        return None;
+    };
+    match op {
+        Operation::FloatConvert {
+            from: Precision::Single,
+            to: Precision::Double,
+        } => Some(float_operand(
+            &args[0],
+            Precision::Single,
+            ctx,
+            parent,
+            right,
+        )),
+        Operation::IntToFloat {
+            signed,
+            bits,
+            to: Precision::Double,
+        } => {
+            let operand = integral(&args[0], ctx, u32::from(*bits));
+            let typed = operand.ty
+                == Int {
+                    bits: u32::from(*bits),
+                    signed: *signed,
+                }
+                && operand.exact >= u32::from(*bits);
+            let operand = if typed {
+                operand
+            } else {
+                operand.cast(u32::from(*bits), *signed, u32::from(*bits))
+            };
+            Some(operand.within(parent, right).text)
+        }
+        _ => None,
     }
 }
 

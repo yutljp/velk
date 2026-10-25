@@ -121,9 +121,8 @@ fn apply_pointer @ 0x2103c4 (size 48)
 -- decompile
 /* velk pseudo-C: factorial @ 0x2103f4 */
 int factorial(int n) {
-    uint32_t v5 = n;
     if (n > 1) {
-        return v5 * factorial(v5 - 1);
+        return n * factorial(n - 1);
     }
     return 1;
 }
@@ -154,9 +153,8 @@ fn factorial @ 0x2103f4 (size 96)
 -- decompile
 /* velk pseudo-C: is_odd @ 0x210454 */
 int is_odd(int n) {
-    uint32_t v5 = n;
     if (n != 0) {
-        return is_even(v5 - 1);
+        return is_even(n - 1);
     }
     return 0;
 }
@@ -187,9 +185,8 @@ fn is_odd @ 0x210454 (size 76)
 -- decompile
 /* velk pseudo-C: is_even @ 0x2104a0 */
 int is_even(int n) {
-    uint32_t v5 = n;
     if (n != 0) {
-        return is_odd(v5 - 1);
+        return is_odd(n - 1);
     }
     return 1;
 }

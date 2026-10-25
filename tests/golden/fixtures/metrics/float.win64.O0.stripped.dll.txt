@@ -19,7 +19,7 @@ double sub_180001000(double *a0, int32_t a1) {
     if (a1 <= 0) {
         return 0.0;
     }
-    return local_0 / (double)a1;
+    return local_0 / a1;
 }
 -- signature
 double (double * a0, int32_t a1)

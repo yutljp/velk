@@ -213,7 +213,6 @@ fn <unnamed> @ 0x201320 (size 26)
 int32_t sub_201340(uint32_t a0) {
     uint32_t *const dword_200120 = (uint32_t *)0x200120ULL;
 
-    int32_t v1 = -1;
     if (a0 > 3) {
         return -1;
     }
@@ -292,11 +291,9 @@ fn <unnamed> @ 0x201360 (size 61)
 -- decompile
 /* velk pseudo-C: sub_2013a0 @ 0x2013a0 */
 int32_t sub_2013a0(uint32_t *a0, int32_t a1) {
-    int32_t v1 = 0;
     if (a0 == 0 || a1 <= 0) {
         return 0;
     }
-    int32_t v2 = 1;
     if (*a0 == 1) {
         return 1;
     }

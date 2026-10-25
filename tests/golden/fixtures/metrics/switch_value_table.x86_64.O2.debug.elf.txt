@@ -9,7 +9,6 @@ int dispatch(int x) {
     uint32_t *const dword_200120 = (uint32_t *)0x200120ULL;
 
     uint32_t v1 = x - 10;
-    int32_t v2 = 0;
     if (v1 > 4) {
         return 0;
     }

@@ -112,9 +112,8 @@ fn <unnamed> @ 0x2013a0 (size 33)
 -- decompile
 /* velk pseudo-C: sub_2013d0 @ 0x2013d0 */
 int32_t sub_2013d0(int32_t a0) {
-    uint32_t v3 = a0;
     if (a0 > 1) {
-        uint32_t v4 = v3 * ((int32_t)(sub_2013d0(v3 - 1)));
+        uint32_t v4 = a0 * ((int32_t)(sub_2013d0((a0 - 1) & 0xffffffff)));
         return v4;
     }
     return 1;
@@ -143,9 +142,8 @@ fn <unnamed> @ 0x2013d0 (size 71)
 -- decompile
 /* velk pseudo-C: sub_201420 @ 0x201420 */
 int32_t sub_201420(int32_t a0) {
-    uint32_t v3 = a0;
     if (a0 != 0) {
-        uint32_t v4 = ((int32_t)(sub_201460(v3 - 1)));
+        uint32_t v4 = ((int32_t)(sub_201460((a0 - 1) & 0xffffffff)));
         return v4;
     }
     return 0;
@@ -174,9 +172,8 @@ fn <unnamed> @ 0x201420 (size 54)
 -- decompile
 /* velk pseudo-C: sub_201460 @ 0x201460 */
 int32_t sub_201460(int32_t a0) {
-    uint32_t v3 = a0;
     if (a0 != 0) {
-        uint32_t v4 = ((int32_t)(sub_201420(v3 - 1)));
+        uint32_t v4 = ((int32_t)(sub_201420((a0 - 1) & 0xffffffff)));
         return v4;
     }
     return 1;

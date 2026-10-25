@@ -22,7 +22,7 @@
 -- decompile
 /* velk pseudo-C: sub_180001000 @ 0x180001000 */
 int64_t sub_180001000(int64_t a0) {
-    uint64_t v1 = (int64_t)(((__int128)a0 * 0x5555555555555556) >> 64);
+    uint64_t v1 = ((__int128)a0 * 0x5555555555555556) >> 64;
     return (v1 >> 63) + v1;
 }
 -- signature
@@ -41,7 +41,7 @@ fn <unnamed> @ 0x180001000 (size 32)
 -- decompile
 /* velk pseudo-C: sub_180001020 @ 0x180001020 */
 int64_t sub_180001020(int64_t a0) {
-    int64_t v1 = (int64_t)(((__int128)a0 * 0x6666666666666667) >> 64);
+    int64_t v1 = ((__int128)a0 * 0x6666666666666667) >> 64;
     return ((uint64_t)v1 >> 63) + (v1 >> 2);
 }
 -- signature

@@ -34,7 +34,7 @@ double average(double *values, int n) {
                 if (n <= 0) {
                     return 0.0;
                 }
-                return v2 / (double)n;
+                return v2 / n;
             }
         } else {
             i = 0;
@@ -49,7 +49,7 @@ double average(double *values, int n) {
     if (n <= 0) {
         return v1;
     }
-    return v2 / (double)n;
+    return v2 / n;
 }
 -- signature
 double (double * values, int n)

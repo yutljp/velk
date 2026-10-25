@@ -19,7 +19,7 @@ double sub_2011f0(double *a0, int32_t a1) {
     if (a1 <= 0) {
         return 0.0;
     }
-    return local_0 / (double)a1;
+    return local_0 / a1;
 }
 -- signature
 double (double * a0, int32_t a1)
@@ -92,7 +92,7 @@ fn <unnamed> @ 0x2012c0 (size 16)
 double sub_2012d0(float a0) {
     double *const double_200120 = (double *)0x200120ULL;
 
-    return (double)a0 * *double_200120;
+    return a0 * *double_200120;
 }
 -- signature
 double (float a0)

@@ -62,7 +62,7 @@ double saved_xmm(double value) {
 
     local_0 = ((union { uint64_t bits; double value; }){ .bits = v1 }).value;
     uint32_t v2 = imported_value(7);
-    return local_0 + (double)(int32_t)v2;
+    return local_0 + (int32_t)v2;
 }
 -- signature
 double (double value)

@@ -412,3 +412,115 @@ fn printed_masked_load_returns_do_not_need_integer_temporaries() {
     }
     check_candidates("masked-load-returns", candidates, Mode::Memory, &[]);
 }
+
+#[test]
+fn unused_branch_results_leave_no_constant_temporaries() {
+    let mut candidates = Vec::new();
+    for isa in ["x86_64", "aarch64"] {
+        let path = common::fixtures_dir().join(format!("metrics/control.{isa}.O2.debug.elf"));
+        let mut binary = Binary::open(&path).unwrap();
+        let address = binary.find("short_circuit").unwrap().addr;
+        let ir = binary.analysis(address, None).unwrap().ir.clone();
+        let candidate =
+            printed_candidate(ir, vec![vec![REGION, 0], vec![REGION, 1], vec![REGION, 5]]);
+        assert!(!candidate.code.contains(" = 0;"), "{}", candidate.code);
+        assert!(!candidate.code.contains(" = 1;"), "{}", candidate.code);
+        candidates.push(candidate);
+    }
+    check_candidates("unused-branch-results", candidates, Mode::Memory, &[]);
+}
+
+#[test]
+fn parameter_copies_of_another_sign_fold_only_without_extra_conversions() {
+    let mut candidates = Vec::new();
+    for wide in [false, true] {
+        for overwritten in [false, true] {
+            let temp = VARIABLE_BASE;
+            let mut stmts = vec![Stmt::Assign {
+                dest: RegRef {
+                    index: temp,
+                    width: 32,
+                },
+                value: Expr::reg(7, 32),
+            }];
+            if overwritten {
+                stmts.push(Stmt::Assign {
+                    dest: RegRef {
+                        index: 7,
+                        width: 32,
+                    },
+                    value: Expr::Const(5),
+                });
+            }
+            stmts.push(Stmt::Brif {
+                cond: Cond::Eq,
+                lhs: Expr::reg(6, 64),
+                rhs: Expr::Const(0),
+                target: 2,
+            });
+            let mut ir = synthetic_ir(
+                &format!("parameter_sign_{wide}_{overwritten}"),
+                vec![
+                    Param {
+                        index: 7,
+                        name: "input".into(),
+                        ty: CType::Named("int".into()),
+                    },
+                    Param {
+                        index: 6,
+                        name: "flag".into(),
+                        ty: CType::U64,
+                    },
+                ],
+                if wide { CType::U64 } else { CType::I32 },
+                stmts,
+            );
+            ir.value_types.insert(temp, CType::U32);
+            ir.blocks.push(Block {
+                start: 1,
+                stmts: vec![Stmt::Ret {
+                    value: Expr::bin(BinOp::Add, Expr::reg(temp, 32), Expr::reg(temp, 32)),
+                }],
+            });
+            ir.blocks.push(Block {
+                start: 2,
+                stmts: vec![Stmt::Ret {
+                    value: Expr::Const(3),
+                }],
+            });
+            let candidate = printed_candidate(
+                ir,
+                [0, 1, 0x7fff_ffff, 0x8000_0000, 0xffff_ffff]
+                    .into_iter()
+                    .flat_map(|input| [vec![input, 0], vec![input, 1]])
+                    .collect(),
+            );
+            if !wide && !overwritten {
+                assert!(
+                    !candidate.code.contains("uint32_t v1"),
+                    "{}",
+                    candidate.code
+                );
+            }
+            if overwritten {
+                assert!(candidate.code.contains(" = input;"), "{}", candidate.code);
+            }
+            candidates.push(candidate);
+        }
+    }
+    check_candidates("parameter-copy-signs", candidates, Mode::Registers, &[]);
+}
+
+#[test]
+fn repeated_parameter_folding_keeps_masked_byte_reads_narrow() {
+    let path = common::fixtures_dir().join("arm32/structs.thumb.O0.elf");
+    let mut binary = Binary::open(&path).unwrap();
+    let address = binary.find("word_low_byte").unwrap().addr;
+    let code = binary.decompile(address, None, None).unwrap();
+    assert!(code.contains("(uint8_t)a0"), "{code}");
+    syntax::run_printed(
+        &code,
+        "",
+        "return word_low_byte(0x101) != 1 || word_low_byte(-1) != 255;",
+    );
+}

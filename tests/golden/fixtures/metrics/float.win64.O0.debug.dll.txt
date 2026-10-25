@@ -19,7 +19,7 @@ double average(double *values, int n) {
     if (n <= 0) {
         return 0.0;
     }
-    return local_0 / (double)n;
+    return local_0 / n;
 }
 -- signature
 double (double * values, int n)
@@ -90,7 +90,7 @@ fn truncate_to_int @ 0x1800010d0 (size 13)
 double widen(float x) {
     double *const __real_4000000000000000 = (double *)0x180002000ULL;
 
-    return (double)x * *__real_4000000000000000;
+    return x * *__real_4000000000000000;
 }
 -- signature
 double (float x)

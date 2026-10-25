@@ -1134,3 +1134,153 @@ fn high_products_keep_sign_conversion_and_the_sixty_four_bit_result() {
     }
     check_candidates("typed-high-products", candidates, Mode::Registers, &[]);
 }
+
+#[test]
+fn high_products_use_the_destination_conversion_only_at_the_assignment_boundary() {
+    let mut candidates = Vec::new();
+    for signed in [false, true] {
+        for bits in [32, 64] {
+            for nested in [false, true] {
+                let product = Expr::bin(
+                    if signed {
+                        BinOp::MulHighS
+                    } else {
+                        BinOp::MulHigh
+                    },
+                    Expr::reg(7, 64),
+                    Expr::reg(6, 64),
+                );
+                let value = if nested {
+                    Expr::bin(BinOp::Shr, product, Expr::Const(1))
+                } else {
+                    product
+                };
+                let candidate = printed_candidate(
+                    synthetic_ir(
+                        &format!("high_destination_{signed}_{bits}_{nested}"),
+                        vec![
+                            Param {
+                                index: 7,
+                                name: "a".into(),
+                                ty: CType::int(8, signed),
+                            },
+                            Param {
+                                index: 6,
+                                name: "b".into(),
+                                ty: CType::int(8, signed),
+                            },
+                        ],
+                        CType::int(bits / 8, signed),
+                        vec![Stmt::Ret { value }],
+                    ),
+                    [0, 1, 1 << 31, 1 << 63, u64::MAX]
+                        .into_iter()
+                        .flat_map(|a| [0, 1, 1 << 63, u64::MAX].map(|b| vec![a, b]))
+                        .collect(),
+                );
+                if !nested {
+                    assert!(
+                        !candidate.code.contains("return (uint64_t)"),
+                        "{}",
+                        candidate.code
+                    );
+                    assert!(
+                        !candidate.code.contains("return (int64_t)"),
+                        "{}",
+                        candidate.code
+                    );
+                }
+                candidates.push(candidate);
+            }
+        }
+    }
+    check_candidates(
+        "high-product-destinations",
+        candidates,
+        Mode::Registers,
+        &[],
+    );
+}
+
+#[test]
+fn double_arithmetic_keeps_one_double_operand_and_integer_signedness() {
+    let mut candidates = Vec::new();
+    for signed in [false, true] {
+        let converted = Expr::Apply {
+            op: Operation::IntToFloat {
+                signed,
+                bits: 32,
+                to: Precision::Double,
+            },
+            args: vec![Expr::reg(7, 32)],
+        };
+        let value = Expr::Apply {
+            op: Operation::FloatToInt {
+                signed: true,
+                bits: 64,
+                from: Precision::Double,
+                rounding: velk::ir::Rounding::TowardZero,
+                saturating: false,
+            },
+            args: vec![Expr::Apply {
+                op: Operation::FloatDiv(Precision::Double),
+                args: vec![converted, Expr::Const(2.0f64.to_bits())],
+            }],
+        };
+        let candidate = printed_candidate(
+            synthetic_ir(
+                &format!("implicit_double_{signed}"),
+                vec![Param {
+                    index: 7,
+                    name: "x".into(),
+                    ty: CType::int(4, signed),
+                }],
+                CType::int(8, true),
+                vec![Stmt::Ret { value }],
+            ),
+            [0, 1, 0x7fff_ffff, 0x8000_0000, 0xffff_ffff]
+                .map(|x| vec![x])
+                .to_vec(),
+        );
+        assert!(candidate.code.contains("x / 2.0"), "{}", candidate.code);
+        assert!(!candidate.code.contains("(double)x"), "{}", candidate.code);
+        candidates.push(candidate);
+    }
+    let widened = |value: f32| Expr::Apply {
+        op: Operation::FloatConvert {
+            from: Precision::Single,
+            to: Precision::Double,
+        },
+        args: vec![Expr::Const(u64::from(value.to_bits()))],
+    };
+    let value = Expr::Apply {
+        op: Operation::FloatToInt {
+            signed: true,
+            bits: 64,
+            from: Precision::Double,
+            rounding: velk::ir::Rounding::TowardZero,
+            saturating: false,
+        },
+        args: vec![Expr::Apply {
+            op: Operation::FloatAdd(Precision::Double),
+            args: vec![widened(16_777_216.0), widened(1.0)],
+        }],
+    };
+    let candidate = printed_candidate(
+        synthetic_ir(
+            "double_from_two_floats",
+            vec![],
+            CType::int(8, true),
+            vec![Stmt::Ret { value }],
+        ),
+        vec![vec![]],
+    );
+    assert_eq!(
+        candidate.code.matches("(double)").count(),
+        1,
+        "{}",
+        candidate.code
+    );
+    candidates.push(candidate);
+    check_candidates("implicit-double-operands", candidates, Mode::Registers, &[]);
+}

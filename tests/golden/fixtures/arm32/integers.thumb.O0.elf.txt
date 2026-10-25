@@ -77,7 +77,6 @@ fn mixed_sign @ 0x20158 (size 22)
 _Bool in_range(int x, int lo, int hi) {
     uint8_t v3 = 0;
     if (x >= lo) {
-        int32_t v6 = 0;
         if (x > hi) {
             return 0;
         }

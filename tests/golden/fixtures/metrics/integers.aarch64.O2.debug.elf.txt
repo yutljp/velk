@@ -170,7 +170,7 @@ fn labs_value @ 0x210274 (size 12)
 -- decompile
 /* velk pseudo-C: mul_high @ 0x210280 */
 unsigned long long mul_high(unsigned long long a, unsigned long long b) {
-    return (uint64_t)(((unsigned __int128)b * a) >> 64);
+    return ((unsigned __int128)b * a) >> 64;
 }
 -- signature
 unsigned long long (unsigned long long a, unsigned long long b)

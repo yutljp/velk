@@ -109,7 +109,6 @@ int sum_arr(int *p, int n) {
         int32_t v1 = (uint32_t)(sub_201d0());
         return v1;
     }
-    uint32_t v2 = 0;
     if ((uint32_t)n < 4) {
         int32_t v3 = (uint32_t)(sub_201b0());
         return v3;

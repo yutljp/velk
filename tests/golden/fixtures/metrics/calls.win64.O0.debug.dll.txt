@@ -123,8 +123,7 @@ fn apply_pointer @ 0x180001080 (size 32)
 /* velk pseudo-C: factorial @ 0x1800010a0 */
 int factorial(int n) {
     if (n > 1) {
-        uint32_t v5 = n;
-        return v5 * factorial(n - 1);
+        return n * factorial(n - 1);
     }
     return 1;
 }

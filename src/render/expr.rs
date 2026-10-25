@@ -621,28 +621,8 @@ fn unfitted(value: &Expr, ctx: &Ctx<'_>, bits: u32, usage: ConstantUse) -> Print
             lhs,
             rhs,
         } => {
-            let ty = Int {
-                bits: 64,
-                signed: *op == BinOp::MulHighS,
-            };
-            let narrow = if ty.signed { "int64_t" } else { "uint64_t" };
-            let wide = if ty.signed {
-                "__int128"
-            } else {
-                "unsigned __int128"
-            };
-            let lhs = integral(lhs, ctx, 64).cast(64, ty.signed, 64);
-            let rhs = integral(rhs, ctx, 64).cast(64, ty.signed, 64);
-            Printed::new(
-                format!(
-                    "({narrow})((({wide}){} * {}) >> 64)",
-                    lhs.within(12, false).text,
-                    rhs.within(11, true).text
-                ),
-                ty,
-                wrapped(ALL, ty),
-                12,
-            )
+            let signed = *op == BinOp::MulHighS;
+            high_product(lhs, rhs, signed, ctx).cast(64, signed, if signed { 64 } else { ALL })
         }
         // C divides a signed value with a sign: each operand is read as the
         // signed type of the operation's width unless it already is one.
@@ -1192,6 +1172,16 @@ pub(super) fn print_declared_value(
             };
         }
     }
+    // The destination performs the final truncation of a wide product.
+    if integer
+        && let Expr::Bin {
+            op: op @ (BinOp::MulHigh | BinOp::MulHighS),
+            lhs,
+            rhs,
+        } = value
+    {
+        return high_product(lhs, rhs, *op == BinOp::MulHighS, ctx);
+    }
     let printed = value_at(
         value,
         ctx,
@@ -1204,6 +1194,26 @@ pub(super) fn print_declared_value(
     } else {
         printed
     }
+}
+
+fn high_product(lhs: &Expr, rhs: &Expr, signed: bool, ctx: &Ctx<'_>) -> Printed {
+    let wide = if signed {
+        "__int128"
+    } else {
+        "unsigned __int128"
+    };
+    let lhs = integral(lhs, ctx, 64).cast(64, signed, 64);
+    let rhs = integral(rhs, ctx, 64).cast(64, signed, 64);
+    Printed::new(
+        format!(
+            "(({wide}){} * {}) >> 64",
+            lhs.within(12, false).text,
+            rhs.within(11, true).text
+        ),
+        Int { bits: 128, signed },
+        if signed { 64 } else { ALL },
+        9,
+    )
 }
 
 fn declared_constant(value: &Expr, printed: Printed, declared: Option<Declared>) -> Printed {

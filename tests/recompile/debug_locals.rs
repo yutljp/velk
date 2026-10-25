@@ -53,7 +53,7 @@ fn branch_folding_preserves_unsigned_arithmetic_from_signed_parameters() {
     ir.value_types.insert(temp, CType::U32);
     velk::passes::read_once::fold_values_read_once(&mut ir);
     let code = velk::render::render(&ir, &[], &Default::default(), &[]);
-    assert!(code.contains("uint32_t v1"), "{code}");
+    assert!(code.contains("& 0xffffffff"), "{code}");
     check_candidates(
         "signed-parameter-copy",
         vec![printed_candidate(
