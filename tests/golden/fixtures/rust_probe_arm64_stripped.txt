@@ -1,4 +1,4 @@
-# rust_probe_arm64_stripped: macho aarch64 0x10000094c, 670 functions, 0 lift failures, 37 unsupported, 1332 gotos
+# rust_probe_arm64_stripped: macho aarch64 0x10000094c, 670 functions, 0 lift failures, 37 unsupported, 1330 gotos
 0x1000008c0 20 - unwind,function-starts
 0x1000008d4 28 - unwind,function-starts
 0x1000008f0 28 - unwind,function-starts

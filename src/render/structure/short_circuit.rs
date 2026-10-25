@@ -112,19 +112,39 @@ fn nested_guard(node: &Node) -> Option<Node> {
 }
 
 fn terminal_guards(first: &Node, second: &Node) -> Option<Node> {
-    let (first, body) = selected_guard(first)?;
-    let (second, other) = selected_guard(second)?;
-    let same = match (body, other) {
-        ([Node::Stmt(Stmt::Ret { value: one })], [Node::Stmt(Stmt::Ret { value: two })]) => {
-            one == two
+    use super::merge_exits::statement;
+
+    let (Some((first, body)), Some((second, other))) =
+        (selected_guard(first), selected_guard(second))
+    else {
+        return None;
+    };
+    let (Some((last, prefix)), Some((other_last, other_prefix))) =
+        (body.split_last(), other.split_last())
+    else {
+        return None;
+    };
+    let same = match (last, other_last) {
+        (Node::Stmt(one @ (Stmt::Ret { .. } | Stmt::Br { target: Some(_) })), Node::Stmt(two)) => {
+            statement(one) == statement(two)
         }
-        ([Node::Stmt(Stmt::Trap)], [Node::Stmt(Stmt::Trap)])
-        | ([Node::Break], [Node::Break])
-        | ([Node::Continue], [Node::Continue]) => true,
+        (Node::Stmt(Stmt::Trap), Node::Stmt(Stmt::Trap))
+        | (Node::Break, Node::Break)
+        | (Node::Continue, Node::Continue) => true,
         _ => false,
     };
-    if !same {
+    if !same || prefix.len() != other_prefix.len() {
         return None;
+    }
+    for (one, two) in prefix.iter().zip(other_prefix) {
+        let (Node::Stmt(one @ (Stmt::Assign { .. } | Stmt::Store { .. })), Node::Stmt(two)) =
+            (one, two)
+        else {
+            return None;
+        };
+        if statement(one) != statement(two) {
+            return None;
+        }
     }
     combined_guard(first, second, body, true)
 }
@@ -709,6 +729,39 @@ mod tests {
     }
 
     #[test]
+    fn identical_terminal_setup_runs_once_after_short_circuit_tests() {
+        for first in [false, true] {
+            for second in [false, true] {
+                let body = vec![increment(1), increment(3), ret(load(COUNTER))];
+                let nodes = vec![
+                    guard(0, first, body.clone()),
+                    guard(1, second, body),
+                    ret(Expr::Const(0)),
+                ];
+                let after = compare(&nodes, &rows());
+                assert_eq!(count_ifs(&after), 1);
+                assert_condition_read_order(&after, &REGISTERS[..2]);
+            }
+        }
+        for different in [true, false] {
+            let nodes = vec![
+                guard(0, true, vec![increment(1), ret(Expr::Const(19))]),
+                guard(
+                    1,
+                    true,
+                    vec![
+                        increment(if different { 2 } else { 1 }),
+                        ret(Expr::Const(20)),
+                    ],
+                ),
+                ret(Expr::Const(0)),
+            ];
+            let after = compare(&nodes, &rows());
+            assert_eq!(count_ifs(&after), 2);
+        }
+    }
+
+    #[test]
     fn common_return_division_stays_in_the_selected_terminal() {
         let returned = Expr::bin(BinOp::DivU, Expr::Const(200), reg(2));
         let nodes = vec![
@@ -896,7 +949,7 @@ mod tests {
             ],
             vec![
                 guard(0, true, vec![increment(1), ret(Expr::Const(7))]),
-                guard(1, true, vec![increment(1), ret(Expr::Const(7))]),
+                guard(1, true, vec![increment(2), ret(Expr::Const(7))]),
                 ret(Expr::Const(0)),
             ],
         ] {

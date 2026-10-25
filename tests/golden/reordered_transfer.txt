@@ -1,0 +1,5 @@
+/* velk pseudo-C: reordered_transfer @ 0x0 */
+uint64_t reordered_transfer(uint8_t *dst, uint8_t *src) {
+    __builtin_memmove(dst, src, 32);
+    return 0;
+}

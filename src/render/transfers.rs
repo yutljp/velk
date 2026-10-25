@@ -235,6 +235,10 @@ fn record(source: &Expr, destination: &Expr, bytes: u64, ctx: &Ctx<'_>) -> Optio
 /// Complete scalar loads followed by their unchanged stores. A byte temporary
 /// preserves every byte, including padding, and snapshots overlapping ranges.
 pub(super) fn render(nodes: &[Node], ctx: &Ctx<'_>) -> Option<(usize, String)> {
+    ordered(nodes, ctx).or_else(|| reordered(nodes, ctx))
+}
+
+fn ordered(nodes: &[Node], ctx: &Ctx<'_>) -> Option<(usize, String)> {
     let mut loads: Vec<(u16, &Expr)> = Vec::new();
     let mut bytes = 0u64;
     for node in nodes.iter().take(4) {
@@ -384,4 +388,180 @@ pub(super) fn render(nodes: &[Node], ctx: &Ctx<'_>) -> Option<(usize, String)> {
         consumed,
         format!("__builtin_memmove({destination}, {source}, {bytes});"),
     ))
+}
+
+/// Stores may visit the words in a different order, provided every read
+/// happens before the first write and each word keeps its relative offset.
+fn reordered(nodes: &[Node], ctx: &Ctx<'_>) -> Option<(usize, String)> {
+    let mut loads = Vec::new();
+    for node in nodes.iter().take(4) {
+        let Node::Stmt(Stmt::Assign {
+            dest,
+            value:
+                value @ Expr::Load {
+                    addr,
+                    width: 8,
+                    signed: false,
+                },
+        }) = node
+        else {
+            break;
+        };
+        if dest.width != 64
+            || (dest.index < VARIABLE_BASE
+                && crate::arch::vector_half(ctx.isa, dest.index).is_none())
+            || !(ctx.read_once.contains(&dest.index)
+                || ctx.transfer_values.contains(&(dest.index, value.clone())))
+            || loads.iter().any(|(register, _)| *register == dest.index)
+            || !valid_address(addr, 8, ctx)
+        {
+            return None;
+        }
+        loads.push((dest.index, addr.as_ref()));
+    }
+    if loads.is_empty() {
+        return None;
+    }
+    let mut sources: Vec<&Expr> = loads.iter().map(|(_, addr)| *addr).collect();
+    if let Some(Node::Stmt(Stmt::Store {
+        value:
+            Expr::Load {
+                addr,
+                width: 8,
+                signed: false,
+            },
+        width: 8,
+        ..
+    })) = nodes.get(loads.len())
+    {
+        sources.push(addr);
+    }
+    if !(2..=4).contains(&sources.len()) {
+        return None;
+    }
+    let mut ordered = Vec::new();
+    for source in &sources {
+        let Some((base, offset)) = address_terms(source) else {
+            return None;
+        };
+        ordered.push((base, offset, *source));
+    }
+    ordered.sort_by_key(|(_, offset, _)| *offset);
+    let source = ordered[0].2;
+    for (part, (base, offset, _)) in ordered.iter().enumerate() {
+        if *base != ordered[0].0 || ordered[0].1.checked_add(part as i64 * 8) != Some(*offset) {
+            return None;
+        }
+    }
+    let mut stores = Vec::new();
+    for part in 0..sources.len() {
+        let Some(Node::Stmt(Stmt::Store {
+            addr,
+            value,
+            width: 8,
+        })) = nodes.get(loads.len() + part)
+        else {
+            return None;
+        };
+        let index = match value {
+            Expr::Reg { index, width: 64 } => {
+                let Some(index) = loads.iter().position(|(register, _)| register == index) else {
+                    return None;
+                };
+                index
+            }
+            Expr::Load {
+                width: 8,
+                signed: false,
+                ..
+            } if part == 0 && sources.len() > loads.len() => loads.len(),
+            _ => return None,
+        };
+        if stores.iter().any(|(other, _)| *other == index) || !valid_address(addr, 8, ctx) {
+            return None;
+        }
+        stores.push((index, addr));
+    }
+    let Some((_, destination)) = stores.iter().find(|(index, _)| sources[*index] == source) else {
+        return None;
+    };
+    for (index, addr) in &stores {
+        let Some((_, offset)) = address_terms(sources[*index]) else {
+            return None;
+        };
+        let Some(distance) = offset.checked_sub(ordered[0].1) else {
+            return None;
+        };
+        if !follows(destination, addr, distance as u64) {
+            return None;
+        }
+    }
+    let bytes = sources.len() as u64 * 8;
+    let mut reads = HashSet::new();
+    for addr in sources
+        .iter()
+        .copied()
+        .chain(stores.iter().map(|(_, addr)| *addr))
+    {
+        crate::ir::visit::collect_reads(addr, &mut reads);
+    }
+    if loads.iter().any(|(register, _)| reads.contains(register)) {
+        return None;
+    }
+    let (Some(source), Some(destination)) = (
+        copy_address(source, bytes, ctx),
+        copy_address(destination, bytes, ctx),
+    ) else {
+        return None;
+    };
+    let consumed = loads.len() + sources.len();
+    let text = format!("__builtin_memmove({destination}, {source}, {bytes});");
+    let new_casts = casts(&text);
+    if new_casts != 0 {
+        let mut original_casts = 0;
+        let mut position = 0;
+        while position < consumed {
+            let remaining = &nodes[position..consumed];
+            if let Some((count, text)) =
+                super::aggregates::render(remaining, ctx).or_else(|| self::ordered(remaining, ctx))
+            {
+                original_casts += casts(&text);
+                position += count;
+            } else if let Node::Stmt(stmt) = &nodes[position] {
+                original_casts += casts(&super::render_stmt(stmt, ctx));
+                position += 1;
+            } else {
+                return None;
+            }
+        }
+        if new_casts > original_casts {
+            return None;
+        }
+    }
+    Some((consumed, text))
+}
+
+fn casts(text: &str) -> usize {
+    let mut count = 0;
+    for (start, _) in text.match_indices('(') {
+        let Some(end) = text[start + 1..].find(')') else {
+            continue;
+        };
+        let ty = text[start + 1..start + 1 + end].trim_end_matches([' ', '*']);
+        if ty.ends_with("_t")
+            && ty
+                .bytes()
+                .all(|byte| byte.is_ascii_alphanumeric() || byte == b'_')
+            || ty.strip_prefix("struct ").is_some_and(|name| {
+                !name.is_empty()
+                    && name
+                        .bytes()
+                        .all(|byte| byte.is_ascii_alphanumeric() || byte == b'_')
+            })
+            || matches!(ty, "float" | "double" | "bool" | "char")
+        {
+            count += 1;
+        }
+    }
+    count
 }

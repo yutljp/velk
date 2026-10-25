@@ -2,6 +2,189 @@ use super::*;
 use velk::ir::{RegRef, VARIABLE_BASE};
 
 #[test]
+fn printed_partial_record_transfers_keep_members_without_extra_casts() {
+    let arguments = Convention::SysV.arguments();
+    let at = |parameter: usize, offset| {
+        Expr::bin(
+            BinOp::Add,
+            Expr::reg(arguments[parameter], 64),
+            Expr::Const(offset),
+        )
+    };
+    let load = |offset| Expr::Load {
+        addr: Box::new(at(1, offset)),
+        width: 8,
+        signed: false,
+    };
+    let mut ir = synthetic_ir(
+        "partial_record_transfer",
+        ["dst", "src"]
+            .into_iter()
+            .enumerate()
+            .map(|(index, name)| Param {
+                index: arguments[index],
+                name: name.into(),
+                ty: CType::pointer_to(CType::Named("struct record".into())),
+            })
+            .collect(),
+        CType::U64,
+        vec![
+            Stmt::Assign {
+                dest: RegRef {
+                    index: VARIABLE_BASE,
+                    width: 64,
+                },
+                value: load(16),
+            },
+            Stmt::Store {
+                addr: at(0, 8),
+                value: load(8),
+                width: 8,
+            },
+            Stmt::Store {
+                addr: at(0, 16),
+                value: Expr::reg(VARIABLE_BASE, 64),
+                width: 8,
+            },
+            Stmt::Ret {
+                value: Expr::Const(0),
+            },
+        ],
+    );
+    ir.structures.push(velk::ir::Structure {
+        name: "record".into(),
+        fields: (0..4).map(|part| (part * 8, CType::U64)).collect(),
+        size: Some(32),
+        elements: arguments[..2].to_vec(),
+    });
+    let candidate = printed_candidate(
+        ir,
+        vec![
+            vec![REGION, REGION + 64],
+            vec![REGION, REGION],
+            vec![REGION + 8, REGION],
+            vec![REGION, REGION + 8],
+        ],
+    );
+    assert!(
+        !candidate.code.contains("__builtin_memmove"),
+        "{}",
+        candidate.code
+    );
+    assert!(
+        candidate.code.contains("dst->field_0x8 = src->field_0x8;"),
+        "{}",
+        candidate.code
+    );
+    check_candidates(
+        "partial-record-transfer",
+        vec![candidate],
+        Mode::Memory,
+        &[],
+    );
+}
+
+#[test]
+fn printed_reordered_transfers_preserve_snapshots_and_word_offsets() {
+    let arguments = Convention::SysV.arguments();
+    let mut candidates = Vec::new();
+    for words in [2usize, 3, 4] {
+        let inline_part = words / 2;
+        for inline in [false, true] {
+            for invalid in 0..4 {
+                let at = |parameter: usize, part: usize| {
+                    Expr::bin(
+                        BinOp::Add,
+                        Expr::reg(arguments[parameter], 64),
+                        Expr::Const(part as u64 * 8),
+                    )
+                };
+                let load = |part| Expr::Load {
+                    addr: Box::new(at(1, part)),
+                    width: 8,
+                    signed: false,
+                };
+                let mut statements = Vec::new();
+                for part in (0..words).rev() {
+                    if !inline || part != inline_part {
+                        statements.push(Stmt::Assign {
+                            dest: RegRef {
+                                index: VARIABLE_BASE + part as u16,
+                                width: 64,
+                            },
+                            value: load(part),
+                        });
+                    }
+                }
+                for position in 0..words {
+                    let part = if invalid == 3 && inline {
+                        (position + inline_part + 1) % words
+                    } else {
+                        (position + inline_part) % words
+                    };
+                    statements.push(Stmt::Store {
+                        addr: at(0, if invalid == 1 { 0 } else { part }),
+                        value: if inline && part == inline_part {
+                            load(part)
+                        } else {
+                            Expr::reg(VARIABLE_BASE + part as u16, 64)
+                        },
+                        width: 8,
+                    });
+                }
+                statements.push(Stmt::Ret {
+                    value: if invalid == 2 {
+                        Expr::reg(VARIABLE_BASE, 64)
+                    } else {
+                        Expr::Const(0)
+                    },
+                });
+                let ir = synthetic_ir(
+                    "reordered_transfer",
+                    ["dst", "src"]
+                        .into_iter()
+                        .enumerate()
+                        .map(|(index, name)| Param {
+                            index: arguments[index],
+                            name: name.into(),
+                            ty: CType::pointer_to(CType::int(1, false)),
+                        })
+                        .collect(),
+                    CType::U64,
+                    statements,
+                );
+                let candidate = printed_candidate(
+                    ir,
+                    [(0, 64), (64, 0), (0, 0), (1, 0), (0, 1), (8, 0), (0, 8)]
+                        .into_iter()
+                        .map(|(dst, src)| vec![REGION + dst, REGION + src])
+                        .collect(),
+                );
+                assert_eq!(
+                    candidate
+                        .code
+                        .contains(&format!("__builtin_memmove(dst, src, {});", words * 8)),
+                    invalid == 0 || (invalid == 3 && !inline),
+                    "{}",
+                    candidate.code,
+                );
+                if words == 4 && inline && invalid == 0 {
+                    assert_eq!(
+                        common::check_expected(
+                            &common::root().join("tests/golden/reordered_transfer.txt"),
+                            &candidate.code,
+                        ),
+                        None,
+                    );
+                }
+                candidates.push(candidate);
+            }
+        }
+    }
+    check_candidates("reordered-transfers", candidates, Mode::Memory, &[]);
+}
+
+#[test]
 fn printed_record_transfers_keep_recovered_frame_storage() {
     let at = |offset: i64| Expr::bin(BinOp::Add, Expr::reg(4, 64), Expr::Const(offset as u64));
     let load = |offset| Expr::Load {

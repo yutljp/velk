@@ -1,0 +1,10 @@
+/* velk pseudo-C: terminal_error_guards @ 0x0 */
+uint64_t terminal_error_guards(uint64_t *pointer, uint64_t input) {
+    *pointer = input & 0x1;
+    if (input == 0 || *pointer == 0) {
+        *pointer = input;
+        pointer[1] = 19;
+        return 19;
+    }
+    return 0;
+}

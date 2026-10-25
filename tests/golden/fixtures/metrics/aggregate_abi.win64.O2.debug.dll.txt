@@ -142,9 +142,7 @@ struct abi_hfa3 abi_hfa3_adjust(struct abi_hfa3 value, double bias) {
     double v1 = ((union { uint64_t bits; double value; }){ .bits = bias_bits }).value + value.c;
     value.c = v1;
     result.c = v1;
-    int64_t v2 = *(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, value_address + 0x8, 8);
-    __builtin_memcpy(result_address, &(uint64_t){*(uint64_t *)__builtin_memcpy((uint64_t[1]){0}, value_address, 8)}, 8);
-    __builtin_memcpy(result_address + 0x8, &(uint64_t){v2}, 8);
+    __builtin_memmove(result_address, value_address, 16);
     return result;
 }
 -- signature

@@ -2,6 +2,114 @@ use super::*;
 use velk::ir::RegRef;
 
 #[test]
+fn printed_terminal_guards_keep_error_payloads_and_short_circuit_reads() {
+    let arguments = Convention::SysV.arguments();
+    let pointer = Expr::reg(arguments[0], 64);
+    let input = Expr::reg(arguments[1], 64);
+    let mut candidates = Vec::new();
+    for different in [false, true] {
+        let mut ir = synthetic_ir(
+            "terminal_error_guards",
+            vec![
+                Param {
+                    index: arguments[0],
+                    name: "pointer".into(),
+                    ty: CType::pointer_to(CType::U64),
+                },
+                Param {
+                    index: arguments[1],
+                    name: "input".into(),
+                    ty: CType::U64,
+                },
+            ],
+            CType::U64,
+            Vec::new(),
+        );
+        ir.blocks = vec![
+            Block {
+                start: 0,
+                stmts: vec![
+                    Stmt::Store {
+                        addr: pointer.clone(),
+                        value: Expr::bin(BinOp::And, input.clone(), Expr::Const(1)),
+                        width: 8,
+                    },
+                    Stmt::Brif {
+                        cond: Cond::Eq,
+                        lhs: input.clone(),
+                        rhs: Expr::Const(0),
+                        target: 30,
+                    },
+                ],
+            },
+            Block {
+                start: 10,
+                stmts: vec![Stmt::Brif {
+                    cond: Cond::Eq,
+                    lhs: Expr::Load {
+                        addr: Box::new(pointer.clone()),
+                        width: 8,
+                        signed: false,
+                    },
+                    rhs: Expr::Const(0),
+                    target: 40,
+                }],
+            },
+            Block {
+                start: 20,
+                stmts: vec![Stmt::Ret {
+                    value: Expr::Const(0),
+                }],
+            },
+        ];
+        for (start, error) in [(30, 19), (40, if different { 20 } else { 19 })] {
+            ir.blocks.push(Block {
+                start,
+                stmts: vec![
+                    Stmt::Store {
+                        addr: pointer.clone(),
+                        value: input.clone(),
+                        width: 8,
+                    },
+                    Stmt::Store {
+                        addr: Expr::bin(BinOp::Add, pointer.clone(), Expr::Const(8)),
+                        value: Expr::Const(error),
+                        width: 8,
+                    },
+                    Stmt::Ret {
+                        value: Expr::Const(error),
+                    },
+                ],
+            });
+        }
+        let candidate = printed_candidate(
+            ir,
+            [0, 1, 2, u64::MAX]
+                .map(|input| vec![REGION, input])
+                .to_vec(),
+        );
+        if !different {
+            assert!(candidate.code.contains(" || "), "{}", candidate.code);
+            assert_eq!(
+                candidate.code.matches("pointer[1] = 19;").count(),
+                1,
+                "{}",
+                candidate.code
+            );
+            assert_eq!(
+                common::check_expected(
+                    &common::root().join("tests/golden/terminal_error_guards.txt"),
+                    &candidate.code,
+                ),
+                None,
+            );
+        }
+        candidates.push(candidate);
+    }
+    check_candidates("terminal-error-guards", candidates, Mode::Memory, &[]);
+}
+
+#[test]
 fn printed_identical_exits_preserve_constants_and_store_order() {
     let arguments = Convention::SysV.arguments();
     let variable = velk::ir::VARIABLE_BASE;
