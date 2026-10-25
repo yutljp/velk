@@ -1007,7 +1007,7 @@ fn check_batch(
         .collect()
 }
 
-fn scan(fixtures: &[PathBuf], name: &str) {
+pub(super) fn scan(fixtures: &[PathBuf], name: &str) {
     let scratch = scratch_dir(name);
     let compiler = compiler();
     let mut fixtures = fixtures.to_vec();

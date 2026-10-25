@@ -8,6 +8,9 @@ use crate::ir::visit::statement_registers;
 use crate::ir::{Cond, Expr, FunctionIr, Stmt, VARIABLE_BASE};
 use crate::passes::frame::reads_outside_frame;
 
+mod debug;
+pub(crate) use debug::fold_debug_locals;
+
 /// Folds a definition read exactly once before its register is written again
 /// into that reader, so `x8 = w8; if (x8 & 0x80000000) ...` keeps no temporary.
 /// A definition a later block, or the next pass of a loop, may read stays.

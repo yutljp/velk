@@ -38,10 +38,29 @@ pub fn fold_values_read_once(ir: &mut FunctionIr) {
         .map(|index| live_out(ir, &live_in, index))
         .collect();
     let chained = chained(ir);
-    let kept = |index: u16, value: &Expr| {
+    let predecessors = crate::render::structure::compare_chain::predecessors(ir);
+    let mut uses = std::collections::HashMap::<u16, usize>::new();
+    for stmt in ir.blocks.iter().flat_map(|block| &block.stmts) {
+        for register in statement_registers(stmt).1 {
+            let count = uses.entry(register).or_default();
+            *count = count.saturating_add(count_operands(stmt, register).max(1));
+        }
+    }
+    let split = ir.landing_pads.is_empty() && !ir.blocks.iter().any(opaque);
+    let kept = |index: u16, value: &Expr, ir: &FunctionIr| {
         !(VARIABLE_BASE..VALUE_BASE).contains(&index)
             || types.get(&index).is_none_or(|ty| match ty {
                 CType::Int { .. } => false,
+                CType::Named(name)
+                    if unsigned_integer(ty)
+                        && integer_value(value, ir, &types, ty)
+                        && !faults(value)
+                        && !name
+                            .split_whitespace()
+                            .any(|word| matches!(word, "bool" | "_Bool" | "char" | "volatile")) =>
+                {
+                    false
+                }
                 CType::Pointer(_) => {
                     ty.pointee_struct().is_some() && (reads_memory(value) || faults(value))
                 }
@@ -58,13 +77,47 @@ pub fn fold_values_read_once(ir: &mut FunctionIr) {
             let Stmt::Assign { dest, value } = &ir.blocks[block].stmts[index] else {
                 continue;
             };
-            if kept(dest.index, value) {
+            if kept(dest.index, value, ir) {
                 continue;
             }
             let (dest, value) = (*dest, truncated(value, dest.width));
+            let mut path = None;
+            if split
+                && chained[block].is_none()
+                && block.saturating_add(1) < ir.blocks.len()
+                && matches!(ir.blocks[block].stmts.last(), Some(Stmt::Brif { target, .. })
+                    if ir.blocks.iter().any(|block| block.start == *target))
+                && uses.get(&dest.index) == Some(&1)
+                && types
+                    .get(&dest.index)
+                    .is_some_and(|ty| unsigned_integer(ty) && integer_value(&value, ir, &types, ty))
+                && !faults(&value)
+            {
+                let mut sources = HashSet::new();
+                collect_reads(&value, &mut sources);
+                // Moving a local's read would also change its live range.
+                if sources.iter().all(|source| {
+                    *source < TEMP_BASE && ir.params.iter().any(|param| param.index == *source)
+                }) {
+                    let targets: Vec<_> = successors(ir, block)
+                        .into_iter()
+                        .filter(|next| {
+                            *next != 0
+                                && *next != block
+                                && predecessors.get(&ir.blocks[*next].start) == Some(&1)
+                                && live_in[*next].contains(&dest.index)
+                        })
+                        .collect();
+                    if let [next] = targets.as_slice() {
+                        let mut extended = chained.clone();
+                        extended[block] = Some(*next);
+                        path = Some(extended);
+                    }
+                }
+            }
             let Some((at, reader)) = reader(
                 ir,
-                &chained,
+                path.as_deref().unwrap_or(&chained),
                 (block, index),
                 dest.index,
                 &value,
@@ -80,6 +133,47 @@ pub fn fold_values_read_once(ir: &mut FunctionIr) {
             ir.blocks[at].stmts[reader] = folded;
             ir.blocks[block].stmts.remove(index);
         }
+    }
+}
+
+fn unsigned_integer(ty: &CType) -> bool {
+    ty.integer()
+        .is_some_and(|(bits, signed)| matches!(bits, 32 | 64) && !signed)
+        && match ty {
+            CType::Int { .. } => true,
+            CType::Named(name) => name.split_whitespace().all(|word| {
+                matches!(
+                    word,
+                    "const" | "unsigned" | "int" | "long" | "uint32_t" | "uint64_t"
+                )
+            }),
+            _ => false,
+        }
+}
+
+fn integer_value(
+    expr: &Expr,
+    ir: &FunctionIr,
+    types: &std::collections::BTreeMap<u16, CType>,
+    expected: &CType,
+) -> bool {
+    match expr {
+        Expr::Reg { index, .. } => ir
+            .params
+            .iter()
+            .find(|param| param.index == *index)
+            .map(|param| &param.ty)
+            .or_else(|| types.get(index))
+            .is_some_and(|ty| {
+                unsigned_integer(ty)
+                    && ty.integer() == expected.integer()
+                    && !matches!(ty, CType::Named(name)
+                        if name.split_whitespace().any(|word| matches!(word, "char" | "volatile")))
+            }),
+        Expr::Load { .. } => false,
+        _ => children(expr)
+            .into_iter()
+            .all(|child| integer_value(child, ir, types, expected)),
     }
 }
 
@@ -226,7 +320,7 @@ fn count(expr: &Expr, register: u16) -> usize {
 
 /// Replaces the read of `dest` in the statement with the value; false when
 /// the read's width does not fit the value's.
-fn substitute(stmt: &mut Stmt, dest: RegRef, value: &Expr) -> bool {
+pub(super) fn substitute(stmt: &mut Stmt, dest: RegRef, value: &Expr) -> bool {
     if stmt.declared_call_reads().contains(&dest.index)
         || stmt
             .preserved_output_sources()

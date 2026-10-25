@@ -72,6 +72,9 @@ fn render_unmerged(
         None
     };
     super::frame_registers::rebase(&mut folded);
+    if crate::passes::copies::fold_debug_locals(&mut folded) {
+        crate::passes::read_once::fold_values_read_once(&mut folded);
+    }
     let types = variables::variable_types(
         &folded,
         &narrow_registers(&folded),

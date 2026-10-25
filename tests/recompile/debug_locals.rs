@@ -1,11 +1,302 @@
 use super::*;
 
+#[test]
+fn branch_folding_preserves_unsigned_arithmetic_from_signed_parameters() {
+    let temp = velk::ir::VARIABLE_BASE;
+    let mut ir = synthetic_ir(
+        "signed_parameter_copy",
+        vec![
+            Param {
+                index: 7,
+                name: "input".into(),
+                ty: CType::I32,
+            },
+            Param {
+                index: 6,
+                name: "flag".into(),
+                ty: CType::U64,
+            },
+        ],
+        CType::U64,
+        vec![
+            Stmt::Assign {
+                dest: velk::ir::RegRef {
+                    index: temp,
+                    width: 32,
+                },
+                value: Expr::reg(7, 32),
+            },
+            Stmt::Brif {
+                cond: Cond::Eq,
+                lhs: Expr::reg(6, 64),
+                rhs: Expr::Const(0),
+                target: 2,
+            },
+        ],
+    );
+    ir.blocks.push(Block {
+        start: 1,
+        stmts: vec![Stmt::Ret {
+            value: Expr::bin(
+                BinOp::And,
+                Expr::bin(BinOp::Sub, Expr::reg(temp, 32), Expr::Const(1)),
+                Expr::Const(0xffff_ffff),
+            ),
+        }],
+    });
+    ir.blocks.push(Block {
+        start: 2,
+        stmts: vec![Stmt::Ret {
+            value: Expr::Const(0),
+        }],
+    });
+    ir.value_types.insert(temp, CType::U32);
+    velk::passes::read_once::fold_values_read_once(&mut ir);
+    let code = velk::render::render(&ir, &[], &Default::default(), &[]);
+    assert!(code.contains("uint32_t v1"), "{code}");
+    check_candidates(
+        "signed-parameter-copy",
+        vec![printed_candidate(
+            ir,
+            [0, 1, 0x7fff_ffff, 0x8000_0000, 0xffff_ffff]
+                .into_iter()
+                .flat_map(|value| [vec![value, 0], vec![value, 1]])
+                .collect(),
+        )],
+        Mode::Registers,
+        &[],
+    );
+}
+
+#[test]
+fn pure_parameter_values_fold_into_one_branch_without_losing_snapshots() {
+    let temp = velk::ir::VARIABLE_BASE;
+    let mut candidates = Vec::new();
+    for width in [32, 64] {
+        for changed in [false, true] {
+            for shared in [false, true] {
+                let mut ir = synthetic_ir(
+                    &format!("branch_temporary_{width}_{changed}_{shared}"),
+                    vec![
+                        Param {
+                            index: 7,
+                            name: "input".into(),
+                            ty: CType::int(width / 8, false),
+                        },
+                        Param {
+                            index: 6,
+                            name: "flag".into(),
+                            ty: CType::U64,
+                        },
+                    ],
+                    CType::U64,
+                    vec![
+                        Stmt::Assign {
+                            dest: velk::ir::RegRef { index: temp, width },
+                            value: Expr::bin(BinOp::Add, Expr::reg(7, width), Expr::Const(1)),
+                        },
+                        Stmt::Brif {
+                            cond: Cond::Eq,
+                            lhs: Expr::reg(6, 64),
+                            rhs: Expr::Const(0),
+                            target: 2,
+                        },
+                    ],
+                );
+                let mut body = Vec::new();
+                if changed {
+                    body.push(Stmt::Assign {
+                        dest: velk::ir::RegRef { index: 7, width },
+                        value: Expr::Const(9),
+                    });
+                }
+                body.push(Stmt::Ret {
+                    value: Expr::bin(
+                        BinOp::And,
+                        Expr::bin(BinOp::Mul, Expr::reg(temp, width), Expr::Const(3)),
+                        Expr::Const(if width == 32 { 0xffff_ffff } else { u64::MAX }),
+                    ),
+                });
+                ir.blocks.push(Block {
+                    start: 1,
+                    stmts: body,
+                });
+                ir.blocks.push(Block {
+                    start: 2,
+                    stmts: vec![Stmt::Ret {
+                        value: if shared {
+                            Expr::reg(temp, width)
+                        } else {
+                            Expr::Const(0)
+                        },
+                    }],
+                });
+                ir.value_types.insert(temp, CType::int(width / 8, false));
+                velk::passes::read_once::fold_values_read_once(&mut ir);
+                let code = velk::render::render(&ir, &[], &Default::default(), &[]);
+                assert_eq!(code.contains(" v1"), changed || shared, "{code}");
+                candidates.push(printed_candidate(
+                    ir,
+                    [0, 1, u64::MAX, 1 << 63]
+                        .into_iter()
+                        .flat_map(|value| [vec![value, 0], vec![value, 1]])
+                        .collect(),
+                ));
+            }
+        }
+    }
+    check_candidates("branch-temporary", candidates, Mode::Registers, &[]);
+}
+
+#[test]
+#[ignore = "syntax-checks every debug C/C++ fixture function"]
+fn debug_fixture_functions_compile() {
+    let fixtures: Vec<_> = common::fixtures()
+        .into_iter()
+        .filter(|path| path.starts_with("metrics") && path.to_string_lossy().contains(".debug."))
+        .collect();
+    assert!(!fixtures.is_empty());
+    syntax::scan(&fixtures, "debug-syntax");
+}
+
+#[test]
+fn named_integer_temporary_folds_into_its_only_use() {
+    let arg = Convention::SysV.arguments()[0];
+    let temp = velk::ir::VARIABLE_BASE;
+    let mut ir = synthetic_ir(
+        "named_integer_temporary",
+        vec![Param {
+            index: arg,
+            name: "input".into(),
+            ty: CType::U64,
+        }],
+        CType::U64,
+        vec![
+            Stmt::Assign {
+                dest: velk::ir::RegRef {
+                    index: temp,
+                    width: 64,
+                },
+                value: Expr::bin(BinOp::Add, Expr::reg(arg, 64), Expr::Const(1)),
+            },
+            Stmt::Ret {
+                value: Expr::bin(BinOp::Mul, Expr::reg(temp, 64), Expr::Const(3)),
+            },
+        ],
+    );
+    ir.value_types
+        .insert(temp, CType::Named("unsigned long".into()));
+    let before = velk::render::render(&ir, &[], &Default::default(), &[]);
+    assert!(before.contains("unsigned long v1"), "{before}");
+    velk::passes::read_once::fold_values_read_once(&mut ir);
+    let code = velk::render::render(&ir, &[], &Default::default(), &[]);
+    assert!(!code.contains(" v1"), "{code}");
+    check_candidates(
+        "named-integer-temporary",
+        vec![printed_candidate(
+            ir,
+            [0, 1, u64::MAX, 1 << 63]
+                .into_iter()
+                .map(|value| vec![value])
+                .collect(),
+        )],
+        Mode::Registers,
+        &[],
+    );
+}
+
 fn slot(offset: i64) -> Expr {
     Expr::bin(
         BinOp::Add,
         Expr::reg(velk::arch::stack_pointer(Isa::X86_64), 64),
         Expr::Const(offset as u64),
     )
+}
+
+#[test]
+fn debug_local_copies_use_the_slot_only_while_values_agree() {
+    let arg = Convention::SysV.arguments()[0];
+    let temp = velk::ir::VARIABLE_BASE;
+    let mut candidates = Vec::new();
+    for overwrite in [false, true] {
+        for partial in [false, true] {
+            let mut ir = synthetic_ir(
+                &format!("debug_copy_{overwrite}_{partial}"),
+                vec![Param {
+                    index: arg,
+                    name: "input".into(),
+                    ty: CType::U32,
+                }],
+                CType::U32,
+                vec![
+                    Stmt::Assign {
+                        dest: velk::ir::RegRef {
+                            index: temp,
+                            width: 32,
+                        },
+                        value: Expr::bin(BinOp::Xor, Expr::reg(arg, 32), Expr::Const(17)),
+                    },
+                    Stmt::Store {
+                        addr: slot(-16),
+                        value: Expr::reg(temp, 32),
+                        width: 4,
+                    },
+                    Stmt::Brif {
+                        cond: Cond::Lt,
+                        lhs: Expr::reg(temp, 32),
+                        rhs: Expr::Const(0),
+                        target: 2,
+                    },
+                ],
+            );
+            ir.debug_locals.push(velk::ir::DebugLocal {
+                name: "sample".into(),
+                ty: CType::U32,
+                slot: -16,
+                size: 4,
+            });
+            let mut body = Vec::new();
+            if overwrite {
+                body.push(Stmt::Store {
+                    addr: slot(if partial { -15 } else { -16 }),
+                    value: Expr::Const(0),
+                    width: if partial { 1 } else { 4 },
+                });
+            }
+            body.push(Stmt::Ret {
+                value: Expr::bin(
+                    BinOp::Add,
+                    Expr::reg(temp, 32),
+                    Expr::Load {
+                        addr: Box::new(slot(-16)),
+                        width: 4,
+                        signed: false,
+                    },
+                ),
+            });
+            ir.blocks.push(Block {
+                start: 1,
+                stmts: body,
+            });
+            ir.blocks.push(Block {
+                start: 2,
+                stmts: vec![Stmt::Ret {
+                    value: Expr::reg(temp, 32),
+                }],
+            });
+            let code = velk::render::render(&ir, &[], &Default::default(), &[]);
+            assert!(code.contains("sample"), "{code}");
+            assert_eq!(code.contains(" v1"), overwrite, "{code}");
+            candidates.push(printed_candidate(
+                ir,
+                [0, 1, 17, 0x7fff_ffff, 0x8000_0000, 0xffff_ffff]
+                    .into_iter()
+                    .map(|value| vec![value])
+                    .collect(),
+            ));
+        }
+    }
+    check_candidates("debug-local-copies", candidates, Mode::Memory, &[]);
 }
 
 #[test]
