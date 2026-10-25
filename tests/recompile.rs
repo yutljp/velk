@@ -14,7 +14,7 @@
 //! `tests/golden/recompile_memory.txt`.
 //!
 //! Compiler and driver results for batches of at most 32 functions are cached
-//! under target/recompile-cache; IR expectations and comparisons are recomputed.
+//! under target/recompile-cache; IR expectations share the cache. Comparisons are recomputed.
 //! Batches run in parallel, with results collected in fixture and batch order.
 //! Set `VELK_RECOMPILE_NO_CACHE=1` to compile and run every batch again.
 
@@ -101,6 +101,8 @@ use std::fmt::Write as _;
 use std::io::Write as _;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
+
+use serde::{Deserialize, Serialize};
 
 use velk::ir::eval::{self, Outcome};
 use velk::ir::{
@@ -5177,14 +5179,14 @@ struct Candidate {
     void: bool,
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 struct AggregateCall {
     signature: DeclaredSignature,
     result: ObjectSlice,
     upper_bits: Vec<u64>,
 }
 
-#[derive(Clone, Copy)]
+#[derive(Debug, Clone, Copy)]
 struct ObjectSlice {
     offset: u64,
     bytes: u8,
@@ -5194,7 +5196,7 @@ struct ObjectSlice {
 const AGGREGATE_STORAGE: u64 = eval::STACK_TOP - 0x10_0000;
 const AGGREGATE_RESULT: u64 = AGGREGATE_STORAGE + 0x2_0000;
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 struct SegmentState {
     fs: Option<u64>,
     gs: Option<u64>,
@@ -5576,7 +5578,7 @@ struct Findings {
     compared: usize,
     runs: usize,
     differing: usize,
-    skipped: BTreeMap<&'static str, usize>,
+    skipped: BTreeMap<String, usize>,
     lines: Vec<String>,
 }
 
@@ -5589,13 +5591,25 @@ enum Ran {
     Other(String),
 }
 
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
+enum ExpectedOutcome {
+    Return { value: u64 },
+    Trap,
+}
+
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
+struct Interpretation {
+    outcome: ExpectedOutcome,
+    checksum: Option<u64>,
+}
+
 /// A run the interpreter finished: the function, the trial, the
 /// arguments as the parameters hold them, and the outcome.
 struct Expected {
     function: usize,
     trial: u64,
     arguments: Vec<u64>,
-    outcome: Outcome,
+    outcome: ExpectedOutcome,
     /// The region's checksum after the run, in the memory pass.
     checksum: Option<u64>,
 }
@@ -5734,9 +5748,12 @@ fn check_batch(
         }
     }
     let canonical_started = std::time::Instant::now();
-    let printed = cache.get_or_compute("canonical", &(&source.text, &requests), || {
-        run(&build_programs()[0], &requests)
-    });
+    let printed = cache.get_or_compute_if(
+        "canonical",
+        &(&source.text, &requests),
+        || run(&build_programs()[0], &requests),
+        |output| can_cache_run(output),
+    );
     let canonical_seconds = canonical_started.elapsed().as_secs_f64();
     let interpretation_started = std::time::Instant::now();
     let mut canonical = printed.lines().map(|line| {
@@ -5747,25 +5764,32 @@ fn check_batch(
     let mut expected = Vec::new();
     for &index in &alive {
         let candidate = candidates[index];
-        for trial in 0..candidate.inputs.len() as u64 {
-            let arguments = canonical.next().unwrap_or_default();
-            // Another function's address differs between the binary and
-            // the compiled program.
-            if !declared_functions(&candidate.code).is_empty() {
-                *result
-                    .skipped
-                    .entry("takes a function's address")
-                    .or_default() += 1;
-                continue;
-            }
-            match interpret(fixture, candidate, trial, &arguments, mode) {
-                Ok(outcome) => expected.push(Expected {
+        let mut arguments = Vec::new();
+        for _ in &candidate.inputs {
+            arguments.push(canonical.next().unwrap_or_default());
+        }
+        if arguments.is_empty() {
+            continue;
+        }
+        // Another function's address differs between the binary and
+        // the compiled program.
+        if !declared_functions(&candidate.code).is_empty() {
+            *result
+                .skipped
+                .entry("takes a function's address".to_owned())
+                .or_default() += arguments.len();
+            continue;
+        }
+        let interpreted = interpretations(fixture, candidate, &arguments, mode);
+        let trials = arguments.into_iter().zip(interpreted).enumerate();
+        for (trial, (arguments, interpreted)) in trials {
+            match interpreted {
+                Ok(interpreted) => expected.push(Expected {
                     function: index,
-                    trial,
+                    trial: trial as u64,
                     arguments,
-                    checksum: (mode == Mode::Memory)
-                        .then(|| region_checksum(&outcome, trial, candidate.ir.isa)),
-                    outcome,
+                    checksum: interpreted.checksum,
+                    outcome: interpreted.outcome,
                 }),
                 Err(reason) => *result.skipped.entry(reason).or_default() += 1,
             }
@@ -5782,18 +5806,21 @@ fn check_batch(
     let expectations: Vec<_> = expected
         .iter()
         .map(|run| match &run.outcome {
-            Outcome::Return { value, .. } => format!("value {value:x} {:?}", run.checksum),
-            Outcome::Trap { .. } => "trap".to_owned(),
-            Outcome::Unknown(reason) => format!("unknown {reason}"),
+            ExpectedOutcome::Return { value } => format!("value {value:x} {:?}", run.checksum),
+            ExpectedOutcome::Trap => "trap".to_owned(),
         })
         .collect();
-    let printed: Vec<String> =
-        cache.get_or_compute("execute", &(&source.text, &requests, expectations), || {
+    let printed: Vec<String> = cache.get_or_compute_if(
+        "execute",
+        &(&source.text, &requests, expectations),
+        || {
             build_programs()
                 .iter()
                 .map(|program| run(program, &requests))
                 .collect()
-        });
+        },
+        |outputs: &Vec<String>| outputs.iter().all(|output| can_cache_run(output)),
+    );
     let execution_seconds = execution_started.elapsed().as_secs_f64();
     let comparison_started = std::time::Instant::now();
     let outputs: Vec<Vec<Ran>> = printed
@@ -5816,7 +5843,7 @@ fn check_batch(
         {
             *result
                 .skipped
-                .entry("reaches memory no page can map")
+                .entry("reaches memory no page can map".to_owned())
                 .or_default() += 1;
             continue;
         }
@@ -5841,8 +5868,8 @@ fn check_batch(
             .map(|(level, ran)| format!("{} at {level}", describe(ran, mask(candidate))))
             .collect();
         let wanted = match (&run.outcome, run.checksum) {
-            (Outcome::Return { value, .. }, None) => format!("0x{:x}", value & mask(candidate)),
-            (Outcome::Return { value, .. }, Some(sum)) => {
+            (ExpectedOutcome::Return { value }, None) => format!("0x{:x}", value & mask(candidate)),
+            (ExpectedOutcome::Return { value }, Some(sum)) => {
                 format!("0x{:x} and memory {sum:x}", value & mask(candidate))
             }
             _ => "a trap".to_owned(),
@@ -6264,7 +6291,61 @@ fn aggregate_state(call: &AggregateCall, arguments: &[u64], trial: u64) -> Entry
     (registers, words.into_iter().collect())
 }
 
-/// The interpreter's outcome of one trial, or why it cannot tell one.
+/// The values, traps, and memory checksums observed for a function's trials.
+fn interpretations(
+    fixture: &Fixture,
+    candidate: &Candidate,
+    arguments: &[Vec<u64>],
+    mode: Mode,
+) -> Vec<Result<Interpretation, String>> {
+    let input = (
+        format!("{:?}", candidate.ir),
+        arguments,
+        mode == Mode::Memory,
+        fixture.convention.arguments,
+        fixture.convention.clobbered,
+        &fixture.entry_registers,
+        &fixture.initial_memory,
+        format!("{:?}", candidate.marshalling),
+        format!("{:?}", candidate.segment_bases),
+        format!("{:?}", candidate.states),
+        (
+            candidate
+                .code
+                .contains("/* target frame's return-address slot */"),
+            candidate.code.contains("/* target entry stack pointer */"),
+        ),
+        candidate.params.len(),
+        candidate.void,
+    );
+    cache::Cache::expectations().get_or_compute("interpret", &input, || {
+        let mut interpreted = Vec::new();
+        let trials = arguments.iter().enumerate();
+        for (trial, arguments) in trials {
+            let trial = trial as u64;
+            let outcome = match interpret(fixture, candidate, trial, arguments, mode) {
+                Ok(outcome) => outcome,
+                Err(reason) => {
+                    interpreted.push(Err(reason.to_owned()));
+                    continue;
+                }
+            };
+            let checksum =
+                (mode == Mode::Memory).then(|| region_checksum(&outcome, trial, candidate.ir.isa));
+            let outcome = match outcome {
+                Outcome::Return { value, .. } => ExpectedOutcome::Return { value },
+                Outcome::Trap { .. } => ExpectedOutcome::Trap,
+                Outcome::Unknown(reason) => {
+                    interpreted.push(Err(reason.to_owned()));
+                    continue;
+                }
+            };
+            interpreted.push(Ok(Interpretation { outcome, checksum }));
+        }
+        interpreted
+    })
+}
+
 fn interpret(
     fixture: &Fixture,
     candidate: &Candidate,
@@ -6410,11 +6491,11 @@ fn same_outcome(a: &Outcome, b: &Outcome, candidate: &Candidate) -> bool {
 
 fn agrees(ran: &Ran, run: &Expected, candidate: &Candidate) -> bool {
     match (ran, &run.outcome) {
-        (Ran::Value(value, sum), Outcome::Return { value: wanted, .. }) => {
+        (Ran::Value(value, sum), ExpectedOutcome::Return { value: wanted }) => {
             (candidate.void || value & mask(candidate) == wanted & mask(candidate))
                 && *sum == run.checksum
         }
-        (Ran::Other(text), Outcome::Trap { .. }) => text == "trap",
+        (Ran::Other(text), ExpectedOutcome::Trap) => text == "trap",
         _ => false,
     }
 }
@@ -6503,6 +6584,11 @@ fn compiles(
         if checked.status.success() {
             return (alive, failures);
         }
+        assert!(
+            checked.status.code().is_some(),
+            "compiler was killed: {}",
+            checked.status
+        );
         let errors = String::from_utf8_lossy(&checked.stderr);
         let prefix = format!("{}:", source.display());
         let mut rejected = false;
@@ -7042,8 +7128,24 @@ fn renamed(code: &str, index: usize) -> String {
     out
 }
 
-/// The program's output for `input`.
+fn timed_out(output: &str) -> bool {
+    output.lines().any(|line| line == "timeout")
+}
+
+fn can_cache_run(output: &str) -> bool {
+    !timed_out(output) && !output.lines().any(|line| line == "unreachable")
+}
+
+/// The program's output for `input`, retrying one timed-out run.
 fn run(program: &Path, input: &str) -> String {
+    let output = run_once(program, input);
+    if timed_out(&output) {
+        return run_once(program, input);
+    }
+    output
+}
+
+fn run_once(program: &Path, input: &str) -> String {
     let mut child = Command::new(program)
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())

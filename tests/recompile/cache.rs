@@ -145,11 +145,48 @@ impl Cache {
         Self { context, root }
     }
 
+    pub(super) fn expectations() -> Self {
+        // Bump this version whenever interpreter behavior changes. Source checks also
+        // invalidate local edits made without a version bump.
+        const INTERPRETER_VERSION: u32 = 1;
+        static SOURCE: OnceLock<u64> = OnceLock::new();
+        let context =
+            if std::env::var_os("VELK_RECOMPILE_NO_CACHE").is_some_and(|value| value == "1") {
+                None
+            } else {
+                Some(format!(
+                    "expectations {INTERPRETER_VERSION} {:016x}",
+                    *SOURCE.get_or_init(|| hash(&format!(
+                        "{}{}{}{}{}",
+                        include_str!("../../src/ir/eval.rs"),
+                        include_str!("../../src/ir/semantics.rs"),
+                        include_str!("../../src/ir/trials.rs"),
+                        include_str!("../recompile.rs"),
+                        include_str!("cache.rs"),
+                    )))
+                ))
+            };
+        Self {
+            context,
+            root: super::common::root().join("target/recompile-cache"),
+        }
+    }
+
     pub(super) fn get_or_compute<T: Serialize + DeserializeOwned>(
         &self,
         stage: &str,
         input: &impl Serialize,
         compute: impl FnOnce() -> T,
+    ) -> T {
+        self.get_or_compute_if(stage, input, compute, |_| true)
+    }
+
+    pub(super) fn get_or_compute_if<T: Serialize + DeserializeOwned>(
+        &self,
+        stage: &str,
+        input: &impl Serialize,
+        compute: impl FnOnce() -> T,
+        cacheable: impl Fn(&T) -> bool,
     ) -> T {
         let Some(context) = &self.context else {
             return compute();
@@ -162,10 +199,14 @@ impl Cache {
             && entry.input == input
             && entry.checksum == hash(&entry.output)
             && let Ok(output) = serde_json::from_str(&entry.output)
+            && cacheable(&output)
         {
             return output;
         }
         let output = compute();
+        if !cacheable(&output) {
+            return output;
+        }
         let text = serde_json::to_string(&output).expect("serializable cache output");
         let entry = Entry {
             input,
@@ -399,6 +440,96 @@ fn batches_reuse_unchanged_code_and_detect_wrong_results_with_a_warm_cache() {
         fixture.candidates[0].code = original;
         let parallel = check_parallel(std::slice::from_ref(&fixture), &scratch, mode);
         assert_comparison_runs(&parallel[0], batch_size + 1, batch_size + 1);
+        if mode == Mode::Memory {
+            fixture.candidates[0].ir.blocks[0]
+                .stmts
+                .insert(0, sc_store(REGION, Expr::Const(99)));
+            let changed_memory = verify(&fixture);
+            assert_eq!(changed_memory[0].differing, 1);
+            assert!(changed_memory[0].lines[0].contains("and memory"));
+        }
     }
     std::fs::remove_dir_all(scratch).unwrap();
+}
+
+#[test]
+fn host_failures_are_never_reused_or_stored() {
+    let root = super::scratch_dir("cache-timeout");
+    let cache = Cache {
+        context: Some("test".into()),
+        root: root.clone(),
+    };
+    let read = |value: &str| {
+        cache.get_or_compute_if(
+            "execute",
+            &(),
+            || value.to_owned(),
+            |output| super::can_cache_run(output),
+        )
+    };
+    assert_eq!(read("timeout"), "timeout");
+    assert_eq!(read("unreachable"), "unreachable");
+    assert_eq!(std::fs::read_dir(&root).unwrap().count(), 0);
+    // Also reject complete timeout entries written by a previous cache policy.
+    cache.get_or_compute("execute", &(), || "timeout".to_owned());
+    assert_eq!(read("timeout"), "timeout");
+    assert_eq!(read("v 7"), "v 7");
+    assert_eq!(read("v 8"), "v 7");
+    std::fs::remove_dir_all(root).unwrap();
+}
+
+#[test]
+fn timed_out_programs_retry_once() {
+    use std::os::unix::fs::PermissionsExt;
+    let root = super::scratch_dir("timeout-retry");
+    let program = root.join("run");
+    let count = root.join("count");
+    std::fs::write(&program, format!("#!/bin/sh\ncat >/dev/null\nif test -f '{}'; then echo 'v 7'; else touch '{}'; echo timeout; fi\n", count.display(), count.display())).unwrap();
+    std::fs::set_permissions(&program, std::fs::Permissions::from_mode(0o700)).unwrap();
+    assert_eq!(super::run(&program, ""), "v 7\n");
+    std::fs::write(
+        &program,
+        format!(
+            "#!/bin/sh\ncat >/dev/null\nprintf x >> '{}'\necho timeout\n",
+            count.display()
+        ),
+    )
+    .unwrap();
+    assert_eq!(super::run(&program, ""), "timeout\n");
+    assert_eq!(std::fs::read(&count).unwrap(), b"xx");
+    std::fs::remove_dir_all(root).unwrap();
+}
+
+#[test]
+fn expectation_cache_preserves_values_checksums_and_refusals() {
+    use super::{ExpectedOutcome, Interpretation};
+    let unique = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap()
+        .as_nanos();
+    let cache = Cache::expectations();
+    let calls = std::cell::Cell::new(0);
+    let expected = || {
+        vec![
+            Ok(Interpretation {
+                outcome: ExpectedOutcome::Return { value: 7 },
+                checksum: Some(123),
+            }),
+            Err("step limit".to_owned()),
+            Ok(Interpretation {
+                outcome: ExpectedOutcome::Trap,
+                checksum: None,
+            }),
+        ]
+    };
+    for _ in 0..2 {
+        let output: Vec<Result<Interpretation, String>> =
+            cache.get_or_compute("interpret", &unique, || {
+                calls.set(calls.get() + 1);
+                expected()
+            });
+        assert_eq!(output, expected());
+    }
+    let disabled = std::env::var_os("VELK_RECOMPILE_NO_CACHE").is_some_and(|value| value == "1");
+    assert_eq!(calls.get(), if disabled { 2 } else { 1 });
 }
