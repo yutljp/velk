@@ -4,12 +4,15 @@
 
 # velk
 
-機械語を、そのままコンパイルできる C に。
+Turn machine code back into C that compiles.
+
+English | [日本語](README.ja.md)
 
 </div>
 
-velk は ELF・PE・Mach-O（x86-64 / AArch64）を読み、元のバイナリと同じ計算をする C を出力するデコンパイラです。
-コマンドラインのほか、LLM エージェント向けにスクリプト API と MCP サーバを備えています。
+velk is a decompiler for ELF, PE and Mach-O binaries (x86-64 and AArch64). It prints C code that computes the same
+results as the original binary. You can use it from the command line, or from an LLM agent through its scripting API
+and MCP server.
 
 ```c
 int sum_until_zero(int *p, int n) {
@@ -32,22 +35,22 @@ int sum_until_zero(int *p, int n) {
 }
 ```
 
-## 使い方
+## Usage
 
 ```bash
 cargo build --release --locked
 
-velk --functions path/to/binary          # 関数の一覧
-velk --decompile path/to/binary main     # 疑似 C
-velk --decompile path/to/binary '*'      # すべての関数
-velk --disasm    path/to/binary 0x1000   # 逆アセンブル
+velk --functions path/to/binary          # list functions
+velk --decompile path/to/binary main     # decompile one function
+velk --decompile path/to/binary '*'      # decompile all functions
+velk --disasm    path/to/binary 0x1000   # disassemble
 ```
 
-そのほかの操作は `velk --help` を参照してください。
+Run `velk --help` for all options.
 
-## エージェントから使う
+## Using velk from an agent
 
-MCP クライアントに `--mcp` 付きで登録します。
+Register velk with your MCP client using the `--mcp` flag.
 
 ```json
 {
@@ -57,20 +60,21 @@ MCP クライアントに `--mcp` 付きで登録します。
 }
 ```
 
-JavaScript のスクリプトで解析し、必要な結果だけを返します。同じ API は `velk --run script.js` でも使えます。
+The agent writes short JavaScript snippets that query the binary and return only what it needs. The same API is
+available from the command line with `velk --run script.js`.
 
 ```js
 const b = velk.open("/absolute/path/to/binary");
 b.functions({ named: true }).slice(0, 5).map(f => ({ addr: f.addr, name: f.name }));
 ```
 
-## ドキュメント
+## Documentation
 
-- [API の概要](src/script/api/index.md)
-- [アーキテクチャ](docs/ARCHITECTURE.md)
-- [ロードマップ](docs/ROADMAP.md)
+- [Scripting API](src/script/api/index.md)
+- [Architecture](docs/ARCHITECTURE.md)
+- [Roadmap](docs/ROADMAP.md)
 - [Testing](docs/TESTING.md)
 
-## ライセンス
+## License
 
-未定です。
+Not decided yet.
