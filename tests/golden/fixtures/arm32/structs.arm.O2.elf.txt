@@ -1,4 +1,4 @@
-# arm32/structs.arm.O2.elf: elf arm32 no entry, 8 functions, 2 lift failures, 3 unsupported, 0 gotos
+# arm32/structs.arm.O2.elf: elf arm32 no entry, 8 functions, 0 lift failures, 5 unsupported, 0 gotos
 0x2011c 24 rect_area symtab,dwarf
 0x20134 48 record_total symtab,dwarf
 0x20164 24 point_add symtab,dwarf
@@ -180,15 +180,53 @@ fn big_sum @ 0x20198 (size 16)
 
 == 0x201a8 word_low_byte
 -- decompile
-error: function at 0x201a8: no instruction could be decoded
+/* velk pseudo-C: word_low_byte @ 0x201a8 */
+int32_t word_low_byte(int32_t a0) {
+    /* unsupported: AAPCS32 multiword, floating-point or aggregate declaration */
+    int32_t v1 = a0 & 0xff;
+    return v1;
+}
+-- signature
+int32_t (int32_t a0)
+-- references
+
+-- ir
+fn word_low_byte @ 0x201a8 (size 8)
+  blk0 @ 0x201a8:
+    unsupported: AAPCS32 multiword, floating-point or aggregate declaration
+    v1 = (r0 & #0xff)
+    ret v1
 -- card
-{"addr":"0x201a8","approxTokens":102,"hardReasons":[],"liftError":"no instruction could be decoded","name":"word_low_byte","nameSources":["symtab","dwarf"],"section":".text","size":8}
+{"addr":"0x201a8","approxTokens":108,"blocks":1,"hardReasons":[],"name":"word_low_byte","nameSources":["symtab","dwarf"],"section":".text","size":8,"unsupported":1}
 
 == 0x201b0 flags_level
 -- decompile
-error: function at 0x201b0: no instruction could be decoded
+/* velk pseudo-C: flags_level @ 0x201b0 */
+int32_t flags_level(uint32_t a0) {
+    /* unsupported: AAPCS32 multiword, floating-point or aggregate declaration */
+    int32_t v1 = a0 >> 4 & 0xf;
+    if ((a0 & 0x1) != 0) {
+        return v1;
+    }
+    v1 = a0 >> 1 & 0x7;
+    return v1;
+}
+-- signature
+int32_t (uint32_t a0)
+-- references
+
+-- ir
+fn flags_level @ 0x201b0 (size 20)
+  blk0 @ 0x201b0:
+    unsupported: AAPCS32 multiword, floating-point or aggregate declaration
+    v1 = ((r0 >> #0x4) & #0xf)
+    brif ne (r0 & #0x1), #0x0 -> 0x201bc
+  blk1 @ 0x201b9:
+    v1 = ((r0 >> #0x1) & #0x7)
+  blk2 @ 0x201bc:
+    ret (v1 & #0xffffffff)
 -- card
-{"addr":"0x201b0","approxTokens":102,"hardReasons":[],"liftError":"no instruction could be decoded","name":"flags_level","nameSources":["symtab","dwarf"],"section":".text","size":20}
+{"addr":"0x201b0","approxTokens":126,"blocks":3,"hardReasons":[],"name":"flags_level","nameSources":["symtab","dwarf"],"section":".text","size":20,"unsupported":1}
 
 == 0x201c4 flags_set_mode
 -- decompile

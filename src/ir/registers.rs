@@ -219,6 +219,7 @@ pub fn reg_name(isa: Isa, index: u16, width: u8) -> String {
             }
         }
         Isa::Arm32 => match index {
+            64..=95 => format!("d{}", index - crate::arch::arm32::D0),
             13 => "sp".into(),
             14 => "lr".into(),
             15 => "pc".into(),

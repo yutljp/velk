@@ -1,4 +1,4 @@
-# arm32/float.arm.O2.elf: elf arm32 no entry, 5 functions, 4 lift failures, 2 unsupported, 0 gotos
+# arm32/float.arm.O2.elf: elf arm32 no entry, 5 functions, 0 lift failures, 6 unsupported, 0 gotos
 0x20104 56 average symtab,dwarf
 0x2013c 12 lerp symtab,dwarf
 0x20148 12 truncate_to_int symtab,dwarf
@@ -35,24 +35,123 @@ fn average @ 0x20104 (size 56)
 
 == 0x2013c lerp
 -- decompile
-error: function at 0x2013c: no instruction could be decoded
+/* velk pseudo-C: lerp @ 0x2013c */
+float lerp(int32_t a0) {
+    uint64_t v3;
+    uint64_t v4;
+    uint64_t v5;
+
+    /* unsupported: AAPCS32 multiword, floating-point or aggregate declaration */
+    float v1 = ((union { uint32_t bits; float value; }){ .bits = v5 & 0xffffffff00000000 | ((union { float value; uint32_t bits; }){ .value = ((union { uint32_t bits; float value; }){ .bits = v3 >> 32 }).value - ((union { uint32_t bits; float value; }){ .bits = v3 }).value }).bits }).value;
+    int32_t v2 = v3 & 0xffffffff00000000 | ((union { float value; uint32_t bits; }){ .value = ((union { uint32_t bits; float value; }){ .bits = v3 }).value + v1 * ((union { uint32_t bits; float value; }){ .bits = v4 }).value }).bits;
+    return ((union { uint32_t bits; float value; }){ .bits = (uint32_t)a0 }).value;
+}
+-- signature
+float (int32_t a0)
+-- references
+
+-- ir
+fn lerp @ 0x2013c (size 12)
+  blk0 @ 0x2013c:
+    unsupported: AAPCS32 multiword, floating-point or aggregate declaration
+    v1 = ((d2 & #0xffffffff00000000) | (fsub.s(((d0 >> #0x20) & #0xffffffff), (d0 & #0xffffffff)) & #0xffffffff))
+    v2 = ((d0 & #0xffffffff00000000) | (fadd.s((d0 & #0xffffffff), fmul.s((v1 & #0xffffffff), (d1 & #0xffffffff))) & #0xffffffff))
+    ret r0
 -- card
-{"addr":"0x2013c","approxTokens":102,"hardReasons":[],"liftError":"no instruction could be decoded","name":"lerp","nameSources":["symtab","dwarf"],"section":".text","size":12}
+{"addr":"0x2013c","approxTokens":114,"blocks":1,"hardReasons":[],"name":"lerp","nameSources":["symtab","dwarf"],"section":".text","size":12,"unsupported":1}
 
 == 0x20148 truncate_to_int
 -- decompile
-error: function at 0x20148: no instruction could be decoded
+/* velk pseudo-C: truncate_to_int @ 0x20148 */
+int32_t truncate_to_int(void) {
+    uint64_t v3;
+
+    /* unsupported: AAPCS32 multiword, floating-point or aggregate declaration */
+    int32_t v1 = v3 & 0xffffffff00000000 | (isunordered(((union { uint64_t bits; double value; }){ .bits = v3 }).value, ((union { uint64_t bits; double value; }){ .bits = v3 }).value) ? 0 : (((union { uint64_t bits; double value; }){ .bits = v3 }).value <= -2147483648.0 ? 0x80000000 : (2147483648.0 <= ((union { uint64_t bits; double value; }){ .bits = v3 }).value ? 0x7fffffff : (int32_t)((union { uint64_t bits; double value; }){ .bits = v3 }).value)));
+    int32_t v2 = v1;
+    return v2;
+}
+-- signature
+int32_t ()
+-- references
+
+-- ir
+fn truncate_to_int @ 0x20148 (size 12)
+  blk0 @ 0x20148:
+    unsupported: AAPCS32 multiword, floating-point or aggregate declaration
+    v1 = ((d0 & #0xffffffff00000000) | (select ne funord.d(d0, d0), #0x0 ? #0x0, select ne fle.d(d0, #0xc1e0000000000000), #0x0 ? #0x80000000, select ne fle.d(#0x41e0000000000000, d0), #0x0 ? #0x7fffffff, f.dtos32.sat(d0) & #0xffffffff))
+    v2 = (v1 & #0xffffffff)
+    ret v2
 -- card
-{"addr":"0x20148","approxTokens":102,"hardReasons":[],"liftError":"no instruction could be decoded","name":"truncate_to_int","nameSources":["symtab","dwarf"],"section":".text","size":12}
+{"addr":"0x20148","approxTokens":114,"blocks":1,"hardReasons":[],"name":"truncate_to_int","nameSources":["symtab","dwarf"],"section":".text","size":12,"unsupported":1}
 
 == 0x20154 widen
 -- decompile
-error: function at 0x20154: no instruction could be decoded
+/* velk pseudo-C: widen @ 0x20154 */
+double widen(int32_t a0) {
+    uint64_t v3;
+
+    /* unsupported: AAPCS32 multiword, floating-point or aggregate declaration */
+    double v1 = (double)((union { uint32_t bits; float value; }){ .bits = v3 }).value;
+    double v2 = v1 + v1;
+    return ((union { uint64_t bits; double value; }){ .bits = (uint32_t)a0 }).value;
+}
+-- signature
+double (int32_t a0)
+-- references
+
+-- ir
+fn widen @ 0x20154 (size 12)
+  blk0 @ 0x20154:
+    unsupported: AAPCS32 multiword, floating-point or aggregate declaration
+    v1 = f.stof.d((d0 & #0xffffffff))
+    v2 = fadd.d(v1, v1)
+    ret r0
 -- card
-{"addr":"0x20154","approxTokens":102,"hardReasons":[],"liftError":"no instruction could be decoded","name":"widen","nameSources":["symtab","dwarf"],"section":".text","size":12}
+{"addr":"0x20154","approxTokens":114,"blocks":1,"hardReasons":[],"name":"widen","nameSources":["symtab","dwarf"],"section":".text","size":12,"unsupported":1}
 
 == 0x20160 compare_doubles
 -- decompile
-error: function at 0x20160: no instruction could be decoded
+/* velk pseudo-C: compare_doubles @ 0x20160 */
+int32_t compare_doubles(void) {
+    uint64_t v4;
+    uint64_t v5;
+
+    /* unsupported: AAPCS32 multiword, floating-point or aggregate declaration */
+    double t77 = ((union { uint64_t bits; double value; }){ .bits = v4 }).value;
+    double t78 = ((union { uint64_t bits; double value; }){ .bits = v5 }).value;
+    int32_t result = 0;
+    double v2 = t77;
+    double v3 = t78;
+    if (t78 < t77) {
+        result = 1;
+    }
+    if (!(v2 < v3)) {
+        return result;
+    }
+    return -1;
+}
+-- signature
+int32_t ()
+-- references
+
+-- ir
+fn compare_doubles @ 0x20160 (size 24)
+  blk0 @ 0x20160:
+    unsupported: AAPCS32 multiword, floating-point or aggregate declaration
+    t77 = d0
+    t78 = d1
+    v1 = #0x0
+    v2 = t77
+    v3 = t78
+    brif eq flt.d(t78, t77), #0x0 -> 0x20170
+  blk1 @ 0x2016d:
+    v1 = #0x1
+  blk2 @ 0x20170:
+    brif eq flt.d(v2, v3), #0x0 -> 0x20174
+  blk3 @ 0x20171:
+    v1 = #0xffffffff
+  blk4 @ 0x20174:
+    ret v1
 -- card
-{"addr":"0x20160","approxTokens":102,"hardReasons":[],"liftError":"no instruction could be decoded","name":"compare_doubles","nameSources":["symtab","dwarf"],"section":".text","size":24}
+{"addr":"0x20160","approxTokens":132,"blocks":5,"hardReasons":[],"name":"compare_doubles","nameSources":["symtab","dwarf"],"section":".text","size":24,"unsupported":1}

@@ -1,4 +1,4 @@
-# arm32/integers.thumb.O2.elf: elf arm32 no entry, 9 functions, 0 lift failures, 3 unsupported, 0 gotos
+# arm32/integers.thumb.O2.elf: elf arm32 no entry, 9 functions, 0 lift failures, 2 unsupported, 0 gotos
 0x20124 6 narrow_add symtab,dwarf
 0x2012c 4 widen_mul symtab,dwarf
 0x20130 10 mixed_sign symtab,dwarf
@@ -239,8 +239,7 @@ fn popcount @ 0x20160 (size 56)
 -- decompile
 /* velk pseudo-C: byte_swap @ 0x20198 */
 unsigned int byte_swap(unsigned int x) {
-    /* unsupported: ARM rev r0, r0 at 0x20198 */
-    return x;
+    return x << 24 | (x >> 8 & 0xff) << 16 | (x >> 16 & 0xff) << 8 | x >> 24;
 }
 -- signature
 unsigned int (unsigned int x)
@@ -249,10 +248,9 @@ unsigned int (unsigned int x)
 -- ir
 fn byte_swap @ 0x20198 (size 4)
   blk0 @ 0x20198:
-    unsupported: ARM rev r0, r0 at 0x20198
-    ret r0
+    ret (((((r0 & #0xff) << #0x18) | (((r0 >> #0x8) & #0xff) << #0x10)) | (((r0 >> #0x10) & #0xff) << #0x8)) | ((r0 >> #0x18) & #0xff))
 -- card
-{"addr":"0x20198","approxTokens":108,"blocks":1,"hardReasons":[],"name":"byte_swap","nameSources":["symtab","dwarf"],"section":".text","size":4,"unsupported":1}
+{"addr":"0x20198","approxTokens":108,"blocks":1,"hardReasons":[],"name":"byte_swap","nameSources":["symtab","dwarf"],"section":".text","size":4,"unsupported":0}
 
 == 0x2019c min3
 -- decompile

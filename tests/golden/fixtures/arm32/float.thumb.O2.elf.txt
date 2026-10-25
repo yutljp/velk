@@ -122,9 +122,9 @@ L_201ac:
         v44 = 0.0;
     }
     if (v45 > v46) {
-        return v44;
+        return ((union { uint64_t bits; double value; }){ .bits = (uint32_t)((union { double value; uint64_t bits; }){ .value = v44 }).bits }).value;
     }
-    return v44;
+    return ((union { uint64_t bits; double value; }){ .bits = (uint32_t)((union { double value; uint64_t bits; }){ .value = v44 }).bits }).value;
 }
 -- signature
 double (int32_t a0, int32_t a1)
@@ -341,7 +341,7 @@ double widen(void) {
         v10 = (uint32_t)(call_values[1]);
     }
     int32_t v8 = v13;
-    return v7;
+    return ((union { uint64_t bits; double value; }){ .bits = (uint32_t)((union { double value; uint64_t bits; }){ .value = v7 }).bits }).value;
 }
 -- signature
 double ()

@@ -1,5 +1,5 @@
 arm32/aggregate_abi.arm.O0.elf: functions 11, complete lifts 0, syntax 11/11, does not lift 0
-arm32/aggregate_abi.arm.O2.elf: functions 11, complete lifts 0, syntax 7/7, does not lift 4
+arm32/aggregate_abi.arm.O2.elf: functions 11, complete lifts 0, syntax 11/11, does not lift 0
 arm32/aggregate_abi.thumb.O0.elf: functions 11, complete lifts 0, syntax 11/11, does not lift 0
 arm32/aggregate_abi.thumb.O2.elf: functions 11, complete lifts 0, syntax 11/11, does not lift 0
 arm32/alt_names.arm.O0.elf: functions 2, complete lifts 2, syntax 2/2, does not lift 0
@@ -27,13 +27,13 @@ arm32/divmod_x64.arm.O2.elf: functions 18, complete lifts 4, syntax 18/18, does 
 arm32/divmod_x64.thumb.O0.elf: functions 18, complete lifts 4, syntax 18/18, does not lift 0
 arm32/divmod_x64.thumb.O2.elf: functions 18, complete lifts 4, syntax 18/18, does not lift 0
 arm32/float.arm.O0.elf: functions 5, complete lifts 0, syntax 5/5, does not lift 0
-arm32/float.arm.O2.elf: functions 5, complete lifts 0, syntax 1/1, does not lift 4
+arm32/float.arm.O2.elf: functions 5, complete lifts 0, syntax 5/5, does not lift 0
 arm32/float.thumb.O0.elf: functions 5, complete lifts 0, syntax 5/5, does not lift 0
 arm32/float.thumb.O2.elf: functions 5, complete lifts 0, syntax 5/5, does not lift 0
-arm32/integers.arm.O0.elf: functions 9, complete lifts 6, syntax 9/9, does not lift 0
-arm32/integers.arm.O2.elf: functions 9, complete lifts 5, syntax 8/8, does not lift 1
+arm32/integers.arm.O0.elf: functions 9, complete lifts 8, syntax 9/9, does not lift 0
+arm32/integers.arm.O2.elf: functions 9, complete lifts 7, syntax 9/9, does not lift 0
 arm32/integers.thumb.O0.elf: functions 9, complete lifts 8, syntax 9/9, does not lift 0
-arm32/integers.thumb.O2.elf: functions 9, complete lifts 7, syntax 9/9, does not lift 0
+arm32/integers.thumb.O2.elf: functions 9, complete lifts 8, syntax 9/9, does not lift 0
 arm32/l0_arith.arm.O0.elf: functions 4, complete lifts 4, syntax 4/4, does not lift 0
 arm32/l0_arith.arm.O2.elf: functions 4, complete lifts 4, syntax 4/4, does not lift 0
 arm32/l0_arith.thumb.O0.elf: functions 4, complete lifts 4, syntax 4/4, does not lift 0
@@ -75,7 +75,7 @@ arm32/struct_arrays.arm.O2.elf: functions 3, complete lifts 3, syntax 3/3, does 
 arm32/struct_arrays.thumb.O0.elf: functions 3, complete lifts 3, syntax 3/3, does not lift 0
 arm32/struct_arrays.thumb.O2.elf: functions 3, complete lifts 3, syntax 3/3, does not lift 0
 arm32/structs.arm.O0.elf: functions 8, complete lifts 3, syntax 8/8, does not lift 0
-arm32/structs.arm.O2.elf: functions 8, complete lifts 3, syntax 6/6, does not lift 2
+arm32/structs.arm.O2.elf: functions 8, complete lifts 3, syntax 8/8, does not lift 0
 arm32/structs.thumb.O0.elf: functions 8, complete lifts 3, syntax 8/8, does not lift 0
 arm32/structs.thumb.O2.elf: functions 8, complete lifts 2, syntax 8/8, does not lift 0
 arm32/switch_jumptable.arm.O0.elf: functions 1, complete lifts 0, syntax 1/1, does not lift 0

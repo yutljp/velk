@@ -1,15 +1,14 @@
 # functions left out:
-#   accesses memory: 240
-#   calls: 7849
+#   accesses memory: 238
+#   calls: 7848
 #   computes on floats or vectors: 1
-#   does not lift: 11
 #   has an unsupported instruction: 106
 #   reads a register that is not a parameter: 5
 #   refers to data: 345
 #   requires an external machine-state source: 2
-#   returns no integer: 284
+#   returns no integer: 290
 #   returns nothing: 651
-#   takes an argument that is no integer: 920
+#   takes an argument that is no integer: 923
 #   takes arguments on the stack: 81
 # runs left out:
 #   step limit: 47
@@ -38,10 +37,10 @@
 # arm32/divmod_x64.arm.O2.elf: 18 functions, 4 qualify, 4 compile, 0 do not, 4 compared (48 runs), 0 differ
 # arm32/divmod_x64.thumb.O0.elf: 18 functions, 4 qualify, 4 compile, 0 do not, 4 compared (48 runs), 0 differ
 # arm32/divmod_x64.thumb.O2.elf: 18 functions, 4 qualify, 4 compile, 0 do not, 4 compared (48 runs), 0 differ
-# arm32/integers.arm.O0.elf: 9 functions, 2 qualify, 2 compile, 0 do not, 2 compared (24 runs), 0 differ
-# arm32/integers.arm.O2.elf: 9 functions, 5 qualify, 5 compile, 0 do not, 5 compared (60 runs), 0 differ
+# arm32/integers.arm.O0.elf: 9 functions, 4 qualify, 4 compile, 0 do not, 4 compared (48 runs), 0 differ
+# arm32/integers.arm.O2.elf: 9 functions, 7 qualify, 7 compile, 0 do not, 7 compared (84 runs), 0 differ
 # arm32/integers.thumb.O0.elf: 9 functions, 8 qualify, 8 compile, 0 do not, 8 compared (96 runs), 0 differ
-# arm32/integers.thumb.O2.elf: 9 functions, 7 qualify, 7 compile, 0 do not, 7 compared (84 runs), 0 differ
+# arm32/integers.thumb.O2.elf: 9 functions, 8 qualify, 8 compile, 0 do not, 8 compared (96 runs), 0 differ
 # arm32/l0_arith.arm.O0.elf: 4 functions, 3 qualify, 3 compile, 0 do not, 3 compared (36 runs), 0 differ
 # arm32/l0_arith.arm.O2.elf: 4 functions, 4 qualify, 4 compile, 0 do not, 4 compared (48 runs), 0 differ
 # arm32/l0_arith.thumb.O0.elf: 4 functions, 4 qualify, 4 compile, 0 do not, 4 compared (48 runs), 0 differ

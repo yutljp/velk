@@ -50,9 +50,22 @@ fn integer_instructions_match_arm_linux() {
         "sxth r0, r0",
         "uxtb r0, r0",
         "uxth r0, r0",
+        "sxtb r0, r0, ror #8",
+        "sxth r0, r0, ror #16",
+        "uxtb r0, r0, ror #24",
+        "uxth r0, r0, ror #8",
+        "ubfx r0, r0, #4, #4",
         "sdiv r0, r0, r1",
         "udiv r0, r0, r1",
         "cmp r0, r1\n{it}movlt r0, r1",
+        "vmov s0, r0\nvmov s1, r1\nvadd.f32 s0, s0, s1\nvmov r0, s0",
+        "vmov s0, r0\nvmov s1, r1\nvsub.f32 s0, s0, s1\nvmov r0, s0",
+        "vmov s0, r0\nvmov s1, r1\nvmla.f32 s0, s0, s1\nvmov r0, s0",
+        "vmov s0, r0\nvcvt.f64.f32 d16, s0\nvmov s0, r1\nvcvt.f64.f32 d17, s0\nvadd.f64 d0, d16, d17\nvcvt.f32.f64 s0, d0\nvmov r0, s0",
+        "vmov s0, r0\nvcvt.f64.f32 d0, s0\nvcvt.s32.f64 s0, d0\nvmov r0, s0",
+        "vmov s0, r0\nvmov s1, r1\nvcmp.f32 s0, s1\nvmrs APSR_nzcv, fpscr\nmov r0, #0\n{it}movlt r0, #1",
+        "vmov s0, r0\nvcvt.f64.f32 d0, s0\nvmov s2, r1\nvcvt.f64.f32 d1, s2\nvcmp.f64 d0, d1\nvmrs APSR_nzcv, fpscr\nmov r0, #0\n{it}movlt r0, #1",
+        "rev r0, r0",
     ];
     let edges = [
         0u32,
@@ -63,6 +76,13 @@ fn integer_instructions_match_arm_linux() {
         33,
         255,
         256,
+        0x3f80_0000,
+        0x3f80_0001,
+        0xbf7f_fffe,
+        0x7f80_0000,
+        0xff80_0000,
+        0xbfc0_0000,
+        0x7fc0_0000,
         0x7fff_ffff,
         0x8000_0000,
         u32::MAX,
@@ -70,7 +90,7 @@ fn integer_instructions_match_arm_linux() {
     for mode in ["arm", "thumb"] {
         let entry_mode = if mode == "thumb" { ".thumb_func\n" } else { "" };
         let mut source = format!(
-            ".syntax unified\n.cpu cortex-a15\n.{mode}\n.text\n.global _start\n.type _start, %function\n{entry_mode}_start:\nmovw r8, #:lower16:results\nmovt r8, #:upper16:results\n"
+            ".syntax unified\n.cpu cortex-a15\n.fpu neon-vfpv4\n.{mode}\n.text\n.global _start\n.type _start, %function\n{entry_mode}_start:\nmovw r8, #:lower16:results\nmovt r8, #:upper16:results\n"
         );
         let mut inputs = Vec::new();
         for index in 0..instructions.len() {
@@ -144,39 +164,38 @@ fn integer_instructions_match_arm_linux() {
                 &HashSet::new(),
             ) {
                 Ok(blocks) => blocks,
-                Err(error) => {
-                    eprintln!("{mode} {}: not lifted: {error}", instruction);
-                    functions.push(None);
-                    continue;
-                }
+                Err(error) => panic!("{mode} {instruction}: not lifted: {error}"),
             };
-            if let Some(reason) = super::unsupported(&ir) {
-                eprintln!("{mode} {}: unsupported: {reason}", instruction);
-                functions.push(None);
-                continue;
-            }
+            assert_eq!(
+                super::unsupported(&ir),
+                None,
+                "{mode} {instruction}: {}",
+                ir.render()
+            );
             assert!(!super::branches_on_unknown_flags(&ir), "{}", ir.render());
-            functions.push(Some(ir));
+            functions.push(ir);
         }
         let mut compared = 0;
         let (results, remainder) = output.stdout.as_chunks::<4>();
         assert!(remainder.is_empty());
         let comparisons = inputs.iter().zip(results);
         for ((index, left, right), bytes) in comparisons {
-            let Some(ir) = &functions[*index] else {
-                continue;
-            };
+            let ir = &functions[*index];
             let expected = u32::from_le_bytes(*bytes);
             let registers = [(0, u64::from(*left)), (1, u64::from(*right))];
             let result = eval::run(ir, &super::setup(&registers));
             compared += 1;
+            let floating_result = instructions[*index].contains("vmov r0, s0")
+                && !instructions[*index].contains("vcvt.s32");
             assert!(
-                matches!(result, eval::Outcome::Return { value, .. } if value == u64::from(expected)),
+                matches!(result, eval::Outcome::Return { value, .. } if value == u64::from(expected)
+                    || (floating_result && f32::from_bits(value as u32).is_nan()
+                        && f32::from_bits(expected).is_nan())),
                 "{mode} {} ({left:#x}, {right:#x}): processor {expected:#x}, IR {result:?}",
                 instructions[*index]
             );
         }
-        assert!(compared >= 12 * edges.len() * edges.len());
+        assert_eq!(compared, instructions.len() * edges.len() * edges.len());
         eprintln!("{mode}: {compared} ARM Linux integer results agree");
     }
 }

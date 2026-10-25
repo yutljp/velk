@@ -1,4 +1,4 @@
-# arm32/aggregate_abi.arm.O2.elf: elf arm32 no entry, 11 functions, 4 lift failures, 54 unsupported, 0 gotos
+# arm32/aggregate_abi.arm.O2.elf: elf arm32 no entry, 11 functions, 0 lift failures, 58 unsupported, 0 gotos
 0x20134 48 abi_pair_adjust symtab,dwarf
 0x20164 40 abi_mixed_adjust symtab,dwarf
 0x2018c 8 abi_hfa1_adjust symtab,dwarf
@@ -88,27 +88,99 @@ fn abi_mixed_adjust @ 0x20164 (size 40)
 
 == 0x2018c abi_hfa1_adjust
 -- decompile
-error: function at 0x2018c: no instruction could be decoded
+/* velk pseudo-C: abi_hfa1_adjust @ 0x2018c */
+int32_t abi_hfa1_adjust(int32_t a0) {
+    uint64_t v2;
+    uint64_t v3;
+
+    /* unsupported: AAPCS32 multiword, floating-point or aggregate declaration */
+    double v1 = ((union { uint64_t bits; double value; }){ .bits = v2 }).value + ((union { uint64_t bits; double value; }){ .bits = v3 }).value;
+    return a0;
+}
+-- signature
+int32_t (int32_t a0)
+-- references
+
+-- ir
+fn abi_hfa1_adjust @ 0x2018c (size 8)
+  blk0 @ 0x2018c:
+    unsupported: AAPCS32 multiword, floating-point or aggregate declaration
+    v1 = fadd.d(d0, d1)
+    ret r0
 -- card
-{"addr":"0x2018c","approxTokens":102,"hardReasons":[],"liftError":"no instruction could be decoded","name":"abi_hfa1_adjust","nameSources":["symtab","dwarf"],"section":".text","size":8}
+{"addr":"0x2018c","approxTokens":108,"blocks":1,"hardReasons":[],"name":"abi_hfa1_adjust","nameSources":["symtab","dwarf"],"section":".text","size":8,"unsupported":1}
 
 == 0x20194 abi_hfa2_adjust
 -- decompile
-error: function at 0x20194: no instruction could be decoded
+/* velk pseudo-C: abi_hfa2_adjust @ 0x20194 */
+int32_t abi_hfa2_adjust(int32_t a0) {
+    uint64_t v2;
+    uint64_t v3;
+
+    /* unsupported: AAPCS32 multiword, floating-point or aggregate declaration */
+    double v1 = ((union { uint64_t bits; double value; }){ .bits = v2 }).value + ((union { uint64_t bits; double value; }){ .bits = v3 }).value;
+    return a0;
+}
+-- signature
+int32_t (int32_t a0)
+-- references
+
+-- ir
+fn abi_hfa2_adjust @ 0x20194 (size 8)
+  blk0 @ 0x20194:
+    unsupported: AAPCS32 multiword, floating-point or aggregate declaration
+    v1 = fadd.d(d1, d2)
+    ret r0
 -- card
-{"addr":"0x20194","approxTokens":102,"hardReasons":[],"liftError":"no instruction could be decoded","name":"abi_hfa2_adjust","nameSources":["symtab","dwarf"],"section":".text","size":8}
+{"addr":"0x20194","approxTokens":108,"blocks":1,"hardReasons":[],"name":"abi_hfa2_adjust","nameSources":["symtab","dwarf"],"section":".text","size":8,"unsupported":1}
 
 == 0x2019c abi_hfa3_adjust
 -- decompile
-error: function at 0x2019c: no instruction could be decoded
+/* velk pseudo-C: abi_hfa3_adjust @ 0x2019c */
+int32_t abi_hfa3_adjust(int32_t a0) {
+    uint64_t v2;
+    uint64_t v3;
+
+    /* unsupported: AAPCS32 multiword, floating-point or aggregate declaration */
+    double v1 = ((union { uint64_t bits; double value; }){ .bits = v2 }).value + ((union { uint64_t bits; double value; }){ .bits = v3 }).value;
+    return a0;
+}
+-- signature
+int32_t (int32_t a0)
+-- references
+
+-- ir
+fn abi_hfa3_adjust @ 0x2019c (size 8)
+  blk0 @ 0x2019c:
+    unsupported: AAPCS32 multiword, floating-point or aggregate declaration
+    v1 = fadd.d(d2, d3)
+    ret r0
 -- card
-{"addr":"0x2019c","approxTokens":102,"hardReasons":[],"liftError":"no instruction could be decoded","name":"abi_hfa3_adjust","nameSources":["symtab","dwarf"],"section":".text","size":8}
+{"addr":"0x2019c","approxTokens":108,"blocks":1,"hardReasons":[],"name":"abi_hfa3_adjust","nameSources":["symtab","dwarf"],"section":".text","size":8,"unsupported":1}
 
 == 0x201a4 abi_hfa4_adjust
 -- decompile
-error: function at 0x201a4: no instruction could be decoded
+/* velk pseudo-C: abi_hfa4_adjust @ 0x201a4 */
+int32_t abi_hfa4_adjust(int32_t a0) {
+    uint64_t v2;
+    uint64_t v3;
+
+    /* unsupported: AAPCS32 multiword, floating-point or aggregate declaration */
+    double v1 = ((union { uint64_t bits; double value; }){ .bits = v2 }).value + ((union { uint64_t bits; double value; }){ .bits = v3 }).value;
+    return a0;
+}
+-- signature
+int32_t (int32_t a0)
+-- references
+
+-- ir
+fn abi_hfa4_adjust @ 0x201a4 (size 8)
+  blk0 @ 0x201a4:
+    unsupported: AAPCS32 multiword, floating-point or aggregate declaration
+    v1 = fadd.d(d3, d4)
+    ret r0
 -- card
-{"addr":"0x201a4","approxTokens":102,"hardReasons":[],"liftError":"no instruction could be decoded","name":"abi_hfa4_adjust","nameSources":["symtab","dwarf"],"section":".text","size":8}
+{"addr":"0x201a4","approxTokens":108,"blocks":1,"hardReasons":[],"name":"abi_hfa4_adjust","nameSources":["symtab","dwarf"],"section":".text","size":8,"unsupported":1}
 
 == 0x201ac abi_exhaust_five
 -- decompile

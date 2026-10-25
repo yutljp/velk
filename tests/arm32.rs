@@ -92,6 +92,12 @@ fn every_arm32_fixture_function_has_valid_c_syntax() {
                 ));
             }
         }
+        assert_eq!(
+            lifted,
+            functions.len(),
+            "{} has functions that do not lift",
+            fixture.display()
+        );
         writeln!(
             results,
             "{}: functions {}, complete lifts {}, syntax {}/{}, does not lift {}",
@@ -374,4 +380,190 @@ fn thumb_entry_presence_uses_the_tagged_address() {
     let image = velk::loader::load(&scratch).unwrap();
     assert_eq!(image.entry, Some(0));
     assert_eq!(image.arm_mode(0), ArmMode::Thumb);
+}
+
+#[test]
+fn extend_divide_bitfield_and_vfp_match_printed_c() {
+    let scratch = common::root().join("target/arm32-instructions");
+    std::fs::create_dir_all(&scratch).unwrap();
+    let instructions = [
+        "sxtb r0, r0",
+        "sxth r0, r0",
+        "uxtb r0, r0",
+        "uxth r0, r0",
+        "sxtb r0, r0, ror #8",
+        "sxth r0, r0, ror #16",
+        "uxtb r0, r0, ror #24",
+        "uxth r0, r0, ror #8",
+        "sdiv r0, r0, r1",
+        "udiv r0, r0, r1",
+        "ubfx r0, r0, #4, #4",
+        "vmov s0, r0\nvmov s1, r1\nvadd.f32 s0, s0, s1\nvmov r0, s0",
+        "vmov s0, r0\nvmov s1, r1\nvsub.f32 s0, s0, s1\nvmov r0, s0",
+        "vmov s0, r0\nvmov s1, r1\nvmla.f32 s0, s0, s1\nvmov r0, s0",
+        "vmov s0, r0\nvcvt.f64.f32 d16, s0\nvmov s0, r1\nvcvt.f64.f32 d17, s0\nvadd.f64 d0, d16, d17\nvcvt.f32.f64 s0, d0\nvmov r0, s0",
+        "vmov s0, r0\nvcvt.f64.f32 d0, s0\nvcvt.s32.f64 s0, d0\nvmov r0, s0",
+        "vmov s0, r0\nvmov s1, r1\nvcmp.f32 s0, s1\nvmrs APSR_nzcv, fpscr\nmov r0, #0\n{it}movlt r0, #1",
+        "vmov s0, r0\nvcvt.f64.f32 d0, s0\nvmov s2, r1\nvcvt.f64.f32 d1, s2\nvcmp.f64 d0, d1\nvmrs APSR_nzcv, fpscr\nmov r0, #0\n{it}movlt r0, #1",
+        "rev r0, r0",
+    ];
+    let edges = [
+        0u32,
+        1,
+        255,
+        256,
+        0x1234_5678,
+        0x3f80_0000,
+        0x3f80_0001,
+        0xbf7f_fffe,
+        0xbfc0_0000,
+        0x7f80_0000,
+        0xff80_0000,
+        0x7fff_ffff,
+        0x8000_0000,
+        u32::MAX,
+    ];
+    for mode in ["arm", "thumb"] {
+        let mut assembly =
+            format!(".syntax unified\n.cpu cortex-a15\n.fpu neon-vfpv4\n.{mode}\n.text\n");
+        for (index, instruction) in instructions.iter().enumerate() {
+            if mode == "thumb" {
+                assembly.push_str(".thumb_func\n");
+            }
+            let instruction =
+                instruction.replace("{it}", if mode == "thumb" { "it lt\n" } else { "" });
+            writeln!(assembly, ".global case_{index}\n.type case_{index}, %function\ncase_{index}:\n{instruction}\nbx lr\n.size case_{index}, .-case_{index}").unwrap();
+        }
+        let source = scratch.join(format!("{mode}.s"));
+        let object = scratch.join(format!("{mode}.o"));
+        std::fs::write(&source, assembly).unwrap();
+        let output = Command::new("clang")
+            .args(["--target=armv7a-linux-gnueabihf", "-c"])
+            .arg(&source)
+            .arg("-o")
+            .arg(&object)
+            .output()
+            .unwrap();
+        assert!(
+            output.status.success(),
+            "{}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+        let mut binary = Binary::open(&object).unwrap();
+        let mut code = String::from(HEADER);
+        let mut checks = String::new();
+        for index in 0..instructions.len() {
+            let name = format!("case_{index}");
+            let function = binary.find(&name).unwrap().clone();
+            let mut ir = binary.analysis(function.addr, None).unwrap().ir.clone();
+            ir.blocks = velk::lift::lift(
+                binary.image(),
+                function.addr,
+                function.size.unwrap(),
+                &HashSet::new(),
+            )
+            .unwrap();
+            assert!(
+                !ir.blocks
+                    .iter()
+                    .flat_map(|block| &block.stmts)
+                    .any(|stmt| matches!(stmt, Stmt::Unsupported { .. } | Stmt::BrifFlags { .. })),
+                "{mode} {name}: {}",
+                ir.render()
+            );
+            let printed = binary.decompile(function.addr, None, None).unwrap();
+            assert!(!printed.contains("unsupported"), "{printed}");
+            code.push_str(&printed);
+            let parameter_count = ir.params.len();
+            for &left in &edges {
+                for &right in &edges {
+                    let a = f32::from_bits(left);
+                    let b = f32::from_bits(right);
+                    let expected = match index {
+                        0 => left as i8 as u32,
+                        1 => left as i16 as u32,
+                        2 => left & 255,
+                        3 => left & 65535,
+                        4 => left.rotate_right(8) as i8 as u32,
+                        5 => left.rotate_right(16) as i16 as u32,
+                        6 => left.rotate_right(24) & 255,
+                        7 => left.rotate_right(8) & 65535,
+                        8 if right == 0 => 0,
+                        8 => (left as i32).wrapping_div(right as i32) as u32,
+                        9 if right == 0 => 0,
+                        9 => left / right,
+                        10 => (left >> 4) & 15,
+                        11 => (a + b).to_bits(),
+                        12 => (a - b).to_bits(),
+                        13 => (a + a * b).to_bits(),
+                        14 => ((f64::from(a) + f64::from(b)) as f32).to_bits(),
+                        15 => (a as i32) as u32,
+                        // LT tests N != V: unordered also satisfies it.
+                        16 | 17 => u32::from(a < b || a.is_nan() || b.is_nan()),
+                        18 => left.swap_bytes(),
+                        _ => unreachable!(),
+                    };
+                    let expected_nan =
+                        (11..=14).contains(&index) && f32::from_bits(expected).is_nan();
+                    let registers = [(0, u64::from(left)), (1, u64::from(right))];
+                    let setup = eval::Setup {
+                        seed: 0,
+                        convention: eval::Convention {
+                            arguments: &[0, 1, 2, 3],
+                            clobbered: &[0, 1, 2, 3, 12, 14],
+                        },
+                        registers: &registers,
+                        memory: &[],
+                        step_limit: 1000,
+                    };
+                    let result = eval::run(&ir, &setup);
+                    assert!(
+                        matches!(result, eval::Outcome::Return { value, .. } if value == u64::from(expected)
+                            || (expected_nan && f32::from_bits(value as u32).is_nan())),
+                        "{mode} {name}({left:#x}, {right:#x}): {result:?}, expected {expected:#x}\n{}",
+                        ir.render()
+                    );
+                    let args = if parameter_count == 2 {
+                        format!("{left}u, {right}u")
+                    } else {
+                        format!("{left}u")
+                    };
+                    let mismatch = if expected_nan {
+                        format!(
+                            "!isnan(((union {{ uint32_t bits; float value; }}){{ .bits = (uint32_t){name}({args}) }}).value)"
+                        )
+                    } else {
+                        format!("(uint32_t){name}({args}) != {expected}u")
+                    };
+                    writeln!(checks, "if ({mismatch}) return {};", index + 1).unwrap();
+                }
+            }
+        }
+        writeln!(code, "int main(void) {{\n{checks}return 0;\n}}").unwrap();
+        let source = scratch.join(format!("{mode}.c"));
+        std::fs::write(&source, velk::render::combine(&code)).unwrap();
+        for level in ["-O0", "-O2"] {
+            let executable = scratch.join(format!("{mode}{level}"));
+            let output = Command::new("clang")
+                .args([
+                    "-fwrapv",
+                    "-ffp-contract=off",
+                    "-fno-strict-aliasing",
+                    "-Werror=implicit-function-declaration",
+                    level,
+                ])
+                .arg(&source)
+                .arg("-o")
+                .arg(&executable)
+                .output()
+                .unwrap();
+            assert!(
+                output.status.success(),
+                "{}",
+                String::from_utf8_lossy(&output.stderr)
+            );
+            let status = Command::new(&executable).status().unwrap();
+            assert!(status.success(), "{mode} {level}: {status}");
+        }
+    }
 }

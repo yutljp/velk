@@ -1,5 +1,7 @@
 //! Decodes and lifts little-endian A32 and T32 instructions.
 
+mod additional;
+
 use std::collections::HashSet;
 
 use yaxpeax_arm::armv7::{self, Instruction, Opcode, Operand, RegShiftStyle, ShiftStyle};
@@ -17,6 +19,7 @@ pub(super) enum Step {
     },
     Execute {
         instruction: Instruction,
+        additional: Option<additional::Instruction>,
         pc: u64,
         next: u64,
         target: Option<u64>,
@@ -114,8 +117,19 @@ fn decode(image: &Image, bytes: &[u8], addr: u64) -> (Vec<Decoded<Step>>, Option
             .allow_nonconforming(false)
             .with_thumb_mode(mode == ArmMode::Thumb);
         let mut reader = ReaderBuilder::<u32, u8>::read_at(&bytes[offset..], 0);
+        let extra = additional::decode(&bytes[offset..], mode);
         let mut instruction = match decoder.decode(&mut reader) {
             Ok(instruction) => instruction,
+            Err(_) if extra.is_some() => Instruction {
+                condition: if mode == ArmMode::Thumb {
+                    armv7::ConditionCode::AL
+                } else {
+                    additional::condition(bytes[offset + 3] >> 4)
+                },
+                thumb: mode == ArmMode::Thumb,
+                wide: mode == ArmMode::Thumb,
+                ..Instruction::default()
+            },
             Err(error) => {
                 return (
                     decoded,
@@ -180,6 +194,7 @@ fn decode(image: &Image, bytes: &[u8], addr: u64) -> (Vec<Decoded<Step>>, Option
             next,
             instruction: Step::Execute {
                 instruction,
+                additional: extra,
                 pc,
                 next,
                 target: destination,
@@ -215,6 +230,7 @@ pub(super) fn lift(
             summaries,
             stmts: Vec::new(),
             flags: None,
+            float_comparison: false,
             touched: false,
         },
         addr,
@@ -251,8 +267,18 @@ pub(crate) fn listing(image: &Image, bytes: &[u8], addr: u64, max: usize) -> Vec
         .iter()
         .filter_map(|d| match &d.instruction {
             Step::Execute {
-                instruction, pc, ..
-            } => Some(format!("0x{pc:<12x} {instruction}")),
+                instruction,
+                additional,
+                pc,
+                ..
+            } => Some(match additional {
+                Some(extra) => {
+                    let text = extra.to_string();
+                    let (mnemonic, operands) = text.split_once(' ').unwrap_or((&text, ""));
+                    format!("0x{pc:<12x} {mnemonic}{} {operands}", instruction.condition)
+                }
+                None => format!("0x{pc:<12x} {instruction}"),
+            }),
             _ => None,
         })
         .take(max)
@@ -270,11 +296,59 @@ struct Lifter<'a> {
     summaries: Summaries<'a>,
     stmts: Vec<Stmt>,
     flags: Option<Flags>,
+    float_comparison: bool,
     touched: bool,
 }
 
 fn low(value: Expr) -> Expr {
     Expr::bin(BinOp::And, value, Expr::constant(0xffff_ffff))
+}
+
+fn extend(value: Expr, width: u8, signed: bool, rotation: u8) -> Expr {
+    let value = super::rotate(
+        value,
+        Expr::constant(u64::from(rotation)),
+        32,
+        /* right */ true,
+    );
+    if signed {
+        Expr::SignExtend {
+            value: Box::new(value),
+            width,
+        }
+    } else {
+        Expr::bin(BinOp::And, value, Expr::constant((1u64 << (width * 8)) - 1))
+    }
+}
+
+fn bitfield(value: Expr, start: u64, width: u64) -> Expr {
+    let shifted = Expr::bin(BinOp::Shr, value, Expr::constant(start));
+    Expr::bin(BinOp::And, shifted, Expr::constant((1u64 << width) - 1))
+}
+
+fn divide(left: Expr, right: Expr, signed: bool) -> Expr {
+    let operand = |value| {
+        if signed {
+            Expr::SignExtend {
+                value: Box::new(value),
+                width: 4,
+            }
+        } else {
+            low(value)
+        }
+    };
+    let right = operand(right);
+    Expr::Select {
+        cond: Cond::Eq,
+        lhs: Box::new(right.clone()),
+        rhs: Box::new(Expr::constant(0)),
+        then: Box::new(Expr::constant(0)),
+        els: Box::new(Expr::bin(
+            if signed { BinOp::DivS } else { BinOp::DivU },
+            operand(left),
+            right,
+        )),
+    }
 }
 
 impl Lifter<'_> {
@@ -417,6 +491,9 @@ impl Lifter<'_> {
         next: u64,
         target: Option<u64>,
     ) -> Option<bool> {
+        if matches!(instruction.opcode, Opcode::BL | Opcode::BLX) {
+            self.float_comparison = false;
+        }
         let [a, b, c, d] = instruction.operands;
         let operand = |op| Self::operand_value(op, pc, instruction.thumb);
         match instruction.opcode {
@@ -667,21 +744,7 @@ impl Lifter<'_> {
                 let (Some(lhs), Some(rhs)) = (operand(b), operand(c)) else {
                     return None;
                 };
-                let value = Expr::Select {
-                    cond: Cond::Eq,
-                    lhs: Box::new(rhs.clone()),
-                    rhs: Box::new(Expr::constant(0)),
-                    then: Box::new(Expr::constant(0)),
-                    els: Box::new(Expr::bin(
-                        if instruction.opcode == Opcode::SDIV {
-                            BinOp::DivS
-                        } else {
-                            BinOp::DivU
-                        },
-                        low(lhs),
-                        low(rhs),
-                    )),
-                };
+                let value = divide(lhs, rhs, instruction.opcode == Opcode::SDIV);
                 self.assign(reg.number(), value);
             }
             Opcode::MLA | Opcode::MLS => {
@@ -711,9 +774,14 @@ impl Lifter<'_> {
                 let Operand::Reg(reg) = a else {
                     return None;
                 };
-                if reg.number() == 15 || c != Operand::Nothing {
+                if reg.number() == 15 {
                     return None;
                 }
+                let rotation = match c {
+                    Operand::Nothing => 0,
+                    Operand::Ror(rotation) if rotation <= 24 && rotation % 8 == 0 => rotation,
+                    _ => return None,
+                };
                 let width = if matches!(instruction.opcode, Opcode::UXTB | Opcode::SXTB) {
                     1
                 } else {
@@ -722,15 +790,39 @@ impl Lifter<'_> {
                 let Some(value) = operand(b) else {
                     return None;
                 };
-                let value = if matches!(instruction.opcode, Opcode::SXTB | Opcode::SXTH) {
-                    Expr::SignExtend {
-                        value: Box::new(value),
-                        width,
-                    }
-                } else {
-                    Expr::bin(BinOp::And, value, Expr::constant((1 << (8 * width)) - 1))
-                };
+                let value = extend(
+                    value,
+                    width,
+                    matches!(instruction.opcode, Opcode::SXTB | Opcode::SXTH),
+                    rotation,
+                );
                 self.assign(reg.number(), value);
+            }
+            Opcode::REV => {
+                let Operand::Reg(destination) = a else {
+                    return None;
+                };
+                let Some(value) = operand(b) else {
+                    return None;
+                };
+                if destination.number() == 15 {
+                    return None;
+                }
+                self.assign(destination.number(), super::reverse_bytes(value, 32, 4));
+            }
+            Opcode::UBFX => {
+                let Operand::Reg(destination) = a else {
+                    return None;
+                };
+                let (Some(value), Some(Expr::Const(start)), Some(Expr::Const(width))) =
+                    (operand(b), operand(c), operand(d))
+                else {
+                    return None;
+                };
+                if destination.number() == 15 || width == 0 || width > 32 || start > 32 - width {
+                    return None;
+                }
+                self.assign(destination.number(), bitfield(value, start, width));
             }
             Opcode::LDRD | Opcode::STRD => {
                 let (Operand::Reg(first), Operand::Reg(second)) = (a, b) else {
@@ -1049,10 +1141,15 @@ impl Machine for Lifter<'_> {
             }
             Step::Execute {
                 instruction,
+                additional,
                 pc,
                 next,
                 target,
             } => {
+                if let Some(extra) = additional {
+                    extra.execute(self);
+                    return false;
+                }
                 let first = self.stmts.len();
                 // Operand failures discard every partial effect of this instruction.
                 match self.execute(instruction, *pc, *next, *target) {
@@ -1062,6 +1159,7 @@ impl Machine for Lifter<'_> {
                         self.stmts
                             .push(Stmt::unsupported(format!("ARM {instruction} at 0x{pc:x}")));
                         self.flags = None;
+                        self.float_comparison = false;
                         self.touched = true;
                         false
                     }
@@ -1074,9 +1172,11 @@ impl Machine for Lifter<'_> {
     }
     fn block_ended(&mut self) {
         self.flags = None;
+        self.float_comparison = false;
     }
     fn block_split(&mut self) {
         self.flags = None;
+        self.float_comparison = false;
     }
     fn exit_flags(&self) -> Option<Flags> {
         self.flags.clone()
@@ -1085,6 +1185,7 @@ impl Machine for Lifter<'_> {
         self.touched
     }
     fn enter_block(&mut self, flags: Option<Flags>) {
+        self.float_comparison = false;
         self.flags = flags;
         self.touched = false;
     }

@@ -88,7 +88,8 @@ int cleanup_on_error(int a, int b, int *out) {
         return result;
     }
     if (b != 0) {
-        *(uint32_t *)((uint32_t)(uintptr_t)out) = (b == 0 ? 0 : a / b);
+        int64_t t1 = b;
+        *(uint32_t *)((uint32_t)(uintptr_t)out) = (t1 == 0 ? 0 : (int64_t)a / t1);
         result = 0;
         return result;
     }
@@ -116,7 +117,8 @@ fn cleanup_on_error @ 0x20178 (size 58)
   blk6 @ 0x20198:
     br 0x201ac
   blk7 @ 0x2019a:
-    store32(select eq r1, #0x0 ? #0x0, (r0 / r1), r2)
+    t1 = sext32(r1)
+    store32(select eq t1, #0x0 ? #0x0, (sext32(r0) / t1), r2)
     store32(#0x0, (sp + #0xfffffffffffffff0))
     br 0x201ac
   blk8 @ 0x201ac:

@@ -1,4 +1,4 @@
-# arm32/structs.arm.O0.elf: elf arm32 no entry, 8 functions, 0 lift failures, 6 unsupported, 0 gotos
+# arm32/structs.arm.O0.elf: elf arm32 no entry, 8 functions, 0 lift failures, 5 unsupported, 0 gotos
 0x2011c 68 rect_area symtab,dwarf
 0x20160 144 record_total symtab,dwarf
 0x201f0 80 point_add symtab,dwarf
@@ -285,23 +285,23 @@ fn word_low_byte @ 0x202d4 (size 28)
 /* velk pseudo-C: flags_level @ 0x202f0 */
 int32_t flags_level(int32_t a0) {
     uint64_t sp = velk_entry_stack_pointer();
-    uint32_t v5;
-    uint32_t v6;
+    uint32_t v2;
+    uint32_t v3;
 
     /* unsupported: AAPCS32 multiword, floating-point or aggregate declaration */
-    *(uint32_t *)(sp - 0x8) = v5;
-    *(uint32_t *)(sp - 0x4) = v6;
-    v5 = sp - 8;
-    *(uint32_t *)(sp - 0xc) = a0;
-    int32_t v1 = *(uint8_t *)(sp - 0xc) & 0x1;
+    *(uint32_t *)(sp - 0x8) = v2;
+    *(uint32_t *)(sp - 0x4) = v3;
+    sp = sp - 0x8;
+    v2 = sp;
+    sp = sp - 0x8;
+    *(uint32_t *)(sp + 0x4) = a0;
+    int32_t v1 = *(uint8_t *)(sp + 0x4) & 0x1;
     if (v1 != 0) {
-        a0 = *(uint8_t *)(sp - 0xc) >> 4;
-        *(uint32_t *)(sp - 0x10) = a0;
-        int32_t v2 = (uint32_t)(sub_20338());
-        return v2;
+        *(uint32_t *)(sp) = *(uint8_t *)(sp + 0x4) >> 4;
+        return *(uint32_t *)(sp);
     }
-    int32_t v3 = *(uint8_t *)(sp - 0xc);
-    /* unsupported: undecodable ARM instruction at 0x2032c: incomplete decoder */
+    *(uint32_t *)(sp) = *(uint8_t *)(sp + 0x4) >> 1 & 0x7;
+    return *(uint32_t *)(sp);
 }
 -- signature
 int32_t (int32_t a0)
@@ -313,22 +313,23 @@ fn flags_level @ 0x202f0 (size 84)
     unsupported: AAPCS32 multiword, floating-point or aggregate declaration
     store32(r11, (sp + #0xfffffffffffffff8))
     store32(lr, (sp + #0xfffffffffffffffc))
-    r11 = (sp + #0xfffffffffffffff8)
-    store32(r0, (sp + #0xfffffffffffffff4))
-    v1 = (load8((sp + #0xfffffffffffffff4)) & #0x1)
+    sp = (sp + #0xfffffffffffffff8)
+    r11 = sp
+    sp = (sp - #0x8)
+    store32(r0, (sp + #0x4))
+    v1 = (load8((sp + #0x4)) & #0x1)
     brif ne v1, #0x0 -> 0x20314
   blk1 @ 0x20311:
     br 0x20328
   blk2 @ 0x20314:
-    r0 = (((load8((sp + #0xfffffffffffffff4)) & #0xffffffff) >> #0x4) & #0xff)
-    store32(r0, (sp + #0xfffffffffffffff0))
-    v2:r0, r1 = call 0x20338
-    ret v2
+    store32((((load8((sp + #0x4)) & #0xffffffff) >> #0x4) & #0xff), sp)
+    br 0x20338
   blk3 @ 0x20328:
-    v3 = (load8((sp + #0xfffffffffffffff4)) & #0xffffffff)
-    unsupported: undecodable ARM instruction at 0x2032c: incomplete decoder
+    store32((((load8((sp + #0x4)) & #0xffffffff) >> #0x1) & #0x7), sp)
+  blk4 @ 0x20338:
+    ret load32(sp)
 -- card
-{"addr":"0x202f0","approxTokens":192,"blocks":4,"hardReasons":[],"name":"flags_level","nameSources":["symtab","dwarf"],"section":".text","size":84,"unsupported":2}
+{"addr":"0x202f0","approxTokens":222,"blocks":5,"hardReasons":[],"name":"flags_level","nameSources":["symtab","dwarf"],"section":".text","size":84,"unsupported":1}
 
 == 0x20344 flags_set_mode
 -- decompile

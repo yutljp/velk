@@ -1,4 +1,4 @@
-# arm32/structs.thumb.O2.elf: elf arm32 no entry, 8 functions, 0 lift failures, 8 unsupported, 0 gotos
+# arm32/structs.thumb.O2.elf: elf arm32 no entry, 8 functions, 0 lift failures, 7 unsupported, 0 gotos
 0x2011c 14 rect_area symtab,dwarf
 0x2012c 164 record_total symtab,dwarf
 0x201d0 14 point_add symtab,dwarf
@@ -269,32 +269,33 @@ fn word_low_byte @ 0x201f8 (size 4)
 == 0x201fc flags_level
 -- decompile
 /* velk pseudo-C: flags_level @ 0x201fc */
-int32_t flags_level(int32_t a0, int32_t a1) {
-    /* unsupported (2 steps): AAPCS32 multiword, floating-point or aggregate declaration, ARM ubfx r1, r0, 0x4, 0x4 at 0x201fc */
-    int32_t v1 = (uint64_t)a0 << 31;
-    if ((uint32_t)((uint64_t)a0 << 31) != 0) {
-        return a1;
+int32_t flags_level(uint32_t a0) {
+    /* unsupported: AAPCS32 multiword, floating-point or aggregate declaration */
+    int32_t v1 = a0 >> 4 & 0xf;
+    int32_t v2 = a0 << 31;
+    if (a0 << 31 != 0) {
+        return v1;
     }
-    /* unsupported: ARM ubfx r1, r0, 0x1, 0x3 at 0x20204 */
-    return a1;
+    v1 = a0 >> 1 & 0x7;
+    return v1;
 }
 -- signature
-int32_t (int32_t a0, int32_t a1)
+int32_t (uint32_t a0)
 -- references
 
 -- ir
 fn flags_level @ 0x201fc (size 16)
   blk0 @ 0x201fc:
     unsupported: AAPCS32 multiword, floating-point or aggregate declaration
-    unsupported: ARM ubfx r1, r0, 0x4, 0x4 at 0x201fc
-    v1 = ((r0 << #0x1f) & #0xffffffff)
+    v1 = ((r0 >> #0x4) & #0xf)
+    v2 = ((r0 << #0x1f) & #0xffffffff)
     brif ne ((r0 << #0x1f) & #0xffffffff), #0x0 -> 0x20208
   blk1 @ 0x20205:
-    unsupported: ARM ubfx r1, r0, 0x1, 0x3 at 0x20204
+    v1 = ((r0 >> #0x1) & #0x7)
   blk2 @ 0x20208:
-    ret (r1 & #0xffffffff)
+    ret (v1 & #0xffffffff)
 -- card
-{"addr":"0x201fc","approxTokens":132,"blocks":3,"hardReasons":[],"name":"flags_level","nameSources":["symtab","dwarf"],"section":".text","size":16,"unsupported":3}
+{"addr":"0x201fc","approxTokens":132,"blocks":3,"hardReasons":[],"name":"flags_level","nameSources":["symtab","dwarf"],"section":".text","size":16,"unsupported":1}
 
 == 0x2020c flags_set_mode
 -- decompile

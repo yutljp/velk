@@ -40,11 +40,11 @@ double average(int32_t a0, int32_t a1) {
         v20 = (uint32_t)(v5); /* also returned by the call */
         *(uint32_t *)(sp - 0x24) = v19;
         *(uint32_t *)(sp - 0x20) = v20;
-        return *(uint32_t *)(sp - 0x24);
+        return ((union { uint64_t bits; double value; }){ .bits = *(uint32_t *)(sp - 0x24) }).value;
     }
     *(uint32_t *)(sp - 0x24) = 0;
     *(uint32_t *)(sp - 0x20) = 0;
-    return *(uint32_t *)(sp - 0x24);
+    return ((union { uint64_t bits; double value; }){ .bits = *(uint32_t *)(sp - 0x24) }).value;
 }
 -- signature
 double (int32_t a0, int32_t a1)
@@ -211,7 +211,7 @@ double widen(int32_t a0) {
         v1 = (uint32_t)(call_values[1]);
     }
     int32_t v11 = v14;
-    return v10;
+    return ((union { uint64_t bits; double value; }){ .bits = (uint32_t)((union { double value; uint64_t bits; }){ .value = v10 }).bits }).value;
 }
 -- signature
 double (int32_t a0)

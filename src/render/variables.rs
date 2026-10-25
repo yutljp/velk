@@ -114,6 +114,7 @@ pub(crate) fn variable_types(
         }
     }
     uses.spread_floats();
+    uses.preserve_upper_bits();
     // Small literal offsets remain integers: pointer arithmetic requires
     // an actual object even when adding the image base would reach one.
     for index in &literal_offsets {
@@ -520,6 +521,8 @@ struct Uses {
     arithmetic: HashSet<u16>,
     /// Registers holding lanes or bit counts, which have no sign.
     bits: HashSet<u16>,
+    /// Registers whose upper 32 bits are read.
+    upper_reads: HashSet<u16>,
     /// `(destination, source)` of each copy.
     copies: Vec<(u16, u16)>,
     /// `(destination, pointer)` of each load through a pointer.
@@ -561,6 +564,28 @@ impl Uses {
         }
     }
 
+    fn preserve_upper_bits(&mut self) {
+        loop {
+            let mut changed = false;
+            for &(destination, source) in &self.copies {
+                if self.upper_reads.contains(&destination) {
+                    changed |= self.upper_reads.insert(source);
+                }
+                if self.upper_reads.contains(&source) {
+                    changed |= self.upper_reads.insert(destination);
+                }
+            }
+            if !changed {
+                break;
+            }
+        }
+        for index in &self.upper_reads {
+            if self.floats.get(index) == Some(&Some(Precision::Single)) {
+                self.floats.insert(*index, None);
+            }
+        }
+    }
+
     fn address(&mut self, addr: &Expr, width: u8) {
         if let Some(base) = base(addr) {
             self.addresses.entry(base).or_default().push(width);
@@ -583,6 +608,12 @@ impl Uses {
                 }
             }
             Expr::Bin { op, lhs, rhs } => {
+                if matches!(op, BinOp::Shr | BinOp::Sar)
+                    && matches!(rhs.as_ref(), Expr::Const(shift) if *shift >= 32 && *shift < 64)
+                    && let Some(index) = copied(lhs)
+                {
+                    self.upper_reads.insert(index);
+                }
                 if !matches!(op, BinOp::Add | BinOp::Sub) {
                     for side in [lhs, rhs] {
                         if let Some(index) = copied(side) {

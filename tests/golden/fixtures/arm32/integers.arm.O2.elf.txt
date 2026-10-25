@@ -1,4 +1,4 @@
-# arm32/integers.arm.O2.elf: elf arm32 no entry, 9 functions, 1 lift failures, 4 unsupported, 0 gotos
+# arm32/integers.arm.O2.elf: elf arm32 no entry, 9 functions, 0 lift failures, 3 unsupported, 0 gotos
 0x20124 12 narrow_add symtab,dwarf
 0x20130 8 widen_mul symtab,dwarf
 0x20138 20 mixed_sign symtab,dwarf
@@ -13,8 +13,7 @@
 -- decompile
 /* velk pseudo-C: narrow_add @ 0x20124 */
 signed char narrow_add(signed char a, signed char b) {
-    int32_t v1 = b + a;
-    /* unsupported: undecodable ARM instruction at 0x20128: incomplete decoder */
+    return b + a;
 }
 -- signature
 signed char (signed char a, signed char b)
@@ -23,10 +22,9 @@ signed char (signed char a, signed char b)
 -- ir
 fn narrow_add @ 0x20124 (size 12)
   blk0 @ 0x20124:
-    v1 = ((r1 + r0) & #0xffffffff)
-    unsupported: undecodable ARM instruction at 0x20128: incomplete decoder
+    ret (sext8(((r1 + r0) & #0xffffffff)) & #0xffffffff)
 -- card
-{"addr":"0x20124","approxTokens":108,"blocks":1,"hardReasons":[],"name":"narrow_add","nameSources":["symtab","dwarf"],"section":".text","size":12,"unsupported":1}
+{"addr":"0x20124","approxTokens":114,"blocks":1,"hardReasons":[],"name":"narrow_add","nameSources":["symtab","dwarf"],"section":".text","size":12,"unsupported":0}
 
 == 0x20130 widen_mul
 -- decompile
@@ -190,9 +188,20 @@ fn popcount @ 0x20178 (size 40)
 
 == 0x201a0 byte_swap
 -- decompile
-error: function at 0x201a0: no instruction could be decoded
+/* velk pseudo-C: byte_swap @ 0x201a0 */
+unsigned int byte_swap(unsigned int x) {
+    return x << 24 | (x >> 8 & 0xff) << 16 | (x >> 16 & 0xff) << 8 | x >> 24;
+}
+-- signature
+unsigned int (unsigned int x)
+-- references
+
+-- ir
+fn byte_swap @ 0x201a0 (size 8)
+  blk0 @ 0x201a0:
+    ret (((((r0 & #0xff) << #0x18) | (((r0 >> #0x8) & #0xff) << #0x10)) | (((r0 >> #0x10) & #0xff) << #0x8)) | ((r0 >> #0x18) & #0xff))
 -- card
-{"addr":"0x201a0","approxTokens":102,"hardReasons":[],"liftError":"no instruction could be decoded","name":"byte_swap","nameSources":["symtab","dwarf"],"section":".text","size":8}
+{"addr":"0x201a0","approxTokens":108,"blocks":1,"hardReasons":[],"name":"byte_swap","nameSources":["symtab","dwarf"],"section":".text","size":8,"unsupported":0}
 
 == 0x201a8 min3
 -- decompile

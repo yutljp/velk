@@ -142,7 +142,8 @@ impl Ctx<'_> {
     }
 
     fn bit_values(&self) -> bool {
-        self.abi.is_some()
+        self.isa == crate::loader::Isa::Arm32
+            || self.abi.is_some()
             || self.declared.keys().any(|index| self.raw_vector(*index))
             || self
                 .floats

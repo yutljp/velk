@@ -1,4 +1,4 @@
-# arm32/integers.arm.O0.elf: elf arm32 no entry, 9 functions, 0 lift failures, 4 unsupported, 0 gotos
+# arm32/integers.arm.O0.elf: elf arm32 no entry, 9 functions, 0 lift failures, 2 unsupported, 0 gotos
 0x20124 44 narrow_add symtab,dwarf
 0x20150 44 widen_mul symtab,dwarf
 0x2017c 48 mixed_sign symtab,dwarf
@@ -16,19 +16,8 @@ uint64_t velk_entry_stack_pointer(void); /* target entry stack pointer */
 -- decompile
 /* velk pseudo-C: narrow_add @ 0x20124 */
 signed char narrow_add(signed char a, signed char b) {
-    uint64_t v2;
-    uint32_t v3;
-    uint32_t local_0; /* [sp-8] */
-    uint32_t local_1; /* [sp-4] */
-    uint8_t local_2; /* [sp-a] */
-
-    local_0 = v2;
-    local_1 = v3;
-    v2 = (uintptr_t)&local_0;
-    *(uint8_t *)(v2 - 0x1) = a;
-    local_2 = b;
-    int32_t v1 = *(int8_t *)(v2 - 0x1) + b;
-    /* unsupported: undecodable ARM instruction at 0x20144: incomplete decoder */
+    int8_t v1 = a;
+    return v1 + b;
 }
 -- signature
 signed char (signed char a, signed char b)
@@ -37,33 +26,16 @@ signed char (signed char a, signed char b)
 -- ir
 fn narrow_add @ 0x20124 (size 44)
   blk0 @ 0x20124:
-    store32(r11, (sp + #0xfffffffffffffff8))
-    store32(lr, (sp + #0xfffffffffffffffc))
-    r11 = (sp + #0xfffffffffffffff8)
-    store8(r0, (r11 - #0x1))
-    store8(r1, (sp + #0xfffffffffffffff6))
-    v1 = ((load8((r11 - #0x1))s + sext8(r1)) & #0xffffffff)
-    unsupported: undecodable ARM instruction at 0x20144: incomplete decoder
+    v1 = (r0 & #0xff)
+    ret (sext8(((sext8(v1) + sext8(r1)) & #0xffffffff)) & #0xffffffff)
 -- card
-{"addr":"0x20124","approxTokens":150,"blocks":1,"hardReasons":[],"name":"narrow_add","nameSources":["symtab","dwarf"],"section":".text","size":44,"unsupported":1}
+{"addr":"0x20124","approxTokens":162,"blocks":1,"hardReasons":[],"name":"narrow_add","nameSources":["symtab","dwarf"],"section":".text","size":44,"unsupported":0}
 
 == 0x20150 widen_mul
 -- decompile
 /* velk pseudo-C: widen_mul @ 0x20150 */
 unsigned short widen_mul(unsigned char a, unsigned char b) {
-    uint64_t v2;
-    uint32_t v3;
-    uint32_t local_0; /* [sp-8] */
-    uint32_t local_1; /* [sp-4] */
-    uint8_t local_2; /* [sp-a] */
-
-    local_0 = v2;
-    local_1 = v3;
-    v2 = (uintptr_t)&local_0;
-    *(uint8_t *)(v2 - 0x1) = a;
-    local_2 = b;
-    int32_t v1 = *(uint8_t *)(v2 - 0x1) * b;
-    /* unsupported: undecodable ARM instruction at 0x20170: incomplete decoder */
+    return a * b;
 }
 -- signature
 unsigned short (unsigned char a, unsigned char b)
@@ -72,15 +44,9 @@ unsigned short (unsigned char a, unsigned char b)
 -- ir
 fn widen_mul @ 0x20150 (size 44)
   blk0 @ 0x20150:
-    store32(r11, (sp + #0xfffffffffffffff8))
-    store32(lr, (sp + #0xfffffffffffffffc))
-    r11 = (sp + #0xfffffffffffffff8)
-    store8(r0, (r11 - #0x1))
-    store8(r1, (sp + #0xfffffffffffffff6))
-    v1 = ((load8((r11 - #0x1)) * (r1 & #0xff)) & #0xffffffff)
-    unsupported: undecodable ARM instruction at 0x20170: incomplete decoder
+    ret (((r0 & #0xff) * (r1 & #0xff)) & #0xffff)
 -- card
-{"addr":"0x20150","approxTokens":150,"blocks":1,"hardReasons":[],"name":"widen_mul","nameSources":["symtab","dwarf"],"section":".text","size":44,"unsupported":1}
+{"addr":"0x20150","approxTokens":162,"blocks":1,"hardReasons":[],"name":"widen_mul","nameSources":["symtab","dwarf"],"section":".text","size":44,"unsupported":0}
 
 == 0x2017c mixed_sign
 -- decompile

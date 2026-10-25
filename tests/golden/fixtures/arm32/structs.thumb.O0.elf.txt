@@ -1,4 +1,4 @@
-# arm32/structs.thumb.O0.elf: elf arm32 no entry, 8 functions, 0 lift failures, 6 unsupported, 0 gotos
+# arm32/structs.thumb.O0.elf: elf arm32 no entry, 8 functions, 0 lift failures, 5 unsupported, 0 gotos
 0x2011c 24 rect_area symtab,dwarf
 0x20134 66 record_total symtab,dwarf
 0x20178 40 point_add symtab,dwarf
@@ -204,9 +204,7 @@ int32_t flags_level(int32_t a0) {
     /* unsupported: AAPCS32 multiword, floating-point or aggregate declaration */
     int32_t v1 = (uint64_t)a0 << 31;
     if (v1 == 0) {
-        int32_t v2 = (uint8_t)a0;
-        /* unsupported: ARM ubfx r0, r0, 0x1, 0x3 at 0x2020c */
-        *(uint32_t *)(sp - 0x8) = a0;
+        *(uint32_t *)(sp - 0x8) = (uint8_t)a0 >> 1 & 0x7;
         return *(uint32_t *)(sp - 0x8);
     }
     *(uint32_t *)(sp - 0x8) = (uint8_t)a0 >> 4;
@@ -229,14 +227,12 @@ fn flags_level @ 0x201f0 (size 42)
     store32(((load8((sp + #0xfffffffffffffffc)) & #0xffffffff) >> #0x4), (sp + #0xfffffffffffffff8))
     br 0x20214
   blk3 @ 0x20208:
-    v2 = (load8((sp + #0xfffffffffffffffc)) & #0xffffffff)
-    unsupported: ARM ubfx r0, r0, 0x1, 0x3 at 0x2020c
-    store32(r0, (sp + #0xfffffffffffffff8))
+    store32((((load8((sp + #0xfffffffffffffffc)) & #0xffffffff) >> #0x1) & #0x7), (sp + #0xfffffffffffffff8))
     br 0x20214
   blk4 @ 0x20214:
     ret load32((sp + #0xfffffffffffffff8))
 -- card
-{"addr":"0x201f0","approxTokens":198,"blocks":5,"hardReasons":[],"name":"flags_level","nameSources":["symtab","dwarf"],"section":".text","size":42,"unsupported":2}
+{"addr":"0x201f0","approxTokens":198,"blocks":5,"hardReasons":[],"name":"flags_level","nameSources":["symtab","dwarf"],"section":".text","size":42,"unsupported":1}
 
 == 0x2021c flags_set_mode
 -- decompile
