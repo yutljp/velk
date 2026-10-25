@@ -153,7 +153,11 @@ fn initial_assignments_declare_locals_in_execution_order() {
                 value: Expr::bin(BinOp::Mul, first.clone(), Expr::Const(2)),
             },
             Stmt::Ret {
-                value: Expr::bin(BinOp::Xor, first, second),
+                value: Expr::bin(
+                    BinOp::Xor,
+                    first,
+                    Expr::bin(BinOp::Add, second.clone(), second),
+                ),
             },
         ],
     );

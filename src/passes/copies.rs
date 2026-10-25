@@ -192,13 +192,81 @@ fn substitute_in_statement(stmt: &mut Stmt, dest: u16, value: &Expr, ok: &mut bo
 /// extension or a small expression) into its only consumer when the widths
 /// match, so no value is extended or truncated by accident.
 pub fn copy_propagate(ir: &mut FunctionIr) {
-    copy_propagate_with(ir, false);
+    copy_propagate_with(ir, /* avoid_duplication */ false, &|_, _| true);
 }
 
 /// Copy propagation for use after CSE: does not duplicate a compound value
 /// into several reads of one consumer.
 pub fn copy_propagate_guarded(ir: &mut FunctionIr) {
-    copy_propagate_with(ir, true);
+    copy_propagate_with(ir, /* avoid_duplication */ true, &|_, _| true);
+}
+
+/// Folds computed integer temporaries without removing pointer or register bindings.
+pub(crate) fn integer_expression_candidate(ir: &FunctionIr) -> Option<FunctionIr> {
+    let types = crate::render::variable_types(ir);
+    if types
+        .values()
+        .chain(ir.value_types.values())
+        .chain(ir.params.iter().map(|param| &param.ty))
+        .chain(ir.debug_locals.iter().map(|local| &local.ty))
+        .chain(ir.members.iter().map(|member| &member.ty))
+        .chain(std::iter::once(&ir.ret_type))
+        .any(|ty| {
+            ty.is_sse_float()
+                || matches!(ty, crate::ir::CType::Named(name) if name.split_whitespace().any(|word| word == "volatile"))
+        })
+    {
+        return None;
+    }
+    // Physical vector registers can hold floating values as raw integer bits.
+    for block in &ir.blocks {
+        for stmt in &block.stmts {
+            if stmt.operands().into_iter().any(super::read_once::floats) {
+                return None;
+            }
+            let (writes, reads) = statement_registers(stmt);
+            if writes
+                .into_iter()
+                .chain(reads)
+                .any(|index| crate::arch::vector_half(ir.isa, index).is_some())
+            {
+                return None;
+            }
+        }
+    }
+    let mut narrow_parameters = Vec::new();
+    for param in &ir.params {
+        if let Some((bits, _)) = param.ty.integer()
+            && bits < 64
+        {
+            narrow_parameters.push((param.index, bits));
+        }
+    }
+    if !narrow_parameters.is_empty() {
+        let Some(reads) = crate::ssa::entry_demands(ir, &[]) else {
+            return None;
+        };
+        if narrow_parameters.iter().any(|(index, bits)| {
+            reads.get(index).copied().unwrap_or(0) & !crate::ir::semantics::mask(*bits) != 0
+        }) {
+            return None;
+        }
+    }
+    let statements: usize = ir.blocks.iter().map(|block| block.stmts.len()).sum();
+    let mut folded = ir.clone();
+    copy_propagate_with(
+        &mut folded,
+        /* avoid_duplication */ true,
+        &|index, value| {
+            index >= VARIABLE_BASE
+                && matches!(types.get(&index), Some(crate::ir::CType::Int { .. }))
+                && matches!(value, Expr::Bin { .. } | Expr::SignExtend { .. })
+                && !reads_outside_frame(value)
+                && !super::read_once::faults(value)
+        },
+    );
+    let remaining: usize = folded.blocks.iter().map(|block| block.stmts.len()).sum();
+    (remaining < statements).then_some(folded)
 }
 
 /// The registers each block reads.
@@ -228,7 +296,11 @@ fn reads_elsewhere(
         .collect()
 }
 
-fn copy_propagate_with(ir: &mut FunctionIr, avoid_duplication: bool) {
+fn copy_propagate_with(
+    ir: &mut FunctionIr,
+    avoid_duplication: bool,
+    eligible: &impl Fn(u16, &Expr) -> bool,
+) {
     let reads = block_reads(ir);
     // A register live on leaving the block, such as one a tail call through
     // an indirect jump reads or the block itself reads again on the next
@@ -257,6 +329,7 @@ fn copy_propagate_with(ir: &mut FunctionIr, avoid_duplication: bool) {
             },
             sp,
             private_frame,
+            eligible,
         );
     }
 }
@@ -316,12 +389,13 @@ fn copy_propagate_block(
     avoid_duplication: Duplication,
     sp: u16,
     private_frame: bool,
+    eligible: &impl Fn(u16, &Expr) -> bool,
 ) {
     let avoid_duplication = matches!(avoid_duplication, Duplication::Avoid);
     let mut index = 0;
     while index < block.stmts.len() {
         let copy = match &block.stmts[index] {
-            Stmt::Assign { dest, value } => {
+            Stmt::Assign { dest, value } if eligible(dest.index, value) => {
                 // A value of unknown width, such as a sign extension, takes
                 // the destination's width.
                 let fold_width = expr_width(value).unwrap_or(dest.width);

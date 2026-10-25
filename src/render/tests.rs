@@ -1245,12 +1245,10 @@ fn a_pointer_taken_as_an_integer_is_cast() {
     }];
     ir.ret_type = CType::U64;
     let text = rendered(&ir);
-    for line in [
-        "    uint8_t v1 = (uintptr_t)a0 & 0x7;\n",
-        "    return (uintptr_t)(v1 != 0 ? a0 : 0);\n",
-    ] {
-        assert!(text.contains(line), "{line:?} in {text}");
-    }
+    assert!(
+        text.contains("return (uintptr_t)(((uintptr_t)a0 & 0x7) != 0 ? a0 : 0);"),
+        "{text}"
+    );
 }
 
 #[test]

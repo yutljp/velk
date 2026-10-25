@@ -3,6 +3,7 @@ mod abi_objects;
 mod aggregates;
 mod body;
 mod calls;
+mod cost;
 mod expr;
 mod frame_registers;
 mod function;

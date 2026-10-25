@@ -440,7 +440,7 @@ fn depth(expr: &Expr, sp: u16) -> usize {
 }
 
 /// Whether evaluating the value may fault, as a division does.
-fn faults(expr: &Expr) -> bool {
+pub(crate) fn faults(expr: &Expr) -> bool {
     matches!(
         expr,
         Expr::Bin {
@@ -454,7 +454,7 @@ fn faults(expr: &Expr) -> bool {
 }
 
 /// Whether the value computes or reads a float.
-fn floats(expr: &Expr) -> bool {
+pub(crate) fn floats(expr: &Expr) -> bool {
     matches!(expr, Expr::Apply { op, .. } if op.result_precision().is_some() || op.argument_precision().is_some())
         || children(expr).into_iter().any(floats)
 }

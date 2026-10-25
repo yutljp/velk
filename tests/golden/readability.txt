@@ -380,8 +380,8 @@ metrics/struct_arrays.aarch64.O2.stripped.elf: 32 lines, 0 prelude lines, 5 vari
 metrics/struct_arrays.win64.O0.debug.dll: 25 lines, 0 prelude lines, 2 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
 metrics/struct_arrays.win64.O0.stripped.dll: 27 lines, 0 prelude lines, 3 variables, 2 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
 metrics/struct_arrays.win64.O2.debug.dll: 50 lines, 0 prelude lines, 7 variables, 17 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
-metrics/struct_arrays.win64.O2.stripped.dll: 49 lines, 0 prelude lines, 6 variables, 5 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
-metrics/struct_arrays.x86_64.O0.debug.elf: 27 lines, 0 prelude lines, 4 variables, 6 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/struct_arrays.win64.O2.stripped.dll: 48 lines, 0 prelude lines, 5 variables, 5 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/struct_arrays.x86_64.O0.debug.elf: 25 lines, 0 prelude lines, 2 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
 metrics/struct_arrays.x86_64.O0.stripped.elf: 27 lines, 0 prelude lines, 3 variables, 2 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
 metrics/struct_arrays.x86_64.O2.debug.elf: 50 lines, 0 prelude lines, 7 variables, 17 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
 metrics/struct_arrays.x86_64.O2.stripped.elf: 48 lines, 0 prelude lines, 5 variables, 9 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
@@ -393,7 +393,7 @@ metrics/structs.win64.O0.debug.dll: 88 lines, 0 prelude lines, 14 variables, 17 
 metrics/structs.win64.O0.stripped.dll: 70 lines, 0 prelude lines, 9 variables, 29 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
 metrics/structs.win64.O2.debug.dll: 108 lines, 16 prelude lines, 19 variables, 26 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
 metrics/structs.win64.O2.stripped.dll: 77 lines, 16 prelude lines, 11 variables, 12 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
-metrics/structs.x86_64.O0.debug.elf: 86 lines, 0 prelude lines, 15 variables, 4 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+metrics/structs.x86_64.O0.debug.elf: 84 lines, 0 prelude lines, 13 variables, 2 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
 metrics/structs.x86_64.O0.stripped.elf: 69 lines, 3 prelude lines, 7 variables, 13 casts, 2 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
 metrics/structs.x86_64.O2.debug.elf: 94 lines, 0 prelude lines, 14 variables, 16 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
 metrics/structs.x86_64.O2.stripped.elf: 71 lines, 0 prelude lines, 6 variables, 13 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls

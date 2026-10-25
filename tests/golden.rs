@@ -4,6 +4,8 @@
 //! harder to read, over every function, are kept in tests/golden/readability.txt.
 
 mod common;
+#[path = "../src/render/cost.rs"]
+mod cost;
 
 use std::collections::BTreeSet;
 use std::fmt::Write as _;
@@ -245,7 +247,7 @@ impl Readability {
                 };
                 self.local_classes[class] += 1;
             }
-            self.casts += casts(code);
+            self.casts += cost::casts(code);
             for (total, count) in self.cast_classes.iter_mut().zip(cast_classes(code)) {
                 *total += count;
             }
@@ -424,7 +426,7 @@ fn cast_classes(code: &str) -> [usize; 5] {
             continue;
         };
         let ty = &rest[..end];
-        if ty.contains('(') || casts(&code[start..start + end + 2]) != 1 {
+        if ty.contains('(') || cost::casts(&code[start..start + end + 2]) != 1 {
             continue;
         }
         let class = if ty.trim_end().ends_with('*') {
@@ -450,29 +452,8 @@ fn cast_classes_partition_casts() {
     let code = "*(uint32_t *)((uint8_t *)p + (uintptr_t)q) + (int8_t)x + (struct item *)r";
     let classes = cast_classes(code);
     assert_eq!(classes, [1, 1, 1, 1, 1]);
-    assert_eq!(classes.iter().sum::<usize>(), casts(code));
-    assert_eq!(casts("result(struct item *value, int32_t count)"), 0);
-}
-
-/// Casts to a scalar, pointer or structure type, such as `(int8_t)` or `(struct s1 *)`.
-fn casts(code: &str) -> usize {
-    code.match_indices('(')
-        .filter(|&(start, _)| {
-            let rest = &code[start + 1..];
-            let Some(end) = rest.find(')') else {
-                return false;
-            };
-            let inner = rest[..end].trim_end_matches([' ', '*']);
-            inner.ends_with("_t")
-                && inner
-                    .bytes()
-                    .all(|b| b.is_ascii_alphanumeric() || b == b'_')
-                || inner.strip_prefix("struct ").is_some_and(|name| {
-                    !name.is_empty() && name.bytes().all(|b| b.is_ascii_alphanumeric() || b == b'_')
-                })
-                || matches!(inner, "float" | "double" | "bool" | "char")
-        })
-        .count()
+    assert_eq!(classes.iter().sum::<usize>(), cost::casts(code));
+    assert_eq!(cost::casts("result(struct item *value, int32_t count)"), 0);
 }
 
 /// Calls through a pointer the analysis could not resolve, printed

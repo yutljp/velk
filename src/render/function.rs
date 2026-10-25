@@ -64,6 +64,44 @@ fn render_unmerged(
     let variadic = super::variadic::prepare(&mut folded, symbols);
     crate::analysis::variadic::drop_register_saves(&mut folded);
     params::fold_saved_parameters(&mut folded);
+    let candidate = crate::passes::copies::integer_expression_candidate(&folded);
+    let baseline = render_prepared(
+        original,
+        folded,
+        references,
+        symbols,
+        data_ranges,
+        variadic.as_ref(),
+    );
+    let Some(candidate) = candidate else {
+        return baseline;
+    };
+    let candidate = render_prepared(
+        original,
+        candidate,
+        references,
+        symbols,
+        data_ranges,
+        variadic.as_ref(),
+    );
+    if super::cost::casts(&candidate.code) <= super::cost::casts(&baseline.code)
+        && candidate.code.lines().count() <= baseline.code.lines().count()
+        && candidate.code.matches("goto ").count() <= baseline.code.matches("goto ").count()
+    {
+        candidate
+    } else {
+        baseline
+    }
+}
+
+fn render_prepared(
+    original: &FunctionIr,
+    mut folded: FunctionIr,
+    references: &[Reference],
+    symbols: &Symbols,
+    data_ranges: &[(u64, u64)],
+    variadic: Option<&super::variadic::Plan>,
+) -> Rendered {
     // A saved parameter returned reads as the parameter now.
     crate::analysis::typing::apply_pointer_return(&mut folded);
     naming::roles::name_parameters(&mut folded, symbols);
@@ -197,7 +235,7 @@ fn render_unmerged(
         symbols,
         data_ranges,
         EntryStorage {
-            variadic: variadic.as_ref(),
+            variadic,
             logical: logical.as_ref(),
             incoming: incoming.as_ref(),
             float_entries,
