@@ -449,7 +449,11 @@ pub(crate) fn member_access(addr: &Expr, width: u8, ctx: &Ctx<'_>) -> Option<Pla
         return Some(member);
     }
     if crate::render::locals::offset_local(addr, crate::arch::stack_pointer(ctx.isa)).is_some()
-        && let Some(address) = super::expr::local_plus_offset(addr, ctx)
+        && let Some(address) = ctx
+            .local_parts
+            .get(&render_expr(addr, ctx))
+            .cloned()
+            .or_else(|| super::expr::local_offset_integer(addr, ctx))
     {
         let ty = CType::int(width, false);
         return Some(Place {

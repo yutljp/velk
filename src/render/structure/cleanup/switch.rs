@@ -195,9 +195,122 @@ fn starts_at(body: &[Node], target: u64) -> bool {
         .any(|node| matches!(node, Node::Label(label) if *label == target))
 }
 
-/// Shares exact case bodies and tails, and successive case prefixes.
-/// Only straight-line bodies without address labels can move this way.
-pub(crate) fn share_switch_tails(nodes: &mut [Node]) {
+fn same_body(left: &[Node], right: &[Node], merge_calls: bool) -> bool {
+    use crate::render::structure::merge_exits::statement;
+
+    left.len() == right.len()
+        && left
+            .iter()
+            .zip(right)
+            .all(|(left, right)| match (left, right) {
+                (
+                    Node::Stmt(Stmt::Call {
+                        kind,
+                        target,
+                        through,
+                        convention,
+                        args,
+                        floats_named,
+                        abi: None,
+                        outputs,
+                        clobbers,
+                        via,
+                    }),
+                    Node::Stmt(Stmt::Call {
+                        kind: other_kind,
+                        target: other_target,
+                        through: other_through,
+                        convention: other_convention,
+                        args: other_args,
+                        floats_named: other_floats_named,
+                        abi: None,
+                        outputs: other_outputs,
+                        clobbers: other_clobbers,
+                        via: other_via,
+                    }),
+                ) if merge_calls => {
+                    (
+                        kind,
+                        target,
+                        through,
+                        convention,
+                        args,
+                        floats_named,
+                        outputs,
+                        clobbers,
+                        via,
+                    ) == (
+                        other_kind,
+                        other_target,
+                        other_through,
+                        other_convention,
+                        other_args,
+                        other_floats_named,
+                        other_outputs,
+                        other_clobbers,
+                        other_via,
+                    )
+                }
+                (Node::Stmt(left), Node::Stmt(right)) => {
+                    let Some(left) = statement(left) else {
+                        return false;
+                    };
+                    Some(left) == statement(right)
+                }
+                (Node::Break, Node::Break) => true,
+                (
+                    Node::If {
+                        cond,
+                        lhs,
+                        rhs,
+                        then,
+                        els,
+                    },
+                    Node::If {
+                        cond: other_cond,
+                        lhs: other_lhs,
+                        rhs: other_rhs,
+                        then: other_then,
+                        els: other_els,
+                    },
+                ) => {
+                    cond == other_cond
+                        && lhs == other_lhs
+                        && rhs == other_rhs
+                        && same_body(then, other_then, merge_calls)
+                        && same_body(els, other_els, merge_calls)
+                }
+                (
+                    Node::Switch {
+                        index,
+                        arms,
+                        default,
+                    },
+                    Node::Switch {
+                        index: other_index,
+                        arms: other_arms,
+                        default: other_default,
+                    },
+                ) => {
+                    index == other_index
+                        && arms.len() == other_arms.len()
+                        && arms.iter().zip(other_arms).all(
+                            |((values, body), (other_values, other_body))| {
+                                values == other_values && same_body(body, other_body, merge_calls)
+                            },
+                        )
+                        && match (default, other_default) {
+                            (None, None) => true,
+                            (Some(body), Some(other)) => same_body(body, other, merge_calls),
+                            _ => false,
+                        }
+                }
+                _ => false,
+            })
+}
+
+/// Shares identical label-free case bodies, straight-line tails, and successive case prefixes.
+pub(crate) fn share_switch_tails(nodes: &mut [Node], merge_calls: bool) {
     use crate::render::structure::merge_exits::{Statement, statement};
 
     let key = |body: &[Node]| -> Option<Vec<Option<Statement>>> {
@@ -226,7 +339,7 @@ pub(crate) fn share_switch_tails(nodes: &mut [Node]) {
     };
     for node in nodes {
         for body in children_mut(node) {
-            share_switch_tails(body);
+            share_switch_tails(body, merge_calls);
         }
         if let Some(shared) = share_case_prefixes(node) {
             *node = shared;
@@ -238,22 +351,18 @@ pub(crate) fn share_switch_tails(nodes: &mut [Node]) {
         if arms.iter().any(|(_, body)| !ends(body, true)) {
             continue;
         }
-        let mut keys: Vec<_> = arms.iter().map(|(_, body)| key(body)).collect();
         let mut position = 0;
         while position < arms.len() {
-            let Some(body) = &keys[position] else {
-                position += 1;
-                continue;
-            };
-            let duplicate = (0..position).find(|other| keys[*other].as_ref() == Some(body));
+            let duplicate = (0..position)
+                .find(|other| same_body(&arms[*other].1, &arms[position].1, merge_calls));
             if let Some(other) = duplicate {
                 let (values, _) = arms.remove(position);
-                keys.remove(position);
                 arms[other].0.extend(values);
             } else {
                 position += 1;
             }
         }
+        let mut keys: Vec<_> = arms.iter().map(|(_, body)| key(body)).collect();
         keys.extend(default.iter().map(|body| key(body)));
         let mut next = vec![None; keys.len()];
         let mut incoming = vec![false; keys.len()];

@@ -8,6 +8,7 @@ use condition::logic;
 pub(crate) use condition::{condition, switch_index};
 pub(super) use memory::byte_pointer;
 pub(super) use memory::copy_address;
+pub(super) use memory::local_offset_integer;
 use memory::{byte_sum, load};
 pub(crate) use memory::{local_plus_offset, slot_access};
 pub(super) use operation::bits_float;

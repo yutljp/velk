@@ -1,0 +1,17 @@
+/* velk pseudo-C: nested_switch_cases @ 0x0 */
+uint64_t nested_switch_cases(uint64_t outer, uint64_t inner) {
+    switch (outer) {
+    case 1:
+    case 2:
+        switch (inner) {
+        case 3:
+            return 17;
+        case 4:
+            return 23;
+        default:
+            return 31;
+        }
+    default:
+        return 41;
+    }
+}

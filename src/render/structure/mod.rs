@@ -156,7 +156,7 @@ fn structure_chosen(ir: Cow<'_, FunctionIr>) -> (Vec<Node>, Cow<'_, FunctionIr>)
 /// Drops labels nothing jumps to but the `kept` ones, code after a jump,
 /// and jumps to where the code goes next anyway; hoisting an `else` after
 /// a branch that leaves can bring a jump right before its label.
-fn tidy(nodes: &mut Vec<Node>, kept: std::collections::HashSet<u64>) {
+fn tidy(nodes: &mut Vec<Node>, kept: std::collections::HashSet<u64>, ir: &FunctionIr) {
     let prune = |nodes: &mut Vec<Node>| {
         let mut used = kept.clone();
         collect_targets(nodes, &mut used);
@@ -181,7 +181,7 @@ fn tidy(nodes: &mut Vec<Node>, kept: std::collections::HashSet<u64>) {
         prune_unreachable(nodes);
         cleanup::order_switch_cases(nodes);
         prune(nodes);
-        cleanup::share_switch_tails(nodes);
+        cleanup::share_switch_tails(nodes, /* merge_calls */ ir.landing_pads.is_empty());
     }
 }
 
@@ -204,7 +204,7 @@ fn by_dominance(ir: &FunctionIr) -> Option<Vec<Node>> {
     };
     // Code the entry does not reach keeps its label, which names where it starts.
     let entries: std::collections::HashSet<u64> = dominance::entries(ir).into_iter().collect();
-    tidy(&mut nodes, entries.clone());
+    tidy(&mut nodes, entries.clone(), ir);
     if label_count(&nodes) == 0 {
         return Some(nodes);
     }
@@ -223,7 +223,7 @@ fn by_dominance(ir: &FunctionIr) -> Option<Vec<Node>> {
         if absorb != dominance::Absorb::Nothing
             && let Some(mut absorbing) = dominance::structure_absorbing(ir, absorb)
         {
-            tidy(&mut absorbing, entries.clone());
+            tidy(&mut absorbing, entries.clone(), ir);
             if cost(&absorbing) < cost(&best) && labels_resolve(ir, &absorbing) {
                 best = absorbing;
             }
@@ -232,7 +232,7 @@ fn by_dominance(ir: &FunctionIr) -> Option<Vec<Node>> {
             && label_count(&best) != 0
             && let Some(mut candidate) = dominance::structure_switches(ir, absorb)
         {
-            tidy(&mut candidate, entries.clone());
+            tidy(&mut candidate, entries.clone(), ir);
             if cost(&candidate) < cost(&best) && labels_resolve(ir, &candidate) {
                 best = candidate;
             }
@@ -403,6 +403,6 @@ fn structure_with(ir: &FunctionIr, reordered: bool) -> Vec<Node> {
         reordered,
     };
     let mut nodes = structurer.emit(0, ir.blocks.len());
-    tidy(&mut nodes, entries);
+    tidy(&mut nodes, entries, ir);
     nodes
 }

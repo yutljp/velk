@@ -707,3 +707,175 @@ fn printed_inline_jump_table_bytes_do_not_become_stack_operations() {
     );
     std::fs::remove_dir_all(scratch).ok();
 }
+
+#[test]
+fn printed_identical_nested_switch_cases_share_their_bodies() {
+    let mut candidates = Vec::new();
+    for different in [false, true] {
+        let mut ir = synthetic_ir(
+            "nested_switch_cases",
+            vec![
+                Param {
+                    index: 7,
+                    name: "outer".into(),
+                    ty: CType::U64,
+                },
+                Param {
+                    index: 6,
+                    name: "inner".into(),
+                    ty: CType::U64,
+                },
+            ],
+            CType::U64,
+            Vec::new(),
+        );
+        ir.blocks.push(Block {
+            start: 0,
+            stmts: vec![Stmt::Switch {
+                index: Expr::reg(7, 64),
+                cases: vec![(1, 10), (2, 50)],
+                default: Some(90),
+            }],
+        });
+        for start in [10, 50] {
+            ir.blocks.push(Block {
+                start,
+                stmts: vec![Stmt::Switch {
+                    index: Expr::reg(6, 64),
+                    cases: vec![(3, start + 10), (4, start + 20)],
+                    default: Some(start + 30),
+                }],
+            });
+            for (offset, value) in [(10, 17), (20, 23), (30, 31)] {
+                ir.blocks.push(Block {
+                    start: start + offset,
+                    stmts: vec![Stmt::Ret {
+                        value: Expr::Const(value + u64::from(different && start == 50)),
+                    }],
+                });
+            }
+        }
+        ir.blocks.push(Block {
+            start: 90,
+            stmts: vec![Stmt::Ret {
+                value: Expr::Const(41),
+            }],
+        });
+        ir.blocks.retain(|block| !block.stmts.is_empty());
+        let candidate = printed_candidate(
+            ir,
+            [0, 1, 2, 3, u64::MAX]
+                .into_iter()
+                .flat_map(|outer| {
+                    [0, 3, 4, 5, u64::MAX]
+                        .into_iter()
+                        .map(move |inner| vec![outer, inner])
+                })
+                .collect(),
+        );
+        assert_eq!(
+            candidate.code.matches("switch (inner)").count(),
+            if different { 2 } else { 1 },
+            "{}",
+            candidate.code
+        );
+        assert!(!candidate.code.contains("goto "), "{}", candidate.code);
+        if !different {
+            assert_eq!(
+                common::check_expected(
+                    &common::root().join("tests/golden/nested_switch_cases.txt"),
+                    &candidate.code
+                ),
+                None
+            );
+        }
+        candidates.push(candidate);
+    }
+    check_candidates("nested-switch-cases", candidates, Mode::Registers, &[]);
+}
+
+#[test]
+fn printed_nested_cases_preserve_call_arguments_and_effects() {
+    for (different, exceptions) in [(false, false), (true, false), (false, true)] {
+        let mut ir = synthetic_ir(
+            "nested_case_calls",
+            vec![Param {
+                index: 7,
+                name: "input".into(),
+                ty: CType::U64,
+            }],
+            CType::U64,
+            Vec::new(),
+        );
+        ir.blocks = vec![Block {
+            start: 0,
+            stmts: vec![Stmt::Switch {
+                index: Expr::reg(7, 64),
+                cases: vec![(1, 10), (2, 40)],
+                default: Some(70),
+            }],
+        }];
+        for start in [10, 40] {
+            ir.blocks.push(Block {
+                start,
+                stmts: vec![Stmt::Brif {
+                    cond: Cond::Eq,
+                    lhs: Expr::bin(BinOp::And, Expr::reg(7, 64), Expr::Const(4)),
+                    rhs: Expr::Const(0),
+                    target: start + 20,
+                }],
+            });
+            ir.blocks.push(Block {
+                start: start + 10,
+                stmts: vec![Stmt::Ret {
+                    value: Expr::Const(31),
+                }],
+            });
+            ir.blocks.push(Block {
+                start: start + 20,
+                stmts: vec![
+                    Stmt::Call {
+                        kind: velk::ir::CallKind::Invoke,
+                        target: Some(0x1000),
+                        through: None,
+                        convention: Convention::SysV,
+                        args: Some(vec![Expr::Const(17 + u64::from(different && start == 40))]),
+                        floats_named: true,
+                        abi: None,
+                        outputs: Vec::new(),
+                        clobbers: Some(Default::default()),
+                        via: None,
+                    },
+                    Stmt::Ret {
+                        value: Expr::Const(23),
+                    },
+                ],
+            });
+        }
+        ir.blocks.push(Block {
+            start: 70,
+            stmts: vec![Stmt::Ret {
+                value: Expr::Const(41),
+            }],
+        });
+        if exceptions {
+            ir.landing_pads.push((70, vec![(10, 40)]));
+        }
+        let mut symbols = velk::render::Symbols::default();
+        symbols.functions.insert(0x1000, "effect".into());
+        let code = velk::render::render(&ir, &[], &symbols, &[]);
+        assert_eq!(
+            code.matches("effect(").count(),
+            if different || exceptions { 2 } else { 1 },
+            "{code}"
+        );
+        syntax::run_printed(
+            &format!("static uint64_t total;\nuint64_t effect(uint64_t);\n{code}"),
+            "uint64_t effect(uint64_t x) { total += x; return 0; }",
+            &format!(
+                "if (nested_case_calls(1) != 23 || nested_case_calls(2) != 23 || nested_case_calls(0) != 41) return 1; return total != {};",
+                34 + u64::from(different)
+            ),
+        );
+    }
+}

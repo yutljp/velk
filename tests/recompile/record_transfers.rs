@@ -675,3 +675,223 @@ fn raw_memory_calls_preserve_bytes_past_a_string_terminator() {
         "unsigned char out[32] = {0}; if (copy_raw_bytes(out) != 7 || memcmp(out, bytes, sizeof out)) return 1;",
     );
 }
+
+#[test]
+fn printed_repeated_byte_stores_fill_only_the_written_range() {
+    let mut candidates = Vec::new();
+    for byte in [0u64, 0x5a, 0xff] {
+        for changed in 0..3 {
+            let mut offset = 0u64;
+            let mut statements = Vec::new();
+            for (part, width) in [8u8, 4, 2, 1].into_iter().enumerate() {
+                let value = if changed == 1 && part == 1 {
+                    byte ^ 1
+                } else {
+                    byte
+                };
+                statements.push(Stmt::Store {
+                    addr: Expr::bin(BinOp::Add, Expr::reg(7, 64), Expr::Const(offset)),
+                    value: Expr::Const(value * (u64::MAX / 255)),
+                    width,
+                });
+                offset += u64::from(width) + u64::from(changed == 2);
+            }
+            statements.push(Stmt::Ret {
+                value: Expr::Const(0),
+            });
+            let ir = synthetic_ir(
+                "repeated_byte_stores",
+                vec![Param {
+                    index: 7,
+                    name: "dst".into(),
+                    ty: CType::pointer_to(CType::int(1, false)),
+                }],
+                CType::U64,
+                statements,
+            );
+            let candidate = printed_candidate(ir, vec![vec![REGION], vec![REGION + 1]]);
+            assert_eq!(
+                candidate
+                    .code
+                    .contains(&format!("__builtin_memset(dst, 0x{byte:x}, 15);")),
+                changed == 0,
+                "{}",
+                candidate.code
+            );
+            if byte == 0x5a && changed == 0 {
+                assert_eq!(
+                    common::check_expected(
+                        &common::root().join("tests/golden/repeated_byte_stores.txt"),
+                        &candidate.code
+                    ),
+                    None
+                );
+            }
+            candidates.push(candidate);
+        }
+    }
+    check_candidates("repeated-byte-stores", candidates, Mode::Memory, &[]);
+}
+
+#[test]
+fn printed_byte_fills_keep_named_global_objects_separate() {
+    for overlapping in [false, true] {
+        let mut ir = synthetic_ir(
+            "clear_objects",
+            vec![],
+            CType::U64,
+            vec![
+                Stmt::Store {
+                    addr: Expr::Const(0x2000),
+                    value: Expr::Const(0),
+                    width: 1,
+                },
+                Stmt::Store {
+                    addr: Expr::Const(0x2001),
+                    value: Expr::Const(0),
+                    width: 1,
+                },
+                Stmt::Ret {
+                    value: Expr::Const(0),
+                },
+            ],
+        );
+        ir.debug_globals = vec![
+            (0x2000, CType::int(1, false), 1),
+            (0x2001, CType::int(1, false), 1),
+        ];
+        if overlapping {
+            ir.debug_globals
+                .push((0x1fff, CType::Array(Box::new(CType::int(1, false))), 4));
+        }
+        let mut symbols = velk::render::Symbols {
+            data: [(0x2000, "left".into()), (0x2001, "right".into())].into(),
+            ..Default::default()
+        };
+        if overlapping {
+            symbols.data.insert(0x1fff, "container".into());
+        }
+        let code = velk::render::render(&ir, &[], &symbols, &[(0x2000, 2)]);
+        assert!(!code.contains("__builtin_memset"), "{code}");
+        assert!(code.contains("left = 0;"), "{code}");
+        assert!(code.contains("right = 0;"), "{code}");
+        syntax::run_printed(
+            &code,
+            "uint8_t left = 1; uint8_t right = 2;",
+            "clear_objects(); return left || right;",
+        );
+    }
+}
+
+#[test]
+fn printed_global_fills_reuse_the_stored_words_address() {
+    let ir = synthetic_ir(
+        "clear_words",
+        vec![],
+        CType::U64,
+        vec![
+            Stmt::Store {
+                addr: Expr::Const(REGION),
+                value: Expr::Const(0),
+                width: 8,
+            },
+            Stmt::Store {
+                addr: Expr::Const(REGION + 8),
+                value: Expr::Const(0),
+                width: 8,
+            },
+            Stmt::Ret {
+                value: Expr::Load {
+                    addr: Box::new(Expr::Const(REGION)),
+                    width: 8,
+                    signed: false,
+                },
+            },
+        ],
+    );
+    let symbols = velk::render::Symbols {
+        data: [(REGION, "counter".into())].into(),
+        ..Default::default()
+    };
+    let mut candidate = printed_candidate(ir.clone(), vec![vec![]]);
+    candidate.code = velk::render::render(&ir, &[], &symbols, &[(REGION, 16)]);
+    assert!(
+        candidate
+            .code
+            .contains("__builtin_memset(counter, 0x0, 16);"),
+        "{}",
+        candidate.code
+    );
+    assert_eq!(
+        candidate.code.matches("*const counter").count(),
+        1,
+        "{}",
+        candidate.code
+    );
+    assert!(!candidate.code.contains("counter_u8"), "{}", candidate.code);
+    check_candidates("global-fill-address", vec![candidate], Mode::Memory, &[]);
+}
+
+#[test]
+fn printed_global_copies_read_the_named_objects() {
+    let mut ir = synthetic_ir(
+        "copy_objects",
+        vec![Param {
+            index: 7,
+            name: "dst".into(),
+            ty: CType::pointer_to(CType::U64),
+        }],
+        CType::U64,
+        vec![
+            Stmt::Assign {
+                dest: RegRef {
+                    index: VARIABLE_BASE,
+                    width: 64,
+                },
+                value: Expr::Load {
+                    addr: Box::new(Expr::Const(0x2000)),
+                    width: 8,
+                    signed: false,
+                },
+            },
+            Stmt::Assign {
+                dest: RegRef {
+                    index: VARIABLE_BASE + 1,
+                    width: 64,
+                },
+                value: Expr::Load {
+                    addr: Box::new(Expr::Const(0x2008)),
+                    width: 8,
+                    signed: false,
+                },
+            },
+            Stmt::Store {
+                addr: Expr::reg(7, 64),
+                value: Expr::reg(VARIABLE_BASE, 64),
+                width: 8,
+            },
+            Stmt::Store {
+                addr: Expr::bin(BinOp::Add, Expr::reg(7, 64), Expr::Const(8)),
+                value: Expr::reg(VARIABLE_BASE + 1, 64),
+                width: 8,
+            },
+            Stmt::Ret {
+                value: Expr::Const(0),
+            },
+        ],
+    );
+    ir.debug_globals = vec![(0x2000, CType::U64, 8), (0x2008, CType::U64, 8)];
+    let symbols = velk::render::Symbols {
+        data: [(0x2000, "first".into()), (0x2008, "second".into())].into(),
+        ..Default::default()
+    };
+    let code = velk::render::render(&ir, &[], &symbols, &[(0x2000, 16)]);
+    assert!(!code.contains("__builtin_mem"), "{code}");
+    assert!(code.contains("= first;"), "{code}");
+    assert!(code.contains("= second;"), "{code}");
+    syntax::run_printed(
+        &code,
+        "uint64_t first = UINT64_C(0x8000000000000001); uint64_t second = UINT64_MAX;",
+        "uint64_t dst[2] = {0}; copy_objects(dst); return dst[0] != first || dst[1] != second;",
+    );
+}

@@ -1,3 +1,4 @@
+use super::globals::View;
 use super::{CType, Ctx, Expr, Node, Stmt, expr, naming};
 use crate::ir::{BinOp, VARIABLE_BASE};
 use std::collections::{HashMap, HashSet};
@@ -81,6 +82,12 @@ fn address(value: &Expr, ctx: &Ctx<'_>) -> bool {
 }
 
 fn valid_address(value: &Expr, bytes: u64, ctx: &Ctx<'_>) -> bool {
+    // Adjacency in the image does not prove that named globals form one C object.
+    if matches!(value, Expr::Const(address)
+        if ctx.globals.containing(*address).is_some() || ctx.globals.target(*address).is_some())
+    {
+        return false;
+    }
     let key = super::render_expr(value, ctx);
     if let Some((_, remaining)) = ctx.transfer_addresses.get(&key) {
         return *remaining >= bytes;
@@ -95,7 +102,7 @@ fn valid_address(value: &Expr, bytes: u64, ctx: &Ctx<'_>) -> bool {
     address(value, ctx)
 }
 
-fn copy_address(value: &Expr, bytes: u64, ctx: &Ctx<'_>) -> Option<String> {
+fn copy_address(value: &Expr, bytes: u64, view: View, ctx: &Ctx<'_>) -> Option<String> {
     if !valid_address(value, bytes, ctx) {
         return None;
     }
@@ -104,11 +111,7 @@ fn copy_address(value: &Expr, bytes: u64, ctx: &Ctx<'_>) -> Option<String> {
         return Some(pointer.clone());
     }
     if let Expr::Const(value) = value {
-        return naming::global_pointer(
-            &Expr::Const(*value),
-            super::globals::View::Unsigned(1),
-            ctx,
-        );
+        return naming::global_pointer(&Expr::Const(*value), view, ctx);
     }
     let address = expr::print_address(value, ctx);
     Some(if address.is_pointer() {
@@ -232,10 +235,76 @@ fn record(source: &Expr, destination: &Expr, bytes: u64, ctx: &Ctx<'_>) -> Optio
     (end == bytes).then_some(ty)
 }
 
-/// Complete scalar loads followed by their unchanged stores. A byte temporary
-/// preserves every byte, including padding, and snapshots overlapping ranges.
+/// Repeated byte stores and complete scalar copies. A byte temporary preserves
+/// every byte, including padding, when a copy needs to snapshot overlapping ranges.
 pub(super) fn render(nodes: &[Node], ctx: &Ctx<'_>) -> Option<(usize, String)> {
-    ordered(nodes, ctx).or_else(|| reordered(nodes, ctx))
+    fill(nodes, ctx)
+        .or_else(|| ordered(nodes, ctx))
+        .or_else(|| reordered(nodes, ctx))
+}
+
+fn fill(nodes: &[Node], ctx: &Ctx<'_>) -> Option<(usize, String)> {
+    let Some(Node::Stmt(Stmt::Store {
+        width: first_width, ..
+    })) = nodes.first()
+    else {
+        return None;
+    };
+    let mut start = None;
+    let mut byte = None;
+    let mut bytes = 0u64;
+    let mut count = 0;
+    for node in nodes {
+        let Node::Stmt(Stmt::Store {
+            addr,
+            value: Expr::Const(value),
+            width,
+        }) = node
+        else {
+            break;
+        };
+        if !matches!(width, 1 | 2 | 4 | 8) || !valid_address(addr, u64::from(*width), ctx) {
+            break;
+        }
+        let pattern = value & 0xff;
+        if (0..*width).any(|part| (value >> (u32::from(part) * 8)) & 0xff != pattern)
+            || byte.is_some_and(|byte| byte != pattern)
+            || start.is_some_and(|first| !follows(first, addr, bytes))
+        {
+            break;
+        }
+        let Some(next) = bytes.checked_add(u64::from(*width)) else {
+            break;
+        };
+        start.get_or_insert(addr);
+        byte = Some(pattern);
+        bytes = next;
+        count += 1;
+    }
+    if count < 2 {
+        return None;
+    }
+    let (Some(start), Some(byte)) = (start, byte) else {
+        return None;
+    };
+    let Some(destination) = copy_address(start, bytes, View::Unsigned(*first_width), ctx) else {
+        return None;
+    };
+    let text = format!("__builtin_memset({destination}, 0x{byte:x}, {bytes});");
+    let new_casts = casts(&text);
+    if new_casts != 0 {
+        let original_casts: usize = nodes[..count]
+            .iter()
+            .filter_map(|node| match node {
+                Node::Stmt(stmt) => Some(casts(&super::render_stmt(stmt, ctx))),
+                _ => None,
+            })
+            .sum();
+        if new_casts > original_casts {
+            return None;
+        }
+    }
+    Some((count, text))
 }
 
 fn ordered(nodes: &[Node], ctx: &Ctx<'_>) -> Option<(usize, String)> {
@@ -346,10 +415,10 @@ fn ordered(nodes: &[Node], ctx: &Ctx<'_>) -> Option<(usize, String)> {
         || whole_elements(loads[0].1, destination, bytes, ctx);
     let source_value = loads[0].1;
     let destination_value = destination;
-    let Some(source) = copy_address(loads[0].1, bytes, ctx) else {
+    let Some(source) = copy_address(loads[0].1, bytes, View::Unsigned(1), ctx) else {
         return None;
     };
-    let Some(destination) = copy_address(destination, bytes, ctx) else {
+    let Some(destination) = copy_address(destination, bytes, View::Unsigned(1), ctx) else {
         return None;
     };
     let consumed = loads.len() * 2 + between.len();
@@ -509,8 +578,8 @@ fn reordered(nodes: &[Node], ctx: &Ctx<'_>) -> Option<(usize, String)> {
         return None;
     }
     let (Some(source), Some(destination)) = (
-        copy_address(source, bytes, ctx),
-        copy_address(destination, bytes, ctx),
+        copy_address(source, bytes, View::Unsigned(1), ctx),
+        copy_address(destination, bytes, View::Unsigned(1), ctx),
     ) else {
         return None;
     };

@@ -32,7 +32,7 @@ fn call_import @ 0x180001000 (size 18)
 int large_frame(int index) {
     _Alignas(16) uint8_t local_0[0x2000]; /* [sp-2000] */
 
-    *(uint8_t *)((uint8_t *)((uintptr_t)(local_0) + (index & 0x1fff))) = index;
+    *(uint8_t *)((uintptr_t)(local_0) + (index & 0x1fff)) = index;
     return (int8_t)index;
 }
 -- signature

@@ -275,6 +275,10 @@ pub(crate) fn local_plus_offset(value: &Expr, ctx: &Ctx<'_>) -> Option<String> {
     if let Some(part) = ctx.local_parts.get(&render_expr(value, ctx)) {
         return Some(part.clone());
     }
+    local_offset_integer(value, ctx).map(|address| format!("(uint8_t *)({address})"))
+}
+
+pub(in crate::render) fn local_offset_integer(value: &Expr, ctx: &Ctx<'_>) -> Option<String> {
     let Some((slot, rest)) =
         crate::render::locals::offset_local(value, crate::arch::stack_pointer(ctx.isa))
     else {
@@ -318,7 +322,7 @@ pub(crate) fn local_plus_offset(value: &Expr, ctx: &Ctx<'_>) -> Option<String> {
         rest = Expr::bin(BinOp::Add, rest, Expr::Const(below));
     }
     Some(format!(
-        "(uint8_t *)((uintptr_t)({address}) + {})",
+        "(uintptr_t)({address}) + {}",
         print_in(&rest, ctx, 64, ConstantUse::Hex)
             .address_integer()
             .within(super::binding(BinOp::Add), true)

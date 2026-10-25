@@ -539,7 +539,7 @@ fn printed_stack_records_indexed_through_each_field_are_one_array() {
     // first read back through the second's address and another index.
     let scaled = Expr::bin(BinOp::Mul, Expr::reg(7, 64), Expr::Const(16));
     let at = |offset: i64, index: Expr| Expr::bin(BinOp::Add, slot(offset), index);
-    let ir = synthetic_ir(
+    let mut ir = synthetic_ir(
         "frame_records",
         vec![Param {
             index: 7,
@@ -574,7 +574,42 @@ fn printed_stack_records_indexed_through_each_field_are_one_array() {
             },
         ],
     );
-    let candidate = printed_candidate(ir, (0..4).map(|value| vec![value]).collect());
+    let body = std::mem::take(&mut ir.blocks[0].stmts);
+    ir.blocks[0].stmts.push(Stmt::Brif {
+        cond: Cond::Hi,
+        lhs: Expr::reg(7, 64),
+        rhs: Expr::Const(3),
+        target: 2,
+    });
+    ir.blocks.push(Block {
+        start: 1,
+        stmts: body,
+    });
+    ir.blocks.push(Block {
+        start: 2,
+        stmts: vec![Stmt::Ret {
+            value: Expr::Const(0),
+        }],
+    });
+    let candidate = printed_candidate(
+        ir,
+        [0, 1, 2, 3, 4, u64::MAX]
+            .into_iter()
+            .map(|value| vec![value])
+            .collect(),
+    );
+    assert!(
+        !candidate.code.contains("*(uint64_t *)((uint8_t *)"),
+        "{}",
+        candidate.code
+    );
+    assert_eq!(
+        common::check_expected(
+            &common::root().join("tests/golden/indexed_frame_access.txt"),
+            &candidate.code,
+        ),
+        None,
+    );
     check_candidates("stack-records", vec![candidate], Mode::Registers, &[]);
 }
 

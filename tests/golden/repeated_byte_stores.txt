@@ -1,0 +1,5 @@
+/* velk pseudo-C: repeated_byte_stores @ 0x0 */
+uint64_t repeated_byte_stores(uint8_t *dst) {
+    __builtin_memset(dst, 0x5a, 15);
+    return 0;
+}
