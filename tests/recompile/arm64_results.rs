@@ -1,6 +1,66 @@
 use super::*;
 
 #[test]
+fn unsigned_vector_maximum_clears_upper_bits_and_preserves_saved_registers() {
+    let scratch = scratch_dir("arm64-unsigned-maximum");
+    let assembly = scratch.join("maximum.s");
+    let object = scratch.join("maximum.o");
+    let mut source = String::from(".text\n");
+    let forms = [
+        ("8b", "b", 8, 8),
+        ("16b", "b", 8, 16),
+        ("4h", "h", 16, 4),
+        ("8h", "h", 16, 8),
+        ("4s", "s", 32, 4),
+    ];
+    for (index, (lanes, scalar, _, _)) in forms.iter().enumerate() {
+        writeln!(source, ".globl maximum_{index}\n.type maximum_{index},@function\nmaximum_{index}:\nldr q0, [x0]\numaxv {scalar}0, v0.{lanes}\nstr q0, [x1]\numov w0, v0.{scalar}[0]\nret\n.size maximum_{index}, .-maximum_{index}").unwrap();
+    }
+    source.push_str(".globl preserved_maximum\n.type preserved_maximum,@function\npreserved_maximum:\nstp x19, x30, [sp, #-16]!\nmov x19, x2\nbl maximum_0\nmov x0, x19\nldp x19, x30, [sp], #16\nret\n.size preserved_maximum, .-preserved_maximum\n");
+    std::fs::write(&assembly, source).unwrap();
+    let compiled = Command::new(compiler())
+        .args(["--target=aarch64-unknown-linux-gnu", "-c"])
+        .arg(&assembly)
+        .arg("-o")
+        .arg(&object)
+        .output()
+        .unwrap();
+    assert!(compiled.status.success(), "{compiled:?}");
+    let mut binary = Binary::open(&object).unwrap();
+    for (index, (_, _, bits, count)) in forms.iter().enumerate() {
+        let name = format!("maximum_{index}");
+        let address = binary.find(&name).unwrap().addr;
+        let printed = binary.decompile(address, None, None).unwrap();
+        assert!(!printed.contains("unsupported"), "{printed}");
+        let mut assertions = String::new();
+        writeln!(assertions, "for (unsigned position = 0; position < {count}; ++position) {{\nstruct S1 input = {{0, 0}}; struct S2 output = {{-1, -1}};\nfor (unsigned byte = 0; byte < {bits} / 8; ++byte) ((uint8_t *)&input)[position * ({bits} / 8) + byte] = 255;\nif ((uint32_t){name}(&input, &output) != (uint{bits}_t)~0U || (uint64_t)output.field_0x0 != (uint{bits}_t)~0U || output.field_0x8 != 0) __builtin_trap();\n}}").unwrap();
+        writeln!(assertions, "for (unsigned trial = 0; trial < 32; ++trial) {{
+struct S1 input = {{-1, -1}}; struct S2 output = {{-1, -1}};
+uint64_t expected = 0;
+for (unsigned lane = 0; lane < {count}; ++lane) {{
+    uint64_t value = (uint{bits}_t)((trial + lane) * 0x9876543U);
+    if (value > expected) expected = value;
+    for (unsigned byte = 0; byte < {bits} / 8; ++byte)
+        ((uint8_t *)&input)[lane * ({bits} / 8) + byte] = value >> (byte * 8);
+}}
+if ((uint32_t){name}(&input, &output) != expected || (uint64_t)output.field_0x0 != expected || output.field_0x8 != 0) __builtin_trap();
+}}").unwrap();
+        syntax::run_printed(&printed, "", &assertions);
+    }
+    let address = binary.find("preserved_maximum").unwrap().addr;
+    let printed = binary.decompile(address, None, None).unwrap();
+    assert!(!printed.contains("undefined"), "{printed}");
+    let code =
+        format!("static void maximum_0(int64_t a, int64_t b) {{ (void)a; (void)b; }}\n{printed}");
+    syntax::run_printed(
+        &code,
+        "",
+        "if ((uint32_t)preserved_maximum(0, 0, 0xabcdef12U) != 0xabcdef12U) __builtin_trap();",
+    );
+    std::fs::remove_dir_all(scratch).ok();
+}
+
+#[test]
 fn printed_arm64_stores_preserve_the_incoming_result() {
     let scratch = scratch_dir("arm64-preserved-result");
     let source = scratch.join("results.s");

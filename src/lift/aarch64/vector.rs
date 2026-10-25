@@ -251,6 +251,23 @@ pub(super) fn lift_vector(lifter: &mut Lifter, ins: &Instruction) -> Option<()> 
             let sum = Expr::apply(Operation::SumLanes(source.2), vec![low, high]);
             lifter.write_simd(slot, bits, (sum, Expr::constant(0)));
         }
+        O::UMAXV => {
+            let (slot, bits) = simd(ops[0])?;
+            let source = vector(ops[1])?;
+            let (low, high) = halves(source);
+            let mut maximum = if source.1 {
+                lanes(LaneOp::MaxUnsigned, source.2, low, high)
+            } else {
+                low
+            };
+            let mut shift = 32;
+            while shift >= source.2 {
+                let upper = Expr::bin(BinOp::Shr, maximum.clone(), Expr::constant(shift.into()));
+                maximum = lanes(LaneOp::MaxUnsigned, source.2, maximum, upper);
+                shift /= 2;
+            }
+            lifter.write_simd(slot, bits, (maximum, Expr::constant(0)));
+        }
         // The two 64-bit lanes added, into a scalar.
         O::ADDP if simd(ops[0]).is_some() => {
             let (slot, bits) = simd(ops[0])?;
