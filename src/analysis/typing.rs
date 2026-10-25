@@ -874,6 +874,19 @@ pub(crate) fn apply_void_return(ir: &mut FunctionIr) {
 /// rest of the return register undefined for the caller.
 pub(crate) fn apply_partial_return(ir: &mut FunctionIr) {
     use crate::ir::{BinOp, Expr, Stmt};
+    if !ir.blocks.iter().flat_map(|block| &block.stmts).any(|stmt| {
+        matches!(
+            stmt,
+            Stmt::Assign {
+                value: Expr::Bin { op: BinOp::Or, .. },
+                ..
+            } | Stmt::Ret {
+                value: Expr::Bin { op: BinOp::Or, .. }
+            }
+        )
+    }) {
+        return;
+    }
     // The new bits and their width in bytes, for `(r & keep) | value`, the
     // rest being the register's earlier value.
     let partial = |value: &Expr| -> Option<(Expr, u8)> {

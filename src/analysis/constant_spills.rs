@@ -6,6 +6,13 @@ use crate::ir::{Block, Expr, FunctionIr, Stmt};
 use crate::loader::Image;
 use crate::passes::frame_slots::frame_slot;
 
+struct Stored {
+    offset: i64,
+    width: u8,
+    value: u64,
+    first_call: usize,
+}
+
 pub(super) fn forward(ir: &mut FunctionIr, image: &Image) {
     if !ir
         .blocks
@@ -62,14 +69,22 @@ pub(super) fn forward(ir: &mut FunctionIr, image: &Image) {
     let mut changed = false;
     for (block, frames) in normalized.blocks.iter_mut().zip(call_frames) {
         let mut frames = frames.into_iter();
-        let mut pending: Vec<(i64, u8, u64)> = Vec::new();
+        let mut pending: Vec<Stored> = Vec::new();
+        let mut calls = Vec::new();
         for stmt in &mut block.stmts {
             for operand in stmt.operands_mut() {
-                changed |= replace(operand, sp, &pending);
+                changed |= replace(operand, sp, &mut pending, &mut |first_call| {
+                    let preserved = calls[first_call..].iter().all(|target| {
+                        *callees
+                            .entry(*target)
+                            .or_insert_with(|| writes_only_frame(image, *target))
+                    });
+                    preserved.then_some(calls.len())
+                });
             }
             if matches!(stmt, Stmt::Call { .. }) {
                 let frame = frames.next().flatten();
-                pending.retain(|(offset, _, _)| frame.is_some_and(|frame| *offset >= frame));
+                pending.retain(|stored| frame.is_some_and(|frame| stored.offset >= frame));
             }
             match stmt {
                 Stmt::Store { addr, value, width } => {
@@ -81,26 +96,34 @@ pub(super) fn forward(ir: &mut FunctionIr, image: &Image) {
                         pending.clear();
                         continue;
                     };
-                    pending.retain(|(start, width, _)| {
-                        *start >= end
-                            || start
-                                .checked_add(i64::from(*width))
+                    pending.retain(|stored| {
+                        stored.offset >= end
+                            || stored
+                                .offset
+                                .checked_add(i64::from(stored.width))
                                 .is_some_and(|end| end <= offset)
                     });
                     if matches!(width, 1 | 2 | 4 | 8)
                         && let Expr::Const(value) = value
                     {
-                        pending.push((offset, *width, *value));
+                        pending.push(Stored {
+                            offset,
+                            width: *width,
+                            value: *value,
+                            first_call: calls.len(),
+                        });
                     }
                 }
                 Stmt::Call {
                     target: Some(target),
                     kind: crate::ir::CallKind::Invoke,
                     ..
-                } if pending.is_empty()
-                    || *callees
-                        .entry(*target)
-                        .or_insert_with(|| writes_only_frame(image, *target)) => {}
+                } => {
+                    // Prove preservation only if a later load needs a stored value.
+                    if !pending.is_empty() {
+                        calls.push(*target);
+                    }
+                }
                 Stmt::Assign { .. }
                 | Stmt::Brif { .. }
                 | Stmt::Br { .. }
@@ -116,10 +139,15 @@ pub(super) fn forward(ir: &mut FunctionIr, image: &Image) {
     }
 }
 
-fn replace(expr: &mut Expr, sp: u16, pending: &[(i64, u8, u64)]) -> bool {
+fn replace(
+    expr: &mut Expr,
+    sp: u16,
+    pending: &mut Vec<Stored>,
+    preserved: &mut impl FnMut(usize) -> Option<usize>,
+) -> bool {
     let mut changed = false;
     for child in crate::ir::visit::children_mut(expr) {
-        changed |= replace(child, sp, pending);
+        changed |= replace(child, sp, pending, preserved);
     }
     if let Expr::Load {
         addr,
@@ -127,12 +155,18 @@ fn replace(expr: &mut Expr, sp: u16, pending: &[(i64, u8, u64)]) -> bool {
         signed,
     } = expr
         && let Some(offset) = frame_slot(addr, 0, sp)
-        && let Some((_, _, value)) = pending
+        && let Some(position) = pending
             .iter()
-            .find(|(stored, bytes, _)| *stored == offset && bytes == width)
+            .position(|stored| stored.offset == offset && stored.width == *width)
     {
+        let Some(first_call) = preserved(pending[position].first_call) else {
+            pending.remove(position);
+            return changed;
+        };
+        let stored = &mut pending[position];
+        stored.first_call = first_call;
         let bits = u32::from(*width).saturating_mul(8);
-        let value = *value & crate::ir::semantics::mask(bits);
+        let value = stored.value & crate::ir::semantics::mask(bits);
         *expr = Expr::Const(if *signed {
             crate::ir::semantics::sign_extend(value, bits) as u64
         } else {

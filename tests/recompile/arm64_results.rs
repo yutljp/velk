@@ -129,6 +129,24 @@ ldr w0, [x8, #16]
 ldp x29, x30, [sp], #64
 ret
 .size changed_address, .-changed_address
+.globl replaced_address
+.type replaced_address,@function
+replaced_address:
+stp x29, x30, [sp, #-64]!
+mov x29, sp
+mov x8, #0x400000000
+str x8, [sp, #16]
+add x0, sp, #16
+bl write_spill
+mov x8, #0x400000000
+str x8, [sp, #16]
+mov w0, #1
+bl spill_helper
+ldr x8, [sp, #16]
+ldr w0, [x8, #16]
+ldp x29, x30, [sp], #64
+ret
+.size replaced_address, .-replaced_address
 ",
     )
     .unwrap();
@@ -148,8 +166,11 @@ ret
     let changed = binary.find("changed_address").unwrap().addr;
     let changed_code = binary.decompile(changed, None, None).unwrap();
     assert!(!changed_code.contains("0x400000010"), "{changed_code}");
+    let replaced = binary.find("replaced_address").unwrap().addr;
+    let replaced_code = binary.decompile(replaced, None, None).unwrap();
+    assert!(replaced_code.contains("0x400000010"), "{replaced_code}");
     let text = format!(
-        "#include <sys/mman.h>\nstatic void spill_helper(uint64_t x) {{ (void)x; }}\nstatic void write_spill(uint64_t *p) {{ *p = 0x500000000ULL; }}\n{code}\n{changed_code}"
+        "#include <sys/mman.h>\nstatic void spill_helper(uint64_t x) {{ (void)x; }}\nstatic void write_spill(uint64_t *p) {{ *p = 0x500000000ULL; }}\n{code}\n{changed_code}\n{replaced_code}"
     );
     syntax::run_printed(
         &text,
@@ -166,6 +187,7 @@ ret
         if (other == MAP_FAILED) __builtin_trap();
         *(uint32_t *)((uint8_t *)other + 16) = 123;
         if ((uint32_t)changed_address() != 123) __builtin_trap();
+        if ((uint32_t)replaced_address() != 19 * 0x9876543U) __builtin_trap();
         munmap(other, 16384);
         munmap(page, 16384);",
     );

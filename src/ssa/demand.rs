@@ -355,6 +355,20 @@ pub(crate) fn entry_demands(ir: &FunctionIr, returns: &[u64]) -> Option<HashMap<
 /// When no read of `v` looks at the kept bits, they never matter and the
 /// write is just `v = x`.
 pub fn narrow_partial_writes(ir: &mut FunctionIr) {
+    if !ir.blocks.iter().flat_map(|block| &block.stmts).any(|stmt| {
+        matches!(
+            stmt,
+            Stmt::Assign {
+                value: Expr::Bin {
+                    op: crate::ir::BinOp::Or,
+                    ..
+                },
+                ..
+            }
+        )
+    }) {
+        return;
+    }
     // An unmodeled instruction or an unknown jump may read any bit.
     if ir.blocks.iter().flat_map(|block| &block.stmts).any(|stmt| {
         matches!(
