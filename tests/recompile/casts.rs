@@ -1067,3 +1067,70 @@ fn boolean_returns_keep_truncation_before_testing_for_zero() {
     let code = velk::render::render(&ir, &[], &Default::default(), &[]);
     syntax::run_printed(&code, "", "return byte_nonzero(256) || !byte_nonzero(128);");
 }
+
+#[test]
+fn high_products_keep_sign_conversion_and_the_sixty_four_bit_result() {
+    let mut candidates = Vec::new();
+    let edges = [0, 1, 0x7fff_ffff, 0x8000_0000, 1 << 63, u64::MAX];
+    for signed in [false, true] {
+        for operand_signed in [false, true] {
+            for shift in [0, 1, 63] {
+                let ty = CType::int(8, operand_signed);
+                let ir = synthetic_ir(
+                    &format!("high_product_{signed}_{operand_signed}_{shift}"),
+                    vec![
+                        Param {
+                            index: 7,
+                            name: "a".into(),
+                            ty: ty.clone(),
+                        },
+                        Param {
+                            index: 6,
+                            name: "b".into(),
+                            ty,
+                        },
+                    ],
+                    CType::U64,
+                    vec![Stmt::Ret {
+                        value: Expr::bin(
+                            BinOp::Shr,
+                            Expr::bin(
+                                if signed {
+                                    BinOp::MulHighS
+                                } else {
+                                    BinOp::MulHigh
+                                },
+                                Expr::reg(7, 64),
+                                Expr::reg(6, 64),
+                            ),
+                            Expr::Const(shift),
+                        ),
+                    }],
+                );
+                let candidate = printed_candidate(
+                    ir,
+                    edges
+                        .iter()
+                        .flat_map(|a| edges.iter().map(move |b| vec![*a, *b]))
+                        .collect(),
+                );
+                if signed == operand_signed {
+                    assert!(!candidate.code.contains("(int64_t)a"), "{}", candidate.code);
+                    assert!(
+                        !candidate.code.contains("(uint64_t)a"),
+                        "{}",
+                        candidate.code
+                    );
+                    assert!(!candidate.code.contains("(int64_t)b"), "{}", candidate.code);
+                    assert!(
+                        !candidate.code.contains("(uint64_t)b"),
+                        "{}",
+                        candidate.code
+                    );
+                }
+                candidates.push(candidate);
+            }
+        }
+    }
+    check_candidates("typed-high-products", candidates, Mode::Registers, &[]);
+}

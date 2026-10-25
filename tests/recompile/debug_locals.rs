@@ -873,3 +873,84 @@ fn narrow_values_with_multiple_definitions_keep_their_snapshots() {
     );
     check_candidates("repeated-narrow-value", vec![candidate], Mode::Memory, &[]);
 }
+
+#[test]
+fn structured_return_copies_preserve_truncation_and_parameter_changes() {
+    let temp = velk::ir::VARIABLE_BASE;
+    let mut candidates = Vec::new();
+    for width in [32, 64] {
+        for changed in [false, true] {
+            let mut ir = synthetic_ir(
+                &format!("return_copy_{width}_{changed}"),
+                vec![
+                    Param {
+                        index: 7,
+                        name: "input".into(),
+                        ty: CType::int(width / 8, true),
+                    },
+                    Param {
+                        index: 6,
+                        name: "flag".into(),
+                        ty: CType::U64,
+                    },
+                ],
+                CType::int(width / 8, true),
+                vec![
+                    Stmt::Assign {
+                        dest: velk::ir::RegRef { index: temp, width },
+                        value: Expr::reg(7, width),
+                    },
+                    Stmt::Brif {
+                        cond: Cond::Eq,
+                        lhs: Expr::reg(6, 64),
+                        rhs: Expr::Const(0),
+                        target: 2,
+                    },
+                ],
+            );
+            let mut body = Vec::new();
+            if changed {
+                body.push(Stmt::Assign {
+                    dest: velk::ir::RegRef { index: 7, width },
+                    value: Expr::Const(9),
+                });
+            }
+            body.push(Stmt::Ret {
+                value: Expr::bin(
+                    BinOp::And,
+                    Expr::reg(temp, width),
+                    Expr::Const(if width == 32 { 0xffff_ffff } else { u64::MAX }),
+                ),
+            });
+            ir.blocks.push(Block {
+                start: 1,
+                stmts: body,
+            });
+            ir.blocks.push(Block {
+                start: 2,
+                stmts: vec![
+                    Stmt::Assign {
+                        dest: velk::ir::RegRef { index: temp, width },
+                        value: Expr::Const(0),
+                    },
+                    Stmt::Ret {
+                        value: Expr::reg(temp, width),
+                    },
+                ],
+            });
+            ir.value_types.insert(temp, CType::int(width / 8, true));
+            let candidate = printed_candidate(
+                ir,
+                [0, 1, 0x7fff_ffff, 0x8000_0000, 1 << 63, u64::MAX]
+                    .into_iter()
+                    .flat_map(|value| [vec![value, 0], vec![value, 1]])
+                    .collect(),
+            );
+            if !changed {
+                assert!(!candidate.code.contains(" v1"), "{}", candidate.code);
+            }
+            candidates.push(candidate);
+        }
+    }
+    check_candidates("structured-return-copies", candidates, Mode::Registers, &[]);
+}

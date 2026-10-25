@@ -22,7 +22,7 @@
 -- decompile
 /* velk pseudo-C: l3 @ 0x180001000 */
 long long l3(long long x) {
-    uint64_t v1 = (int64_t)(((__int128)(int64_t)(x) * (int64_t)(0x5555555555555556)) >> 64);
+    uint64_t v1 = (int64_t)(((__int128)x * 0x5555555555555556) >> 64);
     return (v1 >> 63) + v1;
 }
 -- signature
@@ -41,7 +41,7 @@ fn l3 @ 0x180001000 (size 27)
 -- decompile
 /* velk pseudo-C: l10 @ 0x180001020 */
 long long l10(long long x) {
-    int64_t v1 = (int64_t)(((__int128)(int64_t)(x) * (int64_t)(0x6666666666666667)) >> 64);
+    int64_t v1 = (int64_t)(((__int128)x * 0x6666666666666667) >> 64);
     return ((uint64_t)v1 >> 63) + (v1 >> 2);
 }
 -- signature
@@ -60,7 +60,7 @@ fn l10 @ 0x180001020 (size 31)
 -- decompile
 /* velk pseudo-C: h3 @ 0x180001040 */
 unsigned long long h3(unsigned long long x) {
-    return (uint64_t)(((unsigned __int128)(uint64_t)(x) * (uint64_t)(0xaaaaaaaaaaaaaaab)) >> 64) >> 1;
+    return (uint64_t)(((unsigned __int128)x * 0xaaaaaaaaaaaaaaab) >> 64) >> 1;
 }
 -- signature
 unsigned long long (unsigned long long x)
@@ -77,7 +77,7 @@ fn h3 @ 0x180001040 (size 23)
 -- decompile
 /* velk pseudo-C: h10 @ 0x180001060 */
 unsigned long long h10(unsigned long long x) {
-    return (uint64_t)(((unsigned __int128)(uint64_t)(x) * (uint64_t)(0xcccccccccccccccd)) >> 64) >> 3;
+    return (uint64_t)(((unsigned __int128)x * 0xcccccccccccccccd) >> 64) >> 3;
 }
 -- signature
 unsigned long long (unsigned long long x)
@@ -269,7 +269,7 @@ fn lmod10x @ 0x180001140 (size 44)
 -- decompile
 /* velk pseudo-C: umod10x @ 0x180001170 */
 unsigned long long umod10x(unsigned long long x) {
-    return x - ((uint64_t)(((unsigned __int128)(uint64_t)(x) * (uint64_t)(0xcccccccccccccccd)) >> 64) >> 2 & 0xfffffffffffffffe) * 5;
+    return x - ((uint64_t)(((unsigned __int128)x * 0xcccccccccccccccd) >> 64) >> 2 & 0xfffffffffffffffe) * 5;
 }
 -- signature
 unsigned long long (unsigned long long x)

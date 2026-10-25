@@ -631,11 +631,13 @@ fn unfitted(value: &Expr, ctx: &Ctx<'_>, bits: u32, usage: ConstantUse) -> Print
             } else {
                 "unsigned __int128"
             };
+            let lhs = integral(lhs, ctx, 64).cast(64, ty.signed, 64);
+            let rhs = integral(rhs, ctx, 64).cast(64, ty.signed, 64);
             Printed::new(
                 format!(
-                    "({narrow})((({wide})({narrow})({}) * ({narrow})({})) >> 64)",
-                    integral(lhs, ctx, 64).text,
-                    integral(rhs, ctx, 64).text
+                    "({narrow})((({wide}){} * {}) >> 64)",
+                    lhs.within(12, false).text,
+                    rhs.within(11, true).text
                 ),
                 ty,
                 wrapped(ALL, ty),

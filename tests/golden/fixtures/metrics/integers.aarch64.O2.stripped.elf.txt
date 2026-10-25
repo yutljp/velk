@@ -170,7 +170,7 @@ fn <unnamed> @ 0x210274 (size 12)
 -- decompile
 /* velk pseudo-C: sub_210280 @ 0x210280 */
 int64_t sub_210280(int64_t a0, int64_t a1) {
-    return (uint64_t)(((unsigned __int128)(uint64_t)(a1) * (uint64_t)(a0)) >> 64);
+    return (uint64_t)(((unsigned __int128)(uint64_t)a1 * (uint64_t)a0) >> 64);
 }
 -- signature
 int64_t (int64_t a0, int64_t a1)

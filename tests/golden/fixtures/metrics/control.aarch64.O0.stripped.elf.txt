@@ -128,8 +128,8 @@ int32_t sub_210300(int32_t a0) {
         }
         return -1;
     }
-    int32_t v8 = v3 + 2;
-    return v8 + 4;
+    int32_t v6 = v3 + 2;
+    return v6 + 4;
 }
 -- signature
 int32_t (int32_t a0)

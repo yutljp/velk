@@ -260,7 +260,7 @@ fn lmod10x @ 0x2013f0 (size 44)
 -- decompile
 /* velk pseudo-C: umod10x @ 0x201420 */
 unsigned long long umod10x(unsigned long long x) {
-    return x - ((uint64_t)(((unsigned __int128)(uint64_t)(x) * (uint64_t)(0xcccccccccccccccd)) >> 64) >> 2 & 0xfffffffffffffffe) * 5;
+    return x - ((uint64_t)(((unsigned __int128)x * 0xcccccccccccccccd) >> 64) >> 2 & 0xfffffffffffffffe) * 5;
 }
 -- signature
 unsigned long long (unsigned long long x)
