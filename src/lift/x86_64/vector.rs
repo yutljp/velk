@@ -350,17 +350,43 @@ fn lift_xmm(lifter: &mut Lifter, ins: &Instruction) -> Option<()> {
                 lifter.assign(slot, 64, merged);
             }
         }
-        (Pextrw | Vpextrw, OpKind::Register, OpKind::Register) if narrow && source.is_some() => {
+        (Pextrw | Vpextrw | Pextrd | Vpextrd, OpKind::Memory, OpKind::Register) if narrow => {
+            let (Some(from), Some(addr)) = (source, address()) else {
+                return None;
+            };
+            let bits = if matches!(mnemonic, Pextrw | Vpextrw) {
+                16
+            } else {
+                32
+            };
+            let per_half = 64 / bits;
+            let lane = u64::from(ins.immediate8()) & (128 / bits - 1);
+            let value = Expr::bin(
+                BinOp::Shr,
+                low(from + (lane / per_half) as u16),
+                Expr::constant((lane % per_half) * bits),
+            );
+            store(lifter, addr, value, (bits / 8) as u8);
+        }
+        (Pextrw | Vpextrw | Pextrd | Vpextrd, OpKind::Register, OpKind::Register)
+            if narrow && source.is_some() =>
+        {
             let from = source?;
-            let lane = u64::from(ins.immediate8()) & 7;
+            let bits = if matches!(mnemonic, Pextrw | Vpextrw) {
+                16
+            } else {
+                32
+            };
+            let per_half = 64 / bits;
+            let lane = u64::from(ins.immediate8()) & (128 / bits - 1);
             let value = Expr::bin(
                 BinOp::And,
                 Expr::bin(
                     BinOp::Shr,
-                    low(from + (lane / 4) as u16),
-                    Expr::constant((lane % 4) * 16),
+                    low(from + (lane / per_half) as u16),
+                    Expr::constant((lane % per_half) * bits),
                 ),
-                Expr::constant(0xffff),
+                Expr::constant((1u64 << bits) - 1),
             );
             let (index, width) = gpr(ins.op0_register())?;
             lifter.assign(index, width, value);

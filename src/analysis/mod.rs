@@ -1169,6 +1169,7 @@ fn lift_function(image: &Image, function: &Function) -> Result<Lifted, LiftError
     // The signature reads the returns as they now are, and the cases
     // through the switches.
     jump_table::apply(&mut blocks, &tables);
+    jump_table::drop_data(&mut blocks, &tables, &landing_pads);
     // Without landing pads, code no path reaches is dead; so is a linkage
     // stub's code for binding its import on first use.
     if image.go

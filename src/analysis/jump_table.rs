@@ -176,6 +176,41 @@ pub fn apply(blocks: &mut [Block], recovered: &[Recovered]) {
     }
 }
 
+/// Removes table bytes decoded as instructions when no control-flow path
+/// reaches them. An unresolved jump may still enter them, so keeps them.
+pub(super) fn drop_data(
+    blocks: &mut Vec<Block>,
+    recovered: &[Recovered],
+    landing_pads: &[(u64, Vec<(u64, u64)>)],
+) {
+    if recovered.is_empty() {
+        return;
+    }
+    let mut seen = vec![false; blocks.len()];
+    let mut pending = vec![0];
+    while let Some(index) = pending.pop() {
+        if index >= blocks.len() || std::mem::replace(&mut seen[index], true) {
+            continue;
+        }
+        let edges = crate::ir::cfg::block_successors_with_exceptions(blocks, index, landing_pads);
+        if edges.unknown_normal || edges.unknown_exceptional {
+            return;
+        }
+        pending.extend(edges.normal);
+        pending.extend(edges.exceptional);
+    }
+    let mut index = 0;
+    blocks.retain(|block| {
+        let reached = seen[index];
+        index += 1;
+        reached
+            || !recovered.iter().any(|entry| {
+                let (start, size) = entry.table;
+                block.start >= start && block.start - start < size
+            })
+    });
+}
+
 /// A 64-bit register the block's statements leave holding `index`.
 fn holding(block: &Block, index: &Expr) -> Option<u16> {
     let mut environment = std::collections::HashMap::new();
@@ -724,5 +759,66 @@ fn unscale(expr: Expr) -> Expr {
             },
         },
         other => other,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn table_data_keeps_normal_exceptional_and_unknown_entries() {
+        let table = Recovered {
+            block_start: 0,
+            index: Expr::Const(0),
+            cases: vec![(0, 20)],
+            default: None,
+            table: (10, 4),
+        };
+        let ret = || Stmt::Ret {
+            value: Expr::Const(0),
+        };
+        let blocks = |entry| {
+            vec![
+                Block {
+                    start: 0,
+                    stmts: vec![entry],
+                },
+                Block {
+                    start: 10,
+                    stmts: vec![ret()],
+                },
+                Block {
+                    start: 20,
+                    stmts: vec![ret()],
+                },
+            ]
+        };
+        let mut dead = blocks(Stmt::Br { target: Some(20) });
+        drop_data(&mut dead, std::slice::from_ref(&table), &[]);
+        assert_eq!(
+            dead.iter().map(|block| block.start).collect::<Vec<_>>(),
+            [0, 20]
+        );
+        for entry in [
+            Stmt::Br { target: Some(10) },
+            Stmt::BrIndirect {
+                target: Expr::reg(0, 64),
+            },
+        ] {
+            let mut live = blocks(entry);
+            drop_data(&mut live, std::slice::from_ref(&table), &[]);
+            assert_eq!(live.len(), 3);
+        }
+        let mut exceptional = blocks(ret());
+        exceptional[0].stmts.insert(
+            0,
+            Stmt::Unsupported {
+                text: "unknown call".into(),
+                writes: Some(Vec::new()),
+            },
+        );
+        drop_data(&mut exceptional, &[table], &[(10, vec![(0, 1)])]);
+        assert_eq!(exceptional.len(), 3);
     }
 }

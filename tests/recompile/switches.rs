@@ -676,3 +676,34 @@ fn printed_switch_prefixes_preserve_bounds_width_and_store_order() {
     }
     check_candidates("switch-shared-prefixes", candidates, Mode::Memory, &[]);
 }
+
+#[test]
+fn printed_inline_jump_table_bytes_do_not_become_stack_operations() {
+    let scratch = scratch_dir("inline-jump-table");
+    let assembly = scratch.join("switch.s");
+    let object = scratch.join("switch.o");
+    std::fs::write(
+        &assembly,
+        ".text\n.globl inline_switch\n.type inline_switch,@function\ninline_switch:\ncmpq $1,%rdi\nja .Ldefault\nleaq .Ltable(%rip),%rdx\nmovslq (%rdx,%rdi,4),%rax\naddq %rdx,%rax\njmpq *%rax\n.Ldefault:\nmovl $44,%eax\nret\n.Ltable:\n.long .Lzero-.Ltable\n.long .Lone-.Ltable\n.fill 0x52-(.-.Ltable),1,0x90\n.Lzero:\nmovl $11,%eax\nret\n.Lone:\nmovl $22,%eax\nret\n.size inline_switch,.-inline_switch\n",
+    )
+    .unwrap();
+    let compiled = Command::new(compiler())
+        .args(["--target=x86_64-unknown-linux-gnu", "-c"])
+        .arg(&assembly)
+        .arg("-o")
+        .arg(&object)
+        .output()
+        .unwrap();
+    assert!(compiled.status.success(), "{compiled:?}");
+    let mut binary = Binary::open(&object).unwrap();
+    let address = binary.find("inline_switch").unwrap().addr;
+    let code = binary.decompile(address, None, None).unwrap();
+    assert!(!code.contains("unsupported"), "{code}");
+    assert!(!code.contains("velk_entry_stack_pointer"), "{code}");
+    syntax::run_printed(
+        &code,
+        "",
+        "if(inline_switch(0)!=11 || inline_switch(1)!=22 || inline_switch(2)!=44 || inline_switch(UINT64_MAX)!=44) return 1;",
+    );
+    std::fs::remove_dir_all(scratch).ok();
+}

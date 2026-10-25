@@ -212,17 +212,20 @@ pub(super) fn lift_packed(lifter: &mut Lifter, ins: &Instruction) -> Option<()> 
             };
             return write(lifter, (shuffle(control.0), shuffle(control.1)));
         }
-        Pinsrd => {
+        Pinsrb | Pinsrd => {
             let Some(slot) = destination else {
                 return None;
             };
             let Some(value) = operand(lifter, ins, 1) else {
                 return None;
             };
-            let lane = u64::from(ins.immediate8() & 3);
-            let slot = slot + (lane / 2) as u16;
-            let shift = (lane % 2) * 32;
-            let value = Expr::bin(BinOp::And, value, Expr::constant(0xffff_ffff));
+            let bits = if ins.mnemonic() == Pinsrb { 8 } else { 32 };
+            let per_half = 64 / bits;
+            let lane = u64::from(ins.immediate8()) & (128 / bits - 1);
+            let slot = slot + (lane / per_half) as u16;
+            let shift = (lane % per_half) * bits;
+            let mask = (1u64 << bits) - 1;
+            let value = Expr::bin(BinOp::And, value, Expr::constant(mask));
             lifter.assign(
                 slot,
                 64,
@@ -231,7 +234,7 @@ pub(super) fn lift_packed(lifter: &mut Lifter, ins: &Instruction) -> Option<()> 
                     Expr::bin(
                         BinOp::And,
                         Expr::reg(slot, 64),
-                        Expr::constant(!(0xffff_ffffu64 << shift)),
+                        Expr::constant(!(mask << shift)),
                     ),
                     Expr::bin(BinOp::Shl, value, Expr::constant(shift)),
                 ),

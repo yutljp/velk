@@ -10541,5 +10541,7 @@ fn printed_point_fields_match_original_machine_code() {
 
 #[path = "recompile/comparison_inputs.rs"]
 mod comparison_inputs;
+#[path = "recompile/vector_elements.rs"]
+mod vector_elements;
 #[path = "recompile/vector_extensions.rs"]
 mod vector_extensions;
