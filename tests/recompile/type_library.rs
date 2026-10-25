@@ -273,3 +273,122 @@ fn windows_pointer_arguments_preserve_bytes_after_a_string_terminator() {
         );
     }
 }
+
+#[test]
+fn windows_crt_calls_preserve_target_widths_and_arguments() {
+    let mut binary = Binary::open(&common::fixtures_dir().join("crt_windows.x86_64.exe")).unwrap();
+    for (function, declaration, support, assertions) in [
+        (
+            "crt_format",
+            "#include <stdarg.h>\nint test_printf(const char *, ...);",
+            "int test_printf(const char *format, ...) { va_list args; va_start(args, format); int value = va_arg(args, int); va_end(args); return format[0] == '%' && format[1] == 'd' ? value : 0; }",
+            "return crt_format(-19) != -19;",
+        ),
+        (
+            "crt_number",
+            "int32_t strtol(const char *, char **, int);",
+            "int32_t strtol(const char *text, char **end, int base) { return text && !end && base == 10 ? INT32_MIN : 0; }",
+            "return crt_number(\"x\", 0) != INT32_MIN;",
+        ),
+        (
+            "crt_wide",
+            "size_t wcslen(const unsigned short *);",
+            "size_t wcslen(const unsigned short *text) { return UINT64_C(0x100000000) + text[0]; }",
+            "unsigned short text[] = {37, 0}; return crt_wide(text) != UINT64_C(0x100000025);",
+        ),
+        (
+            "crt_time",
+            "long long _time64(long long *);",
+            "long long _time64(long long *out) { *out = -INT64_C(0x100000025); return *out; }",
+            "long long out = 0; return crt_time(&out) != -INT64_C(0x100000025) || out != -INT64_C(0x100000025);",
+        ),
+        (
+            "crt_math",
+            "double sin(double);",
+            "double sin(double value) { return value * 0.5; }",
+            "return crt_math(3.5) != 1.75;",
+        ),
+        (
+            "crt_secure",
+            "int strcpy_s(char *, unsigned long long, const char *);",
+            "int strcpy_s(char *out, unsigned long long size, const char *text) { *out = *text; return size == UINT64_C(0x100000025) ? -19 : 0; }",
+            "char out = 0; return crt_secure(&out, UINT64_C(0x100000025), \"x\") != -19 || out != 'x';",
+        ),
+        (
+            "crt_wide_secure",
+            "int wcscpy_s(unsigned short *, unsigned long long, const unsigned short *);",
+            "int wcscpy_s(unsigned short *out, unsigned long long size, const unsigned short *text) { *out = *text; return size == UINT64_C(0x100000025) ? -19 : 0; }",
+            "unsigned short out = 0, text[] = {0x8123, 0}; return crt_wide_secure(&out, UINT64_C(0x100000025), text) != -19 || out != 0x8123;",
+        ),
+        (
+            "crt_io",
+            "int _close(int);",
+            "int _close(int fd) { return fd == -7 ? -19 : 0; }",
+            "return crt_io(-7) != -19;",
+        ),
+        (
+            "crt_process",
+            "int _getpid(void);",
+            "int _getpid(void) { return -19; }",
+            "return crt_process() != -19;",
+        ),
+        (
+            "crt_errno",
+            "int *_errno(void);",
+            "static int error_value = -19; int *_errno(void) { return &error_value; }",
+            "return *crt_errno() != -19;",
+        ),
+    ] {
+        let address = binary.find(function).unwrap().addr;
+        let code = binary.decompile(address, None, None).unwrap();
+        let code = code
+            .replace("sin(", "test_sin(")
+            .replace("printf(", "test_printf(");
+        let code = if function == "crt_format" {
+            format!(
+                "static const char format_text[] = \"%d\\n\";\n{}",
+                code.replace("0x140002000", "(uintptr_t)format_text")
+            )
+        } else {
+            code
+        };
+        let declaration = declaration.replace("sin(", "test_sin(");
+        let support = support.replace("sin(", "test_sin(");
+        syntax::run_printed(&format!("{declaration}\n{code}"), &support, assertions);
+    }
+}
+
+#[test]
+fn every_windows_header_and_crt_fixture_function_compiles() {
+    let scratch = scratch_dir("windows-type-library-syntax");
+    let source = scratch.join("check.c");
+    for fixture in ["crt_windows.x86_64.exe", "type_library_windows.win64.exe"] {
+        let mut binary = Binary::open(&common::fixtures_dir().join(fixture)).unwrap();
+        let addresses: Vec<_> = binary
+            .image()
+            .functions
+            .values()
+            .filter(|function| !function.sources.contains(&velk::loader::NameSource::Plt))
+            .map(|function| function.addr)
+            .collect();
+        for address in &addresses {
+            let code = binary.decompile(*address, None, None).unwrap();
+            // The host's strtol returns an LP64 long; the target returns an LLP64 long.
+            let code = code.replace("strtol(", "target_strtol(");
+            std::fs::write(&source, format!("#include <stdint.h>\n#include <stdbool.h>\n#include <stddef.h>\n#include <stdio.h>\n#include <stdlib.h>\n#include <string.h>\n#include <math.h>\n#include <locale.h>\n#include <ctype.h>\n{code}")).unwrap();
+            let output = Command::new(compiler())
+                .args(FLAGS)
+                .arg("-fsyntax-only")
+                .arg(&source)
+                .output()
+                .unwrap();
+            assert!(
+                output.status.success(),
+                "{fixture} {address:#x}:\n{code}\n{}",
+                String::from_utf8_lossy(&output.stderr)
+            );
+        }
+        eprintln!("{fixture}: {0}/{0} compile", addresses.len());
+    }
+    std::fs::remove_dir_all(scratch).unwrap();
+}

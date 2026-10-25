@@ -122,23 +122,26 @@ pub fn return_bits(ret: &CType) -> Option<u32> {
     match ret {
         CType::Void => None,
         CType::Int { bytes, .. } => Some(u32::from(*bytes) * 8),
-        CType::Named(name) => Some(named_bits(name)),
+        CType::Named(_) => Some(ret.integer().map_or(64, |(bits, _)| bits)),
         CType::Pointer(_) | CType::Array(_) => Some(64),
     }
 }
 
-/// The width of a C type the debug info names, as on LP64 targets.
-fn named_bits(name: &str) -> u32 {
-    let words: Vec<&str> = name.split_whitespace().collect();
-    if words.contains(&"char") || words.contains(&"_Bool") || words.contains(&"bool") {
-        8
-    } else if words.contains(&"short") {
-        16
-    } else if words.contains(&"long") {
-        64
-    } else if words.contains(&"int") || words.contains(&"unsigned") || words.contains(&"signed") {
-        32
-    } else {
-        64
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn named_return_widths_include_fixed_width_integer_types() {
+        for (name, bits) in [
+            ("int32_t", 32),
+            ("uint32_t", 32),
+            ("int16_t", 16),
+            ("int64_t", 64),
+            ("long", 64),
+            ("unsigned short", 16),
+        ] {
+            assert_eq!(return_bits(&CType::Named(name.into())), Some(bits));
+        }
     }
 }

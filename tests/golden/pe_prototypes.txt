@@ -1,0 +1,443 @@
+codeview/l4_memory.O0.dll: imports 0/0
+  calls 0/0, lift failures 0
+codeview/l4_memory.O0.stripped.dll: imports 0/0
+  calls 0/0, lift failures 0
+codeview/l4_memory.O2.dll: imports 0/0
+  calls 0/0, lift failures 0
+codeview/l4_memory.O2.stripped.dll: imports 0/0
+  calls 0/0, lift failures 0
+codeview/loops.O0.dll: imports 0/0
+  calls 0/0, lift failures 0
+codeview/loops.O0.stripped.dll: imports 0/0
+  calls 0/0, lift failures 0
+codeview/loops.O2.dll: imports 0/0
+  calls 0/0, lift failures 0
+codeview/loops.O2.stripped.dll: imports 0/0
+  calls 0/0, lift failures 0
+codeview/structs.O0.dll: imports 0/0
+  calls 0/0, lift failures 0
+codeview/structs.O0.stripped.dll: imports 0/0
+  calls 0/0, lift failures 0
+codeview/structs.O2.dll: imports 0/0
+  calls 0/0, lift failures 0
+codeview/structs.O2.stripped.dll: imports 0/0
+  calls 0/0, lift failures 0
+crt_windows.i686.exe: imports 9/15
+  msvcrt.dll!_close: unknown
+  msvcrt.dll!_errno: unknown
+  msvcrt.dll!_getpid: unknown
+  msvcrt.dll!calloc: known
+  msvcrt.dll!fputs: known
+  msvcrt.dll!isalpha: known
+  msvcrt.dll!printf: known
+  msvcrt.dll!setlocale: known
+  msvcrt.dll!sin: known
+  msvcrt.dll!strchr: known
+  msvcrt.dll!strcpy_s: unknown
+  msvcrt.dll!strtol: known
+  msvcrt.dll!time: known
+  msvcrt.dll!wcscpy_s: unknown
+  msvcrt.dll!wcslen: unknown
+  calls 0/0, lift failures 16
+crt_windows.x86_64.exe: imports 15/15
+  msvcrt.dll!_close: known
+  msvcrt.dll!_errno: known
+  msvcrt.dll!_getpid: known
+  msvcrt.dll!_time64: known
+  msvcrt.dll!calloc: known
+  msvcrt.dll!fputs: known
+  msvcrt.dll!isalpha: known
+  msvcrt.dll!printf: known
+  msvcrt.dll!setlocale: known
+  msvcrt.dll!sin: known
+  msvcrt.dll!strchr: known
+  msvcrt.dll!strcpy_s: known
+  msvcrt.dll!strtol: known
+  msvcrt.dll!wcscpy_s: known
+  msvcrt.dll!wcslen: known
+  calls 15/15, lift failures 0
+  0x140001000:0: known
+  0x14000100e:0: known
+  0x14000101c:0: known
+  0x140001030:0: known
+  0x14000103e:0: known
+  0x14000104c:0: known
+  0x14000105b:0: known
+  0x14000106a:0: known
+  0x140001079:0: known
+  0x140001088:0: known
+  0x140001097:0: known
+  0x1400010a6:0: known
+  0x1400010b5:0: known
+  0x1400010c3:0: known
+  0x1400010d2:0: known
+metrics/aggregate_abi.win64.O0.debug.dll: imports 0/0
+  calls 0/0, lift failures 0
+metrics/aggregate_abi.win64.O0.stripped.dll: imports 0/0
+  calls 0/0, lift failures 0
+metrics/aggregate_abi.win64.O2.debug.dll: imports 0/0
+  calls 0/0, lift failures 0
+metrics/aggregate_abi.win64.O2.stripped.dll: imports 0/0
+  calls 0/0, lift failures 0
+metrics/alt_names.win64.O0.debug.dll: imports 0/0
+  calls 0/0, lift failures 0
+metrics/alt_names.win64.O0.stripped.dll: imports 0/0
+  calls 0/0, lift failures 0
+metrics/alt_names.win64.O2.debug.dll: imports 0/0
+  calls 0/0, lift failures 0
+metrics/alt_names.win64.O2.stripped.dll: imports 0/0
+  calls 0/0, lift failures 0
+metrics/arith_mixed.win64.O0.debug.dll: imports 0/0
+  calls 0/0, lift failures 0
+metrics/arith_mixed.win64.O0.stripped.dll: imports 0/0
+  calls 0/0, lift failures 0
+metrics/arith_mixed.win64.O2.debug.dll: imports 0/0
+  calls 0/0, lift failures 0
+metrics/arith_mixed.win64.O2.stripped.dll: imports 0/0
+  calls 0/0, lift failures 0
+metrics/calls.win64.O0.debug.dll: imports 0/0
+  calls 0/6, lift failures 0
+  0x180001040:2: unknown
+  0x180001080:0: unknown
+  0x1800010a0:4: unknown
+  0x1800010f0:3: unknown
+  0x180001120:3: unknown
+  0x1800011c0:5: unknown
+metrics/calls.win64.O0.stripped.dll: imports 0/0
+  calls 0/6, lift failures 0
+  0x180001040:2: unknown
+  0x180001080:0: unknown
+  0x1800010a0:4: unknown
+  0x1800010f0:3: unknown
+  0x180001120:3: unknown
+  0x1800011c0:5: unknown
+metrics/calls.win64.O2.debug.dll: imports 0/0
+  calls 0/6, lift failures 0
+  0x180001040:4: unknown
+  0x180001040:6: unknown
+  0x180001070:0: unknown
+  0x1800011c0:1: unknown
+  0x1800011d0:1: unknown
+  0x180001210:5: unknown
+metrics/calls.win64.O2.stripped.dll: imports 0/0
+  calls 0/4, lift failures 0
+  0x180001040:4: unknown
+  0x180001040:6: unknown
+  0x180001070:0: unknown
+  0x180001210:5: unknown
+metrics/control.win64.O0.debug.dll: imports 0/0
+  calls 0/0, lift failures 0
+metrics/control.win64.O0.stripped.dll: imports 0/0
+  calls 0/0, lift failures 0
+metrics/control.win64.O2.debug.dll: imports 0/0
+  calls 0/0, lift failures 0
+metrics/control.win64.O2.stripped.dll: imports 0/0
+  calls 0/0, lift failures 0
+metrics/divmod_a64.win64.O0.debug.dll: imports 0/0
+  calls 0/0, lift failures 0
+metrics/divmod_a64.win64.O0.stripped.dll: imports 0/0
+  calls 0/0, lift failures 0
+metrics/divmod_a64.win64.O2.debug.dll: imports 0/0
+  calls 0/0, lift failures 0
+metrics/divmod_a64.win64.O2.stripped.dll: imports 0/0
+  calls 0/0, lift failures 0
+metrics/divmod_x64.win64.O0.debug.dll: imports 0/0
+  calls 0/0, lift failures 0
+metrics/divmod_x64.win64.O0.stripped.dll: imports 0/0
+  calls 0/0, lift failures 0
+metrics/divmod_x64.win64.O2.debug.dll: imports 0/0
+  calls 0/0, lift failures 0
+metrics/divmod_x64.win64.O2.stripped.dll: imports 0/0
+  calls 0/0, lift failures 0
+metrics/float.win64.O0.debug.dll: imports 0/0
+  calls 0/0, lift failures 0
+metrics/float.win64.O0.stripped.dll: imports 0/0
+  calls 0/0, lift failures 0
+metrics/float.win64.O2.debug.dll: imports 0/0
+  calls 0/0, lift failures 0
+metrics/float.win64.O2.stripped.dll: imports 0/0
+  calls 0/0, lift failures 0
+metrics/integers.win64.O0.debug.dll: imports 0/0
+  calls 0/0, lift failures 0
+metrics/integers.win64.O0.stripped.dll: imports 0/0
+  calls 0/0, lift failures 0
+metrics/integers.win64.O2.debug.dll: imports 0/0
+  calls 0/0, lift failures 0
+metrics/integers.win64.O2.stripped.dll: imports 0/0
+  calls 0/0, lift failures 0
+metrics/l0_arith.win64.O0.debug.dll: imports 0/0
+  calls 0/0, lift failures 0
+metrics/l0_arith.win64.O0.stripped.dll: imports 0/0
+  calls 0/0, lift failures 0
+metrics/l0_arith.win64.O2.debug.dll: imports 0/0
+  calls 0/0, lift failures 0
+metrics/l0_arith.win64.O2.stripped.dll: imports 0/0
+  calls 0/0, lift failures 0
+metrics/l1_branch.win64.O0.debug.dll: imports 0/0
+  calls 0/0, lift failures 0
+metrics/l1_branch.win64.O0.stripped.dll: imports 0/0
+  calls 0/0, lift failures 0
+metrics/l1_branch.win64.O2.debug.dll: imports 0/0
+  calls 0/0, lift failures 0
+metrics/l1_branch.win64.O2.stripped.dll: imports 0/0
+  calls 0/0, lift failures 0
+metrics/l2_loop.win64.O0.debug.dll: imports 0/0
+  calls 0/0, lift failures 0
+metrics/l2_loop.win64.O0.stripped.dll: imports 0/0
+  calls 0/0, lift failures 0
+metrics/l2_loop.win64.O2.debug.dll: imports 0/0
+  calls 0/0, lift failures 0
+metrics/l2_loop.win64.O2.stripped.dll: imports 0/0
+  calls 0/0, lift failures 0
+metrics/l4_memory.win64.O0.debug.dll: imports 0/0
+  calls 0/0, lift failures 0
+metrics/l4_memory.win64.O0.stripped.dll: imports 0/0
+  calls 0/0, lift failures 0
+metrics/l4_memory.win64.O2.debug.dll: imports 0/0
+  calls 0/0, lift failures 0
+metrics/l4_memory.win64.O2.stripped.dll: imports 0/0
+  calls 0/0, lift failures 0
+metrics/l5_switch.win64.O0.debug.dll: imports 0/0
+  calls 0/16, lift failures 0
+  0x180001000:5: unknown
+  0x180001000:7: unknown
+  0x180001000:9: unknown
+  0x180001000:11: unknown
+  0x180001000:13: unknown
+  0x180001000:15: unknown
+  0x180001000:17: unknown
+  0x180001000:19: unknown
+  0x180001000:21: unknown
+  0x180001000:23: unknown
+  0x180001000:25: unknown
+  0x180001000:27: unknown
+  0x180001000:29: unknown
+  0x180001000:31: unknown
+  0x180001000:33: unknown
+  0x180001000:35: unknown
+metrics/l5_switch.win64.O0.stripped.dll: imports 0/0
+  calls 0/16, lift failures 0
+  0x180001000:5: unknown
+  0x180001000:7: unknown
+  0x180001000:9: unknown
+  0x180001000:11: unknown
+  0x180001000:13: unknown
+  0x180001000:15: unknown
+  0x180001000:17: unknown
+  0x180001000:19: unknown
+  0x180001000:21: unknown
+  0x180001000:23: unknown
+  0x180001000:25: unknown
+  0x180001000:27: unknown
+  0x180001000:29: unknown
+  0x180001000:31: unknown
+  0x180001000:33: unknown
+  0x180001000:35: unknown
+metrics/l5_switch.win64.O2.debug.dll: imports 0/0
+  calls 0/16, lift failures 0
+  0x180001000:3: unknown
+  0x180001000:5: unknown
+  0x180001000:7: unknown
+  0x180001000:9: unknown
+  0x180001000:11: unknown
+  0x180001000:13: unknown
+  0x180001000:15: unknown
+  0x180001000:17: unknown
+  0x180001000:19: unknown
+  0x180001000:21: unknown
+  0x180001000:23: unknown
+  0x180001000:25: unknown
+  0x180001000:27: unknown
+  0x180001000:29: unknown
+  0x180001000:31: unknown
+  0x180001000:33: unknown
+metrics/l5_switch.win64.O2.stripped.dll: imports 0/0
+  calls 0/16, lift failures 0
+  0x180001000:3: unknown
+  0x180001000:5: unknown
+  0x180001000:7: unknown
+  0x180001000:9: unknown
+  0x180001000:11: unknown
+  0x180001000:13: unknown
+  0x180001000:15: unknown
+  0x180001000:17: unknown
+  0x180001000:19: unknown
+  0x180001000:21: unknown
+  0x180001000:23: unknown
+  0x180001000:25: unknown
+  0x180001000:27: unknown
+  0x180001000:29: unknown
+  0x180001000:31: unknown
+  0x180001000:33: unknown
+metrics/l6_abi.win64.O0.debug.dll: imports 0/0
+  calls 0/2, lift failures 0
+  0x180001020:0: unknown
+  0x180001040:0: unknown
+metrics/l6_abi.win64.O0.stripped.dll: imports 0/0
+  calls 0/2, lift failures 0
+  0x180001020:0: unknown
+  0x180001040:0: unknown
+metrics/l6_abi.win64.O2.debug.dll: imports 0/0
+  calls 0/2, lift failures 0
+  0x180001010:0: unknown
+  0x180001020:0: unknown
+metrics/l6_abi.win64.O2.stripped.dll: imports 0/0
+  calls 0/1, lift failures 0
+  0x180001010:0: unknown
+metrics/loops.win64.O0.debug.dll: imports 0/0
+  calls 0/0, lift failures 0
+metrics/loops.win64.O0.stripped.dll: imports 0/0
+  calls 0/0, lift failures 0
+metrics/loops.win64.O2.debug.dll: imports 0/0
+  calls 0/0, lift failures 0
+metrics/loops.win64.O2.stripped.dll: imports 0/0
+  calls 0/0, lift failures 0
+metrics/memory.win64.O0.debug.dll: imports 0/0
+  calls 0/0, lift failures 0
+metrics/memory.win64.O0.stripped.dll: imports 0/0
+  calls 0/0, lift failures 0
+metrics/memory.win64.O2.debug.dll: imports 0/0
+  calls 0/0, lift failures 0
+metrics/memory.win64.O2.stripped.dll: imports 0/0
+  calls 0/0, lift failures 0
+metrics/strings.win64.O0.debug.dll: imports 0/0
+  calls 0/0, lift failures 0
+metrics/strings.win64.O0.stripped.dll: imports 0/0
+  calls 0/0, lift failures 0
+metrics/strings.win64.O2.debug.dll: imports 0/0
+  calls 0/0, lift failures 0
+metrics/strings.win64.O2.stripped.dll: imports 0/0
+  calls 0/0, lift failures 0
+metrics/struct_arrays.win64.O0.debug.dll: imports 0/0
+  calls 0/0, lift failures 0
+metrics/struct_arrays.win64.O0.stripped.dll: imports 0/0
+  calls 0/0, lift failures 0
+metrics/struct_arrays.win64.O2.debug.dll: imports 0/0
+  calls 0/0, lift failures 0
+metrics/struct_arrays.win64.O2.stripped.dll: imports 0/0
+  calls 0/0, lift failures 0
+metrics/structs.win64.O0.debug.dll: imports 0/0
+  calls 0/0, lift failures 0
+metrics/structs.win64.O0.stripped.dll: imports 0/0
+  calls 0/0, lift failures 0
+metrics/structs.win64.O2.debug.dll: imports 0/0
+  calls 0/0, lift failures 0
+metrics/structs.win64.O2.stripped.dll: imports 0/0
+  calls 0/0, lift failures 0
+metrics/switch_jumptable.win64.O0.debug.dll: imports 0/0
+  calls 0/0, lift failures 0
+metrics/switch_jumptable.win64.O0.stripped.dll: imports 0/0
+  calls 0/0, lift failures 0
+metrics/switch_jumptable.win64.O2.debug.dll: imports 0/0
+  calls 0/0, lift failures 0
+metrics/switch_jumptable.win64.O2.stripped.dll: imports 0/0
+  calls 0/0, lift failures 0
+metrics/switch_value_table.win64.O0.debug.dll: imports 0/0
+  calls 0/0, lift failures 0
+metrics/switch_value_table.win64.O0.stripped.dll: imports 0/0
+  calls 0/0, lift failures 0
+metrics/switch_value_table.win64.O2.debug.dll: imports 0/0
+  calls 0/0, lift failures 0
+metrics/switch_value_table.win64.O2.stripped.dll: imports 0/0
+  calls 0/0, lift failures 0
+metrics/tail_calls.win64.O0.debug.dll: imports 0/0
+  calls 0/1, lift failures 0
+  0x180001020:0: unknown
+metrics/tail_calls.win64.O0.stripped.dll: imports 0/0
+  calls 0/1, lift failures 0
+  0x180001020:0: unknown
+metrics/tail_calls.win64.O2.debug.dll: imports 0/0
+  calls 0/1, lift failures 0
+  0x180001010:0: unknown
+metrics/tail_calls.win64.O2.stripped.dll: imports 0/0
+  calls 0/1, lift failures 0
+  0x180001010:0: unknown
+metrics/tail_indirect.win64.O0.debug.dll: imports 0/0
+  calls 0/1, lift failures 0
+  0x180001000:0: unknown
+metrics/tail_indirect.win64.O0.stripped.dll: imports 0/0
+  calls 0/1, lift failures 0
+  0x180001000:0: unknown
+metrics/tail_indirect.win64.O2.debug.dll: imports 0/0
+  calls 0/1, lift failures 0
+  0x180001000:0: unknown
+metrics/tail_indirect.win64.O2.stripped.dll: imports 0/0
+  calls 0/1, lift failures 0
+  0x180001000:0: unknown
+metrics/windows.win64.O0.debug.dll: imports 0/2
+  pe_helpers.dll!__chkstk: unknown
+  pe_helpers.dll!imported_value: unknown
+  calls 0/2, lift failures 0
+  0x180001000:0: unknown
+  0x180001070:1: unknown
+metrics/windows.win64.O0.stripped.dll: imports 0/2
+  pe_helpers.dll!__chkstk: unknown
+  pe_helpers.dll!imported_value: unknown
+  calls 0/2, lift failures 0
+  0x180001000:0: unknown
+  0x180001070:1: unknown
+metrics/windows.win64.O2.debug.dll: imports 0/2
+  pe_helpers.dll!__chkstk: unknown
+  pe_helpers.dll!imported_value: unknown
+  calls 0/2, lift failures 0
+  0x180001000:0: unknown
+  0x180001050:1: unknown
+metrics/windows.win64.O2.stripped.dll: imports 0/2
+  pe_helpers.dll!__chkstk: unknown
+  pe_helpers.dll!imported_value: unknown
+  calls 0/2, lift failures 0
+  0x180001000:0: unknown
+  0x180001050:1: unknown
+pe64.exe: imports 0/0
+  calls 0/0, lift failures 0
+seh.O0.dll: imports 0/2
+  pe_helpers.dll!__C_specific_handler: unknown
+  pe_helpers.dll!imported_value: unknown
+  calls 0/9, lift failures 0
+  0x180001010:0: unknown
+  0x180001060:1: unknown
+  0x1800010a0:2: unknown
+  0x1800010a0:6: unknown
+  0x1800010e0:0: unknown
+  0x180001130:1: unknown
+  0x180001130:6: unknown
+  0x180001190:0: unknown
+  0x1800011c0:0: unknown
+seh.O2.dll: imports 0/2
+  pe_helpers.dll!__C_specific_handler: unknown
+  pe_helpers.dll!imported_value: unknown
+  calls 0/8, lift failures 0
+  0x180001010:1: unknown
+  0x180001040:0: unknown
+  0x180001060:1: unknown
+  0x180001060:3: unknown
+  0x180001090:0: unknown
+  0x1800010c0:0: unknown
+  0x1800010c0:2: unknown
+  0x1800010f0:0: unknown
+seh_cpp.O0.dll: imports 0/2
+  pe_helpers.dll!?imported_value@@YAHH@Z: unknown
+  pe_helpers.dll!__CxxFrameHandler3: unknown
+  calls 0/1, lift failures 0
+  0x180001000:0: unknown
+seh_cpp.O2.dll: imports 0/2
+  pe_helpers.dll!?imported_value@@YAHH@Z: unknown
+  pe_helpers.dll!__CxxFrameHandler3: unknown
+  calls 0/1, lift failures 0
+  0x180001000:1: unknown
+type_library_windows.win64.exe: imports 7/7
+  ADVAPI32.dll!RegCloseKey: known
+  KERNEL32.dll!GetCurrentThreadId: known
+  KERNEL32.dll!GetFileType: known
+  KERNEL32.dll!GetSystemTimeAsFileTime: known
+  KERNEL32.dll!OpenProcess: known
+  KERNEL32.dll!VirtualAlloc: known
+  WS2_32.dll!socket: known
+  calls 7/7, lift failures 0
+  0x140001000:0: known
+  0x14000100f:0: known
+  0x14000102b:0: known
+  0x14000104e:0: known
+  0x14000105d:0: known
+  0x14000107c:0: known
+  0x14000108b:1: known

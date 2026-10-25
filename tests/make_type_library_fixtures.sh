@@ -8,6 +8,7 @@ if [ "${1:-macos}" = linux ]; then
     x86_64-w64-mingw32-gcc -O1 -nostdlib -Wl,--no-insert-timestamp -Wl,-e,fixture_entry \
         tests/cases/c/type_library_windows.c -lkernel32 -ladvapi32 -lws2_32 \
         -o tests/fixtures/type_library_windows.win64.exe
+    sh tests/make_crt_fixtures.sh
     exit
 fi
 sdk=$(xcrun --sdk macosx --show-sdk-path)

@@ -137,6 +137,8 @@ cpp_virtual_a64.elf: 115 lines, 0 prelude lines, 10 variables, 6 casts, 0 regist
 cpp_virtual_a64_stripped.elf: 112 lines, 0 prelude lines, 13 variables, 6 casts, 0 registers, 0 unsigned, 2 traps, 0 gotos, 3 indirect calls
 cpp_virtual_x64.elf: 115 lines, 0 prelude lines, 13 variables, 10 casts, 0 registers, 0 unsigned, 2 traps, 0 gotos, 0 indirect calls
 cpp_virtual_x64_stripped.elf: 112 lines, 0 prelude lines, 14 variables, 8 casts, 0 registers, 0 unsigned, 2 traps, 0 gotos, 3 indirect calls
+crt_windows.i686.exe: 16 lines, 0 prelude lines, 0 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+crt_windows.x86_64.exe: 143 lines, 17 prelude lines, 1 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
 go_probe: 71656 lines, 530 prelude lines, 12896 variables, 12562 casts, 121 registers, 0 unsigned, 18 traps, 73 gotos, 121 indirect calls
 go_probe_arm64: 85588 lines, 649 prelude lines, 16134 variables, 19653 casts, 687 registers, 0 unsigned, 16 traps, 91 gotos, 124 indirect calls
 go_stripped: 71581 lines, 530 prelude lines, 12885 variables, 12560 casts, 121 registers, 0 unsigned, 18 traps, 73 gotos, 121 indirect calls

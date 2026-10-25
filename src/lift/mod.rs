@@ -763,17 +763,11 @@ pub(crate) fn call(
             }
         }
     }
-    // The floating-point arguments follow the integer ones.
-    let floats = summary
-        .and_then(|summary| summary.floats)
-        .filter(|_| args.is_some());
-    if let (Some(args), Some(floats)) = (&mut args, floats) {
-        args.extend(
-            convention.float_arguments()[..floats.min(convention.float_arguments().len())]
-                .iter()
-                .map(|register| Expr::reg(*register, 64)),
-        );
-    }
+    let floats_named = append_float_arguments(
+        &mut args,
+        convention,
+        summary.and_then(|summary| summary.floats),
+    );
     if let (Some(args), Some(inputs)) = (&mut args, summary.and_then(|summary| summary.inputs)) {
         for arg in args {
             if let Expr::Reg { index, .. } = arg
@@ -791,7 +785,7 @@ pub(crate) fn call(
         through: None,
         convention,
         args,
-        floats_named: floats.is_some(),
+        floats_named,
         abi: None,
         outputs: crate::ir::fallback_call_outputs(convention, clobbers),
         clobbers,
@@ -1132,6 +1126,23 @@ pub(crate) fn import_called(image: &Image, through: &Expr) -> Option<crate::load
     import_name(image, through).map(|name| crate::analysis::summary::import(image, name))
 }
 
+fn append_float_arguments(
+    args: &mut Option<Vec<Expr>>,
+    convention: Convention,
+    floats: Option<usize>,
+) -> bool {
+    let (Some(args), Some(floats)) = (args, floats) else {
+        return false;
+    };
+    let registers = convention.float_arguments();
+    args.extend(
+        registers[..floats.min(registers.len())]
+            .iter()
+            .map(|register| Expr::reg(*register, 64)),
+    );
+    true
+}
+
 /// A call to the address `through` computes. One through an import's slot
 /// passes the arguments its prototype takes.
 pub(crate) fn call_through(kind: CallKind, image: &Image, through: Expr) -> Stmt {
@@ -1139,16 +1150,24 @@ pub(crate) fn call_through(kind: CallKind, image: &Image, through: Expr) -> Stmt
     let variadic = crate::lift::import_name(image, &through)
         .and_then(|name| crate::analysis::prototypes::for_image(name, image))
         .is_some_and(|prototype| prototype.format.is_some());
-    let arity = import_called(image, &through)
-        .filter(|_| !variadic)
-        .and_then(|summary| summary.arity);
+    let summary = import_called(image, &through).filter(|_| !variadic);
+    let arity = summary.as_ref().and_then(|summary| summary.arity);
+    let mut args = arguments(kind, convention, image.isa, arity, 0);
+    let floats_named = append_float_arguments(
+        &mut args,
+        convention,
+        summary
+            .as_ref()
+            .and_then(|summary| summary.floats)
+            .filter(|count| *count != 0),
+    );
     Stmt::Call {
         kind,
         target: None,
         through: Some(through),
         convention,
-        args: arguments(kind, convention, image.isa, arity, 0),
-        floats_named: false,
+        args,
+        floats_named,
         abi: None,
         clobbers: None,
         outputs: crate::ir::fallback_call_outputs(convention, None),

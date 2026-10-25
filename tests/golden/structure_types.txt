@@ -137,6 +137,8 @@ cpp_virtual_a64.elf: 7
 cpp_virtual_a64_stripped.elf: 3
 cpp_virtual_x64.elf: 6
 cpp_virtual_x64_stripped.elf: 3
+crt_windows.i686.exe: 0
+crt_windows.x86_64.exe: 0
 go_probe: 844
 go_probe_arm64: 797
 go_stripped: 844

@@ -133,12 +133,8 @@ pub(super) fn for_image(name: &str, image: &Image) -> Option<&'static Prototype>
             .functions
             .get(super::undecorated(name, false));
     }
-    if let Some((dll, function)) = name.split_once('!') {
-        let qualified = format!("{}!{function}", dll.to_ascii_lowercase());
-        return target
-            .imports
-            .get(qualified.as_str())
-            .and_then(|name| target.library.functions.get(name));
+    if name.contains('!') {
+        return windows_import(target, name);
     }
     // A name alone cannot establish which DLL exports a Windows declaration.
     let mut qualified = None;
@@ -157,6 +153,31 @@ pub(super) fn for_image(name: &str, image: &Image) -> Option<&'static Prototype>
     let Some(qualified) = qualified else {
         return None;
     };
+    windows_import(target, qualified)
+}
+
+fn windows_import<'a>(target: &'a TargetLibrary, name: &str) -> Option<&'a Prototype> {
+    let Some((dll, function)) = name.split_once('!') else {
+        return None;
+    };
+    if function.starts_with('#') {
+        return None;
+    }
+    let dll = dll.to_ascii_lowercase();
+    let qualified = format!("{dll}!{function}");
+    if let Some(name) = target.imports.get(qualified.as_str()) {
+        return target.library.functions.get(name);
+    }
+    let host = if dll.starts_with("api-ms-win-crt-") && dll.ends_with("-l1-1-0.dll") {
+        "ucrtbase.dll"
+    } else if dll.starts_with("api-ms-win-core-") && dll.ends_with(".dll") {
+        "kernel32.dll"
+    } else if dll.starts_with("api-ms-win-security-") && dll.ends_with(".dll") {
+        "advapi32.dll"
+    } else {
+        dll.as_str()
+    };
+    let qualified = format!("{host}!{function}");
     target
         .imports
         .get(qualified.as_str())
@@ -370,6 +391,43 @@ mod tests {
         );
         image.isa = Isa::Unsupported;
         assert!(for_image("umask", &image).is_none());
+    }
+
+    #[test]
+    fn windows_crt_dll_names_and_forwarders_preserve_signatures() {
+        let mut image = Image::from_code(Isa::X86_64, 0x1000, Vec::new());
+        image.format = Format::Pe;
+        for dll in [
+            "MSVCRT.DLL",
+            "UCRTBASE.DLL",
+            "API-MS-WIN-CRT-STRING-L1-1-0.DLL",
+        ] {
+            let prototype = for_image(&format!("{dll}!wcscpy_s"), &image).unwrap();
+            assert_eq!(prototype.fixed(), 3);
+            assert_eq!(prototype.params[1].integer(), Some((64, false)));
+            assert_eq!(
+                prototype.params[0],
+                CType::pointer_to(CType::Named("unsigned short".into()))
+            );
+            assert!(for_image(&format!("{dll}!#42"), &image).is_none());
+        }
+        assert!(for_image("other.dll!wcscpy_s", &image).is_none());
+        assert!(for_image("msvcrt.dll!WCSCPY_S", &image).is_none());
+        let number = for_image("msvcrt.dll!strtol", &image).unwrap();
+        assert_eq!(number.ret.integer(), Some((32, true)));
+        assert!(for_image("api-ms-win-core-file-l1-1-0.dll!GetFileType", &image).is_some());
+        assert!(for_image("api-ms-win-security-base-l1-1-0.dll!RegCloseKey", &image).is_some());
+        image.imports.insert(0x2000, "wcscpy_s".into());
+        image
+            .qualified_imports
+            .insert(0x2000, "MsVcRt.DlL!wcscpy_s".into());
+        assert_eq!(for_image("wcscpy_s", &image).unwrap().fixed(), 3);
+        assert!(for_image("msvcrt.dll!printf", &image).is_none());
+        assert!(super::super::for_image("printf", &image).unwrap().variadic);
+        let windows = WINDOWS.get().unwrap();
+        let x86 = &windows["i686-w64-mingw32"];
+        let copy = windows_import(x86, "msvcrt.dll!wcscpy_s").unwrap();
+        assert_eq!(copy.params[1].integer(), Some((32, false)));
     }
 
     #[test]

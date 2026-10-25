@@ -1,0 +1,610 @@
+# crt_windows.x86_64.exe: pe x86_64 0x1400010e9, 30 functions, 0 lift failures, 0 unsupported, 0 gotos
+0x140001000 14 crt_stdio dynamic,unwind
+0x14000100e 14 crt_alloc dynamic,unwind
+0x14000101c 20 crt_number dynamic,unwind
+0x140001030 14 crt_string dynamic,unwind
+0x14000103e 14 crt_wide dynamic,unwind
+0x14000104c 15 crt_time dynamic,unwind
+0x14000105b 15 crt_math dynamic,unwind
+0x14000106a 15 crt_secure dynamic,unwind
+0x140001079 15 crt_wide_secure dynamic,unwind
+0x140001088 15 crt_process dynamic,unwind
+0x140001097 15 crt_io dynamic,unwind
+0x1400010a6 15 crt_errno dynamic,unwind
+0x1400010b5 14 crt_locale dynamic,unwind
+0x1400010c3 15 crt_ctype dynamic,unwind
+0x1400010d2 23 crt_format dynamic,unwind
+0x1400010e9 1 - entry,unwind
+0x1400010f0 8 _close plt
+0x1400010f8 8 _errno plt
+0x140001100 8 _getpid plt
+0x140001108 8 _time64 plt
+0x140001110 8 calloc plt
+0x140001118 8 fputs plt
+0x140001120 8 isalpha plt
+0x140001128 8 printf plt
+0x140001130 8 setlocale plt
+0x140001138 8 strchr plt
+0x140001140 8 strcpy_s plt
+0x140001148 8 strtol plt
+0x140001150 8 wcscpy_s plt
+0x140001158 8 wcslen plt
+/* velk prelude */
+int *_errno(void);
+
+int _close(int);
+
+int _getpid(void);
+
+int strcpy_s(char *, unsigned long long, const char *);
+
+int wcscpy_s(unsigned short *, unsigned long long, const unsigned short *);
+
+int32_t strtol(const char *, char **, int);
+
+long long _time64(long long *);
+
+size_t wcslen(const unsigned short *);
+/* end velk prelude */
+
+== 0x140001000 crt_stdio
+-- decompile
+/* velk pseudo-C: crt_stdio @ 0x140001000 */
+int crt_stdio(const char *a0, FILE *a1) {
+    return fputs(a0, a1);
+}
+-- signature
+int (const char * a0, FILE * a1)
+-- references
+
+-- ir
+fn crt_stdio @ 0x140001000 (size 14)
+  blk0 @ 0x140001000:
+    v1:rax, xmm0 = call 0x140001118(rcx, rdx)
+    ret v1
+-- card
+{"addr":"0x140001000","approxTokens":120,"blocks":1,"hardReasons":[],"name":"crt_stdio","nameSources":["dynamic","unwind"],"section":".text","size":14,"unsupported":0}
+
+== 0x14000100e crt_alloc
+-- decompile
+/* velk pseudo-C: crt_alloc @ 0x14000100e */
+void *crt_alloc(size_t n, size_t size) {
+    return calloc(n, size);
+}
+-- signature
+void * (size_t a0, size_t a1)
+-- references
+
+-- ir
+fn crt_alloc @ 0x14000100e (size 14)
+  blk0 @ 0x14000100e:
+    v1:rax, xmm0 = call 0x140001110(rcx, rdx)
+    ret v1
+-- card
+{"addr":"0x14000100e","approxTokens":120,"blocks":1,"hardReasons":[],"name":"crt_alloc","nameSources":["dynamic","unwind"],"section":".text","size":14,"unsupported":0}
+
+== 0x14000101c crt_number
+-- decompile
+/* velk pseudo-C: crt_number @ 0x14000101c */
+int32_t crt_number(const char *a0, char **a1) {
+    return strtol(a0, a1, 10);
+}
+-- signature
+int32_t (const char * a0, char ** a1)
+-- references
+
+-- ir
+fn crt_number @ 0x14000101c (size 20)
+  blk0 @ 0x14000101c:
+    v1:rax, xmm0 = call 0x140001148(rcx, rdx, #0xa)
+    ret v1
+-- card
+{"addr":"0x14000101c","approxTokens":126,"blocks":1,"hardReasons":[],"name":"crt_number","nameSources":["dynamic","unwind"],"section":".text","size":20,"unsupported":0}
+
+== 0x140001030 crt_string
+-- decompile
+/* velk pseudo-C: crt_string @ 0x140001030 */
+char *crt_string(const char *a0, int a1) {
+    return strchr(a0, a1);
+}
+-- signature
+char * (const char * a0, int a1)
+-- references
+
+-- ir
+fn crt_string @ 0x140001030 (size 14)
+  blk0 @ 0x140001030:
+    v1:rax, xmm0 = call 0x140001138(rcx, rdx)
+    ret v1
+-- card
+{"addr":"0x140001030","approxTokens":120,"blocks":1,"hardReasons":[],"name":"crt_string","nameSources":["dynamic","unwind"],"section":".text","size":14,"unsupported":0}
+
+== 0x14000103e crt_wide
+-- decompile
+/* velk pseudo-C: crt_wide @ 0x14000103e */
+size_t crt_wide(const unsigned short *a0) {
+    return wcslen(a0);
+}
+-- signature
+size_t (const unsigned short * a0)
+-- references
+
+-- ir
+fn crt_wide @ 0x14000103e (size 14)
+  blk0 @ 0x14000103e:
+    v1:rax, xmm0 = call 0x140001158(rcx)
+    ret v1
+-- card
+{"addr":"0x14000103e","approxTokens":120,"blocks":1,"hardReasons":[],"name":"crt_wide","nameSources":["dynamic","unwind"],"section":".text","size":14,"unsupported":0}
+
+== 0x14000104c crt_time
+-- decompile
+/* velk pseudo-C: crt_time @ 0x14000104c */
+/* ref: 0x140002284 .rdata */
+long long crt_time(long long *a0) {
+    return _time64(a0);
+}
+-- signature
+long long (long long * a0)
+-- references
+0x140002284 .rdata
+-- ir
+fn crt_time @ 0x14000104c (size 15)
+  blk0 @ 0x14000104c:
+    v1:rax, xmm0 = call *load64(#0x140002284)(rcx)
+    ret v1
+-- card
+{"addr":"0x14000104c","approxTokens":120,"blocks":1,"hardReasons":[],"name":"crt_time","nameSources":["dynamic","unwind"],"section":".text","size":15,"unsupported":0}
+
+== 0x14000105b crt_math
+-- decompile
+/* velk pseudo-C: crt_math @ 0x14000105b */
+/* ref: 0x1400022b4 .rdata */
+double crt_math(double a0) {
+    double v1 = sin(a0);
+    return v1;
+}
+-- signature
+double (double a0)
+-- references
+0x1400022b4 .rdata
+-- ir
+fn crt_math @ 0x14000105b (size 15)
+  blk0 @ 0x14000105b:
+    rax, v1:xmm0 = call *load64(#0x1400022b4)(xmm0)
+    ret v1
+-- card
+{"addr":"0x14000105b","approxTokens":120,"blocks":1,"hardReasons":[],"name":"crt_math","nameSources":["dynamic","unwind"],"section":".text","size":15,"unsupported":0}
+
+== 0x14000106a crt_secure
+-- decompile
+/* velk pseudo-C: crt_secure @ 0x14000106a */
+/* ref: 0x1400022c4 .rdata */
+int crt_secure(char *a0, unsigned long long a1, const char *a2) {
+    return strcpy_s(a0, a1, a2);
+}
+-- signature
+int (char * a0, unsigned long long a1, const char * a2)
+-- references
+0x1400022c4 .rdata
+-- ir
+fn crt_secure @ 0x14000106a (size 15)
+  blk0 @ 0x14000106a:
+    v1:rax, xmm0 = call *load64(#0x1400022c4)(rcx, rdx, r8)
+    ret v1
+-- card
+{"addr":"0x14000106a","approxTokens":120,"blocks":1,"hardReasons":[],"name":"crt_secure","nameSources":["dynamic","unwind"],"section":".text","size":15,"unsupported":0}
+
+== 0x140001079 crt_wide_secure
+-- decompile
+/* velk pseudo-C: crt_wide_secure @ 0x140001079 */
+/* ref: 0x1400022d4 .rdata */
+int crt_wide_secure(unsigned short *a0, unsigned long long a1, const unsigned short *a2) {
+    return wcscpy_s(a0, a1, a2);
+}
+-- signature
+int (unsigned short * a0, unsigned long long a1, const unsigned short * a2)
+-- references
+0x1400022d4 .rdata
+-- ir
+fn crt_wide_secure @ 0x140001079 (size 15)
+  blk0 @ 0x140001079:
+    v1:rax, xmm0 = call *load64(#0x1400022d4)(rcx, rdx, r8)
+    ret v1
+-- card
+{"addr":"0x140001079","approxTokens":120,"blocks":1,"hardReasons":[],"name":"crt_wide_secure","nameSources":["dynamic","unwind"],"section":".text","size":15,"unsupported":0}
+
+== 0x140001088 crt_process
+-- decompile
+/* velk pseudo-C: crt_process @ 0x140001088 */
+/* ref: 0x14000227c .rdata */
+int crt_process(void) {
+    return _getpid();
+}
+-- signature
+int ()
+-- references
+0x14000227c .rdata
+-- ir
+fn crt_process @ 0x140001088 (size 15)
+  blk0 @ 0x140001088:
+    v1:rax, xmm0 = call *load64(#0x14000227c)()
+    ret v1
+-- card
+{"addr":"0x140001088","approxTokens":120,"blocks":1,"hardReasons":[],"name":"crt_process","nameSources":["dynamic","unwind"],"section":".text","size":15,"unsupported":0}
+
+== 0x140001097 crt_io
+-- decompile
+/* velk pseudo-C: crt_io @ 0x140001097 */
+/* ref: 0x14000226c .rdata */
+int crt_io(int a0) {
+    return _close(a0);
+}
+-- signature
+int (int a0)
+-- references
+0x14000226c .rdata
+-- ir
+fn crt_io @ 0x140001097 (size 15)
+  blk0 @ 0x140001097:
+    v1:rax, xmm0 = call *load64(#0x14000226c)(rcx)
+    ret v1
+-- card
+{"addr":"0x140001097","approxTokens":120,"blocks":1,"hardReasons":[],"name":"crt_io","nameSources":["dynamic","unwind"],"section":".text","size":15,"unsupported":0}
+
+== 0x1400010a6 crt_errno
+-- decompile
+/* velk pseudo-C: crt_errno @ 0x1400010a6 */
+/* ref: 0x140002274 .rdata */
+int *crt_errno(void) {
+    return _errno();
+}
+-- signature
+int * ()
+-- references
+0x140002274 .rdata
+-- ir
+fn crt_errno @ 0x1400010a6 (size 15)
+  blk0 @ 0x1400010a6:
+    v1:rax, xmm0 = call *load64(#0x140002274)()
+    ret v1
+-- card
+{"addr":"0x1400010a6","approxTokens":120,"blocks":1,"hardReasons":[],"name":"crt_errno","nameSources":["dynamic","unwind"],"section":".text","size":15,"unsupported":0}
+
+== 0x1400010b5 crt_locale
+-- decompile
+/* velk pseudo-C: crt_locale @ 0x1400010b5 */
+char *crt_locale(int a0, const char *a1) {
+    return setlocale(a0, a1);
+}
+-- signature
+char * (int a0, const char * a1)
+-- references
+
+-- ir
+fn crt_locale @ 0x1400010b5 (size 14)
+  blk0 @ 0x1400010b5:
+    v1:rax, xmm0 = call 0x140001130(rcx, rdx)
+    ret v1
+-- card
+{"addr":"0x1400010b5","approxTokens":120,"blocks":1,"hardReasons":[],"name":"crt_locale","nameSources":["dynamic","unwind"],"section":".text","size":14,"unsupported":0}
+
+== 0x1400010c3 crt_ctype
+-- decompile
+/* velk pseudo-C: crt_ctype @ 0x1400010c3 */
+/* ref: 0x14000229c .rdata */
+int crt_ctype(int a0) {
+    return isalpha(a0);
+}
+-- signature
+int (int a0)
+-- references
+0x14000229c .rdata
+-- ir
+fn crt_ctype @ 0x1400010c3 (size 15)
+  blk0 @ 0x1400010c3:
+    v1:rax, xmm0 = call *load64(#0x14000229c)(rcx)
+    ret v1
+-- card
+{"addr":"0x1400010c3","approxTokens":120,"blocks":1,"hardReasons":[],"name":"crt_ctype","nameSources":["dynamic","unwind"],"section":".text","size":15,"unsupported":0}
+
+== 0x1400010d2 crt_format
+-- decompile
+/* velk pseudo-C: crt_format @ 0x1400010d2 */
+/* ref: 0x140002000 .rdata */
+int crt_format(int a0) {
+    return printf((const char *)0x140002000, a0 & 0xffffffff);
+}
+-- signature
+int (int a0)
+-- references
+0x140002000 .rdata
+-- ir
+fn crt_format @ 0x1400010d2 (size 23)
+  blk0 @ 0x1400010d2:
+    v1:rax, xmm0 = call 0x140001128(#0x140002000, (rcx & #0xffffffff))
+    ret v1
+-- card
+{"addr":"0x1400010d2","approxTokens":132,"blocks":1,"hardReasons":[],"name":"crt_format","nameSources":["dynamic","unwind"],"section":".text","size":23,"unsupported":0}
+
+== 0x1400010e9 -
+-- decompile
+/* velk pseudo-C: sub_1400010e9 @ 0x1400010e9 */
+void sub_1400010e9(void) {
+}
+-- signature
+void ()
+-- references
+
+-- ir
+fn <unnamed> @ 0x1400010e9 (size 1)
+  blk0 @ 0x1400010e9:
+    ret #0x0
+-- card
+{"addr":"0x1400010e9","approxTokens":102,"blocks":1,"hardReasons":["name-unknown"],"name":null,"nameSources":["entry","unwind"],"section":".text","size":1,"unsupported":0}
+
+== 0x1400010f0 _close
+-- decompile
+/* velk pseudo-C: _close @ 0x1400010f0 */
+/* ref: 0x14000226c .rdata */
+int _close(int a0) {
+    return _close(a0);
+}
+-- signature
+int (int a0)
+-- references
+0x14000226c .rdata
+-- ir
+fn _close @ 0x1400010f0 (size 8)
+  blk0 @ 0x1400010f0:
+    v1:rax, xmm0 = call *load64(#0x14000226c)(rcx)
+    ret v1
+-- card
+{"addr":"0x1400010f0","approxTokens":114,"blocks":1,"hardReasons":[],"name":"_close","nameSources":["plt"],"section":".text","size":8,"sizeEstimated":true,"unsupported":0}
+
+== 0x1400010f8 _errno
+-- decompile
+/* velk pseudo-C: _errno @ 0x1400010f8 */
+/* ref: 0x140002274 .rdata */
+int *_errno(void) {
+    return _errno();
+}
+-- signature
+int * ()
+-- references
+0x140002274 .rdata
+-- ir
+fn _errno @ 0x1400010f8 (size 8)
+  blk0 @ 0x1400010f8:
+    v1:rax, xmm0 = call *load64(#0x140002274)()
+    ret v1
+-- card
+{"addr":"0x1400010f8","approxTokens":114,"blocks":1,"hardReasons":[],"name":"_errno","nameSources":["plt"],"section":".text","size":8,"sizeEstimated":true,"unsupported":0}
+
+== 0x140001100 _getpid
+-- decompile
+/* velk pseudo-C: _getpid @ 0x140001100 */
+/* ref: 0x14000227c .rdata */
+int _getpid(void) {
+    return _getpid();
+}
+-- signature
+int ()
+-- references
+0x14000227c .rdata
+-- ir
+fn _getpid @ 0x140001100 (size 8)
+  blk0 @ 0x140001100:
+    v1:rax, xmm0 = call *load64(#0x14000227c)()
+    ret v1
+-- card
+{"addr":"0x140001100","approxTokens":114,"blocks":1,"hardReasons":[],"name":"_getpid","nameSources":["plt"],"section":".text","size":8,"sizeEstimated":true,"unsupported":0}
+
+== 0x140001108 _time64
+-- decompile
+/* velk pseudo-C: _time64 @ 0x140001108 */
+/* ref: 0x140002284 .rdata */
+long long _time64(long long *a0) {
+    return _time64(a0);
+}
+-- signature
+long long (long long * a0)
+-- references
+0x140002284 .rdata
+-- ir
+fn _time64 @ 0x140001108 (size 8)
+  blk0 @ 0x140001108:
+    v1:rax, xmm0 = call *load64(#0x140002284)(rcx)
+    ret v1
+-- card
+{"addr":"0x140001108","approxTokens":114,"blocks":1,"hardReasons":[],"name":"_time64","nameSources":["plt"],"section":".text","size":8,"sizeEstimated":true,"unsupported":0}
+
+== 0x140001110 calloc
+-- decompile
+/* velk pseudo-C: calloc @ 0x140001110 */
+/* ref: 0x14000228c .rdata */
+void *calloc(size_t n, size_t size) {
+    return calloc(n, size);
+}
+-- signature
+void * (size_t a0, size_t a1)
+-- references
+0x14000228c .rdata
+-- ir
+fn calloc @ 0x140001110 (size 8)
+  blk0 @ 0x140001110:
+    v1:rax, xmm0 = call *load64(#0x14000228c)(rcx, rdx)
+    ret v1
+-- card
+{"addr":"0x140001110","approxTokens":114,"blocks":1,"hardReasons":[],"name":"calloc","nameSources":["plt"],"section":".text","size":8,"sizeEstimated":true,"unsupported":0}
+
+== 0x140001118 fputs
+-- decompile
+/* velk pseudo-C: fputs @ 0x140001118 */
+/* ref: 0x140002294 .rdata */
+int fputs(const char *a0, FILE *a1) {
+    return fputs(a0, a1);
+}
+-- signature
+int (const char * a0, FILE * a1)
+-- references
+0x140002294 .rdata
+-- ir
+fn fputs @ 0x140001118 (size 8)
+  blk0 @ 0x140001118:
+    v1:rax, xmm0 = call *load64(#0x140002294)(rcx, rdx)
+    ret v1
+-- card
+{"addr":"0x140001118","approxTokens":114,"blocks":1,"hardReasons":[],"name":"fputs","nameSources":["plt"],"section":".text","size":8,"sizeEstimated":true,"unsupported":0}
+
+== 0x140001120 isalpha
+-- decompile
+/* velk pseudo-C: isalpha @ 0x140001120 */
+/* ref: 0x14000229c .rdata */
+int isalpha(int a0) {
+    return isalpha(a0);
+}
+-- signature
+int (int a0)
+-- references
+0x14000229c .rdata
+-- ir
+fn isalpha @ 0x140001120 (size 8)
+  blk0 @ 0x140001120:
+    v1:rax, xmm0 = call *load64(#0x14000229c)(rcx)
+    ret v1
+-- card
+{"addr":"0x140001120","approxTokens":114,"blocks":1,"hardReasons":[],"name":"isalpha","nameSources":["plt"],"section":".text","size":8,"sizeEstimated":true,"unsupported":0}
+
+== 0x140001128 printf
+-- decompile
+/* velk pseudo-C: printf @ 0x140001128 */
+/* ref: 0x1400022a4 .rdata */
+int printf(void) {
+    return printf();
+}
+-- signature
+int ()
+-- references
+0x1400022a4 .rdata
+-- ir
+fn printf @ 0x140001128 (size 8)
+  blk0 @ 0x140001128:
+    v1:rax, xmm0 = call *load64(#0x1400022a4)
+    ret v1
+-- card
+{"addr":"0x140001128","approxTokens":114,"blocks":1,"hardReasons":[],"name":"printf","nameSources":["plt"],"section":".text","size":8,"sizeEstimated":true,"unsupported":0}
+
+== 0x140001130 setlocale
+-- decompile
+/* velk pseudo-C: setlocale @ 0x140001130 */
+/* ref: 0x1400022ac .rdata */
+char *setlocale(int a0, const char *a1) {
+    return setlocale(a0, a1);
+}
+-- signature
+char * (int a0, const char * a1)
+-- references
+0x1400022ac .rdata
+-- ir
+fn setlocale @ 0x140001130 (size 8)
+  blk0 @ 0x140001130:
+    v1:rax, xmm0 = call *load64(#0x1400022ac)(rcx, rdx)
+    ret v1
+-- card
+{"addr":"0x140001130","approxTokens":114,"blocks":1,"hardReasons":[],"name":"setlocale","nameSources":["plt"],"section":".text","size":8,"sizeEstimated":true,"unsupported":0}
+
+== 0x140001138 strchr
+-- decompile
+/* velk pseudo-C: strchr @ 0x140001138 */
+/* ref: 0x1400022bc .rdata */
+char *strchr(const char *a0, int a1) {
+    return strchr(a0, a1);
+}
+-- signature
+char * (const char * a0, int a1)
+-- references
+0x1400022bc .rdata
+-- ir
+fn strchr @ 0x140001138 (size 8)
+  blk0 @ 0x140001138:
+    v1:rax, xmm0 = call *load64(#0x1400022bc)(rcx, rdx)
+    ret v1
+-- card
+{"addr":"0x140001138","approxTokens":114,"blocks":1,"hardReasons":[],"name":"strchr","nameSources":["plt"],"section":".text","size":8,"sizeEstimated":true,"unsupported":0}
+
+== 0x140001140 strcpy_s
+-- decompile
+/* velk pseudo-C: strcpy_s @ 0x140001140 */
+/* ref: 0x1400022c4 .rdata */
+int strcpy_s(char *a0, unsigned long long a1, const char *a2) {
+    return strcpy_s(a0, a1, a2);
+}
+-- signature
+int (char * a0, unsigned long long a1, const char * a2)
+-- references
+0x1400022c4 .rdata
+-- ir
+fn strcpy_s @ 0x140001140 (size 8)
+  blk0 @ 0x140001140:
+    v1:rax, xmm0 = call *load64(#0x1400022c4)(rcx, rdx, r8)
+    ret v1
+-- card
+{"addr":"0x140001140","approxTokens":114,"blocks":1,"hardReasons":[],"name":"strcpy_s","nameSources":["plt"],"section":".text","size":8,"sizeEstimated":true,"unsupported":0}
+
+== 0x140001148 strtol
+-- decompile
+/* velk pseudo-C: strtol @ 0x140001148 */
+/* ref: 0x1400022cc .rdata */
+int32_t strtol(const char *a0, char **a1, int a2) {
+    return strtol(a0, a1, a2);
+}
+-- signature
+int32_t (const char * a0, char ** a1, int a2)
+-- references
+0x1400022cc .rdata
+-- ir
+fn strtol @ 0x140001148 (size 8)
+  blk0 @ 0x140001148:
+    v1:rax, xmm0 = call *load64(#0x1400022cc)(rcx, rdx, r8)
+    ret v1
+-- card
+{"addr":"0x140001148","approxTokens":114,"blocks":1,"hardReasons":[],"name":"strtol","nameSources":["plt"],"section":".text","size":8,"sizeEstimated":true,"unsupported":0}
+
+== 0x140001150 wcscpy_s
+-- decompile
+/* velk pseudo-C: wcscpy_s @ 0x140001150 */
+/* ref: 0x1400022d4 .rdata */
+int wcscpy_s(unsigned short *a0, unsigned long long a1, const unsigned short *a2) {
+    return wcscpy_s(a0, a1, a2);
+}
+-- signature
+int (unsigned short * a0, unsigned long long a1, const unsigned short * a2)
+-- references
+0x1400022d4 .rdata
+-- ir
+fn wcscpy_s @ 0x140001150 (size 8)
+  blk0 @ 0x140001150:
+    v1:rax, xmm0 = call *load64(#0x1400022d4)(rcx, rdx, r8)
+    ret v1
+-- card
+{"addr":"0x140001150","approxTokens":114,"blocks":1,"hardReasons":[],"name":"wcscpy_s","nameSources":["plt"],"section":".text","size":8,"sizeEstimated":true,"unsupported":0}
+
+== 0x140001158 wcslen
+-- decompile
+/* velk pseudo-C: wcslen @ 0x140001158 */
+/* ref: 0x1400022dc .rdata */
+size_t wcslen(const unsigned short *a0) {
+    return wcslen(a0);
+}
+-- signature
+size_t (const unsigned short * a0)
+-- references
+0x1400022dc .rdata
+-- ir
+fn wcslen @ 0x140001158 (size 8)
+  blk0 @ 0x140001158:
+    v1:rax, xmm0 = call *load64(#0x1400022dc)(rcx)
+    ret v1
+-- card
+{"addr":"0x140001158","approxTokens":114,"blocks":1,"hardReasons":[],"name":"wcslen","nameSources":["plt"],"section":".text","size":8,"sizeEstimated":true,"unsupported":0}

@@ -1,0 +1,113 @@
+# crt_windows.i686.exe: pe unsupported 0x40116f, 16 functions, 16 lift failures, 0 unsupported, 0 gotos
+0x401000 27 crt_stdio dynamic
+0x40101b 27 crt_alloc dynamic
+0x401036 35 crt_number dynamic
+0x401059 27 crt_string dynamic
+0x401074 19 crt_wide dynamic
+0x401087 20 crt_time dynamic
+0x40109b 20 crt_math dynamic
+0x4010af 36 crt_secure dynamic
+0x4010d3 36 crt_wide_secure dynamic
+0x4010f7 13 crt_process dynamic
+0x401104 20 crt_io dynamic
+0x401118 13 crt_errno dynamic
+0x401125 27 crt_locale dynamic
+0x401140 20 crt_ctype dynamic
+0x401154 27 crt_format dynamic
+0x40116f 113 - entry
+
+== 0x401000 crt_stdio
+-- decompile
+error: function at 0x401000: the instruction set is not supported
+-- card
+{"addr":"0x401000","approxTokens":96,"hardReasons":[],"liftError":"the instruction set is not supported","name":"crt_stdio","nameSources":["dynamic"],"section":".text","size":27,"sizeEstimated":true}
+
+== 0x40101b crt_alloc
+-- decompile
+error: function at 0x40101b: the instruction set is not supported
+-- card
+{"addr":"0x40101b","approxTokens":96,"hardReasons":[],"liftError":"the instruction set is not supported","name":"crt_alloc","nameSources":["dynamic"],"section":".text","size":27,"sizeEstimated":true}
+
+== 0x401036 crt_number
+-- decompile
+error: function at 0x401036: the instruction set is not supported
+-- card
+{"addr":"0x401036","approxTokens":96,"hardReasons":[],"liftError":"the instruction set is not supported","name":"crt_number","nameSources":["dynamic"],"section":".text","size":35,"sizeEstimated":true}
+
+== 0x401059 crt_string
+-- decompile
+error: function at 0x401059: the instruction set is not supported
+-- card
+{"addr":"0x401059","approxTokens":96,"hardReasons":[],"liftError":"the instruction set is not supported","name":"crt_string","nameSources":["dynamic"],"section":".text","size":27,"sizeEstimated":true}
+
+== 0x401074 crt_wide
+-- decompile
+error: function at 0x401074: the instruction set is not supported
+-- card
+{"addr":"0x401074","approxTokens":96,"hardReasons":[],"liftError":"the instruction set is not supported","name":"crt_wide","nameSources":["dynamic"],"section":".text","size":19,"sizeEstimated":true}
+
+== 0x401087 crt_time
+-- decompile
+error: function at 0x401087: the instruction set is not supported
+-- card
+{"addr":"0x401087","approxTokens":96,"hardReasons":[],"liftError":"the instruction set is not supported","name":"crt_time","nameSources":["dynamic"],"section":".text","size":20,"sizeEstimated":true}
+
+== 0x40109b crt_math
+-- decompile
+error: function at 0x40109b: the instruction set is not supported
+-- card
+{"addr":"0x40109b","approxTokens":96,"hardReasons":[],"liftError":"the instruction set is not supported","name":"crt_math","nameSources":["dynamic"],"section":".text","size":20,"sizeEstimated":true}
+
+== 0x4010af crt_secure
+-- decompile
+error: function at 0x4010af: the instruction set is not supported
+-- card
+{"addr":"0x4010af","approxTokens":96,"hardReasons":[],"liftError":"the instruction set is not supported","name":"crt_secure","nameSources":["dynamic"],"section":".text","size":36,"sizeEstimated":true}
+
+== 0x4010d3 crt_wide_secure
+-- decompile
+error: function at 0x4010d3: the instruction set is not supported
+-- card
+{"addr":"0x4010d3","approxTokens":96,"hardReasons":[],"liftError":"the instruction set is not supported","name":"crt_wide_secure","nameSources":["dynamic"],"section":".text","size":36,"sizeEstimated":true}
+
+== 0x4010f7 crt_process
+-- decompile
+error: function at 0x4010f7: the instruction set is not supported
+-- card
+{"addr":"0x4010f7","approxTokens":96,"hardReasons":[],"liftError":"the instruction set is not supported","name":"crt_process","nameSources":["dynamic"],"section":".text","size":13,"sizeEstimated":true}
+
+== 0x401104 crt_io
+-- decompile
+error: function at 0x401104: the instruction set is not supported
+-- card
+{"addr":"0x401104","approxTokens":96,"hardReasons":[],"liftError":"the instruction set is not supported","name":"crt_io","nameSources":["dynamic"],"section":".text","size":20,"sizeEstimated":true}
+
+== 0x401118 crt_errno
+-- decompile
+error: function at 0x401118: the instruction set is not supported
+-- card
+{"addr":"0x401118","approxTokens":96,"hardReasons":[],"liftError":"the instruction set is not supported","name":"crt_errno","nameSources":["dynamic"],"section":".text","size":13,"sizeEstimated":true}
+
+== 0x401125 crt_locale
+-- decompile
+error: function at 0x401125: the instruction set is not supported
+-- card
+{"addr":"0x401125","approxTokens":96,"hardReasons":[],"liftError":"the instruction set is not supported","name":"crt_locale","nameSources":["dynamic"],"section":".text","size":27,"sizeEstimated":true}
+
+== 0x401140 crt_ctype
+-- decompile
+error: function at 0x401140: the instruction set is not supported
+-- card
+{"addr":"0x401140","approxTokens":96,"hardReasons":[],"liftError":"the instruction set is not supported","name":"crt_ctype","nameSources":["dynamic"],"section":".text","size":20,"sizeEstimated":true}
+
+== 0x401154 crt_format
+-- decompile
+error: function at 0x401154: the instruction set is not supported
+-- card
+{"addr":"0x401154","approxTokens":96,"hardReasons":[],"liftError":"the instruction set is not supported","name":"crt_format","nameSources":["dynamic"],"section":".text","size":27,"sizeEstimated":true}
+
+== 0x40116f -
+-- decompile
+error: function at 0x40116f: the instruction set is not supported
+-- card
+{"addr":"0x40116f","approxTokens":96,"hardReasons":["name-unknown"],"liftError":"the instruction set is not supported","name":null,"nameSources":["entry"],"section":".text","size":113,"sizeEstimated":true}

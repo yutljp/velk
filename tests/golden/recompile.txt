@@ -1,13 +1,14 @@
 # functions left out:
 #   accesses memory: 238
-#   calls: 7848
+#   calls: 7877
 #   computes on floats or vectors: 1
+#   does not lift: 16
 #   has an unsupported instruction: 106
 #   reads a register that is not a parameter: 5
 #   refers to data: 345
 #   requires an external machine-state source: 2
 #   returns no integer: 290
-#   returns nothing: 651
+#   returns nothing: 652
 #   takes an argument that is no integer: 923
 #   takes arguments on the stack: 81
 # runs left out:

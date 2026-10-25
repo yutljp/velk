@@ -306,12 +306,16 @@ LINUX_HEADERS = [h for h in HEADERS if h != "sys/event.h"] + [
     "sys/sysinfo.h", "sys/vfs.h", "sys/random.h"]
 WINDOWS_HEADERS = """winsock2.h windows.h ws2tcpip.h wininet.h winhttp.h winternl.h
 shellapi.h shlobj.h objbase.h wincrypt.h bcrypt.h psapi.h tlhelp32.h iphlpapi.h""".split()
-WINDOWS_DLLS = "kernel32 user32 advapi32 ws2_32 wininet winhttp ntdll shell32 ole32 crypt32 bcrypt psapi iphlpapi".split()
+CRT_HEADERS = "stdio.h stdlib.h string.h wchar.h math.h time.h process.h io.h errno.h locale.h ctype.h".split()
+WINDOWS_DLLS = "msvcrt ucrtbase kernel32 user32 advapi32 ws2_32 wininet winhttp ntdll shell32 ole32 crypt32 bcrypt psapi iphlpapi".split()
 
 
 def printed_type(text, target):
     if "mingw" not in target:
         return text
+    if target.startswith("i686"):
+        text = re.sub(r"\b(size_t|uintptr_t)\b", "uint32_t", text)
+        text = re.sub(r"\b(ssize_t|intptr_t|ptrdiff_t)\b", "int32_t", text)
     text = re.sub(r"\bunsigned long\b(?! long)", "uint32_t", text)
     return re.sub(r"(?<!long )\blong\b(?! long)", "int32_t", text)
 
@@ -385,13 +389,13 @@ def write_targets(output, result):
 
 def generate_platform(args):
     windows = args.platform == "windows"
-    headers = WINDOWS_HEADERS if windows else LINUX_HEADERS
+    headers = WINDOWS_HEADERS + CRT_HEADERS if windows else LINUX_HEADERS
     targets = (["x86_64-w64-mingw32", "i686-w64-mingw32"] if windows else
                ["x86_64-linux-gnu", "aarch64-linux-gnu"])
     datasets = {}
     header_hashes = {}
-    groups = ([h for h in headers if h != "winhttp.h"],
-              ["winsock2.h", "windows.h", "winhttp.h"]) if windows else [headers]
+    groups = ([h for h in WINDOWS_HEADERS if h != "winhttp.h"],
+              ["winsock2.h", "windows.h", "winhttp.h"], CRT_HEADERS) if windows else [headers]
     for target in targets:
         # The renderer's long is LP64. Use exact-width scalars for LLP64.
         bits = 32 if target.startswith("i686") else 64
@@ -409,6 +413,14 @@ def generate_platform(args):
                         symbol = symbol.removeprefix("_")
                     symbol = symbol.split("@")[0]
                     exports.setdefault(symbol, []).append(dll + ".dll")
+        if windows:
+            archive = Path(f"/usr/{prefix}-w64-mingw32/lib/libucrt.a")
+            symbols = run(["llvm-nm", "-A", "--defined-only", str(archive)])
+            for dll, symbol in re.findall(r":lib(api-ms-win-crt-[^:]+-l1-1-0)s\d+\.o:.*\b__imp_([^\s]+)", symbols):
+                if bits == 32:
+                    symbol = symbol.removeprefix("_")
+                symbol = symbol.split("@")[0]
+                exports.setdefault(symbol, []).append(dll + ".dll")
         data = {kind: {} for kind in ["functions", "records", "typedefs", "enums", "conventions"]}
         conflicts = {kind: set() for kind in data}
         hashes = {}

@@ -407,7 +407,8 @@ pub(super) fn expression(call: &Stmt, ctx: &Ctx<'_>) -> String {
             .zip(&prototype.params)
             .enumerate()
         {
-            if ty.is_sse_float() {
+            if let Some(precision) = precision(Some(ty)) {
+                *text = super::expr::float_operand(value, precision, ctx, 0, false);
                 continue;
             }
             let pointer = ty.is_pointer().then(|| ty.to_string());

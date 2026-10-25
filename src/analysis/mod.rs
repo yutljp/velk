@@ -82,12 +82,11 @@ fn float_return_slot(isa: crate::loader::Isa) -> Option<u16> {
 /// nothing, and on `AArch64` it is the first argument, which a function
 /// returning a float does not return. A float is a single when the last
 /// write on every path that says computes or loads one.
-fn float_result(
-    blocks: &[crate::ir::Block],
-    isa: crate::loader::Isa,
-) -> Option<crate::ir::Precision> {
+fn float_result(blocks: &[crate::ir::Block], image: &Image) -> Option<crate::ir::Precision> {
     use crate::ir::{Precision, Stmt};
-    let slot = float_return_slot(isa)?;
+    let Some(slot) = float_return_slot(image.isa) else {
+        return None;
+    };
     if blocks.is_empty() {
         return None;
     }
@@ -134,6 +133,18 @@ fn float_result(
                     if written.contains(&crate::arch::RETURN) {
                         state.int = true;
                         state.float_last = false;
+                    }
+                    if written.contains(&slot)
+                        && let Some(prototype) = prototypes::called(image, stmt)
+                        && prototype.ret.is_sse_float()
+                    {
+                        state.float = true;
+                        state.float_last = true;
+                        state.precision = Some(if prototype.ret.to_string() == "float" {
+                            Precision::Single
+                        } else {
+                            Precision::Double
+                        });
                     }
                 }
                 Stmt::Ret { .. } => returns.push(state),
@@ -1107,7 +1118,7 @@ fn lift_function(image: &Image, function: &Function) -> Result<Lifted, LiftError
         }),
         Some(_) => None,
         None if !stack_results.is_empty() => None,
-        None => float_result(&blocks, image.isa),
+        None => float_result(&blocks, image),
     };
     // Without debug info, a function whose callers all ignore what is left
     // in the return register returns nothing either. A linkage stub returns
@@ -1844,7 +1855,7 @@ mod tests {
                     ],
                 }];
                 assert_eq!(
-                    super::float_result(&blocks, isa),
+                    super::float_result(&blocks, &Image::from_code(isa, 0, Vec::new())),
                     (!changed).then_some(Precision::Single)
                 );
             }
