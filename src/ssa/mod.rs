@@ -466,9 +466,7 @@ pub fn count_variadic_arguments(ir: &mut FunctionIr, image: &crate::loader::Imag
         else {
             return None;
         };
-        let Some(prototype) =
-            crate::analysis::prototypes::of(name, image.format == crate::loader::Format::MachO)
-        else {
+        let Some(prototype) = crate::analysis::prototypes::for_image(name, image) else {
             return None;
         };
         let Some(format) = prototype.format else {

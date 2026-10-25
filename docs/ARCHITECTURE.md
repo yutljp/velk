@@ -73,8 +73,9 @@ function, and that the printed C computes the same results.
 - **Jump tables**: indirect jumps through a table become `switch` statements.
 - **Typing**: integer widths and signedness, pointers, recovered structures and the types from debug information.
 
-The C API type library supplies function prototypes and structure layouts generated from macOS SDK headers.
-It is loaded on first use and applied only to Mach-O inputs; other inputs use the handwritten prototypes.
+The C API type library lazily loads compiler-checked declarations and layouts from macOS SDK headers
+for Mach-O, mingw-w64 headers for PE/COFF (using DLL-qualified imports), and glibc headers for ELF,
+with separate target layouts.
 
 ## Optimization passes (`src/passes/`, `src/ssa/`)
 

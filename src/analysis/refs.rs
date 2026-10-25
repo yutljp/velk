@@ -162,9 +162,7 @@ pub fn collect(ir: &FunctionIr, image: &Image) -> Vec<Reference> {
             .and_then(|target| image.functions.get(&target))
             .and_then(|function| function.name.as_deref())
             .or_else(|| crate::lift::import_name(image, through.as_ref()?))
-            .and_then(|name| {
-                crate::analysis::prototypes::of(name, image.format == crate::loader::Format::MachO)
-            });
+            .and_then(|name| crate::analysis::prototypes::for_image(name, image));
         // A parameter the prototype declares a C string ends at its zero byte,
         // whatever argument follows it.
         let c_string = |position: usize| {

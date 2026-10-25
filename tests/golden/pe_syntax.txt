@@ -102,3 +102,4 @@ seh.O0.dll: 10/10 compile
 seh.O2.dll: 8/8 compile
 seh_cpp.O0.dll: 3/3 compile
 seh_cpp.O2.dll: 3/3 compile
+type_library_windows.win64.exe: 13/13 compile

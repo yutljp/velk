@@ -391,25 +391,37 @@ pub(super) fn expression(call: &Stmt, ctx: &Ctx<'_>) -> String {
                 }
             };
         }
-    } else if let Some(prototype) = crate::analysis::prototypes::of(
-        &callee,
-        ctx.symbols.target_format == Some(crate::loader::Format::MachO),
-    ) {
-        for ((text, value), ty) in args
+    } else if let Some(prototype) = ctx.symbols.library_prototypes.get(&callee).or_else(|| {
+        crate::analysis::prototypes::of(
+            &callee,
+            ctx.symbols.target_format == Some(crate::loader::Format::MachO),
+        )
+    }) {
+        let fallback = crate::analysis::prototypes::of(
+            &callee,
+            ctx.symbols.target_format == Some(crate::loader::Format::MachO),
+        );
+        for (index, ((text, value), ty)) in args
             .iter_mut()
             .zip(values.iter().flatten())
             .zip(&prototype.params)
+            .enumerate()
         {
             if ty.is_sse_float() {
                 continue;
             }
             let pointer = ty.is_pointer().then(|| ty.to_string());
-            *text = super::conformed(
-                value,
-                super::expr::print_value_at(value, ctx, 64, false),
-                pointer.as_deref(),
-                ctx,
-            );
+            // A newly typed pointer need not refer to a null-terminated byte string.
+            let preserve_address = pointer.is_some()
+                && ctx.symbols.library_prototypes.contains_key(&callee)
+                && fallback.and_then(|prototype| prototype.params.get(index)) != Some(ty)
+                && matches!(value, Expr::Const(address) if ctx.strings.contains_key(address));
+            let printed = if preserve_address {
+                super::expr::print_address(value, ctx)
+            } else {
+                super::expr::print_value_at(value, ctx, 64, false)
+            };
+            *text = super::conformed(value, printed, pointer.as_deref(), ctx);
         }
     }
     let selector_slot = match values.as_ref().and_then(|args| args.get(1)) {

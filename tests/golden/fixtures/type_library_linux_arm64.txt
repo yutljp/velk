@@ -1,0 +1,628 @@
+# type_library_linux_arm64: elf aarch64 0x7c0, 25 functions, 0 lift failures, 2 unsupported, 0 gotos
+0x6e0 24 _init symtab
+0x720 16 __libc_start_main plt
+0x730 16 __cxa_finalize plt
+0x740 16 kill plt
+0x750 16 fsync plt
+0x760 16 pthread_kill plt
+0x770 16 shutdown plt
+0x780 16 __gmon_start__ plt
+0x790 16 abort plt
+0x7a0 16 getgrgid_r plt
+0x7b0 16 mprotect plt
+0x7c0 52 _start symtab,entry,unwind
+0x7f4 20 call_weak_fn symtab
+0x810 48 deregister_tm_clones symtab,unwind
+0x840 60 register_tm_clones symtab,unwind
+0x880 80 __do_global_dtors_aux symtab,unwind
+0x8d0 8 frame_dummy symtab,unwind
+0x8d8 56 linux_group symtab,unwind
+0x910 4 linux_file symtab,unwind
+0x914 8 linux_process symtab,unwind
+0x91c 8 linux_memory symtab,unwind
+0x924 8 linux_socket symtab,unwind
+0x92c 8 linux_thread symtab,unwind
+0x934 8 main symtab,unwind
+0x93c 20 _fini symtab
+/* velk prelude */
+int kill(int, int);
+
+int pthread_kill(unsigned long, int);
+
+struct group {
+    _Alignas(8) char *gr_name;
+    char *gr_passwd;
+    unsigned int gr_gid;
+    uint8_t gap_0x14[0x4];
+    char **gr_mem;
+};
+
+struct group; int getgrgid_r(unsigned int, struct group *, char *, size_t, struct group **);
+
+uint64_t velk_entry_stack_pointer(void); /* target entry stack pointer */
+/* end velk prelude */
+
+== 0x6e0 _init
+-- decompile
+/* velk pseudo-C: _init @ 0x6e0 */
+int32_t _init(void) {
+    return call_weak_fn();
+}
+-- signature
+int32_t ()
+-- references
+
+-- ir
+fn _init @ 0x6e0 (size 24)
+  blk0 @ 0x6e0:
+    v1:x0, x1, d0, d1 = call 0x7f4()
+    ret v1
+-- card
+{"addr":"0x6e0","approxTokens":132,"blocks":1,"hardReasons":[],"name":"_init","nameSources":["symtab"],"section":".init","size":24,"sizeEstimated":true,"unsupported":0}
+
+== 0x720 __libc_start_main
+-- decompile
+/* velk pseudo-C: __libc_start_main @ 0x720 */
+/* ref: 0x20000 .got.plt */
+int __libc_start_main(void *a0, int a1, char **a2, void *a3, void *a4, void *a5, void *a6) {
+    uint64_t *const __libc_start_main_20000_u64 = (uint64_t *)0x20000ULL;
+
+    int32_t v1 = *__libc_start_main_20000_u64;
+    return __libc_start_main(a0, a1, a2, a3, a4, a5, a6);
+}
+-- signature
+int (void * a0, int a1, char ** a2, void * a3, void * a4, void * a5, void * a6)
+-- references
+0x20000 .got.plt
+-- ir
+fn __libc_start_main @ 0x720 (size 16)
+  blk0 @ 0x720:
+    v1 = load64(#0x20000)
+    v2:x0, x1, d0, d1 = call *load64(#0x20000)(x0, x1, x2, x3, x4, x5, x6)
+    ret v2
+-- card
+{"addr":"0x720","approxTokens":120,"blocks":1,"hardReasons":[],"name":"__libc_start_main","nameSources":["plt"],"section":".plt","size":16,"sizeEstimated":true,"unsupported":0}
+
+== 0x730 __cxa_finalize
+-- decompile
+/* velk pseudo-C: __cxa_finalize @ 0x730 */
+/* ref: 0x20008 .got.plt */
+void __cxa_finalize(void *a0) {
+    uint64_t *const __cxa_finalize_20008_u64 = (uint64_t *)0x20008ULL;
+
+    int32_t v1 = *__cxa_finalize_20008_u64;
+    __cxa_finalize(a0);
+}
+-- signature
+void (void * a0)
+-- references
+0x20008 .got.plt
+-- ir
+fn __cxa_finalize @ 0x730 (size 16)
+  blk0 @ 0x730:
+    v1 = load64(#0x20008)
+    v2:x0, x1, d0, d1 = call *load64(#0x20008)(x0)
+    ret #0x0
+-- card
+{"addr":"0x730","approxTokens":120,"blocks":1,"hardReasons":[],"name":"__cxa_finalize","nameSources":["plt"],"section":".plt","size":16,"sizeEstimated":true,"unsupported":0}
+
+== 0x740 kill
+-- decompile
+/* velk pseudo-C: kill @ 0x740 */
+/* ref: 0x20010 .got.plt */
+int kill(int a0, int a1) {
+    uint64_t *const kill_20010_u64 = (uint64_t *)0x20010ULL;
+
+    int32_t v1 = *kill_20010_u64;
+    return kill(a0, a1);
+}
+-- signature
+int (int a0, int a1)
+-- references
+0x20010 .got.plt
+-- ir
+fn kill @ 0x740 (size 16)
+  blk0 @ 0x740:
+    v1 = load64(#0x20010)
+    v2:x0, x1, d0, d1 = call *load64(#0x20010)(x0, x1)
+    ret v2
+-- card
+{"addr":"0x740","approxTokens":120,"blocks":1,"hardReasons":[],"name":"kill","nameSources":["plt"],"section":".plt","size":16,"sizeEstimated":true,"unsupported":0}
+
+== 0x750 fsync
+-- decompile
+/* velk pseudo-C: fsync @ 0x750 */
+/* ref: 0x20018 .got.plt */
+int fsync(int a0) {
+    uint64_t *const fsync_20018_u64 = (uint64_t *)0x20018ULL;
+
+    int32_t v1 = *fsync_20018_u64;
+    return fsync(a0);
+}
+-- signature
+int (int a0)
+-- references
+0x20018 .got.plt
+-- ir
+fn fsync @ 0x750 (size 16)
+  blk0 @ 0x750:
+    v1 = load64(#0x20018)
+    v2:x0, x1, d0, d1 = call *load64(#0x20018)(x0)
+    ret v2
+-- card
+{"addr":"0x750","approxTokens":120,"blocks":1,"hardReasons":[],"name":"fsync","nameSources":["plt"],"section":".plt","size":16,"sizeEstimated":true,"unsupported":0}
+
+== 0x760 pthread_kill
+-- decompile
+/* velk pseudo-C: pthread_kill @ 0x760 */
+/* ref: 0x20020 .got.plt */
+int pthread_kill(unsigned long a0, int a1) {
+    uint64_t *const pthread_kill_20020_u64 = (uint64_t *)0x20020ULL;
+
+    int32_t v1 = *pthread_kill_20020_u64;
+    return pthread_kill(a0, a1);
+}
+-- signature
+int (unsigned long a0, int a1)
+-- references
+0x20020 .got.plt
+-- ir
+fn pthread_kill @ 0x760 (size 16)
+  blk0 @ 0x760:
+    v1 = load64(#0x20020)
+    v2:x0, x1, d0, d1 = call *load64(#0x20020)(x0, x1)
+    ret v2
+-- card
+{"addr":"0x760","approxTokens":120,"blocks":1,"hardReasons":[],"name":"pthread_kill","nameSources":["plt"],"section":".plt","size":16,"sizeEstimated":true,"unsupported":0}
+
+== 0x770 shutdown
+-- decompile
+/* velk pseudo-C: shutdown @ 0x770 */
+/* ref: 0x20028 .got.plt */
+int shutdown(int a0, int a1) {
+    uint64_t *const shutdown_20028_u64 = (uint64_t *)0x20028ULL;
+
+    int32_t v1 = *shutdown_20028_u64;
+    return shutdown(a0, a1);
+}
+-- signature
+int (int a0, int a1)
+-- references
+0x20028 .got.plt
+-- ir
+fn shutdown @ 0x770 (size 16)
+  blk0 @ 0x770:
+    v1 = load64(#0x20028)
+    v2:x0, x1, d0, d1 = call *load64(#0x20028)(x0, x1)
+    ret v2
+-- card
+{"addr":"0x770","approxTokens":120,"blocks":1,"hardReasons":[],"name":"shutdown","nameSources":["plt"],"section":".plt","size":16,"sizeEstimated":true,"unsupported":0}
+
+== 0x780 __gmon_start__
+-- decompile
+/* velk pseudo-C: __gmon_start__ @ 0x780 */
+/* ref: 0x20030 .got.plt */
+int32_t __gmon_start__(void) {
+    uint64_t *const __gmon_start___20030_u64 = (uint64_t *)0x20030ULL;
+
+    int32_t v1 = *__gmon_start___20030_u64;
+    return __gmon_start__();
+}
+-- signature
+int32_t ()
+-- references
+0x20030 .got.plt
+-- ir
+fn __gmon_start__ @ 0x780 (size 16)
+  blk0 @ 0x780:
+    v1 = load64(#0x20030)
+    v2:x0, x1, d0, d1 = call *load64(#0x20030)
+    ret v2
+-- card
+{"addr":"0x780","approxTokens":120,"blocks":1,"hardReasons":[],"name":"__gmon_start__","nameSources":["plt"],"section":".plt","size":16,"sizeEstimated":true,"unsupported":0}
+
+== 0x790 abort
+-- decompile
+/* velk pseudo-C: abort @ 0x790 */
+/* ref: 0x20038 .got.plt */
+void abort(void) {
+    uint64_t *const abort_20038_u64 = (uint64_t *)0x20038ULL;
+
+    int32_t v1 = *abort_20038_u64;
+    abort();
+}
+-- signature
+void ()
+-- references
+0x20038 .got.plt
+-- ir
+fn abort @ 0x790 (size 16)
+  blk0 @ 0x790:
+    v1 = load64(#0x20038)
+    v2:x0, x1, d0, d1 = call *load64(#0x20038)()
+    ret #0x0
+-- card
+{"addr":"0x790","approxTokens":120,"blocks":1,"hardReasons":[],"name":"abort","nameSources":["plt"],"section":".plt","size":16,"sizeEstimated":true,"unsupported":0}
+
+== 0x7a0 getgrgid_r
+-- decompile
+/* velk pseudo-C: getgrgid_r @ 0x7a0 */
+/* ref: 0x20040 .got.plt */
+int getgrgid_r(unsigned int a0, struct group *a1, char *a2, size_t a3, struct group **a4) {
+    uint64_t *const getgrgid_r_20040_u64 = (uint64_t *)0x20040ULL;
+
+    int32_t v1 = *getgrgid_r_20040_u64;
+    return getgrgid_r(a0, a1, a2, a3, a4);
+}
+-- signature
+int (unsigned int a0, struct group * a1, char * a2, size_t a3, struct group ** a4)
+-- references
+0x20040 .got.plt
+-- ir
+fn getgrgid_r @ 0x7a0 (size 16)
+  blk0 @ 0x7a0:
+    v1 = load64(#0x20040)
+    v2:x0, x1, d0, d1 = call *load64(#0x20040)(x0, x1, x2, x3, x4)
+    ret v2
+-- card
+{"addr":"0x7a0","approxTokens":120,"blocks":1,"hardReasons":[],"name":"getgrgid_r","nameSources":["plt"],"section":".plt","size":16,"sizeEstimated":true,"unsupported":0}
+
+== 0x7b0 mprotect
+-- decompile
+/* velk pseudo-C: mprotect @ 0x7b0 */
+/* ref: 0x20048 .got.plt */
+int mprotect(void *a0, size_t a1, int a2) {
+    uint64_t *const mprotect_20048_u64 = (uint64_t *)0x20048ULL;
+
+    int32_t v1 = *mprotect_20048_u64;
+    return mprotect(a0, a1, a2);
+}
+-- signature
+int (void * a0, size_t a1, int a2)
+-- references
+0x20048 .got.plt
+-- ir
+fn mprotect @ 0x7b0 (size 16)
+  blk0 @ 0x7b0:
+    v1 = load64(#0x20048)
+    v2:x0, x1, d0, d1 = call *load64(#0x20048)(x0, x1, x2)
+    ret v2
+-- card
+{"addr":"0x7b0","approxTokens":120,"blocks":1,"hardReasons":[],"name":"mprotect","nameSources":["plt"],"section":".plt","size":16,"sizeEstimated":true,"unsupported":0}
+
+== 0x7c0 _start
+-- decompile
+/* velk pseudo-C: _start @ 0x7c0 */
+/* ref: 0x1ffd8 .got */
+int32_t _start(void *a0, int64_t a1) {
+    uint64_t sp = velk_entry_stack_pointer();
+    uint64_t *const qword_1ffd8 = (uint64_t *)0x1ffd8ULL;
+
+    __libc_start_main((void *)*qword_1ffd8, a1, (char **)(sp + 8), 0x0, 0x0, a0, (void *)sp);
+    abort();
+}
+-- signature
+int32_t (void * a0)
+-- references
+0x1ffd8 .got
+-- ir
+fn _start @ 0x7c0 (size 52)
+  blk0 @ 0x7c0:
+    x0, x1, d0, d1 = call 0x720(load64(#0x1ffd8), load64(sp), (sp + #0x8), #0x0, #0x0, x0, sp)
+    x0, x1, d0, d1 = call 0x790()
+    trap
+-- card
+{"addr":"0x7c0","approxTokens":174,"blocks":1,"hardReasons":[],"name":"_start","nameSources":["symtab","entry","unwind"],"section":".text","size":52,"unsupported":0}
+
+== 0x7f4 call_weak_fn
+-- decompile
+/* velk pseudo-C: call_weak_fn @ 0x7f4 */
+/* ref: 0x1ffd0 .got */
+int32_t call_weak_fn(void) {
+    uint64_t *const __gmon_start___1ffd0_u64 = (uint64_t *)0x1ffd0ULL;
+    uint64_t v2;
+
+    v2 = *__gmon_start___1ffd0_u64;
+    if (v2 == 0) {
+        return 0;
+    }
+    return __gmon_start__();
+}
+-- signature
+int32_t ()
+-- references
+0x1ffd0 .got
+-- ir
+fn call_weak_fn @ 0x7f4 (size 20)
+  blk0 @ 0x7f4:
+    x0 = load64(#0x1ffd0)
+    brif eq x0, #0x0 -> 0x804
+  blk1 @ 0x800:
+    v1:x0, x1, d0, d1 = call 0x780
+    ret v1
+  blk2 @ 0x804:
+    ret #0x0
+-- card
+{"addr":"0x7f4","approxTokens":126,"blocks":3,"hardReasons":[],"name":"call_weak_fn","nameSources":["symtab"],"section":".text","size":20,"unsupported":0}
+
+== 0x810 deregister_tm_clones
+-- decompile
+/* velk pseudo-C: deregister_tm_clones @ 0x810 */
+void deregister_tm_clones(void) {
+}
+-- signature
+void ()
+-- references
+
+-- ir
+fn deregister_tm_clones @ 0x810 (size 48)
+  blk0 @ 0x810:
+    br 0x83c
+  blk1 @ 0x83c:
+    ret #0x0
+-- card
+{"addr":"0x810","approxTokens":168,"blocks":2,"hardReasons":[],"name":"deregister_tm_clones","nameSources":["symtab","unwind"],"section":".text","size":48,"unsupported":0}
+
+== 0x840 register_tm_clones
+-- decompile
+/* velk pseudo-C: register_tm_clones @ 0x840 */
+/* ref: 0x20060 .bss */
+int32_t register_tm_clones(void) {
+    uint8_t *const completed_0 = (uint8_t *)0x20060ULL;
+
+    return (uintptr_t)completed_0;
+}
+-- signature
+int32_t ()
+-- references
+0x20060 .bss
+-- ir
+fn register_tm_clones @ 0x840 (size 60)
+  blk0 @ 0x840:
+    br 0x878
+  blk1 @ 0x878:
+    ret #0x20060
+-- card
+{"addr":"0x840","approxTokens":186,"blocks":2,"hardReasons":[],"name":"register_tm_clones","nameSources":["symtab","unwind"],"section":".text","size":60,"unsupported":0}
+
+== 0x880 __do_global_dtors_aux
+-- decompile
+/* velk pseudo-C: __do_global_dtors_aux @ 0x880 */
+/* ref: 0x1ffc8 .got */
+/* ref: 0x20000 .got.plt */
+/* ref: 0x20058 .data */
+/* ref: 0x20060 .bss */
+int32_t __do_global_dtors_aux(void) {
+    uint64_t *const __cxa_finalize_1ffc8_u64 = (uint64_t *)0x1ffc8ULL;
+    uint64_t *const __dso_handle = (uint64_t *)0x20058ULL;
+    uint8_t *const completed_0 = (uint8_t *)0x20060ULL;
+    uint64_t v8;
+    uint64_t v9;
+    uint64_t v10;
+    uint64_t v11;
+    uint64_t v12;
+    void *v3;
+    int32_t v4;
+    int32_t v5;
+    int32_t v6;
+    int64_t local_0; /* [sp-18] */
+
+    /* unsupported: PACIASP at 0x880 */
+    local_0 = v10;
+    int32_t result = *completed_0;
+    if ((result & 0x1) == 0) {
+        if (*__cxa_finalize_1ffc8_u64 != 0) {
+            v3 = (void *)*__dso_handle;
+            __cxa_finalize(v3);
+        }
+        {
+            uint64_t call_values[4];
+            call_values[0] = deregister_tm_clones();
+            call_values[1] = v9; /* also returned by the call */
+            call_values[2] = v11; /* also returned by the call */
+            call_values[3] = v12; /* also returned by the call */
+            v8 = call_values[0];
+            v4 = call_values[1];
+            v5 = call_values[2];
+            v6 = call_values[3];
+        }
+        result = 1;
+        *completed_0 = 1;
+    }
+    int32_t v7 = local_0;
+    /* unsupported: AUTIASP at 0x8c8 */
+    return result;
+}
+-- signature
+int32_t ()
+-- references
+0x1ffc8 .got
+0x20000 .got.plt
+0x20058 .data
+0x20060 .bss
+-- ir
+fn __do_global_dtors_aux @ 0x880 (size 80)
+  blk0 @ 0x880:
+    unsupported: PACIASP at 0x880
+    store64(x30, (sp + #0xffffffffffffffe8))
+    v1 = #0x20000
+    v2 = (load8(#0x20060) & #0xffffffff)
+    brif ne (v2 & #0x1), #0x0 -> 0x8c0
+  blk1 @ 0x89c:
+    brif eq load64(#0x1ffc8), #0x0 -> 0x8b4
+  blk2 @ 0x8a8:
+    v3 = load64(#0x20058)
+    x0, x1, d0, d1 = call 0x730(v3)
+  blk3 @ 0x8b4:
+    x0, v4:x1, v5:d0, v6:d1 = call 0x810()
+    v2 = #0x1
+    store8(#0x1, #0x20060)
+  blk4 @ 0x8c0:
+    v7 = load64((sp + #0xffffffffffffffe8))
+    unsupported: AUTIASP at 0x8c8
+    ret v2
+-- card
+{"addr":"0x880","approxTokens":216,"blocks":5,"hardReasons":[],"name":"__do_global_dtors_aux","nameSources":["symtab","unwind"],"section":".text","size":80,"unsupported":2}
+
+== 0x8d0 frame_dummy
+-- decompile
+/* velk pseudo-C: frame_dummy @ 0x8d0 */
+int32_t frame_dummy(void) {
+    return register_tm_clones();
+}
+-- signature
+int32_t ()
+-- references
+
+-- ir
+fn frame_dummy @ 0x8d0 (size 8)
+  blk0 @ 0x8d0:
+    v1:x0, x1, d0, d1 = call 0x840()
+    ret v1
+-- card
+{"addr":"0x8d0","approxTokens":108,"blocks":1,"hardReasons":[],"name":"frame_dummy","nameSources":["symtab","unwind"],"section":".text","size":8,"unsupported":0}
+
+== 0x8d8 linux_group
+-- decompile
+/* velk pseudo-C: linux_group @ 0x8d8 */
+int32_t linux_group(struct group *a0) {
+    struct group *v1 = a0;
+    getgrgid_r(7, v1, 0x0, 0, 0x0);
+    return v1->gr_gid;
+}
+-- signature
+int32_t (struct group * a0)
+-- references
+
+-- ir
+fn linux_group @ 0x8d8 (size 56)
+  blk0 @ 0x8d8:
+    v1 = x0
+    x0, x1, d0, d1 = call 0x7a0(#0x7, v1, #0x0, #0x0, #0x0)
+    ret load32((v1 + #0x10))
+-- card
+{"accesses":["a0 +0x10:uint32_t"],"addr":"0x8d8","approxTokens":180,"blocks":1,"hardReasons":[],"name":"linux_group","nameSources":["symtab","unwind"],"section":".text","size":56,"unsupported":0}
+
+== 0x910 linux_file
+-- decompile
+/* velk pseudo-C: linux_file @ 0x910 */
+int linux_file(int a0) {
+    return fsync(a0);
+}
+-- signature
+int (int a0)
+-- references
+
+-- ir
+fn linux_file @ 0x910 (size 4)
+  blk0 @ 0x910:
+    v1:x0, x1, d0, d1 = call 0x750(x0)
+    ret v1
+-- card
+{"addr":"0x910","approxTokens":102,"blocks":1,"hardReasons":[],"name":"linux_file","nameSources":["symtab","unwind"],"section":".text","size":4,"unsupported":0}
+
+== 0x914 linux_process
+-- decompile
+/* velk pseudo-C: linux_process @ 0x914 */
+int linux_process(int a0) {
+    return kill(a0, 0);
+}
+-- signature
+int (int a0)
+-- references
+
+-- ir
+fn linux_process @ 0x914 (size 8)
+  blk0 @ 0x914:
+    v1:x0, x1, d0, d1 = call 0x740(x0, #0x0)
+    ret v1
+-- card
+{"addr":"0x914","approxTokens":108,"blocks":1,"hardReasons":[],"name":"linux_process","nameSources":["symtab","unwind"],"section":".text","size":8,"unsupported":0}
+
+== 0x91c linux_memory
+-- decompile
+/* velk pseudo-C: linux_memory @ 0x91c */
+int linux_memory(void *a0, size_t a1) {
+    return mprotect(a0, a1, 1);
+}
+-- signature
+int (void * a0, size_t a1)
+-- references
+
+-- ir
+fn linux_memory @ 0x91c (size 8)
+  blk0 @ 0x91c:
+    v1:x0, x1, d0, d1 = call 0x7b0(x0, x1, #0x1)
+    ret v1
+-- card
+{"addr":"0x91c","approxTokens":108,"blocks":1,"hardReasons":[],"name":"linux_memory","nameSources":["symtab","unwind"],"section":".text","size":8,"unsupported":0}
+
+== 0x924 linux_socket
+-- decompile
+/* velk pseudo-C: linux_socket @ 0x924 */
+int linux_socket(int a0) {
+    return shutdown(a0, 0);
+}
+-- signature
+int (int a0)
+-- references
+
+-- ir
+fn linux_socket @ 0x924 (size 8)
+  blk0 @ 0x924:
+    v1:x0, x1, d0, d1 = call 0x770(x0, #0x0)
+    ret v1
+-- card
+{"addr":"0x924","approxTokens":108,"blocks":1,"hardReasons":[],"name":"linux_socket","nameSources":["symtab","unwind"],"section":".text","size":8,"unsupported":0}
+
+== 0x92c linux_thread
+-- decompile
+/* velk pseudo-C: linux_thread @ 0x92c */
+int linux_thread(unsigned long a0) {
+    return pthread_kill(a0, 0);
+}
+-- signature
+int (unsigned long a0)
+-- references
+
+-- ir
+fn linux_thread @ 0x92c (size 8)
+  blk0 @ 0x92c:
+    v1:x0, x1, d0, d1 = call 0x760(x0, #0x0)
+    ret v1
+-- card
+{"addr":"0x92c","approxTokens":108,"blocks":1,"hardReasons":[],"name":"linux_thread","nameSources":["symtab","unwind"],"section":".text","size":8,"unsupported":0}
+
+== 0x934 main
+-- decompile
+/* velk pseudo-C: main @ 0x934 */
+int32_t main(void) {
+    return 0;
+}
+-- signature
+int32_t ()
+-- references
+
+-- ir
+fn main @ 0x934 (size 8)
+  blk0 @ 0x934:
+    ret #0x0
+-- card
+{"addr":"0x934","approxTokens":108,"blocks":1,"hardReasons":[],"name":"main","nameSources":["symtab","unwind"],"section":".text","size":8,"unsupported":0}
+
+== 0x93c _fini
+-- decompile
+/* velk pseudo-C: _fini @ 0x93c */
+int64_t _fini(int64_t a0) {
+    return a0;
+}
+-- signature
+int64_t (int64_t a0)
+-- references
+
+-- ir
+fn _fini @ 0x93c (size 20)
+  blk0 @ 0x93c:
+    ret x0
+-- card
+{"addr":"0x93c","approxTokens":126,"blocks":1,"hardReasons":[],"name":"_fini","nameSources":["symtab"],"section":".fini","size":20,"sizeEstimated":true,"unsupported":0}

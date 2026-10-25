@@ -1,15 +1,15 @@
 # functions left out:
 #   accesses memory: 240
-#   calls: 7809
+#   calls: 7849
 #   computes on floats or vectors: 1
 #   does not lift: 11
 #   has an unsupported instruction: 106
 #   reads a register that is not a parameter: 5
-#   refers to data: 339
+#   refers to data: 345
 #   requires an external machine-state source: 2
 #   returns no integer: 284
-#   returns nothing: 646
-#   takes an argument that is no integer: 917
+#   returns nothing: 651
+#   takes an argument that is no integer: 920
 #   takes arguments on the stack: 81
 # runs left out:
 #   step limit: 47
@@ -315,6 +315,8 @@
 # tail_indirect.o: 2 functions, 1 qualify, 1 compile, 0 do not, 1 compared (12 runs), 0 differ
 # tail_indirect_stripped.o: 2 functions, 1 qualify, 1 compile, 0 do not, 1 compared (12 runs), 0 differ
 # type_library_arm64: 6 functions, 1 qualify, 1 compile, 0 do not, 1 compared (12 runs), 0 differ
+# type_library_linux_arm64: 25 functions, 2 qualify, 2 compile, 0 do not, 2 compared (24 runs), 0 differ
+# type_library_linux_x86_64: 21 functions, 3 qualify, 3 compile, 0 do not, 3 compared (36 runs), 0 differ
 # type_library_x86_64: 6 functions, 1 qualify, 1 compile, 0 do not, 1 compared (12 runs), 0 differ
 # x64_div.o: 18 functions, 18 qualify, 18 compile, 0 do not, 18 compared (216 runs), 0 differ
 # x64_div_macho.o: 18 functions, 18 qualify, 18 compile, 0 do not, 18 compared (216 runs), 0 differ

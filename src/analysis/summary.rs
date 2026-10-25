@@ -724,7 +724,7 @@ fn named(image: &Image, name: &str, imported: bool) -> Summary {
         .unwrap_or(name);
     let noreturn = NORETURN_IMPORTS.contains(&unprefixed) || runtime_noreturn(unprefixed);
     let prototype = imported
-        .then(|| super::prototypes::of(name, image.format == crate::loader::Format::MachO))
+        .then(|| super::prototypes::for_image(name, image))
         .flatten();
     Summary {
         arity: prototype.map(super::prototypes::Prototype::fixed),

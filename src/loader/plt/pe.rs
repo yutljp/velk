@@ -4,6 +4,20 @@ use object::read::pe::Import;
 use object::{LittleEndian, Object, ObjectSection};
 
 pub(super) fn imports(file: &object::read::pe::PeFile64<'_>) -> HashMap<u64, String> {
+    named_imports(file)
+        .into_iter()
+        .map(|(slot, (name, _))| (slot, name))
+        .collect()
+}
+
+pub(super) fn qualified_imports(file: &object::read::pe::PeFile64<'_>) -> HashMap<u64, String> {
+    named_imports(file)
+        .into_iter()
+        .map(|(slot, (name, dll))| (slot, format!("{dll}!{name}")))
+        .collect()
+}
+
+fn named_imports(file: &object::read::pe::PeFile64<'_>) -> HashMap<u64, (String, String)> {
     let Ok(Some(table)) = file.import_table() else {
         return HashMap::new();
     };
@@ -12,6 +26,10 @@ pub(super) fn imports(file: &object::read::pe::PeFile64<'_>) -> HashMap<u64, Str
     };
     let mut imports = HashMap::new();
     while let Ok(Some(descriptor)) = descriptors.next() {
+        let Ok(dll) = table.name(descriptor.name.get(LittleEndian)) else {
+            continue;
+        };
+        let dll = String::from_utf8_lossy(dll).to_ascii_lowercase();
         let first = descriptor.first_thunk.get(LittleEndian);
         if first == 0 {
             continue;
@@ -35,7 +53,10 @@ pub(super) fn imports(file: &object::read::pe::PeFile64<'_>) -> HashMap<u64, Str
             if let Ok(Import::Name(_, name)) = table.import::<object::pe::ImageNtHeaders64>(thunk)
                 && !name.is_empty()
             {
-                imports.insert(slot, String::from_utf8_lossy(name).into_owned());
+                imports.insert(
+                    slot,
+                    (String::from_utf8_lossy(name).into_owned(), dll.clone()),
+                );
             }
             let Some(next) = slot.checked_add(8) else {
                 break;

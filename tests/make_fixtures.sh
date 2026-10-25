@@ -137,7 +137,7 @@ done
 # info, for both ISAs at -O0 and -O2.
 for source in "$CASES"/c/*.c; do
   case=$(basename "$source" .c)
-  case "$case" in pe64 | shared_pointers) continue ;; esac
+  case "$case" in pe64 | shared_pointers | type_library_linux | type_library_windows) continue ;; esac
   for isa in aarch64 x86_64; do
     emulation=aarch64elf; [ "$isa" = x86_64 ] && emulation=elf_x86_64
     for opt in O0 O2; do
@@ -152,6 +152,7 @@ done
 
 bash tests/make_pe_fixtures.sh
 bash tests/make_seh_fixtures.sh
+sh tests/make_type_library_fixtures.sh linux
 
 {
   echo "uname: $(uname -srm)"

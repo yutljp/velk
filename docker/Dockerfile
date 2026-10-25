@@ -8,6 +8,8 @@
 # tests/out-canonical/toolchain.txt in the commit message.
 FROM ubuntu:24.04
 
+COPY --from=ghcr.io/astral-sh/uv:0.10.12 /uv /usr/local/bin/uv
+
 ARG DEBIAN_FRONTEND=noninteractive
 # Pinned versions (overridable from compose.yml)
 ARG CLANG_MAJOR=18
@@ -20,6 +22,7 @@ RUN apt-get update \
  && apt-get install -y --no-install-recommends \
       clang-${CLANG_MAJOR} lld-${CLANG_MAJOR} llvm-${CLANG_MAJOR} \
       build-essential pkg-config ca-certificates curl xz-utils git python3 \
+      mingw-w64 gcc-aarch64-linux-gnu libc6-dev-arm64-cross \
  && rm -rf /var/lib/apt/lists/*
 
 ENV PATH=/usr/lib/llvm-${CLANG_MAJOR}/bin:/usr/local/bin:/usr/local/go/bin:/root/.cargo/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin

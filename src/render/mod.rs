@@ -140,6 +140,14 @@ pub fn callee_names(image: &crate::loader::Image) -> Symbols {
             .collect(),
         target_format: (image.byte_order() == Some(object::Endianness::Little))
             .then_some(image.format),
+        library_prototypes: image
+            .imports
+            .values()
+            .filter_map(|name| {
+                crate::analysis::prototypes::for_image(name, image)
+                    .map(|prototype| (sanitize(name), prototype.clone()))
+            })
+            .collect(),
         variadic_functions: crate::loader::dwarf::variadic::functions(image),
         functions,
         cpp_methods: image
@@ -190,10 +198,7 @@ pub fn callee_names(image: &crate::loader::Image) -> Symbols {
                     return None;
                 };
                 let prototype = if function.sources.contains(&crate::loader::NameSource::Plt) {
-                    crate::analysis::prototypes::of(
-                        name,
-                        image.format == crate::loader::Format::MachO,
-                    )
+                    crate::analysis::prototypes::for_image(name, image)
                 } else {
                     crate::analysis::prototypes::runtime(name)
                 };
@@ -207,10 +212,7 @@ pub fn callee_names(image: &crate::loader::Image) -> Symbols {
             .imports
             .iter()
             .filter_map(|(address, name)| {
-                let prototype = crate::analysis::prototypes::of(
-                    name,
-                    image.format == crate::loader::Format::MachO,
-                );
+                let prototype = crate::analysis::prototypes::for_image(name, image);
                 let Some(prototype) = prototype else {
                     return None;
                 };

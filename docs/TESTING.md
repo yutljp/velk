@@ -80,6 +80,19 @@ To run the test suite in the same pinned Linux environment, use `docker compose 
 Regenerate the C API type library with `UV_CACHE_DIR=target/uv-cache uv run tests/generate_type_library.py`
 and its Mach-O fixtures with `sh tests/make_type_library_fixtures.sh`.
 
+Generate the Windows and Linux datasets and fixtures in the reference environment:
+
+```sh
+docker compose build fixtures
+docker compose run --rm fixtures uv run tests/generate_type_library.py --platform windows
+docker compose run --rm fixtures uv run tests/generate_type_library.py --platform linux
+docker compose run --rm fixtures sh tests/make_type_library_fixtures.sh linux
+```
+
+The Windows dataset includes x86-64 and x86-32; only x86-64 is currently lifted.
+Linux data and fixtures cover x86-64 and AArch64. Each target's signatures and
+padded structure sizes, alignments, and field offsets are checked by its compiler.
+
 Some groups have their own scripts: `tests/make_pe_fixtures.sh` (Windows PE), `tests/make_codeview.sh`
 (CodeView / PDB), `tests/make_seh_fixtures.sh` (Windows SEH), `tests/make_objc_fixtures.sh` (Objective-C) and
 `tests/make_arm64_lang_fixtures.sh` (AArch64 Rust and Go). Rebuild deliberately and review the changed bytes and

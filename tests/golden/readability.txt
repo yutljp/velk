@@ -457,12 +457,12 @@ objc_x86_64_O2: 36 lines, 0 prelude lines, 1 variables, 1 casts, 0 registers, 0 
 objc_x86_64_O2_stripped: 36 lines, 0 prelude lines, 1 variables, 1 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
 pe64.exe: 47 lines, 0 prelude lines, 2 variables, 8 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
 pe64.obj: 46 lines, 0 prelude lines, 2 variables, 8 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
-rust_demo: 59450 lines, 254 prelude lines, 6276 variables, 9224 casts, 12 registers, 0 unsigned, 30 traps, 1398 gotos, 130 indirect calls
+rust_demo: 59448 lines, 276 prelude lines, 6275 variables, 9228 casts, 12 registers, 0 unsigned, 30 traps, 1398 gotos, 130 indirect calls
 rust_demo_arm64: 58913 lines, 322 prelude lines, 7433 variables, 8922 casts, 23 registers, 0 unsigned, 32 traps, 1332 gotos, 155 indirect calls
-rust_probe: 59450 lines, 254 prelude lines, 6276 variables, 9224 casts, 12 registers, 0 unsigned, 30 traps, 1398 gotos, 130 indirect calls
+rust_probe: 59448 lines, 276 prelude lines, 6275 variables, 9228 casts, 12 registers, 0 unsigned, 30 traps, 1398 gotos, 130 indirect calls
 rust_probe_arm64: 58913 lines, 322 prelude lines, 7433 variables, 8922 casts, 23 registers, 0 unsigned, 32 traps, 1332 gotos, 155 indirect calls
 rust_probe_arm64_stripped: 58783 lines, 288 prelude lines, 7420 variables, 8865 casts, 23 registers, 0 unsigned, 32 traps, 1332 gotos, 155 indirect calls
-rust_probe_stripped: 59425 lines, 212 prelude lines, 6340 variables, 9225 casts, 12 registers, 0 unsigned, 31 traps, 1400 gotos, 126 indirect calls
+rust_probe_stripped: 59425 lines, 234 prelude lines, 6340 variables, 9231 casts, 12 registers, 0 unsigned, 31 traps, 1400 gotos, 126 indirect calls
 seh.O0.dll: 103 lines, 0 prelude lines, 15 variables, 11 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
 seh.O2.dll: 69 lines, 0 prelude lines, 6 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
 seh_cpp.O0.dll: 30 lines, 0 prelude lines, 2 variables, 1 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
@@ -477,6 +477,9 @@ tail_calls_stripped.o: 13 lines, 3 prelude lines, 0 variables, 1 casts, 0 regist
 tail_indirect.o: 8 lines, 0 prelude lines, 0 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 1 indirect calls
 tail_indirect_stripped.o: 8 lines, 0 prelude lines, 0 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 1 indirect calls
 type_library_arm64: 37 lines, 9 prelude lines, 7 variables, 2 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+type_library_linux_arm64: 199 lines, 17 prelude lines, 41 variables, 18 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+type_library_linux_x86_64: 111 lines, 19 prelude lines, 10 variables, 7 casts, 3 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+type_library_windows.win64.exe: 64 lines, 17 prelude lines, 0 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
 type_library_x86_64: 28 lines, 9 prelude lines, 0 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
 x64_div.o: 72 lines, 0 prelude lines, 0 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
 x64_div_macho.o: 72 lines, 0 prelude lines, 0 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls

@@ -745,9 +745,7 @@ pub(crate) fn call(
             .functions
             .get(&target)
             .and_then(|function| function.name.as_deref())
-            .and_then(|name| {
-                crate::analysis::prototypes::of(name, image.format == crate::loader::Format::MachO)
-            })
+            .and_then(|name| crate::analysis::prototypes::for_image(name, image))
             .is_some_and(|prototype| prototype.format.is_some())
     });
     let summary = target.filter(|_| !variadic).map(summaries);
@@ -1139,9 +1137,7 @@ pub(crate) fn import_called(image: &Image, through: &Expr) -> Option<crate::load
 pub(crate) fn call_through(kind: CallKind, image: &Image, through: Expr) -> Stmt {
     let convention = Convention::of(image.isa, image.format, image.go);
     let variadic = crate::lift::import_name(image, &through)
-        .and_then(|name| {
-            crate::analysis::prototypes::of(name, image.format == crate::loader::Format::MachO)
-        })
+        .and_then(|name| crate::analysis::prototypes::for_image(name, image))
         .is_some_and(|prototype| prototype.format.is_some());
     let arity = import_called(image, &through)
         .filter(|_| !variadic)

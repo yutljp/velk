@@ -76,6 +76,19 @@ docker compose run --rm fixtures
 C API 型ライブラリは `UV_CACHE_DIR=target/uv-cache uv run tests/generate_type_library.py` で、
 その Mach-O フィクスチャは `sh tests/make_type_library_fixtures.sh` で再生成します。
 
+Windows と Linux のデータとフィクスチャは参照環境で生成します。
+
+```sh
+docker compose build fixtures
+docker compose run --rm fixtures uv run tests/generate_type_library.py --platform windows
+docker compose run --rm fixtures uv run tests/generate_type_library.py --platform linux
+docker compose run --rm fixtures sh tests/make_type_library_fixtures.sh linux
+```
+
+Windows データは x86-64 と x86-32 を含み、現在のリフト対象は x86-64 です。
+Linux のデータとフィクスチャは x86-64 と AArch64 を対象とします。各ターゲットの
+コンパイラーで宣言とパディングを含む構造体のサイズ、アラインメント、フィールドのオフセットを検証します。
+
 一部のグループには専用のスクリプトがあります。`tests/make_pe_fixtures.sh` (Windows PE)、`tests/make_codeview.sh`
 (CodeView / PDB)、`tests/make_seh_fixtures.sh` (Windows SEH)、`tests/make_objc_fixtures.sh` (Objective-C)、
 `tests/make_arm64_lang_fixtures.sh` (AArch64 の Rust と Go) です。再生成は意図して行い、変わったバイトと記録された

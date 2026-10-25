@@ -6,7 +6,7 @@ mkdir -p tests/fixtures/metrics target/pe-build
 clang --target=x86_64-pc-windows-msvc -c tests/cases/pe/runtime.c -o target/pe-build/runtime.obj
 for source in tests/cases/c/*.c; do
   case=$(basename "$source" .c)
-  case "$case" in pe64 | shared_pointers) continue ;; esac
+  case "$case" in pe64 | shared_pointers | type_library_linux | type_library_windows) continue ;; esac
   for opt in O0 O2; do
     base="tests/fixtures/metrics/$case.win64.$opt"
     clang --target=x86_64-pc-windows-msvc -gdwarf -"$opt" -fno-inline -fno-builtin \

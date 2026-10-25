@@ -6,6 +6,8 @@ pub struct Symbols {
     pub variadic_functions: HashMap<u64, usize>,
     /// The object format of a known little-endian target.
     pub target_format: Option<crate::loader::Format>,
+    /// Target-specific declarations of imported functions, keyed by printed name.
+    pub library_prototypes: HashMap<String, crate::analysis::prototypes::Prototype>,
     pub functions: HashMap<u64, String>,
     /// C++ method signatures without their owning class.
     pub cpp_methods: HashMap<u64, String>,

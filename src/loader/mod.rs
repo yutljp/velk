@@ -243,6 +243,8 @@ pub struct Image {
     /// The slots the dynamic linker fills with another module's function or
     /// object, by its name: calls through them call it.
     pub imports: BTreeMap<u64, String>,
+    /// DLL-qualified names of PE imports, keyed by their slots.
+    pub(crate) qualified_imports: HashMap<u64, String>,
     /// The landing pads of the exception tables, each with the code ranges
     /// whose calls unwind into it.
     pub landing_pads: BTreeMap<u64, Vec<(u64, u64)>>,
@@ -400,6 +402,7 @@ impl Image {
             go_abi0: Default::default(),
             stack_rows: Default::default(),
             imports: BTreeMap::new(),
+            qualified_imports: HashMap::new(),
             landing_pads: BTreeMap::new(),
             exception_handlers: Vec::new(),
             result_reads: Default::default(),
@@ -973,6 +976,7 @@ pub fn load(path: &Path) -> Result<Image> {
         relocations,
         relocatable: file.kind() == object::ObjectKind::Relocatable,
         imports: plt::imports(&file).into_iter().collect(),
+        qualified_imports: plt::qualified_imports(&file),
         landing_pads: BTreeMap::new(),
         exception_handlers: Vec::new(),
         go: false,

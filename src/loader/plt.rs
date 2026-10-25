@@ -38,6 +38,13 @@ pub(super) fn imports(file: &ObjFile) -> HashMap<u64, String> {
         .collect()
 }
 
+pub(super) fn qualified_imports(file: &ObjFile) -> HashMap<u64, String> {
+    match file {
+        ObjFile::Pe64(pe) => self::pe::qualified_imports(pe),
+        _ => HashMap::new(),
+    }
+}
+
 /// `(stub address, imported name)` for every stub that jumps through a slot
 /// a dynamic relocation names, or that Mach-O's indirect symbol table names.
 pub(super) fn stubs(file: &ObjFile) -> Vec<(u64, String)> {

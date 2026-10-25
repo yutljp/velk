@@ -3,8 +3,8 @@
 //! result. A variadic function that takes a format string names it, and its
 //! conversions count the arguments that follow.
 //!
-//! macOS declarations and record layouts come from the generated SDK library.
-//! Other targets and unsupported declarations use the tables below.
+//! Platform declarations and record layouts come from generated header libraries.
+//! Unsupported declarations use the tables below.
 //!
 //! The declarations are written as C declares them, apart from three
 //! simplifications: a pointer to a function is written `void (*)(...)` and
@@ -19,7 +19,7 @@ use crate::ir::{CType, Stmt};
 use crate::loader::{Image, NameSource};
 
 mod generated;
-pub(crate) use generated::{apply_records, is_library_record};
+pub(crate) use generated::{apply_records, is_library_record, record_name};
 
 /// What a function takes and returns.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -807,6 +807,14 @@ pub fn of(name: &str, macho: bool) -> Option<&'static Prototype> {
     None
 }
 
+/// Look up a declaration only in the library for the input's format and target.
+pub fn for_image(name: &str, image: &Image) -> Option<&'static Prototype> {
+    if let Some(prototype) = generated::for_image(name, image) {
+        return Some(prototype);
+    }
+    of(name, image.format == crate::loader::Format::MachO)
+}
+
 /// The prototype of a function of the Go or Rust runtime, by its name.
 #[must_use]
 pub fn runtime(name: &str) -> Option<&'static Prototype> {
@@ -817,7 +825,6 @@ pub fn runtime(name: &str) -> Option<&'static Prototype> {
 /// The prototype of the function a call reaches: an import, through its
 /// linkage stub or its slot, or a runtime function the binary defines.
 pub fn called(image: &Image, stmt: &Stmt) -> Option<&'static Prototype> {
-    let macho = image.format == crate::loader::Format::MachO;
     let Stmt::Call {
         target, through, ..
     } = stmt
@@ -825,7 +832,7 @@ pub fn called(image: &Image, stmt: &Stmt) -> Option<&'static Prototype> {
         return None;
     };
     if let Some(through) = through {
-        return crate::lift::import_name(image, through).and_then(|name| of(name, macho));
+        return crate::lift::import_name(image, through).and_then(|name| for_image(name, image));
     }
     let Some(target) = target else {
         return None;
@@ -837,7 +844,7 @@ pub fn called(image: &Image, stmt: &Stmt) -> Option<&'static Prototype> {
         return None;
     };
     if function.sources.contains(&NameSource::Plt) {
-        of(name, macho)
+        for_image(name, image)
     } else {
         runtime(name)
     }

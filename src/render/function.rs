@@ -1039,7 +1039,7 @@ fn render_with(
     .then(|| vacant_name("velk_entry_stack_pointer", &mut call_reserved));
     // The callees whose calls are printed with their declarations are
     // declared as their debug information declares them.
-    let declared_callees: HashMap<String, String> = ir
+    let mut declared_callees: HashMap<String, String> = ir
         .callee_signatures
         .iter()
         .filter_map(|(target, signature)| {
@@ -1064,6 +1064,41 @@ fn render_with(
             Some((callee, format!("{prototype};\n")))
         })
         .collect();
+    if matches!(
+        symbols.target_format,
+        Some(crate::loader::Format::Elf | crate::loader::Format::Pe | crate::loader::Format::Coff)
+    ) {
+        for (callee, prototype) in &symbols.library_prototypes {
+            if callee == &own
+                || declared_callees.contains_key(callee)
+                || !variables::mentions(&body, callee)
+                || crate::analysis::prototypes::of(callee, false) == Some(prototype)
+            {
+                continue;
+            }
+            let mut records = Vec::new();
+            for ty in prototype.params.iter().chain([&prototype.ret]) {
+                if let Some(record) = crate::analysis::prototypes::record_name(ty) {
+                    records.push(format!("{record}; "));
+                }
+            }
+            records.sort();
+            records.dedup();
+            let params = if prototype.params.is_empty() {
+                "void".to_owned()
+            } else {
+                prototype
+                    .params
+                    .iter()
+                    .map(ToString::to_string)
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            };
+            let text = declaration(&prototype.ret, &format!("{callee}({params})"));
+            // Keep tag declarations with the prototype when the prelude is sorted.
+            declared_callees.insert(callee.clone(), format!("{}{text};\n", records.concat()));
+        }
+    }
     let mut prototypes: String = ctx
         .taken
         .borrow()
@@ -1328,12 +1363,7 @@ fn render_with(
         }
     }
     out.insert_str(definitions_at, &ctx.globals.object_declarations(&body));
-    let debug = debug_definitions(
-        ir,
-        &out,
-        &ctx.arrays,
-        symbols.target_format == Some(crate::loader::Format::MachO),
-    );
+    let debug = debug_definitions(ir, &out, &ctx.arrays);
     out.insert_str(definitions_at, &debug);
     Rendered {
         code: super::prelude::combine(&if variadic.is_some() {
@@ -1484,7 +1514,6 @@ fn debug_definitions(
     ir: &FunctionIr,
     code: &str,
     arrays: &HashMap<String, naming::Layout>,
-    macho: bool,
 ) -> String {
     let named = |name: &str| {
         code.match_indices(name).any(|(at, _)| {
@@ -1541,7 +1570,7 @@ fn debug_definitions(
             }
             let text = defined(&definition.name, &members);
             if definition.name.starts_with("struct go_")
-                || (macho && crate::analysis::prototypes::is_library_record(definition))
+                || crate::analysis::prototypes::is_library_record(definition)
             {
                 super::prelude::section(&format!("{text}\n"))
             } else {

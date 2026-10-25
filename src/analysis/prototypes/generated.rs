@@ -1,25 +1,12 @@
 //! Header-derived declarations and record layouts, loaded on first use.
 //!
-//! `macos.json` version 1 contains 869 scalar signatures, 135 record layouts,
-//! 124 typedefs, and seven enums from the macOS 27.0 SDK. Source metadata records
-//! compiler versions, target triples, header names, and header SHA-256 hashes.
-//! No glibc or Win32 dataset is included. Only Mach-O inputs use this library.
-//!
-//! The generator retains declarations and layouts matching on arm64 and x86-64.
-//! It checks every admitted signature against the headers and compiles size,
-//! alignment, and field-offset assertions for both targets. Enum integer types
-//! are queried with compiler compatibility expressions without running target code.
-//!
-//! Aggregate values, long doubles, vectors, blocks, callbacks, mixed integer/float
-//! signatures, stack arguments, and new variadic signatures are excluded. Handwritten
-//! declarations supply format metadata and unsupported signatures. Typedefs resolve
-//! to supported C types; enum values and typedef spellings remain in the data.
-//!
-//! Debug definitions take precedence over library records. Unrepresented members
-//! remain byte arrays; packed layouts requiring reduced scalar alignment are
-//! excluded. Private SDK tags and records defined by the basic C headers stay
-//! opaque to avoid conflicting with system declarations. Shared prelude sections
-//! declare each referenced record once in combined output.
+//! Each format uses its own lazily loaded dataset. Target-specific declarations
+//! and record layouts are checked by the generator with the target compiler.
+//! Unsupported calling sequences remain with the handwritten declarations.
+//! Aggregate values, callbacks, variadic calls, and mixed integer/float parameters
+//! are excluded. Active lifters receive register arguments only. Unsupported typedef
+//! spellings resolve to scalar or pointer types; their original spellings remain
+//! in the source data.
 
 use std::collections::{HashMap, HashSet};
 use std::sync::OnceLock;
@@ -28,7 +15,7 @@ use serde::Deserialize;
 
 use super::Prototype;
 use crate::ir::{AbiProfile, CType, Definition, FunctionIr, Member};
-use crate::loader::{Format, Image};
+use crate::loader::{Format, Image, Isa};
 
 #[derive(Deserialize)]
 struct Source<'a> {
@@ -63,9 +50,133 @@ struct Library {
     records: HashMap<&'static str, Record<'static>>,
 }
 
+#[derive(Deserialize)]
+struct Targets<'a> {
+    version: u32,
+    #[serde(borrow)]
+    targets: HashMap<&'a str, Target<'a>>,
+}
+
+#[derive(Deserialize)]
+struct Target<'a> {
+    #[serde(borrow)]
+    functions: HashMap<&'a str, &'a str>,
+    #[serde(borrow)]
+    records: HashMap<&'a str, Record<'a>>,
+    #[serde(default, borrow)]
+    imports: HashMap<&'a str, &'a str>,
+}
+
+struct TargetLibrary {
+    library: Library,
+    imports: HashMap<&'static str, &'static str>,
+}
+
+static WINDOWS: OnceLock<HashMap<&'static str, TargetLibrary>> = OnceLock::new();
+static LINUX: OnceLock<HashMap<&'static str, TargetLibrary>> = OnceLock::new();
+
+fn targets(text: &'static str) -> HashMap<&'static str, TargetLibrary> {
+    let source: Targets<'static> =
+        serde_json::from_str(text).expect("valid generated target libraries");
+    assert_eq!(source.version, 2, "supported target library version");
+    source
+        .targets
+        .into_iter()
+        .map(|(name, target)| {
+            (
+                name,
+                TargetLibrary {
+                    library: Library {
+                        functions: target
+                            .functions
+                            .values()
+                            .map(|text| super::parse(text))
+                            .collect(),
+                        records: target.records,
+                    },
+                    imports: target.imports,
+                },
+            )
+        })
+        .collect()
+}
+
+fn target_library(image: &Image) -> Option<&'static TargetLibrary> {
+    if image.byte_order() != Some(object::Endianness::Little) {
+        return None;
+    }
+    let (libraries, name) = match (image.format, image.isa) {
+        (Format::Pe | Format::Coff, Isa::X86_64) => (
+            WINDOWS.get_or_init(|| targets(include_str!("windows.json"))),
+            "x86_64-w64-mingw32",
+        ),
+        (Format::Elf, Isa::X86_64) => (
+            LINUX.get_or_init(|| targets(include_str!("linux.json"))),
+            "x86_64-linux-gnu",
+        ),
+        (Format::Elf, Isa::AArch64) => (
+            LINUX.get_or_init(|| targets(include_str!("linux.json"))),
+            "aarch64-linux-gnu",
+        ),
+        _ => return None,
+    };
+    libraries.get(name)
+}
+
+pub(super) fn for_image(name: &str, image: &Image) -> Option<&'static Prototype> {
+    let Some(target) = target_library(image) else {
+        return None;
+    };
+    if image.format == Format::Elf {
+        return target
+            .library
+            .functions
+            .get(super::undecorated(name, false));
+    }
+    if let Some((dll, function)) = name.split_once('!') {
+        let qualified = format!("{}!{function}", dll.to_ascii_lowercase());
+        return target
+            .imports
+            .get(qualified.as_str())
+            .and_then(|name| target.library.functions.get(name));
+    }
+    // A name alone cannot establish which DLL exports a Windows declaration.
+    let mut qualified = None;
+    for (slot, imported) in &image.imports {
+        if imported != name {
+            continue;
+        }
+        let Some(full_name) = image.qualified_imports.get(slot) else {
+            continue;
+        };
+        if qualified.is_some_and(|previous| previous != full_name) {
+            return None;
+        }
+        qualified = Some(full_name);
+    }
+    let Some(qualified) = qualified else {
+        return None;
+    };
+    target
+        .imports
+        .get(qualified.as_str())
+        .and_then(|name| target.library.functions.get(name))
+}
+
+fn image_library(image: &Image) -> Option<&'static Library> {
+    if image.byte_order() != Some(object::Endianness::Little) {
+        return None;
+    }
+    if image.format == Format::MachO && matches!(image.isa, Isa::X86_64 | Isa::AArch64) {
+        return Some(library());
+    }
+    target_library(image).map(|target| &target.library)
+}
+
+static MACOS: OnceLock<Library> = OnceLock::new();
+
 fn library() -> &'static Library {
-    static LIBRARY: OnceLock<Library> = OnceLock::new();
-    LIBRARY.get_or_init(|| {
+    MACOS.get_or_init(|| {
         let source: Source<'static> =
             serde_json::from_str(include_str!("macos.json")).expect("valid generated type library");
         assert_eq!(source.version, 1, "supported type library version");
@@ -85,27 +196,31 @@ pub(super) fn of(name: &str) -> Option<&'static Prototype> {
 }
 
 pub(crate) fn is_library_record(definition: &Definition) -> bool {
-    let Some(record) = library().records.get(definition.name.as_str()) else {
-        return false;
-    };
-    !record.opaque
-        && definition.contains.is_empty()
-        && definition.size == record.size
-        && definition.alignment == Some(record.align)
-        && definition
-            .fields
-            .iter()
-            .map(String::as_str)
-            .eq(record.fields.iter().map(|field| field.name))
-        && record.fields.iter().all(|field| {
-            definition.members.contains(&format!(
-                "{};",
-                crate::render::declaration(&super::parse_type(field.ty), field.name)
-            ))
-        })
+    let libraries = WINDOWS.get().into_iter().chain(LINUX.get());
+    let records = libraries.flat_map(|targets| targets.values().map(|target| &target.library));
+    records.chain(MACOS.get()).any(|library| {
+        let Some(record) = library.records.get(definition.name.as_str()) else {
+            return false;
+        };
+        !record.opaque
+            && definition.contains.is_empty()
+            && definition.size == record.size
+            && definition.alignment == Some(record.align)
+            && definition
+                .fields
+                .iter()
+                .map(String::as_str)
+                .eq(record.fields.iter().map(|field| field.name))
+            && record.fields.iter().all(|field| {
+                definition.members.contains(&format!(
+                    "{};",
+                    crate::render::declaration(&super::parse_type(field.ty), field.name)
+                ))
+            })
+    })
 }
 
-fn record_name(ty: &CType) -> Option<&str> {
+pub(crate) fn record_name(ty: &CType) -> Option<&str> {
     match ty {
         CType::Pointer(target) | CType::Array(target) => record_name(target),
         CType::Named(name) => {
@@ -118,9 +233,9 @@ fn record_name(ty: &CType) -> Option<&str> {
 
 /// Add only records reached by typed values, without replacing debug types.
 pub(crate) fn apply_records(ir: &mut FunctionIr, image: &Image) {
-    if image.format != Format::MachO || image.byte_order() != Some(object::Endianness::Little) {
+    let Some(library) = image_library(image) else {
         return;
-    }
+    };
     let params = ir.params.iter().map(|param| &param.ty);
     let stack_params = ir.stack_params.iter().map(|param| &param.ty);
     let types = params
@@ -147,7 +262,7 @@ pub(crate) fn apply_records(ir: &mut FunctionIr, image: &Image) {
         {
             continue;
         }
-        let Some(record) = library().records.get(name.as_str()) else {
+        let Some(record) = library.records.get(name.as_str()) else {
             continue;
         };
         if record.opaque {
@@ -179,7 +294,7 @@ pub(crate) fn apply_records(ir: &mut FunctionIr, image: &Image) {
                 ty,
                 width,
             });
-            offset = at + width;
+            offset = at.saturating_add(width);
         }
         if offset < record.size {
             members.push(format!(
@@ -194,7 +309,11 @@ pub(crate) fn apply_records(ir: &mut FunctionIr, image: &Image) {
             contains: Vec::new(),
             size: record.size,
             alignment: Some(record.align),
-            compatible_profiles: vec![AbiProfile::SysV, AbiProfile::Aapcs64],
+            compatible_profiles: vec![match image.format {
+                Format::Pe | Format::Coff => AbiProfile::Win64,
+                _ if image.isa == Isa::AArch64 => AbiProfile::Aapcs64,
+                _ => AbiProfile::SysV,
+            }],
         });
     }
 }
@@ -204,7 +323,58 @@ mod tests {
     use super::*;
 
     #[test]
+    fn target_libraries_do_not_cross_formats_or_architectures() {
+        let mut image = Image::from_code(Isa::X86_64, 0x1000, Vec::new());
+        assert_eq!(
+            for_image("umask", &image).unwrap().ret.integer(),
+            Some((32, false))
+        );
+        assert!(!for_image("pthread_self", &image).unwrap().ret.is_pointer());
+        assert!(for_image("kernel32.dll!OpenProcess", &image).is_none());
+        image.format = Format::Pe;
+        assert!(for_image("getgrgid_r", &image).is_none());
+        assert!(for_image("OpenProcess", &image).is_none());
+        assert!(
+            for_image("KERNEL32.DLL!OpenProcess", &image)
+                .unwrap()
+                .ret
+                .is_pointer()
+        );
+        assert!(for_image("other.dll!OpenProcess", &image).is_none());
+        assert!(for_image("kernel32.dll!#1", &image).is_none());
+        assert_eq!(
+            for_image("kernel32.dll!_lclose", &image)
+                .unwrap()
+                .ret
+                .integer(),
+            Some((32, true))
+        );
+        assert_eq!(
+            for_image("user32.dll!GetWindowLongW", &image)
+                .unwrap()
+                .ret
+                .integer(),
+            Some((32, true))
+        );
+        let wide = for_image("kernel32.dll!lstrlenW", &image).unwrap();
+        assert_eq!(
+            wide.params[0],
+            CType::pointer_to(CType::Named("const unsigned short".into()))
+        );
+        image.isa = Isa::AArch64;
+        assert!(for_image("kernel32.dll!OpenProcess", &image).is_none());
+        image.format = Format::Elf;
+        assert_eq!(
+            for_image("umask", &image).unwrap().ret.integer(),
+            Some((32, false))
+        );
+        image.isa = Isa::Unsupported;
+        assert!(for_image("umask", &image).is_none());
+    }
+
+    #[test]
     fn shared_library_records_require_matching_definitions_without_dependencies() {
+        library();
         let mut definition = Definition {
             name: "struct iovec".into(),
             members: vec!["void *iov_base;".into(), "size_t iov_len;".into()],
@@ -248,6 +418,37 @@ mod tests {
             of("div").is_none(),
             "aggregate return needs ABI classification"
         );
+    }
+
+    #[test]
+    fn all_target_declarations_use_supported_scalar_types_and_fitted_fields() {
+        for text in [include_str!("windows.json"), include_str!("linux.json")] {
+            let targets = targets(text);
+            assert_eq!(targets.len(), 2);
+            for (target, data) in targets {
+                assert!(!data.library.functions.is_empty(), "{target}");
+                for (name, prototype) in &data.library.functions {
+                    for ty in prototype.params.iter().chain([&prototype.ret]) {
+                        assert!(
+                            matches!(ty, CType::Void | CType::Pointer(_))
+                                || ty.integer().is_some()
+                                || ty.is_sse_float(),
+                            "{target}: {name}: {ty}"
+                        );
+                    }
+                }
+                for (name, record) in &data.library.records {
+                    assert!(record.align.is_power_of_two(), "{target}: {name}");
+                    assert!(record.size.is_multiple_of(record.align), "{target}: {name}");
+                    let mut end = 0;
+                    for field in &record.fields {
+                        assert!(field.offset >= end && field.width > 0, "{target}: {name}");
+                        end = field.offset.checked_add(field.width).unwrap();
+                        assert!(end <= record.size, "{target}: {name}");
+                    }
+                }
+            }
+        }
     }
 
     #[test]

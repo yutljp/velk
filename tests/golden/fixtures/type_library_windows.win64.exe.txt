@@ -1,0 +1,277 @@
+# type_library_windows.win64.exe: pe x86_64 0x1400010a2, 13 functions, 0 lift failures, 0 unsupported, 0 gotos
+0x140001000 15 windows_file symtab,unwind
+0x14000100f 28 windows_process symtab,unwind
+0x14000102b 35 windows_memory symtab,unwind
+0x14000104e 15 windows_registry symtab,unwind
+0x14000105d 31 windows_socket symtab,unwind
+0x14000107c 15 windows_thread symtab,unwind
+0x14000108b 23 windows_time symtab,unwind
+0x1400010a2 1 fixture_entry symtab,entry,unwind
+0x1400010b0 8 VirtualAlloc plt
+0x1400010b8 8 OpenProcess plt
+0x1400010c0 8 GetSystemTimeAsFileTime plt
+0x1400010c8 8 GetFileType plt
+0x1400010d0 80 GetCurrentThreadId plt
+/* velk prelude */
+struct HKEY__; int32_t RegCloseKey(struct HKEY__ *);
+
+struct _FILETIME { _Alignas(4) uint32_t dwLowDateTime; uint32_t dwHighDateTime; };
+
+struct _FILETIME; void GetSystemTimeAsFileTime(struct _FILETIME *);
+
+uint32_t GetCurrentThreadId(void);
+
+uint32_t GetFileType(void *);
+
+unsigned long long socket(int, int, int);
+
+void *OpenProcess(uint32_t, int, uint32_t);
+
+void *VirtualAlloc(void *, unsigned long long, uint32_t, uint32_t);
+/* end velk prelude */
+
+== 0x140001000 windows_file
+-- decompile
+/* velk pseudo-C: windows_file @ 0x140001000 */
+/* ref: 0x1400050b8 .idata */
+uint32_t windows_file(void *a0) {
+    return GetFileType(a0);
+}
+-- signature
+uint32_t (void * a0)
+-- references
+0x1400050b8 .idata
+-- ir
+fn windows_file @ 0x140001000 (size 15)
+  blk0 @ 0x140001000:
+    v1:rax, xmm0 = call *load64(#0x1400050b8)(rcx)
+    ret v1
+-- card
+{"addr":"0x140001000","approxTokens":120,"blocks":1,"hardReasons":[],"name":"windows_file","nameSources":["symtab","unwind"],"section":".text","size":15,"unsupported":0}
+
+== 0x14000100f windows_process
+-- decompile
+/* velk pseudo-C: windows_process @ 0x14000100f */
+/* ref: 0x1400050c8 .idata */
+void *windows_process(uint32_t a0) {
+    return OpenProcess(0x400, 0, a0);
+}
+-- signature
+void * (uint32_t a0)
+-- references
+0x1400050c8 .idata
+-- ir
+fn windows_process @ 0x14000100f (size 28)
+  blk0 @ 0x14000100f:
+    v1:rax, xmm0 = call *load64(#0x1400050c8)(#0x400, #0x0, (rcx & #0xffffffff))
+    ret v1
+-- card
+{"addr":"0x14000100f","approxTokens":138,"blocks":1,"hardReasons":[],"name":"windows_process","nameSources":["symtab","unwind"],"section":".text","size":28,"unsupported":0}
+
+== 0x14000102b windows_memory
+-- decompile
+/* velk pseudo-C: windows_memory @ 0x14000102b */
+/* ref: 0x1400050d0 .idata */
+void *windows_memory(unsigned long long a0) {
+    return VirtualAlloc(0x0, a0, 0x3000, 4);
+}
+-- signature
+void * (unsigned long long a0)
+-- references
+0x1400050d0 .idata
+-- ir
+fn windows_memory @ 0x14000102b (size 35)
+  blk0 @ 0x14000102b:
+    v1:rax, xmm0 = call *load64(#0x1400050d0)(#0x0, rcx, #0x3000, #0x4)
+    ret v1
+-- card
+{"addr":"0x14000102b","approxTokens":144,"blocks":1,"hardReasons":[],"name":"windows_memory","nameSources":["symtab","unwind"],"section":".text","size":35,"unsupported":0}
+
+== 0x14000104e windows_registry
+-- decompile
+/* velk pseudo-C: windows_registry @ 0x14000104e */
+/* ref: 0x1400050a0 .idata */
+int32_t windows_registry(struct HKEY__ *a0) {
+    return RegCloseKey(a0);
+}
+-- signature
+int32_t (struct HKEY__ * a0)
+-- references
+0x1400050a0 .idata
+-- ir
+fn windows_registry @ 0x14000104e (size 15)
+  blk0 @ 0x14000104e:
+    v1:rax, xmm0 = call *load64(#0x1400050a0)(rcx)
+    ret v1
+-- card
+{"addr":"0x14000104e","approxTokens":120,"blocks":1,"hardReasons":[],"name":"windows_registry","nameSources":["symtab","unwind"],"section":".text","size":15,"unsupported":0}
+
+== 0x14000105d windows_socket
+-- decompile
+/* velk pseudo-C: windows_socket @ 0x14000105d */
+/* ref: 0x1400050e0 .idata */
+unsigned long long windows_socket(void) {
+    return socket(2, 1, 6);
+}
+-- signature
+unsigned long long ()
+-- references
+0x1400050e0 .idata
+-- ir
+fn windows_socket @ 0x14000105d (size 31)
+  blk0 @ 0x14000105d:
+    v1:rax, xmm0 = call *load64(#0x1400050e0)(#0x2, #0x1, #0x6)
+    ret v1
+-- card
+{"addr":"0x14000105d","approxTokens":138,"blocks":1,"hardReasons":[],"name":"windows_socket","nameSources":["symtab","unwind"],"section":".text","size":31,"unsupported":0}
+
+== 0x14000107c windows_thread
+-- decompile
+/* velk pseudo-C: windows_thread @ 0x14000107c */
+/* ref: 0x1400050b0 .idata */
+uint32_t windows_thread(void) {
+    return GetCurrentThreadId();
+}
+-- signature
+uint32_t ()
+-- references
+0x1400050b0 .idata
+-- ir
+fn windows_thread @ 0x14000107c (size 15)
+  blk0 @ 0x14000107c:
+    v1:rax, xmm0 = call *load64(#0x1400050b0)()
+    ret v1
+-- card
+{"addr":"0x14000107c","approxTokens":120,"blocks":1,"hardReasons":[],"name":"windows_thread","nameSources":["symtab","unwind"],"section":".text","size":15,"unsupported":0}
+
+== 0x14000108b windows_time
+-- decompile
+/* velk pseudo-C: windows_time @ 0x14000108b */
+/* ref: 0x1400050c0 .idata */
+int32_t windows_time(struct _FILETIME *a0) {
+    GetSystemTimeAsFileTime(a0);
+    return a0->dwHighDateTime;
+}
+-- signature
+int32_t (struct _FILETIME * a0)
+-- references
+0x1400050c0 .idata
+-- ir
+fn windows_time @ 0x14000108b (size 23)
+  blk0 @ 0x14000108b:
+    v1 = rcx
+    rax, xmm0 = call *load64(#0x1400050c0)(rcx)
+    ret load32((v1 + #0x4))
+-- card
+{"accesses":["a0 +0x4:uint32_t"],"addr":"0x14000108b","approxTokens":144,"blocks":1,"hardReasons":[],"name":"windows_time","nameSources":["symtab","unwind"],"section":".text","size":23,"unsupported":0}
+
+== 0x1400010a2 fixture_entry
+-- decompile
+/* velk pseudo-C: fixture_entry @ 0x1400010a2 */
+void fixture_entry(void) {
+}
+-- signature
+void ()
+-- references
+
+-- ir
+fn fixture_entry @ 0x1400010a2 (size 1)
+  blk0 @ 0x1400010a2:
+    ret #0x0
+-- card
+{"addr":"0x1400010a2","approxTokens":102,"blocks":1,"hardReasons":[],"name":"fixture_entry","nameSources":["symtab","entry","unwind"],"section":".text","size":1,"unsupported":0}
+
+== 0x1400010b0 VirtualAlloc
+-- decompile
+/* velk pseudo-C: VirtualAlloc @ 0x1400010b0 */
+/* ref: 0x1400050d0 .idata */
+void *VirtualAlloc(void *a0, unsigned long long a1, uint32_t a2, uint32_t a3) {
+    return VirtualAlloc(a0, a1, a2, a3);
+}
+-- signature
+void * (void * a0, unsigned long long a1, uint32_t a2, uint32_t a3)
+-- references
+0x1400050d0 .idata
+-- ir
+fn VirtualAlloc @ 0x1400010b0 (size 8)
+  blk0 @ 0x1400010b0:
+    v1:rax, xmm0 = call *load64(#0x1400050d0)(rcx, rdx, r8, r9)
+    ret v1
+-- card
+{"addr":"0x1400010b0","approxTokens":114,"blocks":1,"hardReasons":[],"name":"VirtualAlloc","nameSources":["plt"],"section":".text","size":8,"sizeEstimated":true,"unsupported":0}
+
+== 0x1400010b8 OpenProcess
+-- decompile
+/* velk pseudo-C: OpenProcess @ 0x1400010b8 */
+/* ref: 0x1400050c8 .idata */
+void *OpenProcess(uint32_t a0, int a1, uint32_t a2) {
+    return OpenProcess(a0, a1, a2);
+}
+-- signature
+void * (uint32_t a0, int a1, uint32_t a2)
+-- references
+0x1400050c8 .idata
+-- ir
+fn OpenProcess @ 0x1400010b8 (size 8)
+  blk0 @ 0x1400010b8:
+    v1:rax, xmm0 = call *load64(#0x1400050c8)(rcx, rdx, r8)
+    ret v1
+-- card
+{"addr":"0x1400010b8","approxTokens":114,"blocks":1,"hardReasons":[],"name":"OpenProcess","nameSources":["plt"],"section":".text","size":8,"sizeEstimated":true,"unsupported":0}
+
+== 0x1400010c0 GetSystemTimeAsFileTime
+-- decompile
+/* velk pseudo-C: GetSystemTimeAsFileTime @ 0x1400010c0 */
+/* ref: 0x1400050c0 .idata */
+void GetSystemTimeAsFileTime(struct _FILETIME *a0) {
+    GetSystemTimeAsFileTime(a0);
+}
+-- signature
+void (struct _FILETIME * a0)
+-- references
+0x1400050c0 .idata
+-- ir
+fn GetSystemTimeAsFileTime @ 0x1400010c0 (size 8)
+  blk0 @ 0x1400010c0:
+    v1:rax, xmm0 = call *load64(#0x1400050c0)(rcx)
+    ret #0x0
+-- card
+{"addr":"0x1400010c0","approxTokens":114,"blocks":1,"hardReasons":[],"name":"GetSystemTimeAsFileTime","nameSources":["plt"],"section":".text","size":8,"sizeEstimated":true,"unsupported":0}
+
+== 0x1400010c8 GetFileType
+-- decompile
+/* velk pseudo-C: GetFileType @ 0x1400010c8 */
+/* ref: 0x1400050b8 .idata */
+uint32_t GetFileType(void *a0) {
+    return GetFileType(a0);
+}
+-- signature
+uint32_t (void * a0)
+-- references
+0x1400050b8 .idata
+-- ir
+fn GetFileType @ 0x1400010c8 (size 8)
+  blk0 @ 0x1400010c8:
+    v1:rax, xmm0 = call *load64(#0x1400050b8)(rcx)
+    ret v1
+-- card
+{"addr":"0x1400010c8","approxTokens":114,"blocks":1,"hardReasons":[],"name":"GetFileType","nameSources":["plt"],"section":".text","size":8,"sizeEstimated":true,"unsupported":0}
+
+== 0x1400010d0 GetCurrentThreadId
+-- decompile
+/* velk pseudo-C: GetCurrentThreadId @ 0x1400010d0 */
+/* ref: 0x1400050b0 .idata */
+uint32_t GetCurrentThreadId(void) {
+    return GetCurrentThreadId();
+}
+-- signature
+uint32_t ()
+-- references
+0x1400050b0 .idata
+-- ir
+fn GetCurrentThreadId @ 0x1400010d0 (size 80)
+  blk0 @ 0x1400010d0:
+    v1:rax, xmm0 = call *load64(#0x1400050b0)()
+    ret v1
+-- card
+{"addr":"0x1400010d0","approxTokens":174,"blocks":1,"hardReasons":[],"name":"GetCurrentThreadId","nameSources":["plt"],"section":".text","size":80,"sizeEstimated":true,"unsupported":0}
