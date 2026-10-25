@@ -279,6 +279,7 @@ fn lift_instruction(
 
     if lift_vector(lifter, ins).is_some()
         || lift_float(lifter, ins).is_some()
+        || packed::lift_extend(lifter, ins).is_some()
         || lift_packed(lifter, ins).is_some()
     {
         return false;

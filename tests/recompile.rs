@@ -10447,3 +10447,8 @@ fn printed_point_fields_match_original_machine_code() {
     }
     std::fs::remove_dir_all(scratch).ok();
 }
+
+#[path = "recompile/comparison_inputs.rs"]
+mod comparison_inputs;
+#[path = "recompile/vector_extensions.rs"]
+mod vector_extensions;

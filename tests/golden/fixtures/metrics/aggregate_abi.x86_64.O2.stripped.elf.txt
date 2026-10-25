@@ -85,11 +85,13 @@ struct sub_201260_a2 { int64_t field_0x0; int64_t field_0x8; int64_t field_0x10;
 struct S1 { int64_t field_0x0; int64_t field_0x8; int64_t field_0x10; };
 double sub_201260(struct S1 *a0, double a1, struct sub_201260_a2 a2) {
     double v1;
+    int64_t v2;
 
     *(uint64_t *)((uint8_t *)&a2 + 0x10) = ((union { double value; uint64_t bits; }){ .value = a1 + *(double *)&(*(uint64_t *)((uint8_t *)&a2 + 0x10)) }).bits;
     v1 = *(double *)&(*(uint64_t *)((uint8_t *)&a2 + 0x0));
+    v2 = *(uint64_t *)((uint8_t *)&a2 + 0x8);
     a0->field_0x0 = ((union { double value; uint64_t bits; }){ .value = v1 }).bits;
-    a0->field_0x8 = *(uint64_t *)((uint8_t *)&a2 + 0x8);
+    a0->field_0x8 = v2;
     a0->field_0x10 = *(uint64_t *)((uint8_t *)&a2 + 0x10);
     return v1;
 }
@@ -102,8 +104,9 @@ fn <unnamed> @ 0x201260 (size 33)
   blk0 @ 0x201260:
     store64(fadd.d(xmm0, load64((rsp + #0x18))), (rsp + #0x18))
     v1 = load64((rsp + #0x8))
+    v2 = load64((rsp + #0x10))
     store64(v1, rdi)
-    store64(load64((rsp + #0x10)), (rdi + #0x8))
+    store64(v2, (rdi + #0x8))
     store64(load64((rsp + #0x18)), (rdi + #0x10))
     ret v1
 -- card
@@ -119,15 +122,18 @@ struct sub_201290_a2 {
     int64_t field_0x18;
 };
 double sub_201290(double *a0, double a1, struct sub_201290_a2 a2) {
-    double v1;
+    int64_t v1;
+    double v2;
 
     *(uint64_t *)((uint8_t *)&a2 + 0x18) = ((union { double value; uint64_t bits; }){ .value = a1 + *(double *)&(*(uint64_t *)((uint8_t *)&a2 + 0x18)) }).bits;
+    v1 = *(uint64_t *)((uint8_t *)&a2 + 0x8);
     *(uint64_t *)(a0) = *(uint64_t *)((uint8_t *)&a2 + 0x0);
-    *(uint64_t *)(a0 + 0x1) = *(uint64_t *)((uint8_t *)&a2 + 0x8);
-    v1 = *(double *)&(*(uint64_t *)((uint8_t *)&a2 + 0x10));
-    a0[2] = v1;
-    *(uint64_t *)(a0 + 0x3) = *(uint64_t *)((uint8_t *)&a2 + 0x18);
-    return v1;
+    *(uint64_t *)(a0 + 0x1) = v1;
+    v2 = *(double *)&(*(uint64_t *)((uint8_t *)&a2 + 0x10));
+    v1 = *(uint64_t *)((uint8_t *)&a2 + 0x18);
+    a0[2] = v2;
+    *(uint64_t *)(a0 + 0x3) = v1;
+    return v2;
 }
 -- signature
 double (double * a0, double a1)
@@ -137,12 +143,14 @@ double (double * a0, double a1)
 fn <unnamed> @ 0x201290 (size 33)
   blk0 @ 0x201290:
     store64(fadd.d(xmm0, load64((rsp + #0x20))), (rsp + #0x20))
+    v1 = load64((rsp + #0x10))
     store64(load64((rsp + #0x8)), rdi)
-    store64(load64((rsp + #0x10)), (rdi + #0x8))
-    v1 = load64((rsp + #0x18))
-    store64(v1, (rdi + #0x10))
-    store64(load64((rsp + #0x20)), (rdi + #0x18))
-    ret v1
+    store64(v1, (rdi + #0x8))
+    v2 = load64((rsp + #0x18))
+    v1 = load64((rsp + #0x20))
+    store64(v2, (rdi + #0x10))
+    store64(v1, (rdi + #0x18))
+    ret v2
 -- card
 {"accesses":["a0 +0x0:uint64_t, +0x8:uint64_t, +0x10:uint64_t, +0x18:uint64_t"],"addr":"0x201290","approxTokens":144,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":33,"structures":["struct sub_201290_a2 {\n    int64_t field_0x0;\n    int64_t field_0x8;\n    int64_t field_0x10;\n    int64_t field_0x18;\n};"],"unsupported":0}
 

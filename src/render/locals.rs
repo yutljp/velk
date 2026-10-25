@@ -1331,6 +1331,7 @@ fn slot_types(
     };
     let mut points_to: HashMap<i64, Option<i64>> = HashMap::new();
     let mut constant_slots = std::collections::HashSet::new();
+    let literal_offsets = super::variables::literal_offsets(ir);
     for (position, block) in ir.blocks.iter().enumerate() {
         let Some(frame) = frames[position] else {
             continue;
@@ -1340,7 +1341,10 @@ fn slot_types(
             match stmt {
                 Stmt::Store { addr, value, width } => {
                     if let Some(slot) = walk.local(addr) {
-                        if *width == 8 && matches!(value, Expr::Const(_)) {
+                        if *width == 8
+                            && (matches!(value, Expr::Const(_))
+                                || matches!(value, Expr::Reg { index, .. } if literal_offsets.contains(index)))
+                        {
                             constant_slots.insert(slot);
                         }
                         let ty = match value {

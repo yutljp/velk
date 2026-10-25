@@ -16,7 +16,7 @@ pub(crate) fn variable_types(
     let mut uses = Uses::default();
     let mut pointer_copies = Vec::new();
     let mut integer_copies = HashSet::new();
-    let mut zero_based = HashSet::new();
+    let literal_offsets = literal_offsets(ir);
     for stmt in ir.blocks.iter().flat_map(|block| &block.stmts) {
         match stmt {
             Stmt::Assign {
@@ -43,9 +43,6 @@ pub(crate) fn variable_types(
         match stmt {
             Stmt::Assign { dest, value } => {
                 uses.seen.insert(dest.index);
-                if matches!(value, Expr::Const(0)) {
-                    zero_based.insert(dest.index);
-                }
                 if dest.width == 64
                     && let Expr::Reg { index, width: 64 } = value
                 {
@@ -117,9 +114,9 @@ pub(crate) fn variable_types(
         }
     }
     uses.spread_floats();
-    // Offsets initialized to zero remain integers when reloaded from spills:
-    // pointer arithmetic from null is undefined in C.
-    for index in &zero_based {
+    // Small literal offsets remain integers: pointer arithmetic requires
+    // an actual object even when adding the image base would reach one.
+    for index in &literal_offsets {
         if uses.addresses.contains_key(index) {
             uses.arithmetic.insert(*index);
             uses.bits.insert(*index);
@@ -247,6 +244,59 @@ pub(crate) fn variable_types(
         }
     }
     types
+}
+
+pub(super) fn literal_offsets(ir: &FunctionIr) -> HashSet<u16> {
+    let sp = crate::arch::stack_pointer(ir.isa);
+    let statements = || ir.blocks.iter().flat_map(|block| &block.stmts);
+    let mut known: HashSet<u16> = statements()
+        .filter_map(|stmt| match stmt {
+            Stmt::Assign {
+                dest,
+                value: Expr::Const(value),
+            } if *value < 0x1000 => Some(dest.index),
+            _ => None,
+        })
+        .collect();
+    if known.is_empty()
+        || statements().any(|stmt| matches!(stmt, Stmt::Assign { dest, .. } if dest.index == sp))
+    {
+        return known;
+    }
+    let frame = |addr: &Expr| {
+        crate::passes::frame_slots::frame_slot(addr, 0, sp).is_some_and(|offset| offset < 0)
+    };
+    let mut slots = HashSet::new();
+    loop {
+        let before = known.len() + slots.len();
+        for stmt in statements() {
+            match stmt {
+                Stmt::Store {
+                    addr,
+                    value: Expr::Reg { index, width: 64 },
+                    width: 8,
+                } if frame(addr) && known.contains(index) => {
+                    slots.insert(addr.clone());
+                }
+                Stmt::Assign {
+                    dest,
+                    value: Expr::Load { addr, width: 8, .. },
+                } if slots.contains(addr.as_ref()) => {
+                    known.insert(dest.index);
+                }
+                Stmt::Assign {
+                    dest,
+                    value: Expr::Reg { index, .. },
+                } if known.contains(index) => {
+                    known.insert(dest.index);
+                }
+                _ => {}
+            }
+        }
+        if known.len() + slots.len() == before {
+            return known;
+        }
+    }
 }
 
 /// Gives each field of a recovered structure that only ever holds pointers

@@ -559,7 +559,9 @@ fn printed_local_offsets_preserve_operator_precedence() {
         let candidate = printed_candidate(ir, (0..=1).map(|a| vec![a]).collect());
         assert!(candidate.code.contains(expected), "{}", candidate.code);
         assert!(
-            candidate.code.contains(&format!("(local_0{expected})")),
+            candidate
+                .code
+                .contains(&format!("(uintptr_t)(local_0){expected}")),
             "{}",
             candidate.code
         );

@@ -545,7 +545,7 @@ pub(crate) fn scan_reads(
             scan_reads(lhs, register, narrow, reads_narrow, seen);
             scan_reads(rhs, register, narrow, reads_narrow, seen);
         }
-        Expr::Load { addr, .. } => scan_reads(addr, register, narrow, reads_narrow, seen),
+        Expr::Load { addr, .. } => scan_reads(addr, register, false, reads_narrow, seen),
         // An extension reads only its value's low bytes.
         Expr::SignExtend { value, .. } => scan_reads(value, register, true, reads_narrow, seen),
         Expr::Select {
@@ -555,8 +555,8 @@ pub(crate) fn scan_reads(
             els,
             ..
         } => {
-            scan_reads(lhs, register, narrow, reads_narrow, seen);
-            scan_reads(rhs, register, narrow, reads_narrow, seen);
+            scan_reads(lhs, register, false, reads_narrow, seen);
+            scan_reads(rhs, register, false, reads_narrow, seen);
             scan_reads(then, register, narrow, reads_narrow, seen);
             scan_reads(els, register, narrow, reads_narrow, seen);
         }
@@ -835,7 +835,11 @@ pub(crate) fn apply_void_return(ir: &mut FunctionIr) {
         }
     }
     let carries_argument = ir.convention.arguments().contains(&arch::RETURN);
-    if !saw_ret || written || (carries_argument && !side_effect) || used_elsewhere {
+    if !saw_ret
+        || written
+        || (carries_argument && (ir.convention == crate::ir::Convention::Aapcs64 || !side_effect))
+        || used_elsewhere
+    {
         return;
     }
     ir.ret_type = CType::Void;

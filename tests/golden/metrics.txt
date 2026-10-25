@@ -11,8 +11,8 @@ extra functions | win64.O0 | 2/169
 extra functions | win64.O2 | 2/167
 extra functions | x86_64.O0 | 0/162
 extra functions | x86_64.O2 | 0/162
-parameter count | aarch64.O0 | 151/161
-parameter count | aarch64.O2 | 151/161
+parameter count | aarch64.O0 | 150/161
+parameter count | aarch64.O2 | 150/161
 parameter count | win64.O0 | 162/166
 parameter count | win64.O2 | 156/164
 parameter count | x86_64.O0 | 151/161
@@ -35,8 +35,8 @@ parameter sign | win64.O0 | 135/184
 parameter sign | win64.O2 | 129/176
 parameter sign | x86_64.O0 | 140/152
 parameter sign | x86_64.O2 | 140/152
-return void | aarch64.O0 | 156/162
-return void | aarch64.O2 | 156/162
+return void | aarch64.O0 | 155/162
+return void | aarch64.O2 | 155/162
 return void | win64.O0 | 160/167
 return void | win64.O2 | 161/165
 return void | x86_64.O0 | 155/162
@@ -680,11 +680,11 @@ l2_loop.x86_64.O2 0x201360 sum_skip_odd: ok
 l2_loop.x86_64.O2 0x2013b0 find_first: ok
 l4_memory.aarch64.O0 0x2101dc point_dot: ok
 l4_memory.aarch64.O0 0x21021c array_sum: ok
-l4_memory.aarch64.O0 0x210280 bump: ok
+l4_memory.aarch64.O0 0x210280 bump: 1 parameters, expected 0; returns int64_t, expected void
 l4_memory.aarch64.O0 0x210294 banner_first: ok
 l4_memory.aarch64.O2 0x2101d4 point_dot: ok
 l4_memory.aarch64.O2 0x2101f0 array_sum: ok
-l4_memory.aarch64.O2 0x21027c bump: ok
+l4_memory.aarch64.O2 0x21027c bump: 1 parameters, expected 0; returns int64_t, expected void
 l4_memory.aarch64.O2 0x210290 banner_first: ok
 l4_memory.win64.O0 0x180001000 point_dot: ok
 l4_memory.win64.O0 0x180001040 array_sum: ok

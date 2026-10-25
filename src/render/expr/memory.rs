@@ -312,7 +312,7 @@ pub(crate) fn local_plus_offset(value: &Expr, ctx: &Ctx<'_>) -> Option<String> {
         rest = Expr::bin(BinOp::Add, rest, Expr::Const(below));
     }
     Some(format!(
-        "{address} + {}",
+        "(uint8_t *)((uintptr_t)({address}) + {})",
         print_in(&rest, ctx, 64, ConstantUse::Hex)
             .address_integer()
             .within(super::binding(BinOp::Add), true)

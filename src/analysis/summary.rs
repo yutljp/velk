@@ -788,10 +788,23 @@ fn compute(
             .filter(|param| param.name != "closure" && registers.contains(&param.index))
             .count()
     };
+    let declared_no_arguments = convention == crate::ir::Convention::Aapcs64
+        && count(convention.arguments()) == 1
+        && signature.params[0].index == crate::arch::RETURN
+        && matches!(super::calls::declaration(image, addr), Ok(Some(declaration))
+            if declaration.signature.ret == crate::ir::CType::Void
+                && declaration.signature.params.is_empty()
+                && !declaration.signature.variadic);
     let summary = Summary {
-        arity: Some(count(convention.arguments())),
+        arity: Some(if declared_no_arguments {
+            0
+        } else {
+            count(convention.arguments())
+        }),
         floats: Some(count(convention.float_arguments())),
-        inputs: signature.inputs,
+        inputs: signature
+            .inputs
+            .map(|inputs| Registers(inputs.0 & signature.arguments.0)),
         pointers: convention
             .arguments()
             .iter()

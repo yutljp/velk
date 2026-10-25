@@ -2,12 +2,31 @@ use super::*;
 
 #[test]
 fn printed_explicit_result_survives_callers_discarding_it() {
-    let scratch = scratch_dir("ignored-result");
+    check_result(false);
+}
+
+#[test]
+fn declared_void_callees_do_not_gain_preserved_result_arguments() {
+    check_result(true);
+}
+
+fn check_result(debug: bool) {
+    let scratch = scratch_dir(&format!("ignored-result-{debug}"));
     let original = scratch.join("original.c");
     let executable = scratch.join("original");
     std::fs::write(&original, include_str!("ignored_result.c")).unwrap();
     let compiled = Command::new(compiler())
         .args(["-O2", "-fno-inline"])
+        .args(if debug {
+            &[
+                "--target=aarch64-unknown-linux-gnu",
+                "-ffreestanding",
+                "-c",
+                "-g",
+            ][..]
+        } else {
+            &[]
+        })
         .arg(&original)
         .arg("-o")
         .arg(&executable)
@@ -15,7 +34,11 @@ fn printed_explicit_result_survives_callers_discarding_it() {
         .unwrap();
     assert!(compiled.status.success(), "{compiled:?}");
     let mut binary = Binary::open(&executable).unwrap();
-    let prefix = if cfg!(target_os = "macos") { "_" } else { "" };
+    let prefix = if cfg!(target_os = "macos") && !debug {
+        "_"
+    } else {
+        ""
+    };
     let address = binary.find(&format!("{prefix}final_byte")).unwrap().addr;
     let effect = binary.find(&format!("{prefix}effect")).unwrap().addr;
     let mut ir = binary.analysis(address, None).unwrap().ir.clone();
@@ -30,7 +53,12 @@ fn printed_explicit_result_survives_callers_discarding_it() {
     assert!(code.contains("return (int8_t)"), "{code}");
     assert_eq!(ir.params.len(), 1, "{code}");
     let mut source = String::from(HEADER);
-    source.push_str("static unsigned effects;\nstatic void effect(void) { ++effects; }\n");
+    source.push_str("static unsigned effects;\n");
+    source.push_str(if debug {
+        "static void effect(void) { ++effects; }\n"
+    } else {
+        "static void effect(uint64_t ignored) { (void)ignored; ++effects; }\n"
+    });
     source.push_str(&code);
     source.push_str("int main(void) {\n");
     for value in 0..256u64 {

@@ -324,7 +324,7 @@ fn disjoint(a: &Expr, a_width: u8, b: &Expr, b_width: u8) -> bool {
 
 /// True when every load in the value provably reads other bytes than the
 /// `width` bytes at `addr`.
-fn loads_avoid(value: &Expr, addr: &Expr, width: u8) -> bool {
+pub(super) fn loads_avoid(value: &Expr, addr: &Expr, width: u8) -> bool {
     match value {
         Expr::Load {
             addr: read,

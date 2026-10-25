@@ -35,8 +35,8 @@ int large_frame(int index) {
     _Alignas(16) uint8_t local_1[0x2004]; /* [sp-2008] */
 
     local_0 = index;
-    *(uint8_t *)(local_1 + 0x4 + (index & 0x1fff)) = index;
-    v3 = local_0 & 0x1f00 | *(uint8_t *)(local_1 + 0x4 + (local_0 & 0x1fff));
+    *(uint8_t *)((uint8_t *)((uintptr_t)(local_1 + 0x4) + (index & 0x1fff))) = index;
+    v3 = local_0 & 0x1f00 | *(uint8_t *)((uint8_t *)((uintptr_t)(local_1 + 0x4) + (local_0 & 0x1fff)));
     return v3;
 }
 -- signature

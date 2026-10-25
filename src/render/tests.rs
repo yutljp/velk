@@ -2590,7 +2590,7 @@ fn an_indexed_sum_from_a_local_address_stays_an_integer() {
         ty: CType::I64,
     }];
     let text = render(&ir, &[], &Symbols::default(), &[]);
-    assert!(!text.contains("(local_0 + "), "{text}");
+    assert!(text.contains("(uintptr_t)(local_0 + 0x4) +"), "{text}");
 }
 
 #[test]

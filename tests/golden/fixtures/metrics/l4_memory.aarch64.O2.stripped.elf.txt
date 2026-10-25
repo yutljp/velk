@@ -185,13 +185,14 @@ fn <unnamed> @ 0x2101f0 (size 140)
 -- decompile
 /* velk pseudo-C: sub_21027c @ 0x21027c */
 /* ref: 0x2202a8 .bss */
-void sub_21027c(void) {
+int64_t sub_21027c(int64_t a0) {
     uint32_t *const dword_2202a8 = (uint32_t *)0x2202a8ULL;
 
     *dword_2202a8 += 1;
+    return a0;
 }
 -- signature
-void ()
+int64_t (int64_t a0)
 -- references
 0x2202a8 .bss
 -- ir

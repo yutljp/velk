@@ -116,3 +116,78 @@ fn printed_x64_inputs_exclude_dead_reads_and_unused_call_positions() {
     }
     std::fs::remove_dir_all(scratch).ok();
 }
+
+#[test]
+fn printed_nonzero_absolute_offsets_remain_integer_counters() {
+    let index = velk::ir::VARIABLE_BASE;
+    let result = index + 1;
+    let mut ir = synthetic_ir(
+        "absolute_offsets",
+        vec![],
+        CType::U32,
+        vec![
+            Stmt::Assign {
+                dest: velk::ir::RegRef { index, width: 64 },
+                value: Expr::Const(16),
+            },
+            Stmt::Assign {
+                dest: velk::ir::RegRef {
+                    index: result,
+                    width: 32,
+                },
+                value: Expr::Const(0),
+            },
+            Stmt::Br { target: Some(16) },
+        ],
+    );
+    ir.blocks.push(Block {
+        start: 16,
+        stmts: vec![
+            Stmt::Assign {
+                dest: velk::ir::RegRef {
+                    index: result,
+                    width: 32,
+                },
+                value: Expr::bin(
+                    BinOp::Xor,
+                    Expr::reg(result, 32),
+                    Expr::Load {
+                        addr: Box::new(Expr::bin(
+                            BinOp::Add,
+                            Expr::Const(REGION + 32),
+                            Expr::reg(index, 64),
+                        )),
+                        width: 4,
+                        signed: false,
+                    },
+                ),
+            },
+            Stmt::Assign {
+                dest: velk::ir::RegRef { index, width: 64 },
+                value: Expr::bin(BinOp::Sub, Expr::reg(index, 64), Expr::Const(4)),
+            },
+            Stmt::Brif {
+                cond: Cond::Ne,
+                lhs: Expr::reg(index, 64),
+                rhs: Expr::Const((-8i64) as u64),
+                target: 16,
+            },
+        ],
+    });
+    ir.blocks.push(Block {
+        start: 32,
+        stmts: vec![Stmt::Ret {
+            value: Expr::reg(result, 32),
+        }],
+    });
+    let candidate = printed_candidate(ir, vec![vec![]]);
+    assert!(
+        !candidate
+            .code
+            .lines()
+            .any(|line| line.trim_start().starts_with("uint32_t *")),
+        "{}",
+        candidate.code
+    );
+    check_candidates("absolute-offsets", vec![candidate], Mode::Memory, &[]);
+}

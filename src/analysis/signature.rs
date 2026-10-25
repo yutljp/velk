@@ -10,6 +10,8 @@ use crate::loader::Isa;
 pub struct Signature {
     pub params: Vec<Param>,
     pub inputs: Option<crate::ir::Registers>,
+    /// Argument registers actually read, excluding unchanged implicit results.
+    pub(super) arguments: crate::ir::Registers,
     pub ret: CType,
     pub accesses: Vec<Access>,
     /// Argument registers a signed comparison reads: the parameter is signed.
@@ -392,7 +394,8 @@ pub fn recover_with(
         }
     }
 
-    let returns_argument = arguments.contains(&crate::arch::RETURN);
+    let returns_argument =
+        convention != Convention::Aapcs64 && arguments.contains(&crate::arch::RETURN);
     let effects = blocks.iter().flat_map(|block| &block.stmts).any(|stmt| {
         matches!(stmt, Stmt::Store { .. } | Stmt::Call { .. })
             || matches!(
@@ -462,10 +465,9 @@ pub fn recover_with(
                     reads(lhs, &mut used);
                     reads(rhs, &mut used);
                 }
-                // Where the return register also carries the first argument,
-                // returning it unwritten makes it one only in a function with
-                // no effect, as `return x;` is; one with effects returns
-                // nothing there.
+                // AAPCS64 can return an unchanged first argument even when
+                // the function has effects. Other conventions keep the
+                // void-return heuristic for such functions.
                 Stmt::Ret { value } if !(returns_argument && effects) => reads(value, &mut used),
                 Stmt::Ret { .. } => {}
                 Stmt::BrIndirect { target } => reads(target, &mut used),
@@ -945,6 +947,12 @@ pub fn recover_with(
     Signature {
         params,
         inputs: known_inputs.then_some(incoming),
+        arguments: arguments
+            .iter()
+            .chain(float_arguments)
+            .copied()
+            .filter(|register| inputs.contains(register))
+            .collect(),
         ret,
         accesses,
         signed: signed_args,

@@ -33,52 +33,52 @@ int32_t sub_210334(int32_t a0) {
     if (v1 <= 15) {
         switch (local_0 + 10) {
         case 10:
-            sub_210418();
+            sub_210418(a0);
             return *dword_2205e8;
         case 11:
-            sub_21042c();
+            sub_21042c(a0);
             return *dword_2205e8;
         case 12:
-            sub_210444();
+            sub_210444(a0);
             return *dword_2205e8;
         case 13:
-            sub_210458();
+            sub_210458(a0);
             return *dword_2205e8;
         case 14:
-            sub_21046c();
+            sub_21046c(a0);
             return *dword_2205e8;
         case 15:
-            sub_210480();
+            sub_210480(a0);
             return *dword_2205e8;
         case 16:
-            sub_210498();
+            sub_210498(a0);
             return *dword_2205e8;
         case 17:
-            sub_2104ac();
+            sub_2104ac(a0);
             return *dword_2205e8;
         case 18:
-            sub_2104c0();
+            sub_2104c0(a0);
             return *dword_2205e8;
         case 19:
-            sub_2104d4();
+            sub_2104d4(a0);
             return *dword_2205e8;
         case 20:
-            sub_2104ec();
+            sub_2104ec(a0);
             return *dword_2205e8;
         case 21:
-            sub_210500();
+            sub_210500(a0);
             return *dword_2205e8;
         case 22:
-            sub_210518();
+            sub_210518(a0);
             return *dword_2205e8;
         case 23:
-            sub_21052c();
+            sub_21052c(a0);
             return *dword_2205e8;
         case 24:
-            sub_210544();
+            sub_210544(a0);
             return *dword_2205e8;
         case 25:
-            sub_210558();
+            sub_210558(a0);
             return *dword_2205e8;
         default:
             break;
@@ -95,59 +95,59 @@ int32_t (int32_t a0)
 -- ir
 fn <unnamed> @ 0x210334 (size 228)
   blk0 @ 0x210334:
-    store32(w0, (sp + #0xffffffffffffffec))
+    store32(x0, (sp + #0xffffffffffffffec))
     v1 = ((load32((sp + #0xffffffffffffffec)) - #0xa) & #0xffffffff)
     store64(v1, (sp + #0xffffffffffffffe0))
     brif hi v1, #0xf -> 0x2103f8
   blk1 @ 0x21035c:
     switch (load64((sp + #0xffffffffffffffe0)) + #0xa) [10->0x210378, 11->0x210380, 12->0x210388, 13->0x210390, 14->0x210398, 15->0x2103a0, 16->0x2103a8, 17->0x2103b0, 18->0x2103b8, 19->0x2103c0, 20->0x2103c8, 21->0x2103d0, 22->0x2103d8, 23->0x2103e0, 24->0x2103e8, 25->0x2103f0] default 0x2103f8
   blk2 @ 0x210378:
-    call 0x210418()
+    call 0x210418(x0)
     br 0x210404
   blk3 @ 0x210380:
-    call 0x21042c()
+    call 0x21042c(x0)
     br 0x210404
   blk4 @ 0x210388:
-    call 0x210444()
+    call 0x210444(x0)
     br 0x210404
   blk5 @ 0x210390:
-    call 0x210458()
+    call 0x210458(x0)
     br 0x210404
   blk6 @ 0x210398:
-    call 0x21046c()
+    call 0x21046c(x0)
     br 0x210404
   blk7 @ 0x2103a0:
-    call 0x210480()
+    call 0x210480(x0)
     br 0x210404
   blk8 @ 0x2103a8:
-    call 0x210498()
+    call 0x210498(x0)
     br 0x210404
   blk9 @ 0x2103b0:
-    call 0x2104ac()
+    call 0x2104ac(x0)
     br 0x210404
   blk10 @ 0x2103b8:
-    call 0x2104c0()
+    call 0x2104c0(x0)
     br 0x210404
   blk11 @ 0x2103c0:
-    call 0x2104d4()
+    call 0x2104d4(x0)
     br 0x210404
   blk12 @ 0x2103c8:
-    call 0x2104ec()
+    call 0x2104ec(x0)
     br 0x210404
   blk13 @ 0x2103d0:
-    call 0x210500()
+    call 0x210500(x0)
     br 0x210404
   blk14 @ 0x2103d8:
-    call 0x210518()
+    call 0x210518(x0)
     br 0x210404
   blk15 @ 0x2103e0:
-    call 0x21052c()
+    call 0x21052c(x0)
     br 0x210404
   blk16 @ 0x2103e8:
-    call 0x210544()
+    call 0x210544(x0)
     br 0x210404
   blk17 @ 0x2103f0:
-    call 0x210558()
+    call 0x210558(x0)
     br 0x210404
   blk18 @ 0x2103f8:
     store32(#0x0, #0x2205e8)

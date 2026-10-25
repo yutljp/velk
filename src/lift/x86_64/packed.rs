@@ -43,6 +43,67 @@ fn pack(lanes: Vec<Expr>, bits: u64) -> Expr {
         .unwrap_or_else(|| Expr::constant(0))
 }
 
+pub(super) fn lift_extend(lifter: &mut Lifter, ins: &Instruction) -> Option<()> {
+    use Mnemonic::*;
+    let (from, to, signed) = match ins.mnemonic() {
+        Pmovzxbw => (8, 16, false),
+        Pmovzxbd => (8, 32, false),
+        Pmovzxbq => (8, 64, false),
+        Pmovzxwd => (16, 32, false),
+        Pmovzxwq => (16, 64, false),
+        Pmovzxdq => (32, 64, false),
+        Pmovsxbw => (8, 16, true),
+        Pmovsxbd => (8, 32, true),
+        Pmovsxbq => (8, 64, true),
+        Pmovsxwd => (16, 32, true),
+        Pmovsxwq => (16, 64, true),
+        Pmovsxdq => (32, 64, true),
+        _ => return None,
+    };
+    let Some(destination) = xmm(ins.op0_register()) else {
+        return None;
+    };
+    let source = match ins.op1_kind() {
+        OpKind::Register => {
+            let Some(slot) = xmm(ins.op1_register()) else {
+                return None;
+            };
+            Expr::reg(slot, 64)
+        }
+        OpKind::Memory => {
+            let Some(address) = memory_address(ins) else {
+                return None;
+            };
+            load_at(address, (128 / to * from / 8) as u8)
+        }
+        _ => return None,
+    };
+    let half = |high: bool| {
+        pack(
+            (0..64 / to)
+                .map(|lane| {
+                    let index = lane + u64::from(high) * (64 / to);
+                    let value = lane_of(&(source.clone(), Expr::Const(0)), index, from);
+                    let value = if signed {
+                        Expr::SignExtend {
+                            value: Box::new(value),
+                            width: (from / 8) as u8,
+                        }
+                    } else {
+                        value
+                    };
+                    Expr::bin(BinOp::And, value, Expr::Const(u64::MAX >> (64 - to)))
+                })
+                .collect(),
+            to,
+        )
+    };
+    let high = hold(lifter, half(true));
+    lifter.assign(destination, 64, half(false));
+    lifter.assign(destination + 1, 64, high);
+    Some(())
+}
+
 /// The packed SSE instructions, on each 64-bit half: integer lanes, packed
 /// doubles and singles, shuffles, and sign masks.
 pub(super) fn lift_packed(lifter: &mut Lifter, ins: &Instruction) -> Option<()> {

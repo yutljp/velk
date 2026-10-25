@@ -471,7 +471,10 @@ fn printed_stack_index_held_in_a_pointer_variable_adds_as_an_integer() {
     let mut symbols = velk::render::Symbols::default();
     symbols.functions.insert(0x1000, "memset".into());
     let code = velk::render::render(&ir, &[], &symbols, &[]);
-    assert!(code.contains("local_0 + 0x6 + (uintptr_t)x"), "{code}");
+    assert!(
+        code.contains("(uintptr_t)(local_0 + 0x6) + (uintptr_t)x"),
+        "{code}"
+    );
 }
 
 #[test]
@@ -571,7 +574,7 @@ fn printed_stack_fields_of_a_region_read_at_an_index_see_its_writes() {
     symbols.functions.insert(0x1000, "memset".into());
     let code = velk::render::render(&ir, &[], &symbols, &[]);
     assert!(code.contains("local_0.f_10"), "{code}");
-    assert!(code.contains("(uint8_t *)&local_0 + "), "{code}");
+    assert!(code.contains("(uintptr_t)((uint8_t *)&local_0)"), "{code}");
     ir.blocks[0].stmts.remove(0);
     for offset in (0..32).rev().step_by(8) {
         ir.blocks[0].stmts.insert(0, store(-64 + offset, 0, 8));
@@ -618,4 +621,154 @@ fn printed_stack_buffer_read_below_its_index_base_reaches_the_bytes_there() {
     );
     let candidate = printed_candidate(ir, (0..4).map(|value| vec![value]).collect());
     check_candidates("stack-backwards", vec![candidate], Mode::Registers, &[]);
+}
+
+#[test]
+fn printed_frame_indices_keep_local_storage_when_also_used_in_global_addresses() {
+    let index = VARIABLE_BASE;
+    let frame = Expr::bin(BinOp::Add, slot(-124), Expr::reg(index, 64));
+    let mut ir = synthetic_ir(
+        "frame_and_global_index",
+        vec![],
+        CType::U32,
+        vec![
+            store(-136, 0, 8),
+            store(-124, 0x1234, 2),
+            store(-122, 0x56, 1),
+            Stmt::Assign {
+                dest: RegRef { index, width: 64 },
+                value: Expr::Const(2),
+            },
+            Stmt::Br { target: Some(16) },
+        ],
+    );
+    ir.blocks.push(Block {
+        start: 16,
+        stmts: vec![
+            Stmt::Store {
+                addr: Expr::bin(BinOp::Add, Expr::Const(REGION + 256), Expr::reg(index, 64)),
+                value: Expr::Load {
+                    addr: Box::new(frame),
+                    width: 1,
+                    signed: false,
+                },
+                width: 1,
+            },
+            Stmt::Assign {
+                dest: RegRef { index, width: 64 },
+                value: Expr::bin(BinOp::Sub, Expr::reg(index, 64), Expr::Const(1)),
+            },
+            Stmt::Brif {
+                cond: Cond::Ne,
+                lhs: Expr::reg(index, 64),
+                rhs: Expr::Const(u64::MAX),
+                target: 16,
+            },
+        ],
+    });
+    ir.blocks.push(Block {
+        start: 32,
+        stmts: vec![Stmt::Ret {
+            value: Expr::Const(7),
+        }],
+    });
+    let candidate = printed_candidate(ir, vec![vec![]]);
+    assert!(
+        !candidate.code.contains("velk_entry_stack_pointer"),
+        "{}",
+        candidate.code
+    );
+    check_candidates("frame-and-global-index", vec![candidate], Mode::Memory, &[]);
+}
+
+#[test]
+fn printed_indexed_frame_bases_share_storage_across_adjacent_buffers() {
+    let load = |base, offset| Expr::Load {
+        addr: Box::new(Expr::bin(
+            BinOp::Add,
+            Expr::bin(
+                BinOp::Add,
+                Expr::reg(base, 64),
+                Expr::bin(BinOp::Mul, Expr::reg(7, 64), Expr::Const(8)),
+            ),
+            Expr::Const(offset),
+        )),
+        width: 8,
+        signed: false,
+    };
+    let mut statements: Vec<_> = (0..8)
+        .map(|i| store(-64 + i * 8, (i + 1) as u64, 8))
+        .collect();
+    for (index, offset) in [(VARIABLE_BASE, -64), (VARIABLE_BASE + 1, -32)] {
+        statements.push(Stmt::Assign {
+            dest: RegRef { index, width: 64 },
+            value: slot(offset),
+        });
+    }
+    statements.push(Stmt::Ret {
+        value: Expr::bin(
+            BinOp::Xor,
+            load(VARIABLE_BASE, 48),
+            load(VARIABLE_BASE + 1, 0),
+        ),
+    });
+    let ir = synthetic_ir(
+        "adjacent_indexed_buffers",
+        vec![Param {
+            index: 7,
+            name: "index".into(),
+            ty: CType::U64,
+        }],
+        CType::U64,
+        statements,
+    );
+    let candidate = printed_candidate(ir, vec![vec![0], vec![1]]);
+    check_candidates(
+        "adjacent-indexed-buffers",
+        vec![candidate],
+        Mode::Registers,
+        &[],
+    );
+}
+
+#[test]
+fn printed_wrapping_frame_indices_add_as_integer_addresses() {
+    let address = Expr::bin(
+        BinOp::Add,
+        Expr::reg(VARIABLE_BASE, 64),
+        Expr::bin(BinOp::Shl, Expr::reg(7, 64), Expr::Const(2)),
+    );
+    let ir = synthetic_ir(
+        "wrapping_frame_index",
+        vec![Param {
+            index: 7,
+            name: "index".into(),
+            ty: CType::I64,
+        }],
+        CType::U32,
+        vec![
+            store(-64, 0, 8),
+            store(-56, 0, 8),
+            Stmt::Assign {
+                dest: RegRef {
+                    index: VARIABLE_BASE,
+                    width: 64,
+                },
+                value: slot(-60),
+            },
+            Stmt::Store {
+                addr: address,
+                value: Expr::Const(1),
+                width: 4,
+            },
+            Stmt::Ret { value: load(-64) },
+        ],
+    );
+    let candidate = printed_candidate(ir, vec![vec![u64::MAX], vec![0], vec![1]]);
+    check_candidates(
+        "wrapping-frame-index",
+        vec![candidate],
+        Mode::Registers,
+        &[],
+    );
 }

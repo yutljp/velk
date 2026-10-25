@@ -120,13 +120,8 @@ fn rebase_value(expr: &mut Expr, state: &Origins, sp: u16, frame: i64, pointer: 
             lhs,
             rhs,
         } => {
-            // With an index added, the address is kept as the integer sum
-            // it is: as a pointer into the local, a negative index would
-            // leave the object before the access comes back into it.
-            let offset =
-                matches!(lhs.as_ref(), Expr::Const(_)) || matches!(rhs.as_ref(), Expr::Const(_));
-            rebase_value(lhs, state, sp, frame, pointer && offset);
-            rebase_value(rhs, state, sp, frame, pointer && offset);
+            rebase_value(lhs, state, sp, frame, pointer);
+            rebase_value(rhs, state, sp, frame, pointer);
         }
         other => {
             for child in crate::ir::visit::children_mut(other) {

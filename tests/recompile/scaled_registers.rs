@@ -247,3 +247,76 @@ fn spilled_absolute_offsets_use_integer_arithmetic_through_zero() {
         &["-fsanitize=undefined", "-fno-sanitize-recover=all"],
     );
 }
+
+#[test]
+fn nonzero_offsets_stay_integer_through_distinct_spill_registers() {
+    use velk::ir::{RegRef, VARIABLE_BASE};
+    let slot = Expr::bin(BinOp::Add, Expr::reg(4, 64), Expr::Const((-8i64) as u64));
+    let loaded = VARIABLE_BASE + 1;
+    let mut ir = synthetic_ir(
+        "nonzero_spill_offsets",
+        vec![],
+        CType::U64,
+        vec![
+            Stmt::Assign {
+                dest: RegRef {
+                    index: VARIABLE_BASE,
+                    width: 64,
+                },
+                value: Expr::Const(3),
+            },
+            Stmt::Br { target: Some(16) },
+        ],
+    );
+    ir.blocks.push(Block {
+        start: 16,
+        stmts: vec![
+            Stmt::Store {
+                addr: slot.clone(),
+                value: Expr::reg(VARIABLE_BASE, 64),
+                width: 8,
+            },
+            Stmt::Assign {
+                dest: RegRef {
+                    index: loaded,
+                    width: 64,
+                },
+                value: Expr::Load {
+                    addr: Box::new(slot),
+                    width: 8,
+                    signed: false,
+                },
+            },
+            Stmt::Store {
+                addr: Expr::bin(BinOp::Add, Expr::Const(REGION), Expr::reg(loaded, 64)),
+                value: Expr::Const(19),
+                width: 1,
+            },
+            Stmt::Assign {
+                dest: RegRef {
+                    index: VARIABLE_BASE,
+                    width: 64,
+                },
+                value: Expr::bin(BinOp::Sub, Expr::reg(loaded, 64), Expr::Const(1)),
+            },
+            Stmt::Brif {
+                cond: Cond::Ne,
+                lhs: Expr::reg(loaded, 64),
+                rhs: Expr::Const(0),
+                target: 16,
+            },
+        ],
+    });
+    ir.blocks.push(Block {
+        start: 32,
+        stmts: vec![Stmt::Ret {
+            value: Expr::Const(7),
+        }],
+    });
+    check_candidates(
+        "nonzero-spill-offsets",
+        vec![printed_candidate(ir, vec![vec![]])],
+        Mode::Memory,
+        &["-fsanitize=undefined", "-fno-sanitize-recover=all"],
+    );
+}

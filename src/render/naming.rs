@@ -415,6 +415,15 @@ pub(crate) fn member_access(addr: &Expr, width: u8, ctx: &Ctx<'_>) -> Option<Pla
     if let Some(member) = object_member(addr, width, ctx) {
         return Some(member);
     }
+    if crate::render::locals::offset_local(addr, crate::arch::stack_pointer(ctx.isa)).is_some()
+        && let Some(address) = super::expr::local_plus_offset(addr, ctx)
+    {
+        let ty = CType::int(width, false);
+        return Some(Place {
+            text: format!("*({ty} *)({address})"),
+            ty,
+        });
+    }
     if width == 1
         && let Some(part) = ctx.local_parts.get(&render_expr(addr, ctx))
         && !part.contains('&')

@@ -25,6 +25,7 @@ const MACHINE: usize = crate::arch::aarch64::V0 as usize + 64;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 struct State {
+    sp: u16,
     /// What each machine register holds.
     machine: [Value; MACHINE],
     /// What the lifter's other registers, as those it keeps flag operands
@@ -45,6 +46,7 @@ struct State {
 impl State {
     fn entry(sp: u16) -> Self {
         State {
+            sp,
             machine: std::array::from_fn(|index| {
                 if index == usize::from(sp) {
                     Value::Frame(0)
@@ -95,6 +97,22 @@ impl State {
     /// follow.
     fn class(&self, expr: &Expr) -> (Value, bool) {
         match expr {
+            Expr::Bin {
+                op: BinOp::Or,
+                lhs,
+                rhs,
+            } if let (base, Expr::Const(mask)) | (Expr::Const(mask), base) =
+                (lhs.as_ref(), rhs.as_ref()) =>
+            {
+                if let Value::Frame(at) = self.value(base) {
+                    let address = Expr::bin(BinOp::Or, Expr::reg(self.sp, 64), Expr::Const(*mask));
+                    if let Some(offset) =
+                        crate::passes::frame_slots::frame_slot(&address, at, self.sp)
+                    {
+                        return (Value::Frame(offset), false);
+                    }
+                }
+            }
             Expr::Reg { index, width: 64 } => return (self.register(*index), false),
             Expr::Load { addr, width, .. } => {
                 let value = match (width, self.value(addr)) {

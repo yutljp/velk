@@ -340,6 +340,7 @@ fn copy_propagate_block(
         // Exactly one consumer, and no redefinition of the sources before it.
         let mut consumer = None;
         let mut foldable = true;
+        let loads = reads_memory(&template);
         for later in index + 1..block.stmts.len() {
             if super::memory::atomic(&block.stmts[later])
                 && !super::memory::crosses_atomic(&template, sp, private_frame)
@@ -349,6 +350,21 @@ fn copy_propagate_block(
             }
             let (writes, reads) = statement_registers(&block.stmts[later]);
             let reads_dest = reads.contains(&dest);
+            if consumer.is_none()
+                && loads
+                && !reads_dest
+                && match &block.stmts[later] {
+                    Stmt::Store { addr, width, .. } => {
+                        !super::memory::loads_avoid(&template, addr, *width)
+                    }
+                    Stmt::Call { .. } | Stmt::Unsupported { .. } | Stmt::Machine { .. } => true,
+                    _ => false,
+                }
+                && !super::memory::atomic(&block.stmts[later])
+            {
+                foldable = false;
+                break;
+            }
             // The consumer may rewrite a source: it reads before it writes.
             if writes.iter().any(|written| sources.contains(written)) && !reads_dest {
                 foldable = false;

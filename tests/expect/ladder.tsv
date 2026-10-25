@@ -56,7 +56,7 @@
 4	l4_memory_a64.o	point_dot	has	field_0x4
 4	l4_memory_a64.o	array_sum	has	v1 = v1 + 0x1;
 4	l4_memory_a64.o	array_sum	has	uint32_t *v1;
-4	l4_memory_a64.o	bump	has	void bump(
+4	l4_memory_a64.o	bump	has	return a0;
 4	arm64_linked.elf	pick	has	"velk-aarch64-string"
 4	pe64.exe	msg_first	has	"velk-ref-string"
 

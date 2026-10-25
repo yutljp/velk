@@ -263,3 +263,58 @@ fn printed_single_use_call_arithmetic_keeps_width_and_effects() {
     }
     std::fs::remove_dir_all(scratch).ok();
 }
+
+#[test]
+fn printed_frame_reads_stay_before_stores_that_change_their_bytes() {
+    let frame = Expr::bin(BinOp::Add, Expr::reg(4, 64), Expr::Const((-8i64) as u64));
+    let mut ir = synthetic_ir(
+        "read_before_store",
+        vec![Param {
+            index: 7,
+            name: "input".into(),
+            ty: CType::U32,
+        }],
+        CType::U32,
+        vec![
+            Stmt::Store {
+                addr: frame.clone(),
+                value: Expr::reg(7, 32),
+                width: 4,
+            },
+            Stmt::Assign {
+                dest: RegRef {
+                    index: VARIABLE_BASE,
+                    width: 32,
+                },
+                value: Expr::bin(
+                    BinOp::And,
+                    Expr::Load {
+                        addr: Box::new(frame.clone()),
+                        width: 4,
+                        signed: false,
+                    },
+                    Expr::Const(0x4c40ecca),
+                ),
+            },
+            Stmt::Store {
+                addr: frame,
+                value: Expr::Const(1),
+                width: 4,
+            },
+            Stmt::Ret {
+                value: Expr::reg(VARIABLE_BASE, 32),
+            },
+        ],
+    );
+    let original = ir.clone();
+    velk::passes::copies::copy_propagate_guarded(&mut ir);
+    let mut candidate = printed_candidate(
+        ir,
+        [0, 1, 2, 0x4c40ecca, u32::MAX]
+            .into_iter()
+            .map(|x| vec![u64::from(x)])
+            .collect(),
+    );
+    candidate.ir = original;
+    check_candidates("read-before-store", vec![candidate], Mode::Registers, &[]);
+}
