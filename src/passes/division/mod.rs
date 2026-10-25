@@ -534,7 +534,6 @@ fn magic_block(
         &mut replacements,
         domains,
         narrowed,
-        wide_signed,
         wide_signed_ret,
     );
 

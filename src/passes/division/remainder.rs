@@ -373,7 +373,6 @@ pub(crate) fn apply_remainder_follows(
     replacements: &mut Vec<(usize, Expr)>,
     domains: &mut std::collections::HashSet<(u16, bool)>,
     narrowed: &mut Vec<(u16, bool)>,
-    _wide_signed: &mut std::collections::HashSet<u16>,
     wide_signed_ret: &mut Vec<u16>,
 ) {
     let divisions: Vec<(usize, u64, bool, Expr)> = replacements

@@ -500,7 +500,7 @@ fn collect_uses(
             if dest.index == register {
                 *writes = true;
                 *seen = true;
-                if dest.width > 32 && !masked_wide(value, register) {
+                if dest.width > 32 && !masked_wide(value) {
                     *wide_write = true;
                 }
             }
@@ -593,7 +593,7 @@ pub(crate) fn scan_reads(
 }
 
 /// True when a wide write is masked within 32 bits or provably fits in them.
-fn masked_wide(value: &crate::ir::Expr, _register: u16) -> bool {
+fn masked_wide(value: &crate::ir::Expr) -> bool {
     use crate::ir::Expr;
     if matches!(
         value,
