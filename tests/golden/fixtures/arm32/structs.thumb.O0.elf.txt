@@ -200,12 +200,11 @@ fn word_low_byte @ 0x201e4 (size 12)
 /* velk pseudo-C: flags_level @ 0x201f0 */
 int32_t flags_level(int32_t a0) {
     uint64_t sp = velk_entry_stack_pointer();
-    int32_t v2;
 
     /* unsupported: AAPCS32 multiword, floating-point or aggregate declaration */
     int32_t v1 = (uint64_t)a0 << 31;
     if (v1 == 0) {
-        v2 = (uint8_t)a0;
+        int32_t v2 = (uint8_t)a0;
         /* unsupported: ARM ubfx r0, r0, 0x1, 0x3 at 0x2020c */
         *(uint32_t *)(sp - 0x8) = a0;
         return *(uint32_t *)(sp - 0x8);

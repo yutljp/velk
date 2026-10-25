@@ -1366,12 +1366,10 @@ fn main.divmod @ 0x466cc0 (size 64)
 -- decompile
 /* velk pseudo-C: main.sumSlice @ 0x466d00 */
 int64_t main_sumSlice(uint64_t *a0, int64_t a1) {
-    int64_t v3;
-
     int64_t v1 = 0;
     int64_t result = 0;
     while (a1 > v1) {
-        v3 = a0[v1];
+        int64_t v3 = a0[v1];
         ++v1;
         result += v3;
     }

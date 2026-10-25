@@ -156,33 +156,23 @@ int factorial(int n) {
     uint64_t *const qword_200198 = (uint64_t *)0x200198ULL;
     uint32_t v1;
     int32_t v2;
-    uint64_t v3;
-    uint64_t v4;
     int32_t v5;
-    int32_t v6;
-    uint64_t v7;
-    uint64_t v8;
-    uint64_t v9;
-    uint64_t v10;
-    int32_t v11;
-    uint64_t v12;
-    uint64_t v13;
 
     if (n >= 2) {
         if ((uint32_t)n >= 9) {
-            v3 = 0x100000001;
-            v4 = 0x100000001;
+            uint64_t v3 = 0x100000001;
+            uint64_t v4 = 0x100000001;
             v5 = n - 1;
-            v6 = v5 & 0xfffffff8;
-            v7 = add_lanes32((n & 0xffffffff) * 0x100000001, *qword_200190);
-            v8 = add_lanes32((n & 0xffffffff) * 0x100000001, *qword_200198);
-            v9 = 0x100000001;
-            v10 = 0x100000001;
+            int32_t v6 = v5 & 0xfffffff8;
+            uint64_t v7 = add_lanes32((n & 0xffffffff) * 0x100000001, *qword_200190);
+            uint64_t v8 = add_lanes32((n & 0xffffffff) * 0x100000001, *qword_200198);
+            uint64_t v9 = 0x100000001;
+            uint64_t v10 = 0x100000001;
             v1 = n - v6;
-            v11 = v6;
+            int32_t v11 = v6;
             do {
-                v12 = add_lanes32(v7, 0xfffffffcfffffffc);
-                v13 = add_lanes32(v8, 0xfffffffcfffffffc);
+                uint64_t v12 = add_lanes32(v7, 0xfffffffcfffffffc);
+                uint64_t v13 = add_lanes32(v8, 0xfffffffcfffffffc);
                 v9 = mul_lanes32(v7, v9);
                 v10 = mul_lanes32(v8, v10);
                 v11 -= 8;

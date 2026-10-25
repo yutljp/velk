@@ -20,26 +20,18 @@ struct S1 {
 };
 void copy_bytes(unsigned char *dst, unsigned char *src, uint32_t n) {
     uint64_t v3;
-    int32_t v1;
-    uint32_t v2;
-    int32_t v4;
     int32_t v6;
     int32_t v7;
     int32_t v8;
     int32_t v9;
     uint8_t v10;
-    struct S1 *v11;
-    uint8_t v14;
-    int32_t v16;
-    int32_t v18;
-    uint8_t v19;
     uint32_t local_0; /* [sp-4] */
 
     if (n != 0) {
         local_0 = v3;
-        v1 = n & 0x3;
-        v2 = n >> 2;
-        v4 = 0;
+        int32_t v1 = n & 0x3;
+        uint32_t v2 = n >> 2;
+        int32_t v4 = 0;
         if (n >> 2 != 0) {
             v2 = -(v2 << 2);
             v6 = (uint32_t)(uintptr_t)dst + 1;
@@ -48,14 +40,14 @@ void copy_bytes(unsigned char *dst, unsigned char *src, uint32_t n) {
             while (true) {
                 v9 = v7 + v8;
                 v10 = *(uint8_t *)((v9 + 3) & 0xffffffff);
-                v11 = (struct S1 *)((v6 + v8) & 0xffffffff);
+                struct S1 *v11 = (struct S1 *)((v6 + v8) & 0xffffffff);
                 v11->field_0x3 = v10;
                 v10 = *(uint8_t *)((v9 + 4) & 0xffffffff);
                 v8 += 4;
                 v11->field_0x4 = v10;
                 v10 = *(uint8_t *)((v9 + 5) & 0xffffffff);
                 v11->field_0x5 = v10;
-                v14 = *(uint8_t *)((v9 + 6) & 0xffffffff);
+                uint8_t v14 = *(uint8_t *)((v9 + 6) & 0xffffffff);
                 v11->field_0x6 = v14;
                 if (v2 + v8 + 4 == 0) break;
             }
@@ -67,12 +59,12 @@ void copy_bytes(unsigned char *dst, unsigned char *src, uint32_t n) {
         v2 = *(uint8_t *)((uint32_t)(uintptr_t)src + v4);
         *(uint8_t *)((uint32_t)(uintptr_t)dst + v4) = v2;
         if (v1 != 1) {
-            v16 = v4 + 1;
+            int32_t v16 = v4 + 1;
             v7 = *(uint8_t *)((uint32_t)(uintptr_t)src + v16);
             *(uint8_t *)((uint32_t)(uintptr_t)dst + v16) = v7;
             if (v1 != 2) {
-                v18 = v4 + 2;
-                v19 = *(uint8_t *)((uint32_t)(uintptr_t)src + v18);
+                int32_t v18 = v4 + 2;
+                uint8_t v19 = *(uint8_t *)((uint32_t)(uintptr_t)src + v18);
                 *(uint8_t *)((uint32_t)(uintptr_t)dst + v18) = v19;
                 return;
             }

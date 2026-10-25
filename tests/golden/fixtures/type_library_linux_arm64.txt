@@ -401,10 +401,6 @@ int32_t __do_global_dtors_aux(void) {
     uint64_t v10;
     uint64_t v11;
     uint64_t v12;
-    void *v3;
-    int32_t v4;
-    int32_t v5;
-    int32_t v6;
     int64_t local_0; /* [sp-18] */
 
     /* unsupported: PACIASP at 0x880 */
@@ -412,7 +408,7 @@ int32_t __do_global_dtors_aux(void) {
     int32_t result = *completed_0;
     if ((result & 0x1) == 0) {
         if (*__cxa_finalize_1ffc8_u64 != 0) {
-            v3 = (void *)*__dso_handle;
+            void *v3 = (void *)*__dso_handle;
             __cxa_finalize(v3);
         }
         {
@@ -422,9 +418,9 @@ int32_t __do_global_dtors_aux(void) {
             call_values[2] = v11; /* also returned by the call */
             call_values[3] = v12; /* also returned by the call */
             v8 = call_values[0];
-            v4 = call_values[1];
-            v5 = call_values[2];
-            v6 = call_values[3];
+            int32_t v4 = call_values[1];
+            int32_t v5 = call_values[2];
+            int32_t v6 = call_values[3];
         }
         result = 1;
         *completed_0 = 1;

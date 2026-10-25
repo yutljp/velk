@@ -327,7 +327,6 @@ struct S1 { int32_t field_0x0; int32_t field_0x4; uint8_t gap_0x8[0x10]; };
 int32_t lookup(struct S1 *a0, int a1, int a2) {
     uint64_t *const stderr_GLIBC_2_2_5 = (uint64_t *)0x4020ULL;
     void *v2;
-    uint32_t v11;
     int64_t local_0; /* [sp-78] */
     _Alignas(16) uint8_t local_1[0x50]; /* [sp-68] */
     int64_t local_2; /* [sp-70] */
@@ -356,7 +355,7 @@ int32_t lookup(struct S1 *a0, int a1, int a2) {
     __snprintf_chk((char *)(local_1), 64, 2, 64, (const char *)"missing key %d among %d", a2 & 0xffffffff, a1);
     fputs((const char *)(local_1), (FILE *)*stderr_GLIBC_2_2_5);
     do {
-        v11 = v8[-1];
+        uint32_t v11 = v8[-1];
         v5 = (const char *)v8;
         v8 += 0x6;
         __fprintf_chk((FILE *)*stderr_GLIBC_2_2_5, 2, (const char *)0x201c, v5, v11);

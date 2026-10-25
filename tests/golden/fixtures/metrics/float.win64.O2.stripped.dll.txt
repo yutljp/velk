@@ -10,16 +10,13 @@
 /* velk pseudo-C: sub_180001000 @ 0x180001000 */
 double sub_180001000(double *a0, int32_t a1) {
     uint32_t v3;
-    uint8_t v4;
     int64_t i;
-    double *v14;
-    int64_t i_2;
 
     double result = 0.0;
     double v2 = 0.0;
     if (a1 > 0) {
         v3 = a1;
-        v4 = v3 & 0x7;
+        uint8_t v4 = v3 & 0x7;
         if ((uint32_t)a1 >= 8) {
             v3 &= 0x7ffffff8;
             i = 0;
@@ -43,8 +40,8 @@ double sub_180001000(double *a0, int32_t a1) {
         } else {
             i = 0;
         }
-        v14 = a0 + i;
-        i_2 = 0;
+        double *v14 = a0 + i;
+        int64_t i_2 = 0;
         do {
             v2 = v2 + v14[i_2];
             ++i_2;

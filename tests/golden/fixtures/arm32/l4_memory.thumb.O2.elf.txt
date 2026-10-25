@@ -39,52 +39,38 @@ fn point_dot @ 0x20128 (size 12)
 /* velk pseudo-C: array_sum @ 0x20134 */
 int array_sum(int *a, int n) {
     uint64_t sp = velk_entry_stack_pointer();
-    uint32_t v1;
-    uint32_t v13;
     uint32_t v14;
     uint32_t v15;
     uint32_t v16;
-    uint32_t v20;
     uint32_t v21;
-    int32_t v3;
-    uint32_t v4;
-    int32_t v5;
     int32_t v6;
-    int32_t v7;
-    int32_t v8;
-    int32_t v9;
-    int32_t v10;
-    int32_t v11;
-    int32_t v12;
     int32_t v17;
-    int32_t v18;
-    int32_t v19;
 
     int32_t v2 = 1;
     if (n < 1) {
         a = 0x0;
     }
     if (n >= v2) {
-        v20 = n & 0x3;
-        v3 = (uint32_t)n >> 2;
-        v4 = (uint32_t)n >> 2;
-        v13 = 0;
+        uint32_t v20 = n & 0x3;
+        int32_t v3 = (uint32_t)n >> 2;
+        uint32_t v4 = (uint32_t)n >> 2;
+        uint32_t v13 = 0;
         if (v3 != 0) {
             *(uint32_t *)(sp - 0x10) = v14;
             *(uint32_t *)(sp - 0xc) = v15;
             *(uint32_t *)(sp - 0x8) = v16;
             *(uint32_t *)(sp - 0x4) = v21;
-            v1 = (uint32_t)(uintptr_t)a - 16;
-            v5 = -(v4 << 2);
+            uint32_t v1 = (uint32_t)(uintptr_t)a - 16;
+            int32_t v5 = -(v4 << 2);
             v6 = 0;
             for (;;) {
-                v7 = *(uint32_t *)(v1 + 16);
-                v8 = v13 - 4;
-                v9 = v1 + 20;
-                v10 = v6 + v7;
+                int32_t v7 = *(uint32_t *)(v1 + 16);
+                int32_t v8 = v13 - 4;
+                int32_t v9 = v1 + 20;
+                int32_t v10 = v6 + v7;
                 /* unsupported: ARM ldm r6, {r4, r5, r6} at 0x20162 */
-                v11 = n + v14;
-                v12 = v11 + v15;
+                int32_t v11 = n + v14;
+                int32_t v12 = v11 + v15;
                 v6 = v12 + v16;
                 if (v21 == v13) {
                     break;
@@ -101,8 +87,8 @@ int array_sum(int *a, int n) {
         if (v20 != 1) {
             v17 = (uint32_t)(uintptr_t)a + (v13 << 2);
             v6 += *(uint32_t *)((v17 + 4) & 0xffffffff);
-            v18 = v20;
-            v19 = 2;
+            int32_t v18 = v20;
+            int32_t v19 = 2;
             if (v20 != 2) {
                 v17 = *(uint32_t *)((v17 + 8) & 0xffffffff);
             }

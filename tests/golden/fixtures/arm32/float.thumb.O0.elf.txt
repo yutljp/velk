@@ -15,12 +15,8 @@ double average(int32_t a0, int32_t a1) {
     uint64_t sp = velk_entry_stack_pointer();
     uint64_t v5;
     uint32_t v2;
-    uint32_t v4;
-    int32_t v10;
     int32_t v11;
-    int32_t v13;
     int32_t v14;
-    int32_t v19;
     int32_t v20;
     int32_t i; /* [sp-1c] */
 
@@ -30,17 +26,17 @@ double average(int32_t a0, int32_t a1) {
     *(uint32_t *)(sp - 0x18) = 0;
     *(uint32_t *)(sp - 0x1c) = 0;
     while (*(int32_t *)(sp - 0x1c) < a1) {
-        v4 = *(uint32_t *)(sp - 0x1c);
-        v10 = (uint32_t)(sub_20136(*(uint32_t *)(sp - 0x18), *(uint32_t *)(sp - 0x14), *(uint32_t *)(a0 + (v4 << 3)), *(uint32_t *)(a0 + (v4 << 3) + 4)));
+        uint32_t v4 = *(uint32_t *)(sp - 0x1c);
+        int32_t v10 = (uint32_t)(sub_20136(*(uint32_t *)(sp - 0x18), *(uint32_t *)(sp - 0x14), *(uint32_t *)(a0 + (v4 << 3)), *(uint32_t *)(a0 + (v4 << 3) + 4)));
         v11 = (uint32_t)(v5); /* also returned by the call */
         *(uint32_t *)(sp - 0x14) = v11;
         *(uint32_t *)(sp - 0x18) = v10;
         *(uint32_t *)(sp - 0x1c) = *(uint32_t *)(sp - 0x1c) + 1;
     }
     if (a1 >= 1) {
-        v13 = (uint32_t)(sub_2015a((uint32_t)a1));
+        int32_t v13 = (uint32_t)(sub_2015a((uint32_t)a1));
         v14 = (uint32_t)(v5); /* also returned by the call */
-        v19 = (uint32_t)(sub_20166(*(uint32_t *)(sp - 0x18), *(uint32_t *)(sp - 0x14), (uint32_t)v13, (uint32_t)v14));
+        int32_t v19 = (uint32_t)(sub_20166(*(uint32_t *)(sp - 0x18), *(uint32_t *)(sp - 0x14), (uint32_t)v13, (uint32_t)v14));
         v20 = (uint32_t)(v5); /* also returned by the call */
         *(uint32_t *)(sp - 0x24) = v19;
         *(uint32_t *)(sp - 0x20) = v20;
@@ -247,7 +243,6 @@ int32_t compare_doubles(int32_t a0, int32_t a1, int32_t a2, int32_t a3) {
     uint64_t v4;
     uint32_t v1;
     int32_t v6;
-    int32_t v11;
 
     /* unsupported: AAPCS32 multiword, floating-point or aggregate declaration */
     *(uint32_t *)(sp - 0x8) = v1;
@@ -261,7 +256,7 @@ int32_t compare_doubles(int32_t a0, int32_t a1, int32_t a2, int32_t a3) {
         a1 = (uint32_t)(call_values[1]);
     }
     if (v6 == 0) {
-        v11 = (uint32_t)(sub_20204((uint32_t)a0, *(uint32_t *)(sp - 0xc), (uint32_t)a2, (uint32_t)a3));
+        int32_t v11 = (uint32_t)(sub_20204((uint32_t)a0, *(uint32_t *)(sp - 0xc), (uint32_t)a2, (uint32_t)a3));
         if (v11 != 0) {
             v11 = 1;
         }

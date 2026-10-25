@@ -135,9 +135,7 @@ fn rotate_left @ 0x2016c (size 12)
 /* velk pseudo-C: popcount @ 0x20178 */
 int popcount(unsigned int x) {
     int32_t v3;
-    int32_t v4;
     int32_t v5;
-    int32_t v6;
 
     int32_t v1 = x;
     int32_t v2 = 0;
@@ -146,11 +144,11 @@ int popcount(unsigned int x) {
     }
     if (v1 != v2) {
         v3 = x;
-        v4 = 0;
+        int32_t v4 = 0;
         while (true) {
             v5 = v3 - 1;
             ++v4;
-            v6 = v5 & v3;
+            int32_t v6 = v5 & v3;
             v3 = v5 & v3;
             if (v6 == 0) break;
         }

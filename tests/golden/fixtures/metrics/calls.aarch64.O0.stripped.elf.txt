@@ -111,11 +111,9 @@ fn <unnamed> @ 0x2103c4 (size 48)
 -- decompile
 /* velk pseudo-C: sub_2103f4 @ 0x2103f4 */
 int32_t sub_2103f4(int32_t a0) {
-    uint32_t result;
-
     uint32_t v4 = a0;
     if (a0 > 1) {
-        result = v4 * ((int32_t)(sub_2103f4(v4 - 1)));
+        uint32_t result = v4 * ((int32_t)(sub_2103f4(v4 - 1)));
         return result;
     }
     return 1;
@@ -147,11 +145,9 @@ fn <unnamed> @ 0x2103f4 (size 96)
 -- decompile
 /* velk pseudo-C: sub_210454 @ 0x210454 */
 int32_t sub_210454(int32_t a0) {
-    uint32_t result;
-
     uint32_t v4 = a0;
     if (a0 != 0) {
-        result = ((int32_t)(sub_2104a0(v4 - 1)));
+        uint32_t result = ((int32_t)(sub_2104a0(v4 - 1)));
         return result;
     }
     return 0;
@@ -183,11 +179,9 @@ fn <unnamed> @ 0x210454 (size 76)
 -- decompile
 /* velk pseudo-C: sub_2104a0 @ 0x2104a0 */
 int32_t sub_2104a0(int32_t a0) {
-    uint32_t result;
-
     uint32_t v4 = a0;
     if (a0 != 0) {
-        result = ((int32_t)(sub_210454(v4 - 1)));
+        uint32_t result = ((int32_t)(sub_210454(v4 - 1)));
         return result;
     }
     return 1;

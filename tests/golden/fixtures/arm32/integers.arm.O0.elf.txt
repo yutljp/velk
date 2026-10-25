@@ -133,12 +133,11 @@ fn mixed_sign @ 0x2017c (size 48)
 -- decompile
 /* velk pseudo-C: in_range @ 0x201ac */
 _Bool in_range(int x, int lo, int hi) {
-    int32_t v3;
     uint32_t local_0; /* [sp-18] */
 
     local_0 = 0;
     if (x >= lo) {
-        v3 = 0;
+        int32_t v3 = 0;
         if (x <= hi) {
             v3 = 1;
         }

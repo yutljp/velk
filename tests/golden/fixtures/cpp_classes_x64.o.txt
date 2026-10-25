@@ -9,17 +9,14 @@
 -- decompile
 /* velk pseudo-C: total_area(Shape const* const*, int) @ 0x0 */
 int32_t total_area(uint64_t *a0, int32_t a1) {
-    uint64_t *v5;
-    uint64_t *v6;
-
     if (a1 <= 0) {
         return 0;
     }
     int64_t v3 = 0;
     int32_t v4 = 0;
     do {
-        v5 = (uint64_t *)a0[v3];
-        v6 = (uint64_t *)*v5;
+        uint64_t *v5 = (uint64_t *)a0[v3];
+        uint64_t *v6 = (uint64_t *)*v5;
         v4 += ((int32_t)(((uint64_t (*)())v6[2])(v5)));
         ++v3;
     } while ((uint32_t)a1 != v3);

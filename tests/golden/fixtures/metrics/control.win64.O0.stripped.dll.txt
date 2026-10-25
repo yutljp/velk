@@ -227,8 +227,6 @@ fn <unnamed> @ 0x180001150 (size 117)
 /* velk pseudo-C: sub_1800011d0 @ 0x1800011d0 */
 int32_t sub_1800011d0(uint32_t *a0, int32_t a1) {
     uint8_t v3;
-    int32_t v4;
-    int64_t v6;
     uint8_t local_0; /* [sp-11] */
 
     local_0 = 0;
@@ -243,8 +241,8 @@ int32_t sub_1800011d0(uint32_t *a0, int32_t a1) {
     }
     v3 = 1;
     if (*a0 != 1) {
-        v6 = a1 - 1;
-        v4 = a0[v6];
+        int64_t v6 = a1 - 1;
+        int32_t v4 = a0[v6];
         v3 = a0[v6] == 1;
     }
     local_0 = v3;

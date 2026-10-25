@@ -10,8 +10,6 @@
 /* ref: 0x180003000 .data */
 int sum_while(int n) {
     uint32_t *const sink = (uint32_t *)0x180003000ULL;
-    int32_t v5;
-    int32_t v7;
     int32_t v8;
 
     if (n <= 0) {
@@ -21,11 +19,11 @@ int sum_while(int n) {
     int32_t v2 = 0;
     int32_t v3 = 0;
     if ((uint32_t)n >= 8) {
-        v5 = -(n & 0x7ffffff8);
+        int32_t v5 = -(n & 0x7ffffff8);
         v3 = 0;
         v2 = 7;
         do {
-            v7 = v2 + v3;
+            int32_t v7 = v2 + v3;
             v8 = v2;
             *sink = v3 + v8 - 7;
             v3 = v8 + v7 - 7;

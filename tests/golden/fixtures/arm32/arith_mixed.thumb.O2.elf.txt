@@ -30,15 +30,6 @@ fn sum3 @ 0x200fc (size 6)
 int helper(int x) {
     uint32_t v14;
     uint32_t v15;
-    int32_t v3;
-    int32_t v4;
-    uint32_t v5;
-    int32_t v7;
-    int32_t v9;
-    int32_t v10;
-    int32_t v11;
-    int32_t v12;
-    int32_t v13;
 
     int32_t v1 = x;
     int32_t v2 = 1;
@@ -46,17 +37,17 @@ int helper(int x) {
         x = 0;
     }
     if (v1 >= v2) {
-        v3 = x - 1;
-        v4 = x - 2;
+        int32_t v3 = x - 1;
+        int32_t v4 = x - 2;
         /* unsupported: ARM umull.w r1, r2, r1, r2 at 0x20110 */
-        v5 = v15 & 0x1;
-        v7 = v14 * (x - 3) >> 1;
-        v9 = x + v7 * 0x55555556;
-        v10 = v5 >> 1;
+        uint32_t v5 = v15 & 0x1;
+        int32_t v7 = v14 * (x - 3) >> 1;
+        int32_t v9 = x + v7 * 0x55555556;
+        int32_t v10 = v5 >> 1;
         /* unsupported: ARM rrx r1, r1 at 0x2012e */
-        v11 = v14 * 3;
-        v12 = x + v11;
-        v13 = v12 - 1;
+        int32_t v11 = v14 * 3;
+        int32_t v12 = x + v11;
+        int32_t v13 = v12 - 1;
         return v13;
     }
     return x;
@@ -123,52 +114,38 @@ fn pair_sum @ 0x2013c (size 6)
 /* velk pseudo-C: sum_arr @ 0x20144 */
 int sum_arr(int *p, int n) {
     uint64_t sp = velk_entry_stack_pointer();
-    uint32_t v1;
-    uint32_t v13;
     uint32_t v14;
     uint32_t v15;
     uint32_t v16;
-    uint32_t v20;
     uint32_t v21;
-    int32_t v3;
-    uint32_t v4;
-    int32_t v5;
     int32_t v6;
-    int32_t v7;
-    int32_t v8;
-    int32_t v9;
-    int32_t v10;
-    int32_t v11;
-    int32_t v12;
     int32_t v17;
-    int32_t v18;
-    int32_t v19;
 
     int32_t v2 = 1;
     if (n < 1) {
         p = 0x0;
     }
     if (n >= v2) {
-        v20 = n & 0x3;
-        v3 = (uint32_t)n >> 2;
-        v4 = (uint32_t)n >> 2;
-        v13 = 0;
+        uint32_t v20 = n & 0x3;
+        int32_t v3 = (uint32_t)n >> 2;
+        uint32_t v4 = (uint32_t)n >> 2;
+        uint32_t v13 = 0;
         if (v3 != 0) {
             *(uint32_t *)(sp - 0x10) = v14;
             *(uint32_t *)(sp - 0xc) = v15;
             *(uint32_t *)(sp - 0x8) = v16;
             *(uint32_t *)(sp - 0x4) = v21;
-            v1 = (uint32_t)(uintptr_t)p - 16;
-            v5 = -(v4 << 2);
+            uint32_t v1 = (uint32_t)(uintptr_t)p - 16;
+            int32_t v5 = -(v4 << 2);
             v6 = 0;
             for (;;) {
-                v7 = *(uint32_t *)(v1 + 16);
-                v8 = v13 - 4;
-                v9 = v1 + 20;
-                v10 = v6 + v7;
+                int32_t v7 = *(uint32_t *)(v1 + 16);
+                int32_t v8 = v13 - 4;
+                int32_t v9 = v1 + 20;
+                int32_t v10 = v6 + v7;
                 /* unsupported: ARM ldm r6, {r4, r5, r6} at 0x20172 */
-                v11 = n + v14;
-                v12 = v11 + v15;
+                int32_t v11 = n + v14;
+                int32_t v12 = v11 + v15;
                 v6 = v12 + v16;
                 if (v21 == v13) {
                     break;
@@ -185,8 +162,8 @@ int sum_arr(int *p, int n) {
         if (v20 != 1) {
             v17 = (uint32_t)(uintptr_t)p + (v13 << 2);
             v6 += *(uint32_t *)((v17 + 4) & 0xffffffff);
-            v18 = v20;
-            v19 = 2;
+            int32_t v18 = v20;
+            int32_t v19 = 2;
             if (v20 != 2) {
                 v17 = *(uint32_t *)((v17 + 8) & 0xffffffff);
             }

@@ -29,26 +29,12 @@ double average(int32_t a0, int32_t a1) {
     uint32_t v3;
     int32_t v4;
     int32_t v5;
-    int32_t v9;
-    int32_t v10;
-    int32_t v12;
     int32_t v13;
-    int32_t v14;
-    int32_t v15;
-    int32_t v17;
     int32_t v18;
-    int32_t v19;
-    int32_t v20;
-    int32_t v22;
     int32_t v23;
-    int32_t v24;
-    int32_t v25;
     int32_t v28;
     int32_t v38;
     int32_t v39;
-    double v44;
-    int32_t v45;
-    int32_t v46;
 
     /* unsupported: AAPCS32 multiword, floating-point or aggregate declaration */
     *(uint32_t *)(sp - 0x24) = v30;
@@ -72,21 +58,21 @@ double average(int32_t a0, int32_t a1) {
             v34 = v2 - 32;
             *(uint32_t *)(sp - 0x28) = v2;
             for (;;) {
-                v9 = *(uint32_t *)(v34 + 32);
-                v10 = v34 + 36;
+                int32_t v9 = *(uint32_t *)(v34 + 32);
+                int32_t v10 = v34 + 36;
                 /* unsupported: ARM ldm r7, {r3, r5, r6, r7} at 0x20150 */
-                v12 = (uint32_t)(sub_20156((uint32_t)a0, (uint32_t)a1, v27, v29));
+                int32_t v12 = (uint32_t)(sub_20156((uint32_t)a0, (uint32_t)a1, v27, v29));
                 v13 = (uint32_t)(v41); /* also returned by the call */
-                v14 = v31;
-                v15 = v32;
-                v17 = (uint32_t)(sub_2015e((uint32_t)v12, (uint32_t)v13, (uint32_t)v14, (uint32_t)v15));
+                int32_t v14 = v31;
+                int32_t v15 = v32;
+                int32_t v17 = (uint32_t)(sub_2015e((uint32_t)v12, (uint32_t)v13, (uint32_t)v14, (uint32_t)v15));
                 v18 = (uint32_t)(v41); /* also returned by the call */
-                v19 = *(uint32_t *)(v34 + 20);
-                v20 = v33;
-                v22 = (uint32_t)(sub_20168((uint32_t)v17, (uint32_t)v18, (uint32_t)v20, (uint32_t)v19));
+                int32_t v19 = *(uint32_t *)(v34 + 20);
+                int32_t v20 = v33;
+                int32_t v22 = (uint32_t)(sub_20168((uint32_t)v17, (uint32_t)v18, (uint32_t)v20, (uint32_t)v19));
                 v23 = (uint32_t)(v41); /* also returned by the call */
-                v24 = *(uint32_t *)(v34 + 24);
-                v25 = *(uint32_t *)((uint64_t)(v34 + 24) + 0x4);
+                int32_t v24 = *(uint32_t *)(v34 + 24);
+                int32_t v25 = *(uint32_t *)((uint64_t)(v34 + 24) + 0x4);
                 v4 = (uint32_t)(sub_20170((uint32_t)v22, (uint32_t)v23, (uint32_t)v24, (uint32_t)v25));
                 v5 = (uint32_t)(v41); /* also returned by the call */
                 v3 = v30 + 4;
@@ -129,9 +115,9 @@ double average(int32_t a0, int32_t a1) {
 L_201ac:
     v38 = (uint32_t)(sub_201b6(v36));
     v39 = (uint32_t)(v41); /* also returned by the call */
-    v44 = ((union { uint64_t bits; double value; }){ .bits = (uint32_t)(sub_201c2((uint32_t)v4, (uint32_t)v5, (uint32_t)v38, (uint32_t)v39)) }).value;
-    v45 = v36;
-    v46 = 0;
+    double v44 = ((union { uint64_t bits; double value; }){ .bits = (uint32_t)(sub_201c2((uint32_t)v4, (uint32_t)v5, (uint32_t)v38, (uint32_t)v39)) }).value;
+    int32_t v45 = v36;
+    int32_t v46 = 0;
     if ((int32_t)v36 <= 0) {
         v44 = 0.0;
     }

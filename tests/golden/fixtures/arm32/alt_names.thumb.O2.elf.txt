@@ -25,15 +25,6 @@ fn alt_sum3 @ 0x200ec (size 6)
 int alt_helper(int x) {
     uint32_t v14;
     uint32_t v15;
-    int32_t v3;
-    int32_t v4;
-    uint32_t v5;
-    int32_t v7;
-    int32_t v9;
-    int32_t v10;
-    int32_t v11;
-    int32_t v12;
-    int32_t v13;
 
     int32_t v1 = x;
     int32_t v2 = 1;
@@ -41,17 +32,17 @@ int alt_helper(int x) {
         x = 0;
     }
     if (v1 >= v2) {
-        v3 = x - 1;
-        v4 = x - 2;
+        int32_t v3 = x - 1;
+        int32_t v4 = x - 2;
         /* unsupported: ARM umull.w r1, r2, r1, r2 at 0x20100 */
-        v5 = v15 & 0x1;
-        v7 = v14 * (x - 3) >> 1;
-        v9 = x + v7 * 0x55555556;
-        v10 = v5 >> 1;
+        uint32_t v5 = v15 & 0x1;
+        int32_t v7 = v14 * (x - 3) >> 1;
+        int32_t v9 = x + v7 * 0x55555556;
+        int32_t v10 = v5 >> 1;
         /* unsupported: ARM rrx r1, r1 at 0x2011e */
-        v11 = v14 * 3;
-        v12 = x + v11;
-        v13 = v12 - 1;
+        int32_t v11 = v14 * 3;
+        int32_t v12 = x + v11;
+        int32_t v13 = v12 - 1;
         return v13;
     }
     return x;

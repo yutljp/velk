@@ -38,13 +38,12 @@ struct record {
     uint8_t gap_0x12[0x6];
 };
 long record_total(struct record *items, int n) {
-    int64_t v2;
     long total; /* [sp-18] */
     int i; /* [sp-1c] */
 
     total = 0;
     for (i = 0; i < n; i++) {
-        v2 = items[i].count;
+        int64_t v2 = items[i].count;
         total += items[i].value * v2;
     }
     return total;

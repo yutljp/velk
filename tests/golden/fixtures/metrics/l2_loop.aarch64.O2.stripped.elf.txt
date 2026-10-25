@@ -131,10 +131,8 @@ fn <unnamed> @ 0x210224 (size 64)
 -- decompile
 /* velk pseudo-C: sub_210264 @ 0x210264 */
 int32_t sub_210264(uint32_t *a0, int32_t a1, int32_t a2) {
-    uint64_t i;
-
     if (a1 >= 1) {
-        i = 0;
+        uint64_t i = 0;
         do {
             if (a0[i] == a2) {
                 return i;

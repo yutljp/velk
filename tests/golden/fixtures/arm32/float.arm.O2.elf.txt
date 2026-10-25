@@ -9,11 +9,9 @@
 -- decompile
 /* velk pseudo-C: average @ 0x20104 */
 double average(int64_t a0, int32_t a1) {
-    double v1;
-
     /* unsupported: AAPCS32 multiword, floating-point or aggregate declaration */
     if (a1 < 1) {
-        v1 = ((union { uint64_t bits; double value; }){ .bits = (uint32_t)(sub_20134()) }).value;
+        double v1 = ((union { uint64_t bits; double value; }){ .bits = (uint32_t)(sub_20134()) }).value;
         return v1;
     }
     /* unsupported: undecodable ARM instruction at 0x2010c: incomplete decoder */

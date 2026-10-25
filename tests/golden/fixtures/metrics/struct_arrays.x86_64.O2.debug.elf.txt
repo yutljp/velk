@@ -53,15 +53,13 @@ struct item { _Alignas(8) long key; int count; short kind; uint8_t gap_0xe[0x2];
 long item_last_key(struct item *items, int n) {
     uint64_t v2;
     int64_t v3;
-    uint32_t v5;
-    void *v6;
 
     if (n <= 0) {
         return 0;
     }
     if (n != 1) {
-        v5 = n & 0x7ffffffe;
-        v6 = (void *)&items[1].count;
+        uint32_t v5 = n & 0x7ffffffe;
+        void *v6 = (void *)&items[1].count;
         v2 = 0;
         v3 = 0;
         do {

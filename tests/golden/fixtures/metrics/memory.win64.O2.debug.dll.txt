@@ -27,10 +27,7 @@ static inline uint64_t interleave_low8(uint64_t a, uint64_t b) {
 /* velk pseudo-C: copy_bytes @ 0x180001000 */
 void copy_bytes(unsigned char *dst, unsigned char *src, uint32_t n) {
     uint64_t v7;
-    int64_t i;
-    int64_t v13;
     int64_t v15;
-    int64_t v16;
 
     if (n == 0) {
         return;
@@ -41,7 +38,7 @@ void copy_bytes(unsigned char *dst, unsigned char *src, uint32_t n) {
     if (v5 == 0) {
         if (n >= 32) {
             v7 = n & 0xffffffe0;
-            i = 0;
+            int64_t i = 0;
             do {
                 __builtin_memmove(dst + i, src + i, 32);
                 i += 32;
@@ -55,7 +52,7 @@ void copy_bytes(unsigned char *dst, unsigned char *src, uint32_t n) {
         } else {
             v7 = 0;
         }
-        v13 = v7;
+        int64_t v13 = v7;
         v7 = n & 0xfffffffc;
         do {
             *(uint32_t *)(dst + v13) = *(uint32_t *)(src + v13);
@@ -69,7 +66,7 @@ void copy_bytes(unsigned char *dst, unsigned char *src, uint32_t n) {
     }
 L_1800010a6:
     v15 = v7;
-    v16 = n & 0x3;
+    int64_t v16 = n & 0x3;
     if (v16 != 0) {
         v15 = v7;
         do {
@@ -168,21 +165,18 @@ fn copy_bytes @ 0x180001000 (size 276)
 /* velk pseudo-C: fill_bytes @ 0x180001120 */
 void fill_bytes(unsigned char *dst, unsigned char value, uint32_t n) {
     int64_t v2;
-    uint32_t v3;
     uint64_t v4;
-    int64_t i;
-    int64_t v8;
 
     if (n == 0) {
         return;
     }
     if (n >= 4) {
-        v3 = value;
+        uint32_t v3 = value;
         if (n >= 32) {
             v2 = n & 0xffffffe0;
             v4 = interleave_low8(v3, v3);
             v4 = v4 & 0xffff | (v4 & 0xffff) << 16 | (v4 & 0xffff) << 32 | v4 << 48;
-            i = 0;
+            int64_t i = 0;
             do {
                 *(uint64_t *)(dst + i) = v4;
                 *(uint64_t *)(dst + (i + 0x8)) = v4;
@@ -199,7 +193,7 @@ void fill_bytes(unsigned char *dst, unsigned char value, uint32_t n) {
         } else {
             v2 = 0;
         }
-        v8 = v2;
+        int64_t v8 = v2;
         v2 = n & 0xfffffffc;
         v4 = interleave_low8(v3, v3);
         v4 = v4 & 0xffff | (v4 & 0xffff) << 16 | (v4 & 0xffff) << 32 | v4 << 48;

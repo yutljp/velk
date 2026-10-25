@@ -8,7 +8,6 @@ int dispatch(int x) {
     uint64_t v1;
     uint32_t v6;
     uint32_t v7;
-    int32_t v4;
     int32_t v5;
     uint32_t local_0; /* [sp-c] */
     uint32_t local_1; /* [sp-4] */
@@ -17,7 +16,7 @@ int dispatch(int x) {
     int32_t v3 = v2;
     local_0 = v3;
     if (v2 <= 4) {
-        v4 = local_0;
+        int32_t v4 = local_0;
         /* unsupported: ARM tbb [pc, r1] at 0x200f6 */
         {
             uint64_t call_values[2];

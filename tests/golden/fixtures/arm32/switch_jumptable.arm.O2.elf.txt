@@ -8,12 +8,11 @@ int d7(int x) {
     uint32_t v4;
     uint32_t v5;
     uint32_t v6;
-    int32_t v2;
 
     int32_t v1 = 0x20114 + *(uint32_t *)(0x204a4);
     if ((uint32_t)x <= 9) {
         /* unsupported: ARM adr r2, pc, 0x4 at 0x20114 */
-        v2 = *(uint32_t *)((v5 + ((uint64_t)x << 2)) & 0xffffffff);
+        int32_t v2 = *(uint32_t *)((v5 + ((uint64_t)x << 2)) & 0xffffffff);
         /* unsupported: ARM add pc, r2, r0 at 0x2011c */
         return ((int32_t)(sub_20120((uint32_t)x, v4, v5, v6)));
     }

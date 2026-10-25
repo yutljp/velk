@@ -72,33 +72,23 @@ fn point_dot @ 0x2101d4 (size 28)
 int array_sum(int *a, int n) {
     uint64_t v2;
     int32_t v3;
-    uint64_t v4;
-    uint64_t v5;
-    uint64_t v6;
-    uint64_t v7;
-    uint64_t *v8;
-    int64_t v9;
-    uint64_t v10;
-    uint64_t v11;
-    uint64_t v12;
-    uint64_t v13;
 
     if (n < 1) {
         return 0;
     }
     if ((uint32_t)n >= 8) {
-        v4 = 0;
-        v5 = 0;
-        v6 = 0;
-        v7 = 0;
-        v8 = (uint64_t *)(a + 0x4);
+        uint64_t v4 = 0;
+        uint64_t v5 = 0;
+        uint64_t v6 = 0;
+        uint64_t v7 = 0;
+        uint64_t *v8 = (uint64_t *)(a + 0x4);
         v2 = (uint32_t)n & 0x7ffffff8;
-        v9 = v2;
+        int64_t v9 = v2;
         do {
-            v10 = v8[-2];
-            v11 = v8[-1];
-            v12 = *v8;
-            v13 = v8[1];
+            uint64_t v10 = v8[-2];
+            uint64_t v11 = v8[-1];
+            uint64_t v12 = *v8;
+            uint64_t v13 = v8[1];
             v9 -= 8;
             v8 += 0x4;
             v4 = add_lanes32(v10, v4);

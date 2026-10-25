@@ -12,9 +12,6 @@
 -- decompile
 /* velk pseudo-C: copy_bytes @ 0x201220 */
 void copy_bytes(unsigned char *dst, unsigned char *src, unsigned long n) {
-    int64_t i;
-    int64_t v7;
-    int64_t v8;
     int64_t v9;
 
     if (n == 0) {
@@ -24,7 +21,7 @@ void copy_bytes(unsigned char *dst, unsigned char *src, unsigned long n) {
     if (n >= 8 && (uintptr_t)dst - (uintptr_t)src >= 32) {
         if (n >= 32) {
             v1 = n & 0xffffffffffffffe0;
-            i = 0;
+            int64_t i = 0;
             do {
                 __builtin_memmove(dst + i, src + i, 32);
                 i += 32;
@@ -38,7 +35,7 @@ void copy_bytes(unsigned char *dst, unsigned char *src, unsigned long n) {
         } else {
             v1 = 0;
         }
-        v7 = v1;
+        int64_t v7 = v1;
         v1 = n & 0xfffffffffffffff8;
         do {
             *(uint64_t *)(dst + v7) = *(uint64_t *)(src + v7);
@@ -50,7 +47,7 @@ void copy_bytes(unsigned char *dst, unsigned char *src, unsigned long n) {
     }
 L_2012a6:
     v9 = v1;
-    v8 = n & 0x3;
+    int64_t v8 = n & 0x3;
     if (v8 != 0) {
         v9 = v1;
         do {

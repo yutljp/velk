@@ -15,11 +15,7 @@ void copy_bytes(unsigned char *dst, unsigned char *src, unsigned long n) {
     uint64_t *v2;
     uint64_t *v3;
     int64_t v4;
-    int64_t v5;
     int64_t v14;
-    uint8_t *v15;
-    uint8_t *v16;
-    uint8_t v17;
 
     if (n == 0) {
         return;
@@ -56,7 +52,7 @@ void copy_bytes(unsigned char *dst, unsigned char *src, unsigned long n) {
         v3 = (uint64_t *)(dst + v4);
         v4 -= v1;
         do {
-            v5 = *v2;
+            int64_t v5 = *v2;
             ++v2;
             v4 += 8;
             *v3 = v5;
@@ -68,10 +64,10 @@ void copy_bytes(unsigned char *dst, unsigned char *src, unsigned long n) {
     }
 L_2102a4:
     v14 = n - v1;
-    v15 = (uint8_t *)(dst + v1);
-    v16 = (uint8_t *)(src + v1);
+    uint8_t *v15 = (uint8_t *)(dst + v1);
+    uint8_t *v16 = (uint8_t *)(src + v1);
     do {
-        v17 = *v16;
+        uint8_t v17 = *v16;
         ++v16;
         --v14;
         *v15 = v17;

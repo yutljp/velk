@@ -27,10 +27,7 @@ static inline uint64_t interleave_low8(uint64_t a, uint64_t b) {
 /* velk pseudo-C: sub_180001000 @ 0x180001000 */
 void sub_180001000(uint32_t *a0, uint32_t *a1, uint32_t a2) {
     uint64_t v7;
-    int64_t i;
-    int64_t v13;
     int64_t v15;
-    int64_t v16;
 
     if (a2 == 0) {
         return;
@@ -41,7 +38,7 @@ void sub_180001000(uint32_t *a0, uint32_t *a1, uint32_t a2) {
     if (v5 == 0) {
         if (a2 >= 32) {
             v7 = a2 & 0xffffffe0;
-            i = 0;
+            int64_t i = 0;
             do {
                 __builtin_memmove((uint8_t *)a0 + i, (uint8_t *)a1 + i, 32);
                 i += 32;
@@ -55,7 +52,7 @@ void sub_180001000(uint32_t *a0, uint32_t *a1, uint32_t a2) {
         } else {
             v7 = 0;
         }
-        v13 = v7;
+        int64_t v13 = v7;
         v7 = a2 & 0xfffffffc;
         do {
             *(uint32_t *)((uint8_t *)a0 + v13) = *(uint32_t *)((uint8_t *)a1 + v13);
@@ -69,7 +66,7 @@ void sub_180001000(uint32_t *a0, uint32_t *a1, uint32_t a2) {
     }
 L_1800010a6:
     v15 = v7;
-    v16 = a2 & 0x3;
+    int64_t v16 = a2 & 0x3;
     if (v16 != 0) {
         v15 = v7;
         do {
@@ -168,21 +165,18 @@ fn <unnamed> @ 0x180001000 (size 288)
 /* velk pseudo-C: sub_180001120 @ 0x180001120 */
 void sub_180001120(uint8_t *a0, int32_t a1, uint32_t a2) {
     int64_t v2;
-    uint32_t v3;
     uint64_t v4;
-    int64_t i;
-    int64_t v8;
 
     if (a2 == 0) {
         return;
     }
     if (a2 >= 4) {
-        v3 = a1 & 0xff;
+        uint32_t v3 = a1 & 0xff;
         if (a2 >= 32) {
             v2 = a2 & 0xffffffe0;
             v4 = interleave_low8(v3, v3);
             v4 = v4 & 0xffff | (v4 & 0xffff) << 16 | (v4 & 0xffff) << 32 | v4 << 48;
-            i = 0;
+            int64_t i = 0;
             do {
                 *(uint64_t *)(a0 + i) = v4;
                 *(uint64_t *)(a0 + (i + 0x8)) = v4;
@@ -199,7 +193,7 @@ void sub_180001120(uint8_t *a0, int32_t a1, uint32_t a2) {
         } else {
             v2 = 0;
         }
-        v8 = v2;
+        int64_t v8 = v2;
         v2 = a2 & 0xfffffffc;
         v4 = interleave_low8(v3, v3);
         v4 = v4 & 0xffff | (v4 & 0xffff) << 16 | (v4 & 0xffff) << 32 | v4 << 48;

@@ -9,9 +9,6 @@
 /* velk pseudo-C: count_bits @ 0x200fc */
 int count_bits(unsigned int x) {
     uint32_t v3;
-    int32_t v4;
-    int32_t v5;
-    int32_t v6;
 
     int32_t v1 = x;
     int32_t v2 = 0;
@@ -20,10 +17,10 @@ int count_bits(unsigned int x) {
     }
     if (v1 != v2) {
         v3 = x;
-        v4 = 0;
+        int32_t v4 = 0;
         while (true) {
-            v5 = v3 & 0x1;
-            v6 = v3 >> 1;
+            int32_t v5 = v3 & 0x1;
+            int32_t v6 = v3 >> 1;
             v3 >>= 1;
             v4 += v5;
             if (v6 == 0) break;
@@ -70,12 +67,6 @@ fn count_bits @ 0x200fc (size 40)
 int sum_until(int limit) {
     uint32_t v9;
     uint32_t v10;
-    int32_t v3;
-    int32_t v4;
-    uint32_t v5;
-    int32_t v6;
-    int32_t v7;
-    int32_t v8;
 
     int32_t v1 = limit;
     int32_t v2 = 1;
@@ -83,14 +74,14 @@ int sum_until(int limit) {
         limit = 0;
     }
     if (v1 >= v2) {
-        v3 = limit - 2;
-        v4 = limit - 1;
+        int32_t v3 = limit - 2;
+        int32_t v4 = limit - 1;
         /* unsupported: ARM umull r1, r2, r2, r1 at 0x20138 */
-        v5 = v10 & 0x1;
-        v6 = v5 >> 1;
+        uint32_t v5 = v10 & 0x1;
+        int32_t v6 = v5 >> 1;
         /* unsupported: ARM mov r1, r1, rrx at 0x20144 */
-        v7 = v9 + ((uint64_t)limit << 1);
-        v8 = v7 - 1;
+        int32_t v7 = v9 + ((uint64_t)limit << 1);
+        int32_t v8 = v7 - 1;
         return v8;
     }
     return limit;
@@ -128,15 +119,12 @@ fn sum_until @ 0x20124 (size 48)
 -- decompile
 /* velk pseudo-C: sum_till_neg @ 0x20154 */
 int sum_till_neg(int *p, int n) {
-    int32_t v1;
-    int32_t v2;
-    int32_t v3;
     int32_t v4;
 
     if (n >= 1) {
-        v1 = (uint32_t)(uintptr_t)p;
-        v2 = n;
-        v3 = 0;
+        int32_t v1 = (uint32_t)(uintptr_t)p;
+        int32_t v2 = n;
+        int32_t v3 = 0;
         while (true) {
             v4 = *(uint32_t *)((uint32_t)v1);
             v1 += 4;
@@ -189,12 +177,11 @@ fn sum_till_neg @ 0x20154 (size 60)
 -- decompile
 /* velk pseudo-C: sum_until_zero @ 0x20190 */
 int sum_until_zero(int *p, int n) {
-    int32_t v1;
     int32_t result;
     int32_t v3;
 
     if (n >= 1) {
-        v1 = (uint32_t)(uintptr_t)p;
+        int32_t v1 = (uint32_t)(uintptr_t)p;
         result = 0;
         while (true) {
             v3 = *(uint32_t *)((uint32_t)v1);

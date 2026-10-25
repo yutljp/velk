@@ -12,9 +12,6 @@
 -- decompile
 /* velk pseudo-C: sub_201220 @ 0x201220 */
 void sub_201220(uint64_t *a0, uint64_t *a1, uint64_t a2) {
-    int64_t i;
-    int64_t v7;
-    int64_t v8;
     int64_t v9;
 
     if (a2 == 0) {
@@ -24,7 +21,7 @@ void sub_201220(uint64_t *a0, uint64_t *a1, uint64_t a2) {
     if (a2 >= 8 && (uintptr_t)a0 - (uintptr_t)a1 >= 32) {
         if (a2 >= 32) {
             v1 = a2 & 0xffffffffffffffe0;
-            i = 0;
+            int64_t i = 0;
             do {
                 __builtin_memmove((uint8_t *)a0 + i, (uint8_t *)a1 + i, 32);
                 i += 32;
@@ -38,7 +35,7 @@ void sub_201220(uint64_t *a0, uint64_t *a1, uint64_t a2) {
         } else {
             v1 = 0;
         }
-        v7 = v1;
+        int64_t v7 = v1;
         v1 = a2 & 0xfffffffffffffff8;
         do {
             *(uint64_t *)((uint8_t *)a0 + v7) = *(uint64_t *)((uint8_t *)a1 + v7);
@@ -50,7 +47,7 @@ void sub_201220(uint64_t *a0, uint64_t *a1, uint64_t a2) {
     }
 L_2012a6:
     v9 = v1;
-    v8 = a2 & 0x3;
+    int64_t v8 = a2 & 0x3;
     if (v8 != 0) {
         v9 = v1;
         do {

@@ -145,33 +145,23 @@ int32_t factorial(int32_t a0) {
     uint64_t *const qword_288 = (uint64_t *)0x288ULL;
     uint32_t v1;
     int32_t v2;
-    uint64_t v3;
-    uint64_t v4;
     int32_t v5;
-    int32_t v6;
-    uint64_t v7;
-    uint64_t v8;
-    uint64_t v9;
-    uint64_t v10;
-    int32_t v11;
-    uint64_t v12;
-    uint64_t v13;
 
     if (a0 >= 2) {
         if ((uint32_t)a0 >= 9) {
-            v3 = 0x100000001;
-            v4 = 0x100000001;
+            uint64_t v3 = 0x100000001;
+            uint64_t v4 = 0x100000001;
             v5 = a0 - 1;
-            v6 = v5 & 0xfffffff8;
-            v7 = add_lanes32((a0 & 0xffffffff) * 0x100000001, *qword_280);
-            v8 = add_lanes32((a0 & 0xffffffff) * 0x100000001, *qword_288);
-            v9 = 0x100000001;
-            v10 = 0x100000001;
+            int32_t v6 = v5 & 0xfffffff8;
+            uint64_t v7 = add_lanes32((a0 & 0xffffffff) * 0x100000001, *qword_280);
+            uint64_t v8 = add_lanes32((a0 & 0xffffffff) * 0x100000001, *qword_288);
+            uint64_t v9 = 0x100000001;
+            uint64_t v10 = 0x100000001;
             v1 = a0 - v6;
-            v11 = v6;
+            int32_t v11 = v6;
             do {
-                v12 = add_lanes32(v7, 0xfffffffcfffffffc);
-                v13 = add_lanes32(v8, 0xfffffffcfffffffc);
+                uint64_t v12 = add_lanes32(v7, 0xfffffffcfffffffc);
+                uint64_t v13 = add_lanes32(v8, 0xfffffffcfffffffc);
                 v9 = mul_lanes32(v7, v9);
                 v10 = mul_lanes32(v8, v10);
                 v11 -= 8;
@@ -254,15 +244,12 @@ fn factorial @ 0x78 (size 160)
 -- decompile
 /* velk pseudo-C: is_odd @ 0x118 */
 int32_t is_odd(int32_t a0) {
-    uint32_t v4;
-    int32_t i;
-
     uint32_t v1 = a0 - (a0 != 0) + 1;
     if (v1 >= 2) {
         v1 = (v1 >> 1) + 1;
-        v4 = v1 & 0xfffffffe;
+        uint32_t v4 = v1 & 0xfffffffe;
         a0 -= (v4 << 1);
-        i = v4;
+        int32_t i = v4;
         do {
             i -= 2;
         } while (i != 0);

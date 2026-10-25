@@ -12,7 +12,6 @@ int sum_while(int n) {
     uint32_t *const sink = (uint32_t *)0x302e8ULL;
     int32_t v4;
     int32_t v5;
-    int32_t v6;
 
     int32_t v1 = n;
     int32_t v2 = 1;
@@ -25,7 +24,7 @@ int sum_while(int n) {
             v4 = 0;
             v5 = 0;
         } else {
-            v6 = 0x7ffffffc & n;
+            int32_t v6 = 0x7ffffffc & n;
             v4 = 0;
             v5 = 0;
             while (true) {
@@ -152,9 +151,7 @@ int count_down(int n) {
     uint32_t *const sink = (uint32_t *)0x302e8ULL;
     uint64_t v2;
     int32_t v4;
-    int32_t v5;
     int32_t v6;
-    int32_t v10;
     uint32_t local_0; /* [sp-4] */
 
     int32_t v1 = n;
@@ -166,7 +163,7 @@ int count_down(int n) {
         v4 = 0;
     } else {
         local_0 = v2;
-        v5 = n & 0x7ffffffc;
+        int32_t v5 = n & 0x7ffffffc;
         v4 = 0;
         while (true) {
             *sink = v4 + 1;
@@ -185,7 +182,7 @@ int count_down(int n) {
     if (v3 != 1) {
         v6 = v4 + 2;
         *sink = v6;
-        v10 = 2;
+        int32_t v10 = 2;
         if (v3 != 2) {
             v6 = v4 + 3;
         }
@@ -261,10 +258,8 @@ fn count_down @ 0x2018c (size 102)
 /* ref: 0x302e8 .bss */
 int sum_skip_odd(int n) {
     uint32_t *const sink = (uint32_t *)0x302e8ULL;
-    int32_t v3;
     int32_t v4;
     int32_t v5;
-    int32_t v6;
 
     int32_t v1 = n;
     int32_t v2 = 1;
@@ -272,12 +267,12 @@ int sum_skip_odd(int n) {
         n = 0;
     }
     if (v1 >= v2) {
-        v3 = n & 0x3;
+        int32_t v3 = n & 0x3;
         if ((uint32_t)n < 4) {
             v4 = 0;
             v5 = 0;
         } else {
-            v6 = n & 0x7ffffffc;
+            int32_t v6 = n & 0x7ffffffc;
             v4 = 0;
             v5 = 0;
             while (true) {
@@ -385,11 +380,7 @@ fn sum_skip_odd @ 0x201f4 (size 142)
 -- decompile
 /* velk pseudo-C: find_first @ 0x20284 */
 int find_first(int *p, int n, int v) {
-    int32_t v3;
-    int32_t v4;
     int32_t v5;
-    uint32_t v6;
-    int32_t v7;
     int32_t v8;
 
     int32_t v2 = 1;
@@ -397,12 +388,12 @@ int find_first(int *p, int n, int v) {
         p = (int *)0xffffffff;
     }
     if (n >= v2) {
-        v3 = (uint32_t)(uintptr_t)p;
-        v4 = -n;
+        int32_t v3 = (uint32_t)(uintptr_t)p;
+        int32_t v4 = -n;
         v5 = (uint32_t)(uintptr_t)p + 12;
-        v6 = 0;
+        uint32_t v6 = 0;
         while (*(uint32_t *)((v5 - 12) & 0xffffffff) != v) {
-            v7 = v4 + v6;
+            int32_t v7 = v4 + v6;
             if (v7 == 0xffffffff) {
                 return -1;
             }

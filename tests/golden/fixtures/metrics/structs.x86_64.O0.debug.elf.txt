@@ -38,15 +38,13 @@ struct record {
     uint8_t gap_0x12[0x6];
 };
 long record_total(struct record *items, int n) {
-    int64_t v1;
-    int64_t v3;
     long total; /* [sp-20] */
     int i; /* [sp-24] */
 
     total = 0;
     for (i = 0; i < n; i++) {
-        v1 = (int64_t)i * 24;
-        v3 = (int64_t)i * 24;
+        int64_t v1 = (int64_t)i * 24;
+        int64_t v3 = (int64_t)i * 24;
         total += items[v1 / 24].value * items[v3 / 24].count;
     }
     return total;

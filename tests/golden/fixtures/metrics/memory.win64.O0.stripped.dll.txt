@@ -13,14 +13,13 @@
 /* velk pseudo-C: sub_180001000 @ 0x180001000 */
 int32_t sub_180001000(uint8_t *a0, uint8_t *a1, int32_t a2) {
     uint32_t v1;
-    uint8_t v2;
     uint32_t local_0; /* [sp-1c] */
 
     local_0 = 0;
     while (true) {
         v1 = local_0;
         if (v1 >= a2) break;
-        v2 = a1[local_0];
+        uint8_t v2 = a1[local_0];
         a0[local_0] = v2;
         local_0 += 1;
     }
@@ -55,7 +54,6 @@ fn <unnamed> @ 0x180001000 (size 79)
 /* velk pseudo-C: sub_180001050 @ 0x180001050 */
 int32_t sub_180001050(uint8_t *a0, int32_t a1, int32_t a2) {
     uint32_t v1;
-    uint8_t v2;
     uint8_t local_0; /* [sp-5] */
     uint32_t local_1; /* [sp-14] */
 
@@ -64,7 +62,7 @@ int32_t sub_180001050(uint8_t *a0, int32_t a1, int32_t a2) {
     while (true) {
         v1 = local_1;
         if (v1 >= a2) break;
-        v2 = local_0;
+        uint8_t v2 = local_0;
         a0[local_1] = v2;
         local_1 += 1;
     }

@@ -31,8 +31,6 @@ int dense(int x) {
     uint32_t v7;
     uint32_t v8;
     uint32_t v9;
-    int32_t v3;
-    int32_t v4;
     int32_t v5;
     uint32_t local_1; /* [sp-4] */
     uint32_t local_2; /* [sp-c] */
@@ -46,9 +44,9 @@ int dense(int x) {
     uint32_t v2 = x - 10;
     *(uint32_t *)(sp) = v2;
     if (v2 <= 15) {
-        v3 = *(uint32_t *)(sp);
+        int32_t v3 = *(uint32_t *)(sp);
         /* unsupported: ARM adr r0, pc, 0x4 at 0x201b4 */
-        v4 = *(uint32_t *)((x + (v1 << 2)) & 0xffffffff);
+        int32_t v4 = *(uint32_t *)((x + (v1 << 2)) & 0xffffffff);
         /* unsupported: ARM add pc, r0, r1 at 0x201bc */
         {
             uint64_t call_values[2];

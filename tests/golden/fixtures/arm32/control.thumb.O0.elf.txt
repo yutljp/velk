@@ -249,9 +249,6 @@ fn sparse @ 0x201fc (size 80)
 /* velk pseudo-C: short_circuit @ 0x2024c */
 int short_circuit(int *p, int n) {
     uint64_t sp = velk_entry_stack_pointer();
-    int32_t v2;
-    int32_t v4;
-    int32_t v5;
 
     *(uint32_t *)(sp - 0x4) = (uint32_t)(uintptr_t)p;
     *(uint32_t *)(sp - 0xc) = 0;
@@ -260,12 +257,12 @@ int short_circuit(int *p, int n) {
     }
     *(uint32_t *)(sp - 0xc) = 0;
     if (n >= 1) {
-        v2 = *(uint32_t *)(*(uint32_t *)(sp - 0x4));
+        int32_t v2 = *(uint32_t *)(*(uint32_t *)(sp - 0x4));
         *(uint32_t *)(sp - 0x10) = 1;
         if (v2 != 1) {
-            v4 = *(uint32_t *)((*(uint32_t *)(sp - 0x4) + ((uint64_t)n << 2) - 4) & 0xffffffff) - 1;
+            int32_t v4 = *(uint32_t *)((*(uint32_t *)(sp - 0x4) + ((uint64_t)n << 2) - 4) & 0xffffffff) - 1;
             /* unsupported: ARM clz.w r0, r0 at 0x20284 */
-            v5 = (uint32_t)(uintptr_t)p >> 5;
+            int32_t v5 = (uint32_t)(uintptr_t)p >> 5;
             *(uint32_t *)(sp - 0x10) = v5;
         }
         *(uint32_t *)(sp - 0xc) = *(uint32_t *)(sp - 0x10);

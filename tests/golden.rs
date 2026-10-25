@@ -285,7 +285,8 @@ fn is_declaration(code: &str) -> bool {
     let Some(body) = code.strip_prefix("    ") else {
         return false;
     };
-    if body.starts_with([' ', '{']) || body.starts_with("return ") || body.starts_with("goto ") {
+    let body = body.trim_start();
+    if body.starts_with('{') || body.starts_with("return ") || body.starts_with("goto ") {
         return false;
     }
     if let Some((declaration, _)) = body.split_once('=') {
@@ -321,8 +322,8 @@ fn is_declaration(code: &str) -> bool {
 #[test]
 fn named_variable_counts_exclude_structure_fields() {
     let mut counts = Readability::default();
-    counts.add("struct item {\n    int field;\n};\nint f(void) {\n    int result;\n    result = 1;\n    return result;\n}\n");
-    assert_eq!(counts.variables, 1);
+    counts.add("struct item {\n    int field;\n};\nint f(void) {\n    int result;\n    if (flag) {\n        int value = 1;\n        result = value;\n    }\n    return result;\n}\n");
+    assert_eq!(counts.variables, 2);
 }
 
 #[test]

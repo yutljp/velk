@@ -14,8 +14,6 @@ int d7(int x) {
     uint32_t v5;
     uint32_t v6;
     uint32_t v8;
-    int32_t v2;
-    int32_t v3;
     int32_t v4;
     uint32_t local_0; /* [sp-8] */
     uint32_t local_1; /* [sp-4] */
@@ -28,9 +26,9 @@ int d7(int x) {
     *(uint32_t *)(v7 - 0x4) = x;
     *(uint32_t *)(sp) = x;
     if ((uint32_t)x <= 9) {
-        v2 = *(uint32_t *)(sp);
+        int32_t v2 = *(uint32_t *)(sp);
         /* unsupported: ARM adr r0, pc, 0x4 at 0x20128 */
-        v3 = *(uint32_t *)((x + (v1 << 2)) & 0xffffffff);
+        int32_t v3 = *(uint32_t *)((x + (v1 << 2)) & 0xffffffff);
         /* unsupported: ARM add pc, r0, r1 at 0x20130 */
         {
             uint64_t call_values[2];

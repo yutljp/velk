@@ -70,8 +70,6 @@ fn sum_until @ 0x20 (size 50)
 -- decompile
 /* velk pseudo-C: sum_till_neg @ 0x60 */
 int32_t sum_till_neg(int32_t *p, int32_t n) {
-    int32_t v5;
-
     int32_t result = 0;
     uint32_t v3 = (n <= 0 ? 0 : n);
     if (n <= 0) {
@@ -80,7 +78,7 @@ int32_t sum_till_neg(int32_t *p, int32_t n) {
     result = 0;
     int64_t i = 0;
     do {
-        v5 = p[i];
+        int32_t v5 = p[i];
         if (v5 < 0) {
             break;
         }
@@ -119,14 +117,13 @@ fn sum_till_neg @ 0x60 (size 37)
 /* velk pseudo-C: sum_until_zero @ 0x90 */
 int32_t sum_until_zero(int32_t *p, int32_t n) {
     int64_t i;
-    int32_t v4;
 
     if (n <= 0) {
         return 0;
     }
     int32_t v3 = 0;
     for (i = 0; i < (uint32_t)n; i++) {
-        v4 = p[i];
+        int32_t v4 = p[i];
         if (v4 == 0) {
             break;
         }

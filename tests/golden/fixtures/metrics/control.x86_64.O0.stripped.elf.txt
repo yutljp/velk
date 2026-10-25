@@ -231,7 +231,6 @@ fn <unnamed> @ 0x201380 (size 142)
 -- decompile
 /* velk pseudo-C: sub_201410 @ 0x201410 */
 int32_t sub_201410(uint32_t *a0, int32_t a1) {
-    int64_t v7;
     uint8_t v9;
     uint8_t local_0; /* [sp-15] */
     uint8_t local_1; /* [sp-16] */
@@ -250,7 +249,7 @@ int32_t sub_201410(uint32_t *a0, int32_t a1) {
     v3 = *a0;
     local_1 = 1;
     if (v3 != 1) {
-        v7 = a1 - 1;
+        int64_t v7 = a1 - 1;
         v3 = a0[v7];
         v9 = a0[v7] == 1;
         local_1 = v9;

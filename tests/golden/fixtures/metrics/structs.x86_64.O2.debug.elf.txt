@@ -40,20 +40,17 @@ struct record {
 long record_total(struct record *items, int n) {
     int64_t v2;
     int64_t v3;
-    uint32_t v4;
-    void *v5;
-    int64_t v6;
 
     if (n <= 0) {
         return 0;
     }
     if (n != 1) {
-        v4 = n & 0x7ffffffe;
-        v5 = (void *)&items[1].count;
+        uint32_t v4 = n & 0x7ffffffe;
+        void *v5 = (void *)&items[1].count;
         v2 = 0;
         v3 = 0;
         do {
-            v6 = *(int16_t *)(v5 - 0x18) * *(uint64_t *)(v5 - 0x20) + v3;
+            int64_t v6 = *(int16_t *)(v5 - 0x18) * *(uint64_t *)(v5 - 0x20) + v3;
             v3 = *(int16_t *)(v5) * *(uint64_t *)(v5 - 0x8) + v6;
             v2 += 2;
             v5 += 0x30;

@@ -192,8 +192,6 @@ int factorial(int n) {
     uint64_t *const qword_180002038 = (uint64_t *)0x180002038ULL;
     uint32_t t1;
     int32_t v2;
-    int32_t v3;
-    uint64_t v4;
     uint32_t v5;
     uint64_t v6;
     uint64_t v8;
@@ -201,18 +199,13 @@ int factorial(int n) {
     uint64_t v10;
     uint64_t v11;
     uint64_t v12;
-    uint64_t v13;
-    uint64_t v14;
     uint64_t v16;
     uint64_t v17;
     uint64_t v18;
     uint64_t v19;
     uint64_t v20;
     uint64_t v24;
-    uint64_t v25;
-    uint64_t v26;
     uint32_t v33;
-    uint64_t v36;
     uint32_t v52;
 
     int32_t result = 1;
@@ -221,15 +214,15 @@ int factorial(int n) {
     }
     if ((uint32_t)n >= 9) {
         v2 = n - 1;
-        v3 = v2 & 0xfffffffffffffff8;
-        v4 = n & 0xffffffff;
+        int32_t v3 = v2 & 0xfffffffffffffff8;
+        uint64_t v4 = n & 0xffffffff;
         n -= v3;
         v6 = add_lanes32(v4 | v4 << 32, *__xmm_fffffffdfffffffeffffffff00000000);
         v8 = add_lanes32(v4 | v4 << 32, *qword_180002008);
         v11 = *__xmm_fffffffcfffffffcfffffffcfffffffc;
         v12 = *qword_180002028;
-        v13 = *__xmm_fffffff8fffffff8fffffff8fffffff8;
-        v14 = *qword_180002038;
+        uint64_t v13 = *__xmm_fffffff8fffffff8fffffff8fffffff8;
+        uint64_t v14 = *qword_180002038;
         result = v3;
         v9 = *__xmm_00000001000000010000000100000001;
         v16 = v9;
@@ -241,8 +234,8 @@ int factorial(int n) {
             v20 = (v6 & 0xffffffff) * (v9 & 0xffffffff);
             v5 = v10 >> 32 | v10 >> 32 << 32;
             v24 = (v8 >> 32) * v5;
-            v25 = ((v6 >> 32) * (v9 >> 32)) & 0xffffffff | v24 << 32;
-            v26 = v20 & 0xffffffff | v8 * v10 << 32;
+            uint64_t v25 = ((v6 >> 32) * (v9 >> 32)) & 0xffffffff | v24 << 32;
+            uint64_t v26 = v20 & 0xffffffff | v8 * v10 << 32;
             v9 = interleave_low32(v26, v25);
             v10 = interleave_high32(v26, v25);
             v5 = v19 >> 32 | v19 >> 32 << 32;
@@ -253,7 +246,7 @@ int factorial(int n) {
             v33 = v17 >> 32 | v17 >> 32 << 32;
             t1 = v16 >> 32;
             v20 = (t1 * v20) & 0xffffffff | (uint64_t)(v33 * v5) << 32;
-            v36 = v18 & 0xffffffff | v19 << 32;
+            uint64_t v36 = v18 & 0xffffffff | v19 << 32;
             v16 = interleave_low32(v36, v20);
             v17 = interleave_high32(v36, v20);
             v6 = add_lanes32(v6, v13);
@@ -461,16 +454,8 @@ int sum_varargs(int count, ...) {
     uint64_t v8;
     uint64_t v3;
     uint32_t v5;
-    uint64_t v9;
-    uint64_t v10;
-    int64_t v11;
     uint64_t v12;
-    uint64_t v13;
     uint64_t v14;
-    uint32_t v15;
-    uint64_t v16;
-    int32_t i;
-    uint32_t *v21;
     _Alignas(16) struct __attribute__((packed)) { void *f_0; uint8_t gap_8[0x10]; } local_0; /* [sp-8] */
 
     local_0.f_0 = (void *)v4;
@@ -492,15 +477,15 @@ int sum_varargs(int count, ...) {
             v5 = count & 0x3;
             v2 = (uint64_t)(uint32_t)count - (v5 != 0 ? v5 : 4);
             v3 = (uintptr_t)(v1 + v2);
-            v9 = 0;
-            v10 = 0;
-            v11 = v2;
+            uint64_t v9 = 0;
+            uint64_t v10 = 0;
+            int64_t v11 = v2;
             v12 = 0;
-            v13 = 0;
+            uint64_t v13 = 0;
             do {
                 v14 = v1[1];
-                v15 = v1[2];
-                v16 = v1[3];
+                uint32_t v15 = v1[2];
+                uint64_t v16 = v1[3];
                 v12 = add_lanes32(v12, *v1 & 0xffffffff | v14 << 32);
                 v13 = add_lanes32(v13, v14);
                 v9 = add_lanes32(v9, v15 | v16 << 32);
@@ -521,9 +506,9 @@ int sum_varargs(int count, ...) {
         v18 = v2;
     } else {
         v18 = -v18;
-        i = 0;
+        int32_t i = 0;
         do {
-            v21 = (uint32_t *)v3;
+            uint32_t *v21 = (uint32_t *)v3;
             v3 += 8;
             local_0.f_0 = (void *)v3;
             v5 += *v21;

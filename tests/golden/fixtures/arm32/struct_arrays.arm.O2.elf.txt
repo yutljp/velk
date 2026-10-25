@@ -50,15 +50,13 @@ fn cell_set @ 0x2010c (size 20)
 int32_t item_last_key(struct item *items, int n) {
     int32_t v1;
     int32_t v2;
-    int32_t v3;
-    int32_t v4;
 
     if (n >= 1) {
         v2 = 0;
         v1 = (uint32_t)(uintptr_t)items + 4;
-        v3 = v1;
+        int32_t v3 = v1;
         for (;;) {
-            v4 = *(uint32_t *)((uint32_t)v3);
+            int32_t v4 = *(uint32_t *)((uint32_t)v3);
             v3 += 12;
             if (v4 >= 1) {
                 v2 = *(uint32_t *)((v1 - 4) & 0xffffffff);

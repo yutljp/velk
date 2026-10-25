@@ -33,20 +33,17 @@ struct S1 { uint8_t gap_0x0[0x8]; int64_t field_0x8; uint16_t field_0x10; uint8_
 int64_t sub_2011f0(struct S1 *a0, int32_t a1) {
     int64_t v2;
     int64_t v3;
-    uint32_t v4;
-    void *v5;
-    int64_t v6;
 
     if (a1 <= 0) {
         return 0;
     }
     if (a1 != 1) {
-        v4 = a1 & 0x7ffffffe;
-        v5 = (void *)&a0[1].field_0x10;
+        uint32_t v4 = a1 & 0x7ffffffe;
+        void *v5 = (void *)&a0[1].field_0x10;
         v2 = 0;
         v3 = 0;
         do {
-            v6 = *(int16_t *)(v5 - 0x18) * *(uint64_t *)(v5 - 0x20) + v3;
+            int64_t v6 = *(int16_t *)(v5 - 0x18) * *(uint64_t *)(v5 - 0x20) + v3;
             v3 = *(int16_t *)(v5) * *(uint64_t *)(v5 - 0x8) + v6;
             v2 += 2;
             v5 += 0x30;

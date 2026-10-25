@@ -22,6 +22,62 @@ fn store(offset: i64, value: u64, width: u8) -> Stmt {
 }
 
 #[test]
+fn unused_frame_address_temporaries_disappear_after_rebasing() {
+    let temporary = velk::ir::TEMP_BASE;
+    let address = Expr::reg(temporary, 64);
+    let ir = synthetic_ir(
+        "frame_address_temporary",
+        vec![Param {
+            index: 7,
+            name: "value".into(),
+            ty: CType::U64,
+        }],
+        CType::U64,
+        vec![
+            Stmt::Assign {
+                dest: RegRef {
+                    index: temporary,
+                    width: 64,
+                },
+                value: slot(-16),
+            },
+            Stmt::Store {
+                addr: address.clone(),
+                value: Expr::reg(7, 64),
+                width: 8,
+            },
+            Stmt::Store {
+                addr: Expr::bin(BinOp::Add, address.clone(), Expr::Const(7)),
+                value: Expr::Const(0x81),
+                width: 1,
+            },
+            Stmt::Ret {
+                value: Expr::Load {
+                    addr: Box::new(address),
+                    width: 8,
+                    signed: false,
+                },
+            },
+        ],
+    );
+    let candidate = printed_candidate(
+        ir,
+        [0, 1, u64::MAX, 0x1234_5678_9abc_def0]
+            .into_iter()
+            .map(|value| vec![value])
+            .collect(),
+    );
+    assert!(!candidate.code.contains("t1"), "{}", candidate.code);
+    assert!(candidate.code.contains("local_0"), "{}", candidate.code);
+    check_candidates(
+        "frame-address-temporary",
+        vec![candidate],
+        Mode::Registers,
+        &[],
+    );
+}
+
+#[test]
 fn printed_stack_arrays_preserve_call_and_indexed_writes() {
     let mut candidates = Vec::new();
     for (name, size, copy) in [

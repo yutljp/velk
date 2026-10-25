@@ -2,6 +2,67 @@ use super::*;
 use velk::ir::{RegRef, VARIABLE_BASE};
 
 #[test]
+fn branch_local_initializers_preserve_loads_and_stores() {
+    let pointer = Expr::reg(7, 64);
+    let mut ir = synthetic_ir(
+        "branch_initial_values",
+        vec![
+            Param {
+                index: 7,
+                name: "p".into(),
+                ty: CType::pointer_to(CType::U32),
+            },
+            Param {
+                index: 6,
+                name: "path".into(),
+                ty: CType::U64,
+            },
+        ],
+        CType::U64,
+        vec![Stmt::Brif {
+            cond: Cond::Eq,
+            lhs: Expr::reg(6, 64),
+            rhs: Expr::Const(0),
+            target: 20,
+        }],
+    );
+    for (start, register, increment) in [(10, VARIABLE_BASE, 1), (20, VARIABLE_BASE + 1, 2)] {
+        ir.blocks.push(Block {
+            start,
+            stmts: vec![
+                Stmt::Assign {
+                    dest: RegRef {
+                        index: register,
+                        width: 64,
+                    },
+                    value: Expr::Load {
+                        addr: Box::new(pointer.clone()),
+                        width: 4,
+                        signed: false,
+                    },
+                },
+                Stmt::Store {
+                    addr: pointer.clone(),
+                    value: Expr::bin(BinOp::Add, Expr::reg(register, 64), Expr::Const(increment)),
+                    width: 4,
+                },
+                Stmt::Ret {
+                    value: Expr::reg(register, 64),
+                },
+            ],
+        });
+    }
+    let code = velk::render::render(&ir, &[], &Default::default(), &[]);
+    assert!(code.contains("        uint32_t v2 = *p;"), "{code}");
+    assert!(!code.contains("uint32_t v2;"), "{code}");
+    syntax::run_printed(
+        &code,
+        "",
+        "uint32_t inputs[] = {0, 1, UINT32_MAX}; for (unsigned path = 0; path < 2; ++path) for (unsigned i = 0; i < 3; ++i) { uint32_t value = inputs[i]; if (branch_initial_values(&value, path) != inputs[i] || value != (uint32_t)(inputs[i] + (path ? 1 : 2))) __builtin_trap(); }",
+    );
+}
+
+#[test]
 fn initializers_after_guards_preserve_control_and_memory_order() {
     let mut ir = synthetic_ir(
         "guarded_initial_value",

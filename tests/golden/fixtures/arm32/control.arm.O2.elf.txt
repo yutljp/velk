@@ -12,27 +12,21 @@
 /* velk pseudo-C: matrix_trace @ 0x20118 */
 int matrix_trace(int *m, int n) {
     uint32_t v1;
-    int32_t v3;
-    int32_t v4;
-    uint32_t v5;
-    int32_t v6;
-    int32_t v7;
-    int32_t v9;
 
     int32_t v2 = 1;
     if (n < 1) {
         m = 0x0;
     }
     if (n >= v2) {
-        v3 = (uint32_t)(uintptr_t)m;
-        v4 = 0;
-        v5 = 0;
+        int32_t v3 = (uint32_t)(uintptr_t)m;
+        int32_t v4 = 0;
+        uint32_t v5 = 0;
         for (;;) {
-            v6 = v3 + (v5 * n << 2);
-            v7 = 0;
+            int32_t v6 = v3 + (v5 * n << 2);
+            int32_t v7 = 0;
             for (;;) {
                 ++v7;
-                v9 = v7 - 1;
+                int32_t v9 = v7 - 1;
                 if (v5 == v7 - 1) {
                     v1 = *(uint32_t *)(v6 + (v5 << 2));
                 }
@@ -286,16 +280,13 @@ fn sparse @ 0x201bc (size 68)
 -- decompile
 /* velk pseudo-C: short_circuit @ 0x20200 */
 int short_circuit(int *p, int n) {
-    int32_t v3;
-    int32_t v5;
-
     int32_t v1 = (uint32_t)(uintptr_t)p;
     int32_t v2 = 0;
     if (v1 != 0) {
         if (n >= 1) {
-            v3 = *(uint32_t *)((uint32_t)v1);
+            int32_t v3 = *(uint32_t *)((uint32_t)v1);
             if (v3 != 1) {
-                v5 = *(uint32_t *)((v1 + ((uint64_t)n << 2) - 4) & 0xffffffff) - 1;
+                int32_t v5 = *(uint32_t *)((v1 + ((uint64_t)n << 2) - 4) & 0xffffffff) - 1;
                 /* unsupported: ARM clz r0, r0 at 0x20234 */
                 v2 = (uint32_t)(uintptr_t)p >> 5;
                 return v2;
@@ -341,16 +332,13 @@ fn short_circuit @ 0x20200 (size 64)
 -- decompile
 /* velk pseudo-C: skip_negatives @ 0x20240 */
 int skip_negatives(int *p, int n) {
-    int32_t v1;
-    int32_t v3;
-
     if (n < 1) {
-        v1 = (uint32_t)(sub_202bc());
+        int32_t v1 = (uint32_t)(sub_202bc());
         return v1;
     }
     uint32_t v5 = 0;
     if ((uint32_t)n < 4) {
-        v3 = (uint32_t)(sub_20298());
+        int32_t v3 = (uint32_t)(sub_20298());
         return v3;
     }
     int32_t v4 = n & 0x7ffffffc;
@@ -384,36 +372,24 @@ fn skip_negatives @ 0x20240 (size 136)
 -- decompile
 /* velk pseudo-C: find_pair @ 0x202c8 */
 int find_pair(int *p, int n, int target) {
-    int32_t v3;
-    int32_t v4;
-    int32_t v5;
-    int32_t v6;
-    int32_t v7;
-    uint32_t v8;
-    int32_t v9;
-    int32_t v10;
-    int32_t v11;
-    int32_t v12;
-    int32_t v13;
-
     int32_t v1 = (uint32_t)(uintptr_t)p;
     int32_t v2 = -1;
     if (n >= 1) {
-        v3 = v1 + 4;
-        v4 = n - 1;
-        v5 = n + 1;
-        v6 = 0;
-        v7 = 1;
+        int32_t v3 = v1 + 4;
+        int32_t v4 = n - 1;
+        int32_t v5 = n + 1;
+        int32_t v6 = 0;
+        int32_t v7 = 1;
         do {
-            v8 = v6;
+            uint32_t v8 = v6;
             ++v6;
             if (v6 < n) {
-                v9 = *(uint32_t *)(v1 + (v8 << 2));
-                v10 = v3;
-                v11 = v4;
-                v12 = v7;
+                int32_t v9 = *(uint32_t *)(v1 + (v8 << 2));
+                int32_t v10 = v3;
+                int32_t v11 = v4;
+                int32_t v12 = v7;
                 for (;;) {
-                    v13 = *(uint32_t *)((uint32_t)v10);
+                    int32_t v13 = *(uint32_t *)((uint32_t)v10);
                     v10 += 4;
                     if (v13 + v9 == target) {
                         v2 = v12;

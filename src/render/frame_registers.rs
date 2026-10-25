@@ -62,7 +62,7 @@ fn drop_unread_frame_addresses(ir: &mut FunctionIr, sp: u16) {
         .flat_map(|stmt| crate::ir::visit::statement_registers(stmt).1)
         .collect();
     let unread = |register: u16| {
-        register >= crate::ir::VARIABLE_BASE
+        crate::ir::is_temp(register)
             && !read.contains(&register)
             && !ir
                 .variable_registers

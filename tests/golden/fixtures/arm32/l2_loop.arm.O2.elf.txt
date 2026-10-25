@@ -8,14 +8,10 @@
 -- decompile
 /* velk pseudo-C: sum_while @ 0x2011c */
 int sum_while(int n) {
-    int32_t v2;
-    int32_t v3;
-    int32_t v4;
-
     if (n >= 1) {
-        v2 = 0;
-        v3 = 0;
-        v4 = 0x2013c + *(uint32_t *)(0x20158);
+        int32_t v2 = 0;
+        int32_t v3 = 0;
+        int32_t v4 = 0x2013c + *(uint32_t *)(0x20158);
         while (true) {
             v2 = v3 + v2;
             ++v3;
@@ -101,17 +97,14 @@ fn count_down @ 0x2015c (size 44)
 -- decompile
 /* velk pseudo-C: sum_skip_odd @ 0x20188 */
 int sum_skip_odd(int n) {
-    int32_t v2;
     int32_t v3;
-    int32_t v4;
-    int32_t v5;
 
     if (n >= 1) {
-        v2 = 0;
+        int32_t v2 = 0;
         v3 = 0;
-        v4 = 0x201a8 + *(uint32_t *)(0x201c8);
+        int32_t v4 = 0x201a8 + *(uint32_t *)(0x201c8);
         for (;;) {
-            v5 = v3 & 0x1;
+            int32_t v5 = v3 & 0x1;
             if ((v3 & 0x1) != 0) {
                 v2 += v3;
             }
@@ -166,11 +159,9 @@ fn sum_skip_odd @ 0x20188 (size 68)
 -- decompile
 /* velk pseudo-C: find_first @ 0x201cc */
 int find_first(int *p, int n, int v) {
-    uint32_t v3;
-
     int32_t v1 = (uint32_t)(uintptr_t)p;
     if (n >= 1) {
-        v3 = 0;
+        uint32_t v3 = 0;
         while (*(uint32_t *)(v1 + (v3 << 2)) != v) {
             ++v3;
             if (n == v3) {

@@ -11,8 +11,6 @@ int32_t sum_while(int32_t a0) {
     uint32_t *const sink = (uint32_t *)0x204ULL;
     int32_t v2;
     int32_t v3;
-    int32_t v5;
-    int32_t v7;
     int32_t v8;
 
     if (a0 <= 0) {
@@ -20,11 +18,11 @@ int32_t sum_while(int32_t a0) {
     }
     int32_t v1 = a0 & 0x7;
     if ((uint32_t)a0 >= 8) {
-        v5 = -(a0 & 0x7ffffff8);
+        int32_t v5 = -(a0 & 0x7ffffff8);
         v3 = 0;
         v2 = 7;
         do {
-            v7 = v2 + v3;
+            int32_t v7 = v2 + v3;
             v8 = v2;
             *sink = v3 + v8 - 7;
             v3 = v8 + v7 - 7;
@@ -122,14 +120,13 @@ fn sum_while @ 0x0 (size 239)
 /* velk pseudo-C: count_down @ 0xf0 */
 int32_t count_down(int32_t a0) {
     uint32_t *const sink = (uint32_t *)0x204ULL;
-    int32_t v4;
     int32_t v6;
 
     int32_t v1 = (a0 >= 2 ? a0 : 1);
     int32_t v2 = v1 & 0x7;
     int32_t v3 = 0;
     if (a0 >= 8) {
-        v4 = -(v1 & 0xfffffff8);
+        int32_t v4 = -(v1 & 0xfffffff8);
         v3 = 4;
         do {
             *sink = v3 - 3;
@@ -204,15 +201,13 @@ fn count_down @ 0xf0 (size 157)
 int32_t sum_skip_odd(int32_t a0) {
     uint32_t *const sink = (uint32_t *)0x204ULL;
     int32_t v2;
-    int32_t v3;
-    int32_t v4;
 
     if (a0 <= 0) {
         return 0;
     }
     if (a0 != 1) {
-        v3 = a0 & 0x7ffffffe;
-        v4 = 0;
+        int32_t v3 = a0 & 0x7ffffffe;
+        int32_t v4 = 0;
         v2 = 0;
         do {
             v2 += v4;

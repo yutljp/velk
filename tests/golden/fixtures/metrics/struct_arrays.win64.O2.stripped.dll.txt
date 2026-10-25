@@ -51,15 +51,13 @@ fn <unnamed> @ 0x180001020 (size 32)
 int32_t sub_180001040(uint32_t *a0, int32_t a1) {
     int64_t v1;
     int32_t v2;
-    uint32_t v4;
-    uint32_t *v5;
 
     if (a1 <= 0) {
         return 0;
     }
     if (a1 != 1) {
-        v4 = a1 & 0x7ffffffe;
-        v5 = a0 + 0x4;
+        uint32_t v4 = a1 & 0x7ffffffe;
+        uint32_t *v5 = a0 + 0x4;
         v1 = 0;
         v2 = 0;
         do {

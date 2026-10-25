@@ -48,9 +48,6 @@ fn rect_area @ 0x180001000 (size 16)
 int32_t record_total(uint16_t *a0, int32_t a1) {
     int64_t v3;
     int32_t v4;
-    void *v6;
-    int32_t v7;
-    int32_t v8;
 
     if (a1 <= 0) {
         return 0;
@@ -59,12 +56,12 @@ int32_t record_total(uint16_t *a0, int32_t a1) {
     uint8_t v2 = v1 & 0x3;
     if ((uint32_t)a1 >= 4) {
         v1 &= 0x7ffffffc;
-        v6 = (void *)(a0 + 0x16);
+        void *v6 = (void *)(a0 + 0x16);
         v3 = 0;
         v4 = 0;
         do {
-            v7 = *(int16_t *)(v6 - 0x18) * *(uint32_t *)(v6 - 0x1c);
-            v8 = *(int16_t *)(v6 - 0xc) * *(uint32_t *)(v6 - 0x10) + v7 + (v4 + *(int16_t *)(v6 - 0x24) * *(uint32_t *)(v6 - 0x28));
+            int32_t v7 = *(int16_t *)(v6 - 0x18) * *(uint32_t *)(v6 - 0x1c);
+            int32_t v8 = *(int16_t *)(v6 - 0xc) * *(uint32_t *)(v6 - 0x10) + v7 + (v4 + *(int16_t *)(v6 - 0x24) * *(uint32_t *)(v6 - 0x28));
             v4 = *(int16_t *)(v6) * *(uint32_t *)(v6 - 0x4) + v8;
             v3 += 4;
             v6 += 0x30;

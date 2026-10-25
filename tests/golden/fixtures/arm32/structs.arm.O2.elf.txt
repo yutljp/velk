@@ -33,17 +33,14 @@ fn rect_area @ 0x2011c (size 24)
 /* velk pseudo-C: record_total @ 0x20134 */
 int32_t record_total(struct record *items, int n) {
     int32_t v1;
-    int32_t v2;
-    int32_t v3;
-    int32_t v4;
 
     if (n >= 1) {
         v1 = (uint32_t)(uintptr_t)items + 4;
-        v2 = 0;
+        int32_t v2 = 0;
         while (true) {
-            v3 = *(int16_t *)((v1 + 4) & 0xffffffff);
+            int32_t v3 = *(int16_t *)((v1 + 4) & 0xffffffff);
             --n;
-            v4 = *(uint32_t *)((uint32_t)v1);
+            int32_t v4 = *(uint32_t *)((uint32_t)v1);
             v1 += 12;
             v2 += v4 * v3;
             if (n == 0) break;

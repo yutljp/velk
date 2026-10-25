@@ -478,7 +478,7 @@ ok "decompile helper"
 ca=$("$BIN" --decompile $FIX/arm64.o sum_arr 2>/dev/null)
 echo "$ca" | grep -q "uint32_t \*a0"         || fail "pointer parameter typing"
 echo "$ca" | grep -q "sum_lanes32("            || fail "decompile sum_arr vector sum"
-echo "$ca" | grep -q "uint64_t \*v[0-9]*;" || fail "decompile sum_arr vector pair load"
+echo "$ca" | grep -Eq 'uint64_t \*v[0-9]+( =|;)' || fail "decompile sum_arr vector pair load"
 echo "$ca" | grep -q "return 0;"           || fail "decompile sum_arr early return"
 echo "$ca" | grep -q "do {"                  || fail "decompile sum_arr loop"
 echo "$ca" | grep -q "} while ("             || fail "decompile sum_arr loop condition"
