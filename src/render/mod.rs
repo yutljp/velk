@@ -29,6 +29,7 @@ pub(crate) mod unions;
 mod variables;
 mod variadic;
 mod vector_helpers;
+mod virtual_calls;
 mod widths;
 
 use body::{indent, render_node, render_nodes, via_comment};
@@ -140,6 +141,22 @@ pub fn callee_names(image: &crate::loader::Image) -> Symbols {
             .then_some(image.format),
         variadic_functions: crate::loader::dwarf::variadic::functions(image),
         functions,
+        cpp_methods: image
+            .functions
+            .iter()
+            .filter_map(|(addr, function)| {
+                let Some(source) = function.name.as_deref() else {
+                    return None;
+                };
+                let Some((head, tail)) = source.split_once('(') else {
+                    return None;
+                };
+                let Some((_, method)) = head.rsplit_once("::") else {
+                    return None;
+                };
+                Some((*addr, format!("{method}({tail}")))
+            })
+            .collect(),
         go_value_shapes: image
             .functions
             .iter()

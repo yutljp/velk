@@ -84,6 +84,8 @@ mod switches;
 mod syntax;
 #[path = "recompile/unsupported.rs"]
 mod unsupported;
+#[path = "recompile/virtual_calls.rs"]
+mod virtual_calls;
 #[path = "recompile/x64_flags.rs"]
 mod x64_flags;
 #[path = "recompile/x64_half_moves.rs"]

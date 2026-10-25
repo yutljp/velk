@@ -113,11 +113,12 @@ fn Shape::~Shape() @ 0x201400 (size 2)
 == 0x201410 Shape::scaled(int) const
 -- decompile
 /* velk pseudo-C: Shape::scaled(int) const @ 0x201410 */
+struct velk_area_slot_2_vtable { uint64_t slots[2]; uint64_t (*area)(); };
 int32_t Shape__scaled(uint64_t *a0, int32_t a1) {
     int32_t v3;
 
     uint64_t *v2 = (uint64_t *)*a0;
-    v3 = ((uint64_t (*)())v2[2])(a0); /* vtable slot 2: Square__area, Rect__area */
+    v3 = ((struct velk_area_slot_2_vtable *)(v2))->area(a0); /* vtable slot 2: Square__area, Rect__area */
     return v3 * a1;
 }
 -- signature
@@ -308,9 +309,10 @@ fn rect_scaled(int, int, int) @ 0x2014e0 (size 77)
 == 0x201530 any_area(Shape const*)
 -- decompile
 /* velk pseudo-C: any_area(Shape const*) @ 0x201530 */
+struct velk_area_slot_2_vtable { uint64_t slots[2]; uint64_t (*area)(); };
 int32_t any_area(uint64_t *a0) {
     uint64_t *v1 = (uint64_t *)*a0;
-    return ((uint64_t (*)())v1[2])(a0); /* vtable slot 2: Square__area, Rect__area */
+    return ((struct velk_area_slot_2_vtable *)(v1))->area(a0); /* vtable slot 2: Square__area, Rect__area */
 }
 -- signature
 int32_t (uint64_t * a0)
@@ -328,9 +330,10 @@ fn any_area(Shape const*) @ 0x201530 (size 6)
 == 0x201540 any_scaled(Shape const*, int)
 -- decompile
 /* velk pseudo-C: any_scaled(Shape const*, int) @ 0x201540 */
+struct velk_scaled_slot_3_vtable { uint64_t slots[3]; uint64_t (*scaled)(); };
+struct velk_scaled_slot_3_object { struct velk_scaled_slot_3_vtable *vtable; };
 int32_t any_scaled(uint64_t *a0, int64_t a1) {
-    int64_t v1 = *(uint64_t *)(*a0 + 0x18);
-    return ((uint64_t (*)())v1)(a0, a1); /* vtable slot 3: Shape__scaled, Rect__scaled */
+    return ((struct velk_scaled_slot_3_object *)(a0))->vtable->scaled(a0, a1); /* vtable slot 3: Shape__scaled, Rect__scaled */
 }
 -- signature
 int32_t (uint64_t * a0, int64_t a1)

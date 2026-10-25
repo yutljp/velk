@@ -37,9 +37,9 @@ cold_gcc_stripped: 1
 cpp_classes_a64.o: 0
 cpp_classes_x64.o: 2
 cpp_demo.o: 0
-cpp_virtual_a64.elf: 3
+cpp_virtual_a64.elf: 7
 cpp_virtual_a64_stripped.elf: 3
-cpp_virtual_x64.elf: 3
+cpp_virtual_x64.elf: 6
 cpp_virtual_x64_stripped.elf: 3
 go_probe: 844
 go_probe_arm64: 797

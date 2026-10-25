@@ -47,6 +47,7 @@ pub(crate) struct Ctx<'a> {
     pub(super) variadic: Option<&'a super::variadic::Plan>,
     pub(super) abi: Option<&'a super::abi::Plan>,
     pub(super) call_outputs: super::calls::Outputs,
+    pub(super) virtual_tables: super::virtual_calls::Tables,
     pub(super) block_addresses: std::collections::HashSet<u64>,
     pub(super) jump_provider: String,
     pub(super) isa: Isa,

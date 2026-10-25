@@ -57,6 +57,7 @@ fn render_unmerged(
             )
         });
     }
+    super::virtual_calls::prepare(&mut folded, symbols);
     let variadic = super::variadic::prepare(&mut folded, symbols);
     crate::analysis::variadic::drop_register_saves(&mut folded);
     params::fold_saved_parameters(&mut folded);
@@ -794,6 +795,7 @@ fn render_with(
             .collect(),
         abi: logical,
         call_outputs,
+        virtual_tables: super::virtual_calls::Tables::new(ir, symbols, &mut call_reserved),
         block_addresses,
         jump_provider: vacant_name("velk_jump_target", &mut call_reserved),
         isa: ir.isa,
@@ -1097,6 +1099,8 @@ fn render_with(
         prototypes_at,
         &super::prelude::section(&prototypes.replace("\n", "\n\n")),
     );
+    let tables = ctx.virtual_tables.declarations(&body);
+    out.insert_str(prototypes_at, &tables);
     let declarations_at = out.len();
     let mut declared = 0;
     if let Some(plan) = variadic {

@@ -470,7 +470,7 @@ fn vtables(image: &Image) -> &BTreeSet<u64> {
             .data_symbols
             .iter()
             .filter(|(_, name)| name.trim_start_matches('_').starts_with("ZTV"))
-            .map(|(addr, _)| addr + 16)
+            .filter_map(|(addr, _)| addr.checked_add(16))
             .filter(|point| read_only_word(image, *point).is_some())
             .collect();
         if found.is_empty() && !image.go {
@@ -1036,6 +1036,14 @@ mod tests {
                 .collect(),
             Isa::Unsupported => unreachable!(),
         }
+    }
+
+    #[test]
+    fn overflowing_vtable_symbols_are_ignored() {
+        let (mut image, _) =
+            pointer_factory(Isa::X86_64, false, constant_factory(Isa::X86_64, 0x80));
+        image.data_symbols.insert(u64::MAX - 7, "_ZTV5Shape".into());
+        assert!(vtables(&image).is_empty());
     }
 
     #[test]

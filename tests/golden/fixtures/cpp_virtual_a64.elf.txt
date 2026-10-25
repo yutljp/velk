@@ -115,12 +115,13 @@ fn Shape::~Shape() @ 0x2103c8 (size 4)
 == 0x2103cc Shape::scaled(int) const
 -- decompile
 /* velk pseudo-C: Shape::scaled(int) const @ 0x2103cc */
+struct velk_area_slot_2_vtable { uint64_t slots[2]; uint64_t (*area)(); };
+struct velk_area_slot_2_object { struct velk_area_slot_2_vtable *vtable; };
 int32_t Shape__scaled(uint64_t *a0, int32_t a1) {
     int32_t v3;
 
     int32_t v1 = a1;
-    int64_t v2 = *(uint64_t *)(*a0 + 0x10);
-    v3 = ((uint64_t (*)())v2)(a0); /* vtable slot 2: Square__area, Rect__area */
+    v3 = ((struct velk_area_slot_2_object *)(a0))->vtable->area(a0); /* vtable slot 2: Square__area, Rect__area */
     return v3 * v1;
 }
 -- signature
@@ -303,9 +304,10 @@ fn rect_scaled(int, int, int) @ 0x2104b8 (size 92)
 == 0x210514 any_area(Shape const*)
 -- decompile
 /* velk pseudo-C: any_area(Shape const*) @ 0x210514 */
+struct velk_area_slot_2_vtable { uint64_t slots[2]; uint64_t (*area)(); };
+struct velk_area_slot_2_object { struct velk_area_slot_2_vtable *vtable; };
 int32_t any_area(uint64_t *a0) {
-    int64_t v2 = *(uint64_t *)(*a0 + 0x10);
-    return ((uint64_t (*)())v2)(a0); /* vtable slot 2: Square__area, Rect__area */
+    return ((struct velk_area_slot_2_object *)(a0))->vtable->area(a0); /* vtable slot 2: Square__area, Rect__area */
 }
 -- signature
 int32_t (uint64_t * a0)
@@ -323,9 +325,10 @@ fn any_area(Shape const*) @ 0x210514 (size 12)
 == 0x210520 any_scaled(Shape const*, int)
 -- decompile
 /* velk pseudo-C: any_scaled(Shape const*, int) @ 0x210520 */
+struct velk_scaled_slot_3_vtable { uint64_t slots[3]; uint64_t (*scaled)(); };
+struct velk_scaled_slot_3_object { struct velk_scaled_slot_3_vtable *vtable; };
 int32_t any_scaled(uint64_t *a0, int64_t a1) {
-    int64_t v2 = *(uint64_t *)(*a0 + 0x18);
-    return ((uint64_t (*)())v2)(a0, a1); /* vtable slot 3: Shape__scaled, Rect__scaled */
+    return ((struct velk_scaled_slot_3_object *)(a0))->vtable->scaled(a0, a1); /* vtable slot 3: Shape__scaled, Rect__scaled */
 }
 -- signature
 int32_t (uint64_t * a0, int64_t a1)

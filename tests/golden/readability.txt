@@ -37,9 +37,9 @@ cold_gcc_stripped: 138 lines, 3 prelude lines, 21 variables, 17 casts, 3 registe
 cpp_classes_a64.o: 45 lines, 31 prelude lines, 9 variables, 4 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 1 indirect calls
 cpp_classes_x64.o: 40 lines, 0 prelude lines, 6 variables, 4 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 1 indirect calls
 cpp_demo.o: 14 lines, 0 prelude lines, 1 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
-cpp_virtual_a64.elf: 112 lines, 0 prelude lines, 13 variables, 6 casts, 0 registers, 0 unsigned, 2 traps, 0 gotos, 3 indirect calls
+cpp_virtual_a64.elf: 115 lines, 0 prelude lines, 10 variables, 6 casts, 0 registers, 0 unsigned, 2 traps, 0 gotos, 0 indirect calls
 cpp_virtual_a64_stripped.elf: 112 lines, 0 prelude lines, 13 variables, 6 casts, 0 registers, 0 unsigned, 2 traps, 0 gotos, 3 indirect calls
-cpp_virtual_x64.elf: 112 lines, 0 prelude lines, 14 variables, 8 casts, 0 registers, 0 unsigned, 2 traps, 0 gotos, 3 indirect calls
+cpp_virtual_x64.elf: 115 lines, 0 prelude lines, 13 variables, 10 casts, 0 registers, 0 unsigned, 2 traps, 0 gotos, 0 indirect calls
 cpp_virtual_x64_stripped.elf: 112 lines, 0 prelude lines, 14 variables, 8 casts, 0 registers, 0 unsigned, 2 traps, 0 gotos, 3 indirect calls
 go_probe: 75226 lines, 530 prelude lines, 12826 variables, 12329 casts, 121 registers, 0 unsigned, 18 traps, 75 gotos, 121 indirect calls
 go_probe_arm64: 89354 lines, 649 prelude lines, 16042 variables, 19467 casts, 687 registers, 0 unsigned, 16 traps, 93 gotos, 124 indirect calls

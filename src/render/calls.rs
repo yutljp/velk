@@ -313,37 +313,41 @@ pub(super) fn expression(call: &Stmt, ctx: &Ctx<'_>) -> String {
     if let (Some(name), Some(first)) = (number, args.first_mut()) {
         *first = format!("{first} /* SYS_{name} */");
     }
-    let callee = match (through, target) {
-        _ if matches!(
-            convention,
-            crate::ir::Convention::SyscallX86 | crate::ir::Convention::SyscallArm
-        ) =>
-        {
-            "syscall".to_owned()
-        }
-        (Some(Expr::Load { addr, width: 8, .. }), _)
-            if let Expr::Const(slot) = addr.as_ref()
-                && let Some(name) = ctx.symbols.import_slots.get(slot) =>
-        {
-            super::sanitize(name)
-        }
-        (Some(through), _) => {
-            let text = super::render_value(through, ctx);
-            if text.contains(char::is_whitespace) {
-                format!("((uint64_t (*)())({text}))")
-            } else {
-                format!("((uint64_t (*)()){text})")
+    let callee = if let Some(callee) = ctx.virtual_tables.callee(call, ctx) {
+        callee
+    } else {
+        match (through, target) {
+            _ if matches!(
+                convention,
+                crate::ir::Convention::SyscallX86 | crate::ir::Convention::SyscallArm
+            ) =>
+            {
+                "syscall".to_owned()
             }
+            (Some(Expr::Load { addr, width: 8, .. }), _)
+                if let Expr::Const(slot) = addr.as_ref()
+                    && let Some(name) = ctx.symbols.import_slots.get(slot) =>
+            {
+                super::sanitize(name)
+            }
+            (Some(through), _) => {
+                let text = super::render_value(through, ctx);
+                if text.contains(char::is_whitespace) {
+                    format!("((uint64_t (*)())({text}))")
+                } else {
+                    format!("((uint64_t (*)()){text})")
+                }
+            }
+            (None, Some(target)) => ctx
+                .symbols
+                .functions
+                .get(target)
+                .map_or_else(|| format!("sub_{target:x}"), |name| super::sanitize(name)),
+            (None, None) => format!(
+                "((uint64_t (*)())(uintptr_t){}())",
+                ctx.call_outputs.dynamic_target
+            ),
         }
-        (None, Some(target)) => ctx
-            .symbols
-            .functions
-            .get(target)
-            .map_or_else(|| format!("sub_{target:x}"), |name| super::sanitize(name)),
-        (None, None) => format!(
-            "((uint64_t (*)())(uintptr_t){}())",
-            ctx.call_outputs.dynamic_target
-        ),
     };
     // A callee whose declaration is known takes each argument as the type
     // it declares: an integer converts to its parameter's width as C

@@ -7,6 +7,8 @@ pub struct Symbols {
     /// The object format of a known little-endian target.
     pub target_format: Option<crate::loader::Format>,
     pub functions: HashMap<u64, String>,
+    /// C++ method signatures without their owning class.
+    pub cpp_methods: HashMap<u64, String>,
     /// Original runtime helper names that establish Go value shapes.
     pub go_value_shapes: HashMap<u64, String>,
     /// Original names of known allocators, before conversion to C identifiers.
