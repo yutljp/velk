@@ -188,3 +188,79 @@ fn pointer_self_updates_preserve_element_and_byte_offsets() {
         );
     }
 }
+
+#[test]
+fn printed_global_offsets_keep_the_data_address_separate() {
+    const BASE: u64 = 0x100002000;
+    for width in [1, 2, 4, 8] {
+        let offset = Expr::reg(VARIABLE_BASE, 64);
+        let address = Expr::bin(
+            BinOp::Add,
+            Expr::bin(BinOp::Add, Expr::Const(BASE), offset.clone()),
+            Expr::bin(BinOp::Mul, Expr::reg(6, 64), Expr::Const(width.into())),
+        );
+        let address = Expr::bin(BinOp::Add, address, Expr::Const(8));
+        let ir = synthetic_ir(
+            "global_offset",
+            vec![
+                Param {
+                    index: 7,
+                    name: "row".into(),
+                    ty: CType::I64,
+                },
+                Param {
+                    index: 6,
+                    name: "column".into(),
+                    ty: CType::I64,
+                },
+            ],
+            CType::I64,
+            vec![
+                Stmt::Assign {
+                    dest: RegRef {
+                        index: VARIABLE_BASE,
+                        width: 64,
+                    },
+                    value: Expr::bin(BinOp::Shl, Expr::reg(7, 64), Expr::Const(3)),
+                },
+                Stmt::Store {
+                    addr: address.clone(),
+                    value: Expr::Const(u64::MAX),
+                    width,
+                },
+                Stmt::Ret {
+                    value: Expr::Load {
+                        addr: Box::new(address),
+                        width,
+                        signed: true,
+                    },
+                },
+            ],
+        );
+        let code = velk::render::render(&ir, &[], &Default::default(), &[(BASE, 512)]);
+        assert!(code.contains("0x100002000ULL"), "{code}");
+        if width != 1 {
+            assert!(
+                !code.contains(&format!("0x{:x}]", BASE / u64::from(width))),
+                "{code}"
+            );
+        }
+        let code = format!(
+            "#include <string.h>\n_Alignas(16) static uint8_t data[256];\n{}",
+            code.replace("0x100002000ULL", "(uintptr_t)(data + 128)")
+        );
+        syntax::run_printed(
+            &code,
+            "",
+            &format!(
+                "for (int row = -4; row <= 4; ++row) for (int column = -4; column <= 4; ++column) {{
+                    memset(data, 0, sizeof(data));
+                    if (global_offset(row, column) != -1) __builtin_trap();
+                    int offset = 136 + row * 8 + column * {width};
+                    for (int i = 0; i < 256; ++i)
+                        if (data[i] != (i >= offset && i < offset + {width} ? 255 : 0)) __builtin_trap();
+                }}"
+            ),
+        );
+    }
+}

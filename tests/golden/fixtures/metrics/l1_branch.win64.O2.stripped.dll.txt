@@ -59,9 +59,5 @@ fn <unnamed> @ 0x180001020 (size 16)
     v1 = (select lt (rcx & #0xffffffff), #0x0 ? #0x1, #0x0 & #0xff)
     v2 = (select gt (rcx & #0xffffffff), #0x0 ? #0x1, #0x0 & #0xff)
     ret (sext8(((v2 & #0xff) - (v1 & #0xff))) & #0xffffffff)
-  blk1 @ 0x18000102e:
-    trap
-  blk2 @ 0x18000102f:
-    trap
 -- card
-{"addr":"0x180001020","approxTokens":132,"blocks":3,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":16,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x180001020","approxTokens":132,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":16,"sizeEstimated":true,"unsupported":0}

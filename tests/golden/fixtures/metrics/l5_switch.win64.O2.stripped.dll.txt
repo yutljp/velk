@@ -523,9 +523,5 @@ fn <unnamed> @ 0x1800011b0 (size 44)
     ret #0x64
   blk6 @ 0x1800011d4:
     ret #0xffffffff
-  blk7 @ 0x1800011da:
-    trap
-  blk8 @ 0x1800011db:
-    trap
 -- card
-{"addr":"0x1800011b0","approxTokens":144,"blocks":9,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":44,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x1800011b0","approxTokens":144,"blocks":7,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":44,"sizeEstimated":true,"unsupported":0}

@@ -17,7 +17,7 @@ impl View {
         }
     }
 
-    fn ty(self) -> &'static str {
+    pub(super) fn ty(self) -> &'static str {
         match self {
             Self::Unsigned(width) => super::expr::type_of(width, false),
             Self::Float(Precision::Single) => "float",

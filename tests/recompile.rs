@@ -17,6 +17,8 @@
 //! target/recompile-cache; IR expectations and comparisons are recomputed.
 //! Set VELK_RECOMPILE_NO_CACHE=1 to compile and run every fixture again.
 
+#[path = "recompile/arm64_results.rs"]
+mod arm64_results;
 #[path = "recompile/atomic_layouts.rs"]
 mod atomic_layouts;
 #[path = "recompile/atomic_spelling.rs"]

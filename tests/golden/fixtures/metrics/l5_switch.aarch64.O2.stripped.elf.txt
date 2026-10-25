@@ -26,61 +26,62 @@
 int32_t sub_210304(int32_t a0) {
     uint32_t *const dword_220554 = (uint32_t *)0x220554ULL;
 
-    if ((uint32_t)(a0 - 10) <= 15) {
-        switch (a0) {
-        case 10:
-            sub_2103cc(a0);
-            return *dword_220554;
-        case 11:
-            sub_2103e0(a0);
-            return *dword_220554;
-        case 12:
-            sub_2103f8(a0);
-            return *dword_220554;
-        case 13:
-            sub_21040c(a0);
-            return *dword_220554;
-        case 14:
-            sub_210420(a0);
-            return *dword_220554;
-        case 15:
-            sub_210434(a0);
-            return *dword_220554;
-        case 16:
-            sub_21044c(a0);
-            return *dword_220554;
-        case 17:
-            sub_210460(a0);
-            return *dword_220554;
-        case 18:
-            sub_210474(a0);
-            return *dword_220554;
-        case 19:
-            sub_210488(a0);
-            return *dword_220554;
-        case 20:
-            sub_2104a0(a0);
-            return *dword_220554;
-        case 21:
-            sub_2104b4(a0);
-            return *dword_220554;
-        case 22:
-            sub_2104cc(a0);
-            return *dword_220554;
-        case 23:
-            sub_2104e0(a0);
-            return *dword_220554;
-        case 24:
-            sub_2104f8(a0);
-            return *dword_220554;
-        case 25:
-            sub_21050c(a0);
-            return *dword_220554;
-        default:
-            break;
-        }
+    if ((uint32_t)(a0 - 10) > 15) {
+        *dword_220554 = 0;
+        return *dword_220554;
     }
-    *dword_220554 = 0;
+    switch (a0) {
+    case 10:
+        sub_2103cc();
+        return *dword_220554;
+    case 11:
+        sub_2103e0();
+        return *dword_220554;
+    case 12:
+        sub_2103f8();
+        return *dword_220554;
+    case 13:
+        sub_21040c();
+        return *dword_220554;
+    case 14:
+        sub_210420();
+        return *dword_220554;
+    case 15:
+        sub_210434();
+        return *dword_220554;
+    case 16:
+        sub_21044c();
+        return *dword_220554;
+    case 17:
+        sub_210460();
+        return *dword_220554;
+    case 18:
+        sub_210474();
+        return *dword_220554;
+    case 19:
+        sub_210488();
+        return *dword_220554;
+    case 20:
+        sub_2104a0();
+        return *dword_220554;
+    case 21:
+        sub_2104b4();
+        return *dword_220554;
+    case 22:
+        sub_2104cc();
+        return *dword_220554;
+    case 23:
+        sub_2104e0();
+        return *dword_220554;
+    case 24:
+        sub_2104f8();
+        return *dword_220554;
+    case 25:
+        sub_21050c();
+        return *dword_220554;
+    default:
+        __builtin_unreachable();
+    }
     return *dword_220554;
 }
 -- signature
@@ -91,56 +92,56 @@ int32_t (int32_t a0)
 -- ir
 fn <unnamed> @ 0x210304 (size 200)
   blk0 @ 0x210304:
-    brif hi ((((x0 & #0xffffffff) - #0xa) & #0xffffffff) & #0xffffffff), #0xf -> 0x2103b8
+    brif hi (((w0 - #0xa) & #0xffffffff) & #0xffffffff), #0xf -> 0x2103b8
   blk1 @ 0x210320:
-    switch (x0 & #0xffffffff) [10->0x210338, 11->0x210388, 12->0x210368, 13->0x210378, 14->0x210350, 15->0x210390, 16->0x2103a0, 17->0x210380, 18->0x2103b0, 19->0x210360, 20->0x2103a8, 21->0x210348, 22->0x210358, 23->0x210398, 24->0x210340, 25->0x210370] default 0x2103b8
+    switch w0 [10->0x210338, 11->0x210388, 12->0x210368, 13->0x210378, 14->0x210350, 15->0x210390, 16->0x2103a0, 17->0x210380, 18->0x2103b0, 19->0x210360, 20->0x2103a8, 21->0x210348, 22->0x210358, 23->0x210398, 24->0x210340, 25->0x210370] default <none>
   blk2 @ 0x210338:
-    call 0x2103cc(x0)
+    call 0x2103cc()
     br 0x2103bc
   blk3 @ 0x210340:
-    call 0x2104f8(x0)
+    call 0x2104f8()
     br 0x2103bc
   blk4 @ 0x210348:
-    call 0x2104b4(x0)
+    call 0x2104b4()
     br 0x2103bc
   blk5 @ 0x210350:
-    call 0x210420(x0)
+    call 0x210420()
     br 0x2103bc
   blk6 @ 0x210358:
-    call 0x2104cc(x0)
+    call 0x2104cc()
     br 0x2103bc
   blk7 @ 0x210360:
-    call 0x210488(x0)
+    call 0x210488()
     br 0x2103bc
   blk8 @ 0x210368:
-    call 0x2103f8(x0)
+    call 0x2103f8()
     br 0x2103bc
   blk9 @ 0x210370:
-    call 0x21050c(x0)
+    call 0x21050c()
     br 0x2103bc
   blk10 @ 0x210378:
-    call 0x21040c(x0)
+    call 0x21040c()
     br 0x2103bc
   blk11 @ 0x210380:
-    call 0x210460(x0)
+    call 0x210460()
     br 0x2103bc
   blk12 @ 0x210388:
-    call 0x2103e0(x0)
+    call 0x2103e0()
     br 0x2103bc
   blk13 @ 0x210390:
-    call 0x210434(x0)
+    call 0x210434()
     br 0x2103bc
   blk14 @ 0x210398:
-    call 0x2104e0(x0)
+    call 0x2104e0()
     br 0x2103bc
   blk15 @ 0x2103a0:
-    call 0x21044c(x0)
+    call 0x21044c()
     br 0x2103bc
   blk16 @ 0x2103a8:
-    call 0x2104a0(x0)
+    call 0x2104a0()
     br 0x2103bc
   blk17 @ 0x2103b0:
-    call 0x210474(x0)
+    call 0x210474()
     br 0x2103bc
   blk18 @ 0x2103b8:
     store32(#0x0, #0x220554)

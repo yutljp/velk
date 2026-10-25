@@ -362,10 +362,10 @@ objc_x86_64_O2_stripped: 0
 pe64.exe: 0
 pe64.obj: 0
 rust_demo: 438
-rust_demo_arm64: 459
+rust_demo_arm64: 461
 rust_probe: 438
-rust_probe_arm64: 459
-rust_probe_arm64_stripped: 461
+rust_probe_arm64: 461
+rust_probe_arm64_stripped: 465
 rust_probe_stripped: 380
 seh.O0.dll: 0
 seh.O2.dll: 0

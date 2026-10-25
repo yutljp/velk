@@ -173,9 +173,5 @@ fn <unnamed> @ 0x1800010e0 (size 24)
   blk0 @ 0x1800010e0:
     v1 = (select ne flt.d(xmm1, xmm0), #0x0 ? #0x1, #0x0 & #0xff)
     ret (select eq flt.d(xmm0, xmm1), #0x0 ? (v1 & #0xffffffff), #0xffffffff & #0xffffffff)
-  blk1 @ 0x1800010f6:
-    trap
-  blk2 @ 0x1800010f7:
-    trap
 -- card
-{"addr":"0x1800010e0","approxTokens":138,"blocks":3,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":24,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x1800010e0","approxTokens":138,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":24,"sizeEstimated":true,"unsupported":0}

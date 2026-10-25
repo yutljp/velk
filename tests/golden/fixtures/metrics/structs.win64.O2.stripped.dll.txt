@@ -252,9 +252,5 @@ fn <unnamed> @ 0x180001150 (size 16)
     v1 = (((load32(rcx) & #0xfffffff1) + ((rdx & #0x7) * #0x2)) & #0xffffffff)
     store32(v1, rcx)
     ret v1
-  blk1 @ 0x18000115e:
-    trap
-  blk2 @ 0x18000115f:
-    trap
 -- card
-{"accesses":["a0 +0x0:uint32_t"],"addr":"0x180001150","approxTokens":132,"blocks":3,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":16,"sizeEstimated":true,"unsupported":0}
+{"accesses":["a0 +0x0:uint32_t"],"addr":"0x180001150","approxTokens":132,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":16,"sizeEstimated":true,"unsupported":0}

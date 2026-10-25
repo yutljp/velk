@@ -771,14 +771,38 @@ fn compute(
         {
             signature.clone()
         }
-        _ => Arc::new(signature::recover_with(
-            &blocks,
-            &landing_pads,
-            image.isa,
-            convention,
-            image.go,
-            &|stmt| super::prototypes::called(image, stmt),
-        )),
+        _ => {
+            let mut signature_blocks;
+            let signature_body = if convention == crate::ir::Convention::Aapcs64
+                && !blocks.iter().flat_map(|block| &block.stmts).any(|stmt| {
+                    crate::ir::visit::statement_registers(stmt)
+                        .0
+                        .contains(&crate::arch::RETURN)
+                })
+                && super::results::ignored_by_callers(image, addr)
+            {
+                signature_blocks = blocks.as_ref().clone();
+                for stmt in signature_blocks
+                    .iter_mut()
+                    .flat_map(|block| &mut block.stmts)
+                {
+                    if let Stmt::Ret { value } = stmt {
+                        *value = crate::ir::Expr::Const(0);
+                    }
+                }
+                &signature_blocks
+            } else {
+                &blocks
+            };
+            Arc::new(signature::recover_with(
+                signature_body,
+                &landing_pads,
+                image.isa,
+                convention,
+                image.go,
+                &|stmt| super::prototypes::called(image, stmt),
+            ))
+        }
     };
     // A Go closure's context is no argument a call passes in order.
     let count = |registers: &[u16]| {

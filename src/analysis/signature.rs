@@ -468,7 +468,11 @@ pub fn recover_with(
                 // AAPCS64 can return an unchanged first argument even when
                 // the function has effects. Other conventions keep the
                 // void-return heuristic for such functions.
-                Stmt::Ret { value } if !(returns_argument && effects) => reads(value, &mut used),
+                Stmt::Ret { value }
+                    if convention == Convention::Aapcs64 || !(returns_argument && effects) =>
+                {
+                    reads(value, &mut used)
+                }
                 Stmt::Ret { .. } => {}
                 Stmt::BrIndirect { target } => reads(target, &mut used),
                 Stmt::Switch { index, .. } => reads(index, &mut used),

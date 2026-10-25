@@ -26,13 +26,13 @@ parameter pointer | x86_64.O2 | 186/189
 parameter width | aarch64.O0 | 151/157
 parameter width | aarch64.O2 | 151/157
 parameter width | win64.O0 | 184/196
-parameter width | win64.O2 | 176/190
+parameter width | win64.O2 | 177/190
 parameter width | x86_64.O0 | 152/157
 parameter width | x86_64.O2 | 152/157
 parameter sign | aarch64.O0 | 139/151
 parameter sign | aarch64.O2 | 139/151
 parameter sign | win64.O0 | 135/184
-parameter sign | win64.O2 | 129/176
+parameter sign | win64.O2 | 130/177
 parameter sign | x86_64.O0 | 140/152
 parameter sign | x86_64.O2 | 140/152
 return void | aarch64.O0 | 155/162
@@ -826,7 +826,7 @@ l6_abi.win64.O0 0x180001040 tail_indirect: ok
 l6_abi.win64.O0 0x180001070 six_args: parameter 4 is 8 bytes, expected 4; parameter 5 is 8 bytes, expected 4
 l6_abi.win64.O0 0x1800010b0 wide_add: parameter 0 signedness differs; parameter 1 signedness differs
 l6_abi.win64.O2 0x180001000 tail_target: ok
-l6_abi.win64.O2 0x180001010 tail_direct: parameter 0 is 8 bytes, expected 4
+l6_abi.win64.O2 0x180001010 tail_direct: ok
 l6_abi.win64.O2 0x180001020 tail_indirect: not found
 l6_abi.win64.O2 0x180001030 six_args: parameter 4 is 8 bytes, expected 4; parameter 5 is 8 bytes, expected 4
 l6_abi.win64.O2 0x180001050 wide_add: parameter 0 signedness differs; parameter 1 signedness differs

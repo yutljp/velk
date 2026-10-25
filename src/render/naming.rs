@@ -178,16 +178,41 @@ pub(super) fn flat_array_access_as(
                 lhs,
                 rhs,
             } => work.extend([lhs.as_ref(), rhs.as_ref()]),
-            Expr::Const(value) if base.is_none() => base = Some(*value),
+            Expr::Const(value)
+                if base.is_none()
+                    && ctx.data_ranges.iter().any(|(start, size)| {
+                        *value >= *start && *value < start.saturating_add(*size)
+                    }) =>
+            {
+                base = Some(*value)
+            }
             other => terms.push(other),
         }
     }
     let Some(base) = base else {
         return None;
     };
-    if terms.len() < 2 {
+    if terms.is_empty() {
         return None;
     }
+    if size == 1
+        && terms.len() == 1
+        && !matches!(
+            terms[0],
+            Expr::Bin {
+                op: BinOp::Mul | BinOp::Shl,
+                ..
+            }
+        )
+    {
+        return None;
+    }
+    if ctx.globals.containing(base).is_some() {
+        return None;
+    }
+    let Some(name) = global_pointer(&Expr::Const(base), view, ctx) else {
+        return None;
+    };
     // Each term as an index and how many elements one step of it moves; a
     // 32-bit mask on a term that fits changes nothing.
     let scaled = |term: &Expr| -> Option<(Expr, u64)> {
@@ -224,12 +249,25 @@ pub(super) fn flat_array_access_as(
         };
         (scale % size == 0).then_some((index, scale / size))
     };
-    let parts: Vec<(Expr, u64)> = match terms.into_iter().map(scaled).collect::<Option<_>>() {
+    let parts: Vec<(Expr, u64)> = match terms.iter().copied().map(scaled).collect::<Option<_>>() {
         Some(value) => value,
-        None => return None,
-    };
-    let Some(name) = global_pointer(&Expr::Const(base), view, ctx) else {
-        return None;
+        None => {
+            let Some(offset) = terms
+                .into_iter()
+                .cloned()
+                .reduce(|sum, term| Expr::bin(BinOp::Add, sum, term))
+            else {
+                return None;
+            };
+            return Some(format!(
+                "*({} *)((uintptr_t){name} + {})",
+                view.ty(),
+                crate::render::expr::integer_sum(&offset, ctx)
+                    .address_integer()
+                    .within(10, true)
+                    .text
+            ));
+        }
     };
     let Some(index) = parts
         .iter()

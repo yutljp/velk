@@ -246,9 +246,5 @@ fn <unnamed> @ 0x180001160 (size 36)
     ret #0xffffffff
   blk5 @ 0x18000117f:
     ret (v2 & #0xffffffff)
-  blk6 @ 0x180001182:
-    trap
-  blk7 @ 0x180001183:
-    trap
 -- card
-{"addr":"0x180001160","approxTokens":168,"blocks":8,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":36,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x180001160","approxTokens":168,"blocks":6,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":36,"sizeEstimated":true,"unsupported":0}

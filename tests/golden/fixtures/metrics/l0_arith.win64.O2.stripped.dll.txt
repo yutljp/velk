@@ -69,11 +69,5 @@ int32_t (int32_t a0)
 fn <unnamed> @ 0x180001030 (size 8)
   blk0 @ 0x180001030:
     ret ((#0x0 - ecx) & #0xffffffff)
-  blk1 @ 0x180001035:
-    trap
-  blk2 @ 0x180001036:
-    trap
-  blk3 @ 0x180001037:
-    trap
 -- card
-{"addr":"0x180001030","approxTokens":114,"blocks":4,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":8,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x180001030","approxTokens":114,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":8,"sizeEstimated":true,"unsupported":0}

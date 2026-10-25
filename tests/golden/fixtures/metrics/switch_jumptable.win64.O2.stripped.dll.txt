@@ -188,7 +188,5 @@ fn <unnamed> @ 0x180001000 (size 528)
   blk13 @ 0x180001202:
     store32(v6, #0x180003000)
     ret load32(#0x180003000)
-  blk14 @ 0x18000120f:
-    trap
 -- card
-{"addr":"0x180001000","approxTokens":150,"blocks":15,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":528,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x180001000","approxTokens":150,"blocks":14,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":528,"sizeEstimated":true,"unsupported":0}

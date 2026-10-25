@@ -24,17 +24,11 @@ fn <unnamed> @ 0x180001000 (size 16)
 == 0x180001010 -
 -- decompile
 /* velk pseudo-C: sub_180001010 @ 0x180001010 */
-int32_t sub_180001010(int64_t a0) {
-    uint64_t v1;
-    uint32_t v3;
-
+int32_t sub_180001010(int32_t a0) {
     return sub_180001000((a0 + 2) & 0xffffffff);
-L_180001018:
-    v1 = a0;
-    return ((uint64_t (*)())v1)(v3 + 1);
 }
 -- signature
-int32_t (int64_t a0)
+int32_t (int32_t a0)
 -- references
 
 -- ir
@@ -42,12 +36,8 @@ fn <unnamed> @ 0x180001010 (size 32)
   blk0 @ 0x180001010:
     v2:rax = call 0x180001000((((rcx & #0xffffffff) + #0x2) & #0xffffffff))
     ret v2
-  blk1 @ 0x180001018:
-    rax = rcx
-    rax, xmm0 = call *rax(((rdx + #0x1) & #0xffffffff))
-    ret rax
 -- card
-{"addr":"0x180001010","approxTokens":108,"blocks":2,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":32,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x180001010","approxTokens":108,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":32,"sizeEstimated":true,"unsupported":0}
 
 == 0x180001030 -
 -- decompile
@@ -80,11 +70,5 @@ int64_t (int64_t a0, int64_t a1)
 fn <unnamed> @ 0x180001050 (size 8)
   blk0 @ 0x180001050:
     ret (rcx + rdx)
-  blk1 @ 0x180001055:
-    trap
-  blk2 @ 0x180001056:
-    trap
-  blk3 @ 0x180001057:
-    trap
 -- card
-{"addr":"0x180001050","approxTokens":108,"blocks":4,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":8,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x180001050","approxTokens":108,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":8,"sizeEstimated":true,"unsupported":0}

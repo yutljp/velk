@@ -174,6 +174,12 @@ pub(super) fn load(addr: &Expr, width: u8, signed: bool, ctx: &Ctx<'_>) -> Print
         }
         return value.cast(bits, signed, if signed { 64 } else { ALL });
     }
+    if crate::render::naming::object_member(addr, width, ctx).is_none()
+        && let Some(indexed) = crate::render::naming::flat_array_access(addr, width, ctx)
+    {
+        let strength = if indexed.starts_with('*') { 12 } else { 13 };
+        return global_load(indexed, width, signed, strength);
+    }
     let member = member_access(addr, width, ctx)
         .filter(|member| member.integer().is_some() || member.ty.is_pointer());
     if crate::render::naming::object_member(addr, width, ctx).is_none()
