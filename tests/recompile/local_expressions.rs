@@ -362,3 +362,53 @@ fn printed_widening_keeps_a_local_when_folding_adds_a_cast() {
         &[],
     );
 }
+
+#[test]
+fn printed_masked_load_returns_do_not_need_integer_temporaries() {
+    let mut candidates = Vec::new();
+    for bytes in [1, 2, 4, 8] {
+        for signed in [false, true] {
+            for mask in [1, 0x55, 0x8000_0000, u64::MAX] {
+                let ir = synthetic_ir(
+                    &format!("masked_load_return_{bytes}_{signed}_{mask}"),
+                    vec![Param {
+                        index: 7,
+                        name: "p".into(),
+                        ty: CType::pointer_to(CType::U64),
+                    }],
+                    CType::U64,
+                    vec![
+                        Stmt::Assign {
+                            dest: RegRef {
+                                index: VARIABLE_BASE,
+                                width: 64,
+                            },
+                            value: Expr::Load {
+                                addr: Box::new(Expr::reg(7, 64)),
+                                width: bytes,
+                                signed,
+                            },
+                        },
+                        Stmt::Ret {
+                            value: Expr::bin(
+                                BinOp::And,
+                                Expr::reg(VARIABLE_BASE, 64),
+                                Expr::Const(mask),
+                            ),
+                        },
+                    ],
+                );
+                let mut folded = ir.clone();
+                velk::passes::read_once::fold_values_read_once(&mut folded);
+                let code = velk::render::render(&folded, &[], &Default::default(), &[]);
+                if mask <= byte_mask(bytes) {
+                    assert!(!code.contains(" v1"), "{code}");
+                }
+                let mut candidate = printed_candidate(ir, vec![vec![REGION]]);
+                candidate.code = code;
+                candidates.push(candidate);
+            }
+        }
+    }
+    check_candidates("masked-load-returns", candidates, Mode::Memory, &[]);
+}

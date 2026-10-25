@@ -13,9 +13,8 @@ int sum_while(int n) {
 
     result = 0;
     for (i = 0; i < n; i++) {
-        int32_t v1 = result + i;
-        result = v1;
-        *(uint32_t *)(0x2016c + *(uint32_t *)(0x20188)) = v1;
+        result += i;
+        *(uint32_t *)(0x2016c + *(uint32_t *)(0x20188)) = result;
     }
     return result;
 }
@@ -93,9 +92,8 @@ int sum_skip_odd(int n) {
     for (i = 0; i < n; i++) {
         if ((i & 0x1) == 0) {
         } else {
-            int32_t v1 = result + i;
-            result = v1;
-            *(uint32_t *)(0x20250 + *(uint32_t *)(0x2026c)) = v1;
+            result += i;
+            *(uint32_t *)(0x20250 + *(uint32_t *)(0x2026c)) = result;
         }
     }
     return result;

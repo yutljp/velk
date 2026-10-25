@@ -15,9 +15,8 @@ int sum_while(int n) {
 
     result = 0;
     for (i = 0; i < n; i++) {
-        int32_t v1 = result + i;
-        result = v1;
-        *sink = v1;
+        result += i;
+        *sink = result;
     }
     return result;
 }
@@ -109,9 +108,8 @@ int sum_skip_odd(int n) {
     result = 0;
     for (i = 0; i < n; i++) {
         if ((uint32_t)((uint64_t)*(uint8_t *)&i << 31) != 0) {
-            int32_t v1 = result + i;
-            result = v1;
-            *sink = v1;
+            result += i;
+            *sink = result;
         }
     }
     return result;

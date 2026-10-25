@@ -375,6 +375,20 @@ pub(super) fn substitute(stmt: &mut Stmt, dest: RegRef, value: &Expr) -> bool {
         substitute_tested(lhs, rhs, dest, value);
         substitute_tested(rhs, lhs, dest, value);
     }
+    if let Stmt::Ret {
+        value: Expr::Bin {
+            op: BinOp::And,
+            lhs,
+            rhs,
+        },
+    } = stmt
+        && matches!(value, Expr::Load { .. })
+        && let (Expr::Reg { index, width: read }, Expr::Const(mask)) = (lhs.as_ref(), rhs.as_ref())
+        && *index == dest.index
+        && *mask <= crate::ir::semantics::mask(u32::from((*read).min(dest.width).min(width)))
+    {
+        **lhs = value.clone();
+    }
     let mut ok = true;
     for operand in stmt.operands_mut() {
         substitute_masked(operand, dest, value);

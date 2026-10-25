@@ -224,23 +224,20 @@ int32_t sub_1800011d0(uint32_t *a0, int32_t a1) {
 
     local_0 = 0;
     if (a0 == 0) {
-        uint8_t v3 = local_0;
-        return v3 & 0x1;
+        return local_0 & 0x1;
     }
     local_0 = 0;
     if (a1 <= 0) {
-        uint8_t v11 = local_0;
-        return v11 & 0x1;
+        return local_0 & 0x1;
     }
-    uint8_t v12 = 1;
+    uint8_t v3 = 1;
     if (*a0 != 1) {
         int64_t v6 = a1 - 1;
         int32_t v4 = a0[v6];
-        v12 = a0[v6] == 1;
+        v3 = a0[v6] == 1;
     }
-    local_0 = v12;
-    uint8_t v13 = local_0;
-    return v13 & 0x1;
+    local_0 = v3;
+    return local_0 & 0x1;
 }
 -- signature
 int32_t (uint32_t * a0, int32_t a1)
@@ -265,8 +262,7 @@ fn <unnamed> @ 0x1800011d0 (size 104)
   blk4 @ 0x180001222:
     store8(v3, (rsp + #0xffffffffffffffef))
   blk5 @ 0x18000122a:
-    v3 = load8((rsp + #0xffffffffffffffef))
-    ret (v3 & #0x1)
+    ret (load8((rsp + #0xffffffffffffffef)) & #0x1)
 -- card
 {"addr":"0x1800011d0","approxTokens":240,"blocks":6,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":104,"unsupported":0}
 

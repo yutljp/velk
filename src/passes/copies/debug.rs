@@ -1,13 +1,14 @@
 use crate::ir::visit::{expr_reads, statement_registers};
 use crate::ir::{Expr, FunctionIr, Stmt, VARIABLE_BASE};
 
-/// Uses a named stack variable in place of the register copied into it,
+/// Uses an integer stack variable in place of the register copied into it,
 /// only when every read sees the same complete value in the slot.
 pub(crate) fn fold_debug_locals(ir: &mut FunctionIr) -> bool {
     let sp = crate::arch::stack_pointer(ir.isa);
-    if ir.debug_locals.is_empty() || !crate::passes::memory::fixed_private_frame(ir, sp) {
+    if !crate::passes::memory::fixed_private_frame(ir, sp) {
         return false;
     }
+    let types = crate::render::variable_types(ir);
     let mut predecessors = vec![Vec::new(); ir.blocks.len()];
     for (index, block) in ir.blocks.iter().enumerate() {
         let edges =
@@ -51,7 +52,10 @@ pub(crate) fn fold_debug_locals(ir: &mut FunctionIr) -> bool {
             };
             let (addr, width) = (addr.clone(), *width);
             let slot = crate::passes::frame_slots::frame_slot(&addr, 0, sp);
-            let named = ir.debug_locals.iter().any(|local| {
+            let integer = (ir.debug_locals.is_empty()
+                && matches!(types.get(&dest.index), Some(crate::ir::CType::Int { .. }))
+                && !crate::passes::read_once::floats(&value))
+                || ir.debug_locals.iter().any(|local| {
                 Some(local.slot) == slot
                     && local.size == u64::from(width)
                     && local
@@ -70,7 +74,7 @@ pub(crate) fn fold_debug_locals(ir: &mut FunctionIr) -> bool {
             });
             let mut sources = Default::default();
             expr_reads(&value, &mut sources);
-            if !named
+            if !integer
                 || !matches!(width, 1 | 2 | 4 | 8)
                 || dest.index < VARIABLE_BASE
                 || u32::from(width) * 8 > u32::from(dest.width)

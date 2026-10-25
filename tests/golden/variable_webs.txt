@@ -1,6 +1,6 @@
 # group: variables with unrelated webs before -> after splitting; live phi joins; fixed register bindings; variables with unknown successors
-C/C++ debug: 99 -> 0; 813; 1; 0
-C/C++ stripped: 84 -> 0; 667; 0; 0
+C/C++ debug: 98 -> 0; 813; 1; 0
+C/C++ stripped: 83 -> 0; 667; 0; 0
 Go: 6694 -> 0; 30240; 384; 2
 Rust: 8109 -> 0; 50245; 675; 189
 # alt.o | C/C++ stripped: 1 -> 0; 0; 0; 0
@@ -213,8 +213,8 @@ Rust: 8109 -> 0; 50245; 675; 189
 # metrics/control.aarch64.O0.stripped.elf | C/C++ stripped: 0 -> 0; 2; 0; 0
 # metrics/control.aarch64.O2.debug.elf | C/C++ debug: 1 -> 0; 23; 0; 0
 # metrics/control.aarch64.O2.stripped.elf | C/C++ stripped: 1 -> 0; 23; 0; 0
-# metrics/control.win64.O0.debug.dll | C/C++ debug: 1 -> 0; 2; 0; 0
-# metrics/control.win64.O0.stripped.dll | C/C++ stripped: 1 -> 0; 2; 0; 0
+# metrics/control.win64.O0.debug.dll | C/C++ debug: 0 -> 0; 2; 0; 0
+# metrics/control.win64.O0.stripped.dll | C/C++ stripped: 0 -> 0; 2; 0; 0
 # metrics/control.win64.O2.debug.dll | C/C++ debug: 2 -> 0; 29; 0; 0
 # metrics/control.win64.O2.stripped.dll | C/C++ stripped: 2 -> 0; 29; 0; 0
 # metrics/control.x86_64.O0.debug.elf | C/C++ debug: 2 -> 0; 0; 0; 0

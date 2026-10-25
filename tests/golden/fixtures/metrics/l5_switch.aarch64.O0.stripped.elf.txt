@@ -25,11 +25,10 @@
 /* ref: 0x2205e8 .bss */
 int32_t sub_210334(int32_t a0) {
     uint32_t *const dword_2205e8 = (uint32_t *)0x2205e8ULL;
-    int64_t local_0; /* [sp-20] */
+    uint64_t local_0; /* [sp-20] */
 
-    uint32_t v1 = a0 - 10;
-    local_0 = v1;
-    if (v1 <= 15) {
+    local_0 = (a0 - 10) & 0xffffffff;
+    if (local_0 <= 15) {
         switch (local_0 + 10) {
         case 10:
             sub_210418();

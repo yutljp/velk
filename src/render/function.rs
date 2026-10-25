@@ -134,7 +134,7 @@ fn render_prepared(
         None
     };
     super::frame_registers::rebase(&mut folded);
-    if crate::passes::copies::fold_debug_locals(&mut folded) {
+    if !folded.debug_locals.is_empty() && crate::passes::copies::fold_debug_locals(&mut folded) {
         crate::passes::read_once::fold_values_read_once(&mut folded);
     }
     let mut types = variables::variable_types(

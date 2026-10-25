@@ -214,89 +214,92 @@ fn slot(offset: i64) -> Expr {
 }
 
 #[test]
-fn debug_local_copies_use_the_slot_only_while_values_agree() {
+fn stack_local_copies_use_the_slot_only_while_values_agree() {
     let arg = Convention::SysV.arguments()[0];
     let temp = velk::ir::VARIABLE_BASE;
     let mut candidates = Vec::new();
-    for overwrite in [false, true] {
-        for partial in [false, true] {
-            let mut ir = synthetic_ir(
-                &format!("debug_copy_{overwrite}_{partial}"),
-                vec![Param {
-                    index: arg,
-                    name: "input".into(),
-                    ty: CType::U32,
-                }],
-                CType::U32,
-                vec![
-                    Stmt::Assign {
-                        dest: velk::ir::RegRef {
-                            index: temp,
-                            width: 32,
-                        },
-                        value: Expr::bin(BinOp::Xor, Expr::reg(arg, 32), Expr::Const(17)),
-                    },
-                    Stmt::Store {
-                        addr: slot(-16),
-                        value: Expr::reg(temp, 32),
-                        width: 4,
-                    },
-                    Stmt::Brif {
-                        cond: Cond::Lt,
-                        lhs: Expr::reg(temp, 32),
-                        rhs: Expr::Const(0),
-                        target: 2,
-                    },
-                ],
-            );
-            ir.debug_locals.push(velk::ir::DebugLocal {
-                name: "sample".into(),
-                ty: CType::U32,
-                slot: -16,
-                size: 4,
-            });
-            let mut body = Vec::new();
-            if overwrite {
-                body.push(Stmt::Store {
-                    addr: slot(if partial { -15 } else { -16 }),
-                    value: Expr::Const(0),
-                    width: if partial { 1 } else { 4 },
-                });
+    for width in [32, 64] {
+        for named in [false, true] {
+            for overwrite in [false, true] {
+                for partial in [false, true] {
+                    let mut ir = synthetic_ir(
+                        &format!("stack_copy_{width}_{named}_{overwrite}_{partial}"),
+                        vec![Param {
+                            index: arg,
+                            name: "input".into(),
+                            ty: CType::U32,
+                        }],
+                        CType::int(width / 8, false),
+                        vec![
+                            Stmt::Assign {
+                                dest: velk::ir::RegRef { index: temp, width },
+                                value: Expr::bin(BinOp::Xor, Expr::reg(arg, 32), Expr::Const(17)),
+                            },
+                            Stmt::Store {
+                                addr: slot(-16),
+                                value: Expr::reg(temp, width),
+                                width: width / 8,
+                            },
+                            Stmt::Brif {
+                                cond: if width == 32 { Cond::Lt } else { Cond::Eq },
+                                lhs: Expr::reg(temp, width),
+                                rhs: Expr::Const(0),
+                                target: 2,
+                            },
+                        ],
+                    );
+                    if named {
+                        ir.debug_locals.push(velk::ir::DebugLocal {
+                            name: "sample".into(),
+                            ty: CType::int(width / 8, false),
+                            slot: -16,
+                            size: u64::from(width / 8),
+                        });
+                    }
+                    let mut body = Vec::new();
+                    if overwrite {
+                        body.push(Stmt::Store {
+                            addr: slot(if partial { -15 } else { -16 }),
+                            value: Expr::Const(0),
+                            width: if partial { 1 } else { width / 8 },
+                        });
+                    }
+                    body.push(Stmt::Ret {
+                        value: Expr::bin(
+                            BinOp::Add,
+                            Expr::reg(temp, width),
+                            Expr::Load {
+                                addr: Box::new(slot(-16)),
+                                width: width / 8,
+                                signed: false,
+                            },
+                        ),
+                    });
+                    ir.blocks.push(Block {
+                        start: 1,
+                        stmts: body,
+                    });
+                    ir.blocks.push(Block {
+                        start: 2,
+                        stmts: vec![Stmt::Ret {
+                            value: Expr::reg(temp, width),
+                        }],
+                    });
+                    let code = velk::render::render(&ir, &[], &Default::default(), &[]);
+                    assert_eq!(code.contains("sample"), named, "{code}");
+                    assert_eq!(code.contains(" v1"), overwrite, "{code}");
+                    candidates.push(printed_candidate(
+                        ir,
+                        [0, 1, 17, 0x7fff_ffff, 0x8000_0000, 0xffff_ffff]
+                            .into_iter()
+                            .map(|value| vec![value])
+                            .collect(),
+                    ));
+                }
             }
-            body.push(Stmt::Ret {
-                value: Expr::bin(
-                    BinOp::Add,
-                    Expr::reg(temp, 32),
-                    Expr::Load {
-                        addr: Box::new(slot(-16)),
-                        width: 4,
-                        signed: false,
-                    },
-                ),
-            });
-            ir.blocks.push(Block {
-                start: 1,
-                stmts: body,
-            });
-            ir.blocks.push(Block {
-                start: 2,
-                stmts: vec![Stmt::Ret {
-                    value: Expr::reg(temp, 32),
-                }],
-            });
-            let code = velk::render::render(&ir, &[], &Default::default(), &[]);
-            assert!(code.contains("sample"), "{code}");
-            assert_eq!(code.contains(" v1"), overwrite, "{code}");
-            candidates.push(printed_candidate(
-                ir,
-                [0, 1, 17, 0x7fff_ffff, 0x8000_0000, 0xffff_ffff]
-                    .into_iter()
-                    .map(|value| vec![value])
-                    .collect(),
-            ));
         }
     }
-    check_candidates("debug-local-copies", candidates, Mode::Memory, &[]);
+    check_candidates("stack-local-copies", candidates, Mode::Memory, &[]);
 }
 
 #[test]

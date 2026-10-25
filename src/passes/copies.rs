@@ -254,6 +254,9 @@ pub(crate) fn integer_expression_candidate(ir: &FunctionIr) -> Option<FunctionIr
     }
     let statements: usize = ir.blocks.iter().map(|block| block.stmts.len()).sum();
     let mut folded = ir.clone();
+    if folded.debug_locals.is_empty() && fold_debug_locals(&mut folded) {
+        super::read_once::fold_values_read_once(&mut folded);
+    }
     copy_propagate_with(
         &mut folded,
         /* avoid_duplication */ true,

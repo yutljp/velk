@@ -216,16 +216,15 @@ fn byte_swap @ 0x202a0 (size 76)
 /* velk pseudo-C: min3 @ 0x202ec */
 int min3(int a, int b, int c) {
     uint32_t local_0; /* [sp-1c] */
-    uint32_t local_1; /* [sp-18] */
+    int32_t local_1; /* [sp-18] */
 
     if (a < b) {
         local_0 = a;
     } else {
         local_0 = b;
     }
-    int32_t v1 = local_0;
-    local_1 = v1;
-    if (v1 < c) {
+    local_1 = local_0;
+    if (local_1 < c) {
         return local_1;
     }
     return c;
