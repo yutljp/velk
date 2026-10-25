@@ -33,6 +33,8 @@ mod call_arithmetic;
 #[path = "recompile/compile_fail.rs"]
 mod compile_fail;
 
+#[path = "recompile/constant_spills.rs"]
+mod constant_spills;
 #[path = "recompile/constants.rs"]
 mod constants;
 #[path = "recompile/counted_loops.rs"]

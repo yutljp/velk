@@ -122,3 +122,80 @@ ret
         std::fs::remove_dir_all(scratch).ok();
     }
 }
+
+#[test]
+fn frame_pointer_and_call_spills_survive_loop_flag_joins() {
+    let scratch = scratch_dir("frame-loop-flags");
+    let assembly = scratch.join("frame.s");
+    let object = scratch.join("frame.o");
+    std::fs::write(
+        &assembly,
+        ".text
+.globl loop_callee
+.type loop_callee,@function
+loop_callee:
+pushq %rbp
+movq %rsp, %rbp
+cmpq $0, %rbp
+movq %rsp, %rbp
+sete %dl
+movl $32, %eax
+subq %rax, %rsp
+movl %edi, -4(%rbp)
+movl $2, %ecx
+1:
+movl $7, (%rsi)
+cmpl $0, %edi
+movl $0, %edi
+sete %dl
+subl $1, %ecx
+jne 1b
+movl -4(%rbp), %eax
+addq $32, %rsp
+popq %rbp
+ret
+.size loop_callee, .-loop_callee
+.globl frame_caller
+.type frame_caller,@function
+frame_caller:
+pushq %rbp
+movq %rsp, %rbp
+subq $16, %rsp
+movl %edi, -4(%rbp)
+movl $0, -8(%rbp)
+leaq -8(%rbp), %rsi
+call loop_callee
+addl -4(%rbp), %eax
+addl -8(%rbp), %eax
+addq $16, %rsp
+popq %rbp
+ret
+.size frame_caller, .-frame_caller
+",
+    )
+    .unwrap();
+    let compiled = Command::new(compiler())
+        .args(["-target", "x86_64-unknown-linux-gnu", "-c"])
+        .arg(&assembly)
+        .arg("-o")
+        .arg(&object)
+        .output()
+        .unwrap();
+    assert!(compiled.status.success(), "{compiled:?}");
+    let mut binary = Binary::open(&object).unwrap();
+    let callee = binary.find("loop_callee").unwrap().addr;
+    let caller = binary.find("frame_caller").unwrap().addr;
+    let callee_code = binary.decompile(callee, None, None).unwrap();
+    let caller_code = binary.decompile(caller, None, None).unwrap();
+    assert!(!caller_code.contains("undefined"), "{caller_code}");
+    syntax::run_printed(
+        &format!("{callee_code}\n{caller_code}"),
+        "",
+        "uint32_t inputs[] = {0, 1, 23, 0x7fffffffU, 0x80000000U, 0xffffffffU};
+         for (unsigned i = 0; i < 6; ++i) {
+             uint32_t x = inputs[i];
+             if ((uint32_t)frame_caller(x) != x + x + 7U) __builtin_trap();
+         }",
+    );
+    std::fs::remove_dir_all(scratch).ok();
+}

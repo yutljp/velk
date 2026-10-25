@@ -231,6 +231,11 @@ impl State {
             .others
             .keys()
             .chain(other.others.keys())
+            // Flag operands describe comparisons, never addresses used by memory operations.
+            .filter(|index| {
+                !crate::ir::FLAG_OPERANDS.contains(index)
+                    && !crate::ir::FLAG_CARRIED.contains(index)
+            })
             .map(|index| (self.register(*index), other.register(*index)))
             .collect();
         dropped.extend(self.slots.keys().chain(other.slots.keys()).map(|slot| {
@@ -649,6 +654,45 @@ mod tests {
 
     fn block(start: u64, stmts: Vec<Stmt>) -> Block {
         Block { start, stmts }
+    }
+
+    #[test]
+    fn joined_flag_operands_do_not_expose_saved_register_slots() {
+        let mut temporaries = crate::ir::FLAG_OPERANDS.to_vec();
+        temporaries.extend(crate::ir::FLAG_CARRIED);
+        temporaries.push(crate::ir::EXCHANGE);
+        for temporary in temporaries {
+            let mut entry = push(RBP).to_vec();
+            entry.push(assign(temporary, reg(RSP)));
+            entry.push(Stmt::Br {
+                target: Some(0x1010),
+            });
+            let mut exit = vec![Stmt::Store {
+                addr: reg(7),
+                value: Expr::Const(19),
+                width: 4,
+            }];
+            exit.extend(pop(RBP));
+            exit.push(ret());
+            let blocks = [
+                block(0x1000, entry),
+                block(
+                    0x1010,
+                    vec![
+                        assign(temporary, Expr::Const(2)),
+                        Stmt::Brif {
+                            cond: crate::ir::Cond::Eq,
+                            lhs: reg(0),
+                            rhs: Expr::Const(0),
+                            target: 0x1010,
+                        },
+                    ],
+                ),
+                block(0x1020, exit),
+            ];
+            let changed = clobbers(&blocks, Convention::SysV, RSP).unwrap();
+            assert_eq!(changed.contains(RBP), temporary == crate::ir::EXCHANGE);
+        }
     }
 
     #[test]

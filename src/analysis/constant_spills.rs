@@ -2,7 +2,7 @@
 
 use std::collections::HashMap;
 
-use crate::ir::{Block, Expr, FunctionIr, Stmt};
+use crate::ir::{BinOp, Block, Expr, FunctionIr, Stmt};
 use crate::loader::Image;
 use crate::passes::frame_slots::frame_slot;
 
@@ -72,15 +72,28 @@ pub(super) fn forward(ir: &mut FunctionIr, image: &Image) {
         let mut pending: Vec<Stored> = Vec::new();
         let mut calls = Vec::new();
         for stmt in &mut block.stmts {
-            for operand in stmt.operands_mut() {
-                changed |= replace(operand, sp, &mut pending, &mut |first_call| {
-                    let preserved = calls[first_call..].iter().all(|target| {
-                        *callees
-                            .entry(*target)
-                            .or_insert_with(|| writes_only_frame(image, *target))
-                    });
-                    preserved.then_some(calls.len())
+            let mut preserved = |first_call| {
+                let preserved = calls[first_call..].iter().all(|target| {
+                    *callees
+                        .entry(*target)
+                        .or_insert_with(|| writes_only_frame(image, *target))
                 });
+                preserved.then_some(calls.len())
+            };
+            if let Stmt::Brif { cond, lhs, rhs, .. } = stmt {
+                let bits = crate::ir::semantics::operand_width(lhs, rhs);
+                let original = (lhs.clone(), rhs.clone());
+                let replaced = replace(lhs, sp, &mut pending, &mut preserved)
+                    | replace(rhs, sp, &mut pending, &mut preserved);
+                if crate::passes::copies::comparison_preserved(*cond, bits, lhs, rhs) {
+                    changed |= replaced;
+                } else {
+                    (*lhs, *rhs) = original;
+                }
+            } else {
+                for operand in stmt.operands_mut() {
+                    changed |= replace(operand, sp, &mut pending, &mut preserved);
+                }
             }
             if matches!(stmt, Stmt::Call { .. }) {
                 let frame = frames.next().flatten();
@@ -145,9 +158,35 @@ fn replace(
     pending: &mut Vec<Stored>,
     preserved: &mut impl FnMut(usize) -> Option<usize>,
 ) -> bool {
+    if pending.is_empty() {
+        return false;
+    }
+    let guarded = match expr {
+        Expr::Select { lhs, rhs, .. }
+        | Expr::Bin {
+            op: BinOp::Sar | BinOp::DivS | BinOp::ModS,
+            lhs,
+            rhs,
+        } => Some((crate::ir::semantics::operand_width(lhs, rhs), expr.clone())),
+        _ => None,
+    };
+
     let mut changed = false;
     for child in crate::ir::visit::children_mut(expr) {
         changed |= replace(child, sp, pending, preserved);
+    }
+    if let Some((bits, original)) = guarded {
+        let preserved = match expr {
+            Expr::Select { cond, lhs, rhs, .. } => {
+                crate::passes::copies::comparison_preserved(*cond, bits, lhs, rhs)
+            }
+            Expr::Bin { lhs, rhs, .. } => bits == crate::ir::semantics::operand_width(lhs, rhs),
+            _ => unreachable!("replacing children keeps the expression's operation"),
+        };
+        if !preserved {
+            *expr = original;
+            return false;
+        }
     }
     if let Expr::Load {
         addr,
@@ -242,6 +281,42 @@ fn closed(blocks: &[Block]) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn constant_loads_keep_signed_operation_and_selection_widths() {
+        use crate::ir::Cond;
+
+        let sp = crate::arch::stack_pointer(crate::loader::Isa::X86_64);
+        for width in [1, 2, 4] {
+            let load = Expr::Load {
+                addr: Box::new(Expr::bin(BinOp::Sub, Expr::reg(sp, 64), Expr::Const(8))),
+                width,
+                signed: false,
+            };
+            let mut pending = vec![Stored {
+                offset: -8,
+                width,
+                value: crate::ir::semantics::mask(u32::from(width) * 8),
+                first_call: 0,
+            }];
+            for op in [BinOp::Sar, BinOp::DivS, BinOp::ModS] {
+                let mut expr = Expr::bin(op, load.clone(), Expr::Const(2));
+                let original = expr.clone();
+                assert!(!replace(&mut expr, sp, &mut pending, &mut |_| Some(0)));
+                assert_eq!(expr, original);
+            }
+            let mut expr = Expr::Select {
+                cond: Cond::Ge,
+                lhs: Box::new(load),
+                rhs: Box::new(Expr::Const(0)),
+                then: Box::new(Expr::Const(1)),
+                els: Box::new(Expr::Const(0)),
+            };
+            let original = expr.clone();
+            assert!(!replace(&mut expr, sp, &mut pending, &mut |_| Some(0)));
+            assert_eq!(expr, original);
+        }
+    }
 
     #[test]
     fn frame_only_callees_require_closed_control_flow() {
