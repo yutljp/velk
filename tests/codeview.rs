@@ -125,19 +125,20 @@ fn printed_codeview_names_and_types_compile_and_compute_source_results() {
                 let exe = file.with_extension("out");
                 std::fs::write(&file, format!("#include <stdint.h>\n#include <stdbool.h>\n#include <string.h>\n{code}\nint main(void){{ {driver} return 0; }}\n")).expect("printed source");
                 for optimization in ["-O0", "-O2"] {
-                    let output = Command::new("clang")
-                        .args([
-                            "-std=c11",
-                            optimization,
-                            "-fwrapv",
-                            "-fno-strict-aliasing",
-                            "-Werror",
-                        ])
-                        .arg(&file)
-                        .arg("-o")
-                        .arg(&exe)
-                        .output()
-                        .expect("C compiler");
+                    let output = common::compiler::run(
+                        Command::new("clang")
+                            .args([
+                                "-std=c11",
+                                optimization,
+                                "-fwrapv",
+                                "-fno-strict-aliasing",
+                                "-Werror",
+                            ])
+                            .arg(&file)
+                            .arg("-o")
+                            .arg(&exe),
+                        None,
+                    );
                     assert!(
                         output.status.success(),
                         "{code}\n{}",

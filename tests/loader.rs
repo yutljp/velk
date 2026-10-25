@@ -444,23 +444,13 @@ fn decompiled(binary: &mut Binary, name: &str) -> String {
 
 /// Whether clang accepts the printed C with the declarations it relies on.
 fn compiles(code: &str) -> bool {
-    use std::io::Write as _;
-    let mut compiler = std::process::Command::new("clang")
-        .args(["-fsyntax-only", "-w", "-x", "c", "-"])
-        .stdin(std::process::Stdio::piped())
-        .stderr(std::process::Stdio::piped())
-        .spawn()
-        .expect("clang");
     let prelude = "#include <stdint.h>\n\
                    void memset_pattern16(void *, const void *, unsigned long);\n\
                    int32_t large(void);\n";
-    compiler
-        .stdin
-        .take()
-        .expect("standard input")
-        .write_all(format!("{prelude}{code}").as_bytes())
-        .expect("writing to clang");
-    let output = compiler.wait_with_output().expect("clang");
+    let output = common::compiler::run(
+        std::process::Command::new("clang").args(["-fsyntax-only", "-w", "-x", "c", "-"]),
+        Some(&format!("{prelude}{code}")),
+    );
     if !output.status.success() {
         eprintln!("{code}\n{}", String::from_utf8_lossy(&output.stderr));
     }
@@ -535,26 +525,16 @@ fn macho_library_calls_compile_with_c_headers() {
         let code = decompiled(&mut binary, name);
         assert!(code.contains(&format!("{call}(")), "{code}");
         assert!(!code.contains(&format!("_{call}(")), "{code}");
-        use std::io::Write as _;
-        let mut compiler = std::process::Command::new("clang")
-            .args([
+        let output = common::compiler::run(
+            std::process::Command::new("clang").args([
                 "-fsyntax-only",
                 "-Werror=implicit-function-declaration",
                 "-x",
                 "c",
                 "-",
-            ])
-            .stdin(std::process::Stdio::piped())
-            .stderr(std::process::Stdio::piped())
-            .spawn()
-            .unwrap();
-        compiler
-            .stdin
-            .take()
-            .unwrap()
-            .write_all(format!("#include <stdint.h>\n#include <string.h>\n{code}").as_bytes())
-            .unwrap();
-        let output = compiler.wait_with_output().unwrap();
+            ]),
+            Some(&format!("#include <stdint.h>\n#include <string.h>\n{code}")),
+        );
         assert!(
             output.status.success(),
             "{code}\n{}",

@@ -4,6 +4,8 @@
     reason = "Integration test targets use different subsets of these shared helpers."
 )]
 
+pub mod compiler;
+
 use std::path::{Path, PathBuf};
 
 pub fn root() -> PathBuf {
