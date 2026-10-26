@@ -186,22 +186,13 @@ pub(super) fn call(image: &Image, target: Option<u64>, stmt: &mut Stmt) -> bool 
                 let Some(offset) = kind.stack_offset(image.isa, *convention, offset) else {
                     return false;
                 };
-                let load = |offset| Expr::Load {
-                    addr: Box::new(Expr::bin(
-                        BinOp::Add,
-                        Expr::reg(crate::arch::stack_pointer(image.isa), 64),
-                        Expr::constant(offset as u64),
-                    )),
-                    width: 4,
-                    signed: false,
-                };
                 if pair {
                     let Some(high) = offset.checked_add(4) else {
                         return false;
                     };
-                    join(load(offset), load(high))
+                    join(stack_word(image.isa, offset), stack_word(image.isa, high))
                 } else {
-                    load(offset)
+                    stack_word(image.isa, offset)
                 }
             }
         };
@@ -213,6 +204,18 @@ pub(super) fn call(image: &Image, target: Option<u64>, stmt: &mut Stmt) -> bool 
         return true;
     }
     false
+}
+
+fn stack_word(isa: Isa, offset: i64) -> Expr {
+    Expr::Load {
+        addr: Box::new(Expr::bin(
+            BinOp::Add,
+            Expr::reg(crate::arch::stack_pointer(isa), 64),
+            Expr::constant(offset as u64),
+        )),
+        width: 4,
+        signed: false,
+    }
 }
 
 fn logical_result(stmt: &mut Stmt, width: u8) {

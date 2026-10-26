@@ -839,212 +839,9 @@ impl Lifter<'_> {
             | Opcode::LSL
             | Opcode::LSR
             | Opcode::ASR
-            | Opcode::ROR => {
-                let compare = matches!(
-                    instruction.opcode,
-                    Opcode::CMP | Opcode::CMN | Opcode::TST | Opcode::TEQ
-                );
-                let (left, right) = if compare || c == Operand::Nothing {
-                    (a, b)
-                } else {
-                    (b, c)
-                };
-                let Some(mut lhs) = operand(left) else {
-                    return None;
-                };
-                if instruction.thumb
-                    && matches!(left, Operand::Reg(reg) if reg.number() == 15)
-                    && matches!(instruction.opcode, Opcode::ADD | Opcode::SUB)
-                {
-                    lhs = Expr::constant(u64::from((pc as u32).wrapping_add(4) & !3));
-                }
-                let frame = matches!(a, Operand::Reg(reg) if matches!(reg.number(), 7 | 11 | 13))
-                    && matches!(left, Operand::Reg(reg) if reg.number() == 13)
-                    && matches!(instruction.opcode, Opcode::ADD | Opcode::SUB);
-                let lhs = if frame { Expr::reg(13, 64) } else { low(lhs) };
-                let Some(rhs) = operand(right) else {
-                    return None;
-                };
-                let rhs = if matches!(
-                    instruction.opcode,
-                    Opcode::LSL | Opcode::LSR | Opcode::ASR | Opcode::ROR
-                ) && matches!(right, Operand::Reg(_))
-                {
-                    Expr::bin(BinOp::And, rhs, Expr::constant(255))
-                } else {
-                    low(rhs)
-                };
-                let op = match instruction.opcode {
-                    Opcode::ADD | Opcode::CMN => BinOp::Add,
-                    Opcode::SUB | Opcode::CMP | Opcode::RSB => BinOp::Sub,
-                    Opcode::AND | Opcode::BIC | Opcode::TST => BinOp::And,
-                    Opcode::ORR | Opcode::ORN => BinOp::Or,
-                    Opcode::EOR | Opcode::TEQ => BinOp::Xor,
-                    Opcode::MUL => BinOp::Mul,
-                    Opcode::LSL => BinOp::Shl,
-                    Opcode::LSR => BinOp::Shr,
-                    Opcode::ASR => BinOp::Sar,
-                    _ => BinOp::Or,
-                };
-                let (lhs, rhs) = if instruction.opcode == Opcode::RSB {
-                    (rhs, lhs)
-                } else {
-                    (lhs, rhs)
-                };
-                let value = match instruction.opcode {
-                    Opcode::LSL | Opcode::LSR | Opcode::ASR | Opcode::ROR => {
-                        let Some(value) = shift_value(
-                            lhs.clone(),
-                            match instruction.opcode {
-                                Opcode::LSL => ShiftStyle::LSL,
-                                Opcode::LSR => ShiftStyle::LSR,
-                                Opcode::ASR => ShiftStyle::ASR,
-                                _ => ShiftStyle::ROR,
-                            },
-                            rhs.clone(),
-                        ) else {
-                            return None;
-                        };
-                        value
-                    }
-                    Opcode::BIC | Opcode::ORN => Expr::bin(
-                        op,
-                        lhs.clone(),
-                        Expr::bin(BinOp::Xor, rhs.clone(), Expr::constant(0xffff_ffff)),
-                    ),
-                    _ => Expr::bin(op, lhs.clone(), rhs.clone()),
-                };
-                if instruction.s || compare {
-                    let flags = match op {
-                        BinOp::Add => Flags::sum(lhs.clone(), rhs.clone()),
-                        BinOp::Sub => Flags::difference(lhs.clone(), rhs.clone()),
-                        _ => Flags::result(low(value.clone())),
-                    };
-                    let shifted = match instruction.opcode {
-                        Opcode::LSL | Opcode::LSR | Opcode::ASR => {
-                            let style = match instruction.opcode {
-                                Opcode::LSL => ShiftStyle::LSL,
-                                Opcode::LSR => ShiftStyle::LSR,
-                                _ => ShiftStyle::ASR,
-                            };
-                            shifted_carry(lhs, style, &rhs, carry.clone())
-                                .map(|out| shift_flags(value.clone(), out, overflow.clone()))
-                        }
-                        _ => None,
-                    };
-                    self.set_flags(shifted.unwrap_or(flags));
-                }
-                if !compare {
-                    let Operand::Reg(reg) = a else {
-                        return None;
-                    };
-                    if reg.number() == 15 {
-                        return None;
-                    }
-                    let value =
-                        if frame || (reg.number() == 13 && matches!(op, BinOp::Add | BinOp::Sub)) {
-                            let left = if matches!(left, Operand::Reg(reg) if reg.number() == 13) {
-                                Expr::reg(13, 64)
-                            } else {
-                                let Some(value) = operand(left) else {
-                                    return None;
-                                };
-                                value
-                            };
-                            let Some(right) = operand(right) else {
-                                return None;
-                            };
-                            Expr::bin(op, left, right)
-                        } else {
-                            value
-                        };
-                    self.assign(reg.number(), value);
-                }
-            }
+            | Opcode::ROR => return self.arithmetic(instruction, pc, carry, overflow),
             Opcode::ADC | Opcode::SBC | Opcode::RSC => {
-                let Operand::Reg(destination) = a else {
-                    return None;
-                };
-                if destination.number() == 15 {
-                    return None;
-                }
-                let (left, right) = if c == Operand::Nothing {
-                    (a, b)
-                } else {
-                    (b, c)
-                };
-                let (Some(left), Some(right)) = (operand(left), operand(right)) else {
-                    return None;
-                };
-                let Some(carry) = self
-                    .flags
-                    .as_ref()
-                    .map_or(Test::Unknown, |flags| flags.test(Cond::Cs, Isa::Arm32))
-                    .select(Expr::constant(1), Expr::constant(0))
-                else {
-                    return None;
-                };
-                self.assign_temp(carry);
-                let carry = Expr::reg(crate::ir::EXCHANGE, 64);
-                let (left, right) = if instruction.opcode == Opcode::RSC {
-                    (low(right), low(left))
-                } else {
-                    (low(left), low(right))
-                };
-                let subtract = instruction.opcode != Opcode::ADC;
-                let value = if subtract {
-                    Expr::bin(
-                        BinOp::Sub,
-                        Expr::bin(BinOp::Sub, left.clone(), right.clone()),
-                        Expr::bin(BinOp::Xor, carry.clone(), Expr::constant(1)),
-                    )
-                } else {
-                    Expr::bin(
-                        BinOp::Add,
-                        Expr::bin(BinOp::Add, left.clone(), right.clone()),
-                        carry.clone(),
-                    )
-                };
-                if instruction.s {
-                    let addend = if subtract {
-                        Expr::bin(BinOp::Xor, right.clone(), Expr::constant(0xffff_ffff))
-                    } else {
-                        right.clone()
-                    };
-                    let out = super::flags::carry_out(&left, &addend, carry, 32);
-                    let result = low(value.clone());
-                    let zero = Test::Compare(Cond::Eq, result.clone(), Expr::constant(0))
-                        .select(Expr::constant(64), Expr::constant(0))
-                        .expect("a comparison is decided");
-                    let sign = Expr::bin(
-                        BinOp::And,
-                        Expr::bin(BinOp::Shr, result.clone(), Expr::constant(24)),
-                        Expr::constant(128),
-                    );
-                    let first = Expr::bin(
-                        BinOp::Xor,
-                        left.clone(),
-                        if subtract {
-                            right.clone()
-                        } else {
-                            result.clone()
-                        },
-                    );
-                    let second = Expr::bin(BinOp::Xor, if subtract { left } else { right }, result);
-                    let overflow = Expr::bin(
-                        BinOp::Shr,
-                        Expr::bin(BinOp::And, first, second),
-                        Expr::constant(31),
-                    );
-                    // The stored-flags representation uses an inverted carry bit.
-                    let byte = Expr::bin(
-                        BinOp::Or,
-                        Expr::bin(BinOp::Or, zero, sign),
-                        Expr::bin(BinOp::Xor, out, Expr::constant(1)),
-                    );
-                    self.set_flags(Flags::stored(byte, Some(overflow)));
-                }
-                self.assign(destination.number(), value);
+                return self.carry_arithmetic(instruction, pc, carry);
             }
             Opcode::SDIV | Opcode::UDIV => {
                 let Operand::Reg(reg) = a else {
@@ -1304,114 +1101,7 @@ impl Lifter<'_> {
                 }
             }
             Opcode::PUSH | Opcode::POP | Opcode::LDM(..) | Opcode::STM(..) => {
-                let (base, list, load, add, pre, back) = match instruction.opcode {
-                    Opcode::PUSH | Opcode::POP => {
-                        let Operand::RegList(list) = a else {
-                            return None;
-                        };
-                        (
-                            13,
-                            list,
-                            instruction.opcode == Opcode::POP,
-                            instruction.opcode == Opcode::POP,
-                            instruction.opcode == Opcode::PUSH,
-                            true,
-                        )
-                    }
-                    Opcode::LDM(add, pre, _, user) | Opcode::STM(add, pre, _, user)
-                        if instruction.thumb || !user =>
-                    {
-                        let (Operand::RegWBack(reg, back), Operand::RegList(list)) = (a, b) else {
-                            return None;
-                        };
-                        (
-                            reg.number(),
-                            list,
-                            matches!(instruction.opcode, Opcode::LDM(..)),
-                            add,
-                            if instruction.thumb
-                                && next - pc == 2
-                                && matches!(instruction.opcode, Opcode::STM(..))
-                            {
-                                false
-                            } else {
-                                pre
-                            },
-                            back,
-                        )
-                    }
-                    _ => return None,
-                };
-                if list == 0
-                    || base == 15
-                    || (list & (1 << base) != 0 && back)
-                    || (!load && list & 0x8000 != 0)
-                {
-                    return None;
-                }
-                let count = i64::from(list.count_ones()) * 4;
-                let first = if add {
-                    if pre { 4 } else { 0 }
-                } else {
-                    -count + if pre { 0 } else { 4 }
-                };
-                let mut address = if base == 13 {
-                    Expr::reg(13, 64)
-                } else {
-                    Self::read(base, pc, instruction.thumb)
-                };
-                if list & (1 << base) != 0 {
-                    self.assign_temp(address);
-                    address = Expr::reg(crate::ir::EXCHANGE, 64);
-                }
-                let mut offset = first;
-                for index in 0..16u8 {
-                    if list & (1 << index) == 0 {
-                        continue;
-                    }
-                    let addr =
-                        Expr::bin(BinOp::Add, address.clone(), Expr::constant(offset as u64));
-                    if load {
-                        if index != 15 {
-                            self.assign(
-                                index,
-                                Expr::Load {
-                                    addr: Box::new(addr),
-                                    width: 4,
-                                    signed: false,
-                                },
-                            );
-                        }
-                    } else {
-                        super::preserve_compare(&mut self.flags, Write::Memory, &mut self.stmts);
-                        self.stmts.push(Stmt::Store {
-                            addr,
-                            value: Self::read(index, pc, instruction.thumb),
-                            width: 4,
-                        });
-                    }
-                    offset += 4;
-                }
-                if back {
-                    self.assign(
-                        base,
-                        Expr::bin(
-                            BinOp::Add,
-                            address,
-                            Expr::constant(if add { count } else { -count } as u64),
-                        ),
-                    );
-                }
-                if load && list & 0x8000 != 0 {
-                    // A stack return restores the caller's pc; other computed loads need indirect control flow.
-                    if base != 13 {
-                        return None;
-                    }
-                    self.stmts.push(Stmt::Ret {
-                        value: Expr::reg(0, 32),
-                    });
-                    return Some(true);
-                }
+                return self.transfer_multiple(instruction, pc, next);
             }
             Opcode::RRX => {
                 let (Operand::Reg(dest), Some(value), Some(carry)) = (a, operand(b), carry) else {
@@ -1460,6 +1150,343 @@ impl Lifter<'_> {
                 return Some(true);
             }
             _ => return None,
+        }
+        Some(false)
+    }
+
+    fn arithmetic(
+        &mut self,
+        instruction: &Instruction,
+        pc: u64,
+        carry: Option<Expr>,
+        overflow: Option<Expr>,
+    ) -> Option<bool> {
+        let [a, b, c, _] = instruction.operands;
+        let operand = |op| Self::operand_value(op, pc, instruction.thumb, carry.as_ref());
+        let compare = matches!(
+            instruction.opcode,
+            Opcode::CMP | Opcode::CMN | Opcode::TST | Opcode::TEQ
+        );
+        let (left, right) = if compare || c == Operand::Nothing {
+            (a, b)
+        } else {
+            (b, c)
+        };
+        let Some(mut lhs) = operand(left) else {
+            return None;
+        };
+        if instruction.thumb
+            && matches!(left, Operand::Reg(reg) if reg.number() == 15)
+            && matches!(instruction.opcode, Opcode::ADD | Opcode::SUB)
+        {
+            lhs = Expr::constant(u64::from((pc as u32).wrapping_add(4) & !3));
+        }
+        let frame = matches!(a, Operand::Reg(reg) if matches!(reg.number(), 7 | 11 | 13))
+            && matches!(left, Operand::Reg(reg) if reg.number() == 13)
+            && matches!(instruction.opcode, Opcode::ADD | Opcode::SUB);
+        let lhs = if frame { Expr::reg(13, 64) } else { low(lhs) };
+        let Some(rhs) = operand(right) else {
+            return None;
+        };
+        let rhs = if matches!(
+            instruction.opcode,
+            Opcode::LSL | Opcode::LSR | Opcode::ASR | Opcode::ROR
+        ) && matches!(right, Operand::Reg(_))
+        {
+            Expr::bin(BinOp::And, rhs, Expr::constant(255))
+        } else {
+            low(rhs)
+        };
+        let op = match instruction.opcode {
+            Opcode::ADD | Opcode::CMN => BinOp::Add,
+            Opcode::SUB | Opcode::CMP | Opcode::RSB => BinOp::Sub,
+            Opcode::AND | Opcode::BIC | Opcode::TST => BinOp::And,
+            Opcode::ORR | Opcode::ORN => BinOp::Or,
+            Opcode::EOR | Opcode::TEQ => BinOp::Xor,
+            Opcode::MUL => BinOp::Mul,
+            Opcode::LSL => BinOp::Shl,
+            Opcode::LSR => BinOp::Shr,
+            Opcode::ASR => BinOp::Sar,
+            _ => BinOp::Or,
+        };
+        let (lhs, rhs) = if instruction.opcode == Opcode::RSB {
+            (rhs, lhs)
+        } else {
+            (lhs, rhs)
+        };
+        let value = match instruction.opcode {
+            Opcode::LSL | Opcode::LSR | Opcode::ASR | Opcode::ROR => {
+                let Some(value) = shift_value(
+                    lhs.clone(),
+                    match instruction.opcode {
+                        Opcode::LSL => ShiftStyle::LSL,
+                        Opcode::LSR => ShiftStyle::LSR,
+                        Opcode::ASR => ShiftStyle::ASR,
+                        _ => ShiftStyle::ROR,
+                    },
+                    rhs.clone(),
+                ) else {
+                    return None;
+                };
+                value
+            }
+            Opcode::BIC | Opcode::ORN => Expr::bin(
+                op,
+                lhs.clone(),
+                Expr::bin(BinOp::Xor, rhs.clone(), Expr::constant(0xffff_ffff)),
+            ),
+            _ => Expr::bin(op, lhs.clone(), rhs.clone()),
+        };
+        if instruction.s || compare {
+            let flags = match op {
+                BinOp::Add => Flags::sum(lhs.clone(), rhs.clone()),
+                BinOp::Sub => Flags::difference(lhs.clone(), rhs.clone()),
+                _ => Flags::result(low(value.clone())),
+            };
+            let shifted = match instruction.opcode {
+                Opcode::LSL | Opcode::LSR | Opcode::ASR => {
+                    let style = match instruction.opcode {
+                        Opcode::LSL => ShiftStyle::LSL,
+                        Opcode::LSR => ShiftStyle::LSR,
+                        _ => ShiftStyle::ASR,
+                    };
+                    shifted_carry(lhs, style, &rhs, carry.clone())
+                        .map(|out| shift_flags(value.clone(), out, overflow.clone()))
+                }
+                _ => None,
+            };
+            self.set_flags(shifted.unwrap_or(flags));
+        }
+        if !compare {
+            let Operand::Reg(reg) = a else {
+                return None;
+            };
+            if reg.number() == 15 {
+                return None;
+            }
+            let value = if frame || (reg.number() == 13 && matches!(op, BinOp::Add | BinOp::Sub)) {
+                let left = if matches!(left, Operand::Reg(reg) if reg.number() == 13) {
+                    Expr::reg(13, 64)
+                } else {
+                    let Some(value) = operand(left) else {
+                        return None;
+                    };
+                    value
+                };
+                let Some(right) = operand(right) else {
+                    return None;
+                };
+                Expr::bin(op, left, right)
+            } else {
+                value
+            };
+            self.assign(reg.number(), value);
+        }
+        Some(false)
+    }
+
+    fn carry_arithmetic(
+        &mut self,
+        instruction: &Instruction,
+        pc: u64,
+        carry: Option<Expr>,
+    ) -> Option<bool> {
+        let [a, b, c, _] = instruction.operands;
+        let operand = |op| Self::operand_value(op, pc, instruction.thumb, carry.as_ref());
+        let Operand::Reg(destination) = a else {
+            return None;
+        };
+        if destination.number() == 15 {
+            return None;
+        }
+        let (left, right) = if c == Operand::Nothing {
+            (a, b)
+        } else {
+            (b, c)
+        };
+        let (Some(left), Some(right)) = (operand(left), operand(right)) else {
+            return None;
+        };
+        let Some(carry) = self
+            .flags
+            .as_ref()
+            .map_or(Test::Unknown, |flags| flags.test(Cond::Cs, Isa::Arm32))
+            .select(Expr::constant(1), Expr::constant(0))
+        else {
+            return None;
+        };
+        self.assign_temp(carry);
+        let carry = Expr::reg(crate::ir::EXCHANGE, 64);
+        let (left, right) = if instruction.opcode == Opcode::RSC {
+            (low(right), low(left))
+        } else {
+            (low(left), low(right))
+        };
+        let subtract = instruction.opcode != Opcode::ADC;
+        let value = if subtract {
+            Expr::bin(
+                BinOp::Sub,
+                Expr::bin(BinOp::Sub, left.clone(), right.clone()),
+                Expr::bin(BinOp::Xor, carry.clone(), Expr::constant(1)),
+            )
+        } else {
+            Expr::bin(
+                BinOp::Add,
+                Expr::bin(BinOp::Add, left.clone(), right.clone()),
+                carry.clone(),
+            )
+        };
+        if instruction.s {
+            let addend = if subtract {
+                Expr::bin(BinOp::Xor, right.clone(), Expr::constant(0xffff_ffff))
+            } else {
+                right.clone()
+            };
+            let out = super::flags::carry_out(&left, &addend, carry, 32);
+            let result = low(value.clone());
+            let zero = Test::Compare(Cond::Eq, result.clone(), Expr::constant(0))
+                .select(Expr::constant(64), Expr::constant(0))
+                .expect("a comparison is decided");
+            let sign = Expr::bin(
+                BinOp::And,
+                Expr::bin(BinOp::Shr, result.clone(), Expr::constant(24)),
+                Expr::constant(128),
+            );
+            let first = Expr::bin(
+                BinOp::Xor,
+                left.clone(),
+                if subtract {
+                    right.clone()
+                } else {
+                    result.clone()
+                },
+            );
+            let second = Expr::bin(BinOp::Xor, if subtract { left } else { right }, result);
+            let overflow = Expr::bin(
+                BinOp::Shr,
+                Expr::bin(BinOp::And, first, second),
+                Expr::constant(31),
+            );
+            // The stored-flags representation uses an inverted carry bit.
+            let byte = Expr::bin(
+                BinOp::Or,
+                Expr::bin(BinOp::Or, zero, sign),
+                Expr::bin(BinOp::Xor, out, Expr::constant(1)),
+            );
+            self.set_flags(Flags::stored(byte, Some(overflow)));
+        }
+        self.assign(destination.number(), value);
+        Some(false)
+    }
+
+    fn transfer_multiple(&mut self, instruction: &Instruction, pc: u64, next: u64) -> Option<bool> {
+        let [a, b, _, _] = instruction.operands;
+        let (base, list, load, add, pre, back) = match instruction.opcode {
+            Opcode::PUSH | Opcode::POP => {
+                let Operand::RegList(list) = a else {
+                    return None;
+                };
+                (
+                    13,
+                    list,
+                    instruction.opcode == Opcode::POP,
+                    instruction.opcode == Opcode::POP,
+                    instruction.opcode == Opcode::PUSH,
+                    true,
+                )
+            }
+            Opcode::LDM(add, pre, _, user) | Opcode::STM(add, pre, _, user)
+                if instruction.thumb || !user =>
+            {
+                let (Operand::RegWBack(reg, back), Operand::RegList(list)) = (a, b) else {
+                    return None;
+                };
+                (
+                    reg.number(),
+                    list,
+                    matches!(instruction.opcode, Opcode::LDM(..)),
+                    add,
+                    if instruction.thumb
+                        && next - pc == 2
+                        && matches!(instruction.opcode, Opcode::STM(..))
+                    {
+                        false
+                    } else {
+                        pre
+                    },
+                    back,
+                )
+            }
+            _ => return None,
+        };
+        if list == 0
+            || base == 15
+            || (list & (1 << base) != 0 && back)
+            || (!load && list & 0x8000 != 0)
+        {
+            return None;
+        }
+        let count = i64::from(list.count_ones()) * 4;
+        let first = if add {
+            if pre { 4 } else { 0 }
+        } else {
+            -count + if pre { 0 } else { 4 }
+        };
+        let mut address = if base == 13 {
+            Expr::reg(13, 64)
+        } else {
+            Self::read(base, pc, instruction.thumb)
+        };
+        if list & (1 << base) != 0 {
+            self.assign_temp(address);
+            address = Expr::reg(crate::ir::EXCHANGE, 64);
+        }
+        let mut offset = first;
+        for index in 0..16u8 {
+            if list & (1 << index) == 0 {
+                continue;
+            }
+            let addr = Expr::bin(BinOp::Add, address.clone(), Expr::constant(offset as u64));
+            if load {
+                if index != 15 {
+                    self.assign(
+                        index,
+                        Expr::Load {
+                            addr: Box::new(addr),
+                            width: 4,
+                            signed: false,
+                        },
+                    );
+                }
+            } else {
+                super::preserve_compare(&mut self.flags, Write::Memory, &mut self.stmts);
+                self.stmts.push(Stmt::Store {
+                    addr,
+                    value: Self::read(index, pc, instruction.thumb),
+                    width: 4,
+                });
+            }
+            offset += 4;
+        }
+        if back {
+            self.assign(
+                base,
+                Expr::bin(
+                    BinOp::Add,
+                    address,
+                    Expr::constant(if add { count } else { -count } as u64),
+                ),
+            );
+        }
+        if load && list & 0x8000 != 0 {
+            // A stack return restores the caller's pc; other computed loads need indirect control flow.
+            if base != 13 {
+                return None;
+            }
+            self.stmts.push(Stmt::Ret {
+                value: Expr::reg(0, 32),
+            });
+            return Some(true);
         }
         Some(false)
     }

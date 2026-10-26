@@ -475,183 +475,182 @@ impl Instruction {
                 let value = super::super::reverse_bytes(Expr::reg(u16::from(source), 32), 32, 4);
                 lifter.assign(destination, value);
             }
-            Self::Float { word, operation } => {
-                let precision = if word & 0x100 == 0 {
-                    Precision::Single
-                } else {
-                    Precision::Double
-                };
-                let register = |field: u32, bit: u32, precision| {
-                    let low = ((word >> field) & 15) as u8;
-                    let high = ((word >> bit) & 1) as u8;
-                    if precision == Precision::Double {
-                        low | high << 4
-                    } else {
-                        low << 1 | high
-                    }
-                };
-                let destination = register(12, 22, precision);
-                let left = register(16, 7, precision);
-                let right = register(0, 5, precision);
-                let value = match operation {
-                    FloatOperation::Add
-                    | FloatOperation::Subtract
-                    | FloatOperation::MultiplyAdd => {
-                        let product = Expr::apply(
-                            match operation {
-                                FloatOperation::Add => Operation::FloatAdd(precision),
-                                FloatOperation::Subtract => Operation::FloatSub(precision),
-                                FloatOperation::MultiplyAdd => Operation::FloatMul(precision),
-                                _ => unreachable!("arithmetic operations are matched above"),
-                            },
-                            vec![read(left, precision), read(right, precision)],
-                        );
-                        if matches!(operation, FloatOperation::MultiplyAdd) {
-                            Expr::apply(
-                                Operation::FloatAdd(precision),
-                                vec![read(destination, precision), product],
-                            )
-                        } else {
-                            product
-                        }
-                    }
-                    FloatOperation::Convert => {
-                        let to = if precision == Precision::Single {
-                            Precision::Double
-                        } else {
-                            Precision::Single
-                        };
-                        let value = Expr::apply(
-                            Operation::FloatConvert {
-                                from: precision,
-                                to,
-                            },
-                            vec![read(right, precision)],
-                        );
-                        write(lifter, register(12, 22, to), to, value);
-                        return;
-                    }
-                    FloatOperation::ToSigned => {
-                        let source = read(right, precision);
-                        let value = Expr::apply(
-                            Operation::FloatToInt {
-                                signed: true,
-                                bits: 32,
-                                from: precision,
-                                saturating: true,
-                                rounding: Rounding::TowardZero,
-                            },
-                            vec![source.clone()],
-                        );
-                        let constant = |value: f64| {
-                            Expr::constant(match precision {
-                                Precision::Single => u64::from((value as f32).to_bits()),
-                                Precision::Double => value.to_bits(),
-                            })
-                        };
-                        let choose = |test, then, els| Expr::Select {
-                            cond: Cond::Ne,
-                            lhs: Box::new(test),
-                            rhs: Box::new(Expr::constant(0)),
-                            then: Box::new(then),
-                            els: Box::new(els),
-                        };
-                        let value = choose(
-                            Expr::apply(
-                                Operation::FloatLessEqual(precision),
-                                vec![constant(2147483648.0), source.clone()],
-                            ),
-                            Expr::constant(0x7fff_ffff),
-                            value,
-                        );
-                        let value = choose(
-                            Expr::apply(
-                                Operation::FloatLessEqual(precision),
-                                vec![source.clone(), constant(-2147483648.0)],
-                            ),
-                            Expr::constant(0x8000_0000),
-                            value,
-                        );
-                        let value = choose(
-                            Expr::apply(
-                                Operation::FloatUnordered(precision),
-                                vec![source.clone(), source],
-                            ),
-                            Expr::constant(0),
-                            value,
-                        );
-                        write(
-                            lifter,
-                            register(12, 22, Precision::Single),
-                            Precision::Single,
-                            value,
-                        );
-                        return;
-                    }
-                    FloatOperation::Move => {
-                        let single = register(16, 7, Precision::Single);
-                        let core = ((word >> 12) & 15) as u8;
-                        if word & (1 << 20) == 0 {
-                            write(
-                                lifter,
-                                single,
-                                Precision::Single,
-                                Expr::reg(u16::from(core), 32),
-                            );
-                        } else {
-                            lifter.assign(core, read(single, Precision::Single));
-                        }
-                        return;
-                    }
-                    FloatOperation::Compare => {
-                        lifter.float_comparison = true;
-                        for (index, number) in [(COMPARE_LEFT, destination), (COMPARE_RIGHT, right)]
-                        {
-                            let value = read(number, precision);
-                            let value = if precision == Precision::Single {
-                                Expr::apply(
-                                    Operation::FloatConvert {
-                                        from: precision,
-                                        to: Precision::Double,
-                                    },
-                                    vec![value],
-                                )
-                            } else {
-                                value
-                            };
-                            super::super::preserve_compare(
-                                &mut lifter.flags,
-                                super::super::Write::Register(index, Some(&value)),
-                                &mut lifter.stmts,
-                            );
-                            lifter.stmts.push(Stmt::Assign {
-                                dest: RegRef { index, width: 64 },
-                                value,
-                            });
-                        }
-                        return;
-                    }
-                    FloatOperation::ReadFlags => {
-                        if !lifter.float_comparison {
-                            lifter.stmts.push(Stmt::unsupported(
-                                "ARM VMRS without a known floating-point comparison",
-                            ));
-                            lifter.flags = None;
-                            lifter.touched = true;
-                            return;
-                        }
-                        lifter.set_flags(super::Flags::float_compare(
-                            Expr::reg(COMPARE_LEFT, 64),
-                            Expr::reg(COMPARE_RIGHT, 64),
-                            Precision::Double,
-                        ));
-                        return;
-                    }
-                };
-                write(lifter, destination, precision, value);
-            }
+            Self::Float { word, operation } => execute_float(lifter, word, operation),
         }
     }
+}
+
+fn execute_float(lifter: &mut Lifter<'_>, word: u32, operation: FloatOperation) {
+    let precision = if word & 0x100 == 0 {
+        Precision::Single
+    } else {
+        Precision::Double
+    };
+    let register = |field: u32, bit: u32, precision| {
+        let low = ((word >> field) & 15) as u8;
+        let high = ((word >> bit) & 1) as u8;
+        if precision == Precision::Double {
+            low | high << 4
+        } else {
+            low << 1 | high
+        }
+    };
+    let destination = register(12, 22, precision);
+    let left = register(16, 7, precision);
+    let right = register(0, 5, precision);
+    let value = match operation {
+        FloatOperation::Add | FloatOperation::Subtract | FloatOperation::MultiplyAdd => {
+            let product = Expr::apply(
+                match operation {
+                    FloatOperation::Add => Operation::FloatAdd(precision),
+                    FloatOperation::Subtract => Operation::FloatSub(precision),
+                    FloatOperation::MultiplyAdd => Operation::FloatMul(precision),
+                    _ => unreachable!("arithmetic operations are matched above"),
+                },
+                vec![read(left, precision), read(right, precision)],
+            );
+            if matches!(operation, FloatOperation::MultiplyAdd) {
+                Expr::apply(
+                    Operation::FloatAdd(precision),
+                    vec![read(destination, precision), product],
+                )
+            } else {
+                product
+            }
+        }
+        FloatOperation::Convert => {
+            let to = if precision == Precision::Single {
+                Precision::Double
+            } else {
+                Precision::Single
+            };
+            let value = Expr::apply(
+                Operation::FloatConvert {
+                    from: precision,
+                    to,
+                },
+                vec![read(right, precision)],
+            );
+            write(lifter, register(12, 22, to), to, value);
+            return;
+        }
+        FloatOperation::ToSigned => {
+            let source = read(right, precision);
+            let value = Expr::apply(
+                Operation::FloatToInt {
+                    signed: true,
+                    bits: 32,
+                    from: precision,
+                    saturating: true,
+                    rounding: Rounding::TowardZero,
+                },
+                vec![source.clone()],
+            );
+            let constant = |value: f64| {
+                Expr::constant(match precision {
+                    Precision::Single => u64::from((value as f32).to_bits()),
+                    Precision::Double => value.to_bits(),
+                })
+            };
+            let choose = |test, then, els| Expr::Select {
+                cond: Cond::Ne,
+                lhs: Box::new(test),
+                rhs: Box::new(Expr::constant(0)),
+                then: Box::new(then),
+                els: Box::new(els),
+            };
+            let value = choose(
+                Expr::apply(
+                    Operation::FloatLessEqual(precision),
+                    vec![constant(2147483648.0), source.clone()],
+                ),
+                Expr::constant(0x7fff_ffff),
+                value,
+            );
+            let value = choose(
+                Expr::apply(
+                    Operation::FloatLessEqual(precision),
+                    vec![source.clone(), constant(-2147483648.0)],
+                ),
+                Expr::constant(0x8000_0000),
+                value,
+            );
+            let value = choose(
+                Expr::apply(
+                    Operation::FloatUnordered(precision),
+                    vec![source.clone(), source],
+                ),
+                Expr::constant(0),
+                value,
+            );
+            write(
+                lifter,
+                register(12, 22, Precision::Single),
+                Precision::Single,
+                value,
+            );
+            return;
+        }
+        FloatOperation::Move => {
+            let single = register(16, 7, Precision::Single);
+            let core = ((word >> 12) & 15) as u8;
+            if word & (1 << 20) == 0 {
+                write(
+                    lifter,
+                    single,
+                    Precision::Single,
+                    Expr::reg(u16::from(core), 32),
+                );
+            } else {
+                lifter.assign(core, read(single, Precision::Single));
+            }
+            return;
+        }
+        FloatOperation::Compare => {
+            lifter.float_comparison = true;
+            for (index, number) in [(COMPARE_LEFT, destination), (COMPARE_RIGHT, right)] {
+                let value = read(number, precision);
+                let value = if precision == Precision::Single {
+                    Expr::apply(
+                        Operation::FloatConvert {
+                            from: precision,
+                            to: Precision::Double,
+                        },
+                        vec![value],
+                    )
+                } else {
+                    value
+                };
+                super::super::preserve_compare(
+                    &mut lifter.flags,
+                    super::super::Write::Register(index, Some(&value)),
+                    &mut lifter.stmts,
+                );
+                lifter.stmts.push(Stmt::Assign {
+                    dest: RegRef { index, width: 64 },
+                    value,
+                });
+            }
+            return;
+        }
+        FloatOperation::ReadFlags => {
+            if !lifter.float_comparison {
+                lifter.stmts.push(Stmt::unsupported(
+                    "ARM VMRS without a known floating-point comparison",
+                ));
+                lifter.flags = None;
+                lifter.touched = true;
+                return;
+            }
+            lifter.set_flags(super::Flags::float_compare(
+                Expr::reg(COMPARE_LEFT, 64),
+                Expr::reg(COMPARE_RIGHT, 64),
+                Precision::Double,
+            ));
+            return;
+        }
+    };
+    write(lifter, destination, precision, value);
 }
 
 impl fmt::Display for Instruction {

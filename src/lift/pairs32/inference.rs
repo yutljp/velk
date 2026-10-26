@@ -1,28 +1,40 @@
 //! Word pairs established by carry arithmetic and compiler-runtime arguments.
 
 use std::collections::{HashMap, HashSet};
+use std::fmt;
 use std::sync::Mutex;
 
 use crate::ir::{BinOp, CType, Cond, Expr, Stmt};
 use crate::loader::{Image, Isa};
 
-type Types = (Vec<CType>, Option<CType>);
+#[derive(Clone)]
+struct Declaration {
+    params: Vec<CType>,
+    ret: Option<CType>,
+}
+
+impl fmt::Debug for Declaration {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        // Preserve the tuple formatting exposed by Image's debug output.
+        fmt::Debug::fmt(&(&self.params, &self.ret), f)
+    }
+}
 
 #[derive(Debug, Default)]
-pub(crate) struct Cache(Mutex<HashMap<(u64, u64, u8), Option<Types>>>);
+pub(crate) struct Cache(Mutex<HashMap<(u64, u64, u8), Option<Declaration>>>);
 
 pub(super) fn types(image: &Image, address: u64) -> Option<(Vec<CType>, CType)> {
-    let Some((params, ret)) = declaration(image, address, 2) else {
+    let Some(Declaration { params, ret }) = declaration(image, address, 2) else {
         return None;
     };
     ret.map(|ret| (params, ret))
 }
 
 pub(crate) fn parameters(image: &Image, address: u64) -> Option<Vec<CType>> {
-    declaration(image, address, 2).map(|(params, _)| params)
+    declaration(image, address, 2).map(|declaration| declaration.params)
 }
 
-fn declaration(image: &Image, address: u64, depth: u8) -> Option<Types> {
+fn declaration(image: &Image, address: u64, depth: u8) -> Option<Declaration> {
     if !matches!(image.isa, Isa::I386 | Isa::Arm32) || image.go {
         return None;
     }
@@ -148,12 +160,29 @@ struct State {
     unknown_stack: bool,
 }
 
+impl State {
+    fn invalidate_call_registers(&mut self, isa: Isa) {
+        for register in if isa == Isa::I386 {
+            &[0, 1, 2][..]
+        } else {
+            &[0, 1, 2, 3, 12][..]
+        } {
+            self.registers.remove(register);
+        }
+    }
+}
+
 #[derive(Clone)]
 struct Condition {
     cond: Cond,
     lhs: Expr,
     rhs: Expr,
     taken: bool,
+}
+
+struct CallEffects {
+    partial: bool,
+    narrow: bool,
 }
 
 struct Evidence {
@@ -234,165 +263,7 @@ impl Evidence {
             Expr::Bin { op, lhs, rhs } => {
                 let left = self.eval(lhs, state);
                 let right = self.eval(rhs, state);
-                let constant = match (left.constant, right.constant) {
-                    (Some(a), Some(b)) => match op {
-                        BinOp::Add => Some(a.wrapping_add(b)),
-                        BinOp::Sub => Some(a.wrapping_sub(b)),
-                        BinOp::And => Some(a & b),
-                        BinOp::Or => Some(a | b),
-                        BinOp::Xor => Some(a ^ b),
-                        BinOp::Shl if b < 64 => Some(a << b),
-                        BinOp::Shr if b < 64 => Some(a >> b),
-                        _ => None,
-                    },
-                    _ => None,
-                };
-                let frame = match op {
-                    BinOp::Add => left
-                        .frame
-                        .and_then(|offset| {
-                            right
-                                .constant
-                                .and_then(|delta| offset.checked_add(delta as i64))
-                        })
-                        .or_else(|| {
-                            right.frame.and_then(|offset| {
-                                left.constant
-                                    .and_then(|delta| offset.checked_add(delta as i64))
-                            })
-                        }),
-                    BinOp::Sub => left.frame.and_then(|offset| {
-                        right
-                            .constant
-                            .and_then(|delta| offset.checked_sub(delta as i64))
-                    }),
-                    BinOp::And if right.constant == Some(0xffff_ffff) => left.frame,
-                    _ => None,
-                };
-                let known_bits = match op {
-                    BinOp::And => match (left.constant, right.constant) {
-                        (_, Some(mask)) => left.bits() | !mask,
-                        (Some(mask), _) => right.bits() | !mask,
-                        _ => left.bits() & right.bits(),
-                    },
-                    BinOp::Or => match (left.constant, right.constant) {
-                        (_, Some(mask)) => left.bits() | mask,
-                        (Some(mask), _) => right.bits() | mask,
-                        _ => left.bits() & right.bits(),
-                    },
-                    _ if left.known && right.known => u64::MAX,
-                    _ => 0,
-                };
-                let carry = matches!(op, BinOp::Add | BinOp::Sub) && right.carry;
-                if carry {
-                    self.pair(right, left);
-                }
-                let mut products = 0;
-                let mut high_products = 0;
-                let mut multiplication = false;
-                if *op == BinOp::Mul
-                    && let (Some(a), Some(b)) = (left.word, right.word)
-                    && a < 8
-                    && b < 8
-                {
-                    products = 1 << (a.min(b) * 8 + a.max(b));
-                } else if matches!(op, BinOp::Add | BinOp::Or | BinOp::And | BinOp::Shr) {
-                    products = left.products | right.products;
-                    high_products = left.high_products | right.high_products;
-                    if *op == BinOp::Shr && right.constant == Some(32) {
-                        high_products |= left.products;
-                    }
-                    if *op == BinOp::Add {
-                        for a in 0..8u32 {
-                            for b in a..8 {
-                                if high_products & (1 << (a * 8 + b)) == 0 {
-                                    continue;
-                                }
-                                for (low, other) in [(a, b), (b, a)] {
-                                    if low < 7
-                                        && products
-                                            & (1 << ((low + 1).min(other) * 8
-                                                + (low + 1).max(other)))
-                                            != 0
-                                    {
-                                        self.pair(Value::input(low), Value::input(low + 1));
-                                        multiplication = true;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-                let shifted_word = left.word.map_or(0, |word| 1 << word);
-                let (left_shifts, right_shifts, count_inputs, shift) = match op {
-                    BinOp::Shl => (shifted_word, 0, right.inputs, right.constant),
-                    BinOp::Shr | BinOp::Sar => (0, shifted_word, right.inputs, right.constant),
-                    BinOp::Or => (
-                        left.left_shifts | right.left_shifts,
-                        left.right_shifts | right.right_shifts,
-                        left.count_inputs | right.count_inputs,
-                        None,
-                    ),
-                    BinOp::And if right.constant == Some(0xffff_ffff) => (
-                        left.left_shifts,
-                        left.right_shifts,
-                        left.count_inputs,
-                        left.shift,
-                    ),
-                    _ => (0, 0, 0, None),
-                };
-                let funnel = *op == BinOp::Or
-                    && ((left.count_inputs != 0 && left.count_inputs == right.count_inputs)
-                        || left
-                            .shift
-                            .zip(right.shift)
-                            .is_some_and(|(a, b)| a.checked_add(b) == Some(32)));
-                if funnel {
-                    let pairs =
-                        (left_shifts & (right_shifts >> 1)) | (right_shifts & (left_shifts >> 1));
-                    for word in 0..32 {
-                        if pairs & (1 << word) != 0 {
-                            self.pair(Value::input(word), Value::input(word + 1));
-                        }
-                    }
-                }
-                Value {
-                    inputs: left.inputs | right.inputs,
-                    wide_words: None,
-                    products,
-                    high_products,
-                    left_shifts,
-                    right_shifts,
-                    count_inputs,
-                    shift,
-                    word: if *op == BinOp::And && right.constant == Some(0xffff_ffff) {
-                        left.word
-                    } else {
-                        None
-                    },
-                    constant,
-                    frame,
-                    known: known_bits == u64::MAX,
-                    known_bits,
-                    carry: left.carry
-                        && right.constant.is_some()
-                        && matches!(op, BinOp::And | BinOp::Xor),
-                    boolean: constant.is_some_and(|value| value <= 1)
-                        || (*op == BinOp::And
-                            && (left.constant == Some(1) || right.constant == Some(1)))
-                        || (matches!(op, BinOp::And | BinOp::Or | BinOp::Xor)
-                            && left.boolean
-                            && right.boolean),
-                    narrow: left.narrow
-                        && right.constant.is_some()
-                        && matches!(op, BinOp::And | BinOp::Xor | BinOp::Or),
-                    high: carry
-                        || (*op == BinOp::Add && (left.high || right.high))
-                        || multiplication
-                        || funnel
-                        || (right.constant.is_some() && left.high)
-                        || (left.constant.is_some() && right.high),
-                }
+                self.binary(op, left, right)
             }
             Expr::Select {
                 lhs,
@@ -417,9 +288,311 @@ impl Evidence {
         self.reads |= value.inputs;
         value
     }
+
+    fn call(
+        &mut self,
+        image: &Image,
+        stmt: &Stmt,
+        state: &mut State,
+        depth: u8,
+    ) -> Option<CallEffects> {
+        let Stmt::Call {
+            target,
+            kind,
+            convention,
+            ..
+        } = stmt
+        else {
+            return None;
+        };
+        let declared = target
+            .and_then(|target| super::declared_types(image, target))
+            .map(|(params, ret)| Declaration {
+                params,
+                ret: Some(ret),
+            })
+            .or_else(|| {
+                if depth == 0 {
+                    None
+                } else {
+                    target.and_then(|target| declaration(image, target, depth - 1))
+                }
+            });
+        let Some(Declaration { params, ret }) = declared else {
+            state.invalidate_call_registers(image.isa);
+            return Some(CallEffects {
+                partial: true,
+                narrow: false,
+            });
+        };
+        let Some(locations) = super::locations(image.isa, &params) else {
+            return None;
+        };
+        let narrow = ret
+            .as_ref()
+            .is_some_and(|ret| ret.integer().is_some() && !super::wide(ret))
+            && params.iter().all(|ty| ty.integer().is_some());
+        let mut inputs = 0;
+        for (location, pair) in locations {
+            let (low, high) = match location {
+                super::Location::Register(register) => (
+                    state.registers.get(&register).copied().unwrap_or_default(),
+                    state
+                        .registers
+                        .get(&(register + 1))
+                        .copied()
+                        .unwrap_or_default(),
+                ),
+                super::Location::Stack(offset) => {
+                    let Some(offset) = kind.stack_offset(image.isa, *convention, offset) else {
+                        return None;
+                    };
+                    (
+                        self.eval(&super::stack_word(image.isa, offset), state),
+                        self.eval(
+                            &super::stack_word(
+                                image.isa,
+                                match offset.checked_add(4) {
+                                    Some(high) => high,
+                                    None => return None,
+                                },
+                            ),
+                            state,
+                        ),
+                    )
+                }
+            };
+            inputs |= low.inputs;
+            if pair {
+                let proven = self.pair(low, high);
+                self.parameter_pairs |= proven;
+                inputs |= high.inputs;
+            }
+        }
+        self.used |= inputs;
+        state.invalidate_call_registers(image.isa);
+        state.registers.insert(
+            0,
+            Value {
+                inputs,
+                known: true,
+                ..Value::default()
+            },
+        );
+        if ret.as_ref().is_some_and(super::wide) {
+            state.registers.insert(
+                if image.isa == Isa::I386 { 2 } else { 1 },
+                Value {
+                    inputs,
+                    known: true,
+                    high: true,
+                    ..Value::default()
+                },
+            );
+        }
+        if ret.as_ref().is_some_and(|ret| !super::wide(ret))
+            && let Some(value) = state.registers.get_mut(&0)
+        {
+            value.narrow = true;
+        }
+        if runtime_result(image, *target) == Some(RuntimeResult::WordRemainder) {
+            state.registers.insert(
+                1,
+                Value {
+                    inputs,
+                    known: true,
+                    narrow: true,
+                    ..Value::default()
+                },
+            );
+        }
+        if ret.is_none() {
+            state.registers.remove(&0);
+        }
+        if runtime_result(image, *target) == Some(RuntimeResult::WideRemainder) {
+            state.registers.insert(
+                2,
+                Value {
+                    inputs,
+                    known: true,
+                    ..Value::default()
+                },
+            );
+            state.registers.insert(
+                3,
+                Value {
+                    inputs,
+                    known: true,
+                    high: true,
+                    ..Value::default()
+                },
+            );
+        }
+        Some(CallEffects {
+            partial: ret.is_none(),
+            narrow,
+        })
+    }
+
+    fn binary(&mut self, op: &BinOp, left: Value, right: Value) -> Value {
+        let constant = match (left.constant, right.constant) {
+            (Some(a), Some(b)) => match op {
+                BinOp::Add => Some(a.wrapping_add(b)),
+                BinOp::Sub => Some(a.wrapping_sub(b)),
+                BinOp::And => Some(a & b),
+                BinOp::Or => Some(a | b),
+                BinOp::Xor => Some(a ^ b),
+                BinOp::Shl if b < 64 => Some(a << b),
+                BinOp::Shr if b < 64 => Some(a >> b),
+                _ => None,
+            },
+            _ => None,
+        };
+        let frame = match op {
+            BinOp::Add => left
+                .frame
+                .and_then(|offset| {
+                    right
+                        .constant
+                        .and_then(|delta| offset.checked_add(delta as i64))
+                })
+                .or_else(|| {
+                    right.frame.and_then(|offset| {
+                        left.constant
+                            .and_then(|delta| offset.checked_add(delta as i64))
+                    })
+                }),
+            BinOp::Sub => left.frame.and_then(|offset| {
+                right
+                    .constant
+                    .and_then(|delta| offset.checked_sub(delta as i64))
+            }),
+            BinOp::And if right.constant == Some(0xffff_ffff) => left.frame,
+            _ => None,
+        };
+        let known_bits = match op {
+            BinOp::And => match (left.constant, right.constant) {
+                (_, Some(mask)) => left.bits() | !mask,
+                (Some(mask), _) => right.bits() | !mask,
+                _ => left.bits() & right.bits(),
+            },
+            BinOp::Or => match (left.constant, right.constant) {
+                (_, Some(mask)) => left.bits() | mask,
+                (Some(mask), _) => right.bits() | mask,
+                _ => left.bits() & right.bits(),
+            },
+            _ if left.known && right.known => u64::MAX,
+            _ => 0,
+        };
+        let carry = matches!(op, BinOp::Add | BinOp::Sub) && right.carry;
+        if carry {
+            self.pair(right, left);
+        }
+        let mut products = 0;
+        let mut high_products = 0;
+        let mut multiplication = false;
+        if *op == BinOp::Mul
+            && let (Some(a), Some(b)) = (left.word, right.word)
+            && a < 8
+            && b < 8
+        {
+            products = 1 << (a.min(b) * 8 + a.max(b));
+        } else if matches!(op, BinOp::Add | BinOp::Or | BinOp::And | BinOp::Shr) {
+            products = left.products | right.products;
+            high_products = left.high_products | right.high_products;
+            if *op == BinOp::Shr && right.constant == Some(32) {
+                high_products |= left.products;
+            }
+            if *op == BinOp::Add {
+                for a in 0..8u32 {
+                    for b in a..8 {
+                        if high_products & (1 << (a * 8 + b)) == 0 {
+                            continue;
+                        }
+                        for (low, other) in [(a, b), (b, a)] {
+                            if low < 7
+                                && products
+                                    & (1 << ((low + 1).min(other) * 8 + (low + 1).max(other)))
+                                    != 0
+                            {
+                                self.pair(Value::input(low), Value::input(low + 1));
+                                multiplication = true;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        let shifted_word = left.word.map_or(0, |word| 1 << word);
+        let (left_shifts, right_shifts, count_inputs, shift) = match op {
+            BinOp::Shl => (shifted_word, 0, right.inputs, right.constant),
+            BinOp::Shr | BinOp::Sar => (0, shifted_word, right.inputs, right.constant),
+            BinOp::Or => (
+                left.left_shifts | right.left_shifts,
+                left.right_shifts | right.right_shifts,
+                left.count_inputs | right.count_inputs,
+                None,
+            ),
+            BinOp::And if right.constant == Some(0xffff_ffff) => (
+                left.left_shifts,
+                left.right_shifts,
+                left.count_inputs,
+                left.shift,
+            ),
+            _ => (0, 0, 0, None),
+        };
+        let funnel = *op == BinOp::Or
+            && ((left.count_inputs != 0 && left.count_inputs == right.count_inputs)
+                || left
+                    .shift
+                    .zip(right.shift)
+                    .is_some_and(|(a, b)| a.checked_add(b) == Some(32)));
+        if funnel {
+            let pairs = (left_shifts & (right_shifts >> 1)) | (right_shifts & (left_shifts >> 1));
+            for word in 0..32 {
+                if pairs & (1 << word) != 0 {
+                    self.pair(Value::input(word), Value::input(word + 1));
+                }
+            }
+        }
+        Value {
+            inputs: left.inputs | right.inputs,
+            wide_words: None,
+            products,
+            high_products,
+            left_shifts,
+            right_shifts,
+            count_inputs,
+            shift,
+            word: if *op == BinOp::And && right.constant == Some(0xffff_ffff) {
+                left.word
+            } else {
+                None
+            },
+            constant,
+            frame,
+            known: known_bits == u64::MAX,
+            known_bits,
+            carry: left.carry && right.constant.is_some() && matches!(op, BinOp::And | BinOp::Xor),
+            boolean: constant.is_some_and(|value| value <= 1)
+                || (*op == BinOp::And && (left.constant == Some(1) || right.constant == Some(1)))
+                || (matches!(op, BinOp::And | BinOp::Or | BinOp::Xor)
+                    && left.boolean
+                    && right.boolean),
+            narrow: left.narrow
+                && right.constant.is_some()
+                && matches!(op, BinOp::And | BinOp::Xor | BinOp::Or),
+            high: carry
+                || (*op == BinOp::Add && (left.high || right.high))
+                || multiplication
+                || funnel
+                || (right.constant.is_some() && left.high)
+                || (left.constant.is_some() && right.high),
+        }
+    }
 }
 
-fn infer(image: &Image, address: u64, size: u64, depth: u8) -> Option<Types> {
+fn infer(image: &Image, address: u64, size: u64, depth: u8) -> Option<Declaration> {
     let Ok(blocks) = crate::lift::lift_unpaired(image, address, size, &HashSet::new(), &|_| {
         crate::loader::Summary::default()
     }) else {
@@ -589,161 +762,14 @@ fn infer(image: &Image, address: u64, size: u64, depth: u8) -> Option<Types> {
                         state.stack.insert(slot, stored);
                     }
                 }
-                Stmt::Call {
-                    target,
-                    kind,
-                    convention,
-                    ..
-                } => {
+                Stmt::Call { .. } => {
                     conditions.clear();
                     state.expressions.clear();
-                    let declared = target
-                        .and_then(|target| super::declared_types(image, target))
-                        .map(|(params, ret)| (params, Some(ret)))
-                        .or_else(|| {
-                            if depth == 0 {
-                                None
-                            } else {
-                                target.and_then(|target| declaration(image, target, depth - 1))
-                            }
-                        });
-                    let Some((params, ret)) = declared else {
-                        partial = true;
-                        for register in if image.isa == Isa::I386 {
-                            &[0, 1, 2][..]
-                        } else {
-                            &[0, 1, 2, 3, 12][..]
-                        } {
-                            state.registers.remove(register);
-                        }
-                        continue;
-                    };
-                    let Some(locations) = super::locations(image.isa, &params) else {
+                    let Some(effects) = evidence.call(image, stmt, &mut state, depth) else {
                         return None;
                     };
-                    narrow_call |= ret
-                        .as_ref()
-                        .is_some_and(|ret| ret.integer().is_some() && !super::wide(ret))
-                        && params.iter().all(|ty| ty.integer().is_some());
-                    let mut inputs = 0;
-                    for (location, pair) in locations {
-                        let (low, high) = match location {
-                            super::Location::Register(register) => (
-                                state.registers.get(&register).copied().unwrap_or_default(),
-                                state
-                                    .registers
-                                    .get(&(register + 1))
-                                    .copied()
-                                    .unwrap_or_default(),
-                            ),
-                            super::Location::Stack(offset) => {
-                                let Some(offset) =
-                                    kind.stack_offset(image.isa, *convention, offset)
-                                else {
-                                    return None;
-                                };
-                                let load = |offset| Expr::Load {
-                                    addr: Box::new(Expr::bin(
-                                        BinOp::Add,
-                                        Expr::reg(crate::arch::stack_pointer(image.isa), 64),
-                                        Expr::constant(offset as u64),
-                                    )),
-                                    width: 4,
-                                    signed: false,
-                                };
-                                (
-                                    evidence.eval(&load(offset), &state),
-                                    evidence.eval(
-                                        &load(match offset.checked_add(4) {
-                                            Some(high) => high,
-                                            None => return None,
-                                        }),
-                                        &state,
-                                    ),
-                                )
-                            }
-                        };
-                        inputs |= low.inputs;
-                        if pair {
-                            let proven = evidence.pair(low, high);
-                            evidence.parameter_pairs |= proven;
-                            inputs |= high.inputs;
-                        }
-                    }
-                    evidence.used |= inputs;
-                    for register in if image.isa == Isa::I386 {
-                        &[0, 1, 2][..]
-                    } else {
-                        &[0, 1, 2, 3, 12][..]
-                    } {
-                        state.registers.remove(register);
-                    }
-                    state.registers.insert(
-                        0,
-                        Value {
-                            inputs,
-                            known: true,
-                            ..Value::default()
-                        },
-                    );
-                    if ret.as_ref().is_some_and(super::wide) {
-                        state.registers.insert(
-                            if image.isa == Isa::I386 { 2 } else { 1 },
-                            Value {
-                                inputs,
-                                known: true,
-                                high: true,
-                                ..Value::default()
-                            },
-                        );
-                    }
-                    if ret.as_ref().is_some_and(|ret| !super::wide(ret))
-                        && let Some(value) = state.registers.get_mut(&0)
-                    {
-                        value.narrow = true;
-                    }
-                    if target
-                        .and_then(|target| image.functions.get(&target))
-                        .and_then(|function| function.name.as_deref())
-                        .is_some_and(|name| matches!(name, "__aeabi_idivmod" | "__aeabi_uidivmod"))
-                    {
-                        state.registers.insert(
-                            1,
-                            Value {
-                                inputs,
-                                known: true,
-                                narrow: true,
-                                ..Value::default()
-                            },
-                        );
-                    }
-                    if ret.is_none() {
-                        state.registers.remove(&0);
-                        partial = true;
-                    }
-                    if target
-                        .and_then(|target| image.functions.get(&target))
-                        .and_then(|function| function.name.as_deref())
-                        .is_some_and(|name| matches!(name, "__aeabi_ldivmod" | "__aeabi_uldivmod"))
-                    {
-                        state.registers.insert(
-                            2,
-                            Value {
-                                inputs,
-                                known: true,
-                                ..Value::default()
-                            },
-                        );
-                        state.registers.insert(
-                            3,
-                            Value {
-                                inputs,
-                                known: true,
-                                high: true,
-                                ..Value::default()
-                            },
-                        );
-                    }
+                    partial |= effects.partial;
+                    narrow_call |= effects.narrow;
                 }
                 Stmt::Ret { .. } => {
                     evidence.used |= state.registers.get(&0).copied().unwrap_or_default().inputs;
@@ -882,5 +908,22 @@ fn infer(image: &Image, address: u64, size: u64, depth: u8) -> Option<Types> {
         params.push(if wide { CType::U64 } else { CType::U32 });
         index += if wide { 2 } else { 1 };
     }
-    Some((params, ret))
+    Some(Declaration { params, ret })
+}
+
+#[derive(PartialEq)]
+enum RuntimeResult {
+    WordRemainder,
+    WideRemainder,
+}
+
+fn runtime_result(image: &Image, target: Option<u64>) -> Option<RuntimeResult> {
+    let name = target
+        .and_then(|target| image.functions.get(&target))
+        .and_then(|function| function.name.as_deref());
+    match name {
+        Some("__aeabi_idivmod" | "__aeabi_uidivmod") => Some(RuntimeResult::WordRemainder),
+        Some("__aeabi_ldivmod" | "__aeabi_uldivmod") => Some(RuntimeResult::WideRemainder),
+        _ => None,
+    }
 }

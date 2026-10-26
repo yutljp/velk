@@ -561,12 +561,12 @@ fn known_address(expr: &Expr, addresses: &HashMap<u16, u64>) -> Option<u64> {
     }
 }
 
-/// `value`, `width` bits wide, rotated by `amount`, which wraps at the width,
-/// towards the low bits or the high ones. Bits above the width are left for
-/// the write to clear.
 #[cfg(test)]
 mod smt_tests;
 
+/// `value`, `width` bits wide, rotated by `amount`, which wraps at the width,
+/// towards the low bits or the high ones. Bits above the width are left for
+/// the write to clear.
 fn rotate(value: Expr, amount: Expr, width: u8, right: bool) -> Expr {
     use crate::ir::BinOp;
     let bits = u64::from(width);
