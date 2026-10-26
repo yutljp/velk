@@ -32,18 +32,7 @@ fn word(bytes: &[u8], offset: usize) -> u32 {
     )
 }
 
-fn read_bytes(image: &Image, address: u64, size: u64) -> Option<&[u8]> {
-    let Some(section) = image.section_at(address) else {
-        return None;
-    };
-    if address
-        .checked_add(size)
-        .is_none_or(|end| end > section.vaddr.saturating_add(section.size))
-    {
-        return None;
-    }
-    image.read_vaddr(address, size)
-}
+use super::image_reads::bounded_bytes as read_bytes;
 
 fn code(image: &Image, address: u64) -> bool {
     image.section_at(address).is_some_and(|s| s.executable)

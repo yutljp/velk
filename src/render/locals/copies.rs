@@ -40,8 +40,8 @@ fn rewrite(nodes: &mut Vec<Node>, renamed: &HashMap<u16, u16>) {
                 els,
                 ..
             } => {
-                expression(lhs, renamed);
-                expression(rhs, renamed);
+                crate::ir::visit::rename_registers(lhs, renamed);
+                crate::ir::visit::rename_registers(rhs, renamed);
                 rewrite(then, renamed);
                 rewrite(els, renamed);
             }
@@ -52,14 +52,14 @@ fn rewrite(nodes: &mut Vec<Node>, renamed: &HashMap<u16, u16>) {
                 body,
                 ..
             } => {
-                expression(lhs, renamed);
-                expression(rhs, renamed);
+                crate::ir::visit::rename_registers(lhs, renamed);
+                crate::ir::visit::rename_registers(rhs, renamed);
                 rewrite(prefix, renamed);
                 rewrite(body, renamed);
             }
             Node::DoWhile { lhs, rhs, body, .. } => {
-                expression(lhs, renamed);
-                expression(rhs, renamed);
+                crate::ir::visit::rename_registers(lhs, renamed);
+                crate::ir::visit::rename_registers(rhs, renamed);
                 rewrite(body, renamed);
             }
             Node::Forever { body } => rewrite(body, renamed),
@@ -68,7 +68,7 @@ fn rewrite(nodes: &mut Vec<Node>, renamed: &HashMap<u16, u16>) {
                 arms,
                 default,
             } => {
-                expression(index, renamed);
+                crate::ir::visit::rename_registers(index, renamed);
                 for (_, body) in arms {
                     rewrite(body, renamed);
                 }
@@ -78,16 +78,5 @@ fn rewrite(nodes: &mut Vec<Node>, renamed: &HashMap<u16, u16>) {
             }
             _ => {}
         }
-    }
-}
-
-fn expression(value: &mut Expr, renamed: &HashMap<u16, u16>) {
-    if let Expr::Reg { index, .. } = value
-        && let Some(source) = renamed.get(index)
-    {
-        *index = *source;
-    }
-    for child in crate::ir::visit::children_mut(value) {
-        expression(child, renamed);
     }
 }

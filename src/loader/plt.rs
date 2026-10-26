@@ -130,13 +130,6 @@ fn arm_slots(bytes: &[u8], base: u64) -> Vec<(u64, u64)> {
         let [first, second, third] = instructions else {
             continue;
         };
-        // add ip, pc, #imm; add ip, ip, #imm; ldr pc, [ip, #imm]!
-        if first & 0xffff_f000 != 0xe28f_c000
-            || second & 0xffff_f000 != 0xe28c_c000
-            || third & 0xffff_f000 != 0xe5bc_f000
-        {
-            continue;
-        }
         let Some(pc) = (index as u64)
             .checked_mul(4)
             .and_then(|offset| base.checked_add(offset))
@@ -144,11 +137,9 @@ fn arm_slots(bytes: &[u8], base: u64) -> Vec<(u64, u64)> {
         else {
             continue;
         };
-        let immediate = |word: u32| (word & 255).rotate_right(((word >> 8) & 15) * 2);
-        let slot = (pc as u32 + 8)
-            .wrapping_add(immediate(*first))
-            .wrapping_add(immediate(*second))
-            .wrapping_add(third & 4095);
+        let Some(slot) = super::arm_linkage::slot([*first, *second, *third], pc as u32) else {
+            continue;
+        };
         slots.push((pc, u64::from(slot)));
     }
     slots
@@ -344,5 +335,26 @@ mod tests {
             .flat_map(|word| word.to_le_bytes())
             .collect();
         assert_eq!(aarch64_slots(&code, 0x2000), vec![(0x2000, 0x3018)]);
+        let words = [0xe28f_c600u32, 0xe28c_ca01, 0xe5bc_f024];
+        let code: Vec<u8> = words.iter().flat_map(|word| word.to_le_bytes()).collect();
+        for base in [0x1000, u64::from(u32::MAX) - 11] {
+            let expected = (base as u32)
+                .wrapping_add(8)
+                .wrapping_add(0x1000)
+                .wrapping_add(0x24);
+            assert_eq!(
+                super::arm_slots(&code, base),
+                vec![(base, u64::from(expected))]
+            );
+            assert_eq!(super::arm_slots(&code[..11], base), Vec::new());
+        }
+        assert!(super::arm_slots(&code, u64::from(u32::MAX) - 7).is_empty());
+        assert!(super::arm_slots(&code, u64::MAX).is_empty());
+        for index in 0..3 {
+            let mut invalid = words;
+            invalid[index] ^= 1 << 16;
+            let code: Vec<u8> = invalid.iter().flat_map(|word| word.to_le_bytes()).collect();
+            assert!(super::arm_slots(&code, 0x1000).is_empty());
+        }
     }
 }

@@ -147,34 +147,39 @@ pub(crate) fn evaluate(expr: &Expr, register: &dyn Fn(u16) -> Option<u64>) -> Op
         Expr::Bin { op, lhs, rhs } => {
             let (a, b) = (evaluate(lhs, register)?, evaluate(rhs, register)?);
             let bits = operand_width(lhs, rhs);
-            match op {
-                BinOp::Add => a.wrapping_add(b),
-                BinOp::Sub => a.wrapping_sub(b),
-                BinOp::Mul => a.wrapping_mul(b),
-                BinOp::MulHigh => ((u128::from(a) * u128::from(b)) >> 64) as u64,
-                BinOp::MulHighS => ((i128::from(a as i64) * i128::from(b as i64)) >> 64) as u64,
-                BinOp::And => a & b,
-                BinOp::Or => a | b,
-                BinOp::Xor => a ^ b,
-                BinOp::Shl => a.wrapping_shl(b as u32),
-                BinOp::Shr => a.wrapping_shr(b as u32),
-                BinOp::Sar => (sign_extend(a, bits).wrapping_shr(b as u32) as u64) & mask(bits),
-                BinOp::DivU | BinOp::ModU if b == 0 => return None,
-                BinOp::DivU => a / b,
-                BinOp::ModU => a % b,
-                BinOp::DivS | BinOp::ModS => {
-                    let (sa, sb) = (sign_extend(a, bits), sign_extend(b, bits));
-                    if sb == 0 {
-                        return None;
-                    }
-                    let result = if *op == BinOp::DivS {
-                        sa.wrapping_div(sb)
-                    } else {
-                        sa.wrapping_rem(sb)
-                    };
-                    result as u64 & mask(bits)
-                }
+            return scalar(*op, a, b, bits);
+        }
+    })
+}
+
+/// Evaluates a scalar binary operation, or returns None for division by zero.
+pub(crate) fn scalar(op: BinOp, a: u64, b: u64, bits: u32) -> Option<u64> {
+    Some(match op {
+        BinOp::Add => a.wrapping_add(b),
+        BinOp::Sub => a.wrapping_sub(b),
+        BinOp::Mul => a.wrapping_mul(b),
+        BinOp::MulHigh => ((u128::from(a) * u128::from(b)) >> 64) as u64,
+        BinOp::MulHighS => ((i128::from(a as i64) * i128::from(b as i64)) >> 64) as u64,
+        BinOp::And => a & b,
+        BinOp::Or => a | b,
+        BinOp::Xor => a ^ b,
+        BinOp::Shl => a.wrapping_shl(b as u32),
+        BinOp::Shr => a.wrapping_shr(b as u32),
+        BinOp::Sar => (sign_extend(a, bits).wrapping_shr(b as u32) as u64) & mask(bits),
+        BinOp::DivU | BinOp::ModU if b == 0 => return None,
+        BinOp::DivU => a / b,
+        BinOp::ModU => a % b,
+        BinOp::DivS | BinOp::ModS => {
+            let (sa, sb) = (sign_extend(a, bits), sign_extend(b, bits));
+            if sb == 0 {
+                return None;
             }
+            let result = if op == BinOp::DivS {
+                sa.wrapping_div(sb)
+            } else {
+                sa.wrapping_rem(sb)
+            };
+            result as u64 & mask(bits)
         }
     })
 }

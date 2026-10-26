@@ -7,6 +7,15 @@ use object::Object;
 use super::{Base, Class, VirtualBase, Vtable};
 use crate::loader::Image;
 
+const PRIMITIVES: [(&str, &str); 6] = [
+    (".H", "int"),
+    (".I", "unsigned int"),
+    (".J", "long"),
+    (".N", "double"),
+    (".M", "float"),
+    (".D", "char"),
+];
+
 pub(crate) fn type_name(image: &Image, address: u64) -> Option<String> {
     let Some(at) = address.checked_add(2 * u64::from(crate::arch::pointer_bytes(image.isa))) else {
         return None;
@@ -14,17 +23,8 @@ pub(crate) fn type_name(image: &Image, address: u64) -> Option<String> {
     let Some(name) = super::text(image, at) else {
         return None;
     };
-    let simple = match name {
-        ".H" => Some("int"),
-        ".I" => Some("unsigned int"),
-        ".J" => Some("long"),
-        ".N" => Some("double"),
-        ".M" => Some("float"),
-        ".D" => Some("char"),
-        _ => None,
-    };
-    if let Some(name) = simple {
-        return Some(name.to_owned());
+    if let Some((_, name)) = PRIMITIVES.iter().find(|(tag, _)| *tag == name) {
+        return Some((*name).to_owned());
     }
     let Some(name) = name
         .strip_prefix(".?AV")
@@ -68,13 +68,13 @@ pub(super) fn read(image: &Image) -> Vec<Class> {
             let mut value = [0; 8];
             value[..chunk.len()].copy_from_slice(chunk);
             let locator = u64::from_le_bytes(value);
-            if super::word(image, locator, 4) != Some(u64::from(width == 8)) {
+            if crate::loader::image_reads::word(image, locator, 4) != Some(u64::from(width == 8)) {
                 continue;
             }
             let field = |offset| {
                 locator
                     .checked_add(offset)
-                    .and_then(|at| super::word(image, at, 4))
+                    .and_then(|at| crate::loader::image_reads::word(image, at, 4))
             };
             let rva = |offset| field(offset).and_then(|rva| base.checked_add(rva));
             let (Some(offset), Some(displacement), Some(info), Some(hierarchy)) =
@@ -132,14 +132,9 @@ pub(super) fn read(image: &Image) -> Vec<Class> {
             let Some(info) = section.vaddr.checked_add(index as u64 * width) else {
                 break;
             };
-            let Some(name) = type_name(image, info).filter(|name| {
-                name != "int"
-                    && name != "double"
-                    && name != "float"
-                    && name != "char"
-                    && name != "long"
-                    && name != "unsigned int"
-            }) else {
+            let Some(name) = type_name(image, info)
+                .filter(|name| !PRIMITIVES.iter().any(|(_, primitive)| name == primitive))
+            else {
                 continue;
             };
             classes.entry(info).or_insert_with(|| Class {
@@ -157,7 +152,7 @@ fn bases(image: &Image, base: u64, hierarchy: u64, own: u64) -> Option<Vec<Base>
     let field = |offset| {
         hierarchy
             .checked_add(offset)
-            .and_then(|at| super::word(image, at, 4))
+            .and_then(|at| crate::loader::image_reads::word(image, at, 4))
     };
     let (Some(0), Some(count), Some(array)) = (
         field(0),
@@ -174,7 +169,7 @@ fn bases(image: &Image, base: u64, hierarchy: u64, own: u64) -> Option<Vec<Base>
     for index in 0..count {
         let Some(descriptor) = array
             .checked_add(index * 4)
-            .and_then(|at| super::word(image, at, 4))
+            .and_then(|at| crate::loader::image_reads::word(image, at, 4))
             .and_then(|rva| base.checked_add(rva))
         else {
             return None;
@@ -182,7 +177,7 @@ fn bases(image: &Image, base: u64, hierarchy: u64, own: u64) -> Option<Vec<Base>
         let field = |offset| {
             descriptor
                 .checked_add(offset)
-                .and_then(|at| super::word(image, at, 4))
+                .and_then(|at| crate::loader::image_reads::word(image, at, 4))
         };
         let (
             Some(info),

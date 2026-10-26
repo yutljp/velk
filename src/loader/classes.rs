@@ -104,26 +104,7 @@ impl Image {
     }
 }
 
-pub(super) fn word(image: &Image, address: u64, size: u64) -> Option<u64> {
-    if size > 8 {
-        return None;
-    }
-    let Some(section) = image.section_at(address) else {
-        return None;
-    };
-    let Some(end) = address.checked_add(size) else {
-        return None;
-    };
-    if end > section.vaddr.saturating_add(section.size) {
-        return None;
-    }
-    let Some(bytes) = image.read_vaddr(address, size) else {
-        return None;
-    };
-    let mut value = [0; 8];
-    value[..bytes.len()].copy_from_slice(bytes);
-    Some(u64::from_le_bytes(value))
-}
+pub(super) use super::image_reads::word;
 
 pub(super) fn text(image: &Image, address: u64) -> Option<&str> {
     let Some(section) = image.section_at(address) else {

@@ -1,3 +1,4 @@
+pub(crate) mod arm_linkage;
 mod bytes;
 pub mod classes;
 mod codeview;
@@ -5,6 +6,7 @@ mod discover;
 pub mod dwarf;
 pub mod go;
 mod i386;
+pub(crate) mod image_reads;
 mod macho;
 mod objc;
 mod plt;
@@ -16,21 +18,10 @@ mod symbols;
 mod universal;
 pub(crate) mod unwind;
 
+use image_reads::read_range;
+
 fn limited_exports<T>(exports: impl Iterator<Item = T>) -> impl Iterator<Item = T> {
     exports.take(MAX_EXPORTS)
-}
-
-fn read_range(bytes: &[u8], slice_offset: u64, offset: u64, len: u64) -> Option<&[u8]> {
-    let Some(offset) = offset.checked_sub(slice_offset) else {
-        return None;
-    };
-    let Some(end) = offset.checked_add(len) else {
-        return None;
-    };
-    let (Ok(start), Ok(end)) = (usize::try_from(offset), usize::try_from(end)) else {
-        return None;
-    };
-    bytes.get(start..end)
 }
 
 /// Upper bound on export entries read from one file; a cyclic or self-sharing export trie

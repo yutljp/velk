@@ -107,19 +107,7 @@ pub(crate) fn bytes(image: &Image, address: u64, size: u64) -> Result<Cow<'_, [u
     )))
 }
 
-pub(crate) fn unsigned(data: &[u8], little: bool) -> u64 {
-    let mut value = 0u64;
-    if little {
-        for byte in data.iter().rev() {
-            value = (value << 8) | u64::from(*byte);
-        }
-    } else {
-        for byte in data {
-            value = (value << 8) | u64::from(*byte);
-        }
-    }
-    value
-}
+pub(crate) use crate::loader::image_reads::unsigned;
 
 /// Options for a search within loaded sections.
 #[derive(Debug, PartialEq, Eq, serde::Deserialize)]

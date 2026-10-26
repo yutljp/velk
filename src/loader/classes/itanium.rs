@@ -12,7 +12,7 @@ pub(crate) fn type_name(image: &Image, address: u64) -> Option<String> {
     let Some(at) = address.checked_add(width) else {
         return None;
     };
-    let Some(name) = super::word(image, at, width).and_then(|pointer| {
+    let Some(name) = crate::loader::image_reads::word(image, at, width).and_then(|pointer| {
         let pointer = if width == 8 {
             pointer & !(1 << 63)
         } else {
@@ -31,6 +31,13 @@ pub(crate) fn type_name(image: &Image, address: u64) -> Option<String> {
 
 pub(super) fn read(image: &Image) -> Vec<Class> {
     let width = u64::from(crate::arch::pointer_bytes(image.isa));
+    let mut classes = descriptors(image, width);
+    attach_vtables(image, width, &mut classes);
+    resolve_virtual_bases(image, width, &mut classes);
+    classes.into_values().collect()
+}
+
+fn descriptors(image: &Image, width: u64) -> BTreeMap<u64, Class> {
     let names = references::read(image);
     let mut classes = BTreeMap::<u64, Class>::new();
     for section in &image.sections {
@@ -66,7 +73,7 @@ pub(super) fn read(image: &Image) -> Vec<Class> {
             if single {
                 let Some(base) = address
                     .checked_add(2 * width)
-                    .and_then(|at| super::word(image, at, width))
+                    .and_then(|at| crate::loader::image_reads::word(image, at, width))
                 else {
                     continue;
                 };
@@ -85,7 +92,7 @@ pub(super) fn read(image: &Image) -> Vec<Class> {
             if multiple {
                 let Some(count) = address
                     .checked_add(2 * width + 4)
-                    .and_then(|at| super::word(image, at, 4))
+                    .and_then(|at| crate::loader::image_reads::word(image, at, 4))
                 else {
                     continue;
                 };
@@ -99,8 +106,8 @@ pub(super) fn read(image: &Image) -> Vec<Class> {
                         break;
                     };
                     let (Some(base), Some(flags)) = (
-                        super::word(image, at, width),
-                        super::word(image, at.saturating_add(width), width),
+                        crate::loader::image_reads::word(image, at, width),
+                        crate::loader::image_reads::word(image, at.saturating_add(width), width),
                     ) else {
                         valid = false;
                         break;
@@ -135,6 +142,10 @@ pub(super) fn read(image: &Image) -> Vec<Class> {
             );
         }
     }
+    classes
+}
+
+fn attach_vtables(image: &Image, width: u64, classes: &mut BTreeMap<u64, Class>) {
     for section in &image.sections {
         if !section.loaded || section.executable || section.file_offset.is_none() {
             continue;
@@ -153,7 +164,8 @@ pub(super) fn read(image: &Image) -> Vec<Class> {
             let (Some(top_at), Some(point)) = (at.checked_sub(width), at.checked_add(width)) else {
                 continue;
             };
-            let Some(top) = super::word(image, top_at, width).map(|value| signed(value, width))
+            let Some(top) = crate::loader::image_reads::word(image, top_at, width)
+                .map(|value| signed(value, width))
             else {
                 continue;
             };
@@ -172,6 +184,9 @@ pub(super) fn read(image: &Image) -> Vec<Class> {
             });
         }
     }
+}
+
+fn resolve_virtual_bases(image: &Image, width: u64, classes: &mut BTreeMap<u64, Class>) {
     for class in classes.values_mut() {
         for base in &mut class.bases {
             let Some(offset) = base.vtable_offset else {
@@ -186,7 +201,7 @@ pub(super) fn read(image: &Image) -> Vec<Class> {
                 let value = table
                     .address
                     .checked_add_signed(offset)
-                    .and_then(|at| super::word(image, at, width));
+                    .and_then(|at| crate::loader::image_reads::word(image, at, width));
                 let Some(value) = value.map(|value| signed(value, width)) else {
                     consistent = false;
                     break;
@@ -202,7 +217,6 @@ pub(super) fn read(image: &Image) -> Vec<Class> {
             }
         }
     }
-    classes.into_values().collect()
 }
 
 fn unsigned(bytes: &[u8]) -> u64 {

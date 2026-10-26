@@ -291,23 +291,13 @@ fn sink_copied_definitions(
 
 /// Gives each variable `renamed` names the variable it joined.
 pub(crate) fn rename(stmt: &mut Stmt, renamed: &HashMap<u16, u16>) {
-    fn walk(expr: &mut Expr, renamed: &HashMap<u16, u16>) {
-        if let Expr::Reg { index, .. } = expr
-            && let Some(joined) = renamed.get(index)
-        {
-            *index = *joined;
-        }
-        for child in crate::ir::visit::children_mut(expr) {
-            walk(child, renamed);
-        }
-    }
     for dest in crate::ir::visit::statement_destinations_mut(stmt) {
         if let Some(joined) = renamed.get(&dest.index) {
             dest.index = *joined;
         }
     }
     for expr in stmt.operands_mut() {
-        walk(expr, renamed);
+        crate::ir::visit::rename_registers(expr, renamed);
     }
 }
 

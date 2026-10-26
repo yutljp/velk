@@ -11,7 +11,7 @@ use std::collections::{BTreeMap, HashMap};
 pub(crate) mod emulation;
 
 use super::semantics::{holds, mask, operand_width, sign_extend};
-use super::{BinOp, Block, Expr, FunctionIr, RegRef, Stmt};
+use super::{Block, Expr, FunctionIr, RegRef, Stmt};
 
 pub const STACK_TOP: u64 = 0x7fff_ff00_0000;
 pub(crate) const STACK_SPAN: u64 = 1 << 24;
@@ -381,33 +381,9 @@ impl Machine<'_> {
                     },
                 );
                 let bits = operand_width(lhs, rhs);
-                match op {
-                    BinOp::Add => a.wrapping_add(b),
-                    BinOp::Sub => a.wrapping_sub(b),
-                    BinOp::Mul => a.wrapping_mul(b),
-                    BinOp::MulHigh => ((u128::from(a) * u128::from(b)) >> 64) as u64,
-                    BinOp::MulHighS => ((i128::from(a as i64) * i128::from(b as i64)) >> 64) as u64,
-                    BinOp::And => a & b,
-                    BinOp::Or => a | b,
-                    BinOp::Xor => a ^ b,
-                    BinOp::Shl => a.wrapping_shl(b as u32),
-                    BinOp::Shr => a.wrapping_shr(b as u32),
-                    BinOp::Sar => (sign_extend(a, bits).wrapping_shr(b as u32) as u64) & mask(bits),
-                    BinOp::DivU | BinOp::ModU if b == 0 => return Err("division by zero"),
-                    BinOp::DivU => a / b,
-                    BinOp::ModU => a % b,
-                    BinOp::DivS | BinOp::ModS => {
-                        let (sa, sb) = (sign_extend(a, bits), sign_extend(b, bits));
-                        if sb == 0 {
-                            return Err("division by zero");
-                        }
-                        let result = if *op == BinOp::DivS {
-                            sa.wrapping_div(sb)
-                        } else {
-                            sa.wrapping_rem(sb)
-                        };
-                        result as u64 & mask(bits)
-                    }
+                match super::semantics::scalar(*op, a, b, bits) {
+                    Some(value) => value,
+                    None => return Err("division by zero"),
                 }
             }
         })

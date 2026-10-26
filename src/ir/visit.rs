@@ -51,6 +51,18 @@ pub(crate) fn count_register(expr: &Expr, register: u16) -> usize {
     }
 }
 
+/// Renames register indices without changing read widths or simplifying expressions.
+pub(crate) fn rename_registers(expr: &mut Expr, renamed: &std::collections::HashMap<u16, u16>) {
+    if let Expr::Reg { index, .. } = expr
+        && let Some(joined) = renamed.get(index)
+    {
+        *index = *joined;
+    }
+    for child in crate::ir::visit::children_mut(expr) {
+        rename_registers(child, renamed);
+    }
+}
+
 pub(crate) fn children_mut(expr: &mut Expr) -> Vec<&mut Expr> {
     match expr {
         Expr::Bin { lhs, rhs, .. } => vec![lhs.as_mut(), rhs.as_mut()],
@@ -408,5 +420,22 @@ mod tests {
         let mut reads = HashSet::from([9]);
         expr_reads(&expression, &mut reads);
         assert_eq!(reads, expected);
+        let mut narrow = Expr::Bin {
+            op: BinOp::And,
+            lhs: Box::new(Expr::reg(1, 8)),
+            rhs: Box::new(Expr::Const(0xff)),
+        };
+        rename_registers(
+            &mut narrow,
+            &std::collections::HashMap::from([(1, 2), (2, 3)]),
+        );
+        assert_eq!(
+            narrow,
+            Expr::Bin {
+                op: BinOp::And,
+                lhs: Box::new(Expr::reg(2, 8)),
+                rhs: Box::new(Expr::Const(0xff)),
+            }
+        );
     }
 }
