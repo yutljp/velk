@@ -8,7 +8,7 @@
 -- decompile
 /* velk pseudo-C: frame_bounds @ 0x0 */
 int64_t frame_bounds(int64_t a0) {
-    _Alignas(16) uint8_t local_0[0x200]; /* [sp-210] */
+    _Alignas(16) uint8_t local_0[0x210]; /* [sp-210] */
 
     uint64_t *i = (uint64_t *)(local_0);
     do {

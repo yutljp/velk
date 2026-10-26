@@ -100,7 +100,9 @@ de8cfd4bb564d169aa30f8a822756a3b89199468b4c2d65c4dc9d2f3d7892b50  src/render/exp
 d1f44b5f551f47752db50cff2a0942fc53721352bc5a78e27f5679e6933472b1  src/render/expr/operation.rs	pub(super) fn unmasked_float(
 face9a368d9b9d8c539bed5fbba70ee0fbf97c959bc1ca5824eddf1e38bb1460  src/render/int.rs	pub(crate) fn cast(
 17d6f2e00352d782d6d899663a1eae144fe544c13a92bd5ac68488d7bb35f380  src/render/int.rs	pub(crate) fn fit(
+8aac2929285edc9c1ba57d7db6cf7c59af4e694a3babeec9333a103f4bab0e4e  src/render/locals.rs	pub(super) fn stack_locals_with_roles(
 757327de648c2f687f7533ed35432c1f479452d63c222fd03091e0af9b411fea  src/render/locals/copies.rs	pub(super) fn fold(
+226cb7f228570597b7fa95535758341fbf527ad3ddf9b34a733e58e84bfa9c26  src/render/locals/indexed.rs	pub(super) fn offsets_frame_pointer(
 84c0748d6bda7543b78ae4fa00877a37545f595ddbf08417076989e91be95668  src/render/locals/returns.rs	fn replace_returns(
 b3edc629dd38eecbf0efeb78b0c444e93b264dab40a97bfe06e942fd9d5ecfe1  src/render/locals/values.rs	pub(in crate::render) fn fold(
 dac402149d5e5232a83d33659175898e752f2c11d9ee76dd4264d5950b713235  src/render/params.rs	fn drop_unused_parameter_outputs(

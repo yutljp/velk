@@ -284,6 +284,38 @@ pub(super) fn stack_locals_with_roles(
         .filter_map(|(slot, ..)| *slot)
         .fold(lowest_frame(ir, frames, sp).min(ir.frame_bottom), i64::min);
     let mut lowered: Vec<(i64, i64)> = Vec::new();
+    let argument_accesses = stack_arguments(ir, sp, frames);
+    let in_parameter = |slot: i64| {
+        ir.stack_params.iter().any(|param| {
+            slot.checked_sub(param.offset)
+                .is_some_and(|within| within >= 0 && (within as u64) < param.size)
+        })
+    };
+    let walked =
+        !ir.variadic && !buffers.is_empty() && indexed::offsets_frame_pointer(ir, sp, frames);
+    let frame_end = if walked {
+        // An induction pointer can advance past the last access before its
+        // exit test. Keep such addresses in the same object as the frame.
+        argument_accesses
+            .iter()
+            .filter_map(|(_, slot, width)| slot.filter(|_| *width == 0))
+            .filter(|slot| {
+                !argument_accesses
+                    .iter()
+                    .any(|(_, at, width)| at == &Some(*slot) && *width > 0)
+                    && !in_parameter(*slot)
+            })
+            .max()
+            .unwrap_or(0)
+            .max(0)
+    } else {
+        0
+    };
+    if walked && bottom < 0 {
+        // Separate slots do not establish separate objects when a pointer
+        // reaches them at offsets whose bounds have not been proved.
+        lowered.push((bottom, frame_end));
+    }
     for (slot, _, width, signed) in &accesses {
         let Some(slot) = slot else { continue };
         if *slot >= 0 || *width != 0 {
@@ -541,7 +573,7 @@ pub(super) fn stack_locals_with_roles(
     // first byte, not from a field C would scale it by or bound it to.
     for (key, slot) in &rendered {
         let Some(slot) = slot else { continue };
-        if !indexed.contains(slot) {
+        if !indexed.contains(slot) && !(walked && buffers.contains(slot)) {
             continue;
         }
         let outer = within.get(slot).copied().unwrap_or(*slot);
@@ -559,7 +591,6 @@ pub(super) fn stack_locals_with_roles(
         };
         parts.insert(key.clone(), address);
     }
-    let argument_accesses = stack_arguments(ir, sp, frames);
     let mut parameter_reads = HashMap::new();
     let parameter_addresses =
         scalar_parameter_addresses(ir, &argument_accesses, &base, &mut parameter_reads);
@@ -588,14 +619,7 @@ pub(super) fn stack_locals_with_roles(
     }
     parts.retain(|key, _| !matches!(part_origins.get(key), Some(None)));
     for (key, slot) in &origins {
-        if slot.is_none()
-            || slot.is_some_and(|slot| {
-                ir.stack_params.iter().any(|param| {
-                    slot.checked_sub(param.offset)
-                        .is_some_and(|within| within >= 0 && (within as u64) < param.size)
-                })
-            })
-        {
+        if slot.is_none() || slot.is_some_and(in_parameter) {
             slots.remove(key);
             parts.remove(key);
         }
@@ -606,6 +630,7 @@ pub(super) fn stack_locals_with_roles(
         let Some(slot) = slot else { continue };
         let key = render_expr(address, &base);
         if *width != 0
+            || in_parameter(*slot)
             || parts.contains_key(&key)
             || part_origins.get(&key) != Some(&Some(*slot))
             || argument_accesses
@@ -618,7 +643,7 @@ pub(super) fn stack_locals_with_roles(
             .values()
             .filter(|local| {
                 local.slot < 0
-                    && *slot <= 0
+                    && *slot <= frame_end
                     && local.slot < *slot
                     && local
                         .slot
@@ -2170,6 +2195,48 @@ mod tests {
         BinOp, CType, Convention, Expr, FunctionIr, Param, RegRef, StackParam, Stmt, VARIABLE_BASE,
     };
     use crate::loader::Isa;
+
+    #[test]
+    fn extended_frame_bounds_exclude_incoming_parameter_addresses() {
+        let address = |slot: i64| Expr::bin(BinOp::Add, Expr::reg(4, 64), Expr::Const(slot as u64));
+        let mut stmts = Vec::new();
+        let values = [
+            address(-32),
+            Expr::bin(BinOp::Add, Expr::reg(VARIABLE_BASE, 64), Expr::Const(8)),
+            address(32),
+            address(8),
+        ];
+        let assignments = values.into_iter().enumerate();
+        for (index, value) in assignments {
+            stmts.push(Stmt::Assign {
+                dest: RegRef {
+                    index: VARIABLE_BASE + index as u16,
+                    width: 64,
+                },
+                value,
+            });
+        }
+        let mut ir = FunctionIr::single_block(Isa::X86_64, stmts);
+        ir.stack_params.push(StackParam {
+            offset: 8,
+            size: 8,
+            name: "incoming".to_owned(),
+            ty: CType::U64,
+            position: 0,
+        });
+        let locals = stack_locals(&ir, &[Some(0)], &Default::default(), &Default::default());
+        assert_eq!(locals.decls.len(), 1);
+        let local = &locals.decls[0];
+        let parameter = local.byte_address(8);
+        assert!(!locals.parts.values().any(|address| *address == parameter));
+        assert!(!locals.bounds.values().any(|address| *address == parameter));
+        assert!(
+            locals
+                .bounds
+                .values()
+                .any(|address| *address == local.byte_address(32))
+        );
+    }
 
     fn scalar_stack_binding(adjustment: Option<Expr>, slots: i64) -> FunctionIr {
         let loaded = || Expr::Load {

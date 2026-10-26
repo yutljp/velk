@@ -1,8 +1,105 @@
-use std::collections::{BTreeMap, HashMap, HashSet};
+use std::collections::{BTreeMap, HashMap, HashSet, VecDeque};
 
 use super::FrameAccess;
 use crate::ir::{BinOp, Expr, FunctionIr, Stmt};
 use crate::passes::frame_slots::frame_slot;
+
+/// An offset from an escaped frame pointer can cross any inferred slot boundary.
+pub(super) fn offsets_frame_pointer(ir: &FunctionIr, sp: u16, frames: &[Option<i64>]) -> bool {
+    fn based(expr: &Expr, pointers: &HashSet<u16>) -> bool {
+        match expr {
+            Expr::Reg { index, .. } => pointers.contains(index),
+            Expr::Bin {
+                op: BinOp::Add | BinOp::Sub,
+                lhs,
+                rhs,
+            } => based(lhs, pointers) || based(rhs, pointers),
+            Expr::Bin {
+                op: BinOp::And,
+                lhs,
+                rhs,
+            } if matches!(rhs.as_ref(), Expr::Const(0xffff_ffff)) => based(lhs, pointers),
+            _ => false,
+        }
+    }
+    if ir.blocks.is_empty() {
+        return false;
+    }
+    let mut entries = vec![None; ir.blocks.len()];
+    entries[0] = Some(HashSet::new());
+    let mut pending_blocks = VecDeque::from([0]);
+    while let Some(position) = pending_blocks.pop_front() {
+        let Some(mut pointers) = entries[position].clone() else {
+            continue;
+        };
+        let mut exceptional = pointers.clone();
+        let mut frame = frames.get(position).copied().flatten();
+        for stmt in &ir.blocks[position].stmts {
+            let mut pending = stmt.operands();
+            while let Some(value) = pending.pop() {
+                if matches!(
+                    value,
+                    Expr::Bin {
+                        op: BinOp::Add | BinOp::Sub,
+                        ..
+                    }
+                ) && based(value, &pointers)
+                {
+                    return true;
+                }
+                pending.extend(crate::ir::visit::children(value));
+            }
+            let assigned = match stmt {
+                Stmt::Assign { dest, value } if dest.index != sp => {
+                    based(value, &pointers)
+                        || frame.is_some_and(|frame| {
+                            frame_slot(value, frame, sp).is_some_and(|at| at < 0)
+                        })
+                }
+                _ => false,
+            };
+            if matches!(stmt, Stmt::Call { .. } | Stmt::Unsupported { .. }) {
+                exceptional.extend(&pointers);
+            }
+            for register in crate::ir::visit::statement_registers(stmt).0 {
+                pointers.remove(&register);
+            }
+            if assigned && let Stmt::Assign { dest, .. } = stmt {
+                pointers.insert(dest.index);
+            }
+            frame = super::frame_after(stmt, frame, sp);
+        }
+        let edges = crate::ir::cfg::block_successors_with_exceptions(
+            &ir.blocks,
+            position,
+            &ir.landing_pads,
+        );
+        if (edges.unknown_normal && !pointers.is_empty())
+            || (edges.unknown_exceptional && !exceptional.is_empty())
+        {
+            return true;
+        }
+        for (successors, state) in [(edges.normal, &pointers), (edges.exceptional, &exceptional)] {
+            for next in successors {
+                let changed = match &mut entries[next] {
+                    None => {
+                        entries[next] = Some(state.clone());
+                        true
+                    }
+                    Some(entry) => {
+                        let before = entry.len();
+                        entry.extend(state);
+                        entry.len() != before
+                    }
+                };
+                if changed && !pending_blocks.contains(&next) {
+                    pending_blocks.push_back(next);
+                }
+            }
+        }
+    }
+    false
+}
 
 /// A pointer advanced in a loop can also address slots below its initial
 /// value. Those slots must share its C object even at different access widths.

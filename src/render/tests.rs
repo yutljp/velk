@@ -2775,3 +2775,56 @@ fn imported_pointer_addends_do_not_become_calls_to_the_unadjusted_symbol() {
     assert!(code.contains("(*)())"), "{code}");
     assert!(code.contains("byte addend 4"), "{code}");
 }
+
+#[test]
+fn walked_frame_object_offsets_preserve_symbolic_addresses() {
+    use crate::ir::smt::Proofs;
+
+    let mut proofs = Proofs::default();
+    for isa in [Isa::I386, Isa::X86_64, Isa::AArch64, Isa::Arm32] {
+        let sp = crate::arch::stack_pointer(isa);
+        let address =
+            |slot: i64| Expr::bin(BinOp::Add, Expr::reg(sp, 64), Expr::Const(slot as u64));
+        let pointer = VARIABLE_BASE;
+        let mut ir = FunctionIr::single_block(
+            isa,
+            vec![
+                Stmt::Store {
+                    addr: address(-80),
+                    value: Expr::Const(7),
+                    width: 8,
+                },
+                assign(pointer, address(-32)),
+                assign(
+                    pointer + 1,
+                    Expr::bin(BinOp::Sub, Expr::reg(pointer, 64), Expr::Const(48)),
+                ),
+                assign(pointer + 2, address(16)),
+                Stmt::Ret {
+                    value: load(address(-80), 8),
+                },
+            ],
+        );
+        ir.frame_bottom = -64;
+        let frames = super::block_frames(&ir, sp);
+        let locals = super::stack_locals(&ir, &frames, &Default::default(), &Default::default());
+        assert_eq!(locals.decls.len(), 1);
+        let local = &locals.decls[0];
+        assert_eq!((local.slot, local.size), (-80, 96));
+        for slot in [-80, -32, -8, 0, 16] {
+            let offset = slot - local.slot;
+            let rebased = Expr::bin(BinOp::Add, address(local.slot), Expr::Const(offset as u64));
+            for bits in [32, 64] {
+                proofs.expression(
+                    format!("frame object/{isa:?}/{slot}/{bits}"),
+                    &address(slot),
+                    &rebased,
+                    bits,
+                );
+            }
+        }
+    }
+    if Proofs::available() {
+        proofs.check();
+    }
+}

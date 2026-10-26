@@ -193,3 +193,69 @@ fn printed_narrow_signed_comparisons_keep_negative_constants() {
         &[0, 1, 2, 3, 4, 5, 6, 0x55, 0xffff_fffe],
     );
 }
+
+#[test]
+#[cfg(all(target_os = "linux", target_arch = "x86_64"))]
+fn optimized_frame_array_pointers_share_storage_and_loop_bounds() {
+    let source = include_str!("walked_arrays.c");
+    for (architecture, original_compiler, flags, bits) in [
+        ("i386", "gcc", vec!["-m32"], "-m32"),
+        ("x64", "gcc", vec!["-m64"], "-m64"),
+        (
+            "a64",
+            "aarch64-linux-gnu-gcc",
+            vec!["-fno-tree-vectorize"],
+            "-m64",
+        ),
+        ("arm32", "arm-linux-gnueabihf-gcc", vec![], "-m32"),
+    ] {
+        let scratch = scratch_dir(&format!("walked-frame-array-{architecture}"));
+        let original = scratch.join("original.c");
+        let executable = scratch.join("original");
+        common::compiler::compile_file(
+            Command::new(original_compiler)
+                .args(flags)
+                .args(["-O2", "-fno-stack-protector", "-fno-pie", "-no-pie"])
+                .arg(&original)
+                .arg("-o")
+                .arg(&executable),
+            &original,
+            source,
+        );
+        let mut binary = Binary::open(&executable).unwrap();
+        let address = binary.find("frame_array").unwrap().addr;
+        let code = binary.decompile(address, None, None).unwrap();
+        assert!(
+            !code.contains("velk_entry_stack_pointer"),
+            "{architecture}: {code}"
+        );
+        assert_eq!(
+            code.matches("_Alignas(16) uint8_t local_").count(),
+            1,
+            "{architecture}: {code}"
+        );
+        let program = Program {
+            text: format!(
+                "#include <stdint.h>\n{}\n{}\nuint32_t printed_g;\nint main(void) {{
+                    for (g = 0; g < 5; ++g) {{
+                        printed_g = g;
+                        for (int n = 0; n < 1500; ++n)
+                            if ((uint32_t)frame_array(n) != (uint32_t)original_frame_array(n))
+                                return 1;
+                    }}
+                    return 0;
+                }}",
+                source
+                    .replace("frame_array(", "original_frame_array(")
+                    .replace("int main(", "int original_main("),
+                replace_c_identifier(&code, "g", "printed_g"),
+            ),
+            ranges: Vec::new(),
+        };
+        for level in ["-O0", "-O1", "-O2"] {
+            let executable = build(&program, &scratch, level, &[bits]);
+            assert_eq!(run(&executable, ""), "", "{architecture}: {}", program.text);
+        }
+        std::fs::remove_dir_all(scratch).ok();
+    }
+}
