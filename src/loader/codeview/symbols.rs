@@ -19,6 +19,14 @@ struct Variable {
     register: Option<u16>,
 }
 
+impl Variable {
+    fn invalidate(&mut self) {
+        self.ranges += 1;
+        self.location = None;
+        self.register = None;
+    }
+}
+
 #[derive(Debug)]
 struct Pending {
     addr: u64,
@@ -158,96 +166,13 @@ pub(super) fn read(data: &mut Data, bytes: &[u8], sections: &[(u64, u64)], ids: 
                 function.current = Some(function.variables.len() - 1);
             }
             0x1141 => {
-                let Some(function) = pending.as_mut() else {
-                    continue;
-                };
-                let Some(variable) = function
-                    .current
-                    .and_then(|index| function.variables.get_mut(index))
-                else {
-                    continue;
-                };
-                variable.ranges += 1;
-                variable.location = None;
-                variable.register = None;
-                let (Some(register), Some(attributes), Some(start), Some(segment), Some(length)) = (
-                    reader.u16(),
-                    reader.u16(),
-                    reader.u32(),
-                    reader.u16(),
-                    reader.u16(),
-                ) else {
-                    continue;
-                };
-                if attributes != 0 || !reader.0.is_empty() || variable.ranges != 1 {
-                    continue;
+                if let Some(function) = pending.as_mut() {
+                    register_location(function, reader, sections);
                 }
-                let Some((base, _)) = segment
-                    .checked_sub(1)
-                    .and_then(|i| sections.get(usize::from(i)))
-                else {
-                    continue;
-                };
-                if base.checked_add(u64::from(start)) != Some(function.addr)
-                    || u64::from(length) < function.size
-                {
-                    continue;
-                }
-                variable.register = register_index(register);
             }
             0x1142 | 0x1144 => {
-                let Some(function) = pending.as_mut() else {
-                    continue;
-                };
-                let flags = function.flags;
-                let size = function.size;
-                let Some(variable) = function
-                    .current
-                    .and_then(|index| function.variables.get_mut(index))
-                else {
-                    continue;
-                };
-                variable.ranges += 1;
-                variable.location = None;
-                variable.register = None;
-                let Some(offset) = reader.u32().map(|n| i64::from(n as i32)) else {
-                    continue;
-                };
-                let base = (flags >> if variable.parameter { 16 } else { 14 }) & 3;
-                let register = match base {
-                    1 => 335,
-                    2 => 334,
-                    _ => continue,
-                };
-                if kind == 0x1142 {
-                    let (Some(start), Some(segment), Some(length)) =
-                        (reader.u32(), reader.u16(), reader.u16())
-                    else {
-                        continue;
-                    };
-                    if !reader.0.is_empty() {
-                        continue;
-                    }
-                    let Some((base, _)) = segment
-                        .checked_sub(1)
-                        .and_then(|i| sections.get(usize::from(i)))
-                    else {
-                        continue;
-                    };
-                    let Some(start) = base.checked_add(u64::from(start)) else {
-                        continue;
-                    };
-                    // A short lifetime cannot name a slot for the entire function.
-                    if start < function.addr
-                        || start > function.addr.saturating_add(128)
-                        || start.saturating_add(u64::from(length))
-                            < function.addr.saturating_add(size)
-                    {
-                        continue;
-                    }
-                }
-                if variable.ranges == 1 {
-                    variable.location = Some((register, offset));
+                if let Some(function) = pending.as_mut() {
+                    frame_location(function, reader, sections, kind);
                 }
             }
             0x1111 | 0x110b => {
@@ -280,9 +205,7 @@ pub(super) fn read(data: &mut Data, bytes: &[u8], sections: &[(u64, u64)], ids: 
                         .current
                         .and_then(|index| function.variables.get_mut(index))
                 {
-                    variable.ranges += 1;
-                    variable.location = None;
-                    variable.register = None;
+                    variable.invalidate();
                 }
             }
             _ => {}
@@ -290,6 +213,94 @@ pub(super) fn read(data: &mut Data, bytes: &[u8], sections: &[(u64, u64)], ids: 
     }
     if let Some(function) = pending {
         finish(data, function, &mut budget);
+    }
+}
+
+fn register_location(function: &mut Pending, mut reader: Reader<'_>, sections: &[(u64, u64)]) {
+    let Some(variable) = function
+        .current
+        .and_then(|index| function.variables.get_mut(index))
+    else {
+        return;
+    };
+    variable.invalidate();
+    let (Some(register), Some(attributes), Some(start), Some(segment), Some(length)) = (
+        reader.u16(),
+        reader.u16(),
+        reader.u32(),
+        reader.u16(),
+        reader.u16(),
+    ) else {
+        return;
+    };
+    if attributes != 0 || !reader.0.is_empty() || variable.ranges != 1 {
+        return;
+    }
+    let Some((base, _)) = segment
+        .checked_sub(1)
+        .and_then(|i| sections.get(usize::from(i)))
+    else {
+        return;
+    };
+    if base.checked_add(u64::from(start)) != Some(function.addr)
+        || u64::from(length) < function.size
+    {
+        return;
+    }
+    variable.register = register_index(register);
+}
+
+fn frame_location(
+    function: &mut Pending,
+    mut reader: Reader<'_>,
+    sections: &[(u64, u64)],
+    kind: u16,
+) {
+    let flags = function.flags;
+    let size = function.size;
+    let Some(variable) = function
+        .current
+        .and_then(|index| function.variables.get_mut(index))
+    else {
+        return;
+    };
+    variable.invalidate();
+    let Some(offset) = reader.u32().map(|n| i64::from(n as i32)) else {
+        return;
+    };
+    let base = (flags >> if variable.parameter { 16 } else { 14 }) & 3;
+    let register = match base {
+        1 => 335,
+        2 => 334,
+        _ => return,
+    };
+    if kind == 0x1142 {
+        let (Some(start), Some(segment), Some(length)) = (reader.u32(), reader.u16(), reader.u16())
+        else {
+            return;
+        };
+        if !reader.0.is_empty() {
+            return;
+        }
+        let Some((base, _)) = segment
+            .checked_sub(1)
+            .and_then(|i| sections.get(usize::from(i)))
+        else {
+            return;
+        };
+        let Some(start) = base.checked_add(u64::from(start)) else {
+            return;
+        };
+        // A short lifetime cannot name a slot for the entire function.
+        if start < function.addr
+            || start > function.addr.saturating_add(128)
+            || start.saturating_add(u64::from(length)) < function.addr.saturating_add(size)
+        {
+            return;
+        }
+    }
+    if variable.ranges == 1 {
+        variable.location = Some((register, offset));
     }
 }
 

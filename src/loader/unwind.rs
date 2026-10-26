@@ -31,30 +31,58 @@ pub(crate) enum FrameKind {
     Other,
 }
 
-pub(crate) fn frames(image: &Image) -> Vec<Frame> {
-    if image.format == crate::loader::Format::Pe {
-        return pe::frames(image);
-    }
+pub(super) struct Architecture {
+    pub(super) stack: Register,
+    return_address: Register,
+    pub(super) entry_offset: i64,
+}
+
+pub(super) fn architecture(isa: Isa) -> Option<Architecture> {
+    let (stack, return_address, entry_offset) = match isa {
+        Isa::I386 => (Register(4), Register(8), 4),
+        Isa::X86_64 => (Register(7), Register(16), 8),
+        Isa::AArch64 => (Register(31), Register(30), 0),
+        Isa::Arm32 | Isa::Unsupported => return None,
+    };
+    Some(Architecture {
+        stack,
+        return_address,
+        entry_offset,
+    })
+}
+
+fn inputs(image: &Image) -> Option<(EhFrame<gimli::EndianSlice<'_, LittleEndian>>, BaseAddresses)> {
     let Some(section) = image
         .sections
         .iter()
         .find(|section| matches!(section.name.as_str(), ".eh_frame" | "__eh_frame"))
     else {
-        return Vec::new();
+        return None;
     };
     let Some(data) = image.section_data(&section.name) else {
-        return Vec::new();
-    };
-    // The stack pointer, and the column holding the return address.
-    let (stack, return_address) = match image.isa {
-        Isa::I386 => (Register(4), Register(8)),
-        Isa::X86_64 => (Register(7), Register(16)),
-        Isa::AArch64 => (Register(31), Register(30)),
-        Isa::Arm32 | Isa::Unsupported => return Vec::new(),
+        return None;
     };
     let mut eh_frame = EhFrame::new(data, LittleEndian);
     eh_frame.set_address_size(crate::arch::pointer_bytes(image.isa));
     let bases = BaseAddresses::default().set_eh_frame(section.vaddr);
+    Some((eh_frame, bases))
+}
+
+pub(crate) fn frames(image: &Image) -> Vec<Frame> {
+    if image.format == crate::loader::Format::Pe {
+        return pe::frames(image);
+    }
+    let Some((eh_frame, bases)) = inputs(image) else {
+        return Vec::new();
+    };
+    let Some(Architecture {
+        stack,
+        return_address,
+        entry_offset,
+    }) = architecture(image.isa)
+    else {
+        return Vec::new();
+    };
     let mut context = Box::new(UnwindContext::new());
     let mut frames = Vec::new();
     let mut entries = eh_frame.entries(&bases);
@@ -70,27 +98,19 @@ pub(crate) fn frames(image: &Image) -> Vec<Frame> {
         }
         let kind = match fde.rows(&eh_frame, &bases, &mut context) {
             Ok(mut rows) => match rows.next_row() {
-                Ok(Some(row)) => {
-                    // The call pushed the return address on x86-64.
-                    let entry_offset = match image.isa {
-                        Isa::I386 => 4,
-                        Isa::X86_64 => 8,
-                        _ => 0,
-                    };
-                    match row.cfa() {
-                        CfaRule::RegisterAndOffset { register, offset }
-                            if *register == stack
-                                && *offset == entry_offset
-                                && row.registers().all(|(register, _)| {
-                                    *register == return_address || register.0 > 32
-                                }) =>
-                        {
-                            FrameKind::Entry
-                        }
-                        CfaRule::RegisterAndOffset { .. } => FrameKind::Fragment,
-                        CfaRule::Expression(_) => FrameKind::Other,
+                Ok(Some(row)) => match row.cfa() {
+                    CfaRule::RegisterAndOffset { register, offset }
+                        if *register == stack
+                            && *offset == entry_offset
+                            && row.registers().all(|(register, _)| {
+                                *register == return_address || register.0 > 32
+                            }) =>
+                    {
+                        FrameKind::Entry
                     }
-                }
+                    CfaRule::RegisterAndOffset { .. } => FrameKind::Fragment,
+                    CfaRule::Expression(_) => FrameKind::Other,
+                },
                 _ => FrameKind::Other,
             },
             Err(_) => FrameKind::Other,
@@ -121,30 +141,17 @@ pub(crate) struct StackRow {
 /// Every row of every frame description, by address. A frame address kept
 /// in another register than the stack pointer means a frame is set up.
 pub(crate) fn stack_rows(image: &Image) -> Vec<StackRow> {
-    let Some(section) = image
-        .sections
-        .iter()
-        .find(|section| matches!(section.name.as_str(), ".eh_frame" | "__eh_frame"))
+    let Some((eh_frame, bases)) = inputs(image) else {
+        return Vec::new();
+    };
+    let Some(Architecture {
+        stack,
+        entry_offset,
+        ..
+    }) = architecture(image.isa)
     else {
         return Vec::new();
     };
-    let Some(data) = image.section_data(&section.name) else {
-        return Vec::new();
-    };
-    let stack = match image.isa {
-        Isa::I386 => Register(4),
-        Isa::X86_64 => Register(7),
-        Isa::AArch64 => Register(31),
-        Isa::Arm32 | Isa::Unsupported => return Vec::new(),
-    };
-    let entry_offset = match image.isa {
-        Isa::I386 => 4,
-        Isa::X86_64 => 8,
-        _ => 0,
-    };
-    let mut eh_frame = EhFrame::new(data, LittleEndian);
-    eh_frame.set_address_size(crate::arch::pointer_bytes(image.isa));
-    let bases = BaseAddresses::default().set_eh_frame(section.vaddr);
     let mut context = Box::new(UnwindContext::new());
     let mut out = Vec::new();
     let mut entries = eh_frame.entries(&bases);
@@ -184,19 +191,9 @@ pub(crate) fn stack_rows(image: &Image) -> Vec<StackRow> {
 /// whose calls unwind into it.
 pub(crate) fn landing_pads(image: &Image) -> std::collections::BTreeMap<u64, Vec<(u64, u64)>> {
     let mut pads: std::collections::BTreeMap<u64, Vec<(u64, u64)>> = Default::default();
-    let Some(section) = image
-        .sections
-        .iter()
-        .find(|section| matches!(section.name.as_str(), ".eh_frame" | "__eh_frame"))
-    else {
+    let Some((eh_frame, bases)) = inputs(image) else {
         return pads;
     };
-    let Some(data) = image.section_data(&section.name) else {
-        return pads;
-    };
-    let mut eh_frame = EhFrame::new(data, LittleEndian);
-    eh_frame.set_address_size(crate::arch::pointer_bytes(image.isa));
-    let bases = BaseAddresses::default().set_eh_frame(section.vaddr);
     let mut entries = eh_frame.entries(&bases);
     while let Ok(Some(entry)) = entries.next() {
         let CieOrFde::Fde(partial) = entry else {
@@ -308,6 +305,23 @@ mod probe {
 mod tests {
     #[test]
     fn the_table_has_the_stack_as_on_entry_only_outside_the_frame() {
+        use crate::loader::Isa;
+        use gimli::Register;
+
+        for (isa, expected) in [
+            (Isa::I386, (4, 8, 4)),
+            (Isa::X86_64, (7, 16, 8)),
+            (Isa::AArch64, (31, 30, 0)),
+        ] {
+            let facts = super::architecture(isa).expect("supported unwind architecture");
+            assert_eq!(
+                (facts.stack, facts.return_address, facts.entry_offset),
+                (Register(expected.0), Register(expected.1), expected.2)
+            );
+        }
+        for isa in [Isa::Arm32, Isa::Unsupported] {
+            assert!(super::architecture(isa).is_none());
+        }
         let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/cold_gcc");
         let image = crate::loader::load(&path).expect("loads");
         // lookup: pushes three registers and reserves 0x50 bytes, and pops

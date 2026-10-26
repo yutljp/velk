@@ -4,7 +4,7 @@ pub(crate) fn demangle(name: &str) -> Option<String> {
         .filter(|_| name.starts_with("__Z") || name.starts_with("__R"))
         .unwrap_or(name);
     if let Ok(symbol) = rustc_demangle::try_demangle(name) {
-        if name.starts_with("_R") || looks_like_rust_v0(name) {
+        if name.starts_with("_R") {
             return Some(format!("{symbol:#}"));
         }
         if name.starts_with("_ZN") && name.rsplit_once("17h").is_some() {
@@ -18,8 +18,4 @@ pub(crate) fn demangle(name: &str) -> Option<String> {
         return Some(text);
     }
     None
-}
-
-fn looks_like_rust_v0(name: &str) -> bool {
-    name.starts_with("_R") && name.len() > 3
 }

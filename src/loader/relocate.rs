@@ -239,7 +239,9 @@ fn patch_aarch64(
     r_type: object::elf::RelocationType,
 ) -> Option<()> {
     use object::elf;
-    let instruction = read_u32(bytes, place)?;
+    let Some(instruction) = read_u32(bytes, place) else {
+        return None;
+    };
     let low12 = (value & 0xfff) as u32;
     let patched = match r_type {
         elf::R_AARCH64_ADR_PREL_PG_HI21 | elf::R_AARCH64_ADR_PREL_PG_HI21_NC => {
@@ -251,15 +253,22 @@ fn patch_aarch64(
         elf::R_AARCH64_ADD_ABS_LO12_NC | elf::R_AARCH64_LDST8_ABS_LO12_NC => {
             instruction & !(0xfff << 10) | (low12 << 10)
         }
-        elf::R_AARCH64_LDST16_ABS_LO12_NC => instruction & !(0xfff << 10) | ((low12 >> 1) << 10),
-        elf::R_AARCH64_LDST32_ABS_LO12_NC => instruction & !(0xfff << 10) | ((low12 >> 2) << 10),
-        elf::R_AARCH64_LDST64_ABS_LO12_NC => instruction & !(0xfff << 10) | ((low12 >> 3) << 10),
-        elf::R_AARCH64_LDST128_ABS_LO12_NC => instruction & !(0xfff << 10) | ((low12 >> 4) << 10),
         elf::R_AARCH64_CALL26 | elf::R_AARCH64_JUMP26 => {
             let words = (value.wrapping_sub(pc) as i64 >> 2) as u32;
             instruction & !0x3ff_ffff | (words & 0x3ff_ffff)
         }
-        _ => return None,
+        _ => {
+            let shifts = [
+                (elf::R_AARCH64_LDST16_ABS_LO12_NC, 1),
+                (elf::R_AARCH64_LDST32_ABS_LO12_NC, 2),
+                (elf::R_AARCH64_LDST64_ABS_LO12_NC, 3),
+                (elf::R_AARCH64_LDST128_ABS_LO12_NC, 4),
+            ];
+            let Some((_, shift)) = shifts.iter().find(|(kind, _)| *kind == r_type) else {
+                return None;
+            };
+            instruction & !(0xfff << 10) | ((low12 >> shift) << 10)
+        }
     };
     write_u32(bytes, place, patched);
     Some(())
@@ -315,6 +324,18 @@ mod tests {
             patched(0x9100_0108, 0x14, 0x1028, elf::R_AARCH64_ADD_ABS_LO12_NC),
             0x9100_a108
         );
+        for (kind, expected) in [
+            (elf::R_AARCH64_LDST8_ABS_LO12_NC, 0xffc00),
+            (elf::R_AARCH64_LDST16_ABS_LO12_NC, 0x7fc00),
+            (elf::R_AARCH64_LDST32_ABS_LO12_NC, 0x3fc00),
+            (elf::R_AARCH64_LDST64_ABS_LO12_NC, 0x1fc00),
+            (elf::R_AARCH64_LDST128_ABS_LO12_NC, 0xfc00),
+        ] {
+            assert_eq!(
+                patched(0x8000_0001, 0, 0x13ff, kind),
+                0x8000_0001 | expected
+            );
+        }
         // ldr x8, [x8] scales the offset by its 8-byte access.
         assert_eq!(
             patched(0xf940_0108, 0x14, 0x1028, elf::R_AARCH64_LDST64_ABS_LO12_NC),

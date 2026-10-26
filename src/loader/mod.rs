@@ -642,13 +642,7 @@ impl Image {
                 continue;
             }
             if frame.kind == unwind::FrameKind::Entry {
-                if let Some(existing) = self.functions.get_mut(&frame.start)
-                    && existing.size_estimated
-                {
-                    existing.size = None;
-                    existing.size_estimated = false;
-                }
-                upsert(
+                upsert_authoritative(
                     &mut self.functions,
                     frame.start,
                     None,
@@ -687,13 +681,7 @@ impl Image {
     fn add_dwarf_functions(&mut self) {
         let discovered = crate::loader::dwarf::functions(self);
         for function in discovered {
-            if let Some(existing) = self.functions.get_mut(&function.addr)
-                && existing.size_estimated
-            {
-                existing.size = None;
-                existing.size_estimated = false;
-            }
-            upsert(
+            upsert_authoritative(
                 &mut self.functions,
                 function.addr,
                 Some(function.name),
@@ -739,6 +727,22 @@ fn is_read_only(kind: object::SectionKind, name: &str) -> bool {
         SectionKind::ReadOnlyData | SectionKind::ReadOnlyDataWithRel | SectionKind::ReadOnlyString
     ) || name.starts_with(".data.rel.ro")
         || name == ".got"
+}
+
+fn upsert_authoritative(
+    functions: &mut BTreeMap<u64, Function>,
+    addr: u64,
+    name: Option<String>,
+    size: Option<u64>,
+    source: NameSource,
+) {
+    if let Some(existing) = functions.get_mut(&addr)
+        && existing.size_estimated
+    {
+        existing.size = None;
+        existing.size_estimated = false;
+    }
+    upsert(functions, addr, name, size, source);
 }
 
 fn upsert(
@@ -1057,13 +1061,7 @@ pub fn load_with_arch(path: &Path, arch: Option<Architecture>) -> Result<Image> 
     image.add_go_functions();
     image.add_dwarf_functions();
     for function in image.codeview.functions() {
-        if let Some(existing) = image.functions.get_mut(&function.addr)
-            && existing.size_estimated
-        {
-            existing.size = None;
-            existing.size_estimated = false;
-        }
-        upsert(
+        upsert_authoritative(
             &mut image.functions,
             function.addr,
             Some(function.name),

@@ -272,15 +272,15 @@ pub(crate) fn read(image: &Image) -> Types {
     let Some(module) = super::moduledata(image, tab.vaddr) else {
         return types;
     };
-    let Some(data) = image.read_vaddr(module, 456) else {
+    let Some(data) = image.read_vaddr(module, super::MODULE_TYPE_DATA_SIZE) else {
         return types;
     };
     let word = |at| u64::from_le_bytes(data[at..at + 8].try_into().expect("eight bytes"));
     // Go 1.20 and later include coverage counters before the type region.
     let reader = Reader {
         image,
-        start: word(296),
-        end: word(304),
+        start: word(super::MODULE_TYPES),
+        end: word(super::MODULE_TYPES_END),
     };
     if reader.start >= reader.end {
         return types;
@@ -288,7 +288,10 @@ pub(crate) fn read(image: &Image) -> Types {
     types.start = reader.start;
     types.end = reader.end;
     let mut pending = Vec::new();
-    for (at, width) in [(352, 4u64), (376, 8)] {
+    for (at, width) in [
+        (super::MODULE_TYPE_LINKS, 4u64),
+        (super::MODULE_INTERFACE_LINKS, 8),
+    ] {
         let count = word(at + 8);
         if count > 100_000 || count > word(at + 16) {
             continue;

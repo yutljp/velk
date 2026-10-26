@@ -2,7 +2,7 @@ use super::functions;
 use crate::loader::Image;
 
 /// A version 4 compilation unit with 8-byte addresses holding `dies`.
-fn information(dies: &[u8]) -> Vec<u8> {
+pub(super) fn information(dies: &[u8]) -> Vec<u8> {
     let mut bytes = vec![0; 4];
     bytes.extend(4u16.to_le_bytes());
     bytes.extend(0u32.to_le_bytes());
@@ -14,7 +14,7 @@ fn information(dies: &[u8]) -> Vec<u8> {
 }
 
 /// An image whose only sections are the given debug information.
-fn image(info: &[u8], abbrev: &[u8]) -> Image {
+pub(super) fn image(info: &[u8], abbrev: &[u8]) -> Image {
     let mut bytes = Vec::new();
     let mut sections = Vec::new();
     for (name, data) in [(".debug_info", info), (".debug_abbrev", abbrev)] {
@@ -34,8 +34,7 @@ fn image(info: &[u8], abbrev: &[u8]) -> Image {
     image
 }
 
-#[test]
-fn function_ranges_distinguish_address_and_constant_high_pc() {
+pub(super) fn function_range_data() -> (Vec<u8>, Vec<u8>) {
     // Abbreviation 2: name, low_pc (addr), high_pc (data4);
     // abbreviation 3: name, low_pc (addr), high_pc (addr).
     let abbrev = [
@@ -66,6 +65,29 @@ fn function_ranges_distinguish_address_and_constant_high_pc() {
         dies.extend(high.to_le_bytes());
     }
     dies.push(0);
+    (abbrev.to_vec(), dies)
+}
+
+#[test]
+fn function_ranges_distinguish_address_and_constant_high_pc() {
+    use gimli::AttributeValue;
+
+    for (value, expected) in [
+        (AttributeValue::Data1(u8::MAX), Some(u64::from(u8::MAX))),
+        (AttributeValue::Data2(u16::MAX), Some(u64::from(u16::MAX))),
+        (AttributeValue::Data4(u32::MAX), Some(u64::from(u32::MAX))),
+        (AttributeValue::Data8(u64::MAX), Some(u64::MAX)),
+        (AttributeValue::Udata(u64::MAX), Some(u64::MAX)),
+        (AttributeValue::Sdata(0), Some(0)),
+        (AttributeValue::Sdata(i64::MAX), Some(i64::MAX as u64)),
+        (AttributeValue::Sdata(-1), None),
+        (AttributeValue::Addr(8), None),
+        (AttributeValue::Flag(true), None),
+        (AttributeValue::UnitRef(gimli::UnitOffset(8)), None),
+    ] {
+        assert_eq!(super::layout::number(value), expected);
+    }
+    let (abbrev, dies) = function_range_data();
     let ranges: Vec<_> = functions(&image(&information(&dies), &abbrev))
         .into_iter()
         .map(|function| (function.name, function.addr, function.size))

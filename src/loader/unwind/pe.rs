@@ -1,5 +1,3 @@
-use object::Object;
-
 use super::{Frame, FrameKind};
 use crate::loader::{Image, Isa};
 
@@ -7,16 +5,9 @@ pub(super) fn frames(image: &Image) -> Vec<Frame> {
     if image.isa != Isa::X86_64 {
         return Vec::new();
     }
-    let Ok(file) = object::read::pe::PeFile64::parse(image.bytes.as_slice()) else {
+    let Some((base, data)) = crate::loader::seh::exception_directory(image) else {
         return Vec::new();
     };
-    let Some(directory) = file.data_directory(object::pe::IMAGE_DIRECTORY_ENTRY_EXCEPTION) else {
-        return Vec::new();
-    };
-    let Ok(data) = directory.data(file.data(), &file.section_table()) else {
-        return Vec::new();
-    };
-    let base = file.relative_address_base();
     let mut frames = Vec::new();
     for entry in data.as_chunks::<12>().0 {
         let rva = |offset| {

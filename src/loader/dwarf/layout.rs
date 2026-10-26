@@ -32,7 +32,7 @@ pub(super) fn function_profile(
     }
 }
 
-fn number(value: AttributeValue<Reader<'_>>) -> Option<u64> {
+pub(super) fn number(value: AttributeValue<Reader<'_>>) -> Option<u64> {
     match value {
         AttributeValue::Sdata(value) => value.try_into().ok(),
         value => byte_count(value),

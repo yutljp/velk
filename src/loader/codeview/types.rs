@@ -18,6 +18,13 @@ pub(super) fn name(text: &str) -> bool {
         && !crate::render::reserved_identifier(text)
 }
 
+fn modifier(mut data: Reader<'_>) -> Option<u32> {
+    let (Some(inner), Some(flags)) = (data.u32(), data.u16()) else {
+        return None;
+    };
+    (flags & !7 == 0).then_some(inner)
+}
+
 impl Types {
     pub fn read(bytes: &[u8], start: u32) -> Self {
         let mut types = BTreeMap::new();
@@ -101,12 +108,9 @@ impl Types {
         };
         match kind {
             0x1001 => {
-                let (Some(inner), Some(flags)) = (data.u32(), data.u16()) else {
+                let Some(inner) = modifier(data) else {
                     return None;
                 };
-                if flags & !7 != 0 {
-                    return None;
-                }
                 self.spelling(inner, depth - 1)
             }
             0x1002 => {
@@ -227,12 +231,9 @@ impl Types {
         };
         match kind {
             0x1001 => {
-                let (Some(inner), Some(flags)) = (data.u32(), data.u16()) else {
+                let Some(inner) = modifier(data) else {
                     return None;
                 };
-                if flags & !7 != 0 {
-                    return None;
-                }
                 self.layout_with_budget(inner, depth - 1, budget)
             }
             0x1002 => {

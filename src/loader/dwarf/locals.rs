@@ -83,11 +83,13 @@ fn stack_offset(
     end: u64,
     frame_base: bool,
 ) -> Option<i64> {
-    let (sp, entry_offset) = match image.isa {
-        Isa::I386 => (Register(4), 4i64),
-        Isa::X86_64 => (Register(7), 8i64),
-        Isa::AArch64 => (Register(31), 0i64),
-        Isa::Arm32 | Isa::Unsupported => return None,
+    let Some(crate::loader::unwind::Architecture {
+        stack: sp,
+        entry_offset,
+        ..
+    }) = crate::loader::unwind::architecture(image.isa)
+    else {
+        return None;
     };
     if image.stack_at_entry(start) != Some(true) {
         return None;

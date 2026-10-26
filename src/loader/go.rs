@@ -4,6 +4,17 @@ use crate::loader::Image;
 
 pub(crate) mod types;
 
+const MODULE_NAMES: u64 = 8;
+const MODULE_PC_TABLE: u64 = 104;
+const MODULE_FUNCTION_TABLE: u64 = 128;
+const MODULE_TEXT: u64 = 176;
+const MODULE_TEXT_END: u64 = 184;
+const MODULE_TYPES: usize = 296;
+const MODULE_TYPES_END: usize = 304;
+const MODULE_TYPE_LINKS: usize = 352;
+const MODULE_INTERFACE_LINKS: usize = 376;
+const MODULE_TYPE_DATA_SIZE: u64 = 456;
+
 #[derive(Debug, Clone)]
 pub struct GoFunction {
     pub addr: u64,
@@ -82,16 +93,16 @@ fn moduledata(image: &Image, pclntab: u64) -> Option<u64> {
                 else {
                     continue;
                 };
-                if candidate.checked_add(184).is_none() {
+                if candidate.checked_add(MODULE_TEXT_END).is_none() {
                     continue;
                 }
-                let Some(text_addr) = candidate.checked_add(176) else {
+                let Some(text_addr) = candidate.checked_add(MODULE_TEXT) else {
                     continue;
                 };
-                let pclntable = slice_at(image, candidate + 104);
-                let ftab = slice_at(image, candidate + 128);
+                let pclntable = slice_at(image, candidate + MODULE_PC_TABLE);
+                let ftab = slice_at(image, candidate + MODULE_FUNCTION_TABLE);
                 let text = u64_at(image, text_addr);
-                let funcnametab = slice_at(image, candidate + 8);
+                let funcnametab = slice_at(image, candidate + MODULE_NAMES);
                 if let (
                     Some((table, _)),
                     Some((ftab_ptr, ftab_len)),
@@ -128,10 +139,10 @@ pub fn functions(image: &Image) -> Vec<GoFunction> {
         return Vec::new();
     };
     let (Some((pclntable, _)), Some((ftab_ptr, ftab_len)), Some(text), Some((names, names_len))) = (
-        slice_at(image, data + 104),
-        slice_at(image, data + 128),
-        u64_at(image, data + 176),
-        slice_at(image, data + 8),
+        slice_at(image, data + MODULE_PC_TABLE),
+        slice_at(image, data + MODULE_FUNCTION_TABLE),
+        u64_at(image, data + MODULE_TEXT),
+        slice_at(image, data + MODULE_NAMES),
     ) else {
         return Vec::new();
     };

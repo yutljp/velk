@@ -308,13 +308,6 @@ fn dwarf_call_index(image: &Image) -> Result<CallIndex, AbiIssue> {
     Ok(found)
 }
 
-fn call_number(value: AttributeValue<EndianSlice<'_, LittleEndian>>) -> Option<u64> {
-    match value {
-        AttributeValue::Sdata(value) => value.try_into().ok(),
-        value => byte_count(value),
-    }
-}
-
 fn call_dimensions(
     unit: &Unit<EndianSlice<'_, LittleEndian>>,
     entry: &gimli::DebuggingInformationEntry<EndianSlice<'_, LittleEndian>>,
@@ -332,7 +325,7 @@ fn call_dimensions(
         return Err(AbiIssue::UnsupportedType);
     }
     if let Some(stride) = attribute(entry, gimli::DW_AT_byte_stride)
-        && call_number(stride) != Some(element.size)
+        && layout::number(stride) != Some(element.size)
     {
         return Err(AbiIssue::UnknownLayout);
     }
@@ -357,17 +350,17 @@ fn call_dimensions(
             return Err(AbiIssue::UnknownLayout);
         }
         let lower = attribute(child, gimli::DW_AT_lower_bound)
-            .map(|value| call_number(value).ok_or(AbiIssue::UnknownLayout))
+            .map(|value| layout::number(value).ok_or(AbiIssue::UnknownLayout))
             .transpose()?
             .unwrap_or(0);
         if lower != 0 {
             return Err(AbiIssue::UnsupportedType);
         }
         let count = attribute(child, gimli::DW_AT_count)
-            .map(|value| call_number(value).ok_or(AbiIssue::UnknownLayout))
+            .map(|value| layout::number(value).ok_or(AbiIssue::UnknownLayout))
             .transpose()?;
         let upper = attribute(child, gimli::DW_AT_upper_bound)
-            .map(|value| call_number(value).ok_or(AbiIssue::UnknownLayout))
+            .map(|value| layout::number(value).ok_or(AbiIssue::UnknownLayout))
             .transpose()?
             .map(|value| value.checked_add(1).ok_or(AbiIssue::UnknownLayout))
             .transpose()?;

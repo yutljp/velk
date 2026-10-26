@@ -49,20 +49,26 @@ fn code(image: &Image, address: u64) -> bool {
         && read_bytes(image, address, 1).is_some()
 }
 
+pub(super) fn exception_directory(image: &Image) -> Option<(u64, &[u8])> {
+    let Ok(file) = object::read::pe::PeFile64::parse(image.bytes.as_slice()) else {
+        return None;
+    };
+    let Some(directory) = file.data_directory(object::pe::IMAGE_DIRECTORY_ENTRY_EXCEPTION) else {
+        return None;
+    };
+    let Ok(data) = directory.data(file.data(), &file.section_table()) else {
+        return None;
+    };
+    Some((file.relative_address_base(), data))
+}
+
 pub(super) fn read(image: &Image) -> Vec<Handler> {
     if image.isa != Isa::X86_64 {
         return Vec::new();
     }
-    let Ok(file) = object::read::pe::PeFile64::parse(image.bytes.as_slice()) else {
+    let Some((base, entries)) = exception_directory(image) else {
         return Vec::new();
     };
-    let Some(directory) = file.data_directory(object::pe::IMAGE_DIRECTORY_ENTRY_EXCEPTION) else {
-        return Vec::new();
-    };
-    let Ok(entries) = directory.data(file.data(), &file.section_table()) else {
-        return Vec::new();
-    };
-    let base = file.relative_address_base();
     let frames: std::collections::BTreeMap<_, _> = unwind::frames(image)
         .into_iter()
         .map(|frame| (frame.start, frame.size))

@@ -3,12 +3,17 @@ use std::collections::{HashMap, HashSet};
 use object::read::pe::Import;
 use object::{LittleEndian, Object, ObjectSection};
 
+struct NamedImport {
+    name: String,
+    dll: String,
+}
+
 pub(super) fn imports<Pe: object::read::pe::ImageNtHeaders>(
     file: &object::read::pe::PeFile<'_, Pe>,
 ) -> HashMap<u64, String> {
     named_imports(file)
         .into_iter()
-        .map(|(slot, (name, _))| (slot, name))
+        .map(|(slot, import)| (slot, import.name))
         .collect()
 }
 
@@ -17,13 +22,13 @@ pub(super) fn qualified_imports<Pe: object::read::pe::ImageNtHeaders>(
 ) -> HashMap<u64, String> {
     named_imports(file)
         .into_iter()
-        .map(|(slot, (name, dll))| (slot, format!("{dll}!{name}")))
+        .map(|(slot, import)| (slot, format!("{}!{}", import.dll, import.name)))
         .collect()
 }
 
 fn named_imports<Pe: object::read::pe::ImageNtHeaders>(
     file: &object::read::pe::PeFile<'_, Pe>,
-) -> HashMap<u64, (String, String)> {
+) -> HashMap<u64, NamedImport> {
     let word = if file.is_64() { 8 } else { 4 };
     let Ok(Some(table)) = file.import_table() else {
         return HashMap::new();
@@ -62,7 +67,10 @@ fn named_imports<Pe: object::read::pe::ImageNtHeaders>(
             {
                 imports.insert(
                     slot,
-                    (String::from_utf8_lossy(name).into_owned(), dll.clone()),
+                    NamedImport {
+                        name: String::from_utf8_lossy(name).into_owned(),
+                        dll: dll.clone(),
+                    },
                 );
             }
             let Some(next) = slot.checked_add(word) else {
