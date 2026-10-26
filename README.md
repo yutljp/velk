@@ -47,6 +47,8 @@ int sum_until_zero(int *p, int n) {
 
 ## Usage
 
+To build a stable release, check out the latest release tag (`git checkout v0.1.0`) before building.
+
 ```bash
 cargo build --release --locked
 
