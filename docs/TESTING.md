@@ -187,6 +187,22 @@ and preparation. The script saves per-harness results to
 | `chained_pointer_arm64e_userland24` | The same property for format 12, including all 24 ordinal bits. | 111.28 | pass |
 | `export_trie_limit` | Every export value and `usize` requested index from an unending iterator; the shared production entry limit yields values exactly below `MAX_EXPORTS`, then terminates. | 0.12 | pass |
 
+`go_table_walk` calls the production slice walk with at most two function
+entries, 0–16 function-data bytes, 0–8 name bytes and every 64-bit text base.
+It checks bounded output, nonwrapping code addresses and name lengths.
+`go_table_offsets` uses one entry, an eight-byte function header and a fixed terminated name;
+it checks exact acceptance and output for every 32-bit entry offset, signed
+function/name offset and 64-bit text base. Virtual table mapping and executable
+section membership are covered by normal regression tests, not these harnesses.
+
+The Go harnesses were verified on 2026-10-27 UTC with Kani 0.68.0 and CBMC
+6.11.0 on x86-64 Linux. These times exclude compilation and preparation.
+
+| Harness | Verification seconds | Result |
+| --- | ---: | --- |
+| `go_table_walk` | 81.93 | pass |
+| `go_table_offsets` | 8.48 | pass |
+
 The chained-pointer checks parse a fixed 60-byte starts table through the dependency
 and use the loader's rebase normalization. They do not prove whole-file fixup
 application, import-name lookup, nonzero chain links or page geometry. Normal tests
