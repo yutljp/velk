@@ -448,72 +448,7 @@ pub(super) fn stack_locals_with_roles(
             local.signed = signed;
         }
     }
-    // The fields of each region. An access no other overlaps is a field of
-    // its own. Accesses that overlap one another become the members of one
-    // union when they fill an aligned cell of two, four or eight bytes, each
-    // a whole number of its widths into it, or else of a union of their
-    // layers. A region read at an index has fields too: the index counts
-    // from the region's first byte, so what it reaches is the same storage.
-    let regions: Vec<(i64, i64)> = slot_names
-        .values()
-        .filter(|local| local.size > 0 && !within.contains_key(&local.slot))
-        .map(|local| (local.slot, local.size))
-        .collect();
-    for (outer, size) in regions {
-        let Some(end) = outer.checked_add(size) else {
-            continue;
-        };
-        let inside = |slot: &Option<i64>| slot.is_some_and(|slot| slot >= outer && slot < end);
-        // Fields cost each indexed access a cast to bytes and save one for
-        // each fixed access: a region read more at an index stays bytes.
-        let count = |indexed: bool| {
-            accesses
-                .iter()
-                .filter(|(slot, _, width, signed)| {
-                    inside(slot)
-                        && if indexed {
-                            *width == 0 && *signed == Some(false)
-                        } else {
-                            *width > 0
-                        }
-                })
-                .count()
-        };
-        let indexed_accesses = count(true);
-        if indexed_accesses > 0 && count(false) <= indexed_accesses {
-            continue;
-        }
-        let mut placed: Vec<(i64, u8)> = accesses
-            .iter()
-            .filter(|(slot, _, width, _)| *width > 0 && inside(slot))
-            .filter_map(|(slot, _, width, _)| slot.map(|slot| (slot, *width)))
-            .collect();
-        placed.sort_unstable();
-        placed.dedup();
-        let mut fields = Vec::new();
-        let mut first = 0;
-        while first < placed.len() {
-            let (start, width) = placed[first];
-            let mut stop = start.saturating_add(i64::from(width));
-            let mut next = first + 1;
-            while let Some((slot, width)) = placed.get(next).copied()
-                && slot < stop
-            {
-                stop = stop.max(slot.saturating_add(i64::from(width)));
-                next += 1;
-            }
-            if stop <= end
-                && let Some(field) =
-                    region_field(outer, &placed[first..next], &slot_names, &accesses)
-            {
-                fields.push(field);
-            }
-            first = next;
-        }
-        if let Some(local) = slot_names.get_mut(&outer) {
-            local.fields = fields;
-        }
-    }
+    build_regions(&mut slot_names, &within, &accesses);
     slot_names.retain(|slot, _| !within.contains_key(slot));
     let mut order: Vec<i64> = Vec::new();
     for slot in accesses.iter().filter_map(|(slot, ..)| *slot) {
@@ -1764,6 +1699,78 @@ fn frame_loads(expr: &Expr, frame: i64, sp: u16, out: &mut Vec<(Expr, i64, u8, b
             }
         }
         _ => {}
+    }
+}
+
+fn build_regions(
+    slot_names: &mut HashMap<i64, Local>,
+    within: &HashMap<i64, i64>,
+    accesses: &[FrameAccess],
+) {
+    // The fields of each region. An access no other overlaps is a field of
+    // its own. Accesses that overlap one another become the members of one
+    // union when they fill an aligned cell of two, four or eight bytes, each
+    // a whole number of its widths into it, or else of a union of their
+    // layers. A region read at an index has fields too: the index counts
+    // from the region's first byte, so what it reaches is the same storage.
+    let regions: Vec<(i64, i64)> = slot_names
+        .values()
+        .filter(|local| local.size > 0 && !within.contains_key(&local.slot))
+        .map(|local| (local.slot, local.size))
+        .collect();
+    for (outer, size) in regions {
+        let Some(end) = outer.checked_add(size) else {
+            continue;
+        };
+        let inside = |slot: &Option<i64>| slot.is_some_and(|slot| slot >= outer && slot < end);
+        // Fields cost each indexed access a cast to bytes and save one for
+        // each fixed access: a region read more at an index stays bytes.
+        let count = |indexed: bool| {
+            accesses
+                .iter()
+                .filter(|(slot, _, width, signed)| {
+                    inside(slot)
+                        && if indexed {
+                            *width == 0 && *signed == Some(false)
+                        } else {
+                            *width > 0
+                        }
+                })
+                .count()
+        };
+        let indexed_accesses = count(true);
+        if indexed_accesses > 0 && count(false) <= indexed_accesses {
+            continue;
+        }
+        let mut placed: Vec<(i64, u8)> = accesses
+            .iter()
+            .filter(|(slot, _, width, _)| *width > 0 && inside(slot))
+            .filter_map(|(slot, _, width, _)| slot.map(|slot| (slot, *width)))
+            .collect();
+        placed.sort_unstable();
+        placed.dedup();
+        let mut fields = Vec::new();
+        let mut first = 0;
+        while first < placed.len() {
+            let (start, width) = placed[first];
+            let mut stop = start.saturating_add(i64::from(width));
+            let mut next = first + 1;
+            while let Some((slot, width)) = placed.get(next).copied()
+                && slot < stop
+            {
+                stop = stop.max(slot.saturating_add(i64::from(width)));
+                next += 1;
+            }
+            if stop <= end
+                && let Some(field) = region_field(outer, &placed[first..next], slot_names, accesses)
+            {
+                fields.push(field);
+            }
+            first = next;
+        }
+        if let Some(local) = slot_names.get_mut(&outer) {
+            local.fields = fields;
+        }
     }
 }
 

@@ -131,29 +131,7 @@ pub(crate) fn variable_types(
             uses.bits.insert(*index);
         }
     }
-    loop {
-        let mut changed = false;
-        for &(dest, source) in &pointer_copies {
-            for (from, to) in [(source, dest), (dest, source)] {
-                if integer_copies.contains(&to) {
-                    continue;
-                }
-                let Some(widths) = uses.addresses.get(&from).cloned() else {
-                    continue;
-                };
-                let known = uses.addresses.entry(to).or_default();
-                for width in widths {
-                    if !known.contains(&width) {
-                        known.push(width);
-                        changed = true;
-                    }
-                }
-            }
-        }
-        if !changed {
-            break;
-        }
-    }
+    uses.spread_accesses(&pointer_copies, &integer_copies);
     // What a float variable is loaded from holds floats.
     for (dest, base) in uses.loaded.clone() {
         if let Some(Some(precision)) = uses.floats.get(&dest).copied() {
@@ -641,6 +619,32 @@ struct Uses {
 }
 
 impl Uses {
+    fn spread_accesses(&mut self, copies: &[(u16, u16)], integer_copies: &HashSet<u16>) {
+        loop {
+            let mut changed = false;
+            for &(dest, source) in copies {
+                for (from, to) in [(source, dest), (dest, source)] {
+                    if integer_copies.contains(&to) {
+                        continue;
+                    }
+                    let Some(widths) = self.addresses.get(&from).cloned() else {
+                        continue;
+                    };
+                    let known = self.addresses.entry(to).or_default();
+                    for width in widths {
+                        if !known.contains(&width) {
+                            known.push(width);
+                            changed = true;
+                        }
+                    }
+                }
+            }
+            if !changed {
+                break;
+            }
+        }
+    }
+
     fn float(&mut self, index: u16, precision: Precision) {
         let entry = self.floats.entry(index).or_insert(Some(precision));
         if *entry != Some(precision) {

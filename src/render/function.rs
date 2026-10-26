@@ -352,6 +352,37 @@ struct PreparedBody {
     placement: super::initializers::Placement,
 }
 
+fn type_reservations(
+    ir: &FunctionIr,
+    variable_types: &std::collections::BTreeMap<u16, CType>,
+    locals: &Locals,
+) -> Vec<String> {
+    let mut reserved = Vec::new();
+    for ty in ir
+        .params
+        .iter()
+        .map(|param| &param.ty)
+        .chain(ir.stack_params.iter().map(|param| &param.ty))
+        .chain(variable_types.values())
+        .chain(
+            locals
+                .decls
+                .iter()
+                .flat_map(|local| local.named())
+                .filter_map(|local| local.ty.as_ref()),
+        )
+        .chain(std::iter::once(&ir.ret_type))
+    {
+        reserved.extend(
+            ty.to_string()
+                .split(|c: char| !c.is_ascii_alphanumeric() && c != '_')
+                .filter(|name| !name.is_empty())
+                .map(str::to_owned),
+        );
+    }
+    reserved
+}
+
 fn render_with(
     ir: &FunctionIr,
     references: &[Reference],
@@ -457,28 +488,7 @@ fn render_with(
             .or_else(|| ir.name.clone())
             .unwrap_or_else(|| format!("sub_{:x}", ir.addr)),
     ));
-    for ty in ir
-        .params
-        .iter()
-        .map(|param| &param.ty)
-        .chain(ir.stack_params.iter().map(|param| &param.ty))
-        .chain(variable_types.values())
-        .chain(
-            locals
-                .decls
-                .iter()
-                .flat_map(|local| local.named())
-                .filter_map(|local| local.ty.as_ref()),
-        )
-        .chain(std::iter::once(&ir.ret_type))
-    {
-        machine_reserved.extend(
-            ty.to_string()
-                .split(|c: char| !c.is_ascii_alphanumeric() && c != '_')
-                .filter(|name| !name.is_empty())
-                .map(str::to_owned),
-        );
-    }
+    machine_reserved.extend(type_reservations(ir, &variable_types, &locals));
     // Any other machine register the body uses is a variable of its own;
     // Go keeps the running goroutine in r14.
     let (used_registers, written_registers) = machine_registers(ir, true);
@@ -826,28 +836,7 @@ fn render_with(
             _ => None,
         },
     ));
-    for ty in ir
-        .params
-        .iter()
-        .map(|param| &param.ty)
-        .chain(ir.stack_params.iter().map(|param| &param.ty))
-        .chain(variable_types.values())
-        .chain(
-            locals
-                .decls
-                .iter()
-                .flat_map(|local| local.named())
-                .filter_map(|local| local.ty.as_ref()),
-        )
-        .chain(std::iter::once(&ir.ret_type))
-    {
-        reserved.extend(
-            ty.to_string()
-                .split(|c: char| !c.is_ascii_alphanumeric() && c != '_')
-                .filter(|name| !name.is_empty())
-                .map(str::to_owned),
-        );
-    }
+    reserved.extend(type_reservations(ir, &variable_types, &locals));
     let return_slot = if ir.isa == crate::loader::Isa::X86_64
         && matches!(
             ir.convention,

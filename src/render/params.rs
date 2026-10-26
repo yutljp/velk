@@ -155,6 +155,35 @@ enum Source {
     Slot(u64),
 }
 
+fn slot_accesses(ir: &FunctionIr, slot_of: &impl Fn(&Expr) -> Option<u64>) -> Vec<(u64, u8, bool)> {
+    fn loads(expr: &Expr, out: &mut Vec<(Expr, u8)>) {
+        if let Expr::Load { addr, width, .. } = expr {
+            out.push((addr.as_ref().clone(), *width));
+        }
+        for child in crate::ir::visit::children(expr) {
+            loads(child, out);
+        }
+    }
+    let mut accesses: Vec<(u64, u8, bool)> = Vec::new();
+    for stmt in ir.blocks.iter().flat_map(|block| &block.stmts) {
+        if let Stmt::Store { addr, width, .. } = stmt
+            && let Some(slot) = slot_of(addr)
+        {
+            accesses.push((slot, *width, true));
+        }
+        let mut loaded = Vec::new();
+        for operand in stmt.operands() {
+            loads(operand, &mut loaded);
+        }
+        accesses.extend(
+            loaded
+                .iter()
+                .filter_map(|(addr, width)| slot_of(addr).map(|slot| (slot, *width, false))),
+        );
+    }
+    accesses
+}
+
 fn fold(ir: &mut FunctionIr, param: u16, integer_types: IntegerTypes) {
     let sp = stack_pointer(ir.isa);
     let atomics = ir
@@ -321,31 +350,7 @@ fn fold(ir: &mut FunctionIr, param: u16, integer_types: IntegerTypes) {
     }
     // A slot read wider than its narrowest store, or touched at another
     // offset among its bytes, holds more than the value stored there.
-    fn loads(expr: &Expr, out: &mut Vec<(Expr, u8)>) {
-        if let Expr::Load { addr, width, .. } = expr {
-            out.push((addr.as_ref().clone(), *width));
-        }
-        for child in crate::ir::visit::children(expr) {
-            loads(child, out);
-        }
-    }
-    let mut accesses: Vec<(u64, u8, bool)> = Vec::new();
-    for stmt in ir.blocks.iter().flat_map(|block| &block.stmts) {
-        if let Stmt::Store { addr, width, .. } = stmt
-            && let Some(slot) = slot_of(addr)
-        {
-            accesses.push((slot, *width, true));
-        }
-        let mut loaded = Vec::new();
-        for operand in stmt.operands() {
-            loads(operand, &mut loaded);
-        }
-        accesses.extend(
-            loaded
-                .iter()
-                .filter_map(|(addr, width)| slot_of(addr).map(|slot| (slot, *width, false))),
-        );
-    }
+    let accesses = slot_accesses(ir, &slot_of);
     let mixed = |slot: u64| {
         let narrowest = stored.get(&slot).copied().unwrap_or(8);
         let extent = accesses

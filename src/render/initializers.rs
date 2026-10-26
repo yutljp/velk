@@ -12,8 +12,31 @@ pub(super) fn fold(
     candidates: impl Iterator<Item = (String, String)>,
     placement: Placement,
 ) -> String {
-    let candidates: HashMap<_, _> = candidates.collect();
     let lines: Vec<&str> = body.split_inclusive('\n').collect();
+    let discovery = discover(declarations, body, &lines, candidates, placement);
+    *declarations = discovery.declarations;
+    let replacements = discovery.replacements;
+    let mut result = String::with_capacity(body.len());
+    for (position, line) in lines.iter().enumerate() {
+        result.push_str(replacements.get(&position).map_or(*line, String::as_str));
+    }
+    result
+}
+
+struct Discovery {
+    declarations: String,
+    replacements: HashMap<usize, String>,
+}
+
+fn discover(
+    declarations: &str,
+    body: &str,
+    lines: &[&str],
+    candidates: impl Iterator<Item = (String, String)>,
+    placement: Placement,
+) -> Discovery {
+    let mut declarations = declarations.to_owned();
+    let candidates: HashMap<_, _> = candidates.collect();
     let mut scopes = Vec::with_capacity(lines.len());
     let mut stack = Vec::new();
     let mut labels = HashMap::new();
@@ -161,11 +184,10 @@ pub(super) fn fold(
         };
         replacements.insert(position, initialized);
     }
-    let mut result = String::with_capacity(body.len());
-    for (position, line) in lines.iter().enumerate() {
-        result.push_str(replacements.get(&position).map_or(*line, String::as_str));
+    Discovery {
+        declarations,
+        replacements,
     }
-    result
 }
 
 // A less-indented line bounds the scope conservatively, including case labels.

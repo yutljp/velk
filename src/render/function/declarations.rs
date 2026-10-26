@@ -181,36 +181,7 @@ pub(super) fn emit(input: Input<'_>) -> Declarations {
             "{}; /* [sp{}{:x}] */\n",
             match &local.ty {
                 _ if !local.fields.is_empty() && local.ty.is_none() => {
-                    let mut fields = Vec::new();
-                    let mut end = 0;
-                    for field in &local.fields {
-                        let offset = field.slot.saturating_sub(local.slot);
-                        if offset > end {
-                            fields.push(format!("uint8_t gap_{end:x}[0x{:x}];", offset - end));
-                        }
-                        let name = field
-                            .name
-                            .rsplit('.')
-                            .next()
-                            .expect("splitting a string always yields at least one component");
-                        fields.push(format!(
-                            "{};",
-                            match &field.ty {
-                                _ if !field.views.is_empty() => union_declaration(field, name),
-                                Some(ty) => declaration(ty, name),
-                                None => format!("{} {name}", type_of(field.width, field.signed)),
-                            }
-                        ));
-                        end = offset.saturating_add(i64::from(field.width));
-                    }
-                    if local.size > end {
-                        fields.push(format!("uint8_t gap_{end:x}[0x{:x}];", local.size - end));
-                    }
-                    format!(
-                        "_Alignas(16) struct __attribute__((packed)) {{ {} }} {}",
-                        fields.join(" "),
-                        local.name
-                    )
+                    field_layout(local)
                 }
                 Some(CType::Array(element)) if local.size > 0 => {
                     let size = super::super::locals::scalar_storage_size(element).unwrap_or(1);
@@ -258,4 +229,37 @@ pub(super) fn emit(input: Input<'_>) -> Declarations {
         text: out,
         candidates,
     }
+}
+
+fn field_layout(local: &super::super::locals::Local) -> String {
+    let mut fields = Vec::new();
+    let mut end = 0;
+    for field in &local.fields {
+        let offset = field.slot.saturating_sub(local.slot);
+        if offset > end {
+            fields.push(format!("uint8_t gap_{end:x}[0x{:x}];", offset - end));
+        }
+        let name = field
+            .name
+            .rsplit('.')
+            .next()
+            .expect("splitting a string always yields at least one component");
+        fields.push(format!(
+            "{};",
+            match &field.ty {
+                _ if !field.views.is_empty() => union_declaration(field, name),
+                Some(ty) => declaration(ty, name),
+                None => format!("{} {name}", type_of(field.width, field.signed)),
+            }
+        ));
+        end = offset.saturating_add(i64::from(field.width));
+    }
+    if local.size > end {
+        fields.push(format!("uint8_t gap_{end:x}[0x{:x}];", local.size - end));
+    }
+    format!(
+        "_Alignas(16) struct __attribute__((packed)) {{ {} }} {}",
+        fields.join(" "),
+        local.name
+    )
 }
