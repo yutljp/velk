@@ -21,13 +21,25 @@ pub struct Constant {
 }
 
 pub fn search(image: &Image, value: u64, deadline: Option<Instant>) -> Result<Vec<Constant>> {
+    scan(image, Some(value), deadline)
+}
+
+pub(crate) fn all(image: &Image, deadline: Option<Instant>) -> Result<Vec<Constant>> {
+    // These instruction decoders consume little-endian instruction bytes.
+    if image.byte_order() != Some(object::Endianness::Little) {
+        return Ok(Vec::new());
+    }
+    scan(image, None, deadline)
+}
+
+fn scan(image: &Image, value: Option<u64>, deadline: Option<Instant>) -> Result<Vec<Constant>> {
     let mut result = Vec::new();
     for section in image.sections.iter().filter(|s| s.executable && s.loaded) {
-        let Some(bytes) = image.read_vaddr(section.vaddr, section.size) else {
+        let Some(bytes) = crate::memory::section_bytes(image, section) else {
             continue;
         };
         let mut add = |instruction, operand, immediate| {
-            if immediate != value {
+            if value.is_some_and(|value| immediate != value) {
                 return;
             }
             let function = image
@@ -42,7 +54,7 @@ pub fn search(image: &Image, value: u64, deadline: Option<Instant>) -> Result<Ve
             result.push(Constant {
                 instruction,
                 operand,
-                value,
+                value: immediate,
                 function,
             });
         };

@@ -28,6 +28,8 @@ pub struct Symbols {
     pub function_returns: HashMap<u64, crate::ir::CType>,
     pub import_returns: HashMap<u64, crate::ir::CType>,
     pub data: HashMap<u64, String>,
+    /// Exact constant-table names used only for already identified global accesses.
+    pub constant_names: HashMap<u64, String>,
     /// Header declarations for data objects stored at their symbol addresses.
     pub library_variables: HashMap<u64, crate::analysis::prototypes::LibraryVariable>,
     pub objc_selectors: HashMap<u64, String>,

@@ -228,6 +228,7 @@ pub struct Image {
     /// The regular symbol table has no named, defined code symbols.
     pub stripped: bool,
     bytes: Vec<u8>,
+    section_file_sizes: HashMap<(u64, Option<u64>), u64>,
     pub sections: Vec<Section>,
     pub functions: BTreeMap<u64, Function>,
     /// The names of the data objects the symbol tables define.
@@ -307,6 +308,20 @@ impl Image {
             .range(..=address)
             .next_back()
             .map_or(ArmMode::Arm, |(_, mode)| *mode)
+    }
+
+    pub(crate) fn section_file_size(&self, section: &Section) -> u64 {
+        self.section_file_sizes
+            .get(&(section.vaddr, section.file_offset))
+            .copied()
+            .unwrap_or_else(|| {
+                if section.file_offset.is_some() {
+                    section.size
+                } else {
+                    0
+                }
+            })
+            .min(section.size)
     }
 
     pub(crate) fn byte_order(&self) -> Option<object::Endianness> {
@@ -432,6 +447,7 @@ impl Image {
                 read_only: false,
             }],
             bytes: code,
+            section_file_sizes: HashMap::new(),
             functions: BTreeMap::new(),
             data_symbols: BTreeMap::new(),
             objc_selectors: BTreeMap::new(),
@@ -814,6 +830,7 @@ pub fn load_with_arch(path: &Path, arch: Option<Architecture>) -> Result<Image> 
     relocate::apply_dynamic(&file, &mut relocated);
 
     let mut sections = Vec::new();
+    let mut section_file_sizes = HashMap::<(u64, Option<u64>), u64>::new();
     for section in file.sections() {
         let vaddr = bases
             .get(&section.index())
@@ -824,13 +841,19 @@ pub fn load_with_arch(path: &Path, arch: Option<Architecture>) -> Result<Image> 
         if vaddr.checked_add(section.size()).is_none() {
             continue;
         }
+        let file_range = section.file_range();
+        let file_offset = file_range.and_then(|(offset, _)| offset.checked_add(slice_offset));
+        if let Some((_, size)) = file_range {
+            section_file_sizes
+                .entry((vaddr, file_offset))
+                .and_modify(|current| *current = (*current).min(size))
+                .or_insert(size);
+        }
         sections.push(Section {
             name: section.name().unwrap_or("<unnamed>").to_owned(),
             vaddr,
             size: section.size(),
-            file_offset: section
-                .file_range()
-                .and_then(|(offset, _)| offset.checked_add(slice_offset)),
+            file_offset,
             executable: is_executable(section.kind()),
             loaded: relocate::allocated(&section),
             read_only: is_read_only(section.kind(), section.name().unwrap_or("")),
@@ -1042,6 +1065,7 @@ pub fn load_with_arch(path: &Path, arch: Option<Architecture>) -> Result<Image> 
         entry,
         stripped,
         bytes: relocated,
+        section_file_sizes,
         sections,
         functions,
         data_symbols,

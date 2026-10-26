@@ -13,6 +13,8 @@ pub mod error;
 pub mod ir;
 pub mod lift;
 pub mod loader;
+pub mod memory;
+
 pub mod mcp;
 pub mod passes;
 pub mod project;
@@ -21,5 +23,6 @@ pub mod script;
 pub mod service;
 pub mod sigs;
 pub mod ssa;
+mod tables;
 mod timing;
 pub mod xrefs;

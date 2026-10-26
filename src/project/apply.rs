@@ -173,6 +173,7 @@ impl Project {
                                 format!("symbol name is already used: {name}"),
                             ));
                         }
+                        symbols.constant_names.remove(address);
                         symbols.data.insert(*address, name.clone());
                     }
                     if let Some(ty) = ty {

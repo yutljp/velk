@@ -5,9 +5,31 @@ use serde::Deserialize;
 use serde_json::{Value, json};
 use std::time::Instant;
 
+/// A navigation or memory operation shared by the query interfaces.
 #[derive(Debug, PartialEq, Eq, Deserialize)]
 #[serde(tag = "kind", rename_all = "camelCase", deny_unknown_fields)]
 pub enum Query {
+    /// Searches loaded sections for a byte, text or integer pattern.
+    Search {
+        /// Text interpreted according to the selected encoding.
+        pattern: String,
+        /// Pattern encoding and section or address restrictions.
+        #[serde(default)]
+        options: crate::memory::Search,
+    },
+    /// Decodes complete typed values within one loaded section.
+    ReadMemory {
+        /// Virtual address or a symbol resolving to one.
+        target: String,
+        /// Scalar, string, array or debug structure type.
+        #[serde(rename = "type")]
+        type_name: String,
+        /// Number of consecutive values; defaults to one.
+        #[serde(default = "one_count")]
+        count: u64,
+    },
+    /// Finds exact standard constant signatures and their references.
+    DetectConstants,
     Xrefs {
         target: String,
         #[serde(default)]
@@ -39,6 +61,9 @@ pub enum Query {
         target: String,
     },
 }
+fn one_count() -> u64 {
+    1
+}
 fn one() -> usize {
     1
 }
@@ -46,9 +71,24 @@ fn path_depth() -> usize {
     32
 }
 
+/// Answers a query against the loaded image, honoring the optional deadline.
 pub fn run(binary: &mut Binary, query: Query, deadline: Option<Instant>) -> Result<Value> {
-    let resolve = |text: &str| binary.find_address(text);
     match query {
+        Query::Search { pattern, options } => {
+            crate::memory::search(binary.image(), &pattern, &options, deadline)
+        }
+        Query::ReadMemory {
+            target,
+            type_name,
+            count,
+        } => {
+            let address = match binary.find_address(&target) {
+                Ok(address) => address,
+                Err(error) => return Err(error),
+            };
+            crate::memory::read(binary.image(), address, &type_name, count, deadline)
+        }
+        Query::DetectConstants => crate::tables::detect(binary, deadline),
         Query::Constants { value } => {
             let Some(value) = crate::addr::parse(&value) else {
                 return Err(Error::BadAddress(value));
@@ -59,7 +99,7 @@ pub fn run(binary: &mut Binary, query: Query, deadline: Option<Instant>) -> Resu
             }
         }
         Query::Summary { target } => {
-            let addr = match resolve(&target) {
+            let addr = match binary.find_address(&target) {
                 Ok(addr) => addr,
                 Err(error) => return Err(error),
             };
@@ -75,7 +115,7 @@ pub fn run(binary: &mut Binary, query: Query, deadline: Option<Instant>) -> Resu
             )
         }
         Query::Xrefs { target, from } => {
-            let addr = match resolve(&target) {
+            let addr = match binary.find_address(&target) {
                 Ok(addr) => addr,
                 Err(error) => return Err(error),
             };
@@ -88,11 +128,11 @@ pub fn run(binary: &mut Binary, query: Query, deadline: Option<Instant>) -> Resu
             )
         }
         Query::Path { from, to, depth } => {
-            let from = match resolve(&from) {
+            let from = match binary.find_address(&from) {
                 Ok(addr) => addr,
                 Err(error) => return Err(error),
             };
-            let to = match resolve(&to) {
+            let to = match binary.find_address(&to) {
                 Ok(addr) => addr,
                 Err(error) => return Err(error),
             };
@@ -105,7 +145,7 @@ pub fn run(binary: &mut Binary, query: Query, deadline: Option<Instant>) -> Resu
             )
         }
         Query::Callers { ref target, depth } | Query::Callees { ref target, depth } => {
-            let addr = match resolve(target) {
+            let addr = match binary.find_address(target) {
                 Ok(addr) => addr,
                 Err(error) => return Err(error),
             };

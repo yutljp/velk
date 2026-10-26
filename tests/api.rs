@@ -93,6 +93,9 @@ JSON.stringify({{
     callees: b.callees(f.addr),
     path: b.callPath(f.addr, f.addr, {{ depth: 0 }}),
     constants: b.constants("0x1"),
+    byteSearch: b.search("00"),
+    memoryRead: b.readMemory(f.addr, "u8"),
+    detectedConstants: b.detectConstants(),
     strings: b.strings(),
     summary: f.summary(),
     functionXrefs: f.xrefs(),
@@ -173,6 +176,9 @@ fn script_results_match_the_declarations() {
             ("callees", "GraphResult"),
             ("path", "PathResult"),
             ("constants", "ConstantsResult"),
+            ("byteSearch", "ByteSearchResult"),
+            ("memoryRead", "MemoryReadResult"),
+            ("detectedConstants", "DetectedConstantsResult"),
             ("strings", "StringsResult"),
             ("summary", "FunctionSummary"),
             ("functionXrefs", "XrefResult"),
@@ -189,6 +195,8 @@ fn script_results_match_the_declarations() {
         for (field, array, interface) in [
             ("xrefs", "xrefs", "Xref"),
             ("constants", "matches", "ConstantMatch"),
+            ("byteSearch", "matches", "ByteSearchMatch"),
+            ("detectedConstants", "matches", "DetectedConstant"),
             ("strings", "strings", "StringLiteral"),
         ] {
             for value in navigation[field][array].as_array().into_iter().flatten() {

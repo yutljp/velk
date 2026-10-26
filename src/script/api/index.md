@@ -257,3 +257,49 @@ Names and comments preserve computation. **Declared types can change computation
 through width, signedness, pointer arithmetic, layouts and return conversions;
 they are user assertions. Classification changes available entries. Comments
 appear above their owning function with unsafe delimiters escaped.
+
+
+## Bytes and typed memory
+
+`b.search("48 8b ?? 24")` searches loaded sections. Options select
+`encoding` (`hex`, `ascii`, `utf16`, `integer`), integer `width` in bytes (negative integers use two’s complement),
+`byteOrder` (`native`, `little`, `big`), `start`, `end` and `section`.
+The default is hex in image byte order; start is inclusive and end exclusive.
+Results contain `matches` with `addr`, `section` and the containing `function`
+address or null. Matches may overlap but never cross section boundaries.
+
+`b.readMemory("0x1000", "u32", {count: 4})` reads four values. Types include
+`u8/u16/u32/u64`, `i8/i16/i32/i64`, `f32/f64`, `pointer`, `cstring`, `utf16`,
+`TYPE[N]` and debug structures such as `struct sample`. Reads use image byte
+order and pointer width. Unmapped and cross-section reads fail. Zero-initialized sections read as zero.
+Unsigned 64-bit integers and pointers are hex strings; signed 64-bit integers
+are decimal strings. C strings require UTF-8; UTF-16 strings reject invalid
+surrogates. Infinity and NaN are strings. Limits are 65536 values (including
+nested fields/elements), 16 nesting levels and 16 MiB per read.
+Debug structure reads require available, unambiguous layouts; unsupported
+layouts fail. Debug types on big-endian images are not currently loaded.
+
+`b.detectConstants()` returns `matches` and navigation `failures`. Matches name
+full exact data signatures, in either byte order, and complete groups of decoded
+instruction immediates within one function. Each match gives `name`, `addr`,
+`size`, `kind`, `section`, `byteOrder` and referencing `functions` from xrefs.
+For immediates, the address is the first matched instruction, section and byte
+order are null, and functions contains the function with the group. Big-endian instruction immediates are not decoded. Instructions
+that construct a larger constant from pieces are not combined. The presence of
+constants does not establish which algorithm a function implements.
+Exact data matches supply global names in printed C. A longer matching signature
+wins when signatures share the same starting address.
+
+CLI equivalents:
+
+```sh
+velk --search BIN '48 8b ?? 24' --section .text
+velk --search BIN 'hello' --encoding ascii
+velk --search BIN 'hello' --encoding utf16 --byte-order little
+velk --search BIN 0x12345678 --encoding integer --width 4 --byte-order big
+velk --read-memory BIN 0x1000 --type u32 --count 4
+velk --detect-constants BIN
+```
+
+The same JavaScript methods are available through MCP's `velk_run_script`.
+Slice `matches` or `values` before returning large results.

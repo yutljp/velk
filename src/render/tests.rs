@@ -2712,3 +2712,31 @@ fn annotated_local_name_stays_on_its_first_value_after_splitting() {
         assert!(!text.contains("return saved_value;"), "{text}");
     }
 }
+
+#[test]
+fn constant_table_names_only_rename_global_memory_accesses() {
+    let symbols = Symbols {
+        constant_names: HashMap::from([(0x1000, "aes_sbox".to_owned())]),
+        ..Symbols::default()
+    };
+    let number = FunctionIr::single_block(
+        Isa::AArch64,
+        vec![Stmt::Ret {
+            value: Expr::Const(0x1000),
+        }],
+    );
+    assert_eq!(
+        render(&number, &[], &symbols, &[(0x1000, 256)]),
+        render(&number, &[], &Symbols::default(), &[(0x1000, 256)])
+    );
+    let access = FunctionIr::single_block(
+        Isa::AArch64,
+        vec![Stmt::Ret {
+            value: load(Expr::Const(0x1000), 1),
+        }],
+    );
+    let original = render(&access, &[], &Symbols::default(), &[(0x1000, 256)]);
+    let named = render(&access, &[], &symbols, &[(0x1000, 256)]);
+    assert!(named.contains("aes_sbox"), "{named}");
+    assert_eq!(named.replace("aes_sbox", "g_1000"), original);
+}

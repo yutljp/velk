@@ -36,6 +36,20 @@ interface Binary {
   /** Decoded immediate matches, excluding branch displacements; slice result.matches.
    * Pass a hex string for integers larger than JavaScript's safe integer range. */
   constants(value: string | number): ConstantsResult;
+  /** Searches loaded sections. Hex bytes accept ?? wildcards.
+   * Ranges are [start,end); every byte of a match must fit. Integer widths are bytes.
+   * Use strings for integers outside JavaScript's safe range. */
+  search(pattern: string | number, opts?: { encoding?: "hex" | "ascii" | "utf16" | "integer"; width?: 1 | 2 | 4 | 8; byteOrder?: "native" | "little" | "big"; start?: string | number; end?: string | number; section?: string }): ByteSearchResult;
+  /** Reads complete values within one loaded section, in image byte order.
+   * Types: u8/u16/u32/u64, i8/i16/i32/i64, f32/f64, pointer, cstring, utf16,
+   * TYPE[N] or a debug struct NAME. Defaults to one value; at most 65536 values / 16 MiB.
+   * u64 and pointers are hex strings; i64 is a decimal string. Other finite numbers are JSON numbers.
+   * Nonfinite floats are strings. C strings must contain valid UTF-8; UTF-16 is strict. */
+  readMemory(target: string | number, type: string, opts?: { count?: number }): MemoryReadResult;
+  /** Full exact byte signatures, and groups of decoded immediates in one function.
+   * Detection identifies constants, not an algorithm's purpose. Failures are navigation failures.
+   * Slice matches before returning large results over MCP. */
+  detectConstants(): DetectedConstantsResult;
   /** Writes immediately to the project file; pass open's project option for a writable location.
    * Name edits are reflected in subsequent lookups, summaries, navigation and C. */
   projectSet(annotation: ProjectAnnotation): { ok: boolean };

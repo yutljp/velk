@@ -599,6 +599,7 @@ dependencies = [
  "cpp_demangle",
  "gimli",
  "iced-x86",
+ "memchr",
  "object",
  "rquickjs",
  "rustc-demangle",

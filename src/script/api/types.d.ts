@@ -169,3 +169,34 @@ interface CppMethod {
   address: Addr;
   name: string | null;
 }
+
+/** One complete pattern match within a loaded section. */
+interface ByteSearchMatch {
+  addr: Addr;
+  section: string;
+  function: Addr | null;
+}
+interface ByteSearchResult {
+  matches: ByteSearchMatch[];
+}
+/** Complete values decoded within one loaded section. */
+interface MemoryReadResult {
+  addr: Addr;
+  type: string;
+  values: unknown[];
+  bytes: number;
+}
+/** An exact data signature or a complete group of decoded immediates. */
+interface DetectedConstant {
+  name: string;
+  addr: Addr;
+  size: number;
+  section: string | null;
+  byteOrder: "bytes" | "little" | "big" | null;
+  kind: "data" | "immediates";
+  functions: Addr[];
+}
+interface DetectedConstantsResult {
+  matches: DetectedConstant[];
+  failures: Failure[];
+}

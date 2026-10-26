@@ -106,3 +106,18 @@ b.functions({ named: true }).slice(0, 5).map(f => ({ addr: f.addr, name: f.name 
 ## ライセンス
 
 未定です。
+
+
+バイト列の検索、型を指定したメモリの読み取り、標準的な定数の検出も JSON で利用できます。
+
+```sh
+velk --search app '48 8b ?? 24' --section .text
+velk --search app 'hello' --encoding ascii
+velk --read-memory app 0x1000 --type u32 --count 4
+velk --detect-constants app
+```
+
+JavaScript API と MCP では `b.search(pattern, options)`、
+`b.readMemory(address, type, {count})`、`b.detectConstants()` を使えます。
+エンコーディング、範囲、型、完全一致する定数の詳細は
+[メモリの問い合わせ](docs/MEMORY.ja.md)を参照してください。

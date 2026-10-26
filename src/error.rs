@@ -2,6 +2,10 @@ use std::path::PathBuf;
 
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
+    /// An invalid memory request or an unavailable image range or type.
+    #[error("memory query: {0}")]
+    Memory(String),
+
     #[error("{0}")]
     Project(crate::project::ProjectError),
     #[error("{}: {source}", path.display())]

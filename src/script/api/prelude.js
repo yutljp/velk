@@ -88,6 +88,14 @@
     callers(target, { depth = 1 } = {}) { return call("navigate", { bin: this.#id, query: { kind: "callers", target: String(address(target)), depth } }); }
     callees(target, { depth = 1 } = {}) { return call("navigate", { bin: this.#id, query: { kind: "callees", target: String(address(target)), depth } }); }
     callPath(from, to, { depth = 32 } = {}) { return call("navigate", { bin: this.#id, query: { kind: "path", from: String(address(from)), to: String(address(to)), depth } }); }
+    search(pattern, options = {}) {
+      const opts = { ...options };
+      for (const key of ["start", "end"]) if (opts[key] !== undefined) opts[key] = String(address(opts[key]));
+      if (typeof pattern === "number" && (!Number.isSafeInteger(pattern))) throw new RangeError("use a decimal or hex string for a 64-bit search integer");
+      return call("navigate", { bin: this.#id, query: { kind: "search", pattern: String(pattern), options: opts } });
+    }
+    readMemory(target, type, { count = 1 } = {}) { return call("navigate", { bin: this.#id, query: { kind: "readMemory", target: String(address(target)), type, count } }); }
+    detectConstants() { return call("navigate", { bin: this.#id, query: { kind: "detectConstants" } }); }
     strings({ contains } = {}) { return call("navigate", { bin: this.#id, query: { kind: "strings", contains } }); }
     constants(value) {
       if (typeof value === "number" && (!Number.isSafeInteger(value) || value < 0)) throw new RangeError("use a decimal or hex string for a 64-bit constant");

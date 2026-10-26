@@ -263,6 +263,7 @@ pub fn callee_names(image: &crate::loader::Image) -> Symbols {
         ..Symbols::default()
     };
     classes::name_tables(image, &mut symbols);
+    symbols.constant_names = crate::tables::names(image).into_iter().collect();
     for variable in symbols.library_variables.values() {
         symbols.reserved_names.insert(variable.name.clone());
     }
@@ -283,6 +284,7 @@ pub fn callee_names(image: &crate::loader::Image) -> Symbols {
         .values()
         .chain(symbols.import_slots.values())
         .chain(symbols.data.values())
+        .chain(symbols.constant_names.values())
         .cloned()
         .collect::<Vec<_>>()
     {

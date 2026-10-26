@@ -74,7 +74,7 @@ impl Globals {
         symbols: &super::Symbols,
         reserved: impl IntoIterator<Item = String>,
     ) -> Self {
-        let names: HashMap<_, _> = symbols
+        let mut names: HashMap<_, _> = symbols
             .import_slots
             .iter()
             .chain(&symbols.data)
@@ -86,6 +86,11 @@ impl Globals {
                 (*address, name)
             })
             .collect();
+        for (address, name) in &symbols.constant_names {
+            if !symbols.library_variables.contains_key(address) {
+                names.insert(*address, identifier(name));
+            }
+        }
         let mut counts = HashMap::<&str, usize>::new();
         for name in names.values() {
             *counts.entry(name).or_default() += 1;

@@ -11,6 +11,7 @@ clap = { version = "4.6.7", features = ["derive"] }
 cpp_demangle = "0.5.1"
 gimli = { version = "0.34.0", features = ["read"] }
 iced-x86 = "1.21.0"
+memchr = "2.8.3"
 object = { version = "0.40.0", features = ["all"] }
 rquickjs = "0.14.0"
 rustc-demangle = "0.1.28"

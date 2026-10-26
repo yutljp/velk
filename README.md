@@ -109,3 +109,18 @@ The script method `b.classes()` and MCP tool `velk_classes` list the same RTTI m
 ## License
 
 Not decided yet.
+
+
+Byte patterns, typed memory and standard constants are also available as JSON:
+
+```sh
+velk --search app '48 8b ?? 24' --section .text
+velk --search app 'hello' --encoding ascii
+velk --read-memory app 0x1000 --type u32 --count 4
+velk --detect-constants app
+```
+
+The JavaScript API and MCP provide `b.search(pattern, options)`,
+`b.readMemory(address, type, {count})` and `b.detectConstants()`.
+See [memory queries](docs/MEMORY.md) for encodings, bounds, types and exact
+constant signatures.

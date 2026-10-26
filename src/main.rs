@@ -36,7 +36,7 @@ const HELP_STYLES: Styles = Styles::styled()
     group(ArgGroup::new("operation").required(true).multiple(false).args([
         "compare", "annotate", "annotation", "annotations", "unannotate", "export_project", "import_project", "origins",
         "functions", "classes", "sections", "card", "decompile", "disasm", "ir",
-        "build_signatures", "identify", "run", "mcp", "xrefs", "callers", "callees", "path", "strings", "constants", "summary"
+        "build_signatures", "identify", "run", "mcp", "xrefs", "callers", "callees", "path", "strings", "constants", "summary", "search", "read_memory", "detect_constants"
     ])),
     group(ArgGroup::new("multi_target").args(["decompile", "path"])),
     group(ArgGroup::new("graph").args(["callers", "callees", "path"])),
@@ -130,17 +130,54 @@ struct Cli {
     /// Matching decoded instruction immediates, as JSON.
     #[arg(long, help_heading = "Operations (choose one)")]
     constants: bool,
+    /// Search loaded sections for bytes, text or an integer, as JSON.
+    #[arg(long, help_heading = "Operations (choose one)")]
+    search: bool,
+    /// Read typed values from a file-backed address, as JSON.
+    #[arg(long, help_heading = "Operations (choose one)")]
+    read_memory: bool,
+    /// Detect exact standard constant tables and immediate groups, as JSON.
+    #[arg(long, help_heading = "Operations (choose one)")]
+    detect_constants: bool,
+    /// Search encoding (default: hex).
+    #[arg(long, requires = "search", value_parser = ["hex", "ascii", "utf16", "integer"])]
+    encoding: Option<String>,
+    /// Integer search width in bytes.
+    #[arg(long, requires = "search", value_parser = ["1", "2", "4", "8"])]
+    width: Option<String>,
+    /// Search byte order (default: native).
+    #[arg(long, requires = "search", value_parser = ["native", "little", "big"])]
+    byte_order: Option<String>,
+    /// Inclusive search start address.
+    #[arg(long, requires = "search")]
+    start: Option<String>,
+    /// Exclusive search end address; complete matches must fit before it.
+    #[arg(long, requires = "search")]
+    end: Option<String>,
+    /// Loaded section name to search.
+    #[arg(long, requires = "search")]
+    section: Option<String>,
+    /// Memory type: u8, u16, u32, u64, i8, i16, i32, i64, f32, f64, pointer, cstring, utf16, TYPE[N], or struct NAME.
+    #[arg(
+        long = "type",
+        requires = "read_memory",
+        required_if_eq("read_memory", "true")
+    )]
+    type_name: Option<String>,
+    /// Number of memory values to read (default: 1).
+    #[arg(long, requires = "read_memory")]
+    count: Option<u64>,
     /// Compact function summary, as JSON.
     #[arg(long, help_heading = "Operations (choose one)")]
     summary: bool,
     /// References originating in the target function; only with --xrefs.
-    #[arg(long, requires = "xrefs", conflicts_with_all = ["classes", "functions", "sections", "card", "decompile", "disasm", "ir", "build_signatures", "identify", "run", "mcp", "callers", "callees", "path", "strings", "constants", "summary"])]
+    #[arg(long, requires = "xrefs", conflicts_with_all = ["classes", "search", "read_memory", "detect_constants", "functions", "sections", "card", "decompile", "disasm", "ir", "build_signatures", "identify", "run", "mcp", "callers", "callees", "path", "strings", "constants", "summary"])]
     from: bool,
     /// Maximum call depth; only with --callers, --callees or --path.
-    #[arg(long, requires = "graph", conflicts_with_all = ["classes", "functions", "sections", "card", "decompile", "disasm", "ir", "build_signatures", "identify", "run", "mcp", "xrefs", "strings", "constants", "summary"])]
+    #[arg(long, requires = "graph", conflicts_with_all = ["classes", "search", "read_memory", "detect_constants", "functions", "sections", "card", "decompile", "disasm", "ir", "build_signatures", "identify", "run", "mcp", "xrefs", "strings", "constants", "summary"])]
     depth: Option<usize>,
     /// Case-sensitive substring; only with --strings.
-    #[arg(long, requires = "strings", conflicts_with_all = ["classes", "functions", "sections", "card", "decompile", "disasm", "ir", "build_signatures", "identify", "run", "mcp", "xrefs", "callers", "callees", "path", "constants", "summary"])]
+    #[arg(long, requires = "strings", conflicts_with_all = ["classes", "search", "read_memory", "detect_constants", "functions", "sections", "card", "decompile", "disasm", "ir", "build_signatures", "identify", "run", "mcp", "xrefs", "callers", "callees", "path", "constants", "summary"])]
     contains: Option<String>,
     /// Binary file, or JavaScript file with --run; required except with --mcp.
     #[arg(
@@ -156,9 +193,9 @@ struct Cli {
             ("compare", "true"),
             ("annotate", "true"), ("annotation", "true"), ("unannotate", "true"), ("import_project", "true"), ("origins", "true"),
             ("card", "true"), ("decompile", "true"),
-            ("disasm", "true"), ("ir", "true"), ("xrefs", "true"), ("callers", "true"), ("callees", "true"), ("path", "true"), ("constants", "true"), ("summary", "true")
+            ("disasm", "true"), ("ir", "true"), ("xrefs", "true"), ("callers", "true"), ("callees", "true"), ("path", "true"), ("constants", "true"), ("summary", "true"), ("search", "true"), ("read_memory", "true")
         ]),
-        conflicts_with_all = ["classes", "functions", "sections", "build_signatures", "identify", "run", "mcp", "strings", "annotations", "export_project"]
+        conflicts_with_all = ["classes", "functions", "sections", "build_signatures", "identify", "run", "mcp", "strings", "annotations", "export_project", "detect_constants"]
     )]
     function: Option<String>,
     /// Destination for --path, or a second function to decompile.
@@ -166,29 +203,29 @@ struct Cli {
         value_name = "FUNCTION",
         requires = "multi_target",
         required_if_eq("path", "true"),
-        conflicts_with_all = ["classes", "functions", "sections", "card", "disasm", "ir", "build_signatures", "identify", "run", "mcp", "xrefs", "callers", "callees", "strings", "constants", "summary"])]
+        conflicts_with_all = ["classes", "search", "read_memory", "detect_constants", "functions", "sections", "card", "disasm", "ir", "build_signatures", "identify", "run", "mcp", "xrefs", "callers", "callees", "strings", "constants", "summary"])]
     destination: Option<String>,
     /// Additional functions to decompile; use '*' for all functions.
-    #[arg(value_name = "FUNCTION", requires = "decompile", conflicts_with_all = ["classes", "functions", "sections", "card", "disasm", "ir", "build_signatures", "identify", "run", "mcp", "xrefs", "callers", "callees", "path", "strings", "constants", "summary"])]
+    #[arg(value_name = "FUNCTION", requires = "decompile", conflicts_with_all = ["classes", "search", "read_memory", "detect_constants", "functions", "sections", "card", "disasm", "ir", "build_signatures", "identify", "run", "mcp", "xrefs", "callers", "callees", "path", "strings", "constants", "summary"])]
     additional_functions: Vec<String>,
     /// Maximum functions (default: 40), matches (default: 100), or instructions (default: all).
     #[arg(
         long,
         value_name = "N",
-        conflicts_with_all = ["classes", "compare", "annotate", "annotation", "annotations", "unannotate", "export_project", "import_project", "origins", "xrefs", "callers", "callees", "path", "strings", "constants", "summary", "sections", "card", "decompile", "ir", "build_signatures", "run", "mcp"]
+        conflicts_with_all = ["classes", "compare", "search", "read_memory", "detect_constants", "annotate", "annotation", "annotations", "unannotate", "export_project", "import_project", "origins", "xrefs", "callers", "callees", "path", "strings", "constants", "summary", "sections", "card", "decompile", "ir", "build_signatures", "run", "mcp"]
     )]
     limit: Option<usize>,
     #[arg(
         long,
         value_name = "TOKENS",
-        conflicts_with_all = ["classes", "compare", "annotate", "annotation", "annotations", "unannotate", "export_project", "import_project", "origins", "xrefs", "callers", "callees", "path", "strings", "constants", "summary", "functions", "sections", "decompile", "disasm", "ir", "build_signatures", "identify", "run", "mcp"],
+        conflicts_with_all = ["classes", "compare", "search", "read_memory", "detect_constants", "annotate", "annotation", "annotations", "unannotate", "export_project", "import_project", "origins", "xrefs", "callers", "callees", "path", "strings", "constants", "summary", "functions", "sections", "decompile", "disasm", "ir", "build_signatures", "identify", "run", "mcp"],
         help = format!("Approximate card size in tokens (default: {}); only with --card", card::DEFAULT_BUDGET)
     )]
     budget: Option<usize>,
     /// Print the function list as JSON; only with --functions.
     #[arg(
         long,
-        conflicts_with_all = ["classes", "compare", "annotate", "annotation", "annotations", "unannotate", "export_project", "import_project", "origins", "xrefs", "callers", "callees", "path", "strings", "constants", "summary", "sections", "card", "decompile", "disasm", "ir", "build_signatures", "identify", "run", "mcp"]
+        conflicts_with_all = ["classes", "compare", "search", "read_memory", "detect_constants", "annotate", "annotation", "annotations", "unannotate", "export_project", "import_project", "origins", "xrefs", "callers", "callees", "path", "strings", "constants", "summary", "sections", "card", "decompile", "disasm", "ir", "build_signatures", "identify", "run", "mcp"]
     )]
     json: bool,
     /// Signature database; required for --identify, optional for --card and --decompile.
@@ -196,7 +233,7 @@ struct Cli {
         long,
         value_name = "FILE",
         required_if_eq("identify", "true"),
-        conflicts_with_all = ["classes", "compare", "annotate", "annotation", "annotations", "unannotate", "export_project", "import_project", "origins", "xrefs", "callers", "callees", "path", "strings", "constants", "summary", "functions", "sections", "disasm", "ir", "build_signatures", "run", "mcp"]
+        conflicts_with_all = ["classes", "compare", "search", "read_memory", "detect_constants", "annotate", "annotation", "annotations", "unannotate", "export_project", "import_project", "origins", "xrefs", "callers", "callees", "path", "strings", "constants", "summary", "functions", "sections", "disasm", "ir", "build_signatures", "run", "mcp"]
     )]
     signatures: Option<PathBuf>,
     /// Signature database to write; required with --build-signatures.
@@ -204,7 +241,7 @@ struct Cli {
         long,
         value_name = "FILE",
         required_if_eq("build_signatures", "true"),
-        conflicts_with_all = ["classes", "compare", "annotate", "annotation", "annotations", "unannotate", "export_project", "import_project", "origins", "xrefs", "callers", "callees", "path", "strings", "constants", "summary", "functions", "sections", "card", "decompile", "disasm", "ir", "identify", "run", "mcp"]
+        conflicts_with_all = ["classes", "compare", "search", "read_memory", "detect_constants", "annotate", "annotation", "annotations", "unannotate", "export_project", "import_project", "origins", "xrefs", "callers", "callees", "path", "strings", "constants", "summary", "functions", "sections", "card", "decompile", "disasm", "ir", "identify", "run", "mcp"]
     )]
     output: Option<PathBuf>,
 }
@@ -263,7 +300,10 @@ enum Command {
 
 impl Cli {
     fn into_command(self) -> Command {
-        if self.xrefs
+        if self.search
+            || self.read_memory
+            || self.detect_constants
+            || self.xrefs
             || self.callers
             || self.callees
             || self.path
@@ -273,7 +313,29 @@ impl Cli {
         {
             use velk::xrefs::query::Query;
             let target = self.function.unwrap_or_default();
-            let query = if self.xrefs {
+            let query = if self.search {
+                Query::Search {
+                    pattern: target,
+                    options: velk::memory::Search {
+                        encoding: self.encoding.unwrap_or_else(|| "hex".to_owned()),
+                        width: self
+                            .width
+                            .map(|width| width.parse().expect("clap restricts integer widths")),
+                        byte_order: self.byte_order.unwrap_or_else(|| "native".to_owned()),
+                        start: self.start,
+                        end: self.end,
+                        section: self.section,
+                    },
+                }
+            } else if self.read_memory {
+                Query::ReadMemory {
+                    target,
+                    type_name: self.type_name.expect("clap requires a type"),
+                    count: self.count.unwrap_or(1),
+                }
+            } else if self.detect_constants {
+                Query::DetectConstants
+            } else if self.xrefs {
                 Query::Xrefs {
                     target,
                     from: self.from,
