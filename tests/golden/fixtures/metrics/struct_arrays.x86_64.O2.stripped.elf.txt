@@ -76,10 +76,10 @@ int32_t sub_2011b0(uint32_t *a0, int32_t a1) {
         return v3;
     }
     int64_t v4 = v2 << 4;
-    if (*(int32_t *)((uint8_t *)a0 + v4 + 0x8) <= 0) {
+    if ((int32_t)a0[v4 / 4 + 2] <= 0) {
         return v3;
     }
-    return *(uint64_t *)((uint8_t *)a0 + v4);
+    return *(uint64_t *)(a0 + v4 / 4);
 }
 -- signature
 int32_t (uint32_t * a0, int32_t a1)

@@ -1369,3 +1369,299 @@ fn double_arithmetic_keeps_one_double_operand_and_integer_signedness() {
     candidates.push(candidate);
     check_candidates("implicit-double-operands", candidates, Mode::Registers, &[]);
 }
+
+#[test]
+fn floating_assignments_supply_conversions_and_keep_arithmetic_precision() {
+    use velk::ir::{Operation, Precision, RegRef, VARIABLE_BASE};
+
+    for (from, to) in [
+        (Precision::Single, Precision::Double),
+        (Precision::Double, Precision::Single),
+    ] {
+        let source = if from == Precision::Single {
+            "float"
+        } else {
+            "double"
+        };
+        let target = if to == Precision::Single {
+            "float"
+        } else {
+            "double"
+        };
+        let ir = synthetic_ir(
+            "converted_sum",
+            vec![Param {
+                index: 7,
+                name: "x".into(),
+                ty: CType::Named(source.into()),
+            }],
+            CType::Named(target.into()),
+            vec![
+                Stmt::Assign {
+                    dest: RegRef {
+                        index: VARIABLE_BASE,
+                        width: to.bits(),
+                    },
+                    value: Expr::Apply {
+                        op: Operation::FloatConvert { from, to },
+                        args: vec![Expr::reg(7, from.bits())],
+                    },
+                },
+                Stmt::Ret {
+                    value: Expr::Apply {
+                        op: Operation::FloatAdd(to),
+                        args: vec![Expr::reg(VARIABLE_BASE, to.bits()); 2],
+                    },
+                },
+            ],
+        );
+        let code = velk::render::render(&ir, &[], &Default::default(), &[]);
+        assert!(code.contains(&format!("{target} v1 = x;")), "{code}");
+        assert!(code.contains("return v1 + v1;"), "{code}");
+        syntax::run_printed(
+            &code,
+            "",
+            &format!(
+                "{source} values[] = {{0.0, -0.0, 1.0, 0x1.000001p0, 0x1.fffffep127}}; for (unsigned i = 0; i < sizeof(values)/sizeof(values[0]); ++i) {{ {target} x = values[i]; if (converted_sum(values[i]) != x + x) return 1; }} return 0;"
+            ),
+        );
+    }
+}
+
+#[test]
+fn derived_structure_pointers_keep_validated_field_types() {
+    use velk::ir::{AbiProfile, Definition, Member, RegRef, VARIABLE_BASE};
+
+    let mut candidates = Vec::new();
+    for offset in [0, 2] {
+        for duplicate in [false, true] {
+            let mut ir = synthetic_ir(
+                &format!("derived_fields_{offset}_{duplicate}"),
+                vec![
+                    Param {
+                        index: 7,
+                        name: "items".into(),
+                        ty: CType::pointer_to(CType::Named("struct item".into())),
+                    },
+                    Param {
+                        index: 6,
+                        name: "i".into(),
+                        ty: CType::U32,
+                    },
+                ],
+                CType::U64,
+                vec![
+                    Stmt::Assign {
+                        dest: RegRef {
+                            index: VARIABLE_BASE,
+                            width: 64,
+                        },
+                        value: Expr::bin(
+                            BinOp::Add,
+                            Expr::reg(7, 64),
+                            Expr::bin(
+                                BinOp::Add,
+                                Expr::bin(BinOp::Mul, Expr::reg(6, 32), Expr::Const(8)),
+                                Expr::Const(offset),
+                            ),
+                        ),
+                    },
+                    Stmt::Ret {
+                        value: Expr::bin(
+                            BinOp::Add,
+                            Expr::Load {
+                                addr: Box::new(Expr::reg(VARIABLE_BASE, 64)),
+                                width: 4,
+                                signed: false,
+                            },
+                            Expr::Load {
+                                addr: Box::new(Expr::bin(
+                                    BinOp::Add,
+                                    Expr::reg(VARIABLE_BASE, 64),
+                                    Expr::Const(4),
+                                )),
+                                width: 2,
+                                signed: true,
+                            },
+                        ),
+                    },
+                ],
+            );
+            ir.definitions.push(Definition {
+                name: "struct item".into(),
+                members: vec![
+                    "uint32_t count;".into(),
+                    "int16_t kind;".into(),
+                    "uint8_t gap_0x6[0x2];".into(),
+                ],
+                fields: vec!["count".into(), "kind".into()],
+                contains: vec![],
+                size: 8,
+                alignment: Some(4),
+                compatible_profiles: vec![AbiProfile::SysV],
+            });
+            ir.members.extend([
+                Member {
+                    structure: "item".into(),
+                    offset: 0,
+                    name: "count".into(),
+                    ty: CType::U32,
+                    width: 4,
+                },
+                Member {
+                    structure: "item".into(),
+                    offset: 4,
+                    name: "kind".into(),
+                    ty: CType::int(2, true),
+                    width: 2,
+                },
+            ]);
+            if duplicate {
+                ir.definitions.push(ir.definitions[0].clone());
+            }
+            let candidate = printed_candidate(ir, [0, 1, 2].map(|i| vec![REGION + 16, i]).to_vec());
+            if offset == 0 && !duplicate {
+                assert!(
+                    candidate.code.contains("struct item *v1 = items + i;"),
+                    "{}",
+                    candidate.code
+                );
+                assert!(candidate.code.contains("v1->kind"), "{}", candidate.code);
+            } else {
+                assert!(
+                    !candidate.code.contains("struct item *v1"),
+                    "{}",
+                    candidate.code
+                );
+            }
+            candidates.push(candidate);
+        }
+    }
+    check_candidates("derived-structure-fields", candidates, Mode::Memory, &[]);
+}
+
+#[test]
+fn aligned_byte_offsets_use_typed_pointers_only_for_proven_multiples() {
+    use velk::ir::{RegRef, VARIABLE_BASE};
+
+    let offset = VARIABLE_BASE;
+    let count = offset + 1;
+    let sum = offset + 2;
+    let mut candidates = Vec::new();
+    for stride in [6, 32] {
+        for initial in [Some(0), Some(2), None] {
+            let mut ir = synthetic_ir(
+                &format!("aligned_offsets_{stride}_{initial:?}"),
+                vec![
+                    Param {
+                        index: 7,
+                        name: "p".into(),
+                        ty: CType::pointer_to(CType::I32),
+                    },
+                    Param {
+                        index: 6,
+                        name: "start".into(),
+                        ty: CType::U64,
+                    },
+                ],
+                CType::U64,
+                vec![
+                    Stmt::Assign {
+                        dest: RegRef {
+                            index: offset,
+                            width: 64,
+                        },
+                        value: initial.map_or(Expr::reg(6, 64), Expr::Const),
+                    },
+                    Stmt::Assign {
+                        dest: RegRef {
+                            index: count,
+                            width: 64,
+                        },
+                        value: Expr::Const(2),
+                    },
+                    Stmt::Assign {
+                        dest: RegRef {
+                            index: sum,
+                            width: 64,
+                        },
+                        value: Expr::Const(0),
+                    },
+                    Stmt::Br { target: Some(1) },
+                ],
+            );
+            ir.blocks.extend([
+                Block {
+                    start: 1,
+                    stmts: vec![Stmt::Brif {
+                        cond: Cond::Eq,
+                        lhs: Expr::reg(count, 64),
+                        rhs: Expr::Const(0),
+                        target: 3,
+                    }],
+                },
+                Block {
+                    start: 2,
+                    stmts: vec![
+                        Stmt::Assign {
+                            dest: RegRef {
+                                index: sum,
+                                width: 64,
+                            },
+                            value: Expr::bin(
+                                BinOp::Add,
+                                Expr::reg(sum, 64),
+                                Expr::Load {
+                                    addr: Box::new(Expr::bin(
+                                        BinOp::Add,
+                                        Expr::reg(7, 64),
+                                        Expr::reg(offset, 64),
+                                    )),
+                                    width: 8,
+                                    signed: false,
+                                },
+                            ),
+                        },
+                        Stmt::Assign {
+                            dest: RegRef {
+                                index: offset,
+                                width: 64,
+                            },
+                            value: Expr::bin(
+                                BinOp::Add,
+                                Expr::reg(offset, 64),
+                                Expr::Const(stride),
+                            ),
+                        },
+                        Stmt::Assign {
+                            dest: RegRef {
+                                index: count,
+                                width: 64,
+                            },
+                            value: Expr::bin(BinOp::Sub, Expr::reg(count, 64), Expr::Const(1)),
+                        },
+                        Stmt::Br { target: Some(1) },
+                    ],
+                },
+                Block {
+                    start: 3,
+                    stmts: vec![Stmt::Ret {
+                        value: Expr::reg(sum, 64),
+                    }],
+                },
+            ]);
+            ir.name = Some(ir.name.as_ref().unwrap().replace(['(', ')', ':'], "_"));
+            ir.value_types.insert(offset, CType::I64);
+            let candidate =
+                printed_candidate(ir, [0, 2, 4].map(|start| vec![REGION + 16, start]).to_vec());
+            assert_eq!(
+                candidate.code.contains("(uint8_t *)p"),
+                stride != 32 || initial != Some(0),
+                "{}",
+                candidate.code
+            );
+            candidates.push(candidate);
+        }
+    }
+    check_candidates("aligned-byte-offsets", candidates, Mode::Memory, &[]);
+}

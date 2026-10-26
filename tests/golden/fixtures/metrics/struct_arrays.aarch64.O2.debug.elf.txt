@@ -7,10 +7,9 @@
 -- decompile
 /* velk pseudo-C: item_weight @ 0x210174 */
 struct item { _Alignas(8) long key; int count; short kind; uint8_t gap_0xe[0x2]; };
-struct S1 { uint8_t gap_0x0[0x8]; int32_t field_0x8; int16_t field_0xc; };
 int item_weight(struct item *items, int i) {
-    struct S1 *v1 = (struct S1 *)(items + i);
-    return v1->field_0x8 * v1->field_0xc;
+    struct item *v1 = items + i;
+    return v1->count * v1->kind;
 }
 -- signature
 int (struct item * items, int i)
@@ -28,11 +27,10 @@ fn item_weight @ 0x210174 (size 20)
 -- decompile
 /* velk pseudo-C: cell_set @ 0x210188 */
 struct cell { _Alignas(4) int x; int y; int z; };
-struct S1 { int32_t field_0x0; uint8_t gap_0x4[0x4]; int32_t field_0x8; };
 void cell_set(struct cell *cells, long i, int v) {
-    struct S1 *v1 = (struct S1 *)(cells + i);
-    v1->field_0x0 = v;
-    v1->field_0x8 = v + 1;
+    struct cell *v1 = cells + i;
+    v1->x = v;
+    v1->z = v + 1;
 }
 -- signature
 void (struct cell * cells, long i, int v)

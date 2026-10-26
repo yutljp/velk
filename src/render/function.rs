@@ -79,7 +79,8 @@ fn render_unmerged(
     let variadic = super::variadic::prepare(&mut folded, symbols);
     crate::analysis::variadic::drop_register_saves(&mut folded);
     params::fold_saved_parameters(&mut folded);
-    let candidate = params::integer_copy_candidate(&folded)
+    let candidate = params::mutable_copy_candidate(&folded)
+        .or_else(|| params::integer_copy_candidate(&folded))
         .or_else(|| crate::passes::copies::integer_expression_candidate(&folded))
         .or_else(|| crate::passes::read_once::frame_load_candidate(&folded));
     let baseline = render_prepared(
@@ -1037,11 +1038,7 @@ fn render_with(
         element_types,
         plain_chars,
         arrays,
-        scaled_offsets: if ir.members.is_empty() {
-            HashMap::new()
-        } else {
-            naming::scaled_offsets(ir)
-        },
+        scaled_offsets: naming::address_offsets(ir),
         narrow_regs,
         floats,
         scaled,

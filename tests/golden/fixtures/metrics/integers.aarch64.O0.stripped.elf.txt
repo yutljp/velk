@@ -111,10 +111,9 @@ fn <unnamed> @ 0x2102e0 (size 64)
 -- decompile
 /* velk pseudo-C: sub_210320 @ 0x210320 */
 int32_t sub_210320(int32_t a0) {
-    int32_t v2 = a0;
     int32_t result = 0;
-    while (v2 != 0) {
-        v2 &= v2 - 1;
+    while (a0 != 0) {
+        a0 &= a0 - 1;
         ++result;
     }
     return result;

@@ -41,7 +41,7 @@ void sub_180001000(uint32_t *a0, uint32_t *a1, uint32_t a2) {
             v7 = a2 & 0xffffffe0;
             int64_t i = 0;
             do {
-                __builtin_memmove((uint8_t *)a0 + i, (uint8_t *)a1 + i, 32);
+                __builtin_memmove(a0 + i / 4, a1 + i / 4, 32);
                 i += 32;
             } while (v7 != i);
             if (v7 == a2) {
@@ -56,7 +56,7 @@ void sub_180001000(uint32_t *a0, uint32_t *a1, uint32_t a2) {
         int64_t v13 = v7;
         v7 = a2 & 0xfffffffc;
         do {
-            *(uint32_t *)((uint8_t *)a0 + v13) = *(uint32_t *)((uint8_t *)a1 + v13);
+            a0[v13 / 4] = a1[v13 / 4];
             v13 += 4;
         } while (v7 != v13);
         if (v7 == a2) {

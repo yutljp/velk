@@ -133,7 +133,7 @@ fn <unnamed> @ 0x201270 (size 5)
 -- decompile
 /* velk pseudo-C: sub_201280 @ 0x201280 */
 double sub_201280(float a0) {
-    double v1 = (double)a0;
+    double v1 = a0;
     return v1 + v1;
 }
 -- signature

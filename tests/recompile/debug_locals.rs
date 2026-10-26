@@ -954,3 +954,204 @@ fn structured_return_copies_preserve_truncation_and_parameter_changes() {
     }
     check_candidates("structured-return-copies", candidates, Mode::Registers, &[]);
 }
+
+#[test]
+fn mutable_parameter_copies_preserve_original_uses_and_full_width_writes() {
+    let temp = velk::ir::VARIABLE_BASE;
+    let count = temp + 1;
+    let mut candidates = Vec::new();
+    for width in [32, 64] {
+        for source_live in [false, true] {
+            let mut ir = synthetic_ir(
+                &format!("mutable_copy_{width}_{source_live}"),
+                vec![Param {
+                    index: 7,
+                    name: "input".into(),
+                    ty: CType::int(width / 8, false),
+                }],
+                CType::U64,
+                vec![
+                    Stmt::Assign {
+                        dest: velk::ir::RegRef { index: temp, width },
+                        value: Expr::reg(7, width),
+                    },
+                    Stmt::Assign {
+                        dest: velk::ir::RegRef {
+                            index: count,
+                            width: 64,
+                        },
+                        value: Expr::Const(0),
+                    },
+                    Stmt::Br { target: Some(1) },
+                ],
+            );
+            ir.blocks.extend([
+                Block {
+                    start: 1,
+                    stmts: vec![Stmt::Brif {
+                        cond: Cond::Eq,
+                        lhs: Expr::reg(temp, width),
+                        rhs: Expr::Const(0),
+                        target: 3,
+                    }],
+                },
+                Block {
+                    start: 2,
+                    stmts: vec![
+                        Stmt::Assign {
+                            dest: velk::ir::RegRef { index: temp, width },
+                            value: Expr::bin(BinOp::Shr, Expr::reg(temp, width), Expr::Const(1)),
+                        },
+                        Stmt::Assign {
+                            dest: velk::ir::RegRef {
+                                index: count,
+                                width: 64,
+                            },
+                            value: Expr::bin(BinOp::Add, Expr::reg(count, 64), Expr::Const(1)),
+                        },
+                        Stmt::Br { target: Some(1) },
+                    ],
+                },
+                Block {
+                    start: 3,
+                    stmts: vec![Stmt::Ret {
+                        value: if source_live {
+                            Expr::bin(BinOp::Add, Expr::reg(count, 64), Expr::reg(7, width))
+                        } else {
+                            Expr::reg(count, 64)
+                        },
+                    }],
+                },
+            ]);
+            ir.value_types.insert(temp, CType::int(width / 8, false));
+            let candidate = printed_candidate(
+                ir,
+                [0, 1, 3, 0x8000_0000, 1 << 63, u64::MAX]
+                    .map(|value| vec![value])
+                    .to_vec(),
+            );
+            if !source_live {
+                assert!(!candidate.code.contains(" v1"), "{}", candidate.code);
+                assert!(candidate.code.contains("input >>= 1"), "{}", candidate.code);
+            }
+            candidates.push(candidate);
+        }
+    }
+    check_candidates("mutable-parameter-copies", candidates, Mode::Registers, &[]);
+}
+
+#[test]
+fn mutable_parameter_copies_keep_partial_writes_and_entry_reinitialization() {
+    let temp = velk::ir::VARIABLE_BASE;
+    let mut candidates = Vec::new();
+    let mut partial = synthetic_ir(
+        "mutable_partial_copy",
+        vec![Param {
+            index: 7,
+            name: "input".into(),
+            ty: CType::U32,
+        }],
+        CType::U64,
+        vec![
+            Stmt::Assign {
+                dest: velk::ir::RegRef {
+                    index: temp,
+                    width: 32,
+                },
+                value: Expr::reg(7, 32),
+            },
+            Stmt::Assign {
+                dest: velk::ir::RegRef {
+                    index: temp,
+                    width: 16,
+                },
+                value: Expr::Const(42),
+            },
+            Stmt::Ret {
+                value: Expr::reg(temp, 64),
+            },
+        ],
+    );
+    partial.value_types.insert(temp, CType::U32);
+    let candidate = printed_candidate(
+        partial,
+        [0, 1, 0x1234_abcd, u64::MAX]
+            .map(|value| vec![value])
+            .to_vec(),
+    );
+    assert!(candidate.code.contains(" = input;"), "{}", candidate.code);
+    candidates.push(candidate);
+    let mut reset = synthetic_ir(
+        "mutable_reset_copy",
+        vec![
+            Param {
+                index: 7,
+                name: "input".into(),
+                ty: CType::U64,
+            },
+            Param {
+                index: 6,
+                name: "count".into(),
+                ty: CType::U64,
+            },
+        ],
+        CType::U64,
+        vec![
+            Stmt::Assign {
+                dest: velk::ir::RegRef {
+                    index: temp,
+                    width: 64,
+                },
+                value: Expr::reg(7, 64),
+            },
+            Stmt::Assign {
+                dest: velk::ir::RegRef {
+                    index: temp,
+                    width: 64,
+                },
+                value: Expr::bin(BinOp::Shr, Expr::reg(temp, 64), Expr::Const(1)),
+            },
+            Stmt::Brif {
+                cond: Cond::Eq,
+                lhs: Expr::reg(6, 64),
+                rhs: Expr::Const(0),
+                target: 2,
+            },
+        ],
+    );
+    reset.blocks.extend([
+        Block {
+            start: 1,
+            stmts: vec![
+                Stmt::Assign {
+                    dest: velk::ir::RegRef {
+                        index: 6,
+                        width: 64,
+                    },
+                    value: Expr::bin(BinOp::Sub, Expr::reg(6, 64), Expr::Const(1)),
+                },
+                Stmt::Br { target: Some(0) },
+            ],
+        },
+        Block {
+            start: 2,
+            stmts: vec![Stmt::Ret {
+                value: Expr::reg(temp, 64),
+            }],
+        },
+    ]);
+    reset.value_types.insert(temp, CType::U64);
+    candidates.push(printed_candidate(
+        reset,
+        [0, 1, 0x8000_0000, u64::MAX]
+            .into_iter()
+            .flat_map(|value| [vec![value, 0], vec![value, 1], vec![value, 3]])
+            .collect(),
+    ));
+    check_candidates(
+        "mutable-parameter-boundaries",
+        candidates,
+        Mode::Registers,
+        &[],
+    );
+}

@@ -129,7 +129,7 @@ fn truncate_to_int @ 0x210238 (size 8)
 -- decompile
 /* velk pseudo-C: widen @ 0x210240 */
 double widen(float x) {
-    double v1 = (double)x;
+    double v1 = x;
     return v1 + v1;
 }
 -- signature

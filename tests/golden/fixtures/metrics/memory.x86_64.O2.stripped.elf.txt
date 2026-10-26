@@ -24,7 +24,7 @@ void sub_201220(uint64_t *a0, uint64_t *a1, uint64_t a2) {
             v1 = a2 & 0xffffffffffffffe0;
             int64_t i = 0;
             do {
-                __builtin_memmove((uint8_t *)a0 + i, (uint8_t *)a1 + i, 32);
+                __builtin_memmove(a0 + i / 8, a1 + i / 8, 32);
                 i += 32;
             } while (v1 != i);
             if (v1 == a2) {
@@ -39,7 +39,7 @@ void sub_201220(uint64_t *a0, uint64_t *a1, uint64_t a2) {
         int64_t v7 = v1;
         v1 = a2 & 0xfffffffffffffff8;
         do {
-            *(uint64_t *)((uint8_t *)a0 + v7) = *(uint64_t *)((uint8_t *)a1 + v7);
+            a0[v7 / 8] = a1[v7 / 8];
             v7 += 8;
         } while (v1 != v7);
         if (v1 == a2) {

@@ -206,6 +206,11 @@ pub(crate) fn variable_types(
             ints.insert(index);
             continue;
         };
+        let ty = if ty.is_pointer() && !ir.definitions.is_empty() {
+            derived_structure(ir, index).unwrap_or(ty)
+        } else {
+            ty
+        };
         types.insert(index, ty);
     }
     let pointers: HashSet<u16> = types
@@ -257,6 +262,95 @@ pub(crate) fn variable_types(
         }
     }
     types
+}
+
+fn derived_structure(ir: &FunctionIr, index: u16) -> Option<CType> {
+    let mut assignments = ir
+        .blocks
+        .iter()
+        .flat_map(|block| &block.stmts)
+        .filter(|stmt| {
+            crate::ir::visit::statement_registers(stmt)
+                .0
+                .contains(&index)
+        });
+    let Some(Stmt::Assign { dest, value }) = assignments.next() else {
+        return None;
+    };
+    if dest.width != 64 || assignments.next().is_some() {
+        return None;
+    }
+    let Some(source) = base(value) else {
+        return None;
+    };
+    let Some(param) = ir.params.iter().find(|param| param.index == source) else {
+        return None;
+    };
+    let Some(name) = param.ty.pointee_struct() else {
+        return None;
+    };
+    let Some(definition) = ir
+        .definitions
+        .iter()
+        .find(|definition| definition.name.strip_prefix("struct ") == Some(name))
+    else {
+        return None;
+    };
+    if ir
+        .definitions
+        .iter()
+        .filter(|other| other.name == definition.name)
+        .count()
+        != 1
+        || !super::layouts::usable(ir, definition, name)
+    {
+        return None;
+    }
+    let Expr::Bin {
+        op: BinOp::Add,
+        lhs,
+        rhs,
+    } = value
+    else {
+        return None;
+    };
+    let offset = match (lhs.as_ref(), rhs.as_ref()) {
+        (Expr::Reg { index, width: 64 }, offset) | (offset, Expr::Reg { index, width: 64 })
+            if *index == source =>
+        {
+            offset
+        }
+        _ => return None,
+    };
+    scaled_offset(offset, definition.size).then(|| param.ty.clone())
+}
+
+fn scaled_offset(expr: &Expr, size: u64) -> bool {
+    match expr {
+        Expr::Const(offset) => (*offset as i64).unsigned_abs().is_multiple_of(size),
+        Expr::Bin {
+            op: BinOp::Add | BinOp::Sub,
+            lhs,
+            rhs,
+        } => scaled_offset(lhs, size) && scaled_offset(rhs, size),
+        Expr::Bin {
+            op: BinOp::Mul,
+            lhs,
+            rhs,
+        } => match (lhs.as_ref(), rhs.as_ref()) {
+            (_, Expr::Const(scale)) | (Expr::Const(scale), _) => scale.is_multiple_of(size),
+            _ => false,
+        },
+        Expr::Bin {
+            op: BinOp::Shl,
+            rhs,
+            ..
+        } => {
+            matches!(rhs.as_ref(), Expr::Const(shift)
+                if *shift < 64 && (1u64 << shift).is_multiple_of(size))
+        }
+        _ => false,
+    }
 }
 
 pub(super) fn literal_offsets(ir: &FunctionIr) -> HashSet<u16> {

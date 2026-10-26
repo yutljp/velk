@@ -341,8 +341,8 @@ int skip_negatives(int *p, int n) {
         struct velk_vector vector = { .low.u64 = 0, .high.u64 = 0 };
         struct velk_vector vector_2 = { .low.u64 = 0, .high.u64 = 0 };
         do {
-            struct velk_vector vector_3 = { .low.u64 = *(uint64_t *)((uint8_t *)p + v6), .high.u64 = *(uint64_t *)((uint8_t *)p + v6 + 0x8) };
-            struct velk_vector vector_4 = { .low.u64 = *(uint64_t *)((uint8_t *)p + v6 + 0x10), .high.u64 = *(uint64_t *)((uint8_t *)p + v6 + 0x18) };
+            struct velk_vector vector_3 = { .low.u64 = *(uint64_t *)(p + v6 / 4), .high.u64 = *(uint64_t *)(p + (v6 / 4 + 0x2)) };
+            struct velk_vector vector_4 = { .low.u64 = *(uint64_t *)(p + (v6 / 4 + 0x4)), .high.u64 = *(uint64_t *)(p + (v6 / 4 + 0x6)) };
             vector.low.u64 = add_lanes32(vector.low.u64, greater_lanes32(vector_3.low.u64, 0) & vector_3.low.u64);
             vector.high.u64 = add_lanes32(vector.high.u64, greater_lanes32(vector_3.high.u64, 0) & vector_3.high.u64);
             vector_2.low.u64 = add_lanes32(vector_2.low.u64, greater_lanes32(vector_4.low.u64, 0) & vector_4.low.u64);

@@ -59,3 +59,68 @@ pub(in crate::render) fn registers(ir: &FunctionIr) -> HashMap<u16, u64> {
     scales.retain(|register, _| demanded.get(register).copied().unwrap_or(0) == 0);
     scales
 }
+
+pub(in crate::render) fn address_registers(ir: &FunctionIr) -> HashMap<u16, u64> {
+    let mut scales = registers(ir);
+    if !ir.landing_pads.is_empty() {
+        return scales;
+    }
+    let Some(demanded) = crate::ssa::entry_demands(ir, &[u64::MAX]) else {
+        return scales;
+    };
+    for (register, scale) in aligned_registers(ir, &demanded) {
+        scales.entry(register).or_insert(scale);
+    }
+    scales
+}
+
+fn aligned_registers(ir: &FunctionIr, demanded: &HashMap<u16, u64>) -> HashMap<u16, u64> {
+    let mut zeros = HashMap::new();
+    for stmt in ir.blocks.iter().flat_map(|block| &block.stmts) {
+        for register in crate::ir::visit::statement_registers(stmt).0 {
+            if register >= VARIABLE_BASE {
+                zeros.entry(register).or_insert(64u32);
+            }
+        }
+    }
+    for (register, bits) in &mut zeros {
+        if demanded.get(register).copied().unwrap_or(0) != 0
+            || ir.params.iter().any(|param| param.index == *register)
+        {
+            *bits = 0;
+        }
+    }
+    // Start with all low bits clear, then discard every bit any definition
+    // can set. This also proves alignment for initialized loop counters.
+    for _ in 0..=64 {
+        let mut changed = false;
+        for stmt in ir.blocks.iter().flat_map(|block| &block.stmts) {
+            let read = |register, _| {
+                let bits = zeros.get(&register).copied().unwrap_or(0);
+                crate::ssa::ranges::Fact::bits(crate::ir::semantics::mask(bits), 0)
+            };
+            let bits = match stmt {
+                Stmt::Assign { dest, value } if dest.width == 64 => {
+                    crate::ssa::ranges::expression(value, &read)
+                        .map_or(0, |fact| fact.zeros.trailing_ones())
+                }
+                _ => 0,
+            };
+            for register in crate::ir::visit::statement_registers(stmt).0 {
+                if let Some(known) = zeros.get_mut(&register) {
+                    let next = (*known).min(bits);
+                    changed |= next != *known;
+                    *known = next;
+                }
+            }
+        }
+        if !changed {
+            zeros.retain(|_, bits| *bits > 0);
+            return zeros
+                .into_iter()
+                .map(|(register, bits)| (register, 1u64 << bits.min(31)))
+                .collect();
+        }
+    }
+    HashMap::new()
+}

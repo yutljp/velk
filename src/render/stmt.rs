@@ -178,7 +178,7 @@ pub(super) fn stored_value(value: &Expr, bits: u32, ctx: &Ctx<'_>) -> int::Print
         crate::ir::Precision::Double => "double",
     };
     let integer = type_of(precision.bits() / 8, false);
-    let value = expr::float_operand(value, precision, ctx, 0, false);
+    let value = expr::float_assignment(value, precision, ctx);
     int::Printed::new(
         format!("((union {{ {float} value; {integer} bits; }}){{ .value = {value} }}).bits"),
         int::Int::promoted(u32::from(precision.bits()), false),
@@ -272,7 +272,7 @@ fn aggregate_return(value: &Expr, ctx: &Ctx<'_>) -> Option<String> {
         if let Some((target, precision)) = &float_members[index] {
             lines.push(format!(
                 "    {target} = {};",
-                expr::float_operand(value, *precision, ctx, 0, false)
+                expr::float_assignment(value, *precision, ctx)
             ));
             continue;
         }
@@ -320,7 +320,7 @@ pub(crate) fn render_stmt(stmt: &Stmt, ctx: &Ctx<'_>) -> String {
                 } else {
                     "float"
                 },
-                expr::float_operand(value, precision, ctx, 0, false),
+                expr::float_assignment(value, precision, ctx),
             ),
             None => ("uint64_t", returned(value, ctx)),
         };
@@ -367,7 +367,7 @@ pub(crate) fn render_stmt(stmt: &Stmt, ctx: &Ctx<'_>) -> String {
             if let Some(precision) = ctx.floats.get(&dest.index) {
                 return format!(
                     "{target} = {};",
-                    expr::float_operand(value, *precision, ctx, 0, false)
+                    expr::float_assignment(value, *precision, ctx)
                 );
             }
             // The stack pointer moving reads as arithmetic, not a local's address.
@@ -440,7 +440,7 @@ pub(crate) fn render_stmt(stmt: &Stmt, ctx: &Ctx<'_>) -> String {
                 {
                     return format!(
                         "{target} = {};",
-                        expr::float_operand(value, precision, ctx, 0, false)
+                        expr::float_assignment(value, precision, ctx)
                     );
                 }
                 return match update_of_same_location(addr, value, *width, ctx) {
@@ -460,7 +460,7 @@ pub(crate) fn render_stmt(stmt: &Stmt, ctx: &Ctx<'_>) -> String {
                     return format!(
                         "{} = {};",
                         member.text,
-                        expr::float_operand(value, precision, ctx, 0, false)
+                        expr::float_assignment(value, precision, ctx)
                     );
                 }
                 if member.precision().is_none() {
@@ -498,7 +498,7 @@ pub(crate) fn render_stmt(stmt: &Stmt, ctx: &Ctx<'_>) -> String {
                     {
                         return format!(
                             "{target} = {};",
-                            expr::float_operand(value, *precision, ctx, 0, false)
+                            expr::float_assignment(value, *precision, ctx)
                         );
                     }
                     match update_of_same_location(addr, value, *width, ctx)
@@ -615,7 +615,7 @@ pub(crate) fn render_stmt(stmt: &Stmt, ctx: &Ctx<'_>) -> String {
             if let Some(precision) = ctx.float_return {
                 format!(
                     "return {};",
-                    expr::float_operand(&args[0], precision, ctx, 0, false)
+                    expr::float_assignment(&args[0], precision, ctx)
                 )
             } else {
                 format!("return {};", returned(&args[0], ctx))
@@ -641,10 +641,7 @@ pub(crate) fn render_stmt(stmt: &Stmt, ctx: &Ctx<'_>) -> String {
             if ctx.void_return {
                 "return;".to_owned()
             } else if let Some(precision) = ctx.float_return {
-                format!(
-                    "return {};",
-                    expr::float_operand(value, precision, ctx, 0, false)
-                )
+                format!("return {};", expr::float_assignment(value, precision, ctx))
             } else {
                 format!("return {};", returned(value, ctx))
             }

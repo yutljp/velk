@@ -8,11 +8,10 @@
 -- decompile
 /* velk pseudo-C: count_bits @ 0x2011c0 */
 int count_bits(unsigned int x) {
-    uint32_t v1 = x;
     int32_t result = 0;
-    while (v1 != 0) {
-        result = (v1 & 0x1) + result;
-        v1 >>= 1;
+    while (x != 0) {
+        result = (x & 0x1) + result;
+        x >>= 1;
     }
     return result;
 }

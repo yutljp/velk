@@ -56,6 +56,97 @@ pub(super) fn integer_copy_candidate(ir: &FunctionIr) -> Option<FunctionIr> {
     (after < before).then_some(candidate)
 }
 
+/// Reuse an integer parameter after its only read initializes a mutable copy.
+pub(super) fn mutable_copy_candidate(ir: &FunctionIr) -> Option<FunctionIr> {
+    if !ir.landing_pads.is_empty()
+        || ir.blocks.iter().any(crate::ir::cfg::opaque)
+        || ir
+            .blocks
+            .iter()
+            .flat_map(|block| &block.stmts)
+            .any(|stmt| matches!(stmt, Stmt::Call { .. } | Stmt::Machine { .. }))
+    {
+        return None;
+    }
+    let Some(entry) = ir.blocks.first() else {
+        return None;
+    };
+    if (0..ir.blocks.len()).any(|block| crate::ir::cfg::successors(ir, block).contains(&0)) {
+        return None;
+    }
+    let types = crate::render::variable_types(ir);
+    for (position, stmt) in entry.stmts.iter().enumerate() {
+        let Stmt::Assign {
+            dest,
+            value: Expr::Reg {
+                index: source,
+                width,
+            },
+        } = stmt
+        else {
+            continue;
+        };
+        let Some(param) = ir.params.iter().find(|param| param.index == *source) else {
+            continue;
+        };
+        let Some((bits, _)) = param.ty.integer() else {
+            continue;
+        };
+        if dest.index < VARIABLE_BASE
+            || !matches!(bits, 32 | 64)
+            || u32::from(dest.width) != bits
+            || u32::from(*width) < bits
+            || types
+                .get(&dest.index)
+                .and_then(|ty| ty.integer())
+                .map(|(bits, _)| bits)
+                != Some(bits)
+            || matches!(types.get(&dest.index), Some(crate::ir::CType::Named(name))
+                if name.split_whitespace().any(|word| word == "volatile"))
+            || matches!(&param.ty, crate::ir::CType::Named(name)
+                if name.split_whitespace().any(|word| matches!(word, "volatile" | "bool" | "_Bool")))
+        {
+            continue;
+        }
+        let mut valid = true;
+        let mut modified = false;
+        for (block, body) in ir.blocks.iter().enumerate() {
+            for (at, stmt) in body.stmts.iter().enumerate() {
+                if block == 0 && at == position {
+                    continue;
+                }
+                let (writes, reads) = crate::ir::visit::statement_registers(stmt);
+                modified |= writes.contains(&dest.index);
+                if writes.contains(source)
+                    || reads.contains(source)
+                    || (block == 0
+                        && at < position
+                        && (writes.contains(&dest.index) || reads.contains(&dest.index)))
+                    || (writes.contains(&dest.index)
+                        && !matches!(stmt, Stmt::Assign { dest: other, .. } if other.width == dest.width))
+                {
+                    valid = false;
+                }
+            }
+        }
+        if !valid || !modified {
+            continue;
+        }
+        let mut candidate = ir.clone();
+        candidate.blocks[0].stmts.remove(position);
+        let renamed = HashMap::from([(dest.index, *source)]);
+        for stmt in candidate
+            .blocks
+            .iter_mut()
+            .flat_map(|block| &mut block.stmts)
+        {
+            crate::passes::coalesce::rename(stmt, &renamed);
+        }
+        return Some(candidate);
+    }
+    None
+}
+
 /// Where a copy comes from.
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
 enum Source {

@@ -111,10 +111,9 @@ fn <unnamed> @ 0x201320 (size 43)
 -- decompile
 /* velk pseudo-C: sub_201350 @ 0x201350 */
 int32_t sub_201350(int32_t a0) {
-    int32_t v1 = a0;
     int32_t result = 0;
-    while (v1 != 0) {
-        v1 = v1 - 1 & v1;
+    while (a0 != 0) {
+        a0 = a0 - 1 & a0;
         ++result;
     }
     return result;

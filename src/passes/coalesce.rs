@@ -290,7 +290,7 @@ fn sink_copied_definitions(
 }
 
 /// Gives each variable `renamed` names the variable it joined.
-fn rename(stmt: &mut Stmt, renamed: &HashMap<u16, u16>) {
+pub(crate) fn rename(stmt: &mut Stmt, renamed: &HashMap<u16, u16>) {
     fn walk(expr: &mut Expr, renamed: &HashMap<u16, u16>) {
         if let Expr::Reg { index, .. } = expr
             && let Some(joined) = renamed.get(index)

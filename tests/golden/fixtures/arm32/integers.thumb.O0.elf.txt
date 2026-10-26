@@ -132,10 +132,9 @@ fn rotate_left @ 0x201a4 (size 18)
 -- decompile
 /* velk pseudo-C: popcount @ 0x201b8 */
 int popcount(unsigned int x) {
-    int32_t v3 = x;
     int32_t result = 0;
-    while (v3 != 0) {
-        v3 &= v3 - 1;
+    while (x != 0) {
+        x &= x - 1;
         ++result;
     }
     return result;

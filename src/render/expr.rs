@@ -12,6 +12,7 @@ pub(super) use memory::local_offset_integer;
 use memory::{byte_sum, load};
 pub(crate) use memory::{local_plus_offset, slot_access};
 pub(super) use operation::bits_float;
+pub(super) use operation::float_assignment;
 pub(super) use operation::float_bits;
 pub(crate) use operation::float_operand;
 use operation::operation;

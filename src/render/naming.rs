@@ -1,6 +1,7 @@
 pub(super) mod roles;
 mod scales;
 
+pub(super) use scales::address_registers as address_offsets;
 pub(super) use scales::registers as scaled_offsets;
 
 use crate::ir::{BinOp, CType, Expr, FunctionIr, Precision, Stmt};

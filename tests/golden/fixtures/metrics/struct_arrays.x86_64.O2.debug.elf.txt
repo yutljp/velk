@@ -80,10 +80,10 @@ long item_last_key(struct item *items, int n) {
         return v3;
     }
     int64_t v4 = v2 << 4;
-    if (*(int32_t *)((uint8_t *)items + v4 + 0x8) <= 0) {
+    if (items[v4 / 16].count <= 0) {
         return v3;
     }
-    return *(uint64_t *)((uint8_t *)items + v4);
+    return items[v4 / 16].key;
 }
 -- signature
 long (struct item * items, int n)

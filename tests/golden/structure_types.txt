@@ -403,7 +403,7 @@ metrics/strings.x86_64.O2.debug.elf: 0
 metrics/strings.x86_64.O2.stripped.elf: 0
 metrics/struct_arrays.aarch64.O0.debug.elf: 2
 metrics/struct_arrays.aarch64.O0.stripped.elf: 3
-metrics/struct_arrays.aarch64.O2.debug.elf: 4
+metrics/struct_arrays.aarch64.O2.debug.elf: 2
 metrics/struct_arrays.aarch64.O2.stripped.elf: 3
 metrics/struct_arrays.win64.O0.debug.dll: 2
 metrics/struct_arrays.win64.O0.stripped.dll: 3

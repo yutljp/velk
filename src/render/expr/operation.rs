@@ -337,26 +337,34 @@ fn double_operand(expr: &Expr, ctx: &Ctx<'_>) -> bool {
     }
 }
 
+pub(in crate::render) fn float_assignment(
+    expr: &Expr,
+    precision: Precision,
+    ctx: &Ctx<'_>,
+) -> String {
+    implicit_conversion(expr, precision, ctx, 0, false)
+        .unwrap_or_else(|| float_operand(expr, precision, ctx, 0, false))
+}
+
 fn implicit_double(expr: &Expr, ctx: &Ctx<'_>, parent: u8, right: bool) -> Option<String> {
+    implicit_conversion(expr, Precision::Double, ctx, parent, right)
+}
+
+fn implicit_conversion(
+    expr: &Expr,
+    precision: Precision,
+    ctx: &Ctx<'_>,
+    parent: u8,
+    right: bool,
+) -> Option<String> {
     let Expr::Apply { op, args } = expr else {
         return None;
     };
     match op {
-        Operation::FloatConvert {
-            from: Precision::Single,
-            to: Precision::Double,
-        } => Some(float_operand(
-            &args[0],
-            Precision::Single,
-            ctx,
-            parent,
-            right,
-        )),
-        Operation::IntToFloat {
-            signed,
-            bits,
-            to: Precision::Double,
-        } => {
+        Operation::FloatConvert { from, to } if *to == precision => {
+            Some(float_operand(&args[0], *from, ctx, parent, right))
+        }
+        Operation::IntToFloat { signed, bits, to } if *to == precision => {
             let operand = integral(&args[0], ctx, u32::from(*bits));
             let typed = operand.ty
                 == Int {

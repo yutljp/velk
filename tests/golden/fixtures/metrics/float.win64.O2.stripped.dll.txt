@@ -138,7 +138,7 @@ fn <unnamed> @ 0x1800010c0 (size 16)
 -- decompile
 /* velk pseudo-C: sub_1800010d0 @ 0x1800010d0 */
 double sub_1800010d0(float a0) {
-    double v1 = (double)a0;
+    double v1 = a0;
     return v1 + v1;
 }
 -- signature
