@@ -105,9 +105,9 @@ impl Runner<'_> {
 
     fn range(&self, address: u64, size: u64, write: bool) -> std::result::Result<(), Stop> {
         if size > HEAP_SIZE {
-            return Err(Stop::Error(
-                "hook memory operation exceeds 16 MiB".to_owned(),
-            ));
+            return Err(Stop::Error(format!(
+                "hook memory operation at 0x{address:x} exceeds 16 MiB"
+            )));
         }
         self.machine
             .strict
@@ -214,7 +214,9 @@ impl Runner<'_> {
                     && first < source + size
                     && source < first + size
                 {
-                    return Err(Stop::Error("memcpy ranges overlap; use memmove".to_owned()));
+                    return Err(Stop::Error(format!(
+                        "memcpy ranges overlap at destination 0x{first:x} and source 0x{source:x}; use memmove"
+                    )));
                 }
                 let mut bytes = Vec::new();
                 for offset in 0..size {

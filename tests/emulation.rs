@@ -1,6 +1,10 @@
 //! Checks the execution interfaces against compiled C and explicit fault cases.
 
 mod common;
+#[path = "emulation/edges.rs"]
+mod edges;
+#[path = "emulation/matrix.rs"]
+mod matrix;
 
 use std::fs;
 use std::path::PathBuf;

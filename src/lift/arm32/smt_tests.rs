@@ -2,6 +2,76 @@ use super::*;
 use crate::ir::smt::{self, Proofs};
 
 #[test]
+fn decoded_extend_add_matches_symbolic_rotation_and_addition() {
+    if !Proofs::available() {
+        return;
+    }
+    let mut proofs = Proofs::default();
+    let image = Image::from_code(Isa::Arm32, 0, vec![0; 4]);
+    let summaries = |_| Default::default();
+    for mode in [ArmMode::Arm, ArmMode::Thumb] {
+        for width in [1, 2] {
+            for signed in [false, true] {
+                for rotation in [0, 8, 16, 24] {
+                    let word: u32 = if mode == ArmMode::Arm {
+                        0xe680_0072
+                            | (if signed { 0 } else { 1 << 22 })
+                            | (if width == 1 { 2 << 20 } else { 3 << 20 })
+                            | (1 << 16)
+                            | ((rotation / 8) << 10)
+                    } else {
+                        0xfa01_f082
+                            | (if signed { 0 } else { 1 << 20 })
+                            | (if width == 1 { 1 << 22 } else { 0 })
+                            | ((rotation / 8) << 4)
+                    };
+                    let bytes = if mode == ArmMode::Arm {
+                        word.to_le_bytes()
+                    } else {
+                        let high = ((word >> 16) as u16).to_le_bytes();
+                        let low = (word as u16).to_le_bytes();
+                        [high[0], high[1], low[0], low[1]]
+                    };
+                    let instruction =
+                        additional::decode(&bytes, mode).expect("extend-and-add encoding");
+                    let mut lifter = Lifter {
+                        image: &image,
+                        summaries: &summaries,
+                        stmts: Vec::new(),
+                        flags: None,
+                        float_comparison: false,
+                        touched: false,
+                    };
+                    instruction.execute(&mut lifter, 0, mode == ArmMode::Thumb);
+                    let rotated = format!(
+                        "((_ zero_extend 32) ((_ rotate_right {rotation}) ((_ extract 31 0) r2)))"
+                    );
+                    let extended = if signed {
+                        smt::signed(&rotated, width * 8)
+                    } else {
+                        smt::low(&rotated, width * 8)
+                    };
+                    let expected = smt::low(
+                        &format!("(bvadd {} {extended})", smt::term(&Expr::reg(1, 32))),
+                        32,
+                    );
+                    let [Stmt::Assign { dest, value }] = lifter.stmts.as_slice() else {
+                        panic!("expected one assignment");
+                    };
+                    assert_eq!(dest.index, 0);
+                    proofs.predicate(
+                        format!("{mode:?}/{width}/{signed}/{rotation}"),
+                        &expected,
+                        &smt::term(&low(value.clone())),
+                    );
+                }
+            }
+        }
+    }
+    proofs.check();
+}
+
+#[test]
 fn carry_arithmetic_is_symbolic() {
     if !Proofs::available() {
         return;

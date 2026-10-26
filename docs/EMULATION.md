@@ -111,3 +111,14 @@ Unmapped reads, writes to protected memory, unavailable flags, unsupported
 instructions, and operations requiring external machine state stop explicitly.
 The error names the instruction; memory errors also name the accessed address.
 No missing memory value or call result is guessed.
+
+## Tests
+
+`cargo test --release --test emulation -- --test-threads 3` builds C fixtures
+with `tests/make_emulation_fixtures.sh`. The routine matrix uses `-O0` and `-O2`
+with automatic vectorization disabled, on x86-64, AArch64, x86-32, ARM32 and Thumb.
+It compares return values and buffers with compiled C, and compares complete
+reports across the library, CLI, both JavaScript entry points and MCP. On macOS,
+the arm64 and x86-64 reference executables are also emulated. The suite executes
+the CLI and JavaScript examples in this document and the emulation commands in
+the README files.

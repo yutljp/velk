@@ -28,6 +28,7 @@ pub(in crate::lift) enum Instruction {
     },
     Extend {
         destination: u8,
+        addend: Option<u8>,
         source: u8,
         rotation: u8,
         width: u8,
@@ -166,7 +167,7 @@ pub(super) fn decode(bytes: &[u8], mode: ArmMode) -> Option<Instruction> {
         }
     }
     if mode == ArmMode::Arm && word >> 28 < 15 {
-        if word & 0x0f8f_03f0 == 0x068f_0070 {
+        if word & 0x0f80_03f0 == 0x0680_0070 {
             let signed = word & (1 << 22) == 0;
             let width = match (word >> 20) & 3 {
                 2 => 1,
@@ -178,6 +179,7 @@ pub(super) fn decode(bytes: &[u8], mode: ArmMode) -> Option<Instruction> {
             }
             return Some(Instruction::Extend {
                 destination: reg(12),
+                addend: (reg(16) != 15).then_some(reg(16)),
                 source: reg(0),
                 rotation: ((word >> 10) & 3) as u8 * 8,
                 width,
@@ -214,6 +216,26 @@ pub(super) fn decode(bytes: &[u8], mode: ArmMode) -> Option<Instruction> {
                 width,
             });
         }
+    }
+    if mode == ArmMode::Thumb && word & 0xffa0_f0c0 == 0xfa00_f080 {
+        let destination = reg(8);
+        let source = reg(0);
+        let base = reg(16);
+        if [destination, source]
+            .iter()
+            .any(|register| matches!(register, 13 | 15))
+            || base == 13
+        {
+            return None;
+        }
+        return Some(Instruction::Extend {
+            destination,
+            addend: (base != 15).then_some(base),
+            source,
+            rotation: ((word >> 4) & 3) as u8 * 8,
+            width: if word & (1 << 22) != 0 { 1 } else { 2 },
+            signed: word & (1 << 20) == 0,
+        });
     }
     if (mode == ArmMode::Arm && word >> 28 == 15) || (mode == ArmMode::Thumb && word >> 28 != 14) {
         return None;
@@ -405,13 +427,17 @@ impl Instruction {
             }
             Self::Extend {
                 destination,
+                addend,
                 source,
                 rotation,
                 width,
                 signed,
             } => {
-                let value =
+                let mut value =
                     super::extend(Expr::reg(u16::from(source), 32), width, signed, rotation);
+                if let Some(addend) = addend {
+                    value = Expr::bin(BinOp::Add, Expr::reg(u16::from(addend), 32), value);
+                }
                 lifter.assign(destination, value);
             }
             Self::Divide {
@@ -668,16 +694,24 @@ impl fmt::Display for Instruction {
             ),
             Self::Extend {
                 destination,
+                addend,
                 source,
                 rotation,
                 width,
                 signed,
-            } => write!(
-                f,
-                "{}xt{} r{destination}, r{source}, ror #{rotation}",
-                if *signed { "s" } else { "u" },
-                if *width == 1 { "b" } else { "h" }
-            ),
+            } => {
+                write!(
+                    f,
+                    "{}xt{}{} r{destination}, ",
+                    if *signed { "s" } else { "u" },
+                    if addend.is_some() { "a" } else { "" },
+                    if *width == 1 { "b" } else { "h" }
+                )?;
+                if let Some(addend) = addend {
+                    write!(f, "r{addend}, ")?;
+                }
+                write!(f, "r{source}, ror #{rotation}")
+            }
             Self::Divide {
                 destination,
                 left,
@@ -739,6 +773,14 @@ mod tests {
             );
         }
         assert!(decode(&[0x30, 0xfe, 0x00, 0x0a], ArmMode::Thumb).is_none());
+        for bytes in [
+            [0x51, 0xfa, 0x82, 0xfd],
+            [0x51, 0xfa, 0x8f, 0xf0],
+            [0x5d, 0xfa, 0x82, 0xf0],
+            [0x51, 0xfa, 0xc2, 0xf0],
+        ] {
+            assert!(decode(&bytes, ArmMode::Thumb).is_none(), "{bytes:x?}");
+        }
     }
     #[test]
     fn vmrs_requires_a_comparison_since_the_last_call() {
