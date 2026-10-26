@@ -5,7 +5,12 @@ fn printed_narrow_results_keep_wide_comparisons_and_preserved_arguments() {
     let scratch = scratch_dir("comparison-inputs");
     let assembly = scratch.join("inputs.s");
     let object = scratch.join("inputs.o");
-    std::fs::write(
+    common::compiler::compile_file(
+        Command::new(compiler())
+            .args(["--target=aarch64-unknown-linux-gnu", "-c"])
+            .arg(&assembly)
+            .arg("-o")
+            .arg(&object),
         &assembly,
         r#"
 .text
@@ -99,16 +104,7 @@ only_third:
     ret
 .size only_third, .-only_third
 "#,
-    )
-    .unwrap();
-    let compiled = Command::new(compiler())
-        .args(["--target=aarch64-unknown-linux-gnu", "-c"])
-        .arg(&assembly)
-        .arg("-o")
-        .arg(&object)
-        .output()
-        .unwrap();
-    assert!(compiled.status.success(), "{compiled:?}");
+    );
     let mut binary = Binary::open(&object).unwrap();
     let address = binary.find("compare_wide").unwrap().addr;
     let ir = &binary.analysis(address, None).unwrap().ir;

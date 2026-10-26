@@ -17,15 +17,15 @@ fn printed_half_vector_moves_preserve_the_other_half_and_store_eight_bytes() {
             writeln!(source, ".globl {name}\n.type {name},@function\n{name}:\nmovdqu (%rdi), %xmm0\n{body}\nmovl $7, %eax\nret\n.size {name}, .-{name}").unwrap();
         }
     }
-    std::fs::write(&assembly, source).unwrap();
-    let compiled = Command::new(compiler())
-        .args(["--target=x86_64-unknown-linux-gnu", "-c"])
-        .arg(&assembly)
-        .arg("-o")
-        .arg(&object)
-        .output()
-        .unwrap();
-    assert!(compiled.status.success(), "{compiled:?}");
+    common::compiler::compile_file(
+        Command::new(compiler())
+            .args(["--target=x86_64-unknown-linux-gnu", "-c"])
+            .arg(&assembly)
+            .arg("-o")
+            .arg(&object),
+        &assembly,
+        &source,
+    );
     let mut binary = Binary::open(&object).unwrap();
     for instruction in ["movlps", "movlpd", "movhps", "movhpd"] {
         for load in [false, true] {
@@ -73,15 +73,15 @@ fn printed_vector_extractions_select_lanes_and_zero_extend_registers() {
             }
         }
     }
-    std::fs::write(&assembly, source).unwrap();
-    let compiled = Command::new(compiler())
-        .args(["--target=x86_64-unknown-linux-gnu", "-c"])
-        .arg(&assembly)
-        .arg("-o")
-        .arg(&object)
-        .output()
-        .unwrap();
-    assert!(compiled.status.success(), "{compiled:?}");
+    common::compiler::compile_file(
+        Command::new(compiler())
+            .args(["--target=x86_64-unknown-linux-gnu", "-c"])
+            .arg(&assembly)
+            .arg("-o")
+            .arg(&object),
+        &assembly,
+        &source,
+    );
     let mut binary = Binary::open(&object).unwrap();
     for (instruction, bytes) in [("pextrb", 1), ("pextrw", 2), ("pextrd", 4), ("pextrq", 8)] {
         for lane in 0..16 / bytes {
@@ -125,15 +125,15 @@ fn printed_partial_writes_keep_address_derived_upper_bits_as_numbers() {
     let scratch = scratch_dir("x64-partial-address");
     let assembly = scratch.join("partial.s");
     let object = scratch.join("partial.o");
-    std::fs::write(&assembly, ".text\n.globl partial_address\n.type partial_address,@function\npartial_address:\nmovabsq $0x100019118, %rax\nmovw (%rdi), %ax\nmovq %rax, (%rsi)\nxorl %eax, %eax\nret\n.size partial_address, .-partial_address\n").unwrap();
-    let compiled = Command::new(compiler())
-        .args(["--target=x86_64-unknown-linux-gnu", "-c"])
-        .arg(&assembly)
-        .arg("-o")
-        .arg(&object)
-        .output()
-        .unwrap();
-    assert!(compiled.status.success(), "{compiled:?}");
+    common::compiler::compile_file(
+        Command::new(compiler())
+            .args(["--target=x86_64-unknown-linux-gnu", "-c"])
+            .arg(&assembly)
+            .arg("-o")
+            .arg(&object),
+        &assembly,
+        ".text\n.globl partial_address\n.type partial_address,@function\npartial_address:\nmovabsq $0x100019118, %rax\nmovw (%rdi), %ax\nmovq %rax, (%rsi)\nxorl %eax, %eax\nret\n.size partial_address, .-partial_address\n",
+    );
     let mut binary = Binary::open(&object).unwrap();
     let address = binary.find("partial_address").unwrap().addr;
     let code = binary.decompile(address, None, None).unwrap();

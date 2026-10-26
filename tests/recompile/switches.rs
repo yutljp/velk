@@ -682,19 +682,15 @@ fn printed_inline_jump_table_bytes_do_not_become_stack_operations() {
     let scratch = scratch_dir("inline-jump-table");
     let assembly = scratch.join("switch.s");
     let object = scratch.join("switch.o");
-    std::fs::write(
+    common::compiler::compile_file(
+        Command::new(compiler())
+            .args(["--target=x86_64-unknown-linux-gnu", "-c"])
+            .arg(&assembly)
+            .arg("-o")
+            .arg(&object),
         &assembly,
         ".text\n.globl inline_switch\n.type inline_switch,@function\ninline_switch:\ncmpq $1,%rdi\nja .Ldefault\nleaq .Ltable(%rip),%rdx\nmovslq (%rdx,%rdi,4),%rax\naddq %rdx,%rax\njmpq *%rax\n.Ldefault:\nmovl $44,%eax\nret\n.Ltable:\n.long .Lzero-.Ltable\n.long .Lone-.Ltable\n.fill 0x52-(.-.Ltable),1,0x90\n.Lzero:\nmovl $11,%eax\nret\n.Lone:\nmovl $22,%eax\nret\n.size inline_switch,.-inline_switch\n",
-    )
-    .unwrap();
-    let compiled = Command::new(compiler())
-        .args(["--target=x86_64-unknown-linux-gnu", "-c"])
-        .arg(&assembly)
-        .arg("-o")
-        .arg(&object)
-        .output()
-        .unwrap();
-    assert!(compiled.status.success(), "{compiled:?}");
+    );
     let mut binary = Binary::open(&object).unwrap();
     let address = binary.find("inline_switch").unwrap().addr;
     let code = binary.decompile(address, None, None).unwrap();

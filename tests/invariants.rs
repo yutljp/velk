@@ -7,7 +7,8 @@ mod common;
 use std::collections::HashSet;
 use std::path::Path;
 
-use velk::ir::{CType, Expr, FunctionIr, Stmt};
+use velk::ir::visit;
+use velk::ir::{CType, FunctionIr, Stmt};
 use velk::loader::{Function, Isa};
 use velk::render::structure::{Node, structure_best};
 use velk::service::Binary;
@@ -77,10 +78,12 @@ fn violations(path: &Path, fixture: &Path) -> Vec<String> {
         let analysis = binary
             .analysis(function.addr, None)
             .unwrap_or_else(|error| panic!("{label}: {error}"));
-        for effect in dropped_effects(&analysis.ir) {
+        let nodes = structure_best(&analysis.ir);
+        let reachable = reachable(&analysis.ir);
+        for effect in dropped_effects(&analysis.ir, &nodes, &reachable) {
             found.push(format!("{label}: the pseudo-C drops `{effect}`"));
         }
-        if !ir_runs_off_the_end(&analysis.ir) && falls_through(&structure_best(&analysis.ir)) {
+        if !ir_runs_off_the_end(&analysis.ir, &reachable) && falls_through(&nodes) {
             found.push(format!(
                 "{label}: the pseudo-C runs off the end without a return"
             ));
@@ -103,9 +106,9 @@ fn violations(path: &Path, fixture: &Path) -> Vec<String> {
 
 /// True when a reachable path leaves the last block without a return, jump
 /// or trap, as after a call that does not return.
-fn ir_runs_off_the_end(ir: &FunctionIr) -> bool {
+fn ir_runs_off_the_end(ir: &FunctionIr, reachable: &HashSet<usize>) -> bool {
     let last = ir.blocks.len().saturating_sub(1);
-    reachable(ir).contains(&last)
+    reachable.contains(&last)
         && !matches!(
             ir.blocks[last].stmts.last(),
             Some(
@@ -199,7 +202,7 @@ fn effect(stmt: &Stmt) -> String {
     }
 }
 
-fn dropped_effects(ir: &FunctionIr) -> Vec<String> {
+fn dropped_effects(ir: &FunctionIr, nodes: &[Node], reachable: &HashSet<usize>) -> Vec<String> {
     fn collect(nodes: &[Node], kept: &mut HashSet<String>) {
         for node in nodes {
             match node {
@@ -226,8 +229,7 @@ fn dropped_effects(ir: &FunctionIr) -> Vec<String> {
         }
     }
     let mut kept = HashSet::new();
-    collect(&structure_best(ir), &mut kept);
-    let reachable = reachable(ir);
+    collect(nodes, &mut kept);
     let mut dropped: Vec<String> = ir
         .blocks
         .iter()
@@ -325,24 +327,26 @@ fn unassigned_reads(ir: &FunctionIr, isa: Isa) -> HashSet<u16> {
             } => {
                 written.extend(outputs.iter().map(|output| output.index));
                 for input in inputs {
-                    reads(input, &mut read);
+                    visit::collect_reads(input, &mut read);
                 }
             }
             Stmt::Assign { dest, value } => {
                 written.insert(dest.index);
-                reads(value, &mut read);
+                visit::collect_reads(value, &mut read);
             }
             Stmt::Store { addr, value, .. } => {
-                reads(addr, &mut read);
-                reads(value, &mut read);
+                visit::collect_reads(addr, &mut read);
+                visit::collect_reads(value, &mut read);
             }
             Stmt::Brif { lhs, rhs, .. } => {
-                reads(lhs, &mut read);
-                reads(rhs, &mut read);
+                visit::collect_reads(lhs, &mut read);
+                visit::collect_reads(rhs, &mut read);
             }
-            Stmt::BrIndirect { target } => reads(target, &mut read),
-            Stmt::Switch { index, .. } => reads(index, &mut read),
-            Stmt::Ret { value } if ir.ret_type != CType::Void => reads(value, &mut read),
+            Stmt::BrIndirect { target } => visit::collect_reads(target, &mut read),
+            Stmt::Switch { index, .. } => visit::collect_reads(index, &mut read),
+            Stmt::Ret { value } if ir.ret_type != CType::Void => {
+                visit::collect_reads(value, &mut read)
+            }
             Stmt::Call {
                 through,
                 args,
@@ -361,7 +365,7 @@ fn unassigned_reads(ir: &FunctionIr, isa: Isa) -> HashSet<u16> {
                         .map(|(_, register)| register),
                 );
                 for value in through.iter().chain(args.iter().flatten()) {
-                    reads(value, &mut read);
+                    visit::collect_reads(value, &mut read);
                 }
             }
             Stmt::Ret { .. }
@@ -392,36 +396,4 @@ fn unassigned_reads(ir: &FunctionIr, isa: Isa) -> HashSet<u16> {
     };
     read.retain(|register| !written.contains(register) && !exempt.contains(register));
     read
-}
-
-fn reads(expr: &Expr, into: &mut HashSet<u16>) {
-    match expr {
-        Expr::Reg { index, .. } => {
-            into.insert(*index);
-        }
-        Expr::Const(_) => {}
-        Expr::Bin { lhs, rhs, .. } => {
-            reads(lhs, into);
-            reads(rhs, into);
-        }
-        Expr::Load { addr, .. } => reads(addr, into),
-        Expr::SignExtend { value, .. } => reads(value, into),
-        Expr::Select {
-            lhs,
-            rhs,
-            then,
-            els,
-            ..
-        } => {
-            reads(lhs, into);
-            reads(rhs, into);
-            reads(then, into);
-            reads(els, into);
-        }
-        Expr::Apply { args, .. } => {
-            for arg in args {
-                reads(arg, into);
-            }
-        }
-    }
 }

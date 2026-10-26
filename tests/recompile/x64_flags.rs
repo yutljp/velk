@@ -46,15 +46,15 @@ fn printed_stored_comparisons_and_carry_flags_keep_the_instruction_width() {
     let name = "saved_frame_after_sbb";
     writeln!(source, ".globl {name}\n.type {name},@function\n{name}:\npushq %rbp\nmovq %rsp, %rbp\npushq %rbx\nsubq $8, %rsp\nmovq %rdi, -16(%rbp)\nmovq %rdi, %rbx\nxorl %edx, %edx\nmovl $1, %esi\ncall flags_sbb_w\nmovq -16(%rbp), %rax\naddq %rbx, %rax\naddq $8, %rsp\npopq %rbx\npopq %rbp\nret\n.size {name}, .-{name}").unwrap();
     names.push(name.into());
-    std::fs::write(&assembly, source).unwrap();
-    let compiled = Command::new(compiler())
-        .args(["--target=x86_64-unknown-linux-gnu", "-c"])
-        .arg(&assembly)
-        .arg("-o")
-        .arg(&object)
-        .output()
-        .unwrap();
-    assert!(compiled.status.success(), "{compiled:?}");
+    common::compiler::compile_file(
+        Command::new(compiler())
+            .args(["--target=x86_64-unknown-linux-gnu", "-c"])
+            .arg(&assembly)
+            .arg("-o")
+            .arg(&object),
+        &assembly,
+        &source,
+    );
     let mut binary = Binary::open(&object).unwrap();
     let mut text = String::from(HEADER);
     for name in &names {

@@ -1094,7 +1094,12 @@ fn bounded_indices_share_storage_with_mixed_width_stack_slots() {
     let scratch = scratch_dir("bounded-stack-slots");
     let assembly = scratch.join("bounded.s");
     let object = scratch.join("bounded.o");
-    std::fs::write(
+    common::compiler::compile_file(
+        Command::new(compiler())
+            .args(["--target=x86_64-unknown-linux-gnu", "-c"])
+            .arg(&assembly)
+            .arg("-o")
+            .arg(&object),
         &assembly,
         ".text
 .globl bounded_slots
@@ -1118,16 +1123,7 @@ addq $64, %rsp
 ret
 .size bounded_slots, .-bounded_slots
 ",
-    )
-    .unwrap();
-    let compiled = Command::new(compiler())
-        .args(["--target=x86_64-unknown-linux-gnu", "-c"])
-        .arg(&assembly)
-        .arg("-o")
-        .arg(&object)
-        .output()
-        .unwrap();
-    assert!(compiled.status.success(), "{compiled:?}");
+    );
     let mut binary = Binary::open(&object).unwrap();
     let address = binary.find("bounded_slots").unwrap().addr;
     let code = binary.decompile(address, None, None).unwrap();

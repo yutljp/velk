@@ -28,15 +28,15 @@ fn printed_packed_extensions_keep_every_lane_and_read_only_the_source_width() {
             }
         }
     }
-    std::fs::write(&assembly, source).unwrap();
-    let compiled = Command::new(compiler())
-        .args(["--target=x86_64-unknown-linux-gnu", "-c"])
-        .arg(&assembly)
-        .arg("-o")
-        .arg(&object)
-        .output()
-        .unwrap();
-    assert!(compiled.status.success(), "{compiled:?}");
+    common::compiler::compile_file(
+        Command::new(compiler())
+            .args(["--target=x86_64-unknown-linux-gnu", "-c"])
+            .arg(&assembly)
+            .arg("-o")
+            .arg(&object),
+        &assembly,
+        &source,
+    );
     let mut binary = Binary::open(&object).unwrap();
     for signed in [false, true] {
         for (suffix, from, to) in forms {
@@ -78,15 +78,15 @@ fn unsigned_dword_packing_saturates_each_lane_and_preserves_the_callers_frame() 
         writeln!(source, ".globl {name}\n.type {name},@function\n{name}:\npushq %rbp\nmovq %rsp, %rbp\nmovdqu (%rdi), %xmm0\npackusdw {operand}, %xmm0\nmovdqu %xmm0, (%rsi)\nmovl $7, %eax\npopq %rbp\nret\n.size {name}, .-{name}").unwrap();
     }
     source.push_str(".globl packing_caller\n.type packing_caller,@function\npacking_caller:\npushq %rbp\nmovq %rsp, %rbp\nsubq $16, %rsp\nmovq %rdx, -8(%rbp)\ncall pack_register\nmovq -8(%rbp), %rax\naddq $16, %rsp\npopq %rbp\nret\n.size packing_caller, .-packing_caller\n");
-    std::fs::write(&assembly, source).unwrap();
-    let compiled = Command::new(compiler())
-        .args(["--target=x86_64-unknown-linux-gnu", "-c"])
-        .arg(&assembly)
-        .arg("-o")
-        .arg(&object)
-        .output()
-        .unwrap();
-    assert!(compiled.status.success(), "{compiled:?}");
+    common::compiler::compile_file(
+        Command::new(compiler())
+            .args(["--target=x86_64-unknown-linux-gnu", "-c"])
+            .arg(&assembly)
+            .arg("-o")
+            .arg(&object),
+        &assembly,
+        &source,
+    );
     let mut binary = Binary::open(&object).unwrap();
     let mut code = String::new();
     for name in ["pack_register", "pack_memory", "packing_caller"] {

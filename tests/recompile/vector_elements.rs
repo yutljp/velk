@@ -13,15 +13,15 @@ fn printed_byte_insertions_preserve_other_lanes_and_read_one_memory_byte() {
             writeln!(source, ".globl {name}\n.type {name},@function\n{name}:\nmovdqu (%rdi), %xmm0\npinsrb ${}, {operand}, %xmm0\nmovdqu %xmm0, (%rdx)\nmovl $7, %eax\nret\n.size {name}, .-{name}", lane + 16).unwrap();
         }
     }
-    std::fs::write(&assembly, source).unwrap();
-    let compiled = Command::new(compiler())
-        .args(["--target=x86_64-unknown-linux-gnu", "-c"])
-        .arg(&assembly)
-        .arg("-o")
-        .arg(&object)
-        .output()
-        .unwrap();
-    assert!(compiled.status.success(), "{compiled:?}");
+    common::compiler::compile_file(
+        Command::new(compiler())
+            .args(["--target=x86_64-unknown-linux-gnu", "-c"])
+            .arg(&assembly)
+            .arg("-o")
+            .arg(&object),
+        &assembly,
+        &source,
+    );
     let mut binary = Binary::open(&object).unwrap();
     for memory in [false, true] {
         for lane in 0..16 {
@@ -61,15 +61,15 @@ fn printed_word_extractions_store_two_bytes_and_preserve_saved_registers() {
         }
     }
     source.push_str(".globl extraction_caller\n.type extraction_caller,@function\nextraction_caller:\npushq %rbp\nmovq %rsp,%rbp\nsubq $16,%rsp\nmovq $123,-8(%rbp)\ncall extract_pextrw_0\nmovq -8(%rbp),%rax\naddq $16,%rsp\npopq %rbp\nret\n.size extraction_caller,.-extraction_caller\n");
-    std::fs::write(&assembly, source).unwrap();
-    let compiled = Command::new(compiler())
-        .args(["--target=x86_64-unknown-linux-gnu", "-c"])
-        .arg(&assembly)
-        .arg("-o")
-        .arg(&object)
-        .output()
-        .unwrap();
-    assert!(compiled.status.success(), "{compiled:?}");
+    common::compiler::compile_file(
+        Command::new(compiler())
+            .args(["--target=x86_64-unknown-linux-gnu", "-c"])
+            .arg(&assembly)
+            .arg("-o")
+            .arg(&object),
+        &assembly,
+        &source,
+    );
     let mut binary = Binary::open(&object).unwrap();
     let mut all = String::new();
     for instruction in ["pextrw", "vpextrw"] {
@@ -121,15 +121,15 @@ fn printed_dword_extractions_zero_extend_registers_and_store_four_bytes() {
             }
         }
     }
-    std::fs::write(&assembly, source).unwrap();
-    let compiled = Command::new(compiler())
-        .args(["--target=x86_64-unknown-linux-gnu", "-c"])
-        .arg(&assembly)
-        .arg("-o")
-        .arg(&object)
-        .output()
-        .unwrap();
-    assert!(compiled.status.success(), "{compiled:?}");
+    common::compiler::compile_file(
+        Command::new(compiler())
+            .args(["--target=x86_64-unknown-linux-gnu", "-c"])
+            .arg(&assembly)
+            .arg("-o")
+            .arg(&object),
+        &assembly,
+        &source,
+    );
     let mut binary = Binary::open(&object).unwrap();
     for instruction in ["pextrd", "vpextrd"] {
         for memory in [false, true] {

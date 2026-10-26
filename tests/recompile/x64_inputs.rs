@@ -48,15 +48,15 @@ fn printed_x64_inputs_exclude_dead_reads_and_unused_call_positions() {
         )
         .unwrap();
     }
-    std::fs::write(&assembly, source).unwrap();
-    let compiled = Command::new(compiler())
-        .args(["--target=x86_64-unknown-linux-gnu", "-c"])
-        .arg(&assembly)
-        .arg("-o")
-        .arg(&object)
-        .output()
-        .unwrap();
-    assert!(compiled.status.success(), "{compiled:?}");
+    common::compiler::compile_file(
+        Command::new(compiler())
+            .args(["--target=x86_64-unknown-linux-gnu", "-c"])
+            .arg(&assembly)
+            .arg("-o")
+            .arg(&object),
+        &assembly,
+        &source,
+    );
     let mut binary = Binary::open(&object).unwrap();
     let last = binary.find("last_input").unwrap().addr;
     let partial = binary.find("partial_input").unwrap().addr;
@@ -197,15 +197,15 @@ fn printed_inputs_keep_wide_reads_before_narrow_register_reuse() {
     let scratch = scratch_dir("wide-input-reuse");
     let assembly = scratch.join("reuse.s");
     let object = scratch.join("reuse.o");
-    std::fs::write(&assembly, ".text\n.globl input_reuse\n.type input_reuse,@function\ninput_reuse:\nmovq %rdi, -8(%rsp)\nmovl $1, %edi\nmovq -8(%rsp), %rax\naddq %rdi, %rax\nret\n.size input_reuse, .-input_reuse\n").unwrap();
-    let compiled = Command::new(compiler())
-        .args(["--target=x86_64-unknown-linux-gnu", "-c"])
-        .arg(&assembly)
-        .arg("-o")
-        .arg(&object)
-        .output()
-        .unwrap();
-    assert!(compiled.status.success(), "{compiled:?}");
+    common::compiler::compile_file(
+        Command::new(compiler())
+            .args(["--target=x86_64-unknown-linux-gnu", "-c"])
+            .arg(&assembly)
+            .arg("-o")
+            .arg(&object),
+        &assembly,
+        ".text\n.globl input_reuse\n.type input_reuse,@function\ninput_reuse:\nmovq %rdi, -8(%rsp)\nmovl $1, %edi\nmovq -8(%rsp), %rax\naddq %rdi, %rax\nret\n.size input_reuse, .-input_reuse\n",
+    );
     let mut binary = Binary::open(&object).unwrap();
     let address = binary.find("input_reuse").unwrap().addr;
     let analysis = binary.analysis(address, None).unwrap();
@@ -224,15 +224,15 @@ fn printed_short_arrays_include_four_byte_initializers() {
     let scratch = scratch_dir("short-array-initializers");
     let assembly = scratch.join("array.s");
     let object = scratch.join("array.o");
-    std::fs::write(&assembly, ".text\n.globl short_array\n.type short_array,@function\nshort_array:\npushq %rbp\nmovq %rsp, %rbp\nsubq $32, %rsp\nmovabsq $0x0004000400040004, %rax\nmovq %rax, -16(%rbp)\nmovl $0x00040004, -8(%rbp)\nmovw $4, -4(%rbp)\nmovswl -16(%rbp,%rdi,2), %eax\nleave\nret\n.size short_array, .-short_array\n").unwrap();
-    let compiled = Command::new(compiler())
-        .args(["--target=x86_64-unknown-linux-gnu", "-c"])
-        .arg(&assembly)
-        .arg("-o")
-        .arg(&object)
-        .output()
-        .unwrap();
-    assert!(compiled.status.success(), "{compiled:?}");
+    common::compiler::compile_file(
+        Command::new(compiler())
+            .args(["--target=x86_64-unknown-linux-gnu", "-c"])
+            .arg(&assembly)
+            .arg("-o")
+            .arg(&object),
+        &assembly,
+        ".text\n.globl short_array\n.type short_array,@function\nshort_array:\npushq %rbp\nmovq %rsp, %rbp\nsubq $32, %rsp\nmovabsq $0x0004000400040004, %rax\nmovq %rax, -16(%rbp)\nmovl $0x00040004, -8(%rbp)\nmovw $4, -4(%rbp)\nmovswl -16(%rbp,%rdi,2), %eax\nleave\nret\n.size short_array, .-short_array\n",
+    );
     let mut binary = Binary::open(&object).unwrap();
     let address = binary.find("short_array").unwrap().addr;
     let code = binary.decompile(address, None, None).unwrap();

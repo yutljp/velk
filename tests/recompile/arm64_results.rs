@@ -17,15 +17,15 @@ fn unsigned_vector_maximum_clears_upper_bits_and_preserves_saved_registers() {
         writeln!(source, ".globl maximum_{index}\n.type maximum_{index},@function\nmaximum_{index}:\nldr q0, [x0]\numaxv {scalar}0, v0.{lanes}\nstr q0, [x1]\numov w0, v0.{scalar}[0]\nret\n.size maximum_{index}, .-maximum_{index}").unwrap();
     }
     source.push_str(".globl preserved_maximum\n.type preserved_maximum,@function\npreserved_maximum:\nstp x19, x30, [sp, #-16]!\nmov x19, x2\nbl maximum_0\nmov x0, x19\nldp x19, x30, [sp], #16\nret\n.size preserved_maximum, .-preserved_maximum\n");
-    std::fs::write(&assembly, source).unwrap();
-    let compiled = Command::new(compiler())
-        .args(["--target=aarch64-unknown-linux-gnu", "-c"])
-        .arg(&assembly)
-        .arg("-o")
-        .arg(&object)
-        .output()
-        .unwrap();
-    assert!(compiled.status.success(), "{compiled:?}");
+    common::compiler::compile_file(
+        Command::new(compiler())
+            .args(["--target=aarch64-unknown-linux-gnu", "-c"])
+            .arg(&assembly)
+            .arg("-o")
+            .arg(&object),
+        &assembly,
+        &source,
+    );
     let mut binary = Binary::open(&object).unwrap();
     for (index, (_, _, bits, count)) in forms.iter().enumerate() {
         let name = format!("maximum_{index}");
@@ -141,7 +141,12 @@ fn constant_address_spills_are_rematerialized_across_frame_only_calls() {
     let scratch = scratch_dir("arm64-constant-spill");
     let assembly = scratch.join("spill.s");
     let object = scratch.join("spill.o");
-    std::fs::write(
+    common::compiler::compile_file(
+        Command::new(compiler())
+            .args(["--target=aarch64-unknown-linux-gnu", "-c"])
+            .arg(&assembly)
+            .arg("-o")
+            .arg(&object),
         &assembly,
         ".text
 .globl spill_helper
@@ -208,16 +213,7 @@ ldp x29, x30, [sp], #64
 ret
 .size replaced_address, .-replaced_address
 ",
-    )
-    .unwrap();
-    let compiled = Command::new(compiler())
-        .args(["--target=aarch64-unknown-linux-gnu", "-c"])
-        .arg(&assembly)
-        .arg("-o")
-        .arg(&object)
-        .output()
-        .unwrap();
-    assert!(compiled.status.success(), "{compiled:?}");
+    );
     let mut binary = Binary::open(&object).unwrap();
     let address = binary.find("spilled_address").unwrap().addr;
     let code = binary.decompile(address, None, None).unwrap();
@@ -259,7 +255,12 @@ fn a_full_call_argument_keeps_bits_also_used_by_a_narrow_argument() {
     let scratch = scratch_dir("arm64-mixed-arguments");
     let assembly = scratch.join("arguments.s");
     let object = scratch.join("arguments.o");
-    std::fs::write(
+    common::compiler::compile_file(
+        Command::new(compiler())
+            .args(["--target=aarch64-unknown-linux-gnu", "-c"])
+            .arg(&assembly)
+            .arg("-o")
+            .arg(&object),
         &assembly,
         ".text
 .globl mixed_arguments
@@ -280,16 +281,7 @@ eor x0, x2, x1
 ret
 .size consume_mixed, .-consume_mixed
 ",
-    )
-    .unwrap();
-    let compiled = Command::new(compiler())
-        .args(["--target=aarch64-unknown-linux-gnu", "-c"])
-        .arg(&assembly)
-        .arg("-o")
-        .arg(&object)
-        .output()
-        .unwrap();
-    assert!(compiled.status.success(), "{compiled:?}");
+    );
     let mut binary = Binary::open(&object).unwrap();
     let address = binary.find("mixed_arguments").unwrap().addr;
     let printed = binary.decompile(address, None, None).unwrap();

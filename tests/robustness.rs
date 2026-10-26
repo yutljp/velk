@@ -3,14 +3,8 @@
 
 mod common;
 
+use velk::ir::eval;
 use velk::service::Binary;
-
-fn mix(seed: u64, key: u64) -> u64 {
-    let mut value = seed ^ key.wrapping_mul(0x9e37_79b9_7f4a_7c15);
-    value = (value ^ (value >> 30)).wrapping_mul(0xbf58_476d_1ce4_e5b9);
-    value = (value ^ (value >> 27)).wrapping_mul(0x94d0_49bb_1331_11eb);
-    value ^ (value >> 31)
-}
 
 /// Variants of `bytes`: cut at several lengths, and with a few bytes overwritten.
 fn damaged(bytes: &[u8]) -> Vec<Vec<u8>> {
@@ -21,8 +15,8 @@ fn damaged(bytes: &[u8]) -> Vec<Vec<u8>> {
     for seed in 0..6 {
         let mut copy = bytes.to_vec();
         for flip in 0..16 {
-            let position = (mix(seed, flip) % bytes.len() as u64) as usize;
-            copy[position] = mix(seed, flip + 100) as u8;
+            let position = (eval::hash(seed, flip) % bytes.len() as u64) as usize;
+            copy[position] = eval::hash(seed, flip + 100) as u8;
         }
         variants.push(copy);
     }

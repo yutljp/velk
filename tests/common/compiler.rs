@@ -1,5 +1,7 @@
 //! Compiler execution for integration tests with caller-supplied arguments and input.
 
+use std::fs;
+use std::path::Path;
 use std::process::{Command, Output, Stdio};
 
 pub fn run(command: &mut Command, source: Option<&str>) -> Output {
@@ -20,4 +22,10 @@ pub fn run(command: &mut Command, source: Option<&str>) -> Output {
         .write_all(source.as_bytes())
         .expect("writing to C compiler");
     compiler.wait_with_output().expect("C compiler")
+}
+
+pub fn compile_file(command: &mut Command, path: &Path, source: &str) {
+    fs::write(path, source).expect("writing compiler source");
+    let compiled = run(command, None);
+    assert!(compiled.status.success(), "{compiled:?}");
 }
