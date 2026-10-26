@@ -12,7 +12,7 @@ pub(crate) struct Binding {
 
 pub(in crate::loader) fn apply(
     file: &object::File<'_>,
-    bytes: &mut [u8],
+    bytes: &mut std::borrow::Cow<'_, [u8]>,
 ) -> Result<BTreeMap<u64, Binding>, String> {
     let mut bindings = BTreeMap::new();
     let object::File::MachO64(macho) = file else {
@@ -235,7 +235,7 @@ pub(in crate::loader) fn apply(
                 };
                 let Some(field) = place
                     .checked_add(8)
-                    .and_then(|end| bytes.get_mut(place..end))
+                    .and_then(|end| bytes.to_mut().get_mut(place..end))
                 else {
                     return Err(format!("pointer at {address:#x}: truncated file data"));
                 };

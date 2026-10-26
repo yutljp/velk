@@ -6,9 +6,9 @@
 //! part, are summarized in parallel. The result is the same whichever
 //! function is asked about first, and however many threads there are.
 
-use std::collections::{HashMap, HashSet, VecDeque};
+use std::collections::{HashMap, HashSet};
 use std::sync::atomic::{AtomicUsize, Ordering};
-use std::sync::{Arc, Condvar, Mutex, OnceLock, PoisonError};
+use std::sync::{Arc, OnceLock};
 
 use super::{UNKNOWN_SIZE, signature};
 use crate::ir::{Block, Registers, Stmt};
@@ -128,6 +128,21 @@ pub fn summary(image: &Image, addr: u64) -> Summary {
     cache.get(&addr).copied().unwrap_or_default()
 }
 
+/// Settles summaries before independent callers share the worker pool. Workers
+/// must not wait for this cache's write lock while its owner joins nested work.
+pub(crate) fn prepare(
+    image: &Image,
+    deadline: Option<std::time::Instant>,
+) -> crate::error::Result<()> {
+    for &addr in image.functions.keys() {
+        if let Err(error) = crate::deadline::passed(deadline) {
+            return Err(error);
+        }
+        summary(image, addr);
+    }
+    crate::deadline::passed(deadline)
+}
+
 /// What a call into the middle of a function, as Go's into its code that
 /// zeroes or copies a block, knows of the code from there on: the
 /// registers it changes. The rest is left unknown.
@@ -209,11 +224,12 @@ fn call_graph(
     root: u64,
     known: &HashMap<u64, Summary>,
 ) -> (HashMap<u64, Vec<u64>>, HashSet<u64>) {
+    crate::timing::scope!("summary::call_graph");
     let mut edges = HashMap::new();
     let mut recursive = HashSet::new();
     let mut round = vec![root];
     while !round.is_empty() {
-        let found = in_parallel(&round, |addr| callees(image, *addr));
+        let found = crate::parallel::map(&round, |addr| callees(image, *addr));
         let mut next = Vec::new();
         for (addr, (callees, calls_itself)) in round.into_iter().zip(found) {
             if calls_itself {
@@ -315,6 +331,7 @@ fn settle_parts(
     edges: &HashMap<u64, Vec<u64>>,
     known: &HashMap<u64, Summary>,
 ) -> HashMap<u64, Summary> {
+    crate::timing::scope!("summary::settle_parts");
     let part_of: HashMap<u64, usize> = parts
         .iter()
         .enumerate()
@@ -347,54 +364,36 @@ fn settle_parts(
             .or_else(|| known.get(&target))
             .copied()
     };
-    let queue = Mutex::new(Queue {
-        ready: (0..parts.len())
-            .filter(|index| waiting[*index] == 0)
-            .collect(),
-        waiting,
-        left: parts.len(),
-    });
-    let wake = Condvar::new();
-    let work = || {
-        let _abort = Abort(&queue, &wake);
-        loop {
-            let index = {
-                let mut queue = queue.lock().expect("parts lock");
-                loop {
-                    if let Some(index) = queue.ready.pop_front() {
-                        break index;
-                    }
-                    if queue.left == 0 {
-                        return;
-                    }
-                    queue = wake.wait(queue).expect("parts lock");
-                }
-            };
-            let part = &parts[index];
-            let cyclic = part.len() > 1 || recursive.contains(&part[0]);
-            for (addr, summary) in settle(image, part, cyclic, edges, &outside) {
-                settled[&addr].set(summary).expect("settled once");
-            }
-            let mut queue = queue.lock().expect("parts lock");
-            queue.left -= 1;
-            for dependent in &dependents[index] {
-                queue.waiting[*dependent] -= 1;
-                if queue.waiting[*dependent] == 0 {
-                    queue.ready.push_back(*dependent);
-                }
-            }
-            wake.notify_all();
+    let work = |index: usize| {
+        let part = &parts[index];
+        let cyclic = part.len() > 1 || recursive.contains(&part[0]);
+        for (addr, summary) in settle(image, part, cyclic, edges, &outside) {
+            settled[&addr].set(summary).expect("settled once");
         }
     };
-    let workers = threads().min(parts.len());
-    if workers <= 1 {
-        work();
-    } else {
-        std::thread::scope(|scope| {
-            for _ in 0..workers {
-                scope.spawn(work);
+    match crate::parallel::pool() {
+        Some(pool) if pool.current_num_threads() > 1 => {
+            let ready: Vec<usize> = (0..parts.len())
+                .filter(|&index| waiting[index] == 0)
+                .collect();
+            let pending = PendingParts {
+                waiting: waiting.into_iter().map(AtomicUsize::new).collect(),
+                dependents,
+                work,
+            };
+            pool.scope(|scope| {
+                let pending = &pending;
+                for index in ready {
+                    scope.spawn(move |scope| pending.run(scope, index));
+                }
+            });
+        }
+        _ => {
+            // parts_from puts every callee before its callers.
+            for index in 0..parts.len() {
+                work(index);
             }
-        });
+        }
     }
     settled
         .into_iter()
@@ -402,67 +401,28 @@ fn settle_parts(
         .collect()
 }
 
-/// The parts ready to settle, how many unsettled parts each other one
-/// calls, and how many are left.
-struct Queue {
-    ready: VecDeque<usize>,
-    waiting: Vec<usize>,
-    left: usize,
+struct PendingParts<F> {
+    waiting: Vec<AtomicUsize>,
+    dependents: Vec<Vec<usize>>,
+    work: F,
 }
 
-/// Stops the other workers when one panics, so the panic reaches the
-/// caller instead of leaving them waiting.
-struct Abort<'a>(&'a Mutex<Queue>, &'a Condvar);
-
-impl Drop for Abort<'_> {
-    fn drop(&mut self) {
-        if std::thread::panicking() {
-            let mut queue = self.0.lock().unwrap_or_else(PoisonError::into_inner);
-            queue.ready.clear();
-            queue.left = 0;
-            self.1.notify_all();
+impl<F: Fn(usize) + Sync> PendingParts<F> {
+    fn run<'scope>(&'scope self, scope: &rayon::Scope<'scope>, mut index: usize) {
+        loop {
+            (self.work)(index);
+            let mut next = None;
+            for &dependent in &self.dependents[index] {
+                if self.waiting[dependent].fetch_sub(1, Ordering::AcqRel) == 1
+                    && let Some(ready) = next.replace(dependent)
+                {
+                    scope.spawn(move |scope| self.run(scope, ready));
+                }
+            }
+            let Some(ready) = next else { return };
+            index = ready;
         }
     }
-}
-
-fn threads() -> usize {
-    std::thread::available_parallelism().map_or(1, std::num::NonZero::get)
-}
-
-/// `work` on each item, spread over the machine's threads; the results come
-/// in the items' order.
-fn in_parallel<T: Sync, R: Send>(items: &[T], work: impl Fn(&T) -> R + Sync) -> Vec<R> {
-    let workers = threads().min(items.len());
-    if workers <= 1 {
-        return items.iter().map(work).collect();
-    }
-    let next = AtomicUsize::new(0);
-    let mut done: Vec<(usize, R)> = std::thread::scope(|scope| {
-        let handles: Vec<_> = (0..workers)
-            .map(|_| {
-                scope.spawn(|| {
-                    let mut done = Vec::new();
-                    loop {
-                        let index = next.fetch_add(1, Ordering::Relaxed);
-                        let Some(item) = items.get(index) else {
-                            return done;
-                        };
-                        done.push((index, work(item)));
-                    }
-                })
-            })
-            .collect();
-        handles
-            .into_iter()
-            .flat_map(|handle| {
-                handle
-                    .join()
-                    .unwrap_or_else(|panic| std::panic::resume_unwind(panic))
-            })
-            .collect()
-    });
-    done.sort_unstable_by_key(|(index, _)| *index);
-    done.into_iter().map(|(_, result)| result).collect()
 }
 
 /// Summarizes the functions of one part, whose callees outside it are
@@ -477,6 +437,19 @@ fn settle(
     edges: &HashMap<u64, Vec<u64>>,
     outside: &(dyn Fn(u64) -> Option<Summary> + Sync),
 ) -> HashMap<u64, Summary> {
+    if !cyclic {
+        let addr = part[0];
+        let initial = assumed(image, addr, /* cyclic */ false);
+        let lookup = |target| {
+            if target == addr {
+                initial
+            } else {
+                outside(target).unwrap_or_default()
+            }
+        };
+        let (found, _) = compute(image, addr, &lookup, None, /* with_clobbers */ true);
+        return HashMap::from([(addr, merge(initial, found))]);
+    }
     // Who calls each function, within the part.
     let members: HashSet<u64> = part.iter().copied().collect();
     let mut callers: HashMap<u64, Vec<u64>> = HashMap::new();
@@ -525,7 +498,7 @@ fn settle(
                     .or_else(|| outside(target))
                     .unwrap_or_default()
             };
-            in_parallel(&pending, |addr| {
+            crate::parallel::map(&pending, |addr| {
                 compute(image, *addr, &lookup, seen.get(addr), !cyclic)
             })
         };
@@ -593,7 +566,9 @@ fn settle_clobbers(
     let bodies: HashMap<u64, Option<Vec<Block>>> = part
         .iter()
         .copied()
-        .zip(in_parallel(part, |addr| own_body(image, *addr, &lookup)))
+        .zip(crate::parallel::map(part, |addr| {
+            own_body(image, *addr, &lookup)
+        }))
         .collect();
     let convention = |addr: u64| image.convention_of(addr);
     let sp = crate::arch::stack_pointer(image.isa);
@@ -613,7 +588,7 @@ fn settle_clobbers(
         }
         let found = {
             let known = |target: u64| current.get(&target).copied();
-            in_parallel(&pending, |addr| {
+            crate::parallel::map(&pending, |addr| {
                 bodies[addr].as_ref().and_then(|blocks| {
                     super::clobbers::clobbers_knowing(blocks, convention(*addr), sp, &known)
                 })
@@ -946,6 +921,37 @@ fn can_return(blocks: &[Block]) -> bool {
 mod tests {
     use crate::loader::{Function, Image, Isa, Summary};
     use std::sync::Arc;
+    use std::sync::atomic::{AtomicUsize, Ordering};
+
+    #[test]
+    fn dependent_parts_run_once_after_all_their_callees() {
+        let pool = rayon::ThreadPoolBuilder::new()
+            .num_threads(4)
+            .build()
+            .unwrap();
+        let callees = [vec![], vec![], vec![0, 1], vec![0], vec![2, 3], vec![4]];
+        let finished: Vec<AtomicUsize> = (0..callees.len()).map(|_| AtomicUsize::new(0)).collect();
+        let pending = super::PendingParts {
+            waiting: callees
+                .iter()
+                .map(|calls| AtomicUsize::new(calls.len()))
+                .collect(),
+            dependents: vec![vec![2, 3], vec![2], vec![4], vec![4], vec![5], vec![]],
+            work: |index: usize| {
+                for &callee in &callees[index] {
+                    assert_eq!(finished[callee].load(Ordering::Acquire), 1);
+                }
+                assert_eq!(finished[index].fetch_add(1, Ordering::Release), 0);
+            },
+        };
+        pool.scope(|scope| {
+            scope.spawn(|scope| pending.run(scope, 0));
+            scope.spawn(|scope| pending.run(scope, 1));
+        });
+        for count in finished {
+            assert_eq!(count.into_inner(), 1);
+        }
+    }
 
     fn image(words: &[u32]) -> Image {
         let code: Vec<_> = words.iter().flat_map(|word| word.to_le_bytes()).collect();

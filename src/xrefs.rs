@@ -96,129 +96,157 @@ impl Index {
         }
     }
 
-    pub(crate) fn build(image: &Image, deadline: Option<Instant>) -> Result<Self> {
+    fn function(
+        image: &Image,
+        function: &crate::loader::Function,
+        deadline: Option<Instant>,
+    ) -> Result<Self> {
+        if let Err(error) = passed(deadline) {
+            return Err(error);
+        }
         let mut index = Self::default();
-        for function in image.functions.values() {
-            if let Err(error) = passed(deadline) {
-                return Err(error);
+        let blocks = match crate::analysis::navigation::blocks(image, function) {
+            Ok(blocks) => blocks,
+            Err(error) => {
+                index.failures.push(Failure {
+                    function: function.addr,
+                    error: error.to_string(),
+                });
+                return Ok(index);
             }
-            let blocks = match crate::analysis::navigation::blocks(image, function) {
-                Ok(blocks) => blocks,
-                Err(error) => {
-                    index.failures.push(Failure {
+        };
+        let entries = crate::analysis::navigation::constants(&blocks, image);
+        for (block, mut values) in std::iter::zip(&blocks, entries) {
+            for (statement, stmt) in block.stmts.iter().enumerate() {
+                let mut add = |target, kind| {
+                    index.xrefs.push(Xref {
                         function: function.addr,
-                        error: error.to_string(),
-                    });
-                    continue;
-                }
-            };
-            let entries = crate::analysis::navigation::constants(&blocks, image);
-            for (block, mut values) in blocks.iter().zip(entries) {
-                for (statement, stmt) in block.stmts.iter().enumerate() {
-                    let mut add = |target, kind| {
-                        index.xrefs.push(Xref {
-                            function: function.addr,
-                            block: block.start,
-                            statement,
-                            target,
-                            kind,
-                            name: name(image, target),
-                        })
-                    };
-                    if let Stmt::Call {
+                        block: block.start,
+                        statement,
                         target,
                         kind,
-                        through,
-                        via,
-                        ..
-                    } = stmt
-                    {
-                        if let Some(target) = target {
-                            add(
+                        name: name(image, target),
+                    })
+                };
+                if let Stmt::Call {
+                    target,
+                    kind,
+                    through,
+                    via,
+                    ..
+                } = stmt
+                {
+                    if let Some(target) = target {
+                        add(
+                            *target,
+                            if *kind == CallKind::Tail {
+                                Kind::TailCall
+                            } else if via.is_some() {
+                                Kind::ResolvedCall
+                            } else {
+                                Kind::Call
+                            },
+                        );
+                        // Linkage stubs name the same import as their slot.
+                        // Keep the stub edge as well as the import use.
+                        if let Some(function) = image.functions.get(target)
+                            && function.sources.contains(&crate::loader::NameSource::Plt)
+                            && let Some(name) = &function.name
+                        {
+                            for (slot, imported) in &image.imports {
+                                if imported == name {
+                                    add(*slot, Kind::ResolvedCall);
+                                }
+                            }
+                        }
+                    } else if let Some(through) = through {
+                        let resolved = crate::analysis::navigation::resolve(through, &values);
+                        match &resolved {
+                            Expr::Const(target) => add(
                                 *target,
                                 if *kind == CallKind::Tail {
                                     Kind::TailCall
-                                } else if via.is_some() {
-                                    Kind::ResolvedCall
                                 } else {
-                                    Kind::Call
+                                    Kind::ResolvedCall
                                 },
-                            );
-                            // Linkage stubs name the same import as their slot.
-                            // Keep the stub edge as well as the import use.
-                            if let Some(function) = image.functions.get(target)
-                                && function.sources.contains(&crate::loader::NameSource::Plt)
-                                && let Some(name) = &function.name
-                            {
-                                for (slot, imported) in &image.imports {
-                                    if imported == name {
-                                        add(*slot, Kind::ResolvedCall);
-                                    }
+                            ),
+                            Expr::Load { addr, .. } => {
+                                if let Expr::Const(slot) = addr.as_ref()
+                                    && image.imports.contains_key(slot)
+                                {
+                                    add(
+                                        *slot,
+                                        if *kind == CallKind::Tail {
+                                            Kind::TailCall
+                                        } else {
+                                            Kind::ResolvedCall
+                                        },
+                                    );
                                 }
                             }
-                        } else if let Some(through) = through {
-                            let resolved = crate::analysis::navigation::resolve(through, &values);
-                            match &resolved {
-                                Expr::Const(target) => add(
-                                    *target,
-                                    if *kind == CallKind::Tail {
-                                        Kind::TailCall
-                                    } else {
-                                        Kind::ResolvedCall
-                                    },
-                                ),
-                                Expr::Load { addr, .. } => {
-                                    if let Expr::Const(slot) = addr.as_ref()
-                                        && image.imports.contains_key(slot)
-                                    {
-                                        add(
-                                            *slot,
-                                            if *kind == CallKind::Tail {
-                                                Kind::TailCall
-                                            } else {
-                                                Kind::ResolvedCall
-                                            },
-                                        );
-                                    }
-                                }
-                                _ => {}
-                            }
-                        }
-                        if let Some(via) = via {
-                            if via.table == crate::ir::Table::Pointer {
-                                add(via.slot, Kind::Read);
-                            }
-                            for target in &via.candidates {
-                                add(*target, Kind::CandidateCall);
-                            }
+                            _ => {}
                         }
                     }
-                    if let Stmt::Switch { cases, default, .. } = stmt {
-                        for target in cases.iter().map(|(_, target)| target).chain(default) {
-                            add(*target, Kind::JumpTable);
+                    if let Some(via) = via {
+                        if via.table == crate::ir::Table::Pointer {
+                            add(via.slot, Kind::Read);
+                        }
+                        for target in &via.candidates {
+                            add(*target, Kind::CandidateCall);
                         }
                     }
-                    if let Stmt::Store { addr, value, .. } = stmt {
-                        let addr = crate::analysis::navigation::resolve(addr, &values);
-                        expression(&addr, Kind::Write, image, &mut add);
+                }
+                if let Stmt::Switch { cases, default, .. } = stmt {
+                    for target in cases.iter().map(|(_, target)| target).chain(default) {
+                        add(*target, Kind::JumpTable);
+                    }
+                }
+                if let Stmt::Store { addr, value, .. } = stmt {
+                    let addr = crate::analysis::navigation::resolve(addr, &values);
+                    expression(&addr, Kind::Write, image, &mut add);
+                    expression(
+                        &crate::analysis::navigation::resolve(value, &values),
+                        Kind::Address,
+                        image,
+                        &mut add,
+                    );
+                } else {
+                    for operand in stmt.operands() {
                         expression(
-                            &crate::analysis::navigation::resolve(value, &values),
+                            &crate::analysis::navigation::resolve(operand, &values),
                             Kind::Address,
                             image,
                             &mut add,
                         );
-                    } else {
-                        for operand in stmt.operands() {
-                            expression(
-                                &crate::analysis::navigation::resolve(operand, &values),
-                                Kind::Address,
-                                image,
-                                &mut add,
-                            );
-                        }
                     }
-                    crate::analysis::navigation::advance(stmt, &mut values);
                 }
+                crate::analysis::navigation::advance(stmt, &mut values);
+            }
+        }
+        if let Err(error) = passed(deadline) {
+            return Err(error);
+        }
+        Ok(index)
+    }
+
+    pub(crate) fn build(image: &Image, deadline: Option<Instant>) -> Result<Self> {
+        if crate::parallel::threads() > 1
+            && let Err(error) = crate::analysis::summary::prepare(image, deadline)
+        {
+            return Err(error);
+        }
+        let mut index = Self::default();
+        let functions: Vec<_> = image.functions.values().collect();
+        let results = crate::parallel::map(&functions, |function| {
+            Self::function(image, function, deadline)
+        });
+        for result in results {
+            match result {
+                Ok(mut function) => {
+                    index.xrefs.append(&mut function.xrefs);
+                    index.failures.append(&mut function.failures);
+                }
+                Err(error) => return Err(error),
             }
         }
         if let Err(error) = passed(deadline) {

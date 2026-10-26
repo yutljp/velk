@@ -58,7 +58,7 @@ cargo build --release --locked
 velk --functions path/to/binary          # 関数の一覧
 velk --classes   path/to/binary          # C++ クラスを JSON で一覧表示
 velk --decompile path/to/binary main     # 疑似 C
-velk --decompile path/to/binary '*'      # すべての関数
+velk --decompile path/to/binary          # すべての関数
 velk --disasm    path/to/binary 0x1000   # 逆アセンブル
 velk --emulate path/to/binary sum3 --emulation-options '{"arguments":[1,2,3]}' # 引数を指定して実行
 velk --xrefs     path/to/binary main     # main への参照
@@ -66,6 +66,10 @@ velk --strings   path/to/binary          # 参照付きの文字列
 ```
 
 そのほかの操作は `velk --help` を参照してください。
+
+バイナリ全体の処理には利用可能な CPU コアを使います。`VELK_THREADS=1` でワーカーを 1 個に、
+ほかの正の整数でワーカー数の上限を指定できます。結果は関数の順序を保ちます。
+Linux ではバイナリのローダーが入力のスナップショットを読み取り専用でメモリにマップし、マップできない場合はファイルを読み込みます。
 
 ユニバーサル Mach-O はこのマシンのアーキテクチャを開きます。別のものは `--arch x86_64`（または `arm64`、`arm64e`）で選びます。
 

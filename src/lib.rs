@@ -17,6 +17,7 @@ pub mod loader;
 pub mod memory;
 
 pub mod mcp;
+mod parallel;
 pub mod passes;
 pub mod project;
 pub mod render;

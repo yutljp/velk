@@ -60,15 +60,34 @@ fn fixture(format: u16, pointers: &[u64], import_format: u32, addend: i64) -> Ve
 
 fn decode(bytes: &[u8]) -> Result<(Vec<u8>, BTreeMap<u64, Binding>), String> {
     let file = object::File::parse(bytes).unwrap();
-    let mut patched = bytes.to_vec();
+    let mut patched = std::borrow::Cow::Borrowed(bytes);
     match apply(&file, &mut patched) {
-        Ok(bindings) => Ok((patched, bindings)),
+        Ok(bindings) => Ok((patched.into_owned(), bindings)),
         Err(error) => Err(error),
     }
 }
 
 fn pointer(bytes: &[u8], at: usize) -> u64 {
     u64::from_le_bytes(bytes[at..at + 8].try_into().unwrap())
+}
+
+#[test]
+fn decoding_copies_borrowed_input_only_when_patching_pointers() {
+    let original = fixture(6, &[0x888], 1, 0);
+    let file = object::File::parse(original.as_slice()).unwrap();
+    let mut patched = std::borrow::Cow::Borrowed(original.as_slice());
+    assert!(apply(&file, &mut patched).unwrap().is_empty());
+    assert!(matches!(patched, std::borrow::Cow::Owned(_)));
+    assert_eq!(pointer(&patched, 0x1000), BASE + 0x888);
+    assert_eq!(pointer(&original, 0x1000), 0x888);
+
+    let mut original = original;
+    u32_at(&mut original, 16, 2);
+    u32_at(&mut original, 20, 144);
+    let file = object::File::parse(original.as_slice()).unwrap();
+    let mut patched = std::borrow::Cow::Borrowed(original.as_slice());
+    assert!(apply(&file, &mut patched).unwrap().is_empty());
+    assert!(matches!(patched, std::borrow::Cow::Borrowed(_)));
 }
 
 #[test]

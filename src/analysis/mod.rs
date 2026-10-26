@@ -994,20 +994,23 @@ struct Lifted {
 /// which may expose further tables.
 pub fn absorb_jump_table_cases(image: &mut Image) {
     for _ in 0..4 {
-        let mut cases = HashSet::new();
-        for function in image.functions.values() {
-            if !function
-                .sources
-                .contains(&crate::loader::NameSource::Prologue)
-            {
-                continue;
-            }
+        let functions: Vec<_> = image
+            .functions
+            .values()
+            .filter(|function| {
+                function
+                    .sources
+                    .contains(&crate::loader::NameSource::Prologue)
+            })
+            .collect();
+        let found = crate::parallel::map(&functions, |function| {
+            let mut cases = HashSet::new();
             let size = function.size.unwrap_or(UNKNOWN_SIZE);
             // Function extents are still settling, so no callee is summarized yet.
             let Ok(blocks) = lift::lift_with(image, function.addr, size, &HashSet::new(), &|_| {
                 crate::loader::Summary::default()
             }) else {
-                continue;
+                return cases;
             };
             let reach = function.addr..function.addr.saturating_add(0x1_0000);
             for table in jump_table::recover(&blocks, image, reach) {
@@ -1018,6 +1021,11 @@ pub fn absorb_jump_table_cases(image: &mut Image) {
                         .filter(|target| *target != function.addr),
                 );
             }
+            cases
+        });
+        let mut cases = HashSet::new();
+        for found in found {
+            cases.extend(found);
         }
         if !image.drop_scanned_starts(&cases) {
             return;

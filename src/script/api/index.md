@@ -65,6 +65,21 @@ For several functions select a small batch first; mapping `decompile()` over an
 entire function list still does all that work before the display limit applies.
 Truncated C is incomplete and cannot be compiled as is.
 
+For parallel decompilation, use `b.decompile(selectedFunctions)` or `b.decompile()`
+for every function. Results are `{addr, code, error}` objects in the selected order;
+each has either C text or an error. Log each successful `code` to combine its C
+prelude with other logged functions. Individual `f.decompile()` calls in a loop
+remain sequential. `VELK_THREADS` limits workers across analysis and navigation;
+the default is the available CPU count.
+
+```js
+const b = velk.open("/path/to/binary");
+for (const result of b.decompile(b.functions().slice(0, 5))) {
+  if (result.error !== null) throw new Error(result.error);
+  console.log(result.code);
+}
+```
+
 ## Navigation queries
 
 Navigation commands print JSON:

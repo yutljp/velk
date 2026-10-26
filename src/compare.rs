@@ -118,7 +118,12 @@ impl Snapshot {
         }
         // Use binary names, not names supplied by the annotations being transferred.
         let functions: Vec<_> = binary.image().functions.values().cloned().collect();
-        for function in functions {
+        let addresses: Vec<_> = functions.iter().map(|function| function.addr).collect();
+        let rendered = match binary.decompile_many(&addresses, None, deadline) {
+            Ok(rendered) => rendered,
+            Err(error) => return Err(error),
+        };
+        for (function, code) in std::iter::zip(functions, rendered) {
             if let Err(error) = passed(deadline) {
                 return Err(error);
             }
@@ -204,7 +209,7 @@ impl Snapshot {
             entry
                 .constants
                 .retain(|value| binary.image().section_at(*value).is_none());
-            match binary.decompile(entry.function.addr, None, deadline) {
+            match code {
                 Ok(code) => entry.code = Some(code),
                 Err(error) => snapshot
                     .failures

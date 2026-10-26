@@ -5146,14 +5146,14 @@ fn compare(mode: Mode, golden: &str) {
                 fixture.name.display(),
                 result.lines
             );
-            assert_eq!(
-                result.differing,
-                0,
-                "{}: {:?}",
-                fixture.name.display(),
-                result.lines
-            );
         }
+        assert_eq!(
+            result.differing,
+            0,
+            "{}: {:?}",
+            fixture.name.display(),
+            result.lines
+        );
         for (reason, count) in &fixture.excluded {
             *excluded.entry(reason).or_default() += count;
         }

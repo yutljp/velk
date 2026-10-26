@@ -199,7 +199,7 @@ struct Cli {
             ("compare", "true"),
             ("annotate", "true"), ("annotation", "true"), ("unannotate", "true"), ("import_project", "true"), ("origins", "true"),
             ("emulate", "true"),
-            ("card", "true"), ("decompile", "true"),
+            ("card", "true"),
             ("disasm", "true"), ("ir", "true"), ("xrefs", "true"), ("callers", "true"), ("callees", "true"), ("path", "true"), ("constants", "true"), ("summary", "true"), ("search", "true"), ("read_memory", "true")
         ]),
         conflicts_with_all = ["classes", "functions", "sections", "build_signatures", "identify", "run", "mcp", "strings", "annotations", "export_project", "detect_constants"]
@@ -427,14 +427,15 @@ impl Cli {
             Self {
                 decompile: true,
                 input: Some(path),
-                function: Some(function),
+                function,
                 destination,
                 additional_functions,
                 signatures,
                 ..
             } => Command::Decompile {
                 path,
-                functions: std::iter::once(function)
+                functions: function
+                    .into_iter()
                     .chain(destination)
                     .chain(additional_functions)
                     .collect(),
@@ -722,18 +723,19 @@ fn run(
                 Ok(binary) => binary,
                 Err(error) => return Err(error),
             };
-            let addresses = if functions.iter().any(|function| function == "*") {
-                binary.image().functions.keys().copied().collect::<Vec<_>>()
-            } else {
-                let mut addresses = Vec::new();
-                for target in &functions {
-                    match binary.find(target) {
-                        Ok(found) => addresses.push(found.addr),
-                        Err(error) => return Err(error),
+            let addresses =
+                if functions.is_empty() || functions.iter().any(|function| function == "*") {
+                    binary.image().functions.keys().copied().collect::<Vec<_>>()
+                } else {
+                    let mut addresses = Vec::new();
+                    for target in &functions {
+                        match binary.find(target) {
+                            Ok(found) => addresses.push(found.addr),
+                            Err(error) => return Err(error),
+                        }
                     }
-                }
-                addresses
-            };
+                    addresses
+                };
             return Ok(decompile_functions(
                 &mut binary,
                 &addresses,
@@ -822,13 +824,31 @@ fn decompile_functions(
     title: &str,
     signatures: Option<&Database>,
 ) -> ExitCode {
-    use std::time::{Duration, Instant};
+    use std::time::Duration;
 
     let mut code = String::new();
     let mut status = ExitCode::SUCCESS;
-    for &addr in addresses {
-        let deadline = Instant::now() + Duration::from_secs(10);
-        match binary.decompile(addr, signatures, Some(deadline)) {
+    let results = if addresses.len() <= 1 {
+        addresses
+            .iter()
+            .map(|&addr| {
+                let deadline = std::time::Instant::now() + Duration::from_secs(10);
+                binary.decompile(addr, signatures, Some(deadline))
+            })
+            .collect()
+    } else {
+        match binary.decompile_many(addresses, signatures, None) {
+            Ok(results) => results,
+            Err(error) => {
+                for addr in addresses {
+                    eprintln!("error: function at 0x{addr:x}: {error}");
+                }
+                return ExitCode::FAILURE;
+            }
+        }
+    };
+    for (&addr, result) in std::iter::zip(addresses, results) {
+        match result {
             Ok(text) => code.push_str(&text),
             Err(error) => {
                 eprintln!("error: function at 0x{addr:x}: {error}");
@@ -1128,7 +1148,7 @@ mod tests {
         for (_, flag) in OPERATIONS.into_iter().take(9) {
             assert_eq!(error(&[flag]).kind(), ErrorKind::MissingRequiredArgument);
         }
-        for flag in ["--card", "--decompile", "--disasm", "--ir"] {
+        for flag in ["--card", "--disasm", "--ir"] {
             assert_eq!(
                 error(&[flag, "binary"]).kind(),
                 ErrorKind::MissingRequiredArgument

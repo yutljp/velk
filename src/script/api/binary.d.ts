@@ -16,6 +16,10 @@ interface Binary {
   slices: { arch: string; cpuType: number; cpuSubtype: number; offset: number; size: number }[];
   sliceOffset: number;
 
+  /** Renders functions concurrently in the supplied order, or every function in address order.
+   * Each result has either C or an error; one failure does not discard other results. */
+  decompile(functions?: Func[]): { addr: Addr; code: string | null; error: string | null }[];
+
   /** C++ classes described by RTTI; empty when unsupported or absent. */
   classes(): CppClass[];
   /** Execute a function name or virtual address with explicit state and limits. */

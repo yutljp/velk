@@ -137,6 +137,13 @@ pub enum Request {
         /// Function address in hexadecimal or decimal.
         addr: String,
     },
+    /// Renders selected functions concurrently, in address-list order.
+    DecompileMany {
+        /// Path identifying the binary to analyze.
+        bin: BinaryRef,
+        /// Function addresses; absence selects every function.
+        addresses: Option<Vec<String>>,
+    },
     /// Lists decoded instructions.
     Disasm {
         /// Path identifying the binary to analyze.
@@ -292,6 +299,37 @@ pub fn handle(
                 .open_arch(&bin, bin.arch())?
                 .decompile(parse(&addr)?, None, deadline)?
         )),
+        Request::DecompileMany { bin, addresses } => {
+            let binary = match session.open_arch(&bin, bin.arch()) {
+                Ok(binary) => binary,
+                Err(error) => return Err(error),
+            };
+            let addresses = match addresses {
+                Some(addresses) => {
+                    let mut parsed = Vec::with_capacity(addresses.len());
+                    for address in addresses {
+                        match parse(&address) {
+                            Ok(address) => parsed.push(address),
+                            Err(error) => return Err(error),
+                        }
+                    }
+                    parsed
+                }
+                None => binary.image().functions.keys().copied().collect(),
+            };
+            let results = match binary.decompile_many(&addresses, None, deadline) {
+                Ok(results) => results,
+                Err(error) => return Err(error),
+            };
+            let mut output = Vec::with_capacity(results.len());
+            for (addr, result) in addresses.into_iter().zip(results) {
+                output.push(match result {
+                    Ok(code) => json!({ "addr": crate::addr::format(addr), "code": code, "error": null }),
+                    Err(error) => json!({ "addr": crate::addr::format(addr), "code": null, "error": error.to_string() }),
+                });
+            }
+            Ok(json!(output))
+        }
         Request::Disasm { bin, addr, limit } => Ok(json!(
             session
                 .open_arch(&bin, bin.arch())?

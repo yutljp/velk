@@ -43,23 +43,23 @@ fn make_entry(name: String, isa: Isa, body: Body, calls: Vec<String>) -> Entry {
 }
 
 pub(crate) fn image_entries(image: &Image, deadline: Option<Instant>) -> Result<Vec<Entry>> {
-    let mut entries = Vec::new();
-    for function in image.functions.values() {
+    let functions: Vec<_> = image.functions.values().collect();
+    let found = crate::parallel::map(&functions, |function| {
         if let Err(error) = passed(deadline) {
             return Err(error);
         }
         let (Some(name), Some(size)) = (&function.name, function.size) else {
-            continue;
+            return Ok(None);
         };
         if size > MAX_BYTES {
-            continue;
+            return Ok(None);
         }
         let Some(bytes) = image.read_vaddr(function.addr, size) else {
-            continue;
+            return Ok(None);
         };
         let Some(body) = normalize::normalize(image.isa, bytes, function.addr, &HashSet::new())
         else {
-            continue;
+            return Ok(None);
         };
         let calls: Option<Vec<_>> = body
             .calls
@@ -72,9 +72,17 @@ pub(crate) fn image_entries(image: &Image, deadline: Option<Instant>) -> Result<
             })
             .collect();
         let Some(calls) = calls else {
-            continue;
+            return Ok(None);
         };
-        entries.push(make_entry(name.clone(), image.isa, body, calls));
+        Ok(Some(make_entry(name.clone(), image.isa, body, calls)))
+    });
+    let mut entries = Vec::new();
+    for result in found {
+        match result {
+            Ok(Some(entry)) => entries.push(entry),
+            Ok(None) => {}
+            Err(error) => return Err(error),
+        }
     }
     Ok(entries)
 }
@@ -90,23 +98,23 @@ pub(crate) fn identify(
             index.entry(&entry.bytes).or_default().push(entry);
         }
     }
-    let mut candidates = BTreeMap::new();
-    for function in image.functions.values() {
+    let functions: Vec<_> = image.functions.values().collect();
+    let found = crate::parallel::map(&functions, |function| {
         if let Err(error) = passed(deadline) {
             return Err(error);
         }
         let Some(size) = function.size.filter(|size| *size <= MAX_BYTES) else {
-            continue;
+            return Ok(None);
         };
         let Some(bytes) = image.read_vaddr(function.addr, size) else {
-            continue;
+            return Ok(None);
         };
         let Some(body) = normalize::normalize(image.isa, bytes, function.addr, &HashSet::new())
         else {
-            continue;
+            return Ok(None);
         };
         let Some(entries) = index.get(body.bytes.as_slice()) else {
-            continue;
+            return Ok(None);
         };
         let first = entries[0];
         // Repeated copies of the same signature are harmless; aliases are ambiguous.
@@ -115,10 +123,21 @@ pub(crate) fn identify(
             .any(|entry| entry.name != first.name || entry.calls != first.calls)
             || first.calls.len() != body.calls.len()
         {
-            continue;
+            return Ok(None);
         }
-        candidates.insert(function.addr, (first, body.calls));
+        Ok(Some((function.addr, (first, body.calls))))
+    });
+    let mut candidates = BTreeMap::new();
+    for result in found {
+        match result {
+            Ok(Some((addr, candidate))) => {
+                candidates.insert(addr, candidate);
+            }
+            Ok(None) => {}
+            Err(error) => return Err(error),
+        }
     }
+
     // Prune until every direct edge agrees, including recursive components.
     loop {
         if let Err(error) = passed(deadline) {

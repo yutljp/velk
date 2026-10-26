@@ -14,7 +14,9 @@ cpp_demangle = "0.5.1"
 gimli = { version = "0.34.0", features = ["read"] }
 iced-x86 = "1.21.0"
 memchr = "2.8.3"
+memmap2 = "0.9.8"
 object = { version = "0.40.0", features = ["all"] }
+rayon = "1.12.0"
 rquickjs = "0.14.0"
 rustc-demangle = "0.1.28"
 serde = { version = "1.0.229", features = ["derive"] }
@@ -27,6 +29,9 @@ yaxpeax-arm = "0.5.0"
 [dev-dependencies]
 proc-macro2 = { version = "1.0.107", features = ["span-locations"] }
 syn = { version = "3.0.9", features = ["full", "visit"] }
+
+[target.'cfg(target_os = "linux")'.dependencies]
+rustix = { version = "1.0.7", features = ["fs"] }
 
 [lints.clippy]
 question_mark = "allow"

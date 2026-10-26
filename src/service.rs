@@ -1,3 +1,5 @@
+mod batch;
+
 use std::collections::HashMap;
 use std::collections::hash_map::Entry;
 use std::path::{Path, PathBuf};
@@ -588,8 +590,8 @@ impl Binary {
         let Some(function) = self.image.functions.get(&addr) else {
             return Err(Error::NoFunctionAt(addr));
         };
-        let analysis = match cached(&mut self.shared_analyses, &self.image, function, deadline) {
-            Ok(Ok(analysis)) => analysis,
+        match cached(&mut self.shared_analyses, &self.image, function, deadline) {
+            Ok(Ok(_)) => {}
             Ok(Err(source)) => {
                 return Err(Error::Lift {
                     addr,
@@ -598,16 +600,30 @@ impl Binary {
             }
             Err(error) => return Err(error),
         };
+        let Some(Ok(analysis)) = self.shared_analyses.get(&addr) else {
+            unreachable!("successful analysis is cached");
+        };
+        self.render_analysis(analysis, &overrides, identified.as_deref(), deadline)
+    }
+
+    fn render_analysis(
+        &self,
+        analysis: &Analysis,
+        overrides: &std::collections::BTreeMap<u64, crate::ir::DeclaredSignature>,
+        identified: Option<&str>,
+        deadline: Option<Instant>,
+    ) -> Result<render::Rendered> {
         if let Err(error) = passed(deadline) {
             return Err(error);
         }
+        let addr = analysis.ir.addr;
         let mut ir = std::borrow::Cow::Borrowed(&analysis.ir);
         let mut symbols = std::borrow::Cow::Borrowed(&self.symbols);
         if let Some(project) = &self.project {
             if let Err(error) = project.apply(ir.to_mut(), symbols.to_mut()) {
                 return Err(error);
             }
-            for (target, signature) in overrides {
+            for (&target, signature) in overrides {
                 let statements = ir.blocks.iter().flat_map(|block| &block.stmts);
                 for stmt in statements {
                     if let crate::ir::Stmt::Call {
@@ -627,7 +643,9 @@ impl Binary {
                         ));
                     }
                 }
-                ir.to_mut().callee_signatures.insert(target, signature);
+                ir.to_mut()
+                    .callee_signatures
+                    .insert(target, signature.clone());
             }
         }
         let mut rendered = render::render_with_dependencies(
@@ -734,46 +752,9 @@ impl Binary {
             self.shared_analyses.insert(addr, root.clone());
             return Ok(());
         };
-        let ir = &root_analysis.ir;
-        let pointer = |register| {
-            ir.pointer_values.contains(&register)
-                || ir
-                    .value_types
-                    .get(&register)
-                    .is_some_and(crate::ir::CType::is_pointer)
-                || ir
-                    .params
-                    .iter()
-                    .any(|param| param.index == register && param.ty.is_pointer())
-        };
-        let mut neighbors = std::collections::BTreeSet::new();
-        for stmt in ir.blocks.iter().flat_map(|block| &block.stmts) {
-            if let crate::ir::Stmt::Call {
-                target: Some(target),
-                through: None,
-                args: Some(args),
-                outputs,
-                ..
-            } = stmt
-                && (args.iter().any(|arg| {
-                    let mut reads = std::collections::HashSet::new();
-                    crate::ir::visit::collect_reads(arg, &mut reads);
-                    reads.into_iter().any(pointer)
-                }) || outputs.iter().any(|output| pointer(output.dest.index)))
-                && self.image.functions.contains_key(target)
-            {
-                neighbors.insert(*target);
-            }
-        }
-        if ir.params.iter().any(|param| param.ty.is_pointer()) {
-            neighbors.extend(analysis::results::callers(&self.image, addr));
-        }
-        neighbors.remove(&addr);
-        // One call edge and at most eight neighbors bound interactive work.
-        // Always start from original analyses: another request's merged layouts
-        // must never become input to this function's neighborhood.
+        let neighbors = batch::neighbors(&self.image, root_analysis);
         let mut functions = vec![root_analysis.clone()];
-        for neighbor in neighbors.into_iter().take(8) {
+        for neighbor in neighbors {
             let Some(function) = self.image.functions.get(&neighbor) else {
                 continue;
             };
@@ -896,14 +877,18 @@ fn cached<'a>(
     function: &Function,
     deadline: Option<Instant>,
 ) -> Result<&'a Result<Analysis, LiftError>> {
-    passed(deadline)?;
+    if let Err(error) = passed(deadline) {
+        return Err(error);
+    }
     if let Entry::Vacant(entry) = analyses.entry(function.addr) {
         let analyzed = match analysis::analyze(image, function, deadline) {
             Ok(analysis) => Ok(analysis),
             Err(Error::Lift { source, .. }) => Err(source),
             Err(error) => return Err(error),
         };
-        passed(deadline)?;
+        if let Err(error) = passed(deadline) {
+            return Err(error);
+        }
         entry.insert(analyzed);
     }
     Ok(analyses.get(&function.addr).expect("analysis was inserted"))

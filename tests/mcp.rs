@@ -89,6 +89,36 @@ fn discovery_and_fresh_scripts_work_over_stdio() {
 }
 
 #[test]
+fn batch_decompilation_example_matches_individual_functions_over_stdio() {
+    let path = common::fixtures_dir().join("arm64.o");
+    let code = format!(
+        r#"
+const b = velk.open({path:?});
+const functions = b.functions().slice(0, 5);
+for (const result of b.decompile(functions)) {{
+  if (result.error !== null) throw new Error(result.error);
+  const single = b.getFunction(result.addr).decompile();
+  if (result.code !== single) throw new Error("function output");
+  console.log(result.code);
+}}
+"#
+    );
+    let responses = exchange(&[script(0, &code)]);
+    assert_eq!(responses.len(), 1);
+    assert_eq!(responses[0]["result"]["isError"], false);
+    let mut binary = velk::service::Binary::open(&path).unwrap();
+    let addresses: Vec<_> = binary.image().functions.keys().copied().take(5).collect();
+    let mut expected = String::new();
+    for address in addresses {
+        if !expected.is_empty() {
+            expected.push('\n');
+        }
+        expected.push_str(&binary.decompile(address, None, None).unwrap());
+    }
+    assert_eq!(text(&responses[0]), velk::render::combine(&expected));
+}
+
+#[test]
 fn errors_are_actionable_and_the_server_recovers() {
     let path = common::fixtures_dir().join("arm64.o");
     let prefix = format!("const b=velk.open({path:?}); ");

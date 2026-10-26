@@ -1,3 +1,4 @@
+mod bytes;
 pub mod classes;
 mod codeview;
 mod discover;
@@ -239,7 +240,7 @@ pub struct Image {
     pub entry: Option<u64>,
     /// The regular symbol table has no named, defined code symbols.
     pub stripped: bool,
-    bytes: Vec<u8>,
+    bytes: bytes::Bytes,
     pub sections: Vec<Section>,
     pub functions: BTreeMap<u64, Function>,
     /// The names of the data objects the symbol tables define.
@@ -462,7 +463,7 @@ impl Image {
                 loaded: true,
                 read_only: false,
             }],
-            bytes: code,
+            bytes: bytes::Bytes::Owned(code),
             functions: BTreeMap::new(),
             data_symbols: BTreeMap::new(),
             objc_selectors: BTreeMap::new(),
@@ -856,16 +857,11 @@ pub fn load(path: &Path) -> Result<Image> {
 
 /// Loads a binary, selecting a universal Mach-O slice when requested.
 pub fn load_with_arch(path: &Path, arch: Option<Architecture>) -> Result<Image> {
-    let bytes = match std::fs::read(path) {
+    let input = match bytes::Bytes::read(path) {
         Ok(bytes) => bytes,
-        Err(source) => {
-            return Err(Error::Io {
-                path: path.to_owned(),
-                source,
-            });
-        }
+        Err(error) => return Err(error),
     };
-    let (bytes, slices, slice_offset) = match universal::select(&bytes, arch) {
+    let (bytes, slices, slice_offset) = match universal::select(&input, arch) {
         Ok(selection) => selection,
         Err(error) => return Err(error),
     };
@@ -882,7 +878,7 @@ pub fn load_with_arch(path: &Path, arch: Option<Architecture>) -> Result<Image> 
         Err(source) => return Err(object_error(source)),
     };
     let bases = relocate::layout(&file);
-    let mut relocated = bytes.to_vec();
+    let mut relocated = std::borrow::Cow::Borrowed(bytes);
     relocate::apply(&file, &bases, &mut relocated);
     relocate::apply_dynamic(&file, &mut relocated);
     let bindings = match macho::fixups::apply(&file, &mut relocated) {
@@ -1144,7 +1140,17 @@ pub fn load_with_arch(path: &Path, arch: Option<Architecture>) -> Result<Image> 
         }),
         entry,
         stripped,
-        bytes: relocated,
+        bytes: match relocated {
+            std::borrow::Cow::Owned(bytes) => bytes::Bytes::Owned(bytes),
+            std::borrow::Cow::Borrowed(bytes) => match input.slice(slice_offset, bytes.len()) {
+                Some(bytes) => bytes,
+                None => {
+                    return Err(Error::Architecture(
+                        "selected slice is outside the input".to_owned(),
+                    ));
+                }
+            },
+        },
         sections,
         functions,
         data_symbols,

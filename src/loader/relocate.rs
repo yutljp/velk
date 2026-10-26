@@ -1,6 +1,7 @@
 //! Laying out and relocating the sections of a relocatable object as a linker
 //! would, so that calls and data references reach real addresses.
 
+use std::borrow::Cow;
 use std::collections::HashMap;
 
 use object::read::{File as ObjFile, Object, ObjectSection, ObjectSymbol, ObjectSymbolTable};
@@ -74,7 +75,7 @@ pub(super) fn symbol_address<'data>(
 /// information that names places in them, to `bytes`, the file's contents.
 /// A relocation against an undefined symbol, or of a kind this does not
 /// model, leaves its place as the object has it.
-pub(super) fn apply(file: &ObjFile, bases: &HashMap<SectionIndex, u64>, bytes: &mut [u8]) {
+pub(super) fn apply(file: &ObjFile, bases: &HashMap<SectionIndex, u64>, bytes: &mut Cow<'_, [u8]>) {
     // Debug information is not loaded: it and the offsets into it start at
     // zero.
     let debug = |index: SectionIndex| {
@@ -110,7 +111,7 @@ pub(super) fn apply(file: &ObjFile, bases: &HashMap<SectionIndex, u64>, bytes: &
                 continue;
             };
             let pc = base.wrapping_add(offset);
-            patch(bytes, place, pc, target, &relocation);
+            patch(bytes.to_mut(), place, pc, target, &relocation);
         }
     }
 }
@@ -118,7 +119,7 @@ pub(super) fn apply(file: &ObjFile, bases: &HashMap<SectionIndex, u64>, bytes: &
 /// Fills the pointers a dynamic loader would, at a load address of zero: a
 /// relative relocation's addend, and the address of a symbol the image
 /// defines itself. Pointers to symbols of other modules stay as they are.
-pub(super) fn apply_dynamic(file: &ObjFile, bytes: &mut [u8]) {
+pub(super) fn apply_dynamic(file: &ObjFile, bytes: &mut Cow<'_, [u8]>) {
     let Some(relocations) = file.dynamic_relocations() else {
         return;
     };
@@ -183,9 +184,13 @@ pub(super) fn apply_dynamic(file: &ObjFile, bytes: &mut [u8]) {
             _ => continue,
         };
         if word == 4 {
-            write_u32(bytes, place, value as u32);
+            if read_u32(bytes, place) != Some(value as u32) {
+                write_u32(bytes.to_mut(), place, value as u32);
+            }
         } else {
-            write_u64(bytes, place, value);
+            if read_u64(bytes, place) != Some(value) {
+                write_u64(bytes.to_mut(), place, value);
+            }
         }
     }
 }

@@ -55,7 +55,7 @@ cargo build --release --locked
 velk --functions path/to/binary          # list functions
 velk --classes   path/to/binary          # list C++ classes as JSON
 velk --decompile path/to/binary main     # decompile one function
-velk --decompile path/to/binary '*'      # decompile all functions
+velk --decompile path/to/binary          # decompile all functions
 velk --disasm    path/to/binary 0x1000   # disassemble
 velk --emulate path/to/binary sum3 --emulation-options '{"arguments":[1,2,3]}' # execute with arguments
 velk --xrefs     path/to/binary main     # references to main
@@ -63,6 +63,10 @@ velk --strings   path/to/binary          # strings with references
 ```
 
 Run `velk --help` for all options.
+
+Whole-binary work uses the available CPU cores. Set `VELK_THREADS=1` to run with one worker,
+or another positive integer to limit workers. Results remain in function order.
+On Linux, the binary loader uses a read-only mapped snapshot; if mapping fails, it reads the file.
 
 Universal Mach-O files open the slice for this machine; pick another with `--arch x86_64` (or `arm64`, `arm64e`).
 

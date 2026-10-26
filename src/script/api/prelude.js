@@ -43,6 +43,7 @@
       this.#id = id;
       Object.assign(this, info);
     }
+    decompile(functions) { return call("decompileMany", { bin: this.#id, addresses: functions?.map(f => f.addr) }); }
     classes() { return call("classes", { bin: this.#id }); }
     emulate(start, options = {}) {
       if (typeof start === "number" && (!Number.isSafeInteger(start) || start < 0)) throw new RangeError("use a decimal or hex string for a 64-bit address");
