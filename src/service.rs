@@ -11,6 +11,16 @@ use crate::loader::{self, Architecture, Function, Image};
 use crate::sigs::{self, Database};
 use crate::{disasm, render};
 
+fn canonicalize(path: &Path) -> Result<PathBuf> {
+    match std::fs::canonicalize(path) {
+        Ok(path) => Ok(path),
+        Err(source) => Err(Error::Io {
+            path: path.to_owned(),
+            source,
+        }),
+    }
+}
+
 const SHOWN_CANDIDATES: usize = 10;
 
 /// Loaded binaries, kept across calls so repeated queries reuse the analysis.
@@ -26,14 +36,9 @@ impl Session {
         project: Option<&Path>,
         arch: Option<Architecture>,
     ) -> Result<&mut Binary> {
-        let path = match std::fs::canonicalize(path) {
+        let path = match canonicalize(path) {
             Ok(path) => path,
-            Err(source) => {
-                return Err(Error::Io {
-                    path: path.to_owned(),
-                    source,
-                });
-            }
+            Err(error) => return Err(error),
         };
         if let Some(project) = project {
             let reuse = self
@@ -58,14 +63,9 @@ impl Session {
 
     /// Opens and caches a particular architecture independently.
     pub fn open_arch(&mut self, path: &Path, arch: Option<Architecture>) -> Result<&mut Binary> {
-        let path = match std::fs::canonicalize(path) {
+        let path = match canonicalize(path) {
             Ok(path) => path,
-            Err(source) => {
-                return Err(Error::Io {
-                    path: path.to_owned(),
-                    source,
-                });
-            }
+            Err(error) => return Err(error),
         };
         let modified = match modified(&path) {
             Ok(value) => value,
@@ -172,14 +172,9 @@ impl Binary {
         mut project_digest: Option<String>,
         arch: Option<Architecture>,
     ) -> Result<Self> {
-        let path = match std::fs::canonicalize(path) {
+        let path = match canonicalize(path) {
             Ok(path) => path,
-            Err(source) => {
-                return Err(Error::Io {
-                    path: path.to_owned(),
-                    source,
-                });
-            }
+            Err(error) => return Err(error),
         };
         let project_path = project_path
             .map(Path::to_owned)
@@ -495,6 +490,25 @@ impl Binary {
         Ok(ir)
     }
 
+    fn identify_selected(
+        &mut self,
+        addr: u64,
+        signatures: Option<&Database>,
+        deadline: Option<Instant>,
+    ) -> Result<Option<String>> {
+        match signatures {
+            Some(database) => match self.identify(database, deadline) {
+                Ok(result) => Ok(result
+                    .matches
+                    .into_iter()
+                    .find(|matched| matched.addr == addr)
+                    .map(|matched| matched.matched)),
+                Err(error) => Err(error),
+            },
+            None => Ok(None),
+        }
+    }
+
     pub fn card(
         &mut self,
         addr: u64,
@@ -506,16 +520,9 @@ impl Binary {
         if !self.image.functions.contains_key(&addr) {
             return Err(Error::NoFunctionAt(addr));
         }
-        let identified = match signatures {
-            Some(database) => match self.identify(database, deadline) {
-                Ok(result) => result
-                    .matches
-                    .into_iter()
-                    .find(|matched| matched.addr == addr)
-                    .map(|matched| matched.matched),
-                Err(error) => return Err(error),
-            },
-            None => None,
+        let identified = match self.identify_selected(addr, signatures, deadline) {
+            Ok(identified) => identified,
+            Err(error) => return Err(error),
         };
         if let Err(error) = self.prepare_structures(addr, deadline) {
             return Err(error);
@@ -567,16 +574,9 @@ impl Binary {
         if !self.image.functions.contains_key(&addr) {
             return Err(Error::NoFunctionAt(addr));
         }
-        let identified = match signatures {
-            Some(database) => match self.identify(database, deadline) {
-                Ok(result) => result
-                    .matches
-                    .into_iter()
-                    .find(|matched| matched.addr == addr)
-                    .map(|matched| matched.matched),
-                Err(error) => return Err(error),
-            },
-            None => None,
+        let identified = match self.identify_selected(addr, signatures, deadline) {
+            Ok(identified) => identified,
+            Err(error) => return Err(error),
         };
         if let Err(error) = self.prepare_structures(addr, deadline) {
             return Err(error);

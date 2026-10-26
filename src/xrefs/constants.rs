@@ -48,123 +48,18 @@ pub fn search(image: &Image, value: u64, deadline: Option<Instant>) -> Result<Ve
         };
         match image.isa {
             Isa::I386 | Isa::X86_64 => {
-                let bitness = if image.isa == Isa::I386 { 32 } else { 64 };
-                let mut decoder =
-                    Decoder::with_ip(bitness, bytes, section.vaddr, DecoderOptions::NONE);
-                let mut count = 0usize;
-                while decoder.can_decode() {
-                    if count.is_multiple_of(1024)
-                        && let Err(error) = passed(deadline)
-                    {
-                        return Err(error);
-                    }
-                    count += 1;
-                    let instruction = decoder.decode();
-                    if instruction.is_invalid() {
-                        continue;
-                    }
-                    for operand in 0..instruction.op_count() {
-                        let immediate = match instruction.op_kind(operand) {
-                            OpKind::Immediate8 => instruction.immediate8() as u64,
-                            OpKind::Immediate8_2nd => instruction.immediate8_2nd() as u64,
-                            OpKind::Immediate16 => instruction.immediate16() as u64,
-                            OpKind::Immediate32 => instruction.immediate32() as u64,
-                            OpKind::Immediate64 => instruction.immediate64(),
-                            OpKind::Immediate8to16 => instruction.immediate8to16() as u16 as u64,
-                            OpKind::Immediate8to32 => instruction.immediate8to32() as u32 as u64,
-                            OpKind::Immediate8to64 => instruction.immediate8to64() as u64,
-                            OpKind::Immediate32to64 => instruction.immediate32to64() as u64,
-                            _ => continue,
-                        };
-                        add(instruction.ip(), operand as usize, immediate);
-                    }
+                if let Err(error) = scan_x86(image.isa, bytes, section.vaddr, deadline, &mut add) {
+                    return Err(error);
                 }
             }
             Isa::AArch64 => {
-                let mut reader = ReaderBuilder::<u64, u8>::read_at(bytes, 0);
-                let decoder = a64::InstDecoder::default();
-                for offset in 0..bytes.len() / 4 {
-                    if offset.is_multiple_of(1024)
-                        && let Err(error) = passed(deadline)
-                    {
-                        return Err(error);
-                    }
-                    let Some(pc) = section.vaddr.checked_add((offset as u64).saturating_mul(4))
-                    else {
-                        break;
-                    };
-                    let Ok(instruction) = decoder.decode(&mut reader) else {
-                        continue;
-                    };
-                    for (operand, arg) in instruction.operands.iter().enumerate() {
-                        match arg {
-                            a64::Operand::Immediate(immediate) => {
-                                add(pc, operand, *immediate as u64)
-                            }
-                            a64::Operand::Imm64(immediate) => add(pc, operand, *immediate),
-                            a64::Operand::ImmShift(immediate, shift) => {
-                                if let Some(immediate) =
-                                    (*immediate as u64).checked_shl(*shift as u32)
-                                {
-                                    add(pc, operand, immediate);
-                                }
-                            }
-                            _ => {}
-                        }
-                    }
+                if let Err(error) = scan_aarch64(bytes, section.vaddr, deadline, &mut add) {
+                    return Err(error);
                 }
             }
             Isa::Arm32 => {
-                let mut offset = 0usize;
-                while offset < bytes.len() {
-                    if let Err(error) = passed(deadline) {
-                        return Err(error);
-                    }
-                    let Some(pc) = section.vaddr.checked_add(offset as u64) else {
-                        break;
-                    };
-                    let mode = image.arm_mode(pc);
-                    if mode == ArmMode::Data {
-                        offset += 1;
-                        continue;
-                    }
-                    let decoder = armv7::InstDecoder::default()
-                        .allow_nonconforming(false)
-                        .with_thumb_mode(mode == ArmMode::Thumb);
-                    let mut reader = ReaderBuilder::<u32, u8>::read_at(&bytes[offset..], 0);
-                    let Ok(instruction) = decoder.decode(&mut reader) else {
-                        offset += if mode == ArmMode::Thumb { 2 } else { 4 };
-                        continue;
-                    };
-                    offset += if instruction.thumb && !instruction.wide {
-                        2
-                    } else {
-                        4
-                    };
-                    if matches!(
-                        instruction.opcode,
-                        Opcode::B
-                            | Opcode::BL
-                            | Opcode::BLX
-                            | Opcode::CBZ
-                            | Opcode::CBNZ
-                            | Opcode::IT
-                    ) {
-                        continue;
-                    }
-                    for (operand, arg) in instruction.operands.iter().enumerate() {
-                        let immediate = match arg {
-                            Operand::Imm12(value) => u64::from(*value),
-                            Operand::Imm32(value) => u64::from(*value),
-                            _ => continue,
-                        };
-                        let immediate = if instruction.opcode == Opcode::MOVT {
-                            immediate << 16
-                        } else {
-                            immediate
-                        };
-                        add(pc, operand, immediate);
-                    }
+                if let Err(error) = scan_arm32(image, bytes, section.vaddr, deadline, &mut add) {
+                    return Err(error);
                 }
             }
             Isa::Unsupported => {}
@@ -174,4 +69,136 @@ pub fn search(image: &Image, value: u64, deadline: Option<Instant>) -> Result<Ve
         return Err(error);
     }
     Ok(result)
+}
+
+fn scan_x86(
+    isa: Isa,
+    bytes: &[u8],
+    base: u64,
+    deadline: Option<Instant>,
+    add: &mut impl FnMut(u64, usize, u64),
+) -> Result<()> {
+    let bitness = if isa == Isa::I386 { 32 } else { 64 };
+    let mut decoder = Decoder::with_ip(bitness, bytes, base, DecoderOptions::NONE);
+    let mut count = 0usize;
+    while decoder.can_decode() {
+        if count.is_multiple_of(1024)
+            && let Err(error) = passed(deadline)
+        {
+            return Err(error);
+        }
+        count += 1;
+        let instruction = decoder.decode();
+        if instruction.is_invalid() {
+            continue;
+        }
+        for operand in 0..instruction.op_count() {
+            let immediate = match instruction.op_kind(operand) {
+                OpKind::Immediate8 => instruction.immediate8() as u64,
+                OpKind::Immediate8_2nd => instruction.immediate8_2nd() as u64,
+                OpKind::Immediate16 => instruction.immediate16() as u64,
+                OpKind::Immediate32 => instruction.immediate32() as u64,
+                OpKind::Immediate64 => instruction.immediate64(),
+                OpKind::Immediate8to16 => instruction.immediate8to16() as u16 as u64,
+                OpKind::Immediate8to32 => instruction.immediate8to32() as u32 as u64,
+                OpKind::Immediate8to64 => instruction.immediate8to64() as u64,
+                OpKind::Immediate32to64 => instruction.immediate32to64() as u64,
+                _ => continue,
+            };
+            add(instruction.ip(), operand as usize, immediate);
+        }
+    }
+    Ok(())
+}
+
+fn scan_aarch64(
+    bytes: &[u8],
+    base: u64,
+    deadline: Option<Instant>,
+    add: &mut impl FnMut(u64, usize, u64),
+) -> Result<()> {
+    let mut reader = ReaderBuilder::<u64, u8>::read_at(bytes, 0);
+    let decoder = a64::InstDecoder::default();
+    for offset in 0..bytes.len() / 4 {
+        if offset.is_multiple_of(1024)
+            && let Err(error) = passed(deadline)
+        {
+            return Err(error);
+        }
+        let Some(pc) = base.checked_add((offset as u64).saturating_mul(4)) else {
+            break;
+        };
+        let Ok(instruction) = decoder.decode(&mut reader) else {
+            continue;
+        };
+        for (operand, arg) in instruction.operands.iter().enumerate() {
+            match arg {
+                a64::Operand::Immediate(immediate) => add(pc, operand, *immediate as u64),
+                a64::Operand::Imm64(immediate) => add(pc, operand, *immediate),
+                a64::Operand::ImmShift(immediate, shift) => {
+                    if let Some(immediate) = (*immediate as u64).checked_shl(*shift as u32) {
+                        add(pc, operand, immediate);
+                    }
+                }
+                _ => {}
+            }
+        }
+    }
+    Ok(())
+}
+
+fn scan_arm32(
+    image: &Image,
+    bytes: &[u8],
+    base: u64,
+    deadline: Option<Instant>,
+    add: &mut impl FnMut(u64, usize, u64),
+) -> Result<()> {
+    let mut offset = 0usize;
+    while offset < bytes.len() {
+        if let Err(error) = passed(deadline) {
+            return Err(error);
+        }
+        let Some(pc) = base.checked_add(offset as u64) else {
+            break;
+        };
+        let mode = image.arm_mode(pc);
+        if mode == ArmMode::Data {
+            offset += 1;
+            continue;
+        }
+        let decoder = armv7::InstDecoder::default()
+            .allow_nonconforming(false)
+            .with_thumb_mode(mode == ArmMode::Thumb);
+        let mut reader = ReaderBuilder::<u32, u8>::read_at(&bytes[offset..], 0);
+        let Ok(instruction) = decoder.decode(&mut reader) else {
+            offset += if mode == ArmMode::Thumb { 2 } else { 4 };
+            continue;
+        };
+        offset += if instruction.thumb && !instruction.wide {
+            2
+        } else {
+            4
+        };
+        if matches!(
+            instruction.opcode,
+            Opcode::B | Opcode::BL | Opcode::BLX | Opcode::CBZ | Opcode::CBNZ | Opcode::IT
+        ) {
+            continue;
+        }
+        for (operand, arg) in instruction.operands.iter().enumerate() {
+            let immediate = match arg {
+                Operand::Imm12(value) => u64::from(*value),
+                Operand::Imm32(value) => u64::from(*value),
+                _ => continue,
+            };
+            let immediate = if instruction.opcode == Opcode::MOVT {
+                immediate << 16
+            } else {
+                immediate
+            };
+            add(pc, operand, immediate);
+        }
+    }
+    Ok(())
 }

@@ -28,6 +28,16 @@ fn hash(binary: &Path) -> Result<String> {
     Ok(format!("{:x}", Sha256::digest(&bytes)))
 }
 
+fn initialize_digest(binary: &Path, digest: &mut Option<String>) -> Result<()> {
+    if digest.is_none() {
+        *digest = Some(match hash(binary) {
+            Ok(value) => value,
+            Err(cause) => return Err(cause),
+        });
+    }
+    Ok(())
+}
+
 /// A missing sidecar is an empty project. An existing, invalid sidecar is an error.
 pub fn load(binary: &Path) -> Result<Option<Project>> {
     let binary = match fs::canonicalize(binary) {
@@ -59,11 +69,8 @@ pub(crate) fn load_at(
     if let Err(cause) = project.validate() {
         return Err(cause);
     }
-    if digest.is_none() {
-        *digest = Some(match hash(binary) {
-            Ok(value) => value,
-            Err(cause) => return Err(cause),
-        });
+    if let Err(cause) = initialize_digest(binary, digest) {
+        return Err(cause);
     }
     if Some(&project.binary_sha256) != digest.as_ref() {
         return Err(error(
@@ -114,11 +121,8 @@ pub(crate) fn update_cached<T>(
         Ok(None) => Project {
             version: 1,
             binary_sha256: {
-                if digest.is_none() {
-                    *digest = Some(match hash(&binary) {
-                        Ok(value) => value,
-                        Err(cause) => return Err(cause),
-                    });
+                if let Err(cause) = initialize_digest(&binary, digest) {
+                    return Err(cause);
                 }
                 digest.clone().expect("the binary hash was initialized")
             },

@@ -74,9 +74,9 @@ pub(crate) fn execute_cached(mut cli: Cli, digest: &mut Option<String>) -> Resul
             })
         }
         Command::Remove { target } => {
-            let target: Target = match serde_json::from_str(&target) {
+            let target = match parse_target(&target) {
                 Ok(value) => value,
-                Err(cause) => return Err(error("project_json", cause.to_string())),
+                Err(cause) => return Err(cause),
             };
             super::update_cached(&cli.binary, &destination, digest, |project| {
                 Ok(json!({"removed": project.remove(&target)}))
@@ -104,9 +104,9 @@ pub(crate) fn execute_cached(mut cli: Cli, digest: &mut Option<String>) -> Resul
             match command {
                 Command::List => Ok(json!(project.map(|p| p.annotations).unwrap_or_default())),
                 Command::Get { target } => {
-                    let target: Target = match serde_json::from_str(&target) {
+                    let target = match parse_target(&target) {
                         Ok(value) => value,
-                        Err(cause) => return Err(error("project_json", cause.to_string())),
+                        Err(cause) => return Err(cause),
                     };
                     Ok(json!(project.as_ref().and_then(|p| p.get(&target))))
                 }
@@ -119,5 +119,12 @@ pub(crate) fn execute_cached(mut cli: Cli, digest: &mut Option<String>) -> Resul
                 _ => unreachable!(),
             }
         }
+    }
+}
+
+fn parse_target(text: &str) -> Result<Target> {
+    match serde_json::from_str(text) {
+        Ok(value) => Ok(value),
+        Err(cause) => Err(error("project_json", cause.to_string())),
     }
 }

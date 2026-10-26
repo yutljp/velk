@@ -212,26 +212,7 @@ impl Types {
             .strip_prefix("typedef ")
             .and_then(|s| s.strip_suffix(';'))
         {
-            let (found, ty) = match self.named(alias) {
-                Ok(value) => value,
-                Err(cause) => return Err(cause),
-            };
-            if found != name
-                || self.known.contains_key(name)
-                || !self.ordinary_names.insert(name.to_owned())
-            {
-                return Err(error(
-                    "invalid_declaration",
-                    "typedef name is duplicate or does not match its key",
-                ));
-            }
-            let (size, align) = match self.size(&ty) {
-                Ok(layout) => layout,
-                Err(cause) => return Err(cause),
-            };
-            self.known.insert(name.to_owned(), (ty, size, align));
-            self.declarations.push(emitted);
-            return Ok(());
+            return self.typedef_declaration(name, alias, emitted);
         }
         let Some((head, body)) = text.split_once('{') else {
             return Err(error(
@@ -252,37 +233,7 @@ impl Types {
             ));
         }
         if let Some(tag) = name.strip_prefix("enum ") {
-            if !identifier(tag) || body.trim().is_empty() {
-                return Err(error("invalid_declaration", "invalid enum"));
-            }
-            let mut names = HashSet::new();
-            let mut next = 0i64;
-            for value in body.trim().trim_end_matches(',').split(',') {
-                let (key, number) = match value.trim().split_once('=') {
-                    Some((key, number)) => (key.trim(), number.trim().parse::<i64>().ok()),
-                    None => (value.trim(), Some(next)),
-                };
-                let Some(number) = number.filter(|n| i32::try_from(*n).is_ok()) else {
-                    return Err(error(
-                        "invalid_declaration",
-                        "enum values must be decimal signed 32-bit integers",
-                    ));
-                };
-                if !identifier(key)
-                    || !names.insert(key)
-                    || !self.ordinary_names.insert(key.to_owned())
-                {
-                    return Err(error(
-                        "invalid_declaration",
-                        "invalid or duplicate enum member",
-                    ));
-                }
-                next = number.saturating_add(1);
-            }
-            self.known
-                .insert(name.to_owned(), (CType::int(4, true), 4, 4));
-            self.declarations.push(emitted);
-            return Ok(());
+            return self.enum_declaration(name, tag, body, emitted);
         }
         let Some(tag) = name.strip_prefix("struct ") else {
             return Err(error(
@@ -290,6 +241,77 @@ impl Types {
                 "only struct, enum, and typedef declarations are supported",
             ));
         };
+        self.struct_declaration(name, tag, body, emitted)
+    }
+
+    fn typedef_declaration(&mut self, name: &str, alias: &str, emitted: String) -> Result<()> {
+        let (found, ty) = match self.named(alias) {
+            Ok(value) => value,
+            Err(cause) => return Err(cause),
+        };
+        if found != name
+            || self.known.contains_key(name)
+            || !self.ordinary_names.insert(name.to_owned())
+        {
+            return Err(error(
+                "invalid_declaration",
+                "typedef name is duplicate or does not match its key",
+            ));
+        }
+        let (size, align) = match self.size(&ty) {
+            Ok(layout) => layout,
+            Err(cause) => return Err(cause),
+        };
+        self.known.insert(name.to_owned(), (ty, size, align));
+        self.declarations.push(emitted);
+        Ok(())
+    }
+
+    fn enum_declaration(
+        &mut self,
+        name: &str,
+        tag: &str,
+        body: &str,
+        emitted: String,
+    ) -> Result<()> {
+        if !identifier(tag) || body.trim().is_empty() {
+            return Err(error("invalid_declaration", "invalid enum"));
+        }
+        let mut names = HashSet::new();
+        let mut next = 0i64;
+        for value in body.trim().trim_end_matches(',').split(',') {
+            let (key, number) = match value.trim().split_once('=') {
+                Some((key, number)) => (key.trim(), number.trim().parse::<i64>().ok()),
+                None => (value.trim(), Some(next)),
+            };
+            let Some(number) = number.filter(|n| i32::try_from(*n).is_ok()) else {
+                return Err(error(
+                    "invalid_declaration",
+                    "enum values must be decimal signed 32-bit integers",
+                ));
+            };
+            if !identifier(key) || !names.insert(key) || !self.ordinary_names.insert(key.to_owned())
+            {
+                return Err(error(
+                    "invalid_declaration",
+                    "invalid or duplicate enum member",
+                ));
+            }
+            next = number.saturating_add(1);
+        }
+        self.known
+            .insert(name.to_owned(), (CType::int(4, true), 4, 4));
+        self.declarations.push(emitted);
+        Ok(())
+    }
+
+    fn struct_declaration(
+        &mut self,
+        name: &str,
+        tag: &str,
+        body: &str,
+        emitted: String,
+    ) -> Result<()> {
         if !identifier(tag) || body.trim().is_empty() {
             return Err(error("invalid_declaration", "invalid struct"));
         }

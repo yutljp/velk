@@ -319,16 +319,25 @@ fn assembly_register(word: &str) -> bool {
     ) {
         return true;
     }
-    if ["xmm", "ymm", "zmm"]
+    const NUMBERED: [(&str, u8); 14] = [
+        ("xmm", 31),
+        ("ymm", 31),
+        ("zmm", 31),
+        ("mm", 7),
+        ("k", 7),
+        ("x", 30),
+        ("w", 30),
+        ("q", 31),
+        ("d", 31),
+        ("s", 31),
+        ("h", 31),
+        ("b", 31),
+        ("z", 31),
+        ("p", 15),
+    ];
+    if NUMBERED
         .iter()
-        .any(|prefix| numbered(word, prefix, 31))
-        || numbered(word, "mm", 7)
-        || numbered(word, "k", 7)
-        || ["x", "w"].iter().any(|prefix| numbered(word, prefix, 30))
-        || ["q", "d", "s", "h", "b", "z"]
-            .iter()
-            .any(|prefix| numbered(word, prefix, 31))
-        || numbered(word, "p", 15)
+        .any(|(prefix, limit)| numbered(word, prefix, *limit))
     {
         return true;
     }
