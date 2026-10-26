@@ -475,10 +475,10 @@ pub fn count_variadic_arguments(ir: &mut FunctionIr, image: &crate::loader::Imag
         let Some(prototype) = crate::analysis::prototypes::for_image(name, image) else {
             return None;
         };
-        let Some(format) = prototype.format else {
+        if prototype.format.is_none() {
             return None;
-        };
-        Some((prototype.fixed(), format, prototype.scans))
+        }
+        Some(prototype)
     };
     let pending = ir.blocks.iter().flat_map(|block| &block.stmts).any(|stmt| {
         !stmt.has_declared_call()
@@ -506,7 +506,11 @@ pub fn count_variadic_arguments(ir: &mut FunctionIr, image: &crate::loader::Imag
             else {
                 continue;
             };
-            let Some((fixed, format, scans)) = variadic(*target) else {
+            let Some(prototype) = variadic(*target) else {
+                continue;
+            };
+            let fixed = prototype.fixed();
+            let Some(format) = prototype.format else {
                 continue;
             };
             let registers = convention.arguments();
@@ -525,7 +529,43 @@ pub fn count_variadic_arguments(ir: &mut FunctionIr, image: &crate::loader::Imag
             let Some(format) = c_string(image, *address) else {
                 continue;
             };
-            let count = fixed + crate::analysis::prototypes::conversion_types(&format, scans).len();
+            if image.isa == crate::loader::Isa::AArch64
+                && image.format == crate::loader::Format::MachO
+            {
+                // Apple places unnamed arguments in eight-byte stack slots, even
+                // when unused integer argument registers remain.
+                let conversions =
+                    crate::analysis::prototypes::all_conversion_types(&format, prototype.scans);
+                if prototype.floats() != 0
+                    || fixed > registers.len()
+                    || conversions.iter().any(|ty| {
+                        !ty.is_pointer() && ty.integer().is_none_or(|(bits, _)| bits > 64)
+                    })
+                {
+                    continue;
+                }
+                *args = crate::lift::arguments(
+                    *kind,
+                    *convention,
+                    ir.isa,
+                    Some(fixed),
+                    conversions.len(),
+                );
+                if let Some(args) = args {
+                    for (value, ty) in args.iter_mut().skip(fixed).zip(&conversions) {
+                        if let Expr::Load { width, signed, .. } = value
+                            && let Some((bits, is_signed)) = ty.integer()
+                        {
+                            *width = (bits / 8) as u8;
+                            *signed = is_signed;
+                        }
+                    }
+                }
+                continue;
+            }
+            let count = fixed.saturating_add(
+                crate::analysis::prototypes::conversion_types(&format, prototype.scans).len(),
+            );
             // The rest are read from the stack, where the call finds them.
             *args = crate::lift::arguments(
                 *kind,

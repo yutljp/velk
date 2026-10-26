@@ -221,6 +221,8 @@ pub struct Image {
     /// is read in; None when unknown.
     byte_order: Option<object::Endianness>,
     pub entry: Option<u64>,
+    /// The regular symbol table has no named, defined code symbols.
+    pub stripped: bool,
     bytes: Vec<u8>,
     pub sections: Vec<Section>,
     pub functions: BTreeMap<u64, Function>,
@@ -413,6 +415,7 @@ impl Image {
                 Isa::Unsupported => None,
             },
             entry: None,
+            stripped: false,
             sections: vec![Section {
                 name: ".text".to_owned(),
                 vaddr: addr,
@@ -1009,6 +1012,9 @@ pub fn load_with_arch(path: &Path, arch: Option<Architecture>) -> Result<Image> 
     estimate_sizes(&sections, &mut functions);
 
     let codeview = codeview::read(path, &file, &bases);
+    let stripped = !functions
+        .values()
+        .any(|function| function.name.is_some() && function.sources.contains(&NameSource::Symtab));
     let mut image = Image {
         slices,
         slice_offset,
@@ -1022,6 +1028,7 @@ pub fn load_with_arch(path: &Path, arch: Option<Architecture>) -> Result<Image> 
             object::Endianness::Big
         }),
         entry,
+        stripped,
         bytes: relocated,
         sections,
         functions,

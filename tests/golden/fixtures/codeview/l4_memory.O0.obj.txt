@@ -5,7 +5,6 @@
 0xa0 11 banner_first symtab,codeview
 /* velk prelude */
 extern uint32_t g_counter; /* address: 0xb8 */
-
 extern uint64_t banner; /* address: 0xb0 */
 /* end velk prelude */
 

@@ -5,7 +5,6 @@
 0x210294 16 - unwind,prologue
 /* velk prelude */
 extern uint32_t g_2202b0; /* address: 0x2202b0 */
-
 extern uint64_t g_2202a8; /* address: 0x2202a8 */
 /* end velk prelude */
 

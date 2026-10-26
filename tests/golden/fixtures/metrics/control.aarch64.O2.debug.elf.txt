@@ -21,7 +21,6 @@ static inline uint64_t add_lanes32(uint64_t a, uint64_t b) {
     return out;
 }
 #endif
-
 #ifndef VELK_max_lanes32
 #define VELK_max_lanes32
 static inline uint64_t max_lanes32(uint64_t a, uint64_t b) {
@@ -36,7 +35,6 @@ static inline uint64_t max_lanes32(uint64_t a, uint64_t b) {
     return out;
 }
 #endif
-
 #ifndef VELK_sum_lanes32
 #define VELK_sum_lanes32
 static inline uint64_t sum_lanes32(uint64_t a, uint64_t b) {

@@ -13,20 +13,14 @@
 0x1400010c8 8 GetFileType plt
 0x1400010d0 80 GetCurrentThreadId plt
 /* velk prelude */
-struct HKEY__; int32_t RegCloseKey(struct HKEY__ *);
-
 struct _FILETIME { _Alignas(4) uint32_t dwLowDateTime; uint32_t dwHighDateTime; };
 
+struct HKEY__; int32_t RegCloseKey(struct HKEY__ *);
 struct _FILETIME; void GetSystemTimeAsFileTime(struct _FILETIME *);
-
 uint32_t GetCurrentThreadId(void);
-
 uint32_t GetFileType(void *);
-
 unsigned long long socket(int, int, int);
-
 void *OpenProcess(uint32_t, int, uint32_t);
-
 void *VirtualAlloc(void *, unsigned long long, uint32_t, uint32_t);
 /* end velk prelude */
 

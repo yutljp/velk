@@ -11,19 +11,14 @@
 0x1800011c0 80 call_sum9 symtab,dwarf,unwind
 0x180001210 104 sum_varargs symtab,dwarf,unwind
 /* velk prelude */
-int is_even(int);
-
-int is_odd(int);
-
-int square(int);
-
-int twice(int);
-
-int32_t sum9(int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t);
-
-uint64_t *velk_return_address_slot(void); /* target frame's return-address slot */
-
 extern uint64_t table[]; /* address: 0x180002000 */
+
+int is_even(int);
+int is_odd(int);
+int square(int);
+int twice(int);
+int32_t sum9(int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t);
+uint64_t *velk_return_address_slot(void); /* target frame's return-address slot */
 /* end velk prelude */
 
 == 0x180001000 twice

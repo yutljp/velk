@@ -5,7 +5,6 @@
 0x1800010a0 12 - prologue
 /* velk prelude */
 extern uint32_t g_180003008; /* address: 0x180003008 */
-
 extern uint64_t g_180003000; /* address: 0x180003000 */
 /* end velk prelude */
 

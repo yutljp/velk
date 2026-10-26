@@ -33,23 +33,16 @@ struct group {
     char **gr_mem;
 };
 
-struct group; int getgrgid_r(unsigned int, struct group *, char *, size_t, struct group **);
+extern uint64_t __cxa_finalize_1ffc8; /* address: 0x1ffc8 */
+extern uint64_t __dso_handle; /* address: 0x20058 */
+extern uint64_t __gmon_start___1ffd0; /* address: 0x1ffd0 */
+extern uint64_t g_1ffd8; /* address: 0x1ffd8 */
+extern uint8_t completed_0; /* address: 0x20060 */
 
 int kill(int, int);
-
 int pthread_kill(unsigned long, int);
-
+struct group; int getgrgid_r(unsigned int, struct group *, char *, size_t, struct group **);
 uint64_t velk_entry_stack_pointer(void); /* target entry stack pointer */
-
-extern uint64_t __cxa_finalize_1ffc8; /* address: 0x1ffc8 */
-
-extern uint64_t __dso_handle; /* address: 0x20058 */
-
-extern uint64_t __gmon_start___1ffd0; /* address: 0x1ffd0 */
-
-extern uint64_t g_1ffd8; /* address: 0x1ffd8 */
-
-extern uint8_t completed_0; /* address: 0x20060 */
 /* end velk prelude */
 
 == 0x6e0 _init

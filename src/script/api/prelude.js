@@ -59,7 +59,7 @@
       try {
         return new Func(this.#id, call("find", { bin: this.#id, target: String(address(target)) }));
       } catch (error) {
-        if (error.message.startsWith("no function matches")) {
+        if (error.message.startsWith("no function matches") && !error.message.includes("binary is stripped")) {
           const prefix = String(target).slice(0, 3).toLowerCase();
           const candidates = this.functions().filter(f => [f.name, ...f.aliases].some(name => name?.toLowerCase().startsWith(prefix))).slice(0, 5);
           if (candidates.length) error.message += "; candidates: " + candidates.map(f => `${f.name} (${f.addr})`).join(", ");

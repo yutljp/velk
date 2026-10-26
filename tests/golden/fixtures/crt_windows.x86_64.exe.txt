@@ -34,19 +34,12 @@
 #include <stdio.h>
 
 int *_errno(void);
-
 int _close(int);
-
 int _getpid(void);
-
 int strcpy_s(char *, unsigned long long, const char *);
-
 int wcscpy_s(unsigned short *, unsigned long long, const unsigned short *);
-
 int32_t strtol(const char *, char **, int);
-
 long long _time64(long long *);
-
 size_t wcslen(const unsigned short *);
 /* end velk prelude */
 

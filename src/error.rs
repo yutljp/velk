@@ -31,6 +31,8 @@ pub enum Error {
     NoFunctionAt(u64),
     #[error("no function matches \"{0}\"")]
     NoFunctionNamed(String),
+    #[error("no function matches \"{name}\"; binary is stripped; entry {}; use --functions to list addresses", entry.map_or("unavailable".to_owned(), |address| format!("0x{address:x}")))]
+    StrippedFunctionName { name: String, entry: Option<u64> },
     #[error(
         "\"{name}\" matches {total} functions: {}{}; pass an exact name or address",
         shown.join(", "),

@@ -22,8 +22,36 @@ impl Prelude {
             };
             body.push_str(before);
             for definition in definitions.split("\n\n") {
-                if !definition.trim().is_empty() {
+                let definition = definition.trim_matches('\n');
+                if definition.starts_with(PROJECT) {
                     self.definitions.insert(definition.trim_end().to_owned());
+                    continue;
+                }
+                let mut current = String::new();
+                let mut conditional_depth = 0usize;
+                for line in definition.lines() {
+                    if line.starts_with("#if") {
+                        conditional_depth += 1;
+                    } else if line.starts_with("#endif") {
+                        conditional_depth = conditional_depth.saturating_sub(1);
+                    }
+                    current.push_str(line);
+                    current.push('\n');
+                    let declaration = line.split_once(" /*").map_or(line, |(text, _)| text);
+                    if conditional_depth == 0
+                        && !line.starts_with(char::is_whitespace)
+                        && (declaration.ends_with(';')
+                            || declaration.ends_with('}')
+                            || line.starts_with("#include ")
+                            || line.starts_with("#endif")
+                            || line.starts_with("extern "))
+                    {
+                        self.definitions.insert(current.trim_end().to_owned());
+                        current.clear();
+                    }
+                }
+                if !current.trim().is_empty() {
+                    self.definitions.insert(current.trim_end().to_owned());
                 }
             }
             rest = remaining;
@@ -38,26 +66,7 @@ impl Prelude {
             return String::new();
         }
         let mut definitions: Vec<_> = self.definitions.iter().cloned().collect();
-        definitions.sort_by_key(|definition| {
-            if definition.starts_with(PROJECT) || definition.starts_with('#') {
-                0
-            } else if [
-                "struct go_string {",
-                "struct go_slice {",
-                "struct go_iface {",
-            ]
-            .iter()
-            .any(|prefix| definition.starts_with(prefix))
-            {
-                1
-            } else if definition.starts_with("struct ") || definition.starts_with("union ") {
-                2
-            } else if definition.starts_with("extern ") {
-                4
-            } else {
-                3
-            }
-        });
+        definitions.sort_by_key(|definition| order(definition));
         let mut dependencies = vec![0usize; definitions.len()];
         let mut dependents = vec![Vec::new(); definitions.len()];
         for (record, other) in definitions.iter().enumerate() {
@@ -102,7 +111,50 @@ impl Prelude {
                 ordered.push(definition);
             }
         }
-        format!("{START}{}\n{END}", ordered.join("\n\n"))
+        let mut output = START.to_owned();
+        let mut previous: Option<(u8, bool)> = None;
+        for definition in ordered {
+            let group = match order(definition) {
+                1 | 2 => 1,
+                group => group,
+            };
+            if previous.is_some_and(|(previous, project)| {
+                previous != group || project || definition.starts_with(PROJECT)
+            }) {
+                output.push('\n');
+            }
+            output.push_str(definition);
+            output.push('\n');
+            previous = Some((group, definition.starts_with(PROJECT)));
+        }
+        output.push_str(END);
+        output
+    }
+}
+
+fn order(definition: &str) -> u8 {
+    if definition.starts_with(PROJECT) || definition.starts_with('#') {
+        0
+    } else if [
+        "struct go_string {",
+        "struct go_slice {",
+        "struct go_iface {",
+    ]
+    .iter()
+    .any(|prefix| definition.starts_with(prefix))
+    {
+        1
+    } else if definition.starts_with("typedef ")
+        || ((definition.starts_with("struct ") || definition.starts_with("union "))
+            && (definition.contains(" {") || !definition.contains('(')))
+    {
+        2
+    } else if definition.starts_with("extern ")
+        && (!definition.contains('(') || definition.contains("/* address:"))
+    {
+        3
+    } else {
+        4
     }
 }
 
@@ -132,8 +184,34 @@ mod tests {
     use super::*;
 
     #[test]
+    fn declarations_are_grouped_and_remain_deduplicated() {
+        let definitions = "struct item {\n    int value;\n};\n\nextern int a;\n\nextern int b;\n\nint f(void);\n\nint g(void);\n";
+        let output = combine(&section(definitions));
+        assert_eq!(
+            output,
+            format!(
+                "{START}struct item {{\n    int value;\n}};\n\nextern int a;\nextern int b;\n\nint f(void);\nint g(void);\n{END}"
+            )
+        );
+        assert_eq!(combine(&format!("{output}{output}")), output);
+    }
+
+    #[test]
+    fn grouped_multiline_definitions_keep_their_boundaries() {
+        let first = section("#include <stdint.h>\n\nstruct first {\n    int n;\n};\n\n");
+        let second = section(
+            "#include <stdbool.h>\n\nstruct second {\n    struct first value;\n};\n\n#ifndef HELPER\n#define HELPER\nstatic inline int helper(void) { return 1; }\n#endif\n",
+        );
+        let combined = combine(&format!("{first}{second}"));
+        assert_eq!(combine(&format!("{combined}{first}{second}")), combined);
+        assert!(
+            combined.find("struct first {").unwrap() < combined.find("struct second {").unwrap()
+        );
+    }
+
+    #[test]
     fn shared_definitions_precede_all_bodies() {
-        let first = format!("{}void f(void) {{}}\n", section("#include <cpuid.h>\n\n"));
+        let first = format!("{}void f(void) {{}}\n", section("\n#include <cpuid.h>\n\n"));
         let second = format!(
             "{}int g(void) {{ return helper(); }}\n",
             section("#include <cpuid.h>\n\nstatic inline int helper(void) { return 1; }\n\n")

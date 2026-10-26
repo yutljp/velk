@@ -13,17 +13,13 @@
 /* velk prelude */
 #include <stdarg.h>
 
-int is_even(int);
-
-int is_odd(int);
-
-int square(int);
-
-int twice(int);
-
-long sum9(long, long, long, long, long, long, long, long, long);
-
 extern uint64_t table[]; /* address: 0x202670 */
+
+int is_even(int);
+int is_odd(int);
+int square(int);
+int twice(int);
+long sum9(long, long, long, long, long, long, long, long, long);
 /* end velk prelude */
 
 == 0x201310 twice

@@ -559,7 +559,6 @@ static inline uint64_t equal_lanes8(uint64_t a, uint64_t b) {
     return out;
 }
 #endif
-
 #ifndef VELK_interleave_low8
 #define VELK_interleave_low8
 static inline uint64_t interleave_low8(uint64_t a, uint64_t b) {
@@ -572,7 +571,6 @@ static inline uint64_t interleave_low8(uint64_t a, uint64_t b) {
     return out;
 }
 #endif
-
 #ifndef VELK_sign_bits8
 #define VELK_sign_bits8
 static inline uint64_t sign_bits8(uint64_t a) {
@@ -583,11 +581,10 @@ static inline uint64_t sign_bits8(uint64_t a) {
 }
 #endif
 
-void memchr_raw__find_sse2(void);
-
 extern uint64_t g_55aa8; /* address: 0x55aa8 */
-
 extern uint64_t g_56140; /* address: 0x56140 */
+
+void memchr_raw__find_sse2(void);
 /* end velk prelude */
 
 == 0x14f90 rust_demo::main

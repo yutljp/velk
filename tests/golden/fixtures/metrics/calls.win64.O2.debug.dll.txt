@@ -25,7 +25,6 @@ static inline uint64_t add_lanes32(uint64_t a, uint64_t b) {
     return out;
 }
 #endif
-
 #ifndef VELK_interleave_high32
 #define VELK_interleave_high32
 static inline uint64_t interleave_high32(uint64_t a, uint64_t b) {
@@ -38,7 +37,6 @@ static inline uint64_t interleave_high32(uint64_t a, uint64_t b) {
     return out;
 }
 #endif
-
 #ifndef VELK_interleave_low32
 #define VELK_interleave_low32
 static inline uint64_t interleave_low32(uint64_t a, uint64_t b) {
@@ -54,33 +52,21 @@ static inline uint64_t interleave_low32(uint64_t a, uint64_t b) {
 
 struct velk_vector { union { uint64_t u64; int64_t s64; uint32_t u32; int32_t s32; uint16_t u16; int16_t s16; uint8_t u8; int8_t s8; float f32; double f64; } low, high; };
 
-int is_even(int);
-
-int is_odd(int);
-
-int square(int);
-
-int twice(int);
-
-int32_t sum9(int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t);
-
-uint64_t *velk_return_address_slot(void); /* target frame's return-address slot */
-
 extern uint64_t __xmm_00000001000000010000000100000001; /* address: 0x180002010 */
-
 extern uint64_t __xmm_fffffff8fffffff8fffffff8fffffff8; /* address: 0x180002030 */
-
 extern uint64_t __xmm_fffffffcfffffffcfffffffcfffffffc; /* address: 0x180002020 */
-
 extern uint64_t __xmm_fffffffdfffffffeffffffff00000000; /* address: 0x180002000 */
-
 extern uint64_t g_180002008; /* address: 0x180002008 */
-
 extern uint64_t g_180002018; /* address: 0x180002018 */
-
 extern uint64_t g_180002028; /* address: 0x180002028 */
-
 extern uint64_t g_180002038; /* address: 0x180002038 */
+
+int is_even(int);
+int is_odd(int);
+int square(int);
+int twice(int);
+int32_t sum9(int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t);
+uint64_t *velk_return_address_slot(void); /* target frame's return-address slot */
 /* end velk prelude */
 
 == 0x180001000 twice

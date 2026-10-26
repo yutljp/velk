@@ -3,7 +3,6 @@
 0x10001010 6 windows_error dynamic
 /* velk prelude */
 uint32_t GetFileType(void *);
-
 uint32_t GetLastError(void);
 /* end velk prelude */
 

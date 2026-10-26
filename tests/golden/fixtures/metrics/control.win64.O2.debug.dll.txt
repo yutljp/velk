@@ -21,7 +21,6 @@ static inline uint64_t add_lanes32(uint64_t a, uint64_t b) {
     return out;
 }
 #endif
-
 #ifndef VELK_greater_lanes32
 #define VELK_greater_lanes32
 static inline uint64_t greater_lanes32(uint64_t a, uint64_t b) {

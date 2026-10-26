@@ -10,9 +10,7 @@
 0x100000a00 20 _main symtab,dynamic,entry,function-starts
 /* velk prelude */
 extern uint64_t g_1000081e0; /* address: 0x1000081e0 */
-
 extern uint64_t objc_msgSend_100004060; /* address: 0x100004060 */
-
 extern uint8_t __block_literal_global; /* address: 0x100004020 */
 /* end velk prelude */
 

@@ -10,7 +10,6 @@
 0x100000a00 20 - entry,function-starts
 /* velk prelude */
 extern uint64_t g_1000081e0; /* address: 0x1000081e0 */
-
 extern uint64_t objc_msgSend_100004060; /* address: 0x100004060 */
 /* end velk prelude */
 

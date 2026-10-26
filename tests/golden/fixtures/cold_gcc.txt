@@ -15,23 +15,16 @@
 0x1290 240 lookup symtab,unwind
 0x1380 13 _fini symtab
 /* velk prelude */
-uint64_t main();
-
-uint64_t velk_entry_stack_pointer(void); /* target entry stack pointer */
-
 extern uint64_t __cxa_finalize_3ff8; /* address: 0x3ff8 */
-
 extern uint64_t __dso_handle; /* address: 0x4008 */
-
 extern uint64_t __gmon_start___3fe8; /* address: 0x3fe8 */
-
 extern uint64_t g_2028; /* address: 0x2028 */
-
 extern uint64_t g_2030; /* address: 0x2030 */
-
 extern uint64_t stderr_GLIBC_2_2_5; /* address: 0x4020 */
-
 extern uint8_t completed_0; /* address: 0x4028 */
+
+uint64_t main();
+uint64_t velk_entry_stack_pointer(void); /* target entry stack pointer */
 /* end velk prelude */
 
 == 0x1000 _init
@@ -331,7 +324,7 @@ int32_t lookup(struct S1 *a0, int a1, int a2) {
     if (a1 <= 0) {
         void *v2 = local_1;
         local_0 = a1;
-        __snprintf_chk((char *)(local_1), 64, 2, 64, (const char *)"missing key %d among %d", a2 & 0xffffffff, a1);
+        __snprintf_chk((char *)(local_1), 64, 2, 64, "missing key %d among %d", a2 & 0xffffffff, a1);
         fputs((const char *)(local_1), (FILE *)stderr_GLIBC_2_2_5);
         abort();
     }
@@ -348,7 +341,7 @@ int32_t lookup(struct S1 *a0, int a1, int a2) {
     local_0 = a1;
     uint32_t *v8 = (uint32_t *)(v16 + 8);
     int64_t v17 = (uintptr_t)(v8 + v4 / 4);
-    __snprintf_chk((char *)(local_1), 64, 2, 64, (const char *)"missing key %d among %d", a2 & 0xffffffff, a1);
+    __snprintf_chk((char *)(local_1), 64, 2, 64, "missing key %d among %d", a2 & 0xffffffff, a1);
     fputs((const char *)(local_1), (FILE *)stderr_GLIBC_2_2_5);
     do {
         uint32_t v11 = v8[-1];

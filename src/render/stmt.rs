@@ -111,6 +111,13 @@ pub(super) fn conformed(
     } else {
         printed
     };
+    if pointer.is_some_and(|ty| matches!(ty.trim(), "char *" | "const char *"))
+        && printed.is_pointer()
+        && printed.text.starts_with('"')
+        && matches!(value, Expr::Const(address) if ctx.strings.contains_key(address))
+    {
+        return printed.text;
+    }
     if printed.is_pointer()
         && let Some(target) = naming::pointer_target(value, ctx)
         && (pointer == Some("const void *")

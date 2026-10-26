@@ -10,7 +10,6 @@
 0x1000009e0 15 _main symtab,dynamic,entry,function-starts
 /* velk prelude */
 extern uint64_t g_1000021e0; /* address: 0x1000021e0 */
-
 extern uint8_t __block_literal_global; /* address: 0x100001020 */
 /* end velk prelude */
 

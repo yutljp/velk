@@ -425,6 +425,10 @@ impl Binary {
             })
             .collect();
         match partial.as_slice() {
+            [] if self.image.stripped => Err(Error::StrippedFunctionName {
+                name: target.to_owned(),
+                entry: self.image.entry,
+            }),
             [] => Err(Error::NoFunctionNamed(target.to_owned())),
             [only] => Ok(only),
             many => Err(Error::AmbiguousName {

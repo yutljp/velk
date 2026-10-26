@@ -11,9 +11,9 @@
 0x1800011c0 80 - unwind,prologue
 0x180001210 104 - unwind,prologue
 /* velk prelude */
-uint64_t *velk_return_address_slot(void); /* target frame's return-address slot */
-
 extern uint64_t g_180002000[]; /* address: 0x180002000 */
+
+uint64_t *velk_return_address_slot(void); /* target frame's return-address slot */
 /* end velk prelude */
 
 == 0x180001000 -
