@@ -1143,7 +1143,7 @@ fn buffer_extents(
                     Some(Expr::Load { addr, width: 8, .. })
                         if let Expr::Const(slot) = addr.as_ref() =>
                     {
-                        symbols.import_slots.get(slot)
+                        symbols.import_name(slot)
                     }
                     None => target.and_then(|target| symbols.semantic_function(target)),
                     _ => None,

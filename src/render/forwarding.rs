@@ -23,7 +23,7 @@ pub(super) fn render(ir: &FunctionIr, symbols: &Symbols) -> Option<String> {
     let Expr::Const(slot) = addr.as_ref() else {
         return None;
     };
-    let Some(import) = symbols.import_slots.get(slot) else {
+    let Some(import) = symbols.import_name(slot) else {
         return None;
     };
     let target = sanitize(import);

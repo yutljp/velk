@@ -25,6 +25,8 @@ pub struct Symbols {
     /// Original names of known allocators, before conversion to C identifiers.
     pub allocator_names: HashMap<u64, String>,
     pub import_slots: HashMap<u64, String>,
+    /// Byte addends retained from imported pointer relocations.
+    pub import_addends: HashMap<u64, i64>,
     pub function_returns: HashMap<u64, crate::ir::CType>,
     pub import_returns: HashMap<u64, crate::ir::CType>,
     pub data: HashMap<u64, String>,
@@ -39,6 +41,17 @@ pub struct Symbols {
 }
 
 impl Symbols {
+    pub(super) fn import_name(&self, slot: &u64) -> Option<&String> {
+        if self
+            .import_addends
+            .get(slot)
+            .is_some_and(|addend| *addend != 0)
+        {
+            return None;
+        }
+        self.import_slots.get(slot)
+    }
+
     pub(crate) fn semantic_function(&self, address: u64) -> Option<&String> {
         self.original_functions
             .get(&address)

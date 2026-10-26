@@ -1,5 +1,7 @@
 use object::read::macho::LoadCommandVariant;
 
+pub(super) mod fixups;
+
 use super::{Image, NameSource, upsert};
 
 /// The linker records leaf functions too, including ones without unwind rows.

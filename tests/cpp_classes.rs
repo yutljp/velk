@@ -374,3 +374,109 @@ fn msvc_virtual_base_thunks_forward_the_adjusted_object_in_printed_c() {
         assert!(Command::new(&executable).status().unwrap().success());
     }
 }
+
+#[test]
+fn classes_and_offsets_use_the_32_bit_abi_in_debug_and_stripped_images() {
+    for architecture in ["i386", "arm", "thumb", "x86"] {
+        let format = if architecture == "x86" { "dll" } else { "elf" };
+        for variant in ["debug", "stripped"] {
+            let fixture = format!("tests/metadata/cpp32/rtti.{architecture}.{variant}.{format}");
+            let path = common::root().join(&fixture);
+            let mut binary = Binary::open(&path).unwrap();
+            let classes = binary.image().classes();
+            let names: BTreeSet<_> = classes.iter().map(|class| class.name.as_str()).collect();
+            assert_eq!(
+                names,
+                BTreeSet::from(["Error", "Multiple", "Other", "Root", "Single", "Virtual"]),
+                "{fixture}"
+            );
+            let class = |name| classes.iter().find(|class| class.name == name).unwrap();
+            assert_eq!(class("Single").bases[0].name, "Root");
+            assert_eq!(class("Single").bases[0].offset, Some(0));
+            let multiple = class("Multiple");
+            assert_eq!(
+                multiple
+                    .bases
+                    .iter()
+                    .map(|base| (base.name.as_str(), base.offset, base.is_virtual))
+                    .collect::<Vec<_>>(),
+                vec![("Root", Some(0), false), ("Other", Some(8), false)]
+            );
+            assert_eq!(
+                multiple
+                    .vtables
+                    .iter()
+                    .map(|table| table.offset)
+                    .collect::<Vec<_>>(),
+                vec![0, 8]
+            );
+            let base = &class("Virtual").bases[0];
+            assert!(base.is_virtual && base.is_public);
+            assert_eq!(base.name, "Root");
+            if architecture == "x86" {
+                let location = base.vbtable.as_ref().unwrap();
+                assert_eq!(
+                    (
+                        location.pointer_offset,
+                        location.entry_offset,
+                        location.member_offset
+                    ),
+                    (0, 4, 0)
+                );
+                assert_eq!(base.offset, None);
+                assert_eq!(
+                    class("Virtual").vtables[0].construction_displacement,
+                    Some(4)
+                );
+            } else {
+                assert_eq!(base.offset, Some(8));
+                assert_eq!(base.vtable_offset, Some(-12));
+            }
+            assert!(class("Error").vtables.is_empty());
+            let root_method = class("Root").vtables[0].methods[0].address;
+            let method_count = if architecture == "x86" { 2 } else { 3 };
+            assert_eq!(class("Root").vtables[0].methods.len(), method_count);
+            for class in classes {
+                for table in &class.vtables {
+                    for method in &table.methods {
+                        assert!(
+                            binary.function(method.address).is_ok(),
+                            "{fixture} {method:?}"
+                        );
+                        if architecture == "thumb" {
+                            assert_eq!(
+                                binary.image().arm_mode(method.address),
+                                velk::loader::ArmMode::Thumb
+                            );
+                        }
+                    }
+                }
+            }
+            let output = Command::new(env!("CARGO_BIN_EXE_velk"))
+                .args(["--classes"])
+                .arg(&path)
+                .output()
+                .unwrap();
+            assert!(output.status.success());
+            let listed: serde_json::Value = serde_json::from_slice(&output.stdout).unwrap();
+            assert_eq!(listed, serde_json::json!(classes));
+            let code = binary.decompile(root_method, None, None).unwrap();
+            let output = common::compiler::run(
+                Command::new("clang").args([
+                    "-x",
+                    "c",
+                    "-std=c11",
+                    "-fsyntax-only",
+                    "-Werror=implicit-function-declaration",
+                    "-",
+                ]),
+                Some(&code),
+            );
+            assert!(
+                output.status.success(),
+                "{fixture}: {}\n{code}",
+                String::from_utf8_lossy(&output.stderr)
+            );
+        }
+    }
+}

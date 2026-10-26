@@ -1,4 +1,4 @@
-//! Image-relative MSVC x64 RTTI descriptors.
+//! Absolute MSVC x86 and image-relative x64 RTTI descriptors.
 
 use std::collections::BTreeMap;
 
@@ -8,7 +8,7 @@ use super::{Base, Class, VirtualBase, Vtable};
 use crate::loader::Image;
 
 pub(crate) fn type_name(image: &Image, address: u64) -> Option<String> {
-    let Some(at) = address.checked_add(16) else {
+    let Some(at) = address.checked_add(2 * u64::from(crate::arch::pointer_bytes(image.isa))) else {
         return None;
     };
     let Some(name) = super::text(image, at) else {
@@ -50,7 +50,12 @@ pub(super) fn read(image: &Image) -> Vec<Class> {
     let Ok(file) = object::File::parse(image.bytes.as_slice()) else {
         return Vec::new();
     };
-    let base = file.relative_address_base();
+    let width = u64::from(crate::arch::pointer_bytes(image.isa));
+    let base = if width == 8 {
+        file.relative_address_base()
+    } else {
+        0
+    };
     let mut classes = BTreeMap::<u64, Class>::new();
     for section in &image.sections {
         if !section.loaded || section.executable || !section.read_only {
@@ -59,9 +64,11 @@ pub(super) fn read(image: &Image) -> Vec<Class> {
         let Some(bytes) = image.read_vaddr(section.vaddr, section.size) else {
             continue;
         };
-        for (index, chunk) in bytes.as_chunks::<8>().0.iter().enumerate() {
-            let locator = u64::from_le_bytes(*chunk);
-            if super::word(image, locator, 4) != Some(1) {
+        for (index, chunk) in bytes.chunks_exact(width as usize).enumerate() {
+            let mut value = [0; 8];
+            value[..chunk.len()].copy_from_slice(chunk);
+            let locator = u64::from_le_bytes(value);
+            if super::word(image, locator, 4) != Some(u64::from(width == 8)) {
                 continue;
             }
             let field = |offset| {
@@ -70,12 +77,12 @@ pub(super) fn read(image: &Image) -> Vec<Class> {
                     .and_then(|at| super::word(image, at, 4))
             };
             let rva = |offset| field(offset).and_then(|rva| base.checked_add(rva));
-            let (Some(offset), Some(displacement), Some(info), Some(hierarchy), Some(own)) =
-                (field(4), field(8), rva(12), rva(16), rva(20))
+            let (Some(offset), Some(displacement), Some(info), Some(hierarchy)) =
+                (field(4), field(8), rva(12), rva(16))
             else {
                 continue;
             };
-            if own != locator {
+            if width == 8 && rva(20) != Some(locator) {
                 continue;
             }
             let Some(name) = type_name(image, info) else {
@@ -84,7 +91,7 @@ pub(super) fn read(image: &Image) -> Vec<Class> {
             let Some(bases) = bases(image, base, hierarchy, info) else {
                 continue;
             };
-            let Some(point) = section.vaddr.checked_add(index as u64 * 8 + 8) else {
+            let Some(point) = section.vaddr.checked_add(index as u64 * width + width) else {
                 break;
             };
             let methods = super::methods(image, point);
@@ -112,15 +119,17 @@ pub(super) fn read(image: &Image) -> Vec<Class> {
         let Some(bytes) = image.read_vaddr(section.vaddr, section.size) else {
             continue;
         };
-        for (index, chunk) in bytes.as_chunks::<8>().0.iter().enumerate() {
-            let target = u64::from_le_bytes(*chunk);
+        for (index, chunk) in bytes.chunks_exact(width as usize).enumerate() {
+            let mut value = [0; 8];
+            value[..chunk.len()].copy_from_slice(chunk);
+            let target = u64::from_le_bytes(value);
             let Some(function) = image.functions.get(&target) else {
                 continue;
             };
             if function.name.as_deref() != Some("??_7type_info@@6B@") {
                 continue;
             }
-            let Some(info) = section.vaddr.checked_add(index as u64 * 8) else {
+            let Some(info) = section.vaddr.checked_add(index as u64 * width) else {
                 break;
             };
             let Some(name) = type_name(image, info).filter(|name| {

@@ -337,7 +337,7 @@ pub(super) fn expression(call: &Stmt, ctx: &Ctx<'_>) -> String {
             (Some(Expr::Load { addr, width, .. }), _)
                 if *width == crate::arch::pointer_bytes(ctx.isa)
                     && let Expr::Const(slot) = addr.as_ref()
-                    && let Some(name) = ctx.symbols.import_slots.get(slot) =>
+                    && let Some(name) = ctx.symbols.import_name(slot) =>
             {
                 super::sanitize(name)
             }

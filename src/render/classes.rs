@@ -35,12 +35,15 @@ pub(crate) fn comments(ir: &FunctionIr, image: &Image) -> String {
     for statement in ir.blocks.iter().flat_map(|block| &block.stmts) {
         let Stmt::Store {
             value: Expr::Const(address),
-            width: 8,
+            width,
             ..
         } = statement
         else {
             continue;
         };
+        if *width != crate::arch::pointer_bytes(image.isa) {
+            continue;
+        }
         if !seen.insert(*address) {
             continue;
         }

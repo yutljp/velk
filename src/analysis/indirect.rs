@@ -232,6 +232,11 @@ impl Tracker<'_> {
                 if *width == 8 {
                     if let Value::Const(slot, _) = addr
                         && self.image.imports.contains_key(&slot)
+                        && self
+                            .image
+                            .import_addends
+                            .get(&slot)
+                            .is_none_or(|addend| *addend == 0)
                     {
                         return Value::Import(slot);
                     }
@@ -449,12 +454,25 @@ fn successors(blocks: &[Block], pads: &[(u64, Vec<(u64, u64)>)], index: usize) -
 
 /// The word at `addr` in constant data.
 fn read_only_word(image: &Image, addr: u64) -> Option<u64> {
-    let section = image.section_at(addr)?;
-    if !section.read_only || addr.checked_add(8)? > section.vaddr.saturating_add(section.size) {
+    let Some(section) = image.section_at(addr) else {
+        return None;
+    };
+    let Some(end) = addr.checked_add(8) else {
+        return None;
+    };
+    if !section.read_only
+        || end > section.vaddr.saturating_add(section.size)
+        || image.imports.contains_key(&addr)
+    {
         return None;
     }
-    let bytes = image.read_vaddr(addr, 8)?;
-    Some(u64::from_le_bytes(bytes.try_into().ok()?))
+    let Some(bytes) = image.read_vaddr(addr, 8) else {
+        return None;
+    };
+    let Ok(bytes) = bytes.try_into() else {
+        return None;
+    };
+    Some(u64::from_le_bytes(bytes))
 }
 
 fn is_code(image: &Image, word: Option<u64>) -> bool {

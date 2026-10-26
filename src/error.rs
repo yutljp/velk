@@ -31,6 +31,8 @@ pub enum Error {
     SignatureVersion { found: Option<u64>, expected: u32 },
     #[error("Mach-O architecture selection: {0}")]
     Architecture(String),
+    #[error("Mach-O fixups: {0}")]
+    MachOFixups(String),
     #[error("not an address: \"{0}\" (use 0x-prefixed hex or decimal)")]
     BadAddress(String),
     #[error("no function at 0x{0:x}")]

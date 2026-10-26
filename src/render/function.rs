@@ -1216,7 +1216,7 @@ fn render_with(
     .then(|| vacant_name("velk_entry_stack_pointer", &mut call_reserved));
     let mut call_returns: HashMap<String, &CType> = HashMap::new();
     for (address, ty) in &symbols.import_returns {
-        if let Some(name) = symbols.import_slots.get(address) {
+        if let Some(name) = symbols.import_name(address) {
             call_returns.insert(sanitize(name), ty);
         }
     }

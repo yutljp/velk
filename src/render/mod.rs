@@ -247,6 +247,11 @@ pub fn callee_names(image: &crate::loader::Image) -> Symbols {
                 (*address, name)
             })
             .collect(),
+        import_addends: image
+            .import_addends
+            .iter()
+            .map(|(slot, addend)| (*slot, *addend))
+            .collect(),
         library_variables: image
             .data_symbols
             .iter()

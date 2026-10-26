@@ -87,7 +87,7 @@ impl Facts {
                         })
                         .or_else(|| {
                             via.as_ref()
-                                .and_then(|via| ctx.symbols.import_slots.get(&via.slot))
+                                .and_then(|via| ctx.symbols.import_name(&via.slot))
                         });
                     let allocation = name.and_then(|name| allocator(name));
                     let size = name.and_then(|name| allocation_size(name, args.as_deref(), &facts));

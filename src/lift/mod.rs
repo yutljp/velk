@@ -406,6 +406,12 @@ fn drop_stack_probes(blocks: &mut [Block], image: &Image) {
                     ..
                 } => slots
                     .get(index)
+                    .filter(|slot| {
+                        image
+                            .import_addends
+                            .get(slot)
+                            .is_none_or(|addend| *addend == 0)
+                    })
                     .and_then(|slot| image.imports.get(slot))
                     .map(String::as_str),
                 Stmt::Call {
@@ -967,6 +973,13 @@ pub(crate) fn import_name<'a>(image: &'a Image, through: &Expr) -> Option<&'a st
     let Expr::Const(slot) = addr.as_ref() else {
         return None;
     };
+    if image
+        .import_addends
+        .get(slot)
+        .is_some_and(|addend| *addend != 0)
+    {
+        return None;
+    }
     image.imports.get(slot).map(String::as_str)
 }
 

@@ -87,8 +87,10 @@ impl Image {
     /// Returns C++ classes supported by validated runtime descriptors.
     pub fn classes(&self) -> &[Class] {
         self.classes.get_or_init(|| {
-            if !matches!(self.isa, Isa::X86_64 | Isa::AArch64)
-                || self.byte_order() != Some(object::Endianness::Little)
+            if !matches!(
+                self.isa,
+                Isa::I386 | Isa::X86_64 | Isa::Arm32 | Isa::AArch64
+            ) || self.byte_order() != Some(object::Endianness::Little)
                 || self.go
             {
                 return Vec::new();
@@ -143,19 +145,25 @@ pub(super) fn text(image: &Image, address: u64) -> Option<&str> {
 
 fn methods(image: &Image, address: u64) -> Vec<Method> {
     let mut methods = Vec::new();
+    let width = u64::from(crate::arch::pointer_bytes(image.isa));
     for slot in 0..4096 {
-        let Some(at) = address.checked_add(slot * 8) else {
+        let Some(at) = address.checked_add(slot * width) else {
             break;
         };
-        let Some(target) = word(image, at, 8) else {
+        let Some(target) = word(image, at, width) else {
             break;
         };
+        let target = image.code_address(target);
         if !image
             .section_at(target)
             .is_some_and(|section| section.executable)
         {
             // Undefined pure virtual entries may still have dynamic relocations.
-            if let Some(name) = image.imports.get(&at)
+            if image
+                .import_addends
+                .get(&at)
+                .is_none_or(|addend| *addend == 0)
+                && let Some(name) = image.imports.get(&at)
                 && matches!(
                     name.trim_start_matches('_'),
                     "cxa_pure_virtual" | "cxa_deleted_virtual" | "purecall"
@@ -190,9 +198,19 @@ pub(super) fn discover(image: &mut Image) {
         return;
     }
     let mut addresses = std::collections::BTreeSet::new();
+    let mut thumb_addresses = std::collections::BTreeSet::new();
     for class in image.classes() {
         for table in &class.vtables {
             for method in &table.methods {
+                if image.isa == Isa::Arm32
+                    && let Some(at) = method
+                        .slot
+                        .checked_mul(4)
+                        .and_then(|offset| table.address.checked_add(offset))
+                    && word(image, at, 4).is_some_and(|pointer| pointer & 1 != 0)
+                {
+                    thumb_addresses.insert(method.address);
+                }
                 if !image.functions.contains_key(&method.address)
                     && image
                         .section_at(method.address)
@@ -202,6 +220,9 @@ pub(super) fn discover(image: &mut Image) {
                 }
             }
         }
+    }
+    for address in thumb_addresses {
+        image.arm_modes.insert(address, super::ArmMode::Thumb);
     }
     let mut thunks = Vec::new();
     if image.format == Format::Pe && image.isa == Isa::X86_64 {

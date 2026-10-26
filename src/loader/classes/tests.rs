@@ -117,3 +117,69 @@ fn runtime_type_names_cannot_start_a_c_identifier_with_a_digit() {
             .is_none_or(|name| name == "data_1_vtable_0")
     );
 }
+
+#[test]
+fn malformed_32_bit_descriptors_do_not_hide_later_classes() {
+    for architecture in ["i386", "arm", "thumb"] {
+        let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join(format!(
+            "tests/metadata/cpp32/rtti.{architecture}.stripped.elf"
+        ));
+        let image = crate::loader::load(&path).unwrap();
+        let info = image
+            .classes()
+            .iter()
+            .find(|class| class.name == "Multiple")
+            .unwrap()
+            .type_info;
+        for (offset, value) in [(12, u32::MAX), (12, 4097), (16, u32::MAX)] {
+            let mut image = crate::loader::load(&path).unwrap();
+            patch(&mut image, info + offset, &value.to_le_bytes());
+            let classes = itanium::read(&image);
+            assert!(!classes.iter().any(|class| class.name == "Multiple"));
+            assert!(classes.iter().any(|class| class.name == "Virtual"));
+        }
+    }
+    let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("tests/metadata/cpp32/rtti.x86.stripped.dll");
+    let image = crate::loader::load(&path).unwrap();
+    let table = image
+        .classes()
+        .iter()
+        .find(|class| class.name == "Multiple")
+        .unwrap()
+        .vtables[0]
+        .address;
+    let locator = word(&image, table - 4, 4).unwrap();
+    let hierarchy = word(&image, locator + 16, 4).unwrap();
+    for (at, value) in [
+        (locator, 1u32),
+        (locator + 12, u32::MAX),
+        (hierarchy + 8, u32::MAX),
+    ] {
+        let mut image = crate::loader::load(&path).unwrap();
+        patch(&mut image, at, &value.to_le_bytes());
+        let classes = msvc::read(&image);
+        assert!(
+            !classes
+                .iter()
+                .any(|class| class.vtables.iter().any(|vtable| vtable.address == table))
+        );
+        assert!(
+            classes
+                .iter()
+                .any(|class| class.name == "Single" && !class.vtables.is_empty())
+        );
+    }
+}
+
+#[test]
+fn elf32_type_names_keep_the_high_address_bit() {
+    let mut image = Image::from_code(Isa::I386, 0x8000_0000, vec![0; 128]);
+    image.sections[0].executable = false;
+    patch(&mut image, 0x8000_0004, &0x8000_0040u32.to_le_bytes());
+    patch(&mut image, 0x8000_0040, b"4Root\0");
+    assert_eq!(
+        itanium::type_name(&image, 0x8000_0000),
+        Some("Root".to_owned())
+    );
+}

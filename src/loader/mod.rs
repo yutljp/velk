@@ -272,6 +272,8 @@ pub struct Image {
     /// The slots the dynamic linker fills with another module's function or
     /// object, by its name: calls through them call it.
     pub imports: BTreeMap<u64, String>,
+    /// Byte addends for imported pointers, keyed by the slots that hold them.
+    pub import_addends: BTreeMap<u64, i64>,
     /// DLL-qualified names of PE imports, keyed by their slots.
     pub(crate) qualified_imports: HashMap<u64, String>,
     pub(crate) exception_regions: Vec<unwind::Region>,
@@ -299,6 +301,15 @@ pub enum ArmMode {
 }
 
 pub use universal::{Architecture, Slice};
+
+/// A loaded pointer, including a symbolic address supplied by another image.
+#[derive(Debug, PartialEq, Eq)]
+pub enum Pointer<'image> {
+    /// An address in the image's preferred address space.
+    Address(u64),
+    /// An imported symbol address plus a byte displacement.
+    Import { name: &'image str, addend: i64 },
+}
 
 impl Image {
     pub(crate) fn code_address(&self, address: u64) -> u64 {
@@ -458,6 +469,7 @@ impl Image {
             go_abi0: Default::default(),
             stack_rows: Default::default(),
             imports: BTreeMap::new(),
+            import_addends: BTreeMap::new(),
             qualified_imports: HashMap::new(),
             landing_pads: BTreeMap::new(),
             exception_regions: Vec::new(),
@@ -627,11 +639,51 @@ impl Image {
         self.bytes.get(start..end)
     }
 
-    /// The file's bytes at a virtual address; None where no section holds
-    /// file data, as in zero-initialized data.
+    /// Relocated image bytes at a virtual address; absent for unbacked data.
+    /// Chained rebases contain addresses. Unresolved chained imports contain zero;
+    /// use `read_pointer` to retain their symbol names and byte addends.
     pub fn read_vaddr(&self, vaddr: u64, len: u64) -> Option<&[u8]> {
         self.virtual_offset(vaddr)
             .and_then(|offset| self.read(offset, len))
+    }
+
+    /// Reads an image-sized pointer, retaining unresolved imports and their addends.
+    pub fn read_pointer(&self, address: u64) -> Option<Pointer<'_>> {
+        if let Some(name) = self.imports.get(&address) {
+            return Some(Pointer::Import {
+                name,
+                addend: self.import_addends.get(&address).copied().unwrap_or(0),
+            });
+        }
+        let width = u64::from(crate::arch::pointer_bytes(self.isa));
+        let Some(section) = self.section_at(address) else {
+            return None;
+        };
+        let (Some(end), Some(section_end)) = (
+            address.checked_add(width),
+            section.vaddr.checked_add(section.size),
+        ) else {
+            return None;
+        };
+        if end > section_end {
+            return None;
+        }
+        let Some(bytes) = self.read_vaddr(address, width) else {
+            return None;
+        };
+        let mut word = [0; 8];
+        let value = match self.byte_order {
+            Some(object::Endianness::Little) => {
+                word[..bytes.len()].copy_from_slice(bytes);
+                u64::from_le_bytes(word)
+            }
+            Some(object::Endianness::Big) => {
+                word[8 - bytes.len()..].copy_from_slice(bytes);
+                u64::from_be_bytes(word)
+            }
+            None => return None,
+        };
+        Some(Pointer::Address(value))
     }
 
     fn add_go_functions(&mut self) {
@@ -827,6 +879,10 @@ pub fn load_with_arch(path: &Path, arch: Option<Architecture>) -> Result<Image> 
     let mut relocated = bytes.to_vec();
     relocate::apply(&file, &bases, &mut relocated);
     relocate::apply_dynamic(&file, &mut relocated);
+    let bindings = match macho::fixups::apply(&file, &mut relocated) {
+        Ok(bindings) => bindings,
+        Err(cause) => return Err(Error::MachOFixups(cause)),
+    };
 
     let mut sections = Vec::new();
     for section in file.sections() {
@@ -1101,6 +1157,7 @@ pub fn load_with_arch(path: &Path, arch: Option<Architecture>) -> Result<Image> 
         relocations,
         relocatable: file.kind() == object::ObjectKind::Relocatable,
         imports: plt::imports(&file).into_iter().collect(),
+        import_addends: BTreeMap::new(),
         qualified_imports: plt::qualified_imports(&file),
         landing_pads: BTreeMap::new(),
         exception_regions: Vec::new(),
@@ -1110,6 +1167,10 @@ pub fn load_with_arch(path: &Path, arch: Option<Architecture>) -> Result<Image> 
         classes: Default::default(),
         installs: Default::default(),
     };
+    for (address, binding) in bindings {
+        image.imports.insert(address, binding.name);
+        image.import_addends.insert(address, binding.addend);
+    }
     image.add_go_functions();
     image.add_dwarf_functions();
     for function in image.codeview.functions() {

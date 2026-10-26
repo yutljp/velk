@@ -8,12 +8,18 @@ use super::{Base, Class, Vtable};
 use crate::loader::Image;
 
 pub(crate) fn type_name(image: &Image, address: u64) -> Option<String> {
-    let Some(at) = address.checked_add(8) else {
+    let width = u64::from(crate::arch::pointer_bytes(image.isa));
+    let Some(at) = address.checked_add(width) else {
         return None;
     };
-    let Some(name) =
-        super::word(image, at, 8).and_then(|pointer| super::text(image, pointer & !(1 << 63)))
-    else {
+    let Some(name) = super::word(image, at, width).and_then(|pointer| {
+        let pointer = if width == 8 {
+            pointer & !(1 << 63)
+        } else {
+            pointer
+        };
+        super::text(image, pointer)
+    }) else {
         return None;
     };
     let mangled = format!("_ZTS{}", name.trim_start_matches('*'));
@@ -24,6 +30,7 @@ pub(crate) fn type_name(image: &Image, address: u64) -> Option<String> {
 }
 
 pub(super) fn read(image: &Image) -> Vec<Class> {
+    let width = u64::from(crate::arch::pointer_bytes(image.isa));
     let names = references::read(image);
     let mut classes = BTreeMap::<u64, Class>::new();
     for section in &image.sections {
@@ -33,14 +40,14 @@ pub(super) fn read(image: &Image) -> Vec<Class> {
         let Some(bytes) = image.read_vaddr(section.vaddr, section.size) else {
             continue;
         };
-        for (index, chunk) in bytes.as_chunks::<8>().0.iter().enumerate() {
-            let Some(address) = section.vaddr.checked_add(index as u64 * 8) else {
+        for (index, chunk) in bytes.chunks_exact(width as usize).enumerate() {
+            let Some(address) = section.vaddr.checked_add(index as u64 * width) else {
                 break;
             };
-            let pointer = u64::from_le_bytes(*chunk);
+            let pointer = unsigned(chunk);
             let kind = names.get(&address).or_else(|| {
                 pointer
-                    .checked_sub(16)
+                    .checked_sub(2 * width)
                     .and_then(|address| image.data_symbols.get(&address))
             });
             let Some(kind) = kind else {
@@ -58,8 +65,8 @@ pub(super) fn read(image: &Image) -> Vec<Class> {
             let mut bases = Vec::new();
             if single {
                 let Some(base) = address
-                    .checked_add(16)
-                    .and_then(|at| super::word(image, at, 8))
+                    .checked_add(2 * width)
+                    .and_then(|at| super::word(image, at, width))
                 else {
                     continue;
                 };
@@ -77,7 +84,7 @@ pub(super) fn read(image: &Image) -> Vec<Class> {
             }
             if multiple {
                 let Some(count) = address
-                    .checked_add(20)
+                    .checked_add(2 * width + 4)
                     .and_then(|at| super::word(image, at, 4))
                 else {
                     continue;
@@ -87,13 +94,13 @@ pub(super) fn read(image: &Image) -> Vec<Class> {
                 }
                 let mut valid = true;
                 for index in 0..count {
-                    let Some(at) = address.checked_add(24 + index * 16) else {
+                    let Some(at) = address.checked_add(2 * width + 8 + index * 2 * width) else {
                         valid = false;
                         break;
                     };
                     let (Some(base), Some(flags)) = (
-                        super::word(image, at, 8),
-                        super::word(image, at.saturating_add(8), 8),
+                        super::word(image, at, width),
+                        super::word(image, at.saturating_add(width), width),
                     ) else {
                         valid = false;
                         break;
@@ -103,7 +110,7 @@ pub(super) fn read(image: &Image) -> Vec<Class> {
                         break;
                     };
                     let is_virtual = flags & 1 != 0;
-                    let offset = (flags as i64) >> 8;
+                    let offset = signed(flags, width) >> 8;
                     bases.push(Base {
                         name,
                         offset: (!is_virtual).then_some(offset),
@@ -135,18 +142,19 @@ pub(super) fn read(image: &Image) -> Vec<Class> {
         let Some(bytes) = image.read_vaddr(section.vaddr, section.size) else {
             continue;
         };
-        for (index, chunk) in bytes.as_chunks::<8>().0.iter().enumerate() {
-            let info = u64::from_le_bytes(*chunk);
+        for (index, chunk) in bytes.chunks_exact(width as usize).enumerate() {
+            let info = unsigned(chunk);
             let Some(class) = classes.get_mut(&info) else {
                 continue;
             };
-            let Some(at) = section.vaddr.checked_add(index as u64 * 8) else {
+            let Some(at) = section.vaddr.checked_add(index as u64 * width) else {
                 break;
             };
-            let (Some(top_at), Some(point)) = (at.checked_sub(8), at.checked_add(8)) else {
+            let (Some(top_at), Some(point)) = (at.checked_sub(width), at.checked_add(width)) else {
                 continue;
             };
-            let Some(top) = super::word(image, top_at, 8).map(|value| value as i64) else {
+            let Some(top) = super::word(image, top_at, width).map(|value| signed(value, width))
+            else {
                 continue;
             };
             if !(-0x100_0000..=0).contains(&top) {
@@ -178,8 +186,8 @@ pub(super) fn read(image: &Image) -> Vec<Class> {
                 let value = table
                     .address
                     .checked_add_signed(offset)
-                    .and_then(|at| super::word(image, at, 8));
-                let Some(value) = value.map(|value| value as i64) else {
+                    .and_then(|at| super::word(image, at, width));
+                let Some(value) = value.map(|value| signed(value, width)) else {
                     consistent = false;
                     break;
                 };
@@ -195,4 +203,18 @@ pub(super) fn read(image: &Image) -> Vec<Class> {
         }
     }
     classes.into_values().collect()
+}
+
+fn unsigned(bytes: &[u8]) -> u64 {
+    let mut word = [0; 8];
+    word[..bytes.len()].copy_from_slice(bytes);
+    u64::from_le_bytes(word)
+}
+
+fn signed(value: u64, width: u64) -> i64 {
+    if width == 4 {
+        i64::from(value as i32)
+    } else {
+        value as i64
+    }
 }

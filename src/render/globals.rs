@@ -66,6 +66,7 @@ pub(super) struct Globals {
     headers: HashMap<u64, String>,
     names: HashMap<u64, String>,
     repeated: HashSet<String>,
+    bindings: HashMap<u64, (String, i64)>,
     used: RefCell<Used>,
 }
 
@@ -132,6 +133,16 @@ impl Globals {
                 .collect(),
             names,
             repeated,
+            bindings: symbols
+                .import_addends
+                .iter()
+                .filter_map(|(slot, addend)| {
+                    symbols
+                        .import_slots
+                        .get(slot)
+                        .map(|name| (*slot, (super::sanitize(name), *addend)))
+                })
+                .collect(),
             used: RefCell::new(Used {
                 names: reserved.into_iter().collect(),
                 ..Used::default()
@@ -420,6 +431,11 @@ impl Globals {
             declarations.push_str(&format!(
                 "extern {ty} {name}{suffix}; /* address: 0x{base:x} */\n\n"
             ));
+            if let Some((symbol, addend)) = self.bindings.get(&base) {
+                declarations.push_str(&format!(
+                    "/* Initial pointer: {symbol}, byte addend {addend}. */\n\n"
+                ));
+            }
         }
         *code = replace_expressions(code, &replacements);
         declarations

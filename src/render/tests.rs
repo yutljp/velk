@@ -2740,3 +2740,37 @@ fn constant_table_names_only_rename_global_memory_accesses() {
     assert!(named.contains("aes_sbox"), "{named}");
     assert_eq!(named.replace("aes_sbox", "g_1000"), original);
 }
+
+#[test]
+fn imported_pointer_addends_do_not_become_calls_to_the_unadjusted_symbol() {
+    let mut ir = FunctionIr::single_block(
+        Isa::X86_64,
+        vec![
+            Stmt::Call {
+                kind: crate::ir::CallKind::Invoke,
+                target: None,
+                through: Some(load(Expr::Const(0x1000), 8)),
+                convention: crate::ir::Convention::SysV,
+                args: Some(Vec::new()),
+                floats_named: false,
+                abi: None,
+                outputs: Vec::new(),
+                clobbers: None,
+                via: None,
+            },
+            Stmt::Ret {
+                value: Expr::Const(0),
+            },
+        ],
+    );
+    ir.ret_type = CType::Void;
+    let symbols = Symbols {
+        import_slots: HashMap::from([(0x1000, "imported_function".to_owned())]),
+        import_addends: HashMap::from([(0x1000, 4)]),
+        ..Symbols::default()
+    };
+    let code = render(&ir, &[], &symbols, &[(0x1000, 8)]);
+    assert!(!code.contains("    imported_function();"), "{code}");
+    assert!(code.contains("(*)())"), "{code}");
+    assert!(code.contains("byte addend 4"), "{code}");
+}
