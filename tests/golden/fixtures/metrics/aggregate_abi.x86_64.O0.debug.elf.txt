@@ -266,7 +266,7 @@ int64_t abi_exhaust_seven(int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_
     e = a4;
     f = a5;
     int64_t v5 = a7 * 19;
-    int64_t v6 = a0 + a1 * 3 + a2 * 5 + a3 * 7 + a4 * 11 + a5 * 13 + a6 * 17 + v5 + a8 * 23;
+    int64_t v6 = (int64_t)((uint64_t)(int64_t)((uint64_t)(int64_t)((uint64_t)(int64_t)((uint64_t)(int64_t)((uint64_t)a0 + (int64_t)((uint64_t)a1 * 3)) + (int64_t)((uint64_t)a2 * 5)) + (int64_t)((uint64_t)a3 * 7)) + (int64_t)((uint64_t)a4 * 11)) + (int64_t)((uint64_t)a5 * 13)) + a6 * 17 + v5 + a8 * 23;
     return v6 + a9 * 29;
 }
 -- signature

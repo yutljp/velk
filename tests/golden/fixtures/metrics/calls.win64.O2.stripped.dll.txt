@@ -71,7 +71,7 @@ uint64_t sub_1800011f0();
 -- decompile
 /* velk pseudo-C: sub_180001000 @ 0x180001000 */
 int32_t sub_180001000(int32_t a0) {
-    return a0 * 2;
+    return (uint32_t)a0 * 2;
 }
 -- signature
 int32_t (int32_t a0)
@@ -88,7 +88,7 @@ fn <unnamed> @ 0x180001000 (size 16)
 -- decompile
 /* velk pseudo-C: sub_180001010 @ 0x180001010 */
 int32_t sub_180001010(int32_t a0) {
-    return a0 * a0;
+    return (uint32_t)a0 * a0;
 }
 -- signature
 int32_t (int32_t a0)
@@ -124,7 +124,7 @@ fn <unnamed> @ 0x180001020 (size 32)
 int32_t sub_180001040(uint32_t a0, int32_t a1) {
     int32_t v2 = (0xaaaaaaab * (uint64_t)a0 >> 33) * 3;
     int32_t v3 = a0 - v2;
-    if (v3 + v2 != v2 && v3 == 1) {
+    if ((uint32_t)v3 + v2 != v2 && v3 == 1) {
         return sub_180001010((uint32_t)a1);
     }
     return sub_180001000((uint32_t)a1);
@@ -154,7 +154,7 @@ fn <unnamed> @ 0x180001040 (size 48)
 -- decompile
 /* velk pseudo-C: sub_180001070 @ 0x180001070 */
 int32_t sub_180001070(void *a0, int32_t a1) {
-    return ((int32_t)(((uint64_t (*)())a0)(a1 & 0xffffffff))) + 1;
+    return (uint32_t)((int32_t)(((uint64_t (*)())a0)(a1 & 0xffffffff))) + 1;
 }
 -- signature
 int32_t (void * a0, int32_t a1)
@@ -190,10 +190,10 @@ int32_t sub_180001090(int32_t a0) {
         return 1;
     }
     if ((uint32_t)a0 >= 9) {
-        int32_t v2 = a0 - 1;
+        int32_t v2 = (uint32_t)a0 - 1;
         int32_t v3 = v2 & 0xfffffffffffffff8;
         uint64_t v4 = a0 & 0xffffffff;
-        a0 -= v3;
+        a0 = (uint32_t)a0 - v3;
         struct velk_vector vector = { .low.u64 = add_lanes32(v4 | v4 << 32, g_180002000), .high.u64 = add_lanes32(v4 | v4 << 32, g_180002008) };
         struct velk_vector vector_2 = { .low.u64 = g_180002020, .high.u64 = g_180002028 };
         struct velk_vector vector_3 = { .low.u64 = g_180002030, .high.u64 = g_180002038 };
@@ -221,7 +221,7 @@ int32_t sub_180001090(int32_t a0) {
             vector_7 = (struct velk_vector){ .low.u64 = interleave_low32(v36, v55), .high.u64 = interleave_high32(v36, v55) };
             vector.low.u64 = add_lanes32(vector.low.u64, vector_3.low.u64);
             vector.high.u64 = add_lanes32(vector.high.u64, vector_3.high.u64);
-            v53 = v53 - 8;
+            v53 = (uint32_t)v53 - 8;
         } while (v53 != 0);
         t1 = vector_7.low.u64 >> 32;
         uint64_t v58 = (vector_5.low.u64 >> 32) * t1;
@@ -232,9 +232,9 @@ int32_t sub_180001090(int32_t a0) {
         }
     }
     do {
-        v1 *= a0;
+        v1 = (uint32_t)v1 * a0;
         v52 = a0;
-        a0 = a0 - 1;
+        a0 = (uint32_t)a0 - 1;
     } while (v52 > 2);
     return v1;
 }
@@ -318,11 +318,11 @@ fn <unnamed> @ 0x180001090 (size 297)
 /* velk pseudo-C: sub_1800011c0 @ 0x1800011c0 */
 int32_t sub_1800011c0(int32_t a0) {
     while (a0 != 0) {
-        int32_t v1 = a0 - 1;
+        int32_t v1 = (uint32_t)a0 - 1;
         if (v1 == 0) {
             return 1;
         }
-        a0 = v1 - 1;
+        a0 = (uint32_t)v1 - 1;
     }
     return 0;
 }
@@ -353,7 +353,7 @@ fn <unnamed> @ 0x1800011c0 (size 48)
 -- decompile
 /* velk pseudo-C: sub_1800011f0 @ 0x1800011f0 */
 int32_t sub_1800011f0(int32_t a0, int32_t a1, int32_t a2, int32_t a3, int64_t a4, int64_t a5, int64_t a6, int64_t a7, int64_t a8) {
-    return a2 + a3 + (a0 + a1) + (uint32_t)a4 + (uint32_t)a5 + (uint32_t)a6 + (uint32_t)a7 + (uint32_t)a8;
+    return (uint32_t)a2 + a3 + ((uint32_t)a0 + a1) + (uint32_t)a4 + (uint32_t)a5 + (uint32_t)a6 + (uint32_t)a7 + (uint32_t)a8;
 }
 -- signature
 int32_t (int32_t a0, int32_t a1, int32_t a2, int32_t a3)
@@ -424,7 +424,7 @@ int32_t sub_180001260(int32_t a0, int64_t a1, int64_t a2, int64_t a3) {
         v5 = 0;
         v29 = (uintptr_t)v1;
     } else {
-        uint64_t v3 = (uintptr_t)(v1 + ((a0 - 1) & 0xffffffff));
+        uint64_t v3 = (uintptr_t)(v1 + ((uint32_t)a0 - 1));
         if ((((uintptr_t)&local_0 < v3 + 4) & ((uintptr_t)v1 < (uintptr_t)((uint8_t *)&local_0 + 0x8))) == 0) {
             uint8_t v30 = a0 & 0x3;
             v2 = (uint64_t)(uint32_t)a0 - (v30 != 0 ? v30 : 4);
@@ -440,7 +440,7 @@ int32_t sub_180001260(int32_t a0, int64_t a1, int64_t a2, int64_t a3) {
                 vector.low.u64 = add_lanes32(vector.low.u64, vector_3.low.u32 | vector_3.high.u64 << 32);
                 vector.high.u64 = add_lanes32(vector.high.u64, vector_3.high.u64);
                 v1 += 0x4;
-                v11 = v11 - 4;
+                v11 = (int64_t)((uint64_t)v11 - 4);
             } while (v11 != 0);
             local_0 = v1;
             uint64_t v31 = add_lanes32(vector.low.u64, vector_2.low.u64);
@@ -454,22 +454,22 @@ int32_t sub_180001260(int32_t a0, int64_t a1, int64_t a2, int64_t a3) {
     if (v18 == 0) {
         v32 = v2;
     } else {
-        v18 = -v18;
+        v18 = -(uint32_t)v18;
         int32_t i = 0;
         do {
             uint32_t *v21 = (uint32_t *)v29;
-            v29 += 8;
+            v29 = (int64_t)((uint64_t)v29 + 8);
             local_0 = (void *)v29;
             v5 += *v21;
-            --i;
+            i = (uint32_t)i - 1;
         } while (v18 != i);
         v32 = v2 - i;
     }
     if ((uint32_t)(v2 - a0) > 0xfffffffc) {
         return v5;
     }
-    int32_t v23 = a0 - v32;
-    uint32_t *v24 = (uint32_t *)(v29 + 16);
+    int32_t v23 = (uint32_t)a0 - v32;
+    uint32_t *v24 = (uint32_t *)(int64_t)((uint64_t)v29 + 16);
     do {
         local_0 = v24 - 0x2;
         v5 += v24[-4];
@@ -480,7 +480,7 @@ int32_t sub_180001260(int32_t a0, int64_t a1, int64_t a2, int64_t a3) {
         local_0 = v24 + 0x4;
         v5 += v24[2];
         v24 += 0x8;
-        v23 = v23 - 4;
+        v23 = (uint32_t)v23 - 4;
     } while (v23 != 0);
     return v5;
 }

@@ -119,7 +119,7 @@ fn <unnamed> @ 0x180001040 (size 32)
 /* ref: 0x1800030e0 .data */
 struct S1 { int64_t field_0x0; int32_t field_0x8; };
 int32_t sub_180001060(struct S1 *a0) {
-    return a0->field_0x8 + 1;
+    return (uint32_t)a0->field_0x8 + 1;
 L_180001066:
     a0->field_0x0 = (uintptr_t)(&Single_vtable_0);
     g_1800030e0 += 1;
@@ -249,7 +249,7 @@ uint64_t *sub_180001120(uint64_t *a0, int64_t a1, int32_t a2) {
     }
     *(uint64_t *)((uint8_t *)a0 + *(int32_t *)(*a0 + 0x4)) = (uintptr_t)(&Virtual_vtable_24);
     int64_t v3 = *(int32_t *)(*a0 + 0x4);
-    *(uint32_t *)((uint8_t *)a0 + v3 - 0x4) = v3 - 24;
+    *(uint32_t *)((uint8_t *)a0 + v3 - 0x4) = (int64_t)((uint64_t)v3 - 24);
     *(uint32_t *)(a0 + 0x1) = 4;
     return a0;
 }
@@ -372,7 +372,7 @@ fn single @ 0x1800011b0 (size 63)
 -- decompile
 /* velk pseudo-C: sub_1800011f0 @ 0x1800011f0 */
 int32_t sub_1800011f0(int64_t a0, int64_t a1) {
-    return sub_180001070(a1 + 32);
+    return sub_180001070((int64_t)((uint64_t)a1 + 32));
 }
 -- signature
 int32_t (int64_t a0, int64_t a1)
@@ -395,7 +395,7 @@ int32_t multiple(void) {
 
     sub_1800010b0(local_0);
     int32_t v2 = dispatch(local_0);
-    return ((int32_t)(sub_180001100(local_1))) + v2;
+    return (uint32_t)((int32_t)(sub_180001100(local_1))) + v2;
 }
 -- signature
 int32_t ()
@@ -445,7 +445,7 @@ fn virtual_base @ 0x180001240 (size 78)
 -- decompile
 /* velk pseudo-C: sub_180001290 @ 0x180001290 */
 int32_t sub_180001290(int64_t a0, int64_t a1) {
-    return sub_180001540(a1 + 40);
+    return sub_180001540((int64_t)((uint64_t)a1 + 40));
 }
 -- signature
 int32_t (int64_t a0, int64_t a1)
@@ -755,7 +755,7 @@ fn catch_cleanup @ 0x180001460 (size 72)
 -- decompile
 /* velk pseudo-C: sub_1800014b0 @ 0x1800014b0 */
 int32_t sub_1800014b0(int64_t a0, int64_t a1) {
-    return sub_180001070(a1 + 40);
+    return sub_180001070((int64_t)((uint64_t)a1 + 40));
 }
 -- signature
 int32_t (int64_t a0, int64_t a1)
@@ -813,7 +813,7 @@ fn <unnamed> @ 0x180001530 (size 15)
 -- decompile
 /* velk pseudo-C: sub_180001550 @ 0x180001550 */
 int64_t sub_180001550(int64_t a0, int64_t a1) {
-    return sub_180001600(a0 - 16, a1);
+    return sub_180001600((int64_t)((uint64_t)a0 - 16), a1);
 }
 -- signature
 int64_t (int64_t a0, int64_t a1)
@@ -955,7 +955,7 @@ fn <unnamed> @ 0x180001600 (size 35)
 -- decompile
 /* velk pseudo-C: sub_180001630 @ 0x180001630 */
 int64_t sub_180001630(int64_t a0, int32_t a1) {
-    int64_t v2 = a0 - 24;
+    int64_t v2 = (int64_t)((uint64_t)a0 - 24);
     sub_180001540(v2);
     if ((a1 & 0x1) == 0) {
         return v2;

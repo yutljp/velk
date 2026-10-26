@@ -112,14 +112,14 @@ int32_t h3(int32_t a0, int32_t a1) {
 
     /* unsupported: AAPCS32 multiword, floating-point or aggregate declaration */
     *(uint32_t *)(sp - 0x8) = v8;
-    int32_t v1 = a0 + a1;
+    int32_t v1 = (uint32_t)a0 + a1;
     /* unsupported: ARM adc lr, r2, 0x0 at 0x2018c */
     int32_t v3 = v12 & 0xffff | 0xaaaa0000;
     /* unsupported: ARM umull.w r3, r2, lr, ip at 0x20194 */
     int32_t v4 = v2 & 0xfffffffe;
     int32_t v5 = v4 + (v2 >> 1);
     int32_t v6 = v13 - v5;
-    int32_t v7 = a0 - v6;
+    int32_t v7 = (uint32_t)a0 - v6;
     /* unsupported: ARM umull.w r0, lr, r2, ip at 0x201a6 */
     int32_t v9 = v13 + v2 * 0xaaaaaaaa;
     /* unsupported: ARM sbc r1, r1, 0x0 at 0x201b2 */
@@ -295,7 +295,7 @@ int umod3x(unsigned int x) {
 
     /* unsupported: ARM umull.w r1, r2, r0, r1 at 0x20238 */
     int32_t v3 = v1 >> 1;
-    int32_t v4 = v3 * 3;
+    int32_t v4 = (uint32_t)v3 * 3;
     int32_t v5 = x - v4;
     return v5;
 }
@@ -324,8 +324,8 @@ int smod3x(int x) {
 
     /* unsupported: ARM smull.w r1, r2, r0, r1 at 0x20250 */
     int32_t v3 = v1 + (v1 >> 31);
-    int32_t v4 = v3 * 3;
-    int32_t v5 = x - v4;
+    int32_t v4 = (uint32_t)v3 * 3;
+    int32_t v5 = (uint32_t)x - v4;
     return v5;
 }
 -- signature
@@ -578,7 +578,7 @@ int pdiv10(int x) {
 
     /* unsupported: ARM smull.w r0, r1, r0, r1 at 0x20308 */
     int64_t t1 = (int32_t)v1;
-    int32_t v3 = (t1 >> 2) + (v1 >> 31);
+    int32_t v3 = (int64_t)((uint64_t)(t1 >> 2) + (v1 >> 31));
     return v3;
 }
 -- signature

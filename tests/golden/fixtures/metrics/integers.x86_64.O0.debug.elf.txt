@@ -117,7 +117,7 @@ int popcount(unsigned int x) {
     int32_t result = 0;
     while (x != 0) {
         x = x - 1 & x;
-        ++result;
+        result = (uint32_t)result + 1;
     }
     return result;
 }
@@ -205,7 +205,7 @@ long labs_value(long x) {
     if (x >= 0) {
         return v1;
     }
-    return -v1;
+    return (int64_t)-(uint64_t)v1;
 }
 -- signature
 long (long x)

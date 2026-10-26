@@ -105,7 +105,7 @@ ok "ir sum_arr"
 # 5) pseudo-C output
 c3=$("$BIN" --decompile $FIX/arm64.o sum3 2>/dev/null)
 echo "$c3" | grep "int32_t sum3(int32_t a0, int32_t a1, int32_t a2)" >/dev/null || fail "decompile sum3 signature"
-echo "$c3" | grep "return a1 + a0 + a2;"   >/dev/null || fail "decompile sum3 fold"
+echo "$c3" | grep "return (uint32_t)a1 + a0 + a2;"   >/dev/null || fail "decompile sum3 fold"
 [ "$(echo "$c3" | grep -c '0xffffffff')" -eq 0 ] || fail "decompile sum3 masks"
 echo "$c3" | grep "return "               >/dev/null || fail "decompile sum3 return"
 echo "$sum3_ir" | grep -F "ret (((w1 + w0) + w2) & #0xffffffff)" >/dev/null || fail "ir sum3 width"
@@ -167,7 +167,7 @@ decompile|sm10|arm64_div.o|smod10
 match|sm10|int32_t smod10|msub mod10 signed width
 decompile|sm3x|x64_div.o|smod3x
 decompile|ng|arm64_div.o|negate
-match|ng|return -a0;|negate render
+match|ng|return -(uint32_t)a0;|negate render
 reject|ng|0 -|negate render kept 0 - x
 match|sm3x|int32_t smod3x(|x86 lea mod3 signed width
 match|sm4|% 4|cset-pow2 mod s32
@@ -229,14 +229,14 @@ sum3_ir2=$("$BIN" --decompile $FIX/arm64.o sum3 2>/dev/null)
 echo "$sum3_ir2" | grep "w8" >/dev/null && fail "temporary inlining (sum3)"
 ok "temporary inlining"
 abs_ir=$("$BIN" --decompile $FIX/pe64.exe reg_abs 2>/dev/null)
-echo "$abs_ir" | grep "(-a0 < 0 ? a0 : -a0)" >/dev/null || fail "neg and cmovs absolute value"
+echo "$abs_ir" | grep -F "((int32_t)-(uint32_t)a0 < 0 ? a0 : -(uint32_t)a0)" >/dev/null || fail "neg and cmovs absolute value"
 echo "$abs_ir" | grep -- "-(-" >/dev/null && fail "double negation kept"
 sign_ir=$("$BIN" --decompile $FIX/pe64.exe reg_sign 2>/dev/null)
 echo "$sign_ir" | grep "(int8_t)a0"   >/dev/null || fail "sign-extend mask fold"
 echo "$sign_ir" | grep "0x1f" >/dev/null && fail "sign-extend artifact"
 ok "algebraic cleanup"
 abs_ret=$("$BIN" --decompile $FIX/pe64.exe reg_abs 2>/dev/null)
-echo "$abs_ret" | grep "return (-a0 < 0 ? a0 : -a0);"     >/dev/null || fail "abs folds into the return"
+echo "$abs_ret" | grep -F "return ((int32_t)-(uint32_t)a0 < 0 ? a0 : -(uint32_t)a0);" >/dev/null || fail "abs folds into the return"
 helper_cse=$("$BIN" --decompile $FIX/arm64.o helper 2>/dev/null)
 echo "$helper_cse" | grep "t1" >/dev/null && fail "temporary for a 32-bit register read"
 ok "two-round inlining"
@@ -247,7 +247,7 @@ echo "$mod_ir" | grep -F "a0 % a1" >/dev/null || fail "idiv remainder dividend"
 ok "runtime division and remainder"
 stack_ir=$("$BIN" --decompile $FIX/arm64_loops0.o sum_until 2>/dev/null)
 echo "$stack_ir" | grep -F "for (int32_t i = 1;" >/dev/null || fail "stack locals named"
-echo "$stack_ir" | grep "result += i;" >/dev/null || fail "stack local accumulation"
+echo "$stack_ir" | grep -F "result = (uint32_t)result + i;" >/dev/null || fail "stack local accumulation"
 echo "$stack_ir" | grep "sp + 0x4" >/dev/null && fail "stack address left raw"
 ok "stack locals"
 decl_ir=$("$BIN" --decompile $FIX/arm64_loops0.o sum_until 2>/dev/null)
@@ -267,7 +267,7 @@ echo "$arr_ir" | grep "goto L_" >/dev/null && fail "sum_arr has no gotos"
 echo "$arr_ir" | grep "} else {"   >/dev/null || fail "if/else across a skipped block"
 echo "$arr_ir" | grep -F "v2 = (uint32_t)a1 & 0x7ffffff8;"   >/dev/null || fail "branch block prefix kept"
 helper_pre=$("$BIN" --decompile $FIX/arm64.o helper 2>/dev/null)
-echo "$helper_pre" | grep "v1 = a0 - 1;"  >/dev/null || fail "prefix before early return"
+echo "$helper_pre" | grep -F "v1 = (uint32_t)a0 - 1;" >/dev/null || fail "prefix before early return"
 ok "if/else structuring"
 sig_zero=$("$BIN" --decompile $FIX/arm64_div.o is_zero 2>/dev/null)
 echo "$sig_zero" | grep "int32_t is_zero(int32_t a0)" >/dev/null || fail "boolean signature by usage"
@@ -280,22 +280,22 @@ echo "$sig_helper" | grep "int32_t helper(int32_t a0)"    >/dev/null || fail "lo
 ok "types by usage"
 mask_ir=$("$BIN" --decompile $FIX/arm64.o helper 2>/dev/null)
 echo "$mask_ir" | grep -F "return (v3 >> 1) * 0x55555556 + a0" >/dev/null || fail "mask implied by 32-bit arithmetic"
-echo "$mask_ir" | grep -F "v2 = (uint64_t)v1 * ((a0 - 2) & 0xffffffff);" >/dev/null || fail "64-bit product of 32-bit values"
-echo "$mask_ir" | grep "v1 = a0 - 1;"          >/dev/null || fail "mask implied by a 32-bit parameter"
+echo "$mask_ir" | grep -F "v2 = (uint64_t)v1 * ((uint32_t)a0 - 2);" >/dev/null || fail "64-bit product of 32-bit values"
+echo "$mask_ir" | grep "v1 = (uint32_t)a0 - 1;"          >/dev/null || fail "mask implied by a 32-bit parameter"
 narrow_ir=$("$BIN" --decompile $FIX/arm64_loops0.o sum_until 2>/dev/null)
-echo "$narrow_ir" | grep "for (int32_t i = 1; i <= a0; i++)" >/dev/null || fail "32-bit comparison kept"
-echo "$narrow_ir" | grep "result += i;"   >/dev/null || fail "compound store in a loop"
+echo "$narrow_ir" | grep "for (int32_t i = 1; i <= a0; i = (uint32_t)i + 1)" >/dev/null || fail "32-bit comparison kept"
+echo "$narrow_ir" | grep "result = (uint32_t)result + i;"   >/dev/null || fail "wrapping update in a loop"
 ok "mask elision by width"
 narrow_dest=$("$BIN" --decompile $FIX/arm64.o helper 2>/dev/null)
 echo "$narrow_dest" | grep "+ (v8 << 1)) - 1;" >/dev/null || fail "mask implied by the return type"
 echo "$narrow_dest" | grep "a0 = .*0xffffffff" >/dev/null && fail "return mask kept"
 ok "masks implied by the destination"
 masked_ir=$("$BIN" --decompile $FIX/arm64.o sum_arr 2>/dev/null)
-echo "$masked_ir" | grep -E "v3 = v[0-9]+ \+ v3;" >/dev/null || fail "mask bounded by its constant"
+echo "$masked_ir" | grep -E "v3 = \(uint32_t\)v[0-9]+ \+ v3;" >/dev/null || fail "mask bounded by its constant"
 echo "$masked_ir" | grep "w10 + w8) & 0xffffffff" >/dev/null && fail "bounded mask kept"
 ok "mask bounded by the constant"
 dwarf_ir=$("$BIN" --decompile $FIX/arm64_debug.elf helper 2>/dev/null)
-echo "$dwarf_ir" | grep "v1 = x - 1;"      >/dev/null || fail "narrow DWARF type read without a mask"
+echo "$dwarf_ir" | grep "v1 = (uint32_t)x - 1;"      >/dev/null || fail "narrow DWARF type read without a mask"
 echo "$dwarf_ir" | grep "(x & 0xffffffff)" >/dev/null && fail "narrow DWARF type keeps the mask"
 ok "narrow DWARF types"
 sign_ir2=$("$BIN" --decompile $FIX/pe64.exe reg_sign 2>/dev/null)
@@ -568,7 +568,7 @@ ok "closed pipe"
 
 x86_c=$("$BIN" --decompile $FIX/pe64.exe reg_add 2>/dev/null)
 echo "$x86_c" | grep "int32_t reg_add(int32_t a0, int32_t a1)" >/dev/null || fail "x86 decompile signature"
-echo "$x86_c" | grep "return a0 + a1;"         >/dev/null || fail "x86 decompile return"
+echo "$x86_c" | grep "return (uint32_t)a0 + a1;"         >/dev/null || fail "x86 decompile return"
 ok "x86 decompile"
 
 # 7) instruction signatures reject short functions and match full bodies

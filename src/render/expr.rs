@@ -572,11 +572,29 @@ fn unfitted(value: &Expr, ctx: &Ctx<'_>, bits: u32, usage: ConstantUse) -> Print
                     wrapped(negated.exact, negated.ty)
                 }
             };
-            let negated = widened(integral(rhs, ctx, bits), rhs, bits, keeps);
+            let mut negated = widened(integral(rhs, ctx, bits), rhs, bits, keeps);
+            let signed_type = negated.ty;
+            let wraps = signed_type.signed
+                && negated.signed_bits() >= signed_type.bits
+                && negated.unsigned_bits() >= signed_type.bits
+                && !(negated.exact == ALL && small < signed_type.bits);
+            if wraps {
+                let unsigned = Int {
+                    bits: signed_type.bits,
+                    signed: false,
+                };
+                let exact = converted(&negated, unsigned);
+                negated = negated.cast(unsigned.bits, false, exact);
+            }
             let exact = keeps(&negated);
             let operand = negated.within(12, false).text;
             let separator = if operand.starts_with('-') { " " } else { "" };
-            Printed::new(format!("-{separator}{operand}"), negated.ty, exact, 12)
+            let printed = Printed::new(format!("-{separator}{operand}"), negated.ty, exact, 12);
+            if wraps && signed_type.bits == 64 {
+                printed.cast(64, true, exact.min(64))
+            } else {
+                printed
+            }
         }
         Expr::Bin {
             op: BinOp::Xor,
@@ -989,9 +1007,45 @@ fn binary(
             rhs = widen(rhs, constant_right, WidenSign::Preserve);
         }
     }
+    let mut wrapping_type = None;
+    let ty = lhs.ty.common(rhs.ty);
+    if ty.signed && matches!(op, BinOp::Add | BinOp::Sub | BinOp::Mul) {
+        let signed_bits = |value: &Printed, zero: u32| {
+            let bits = value
+                .signed_bits()
+                .min(value.unsigned_bits().saturating_add(1));
+            if value.exact == ALL {
+                bits.min(zero.saturating_add(1))
+            } else {
+                bits
+            }
+        };
+        let (a, b) = (signed_bits(&lhs, zero_left), signed_bits(&rhs, zero_right));
+        let safe = if op == BinOp::Mul {
+            a.saturating_add(b) <= ty.bits
+        } else {
+            a.max(b) < ty.bits
+        };
+        if !safe {
+            // A mask on the result does not make signed overflow defined in C.
+            let unsigned = Int {
+                bits: ty.bits,
+                signed: false,
+            };
+            if matches!(left, Expr::Const(_)) {
+                let exact = converted(&rhs, unsigned);
+                rhs = rhs.cast(ty.bits, false, exact);
+            } else {
+                let exact = converted(&lhs, unsigned);
+                lhs = lhs.cast(ty.bits, false, exact);
+            }
+            // Address indexes still need negative 64-bit offsets after wrapping.
+            wrapping_type = (ty.bits == 64).then_some(ty);
+        }
+    }
     let exact = keeps(&lhs, &rhs);
     let ty = lhs.ty.common(rhs.ty);
-    Printed::new(
+    let printed = Printed::new(
         format!(
             "{} {} {}",
             lhs.within(strength, false).text,
@@ -1001,7 +1055,11 @@ fn binary(
         ty,
         exact,
         strength,
-    )
+    );
+    match wrapping_type {
+        Some(ty) => printed.cast(ty.bits, true, exact.min(ty.bits)),
+        None => printed,
+    }
 }
 
 #[derive(Clone, Copy)]
@@ -1035,7 +1093,16 @@ fn widen(printed: Printed, constant: bool, unsigned: WidenSign) -> Printed {
         }
     } else {
         let signed = printed.ty.signed && !unsigned;
-        printed.cast(64, signed, exact)
+        let range = match printed.range {
+            Range::Any => Range::Signed(printed.ty.bits),
+            known => known,
+        };
+        let widened = printed.cast(64, signed, exact);
+        if signed {
+            widened.ranging(range)
+        } else {
+            widened
+        }
     }
 }
 

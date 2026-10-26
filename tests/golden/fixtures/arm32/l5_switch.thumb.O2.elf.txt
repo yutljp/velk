@@ -35,7 +35,7 @@ int dense(int x) {
     uint32_t v5;
     int32_t v3;
 
-    uint32_t v1 = x - 10;
+    uint32_t v1 = (uint32_t)x - 10;
     if (v1 <= 15) {
         /* unsupported: ARM tbb [pc, r0] at 0x2019c */
         {

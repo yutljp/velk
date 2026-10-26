@@ -11,7 +11,7 @@
 /* velk pseudo-C: item_weight @ 0x2011a0 */
 struct item { _Alignas(8) long key; int count; short kind; uint8_t gap_0xe[0x2]; };
 int item_weight(struct item *items, int i) {
-    return items[i].kind * items[i].count;
+    return (uint32_t)items[i].kind * items[i].count;
 }
 -- signature
 int (struct item * items, int i)
@@ -30,7 +30,7 @@ fn item_weight @ 0x2011a0 (size 51)
 struct cell { _Alignas(4) int x; int y; int z; };
 void cell_set(struct cell *cells, long i, int v) {
     cells[i].x = v;
-    cells[i].z = v + 1;
+    cells[i].z = (uint32_t)v + 1;
 }
 -- signature
 void (struct cell * cells, long i, int v)

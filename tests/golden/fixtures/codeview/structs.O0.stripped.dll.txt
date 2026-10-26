@@ -15,7 +15,7 @@
 -- decompile
 /* velk pseudo-C: rect_area @ 0x180001000 */
 int32_t rect_area(int64_t a0) {
-    return (*(uint32_t *)(a0 + 0x8) - *(uint32_t *)(a0)) * (*(uint32_t *)(a0 + 0xc) - *(uint32_t *)(a0 + 0x4));
+    return (*(uint32_t *)((int64_t)((uint64_t)a0 + 0x8)) - *(uint32_t *)(a0)) * (*(uint32_t *)((int64_t)((uint64_t)a0 + 0xc)) - *(uint32_t *)((int64_t)((uint64_t)a0 + 0x4)));
 }
 -- signature
 int32_t (int64_t a0)
@@ -38,7 +38,7 @@ int32_t record_total(struct S1 *a0, int32_t a1) {
 
     result = 0;
     for (i = 0; i < a1; i++) {
-        result += a0[i].field_0x4 * (int16_t)a0[i].field_0x8;
+        result += (uint32_t)a0[i].field_0x4 * (int16_t)a0[i].field_0x8;
     }
     return result;
 }
@@ -97,9 +97,9 @@ fn point_add @ 0x1800010a0 (size 48)
 struct S1 { int32_t field_0x0; int32_t field_0x4; int32_t field_0x8; int32_t field_0xc; };
 struct S1 *big_make(struct S1 *result, int32_t a1) {
     result->field_0x0 = a1;
-    result->field_0x4 = a1 + 1;
+    result->field_0x4 = (uint32_t)a1 + 1;
     result->field_0x8 = (uint64_t)a1 << 1;
-    result->field_0xc = a1 * 3;
+    result->field_0xc = (uint32_t)a1 * 3;
     return result;
 }
 -- signature
@@ -123,7 +123,7 @@ fn big_make @ 0x1800010d0 (size 64)
 /* velk pseudo-C: big_sum @ 0x180001110 */
 struct S1 { int32_t field_0x0; int32_t field_0x4; int32_t field_0x8; int32_t field_0xc; };
 int32_t big_sum(struct S1 *a0) {
-    return a0->field_0x0 + a0->field_0x4 + a0->field_0x8 + a0->field_0xc;
+    return (uint32_t)a0->field_0x0 + a0->field_0x4 + a0->field_0x8 + a0->field_0xc;
 }
 -- signature
 int32_t (struct S1 * a0)

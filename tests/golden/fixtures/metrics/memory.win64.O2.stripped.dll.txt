@@ -44,7 +44,7 @@ void sub_180001000(uint32_t *a0, uint32_t *a1, uint32_t a2) {
             int64_t i = 0;
             do {
                 __builtin_memmove(a0 + i / 4, a1 + i / 4, 32);
-                i += 32;
+                i = (int64_t)((uint64_t)i + 32);
             } while (v7 != i);
             if (v7 == a2) {
                 return;
@@ -59,7 +59,7 @@ void sub_180001000(uint32_t *a0, uint32_t *a1, uint32_t a2) {
         v7 = a2 & 0xfffffffc;
         do {
             a0[v13 / 4] = a1[v13 / 4];
-            v13 += 4;
+            v13 = (int64_t)((uint64_t)v13 + 4);
         } while (v7 != v13);
         if (v7 == a2) {
             return;
@@ -74,8 +74,8 @@ L_1800010a6:;
         v15 = v7;
         do {
             *(uint8_t *)((uint8_t *)a0 + v15) = *(uint8_t *)((uint8_t *)a1 + v15);
-            ++v15;
-            --v16;
+            v15 = (int64_t)((uint64_t)v15 + 1);
+            v16 = (int64_t)((uint64_t)v16 - 1);
         } while (v16 != 0);
     }
     if (v7 - a2 > -4) {
@@ -86,7 +86,7 @@ L_1800010a6:;
         *(uint8_t *)((uint8_t *)a0 + v15 + 0x1) = *(uint8_t *)((uint8_t *)a1 + v15 + 0x1);
         *(uint8_t *)((uint8_t *)a0 + v15 + 0x2) = *(uint8_t *)((uint8_t *)a1 + v15 + 0x2);
         *(uint8_t *)((uint8_t *)a0 + v15 + 0x3) = *(uint8_t *)((uint8_t *)a1 + v15 + 0x3);
-        v15 += 4;
+        v15 = (int64_t)((uint64_t)v15 + 4);
     } while (a2 != v15);
 }
 -- signature
@@ -181,10 +181,10 @@ void sub_180001120(uint8_t *a0, int32_t a1, uint32_t a2) {
             int64_t i = 0;
             do {
                 *(uint64_t *)(a0 + i) = v4;
-                *(uint64_t *)(a0 + (i + 0x8)) = v4;
-                *(uint64_t *)(a0 + (i + 0x10)) = v4;
-                *(uint64_t *)(a0 + (i + 0x18)) = v4;
-                i += 32;
+                *(uint64_t *)(a0 + (int64_t)((uint64_t)i + 0x8)) = v4;
+                *(uint64_t *)(a0 + (int64_t)((uint64_t)i + 0x10)) = v4;
+                *(uint64_t *)(a0 + (int64_t)((uint64_t)i + 0x18)) = v4;
+                i = (int64_t)((uint64_t)i + 32);
             } while (v2 != i);
             if ((uint32_t)v2 == a2) {
                 return;
@@ -201,7 +201,7 @@ void sub_180001120(uint8_t *a0, int32_t a1, uint32_t a2) {
         v11 = v11 & 0xffff | v11 << 16 | (uint64_t)v11 << 32 | (uint64_t)v11 << 48;
         do {
             *(uint32_t *)(a0 + v8) = v11;
-            v8 += 4;
+            v8 = (int64_t)((uint64_t)v8 + 4);
         } while (v2 != v8);
         if ((uint32_t)v2 == a2) {
             return;
@@ -212,7 +212,7 @@ void sub_180001120(uint8_t *a0, int32_t a1, uint32_t a2) {
 L_1800011d0:
     do {
         a0[v2] = a1;
-        ++v2;
+        v2 = (int64_t)((uint64_t)v2 + 1);
     } while (a2 != v2);
 }
 -- signature
@@ -280,9 +280,9 @@ int32_t sub_1800011e0(uint8_t *a0) {
     int32_t v1 = 0;
     do {
         v2 = v1;
-        ++v1;
+        v1 = (uint32_t)v1 + 1;
     } while (a0[v2] != 0);
-    return v1 - 1;
+    return (uint32_t)v1 - 1;
 }
 -- signature
 int32_t (uint8_t * a0)

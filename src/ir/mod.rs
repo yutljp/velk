@@ -1,6 +1,8 @@
 mod convention;
 mod print;
 mod registers;
+#[cfg(test)]
+pub(crate) mod smt;
 
 pub use calls::CallAbi;
 pub use convention::{CallKind, Convention};
@@ -481,6 +483,12 @@ impl Expr {
             return Expr::Const(value);
         }
         if matches!(op, BinOp::Shl | BinOp::Shr | BinOp::Sar) && matches!(rhs, Expr::Const(0)) {
+            if op == BinOp::Sar {
+                let bits = semantics::operand_width(&lhs, &rhs);
+                if bits < 64 {
+                    return Expr::bin(BinOp::And, lhs, Expr::Const(semantics::mask(bits)));
+                }
+            }
             return lhs;
         }
         if matches!(op, BinOp::Add | BinOp::Sub | BinOp::Or | BinOp::Xor)
@@ -492,7 +500,11 @@ impl Expr {
             return rhs;
         }
         // As `sbb rdx, rdx` starts, whatever rdx holds.
-        if matches!(op, BinOp::Sub | BinOp::Xor) && lhs == rhs {
+        if matches!(op, BinOp::Sub | BinOp::Xor)
+            && lhs == rhs
+            && !crate::passes::copies::reads_memory(&lhs)
+            && !crate::passes::read_once::faults(&lhs)
+        {
             return Expr::Const(0);
         }
         if matches!(op, BinOp::And | BinOp::Or) && lhs == rhs {

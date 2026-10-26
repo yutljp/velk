@@ -12,7 +12,7 @@ int tail_one(int);
 -- decompile
 /* velk pseudo-C: tail_one @ 0x21017c */
 int tail_one(int x) {
-    return x * 3 + 1;
+    return (uint32_t)x * 3 + 1;
 }
 -- signature
 int (int x)
@@ -29,7 +29,7 @@ fn tail_one @ 0x21017c (size 28)
 -- decompile
 /* velk pseudo-C: tail_two @ 0x210198 */
 int tail_two(int x) {
-    return tail_one(x + 2);
+    return tail_one((uint32_t)x + 2);
 }
 -- signature
 int (int x)
@@ -47,7 +47,7 @@ fn tail_two @ 0x210198 (size 8)
 -- decompile
 /* velk pseudo-C: tail_three @ 0x2101a0 */
 int tail_three(int x) {
-    return x - 7;
+    return (uint32_t)x - 7;
 }
 -- signature
 int (int x)

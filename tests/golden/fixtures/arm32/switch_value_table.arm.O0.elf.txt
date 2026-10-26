@@ -28,7 +28,7 @@ int dispatch(int x) {
     v8 = sp;
     sp = sp - 0xc;
     local_2 = x;
-    uint32_t v2 = x - 10;
+    uint32_t v2 = (uint32_t)x - 10;
     *(uint32_t *)(sp) = v2;
     if (v2 <= 4) {
         int32_t v3 = *(uint32_t *)(sp);

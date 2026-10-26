@@ -8,19 +8,19 @@
 -- decompile
 /* velk pseudo-C: sub_210154 @ 0x210154 */
 int32_t sub_210154(int32_t a0) {
-    if (a0 - 10 == 0) {
+    if ((uint32_t)a0 - 10 == 0) {
         return 1;
     }
-    if (a0 - 11 == 0) {
+    if ((uint32_t)a0 - 11 == 0) {
         return 3;
     }
-    if (a0 - 12 == 0) {
+    if ((uint32_t)a0 - 12 == 0) {
         return 7;
     }
-    if (a0 - 13 == 0) {
+    if ((uint32_t)a0 - 13 == 0) {
         return 9;
     }
-    if (a0 - 14 == 0) {
+    if ((uint32_t)a0 - 14 == 0) {
         return 11;
     }
     return 0;

@@ -48,7 +48,7 @@ uint64_t sub_210558();
 int32_t sub_210334(int32_t a0) {
     uint64_t local_0; /* [sp-20] */
 
-    local_0 = (a0 - 10) & 0xffffffff;
+    local_0 = (uint32_t)a0 - 10;
     if (local_0 <= 15) {
         switch (local_0 + 10) {
         case 10:
@@ -484,13 +484,13 @@ fn <unnamed> @ 0x210558 (size 24)
 -- decompile
 /* velk pseudo-C: sub_210570 @ 0x210570 */
 int32_t sub_210570(int32_t a0) {
-    if (a0 - 1 == 0) {
+    if ((uint32_t)a0 - 1 == 0) {
         return 100;
     }
-    if (a0 - 50 == 0) {
+    if ((uint32_t)a0 - 50 == 0) {
         return 7;
     }
-    if (a0 - 300 == 0) {
+    if ((uint32_t)a0 - 300 == 0) {
         return 300;
     }
     return -1;

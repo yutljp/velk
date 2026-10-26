@@ -46,7 +46,7 @@ uint64_t sub_21050c();
 /* ref: 0x200158 .rodata */
 /* ref: 0x220554 .bss */
 int32_t sub_210304(int32_t a0) {
-    if ((uint32_t)(a0 - 10) > 15) {
+    if ((uint32_t)a0 - 10 > 15) {
         g_220554 = 0;
         return g_220554;
     }

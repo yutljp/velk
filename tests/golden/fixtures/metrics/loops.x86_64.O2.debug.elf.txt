@@ -55,7 +55,7 @@ int sum_until(int limit) {
     if (limit <= 0) {
         return 0;
     }
-    return ((uint64_t)((limit - 2) & 0xffffffff) * ((limit - 1) & 0xffffffff) >> 1) + limit * 2 - 1;
+    return ((uint64_t)((uint32_t)limit - 2) * ((uint32_t)limit - 1) >> 1) + (uint32_t)limit * 2 - 1;
 }
 -- signature
 int (int limit)
@@ -88,8 +88,8 @@ int sum_till_neg(int *p, int n) {
             break;
         }
         v5 = p[v1];
-        v3 = v5 + v4;
-        ++v1;
+        v3 = (uint32_t)v5 + v4;
+        v1 = (int64_t)((uint64_t)v1 + 1);
     } while (v5 >= 0);
     return v4;
 }
@@ -124,12 +124,12 @@ int sum_until_zero(int *p, int n) {
         return 0;
     }
     int32_t v3 = 0;
-    for (int64_t i = 0; i < (uint32_t)n; i++) {
+    for (int64_t i = 0; i < (uint32_t)n; i = (int64_t)((uint64_t)i + 1)) {
         int32_t v4 = p[i];
         if (v4 == 0) {
             break;
         }
-        v3 += (v4 <= 0 ? 0 : v4);
+        v3 = (uint32_t)v3 + (v4 <= 0 ? 0 : v4);
     }
     return v3;
 }

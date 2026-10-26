@@ -17,7 +17,7 @@
 -- decompile
 /* velk pseudo-C: sub_180001000 @ 0x180001000 */
 int32_t sub_180001000(int32_t a0, int32_t a1) {
-    return a0 + a1;
+    return (uint32_t)a0 + a1;
 }
 -- signature
 int32_t (int32_t a0, int32_t a1)
@@ -114,8 +114,8 @@ int32_t sub_180001050(int32_t a0) {
         return 0;
     }
     do {
-        ++v1;
-        v2 = a0 - 1 & a0;
+        v1 = (uint32_t)v1 + 1;
+        v2 = (uint32_t)a0 - 1 & a0;
         a0 = v2;
     } while (v2 != 0);
     return v1;
@@ -179,7 +179,7 @@ fn <unnamed> @ 0x180001080 (size 16)
 -- decompile
 /* velk pseudo-C: sub_180001090 @ 0x180001090 */
 int32_t sub_180001090(int32_t a0) {
-    return (-a0 < 0 ? a0 : -a0);
+    return ((int32_t)-(uint32_t)a0 < 0 ? a0 : -(uint32_t)a0);
 }
 -- signature
 int32_t (int32_t a0)

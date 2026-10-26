@@ -9,7 +9,7 @@
 -- decompile
 /* velk pseudo-C: alt_sum3 @ 0x200ec */
 int alt_sum3(int a, int b, int c) {
-    return a + b + c;
+    return (uint32_t)a + b + c;
 }
 -- signature
 int (int a, int b, int c)
@@ -31,7 +31,7 @@ int alt_helper(int x) {
 
     result = 0;
     for (i = 0; i < x; i++) {
-        result += i * i;
+        result += (uint32_t)i * i;
     }
     return result;
 }

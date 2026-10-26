@@ -46,7 +46,7 @@ uint64_t c9();
 /* ref: 0x200158 .rodata */
 /* ref: 0x220554 .bss */
 int dense(int x) {
-    if ((uint32_t)(x - 10) > 15) {
+    if ((uint32_t)x - 10 > 15) {
         g_sink = 0;
         return g_sink;
     }

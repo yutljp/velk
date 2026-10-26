@@ -46,7 +46,7 @@ uint64_t c9();
 /* ref: 0x180002000 .rdata */
 /* ref: 0x180003000 .data */
 int dense(int x) {
-    uint64_t v1 = (x - 10) & 0xffffffff;
+    uint64_t v1 = (uint32_t)x - 10;
     if (v1 > 15) {
         g_sink = 0;
         return g_sink;

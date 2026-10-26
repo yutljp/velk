@@ -12,7 +12,7 @@ uint64_t sub_2011a0();
 -- decompile
 /* velk pseudo-C: sub_2011a0 @ 0x2011a0 */
 int32_t sub_2011a0(int32_t a0) {
-    return a0 * 3 + 1;
+    return (uint32_t)a0 * 3 + 1;
 }
 -- signature
 int32_t (int32_t a0)
@@ -29,7 +29,7 @@ fn <unnamed> @ 0x2011a0 (size 22)
 -- decompile
 /* velk pseudo-C: sub_2011c0 @ 0x2011c0 */
 int32_t sub_2011c0(int32_t a0) {
-    return sub_2011a0((a0 + 2) & 0xffffffff);
+    return sub_2011a0((uint32_t)a0 + 2);
 }
 -- signature
 int32_t (int32_t a0)
@@ -47,7 +47,7 @@ fn <unnamed> @ 0x2011c0 (size 28)
 -- decompile
 /* velk pseudo-C: sub_2011e0 @ 0x2011e0 */
 int32_t sub_2011e0(int32_t a0) {
-    return a0 - 7;
+    return (uint32_t)a0 - 7;
 }
 -- signature
 int32_t (int32_t a0)

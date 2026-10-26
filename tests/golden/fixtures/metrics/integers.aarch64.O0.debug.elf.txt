@@ -72,7 +72,7 @@ _Bool in_range(int x, int lo, int hi) {
     if (x < lo) {
         return v3;
     }
-    return x - hi + hi <= hi;
+    return (int32_t)((uint32_t)x - hi + hi) <= hi;
 }
 -- signature
 _Bool (int x, int lo, int hi)
@@ -117,7 +117,7 @@ int popcount(unsigned int x) {
     int32_t result = 0;
     while (x != 0) {
         x &= x - 1;
-        ++result;
+        result = (uint32_t)result + 1;
     }
     return result;
 }
@@ -214,7 +214,7 @@ long labs_value(long x) {
     if ((x & 0x8000000000000000) == 0) {
         return x;
     }
-    return -x;
+    return (int64_t)-(uint64_t)x;
 }
 -- signature
 long (long x)

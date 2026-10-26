@@ -75,7 +75,7 @@ fn <unnamed> @ 0x2102c4 (size 8)
 -- decompile
 /* velk pseudo-C: sub_2102cc @ 0x2102cc */
 int32_t sub_2102cc(int32_t a0) {
-    return a0 * a0;
+    return (uint32_t)a0 * a0;
 }
 -- signature
 int32_t (int32_t a0)
@@ -130,7 +130,7 @@ fn <unnamed> @ 0x2102f0 (size 44)
 -- decompile
 /* velk pseudo-C: sub_21031c @ 0x21031c */
 int32_t sub_21031c(void *a0, int32_t a1) {
-    return ((int32_t)(((uint64_t (*)())a0)(a1 & 0xffffffff))) + 1;
+    return (uint32_t)((int32_t)(((uint64_t (*)())a0)(a1 & 0xffffffff))) + 1;
 }
 -- signature
 int32_t (void * a0, int32_t a1)
@@ -156,17 +156,17 @@ int32_t sub_21033c(int32_t a0) {
     if (a0 >= 2) {
         if ((uint32_t)a0 >= 9) {
             struct velk_vector vector = { .low.u64 = 0x100000001, .high.u64 = 0x100000001 };
-            int32_t v5 = a0 - 1;
+            int32_t v5 = (uint32_t)a0 - 1;
             int32_t v6 = v5 & 0xfffffff8;
-            struct velk_vector vector_2 = { .low.u64 = add_lanes32((a0 & 0xffffffff) * 0x100000001, g_200190), .high.u64 = add_lanes32((a0 & 0xffffffff) * 0x100000001, g_200198) };
+            struct velk_vector vector_2 = { .low.u64 = add_lanes32((int64_t)((uint64_t)(a0 & 0xffffffff) * 0x100000001), g_200190), .high.u64 = add_lanes32((int64_t)((uint64_t)(a0 & 0xffffffff) * 0x100000001), g_200198) };
             struct velk_vector vector_3 = { .low.u64 = 0x100000001, .high.u64 = 0x100000001 };
-            v1 = a0 - v6;
+            v1 = (uint32_t)a0 - v6;
             int32_t v11 = v6;
             do {
                 struct velk_vector vector_4 = { .low.u64 = add_lanes32(vector_2.low.u64, 0xfffffffcfffffffc), .high.u64 = add_lanes32(vector_2.high.u64, 0xfffffffcfffffffc) };
                 vector_3.low.u64 = mul_lanes32(vector_2.low.u64, vector_3.low.u64);
                 vector_3.high.u64 = mul_lanes32(vector_2.high.u64, vector_3.high.u64);
-                v11 -= 8;
+                v11 = (uint32_t)v11 - 8;
                 vector_2.low.u64 = add_lanes32(vector_2.low.u64, 0xfffffff8fffffff8);
                 vector_2.high.u64 = add_lanes32(vector_2.high.u64, 0xfffffff8fffffff8);
                 vector.low.u64 = mul_lanes32(vector_4.low.u64, vector.low.u64);
@@ -250,7 +250,7 @@ int32_t sub_2103dc(int32_t a0) {
     if (a0 == 0) {
         return 0;
     }
-    return sub_2103ec((a0 - 1) & 0xffffffff);
+    return sub_2103ec((uint32_t)a0 - 1);
 }
 -- signature
 int32_t (int32_t a0)
@@ -275,7 +275,7 @@ int32_t sub_2103ec(int32_t a0) {
     if (a0 == 0) {
         return 1;
     }
-    return sub_2103dc((a0 - 1) & 0xffffffff);
+    return sub_2103dc((uint32_t)a0 - 1);
 }
 -- signature
 int32_t (int32_t a0)
@@ -297,7 +297,7 @@ fn <unnamed> @ 0x2103ec (size 20)
 -- decompile
 /* velk pseudo-C: sub_210400 @ 0x210400 */
 int64_t sub_210400(int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5, int64_t a6, int64_t a7, int64_t a8) {
-    return a1 + a0 + (a2 + a3) + (a4 + a5 + a6) + (a7 + a8);
+    return (int64_t)((uint64_t)(int64_t)((uint64_t)(int64_t)((uint64_t)a1 + a0) + (int64_t)((uint64_t)a2 + a3)) + (int64_t)((uint64_t)(int64_t)((uint64_t)a4 + a5) + a6)) + (a7 + a8);
 }
 -- signature
 int64_t (int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5, int64_t a6, int64_t a7)
@@ -340,8 +340,8 @@ int32_t sub_210468(int32_t a0, ...) {
     }
     int32_t v3 = 0;
     while (true) {
-        --a0;
-        v3 = va_arg(varargs, int) + v3;
+        a0 = (uint32_t)a0 - 1;
+        v3 = (uint32_t)va_arg(varargs, int) + v3;
         if (a0 == 0) break;
     }
     { uint64_t variadic_result = v3; va_end(varargs); return variadic_result; }

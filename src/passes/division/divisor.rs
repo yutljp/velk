@@ -16,6 +16,9 @@ pub(crate) fn magic_matches(magic: u64, divisor: u64, domain_bits: u64, signed: 
     })
 }
 
+#[cfg(test)]
+mod smt_tests;
+
 /// Divisor for the signed `(x * M) >> S` (ARM64 `smulh` or x86-64 `imul`),
 /// exact over all `x` in `[-2^(n-1), 2^(n-1))`.
 pub(crate) fn magic_divisor_signed64(

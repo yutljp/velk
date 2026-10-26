@@ -25,7 +25,7 @@ int matrix_trace(int *m, int n) {
     for (i = 0; i < n; i++) {
         for (j = 0; j < n; j++) {
             if (i == j) {
-                result += *(uint32_t *)(((uint32_t)(uintptr_t)m + ((uint64_t)(j + i * n) << 2)) & 0xffffffff);
+                result += *(uint32_t *)((uint32_t)(uintptr_t)m + ((j + (uint32_t)i * n) << 2));
             }
         }
     }
@@ -376,10 +376,10 @@ int find_pair(int *p, int n, int target) {
     int32_t i; /* [sp-14] */
 
     for (i = 0; i < n; i++) {
-        for (int32_t j = i + 1; j < n; j++) {
+        for (int32_t j = (uint32_t)i + 1; j < n; j = (uint32_t)j + 1) {
             int32_t v2 = (uint32_t)(uintptr_t)p;
             if (*(uint32_t *)((v2 + ((uint64_t)i << 2)) & 0xffffffff) + *(uint32_t *)((v2 + ((uint64_t)j << 2)) & 0xffffffff) == target) {
-                return j + i * n;
+                return j + (uint32_t)i * n;
             }
         }
     }

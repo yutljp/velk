@@ -46,7 +46,7 @@ fn twice @ 0x20140 (size 8)
 -- decompile
 /* velk pseudo-C: square @ 0x20148 */
 int square(int x) {
-    return x * x;
+    return (uint32_t)x * x;
 }
 -- signature
 int (int x)
@@ -95,9 +95,9 @@ int apply_table(unsigned int index, int x) {
 
     /* unsupported: ARM umull r2, r3, r0, r2 at 0x20180 */
     int32_t v3 = v1 >> 1;
-    int32_t v4 = v3 * 3;
+    int32_t v4 = (uint32_t)v3 * 3;
     int32_t v5 = index - v4;
-    if (v5 + v4 != v4 && v5 == 1) {
+    if ((uint32_t)v5 + v4 != v4 && v5 == 1) {
         return ((int32_t)(square((uint32_t)x)));
     }
     return ((int32_t)(twice((uint32_t)x)));
@@ -135,7 +135,7 @@ fn apply_table @ 0x20178 (size 52)
 -- decompile
 /* velk pseudo-C: apply_pointer @ 0x201ac */
 int apply_pointer(void *f, int x) {
-    return ((int32_t)(((uint32_t (*)())(uint32_t)(uintptr_t)f)((uint32_t)x))) + 1;
+    return (uint32_t)((int32_t)(((uint32_t (*)())(uint32_t)(uintptr_t)f)((uint32_t)x))) + 1;
 }
 -- signature
 int (void * f, int x)
@@ -165,7 +165,7 @@ int factorial(int n) {
         return v2;
     }
     /* unsupported: ARM adr r1, pc, 0x64 at 0x201e4 */
-    int32_t v3 = n - 1;
+    int32_t v3 = (uint32_t)n - 1;
     /* unsupported: undecodable ARM instruction at 0x201ec: incomplete decoder */
 }
 -- signature
@@ -202,7 +202,7 @@ int is_odd(int n) {
         n = 0;
     }
     if (v1 != v2) {
-        return ((int32_t)(is_even((n - 1) & 0xffffffff)));
+        return ((int32_t)(is_even((uint32_t)n - 1)));
     }
     return n;
 }
@@ -238,7 +238,7 @@ int is_even(int n) {
         n = 1;
     }
     if (v1 != v2) {
-        return ((int32_t)(is_odd((n - 1) & 0xffffffff)));
+        return ((int32_t)(is_odd((uint32_t)n - 1)));
     }
     return n;
 }
@@ -275,10 +275,10 @@ int32_t sum9(int32_t a, int32_t b, int32_t c, int32_t d, int32_t e, int32_t f, i
 
     local_0 = v1;
     struct S1 *v3 = (struct S1 *)((sp - 16 + 16) & 0xffffffff);
-    int32_t v4 = b + a + c + d;
-    int32_t v9 = v4 + v3->field_0x0;
-    int32_t v10 = v9 + v3->field_0x4;
-    int32_t v11 = v10 + v3->field_0x8;
+    int32_t v4 = (uint32_t)b + a + c + d;
+    int32_t v9 = (uint32_t)v4 + v3->field_0x0;
+    int32_t v10 = (uint32_t)v9 + v3->field_0x4;
+    int32_t v11 = (uint32_t)v10 + v3->field_0x8;
     int32_t v12 = v11 + h;
     return v12 + i;
 }

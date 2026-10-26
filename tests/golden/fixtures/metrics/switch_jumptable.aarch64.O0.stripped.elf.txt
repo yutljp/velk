@@ -40,43 +40,43 @@ int32_t sub_21018c(int32_t a0) {
         }
         return g_2204fc;
     }
-    if (a0 - 3 == 0) {
+    if ((uint32_t)a0 - 3 == 0) {
         for (i_4 = 0; i_4 < 4; i_4++) {
             g_2204fc += i_4;
         }
         return g_2204fc;
     }
-    if (a0 - 4 == 0) {
+    if ((uint32_t)a0 - 4 == 0) {
         for (i_5 = 0; i_5 < 5; i_5++) {
             g_2204fc += i_5;
         }
         return g_2204fc;
     }
-    if (a0 - 5 == 0) {
+    if ((uint32_t)a0 - 5 == 0) {
         for (i_6 = 0; i_6 < 6; i_6++) {
             g_2204fc += i_6;
         }
         return g_2204fc;
     }
-    if (a0 - 6 == 0) {
+    if ((uint32_t)a0 - 6 == 0) {
         for (i_7 = 0; i_7 < 7; i_7++) {
             g_2204fc += i_7;
         }
         return g_2204fc;
     }
-    if (a0 - 7 == 0) {
+    if ((uint32_t)a0 - 7 == 0) {
         for (i_8 = 0; i_8 < 8; i_8++) {
             g_2204fc += i_8;
         }
         return g_2204fc;
     }
-    if (a0 - 8 == 0) {
+    if ((uint32_t)a0 - 8 == 0) {
         for (i_9 = 0; i_9 < 9; i_9++) {
             g_2204fc += i_9;
         }
         return g_2204fc;
     }
-    if (a0 - 9 == 0) {
+    if ((uint32_t)a0 - 9 == 0) {
         for (i_10 = 0; i_10 < 10; i_10++) {
             g_2204fc += i_10;
         }

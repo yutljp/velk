@@ -111,7 +111,7 @@ int popcount(unsigned int x) {
         return 0;
     }
     do {
-        ++v1;
+        v1 = (uint32_t)v1 + 1;
         v2 = x - 1 & x;
         x = v2;
     } while (v2 != 0);
@@ -176,7 +176,7 @@ fn min3 @ 0x201290 (size 13)
 -- decompile
 /* velk pseudo-C: labs_value @ 0x2012a0 */
 long labs_value(long x) {
-    return (-x < 0 ? x : -x);
+    return ((int64_t)-(uint64_t)x < 0 ? x : (int64_t)-(uint64_t)x);
 }
 -- signature
 long (long x)

@@ -9,7 +9,7 @@
 -- decompile
 /* velk pseudo-C: alt_sum3 @ 0x200ec */
 int alt_sum3(int a, int b, int c) {
-    return b + a + c;
+    return (uint32_t)b + a + c;
 }
 -- signature
 int (int a, int b, int c)
@@ -36,17 +36,17 @@ int alt_helper(int x) {
         x = 0;
     }
     if (v1 >= v2) {
-        int32_t v3 = x - 2;
-        int32_t v4 = x - 1;
-        int32_t v5 = x - 3;
+        int32_t v3 = (uint32_t)x - 2;
+        int32_t v4 = (uint32_t)x - 1;
+        int32_t v5 = (uint32_t)x - 3;
         /* unsupported: ARM umull r1, ip, r2, r1 at 0x20110 */
         uint32_t v8 = v6 * v7;
         int32_t v9 = x + (v8 >> 1) * 0x55555556;
         int32_t v10 = (v14 & 0x1) >> 1;
         /* unsupported: ARM mov r1, r1, rrx at 0x20130 */
         int32_t v11 = v6 * 3;
-        int32_t v12 = x + v11;
-        int32_t v13 = v12 - 1;
+        int32_t v12 = (uint32_t)x + v11;
+        int32_t v13 = (uint32_t)v12 - 1;
         return v13;
     }
     return x;

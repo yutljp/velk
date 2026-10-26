@@ -163,14 +163,14 @@ int32_t h3(int32_t a0, int32_t a1, int32_t a2, int32_t a3) {
     sp = sp - 0x8;
     *(uint32_t *)(sp) = a0;
     *(uint32_t *)(sp + 0x4) = a1;
-    int32_t v1 = a0 + a1;
+    int32_t v1 = (uint32_t)a0 + a1;
     /* unsupported (2 steps): ARM adc r3, r2, 0x0 at 0x201ec, ARM umull ip, lr, r3, r2 at 0x201f8 */
     int32_t v4 = a3 - ((v3 & 0xfffffffe) + (v3 >> 1));
-    int32_t v5 = a0 - v4;
+    int32_t v5 = (uint32_t)a0 - v4;
     /* unsupported: ARM umull r0, lr, r3, r2 at 0x2020c */
     int32_t v8 = v3 + a3 * 0xaaaaaaaa;
     /* unsupported: ARM sbc r1, r1, 0x0 at 0x2021c */
-    int32_t v9 = a3 + a1 * a2;
+    int32_t v9 = a3 + (uint32_t)a1 * a2;
     sp = v2;
     v2 = *(uint32_t *)(sp);
     sp = sp + 0x8;
@@ -231,7 +231,7 @@ int32_t h10(int32_t a0, int32_t a1) {
     int32_t v4 = (v3 | (uint64_t)a1 << 31) + ((uint32_t)a1 >> 1);
     /* unsupported (2 steps): ARM adc r1, r1, 0x0 at 0x20254, ARM umull r3, lr, r1, r2 at 0x20260 */
     int32_t v7 = a1 - ((v6 & 0xfffffffc) + (v6 >> 2));
-    int32_t v8 = a0 - v7;
+    int32_t v8 = (uint32_t)a0 - v7;
     /* unsupported: ARM umull r0, lr, r1, r2 at 0x20274 */
     int32_t v11 = v6 + a1 * 0xcccccccc;
     /* unsupported: ARM rsc r1, r1, ip, lsr 1 at 0x20288 */
@@ -387,7 +387,7 @@ int umod3x(unsigned int x) {
     *(uint32_t *)(sp - 0x4) = x;
     /* unsupported: ARM umull r2, r1, r0, r1 at 0x20338 */
     int32_t v4 = v1 >> 1;
-    int32_t v5 = v4 * 3;
+    int32_t v5 = (uint32_t)v4 * 3;
     int32_t v6 = x - v5;
     sp = v2;
     v2 = *(uint32_t *)(sp);

@@ -54,7 +54,7 @@ int32_t mixed_sign(int32_t a0, int32_t a1) {
     /* unsupported: AAPCS32 multiword, floating-point or aggregate declaration */
     int32_t t1 = a0 >> 31;
     int32_t v1 = t1;
-    int32_t v2 = a0 - a1;
+    int32_t v2 = (uint32_t)a0 - a1;
     /* unsupported: ARM sbc r1, r2, 0x0 at 0x20134 */
     return a0;
 }
@@ -142,29 +142,29 @@ int popcount(unsigned int x) {
         int32_t v3 = x;
         int32_t v4 = 1;
         while (true) {
-            int32_t v5 = v3 - 1;
+            int32_t v5 = (uint32_t)v3 - 1;
             int32_t v7 = v3 & v5;
             if ((v3 & v5) == 0) break;
-            int32_t v18 = v7 - 2;
+            int32_t v18 = (uint32_t)v7 - 2;
             int32_t v19 = v7 & v18;
             if ((v7 & v18) == 0) {
-                return v4 + 1;
+                return (uint32_t)v4 + 1;
             }
-            int32_t v20 = v19 - 2;
+            int32_t v20 = (uint32_t)v19 - 2;
             int32_t v21 = v19 & v20;
             int32_t v22 = v19 & v20;
             if (v22 == 0) {
-                v4 += 2;
+                v4 = (uint32_t)v4 + 2;
             }
             if (v22 == 0) {
                 return v4;
             }
-            int32_t v23 = v21 - 2;
+            int32_t v23 = (uint32_t)v21 - 2;
             v3 = v21 & v23;
-            v4 += 4;
+            v4 = (uint32_t)v4 + 4;
             int32_t v24 = v21 & v23;
             if (v24 == 0) {
-                --v4;
+                v4 = (uint32_t)v4 - 1;
             }
             if (v24 == 0) {
                 return v4;
@@ -290,7 +290,7 @@ int32_t labs_value(int32_t x) {
     if (x >= 0) {
         return x;
     }
-    x = -x;
+    x = -(uint32_t)x;
     return x;
 }
 -- signature

@@ -16,7 +16,7 @@ extern uint32_t banner; /* address: 0x3019c */
 int point_dot(struct point *a, struct point *b) {
     int32_t v1 = (uint32_t)(uintptr_t)a;
     int32_t v2 = (uint32_t)(uintptr_t)b;
-    return *(uint32_t *)((v2 + 4) & 0xffffffff) * *(uint32_t *)((v1 + 4) & 0xffffffff) + *(uint32_t *)((uint32_t)v1) * *(uint32_t *)((uint32_t)v2);
+    return *(uint32_t *)((uint32_t)v2 + 4) * *(uint32_t *)((uint32_t)v1 + 4) + *(uint32_t *)((uint32_t)v1) * *(uint32_t *)((uint32_t)v2);
 }
 -- signature
 int (struct point * a, struct point * b)

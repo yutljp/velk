@@ -185,7 +185,7 @@ fn <unnamed> @ 0x210474 (size 28)
 -- decompile
 /* velk pseudo-C: sub_210490 @ 0x210490 */
 int32_t sub_210490(int32_t a0) {
-    return a0 - a0 / 3 * 3;
+    return a0 - (uint32_t)(a0 / 3) * 3;
 }
 -- signature
 int32_t (int32_t a0)
@@ -236,7 +236,7 @@ fn <unnamed> @ 0x2104d8 (size 36)
 -- decompile
 /* velk pseudo-C: sub_2104fc @ 0x2104fc */
 int32_t sub_2104fc(int32_t a0) {
-    return a0 - a0 / 10 * 10;
+    return a0 - (uint32_t)(a0 / 10) * 10;
 }
 -- signature
 int32_t (int32_t a0)
@@ -253,7 +253,7 @@ fn <unnamed> @ 0x2104fc (size 36)
 -- decompile
 /* velk pseudo-C: sub_210520 @ 0x210520 */
 int64_t sub_210520(int64_t a0) {
-    return a0 - a0 / 10 * 10;
+    return (int64_t)((uint64_t)a0 - (int64_t)((uint64_t)(a0 / 10) * 10));
 }
 -- signature
 int64_t (int64_t a0)
@@ -287,7 +287,7 @@ fn <unnamed> @ 0x210544 (size 36)
 -- decompile
 /* velk pseudo-C: sub_210568 @ 0x210568 */
 int64_t sub_210568(int64_t a0) {
-    return a0 - a0 / 16 * 16;
+    return (int64_t)((uint64_t)a0 - (int64_t)((uint64_t)(a0 / 16) * 16));
 }
 -- signature
 int64_t (int64_t a0)
@@ -304,7 +304,7 @@ fn <unnamed> @ 0x210568 (size 36)
 -- decompile
 /* velk pseudo-C: sub_21058c @ 0x21058c */
 int32_t sub_21058c(int32_t a0) {
-    return a0 - a0 / 4 * 4;
+    return a0 - (uint32_t)(a0 / 4) * 4;
 }
 -- signature
 int32_t (int32_t a0)
@@ -321,7 +321,7 @@ fn <unnamed> @ 0x21058c (size 36)
 -- decompile
 /* velk pseudo-C: sub_2105b0 @ 0x2105b0 */
 int32_t sub_2105b0(int32_t a0) {
-    return -a0;
+    return -(uint32_t)a0;
 }
 -- signature
 int32_t (int32_t a0)
@@ -389,7 +389,7 @@ fn <unnamed> @ 0x210604 (size 28)
 -- decompile
 /* velk pseudo-C: sub_210620 @ 0x210620 */
 int64_t sub_210620(int64_t a0) {
-    return -a0;
+    return (int64_t)-(uint64_t)a0;
 }
 -- signature
 int64_t (int64_t a0)
@@ -406,7 +406,7 @@ fn <unnamed> @ 0x210620 (size 28)
 -- decompile
 /* velk pseudo-C: sub_21063c @ 0x21063c */
 int64_t sub_21063c(int64_t a0) {
-    return a0 - a0 / 3 * 3;
+    return (int64_t)((uint64_t)a0 - (int64_t)((uint64_t)(a0 / 3) * 3));
 }
 -- signature
 int64_t (int64_t a0)

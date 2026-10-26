@@ -53,7 +53,10 @@ fn branch_folding_preserves_unsigned_arithmetic_from_signed_parameters() {
     ir.value_types.insert(temp, CType::U32);
     velk::passes::read_once::fold_values_read_once(&mut ir);
     let code = velk::render::render(&ir, &[], &Default::default(), &[]);
-    assert!(code.contains("& 0xffffffff"), "{code}");
+    assert!(
+        code.contains("& 0xffffffff") || code.contains("uint32_t v1 = input;"),
+        "{code}"
+    );
     check_candidates(
         "signed-parameter-copy",
         vec![printed_candidate(
@@ -289,7 +292,11 @@ fn stack_local_copies_use_the_slot_only_while_values_agree() {
                     });
                     let code = velk::render::render(&ir, &[], &Default::default(), &[]);
                     assert_eq!(code.contains("sample"), named, "{code}");
-                    assert_eq!(code.contains(" v1"), overwrite, "{code}");
+                    assert_eq!(
+                        code.contains(" v1"),
+                        overwrite || (width == 32 && !named),
+                        "{code}"
+                    );
                     candidates.push(printed_candidate(
                         ir,
                         [0, 1, 17, 0x7fff_ffff, 0x8000_0000, 0xffff_ffff]

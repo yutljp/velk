@@ -8,19 +8,19 @@
 -- decompile
 /* velk pseudo-C: dispatch @ 0x210154 */
 int dispatch(int x) {
-    if (x - 10 == 0) {
+    if ((uint32_t)x - 10 == 0) {
         return 1;
     }
-    if (x - 11 == 0) {
+    if ((uint32_t)x - 11 == 0) {
         return 3;
     }
-    if (x - 12 == 0) {
+    if ((uint32_t)x - 12 == 0) {
         return 7;
     }
-    if (x - 13 == 0) {
+    if ((uint32_t)x - 13 == 0) {
         return 9;
     }
-    if (x - 14 == 0) {
+    if ((uint32_t)x - 14 == 0) {
         return 11;
     }
     return 0;

@@ -33,7 +33,7 @@ fn add_bias @ 0x12f0 (size 14)
 -- decompile
 /* velk pseudo-C: imported @ 0x1300 */
 int imported(uint32_t a0) {
-    return abs_plt(a0) + 3;
+    return (uint32_t)abs_plt(a0) + 3;
 }
 -- signature
 int ()

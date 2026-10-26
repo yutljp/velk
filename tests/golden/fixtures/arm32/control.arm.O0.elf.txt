@@ -28,7 +28,7 @@ int matrix_trace(int *m, int n) {
     for (i = 0; i < n; i++) {
         for (j = 0; j < n; j++) {
             if (i == j) {
-                result += *(uint32_t *)((local_0 + ((uint64_t)(j + i * n) << 2)) & 0xffffffff);
+                result += *(uint32_t *)(local_0 + ((j + (uint32_t)i * n) << 2));
             }
         }
     }
@@ -285,7 +285,7 @@ int short_circuit(int *p, int n) {
             local_2 = 1;
             if (v1 != 1) {
                 int32_t v4 = 0;
-                if (*(uint32_t *)((local_0 + ((uint64_t)(n - 1) << 2)) & 0xffffffff) == 1) {
+                if (*(uint32_t *)(local_0 + (((uint32_t)n - 1) << 2)) == 1) {
                     v4 = 1;
                 }
                 local_2 = v4;
@@ -396,10 +396,10 @@ int find_pair(int *p, int n, int target) {
 
     local_0 = (uint32_t)(uintptr_t)p;
     for (i = 0; i < n; i++) {
-        for (j = i + 1; j < n; j++) {
+        for (j = (uint32_t)i + 1; j < n; j++) {
             int32_t v1 = local_0;
             if (*(uint32_t *)((v1 + ((uint64_t)i << 2)) & 0xffffffff) + *(uint32_t *)((v1 + ((uint64_t)j << 2)) & 0xffffffff) == target) {
-                return i * n + j;
+                return (uint32_t)i * n + j;
             }
         }
     }

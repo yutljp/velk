@@ -31,7 +31,7 @@ fn tail_target @ 0x20104 (size 28)
 -- decompile
 /* velk pseudo-C: tail_direct @ 0x20120 */
 int tail_direct(int x) {
-    return ((int32_t)(tail_target((x + 2) & 0xffffffff)));
+    return ((int32_t)(tail_target((uint32_t)x + 2)));
 }
 -- signature
 int (int x)
@@ -49,7 +49,7 @@ fn tail_direct @ 0x20120 (size 8)
 -- decompile
 /* velk pseudo-C: tail_indirect @ 0x20128 */
 int tail_indirect(void *f, int x) {
-    return ((int32_t)(((uint32_t (*)())(uint32_t)(uintptr_t)f)((x + 1) & 0xffffffff)));
+    return ((int32_t)(((uint32_t (*)())(uint32_t)(uintptr_t)f)((uint32_t)x + 1)));
 }
 -- signature
 int (void * f, int x)
@@ -67,7 +67,7 @@ fn tail_indirect @ 0x20128 (size 12)
 -- decompile
 /* velk pseudo-C: six_args @ 0x20134 */
 int six_args(int a, int b, int c, int d, int e, int f) {
-    return b + a + c + d + e + f;
+    return (uint32_t)b + a + c + d + e + f;
 }
 -- signature
 int (int a, int b, int c, int d)
@@ -85,7 +85,7 @@ fn six_args @ 0x20134 (size 36)
 /* velk pseudo-C: wide_add @ 0x20158 */
 int32_t wide_add(int32_t a0, int64_t a1, int32_t a2) {
     /* unsupported: AAPCS32 multiword, floating-point or aggregate declaration */
-    int32_t v1 = a2 + a0;
+    int32_t v1 = (uint32_t)a2 + a0;
     /* unsupported: ARM adc r1, r3, r1 at 0x2015c */
     return a0;
 }

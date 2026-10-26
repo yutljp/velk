@@ -6,7 +6,7 @@ fn scaled_stack_values_do_not_leave_unused_frame_stores() {
     let mut binary = Binary::open(&path).unwrap();
     let address = binary.find("tail_target").unwrap().addr;
     let code = binary.decompile(address, None, None).unwrap();
-    assert!(code.contains("return x * 3 + 1;"), "{code}");
+    assert!(code.contains("return (uint32_t)x * 3 + 1;"), "{code}");
     assert!(!code.contains("local_"), "{code}");
     syntax::run_printed(
         &code,

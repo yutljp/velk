@@ -97,7 +97,11 @@ fn printed_counted_loops_match_bounds_and_exits() {
         };
         let candidate = printed_candidate(ir, inputs.into_iter().map(|x| vec![x]).collect());
         assert!(candidate.code.contains("for ("), "{}", candidate.code);
-        assert!(candidate.code.contains("++"), "{}", candidate.code);
+        assert!(
+            candidate.code.contains("++") || candidate.code.contains("+ 1"),
+            "{}",
+            candidate.code
+        );
         candidates.push(candidate);
     }
     let mut ir = synthetic_ir(
@@ -134,7 +138,11 @@ fn printed_counted_loops_match_bounds_and_exits() {
     ];
     let candidate = printed_candidate(ir, vec![vec![0], vec![1], vec![2], vec![7]]);
     assert!(candidate.code.contains("for ("), "{}", candidate.code);
-    assert!(candidate.code.contains("--"), "{}", candidate.code);
+    assert!(
+        candidate.code.contains("--") || candidate.code.contains("- 1"),
+        "{}",
+        candidate.code
+    );
     candidates.push(candidate);
     check_candidates("counted-loops", candidates, Mode::Registers, &[]);
 }
@@ -434,7 +442,11 @@ fn printed_guarded_unsigned_do_countdown_preserves_zero() {
     ];
     let candidate = printed_candidate(ir, vec![vec![0], vec![1], vec![2], vec![7]]);
     assert!(candidate.code.contains("for ("), "{}", candidate.code);
-    assert!(candidate.code.contains("--"), "{}", candidate.code);
+    assert!(
+        candidate.code.contains("--") || candidate.code.contains("- 1"),
+        "{}",
+        candidate.code
+    );
     check_candidates("guarded-down", vec![candidate], Mode::Registers, &[]);
 }
 

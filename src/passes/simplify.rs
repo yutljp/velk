@@ -31,7 +31,10 @@ fn simplify_stmt(stmt: &mut Stmt, constants: &mut HashMap<u16, u64>) {
         Stmt::Assign { dest, value } => {
             let simplified = simplify_expr(value.clone(), constants);
             if let Expr::Const(value) = simplified {
-                constants.insert(dest.index, value);
+                constants.insert(
+                    dest.index,
+                    value & crate::ir::semantics::mask(u32::from(dest.width)),
+                );
             } else {
                 constants.remove(&dest.index);
             }
@@ -229,11 +232,20 @@ fn simplify_expr(expr: Expr, constants: &HashMap<u16, u64>) -> Expr {
             None => Expr::Reg { index, width },
         },
         Expr::Const(_) => expr,
-        Expr::Bin { op, lhs, rhs } => fold_offsets(algebraic(Expr::bin(
-            op,
-            simplify_expr(*lhs, constants),
-            simplify_expr(*rhs, constants),
-        ))),
+        Expr::Bin { op, lhs, rhs } => {
+            let bits = crate::ir::semantics::operand_width(&lhs, &rhs);
+            let original = matches!(op, BinOp::Sar | BinOp::DivS | BinOp::ModS)
+                .then(|| (lhs.clone(), rhs.clone()));
+            let mut a = simplify_expr(*lhs, constants);
+            let mut b = simplify_expr(*rhs, constants);
+            if let Some((lhs, rhs)) = original
+                && crate::ir::semantics::operand_width(&a, &b) != bits
+            {
+                // These operations take their sign from the operands' width.
+                (a, b) = (*lhs, *rhs);
+            }
+            fold_offsets(algebraic(Expr::bin(op, a, b)))
+        }
         Expr::Load {
             addr,
             width,
@@ -247,7 +259,7 @@ fn simplify_expr(expr: Expr, constants: &HashMap<u16, u64>) -> Expr {
             let value = simplify_expr(*value, constants);
             // The extension reads only its low bytes, which the kept bits of
             // a partial register write do not reach.
-            let low = (1u64 << (u32::from(width.min(4)) * 8)).wrapping_sub(1);
+            let low = crate::ir::semantics::mask(u32::from(width) * 8);
             let value = match &value {
                 Expr::Bin {
                     op: crate::ir::BinOp::Or,
@@ -267,7 +279,7 @@ fn simplify_expr(expr: Expr, constants: &HashMap<u16, u64>) -> Expr {
                     rhs,
                 } => match rhs.as_ref() {
                     Expr::Const(mask)
-                        if *mask == (1u64 << (width.min(8) as u32 * 8)).wrapping_sub(1) =>
+                        if *mask == crate::ir::semantics::mask(u32::from(width) * 8) =>
                     {
                         lhs.as_ref().clone()
                     }
@@ -334,6 +346,8 @@ fn simplify_expr(expr: Expr, constants: &HashMap<u16, u64>) -> Expr {
             // `pcmpeqd x, x` does to set every bit, reads nothing of them.
             if let (crate::ir::Operation::Lanes(lane, _), [a, b]) = (op, args.as_slice())
                 && a == b
+                && !super::copies::reads_memory(a)
+                && !super::read_once::faults(a)
             {
                 use crate::ir::LaneOp;
                 match lane {

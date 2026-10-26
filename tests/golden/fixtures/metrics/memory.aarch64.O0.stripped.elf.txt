@@ -170,7 +170,7 @@ fn <unnamed> @ 0x210378 (size 68)
 -- decompile
 /* velk pseudo-C: sub_2103bc @ 0x2103bc */
 int64_t sub_2103bc(int64_t a0, int64_t a1) {
-    return (a1 - a0) / 4;
+    return (int64_t)((uint64_t)a1 - a0) / 4;
 }
 -- signature
 int64_t (int64_t a0, int64_t a1)

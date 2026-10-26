@@ -46,7 +46,7 @@ uint64_t sub_2014d0();
 /* ref: 0x200158 .rodata */
 /* ref: 0x20250c .bss */
 int32_t sub_201330(int32_t a0) {
-    uint64_t v1 = (a0 - 10) & 0xffffffff;
+    uint64_t v1 = (uint32_t)a0 - 10;
     if (v1 > 15) {
         g_20250c = 0;
         return g_20250c;

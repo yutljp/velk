@@ -377,7 +377,7 @@ fn <unnamed> @ 0x201b08 (size 7)
 -- decompile
 /* velk pseudo-C: sub_201b10 @ 0x201b10 */
 int32_t sub_201b10(int64_t a0) {
-    return sub_201b08(a0 - 16);
+    return sub_201b08((int64_t)((uint64_t)a0 - 16));
 }
 -- signature
 int32_t (int64_t a0)
@@ -728,7 +728,7 @@ int32_t sub_201c30(int32_t a0) {
 
     sub_201ad0(local_0, a0 & 0xffffffff);
     int32_t v3 = sub_201be0(local_0);
-    return ((int32_t)(sub_201b08(local_0))) + v3;
+    return (uint32_t)((int32_t)(sub_201b08(local_0))) + v3;
 }
 -- signature
 int32_t (int32_t a0)

@@ -10,7 +10,7 @@
 int dispatch(int x) {
     uint32_t v4;
 
-    uint32_t result = x - 10;
+    uint32_t result = (uint32_t)x - 10;
     uint32_t v2 = result;
     uint32_t v3 = 4;
     if (result > 4) {

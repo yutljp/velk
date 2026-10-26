@@ -53,8 +53,8 @@ fn <unnamed> @ 0x210394 (size 4)
 /* ref: 0x2315c8 .bss */
 int64_t sub_210398(int64_t a0) {
     int64_t v1 = g_2315c8;
-    g_2315c8 = v1 + (a0 + 15 & 0xfffffffffffffff0);
-    return 0x2305c8 + v1;
+    g_2315c8 = v1 + ((int64_t)((uint64_t)a0 + 15) & 0xfffffffffffffff0);
+    return (int64_t)(0x2305c8 + (uint64_t)v1);
 }
 -- signature
 int64_t (int64_t a0)
@@ -128,7 +128,7 @@ int32_t sub_2103cc(uint64_t *a0, int32_t a1) {
     int32_t v1 = a1;
     int64_t v2 = *(uint64_t *)(*a0 + 0x10);
     int32_t v3 = ((uint64_t (*)())v2)(a0); /* vtable slot 2: sub_21040c, sub_21042c */
-    return v3 * v1;
+    return (uint32_t)v3 * v1;
 }
 -- signature
 int32_t (uint64_t * a0, int32_t a1)
@@ -171,7 +171,7 @@ fn <unnamed> @ 0x2103f8 (size 20)
 /* velk pseudo-C: sub_21040c @ 0x21040c */
 int32_t sub_21040c(uint32_t *a0) {
     int32_t v1 = a0[2];
-    return v1 * v1;
+    return (uint32_t)v1 * v1;
 }
 -- signature
 int32_t (uint32_t * a0)
@@ -214,7 +214,7 @@ fn <unnamed> @ 0x210418 (size 20)
 /* velk pseudo-C: sub_21042c @ 0x21042c */
 struct S1 { uint8_t gap_0x0[0x8]; int32_t field_0x8; int32_t field_0xc; };
 int32_t sub_21042c(struct S1 *a0) {
-    return a0->field_0xc * a0->field_0x8;
+    return (uint32_t)a0->field_0xc * a0->field_0x8;
 }
 -- signature
 int32_t (struct S1 * a0)
@@ -232,7 +232,7 @@ fn <unnamed> @ 0x21042c (size 12)
 /* velk pseudo-C: sub_210438 @ 0x210438 */
 struct S1 { uint8_t gap_0x0[0x8]; int32_t field_0x8; int32_t field_0xc; };
 int32_t sub_210438(struct S1 *a0, int32_t a1) {
-    return a0->field_0x8 * a1 * a0->field_0xc + 1;
+    return (uint32_t)a0->field_0x8 * a1 * a0->field_0xc + 1;
 }
 -- signature
 int32_t (struct S1 * a0, int32_t a1)
@@ -252,10 +252,10 @@ fn <unnamed> @ 0x210438 (size 20)
 /* ref: 0x2315c8 .bss */
 int32_t sub_21044c(int32_t a0) {
     int64_t v1 = g_2315c8;
-    g_2315c8 = v1 + 16;
-    sub_2103f8(0x2305c8 + v1, a0 & 0xffffffff);
-    int32_t v4 = sub_21040c(0x2305c8 + v1); /* via vtable slot 2 */
-    sub_210530(0x2305c8 + v1); /* via vtable slot 1 */
+    g_2315c8 = (int64_t)((uint64_t)v1 + 16);
+    sub_2103f8((int64_t)(0x2305c8 + (uint64_t)v1), a0 & 0xffffffff);
+    int32_t v4 = sub_21040c((int64_t)(0x2305c8 + (uint64_t)v1)); /* via vtable slot 2 */
+    sub_210530((int64_t)(0x2305c8 + (uint64_t)v1)); /* via vtable slot 1 */
     return v4;
 }
 -- signature
@@ -282,9 +282,9 @@ fn <unnamed> @ 0x21044c (size 108)
 /* ref: 0x2315c8 .bss */
 int32_t sub_2104b8(int32_t a0, int32_t a1, int32_t a2) {
     int64_t v1 = g_2315c8;
-    g_2315c8 = v1 + 16;
-    sub_210418(0x2305c8 + v1, a0 & 0xffffffff, a1 & 0xffffffff);
-    return sub_210438(0x2305c8 + v1, a2 & 0xffffffff); /* via vtable slot 3 */
+    g_2315c8 = (int64_t)((uint64_t)v1 + 16);
+    sub_210418((int64_t)(0x2305c8 + (uint64_t)v1), a0 & 0xffffffff, a1 & 0xffffffff);
+    return sub_210438((int64_t)(0x2305c8 + (uint64_t)v1), a2 & 0xffffffff); /* via vtable slot 3 */
 }
 -- signature
 int32_t (int32_t a0, int32_t a1, int32_t a2)

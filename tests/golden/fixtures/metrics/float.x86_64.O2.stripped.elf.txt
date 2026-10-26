@@ -23,14 +23,14 @@ double sub_2011b0(double *a0, int32_t a1) {
             i = 0;
             do {
                 v2 = v2 + a0[i];
-                v2 = v2 + a0[i + 1];
-                v2 = v2 + a0[i + 2];
-                v2 = v2 + a0[i + 3];
-                v2 = v2 + a0[i + 4];
-                v2 = v2 + a0[i + 5];
-                v2 = v2 + a0[i + 6];
-                v2 = v2 + a0[i + 7];
-                i += 8;
+                v2 = v2 + a0[(int64_t)((uint64_t)i + 1)];
+                v2 = v2 + a0[(int64_t)((uint64_t)i + 2)];
+                v2 = v2 + a0[(int64_t)((uint64_t)i + 3)];
+                v2 = v2 + a0[(int64_t)((uint64_t)i + 4)];
+                v2 = v2 + a0[(int64_t)((uint64_t)i + 5)];
+                v2 = v2 + a0[(int64_t)((uint64_t)i + 6)];
+                v2 = v2 + a0[(int64_t)((uint64_t)i + 7)];
+                i = (int64_t)((uint64_t)i + 8);
             } while (v3 != i);
         } else {
             i = 0;
@@ -40,7 +40,7 @@ double sub_2011b0(double *a0, int32_t a1) {
             int64_t i_2 = 0;
             do {
                 v2 = v2 + v14[i_2];
-                ++i_2;
+                i_2 = (int64_t)((uint64_t)i_2 + 1);
             } while (v4 != i_2);
         }
     }

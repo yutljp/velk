@@ -85,14 +85,14 @@ long record_total(struct record *items, int n) {
         do {
             int64_t v8 = *(uint64_t *)(v6 - 0x18);
             int64_t v9 = *(int16_t *)(v6 - 0x10);
-            v7 -= 2;
+            v7 = (int64_t)((uint64_t)v7 - 2);
             int64_t v10 = *(uint64_t *)(v6);
             int64_t v11 = *(int16_t *)(v6 + 0x8);
             v6 += 0x30;
-            v3 = v8 * v9 + v3;
-            v5 = v10 * v11 + v5;
+            v3 = (int64_t)((uint64_t)(int64_t)((uint64_t)v8 * v9) + v3);
+            v5 = (int64_t)((uint64_t)(int64_t)((uint64_t)v10 * v11) + v5);
         } while (v7 != 0);
-        v3 = v5 + v3;
+        v3 = (int64_t)((uint64_t)v5 + v3);
         if (v2 == (uint32_t)n) {
             return v3;
         }
@@ -105,9 +105,9 @@ long record_total(struct record *items, int n) {
     do {
         int64_t v14 = *(uint64_t *)(v13 - 0x8);
         int64_t v15 = *(int16_t *)(v13);
-        --v12;
+        v12 = (int64_t)((uint64_t)v12 - 1);
         v13 += 0x18;
-        v3 = v14 * v15 + v3;
+        v3 = (int64_t)((uint64_t)(int64_t)((uint64_t)v14 * v15) + v3);
     } while (v12 != 0);
     return v3;
 }
@@ -226,7 +226,7 @@ fn big_make @ 0x2102a8 (size 24)
 /* struct: x0 +0x0:uint64_t, +0x8:uint64_t, +0x10:uint64_t, +0x18:uint64_t */
 struct big { _Alignas(8) long a; long b; long c; long d; };
 long big_sum(struct big value) {
-    return value.a + value.c + (value.b + value.d);
+    return (int64_t)((uint64_t)(int64_t)((uint64_t)value.a + value.c) + (int64_t)((uint64_t)value.b + value.d));
 }
 -- signature
 int64_t (struct S1 * a0)

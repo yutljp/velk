@@ -321,7 +321,7 @@ fn smod4 @ 0x201650 (size 22)
 -- decompile
 /* velk pseudo-C: negate @ 0x201670 */
 int negate(int x) {
-    return -x;
+    return -(uint32_t)x;
 }
 -- signature
 int (int x)
@@ -389,7 +389,7 @@ fn is_pos @ 0x2016c0 (size 21)
 -- decompile
 /* velk pseudo-C: lnegate @ 0x2016e0 */
 long lnegate(long x) {
-    return -x;
+    return (int64_t)-(uint64_t)x;
 }
 -- signature
 long (long x)

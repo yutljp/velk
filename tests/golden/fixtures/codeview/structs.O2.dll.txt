@@ -32,7 +32,7 @@ static inline uint64_t add_lanes32(uint64_t a, uint64_t b) {
 struct point { _Alignas(4) int32_t x; int32_t y; };
 struct rect { _Alignas(4) struct point min; struct point max; };
 int32_t rect_area(struct rect *r) {
-    return (r->max.y - r->min.y) * (r->max.x - r->min.x);
+    return ((uint32_t)r->max.y - r->min.y) * ((uint32_t)r->max.x - r->min.x);
 }
 -- signature
 int32_t (struct rect * r)
@@ -73,7 +73,7 @@ int32_t record_total(struct record *items, int32_t n) {
             int32_t v7 = *(int16_t *)(v6 - 0x18) * *(uint32_t *)(v6 - 0x1c);
             int32_t v8 = *(int16_t *)(v6 - 0xc) * *(uint32_t *)(v6 - 0x10) + v7 + (v4 + *(int16_t *)(v6 - 0x24) * *(uint32_t *)(v6 - 0x28));
             v4 = *(int16_t *)(v6) * *(uint32_t *)(v6 - 0x4) + v8;
-            v3 += 4;
+            v3 = (int64_t)((uint64_t)v3 + 4);
             v6 += 0x30;
         } while (v1 != v3);
         if (v2 == 0) {
@@ -87,9 +87,9 @@ int32_t record_total(struct record *items, int32_t n) {
     uint8_t v14 = (v2 << 2) * 3;
     int64_t i = 0;
     do {
-        int32_t v15 = *(int16_t *)(v10 + i) * *(uint32_t *)(v10 + i - 0x4);
-        v4 += v15;
-        i += 12;
+        int32_t v15 = *(int16_t *)((int64_t)((uint64_t)v10 + i)) * *(uint32_t *)((int64_t)((uint64_t)(int64_t)((uint64_t)v10 + i) - 0x4));
+        v4 = (uint32_t)v4 + v15;
+        i = (int64_t)((uint64_t)i + 12);
     } while (v14 != i);
     return v4;
 }

@@ -121,7 +121,7 @@ fn seh_finally @ 0x180001060 (size 40)
 -- decompile
 /* velk pseudo-C: seh_finally__finally_0 @ 0x180001090 */
 int32_t seh_finally__finally_0(int64_t a0, int64_t a1) {
-    return sub_1800010b0(a1 + 48);
+    return sub_1800010b0((int64_t)((uint64_t)a1 + 48));
 }
 -- signature
 int32_t (int64_t a0, int64_t a1)

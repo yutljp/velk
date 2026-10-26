@@ -10,8 +10,8 @@
 -- decompile
 /* velk pseudo-C: item_weight @ 0x200f4 */
 int item_weight(struct item *items, int i) {
-    int32_t v1 = (uint32_t)(uintptr_t)items + ((uint64_t)(i * 3) << 2);
-    return *(uint32_t *)((v1 + 4) & 0xffffffff) * *(int16_t *)((v1 + 8) & 0xffffffff);
+    int32_t v1 = (uint32_t)(uintptr_t)items + ((uint32_t)i * 3 << 2);
+    return *(uint32_t *)((uint32_t)v1 + 4) * *(int16_t *)((uint32_t)v1 + 8);
 }
 -- signature
 int (struct item * items, int i)
@@ -31,7 +31,7 @@ fn item_weight @ 0x200f4 (size 24)
 void cell_set(struct cell *cells, int32_t i, int v) {
     uint32_t v1 = i + ((uint64_t)i << 1);
     *(uint32_t *)((uint32_t)(uintptr_t)cells + (v1 << 2)) = v;
-    *(uint32_t *)((uint32_t)(uintptr_t)cells + (v1 << 2) + 8) = v + 1;
+    *(uint32_t *)((uint32_t)(uintptr_t)cells + (v1 << 2) + 8) = (uint32_t)v + 1;
 }
 -- signature
 void (struct cell * cells, int32_t i, int v)
@@ -57,11 +57,11 @@ int32_t item_last_key(struct item *items, int n) {
         int32_t v3 = v1;
         for (;;) {
             int32_t v4 = *(uint32_t *)((uint32_t)v3);
-            v3 += 12;
+            v3 = (uint32_t)v3 + 12;
             if (v4 >= 1) {
-                v2 = *(uint32_t *)((v1 - 4) & 0xffffffff);
+                v2 = *(uint32_t *)((uint32_t)v1 - 4);
             }
-            --n;
+            n = (uint32_t)n - 1;
             v1 = v3;
             if (n == 0) {
                 return v2;

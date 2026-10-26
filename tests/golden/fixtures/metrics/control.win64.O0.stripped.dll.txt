@@ -22,7 +22,7 @@ int32_t sub_180001000(uint32_t *a0, int32_t a1) {
     for (i = 0; i < a1; i++) {
         for (j = 0; j < a1; j++) {
             if (i == j) {
-                result += a0[i * a1 + j];
+                result += a0[(int32_t)((uint32_t)i * a1 + j)];
             }
         }
     }
@@ -163,16 +163,16 @@ fn <unnamed> @ 0x1800010e0 (size 112)
 -- decompile
 /* velk pseudo-C: sub_180001150 @ 0x180001150 */
 int32_t sub_180001150(int32_t a0) {
-    if (a0 - 1 == 0) {
+    if ((uint32_t)a0 - 1 == 0) {
         return 10;
     }
-    if (a0 - 100 == 0) {
+    if ((uint32_t)a0 - 100 == 0) {
         return 20;
     }
-    if (a0 - 1000 == 0) {
+    if ((uint32_t)a0 - 1000 == 0) {
         return 30;
     }
-    if (a0 - 10000 == 0) {
+    if ((uint32_t)a0 - 10000 == 0) {
         return 40;
     }
     return 0;
@@ -235,7 +235,7 @@ int32_t sub_1800011d0(uint32_t *a0, int32_t a1) {
     }
     uint8_t v3 = 1;
     if (*a0 != 1) {
-        int64_t v6 = a1 - 1;
+        int64_t v6 = (int32_t)((uint32_t)a1 - 1);
         int32_t v4 = a0[v6];
         v3 = a0[v6] == 1;
     }
@@ -316,9 +316,9 @@ int32_t sub_1800012a0(uint32_t *a0, int32_t a1, int32_t a2) {
     int32_t i; /* [sp-1c] */
 
     for (i = 0; i < a1; i++) {
-        for (int32_t j = i + 1; j < a1; j++) {
+        for (int32_t j = (uint32_t)i + 1; j < a1; j = (uint32_t)j + 1) {
             if (a0[i] + a0[j] == a2) {
-                return i * a1 + j;
+                return (uint32_t)i * a1 + j;
             }
         }
     }

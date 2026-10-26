@@ -44,7 +44,7 @@ fn twice @ 0x201310 (size 14)
 -- decompile
 /* velk pseudo-C: square @ 0x201320 */
 int square(int x) {
-    return x * x;
+    return (uint32_t)x * x;
 }
 -- signature
 int (int x)
@@ -101,7 +101,7 @@ fn apply_table @ 0x201360 (size 52)
 -- decompile
 /* velk pseudo-C: apply_pointer @ 0x2013a0 */
 int apply_pointer(void *f, int x) {
-    return ((int32_t)(((uint64_t (*)())f)(x & 0xffffffff))) + 1;
+    return (uint32_t)((int32_t)(((uint64_t (*)())f)(x & 0xffffffff))) + 1;
 }
 -- signature
 int (void * f, int x)
@@ -119,8 +119,9 @@ fn apply_pointer @ 0x2013a0 (size 33)
 -- decompile
 /* velk pseudo-C: factorial @ 0x2013d0 */
 int factorial(int n) {
+    uint32_t v3 = n;
     if (n > 1) {
-        return n * factorial(n - 1);
+        return v3 * factorial(v3 - 1);
     }
     return 1;
 }
@@ -148,8 +149,9 @@ fn factorial @ 0x2013d0 (size 71)
 -- decompile
 /* velk pseudo-C: is_odd @ 0x201420 */
 int is_odd(int n) {
+    uint32_t v3 = n;
     if (n != 0) {
-        return is_even(n - 1);
+        return is_even(v3 - 1);
     }
     return 0;
 }
@@ -177,8 +179,9 @@ fn is_odd @ 0x201420 (size 54)
 -- decompile
 /* velk pseudo-C: is_even @ 0x201460 */
 int is_even(int n) {
+    uint32_t v3 = n;
     if (n != 0) {
-        return is_odd(n - 1);
+        return is_odd(v3 - 1);
     }
     return 1;
 }
@@ -206,7 +209,7 @@ fn is_even @ 0x201460 (size 57)
 -- decompile
 /* velk pseudo-C: sum9 @ 0x2014a0 */
 long sum9(long a, long b, long c, long d, long e, long f, long g, long h, long i) {
-    return a + b + c + d + e + f + g + h + i;
+    return (int64_t)((uint64_t)(int64_t)((uint64_t)(int64_t)((uint64_t)(int64_t)((uint64_t)(int64_t)((uint64_t)a + b) + c) + d) + e) + f) + g + h + i;
 }
 -- signature
 long (long a, long b, long c, long d, long e, long f)

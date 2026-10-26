@@ -168,7 +168,9 @@ fn initial_assignments_declare_locals_in_execution_order() {
         candidate.code
     );
     assert!(
-        candidate.code.contains("int64_t v2 = v1 * 2;"),
+        candidate
+            .code
+            .contains("int64_t v2 = (int64_t)((uint64_t)v1 * 2);"),
         "{}",
         candidate.code
     );

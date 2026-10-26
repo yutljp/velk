@@ -10,6 +10,9 @@ use crate::ir::semantics::{mask, operand_width};
 use crate::ir::{BinOp, Cond, Expr, Operation, Precision, Stmt};
 use crate::loader::Isa;
 
+#[cfg(test)]
+mod smt_tests;
+
 /// The operation whose result set the flags.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(super) enum Source {

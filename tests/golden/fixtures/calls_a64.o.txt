@@ -73,7 +73,7 @@ fn twice @ 0x0 (size 8)
 -- decompile
 /* velk pseudo-C: square @ 0x8 */
 int32_t square(int32_t a0) {
-    return a0 * a0;
+    return (uint32_t)a0 * a0;
 }
 -- signature
 int32_t (int32_t a0)
@@ -127,7 +127,7 @@ fn apply_table @ 0x2c (size 44)
 -- decompile
 /* velk pseudo-C: apply_pointer @ 0x58 */
 int32_t apply_pointer(void *a0, int32_t a1) {
-    return ((int32_t)(((uint64_t (*)())a0)(a1 & 0xffffffff))) + 1;
+    return (uint32_t)((int32_t)(((uint64_t (*)())a0)(a1 & 0xffffffff))) + 1;
 }
 -- signature
 int32_t (void * a0, int32_t a1)
@@ -151,17 +151,17 @@ int32_t factorial(int32_t a0) {
     if (a0 >= 2) {
         if ((uint32_t)a0 >= 9) {
             struct velk_vector vector = { .low.u64 = 0x100000001, .high.u64 = 0x100000001 };
-            int32_t v5 = a0 - 1;
+            int32_t v5 = (uint32_t)a0 - 1;
             int32_t v6 = v5 & 0xfffffff8;
-            struct velk_vector vector_2 = { .low.u64 = add_lanes32((a0 & 0xffffffff) * 0x100000001, g_280), .high.u64 = add_lanes32((a0 & 0xffffffff) * 0x100000001, g_288) };
+            struct velk_vector vector_2 = { .low.u64 = add_lanes32((int64_t)((uint64_t)(a0 & 0xffffffff) * 0x100000001), g_280), .high.u64 = add_lanes32((int64_t)((uint64_t)(a0 & 0xffffffff) * 0x100000001), g_288) };
             struct velk_vector vector_3 = { .low.u64 = 0x100000001, .high.u64 = 0x100000001 };
-            v1 = a0 - v6;
+            v1 = (uint32_t)a0 - v6;
             int32_t v11 = v6;
             do {
                 struct velk_vector vector_4 = { .low.u64 = add_lanes32(vector_2.low.u64, 0xfffffffcfffffffc), .high.u64 = add_lanes32(vector_2.high.u64, 0xfffffffcfffffffc) };
                 vector_3.low.u64 = mul_lanes32(vector_2.low.u64, vector_3.low.u64);
                 vector_3.high.u64 = mul_lanes32(vector_2.high.u64, vector_3.high.u64);
-                v11 -= 8;
+                v11 = (uint32_t)v11 - 8;
                 vector_2.low.u64 = add_lanes32(vector_2.low.u64, 0xfffffff8fffffff8);
                 vector_2.high.u64 = add_lanes32(vector_2.high.u64, 0xfffffff8fffffff8);
                 vector.low.u64 = mul_lanes32(vector_4.low.u64, vector.low.u64);
@@ -241,20 +241,20 @@ fn factorial @ 0x78 (size 160)
 -- decompile
 /* velk pseudo-C: is_odd @ 0x118 */
 int32_t is_odd(int32_t a0) {
-    uint32_t v1 = a0 - (a0 != 0) + 1;
+    uint32_t v1 = (uint32_t)a0 - (a0 != 0) + 1;
     if (v1 >= 2) {
         int32_t v7 = (v1 >> 1) + 1;
         uint32_t v4 = v7 & 0xfffffffe;
         a0 -= (v4 << 1);
         int32_t i = v4;
         do {
-            i -= 2;
+            i = (uint32_t)i - 2;
         } while (i != 0);
         if (v7 == v4) {
-            return a0 + 2;
+            return (uint32_t)a0 + 2;
         }
     }
-    uint32_t i_2 = a0 + 2;
+    uint32_t i_2 = (uint32_t)a0 + 2;
     do {
         i_2 -= 2;
     } while (i_2 > 1);
@@ -298,7 +298,7 @@ int32_t is_even(int32_t a0) {
     if (a0 == 0) {
         return 1;
     }
-    return a0 - 1 - (a0 - (a0 != 1) & 0xfffffffe);
+    return (uint32_t)a0 - 1 - ((uint32_t)a0 - (a0 != 1) & 0xfffffffe);
 }
 -- signature
 int32_t (int32_t a0)
@@ -319,7 +319,7 @@ fn is_even @ 0x170 (size 36)
 -- decompile
 /* velk pseudo-C: sum9 @ 0x194 */
 int64_t sum9(int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5, int64_t a6, int64_t a7, int64_t a8) {
-    return a1 + a0 + (a2 + a3) + (a4 + a5 + a6) + (a7 + a8);
+    return (int64_t)((uint64_t)(int64_t)((uint64_t)(int64_t)((uint64_t)a1 + a0) + (int64_t)((uint64_t)a2 + a3)) + (int64_t)((uint64_t)(int64_t)((uint64_t)a4 + a5) + a6)) + (a7 + a8);
 }
 -- signature
 int64_t (int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5, int64_t a6, int64_t a7)
@@ -336,7 +336,7 @@ fn sum9 @ 0x194 (size 40)
 -- decompile
 /* velk pseudo-C: call_sum9 @ 0x1bc */
 int64_t call_sum9(int64_t a0) {
-    return a0 + 36;
+    return (int64_t)((uint64_t)a0 + 36);
 }
 -- signature
 int64_t (int64_t a0)
@@ -361,8 +361,8 @@ int32_t sum_varargs(int32_t a0, ...) {
     }
     int32_t v3 = 0;
     while (true) {
-        --a0;
-        v3 = va_arg(varargs, int) + v3;
+        a0 = (uint32_t)a0 - 1;
+        v3 = (uint32_t)va_arg(varargs, int) + v3;
         if (a0 == 0) break;
     }
     { uint64_t variadic_result = v3; va_end(varargs); return variadic_result; }

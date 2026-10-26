@@ -43,7 +43,7 @@ fn twice @ 0x20134 (size 4)
 -- decompile
 /* velk pseudo-C: square @ 0x20138 */
 int square(int x) {
-    return x * x;
+    return (uint32_t)x * x;
 }
 -- signature
 int (int x)
@@ -89,7 +89,7 @@ int apply_table(unsigned int index, int x) {
 
     /* unsupported: ARM umull.w r2, r3, r0, r2 at 0x20160 */
     int32_t v3 = v1 >> 1;
-    int32_t v4 = v3 * 3;
+    int32_t v4 = (uint32_t)v3 * 3;
     int32_t v5 = v4;
     int32_t v6 = index - v4;
     if (index != v5 && v6 == 1) {
@@ -133,7 +133,7 @@ fn apply_table @ 0x20158 (size 36)
 -- decompile
 /* velk pseudo-C: apply_pointer @ 0x2017c */
 int apply_pointer(void *f, int x) {
-    return ((int32_t)(((uint32_t (*)())(uint32_t)(uintptr_t)f)((uint32_t)x))) + 1;
+    return (uint32_t)((int32_t)(((uint32_t (*)())(uint32_t)(uintptr_t)f)((uint32_t)x))) + 1;
 }
 -- signature
 int (void * f, int x)
@@ -159,38 +159,38 @@ int factorial(int n) {
         n = 1;
     }
     if (v1 >= v2) {
-        int32_t v3 = n - 1;
+        int32_t v3 = (uint32_t)n - 1;
         int32_t v15 = v3 & 0x3;
-        if ((uint32_t)(n - 2) < 3) {
+        if ((uint32_t)n - 2 < 3) {
             v16 = 1;
         } else {
             int32_t v6 = v3 & 0xfffffffc;
             v16 = 1;
             while (true) {
-                v16 = n * v16;
-                int32_t v8 = n - 2;
-                v16 = (n - 1) * v16;
-                int32_t v10 = n - 3;
-                n -= 4;
-                v6 -= 4;
-                v16 = v10 * (v8 * v16);
+                v16 = (uint32_t)n * v16;
+                int32_t v8 = (uint32_t)n - 2;
+                v16 = ((uint32_t)n - 1) * v16;
+                int32_t v10 = (uint32_t)n - 3;
+                n = (uint32_t)n - 4;
+                v6 = (uint32_t)v6 - 4;
+                v16 = v10 * ((uint32_t)v8 * v16);
                 if (v6 == 0) break;
             }
             if (v15 == 0) {
                 return v16;
             }
         }
-        v16 = n * v16;
+        v16 = (uint32_t)n * v16;
         if (v15 != 1) {
-            v16 = (n - 1) * v16;
+            v16 = ((uint32_t)n - 1) * v16;
             int32_t v17 = 2;
             if (v15 != 2) {
-                n -= 2;
+                n = (uint32_t)n - 2;
             }
             if (v15 == v17) {
                 return v16;
             }
-            v16 = n * v16;
+            v16 = (uint32_t)n * v16;
             return v16;
         }
         return v16;
@@ -270,7 +270,7 @@ int is_odd(int n) {
         n = 0;
     }
     if (v1 != v2) {
-        return ((int32_t)(is_even((n - 1) & 0xffffffff)));
+        return ((int32_t)(is_even((uint32_t)n - 1)));
     }
     return n;
 }
@@ -306,7 +306,7 @@ int is_even(int n) {
         n = 1;
     }
     if (v1 != v2) {
-        return ((int32_t)(is_odd((n - 1) & 0xffffffff)));
+        return ((int32_t)(is_odd((uint32_t)n - 1)));
     }
     return n;
 }
@@ -336,7 +336,7 @@ fn is_even @ 0x201f8 (size 14)
 -- decompile
 /* velk pseudo-C: sum9 @ 0x20208 */
 int32_t sum9(int32_t a, int32_t b, int32_t c, int32_t d, int32_t e, int32_t f, int32_t g, int32_t h, int32_t i) {
-    return a + b + c + d + e + f + g + h + i;
+    return (uint32_t)a + b + c + d + e + f + g + h + i;
 }
 -- signature
 int32_t (int32_t a, int32_t b, int32_t c, int32_t d)
@@ -390,30 +390,30 @@ int sum_varargs(int count, ...) {
             v5 = 0;
             while (true) {
                 int32_t v7 = v3;
-                *(uint32_t *)(sp - 0x14) = v3 + 4;
-                v6 -= 4;
+                *(uint32_t *)(sp - 0x14) = (uint32_t)v3 + 4;
+                v6 = (uint32_t)v6 - 4;
                 int32_t v8 = *(uint32_t *)((uint32_t)v7) + v5;
-                *(uint32_t *)(sp - 0x14) = v7 + 8;
-                int32_t v9 = *(uint32_t *)((v7 + 4) & 0xffffffff);
-                *(uint32_t *)(sp - 0x14) = v7 + 12;
-                int32_t v10 = *(uint32_t *)((v7 + 8) & 0xffffffff) + (v9 + v8);
-                v3 = v7 + 16;
+                *(uint32_t *)(sp - 0x14) = (uint32_t)v7 + 8;
+                int32_t v9 = *(uint32_t *)((uint32_t)v7 + 4);
+                *(uint32_t *)(sp - 0x14) = (uint32_t)v7 + 12;
+                int32_t v10 = *(uint32_t *)((uint32_t)v7 + 8) + ((uint32_t)v9 + v8);
+                v3 = (uint32_t)v7 + 16;
                 *(uint32_t *)(sp - 0x14) = v3;
-                v5 = v10 + *(uint32_t *)((v7 + 12) & 0xffffffff);
+                v5 = v10 + *(uint32_t *)((uint32_t)v7 + 12);
                 if (v6 == 0) break;
             }
             if (v4 == 0) {
                 return v5;
             }
         }
-        *(uint32_t *)(sp - 0x14) = v3 + 4;
+        *(uint32_t *)(sp - 0x14) = (uint32_t)v3 + 4;
         v5 += *(uint32_t *)((uint32_t)v3);
         if (v4 != 1) {
-            *(uint32_t *)(sp - 0x14) = v3 + 8;
-            v5 += *(uint32_t *)((v3 + 4) & 0xffffffff);
+            *(uint32_t *)(sp - 0x14) = (uint32_t)v3 + 8;
+            v5 += *(uint32_t *)((uint32_t)v3 + 4);
             if (v4 != 2) {
-                v5 += *(uint32_t *)((v3 + 8) & 0xffffffff);
-                *(uint32_t *)(sp - 0x14) = v3 + 12;
+                v5 += *(uint32_t *)((uint32_t)v3 + 8);
+                *(uint32_t *)(sp - 0x14) = (uint32_t)v3 + 12;
                 return v5;
             }
             return v5;

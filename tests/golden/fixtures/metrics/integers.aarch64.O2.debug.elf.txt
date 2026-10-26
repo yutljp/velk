@@ -156,7 +156,7 @@ fn min3 @ 0x210260 (size 20)
 -- decompile
 /* velk pseudo-C: labs_value @ 0x210274 */
 long labs_value(long x) {
-    return (x >= 0 ? x : -x);
+    return (x >= 0 ? x : (int64_t)-(uint64_t)x);
 }
 -- signature
 long (long x)

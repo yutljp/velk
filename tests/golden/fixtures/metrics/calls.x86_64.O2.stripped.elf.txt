@@ -73,7 +73,7 @@ uint64_t velk_entry_stack_pointer(void); /* target entry stack pointer */
 -- decompile
 /* velk pseudo-C: sub_2012f0 @ 0x2012f0 */
 int32_t sub_2012f0(int32_t a0) {
-    return a0 * 2;
+    return (uint32_t)a0 * 2;
 }
 -- signature
 int32_t (int32_t a0)
@@ -90,7 +90,7 @@ fn <unnamed> @ 0x2012f0 (size 4)
 -- decompile
 /* velk pseudo-C: sub_201300 @ 0x201300 */
 int32_t sub_201300(int32_t a0) {
-    return a0 * a0;
+    return (uint32_t)a0 * a0;
 }
 -- signature
 int32_t (int32_t a0)
@@ -147,7 +147,7 @@ fn <unnamed> @ 0x201330 (size 34)
 -- decompile
 /* velk pseudo-C: sub_201360 @ 0x201360 */
 int32_t sub_201360(void *a0, int32_t a1) {
-    return ((int32_t)(((uint64_t (*)())a0)(a1 & 0xffffffff))) + 1;
+    return (uint32_t)((int32_t)(((uint64_t (*)())a0)(a1 & 0xffffffff))) + 1;
 }
 -- signature
 int32_t (void * a0, int32_t a1)
@@ -182,10 +182,10 @@ int32_t sub_201370(int32_t a0) {
         return 1;
     }
     if ((uint32_t)a0 >= 9) {
-        int32_t v2 = a0 - 1;
+        int32_t v2 = (uint32_t)a0 - 1;
         int32_t v3 = v2 & 0xfffffffffffffff8;
         uint64_t v4 = a0 & 0xffffffff;
-        a0 -= v3;
+        a0 = (uint32_t)a0 - v3;
         struct velk_vector vector = { .low.u64 = add_lanes32(v4 | v4 << 32, g_200190), .high.u64 = add_lanes32(v4 | v4 << 32, g_200198) };
         struct velk_vector vector_2 = { .low.u64 = g_2001c0, .high.u64 = g_2001c8 };
         struct velk_vector vector_3 = { .low.u64 = g_2001b0, .high.u64 = g_2001b8 };
@@ -213,7 +213,7 @@ int32_t sub_201370(int32_t a0) {
             vector_7 = (struct velk_vector){ .low.u64 = interleave_low32(v36, v49), .high.u64 = interleave_high32(v36, v49) };
             vector.low.u64 = add_lanes32(vector.low.u64, vector_3.low.u64);
             vector.high.u64 = add_lanes32(vector.high.u64, vector_3.high.u64);
-            v47 = v47 - 8;
+            v47 = (uint32_t)v47 - 8;
         } while (v47 != 0);
         v1 = (vector_7.high.u64 >> 32) * (vector_5.high.u64 >> 32) * ((vector_7.low.u64 >> 32) * (vector_5.low.u64 >> 32)) * (vector_7.high.u64 * vector_5.high.u64 * (vector_7.low.u64 * vector_5.low.u64));
         if (v2 == v3) {
@@ -221,9 +221,9 @@ int32_t sub_201370(int32_t a0) {
         }
     }
     do {
-        v1 *= a0;
+        v1 = (uint32_t)v1 * a0;
         v46 = a0;
-        a0 = a0 - 1;
+        a0 = (uint32_t)a0 - 1;
     } while (v46 > 2);
     return v1;
 }
@@ -306,7 +306,7 @@ int32_t sub_201460(int32_t a0) {
     if (a0 == 0) {
         return 0;
     }
-    return sub_201470((a0 - 1) & 0xffffffff);
+    return sub_201470((uint32_t)a0 - 1);
 }
 -- signature
 int32_t (int32_t a0)
@@ -331,7 +331,7 @@ int32_t sub_201470(int32_t a0) {
     if (a0 == 0) {
         return 1;
     }
-    return sub_201460((a0 - 1) & 0xffffffff);
+    return sub_201460((uint32_t)a0 - 1);
 }
 -- signature
 int32_t (int32_t a0)
@@ -353,7 +353,7 @@ fn <unnamed> @ 0x201470 (size 17)
 -- decompile
 /* velk pseudo-C: sub_201490 @ 0x201490 */
 int64_t sub_201490(int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5, int64_t a6, int64_t a7, int64_t a8) {
-    return a2 + a3 + (a1 + a0) + a4 + a5 + a6 + a7 + a8;
+    return (int64_t)((uint64_t)(int64_t)((uint64_t)(int64_t)((uint64_t)(int64_t)((uint64_t)a2 + a3) + (int64_t)((uint64_t)a1 + a0)) + a4) + a5) + a6 + a7 + a8;
 }
 -- signature
 int64_t (int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5)
@@ -429,7 +429,7 @@ int32_t sub_2014f0(int32_t a0, ...) {
                 local_2 = v3;
             }
             v4 += *v7;
-            v6 = v6 - 2;
+            v6 = (uint32_t)v6 - 2;
         } while (v6 != 0);
     } else {
         v4 = 0;

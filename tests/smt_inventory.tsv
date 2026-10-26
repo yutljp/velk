@@ -1,0 +1,124 @@
+site	rewrite	side_conditions	widths	coverage	anchor
+src/ir/mod.rs:457	Constant binary folding	Both operands constant; denominator nonzero for division	64	instances	pub fn bin(
+src/ir/mod.rs:457	Zero shifts and zero arithmetic/bitwise operands	Zero on permitted side; SAR retains truncation	8/16/32/64	templates	pub fn bin(
+src/ir/mod.rs:457	Identical-operand sub/xor/and/or	Identical expression trees	8/16/32/64	register templates; effects open	pub fn bin(
+src/ir/mod.rs:457	Multiply by one and repeated low32 mask	Right one; or two exact low32 masks	8/16/32/64	templates	pub fn bin(
+src/ir/semantics.rs:185	Integer and vector constant folding	Known nonfaulting operands; not Undefined/Results	Operation-specific	open beyond covered lanes	pub(crate) fn fold(
+src/ir/semantics.rs:185	Floating constant folding	Known arguments; result not NaN	32/64	open IEEE model	pub(crate) fn fold(
+src/ir/visit.rs:165	Recursive expression substitution	Caller must establish widths and effect safety	8/16/32/64	open caller context	pub fn substitute_values(
+src/ir/visit.rs:4	Flatten sums and differences	Preserve order and sign of each term	64	open	pub(crate) fn sum_terms
+src/passes/simplify.rs:29	Local constants	No intervening definition/clobber; assignment truncation	8/16/32/64	templates	fn simplify_stmt(
+src/passes/simplify.rs:29	Drop preserved merge bits from store	Register-only preserved bits disjoint from access mask	8/16/32/64	open stores	fn simplify_stmt(
+src/passes/simplify.rs:29	Drop store masks	Mask covers every stored bit	8/16/32/64	open stores	fn simplify_stmt(
+src/passes/simplify.rs:29	Simplify comparison operands	Comparison width preserved or constant extended safely	8/16/32/64	select templates; CFG open	fn simplify_stmt(
+src/passes/simplify.rs:160	Cancel inverse addition/subtraction	Matching offset; optional low32 mask only at <=32 bits	8/16/32/64	open branch pattern	fn cancel_round_trip(
+src/passes/simplify.rs:195	Move offset across equality	Eq/Ne; right constant; known source width	8/16/32/64	open branch pattern	fn move_offset_across(
+src/passes/simplify.rs:227	Recursive binary simplification	Signed operand interpretation width retained	8/16/32/64	templates	fn simplify_expr(
+src/passes/simplify.rs:227	Remove preserved bits and exact masks before extension	Discarded bits outside source width	8/16/32/64	templates	fn simplify_expr(
+src/passes/simplify.rs:227	Fold constant or identical-register select	Evaluate condition at original width	8/16/32/64	templates	fn simplify_expr(
+src/passes/simplify.rs:227	Same-input lane comparisons and subtraction	Equal arguments; Eq/GeS/GeU/Sub/GtS/GtU	8/16/32/64 lanes	templates	fn simplify_expr(
+src/passes/simplify.rs:385	Reassemble contiguous bit fields	Same source; disjoint contiguous coverage; width unchanged	8/16/32/64	open partitions	fn reassembled(
+src/passes/simplify.rs:497	Sum per-byte population counts	Unsigned widening byte sum; count halves or zero	64/128 input bits	decomposed proof	fn counted_bits(
+src/passes/simplify.rs:527	Remove redundant low32 view	Range proves fit32	32	open range context	fn low32(
+src/passes/simplify.rs:546	Unsigned reciprocal multiply/shift	Dividend and multiplier fit32; shift32..63; error bound	32 domain/64 product	open separate recognizer	fn magic_divisor(
+src/passes/simplify.rs:559	Collapse nested register scaling	Register leaves; constant multiply/shift; modular factors	8/16/32/64	instances	fn scaled_register(
+src/passes/simplify.rs:578	Combine equal-register scales	Same register leaves; modular scale sum/difference	8/16/32/64	instances	fn algebraic(
+src/passes/simplify.rs:578	Undefined mask/shift/OR refinement	Undefined operand	64	refinement; not equality	fn algebraic(
+src/passes/simplify.rs:578	Quotient plus shifted quotient	Same quotient; fit32; shift1..31	32/64	open	fn algebraic(
+src/passes/simplify.rs:578	Multiply-back remainder	Same dividend and divisor; low32 views fit	32/64	open	fn algebraic(
+src/passes/simplify.rs:578	OR restored subsets and complementary fields	Same source/shift; full coverage for reconstruction	8/16/32/64	subset templates; partitions open	fn algebraic(
+src/passes/simplify.rs:578	Double negation and add/subtract zero	Exact matching operator shape	8/16/32/64	templates	fn algebraic(
+src/passes/simplify.rs:578	Remove unsigned-load mask	Mask equals load width	8/16/32/64	value templates; faults open	fn algebraic(
+src/passes/simplify.rs:578	Merge constant masks	Nested AND with constant masks	8/16/32/64	instances and signed contexts	fn algebraic(
+src/passes/simplify.rs:578	Discard preserved bits through mask	No possible preserved bit overlaps mask	8/16/32/64	templates	fn algebraic(
+src/passes/simplify.rs:578	Drop low32 masks in modular operations	Outer low32 mask; Add/Sub/Mul/And/Or/Xor; retain register views	32	templates	fn algebraic(
+src/passes/simplify.rs:861	Reassociate constant address offsets	Nested Add/Sub; right operands constant	64 modular	instances	fn fold_offsets(
+src/passes/simplify.rs:899	Extend comparison constant	Signed narrow value; original constant fits comparison width	8/16/32 to64	select templates	fn widen_compared_constant(
+src/passes/copies.rs:130	Truncate substitution to assigned/read width	Destination width or proven value range	8/16/32/64	pass templates	pub(crate) fn truncated(
+src/passes/copies.rs:142	Allow comparison width change	Same width or Eq/Ne with values fitting smaller width	8/16/32/64	pass templates	pub(crate) fn comparison_preserved(
+src/passes/copies.rs:637	Inline register expression	Compatible widths; truncation; signed/condition guards	8/16/32/64	pass templates	pub(crate) fn substitute_reg_inner(
+src/passes/copies.rs:396	Remove single-use definition	Use count; liveness; clobber and effect barriers	8/16/32/64	straight-line templates; CFG open	fn copy_propagate_block(
+src/passes/copies.rs:18	Inline local copy	Dominance/liveness; assignment truncation retained	8/16/32/64	straight-line templates; CFG open	pub fn inline_local_copies(
+src/passes/read_once.rs:388	Inline into only reader	Single use; safe effects; width and comparison guards	8/16/32/64	straight-line templates; memory open	pub(crate) fn substitute(
+src/passes/read_once.rs:442	Substitute masked comparison operand	Read/write widths cover mask and comparison constant	8/16/32/64	pass templates	fn substitute_tested(
+src/passes/read_once.rs:462	Substitute masked register read	Exact low8/16/32 mask fits write/read widths	8/16/32	pass templates	fn substitute_masked(
+src/passes/cse.rs:87	Share repeated expression	Binding width; use counts; speculation and effect guards	8/16/32/64	pass templates; CFG open	fn bind(
+src/passes/widths.rs:86	Specialize variables to32 and drop masks	Every relevant read/write consistently32	32	open whole-function typing	pub fn specialize_widths(
+src/passes/memory.rs:378	Store-to-load forwarding	Equal address/width; no alias/clobber/effect barrier; proper extension	8/16/32/64	open memory model	fn forward_expr(
+src/passes/memory.rs:471	Fuse load/op/store	Same location; safe effects and use counts	8/16/32/64	open memory model	fn fuse_block(
+src/passes/memory.rs:785	Forward spilled variables	Frame escape/liveness and overlap guards	8/16/32/64	open memory/CFG context	pub fn forward_spilled_variables(
+src/passes/frame_slots.rs:95	Replace frame pointer	Known stack offsets; safe pointer uses	32/64 addresses	open frame/CFG context	fn substitute_frame_pointer(
+src/passes/frame_slots.rs:421	Canonical stack-relative address	Known frame displacement; checked slot calculations	32/64 addresses	open frame context	fn rewrite_expr_frame(
+src/passes/division/divisor.rs:67	Unsigned reciprocal certificate	Valid domain/shift; maximum interval error below modulus	8/16/32/64	accepted certificate instances	pub(crate) fn magic_divisor(
+src/passes/division/divisor.rs:24	Signed reciprocal plus sign correction certificate	Positive slip; positive error <modulus; negative <=modulus	8/16/32/64	accepted certificate instances	pub(crate) fn magic_divisor_signed64(
+src/passes/division/divisor.rs:98	Signed widening32 certificate	32-bit multiplier/domain; shift32	32	certificate tested; matcher open	pub(crate) fn magic_divisor_signed(
+src/passes/division/chains.rs:20	Signed high-product quotient	Exact reciprocal; correct sign/shift/domain; safe uses	32/64	open matcher	pub(crate) fn signed64_chain(
+src/passes/division/chains.rs:199	Unsigned high-product quotient	Exact reciprocal, shift and domain	32/64	open matcher	pub(crate) fn unsigned64_chain(
+src/passes/division/chains.rs:281	Signed widening quotient	Signed extension/product and exact sign correction	32/64	open matcher	pub(crate) fn signed_chain(
+src/passes/division/select.rs:13	Sign-select remainder	Matching negate, mask and dividend	32/64	open matcher	pub(crate) fn cs_neg_chain(
+src/passes/division/select.rs:175	Biased power-of-two remainder	Exact sign-select and rounded multiple	32/64	open matcher	pub(crate) fn signed_select_mod_chain(
+src/passes/division/select.rs:318	Biased power-of-two quotient	Matching signed condition, bias and arithmetic shift	32/64	open matcher	pub(crate) fn signed_select_chain(
+src/passes/division/widened.rs:52	Named widening-product quotient	Matching product, shifts, sign and live definitions	32	open matcher	pub(crate) fn widened_signed_site(
+src/passes/division/remainder.rs:64	Multiply-back remainder chain	Same source/divisor; aliases and multiplier steps checked	32/64	open matcher	pub(crate) fn remainder_scan(
+src/passes/division/remainder.rs:364	Following multiply/subtract remainder	Exact quotient/multiplier and safe definitions/uses	32/64	open matcher	pub(crate) fn apply_remainder_follows(
+src/passes/division/proof.rs:23	Normalize proof-expression truncations	Only supported modular operations distribute truncation	32/64	open normalizer	fn bits(
+src/passes/division/proof.rs:77	Normalize proof-expression sign extension	Truncate before extending	32/64	open normalizer	fn signed(
+src/passes/division/proof.rs:88	Normalize modular proof operands	Add/Sub/Mul and supported masks	32/64	open normalizer	fn bin(
+src/passes/division/proof.rs:228	Accept quotient equivalence	Normalized expression/domain and reciprocal checks	32/64	open normalizer	fn division(
+src/passes/division/proof.rs:388	Accept remainder equivalence	Exact quotient/multiply-back or signed power-of-two shape	32/64	open normalizer	fn remainder(
+src/ssa/sccp.rs:203	Replace SSA singletons	Signed/condition-sensitive widths retained	8/16/32/64	pass templates	fn substitute(
+src/ssa/sccp.rs:313	Fold SSA assignments and branches	Executable-edge analysis and known values	8/16/32/64	straight-line templates; CFG open	pub fn propagate(
+src/ssa/ranges.rs:1372	Remove masks/extensions and replace singletons	Possible-bit/range facts; width and sensitivity guards	8/16/32/64	pass templates; general facts open	fn rewrite(
+src/ssa/ranges.rs:1254	Simplify assigned/returned values	Preserve type masks and partial-write merges	8/16/32/64	pass templates	fn rewrite_value(
+src/ssa/ranges.rs:1285	Fold branches and prune switches	Proven tests/range coverage and executable edges	8/16/32/64	open CFG proof	fn terminate(
+src/ssa/demand.rs:331	Narrow to demanded low bits	All live demanded bits fit; no hidden use	8/16/32/64	open demand analysis	pub fn narrow_partial_writes(
+src/lift/mod.rs:464	Rotation to shifts and OR	Power-of-two width; final result consumed at that width	8/16/32/64	templates	fn rotate(
+src/lift/mod.rs:497	Byte/chunk reversal	Valid chunk dividing byte width	8/16/32/64	templates	fn reverse_bytes(
+src/lift/mod.rs:650	Recover overwritten comparison operand	Matching register and supported add/subtract inverse	8/16/32/64	open flag lifetime	fn recover_operand(
+src/lift/flags.rs:291	Difference conditions	Subtraction N/Z/no-borrow/overflow	1/8/16/32/64	templates	fn own_test(
+src/lift/flags.rs:511	Sum conditions	ISA carry convention and addition N/Z/C/V	1/8/16/32/64	templates	fn sum(a:
+src/lift/flags.rs:291	Logic/result/shift conditions	Only defined flags; cleared flags or known carry	1/8/16/32/64	templates; width override open	fn own_test(
+src/lift/flags.rs:291	Zero/carry/carry-overflow conditions	Truth bit/nonzero indicator and known flags	1/8/16/32/64	templates	fn own_test(
+src/lift/flags.rs:706	Fixed NZCV conditions	Four explicit flag bits	1	exhaustive16 flags	fn fixed_holds(
+src/lift/flags.rs:125	Integer parity	Defined low byte; no conditional flags	8/16/32/64	templates; stored/float open	pub fn parity(
+src/lift/flags.rs:154	Adjust flag	Difference/sum or saved known flags	8/16/32/64	open	pub fn adjust(
+src/lift/flags.rs:426	Conditions from saved flag byte	Saved sign/zero/carry; overflow only if known	8/1	open	fn stored_test(
+src/lift/flags.rs:475	Floating comparison conditions	ISA ordered/unordered flags	32/64	open IEEE model	fn float_test(
+src/lift/flags.rs:278	Conditional comparison flags	Current comparison or explicit fallback NZCV	1/32	templates	pub fn test(
+src/lift/flags.rs:591	Add carry input	Carry0/1; operands fit width	1/8/16/32/64	templates	pub(super) fn carry_out(
+src/lift/flags.rs:598	Subtract borrow input	Borrow0/1; operands fit width	1/8/16/32/64	templates	pub(super) fn borrow_out(
+src/lift/flags.rs:630	Conjoin recovered conditions	Unknown stays unknown; boolean selects	1/8/16/32/64	conditional flag templates	fn both(
+src/lift/x86_64/operands.rs:253	Partial register write	8/16/high-byte merge;32 zero-extends;64 replaces	8/16/32/64	open lowering	pub(super) fn write_operand(
+src/lift/aarch64/integer.rs:16	Extend then shift operand	Decoded extension kind and source width	8/16/32/64	open lowering	pub(super) fn extend_shift(
+src/lift/arm32.rs:307	Rotated sign/zero extension	Decoded width and rotation	8/16 to32	open lowering	fn extend(
+src/lift/arm32.rs:1071	A32 shifted operand	Architecture shift amount and sign; final low32 result	32	open lowering	fn shift_value(
+src/render/expr.rs:360	Remove or apply count mask	Range <=63 or explicit mask63	8/16/32/64	compiled C instances	fn shift_count(
+src/render/expr.rs:374	Choose shift widths and casts	Bounded count; unsigned logical shifts; correct sign width	8/16/32/64	compiled C instances	fn shift(
+src/render/expr.rs:515	Negation and complement shorthand	Unsigned wrap or proven safe signed arithmetic	8/16/32/64	compiled C instances	fn unfitted(
+src/render/expr.rs:515	Division/remainder casts	Match sign/width; preserve whole unsigned values	8/16/32/64	divisor3 C instances; exceptions open	fn unfitted(
+src/render/expr.rs:515	Omit sign-extension casts	Printed sign range and exact low bits match	8/16/32/64	compiled C instances	fn unfitted(
+src/render/expr.rs:801	Scale pointer arithmetic and spell negative offsets	Known object/scale or byte arithmetic	32/64	integer instances; pointers open	fn arithmetic(
+src/render/expr.rs:948	Arithmetic width and cast choice	Keep required low bits; avoid signed overflow	8/16/32/64	compiled C instances	fn binary(
+src/render/expr.rs:888	Select common type/casts	Both branches preserve required bits	8/16/32/64	boolean C instances; general select open	fn selected(
+src/render/expr.rs:1111	Remove narrow register-read cast	Declared type/range and requested width agree	8/16/32/64	compiled C instances	fn register(
+src/render/expr.rs:1328	Remove low-bit masks	Value already fits or reader observes only low bits	8/16/32/64	compiled C instances	fn masked(
+src/render/expr.rs:1270	High widening-product casts	Correct sign;128-bit product	64/128	open extended C integers	fn high_product(
+src/render/int.rs:206	Omit redundant integer cast	Promoted type/range make truncation unnecessary	8/16/32/64	compiled C instances	pub(crate) fn cast(
+src/render/int.rs:403	Insert/omit fitting casts	Exact-bit agreement and value range cover reader	8/16/32/64	compiled C instances	pub(crate) fn fit(
+src/render/expr/condition.rs:6	Zero/truth tests and comparison casts	Eq/Ne zero or truth-valued expression; common C type exact	8/16/32/64	scalar C instances; nested truth open	pub(crate) fn condition(
+src/render/expr/condition.rs:130	Remove comparison masks or reread sign	Common C type preserves IR comparison width	8/16/32/64	compiled C instances	fn compared(
+src/render/expr/condition.rs:289	Boolean selects to logical AND/OR/NOT	Truth-valued alternatives; read order retained	1	open nested truth templates	pub(super) fn logic(
+src/render/expr/operation.rs:8	Remove floating mask	Result precision matches and mask covers it	32/64	open IEEE model	pub(super) fn unmasked_float(
+src/render/expr/operation.rs:357	Omit integer/float conversion casts	Source type/range implements operation width/sign	8/16/32/64	open IEEE model	fn implicit_conversion(
+src/render/expr/memory.rs:40	Fold byte pointer arithmetic	Known object origin and checked displacement	32/64 addresses	open C object model	pub(super) fn byte_sum(
+src/render/expr/memory.rs:131	Replace raw load by named access	Alias/layout/access sign and width known	8/16/32/64	open C object model	pub(super) fn load(
+src/render/stmt.rs:54	Drop update masks	Destination truncates to same width	8/16/32/64	open statement context	fn without_update_mask(
+src/render/stmt.rs:93	Fit return/argument type	Declared/inferred destination and exact agreement	8/16/32/64	U64 return instances; other destinations open	pub(super) fn conformed(
+src/render/stmt.rs:188	Narrow assignment spelling	Destination type supplies required truncation	8/16/32/64	open compiled assignment	pub(super) fn narrow_write(
+src/render/widths.rs:37	Narrow printed locals	Every demanded read/write agrees	8/16/32/64	open whole-function context	pub(crate) fn narrow_variables(
+src/render/params.rs:492	Promote saved parameters	Safe slots; no overlapping clobber; matching widths	8/16/32/64	open memory/ABI context	fn replace_loads(
+src/render/stack_bytes.rs:399	Stack addresses to array offsets	Known origin, bounds and initialized access	32/64	open C object model	fn rewrite_address(
+src/render/abi_objects.rs:320	ABI object access to local object	ABI mapping; initialized bytes; checked bounds	ABI-defined	open memory/ABI context	fn rewrite_value(
+src/render/locals/returns.rs:98	Substitute returned copy	Source still live; assignment truncation retained	8/16/32/64	open structured CFG	fn replace_returns(
+src/render/locals/values.rs:10	Inline values into structured nodes	Single use; compatible types; safe motion/effects	8/16/32/64	open structured CFG	pub(in crate::render) fn fold(
+src/analysis/structures.rs:950	Fold structure scales/indexes	Proven layout and scale	32/64	open structure context	fn rewrite(

@@ -67,7 +67,7 @@ double average(int32_t a0, int32_t a1) {
             v5 = 0;
         } else {
             v29 = v27 & 0x7ffffffc;
-            v21 = v2 - 32;
+            v21 = (uint32_t)v2 - 32;
             *(uint32_t *)(sp - 0x28) = v2;
             for (;;) {
                 int32_t v9 = *(uint32_t *)(v21 + 32);
@@ -99,21 +99,21 @@ double average(int32_t a0, int32_t a1) {
         }
         int32_t v28 = v2 + (v3 << 3);
         {
-            call_values[0] = sub_20190((uint32_t)v4, (uint32_t)v5, *(uint32_t *)(v2 + (v3 << 3)), *(uint32_t *)((v28 + 4) & 0xffffffff));
+            call_values[0] = sub_20190((uint32_t)v4, (uint32_t)v5, *(uint32_t *)(v2 + (v3 << 3)), *(uint32_t *)((uint32_t)v28 + 4));
             call_values[1] = v31; /* also returned by the call */
             v4 = (uint32_t)(call_values[0]);
             v5 = (uint32_t)(call_values[1]);
         }
         if (v26 != 1) {
             {
-                call_values[0] = sub_2019e((uint32_t)v4, (uint32_t)v5, *(uint32_t *)((v28 + 8) & 0xffffffff), *(uint32_t *)((uint64_t)((v28 + 8) & 0xffffffff) + 0x4));
+                call_values[0] = sub_2019e((uint32_t)v4, (uint32_t)v5, *(uint32_t *)((uint32_t)v28 + 8), *(uint32_t *)((uint64_t)((uint32_t)v28 + 8) + 0x4));
                 call_values[1] = v31; /* also returned by the call */
                 v4 = (uint32_t)(call_values[0]);
                 v5 = (uint32_t)(call_values[1]);
             }
             if (v26 != 2) {
                 {
-                    call_values[0] = sub_201ac((uint32_t)v4, (uint32_t)v5, *(uint32_t *)((v28 + 16) & 0xffffffff), *(uint32_t *)((uint64_t)((v28 + 16) & 0xffffffff) + 0x4));
+                    call_values[0] = sub_201ac((uint32_t)v4, (uint32_t)v5, *(uint32_t *)((uint32_t)v28 + 16), *(uint32_t *)((uint64_t)((uint32_t)v28 + 16) + 0x4));
                     call_values[1] = v31; /* also returned by the call */
                     v4 = (uint32_t)(call_values[0]);
                     v5 = (uint32_t)(call_values[1]);

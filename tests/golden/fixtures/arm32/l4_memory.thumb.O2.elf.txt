@@ -71,7 +71,7 @@ int array_sum(int *a, int n) {
                 int32_t v7 = *(uint32_t *)(v1 + 16);
                 int32_t v8 = v13 - 4;
                 int32_t v9 = v1 + 20;
-                int32_t v10 = v6 + v7;
+                int32_t v10 = (uint32_t)v6 + v7;
                 /* unsupported: ARM ldm r6, {r4, r5, r6} at 0x20162 */
                 int32_t v11 = n + v14;
                 int32_t v12 = v11 + v15;
@@ -90,16 +90,16 @@ int array_sum(int *a, int n) {
         v6 += *(uint32_t *)((uint32_t)(uintptr_t)a + (v13 << 2));
         if (v20 != 1) {
             int32_t v17 = (uint32_t)(uintptr_t)a + (v13 << 2);
-            v6 += *(uint32_t *)((v17 + 4) & 0xffffffff);
+            v6 += *(uint32_t *)((uint32_t)v17 + 4);
             int32_t v18 = v20;
             int32_t v19 = 2;
             if (v20 != 2) {
-                v17 = *(uint32_t *)((v17 + 8) & 0xffffffff);
+                v17 = *(uint32_t *)((uint32_t)v17 + 8);
             }
             if (v18 == v19) {
                 return v6;
             }
-            v6 += v17;
+            v6 = (uint32_t)v6 + v17;
             return v6;
         }
         return v6;

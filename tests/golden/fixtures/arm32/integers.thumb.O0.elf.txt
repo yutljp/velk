@@ -53,7 +53,7 @@ int32_t mixed_sign(int32_t a0, int32_t a1) {
     /* unsupported: AAPCS32 multiword, floating-point or aggregate declaration */
     int32_t t1 = a0 >> 31;
     int32_t v2 = t1;
-    int32_t v3 = a0 - a1;
+    int32_t v3 = (uint32_t)a0 - a1;
     /* unsupported: ARM sbc r1, r1, 0x0 at 0x20166 */
     return a0;
 }
@@ -138,7 +138,7 @@ int popcount(unsigned int x) {
     int32_t result = 0;
     while (x != 0) {
         x &= x - 1;
-        ++result;
+        result = (uint32_t)result + 1;
     }
     return result;
 }
@@ -237,7 +237,7 @@ fn min3 @ 0x20204 (size 62)
 /* velk pseudo-C: labs_value @ 0x20244 */
 int32_t labs_value(int32_t x) {
     if (x <= -1) {
-        return -x;
+        return -(uint32_t)x;
     }
     return x;
 }

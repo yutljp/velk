@@ -12,7 +12,7 @@
 struct item { _Alignas(8) long key; int count; short kind; uint8_t gap_0xe[0x2]; };
 int item_weight(struct item *items, int i) {
     struct item *v1 = items + i;
-    return v1->count * v1->kind;
+    return (uint32_t)v1->count * v1->kind;
 }
 -- signature
 int (struct item * items, int i)
@@ -33,7 +33,7 @@ struct cell { _Alignas(4) int x; int y; int z; };
 void cell_set(struct cell *cells, long i, int v) {
     struct cell *v1 = cells + i;
     v1->x = v;
-    v1->z = v + 1;
+    v1->z = (uint32_t)v + 1;
 }
 -- signature
 void (struct cell * cells, long i, int v)
@@ -64,7 +64,7 @@ long item_last_key(struct item *items, int n) {
         if (*(int32_t *)(v4) >= 1) {
             v2 = *(uint64_t *)(v4 - 0x8);
         }
-        --v3;
+        v3 = (int64_t)((uint64_t)v3 - 1);
         v4 += 0x10;
     } while (v3 != 0);
     return v2;

@@ -24,7 +24,7 @@ int count_bits(unsigned int x) {
             int32_t v5 = v3 & 0x1;
             int32_t v6 = v3 >> 1;
             v3 >>= 1;
-            v4 += v5;
+            v4 = (uint32_t)v4 + v5;
             if (v6 == 0) break;
         }
         return v4;
@@ -76,14 +76,14 @@ int sum_until(int limit) {
         limit = 0;
     }
     if (v1 >= v2) {
-        int32_t v3 = limit - 2;
-        int32_t v4 = limit - 1;
+        int32_t v3 = (uint32_t)limit - 2;
+        int32_t v4 = (uint32_t)limit - 1;
         /* unsupported: ARM umull r1, r2, r2, r1 at 0x20138 */
         uint32_t v5 = v10 & 0x1;
         int32_t v6 = v5 >> 1;
         /* unsupported: ARM mov r1, r1, rrx at 0x20144 */
         int32_t v7 = v9 + ((uint64_t)limit << 1);
-        int32_t v8 = v7 - 1;
+        int32_t v8 = (uint32_t)v7 - 1;
         return v8;
     }
     return limit;
@@ -127,10 +127,10 @@ int sum_till_neg(int *p, int n) {
         int32_t v3 = 0;
         while (true) {
             int32_t v4 = *(uint32_t *)((uint32_t)v1);
-            v1 += 4;
-            if (v4 == -1 || (v4 + 1 ^ (v4 ^ v4 + 1) & (0x1 ^ v4 + 1)) < 0) break;
-            v3 = v4 + v3;
-            --v2;
+            v1 = (uint32_t)v1 + 4;
+            if (v4 == -1 || (int32_t)((uint32_t)v4 + 1 ^ (v4 ^ (uint32_t)v4 + 1) & (0x1 ^ (uint32_t)v4 + 1)) < 0) break;
+            v3 = (uint32_t)v4 + v3;
+            v2 = (uint32_t)v2 - 1;
             if (v2 == 0) {
                 return v3;
             }
@@ -182,9 +182,9 @@ int sum_until_zero(int *p, int n) {
         int32_t v2 = 0;
         while (true) {
             int32_t v3 = *(uint32_t *)((uint32_t)v1);
-            v1 += 4;
+            v1 = (uint32_t)v1 + 4;
             if (v3 == 0) break;
-            --n;
+            n = (uint32_t)n - 1;
             v2 = (v3 & (v3 >> 31 ^ 0xffffffff)) + v2;
             if (n == 0) {
                 return v2;

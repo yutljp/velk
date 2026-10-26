@@ -23,7 +23,7 @@ uint64_t objc_msgSend();
 -- decompile
 /* velk pseudo-C: -[Counter add:with:] @ 0x1000008c0 */
 int64_t _Counter_add_with__(int64_t a0, int64_t a1, int64_t a2, int64_t a3) {
-    return a2 + a3;
+    return (int64_t)((uint64_t)a2 + a3);
 }
 -- signature
 int64_t (int64_t a0, int64_t a1, int64_t a2, int64_t a3)
@@ -160,7 +160,7 @@ fn _use_block @ 0x1000009a4 (size 56)
 -- decompile
 /* velk pseudo-C: ___use_block_block_invoke @ 0x1000009dc */
 int64_t __use_block_block_invoke(int64_t a0, int64_t a1) {
-    return a1 + 3;
+    return (int64_t)((uint64_t)a1 + 3);
 }
 -- signature
 int64_t (int64_t a0, int64_t a1)

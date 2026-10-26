@@ -785,7 +785,7 @@ fn parameter_copies_of_another_sign_fold_only_without_extra_conversions() {
             );
             if !wide && !overwritten {
                 assert!(
-                    !candidate.code.contains("uint32_t v1"),
+                    candidate.code.contains("uint32_t v1 = input;"),
                     "{}",
                     candidate.code
                 );

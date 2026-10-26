@@ -33,7 +33,7 @@ static inline uint64_t add_lanes32(uint64_t a, uint64_t b) {
 struct S1 { int32_t field_0x0; int32_t field_0x4; };
 struct S2 { int32_t field_0x0; int32_t field_0x4; };
 int32_t point_dot(struct S1 *a0, struct S2 *a1) {
-    return a1->field_0x4 * a0->field_0x4 + a1->field_0x0 * a0->field_0x0;
+    return (uint32_t)a1->field_0x4 * a0->field_0x4 + (uint32_t)a1->field_0x0 * a0->field_0x0;
 }
 -- signature
 int32_t (struct S1 * a0, struct S2 * a1)
@@ -64,10 +64,10 @@ int32_t array_sum(uint32_t *a0, int32_t a1) {
         struct velk_vector vector_2 = { .low.u64 = 0, .high.u64 = 0 };
         do {
             vector_2.low.u64 = add_lanes32(vector_2.low.u64, *(uint64_t *)(a0 + v7 / 4));
-            vector_2.high.u64 = add_lanes32(vector_2.high.u64, *(uint64_t *)(a0 + (v7 / 4 + 0x2)));
-            vector.low.u64 = add_lanes32(vector.low.u64, *(uint64_t *)(a0 + (v7 / 4 + 0x4)));
-            vector.high.u64 = add_lanes32(vector.high.u64, *(uint64_t *)(a0 + (v7 / 4 + 0x6)));
-            v7 += 32;
+            vector_2.high.u64 = add_lanes32(vector_2.high.u64, *(uint64_t *)(a0 + (int64_t)((uint64_t)(v7 / 4) + 0x2)));
+            vector.low.u64 = add_lanes32(vector.low.u64, *(uint64_t *)(a0 + (int64_t)((uint64_t)(v7 / 4) + 0x4)));
+            vector.high.u64 = add_lanes32(vector.high.u64, *(uint64_t *)(a0 + (int64_t)((uint64_t)(v7 / 4) + 0x6)));
+            v7 = (int64_t)((uint64_t)v7 + 32);
         } while (v4 != v7);
         uint64_t v17 = add_lanes32(add_lanes32(vector.high.u64, vector_2.high.u64), add_lanes32(vector.low.u64, vector_2.low.u64));
         v3 = add_lanes32(v17 >> 32 | v17 >> 32 << 32, v17);
@@ -80,7 +80,7 @@ int32_t array_sum(uint32_t *a0, int32_t a1) {
     }
     do {
         v3 += a0[v2];
-        ++v2;
+        v2 = (int64_t)((uint64_t)v2 + 1);
     } while ((uint32_t)a1 != v2);
     return v3;
 }

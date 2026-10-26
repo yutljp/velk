@@ -20,8 +20,8 @@ int32_t total_area(uint64_t *a0, int32_t a1) {
     do {
         uint64_t *v5 = (uint64_t *)a0[v3];
         uint64_t *v6 = (uint64_t *)*v5;
-        v4 += ((int32_t)(((uint64_t (*)())v6[2])(v5)));
-        ++v3;
+        v4 = (uint32_t)v4 + ((int32_t)(((uint64_t (*)())v6[2])(v5)));
+        v3 = (int64_t)((uint64_t)v3 + 1);
     } while ((uint32_t)a1 != v3);
     return v4;
 }
@@ -98,7 +98,7 @@ fn clamp_long(long) @ 0x70 (size 35)
 struct S1 { int32_t field_0x0; int32_t field_0x4; };
 struct S2 { int32_t field_0x0; int32_t field_0x4; };
 int32_t dot_sum(struct S2 *a0, struct S1 *a1) {
-    return (a1->field_0x4 + a0->field_0x4) * (a1->field_0x0 + a0->field_0x0);
+    return ((uint32_t)a1->field_0x4 + a0->field_0x4) * ((uint32_t)a1->field_0x0 + a0->field_0x0);
 }
 -- signature
 int32_t (struct S2 * a0, struct S1 * a1)

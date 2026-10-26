@@ -46,7 +46,7 @@ int sum_until(int limit) {
     if (limit <= 0) {
         return 0;
     }
-    int32_t v1 = limit + 1;
+    int32_t v1 = (uint32_t)limit + 1;
     uint64_t v2 = (v1 >= 3 ? v1 : 2) & 0xffffffff;
     int32_t v4 = ((v2 - 3) & 0xffffffff) * (0x1fffffffe + v2) >> 1;
     return v4 + v2 * 2 - 3;
@@ -84,8 +84,8 @@ int sum_till_neg(int *p, int n) {
         if (v5 < 0) {
             break;
         }
-        v6 += v5;
-        ++i;
+        v6 = (uint32_t)v6 + v5;
+        i = (int64_t)((uint64_t)i + 1);
     } while (v3 != i);
     return v6;
 }
@@ -122,12 +122,12 @@ int sum_until_zero(int *p, int n) {
         return 0;
     }
     int32_t v3 = 0;
-    for (int64_t i = 0; i < (uint32_t)n; i++) {
+    for (int64_t i = 0; i < (uint32_t)n; i = (int64_t)((uint64_t)i + 1)) {
         int32_t v4 = p[i];
         if (v4 == 0) {
             break;
         }
-        v3 += (v4 <= 0 ? 0 : v4);
+        v3 = (uint32_t)v3 + (v4 <= 0 ? 0 : v4);
     }
     return v3;
 }

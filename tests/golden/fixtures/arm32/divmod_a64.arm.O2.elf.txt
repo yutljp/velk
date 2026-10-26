@@ -114,14 +114,14 @@ int32_t hdiv3(int32_t a0, int32_t a1) {
 
     /* unsupported: AAPCS32 multiword, floating-point or aggregate declaration */
     *(uint32_t *)(sp - 0x8) = v8;
-    int32_t v1 = a0 + a1;
+    int32_t v1 = (uint32_t)a0 + a1;
     /* unsupported: ARM adc lr, r2, 0x0 at 0x201e0 */
     int32_t v3 = v12 & 0xffff | 0xaaaa0000;
     /* unsupported: ARM umull r3, r2, lr, ip at 0x201e8 */
     int32_t v4 = v2 & 0xfffffffe;
     int32_t v5 = v4 + (v2 >> 1);
     int32_t v7 = v13 - v5;
-    int32_t v9 = a0 - v7;
+    int32_t v9 = (uint32_t)a0 - v7;
     /* unsupported (2 steps): ARM sbc r1, r1, 0x0 at 0x20204, ARM umull r0, lr, r2, ip at 0x20208 */
     int32_t v10 = v13 + v2 * v6;
     int32_t v11 = v10 + a1 * v12;
@@ -330,7 +330,7 @@ unsigned int umod3(unsigned int x) {
 
     /* unsupported: ARM umull r1, r2, r0, r1 at 0x202e4 */
     int32_t v3 = v1 >> 1;
-    int32_t v4 = v3 * 3;
+    int32_t v4 = (uint32_t)v3 * 3;
     int32_t v5 = x - v4;
     return v5;
 }
@@ -359,7 +359,7 @@ unsigned int umod10(unsigned int x) {
 
     /* unsupported: ARM umull r1, r2, r0, r1 at 0x20300 */
     int32_t v3 = v1 >> 3;
-    uint32_t v4 = v3 * 5;
+    uint32_t v4 = (uint32_t)v3 * 5;
     int32_t v5 = x - (v4 << 1);
     return v5;
 }
@@ -530,7 +530,7 @@ fn smod4 @ 0x203a4 (size 20)
 -- decompile
 /* velk pseudo-C: negate @ 0x203b8 */
 int negate(int x) {
-    return -x;
+    return -(uint32_t)x;
 }
 -- signature
 int (int x)
@@ -610,7 +610,7 @@ fn is_pos @ 0x203d4 (size 20)
 -- decompile
 /* velk pseudo-C: lnegate @ 0x203e8 */
 int32_t lnegate(int32_t x) {
-    return -x;
+    return -(uint32_t)x;
 }
 -- signature
 int32_t (int32_t x)

@@ -19,7 +19,7 @@ extern uint64_t g_140003000; /* address: 0x140003000 */
 -- decompile
 /* velk pseudo-C: reg_add @ 0x140001000 */
 int32_t reg_add(int32_t a0, int32_t a1) {
-    return a0 + a1;
+    return (uint32_t)a0 + a1;
 }
 -- signature
 int32_t (int32_t a0, int32_t a1)
@@ -36,7 +36,7 @@ fn reg_add @ 0x140001000 (size 16)
 -- decompile
 /* velk pseudo-C: reg_mul @ 0x140001010 */
 int32_t reg_mul(int32_t a0, int32_t a1) {
-    return a0 * a1;
+    return (uint32_t)a0 * a1;
 }
 -- signature
 int32_t (int32_t a0, int32_t a1)
@@ -104,7 +104,7 @@ fn reg_negative @ 0x140001040 (size 16)
 -- decompile
 /* velk pseudo-C: reg_abs @ 0x140001050 */
 int32_t reg_abs(int32_t a0) {
-    return (-a0 < 0 ? a0 : -a0);
+    return ((int32_t)-(uint32_t)a0 < 0 ? a0 : -(uint32_t)a0);
 }
 -- signature
 int32_t (int32_t a0)

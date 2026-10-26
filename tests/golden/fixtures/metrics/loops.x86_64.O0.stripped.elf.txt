@@ -44,8 +44,8 @@ fn <unnamed> @ 0x2011c0 (size 54)
 /* velk pseudo-C: sub_201200 @ 0x201200 */
 int32_t sub_201200(int32_t a0) {
     int32_t result = 0;
-    for (int32_t i = 1; i <= a0; i++) {
-        result = i + result;
+    for (int32_t i = 1; i <= a0; i = (uint32_t)i + 1) {
+        result = (uint32_t)i + result;
     }
     return result;
 }

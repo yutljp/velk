@@ -44,7 +44,7 @@ void copy_bytes(unsigned char *dst, unsigned char *src, uint32_t n) {
             int64_t i = 0;
             do {
                 __builtin_memmove(dst + i, src + i, 32);
-                i += 32;
+                i = (int64_t)((uint64_t)i + 32);
             } while (v7 != i);
             if (v7 == n) {
                 return;
@@ -59,7 +59,7 @@ void copy_bytes(unsigned char *dst, unsigned char *src, uint32_t n) {
         v7 = n & 0xfffffffc;
         do {
             *(uint32_t *)(dst + v13) = *(uint32_t *)(src + v13);
-            v13 += 4;
+            v13 = (int64_t)((uint64_t)v13 + 4);
         } while (v7 != v13);
         if (v7 == n) {
             return;
@@ -74,8 +74,8 @@ L_1800010a6:;
         v15 = v7;
         do {
             dst[v15] = src[v15];
-            ++v15;
-            --v16;
+            v15 = (int64_t)((uint64_t)v15 + 1);
+            v16 = (int64_t)((uint64_t)v16 - 1);
         } while (v16 != 0);
     }
     if (v7 - n > -4) {
@@ -83,10 +83,10 @@ L_1800010a6:;
     }
     do {
         dst[v15] = src[v15];
-        dst[v15 + 1] = src[v15 + 1];
-        dst[v15 + 2] = src[v15 + 2];
-        dst[v15 + 3] = src[v15 + 3];
-        v15 += 4;
+        dst[(int64_t)((uint64_t)v15 + 1)] = src[(int64_t)((uint64_t)v15 + 1)];
+        dst[(int64_t)((uint64_t)v15 + 2)] = src[(int64_t)((uint64_t)v15 + 2)];
+        dst[(int64_t)((uint64_t)v15 + 3)] = src[(int64_t)((uint64_t)v15 + 3)];
+        v15 = (int64_t)((uint64_t)v15 + 4);
     } while (n != v15);
 }
 -- signature
@@ -181,10 +181,10 @@ void fill_bytes(unsigned char *dst, unsigned char value, uint32_t n) {
             int64_t i = 0;
             do {
                 *(uint64_t *)(dst + i) = v4;
-                *(uint64_t *)(dst + (i + 0x8)) = v4;
-                *(uint64_t *)(dst + (i + 0x10)) = v4;
-                *(uint64_t *)(dst + (i + 0x18)) = v4;
-                i += 32;
+                *(uint64_t *)(dst + (int64_t)((uint64_t)i + 0x8)) = v4;
+                *(uint64_t *)(dst + (int64_t)((uint64_t)i + 0x10)) = v4;
+                *(uint64_t *)(dst + (int64_t)((uint64_t)i + 0x18)) = v4;
+                i = (int64_t)((uint64_t)i + 32);
             } while (v2 != i);
             if ((uint32_t)v2 == n) {
                 return;
@@ -201,7 +201,7 @@ void fill_bytes(unsigned char *dst, unsigned char value, uint32_t n) {
         v11 = v11 & 0xffff | v11 << 16 | (uint64_t)v11 << 32 | (uint64_t)v11 << 48;
         do {
             *(uint32_t *)(dst + v8) = v11;
-            v8 += 4;
+            v8 = (int64_t)((uint64_t)v8 + 4);
         } while (v2 != v8);
         if ((uint32_t)v2 == n) {
             return;
@@ -212,7 +212,7 @@ void fill_bytes(unsigned char *dst, unsigned char value, uint32_t n) {
 L_1800011d0:
     do {
         dst[v2] = value;
-        ++v2;
+        v2 = (int64_t)((uint64_t)v2 + 1);
     } while (n != v2);
 }
 -- signature
@@ -280,9 +280,9 @@ uint32_t string_length(char *s) {
     int32_t n = 0;
     do {
         v2 = n;
-        ++n;
+        n = (uint32_t)n + 1;
     } while (s[v2] != 0);
-    return n - 1;
+    return (uint32_t)n - 1;
 }
 -- signature
 uint32_t (char * s)
@@ -359,7 +359,7 @@ fn pointer_distance @ 0x180001240 (size 11)
 -- decompile
 /* velk pseudo-C: read_volatile @ 0x180001250 */
 int read_volatile(int *p) {
-    return *p + *p;
+    return (uint32_t)*p + *p;
 }
 -- signature
 int (int * p)

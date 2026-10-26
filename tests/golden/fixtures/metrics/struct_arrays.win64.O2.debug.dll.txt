@@ -12,7 +12,7 @@
 struct item { _Alignas(4) int32_t key; int count; short kind; uint8_t gap_0xa[0x2]; };
 int item_weight(struct item *items, int i) {
     int64_t v1 = (int64_t)i * 3;
-    return *(int16_t *)((uint8_t *)items + v1 * 0x4 + 0x8) * *(uint32_t *)((uint8_t *)items + v1 * 0x4 + 0x4);
+    return *(int16_t *)((uint8_t *)items + (int64_t)((uint64_t)v1 * 0x4) + 0x8) * *(uint32_t *)((uint8_t *)items + (int64_t)((uint64_t)v1 * 0x4) + 0x4);
 }
 -- signature
 int (struct item * items, int i)
@@ -32,8 +32,8 @@ fn item_weight @ 0x180001000 (size 18)
 struct cell { _Alignas(4) int x; int y; int z; };
 void cell_set(struct cell *cells, int32_t i, int v) {
     int64_t v1 = (int64_t)i * 3;
-    *(uint32_t *)((uint8_t *)cells + v1 * 0x4) = v;
-    *(uint32_t *)((uint8_t *)cells + v1 * 0x4 + 0x8) = v + 1;
+    *(uint32_t *)((uint8_t *)cells + (int64_t)((uint64_t)v1 * 0x4)) = v;
+    *(uint32_t *)((uint8_t *)cells + (int64_t)((uint64_t)v1 * 0x4) + 0x8) = (uint32_t)v + 1;
 }
 -- signature
 void (struct cell * cells, int32_t i, int v)
@@ -72,7 +72,7 @@ int32_t item_last_key(struct item *items, int n) {
             if ((int32_t)*v5 > 0) {
                 v2 = v5[-1];
             }
-            v1 += 2;
+            v1 = (int64_t)((uint64_t)v1 + 2);
             v5 += 0x6;
         } while (v4 != v1);
         if ((n & 0x1) == 0) {
@@ -82,11 +82,11 @@ int32_t item_last_key(struct item *items, int n) {
         v1 = 0;
         v2 = 0;
     }
-    int64_t v6 = v1 * 3;
-    if (*(int32_t *)((uint8_t *)items + v6 * 0x4 + 0x4) <= 0) {
+    int64_t v6 = (int64_t)((uint64_t)v1 * 3);
+    if (*(int32_t *)((uint8_t *)items + (int64_t)((uint64_t)v6 * 0x4) + 0x4) <= 0) {
         return v2;
     }
-    return *(uint32_t *)((uint8_t *)items + v6 * 0x4);
+    return *(uint32_t *)((uint8_t *)items + (int64_t)((uint64_t)v6 * 0x4));
 }
 -- signature
 int32_t (struct item * items, int n)

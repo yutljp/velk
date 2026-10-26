@@ -14,7 +14,7 @@ int tail_target(int);
 -- decompile
 /* velk pseudo-C: tail_target @ 0x180001000 */
 int tail_target(int x) {
-    return x * 3 + 1;
+    return (uint32_t)x * 3 + 1;
 }
 -- signature
 int (int x)
@@ -31,7 +31,7 @@ fn tail_target @ 0x180001000 (size 25)
 -- decompile
 /* velk pseudo-C: tail_direct @ 0x180001020 */
 int tail_direct(int x) {
-    return tail_target(x + 2);
+    return tail_target((uint32_t)x + 2);
 }
 -- signature
 int (int x)
@@ -49,7 +49,7 @@ fn tail_direct @ 0x180001020 (size 26)
 -- decompile
 /* velk pseudo-C: tail_indirect @ 0x180001040 */
 int tail_indirect(void *f, int x) {
-    return ((uint64_t (*)())f)((x + 1) & 0xffffffff);
+    return ((uint64_t (*)())f)((uint32_t)x + 1);
 }
 -- signature
 int (void * f, int x)
@@ -67,7 +67,7 @@ fn tail_indirect @ 0x180001040 (size 33)
 -- decompile
 /* velk pseudo-C: six_args @ 0x180001070 */
 int six_args(int a, int b, int c, int d, int e, int f) {
-    return a + b + c + d + e + f;
+    return (uint32_t)a + b + c + d + e + f;
 }
 -- signature
 int (int a, int b, int c, int d)

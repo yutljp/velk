@@ -11,7 +11,7 @@
 -- decompile
 /* velk pseudo-C: add3 @ 0x200fc */
 int add3(int a, int b, int c) {
-    return a + b + c;
+    return (uint32_t)a + b + c;
 }
 -- signature
 int (int a, int b, int c)
@@ -28,7 +28,7 @@ fn add3 @ 0x200fc (size 22)
 -- decompile
 /* velk pseudo-C: scale @ 0x20114 */
 int scale(int x) {
-    return x * 7 + 3;
+    return (uint32_t)x * 7 + 3;
 }
 -- signature
 int (int x)
@@ -77,7 +77,7 @@ fn pick @ 0x20124 (size 34)
 -- decompile
 /* velk pseudo-C: negate @ 0x20148 */
 int negate(int x) {
-    return -x;
+    return -(uint32_t)x;
 }
 -- signature
 int (int x)

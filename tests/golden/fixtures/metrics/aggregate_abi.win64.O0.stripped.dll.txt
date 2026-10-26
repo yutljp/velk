@@ -20,7 +20,7 @@
 struct S1 { int64_t field_0x0; int64_t field_0x8; };
 struct S2 { int64_t field_0x0; int64_t field_0x8; };
 struct S1 *sub_180001000(struct S1 *result, struct S2 *a1, int64_t a2) {
-    result->field_0x0 = a1->field_0x0 + a2;
+    result->field_0x0 = (int64_t)((uint64_t)a1->field_0x0 + a2);
     result->field_0x8 = a1->field_0x8 ^ a2;
     return result;
 }
@@ -174,7 +174,7 @@ fn <unnamed> @ 0x180001150 (size 73)
 struct S1 { int64_t field_0x0; int64_t field_0x8; };
 int64_t sub_1800011a0(int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5, int64_t a6) {
     struct S1 *v2 = (struct S1 *)a5;
-    return a0 + a1 * 3 + a2 * 5 + a3 * 7 + a4 * 11 + v2->field_0x0 * 13 + v2->field_0x8 * 17 + a6 * 19;
+    return (int64_t)((uint64_t)(int64_t)((uint64_t)(int64_t)((uint64_t)a0 + (int64_t)((uint64_t)a1 * 3)) + (int64_t)((uint64_t)a2 * 5)) + (int64_t)((uint64_t)a3 * 7)) + a4 * 11 + (int64_t)((uint64_t)v2->field_0x0 * 13) + (int64_t)((uint64_t)v2->field_0x8 * 17) + a6 * 19;
 }
 -- signature
 int64_t (int64_t a0, int64_t a1, int64_t a2, int64_t a3)
@@ -194,7 +194,7 @@ fn <unnamed> @ 0x1800011a0 (size 110)
 struct S1 { int64_t field_0x0; int64_t field_0x8; };
 int64_t sub_180001210(int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5, int64_t a6, int64_t a7, int64_t a8) {
     struct S1 *v2 = (struct S1 *)a7;
-    return a0 + a1 * 3 + a2 * 5 + a3 * 7 + a4 * 11 + a5 * 13 + a6 * 17 + v2->field_0x0 * 19 + v2->field_0x8 * 23 + a8 * 29;
+    return (int64_t)((uint64_t)(int64_t)((uint64_t)(int64_t)((uint64_t)a0 + (int64_t)((uint64_t)a1 * 3)) + (int64_t)((uint64_t)a2 * 5)) + (int64_t)((uint64_t)a3 * 7)) + a4 * 11 + a5 * 13 + a6 * 17 + (int64_t)((uint64_t)v2->field_0x0 * 19) + (int64_t)((uint64_t)v2->field_0x8 * 23) + a8 * 29;
 }
 -- signature
 int64_t (int64_t a0, int64_t a1, int64_t a2, int64_t a3)
@@ -218,9 +218,9 @@ struct S1 *sub_1800012a0(struct S1 *result, struct S2 *a1, int64_t a2) {
     int64_t local_0; /* [sp-10] */
 
     local_0 = a2;
-    result->field_0x0 = a1->field_0x0 + a2;
+    result->field_0x0 = (int64_t)((uint64_t)a1->field_0x0 + a2);
     result->field_0x8 = a1->field_0x8 ^ local_0;
-    result->field_0x10 = a1->field_0x0 - a1->field_0x8;
+    result->field_0x10 = (int64_t)((uint64_t)a1->field_0x0 - a1->field_0x8);
     return result;
 }
 -- signature
@@ -246,7 +246,7 @@ fn <unnamed> @ 0x1800012a0 (size 73)
 struct S1 { int64_t field_0x0; int64_t field_0x8; };
 int64_t sub_1800012f0(int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5, int64_t a6) {
     struct S1 *v2 = (struct S1 *)a5;
-    return a0 + a1 * 3 + a2 * 5 + a3 * 7 + a4 * 11 + v2->field_0x0 * 13 + v2->field_0x8 * 17 + a6 * 19;
+    return (int64_t)((uint64_t)(int64_t)((uint64_t)(int64_t)((uint64_t)a0 + (int64_t)((uint64_t)a1 * 3)) + (int64_t)((uint64_t)a2 * 5)) + (int64_t)((uint64_t)a3 * 7)) + a4 * 11 + (int64_t)((uint64_t)v2->field_0x0 * 13) + (int64_t)((uint64_t)v2->field_0x8 * 17) + a6 * 19;
 }
 -- signature
 int64_t (int64_t a0, int64_t a1, int64_t a2, int64_t a3)
@@ -266,7 +266,7 @@ fn <unnamed> @ 0x1800012f0 (size 110)
 struct S1 { int64_t field_0x0; int64_t field_0x8; };
 int64_t sub_180001360(int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5, int64_t a6, int64_t a7, int64_t a8) {
     struct S1 *v2 = (struct S1 *)a7;
-    return a0 + a1 * 3 + a2 * 5 + a3 * 7 + a4 * 11 + a5 * 13 + a6 * 17 + v2->field_0x0 * 19 + v2->field_0x8 * 23 + a8 * 29;
+    return (int64_t)((uint64_t)(int64_t)((uint64_t)(int64_t)((uint64_t)a0 + (int64_t)((uint64_t)a1 * 3)) + (int64_t)((uint64_t)a2 * 5)) + (int64_t)((uint64_t)a3 * 7)) + a4 * 11 + a5 * 13 + a6 * 17 + (int64_t)((uint64_t)v2->field_0x0 * 19) + (int64_t)((uint64_t)v2->field_0x8 * 23) + a8 * 29;
 }
 -- signature
 int64_t (int64_t a0, int64_t a1, int64_t a2, int64_t a3)

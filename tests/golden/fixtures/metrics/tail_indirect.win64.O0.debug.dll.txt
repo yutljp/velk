@@ -9,7 +9,7 @@
 -- decompile
 /* velk pseudo-C: via_ptr @ 0x180001000 */
 int via_ptr(void *f, int x) {
-    return ((uint64_t (*)())f)((x + 1) & 0xffffffff);
+    return ((uint64_t (*)())f)((uint32_t)x + 1);
 }
 -- signature
 int (void * f, int x)
@@ -27,7 +27,7 @@ fn via_ptr @ 0x180001000 (size 33)
 -- decompile
 /* velk pseudo-C: after_ptr @ 0x180001030 */
 int after_ptr(int x) {
-    return x + 5;
+    return (uint32_t)x + 5;
 }
 -- signature
 int (int x)

@@ -167,7 +167,7 @@ fn <unnamed> @ 0x201390 (size 53)
 -- decompile
 /* velk pseudo-C: sub_2013d0 @ 0x2013d0 */
 int64_t sub_2013d0(int64_t a0, int64_t a1) {
-    return (a1 - a0) >> 2;
+    return (int64_t)((uint64_t)a1 - a0) >> 2;
 }
 -- signature
 int64_t (int64_t a0, int64_t a1)

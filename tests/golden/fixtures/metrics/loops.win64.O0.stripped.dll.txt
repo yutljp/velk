@@ -44,8 +44,8 @@ fn <unnamed> @ 0x180001000 (size 49)
 /* velk pseudo-C: sub_180001040 @ 0x180001040 */
 int32_t sub_180001040(int32_t a0) {
     int32_t result = 0;
-    for (int32_t i = 1; i <= a0; i++) {
-        result = i + result;
+    for (int32_t i = 1; i <= a0; i = (uint32_t)i + 1) {
+        result = (uint32_t)i + result;
     }
     return result;
 }

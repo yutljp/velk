@@ -113,14 +113,14 @@ int32_t hdiv3(int32_t a0, int32_t a1) {
 
     /* unsupported: AAPCS32 multiword, floating-point or aggregate declaration */
     *(uint32_t *)(sp - 0x8) = v8;
-    int32_t v1 = a0 + a1;
+    int32_t v1 = (uint32_t)a0 + a1;
     /* unsupported: ARM adc lr, r2, 0x0 at 0x201d0 */
     int32_t v3 = v12 & 0xffff | 0xaaaa0000;
     /* unsupported: ARM umull.w r3, r2, lr, ip at 0x201d8 */
     int32_t v4 = v2 & 0xfffffffe;
     int32_t v5 = v4 + (v2 >> 1);
     int32_t v6 = v13 - v5;
-    int32_t v7 = a0 - v6;
+    int32_t v7 = (uint32_t)a0 - v6;
     /* unsupported: ARM umull.w r0, lr, r2, ip at 0x201ea */
     int32_t v9 = v13 + v2 * 0xaaaaaaaa;
     /* unsupported: ARM sbc r1, r1, 0x0 at 0x201f6 */
@@ -246,7 +246,7 @@ int sdiv10(int x) {
 
     /* unsupported: ARM smull.w r0, r1, r0, r1 at 0x20260 */
     int64_t t1 = (int32_t)v1;
-    int32_t v3 = (t1 >> 2) + (v1 >> 31);
+    int32_t v3 = (int64_t)((uint64_t)(t1 >> 2) + (v1 >> 31));
     return v3;
 }
 -- signature
@@ -323,8 +323,8 @@ int smod3(int x) {
 
     /* unsupported: ARM smull.w r1, r2, r0, r1 at 0x20294 */
     int32_t v3 = v1 + (v1 >> 31);
-    int32_t v4 = v3 * 3;
-    int32_t v5 = x - v4;
+    int32_t v4 = (uint32_t)v3 * 3;
+    int32_t v5 = (uint32_t)x - v4;
     return v5;
 }
 -- signature
@@ -352,7 +352,7 @@ unsigned int umod3(unsigned int x) {
 
     /* unsupported: ARM umull.w r1, r2, r0, r1 at 0x202ac */
     int32_t v3 = v1 >> 1;
-    int32_t v4 = v3 * 3;
+    int32_t v4 = (uint32_t)v3 * 3;
     int32_t v5 = x - v4;
     return v5;
 }
@@ -381,7 +381,7 @@ unsigned int umod10(unsigned int x) {
 
     /* unsupported: ARM umull.w r1, r2, r0, r1 at 0x202c4 */
     int32_t v3 = v1 >> 3;
-    uint32_t v4 = v3 * 5;
+    uint32_t v4 = (uint32_t)v3 * 5;
     int32_t v5 = x - (v4 << 1);
     return v5;
 }
@@ -410,8 +410,8 @@ int smod10(int x) {
 
     /* unsupported: ARM smull.w r1, r2, r0, r1 at 0x202dc */
     int64_t t1 = (int32_t)v1;
-    int32_t v3 = (t1 >> 2) + (v1 >> 31);
-    uint32_t v4 = v3 * 5;
+    int32_t v3 = (int64_t)((uint64_t)(t1 >> 2) + (v1 >> 31));
+    uint32_t v4 = (uint32_t)v3 * 5;
     int32_t v5 = x - (v4 << 1);
     return v5;
 }
@@ -562,7 +562,7 @@ fn smod4 @ 0x20344 (size 14)
 -- decompile
 /* velk pseudo-C: negate @ 0x20354 */
 int negate(int x) {
-    return -x;
+    return -(uint32_t)x;
 }
 -- signature
 int (int x)
@@ -642,7 +642,7 @@ fn is_pos @ 0x20364 (size 12)
 -- decompile
 /* velk pseudo-C: lnegate @ 0x20370 */
 int32_t lnegate(int32_t x) {
-    return -x;
+    return -(uint32_t)x;
 }
 -- signature
 int32_t (int32_t x)

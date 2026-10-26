@@ -18,7 +18,7 @@ uint64_t imported_value();
 /* ref: 0x1800020a0 .rdata */
 int32_t sub_180001000(void) {
     int32_t v1 = imported_value();
-    return v1 + 3;
+    return (uint32_t)v1 + 3;
 }
 -- signature
 int32_t ()
@@ -84,7 +84,7 @@ fn <unnamed> @ 0x180001050 (size 49)
 struct S1 { int64_t field_0x0; int64_t field_0x8; int64_t field_0x10; };
 struct S1 *sub_180001090(struct S1 *a0, int64_t a1) {
     a0->field_0x0 = a1;
-    a0->field_0x8 = a1 + 1;
+    a0->field_0x8 = (int64_t)((uint64_t)a1 + 1);
     a0->field_0x10 = a1 ^ 0x9;
     return a0;
 }
@@ -107,7 +107,7 @@ fn <unnamed> @ 0x180001090 (size 32)
 -- decompile
 /* velk pseudo-C: sub_1800010b0 @ 0x1800010b0 */
 int64_t sub_1800010b0(int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5) {
-    return a5 * 13 + (a4 * 11 + (a2 * 5 + (a1 * 3 + a0) + a3 * 8 - a3));
+    return a5 * 13 + (a4 * 11 + (int64_t)((uint64_t)(int64_t)((uint64_t)(int64_t)((uint64_t)(int64_t)((uint64_t)a2 * 5) + (int64_t)((uint64_t)(int64_t)((uint64_t)a1 * 3) + a0)) + (int64_t)((uint64_t)a3 * 8)) - a3));
 }
 -- signature
 int64_t (int64_t a0, int64_t a1, int64_t a2, int64_t a3)

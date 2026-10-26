@@ -11,7 +11,7 @@
 -- decompile
 /* velk pseudo-C: sub_21019c @ 0x21019c */
 int32_t sub_21019c(int32_t a0, int32_t a1, int32_t a2) {
-    return a0 + a1 + a2;
+    return (uint32_t)a0 + a1 + a2;
 }
 -- signature
 int32_t (int32_t a0, int32_t a1, int32_t a2)
@@ -28,7 +28,7 @@ fn <unnamed> @ 0x21019c (size 44)
 -- decompile
 /* velk pseudo-C: sub_2101c8 @ 0x2101c8 */
 int32_t sub_2101c8(int32_t a0) {
-    return a0 * 7 + 3;
+    return (uint32_t)a0 * 7 + 3;
 }
 -- signature
 int32_t (int32_t a0)
@@ -75,7 +75,7 @@ fn <unnamed> @ 0x2101e8 (size 68)
 -- decompile
 /* velk pseudo-C: sub_21022c @ 0x21022c */
 int32_t sub_21022c(int32_t a0) {
-    return -a0;
+    return -(uint32_t)a0;
 }
 -- signature
 int32_t (int32_t a0)

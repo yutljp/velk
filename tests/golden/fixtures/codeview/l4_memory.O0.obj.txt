@@ -15,7 +15,7 @@ extern uint64_t banner; /* address: 0xb0 */
 /* velk pseudo-C: point_dot @ 0x0 */
 struct point { _Alignas(4) int32_t x; int32_t y; };
 int32_t point_dot(struct point *a, struct point *b) {
-    return a->x * b->x + a->y * b->y;
+    return (uint32_t)a->x * b->x + (uint32_t)a->y * b->y;
 }
 -- signature
 int32_t (struct point * a, struct point * b)

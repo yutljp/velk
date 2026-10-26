@@ -80,14 +80,14 @@ int64_t sub_2101f0(struct S1 *a0, int32_t a1) {
         do {
             int64_t v8 = *(uint64_t *)(v6 - 0x18);
             int64_t v9 = *(int16_t *)(v6 - 0x10);
-            v7 -= 2;
+            v7 = (int64_t)((uint64_t)v7 - 2);
             int64_t v10 = *(uint64_t *)(v6);
             int64_t v11 = *(int16_t *)(v6 + 0x8);
             v6 += 0x30;
-            v3 = v8 * v9 + v3;
-            v5 = v10 * v11 + v5;
+            v3 = (int64_t)((uint64_t)(int64_t)((uint64_t)v8 * v9) + v3);
+            v5 = (int64_t)((uint64_t)(int64_t)((uint64_t)v10 * v11) + v5);
         } while (v7 != 0);
-        v3 = v5 + v3;
+        v3 = (int64_t)((uint64_t)v5 + v3);
         if (v2 == (uint32_t)a1) {
             return v3;
         }
@@ -100,9 +100,9 @@ int64_t sub_2101f0(struct S1 *a0, int32_t a1) {
     do {
         int64_t v14 = *(uint64_t *)(v13 - 0x8);
         int64_t v15 = *(int16_t *)(v13);
-        --v12;
+        v12 = (int64_t)((uint64_t)v12 - 1);
         v13 += 0x18;
-        v3 = v14 * v15 + v3;
+        v3 = (int64_t)((uint64_t)(int64_t)((uint64_t)v14 * v15) + v3);
     } while (v12 != 0);
     return v3;
 }
@@ -161,7 +161,7 @@ fn <unnamed> @ 0x2101f0 (size 160)
 -- decompile
 /* velk pseudo-C: sub_210290 @ 0x210290 */
 int64_t sub_210290(int64_t a0, int64_t a1) {
-    return (a0 & 0xffffffff00000000) + a1 & 0xffffffff00000000 | (a1 + a0) & 0xffffffff;
+    return (a0 & 0xffffffff00000000) + a1 & 0xffffffff00000000 | (int64_t)((uint64_t)a1 + a0) & 0xffffffff;
 }
 -- signature
 int64_t (int64_t a0, int64_t a1)
@@ -182,9 +182,9 @@ int64_t sub_2102a8(int64_t a0) {
 
     int64_t v1 = (uint64_t)a0 << 1;
     *(uint64_t *)(v2) = a0;
-    *(uint64_t *)(v2 + 0x8) = a0 + 1;
+    *(uint64_t *)(v2 + 0x8) = (int64_t)((uint64_t)a0 + 1);
     *(uint64_t *)(v2 + 0x10) = v1;
-    *(uint64_t *)(v2 + 0x18) = v1 + a0;
+    *(uint64_t *)(v2 + 0x18) = (int64_t)((uint64_t)v1 + a0);
     return a0;
 }
 -- signature
@@ -208,7 +208,7 @@ fn <unnamed> @ 0x2102a8 (size 24)
 /* velk pseudo-C: sub_2102c0 @ 0x2102c0 */
 struct S1 { int64_t field_0x0; int64_t field_0x8; int64_t field_0x10; int64_t field_0x18; };
 int64_t sub_2102c0(struct S1 *a0) {
-    return a0->field_0x0 + a0->field_0x10 + (a0->field_0x8 + a0->field_0x18);
+    return (int64_t)((uint64_t)(int64_t)((uint64_t)a0->field_0x0 + a0->field_0x10) + (int64_t)((uint64_t)a0->field_0x8 + a0->field_0x18));
 }
 -- signature
 int64_t (struct S1 * a0)

@@ -31,7 +31,7 @@ static inline uint64_t add_lanes32(uint64_t a, uint64_t b) {
 /* velk pseudo-C: rect_area @ 0x180001000 */
 struct S1 { int32_t field_0x0; int32_t field_0x4; int32_t field_0x8; int32_t field_0xc; };
 int32_t rect_area(struct S1 *a0) {
-    return (a0->field_0xc - a0->field_0x4) * (a0->field_0x8 - a0->field_0x0);
+    return ((uint32_t)a0->field_0xc - a0->field_0x4) * ((uint32_t)a0->field_0x8 - a0->field_0x0);
 }
 -- signature
 int32_t (struct S1 * a0)
@@ -65,7 +65,7 @@ int32_t record_total(uint16_t *a0, int32_t a1) {
             int32_t v7 = *(int16_t *)(v6 - 0x18) * *(uint32_t *)(v6 - 0x1c);
             int32_t v8 = *(int16_t *)(v6 - 0xc) * *(uint32_t *)(v6 - 0x10) + v7 + (v4 + *(int16_t *)(v6 - 0x24) * *(uint32_t *)(v6 - 0x28));
             v4 = *(int16_t *)(v6) * *(uint32_t *)(v6 - 0x4) + v8;
-            v3 += 4;
+            v3 = (int64_t)((uint64_t)v3 + 4);
             v6 += 0x30;
         } while (v1 != v3);
         if (v2 == 0) {
@@ -75,13 +75,13 @@ int32_t record_total(uint16_t *a0, int32_t a1) {
         v3 = 0;
         v4 = 0;
     }
-    int64_t v10 = (uintptr_t)(a0 + (v3 * 0x6 + 0x4));
+    int64_t v10 = (uintptr_t)(a0 + (int64_t)((uint64_t)(int64_t)((uint64_t)v3 * 0x6) + 0x4));
     uint8_t v14 = (v2 << 2) * 3;
     int64_t i = 0;
     do {
-        int32_t v15 = *(int16_t *)(v10 + i) * *(uint32_t *)(v10 + i - 0x4);
-        v4 += v15;
-        i += 12;
+        int32_t v15 = *(int16_t *)((int64_t)((uint64_t)v10 + i)) * *(uint32_t *)((int64_t)((uint64_t)(int64_t)((uint64_t)v10 + i) - 0x4));
+        v4 = (uint32_t)v4 + v15;
+        i = (int64_t)((uint64_t)i + 12);
     } while (v14 != i);
     return v4;
 }
@@ -135,7 +135,7 @@ fn record_total @ 0x180001010 (size 176)
 -- decompile
 /* velk pseudo-C: point_add @ 0x1800010c0 */
 int64_t point_add(int64_t a0, int64_t a1) {
-    return (a0 + a1) & 0xffffffff | (a1 & 0xffffffff00000000) + a0 & 0xffffffff00000000;
+    return (int64_t)((uint64_t)a0 + a1) & 0xffffffff | (a1 & 0xffffffff00000000) + a0 & 0xffffffff00000000;
 }
 -- signature
 int64_t (int64_t a0, int64_t a1)
@@ -154,9 +154,9 @@ fn point_add @ 0x1800010c0 (size 32)
 struct S1 { int32_t field_0x0; int32_t field_0x4; int32_t field_0x8; int32_t field_0xc; };
 struct S1 *big_make(struct S1 *a0, int32_t a1) {
     a0->field_0x0 = a1;
-    a0->field_0x4 = a1 + 1;
-    a0->field_0x8 = a1 * 2;
-    a0->field_0xc = a1 * 3;
+    a0->field_0x4 = (uint32_t)a1 + 1;
+    a0->field_0x8 = (uint32_t)a1 * 2;
+    a0->field_0xc = (uint32_t)a1 * 3;
     return a0;
 }
 -- signature

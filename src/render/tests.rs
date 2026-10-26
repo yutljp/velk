@@ -682,13 +682,13 @@ fn a_counter_kept_to_32_bits_is_a_32_bit_variable() {
     }];
     let text = rendered(&ir);
     assert!(text.contains("    int32_t result = 0;\n"), "{text}");
-    assert!(text.contains("++result;"), "{text}");
+    assert!(text.contains("result = (uint32_t)result + 1;"), "{text}");
     assert!(text.contains("*a0 = result;"), "{text}");
     ir.variable_registers.insert(counter, 0);
     ir.debug_registers.push((0, "total".to_owned()));
     let text = rendered(&ir);
     assert!(text.contains("    int32_t total = 0;\n"), "{text}");
-    assert!(text.contains("++total;"), "{text}");
+    assert!(text.contains("total = (uint32_t)total + 1;"), "{text}");
     assert!(text.contains("*a0 = total;"), "{text}");
 }
 
@@ -1182,7 +1182,10 @@ fn a_pointer_to_scalars_is_indexed_by_elements() {
         },
     ];
     let text = rendered(&ir);
-    assert!(text.contains("return a0[a1 + 2];"), "{text}");
+    assert!(
+        text.contains("return a0[(int64_t)((uint64_t)a1 + 2)];"),
+        "{text}"
+    );
 }
 
 #[test]
@@ -1449,14 +1452,14 @@ fn a_mask_stays_on_a_sum_that_can_carry_out_of_it() {
         CType::I64,
         mask(Expr::bin(BinOp::Add, low(1), low(0)), 0xffff_ffff),
     );
-    assert_eq!(text, "(a1 + a0) & 0xffffffff");
+    assert_eq!(text, "(int64_t)((uint64_t)a1 + a0) & 0xffffffff");
     // Read in its low 32 bits only, it goes.
     let text = returned(
         &[(0, CType::I64), (1, CType::I64)],
         CType::I32,
         mask(Expr::bin(BinOp::Add, low(1), low(0)), 0xffff_ffff),
     );
-    assert_eq!(text, "a1 + a0");
+    assert_eq!(text, "(int64_t)((uint64_t)a1 + a0)");
 }
 
 #[test]

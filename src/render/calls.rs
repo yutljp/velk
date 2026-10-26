@@ -1027,7 +1027,6 @@ mod tests {
         let text = crate::render::render(&ir, &[], &Default::default(), &[]);
         for expected in [
             " v1 =",
-            " v2;",
             "uint64_t v3;",
             "v1 = sub_1000();",
             "v2 = (uint32_t)(v3); /* also returned by the call */",

@@ -65,7 +65,7 @@ int32_t mixed_sign(int32_t a0, int32_t a1) {
     sp = sp - 0x8;
     *(uint32_t *)(sp + 0x4) = a0;
     *(uint32_t *)(sp) = a1;
-    int32_t v2 = a0 - a1;
+    int32_t v2 = (uint32_t)a0 - a1;
     /* unsupported: ARM rsc r1, r1, r2, asr 31 at 0x201a0 */
     sp = v1;
     v1 = *(uint32_t *)(sp);
@@ -270,7 +270,7 @@ fn min3 @ 0x202ec (size 116)
 /* velk pseudo-C: labs_value @ 0x20360 */
 int32_t labs_value(int32_t x) {
     if (x < 0) {
-        return -x;
+        return -(uint32_t)x;
     }
     return x;
 }

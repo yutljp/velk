@@ -11,10 +11,10 @@
 int32_t sub_201180(int32_t a0) {
     int64_t local_0; /* [sp-18] */
 
-    uint32_t v1 = a0 - 10;
+    uint32_t v1 = (uint32_t)a0 - 10;
     local_0 = v1;
     if (v1 <= 4) {
-        switch (local_0 - 4) {
+        switch ((int64_t)((uint64_t)local_0 - 4)) {
         case -4:
             return 1;
         case -3:

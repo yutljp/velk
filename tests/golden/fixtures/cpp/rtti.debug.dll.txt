@@ -330,7 +330,7 @@ void __0Virtual__QEAA_H_Z(struct Virtual *this, int value, int is_most_derived) 
     }
     *(uint64_t *)((uint8_t *)this + *(int32_t *)(*(uint64_t *)(this) + 0x4)) = (uintptr_t)(&___7Virtual__6B_);
     int64_t v2 = *(int32_t *)(*(uint64_t *)(this) + 0x4);
-    *(uint32_t *)((uint8_t *)this + v2 - 0x4) = v2 - 24;
+    *(uint32_t *)((uint8_t *)this + v2 - 0x4) = (int64_t)((uint64_t)v2 - 24);
     this->extra = 4;
 }
 -- signature
@@ -463,7 +463,7 @@ fn single @ 0x1800011b0 (size 63)
 -- decompile
 /* velk pseudo-C: ?dtor$2@?0?single@4HA @ 0x1800011f0 */
 void _dtor_2__0_single_4HA(int64_t a0, int64_t a1) {
-    __1Single__UEAA_XZ(a1 + 32);
+    __1Single__UEAA_XZ((int64_t)((uint64_t)a1 + 32));
 }
 -- signature
 void (int64_t a0, int64_t a1)
@@ -486,7 +486,7 @@ int multiple(int value) {
 
     __0Multiple__QEAA_H_Z(local_0, value & 0xffffffff);
     int32_t v3 = dispatch(local_0);
-    return ((int32_t)(_other_Multiple__UEBAHXZ(local_1))) + v3;
+    return (uint32_t)((int32_t)(_other_Multiple__UEBAHXZ(local_1))) + v3;
 }
 -- signature
 int (int value)
@@ -828,7 +828,7 @@ fn catch_cleanup @ 0x180001460 (size 72)
 -- decompile
 /* velk pseudo-C: ?dtor$3@?0?catch_cleanup@4HA @ 0x1800014b0 */
 void _dtor_3__0_catch_cleanup_4HA(int64_t a0, int64_t a1) {
-    __1Single__UEAA_XZ(a1 + 40);
+    __1Single__UEAA_XZ((int64_t)((uint64_t)a1 + 40));
 }
 -- signature
 void (int64_t a0, int64_t a1)
@@ -1020,7 +1020,7 @@ fn ??_DVirtual@@QEAAXXZ @ 0x180001540 (size 16)
 -- decompile
 /* velk pseudo-C: ??_EMultiple@@WBA@EAAPEAXI@Z @ 0x180001550 */
 void ___EMultiple__WBA_EAAPEAXI_Z(int64_t a0, int64_t a1) {
-    ___GMultiple__UEAAPEAXI_Z(a0 - 16, a1);
+    ___GMultiple__UEAAPEAXI_Z((int64_t)((uint64_t)a0 - 16), a1);
 }
 -- signature
 void (int64_t a0, int64_t a1)

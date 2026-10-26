@@ -22,7 +22,7 @@ int matrix_trace(int *m, int n) {
     for (i = 0; i < n; i++) {
         for (j = 0; j < n; j++) {
             if (i == j) {
-                result += m[i * n + j];
+                result += m[(int32_t)((uint32_t)i * n + j)];
             }
         }
     }
@@ -163,16 +163,16 @@ fn fallthrough @ 0x1800010e0 (size 112)
 -- decompile
 /* velk pseudo-C: sparse @ 0x180001150 */
 int sparse(int x) {
-    if (x - 1 == 0) {
+    if ((uint32_t)x - 1 == 0) {
         return 10;
     }
-    if (x - 100 == 0) {
+    if ((uint32_t)x - 100 == 0) {
         return 20;
     }
-    if (x - 1000 == 0) {
+    if ((uint32_t)x - 1000 == 0) {
         return 30;
     }
-    if (x - 10000 == 0) {
+    if ((uint32_t)x - 10000 == 0) {
         return 40;
     }
     return 0;
@@ -235,7 +235,7 @@ int short_circuit(int *p, int n) {
     }
     uint8_t v3 = 1;
     if (*p != 1) {
-        int64_t v6 = n - 1;
+        int64_t v6 = (int32_t)((uint32_t)n - 1);
         int32_t v4 = p[v6];
         v3 = p[v6] == 1;
     }
@@ -316,9 +316,9 @@ int find_pair(int *p, int n, int target) {
     int32_t i; /* [sp-1c] */
 
     for (i = 0; i < n; i++) {
-        for (int32_t j = i + 1; j < n; j++) {
-            if (p[i] + p[j] == target) {
-                return i * n + j;
+        for (int32_t j = (uint32_t)i + 1; j < n; j = (uint32_t)j + 1) {
+            if ((uint32_t)p[i] + p[j] == target) {
+                return (uint32_t)i * n + j;
             }
         }
     }

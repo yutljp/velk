@@ -17,7 +17,7 @@
 struct point { _Alignas(4) int x; int y; };
 struct rect { _Alignas(4) struct point min; struct point max; };
 int rect_area(struct rect *r) {
-    return (r->max.y - r->min.y) * (r->max.x - r->min.x);
+    return ((uint32_t)r->max.y - r->min.y) * ((uint32_t)r->max.x - r->min.x);
 }
 -- signature
 int (struct rect * r)
@@ -55,7 +55,7 @@ long record_total(struct record *items, int n) {
         do {
             int64_t v6 = *(int16_t *)(v5 - 0x18) * *(uint64_t *)(v5 - 0x20) + v3;
             v3 = *(int16_t *)(v5) * *(uint64_t *)(v5 - 0x8) + v6;
-            v2 += 2;
+            v2 = (int64_t)((uint64_t)v2 + 2);
             v5 += 0x30;
         } while (v4 != v2);
     } else {
@@ -65,8 +65,8 @@ long record_total(struct record *items, int n) {
     if ((n & 0x1) == 0) {
         return v3;
     }
-    int64_t v7 = v2 * 3;
-    return v3 + *(int16_t *)((uint8_t *)items + v7 * 0x8 + 0x10) * *(uint64_t *)((uint8_t *)items + v7 * 0x8 + 0x8);
+    int64_t v7 = (int64_t)((uint64_t)v2 * 3);
+    return v3 + *(int16_t *)((uint8_t *)items + (int64_t)((uint64_t)v7 * 0x8) + 0x10) * *(uint64_t *)((uint8_t *)items + (int64_t)((uint64_t)v7 * 0x8) + 0x8);
 }
 -- signature
 long (struct record * items, int n)
@@ -168,7 +168,7 @@ fn big_make @ 0x201280 (size 31)
 /* velk pseudo-C: big_sum @ 0x2012a0 */
 struct big { _Alignas(8) long a; long b; long c; long d; };
 long big_sum(struct big value) {
-    return value.b + value.d + (value.a + value.c);
+    return (int64_t)((uint64_t)(int64_t)((uint64_t)value.b + value.d) + (int64_t)((uint64_t)value.a + value.c));
 }
 -- signature
 int64_t ()

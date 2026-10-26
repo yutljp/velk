@@ -18,7 +18,7 @@ uint64_t velk_entry_stack_pointer(void); /* target entry stack pointer */
 /* velk pseudo-C: sub_201240 @ 0x201240 */
 struct S1 { int32_t field_0x0; int32_t field_0x4; int32_t field_0x8; int32_t field_0xc; };
 int32_t sub_201240(struct S1 *a0) {
-    return (a0->field_0x8 - a0->field_0x0) * (a0->field_0xc - a0->field_0x4);
+    return ((uint32_t)a0->field_0x8 - a0->field_0x0) * ((uint32_t)a0->field_0xc - a0->field_0x4);
 }
 -- signature
 int32_t (struct S1 * a0)
@@ -41,7 +41,7 @@ int64_t sub_201270(struct S1 *a0, int32_t a1) {
 
     result = 0;
     for (i = 0; i < a1; i++) {
-        result += a0[i].field_0x8 * (int16_t)a0[i].field_0x10;
+        result += (int64_t)((uint64_t)a0[i].field_0x8 * (int16_t)a0[i].field_0x10);
     }
     return result;
 }
@@ -102,9 +102,9 @@ fn <unnamed> @ 0x2012e0 (size 36)
 struct S1 { int64_t field_0x0; int64_t field_0x8; int64_t field_0x10; int64_t field_0x18; };
 struct S1 *sub_201310(struct S1 *result, int64_t a1) {
     result->field_0x0 = a1;
-    result->field_0x8 = a1 + 1;
+    result->field_0x8 = (int64_t)((uint64_t)a1 + 1);
     result->field_0x10 = (uint64_t)a1 << 1;
-    result->field_0x18 = a1 * 3;
+    result->field_0x18 = (int64_t)((uint64_t)a1 * 3);
     return result;
 }
 -- signature
@@ -137,7 +137,7 @@ int64_t sub_201350(struct sub_201350_a0 a0) {
     uint64_t rsp = velk_entry_stack_pointer();
 
     struct S1 *v1 = (struct S1 *)(rsp + 8);
-    return v1->field_0x0 + v1->field_0x8 + v1->field_0x10 + v1->field_0x18;
+    return (int64_t)((uint64_t)(int64_t)((uint64_t)(int64_t)((uint64_t)v1->field_0x0 + v1->field_0x8) + v1->field_0x10) + v1->field_0x18);
 }
 -- signature
 int64_t ()

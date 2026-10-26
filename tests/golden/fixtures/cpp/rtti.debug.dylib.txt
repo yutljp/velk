@@ -510,7 +510,7 @@ fn Multiple::other() const @ 0x7b8 (size 12)
 -- decompile
 /* velk pseudo-C: {virtual override thunk({offset(-16)}, Multiple::other() const)} @ 0x7c4 */
 int32_t virtual_override_thunk__offset__16____Multiple__other___const__(int64_t a0) {
-    return Multiple__other(a0 - 16);
+    return Multiple__other((int64_t)((uint64_t)a0 - 16));
 }
 -- signature
 int32_t (int64_t a0)
@@ -598,7 +598,7 @@ fn Multiple::~Multiple() @ 0x7d8 (size 8)
 -- decompile
 /* velk pseudo-C: {virtual override thunk({offset(-16)}, Multiple::~Multiple())} @ 0x7e0 */
 int32_t virtual_override_thunk__offset__16____Multiple___Multiple_____7e0(int64_t a0) {
-    int64_t v1 = a0 - 16;
+    int64_t v1 = (int64_t)((uint64_t)a0 - 16);
     Multiple___Multiple_7d8(v1);
     return v1;
 }
@@ -890,7 +890,7 @@ int32_t multiple(int64_t a0) {
     local_0 = v2;
     Multiple__Multiple_7a8(local_1, a0);
     int32_t v3 = dispatch(local_1);
-    return ((int32_t)(Multiple__other(local_1))) + v3;
+    return (uint32_t)((int32_t)(Multiple__other(local_1))) + v3;
 }
 -- signature
 int32_t (int64_t a0)
@@ -1115,7 +1115,7 @@ L_a70:
     }
     uint32_t *v9 = (uint32_t *)(__cxa_begin_catch((void *)v10));
     int32_t v12 = *v9;
-    uint32_t v13 = v12 + 3;
+    uint32_t v13 = (uint32_t)v12 + 3;
     __cxa_end_catch();
     return v13;
 }

@@ -27,34 +27,34 @@ int32_t sub_180001000(int32_t a0) {
         v3 = 0;
         v2 = 7;
         do {
-            int32_t v7 = v2 + v3;
+            int32_t v7 = (uint32_t)v2 + v3;
             v8 = v2;
-            g_180003000 = v3 + v8 - 7;
-            int32_t v17 = v8 + v7 - 7;
-            g_180003000 = v8 + v7 - 13;
-            int32_t v18 = v8 + v17 - 6;
-            g_180003000 = v8 + v17 - 11;
-            int32_t v19 = v8 + v18 - 5;
-            g_180003000 = v8 + v18 - 9;
-            int32_t v20 = v8 + v19 - 4;
-            g_180003000 = v8 + v19 - 7;
-            v3 = v8 + v20 - 3;
-            g_180003000 = v8 + v20 - 5;
-            g_180003000 = v8 + v3 - 3;
-            v3 = v8 + (v8 + v3 - 2) - 1;
+            g_180003000 = (uint32_t)v3 + v8 - 7;
+            int32_t v17 = (uint32_t)v8 + v7 - 7;
+            g_180003000 = (uint32_t)v8 + v7 - 13;
+            int32_t v18 = (uint32_t)v8 + v17 - 6;
+            g_180003000 = (uint32_t)v8 + v17 - 11;
+            int32_t v19 = (uint32_t)v8 + v18 - 5;
+            g_180003000 = (uint32_t)v8 + v18 - 9;
+            int32_t v20 = (uint32_t)v8 + v19 - 4;
+            g_180003000 = (uint32_t)v8 + v19 - 7;
+            v3 = (uint32_t)v8 + v20 - 3;
+            g_180003000 = (uint32_t)v8 + v20 - 5;
+            g_180003000 = (uint32_t)v8 + v3 - 3;
+            v3 = v8 + ((uint32_t)v8 + v3 - 2) - 1;
             g_180003000 = v3;
-            v2 += 8;
-        } while (v8 + v5 + 8 != 7);
+            v2 = (uint32_t)v2 + 8;
+        } while ((uint32_t)v8 + v5 + 8 != 7);
         if (v1 == 0) {
             return v3;
         }
-        v2 = v2 - 7;
+        v2 = (uint32_t)v2 - 7;
     }
     do {
-        v3 += v2;
+        v3 = (uint32_t)v3 + v2;
         g_180003000 = v3;
-        ++v2;
-        --v1;
+        v2 = (uint32_t)v2 + 1;
+        v1 = (uint32_t)v1 - 1;
     } while (v1 != 0);
     return v3;
 }
@@ -118,8 +118,8 @@ fn <unnamed> @ 0x180001000 (size 240)
 int32_t sub_1800010f0(int32_t a0) {
     int32_t result = 0;
     do {
-        ++result;
-        --a0;
+        result = (uint32_t)result + 1;
+        a0 = (uint32_t)a0 - 1;
         g_180003000 = result;
     } while (a0 > 0);
     return result;
@@ -157,10 +157,10 @@ int32_t sub_180001110(int32_t a0) {
     int32_t v4 = 0;
     int32_t v6 = 0;
     do {
-        v6 += v4;
-        ++v6;
+        v6 = (uint32_t)v6 + v4;
+        v6 = (uint32_t)v6 + 1;
         g_180003000 = v6;
-        v4 += 2;
+        v4 = (uint32_t)v4 + 2;
     } while (v3 != v4);
     if ((a0 & 0x1) == 0) {
         return v6;
@@ -208,7 +208,7 @@ int32_t sub_180001160(uint32_t *a0, int32_t a1, int32_t a2) {
     }
     int64_t v2 = 0;
     while (a0[v2] != a2) {
-        ++v2;
+        v2 = (int64_t)((uint64_t)v2 + 1);
         if ((uint32_t)a1 == v2) {
             return -1;
         }

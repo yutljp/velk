@@ -9,7 +9,7 @@
 -- decompile
 /* velk pseudo-C: sub_210164 @ 0x210164 */
 int32_t sub_210164(void *a0, int32_t a1) {
-    return ((uint64_t (*)())a0)((a1 + 1) & 0xffffffff);
+    return ((uint64_t (*)())a0)((uint32_t)a1 + 1);
 }
 -- signature
 int32_t (void * a0, int32_t a1)
@@ -27,7 +27,7 @@ fn <unnamed> @ 0x210164 (size 12)
 -- decompile
 /* velk pseudo-C: sub_210170 @ 0x210170 */
 int32_t sub_210170(int32_t a0) {
-    return a0 + 5;
+    return (uint32_t)a0 + 5;
 }
 -- signature
 int32_t (int32_t a0)

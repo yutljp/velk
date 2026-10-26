@@ -25,18 +25,18 @@ int count_bits(unsigned int x) {
             v4 += (v3 & 0x1);
             if (v3 >> 1 == 0) break;
             uint8_t v11 = v3 >> 2;
-            v4 += (v6 & 0x1);
+            v4 = (uint32_t)v4 + (v6 & 0x1);
             if (v3 >> 2 == 0) {
                 return v4;
             }
             uint8_t v12 = v3 >> 3;
-            v4 += (v11 & 0x1);
+            v4 = (uint32_t)v4 + (v11 & 0x1);
             if (v3 >> 3 == 0) {
                 return v4;
             }
             int32_t v8 = v3 >> 4;
             v3 >>= 4;
-            v4 += (v12 & 0x1);
+            v4 = (uint32_t)v4 + (v12 & 0x1);
             if (v8 == 0) {
                 return v4;
             }
@@ -108,14 +108,14 @@ int sum_until(int limit) {
         limit = 0;
     }
     if (v1 >= v2) {
-        int32_t v3 = limit - 1;
-        int32_t v4 = limit - 2;
+        int32_t v3 = (uint32_t)limit - 1;
+        int32_t v4 = (uint32_t)limit - 2;
         /* unsupported: ARM umull.w r1, r2, r1, r2 at 0x20144 */
         uint32_t v5 = v10 & 0x1;
         int32_t v6 = v5 >> 1;
         /* unsupported: ARM rrx r1, r1 at 0x20150 */
         int32_t v7 = v9 + ((uint64_t)limit << 1);
-        int32_t v8 = v7 - 1;
+        int32_t v8 = (uint32_t)v7 - 1;
         return v8;
     }
     return limit;
@@ -159,43 +159,43 @@ int sum_till_neg(int *p, int n) {
     }
     if (n >= v2) {
         int32_t v4 = (uint32_t)(uintptr_t)p;
-        int32_t v5 = -n;
+        int32_t v5 = -(uint32_t)n;
         int32_t v6 = (uint32_t)(uintptr_t)p + 12;
-        int32_t v7 = n - 1;
+        int32_t v7 = (uint32_t)n - 1;
         int32_t v8 = 0;
         uint32_t v9 = 0;
         while (true) {
-            int32_t v13 = *(uint32_t *)((v6 - 12) & 0xffffffff);
+            int32_t v13 = *(uint32_t *)((uint32_t)v6 - 12);
             if (v13 <= -1) break;
-            v8 += v13;
+            v8 = (uint32_t)v8 + v13;
             if (v7 == v9) {
                 return v8;
             }
             int32_t v10 = v4 + (v9 << 2);
-            int32_t v11 = *(uint32_t *)((v10 + 4) & 0xffffffff);
+            int32_t v11 = *(uint32_t *)((uint32_t)v10 + 4);
             if (v11 < 0) {
                 return v8;
             }
             int32_t v12 = v5 + v9;
-            v8 += v11;
+            v8 = (uint32_t)v8 + v11;
             if (v12 == 0xfffffffe) {
                 return v8;
             }
-            int32_t v16 = *(uint32_t *)((v10 + 8) & 0xffffffff);
+            int32_t v16 = *(uint32_t *)((uint32_t)v10 + 8);
             if (v16 < 0) {
                 return v8;
             }
-            v8 += v16;
+            v8 = (uint32_t)v8 + v16;
             if (v12 == 0xfffffffd) {
                 return v8;
             }
             int32_t v17 = *(uint32_t *)((uint32_t)v6);
-            v6 += 16;
+            v6 = (uint32_t)v6 + 16;
             if (v17 < 0) {
                 return v8;
             }
             v9 += 4;
-            v8 += v17;
+            v8 = (uint32_t)v8 + v17;
             if (n == v9) {
                 return v8;
             }
@@ -288,13 +288,13 @@ int sum_until_zero(int *p, int n) {
     }
     if (n >= v2) {
         int32_t v3 = (uint32_t)(uintptr_t)p;
-        int32_t v4 = -n;
+        int32_t v4 = -(uint32_t)n;
         int32_t v5 = (uint32_t)(uintptr_t)p + 12;
-        int32_t v6 = n - 1;
+        int32_t v6 = (uint32_t)n - 1;
         int32_t v7 = 0;
         uint32_t v8 = 0;
         while (true) {
-            int32_t v9 = *(uint32_t *)((v5 - 12) & 0xffffffff);
+            int32_t v9 = *(uint32_t *)((uint32_t)v5 - 12);
             if (v9 == 0) break;
             int32_t t1 = v9 >> 31;
             v7 += (v9 & (t1 ^ 0xffffffff));
@@ -302,7 +302,7 @@ int sum_until_zero(int *p, int n) {
                 return v7;
             }
             int32_t v11 = v3 + (v8 << 2);
-            int32_t v12 = *(uint32_t *)((v11 + 4) & 0xffffffff);
+            int32_t v12 = *(uint32_t *)((uint32_t)v11 + 4);
             if (v12 == 0) {
                 break;
             }
@@ -312,7 +312,7 @@ int sum_until_zero(int *p, int n) {
             if (v14 == 0xfffffffe) {
                 return v7;
             }
-            int32_t v16 = *(uint32_t *)((v11 + 8) & 0xffffffff);
+            int32_t v16 = *(uint32_t *)((uint32_t)v11 + 8);
             if (v16 == 0) {
                 break;
             }
@@ -322,7 +322,7 @@ int sum_until_zero(int *p, int n) {
                 break;
             }
             int32_t v17 = *(uint32_t *)((uint32_t)v5);
-            v5 += 16;
+            v5 = (uint32_t)v5 + 16;
             if (v17 == 0) {
                 return v7;
             }

@@ -10,8 +10,8 @@
 -- decompile
 /* velk pseudo-C: item_weight @ 0x200f4 */
 int item_weight(struct item *items, int i) {
-    int32_t v1 = (uint32_t)(uintptr_t)items + ((uint64_t)(i * 3) << 2);
-    return *(int16_t *)((v1 + 8) & 0xffffffff) * *(uint32_t *)((v1 + 4) & 0xffffffff);
+    int32_t v1 = (uint32_t)(uintptr_t)items + ((uint32_t)i * 3 << 2);
+    return *(int16_t *)((uint32_t)v1 + 8) * *(uint32_t *)((uint32_t)v1 + 4);
 }
 -- signature
 int (struct item * items, int i)
@@ -31,7 +31,7 @@ fn item_weight @ 0x200f4 (size 18)
 void cell_set(struct cell *cells, int32_t i, int v) {
     uint32_t v1 = i + ((uint64_t)i << 1);
     *(uint32_t *)((uint32_t)(uintptr_t)cells + (v1 << 2)) = v;
-    *(uint32_t *)((uint32_t)(uintptr_t)cells + (v1 << 2) + 8) = v + 1;
+    *(uint32_t *)((uint32_t)(uintptr_t)cells + (v1 << 2) + 8) = (uint32_t)v + 1;
 }
 -- signature
 void (struct cell * cells, int32_t i, int v)
@@ -66,23 +66,23 @@ int32_t item_last_key(struct item *items, int n) {
             v6 = 0;
         } else {
             int32_t v7 = n & 0x7ffffffc;
-            int32_t v8 = v3 + 40;
+            int32_t v8 = (uint32_t)v3 + 40;
             v5 = 0;
             v6 = 0;
             for (;;) {
                 v5 += 4;
-                if (*(int32_t *)((v8 - 36) & 0xffffffff) >= 1) {
-                    v6 = *(uint32_t *)((v8 - 40) & 0xffffffff);
+                if (*(int32_t *)((uint32_t)v8 - 36) >= 1) {
+                    v6 = *(uint32_t *)((uint32_t)v8 - 40);
                 }
-                if (*(int32_t *)((v8 - 24) & 0xffffffff) >= 1) {
-                    v6 = *(uint32_t *)((v8 - 28) & 0xffffffff);
+                if (*(int32_t *)((uint32_t)v8 - 24) >= 1) {
+                    v6 = *(uint32_t *)((uint32_t)v8 - 28);
                 }
-                if (*(int32_t *)((v8 - 12) & 0xffffffff) >= 1) {
-                    v6 = *(uint32_t *)((v8 - 16) & 0xffffffff);
+                if (*(int32_t *)((uint32_t)v8 - 12) >= 1) {
+                    v6 = *(uint32_t *)((uint32_t)v8 - 16);
                 }
-                int32_t v11 = v8 + 48;
+                int32_t v11 = (uint32_t)v8 + 48;
                 if (*(int32_t *)((uint32_t)v8) >= 1) {
-                    v6 = *(uint32_t *)((v8 - 4) & 0xffffffff);
+                    v6 = *(uint32_t *)((uint32_t)v8 - 4);
                 }
                 v8 = v11;
                 if (v7 == v5) {
@@ -94,18 +94,18 @@ int32_t item_last_key(struct item *items, int n) {
             }
         }
         int32_t v13 = v3 + (v5 * 3 << 2);
-        if (*(int32_t *)((v13 + 4) & 0xffffffff) >= 1) {
+        if (*(int32_t *)((uint32_t)v13 + 4) >= 1) {
             v6 = *(uint32_t *)((uint32_t)v13);
         }
         if (v4 != 1) {
-            if (*(int32_t *)((v13 + 16) & 0xffffffff) >= 1) {
-                v6 = *(uint32_t *)((v13 + 12) & 0xffffffff);
+            if (*(int32_t *)((uint32_t)v13 + 16) >= 1) {
+                v6 = *(uint32_t *)((uint32_t)v13 + 12);
             }
             if (v4 != 2) {
-                if (*(int32_t *)((v13 + 28) & 0xffffffff) < 1) {
+                if (*(int32_t *)((uint32_t)v13 + 28) < 1) {
                     return v6;
                 }
-                int32_t v14 = *(uint32_t *)((v13 + 24) & 0xffffffff);
+                int32_t v14 = *(uint32_t *)((uint32_t)v13 + 24);
                 return v14;
             }
             return v6;

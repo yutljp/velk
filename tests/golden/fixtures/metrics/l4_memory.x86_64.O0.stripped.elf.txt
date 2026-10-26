@@ -16,7 +16,7 @@ extern uint64_t g_2022c0; /* address: 0x2022c0 */
 struct S1 { int32_t field_0x0; int32_t field_0x4; };
 struct S2 { int32_t field_0x0; int32_t field_0x4; };
 int32_t sub_201210(struct S2 *a0, struct S1 *a1) {
-    return a0->field_0x0 * a1->field_0x0 + a0->field_0x4 * a1->field_0x4;
+    return (uint32_t)a0->field_0x0 * a1->field_0x0 + (uint32_t)a0->field_0x4 * a1->field_0x4;
 }
 -- signature
 int32_t (struct S2 * a0, struct S1 * a1)

@@ -53,8 +53,8 @@ fn <unnamed> @ 0x2013a0 (size 2)
 /* ref: 0x204610 .bss */
 int64_t sub_2013b0(int64_t a0) {
     int64_t v1 = g_204610;
-    g_204610 = (a0 + 15 & 0xfffffffffffffff0) + v1;
-    return 0x203610 + v1;
+    g_204610 = ((int64_t)((uint64_t)a0 + 15) & 0xfffffffffffffff0) + v1;
+    return (int64_t)(0x203610 + (uint64_t)v1);
 }
 -- signature
 int64_t (int64_t a0)
@@ -125,7 +125,7 @@ fn <unnamed> @ 0x201400 (size 2)
 int32_t sub_201410(uint64_t *a0, int32_t a1) {
     uint64_t *v2 = (uint64_t *)*a0;
     int32_t v3 = ((uint64_t (*)())v2[2])(a0); /* vtable slot 2: sub_201430, sub_201460 */
-    return v3 * a1;
+    return (uint32_t)v3 * a1;
 }
 -- signature
 int32_t (uint64_t * a0, int32_t a1)
@@ -169,7 +169,7 @@ fn <unnamed> @ 0x201420 (size 14)
 /* velk pseudo-C: sub_201430 @ 0x201430 */
 int32_t sub_201430(uint32_t *a0) {
     int32_t v1 = a0[2];
-    return v1 * v1;
+    return (uint32_t)v1 * v1;
 }
 -- signature
 int32_t (uint32_t * a0)
@@ -213,7 +213,7 @@ fn <unnamed> @ 0x201440 (size 17)
 /* velk pseudo-C: sub_201460 @ 0x201460 */
 struct S1 { uint8_t gap_0x0[0x8]; int32_t field_0x8; int32_t field_0xc; };
 int32_t sub_201460(struct S1 *a0) {
-    return a0->field_0xc * a0->field_0x8;
+    return (uint32_t)a0->field_0xc * a0->field_0x8;
 }
 -- signature
 int32_t (struct S1 * a0)
@@ -231,7 +231,7 @@ fn <unnamed> @ 0x201460 (size 8)
 /* velk pseudo-C: sub_201470 @ 0x201470 */
 struct S1 { uint8_t gap_0x0[0x8]; int32_t field_0x8; int32_t field_0xc; };
 int32_t sub_201470(struct S1 *a0, int32_t a1) {
-    return a1 * a0->field_0x8 * a0->field_0xc + 1;
+    return (uint32_t)a1 * a0->field_0x8 * a0->field_0xc + 1;
 }
 -- signature
 int32_t (struct S1 * a0, int32_t a1)
@@ -252,8 +252,8 @@ fn <unnamed> @ 0x201470 (size 12)
 struct S1 { int64_t field_0x0; int32_t field_0x8; };
 int32_t sub_201480(int32_t a0) {
     int64_t v1 = g_204610;
-    struct S1 *v2 = (struct S1 *)(0x203610 + v1);
-    g_204610 = v1 + 16;
+    struct S1 *v2 = (struct S1 *)(int64_t)(0x203610 + (uint64_t)v1);
+    g_204610 = (int64_t)((uint64_t)v1 + 16);
     sub_201420(v2, a0 & 0xffffffff);
     int32_t v3 = sub_201430(v2); /* via vtable slot 2 */
     sub_201560(); /* via vtable slot 1 */
@@ -285,8 +285,8 @@ fn <unnamed> @ 0x201480 (size 81)
 struct S1 { int64_t field_0x0; int32_t field_0x8; int32_t field_0xc; };
 int32_t sub_2014e0(int32_t a0, int32_t a1, int32_t a2) {
     int64_t v3 = g_204610;
-    struct S1 *v4 = (struct S1 *)(0x203610 + v3);
-    g_204610 = v3 + 16;
+    struct S1 *v4 = (struct S1 *)(int64_t)(0x203610 + (uint64_t)v3);
+    g_204610 = (int64_t)((uint64_t)v3 + 16);
     sub_201440(v4, a0 & 0xffffffff, a1 & 0xffffffff);
     return sub_201470(v4, a2 & 0xffffffff); /* via vtable slot 3 */
 }

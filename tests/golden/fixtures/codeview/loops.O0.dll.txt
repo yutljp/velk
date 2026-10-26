@@ -44,8 +44,8 @@ fn count_bits @ 0x180001000 (size 49)
 /* velk pseudo-C: sum_until @ 0x180001040 */
 int32_t sum_until(int32_t limit) {
     int32_t result = 0;
-    for (int32_t i = 1; i <= limit; i++) {
-        result = i + result;
+    for (int32_t i = 1; i <= limit; i = (uint32_t)i + 1) {
+        result = (uint32_t)i + result;
     }
     return result;
 }

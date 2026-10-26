@@ -15,7 +15,7 @@ extern uint32_t g_sink; /* address: 0x2202e8 */
 int32_t dense(int32_t a0) {
     int32_t v4;
 
-    if ((uint32_t)(a0 - 10) > 15) {
+    if ((uint32_t)a0 - 10 > 15) {
         v4 = 0;
     } else {
         switch (a0) {

@@ -11,7 +11,7 @@
 -- decompile
 /* velk pseudo-C: sum3 @ 0x180001000 */
 int sum3(int a, int b, int c) {
-    return a + b + c;
+    return (uint32_t)a + b + c;
 }
 -- signature
 int (int a, int b, int c)
@@ -29,8 +29,8 @@ fn sum3 @ 0x180001000 (size 34)
 /* velk pseudo-C: helper @ 0x180001030 */
 int helper(int x) {
     int32_t result = 0;
-    for (int32_t i = 0; i < x; i++) {
-        result = i * i + result;
+    for (int32_t i = 0; i < x; i = (uint32_t)i + 1) {
+        result = (uint32_t)i * i + result;
     }
     return result;
 }
@@ -59,7 +59,7 @@ fn helper @ 0x180001030 (size 73)
 /* velk pseudo-C: pair_sum @ 0x180001080 */
 struct pair { _Alignas(4) int a; int b; };
 int pair_sum(struct pair *p) {
-    return p->a + p->b;
+    return (uint32_t)p->a + p->b;
 }
 -- signature
 int (struct pair * p)

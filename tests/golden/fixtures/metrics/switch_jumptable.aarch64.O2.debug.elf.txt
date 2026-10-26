@@ -16,39 +16,39 @@ int d7(int x) {
         v1 = g;
         if ((uint32_t)x > 0) {
             g = v1;
-            ++v1;
+            v1 = (uint32_t)v1 + 1;
         }
         if ((uint32_t)x > 1) {
             g = v1;
-            v1 += 2;
+            v1 = (uint32_t)v1 + 2;
         }
         if ((uint32_t)x > 2) {
             g = v1;
-            v1 += 3;
+            v1 = (uint32_t)v1 + 3;
         }
         if ((uint32_t)x > 3) {
             g = v1;
-            v1 += 4;
+            v1 = (uint32_t)v1 + 4;
         }
         if ((uint32_t)x > 4) {
             g = v1;
-            v1 += 5;
+            v1 = (uint32_t)v1 + 5;
         }
         if ((uint32_t)x > 5) {
             g = v1;
-            v1 += 6;
+            v1 = (uint32_t)v1 + 6;
         }
         if ((uint32_t)x > 6) {
             g = v1;
-            v1 += 7;
+            v1 = (uint32_t)v1 + 7;
         }
         if ((uint32_t)x > 7) {
             g = v1;
-            v1 += 8;
+            v1 = (uint32_t)v1 + 8;
         }
         if ((uint32_t)x > 8) {
             g = v1;
-            v1 += 9;
+            v1 = (uint32_t)v1 + 9;
         }
     }
     g = v1;

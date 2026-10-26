@@ -17,8 +17,8 @@ int sum_while(int n) {
         int32_t v3 = 0;
         int32_t v4 = 0x2013c + *(uint32_t *)(0x20158);
         while (true) {
-            v2 = v3 + v2;
-            ++v3;
+            v2 = (uint32_t)v3 + v2;
+            v3 = (uint32_t)v3 + 1;
             *(uint32_t *)((uint32_t)v4) = v2;
             if (n == v3) break;
         }
@@ -64,9 +64,9 @@ int count_down(int n) {
         n = 1;
     }
     int32_t v2 = 0;
-    int32_t v3 = 0x20174 + v1;
+    int32_t v3 = 0x20174 + (uint32_t)v1;
     while (true) {
-        ++v2;
+        v2 = (uint32_t)v2 + 1;
         *(uint32_t *)((uint32_t)v3) = v2;
         if (n == v2) break;
     }
@@ -108,9 +108,9 @@ int sum_skip_odd(int n) {
         for (;;) {
             int32_t v5 = v3 & 0x1;
             if ((v3 & 0x1) != 0) {
-                v2 += v3;
+                v2 = (uint32_t)v2 + v3;
             }
-            ++v3;
+            v3 = (uint32_t)v3 + 1;
             if (v5 != 0) {
                 *(uint32_t *)((uint32_t)v4) = v2;
             }

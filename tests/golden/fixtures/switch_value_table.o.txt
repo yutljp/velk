@@ -10,7 +10,7 @@ extern uint32_t g_24[]; /* address: 0x24 */
 -- decompile
 /* velk pseudo-C: dispatch @ 0x0 */
 int32_t dispatch(int32_t a0) {
-    uint32_t v1 = a0 - 10;
+    uint32_t v1 = (uint32_t)a0 - 10;
     if (v1 > 4) {
         return 0;
     }

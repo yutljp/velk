@@ -25,7 +25,7 @@
 -- decompile
 /* velk pseudo-C: _signed_return @ 0x0 */
 int64_t signed_return(int64_t a0) {
-    return a0 + 7;
+    return (int64_t)((uint64_t)a0 + 7);
 }
 -- signature
 int64_t (int64_t a0)
@@ -42,7 +42,7 @@ fn _signed_return @ 0x0 (size 12)
 -- decompile
 /* velk pseudo-C: _signed_return_a @ 0xc */
 int64_t signed_return_a(int64_t a0) {
-    return a0 + 9;
+    return (int64_t)((uint64_t)a0 + 9);
 }
 -- signature
 int64_t (int64_t a0)

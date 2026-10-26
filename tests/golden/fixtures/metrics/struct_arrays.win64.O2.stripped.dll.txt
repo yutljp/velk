@@ -11,7 +11,7 @@
 /* velk pseudo-C: sub_180001000 @ 0x180001000 */
 struct S1 { uint8_t gap_0x0[0x4]; int32_t field_0x4; uint16_t field_0x8; uint8_t gap_0xa[0x2]; };
 int32_t sub_180001000(struct S1 *a0, int32_t a1) {
-    return (int16_t)a0[a1].field_0x8 * a0[a1].field_0x4;
+    return (uint32_t)(int16_t)a0[a1].field_0x8 * a0[a1].field_0x4;
 }
 -- signature
 int32_t (struct S1 * a0, int32_t a1)
@@ -30,7 +30,7 @@ fn <unnamed> @ 0x180001000 (size 32)
 struct S1 { int32_t field_0x0; uint8_t gap_0x4[0x4]; int32_t field_0x8; };
 int64_t sub_180001020(struct S1 *a0, int32_t a1, int32_t a2) {
     a0[a1].field_0x0 = a2;
-    a0[a1].field_0x8 = a2 + 1;
+    a0[a1].field_0x8 = (uint32_t)a2 + 1;
     return (int64_t)a1 * 3;
 }
 -- signature
@@ -69,7 +69,7 @@ int32_t sub_180001040(uint32_t *a0, int32_t a1) {
             if ((int32_t)*v5 > 0) {
                 v2 = v5[-1];
             }
-            v1 += 2;
+            v1 = (int64_t)((uint64_t)v1 + 2);
             v5 += 0x6;
         } while (v4 != v1);
         if ((a1 & 0x1) == 0) {
@@ -79,8 +79,8 @@ int32_t sub_180001040(uint32_t *a0, int32_t a1) {
         v1 = 0;
         v2 = 0;
     }
-    int64_t v6 = v1 * 3;
-    if ((int32_t)a0[v6 + 1] <= 0) {
+    int64_t v6 = (int64_t)((uint64_t)v1 * 3);
+    if ((int32_t)a0[(int64_t)((uint64_t)v6 + 1)] <= 0) {
         return v2;
     }
     return a0[v6];

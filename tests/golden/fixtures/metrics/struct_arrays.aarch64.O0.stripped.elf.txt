@@ -11,7 +11,7 @@
 /* velk pseudo-C: sub_210184 @ 0x210184 */
 struct S1 { uint8_t gap_0x0[0x8]; int32_t field_0x8; int16_t field_0xc; uint8_t gap_0xe[0x2]; };
 int32_t sub_210184(struct S1 *a0, int32_t a1) {
-    return a0[a1].field_0xc * a0[a1].field_0x8;
+    return (uint32_t)a0[a1].field_0xc * a0[a1].field_0x8;
 }
 -- signature
 int32_t (struct S1 * a0, int32_t a1)
@@ -30,7 +30,7 @@ fn <unnamed> @ 0x210184 (size 56)
 struct S1 { int32_t field_0x0; uint8_t gap_0x4[0x4]; int32_t field_0x8; };
 struct S1 *sub_2101bc(struct S1 *a0, int64_t a1, int32_t a2) {
     a0[a1].field_0x0 = a2;
-    a0[a1].field_0x8 = a2 + 1;
+    a0[a1].field_0x8 = (uint32_t)a2 + 1;
     return a0;
 }
 -- signature

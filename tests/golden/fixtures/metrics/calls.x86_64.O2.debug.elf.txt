@@ -75,7 +75,7 @@ uint64_t velk_entry_stack_pointer(void); /* target entry stack pointer */
 -- decompile
 /* velk pseudo-C: twice @ 0x2012f0 */
 int twice(int x) {
-    return x * 2;
+    return (uint32_t)x * 2;
 }
 -- signature
 int (int x)
@@ -92,7 +92,7 @@ fn twice @ 0x2012f0 (size 4)
 -- decompile
 /* velk pseudo-C: square @ 0x201300 */
 int square(int x) {
-    return x * x;
+    return (uint32_t)x * x;
 }
 -- signature
 int (int x)
@@ -149,7 +149,7 @@ fn apply_table @ 0x201330 (size 34)
 -- decompile
 /* velk pseudo-C: apply_pointer @ 0x201360 */
 int apply_pointer(void *f, int x) {
-    return ((int32_t)(((uint64_t (*)())f)(x & 0xffffffff))) + 1;
+    return (uint32_t)((int32_t)(((uint64_t (*)())f)(x & 0xffffffff))) + 1;
 }
 -- signature
 int (void * f, int x)
@@ -184,10 +184,10 @@ int factorial(int n) {
         return 1;
     }
     if ((uint32_t)n >= 9) {
-        int32_t v2 = n - 1;
+        int32_t v2 = (uint32_t)n - 1;
         int32_t v3 = v2 & 0xfffffffffffffff8;
         uint64_t v4 = n & 0xffffffff;
-        n -= v3;
+        n = (uint32_t)n - v3;
         struct velk_vector vector = { .low.u64 = add_lanes32(v4 | v4 << 32, g_200190), .high.u64 = add_lanes32(v4 | v4 << 32, g_200198) };
         struct velk_vector vector_2 = { .low.u64 = g_2001c0, .high.u64 = g_2001c8 };
         struct velk_vector vector_3 = { .low.u64 = g_2001b0, .high.u64 = g_2001b8 };
@@ -215,7 +215,7 @@ int factorial(int n) {
             vector_7 = (struct velk_vector){ .low.u64 = interleave_low32(v36, v49), .high.u64 = interleave_high32(v36, v49) };
             vector.low.u64 = add_lanes32(vector.low.u64, vector_3.low.u64);
             vector.high.u64 = add_lanes32(vector.high.u64, vector_3.high.u64);
-            v47 = v47 - 8;
+            v47 = (uint32_t)v47 - 8;
         } while (v47 != 0);
         v1 = (vector_7.high.u64 >> 32) * (vector_5.high.u64 >> 32) * ((vector_7.low.u64 >> 32) * (vector_5.low.u64 >> 32)) * (vector_7.high.u64 * vector_5.high.u64 * (vector_7.low.u64 * vector_5.low.u64));
         if (v2 == v3) {
@@ -223,9 +223,9 @@ int factorial(int n) {
         }
     }
     do {
-        v1 *= n;
+        v1 = (uint32_t)v1 * n;
         v46 = n;
-        n = n - 1;
+        n = (uint32_t)n - 1;
     } while (v46 > 2);
     return v1;
 }
@@ -308,7 +308,7 @@ int is_odd(int n) {
     if (n == 0) {
         return 0;
     }
-    return is_even(n - 1);
+    return is_even((uint32_t)n - 1);
 }
 -- signature
 int (int n)
@@ -333,7 +333,7 @@ int is_even(int n) {
     if (n == 0) {
         return 1;
     }
-    return is_odd(n - 1);
+    return is_odd((uint32_t)n - 1);
 }
 -- signature
 int (int n)
@@ -355,7 +355,7 @@ fn is_even @ 0x201470 (size 17)
 -- decompile
 /* velk pseudo-C: sum9 @ 0x201490 */
 long sum9(long a, long b, long c, long d, long e, long f, long g, long h, long i) {
-    return c + d + (b + a) + e + f + g + h + i;
+    return (int64_t)((uint64_t)(int64_t)((uint64_t)(int64_t)((uint64_t)(int64_t)((uint64_t)c + d) + (int64_t)((uint64_t)b + a)) + e) + f) + g + h + i;
 }
 -- signature
 long (long a, long b, long c, long d, long e, long f)
@@ -431,7 +431,7 @@ int sum_varargs(int count, ...) {
                 local_2 = v3;
             }
             v4 += *v7;
-            v6 = v6 - 2;
+            v6 = (uint32_t)v6 - 2;
         } while (v6 != 0);
     } else {
         v4 = 0;

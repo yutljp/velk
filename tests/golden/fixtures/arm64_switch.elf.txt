@@ -11,7 +11,7 @@ extern uint32_t g_200120[]; /* address: 0x200120 */
 /* velk pseudo-C: dispatch @ 0x210164 */
 /* ref: 0x200120 .rodata */
 int32_t dispatch(int32_t a0) {
-    uint32_t v1 = a0 - 10;
+    uint32_t v1 = (uint32_t)a0 - 10;
     if (v1 > 4) {
         return 0;
     }

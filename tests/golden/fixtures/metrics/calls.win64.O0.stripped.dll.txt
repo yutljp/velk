@@ -42,7 +42,7 @@ fn <unnamed> @ 0x180001000 (size 13)
 -- decompile
 /* velk pseudo-C: sub_180001010 @ 0x180001010 */
 int32_t sub_180001010(int32_t a0) {
-    return a0 * a0;
+    return (uint32_t)a0 * a0;
 }
 -- signature
 int32_t (int32_t a0)
@@ -99,7 +99,7 @@ fn <unnamed> @ 0x180001040 (size 52)
 -- decompile
 /* velk pseudo-C: sub_180001080 @ 0x180001080 */
 int32_t sub_180001080(void *a0, int32_t a1) {
-    return ((int32_t)(((uint64_t (*)())a0)(a1 & 0xffffffff))) + 1;
+    return (uint32_t)((int32_t)(((uint64_t (*)())a0)(a1 & 0xffffffff))) + 1;
 }
 -- signature
 int32_t (void * a0, int32_t a1)
@@ -118,7 +118,8 @@ fn <unnamed> @ 0x180001080 (size 32)
 /* velk pseudo-C: sub_1800010a0 @ 0x1800010a0 */
 int32_t sub_1800010a0(int32_t a0) {
     if (a0 > 1) {
-        uint32_t v4 = a0 * sub_1800010a0(a0 - 1);
+        uint32_t v5 = a0;
+        uint32_t v4 = v5 * sub_1800010a0((uint32_t)a0 - 1);
         return v4;
     }
     return 1;
@@ -205,7 +206,7 @@ fn <unnamed> @ 0x180001120 (size 51)
 -- decompile
 /* velk pseudo-C: sub_180001160 @ 0x180001160 */
 int32_t sub_180001160(int32_t a0, int32_t a1, int32_t a2, int32_t a3, int64_t a4, int64_t a5, int64_t a6, int64_t a7, int64_t a8) {
-    return a0 + a1 + a2 + a3 + (uint32_t)a4 + (uint32_t)a5 + (uint32_t)a6 + (uint32_t)a7 + (uint32_t)a8;
+    return (uint32_t)a0 + a1 + a2 + a3 + (uint32_t)a4 + (uint32_t)a5 + (uint32_t)a6 + (uint32_t)a7 + (uint32_t)a8;
 }
 -- signature
 int32_t (int32_t a0, int32_t a1, int32_t a2, int32_t a3)
