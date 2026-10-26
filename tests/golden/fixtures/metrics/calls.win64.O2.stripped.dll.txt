@@ -82,7 +82,7 @@ fn <unnamed> @ 0x180001000 (size 16)
   blk0 @ 0x180001000:
     ret ((rcx * #0x2) & #0xffffffff)
 -- card
-{"addr":"0x180001000","approxTokens":108,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":16,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x180001000","approxTokens":108,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":16,"sizeEstimated":true,"unsupported":0}
 
 == 0x180001010 -
 -- decompile
@@ -99,7 +99,7 @@ fn <unnamed> @ 0x180001010 (size 16)
   blk0 @ 0x180001010:
     ret ((ecx * ecx) & #0xffffffff)
 -- card
-{"addr":"0x180001010","approxTokens":114,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":16,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x180001010","approxTokens":114,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":16,"sizeEstimated":true,"unsupported":0}
 
 == 0x180001020 -
 -- decompile
@@ -116,7 +116,7 @@ fn <unnamed> @ 0x180001020 (size 32)
   blk0 @ 0x180001020:
     ret select eq (rcx & #0xffffffff), #0x0 ? #0x180001000, #0x180001010
 -- card
-{"addr":"0x180001020","approxTokens":126,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":32,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x180001020","approxTokens":126,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":32,"sizeEstimated":true,"unsupported":0}
 
 == 0x180001040 -
 -- decompile
@@ -148,7 +148,7 @@ fn <unnamed> @ 0x180001040 (size 48)
     v5:rax = call 0x180001000(edx)
     ret v5
 -- card
-{"addr":"0x180001040","approxTokens":162,"blocks":4,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":48,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x180001040","approxTokens":162,"blocks":4,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":48,"sizeEstimated":true,"unsupported":0}
 
 == 0x180001070 -
 -- decompile
@@ -166,7 +166,7 @@ fn <unnamed> @ 0x180001070 (size 18)
     v3:rax, xmm0 = call *rcx((rdx & #0xffffffff))
     ret (((v3 & #0xffffffff) + #0x1) & #0xffffffff)
 -- card
-{"addr":"0x180001070","approxTokens":138,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind"],"section":".text","size":18,"unsupported":0}
+{"addr":"0x180001070","approxTokens":138,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":18,"unsupported":0}
 
 == 0x180001090 -
 -- decompile
@@ -311,7 +311,7 @@ fn <unnamed> @ 0x180001090 (size 297)
   blk6 @ 0x1800011ab:
     ret v1
 -- card
-{"addr":"0x180001090","approxTokens":240,"blocks":7,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":297,"unsupported":0}
+{"addr":"0x180001090","approxTokens":240,"blocks":7,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":297,"unsupported":0}
 
 == 0x1800011c0 -
 -- decompile
@@ -347,7 +347,7 @@ fn <unnamed> @ 0x1800011c0 (size 48)
   blk5 @ 0x1800011db:
     ret #0x1
 -- card
-{"addr":"0x1800011c0","approxTokens":120,"blocks":6,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":48,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x1800011c0","approxTokens":120,"blocks":6,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":48,"sizeEstimated":true,"unsupported":0}
 
 == 0x1800011f0 -
 -- decompile
@@ -364,7 +364,7 @@ fn <unnamed> @ 0x1800011f0 (size 32)
   blk0 @ 0x1800011f0:
     ret ((((((((r8 + r9) + (ecx + edx)) + load32((rsp + #0x28))) + load32((rsp + #0x30))) + load32((rsp + #0x38))) + load32((rsp + #0x40))) + load32((rsp + #0x48))) & #0xffffffff)
 -- card
-{"addr":"0x1800011f0","approxTokens":150,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":32,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x1800011f0","approxTokens":150,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":32,"sizeEstimated":true,"unsupported":0}
 
 == 0x180001210 -
 -- decompile
@@ -398,7 +398,7 @@ fn <unnamed> @ 0x180001210 (size 72)
     v1:rax = call 0x1800011f0(rcx, #0x1, #0x2, #0x3, load64((rsp + #0xffffffffffffffd8)), load64((rsp + #0xffffffffffffffe0)), load64((rsp + #0xffffffffffffffe8)), load64((rsp + #0xfffffffffffffff0)), load64((rsp + #0xfffffffffffffff8)))
     ret v1
 -- card
-{"addr":"0x180001210","approxTokens":174,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":72,"unsupported":0}
+{"addr":"0x180001210","approxTokens":174,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":72,"unsupported":0}
 
 == 0x180001260 -
 -- decompile
@@ -573,4 +573,4 @@ fn <unnamed> @ 0x180001260 (size 322)
   blk16 @ 0x1800013a0:
     ret v5
 -- card
-{"addr":"0x180001260","approxTokens":240,"blocks":17,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":322,"unsupported":0}
+{"addr":"0x180001260","approxTokens":240,"blocks":17,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":322,"unsupported":0}

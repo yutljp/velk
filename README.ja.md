@@ -128,6 +128,13 @@ JavaScript API と MCP では `b.search(pattern, options)`、
 エンコーディング、範囲、型、完全一致する定数の詳細は
 [メモリの問い合わせ](docs/MEMORY.ja.md)を参照してください。
 
+整数の恒等式や解析で追跡した定数値によって、すべての入力に対して結果が
+決まると証明できた条件分岐を除去します。ディスパッチループへ入る状態が
+すべて定数の場合は、直接分岐に置き換えられます。遷移先が不明な場合は
+ディスパッチャを残します。関数カードと JavaScript/MCP の関数概要の
+`simplification` に、`simplified`、`predicatesRemoved`、
+`dispatcherStatesRemoved` を返します。[制御フローの簡略化](docs/CONTROL_FLOW.ja.md)を参照してください。
+
 ## ドキュメント
 
 - [API の概要](src/script/api/index.md)

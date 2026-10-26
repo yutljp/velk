@@ -1,0 +1,232 @@
+# flattened_stores_aarch64_O2.o: elf aarch64 no entry, 7 functions, 0 lift failures, 0 unsupported, 0 gotos
+0x0 16 original_line symtab,unwind
+0x10 80 flattened_line symtab,unwind
+0x60 28 original_branch symtab,unwind
+0x7c 120 flattened_branch symtab,unwind
+0xf4 40 original_loop symtab,unwind
+0x11c 108 flattened_loop symtab,unwind
+0x188 68 variable_transition symtab,unwind
+/* velk prelude */
+#include <stdint.h>
+/* end velk prelude */
+
+== 0x0 original_line
+-- decompile
+/* velk pseudo-C: original_line @ 0x0 */
+int32_t original_line(int32_t a0) {
+    return (uint32_t)a0 + 3 ^ 0x55;
+}
+-- signature
+int32_t (int32_t a0)
+-- references
+
+-- ir
+fn original_line @ 0x0 (size 16)
+  blk0 @ 0x0:
+    ret (((w0 + #0x3) & #0xffffffff) ^ #0x55)
+-- card
+{"addr":"0x0","approxTokens":120,"blocks":1,"hardReasons":[],"name":"original_line","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":16,"unsupported":0}
+
+== 0x10 flattened_line
+-- decompile
+/* velk pseudo-C: flattened_line @ 0x10 */
+int32_t flattened_line(int64_t result) {
+    result = (int64_t)((uint64_t)result + 3) & 0xffffffff;
+    result = (result ^ 0x55) & 0xffffffff;
+    return result;
+}
+-- signature
+int32_t (int64_t a0)
+-- references
+
+-- ir
+fn flattened_line @ 0x10 (size 80)
+  blk0 @ 0x10:
+    br 0x20
+  blk1 @ 0x20:
+    x0 = (((x0 & #0xffffffff) + #0x3) & #0xffffffff)
+    br 0x40
+  blk2 @ 0x40:
+    x0 = (((x0 & #0xffffffff) ^ #0x55) & #0xffffffff)
+    br 0x58
+  blk3 @ 0x58:
+    ret x0
+-- card
+{"addr":"0x10","approxTokens":216,"blocks":4,"hardReasons":[],"name":"flattened_line","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":3,"predicatesRemoved":0,"simplified":true},"size":80,"unsupported":0}
+
+== 0x60 original_branch
+-- decompile
+/* velk pseudo-C: original_branch @ 0x60 */
+int32_t original_branch(int32_t a0) {
+    return ((a0 & 0x1) == 0 ? a0 ^ 0x55 : (uint32_t)a0 + 3) + 7;
+}
+-- signature
+int32_t (int32_t a0)
+-- references
+
+-- ir
+fn original_branch @ 0x60 (size 28)
+  blk0 @ 0x60:
+    ret ((select eq (w0 & #0x1), #0x0 ? (w0 ^ #0x55), ((w0 + #0x3) & #0xffffffff) + #0x7) & #0xffffffff)
+-- card
+{"addr":"0x60","approxTokens":138,"blocks":1,"hardReasons":[],"name":"original_branch","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":28,"unsupported":0}
+
+== 0x7c flattened_branch
+-- decompile
+/* velk pseudo-C: flattened_branch @ 0x7c */
+int32_t flattened_branch(int32_t a0) {
+    int32_t v3;
+
+    int32_t v1 = 11;
+    for (;;) {
+        int32_t v2 = ((a0 & 0x1) == 0 ? 47 : 29);
+        do {
+            v3 = v1;
+            v1 = v2;
+        } while (v3 == 11);
+        switch (v3) {
+        case 29:
+            a0 = (uint32_t)a0 + 3;
+            break;
+        case 47:
+            a0 ^= 0x55;
+            break;
+        case 61:
+            return (uint32_t)a0 + 7;
+        default:
+            return 0;
+        }
+        v1 = 61;
+    }
+}
+-- signature
+int32_t (int32_t a0)
+-- references
+
+-- ir
+fn flattened_branch @ 0x7c (size 120)
+  blk0 @ 0x7c:
+    v1 = #0xb
+  blk1 @ 0x90:
+    v2 = select eq (x0 & #0x1), #0x0 ? #0x2f, #0x1d
+  blk2 @ 0x98:
+    v3 = (v1 & #0xffffffff)
+    v1 = v2
+    brif eq v3, #0xb -> 0x98
+  blk3 @ 0xac:
+    brif eq v3, #0x3d -> 0xdc
+  blk4 @ 0xb4:
+    brif eq v3, #0x2f -> 0xd0
+  blk5 @ 0xbc:
+    brif ne v3, #0x1d -> 0xe8
+  blk6 @ 0xc4:
+    x0 = (((x0 & #0xffffffff) + #0x3) & #0xffffffff)
+    v1 = #0x3d
+    br 0x90
+  blk7 @ 0xd0:
+    x0 = (((x0 & #0xffffffff) ^ #0x55) & #0xffffffff)
+    v1 = #0x3d
+    br 0x90
+  blk8 @ 0xdc:
+    ret (((x0 & #0xffffffff) + #0x7) & #0xffffffff)
+  blk9 @ 0xe8:
+    ret #0x0
+-- card
+{"addr":"0x7c","approxTokens":240,"blocks":10,"hardReasons":[],"name":"flattened_branch","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":120,"unsupported":0}
+
+== 0xf4 original_loop
+-- decompile
+/* velk pseudo-C: original_loop @ 0xf4 */
+uint32_t original_loop(int32_t a0) {
+    uint32_t v1 = a0 & 0xf;
+    if ((a0 & 0xf) == 0) {
+        return 0;
+    }
+    uint32_t v2 = v1 - 1;
+    return v2 + ((uint64_t)v2 * (v1 - 2) >> 1);
+}
+-- signature
+uint32_t (int32_t a0)
+-- references
+
+-- ir
+fn original_loop @ 0xf4 (size 40)
+  blk0 @ 0xf4:
+    v1 = (x0 & #0xf)
+    brif eq (x0 & #0xf), #0x0 -> 0x114
+  blk1 @ 0xfc:
+    v2 = ((v1 & #0xffffffff) - #0x1)
+    ret ((v2 + ((v2 * (((v1 & #0xffffffff) - #0x2) & #0xffffffff)) >> #0x1)) & #0xffffffff)
+  blk2 @ 0x114:
+    ret #0x0
+-- card
+{"addr":"0xf4","approxTokens":144,"blocks":3,"hardReasons":[],"name":"original_loop","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":40,"unsupported":0}
+
+== 0x11c flattened_loop
+-- decompile
+/* velk pseudo-C: flattened_loop @ 0x11c */
+int32_t flattened_loop(int32_t a0) {
+    int32_t result = 0;
+    uint32_t v4 = a0 & 0xf;
+    for (uint32_t v3 = 0; v3 < v4; v3++) {
+        result = v3 + result;
+    }
+    return result;
+}
+-- signature
+int32_t (int32_t a0)
+-- references
+
+-- ir
+fn flattened_loop @ 0x11c (size 108)
+  blk0 @ 0x11c:
+    v2 = #0x0
+    v3 = #0x0
+    v4 = (x0 & #0xf)
+    br 0x144
+  blk1 @ 0x144:
+    brif cc (v3 & #0xffffffff), v4 -> 0x164
+  blk2 @ 0x181:
+    br 0x180
+  blk3 @ 0x164:
+    v2 = (((v3 & #0xffffffff) + (v2 & #0xffffffff)) & #0xffffffff)
+    v3 = (((v3 & #0xffffffff) + #0x1) & #0xffffffff)
+    br 0x144
+  blk4 @ 0x180:
+    ret v2
+-- card
+{"addr":"0x11c","approxTokens":240,"blocks":5,"hardReasons":[],"name":"flattened_loop","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":3,"predicatesRemoved":0,"simplified":true},"size":108,"unsupported":0}
+
+== 0x188 variable_transition
+-- decompile
+/* velk pseudo-C: variable_transition @ 0x188 */
+int32_t variable_transition(int32_t a0) {
+    int32_t v1;
+
+    do {
+        v1 = a0;
+    } while (v1 == 11);
+    if (v1 != 29) {
+        return a0;
+    }
+    return 32;
+}
+-- signature
+int32_t (int32_t a0)
+-- references
+
+-- ir
+fn variable_transition @ 0x188 (size 68)
+  blk0 @ 0x188:
+  blk1 @ 0x1a0:
+  blk2 @ 0x1a8:
+    v1 = w0
+    brif eq (v1 & #0xffffffff), #0xb -> 0x1a8
+  blk3 @ 0x1b8:
+    brif ne (v1 & #0xffffffff), #0x1d -> 0x1c4
+  blk4 @ 0x1c0:
+    w0 = #0x20
+  blk5 @ 0x1c4:
+    ret w0
+-- card
+{"addr":"0x188","approxTokens":198,"blocks":6,"hardReasons":[],"name":"variable_transition","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":2,"simplified":true},"size":68,"unsupported":0}

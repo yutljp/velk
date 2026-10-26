@@ -43,7 +43,7 @@ fn <unnamed> @ 0x180001000 (size 20)
   blk0 @ 0x180001000:
     ret (((rcx & #0xffffffff) / #0x3) & #0xffffffff)
 -- card
-{"addr":"0x180001000","approxTokens":144,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":20,"unsupported":0}
+{"addr":"0x180001000","approxTokens":144,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":20,"unsupported":0}
 
 == 0x180001020 -
 -- decompile
@@ -60,7 +60,7 @@ fn <unnamed> @ 0x180001020 (size 20)
   blk0 @ 0x180001020:
     ret (((rcx & #0xffffffff) / #0xa) & #0xffffffff)
 -- card
-{"addr":"0x180001020","approxTokens":144,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":20,"unsupported":0}
+{"addr":"0x180001020","approxTokens":144,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":20,"unsupported":0}
 
 == 0x180001040 -
 -- decompile
@@ -77,7 +77,7 @@ fn <unnamed> @ 0x180001040 (size 14)
   blk0 @ 0x180001040:
     ret (((rcx & #0xffffffff) >> #0x6) & #0xffffffff)
 -- card
-{"addr":"0x180001040","approxTokens":132,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":14,"unsupported":0}
+{"addr":"0x180001040","approxTokens":132,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":14,"unsupported":0}
 
 == 0x180001050 -
 -- decompile
@@ -94,7 +94,7 @@ fn <unnamed> @ 0x180001050 (size 21)
   blk0 @ 0x180001050:
     ret (rcx / #0x3)
 -- card
-{"addr":"0x180001050","approxTokens":144,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":21,"unsupported":0}
+{"addr":"0x180001050","approxTokens":144,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":21,"unsupported":0}
 
 == 0x180001070 -
 -- decompile
@@ -111,7 +111,7 @@ fn <unnamed> @ 0x180001070 (size 21)
   blk0 @ 0x180001070:
     ret (rcx / #0xa)
 -- card
-{"addr":"0x180001070","approxTokens":144,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":21,"unsupported":0}
+{"addr":"0x180001070","approxTokens":144,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":21,"unsupported":0}
 
 == 0x180001090 -
 -- decompile
@@ -128,7 +128,7 @@ fn <unnamed> @ 0x180001090 (size 19)
   blk0 @ 0x180001090:
     ret (((rcx & #0xffffffff) / #0x3) & #0xffffffff)
 -- card
-{"addr":"0x180001090","approxTokens":144,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":19,"unsupported":0}
+{"addr":"0x180001090","approxTokens":144,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":19,"unsupported":0}
 
 == 0x1800010b0 -
 -- decompile
@@ -145,7 +145,7 @@ fn <unnamed> @ 0x1800010b0 (size 19)
   blk0 @ 0x1800010b0:
     ret (((rcx & #0xffffffff) / #0xa) & #0xffffffff)
 -- card
-{"addr":"0x1800010b0","approxTokens":144,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":19,"unsupported":0}
+{"addr":"0x1800010b0","approxTokens":144,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":19,"unsupported":0}
 
 == 0x1800010d0 -
 -- decompile
@@ -162,7 +162,7 @@ fn <unnamed> @ 0x1800010d0 (size 19)
   blk0 @ 0x1800010d0:
     ret (((rcx & #0xffffffff) / #0x10) & #0xffffffff)
 -- card
-{"addr":"0x1800010d0","approxTokens":144,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":19,"unsupported":0}
+{"addr":"0x1800010d0","approxTokens":144,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":19,"unsupported":0}
 
 == 0x1800010f0 -
 -- decompile
@@ -179,7 +179,7 @@ fn <unnamed> @ 0x1800010f0 (size 21)
   blk0 @ 0x1800010f0:
     ret (rcx / #0x10)
 -- card
-{"addr":"0x1800010f0","approxTokens":144,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":21,"unsupported":0}
+{"addr":"0x1800010f0","approxTokens":144,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":21,"unsupported":0}
 
 == 0x180001110 -
 -- decompile
@@ -196,7 +196,7 @@ fn <unnamed> @ 0x180001110 (size 21)
   blk0 @ 0x180001110:
     ret ((rcx & #0xffffffff) % #0x3)
 -- card
-{"addr":"0x180001110","approxTokens":150,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":21,"unsupported":0}
+{"addr":"0x180001110","approxTokens":150,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":21,"unsupported":0}
 
 == 0x180001130 -
 -- decompile
@@ -213,7 +213,7 @@ fn <unnamed> @ 0x180001130 (size 22)
   blk0 @ 0x180001130:
     ret (((rcx & #0xffffffff) % #0x3) & #0xffffffff)
 -- card
-{"addr":"0x180001130","approxTokens":150,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":22,"unsupported":0}
+{"addr":"0x180001130","approxTokens":150,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":22,"unsupported":0}
 
 == 0x180001150 -
 -- decompile
@@ -230,7 +230,7 @@ fn <unnamed> @ 0x180001150 (size 22)
   blk0 @ 0x180001150:
     ret (((rcx & #0xffffffff) % #0xa) & #0xffffffff)
 -- card
-{"addr":"0x180001150","approxTokens":150,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":22,"unsupported":0}
+{"addr":"0x180001150","approxTokens":150,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":22,"unsupported":0}
 
 == 0x180001170 -
 -- decompile
@@ -247,7 +247,7 @@ fn <unnamed> @ 0x180001170 (size 21)
   blk0 @ 0x180001170:
     ret ((rcx & #0xffffffff) % #0xa)
 -- card
-{"addr":"0x180001170","approxTokens":150,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":21,"unsupported":0}
+{"addr":"0x180001170","approxTokens":150,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":21,"unsupported":0}
 
 == 0x180001190 -
 -- decompile
@@ -264,7 +264,7 @@ fn <unnamed> @ 0x180001190 (size 24)
   blk0 @ 0x180001190:
     ret (rcx % #0xa)
 -- card
-{"addr":"0x180001190","approxTokens":150,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":24,"unsupported":0}
+{"addr":"0x180001190","approxTokens":150,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":24,"unsupported":0}
 
 == 0x1800011b0 -
 -- decompile
@@ -281,7 +281,7 @@ fn <unnamed> @ 0x1800011b0 (size 24)
   blk0 @ 0x1800011b0:
     ret (rcx % #0xa)
 -- card
-{"addr":"0x1800011b0","approxTokens":150,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":24,"unsupported":0}
+{"addr":"0x1800011b0","approxTokens":150,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":24,"unsupported":0}
 
 == 0x1800011d0 -
 -- decompile
@@ -298,7 +298,7 @@ fn <unnamed> @ 0x1800011d0 (size 24)
   blk0 @ 0x1800011d0:
     ret (rcx % #0x10)
 -- card
-{"addr":"0x1800011d0","approxTokens":150,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":24,"unsupported":0}
+{"addr":"0x1800011d0","approxTokens":150,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":24,"unsupported":0}
 
 == 0x1800011f0 -
 -- decompile
@@ -315,7 +315,7 @@ fn <unnamed> @ 0x1800011f0 (size 21)
   blk0 @ 0x1800011f0:
     ret ((rcx & #0xffffffff) % #0x4)
 -- card
-{"addr":"0x1800011f0","approxTokens":150,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":21,"unsupported":0}
+{"addr":"0x1800011f0","approxTokens":150,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":21,"unsupported":0}
 
 == 0x180001210 -
 -- decompile
@@ -332,7 +332,7 @@ fn <unnamed> @ 0x180001210 (size 13)
   blk0 @ 0x180001210:
     ret ((#0x0 - (rcx & #0xffffffff)) & #0xffffffff)
 -- card
-{"addr":"0x180001210","approxTokens":132,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":13,"unsupported":0}
+{"addr":"0x180001210","approxTokens":132,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":13,"unsupported":0}
 
 == 0x180001220 -
 -- decompile
@@ -350,7 +350,7 @@ fn <unnamed> @ 0x180001220 (size 20)
     v1 = (select lt (rcx & #0xffffffff), #0x0 ? #0x1, #0x0 & #0xff)
     ret v1
 -- card
-{"addr":"0x180001220","approxTokens":144,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":20,"unsupported":0}
+{"addr":"0x180001220","approxTokens":144,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":20,"unsupported":0}
 
 == 0x180001240 -
 -- decompile
@@ -368,7 +368,7 @@ fn <unnamed> @ 0x180001240 (size 20)
     v1 = (select eq (rcx & #0xffffffff), #0x0 ? #0x1, #0x0 & #0xff)
     ret v1
 -- card
-{"addr":"0x180001240","approxTokens":144,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":20,"unsupported":0}
+{"addr":"0x180001240","approxTokens":144,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":20,"unsupported":0}
 
 == 0x180001260 -
 -- decompile
@@ -386,7 +386,7 @@ fn <unnamed> @ 0x180001260 (size 20)
     v1 = (select gt (rcx & #0xffffffff), #0x0 ? #0x1, #0x0 & #0xff)
     ret v1
 -- card
-{"addr":"0x180001260","approxTokens":144,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":20,"unsupported":0}
+{"addr":"0x180001260","approxTokens":144,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":20,"unsupported":0}
 
 == 0x180001280 -
 -- decompile
@@ -403,7 +403,7 @@ fn <unnamed> @ 0x180001280 (size 13)
   blk0 @ 0x180001280:
     ret ((#0x0 - (rcx & #0xffffffff)) & #0xffffffff)
 -- card
-{"addr":"0x180001280","approxTokens":132,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":13,"unsupported":0}
+{"addr":"0x180001280","approxTokens":132,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":13,"unsupported":0}
 
 == 0x180001290 -
 -- decompile
@@ -420,7 +420,7 @@ fn <unnamed> @ 0x180001290 (size 24)
   blk0 @ 0x180001290:
     ret (rcx % #0x3)
 -- card
-{"addr":"0x180001290","approxTokens":150,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":24,"unsupported":0}
+{"addr":"0x180001290","approxTokens":150,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":24,"unsupported":0}
 
 == 0x1800012b0 -
 -- decompile
@@ -437,7 +437,7 @@ fn <unnamed> @ 0x1800012b0 (size 21)
   blk0 @ 0x1800012b0:
     ret (rcx / #0x3)
 -- card
-{"addr":"0x1800012b0","approxTokens":144,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":21,"unsupported":0}
+{"addr":"0x1800012b0","approxTokens":144,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":21,"unsupported":0}
 
 == 0x1800012d0 -
 -- decompile
@@ -454,4 +454,4 @@ fn <unnamed> @ 0x1800012d0 (size 21)
   blk0 @ 0x1800012d0:
     ret (rcx / #0xa)
 -- card
-{"addr":"0x1800012d0","approxTokens":144,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":21,"unsupported":0}
+{"addr":"0x1800012d0","approxTokens":144,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":21,"unsupported":0}

@@ -29,7 +29,7 @@ fn <unnamed> @ 0x180001000 (size 26)
     v2:rax, xmm0 = call *load64(#0x1800020a0)((rcx & #0xffffffff))
     ret (((v2 & #0xffffffff) + #0x3) & #0xffffffff)
 -- card
-{"addr":"0x180001000","approxTokens":138,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":26,"unsupported":0}
+{"addr":"0x180001000","approxTokens":138,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":26,"unsupported":0}
 
 == 0x180001020 -
 -- decompile
@@ -55,7 +55,7 @@ fn <unnamed> @ 0x180001020 (size 65)
     v3 = ((load32((rsp + #0xfffffffffffffffc)) & #0x1f00) | load8((((rsp + #0xffffffffffffdff8) + (load32((rsp + #0xfffffffffffffffc)) & #0x1fff)) + #0x4)))
     ret (sext8(v3) & #0xffffffff)
 -- card
-{"addr":"0x180001020","approxTokens":180,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":65,"unsupported":0}
+{"addr":"0x180001020","approxTokens":180,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":65,"unsupported":0}
 
 == 0x180001070 -
 -- decompile
@@ -80,7 +80,7 @@ fn <unnamed> @ 0x180001070 (size 52)
     v2:rax, xmm0 = call *load64(#0x1800020a0)(#0x7)
     ret fadd.d(load64((rsp + #0xfffffffffffffff0)), s32tof.d((v2 & #0xffffffff)))
 -- card
-{"addr":"0x180001070","approxTokens":162,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":52,"unsupported":0}
+{"addr":"0x180001070","approxTokens":162,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":52,"unsupported":0}
 
 == 0x1800010b0 -
 -- decompile
@@ -105,7 +105,7 @@ fn <unnamed> @ 0x1800010b0 (size 52)
     store64((load64((rsp + #0xfffffffffffffff0)) ^ #0x9), (rcx + #0x10))
     ret rcx
 -- card
-{"accesses":["result +0x0:uint64_t, +0x8:uint64_t, +0x10:uint64_t"],"addr":"0x1800010b0","approxTokens":180,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":52,"structures":["struct S1 { int64_t field_0x0; int64_t field_0x8; int64_t field_0x10; };"],"unsupported":0}
+{"accesses":["result +0x0:uint64_t, +0x8:uint64_t, +0x10:uint64_t"],"addr":"0x1800010b0","approxTokens":180,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":52,"structures":["struct S1 { int64_t field_0x0; int64_t field_0x8; int64_t field_0x10; };"],"unsupported":0}
 
 == 0x1800010f0 -
 -- decompile
@@ -122,7 +122,7 @@ fn <unnamed> @ 0x1800010f0 (size 87)
   blk0 @ 0x1800010f0:
     ret (((((rcx + (rdx * #0x3)) + (r8 * #0x5)) + (r9 * #0x7)) + (load64((rsp + #0x28)) * #0xb)) + (load64((rsp + #0x30)) * #0xd))
 -- card
-{"addr":"0x1800010f0","approxTokens":216,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":87,"unsupported":0}
+{"addr":"0x1800010f0","approxTokens":216,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":87,"unsupported":0}
 
 == 0x180001150 __chkstk
 -- decompile
@@ -138,7 +138,7 @@ fn __chkstk @ 0x180001150 (size 16)
   blk0 @ 0x180001150:
     ret rax
 -- card
-{"addr":"0x180001150","approxTokens":108,"blocks":1,"hardReasons":[],"name":"__chkstk","nameSources":["plt","prologue"],"section":".text","size":16,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x180001150","approxTokens":108,"blocks":1,"hardReasons":[],"name":"__chkstk","nameSources":["plt","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":16,"sizeEstimated":true,"unsupported":0}
 
 == 0x180001160 imported_value
 -- decompile
@@ -157,4 +157,4 @@ fn imported_value @ 0x180001160 (size 6)
     v1:rax, xmm0 = call *load64(#0x1800020a0)
     ret v1
 -- card
-{"addr":"0x180001160","approxTokens":102,"blocks":1,"hardReasons":[],"name":"imported_value","nameSources":["plt","prologue"],"section":".text","size":6,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x180001160","approxTokens":102,"blocks":1,"hardReasons":[],"name":"imported_value","nameSources":["plt","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":6,"sizeEstimated":true,"unsupported":0}

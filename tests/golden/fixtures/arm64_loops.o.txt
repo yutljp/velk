@@ -44,7 +44,7 @@ fn count_bits @ 0x0 (size 40)
   blk3 @ 0x24:
     ret x0
 -- card
-{"addr":"0x0","approxTokens":156,"blocks":4,"hardReasons":[],"name":"count_bits","nameSources":["symtab","unwind"],"section":".text","size":40,"unsupported":0}
+{"addr":"0x0","approxTokens":156,"blocks":4,"hardReasons":[],"name":"count_bits","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":40,"unsupported":0}
 
 == 0x28 sum_until
 -- decompile
@@ -72,7 +72,7 @@ fn sum_until @ 0x28 (size 40)
   blk2 @ 0x48:
     ret #0x0
 -- card
-{"addr":"0x28","approxTokens":144,"blocks":3,"hardReasons":[],"name":"sum_until","nameSources":["symtab","unwind"],"section":".text","size":40,"unsupported":0}
+{"addr":"0x28","approxTokens":144,"blocks":3,"hardReasons":[],"name":"sum_until","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":40,"unsupported":0}
 
 == 0x50 sum_till_neg
 -- decompile
@@ -116,7 +116,7 @@ fn sum_till_neg @ 0x50 (size 40)
   blk3 @ 0x70:
     ret v3
 -- card
-{"addr":"0x50","approxTokens":156,"blocks":4,"hardReasons":[],"name":"sum_till_neg","nameSources":["symtab","unwind"],"section":".text","size":40,"unsupported":0}
+{"addr":"0x50","approxTokens":156,"blocks":4,"hardReasons":[],"name":"sum_till_neg","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":40,"unsupported":0}
 
 == 0x78 sum_until_zero
 -- decompile
@@ -164,4 +164,4 @@ fn sum_until_zero @ 0x78 (size 56)
   blk5 @ 0xa8:
     ret #0x0
 -- card
-{"addr":"0x78","approxTokens":168,"blocks":6,"hardReasons":[],"name":"sum_until_zero","nameSources":["symtab","unwind"],"section":".text","size":56,"unsupported":0}
+{"addr":"0x78","approxTokens":168,"blocks":6,"hardReasons":[],"name":"sum_until_zero","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":56,"unsupported":0}

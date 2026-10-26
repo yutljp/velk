@@ -118,7 +118,7 @@ fn <unnamed> @ 0x2011d0 (size 239)
   blk9 @ 0x2012be:
     ret v3
 -- card
-{"addr":"0x2011d0","approxTokens":162,"blocks":10,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":239,"unsupported":0}
+{"addr":"0x2011d0","approxTokens":162,"blocks":10,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":239,"unsupported":0}
 
 == 0x2012c0 -
 -- decompile
@@ -198,7 +198,7 @@ fn <unnamed> @ 0x2012c0 (size 157)
   blk7 @ 0x20135c:
     ret v1
 -- card
-{"addr":"0x2012c0","approxTokens":240,"blocks":8,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":157,"unsupported":0}
+{"addr":"0x2012c0","approxTokens":240,"blocks":8,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":157,"unsupported":0}
 
 == 0x201360 -
 -- decompile
@@ -260,7 +260,7 @@ fn <unnamed> @ 0x201360 (size 71)
   blk8 @ 0x2013a6:
     ret v2
 -- card
-{"addr":"0x201360","approxTokens":138,"blocks":9,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":71,"unsupported":0}
+{"addr":"0x201360","approxTokens":138,"blocks":9,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":1,"simplified":true},"size":71,"unsupported":0}
 
 == 0x2013b0 -
 -- decompile
@@ -299,4 +299,4 @@ fn <unnamed> @ 0x2013b0 (size 33)
   blk5 @ 0x2013ce:
     ret (v2 & #0xffffffff)
 -- card
-{"addr":"0x2013b0","approxTokens":168,"blocks":6,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":33,"unsupported":0}
+{"addr":"0x2013b0","approxTokens":168,"blocks":6,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":33,"unsupported":0}

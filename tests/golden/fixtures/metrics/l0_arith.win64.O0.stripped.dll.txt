@@ -22,7 +22,7 @@ fn <unnamed> @ 0x180001000 (size 34)
   blk0 @ 0x180001000:
     ret (((ecx + edx) + r8d) & #0xffffffff)
 -- card
-{"addr":"0x180001000","approxTokens":150,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":34,"unsupported":0}
+{"addr":"0x180001000","approxTokens":150,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":34,"unsupported":0}
 
 == 0x180001030 -
 -- decompile
@@ -39,7 +39,7 @@ fn <unnamed> @ 0x180001030 (size 15)
   blk0 @ 0x180001030:
     ret ((((rcx & #0xffffffff) * #0x7) + #0x3) & #0xffffffff)
 -- card
-{"addr":"0x180001030","approxTokens":132,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":15,"unsupported":0}
+{"addr":"0x180001030","approxTokens":132,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":15,"unsupported":0}
 
 == 0x180001040 -
 -- decompile
@@ -66,7 +66,7 @@ fn <unnamed> @ 0x180001040 (size 49)
   blk3 @ 0x180001068:
     ret v1
 -- card
-{"addr":"0x180001040","approxTokens":150,"blocks":4,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":49,"unsupported":0}
+{"addr":"0x180001040","approxTokens":150,"blocks":4,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":49,"unsupported":0}
 
 == 0x180001080 -
 -- decompile
@@ -83,4 +83,4 @@ fn <unnamed> @ 0x180001080 (size 13)
   blk0 @ 0x180001080:
     ret ((#0x0 - (rcx & #0xffffffff)) & #0xffffffff)
 -- card
-{"addr":"0x180001080","approxTokens":132,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":13,"unsupported":0}
+{"addr":"0x180001080","approxTokens":132,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":13,"unsupported":0}

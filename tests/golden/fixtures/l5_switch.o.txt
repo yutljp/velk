@@ -144,7 +144,7 @@ fn dense @ 0x0 (size 268)
     store32(v5, #0x14c)
     ret load32(#0x14c)
 -- card
-{"addr":"0x0","approxTokens":240,"blocks":21,"hardReasons":[],"name":"dense","nameSources":["symtab","unwind"],"section":".text","size":268,"unsupported":0}
+{"addr":"0x0","approxTokens":240,"blocks":21,"hardReasons":[],"name":"dense","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":268,"unsupported":0}
 
 == 0x10c sparse
 -- decompile
@@ -182,4 +182,4 @@ fn sparse @ 0x10c (size 48)
   blk6 @ 0x138:
     ret x0
 -- card
-{"addr":"0x10c","approxTokens":144,"blocks":7,"hardReasons":[],"name":"sparse","nameSources":["symtab","unwind"],"section":".text","size":48,"unsupported":0}
+{"addr":"0x10c","approxTokens":144,"blocks":7,"hardReasons":[],"name":"sparse","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":48,"unsupported":0}

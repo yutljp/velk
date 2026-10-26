@@ -1308,7 +1308,7 @@ fn runtime.printstring @ 0x40bd0 (size 128)
     v4:x0, x1, d0, d1 = call 0x40420(x0, x1, x1)
     ret v4
 -- card
-{"addr":"0x40bd0","approxTokens":228,"blocks":2,"hardReasons":[],"name":"runtime.printstring","nameSources":["pclntab"],"section":".text","size":128,"unsupported":0}
+{"addr":"0x40bd0","approxTokens":228,"blocks":2,"hardReasons":[],"name":"runtime.printstring","nameSources":["pclntab"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":128,"unsupported":0}
 
 == 0x77420 main.add
 -- decompile
@@ -1325,7 +1325,7 @@ fn main.add @ 0x77420 (size 16)
   blk0 @ 0x77420:
     ret (x0 + x1)
 -- card
-{"addr":"0x77420","approxTokens":108,"blocks":1,"hardReasons":[],"name":"main.add","nameSources":["pclntab"],"section":".text","size":16,"unsupported":0}
+{"addr":"0x77420","approxTokens":108,"blocks":1,"hardReasons":[],"name":"main.add","nameSources":["pclntab"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":16,"unsupported":0}
 
 == 0x77430 main.divmod
 -- decompile
@@ -1356,7 +1356,7 @@ fn main.divmod @ 0x77430 (size 96)
     x0, x1, d0, d1 = call 0x3cc80(x0, #0x0, x2)
     trap
 -- card
-{"addr":"0x77430","approxTokens":180,"blocks":4,"hardReasons":[],"name":"main.divmod","nameSources":["pclntab"],"section":".text","size":96,"unsupported":0}
+{"addr":"0x77430","approxTokens":180,"blocks":4,"hardReasons":[],"name":"main.divmod","nameSources":["pclntab"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":96,"unsupported":0}
 
 == 0x77490 main.sumSlice
 -- decompile
@@ -1390,7 +1390,7 @@ fn main.sumSlice @ 0x77490 (size 48)
   blk3 @ 0x774b4:
     ret v2
 -- card
-{"addr":"0x77490","approxTokens":162,"blocks":4,"hardReasons":[],"name":"main.sumSlice","nameSources":["pclntab"],"section":".text","size":48,"unsupported":0}
+{"addr":"0x77490","approxTokens":162,"blocks":4,"hardReasons":[],"name":"main.sumSlice","nameSources":["pclntab"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":48,"unsupported":0}
 
 == 0x774c0 main.kindName
 -- decompile
@@ -1438,7 +1438,7 @@ fn main.kindName @ 0x774c0 (size 112)
   blk7 @ 0x77520:
     ret #0x0
 -- card
-{"accesses":["a0 +0x10:uint32_t"],"addr":"0x774c0","approxTokens":180,"blocks":8,"hardReasons":[],"name":"main.kindName","nameSources":["pclntab"],"section":".text","size":112,"unsupported":0}
+{"accesses":["a0 +0x10:uint32_t"],"addr":"0x774c0","approxTokens":180,"blocks":8,"hardReasons":[],"name":"main.kindName","nameSources":["pclntab"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":112,"unsupported":0}
 
 == 0x77530 main.main
 -- decompile
@@ -1542,4 +1542,4 @@ fn main.main @ 0x77530 (size 240)
     v2:x0, x1, d0, d1 = call 0x403c0(v2, v3, undefined())
     ret v2
 -- card
-{"addr":"0x77530","approxTokens":240,"blocks":2,"hardReasons":[],"name":"main.main","nameSources":["pclntab"],"section":".text","size":240,"unsupported":0}
+{"addr":"0x77530","approxTokens":240,"blocks":2,"hardReasons":[],"name":"main.main","nameSources":["pclntab"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":240,"unsupported":0}

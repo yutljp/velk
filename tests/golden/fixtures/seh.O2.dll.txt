@@ -31,7 +31,7 @@ fn choose_filter @ 0x180001000 (size 16)
   blk0 @ 0x180001000:
     ret (ecx & #0x1)
 -- card
-{"addr":"0x180001000","approxTokens":114,"blocks":1,"hardReasons":[],"name":"choose_filter","nameSources":["dynamic"],"section":".text","size":16,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x180001000","approxTokens":114,"blocks":1,"hardReasons":[],"name":"choose_filter","nameSources":["dynamic"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":16,"sizeEstimated":true,"unsupported":0}
 
 == 0x180001010 seh_except
 -- decompile
@@ -65,7 +65,7 @@ fn seh_except @ 0x180001010 (size 33)
   blk2 @ 0x18000102a:
     br 0x180001024
 -- card
-{"addr":"0x180001010","approxTokens":150,"blocks":3,"hardReasons":[],"name":"seh_except","nameSources":["dynamic","unwind"],"section":".text","size":33,"unsupported":0}
+{"addr":"0x180001010","approxTokens":150,"blocks":3,"hardReasons":[],"name":"seh_except","nameSources":["dynamic","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":33,"unsupported":0}
 
 == 0x180001040 seh_except__except_filter_0
 -- decompile
@@ -83,7 +83,7 @@ fn seh_except__except_filter_0 @ 0x180001040 (size 32)
     v2:rax = call 0x180001000(load32((rdx + #0x2c)))
     ret v2
 -- card
-{"addr":"0x180001040","approxTokens":114,"blocks":1,"hardReasons":[],"name":"seh_except__except_filter_0","nameSources":["unwind"],"section":".text","size":32,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x180001040","approxTokens":114,"blocks":1,"hardReasons":[],"name":"seh_except__except_filter_0","nameSources":["unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":32,"sizeEstimated":true,"unsupported":0}
 
 == 0x180001060 seh_finally
 -- decompile
@@ -115,7 +115,7 @@ fn seh_finally @ 0x180001060 (size 40)
     rax, xmm0 = call 0x1800010b0((rsp + #0xfffffffffffffff8))
     ret load32((rsp + #0xfffffffffffffff4))
 -- card
-{"addr":"0x180001060","approxTokens":174,"blocks":1,"hardReasons":[],"name":"seh_finally","nameSources":["dynamic","unwind"],"section":".text","size":40,"unsupported":0}
+{"addr":"0x180001060","approxTokens":174,"blocks":1,"hardReasons":[],"name":"seh_finally","nameSources":["dynamic","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":40,"unsupported":0}
 
 == 0x180001090 seh_finally__finally_0
 -- decompile
@@ -133,7 +133,7 @@ fn seh_finally__finally_0 @ 0x180001090 (size 29)
     v3:rax, xmm0 = call 0x1800010b0((rdx + #0x30))
     ret v3
 -- card
-{"addr":"0x180001090","approxTokens":156,"blocks":1,"hardReasons":[],"name":"seh_finally__finally_0","nameSources":["unwind"],"section":".text","size":29,"unsupported":0}
+{"addr":"0x180001090","approxTokens":156,"blocks":1,"hardReasons":[],"name":"seh_finally__finally_0","nameSources":["unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":29,"unsupported":0}
 
 == 0x1800010c0 seh_nested
 -- decompile
@@ -169,7 +169,7 @@ fn seh_nested @ 0x1800010c0 (size 42)
   blk2 @ 0x1800010e3:
     br 0x1800010da
 -- card
-{"addr":"0x1800010c0","approxTokens":180,"blocks":3,"hardReasons":[],"name":"seh_nested","nameSources":["dynamic","unwind"],"section":".text","size":42,"unsupported":0}
+{"addr":"0x1800010c0","approxTokens":180,"blocks":3,"hardReasons":[],"name":"seh_nested","nameSources":["dynamic","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":42,"unsupported":0}
 
 == 0x1800010f0 seh_nested__finally_0
 -- decompile
@@ -187,7 +187,7 @@ fn seh_nested__finally_0 @ 0x1800010f0 (size 28)
     v1:rax, xmm0 = call 0x180001110(rcx)
     ret v1
 -- card
-{"addr":"0x1800010f0","approxTokens":162,"blocks":1,"hardReasons":[],"name":"seh_nested__finally_0","nameSources":["unwind"],"section":".text","size":28,"unsupported":0}
+{"addr":"0x1800010f0","approxTokens":162,"blocks":1,"hardReasons":[],"name":"seh_nested__finally_0","nameSources":["unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":28,"unsupported":0}
 
 == 0x180001120 __C_specific_handler
 -- decompile
@@ -206,4 +206,4 @@ fn __C_specific_handler @ 0x180001120 (size 6)
     v1:rax, xmm0 = call *load64(#0x1800020e8)
     ret v1
 -- card
-{"addr":"0x180001120","approxTokens":102,"blocks":1,"hardReasons":[],"name":"__C_specific_handler","nameSources":["plt"],"section":".text","size":6,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x180001120","approxTokens":102,"blocks":1,"hardReasons":[],"name":"__C_specific_handler","nameSources":["plt"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":6,"sizeEstimated":true,"unsupported":0}

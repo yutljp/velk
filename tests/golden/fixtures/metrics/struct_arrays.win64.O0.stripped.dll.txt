@@ -22,7 +22,7 @@ fn <unnamed> @ 0x180001000 (size 57)
   blk0 @ 0x180001000:
     ret ((sext16(load16(((rcx + (sext32(rdx) * #0xc)) + #0x8))) * load32(((rcx + (sext32(rdx) * #0xc)) + #0x4))) & #0xffffffff)
 -- card
-{"addr":"0x180001000","approxTokens":186,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":57,"structures":["struct S1 { uint8_t gap_0x0[0x4]; int32_t field_0x4; uint16_t field_0x8; uint8_t gap_0xa[0x2]; };"],"unsupported":0}
+{"addr":"0x180001000","approxTokens":186,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":57,"structures":["struct S1 { uint8_t gap_0x0[0x4]; int32_t field_0x4; uint16_t field_0x8; uint8_t gap_0xa[0x2]; };"],"unsupported":0}
 
 == 0x180001040 -
 -- decompile
@@ -49,7 +49,7 @@ fn <unnamed> @ 0x180001040 (size 70)
     store32((load32((rsp + #0xfffffffffffffffc)) + #0x1), (v1 + #0x8))
     ret v1
 -- card
-{"addr":"0x180001040","approxTokens":210,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":70,"structures":["struct S1 { int32_t field_0x0; uint8_t gap_0x4[0x4]; int32_t field_0x8; };"],"unsupported":0}
+{"addr":"0x180001040","approxTokens":210,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":70,"structures":["struct S1 { int32_t field_0x0; uint8_t gap_0x4[0x4]; int32_t field_0x8; };"],"unsupported":0}
 
 == 0x180001090 -
 -- decompile
@@ -90,4 +90,4 @@ fn <unnamed> @ 0x180001090 (size 103)
   blk6 @ 0x1800010ee:
     ret load32((rsp + #0xffffffffffffffec))
 -- card
-{"addr":"0x180001090","approxTokens":222,"blocks":7,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":103,"structures":["struct S1 { int32_t field_0x0; int32_t field_0x4; uint8_t gap_0x8[0x4]; };"],"unsupported":0}
+{"addr":"0x180001090","approxTokens":222,"blocks":7,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":103,"structures":["struct S1 { int32_t field_0x0; int32_t field_0x4; uint8_t gap_0x8[0x4]; };"],"unsupported":0}

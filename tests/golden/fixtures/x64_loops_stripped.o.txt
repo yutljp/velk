@@ -46,7 +46,7 @@ fn <unnamed> @ 0x0 (size 48)
   blk3 @ 0x20:
     ret v1
 -- card
-{"addr":"0x0","approxTokens":174,"blocks":4,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":48,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x0","approxTokens":174,"blocks":4,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":48,"sizeEstimated":true,"unsupported":0}
 
 == 0x30 -
 -- decompile
@@ -70,7 +70,7 @@ fn <unnamed> @ 0x30 (size 32)
   blk2 @ 0x47:
     ret #0x0
 -- card
-{"addr":"0x30","approxTokens":150,"blocks":3,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":32,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x30","approxTokens":150,"blocks":3,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":32,"sizeEstimated":true,"unsupported":0}
 
 == 0x50 -
 -- decompile
@@ -114,7 +114,7 @@ fn <unnamed> @ 0x50 (size 48)
   blk3 @ 0x77:
     ret v4
 -- card
-{"addr":"0x50","approxTokens":180,"blocks":4,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":48,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x50","approxTokens":180,"blocks":4,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":48,"sizeEstimated":true,"unsupported":0}
 
 == 0x80 -
 -- decompile
@@ -157,4 +157,4 @@ fn <unnamed> @ 0x80 (size 44)
   blk5 @ 0xa9:
     ret #0x0
 -- card
-{"addr":"0x80","approxTokens":192,"blocks":6,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":44,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x80","approxTokens":192,"blocks":6,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":44,"sizeEstimated":true,"unsupported":0}

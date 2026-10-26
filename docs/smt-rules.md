@@ -2,6 +2,8 @@
 
 The normal Rust unit suite includes test-only Z3 checks. Run them with
 `cargo test --release --lib smt -- --test-threads 3 --nocapture`.
+Integer predicate and dominating-guard checks also run with
+`cargo test --release --lib passes::deobfuscation -- --test-threads 3`.
 Z3 must be on PATH. The tests print a clear skip message when it is absent.
 The rendered-C tests also need Clang and uv. Python runs through
 `uv run --no-project tests/smt_c.py` and uses only the standard library.

@@ -8,6 +8,12 @@ interface Section {
   executable: boolean;
 }
 
+interface Simplification {
+  simplified: boolean;
+  predicatesRemoved: number;
+  dispatcherStatesRemoved: number;
+}
+
 interface Card {
   addr: Addr;
   name: string | null;
@@ -30,6 +36,8 @@ interface Card {
   accesses?: string[];
   /** Recovered structure declarations shared across direct pointer flows. */
   structures?: string[];
+  /** Proven predicate and constant dispatcher removals. */
+  simplification: Simplification;
   disasmPreview: string[];
   approxTokens: number;
 }
@@ -122,6 +130,7 @@ interface ConstantsResult {
 }
 
 interface FunctionSummary {
+  simplification: Simplification;
   addr: Addr;
   name: string | null;
   size: number | null;

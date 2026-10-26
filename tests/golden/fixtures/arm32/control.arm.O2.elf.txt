@@ -98,7 +98,7 @@ fn matrix_trace @ 0x20118 (size 80)
   blk14 @ 0x20164:
     ret v4
 -- card
-{"addr":"0x20118","approxTokens":216,"blocks":15,"hardReasons":[],"name":"matrix_trace","nameSources":["symtab","dwarf"],"section":".text","size":80,"unsupported":0}
+{"addr":"0x20118","approxTokens":216,"blocks":15,"hardReasons":[],"name":"matrix_trace","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":80,"unsupported":0}
 
 == 0x20168 cleanup_on_error
 -- decompile
@@ -141,7 +141,7 @@ fn cleanup_on_error @ 0x20168 (size 52)
   blk5 @ 0x20198:
     ret v3
 -- card
-{"addr":"0x20168","approxTokens":174,"blocks":6,"hardReasons":[],"name":"cleanup_on_error","nameSources":["symtab","dwarf"],"section":".text","size":52,"unsupported":0}
+{"addr":"0x20168","approxTokens":174,"blocks":6,"hardReasons":[],"name":"cleanup_on_error","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":52,"unsupported":0}
 
 == 0x2019c fallthrough
 -- decompile
@@ -187,7 +187,7 @@ fn fallthrough @ 0x2019c (size 32)
   blk6 @ 0x201b4:
     ret v2
 -- card
-{"addr":"0x2019c","approxTokens":138,"blocks":7,"hardReasons":[],"name":"fallthrough","nameSources":["symtab","dwarf"],"section":".text","size":32,"unsupported":0}
+{"addr":"0x2019c","approxTokens":138,"blocks":7,"hardReasons":[],"name":"fallthrough","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":32,"unsupported":0}
 
 == 0x201bc sparse
 -- decompile
@@ -285,7 +285,7 @@ fn sparse @ 0x201bc (size 68)
   blk19 @ 0x201fc:
     br 0x201dc
 -- card
-{"addr":"0x201bc","approxTokens":198,"blocks":20,"hardReasons":[],"name":"sparse","nameSources":["symtab","dwarf"],"section":".text","size":68,"unsupported":0}
+{"addr":"0x201bc","approxTokens":198,"blocks":20,"hardReasons":[],"name":"sparse","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":68,"unsupported":0}
 
 == 0x20200 short_circuit
 -- decompile
@@ -336,7 +336,7 @@ fn short_circuit @ 0x20200 (size 64)
   blk7 @ 0x2023c:
     ret v2
 -- card
-{"addr":"0x20200","approxTokens":192,"blocks":8,"hardReasons":[],"name":"short_circuit","nameSources":["symtab","dwarf"],"section":".text","size":64,"unsupported":0}
+{"addr":"0x20200","approxTokens":192,"blocks":8,"hardReasons":[],"name":"short_circuit","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":64,"unsupported":0}
 
 == 0x20240 skip_negatives
 -- decompile
@@ -375,7 +375,7 @@ fn skip_negatives @ 0x20240 (size 136)
     v4 = (r1 & #0x7ffffffc)
     unsupported: undecodable ARM instruction at 0x2025c: incomplete decoder
 -- card
-{"addr":"0x20240","approxTokens":144,"blocks":5,"hardReasons":[],"name":"skip_negatives","nameSources":["symtab","dwarf"],"section":".text","size":136,"unsupported":1}
+{"addr":"0x20240","approxTokens":144,"blocks":5,"hardReasons":[],"name":"skip_negatives","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":136,"unsupported":1}
 
 == 0x202c8 find_pair
 -- decompile
@@ -478,4 +478,4 @@ fn find_pair @ 0x202c8 (size 140)
   blk14 @ 0x2034c:
     ret v2
 -- card
-{"addr":"0x202c8","approxTokens":240,"blocks":15,"hardReasons":[],"name":"find_pair","nameSources":["symtab","dwarf"],"section":".text","size":140,"unsupported":0}
+{"addr":"0x202c8","approxTokens":240,"blocks":15,"hardReasons":[],"name":"find_pair","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":140,"unsupported":0}

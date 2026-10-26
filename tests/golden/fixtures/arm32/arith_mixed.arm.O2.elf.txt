@@ -25,7 +25,7 @@ fn sum3 @ 0x200fc (size 12)
   blk0 @ 0x200fc:
     ret (((r1 + r0) + r2) & #0xffffffff)
 -- card
-{"addr":"0x200fc","approxTokens":114,"blocks":1,"hardReasons":[],"name":"sum3","nameSources":["symtab","dwarf"],"section":".text","size":12,"unsupported":0}
+{"addr":"0x200fc","approxTokens":114,"blocks":1,"hardReasons":[],"name":"sum3","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":12,"unsupported":0}
 
 == 0x20108 helper
 -- decompile
@@ -66,7 +66,7 @@ fn helper @ 0x20108 (size 76)
     v6 = (v4 >> #0x20)
     ret (((((r0 + ((((v5 * (r0 - #0x3)) & #0xffffffff) >> #0x1) * #0x55555556)) & #0xffffffff) + (((v5 >> #0x1) | (select eq ((v6 & #0x1) ^ #0x1), #0x0 ? #0x1, #0x0 << #0x1f)) * #0x3)) - #0x1) & #0xffffffff)
 -- card
-{"addr":"0x20108","approxTokens":210,"blocks":5,"hardReasons":[],"name":"helper","nameSources":["symtab","dwarf"],"section":".text","size":76,"unsupported":0}
+{"addr":"0x20108","approxTokens":210,"blocks":5,"hardReasons":[],"name":"helper","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":76,"unsupported":0}
 
 == 0x20154 pair_sum
 -- decompile
@@ -83,7 +83,7 @@ fn pair_sum @ 0x20154 (size 12)
   blk0 @ 0x20154:
     ret ((load32((r0 + #0x4)) + load32(r0)) & #0xffffffff)
 -- card
-{"addr":"0x20154","approxTokens":114,"blocks":1,"hardReasons":[],"name":"pair_sum","nameSources":["symtab","dwarf"],"section":".text","size":12,"unsupported":0}
+{"addr":"0x20154","approxTokens":114,"blocks":1,"hardReasons":[],"name":"pair_sum","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":12,"unsupported":0}
 
 == 0x20160 sum_arr
 -- decompile
@@ -122,4 +122,4 @@ fn sum_arr @ 0x20160 (size 124)
     v4 = (r1 & #0x7ffffffc)
     unsupported: undecodable ARM instruction at 0x2017c: incomplete decoder
 -- card
-{"addr":"0x20160","approxTokens":144,"blocks":5,"hardReasons":[],"name":"sum_arr","nameSources":["symtab","dwarf"],"section":".text","size":124,"unsupported":1}
+{"addr":"0x20160","approxTokens":144,"blocks":5,"hardReasons":[],"name":"sum_arr","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":124,"unsupported":1}

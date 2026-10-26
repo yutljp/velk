@@ -37,6 +37,8 @@ lld-link /out:"$OUT/pe64.exe" /entry:entry /nodefaultlib /subsystem:console /Bre
   /export:reg_mod "$OUT/pe64.obj"
 rm -f "$OUT/pe64.lib" "$OUT/pe64.exp"
 
+bash tests/make_control_flow_fixtures.sh
+
 # Basic objects.
 "${CC[@]}" $A64 -O2 -c "$CASES/c/arith_mixed.c" -o "$OUT/arm64.o"
 "${CC[@]}" $A64 -O2 -c "$CASES/c/divmod_a64.c" -o "$OUT/arm64_div.o"

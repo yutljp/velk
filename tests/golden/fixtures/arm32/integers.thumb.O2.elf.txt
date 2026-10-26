@@ -28,7 +28,7 @@ fn narrow_add @ 0x20124 (size 6)
   blk0 @ 0x20124:
     ret (sext8(((r0 + r1) & #0xffffffff)) & #0xffffffff)
 -- card
-{"addr":"0x20124","approxTokens":114,"blocks":1,"hardReasons":[],"name":"narrow_add","nameSources":["symtab","dwarf"],"section":".text","size":6,"unsupported":0}
+{"addr":"0x20124","approxTokens":114,"blocks":1,"hardReasons":[],"name":"narrow_add","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":6,"unsupported":0}
 
 == 0x2012c widen_mul
 -- decompile
@@ -45,7 +45,7 @@ fn widen_mul @ 0x2012c (size 4)
   blk0 @ 0x2012c:
     ret ((r1 * r0) & #0xffffffff)
 -- card
-{"addr":"0x2012c","approxTokens":108,"blocks":1,"hardReasons":[],"name":"widen_mul","nameSources":["symtab","dwarf"],"section":".text","size":4,"unsupported":0}
+{"addr":"0x2012c","approxTokens":108,"blocks":1,"hardReasons":[],"name":"widen_mul","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":4,"unsupported":0}
 
 == 0x20130 mixed_sign
 -- decompile
@@ -64,7 +64,7 @@ fn mixed_sign @ 0x20130 (size 10)
     v2 = (r0 - r1)
     ret (v2 | ((((sext32(r0) >>> #0x1f) - (select cs (v2 + r1), r1 ? #0x1, #0x0 ^ #0x1)) & #0xffffffff) << #0x20))
 -- card
-{"addr":"0x20130","approxTokens":120,"blocks":1,"hardReasons":[],"name":"mixed_sign","nameSources":["symtab","dwarf"],"section":".text","size":10,"unsupported":0}
+{"addr":"0x20130","approxTokens":120,"blocks":1,"hardReasons":[],"name":"mixed_sign","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":10,"unsupported":0}
 
 == 0x2013c in_range
 -- decompile
@@ -100,7 +100,7 @@ fn in_range @ 0x2013c (size 26)
   blk4 @ 0x20150:
     ret (v3 & v2)
 -- card
-{"addr":"0x2013c","approxTokens":156,"blocks":5,"hardReasons":[],"name":"in_range","nameSources":["symtab","dwarf"],"section":".text","size":26,"unsupported":0}
+{"addr":"0x2013c","approxTokens":156,"blocks":5,"hardReasons":[],"name":"in_range","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":26,"unsupported":0}
 
 == 0x20158 rotate_left
 -- decompile
@@ -119,7 +119,7 @@ fn rotate_left @ 0x20158 (size 6)
     v1 = (#0x0 - r1)
     ret (((r0 >> (v1 & #0x1f)) | (r0 << ((#0x20 - (v1 & #0x1f)) & #0x1f))) & #0xffffffff)
 -- card
-{"addr":"0x20158","approxTokens":114,"blocks":1,"hardReasons":[],"name":"rotate_left","nameSources":["symtab","dwarf"],"section":".text","size":6,"unsupported":0}
+{"addr":"0x20158","approxTokens":114,"blocks":1,"hardReasons":[],"name":"rotate_left","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":6,"unsupported":0}
 
 == 0x20160 popcount
 -- decompile
@@ -225,7 +225,7 @@ fn popcount @ 0x20160 (size 56)
   blk18 @ 0x20194:
     ret ((v4 + #0x1) & #0xffffffff)
 -- card
-{"addr":"0x20160","approxTokens":240,"blocks":19,"hardReasons":[],"name":"popcount","nameSources":["symtab","dwarf"],"section":".text","size":56,"unsupported":0}
+{"addr":"0x20160","approxTokens":240,"blocks":19,"hardReasons":[],"name":"popcount","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":56,"unsupported":0}
 
 == 0x20198 byte_swap
 -- decompile
@@ -242,7 +242,7 @@ fn byte_swap @ 0x20198 (size 4)
   blk0 @ 0x20198:
     ret (((((r0 & #0xff) << #0x18) | (((r0 >> #0x8) & #0xff) << #0x10)) | (((r0 >> #0x10) & #0xff) << #0x8)) | ((r0 >> #0x18) & #0xff))
 -- card
-{"addr":"0x20198","approxTokens":108,"blocks":1,"hardReasons":[],"name":"byte_swap","nameSources":["symtab","dwarf"],"section":".text","size":4,"unsupported":0}
+{"addr":"0x20198","approxTokens":108,"blocks":1,"hardReasons":[],"name":"byte_swap","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":4,"unsupported":0}
 
 == 0x2019c min3
 -- decompile
@@ -274,7 +274,7 @@ fn min3 @ 0x2019c (size 14)
   blk4 @ 0x201a8:
     ret r0
 -- card
-{"addr":"0x2019c","approxTokens":138,"blocks":5,"hardReasons":[],"name":"min3","nameSources":["symtab","dwarf"],"section":".text","size":14,"unsupported":0}
+{"addr":"0x2019c","approxTokens":138,"blocks":5,"hardReasons":[],"name":"min3","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":14,"unsupported":0}
 
 == 0x201ac labs_value
 -- decompile
@@ -299,4 +299,4 @@ fn labs_value @ 0x201ac (size 8)
   blk2 @ 0x201b2:
     ret r0
 -- card
-{"addr":"0x201ac","approxTokens":120,"blocks":3,"hardReasons":[],"name":"labs_value","nameSources":["symtab","dwarf"],"section":".text","size":8,"unsupported":0}
+{"addr":"0x201ac","approxTokens":120,"blocks":3,"hardReasons":[],"name":"labs_value","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":8,"unsupported":0}

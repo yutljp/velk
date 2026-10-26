@@ -43,7 +43,7 @@ fn classify @ 0x200f4 (size 84)
   blk7 @ 0x2013c:
     ret v1
 -- card
-{"addr":"0x200f4","approxTokens":222,"blocks":8,"hardReasons":[],"name":"classify","nameSources":["symtab","dwarf"],"section":".text","size":84,"unsupported":0}
+{"addr":"0x200f4","approxTokens":222,"blocks":8,"hardReasons":[],"name":"classify","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":84,"unsupported":0}
 
 == 0x20148 clamp
 -- decompile
@@ -82,7 +82,7 @@ fn clamp @ 0x20148 (size 100)
   blk7 @ 0x201a0:
     ret v1
 -- card
-{"addr":"0x20148","approxTokens":240,"blocks":8,"hardReasons":[],"name":"clamp","nameSources":["symtab","dwarf"],"section":".text","size":100,"unsupported":0}
+{"addr":"0x20148","approxTokens":240,"blocks":8,"hardReasons":[],"name":"clamp","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":100,"unsupported":0}
 
 == 0x201ac sign_of
 -- decompile
@@ -128,4 +128,4 @@ fn sign_of @ 0x201ac (size 84)
   blk8 @ 0x201f4:
     ret v2
 -- card
-{"addr":"0x201ac","approxTokens":222,"blocks":9,"hardReasons":[],"name":"sign_of","nameSources":["symtab","dwarf"],"section":".text","size":84,"unsupported":0}
+{"addr":"0x201ac","approxTokens":222,"blocks":9,"hardReasons":[],"name":"sign_of","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":84,"unsupported":0}

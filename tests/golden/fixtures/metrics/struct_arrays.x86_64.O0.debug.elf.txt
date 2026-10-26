@@ -22,7 +22,7 @@ fn item_weight @ 0x2011a0 (size 51)
   blk0 @ 0x2011a0:
     ret ((sext16(load16(((rdi + (sext32(esi) << #0x4)) + #0xc))) * load32(((rdi + (sext32(esi) << #0x4)) + #0x8))) & #0xffffffff)
 -- card
-{"addr":"0x2011a0","approxTokens":192,"blocks":1,"hardReasons":[],"name":"item_weight","nameSources":["symtab","dwarf","unwind"],"section":".text","size":51,"unsupported":0}
+{"addr":"0x2011a0","approxTokens":192,"blocks":1,"hardReasons":[],"name":"item_weight","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":51,"unsupported":0}
 
 == 0x2011e0 cell_set
 -- decompile
@@ -46,7 +46,7 @@ fn cell_set @ 0x2011e0 (size 55)
     store32((load32((rsp + #0xffffffffffffffe4)) + #0x1), ((load64((rsp + #0xfffffffffffffff0)) + (load64((rsp + #0xffffffffffffffe8)) * #0xc)) + #0x8))
     ret #0x0
 -- card
-{"addr":"0x2011e0","approxTokens":204,"blocks":1,"hardReasons":[],"name":"cell_set","nameSources":["symtab","dwarf","unwind"],"section":".text","size":55,"unsupported":0}
+{"addr":"0x2011e0","approxTokens":204,"blocks":1,"hardReasons":[],"name":"cell_set","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":55,"unsupported":0}
 
 == 0x201220 item_last_key
 -- decompile
@@ -91,4 +91,4 @@ fn item_last_key @ 0x201220 (size 110)
   blk6 @ 0x201288:
     ret load64((rsp + #0xffffffffffffffe0))
 -- card
-{"addr":"0x201220","approxTokens":228,"blocks":7,"hardReasons":[],"name":"item_last_key","nameSources":["symtab","dwarf","unwind"],"section":".text","size":110,"unsupported":0}
+{"addr":"0x201220","approxTokens":228,"blocks":7,"hardReasons":[],"name":"item_last_key","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":110,"unsupported":0}

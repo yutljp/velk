@@ -93,7 +93,7 @@ fn <unnamed> @ 0x21019c (size 144)
   blk10 @ 0x210224:
     ret #0x0
 -- card
-{"addr":"0x21019c","approxTokens":240,"blocks":11,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":144,"unsupported":0}
+{"addr":"0x21019c","approxTokens":240,"blocks":11,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":1,"simplified":true},"size":144,"unsupported":0}
 
 == 0x21022c -
 -- decompile
@@ -110,7 +110,7 @@ fn <unnamed> @ 0x21022c (size 12)
   blk0 @ 0x21022c:
     ret fma.s(fsub.s(s1, s0), s2, s0)
 -- card
-{"addr":"0x21022c","approxTokens":114,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":12,"unsupported":0}
+{"addr":"0x21022c","approxTokens":114,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":12,"unsupported":0}
 
 == 0x210238 -
 -- decompile
@@ -127,7 +127,7 @@ fn <unnamed> @ 0x210238 (size 8)
   blk0 @ 0x210238:
     ret f.dtos32.sat(d0)
 -- card
-{"addr":"0x210238","approxTokens":108,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":8,"unsupported":0}
+{"addr":"0x210238","approxTokens":108,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":8,"unsupported":0}
 
 == 0x210240 -
 -- decompile
@@ -146,7 +146,7 @@ fn <unnamed> @ 0x210240 (size 12)
     v1 = f.stof.d((d0 & #0xffffffff))
     ret fadd.d(v1, v1)
 -- card
-{"addr":"0x210240","approxTokens":114,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":12,"unsupported":0}
+{"addr":"0x210240","approxTokens":114,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":12,"unsupported":0}
 
 == 0x21024c -
 -- decompile
@@ -164,4 +164,4 @@ fn <unnamed> @ 0x21024c (size 16)
     v1 = select eq flt.d(d0, d1), #0x0 ? select ne flt.d(d1, d0), #0x0 ? #0x1, #0x0, #0xffffffff
     ret v1
 -- card
-{"addr":"0x21024c","approxTokens":120,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":16,"unsupported":0}
+{"addr":"0x21024c","approxTokens":120,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":16,"unsupported":0}

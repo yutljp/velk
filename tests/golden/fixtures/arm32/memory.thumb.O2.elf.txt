@@ -135,7 +135,7 @@ fn copy_bytes @ 0x2013c (size 108)
   blk15 @ 0x201a2:
     ret #0x0
 -- card
-{"addr":"0x2013c","approxTokens":240,"blocks":16,"hardReasons":[],"name":"copy_bytes","nameSources":["symtab","dwarf"],"section":".text","size":108,"structures":["struct S1 {\n    uint8_t gap_0x0[0x3];\n    uint8_t field_0x3;\n    uint8_t field_0x4;\n    uint8_t field_0x5;\n    uint8_t field_0x6;\n};"],"unsupported":0}
+{"addr":"0x2013c","approxTokens":240,"blocks":16,"hardReasons":[],"name":"copy_bytes","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":108,"structures":["struct S1 {\n    uint8_t gap_0x0[0x3];\n    uint8_t field_0x3;\n    uint8_t field_0x4;\n    uint8_t field_0x5;\n    uint8_t field_0x6;\n};"],"unsupported":0}
 
 == 0x201a8 fill_bytes
 -- decompile
@@ -160,7 +160,7 @@ fn fill_bytes @ 0x201a8 (size 20)
     r0, r1 = call 0x201ba(r0, r2, r1)
     ret #0x0
 -- card
-{"addr":"0x201a8","approxTokens":150,"blocks":3,"hardReasons":[],"name":"fill_bytes","nameSources":["symtab","dwarf"],"section":".text","size":20,"unsupported":0}
+{"addr":"0x201a8","approxTokens":150,"blocks":3,"hardReasons":[],"name":"fill_bytes","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":20,"unsupported":0}
 
 == 0x201bc string_length
 -- decompile
@@ -180,7 +180,7 @@ fn string_length @ 0x201bc (size 4)
     v1:r0, r1 = call 0x201c0(r0, r1)
     ret v1
 -- card
-{"addr":"0x201bc","approxTokens":102,"blocks":1,"hardReasons":[],"name":"string_length","nameSources":["symtab","dwarf"],"section":".text","size":4,"unsupported":0}
+{"addr":"0x201bc","approxTokens":102,"blocks":1,"hardReasons":[],"name":"string_length","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":4,"unsupported":0}
 
 == 0x201c0 grid_get
 -- decompile
@@ -198,7 +198,7 @@ fn grid_get @ 0x201c0 (size 26)
   blk0 @ 0x201c0:
     ret load32(((#0x30214 + ((r0 & #0x3) << #0x5)) + ((r1 & #0x7) << #0x2)))
 -- card
-{"addr":"0x201c0","approxTokens":138,"blocks":1,"hardReasons":[],"name":"grid_get","nameSources":["symtab","dwarf"],"section":".text","size":26,"unsupported":0}
+{"addr":"0x201c0","approxTokens":138,"blocks":1,"hardReasons":[],"name":"grid_get","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":26,"unsupported":0}
 
 == 0x201dc grid_set
 -- decompile
@@ -217,7 +217,7 @@ fn grid_set @ 0x201dc (size 26)
     store32(r2, ((#0x30214 + ((r0 & #0x3) << #0x5)) + ((r1 & #0x7) << #0x2)))
     ret #0x0
 -- card
-{"addr":"0x201dc","approxTokens":138,"blocks":1,"hardReasons":[],"name":"grid_set","nameSources":["symtab","dwarf"],"section":".text","size":26,"unsupported":0}
+{"addr":"0x201dc","approxTokens":138,"blocks":1,"hardReasons":[],"name":"grid_set","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":26,"unsupported":0}
 
 == 0x201f8 pointer_distance
 -- decompile
@@ -234,7 +234,7 @@ fn pointer_distance @ 0x201f8 (size 6)
   blk0 @ 0x201f8:
     ret ((sext32((r1 - r0)) >>> #0x2) & #0xffffffff)
 -- card
-{"addr":"0x201f8","approxTokens":114,"blocks":1,"hardReasons":[],"name":"pointer_distance","nameSources":["symtab","dwarf"],"section":".text","size":6,"unsupported":0}
+{"addr":"0x201f8","approxTokens":114,"blocks":1,"hardReasons":[],"name":"pointer_distance","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":6,"unsupported":0}
 
 == 0x20200 read_volatile
 -- decompile
@@ -251,7 +251,7 @@ fn read_volatile @ 0x20200 (size 8)
   blk0 @ 0x20200:
     ret ((load32(r0) + load32(r0)) & #0xffffffff)
 -- card
-{"addr":"0x20200","approxTokens":120,"blocks":1,"hardReasons":[],"name":"read_volatile","nameSources":["symtab","dwarf"],"section":".text","size":8,"unsupported":0}
+{"addr":"0x20200","approxTokens":120,"blocks":1,"hardReasons":[],"name":"read_volatile","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":8,"unsupported":0}
 
 == 0x20208 swap_ints
 -- decompile
@@ -273,4 +273,4 @@ fn swap_ints @ 0x20208 (size 10)
     store32(v1, r1)
     ret #0x0
 -- card
-{"addr":"0x20208","approxTokens":126,"blocks":1,"hardReasons":[],"name":"swap_ints","nameSources":["symtab","dwarf"],"section":".text","size":10,"unsupported":0}
+{"addr":"0x20208","approxTokens":126,"blocks":1,"hardReasons":[],"name":"swap_ints","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":10,"unsupported":0}

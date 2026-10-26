@@ -24,7 +24,7 @@ fn ns::add(int, int) @ 0x0 (size 8)
   blk0 @ 0x0:
     ret ((w1 + w0) & #0xffffffff)
 -- card
-{"addr":"0x0","approxTokens":108,"blocks":1,"hardReasons":[],"name":"ns::add(int, int)","nameSources":["symtab","unwind"],"section":".text","size":8,"unsupported":0}
+{"addr":"0x0","approxTokens":108,"blocks":1,"hardReasons":[],"name":"ns::add(int, int)","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":8,"unsupported":0}
 
 == 0x8 ns::mul(int, int)
 -- decompile
@@ -41,7 +41,7 @@ fn ns::mul(int, int) @ 0x8 (size 8)
   blk0 @ 0x8:
     ret ((w1 * w0) & #0xffffffff)
 -- card
-{"addr":"0x8","approxTokens":108,"blocks":1,"hardReasons":[],"name":"ns::mul(int, int)","nameSources":["symtab","unwind"],"section":".text","size":8,"unsupported":0}
+{"addr":"0x8","approxTokens":108,"blocks":1,"hardReasons":[],"name":"ns::mul(int, int)","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":8,"unsupported":0}
 
 == 0x10 use(int)
 -- decompile
@@ -61,4 +61,4 @@ fn use(int) @ 0x10 (size 44)
     v2:x0 = call 0x0((x0 & #0xffffffff), (v2 & #0xffffffff))
     ret v2
 -- card
-{"addr":"0x10","approxTokens":162,"blocks":1,"hardReasons":[],"name":"use(int)","nameSources":["symtab","unwind"],"section":".text","size":44,"unsupported":0}
+{"addr":"0x10","approxTokens":162,"blocks":1,"hardReasons":[],"name":"use(int)","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":44,"unsupported":0}

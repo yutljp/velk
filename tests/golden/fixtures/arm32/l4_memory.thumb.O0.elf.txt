@@ -29,7 +29,7 @@ fn point_dot @ 0x20128 (size 28)
     v1 = r0
     ret (((load32(((r1 + #0x4) & #0xffffffff)) * load32(((v1 + #0x4) & #0xffffffff))) + (load32(v1) * load32(r1))) & #0xffffffff)
 -- card
-{"addr":"0x20128","approxTokens":174,"blocks":1,"hardReasons":[],"name":"point_dot","nameSources":["symtab","dwarf"],"section":".text","size":28,"unsupported":0}
+{"addr":"0x20128","approxTokens":174,"blocks":1,"hardReasons":[],"name":"point_dot","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":28,"unsupported":0}
 
 == 0x20144 array_sum
 -- decompile
@@ -73,7 +73,7 @@ fn array_sum @ 0x20144 (size 54)
   blk6 @ 0x20174:
     ret load32((sp + #0xfffffffffffffff4))
 -- card
-{"addr":"0x20144","approxTokens":240,"blocks":7,"hardReasons":[],"name":"array_sum","nameSources":["symtab","dwarf"],"section":".text","size":54,"unsupported":0}
+{"addr":"0x20144","approxTokens":240,"blocks":7,"hardReasons":[],"name":"array_sum","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":54,"unsupported":0}
 
 == 0x2017c bump
 -- decompile
@@ -92,7 +92,7 @@ fn bump @ 0x2017c (size 16)
     store32((load32(#0x301a0) + #0x1), #0x301a0)
     ret #0x0
 -- card
-{"addr":"0x2017c","approxTokens":132,"blocks":1,"hardReasons":[],"name":"bump","nameSources":["symtab","dwarf"],"section":".text","size":16,"unsupported":0}
+{"addr":"0x2017c","approxTokens":132,"blocks":1,"hardReasons":[],"name":"bump","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":16,"unsupported":0}
 
 == 0x2018c banner_first
 -- decompile
@@ -110,4 +110,4 @@ fn banner_first @ 0x2018c (size 14)
   blk0 @ 0x2018c:
     ret (load8(load32(#0x3019c)) & #0xffffffff)
 -- card
-{"addr":"0x2018c","approxTokens":126,"blocks":1,"hardReasons":[],"name":"banner_first","nameSources":["symtab","dwarf"],"section":".text","size":14,"unsupported":0}
+{"addr":"0x2018c","approxTokens":126,"blocks":1,"hardReasons":[],"name":"banner_first","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":14,"unsupported":0}

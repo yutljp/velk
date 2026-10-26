@@ -146,7 +146,7 @@ fn sum_while @ 0x2011c (size 110)
   blk20 @ 0x20188:
     ret v5
 -- card
-{"addr":"0x2011c","approxTokens":240,"blocks":21,"hardReasons":[],"name":"sum_while","nameSources":["symtab","dwarf"],"section":".text","size":110,"unsupported":0}
+{"addr":"0x2011c","approxTokens":240,"blocks":21,"hardReasons":[],"name":"sum_while","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":110,"unsupported":0}
 
 == 0x2018c count_down
 -- decompile
@@ -253,7 +253,7 @@ fn count_down @ 0x2018c (size 102)
   blk16 @ 0x201f0:
     ret r0
 -- card
-{"addr":"0x2018c","approxTokens":240,"blocks":17,"hardReasons":[],"name":"count_down","nameSources":["symtab","dwarf"],"section":".text","size":102,"unsupported":0}
+{"addr":"0x2018c","approxTokens":240,"blocks":17,"hardReasons":[],"name":"count_down","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":102,"unsupported":0}
 
 == 0x201f4 sum_skip_odd
 -- decompile
@@ -380,7 +380,7 @@ fn sum_skip_odd @ 0x201f4 (size 142)
     store32(v5, #0x302e8)
     ret v5
 -- card
-{"addr":"0x201f4","approxTokens":240,"blocks":24,"hardReasons":[],"name":"sum_skip_odd","nameSources":["symtab","dwarf"],"section":".text","size":142,"unsupported":0}
+{"addr":"0x201f4","approxTokens":240,"blocks":24,"hardReasons":[],"name":"sum_skip_odd","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":2,"simplified":true},"size":142,"unsupported":0}
 
 == 0x20284 find_first
 -- decompile
@@ -497,4 +497,4 @@ fn find_first @ 0x20284 (size 100)
   blk24 @ 0x202e4:
     ret ((v6 + #0x3) & #0xffffffff)
 -- card
-{"addr":"0x20284","approxTokens":240,"blocks":25,"hardReasons":[],"name":"find_first","nameSources":["symtab","dwarf"],"section":".text","size":100,"unsupported":0}
+{"addr":"0x20284","approxTokens":240,"blocks":25,"hardReasons":[],"name":"find_first","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":100,"unsupported":0}

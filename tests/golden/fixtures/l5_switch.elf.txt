@@ -147,7 +147,7 @@ fn dense @ 0x2101ac (size 268)
     store32(v4, #0x2202e8)
     ret load32(#0x2202e8)
 -- card
-{"addr":"0x2101ac","approxTokens":240,"blocks":21,"hardReasons":[],"name":"dense","nameSources":["symtab","entry","unwind"],"section":".text","size":268,"unsupported":0}
+{"addr":"0x2101ac","approxTokens":240,"blocks":21,"hardReasons":[],"name":"dense","nameSources":["symtab","entry","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":268,"unsupported":0}
 
 == 0x2102b8 sparse
 -- decompile
@@ -185,4 +185,4 @@ fn sparse @ 0x2102b8 (size 48)
   blk6 @ 0x2102e4:
     ret x0
 -- card
-{"addr":"0x2102b8","approxTokens":144,"blocks":7,"hardReasons":[],"name":"sparse","nameSources":["symtab","unwind"],"section":".text","size":48,"unsupported":0}
+{"addr":"0x2102b8","approxTokens":144,"blocks":7,"hardReasons":[],"name":"sparse","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":48,"unsupported":0}

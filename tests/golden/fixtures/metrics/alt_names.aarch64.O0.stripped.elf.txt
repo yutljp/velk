@@ -20,7 +20,7 @@ fn <unnamed> @ 0x21016c (size 44)
   blk0 @ 0x21016c:
     ret (((w0 + w1) + w2) & #0xffffffff)
 -- card
-{"addr":"0x21016c","approxTokens":162,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":44,"unsupported":0}
+{"addr":"0x21016c","approxTokens":162,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":44,"unsupported":0}
 
 == 0x210198 -
 -- decompile
@@ -55,4 +55,4 @@ fn <unnamed> @ 0x210198 (size 96)
   blk5 @ 0x2101ec:
     ret v2
 -- card
-{"addr":"0x210198","approxTokens":240,"blocks":6,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":96,"unsupported":0}
+{"addr":"0x210198","approxTokens":240,"blocks":6,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":96,"unsupported":0}

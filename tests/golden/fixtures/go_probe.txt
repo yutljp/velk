@@ -1312,7 +1312,7 @@ fn runtime.printstring @ 0x430e20 (size 128)
     v3:rax, rbx, rcx, rdi, rsi, r8, r9, r10, r11, xmm0, xmm1, xmm2, xmm3 = call 0x430660(rax, rbx, rbx)
     ret v3
 -- card
-{"addr":"0x430e20","approxTokens":222,"blocks":2,"hardReasons":[],"name":"runtime.printstring","nameSources":["pclntab"],"section":".text","size":128,"unsupported":0}
+{"addr":"0x430e20","approxTokens":222,"blocks":2,"hardReasons":[],"name":"runtime.printstring","nameSources":["pclntab"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":128,"unsupported":0}
 
 == 0x466ca0 main.add
 -- decompile
@@ -1329,7 +1329,7 @@ fn main.add @ 0x466ca0 (size 32)
   blk0 @ 0x466ca0:
     ret (rax + rbx)
 -- card
-{"addr":"0x466ca0","approxTokens":108,"blocks":1,"hardReasons":[],"name":"main.add","nameSources":["pclntab"],"section":".text","size":32,"unsupported":0}
+{"addr":"0x466ca0","approxTokens":108,"blocks":1,"hardReasons":[],"name":"main.add","nameSources":["pclntab"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":32,"unsupported":0}
 
 == 0x466cc0 main.divmod
 -- decompile
@@ -1371,7 +1371,7 @@ fn main.divmod @ 0x466cc0 (size 64)
     call 0x42cf20()
     trap
 -- card
-{"addr":"0x466cc0","approxTokens":150,"blocks":6,"hardReasons":[],"name":"main.divmod","nameSources":["pclntab"],"section":".text","size":64,"unsupported":0}
+{"addr":"0x466cc0","approxTokens":150,"blocks":6,"hardReasons":[],"name":"main.divmod","nameSources":["pclntab"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":64,"unsupported":0}
 
 == 0x466d00 main.sumSlice
 -- decompile
@@ -1405,7 +1405,7 @@ fn main.sumSlice @ 0x466d00 (size 32)
   blk3 @ 0x466d1a:
     ret v2
 -- card
-{"addr":"0x466d00","approxTokens":120,"blocks":4,"hardReasons":[],"name":"main.sumSlice","nameSources":["pclntab"],"section":".text","size":32,"unsupported":0}
+{"addr":"0x466d00","approxTokens":120,"blocks":4,"hardReasons":[],"name":"main.sumSlice","nameSources":["pclntab"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":32,"unsupported":0}
 
 == 0x466d20 main.kindName
 -- decompile
@@ -1453,7 +1453,7 @@ fn main.kindName @ 0x466d20 (size 96)
   blk7 @ 0x466d6b:
     ret #0x0
 -- card
-{"accesses":["a0 +0x10:uint32_t"],"addr":"0x466d20","approxTokens":168,"blocks":8,"hardReasons":[],"name":"main.kindName","nameSources":["pclntab"],"section":".text","size":96,"unsupported":0}
+{"accesses":["a0 +0x10:uint32_t"],"addr":"0x466d20","approxTokens":168,"blocks":8,"hardReasons":[],"name":"main.kindName","nameSources":["pclntab"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":96,"unsupported":0}
 
 == 0x466d80 main.main
 -- decompile
@@ -1530,4 +1530,4 @@ fn main.main @ 0x466d80 (size 256)
     v1:rax, rbx, rcx, rdi, rsi, r8, r9, r10, r11, xmm0, xmm1, xmm2, xmm3 = call 0x430600()
     ret v1
 -- card
-{"addr":"0x466d80","approxTokens":240,"blocks":2,"hardReasons":[],"name":"main.main","nameSources":["pclntab"],"section":".text","size":256,"unsupported":0}
+{"addr":"0x466d80","approxTokens":240,"blocks":2,"hardReasons":[],"name":"main.main","nameSources":["pclntab"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":256,"unsupported":0}

@@ -51,7 +51,7 @@ fn <unnamed> @ 0x180001000 (size 79)
   blk3 @ 0x18000104a:
     ret v1
 -- card
-{"addr":"0x180001000","approxTokens":204,"blocks":4,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":79,"unsupported":0}
+{"addr":"0x180001000","approxTokens":204,"blocks":4,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":79,"unsupported":0}
 
 == 0x180001050 -
 -- decompile
@@ -92,7 +92,7 @@ fn <unnamed> @ 0x180001050 (size 70)
   blk3 @ 0x180001091:
     ret v1
 -- card
-{"addr":"0x180001050","approxTokens":192,"blocks":4,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":70,"unsupported":0}
+{"addr":"0x180001050","approxTokens":192,"blocks":4,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":70,"unsupported":0}
 
 == 0x1800010a0 -
 -- decompile
@@ -120,7 +120,7 @@ fn <unnamed> @ 0x1800010a0 (size 54)
   blk3 @ 0x1800010cd:
     ret load32((rsp + #0xfffffffffffffff4))
 -- card
-{"addr":"0x1800010a0","approxTokens":162,"blocks":4,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":54,"unsupported":0}
+{"addr":"0x1800010a0","approxTokens":162,"blocks":4,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":54,"unsupported":0}
 
 == 0x1800010e0 -
 -- decompile
@@ -138,7 +138,7 @@ fn <unnamed> @ 0x1800010e0 (size 46)
   blk0 @ 0x1800010e0:
     ret load32(((#0x180003000 + ((rcx & #0x3) << #0x5)) + (sext32((edx & #0x7)) * #0x4)))
 -- card
-{"addr":"0x1800010e0","approxTokens":186,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":46,"unsupported":0}
+{"addr":"0x1800010e0","approxTokens":186,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":46,"unsupported":0}
 
 == 0x180001110 -
 -- decompile
@@ -162,7 +162,7 @@ fn <unnamed> @ 0x180001110 (size 63)
     store32(load32((rsp + #0xfffffffffffffffc)), (v2 + (sext32((load32((rsp + #0xfffffffffffffff8)) & #0x7)) * #0x4)))
     ret v2
 -- card
-{"addr":"0x180001110","approxTokens":198,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":63,"unsupported":0}
+{"addr":"0x180001110","approxTokens":198,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":63,"unsupported":0}
 
 == 0x180001150 -
 -- decompile
@@ -179,7 +179,7 @@ fn <unnamed> @ 0x180001150 (size 34)
   blk0 @ 0x180001150:
     ret ((rdx - rcx) >>> #0x2)
 -- card
-{"addr":"0x180001150","approxTokens":150,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":34,"unsupported":0}
+{"addr":"0x180001150","approxTokens":150,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":34,"unsupported":0}
 
 == 0x180001180 -
 -- decompile
@@ -200,7 +200,7 @@ fn <unnamed> @ 0x180001180 (size 42)
     store32(load32(rcx), (rsp + #0xfffffffffffffff4))
     ret ((load32((rsp + #0xfffffffffffffff4)) + load32(rcx)) & #0xffffffff)
 -- card
-{"addr":"0x180001180","approxTokens":168,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":42,"unsupported":0}
+{"addr":"0x180001180","approxTokens":168,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":42,"unsupported":0}
 
 == 0x1800011b0 -
 -- decompile
@@ -226,4 +226,4 @@ fn <unnamed> @ 0x1800011b0 (size 55)
     store32(v1, v2)
     ret v2
 -- card
-{"addr":"0x1800011b0","approxTokens":186,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":55,"unsupported":0}
+{"addr":"0x1800011b0","approxTokens":186,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":55,"unsupported":0}

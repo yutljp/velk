@@ -37,6 +37,8 @@ pub const UNKNOWN_SIZE: u64 = 256;
 
 #[derive(Debug, Clone)]
 pub struct Analysis {
+    /// Predicate and dispatcher removals proved during analysis.
+    pub simplification: crate::passes::deobfuscation::Simplification,
     pub ir: FunctionIr,
     pub references: Vec<Reference>,
 }

@@ -28,7 +28,7 @@ fn <unnamed> @ 0x180001000 (size 16)
   blk0 @ 0x180001000:
     ret ((rcx + rdx) & #0xffffffff)
 -- card
-{"addr":"0x180001000","approxTokens":108,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":16,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x180001000","approxTokens":108,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":16,"sizeEstimated":true,"unsupported":0}
 
 == 0x180001010 -
 -- decompile
@@ -47,7 +47,7 @@ fn <unnamed> @ 0x180001010 (size 16)
     v1 = (rdx & #0xff)
     ret ((v1 * (rcx & #0xff)) & #0xffffffff)
 -- card
-{"addr":"0x180001010","approxTokens":120,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":16,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x180001010","approxTokens":120,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":16,"sizeEstimated":true,"unsupported":0}
 
 == 0x180001020 -
 -- decompile
@@ -64,7 +64,7 @@ fn <unnamed> @ 0x180001020 (size 16)
   blk0 @ 0x180001020:
     ret (sext32(rcx) - edx)
 -- card
-{"addr":"0x180001020","approxTokens":120,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":16,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x180001020","approxTokens":120,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":16,"sizeEstimated":true,"unsupported":0}
 
 == 0x180001030 -
 -- decompile
@@ -81,7 +81,7 @@ fn <unnamed> @ 0x180001030 (size 16)
   blk0 @ 0x180001030:
     ret (((select le ecx, r8d ? #0x1, #0x0 & #0xff) & (select ge ecx, (rdx & #0xffffffff) ? #0x1, #0x0 & #0xff)) & #0xff)
 -- card
-{"addr":"0x180001030","approxTokens":132,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":16,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x180001030","approxTokens":132,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":16,"sizeEstimated":true,"unsupported":0}
 
 == 0x180001040 -
 -- decompile
@@ -101,7 +101,7 @@ fn <unnamed> @ 0x180001040 (size 16)
     t1 = (edx & #0x1f)
     ret (((v1 << t1) | (v1 >> ((#0x20 - t1) & #0x1f))) & #0xffffffff)
 -- card
-{"addr":"0x180001040","approxTokens":120,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":16,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x180001040","approxTokens":120,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":16,"sizeEstimated":true,"unsupported":0}
 
 == 0x180001050 -
 -- decompile
@@ -137,7 +137,7 @@ fn <unnamed> @ 0x180001050 (size 32)
   blk2 @ 0x18000106b:
     ret v1
 -- card
-{"addr":"0x180001050","approxTokens":156,"blocks":3,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":32,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x180001050","approxTokens":156,"blocks":3,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":32,"sizeEstimated":true,"unsupported":0}
 
 == 0x180001070 -
 -- decompile
@@ -154,7 +154,7 @@ fn <unnamed> @ 0x180001070 (size 16)
   blk0 @ 0x180001070:
     ret (((((ecx & #0xff) << #0x18) | (((ecx >> #0x8) & #0xff) << #0x10)) | (((ecx >> #0x10) & #0xff) << #0x8)) | ((ecx >> #0x18) & #0xff))
 -- card
-{"addr":"0x180001070","approxTokens":114,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":16,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x180001070","approxTokens":114,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":16,"sizeEstimated":true,"unsupported":0}
 
 == 0x180001080 -
 -- decompile
@@ -173,7 +173,7 @@ fn <unnamed> @ 0x180001080 (size 16)
     v1 = select lt ecx, edx ? ecx, edx
     ret select ge v1, r8d ? r8d, v1
 -- card
-{"addr":"0x180001080","approxTokens":132,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":16,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x180001080","approxTokens":132,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":16,"sizeEstimated":true,"unsupported":0}
 
 == 0x180001090 -
 -- decompile
@@ -190,7 +190,7 @@ fn <unnamed> @ 0x180001090 (size 16)
   blk0 @ 0x180001090:
     ret select lt ((#0x0 - ecx) & #0xffffffff), #0x0 ? ecx, ((#0x0 - ecx) & #0xffffffff)
 -- card
-{"addr":"0x180001090","approxTokens":120,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":16,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x180001090","approxTokens":120,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":16,"sizeEstimated":true,"unsupported":0}
 
 == 0x1800010a0 -
 -- decompile
@@ -207,4 +207,4 @@ fn <unnamed> @ 0x1800010a0 (size 12)
   blk0 @ 0x1800010a0:
     ret (rdx hi128 rcx)
 -- card
-{"addr":"0x1800010a0","approxTokens":120,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":12,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x1800010a0","approxTokens":120,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":12,"sizeEstimated":true,"unsupported":0}

@@ -24,7 +24,7 @@ fn import_call @ 0x10001000 (size 27)
     v1:eax, edx = call *load32(#0x100020dc)(load32((esp + #0x4)))
     ret (((v1 & #0xffffffff) + #0x3) & #0xffffffff)
 -- card
-{"addr":"0x10001000","approxTokens":162,"blocks":1,"hardReasons":[],"name":"import_call","nameSources":["dynamic"],"section":".text","size":27,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x10001000","approxTokens":162,"blocks":1,"hardReasons":[],"name":"import_call","nameSources":["dynamic"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":27,"sizeEstimated":true,"unsupported":0}
 
 == 0x1000101b abs
 -- decompile
@@ -43,4 +43,4 @@ fn abs @ 0x1000101b (size 6)
     v1:eax, edx = call *load32(#0x100020dc)(load32((esp + #0x4)))
     ret (v1 & #0xffffffff)
 -- card
-{"addr":"0x1000101b","approxTokens":102,"blocks":1,"hardReasons":[],"name":"abs","nameSources":["plt"],"section":".text","size":6,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x1000101b","approxTokens":102,"blocks":1,"hardReasons":[],"name":"abs","nameSources":["plt"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":6,"sizeEstimated":true,"unsupported":0}

@@ -22,7 +22,7 @@ fn <unnamed> @ 0x180001000 (size 16)
   blk0 @ 0x180001000:
     ret (((rcx + rdx) + r8d) & #0xffffffff)
 -- card
-{"addr":"0x180001000","approxTokens":114,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":16,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x180001000","approxTokens":114,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":16,"sizeEstimated":true,"unsupported":0}
 
 == 0x180001010 -
 -- decompile
@@ -39,7 +39,7 @@ fn <unnamed> @ 0x180001010 (size 16)
   blk0 @ 0x180001010:
     ret ((((rcx * #0x8) - (rcx & #0xffffffff)) + #0x3) & #0xffffffff)
 -- card
-{"addr":"0x180001010","approxTokens":120,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":16,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x180001010","approxTokens":120,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":16,"sizeEstimated":true,"unsupported":0}
 
 == 0x180001020 -
 -- decompile
@@ -56,7 +56,7 @@ fn <unnamed> @ 0x180001020 (size 16)
   blk0 @ 0x180001020:
     ret select gt ecx, edx ? ecx, edx
 -- card
-{"addr":"0x180001020","approxTokens":120,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":16,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x180001020","approxTokens":120,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":16,"sizeEstimated":true,"unsupported":0}
 
 == 0x180001030 -
 -- decompile
@@ -73,4 +73,4 @@ fn <unnamed> @ 0x180001030 (size 8)
   blk0 @ 0x180001030:
     ret ((#0x0 - ecx) & #0xffffffff)
 -- card
-{"addr":"0x180001030","approxTokens":114,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","size":8,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x180001030","approxTokens":114,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":8,"sizeEstimated":true,"unsupported":0}

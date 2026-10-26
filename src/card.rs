@@ -47,6 +47,8 @@ pub struct Card {
     pub structures: Vec<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub identified: Option<String>,
+    /// Predicate and dispatcher removals proved during analysis.
+    pub simplification: crate::passes::deobfuscation::Simplification,
     pub disasm_preview: Vec<String>,
     pub approx_tokens: usize,
 }
@@ -111,6 +113,7 @@ pub fn build(
                     .collect()
             })
             .unwrap_or_default(),
+        simplification: analysis.map(|a| a.simplification).unwrap_or_default(),
         identified,
         approx_tokens: disasm_preview.len() * TOKENS_PER_LINE + BASE_TOKENS,
         disasm_preview,

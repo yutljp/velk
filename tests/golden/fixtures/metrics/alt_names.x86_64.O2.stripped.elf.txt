@@ -20,7 +20,7 @@ fn <unnamed> @ 0x201170 (size 6)
   blk0 @ 0x201170:
     ret (((rdi + rsi) + edx) & #0xffffffff)
 -- card
-{"addr":"0x201170","approxTokens":114,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":6,"unsupported":0}
+{"addr":"0x201170","approxTokens":114,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":6,"unsupported":0}
 
 == 0x201180 -
 -- decompile
@@ -48,4 +48,4 @@ fn <unnamed> @ 0x201180 (size 46)
   blk2 @ 0x2011ab:
     ret #0x0
 -- card
-{"addr":"0x201180","approxTokens":186,"blocks":3,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":46,"unsupported":0}
+{"addr":"0x201180","approxTokens":186,"blocks":3,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":46,"unsupported":0}

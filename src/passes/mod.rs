@@ -2,6 +2,7 @@ pub mod coalesce;
 pub mod copies;
 pub mod cse;
 pub mod dce;
+pub mod deobfuscation;
 pub mod division;
 pub mod frame;
 pub mod frame_slots;
@@ -14,7 +15,7 @@ pub mod widths;
 use crate::ir::FunctionIr;
 
 /// Functions with recovered jump tables skip the flow-sensitive cleanups.
-pub fn optimize(ir: &mut FunctionIr, has_jump_tables: bool) {
+pub fn optimize(ir: &mut FunctionIr, has_jump_tables: bool) -> deobfuscation::Simplification {
     cse::cse(ir);
     simplify::simplify(ir);
     division::recover_divisions(ir);
@@ -40,8 +41,8 @@ pub fn optimize(ir: &mut FunctionIr, has_jump_tables: bool) {
         dce::dce(ir);
     }
     memory::fuse_load_op_store(ir);
-    crate::ssa::propagate_constants(ir);
-    crate::ssa::ranges::simplify(ir);
+    let changes = deobfuscation::predicates(ir);
     simplify::simplify(ir);
     dce::dce(ir);
+    changes
 }

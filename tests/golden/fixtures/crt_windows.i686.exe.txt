@@ -73,7 +73,7 @@ fn crt_stdio @ 0x401000 (size 27)
     v1:eax, edx = call 0x401190(load32((esp + #0x4)), load32((esp + #0x8)))
     ret (v1 & #0xffffffff)
 -- card
-{"addr":"0x401000","approxTokens":144,"blocks":1,"hardReasons":[],"name":"crt_stdio","nameSources":["dynamic"],"section":".text","size":27,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x401000","approxTokens":144,"blocks":1,"hardReasons":[],"name":"crt_stdio","nameSources":["dynamic"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":27,"sizeEstimated":true,"unsupported":0}
 
 == 0x40101b crt_alloc
 -- decompile
@@ -91,7 +91,7 @@ fn crt_alloc @ 0x40101b (size 27)
     v1:eax, edx = call 0x401188(load32((esp + #0x4)), load32((esp + #0x8)))
     ret (v1 & #0xffffffff)
 -- card
-{"addr":"0x40101b","approxTokens":144,"blocks":1,"hardReasons":[],"name":"crt_alloc","nameSources":["dynamic"],"section":".text","size":27,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x40101b","approxTokens":144,"blocks":1,"hardReasons":[],"name":"crt_alloc","nameSources":["dynamic"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":27,"sizeEstimated":true,"unsupported":0}
 
 == 0x401036 crt_number
 -- decompile
@@ -109,7 +109,7 @@ fn crt_number @ 0x401036 (size 35)
     v1:eax, edx = call 0x4011c0(load32((esp + #0x4)), load32((esp + #0x8)), #0xa)
     ret (v1 & #0xffffffff)
 -- card
-{"addr":"0x401036","approxTokens":150,"blocks":1,"hardReasons":[],"name":"crt_number","nameSources":["dynamic"],"section":".text","size":35,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x401036","approxTokens":150,"blocks":1,"hardReasons":[],"name":"crt_number","nameSources":["dynamic"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":35,"sizeEstimated":true,"unsupported":0}
 
 == 0x401059 crt_string
 -- decompile
@@ -127,7 +127,7 @@ fn crt_string @ 0x401059 (size 27)
     v1:eax, edx = call 0x4011b0(load32((esp + #0x4)), load32((esp + #0x8)))
     ret (v1 & #0xffffffff)
 -- card
-{"addr":"0x401059","approxTokens":144,"blocks":1,"hardReasons":[],"name":"crt_string","nameSources":["dynamic"],"section":".text","size":27,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x401059","approxTokens":144,"blocks":1,"hardReasons":[],"name":"crt_string","nameSources":["dynamic"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":27,"sizeEstimated":true,"unsupported":0}
 
 == 0x401074 crt_wide
 -- decompile
@@ -145,7 +145,7 @@ fn crt_wide @ 0x401074 (size 19)
     v1:eax, edx = call 0x4011d8(load32((esp + #0x4)))
     ret (v1 & #0xffffffff)
 -- card
-{"addr":"0x401074","approxTokens":132,"blocks":1,"hardReasons":[],"name":"crt_wide","nameSources":["dynamic"],"section":".text","size":19,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x401074","approxTokens":132,"blocks":1,"hardReasons":[],"name":"crt_wide","nameSources":["dynamic"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":19,"sizeEstimated":true,"unsupported":0}
 
 == 0x401087 crt_time
 -- decompile
@@ -164,7 +164,7 @@ fn crt_time @ 0x401087 (size 20)
     v1:eax, edx = call *load32(#0x402230)(load32((esp + #0x4)))
     ret (v1 & #0xffffffff)
 -- card
-{"addr":"0x401087","approxTokens":132,"blocks":1,"hardReasons":[],"name":"crt_time","nameSources":["dynamic"],"section":".text","size":20,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x401087","approxTokens":132,"blocks":1,"hardReasons":[],"name":"crt_time","nameSources":["dynamic"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":20,"sizeEstimated":true,"unsupported":0}
 
 == 0x40109b crt_math
 -- decompile
@@ -186,7 +186,7 @@ fn crt_math @ 0x40109b (size 20)
     v1:eax, edx = call *load32(#0x402220)()
     ret (v1 & #0xffffffff)
 -- card
-{"addr":"0x40109b","approxTokens":132,"blocks":1,"hardReasons":[],"name":"crt_math","nameSources":["dynamic"],"section":".text","size":20,"sizeEstimated":true,"unsupported":2}
+{"addr":"0x40109b","approxTokens":132,"blocks":1,"hardReasons":[],"name":"crt_math","nameSources":["dynamic"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":20,"sizeEstimated":true,"unsupported":2}
 
 == 0x4010af crt_secure
 -- decompile
@@ -205,7 +205,7 @@ fn crt_secure @ 0x4010af (size 36)
     v1:eax, edx = call *load32(#0x402228)(load32((esp + #0x4)), load32((esp + #0x8)), load32((esp + #0xc)))
     ret (v1 & #0xffffffff)
 -- card
-{"addr":"0x4010af","approxTokens":156,"blocks":1,"hardReasons":[],"name":"crt_secure","nameSources":["dynamic"],"section":".text","size":36,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x4010af","approxTokens":156,"blocks":1,"hardReasons":[],"name":"crt_secure","nameSources":["dynamic"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":36,"sizeEstimated":true,"unsupported":0}
 
 == 0x4010d3 crt_wide_secure
 -- decompile
@@ -224,7 +224,7 @@ fn crt_wide_secure @ 0x4010d3 (size 36)
     v1:eax, edx = call *load32(#0x402234)(load32((esp + #0x4)), load32((esp + #0x8)), load32((esp + #0xc)))
     ret (v1 & #0xffffffff)
 -- card
-{"addr":"0x4010d3","approxTokens":156,"blocks":1,"hardReasons":[],"name":"crt_wide_secure","nameSources":["dynamic"],"section":".text","size":36,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x4010d3","approxTokens":156,"blocks":1,"hardReasons":[],"name":"crt_wide_secure","nameSources":["dynamic"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":36,"sizeEstimated":true,"unsupported":0}
 
 == 0x4010f7 crt_process
 -- decompile
@@ -243,7 +243,7 @@ fn crt_process @ 0x4010f7 (size 13)
     v1:eax, edx = call *load32(#0x402208)()
     ret (v1 & #0xffffffff)
 -- card
-{"addr":"0x4010f7","approxTokens":120,"blocks":1,"hardReasons":[],"name":"crt_process","nameSources":["dynamic"],"section":".text","size":13,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x4010f7","approxTokens":120,"blocks":1,"hardReasons":[],"name":"crt_process","nameSources":["dynamic"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":13,"sizeEstimated":true,"unsupported":0}
 
 == 0x401104 crt_io
 -- decompile
@@ -262,7 +262,7 @@ fn crt_io @ 0x401104 (size 20)
     v1:eax, edx = call *load32(#0x402200)(load32((esp + #0x4)))
     ret (v1 & #0xffffffff)
 -- card
-{"addr":"0x401104","approxTokens":132,"blocks":1,"hardReasons":[],"name":"crt_io","nameSources":["dynamic"],"section":".text","size":20,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x401104","approxTokens":132,"blocks":1,"hardReasons":[],"name":"crt_io","nameSources":["dynamic"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":20,"sizeEstimated":true,"unsupported":0}
 
 == 0x401118 crt_errno
 -- decompile
@@ -281,7 +281,7 @@ fn crt_errno @ 0x401118 (size 13)
     v1:eax, edx = call *load32(#0x402204)()
     ret (v1 & #0xffffffff)
 -- card
-{"addr":"0x401118","approxTokens":120,"blocks":1,"hardReasons":[],"name":"crt_errno","nameSources":["dynamic"],"section":".text","size":13,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x401118","approxTokens":120,"blocks":1,"hardReasons":[],"name":"crt_errno","nameSources":["dynamic"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":13,"sizeEstimated":true,"unsupported":0}
 
 == 0x401125 crt_locale
 -- decompile
@@ -299,7 +299,7 @@ fn crt_locale @ 0x401125 (size 27)
     v1:eax, edx = call 0x4011a8(load32((esp + #0x4)), load32((esp + #0x8)))
     ret (v1 & #0xffffffff)
 -- card
-{"addr":"0x401125","approxTokens":144,"blocks":1,"hardReasons":[],"name":"crt_locale","nameSources":["dynamic"],"section":".text","size":27,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x401125","approxTokens":144,"blocks":1,"hardReasons":[],"name":"crt_locale","nameSources":["dynamic"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":27,"sizeEstimated":true,"unsupported":0}
 
 == 0x401140 crt_ctype
 -- decompile
@@ -318,7 +318,7 @@ fn crt_ctype @ 0x401140 (size 20)
     v1:eax, edx = call *load32(#0x402214)(load32((esp + #0x4)))
     ret (v1 & #0xffffffff)
 -- card
-{"addr":"0x401140","approxTokens":132,"blocks":1,"hardReasons":[],"name":"crt_ctype","nameSources":["dynamic"],"section":".text","size":20,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x401140","approxTokens":132,"blocks":1,"hardReasons":[],"name":"crt_ctype","nameSources":["dynamic"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":20,"sizeEstimated":true,"unsupported":0}
 
 == 0x401154 crt_format
 -- decompile
@@ -337,7 +337,7 @@ fn crt_format @ 0x401154 (size 27)
     v1:eax, edx = call 0x4011a0(#0x402000, load32((esp + #0x4)))
     ret (v1 & #0xffffffff)
 -- card
-{"addr":"0x401154","approxTokens":138,"blocks":1,"hardReasons":[],"name":"crt_format","nameSources":["dynamic"],"section":".text","size":27,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x401154","approxTokens":138,"blocks":1,"hardReasons":[],"name":"crt_format","nameSources":["dynamic"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":27,"sizeEstimated":true,"unsupported":0}
 
 == 0x40116f -
 -- decompile
@@ -353,7 +353,7 @@ fn <unnamed> @ 0x40116f (size 1)
   blk0 @ 0x40116f:
     ret #0x0
 -- card
-{"addr":"0x40116f","approxTokens":102,"blocks":1,"hardReasons":["name-unknown"],"name":null,"nameSources":["entry"],"section":".text","size":1,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x40116f","approxTokens":102,"blocks":1,"hardReasons":["name-unknown"],"name":null,"nameSources":["entry"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":1,"sizeEstimated":true,"unsupported":0}
 
 == 0x401170 _close
 -- decompile
@@ -372,7 +372,7 @@ fn _close @ 0x401170 (size 8)
     v1:eax, edx = call *load32(#0x402200)(load32((esp + #0x4)))
     ret (v1 & #0xffffffff)
 -- card
-{"addr":"0x401170","approxTokens":114,"blocks":1,"hardReasons":[],"name":"_close","nameSources":["plt"],"section":".text","size":8,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x401170","approxTokens":114,"blocks":1,"hardReasons":[],"name":"_close","nameSources":["plt"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":8,"sizeEstimated":true,"unsupported":0}
 
 == 0x401178 _errno
 -- decompile
@@ -391,7 +391,7 @@ fn _errno @ 0x401178 (size 8)
     v1:eax, edx = call *load32(#0x402204)()
     ret (v1 & #0xffffffff)
 -- card
-{"addr":"0x401178","approxTokens":114,"blocks":1,"hardReasons":[],"name":"_errno","nameSources":["plt"],"section":".text","size":8,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x401178","approxTokens":114,"blocks":1,"hardReasons":[],"name":"_errno","nameSources":["plt"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":8,"sizeEstimated":true,"unsupported":0}
 
 == 0x401180 _getpid
 -- decompile
@@ -410,7 +410,7 @@ fn _getpid @ 0x401180 (size 8)
     v1:eax, edx = call *load32(#0x402208)()
     ret (v1 & #0xffffffff)
 -- card
-{"addr":"0x401180","approxTokens":114,"blocks":1,"hardReasons":[],"name":"_getpid","nameSources":["plt"],"section":".text","size":8,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x401180","approxTokens":114,"blocks":1,"hardReasons":[],"name":"_getpid","nameSources":["plt"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":8,"sizeEstimated":true,"unsupported":0}
 
 == 0x401188 calloc
 -- decompile
@@ -429,7 +429,7 @@ fn calloc @ 0x401188 (size 8)
     v1:eax, edx = call *load32(#0x40220c)(load32((esp + #0x4)), load32((esp + #0x8)))
     ret (v1 & #0xffffffff)
 -- card
-{"addr":"0x401188","approxTokens":114,"blocks":1,"hardReasons":[],"name":"calloc","nameSources":["plt"],"section":".text","size":8,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x401188","approxTokens":114,"blocks":1,"hardReasons":[],"name":"calloc","nameSources":["plt"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":8,"sizeEstimated":true,"unsupported":0}
 
 == 0x401190 fputs
 -- decompile
@@ -448,7 +448,7 @@ fn fputs @ 0x401190 (size 8)
     v1:eax, edx = call *load32(#0x402210)(load32((esp + #0x4)), load32((esp + #0x8)))
     ret (v1 & #0xffffffff)
 -- card
-{"addr":"0x401190","approxTokens":114,"blocks":1,"hardReasons":[],"name":"fputs","nameSources":["plt"],"section":".text","size":8,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x401190","approxTokens":114,"blocks":1,"hardReasons":[],"name":"fputs","nameSources":["plt"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":8,"sizeEstimated":true,"unsupported":0}
 
 == 0x401198 isalpha
 -- decompile
@@ -467,7 +467,7 @@ fn isalpha @ 0x401198 (size 8)
     v1:eax, edx = call *load32(#0x402214)(load32((esp + #0x4)))
     ret (v1 & #0xffffffff)
 -- card
-{"addr":"0x401198","approxTokens":114,"blocks":1,"hardReasons":[],"name":"isalpha","nameSources":["plt"],"section":".text","size":8,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x401198","approxTokens":114,"blocks":1,"hardReasons":[],"name":"isalpha","nameSources":["plt"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":8,"sizeEstimated":true,"unsupported":0}
 
 == 0x4011a0 printf
 -- decompile
@@ -488,7 +488,7 @@ fn printf @ 0x4011a0 (size 8)
     v1:eax, edx = call *load32(#0x402218)
     ret (v1 & #0xffffffff)
 -- card
-{"addr":"0x4011a0","approxTokens":114,"blocks":1,"hardReasons":[],"name":"printf","nameSources":["plt"],"section":".text","size":8,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x4011a0","approxTokens":114,"blocks":1,"hardReasons":[],"name":"printf","nameSources":["plt"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":8,"sizeEstimated":true,"unsupported":0}
 
 == 0x4011a8 setlocale
 -- decompile
@@ -507,7 +507,7 @@ fn setlocale @ 0x4011a8 (size 8)
     v1:eax, edx = call *load32(#0x40221c)(load32((esp + #0x4)), load32((esp + #0x8)))
     ret (v1 & #0xffffffff)
 -- card
-{"addr":"0x4011a8","approxTokens":114,"blocks":1,"hardReasons":[],"name":"setlocale","nameSources":["plt"],"section":".text","size":8,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x4011a8","approxTokens":114,"blocks":1,"hardReasons":[],"name":"setlocale","nameSources":["plt"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":8,"sizeEstimated":true,"unsupported":0}
 
 == 0x4011b0 strchr
 -- decompile
@@ -526,7 +526,7 @@ fn strchr @ 0x4011b0 (size 8)
     v1:eax, edx = call *load32(#0x402224)(load32((esp + #0x4)), load32((esp + #0x8)))
     ret (v1 & #0xffffffff)
 -- card
-{"addr":"0x4011b0","approxTokens":114,"blocks":1,"hardReasons":[],"name":"strchr","nameSources":["plt"],"section":".text","size":8,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x4011b0","approxTokens":114,"blocks":1,"hardReasons":[],"name":"strchr","nameSources":["plt"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":8,"sizeEstimated":true,"unsupported":0}
 
 == 0x4011b8 strcpy_s
 -- decompile
@@ -545,7 +545,7 @@ fn strcpy_s @ 0x4011b8 (size 8)
     v1:eax, edx = call *load32(#0x402228)(load32((esp + #0x4)), load32((esp + #0x8)), load32((esp + #0xc)))
     ret (v1 & #0xffffffff)
 -- card
-{"addr":"0x4011b8","approxTokens":114,"blocks":1,"hardReasons":[],"name":"strcpy_s","nameSources":["plt"],"section":".text","size":8,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x4011b8","approxTokens":114,"blocks":1,"hardReasons":[],"name":"strcpy_s","nameSources":["plt"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":8,"sizeEstimated":true,"unsupported":0}
 
 == 0x4011c0 strtol
 -- decompile
@@ -564,7 +564,7 @@ fn strtol @ 0x4011c0 (size 8)
     v1:eax, edx = call *load32(#0x40222c)(load32((esp + #0x4)), load32((esp + #0x8)), load32((esp + #0xc)))
     ret (v1 & #0xffffffff)
 -- card
-{"addr":"0x4011c0","approxTokens":114,"blocks":1,"hardReasons":[],"name":"strtol","nameSources":["plt"],"section":".text","size":8,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x4011c0","approxTokens":114,"blocks":1,"hardReasons":[],"name":"strtol","nameSources":["plt"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":8,"sizeEstimated":true,"unsupported":0}
 
 == 0x4011c8 time
 -- decompile
@@ -583,7 +583,7 @@ fn time @ 0x4011c8 (size 8)
     v1:eax, edx = call *load32(#0x402230)(load32((esp + #0x4)))
     ret (v1 & #0xffffffff)
 -- card
-{"addr":"0x4011c8","approxTokens":114,"blocks":1,"hardReasons":[],"name":"time","nameSources":["plt"],"section":".text","size":8,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x4011c8","approxTokens":114,"blocks":1,"hardReasons":[],"name":"time","nameSources":["plt"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":8,"sizeEstimated":true,"unsupported":0}
 
 == 0x4011d0 wcscpy_s
 -- decompile
@@ -602,7 +602,7 @@ fn wcscpy_s @ 0x4011d0 (size 8)
     v1:eax, edx = call *load32(#0x402234)(load32((esp + #0x4)), load32((esp + #0x8)), load32((esp + #0xc)))
     ret (v1 & #0xffffffff)
 -- card
-{"addr":"0x4011d0","approxTokens":114,"blocks":1,"hardReasons":[],"name":"wcscpy_s","nameSources":["plt"],"section":".text","size":8,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x4011d0","approxTokens":114,"blocks":1,"hardReasons":[],"name":"wcscpy_s","nameSources":["plt"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":8,"sizeEstimated":true,"unsupported":0}
 
 == 0x4011d8 wcslen
 -- decompile
@@ -621,4 +621,4 @@ fn wcslen @ 0x4011d8 (size 8)
     v1:eax, edx = call *load32(#0x402238)(load32((esp + #0x4)))
     ret (v1 & #0xffffffff)
 -- card
-{"addr":"0x4011d8","approxTokens":114,"blocks":1,"hardReasons":[],"name":"wcslen","nameSources":["plt"],"section":".text","size":8,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x4011d8","approxTokens":114,"blocks":1,"hardReasons":[],"name":"wcslen","nameSources":["plt"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":8,"sizeEstimated":true,"unsupported":0}

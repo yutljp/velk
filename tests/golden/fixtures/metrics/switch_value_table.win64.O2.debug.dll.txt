@@ -32,4 +32,4 @@ fn dispatch @ 0x180001000 (size 24)
   blk2 @ 0x180001017:
     ret v2
 -- card
-{"addr":"0x180001000","approxTokens":144,"blocks":3,"hardReasons":[],"name":"dispatch","nameSources":["symtab","dwarf"],"section":".text","size":24,"unsupported":0}
+{"addr":"0x180001000","approxTokens":144,"blocks":3,"hardReasons":[],"name":"dispatch","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":24,"unsupported":0}

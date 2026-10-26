@@ -1,7 +1,7 @@
 # functions left out:
 #   calls: 8179
 #   computes on floats or vectors: 102
-#   computes on registers alone: 1729
+#   computes on registers alone: 1817
 #   has an unsupported instruction: 17
 #   reads a register that is not a parameter: 129
 #   refers to data: 887

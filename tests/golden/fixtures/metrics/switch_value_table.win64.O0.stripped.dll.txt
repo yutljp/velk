@@ -64,4 +64,4 @@ fn <unnamed> @ 0x180001000 (size 113)
   blk8 @ 0x180001068:
     ret load32((rsp + #0xfffffffffffffffc))
 -- card
-{"addr":"0x180001000","approxTokens":186,"blocks":9,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":113,"unsupported":0}
+{"addr":"0x180001000","approxTokens":186,"blocks":9,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":113,"unsupported":0}

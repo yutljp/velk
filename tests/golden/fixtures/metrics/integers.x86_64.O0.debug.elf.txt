@@ -28,7 +28,7 @@ fn narrow_add @ 0x201280 (size 31)
   blk0 @ 0x201280:
     ret (sext8(((sext8(rdi) + sext8(rsi)) & #0xffffffff)) & #0xffffffff)
 -- card
-{"addr":"0x201280","approxTokens":168,"blocks":1,"hardReasons":[],"name":"narrow_add","nameSources":["symtab","dwarf","unwind"],"section":".text","size":31,"unsupported":0}
+{"addr":"0x201280","approxTokens":168,"blocks":1,"hardReasons":[],"name":"narrow_add","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":31,"unsupported":0}
 
 == 0x2012a0 widen_mul
 -- decompile
@@ -45,7 +45,7 @@ fn widen_mul @ 0x2012a0 (size 32)
   blk0 @ 0x2012a0:
     ret (((rdi & #0xff) * (rsi & #0xff)) & #0xffff)
 -- card
-{"addr":"0x2012a0","approxTokens":168,"blocks":1,"hardReasons":[],"name":"widen_mul","nameSources":["symtab","dwarf","unwind"],"section":".text","size":32,"unsupported":0}
+{"addr":"0x2012a0","approxTokens":168,"blocks":1,"hardReasons":[],"name":"widen_mul","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":32,"unsupported":0}
 
 == 0x2012c0 mixed_sign
 -- decompile
@@ -62,7 +62,7 @@ fn mixed_sign @ 0x2012c0 (size 22)
   blk0 @ 0x2012c0:
     ret (sext32(edi) - esi)
 -- card
-{"addr":"0x2012c0","approxTokens":150,"blocks":1,"hardReasons":[],"name":"mixed_sign","nameSources":["symtab","dwarf","unwind"],"section":".text","size":22,"unsupported":0}
+{"addr":"0x2012c0","approxTokens":150,"blocks":1,"hardReasons":[],"name":"mixed_sign","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":22,"unsupported":0}
 
 == 0x2012e0 in_range
 -- decompile
@@ -91,7 +91,7 @@ fn in_range @ 0x2012e0 (size 52)
   blk2 @ 0x20130a:
     ret v5
 -- card
-{"addr":"0x2012e0","approxTokens":210,"blocks":3,"hardReasons":[],"name":"in_range","nameSources":["symtab","dwarf","unwind"],"section":".text","size":52,"unsupported":0}
+{"addr":"0x2012e0","approxTokens":210,"blocks":3,"hardReasons":[],"name":"in_range","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":52,"unsupported":0}
 
 == 0x201320 rotate_left
 -- decompile
@@ -108,7 +108,7 @@ fn rotate_left @ 0x201320 (size 43)
   blk0 @ 0x201320:
     ret (((edi << (esi & #0x1f)) & #0xffffffff) | (edi >> ((#0x20 - esi) & #0x1f)))
 -- card
-{"addr":"0x201320","approxTokens":198,"blocks":1,"hardReasons":[],"name":"rotate_left","nameSources":["symtab","dwarf","unwind"],"section":".text","size":43,"unsupported":0}
+{"addr":"0x201320","approxTokens":198,"blocks":1,"hardReasons":[],"name":"rotate_left","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":43,"unsupported":0}
 
 == 0x201350 popcount
 -- decompile
@@ -139,7 +139,7 @@ fn popcount @ 0x201350 (size 55)
   blk3 @ 0x201382:
     ret v2
 -- card
-{"addr":"0x201350","approxTokens":180,"blocks":4,"hardReasons":[],"name":"popcount","nameSources":["symtab","dwarf","unwind"],"section":".text","size":55,"unsupported":0}
+{"addr":"0x201350","approxTokens":180,"blocks":4,"hardReasons":[],"name":"popcount","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":55,"unsupported":0}
 
 == 0x201390 byte_swap
 -- decompile
@@ -156,7 +156,7 @@ fn byte_swap @ 0x201390 (size 51)
   blk0 @ 0x201390:
     ret ((((edi >> #0x18) | ((edi >> #0x8) & #0xff00)) | ((edi << #0x8) & #0xff0000)) | ((edi << #0x18) & #0xffffffff))
 -- card
-{"addr":"0x201390","approxTokens":204,"blocks":1,"hardReasons":[],"name":"byte_swap","nameSources":["symtab","dwarf","unwind"],"section":".text","size":51,"unsupported":0}
+{"addr":"0x201390","approxTokens":204,"blocks":1,"hardReasons":[],"name":"byte_swap","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":51,"unsupported":0}
 
 == 0x2013d0 min3
 -- decompile
@@ -195,7 +195,7 @@ fn min3 @ 0x2013d0 (size 82)
   blk6 @ 0x20141d:
     ret v1
 -- card
-{"addr":"0x2013d0","approxTokens":162,"blocks":7,"hardReasons":[],"name":"min3","nameSources":["symtab","dwarf","unwind"],"section":".text","size":82,"unsupported":0}
+{"addr":"0x2013d0","approxTokens":162,"blocks":7,"hardReasons":[],"name":"min3","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":82,"unsupported":0}
 
 == 0x201430 labs_value
 -- decompile
@@ -223,7 +223,7 @@ fn labs_value @ 0x201430 (size 48)
   blk3 @ 0x20145a:
     ret v1
 -- card
-{"addr":"0x201430","approxTokens":150,"blocks":4,"hardReasons":[],"name":"labs_value","nameSources":["symtab","dwarf","unwind"],"section":".text","size":48,"unsupported":0}
+{"addr":"0x201430","approxTokens":150,"blocks":4,"hardReasons":[],"name":"labs_value","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":48,"unsupported":0}
 
 == 0x201460 mul_high
 -- decompile
@@ -240,4 +240,4 @@ fn mul_high @ 0x201460 (size 28)
   blk0 @ 0x201460:
     ret (rdi hi128 rsi)
 -- card
-{"addr":"0x201460","approxTokens":156,"blocks":1,"hardReasons":[],"name":"mul_high","nameSources":["symtab","dwarf","unwind"],"section":".text","size":28,"unsupported":0}
+{"addr":"0x201460","approxTokens":156,"blocks":1,"hardReasons":[],"name":"mul_high","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":28,"unsupported":0}

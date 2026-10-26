@@ -81,7 +81,7 @@ fn matrix_trace @ 0x20114 (size 100)
   blk16 @ 0x20172:
     ret load32((sp + #0xfffffffffffffff4))
 -- card
-{"addr":"0x20114","approxTokens":240,"blocks":17,"hardReasons":[],"name":"matrix_trace","nameSources":["symtab","dwarf"],"section":".text","size":100,"unsupported":0}
+{"addr":"0x20114","approxTokens":240,"blocks":17,"hardReasons":[],"name":"matrix_trace","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":100,"unsupported":0}
 
 == 0x20178 cleanup_on_error
 -- decompile
@@ -127,7 +127,7 @@ fn cleanup_on_error @ 0x20178 (size 58)
   blk8 @ 0x201ac:
     ret load32((sp + #0xfffffffffffffff0))
 -- card
-{"addr":"0x20178","approxTokens":240,"blocks":9,"hardReasons":[],"name":"cleanup_on_error","nameSources":["symtab","dwarf"],"section":".text","size":58,"unsupported":0}
+{"addr":"0x20178","approxTokens":240,"blocks":9,"hardReasons":[],"name":"cleanup_on_error","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":58,"unsupported":0}
 
 == 0x201b4 fallthrough
 -- decompile
@@ -178,7 +178,7 @@ fn fallthrough @ 0x201b4 (size 70)
   blk4 @ 0x201f4:
     ret load32((sp + #0xfffffffffffffff8))
 -- card
-{"addr":"0x201b4","approxTokens":240,"blocks":5,"hardReasons":[],"name":"fallthrough","nameSources":["symtab","dwarf"],"section":".text","size":70,"unsupported":1}
+{"addr":"0x201b4","approxTokens":240,"blocks":5,"hardReasons":[],"name":"fallthrough","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":70,"unsupported":1}
 
 == 0x201fc sparse
 -- decompile
@@ -247,7 +247,7 @@ fn sparse @ 0x201fc (size 80)
   blk17 @ 0x20246:
     ret v2
 -- card
-{"addr":"0x201fc","approxTokens":240,"blocks":18,"hardReasons":[],"name":"sparse","nameSources":["symtab","dwarf"],"section":".text","size":80,"unsupported":0}
+{"addr":"0x201fc","approxTokens":240,"blocks":18,"hardReasons":[],"name":"sparse","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":80,"unsupported":0}
 
 == 0x2024c short_circuit
 -- decompile
@@ -311,7 +311,7 @@ fn short_circuit @ 0x2024c (size 82)
   blk10 @ 0x20294:
     ret (load32((sp + #0xfffffffffffffff4)) & #0x1)
 -- card
-{"addr":"0x2024c","approxTokens":240,"blocks":11,"hardReasons":[],"name":"short_circuit","nameSources":["symtab","dwarf"],"section":".text","size":82,"unsupported":0}
+{"addr":"0x2024c","approxTokens":240,"blocks":11,"hardReasons":[],"name":"short_circuit","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":82,"unsupported":0}
 
 == 0x202a0 skip_negatives
 -- decompile
@@ -366,7 +366,7 @@ fn skip_negatives @ 0x202a0 (size 72)
   blk10 @ 0x202e2:
     ret load32((sp + #0xfffffffffffffff4))
 -- card
-{"addr":"0x202a0","approxTokens":240,"blocks":11,"hardReasons":[],"name":"skip_negatives","nameSources":["symtab","dwarf"],"section":".text","size":72,"unsupported":0}
+{"addr":"0x202a0","approxTokens":240,"blocks":11,"hardReasons":[],"name":"skip_negatives","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":72,"unsupported":0}
 
 == 0x202e8 find_pair
 -- decompile
@@ -441,4 +441,4 @@ fn find_pair @ 0x202e8 (size 114)
   blk17 @ 0x20354:
     ret load32((sp + #0xfffffffffffffffc))
 -- card
-{"addr":"0x202e8","approxTokens":240,"blocks":18,"hardReasons":[],"name":"find_pair","nameSources":["symtab","dwarf"],"section":".text","size":114,"unsupported":0}
+{"addr":"0x202e8","approxTokens":240,"blocks":18,"hardReasons":[],"name":"find_pair","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":114,"unsupported":0}

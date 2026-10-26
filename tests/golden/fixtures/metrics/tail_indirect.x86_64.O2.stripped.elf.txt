@@ -21,7 +21,7 @@ fn <unnamed> @ 0x201170 (size 8)
     v3:rax, rdx, xmm0, xmm1 = call *rdi(((rsi + #0x1) & #0xffffffff))
     ret v3
 -- card
-{"addr":"0x201170","approxTokens":114,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":8,"unsupported":0}
+{"addr":"0x201170","approxTokens":114,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":8,"unsupported":0}
 
 == 0x201180 -
 -- decompile
@@ -38,4 +38,4 @@ fn <unnamed> @ 0x201180 (size 12)
   blk0 @ 0x201180:
     ret ((edi + #0x5) & #0xffffffff)
 -- card
-{"addr":"0x201180","approxTokens":120,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":12,"unsupported":0}
+{"addr":"0x201180","approxTokens":120,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":12,"unsupported":0}

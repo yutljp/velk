@@ -84,7 +84,7 @@ fn total_area(Shape const* const*, int) @ 0x0 (size 92)
   blk5 @ 0x48:
     ret (v2 & #0xffffffff)
 -- card
-{"addr":"0x0","approxTokens":234,"blocks":6,"hardReasons":[],"name":"total_area(Shape const* const*, int)","nameSources":["symtab","unwind"],"section":".text","size":92,"unsupported":0}
+{"addr":"0x0","approxTokens":234,"blocks":6,"hardReasons":[],"name":"total_area(Shape const* const*, int)","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":92,"unsupported":0}
 
 == 0x5c clamp_int(int)
 -- decompile
@@ -103,7 +103,7 @@ fn clamp_int(int) @ 0x5c (size 20)
     v1 = (select lt w0, #0xff ? w0, #0xff & #0xffffffff)
     ret ((v1 & #0xffffffff) & (((v1 & #0xffffffff) >>> #0x1f) ^ #0xffffffffffffffff))
 -- card
-{"addr":"0x5c","approxTokens":126,"blocks":1,"hardReasons":[],"name":"clamp_int(int)","nameSources":["symtab","unwind"],"section":".text","size":20,"unsupported":0}
+{"addr":"0x5c","approxTokens":126,"blocks":1,"hardReasons":[],"name":"clamp_int(int)","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":20,"unsupported":0}
 
 == 0x70 clamp_long(long)
 -- decompile
@@ -122,7 +122,7 @@ fn clamp_long(long) @ 0x70 (size 28)
     v1 = select lt x0, #0x3e8 ? x0, #0x3e8
     ret select gt v1, #0xfffffffffffffc18 ? v1, #0xfffffffffffffc18
 -- card
-{"addr":"0x70","approxTokens":138,"blocks":1,"hardReasons":[],"name":"clamp_long(long)","nameSources":["symtab","unwind"],"section":".text","size":28,"unsupported":0}
+{"addr":"0x70","approxTokens":138,"blocks":1,"hardReasons":[],"name":"clamp_long(long)","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":28,"unsupported":0}
 
 == 0x8c dot_sum(Vec2 const&, Vec2 const&)
 -- decompile
@@ -141,7 +141,7 @@ fn dot_sum(Vec2 const&, Vec2 const&) @ 0x8c (size 24)
     v1 = add_lanes32(load64(x1), load64(x0))
     ret (mul_lanes32(v1, (((v1 >> #0x20) & #0xffffffff) * #0x100000001)) & #0xffffffff)
 -- card
-{"accesses":["a0 +0x0:uint64_t","a1 +0x0:uint64_t"],"addr":"0x8c","approxTokens":132,"blocks":1,"hardReasons":[],"name":"dot_sum(Vec2 const&, Vec2 const&)","nameSources":["symtab","unwind"],"section":".text","size":24,"unsupported":0}
+{"accesses":["a0 +0x0:uint64_t","a1 +0x0:uint64_t"],"addr":"0x8c","approxTokens":132,"blocks":1,"hardReasons":[],"name":"dot_sum(Vec2 const&, Vec2 const&)","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":24,"unsupported":0}
 
 == 0xa4 increment(int&)
 -- decompile
@@ -160,4 +160,4 @@ fn increment(int&) @ 0xa4 (size 16)
     store32((load32(x0) + #0x1), x0)
     ret x0
 -- card
-{"accesses":["a0 +0x0:uint32_t"],"addr":"0xa4","approxTokens":120,"blocks":1,"hardReasons":[],"name":"increment(int&)","nameSources":["symtab","unwind"],"section":".text","size":16,"unsupported":0}
+{"accesses":["a0 +0x0:uint32_t"],"addr":"0xa4","approxTokens":120,"blocks":1,"hardReasons":[],"name":"increment(int&)","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":16,"unsupported":0}

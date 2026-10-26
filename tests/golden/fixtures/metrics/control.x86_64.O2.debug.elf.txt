@@ -178,7 +178,7 @@ fn matrix_trace @ 0x201220 (size 242)
   blk22 @ 0x20130f:
     ret #0x0
 -- card
-{"addr":"0x201220","approxTokens":198,"blocks":23,"hardReasons":[],"name":"matrix_trace","nameSources":["symtab","dwarf","unwind"],"section":".text","size":242,"unsupported":0}
+{"addr":"0x201220","approxTokens":198,"blocks":23,"hardReasons":[],"name":"matrix_trace","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":242,"unsupported":0}
 
 == 0x201320 cleanup_on_error
 -- decompile
@@ -207,7 +207,7 @@ fn cleanup_on_error @ 0x201320 (size 26)
   blk3 @ 0x201339:
     ret v1
 -- card
-{"accesses":["out +0x0:uint32_t"],"addr":"0x201320","approxTokens":168,"blocks":4,"hardReasons":[],"name":"cleanup_on_error","nameSources":["symtab","dwarf","unwind"],"section":".text","size":26,"unsupported":0}
+{"accesses":["out +0x0:uint32_t"],"addr":"0x201320","approxTokens":168,"blocks":4,"hardReasons":[],"name":"cleanup_on_error","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":26,"unsupported":0}
 
 == 0x201340 fallthrough
 -- decompile
@@ -233,7 +233,7 @@ fn fallthrough @ 0x201340 (size 23)
   blk2 @ 0x201356:
     ret v1
 -- card
-{"addr":"0x201340","approxTokens":138,"blocks":3,"hardReasons":[],"name":"fallthrough","nameSources":["symtab","dwarf","unwind"],"section":".text","size":23,"unsupported":0}
+{"addr":"0x201340","approxTokens":138,"blocks":3,"hardReasons":[],"name":"fallthrough","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":23,"unsupported":0}
 
 == 0x201360 sparse
 -- decompile
@@ -286,7 +286,7 @@ fn sparse @ 0x201360 (size 61)
   blk9 @ 0x201397:
     ret #0x1e
 -- card
-{"addr":"0x201360","approxTokens":144,"blocks":10,"hardReasons":[],"name":"sparse","nameSources":["symtab","dwarf","unwind"],"section":".text","size":61,"unsupported":0}
+{"addr":"0x201360","approxTokens":144,"blocks":10,"hardReasons":[],"name":"sparse","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":61,"unsupported":0}
 
 == 0x2013a0 short_circuit
 -- decompile
@@ -319,7 +319,7 @@ fn short_circuit @ 0x2013a0 (size 34)
   blk4 @ 0x2013c1:
     ret v1
 -- card
-{"addr":"0x2013a0","approxTokens":174,"blocks":5,"hardReasons":[],"name":"short_circuit","nameSources":["symtab","dwarf","unwind"],"section":".text","size":34,"unsupported":0}
+{"addr":"0x2013a0","approxTokens":174,"blocks":5,"hardReasons":[],"name":"short_circuit","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":34,"unsupported":0}
 
 == 0x2013d0 skip_negatives
 -- decompile
@@ -410,7 +410,7 @@ fn skip_negatives @ 0x2013d0 (size 183)
   blk8 @ 0x201486:
     ret v3
 -- card
-{"addr":"0x2013d0","approxTokens":150,"blocks":9,"hardReasons":[],"name":"skip_negatives","nameSources":["symtab","dwarf","unwind"],"section":".text","size":183,"unsupported":0}
+{"addr":"0x2013d0","approxTokens":150,"blocks":9,"hardReasons":[],"name":"skip_negatives","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":183,"unsupported":0}
 
 == 0x201490 find_pair
 -- decompile
@@ -486,4 +486,4 @@ fn find_pair @ 0x201490 (size 112)
   blk10 @ 0x2014ff:
     ret v1
 -- card
-{"addr":"0x201490","approxTokens":174,"blocks":11,"hardReasons":[],"name":"find_pair","nameSources":["symtab","dwarf","unwind"],"section":".text","size":112,"unsupported":0}
+{"addr":"0x201490","approxTokens":174,"blocks":11,"hardReasons":[],"name":"find_pair","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":112,"unsupported":0}

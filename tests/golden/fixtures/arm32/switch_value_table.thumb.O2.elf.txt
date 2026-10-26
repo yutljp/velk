@@ -56,4 +56,4 @@ fn dispatch @ 0x200ec (size 20)
   blk8 @ 0x200fe:
     ret v1
 -- card
-{"addr":"0x200ec","approxTokens":144,"blocks":9,"hardReasons":[],"name":"dispatch","nameSources":["symtab","dwarf"],"section":".text","size":20,"unsupported":0}
+{"addr":"0x200ec","approxTokens":144,"blocks":9,"hardReasons":[],"name":"dispatch","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":20,"unsupported":0}

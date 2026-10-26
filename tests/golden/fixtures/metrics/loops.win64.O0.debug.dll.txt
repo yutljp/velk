@@ -37,7 +37,7 @@ fn count_bits @ 0x180001000 (size 49)
   blk3 @ 0x18000102c:
     ret v3
 -- card
-{"addr":"0x180001000","approxTokens":174,"blocks":4,"hardReasons":[],"name":"count_bits","nameSources":["symtab","dwarf","unwind"],"section":".text","size":49,"unsupported":0}
+{"addr":"0x180001000","approxTokens":174,"blocks":4,"hardReasons":[],"name":"count_bits","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":49,"unsupported":0}
 
 == 0x180001040 sum_until
 -- decompile
@@ -67,7 +67,7 @@ fn sum_until @ 0x180001040 (size 68)
   blk3 @ 0x18000107b:
     ret v2
 -- card
-{"addr":"0x180001040","approxTokens":180,"blocks":4,"hardReasons":[],"name":"sum_until","nameSources":["symtab","dwarf","unwind"],"section":".text","size":68,"unsupported":0}
+{"addr":"0x180001040","approxTokens":180,"blocks":4,"hardReasons":[],"name":"sum_until","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":68,"unsupported":0}
 
 == 0x180001090 sum_till_neg
 -- decompile
@@ -109,7 +109,7 @@ fn sum_till_neg @ 0x180001090 (size 99)
   blk5 @ 0x1800010ea:
     ret load32((rsp + #0xffffffffffffffec))
 -- card
-{"addr":"0x180001090","approxTokens":186,"blocks":6,"hardReasons":[],"name":"sum_till_neg","nameSources":["symtab","dwarf","unwind"],"section":".text","size":99,"unsupported":0}
+{"addr":"0x180001090","approxTokens":186,"blocks":6,"hardReasons":[],"name":"sum_till_neg","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":99,"unsupported":0}
 
 == 0x180001100 sum_until_zero
 -- decompile
@@ -156,4 +156,4 @@ fn sum_until_zero @ 0x180001100 (size 111)
   blk8 @ 0x180001166:
     ret load32((rsp + #0xffffffffffffffec))
 -- card
-{"addr":"0x180001100","approxTokens":174,"blocks":9,"hardReasons":[],"name":"sum_until_zero","nameSources":["symtab","dwarf","unwind"],"section":".text","size":111,"unsupported":0}
+{"addr":"0x180001100","approxTokens":174,"blocks":9,"hardReasons":[],"name":"sum_until_zero","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":111,"unsupported":0}

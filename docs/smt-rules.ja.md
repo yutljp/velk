@@ -2,6 +2,8 @@
 
 通常の Rust 単体テストには、テスト専用の Z3 検証が含まれます。
 `cargo test --release --lib smt -- --test-threads 3 --nocapture` で実行できます。
+整数の条件式と支配する条件の検証は
+`cargo test --release --lib passes::deobfuscation -- --test-threads 3` でも実行できます。
 PATH に Z3 が必要です。存在しない場合は明確なスキップ理由を表示します。
 C 出力の検証には Clang と uv も必要です。Python は
 `uv run --no-project tests/smt_c.py` で実行し、標準ライブラリだけを使います。

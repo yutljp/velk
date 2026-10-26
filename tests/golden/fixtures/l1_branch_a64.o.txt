@@ -22,7 +22,7 @@ fn classify @ 0x0 (size 16)
     v1 = select ge w0, #0x0 ? select ne w0, #0x0 ? #0x1, #0x0, #0xffffffff
     ret v1
 -- card
-{"addr":"0x0","approxTokens":120,"blocks":1,"hardReasons":[],"name":"classify","nameSources":["symtab","unwind"],"section":".text","size":16,"unsupported":0}
+{"addr":"0x0","approxTokens":120,"blocks":1,"hardReasons":[],"name":"classify","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":16,"unsupported":0}
 
 == 0x10 clamp
 -- decompile
@@ -39,7 +39,7 @@ fn clamp @ 0x10 (size 20)
   blk0 @ 0x10:
     ret select lt w0, w1 ? w1, select lt w0, w2 ? w0, w2
 -- card
-{"addr":"0x10","approxTokens":126,"blocks":1,"hardReasons":[],"name":"clamp","nameSources":["symtab","unwind"],"section":".text","size":20,"unsupported":0}
+{"addr":"0x10","approxTokens":126,"blocks":1,"hardReasons":[],"name":"clamp","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":20,"unsupported":0}
 
 == 0x24 sign_of
 -- decompile
@@ -57,4 +57,4 @@ fn sign_of @ 0x24 (size 20)
     v1 = select lt w0, #0x1 ? select ne w0, #0x0 ? #0xffffffff, #0x0, #0x1
     ret v1
 -- card
-{"addr":"0x24","approxTokens":126,"blocks":1,"hardReasons":[],"name":"sign_of","nameSources":["symtab","unwind"],"section":".text","size":20,"unsupported":0}
+{"addr":"0x24","approxTokens":126,"blocks":1,"hardReasons":[],"name":"sign_of","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":20,"unsupported":0}

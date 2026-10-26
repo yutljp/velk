@@ -106,7 +106,7 @@ fn matrix_trace @ 0x2101d4 (size 100)
   blk8 @ 0x210230:
     ret #0x0
 -- card
-{"addr":"0x2101d4","approxTokens":234,"blocks":9,"hardReasons":[],"name":"matrix_trace","nameSources":["symtab","dwarf","unwind"],"section":".text","size":100,"unsupported":0}
+{"addr":"0x2101d4","approxTokens":234,"blocks":9,"hardReasons":[],"name":"matrix_trace","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":100,"unsupported":0}
 
 == 0x210238 cleanup_on_error
 -- decompile
@@ -136,7 +136,7 @@ fn cleanup_on_error @ 0x210238 (size 32)
   blk3 @ 0x210254:
     ret v2
 -- card
-{"accesses":["out +0x0:uint32_t"],"addr":"0x210238","approxTokens":144,"blocks":4,"hardReasons":[],"name":"cleanup_on_error","nameSources":["symtab","dwarf","unwind"],"section":".text","size":32,"unsupported":0}
+{"accesses":["out +0x0:uint32_t"],"addr":"0x210238","approxTokens":144,"blocks":4,"hardReasons":[],"name":"cleanup_on_error","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":32,"unsupported":0}
 
 == 0x210258 fallthrough
 -- decompile
@@ -161,7 +161,7 @@ fn fallthrough @ 0x210258 (size 32)
   blk2 @ 0x210270:
     ret #0xffffffff
 -- card
-{"addr":"0x210258","approxTokens":132,"blocks":3,"hardReasons":[],"name":"fallthrough","nameSources":["symtab","dwarf","unwind"],"section":".text","size":32,"unsupported":0}
+{"addr":"0x210258","approxTokens":132,"blocks":3,"hardReasons":[],"name":"fallthrough","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":32,"unsupported":0}
 
 == 0x210278 sparse
 -- decompile
@@ -214,7 +214,7 @@ fn sparse @ 0x210278 (size 84)
   blk9 @ 0x2102c4:
     ret #0x1e
 -- card
-{"addr":"0x210278","approxTokens":144,"blocks":10,"hardReasons":[],"name":"sparse","nameSources":["symtab","dwarf","unwind"],"section":".text","size":84,"unsupported":0}
+{"addr":"0x210278","approxTokens":144,"blocks":10,"hardReasons":[],"name":"sparse","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":84,"unsupported":0}
 
 == 0x2102cc short_circuit
 -- decompile
@@ -249,7 +249,7 @@ fn short_circuit @ 0x2102cc (size 60)
   blk5 @ 0x210304:
     ret v2
 -- card
-{"addr":"0x2102cc","approxTokens":156,"blocks":6,"hardReasons":[],"name":"short_circuit","nameSources":["symtab","dwarf","unwind"],"section":".text","size":60,"unsupported":0}
+{"addr":"0x2102cc","approxTokens":156,"blocks":6,"hardReasons":[],"name":"short_circuit","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":60,"unsupported":0}
 
 == 0x210308 skip_negatives
 -- decompile
@@ -349,7 +349,7 @@ fn skip_negatives @ 0x210308 (size 156)
   blk9 @ 0x21039c:
     ret (v3 & #0xffffffff)
 -- card
-{"addr":"0x210308","approxTokens":162,"blocks":10,"hardReasons":[],"name":"skip_negatives","nameSources":["symtab","dwarf","unwind"],"section":".text","size":156,"unsupported":0}
+{"addr":"0x210308","approxTokens":162,"blocks":10,"hardReasons":[],"name":"skip_negatives","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":156,"unsupported":0}
 
 == 0x2103a4 find_pair
 -- decompile
@@ -433,4 +433,4 @@ fn find_pair @ 0x2103a4 (size 136)
   blk9 @ 0x210424:
     ret (v11 & #0xffffffff)
 -- card
-{"addr":"0x2103a4","approxTokens":240,"blocks":10,"hardReasons":[],"name":"find_pair","nameSources":["symtab","dwarf","unwind"],"section":".text","size":136,"unsupported":0}
+{"addr":"0x2103a4","approxTokens":240,"blocks":10,"hardReasons":[],"name":"find_pair","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":136,"unsupported":0}

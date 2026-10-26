@@ -86,7 +86,7 @@ fn abi_pair_adjust @ 0x20134 (size 80)
     v15 = load32((sp + #0xfffffffffffffff8))
     ret v13
 -- card
-{"addr":"0x20134","approxTokens":240,"blocks":1,"hardReasons":[],"name":"abi_pair_adjust","nameSources":["symtab","dwarf"],"section":".text","size":80,"unsupported":1}
+{"addr":"0x20134","approxTokens":240,"blocks":1,"hardReasons":[],"name":"abi_pair_adjust","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":80,"unsupported":1}
 
 == 0x20184 abi_mixed_adjust
 -- decompile
@@ -173,7 +173,7 @@ fn abi_mixed_adjust @ 0x20184 (size 86)
     v23 = load32((sp + #0xfffffffffffffff8))
     ret v19
 -- card
-{"addr":"0x20184","approxTokens":240,"blocks":1,"hardReasons":[],"name":"abi_mixed_adjust","nameSources":["symtab","dwarf"],"section":".text","size":86,"unsupported":1}
+{"addr":"0x20184","approxTokens":240,"blocks":1,"hardReasons":[],"name":"abi_mixed_adjust","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":86,"unsupported":1}
 
 == 0x201dc abi_hfa1_adjust
 -- decompile
@@ -226,7 +226,7 @@ fn abi_hfa1_adjust @ 0x201dc (size 50)
     v14 = load32((sp + #0xfffffffffffffff8))
     ret v12
 -- card
-{"addr":"0x201dc","approxTokens":240,"blocks":1,"hardReasons":[],"name":"abi_hfa1_adjust","nameSources":["symtab","dwarf"],"section":".text","size":50,"unsupported":1}
+{"addr":"0x201dc","approxTokens":240,"blocks":1,"hardReasons":[],"name":"abi_hfa1_adjust","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":50,"unsupported":1}
 
 == 0x20210 abi_hfa2_adjust
 -- decompile
@@ -291,7 +291,7 @@ fn abi_hfa2_adjust @ 0x20210 (size 78)
     v17 = load32((sp + #0xfffffffffffffff8))
     ret v13
 -- card
-{"addr":"0x20210","approxTokens":240,"blocks":1,"hardReasons":[],"name":"abi_hfa2_adjust","nameSources":["symtab","dwarf"],"section":".text","size":78,"unsupported":1}
+{"addr":"0x20210","approxTokens":240,"blocks":1,"hardReasons":[],"name":"abi_hfa2_adjust","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":78,"unsupported":1}
 
 == 0x20260 abi_hfa3_adjust
 -- decompile
@@ -416,7 +416,7 @@ fn abi_hfa3_adjust @ 0x20260 (size 82)
     v27 = load32((sp + #0xfffffffffffffff8))
     ret v15
 -- card
-{"accesses":["a0 +0x0:uint32_t, +0x4:uint32_t, +0x8:uint32_t, +0xc:uint32_t, +0x10:uint32_t, +0x14:uint32_t","a1 +0x0:uint32_t, +0x4:uint32_t, +0x8:uint32_t, +0xc:uint32_t, +0x10:uint32_t, +0x14:uint32_t"],"addr":"0x20260","approxTokens":240,"blocks":1,"hardReasons":[],"name":"abi_hfa3_adjust","nameSources":["symtab","dwarf"],"section":".text","size":82,"unsupported":1}
+{"accesses":["a0 +0x0:uint32_t, +0x4:uint32_t, +0x8:uint32_t, +0xc:uint32_t, +0x10:uint32_t, +0x14:uint32_t","a1 +0x0:uint32_t, +0x4:uint32_t, +0x8:uint32_t, +0xc:uint32_t, +0x10:uint32_t, +0x14:uint32_t"],"addr":"0x20260","approxTokens":240,"blocks":1,"hardReasons":[],"name":"abi_hfa3_adjust","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":82,"unsupported":1}
 
 == 0x202b4 abi_hfa4_adjust
 -- decompile
@@ -563,7 +563,7 @@ fn abi_hfa4_adjust @ 0x202b4 (size 98)
     v33 = load32((sp + #0xfffffffffffffff8))
     ret v25
 -- card
-{"addr":"0x202b4","approxTokens":240,"blocks":1,"hardReasons":[],"name":"abi_hfa4_adjust","nameSources":["symtab","dwarf"],"section":".text","size":98,"unsupported":1}
+{"addr":"0x202b4","approxTokens":240,"blocks":1,"hardReasons":[],"name":"abi_hfa4_adjust","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":98,"unsupported":1}
 
 == 0x20318 abi_exhaust_five
 -- decompile
@@ -731,7 +731,7 @@ fn abi_exhaust_five @ 0x20318 (size 262)
     r11 = load32((sp + #0xfffffffffffffff8))
     ret (v62 | (v64 << #0x20))
 -- card
-{"addr":"0x20318","approxTokens":240,"blocks":1,"hardReasons":[],"name":"abi_exhaust_five","nameSources":["symtab","dwarf"],"section":".text","size":262,"unsupported":1}
+{"addr":"0x20318","approxTokens":240,"blocks":1,"hardReasons":[],"name":"abi_exhaust_five","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":262,"unsupported":1}
 
 == 0x20420 abi_exhaust_seven
 -- decompile
@@ -932,7 +932,7 @@ fn abi_exhaust_seven @ 0x20420 (size 336)
     r11 = load32((sp + #0xfffffffffffffff8))
     ret (v77 | (v79 << #0x20))
 -- card
-{"addr":"0x20420","approxTokens":240,"blocks":1,"hardReasons":[],"name":"abi_exhaust_seven","nameSources":["symtab","dwarf"],"section":".text","size":336,"unsupported":1}
+{"addr":"0x20420","approxTokens":240,"blocks":1,"hardReasons":[],"name":"abi_exhaust_seven","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":336,"unsupported":1}
 
 == 0x20570 abi_indirect_make
 -- decompile
@@ -1009,7 +1009,7 @@ fn abi_indirect_make @ 0x20570 (size 100)
     v17 = load32((sp + #0xfffffffffffffff8))
     ret v16
 -- card
-{"addr":"0x20570","approxTokens":240,"blocks":1,"hardReasons":[],"name":"abi_indirect_make","nameSources":["symtab","dwarf"],"section":".text","size":100,"unsupported":1}
+{"addr":"0x20570","approxTokens":240,"blocks":1,"hardReasons":[],"name":"abi_indirect_make","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":100,"unsupported":1}
 
 == 0x205d4 abi_exhaust_five_aligned
 -- decompile
@@ -1177,7 +1177,7 @@ fn abi_exhaust_five_aligned @ 0x205d4 (size 262)
     r11 = load32((sp + #0xfffffffffffffff8))
     ret (v62 | (v64 << #0x20))
 -- card
-{"addr":"0x205d4","approxTokens":240,"blocks":1,"hardReasons":[],"name":"abi_exhaust_five_aligned","nameSources":["symtab","dwarf"],"section":".text","size":262,"unsupported":1}
+{"addr":"0x205d4","approxTokens":240,"blocks":1,"hardReasons":[],"name":"abi_exhaust_five_aligned","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":262,"unsupported":1}
 
 == 0x206dc abi_exhaust_seven_aligned
 -- decompile
@@ -1378,4 +1378,4 @@ fn abi_exhaust_seven_aligned @ 0x206dc (size 336)
     r11 = load32((sp + #0xfffffffffffffff8))
     ret (v77 | (v79 << #0x20))
 -- card
-{"addr":"0x206dc","approxTokens":240,"blocks":1,"hardReasons":[],"name":"abi_exhaust_seven_aligned","nameSources":["symtab","dwarf"],"section":".text","size":336,"unsupported":1}
+{"addr":"0x206dc","approxTokens":240,"blocks":1,"hardReasons":[],"name":"abi_exhaust_seven_aligned","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":336,"unsupported":1}

@@ -22,7 +22,7 @@ fn <unnamed> @ 0x21019c (size 44)
   blk0 @ 0x21019c:
     ret (((w0 + w1) + w2) & #0xffffffff)
 -- card
-{"addr":"0x21019c","approxTokens":162,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":44,"unsupported":0}
+{"addr":"0x21019c","approxTokens":162,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":44,"unsupported":0}
 
 == 0x2101c8 -
 -- decompile
@@ -57,7 +57,7 @@ fn <unnamed> @ 0x2101c8 (size 96)
   blk5 @ 0x21021c:
     ret v2
 -- card
-{"addr":"0x2101c8","approxTokens":240,"blocks":6,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":96,"unsupported":0}
+{"addr":"0x2101c8","approxTokens":240,"blocks":6,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":96,"unsupported":0}
 
 == 0x210228 -
 -- decompile
@@ -75,7 +75,7 @@ fn <unnamed> @ 0x210228 (size 36)
   blk0 @ 0x210228:
     ret ((load32(x0) + load32((x0 + #0x4))) & #0xffffffff)
 -- card
-{"addr":"0x210228","approxTokens":150,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":36,"structures":["struct S1 { int32_t field_0x0; int32_t field_0x4; };"],"unsupported":0}
+{"addr":"0x210228","approxTokens":150,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":36,"structures":["struct S1 { int32_t field_0x0; int32_t field_0x4; };"],"unsupported":0}
 
 == 0x21024c -
 -- decompile
@@ -113,4 +113,4 @@ fn <unnamed> @ 0x21024c (size 100)
   blk5 @ 0x2102a4:
     ret load32((sp + #0xfffffffffffffff0))
 -- card
-{"addr":"0x21024c","approxTokens":240,"blocks":6,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":100,"unsupported":0}
+{"addr":"0x21024c","approxTokens":240,"blocks":6,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":100,"unsupported":0}

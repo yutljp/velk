@@ -43,7 +43,7 @@ fn <unnamed> @ 0x210394 (size 28)
   blk0 @ 0x210394:
     ret (w0 / #0x3)
 -- card
-{"addr":"0x210394","approxTokens":138,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":28,"unsupported":0}
+{"addr":"0x210394","approxTokens":138,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":28,"unsupported":0}
 
 == 0x2103b0 -
 -- decompile
@@ -60,7 +60,7 @@ fn <unnamed> @ 0x2103b0 (size 28)
   blk0 @ 0x2103b0:
     ret (w0 / #0xa)
 -- card
-{"addr":"0x2103b0","approxTokens":138,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":28,"unsupported":0}
+{"addr":"0x2103b0","approxTokens":138,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":28,"unsupported":0}
 
 == 0x2103cc -
 -- decompile
@@ -77,7 +77,7 @@ fn <unnamed> @ 0x2103cc (size 28)
   blk0 @ 0x2103cc:
     ret (w0 / #0x40)
 -- card
-{"addr":"0x2103cc","approxTokens":138,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":28,"unsupported":0}
+{"addr":"0x2103cc","approxTokens":138,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":28,"unsupported":0}
 
 == 0x2103e8 -
 -- decompile
@@ -94,7 +94,7 @@ fn <unnamed> @ 0x2103e8 (size 28)
   blk0 @ 0x2103e8:
     ret (x0 / #0x3)
 -- card
-{"addr":"0x2103e8","approxTokens":138,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":28,"unsupported":0}
+{"addr":"0x2103e8","approxTokens":138,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":28,"unsupported":0}
 
 == 0x210404 -
 -- decompile
@@ -111,7 +111,7 @@ fn <unnamed> @ 0x210404 (size 28)
   blk0 @ 0x210404:
     ret (x0 / #0xa)
 -- card
-{"addr":"0x210404","approxTokens":138,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":28,"unsupported":0}
+{"addr":"0x210404","approxTokens":138,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":28,"unsupported":0}
 
 == 0x210420 -
 -- decompile
@@ -128,7 +128,7 @@ fn <unnamed> @ 0x210420 (size 28)
   blk0 @ 0x210420:
     ret (w0 / #0x3)
 -- card
-{"addr":"0x210420","approxTokens":138,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":28,"unsupported":0}
+{"addr":"0x210420","approxTokens":138,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":28,"unsupported":0}
 
 == 0x21043c -
 -- decompile
@@ -145,7 +145,7 @@ fn <unnamed> @ 0x21043c (size 28)
   blk0 @ 0x21043c:
     ret (w0 / #0xa)
 -- card
-{"addr":"0x21043c","approxTokens":138,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":28,"unsupported":0}
+{"addr":"0x21043c","approxTokens":138,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":28,"unsupported":0}
 
 == 0x210458 -
 -- decompile
@@ -162,7 +162,7 @@ fn <unnamed> @ 0x210458 (size 28)
   blk0 @ 0x210458:
     ret (w0 / #0x10)
 -- card
-{"addr":"0x210458","approxTokens":138,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":28,"unsupported":0}
+{"addr":"0x210458","approxTokens":138,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":28,"unsupported":0}
 
 == 0x210474 -
 -- decompile
@@ -179,7 +179,7 @@ fn <unnamed> @ 0x210474 (size 28)
   blk0 @ 0x210474:
     ret (x0 / #0x10)
 -- card
-{"addr":"0x210474","approxTokens":138,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":28,"unsupported":0}
+{"addr":"0x210474","approxTokens":138,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":28,"unsupported":0}
 
 == 0x210490 -
 -- decompile
@@ -196,7 +196,7 @@ fn <unnamed> @ 0x210490 (size 36)
   blk0 @ 0x210490:
     ret ((w0 - ((w0 / #0x3) * #0x3)) & #0xffffffff)
 -- card
-{"addr":"0x210490","approxTokens":150,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":36,"unsupported":0}
+{"addr":"0x210490","approxTokens":150,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":36,"unsupported":0}
 
 == 0x2104b4 -
 -- decompile
@@ -213,7 +213,7 @@ fn <unnamed> @ 0x2104b4 (size 36)
   blk0 @ 0x2104b4:
     ret ((w0 % #0x3) & #0xffffffff)
 -- card
-{"addr":"0x2104b4","approxTokens":150,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":36,"unsupported":0}
+{"addr":"0x2104b4","approxTokens":150,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":36,"unsupported":0}
 
 == 0x2104d8 -
 -- decompile
@@ -230,7 +230,7 @@ fn <unnamed> @ 0x2104d8 (size 36)
   blk0 @ 0x2104d8:
     ret ((w0 % #0xa) & #0xffffffff)
 -- card
-{"addr":"0x2104d8","approxTokens":150,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":36,"unsupported":0}
+{"addr":"0x2104d8","approxTokens":150,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":36,"unsupported":0}
 
 == 0x2104fc -
 -- decompile
@@ -247,7 +247,7 @@ fn <unnamed> @ 0x2104fc (size 36)
   blk0 @ 0x2104fc:
     ret ((w0 - ((w0 / #0xa) * #0xa)) & #0xffffffff)
 -- card
-{"addr":"0x2104fc","approxTokens":150,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":36,"unsupported":0}
+{"addr":"0x2104fc","approxTokens":150,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":36,"unsupported":0}
 
 == 0x210520 -
 -- decompile
@@ -264,7 +264,7 @@ fn <unnamed> @ 0x210520 (size 36)
   blk0 @ 0x210520:
     ret (x0 - ((x0 / #0xa) * #0xa))
 -- card
-{"addr":"0x210520","approxTokens":150,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":36,"unsupported":0}
+{"addr":"0x210520","approxTokens":150,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":36,"unsupported":0}
 
 == 0x210544 -
 -- decompile
@@ -281,7 +281,7 @@ fn <unnamed> @ 0x210544 (size 36)
   blk0 @ 0x210544:
     ret (x0 % #0xa)
 -- card
-{"addr":"0x210544","approxTokens":150,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":36,"unsupported":0}
+{"addr":"0x210544","approxTokens":150,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":36,"unsupported":0}
 
 == 0x210568 -
 -- decompile
@@ -298,7 +298,7 @@ fn <unnamed> @ 0x210568 (size 36)
   blk0 @ 0x210568:
     ret (x0 - ((x0 / #0x10) * #0x10))
 -- card
-{"addr":"0x210568","approxTokens":150,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":36,"unsupported":0}
+{"addr":"0x210568","approxTokens":150,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":36,"unsupported":0}
 
 == 0x21058c -
 -- decompile
@@ -315,7 +315,7 @@ fn <unnamed> @ 0x21058c (size 36)
   blk0 @ 0x21058c:
     ret ((w0 - ((w0 / #0x4) * #0x4)) & #0xffffffff)
 -- card
-{"addr":"0x21058c","approxTokens":150,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":36,"unsupported":0}
+{"addr":"0x21058c","approxTokens":150,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":36,"unsupported":0}
 
 == 0x2105b0 -
 -- decompile
@@ -332,7 +332,7 @@ fn <unnamed> @ 0x2105b0 (size 28)
   blk0 @ 0x2105b0:
     ret ((#0x0 - w0) & #0xffffffff)
 -- card
-{"addr":"0x2105b0","approxTokens":138,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":28,"unsupported":0}
+{"addr":"0x2105b0","approxTokens":138,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":28,"unsupported":0}
 
 == 0x2105cc -
 -- decompile
@@ -349,7 +349,7 @@ fn <unnamed> @ 0x2105cc (size 28)
   blk0 @ 0x2105cc:
     ret select lt w0, #0x0 ? #0x1, #0x0
 -- card
-{"addr":"0x2105cc","approxTokens":138,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":28,"unsupported":0}
+{"addr":"0x2105cc","approxTokens":138,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":28,"unsupported":0}
 
 == 0x2105e8 -
 -- decompile
@@ -366,7 +366,7 @@ fn <unnamed> @ 0x2105e8 (size 28)
   blk0 @ 0x2105e8:
     ret select eq w0, #0x0 ? #0x1, #0x0
 -- card
-{"addr":"0x2105e8","approxTokens":138,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":28,"unsupported":0}
+{"addr":"0x2105e8","approxTokens":138,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":28,"unsupported":0}
 
 == 0x210604 -
 -- decompile
@@ -383,7 +383,7 @@ fn <unnamed> @ 0x210604 (size 28)
   blk0 @ 0x210604:
     ret select gt w0, #0x0 ? #0x1, #0x0
 -- card
-{"addr":"0x210604","approxTokens":138,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":28,"unsupported":0}
+{"addr":"0x210604","approxTokens":138,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":28,"unsupported":0}
 
 == 0x210620 -
 -- decompile
@@ -400,7 +400,7 @@ fn <unnamed> @ 0x210620 (size 28)
   blk0 @ 0x210620:
     ret (#0x0 - x0)
 -- card
-{"addr":"0x210620","approxTokens":138,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":28,"unsupported":0}
+{"addr":"0x210620","approxTokens":138,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":28,"unsupported":0}
 
 == 0x21063c -
 -- decompile
@@ -417,7 +417,7 @@ fn <unnamed> @ 0x21063c (size 36)
   blk0 @ 0x21063c:
     ret (x0 - ((x0 / #0x3) * #0x3))
 -- card
-{"addr":"0x21063c","approxTokens":150,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":36,"unsupported":0}
+{"addr":"0x21063c","approxTokens":150,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":36,"unsupported":0}
 
 == 0x210660 -
 -- decompile
@@ -434,7 +434,7 @@ fn <unnamed> @ 0x210660 (size 28)
   blk0 @ 0x210660:
     ret (x0 / #0x3)
 -- card
-{"addr":"0x210660","approxTokens":138,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":28,"unsupported":0}
+{"addr":"0x210660","approxTokens":138,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":28,"unsupported":0}
 
 == 0x21067c -
 -- decompile
@@ -451,4 +451,4 @@ fn <unnamed> @ 0x21067c (size 28)
   blk0 @ 0x21067c:
     ret (x0 / #0xa)
 -- card
-{"addr":"0x21067c","approxTokens":138,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":28,"unsupported":0}
+{"addr":"0x21067c","approxTokens":138,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":28,"unsupported":0}

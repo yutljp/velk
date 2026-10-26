@@ -204,7 +204,7 @@ fn step(stmt: &Stmt, state: &mut HashMap<u16, i64>) {
         };
         return;
     }
-    for register in crate::ir::visit::statement_registers(stmt).0 {
+    for register in crate::ir::visit::statement_writes(stmt) {
         state.remove(&register);
     }
 }

@@ -54,7 +54,7 @@ fn sum_while @ 0x2011c (size 64)
   blk6 @ 0x20150:
     ret #0x0
 -- card
-{"addr":"0x2011c","approxTokens":186,"blocks":7,"hardReasons":[],"name":"sum_while","nameSources":["symtab","dwarf"],"section":".text","size":64,"unsupported":0}
+{"addr":"0x2011c","approxTokens":186,"blocks":7,"hardReasons":[],"name":"sum_while","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":64,"unsupported":0}
 
 == 0x2015c count_down
 -- decompile
@@ -93,7 +93,7 @@ fn count_down @ 0x2015c (size 44)
   blk5 @ 0x20180:
     ret r0
 -- card
-{"addr":"0x2015c","approxTokens":156,"blocks":6,"hardReasons":[],"name":"count_down","nameSources":["symtab","dwarf"],"section":".text","size":44,"unsupported":0}
+{"addr":"0x2015c","approxTokens":156,"blocks":6,"hardReasons":[],"name":"count_down","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":44,"unsupported":0}
 
 == 0x20188 sum_skip_odd
 -- decompile
@@ -152,7 +152,7 @@ fn sum_skip_odd @ 0x20188 (size 68)
   blk10 @ 0x201c0:
     ret #0x0
 -- card
-{"addr":"0x20188","approxTokens":192,"blocks":11,"hardReasons":[],"name":"sum_skip_odd","nameSources":["symtab","dwarf"],"section":".text","size":68,"unsupported":0}
+{"addr":"0x20188","approxTokens":192,"blocks":11,"hardReasons":[],"name":"sum_skip_odd","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":68,"unsupported":0}
 
 == 0x201cc find_first
 -- decompile
@@ -200,4 +200,4 @@ fn find_first @ 0x201cc (size 68)
   blk8 @ 0x20204:
     ret v3
 -- card
-{"addr":"0x201cc","approxTokens":198,"blocks":9,"hardReasons":[],"name":"find_first","nameSources":["symtab","dwarf"],"section":".text","size":68,"unsupported":0}
+{"addr":"0x201cc","approxTokens":198,"blocks":9,"hardReasons":[],"name":"find_first","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":68,"unsupported":0}

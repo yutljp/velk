@@ -224,27 +224,47 @@ pub fn statement_destinations_mut(stmt: &mut Stmt) -> Vec<&mut super::RegRef> {
     }
 }
 
+pub(crate) fn statement_writes(stmt: &Stmt) -> std::collections::HashSet<u16> {
+    let mut writes = std::collections::HashSet::new();
+    match stmt {
+        Stmt::Machine { outputs, .. } => writes.extend(outputs.iter().map(|dest| dest.index)),
+        Stmt::Assign { dest, .. } => {
+            writes.insert(dest.index);
+        }
+        Stmt::Call { outputs, .. } => {
+            writes.extend(outputs.iter().map(|output| output.dest.index));
+            writes.extend(
+                stmt.call_clobbers()
+                    .into_iter()
+                    .filter(|register| !outputs.iter().any(|output| output.register == *register)),
+            );
+        }
+        // An unmodeled instruction may leave changed the registers it names,
+        // or any machine register when they are not known.
+        Stmt::Unsupported { writes: named, .. } => match named {
+            Some(named) => writes.extend(named),
+            None => writes.extend(crate::arch::machine_registers()),
+        },
+        _ => {}
+    }
+    writes
+}
+
 pub(crate) fn statement_registers(
     stmt: &Stmt,
 ) -> (
     std::collections::HashSet<u16>,
     std::collections::HashSet<u16>,
 ) {
-    let mut writes = std::collections::HashSet::new();
+    let writes = statement_writes(stmt);
     let mut reads = std::collections::HashSet::new();
     match stmt {
-        Stmt::Machine {
-            inputs, outputs, ..
-        } => {
-            writes.extend(outputs.iter().map(|dest| dest.index));
+        Stmt::Machine { inputs, .. } => {
             for input in inputs {
                 expr_reads(input, &mut reads);
             }
         }
-        Stmt::Assign { dest, value } => {
-            writes.insert(dest.index);
-            expr_reads(value, &mut reads);
-        }
+        Stmt::Assign { value, .. } => expr_reads(value, &mut reads),
         Stmt::Store { addr, value, .. } => {
             expr_reads(addr, &mut reads);
             expr_reads(value, &mut reads);
@@ -256,13 +276,7 @@ pub(crate) fn statement_registers(
         Stmt::Ret { value } => expr_reads(value, &mut reads),
         Stmt::BrIndirect { target } => expr_reads(target, &mut reads),
         Stmt::Switch { index, .. } => expr_reads(index, &mut reads),
-        Stmt::Call {
-            through,
-            args,
-            outputs,
-            ..
-        } => {
-            writes.extend(outputs.iter().map(|output| output.dest.index));
+        Stmt::Call { through, args, .. } => {
             if let Some(through) = through {
                 expr_reads(through, &mut reads);
             }
@@ -276,18 +290,7 @@ pub(crate) fn statement_registers(
                     .into_iter()
                     .map(|(_, register)| register),
             );
-            writes.extend(
-                stmt.call_clobbers()
-                    .into_iter()
-                    .filter(|register| !outputs.iter().any(|output| output.register == *register)),
-            );
         }
-        // An unmodeled instruction may leave changed the registers it names,
-        // or any machine register when they are not known.
-        Stmt::Unsupported { writes: named, .. } => match named {
-            Some(named) => writes.extend(named),
-            None => writes.extend(crate::arch::machine_registers()),
-        },
         _ => {}
     }
     (writes, reads)

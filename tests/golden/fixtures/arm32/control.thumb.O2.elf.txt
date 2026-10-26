@@ -520,7 +520,7 @@ fn matrix_trace @ 0x20118 (size 418)
   blk113 @ 0x202b6:
     ret v5
 -- card
-{"addr":"0x20118","approxTokens":240,"blocks":114,"hardReasons":[],"name":"matrix_trace","nameSources":["symtab","dwarf"],"section":".text","size":418,"unsupported":0}
+{"addr":"0x20118","approxTokens":240,"blocks":114,"hardReasons":[],"name":"matrix_trace","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":418,"unsupported":0}
 
 == 0x202bc cleanup_on_error
 -- decompile
@@ -558,7 +558,7 @@ fn cleanup_on_error @ 0x202bc (size 26)
   blk5 @ 0x202d4:
     ret v3
 -- card
-{"addr":"0x202bc","approxTokens":162,"blocks":6,"hardReasons":[],"name":"cleanup_on_error","nameSources":["symtab","dwarf"],"section":".text","size":26,"unsupported":0}
+{"addr":"0x202bc","approxTokens":162,"blocks":6,"hardReasons":[],"name":"cleanup_on_error","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":26,"unsupported":0}
 
 == 0x202d8 fallthrough
 -- decompile
@@ -610,7 +610,7 @@ fn fallthrough @ 0x202d8 (size 20)
   blk8 @ 0x202ea:
     ret r0
 -- card
-{"addr":"0x202d8","approxTokens":138,"blocks":9,"hardReasons":[],"name":"fallthrough","nameSources":["symtab","dwarf"],"section":".text","size":20,"unsupported":0}
+{"addr":"0x202d8","approxTokens":138,"blocks":9,"hardReasons":[],"name":"fallthrough","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":20,"unsupported":0}
 
 == 0x202ec sparse
 -- decompile
@@ -708,7 +708,7 @@ fn sparse @ 0x202ec (size 46)
   blk19 @ 0x20318:
     br 0x20302
 -- card
-{"addr":"0x202ec","approxTokens":222,"blocks":20,"hardReasons":[],"name":"sparse","nameSources":["symtab","dwarf"],"section":".text","size":46,"unsupported":0}
+{"addr":"0x202ec","approxTokens":222,"blocks":20,"hardReasons":[],"name":"sparse","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":46,"unsupported":0}
 
 == 0x2031c short_circuit
 -- decompile
@@ -772,7 +772,7 @@ fn short_circuit @ 0x2031c (size 44)
   blk9 @ 0x20346:
     ret v3
 -- card
-{"addr":"0x2031c","approxTokens":204,"blocks":10,"hardReasons":[],"name":"short_circuit","nameSources":["symtab","dwarf"],"section":".text","size":44,"unsupported":0}
+{"addr":"0x2031c","approxTokens":204,"blocks":10,"hardReasons":[],"name":"short_circuit","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":44,"unsupported":0}
 
 == 0x20348 skip_negatives
 -- decompile
@@ -903,7 +903,7 @@ fn skip_negatives @ 0x20348 (size 136)
   blk18 @ 0x203cc:
     ret v5
 -- card
-{"addr":"0x20348","approxTokens":240,"blocks":19,"hardReasons":[],"name":"skip_negatives","nameSources":["symtab","dwarf"],"section":".text","size":136,"structures":["struct S1 { int32_t field_0x0; int32_t field_0x4; int32_t field_0x8; };"],"unsupported":0}
+{"addr":"0x20348","approxTokens":240,"blocks":19,"hardReasons":[],"name":"skip_negatives","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":136,"structures":["struct S1 { int32_t field_0x0; int32_t field_0x4; int32_t field_0x8; };"],"unsupported":0}
 
 == 0x203d0 find_pair
 -- decompile
@@ -1051,4 +1051,4 @@ fn find_pair @ 0x203d0 (size 146)
   blk31 @ 0x2045a:
     ret #0xffffffff
 -- card
-{"addr":"0x203d0","approxTokens":240,"blocks":32,"hardReasons":[],"name":"find_pair","nameSources":["symtab","dwarf"],"section":".text","size":146,"structures":["struct S1 {\n    uint8_t gap_0x0[0x4];\n    int32_t field_0x4;\n    int32_t field_0x8;\n    int32_t field_0xc;\n    int32_t field_0x10;\n};"],"unsupported":0}
+{"addr":"0x203d0","approxTokens":240,"blocks":32,"hardReasons":[],"name":"find_pair","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":146,"structures":["struct S1 {\n    uint8_t gap_0x0[0x4];\n    int32_t field_0x4;\n    int32_t field_0x8;\n    int32_t field_0xc;\n    int32_t field_0x10;\n};"],"unsupported":0}

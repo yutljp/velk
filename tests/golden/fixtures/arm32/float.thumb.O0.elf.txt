@@ -111,7 +111,7 @@ fn average @ 0x20104 (size 122)
   blk11 @ 0x20176:
     ret load32((sp + #0xffffffffffffffdc))
 -- card
-{"addr":"0x20104","approxTokens":240,"blocks":12,"hardReasons":[],"name":"average","nameSources":["symtab","dwarf"],"section":".text","size":122,"unsupported":1}
+{"addr":"0x20104","approxTokens":240,"blocks":12,"hardReasons":[],"name":"average","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":122,"unsupported":1}
 
 == 0x20180 lerp
 -- decompile
@@ -162,7 +162,7 @@ fn lerp @ 0x20180 (size 36)
     v11 = load32((sp + #0xfffffffffffffff8))
     ret v10
 -- card
-{"addr":"0x20180","approxTokens":186,"blocks":1,"hardReasons":[],"name":"lerp","nameSources":["symtab","dwarf"],"section":".text","size":36,"unsupported":1}
+{"addr":"0x20180","approxTokens":186,"blocks":1,"hardReasons":[],"name":"lerp","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":36,"unsupported":1}
 
 == 0x201a4 truncate_to_int
 -- decompile
@@ -204,7 +204,7 @@ fn truncate_to_int @ 0x201a4 (size 20)
     v5 = load32((sp + #0xfffffffffffffff8))
     ret v4
 -- card
-{"addr":"0x201a4","approxTokens":150,"blocks":1,"hardReasons":[],"name":"truncate_to_int","nameSources":["symtab","dwarf"],"section":".text","size":20,"unsupported":1}
+{"addr":"0x201a4","approxTokens":150,"blocks":1,"hardReasons":[],"name":"truncate_to_int","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":20,"unsupported":1}
 
 == 0x201b8 widen
 -- decompile
@@ -249,7 +249,7 @@ fn widen @ 0x201b8 (size 28)
     v11 = load32((sp + #0xfffffffffffffff8))
     ret v10
 -- card
-{"addr":"0x201b8","approxTokens":168,"blocks":1,"hardReasons":[],"name":"widen","nameSources":["symtab","dwarf"],"section":".text","size":28,"unsupported":1}
+{"addr":"0x201b8","approxTokens":168,"blocks":1,"hardReasons":[],"name":"widen","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":28,"unsupported":1}
 
 == 0x201d4 compare_doubles
 -- decompile
@@ -318,4 +318,4 @@ fn compare_doubles @ 0x201d4 (size 64)
   blk6 @ 0x2020e:
     ret load32((sp + #0xffffffffffffffe4))
 -- card
-{"addr":"0x201d4","approxTokens":240,"blocks":7,"hardReasons":[],"name":"compare_doubles","nameSources":["symtab","dwarf"],"section":".text","size":64,"unsupported":1}
+{"addr":"0x201d4","approxTokens":240,"blocks":7,"hardReasons":[],"name":"compare_doubles","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":64,"unsupported":1}

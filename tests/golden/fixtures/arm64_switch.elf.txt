@@ -31,4 +31,4 @@ fn dispatch @ 0x210164 (size 36)
   blk2 @ 0x210180:
     ret #0x0
 -- card
-{"addr":"0x210164","approxTokens":138,"blocks":3,"hardReasons":[],"name":"dispatch","nameSources":["symtab","entry","unwind"],"section":".text","size":36,"unsupported":0}
+{"addr":"0x210164","approxTokens":138,"blocks":3,"hardReasons":[],"name":"dispatch","nameSources":["symtab","entry","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":36,"unsupported":0}

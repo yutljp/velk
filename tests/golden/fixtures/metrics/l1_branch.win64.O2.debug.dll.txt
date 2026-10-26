@@ -25,7 +25,7 @@ fn classify @ 0x180001000 (size 14)
     v2 = (select gt (rcx & #0xffffffff), #0x0 ? #0x1, #0x0 & #0xff)
     ret (sext8(((v2 & #0xff) - (v1 & #0xff))) & #0xffffffff)
 -- card
-{"addr":"0x180001000","approxTokens":132,"blocks":1,"hardReasons":[],"name":"classify","nameSources":["symtab","dwarf"],"section":".text","size":14,"unsupported":0}
+{"addr":"0x180001000","approxTokens":132,"blocks":1,"hardReasons":[],"name":"classify","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":14,"unsupported":0}
 
 == 0x180001010 clamp
 -- decompile
@@ -42,7 +42,7 @@ fn clamp @ 0x180001010 (size 15)
   blk0 @ 0x180001010:
     ret select lt ecx, edx ? edx, select lt ecx, r8d ? ecx, r8d
 -- card
-{"addr":"0x180001010","approxTokens":132,"blocks":1,"hardReasons":[],"name":"clamp","nameSources":["symtab","dwarf"],"section":".text","size":15,"unsupported":0}
+{"addr":"0x180001010","approxTokens":132,"blocks":1,"hardReasons":[],"name":"clamp","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":15,"unsupported":0}
 
 == 0x180001020 sign_of
 -- decompile
@@ -63,4 +63,4 @@ fn sign_of @ 0x180001020 (size 14)
     v2 = (select gt (rcx & #0xffffffff), #0x0 ? #0x1, #0x0 & #0xff)
     ret (sext8(((v2 & #0xff) - (v1 & #0xff))) & #0xffffffff)
 -- card
-{"addr":"0x180001020","approxTokens":132,"blocks":1,"hardReasons":[],"name":"sign_of","nameSources":["symtab","dwarf"],"section":".text","size":14,"unsupported":0}
+{"addr":"0x180001020","approxTokens":132,"blocks":1,"hardReasons":[],"name":"sign_of","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":14,"unsupported":0}

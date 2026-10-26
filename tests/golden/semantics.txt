@@ -1,4 +1,4 @@
-# 12407 functions, 136421 compared runs
+# 12495 functions, 137477 compared runs
 # runs left unfinished:
 #   cache maintenance requires external memory state (Go): 2
 #   exclusive access requires an external memory monitor (Go): 888

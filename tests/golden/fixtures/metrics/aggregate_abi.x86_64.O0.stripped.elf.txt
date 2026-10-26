@@ -31,7 +31,7 @@ fn <unnamed> @ 0x2012a0 (size 56)
   blk0 @ 0x2012a0:
     ret (rdi + rdx)
 -- card
-{"addr":"0x2012a0","approxTokens":198,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":56,"unsupported":0}
+{"addr":"0x2012a0","approxTokens":198,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":56,"unsupported":0}
 
 == 0x2012e0 -
 -- decompile
@@ -48,7 +48,7 @@ fn <unnamed> @ 0x2012e0 (size 67)
   blk0 @ 0x2012e0:
     ret (rdi ^ rsi)
 -- card
-{"addr":"0x2012e0","approxTokens":204,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":67,"unsupported":0}
+{"addr":"0x2012e0","approxTokens":204,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":67,"unsupported":0}
 
 == 0x201330 -
 -- decompile
@@ -65,7 +65,7 @@ fn <unnamed> @ 0x201330 (size 44)
   blk0 @ 0x201330:
     ret fadd.d(xmm1, xmm0)
 -- card
-{"addr":"0x201330","approxTokens":168,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":44,"unsupported":0}
+{"addr":"0x201330","approxTokens":168,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":44,"unsupported":0}
 
 == 0x201360 -
 -- decompile
@@ -82,7 +82,7 @@ fn <unnamed> @ 0x201360 (size 58)
   blk0 @ 0x201360:
     ret xmm0
 -- card
-{"addr":"0x201360","approxTokens":186,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":58,"unsupported":0}
+{"addr":"0x201360","approxTokens":186,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":58,"unsupported":0}
 
 == 0x2013a0 -
 -- decompile
@@ -118,7 +118,7 @@ fn <unnamed> @ 0x2013a0 (size 55)
     store64(load64((v1 + #0x10)), (rdi + #0x10))
     ret v2
 -- card
-{"accesses":["a0 +0x0:uint64_t, +0x8:uint64_t, +0x10:uint64_t"],"addr":"0x2013a0","approxTokens":192,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":55,"structures":["struct sub_2013a0_a2 { int64_t field_0x0; int64_t field_0x8; int64_t field_0x10; };","struct S1 { int64_t field_0x0; int64_t field_0x8; int64_t field_0x10; };"],"unsupported":0}
+{"accesses":["a0 +0x0:uint64_t, +0x8:uint64_t, +0x10:uint64_t"],"addr":"0x2013a0","approxTokens":192,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":55,"structures":["struct sub_2013a0_a2 { int64_t field_0x0; int64_t field_0x8; int64_t field_0x10; };","struct S1 { int64_t field_0x0; int64_t field_0x8; int64_t field_0x10; };"],"unsupported":0}
 
 == 0x2013e0 -
 -- decompile
@@ -161,7 +161,7 @@ fn <unnamed> @ 0x2013e0 (size 63)
     store64(load64((v1 + #0x18)), (rdi + #0x18))
     ret v2
 -- card
-{"accesses":["a0 +0x0:uint64_t, +0x8:uint64_t, +0x10:uint64_t, +0x18:uint64_t"],"addr":"0x2013e0","approxTokens":204,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":63,"structures":["struct sub_2013e0_a2 {\n    int64_t field_0x0;\n    int64_t field_0x8;\n    int64_t field_0x10;\n    int64_t field_0x18;\n};","struct S1 { int64_t field_0x0; int64_t field_0x8; int64_t field_0x10; int64_t field_0x18; };"],"unsupported":0}
+{"accesses":["a0 +0x0:uint64_t, +0x8:uint64_t, +0x10:uint64_t, +0x18:uint64_t"],"addr":"0x2013e0","approxTokens":204,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":63,"structures":["struct sub_2013e0_a2 {\n    int64_t field_0x0;\n    int64_t field_0x8;\n    int64_t field_0x10;\n    int64_t field_0x18;\n};","struct S1 { int64_t field_0x0; int64_t field_0x8; int64_t field_0x10; int64_t field_0x18; };"],"unsupported":0}
 
 == 0x201420 -
 -- decompile
@@ -202,7 +202,7 @@ fn <unnamed> @ 0x201420 (size 96)
     v4 = ((((((rdi + (rsi * #0x3)) + (rdx * #0x5)) + (rcx * #0x7)) + (r8 * #0xb)) + v3) + (load64((v2 + #0x8)) * #0x11))
     ret (v4 + (r9 * #0x13))
 -- card
-{"addr":"0x201420","approxTokens":240,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":96,"structures":["struct S1 { int64_t field_0x0; int64_t field_0x8; };"],"unsupported":0}
+{"addr":"0x201420","approxTokens":240,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":96,"structures":["struct S1 { int64_t field_0x0; int64_t field_0x8; };"],"unsupported":0}
 
 == 0x201480 -
 -- decompile
@@ -243,7 +243,7 @@ fn <unnamed> @ 0x201480 (size 120)
     v6 = ((((((((rdi + (rsi * #0x3)) + (rdx * #0x5)) + (rcx * #0x7)) + (r8 * #0xb)) + (r9 * #0xd)) + (load64((rsp + #0x8)) * #0x11)) + v5) + (load64((v3 + #0x8)) * #0x17))
     ret (v6 + (load64((rsp + #0x20)) * #0x1d))
 -- card
-{"addr":"0x201480","approxTokens":240,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":120,"structures":["struct S1 { int64_t field_0x0; int64_t field_0x8; };"],"unsupported":0}
+{"addr":"0x201480","approxTokens":240,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":120,"structures":["struct S1 { int64_t field_0x0; int64_t field_0x8; };"],"unsupported":0}
 
 == 0x201500 -
 -- decompile
@@ -270,7 +270,7 @@ fn <unnamed> @ 0x201500 (size 56)
     store64((load64((rsp + #0xffffffffffffffe8)) - load64((rsp + #0xfffffffffffffff0))), (rdi + #0x10))
     ret rdi
 -- card
-{"accesses":["result +0x0:uint64_t, +0x8:uint64_t, +0x10:uint64_t"],"addr":"0x201500","approxTokens":198,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":56,"structures":["struct S1 { int64_t field_0x0; int64_t field_0x8; int64_t field_0x10; };"],"unsupported":0}
+{"accesses":["result +0x0:uint64_t, +0x8:uint64_t, +0x10:uint64_t"],"addr":"0x201500","approxTokens":198,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":56,"structures":["struct S1 { int64_t field_0x0; int64_t field_0x8; int64_t field_0x10; };"],"unsupported":0}
 
 == 0x201540 -
 -- decompile
@@ -311,7 +311,7 @@ fn <unnamed> @ 0x201540 (size 96)
     v4 = ((((((rdi + (rsi * #0x3)) + (rdx * #0x5)) + (rcx * #0x7)) + (r8 * #0xb)) + v3) + (load64((v2 + #0x8)) * #0x11))
     ret (v4 + (r9 * #0x13))
 -- card
-{"addr":"0x201540","approxTokens":240,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":96,"structures":["struct S1 { int64_t field_0x0; int64_t field_0x8; };"],"unsupported":0}
+{"addr":"0x201540","approxTokens":240,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":96,"structures":["struct S1 { int64_t field_0x0; int64_t field_0x8; };"],"unsupported":0}
 
 == 0x2015a0 -
 -- decompile
@@ -352,4 +352,4 @@ fn <unnamed> @ 0x2015a0 (size 120)
     v6 = ((((((((rdi + (rsi * #0x3)) + (rdx * #0x5)) + (rcx * #0x7)) + (r8 * #0xb)) + (r9 * #0xd)) + (load64((rsp + #0x8)) * #0x11)) + v5) + (load64((v3 + #0x8)) * #0x17))
     ret (v6 + (load64((rsp + #0x20)) * #0x1d))
 -- card
-{"addr":"0x2015a0","approxTokens":240,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":120,"structures":["struct S1 { int64_t field_0x0; int64_t field_0x8; };"],"unsupported":0}
+{"addr":"0x2015a0","approxTokens":240,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":120,"structures":["struct S1 { int64_t field_0x0; int64_t field_0x8; };"],"unsupported":0}

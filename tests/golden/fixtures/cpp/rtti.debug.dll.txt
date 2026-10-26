@@ -101,7 +101,7 @@ fn ??0Root@@QEAA@H@Z @ 0x180001000 (size 32)
     store32(edx, (v1 + #0x8))
     ret #0x0
 -- card
-{"accesses":["this +0x0:uint64_t, +0x8:uint32_t"],"addr":"0x180001000","approxTokens":126,"blocks":1,"hardReasons":[],"name":"??0Root@@QEAA@H@Z","nameSources":["symtab"],"section":".text","size":32,"sizeEstimated":true,"structures":["struct __0Root__QEAA_H_Z_s1 { int64_t field_0x0; int32_t field_0x8; };"],"unsupported":0}
+{"accesses":["this +0x0:uint64_t, +0x8:uint32_t"],"addr":"0x180001000","approxTokens":126,"blocks":1,"hardReasons":[],"name":"??0Root@@QEAA@H@Z","nameSources":["symtab"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":32,"sizeEstimated":true,"structures":["struct __0Root__QEAA_H_Z_s1 { int64_t field_0x0; int32_t field_0x8; };"],"unsupported":0}
 
 == 0x180001020 ?value@Root@@UEBAHXZ
 -- decompile
@@ -120,7 +120,7 @@ fn ?value@Root@@UEBAHXZ @ 0x180001020 (size 16)
     v1 = load32((rcx + #0x8))
     ret #0x0
 -- card
-{"accesses":["this +0x8:uint32_t"],"addr":"0x180001020","approxTokens":108,"blocks":1,"hardReasons":[],"name":"?value@Root@@UEBAHXZ","nameSources":["symtab"],"section":".text","size":16,"sizeEstimated":true,"unsupported":0}
+{"accesses":["this +0x8:uint32_t"],"addr":"0x180001020","approxTokens":108,"blocks":1,"hardReasons":[],"name":"?value@Root@@UEBAHXZ","nameSources":["symtab"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":16,"sizeEstimated":true,"unsupported":0}
 
 == 0x180001030 ??1Root@@UEAA@XZ
 -- decompile
@@ -136,7 +136,7 @@ fn ??1Root@@UEAA@XZ @ 0x180001030 (size 16)
   blk0 @ 0x180001030:
     ret #0x0
 -- card
-{"addr":"0x180001030","approxTokens":102,"blocks":1,"hardReasons":[],"name":"??1Root@@UEAA@XZ","nameSources":["symtab"],"section":".text","size":16,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x180001030","approxTokens":102,"blocks":1,"hardReasons":[],"name":"??1Root@@UEAA@XZ","nameSources":["symtab"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":16,"sizeEstimated":true,"unsupported":0}
 
 == 0x180001040 ??0Single@@QEAA@H@Z
 -- decompile
@@ -159,7 +159,7 @@ fn ??0Single@@QEAA@H@Z @ 0x180001040 (size 32)
     store64(#0x180002028, v1)
     ret #0x0
 -- card
-{"accesses":["this +0x0:uint64_t"],"addr":"0x180001040","approxTokens":156,"blocks":1,"hardReasons":[],"name":"??0Single@@QEAA@H@Z","nameSources":["symtab","unwind"],"section":".text","size":32,"unsupported":0}
+{"accesses":["this +0x0:uint64_t"],"addr":"0x180001040","approxTokens":156,"blocks":1,"hardReasons":[],"name":"??0Single@@QEAA@H@Z","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":32,"unsupported":0}
 
 == 0x180001060 ?value@Single@@UEBAHXZ
 -- decompile
@@ -177,7 +177,7 @@ fn ?value@Single@@UEBAHXZ @ 0x180001060 (size 16)
     v1 = load32((rcx + #0x8))
     ret #0x0
 -- card
-{"accesses":["this +0x8:uint32_t"],"addr":"0x180001060","approxTokens":114,"blocks":1,"hardReasons":[],"name":"?value@Single@@UEBAHXZ","nameSources":["symtab"],"section":".text","size":16,"sizeEstimated":true,"unsupported":0}
+{"accesses":["this +0x8:uint32_t"],"addr":"0x180001060","approxTokens":114,"blocks":1,"hardReasons":[],"name":"?value@Single@@UEBAHXZ","nameSources":["symtab"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":16,"sizeEstimated":true,"unsupported":0}
 
 == 0x180001070 ??1Single@@UEAA@XZ
 -- decompile
@@ -201,7 +201,7 @@ fn ??1Single@@UEAA@XZ @ 0x180001070 (size 32)
     store32((load32(#0x1800030e0) + #0x1), #0x1800030e0)
     ret #0x0
 -- card
-{"accesses":["this +0x0:uint64_t"],"addr":"0x180001070","approxTokens":120,"blocks":1,"hardReasons":[],"name":"??1Single@@UEAA@XZ","nameSources":["symtab"],"section":".text","size":32,"sizeEstimated":true,"unsupported":0}
+{"accesses":["this +0x0:uint64_t"],"addr":"0x180001070","approxTokens":120,"blocks":1,"hardReasons":[],"name":"??1Single@@UEAA@XZ","nameSources":["symtab"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":32,"sizeEstimated":true,"unsupported":0}
 
 == 0x180001090 ?other@Other@@UEBAHXZ
 -- decompile
@@ -217,7 +217,7 @@ fn ?other@Other@@UEBAHXZ @ 0x180001090 (size 16)
   blk0 @ 0x180001090:
     ret #0x0
 -- card
-{"addr":"0x180001090","approxTokens":108,"blocks":1,"hardReasons":[],"name":"?other@Other@@UEBAHXZ","nameSources":["symtab"],"section":".text","size":16,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x180001090","approxTokens":108,"blocks":1,"hardReasons":[],"name":"?other@Other@@UEBAHXZ","nameSources":["symtab"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":16,"sizeEstimated":true,"unsupported":0}
 
 == 0x1800010a0 ??1Other@@UEAA@XZ
 -- decompile
@@ -233,7 +233,7 @@ fn ??1Other@@UEAA@XZ @ 0x1800010a0 (size 16)
   blk0 @ 0x1800010a0:
     ret #0x0
 -- card
-{"addr":"0x1800010a0","approxTokens":102,"blocks":1,"hardReasons":[],"name":"??1Other@@UEAA@XZ","nameSources":["symtab"],"section":".text","size":16,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x1800010a0","approxTokens":102,"blocks":1,"hardReasons":[],"name":"??1Other@@UEAA@XZ","nameSources":["symtab"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":16,"sizeEstimated":true,"unsupported":0}
 
 == 0x1800010b0 ??0Multiple@@QEAA@H@Z
 -- decompile
@@ -263,7 +263,7 @@ fn ??0Multiple@@QEAA@H@Z @ 0x1800010b0 (size 52)
     store64(#0x180002068, (v1 + #0x10))
     ret #0x0
 -- card
-{"accesses":["this +0x0:uint64_t, +0x10:uint64_t"],"addr":"0x1800010b0","approxTokens":180,"blocks":1,"hardReasons":[],"name":"??0Multiple@@QEAA@H@Z","nameSources":["symtab","unwind"],"section":".text","size":52,"structures":["struct __0Multiple__QEAA_H_Z_s1 { int64_t field_0x0; uint8_t gap_0x8[0x8]; int64_t field_0x10; };"],"unsupported":0}
+{"accesses":["this +0x0:uint64_t, +0x10:uint64_t"],"addr":"0x1800010b0","approxTokens":180,"blocks":1,"hardReasons":[],"name":"??0Multiple@@QEAA@H@Z","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":52,"structures":["struct __0Multiple__QEAA_H_Z_s1 { int64_t field_0x0; uint8_t gap_0x8[0x8]; int64_t field_0x10; };"],"unsupported":0}
 
 == 0x1800010f0 ?value@Multiple@@UEBAHXZ
 -- decompile
@@ -281,7 +281,7 @@ fn ?value@Multiple@@UEBAHXZ @ 0x1800010f0 (size 16)
     v1 = load32((rcx + #0x8))
     ret #0x0
 -- card
-{"accesses":["this +0x8:uint32_t"],"addr":"0x1800010f0","approxTokens":114,"blocks":1,"hardReasons":[],"name":"?value@Multiple@@UEBAHXZ","nameSources":["symtab"],"section":".text","size":16,"sizeEstimated":true,"unsupported":0}
+{"accesses":["this +0x8:uint32_t"],"addr":"0x1800010f0","approxTokens":114,"blocks":1,"hardReasons":[],"name":"?value@Multiple@@UEBAHXZ","nameSources":["symtab"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":16,"sizeEstimated":true,"unsupported":0}
 
 == 0x180001100 ?other@Multiple@@UEBAHXZ
 -- decompile
@@ -299,7 +299,7 @@ fn ?other@Multiple@@UEBAHXZ @ 0x180001100 (size 16)
     v1 = load32((rcx + #0xfffffffffffffff8))
     ret #0x0
 -- card
-{"accesses":["this +0xfffffffffffffff8:uint32_t"],"addr":"0x180001100","approxTokens":114,"blocks":1,"hardReasons":[],"name":"?other@Multiple@@UEBAHXZ","nameSources":["symtab"],"section":".text","size":16,"sizeEstimated":true,"unsupported":0}
+{"accesses":["this +0xfffffffffffffff8:uint32_t"],"addr":"0x180001100","approxTokens":114,"blocks":1,"hardReasons":[],"name":"?other@Multiple@@UEBAHXZ","nameSources":["symtab"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":16,"sizeEstimated":true,"unsupported":0}
 
 == 0x180001110 ??1Multiple@@UEAA@XZ
 -- decompile
@@ -315,7 +315,7 @@ fn ??1Multiple@@UEAA@XZ @ 0x180001110 (size 16)
   blk0 @ 0x180001110:
     ret #0x0
 -- card
-{"addr":"0x180001110","approxTokens":102,"blocks":1,"hardReasons":[],"name":"??1Multiple@@UEAA@XZ","nameSources":["symtab"],"section":".text","size":16,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x180001110","approxTokens":102,"blocks":1,"hardReasons":[],"name":"??1Multiple@@UEAA@XZ","nameSources":["symtab"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":16,"sizeEstimated":true,"unsupported":0}
 
 == 0x180001120 ??0Virtual@@QEAA@H@Z
 -- decompile
@@ -353,7 +353,7 @@ fn ??0Virtual@@QEAA@H@Z @ 0x180001120 (size 80)
     store32(#0x4, (v1 + #0x8))
     ret #0x0
 -- card
-{"accesses":["this +0x0:uint64_t, +0x8:uint32_t"],"addr":"0x180001120","approxTokens":228,"blocks":3,"hardReasons":[],"name":"??0Virtual@@QEAA@H@Z","nameSources":["symtab","unwind"],"section":".text","size":80,"unsupported":0}
+{"accesses":["this +0x0:uint64_t, +0x8:uint32_t"],"addr":"0x180001120","approxTokens":228,"blocks":3,"hardReasons":[],"name":"??0Virtual@@QEAA@H@Z","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":80,"unsupported":0}
 
 == 0x180001170 ?value@Virtual@@UEBAHXZ
 -- decompile
@@ -371,7 +371,7 @@ fn ?value@Virtual@@UEBAHXZ @ 0x180001170 (size 16)
     v1 = ((load32((rcx + #0xfffffffffffffff0)) + load32(((rcx + sext32(load32((load64((rcx + #0xffffffffffffffe8)) + #0x4)))) + #0xfffffffffffffff0))) & #0xffffffff)
     ret #0x0
 -- card
-{"accesses":["this +0xffffffffffffffe8:uint64_t, +0xfffffffffffffff0:uint32_t"],"addr":"0x180001170","approxTokens":126,"blocks":1,"hardReasons":[],"name":"?value@Virtual@@UEBAHXZ","nameSources":["symtab"],"section":".text","size":16,"sizeEstimated":true,"unsupported":0}
+{"accesses":["this +0xffffffffffffffe8:uint64_t, +0xfffffffffffffff0:uint32_t"],"addr":"0x180001170","approxTokens":126,"blocks":1,"hardReasons":[],"name":"?value@Virtual@@UEBAHXZ","nameSources":["symtab"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":16,"sizeEstimated":true,"unsupported":0}
 
 == 0x180001180 ??1Virtual@@UEAA@XZ
 -- decompile
@@ -387,7 +387,7 @@ fn ??1Virtual@@UEAA@XZ @ 0x180001180 (size 16)
   blk0 @ 0x180001180:
     ret #0x0
 -- card
-{"addr":"0x180001180","approxTokens":102,"blocks":1,"hardReasons":[],"name":"??1Virtual@@UEAA@XZ","nameSources":["symtab"],"section":".text","size":16,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x180001180","approxTokens":102,"blocks":1,"hardReasons":[],"name":"??1Virtual@@UEAA@XZ","nameSources":["symtab"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":16,"sizeEstimated":true,"unsupported":0}
 
 == 0x180001190 dispatch
 -- decompile
@@ -407,7 +407,7 @@ fn dispatch @ 0x180001190 (size 6)
     v2:rax, xmm0 = call *load64(v1)(rcx)
     ret v2
 -- card
-{"accesses":["object +0x0:uint64_t"],"addr":"0x180001190","approxTokens":108,"blocks":1,"hardReasons":[],"name":"dispatch","nameSources":["symtab","dynamic","dwarf"],"section":".text","size":6,"unsupported":0}
+{"accesses":["object +0x0:uint64_t"],"addr":"0x180001190","approxTokens":108,"blocks":1,"hardReasons":[],"name":"dispatch","nameSources":["symtab","dynamic","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":6,"unsupported":0}
 
 == 0x1800011a0 dispatch_multiple
 -- decompile
@@ -427,7 +427,7 @@ fn dispatch_multiple @ 0x1800011a0 (size 11)
     v3:rax, xmm0 = call *load64(v1)((rcx + #0x10))
     ret v3
 -- card
-{"addr":"0x1800011a0","approxTokens":114,"blocks":1,"hardReasons":[],"name":"dispatch_multiple","nameSources":["symtab","dynamic","dwarf"],"section":".text","size":11,"unsupported":0}
+{"addr":"0x1800011a0","approxTokens":114,"blocks":1,"hardReasons":[],"name":"dispatch_multiple","nameSources":["symtab","dynamic","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":11,"unsupported":0}
 
 == 0x1800011b0 single
 -- decompile
@@ -457,7 +457,7 @@ fn single @ 0x1800011b0 (size 63)
     rax = call 0x180001070((rsp + #0xffffffffffffffd8))
     ret (v3 & #0xffffffff)
 -- card
-{"addr":"0x1800011b0","approxTokens":222,"blocks":1,"hardReasons":[],"name":"single","nameSources":["symtab","dynamic","dwarf","unwind"],"section":".text","size":63,"unsupported":0}
+{"addr":"0x1800011b0","approxTokens":222,"blocks":1,"hardReasons":[],"name":"single","nameSources":["symtab","dynamic","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":63,"unsupported":0}
 
 == 0x1800011f0 ?dtor$2@?0?single@4HA
 -- decompile
@@ -475,7 +475,7 @@ fn ?dtor$2@?0?single@4HA @ 0x1800011f0 (size 32)
     v1:rax = call 0x180001070((rdx + #0x20))
     ret #0x0
 -- card
-{"addr":"0x1800011f0","approxTokens":168,"blocks":1,"hardReasons":[],"name":"?dtor$2@?0?single@4HA","nameSources":["symtab","unwind"],"section":".text","size":32,"unsupported":0}
+{"addr":"0x1800011f0","approxTokens":168,"blocks":1,"hardReasons":[],"name":"?dtor$2@?0?single@4HA","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":32,"unsupported":0}
 
 == 0x180001210 multiple
 -- decompile
@@ -501,7 +501,7 @@ fn multiple @ 0x180001210 (size 48)
     v5:rax = call 0x180001100((rsp + #0xfffffffffffffff0))
     ret (((v5 & #0xffffffff) + (v3 & #0xffffffff)) & #0xffffffff)
 -- card
-{"addr":"0x180001210","approxTokens":186,"blocks":1,"hardReasons":[],"name":"multiple","nameSources":["symtab","dynamic","dwarf","unwind"],"section":".text","size":48,"unsupported":0}
+{"addr":"0x180001210","approxTokens":186,"blocks":1,"hardReasons":[],"name":"multiple","nameSources":["symtab","dynamic","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":48,"unsupported":0}
 
 == 0x180001240 virtual_base
 -- decompile
@@ -530,7 +530,7 @@ fn virtual_base @ 0x180001240 (size 78)
     call 0x180001540()
     ret (v3 & #0xffffffff)
 -- card
-{"addr":"0x180001240","approxTokens":234,"blocks":1,"hardReasons":[],"name":"virtual_base","nameSources":["symtab","dynamic","dwarf","unwind"],"section":".text","size":78,"unsupported":0}
+{"addr":"0x180001240","approxTokens":234,"blocks":1,"hardReasons":[],"name":"virtual_base","nameSources":["symtab","dynamic","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":78,"unsupported":0}
 
 == 0x180001290 ?dtor$2@?0?virtual_base@4HA
 -- decompile
@@ -548,7 +548,7 @@ fn ?dtor$2@?0?virtual_base@4HA @ 0x180001290 (size 32)
     call 0x180001540()
     ret #0x0
 -- card
-{"addr":"0x180001290","approxTokens":168,"blocks":1,"hardReasons":[],"name":"?dtor$2@?0?virtual_base@4HA","nameSources":["symtab","unwind"],"section":".text","size":32,"unsupported":0}
+{"addr":"0x180001290","approxTokens":168,"blocks":1,"hardReasons":[],"name":"?dtor$2@?0?virtual_base@4HA","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":32,"unsupported":0}
 
 == 0x1800012b0 catch_one
 -- decompile
@@ -573,7 +573,7 @@ fn catch_one @ 0x1800012b0 (size 36)
     v1:rax, xmm0 = call *load64(#0x180002488)(rcx)
     ret (v1 & #0xffffffff)
 -- card
-{"addr":"0x1800012b0","approxTokens":156,"blocks":1,"hardReasons":[],"name":"catch_one","nameSources":["symtab","dynamic","dwarf","unwind"],"section":".text","size":36,"unsupported":0}
+{"addr":"0x1800012b0","approxTokens":156,"blocks":1,"hardReasons":[],"name":"catch_one","nameSources":["symtab","dynamic","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":36,"unsupported":0}
 
 == 0x1800012e0 ?catch$2@?0?catch_one@4HA
 -- decompile
@@ -597,7 +597,7 @@ fn ?catch$2@?0?catch_one@4HA @ 0x1800012e0 (size 36)
     store32(load32(load64((v1 + #0xfffffffffffffff8))), (v1 + #0xffffffffffffffec))
     ret #0x1800012cb
 -- card
-{"addr":"0x1800012e0","aliases":["catch_one__catch_0"],"approxTokens":162,"blocks":1,"hardReasons":[],"name":"?catch$2@?0?catch_one@4HA","nameSources":["symtab","unwind"],"section":".text","size":36,"unsupported":0}
+{"addr":"0x1800012e0","aliases":["catch_one__catch_0"],"approxTokens":162,"blocks":1,"hardReasons":[],"name":"?catch$2@?0?catch_one@4HA","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":36,"unsupported":0}
 
 == 0x180001310 catch_many
 -- decompile
@@ -626,7 +626,7 @@ fn catch_many @ 0x180001310 (size 36)
     v1:rax, xmm0 = call *load64(#0x180002488)(rcx)
     ret (v1 & #0xffffffff)
 -- card
-{"addr":"0x180001310","approxTokens":156,"blocks":1,"hardReasons":[],"name":"catch_many","nameSources":["symtab","dynamic","dwarf","unwind"],"section":".text","size":36,"unsupported":0}
+{"addr":"0x180001310","approxTokens":156,"blocks":1,"hardReasons":[],"name":"catch_many","nameSources":["symtab","dynamic","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":36,"unsupported":0}
 
 == 0x180001340 ?catch$2@?0?catch_many@4HA
 -- decompile
@@ -652,7 +652,7 @@ fn ?catch$2@?0?catch_many@4HA @ 0x180001340 (size 38)
     store32((load32(load64((v1 + #0xfffffffffffffff8))) + #0x1), (v1 + #0xffffffffffffffe4))
     ret #0x18000132b
 -- card
-{"addr":"0x180001340","aliases":["catch_many__catch_0","?catch$3@?0?catch_many@4HA__catch_0","?catch$4@?0?catch_many@4HA__catch_0"],"approxTokens":168,"blocks":1,"hardReasons":[],"name":"?catch$2@?0?catch_many@4HA","nameSources":["symtab","unwind"],"section":".text","size":38,"unsupported":0}
+{"addr":"0x180001340","aliases":["catch_many__catch_0","?catch$3@?0?catch_many@4HA__catch_0","?catch$4@?0?catch_many@4HA__catch_0"],"approxTokens":168,"blocks":1,"hardReasons":[],"name":"?catch$2@?0?catch_many@4HA","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":38,"unsupported":0}
 
 == 0x180001370 ?catch$3@?0?catch_many@4HA
 -- decompile
@@ -678,7 +678,7 @@ fn ?catch$3@?0?catch_many@4HA @ 0x180001370 (size 36)
     store32((load32((v1 + #0xfffffffffffffff4)) + #0x2), (v1 + #0xffffffffffffffe4))
     ret #0x18000132b
 -- card
-{"addr":"0x180001370","aliases":["catch_many__catch_1","?catch$2@?0?catch_many@4HA__catch_1","?catch$4@?0?catch_many@4HA__catch_1"],"approxTokens":162,"blocks":1,"hardReasons":[],"name":"?catch$3@?0?catch_many@4HA","nameSources":["symtab","unwind"],"section":".text","size":36,"unsupported":0}
+{"addr":"0x180001370","aliases":["catch_many__catch_1","?catch$2@?0?catch_many@4HA__catch_1","?catch$4@?0?catch_many@4HA__catch_1"],"approxTokens":162,"blocks":1,"hardReasons":[],"name":"?catch$3@?0?catch_many@4HA","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":36,"unsupported":0}
 
 == 0x1800013a0 ?catch$4@?0?catch_many@4HA
 -- decompile
@@ -702,7 +702,7 @@ fn ?catch$4@?0?catch_many@4HA @ 0x1800013a0 (size 34)
     store32(#0xffffffff, (rdx + #0x24))
     ret #0x18000132b
 -- card
-{"addr":"0x1800013a0","aliases":["catch_many__catch_2","?catch$2@?0?catch_many@4HA__catch_2","?catch$3@?0?catch_many@4HA__catch_2"],"approxTokens":150,"blocks":1,"hardReasons":[],"name":"?catch$4@?0?catch_many@4HA","nameSources":["symtab","unwind"],"section":".text","size":34,"unsupported":0}
+{"addr":"0x1800013a0","aliases":["catch_many__catch_2","?catch$2@?0?catch_many@4HA__catch_2","?catch$3@?0?catch_many@4HA__catch_2"],"approxTokens":150,"blocks":1,"hardReasons":[],"name":"?catch$4@?0?catch_many@4HA","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":34,"unsupported":0}
 
 == 0x1800013d0 catch_nested
 -- decompile
@@ -732,7 +732,7 @@ fn catch_nested @ 0x1800013d0 (size 36)
     v1:rax, xmm0 = call *load64(#0x180002488)(rcx)
     ret (v1 & #0xffffffff)
 -- card
-{"addr":"0x1800013d0","approxTokens":156,"blocks":1,"hardReasons":[],"name":"catch_nested","nameSources":["symtab","dynamic","dwarf","unwind"],"section":".text","size":36,"unsupported":0}
+{"addr":"0x1800013d0","approxTokens":156,"blocks":1,"hardReasons":[],"name":"catch_nested","nameSources":["symtab","dynamic","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":36,"unsupported":0}
 
 == 0x180001400 ?catch$2@?0?catch_nested@4HA
 -- decompile
@@ -757,7 +757,7 @@ fn ?catch$2@?0?catch_nested@4HA @ 0x180001400 (size 39)
     store32((load32(load64((v1 + #0xfffffffffffffff0))) + #0x3), (v1 + #0xffffffffffffffe4))
     ret #0x1800013eb
 -- card
-{"addr":"0x180001400","aliases":["catch_nested__catch_1","?catch$3@?0?catch_nested@4HA__catch_1"],"approxTokens":168,"blocks":1,"hardReasons":[],"name":"?catch$2@?0?catch_nested@4HA","nameSources":["symtab","unwind"],"section":".text","size":39,"unsupported":0}
+{"addr":"0x180001400","aliases":["catch_nested__catch_1","?catch$3@?0?catch_nested@4HA__catch_1"],"approxTokens":168,"blocks":1,"hardReasons":[],"name":"?catch$2@?0?catch_nested@4HA","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":39,"unsupported":0}
 
 == 0x180001430 ?catch$3@?0?catch_nested@4HA
 -- decompile
@@ -784,7 +784,7 @@ fn ?catch$3@?0?catch_nested@4HA @ 0x180001430 (size 39)
     store32(v3, (v1 + #0xffffffffffffffe4))
     ret #0x1800013eb
 -- card
-{"addr":"0x180001430","aliases":["catch_nested__catch_0","?catch$2@?0?catch_nested@4HA__catch_0"],"approxTokens":162,"blocks":1,"hardReasons":[],"name":"?catch$3@?0?catch_nested@4HA","nameSources":["symtab","unwind"],"section":".text","size":39,"unsupported":0}
+{"addr":"0x180001430","aliases":["catch_nested__catch_0","?catch$2@?0?catch_nested@4HA__catch_0"],"approxTokens":162,"blocks":1,"hardReasons":[],"name":"?catch$3@?0?catch_nested@4HA","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":39,"unsupported":0}
 
 == 0x180001460 catch_cleanup
 -- decompile
@@ -822,7 +822,7 @@ fn catch_cleanup @ 0x180001460 (size 72)
     rax = call 0x180001070((rsp + #0xffffffffffffffd0))
     ret load32((rsp + #0xffffffffffffffe4))
 -- card
-{"addr":"0x180001460","approxTokens":228,"blocks":1,"hardReasons":[],"name":"catch_cleanup","nameSources":["symtab","dynamic","dwarf","unwind"],"section":".text","size":72,"unsupported":0}
+{"addr":"0x180001460","approxTokens":228,"blocks":1,"hardReasons":[],"name":"catch_cleanup","nameSources":["symtab","dynamic","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":72,"unsupported":0}
 
 == 0x1800014b0 ?dtor$3@?0?catch_cleanup@4HA
 -- decompile
@@ -840,7 +840,7 @@ fn ?dtor$3@?0?catch_cleanup@4HA @ 0x1800014b0 (size 32)
     v1:rax = call 0x180001070((rdx + #0x28))
     ret #0x0
 -- card
-{"addr":"0x1800014b0","approxTokens":168,"blocks":1,"hardReasons":[],"name":"?dtor$3@?0?catch_cleanup@4HA","nameSources":["symtab","unwind"],"section":".text","size":32,"unsupported":0}
+{"addr":"0x1800014b0","approxTokens":168,"blocks":1,"hardReasons":[],"name":"?dtor$3@?0?catch_cleanup@4HA","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":32,"unsupported":0}
 
 == 0x1800014d0 ?catch$4@?0?catch_cleanup@4HA
 -- decompile
@@ -862,7 +862,7 @@ fn ?catch$4@?0?catch_cleanup@4HA @ 0x1800014d0 (size 36)
     store32(#0xfffffffe, (rdx + #0x3c))
     ret #0x18000149e
 -- card
-{"addr":"0x1800014d0","aliases":["catch_cleanup__catch_0"],"approxTokens":162,"blocks":1,"hardReasons":[],"name":"?catch$4@?0?catch_cleanup@4HA","nameSources":["symtab","unwind"],"section":".text","size":36,"unsupported":0}
+{"addr":"0x1800014d0","aliases":["catch_cleanup__catch_0"],"approxTokens":162,"blocks":1,"hardReasons":[],"name":"?catch$4@?0?catch_cleanup@4HA","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":36,"unsupported":0}
 
 == 0x180001500 ??3@YAXPEAX@Z
 -- decompile
@@ -878,7 +878,7 @@ fn ??3@YAXPEAX@Z @ 0x180001500 (size 16)
   blk0 @ 0x180001500:
     ret #0x0
 -- card
-{"addr":"0x180001500","approxTokens":102,"blocks":1,"hardReasons":[],"name":"??3@YAXPEAX@Z","nameSources":["symtab"],"section":".text","size":16,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x180001500","approxTokens":102,"blocks":1,"hardReasons":[],"name":"??3@YAXPEAX@Z","nameSources":["symtab"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":16,"sizeEstimated":true,"unsupported":0}
 
 == 0x180001510 ??3@YAXPEAX_K@Z
 -- decompile
@@ -924,7 +924,7 @@ fn ??3@YAXPEAX_K@Z @ 0x180001510 (size 16)
   blk15 @ 0x18000151f:
     trap
 -- card
-{"addr":"0x180001510","approxTokens":102,"blocks":16,"hardReasons":[],"name":"??3@YAXPEAX_K@Z","nameSources":["symtab"],"section":".text","size":16,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x180001510","approxTokens":102,"blocks":16,"hardReasons":[],"name":"??3@YAXPEAX_K@Z","nameSources":["symtab"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":16,"sizeEstimated":true,"unsupported":0}
 
 == 0x180001520 ??0Other@@QEAA@XZ
 -- decompile
@@ -948,7 +948,7 @@ fn ??0Other@@QEAA@XZ @ 0x180001520 (size 16)
   blk2 @ 0x18000152f:
     trap
 -- card
-{"accesses":["this +0x0:uint64_t"],"addr":"0x180001520","approxTokens":120,"blocks":3,"hardReasons":[],"name":"??0Other@@QEAA@XZ","nameSources":["symtab"],"section":".text","size":16,"sizeEstimated":true,"unsupported":0}
+{"accesses":["this +0x0:uint64_t"],"addr":"0x180001520","approxTokens":120,"blocks":3,"hardReasons":[],"name":"??0Other@@QEAA@XZ","nameSources":["symtab"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":16,"sizeEstimated":true,"unsupported":0}
 
 == 0x180001530 ?value@Virtual@@$4PPPPPPPM@A@EBAHXZ
 -- decompile
@@ -968,7 +968,7 @@ fn ?value@Virtual@@$4PPPPPPPM@A@EBAHXZ @ 0x180001530 (size 16)
   blk1 @ 0x18000153f:
     trap
 -- card
-{"addr":"0x180001530","approxTokens":126,"blocks":2,"hardReasons":[],"name":"?value@Virtual@@$4PPPPPPPM@A@EBAHXZ","nameSources":["symtab"],"section":".text","size":16,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x180001530","approxTokens":126,"blocks":2,"hardReasons":[],"name":"?value@Virtual@@$4PPPPPPPM@A@EBAHXZ","nameSources":["symtab"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":16,"sizeEstimated":true,"unsupported":0}
 
 == 0x180001540 ??_DVirtual@@QEAAXXZ
 -- decompile
@@ -1014,7 +1014,7 @@ fn ??_DVirtual@@QEAAXXZ @ 0x180001540 (size 16)
   blk15 @ 0x18000154f:
     trap
 -- card
-{"addr":"0x180001540","approxTokens":102,"blocks":16,"hardReasons":[],"name":"??_DVirtual@@QEAAXXZ","nameSources":["symtab"],"section":".text","size":16,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x180001540","approxTokens":102,"blocks":16,"hardReasons":[],"name":"??_DVirtual@@QEAAXXZ","nameSources":["symtab"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":16,"sizeEstimated":true,"unsupported":0}
 
 == 0x180001550 ??_EMultiple@@WBA@EAAPEAXI@Z
 -- decompile
@@ -1046,7 +1046,7 @@ fn ??_EMultiple@@WBA@EAAPEAXI@Z @ 0x180001550 (size 16)
   blk7 @ 0x18000155f:
     trap
 -- card
-{"addr":"0x180001550","approxTokens":108,"blocks":8,"hardReasons":[],"name":"??_EMultiple@@WBA@EAAPEAXI@Z","nameSources":["symtab"],"section":".text","size":16,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x180001550","approxTokens":108,"blocks":8,"hardReasons":[],"name":"??_EMultiple@@WBA@EAAPEAXI@Z","nameSources":["symtab"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":16,"sizeEstimated":true,"unsupported":0}
 
 == 0x180001560 ??_EVirtual@@$4PPPPPPPM@A@EAAPEAXI@Z
 -- decompile
@@ -1066,7 +1066,7 @@ fn ??_EVirtual@@$4PPPPPPPM@A@EAAPEAXI@Z @ 0x180001560 (size 16)
   blk1 @ 0x18000156f:
     trap
 -- card
-{"addr":"0x180001560","approxTokens":126,"blocks":2,"hardReasons":[],"name":"??_EVirtual@@$4PPPPPPPM@A@EAAPEAXI@Z","nameSources":["symtab"],"section":".text","size":16,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x180001560","approxTokens":126,"blocks":2,"hardReasons":[],"name":"??_EVirtual@@$4PPPPPPPM@A@EAAPEAXI@Z","nameSources":["symtab"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":16,"sizeEstimated":true,"unsupported":0}
 
 == 0x180001570 ??_GOther@@UEAAPEAXI@Z
 -- decompile
@@ -1092,7 +1092,7 @@ fn ??_GOther@@UEAAPEAXI@Z @ 0x180001570 (size 35)
   blk2 @ 0x18000158a:
     ret v1
 -- card
-{"addr":"0x180001570","aliases":["??_EOther@@UEAAPEAXI@Z"],"approxTokens":168,"blocks":3,"hardReasons":[],"name":"??_GOther@@UEAAPEAXI@Z","nameSources":["symtab","unwind"],"section":".text","size":35,"unsupported":0}
+{"addr":"0x180001570","aliases":["??_EOther@@UEAAPEAXI@Z"],"approxTokens":168,"blocks":3,"hardReasons":[],"name":"??_GOther@@UEAAPEAXI@Z","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":35,"unsupported":0}
 
 == 0x1800015a0 ??_GRoot@@UEAAPEAXI@Z
 -- decompile
@@ -1118,7 +1118,7 @@ fn ??_GRoot@@UEAAPEAXI@Z @ 0x1800015a0 (size 35)
   blk2 @ 0x1800015ba:
     ret v1
 -- card
-{"addr":"0x1800015a0","aliases":["??_ERoot@@UEAAPEAXI@Z"],"approxTokens":168,"blocks":3,"hardReasons":[],"name":"??_GRoot@@UEAAPEAXI@Z","nameSources":["symtab","unwind"],"section":".text","size":35,"unsupported":0}
+{"addr":"0x1800015a0","aliases":["??_ERoot@@UEAAPEAXI@Z"],"approxTokens":168,"blocks":3,"hardReasons":[],"name":"??_GRoot@@UEAAPEAXI@Z","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":35,"unsupported":0}
 
 == 0x1800015d0 ??_GSingle@@UEAAPEAXI@Z
 -- decompile
@@ -1146,7 +1146,7 @@ fn ??_GSingle@@UEAAPEAXI@Z @ 0x1800015d0 (size 45)
   blk2 @ 0x1800015f3:
     ret v1
 -- card
-{"addr":"0x1800015d0","aliases":["??_ESingle@@UEAAPEAXI@Z"],"approxTokens":192,"blocks":3,"hardReasons":[],"name":"??_GSingle@@UEAAPEAXI@Z","nameSources":["symtab","unwind"],"section":".text","size":45,"unsupported":0}
+{"addr":"0x1800015d0","aliases":["??_ESingle@@UEAAPEAXI@Z"],"approxTokens":192,"blocks":3,"hardReasons":[],"name":"??_GSingle@@UEAAPEAXI@Z","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":45,"unsupported":0}
 
 == 0x180001600 ??_GMultiple@@UEAAPEAXI@Z
 -- decompile
@@ -1172,7 +1172,7 @@ fn ??_GMultiple@@UEAAPEAXI@Z @ 0x180001600 (size 35)
   blk2 @ 0x18000161a:
     ret v1
 -- card
-{"addr":"0x180001600","aliases":["??_EMultiple@@UEAAPEAXI@Z"],"approxTokens":168,"blocks":3,"hardReasons":[],"name":"??_GMultiple@@UEAAPEAXI@Z","nameSources":["symtab","unwind"],"section":".text","size":35,"unsupported":0}
+{"addr":"0x180001600","aliases":["??_EMultiple@@UEAAPEAXI@Z"],"approxTokens":168,"blocks":3,"hardReasons":[],"name":"??_GMultiple@@UEAAPEAXI@Z","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":35,"unsupported":0}
 
 == 0x180001630 ??_GVirtual@@UEAAPEAXI@Z
 -- decompile
@@ -1201,7 +1201,7 @@ fn ??_GVirtual@@UEAAPEAXI@Z @ 0x180001630 (size 52)
   blk2 @ 0x18000165a:
     ret v1
 -- card
-{"addr":"0x180001630","aliases":["??_EVirtual@@UEAAPEAXI@Z"],"approxTokens":204,"blocks":3,"hardReasons":[],"name":"??_GVirtual@@UEAAPEAXI@Z","nameSources":["symtab","unwind"],"section":".text","size":52,"unsupported":0}
+{"addr":"0x180001630","aliases":["??_EVirtual@@UEAAPEAXI@Z"],"approxTokens":204,"blocks":3,"hardReasons":[],"name":"??_GVirtual@@UEAAPEAXI@Z","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":52,"unsupported":0}
 
 == 0x180001670 ??_7type_info@@6B@
 -- decompile
@@ -1220,7 +1220,7 @@ fn ??_7type_info@@6B@ @ 0x180001670 (size 16)
     v1:rax, xmm0 = call *load64(#0x180002480)
     ret v1
 -- card
-{"addr":"0x180001670","approxTokens":108,"blocks":1,"hardReasons":[],"name":"??_7type_info@@6B@","nameSources":["symtab","plt"],"section":".text","size":16,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x180001670","approxTokens":108,"blocks":1,"hardReasons":[],"name":"??_7type_info@@6B@","nameSources":["symtab","plt"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":16,"sizeEstimated":true,"unsupported":0}
 
 == 0x180001680 __CxxFrameHandler3
 -- decompile
@@ -1239,7 +1239,7 @@ fn __CxxFrameHandler3 @ 0x180001680 (size 16)
     v1:rax, xmm0 = call *load64(#0x180002490)
     ret v1
 -- card
-{"addr":"0x180001680","approxTokens":108,"blocks":1,"hardReasons":[],"name":"__CxxFrameHandler3","nameSources":["symtab","plt"],"section":".text","size":16,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x180001680","approxTokens":108,"blocks":1,"hardReasons":[],"name":"__CxxFrameHandler3","nameSources":["symtab","plt"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":16,"sizeEstimated":true,"unsupported":0}
 
 == 0x180001690 ?imported_value@@YAHH@Z
 -- decompile
@@ -1258,4 +1258,4 @@ fn ?imported_value@@YAHH@Z @ 0x180001690 (size 6)
     v1:rax, xmm0 = call *load64(#0x180002488)
     ret v1
 -- card
-{"addr":"0x180001690","approxTokens":102,"blocks":1,"hardReasons":[],"name":"?imported_value@@YAHH@Z","nameSources":["plt"],"section":".text","size":6,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x180001690","approxTokens":102,"blocks":1,"hardReasons":[],"name":"?imported_value@@YAHH@Z","nameSources":["plt"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":6,"sizeEstimated":true,"unsupported":0}

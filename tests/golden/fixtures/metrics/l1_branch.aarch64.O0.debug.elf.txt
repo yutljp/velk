@@ -44,7 +44,7 @@ fn classify @ 0x210184 (size 76)
   blk7 @ 0x2101c4:
     ret v2
 -- card
-{"addr":"0x210184","approxTokens":210,"blocks":8,"hardReasons":[],"name":"classify","nameSources":["symtab","dwarf","unwind"],"section":".text","size":76,"unsupported":0}
+{"addr":"0x210184","approxTokens":210,"blocks":8,"hardReasons":[],"name":"classify","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":76,"unsupported":0}
 
 == 0x2101d0 clamp
 -- decompile
@@ -84,7 +84,7 @@ fn clamp @ 0x2101d0 (size 104)
   blk7 @ 0x21022c:
     ret v2
 -- card
-{"addr":"0x2101d0","approxTokens":240,"blocks":8,"hardReasons":[],"name":"clamp","nameSources":["symtab","dwarf","unwind"],"section":".text","size":104,"unsupported":0}
+{"addr":"0x2101d0","approxTokens":240,"blocks":8,"hardReasons":[],"name":"clamp","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":104,"unsupported":0}
 
 == 0x210238 sign_of
 -- decompile
@@ -114,4 +114,4 @@ fn sign_of @ 0x210238 (size 72)
   blk4 @ 0x210274:
     ret v2
 -- card
-{"addr":"0x210238","approxTokens":204,"blocks":5,"hardReasons":[],"name":"sign_of","nameSources":["symtab","dwarf","unwind"],"section":".text","size":72,"unsupported":0}
+{"addr":"0x210238","approxTokens":204,"blocks":5,"hardReasons":[],"name":"sign_of","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":72,"unsupported":0}

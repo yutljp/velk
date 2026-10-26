@@ -1,4 +1,4 @@
-# rust_demo_arm64: macho aarch64 0x10000094c, 670 functions, 0 lift failures, 37 unsupported, 1334 gotos
+# rust_demo_arm64: macho aarch64 0x10000094c, 670 functions, 0 lift failures, 37 unsupported, 1333 gotos
 0x1000008c0 20 std::sys::backtrace::__rust_begin_short_backtrace::<fn(), ()> symtab,unwind,function-starts
 0x1000008d4 28 std::rt::lang_start::<()>::{closure#0} symtab,unwind,function-starts
 0x1000008f0 28 <std::rt::lang_start<()>::{closure#0} as core::ops::function::FnOnce<()>>::call_once::{shim:vtable#0} symtab,unwind,function-starts
@@ -705,4 +705,4 @@ fn rust_demo::main @ 0x10000090c (size 64)
     v2:x0, x1, d0, d1 = call 0x1000197ac(#0x100035d74, (sp + #0xffffffffffffffe0))
     ret v2
 -- card
-{"addr":"0x10000090c","approxTokens":192,"blocks":1,"hardReasons":[],"name":"rust_demo::main","nameSources":["symtab","unwind","function-starts"],"section":"__text","size":64,"unsupported":0}
+{"addr":"0x10000090c","approxTokens":192,"blocks":1,"hardReasons":[],"name":"rust_demo::main","nameSources":["symtab","unwind","function-starts"],"section":"__text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":64,"unsupported":0}

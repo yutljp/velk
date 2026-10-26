@@ -101,7 +101,7 @@ fn Root::Root(int) @ 0x201a30 (size 14)
     store32(esi, (rdi + #0x8))
     ret #0x0
 -- card
-{"accesses":["this +0x0:uint64_t, +0x8:uint32_t"],"addr":"0x201a30","approxTokens":120,"blocks":1,"hardReasons":[],"name":"Root::Root(int)","nameSources":["symtab","dwarf","unwind"],"section":".text","size":14,"unsupported":0}
+{"accesses":["this +0x0:uint64_t, +0x8:uint32_t"],"addr":"0x201a30","approxTokens":120,"blocks":1,"hardReasons":[],"name":"Root::Root(int)","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":14,"unsupported":0}
 
 == 0x201a40 Root::value() const
 -- decompile
@@ -120,7 +120,7 @@ fn Root::value() const @ 0x201a40 (size 4)
     v1 = load32((rdi + #0x8))
     ret #0x0
 -- card
-{"accesses":["this +0x8:uint32_t"],"addr":"0x201a40","approxTokens":108,"blocks":1,"hardReasons":[],"name":"Root::value() const","nameSources":["symtab","unwind"],"section":".text","size":4,"unsupported":0}
+{"accesses":["this +0x8:uint32_t"],"addr":"0x201a40","approxTokens":108,"blocks":1,"hardReasons":[],"name":"Root::value() const","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":4,"unsupported":0}
 
 == 0x201a44 Root::~Root()
 -- decompile
@@ -136,7 +136,7 @@ fn Root::~Root() @ 0x201a44 (size 1)
   blk0 @ 0x201a44:
     ret #0x0
 -- card
-{"addr":"0x201a44","approxTokens":102,"blocks":1,"hardReasons":[],"name":"Root::~Root()","nameSources":["symtab","dwarf","unwind"],"section":".text","size":1,"unsupported":0}
+{"addr":"0x201a44","approxTokens":102,"blocks":1,"hardReasons":[],"name":"Root::~Root()","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":1,"unsupported":0}
 
 == 0x201a50 Root::~Root()
 -- decompile
@@ -154,7 +154,7 @@ fn Root::~Root() @ 0x201a50 (size 10)
     call 0x201a5a()
     ret #0x0
 -- card
-{"addr":"0x201a50","approxTokens":108,"blocks":1,"hardReasons":[],"name":"Root::~Root()","nameSources":["symtab","dwarf","unwind"],"section":".text","size":10,"unsupported":0}
+{"addr":"0x201a50","approxTokens":108,"blocks":1,"hardReasons":[],"name":"Root::~Root()","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":10,"unsupported":0}
 
 == 0x201a5a operator delete(void*, unsigned long)
 -- decompile
@@ -170,7 +170,7 @@ fn operator delete(void*, unsigned long) @ 0x201a5a (size 1)
   blk0 @ 0x201a5a:
     ret #0x0
 -- card
-{"addr":"0x201a5a","approxTokens":102,"blocks":1,"hardReasons":[],"name":"operator delete(void*, unsigned long)","nameSources":["symtab","dwarf","unwind"],"section":".text","size":1,"unsupported":0}
+{"addr":"0x201a5a","approxTokens":102,"blocks":1,"hardReasons":[],"name":"operator delete(void*, unsigned long)","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":1,"unsupported":0}
 
 == 0x201a60 Single::Single(int)
 -- decompile
@@ -192,7 +192,7 @@ fn Single::Single(int) @ 0x201a60 (size 21)
     store64(#0x202e58, rdi)
     ret #0x0
 -- card
-{"accesses":["this +0x0:uint64_t"],"addr":"0x201a60","approxTokens":138,"blocks":1,"hardReasons":[],"name":"Single::Single(int)","nameSources":["symtab","dwarf","unwind"],"section":".text","size":21,"unsupported":0}
+{"accesses":["this +0x0:uint64_t"],"addr":"0x201a60","approxTokens":138,"blocks":1,"hardReasons":[],"name":"Single::Single(int)","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":21,"unsupported":0}
 
 == 0x201a78 Single::value() const
 -- decompile
@@ -210,7 +210,7 @@ fn Single::value() const @ 0x201a78 (size 6)
     v1 = load32((rdi + #0x8))
     ret #0x0
 -- card
-{"accesses":["this +0x8:uint32_t"],"addr":"0x201a78","approxTokens":114,"blocks":1,"hardReasons":[],"name":"Single::value() const","nameSources":["symtab","unwind"],"section":".text","size":6,"unsupported":0}
+{"accesses":["this +0x8:uint32_t"],"addr":"0x201a78","approxTokens":114,"blocks":1,"hardReasons":[],"name":"Single::value() const","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":6,"unsupported":0}
 
 == 0x201a80 Single::~Single()
 -- decompile
@@ -234,7 +234,7 @@ fn Single::~Single() @ 0x201a80 (size 17)
     store32((load32(#0x204160) + #0x1), #0x204160)
     ret #0x0
 -- card
-{"accesses":["this +0x0:uint64_t"],"addr":"0x201a80","approxTokens":120,"blocks":1,"hardReasons":[],"name":"Single::~Single()","nameSources":["symtab","dwarf","unwind"],"section":".text","size":17,"unsupported":0}
+{"accesses":["this +0x0:uint64_t"],"addr":"0x201a80","approxTokens":120,"blocks":1,"hardReasons":[],"name":"Single::~Single()","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":17,"unsupported":0}
 
 == 0x201aa0 Single::~Single()
 -- decompile
@@ -254,7 +254,7 @@ fn Single::~Single() @ 0x201aa0 (size 23)
     call 0x201a5a()
     ret #0x0
 -- card
-{"addr":"0x201aa0","approxTokens":138,"blocks":1,"hardReasons":[],"name":"Single::~Single()","nameSources":["symtab","dwarf","unwind"],"section":".text","size":23,"unsupported":0}
+{"addr":"0x201aa0","approxTokens":138,"blocks":1,"hardReasons":[],"name":"Single::~Single()","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":23,"unsupported":0}
 
 == 0x201ab8 Other::other() const
 -- decompile
@@ -270,7 +270,7 @@ fn Other::other() const @ 0x201ab8 (size 6)
   blk0 @ 0x201ab8:
     ret #0x0
 -- card
-{"addr":"0x201ab8","approxTokens":108,"blocks":1,"hardReasons":[],"name":"Other::other() const","nameSources":["symtab","unwind"],"section":".text","size":6,"unsupported":0}
+{"addr":"0x201ab8","approxTokens":108,"blocks":1,"hardReasons":[],"name":"Other::other() const","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":6,"unsupported":0}
 
 == 0x201abe Other::~Other()
 -- decompile
@@ -286,7 +286,7 @@ fn Other::~Other() @ 0x201abe (size 1)
   blk0 @ 0x201abe:
     ret #0x0
 -- card
-{"addr":"0x201abe","approxTokens":102,"blocks":1,"hardReasons":[],"name":"Other::~Other()","nameSources":["symtab","dwarf","unwind"],"section":".text","size":1,"unsupported":0}
+{"addr":"0x201abe","approxTokens":102,"blocks":1,"hardReasons":[],"name":"Other::~Other()","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":1,"unsupported":0}
 
 == 0x201ac0 Other::~Other()
 -- decompile
@@ -304,7 +304,7 @@ fn Other::~Other() @ 0x201ac0 (size 10)
     call 0x201a5a()
     ret #0x0
 -- card
-{"addr":"0x201ac0","approxTokens":108,"blocks":1,"hardReasons":[],"name":"Other::~Other()","nameSources":["symtab","dwarf","unwind"],"section":".text","size":10,"unsupported":0}
+{"addr":"0x201ac0","approxTokens":108,"blocks":1,"hardReasons":[],"name":"Other::~Other()","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":10,"unsupported":0}
 
 == 0x201ad0 Multiple::Multiple(int)
 -- decompile
@@ -334,7 +334,7 @@ fn Multiple::Multiple(int) @ 0x201ad0 (size 41)
     store64(#0x202eb0, (v1 + #0x10))
     ret #0x0
 -- card
-{"accesses":["this +0x0:uint64_t, +0x10:uint64_t"],"addr":"0x201ad0","approxTokens":162,"blocks":1,"hardReasons":[],"name":"Multiple::Multiple(int)","nameSources":["symtab","dwarf","unwind"],"section":".text","size":41,"structures":["struct Multiple__Multiple_s1 { int64_t field_0x0; uint8_t gap_0x8[0x8]; int64_t field_0x10; };"],"unsupported":0}
+{"accesses":["this +0x0:uint64_t, +0x10:uint64_t"],"addr":"0x201ad0","approxTokens":162,"blocks":1,"hardReasons":[],"name":"Multiple::Multiple(int)","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":41,"structures":["struct Multiple__Multiple_s1 { int64_t field_0x0; uint8_t gap_0x8[0x8]; int64_t field_0x10; };"],"unsupported":0}
 
 == 0x201b00 Multiple::value() const
 -- decompile
@@ -352,7 +352,7 @@ fn Multiple::value() const @ 0x201b00 (size 7)
     v1 = load32((rdi + #0x8))
     ret #0x0
 -- card
-{"accesses":["this +0x8:uint32_t"],"addr":"0x201b00","approxTokens":114,"blocks":1,"hardReasons":[],"name":"Multiple::value() const","nameSources":["symtab","unwind"],"section":".text","size":7,"unsupported":0}
+{"accesses":["this +0x8:uint32_t"],"addr":"0x201b00","approxTokens":114,"blocks":1,"hardReasons":[],"name":"Multiple::value() const","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":7,"unsupported":0}
 
 == 0x201b08 Multiple::other() const
 -- decompile
@@ -370,7 +370,7 @@ fn Multiple::other() const @ 0x201b08 (size 7)
     v1 = load32((rdi + #0x8))
     ret #0x0
 -- card
-{"accesses":["this +0x8:uint32_t"],"addr":"0x201b08","approxTokens":114,"blocks":1,"hardReasons":[],"name":"Multiple::other() const","nameSources":["symtab","unwind"],"section":".text","size":7,"unsupported":0}
+{"accesses":["this +0x8:uint32_t"],"addr":"0x201b08","approxTokens":114,"blocks":1,"hardReasons":[],"name":"Multiple::other() const","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":7,"unsupported":0}
 
 == 0x201b10 {virtual override thunk({offset(-16)}, Multiple::other() const)}
 -- decompile
@@ -388,7 +388,7 @@ fn {virtual override thunk({offset(-16)}, Multiple::other() const)} @ 0x201b10 (
     eax = call 0x201b08((rdi + #0xfffffffffffffff0))
     ret #0x0
 -- card
-{"addr":"0x201b10","approxTokens":108,"blocks":1,"hardReasons":[],"name":"{virtual override thunk({offset(-16)}, Multiple::other() const)}","nameSources":["symtab","dwarf","unwind"],"section":".text","size":9,"unsupported":0}
+{"addr":"0x201b10","approxTokens":108,"blocks":1,"hardReasons":[],"name":"{virtual override thunk({offset(-16)}, Multiple::other() const)}","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":9,"unsupported":0}
 
 == 0x201b1a Multiple::~Multiple()
 -- decompile
@@ -404,7 +404,7 @@ fn Multiple::~Multiple() @ 0x201b1a (size 1)
   blk0 @ 0x201b1a:
     ret #0x0
 -- card
-{"addr":"0x201b1a","approxTokens":102,"blocks":1,"hardReasons":[],"name":"Multiple::~Multiple()","nameSources":["symtab","dwarf","unwind"],"section":".text","size":1,"unsupported":0}
+{"addr":"0x201b1a","approxTokens":102,"blocks":1,"hardReasons":[],"name":"Multiple::~Multiple()","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":1,"unsupported":0}
 
 == 0x201b1c {virtual override thunk({offset(-16)}, Multiple::~Multiple())}
 -- decompile
@@ -420,7 +420,7 @@ fn {virtual override thunk({offset(-16)}, Multiple::~Multiple())} @ 0x201b1c (si
   blk0 @ 0x201b1c:
     ret #0x0
 -- card
-{"addr":"0x201b1c","approxTokens":102,"blocks":1,"hardReasons":[],"name":"{virtual override thunk({offset(-16)}, Multiple::~Multiple())}","nameSources":["symtab","dwarf","unwind"],"section":".text","size":1,"unsupported":0}
+{"addr":"0x201b1c","approxTokens":102,"blocks":1,"hardReasons":[],"name":"{virtual override thunk({offset(-16)}, Multiple::~Multiple())}","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":1,"unsupported":0}
 
 == 0x201b20 Multiple::~Multiple()
 -- decompile
@@ -438,7 +438,7 @@ fn Multiple::~Multiple() @ 0x201b20 (size 10)
     call 0x201a5a()
     ret #0x0
 -- card
-{"addr":"0x201b20","approxTokens":108,"blocks":1,"hardReasons":[],"name":"Multiple::~Multiple()","nameSources":["symtab","dwarf","unwind"],"section":".text","size":10,"unsupported":0}
+{"addr":"0x201b20","approxTokens":108,"blocks":1,"hardReasons":[],"name":"Multiple::~Multiple()","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":10,"unsupported":0}
 
 == 0x201b30 {virtual override thunk({offset(-16)}, Multiple::~Multiple())}
 -- decompile
@@ -456,7 +456,7 @@ fn {virtual override thunk({offset(-16)}, Multiple::~Multiple())} @ 0x201b30 (si
     call 0x201b20()
     ret #0x0
 -- card
-{"addr":"0x201b30","approxTokens":108,"blocks":1,"hardReasons":[],"name":"{virtual override thunk({offset(-16)}, Multiple::~Multiple())}","nameSources":["symtab","dwarf","unwind"],"section":".text","size":9,"unsupported":0}
+{"addr":"0x201b30","approxTokens":108,"blocks":1,"hardReasons":[],"name":"{virtual override thunk({offset(-16)}, Multiple::~Multiple())}","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":9,"unsupported":0}
 
 == 0x201b40 Virtual::Virtual(int)
 -- decompile
@@ -481,7 +481,7 @@ fn Virtual::Virtual(int) @ 0x201b40 (size 26)
     store32(#0x4, (rdi + #0x8))
     ret #0x0
 -- card
-{"accesses":["this +0x0:uint64_t, +0x8:uint32_t","vtt +0x0:uint64_t, +0x8:uint64_t"],"addr":"0x201b40","approxTokens":138,"blocks":1,"hardReasons":[],"name":"Virtual::Virtual(int)","nameSources":["symtab","dwarf","unwind"],"section":".text","size":26,"unsupported":0}
+{"accesses":["this +0x0:uint64_t, +0x8:uint32_t","vtt +0x0:uint64_t, +0x8:uint64_t"],"addr":"0x201b40","approxTokens":138,"blocks":1,"hardReasons":[],"name":"Virtual::Virtual(int)","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":26,"unsupported":0}
 
 == 0x201b60 Virtual::Virtual(int)
 -- decompile
@@ -511,7 +511,7 @@ fn Virtual::Virtual(int) @ 0x201b60 (size 43)
     store32(#0x4, (v1 + #0x8))
     ret #0x0
 -- card
-{"accesses":["this +0x0:uint64_t, +0x8:uint32_t, +0x10:uint64_t"],"addr":"0x201b60","approxTokens":162,"blocks":1,"hardReasons":[],"name":"Virtual::Virtual(int)","nameSources":["symtab","dwarf","unwind"],"section":".text","size":43,"structures":["struct Virtual__Virtual_s1 {\n    int64_t field_0x0;\n    int32_t field_0x8;\n    uint8_t gap_0xc[0x4];\n    int64_t field_0x10;\n};"],"unsupported":0}
+{"accesses":["this +0x0:uint64_t, +0x8:uint32_t, +0x10:uint64_t"],"addr":"0x201b60","approxTokens":162,"blocks":1,"hardReasons":[],"name":"Virtual::Virtual(int)","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":43,"structures":["struct Virtual__Virtual_s1 {\n    int64_t field_0x0;\n    int32_t field_0x8;\n    uint8_t gap_0xc[0x4];\n    int64_t field_0x10;\n};"],"unsupported":0}
 
 == 0x201b90 Virtual::value() const
 -- decompile
@@ -530,7 +530,7 @@ fn Virtual::value() const @ 0x201b90 (size 15)
     v1 = ((load32((rdi + #0x8)) + load32(((rdi + load64((load64(rdi) + #0xffffffffffffffe8))) + #0x8))) & #0xffffffff)
     ret #0x0
 -- card
-{"accesses":["this +0x0:uint64_t, +0x8:uint32_t"],"addr":"0x201b90","approxTokens":126,"blocks":1,"hardReasons":[],"name":"Virtual::value() const","nameSources":["symtab","unwind"],"section":".text","size":15,"unsupported":0}
+{"accesses":["this +0x0:uint64_t, +0x8:uint32_t"],"addr":"0x201b90","approxTokens":126,"blocks":1,"hardReasons":[],"name":"Virtual::value() const","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":15,"unsupported":0}
 
 == 0x201ba0 {virtual override thunk({virtual offset(0, -24)}, Virtual::value() const)}
 -- decompile
@@ -548,7 +548,7 @@ fn {virtual override thunk({virtual offset(0, -24)}, Virtual::value() const)} @ 
     rax = call 0x201b90((rdi + load64((load64(rdi) + #0xffffffffffffffe8))))
     ret #0x0
 -- card
-{"addr":"0x201ba0","approxTokens":114,"blocks":1,"hardReasons":[],"name":"{virtual override thunk({virtual offset(0, -24)}, Virtual::value() const)}","nameSources":["symtab","dwarf","unwind"],"section":".text","size":12,"unsupported":0}
+{"addr":"0x201ba0","approxTokens":114,"blocks":1,"hardReasons":[],"name":"{virtual override thunk({virtual offset(0, -24)}, Virtual::value() const)}","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":12,"unsupported":0}
 
 == 0x201bac Virtual::~Virtual()
 -- decompile
@@ -564,7 +564,7 @@ fn Virtual::~Virtual() @ 0x201bac (size 1)
   blk0 @ 0x201bac:
     ret #0x0
 -- card
-{"addr":"0x201bac","approxTokens":102,"blocks":1,"hardReasons":[],"name":"Virtual::~Virtual()","nameSources":["symtab","dwarf","unwind"],"section":".text","size":1,"unsupported":0}
+{"addr":"0x201bac","approxTokens":102,"blocks":1,"hardReasons":[],"name":"Virtual::~Virtual()","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":1,"unsupported":0}
 
 == 0x201bae Virtual::~Virtual()
 -- decompile
@@ -580,7 +580,7 @@ fn Virtual::~Virtual() @ 0x201bae (size 1)
   blk0 @ 0x201bae:
     ret #0x0
 -- card
-{"addr":"0x201bae","approxTokens":102,"blocks":1,"hardReasons":[],"name":"Virtual::~Virtual()","nameSources":["symtab","dwarf","unwind"],"section":".text","size":1,"unsupported":0}
+{"addr":"0x201bae","approxTokens":102,"blocks":1,"hardReasons":[],"name":"Virtual::~Virtual()","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":1,"unsupported":0}
 
 == 0x201bb0 {virtual override thunk({virtual offset(0, -32)}, Virtual::~Virtual())}
 -- decompile
@@ -596,7 +596,7 @@ fn {virtual override thunk({virtual offset(0, -32)}, Virtual::~Virtual())} @ 0x2
   blk0 @ 0x201bb0:
     ret #0x0
 -- card
-{"addr":"0x201bb0","approxTokens":102,"blocks":1,"hardReasons":[],"name":"{virtual override thunk({virtual offset(0, -32)}, Virtual::~Virtual())}","nameSources":["symtab","dwarf","unwind"],"section":".text","size":1,"unsupported":0}
+{"addr":"0x201bb0","approxTokens":102,"blocks":1,"hardReasons":[],"name":"{virtual override thunk({virtual offset(0, -32)}, Virtual::~Virtual())}","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":1,"unsupported":0}
 
 == 0x201bc0 Virtual::~Virtual()
 -- decompile
@@ -614,7 +614,7 @@ fn Virtual::~Virtual() @ 0x201bc0 (size 10)
     call 0x201a5a()
     ret #0x0
 -- card
-{"addr":"0x201bc0","approxTokens":108,"blocks":1,"hardReasons":[],"name":"Virtual::~Virtual()","nameSources":["symtab","dwarf","unwind"],"section":".text","size":10,"unsupported":0}
+{"addr":"0x201bc0","approxTokens":108,"blocks":1,"hardReasons":[],"name":"Virtual::~Virtual()","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":10,"unsupported":0}
 
 == 0x201bd0 {virtual override thunk({virtual offset(0, -32)}, Virtual::~Virtual())}
 -- decompile
@@ -634,7 +634,7 @@ fn {virtual override thunk({virtual offset(0, -32)}, Virtual::~Virtual())} @ 0x2
     call 0x201bc0()
     ret #0x0
 -- card
-{"addr":"0x201bd0","approxTokens":114,"blocks":1,"hardReasons":[],"name":"{virtual override thunk({virtual offset(0, -32)}, Virtual::~Virtual())}","nameSources":["symtab","dwarf","unwind"],"section":".text","size":12,"unsupported":0}
+{"addr":"0x201bd0","approxTokens":114,"blocks":1,"hardReasons":[],"name":"{virtual override thunk({virtual offset(0, -32)}, Virtual::~Virtual())}","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":12,"unsupported":0}
 
 == 0x201be0 dispatch
 -- decompile
@@ -654,7 +654,7 @@ fn dispatch @ 0x201be0 (size 5)
     v2:rax, rdx, xmm0, xmm1 = call *load64(v1)
     ret v2
 -- card
-{"accesses":["object +0x0:uint64_t"],"addr":"0x201be0","approxTokens":108,"blocks":1,"hardReasons":[],"name":"dispatch","nameSources":["symtab","dwarf","unwind"],"section":".text","size":5,"unsupported":0}
+{"accesses":["object +0x0:uint64_t"],"addr":"0x201be0","approxTokens":108,"blocks":1,"hardReasons":[],"name":"dispatch","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":5,"unsupported":0}
 
 == 0x201be8 dispatch_multiple
 -- decompile
@@ -675,7 +675,7 @@ fn dispatch_multiple @ 0x201be8 (size 6)
     v2:rax, rdx, xmm0, xmm1 = call *load64((v1 + #0x18))(rdi)
     ret v2
 -- card
-{"accesses":["object +0x0:uint64_t"],"addr":"0x201be8","approxTokens":108,"blocks":1,"hardReasons":[],"name":"dispatch_multiple","nameSources":["symtab","dwarf","unwind"],"section":".text","size":6,"unsupported":0}
+{"accesses":["object +0x0:uint64_t"],"addr":"0x201be8","approxTokens":108,"blocks":1,"hardReasons":[],"name":"dispatch_multiple","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":6,"unsupported":0}
 
 == 0x201bf0 single
 -- decompile
@@ -711,7 +711,7 @@ fn single @ 0x201bf0 (size 63)
     rax, rdx, xmm0, xmm1 = call 0x201de0(exception)
     trap
 -- card
-{"addr":"0x201bf0","approxTokens":186,"blocks":3,"hardReasons":[],"name":"single","nameSources":["symtab","entry","dwarf","unwind"],"section":".text","size":63,"unsupported":0}
+{"addr":"0x201bf0","approxTokens":186,"blocks":3,"hardReasons":[],"name":"single","nameSources":["symtab","entry","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":63,"unsupported":0}
 
 == 0x201c30 multiple
 -- decompile
@@ -736,7 +736,7 @@ fn multiple @ 0x201c30 (size 46)
     v5:rax = call 0x201b08(v2)
     ret (((v5 & #0xffffffff) + (v3 & #0xffffffff)) & #0xffffffff)
 -- card
-{"addr":"0x201c30","approxTokens":198,"blocks":1,"hardReasons":[],"name":"multiple","nameSources":["symtab","dwarf","unwind"],"section":".text","size":46,"unsupported":0}
+{"addr":"0x201c30","approxTokens":198,"blocks":1,"hardReasons":[],"name":"multiple","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":46,"unsupported":0}
 
 == 0x201c60 virtual_base
 -- decompile
@@ -762,7 +762,7 @@ fn virtual_base @ 0x201c60 (size 40)
     v4:rax, rdx, xmm0, xmm1 = call 0x201be0(v2)
     ret v4
 -- card
-{"addr":"0x201c60","approxTokens":174,"blocks":1,"hardReasons":[],"name":"virtual_base","nameSources":["symtab","dwarf","unwind"],"section":".text","size":40,"unsupported":0}
+{"addr":"0x201c60","approxTokens":174,"blocks":1,"hardReasons":[],"name":"virtual_base","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":40,"unsupported":0}
 
 == 0x201c90 catch_one
 -- decompile
@@ -795,7 +795,7 @@ fn catch_one @ 0x201c90 (size 27)
     rax, rdx, xmm0, xmm1 = call 0x201e10()
     ret (v3 & #0xffffffff)
 -- card
-{"addr":"0x201c90","approxTokens":120,"blocks":3,"hardReasons":[],"name":"catch_one","nameSources":["symtab","dwarf","unwind"],"section":".text","size":27,"unsupported":0}
+{"addr":"0x201c90","approxTokens":120,"blocks":3,"hardReasons":[],"name":"catch_one","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":27,"unsupported":0}
 
 == 0x201cb0 catch_many
 -- decompile
@@ -878,7 +878,7 @@ fn catch_many @ 0x201cb0 (size 69)
     rax, rdx, xmm0, xmm1 = call 0x201e10()
     br 0x201cb8
 -- card
-{"addr":"0x201cb0","approxTokens":144,"blocks":8,"hardReasons":[],"name":"catch_many","nameSources":["symtab","dwarf","unwind"],"section":".text","size":69,"unsupported":0}
+{"addr":"0x201cb0","approxTokens":144,"blocks":8,"hardReasons":[],"name":"catch_many","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":69,"unsupported":0}
 
 == 0x201d00 catch_nested
 -- decompile
@@ -974,7 +974,7 @@ fn catch_nested @ 0x201d00 (size 92)
     rax, rdx, xmm0, xmm1 = call 0x201de0(v3)
     trap
 -- card
-{"addr":"0x201d00","approxTokens":144,"blocks":10,"hardReasons":[],"name":"catch_nested","nameSources":["symtab","dwarf","unwind"],"section":".text","size":92,"unsupported":0}
+{"addr":"0x201d00","approxTokens":144,"blocks":10,"hardReasons":[],"name":"catch_nested","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":92,"unsupported":0}
 
 == 0x201d60 catch_cleanup
 -- decompile
@@ -1030,7 +1030,7 @@ fn catch_cleanup @ 0x201d60 (size 82)
     v6 = #0xfffffffe
     br 0x201d8b
 -- card
-{"addr":"0x201d60","approxTokens":198,"blocks":4,"hardReasons":[],"name":"catch_cleanup","nameSources":["symtab","dwarf","unwind"],"section":".text","size":82,"unsupported":0}
+{"addr":"0x201d60","approxTokens":198,"blocks":4,"hardReasons":[],"name":"catch_cleanup","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":82,"unsupported":0}
 
 == 0x201db2 operator delete(void*)
 -- decompile
@@ -1046,7 +1046,7 @@ fn operator delete(void*) @ 0x201db2 (size 1)
   blk0 @ 0x201db2:
     ret #0x0
 -- card
-{"addr":"0x201db2","approxTokens":102,"blocks":1,"hardReasons":[],"name":"operator delete(void*)","nameSources":["symtab","dwarf","unwind"],"section":".text","size":1,"unsupported":0}
+{"addr":"0x201db2","approxTokens":102,"blocks":1,"hardReasons":[],"name":"operator delete(void*)","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":1,"unsupported":0}
 
 == 0x201dc0 Other::Other()
 -- decompile
@@ -1066,7 +1066,7 @@ fn Other::Other() @ 0x201dc0 (size 11)
     store64(#0x202f78, rdi)
     ret #0x0
 -- card
-{"accesses":["this +0x0:uint64_t"],"addr":"0x201dc0","approxTokens":114,"blocks":1,"hardReasons":[],"name":"Other::Other()","nameSources":["symtab","dwarf","unwind"],"section":".text","size":11,"unsupported":0}
+{"accesses":["this +0x0:uint64_t"],"addr":"0x201dc0","approxTokens":114,"blocks":1,"hardReasons":[],"name":"Other::Other()","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":11,"unsupported":0}
 
 == 0x201de0 _Unwind_Resume
 -- decompile
@@ -1085,7 +1085,7 @@ fn _Unwind_Resume @ 0x201de0 (size 16)
     rax, rdx, xmm0, xmm1 = call *load64(#0x204140)(rdi)
     trap
 -- card
-{"addr":"0x201de0","approxTokens":114,"blocks":1,"hardReasons":[],"name":"_Unwind_Resume","nameSources":["plt"],"section":".plt","size":16,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x201de0","approxTokens":114,"blocks":1,"hardReasons":[],"name":"_Unwind_Resume","nameSources":["plt"],"section":".plt","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":16,"sizeEstimated":true,"unsupported":0}
 
 == 0x201df0 imported_value(int)
 -- decompile
@@ -1104,7 +1104,7 @@ fn imported_value(int) @ 0x201df0 (size 16)
     v1:rax, rdx, xmm0, xmm1 = call *load64(#0x204148)
     ret v1
 -- card
-{"addr":"0x201df0","approxTokens":114,"blocks":1,"hardReasons":[],"name":"imported_value(int)","nameSources":["plt"],"section":".plt","size":16,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x201df0","approxTokens":114,"blocks":1,"hardReasons":[],"name":"imported_value(int)","nameSources":["plt"],"section":".plt","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":16,"sizeEstimated":true,"unsupported":0}
 
 == 0x201e00 __cxa_begin_catch
 -- decompile
@@ -1123,7 +1123,7 @@ fn __cxa_begin_catch @ 0x201e00 (size 16)
     v1:rax, rdx, xmm0, xmm1 = call *load64(#0x204150)(rdi)
     ret v1
 -- card
-{"addr":"0x201e00","approxTokens":114,"blocks":1,"hardReasons":[],"name":"__cxa_begin_catch","nameSources":["plt"],"section":".plt","size":16,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x201e00","approxTokens":114,"blocks":1,"hardReasons":[],"name":"__cxa_begin_catch","nameSources":["plt"],"section":".plt","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":16,"sizeEstimated":true,"unsupported":0}
 
 == 0x201e10 __cxa_end_catch
 -- decompile
@@ -1142,4 +1142,4 @@ fn __cxa_end_catch @ 0x201e10 (size 16)
     v1:rax, rdx, xmm0, xmm1 = call *load64(#0x204158)()
     ret #0x0
 -- card
-{"addr":"0x201e10","approxTokens":114,"blocks":1,"hardReasons":[],"name":"__cxa_end_catch","nameSources":["plt"],"section":".plt","size":16,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x201e10","approxTokens":114,"blocks":1,"hardReasons":[],"name":"__cxa_end_catch","nameSources":["plt"],"section":".plt","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":16,"sizeEstimated":true,"unsupported":0}

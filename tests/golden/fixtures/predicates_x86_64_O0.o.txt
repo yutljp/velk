@@ -1,0 +1,198 @@
+# predicates_x86_64_O0.o: elf x86_64 no entry, 8 functions, 0 lift failures, 0 unsupported, 0 gotos
+0x0 15 original symtab,unwind
+0x10 18 original64 symtab,unwind
+0x30 35 original_fixed symtab,unwind
+0x60 52 opaque_parity symtab,unwind
+0xa0 66 opaque_parity64 symtab,unwind
+0xf0 56 opaque_bits symtab,unwind
+0x130 65 opaque_fixed symtab,unwind
+0x180 52 variable_predicate symtab,unwind
+/* velk prelude */
+#include <stdint.h>
+/* end velk prelude */
+
+== 0x0 original
+-- decompile
+/* velk pseudo-C: original @ 0x0 */
+int32_t original(int32_t a0) {
+    return (uint32_t)a0 + 7;
+}
+-- signature
+int32_t (int32_t a0)
+-- references
+
+-- ir
+fn original @ 0x0 (size 15)
+  blk0 @ 0x0:
+    ret ((edi + #0x7) & #0xffffffff)
+-- card
+{"addr":"0x0","approxTokens":138,"blocks":1,"hardReasons":[],"name":"original","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":15,"unsupported":0}
+
+== 0x10 original64
+-- decompile
+/* velk pseudo-C: original64 @ 0x10 */
+int64_t original64(int64_t a0) {
+    return (int64_t)((uint64_t)a0 + 7);
+}
+-- signature
+int64_t (int64_t a0)
+-- references
+
+-- ir
+fn original64 @ 0x10 (size 18)
+  blk0 @ 0x10:
+    ret (rdi + #0x7)
+-- card
+{"addr":"0x10","approxTokens":138,"blocks":1,"hardReasons":[],"name":"original64","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":18,"unsupported":0}
+
+== 0x30 original_fixed
+-- decompile
+/* velk pseudo-C: original_fixed @ 0x30 */
+int32_t original_fixed(int32_t a0) {
+    int32_t v1 = a0;
+    if ((a0 & 0x1) == 0) {
+        return (uint32_t)v1 + 7;
+    }
+    int32_t v2 = (uint32_t)v1 + 2;
+    return (uint32_t)v2 + 7;
+}
+-- signature
+int32_t (int32_t a0)
+-- references
+
+-- ir
+fn original_fixed @ 0x30 (size 35)
+  blk0 @ 0x30:
+    v1 = edi
+    brif eq (edi & #0x1), #0x0 -> 0x4b
+  blk1 @ 0x42:
+    v1 = ((v1 + #0x2) & #0xffffffff)
+  blk2 @ 0x4b:
+    ret ((v1 + #0x7) & #0xffffffff)
+-- card
+{"addr":"0x30","approxTokens":180,"blocks":3,"hardReasons":[],"name":"original_fixed","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":35,"unsupported":0}
+
+== 0x60 opaque_parity
+-- decompile
+/* velk pseudo-C: opaque_parity @ 0x60 */
+int32_t opaque_parity(int32_t a0) {
+    return (uint32_t)a0 + 7;
+}
+-- signature
+int32_t (int32_t a0)
+-- references
+
+-- ir
+fn opaque_parity @ 0x60 (size 52)
+  blk0 @ 0x60:
+  blk1 @ 0x7b:
+    br 0x8f
+  blk2 @ 0x8f:
+    ret ((edi + #0x7) & #0xffffffff)
+-- card
+{"addr":"0x60","approxTokens":180,"blocks":3,"hardReasons":[],"name":"opaque_parity","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":1,"simplified":true},"size":52,"unsupported":0}
+
+== 0xa0 opaque_parity64
+-- decompile
+/* velk pseudo-C: opaque_parity64 @ 0xa0 */
+int64_t opaque_parity64(int64_t a0) {
+    return (int64_t)((uint64_t)a0 + 7);
+}
+-- signature
+int64_t (int64_t a0)
+-- references
+
+-- ir
+fn opaque_parity64 @ 0xa0 (size 66)
+  blk0 @ 0xa0:
+  blk1 @ 0xc2:
+    br 0xdc
+  blk2 @ 0xdc:
+    ret (rdi + #0x7)
+-- card
+{"addr":"0xa0","approxTokens":180,"blocks":3,"hardReasons":[],"name":"opaque_parity64","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":1,"simplified":true},"size":66,"unsupported":0}
+
+== 0xf0 opaque_bits
+-- decompile
+/* velk pseudo-C: opaque_bits @ 0xf0 */
+int32_t opaque_bits(int32_t a0) {
+    if ((a0 & ~a0) != 0) {
+        return (uint32_t)a0 - 19;
+    }
+    return (uint32_t)a0 + 7;
+}
+-- signature
+int32_t (int32_t a0)
+-- references
+
+-- ir
+fn opaque_bits @ 0xf0 (size 56)
+  blk0 @ 0xf0:
+    v1 = edi
+    brif ne (edi & ((edi ^ #0xffffffffffffffff) & #0xffffffff)), #0x0 -> 0x11a
+  blk1 @ 0x10f:
+    v2 = ((v1 + #0x7) & #0xffffffff)
+    br 0x123
+  blk2 @ 0x11a:
+    v2 = ((v1 - #0x13) & #0xffffffff)
+  blk3 @ 0x123:
+    ret v2
+-- card
+{"addr":"0xf0","approxTokens":192,"blocks":4,"hardReasons":[],"name":"opaque_bits","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":56,"unsupported":0}
+
+== 0x130 opaque_fixed
+-- decompile
+/* velk pseudo-C: opaque_fixed @ 0x130 */
+int32_t opaque_fixed(int32_t a0) {
+    int32_t v1 = a0;
+    if ((a0 & 0x1) != 0) {
+        v1 = (uint32_t)v1 + 2;
+    }
+    return (uint32_t)v1 + 7;
+}
+-- signature
+int32_t (int32_t a0)
+-- references
+
+-- ir
+fn opaque_fixed @ 0x130 (size 65)
+  blk0 @ 0x130:
+    v1 = edi
+    brif eq (edi & #0x1), #0x0 -> 0x152
+  blk1 @ 0x149:
+    v1 = ((v1 + #0x2) & #0xffffffff)
+  blk2 @ 0x152:
+  blk3 @ 0x158:
+    br 0x16c
+  blk4 @ 0x16c:
+    ret ((v1 + #0x7) & #0xffffffff)
+-- card
+{"addr":"0x130","approxTokens":198,"blocks":5,"hardReasons":[],"name":"opaque_fixed","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":65,"unsupported":0}
+
+== 0x180 variable_predicate
+-- decompile
+/* velk pseudo-C: variable_predicate @ 0x180 */
+int32_t variable_predicate(int32_t a0) {
+    if ((a0 * ((uint32_t)a0 + 2) & 0x1) != 0) {
+        return (uint32_t)a0 - 19;
+    }
+    return (uint32_t)a0 + 7;
+}
+-- signature
+int32_t (int32_t a0)
+-- references
+
+-- ir
+fn variable_predicate @ 0x180 (size 52)
+  blk0 @ 0x180:
+    v1 = edi
+    brif ne ((edi * (edi + #0x2)) & #0x1), #0x0 -> 0x1a6
+  blk1 @ 0x19b:
+    v2 = ((v1 + #0x7) & #0xffffffff)
+    br 0x1af
+  blk2 @ 0x1a6:
+    v2 = ((v1 - #0x13) & #0xffffffff)
+  blk3 @ 0x1af:
+    ret v2
+-- card
+{"addr":"0x180","approxTokens":180,"blocks":4,"hardReasons":[],"name":"variable_predicate","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":52,"unsupported":0}

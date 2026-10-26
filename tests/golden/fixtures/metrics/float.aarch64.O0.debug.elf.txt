@@ -58,7 +58,7 @@ fn average @ 0x2101b4 (size 160)
   blk9 @ 0x210248:
     ret load64((sp + #0xffffffffffffffd8))
 -- card
-{"addr":"0x2101b4","approxTokens":240,"blocks":10,"hardReasons":[],"name":"average","nameSources":["symtab","dwarf","unwind"],"section":".text","size":160,"unsupported":0}
+{"addr":"0x2101b4","approxTokens":240,"blocks":10,"hardReasons":[],"name":"average","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":160,"unsupported":0}
 
 == 0x210254 lerp
 -- decompile
@@ -75,7 +75,7 @@ fn lerp @ 0x210254 (size 48)
   blk0 @ 0x210254:
     ret fma.s(fsub.s(s1, s0), s2, s0)
 -- card
-{"addr":"0x210254","approxTokens":168,"blocks":1,"hardReasons":[],"name":"lerp","nameSources":["symtab","dwarf","unwind"],"section":".text","size":48,"unsupported":0}
+{"addr":"0x210254","approxTokens":168,"blocks":1,"hardReasons":[],"name":"lerp","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":48,"unsupported":0}
 
 == 0x210284 truncate_to_int
 -- decompile
@@ -92,7 +92,7 @@ fn truncate_to_int @ 0x210284 (size 24)
   blk0 @ 0x210284:
     ret f.dtos32.sat(d0)
 -- card
-{"addr":"0x210284","approxTokens":132,"blocks":1,"hardReasons":[],"name":"truncate_to_int","nameSources":["symtab","dwarf","unwind"],"section":".text","size":24,"unsupported":0}
+{"addr":"0x210284","approxTokens":132,"blocks":1,"hardReasons":[],"name":"truncate_to_int","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":24,"unsupported":0}
 
 == 0x21029c widen
 -- decompile
@@ -109,7 +109,7 @@ fn widen @ 0x21029c (size 32)
   blk0 @ 0x21029c:
     ret fmul.d(f.stof.d((d0 & #0xffffffff)), #0x4000000000000000)
 -- card
-{"addr":"0x21029c","approxTokens":144,"blocks":1,"hardReasons":[],"name":"widen","nameSources":["symtab","dwarf","unwind"],"section":".text","size":32,"unsupported":0}
+{"addr":"0x21029c","approxTokens":144,"blocks":1,"hardReasons":[],"name":"widen","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":32,"unsupported":0}
 
 == 0x2102bc compare_doubles
 -- decompile
@@ -139,4 +139,4 @@ fn compare_doubles @ 0x2102bc (size 84)
   blk4 @ 0x210304:
     ret v2
 -- card
-{"addr":"0x2102bc","approxTokens":222,"blocks":5,"hardReasons":[],"name":"compare_doubles","nameSources":["symtab","dwarf","unwind"],"section":".text","size":84,"unsupported":0}
+{"addr":"0x2102bc","approxTokens":222,"blocks":5,"hardReasons":[],"name":"compare_doubles","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":84,"unsupported":0}

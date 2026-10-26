@@ -36,7 +36,7 @@ fn _signed_return @ 0x0 (size 12)
   blk0 @ 0x0:
     ret (x0 + #0x7)
 -- card
-{"addr":"0x0","approxTokens":114,"blocks":1,"hardReasons":[],"name":"_signed_return","nameSources":["symtab","dynamic"],"section":"__text","size":12,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x0","approxTokens":114,"blocks":1,"hardReasons":[],"name":"_signed_return","nameSources":["symtab","dynamic"],"section":"__text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":12,"sizeEstimated":true,"unsupported":0}
 
 == 0xc _signed_return_a
 -- decompile
@@ -53,7 +53,7 @@ fn _signed_return_a @ 0xc (size 12)
   blk0 @ 0xc:
     ret (x0 + #0x9)
 -- card
-{"addr":"0xc","approxTokens":114,"blocks":1,"hardReasons":[],"name":"_signed_return_a","nameSources":["symtab","dynamic"],"section":"__text","size":12,"sizeEstimated":true,"unsupported":0}
+{"addr":"0xc","approxTokens":114,"blocks":1,"hardReasons":[],"name":"_signed_return_a","nameSources":["symtab","dynamic"],"section":"__text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":12,"sizeEstimated":true,"unsupported":0}
 
 == 0x18 _authenticated_return
 -- decompile
@@ -70,7 +70,7 @@ fn _authenticated_return @ 0x18 (size 12)
   blk0 @ 0x18:
     ret x0
 -- card
-{"addr":"0x18","approxTokens":114,"blocks":1,"hardReasons":[],"name":"_authenticated_return","nameSources":["symtab","dynamic"],"section":"__text","size":12,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x18","approxTokens":114,"blocks":1,"hardReasons":[],"name":"_authenticated_return","nameSources":["symtab","dynamic"],"section":"__text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":12,"sizeEstimated":true,"unsupported":0}
 
 == 0x24 _authenticated_return_a
 -- decompile
@@ -87,7 +87,7 @@ fn _authenticated_return_a @ 0x24 (size 12)
   blk0 @ 0x24:
     ret x0
 -- card
-{"addr":"0x24","approxTokens":114,"blocks":1,"hardReasons":[],"name":"_authenticated_return_a","nameSources":["symtab","dynamic"],"section":"__text","size":12,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x24","approxTokens":114,"blocks":1,"hardReasons":[],"name":"_authenticated_return_a","nameSources":["symtab","dynamic"],"section":"__text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":12,"sizeEstimated":true,"unsupported":0}
 
 == 0x30 _pointer_identity
 -- decompile
@@ -104,7 +104,7 @@ fn _pointer_identity @ 0x30 (size 76)
   blk0 @ 0x30:
     ret x0
 -- card
-{"addr":"0x30","approxTokens":210,"blocks":1,"hardReasons":[],"name":"_pointer_identity","nameSources":["symtab","dynamic"],"section":"__text","size":76,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x30","approxTokens":210,"blocks":1,"hardReasons":[],"name":"_pointer_identity","nameSources":["symtab","dynamic"],"section":"__text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":76,"sizeEstimated":true,"unsupported":0}
 
 == 0x7c _load_a
 -- decompile
@@ -121,7 +121,7 @@ fn _load_a @ 0x7c (size 8)
   blk0 @ 0x7c:
     ret load64((x0 + #0x8))
 -- card
-{"addr":"0x7c","approxTokens":108,"blocks":1,"hardReasons":[],"name":"_load_a","nameSources":["symtab","dynamic"],"section":"__text","size":8,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x7c","approxTokens":108,"blocks":1,"hardReasons":[],"name":"_load_a","nameSources":["symtab","dynamic"],"section":"__text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":8,"sizeEstimated":true,"unsupported":0}
 
 == 0x84 _load_b
 -- decompile
@@ -138,7 +138,7 @@ fn _load_b @ 0x84 (size 8)
   blk0 @ 0x84:
     ret load64((x0 + #0xfffffffffffffff8))
 -- card
-{"addr":"0x84","approxTokens":108,"blocks":1,"hardReasons":[],"name":"_load_b","nameSources":["symtab","dynamic"],"section":"__text","size":8,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x84","approxTokens":108,"blocks":1,"hardReasons":[],"name":"_load_b","nameSources":["symtab","dynamic"],"section":"__text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":8,"sizeEstimated":true,"unsupported":0}
 
 == 0x8c _load_writeback
 -- decompile
@@ -155,7 +155,7 @@ fn _load_writeback @ 0x8c (size 12)
   blk0 @ 0x8c:
     ret ((x0 + #0x8) + load64((x0 + #0x8)))
 -- card
-{"addr":"0x8c","approxTokens":114,"blocks":1,"hardReasons":[],"name":"_load_writeback","nameSources":["symtab","dynamic"],"section":"__text","size":12,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x8c","approxTokens":114,"blocks":1,"hardReasons":[],"name":"_load_writeback","nameSources":["symtab","dynamic"],"section":"__text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":12,"sizeEstimated":true,"unsupported":0}
 
 == 0x98 _load_sp
 -- decompile
@@ -172,7 +172,7 @@ fn _load_sp @ 0x98 (size 20)
   blk0 @ 0x98:
     ret x0
 -- card
-{"addr":"0x98","approxTokens":126,"blocks":1,"hardReasons":[],"name":"_load_sp","nameSources":["symtab","dynamic"],"section":"__text","size":20,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x98","approxTokens":126,"blocks":1,"hardReasons":[],"name":"_load_sp","nameSources":["symtab","dynamic"],"section":"__text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":20,"sizeEstimated":true,"unsupported":0}
 
 == 0xac _branch_a
 -- decompile
@@ -190,7 +190,7 @@ fn _branch_a @ 0xac (size 4)
     v1:x0, x1, d0, d1 = call *x0
     ret v1
 -- card
-{"addr":"0xac","approxTokens":102,"blocks":1,"hardReasons":[],"name":"_branch_a","nameSources":["symtab","dynamic"],"section":"__text","size":4,"sizeEstimated":true,"unsupported":0}
+{"addr":"0xac","approxTokens":102,"blocks":1,"hardReasons":[],"name":"_branch_a","nameSources":["symtab","dynamic"],"section":"__text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":4,"sizeEstimated":true,"unsupported":0}
 
 == 0xb0 _branch_b
 -- decompile
@@ -208,7 +208,7 @@ fn _branch_b @ 0xb0 (size 4)
     v1:x0, x1, d0, d1 = call *x0
     ret v1
 -- card
-{"addr":"0xb0","approxTokens":102,"blocks":1,"hardReasons":[],"name":"_branch_b","nameSources":["symtab","dynamic"],"section":"__text","size":4,"sizeEstimated":true,"unsupported":0}
+{"addr":"0xb0","approxTokens":102,"blocks":1,"hardReasons":[],"name":"_branch_b","nameSources":["symtab","dynamic"],"section":"__text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":4,"sizeEstimated":true,"unsupported":0}
 
 == 0xb4 _branch_az
 -- decompile
@@ -226,7 +226,7 @@ fn _branch_az @ 0xb4 (size 4)
     v1:x0, x1, d0, d1 = call *x0
     ret v1
 -- card
-{"addr":"0xb4","approxTokens":102,"blocks":1,"hardReasons":[],"name":"_branch_az","nameSources":["symtab","dynamic"],"section":"__text","size":4,"sizeEstimated":true,"unsupported":0}
+{"addr":"0xb4","approxTokens":102,"blocks":1,"hardReasons":[],"name":"_branch_az","nameSources":["symtab","dynamic"],"section":"__text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":4,"sizeEstimated":true,"unsupported":0}
 
 == 0xb8 _branch_bz
 -- decompile
@@ -244,7 +244,7 @@ fn _branch_bz @ 0xb8 (size 4)
     v1:x0, x1, d0, d1 = call *x0
     ret v1
 -- card
-{"addr":"0xb8","approxTokens":102,"blocks":1,"hardReasons":[],"name":"_branch_bz","nameSources":["symtab","dynamic"],"section":"__text","size":4,"sizeEstimated":true,"unsupported":0}
+{"addr":"0xb8","approxTokens":102,"blocks":1,"hardReasons":[],"name":"_branch_bz","nameSources":["symtab","dynamic"],"section":"__text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":4,"sizeEstimated":true,"unsupported":0}
 
 == 0xbc _invoke_a
 -- decompile
@@ -268,7 +268,7 @@ fn _invoke_a @ 0xbc (size 16)
     v1:x0, x1, d0, d1 = call *x0
     ret v1
 -- card
-{"addr":"0xbc","approxTokens":120,"blocks":1,"hardReasons":[],"name":"_invoke_a","nameSources":["symtab","dynamic"],"section":"__text","size":16,"sizeEstimated":true,"unsupported":0}
+{"addr":"0xbc","approxTokens":120,"blocks":1,"hardReasons":[],"name":"_invoke_a","nameSources":["symtab","dynamic"],"section":"__text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":16,"sizeEstimated":true,"unsupported":0}
 
 == 0xcc _invoke_b
 -- decompile
@@ -292,7 +292,7 @@ fn _invoke_b @ 0xcc (size 16)
     v1:x0, x1, d0, d1 = call *x0
     ret v1
 -- card
-{"addr":"0xcc","approxTokens":120,"blocks":1,"hardReasons":[],"name":"_invoke_b","nameSources":["symtab","dynamic"],"section":"__text","size":16,"sizeEstimated":true,"unsupported":0}
+{"addr":"0xcc","approxTokens":120,"blocks":1,"hardReasons":[],"name":"_invoke_b","nameSources":["symtab","dynamic"],"section":"__text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":16,"sizeEstimated":true,"unsupported":0}
 
 == 0xdc _invoke_az
 -- decompile
@@ -316,7 +316,7 @@ fn _invoke_az @ 0xdc (size 16)
     v1:x0, x1, d0, d1 = call *x0
     ret v1
 -- card
-{"addr":"0xdc","approxTokens":120,"blocks":1,"hardReasons":[],"name":"_invoke_az","nameSources":["symtab","dynamic"],"section":"__text","size":16,"sizeEstimated":true,"unsupported":0}
+{"addr":"0xdc","approxTokens":120,"blocks":1,"hardReasons":[],"name":"_invoke_az","nameSources":["symtab","dynamic"],"section":"__text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":16,"sizeEstimated":true,"unsupported":0}
 
 == 0xec _invoke_bz
 -- decompile
@@ -340,7 +340,7 @@ fn _invoke_bz @ 0xec (size 16)
     v1:x0, x1, d0, d1 = call *x0
     ret v1
 -- card
-{"addr":"0xec","approxTokens":120,"blocks":1,"hardReasons":[],"name":"_invoke_bz","nameSources":["symtab","dynamic"],"section":"__text","size":16,"sizeEstimated":true,"unsupported":0}
+{"addr":"0xec","approxTokens":120,"blocks":1,"hardReasons":[],"name":"_invoke_bz","nameSources":["symtab","dynamic"],"section":"__text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":16,"sizeEstimated":true,"unsupported":0}
 
 == 0xfc _pointer_hints
 -- decompile
@@ -357,4 +357,4 @@ fn _pointer_hints @ 0xfc (size 40)
   blk0 @ 0xfc:
     ret x0
 -- card
-{"addr":"0xfc","approxTokens":156,"blocks":1,"hardReasons":[],"name":"_pointer_hints","nameSources":["symtab","dynamic"],"section":"__text","size":40,"sizeEstimated":true,"unsupported":0}
+{"addr":"0xfc","approxTokens":156,"blocks":1,"hardReasons":[],"name":"_pointer_hints","nameSources":["symtab","dynamic"],"section":"__text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":40,"sizeEstimated":true,"unsupported":0}

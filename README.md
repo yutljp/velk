@@ -131,6 +131,13 @@ The JavaScript API and MCP provide `b.search(pattern, options)`,
 See [memory queries](docs/MEMORY.md) for encodings, bounds, types and exact
 constant signatures.
 
+Constant control-flow predicates are removed only when integer identities or tracked
+constant values prove their result for every input. Dispatch loops whose incoming
+states are all constants can be replaced with direct branches. Unknown transitions
+keep the dispatcher. Function cards and JavaScript/MCP function summaries include
+`simplification`, with `simplified`, `predicatesRemoved`, and
+`dispatcherStatesRemoved`. See [control-flow simplification](docs/CONTROL_FLOW.md).
+
 ## Documentation
 
 - [Scripting API](src/script/api/index.md)

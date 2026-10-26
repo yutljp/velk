@@ -23,7 +23,7 @@ fn tail_one @ 0x2011a0 (size 22)
   blk0 @ 0x2011a0:
     ret (((edi * #0x3) + #0x1) & #0xffffffff)
 -- card
-{"addr":"0x2011a0","approxTokens":150,"blocks":1,"hardReasons":[],"name":"tail_one","nameSources":["symtab","dwarf","unwind"],"section":".text","size":22,"unsupported":0}
+{"addr":"0x2011a0","approxTokens":150,"blocks":1,"hardReasons":[],"name":"tail_one","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":22,"unsupported":0}
 
 == 0x2011c0 tail_two
 -- decompile
@@ -41,7 +41,7 @@ fn tail_two @ 0x2011c0 (size 28)
     v3:rax = call 0x2011a0((((rdi & #0xffffffff) + #0x2) & #0xffffffff))
     ret v3
 -- card
-{"addr":"0x2011c0","approxTokens":156,"blocks":1,"hardReasons":[],"name":"tail_two","nameSources":["symtab","dwarf","unwind"],"section":".text","size":28,"unsupported":0}
+{"addr":"0x2011c0","approxTokens":156,"blocks":1,"hardReasons":[],"name":"tail_two","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":28,"unsupported":0}
 
 == 0x2011e0 tail_three
 -- decompile
@@ -58,4 +58,4 @@ fn tail_three @ 0x2011e0 (size 21)
   blk0 @ 0x2011e0:
     ret ((edi - #0x7) & #0xffffffff)
 -- card
-{"addr":"0x2011e0","approxTokens":150,"blocks":1,"hardReasons":[],"name":"tail_three","nameSources":["symtab","dwarf","unwind"],"section":".text","size":21,"unsupported":0}
+{"addr":"0x2011e0","approxTokens":150,"blocks":1,"hardReasons":[],"name":"tail_three","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":21,"unsupported":0}

@@ -33,7 +33,7 @@ fn -[Counter add:with:] @ 0x1000008c0 (size 40)
   blk0 @ 0x1000008c0:
     ret (x2 + x3)
 -- card
-{"addr":"0x1000008c0","approxTokens":156,"blocks":1,"hardReasons":[],"name":"-[Counter add:with:]","nameSources":["function-starts","objc"],"section":"__text","size":40,"unsupported":0}
+{"addr":"0x1000008c0","approxTokens":156,"blocks":1,"hardReasons":[],"name":"-[Counter add:with:]","nameSources":["function-starts","objc"],"section":"__text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":40,"unsupported":0}
 
 == 0x1000008e8 +[Counter answer]
 -- decompile
@@ -50,7 +50,7 @@ fn +[Counter answer] @ 0x1000008e8 (size 24)
   blk0 @ 0x1000008e8:
     ret #0x2a
 -- card
-{"addr":"0x1000008e8","approxTokens":132,"blocks":1,"hardReasons":[],"name":"+[Counter answer]","nameSources":["function-starts","objc"],"section":"__text","size":24,"unsupported":0}
+{"addr":"0x1000008e8","approxTokens":132,"blocks":1,"hardReasons":[],"name":"+[Counter answer]","nameSources":["function-starts","objc"],"section":"__text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":24,"unsupported":0}
 
 == 0x100000900 -[Counter value]
 -- decompile
@@ -67,7 +67,7 @@ fn -[Counter value] @ 0x100000900 (size 28)
   blk0 @ 0x100000900:
     ret load64(x0)
 -- card
-{"addr":"0x100000900","approxTokens":138,"blocks":1,"hardReasons":[],"name":"-[Counter value]","nameSources":["function-starts","objc"],"section":"__text","size":28,"unsupported":0}
+{"addr":"0x100000900","approxTokens":138,"blocks":1,"hardReasons":[],"name":"-[Counter value]","nameSources":["function-starts","objc"],"section":"__text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":28,"unsupported":0}
 
 == 0x10000091c -[Counter setValue:]
 -- decompile
@@ -88,7 +88,7 @@ fn -[Counter setValue:] @ 0x10000091c (size 36)
     store64(load64((sp + #0xffffffffffffffe8)), load64((sp + #0xfffffffffffffff8)))
     ret x0
 -- card
-{"addr":"0x10000091c","approxTokens":150,"blocks":1,"hardReasons":[],"name":"-[Counter setValue:]","nameSources":["function-starts","objc"],"section":"__text","size":36,"unsupported":0}
+{"addr":"0x10000091c","approxTokens":150,"blocks":1,"hardReasons":[],"name":"-[Counter setValue:]","nameSources":["function-starts","objc"],"section":"__text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":36,"unsupported":0}
 
 == 0x100000940 -[Counter twice:]
 -- decompile
@@ -105,7 +105,7 @@ fn -[Counter twice:] @ 0x100000940 (size 32)
   blk0 @ 0x100000940:
     ret (x2 << #0x1)
 -- card
-{"addr":"0x100000940","approxTokens":144,"blocks":1,"hardReasons":[],"name":"-[Counter twice:]","nameSources":["function-starts","objc"],"section":"__text","size":32,"unsupported":0}
+{"addr":"0x100000940","approxTokens":144,"blocks":1,"hardReasons":[],"name":"-[Counter twice:]","nameSources":["function-starts","objc"],"section":"__text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":32,"unsupported":0}
 
 == 0x100000960 -
 -- decompile
@@ -133,7 +133,7 @@ fn <unnamed> @ 0x100000960 (size 68)
     v1:x0, x1, d0, d1 = call *load64(#0x100004060)(v1, v4, x1, x2)
     ret v1
 -- card
-{"addr":"0x100000960","approxTokens":198,"blocks":1,"hardReasons":[],"name":null,"nameHints":["add_with"],"nameSources":["function-starts"],"section":"__text","size":68,"strings":["add:with:"],"unsupported":0}
+{"addr":"0x100000960","approxTokens":198,"blocks":1,"hardReasons":[],"name":null,"nameHints":["add_with"],"nameSources":["function-starts"],"section":"__text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":68,"strings":["add:with:"],"unsupported":0}
 
 == 0x1000009a4 -
 -- decompile
@@ -153,7 +153,7 @@ fn <unnamed> @ 0x1000009a4 (size 56)
     v1:x0 = call 0x1000009dc(#0x100004020, x0)
     ret v1
 -- card
-{"accesses":["a0 +0x10:uint64_t"],"addr":"0x1000009a4","approxTokens":180,"blocks":1,"hardReasons":[],"name":null,"nameSources":["function-starts"],"section":"__text","size":56,"unsupported":0}
+{"accesses":["a0 +0x10:uint64_t"],"addr":"0x1000009a4","approxTokens":180,"blocks":1,"hardReasons":[],"name":null,"nameSources":["function-starts"],"section":"__text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":56,"unsupported":0}
 
 == 0x1000009dc -
 -- decompile
@@ -170,7 +170,7 @@ fn <unnamed> @ 0x1000009dc (size 36)
   blk0 @ 0x1000009dc:
     ret (x1 + #0x3)
 -- card
-{"addr":"0x1000009dc","approxTokens":150,"blocks":1,"hardReasons":[],"name":null,"nameSources":["function-starts"],"section":"__text","size":36,"unsupported":0}
+{"addr":"0x1000009dc","approxTokens":150,"blocks":1,"hardReasons":[],"name":null,"nameSources":["function-starts"],"section":"__text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":36,"unsupported":0}
 
 == 0x100000a00 -
 -- decompile
@@ -187,4 +187,4 @@ fn <unnamed> @ 0x100000a00 (size 20)
   blk0 @ 0x100000a00:
     ret #0x0
 -- card
-{"addr":"0x100000a00","approxTokens":126,"blocks":1,"hardReasons":["name-unknown"],"name":null,"nameSources":["entry","function-starts"],"section":"__text","size":20,"unsupported":0}
+{"addr":"0x100000a00","approxTokens":126,"blocks":1,"hardReasons":["name-unknown"],"name":null,"nameSources":["entry","function-starts"],"section":"__text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":20,"unsupported":0}

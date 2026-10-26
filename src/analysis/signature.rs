@@ -325,8 +325,7 @@ pub fn recover_with(
     // really leaves there: a read of one is no argument either.
     let call_writes = |stmt: &Stmt| match stmt {
         Stmt::Call { convention, .. } => {
-            let mut written: Vec<_> = crate::ir::visit::statement_registers(stmt)
-                .0
+            let mut written: Vec<_> = crate::ir::visit::statement_writes(stmt)
                 .into_iter()
                 .collect();
             written.extend(convention.clobbered().iter().copied().filter(|register| {
@@ -636,7 +635,7 @@ pub fn recover_with(
         match stmt {
             Stmt::Assign { dest, .. } => *definitions.entry(dest.index).or_default() += 1,
             Stmt::Call { .. } | Stmt::Machine { .. } => {
-                for register in crate::ir::visit::statement_registers(stmt).0 {
+                for register in crate::ir::visit::statement_writes(stmt) {
                     *definitions.entry(register).or_default() += 2;
                 }
             }
@@ -1142,11 +1141,10 @@ impl Origins {
             )
         }) {
             if crate::passes::memory::frame_addresses_escape(blocks, self.sp)
-                || blocks.iter().flat_map(|block| &block.stmts).any(|stmt| {
-                    crate::ir::visit::statement_registers(stmt)
-                        .0
-                        .contains(&self.sp)
-                })
+                || blocks
+                    .iter()
+                    .flat_map(|block| &block.stmts)
+                    .any(|stmt| crate::ir::visit::statement_writes(stmt).contains(&self.sp))
             {
                 found.1.clear();
             } else {
@@ -1227,7 +1225,7 @@ impl Origins {
                         origin.get(&source).map(|source| (dest.index, *source))
                     })
                     .collect();
-                for register in crate::ir::visit::statement_registers(stmt).0 {
+                for register in crate::ir::visit::statement_writes(stmt) {
                     origin.remove(&register);
                 }
                 origin.extend(preserved);

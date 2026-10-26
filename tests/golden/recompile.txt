@@ -103,6 +103,14 @@
 # cpp_virtual_a64_stripped.elf: 18 functions, 7 qualify, 7 compile, 0 do not, 7 compared (84 runs), 0 differ
 # cpp_virtual_x64.elf: 18 functions, 2 qualify, 2 compile, 0 do not, 2 compared (24 runs), 0 differ
 # cpp_virtual_x64_stripped.elf: 18 functions, 2 qualify, 2 compile, 0 do not, 2 compared (24 runs), 0 differ
+# flattened_aarch64_O0.o: 7 functions, 7 qualify, 7 compile, 0 do not, 7 compared (84 runs), 0 differ
+# flattened_aarch64_O2.o: 7 functions, 7 qualify, 7 compile, 0 do not, 7 compared (84 runs), 0 differ
+# flattened_stores_aarch64_O0.o: 7 functions, 7 qualify, 7 compile, 0 do not, 7 compared (84 runs), 0 differ
+# flattened_stores_aarch64_O2.o: 7 functions, 7 qualify, 7 compile, 0 do not, 7 compared (84 runs), 0 differ
+# flattened_stores_x86_64_O0.o: 7 functions, 7 qualify, 7 compile, 0 do not, 7 compared (84 runs), 0 differ
+# flattened_stores_x86_64_O2.o: 7 functions, 7 qualify, 7 compile, 0 do not, 7 compared (84 runs), 0 differ
+# flattened_x86_64_O0.o: 7 functions, 7 qualify, 7 compile, 0 do not, 7 compared (84 runs), 0 differ
+# flattened_x86_64_O2.o: 7 functions, 7 qualify, 7 compile, 0 do not, 7 compared (84 runs), 0 differ
 # go_probe: 1275 functions, 15 qualify, 15 compile, 0 do not, 15 compared (180 runs), 0 differ
 # go_probe_arm64: 1271 functions, 11 qualify, 11 compile, 0 do not, 11 compared (132 runs), 0 differ
 # go_stripped: 1273 functions, 15 qualify, 15 compile, 0 do not, 15 compared (180 runs), 0 differ
@@ -308,6 +316,10 @@
 # objc_x86_64_O2_stripped: 8 functions, 5 qualify, 5 compile, 0 do not, 5 compared (60 runs), 0 differ
 # pe64.exe: 10 functions, 8 qualify, 8 compile, 0 do not, 8 compared (96 runs), 0 differ
 # pe64.obj: 10 functions, 8 qualify, 8 compile, 0 do not, 8 compared (96 runs), 0 differ
+# predicates_aarch64_O0.o: 8 functions, 8 qualify, 8 compile, 0 do not, 8 compared (96 runs), 0 differ
+# predicates_aarch64_O2.o: 8 functions, 8 qualify, 8 compile, 0 do not, 8 compared (96 runs), 0 differ
+# predicates_x86_64_O0.o: 8 functions, 8 qualify, 8 compile, 0 do not, 8 compared (96 runs), 0 differ
+# predicates_x86_64_O2.o: 8 functions, 8 qualify, 8 compile, 0 do not, 8 compared (96 runs), 0 differ
 # rust_demo: 545 functions, 1 qualify, 1 compile, 0 do not, 1 compared (12 runs), 0 differ
 # rust_demo_arm64: 670 functions, 23 qualify, 23 compile, 0 do not, 23 compared (276 runs), 0 differ
 # rust_probe: 545 functions, 1 qualify, 1 compile, 0 do not, 1 compared (12 runs), 0 differ

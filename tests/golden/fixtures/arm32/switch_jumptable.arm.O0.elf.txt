@@ -74,4 +74,4 @@ fn d7 @ 0x20104 (size 932)
   blk4 @ 0x2043c:
     ret load32(#0x304a8)
 -- card
-{"addr":"0x20104","approxTokens":240,"blocks":5,"hardReasons":[],"name":"d7","nameSources":["symtab","dwarf"],"section":".text","size":932,"unsupported":1}
+{"addr":"0x20104","approxTokens":240,"blocks":5,"hardReasons":[],"name":"d7","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":932,"unsupported":1}

@@ -51,7 +51,7 @@ fn sum_while @ 0x2011c (size 58)
   blk6 @ 0x20150:
     ret load32((sp + #0xfffffffffffffff8))
 -- card
-{"addr":"0x2011c","approxTokens":240,"blocks":7,"hardReasons":[],"name":"sum_while","nameSources":["symtab","dwarf"],"section":".text","size":58,"unsupported":0}
+{"addr":"0x2011c","approxTokens":240,"blocks":7,"hardReasons":[],"name":"sum_while","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":58,"unsupported":0}
 
 == 0x20158 count_down
 -- decompile
@@ -96,7 +96,7 @@ fn count_down @ 0x20158 (size 50)
   blk5 @ 0x20184:
     ret load32((sp + #0xfffffffffffffff8))
 -- card
-{"addr":"0x20158","approxTokens":234,"blocks":6,"hardReasons":[],"name":"count_down","nameSources":["symtab","dwarf"],"section":".text","size":50,"unsupported":0}
+{"addr":"0x20158","approxTokens":234,"blocks":6,"hardReasons":[],"name":"count_down","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":50,"unsupported":0}
 
 == 0x2018c sum_skip_odd
 -- decompile
@@ -148,7 +148,7 @@ fn sum_skip_odd @ 0x2018c (size 70)
   blk9 @ 0x201cc:
     ret load32((sp + #0xfffffffffffffff8))
 -- card
-{"addr":"0x2018c","approxTokens":240,"blocks":10,"hardReasons":[],"name":"sum_skip_odd","nameSources":["symtab","dwarf"],"section":".text","size":70,"unsupported":0}
+{"addr":"0x2018c","approxTokens":240,"blocks":10,"hardReasons":[],"name":"sum_skip_odd","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":70,"unsupported":0}
 
 == 0x201d4 find_first
 -- decompile
@@ -198,4 +198,4 @@ fn find_first @ 0x201d4 (size 70)
   blk11 @ 0x20214:
     ret load32((sp + #0xfffffffffffffffc))
 -- card
-{"addr":"0x201d4","approxTokens":240,"blocks":12,"hardReasons":[],"name":"find_first","nameSources":["symtab","dwarf"],"section":".text","size":70,"unsupported":0}
+{"addr":"0x201d4","approxTokens":240,"blocks":12,"hardReasons":[],"name":"find_first","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":70,"unsupported":0}

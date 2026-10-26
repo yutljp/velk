@@ -193,4 +193,4 @@ fn d7 @ 0x180001000 (size 527)
     store32(v6, #0x180003000)
     ret load32(#0x180003000)
 -- card
-{"addr":"0x180001000","approxTokens":150,"blocks":14,"hardReasons":[],"name":"d7","nameSources":["symtab","dwarf"],"section":".text","size":527,"unsupported":0}
+{"addr":"0x180001000","approxTokens":150,"blocks":14,"hardReasons":[],"name":"d7","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":527,"unsupported":0}

@@ -23,7 +23,7 @@ fn tail_one @ 0x200f4 (size 20)
   blk0 @ 0x200f4:
     ret (((r0 * #0x3) + #0x1) & #0xffffffff)
 -- card
-{"addr":"0x200f4","approxTokens":150,"blocks":1,"hardReasons":[],"name":"tail_one","nameSources":["symtab","dwarf"],"section":".text","size":20,"unsupported":0}
+{"addr":"0x200f4","approxTokens":150,"blocks":1,"hardReasons":[],"name":"tail_one","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":20,"unsupported":0}
 
 == 0x20108 tail_two
 -- decompile
@@ -41,7 +41,7 @@ fn tail_two @ 0x20108 (size 18)
     v2:r0 = call 0x200f4(((r0 + #0x2) & #0xffffffff))
     ret v2
 -- card
-{"addr":"0x20108","approxTokens":144,"blocks":1,"hardReasons":[],"name":"tail_two","nameSources":["symtab","dwarf"],"section":".text","size":18,"unsupported":0}
+{"addr":"0x20108","approxTokens":144,"blocks":1,"hardReasons":[],"name":"tail_two","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":18,"unsupported":0}
 
 == 0x2011c tail_three
 -- decompile
@@ -58,4 +58,4 @@ fn tail_three @ 0x2011c (size 16)
   blk0 @ 0x2011c:
     ret ((r0 - #0x7) & #0xffffffff)
 -- card
-{"addr":"0x2011c","approxTokens":144,"blocks":1,"hardReasons":[],"name":"tail_three","nameSources":["symtab","dwarf"],"section":".text","size":16,"unsupported":0}
+{"addr":"0x2011c","approxTokens":144,"blocks":1,"hardReasons":[],"name":"tail_three","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":16,"unsupported":0}

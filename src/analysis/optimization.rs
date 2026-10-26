@@ -60,7 +60,8 @@ pub(super) fn optimize(
     passed(deadline)?;
     crate::ssa::undefine_clobbered_reads(&mut ir);
     let reached = crate::ir::cfg::reached(&ir);
-    cleanup_before_split(&mut ir, image, has_jump_tables, &reached, deadline)?;
+    let mut simplification =
+        cleanup_before_split(&mut ir, image, has_jump_tables, &reached, deadline)?;
     // Guessed register arguments do not bound a callee's stack arguments.
     // Calls that save execution state can also reach the frame implicitly.
     let promote_slots = ir.blocks.iter().flat_map(|block| &block.stmts).all(|stmt| {
@@ -202,7 +203,7 @@ pub(super) fn optimize(
     }
     passed(deadline)?;
     crate::lift::fold_literals(&mut ir, image);
-    let references = refs::collect(&ir, image);
+    let mut references = refs::collect(&ir, image);
     passed(deadline)?;
     passes::frame_slots::settle(&mut ir);
     passed(deadline)?;
@@ -267,8 +268,17 @@ pub(super) fn optimize(
     passes::coalesce::reuse_pointers(&mut ir);
     passed(deadline)?;
     go_types::apply(&mut ir, image);
+    let changes = passes::deobfuscation::simplify(&mut ir);
+    if changes.simplified {
+        references = refs::collect(&ir, image);
+    }
+    simplification.add(changes);
     ir.callee_signatures = crate::analysis::calls::printable_signatures(image, &ir);
-    Ok(Analysis { ir, references })
+    Ok(Analysis {
+        ir,
+        references,
+        simplification,
+    })
 }
 
 fn is_variadic_forwarding_call(ir: &FunctionIr, block: &Block, stmt: &Stmt, image: &Image) -> bool {
@@ -291,13 +301,13 @@ fn cleanup_before_split(
     has_jump_tables: bool,
     reached: &HashSet<u64>,
     deadline: Option<Instant>,
-) -> Result<(), Error> {
+) -> Result<passes::deobfuscation::Simplification, Error> {
     passed(deadline)?;
-    passes::optimize(ir, has_jump_tables);
+    let changes = passes::optimize(ir, has_jump_tables);
     constant_spills::forward(ir, image);
     passed(deadline)?;
     drop_folded_away(ir, reached);
-    Ok(())
+    Ok(changes)
 }
 
 enum FrameSlotPromotion {

@@ -22,7 +22,7 @@ fn sum3 @ 0x2011c0 (size 24)
   blk0 @ 0x2011c0:
     ret (((edi + esi) + edx) & #0xffffffff)
 -- card
-{"addr":"0x2011c0","approxTokens":156,"blocks":1,"hardReasons":[],"name":"sum3","nameSources":["symtab","dwarf","unwind"],"section":".text","size":24,"unsupported":0}
+{"addr":"0x2011c0","approxTokens":156,"blocks":1,"hardReasons":[],"name":"sum3","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":24,"unsupported":0}
 
 == 0x2011e0 helper
 -- decompile
@@ -53,7 +53,7 @@ fn helper @ 0x2011e0 (size 65)
   blk3 @ 0x20121c:
     ret v2
 -- card
-{"addr":"0x2011e0","approxTokens":192,"blocks":4,"hardReasons":[],"name":"helper","nameSources":["symtab","dwarf","unwind"],"section":".text","size":65,"unsupported":0}
+{"addr":"0x2011e0","approxTokens":192,"blocks":4,"hardReasons":[],"name":"helper","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":65,"unsupported":0}
 
 == 0x201230 pair_sum
 -- decompile
@@ -71,7 +71,7 @@ fn pair_sum @ 0x201230 (size 23)
   blk0 @ 0x201230:
     ret ((load32(rdi) + load32((rdi + #0x4))) & #0xffffffff)
 -- card
-{"addr":"0x201230","approxTokens":150,"blocks":1,"hardReasons":[],"name":"pair_sum","nameSources":["symtab","dwarf","unwind"],"section":".text","size":23,"unsupported":0}
+{"addr":"0x201230","approxTokens":150,"blocks":1,"hardReasons":[],"name":"pair_sum","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":23,"unsupported":0}
 
 == 0x201250 sum_arr
 -- decompile
@@ -106,4 +106,4 @@ fn sum_arr @ 0x201250 (size 73)
   blk3 @ 0x201294:
     ret load32((rsp + #0xffffffffffffffe8))
 -- card
-{"addr":"0x201250","approxTokens":204,"blocks":4,"hardReasons":[],"name":"sum_arr","nameSources":["symtab","dwarf","unwind"],"section":".text","size":73,"unsupported":0}
+{"addr":"0x201250","approxTokens":204,"blocks":4,"hardReasons":[],"name":"sum_arr","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":73,"unsupported":0}

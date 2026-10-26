@@ -22,7 +22,7 @@ fn _sum3 @ 0x0 (size 11)
   blk0 @ 0x0:
     ret (((rdi + rsi) + edx) & #0xffffffff)
 -- card
-{"addr":"0x0","approxTokens":132,"blocks":1,"hardReasons":[],"name":"_sum3","nameSources":["symtab","dynamic","unwind"],"section":"__text","size":11,"unsupported":0}
+{"addr":"0x0","approxTokens":132,"blocks":1,"hardReasons":[],"name":"_sum3","nameSources":["symtab","dynamic","unwind"],"section":"__text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":11,"unsupported":0}
 
 == 0x10 _helper
 -- decompile
@@ -48,7 +48,7 @@ fn _helper @ 0x10 (size 50)
   blk2 @ 0x3e:
     ret #0x0
 -- card
-{"addr":"0x10","approxTokens":204,"blocks":3,"hardReasons":[],"name":"_helper","nameSources":["symtab","dynamic","unwind"],"section":"__text","size":50,"unsupported":0}
+{"addr":"0x10","approxTokens":204,"blocks":3,"hardReasons":[],"name":"_helper","nameSources":["symtab","dynamic","unwind"],"section":"__text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":50,"unsupported":0}
 
 == 0x50 _pair_sum
 -- decompile
@@ -66,7 +66,7 @@ fn _pair_sum @ 0x50 (size 11)
   blk0 @ 0x50:
     ret ((load32((rdi + #0x4)) + load32(rdi)) & #0xffffffff)
 -- card
-{"accesses":["a0 +0x4:uint32_t"],"addr":"0x50","approxTokens":132,"blocks":1,"hardReasons":[],"name":"_pair_sum","nameSources":["symtab","dynamic","unwind"],"section":"__text","size":11,"structures":["struct S1 { int32_t field_0x0; int32_t field_0x4; };"],"unsupported":0}
+{"accesses":["a0 +0x4:uint32_t"],"addr":"0x50","approxTokens":132,"blocks":1,"hardReasons":[],"name":"_pair_sum","nameSources":["symtab","dynamic","unwind"],"section":"__text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":11,"structures":["struct S1 { int32_t field_0x0; int32_t field_0x4; };"],"unsupported":0}
 
 == 0x60 _sum_arr
 -- decompile
@@ -155,4 +155,4 @@ fn _sum_arr @ 0x60 (size 125)
   blk9 @ 0xdb:
     ret v4
 -- card
-{"addr":"0x60","approxTokens":168,"blocks":10,"hardReasons":[],"name":"_sum_arr","nameSources":["symtab","dynamic","unwind"],"section":"__text","size":125,"unsupported":0}
+{"addr":"0x60","approxTokens":168,"blocks":10,"hardReasons":[],"name":"_sum_arr","nameSources":["symtab","dynamic","unwind"],"section":"__text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":125,"unsupported":0}

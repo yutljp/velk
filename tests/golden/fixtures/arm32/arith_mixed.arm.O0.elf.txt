@@ -22,7 +22,7 @@ fn sum3 @ 0x200fc (size 52)
   blk0 @ 0x200fc:
     ret (((r0 + r1) + r2) & #0xffffffff)
 -- card
-{"addr":"0x200fc","approxTokens":174,"blocks":1,"hardReasons":[],"name":"sum3","nameSources":["symtab","dwarf"],"section":".text","size":52,"unsupported":0}
+{"addr":"0x200fc","approxTokens":174,"blocks":1,"hardReasons":[],"name":"sum3","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":52,"unsupported":0}
 
 == 0x20130 helper
 -- decompile
@@ -54,7 +54,7 @@ fn helper @ 0x20130 (size 100)
   blk4 @ 0x20188:
     ret v1
 -- card
-{"addr":"0x20130","approxTokens":240,"blocks":5,"hardReasons":[],"name":"helper","nameSources":["symtab","dwarf"],"section":".text","size":100,"unsupported":0}
+{"addr":"0x20130","approxTokens":240,"blocks":5,"hardReasons":[],"name":"helper","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":100,"unsupported":0}
 
 == 0x20194 pair_sum
 -- decompile
@@ -71,7 +71,7 @@ fn pair_sum @ 0x20194 (size 44)
   blk0 @ 0x20194:
     ret ((load32(r0) + load32(((r0 + #0x4) & #0xffffffff))) & #0xffffffff)
 -- card
-{"addr":"0x20194","approxTokens":162,"blocks":1,"hardReasons":[],"name":"pair_sum","nameSources":["symtab","dwarf"],"section":".text","size":44,"unsupported":0}
+{"addr":"0x20194","approxTokens":162,"blocks":1,"hardReasons":[],"name":"pair_sum","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":44,"unsupported":0}
 
 == 0x201c0 sum_arr
 -- decompile
@@ -106,4 +106,4 @@ fn sum_arr @ 0x201c0 (size 108)
   blk4 @ 0x20220:
     ret load32((sp + #0xffffffffffffffec))
 -- card
-{"addr":"0x201c0","approxTokens":240,"blocks":5,"hardReasons":[],"name":"sum_arr","nameSources":["symtab","dwarf"],"section":".text","size":108,"unsupported":0}
+{"addr":"0x201c0","approxTokens":240,"blocks":5,"hardReasons":[],"name":"sum_arr","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":108,"unsupported":0}

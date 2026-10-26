@@ -1,17 +1,17 @@
 # functions left out:
-#   calls: 8016
+#   calls: 8178
 #   computes on floats or vectors: 102
-#   computes on registers alone: 1556
+#   computes on registers alone: 1699
 #   has an unsupported instruction: 125
-#   reads a register that is not a parameter: 126
-#   refers to data: 829
+#   reads a register that is not a parameter: 129
+#   refers to data: 839
 #   requires an external machine-state source: 4
 #   returns no integer: 172
 #   takes an argument that is no integer: 99
 #   takes arguments on the stack: 91
 # runs left out:
-#   reaches memory no page can map: 325
-#   reads a register that is not a parameter: 1690
+#   reaches memory no page can map: 349
+#   reads a register that is not a parameter: 1870
 #   requires an unnormalized target frame: 48
 #   step limit: 1090
 #   switch without a matching case: 36
@@ -87,6 +87,12 @@
 # codeview/structs.O2.dll: 8 functions, 3 qualify, 3 compile, 0 do not, 3 compared (34 runs), 0 differ
 # codeview/structs.O2.obj: 8 functions, 3 qualify, 3 compile, 0 do not, 3 compared (34 runs), 0 differ
 # codeview/structs.O2.stripped.dll: 8 functions, 4 qualify, 4 compile, 0 do not, 4 compared (46 runs), 0 differ
+# cpp/rtti.debug.dll: 49 functions, 11 qualify, 11 compile, 0 do not, 7 compared (84 runs), 0 differ
+# cpp/rtti.debug.dylib: 51 functions, 9 qualify, 9 compile, 0 do not, 6 compared (72 runs), 0 differ
+# cpp/rtti.debug.elf: 44 functions, 6 qualify, 6 compile, 0 do not, 4 compared (48 runs), 0 differ
+# cpp/rtti.stripped.dll: 39 functions, 7 qualify, 7 compile, 0 do not, 4 compared (48 runs), 0 differ
+# cpp/rtti.stripped.dylib: 51 functions, 9 qualify, 9 compile, 0 do not, 6 compared (72 runs), 0 differ
+# cpp/rtti.stripped.elf: 44 functions, 6 qualify, 6 compile, 0 do not, 4 compared (48 runs), 0 differ
 # cpp_classes_a64.o: 5 functions, 1 qualify, 1 compile, 0 do not, 1 compared (12 runs), 0 differ
 # cpp_classes_x64.o: 5 functions, 2 qualify, 2 compile, 0 do not, 2 compared (24 runs), 0 differ
 # cpp_virtual_a64.elf: 18 functions, 3 qualify, 3 compile, 0 do not, 3 compared (36 runs), 0 differ

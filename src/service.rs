@@ -341,8 +341,8 @@ impl Binary {
             Err(error) => return Err(error),
         };
         function.name = self.function_name(function.addr).map(str::to_owned);
-        let ir = match self.analysis(addr, deadline) {
-            Ok(analysis) => &analysis.ir,
+        let (ir, simplification) = match self.analysis(addr, deadline) {
+            Ok(analysis) => (&analysis.ir, analysis.simplification),
             Err(error) => return Err(error),
         };
         let signature = serde_json::json!({
@@ -369,7 +369,7 @@ impl Binary {
         let outgoing = index.from(addr);
         Ok(serde_json::json!({
             "addr": crate::addr::format(addr), "name": function.name, "size": function.size,
-            "signature": signature,
+            "signature": signature, "simplification": simplification,
             "callees": index.graph(addr, false, 1).into_iter().map(crate::addr::format).collect::<Vec<_>>(),
             "imports": outgoing.iter().filter_map(|xref| imports.get(&xref.target))
                 .collect::<std::collections::BTreeSet<_>>(),
@@ -1041,6 +1041,7 @@ mod tests {
             Ok(Analysis {
                 ir,
                 references: Vec::new(),
+                simplification: Default::default(),
             }),
         );
         let rendered = binary

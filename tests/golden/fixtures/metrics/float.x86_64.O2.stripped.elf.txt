@@ -96,7 +96,7 @@ fn <unnamed> @ 0x2011b0 (size 161)
   blk10 @ 0x201250:
     ret v1
 -- card
-{"addr":"0x2011b0","approxTokens":162,"blocks":11,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":161,"unsupported":0}
+{"addr":"0x2011b0","approxTokens":162,"blocks":11,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":161,"unsupported":0}
 
 == 0x201260 -
 -- decompile
@@ -113,7 +113,7 @@ fn <unnamed> @ 0x201260 (size 13)
   blk0 @ 0x201260:
     ret fadd.s((xmm0 & #0xffffffff), (fmul.s(fsub.s((xmm1 & #0xffffffff), (xmm0 & #0xffffffff)), (uint32_t)xmm2) & #0xffffffff))
 -- card
-{"addr":"0x201260","approxTokens":120,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":13,"unsupported":0}
+{"addr":"0x201260","approxTokens":120,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":13,"unsupported":0}
 
 == 0x201270 -
 -- decompile
@@ -130,7 +130,7 @@ fn <unnamed> @ 0x201270 (size 5)
   blk0 @ 0x201270:
     ret f.dtos32(xmm0)
 -- card
-{"addr":"0x201270","approxTokens":108,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":5,"unsupported":0}
+{"addr":"0x201270","approxTokens":108,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":5,"unsupported":0}
 
 == 0x201280 -
 -- decompile
@@ -149,7 +149,7 @@ fn <unnamed> @ 0x201280 (size 9)
     v1 = f.stof.d((xmm0 & #0xffffffff))
     ret fadd.d(v1, v1)
 -- card
-{"addr":"0x201280","approxTokens":114,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":9,"unsupported":0}
+{"addr":"0x201280","approxTokens":114,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":9,"unsupported":0}
 
 == 0x201290 -
 -- decompile
@@ -168,4 +168,4 @@ fn <unnamed> @ 0x201290 (size 22)
     v1 = (select ne flt.d(xmm1, xmm0), #0x0 ? #0x1, #0x0 & #0xff)
     ret (select eq flt.d(xmm0, xmm1), #0x0 ? (v1 & #0xffffffff), #0xffffffff & #0xffffffff)
 -- card
-{"addr":"0x201290","approxTokens":138,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","size":22,"unsupported":0}
+{"addr":"0x201290","approxTokens":138,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":22,"unsupported":0}

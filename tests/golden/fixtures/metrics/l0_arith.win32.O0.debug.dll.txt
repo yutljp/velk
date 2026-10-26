@@ -22,7 +22,7 @@ fn _add3 @ 0x10001000 (size 23)
   blk0 @ 0x10001000:
     ret (((load32((esp + #0x4)) + load32((esp + #0x8))) + load32((esp + #0xc))) & #0xffffffff)
 -- card
-{"addr":"0x10001000","aliases":["add3"],"approxTokens":156,"blocks":1,"hardReasons":[],"name":"_add3","nameSources":["symtab","dynamic","dwarf"],"section":".text","size":23,"unsupported":0}
+{"addr":"0x10001000","aliases":["add3"],"approxTokens":156,"blocks":1,"hardReasons":[],"name":"_add3","nameSources":["symtab","dynamic","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":23,"unsupported":0}
 
 == 0x10001020 _scale
 -- decompile
@@ -39,7 +39,7 @@ fn _scale @ 0x10001020 (size 15)
   blk0 @ 0x10001020:
     ret (((load32((esp + #0x4)) * #0x7) + #0x3) & #0xffffffff)
 -- card
-{"addr":"0x10001020","aliases":["scale"],"approxTokens":138,"blocks":1,"hardReasons":[],"name":"_scale","nameSources":["symtab","dynamic","dwarf"],"section":".text","size":15,"unsupported":0}
+{"addr":"0x10001020","aliases":["scale"],"approxTokens":138,"blocks":1,"hardReasons":[],"name":"_scale","nameSources":["symtab","dynamic","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":15,"unsupported":0}
 
 == 0x10001030 _pick
 -- decompile
@@ -68,7 +68,7 @@ fn _pick @ 0x10001030 (size 40)
   blk3 @ 0x10001050:
     ret v1
 -- card
-{"addr":"0x10001030","aliases":["pick"],"approxTokens":162,"blocks":4,"hardReasons":[],"name":"_pick","nameSources":["symtab","dynamic","dwarf"],"section":".text","size":40,"unsupported":0}
+{"addr":"0x10001030","aliases":["pick"],"approxTokens":162,"blocks":4,"hardReasons":[],"name":"_pick","nameSources":["symtab","dynamic","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":40,"unsupported":0}
 
 == 0x10001060 _negate
 -- decompile
@@ -85,4 +85,4 @@ fn _negate @ 0x10001060 (size 13)
   blk0 @ 0x10001060:
     ret ((#0x0 - load32((esp + #0x4))) & #0xffffffff)
 -- card
-{"addr":"0x10001060","aliases":["negate"],"approxTokens":138,"blocks":1,"hardReasons":[],"name":"_negate","nameSources":["symtab","dynamic","dwarf"],"section":".text","size":13,"unsupported":0}
+{"addr":"0x10001060","aliases":["negate"],"approxTokens":138,"blocks":1,"hardReasons":[],"name":"_negate","nameSources":["symtab","dynamic","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":13,"unsupported":0}

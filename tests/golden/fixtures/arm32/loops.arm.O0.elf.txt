@@ -38,7 +38,7 @@ fn count_bits @ 0x200fc (size 84)
   blk4 @ 0x20144:
     ret v2
 -- card
-{"addr":"0x200fc","approxTokens":222,"blocks":5,"hardReasons":[],"name":"count_bits","nameSources":["symtab","dwarf"],"section":".text","size":84,"unsupported":0}
+{"addr":"0x200fc","approxTokens":222,"blocks":5,"hardReasons":[],"name":"count_bits","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":84,"unsupported":0}
 
 == 0x20150 sum_until
 -- decompile
@@ -70,7 +70,7 @@ fn sum_until @ 0x20150 (size 92)
   blk4 @ 0x201a0:
     ret v1
 -- card
-{"addr":"0x20150","approxTokens":234,"blocks":5,"hardReasons":[],"name":"sum_until","nameSources":["symtab","dwarf"],"section":".text","size":92,"unsupported":0}
+{"addr":"0x20150","approxTokens":234,"blocks":5,"hardReasons":[],"name":"sum_until","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":92,"unsupported":0}
 
 == 0x201ac sum_till_neg
 -- decompile
@@ -117,7 +117,7 @@ fn sum_till_neg @ 0x201ac (size 132)
   blk7 @ 0x20224:
     ret load32((sp + #0xffffffffffffffec))
 -- card
-{"addr":"0x201ac","approxTokens":240,"blocks":8,"hardReasons":[],"name":"sum_till_neg","nameSources":["symtab","dwarf"],"section":".text","size":132,"unsupported":0}
+{"addr":"0x201ac","approxTokens":240,"blocks":8,"hardReasons":[],"name":"sum_till_neg","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":132,"unsupported":0}
 
 == 0x20230 sum_until_zero
 -- decompile
@@ -175,4 +175,4 @@ fn sum_until_zero @ 0x20230 (size 164)
   blk11 @ 0x202c8:
     ret load32((sp + #0xffffffffffffffec))
 -- card
-{"addr":"0x20230","approxTokens":240,"blocks":12,"hardReasons":[],"name":"sum_until_zero","nameSources":["symtab","dwarf"],"section":".text","size":164,"unsupported":0}
+{"addr":"0x20230","approxTokens":240,"blocks":12,"hardReasons":[],"name":"sum_until_zero","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":164,"unsupported":0}

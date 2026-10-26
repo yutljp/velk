@@ -24,7 +24,7 @@ fn helper_one @ 0x13d0 (size 4)
   blk0 @ 0x13d0:
     ret ((rdi + #0xfffffffffffffffe) & #0xffffffff)
 -- card
-{"addr":"0x13d0","approxTokens":108,"blocks":1,"hardReasons":[],"name":"helper_one","nameSources":["symtab","dynamic","unwind"],"section":".text","size":4,"unsupported":0}
+{"addr":"0x13d0","approxTokens":108,"blocks":1,"hardReasons":[],"name":"helper_one","nameSources":["symtab","dynamic","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":4,"unsupported":0}
 
 == 0x13e0 helper_two
 -- decompile
@@ -41,7 +41,7 @@ fn helper_two @ 0x13e0 (size 7)
   blk0 @ 0x13e0:
     ret (((rdi * #0x2) & #0xffffffff) ^ #0xa)
 -- card
-{"addr":"0x13e0","approxTokens":114,"blocks":1,"hardReasons":[],"name":"helper_two","nameSources":["symtab","dynamic","unwind"],"section":".text","size":7,"unsupported":0}
+{"addr":"0x13e0","approxTokens":114,"blocks":1,"hardReasons":[],"name":"helper_two","nameSources":["symtab","dynamic","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":7,"unsupported":0}
 
 == 0x13f0 target
 -- decompile
@@ -58,7 +58,7 @@ fn target @ 0x13f0 (size 10)
   blk0 @ 0x13f0:
     ret (((rdi * #0x8) - (rdi & #0xffffffff)) & #0xffffffff)
 -- card
-{"addr":"0x13f0","approxTokens":114,"blocks":1,"hardReasons":[],"name":"target","nameSources":["symtab","dynamic","unwind"],"section":".text","size":10,"unsupported":0}
+{"addr":"0x13f0","approxTokens":114,"blocks":1,"hardReasons":[],"name":"target","nameSources":["symtab","dynamic","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":10,"unsupported":0}
 
 == 0x1400 use_ptr
 -- decompile
@@ -78,4 +78,4 @@ fn use_ptr @ 0x1400 (size 9)
     v2:rax, rdx, xmm0, xmm1 = call *load64(v1)
     ret v2
 -- card
-{"addr":"0x1400","approxTokens":108,"blocks":1,"hardReasons":[],"name":"use_ptr","nameSources":["symtab","dynamic","unwind"],"section":".text","size":9,"unsupported":0}
+{"addr":"0x1400","approxTokens":108,"blocks":1,"hardReasons":[],"name":"use_ptr","nameSources":["symtab","dynamic","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":9,"unsupported":0}
