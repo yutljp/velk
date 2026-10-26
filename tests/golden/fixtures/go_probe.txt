@@ -1343,8 +1343,8 @@ int64_t main_divmod(int64_t a0, int64_t a1) {
     case 0:
         runtime_panicdivide();
     default:;
-        uint64_t v3 = a0 % a1;
-        uint64_t v4 = a0 / a1;
+        uint64_t v3 = (int64_t)((__int128)a0 % a1);
+        uint64_t v4 = (int64_t)((__int128)a0 / a1);
         return v4; /* also returns v3 */
     }
 }

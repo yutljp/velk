@@ -6,6 +6,11 @@ use std::process::{Command, Stdio};
 
 use super::{BinOp, Cond, Expr, LaneOp, Operation, Stmt};
 
+mod extended_tests;
+mod floating;
+mod integer;
+mod inventory;
+mod program;
 mod render_tests;
 mod tests;
 
@@ -108,6 +113,12 @@ struct Value {
 
 fn operation(op: Operation, args: &[Value]) -> String {
     let a = &args[0].term;
+    if let Some(result) = floating::operation(op, args) {
+        return result;
+    }
+    if let Some(result) = integer::operation(op, args) {
+        return result;
+    }
     match op {
         Operation::CountLeadingZeros(bits) | Operation::CountTrailingZeros(bits) => {
             let mut total = constant(0);
@@ -178,6 +189,84 @@ fn operation(op: Operation, args: &[Value]) -> String {
                         truth(binary("bvsge", &signed(&a, bits), &signed(&b, bits)))
                     }
                     LaneOp::GreaterEqualUnsigned => truth(binary("bvuge", &a, &b)),
+                    LaneOp::MinSigned
+                    | LaneOp::MaxSigned
+                    | LaneOp::MinUnsigned
+                    | LaneOp::MaxUnsigned => {
+                        let signed_compare = matches!(lane, LaneOp::MinSigned | LaneOp::MaxSigned);
+                        let minimum = matches!(lane, LaneOp::MinSigned | LaneOp::MinUnsigned);
+                        let test = if signed_compare {
+                            binary(
+                                if minimum { "bvsle" } else { "bvsge" },
+                                &signed(&a, bits),
+                                &signed(&b, bits),
+                            )
+                        } else {
+                            binary(if minimum { "bvule" } else { "bvuge" }, &a, &b)
+                        };
+                        format!("(ite {test} {a} {b})")
+                    }
+                    LaneOp::ShiftLeft | LaneOp::ShiftRight => binary(
+                        if lane == LaneOp::ShiftLeft {
+                            "bvshl"
+                        } else {
+                            "bvlshr"
+                        },
+                        &a,
+                        &args[1].term,
+                    ),
+                    LaneOp::ShiftRightSigned => {
+                        let count = &args[1].term;
+                        let count = format!(
+                            "(ite (bvult {count} {}) {count} {})",
+                            constant(u64::from(bits)),
+                            constant(u64::from(bits) - 1)
+                        );
+                        binary("bvashr", &signed(&a, bits), &count)
+                    }
+                    LaneOp::ShiftVariableUnsigned => {
+                        let count = signed(&b, 8);
+                        let negative = binary("bvslt", &count, &constant(0));
+                        format!("(ite {negative} (bvlshr {a} (bvneg {count})) (bvshl {a} {count}))")
+                    }
+                    LaneOp::AddSaturatingUnsigned => {
+                        assert!(bits <= 32, "wide saturating lanes are not modeled");
+                        let sum = binary("bvadd", &a, &b);
+                        let maximum = constant(super::semantics::mask(bits));
+                        format!("(ite (bvugt {sum} {maximum}) {maximum} {sum})")
+                    }
+                    LaneOp::SubSaturatingUnsigned => {
+                        format!("(ite (bvult {a} {b}) {} (bvsub {a} {b}))", constant(0))
+                    }
+                    LaneOp::AddSaturatingSigned | LaneOp::SubSaturatingSigned => {
+                        assert!(bits <= 32, "wide saturating lanes are not modeled");
+                        let operator = if lane == LaneOp::AddSaturatingSigned {
+                            "bvadd"
+                        } else {
+                            "bvsub"
+                        };
+                        let result = binary(operator, &signed(&a, bits), &signed(&b, bits));
+                        let minimum = constant((1u64 << (bits - 1)).wrapping_neg());
+                        let maximum = constant((1u64 << (bits - 1)) - 1);
+                        format!(
+                            "(ite (bvslt {result} {minimum}) {minimum} (ite (bvsgt {result} {maximum}) {maximum} {result}))"
+                        )
+                    }
+                    LaneOp::Average => format!(
+                        "(bvlshr (bvadd (bvadd {a} {b}) {}) {})",
+                        constant(1),
+                        constant(1)
+                    ),
+                    LaneOp::MulHighSigned | LaneOp::MulHighUnsigned => {
+                        assert!(bits <= 32, "wide high-product lanes are not modeled");
+                        let product = if lane == LaneOp::MulHighSigned {
+                            binary("bvmul", &signed(&a, bits), &signed(&b, bits))
+                        } else {
+                            binary("bvmul", &a, &b)
+                        };
+                        binary("bvlshr", &product, &constant(u64::from(bits)))
+                    }
+                    LaneOp::CountLeadingZeros => integer::zero_count(&a, bits, true),
                     LaneOp::PopCount if bits == 8 => {
                         format!("((_ zero_extend 60) (count8 ((_ extract 7 0) {a})))")
                     }
@@ -188,7 +277,6 @@ fn operation(op: Operation, args: &[Value]) -> String {
                             defined: "true".to_owned(),
                         }],
                     ),
-                    _ => panic!("unsupported SMT lane operation: {lane:?}"),
                 };
                 result = binary(
                     "bvor",
@@ -221,6 +309,10 @@ fn operation(op: Operation, args: &[Value]) -> String {
 }
 
 fn value(expr: &Expr, registers: &BTreeMap<u16, String>) -> Value {
+    memory_value(expr, registers, "memory")
+}
+
+fn memory_value(expr: &Expr, registers: &BTreeMap<u16, String>, memory: &str) -> Value {
     let mut defined = Vec::new();
     let term = match expr {
         Expr::Const(n) => constant(*n),
@@ -236,12 +328,12 @@ fn value(expr: &Expr, registers: &BTreeMap<u16, String>) -> Value {
             width,
             signed: is_signed,
         } => {
-            let addr = value(addr, registers);
+            let addr = memory_value(addr, registers, memory);
             defined.push(addr.defined);
             let mut loaded = constant(0);
             for byte in 0..*width {
                 let address = binary("bvadd", &addr.term, &constant(u64::from(byte)));
-                let byte_value = format!("((_ zero_extend 56) (select memory {address}))");
+                let byte_value = format!("((_ zero_extend 56) (select {memory} {address}))");
                 loaded = binary(
                     "bvor",
                     &loaded,
@@ -258,13 +350,13 @@ fn value(expr: &Expr, registers: &BTreeMap<u16, String>) -> Value {
             value: inner,
             width,
         } => {
-            let inner = value(inner, registers);
+            let inner = memory_value(inner, registers, memory);
             defined.push(inner.defined);
             signed(&inner.term, u32::from(*width) * 8)
         }
         Expr::Bin { op, lhs, rhs } => {
-            let a = value(lhs, registers);
-            let b = value(rhs, registers);
+            let a = memory_value(lhs, registers, memory);
+            let b = memory_value(rhs, registers, memory);
             defined.extend([a.defined, b.defined]);
             let bits = super::semantics::operand_width(lhs, rhs);
             let (a, b) = (a.term, b.term);
@@ -329,16 +421,16 @@ fn value(expr: &Expr, registers: &BTreeMap<u16, String>) -> Value {
             then,
             els,
         } => {
-            let a = value(lhs, registers);
-            let b = value(rhs, registers);
+            let a = memory_value(lhs, registers, memory);
+            let b = memory_value(rhs, registers, memory);
             let test = condition(
                 *cond,
                 &a.term,
                 &b.term,
                 super::semantics::operand_width(lhs, rhs),
             );
-            let then = value(then, registers);
-            let els = value(els, registers);
+            let then = memory_value(then, registers, memory);
+            let els = memory_value(els, registers, memory);
             defined.extend([
                 a.defined,
                 b.defined,
@@ -347,7 +439,10 @@ fn value(expr: &Expr, registers: &BTreeMap<u16, String>) -> Value {
             format!("(ite {test} {} {})", then.term, els.term)
         }
         Expr::Apply { op, args } => {
-            let args: Vec<Value> = args.iter().map(|arg| value(arg, registers)).collect();
+            let args: Vec<Value> = args
+                .iter()
+                .map(|arg| memory_value(arg, registers, memory))
+                .collect();
             defined.extend(args.iter().map(|arg| arg.defined.clone()));
             operation(*op, &args)
         }
@@ -433,15 +528,7 @@ impl Proofs {
         self.cases.push((name.into(), mismatch));
     }
 
-    fn rendered(
-        &mut self,
-        name: String,
-        before: &Expr,
-        registers: &BTreeMap<u16, String>,
-        after: &str,
-        defined: &str,
-    ) {
-        let before = value(before, registers);
+    fn rendered(&mut self, name: String, before: &Value, after: &str, defined: &str) {
         self.cases.push((
             name,
             format!(
@@ -481,7 +568,13 @@ impl Proofs {
     pub(crate) fn check(self) {
         use std::io::{BufRead, Write};
 
-        let mut script = String::from("(set-option :timeout 5000)\n");
+        assert!(
+            !self.cases.is_empty(),
+            "an SMT test must exercise at least one obligation"
+        );
+
+        // Bound solver work rather than elapsed time, which depends on system load.
+        let mut script = String::from("(set-option :rlimit 10000000)\n");
         for index in 0..64 {
             script.push_str(&format!("(declare-const r{index} (_ BitVec 64))\n"));
         }

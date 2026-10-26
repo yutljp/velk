@@ -146,7 +146,7 @@ fn an_eight_byte_extension_keeps_the_high_half_of_a_merge() {
     );
 }
 
-fn check_rewrite(proofs: &mut Proofs, name: &str, before: &Expr, after: &Expr) {
+pub(super) fn check_rewrite(proofs: &mut Proofs, name: &str, before: &Expr, after: &Expr) {
     if before == after {
         return;
     }
@@ -590,37 +590,6 @@ fn assignment_rewrites_preserve_truncation() {
         }
     }
     proofs.check();
-}
-
-#[test]
-fn inventory_matches_the_reviewed_sources() {
-    use sha2::Digest;
-    for line in include_str!("../../../tests/smt_inventory.tsv")
-        .lines()
-        .skip(1)
-    {
-        let fields: Vec<&str> = line.split('\t').collect();
-        assert_eq!(fields.len(), 6, "inventory rows have six fields: {line}");
-        let (path, number) = fields[0].rsplit_once(':').expect("inventory file and line");
-        let number: usize = number.parse().expect("inventory source line");
-        let source = std::fs::read_to_string(path).expect("inventory source exists");
-        assert!(
-            source
-                .lines()
-                .nth(number - 1)
-                .is_some_and(|line| line.contains(fields[5])),
-            "inventory location must match {line}"
-        );
-    }
-    for line in include_str!("../../../tests/smt_sources.sha256").lines() {
-        let (expected, path) = line.split_once("  ").expect("source digest and path");
-        let source = std::fs::read(path).expect("inventoried source exists");
-        assert_eq!(
-            format!("{:x}", sha2::Sha256::digest(source)),
-            expected,
-            "revisit inventory and proof coverage after changing {path}"
-        );
-    }
 }
 
 #[test]

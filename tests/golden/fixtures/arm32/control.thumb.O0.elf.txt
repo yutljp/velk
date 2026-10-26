@@ -94,7 +94,7 @@ int cleanup_on_error(int a, int b, int *out) {
         return result;
     }
     if (b != 0) {
-        *(uint32_t *)((uint32_t)(uintptr_t)out) = (b == 0 ? 0 : (int64_t)a / (int64_t)b);
+        *(uint32_t *)((uint32_t)(uintptr_t)out) = (b == 0 ? 0 : (int64_t)((__int128)(int64_t)a / (int64_t)b));
         return 0;
     }
     return result;

@@ -673,6 +673,40 @@ fn unfitted(value: &Expr, ctx: &Ctx<'_>, bits: u32, usage: ConstantUse) -> Print
                 }
             };
             let (dividend, divisor) = (side(lhs), side(rhs));
+            if !narrower && width < 32 && *op == BinOp::DivS {
+                return Printed::new(
+                    format!(
+                        "{} / {}",
+                        dividend.within(11, false).text,
+                        divisor.within(11, true).text
+                    ),
+                    dividend.ty.common(divisor.ty),
+                    width,
+                    11,
+                )
+                .cast(width, true, width);
+            }
+            if !narrower && width >= 32 && dividend.signed_bits() >= width {
+                // The IR wraps MIN / -1; C needs a wider operation even
+                // for remainder, whose mathematical result is zero.
+                let wide = if width == 64 { "__int128" } else { "int64_t" };
+                return Printed::new(
+                    format!(
+                        "({wide}){} {} {}",
+                        dividend.within(12, false).text,
+                        operator(*op),
+                        divisor.within(11, true).text
+                    ),
+                    Int {
+                        bits: 2 * width,
+                        signed: true,
+                    },
+                    width,
+                    11,
+                )
+                .cast(width, true, width)
+                .ranging(Range::Signed(width));
+            }
             Printed::new(
                 format!(
                     "{} {} {}",

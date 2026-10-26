@@ -64,6 +64,34 @@ def bounds(node):
 def expression(node, parameters):
     kind = node["kind"]
     children = node.get("inner", [])
+    if kind == "CallExpr":
+        callee = children[0]
+        while callee.get("inner"):
+            callee = callee["inner"][0]
+        name = callee["referencedDecl"]["name"]
+        a, width, _, valid = expression(children[1], parameters)
+        if name.startswith("__builtin_bitreverse"):
+            term = f"((_ extract 0 0) {a})"
+            for index in range(1, width):
+                term = f"(concat {term} ((_ extract {index} {index}) {a}))"
+            return term, width, False, valid
+        if name.startswith(("__builtin_clz", "__builtin_ctz")):
+            bits, sign = integer_type(node)
+            leading = name.startswith("__builtin_clz")
+            result = bv(width, bits)
+            for index in range(width):
+                bit = index if leading else width - 1 - index
+                result = f"(ite (= ((_ extract {bit} {bit}) {a}) #b1) {bv(width - 1 - index, bits)} {result})"
+            if name.endswith("g"):
+                assert not integer_type(children[1])[1]
+                fallback, fallback_bits, fallback_sign, fallback_valid = expression(children[2], parameters)
+                fallback = cast(fallback, fallback_bits, bits, fallback_sign)
+                result = f"(ite (= {a} {bv(0, width)}) {fallback} {result})"
+                valid = f"(and {valid} {fallback_valid})"
+            else:
+                valid = f"(and {valid} {truth(a, width)})"
+            return result, bits, sign, valid
+        raise ValueError(f"unsupported C call: {name}")
     bits, signed = integer_type(node)
     if kind == "IntegerLiteral":
         return bv(int(node["value"]), bits), bits, signed, "true"
@@ -79,22 +107,6 @@ def expression(node, parameters):
         else:
             a = cast(a, old, bits, sign)
         return a, bits, signed, defined
-    if kind == "CallExpr":
-        callee = children[0]
-        while callee["kind"] in ("ImplicitCastExpr", "ParenExpr"):
-            callee = callee["inner"][0]
-        name = callee["referencedDecl"]["name"]
-        if name not in ("__builtin_clzg", "__builtin_ctzg") or len(children) != 3:
-            raise ValueError(f"unsupported C call: {name}")
-        a, width, sign, defined = expression(children[1], parameters)
-        assert not sign
-        fallback, fallback_bits, fallback_sign, fallback_defined = expression(children[2], parameters)
-        result = cast(fallback, fallback_bits, bits, fallback_sign)
-        for bit in range(width):
-            position = bit if name == "__builtin_clzg" else width - bit - 1
-            count = width - position - 1 if name == "__builtin_clzg" else position
-            result = f"(ite (= ((_ extract {position} {position}) {a}) #b1) {bv(count, bits)} {result})"
-        return result, bits, signed, f"(and {defined} {fallback_defined})"
     if kind == "ConditionalOperator":
         condition, cbits, _, cd = expression(children[0], parameters)
         a, _, _, ad = expression(children[1], parameters)
@@ -185,13 +197,58 @@ def main():
             if child["kind"] == "ParmVarDecl":
                 parameters[child["name"]] = f"r{[7, 6, 2][len(parameters)]}"
         body = node["inner"][-1]
-        if body["kind"] != "CompoundStmt" or len(body["inner"]) != 1 or body["inner"][0]["kind"] != "ReturnStmt":
-            raise ValueError(f"{name}: expected a scalar return body: {body}")
-        term, bits, sign, defined = expression(body["inner"][0]["inner"][0], parameters)
-        output.append({"name": name, "term": cast(term, bits, 64, sign), "defined": defined})
+        if body["kind"] != "CompoundStmt":
+            raise ValueError(f"{name}: expected a function body")
+        term, defined = statements(body.get("inner", []), parameters, "true")
+        output.append({"name": name, "term": term, "defined": defined})
     if len(output) != len(names):
         raise ValueError("Clang did not return every requested function")
     json.dump(output, sys.stdout)
+
+
+def statements(nodes, values, defined):
+    values = dict(values)
+    for index, node in enumerate(nodes):
+        kind = node["kind"]
+        children = node.get("inner", [])
+        if kind == "ReturnStmt":
+            term, bits, sign, valid = expression(children[0], values)
+            return cast(term, bits, 64, sign), f"(and {defined} {valid})"
+        if kind == "DeclStmt":
+            for declaration in children:
+                if declaration["kind"] != "VarDecl":
+                    raise ValueError(f"unsupported declaration: {declaration['kind']}")
+                initializers = declaration.get("inner", [])
+                if initializers:
+                    term, bits, sign, valid = expression(initializers[-1], values)
+                    values[declaration["name"]] = cast(term, bits, 64, sign)
+                    defined = f"(and {defined} {valid})"
+            continue
+        if kind in ("BinaryOperator", "CompoundAssignOperator") and node["opcode"].endswith("="):
+            lhs, rhs = children
+            if lhs["kind"] != "DeclRefExpr":
+                raise ValueError("assignment target must be a scalar variable")
+            if node["opcode"] != "=":
+                # Clang records the arithmetic type separately from the destination.
+                calculation = dict(node, kind="BinaryOperator", opcode=node["opcode"][:-1], type=node["computeResultType"])
+                calculation["inner"] = [dict(kind="CStyleCastExpr", type=node["computeLHSType"], inner=[lhs]), rhs]
+                rhs = dict(kind="CStyleCastExpr", type=lhs["type"], inner=[calculation])
+            term, bits, sign, valid = expression(rhs, values)
+            values[lhs["referencedDecl"]["name"]] = cast(term, bits, 64, sign)
+            defined = f"(and {defined} {valid})"
+            continue
+        if kind == "IfStmt":
+            condition, cbits, _, valid = expression(children[0], values)
+            branches = []
+            for arm in [children[1], children[2] if len(children) > 2 else None]:
+                prefix = [] if arm is None else (arm.get("inner", []) if arm["kind"] == "CompoundStmt" else [arm])
+                branches.append(statements(prefix + nodes[index + 1:], values, f"(and {defined} {valid})"))
+            test = truth(condition, cbits)
+            return f"(ite {test} {branches[0][0]} {branches[1][0]})", f"(ite {test} {branches[0][1]} {branches[1][1]})"
+        if kind == "NullStmt":
+            continue
+        raise ValueError(f"unsupported C statement: {kind}")
+    raise ValueError("scalar function must return on every path")
 
 
 if __name__ == "__main__":

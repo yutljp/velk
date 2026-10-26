@@ -529,7 +529,7 @@ int cleanup_on_error(int a, int b, int *out) {
     int32_t v3 = -1;
     if (a >= 0) {
         if (b != 0) {
-            *(uint32_t *)((uint32_t)(uintptr_t)out) = (b == 0 ? 0 : (int64_t)a / (int64_t)b);
+            *(uint32_t *)((uint32_t)(uintptr_t)out) = (b == 0 ? 0 : (int64_t)((__int128)(int64_t)a / (int64_t)b));
             return 0;
         }
         return -1;

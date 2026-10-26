@@ -71,7 +71,7 @@ int cleanup_on_error(int a, int b, int *out) {
     result = 0xffffffff;
     if (a >= 0) {
         if (b != 0) {
-            *out = a / b;
+            *out = (int32_t)((int64_t)a / b);
             return 0;
         }
         return result;

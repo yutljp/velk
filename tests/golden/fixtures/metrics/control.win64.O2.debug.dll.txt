@@ -191,7 +191,7 @@ int cleanup_on_error(int a, int b, int *out) {
     if (v2 != 0) {
         return -1;
     }
-    *out = a / b;
+    *out = (int32_t)((int64_t)a / b);
     return 0;
 }
 -- signature

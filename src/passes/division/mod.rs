@@ -5,6 +5,9 @@ mod remainder;
 mod select;
 mod widened;
 
+#[cfg(test)]
+mod smt_tests;
+
 use crate::arch;
 use crate::ir::CType;
 use crate::ir::visit::assign_of;

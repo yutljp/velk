@@ -233,3 +233,163 @@ fn carry_borrow_and_conditional_flags_are_equivalent() {
     }
     proofs.check();
 }
+
+#[test]
+fn saved_adjust_and_widened_logic_flags_are_equivalent() {
+    if !Proofs::available() {
+        return;
+    }
+    let mut proofs = Proofs::default();
+    let byte = Expr::reg(0, 8);
+    let overflow = Expr::reg(1, 1);
+    let raw = smt::term(&byte);
+    let bit = |index| format!("(= ((_ extract {index} {index}) {raw}) #b1)");
+    for known in [false, true] {
+        let flags = Flags::stored(byte.clone(), known.then(|| overflow.clone()));
+        for cond in CONDITIONS {
+            let actual = decided(flags.test(cond, Isa::X86_64));
+            if !known
+                && matches!(
+                    cond,
+                    Cond::Vs | Cond::Vc | Cond::Ge | Cond::Lt | Cond::Gt | Cond::Le
+                )
+            {
+                assert!(actual.is_none(), "unknown overflow must stay unknown");
+                continue;
+            }
+            let expected = reference(
+                cond,
+                &bit(7),
+                &bit(6),
+                &format!("(not {})", bit(0)),
+                &format!("(= {} {})", smt::term(&overflow), smt::constant(1)),
+            );
+            proofs.predicate(
+                format!("saved flags/{known}/{cond:?}"),
+                &expected,
+                &actual.expect("saved condition is known"),
+            );
+        }
+        for even in [false, true] {
+            proofs.predicate(
+                format!("saved parity/{known}/{even}"),
+                &if even {
+                    bit(2)
+                } else {
+                    format!("(not {})", bit(2))
+                },
+                &decided(flags.parity(even)).expect("saved parity"),
+            );
+        }
+        proofs.predicate(
+            format!("saved adjust/{known}"),
+            &bit(4),
+            &decided(flags.adjust()).expect("saved adjust"),
+        );
+    }
+    for bits in [8, 16, 32, 64] {
+        let a = Expr::reg(0, bits);
+        let b = Expr::reg(1, bits);
+        let low_a = format!("((_ extract 3 0) {})", smt::term(&a));
+        let low_b = format!("((_ extract 3 0) {})", smt::term(&b));
+        for source in [Source::Difference, Source::Sum] {
+            let flags = Flags::new(source, a.clone(), b.clone());
+            let expected = if source == Source::Difference {
+                format!("(bvult {low_a} {low_b})")
+            } else {
+                format!(
+                    "(bvugt (bvadd ((_ zero_extend 1) {low_a}) ((_ zero_extend 1) {low_b})) (_ bv15 5))"
+                )
+            };
+            proofs.predicate(
+                format!("adjust/{bits}/{source:?}"),
+                &expected,
+                &decided(flags.adjust()).expect("arithmetic adjust"),
+            );
+        }
+        for width in [32, 64] {
+            if width <= u32::from(bits) {
+                continue;
+            }
+            let flags = Flags::logic_at(a.clone(), width);
+            for isa in [Isa::X86_64, Isa::AArch64] {
+                for cond in CONDITIONS {
+                    let expected = reference(
+                        cond,
+                        "false",
+                        &format!("(= {} {})", smt::term(&a), smt::constant(0)),
+                        if isa == Isa::X86_64 { "true" } else { "false" },
+                        "false",
+                    );
+                    proofs.predicate(
+                        format!("wide logic/{bits}/{width}/{isa:?}/{cond:?}"),
+                        &expected,
+                        &decided(flags.test(cond, isa)).expect("logic flags"),
+                    );
+                }
+            }
+        }
+    }
+    proofs.check();
+}
+
+#[test]
+fn ieee_comparison_flags_are_equivalent() {
+    if !Proofs::available() {
+        return;
+    }
+    let mut proofs = Proofs::default();
+    for precision in [Precision::Single, Precision::Double] {
+        let bits = precision.bits();
+        let (exponent, significand) = if bits == 32 { (8, 24) } else { (11, 53) };
+        let float = |index| {
+            format!(
+                "((_ to_fp {exponent} {significand}) ((_ extract {} 0) r{index}))",
+                bits - 1
+            )
+        };
+        let (a, b) = (float(0), float(1));
+        let unordered = format!("(or (fp.isNaN {a}) (fp.isNaN {b}))");
+        let equal = format!("(fp.eq {a} {b})");
+        let less = format!("(fp.lt {a} {b})");
+        for isa in [Isa::I386, Isa::X86_64, Isa::AArch64, Isa::Arm32] {
+            let flags = Flags::float_compare(Expr::reg(0, bits), Expr::reg(1, bits), precision);
+            let (n, z, c, v) = if matches!(isa, Isa::I386 | Isa::X86_64) {
+                (
+                    "false".to_owned(),
+                    format!("(or {equal} {unordered})"),
+                    format!("(not (or {less} {unordered}))"),
+                    "false".to_owned(),
+                )
+            } else {
+                (
+                    less.clone(),
+                    equal.clone(),
+                    format!("(not {less})"),
+                    unordered.clone(),
+                )
+            };
+            for cond in CONDITIONS {
+                proofs.predicate(
+                    format!("float flags/{precision:?}/{isa:?}/{cond:?}"),
+                    &reference(cond, &n, &z, &c, &v),
+                    &decided(flags.test(cond, isa)).expect("float condition"),
+                );
+            }
+            for even in [false, true] {
+                let expected = if even {
+                    unordered.clone()
+                } else {
+                    format!("(not {unordered})")
+                };
+                proofs.predicate(
+                    format!("float parity/{precision:?}/{isa:?}/{even}"),
+                    &expected,
+                    &decided(flags.parity(even)).expect("float parity"),
+                );
+            }
+            assert_eq!(flags.adjust(), Test::Never);
+        }
+    }
+    proofs.check();
+}

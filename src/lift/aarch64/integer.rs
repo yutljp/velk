@@ -3,6 +3,9 @@ use super::{
     Stmt, Test, a64,
 };
 
+#[cfg(test)]
+mod smt_tests;
+
 fn shift_expr(style: a64::ShiftStyle, amount: u64, value: Expr) -> Option<Expr> {
     let op = match style {
         a64::ShiftStyle::LSL => BinOp::Shl,
@@ -23,7 +26,8 @@ pub(super) fn extend_shift(
     let mask = match (style, width) {
         (a64::ShiftStyle::UXTB, _) => Some(0xff),
         (a64::ShiftStyle::UXTH, _) => Some(0xffff),
-        (a64::ShiftStyle::UXTW, _) | (a64::ShiftStyle::UXTX, _) => Some(0xffff_ffff),
+        (a64::ShiftStyle::UXTW, _) => Some(0xffff_ffff),
+        (a64::ShiftStyle::UXTX, _) => Some(u64::MAX),
         _ => None,
     };
     if let Some(mask) = mask {

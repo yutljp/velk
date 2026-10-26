@@ -4,6 +4,9 @@ use crate::ir::{BinOp, Cond, Expr, Stmt};
 
 use super::divisor::{magic_divisor, magic_divisor_signed64};
 
+#[cfg(test)]
+mod smt_tests;
+
 // Register definitions stay distinct, including when a register is overwritten
 // between the multiply and the proposed replacement.
 #[derive(Clone, Debug, PartialEq, Eq)]

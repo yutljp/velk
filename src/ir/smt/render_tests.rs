@@ -80,8 +80,60 @@ fn wrapping_arithmetic_avoids_c_overflow() {
     }];
     let negative_code =
         crate::render::render(&negated, &[], &crate::render::Symbols::default(), &[]);
+    let mut division_code = String::new();
+    for bits in [32, 64] {
+        for (name, op) in [("quotient", BinOp::DivS), ("remainder", BinOp::ModS)] {
+            let mut divided = FunctionIr::single_block(
+                Isa::X86_64,
+                vec![Stmt::Ret {
+                    value: bin(op, Expr::reg(7, bits), Expr::reg(6, bits)),
+                }],
+            );
+            divided.name = Some(format!("{name}_{bits}"));
+            divided.params = [7, 6]
+                .into_iter()
+                .enumerate()
+                .map(|(position, index)| Param {
+                    index,
+                    name: format!("a{position}"),
+                    ty: CType::int(bits / 8, true),
+                })
+                .collect();
+            division_code.push_str(&crate::render::render(
+                &divided,
+                &[],
+                &crate::render::Symbols::default(),
+                &[],
+            ));
+        }
+    }
+    for bits in [8, 64] {
+        for (name, op) in [
+            ("leading", Operation::CountLeadingZeros(bits)),
+            ("trailing", Operation::CountTrailingZeros(bits)),
+        ] {
+            let mut counted = FunctionIr::single_block(
+                Isa::X86_64,
+                vec![Stmt::Ret {
+                    value: Expr::apply(op, vec![Expr::reg(7, 64)]),
+                }],
+            );
+            counted.name = Some(format!("{name}_{bits}"));
+            counted.params = vec![Param {
+                index: 7,
+                name: "input".to_owned(),
+                ty: CType::U64,
+            }];
+            division_code.push_str(&crate::render::render(
+                &counted,
+                &[],
+                &crate::render::Symbols::default(),
+                &[],
+            ));
+        }
+    }
     let source = format!(
-        "#include <stdint.h>\n{code}\n{pointer_code}\n{negative_code}\nint main(void) {{ int64_t data[8] = {{10,20,30,40,50,60,70,80}}; return masked_sum(0x40000000, 0x40000001) != 1 || indexed_value(data + 3, -3) != 30 || indexed_value(data + 3, -5) != 10 || indexed_value(data + 3, 0) != 60 || negated_value(INT64_MIN) != (uint64_t)INT64_MIN; }}\n"
+        "#include <stdint.h>\n{code}\n{pointer_code}\n{negative_code}\n{division_code}\nint main(void) {{ int64_t data[8] = {{10,20,30,40,50,60,70,80}}; return masked_sum(0x40000000, 0x40000001) != 1 || indexed_value(data + 3, -3) != 30 || indexed_value(data + 3, -5) != 10 || indexed_value(data + 3, 0) != 60 || negated_value(INT64_MIN) != (uint64_t)INT64_MIN || quotient_32(INT32_MIN, -1) != UINT64_C(0x80000000) || remainder_32(INT32_MIN, -1) != 0 || quotient_64(INT64_MIN, -1) != (uint64_t)INT64_MIN || remainder_64(INT64_MIN, -1) != 0 || quotient_64(-7, 3) != (uint64_t)-2 || remainder_32(-7, 3) != UINT64_C(0xffffffff) || leading_8(0) != 8 || leading_8(254) != 0 || trailing_8(256) != 8 || leading_64(0) != 64 || trailing_64(0) != 64; }}\n"
     );
     let directory = format!("target/smt-overflow-{}", std::process::id());
     std::fs::create_dir_all(&directory).expect("create C regression directory");
@@ -126,8 +178,6 @@ fn wrapping_arithmetic_avoids_c_overflow() {
 
 #[test]
 fn compiled_scalar_c_is_equivalent_to_ir() {
-    use std::io::Write;
-
     if !Proofs::available() {
         return;
     }
@@ -154,6 +204,14 @@ fn compiled_scalar_c_is_equivalent_to_ir() {
                     bin(BinOp::Sub, Expr::Const(0), x.clone()),
                     bin(BinOp::Sub, Expr::Const(0), Expr::Const(1)),
                 ];
+                for width in [8, 16, 32, 64] {
+                    for op in [
+                        Operation::CountLeadingZeros(width),
+                        Operation::CountTrailingZeros(width),
+                    ] {
+                        cases.push(Expr::apply(op, vec![x.clone()]));
+                    }
+                }
                 for op in [
                     BinOp::Add,
                     BinOp::Sub,
@@ -166,6 +224,18 @@ fn compiled_scalar_c_is_equivalent_to_ir() {
                     cases.push(bin(op, x.clone(), Expr::Const(u64::MAX)));
                 }
                 for op in [BinOp::DivU, BinOp::ModU, BinOp::DivS, BinOp::ModS] {
+                    cases.push(bin(op, x.clone(), Expr::Const(3)));
+                    for divisor in [1, u64::MAX, 1 << (read - 1)] {
+                        cases.push(bin(op, x.clone(), Expr::Const(divisor)));
+                        if op == BinOp::DivS {
+                            cases.push(Expr::SignExtend {
+                                value: Box::new(bin(op, x.clone(), Expr::Const(divisor))),
+                                width: read / 8,
+                            });
+                        }
+                    }
+                }
+                for op in [BinOp::MulHigh, BinOp::MulHighS] {
                     cases.push(bin(op, x.clone(), Expr::Const(3)));
                 }
                 for op in [BinOp::Shl, BinOp::Shr, BinOp::Sar] {
@@ -206,6 +276,27 @@ fn compiled_scalar_c_is_equivalent_to_ir() {
                         then: Box::new(Expr::Const(1)),
                         els: Box::new(Expr::Const(0)),
                     });
+                    let truth = Expr::Select {
+                        cond: *cond,
+                        lhs: Box::new(y.clone()),
+                        rhs: Box::new(Expr::Const(0)),
+                        then: Box::new(Expr::Const(1)),
+                        els: Box::new(Expr::Const(0)),
+                    };
+                    for (then, els) in [
+                        (truth.clone(), Expr::Const(0)),
+                        (Expr::Const(1), truth),
+                        (x.clone(), Expr::Const(u64::MAX)),
+                        (Expr::Const(1 << 63), y.clone()),
+                    ] {
+                        cases.push(Expr::Select {
+                            cond: *cond,
+                            lhs: Box::new(x.clone()),
+                            rhs: Box::new(Expr::Const(0)),
+                            then: Box::new(then),
+                            els: Box::new(els),
+                        });
+                    }
                 }
                 for (index, value) in cases.into_iter().enumerate() {
                     let name = format!("smt_c_{bits}_{is_signed}_{read}_{index}");
@@ -244,12 +335,19 @@ fn compiled_scalar_c_is_equivalent_to_ir() {
                             },
                         );
                     }
-                    originals.insert(name, (value, registers));
+                    originals.insert(name, super::value(&value, &registers));
                 }
             }
         }
     }
+    prove_rendered(source, originals);
+}
+
+fn prove_rendered(source: String, originals: BTreeMap<String, Value>) {
+    use std::io::Write;
     let names: Vec<&String> = originals.keys().collect();
+    let first = names.first().expect("rendered corpus is nonempty");
+    std::fs::write(format!("target/{first}.c"), &source).expect("save rendered C corpus");
     let request = serde_json::json!({ "source": source, "names": names });
     let mut child = Command::new("uv")
         .args(["run", "--no-project", "tests/smt_c.py"])
@@ -275,14 +373,114 @@ fn compiled_scalar_c_is_equivalent_to_ir() {
     let mut proofs = Proofs::default();
     for result in results.as_array().expect("C translation array") {
         let name = result["name"].as_str().expect("function name");
-        let (value, registers) = originals.get(name).expect("requested function");
+        let value = originals.get(name).expect("requested function");
         proofs.rendered(
-            format!("rendered/{name}/{value:?}"),
+            format!("rendered/{name}"),
             value,
-            registers,
             result["term"].as_str().expect("C SMT term"),
             result["defined"].as_str().expect("C validity condition"),
         );
     }
     proofs.check();
+}
+
+#[test]
+fn compiled_assignments_and_return_conversions_are_equivalent() {
+    if !Proofs::available() {
+        return;
+    }
+    let mut source = String::from("#include <stdint.h>\n");
+    let mut originals = BTreeMap::new();
+    for bits in [8, 16, 32, 64] {
+        for signed in [false, true] {
+            let ty = CType::int(bits / 8, signed);
+            let x = Expr::reg(7, 64);
+            let y = Expr::reg(6, 64);
+            let mask = crate::ir::semantics::mask(u32::from(bits));
+            let mut expressions = vec![
+                x.clone(),
+                bin(BinOp::Add, x.clone(), y.clone()),
+                bin(BinOp::Sub, x.clone(), y.clone()),
+                bin(BinOp::Mul, x.clone(), Expr::Const(3)),
+            ];
+            for op in [BinOp::Add, BinOp::Sub, BinOp::Xor] {
+                expressions.push(bin(
+                    BinOp::And,
+                    bin(op, Expr::reg(3, bits), x.clone()),
+                    Expr::Const(mask),
+                ));
+            }
+            for (case, expression) in expressions.into_iter().enumerate() {
+                for local in [false, true] {
+                    let name = format!("smt_assignment_{bits}_{signed}_{case}_{local}");
+                    let statements = if local {
+                        vec![
+                            Stmt::Assign {
+                                dest: crate::ir::RegRef {
+                                    index: 3,
+                                    width: bits,
+                                },
+                                value: y.clone(),
+                            },
+                            Stmt::Assign {
+                                dest: crate::ir::RegRef {
+                                    index: 3,
+                                    width: bits,
+                                },
+                                value: expression.clone(),
+                            },
+                            Stmt::Ret {
+                                value: bin(
+                                    BinOp::Add,
+                                    Expr::reg(3, bits),
+                                    bin(BinOp::Shr, Expr::reg(3, bits), Expr::Const(1)),
+                                ),
+                            },
+                        ]
+                    } else {
+                        // Give the update-shaped expressions a reaching definition too.
+                        vec![
+                            Stmt::Assign {
+                                dest: crate::ir::RegRef {
+                                    index: 3,
+                                    width: bits,
+                                },
+                                value: y.clone(),
+                            },
+                            Stmt::Ret {
+                                value: expression.clone(),
+                            },
+                        ]
+                    };
+                    let mut expected = returned(&statements);
+                    expected.term = if signed {
+                        super::signed(&expected.term, u32::from(bits))
+                    } else {
+                        low(&expected.term, u32::from(bits))
+                    };
+                    let mut ir = FunctionIr::single_block(Isa::X86_64, statements);
+                    ir.name = Some(name.clone());
+                    ir.ret_type = ty.clone();
+                    ir.params = [7, 6]
+                        .into_iter()
+                        .enumerate()
+                        .map(|(position, index)| Param {
+                            index,
+                            name: format!("a{position}"),
+                            ty: CType::U64,
+                        })
+                        .collect();
+                    source.push_str(&crate::render::render(
+                        &ir,
+                        &[],
+                        &crate::render::Symbols::default(),
+                        &[],
+                    ));
+                    source.push('\n');
+                    originals.insert(name, expected);
+                }
+            }
+        }
+    }
+    prove_rendered(source, originals);
 }

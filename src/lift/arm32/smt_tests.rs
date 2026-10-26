@@ -209,3 +209,67 @@ fn long_multiply_matches_a_wide_product() {
     }
     proofs.check();
 }
+
+#[test]
+fn rotated_extensions_and_shifted_operands_are_equivalent() {
+    if !Proofs::available() {
+        return;
+    }
+    let mut proofs = Proofs::default();
+    let x = Expr::reg(0, 32);
+    let input = "((_ extract 31 0) r0)";
+    for bytes in [1, 2] {
+        for signed in [false, true] {
+            for rotation in [0, 8, 16, 24] {
+                let rotated = format!("((_ zero_extend 32) ((_ rotate_right {rotation}) {input}))");
+                let expected = if signed {
+                    smt::signed(&rotated, u32::from(bytes) * 8)
+                } else {
+                    smt::low(&rotated, u32::from(bytes) * 8)
+                };
+                proofs.predicate(
+                    format!("rotated extension/{bytes}/{signed}/{rotation}"),
+                    &expected,
+                    &smt::term(&extend(x.clone(), bytes, signed, rotation)),
+                );
+            }
+        }
+    }
+    let amount = Expr::reg(1, 8);
+    let count = smt::term(&amount);
+    for style in [
+        ShiftStyle::LSL,
+        ShiftStyle::LSR,
+        ShiftStyle::ASR,
+        ShiftStyle::ROR,
+    ] {
+        let expected = match style {
+            ShiftStyle::ROR => format!(
+                "((_ zero_extend 32) (ext_rotate_right {input} ((_ extract 31 0) {count})))"
+            ),
+            ShiftStyle::ASR => smt::low(
+                &format!("(bvashr {} {count})", smt::signed(&smt::term(&x), 32)),
+                32,
+            ),
+            _ => smt::low(
+                &format!(
+                    "({} {} {count})",
+                    if style == ShiftStyle::LSL {
+                        "bvshl"
+                    } else {
+                        "bvlshr"
+                    },
+                    smt::term(&x)
+                ),
+                32,
+            ),
+        };
+        let actual = shift_value(x.clone(), style, amount.clone()).expect("supported shift");
+        proofs.predicate(
+            format!("A32 shift/{style:?}"),
+            &expected,
+            &smt::low(&smt::term(&actual), 32),
+        );
+    }
+    proofs.check();
+}

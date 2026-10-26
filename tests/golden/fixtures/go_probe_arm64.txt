@@ -1337,7 +1337,7 @@ int64_t main_divmod(int64_t a0, int64_t a1, int64_t a2) {
     if (a1 == 0) {
         runtime_panicdivide(a0, 0, a2);
     }
-    return a0 / a1;
+    return (int64_t)((__int128)a0 / a1);
 }
 -- signature
 int64_t (int64_t a0, int64_t a1, int64_t a2)
