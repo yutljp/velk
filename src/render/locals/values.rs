@@ -21,8 +21,9 @@ pub(in crate::render) fn fold(ir: &FunctionIr, nodes: &mut Vec<Node>, ctx: &Ctx<
     {
         return false;
     }
+    let changed = super::copies::fold(ir, nodes, ctx);
     let once = crate::render::calls::read_once(nodes);
-    walk(nodes, ctx, &once)
+    walk(nodes, ctx, &once) || changed
 }
 
 fn walk(nodes: &mut Vec<Node>, ctx: &Ctx<'_>, once: &HashSet<u16>) -> bool {
@@ -153,14 +154,14 @@ fn unsigned_register(index: u16, ctx: &Ctx<'_>) -> bool {
             .is_some_and(|ty| ty.integer && ty.bits == 64 && !ty.signed)
 }
 
-fn plain_register(index: u16, ctx: &Ctx<'_>) -> bool {
+pub(super) fn plain_register(index: u16, ctx: &Ctx<'_>) -> bool {
     !ctx.names.get(&index).is_some_and(|name| {
         name.bytes()
             .any(|byte| !byte.is_ascii_alphanumeric() && byte != b'_')
     })
 }
 
-fn same_type_copy(dest: u16, value: &Expr, ctx: &Ctx<'_>) -> bool {
+pub(super) fn same_type_copy(dest: u16, value: &Expr, ctx: &Ctx<'_>) -> bool {
     let Expr::Reg { index, width: 64 } = value else {
         return false;
     };

@@ -11,9 +11,48 @@ use crate::ir::{BinOp, Expr, FunctionIr, Stmt, VARIABLE_BASE};
 use crate::passes::copies::left_by_call;
 
 pub(super) fn fold_saved_parameters(ir: &mut FunctionIr) {
+    drop_unused_parameter_outputs(ir);
     let params: Vec<u16> = ir.params.iter().map(|param| param.index).collect();
     for param in params {
         fold(ir, param, IntegerTypes::Exact);
+    }
+}
+
+fn drop_unused_parameter_outputs(ir: &mut FunctionIr) {
+    let params: HashSet<u16> = ir
+        .params
+        .iter()
+        .filter(|param| param.ty.is_pointer() || param.ty.integer().is_some())
+        .map(|param| param.index)
+        .collect();
+    if !ir.landing_pads.is_empty() || ir.blocks.iter().any(crate::ir::cfg::opaque) {
+        return;
+    }
+    let live_in = crate::ir::cfg::live_in(ir);
+    let exits: Vec<_> = (0..ir.blocks.len())
+        .map(|index| crate::ir::cfg::live_out(ir, &live_in, index))
+        .collect();
+    for (block, mut live) in ir.blocks.iter_mut().zip(exits) {
+        for stmt in block.stmts.iter_mut().rev() {
+            let (writes, reads) = crate::ir::visit::statement_registers(stmt);
+            // An unused result in an argument register does not overwrite the
+            // C parameter. Keep declared result bindings unchanged.
+            if let Stmt::Call {
+                outputs, abi: None, ..
+            } = stmt
+            {
+                outputs.retain(|output| {
+                    output.dest.width != 64
+                        || output.dest.index != output.register
+                        || !params.contains(&output.dest.index)
+                        || live.contains(&output.dest.index)
+                });
+            }
+            for written in writes {
+                live.remove(&written);
+            }
+            live.extend(reads);
+        }
     }
 }
 
@@ -554,6 +593,49 @@ mod tests {
     const OLD: u64 = 0x0706_0504_0302_0100;
     const NEW: u64 = 0x96a5_3cc3_f00f_5a69;
     const OTHER: u64 = 0xfedc_ba98_7654_3210;
+
+    #[test]
+    fn parameter_result_bindings_stay_when_a_successor_reads_them() {
+        let mut ir = FunctionIr::single_block(
+            Isa::X86_64,
+            vec![Stmt::Call {
+                kind: crate::ir::CallKind::Invoke,
+                target: Some(0x1000),
+                through: None,
+                convention: Convention::GoAmd64,
+                args: Some(Vec::new()),
+                floats_named: false,
+                abi: None,
+                outputs: vec![crate::ir::CallOutput {
+                    register: 3,
+                    dest: RegRef {
+                        index: 3,
+                        width: 64,
+                    },
+                }],
+                clobbers: None,
+                via: None,
+            }],
+        );
+        ir.params.push(Param {
+            index: 3,
+            name: "input".into(),
+            ty: CType::U64,
+        });
+        ir.blocks.push(crate::ir::Block {
+            start: 1,
+            stmts: vec![Stmt::Ret {
+                value: Expr::reg(3, 64),
+            }],
+        });
+        drop_unused_parameter_outputs(&mut ir);
+        assert_eq!(ir.blocks[0].stmts[0].call_outputs().len(), 1);
+        ir.blocks[1].stmts[0] = Stmt::Ret {
+            value: Expr::Const(0),
+        };
+        drop_unused_parameter_outputs(&mut ir);
+        assert!(ir.blocks[0].stmts[0].call_outputs().is_empty());
+    }
 
     fn address(offset: i64) -> Expr {
         Expr::bin(BinOp::Add, Expr::reg(31, 64), Expr::Const(offset as u64))

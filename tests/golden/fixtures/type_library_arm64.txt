@@ -25,9 +25,8 @@ struct group; int (getgrgid_r)(unsigned int, struct group *, char *, size_t, str
 -- decompile
 /* velk pseudo-C: _library_group @ 0x100000568 */
 int32_t library_group(struct group *a0) {
-    struct group *v1 = a0;
-    getgrgid_r(7, v1, 0x0, 0, 0x0);
-    return v1->gr_gid;
+    getgrgid_r(7, a0, 0x0, 0, 0x0);
+    return a0->gr_gid;
 }
 -- signature
 int32_t (struct group * a0)
@@ -64,10 +63,8 @@ fn _library_wide_length @ 0x1000005a0 (size 4)
 -- decompile
 /* velk pseudo-C: _library_group_at @ 0x1000005a4 */
 int32_t library_group_at(struct group *a0, int64_t a1) {
-    uint64_t v1 = a1;
-    struct group *v2 = a0;
-    getgrgid_r(7, v2, 0x0, 0, 0x0);
-    return v2[v1].gr_gid;
+    getgrgid_r(7, a0, 0x0, 0, 0x0);
+    return a0[a1].gr_gid;
 }
 -- signature
 int32_t (struct group * a0, int64_t a1)

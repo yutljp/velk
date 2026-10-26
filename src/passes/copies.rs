@@ -11,6 +11,8 @@ use crate::passes::frame::reads_outside_frame;
 
 mod debug;
 pub(crate) use debug::fold_debug_locals;
+mod available;
+pub(crate) use available::redundant_copy_renames;
 
 /// Folds a definition read exactly once before its register is written again
 /// into that reader, so `x8 = w8; if (x8 & 0x80000000) ...` keeps no temporary.

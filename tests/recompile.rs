@@ -56,6 +56,8 @@ mod forwarding;
 mod frame_arrays;
 #[path = "recompile/frame_values.rs"]
 mod frame_values;
+#[path = "recompile/go_locals.rs"]
+mod go_locals;
 #[path = "recompile/go_stack.rs"]
 mod go_stack;
 #[path = "recompile/go_values.rs"]

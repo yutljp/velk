@@ -257,8 +257,8 @@ fn scalar_array_types_extend_through_whole_copies() {
     recover(&mut ir);
     let text = crate::render::render(&ir, &[], &Default::default(), &[]);
     assert!(text.contains("uint64_t *v1 ="), "{text}");
-    assert!(text.contains("v2 = v1;"), "{text}");
-    assert!(text.contains("return v2[index];"), "{text}");
+    assert!(!text.contains("v2 = v1;"), "{text}");
+    assert!(text.contains("return v1[index];"), "{text}");
     compile_and_run(
         "scalar_array",
         &text,

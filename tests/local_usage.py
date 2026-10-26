@@ -1,7 +1,7 @@
 """Conservative syntactic screen of locals in complete velk CLI output.
 
 Usage: uv run python tests/local_usage.py OUTPUT.c [OUTPUT.c ...]
-CSV definitions and uses go to stdout; class totals go to stderr.
+CSV definitions and uses go to stdout; class and origin totals go to stderr.
 
 Counts direct assignments and component writes as definitions, and read-modify
 writes as both a definition and use. The single-use, copy and merge classes describe syntax; they do not prove
@@ -9,6 +9,8 @@ that IR widths, bindings and live ranges permit eliminating a variable.
 Everything outside this limited screen remains separate_or_unproven.
 Writes through pointers are memory accesses rather than local definitions.
 Stack object members count as component definitions.
+Origins describe the printed initializer or repeated definitions, not recovered
+source-language variables. Stack storage takes precedence over its initializer.
 """
 
 import collections
@@ -230,6 +232,33 @@ def analyze(path):
                     if slot or address:
                         kind = "single_use_candidate"
             summary[kind] += 1
+            origin = "computed_value"
+            if value["name"].startswith("local_"):
+                origin = "stack_storage"
+            elif local_type in {"struct go_string", "struct go_slice", "struct go_iface"}:
+                origin = "typed_header"
+            elif value["addressed"] or "[" in local_type or local_type == "aggregate":
+                origin = "addressable_storage"
+            elif kind in {"plain_copy", "same_source_merge"}:
+                origin = "register_copy" if kind == "plain_copy" else "merge_copy"
+            elif len(definitions) != 1:
+                origin = "multiple_or_missing_definitions"
+            else:
+                rhs = definitions[0][1]
+                if any(
+                    IDENTIFIER.fullmatch(token)
+                    and rhs[index + 1 : index + 2] == ["("]
+                    and not re.fullmatch(r"(?:u?int\d+_t|uintptr_t|intptr_t)", token)
+                    for index, token in enumerate(rhs)
+                ):
+                    origin = "call_result"
+                elif rhs[:1] == ["*"] or any(token in {"->", "["} for token in rhs):
+                    origin = "memory_read"
+                elif rhs and all(
+                    re.fullmatch(r"(?:0x[0-9a-fA-F]+|[0-9]+)", token) or token == "-"
+                    for token in rhs
+                ):
+                    origin = "constant"
             rows.append(
                 [
                     Path(path).name,
@@ -240,6 +269,7 @@ def analyze(path):
                     len(definitions),
                     len(uses),
                     kind,
+                    origin,
                 ]
             )
     return summary, rows
@@ -248,12 +278,13 @@ def analyze(path):
 def main():
     writer = csv.writer(sys.stdout)
     writer.writerow(
-        ["file", "function", "local", "body_line", "type", "definitions", "uses", "class"]
+        ["file", "function", "local", "body_line", "type", "definitions", "uses", "class", "origin"]
     )
     for path in sys.argv[1:]:
         summary, rows = analyze(path)
         writer.writerows(rows)
         print(path, dict(summary), "total", sum(summary.values()), file=sys.stderr)
+        print("origins", dict(collections.Counter(row[-1] for row in rows)), file=sys.stderr)
 
 
 if __name__ == "__main__":
