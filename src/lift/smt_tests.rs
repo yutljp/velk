@@ -36,11 +36,27 @@ fn rotations_and_byte_reversals_are_equivalent() {
                     &smt::term(&rotate(x.clone(), amount.clone(), bits, right)),
                     u32::from(bits),
                 );
-                proofs.predicate(
-                    format!("rotate/{bits}/{right}/{amount:?}"),
-                    &expected,
-                    &actual,
-                );
+                if matches!(amount, Expr::Reg { .. }) {
+                    // Cover every count residue while keeping all upper count bits symbolic.
+                    // Bind after lowering so the real variable-count expression is checked.
+                    let count_bits = bits.ilog2();
+                    for residue in 0..bits {
+                        let count = format!(
+                            "(concat ((_ extract 63 {count_bits}) r1) (_ bv{residue} {count_bits}))"
+                        );
+                        proofs.predicate(
+                            format!("rotate/{bits}/{right}/count residue {residue}"),
+                            &format!("(let ((r1 {count})) {expected})"),
+                            &format!("(let ((r1 {count})) {actual})"),
+                        );
+                    }
+                } else {
+                    proofs.predicate(
+                        format!("rotate/{bits}/{right}/{amount:?}"),
+                        &expected,
+                        &actual,
+                    );
+                }
             }
         }
         for chunk in [1, 2, 4, 8] {

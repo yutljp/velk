@@ -42,8 +42,14 @@ values, definedness and final memory. Private-frame tests observe the return
 value and definedness, allowing writes to unescaped frame slots to disappear. Flag tests
 compare the real recovered predicates with independent flag formulas.
 Rotation and byte reversal tests compare the real lowered expressions with
-bit-vector rotation and byte extraction. Reciprocal tests obtain accepted
-divisors from Rust and prove their quotient-interval inequalities for every
+bit-vector rotation and byte extraction. Variable rotation counts are partitioned
+by every possible residue modulo the width (8/16/32/64). Each query binds the low
+count bits after lowering and leaves the upper bits symbolic, covering every
+64-bit count without changing the variable-count lowering. This avoids exhausting
+the solver's resource limit on a single symbolic rotation query with Z3 4.13.3.
+Constant-count and byte-reversal checks remain separate obligations.
+Reciprocal tests obtain accepted divisors from Rust and prove their
+quotient-interval inequalities for every
 dividend in the corresponding domain, using integer arithmetic. They test
 a finite corpus of multipliers, shifts and candidate divisors.
 
