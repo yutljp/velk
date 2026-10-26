@@ -70,3 +70,22 @@ pub(super) fn records(mut bytes: &[u8]) -> impl Iterator<Item = (u16, &[u8])> {
         }
     })
 }
+
+#[cfg(kani)]
+mod proofs {
+    #[kani::proof]
+    #[kani::unwind(20)]
+    fn codeview_records() {
+        let bytes: [u8; 16] = kani::any();
+        let len: usize = kani::any();
+        kani::assume(len <= bytes.len());
+        let mut reader = super::Reader(&bytes[..len]);
+        let count: usize = kani::any();
+        let result = reader.take(count);
+        assert_eq!(result.is_some(), count <= len);
+        let _ = reader.number();
+        for (_, record) in super::records(&bytes[..len]) {
+            assert!(record.len() <= len);
+        }
+    }
+}

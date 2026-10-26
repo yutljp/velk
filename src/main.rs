@@ -857,6 +857,12 @@ mod tests {
     use std::path::PathBuf;
     use velk::card;
 
+    #[cfg(all(unix, miri))]
+    #[test]
+    fn closed_pipe_signal() {
+        super::exit_on_closed_pipe();
+    }
+
     const OPERATIONS: [(&str, &str); 10] = [
         ("-f", "--functions"),
         ("-s", "--sections"),

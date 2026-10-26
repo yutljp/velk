@@ -108,8 +108,29 @@ fn aarch64_branch_targets(bytes: &[u8], base: u64) -> std::collections::HashSet<
 }
 
 pub(crate) fn read_word(bytes: &[u8], offset: usize) -> Option<u32> {
-    let slice = bytes.get(offset..offset + 4)?;
+    let Some(end) = offset.checked_add(4) else {
+        return None;
+    };
+    let Some(slice) = bytes.get(offset..end) else {
+        return None;
+    };
     Some(u32::from_le_bytes([slice[0], slice[1], slice[2], slice[3]]))
+}
+
+#[cfg(kani)]
+mod proofs {
+    #[kani::proof]
+    fn instruction_word() {
+        let bytes: [u8; 8] = kani::any();
+        let len: usize = kani::any();
+        kani::assume(len <= bytes.len());
+        let offset: usize = kani::any();
+        let result = super::read_word(&bytes[..len], offset);
+        assert_eq!(result.is_some(), offset <= len && len - offset >= 4);
+        if let Some(value) = result {
+            assert_eq!(value.to_le_bytes(), bytes[offset..offset + 4]);
+        }
+    }
 }
 
 pub(crate) fn is_aarch64_padding(word: u32) -> bool {
@@ -269,6 +290,17 @@ pub(crate) fn estimate_sizes(sections: &[Section], functions: &mut BTreeMap<u64,
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn instruction_words_reject_overflow_and_truncation() {
+        for offset in [usize::MAX, usize::MAX - 1, usize::MAX - 3, 1, 4] {
+            assert_eq!(super::read_word(&[1, 2, 3, 4], offset), None);
+        }
+        for len in 0..4 {
+            assert_eq!(super::read_word(&[1, 2, 3, 4][..len], 0), None);
+        }
+        assert_eq!(super::read_word(&[1, 2, 3, 4], 0), Some(0x0403_0201));
+    }
+
     use super::{aarch64_prologues, estimate_sizes, x86_prologues};
 
     #[test]

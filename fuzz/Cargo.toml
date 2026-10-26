@@ -1,0 +1,68 @@
+[package]
+name = "velk-fuzz"
+version = "0.0.0"
+publish = false
+edition = "2024"
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "0.4"
+serde_json = "1.0"
+velk = { path = "..", features = ["fuzzing"] }
+
+[workspace]
+members = ["."]
+
+[profile.release]
+debug = 1
+
+[[bin]]
+name = "elf"
+path = "fuzz_targets/elf.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "pe"
+path = "fuzz_targets/pe.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "macho"
+path = "fuzz_targets/macho.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "functions"
+path = "fuzz_targets/functions.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "decompile"
+path = "fuzz_targets/decompile.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "script_request"
+path = "fuzz_targets/script_request.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "mcp_request"
+path = "fuzz_targets/mcp_request.rs"
+test = false
+doc = false
+bench = false

@@ -1,8 +1,8 @@
 site	rewrite	side_conditions	widths	coverage	anchor	reviewed_sha256
-src/ir/mod.rs:457	Constant binary folding	Both operands constant; denominator nonzero for division	64	instances	pub fn bin(	b59f8912950b33ac816ad03b9e6c7661f32565edcf88566a89f4eb01c25ca3aa
-src/ir/mod.rs:457	Zero shifts and zero arithmetic/bitwise operands	Zero on permitted side; SAR retains truncation	8/16/32/64	templates	pub fn bin(	b59f8912950b33ac816ad03b9e6c7661f32565edcf88566a89f4eb01c25ca3aa
-src/ir/mod.rs:457	Identical-operand sub/xor/and/or	Identical expression trees	8/16/32/64	register templates; effects open	pub fn bin(	b59f8912950b33ac816ad03b9e6c7661f32565edcf88566a89f4eb01c25ca3aa
-src/ir/mod.rs:457	Multiply by one and repeated low32 mask	Right one; or two exact low32 masks	8/16/32/64	templates	pub fn bin(	b59f8912950b33ac816ad03b9e6c7661f32565edcf88566a89f4eb01c25ca3aa
+src/ir/mod.rs:459	Constant binary folding	Both operands constant; denominator nonzero for division	64	instances	pub fn bin(	fc90dadb8060f1b61b1a2ff1446f96690c6db8f20df66dfa428dedd8fe510e31
+src/ir/mod.rs:459	Zero shifts and zero arithmetic/bitwise operands	Zero on permitted side; SAR retains truncation	8/16/32/64	templates	pub fn bin(	fc90dadb8060f1b61b1a2ff1446f96690c6db8f20df66dfa428dedd8fe510e31
+src/ir/mod.rs:459	Identical-operand sub/xor/and/or	Identical expression trees	8/16/32/64	register templates; effects open	pub fn bin(	fc90dadb8060f1b61b1a2ff1446f96690c6db8f20df66dfa428dedd8fe510e31
+src/ir/mod.rs:459	Multiply by one and repeated low32 mask	Right one; or two exact low32 masks	8/16/32/64	templates	pub fn bin(	fc90dadb8060f1b61b1a2ff1446f96690c6db8f20df66dfa428dedd8fe510e31
 src/ir/semantics.rs:185	Integer and vector constant folding	Known nonfaulting operands; not Undefined/Results	Operation-specific	integer/lane fold instances; open pack/crypto/wide division	pub(crate) fn fold(	46bedbb5b7e24a0f679990fd51c245e40a52e7d292731ac61e58019e6e71a420
 src/ir/semantics.rs:185	Floating constant folding	Known arguments; result not NaN	32/64	IEEE fold instances	pub(crate) fn fold(	46bedbb5b7e24a0f679990fd51c245e40a52e7d292731ac61e58019e6e71a420
 src/ir/visit.rs:165	Recursive expression substitution	Caller must establish widths and effect safety	8/16/32/64	width-compatible substitution templates; open caller safety	pub fn substitute_values(	64f9d44886a766954df24d59bdf82887fe3dbef3b471840a11ec397c75429f96

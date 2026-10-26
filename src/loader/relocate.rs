@@ -352,3 +352,57 @@ mod tests {
         );
     }
 }
+
+#[cfg(kani)]
+mod proofs {
+    #[kani::proof]
+    #[kani::unwind(20)]
+    fn relocation_words() {
+        let mut bytes: [u8; 16] = kani::any();
+        let original = bytes;
+        let len: usize = kani::any();
+        kani::assume(len <= bytes.len());
+        let place: usize = kani::any();
+        let value: u64 = kani::any();
+        super::write_u64(&mut bytes[..len], place, value);
+        if place <= len && len - place >= 8 {
+            assert_eq!(super::read_u64(&bytes[..len], place), Some(value));
+            for index in 0..bytes.len() {
+                if index < place || index >= place + 8 {
+                    assert_eq!(bytes[index], original[index]);
+                }
+            }
+        } else {
+            assert_eq!(super::read_u64(&bytes[..len], place), None);
+            assert_eq!(bytes, original);
+        }
+        let value: u32 = kani::any();
+        let original = bytes;
+        super::write_u32(&mut bytes[..len], place, value);
+        if place <= len && len - place >= 4 {
+            assert_eq!(super::read_u32(&bytes[..len], place), Some(value));
+        } else {
+            assert_eq!(super::read_u32(&bytes[..len], place), None);
+            assert_eq!(bytes, original);
+        }
+    }
+
+    #[kani::proof]
+    #[kani::unwind(10)]
+    fn aarch64_relocation() {
+        let instruction: u32 = kani::any();
+        let pc: u64 = kani::any();
+        let value: u64 = kani::any();
+        let kind: u32 = kani::any();
+        let mut bytes = instruction.to_le_bytes();
+        let _ = super::patch_aarch64(&mut bytes, 0, pc, value, object::elf::RelocationType(kind));
+        if kind == object::elf::R_AARCH64_CALL26.0 {
+            let patched = u32::from_le_bytes(bytes);
+            assert_eq!(patched & !0x03ff_ffff, instruction & !0x03ff_ffff);
+            assert_eq!(
+                patched & 0x03ff_ffff,
+                (value.wrapping_sub(pc) >> 2) as u32 & 0x03ff_ffff
+            );
+        }
+    }
+}

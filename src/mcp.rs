@@ -86,6 +86,23 @@ fn handle(engine: &Engine, request: &Value) -> Option<Value> {
     Some(reply(id, result))
 }
 
+/// Exercises request dispatch without executing supplied scripts or opening files.
+#[cfg(feature = "fuzzing")]
+pub fn fuzz_request(engine: &Engine, bytes: &[u8]) {
+    let Ok(mut request) = serde_json::from_slice::<Value>(bytes) else {
+        return;
+    };
+    if let Some(arguments) = request.pointer_mut("/params/arguments")
+        && let Some(arguments) = arguments.as_object_mut()
+    {
+        if arguments.get("code").is_some_and(Value::is_string) {
+            arguments.insert("code".to_owned(), json!(""));
+        }
+        arguments.remove("path");
+    }
+    let _ = handle(engine, &request);
+}
+
 fn reply(id: Value, result: std::result::Result<Value, RpcError>) -> Value {
     match result {
         Ok(result) => json!({ "jsonrpc": "2.0", "id": id, "result": result }),

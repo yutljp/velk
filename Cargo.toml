@@ -6,6 +6,7 @@ license = "MIT"
 
 [features]
 timing = []
+fuzzing = []
 
 [dependencies]
 clap = { version = "4.6.7", features = ["derive"] }
@@ -53,6 +54,9 @@ needless_for_each = "deny"
 rc_buffer = "deny"
 string_add = "deny"
 undocumented_unsafe_blocks = "deny"
+
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(kani)'] }
 
 [profile.test]
 opt-level = 2

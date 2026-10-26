@@ -363,3 +363,82 @@ mod malformed {
         assert_eq!(reader.encoded(0x14), None);
     }
 }
+
+#[cfg(kani)]
+mod proofs {
+    use super::Reader;
+    use crate::loader::{Image, Isa};
+
+    #[kani::proof]
+    #[kani::unwind(12)]
+    fn leb_readers() {
+        let bytes: [u8; 10] = kani::any();
+        let len: usize = kani::any();
+        kani::assume(len <= bytes.len());
+        let image = Image::from_code(Isa::X86_64, 0, bytes[..len].to_vec());
+        let mut reader = Reader {
+            image: &image,
+            at: 0,
+            end: len as u64,
+        };
+        let unsigned = reader.uleb();
+        assert!(reader.at <= len as u64);
+        if unsigned.is_some() {
+            assert!(reader.at > 0 && reader.at <= 10);
+        }
+        reader.at = 0;
+        let signed = reader.sleb();
+        assert!(reader.at <= len as u64);
+        if signed.is_some() {
+            assert!(reader.at > 0 && reader.at <= 10);
+        }
+    }
+
+    #[kani::proof]
+    #[kani::unwind(12)]
+    fn leb_round_trip() {
+        let value: u64 = kani::any();
+        let mut bytes = [0u8; 10];
+        let mut remaining = value;
+        let mut len = 0;
+        loop {
+            let byte = (remaining & 0x7f) as u8;
+            remaining >>= 7;
+            bytes[len] = byte | if remaining != 0 { 0x80 } else { 0 };
+            len += 1;
+            if remaining == 0 {
+                break;
+            }
+        }
+        let image = Image::from_code(Isa::X86_64, 0, bytes[..len].to_vec());
+        let mut reader = Reader {
+            image: &image,
+            at: 0,
+            end: len as u64,
+        };
+        assert_eq!(reader.uleb(), Some(value));
+        assert_eq!(reader.at, len as u64);
+    }
+}
+
+#[cfg(kani)]
+mod pointer_proofs {
+    #[kani::proof]
+    #[kani::unwind(20)]
+    fn encoded_pointers() {
+        let bytes: [u8; 16] = kani::any();
+        let len: usize = kani::any();
+        kani::assume(len <= bytes.len());
+        let base: u64 = kani::any();
+        let image = crate::loader::Image::from_code(
+            crate::loader::Isa::X86_64,
+            base,
+            bytes[..len].to_vec(),
+        );
+        if let Some(mut reader) = super::Reader::new(&image, base) {
+            let encoding: u8 = kani::any();
+            let _ = reader.encoded(encoding);
+            assert!(reader.at >= base && reader.at <= reader.end);
+        }
+    }
+}

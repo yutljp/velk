@@ -7,6 +7,8 @@ mod i386;
 mod macho;
 mod objc;
 mod plt;
+#[cfg(kani)]
+mod proofs;
 mod relocate;
 pub(crate) mod seh;
 mod symbols;
@@ -431,7 +433,7 @@ impl Image {
 
     /// An image holding only little-endian `code`, mapped executable at
     /// `addr`.
-    #[cfg(test)]
+    #[cfg(any(test, kani))]
     pub(crate) fn from_code(isa: Isa, addr: u64, code: Vec<u8>) -> Self {
         Self {
             slices: Vec::new(),

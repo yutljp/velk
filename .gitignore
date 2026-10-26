@@ -17,3 +17,10 @@ tests/out*/
 
 # Local agent worktrees and settings
 /.claude/
+
+# Generated verification inputs and findings
+/fuzz/corpus/
+/fuzz/artifacts/
+/fuzz/coverage/
+/fuzz/target/
+/tests/__pycache__/
