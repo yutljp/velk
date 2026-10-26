@@ -7,6 +7,9 @@
 0x2012c0 3 - unwind,prologue
 0x2012d0 23 - unwind,prologue
 0x2012f0 18 - unwind,prologue
+/* velk prelude */
+#include <stdint.h>
+/* end velk prelude */
 
 == 0x2011e0 -
 -- decompile

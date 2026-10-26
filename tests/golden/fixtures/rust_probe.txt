@@ -545,6 +545,11 @@
 0x52b70 16 __cxa_finalize plt
 0x52b80 16 _Unwind_Resume plt
 /* velk prelude */
+#include <stdint.h>
+
+extern uint64_t g_55aa8; /* address: 0x55aa8 */
+extern uint64_t g_56140; /* address: 0x56140 */
+
 #ifndef VELK_equal_lanes8
 #define VELK_equal_lanes8
 static inline uint64_t equal_lanes8(uint64_t a, uint64_t b) {
@@ -580,10 +585,7 @@ static inline uint64_t sign_bits8(uint64_t a) {
     return out;
 }
 #endif
-
-extern uint64_t g_55aa8; /* address: 0x55aa8 */
-extern uint64_t g_56140; /* address: 0x56140 */
-
+uint64_t stdio___print();
 void memchr_raw__find_sse2(void);
 /* end velk prelude */
 

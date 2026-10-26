@@ -427,6 +427,11 @@ pub(super) fn object_member(addr: &Expr, width: u8, ctx: &Ctx<'_>) -> Option<Pla
 /// Renders a member access when the field table has that offset at the
 /// access's own width.
 pub(crate) fn member_access(addr: &Expr, width: u8, ctx: &Ctx<'_>) -> Option<Place> {
+    if let Expr::Const(address) = addr
+        && let Some((text, ty)) = ctx.globals.header_object(*address, width)
+    {
+        return Some(Place { text, ty });
+    }
     if let Some(member) = object_member(addr, width, ctx) {
         return Some(member);
     }
@@ -593,6 +598,11 @@ pub(super) fn pointer_target(expr: &Expr, ctx: &Ctx<'_>) -> Option<CType> {
         }
         Expr::Reg { index, width: 64 } => ctx.element_types.get(index).cloned(),
         Expr::Load { addr, width: 8, .. } => {
+            if let Expr::Const(address) = addr.as_ref()
+                && let Some((_, CType::Pointer(target))) = ctx.globals.header_object(*address, 8)
+            {
+                return Some(*target);
+            }
             if let Some(ty) = ctx
                 .slots
                 .get(&render_expr(addr, ctx))

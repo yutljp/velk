@@ -3,6 +3,9 @@
 0x10 50 _helper symtab,dynamic,unwind
 0x50 11 _pair_sum symtab,dynamic,unwind
 0x60 125 _sum_arr symtab,dynamic,unwind
+/* velk prelude */
+#include <stdint.h>
+/* end velk prelude */
 
 == 0x0 _sum3
 -- decompile

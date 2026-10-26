@@ -63,6 +63,7 @@ pub(super) struct Globals {
     linkable: HashSet<u64>,
     types: HashMap<u64, CType>,
     sizes: HashMap<u64, u64>,
+    headers: HashMap<u64, String>,
     names: HashMap<u64, String>,
     repeated: HashSet<String>,
     used: RefCell<Used>,
@@ -77,16 +78,33 @@ impl Globals {
             .import_slots
             .iter()
             .chain(&symbols.data)
-            .map(|(address, name)| (*address, identifier(name)))
+            .map(|(address, name)| {
+                let name = symbols
+                    .library_variables
+                    .get(address)
+                    .map_or_else(|| identifier(name), |variable| variable.name.clone());
+                (*address, name)
+            })
             .collect();
         let mut counts = HashMap::<&str, usize>::new();
         for name in names.values() {
             *counts.entry(name).or_default() += 1;
         }
-        let repeated = counts
+        let repeated: HashSet<String> = counts
             .into_iter()
             .filter(|(_, count)| *count > 1)
             .map(|(name, _)| name.to_owned())
+            .collect();
+        let variables: Vec<_> = symbols
+            .library_variables
+            .iter()
+            .filter(|(address, variable)| {
+                names
+                    .get(address)
+                    .is_some_and(|name| !repeated.contains(name))
+                    && variable.size != 0
+                    && address.checked_add(variable.size).is_some()
+            })
             .collect();
         Self {
             linkable: symbols
@@ -95,8 +113,18 @@ impl Globals {
                 .filter(|(_, name)| identifier(name) == **name)
                 .map(|(address, _)| *address)
                 .collect(),
-            types: HashMap::new(),
-            sizes: HashMap::new(),
+            types: variables
+                .iter()
+                .map(|(address, variable)| (**address, variable.ty.clone()))
+                .collect(),
+            sizes: variables
+                .iter()
+                .map(|(address, variable)| (**address, variable.size))
+                .collect(),
+            headers: variables
+                .iter()
+                .map(|(address, variable)| (**address, variable.header.clone()))
+                .collect(),
             names,
             repeated,
             used: RefCell::new(Used {
@@ -109,6 +137,9 @@ impl Globals {
     pub(super) fn pointer(&self, address: u64, view: View) -> String {
         if let Some(ty) = self.target(address)
             && match view {
+                View::Unsigned(width) if self.headers.contains_key(&address) => {
+                    self.sizes.get(&address) == Some(&u64::from(width))
+                }
                 View::Unsigned(width) => ty
                     .integer()
                     .is_some_and(|(bits, _)| bits == u32::from(width) * 8),
@@ -182,6 +213,9 @@ impl Globals {
         layouts: &HashMap<String, super::naming::Layout>,
     ) {
         for (address, ty, size) in &ir.debug_globals {
+            if self.headers.contains_key(address) {
+                continue;
+            }
             let Some(name) = self.names.get(address) else {
                 continue;
             };
@@ -246,6 +280,18 @@ impl Globals {
         })
     }
 
+    pub(super) fn header_object(&self, address: u64, width: u8) -> Option<(String, CType)> {
+        if !self.headers.contains_key(&address)
+            || self.sizes.get(&address) != Some(&u64::from(width))
+        {
+            return None;
+        }
+        let Some(pointer) = self.object_pointer(address) else {
+            return None;
+        };
+        Some((format!("*{pointer}"), self.types[&address].clone()))
+    }
+
     pub(super) fn containing(&self, address: u64) -> Option<(u64, u64)> {
         let mut found = self
             .sizes
@@ -282,6 +328,9 @@ impl Globals {
             .iter()
             .filter(|(_, name)| super::function::code_mentions(body, name))
             .map(|(address, name)| {
+                if let Some(header) = self.headers.get(address) {
+                    return format!("#include <{header}>\n\n");
+                }
                 format!(
                     "extern {}; /* address: 0x{address:x} */\n\n",
                     match &self.types[address] {

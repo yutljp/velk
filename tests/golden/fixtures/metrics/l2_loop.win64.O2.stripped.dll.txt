@@ -4,6 +4,8 @@
 0x180001110 80 - prologue
 0x180001160 36 - prologue
 /* velk prelude */
+#include <stdint.h>
+
 extern uint32_t g_180003000; /* address: 0x180003000 */
 /* end velk prelude */
 

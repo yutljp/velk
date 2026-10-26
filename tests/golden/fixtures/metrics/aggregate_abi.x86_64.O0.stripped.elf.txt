@@ -11,6 +11,8 @@
 0x201540 96 - unwind,prologue
 0x2015a0 120 - unwind,prologue
 /* velk prelude */
+#include <stdint.h>
+
 uint64_t velk_entry_stack_pointer(void); /* target entry stack pointer */
 /* end velk prelude */
 

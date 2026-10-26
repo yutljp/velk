@@ -9,8 +9,13 @@
 0x1000009c0 32 ___use_block_block_invoke symtab,function-starts
 0x1000009e0 15 _main symtab,dynamic,entry,function-starts
 /* velk prelude */
+#include <stdint.h>
+
 extern uint64_t g_1000021e0; /* address: 0x1000021e0 */
 extern uint8_t __block_literal_global; /* address: 0x100001020 */
+
+uint64_t __use_block_block_invoke();
+uint64_t objc_msgSend();
 /* end velk prelude */
 
 == 0x1000008b0 -[Counter add:with:]

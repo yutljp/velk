@@ -4312,7 +4312,8 @@ static uint64_t output_callee(uint64_t value) {
         );
         let printed = velk::render::render(&ir, &[], &symbols, &[]);
         assert_eq!(!printed.contains("call_values"), direct, "{printed}");
-        assert_eq!(printed.matches("output_callee(").count(), 1, "{printed}");
+        let body = velk::render::Prelude::default().extract(&printed);
+        assert_eq!(body.matches("output_callee(").count(), 1, "{printed}");
         if direct {
             assert!(printed.contains("v1 = output_callee(left);"), "{printed}");
             assert!(

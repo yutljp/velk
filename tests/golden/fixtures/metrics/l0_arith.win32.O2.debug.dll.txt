@@ -3,6 +3,9 @@
 0x10001010 17 _scale symtab,dynamic,dwarf
 0x10001030 14 _pick symtab,dynamic,dwarf
 0x10001040 7 _negate symtab,dynamic,dwarf
+/* velk prelude */
+#include <stdint.h>
+/* end velk prelude */
 
 == 0x10001000 _add3
 -- decompile

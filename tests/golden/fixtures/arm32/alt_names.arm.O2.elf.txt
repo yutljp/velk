@@ -1,6 +1,9 @@
 # arm32/alt_names.arm.O2.elf: elf arm32 no entry, 2 functions, 0 lift failures, 2 unsupported, 0 gotos
 0x200ec 12 alt_sum3 symtab,dwarf
 0x200f8 76 alt_helper symtab,dwarf
+/* velk prelude */
+#include <stdint.h>
+/* end velk prelude */
 
 == 0x200ec alt_sum3
 -- decompile

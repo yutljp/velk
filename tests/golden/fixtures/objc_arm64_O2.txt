@@ -9,7 +9,11 @@
 0x1000009a4 8 _main symtab,dynamic,entry,function-starts
 0x1000009ac 12 _objc_msgSend plt
 /* velk prelude */
+#include <stdint.h>
+
 extern uint64_t g_100008138; /* address: 0x100008138 */
+
+uint64_t objc_msgSend();
 /* end velk prelude */
 
 == 0x100000960 -[Counter add:with:]

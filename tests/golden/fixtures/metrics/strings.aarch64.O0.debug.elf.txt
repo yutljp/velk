@@ -1,6 +1,8 @@
 # metrics/strings.aarch64.O0.debug.elf: elf aarch64 no entry, 1 functions, 0 lift failures, 0 unsupported, 0 gotos
 0x21019c 16 pick symtab,dwarf,unwind
 /* velk prelude */
+#include <stdint.h>
+
 extern uint64_t kName; /* address: 0x2201b0 */
 /* end velk prelude */
 

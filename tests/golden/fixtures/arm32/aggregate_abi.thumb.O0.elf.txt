@@ -11,6 +11,13 @@
 0x205d4 262 abi_exhaust_five_aligned symtab,dwarf
 0x206dc 336 abi_exhaust_seven_aligned symtab,dwarf
 /* velk prelude */
+#include <stdint.h>
+
+uint64_t sub_201ba();
+uint64_t sub_201fa();
+uint64_t sub_2023e();
+uint64_t sub_20296();
+uint64_t sub_202f2();
 uint64_t velk_entry_stack_pointer(void); /* target entry stack pointer */
 /* end velk prelude */
 

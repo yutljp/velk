@@ -3,6 +3,9 @@
 0x2011c0 26 sum_until symtab,dwarf,unwind
 0x2011e0 40 sum_till_neg symtab,dwarf,unwind
 0x201210 44 sum_until_zero symtab,dwarf,unwind
+/* velk prelude */
+#include <stdint.h>
+/* end velk prelude */
 
 == 0x201190 count_bits
 -- decompile

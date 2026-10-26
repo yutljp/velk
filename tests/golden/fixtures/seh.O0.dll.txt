@@ -9,6 +9,14 @@
 0x180001190 33 seh_nested__finally_0 unwind
 0x1800011c0 30 - unwind
 0x1800011e0 6 __C_specific_handler plt
+/* velk prelude */
+#include <stdint.h>
+
+uint64_t choose_filter();
+uint64_t imported_value();
+uint64_t sub_180001100();
+uint64_t sub_1800011c0();
+/* end velk prelude */
 
 == 0x180001000 choose_filter
 -- decompile

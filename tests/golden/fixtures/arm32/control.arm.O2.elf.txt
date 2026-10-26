@@ -6,6 +6,13 @@
 0x20200 64 short_circuit symtab,dwarf
 0x20240 136 skip_negatives symtab,dwarf
 0x202c8 140 find_pair symtab,dwarf
+/* velk prelude */
+#include <stdint.h>
+
+uint64_t sub_20190();
+uint64_t sub_20298();
+uint64_t sub_202bc();
+/* end velk prelude */
 
 == 0x20118 matrix_trace
 -- decompile

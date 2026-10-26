@@ -3,6 +3,9 @@
 0x20170 108 array_sum symtab,dwarf
 0x201dc 48 bump symtab,dwarf
 0x2020c 32 banner_first symtab,dwarf
+/* velk prelude */
+#include <stdint.h>
+/* end velk prelude */
 
 == 0x20128 point_dot
 -- decompile

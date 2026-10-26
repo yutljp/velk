@@ -6,6 +6,11 @@
 0x1800010b0 54 stack_arguments symtab,dwarf
 0x1800010f0 16 __chkstk symtab,plt
 0x180001100 6 imported_value plt
+/* velk prelude */
+#include <stdint.h>
+
+uint64_t imported_value();
+/* end velk prelude */
 
 == 0x180001000 call_import
 -- decompile

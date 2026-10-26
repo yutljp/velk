@@ -3,6 +3,12 @@
 0x20108 76 helper symtab,dwarf
 0x20154 12 pair_sum symtab,dwarf
 0x20160 124 sum_arr symtab,dwarf
+/* velk prelude */
+#include <stdint.h>
+
+uint64_t sub_201b0();
+uint64_t sub_201d0();
+/* end velk prelude */
 
 == 0x200fc sum3
 -- decompile

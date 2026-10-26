@@ -1015,6 +1015,8 @@ crt_windows.x86_64.exe 0x140001140:
 crt_windows.x86_64.exe 0x140001148:
 crt_windows.x86_64.exe 0x140001150:
 crt_windows.x86_64.exe 0x140001158:
+frame_bounds_a64.o 0x0: 4do { 4while ( 4do { 4while (
+frame_bounds_x64.o 0x0: 4do { 4while ( 4do { 4while (
 go_probe 0x401000: 4if ( 4if (
 go_probe 0x401060: 4if ( 4while ( 8if ( 8if ( 12continue; 8if (
 go_probe 0x4010e0: 4if ( 4while ( 8if ( 8if ( 12continue; 8if ( 8if ( 12if (

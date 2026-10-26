@@ -4,6 +4,8 @@
 0x201290 90 - unwind,prologue
 0x2012f0 95 - unwind,prologue
 /* velk prelude */
+#include <stdint.h>
+
 extern uint32_t g_202350; /* address: 0x202350 */
 /* end velk prelude */
 

@@ -3,6 +3,9 @@
 0x10001010 32 scale dynamic
 0x10001030 16 pick dynamic
 0x10001040 7 negate dynamic
+/* velk prelude */
+#include <stdint.h>
+/* end velk prelude */
 
 == 0x10001000 add3
 -- decompile

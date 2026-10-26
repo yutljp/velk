@@ -7,6 +7,13 @@
 0x201fc 12 pointer_distance symtab,dwarf
 0x20208 16 read_volatile symtab,dwarf
 0x20218 20 swap_ints symtab,dwarf
+/* velk prelude */
+#include <stdint.h>
+
+uint64_t grid_get();
+uint64_t string_length();
+uint64_t sub_20188();
+/* end velk prelude */
 
 == 0x2013c copy_bytes
 -- decompile

@@ -1,6 +1,8 @@
 # metrics/strings.x86_64.O0.stripped.elf: elf x86_64 no entry, 1 functions, 0 lift failures, 0 unsupported, 0 gotos
 0x2011b0 17 - unwind,prologue
 /* velk prelude */
+#include <stdint.h>
+
 extern uint64_t g_2021c8; /* address: 0x2021c8 */
 /* end velk prelude */
 

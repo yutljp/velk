@@ -4,6 +4,9 @@
 0x1800010c0 5 truncate_to_int symtab,dwarf
 0x1800010d0 9 widen symtab,dwarf
 0x1800010e0 22 compare_doubles symtab,dwarf
+/* velk prelude */
+#include <stdint.h>
+/* end velk prelude */
 
 == 0x180001000 average
 -- decompile

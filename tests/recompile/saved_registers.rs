@@ -57,7 +57,7 @@ ret
 .size mask_caller, .-mask_caller
 ",
             "mask_caller",
-            "static void mask_callee(int64_t p) { *(uint64_t *)(uintptr_t)p = 1; }",
+            "static uint64_t mask_callee(int64_t p) { *(uint64_t *)(uintptr_t)p = 1; return 0; }",
         ),
         (
             "aarch64-unknown-linux-gnu",
@@ -88,7 +88,7 @@ ret
 .size offset_caller, .-offset_caller
 ",
             "offset_caller",
-            "static void offset_callee(void) {}",
+            "static uint64_t offset_callee(void) { return 0; }",
         ),
     ] {
         let scratch = scratch_dir(name);
@@ -189,7 +189,7 @@ ret
     let caller_code = binary.decompile(caller, None, None).unwrap();
     assert!(!caller_code.contains("undefined"), "{caller_code}");
     syntax::run_printed(
-        &format!("{callee_code}\n{caller_code}"),
+        &velk::render::combine(&format!("{callee_code}\n{caller_code}")),
         "",
         "uint32_t inputs[] = {0, 1, 23, 0x7fffffffU, 0x80000000U, 0xffffffffU};
          for (unsigned i = 0; i < 6; ++i) {

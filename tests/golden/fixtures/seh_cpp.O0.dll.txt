@@ -2,6 +2,11 @@
 0x180001000 58 cpp_catch dynamic,unwind
 0x180001040 34 cpp_catch__catch_0 unwind
 0x180001070 6 __CxxFrameHandler3 plt
+/* velk prelude */
+#include <stdint.h>
+
+uint64_t _imported_value__YAHH_Z();
+/* end velk prelude */
 
 == 0x180001000 cpp_catch
 -- decompile

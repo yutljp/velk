@@ -1,7 +1,11 @@
 # arm32/switch_jumptable.thumb.O0.elf: elf arm32 no entry, 1 functions, 0 lift failures, 1 unsupported, 0 gotos
 0x20104 480 d7 symtab,dwarf
 /* velk prelude */
+#include <stdint.h>
+
 extern uint32_t g; /* address: 0x302e4 */
+
+uint64_t sub_20118();
 /* end velk prelude */
 
 == 0x20104 d7

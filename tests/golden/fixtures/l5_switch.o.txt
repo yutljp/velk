@@ -2,6 +2,8 @@
 0x0 268 dense symtab,unwind
 0x10c 48 sparse symtab,unwind
 /* velk prelude */
+#include <stdint.h>
+
 extern uint32_t g_sink; /* address: 0x14c */
 /* end velk prelude */
 

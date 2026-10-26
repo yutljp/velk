@@ -1785,8 +1785,9 @@ fn segment_bindings_keep_real_calls_parameters_and_data_distinct() {
             rendered.code
         );
     }
+    let body = crate::render::Prelude::default().extract(&rendered.code);
     assert_eq!(
-        rendered.code.matches("velk_x86_fs_base();").count(),
+        body.matches("velk_x86_fs_base();").count(),
         1,
         "{}",
         rendered.code

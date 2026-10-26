@@ -9,6 +9,9 @@
 0x180001150 87 - unwind,prologue
 0x1800011b0 35 - unwind,prologue
 0x1800011e0 33 - unwind,prologue
+/* velk prelude */
+#include <stdint.h>
+/* end velk prelude */
 
 == 0x180001000 -
 -- decompile

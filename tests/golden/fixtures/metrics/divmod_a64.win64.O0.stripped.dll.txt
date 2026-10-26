@@ -24,6 +24,9 @@
 0x180001290 24 - unwind,prologue
 0x1800012b0 21 - unwind,prologue
 0x1800012d0 21 - unwind,prologue
+/* velk prelude */
+#include <stdint.h>
+/* end velk prelude */
 
 == 0x180001000 -
 -- decompile

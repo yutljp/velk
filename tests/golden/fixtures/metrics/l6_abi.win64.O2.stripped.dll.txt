@@ -3,6 +3,11 @@
 0x180001010 32 - prologue
 0x180001030 32 - prologue
 0x180001050 8 - prologue
+/* velk prelude */
+#include <stdint.h>
+
+uint64_t sub_180001000();
+/* end velk prelude */
 
 == 0x180001000 -
 -- decompile

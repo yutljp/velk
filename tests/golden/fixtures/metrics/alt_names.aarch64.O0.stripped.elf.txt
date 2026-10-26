@@ -1,6 +1,9 @@
 # metrics/alt_names.aarch64.O0.stripped.elf: elf aarch64 no entry, 2 functions, 0 lift failures, 0 unsupported, 0 gotos
 0x21016c 44 - unwind,prologue
 0x210198 96 - unwind,prologue
+/* velk prelude */
+#include <stdint.h>
+/* end velk prelude */
 
 == 0x21016c -
 -- decompile

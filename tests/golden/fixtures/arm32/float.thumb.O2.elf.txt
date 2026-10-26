@@ -5,6 +5,25 @@
 0x201f8 16 widen symtab,dwarf
 0x20208 50 compare_doubles symtab,dwarf
 /* velk prelude */
+#include <stdint.h>
+
+uint64_t sub_20156();
+uint64_t sub_2015e();
+uint64_t sub_20168();
+uint64_t sub_20170();
+uint64_t sub_20190();
+uint64_t sub_2019e();
+uint64_t sub_201ac();
+uint64_t sub_201b6();
+uint64_t sub_201c2();
+uint64_t sub_201e2();
+uint64_t sub_201e8();
+uint64_t sub_201ee();
+uint64_t sub_201f6();
+uint64_t sub_201fe();
+uint64_t sub_20206();
+uint64_t sub_20218();
+uint64_t sub_2022c();
 uint64_t velk_entry_stack_pointer(void); /* target entry stack pointer */
 /* end velk prelude */
 

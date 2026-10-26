@@ -11,6 +11,14 @@
 0x20228 44 call_sum9 symtab,dwarf
 0x20254 154 sum_varargs symtab,dwarf
 /* velk prelude */
+#include <stdbool.h>
+#include <stdint.h>
+
+uint64_t is_even();
+uint64_t is_odd();
+uint64_t square();
+uint64_t sum9();
+uint64_t twice();
 uint64_t velk_entry_stack_pointer(void); /* target entry stack pointer */
 /* end velk prelude */
 

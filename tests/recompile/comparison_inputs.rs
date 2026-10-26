@@ -140,7 +140,7 @@ only_third:
     let address = binary.find("saved_address").unwrap().addr;
     let code = binary.decompile(address, None, None).unwrap();
     assert!(!code.contains("undefined"), "{code}");
-    let code = format!("static void local_bits(void) {{}}\n{code}");
+    let code = format!("static uint64_t local_bits(void) {{ return 0; }}\n{code}");
     syntax::run_printed(
         &code,
         "",

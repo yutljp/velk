@@ -60,9 +60,9 @@ fn go_abi0_wrapper_recovers_stack_parameters_and_result() {
     assert!(!code.contains("stack_pointer"), "{code}");
     assert!(code.contains("return"), "{code}");
     let mut source = String::from(HEADER);
-    source.push_str("\nstatic int32_t runtime_write_45fe40(int64_t a, int64_t b, uint32_t c) { return (int32_t)((uint64_t)a * 7 + (uint64_t)b * 13 + c); }\n");
+    source.push_str("\nstatic uint64_t runtime_write_45fe40(int64_t a, int64_t b, uint32_t c) { return (uint32_t)((uint64_t)a * 7 + (uint64_t)b * 13 + c); }\n");
     source.push_str(&code);
-    source.push_str("\nint main(void) { for (unsigned i = 0; i < 100; ++i) { int64_t a = (int64_t)((uint64_t)i * 0xfedcba987654321ULL); int64_t b = -a; uint32_t c = i * 123456789u; if (runtime_write_466160(a, b, c) != runtime_write_45fe40(a, b, c)) return 1; } return 0; }\n");
+    source.push_str("\nint main(void) { for (unsigned i = 0; i < 100; ++i) { int64_t a = (int64_t)((uint64_t)i * 0xfedcba987654321ULL); int64_t b = -a; uint32_t c = i * 123456789u; if (runtime_write_466160(a, b, c) != (int32_t)runtime_write_45fe40(a, b, c)) return 1; } return 0; }\n");
     let scratch = scratch_dir("go-abi0");
     let input = scratch.join("wrapper.c");
     std::fs::write(&input, source).unwrap();

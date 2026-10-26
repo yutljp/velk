@@ -18,7 +18,11 @@
 0x20344 18 c15 symtab,dwarf
 0x20358 32 sparse symtab,dwarf
 /* velk prelude */
+#include <stdint.h>
+
 extern uint32_t g_sink; /* address: 0x30378 */
+
+uint64_t sub_201a0();
 /* end velk prelude */
 
 == 0x2018c dense

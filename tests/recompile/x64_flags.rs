@@ -78,7 +78,7 @@ fn printed_stored_comparisons_and_carry_flags_keep_the_instruction_width() {
     );
     text.push_str("for (unsigned a = 0; a < 256; ++a) for (unsigned b = 0; b < 256; ++b) for (unsigned c = 0; c < 2; ++c) { if (flags_adc_b(a,b,c) != expected(a,b,c,8,0)) return 3; if (flags_sbb_b(a,b,c) != expected(a,b,c,8,1)) return 4; } return 0; }\n");
     let program = Program {
-        text,
+        text: velk::render::combine(&text),
         ranges: Vec::new(),
     };
     for level in LEVELS {

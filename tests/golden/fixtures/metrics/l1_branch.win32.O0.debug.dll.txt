@@ -2,6 +2,9 @@
 0x10001000 52 _classify symtab,dynamic,dwarf
 0x10001040 59 _clamp symtab,dynamic,dwarf
 0x10001080 50 _sign_of symtab,dynamic,dwarf
+/* velk prelude */
+#include <stdint.h>
+/* end velk prelude */
 
 == 0x10001000 _classify
 -- decompile

@@ -17,6 +17,9 @@
 0x201450 12 pdiv64 symtab,dwarf,unwind
 0x201460 16 qdiv64 symtab,dwarf,unwind
 0x201470 24 pdiv10 symtab,dwarf,unwind
+/* velk prelude */
+#include <stdint.h>
+/* end velk prelude */
 
 == 0x2012b0 l3
 -- decompile

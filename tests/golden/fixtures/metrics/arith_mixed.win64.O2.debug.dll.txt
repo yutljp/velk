@@ -4,6 +4,10 @@
 0x180001040 6 pair_sum symtab,dwarf
 0x180001050 140 sum_arr symtab,dwarf
 /* velk prelude */
+#include <stdint.h>
+
+struct velk_vector { union { uint64_t u64; int64_t s64; uint32_t u32; int32_t s32; uint16_t u16; int16_t s16; uint8_t u8; int8_t s8; float f32; double f64; } low, high; };
+
 #ifndef VELK_add_lanes32
 #define VELK_add_lanes32
 static inline uint64_t add_lanes32(uint64_t a, uint64_t b) {
@@ -18,8 +22,6 @@ static inline uint64_t add_lanes32(uint64_t a, uint64_t b) {
     return out;
 }
 #endif
-
-struct velk_vector { union { uint64_t u64; int64_t s64; uint32_t u32; int32_t s32; uint16_t u16; int16_t s16; uint8_t u8; int8_t s8; float f32; double f64; } low, high; };
 /* end velk prelude */
 
 == 0x180001000 sum3

@@ -18,6 +18,11 @@
 0x20390 32 qdiv64 symtab,dwarf
 0x203b0 28 pdiv10 symtab,dwarf
 /* velk prelude */
+#include <stdint.h>
+
+uint64_t sub_20180();
+uint64_t sub_20198();
+uint64_t sub_20338();
 uint64_t velk_entry_stack_pointer(void); /* target entry stack pointer */
 /* end velk prelude */
 

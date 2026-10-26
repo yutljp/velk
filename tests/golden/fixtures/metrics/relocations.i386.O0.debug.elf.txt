@@ -4,6 +4,13 @@
 0x1330 37 via_plt symtab,dynamic,dwarf,unwind
 0x1370 16 add_bias plt
 0x1380 16 abs plt
+/* velk prelude */
+#include <stdint.h>
+
+int (abs)(int);
+int abs_plt();
+uint64_t add_bias();
+/* end velk prelude */
 
 == 0x12f0 add_bias
 -- decompile

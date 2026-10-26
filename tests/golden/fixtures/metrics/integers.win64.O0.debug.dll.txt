@@ -9,6 +9,9 @@
 0x180001150 87 min3 symtab,dwarf,unwind
 0x1800011b0 35 labs_value symtab,dwarf,unwind
 0x1800011e0 33 mul_high symtab,dwarf,unwind
+/* velk prelude */
+#include <stdint.h>
+/* end velk prelude */
 
 == 0x180001000 narrow_add
 -- decompile

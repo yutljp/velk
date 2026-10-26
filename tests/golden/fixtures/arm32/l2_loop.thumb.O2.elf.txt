@@ -4,6 +4,9 @@
 0x201f4 142 sum_skip_odd symtab,dwarf
 0x20284 100 find_first symtab,dwarf
 /* velk prelude */
+#include <stdbool.h>
+#include <stdint.h>
+
 extern uint32_t sink; /* address: 0x302e8 */
 /* end velk prelude */
 

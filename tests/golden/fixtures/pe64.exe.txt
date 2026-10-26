@@ -10,6 +10,8 @@
 0x140001080 16 reg_mod dynamic
 0x140001090 30 - entry
 /* velk prelude */
+#include <stdint.h>
+
 extern uint64_t g_140003000; /* address: 0x140003000 */
 /* end velk prelude */
 

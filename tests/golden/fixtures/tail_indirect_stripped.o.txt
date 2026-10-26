@@ -1,6 +1,9 @@
 # tail_indirect_stripped.o: elf aarch64 no entry, 2 functions, 0 lift failures, 0 unsupported, 0 gotos
 0x0 12 - prologue
 0xc 24 - prologue
+/* velk prelude */
+#include <stdint.h>
+/* end velk prelude */
 
 == 0x0 -
 -- decompile

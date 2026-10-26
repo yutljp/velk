@@ -4,6 +4,11 @@
 0x20 8 tail_indirect symtab,unwind
 0x30 14 six_args symtab,unwind
 0x40 5 wide_add symtab,unwind
+/* velk prelude */
+#include <stdint.h>
+
+uint64_t tail_target();
+/* end velk prelude */
 
 == 0x0 tail_target
 -- decompile

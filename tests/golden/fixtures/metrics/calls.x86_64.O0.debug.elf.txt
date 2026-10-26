@@ -12,6 +12,7 @@
 0x201540 296 sum_varargs symtab,dwarf,unwind
 /* velk prelude */
 #include <stdarg.h>
+#include <stdint.h>
 
 extern uint64_t table[]; /* address: 0x202670 */
 

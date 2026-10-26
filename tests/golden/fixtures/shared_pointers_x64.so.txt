@@ -4,6 +4,8 @@
 0x13f0 10 target symtab,dynamic,unwind
 0x1400 9 use_ptr symtab,dynamic,unwind
 /* velk prelude */
+#include <stdint.h>
+
 extern uint64_t g_24b0; /* address: 0x24b0 */
 /* end velk prelude */
 

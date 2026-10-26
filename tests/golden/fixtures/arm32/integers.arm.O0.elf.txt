@@ -9,6 +9,8 @@
 0x202ec 116 min3 symtab,dwarf
 0x20360 68 labs_value symtab,dwarf
 /* velk prelude */
+#include <stdint.h>
+
 uint64_t velk_entry_stack_pointer(void); /* target entry stack pointer */
 /* end velk prelude */
 

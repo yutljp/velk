@@ -11,6 +11,8 @@
 0x203cc 212 abi_exhaust_five_aligned symtab,dwarf
 0x204a0 268 abi_exhaust_seven_aligned symtab,dwarf
 /* velk prelude */
+#include <stdint.h>
+
 uint64_t velk_entry_stack_pointer(void); /* target entry stack pointer */
 /* end velk prelude */
 

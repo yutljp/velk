@@ -907,83 +907,25 @@ fn check_with_compiler(
     returns: &BTreeMap<String, CType>,
     compiler: &Path,
 ) -> Option<String> {
-    let mut prelude = velk::render::Prelude::default();
-    let body = renamed(&prelude.extract(code), 0);
-    let mut declarations = BTreeSet::new();
-    loop {
-        let source = syntax_source(&prelude, &body, &declarations, returns);
-        std::fs::write(path, source).expect("saved syntax source");
-        let output = syntax_command(compiler)
-            .arg(path)
-            .output()
-            .expect("C compiler");
-        if output.status.success() {
-            return None;
-        }
-        let errors = String::from_utf8_lossy(&output.stderr);
-        let mut added = false;
-        for line in errors.lines() {
-            if let Some(rest) = line.split("error: call to undeclared function '").nth(1)
-                && let Some((name, _)) = rest.split_once('\'')
-            {
-                added |= declarations.insert(name.to_owned());
-            }
-        }
-        if !added {
-            return Some(
-                errors
-                    .lines()
-                    .find_map(|line| {
-                        line.split_once("error: ")
-                            .map(|(_, message)| message.to_owned())
-                    })
-                    .unwrap_or_else(|| errors.into_owned()),
-            );
-        }
+    let _ = returns;
+    std::fs::write(path, code).expect("saved syntax source");
+    let output = syntax_command(compiler)
+        .arg(path)
+        .output()
+        .expect("C compiler");
+    if output.status.success() {
+        return None;
     }
-}
-
-fn syntax_source(
-    prelude: &velk::render::Prelude,
-    body: &str,
-    declarations: &BTreeSet<String>,
-    returns: &BTreeMap<String, CType>,
-) -> String {
-    let mut source = HEADER
-        .lines()
-        .filter(|line| {
-            !line.starts_with("#include")
-                || ["<inttypes.h>", "<stdbool.h>", "<stddef.h>", "<stdint.h>"]
-                    .iter()
-                    .any(|header| line.contains(header))
-        })
-        .map(|line| format!("{line}\n"))
-        .collect::<String>();
-    let support = prelude.render();
-    // Target declarations can use a different data model from the host headers.
-    let mut hidden = Vec::new();
-    for name in ["calloc", "strtol"] {
-        if support.contains(&format!("{name}(")) {
-            writeln!(source, "#define {name} syntax_host_{name}")
-                .expect("formatting into a String cannot fail");
-            hidden.push(name);
-        }
-    }
-    source.push_str("#include <stdlib.h>\n");
-    for name in hidden {
-        writeln!(source, "#undef {name}").expect("formatting into a String cannot fail");
-    }
-    if !support.contains("#include <stdio.h>") && !support.contains("#include <wchar.h>") {
-        source.push_str("typedef struct syntax_file FILE;\ntypedef intptr_t off_t;\n");
-    }
-    source.push_str("typedef struct syntax_directory DIR;\ntypedef struct syntax_mutex pthread_mutex_t;\ntypedef struct syntax_mutex_attributes pthread_mutexattr_t;\ntypedef intptr_t ssize_t;\ntypedef uintptr_t pthread_t;\ntypedef uint32_t pthread_key_t;\ntypedef int32_t pid_t;\n");
-    for name in declarations {
-        let ty = returns.get(name).cloned().unwrap_or(CType::U64);
-        writeln!(source, "{ty} {name}();").expect("formatting into a String cannot fail");
-    }
-    source.push_str(&support);
-    source.push_str(body);
-    source
+    let errors = String::from_utf8_lossy(&output.stderr);
+    Some(
+        errors
+            .lines()
+            .find_map(|line| {
+                line.split_once("error: ")
+                    .map(|(_, message)| message.to_owned())
+            })
+            .unwrap_or_else(|| errors.into_owned()),
+    )
 }
 
 fn syntax_command(compiler: &Path) -> Command {
@@ -994,6 +936,7 @@ fn syntax_command(compiler: &Path) -> Command {
     command.args(FLAGS).args([
         "-std=gnu11",
         "-fno-builtin",
+        "-ffreestanding",
         "-fsyntax-only",
         "-ferror-limit=0",
         "-Werror=implicit-function-declaration",
@@ -1005,7 +948,7 @@ fn syntax_command(compiler: &Path) -> Command {
 fn library_allocation_calls_have_pointer_prototypes() {
     let scratch = scratch_dir("syntax-allocation-prototypes");
     let path = scratch.join("function.c");
-    let code = "void *allocate(size_t size, void *ptr) { void *v = malloc(size); return realloc(v ? v : ptr, size); }";
+    let code = "#include <stdlib.h>\nvoid *allocate(size_t size, void *ptr) { void *v = malloc(size); return realloc(v ? v : ptr, size); }";
     assert_eq!(check(code, &path, &BTreeMap::new()), None);
     let source = std::fs::read_to_string(path).unwrap();
     assert!(source.contains("#include <stdlib.h>"), "{source}");
@@ -1015,8 +958,7 @@ fn library_allocation_calls_have_pointer_prototypes() {
 
 #[test]
 fn structure_pointer_returns_do_not_define_structure_tags() {
-    let code =
-        "struct dirent *read_directory(DIR *directory) {\n    return readdir(directory);\n}\n";
+    let code = "#include <dirent.h>\nstruct dirent *read_directory(DIR *directory) {\n    return readdir(directory);\n}\n";
     assert!(defined_types(code).is_empty());
     assert!(renamed(code, 7).contains("struct dirent *velk_f7(DIR *directory) {"));
     let scratch = scratch_dir("syntax-structure-return");
@@ -1058,6 +1000,7 @@ fn library_pointer_arguments_preserve_address_bits() {
     );
     let symbols = velk::render::Symbols {
         functions: [(0x1000, "atoi".into())].into(),
+        function_returns: [(0x1000, CType::I32)].into(),
         ..Default::default()
     };
     let code = velk::render::render(&ir, &[], &symbols, &[]);
@@ -1148,6 +1091,7 @@ fn newer_clang_syntax_regressions() {
 
 fn large_fixture_syntax_with_compiler(compiler: &Path, name: &str) {
     for (fixture, addresses) in [
+        ("cold_gcc_stripped", vec![0x1290]),
         (
             "go_probe",
             vec![
@@ -1218,14 +1162,8 @@ fn check_batch(
     let paths: Vec<_> = codes
         .iter()
         .map(|(address, code)| {
-            let mut prelude = velk::render::Prelude::default();
-            let body = renamed(&prelude.extract(code), 0);
             let path = scratch.join(format!("function-{address:x}.c"));
-            std::fs::write(
-                &path,
-                syntax_source(&prelude, &body, &BTreeSet::new(), returns),
-            )
-            .expect("saved syntax source");
+            std::fs::write(&path, code).expect("saved syntax source");
             path
         })
         .collect();
@@ -1328,7 +1266,10 @@ pub(super) fn scan(fixtures: &[PathBuf], name: &str) {
 fn syntax_batches_preserve_individual_failures() {
     let scratch = scratch_dir("syntax-batch-failures");
     let codes = vec![
-        (1, "uint64_t same(void) { return 1; }".into()),
+        (
+            1,
+            "#include <stdint.h>\nuint64_t same(void) { return 1; }".into(),
+        ),
         (2, "uint64_t same(void) { return missing(2); }".into()),
         (
             3,
@@ -1342,7 +1283,7 @@ fn syntax_batches_preserve_individual_failures() {
     let returns = [("pointer_result".into(), CType::pointer_to(CType::U64))].into();
     let compiler = compiler();
     let results = check_batch(&codes, &scratch, &returns, &compiler);
-    assert!(results[2].1.is_some());
+    assert!(results[1..].iter().all(|(_, error)| error.is_some()));
     for ((address, code), (actual_address, actual)) in codes.iter().zip(results) {
         assert_eq!(*address, actual_address);
         let expected =
@@ -1351,11 +1292,7 @@ fn syntax_batches_preserve_individual_failures() {
         let saved = scratch.join(format!("function-{address:x}.c"));
         assert_eq!(saved.is_file(), actual.is_some());
         if actual.is_some() {
-            assert!(
-                std::fs::read_to_string(saved)
-                    .unwrap()
-                    .contains("deliberate syntax error")
-            );
+            assert_eq!(std::fs::read_to_string(saved).unwrap(), *code);
         }
     }
     assert!(
@@ -1606,6 +1543,7 @@ fn printed_stack_aggregate_initializers_preserve_every_byte() {
             ir.convention = Convention::of(isa, velk::loader::Format::Elf, false);
             let mut symbols = velk::render::Symbols::default();
             symbols.functions.insert(0x1000, "inspect_bytes".into());
+            symbols.function_returns.insert(0x1000, CType::I64);
             let code = velk::render::render(&ir, &[], &symbols, &[]);
             assert_eq!(
                 code.contains("__typeof__"),
@@ -1659,4 +1597,267 @@ fn printed_stack_aggregate_initializers_preserve_every_byte() {
             run_printed(&code, &support, &assertions);
         }
     }
+}
+
+#[test]
+fn standalone_loops_declare_imports_and_boolean_types() {
+    let mut ir = synthetic_ir("import_loop", vec![], CType::Named("bool".into()), vec![]);
+    for target in [0x1000, 0x2000] {
+        ir.blocks[0].stmts.push(Stmt::Call {
+            abi: None,
+            kind: velk::ir::CallKind::Invoke,
+            target: Some(target),
+            through: None,
+            convention: Convention::SysV,
+            args: Some(vec![]),
+            floats_named: false,
+            outputs: vec![],
+            clobbers: Some(Default::default()),
+            via: None,
+        });
+    }
+    ir.blocks[0].stmts.push(Stmt::Br { target: Some(0) });
+    let symbols = velk::render::Symbols {
+        functions: [
+            (0x1000, "unknown_import".into()),
+            (0x2000, "__stack_chk_fail".into()),
+        ]
+        .into(),
+        function_returns: [(0x2000, CType::Void)].into(),
+        ..Default::default()
+    };
+    let code = velk::render::render(&ir, &[], &symbols, &[]);
+    assert!(code.contains("bool import_loop"), "{code}");
+    assert!(code.contains("#include <stdbool.h>"), "{code}");
+    assert!(code.contains("void (__stack_chk_fail)(void);"), "{code}");
+    assert!(code.contains("uint64_t unknown_import();"), "{code}");
+    let scratch = scratch_dir("standalone-import-loop");
+    let path = scratch.join("function.c");
+    assert_eq!(check(&code, &path, &BTreeMap::new()), None, "{code}");
+    for incomplete in [
+        code.replace("#include <stdbool.h>", ""),
+        code.replace("void (__stack_chk_fail)(void);", ""),
+        code.replace("uint64_t unknown_import();", ""),
+    ] {
+        assert!(
+            check(&incomplete, &path, &BTreeMap::new()).is_some(),
+            "{incomplete}"
+        );
+    }
+}
+
+#[test]
+fn standalone_recursive_calls_convert_pointer_arguments_to_integer_parameters() {
+    let pointer = velk::ir::VARIABLE_BASE;
+    let mut ir = synthetic_ir(
+        "recursive_count",
+        vec![Param {
+            index: 7,
+            name: "count".into(),
+            ty: CType::U64,
+        }],
+        CType::U64,
+        vec![Stmt::Brif {
+            cond: Cond::Eq,
+            lhs: Expr::reg(7, 64),
+            rhs: Expr::Const(0),
+            target: 32,
+        }],
+    );
+    ir.value_types
+        .insert(pointer, CType::pointer_to(CType::U64));
+    ir.blocks.push(Block {
+        start: 16,
+        stmts: vec![
+            Stmt::Assign {
+                dest: velk::ir::RegRef {
+                    index: pointer,
+                    width: 64,
+                },
+                value: Expr::bin(BinOp::Sub, Expr::reg(7, 64), Expr::Const(1)),
+            },
+            Stmt::Call {
+                abi: None,
+                kind: velk::ir::CallKind::Invoke,
+                target: Some(0),
+                through: None,
+                convention: Convention::SysV,
+                args: Some(vec![Expr::reg(pointer, 64)]),
+                floats_named: false,
+                outputs: velk::ir::fallback_call_outputs(Convention::SysV, None),
+                clobbers: None,
+                via: None,
+            },
+            Stmt::Ret {
+                value: Expr::bin(
+                    BinOp::Add,
+                    Expr::reg(0, 64),
+                    Expr::bin(BinOp::Add, Expr::reg(pointer, 64), Expr::Const(1)),
+                ),
+            },
+        ],
+    });
+    ir.blocks.push(Block {
+        start: 32,
+        stmts: vec![Stmt::Ret {
+            value: Expr::Const(0),
+        }],
+    });
+    let symbols = velk::render::Symbols {
+        functions: [(0, "recursive_count".into())].into(),
+        ..Default::default()
+    };
+    let code = velk::render::render(&ir, &[], &symbols, &[]);
+    let scratch = scratch_dir("standalone-recursive-call");
+    assert_eq!(
+        check(&code, &scratch.join("function.c"), &BTreeMap::new()),
+        None,
+        "{code}"
+    );
+    run_printed(
+        &code,
+        "",
+        "return recursive_count(0) != 0 || recursive_count(1) != 1 || recursive_count(3) != 6 || recursive_count(10) != 55;",
+    );
+}
+
+#[test]
+fn combined_generic_callees_use_the_printed_function_definition() {
+    let declaration = "/* velk prelude */\n#include <stdint.h>\n\nuint64_t known_callee();\n/* end velk prelude */\n";
+    let caller = "int32_t known_caller(void) {\n    return known_callee();\n}\n";
+    let callee = "int32_t known_callee(void) {\n    return -7;\n}\n";
+    for body in [format!("{caller}{callee}"), format!("{callee}{caller}")] {
+        let code = velk::render::combine(&format!("{declaration}{body}"));
+        assert!(code.contains("int32_t known_callee(void);"), "{code}");
+        assert!(!code.contains("uint64_t known_callee();"), "{code}");
+        let scratch = scratch_dir("combined-callee-definitions");
+        assert_eq!(
+            check(&code, &scratch.join("function.c"), &BTreeMap::new()),
+            None,
+            "{code}"
+        );
+        run_printed(&code, "", "return known_caller() != -7;");
+    }
+}
+
+#[test]
+fn standalone_recursive_narrow_returns_zero_extend_before_wide_uses() {
+    let mut ir = synthetic_ir(
+        "recursive_narrow",
+        vec![Param {
+            index: 7,
+            name: "count".into(),
+            ty: CType::U64,
+        }],
+        CType::I32,
+        vec![Stmt::Brif {
+            cond: Cond::Eq,
+            lhs: Expr::reg(7, 64),
+            rhs: Expr::Const(0),
+            target: 32,
+        }],
+    );
+    ir.blocks.push(Block {
+        start: 16,
+        stmts: vec![
+            Stmt::Call {
+                abi: None,
+                kind: velk::ir::CallKind::Invoke,
+                target: Some(0),
+                through: None,
+                convention: Convention::SysV,
+                args: Some(vec![Expr::bin(
+                    BinOp::Sub,
+                    Expr::reg(7, 64),
+                    Expr::Const(1),
+                )]),
+                floats_named: false,
+                outputs: velk::ir::fallback_call_outputs(Convention::SysV, None),
+                clobbers: None,
+                via: None,
+            },
+            Stmt::Ret {
+                value: Expr::bin(BinOp::Shr, Expr::reg(0, 64), Expr::Const(32)),
+            },
+        ],
+    });
+    ir.blocks.push(Block {
+        start: 32,
+        stmts: vec![Stmt::Ret {
+            value: Expr::Const(0xffffffff),
+        }],
+    });
+    let symbols = velk::render::Symbols {
+        functions: [(0, "recursive_narrow".into())].into(),
+        ..Default::default()
+    };
+    let code = velk::render::render(&ir, &[], &symbols, &[]);
+    let scratch = scratch_dir("standalone-recursive-width");
+    assert_eq!(
+        check(&code, &scratch.join("function.c"), &BTreeMap::new()),
+        None,
+        "{code}"
+    );
+    run_printed(
+        &code,
+        "",
+        "return (uint32_t)recursive_narrow(0) != UINT32_MAX || recursive_narrow(1) != 0 || recursive_narrow(3) != 0;",
+    );
+}
+
+#[test]
+fn caller_stack_arguments_are_not_local_object_end_addresses() {
+    let mut binary = Binary::open(&common::fixtures_dir().join("cold_gcc_stripped")).unwrap();
+    let code = binary.decompile(0x11a0, None, None).unwrap();
+    assert!(code.contains("(char **)(rsp + 8)"), "{code}");
+    assert!(code.contains("velk_entry_stack_pointer"), "{code}");
+    let scratch = scratch_dir("caller-stack-address");
+    assert_eq!(
+        check(&code, &scratch.join("function.c"), &BTreeMap::new()),
+        None,
+        "{code}"
+    );
+}
+
+#[test]
+fn unnamed_callees_keep_recorded_floating_returns() {
+    let ir = synthetic_ir(
+        "floating_result",
+        vec![],
+        CType::Named("double".into()),
+        vec![
+            Stmt::Call {
+                abi: None,
+                kind: velk::ir::CallKind::Invoke,
+                target: Some(0x1000),
+                through: None,
+                convention: Convention::SysV,
+                args: Some(vec![]),
+                floats_named: false,
+                outputs: velk::ir::fallback_call_outputs(Convention::SysV, None),
+                clobbers: None,
+                via: None,
+            },
+            Stmt::Ret {
+                value: Expr::reg(velk::arch::x86::XMM0, 64),
+            },
+        ],
+    );
+    let symbols = velk::render::Symbols {
+        function_returns: [(0x1000, CType::Named("double".into()))].into(),
+        ..Default::default()
+    };
+    let code = velk::render::render(&ir, &[], &symbols, &[]);
+    assert!(code.contains("double sub_1000();"), "{code}");
+    let scratch = scratch_dir("unnamed-floating-return");
+    assert_eq!(
+        check(&code, &scratch.join("function.c"), &BTreeMap::new()),
+        None,
+        "{code}"
+    );
+    run_printed(
+        &code,
+        "double sub_1000(void) { return 1.25; }",
+        "return floating_result() != 1.25;",
+    );
 }

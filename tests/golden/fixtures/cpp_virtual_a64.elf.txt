@@ -18,7 +18,15 @@
 0x210530 4 Square::~Square() symtab,unwind
 0x210534 4 Rect::~Rect() symtab,unwind
 /* velk prelude */
+#include <stdint.h>
+
 extern uint64_t _ZL4used; /* address: 0x2315c8 */
+
+uint64_t Rect__Rect();
+uint64_t Rect__scaled();
+uint64_t Square__Square();
+uint64_t Square___Square();
+uint64_t Square__area();
 /* end velk prelude */
 
 == 0x210394 __cxa_pure_virtual

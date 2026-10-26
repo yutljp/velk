@@ -1268,6 +1268,17 @@
 0x77830 16 internal/runtime/exithook.Run.deferwrap2 pclntab
 0x77840 16 internal/runtime/exithook.Run.deferwrap1 pclntab
 0x77850 100 internal/runtime/exithook.Run.func1 pclntab
+/* velk prelude */
+#include <stdint.h>
+
+uint64_t main_add();
+uint64_t main_twice();
+uint64_t runtime_gwrite();
+uint64_t runtime_printlock();
+uint64_t runtime_printnl();
+uint64_t runtime_printunlock();
+void runtime_printint();
+/* end velk prelude */
 
 == 0x40bd0 runtime.printstring
 -- decompile

@@ -2,8 +2,10 @@
 0x10001000 16 windows_file dynamic
 0x10001010 6 windows_error dynamic
 /* velk prelude */
-uint32_t GetFileType(void *);
-uint32_t GetLastError(void);
+#include <stdint.h>
+
+uint32_t (GetFileType)(void *);
+uint32_t (GetLastError)(void);
 /* end velk prelude */
 
 == 0x10001000 windows_file

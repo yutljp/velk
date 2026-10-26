@@ -3,6 +3,9 @@
 0x2101c8 32 - unwind,prologue
 0x2101e8 68 - unwind,prologue
 0x21022c 28 - unwind,prologue
+/* velk prelude */
+#include <stdint.h>
+/* end velk prelude */
 
 == 0x21019c -
 -- decompile

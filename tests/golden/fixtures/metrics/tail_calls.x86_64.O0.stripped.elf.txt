@@ -2,6 +2,11 @@
 0x2011a0 22 - unwind,prologue
 0x2011c0 28 - unwind,prologue
 0x2011e0 21 - unwind,prologue
+/* velk prelude */
+#include <stdint.h>
+
+uint64_t sub_2011a0();
+/* end velk prelude */
 
 == 0x2011a0 -
 -- decompile

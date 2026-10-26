@@ -3,6 +3,9 @@
 0x2101c8 32 scale symtab,dwarf,unwind
 0x2101e8 68 pick symtab,dwarf,unwind
 0x21022c 28 negate symtab,dwarf,unwind
+/* velk prelude */
+#include <stdint.h>
+/* end velk prelude */
 
 == 0x21019c add3
 -- decompile

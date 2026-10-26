@@ -1270,6 +1270,21 @@
 0x77990 16 internal/runtime/exithook.Run.deferwrap2 pclntab
 0x779a0 16 internal/runtime/exithook.Run.deferwrap1 pclntab
 0x779b0 100 internal/runtime/exithook.Run.func1 pclntab
+/* velk prelude */
+#include <stdint.h>
+
+uint64_t main_add();
+uint64_t main_divmod();
+uint64_t main_kindName();
+uint64_t main_sumSlice();
+uint64_t runtime_gwrite();
+uint64_t runtime_panicdivide();
+uint64_t runtime_printlock();
+uint64_t runtime_printnl();
+uint64_t runtime_printsp();
+uint64_t runtime_printunlock();
+void runtime_printint();
+/* end velk prelude */
 
 == 0x40bd0 runtime.printstring
 -- decompile

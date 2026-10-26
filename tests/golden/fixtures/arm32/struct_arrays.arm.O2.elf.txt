@@ -2,6 +2,9 @@
 0x200f4 24 item_weight symtab,dwarf
 0x2010c 20 cell_set symtab,dwarf
 0x20120 56 item_last_key symtab,dwarf
+/* velk prelude */
+#include <stdint.h>
+/* end velk prelude */
 
 == 0x200f4 item_weight
 -- decompile

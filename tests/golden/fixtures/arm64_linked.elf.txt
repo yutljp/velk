@@ -1,6 +1,8 @@
 # arm64_linked.elf: elf aarch64 0x21019c, 1 functions, 0 lift failures, 0 unsupported, 0 gotos
 0x21019c 16 pick symtab,entry,unwind
 /* velk prelude */
+#include <stdint.h>
+
 extern uint64_t kName; /* address: 0x2201b0 */
 /* end velk prelude */
 

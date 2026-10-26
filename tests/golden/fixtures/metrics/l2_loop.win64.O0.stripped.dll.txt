@@ -4,6 +4,8 @@
 0x180001090 94 - unwind,prologue
 0x1800010f0 97 - unwind,prologue
 /* velk prelude */
+#include <stdint.h>
+
 extern uint32_t g_180003000; /* address: 0x180003000 */
 /* end velk prelude */
 

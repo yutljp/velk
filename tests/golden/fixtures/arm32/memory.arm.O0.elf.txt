@@ -7,6 +7,11 @@
 0x202dc 48 pointer_distance symtab,dwarf
 0x2030c 60 read_volatile symtab,dwarf
 0x20348 68 swap_ints symtab,dwarf
+/* velk prelude */
+#include <stdint.h>
+
+uint64_t sub_20304();
+/* end velk prelude */
 
 == 0x2013c copy_bytes
 -- decompile

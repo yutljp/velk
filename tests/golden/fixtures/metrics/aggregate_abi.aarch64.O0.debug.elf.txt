@@ -10,6 +10,9 @@
 0x21053c 76 abi_indirect_make symtab,dwarf,unwind
 0x210588 160 abi_exhaust_five_aligned symtab,dwarf,unwind
 0x210628 212 abi_exhaust_seven_aligned symtab,dwarf,unwind
+/* velk prelude */
+#include <stdint.h>
+/* end velk prelude */
 
 == 0x210244 abi_pair_adjust
 -- decompile

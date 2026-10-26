@@ -10,6 +10,19 @@
 0x180001210 72 - unwind,prologue
 0x180001260 322 - unwind,prologue
 /* velk prelude */
+#include <stdint.h>
+
+struct velk_vector { union { uint64_t u64; int64_t s64; uint32_t u32; int32_t s32; uint16_t u16; int16_t s16; uint8_t u8; int8_t s8; float f32; double f64; } low, high; };
+
+extern uint64_t g_180002000; /* address: 0x180002000 */
+extern uint64_t g_180002008; /* address: 0x180002008 */
+extern uint64_t g_180002010; /* address: 0x180002010 */
+extern uint64_t g_180002018; /* address: 0x180002018 */
+extern uint64_t g_180002020; /* address: 0x180002020 */
+extern uint64_t g_180002028; /* address: 0x180002028 */
+extern uint64_t g_180002030; /* address: 0x180002030 */
+extern uint64_t g_180002038; /* address: 0x180002038 */
+
 #ifndef VELK_add_lanes32
 #define VELK_add_lanes32
 static inline uint64_t add_lanes32(uint64_t a, uint64_t b) {
@@ -48,19 +61,10 @@ static inline uint64_t interleave_low32(uint64_t a, uint64_t b) {
     return out;
 }
 #endif
-
-struct velk_vector { union { uint64_t u64; int64_t s64; uint32_t u32; int32_t s32; uint16_t u16; int16_t s16; uint8_t u8; int8_t s8; float f32; double f64; } low, high; };
-
-extern uint64_t g_180002000; /* address: 0x180002000 */
-extern uint64_t g_180002008; /* address: 0x180002008 */
-extern uint64_t g_180002010; /* address: 0x180002010 */
-extern uint64_t g_180002018; /* address: 0x180002018 */
-extern uint64_t g_180002020; /* address: 0x180002020 */
-extern uint64_t g_180002028; /* address: 0x180002028 */
-extern uint64_t g_180002030; /* address: 0x180002030 */
-extern uint64_t g_180002038; /* address: 0x180002038 */
-
 uint64_t *velk_return_address_slot(void); /* target frame's return-address slot */
+uint64_t sub_180001000();
+uint64_t sub_180001010();
+uint64_t sub_1800011f0();
 /* end velk prelude */
 
 == 0x180001000 -
@@ -421,7 +425,7 @@ int32_t sub_180001260(int32_t a0, int64_t a1, int64_t a2, int64_t a3) {
         v29 = (uintptr_t)v1;
     } else {
         uint64_t v3 = (uintptr_t)(v1 + ((a0 - 1) & 0xffffffff));
-        if ((((uintptr_t)velk_return_address_slot() - 8 < v3 + 4) & ((uintptr_t)v1 < (uintptr_t)velk_return_address_slot())) == 0) {
+        if ((((uintptr_t)&local_0 < v3 + 4) & ((uintptr_t)v1 < (uintptr_t)((uint8_t *)&local_0 + 0x8))) == 0) {
             uint8_t v30 = a0 & 0x3;
             v2 = (uint64_t)(uint32_t)a0 - (v30 != 0 ? v30 : 4);
             v29 = (uintptr_t)(v1 + v2);

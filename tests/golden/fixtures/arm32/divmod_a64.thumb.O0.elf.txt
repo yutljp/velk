@@ -25,6 +25,12 @@
 0x20458 24 ldiv3 symtab,dwarf
 0x20470 24 ldiv10 symtab,dwarf
 /* velk prelude */
+#include <stdint.h>
+
+uint64_t sub_20378();
+uint64_t sub_20450();
+uint64_t sub_2046c();
+uint64_t sub_20484();
 uint64_t velk_entry_stack_pointer(void); /* target entry stack pointer */
 /* end velk prelude */
 

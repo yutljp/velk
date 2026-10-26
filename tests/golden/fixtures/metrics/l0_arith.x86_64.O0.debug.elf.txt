@@ -3,6 +3,9 @@
 0x2011e0 16 scale symtab,dwarf,unwind
 0x2011f0 44 pick symtab,dwarf,unwind
 0x201220 14 negate symtab,dwarf,unwind
+/* velk prelude */
+#include <stdint.h>
+/* end velk prelude */
 
 == 0x2011c0 add3
 -- decompile

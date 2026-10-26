@@ -5,6 +5,8 @@
 0x210254 80 six_args symtab,dwarf,unwind
 0x2102a4 32 wide_add symtab,dwarf,unwind
 /* velk prelude */
+#include <stdint.h>
+
 int tail_target(int);
 /* end velk prelude */
 

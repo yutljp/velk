@@ -24,6 +24,9 @@
 0x1cc 28 lmod3 symtab,unwind
 0x1e8 20 ldiv3 symtab,unwind
 0x1fc 24 ldiv10 symtab,unwind
+/* velk prelude */
+#include <stdint.h>
+/* end velk prelude */
 
 == 0x0 udiv3
 -- decompile

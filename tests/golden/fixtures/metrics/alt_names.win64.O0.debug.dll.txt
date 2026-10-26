@@ -1,6 +1,9 @@
 # metrics/alt_names.win64.O0.debug.dll: pe x86_64 no entry, 2 functions, 0 lift failures, 0 unsupported, 0 gotos
 0x180001000 34 alt_sum3 symtab,dwarf,unwind
 0x180001030 73 alt_helper symtab,dwarf,unwind
+/* velk prelude */
+#include <stdint.h>
+/* end velk prelude */
 
 == 0x180001000 alt_sum3
 -- decompile

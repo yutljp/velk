@@ -227,6 +227,7 @@ fn return_type<'a>(call: &Stmt, ctx: &'a Ctx<'_>) -> Option<&'a crate::ir::CType
                 return None;
             };
             match ctx.callee_signatures.get(target) {
+                _ if *target == ctx.ir.addr => Some(&ctx.ir.ret_type),
                 Some(signature) => Some(&signature.ret),
                 None => ctx.symbols.function_returns.get(target),
             }
@@ -359,6 +360,18 @@ pub(super) fn expression(call: &Stmt, ctx: &Ctx<'_>) -> String {
             ),
         }
     };
+    let returns_used = call
+        .call_outputs()
+        .iter()
+        .any(|output| ctx.call_outputs.used(call, output) && !identity_output(call, output, ctx));
+    if !callee.contains(['(', ')', ' ', '*']) && !callee.starts_with("__builtin_") {
+        ctx.taken.borrow_mut().insert(callee.clone());
+        ctx.call_returns_used
+            .borrow_mut()
+            .entry(callee.clone())
+            .and_modify(|seen| *seen |= returns_used)
+            .or_insert(returns_used);
+    }
     let semantic_name = if through.is_none() {
         target
             .and_then(|target| ctx.symbols.original_functions.get(&target))
@@ -366,18 +379,45 @@ pub(super) fn expression(call: &Stmt, ctx: &Ctx<'_>) -> String {
     } else {
         None
     };
+    let own = through.is_none() && *target == Some(ctx.ir.addr);
+    let parameters: Option<Vec<&crate::ir::CType>> = if own {
+        if let Some(plan) = ctx.abi {
+            Some(plan.params.iter().map(|(_, ty)| ty).collect())
+        } else {
+            let mut parameters = Vec::new();
+            let mut registers = ctx.ir.params.iter();
+            for position in 0..ctx
+                .ir
+                .params
+                .len()
+                .saturating_add(ctx.ir.stack_params.len())
+            {
+                if let Some(param) = ctx
+                    .ir
+                    .stack_params
+                    .iter()
+                    .find(|param| param.position == position)
+                {
+                    parameters.push(&param.ty);
+                } else if let Some(param) = registers.next() {
+                    parameters.push(&param.ty);
+                }
+            }
+            Some(parameters)
+        }
+    } else {
+        target
+            .and_then(|target| ctx.callee_signatures.get(&target))
+            .map(|signature| signature.params.iter().map(|(_, ty)| ty).collect())
+    };
     // A callee whose declaration is known takes each argument as the type
     // it declares: an integer converts to its parameter's width as C
     // converts it, and a pointer is passed as one.
     if through.is_none()
-        && let Some(signature) = target.and_then(|target| ctx.callee_signatures.get(&target))
-        && signature.params.len() == args.len()
+        && let Some(parameters) = &parameters
+        && parameters.len() == args.len()
     {
-        for ((text, value), (_, ty)) in args
-            .iter_mut()
-            .zip(values.iter().flatten())
-            .zip(&signature.params)
-        {
+        for ((text, value), ty) in args.iter_mut().zip(values.iter().flatten()).zip(parameters) {
             *text = match ty.integer() {
                 Some((bits, signed)) if !ty.is_pointer() => {
                     super::expr::print_declared_value(
@@ -451,6 +491,36 @@ pub(super) fn expression(call: &Stmt, ctx: &Ctx<'_>) -> String {
     {
         *text = format!("{text} /* @selector({selector}) */");
     }
+    let prototype = ctx.symbols.library_prototypes.get(&callee).or_else(|| {
+        crate::analysis::prototypes::of(
+            semantic_name.as_deref().unwrap_or(&callee),
+            ctx.symbols.target_format == Some(crate::loader::Format::MachO),
+        )
+        .filter(|prototype| {
+            return_type(call, ctx) == Some(&prototype.ret)
+                || (return_type(call, ctx).is_none() && !returns_used)
+        })
+    });
+    let unmatched = if own
+        && parameters
+            .as_ref()
+            .is_some_and(|params| params.len() != args.len())
+    {
+        Some(&ctx.ir.ret_type)
+    } else if let Some(prototype) = prototype
+        && (args.len() < prototype.params.len()
+            || (!prototype.variadic && args.len() != prototype.params.len()))
+    {
+        Some(&prototype.ret)
+    } else {
+        None
+    };
+    let callee = if let Some(ret) = unmatched {
+        let pointer = super::declaration(ret, "(*)()");
+        format!("/* unresolved call signature */ (({pointer}){callee})")
+    } else {
+        callee
+    };
     format!("{callee}({})", args.join(", "))
 }
 
@@ -965,7 +1035,8 @@ mod tests {
             assert!(text.contains(expected), "{expected}: {text}");
         }
         assert!(!text.contains("return sub_1000()"), "{text}");
-        assert_eq!(text.matches("sub_1000()").count(), 1, "{text}");
+        let body = crate::render::Prelude::default().extract(&text);
+        assert_eq!(body.matches("sub_1000()").count(), 1, "{text}");
         let setup = crate::ir::eval::Setup {
             seed: 1,
             convention: crate::ir::eval::Convention {
@@ -1081,15 +1152,26 @@ mod tests {
             ..Default::default()
         };
         let text = crate::render::render(&ir, &[], &symbols, &[]);
-        assert!(text.contains("v2 = strtod();"), "{text}");
-        assert!(!text.contains("v1 = strtod()"), "{text}");
+        assert!(
+            text.contains("v2 = /* unresolved call signature */ ((double (*)())strtod)();"),
+            "{text}"
+        );
+        assert!(
+            !text.contains("v1 = /* unresolved call signature */ ((double (*)())strtod)()"),
+            "{text}"
+        );
         let symbols = crate::render::Symbols {
             function_returns: Default::default(),
             ..symbols
         };
         let text = crate::render::render(&ir, &[], &symbols, &[]);
-        assert!(!text.contains("v2 = strtod();"), "{text}");
+        assert!(
+            !text.contains("v2 = /* unresolved call signature */ ((double (*)())strtod)();"),
+            "{text}"
+        );
         assert!(text.contains("also returned by the call"), "{text}");
+        assert!(text.contains("uint64_t strtod();"), "{text}");
+        assert!(!text.contains("double (strtod)("), "{text}");
     }
 
     #[test]
@@ -1301,7 +1383,8 @@ mod tests {
                 ],
             );
             let text = crate::render::render(&ir, &[], &Default::default(), &[]);
-            assert_eq!(text.matches("sub_1000()").count(), 1, "{text}");
+            let body = crate::render::Prelude::default().extract(&text);
+            assert_eq!(body.matches("sub_1000()").count(), 1, "{text}");
             assert_eq!(text.contains("call_values"), width == 32, "{text}");
             if width == 32 {
                 assert!(text.contains("v1 = (uint32_t)(call_values[0]);"), "{text}");

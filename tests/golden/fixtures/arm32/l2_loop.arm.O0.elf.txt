@@ -3,6 +3,10 @@
 0x2018c 96 count_down symtab,dwarf
 0x201ec 132 sum_skip_odd symtab,dwarf
 0x20270 128 find_first symtab,dwarf
+/* velk prelude */
+#include <stdbool.h>
+#include <stdint.h>
+/* end velk prelude */
 
 == 0x2011c sum_while
 -- decompile

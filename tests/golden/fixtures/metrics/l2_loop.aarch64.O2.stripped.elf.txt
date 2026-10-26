@@ -4,6 +4,8 @@
 0x210224 64 - unwind,prologue
 0x210264 52 - unwind,prologue
 /* velk prelude */
+#include <stdint.h>
+
 extern uint32_t g_220298; /* address: 0x220298 */
 /* end velk prelude */
 

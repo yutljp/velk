@@ -2,6 +2,11 @@
 0x180001000 25 - unwind,prologue
 0x180001020 26 - unwind,prologue
 0x180001040 20 - unwind,prologue
+/* velk prelude */
+#include <stdint.h>
+
+uint64_t sub_180001000();
+/* end velk prelude */
 
 == 0x180001000 -
 -- decompile

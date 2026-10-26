@@ -17,6 +17,9 @@
 0xdc 16 _invoke_az symtab,dynamic
 0xec 16 _invoke_bz symtab,dynamic
 0xfc 40 _pointer_hints symtab,dynamic
+/* velk prelude */
+#include <stdint.h>
+/* end velk prelude */
 
 == 0x0 _signed_return
 -- decompile

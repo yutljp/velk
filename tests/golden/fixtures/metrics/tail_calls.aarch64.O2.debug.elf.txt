@@ -3,6 +3,8 @@
 0x210198 8 tail_two symtab,dwarf,unwind
 0x2101a0 24 tail_three symtab,dwarf,unwind
 /* velk prelude */
+#include <stdint.h>
+
 int tail_one(int);
 /* end velk prelude */
 

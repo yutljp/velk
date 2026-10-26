@@ -9,7 +9,12 @@
 0x1000009c0 32 - function-starts
 0x1000009e0 15 - entry,function-starts
 /* velk prelude */
+#include <stdint.h>
+
 extern uint64_t g_1000021e0; /* address: 0x1000021e0 */
+
+uint64_t objc_msgSend();
+uint64_t sub_1000009c0();
 /* end velk prelude */
 
 == 0x1000008b0 -[Counter add:with:]

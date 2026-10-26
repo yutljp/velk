@@ -291,7 +291,7 @@ fn printed_stack_arrays_preserve_call_and_indexed_writes() {
         candidate.code = format!(
             "#include <string.h>\n{}\n{code}",
             if unknown {
-                "static void sub_1000(void *destination, const void *source, size_t size) { memcpy(destination, source, size); }"
+                "static uint64_t sub_1000(void *destination, const void *source, size_t size) { memcpy(destination, source, size); return 0; }"
             } else {
                 ""
             }
@@ -1136,4 +1136,99 @@ ret
     }",
     );
     std::fs::remove_dir_all(scratch).ok();
+}
+
+#[test]
+fn optimized_stack_array_bounds_use_the_recovered_object() {
+    for architecture in ["x64", "a64"] {
+        let path = common::fixtures_dir().join(format!("frame_bounds_{architecture}.o"));
+        let mut binary = Binary::open(&path).unwrap();
+        let address = binary.find("frame_bounds").unwrap().addr;
+        let ir = binary.analysis(address, None).unwrap().ir.clone();
+        let code = binary.decompile(address, None, None).unwrap();
+        assert!(
+            !code.contains("velk_entry_stack_pointer"),
+            "{architecture}: {code}"
+        );
+        assert!(
+            code.matches("!= (void *)(local_0 + 0x200)").count() >= 2,
+            "{code}"
+        );
+        assert!(!code.contains("(uintptr_t)"), "{code}");
+        let scratch = scratch_dir(&format!("frame-bounds-{architecture}"));
+        assert_eq!(
+            syntax::check(&code, &scratch.join("function.c"), &BTreeMap::new()),
+            None,
+            "{code}"
+        );
+        let output = Command::new(compiler())
+            .args([
+                "-std=gnu11",
+                "-fsyntax-only",
+                "-Werror=compare-distinct-pointer-types",
+            ])
+            .arg(scratch.join("function.c"))
+            .output()
+            .unwrap();
+        assert!(
+            output.status.success(),
+            "{code}\n{}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+        let inputs = [0, 1, 73, u64::MAX, 1 << 63]
+            .into_iter()
+            .map(|seed| vec![seed])
+            .collect();
+        let mut candidate = printed_candidate(ir, inputs);
+        candidate.code = code;
+        check_candidates(
+            &format!("frame-bounds-{architecture}"),
+            vec![candidate],
+            Mode::Memory,
+            &[],
+        );
+    }
+}
+
+#[test]
+fn frame_address_comparisons_include_the_end_but_exclude_caller_storage() {
+    for end in [-8, 0, 8] {
+        let mut ir = synthetic_ir(
+            "frame_address_bound",
+            vec![],
+            CType::U64,
+            vec![
+                store(-32, 1, 8),
+                store(-24, 2, 8),
+                store(-16, 3, 8),
+                store(-8, 4, 8),
+                Stmt::Assign {
+                    dest: RegRef {
+                        index: VARIABLE_BASE,
+                        width: 64,
+                    },
+                    value: slot(-32),
+                },
+                Stmt::Ret {
+                    value: Expr::Select {
+                        cond: Cond::Ne,
+                        lhs: Box::new(Expr::reg(VARIABLE_BASE, 64)),
+                        rhs: Box::new(slot(end)),
+                        then: Box::new(Expr::Const(1)),
+                        els: Box::new(Expr::Const(0)),
+                    },
+                },
+            ],
+        );
+        ir.value_types
+            .insert(VARIABLE_BASE, CType::pointer_to(CType::U64));
+        let code = velk::render::render(&ir, &[], &Default::default(), &[]);
+        assert_eq!(code.contains("velk_entry_stack_pointer"), end > 0, "{code}");
+        let support = if end > 0 {
+            "uint64_t velk_entry_stack_pointer(void) { return 0x100000; }"
+        } else {
+            ""
+        };
+        syntax::run_printed(&code, support, "return frame_address_bound() != 1;");
+    }
 }

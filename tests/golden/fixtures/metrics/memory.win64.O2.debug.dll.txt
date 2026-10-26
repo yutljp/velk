@@ -8,6 +8,10 @@
 0x180001250 7 read_volatile symtab,dwarf
 0x180001260 11 swap_ints symtab,dwarf
 /* velk prelude */
+#include <stdint.h>
+
+extern int grid[]; /* address: 0x180003000 */
+
 #ifndef VELK_interleave_low8
 #define VELK_interleave_low8
 static inline uint64_t interleave_low8(uint64_t a, uint64_t b) {
@@ -20,8 +24,6 @@ static inline uint64_t interleave_low8(uint64_t a, uint64_t b) {
     return out;
 }
 #endif
-
-extern int grid[]; /* address: 0x180003000 */
 /* end velk prelude */
 
 == 0x180001000 copy_bytes

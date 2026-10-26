@@ -39,7 +39,7 @@ impl ValueType {
             Self::Integer {
                 bits,
                 signed,
-                zero_extended: matches!(call, Stmt::Call { target: Some(target), through: None, .. } if ctx.callee_signatures.contains_key(target)),
+                zero_extended: matches!(call, Stmt::Call { target: Some(target), through: None, .. } if ctx.callee_signatures.contains_key(target) || *target == ctx.ir.addr),
             }
         }
     }

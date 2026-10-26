@@ -18,7 +18,26 @@
 0x21050c 24 - unwind,prologue
 0x210524 48 - unwind,prologue
 /* velk prelude */
+#include <stdint.h>
+
 extern uint32_t g_220554; /* address: 0x220554 */
+
+uint64_t sub_2103cc();
+uint64_t sub_2103e0();
+uint64_t sub_2103f8();
+uint64_t sub_21040c();
+uint64_t sub_210420();
+uint64_t sub_210434();
+uint64_t sub_21044c();
+uint64_t sub_210460();
+uint64_t sub_210474();
+uint64_t sub_210488();
+uint64_t sub_2104a0();
+uint64_t sub_2104b4();
+uint64_t sub_2104cc();
+uint64_t sub_2104e0();
+uint64_t sub_2104f8();
+uint64_t sub_21050c();
 /* end velk prelude */
 
 == 0x210304 -

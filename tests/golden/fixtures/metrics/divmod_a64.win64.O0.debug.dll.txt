@@ -24,6 +24,9 @@
 0x180001290 24 lmod3 symtab,dwarf,unwind
 0x1800012b0 21 ldiv3 symtab,dwarf,unwind
 0x1800012d0 21 ldiv10 symtab,dwarf,unwind
+/* velk prelude */
+#include <stdint.h>
+/* end velk prelude */
 
 == 0x180001000 udiv3
 -- decompile

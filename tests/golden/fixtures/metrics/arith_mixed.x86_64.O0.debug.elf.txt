@@ -3,6 +3,9 @@
 0x2011e0 65 helper symtab,dwarf,unwind
 0x201230 23 pair_sum symtab,dwarf,unwind
 0x201250 73 sum_arr symtab,dwarf,unwind
+/* velk prelude */
+#include <stdint.h>
+/* end velk prelude */
 
 == 0x2011c0 sum3
 -- decompile

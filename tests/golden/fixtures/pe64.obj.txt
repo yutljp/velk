@@ -10,6 +10,8 @@
 0x80 16 reg_mod symtab
 0x90 30 entry symtab
 /* velk prelude */
+#include <stdint.h>
+
 extern uint64_t kMsg; /* address: 0xb0 */
 /* end velk prelude */
 

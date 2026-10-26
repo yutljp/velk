@@ -9,6 +9,9 @@
 0x201290 13 min3 symtab,dwarf,unwind
 0x2012a0 11 labs_value symtab,dwarf,unwind
 0x2012b0 10 mul_high symtab,dwarf,unwind
+/* velk prelude */
+#include <stdint.h>
+/* end velk prelude */
 
 == 0x201210 narrow_add
 -- decompile

@@ -1,6 +1,9 @@
 # metrics/tail_indirect.aarch64.O0.debug.elf: elf aarch64 no entry, 2 functions, 0 lift failures, 0 unsupported, 0 gotos
 0x21017c 48 via_ptr symtab,dwarf,unwind
 0x2101ac 32 after_ptr symtab,dwarf,unwind
+/* velk prelude */
+#include <stdint.h>
+/* end velk prelude */
 
 == 0x21017c via_ptr
 -- decompile

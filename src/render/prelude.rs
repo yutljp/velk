@@ -60,6 +60,52 @@ impl Prelude {
         body
     }
 
+    fn bind_definitions(&mut self, body: &str) {
+        for line in body.lines() {
+            if line.starts_with(char::is_whitespace) {
+                continue;
+            }
+            let Some(signature) = line.strip_suffix(" {") else {
+                continue;
+            };
+            if !signature.ends_with(')') {
+                continue;
+            }
+            let Some(open) = signature.find('(') else {
+                continue;
+            };
+            let before = &signature[..open];
+            let name = before
+                .rsplit(|c: char| !c.is_ascii_alphanumeric() && c != '_')
+                .next()
+                .unwrap_or("");
+            if name.is_empty() || name == "__attribute__" {
+                continue;
+            }
+            let ending = format!(" {name}();");
+            let old = self.definitions.len();
+            self.definitions
+                .retain(|definition| !definition.ends_with(&ending));
+            if self.definitions.len() == old {
+                continue;
+            }
+            let words: Vec<_> = signature
+                .split(|c: char| !c.is_ascii_alphanumeric() && c != '_')
+                .filter(|word| !word.is_empty())
+                .collect();
+            let mut records = BTreeSet::new();
+            for pair in words.windows(2) {
+                if matches!(pair[0], "struct" | "union") {
+                    records.insert(format!("{} {}; ", pair[0], pair[1]));
+                }
+            }
+            self.definitions.insert(format!(
+                "{}{signature};",
+                records.into_iter().collect::<String>()
+            ));
+        }
+    }
+
     #[must_use]
     pub fn render(&self) -> String {
         if self.definitions.is_empty() {
@@ -133,7 +179,7 @@ impl Prelude {
 }
 
 fn order(definition: &str) -> u8 {
-    if definition.starts_with(PROJECT) || definition.starts_with('#') {
+    if definition.starts_with(PROJECT) || definition.starts_with("#include ") {
         0
     } else if [
         "struct go_string {",
@@ -176,6 +222,7 @@ pub fn combine(code: &str) -> String {
     let code = super::globals::resolve(code);
     let mut prelude = Prelude::default();
     let body = prelude.extract(&code);
+    prelude.bind_definitions(&body);
     format!("{}{body}", prelude.render())
 }
 
@@ -206,6 +253,10 @@ mod tests {
         assert_eq!(combine(&format!("{combined}{first}{second}")), combined);
         assert!(
             combined.find("struct first {").unwrap() < combined.find("struct second {").unwrap()
+        );
+        assert!(
+            combined.find("#include <stdint.h>").unwrap()
+                < combined.find("#ifndef HELPER").unwrap()
         );
     }
 

@@ -2,6 +2,9 @@
 0x210174 16 classify symtab,dwarf,unwind
 0x210184 20 clamp symtab,dwarf,unwind
 0x210198 20 sign_of symtab,dwarf,unwind
+/* velk prelude */
+#include <stdint.h>
+/* end velk prelude */
 
 == 0x210174 classify
 -- decompile

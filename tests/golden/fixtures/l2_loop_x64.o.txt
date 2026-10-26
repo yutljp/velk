@@ -4,6 +4,8 @@
 0x190 71 sum_skip_odd symtab,unwind
 0x1e0 33 find_first symtab,unwind
 /* velk prelude */
+#include <stdint.h>
+
 extern uint32_t sink; /* address: 0x204 */
 /* end velk prelude */
 

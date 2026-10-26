@@ -4,6 +4,8 @@
 0x2017c 16 bump symtab,dwarf
 0x2018c 14 banner_first symtab,dwarf
 /* velk prelude */
+#include <stdint.h>
+
 extern int g_counter; /* address: 0x301a0 */
 extern uint32_t banner; /* address: 0x3019c */
 /* end velk prelude */

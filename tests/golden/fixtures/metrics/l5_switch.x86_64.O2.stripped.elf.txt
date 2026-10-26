@@ -18,7 +18,26 @@
 0x2014d0 8 - unwind,prologue
 0x2014e0 42 - unwind,prologue
 /* velk prelude */
+#include <stdint.h>
+
 extern uint32_t g_20250c; /* address: 0x20250c */
+
+uint64_t sub_2013e0();
+uint64_t sub_2013f0();
+uint64_t sub_201400();
+uint64_t sub_201410();
+uint64_t sub_201420();
+uint64_t sub_201430();
+uint64_t sub_201440();
+uint64_t sub_201450();
+uint64_t sub_201460();
+uint64_t sub_201470();
+uint64_t sub_201480();
+uint64_t sub_201490();
+uint64_t sub_2014a0();
+uint64_t sub_2014b0();
+uint64_t sub_2014c0();
+uint64_t sub_2014d0();
 /* end velk prelude */
 
 == 0x201330 -

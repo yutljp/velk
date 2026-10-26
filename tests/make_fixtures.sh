@@ -43,6 +43,10 @@ rm -f "$OUT/pe64.lib" "$OUT/pe64.exp"
 "${CC[@]}" $A64 -O2 -c "$CASES/c/alt_names.c" -o "$OUT/alt.o"
 "${CC[@]}" $X64 -O2 -c "$CASES/c/divmod_x64.c" -o "$OUT/x64_div.o"
 
+# Stack-array loops with constant frame boundaries.
+"${CC[@]}" $X64 -O2 -fno-unroll-loops -fno-vectorize -c "$CASES/c/frame_bounds.c" -o "$OUT/frame_bounds_x64.o"
+"${CC[@]}" $A64 -O2 -fno-unroll-loops -fno-vectorize -c "$CASES/c/frame_bounds.c" -o "$OUT/frame_bounds_a64.o"
+
 # Mach-O objects; executables would need a macOS SDK.
 "${CC[@]}" --target=x86_64-apple-macos13 -O2 -c "$CASES/c/divmod_x64.c" -o "$OUT/x64_div_macho.o"
 "${CC[@]}" --target=arm64-apple-macos13 -O2 -c "$CASES/c/arith_mixed.c" -o "$OUT/arm64_macho.o"

@@ -3,6 +3,9 @@
 0x180001020 50 sum_until symtab,dwarf
 0x180001060 37 sum_till_neg symtab,dwarf
 0x180001090 44 sum_until_zero symtab,dwarf
+/* velk prelude */
+#include <stdint.h>
+/* end velk prelude */
 
 == 0x180001000 count_bits
 -- decompile

@@ -8,6 +8,8 @@
 0x2022c 26 read_volatile symtab,dwarf
 0x20248 30 swap_ints symtab,dwarf
 /* velk prelude */
+#include <stdint.h>
+
 extern int grid[]; /* address: 0x30268 */
 /* end velk prelude */
 

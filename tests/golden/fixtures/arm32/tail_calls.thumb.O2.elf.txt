@@ -2,6 +2,11 @@
 0x200f4 16 tail_one symtab,dwarf
 0x20104 6 tail_two symtab,dwarf
 0x2010c 12 tail_three symtab,dwarf
+/* velk prelude */
+#include <stdint.h>
+
+uint64_t tail_one();
+/* end velk prelude */
 
 == 0x200f4 tail_one
 -- decompile

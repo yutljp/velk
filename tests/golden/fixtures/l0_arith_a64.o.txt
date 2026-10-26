@@ -3,6 +3,9 @@
 0xc 16 scale symtab,unwind
 0x1c 12 pick symtab,unwind
 0x28 8 negate symtab,unwind
+/* velk prelude */
+#include <stdint.h>
+/* end velk prelude */
 
 == 0x0 add3
 -- decompile

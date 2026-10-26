@@ -8,6 +8,10 @@
 0x180001250 16 - prologue
 0x180001260 12 - prologue
 /* velk prelude */
+#include <stdint.h>
+
+extern uint32_t g_180003000[]; /* address: 0x180003000 */
+
 #ifndef VELK_interleave_low8
 #define VELK_interleave_low8
 static inline uint64_t interleave_low8(uint64_t a, uint64_t b) {
@@ -20,8 +24,6 @@ static inline uint64_t interleave_low8(uint64_t a, uint64_t b) {
     return out;
 }
 #endif
-
-extern uint32_t g_180003000[]; /* address: 0x180003000 */
 /* end velk prelude */
 
 == 0x180001000 -

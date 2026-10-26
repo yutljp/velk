@@ -50,8 +50,9 @@ if ((uint32_t){name}(&input, &output) != expected || (uint64_t)output.field_0x0 
     let address = binary.find("preserved_maximum").unwrap().addr;
     let printed = binary.decompile(address, None, None).unwrap();
     assert!(!printed.contains("undefined"), "{printed}");
-    let code =
-        format!("static void maximum_0(int64_t a, int64_t b) {{ (void)a; (void)b; }}\n{printed}");
+    let code = format!(
+        "static uint64_t maximum_0(int64_t a, int64_t b) {{ (void)a; (void)b; return 0; }}\n{printed}"
+    );
     syntax::run_printed(
         &code,
         "",
@@ -226,7 +227,7 @@ ret
     let replaced_code = binary.decompile(replaced, None, None).unwrap();
     assert!(replaced_code.contains("0x400000010"), "{replaced_code}");
     let text = format!(
-        "#include <sys/mman.h>\nstatic void spill_helper(uint64_t x) {{ (void)x; }}\nstatic void write_spill(uint64_t *p) {{ *p = 0x500000000ULL; }}\n{code}\n{changed_code}\n{replaced_code}"
+        "#include <sys/mman.h>\nstatic uint64_t spill_helper(uint64_t x) {{ (void)x; return 0; }}\nstatic uint64_t write_spill(uint64_t *p) {{ *p = 0x500000000ULL; return 0; }}\n{code}\n{changed_code}\n{replaced_code}"
     );
     syntax::run_printed(
         &text,

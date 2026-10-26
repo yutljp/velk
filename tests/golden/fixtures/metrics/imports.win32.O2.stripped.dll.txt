@@ -1,6 +1,11 @@
 # metrics/imports.win32.O2.stripped.dll: pe i386 no entry, 2 functions, 0 lift failures, 0 unsupported, 0 gotos
 0x10001000 17 import_call dynamic
 0x10001011 6 abs plt
+/* velk prelude */
+#include <stdint.h>
+
+int (abs)(int);
+/* end velk prelude */
 
 == 0x10001000 import_call
 -- decompile

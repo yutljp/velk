@@ -3,6 +3,9 @@
 0x28 40 - prologue
 0x50 40 - prologue
 0x78 56 - prologue
+/* velk prelude */
+#include <stdint.h>
+/* end velk prelude */
 
 == 0x0 -
 -- decompile

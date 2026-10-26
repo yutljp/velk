@@ -3,6 +3,9 @@
 0x30 26 sum_until symtab,unwind
 0x50 40 sum_till_neg symtab,unwind
 0x80 44 sum_until_zero symtab,unwind
+/* velk prelude */
+#include <stdint.h>
+/* end velk prelude */
 
 == 0x0 count_bits
 -- decompile

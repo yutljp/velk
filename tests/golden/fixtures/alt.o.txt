@@ -1,6 +1,9 @@
 # alt.o: elf aarch64 no entry, 2 functions, 0 lift failures, 0 unsupported, 0 gotos
 0x0 12 alt_sum3 symtab,unwind
 0xc 68 alt_helper symtab,unwind
+/* velk prelude */
+#include <stdint.h>
+/* end velk prelude */
 
 == 0x0 alt_sum3
 -- decompile

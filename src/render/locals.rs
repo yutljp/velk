@@ -76,6 +76,7 @@ impl Local {
 pub(crate) struct Locals {
     pub(super) slots: HashMap<String, String>,
     pub(super) parts: HashMap<String, String>,
+    pub(super) bounds: HashMap<String, String>,
     pub(super) transfer_addresses: HashMap<String, (String, u64)>,
     pub(super) widths: HashMap<String, u8>,
     /// For a union member named at an address, the other members there,
@@ -154,6 +155,7 @@ pub(super) fn stack_locals_with_roles(
 ) -> Locals {
     let sp = stack_pointer(ir.isa);
     let base = Ctx {
+        ir,
         variadic: None,
         go_word_types: Default::default(),
         callee_signatures: Default::default(),
@@ -172,6 +174,8 @@ pub(super) fn stack_locals_with_roles(
         parameter_addresses: HashMap::new(),
         parameter_reads: HashMap::new(),
         local_parts: HashMap::new(),
+        frame_bounds: HashMap::new(),
+        call_returns_used: Default::default(),
         transfer_addresses: HashMap::new(),
         frame_origins: HashMap::new(),
         frame_addresses: Vec::new(),
@@ -662,6 +666,43 @@ pub(super) fn stack_locals_with_roles(
             parts.remove(key);
         }
     }
+    let mut bounds = HashMap::new();
+    // A boundary used only as an address can be one past an existing object.
+    for (address, slot, width) in &argument_accesses {
+        let Some(slot) = slot else { continue };
+        let key = render_expr(address, &base);
+        if *width != 0
+            || parts.contains_key(&key)
+            || part_origins.get(&key) != Some(&Some(*slot))
+            || argument_accesses
+                .iter()
+                .any(|(_, at, width)| at == &Some(*slot) && *width != 0)
+        {
+            continue;
+        }
+        let Some(local) = slot_names
+            .values()
+            .filter(|local| {
+                local.slot < 0
+                    && *slot <= 0
+                    && local.slot < *slot
+                    && local
+                        .slot
+                        .checked_add(local.size.max(i64::from(local.width)))
+                        .is_some_and(|end| *slot <= end)
+                    && !within.contains_key(&local.slot)
+            })
+            .min_by_key(|local| local.slot)
+        else {
+            continue;
+        };
+        let address = local.byte_address(*slot);
+        bounds.insert(key.clone(), address.clone());
+        // Incoming variadic storage does not belong to the callee's frame object.
+        if !ir.variadic || *slot < 0 {
+            parts.insert(key, address);
+        }
+    }
     let mut bindings: HashMap<String, Option<(String, u8)>> = HashMap::new();
     for (address, slot, width) in &argument_accesses {
         if *width == 0 {
@@ -758,6 +799,7 @@ pub(super) fn stack_locals_with_roles(
     Locals {
         slots,
         parts,
+        bounds,
         transfer_addresses,
         widths,
         views,
@@ -1824,14 +1866,24 @@ fn frame_accesses(
                     _ => (value, None),
                 };
                 frame_loads(value, frame, sp, &mut found);
-                frame_addresses(
-                    value,
-                    frame,
-                    sp,
-                    access,
-                    ir.convention == crate::ir::Convention::Win64,
-                    &mut taken,
-                );
+                if matches!(stmt, Stmt::Brif { .. }) {
+                    comparison_addresses(
+                        value,
+                        frame,
+                        sp,
+                        ir.convention == crate::ir::Convention::Win64,
+                        &mut taken,
+                    );
+                } else {
+                    frame_addresses(
+                        value,
+                        frame,
+                        sp,
+                        access,
+                        ir.convention == crate::ir::Convention::Win64,
+                        &mut taken,
+                    );
+                }
             }
             for (addr, slot, width, signed) in found {
                 accesses.push((Some(slot), addr, width, Some(signed)));
@@ -1952,6 +2004,18 @@ fn frame_addresses(
         return;
     }
     match expr {
+        Expr::Select {
+            lhs,
+            rhs,
+            then,
+            els,
+            ..
+        } => {
+            comparison_addresses(lhs, frame, sp, home, out);
+            comparison_addresses(rhs, frame, sp, home, out);
+            frame_addresses(then, frame, sp, None, home, out);
+            frame_addresses(els, frame, sp, None, home, out);
+        }
         Expr::Load { addr, .. } if frame_slot(addr, frame, sp).is_some() => {}
         Expr::Load { addr, width, .. } => frame_addresses(addr, frame, sp, Some(*width), home, out),
         other => {
@@ -1959,6 +2023,23 @@ fn frame_addresses(
                 frame_addresses(child, frame, sp, None, home, out);
             }
         }
+    }
+}
+
+// Comparing an address does not establish storage there; loads still do.
+fn comparison_addresses(
+    expr: &Expr,
+    frame: i64,
+    sp: u16,
+    home: bool,
+    out: &mut Vec<(Expr, i64, bool, Option<u8>)>,
+) {
+    if matches!(expr, Expr::Load { .. }) {
+        frame_addresses(expr, frame, sp, None, home, out);
+        return;
+    }
+    for child in crate::ir::visit::children(expr) {
+        comparison_addresses(child, frame, sp, home, out);
     }
 }
 

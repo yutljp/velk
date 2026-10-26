@@ -4,6 +4,14 @@
 0x10001020 10 @fastcall_add@12 symtab,dynamic,dwarf
 0x10001030 9 _thiscall_add symtab,dynamic,dwarf
 0x10001040 65 _call_conventions symtab,dynamic,dwarf
+/* velk prelude */
+#include <stdint.h>
+
+uint64_t _cdecl_add();
+uint64_t _fastcall_add_12();
+uint64_t _stdcall_add_8();
+uint64_t _thiscall_add();
+/* end velk prelude */
 
 == 0x10001000 _cdecl_add
 -- decompile

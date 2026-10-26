@@ -97,7 +97,7 @@ fn unsigned_dword_packing_saturates_each_lane_and_preserves_the_callers_frame() 
         code.push_str(&printed);
     }
     syntax::run_printed(
-        &code,
+        &velk::render::combine(&code),
         "#include <string.h>\n",
         "int32_t input[8] = {INT32_MIN, -1, 0, 65535, 1, 65534, 65536, INT32_MAX};
          uint16_t output[8]; uint16_t expected[8];

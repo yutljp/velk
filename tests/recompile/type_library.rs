@@ -131,7 +131,7 @@ fn linux_header_calls_and_layouts_compile_and_preserve_values() {
             let address = binary.find(function).unwrap().addr;
             let code = binary.decompile(address, None, None).unwrap();
             // The host's pthread_t can differ from the target's integer type.
-            let code = code.replace("pthread_kill(", "test_pthread_kill(");
+            let code = replace_c_identifier(&code, "pthread_kill", "test_pthread_kill");
             syntax::run_printed(&format!("{declaration}\n{code}"), support, assertions);
         }
     }
@@ -374,7 +374,7 @@ fn every_windows_header_and_crt_fixture_function_compiles() {
         for address in &addresses {
             let code = binary.decompile(*address, None, None).unwrap();
             // The host's strtol returns an LP64 long; the target returns an LLP64 long.
-            let code = code.replace("strtol(", "target_strtol(");
+            let code = replace_c_identifier(&code, "strtol", "target_strtol");
             std::fs::write(&source, format!("#include <stdint.h>\n#include <stdbool.h>\n#include <stddef.h>\n#include <stdio.h>\n#include <stdlib.h>\n#include <string.h>\n#include <math.h>\n#include <locale.h>\n#include <ctype.h>\n{code}")).unwrap();
             let output = Command::new(compiler())
                 .args(FLAGS)
@@ -391,4 +391,155 @@ fn every_windows_header_and_crt_fixture_function_compiles() {
         eprintln!("{fixture}: {0}/{0} compile", addresses.len());
     }
     std::fs::remove_dir_all(scratch).unwrap();
+}
+
+#[test]
+fn header_variables_keep_declared_names_and_types() {
+    for fixture in ["type_library_linux_x86_64", "type_library_linux_arm64"] {
+        let mut image = velk::loader::load(&common::fixtures_dir().join(fixture)).unwrap();
+        for (name, width, ty, assertions) in [
+            (
+                "stderr",
+                8,
+                CType::pointer_to(CType::Named("FILE".into())),
+                "return read_object() != stderr;",
+            ),
+            (
+                "stdout",
+                8,
+                CType::pointer_to(CType::Named("FILE".into())),
+                "return read_object() != stdout;",
+            ),
+            (
+                "stdin",
+                8,
+                CType::pointer_to(CType::Named("FILE".into())),
+                "return read_object() != stdin;",
+            ),
+            (
+                "optind",
+                4,
+                CType::I32,
+                "optind = -73; return read_object() != -73;",
+            ),
+        ] {
+            image.data_symbols.clear();
+            image.data_symbols.insert(0x9000, format!("{name}@TEST"));
+            let symbols = velk::render::callee_names(&image);
+            let mut ir = synthetic_ir(
+                "read_object",
+                vec![],
+                ty,
+                vec![Stmt::Ret {
+                    value: Expr::Load {
+                        addr: Box::new(Expr::Const(0x9000)),
+                        width,
+                        signed: width == 4,
+                    },
+                }],
+            );
+            ir.isa = image.isa;
+            let code = velk::render::render(&ir, &[], &symbols, &[(0x9000, 8)]);
+            assert!(code.contains(&format!("return {name};")), "{code}");
+            assert!(!code.contains("extern "), "{code}");
+            let scratch = scratch_dir(&format!("header-variable-{fixture}-{name}"));
+            assert_eq!(
+                syntax::check(&code, &scratch.join("check.c"), &BTreeMap::new()),
+                None,
+                "{code}"
+            );
+            syntax::run_printed(&code, "", assertions);
+            if name == "optind" {
+                ir.ret_type = CType::int(1, false);
+                ir.blocks[0].stmts = vec![Stmt::Ret {
+                    value: Expr::Load {
+                        addr: Box::new(Expr::Const(0x9000)),
+                        width: 1,
+                        signed: false,
+                    },
+                }];
+                let partial = velk::render::render(&ir, &[], &symbols, &[(0x9000, 8)]);
+                assert!(!partial.contains("extern "), "{partial}");
+                syntax::run_printed(
+                    &partial,
+                    "",
+                    "optind = 0x123456ab; return read_object() != 0xab;",
+                );
+                ir.ret_type = CType::I32;
+                ir.blocks[0].stmts.insert(
+                    0,
+                    Stmt::Store {
+                        addr: Expr::Const(0x9000),
+                        width: 1,
+                        value: Expr::Const(0xcd),
+                    },
+                );
+                ir.blocks[0].stmts[1] = Stmt::Ret {
+                    value: Expr::Load {
+                        addr: Box::new(Expr::Const(0x9000)),
+                        width: 4,
+                        signed: true,
+                    },
+                };
+                let stored = velk::render::render(&ir, &[], &symbols, &[(0x9000, 8)]);
+                syntax::run_printed(
+                    &stored,
+                    "",
+                    "optind = 0x123456ab; return read_object() != 0x123456cd || optind != 0x123456cd;",
+                );
+            }
+        }
+    }
+}
+
+#[test]
+fn copy_relocated_stream_uses_the_header_object() {
+    let mut binary = Binary::open(&common::fixtures_dir().join("cold_gcc_stripped")).unwrap();
+    let code = binary.decompile(0x1290, None, None).unwrap();
+    assert!(
+        code.contains("fputs((const char *)(local_1), stderr)"),
+        "{code}"
+    );
+    assert!(!code.contains("data_stderr"), "{code}");
+    assert!(!code.contains("(FILE *)stderr"), "{code}");
+    assert!(
+        !code
+            .lines()
+            .any(|line| line.starts_with("extern ") && line.contains("stderr")),
+        "{code}"
+    );
+    let scratch = scratch_dir("copy-relocated-stream");
+    assert_eq!(
+        syntax::check(&code, &scratch.join("check.c"), &BTreeMap::new()),
+        None,
+        "{code}"
+    );
+}
+
+#[test]
+fn header_variable_import_slots_keep_address_storage() {
+    let mut image =
+        velk::loader::load(&common::fixtures_dir().join("type_library_linux_x86_64")).unwrap();
+    image.data_symbols.clear();
+    image.imports.insert(0x9000, "stderr".into());
+    let symbols = velk::render::callee_names(&image);
+    let ir = synthetic_ir(
+        "read_slot",
+        vec![],
+        CType::U64,
+        vec![Stmt::Ret {
+            value: Expr::Load {
+                addr: Box::new(Expr::Const(0x9000)),
+                width: 8,
+                signed: false,
+            },
+        }],
+    );
+    let code = velk::render::render(&ir, &[], &symbols, &[(0x9000, 8)]);
+    assert!(code.contains("extern uint64_t data_stderr_9000;"), "{code}");
+    syntax::run_printed(
+        &code,
+        "uint64_t data_stderr_9000 = 73;",
+        "return read_slot() != 73;",
+    );
 }

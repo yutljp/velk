@@ -6,6 +6,9 @@
 0x201410 99 - unwind,prologue
 0x201480 96 - unwind,prologue
 0x2014e0 153 - unwind,prologue
+/* velk prelude */
+#include <stdint.h>
+/* end velk prelude */
 
 == 0x201230 -
 -- decompile

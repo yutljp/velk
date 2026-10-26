@@ -670,6 +670,9 @@
 0x100035a14 12 _write plt
 0x100035a20 12 _writev plt
 /* velk prelude */
+#include <stdint.h>
+
+uint64_t stdio___print();
 void i32__fmt_10002ff74(void);
 /* end velk prelude */
 

@@ -1,3 +1,6 @@
+/* velk prelude */
+#include <stdint.h>
+/* end velk prelude */
 /* velk pseudo-C: frame_records @ 0x0 */
 uint64_t frame_records(uint64_t x) {
     _Alignas(16) uint8_t local_0[0x40]; /* [sp-40] */

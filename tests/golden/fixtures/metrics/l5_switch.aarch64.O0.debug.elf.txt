@@ -18,7 +18,26 @@
 0x210558 24 c15 symtab,dwarf,unwind
 0x210570 120 sparse symtab,dwarf,unwind
 /* velk prelude */
+#include <stdint.h>
+
 extern uint32_t g_sink; /* address: 0x2205e8 */
+
+uint64_t c0();
+uint64_t c1();
+uint64_t c10();
+uint64_t c11();
+uint64_t c12();
+uint64_t c13();
+uint64_t c14();
+uint64_t c15();
+uint64_t c2();
+uint64_t c3();
+uint64_t c4();
+uint64_t c5();
+uint64_t c6();
+uint64_t c7();
+uint64_t c8();
+uint64_t c9();
 /* end velk prelude */
 
 == 0x210334 dense

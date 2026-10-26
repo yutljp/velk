@@ -1,5 +1,8 @@
 # arm32/strings.arm.O2.elf: elf arm32 no entry, 1 functions, 0 lift failures, 0 unsupported, 0 gotos
 0x20118 20 pick symtab,dwarf
+/* velk prelude */
+#include <stdint.h>
+/* end velk prelude */
 
 == 0x20118 pick
 -- decompile

@@ -24,6 +24,9 @@
 0x201570 37 lmod3 symtab,dwarf,unwind
 0x2015a0 27 ldiv3 symtab,dwarf,unwind
 0x2015c0 31 ldiv10 symtab,dwarf,unwind
+/* velk prelude */
+#include <stdint.h>
+/* end velk prelude */
 
 == 0x201340 udiv3
 -- decompile

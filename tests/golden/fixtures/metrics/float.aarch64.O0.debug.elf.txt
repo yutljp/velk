@@ -4,6 +4,10 @@
 0x210284 24 truncate_to_int symtab,dwarf,unwind
 0x21029c 32 widen symtab,dwarf,unwind
 0x2102bc 84 compare_doubles symtab,dwarf,unwind
+/* velk prelude */
+#include <math.h>
+#include <stdint.h>
+/* end velk prelude */
 
 == 0x2101b4 average
 -- decompile

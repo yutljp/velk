@@ -18,7 +18,15 @@
 0x201560 1 - unwind,prologue
 0x201570 1 - unwind,prologue
 /* velk prelude */
+#include <stdint.h>
+
 extern uint64_t g_204610; /* address: 0x204610 */
+
+uint64_t sub_201420();
+uint64_t sub_201430();
+uint64_t sub_201440();
+uint64_t sub_201470();
+uint64_t sub_201560();
 /* end velk prelude */
 
 == 0x2013a0 -

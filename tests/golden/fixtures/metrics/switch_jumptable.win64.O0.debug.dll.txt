@@ -1,6 +1,8 @@
 # metrics/switch_jumptable.win64.O0.debug.dll: pe x86_64 no entry, 1 functions, 0 lift failures, 0 unsupported, 0 gotos
 0x180001000 568 d7 symtab,dwarf,unwind
 /* velk prelude */
+#include <stdint.h>
+
 extern uint32_t g; /* address: 0x180003000 */
 /* end velk prelude */
 

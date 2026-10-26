@@ -8,7 +8,11 @@
 0x201390 5 read_volatile symtab,dwarf,unwind
 0x2013a0 9 swap_ints symtab,dwarf,unwind
 /* velk prelude */
+#include <stdint.h>
+
 extern int grid[]; /* address: 0x2023b0 */
+
+uint64_t sub_0();
 /* end velk prelude */
 
 == 0x201220 copy_bytes

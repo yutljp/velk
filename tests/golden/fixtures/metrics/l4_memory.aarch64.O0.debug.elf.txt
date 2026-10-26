@@ -4,6 +4,8 @@
 0x210280 20 bump symtab,dwarf,unwind
 0x210294 16 banner_first symtab,dwarf,unwind
 /* velk prelude */
+#include <stdint.h>
+
 extern int g_counter; /* address: 0x2202b0 */
 extern uint64_t banner; /* address: 0x2202a8 */
 /* end velk prelude */

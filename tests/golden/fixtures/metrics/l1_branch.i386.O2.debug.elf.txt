@@ -2,6 +2,9 @@
 0x1220 17 classify symtab,dynamic,dwarf,unwind
 0x1240 23 clamp symtab,dynamic,dwarf,unwind
 0x1260 17 sign_of symtab,dynamic,dwarf,unwind
+/* velk prelude */
+#include <stdint.h>
+/* end velk prelude */
 
 == 0x1220 classify
 -- decompile

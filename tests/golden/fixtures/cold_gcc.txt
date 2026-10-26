@@ -15,16 +15,29 @@
 0x1290 240 lookup symtab,unwind
 0x1380 13 _fini symtab
 /* velk prelude */
+#include <stddef.h>
+#include <stdint.h>
+#include <stdio.h>
+
 extern uint64_t __cxa_finalize_3ff8; /* address: 0x3ff8 */
 extern uint64_t __dso_handle; /* address: 0x4008 */
 extern uint64_t __gmon_start___3fe8; /* address: 0x3fe8 */
 extern uint64_t g_2028; /* address: 0x2028 */
 extern uint64_t g_2030; /* address: 0x2030 */
-extern uint64_t stderr_GLIBC_2_2_5; /* address: 0x4020 */
 extern uint8_t completed_0; /* address: 0x4028 */
 
-uint64_t main();
+int (__fprintf_chk)(FILE *, int, const char *, ...);
+int (__libc_start_main)(void *, int, char **, void *, void *, void *, void *);
+int (__snprintf_chk)(char *, size_t, int, size_t, const char *, ...);
+int (fputs)(const char *, FILE *);
+uint64_t __gmon_start__();
+uint64_t deregister_tm_clones();
+uint64_t lookup();
+uint64_t register_tm_clones();
 uint64_t velk_entry_stack_pointer(void); /* target entry stack pointer */
+void (__cxa_finalize)(void *);
+void (abort)(void);
+void main(void);
 /* end velk prelude */
 
 == 0x1000 _init
@@ -205,7 +218,7 @@ int32_t _start(int64_t a0, int64_t a1, void *a2) {
     int64_t v2 = local_0;
     local_0 = v1;
     local_1 = rsp;
-    __libc_start_main((void *)main, v2, (char **)(rsp + 8), 0x0, 0x0, a2);
+    /* unresolved call signature */ ((int (*)())__libc_start_main)((void *)main, v2, (char **)(rsp + 8), 0x0, 0x0, a2);
 }
 -- signature
 int32_t (int64_t a0, int64_t a1, void * a2)
@@ -325,7 +338,7 @@ int32_t lookup(struct S1 *a0, int a1, int a2) {
         void *v2 = local_1;
         local_0 = a1;
         __snprintf_chk((char *)(local_1), 64, 2, 64, "missing key %d among %d", a2 & 0xffffffff, a1);
-        fputs((const char *)(local_1), (FILE *)stderr_GLIBC_2_2_5);
+        fputs((const char *)(local_1), stderr);
         abort();
     }
     int64_t v16 = (uintptr_t)a0;
@@ -342,12 +355,12 @@ int32_t lookup(struct S1 *a0, int a1, int a2) {
     uint32_t *v8 = (uint32_t *)(v16 + 8);
     int64_t v17 = (uintptr_t)(v8 + v4 / 4);
     __snprintf_chk((char *)(local_1), 64, 2, 64, "missing key %d among %d", a2 & 0xffffffff, a1);
-    fputs((const char *)(local_1), (FILE *)stderr_GLIBC_2_2_5);
+    fputs((const char *)(local_1), stderr);
     do {
         uint32_t v11 = v8[-1];
         int64_t v18 = (uintptr_t)v8;
         v8 += 0x6;
-        __fprintf_chk((FILE *)stderr_GLIBC_2_2_5, 2, (const char *)0x201c, v18, v11);
+        __fprintf_chk(stderr, 2, (const char *)0x201c, v18, v11);
     } while ((uintptr_t)v8 != v17);
     abort();
 }

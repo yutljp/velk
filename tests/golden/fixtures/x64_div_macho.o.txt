@@ -17,6 +17,9 @@
 0x220 17 _pdiv64 symtab,dynamic,unwind
 0x240 21 _qdiv64 symtab,dynamic,unwind
 0x260 29 _pdiv10 symtab,dynamic,unwind
+/* velk prelude */
+#include <stdint.h>
+/* end velk prelude */
 
 == 0x0 _l3
 -- decompile

@@ -8,6 +8,8 @@
 0x180001130 22 flags_level dynamic,codeview
 0x180001150 14 flags_set_mode dynamic,codeview
 /* velk prelude */
+#include <stdint.h>
+
 #ifndef VELK_add_lanes32
 #define VELK_add_lanes32
 static inline uint64_t add_lanes32(uint64_t a, uint64_t b) {

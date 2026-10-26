@@ -4,6 +4,8 @@
 0x30 7 bump symtab,unwind
 0x40 11 banner_first symtab,unwind
 /* velk prelude */
+#include <stdint.h>
+
 extern uint32_t g_counter; /* address: 0x4c */
 extern uint64_t banner; /* address: 0x60 */
 /* end velk prelude */

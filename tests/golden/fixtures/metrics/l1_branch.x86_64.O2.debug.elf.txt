@@ -2,6 +2,9 @@
 0x201180 16 classify symtab,dwarf,unwind
 0x201190 13 clamp symtab,dwarf,unwind
 0x2011a0 20 sign_of symtab,dwarf,unwind
+/* velk prelude */
+#include <stdint.h>
+/* end velk prelude */
 
 == 0x201180 classify
 -- decompile

@@ -46,6 +46,7 @@ pub(super) struct ParameterRead {
 }
 
 pub(crate) struct Ctx<'a> {
+    pub(super) ir: &'a crate::ir::FunctionIr,
     pub(super) variadic: Option<&'a super::variadic::Plan>,
     pub(super) abi: Option<&'a super::abi::Plan>,
     pub(super) call_outputs: super::calls::Outputs,
@@ -74,6 +75,8 @@ pub(crate) struct Ctx<'a> {
     /// Rendered stack address within a wider local to that address as bytes
     /// into the local.
     pub(super) local_parts: HashMap<String, String>,
+    pub(super) frame_bounds: HashMap<String, String>,
+    pub(super) call_returns_used: std::cell::RefCell<HashMap<String, bool>>,
     /// Frame addresses within one declared object, with their remaining byte extent.
     pub(super) transfer_addresses: HashMap<String, (String, u64)>,
     pub(super) frame_origins: HashMap<u16, i64>,

@@ -2,6 +2,12 @@
 0x0 8 ns::add(int, int) symtab,unwind
 0x8 8 ns::mul(int, int) symtab,unwind
 0x10 44 use(int) symtab,unwind
+/* velk prelude */
+#include <stdint.h>
+
+uint64_t ns__add();
+uint64_t ns__mul();
+/* end velk prelude */
 
 == 0x0 ns::add(int, int)
 -- decompile

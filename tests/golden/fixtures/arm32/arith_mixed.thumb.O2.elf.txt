@@ -4,6 +4,8 @@
 0x2013c 6 pair_sum symtab,dwarf
 0x20144 108 sum_arr symtab,dwarf
 /* velk prelude */
+#include <stdint.h>
+
 uint64_t velk_entry_stack_pointer(void); /* target entry stack pointer */
 /* end velk prelude */
 

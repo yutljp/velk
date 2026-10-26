@@ -17,6 +17,9 @@
 0x1800011d0 19 pdiv64 symtab,dwarf,unwind
 0x1800011f0 21 qdiv64 symtab,dwarf,unwind
 0x180001210 19 pdiv10 symtab,dwarf,unwind
+/* velk prelude */
+#include <stdint.h>
+/* end velk prelude */
 
 == 0x180001000 l3
 -- decompile

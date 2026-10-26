@@ -18,7 +18,26 @@
 0x210558 24 - unwind,prologue
 0x210570 120 - unwind,prologue
 /* velk prelude */
+#include <stdint.h>
+
 extern uint32_t g_2205e8; /* address: 0x2205e8 */
+
+uint64_t sub_210418();
+uint64_t sub_21042c();
+uint64_t sub_210444();
+uint64_t sub_210458();
+uint64_t sub_21046c();
+uint64_t sub_210480();
+uint64_t sub_210498();
+uint64_t sub_2104ac();
+uint64_t sub_2104c0();
+uint64_t sub_2104d4();
+uint64_t sub_2104ec();
+uint64_t sub_210500();
+uint64_t sub_210518();
+uint64_t sub_21052c();
+uint64_t sub_210544();
+uint64_t sub_210558();
 /* end velk prelude */
 
 == 0x210334 -

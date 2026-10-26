@@ -1,6 +1,9 @@
 # metrics/tail_indirect.x86_64.O0.stripped.elf: elf x86_64 no entry, 2 functions, 0 lift failures, 0 unsupported, 0 gotos
 0x201180 33 - unwind,prologue
 0x2011b0 21 - unwind,prologue
+/* velk prelude */
+#include <stdint.h>
+/* end velk prelude */
 
 == 0x201180 -
 -- decompile

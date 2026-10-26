@@ -1,6 +1,9 @@
 # arm32/tail_indirect.thumb.O0.elf: elf arm32 no entry, 2 functions, 0 lift failures, 0 unsupported, 0 gotos
 0x200ec 20 via_ptr symtab,dwarf
 0x20100 16 after_ptr symtab,dwarf
+/* velk prelude */
+#include <stdint.h>
+/* end velk prelude */
 
 == 0x200ec via_ptr
 -- decompile

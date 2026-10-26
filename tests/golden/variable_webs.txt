@@ -1,6 +1,6 @@
 # group: variables with unrelated webs before -> after splitting; live phi joins; fixed register bindings; variables with unknown successors
 C/C++ debug: 98 -> 0; 813; 1; 0
-C/C++ stripped: 85 -> 0; 683; 0; 0
+C/C++ stripped: 86 -> 0; 691; 0; 0
 Go: 6734 -> 0; 30546; 424; 2
 Rust: 8094 -> 0; 50589; 702; 189
 # alt.o | C/C++ stripped: 1 -> 0; 0; 0; 0
@@ -144,6 +144,8 @@ Rust: 8094 -> 0; 50589; 702; 189
 # cpp_virtual_x64_stripped.elf | C/C++ stripped: 1 -> 0; 0; 0; 0
 # crt_windows.i686.exe | C/C++ stripped: 0 -> 0; 0; 0; 0
 # crt_windows.x86_64.exe | C/C++ stripped: 0 -> 0; 0; 0; 0
+# frame_bounds_a64.o | C/C++ stripped: 1 -> 0; 4; 0; 0
+# frame_bounds_x64.o | C/C++ stripped: 0 -> 0; 4; 0; 0
 # go_probe | Go: 1498 -> 0; 6926; 96; 0
 # go_probe_arm64 | Go: 1869 -> 0; 8349; 116; 1
 # go_stripped | Go: 1498 -> 0; 6924; 96; 0

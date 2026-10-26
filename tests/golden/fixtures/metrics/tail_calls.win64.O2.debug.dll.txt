@@ -3,6 +3,8 @@
 0x180001010 8 tail_two symtab,dwarf
 0x180001020 14 tail_three symtab,dwarf,unwind
 /* velk prelude */
+#include <stdint.h>
+
 int tail_one(int);
 /* end velk prelude */
 

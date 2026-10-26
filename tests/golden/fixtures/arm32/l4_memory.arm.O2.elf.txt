@@ -3,6 +3,12 @@
 0x20140 124 array_sum symtab,dwarf
 0x201bc 36 bump symtab,dwarf
 0x201e0 20 banner_first symtab,dwarf
+/* velk prelude */
+#include <stdint.h>
+
+uint64_t sub_20190();
+uint64_t sub_201b0();
+/* end velk prelude */
 
 == 0x20128 point_dot
 -- decompile

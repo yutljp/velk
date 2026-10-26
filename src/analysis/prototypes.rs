@@ -20,6 +20,21 @@ use crate::loader::{Image, NameSource};
 
 pub(crate) mod effects;
 mod generated;
+pub(crate) use generated::variable;
+
+/// A scalar data object declared by a target library header.
+#[derive(Clone)]
+pub struct LibraryVariable {
+    /// The variable name declared by the header.
+    pub name: String,
+    /// The type declared by the header.
+    pub ty: CType,
+    /// The object's size in bytes on the target.
+    pub size: u64,
+    /// The header that declares the object.
+    pub header: String,
+}
+
 pub(crate) use generated::{apply_records, i386_import, is_library_record, record_name};
 
 /// What a function takes and returns.

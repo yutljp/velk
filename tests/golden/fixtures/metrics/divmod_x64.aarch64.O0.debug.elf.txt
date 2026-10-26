@@ -17,6 +17,9 @@
 0x2104c8 28 pdiv64 symtab,dwarf,unwind
 0x2104e4 28 qdiv64 symtab,dwarf,unwind
 0x210500 28 pdiv10 symtab,dwarf,unwind
+/* velk prelude */
+#include <stdint.h>
+/* end velk prelude */
 
 == 0x2102ec l3
 -- decompile

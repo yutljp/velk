@@ -1,5 +1,10 @@
 # arm32/switch_value_table.thumb.O0.elf: elf arm32 no entry, 1 functions, 0 lift failures, 1 unsupported, 0 gotos
 0x200e4 70 dispatch symtab,dwarf
+/* velk prelude */
+#include <stdint.h>
+
+uint64_t sub_200fa();
+/* end velk prelude */
 
 == 0x200e4 dispatch
 -- decompile

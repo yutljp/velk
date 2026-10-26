@@ -4,6 +4,8 @@
 0x180001090 16 bump symtab,dwarf
 0x1800010a0 11 banner_first symtab,dwarf
 /* velk prelude */
+#include <stdint.h>
+
 extern int g_counter; /* address: 0x180003008 */
 extern uint64_t banner; /* address: 0x180003000 */
 /* end velk prelude */

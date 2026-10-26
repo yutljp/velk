@@ -4,6 +4,9 @@
 0x201270 5 truncate_to_int symtab,dwarf,unwind
 0x201280 9 widen symtab,dwarf,unwind
 0x201290 22 compare_doubles symtab,dwarf,unwind
+/* velk prelude */
+#include <stdint.h>
+/* end velk prelude */
 
 == 0x2011b0 average
 -- decompile

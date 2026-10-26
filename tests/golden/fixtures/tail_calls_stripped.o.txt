@@ -3,6 +3,8 @@
 0x1c 8 - prologue
 0x24 24 - prologue
 /* velk prelude */
+#include <stdint.h>
+
 uint64_t velk_dynamic_call_target(void);
 /* end velk prelude */
 

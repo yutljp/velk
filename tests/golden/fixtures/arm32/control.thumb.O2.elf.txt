@@ -7,6 +7,8 @@
 0x20348 136 skip_negatives symtab,dwarf
 0x203d0 146 find_pair symtab,dwarf
 /* velk prelude */
+#include <stdint.h>
+
 uint64_t velk_entry_stack_pointer(void); /* target entry stack pointer */
 /* end velk prelude */
 

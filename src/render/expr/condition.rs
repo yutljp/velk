@@ -140,6 +140,19 @@ fn compared(cond: Cond, lhs: &Expr, rhs: &Expr, ctx: &Ctx<'_>) -> [Printed; 2] {
         {
             super::signed_constant(*value, bits)
         }
+        _ if bits == 64
+            && crate::passes::frame_slots::frame_slot(
+                side,
+                0,
+                crate::arch::stack_pointer(ctx.isa),
+            )
+            .is_some() =>
+        {
+            match ctx.frame_bounds.get(&super::render_expr(side, ctx)) {
+                Some(address) => Printed::pointer(address.clone(), 10),
+                None => super::print_value_at(side, ctx, bits, /* integer */ false),
+            }
+        }
         _ => print(side, ctx, bits),
     };
     let exprs = [lhs, rhs];
@@ -152,6 +165,21 @@ fn compared(cond: Cond, lhs: &Expr, rhs: &Expr, ctx: &Ctx<'_>) -> [Printed; 2] {
             .zip(exprs)
             .all(|(printed, expr)| printed.is_pointer() || matches!(expr, Expr::Const(0)))
     {
+        for (index, expr) in exprs.iter().enumerate() {
+            if sides[index].is_pointer()
+                && sides[1 - index].is_pointer()
+                && crate::passes::frame_slots::frame_slot(
+                    expr,
+                    0,
+                    crate::arch::stack_pointer(ctx.isa),
+                )
+                .is_some()
+                && crate::render::naming::pointer_target(expr, ctx)
+                    != crate::render::naming::pointer_target(exprs[1 - index], ctx)
+            {
+                sides[index] = Printed::pointer(format!("(void *)({})", sides[index].text), 12);
+            }
+        }
         return sides;
     }
     sides = sides.map(Printed::address_integer);

@@ -240,5 +240,5 @@ fn pe32_import_uses_windows_header_types() {
             .unwrap();
     let address = binary.find("windows_file").unwrap().addr;
     let code = binary.decompile(address, None, None).unwrap();
-    assert!(code.contains("uint32_t GetFileType(void *);"), "{code}");
+    assert!(code.contains("uint32_t (GetFileType)(void *);"), "{code}");
 }

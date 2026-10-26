@@ -24,6 +24,38 @@ struct Source<'a> {
     functions: HashMap<&'a str, &'a str>,
     #[serde(borrow)]
     records: HashMap<&'a str, Record<'a>>,
+    #[serde(default, borrow)]
+    variables: HashMap<&'a str, Variable<'a>>,
+}
+
+#[derive(Deserialize)]
+struct Variable<'a> {
+    #[serde(rename = "type", borrow)]
+    ty: &'a str,
+    size: u64,
+    #[serde(borrow)]
+    header: &'a str,
+}
+
+pub(crate) fn variable(name: &str, image: &Image) -> Option<super::LibraryVariable> {
+    let Some(library) = image_library(image) else {
+        return None;
+    };
+    let name = super::undecorated(name, image.format == Format::MachO);
+    let name = if image.format == Format::MachO {
+        name.strip_prefix('_').unwrap_or(name)
+    } else {
+        name
+    };
+    let Some(variable) = library.variables.get(name) else {
+        return None;
+    };
+    Some(super::LibraryVariable {
+        name: name.to_owned(),
+        ty: super::parse_type(variable.ty),
+        size: variable.size,
+        header: variable.header.to_owned(),
+    })
 }
 
 #[derive(Deserialize)]
@@ -48,6 +80,7 @@ struct Field<'a> {
 struct Library {
     functions: HashMap<&'static str, Prototype>,
     records: HashMap<&'static str, Record<'static>>,
+    variables: HashMap<&'static str, Variable<'static>>,
 }
 
 #[derive(Deserialize)]
@@ -63,6 +96,8 @@ struct Target<'a> {
     functions: HashMap<&'a str, &'a str>,
     #[serde(borrow)]
     records: HashMap<&'a str, Record<'a>>,
+    #[serde(default, borrow)]
+    variables: HashMap<&'a str, Variable<'a>>,
     #[serde(default, borrow)]
     imports: HashMap<&'a str, &'a str>,
     #[serde(default, borrow)]
@@ -99,6 +134,7 @@ fn targets(text: &'static str) -> HashMap<&'static str, TargetLibrary> {
                             .map(|text| super::parse(text))
                             .collect(),
                         records: target.records,
+                        variables: target.variables,
                     },
                     imports: target.imports,
                     conventions: target.conventions,
@@ -291,6 +327,7 @@ fn library() -> &'static Library {
                 .map(|text| super::parse(text))
                 .collect(),
             records: source.records,
+            variables: source.variables,
         }
     })
 }

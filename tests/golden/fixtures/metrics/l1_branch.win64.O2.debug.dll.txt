@@ -2,6 +2,9 @@
 0x180001000 14 classify symtab,dwarf
 0x180001010 15 clamp symtab,dwarf
 0x180001020 14 sign_of symtab,dwarf
+/* velk prelude */
+#include <stdint.h>
+/* end velk prelude */
 
 == 0x180001000 classify
 -- decompile

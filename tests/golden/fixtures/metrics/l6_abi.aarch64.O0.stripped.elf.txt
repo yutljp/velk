@@ -4,6 +4,11 @@
 0x210224 48 - unwind,prologue
 0x210254 80 - unwind,prologue
 0x2102a4 32 - unwind,prologue
+/* velk prelude */
+#include <stdint.h>
+
+uint64_t sub_2101d4();
+/* end velk prelude */
 
 == 0x2101d4 -
 -- decompile

@@ -8,6 +8,8 @@
 0x2102d8 20 flags_level symtab,dwarf,unwind
 0x2102ec 24 flags_set_mode symtab,dwarf,unwind
 /* velk prelude */
+#include <stdint.h>
+
 #ifndef VELK_mul_lanes32
 #define VELK_mul_lanes32
 static inline uint64_t mul_lanes32(uint64_t a, uint64_t b) {

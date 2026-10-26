@@ -6,6 +6,11 @@
 0x1800010b0 64 - prologue
 0x1800010f0 16 __chkstk plt,prologue
 0x180001100 6 imported_value plt,prologue
+/* velk prelude */
+#include <stdint.h>
+
+uint64_t imported_value();
+/* end velk prelude */
 
 == 0x180001000 -
 -- decompile

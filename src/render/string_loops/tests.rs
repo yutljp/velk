@@ -366,6 +366,13 @@ fn object_provenance_preserves_printed_copy_behavior() {
         }];
         let mut symbols = super::super::Symbols::default();
         symbols.functions.insert(0x1000, "malloc".to_owned());
+        symbols.function_returns.insert(
+            0x1000,
+            crate::analysis::prototypes::of("malloc", false)
+                .expect("malloc has a library prototype")
+                .ret
+                .clone(),
+        );
         let code = crate::render::render(&ir, &[], &symbols, &[(0x2000, 0x200)]);
         assert_eq!(code.contains("__builtin_memcpy"), builtin, "{name}\n{code}");
         // Absolute global addresses need backing storage in this execution harness.

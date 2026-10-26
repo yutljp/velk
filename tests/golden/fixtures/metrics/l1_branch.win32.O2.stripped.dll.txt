@@ -2,6 +2,9 @@
 0x10001000 32 classify dynamic
 0x10001020 32 clamp dynamic
 0x10001040 17 sign_of dynamic
+/* velk prelude */
+#include <stdint.h>
+/* end velk prelude */
 
 == 0x10001000 classify
 -- decompile

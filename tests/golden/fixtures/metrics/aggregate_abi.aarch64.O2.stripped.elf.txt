@@ -10,6 +10,9 @@
 0x2102e4 24 - unwind,prologue
 0x2102fc 60 - unwind,prologue
 0x210338 84 - unwind,prologue
+/* velk prelude */
+#include <stdint.h>
+/* end velk prelude */
 
 == 0x210214 -
 -- decompile

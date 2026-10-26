@@ -4,6 +4,11 @@
 0x180001040 33 - unwind,prologue
 0x180001070 57 - unwind,prologue
 0x1800010b0 27 - unwind,prologue
+/* velk prelude */
+#include <stdint.h>
+
+uint64_t sub_180001000();
+/* end velk prelude */
 
 == 0x180001000 -
 -- decompile

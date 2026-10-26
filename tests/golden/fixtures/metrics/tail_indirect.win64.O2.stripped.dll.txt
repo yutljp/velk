@@ -1,6 +1,9 @@
 # metrics/tail_indirect.win64.O2.stripped.dll: pe x86_64 no entry, 2 functions, 0 lift failures, 0 unsupported, 0 gotos
 0x180001000 16 - prologue
 0x180001010 14 - unwind,prologue
+/* velk prelude */
+#include <stdint.h>
+/* end velk prelude */
 
 == 0x180001000 -
 -- decompile

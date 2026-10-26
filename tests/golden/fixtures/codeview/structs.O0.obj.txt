@@ -7,6 +7,9 @@
 0x130 11 word_low_byte symtab,codeview
 0x140 49 flags_level symtab,codeview
 0x180 39 flags_set_mode symtab,codeview
+/* velk prelude */
+#include <stdint.h>
+/* end velk prelude */
 
 == 0x0 rect_area
 -- decompile

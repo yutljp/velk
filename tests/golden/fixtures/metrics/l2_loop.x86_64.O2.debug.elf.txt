@@ -4,6 +4,8 @@
 0x201360 71 sum_skip_odd symtab,dwarf,unwind
 0x2013b0 33 find_first symtab,dwarf,unwind
 /* velk prelude */
+#include <stdint.h>
+
 extern uint32_t sink; /* address: 0x2023d4 */
 /* end velk prelude */
 

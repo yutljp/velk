@@ -25,6 +25,7 @@ mod stack_bytes;
 mod stmt;
 mod string_loops;
 pub mod structure;
+mod support;
 mod symbols;
 mod transfers;
 pub(crate) mod unions;
@@ -236,7 +237,21 @@ pub fn callee_names(image: &crate::loader::Image) -> Symbols {
         import_slots: image
             .imports
             .iter()
-            .map(|(address, name)| (*address, name.clone()))
+            .map(|(address, name)| {
+                let name = match crate::analysis::prototypes::variable(name, image) {
+                    Some(variable) => format!("data_{}", variable.name),
+                    None => name.clone(),
+                };
+                (*address, name)
+            })
+            .collect(),
+        library_variables: image
+            .data_symbols
+            .iter()
+            .filter_map(|(address, name)| {
+                crate::analysis::prototypes::variable(name, image)
+                    .map(|variable| (*address, variable))
+            })
             .collect(),
         data: image
             .data_symbols
@@ -245,6 +260,9 @@ pub fn callee_names(image: &crate::loader::Image) -> Symbols {
             .collect(),
         ..Symbols::default()
     };
+    for variable in symbols.library_variables.values() {
+        symbols.reserved_names.insert(variable.name.clone());
+    }
     for name in image
         .functions
         .values()

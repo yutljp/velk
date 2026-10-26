@@ -5,6 +5,8 @@
 0x8c 24 dot_sum(Vec2 const&, Vec2 const&) symtab,unwind
 0xa4 16 increment(int&) symtab,unwind
 /* velk prelude */
+#include <stdint.h>
+
 #ifndef VELK_add_lanes32
 #define VELK_add_lanes32
 static inline uint64_t add_lanes32(uint64_t a, uint64_t b) {

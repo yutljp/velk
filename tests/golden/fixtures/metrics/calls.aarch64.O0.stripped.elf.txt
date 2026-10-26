@@ -12,8 +12,13 @@
 0x2105b0 316 - unwind,prologue
 /* velk prelude */
 #include <stdarg.h>
+#include <stdint.h>
 
 extern uint64_t g_2206f0[]; /* address: 0x2206f0 */
+
+uint64_t sub_210454();
+uint64_t sub_2104a0();
+uint64_t sub_2104ec();
 /* end velk prelude */
 
 == 0x21031c -
@@ -112,7 +117,7 @@ fn <unnamed> @ 0x2103c4 (size 48)
 /* velk pseudo-C: sub_2103f4 @ 0x2103f4 */
 int32_t sub_2103f4(int32_t a0) {
     if (a0 > 1) {
-        uint32_t v6 = a0 * ((int32_t)(sub_2103f4((a0 - 1) & 0xffffffff)));
+        uint32_t v6 = a0 * sub_2103f4(a0 - 1);
         return v6;
     }
     return 1;

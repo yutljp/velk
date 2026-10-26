@@ -17,6 +17,9 @@
 0x1a0 12 pdiv64 symtab,unwind
 0x1b0 16 qdiv64 symtab,unwind
 0x1c0 24 pdiv10 symtab,unwind
+/* velk prelude */
+#include <stdint.h>
+/* end velk prelude */
 
 == 0x0 l3
 -- decompile

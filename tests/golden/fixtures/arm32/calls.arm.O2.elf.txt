@@ -11,6 +11,17 @@
 0x202c0 64 call_sum9 symtab,dwarf
 0x20300 256 sum_varargs symtab,dwarf
 /* velk prelude */
+#include <stdint.h>
+
+uint64_t is_even();
+uint64_t is_odd();
+uint64_t square();
+uint64_t sub_20234();
+uint64_t sub_20248();
+uint64_t sub_203ac();
+uint64_t sub_203d8();
+uint64_t sum9();
+uint64_t twice();
 uint64_t velk_entry_stack_pointer(void); /* target entry stack pointer */
 /* end velk prelude */
 

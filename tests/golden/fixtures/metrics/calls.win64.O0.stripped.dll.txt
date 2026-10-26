@@ -11,9 +11,14 @@
 0x1800011c0 80 - unwind,prologue
 0x180001210 104 - unwind,prologue
 /* velk prelude */
+#include <stdint.h>
+
 extern uint64_t g_180002000[]; /* address: 0x180002000 */
 
 uint64_t *velk_return_address_slot(void); /* target frame's return-address slot */
+uint64_t sub_1800010f0();
+uint64_t sub_180001120();
+uint64_t sub_180001160();
 /* end velk prelude */
 
 == 0x180001000 -
@@ -113,7 +118,7 @@ fn <unnamed> @ 0x180001080 (size 32)
 /* velk pseudo-C: sub_1800010a0 @ 0x1800010a0 */
 int32_t sub_1800010a0(int32_t a0) {
     if (a0 > 1) {
-        uint32_t v4 = a0 * ((int32_t)(sub_1800010a0((uint64_t)(uint32_t)a0 - 1)));
+        uint32_t v4 = a0 * sub_1800010a0(a0 - 1);
         return v4;
     }
     return 1;

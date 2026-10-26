@@ -4,6 +4,8 @@
 0x2018c 70 sum_skip_odd symtab,dwarf
 0x201d4 70 find_first symtab,dwarf
 /* velk prelude */
+#include <stdint.h>
+
 extern uint32_t sink; /* address: 0x3021c */
 /* end velk prelude */
 

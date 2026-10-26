@@ -3,6 +3,9 @@
 0x1260 17 scale symtab,dynamic,dwarf,unwind
 0x1280 14 pick symtab,dynamic,dwarf,unwind
 0x1290 7 negate symtab,dynamic,dwarf,unwind
+/* velk prelude */
+#include <stdint.h>
+/* end velk prelude */
 
 == 0x1250 add3
 -- decompile

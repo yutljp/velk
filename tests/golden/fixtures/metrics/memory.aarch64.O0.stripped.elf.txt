@@ -8,6 +8,8 @@
 0x2103e4 52 - unwind,prologue
 0x210418 60 - unwind,prologue
 /* velk prelude */
+#include <stdint.h>
+
 extern uint32_t g_220454[]; /* address: 0x220454 */
 /* end velk prelude */
 

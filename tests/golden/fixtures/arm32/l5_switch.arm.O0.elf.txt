@@ -18,6 +18,9 @@
 0x2057c 48 c15 symtab,dwarf
 0x205ac 124 sparse symtab,dwarf
 /* velk prelude */
+#include <stdint.h>
+
+uint64_t sub_201c0();
 uint64_t velk_entry_stack_pointer(void); /* target entry stack pointer */
 /* end velk prelude */
 

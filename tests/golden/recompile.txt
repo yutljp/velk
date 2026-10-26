@@ -1,5 +1,5 @@
 # functions left out:
-#   accesses memory: 314
+#   accesses memory: 316
 #   calls: 7940
 #   computes on floats or vectors: 1
 #   has an unsupported instruction: 106

@@ -128,9 +128,10 @@ fn windows_imports_keep_arguments_and_saved_xmm_values() {
             let address = binary.find(name).unwrap().addr;
             let code = binary.decompile(address, None, None).unwrap();
             assert!(code.contains("imported_value("), "{code}");
-            assert!(!code.contains("imported_value()"), "{code}");
+            let body = velk::render::Prelude::default().extract(&code);
+            assert!(!body.contains("imported_value()"), "{code}");
             let text = format!(
-                "{HEADER}\nint imported_value(int value, ...) {{ return value * 2; }}\n{code}\nint main(void) {{ return call_import(-9) != -15; }}\n"
+                "{HEADER}\nuint64_t imported_value(int value) {{ return (uint32_t)(value * 2); }}\n{code}\nint main(void) {{ return call_import(-9) != -15; }}\n"
             );
             let text = if name == "saved_xmm" {
                 text.replace(

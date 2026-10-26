@@ -8,7 +8,11 @@
 0x201390 5 - unwind,prologue
 0x2013a0 9 - unwind,prologue
 /* velk prelude */
+#include <stdint.h>
+
 extern uint32_t g_2023b0[]; /* address: 0x2023b0 */
+
+uint64_t sub_0();
 /* end velk prelude */
 
 == 0x201220 -

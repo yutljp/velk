@@ -18,7 +18,15 @@
 0x210530 4 - unwind,prologue
 0x210534 4 - unwind,prologue
 /* velk prelude */
+#include <stdint.h>
+
 extern uint64_t g_2315c8; /* address: 0x2315c8 */
+
+uint64_t sub_2103f8();
+uint64_t sub_21040c();
+uint64_t sub_210418();
+uint64_t sub_210438();
+uint64_t sub_210530();
 /* end velk prelude */
 
 == 0x210394 -

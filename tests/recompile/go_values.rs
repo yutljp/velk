@@ -158,10 +158,11 @@ fn go_register_and_stack_shapes_compile_and_preserve_all_words() {
         ir.convention = Convention::GoAmd64;
         let symbols = velk::render::Symbols {
             functions: [(10, format!("sink_{helper}"))].into(),
+            function_returns: [(10, CType::Void)].into(),
             go_value_shapes: [(10, format!("runtime.{helper}"))].into(),
             ..Default::default()
         };
-        source.push_str(&format!("static uint64_t observed_{helper};\nstatic void sink_{helper}(uint64_t a, uint64_t b{}) {{ observed_{helper} = a ^ b{}; }}\n", if count == 3 { ", uint64_t c" } else { "" }, if count == 3 { " ^ c" } else { "" }));
+        source.push_str(&format!("static uint64_t observed_{helper};\nvoid sink_{helper}(uint64_t a, uint64_t b{}) {{ observed_{helper} = a ^ b{}; }}\n", if count == 3 { ", uint64_t c" } else { "" }, if count == 3 { " ^ c" } else { "" }));
         let code = velk::render::render(&ir, &[], &symbols, &[]);
         assert!(code.contains("struct go_"), "{code}");
         source.push_str(&prelude.extract(&code));

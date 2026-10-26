@@ -5,6 +5,8 @@
 0x1800010e0 31 widen symtab,dwarf,unwind
 0x180001100 84 compare_doubles symtab,dwarf,unwind
 /* velk prelude */
+#include <stdint.h>
+
 extern double __real_4000000000000000; /* address: 0x180002000 */
 /* end velk prelude */
 

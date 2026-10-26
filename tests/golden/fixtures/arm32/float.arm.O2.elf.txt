@@ -4,6 +4,12 @@
 0x20148 12 truncate_to_int symtab,dwarf
 0x20154 12 widen symtab,dwarf
 0x20160 24 compare_doubles symtab,dwarf
+/* velk prelude */
+#include <math.h>
+#include <stdint.h>
+
+uint64_t sub_20134();
+/* end velk prelude */
 
 == 0x20104 average
 -- decompile

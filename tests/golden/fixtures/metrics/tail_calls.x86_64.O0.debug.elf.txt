@@ -3,6 +3,8 @@
 0x2011c0 28 tail_two symtab,dwarf,unwind
 0x2011e0 21 tail_three symtab,dwarf,unwind
 /* velk prelude */
+#include <stdint.h>
+
 int tail_one(int);
 /* end velk prelude */
 

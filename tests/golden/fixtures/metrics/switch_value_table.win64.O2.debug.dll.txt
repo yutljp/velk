@@ -1,6 +1,8 @@
 # metrics/switch_value_table.win64.O2.debug.dll: pe x86_64 no entry, 1 functions, 0 lift failures, 0 unsupported, 0 gotos
 0x180001000 24 dispatch symtab,dwarf
 /* velk prelude */
+#include <stdint.h>
+
 extern uint8_t g_180002000[]; /* address: 0x180002000 */
 /* end velk prelude */
 

@@ -3,6 +3,9 @@
 0x180001030 73 helper symtab,dwarf,unwind
 0x180001080 20 pair_sum symtab,dwarf,unwind
 0x1800010a0 77 sum_arr symtab,dwarf,unwind
+/* velk prelude */
+#include <stdint.h>
+/* end velk prelude */
 
 == 0x180001000 sum3
 -- decompile

@@ -442,14 +442,19 @@ fn decompiled(binary: &mut Binary, name: &str) -> String {
         .unwrap_or_else(|error| panic!("{error}"))
 }
 
-/// Whether clang accepts the printed C with the declarations it relies on.
+/// Whether clang accepts the printed C without additional declarations.
 fn compiles(code: &str) -> bool {
-    let prelude = "#include <stdint.h>\n\
-                   void memset_pattern16(void *, const void *, unsigned long);\n\
-                   int32_t large(void);\n";
     let output = common::compiler::run(
-        std::process::Command::new("clang").args(["-fsyntax-only", "-w", "-x", "c", "-"]),
-        Some(&format!("{prelude}{code}")),
+        std::process::Command::new("clang").args([
+            "-std=gnu11",
+            "-fsyntax-only",
+            "-Werror=implicit-function-declaration",
+            "-w",
+            "-x",
+            "c",
+            "-",
+        ]),
+        Some(code),
     );
     if !output.status.success() {
         eprintln!("{code}\n{}", String::from_utf8_lossy(&output.stderr));

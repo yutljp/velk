@@ -1,6 +1,8 @@
 # metrics/strings.win64.O2.stripped.dll: pe x86_64 no entry, 1 functions, 0 lift failures, 0 unsupported, 0 gotos
 0x180001000 12 - prologue
 /* velk prelude */
+#include <stdint.h>
+
 extern uint64_t g_180003000; /* address: 0x180003000 */
 /* end velk prelude */
 

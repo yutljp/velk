@@ -254,6 +254,53 @@ def extract(clang, sdk, target, source):
     return {"functions": functions, "records": records, "typedefs": aliases, "enums": constants, "conventions": conventions}, rejected
 
 
+def header_variables(clang, sdk, target, headers):
+    variables = {}
+    include_depths = {}
+    pointer_size = 4 if target.startswith("i686") else 8
+    scalar_sizes = dict(SCALARS)
+    if "mingw" in target:
+        scalar_sizes["long"] = scalar_sizes["unsigned long"] = 4
+    for name in ["size_t", "ssize_t", "intptr_t", "uintptr_t", "ptrdiff_t"]:
+        scalar_sizes[name] = pointer_size
+    with tempfile.TemporaryDirectory() as temp:
+        source = Path(temp) / "variables.c"
+        for header in sorted(headers, key=lambda h: (len(h), h)):
+            source.write_text(f"#include <{header}>\n")
+            args = compiler_args(clang, sdk, target)
+            result = subprocess.run(args + ["-fsyntax-only", str(source), "-H",
+                                            "-Xclang", "-ast-dump=json"],
+                                    capture_output=True, text=True)
+            if result.returncode:
+                raise RuntimeError(result.stderr)
+            nodes = json.loads(result.stdout)["inner"]
+            depths = {str(source): 0}
+            for line in result.stderr.splitlines():
+                match = re.fullmatch(r"(\.+) (.+)", line)
+                if match:
+                    depths[match[2]] = len(match[1])
+            checks = []
+            for node in nodes:
+                location = node.get("loc", {})
+                if node.get("kind") != "VarDecl" or node.get("storageClass") != "extern":
+                    continue
+                name = node.get("name")
+                ty = node["type"]["qualType"]
+                scalar = re.sub(r"\b(const|volatile)\b", "", ty).strip()
+                size = pointer_size if ty.endswith("*") else scalar_sizes.get(scalar)
+                if name and size and "(" not in ty and "[" not in ty:
+                    # Prefer the public header with the shortest include chain.
+                    parent = location.get("includedFrom", {}).get("file", "")
+                    depth = depths.get(parent, len(nodes))
+                    if name not in variables or depth < include_depths[name]:
+                        variables[name] = {"type": ty, "size": size, "header": header}
+                        include_depths[name] = depth
+                    checks.append(f'_Static_assert(sizeof({name}) == {size}, "{name}");')
+            source.write_text(source.read_text() + "\n".join(checks) + "\n")
+            run(args + ["-fsyntax-only", str(source)])
+    return variables
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--platform", choices=["macos", "windows", "linux"], default="macos")
@@ -273,6 +320,8 @@ def main():
         x64, x64_rejected = extract(args.clang, sdk, "x86_64-apple-macos", source)
         arm.pop("conventions")
         x64.pop("conventions")
+    for target, declarations in zip(["arm64-apple-macos", "x86_64-apple-macos"], [arm, x64]):
+        declarations["variables"] = header_variables(args.clang, sdk, target, HEADERS)
     resource = Path(run([args.clang, "-print-resource-dir"]).strip()) / "include"
     header_hashes = {}
     for header in sorted(set(HEADERS + STANDARD_HEADERS)):
@@ -459,6 +508,7 @@ def generate_platform(args):
         data["conventions"] = {name: data["conventions"][name] for name in data["functions"]}
         data["rejected_signatures"] = rejected
         data["calling_convention"] = "stdcall" if bits == 32 else "win64" if windows else "c"
+        data["variables"] = header_variables(args.clang, None, target, headers)
         datasets[target] = data
         print(target, {kind: len(data[kind]) for kind in ["functions", "records", "typedefs"]})
     result = {"version": 2, "source": {"compiler": run([args.clang, "--version"]).splitlines()[0],

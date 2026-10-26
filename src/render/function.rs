@@ -29,7 +29,7 @@ pub fn render_with_dependencies(
     crate::timing::scope!("render/function::render_with_dependencies");
     if let Some(code) = super::forwarding::render(ir, symbols) {
         return Rendered {
-            code,
+            code: super::prelude::combine(&format!("{}{code}", super::support::definitions(&code))),
             segment_bases: Vec::new(),
         };
     }
@@ -938,6 +938,7 @@ fn render_with(
         }
     }
     let mut ctx = Ctx {
+        ir,
         variadic,
         callee_signatures: ir.callee_signatures.clone(),
         go_word_types: go_groups
@@ -969,6 +970,8 @@ fn render_with(
         parameter_addresses: locals.parameter_addresses,
         parameter_reads: locals.parameter_reads,
         local_parts: locals.parts,
+        frame_bounds: locals.bounds,
+        call_returns_used: Default::default(),
         transfer_addresses: locals.transfer_addresses,
         frame_origins: super::provenance::frame_origins(ir),
         frame_addresses: Vec::new(),
@@ -1200,6 +1203,19 @@ fn render_with(
     let stack_provider = (!ctx.names.contains_key(&stack_pointer(ir.isa))
         && variables::mentions(&body, &stack_name))
     .then(|| vacant_name("velk_entry_stack_pointer", &mut call_reserved));
+    let mut call_returns: HashMap<String, &CType> = HashMap::new();
+    for (address, ty) in &symbols.import_returns {
+        if let Some(name) = symbols.import_slots.get(address) {
+            call_returns.insert(sanitize(name), ty);
+        }
+    }
+    for (address, ty) in &symbols.function_returns {
+        let name = symbols
+            .functions
+            .get(address)
+            .map_or_else(|| format!("sub_{address:x}"), |name| sanitize(name));
+        call_returns.insert(name, ty);
+    }
     // The callees whose calls are printed with their declarations are
     // declared as their debug information declares them.
     let mut declared_callees: HashMap<String, String> = ir
@@ -1235,50 +1251,40 @@ fn render_with(
             if callee == &own
                 || declared_callees.contains_key(callee)
                 || !variables::mentions(&body, callee)
-                || crate::analysis::prototypes::of(callee, false) == Some(prototype)
             {
                 continue;
             }
-            let mut records = Vec::new();
-            for ty in prototype.params.iter().chain([&prototype.ret]) {
-                if let Some(record) = crate::analysis::prototypes::record_name(ty) {
-                    records.push(format!("{record}; "));
-                }
-            }
-            records.sort();
-            records.dedup();
-            let params = if prototype.params.is_empty() {
-                "void".to_owned()
-            } else {
-                prototype
-                    .params
-                    .iter()
-                    .map(ToString::to_string)
-                    .collect::<Vec<_>>()
-                    .join(", ")
-            };
-            let text = declaration(&prototype.ret, &format!("{callee}({params})"));
-            // Keep tag declarations with the prototype when the prelude is sorted.
-            declared_callees.insert(callee.clone(), format!("{}{text};\n", records.concat()));
+            declared_callees.insert(callee.clone(), super::support::prototype(callee, prototype));
         }
+    }
+    for callee in ctx.taken.borrow().iter() {
+        if callee == &own || declared_callees.contains_key(callee) || !code_mentions(&body, callee)
+        {
+            continue;
+        }
+        let Some(prototype) = crate::analysis::prototypes::of(
+            callee,
+            symbols.target_format == Some(crate::loader::Format::MachO),
+        ) else {
+            continue;
+        };
+        let known = call_returns.get(callee).copied();
+        let unused = ctx.call_returns_used.borrow().get(callee) == Some(&false);
+        if known != Some(&prototype.ret) && !(known.is_none() && unused) {
+            continue;
+        }
+        declared_callees.insert(callee.clone(), super::support::prototype(callee, prototype));
     }
     let mut prototypes: String = ctx
         .taken
         .borrow()
         .iter()
-        .filter(|taken| **taken != own && !declared_callees.contains_key(*taken))
+        .filter(|taken| {
+            **taken != own && !declared_callees.contains_key(*taken) && code_mentions(&body, taken)
+        })
         .map(|taken| {
             if body.contains(&format!("{taken}(")) {
-                let ty = symbols
-                    .functions
-                    .iter()
-                    .find_map(|(address, name)| {
-                        (sanitize(name) == *taken)
-                            .then(|| symbols.function_returns.get(address))
-                            .flatten()
-                    })
-                    .cloned()
-                    .unwrap_or(CType::U64);
+                let ty = call_returns.get(taken).copied().unwrap_or(&CType::U64);
                 format!("{ty} {taken}();\n")
             } else {
                 format!("void {taken}(void);\n")
@@ -1375,6 +1381,7 @@ fn render_with(
             &super::prelude::section(super::vector_helpers::VALUE_DEFINITION),
         );
     }
+    out.insert_str(0, &super::support::definitions(&out));
     Rendered {
         code: super::prelude::combine(&if variadic.is_some() {
             format!("{}{out}", super::prelude::section("#include <stdarg.h>\n"))

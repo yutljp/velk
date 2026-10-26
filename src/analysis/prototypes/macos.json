@@ -1143,5 +1143,25 @@
 "idtype_t":{"type":"unsigned int","values":{"P_ALL":0,"P_PID":1,"P_PGID":2}},
 "ipc_info_object_type_t":{"type":"unsigned int","values":{"IPC_OTYPE_NONE":0,"IPC_OTYPE_THREAD_CONTROL":1,"IPC_OTYPE_TASK_CONTROL":2,"IPC_OTYPE_HOST":3,"IPC_OTYPE_HOST_PRIV":4,"IPC_OTYPE_PROCESSOR":5,"IPC_OTYPE_PROCESSOR_SET":6,"IPC_OTYPE_PROCESSOR_SET_NAME":7,"IPC_OTYPE_TIMER":8,"IPC_OTYPE_PORT_SUBST_ONCE":9,"IPC_OTYPE_MIG":10,"IPC_OTYPE_MEMORY_OBJECT":11,"IPC_OTYPE_XMM_PAGER":12,"IPC_OTYPE_XMM_KERNEL":13,"IPC_OTYPE_XMM_REPLY":14,"IPC_OTYPE_UND_REPLY":15,"IPC_OTYPE_HOST_NOTIFY":16,"IPC_OTYPE_HOST_SECURITY":17,"IPC_OTYPE_LEDGER":18,"IPC_OTYPE_MAIN_DEVICE":19,"IPC_OTYPE_TASK_NAME":20,"IPC_OTYPE_SUBSYSTEM":21,"IPC_OTYPE_IO_DONE_QUEUE":22,"IPC_OTYPE_SEMAPHORE":23,"IPC_OTYPE_LOCK_SET":24,"IPC_OTYPE_CLOCK":25,"IPC_OTYPE_CLOCK_CTRL":26,"IPC_OTYPE_IOKIT_IDENT":27,"IPC_OTYPE_NAMED_ENTRY":28,"IPC_OTYPE_IOKIT_CONNECT":29,"IPC_OTYPE_IOKIT_OBJECT":30,"IPC_OTYPE_UPL":31,"IPC_OTYPE_MEM_OBJ_CONTROL":32,"IPC_OTYPE_AU_SESSIONPORT":33,"IPC_OTYPE_FILEPORT":34,"IPC_OTYPE_LABELH":35,"IPC_OTYPE_TASK_RESUME":36,"IPC_OTYPE_VOUCHER":37,"IPC_OTYPE_VOUCHER_ATTR_CONTROL":38,"IPC_OTYPE_WORK_INTERVAL":39,"IPC_OTYPE_UX_HANDLER":40,"IPC_OTYPE_UEXT_OBJECT":41,"IPC_OTYPE_ARCADE_REG":42,"IPC_OTYPE_EVENTLINK":43,"IPC_OTYPE_TASK_INSPECT":44,"IPC_OTYPE_TASK_READ":45,"IPC_OTYPE_THREAD_INSPECT":46,"IPC_OTYPE_THREAD_READ":47,"IPC_OTYPE_SUID_CRED":48,"IPC_OTYPE_HYPERVISOR":49,"IPC_OTYPE_TASK_ID_TOKEN":50,"IPC_OTYPE_TASK_FATAL":51,"IPC_OTYPE_KCDATA":52,"IPC_OTYPE_EXCLAVES_RESOURCE":53,"IPC_OTYPE_THREAD_RESUME":54,"IPC_OTYPE_UNKNOWN":4294967295}},
 "mpo_flags_t":{"type":"unsigned int","values":{"MPO_PORT":0,"MPO_SERVICE_PORT":1024,"MPO_CONNECTION_PORT":2048,"MPO_REPLY_PORT":4096,"MPO_WEAK_REPLY_PORT":16384,"MPO_NOTIFICATION_PORT":17408,"MPO_EXCEPTION_PORT":32768,"MPO_CONNECTION_PORT_WITH_PORT_ARRAY":65536}}
+},
+"variables":{
+"_CurrentRuneLocale":{"type":"_RuneLocale *","size":8,"header":"ctype.h"},
+"__mb_cur_max":{"type":"int","size":4,"header":"stdlib.h"},
+"__stderrp":{"type":"FILE *","size":8,"header":"stdio.h"},
+"__stdinp":{"type":"FILE *","size":8,"header":"stdio.h"},
+"__stdoutp":{"type":"FILE *","size":8,"header":"stdio.h"},
+"_libiconv_version":{"type":"int","size":4,"header":"iconv.h"},
+"daylight":{"type":"int","size":4,"header":"time.h"},
+"getdate_err":{"type":"int","size":4,"header":"time.h"},
+"h_errno":{"type":"int","size":4,"header":"netdb.h"},
+"optarg":{"type":"char *","size":8,"header":"unistd.h"},
+"opterr":{"type":"int","size":4,"header":"unistd.h"},
+"optind":{"type":"int","size":4,"header":"unistd.h"},
+"optopt":{"type":"int","size":4,"header":"unistd.h"},
+"optreset":{"type":"int","size":4,"header":"unistd.h"},
+"signgam":{"type":"int","size":4,"header":"math.h"},
+"suboptarg":{"type":"char *","size":8,"header":"unistd.h"},
+"sys_nerr":{"type":"const int","size":4,"header":"stdio.h"},
+"timezone":{"type":"long","size":8,"header":"time.h"}
 }
 }

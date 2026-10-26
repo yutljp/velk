@@ -7,6 +7,9 @@
 0x180001130 11 word_low_byte dynamic,codeview
 0x180001140 49 flags_level dynamic,codeview
 0x180001180 39 flags_set_mode dynamic,codeview
+/* velk prelude */
+#include <stdint.h>
+/* end velk prelude */
 
 == 0x180001000 rect_area
 -- decompile

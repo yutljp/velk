@@ -3,6 +3,9 @@
 0x180001040 80 sum_until dynamic
 0x180001090 112 sum_till_neg dynamic
 0x180001100 111 sum_until_zero dynamic
+/* velk prelude */
+#include <stdint.h>
+/* end velk prelude */
 
 == 0x180001000 count_bits
 -- decompile

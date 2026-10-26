@@ -25,6 +25,12 @@
 0x2040c 20 ldiv3 symtab,dwarf
 0x20420 20 ldiv10 symtab,dwarf
 /* velk prelude */
+#include <stdint.h>
+
+uint64_t sub_20344();
+uint64_t sub_20400();
+uint64_t sub_2041c();
+uint64_t sub_20430();
 uint64_t velk_entry_stack_pointer(void); /* target entry stack pointer */
 /* end velk prelude */
 

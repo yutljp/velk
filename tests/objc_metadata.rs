@@ -57,11 +57,12 @@ fn objc_methods_and_selectors() {
                     assert_eq!(annotated.replace(" /* @selector(add:with:) */", ""), plain);
                     let source =
                         common::root().join(format!("target/objc_{arch}_{level}{suffix}.c"));
-                    std::fs::write(&source, format!("#include <stdint.h>\nextern int32_t objc_msgSend(int64_t, int64_t, ...);\n{code}")).unwrap();
+                    std::fs::write(&source, &code).unwrap();
                     let output = std::process::Command::new("clang")
                         .args([
                             "-x",
                             "c",
+                            "-std=gnu11",
                             "-fsyntax-only",
                             "-Werror=implicit-function-declaration",
                         ])

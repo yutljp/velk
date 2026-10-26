@@ -1,6 +1,8 @@
 # metrics/switch_jumptable.aarch64.O0.stripped.elf: elf aarch64 no entry, 1 functions, 0 lift failures, 0 unsupported, 0 gotos
 0x21018c 880 - unwind,prologue
 /* velk prelude */
+#include <stdint.h>
+
 extern uint32_t g_2204fc; /* address: 0x2204fc */
 /* end velk prelude */
 

@@ -8,6 +8,8 @@
 0x180001180 42 read_volatile symtab,dwarf,unwind
 0x1800011b0 55 swap_ints symtab,dwarf,unwind
 /* velk prelude */
+#include <stdint.h>
+
 extern int grid[]; /* address: 0x180003000 */
 /* end velk prelude */
 

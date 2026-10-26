@@ -8,6 +8,8 @@
 0x130 22 flags_level symtab,codeview
 0x150 14 flags_set_mode symtab,codeview
 /* velk prelude */
+#include <stdint.h>
+
 #ifndef VELK_add_lanes32
 #define VELK_add_lanes32
 static inline uint64_t add_lanes32(uint64_t a, uint64_t b) {

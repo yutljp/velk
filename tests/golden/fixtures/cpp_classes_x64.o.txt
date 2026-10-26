@@ -4,6 +4,9 @@
 0x70 35 clamp_long(long) symtab,unwind
 0xa0 14 dot_sum(Vec2 const&, Vec2 const&) symtab,unwind
 0xb0 3 increment(int&) symtab,unwind
+/* velk prelude */
+#include <stdint.h>
+/* end velk prelude */
 
 == 0x0 total_area(Shape const* const*, int)
 -- decompile

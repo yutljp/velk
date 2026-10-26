@@ -2,6 +2,9 @@
 0x200f4 16 classify symtab,dwarf
 0x20104 24 clamp symtab,dwarf
 0x2011c 16 sign_of symtab,dwarf
+/* velk prelude */
+#include <stdint.h>
+/* end velk prelude */
 
 == 0x200f4 classify
 -- decompile

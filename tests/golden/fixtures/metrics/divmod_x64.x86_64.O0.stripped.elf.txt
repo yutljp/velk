@@ -17,6 +17,9 @@
 0x201550 20 - unwind,prologue
 0x201570 24 - unwind,prologue
 0x201590 20 - unwind,prologue
+/* velk prelude */
+#include <stdint.h>
+/* end velk prelude */
 
 == 0x201380 -
 -- decompile

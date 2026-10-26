@@ -2,6 +2,11 @@
 0x0 28 tail_one symtab,unwind
 0x1c 8 tail_two symtab,unwind
 0x24 24 tail_three symtab,unwind
+/* velk prelude */
+#include <stdint.h>
+
+uint64_t tail_one();
+/* end velk prelude */
 
 == 0x0 tail_one
 -- decompile

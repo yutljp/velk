@@ -1,5 +1,8 @@
 # member_types_x64.elf: elf x86_64 0x201160, 1 functions, 0 lift failures, 0 unsupported, 0 gotos
 0x201160 36 read_outer symtab,entry,dwarf,unwind
+/* velk prelude */
+#include <stdint.h>
+/* end velk prelude */
 
 == 0x201160 read_outer
 -- decompile

@@ -5,6 +5,8 @@
 0x2012d0 32 - unwind,prologue
 0x2012f0 79 - unwind,prologue
 /* velk prelude */
+#include <stdint.h>
+
 extern double g_200120; /* address: 0x200120 */
 /* end velk prelude */
 

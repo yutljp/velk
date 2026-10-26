@@ -1,0 +1,53 @@
+# frame_bounds_a64.o: elf aarch64 no entry, 1 functions, 0 lift failures, 0 unsupported, 0 gotos
+0x0 92 frame_bounds symtab,unwind
+/* velk prelude */
+#include <stdint.h>
+/* end velk prelude */
+
+== 0x0 frame_bounds
+-- decompile
+/* velk pseudo-C: frame_bounds @ 0x0 */
+int64_t frame_bounds(int64_t a0) {
+    _Alignas(16) uint8_t local_0[0x200]; /* [sp-210] */
+
+    uint64_t *i = (uint64_t *)(local_0);
+    do {
+        *i = a0;
+        a0 = a0 * 0x19660d + 0x3c6ef35f;
+        ++i;
+    } while (i != (void *)(local_0 + 0x200));
+    int64_t result = 0;
+    uint64_t *v7 = (uint64_t *)(local_0);
+    do {
+        int64_t v6 = *v7;
+        ++v7;
+        result = v6 ^ result;
+    } while (v7 != (void *)(local_0 + 0x200));
+    return result;
+}
+-- signature
+int64_t (int64_t a0)
+-- references
+
+-- ir
+fn frame_bounds @ 0x0 (size 92)
+  blk0 @ 0x0:
+    v1 = (sp + #0xfffffffffffffdf0)
+    v2 = (v1 + #0x200)
+  blk1 @ 0x20:
+    store64(x0, v1)
+    x0 = ((x0 * #0x19660d) + #0x3c6ef35f)
+    v1 = (v1 + #0x8)
+    brif ne v1, v2 -> 0x20
+  blk2 @ 0x34:
+    v4 = #0x0
+    v1 = (sp + #0xfffffffffffffdf0)
+  blk3 @ 0x3c:
+    v6 = load64(v1)
+    v1 = (v1 + #0x8)
+    v4 = (v6 ^ v4)
+    brif ne v1, v2 -> 0x3c
+  blk4 @ 0x50:
+    ret v4
+-- card
+{"addr":"0x0","approxTokens":234,"blocks":5,"hardReasons":[],"name":"frame_bounds","nameSources":["symtab","unwind"],"section":".text","size":92,"unsupported":0}

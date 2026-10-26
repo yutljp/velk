@@ -3,6 +3,9 @@
 0x20108 12 scale symtab,dwarf
 0x20114 12 pick symtab,dwarf
 0x20120 8 negate symtab,dwarf
+/* velk prelude */
+#include <stdint.h>
+/* end velk prelude */
 
 == 0x200fc add3
 -- decompile

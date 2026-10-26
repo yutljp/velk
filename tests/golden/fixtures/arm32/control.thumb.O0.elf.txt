@@ -7,6 +7,9 @@
 0x202a0 72 skip_negatives symtab,dwarf
 0x202e8 114 find_pair symtab,dwarf
 /* velk prelude */
+#include <stdint.h>
+
+uint64_t sub_201ca();
 uint64_t velk_entry_stack_pointer(void); /* target entry stack pointer */
 /* end velk prelude */
 

@@ -191,7 +191,7 @@ fn printed_switch_default_traps() {
     assert!(!candidate.code.contains("goto "), "{}", candidate.code);
     assert!(candidate.code.contains("sub_200();"), "{}", candidate.code);
     candidate.code = format!(
-        "_Noreturn static void sub_200(void) {{ __builtin_trap(); }}\n{}",
+        "_Noreturn static uint64_t sub_200(void) {{ __builtin_trap(); }}\n{}",
         candidate.code
     );
     check_candidates("switch-default-trap", vec![candidate], Mode::Registers, &[]);
@@ -861,7 +861,10 @@ fn printed_nested_cases_preserve_call_arguments_and_effects() {
         symbols.functions.insert(0x1000, "effect".into());
         let code = velk::render::render(&ir, &[], &symbols, &[]);
         assert_eq!(
-            code.matches("effect(").count(),
+            velk::render::Prelude::default()
+                .extract(&code)
+                .matches("effect(")
+                .count(),
             if different || exceptions { 2 } else { 1 },
             "{code}"
         );

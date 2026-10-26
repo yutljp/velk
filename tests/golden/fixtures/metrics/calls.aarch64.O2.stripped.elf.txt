@@ -11,6 +11,16 @@
 0x210428 64 - unwind,prologue
 0x210468 188 - unwind,prologue
 /* velk prelude */
+#include <stdarg.h>
+#include <stdbool.h>
+#include <stdint.h>
+
+struct velk_vector { union { uint64_t u64; int64_t s64; uint32_t u32; int32_t s32; uint16_t u16; int16_t s16; uint8_t u8; int8_t s8; float f32; double f64; } low, high; };
+
+extern uint64_t g_200190; /* address: 0x200190 */
+extern uint64_t g_200198; /* address: 0x200198 */
+extern uint64_t g_220528[]; /* address: 0x220528 */
+
 #ifndef VELK_add_lanes32
 #define VELK_add_lanes32
 static inline uint64_t add_lanes32(uint64_t a, uint64_t b) {
@@ -39,13 +49,9 @@ static inline uint64_t mul_lanes32(uint64_t a, uint64_t b) {
     return out;
 }
 #endif
-#include <stdarg.h>
-
-struct velk_vector { union { uint64_t u64; int64_t s64; uint32_t u32; int32_t s32; uint16_t u16; int16_t s16; uint8_t u8; int8_t s8; float f32; double f64; } low, high; };
-
-extern uint64_t g_200190; /* address: 0x200190 */
-extern uint64_t g_200198; /* address: 0x200198 */
-extern uint64_t g_220528[]; /* address: 0x220528 */
+uint64_t sub_2103dc();
+uint64_t sub_2103ec();
+uint64_t sub_210400();
 /* end velk prelude */
 
 == 0x2102c4 -

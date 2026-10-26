@@ -1,6 +1,9 @@
 # metrics/alt_names.x86_64.O2.stripped.elf: elf x86_64 no entry, 2 functions, 0 lift failures, 0 unsupported, 0 gotos
 0x201170 6 - unwind,prologue
 0x201180 46 - unwind,prologue
+/* velk prelude */
+#include <stdint.h>
+/* end velk prelude */
 
 == 0x201170 -
 -- decompile

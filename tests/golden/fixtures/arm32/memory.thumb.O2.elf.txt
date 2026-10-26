@@ -8,7 +8,13 @@
 0x20200 8 read_volatile symtab,dwarf
 0x20208 10 swap_ints symtab,dwarf
 /* velk prelude */
+#include <stdbool.h>
+#include <stdint.h>
+
 extern int grid[]; /* address: 0x30214 */
+
+uint64_t grid_get();
+uint64_t sub_201ba();
 /* end velk prelude */
 
 == 0x2013c copy_bytes

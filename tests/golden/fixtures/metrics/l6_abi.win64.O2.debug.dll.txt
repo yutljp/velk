@@ -5,6 +5,8 @@
 0x180001030 17 six_args symtab,dwarf
 0x180001050 5 wide_add symtab,dwarf
 /* velk prelude */
+#include <stdint.h>
+
 int tail_target(int);
 /* end velk prelude */
 

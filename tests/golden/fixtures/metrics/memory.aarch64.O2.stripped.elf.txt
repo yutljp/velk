@@ -8,6 +8,8 @@
 0x21032c 16 - unwind,prologue
 0x21033c 20 - unwind,prologue
 /* velk prelude */
+#include <stdint.h>
+
 extern uint32_t g_220350[]; /* address: 0x220350 */
 /* end velk prelude */
 

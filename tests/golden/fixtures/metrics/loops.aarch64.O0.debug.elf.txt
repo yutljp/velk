@@ -3,6 +3,9 @@
 0x2101e8 92 sum_until symtab,dwarf,unwind
 0x210244 120 sum_till_neg symtab,dwarf,unwind
 0x2102bc 148 sum_until_zero symtab,dwarf,unwind
+/* velk prelude */
+#include <stdint.h>
+/* end velk prelude */
 
 == 0x21019c count_bits
 -- decompile

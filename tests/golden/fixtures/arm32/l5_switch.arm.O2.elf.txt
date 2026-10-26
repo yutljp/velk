@@ -17,6 +17,11 @@
 0x20494 36 c14 symtab,dwarf
 0x204b8 36 c15 symtab,dwarf
 0x204dc 40 sparse symtab,dwarf
+/* velk prelude */
+#include <stdint.h>
+
+uint64_t sub_201a8();
+/* end velk prelude */
 
 == 0x2018c dense
 -- decompile

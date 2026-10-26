@@ -62,6 +62,7 @@ fn check_against_original_with_flags(
         for (other, at) in functions.iter().zip(&addresses) {
             if *at != address {
                 others.functions.insert(*at, (*other).into());
+                others.function_returns.insert(*at, CType::U32);
             }
         }
         let code = velk::render::render(&ir, &[], &others, &[]);

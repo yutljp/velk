@@ -97,6 +97,6 @@ ret
         code.push_str(&binary.decompile(address, None, None).unwrap());
         writeln!(assertions, "if ({name}() != {expected}) __builtin_trap();").unwrap();
     }
-    syntax::run_printed(&code, "", &assertions);
+    syntax::run_printed(&velk::render::combine(&code), "", &assertions);
     std::fs::remove_dir_all(scratch).ok();
 }

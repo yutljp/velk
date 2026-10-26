@@ -4,6 +4,8 @@
 0x201360 71 - unwind,prologue
 0x2013b0 33 - unwind,prologue
 /* velk prelude */
+#include <stdint.h>
+
 extern uint32_t g_2023d4; /* address: 0x2023d4 */
 /* end velk prelude */
 

@@ -11,6 +11,19 @@
 0x180001210 72 call_sum9 symtab,dwarf,unwind
 0x180001260 322 sum_varargs symtab,dwarf,unwind
 /* velk prelude */
+#include <stdint.h>
+
+struct velk_vector { union { uint64_t u64; int64_t s64; uint32_t u32; int32_t s32; uint16_t u16; int16_t s16; uint8_t u8; int8_t s8; float f32; double f64; } low, high; };
+
+extern uint64_t __xmm_00000001000000010000000100000001; /* address: 0x180002010 */
+extern uint64_t __xmm_fffffff8fffffff8fffffff8fffffff8; /* address: 0x180002030 */
+extern uint64_t __xmm_fffffffcfffffffcfffffffcfffffffc; /* address: 0x180002020 */
+extern uint64_t __xmm_fffffffdfffffffeffffffff00000000; /* address: 0x180002000 */
+extern uint64_t g_180002008; /* address: 0x180002008 */
+extern uint64_t g_180002018; /* address: 0x180002018 */
+extern uint64_t g_180002028; /* address: 0x180002028 */
+extern uint64_t g_180002038; /* address: 0x180002038 */
+
 #ifndef VELK_add_lanes32
 #define VELK_add_lanes32
 static inline uint64_t add_lanes32(uint64_t a, uint64_t b) {
@@ -49,18 +62,6 @@ static inline uint64_t interleave_low32(uint64_t a, uint64_t b) {
     return out;
 }
 #endif
-
-struct velk_vector { union { uint64_t u64; int64_t s64; uint32_t u32; int32_t s32; uint16_t u16; int16_t s16; uint8_t u8; int8_t s8; float f32; double f64; } low, high; };
-
-extern uint64_t __xmm_00000001000000010000000100000001; /* address: 0x180002010 */
-extern uint64_t __xmm_fffffff8fffffff8fffffff8fffffff8; /* address: 0x180002030 */
-extern uint64_t __xmm_fffffffcfffffffcfffffffcfffffffc; /* address: 0x180002020 */
-extern uint64_t __xmm_fffffffdfffffffeffffffff00000000; /* address: 0x180002000 */
-extern uint64_t g_180002008; /* address: 0x180002008 */
-extern uint64_t g_180002018; /* address: 0x180002018 */
-extern uint64_t g_180002028; /* address: 0x180002028 */
-extern uint64_t g_180002038; /* address: 0x180002038 */
-
 int is_even(int);
 int is_odd(int);
 int square(int);
@@ -427,24 +428,24 @@ int sum_varargs(int count, ...) {
     int32_t v5;
     int64_t v29;
     int32_t v32;
-    _Alignas(16) struct __attribute__((packed)) { void *f_0; uint8_t gap_8[0x10]; } local_0; /* [sp-8] */
+    void *local_0; /* [sp-8] */
 
-    local_0.f_0 = (void *)v4;
+    local_0 = (void *)v4;
     *(uint64_t *)((uint8_t *)velk_return_address_slot() + 0x10) = v6;
     *(uint64_t *)((uint8_t *)velk_return_address_slot() + 0x18) = v7;
     *(uint64_t *)((uint8_t *)velk_return_address_slot() + 0x20) = v8;
-    local_0.f_0 = ((uint8_t *)velk_return_address_slot() + 0x10);
+    local_0 = ((uint8_t *)velk_return_address_slot() + 0x10);
     if (count <= 0) {
         return 0;
     }
-    uint64_t *v1 = local_0.f_0;
+    uint64_t *v1 = local_0;
     uint64_t v2 = 0;
     if ((uint32_t)count < 13) {
         v5 = 0;
         v29 = (uintptr_t)v1;
     } else {
         uint64_t v3 = (uintptr_t)(v1 + ((count - 1) & 0xffffffff));
-        if ((((uintptr_t)velk_return_address_slot() - 8 < v3 + 4) & ((uintptr_t)v1 < (uintptr_t)velk_return_address_slot())) == 0) {
+        if ((((uintptr_t)&local_0 < v3 + 4) & ((uintptr_t)v1 < (uintptr_t)velk_return_address_slot())) == 0) {
             uint8_t v30 = count & 0x3;
             v2 = (uint64_t)(uint32_t)count - (v30 != 0 ? v30 : 4);
             v29 = (uintptr_t)(v1 + v2);
@@ -461,7 +462,7 @@ int sum_varargs(int count, ...) {
                 v1 += 0x4;
                 v11 = v11 - 4;
             } while (v11 != 0);
-            local_0.f_0 = v1;
+            local_0 = v1;
             uint64_t v31 = add_lanes32(vector.low.u64, vector_2.low.u64);
             v5 = add_lanes32(v31 >> 32 | v31 >> 32 << 32, v31);
         } else {
@@ -478,7 +479,7 @@ int sum_varargs(int count, ...) {
         do {
             uint32_t *v21 = (uint32_t *)v29;
             v29 += 8;
-            local_0.f_0 = (void *)v29;
+            local_0 = (void *)v29;
             v5 += *v21;
             --i;
         } while (v18 != i);
@@ -490,13 +491,13 @@ int sum_varargs(int count, ...) {
     int32_t v23 = count - v32;
     uint32_t *v24 = (uint32_t *)(v29 + 16);
     do {
-        local_0.f_0 = v24 - 0x2;
+        local_0 = v24 - 0x2;
         v5 += v24[-4];
-        local_0.f_0 = v24;
+        local_0 = v24;
         v5 += v24[-2];
-        local_0.f_0 = v24 + 0x2;
+        local_0 = v24 + 0x2;
         v5 += *v24;
-        local_0.f_0 = v24 + 0x4;
+        local_0 = v24 + 0x4;
         v5 += v24[2];
         v24 += 0x8;
         v23 = v23 - 4;

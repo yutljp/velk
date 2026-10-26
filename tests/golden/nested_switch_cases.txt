@@ -1,3 +1,6 @@
+/* velk prelude */
+#include <stdint.h>
+/* end velk prelude */
 /* velk pseudo-C: nested_switch_cases @ 0x0 */
 uint64_t nested_switch_cases(uint64_t outer, uint64_t inner) {
     switch (outer) {

@@ -3825,6 +3825,25 @@
 "wctrans_t":"const __int32_t *",
 "wctype_t":"unsigned long",
 "wint_t":"unsigned int"
+},
+"variables":{
+"__daylight":{"header":"time.h","size":4,"type":"int"},
+"__environ":{"header":"unistd.h","size":8,"type":"char **"},
+"__timezone":{"header":"time.h","size":8,"type":"long"},
+"daylight":{"header":"time.h","size":4,"type":"int"},
+"environ":{"header":"unistd.h","size":8,"type":"char **"},
+"getdate_err":{"header":"time.h","size":4,"type":"int"},
+"optarg":{"header":"unistd.h","size":8,"type":"char *"},
+"opterr":{"header":"unistd.h","size":4,"type":"int"},
+"optind":{"header":"unistd.h","size":4,"type":"int"},
+"optopt":{"header":"unistd.h","size":4,"type":"int"},
+"program_invocation_name":{"header":"errno.h","size":8,"type":"char *"},
+"program_invocation_short_name":{"header":"errno.h","size":8,"type":"char *"},
+"signgam":{"header":"math.h","size":4,"type":"int"},
+"stderr":{"header":"stdio.h","size":8,"type":"FILE *"},
+"stdin":{"header":"stdio.h","size":8,"type":"FILE *"},
+"stdout":{"header":"stdio.h","size":8,"type":"FILE *"},
+"timezone":{"header":"time.h","size":8,"type":"long"}
 }
 },
 "x86_64-linux-gnu":{
@@ -7635,6 +7654,25 @@
 "wctrans_t":"const __int32_t *",
 "wctype_t":"unsigned long",
 "wint_t":"unsigned int"
+},
+"variables":{
+"__daylight":{"header":"time.h","size":4,"type":"int"},
+"__environ":{"header":"unistd.h","size":8,"type":"char **"},
+"__timezone":{"header":"time.h","size":8,"type":"long"},
+"daylight":{"header":"time.h","size":4,"type":"int"},
+"environ":{"header":"unistd.h","size":8,"type":"char **"},
+"getdate_err":{"header":"time.h","size":4,"type":"int"},
+"optarg":{"header":"unistd.h","size":8,"type":"char *"},
+"opterr":{"header":"unistd.h","size":4,"type":"int"},
+"optind":{"header":"unistd.h","size":4,"type":"int"},
+"optopt":{"header":"unistd.h","size":4,"type":"int"},
+"program_invocation_name":{"header":"errno.h","size":8,"type":"char *"},
+"program_invocation_short_name":{"header":"errno.h","size":8,"type":"char *"},
+"signgam":{"header":"math.h","size":4,"type":"int"},
+"stderr":{"header":"stdio.h","size":8,"type":"FILE *"},
+"stdin":{"header":"stdio.h","size":8,"type":"FILE *"},
+"stdout":{"header":"stdio.h","size":8,"type":"FILE *"},
+"timezone":{"header":"time.h","size":8,"type":"long"}
 }
 }
 }

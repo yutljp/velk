@@ -4,6 +4,8 @@
 0x201a0 16 bump symtab,dwarf
 0x201b0 14 banner_first symtab,dwarf
 /* velk prelude */
+#include <stdint.h>
+
 extern int g_counter; /* address: 0x301c4 */
 extern uint32_t banner; /* address: 0x301c0 */
 

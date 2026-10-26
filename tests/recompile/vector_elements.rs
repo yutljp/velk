@@ -98,7 +98,7 @@ fn printed_word_extractions_store_two_bytes_and_preserve_saved_registers() {
     assert!(!code.contains("undefined"), "{code}");
     all.push_str(&code);
     syntax::run_printed(
-        &all,
+        &velk::render::combine(&all),
         "",
         "uint16_t input[8]={9}; uint16_t out=0; if(extraction_caller((uintptr_t)input,(uintptr_t)&out)!=123 || out!=9) return 1;",
     );

@@ -11,6 +11,11 @@
 0x203e8 84 call_sum9 symtab,dwarf
 0x2043c 136 sum_varargs symtab,dwarf
 /* velk prelude */
+#include <stdint.h>
+
+uint64_t is_even();
+uint64_t is_odd();
+uint64_t sum9();
 uint64_t velk_entry_stack_pointer(void); /* target entry stack pointer */
 /* end velk prelude */
 
@@ -197,7 +202,7 @@ int factorial(int n) {
         return 1;
     }
     local_1 = n;
-    int32_t v1 = (uint32_t)(factorial((n - 1) & 0xffffffff));
+    int32_t v1 = factorial(n - 1);
     return local_1 * v1;
 }
 -- signature

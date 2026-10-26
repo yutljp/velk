@@ -7,6 +7,9 @@
 0x2012c0 3 word_low_byte symtab,dwarf,unwind
 0x2012d0 23 flags_level symtab,dwarf,unwind
 0x2012f0 18 flags_set_mode symtab,dwarf,unwind
+/* velk prelude */
+#include <stdint.h>
+/* end velk prelude */
 
 == 0x2011e0 rect_area
 -- decompile

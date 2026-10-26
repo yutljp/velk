@@ -3,6 +3,9 @@
 0x20128 48 sum_until symtab,dwarf
 0x20158 68 sum_till_neg symtab,dwarf
 0x2019c 86 sum_until_zero symtab,dwarf
+/* velk prelude */
+#include <stdint.h>
+/* end velk prelude */
 
 == 0x200fc count_bits
 -- decompile

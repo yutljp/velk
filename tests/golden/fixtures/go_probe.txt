@@ -1275,7 +1275,21 @@
 0x4671c0 64 internal/runtime/exithook.Run.deferwrap1 pclntab
 0x467200 72 internal/runtime/exithook.Run.func1 pclntab
 /* velk prelude */
+#include <stdint.h>
+
 struct go_string { uint8_t * ptr; int64_t len; };
+
+uint64_t main_add();
+uint64_t main_divmod();
+uint64_t main_kindName();
+uint64_t main_sumSlice();
+uint64_t runtime_gwrite();
+uint64_t runtime_panicdivide();
+uint64_t runtime_printlock();
+uint64_t runtime_printnl();
+uint64_t runtime_printsp();
+uint64_t runtime_printunlock();
+void runtime_printint();
 /* end velk prelude */
 
 == 0x430e20 runtime.printstring

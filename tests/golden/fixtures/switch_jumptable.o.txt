@@ -1,6 +1,8 @@
 # switch_jumptable.o: elf aarch64 no entry, 1 functions, 0 lift failures, 0 unsupported, 0 gotos
 0x0 736 d7 symtab,unwind
 /* velk prelude */
+#include <stdint.h>
+
 extern uint32_t g; /* address: 0x2e0 */
 /* end velk prelude */
 

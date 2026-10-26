@@ -8,7 +8,11 @@
 0x1000008d0 16 _use_block symtab,dynamic,function-starts
 0x1000008e0 8 _main symtab,dynamic,entry,function-starts
 /* velk prelude */
+#include <stdint.h>
+
 extern uint64_t g_100002130; /* address: 0x100002130 */
+
+uint64_t objc_msgSend();
 /* end velk prelude */
 
 == 0x100000860 -[Counter add:with:]

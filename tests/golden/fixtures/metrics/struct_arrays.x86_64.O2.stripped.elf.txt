@@ -2,6 +2,9 @@
 0x201180 18 - unwind,prologue
 0x2011a0 14 - unwind,prologue
 0x2011b0 100 - unwind,prologue
+/* velk prelude */
+#include <stdint.h>
+/* end velk prelude */
 
 == 0x201180 -
 -- decompile

@@ -10,6 +10,9 @@
 0x1800012a0 73 abi_indirect_make symtab,dwarf,unwind
 0x1800012f0 110 abi_exhaust_five_aligned symtab,dwarf,unwind
 0x180001360 138 abi_exhaust_seven_aligned symtab,dwarf,unwind
+/* velk prelude */
+#include <stdint.h>
+/* end velk prelude */
 
 == 0x180001000 abi_pair_adjust
 -- decompile

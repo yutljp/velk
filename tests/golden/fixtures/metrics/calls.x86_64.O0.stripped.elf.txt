@@ -12,8 +12,13 @@
 0x201540 296 - unwind,prologue
 /* velk prelude */
 #include <stdarg.h>
+#include <stdint.h>
 
 extern uint64_t g_202670[]; /* address: 0x202670 */
+
+uint64_t sub_201420();
+uint64_t sub_201460();
+uint64_t sub_2014a0();
 /* end velk prelude */
 
 == 0x201310 -
@@ -113,7 +118,7 @@ fn <unnamed> @ 0x2013a0 (size 33)
 /* velk pseudo-C: sub_2013d0 @ 0x2013d0 */
 int32_t sub_2013d0(int32_t a0) {
     if (a0 > 1) {
-        uint32_t v4 = a0 * ((int32_t)(sub_2013d0((a0 - 1) & 0xffffffff)));
+        uint32_t v4 = a0 * sub_2013d0(a0 - 1);
         return v4;
     }
     return 1;

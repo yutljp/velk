@@ -1,6 +1,9 @@
 # metrics/alt_names.aarch64.O2.debug.elf: elf aarch64 no entry, 2 functions, 0 lift failures, 0 unsupported, 0 gotos
 0x210164 12 alt_sum3 symtab,dwarf,unwind
 0x210170 68 alt_helper symtab,dwarf,unwind
+/* velk prelude */
+#include <stdint.h>
+/* end velk prelude */
 
 == 0x210164 alt_sum3
 -- decompile

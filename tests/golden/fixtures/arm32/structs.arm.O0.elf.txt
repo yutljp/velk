@@ -8,6 +8,8 @@
 0x202f0 84 flags_level symtab,dwarf
 0x20344 60 flags_set_mode symtab,dwarf
 /* velk prelude */
+#include <stdint.h>
+
 uint64_t velk_entry_stack_pointer(void); /* target entry stack pointer */
 /* end velk prelude */
 

@@ -6,6 +6,9 @@
 0x1000005ec 12 _getgrgid_r plt
 0x1000005f8 12 _wcslen plt
 /* velk prelude */
+#include <stddef.h>
+#include <stdint.h>
+
 struct group {
     _Alignas(8) char *gr_name;
     char *gr_passwd;
@@ -13,6 +16,9 @@ struct group {
     uint8_t gap_0x14[0x4];
     char **gr_mem;
 };
+
+size_t (wcslen)(const int *);
+struct group; int (getgrgid_r)(unsigned int, struct group *, char *, size_t, struct group **);
 /* end velk prelude */
 
 == 0x100000568 _library_group

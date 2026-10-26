@@ -1,6 +1,8 @@
 # metrics/switch_jumptable.x86_64.O0.debug.elf: elf x86_64 no entry, 1 functions, 0 lift failures, 0 unsupported, 0 gotos
 0x2011c0 592 d7 symtab,dwarf,unwind
 /* velk prelude */
+#include <stdint.h>
+
 extern uint32_t g; /* address: 0x202410 */
 /* end velk prelude */
 

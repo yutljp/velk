@@ -4,6 +4,11 @@
 0x20128 12 tail_indirect symtab,dwarf
 0x20134 36 six_args symtab,dwarf
 0x20158 12 wide_add symtab,dwarf
+/* velk prelude */
+#include <stdint.h>
+
+uint64_t tail_target();
+/* end velk prelude */
 
 == 0x20104 tail_target
 -- decompile

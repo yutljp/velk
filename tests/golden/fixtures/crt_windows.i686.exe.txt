@@ -31,17 +31,30 @@
 0x4011d8 8 wcslen plt
 /* velk prelude */
 #include <stdarg.h>
+#include <stdint.h>
 #include <stdio.h>
 
-int *_errno(void);
-int _close(int);
-int _getpid(void);
-int strcpy_s(char *, unsigned int, const char *);
-int wcscpy_s(unsigned short *, unsigned int, const unsigned short *);
-int32_t strtol(const char *, char **, int);
-int32_t time(int32_t *);
-uint32_t wcslen(const unsigned short *);
-void *calloc(uint32_t, uint32_t);
+char * setlocale_plt();
+char * strchr_plt();
+char *(setlocale)(int, const char *);
+char *(strchr)(const char *, int);
+double (sin)(double);
+int (_close)(int);
+int (_getpid)(void);
+int (fputs)(const char *, FILE *);
+int (isalpha)(int);
+int (strcpy_s)(char *, unsigned int, const char *);
+int (wcscpy_s)(unsigned short *, unsigned int, const unsigned short *);
+int *(_errno)(void);
+int fputs_plt();
+int printf_plt();
+int32_t (strtol)(const char *, char **, int);
+int32_t (time)(int32_t *);
+int32_t strtol_plt();
+uint32_t (wcslen)(const unsigned short *);
+uint32_t wcslen_plt();
+void * calloc_plt();
+void *(calloc)(uint32_t, uint32_t);
 /* end velk prelude */
 
 == 0x401000 crt_stdio
@@ -159,7 +172,7 @@ fn crt_time @ 0x401087 (size 20)
 /* ref: 0x402220 .rdata */
 int32_t crt_math(void) {
     /* unsupported (2 steps): Fld at 0x40109e, Fstp at 0x4010a2 */
-    return ((int32_t)(sin()));
+    return ((int32_t)(/* unresolved call signature */ ((double (*)())sin)()));
 }
 -- signature
 int32_t ()

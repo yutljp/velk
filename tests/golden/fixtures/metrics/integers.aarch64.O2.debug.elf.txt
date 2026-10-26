@@ -9,6 +9,9 @@
 0x210260 20 min3 symtab,dwarf,unwind
 0x210274 12 labs_value symtab,dwarf,unwind
 0x210280 8 mul_high symtab,dwarf,unwind
+/* velk prelude */
+#include <stdint.h>
+/* end velk prelude */
 
 == 0x210204 narrow_add
 -- decompile

@@ -6,6 +6,9 @@
 0x201410 99 short_circuit symtab,dwarf,unwind
 0x201480 96 skip_negatives symtab,dwarf,unwind
 0x2014e0 153 find_pair symtab,dwarf,unwind
+/* velk prelude */
+#include <stdint.h>
+/* end velk prelude */
 
 == 0x201230 matrix_trace
 -- decompile

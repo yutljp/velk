@@ -8,6 +8,10 @@
 0x20198 4 byte_swap symtab,dwarf
 0x2019c 14 min3 symtab,dwarf
 0x201ac 8 labs_value symtab,dwarf
+/* velk prelude */
+#include <stdbool.h>
+#include <stdint.h>
+/* end velk prelude */
 
 == 0x20124 narrow_add
 -- decompile
