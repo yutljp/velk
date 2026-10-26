@@ -1,7 +1,6 @@
 //! Memory queries agree across the CLI, JavaScript API and MCP transport.
 mod common;
 
-use std::io::Write;
 use std::path::Path;
 use std::process::{Command, Stdio};
 
@@ -35,16 +34,14 @@ fn script(code: &str) -> Value {
 }
 
 fn mcp(code: &str) -> Value {
-    let mut child = Command::new(env!("CARGO_BIN_EXE_velk"))
+    let child = Command::new(env!("CARGO_BIN_EXE_velk"))
         .arg("--mcp")
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
         .spawn()
         .expect("the MCP server starts");
     let request = json!({"jsonrpc":"2.0", "id":1, "method":"tools/call", "params":{"name":"velk_run_script", "arguments":{"code":code,"max_output_chars":20000}}});
-    writeln!(child.stdin.take().expect("piped input"), "{request}")
-        .expect("the request is written");
-    let output = child.wait_with_output().expect("the server exits");
+    let output = common::mcp_request(child, &request);
     assert!(output.status.success());
     let response: Value = serde_json::from_slice(&output.stdout).expect("a JSON response");
     assert_eq!(response["result"]["isError"], false, "{response}");
@@ -246,13 +243,14 @@ fn detected_names_compile_and_preserve_every_table_element() {
     let directory = common::root().join("target/memory-recompile");
     std::fs::create_dir_all(&directory).unwrap();
     let original = directory.join("original.o");
-    let compiled = Command::new("clang")
-        .args(["-O1", "-Dtable_byte=original_table_byte", "-c"])
-        .arg(common::root().join("tests/cases/memory/values.c"))
-        .arg("-o")
-        .arg(&original)
-        .output()
-        .unwrap();
+    let compiled = common::compiler::run(
+        Command::new("clang")
+            .args(["-O1", "-Dtable_byte=original_table_byte", "-c"])
+            .arg(common::root().join("tests/cases/memory/values.c"))
+            .arg("-o")
+            .arg(&original),
+        None,
+    );
     assert!(
         compiled.status.success(),
         "{}",

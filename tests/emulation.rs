@@ -93,32 +93,33 @@ fn build_fixture(architecture: &str) -> PathBuf {
     if architecture == "thumb32" {
         compiler.arg("-mthumb");
     }
-    let output = compiler
-        .args([
-            "-target",
-            target,
-            if matches!(architecture, "arm32" | "thumb32") {
-                "-O0"
-            } else {
-                "-O1"
-            },
-            "-fno-vectorize",
-            "-fno-slp-vectorize",
-            "-fno-builtin",
-            "-fno-stack-protector",
-            "-fno-pie",
-            "-nostdlib",
-            "-static",
-            "-fuse-ld=lld",
-            "-Wl,-e,_start",
-            "-Wl,--build-id=none",
-        ])
-        .arg(scratch.join("routines.c"))
-        .arg(scratch.join("start.S"))
-        .arg("-o")
-        .arg(&path)
-        .output()
-        .expect("valid compiled fixture state");
+    let output = common::compiler::run(
+        compiler
+            .args([
+                "-target",
+                target,
+                if matches!(architecture, "arm32" | "thumb32") {
+                    "-O0"
+                } else {
+                    "-O1"
+                },
+                "-fno-vectorize",
+                "-fno-slp-vectorize",
+                "-fno-builtin",
+                "-fno-stack-protector",
+                "-fno-pie",
+                "-nostdlib",
+                "-static",
+                "-fuse-ld=lld",
+                "-Wl,-e,_start",
+                "-Wl,--build-id=none",
+            ])
+            .arg(scratch.join("routines.c"))
+            .arg(scratch.join("start.S"))
+            .arg("-o")
+            .arg(&path),
+        None,
+    );
     assert!(output.status.success(), "{architecture}: {output:?}");
     path
 }
@@ -182,22 +183,23 @@ fn check_imported_hooks(architecture: &str) {
     if architecture == "thumb32" {
         compiler.arg("-mthumb");
     }
-    let output = compiler
-        .args([
-            "-target",
-            target,
-            "-O1",
-            "-fno-builtin",
-            "-fPIC",
-            "-shared",
-            "-nostdlib",
-            "-fuse-ld=lld",
-        ])
-        .arg(scratch.join("imports.c"))
-        .arg("-o")
-        .arg(scratch.join("imports.elf"))
-        .output()
-        .expect("compiling imported-call source");
+    let output = common::compiler::run(
+        compiler
+            .args([
+                "-target",
+                target,
+                "-O1",
+                "-fno-builtin",
+                "-fPIC",
+                "-shared",
+                "-nostdlib",
+                "-fuse-ld=lld",
+            ])
+            .arg(scratch.join("imports.c"))
+            .arg("-o")
+            .arg(scratch.join("imports.elf")),
+        None,
+    );
     assert!(output.status.success(), "{architecture}: {output:?}");
     let binary = Binary::open(&scratch.join("imports.elf")).expect("loading imported calls");
     let report = execute(&binary, "hooked", json!({"arguments":["0x10000000"]}));
@@ -442,23 +444,15 @@ fn cli_javascript_and_mcp_share_the_execution_result() {
         serde_json::from_str::<Value>(&output.output).expect("valid compiled fixture state"),
         cli
     );
-    use std::io::Write as _;
     use std::process::Stdio;
-    let mut child = Command::new(env!("CARGO_BIN_EXE_velk"))
+    let child = Command::new(env!("CARGO_BIN_EXE_velk"))
         .arg("--mcp")
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
         .spawn()
         .expect("valid compiled fixture state");
     let request = json!({"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"velk_emulate","arguments":{"path":path,"start":"sum9","options":options}}});
-    writeln!(
-        child.stdin.take().expect("valid compiled fixture state"),
-        "{request}"
-    )
-    .expect("valid compiled fixture state");
-    let output = child
-        .wait_with_output()
-        .expect("valid compiled fixture state");
+    let output = common::mcp_request(child, &request);
     let response: Value =
         serde_json::from_slice(&output.stdout).expect("valid compiled fixture state");
     assert_eq!(response["result"]["isError"], false, "{response}");
@@ -543,19 +537,20 @@ int main(void) {
     if cfg!(target_os = "macos") {
         compiler.args(["-arch", "x86_64"]);
     }
-    let output = compiler
-        .args([
-            "-O1",
-            "-fno-builtin",
-            "-D_FORTIFY_SOURCE=0",
-            "-fno-pie",
-            "-no-pie",
-        ])
-        .arg(scratch.join("hooks.c"))
-        .arg("-o")
-        .arg(&path)
-        .output()
-        .expect("valid compiled fixture state");
+    let output = common::compiler::run(
+        compiler
+            .args([
+                "-O1",
+                "-fno-builtin",
+                "-D_FORTIFY_SOURCE=0",
+                "-fno-pie",
+                "-no-pie",
+            ])
+            .arg(scratch.join("hooks.c"))
+            .arg("-o")
+            .arg(&path),
+        None,
+    );
     assert!(output.status.success(), "{output:?}");
     let output = Command::new(&path)
         .output()

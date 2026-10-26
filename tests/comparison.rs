@@ -2,7 +2,6 @@ mod common;
 
 use std::collections::BTreeMap;
 use std::fs;
-use std::io::Write;
 use std::path::PathBuf;
 use std::process::{Command, Stdio};
 use std::sync::atomic::{AtomicUsize, Ordering};
@@ -376,7 +375,7 @@ fn javascript_transfer() {
 fn mcp_transfer() {
     let fixture = Fixture::new("x86_64", true);
     fixture.seed();
-    let mut child = Command::new(env!("CARGO_BIN_EXE_velk"))
+    let child = Command::new(env!("CARGO_BIN_EXE_velk"))
         .arg("--mcp")
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
@@ -384,17 +383,7 @@ fn mcp_transfer() {
         .spawn()
         .expect("comparison fixture must be valid");
     let request = json!({"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"velk_run_script","arguments":{"code":format!("velk.open({:?}).compare(velk.open({:?}), {{carryAnnotations:true}})",fixture.first, fixture.second),"max_output_chars":20000,"timeout_ms":120000}}});
-    writeln!(
-        child
-            .stdin
-            .take()
-            .expect("comparison fixture must be valid"),
-        "{request}"
-    )
-    .expect("comparison fixture must be valid");
-    let output = child
-        .wait_with_output()
-        .expect("comparison fixture must be valid");
+    let output = common::mcp_request(child, &request);
     assert!(output.status.success());
     let response: Value =
         serde_json::from_slice(&output.stdout).expect("comparison fixture must be valid");
@@ -580,25 +569,27 @@ fn transferred_names_and_scalar_types_compile_and_preserve_results() {
     let code = velk::render::combine(&format!("{stable_code}\n{global_code}"));
     let original = fixture.directory.join("original.o");
     let source = common::root().join("tests/comparison/fixtures/second.c");
-    let output = Command::new("clang")
-        .args(["-O1", "-c"])
-        .arg(&source)
-        .arg("-o")
-        .arg(&original)
-        .output()
-        .expect("comparison fixture must be valid");
+    let output = common::compiler::run(
+        Command::new("clang")
+            .args(["-O1", "-c"])
+            .arg(&source)
+            .arg("-o")
+            .arg(&original),
+        None,
+    );
     assert!(output.status.success(), "{:?}", output);
     let executable = fixture.directory.join("verify");
     let input = fixture.directory.join("verify.c");
     fs::write(&input, format!("{code}\nint32_t running_total = 41;\nint stable(int);\nint read_total(int);\nint main(void) {{ for (int i=-1000;i<=1000;i++) {{ if (user_calculation(i)!=stable(i)) return 1; if (read_carried(i)!=read_total(i)) return 2; }} return 0; }}\n")).expect("comparison fixture must be valid");
-    let output = Command::new("clang")
-        .args(["-std=c11", "-Werror=implicit-function-declaration"])
-        .arg(&input)
-        .arg(&original)
-        .arg("-o")
-        .arg(&executable)
-        .output()
-        .expect("comparison fixture must be valid");
+    let output = common::compiler::run(
+        Command::new("clang")
+            .args(["-std=c11", "-Werror=implicit-function-declaration"])
+            .arg(&input)
+            .arg(&original)
+            .arg("-o")
+            .arg(&executable),
+        None,
+    );
     assert!(
         output.status.success(),
         "{}",

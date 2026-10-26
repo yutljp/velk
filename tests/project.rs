@@ -44,28 +44,29 @@ int32_t global_add(int32_t x) { return total + x; }
 __attribute__((noinline)) void touch(int32_t *p) { *p += 7; }
 __attribute__((nodebug)) int32_t stack_work(int32_t x) { int32_t slots[4]; slots[0]=x; slots[1]=x+1; touch(slots); return slots[0] + slots[1]; }
 "#).expect("test source can be written");
-        let result = Command::new("clang")
-            .args([
-                "-O1",
-                "-g",
-                "-fPIC",
-                if cfg!(target_os = "macos") {
-                    "-dynamiclib"
+        let result = common::compiler::run(
+            Command::new("clang")
+                .args([
+                    "-O1",
+                    "-g",
+                    "-fPIC",
+                    if cfg!(target_os = "macos") {
+                        "-dynamiclib"
+                    } else {
+                        "-shared"
+                    },
+                ])
+                // These tests annotate definitions and their direct data accesses.
+                .args(if cfg!(target_os = "linux") {
+                    &["-Wl,-Bsymbolic"][..]
                 } else {
-                    "-shared"
-                },
-            ])
-            // These tests annotate definitions and their direct data accesses.
-            .args(if cfg!(target_os = "linux") {
-                &["-Wl,-Bsymbolic"][..]
-            } else {
-                &[]
-            })
-            .arg(&source)
-            .arg("-o")
-            .arg(&fixture.binary)
-            .output()
-            .expect("clang can compile the test fixture");
+                    &[]
+                })
+                .arg(&source)
+                .arg("-o")
+                .arg(&fixture.binary),
+            None,
+        );
         assert!(
             result.status.success(),
             "{}",
@@ -103,19 +104,20 @@ __attribute__((nodebug)) int32_t stack_work(int32_t x) { int32_t slots[4]; slots
         let source = self.directory.join("output.c");
         let executable = self.directory.join("verify");
         std::fs::write(&source, code).expect("rendered source can be written");
-        let result = Command::new("clang")
-            .args([
-                "-std=c11",
-                "-Werror=implicit-function-declaration",
-                "-include",
-                "stdint.h",
-            ])
-            .arg(&source)
-            .arg(&self.binary)
-            .arg("-o")
-            .arg(&executable)
-            .output()
-            .expect("clang can compile the rendered source");
+        let result = common::compiler::run(
+            Command::new("clang")
+                .args([
+                    "-std=c11",
+                    "-Werror=implicit-function-declaration",
+                    "-include",
+                    "stdint.h",
+                ])
+                .arg(&source)
+                .arg(&self.binary)
+                .arg("-o")
+                .arg(&executable),
+            None,
+        );
         assert!(
             result.status.success(),
             "{}\n{code}",

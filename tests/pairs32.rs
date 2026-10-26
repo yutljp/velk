@@ -5,6 +5,12 @@ use std::process::Command;
 
 use velk::service::Binary;
 
+const TARGETS: [(&str, &str); 3] = [
+    ("i386-linux-gnu", ""),
+    ("armv7a-linux-gnueabihf", "-marm"),
+    ("armv7a-linux-gnueabihf", "-mthumb"),
+];
+
 #[test]
 fn declared_word_pairs_compile_and_match_integer_operations() {
     check_word_pairs(/* debug */ true);
@@ -22,11 +28,7 @@ fn check_word_pairs(debug: bool) {
         "target/pairs32-inferred-tests"
     });
     std::fs::create_dir_all(&scratch).expect("create fixture directory");
-    for (target, mode) in [
-        ("i386-linux-gnu", ""),
-        ("armv7a-linux-gnueabihf", "-marm"),
-        ("armv7a-linux-gnueabihf", "-mthumb"),
-    ] {
+    for (target, mode) in TARGETS {
         for level in ["-O0", "-O2"] {
             let tag = format!("{target}{mode}{level}");
             let object = scratch.join(format!("{tag}.o"));
@@ -46,12 +48,13 @@ fn check_word_pairs(debug: bool) {
             if !mode.is_empty() {
                 compiler.arg(mode);
             }
-            let output = compiler
-                .arg(common::root().join("tests/cases/pairs32.c"))
-                .arg("-o")
-                .arg(&object)
-                .output()
-                .expect("run fixture compiler");
+            let output = common::compiler::run(
+                compiler
+                    .arg(common::root().join("tests/cases/pairs32.c"))
+                    .arg("-o")
+                    .arg(&object),
+                None,
+            );
             assert!(
                 output.status.success(),
                 "{}",
@@ -76,13 +79,14 @@ fn check_word_pairs(debug: bool) {
                 writeln!(assembly, ".global {name}\n.type {name}, %function\n{name}:\n{body}\n.size {name}, .-{name}").expect("writing to a String succeeds");
             }
             std::fs::write(&helpers, assembly).expect("write helper assembly");
-            let output = Command::new("clang")
-                .args(["-target", target, "-c"])
-                .arg(&helpers)
-                .arg("-o")
-                .arg(&helpers_object)
-                .output()
-                .expect("run fixture compiler");
+            let output = common::compiler::run(
+                Command::new("clang")
+                    .args(["-target", target, "-c"])
+                    .arg(&helpers)
+                    .arg("-o")
+                    .arg(&helpers_object),
+                None,
+            );
             assert!(
                 output.status.success(),
                 "{}",
@@ -236,20 +240,21 @@ fn check_word_pairs(debug: bool) {
             std::fs::write(&source, velk::render::combine(&code)).expect("write printed C");
             for optimization in ["-O0", "-O2"] {
                 let executable = scratch.join(format!("{tag}{optimization}"));
-                let output = Command::new("clang")
-                    .args([
-                        "-std=c17",
-                        "-Werror",
-                        "-Wno-unused-variable",
-                        "-fsanitize=undefined",
-                        "-fno-sanitize-recover=undefined",
-                        optimization,
-                    ])
-                    .arg(&source)
-                    .arg("-o")
-                    .arg(&executable)
-                    .output()
-                    .expect("compile printed C");
+                let output = common::compiler::run(
+                    Command::new("clang")
+                        .args([
+                            "-std=c17",
+                            "-Werror",
+                            "-Wno-unused-variable",
+                            "-fsanitize=undefined",
+                            "-fno-sanitize-recover=undefined",
+                            optimization,
+                        ])
+                        .arg(&source)
+                        .arg("-o")
+                        .arg(&executable),
+                    None,
+                );
                 assert!(
                     output.status.success(),
                     "{tag}: {}\n{code}",
@@ -348,13 +353,14 @@ fn arm_carry_flags_and_vfp_stack_saves_match_printed_c() {
         let source = scratch.join(format!("{mode}.s"));
         let object = scratch.join(format!("{mode}.o"));
         std::fs::write(&source, assembly).unwrap();
-        let output = Command::new("clang")
-            .args(["--target=armv7a-linux-gnueabihf", "-c"])
-            .arg(&source)
-            .arg("-o")
-            .arg(&object)
-            .output()
-            .unwrap();
+        let output = common::compiler::run(
+            Command::new("clang")
+                .args(["--target=armv7a-linux-gnueabihf", "-c"])
+                .arg(&source)
+                .arg("-o")
+                .arg(&object),
+            None,
+        );
         assert!(
             output.status.success(),
             "{}",
@@ -458,13 +464,14 @@ fn arm_carry_flags_and_vfp_stack_saves_match_printed_c() {
         .unwrap();
         for level in ["-O0", "-O2"] {
             let executable = scratch.join(format!("{mode}{level}"));
-            let output = Command::new("clang")
-                .args(["-std=c17", level, "-Werror", "-Wno-unused-variable"])
-                .arg(&source)
-                .arg("-o")
-                .arg(&executable)
-                .output()
-                .unwrap();
+            let output = common::compiler::run(
+                Command::new("clang")
+                    .args(["-std=c17", level, "-Werror", "-Wno-unused-variable"])
+                    .arg(&source)
+                    .arg("-o")
+                    .arg(&executable),
+                None,
+            );
             assert!(
                 output.status.success(),
                 "{}\n{code}",
@@ -484,19 +491,20 @@ fn arm_import_stubs_use_the_declared_argument_count() {
     std::fs::write(&source, "extern void *memcpy(void *, const void *, unsigned int);\nvoid *copy_known(void *dst, const void *src) { return memcpy(dst, src, 7); }\n").unwrap();
     let object = scratch.join("copy.o");
     let image = scratch.join("copy.so");
-    let output = Command::new("clang")
-        .args([
-            "--target=armv7a-linux-gnueabihf",
-            "-O2",
-            "-fno-builtin",
-            "-fPIC",
-            "-c",
-        ])
-        .arg(&source)
-        .arg("-o")
-        .arg(&object)
-        .output()
-        .unwrap();
+    let output = common::compiler::run(
+        Command::new("clang")
+            .args([
+                "--target=armv7a-linux-gnueabihf",
+                "-O2",
+                "-fno-builtin",
+                "-fPIC",
+                "-c",
+            ])
+            .arg(&source)
+            .arg("-o")
+            .arg(&object),
+        None,
+    );
     assert!(
         output.status.success(),
         "{}",
@@ -522,13 +530,14 @@ fn arm_import_stubs_use_the_declared_argument_count() {
     let source = scratch.join("check.c");
     std::fs::write(&source, format!("#include <stdint.h>\n#include <stdbool.h>\n#include <stddef.h>\nstatic void *copy_stub(void *dst, const void *src, size_t count) {{ return (uintptr_t)dst == 0x1000 && (uintptr_t)src == 0x2000 && count == 7 ? dst : 0; }}\n#define memcpy copy_stub\n{printed}\nint main(void) {{ return copy_known((void *)0x1000, (void *)0x2000) != (void *)0x1000; }}\n")).unwrap();
     let executable = scratch.join("check");
-    let output = Command::new("clang")
-        .args(["-std=c17", "-Werror", "-Wno-int-to-void-pointer-cast"])
-        .arg(&source)
-        .arg("-o")
-        .arg(&executable)
-        .output()
-        .unwrap();
+    let output = common::compiler::run(
+        Command::new("clang")
+            .args(["-std=c17", "-Werror", "-Wno-int-to-void-pointer-cast"])
+            .arg(&source)
+            .arg("-o")
+            .arg(&executable),
+        None,
+    );
     assert!(
         output.status.success(),
         "{}\n{printed}",
@@ -541,11 +550,7 @@ fn arm_import_stubs_use_the_declared_argument_count() {
 fn word_runtime_calls_and_indexed_frames_compile_and_run() {
     let scratch = common::root().join("target/pairs32-followup");
     std::fs::create_dir_all(&scratch).unwrap();
-    for (target, mode) in [
-        ("i386-linux-gnu", ""),
-        ("armv7a-linux-gnueabihf", "-marm"),
-        ("armv7a-linux-gnueabihf", "-mthumb"),
-    ] {
+    for (target, mode) in TARGETS {
         for level in ["-O0", "-O2"] {
             let tag = format!("{target}{mode}{level}");
             let object = scratch.join(format!("{tag}.o"));
@@ -563,12 +568,13 @@ fn word_runtime_calls_and_indexed_frames_compile_and_run() {
             if !mode.is_empty() {
                 compiler.arg(mode);
             }
-            let output = compiler
-                .arg(common::root().join("tests/cases/word_calls.c"))
-                .arg("-o")
-                .arg(&object)
-                .output()
-                .unwrap();
+            let output = common::compiler::run(
+                compiler
+                    .arg(common::root().join("tests/cases/word_calls.c"))
+                    .arg("-o")
+                    .arg(&object),
+                None,
+            );
             assert!(
                 output.status.success(),
                 "{}",
@@ -585,12 +591,8 @@ fn word_runtime_calls_and_indexed_frames_compile_and_run() {
             if !mode.is_empty() {
                 compiler.arg(mode);
             }
-            let output = compiler
-                .arg(&helpers)
-                .arg("-o")
-                .arg(&helpers_object)
-                .output()
-                .unwrap();
+            let output =
+                common::compiler::run(compiler.arg(&helpers).arg("-o").arg(&helpers_object), None);
             assert!(
                 output.status.success(),
                 "{}",
@@ -650,20 +652,21 @@ fn word_runtime_calls_and_indexed_frames_compile_and_run() {
                     )
                     .unwrap();
                     let object = scratch.join(format!("{tag}-frame.o"));
-                    let output = Command::new("clang")
-                        .args([
-                            "-target",
-                            target,
-                            "-ffreestanding",
-                            "-std=c17",
-                            "-Werror",
-                            "-c",
-                        ])
-                        .arg(&source)
-                        .arg("-o")
-                        .arg(&object)
-                        .output()
-                        .unwrap();
+                    let output = common::compiler::run(
+                        Command::new("clang")
+                            .args([
+                                "-target",
+                                target,
+                                "-ffreestanding",
+                                "-std=c17",
+                                "-Werror",
+                                "-c",
+                            ])
+                            .arg(&source)
+                            .arg("-o")
+                            .arg(&object),
+                        None,
+                    );
                     assert!(
                         output.status.success(),
                         "{tag}: {}\n{printed}",
@@ -717,13 +720,14 @@ fn word_runtime_calls_and_indexed_frames_compile_and_run() {
             )
             .unwrap();
             let executable = scratch.join(format!("{tag}-check"));
-            let output = Command::new("clang")
-                .args(["-std=c17", "-O2", "-Werror", "-Wno-unused-variable"])
-                .arg(&source)
-                .arg("-o")
-                .arg(&executable)
-                .output()
-                .unwrap();
+            let output = common::compiler::run(
+                Command::new("clang")
+                    .args(["-std=c17", "-O2", "-Werror", "-Wno-unused-variable"])
+                    .arg(&source)
+                    .arg("-o")
+                    .arg(&executable),
+                None,
+            );
             assert!(
                 output.status.success(),
                 "{tag}: {}\n{code}",
@@ -745,13 +749,14 @@ fn aligned_i386_frame_addresses_use_local_storage() {
     source.push_str(".global frame_distance\n.type frame_distance, @function\nframe_distance:\npush %ebp\nmov %esp, %ebp\nsub $32, %esp\nlea -13(%ebp), %eax\nmov %eax, %edx\nand $-4, %edx\nsub %edx, %eax\nleave\nret\n.size frame_distance, .-frame_distance\n");
     std::fs::write(&assembly, source).unwrap();
     let object = scratch.join("aligned.o");
-    let output = Command::new("clang")
-        .args(["-target", "i386-linux-gnu", "-c"])
-        .arg(&assembly)
-        .arg("-o")
-        .arg(&object)
-        .output()
-        .unwrap();
+    let output = common::compiler::run(
+        Command::new("clang")
+            .args(["-target", "i386-linux-gnu", "-c"])
+            .arg(&assembly)
+            .arg("-o")
+            .arg(&object),
+        None,
+    );
     assert!(
         output.status.success(),
         "{}",
@@ -767,13 +772,14 @@ fn aligned_i386_frame_addresses_use_local_storage() {
     let source = scratch.join("check.c");
     std::fs::write(&source, format!("#include <stdint.h>\n#include <stdbool.h>\n{printed}\nint main(void) {{ for (unsigned n = 0; n < 16; ++n) {{ if (aligned_frame(n) != 42) return 1; }} return frame_distance() != 3; }}\n")).unwrap();
     let executable = scratch.join("check");
-    let output = Command::new("clang")
-        .args(["-std=c17", "-Werror", "-O2"])
-        .arg(&source)
-        .arg("-o")
-        .arg(&executable)
-        .output()
-        .unwrap();
+    let output = common::compiler::run(
+        Command::new("clang")
+            .args(["-std=c17", "-Werror", "-O2"])
+            .arg(&source)
+            .arg("-o")
+            .arg(&executable),
+        None,
+    );
     assert!(
         output.status.success(),
         "{}\n{printed}",

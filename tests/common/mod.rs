@@ -7,6 +7,9 @@
 pub mod compiler;
 
 use std::path::{Path, PathBuf};
+use std::process::{Child, Output};
+
+use serde_json::Value;
 
 pub fn root() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR"))
@@ -144,4 +147,13 @@ pub fn fixture_group(fixture: &Path, image: &velk::loader::Image) -> &'static st
     } else {
         "C/C++ stripped"
     }
+}
+
+/// Writes one JSON-RPC request, closes input, and collects the server output.
+pub fn mcp_request(mut child: Child, request: &Value) -> Output {
+    use std::io::Write as _;
+
+    writeln!(child.stdin.take().expect("piped MCP input"), "{request}")
+        .expect("writing MCP request");
+    child.wait_with_output().expect("MCP server shutdown")
 }

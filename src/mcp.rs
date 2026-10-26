@@ -7,7 +7,7 @@ use std::time::Duration;
 use serde_json::{Value, json};
 
 use crate::error::{Error, Result};
-use crate::script::Engine;
+use crate::script::{Engine, Outcome};
 
 type RpcError = (i32, &'static str);
 
@@ -195,9 +195,7 @@ fn call_tool(engine: &Engine, request: &Value) -> std::result::Result<Value, Rpc
                     json!({ "content": [{ "type": "text", "text": "missing path" }], "isError": true }),
                 );
             };
-            let path = json!(path);
-            let arch = arguments.get("arch").unwrap_or(&Value::Null);
-            let code = format!("velk.open({path}, {{arch:{arch}}}).classes()");
+            let code = classes_script(path, arguments);
             run_script(
                 engine,
                 &json!({"code": code, "max_output_chars": MAX_OUTPUT_CHARS}),
@@ -213,6 +211,31 @@ fn call_tool(engine: &Engine, request: &Value) -> std::result::Result<Value, Rpc
     }))
 }
 
+fn classes_script(path: &str, arguments: &Value) -> String {
+    let path = json!(path);
+    let arch = arguments.get("arch").unwrap_or(&Value::Null);
+    format!("velk.open({path}, {{arch:{arch}}}).classes()")
+}
+
+fn emulation_script(path: &str, start: &str, arguments: &Value) -> String {
+    let options = arguments
+        .get("options")
+        .cloned()
+        .unwrap_or_else(|| json!({}));
+    let open = json!({ "arch": arguments.get("arch") });
+    format!(
+        "velk.open({}, {}).emulate({}, {})",
+        json!(path),
+        open,
+        json!(start),
+        options
+    )
+}
+
+fn evaluate_script(engine: &Engine, code: &str, millis: u64) -> Outcome {
+    engine.run(code, Some(Duration::from_millis(millis)))
+}
+
 fn emulate(engine: &Engine, arguments: &Value) -> (String, bool) {
     let Some(path) = arguments.get("path").and_then(Value::as_str) else {
         return ("missing path".to_owned(), true);
@@ -220,19 +243,8 @@ fn emulate(engine: &Engine, arguments: &Value) -> (String, bool) {
     let Some(start) = arguments.get("start").and_then(Value::as_str) else {
         return ("missing start".to_owned(), true);
     };
-    let options = arguments
-        .get("options")
-        .cloned()
-        .unwrap_or_else(|| json!({}));
-    let open = json!({ "arch": arguments.get("arch") });
-    let code = format!(
-        "velk.open({}, {}).emulate({}, {})",
-        json!(path),
-        open,
-        json!(start),
-        options
-    );
-    let outcome = engine.run(&code, Some(Duration::from_millis(MAX_TIMEOUT_MS)));
+    let code = emulation_script(path, start, arguments);
+    let outcome = evaluate_script(engine, &code, MAX_TIMEOUT_MS);
     match outcome.error {
         Some(error) => (error, true),
         None => {
@@ -264,7 +276,7 @@ fn run_script(engine: &Engine, arguments: &Value) -> (String, bool) {
         .and_then(Value::as_u64)
         .unwrap_or(DEFAULT_OUTPUT_CHARS as u64)
         .clamp(MIN_OUTPUT_CHARS as u64, MAX_OUTPUT_CHARS as u64) as usize;
-    let outcome = engine.run(code, Some(Duration::from_millis(millis)));
+    let outcome = evaluate_script(engine, code, millis);
     (
         script_output(&outcome.output, outcome.error.as_deref(), limit),
         outcome.error.is_some(),
