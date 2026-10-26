@@ -80,5 +80,3 @@ buffers and strings shorter than four characters are left unchanged.
 `cargo test --release --test string_decoding -- --test-threads 3 --nocapture`
 compares recovered text with source and native execution, reports found/wrong/missed
 counts per style and architecture, and runs the shell and JavaScript examples.
-The ARM32 `-O0` inline-buffer fixture uses a NEON load that the interpreter does
-not support; recovery leaves it unchanged.

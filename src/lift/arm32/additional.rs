@@ -91,6 +91,20 @@ pub(super) fn decode(bytes: &[u8], mode: ArmMode) -> Option<Instruction> {
         ArmMode::Data => return None,
     };
     let reg = |shift: u32| ((word >> shift) & 15) as u8;
+    let vector_load = match mode {
+        ArmMode::Arm => word & 0xffb0_0fff == 0xf420_070f,
+        ArmMode::Thumb => word & 0xffb0_0fff == 0xf920_070f,
+        ArmMode::Data => false,
+    };
+    if vector_load && reg(16) != 15 {
+        return Some(Instruction::FloatMemory {
+            register: reg(12) | ((word >> 18) & 16) as u8,
+            base: reg(16),
+            offset: 0,
+            double: true,
+            load: true,
+        });
+    }
     if ((mode == ArmMode::Arm && word >> 28 < 15) || (mode == ArmMode::Thumb && word >> 28 == 14))
         && word & 0x0f20_0e00 == 0x0d00_0a00
     {
@@ -751,6 +765,39 @@ impl fmt::Display for Instruction {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn vector_load_decodes_registers_and_rejects_writeback() {
+        for mode in [ArmMode::Arm, ArmMode::Thumb] {
+            for register in 0..32u32 {
+                for base in 0..15u32 {
+                    let prefix = if mode == ArmMode::Arm {
+                        0xf420_070f
+                    } else {
+                        0xf920_070f
+                    };
+                    let word =
+                        prefix | (base << 16) | ((register & 15) << 12) | ((register & 16) << 18);
+                    let bytes = if mode == ArmMode::Arm {
+                        word.to_le_bytes()
+                    } else {
+                        let high = (word >> 16) as u16;
+                        let low = word as u16;
+                        let [a, b] = high.to_le_bytes();
+                        let [c, d] = low.to_le_bytes();
+                        [a, b, c, d]
+                    };
+                    assert!(
+                        matches!(decode(&bytes, mode), Some(Instruction::FloatMemory {
+                        register: actual, base: actual_base, offset: 0, double: true, load: true
+                    }) if u32::from(actual) == register && u32::from(actual_base) == base)
+                    );
+                }
+            }
+        }
+        assert!(decode(&0xf460_070du32.to_le_bytes(), ArmMode::Arm).is_none());
+        assert!(decode(&0xf46f_070fu32.to_le_bytes(), ArmMode::Arm).is_none());
+    }
 
     #[test]
     fn invalid_and_truncated_encodings_are_not_accepted() {

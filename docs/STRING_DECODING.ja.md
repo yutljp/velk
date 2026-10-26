@@ -75,5 +75,3 @@ MCP では `velk_run_script` から同じ JavaScript の操作を使えます。
 `cargo test --release --test string_decoding -- --test-threads 3 --nocapture` は
 復元結果をソースおよびネイティブ実行と比較し、方式とアーキテクチャごとに
 発見数・誤検出数・見逃し数を表示し、シェルと JavaScript の使用例を実行します。
-ARM32 の `-O0` のインラインバッファーの例は、インタープリターが未対応の NEON
-ロードを使うため、復元せずそのまま残します。

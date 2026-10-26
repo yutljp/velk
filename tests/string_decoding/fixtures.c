@@ -1,6 +1,19 @@
 #include "../emulation/routines.c"
 #include "data.h"
 
+__attribute__((noinline)) void *memcpy(void *dst, const void *src, unsigned long n) {
+    u8 *d = dst;
+    const u8 *s = src;
+    for (unsigned long i = 0; i < n; ++i) d[i] = s[i];
+    return dst;
+}
+
+__attribute__((noinline)) void *memset(void *dst, int value, unsigned long n) {
+    u8 *d = dst;
+    for (unsigned long i = 0; i < n; ++i) d[i] = (u8)value;
+    return dst;
+}
+
 __attribute__((noinline)) unsigned long strlen(const char *p) {
     unsigned long n = 0;
     while (p[n]) ++n;
@@ -35,9 +48,7 @@ u32 case_utf8(void) { xor_key(utf8_data, sizeof(utf8_data), 93); return utf8_dat
 u32 case_wide(void) { xor_key(wide_data, sizeof(wide_data), 93); return wide_data[0]; }
 u32 case_comment(void) { xor_key(comment_data, sizeof(comment_data), 93); return comment_data[0]; }
 u32 case_inline(void) {
-    volatile u8 p[13];
-    p[0]=52; p[1]=51; p[2]=49; p[3]=52; p[4]=51; p[5]=56; p[6]=125;
-    p[7]=46; p[8]=41; p[9]=60; p[10]=62; p[11]=54; p[12]=93;
+    volatile u8 p[13] = {52, 51, 49, 52, 51, 56, 125, 46, 41, 60, 62, 54, 93};
     for (u32 i = 0; i < sizeof(p); ++i) p[i] ^= 93;
     return strlen((const char *)p);
 }

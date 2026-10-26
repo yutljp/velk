@@ -188,3 +188,220 @@ fn integer_instructions_match_arm_linux() {
         eprintln!("{mode}: {compared} ARM Linux integer results agree");
     }
 }
+
+#[test]
+fn vector_loads_match_arm_linux() {
+    use std::fmt::Write as _;
+
+    if !super::docker_available("linux/arm/v7", "alpine:3.20", "armv7") {
+        return;
+    }
+    let scratch = Path::new(env!("CARGO_MANIFEST_DIR")).join("target/arm32-vector-hardware");
+    fs::create_dir_all(&scratch).unwrap();
+    let cases = [(0, 0), (2, 7), (3, 16), (12, 31)];
+    let bytes: Vec<u8> = (0..32).map(|i| (i * 37 + 11) as u8).collect();
+    for mode in ["arm", "thumb"] {
+        let entry = if mode == "thumb" { ".thumb_func\n" } else { "" };
+        let mut source = format!(
+            ".syntax unified\n.cpu cortex-a15\n.fpu neon-vfpv4\n.{mode}\n.text\n.global _start\n.type _start, %function\n{entry}_start:\nldr r8, =results\n"
+        );
+        for (index, (_, vector)) in cases.iter().enumerate() {
+            for offset in [0, 1, 3, 8] {
+                writeln!(source, "ldr r0, =data\nadd r0, r0, #{offset}\nbl case_{index}\nvmov r0, r1, d{vector}\nstr r0, [r8], #4\nstr r1, [r8], #4").unwrap();
+            }
+        }
+        let size = cases.len() * 4 * 8;
+        writeln!(source, "mov r0, #1\nldr r1, =results\nmov r2, #{size}\nmov r7, #4\nsvc #0\nmov r0, #0\nmov r7, #1\nsvc #0\n.ltorg").unwrap();
+        for (index, (base, vector)) in cases.iter().enumerate() {
+            writeln!(source, "{entry}.type case_{index}, %function\ncase_{index}:\nmov r{base}, r0\nvld1.8 {{d{vector}}}, [r{base}]\nbx lr\n.size case_{index}, .-case_{index}").unwrap();
+        }
+        writeln!(
+            source,
+            ".data\n.balign 8\ndata: .byte {}\n.bss\n.balign 4\nresults: .space {size}",
+            bytes
+                .iter()
+                .map(u8::to_string)
+                .collect::<Vec<_>>()
+                .join(",")
+        )
+        .unwrap();
+        let assembly = scratch.join(format!("{mode}.s"));
+        let executable = scratch.join(format!("{mode}.elf"));
+        fs::write(&assembly, source).unwrap();
+        let build = Command::new("clang")
+            .args([
+                "--target=armv7a-linux-gnueabihf",
+                "-fuse-ld=lld",
+                "-nostdlib",
+                "-static",
+                "-Wl,-e,_start",
+            ])
+            .arg(&assembly)
+            .arg("-o")
+            .arg(&executable)
+            .output()
+            .unwrap();
+        assert!(
+            build.status.success(),
+            "{}",
+            String::from_utf8_lossy(&build.stderr)
+        );
+        let output = super::docker_run(
+            "linux/arm/v7",
+            "alpine:3.20",
+            &scratch,
+            &format!("{mode}.elf"),
+        );
+        assert!(
+            output.status.success(),
+            "{}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+        assert_eq!(output.stdout.len(), size);
+        let image = loader::load(&executable).unwrap();
+        for (index, (_, vector)) in cases.iter().enumerate() {
+            let name = format!("case_{index}");
+            let function = image
+                .functions
+                .values()
+                .find(|f| f.name.as_deref() == Some(&name))
+                .unwrap();
+            let mut ir = FunctionIr::single_block(image.isa, Vec::new());
+            ir.blocks = super::lift(
+                &image,
+                function.addr,
+                function.size.unwrap(),
+                &HashSet::new(),
+            )
+            .unwrap();
+            assert_eq!(super::unsupported(&ir), None, "{}", ir.render());
+            for (offset_index, offset) in [0u64, 1, 3, 8].iter().enumerate() {
+                let address = 0x10000 + index as u64 * 0x100;
+                let words: Vec<_> = bytes
+                    .as_chunks::<8>()
+                    .0
+                    .iter()
+                    .enumerate()
+                    .map(|(i, chunk)| (address + i as u64 * 8, u64::from_le_bytes(*chunk)))
+                    .collect();
+                let registers = [(0, address + offset)];
+                let setup = eval::Setup {
+                    memory: &words,
+                    ..super::setup(&registers)
+                };
+                let (state, _) = eval::state_after(&ir, &setup).unwrap();
+                let at = (index * 4 + offset_index) * 8;
+                let expected = u64::from_le_bytes(output.stdout[at..at + 8].try_into().unwrap());
+                assert_eq!(
+                    state.get(&(crate::arch::arm32::D0 + vector)).copied(),
+                    Some(expected),
+                    "{mode} {name} offset {offset}"
+                );
+            }
+        }
+    }
+}
+
+#[test]
+fn vector_load_printed_c_matches_arm_linux() {
+    let scratch = Path::new(env!("CARGO_MANIFEST_DIR")).join("target/arm32-vector-c");
+    fs::create_dir_all(&scratch).unwrap();
+    for mode in ["arm", "thumb"] {
+        let entry = if mode == "thumb" { ".thumb_func\n" } else { "" };
+        let assembly = format!(
+            ".syntax unified\n.cpu cortex-a15\n.fpu neon-vfpv4\n.{mode}\n.text\n.global vector_copy\n.type vector_copy, %function\n{entry}vector_copy:\nvld1.8 {{d0}}, [r0]\nvstr d0, [r1]\nmov r0, #42\nbx lr\n.size vector_copy, .-vector_copy\n"
+        );
+        let fixture = scratch.join(format!("{mode}.s"));
+        let image = scratch.join(format!("{mode}-fixture"));
+        fs::write(&fixture, assembly).unwrap();
+        let build = Command::new("clang")
+            .args([
+                "--target=armv7a-linux-gnueabihf",
+                "-fuse-ld=lld",
+                "-nostdlib",
+                "-static",
+                "-Wl,-e,vector_copy",
+            ])
+            .arg(&fixture)
+            .arg("-o")
+            .arg(&image)
+            .output()
+            .unwrap();
+        assert!(
+            build.status.success(),
+            "{}",
+            String::from_utf8_lossy(&build.stderr)
+        );
+        let mut binary = crate::service::Binary::open(&image).unwrap();
+        let address = binary.find("vector_copy").unwrap().addr;
+        let code = binary.decompile(address, None, None).unwrap();
+        assert!(!code.contains("unsupported"), "{code}");
+        let code = code.replace("vector_copy(", "printed_copy(");
+        let wrapper = format!(
+            r#"{code}
+extern int vector_copy(int, int);
+int check(void) {{
+    unsigned char input[32], native[16], printed[16];
+    for (int offset = 0; offset < 8; offset++) {{
+        for (int i = 0; i < 32; i++) input[i] = (unsigned char)(i * 37 + offset);
+        for (int i = 0; i < 16; i++) native[i] = printed[i] = (unsigned char)(i + 91);
+        int a = vector_copy((int)(uintptr_t)(input + offset), (int)(uintptr_t)native);
+        int b = printed_copy((int)(uintptr_t)(input + offset), (int)(uintptr_t)printed);
+        if (a != b) return 1;
+        for (int i = 0; i < 16; i++) if (native[i] != printed[i]) return 2;
+        for (int i = 0; i < 32; i++) if (input[i] != (unsigned char)(i * 37 + offset)) return 3;
+    }}
+    return 0;
+}}
+"#
+        );
+        let source = scratch.join(format!("{mode}.c"));
+        fs::write(&source, wrapper).unwrap();
+        let start = scratch.join("start.s");
+        fs::write(
+            &start,
+            ".syntax unified\n.arm\n.text\n.global _start\n_start:\nbl check\nmov r7, #1\nsvc #0\n",
+        )
+        .unwrap();
+        let executable = scratch.join(format!("{mode}-check"));
+        let build = Command::new("clang")
+            .args([
+                "--target=armv7a-linux-gnueabihf",
+                "-fuse-ld=lld",
+                "-ffreestanding",
+                "-fno-builtin",
+                "-nostdlib",
+                "-static",
+                "-Wl,-e,_start",
+            ])
+            .arg(&source)
+            .arg(&fixture)
+            .arg(&start)
+            .arg("-o")
+            .arg(&executable)
+            .output()
+            .unwrap();
+        assert!(
+            build.status.success(),
+            "{}\n{code}",
+            String::from_utf8_lossy(&build.stderr)
+        );
+    }
+    if !super::docker_available("linux/arm/v7", "alpine:3.20", "armv7") {
+        return;
+    }
+    for mode in ["arm", "thumb"] {
+        let output = super::docker_run(
+            "linux/arm/v7",
+            "alpine:3.20",
+            &scratch,
+            &format!("{mode}-check"),
+        );
+        assert!(
+            output.status.success(),
+            "{mode}: {:?}: {}",
+            output.status,
+            String::from_utf8_lossy(&output.stderr)
+        );
+    }
+}
