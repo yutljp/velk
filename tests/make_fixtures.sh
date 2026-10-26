@@ -103,6 +103,10 @@ for case in l0_arith l1_branch l2_loop l6_abi; do
   "${CC[@]}" $A64 -O2 -c "$CASES/c/$case.c" -o "$OUT/${case}_a64.o"
   "${CC[@]}" $X64 -O2 -c "$CASES/c/$case.c" -o "$OUT/${case}_x64.o"
 done
+mkdir -p tests/raw_fixtures
+for isa in a64 x64; do
+  llvm-strip --strip-debug "$OUT/l0_arith_$isa.o" -o "tests/raw_fixtures/l0_arith_$isa.nodebug.o"
+done
 "${CC[@]}" $A64 -O1 -c "$CASES/c/l4_memory.c" -o "$OUT/l4_memory_a64.o"
 "${CC[@]}" $X64 -O1 -c "$CASES/c/l4_memory.c" -o "$OUT/l4_memory_x64.o"
 "${CC[@]}" $A64 -O2 -c "$CASES/c/l5_switch.c" -o "$OUT/l5_switch.o"

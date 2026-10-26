@@ -17,5 +17,9 @@ for source in "$ROOT"/tests/cases/c/*.c; do
         done
     done
 done
+mkdir -p "$ROOT/tests/raw_fixtures"
+for mode in arm thumb; do
+    llvm-strip --strip-debug "$OUT/l0_arith.$mode.O2.elf" -o "$ROOT/tests/raw_fixtures/l0_arith.$mode.O2.nodebug.elf"
+done
 clang --version | head -1 > "$OUT/toolchain.txt"
 ld.lld --version | head -1 >> "$OUT/toolchain.txt"

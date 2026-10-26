@@ -47,7 +47,7 @@ impl Default for SignatureOptions {
 /// Loaded binaries, kept across calls so repeated queries reuse the analysis.
 #[derive(Default)]
 pub struct Session {
-    binaries: HashMap<(PathBuf, Option<Architecture>, SignatureOptions), Binary>,
+    binaries: HashMap<(PathBuf, loader::OpenOptions, SignatureOptions), Binary>,
 }
 
 impl Session {
@@ -56,45 +56,42 @@ impl Session {
         path: &Path,
         project: Option<&Path>,
         arch: Option<Architecture>,
-        options: &SignatureOptions,
+        signatures: &SignatureOptions,
     ) -> Result<&mut Binary> {
-        let path = match canonicalize(path) {
-            Ok(path) => path,
-            Err(error) => return Err(error),
-        };
-        if let Some(project) = project {
-            let reuse = self
-                .binaries
-                .get(&(path.clone(), arch, options.clone()))
-                .is_some_and(|binary| binary.project_path == project);
-            if !reuse {
-                let binary = match Binary::open_with_signatures(&path, Some(project), arch, options)
-                {
-                    Ok(binary) => binary,
-                    Err(error) => return Err(error),
-                };
-                self.binaries
-                    .insert((path.clone(), arch, options.clone()), binary);
-            }
-        }
-        self.open_configured(&path, arch, options)
+        self.open_input_with_signatures(
+            path,
+            project,
+            &loader::OpenOptions { arch, raw: None },
+            signatures,
+        )
     }
 
-    /// Loads the file, or returns the cached binary when the file is unchanged.
+    /// Loads the file, or returns cached analysis when the file is unchanged.
     pub fn open(&mut self, path: &Path) -> Result<&mut Binary> {
         self.open_arch(path, None)
     }
 
     /// Opens and caches a particular architecture independently.
     pub fn open_arch(&mut self, path: &Path, arch: Option<Architecture>) -> Result<&mut Binary> {
-        self.open_configured(path, arch, &SignatureOptions::default())
+        self.open_with_options(path, None, arch, &SignatureOptions::default())
     }
 
-    pub(crate) fn open_configured(
+    /// Opens a normal or raw image, caching each mapping independently.
+    pub fn open_input(
         &mut self,
         path: &Path,
-        arch: Option<Architecture>,
-        options: &SignatureOptions,
+        project: Option<&Path>,
+        options: &loader::OpenOptions,
+    ) -> Result<&mut Binary> {
+        self.open_input_with_signatures(path, project, options, &SignatureOptions::default())
+    }
+
+    pub(crate) fn open_input_with_signatures(
+        &mut self,
+        path: &Path,
+        project: Option<&Path>,
+        options: &loader::OpenOptions,
+        signatures: &SignatureOptions,
     ) -> Result<&mut Binary> {
         let path = match canonicalize(path) {
             Ok(path) => path,
@@ -104,8 +101,14 @@ impl Session {
             Ok(value) => value,
             Err(error) => return Err(error),
         };
-        match self.binaries.entry((path, arch, options.clone())) {
-            Entry::Occupied(entry) if entry.get().modified == modified => {
+        match self
+            .binaries
+            .entry((path, options.clone(), signatures.clone()))
+        {
+            Entry::Occupied(entry)
+                if entry.get().modified == modified
+                    && project.is_none_or(|project| entry.get().project_path == project) =>
+            {
                 let binary = entry.into_mut();
                 match binary.refresh_project() {
                     Ok(()) => Ok(binary),
@@ -113,13 +116,14 @@ impl Session {
                 }
             }
             Entry::Occupied(mut entry) => {
+                let project = project.unwrap_or(&entry.get().project_path);
                 let binary = match Binary::load_project(
                     &entry.key().0,
                     modified,
-                    Some(&entry.get().project_path),
+                    Some(project),
                     None,
-                    arch,
                     options,
+                    signatures,
                 ) {
                     Ok(binary) => binary,
                     Err(error) => return Err(error),
@@ -128,12 +132,17 @@ impl Session {
                 Ok(entry.into_mut())
             }
             Entry::Vacant(entry) => {
-                let binary =
-                    match Binary::load_project(&entry.key().0, modified, None, None, arch, options)
-                    {
-                        Ok(binary) => binary,
-                        Err(error) => return Err(error),
-                    };
+                let binary = match Binary::load_project(
+                    &entry.key().0,
+                    modified,
+                    project,
+                    None,
+                    options,
+                    signatures,
+                ) {
+                    Ok(binary) => binary,
+                    Err(error) => return Err(error),
+                };
                 Ok(entry.insert(binary))
             }
         }
@@ -150,7 +159,7 @@ pub struct Binary {
     project_path: PathBuf,
     pub(crate) project_digest: Option<String>,
     image: Image,
-    arch: Option<Architecture>,
+    options: loader::OpenOptions,
     signature_options: SignatureOptions,
     signature_database: Database,
     symbols: render::Symbols,
@@ -199,6 +208,15 @@ impl Binary {
         project: Option<&Path>,
         arch: Option<Architecture>,
     ) -> Result<Self> {
+        Self::open_input(path, project, &loader::OpenOptions { arch, raw: None })
+    }
+
+    /// Opens a normal or raw image with explicit mapping options.
+    pub fn open_input(
+        path: &Path,
+        project: Option<&Path>,
+        options: &loader::OpenOptions,
+    ) -> Result<Self> {
         let modified = match modified(path) {
             Ok(value) => value,
             Err(error) => return Err(error),
@@ -208,23 +226,38 @@ impl Binary {
             modified,
             project,
             None,
-            arch,
+            options,
             &SignatureOptions::default(),
         )
     }
 
-    /// Opens a binary with independently cached signature options.
+    /// Opens a binary with selected signature databases.
     pub fn open_with_signatures(
         path: &Path,
         project: Option<&Path>,
         arch: Option<Architecture>,
-        options: &SignatureOptions,
+        signatures: &SignatureOptions,
+    ) -> Result<Self> {
+        Self::open_input_with_signatures(
+            path,
+            project,
+            &loader::OpenOptions { arch, raw: None },
+            signatures,
+        )
+    }
+
+    /// Opens an image with mapping and signature options.
+    pub fn open_input_with_signatures(
+        path: &Path,
+        project: Option<&Path>,
+        options: &loader::OpenOptions,
+        signatures: &SignatureOptions,
     ) -> Result<Self> {
         let modified = match modified(path) {
             Ok(value) => value,
             Err(error) => return Err(error),
         };
-        Self::load_project(path, modified, project, None, arch, options)
+        Self::load_project(path, modified, project, None, options, signatures)
     }
 
     fn load_project(
@@ -232,8 +265,8 @@ impl Binary {
         modified: SystemTime,
         project_path: Option<&Path>,
         mut project_digest: Option<String>,
-        arch: Option<Architecture>,
-        options: &SignatureOptions,
+        options: &loader::OpenOptions,
+        signatures: &SignatureOptions,
     ) -> Result<Self> {
         let path = match canonicalize(path) {
             Ok(path) => path,
@@ -246,7 +279,20 @@ impl Binary {
             Ok(project) => project,
             Err(error) => return Err(error),
         };
-        let mut image = match loader::load_with_arch(&path, arch) {
+        let mut options = options.clone();
+        if let Some(raw) = project.as_ref().and_then(|project| project.raw.as_ref()) {
+            if options
+                .raw
+                .as_ref()
+                .is_some_and(|requested| requested != raw)
+            {
+                return Err(Error::Raw(
+                    "mapping differs from the project file; select a different project".to_owned(),
+                ));
+            }
+            options.raw = Some(raw.clone());
+        }
+        let mut image = match loader::load_input(&path, &options) {
             Ok(image) => image,
             Err(error) => return Err(error),
         };
@@ -256,8 +302,8 @@ impl Binary {
         {
             return Err(error);
         }
-        let needs_defaults = options.defaults
-            && (!options.files.is_empty()
+        let needs_defaults = signatures.defaults
+            && (!signatures.files.is_empty()
                 || image
                     .functions
                     .values()
@@ -267,7 +313,7 @@ impl Binary {
         } else {
             Database::new(Vec::new())
         };
-        for path in &options.files {
+        for path in &signatures.files {
             let mut extra = match Database::load(path) {
                 Ok(database) => database,
                 Err(error) => return Err(error),
@@ -297,14 +343,14 @@ impl Binary {
             symbols: render::callee_names(&image),
             data_ranges: render::data_ranges(&image),
             image,
-            arch,
-            signature_options: options.clone(),
+            options,
+            signature_options: signatures.clone(),
             signature_database: database.clone(),
             analyses: HashMap::new(),
             shared_analyses: HashMap::new(),
         };
-        if (!options.files.is_empty()
-            || (options.defaults
+        if (!signatures.files.is_empty()
+            || (signatures.defaults
                 && binary
                     .image
                     .functions
@@ -313,7 +359,7 @@ impl Binary {
             && let Err(error) = binary.apply_signatures(
                 &database,
                 None,
-                if options.files.is_empty() {
+                if signatures.files.is_empty() {
                     MatchScope::Unnamed
                 } else {
                     MatchScope::All
@@ -343,7 +389,7 @@ impl Binary {
                 self.modified,
                 Some(&self.project_path),
                 self.project_digest.clone(),
-                self.arch,
+                &self.options,
                 &self.signature_options,
             ) {
                 Ok(mut binary) => {
@@ -354,6 +400,10 @@ impl Binary {
             }
         }
         Ok(())
+    }
+
+    pub(crate) fn input_options(&self) -> &loader::OpenOptions {
+        &self.options
     }
 
     pub(crate) fn project_path(&self) -> &Path {
@@ -1003,7 +1053,7 @@ impl Binary {
         if let Err(error) = passed(deadline) {
             return Err(error);
         }
-        let database = if self.arch.is_some() {
+        let database = if self.options.arch.is_some() || self.options.raw.is_some() {
             let entries = match sigs::image_entries(&self.image, deadline) {
                 Ok(entries) => entries,
                 Err(error) => return Err(error),

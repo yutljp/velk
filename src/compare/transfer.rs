@@ -246,11 +246,15 @@ pub(super) fn carry(
         Err(error) => return Err(error),
     };
     let globals = globals(left, right, pairs);
+    let raw = second.input_options().raw.clone();
     project::update_cached(
         second.path(),
         second.project_path(),
         &mut None,
         |destination| {
+            if let Err(error) = destination.set_raw_mapping(raw.as_ref()) {
+                return Err(error);
+            }
             let mut report = Report::default();
             let conflicting_types = source.annotations.iter().any(|annotation| {
                 matches!(annotation.target, Target::Declaration { .. })

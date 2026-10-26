@@ -50,6 +50,21 @@ pub(super) struct Cli {
     /// Initial state and limits as JSON; see docs/EMULATION.md.
     #[arg(long, requires = "emulate", value_name = "JSON", conflicts_with_all = ["compare", "annotate", "annotation", "annotations", "unannotate", "export_project", "import_project", "origins", "functions", "classes", "sections", "card", "decompile", "disasm", "ir", "build_signatures", "identify", "run", "mcp", "xrefs", "callers", "callees", "path", "strings", "constants", "summary", "search", "read_memory", "detect_constants"])]
     emulation_options: Option<String>,
+    /// Instruction set for a headerless input file.
+    #[arg(long, value_enum, requires = "load_address", conflicts_with_all = ["arch", "compare", "run", "mcp"])]
+    pub(super) raw_arch: Option<velk::loader::RawArchitecture>,
+    /// Virtual address of the first raw input byte (hex or decimal).
+    #[arg(long, requires = "raw_arch", value_parser = crate::parse_address)]
+    pub(super) load_address: Option<u64>,
+    /// Raw entry point (repeatable); defaults to the load address.
+    #[arg(long, requires = "raw_arch", value_parser = crate::parse_address)]
+    pub(super) entry: Vec<u64>,
+    /// Raw byte order (default: little); big-endian code is not supported.
+    #[arg(long, requires = "raw_arch", value_enum, default_value = "little")]
+    pub(super) raw_byte_order: velk::loader::ByteOrder,
+    /// Save a successfully unpacked executable to a new file before analysis.
+    #[arg(long, conflicts_with_all = ["run", "mcp", "compare"])]
+    pub(super) save_unpacked: Option<PathBuf>,
     /// Select a Mach-O architecture (default: host architecture).
     #[arg(long, value_enum, conflicts_with_all = ["run", "mcp"])]
     pub(super) arch: Option<velk::loader::Architecture>,

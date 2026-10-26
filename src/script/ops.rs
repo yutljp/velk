@@ -30,6 +30,8 @@ pub enum BinaryRef {
         /// Signature selection used by this binary handle.
         #[serde(default, rename = "signatureOptions")]
         signature_options: SignatureOptions,
+        /// Explicit headerless mapping.
+        raw: Option<crate::loader::RawOptions>,
     },
 }
 
@@ -38,7 +40,7 @@ impl BinaryRef {
         &self,
         session: &'session mut Session,
     ) -> Result<&'session mut Binary> {
-        session.open_configured(self, self.arch(), &self.signature_options())
+        session.open_input_with_signatures(self, None, &self.options(), &self.signature_options())
     }
 
     fn signature_options(&self) -> SignatureOptions {
@@ -47,6 +49,16 @@ impl BinaryRef {
             Self::Selected {
                 signature_options, ..
             } => signature_options.clone(),
+        }
+    }
+
+    fn options(&self) -> crate::loader::OpenOptions {
+        match self {
+            Self::Path(_) => crate::loader::OpenOptions::default(),
+            Self::Selected { arch, raw, .. } => crate::loader::OpenOptions {
+                arch: *arch,
+                raw: raw.clone(),
+            },
         }
     }
 
@@ -120,6 +132,15 @@ pub enum Request {
         /// Embedded and additional signature sets to use.
         #[serde(default, rename = "signatureOptions")]
         signature_options: SignatureOptions,
+        /// Explicit headerless mapping.
+        raw: Option<crate::loader::RawOptions>,
+    },
+    /// Saves a completely recovered executable to a new file.
+    SaveUnpacked {
+        /// Open binary to save.
+        bin: BinaryRef,
+        /// Destination, which must not exist.
+        path: PathBuf,
     },
     /// Lists recovered C++ classes.
     Classes {
@@ -275,11 +296,12 @@ pub fn handle(
             project,
             arch,
             signature_options,
+            raw,
         } => {
-            let binary = match session.open_with_options(
+            let binary = match session.open_input_with_signatures(
                 &path,
                 project.as_deref(),
-                arch,
+                &crate::loader::OpenOptions { arch, raw },
                 &signature_options,
             ) {
                 Ok(binary) => binary,
@@ -287,14 +309,25 @@ pub fn handle(
             };
             let image = binary.image();
             Ok(json!({
-                "id": { "path": binary.path(), "arch": arch, "signatureOptions": signature_options },
+                "id": { "path": binary.path(), "arch": arch, "raw": binary.input_options().raw, "signatureOptions": signature_options },
                 "path": binary.path(),
                 "format": image.format,
+                "packing": image.packing,
                 "arch": image.isa,
                 "slices": image.slices,
                 "sliceOffset": image.slice_offset,
                 "entry": image.entry.map(addr::format),
             }))
+        }
+        Request::SaveUnpacked { bin, path } => {
+            let binary = match bin.open(session) {
+                Ok(binary) => binary,
+                Err(error) => return Err(error),
+            };
+            match binary.image().save_unpacked(&path) {
+                Ok(()) => Ok(json!({"saved": path})),
+                Err(error) => Err(error),
+            }
         }
         Request::Classes { bin } => {
             let binary = match bin.open(session) {
@@ -303,8 +336,21 @@ pub fn handle(
             };
             Ok(json!(binary.image().classes()))
         }
-        Request::Sections { bin } => Ok(json!(bin.open(session)?.image().sections)),
-        Request::Functions { bin } => Ok(json!(bin.open(session)?.functions())),
+        Request::Sections { bin } => Ok(json!(
+            match bin.open(session) {
+                Ok(binary) => binary,
+                Err(error) => return Err(error),
+            }
+            .image()
+            .sections
+        )),
+        Request::Functions { bin } => Ok(json!(
+            match bin.open(session) {
+                Ok(binary) => binary,
+                Err(error) => return Err(error),
+            }
+            .functions()
+        )),
         Request::Find { bin, target } => {
             let binary = match bin.open(session) {
                 Ok(binary) => binary,
@@ -322,7 +368,11 @@ pub fn handle(
             ))
         }
         Request::Card { bin, addr, budget } => {
-            let card = bin.open(session)?.card(
+            let card = match bin.open(session) {
+                Ok(binary) => binary,
+                Err(error) => return Err(error),
+            }
+            .card(
                 parse(&addr)?,
                 budget.unwrap_or(DEFAULT_BUDGET),
                 None,
@@ -454,7 +504,7 @@ pub fn handle(
             bin.open(session)?.shape_hash(parse(&addr)?, deadline)?
         )),
         Request::BuildSignatures { bin } => {
-            if bin.arch().is_some() {
+            if bin.arch().is_some() || bin.options().raw.is_some() {
                 let binary = match bin.open(session) {
                     Ok(binary) => binary,
                     Err(error) => return Err(error),

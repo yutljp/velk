@@ -175,7 +175,8 @@ fn tools() -> Value {
                     "path": { "type": "string" },
                     "start": { "type": "string", "description": "Function name or virtual address" },
                     "options": { "type": "object", "description": "EmulationOptions from the emulation API topic" },
-                    "arch": { "type": "string", "enum": ["x86_64", "arm64", "arm64e"] }
+                    "arch": { "type": "string", "enum": ["x86_64", "arm64", "arm64e"] },
+                    "raw": { "type": "object", "description": "RawOptions from the binary API topic" }
                 },
                 "required": ["path", "start"],
                 "additionalProperties": false
@@ -222,7 +223,7 @@ fn emulation_script(path: &str, start: &str, arguments: &Value) -> String {
         .get("options")
         .cloned()
         .unwrap_or_else(|| json!({}));
-    let open = json!({ "arch": arguments.get("arch") });
+    let open = json!({ "arch": arguments.get("arch"), "raw": arguments.get("raw") });
     format!(
         "velk.open({}, {}).emulate({}, {})",
         json!(path),

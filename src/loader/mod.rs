@@ -7,6 +7,9 @@ pub mod dwarf;
 pub mod go;
 mod i386;
 pub(crate) mod image_reads;
+mod input;
+pub mod packed;
+pub use input::{ByteOrder, OpenOptions, RawArchitecture, RawOptions};
 mod macho;
 mod objc;
 mod plt;
@@ -57,6 +60,7 @@ pub enum Format {
     Coff,
     MachO,
     Other,
+    Raw,
 }
 
 impl fmt::Display for Format {
@@ -67,6 +71,7 @@ impl fmt::Display for Format {
             Format::Coff => "coff",
             Format::MachO => "macho",
             Format::Other => "other",
+            Format::Raw => "raw",
         })
     }
 }
@@ -239,6 +244,9 @@ pub struct Image {
     pub slice_offset: u64,
     codeview: codeview::Data,
     pub format: Format,
+    /// Successful recovery of a packed input, when applicable.
+    pub packing: Option<packed::Report>,
+    recovered: Option<Vec<u8>>,
     pub isa: Isa,
     /// ARM mapping symbols and function entry modes, keyed by physical address.
     pub arm_modes: BTreeMap<u64, ArmMode>,
@@ -445,13 +453,14 @@ impl Image {
 
     /// An image holding only little-endian `code`, mapped executable at
     /// `addr`.
-    #[cfg(test)]
-    pub(crate) fn from_code(isa: Isa, addr: u64, code: Vec<u8>) -> Self {
+    fn code_image(isa: Isa, addr: u64, code: bytes::Bytes) -> Self {
         Self {
             slices: Vec::new(),
             slice_offset: 0,
             codeview: Default::default(),
             format: Format::Elf,
+            packing: None,
+            recovered: None,
             isa,
             arm_modes: BTreeMap::new(),
             literal_sections: Vec::new(),
@@ -474,7 +483,7 @@ impl Image {
                 loaded: true,
                 read_only: false,
             }],
-            bytes: bytes::Bytes::Owned(code),
+            bytes: code,
             functions: BTreeMap::new(),
             data_symbols: BTreeMap::new(),
             objc_selectors: BTreeMap::new(),
@@ -502,6 +511,40 @@ impl Image {
             classes: Default::default(),
             installs: Default::default(),
         }
+    }
+
+    #[cfg(test)]
+    pub(crate) fn from_code(isa: Isa, addr: u64, code: Vec<u8>) -> Self {
+        Self::code_image(isa, addr, bytes::Bytes::Owned(code))
+    }
+
+    /// Saves the complete recovered file, refusing to overwrite an existing path.
+    pub fn save_unpacked(&self, path: &Path) -> Result<()> {
+        use std::io::Write;
+        let Some(bytes) = &self.recovered else {
+            return Err(Error::Packed("the input was not unpacked".to_owned()));
+        };
+        let mut output = match std::fs::OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .open(path)
+        {
+            Ok(output) => output,
+            Err(source) => {
+                return Err(Error::Io {
+                    path: path.to_owned(),
+                    source,
+                });
+            }
+        };
+        if let Err(source) = output.write_all(bytes) {
+            let _ = std::fs::remove_file(path);
+            return Err(Error::Io {
+                path: path.to_owned(),
+                source,
+            });
+        }
+        Ok(())
     }
 
     pub fn section_at(&self, vaddr: u64) -> Option<&Section> {
@@ -860,11 +903,37 @@ pub fn load(path: &Path) -> Result<Image> {
 
 /// Loads a binary, selecting a universal Mach-O slice when requested.
 pub fn load_with_arch(path: &Path, arch: Option<Architecture>) -> Result<Image> {
+    load_input(path, &OpenOptions { arch, raw: None })
+}
+
+/// Loads a normal or explicitly described raw image.
+pub fn load_input(path: &Path, options: &OpenOptions) -> Result<Image> {
+    if let Some(raw) = &options.raw {
+        if options.arch.is_some() {
+            return Err(Error::Raw(
+                "raw and Mach-O architecture options conflict".to_owned(),
+            ));
+        }
+        return input::load_raw(path, raw);
+    }
     let input = match bytes::Bytes::read(path) {
         Ok(bytes) => bytes,
         Err(error) => return Err(error),
     };
-    let (bytes, slices, slice_offset) = match universal::select(&input, arch) {
+    let (input, packing, recovered) = if let Some(report) = packed::detect(&input) {
+        let recovered = match packed::unpack(&input) {
+            Ok(bytes) => bytes,
+            Err(error) => return Err(error),
+        };
+        (
+            bytes::Bytes::Owned(recovered.clone()),
+            Some(report),
+            Some(recovered),
+        )
+    } else {
+        (input, None, None)
+    };
+    let (bytes, slices, slice_offset) = match universal::select(&input, options.arch) {
         Ok(selection) => selection,
         Err(error) => return Err(error),
     };
@@ -1132,6 +1201,8 @@ pub fn load_with_arch(path: &Path, arch: Option<Architecture>) -> Result<Image> 
         slice_offset,
         codeview,
         format: format_of(kind),
+        packing,
+        recovered,
         isa: isa_of(file.architecture()),
         arm_modes,
         literal_sections,

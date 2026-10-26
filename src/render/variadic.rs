@@ -398,8 +398,10 @@ pub(super) fn prepare(ir: &mut FunctionIr, symbols: &Symbols) -> Option<Plan> {
         }
     }
     let layout = match (ir.isa, ir.convention, symbols.target_format) {
-        (Isa::X86_64, Convention::SysV, Some(Format::Elf | Format::MachO)) => Layout::SysV,
-        (Isa::AArch64, Convention::Aapcs64, Some(Format::Elf)) => Layout::Aapcs64,
+        (Isa::X86_64, Convention::SysV, Some(Format::Elf | Format::MachO | Format::Raw)) => {
+            Layout::SysV
+        }
+        (Isa::AArch64, Convention::Aapcs64, Some(Format::Elf | Format::Raw)) => Layout::Aapcs64,
         (Isa::AArch64, Convention::Aapcs64, Some(Format::MachO)) => Layout::Apple,
         _ => return None,
     };

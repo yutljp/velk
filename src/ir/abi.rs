@@ -611,9 +611,9 @@ pub(crate) fn profile(
 ) -> Result<AbiProfile, AbiIssue> {
     use crate::loader::{Format, Isa};
     match (isa, format) {
-        (Isa::X86_64, Format::Elf) => Ok(AbiProfile::SysV),
+        (Isa::X86_64, Format::Elf | Format::Raw) => Ok(AbiProfile::SysV),
         (Isa::X86_64, Format::Pe | Format::Coff) => Ok(AbiProfile::Win64),
-        (Isa::AArch64, Format::Elf) => Ok(AbiProfile::Aapcs64),
+        (Isa::AArch64, Format::Elf | Format::Raw) => Ok(AbiProfile::Aapcs64),
         _ => Err(AbiIssue::UnsupportedProfile),
     }
 }

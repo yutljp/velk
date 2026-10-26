@@ -247,8 +247,10 @@ pub(super) fn lift_in_mode(
     summaries: Summaries<'_>,
     mode: super::execution::Mode,
 ) -> Result<Vec<Block>, LiftError> {
-    if image.format != crate::loader::Format::Elf
-        || image.byte_order() != Some(object::Endianness::Little)
+    if !matches!(
+        image.format,
+        crate::loader::Format::Elf | crate::loader::Format::Raw
+    ) || image.byte_order() != Some(object::Endianness::Little)
         || addr > u64::from(u32::MAX)
         || addr
             .checked_add(bytes.len() as u64)

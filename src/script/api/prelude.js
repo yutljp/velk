@@ -49,6 +49,7 @@
       if (typeof start === "number" && (!Number.isSafeInteger(start) || start < 0)) throw new RangeError("use a decimal or hex string for a 64-bit address");
       return call("emulate", { bin: this.#id, start: String(address(start)), options });
     }
+    saveUnpacked(path) { return call("saveUnpacked", { bin: this.#id, path }); }
     sections() { return call("sections", { bin: this.#id }); }
     compare(other, { carryAnnotations = false } = {}) {
       const result = call("compare", { first: this.#id, second: other.#id, carryAnnotations });
@@ -114,7 +115,7 @@
   const log = (...values) => { output.push(values.map(show).join(" ")); };
 
   globalThis.console = Object.freeze({ log, info: log, warn: log, error: log });
-  globalThis.velk = Object.freeze({ open: (path, opts = {}) => new Binary(call("open", { path, project: opts.project, arch: opts.arch, signatureOptions: { defaults: opts.defaultSignatures !== false, files: opts.signatures ?? [] } })), buildSignatures: (path) => call("buildSignatures", { bin: path }) });
+  globalThis.velk = Object.freeze({ open: (path, opts = {}) => new Binary(call("open", { path, project: opts.project, arch: opts.arch, raw: opts.raw, signatureOptions: { defaults: opts.defaultSignatures !== false, files: opts.signatures ?? [] } })), buildSignatures: (path) => call("buildSignatures", { bin: path }) });
   // The logged output, and the result's text unless showing it fails: then
   // the failure is left in __velkFinishError and the log still returned.
   globalThis.__velkFinish = (value) => {

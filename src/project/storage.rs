@@ -119,6 +119,7 @@ pub(crate) fn update_cached<T>(
     let mut project = match load_at(&binary, destination, digest) {
         Ok(Some(project)) => project,
         Ok(None) => Project {
+            raw: None,
             version: 1,
             binary_sha256: {
                 if let Err(cause) = initialize_digest(&binary, digest) {

@@ -23,19 +23,19 @@ pub(super) fn handle(
         Ok(binary) => binary.project_path().to_owned(),
         Err(error) => return Err(error),
     };
-    let mut first = match Binary::open_with_signatures(
+    let mut first = match Binary::open_input_with_signatures(
         &first,
         Some(&first_project),
-        first.arch(),
+        &first.options(),
         &first.signature_options(),
     ) {
         Ok(binary) => binary,
         Err(error) => return Err(error),
     };
-    let mut second = match Binary::open_with_signatures(
+    let mut second = match Binary::open_input_with_signatures(
         &second,
         Some(&second_project),
-        second.arch(),
+        &second.options(),
         &second.signature_options(),
     ) {
         Ok(binary) => binary,

@@ -92,6 +92,9 @@ pub struct Annotation {
 pub struct Project {
     pub version: u32,
     pub binary_sha256: String,
+    /// Headerless mapping retained for reopening the annotated file.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub raw: Option<crate::loader::RawOptions>,
     pub annotations: Vec<Annotation>,
 }
 
@@ -115,6 +118,23 @@ pub(super) fn io(path: &Path, cause: impl std::fmt::Display) -> Error {
 }
 
 impl Project {
+    pub(crate) fn set_raw_mapping(
+        &mut self,
+        raw: Option<&crate::loader::RawOptions>,
+    ) -> Result<()> {
+        let Some(raw) = raw else {
+            return Ok(());
+        };
+        if self.raw.as_ref().is_some_and(|current| current != raw) {
+            return Err(error(
+                "invalid_mapping",
+                "project uses a different raw mapping",
+            ));
+        }
+        self.raw = Some(raw.clone());
+        Ok(())
+    }
+
     /// Returns the annotation for a target, if present.
     #[must_use]
     pub fn get(&self, target: &Target) -> Option<&Annotation> {
@@ -252,6 +272,7 @@ mod tests {
         let mut project = Project {
             version: 1,
             binary_sha256: String::new(),
+            raw: None,
             annotations: Vec::new(),
         };
         project.set(Annotation {
@@ -286,6 +307,7 @@ mod tests {
         let mut project = Project {
             version: 1,
             binary_sha256: String::new(),
+            raw: None,
             annotations: Vec::new(),
         };
         project.set(Annotation {
@@ -312,6 +334,7 @@ mod tests {
         let mut project = Project {
             version: 1,
             binary_sha256: String::new(),
+            raw: None,
             annotations: Vec::new(),
         };
         project.set(Annotation {

@@ -9,6 +9,12 @@ same path at the start of every script. `velk.open()` discovers functions withou
 decompiling all of them; `card()`, `decompile()` and other function operations
 analyze the selected function and a bounded neighborhood when needed.
 
+Headerless code uses `velk.open("code.bin", {raw: {arch: "x86_64", base: "0x7000"}})`.
+RawOptions in the binary topic lists all instruction sets and entry options.
+UPX ELF/PE recovery requires UPX on PATH. `b.packing` reports successful direct
+decoding and `b.saveUnpacked("recovered.exe")` saves its complete output.
+See [input formats and limits](../../../docs/INPUT.md).
+
 Open ELF, PE/COFF or Mach-O files. A universal Mach-O file opens the slice for this
 machine; pass `{arch: "x86_64"}` (or `"arm64"`, `"arm64e"`) to `velk.open` for another.
 Use an absolute binary path when the MCP client's working directory is unknown.

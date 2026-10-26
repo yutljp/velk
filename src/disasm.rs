@@ -42,8 +42,10 @@ fn disassemble(
         Isa::X86_64 => Ok(x86_64(bytes, addr, max_lines, extent, 64)),
         Isa::AArch64 => Ok(aarch64(bytes, addr, max_lines, extent)),
         Isa::Arm32
-            if image.format == crate::loader::Format::Elf
-                && image.byte_order() == Some(object::Endianness::Little) =>
+            if matches!(
+                image.format,
+                crate::loader::Format::Elf | crate::loader::Format::Raw
+            ) && image.byte_order() == Some(object::Endianness::Little) =>
         {
             Ok(crate::lift::arm32_listing(image, bytes, addr, max_lines))
         }

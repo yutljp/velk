@@ -4,7 +4,11 @@ use crate::loader::Image;
 
 pub(super) fn strings(image: &Image) -> Vec<StringLiteral> {
     let mut result = Vec::new();
-    for section in image.sections.iter().filter(|s| s.loaded && !s.executable) {
+    for section in image
+        .sections
+        .iter()
+        .filter(|s| s.loaded && (!s.executable || image.format == crate::loader::Format::Raw))
+    {
         let Some(bytes) = image.read_vaddr(section.vaddr, section.size) else {
             continue;
         };

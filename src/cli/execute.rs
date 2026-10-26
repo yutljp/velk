@@ -5,7 +5,6 @@ use std::process::ExitCode;
 
 use serde_json::json;
 use velk::error::{Error, Result};
-use velk::service::Binary;
 use velk::sigs::Database;
 use velk::{mcp, script};
 
@@ -18,16 +17,16 @@ fn compare_binaries(
     other: &Path,
     project: Option<&Path>,
     other_project: Option<&Path>,
-    arch: Option<velk::loader::Architecture>,
+    input_options: &velk::loader::OpenOptions,
     carry_annotations: bool,
     signature_options: &velk::service::SignatureOptions,
 ) -> Result<velk::compare::Report> {
-    let mut first = match Binary::open_with_signatures(path, project, arch, signature_options) {
+    let mut first = match crate::open_binary(path, project, input_options, signature_options) {
         Ok(binary) => binary,
         Err(error) => return Err(error),
     };
     let mut second =
-        match Binary::open_with_signatures(other, other_project, arch, signature_options) {
+        match crate::open_binary(other, other_project, input_options, signature_options) {
             Ok(binary) => binary,
             Err(error) => return Err(error),
         };
@@ -37,7 +36,7 @@ fn compare_binaries(
 pub(crate) fn run(
     command: Command,
     project: Option<&Path>,
-    arch: Option<velk::loader::Architecture>,
+    input_options: &velk::loader::OpenOptions,
     decode_strings: bool,
     signature_options: &velk::service::SignatureOptions,
 ) -> Result<ExitCode> {
@@ -53,7 +52,7 @@ pub(crate) fn run(
                 &other,
                 project,
                 other_project.as_deref(),
-                arch,
+                input_options,
                 carry_annotations,
                 signature_options,
             );
@@ -76,7 +75,7 @@ pub(crate) fn run(
             start,
             options,
         } => {
-            let binary = match Binary::open_with_signatures(&path, project, arch, signature_options)
+            let binary = match crate::open_binary(&path, project, input_options, signature_options)
             {
                 Ok(binary) => binary,
                 Err(error) => return Err(error),
@@ -105,7 +104,7 @@ pub(crate) fn run(
         }
         Command::Navigation { path, query } => {
             let mut binary =
-                match Binary::open_with_signatures(&path, project, arch, signature_options) {
+                match crate::open_binary(&path, project, input_options, signature_options) {
                     Ok(binary) => binary,
                     Err(error) => return Err(error),
                 };
@@ -116,7 +115,7 @@ pub(crate) fn run(
         }
 
         Command::Functions { path, limit, json } => {
-            let binary = match Binary::open_with_signatures(&path, project, arch, signature_options)
+            let binary = match crate::open_binary(&path, project, input_options, signature_options)
             {
                 Ok(binary) => binary,
                 Err(error) => return Err(error),
@@ -128,7 +127,7 @@ pub(crate) fn run(
             }
         }
         Command::Classes { path } => {
-            let binary = match Binary::open_with_signatures(&path, project, arch, signature_options)
+            let binary = match crate::open_binary(&path, project, input_options, signature_options)
             {
                 Ok(binary) => binary,
                 Err(error) => return Err(error),
@@ -136,7 +135,7 @@ pub(crate) fn run(
             println!("{:#}", json!(binary.image().classes()));
         }
         Command::Sections { path } => {
-            let binary = match Binary::open_with_signatures(&path, project, arch, signature_options)
+            let binary = match crate::open_binary(&path, project, input_options, signature_options)
             {
                 Ok(binary) => binary,
                 Err(error) => return Err(error),
@@ -149,7 +148,7 @@ pub(crate) fn run(
             budget,
         } => {
             let mut binary =
-                match Binary::open_with_signatures(&path, project, arch, signature_options) {
+                match crate::open_binary(&path, project, input_options, signature_options) {
                     Ok(binary) => binary,
                     Err(error) => return Err(error),
                 };
@@ -165,7 +164,7 @@ pub(crate) fn run(
         }
         Command::Decompile { path, functions } => {
             let mut binary =
-                match Binary::open_with_signatures(&path, project, arch, signature_options) {
+                match crate::open_binary(&path, project, input_options, signature_options) {
                     Ok(binary) => binary,
                     Err(error) => return Err(error),
                 };
@@ -195,7 +194,7 @@ pub(crate) fn run(
             function,
             limit,
         } => {
-            let binary = match Binary::open_with_signatures(&path, project, arch, signature_options)
+            let binary = match crate::open_binary(&path, project, input_options, signature_options)
             {
                 Ok(binary) => binary,
                 Err(error) => return Err(error),
@@ -219,7 +218,7 @@ pub(crate) fn run(
         }
         Command::Ir { path, function } => {
             let mut binary =
-                match Binary::open_with_signatures(&path, project, arch, signature_options) {
+                match crate::open_binary(&path, project, input_options, signature_options) {
                     Ok(binary) => binary,
                     Err(error) => return Err(error),
                 };
@@ -234,9 +233,9 @@ pub(crate) fn run(
             cli_output::print_code(&binary, addr, &function, &code, Language::Ir);
         }
         Command::BuildSignatures { path, output } => {
-            let database = if arch.is_some() {
+            let database = if input_options.arch.is_some() || input_options.raw.is_some() {
                 let mut binary =
-                    match Binary::open_with_signatures(&path, project, arch, signature_options) {
+                    match crate::open_binary(&path, project, input_options, signature_options) {
                         Ok(binary) => binary,
                         Err(error) => return Err(error),
                     };
@@ -264,7 +263,7 @@ pub(crate) fn run(
         }
         Command::Identify { path, limit } => {
             let mut binary =
-                match Binary::open_with_signatures(&path, project, arch, signature_options) {
+                match crate::open_binary(&path, project, input_options, signature_options) {
                     Ok(binary) => binary,
                     Err(error) => return Err(error),
                 };

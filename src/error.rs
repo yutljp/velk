@@ -2,6 +2,10 @@ use std::path::PathBuf;
 
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
+    #[error("raw input: {0}")]
+    Raw(String),
+    #[error("packed input: {0}")]
+    Packed(String),
     /// An invalid memory request or an unavailable image range or type.
     #[error("memory query: {0}")]
     Memory(String),

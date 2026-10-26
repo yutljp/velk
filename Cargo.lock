@@ -689,6 +689,7 @@ dependencies = [
  "flate2",
  "gimli",
  "iced-x86",
+ "libc",
  "memchr",
  "memmap2",
  "object",

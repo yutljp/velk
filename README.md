@@ -70,6 +70,14 @@ On Linux, the binary loader uses a read-only mapped snapshot; if mapping fails, 
 
 Universal Mach-O files open the slice for this machine; pick another with `--arch x86_64` (or `arm64`, `arm64e`).
 
+## Raw and packed input
+
+Headerless code accepts an explicit instruction set, load address, and entries:
+`velk -D --raw-arch x86_64 --load-address 0x7000 code.bin 0x7000`.
+The same mapping is available in scripts and MCP. UPX ELF and PE inputs use the
+installed UPX decoder; `--save-unpacked FILE` saves a successful recovery.
+See [input formats and limits](docs/INPUT.md).
+
 ## Running loaded code
 
 Run a function by name or virtual address with initial arguments and memory:

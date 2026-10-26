@@ -4,7 +4,7 @@ declare const velk: {
    * signatures adds JSON or gzip-compressed JSON databases; all enabled sets are matched together.
    * Reopening an unchanged file reuses cached analysis, even across scripts.
    * Universal Mach-O files open the slice for this machine unless opts.arch picks another. */
-  open(path: string, opts?: { project?: string; arch?: "arm64" | "arm64e" | "x86_64"; defaultSignatures?: boolean; signatures?: string[] }): Binary;
+  open(path: string, opts?: { project?: string; arch?: "arm64" | "arm64e" | "x86_64"; raw?: RawOptions; defaultSignatures?: boolean; signatures?: string[] }): Binary;
   /** Builds instruction signatures from a binary, static archive, or Rust rlib. */
   buildSignatures(path: string): { database: SignatureDb; failures: Failure[] };
 };
@@ -12,11 +12,15 @@ declare const velk: {
 interface Binary {
   /** Absolute path of the file. */
   path: string;
-  format: "elf" | "pe" | "coff" | "macho" | "other";
+  format: "elf" | "pe" | "coff" | "macho" | "other" | "raw";
   arch: "i386" | "x86_64" | "aarch64" | "arm32" | "unsupported";
   entry: Addr | null;
   slices: { arch: string; cpuType: number; cpuSubtype: number; offset: number; size: number }[];
   sliceOffset: number;
+  /** Successful direct recovery; null when the input was not packed. */
+  packing: { packer: string; version: string | null; method: string } | null;
+  /** Save the complete recovered executable; destination must not already exist. */
+  saveUnpacked(path: string): { saved: string };
 
   /** Renders functions concurrently in the supplied order, or every function in address order.
    * Each result has either C or an error; one failure does not discard other results. */
@@ -101,7 +105,7 @@ type ProjectTarget =
   | { kind: "signature"; function: Addr }
   | { kind: "declaration"; name: string };
 type ProjectAnnotation = { target: ProjectTarget; name?: string; c_type?: string; text?: string };
-type AnalysisProject = { version: 1; binary_sha256: string; annotations: ProjectAnnotation[] };
+type AnalysisProject = { version: 1; binary_sha256: string; raw?: RawOptions; annotations: ProjectAnnotation[] };
 
 type FunctionComparison = {
   first: ComparedFunction; second: ComparedFunction;
@@ -115,3 +119,13 @@ type ComparisonReport = {
   transfer: { copied: AnnotationTransfer[]; skipped: AnnotationTransfer[] } | null;
 };
 type ComparedFunction = Pick<Func, "addr" | "name" | "aliases" | "size" | "sizeEstimated" | "nameSources">;
+
+/** Headerless bytes, mapped as one readable and executable region.
+ * Defaults to little endian; big-endian code is currently rejected. */
+interface RawOptions {
+  arch: "x86_64" | "i386" | "aarch64" | "arm32" | "thumb";
+  base: string | number;
+  /** Defaults to base. Odd ARM addresses select Thumb mode. */
+  entries?: (string | number)[];
+  byteOrder?: "little" | "big";
+}

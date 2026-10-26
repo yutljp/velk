@@ -31,6 +31,34 @@ fn exit_on_closed_pipe() {
     }
 }
 
+fn parse_address(text: &str) -> std::result::Result<u64, String> {
+    velk::addr::parse(text).ok_or_else(|| format!("invalid address: {text}"))
+}
+
+fn open_binary(
+    path: &Path,
+    project: Option<&Path>,
+    options: &velk::loader::OpenOptions,
+    signatures: &velk::service::SignatureOptions,
+) -> Result<Binary> {
+    let binary = match Binary::open_input_with_signatures(path, project, options, signatures) {
+        Ok(binary) => binary,
+        Err(error) => return Err(error),
+    };
+    if let Some(report) = &binary.image().packing {
+        eprintln!(
+            "unpacked {}{} using {}",
+            report.packer,
+            report
+                .version
+                .as_ref()
+                .map_or(String::new(), |version| format!(" {version}")),
+            report.method
+        );
+    }
+    Ok(binary)
+}
+
 fn main() -> ExitCode {
     #[cfg(unix)]
     exit_on_closed_pipe();
@@ -39,6 +67,36 @@ fn main() -> ExitCode {
         Err(code) => return code,
     };
     let project = cli.project.clone();
+    let input_options = velk::loader::OpenOptions {
+        arch: cli.arch,
+        raw: cli.raw_arch.map(|arch| velk::loader::RawOptions {
+            arch,
+            base: cli.load_address.expect("clap requires a load address"),
+            entries: cli.entry.clone(),
+            byte_order: cli.raw_byte_order,
+        }),
+    };
+    let signature_options = velk::service::SignatureOptions {
+        defaults: !cli.no_default_signatures,
+        files: cli.signatures.clone(),
+    };
+    if let Some(destination) = &cli.save_unpacked {
+        let saved = match cli.input.as_deref() {
+            Some(path) => {
+                match open_binary(path, project.as_deref(), &input_options, &signature_options) {
+                    Ok(binary) => binary.image().save_unpacked(destination),
+                    Err(error) => Err(error),
+                }
+            }
+            None => Err(Error::Packed(
+                "saving requires an input executable".to_owned(),
+            )),
+        };
+        if let Err(error) = saved {
+            eprintln!("error: {error}");
+            return ExitCode::FAILURE;
+        }
+    }
     let operation = if cli.annotate {
         Some(velk::project::cli::Command::Set {
             json: cli.function.clone().unwrap_or_default(),
@@ -70,6 +128,7 @@ fn main() -> ExitCode {
         return match velk::project::cli::execute(velk::project::cli::Cli {
             binary: cli.input.expect("clap requires input"),
             arch: cli.arch,
+            raw: input_options.raw,
             project,
             command,
         }) {
@@ -87,16 +146,11 @@ fn main() -> ExitCode {
             }
         };
     }
-    let arch = cli.arch;
     let decode_strings = !cli.no_string_decoding;
-    let signature_options = velk::service::SignatureOptions {
-        defaults: !cli.no_default_signatures,
-        files: cli.signatures.clone(),
-    };
     match cli::run(
         cli.into_command(),
         project.as_deref(),
-        arch,
+        &input_options,
         decode_strings,
         &signature_options,
     ) {

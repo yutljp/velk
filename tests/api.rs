@@ -73,9 +73,15 @@ fn exercise(fixture: &str, function: &str) -> Value {
         r#"
 const b = velk.open({path:?});
 const f = b.getFunction({function:?});
+try {{
+  b.saveUnpacked("target/api-unused-unpacked");
+  throw Error("saving an ordinary input succeeded");
+}} catch (error) {{
+  if (!error.message.includes("input was not unpacked")) throw error;
+}}
 const signatures = b.buildSignatures();
 JSON.stringify({{
-  binary: {{ path: b.path, format: b.format, arch: b.arch, entry: b.entry, slices: b.slices, sliceOffset: b.sliceOffset }},
+  binary: {{ path: b.path, format: b.format, arch: b.arch, entry: b.entry, slices: b.slices, sliceOffset: b.sliceOffset, packing: b.packing }},
   section: b.sections()[0],
   func: Object.fromEntries(Object.entries(f)),
   card: f.card(),

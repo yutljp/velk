@@ -17,6 +17,7 @@ pub(super) fn handle(
         Err(error) => return Err(error),
     };
     let destination = binary.project_path().to_owned();
+    let raw = binary.input_options().raw.clone();
     let command = match action.as_str() {
         "origins" => {
             let binary = match bin.open(session) {
@@ -49,12 +50,27 @@ pub(super) fn handle(
                 &destination,
                 &mut binary.project_digest,
                 |project| {
-                    let imported = match serde_json::from_value(value) {
+                    let mut imported: crate::project::Project = match serde_json::from_value(value)
+                    {
                         Ok(imported) => imported,
                         Err(cause) => {
                             return Err(crate::project::error("project_json", cause.to_string()));
                         }
                     };
+                    if imported
+                        .raw
+                        .as_ref()
+                        .is_some_and(|mapping| Some(mapping) != raw.as_ref())
+                    {
+                        return Err(crate::project::error(
+                            "invalid_mapping",
+                            "imported project uses a different raw mapping",
+                        ));
+                    }
+                    if let Err(error) = project.set_raw_mapping(raw.as_ref()) {
+                        return Err(error);
+                    }
+                    imported.raw = raw;
                     *project = imported;
                     Ok(json!({"ok": true}))
                 },
@@ -71,6 +87,7 @@ pub(super) fn handle(
         crate::project::cli::Cli {
             binary: bin.to_path_buf(),
             arch: bin.arch(),
+            raw,
             project: Some(destination),
             command,
         },

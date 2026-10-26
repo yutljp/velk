@@ -10,6 +10,8 @@ pub struct Cli {
     pub binary: PathBuf,
     /// Architecture selected for function analysis.
     pub arch: Option<crate::loader::Architecture>,
+    /// Explicit headerless mapping.
+    pub raw: Option<crate::loader::RawOptions>,
     pub command: Command,
     pub project: Option<PathBuf>,
 }
@@ -44,12 +46,27 @@ pub(crate) fn execute_cached(mut cli: Cli, digest: &mut Option<String>) -> Resul
         Err(cause) => return Err(super::io(&cli.binary, cause)),
     };
     let destination = cli.project.unwrap_or_else(|| super::path(&cli.binary));
+    if cli.raw.is_some()
+        && let Err(error) = crate::service::Binary::open_input(
+            &cli.binary,
+            Some(&destination),
+            &crate::loader::OpenOptions {
+                arch: cli.arch,
+                raw: cli.raw.clone(),
+            },
+        )
+    {
+        return Err(error);
+    }
     match cli.command {
         Command::Origins { function } => {
-            let mut binary = match crate::service::Binary::open_with_options(
+            let mut binary = match crate::service::Binary::open_input(
                 &cli.binary,
                 Some(&destination),
-                cli.arch,
+                &crate::loader::OpenOptions {
+                    arch: cli.arch,
+                    raw: cli.raw.clone(),
+                },
             ) {
                 Ok(binary) => binary,
                 Err(cause) => return Err(cause),
@@ -69,6 +86,9 @@ pub(crate) fn execute_cached(mut cli: Cli, digest: &mut Option<String>) -> Resul
                 Err(cause) => return Err(error("project_json", cause.to_string())),
             };
             super::update_cached(&cli.binary, &destination, digest, |project| {
+                if let Err(error) = project.set_raw_mapping(cli.raw.as_ref()) {
+                    return Err(error);
+                }
                 project.set(annotation);
                 Ok(json!({"ok": true}))
             })
@@ -79,6 +99,9 @@ pub(crate) fn execute_cached(mut cli: Cli, digest: &mut Option<String>) -> Resul
                 Err(cause) => return Err(cause),
             };
             super::update_cached(&cli.binary, &destination, digest, |project| {
+                if let Err(error) = project.set_raw_mapping(cli.raw.as_ref()) {
+                    return Err(error);
+                }
                 Ok(json!({"removed": project.remove(&target)}))
             })
         }
@@ -87,11 +110,23 @@ pub(crate) fn execute_cached(mut cli: Cli, digest: &mut Option<String>) -> Resul
                 Ok(text) => text,
                 Err(cause) => return Err(super::io(&file, cause)),
             };
-            let imported: Project = match serde_json::from_slice(&text) {
+            let mut imported: Project = match serde_json::from_slice(&text) {
                 Ok(value) => value,
                 Err(cause) => return Err(error("project_json", cause.to_string())),
             };
+            if let Some(raw) = &cli.raw {
+                if imported.raw.as_ref().is_some_and(|mapping| mapping != raw) {
+                    return Err(error(
+                        "invalid_mapping",
+                        "imported project uses a different raw mapping",
+                    ));
+                }
+                imported.raw = Some(raw.clone());
+            }
             super::update_cached(&cli.binary, &destination, digest, |project| {
+                if let Err(error) = project.set_raw_mapping(cli.raw.as_ref()) {
+                    return Err(error);
+                }
                 *project = imported;
                 Ok(json!({"ok": true}))
             })
@@ -111,8 +146,16 @@ pub(crate) fn execute_cached(mut cli: Cli, digest: &mut Option<String>) -> Resul
                     Ok(json!(project.as_ref().and_then(|p| p.get(&target))))
                 }
                 Command::Export => match project {
-                    Some(project) => Ok(json!(project)),
+                    Some(mut project) => {
+                        if let Err(error) = project.set_raw_mapping(cli.raw.as_ref()) {
+                            return Err(error);
+                        }
+                        Ok(json!(project))
+                    }
                     None => super::update_cached(&cli.binary, &destination, digest, |project| {
+                        if let Err(error) = project.set_raw_mapping(cli.raw.as_ref()) {
+                            return Err(error);
+                        }
                         Ok(json!(project))
                     }),
                 },
