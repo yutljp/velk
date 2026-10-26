@@ -48,6 +48,33 @@ pub(super) fn emit(input: Input<'_>) -> Declarations {
         variable_types,
         decls,
     } = input;
+    let mut addresses = std::collections::HashSet::new();
+    if matches!(ir.isa, crate::loader::Isa::I386 | crate::loader::Isa::Arm32) {
+        addresses.extend(ctx.frame_origins.keys().copied());
+        fn base(expr: &crate::ir::Expr) -> Option<u16> {
+            match expr {
+                crate::ir::Expr::Reg { index, .. } => Some(*index),
+                crate::ir::Expr::Bin {
+                    op: crate::ir::BinOp::Add | crate::ir::BinOp::Sub | crate::ir::BinOp::And,
+                    lhs,
+                    ..
+                } => base(lhs),
+                _ => None,
+            }
+        }
+        for stmt in ir.blocks.iter().flat_map(|block| &block.stmts) {
+            if let crate::ir::Stmt::Store { addr, .. } = stmt {
+                addresses.extend(base(addr));
+            }
+            let mut pending = stmt.operands();
+            while let Some(expr) = pending.pop() {
+                if let crate::ir::Expr::Load { addr, .. } = expr {
+                    addresses.extend(base(addr));
+                }
+                pending.extend(crate::ir::visit::children(expr));
+            }
+        }
+    }
     let mut out = String::new();
     let mut declared = 0;
     if let Some(plan) = variadic {
@@ -142,6 +169,9 @@ pub(super) fn emit(input: Input<'_>) -> Declarations {
         declared += 1;
     }
     for (index, ty) in variable_types {
+        if ir.params.iter().any(|param| param.index == *index) {
+            continue;
+        }
         if vector_groups
             .iter()
             .any(|group| group.fields.iter().any(|(field, _)| field == index))
@@ -162,6 +192,12 @@ pub(super) fn emit(input: Input<'_>) -> Declarations {
             continue;
         }
         indent(1, &mut out);
+        let address_type = CType::Named("uintptr_t".to_owned());
+        let ty = if addresses.contains(index) && ty.integer().is_some_and(|(bits, _)| bits <= 32) {
+            &address_type
+        } else {
+            ty
+        };
         out.push_str(&format!("{};\n", declaration(ty, &name)));
         declared += 1;
     }

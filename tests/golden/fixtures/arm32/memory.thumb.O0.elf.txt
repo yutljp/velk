@@ -48,7 +48,7 @@ fn copy_bytes @ 0x2013c (size 48)
     br 0x20154
   blk4 @ 0x20154:
     v1 = load32((sp + #0xfffffffffffffff0))
-    store8(load8(((load32((sp + #0xfffffffffffffff8)) + v1) & #0xffffffff)), ((load32((sp + #0xfffffffffffffffc)) + v1) & #0xffffffff))
+    store8((load8(((load32((sp + #0xfffffffffffffff8)) + v1) & #0xffffffff)) & #0xffffffff), ((load32((sp + #0xfffffffffffffffc)) + v1) & #0xffffffff))
     br 0x20160
   blk5 @ 0x20160:
     store32((load32((sp + #0xfffffffffffffff0)) + #0x1), (sp + #0xfffffffffffffff0))
@@ -89,7 +89,7 @@ fn fill_bytes @ 0x2016c (size 50)
   blk3 @ 0x20184:
     br 0x20186
   blk4 @ 0x20186:
-    store8(load8((sp + #0xfffffffffffffffb)), ((load32((sp + #0xfffffffffffffffc)) + load32((sp + #0xfffffffffffffff0))) & #0xffffffff))
+    store8((load8((sp + #0xfffffffffffffffb)) & #0xffffffff), ((load32((sp + #0xfffffffffffffffc)) + load32((sp + #0xfffffffffffffff0))) & #0xffffffff))
     br 0x20192
   blk5 @ 0x20192:
     store32((load32((sp + #0xfffffffffffffff0)) + #0x1), (sp + #0xfffffffffffffff0))
@@ -135,7 +135,7 @@ fn string_length @ 0x201a0 (size 34)
 /* velk pseudo-C: grid_get @ 0x201c4 */
 /* ref: 0x30268 .bss */
 int grid_get(int row, int col) {
-    return *(uint32_t *)(0x30268 + ((row & 0x3) << 5) + ((col & 0x7) << 2));
+    return grid[(row & 0x3) * 8 + (col & 0x7)];
 }
 -- signature
 int (int row, int col)
@@ -144,7 +144,7 @@ int (int row, int col)
 -- ir
 fn grid_get @ 0x201c4 (size 38)
   blk0 @ 0x201c4:
-    ret load32((((#0x30268 + ((r0 & #0x3) << #0x5)) & #0xffffffff) + ((r1 & #0x7) << #0x2)))
+    ret load32(((#0x30268 + ((r0 & #0x3) << #0x5)) + ((r1 & #0x7) << #0x2)))
 -- card
 {"addr":"0x201c4","approxTokens":174,"blocks":1,"hardReasons":[],"name":"grid_get","nameSources":["symtab","dwarf"],"section":".text","size":38,"unsupported":0}
 
@@ -164,7 +164,8 @@ fn grid_set @ 0x201ec (size 42)
   blk0 @ 0x201ec:
     store32(r0, (sp + #0xfffffffffffffffc))
     store32(r1, (sp + #0xfffffffffffffff8))
-    store32(r2, ((#0x30268 + ((load32((sp + #0xfffffffffffffffc)) & #0x3) << #0x5)) + ((load32((sp + #0xfffffffffffffff8)) & #0x7) << #0x2)))
+    store32(r2, (sp + #0xfffffffffffffff4))
+    store32(load32((sp + #0xfffffffffffffff4)), ((#0x30268 + ((load32((sp + #0xfffffffffffffffc)) & #0x3) << #0x5)) + ((load32((sp + #0xfffffffffffffff8)) & #0x7) << #0x2)))
     ret #0x0
 -- card
 {"addr":"0x201ec","approxTokens":186,"blocks":1,"hardReasons":[],"name":"grid_set","nameSources":["symtab","dwarf"],"section":".text","size":42,"unsupported":0}
@@ -195,7 +196,7 @@ int read_volatile(int *p) {
     uint32_t local_2; /* [sp-c] */
 
     local_0 = (uint32_t)(uintptr_t)p;
-    local_1 = *(uint32_t *)((uint32_t)(uintptr_t)p);
+    local_1 = *(uint32_t *)(local_0);
     local_2 = *(uint32_t *)(local_0);
     return local_1 + local_2;
 }
@@ -207,7 +208,7 @@ int (int * p)
 fn read_volatile @ 0x2022c (size 26)
   blk0 @ 0x2022c:
     store32(r0, (sp + #0xfffffffffffffffc))
-    store32(load32(r0), (sp + #0xfffffffffffffff8))
+    store32(load32(load32((sp + #0xfffffffffffffffc))), (sp + #0xfffffffffffffff8))
     store32(load32(load32((sp + #0xfffffffffffffffc))), (sp + #0xfffffffffffffff4))
     ret ((load32((sp + #0xfffffffffffffff8)) + load32((sp + #0xfffffffffffffff4))) & #0xffffffff)
 -- card
@@ -223,8 +224,8 @@ void swap_ints(int *a, int *b) {
 
     local_0 = (uint32_t)(uintptr_t)a;
     local_1 = (uint32_t)(uintptr_t)b;
-    local_2 = *(uint32_t *)((uint32_t)(uintptr_t)a);
-    *(uint32_t *)(local_0) = *(uint32_t *)((uint32_t)(uintptr_t)b);
+    local_2 = *(uint32_t *)(local_0);
+    *(uint32_t *)(local_0) = *(uint32_t *)(local_1);
     *(uint32_t *)(local_1) = local_2;
 }
 -- signature
@@ -236,8 +237,8 @@ fn swap_ints @ 0x20248 (size 30)
   blk0 @ 0x20248:
     store32(r0, (sp + #0xfffffffffffffffc))
     store32(r1, (sp + #0xfffffffffffffff8))
-    store32(load32(r0), (sp + #0xfffffffffffffff4))
-    store32(load32(r1), load32((sp + #0xfffffffffffffffc)))
+    store32(load32(load32((sp + #0xfffffffffffffffc))), (sp + #0xfffffffffffffff4))
+    store32(load32(load32((sp + #0xfffffffffffffff8))), load32((sp + #0xfffffffffffffffc)))
     store32(load32((sp + #0xfffffffffffffff4)), load32((sp + #0xfffffffffffffff8)))
     ret #0x0
 -- card

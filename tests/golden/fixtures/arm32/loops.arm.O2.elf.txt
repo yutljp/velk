@@ -1,4 +1,4 @@
-# arm32/loops.arm.O2.elf: elf arm32 no entry, 4 functions, 0 lift failures, 2 unsupported, 0 gotos
+# arm32/loops.arm.O2.elf: elf arm32 no entry, 4 functions, 0 lift failures, 0 unsupported, 0 gotos
 0x200fc 40 count_bits symtab,dwarf
 0x20124 48 sum_until symtab,dwarf
 0x20154 60 sum_till_neg symtab,dwarf
@@ -22,10 +22,11 @@ int count_bits(unsigned int x) {
         int32_t v4 = 0;
         while (true) {
             int32_t v5 = v3 & 0x1;
-            int32_t v6 = v3 >> 1;
+            int32_t t1 = v3 >> 1;
+            uint32_t v6 = (t1 == 0 ? 64 : 0) | v3 & 0x1 ^ 0x1;
             v3 >>= 1;
             v4 = (uint32_t)v4 + v5;
-            if (v6 == 0) break;
+            if (v6 >> 6 != 0) break;
         }
         return v4;
     }
@@ -52,10 +53,11 @@ fn count_bits @ 0x200fc (size 40)
     v4 = #0x0
   blk5 @ 0x20110:
     v5 = (v3 & #0x1)
-    v6 = (v3 >> #0x1)
+    t1 = (v3 >> #0x1)
+    v6 = (select eq t1, #0x0 ? #0x40, #0x0 | ((v3 & #0x1) ^ #0x1))
     v3 = (v3 >> #0x1)
     v4 = ((v4 + v5) & #0xffffffff)
-    brif eq v6, #0x0 -> 0x20120
+    brif ne (v6 >> #0x6), #0x0 -> 0x20120
   blk6 @ 0x2011d:
     br 0x20110
   blk7 @ 0x20120:
@@ -67,24 +69,15 @@ fn count_bits @ 0x200fc (size 40)
 -- decompile
 /* velk pseudo-C: sum_until @ 0x20124 */
 int sum_until(int limit) {
-    uint32_t v9;
-    uint32_t v10;
-
     int32_t v1 = limit;
     int32_t v2 = 1;
     if (limit < 1) {
         limit = 0;
     }
     if (v1 >= v2) {
-        int32_t v3 = (uint32_t)limit - 2;
-        int32_t v4 = (uint32_t)limit - 1;
-        /* unsupported: ARM umull r1, r2, r2, r1 at 0x20138 */
-        uint32_t v5 = v10 & 0x1;
-        int32_t v6 = v5 >> 1;
-        /* unsupported: ARM mov r1, r1, rrx at 0x20144 */
-        int32_t v7 = v9 + ((uint64_t)limit << 1);
-        int32_t v8 = (uint32_t)v7 - 1;
-        return v8;
+        uint64_t v3 = (uint64_t)((uint32_t)limit - 1) * ((uint32_t)limit - 2);
+        uint8_t v4 = v3 >> 32;
+        return ((v3 & 0xffffffff) >> 1 | (uint64_t)((v4 & 0x1 ^ 0x1) == 0) << 31) + ((uint64_t)limit << 1) - 1;
     }
     return limit;
 }
@@ -105,24 +98,20 @@ fn sum_until @ 0x20124 (size 48)
   blk3 @ 0x2012d:
     ret r0
   blk4 @ 0x20130:
-    v3 = ((r0 - #0x2) & #0xffffffff)
-    v4 = ((r0 - #0x1) & #0xffffffff)
-    unsupported: ARM umull r1, r2, r2, r1 at 0x20138
-    v5 = (r2 & #0x1)
-    v6 = ((v5 >> #0x1) & #0xffffffff)
-    unsupported: ARM mov r1, r1, rrx at 0x20144
-    v7 = ((r1 + (r0 << #0x1)) & #0xffffffff)
-    v8 = ((v7 - #0x1) & #0xffffffff)
-    ret v8
+    v3 = (((r0 - #0x1) & #0xffffffff) * ((r0 - #0x2) & #0xffffffff))
+    v4 = (v3 >> #0x20)
+    ret ((((((v3 & #0xffffffff) >> #0x1) | (select eq ((v4 & #0x1) ^ #0x1), #0x0 ? #0x1, #0x0 << #0x1f)) + (r0 << #0x1)) - #0x1) & #0xffffffff)
 -- card
-{"addr":"0x20124","approxTokens":168,"blocks":5,"hardReasons":[],"name":"sum_until","nameSources":["symtab","dwarf"],"section":".text","size":48,"unsupported":2}
+{"addr":"0x20124","approxTokens":168,"blocks":5,"hardReasons":[],"name":"sum_until","nameSources":["symtab","dwarf"],"section":".text","size":48,"unsupported":0}
 
 == 0x20154 sum_till_neg
 -- decompile
 /* velk pseudo-C: sum_till_neg @ 0x20154 */
 int sum_till_neg(int *p, int n) {
+    uintptr_t v1;
+
     if (n >= 1) {
-        int32_t v1 = (uint32_t)(uintptr_t)p;
+        v1 = (uint32_t)(uintptr_t)p;
         int32_t v2 = n;
         int32_t v3 = 0;
         while (true) {
@@ -156,13 +145,13 @@ fn sum_till_neg @ 0x20154 (size 60)
     br 0x20178
   blk3 @ 0x2016c:
     v3 = ((v4 + v3) & #0xffffffff)
-    v2 = (v2 - #0x1)
+    v2 = ((v2 - #0x1) & #0xffffffff)
     brif ne v2, #0x0 -> 0x20178
   blk4 @ 0x20175:
     ret v3
   blk5 @ 0x20178:
     v4 = load32(v1)
-    v1 = (v1 + #0x4)
+    v1 = ((v1 + #0x4) & #0xffffffff)
     brif eq select ne v4, #0xffffffffffffffff ? select ge ((v4 + #0x1) ^ ((v4 ^ (v4 + #0x1)) & (#0x1 ^ (v4 + #0x1)))), #0x0 ? #0x1, #0x0, #0x0, #0x0 -> 0x20184
   blk6 @ 0x20181:
     br 0x2016c
@@ -177,8 +166,10 @@ fn sum_till_neg @ 0x20154 (size 60)
 -- decompile
 /* velk pseudo-C: sum_until_zero @ 0x20190 */
 int sum_until_zero(int *p, int n) {
+    uintptr_t v1;
+
     if (n >= 1) {
-        int32_t v1 = (uint32_t)(uintptr_t)p;
+        v1 = (uint32_t)(uintptr_t)p;
         int32_t v2 = 0;
         while (true) {
             int32_t v3 = *(uint32_t *)((uint32_t)v1);
@@ -209,7 +200,7 @@ fn sum_until_zero @ 0x20190 (size 56)
     v2 = #0x0
   blk3 @ 0x201a0:
     v3 = load32(v1)
-    v1 = (v1 + #0x4)
+    v1 = ((v1 + #0x4) & #0xffffffff)
     brif ne v3, #0x0 -> 0x201ac
   blk4 @ 0x201a9:
     br 0x201c4

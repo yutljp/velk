@@ -12,7 +12,7 @@ uint64_t tail_one();
 -- decompile
 /* velk pseudo-C: tail_one @ 0x200f4 */
 int tail_one(int x) {
-    return x + ((uint64_t)x << 1) + 1;
+    return (uint32_t)x * 3 + 1;
 }
 -- signature
 int (int x)
@@ -21,7 +21,7 @@ int (int x)
 -- ir
 fn tail_one @ 0x200f4 (size 20)
   blk0 @ 0x200f4:
-    ret (((r0 + (r0 << #0x1)) + #0x1) & #0xffffffff)
+    ret (((r0 * #0x3) + #0x1) & #0xffffffff)
 -- card
 {"addr":"0x200f4","approxTokens":150,"blocks":1,"hardReasons":[],"name":"tail_one","nameSources":["symtab","dwarf"],"section":".text","size":20,"unsupported":0}
 
@@ -38,8 +38,8 @@ int (int x)
 -- ir
 fn tail_two @ 0x20108 (size 18)
   blk0 @ 0x20108:
-    v3:r0 = call 0x200f4(((r0 + #0x2) & #0xffffffff))
-    ret v3
+    v2:r0 = call 0x200f4(((r0 + #0x2) & #0xffffffff))
+    ret v2
 -- card
 {"addr":"0x20108","approxTokens":144,"blocks":1,"hardReasons":[],"name":"tail_two","nameSources":["symtab","dwarf"],"section":".text","size":18,"unsupported":0}
 

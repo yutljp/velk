@@ -1,4 +1,4 @@
-# arm32/control.thumb.O2.elf: elf arm32 no entry, 7 functions, 0 lift failures, 2 unsupported, 2 gotos
+# arm32/control.thumb.O2.elf: elf arm32 no entry, 7 functions, 0 lift failures, 0 unsupported, 2 gotos
 0x20118 418 matrix_trace symtab,dwarf
 0x202bc 26 cleanup_on_error symtab,dwarf
 0x202d8 20 fallthrough symtab,dwarf
@@ -7,9 +7,8 @@
 0x20348 136 skip_negatives symtab,dwarf
 0x203d0 146 find_pair symtab,dwarf
 /* velk prelude */
+#include <stdbool.h>
 #include <stdint.h>
-
-uint64_t velk_entry_stack_pointer(void); /* target entry stack pointer */
 /* end velk prelude */
 
 == 0x20118 matrix_trace
@@ -20,7 +19,10 @@ int matrix_trace(int *m, int n) {
     uint32_t v11;
     uint32_t v4;
     int32_t v5;
+    uintptr_t v10;
     int32_t v13;
+    uintptr_t v30;
+    uintptr_t v40;
     int32_t v44;
     int32_t v65;
     int32_t v80;
@@ -42,7 +44,7 @@ int matrix_trace(int *m, int n) {
             v5 = 0;
             do {
                 uint32_t v9 = v4 * n;
-                int32_t v10 = v3 + (v9 << 2);
+                v10 = v3 + (v9 << 2);
                 if ((uint32_t)n < 4) {
                     v65 = 0;
                 } else {
@@ -102,7 +104,7 @@ int matrix_trace(int *m, int n) {
             L_201c0:;
                 uint32_t v28 = v4 | 0x1;
                 uint32_t v70 = v28 * n;
-                int32_t v30 = v3 + (v70 << 2);
+                v30 = v3 + (v70 << 2);
                 if ((uint32_t)n < 4) {
                     v11 = 0;
                 } else {
@@ -155,11 +157,11 @@ int matrix_trace(int *m, int n) {
             L_2014c:
                 v4 += 2;
             } while (v4 != v6);
-            if ((uint32_t)((uint64_t)n << 31) == 0) {
+            if ((((((uint64_t)n << 31) & 0xffffffff) >> 24 | ((uint32_t)((uint64_t)n << 31) == 0 ? 0x40 : 0x0) | (uint32_t)n >> 1 & 0x1 ^ 0x1) >> 6 & 0x1) != 0) {
                 return v5;
             }
         }
-        int32_t v40 = v3 + (v4 * n << 2);
+        v40 = v3 + (v4 * n << 2);
         if ((uint32_t)n < 4) {
             v80 = 0;
         } else {
@@ -283,7 +285,7 @@ fn matrix_trace @ 0x20118 (size 418)
   blk13 @ 0x20164:
     v2 = #0x0
   blk14 @ 0x20168:
-    v13 = (v2 & #0xffffffff)
+    v13 = v2
     v15 = ((v13 + #0x2) & #0xffffffff)
     brif ne v4, v2 -> 0x20176
   blk15 @ 0x20173:
@@ -326,7 +328,7 @@ fn matrix_trace @ 0x20118 (size 418)
     br 0x201c0
   blk33 @ 0x201a2:
     v9 = ((v2 + #0x1) & #0xffffffff)
-    v15 = (v9 & #0xffffffff)
+    v15 = v9
     brif ne v4, v9 -> 0x201ac
   blk34 @ 0x201a9:
     v9 = load32(((v10 + (v4 << #0x2)) & #0xffffffff))
@@ -340,7 +342,7 @@ fn matrix_trace @ 0x20118 (size 418)
     br 0x201c0
   blk39 @ 0x201b4:
     v9 = ((v2 + #0x2) & #0xffffffff)
-    v2 = (v9 & #0xffffffff)
+    v2 = v9
     brif ne v4, v9 -> 0x201be
   blk40 @ 0x201bb:
     v9 = load32(((v10 + (v4 << #0x2)) & #0xffffffff))
@@ -349,7 +351,7 @@ fn matrix_trace @ 0x20118 (size 418)
   blk42 @ 0x201bf:
     v5 = ((v5 + v9) & #0xffffffff)
   blk43 @ 0x201c0:
-    v28 = ((v4 | #0x1) & #0xffffffff)
+    v28 = (v4 | #0x1)
     v9 = ((v28 * r1) & #0xffffffff)
     v30 = ((v3 + (v9 << #0x2)) & #0xffffffff)
     brif cc r1, #0x4 -> 0x201d0
@@ -365,8 +367,8 @@ fn matrix_trace @ 0x20118 (size 418)
   blk48 @ 0x201dc:
     v9 = #0x0
   blk49 @ 0x201e0:
-    r7 = (v9 & #0xffffffff)
-    v2 = (v9 & #0xffffffff)
+    r7 = v9
+    v2 = v9
     brif ne v4, v9 -> 0x201ea
   blk50 @ 0x201e7:
     v9 = load32(((v30 + (v28 << #0x2)) & #0xffffffff))
@@ -398,7 +400,7 @@ fn matrix_trace @ 0x20118 (size 418)
   blk62 @ 0x2020d:
     br 0x2014c
   blk63 @ 0x2020e:
-    v2 = (r7 & #0xffffffff)
+    v2 = r7
     brif ne v4, r7 -> 0x20216
   blk64 @ 0x20213:
     v9 = load32(((v30 + (v28 << #0x2)) & #0xffffffff))
@@ -412,7 +414,7 @@ fn matrix_trace @ 0x20118 (size 418)
     br 0x2014c
   blk69 @ 0x2021e:
     v9 = ((r7 + #0x1) & #0xffffffff)
-    v2 = (v9 & #0xffffffff)
+    v2 = v9
     brif ne v4, v9 -> 0x20228
   blk70 @ 0x20225:
     v9 = load32(((v30 + (v28 << #0x2)) & #0xffffffff))
@@ -423,7 +425,7 @@ fn matrix_trace @ 0x20118 (size 418)
   blk73 @ 0x2022a:
     br 0x2014c
   blk74 @ 0x2022c:
-    brif ne ((r1 << #0x1f) & #0xffffffff), #0x0 -> 0x20230
+    brif eq (((((((r1 << #0x1f) & #0xffffffff) >> #0x18) | select eq ((r1 << #0x1f) & #0xffffffff), #0x0 ? #0x40, #0x0) | (((r1 >> #0x1) & #0x1) ^ #0x1)) >> #0x6) & #0x1), #0x0 -> 0x20230
   blk75 @ 0x2022f:
     br 0x202b6
   blk76 @ 0x20230:
@@ -467,7 +469,7 @@ fn matrix_trace @ 0x20118 (size 418)
     v5 = ((v5 + v2) & #0xffffffff)
   blk92 @ 0x20274:
     r7 = ((v15 + #0x1) & #0xffffffff)
-    v15 = (r7 & #0xffffffff)
+    v15 = r7
     brif ne v4, r7 -> 0x2027e
   blk93 @ 0x2027b:
     v2 = load32(((v40 + (v4 << #0x2)) & #0xffffffff))
@@ -496,7 +498,7 @@ fn matrix_trace @ 0x20118 (size 418)
   blk104 @ 0x2029b:
     ret v5
   blk105 @ 0x2029e:
-    v55 = (v2 + #0x1)
+    v55 = ((v2 + #0x1) & #0xffffffff)
     v15 = v55
     brif ne v4, v55 -> 0x202a8
   blk106 @ 0x202a5:
@@ -506,7 +508,7 @@ fn matrix_trace @ 0x20118 (size 418)
   blk108 @ 0x202a9:
     v5 = ((v5 + v55) & #0xffffffff)
   blk109 @ 0x202aa:
-    v55 = (v2 + #0x2)
+    v55 = ((v2 + #0x2) & #0xffffffff)
     v2 = v55
     brif ne v4, v55 -> 0x202b4
   blk110 @ 0x202b1:
@@ -562,7 +564,7 @@ fn cleanup_on_error @ 0x202bc (size 26)
 -- decompile
 /* velk pseudo-C: fallthrough @ 0x202d8 */
 int fallthrough(int x) {
-    uint32_t v3;
+    uintptr_t v4;
 
     uint32_t v1 = x;
     uint32_t v2 = 3;
@@ -570,16 +572,16 @@ int fallthrough(int x) {
         x = -1;
     }
     if (v1 <= v2) {
-        v3 = 0x114;
+        v4 = 0x114;
     }
     if (v1 <= v2) {
-        v3 = v3 & 0xffff | 0x10000;
+        v4 = v4 & 0xffff | 0x10000;
     }
     if (v1 > v2) {
         return x;
     }
-    x = *(uint8_t *)(v3 + x);
-    return x;
+    int32_t v3 = *(uint8_t *)(v4 + x);
+    return v3;
 }
 -- signature
 int (int x)
@@ -600,11 +602,11 @@ fn fallthrough @ 0x202d8 (size 20)
   blk4 @ 0x202e4:
     brif hi v1, v2 -> 0x202e8
   blk5 @ 0x202e5:
-    r1 = (((r1 & #0xffff) | #0x10000) & #0xffffffff)
+    r1 = ((r1 & #0xffff) | #0x10000)
   blk6 @ 0x202e8:
     brif hi v1, v2 -> 0x202ea
   blk7 @ 0x202e9:
-    r0 = (load8(((r1 + r0) & #0xffffffff)) & #0xffffffff)
+    r0 = load8(((r1 + r0) & #0xffffffff))
   blk8 @ 0x202ea:
     ret r0
 -- card
@@ -712,25 +714,25 @@ fn sparse @ 0x202ec (size 46)
 -- decompile
 /* velk pseudo-C: short_circuit @ 0x2031c */
 int short_circuit(int *p, int n) {
-    int32_t v1 = (uint32_t)(uintptr_t)p;
-    int32_t v2 = (uint32_t)(uintptr_t)p;
+    uintptr_t v1;
+
+    v1 = (uint32_t)(uintptr_t)p;
     int32_t v3 = 0;
-    if (v2 != 0) {
+    if ((uint32_t)(uintptr_t)p != 0) {
         if (n >= 1) {
-            int32_t v4 = *(uint32_t *)((uint32_t)v1);
-            int32_t v5 = v4;
+            int32_t v9 = *(uint32_t *)((uint32_t)v1);
+            int32_t v5 = v9;
             int32_t v6 = 1;
-            if (v4 == 1) {
-                v4 = 1;
+            if (v9 == 1) {
+                v9 = 1;
             }
             if (v5 != v6) {
-                int32_t v7 = *(uint32_t *)((v1 + ((uint64_t)n << 2) - 4) & 0xffffffff) - 1;
-                /* unsupported: ARM clz.w r0, r0 at 0x20340 */
-                int32_t v8 = (uint32_t)(uintptr_t)p >> 5;
-                int32_t v9 = (uint32_t)(uintptr_t)p >> 5;
-                return v9;
+                uint32_t v10 = *(uint32_t *)((v1 + ((uint64_t)n << 2) - 4) & 0xffffffff) - 1;
+                uint32_t v11 = (v10 == 0 ? 32 : __builtin_clzg(v10, 32));
+                int32_t v12 = v11 >> 5;
+                return v12;
             }
-            return v4;
+            return v9;
         }
         return v3;
     }
@@ -743,10 +745,9 @@ int (int * p, int n)
 -- ir
 fn short_circuit @ 0x2031c (size 44)
   blk0 @ 0x2031c:
-    v1 = (r0 & #0xffffffff)
-    v2 = r0
+    v1 = r0
     v3 = #0x0
-    brif ne v2, #0x0 -> 0x20328
+    brif ne r0, #0x0 -> 0x20328
   blk1 @ 0x20327:
     ret #0x0
   blk2 @ 0x20328:
@@ -754,99 +755,81 @@ fn short_circuit @ 0x2031c (size 44)
   blk3 @ 0x2032b:
     br 0x20346
   blk4 @ 0x2032c:
-    v4 = load32(v1)
-    v5 = v4
+    v3 = load32(v1)
+    v5 = v3
     v6 = #0x1
-    brif ne v4, #0x1 -> 0x20334
+    brif ne v3, #0x1 -> 0x20334
   blk5 @ 0x20333:
-    v4 = #0x1
+    v3 = #0x1
   blk6 @ 0x20334:
     brif ne v5, v6 -> 0x20336
   blk7 @ 0x20335:
-    ret v4
+    ret v3
   blk8 @ 0x20336:
-    v7 = ((load32((((v1 + (r1 << #0x2)) - #0x4) & #0xffffffff)) - #0x1) & #0xffffffff)
-    unsupported: ARM clz.w r0, r0 at 0x20340
-    v8 = (r0 >> #0x5)
-    v3 = ((r0 >> #0x5) & #0xffffffff)
+    v3 = ((load32((((v1 + (r1 << #0x2)) - #0x4) & #0xffffffff)) - #0x1) & #0xffffffff)
+    v3 = select eq v3, #0x0 ? #0x20, clz32(v3)
+    v3 = (v3 >> #0x5)
   blk9 @ 0x20346:
     ret v3
 -- card
-{"addr":"0x2031c","approxTokens":204,"blocks":10,"hardReasons":[],"name":"short_circuit","nameSources":["symtab","dwarf"],"section":".text","size":44,"unsupported":1}
+{"addr":"0x2031c","approxTokens":204,"blocks":10,"hardReasons":[],"name":"short_circuit","nameSources":["symtab","dwarf"],"section":".text","size":44,"unsupported":0}
 
 == 0x20348 skip_negatives
 -- decompile
 /* velk pseudo-C: skip_negatives @ 0x20348 */
+struct S1 { int32_t field_0x0; int32_t field_0x4; int32_t field_0x8; };
 int skip_negatives(int *p, int n) {
-    uint64_t sp = velk_entry_stack_pointer();
-    uint32_t v17;
-    uint32_t v18;
-    uint32_t v19;
-    uint32_t v25;
-    int32_t t1;
-    int32_t v6;
+    uintptr_t v7;
+    uintptr_t v23;
+    int32_t v26;
 
     int32_t v2 = 1;
     if (n < 1) {
         p = 0x0;
     }
     if (n >= v2) {
-        uint32_t v24 = n & 0x3;
-        int32_t v3 = (uint32_t)n >> 2;
-        uint32_t v4 = (uint32_t)n >> 2;
-        uint32_t v16 = 0;
-        if (v3 != 0) {
-            *(uint32_t *)(sp - 0x10) = v17;
-            *(uint32_t *)(sp - 0xc) = v18;
-            *(uint32_t *)(sp - 0x8) = v19;
-            *(uint32_t *)(sp - 0x4) = v25;
-            uint32_t v1 = (uint32_t)(uintptr_t)p - 16;
-            int32_t v5 = -(v4 << 2);
-            v6 = 0;
-            for (;;) {
-                int32_t v7 = *(uint32_t *)(v1 + 16);
-                int32_t v8 = v16 - 4;
-                t1 = v7 >> 31;
-                int32_t v9 = v1 + 20;
-                int32_t v10 = v6 + (v7 & (t1 ^ 0xffffffff));
-                /* unsupported: ARM ldm r6, {r4, r5, r6} at 0x2037a */
-                t1 = (int32_t)v17 >> 31;
-                int32_t v11 = v17 & (t1 ^ 0xffffffff);
-                int32_t v12 = (uint32_t)n + v11;
-                t1 = (int32_t)v18 >> 31;
-                int32_t v13 = v18 & (t1 ^ 0xffffffff);
-                int32_t v14 = (uint32_t)v12 + v13;
-                t1 = (int32_t)v19 >> 31;
-                int32_t v15 = v19 & (t1 ^ 0xffffffff);
-                v6 = (uint32_t)v14 + v15;
-                if (v25 == v16) {
-                    break;
-                }
+        int32_t v3 = n & 0x3;
+        uint32_t v5 = (uint32_t)n >> 2;
+        uint32_t v6 = 0;
+        if ((((uint32_t)n >> 2 == 0 ? 0x40 : 0x0) | (uint32_t)n >> 1 & 0x1 ^ 0x1) >> 6 == 0) {
+            v7 = (uint32_t)(uintptr_t)p - 16;
+            int32_t v8 = -(v5 << 2);
+            v26 = 0;
+            while (true) {
+                int32_t v10 = *(uint32_t *)((uint32_t)v7 + 16);
+                v7 = (uint32_t)v7 + 16;
+                v6 -= 4;
+                v26 += (v10 & (v10 >> 31 ^ 0xffffffff));
+                struct S1 *v12 = (struct S1 *)((uint32_t)v7 + 4);
+                int32_t v27 = v12->field_0x0;
+                int32_t v14 = v12->field_0x4;
+                int32_t v15 = v12->field_0x8;
+                v26 += (v27 & (v27 >> 31 ^ 0xffffffff));
+                v26 += (v14 & (v14 >> 31 ^ 0xffffffff));
+                v26 += (v15 & (v15 >> 31 ^ 0xffffffff));
+                if (v8 == v6) break;
             }
-            if (v24 == 0) {
-                return v6;
+            if (v3 == 0) {
+                return v26;
             }
-            v16 = -v16;
+            v6 = -v6;
         } else {
-            v6 = 0;
+            v26 = 0;
         }
-        int32_t v20 = *(uint32_t *)((uint32_t)(uintptr_t)p + (v16 << 2));
-        t1 = v20 >> 31;
-        v6 += (v20 & (t1 ^ 0xffffffff));
-        if (v24 != 1) {
-            int32_t v21 = (uint32_t)(uintptr_t)p + (v16 << 2);
-            int32_t v22 = *(uint32_t *)((uint32_t)v21 + 4);
-            t1 = v22 >> 31;
-            v6 += (v22 & (t1 ^ 0xffffffff));
-            if (v24 != 2) {
-                int32_t v23 = *(uint32_t *)((uint32_t)v21 + 8);
-                t1 = v23 >> 31;
-                v6 += (v23 & (t1 ^ 0xffffffff));
-                return v6;
+        int32_t v22 = *(uint32_t *)((uint32_t)(uintptr_t)p + (v6 << 2));
+        v26 += (v22 & (v22 >> 31 ^ 0xffffffff));
+        if (v3 != 1) {
+            v23 = (uint32_t)(uintptr_t)p + (v6 << 2);
+            int32_t v28 = *(uint32_t *)((uint32_t)v23 + 4);
+            v26 += (v28 & (v28 >> 31 ^ 0xffffffff));
+            if (v3 != 2) {
+                int32_t v25 = *(uint32_t *)((uint32_t)v23 + 8);
+                v26 += (v25 & (v25 >> 31 ^ 0xffffffff));
+                return v26;
             }
-            return v6;
+            return v26;
         }
-        return v6;
+        return v26;
     }
     return (uint32_t)(uintptr_t)p;
 }
@@ -867,72 +850,60 @@ fn skip_negatives @ 0x20348 (size 136)
   blk3 @ 0x2034f:
     ret r0
   blk4 @ 0x20350:
-    r12 = (r1 & #0x3)
-    v3 = (r1 >> #0x2)
-    v4 = ((r1 >> #0x2) & #0xffffffff)
-    r3 = #0x0
-    brif ne v3, #0x0 -> 0x2035c
+    v3 = (r1 & #0x3)
+    v5 = (r1 >> #0x2)
+    v6 = #0x0
+    brif eq ((select eq (r1 >> #0x2), #0x0 ? #0x40, #0x0 | (((r1 >> #0x1) & #0x1) ^ #0x1)) >> #0x6), #0x0 -> 0x2035c
   blk5 @ 0x2035b:
     br 0x203a0
   blk6 @ 0x2035c:
-    store32(r4, (sp + #0xfffffffffffffff0))
-    store32(r5, (sp + #0xfffffffffffffff4))
-    store32(r6, (sp + #0xfffffffffffffff8))
-    store32(lr, (sp + #0xfffffffffffffffc))
-    r2 = ((r0 - #0x10) & #0xffffffff)
-    v5 = ((#0x0 - (v4 << #0x2)) & #0xffffffff)
-    v6 = #0x0
+    v7 = ((r0 - #0x10) & #0xffffffff)
+    v8 = ((#0x0 - (v5 << #0x2)) & #0xffffffff)
+    v5 = #0x0
   blk7 @ 0x2036c:
-    v7 = load32(((r2 + #0x10) & #0xffffffff))
-    v8 = ((r3 - #0x4) & #0xffffffff)
-    t1 = (sext32(v7) >>> #0x1f)
-    v9 = ((r2 + #0x14) & #0xffffffff)
-    v10 = ((v6 + (v7 & ((t1 & #0xffffffff) ^ #0xffffffff))) & #0xffffffff)
-    unsupported: ARM ldm r6, {r4, r5, r6} at 0x2037a
-    t1 = (sext32(r4) >>> #0x1f)
-    v11 = ((r4 & ((t1 & #0xffffffff) ^ #0xffffffff)) & #0xffffffff)
-    v12 = ((r1 + v11) & #0xffffffff)
-    t1 = (sext32(r5) >>> #0x1f)
-    v13 = ((r5 & ((t1 & #0xffffffff) ^ #0xffffffff)) & #0xffffffff)
-    v14 = ((v12 + v13) & #0xffffffff)
-    t1 = (sext32(r6) >>> #0x1f)
-    v15 = ((r6 & ((t1 & #0xffffffff) ^ #0xffffffff)) & #0xffffffff)
-    v6 = ((v14 + v15) & #0xffffffff)
-    brif eq lr, r3 -> 0x20392
+    v10 = load32(((v7 + #0x10) & #0xffffffff))
+    v7 = ((v7 + #0x10) & #0xffffffff)
+    v6 = ((v6 - #0x4) & #0xffffffff)
+    v5 = ((v5 + (v10 & (((sext32(v10) >>> #0x1f) & #0xffffffff) ^ #0xffffffff))) & #0xffffffff)
+    v12 = ((v7 + #0x4) & #0xffffffff)
+    v10 = load32(v12)
+    v14 = load32((v12 + #0x4))
+    v15 = load32((v12 + #0x8))
+    v5 = ((v5 + (v10 & (((sext32(v10) >>> #0x1f) & #0xffffffff) ^ #0xffffffff))) & #0xffffffff)
+    v5 = ((v5 + (v14 & (((sext32(v14) >>> #0x1f) & #0xffffffff) ^ #0xffffffff))) & #0xffffffff)
+    v5 = ((v5 + (v15 & (((sext32(v15) >>> #0x1f) & #0xffffffff) ^ #0xffffffff))) & #0xffffffff)
+    brif eq v8, v6 -> 0x20392
   blk8 @ 0x20391:
     br 0x2036c
   blk9 @ 0x20392:
-    brif ne r12, #0x0 -> 0x2039c
+    brif ne v3, #0x0 -> 0x2039c
   blk10 @ 0x2039b:
     br 0x203cc
   blk11 @ 0x2039c:
-    r3 = ((#0x0 - r3) & #0xffffffff)
+    v6 = ((#0x0 - v6) & #0xffffffff)
     br 0x203a2
   blk12 @ 0x203a0:
-    v6 = #0x0
+    v5 = #0x0
   blk13 @ 0x203a2:
-    v20 = load32(((r0 + (r3 << #0x2)) & #0xffffffff))
-    t1 = (sext32(v20) >>> #0x1f)
-    v6 = ((v6 + (v20 & ((t1 & #0xffffffff) ^ #0xffffffff))) & #0xffffffff)
-    brif ne r12, #0x1 -> 0x203b2
+    v22 = load32(((r0 + (v6 << #0x2)) & #0xffffffff))
+    v5 = ((v5 + (v22 & (((sext32(v22) >>> #0x1f) & #0xffffffff) ^ #0xffffffff))) & #0xffffffff)
+    brif ne v3, #0x1 -> 0x203b2
   blk14 @ 0x203b1:
     br 0x203cc
   blk15 @ 0x203b2:
-    v21 = ((r0 + (r3 << #0x2)) & #0xffffffff)
-    v22 = load32(((v21 + #0x4) & #0xffffffff))
-    t1 = (sext32(v22) >>> #0x1f)
-    v6 = ((v6 + (v22 & ((t1 & #0xffffffff) ^ #0xffffffff))) & #0xffffffff)
-    brif ne r12, #0x2 -> 0x203c4
+    v23 = ((r0 + (v6 << #0x2)) & #0xffffffff)
+    v22 = load32(((v23 + #0x4) & #0xffffffff))
+    v5 = ((v5 + (v22 & (((sext32(v22) >>> #0x1f) & #0xffffffff) ^ #0xffffffff))) & #0xffffffff)
+    brif ne v3, #0x2 -> 0x203c4
   blk16 @ 0x203c3:
     br 0x203cc
   blk17 @ 0x203c4:
-    v23 = load32(((v21 + #0x8) & #0xffffffff))
-    t1 = (sext32(v23) >>> #0x1f)
-    v6 = ((v6 + (v23 & ((t1 & #0xffffffff) ^ #0xffffffff))) & #0xffffffff)
+    v25 = load32(((v23 + #0x8) & #0xffffffff))
+    v5 = ((v5 + (v25 & (((sext32(v25) >>> #0x1f) & #0xffffffff) ^ #0xffffffff))) & #0xffffffff)
   blk18 @ 0x203cc:
-    ret (v6 & #0xffffffff)
+    ret v5
 -- card
-{"addr":"0x20348","approxTokens":240,"blocks":19,"hardReasons":[],"name":"skip_negatives","nameSources":["symtab","dwarf"],"section":".text","size":136,"unsupported":1}
+{"addr":"0x20348","approxTokens":240,"blocks":19,"hardReasons":[],"name":"skip_negatives","nameSources":["symtab","dwarf"],"section":".text","size":136,"structures":["struct S1 { int32_t field_0x0; int32_t field_0x4; int32_t field_0x8; };"],"unsupported":0}
 
 == 0x203d0 find_pair
 -- decompile
@@ -988,8 +959,8 @@ int find_pair(int *p, int n, int target) {
                         }
                         break;
                     }
-                    int32_t v11 = v8 + 1;
-                    return v11 + v5 * n;
+                    ++v8;
+                    return v8 + v5 * n;
                 }
             }
             v5 = v6;
@@ -1016,7 +987,7 @@ fn find_pair @ 0x203d0 (size 146)
     ret r0
   blk4 @ 0x203da:
     v3 = (r1 - #0x1)
-    v4 = (#0x0 - r1)
+    v4 = ((#0x0 - r1) & #0xffffffff)
     v5 = #0x0
     br 0x203f2
   blk5 @ 0x203ec:
@@ -1025,7 +996,7 @@ fn find_pair @ 0x203d0 (size 146)
   blk6 @ 0x203f1:
     br 0x2045a
   blk7 @ 0x203f2:
-    v6 = (v5 + #0x1)
+    v6 = ((v5 + #0x1) & #0xffffffff)
     brif lt v6, r1 -> 0x203fa
   blk8 @ 0x203f9:
     br 0x203ec
@@ -1038,7 +1009,7 @@ fn find_pair @ 0x203d0 (size 146)
   blk11 @ 0x2040b:
     br 0x2043c
   blk12 @ 0x2040c:
-    v10 = (v4 + v8)
+    v10 = ((v4 + v8) & #0xffffffff)
     brif ne v10, #0xfffffffe -> 0x20414
   blk13 @ 0x20413:
     br 0x203ec
@@ -1059,7 +1030,7 @@ fn find_pair @ 0x203d0 (size 146)
   blk21 @ 0x2042b:
     br 0x203ec
   blk22 @ 0x2042c:
-    v8 = (v8 + #0x4)
+    v8 = ((v8 + #0x4) & #0xffffffff)
     brif ne ((load32((v9 + #0x10)) + v7) & #0xffffffff), r2 -> 0x20436
   blk23 @ 0x20435:
     br 0x2043e
@@ -1070,7 +1041,7 @@ fn find_pair @ 0x203d0 (size 146)
   blk26 @ 0x2043a:
     br 0x203ec
   blk27 @ 0x2043c:
-    v8 = (v8 + #0x1)
+    v8 = ((v8 + #0x1) & #0xffffffff)
   blk28 @ 0x2043e:
     ret ((v8 + (v5 * r1)) & #0xffffffff)
   blk29 @ 0x20446:

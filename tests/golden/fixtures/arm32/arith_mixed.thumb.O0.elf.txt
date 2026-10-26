@@ -41,11 +41,12 @@ int (int x)
 -- ir
 fn helper @ 0x20114 (size 48)
   blk0 @ 0x20114:
+    v2 = r0
     v3 = #0x0
     v4 = #0x0
     br 0x20120
   blk1 @ 0x20120:
-    brif lt v4, r0 -> 0x20128
+    brif lt v4, v2 -> 0x20128
   blk2 @ 0x20127:
     br 0x2013e
   blk3 @ 0x20128:
@@ -65,8 +66,7 @@ fn helper @ 0x20114 (size 48)
 -- decompile
 /* velk pseudo-C: pair_sum @ 0x20144 */
 int pair_sum(struct pair *p) {
-    int32_t v1 = (uint32_t)(uintptr_t)p;
-    return *(uint32_t *)((uint32_t)v1) + *(uint32_t *)((uint32_t)v1 + 4);
+    return *(uint32_t *)((uint32_t)(uintptr_t)p) + *(uint32_t *)((uint32_t)(uintptr_t)p + 4);
 }
 -- signature
 int (struct pair * p)
@@ -75,8 +75,7 @@ int (struct pair * p)
 -- ir
 fn pair_sum @ 0x20144 (size 16)
   blk0 @ 0x20144:
-    v1 = r0
-    ret ((load32(v1) + load32(((v1 + #0x4) & #0xffffffff))) & #0xffffffff)
+    ret ((load32(r0) + load32(((r0 + #0x4) & #0xffffffff))) & #0xffffffff)
 -- card
 {"addr":"0x20144","approxTokens":144,"blocks":1,"hardReasons":[],"name":"pair_sum","nameSources":["symtab","dwarf"],"section":".text","size":16,"unsupported":0}
 
@@ -84,12 +83,14 @@ fn pair_sum @ 0x20144 (size 16)
 -- decompile
 /* velk pseudo-C: sum_arr @ 0x20154 */
 int sum_arr(int *p, int n) {
+    uint32_t local_0; /* [sp-4] */
     uint32_t result; /* [sp-c] */
     int32_t i; /* [sp-10] */
 
+    local_0 = (uint32_t)(uintptr_t)p;
     result = 0;
     for (i = 0; i < n; i++) {
-        result += *(uint32_t *)(((uint32_t)(uintptr_t)p + ((uint64_t)i << 2)) & 0xffffffff);
+        result += *(uint32_t *)((local_0 + ((uint64_t)i << 2)) & 0xffffffff);
     }
     return result;
 }
@@ -100,17 +101,19 @@ int (int * p, int n)
 -- ir
 fn sum_arr @ 0x20154 (size 54)
   blk0 @ 0x20154:
+    store32(r0, (sp + #0xfffffffffffffffc))
+    store32(r1, (sp + #0xfffffffffffffff8))
     store32(#0x0, (sp + #0xfffffffffffffff4))
     store32(#0x0, (sp + #0xfffffffffffffff0))
     br 0x20162
   blk1 @ 0x20162:
-    brif lt load32((sp + #0xfffffffffffffff0)), r1 -> 0x2016a
+    brif lt load32((sp + #0xfffffffffffffff0)), load32((sp + #0xfffffffffffffff8)) -> 0x2016a
   blk2 @ 0x20169:
     br 0x20184
   blk3 @ 0x2016a:
     br 0x2016c
   blk4 @ 0x2016c:
-    store32((load32((sp + #0xfffffffffffffff4)) + load32(((r0 + (load32((sp + #0xfffffffffffffff0)) << #0x2)) & #0xffffffff))), (sp + #0xfffffffffffffff4))
+    store32((load32((sp + #0xfffffffffffffff4)) + load32(((load32((sp + #0xfffffffffffffffc)) + (load32((sp + #0xfffffffffffffff0)) << #0x2)) & #0xffffffff))), (sp + #0xfffffffffffffff4))
     br 0x2017c
   blk5 @ 0x2017c:
     store32((load32((sp + #0xfffffffffffffff0)) + #0x1), (sp + #0xfffffffffffffff0))

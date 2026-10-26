@@ -10,6 +10,8 @@
 /* velk prelude */
 #include <stdint.h>
 
+extern int grid[]; /* address: 0x3022c */
+
 uint64_t grid_get();
 uint64_t string_length();
 uint64_t sub_20188();
@@ -68,8 +70,8 @@ fn copy_bytes @ 0x2013c (size 112)
     r0, r1 = call 0x20188
     ret #0x0
   blk6 @ 0x20160:
-    v2 = (r1 & #0xffffffff)
-    v3 = (r0 & #0xffffffff)
+    v2 = r1
+    v3 = r0
     v4 = (r2 & #0xfffffff0)
     unsupported: undecodable ARM instruction at 0x20170: incomplete decoder
 -- card
@@ -80,7 +82,7 @@ fn copy_bytes @ 0x2013c (size 112)
 /* velk pseudo-C: fill_bytes @ 0x201ac */
 void fill_bytes(unsigned char *dst, unsigned char value, uint32_t n) {
     if (n != 0) {
-        string_length((uint32_t)(uintptr_t)dst, value);
+        string_length((uint32_t)(uintptr_t)dst);
         return;
     }
 }
@@ -95,7 +97,7 @@ fn fill_bytes @ 0x201ac (size 12)
   blk1 @ 0x201b1:
     ret #0x0
   blk2 @ 0x201b4:
-    r0, r1 = call 0x201b8(r0, r1)
+    r0, r1 = call 0x201b8(r0)
     ret #0x0
 -- card
 {"addr":"0x201ac","approxTokens":114,"blocks":3,"hardReasons":[],"name":"fill_bytes","nameSources":["symtab","dwarf"],"section":".text","size":12,"unsupported":0}
@@ -123,34 +125,36 @@ fn string_length @ 0x201b8 (size 4)
 == 0x201bc grid_get
 -- decompile
 /* velk pseudo-C: grid_get @ 0x201bc */
+/* ref: 0x3022c .bss */
 int grid_get(int row, int col) {
-    return *(uint32_t *)(0x201d0 + *(uint32_t *)(0x201d8) + ((row & 0x3) << 5) + ((col & 0x7) << 2));
+    return grid[(row & 0x3) * 8 + (col & 0x7)];
 }
 -- signature
 int (int row, int col)
 -- references
-
+0x3022c .bss
 -- ir
 fn grid_get @ 0x201bc (size 32)
   blk0 @ 0x201bc:
-    ret load32(((((#0x201d0 + load32(#0x201d8)) + ((r0 & #0x3) << #0x5)) + ((r1 & #0x7) << #0x2)) & #0xffffffff))
+    ret load32(((#0x3022c + ((r0 & #0x3) << #0x5)) + ((r1 & #0x7) << #0x2)))
 -- card
 {"addr":"0x201bc","approxTokens":138,"blocks":1,"hardReasons":[],"name":"grid_get","nameSources":["symtab","dwarf"],"section":".text","size":32,"unsupported":0}
 
 == 0x201dc grid_set
 -- decompile
 /* velk pseudo-C: grid_set @ 0x201dc */
+/* ref: 0x3022c .bss */
 void grid_set(int row, int col, int value) {
-    *(uint32_t *)(0x201f0 + *(uint32_t *)(0x201f8) + ((row & 0x3) << 5) + ((col & 0x7) << 2)) = value;
+    grid[(row & 0x3) * 8 + (col & 0x7)] = value;
 }
 -- signature
 void (int row, int col, int value)
 -- references
-
+0x3022c .bss
 -- ir
 fn grid_set @ 0x201dc (size 32)
   blk0 @ 0x201dc:
-    store32(r2, ((((#0x201f0 + load32(#0x201f8)) + ((r0 & #0x3) << #0x5)) + ((r1 & #0x7) << #0x2)) & #0xffffffff))
+    store32(r2, ((#0x3022c + ((r0 & #0x3) << #0x5)) + ((r1 & #0x7) << #0x2)))
     ret #0x0
 -- card
 {"addr":"0x201dc","approxTokens":138,"blocks":1,"hardReasons":[],"name":"grid_set","nameSources":["symtab","dwarf"],"section":".text","size":32,"unsupported":0}

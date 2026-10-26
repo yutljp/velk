@@ -5382,6 +5382,9 @@ fn prepare(fixture: &Path, mode: Mode) -> Fixture {
                                 + 0x2000
                                 + 0x2000 * (position as u64 % 6);
                         }
+                        if let Some(register) = trials::register_pair(&ir, param) {
+                            return trials::pair_input(register, &registers, trial);
+                        }
                         registers
                             .iter()
                             .find(|(register, _)| *register == param.index)

@@ -1,14 +1,14 @@
-# 12407 functions, 134826 compared runs
+# 12407 functions, 136421 compared runs
 # runs left unfinished:
 #   cache maintenance requires external memory state (Go): 2
 #   exclusive access requires an external memory monitor (Go): 888
 #   machine state unavailable (Go): 216
 #   machine state unavailable (Rust): 72
 #   ran past the last block (Go): 24
-#   step limit (C and C++): 679
+#   step limit (C and C++): 686
 #   step limit (Go): 5462
 #   step limit (Rust): 3534
 #   switch without a matching case (Rust): 180
-#   unsupported instruction (C and C++): 2785
+#   unsupported instruction (C and C++): 1183
 #   unsupported instruction (Go): 144
 #   unsupported instruction (Rust): 72

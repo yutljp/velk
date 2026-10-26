@@ -1,4 +1,4 @@
-# arm32/float.thumb.O2.elf: elf arm32 no entry, 5 functions, 0 lift failures, 6 unsupported, 1 gotos
+# arm32/float.thumb.O2.elf: elf arm32 no entry, 5 functions, 0 lift failures, 5 unsupported, 1 gotos
 0x20104 206 average symtab,dwarf
 0x201d4 28 lerp symtab,dwarf
 0x201f0 8 truncate_to_int symtab,dwarf
@@ -30,107 +30,110 @@ uint64_t velk_entry_stack_pointer(void); /* target entry stack pointer */
 == 0x20104 average
 -- decompile
 /* velk pseudo-C: average @ 0x20104 */
+struct S1 { int32_t field_0x0; int32_t field_0x4; int32_t field_0x8; int32_t field_0xc; };
 double average(int32_t a0, int32_t a1) {
     uint64_t sp = velk_entry_stack_pointer();
     uint64_t call_values[2];
-    uint64_t v31;
-    uint32_t v1;
-    uint32_t v6;
-    uint32_t v7;
-    uint32_t v8;
-    uint32_t v11;
-    uint32_t v16;
+    uint64_t v30;
+    uint32_t v2;
+    uint32_t v17;
+    uint32_t v18;
     uint32_t v21;
+    uint32_t v22;
+    uint32_t v25;
     uint32_t v26;
     uint32_t v27;
-    uint32_t v29;
-    uint32_t v3;
-    int32_t v4;
-    int32_t v5;
+    uintptr_t v3;
+    uint32_t v5;
+    int32_t v6;
+    int32_t v7;
+    uintptr_t v8;
+    uintptr_t v28;
 
     /* unsupported: AAPCS32 multiword, floating-point or aggregate declaration */
-    *(uint32_t *)(sp - 0x24) = v7;
-    *(uint32_t *)(sp - 0x20) = v8;
-    *(uint32_t *)(sp - 0x1c) = v11;
-    *(uint32_t *)(sp - 0x18) = v16;
-    *(uint32_t *)(sp - 0x14) = v21;
-    *(uint32_t *)(sp - 0x10) = v26;
-    *(uint32_t *)(sp - 0xc) = v27;
-    *(uint32_t *)(sp - 0x8) = v29;
-    v27 = a1;
+    *(uint32_t *)(sp - 0x24) = v2;
+    *(uint32_t *)(sp - 0x20) = v17;
+    *(uint32_t *)(sp - 0x1c) = v18;
+    *(uint32_t *)(sp - 0x18) = v21;
+    *(uint32_t *)(sp - 0x14) = v22;
+    *(uint32_t *)(sp - 0x10) = v25;
+    *(uint32_t *)(sp - 0xc) = v26;
+    *(uint32_t *)(sp - 0x8) = v27;
+    int32_t v1 = a1;
     if (a1 >= 1) {
-        int32_t v2 = a0;
-        v26 = v27 & 0x3;
-        if (v27 < 4) {
-            v3 = 0;
-            v4 = 0;
+        v3 = a0;
+        int32_t v4 = v1 & 0x3;
+        if ((uint32_t)v1 < 4) {
             v5 = 0;
+            v6 = 0;
+            v7 = 0;
         } else {
-            v29 = v27 & 0x7ffffffc;
-            v21 = (uint32_t)v2 - 32;
-            *(uint32_t *)(sp - 0x28) = v2;
+            v27 = v1 & 0x7ffffffc;
+            v8 = (uint32_t)v3 - 32;
+            v5 = 0;
+            v6 = 0;
+            v7 = 0;
+            *(uint32_t *)(sp - 0x28) = v3;
             for (;;) {
-                int32_t v9 = *(uint32_t *)(v21 + 32);
-                int32_t v10 = v21 + 36;
-                /* unsupported: ARM ldm r7, {r3, r5, r6, r7} at 0x20150 */
-                int32_t v12 = (uint32_t)(sub_20156((uint32_t)a0, (uint32_t)a1, v1, v6));
-                int32_t v13 = (uint32_t)(v31); /* also returned by the call */
-                int32_t v14 = v8;
-                int32_t v15 = v11;
-                int32_t v17 = (uint32_t)(sub_2015e((uint32_t)v12, (uint32_t)v13, (uint32_t)v14, (uint32_t)v15));
-                int32_t v18 = (uint32_t)(v31); /* also returned by the call */
-                int32_t v19 = *(uint32_t *)(v21 + 20);
-                int32_t v20 = v16;
-                int32_t v22 = (uint32_t)(sub_20168((uint32_t)v17, (uint32_t)v18, (uint32_t)v20, (uint32_t)v19));
-                int32_t v23 = (uint32_t)(v31); /* also returned by the call */
-                int32_t v24 = *(uint32_t *)(v21 + 24);
-                int32_t v25 = *(uint32_t *)((uint64_t)(v21 + 24) + 0x4);
-                v4 = (uint32_t)(sub_20170((uint32_t)v22, (uint32_t)v23, (uint32_t)v24, (uint32_t)v25));
-                v5 = (uint32_t)(v31); /* also returned by the call */
-                v3 = v7 + 4;
-                if (v29 == v3) {
+                int32_t v9 = *(uint32_t *)((uint32_t)v8 + 32);
+                v8 = (uint32_t)v8 + 32;
+                struct S1 *v10 = (struct S1 *)((uint32_t)v8 + 4);
+                int32_t v11 = v10->field_0x0;
+                int32_t v12 = v10->field_0x4;
+                int32_t v13 = v10->field_0x8;
+                int32_t v14 = v10->field_0xc;
+                int32_t v15 = (uint32_t)(sub_20156((uint32_t)v6, (uint32_t)v7, (uint32_t)v9, (uint32_t)v11));
+                int32_t v16 = (uint32_t)(v30); /* also returned by the call */
+                int32_t v19 = (uint32_t)(sub_2015e((uint32_t)v15, (uint32_t)v16, (uint32_t)v12, (uint32_t)v13));
+                int32_t v20 = (uint32_t)(v30); /* also returned by the call */
+                int32_t v23 = (uint32_t)(sub_20168((uint32_t)v19, (uint32_t)v20, (uint32_t)v14, *(uint32_t *)((uint32_t)v8 + 20)));
+                int32_t v24 = (uint32_t)(v30); /* also returned by the call */
+                v6 = (uint32_t)(sub_20170((uint32_t)v23, (uint32_t)v24, *(uint32_t *)((uint32_t)v8 + 24), *(uint32_t *)((uint64_t)((uint32_t)v8 + 24) + 0x4)));
+                v7 = (uint32_t)(v30); /* also returned by the call */
+                v5 += 4;
+                if (v27 == v5) {
                     break;
                 }
             }
-            v2 = *(uint32_t *)(sp - 0x28);
-            if (v26 == 0) {
+            v3 = *(uint32_t *)(sp - 0x28);
+            if (v4 == 0) {
                 goto L_201ac;
             }
         }
-        int32_t v28 = v2 + (v3 << 3);
+        v28 = v3 + (v5 << 3);
         {
-            call_values[0] = sub_20190((uint32_t)v4, (uint32_t)v5, *(uint32_t *)(v2 + (v3 << 3)), *(uint32_t *)((uint32_t)v28 + 4));
-            call_values[1] = v31; /* also returned by the call */
-            v4 = (uint32_t)(call_values[0]);
-            v5 = (uint32_t)(call_values[1]);
+            call_values[0] = sub_20190((uint32_t)v6, (uint32_t)v7, *(uint32_t *)(v3 + (v5 << 3)), *(uint32_t *)((uint32_t)v28 + 4));
+            call_values[1] = v30; /* also returned by the call */
+            v6 = (uint32_t)(call_values[0]);
+            v7 = (uint32_t)(call_values[1]);
         }
-        if (v26 != 1) {
+        if (v4 != 1) {
             {
-                call_values[0] = sub_2019e((uint32_t)v4, (uint32_t)v5, *(uint32_t *)((uint32_t)v28 + 8), *(uint32_t *)((uint64_t)((uint32_t)v28 + 8) + 0x4));
-                call_values[1] = v31; /* also returned by the call */
-                v4 = (uint32_t)(call_values[0]);
-                v5 = (uint32_t)(call_values[1]);
+                call_values[0] = sub_2019e((uint32_t)v6, (uint32_t)v7, *(uint32_t *)((uint32_t)v28 + 8), *(uint32_t *)((uint64_t)((uint32_t)v28 + 8) + 0x4));
+                call_values[1] = v30; /* also returned by the call */
+                v6 = (uint32_t)(call_values[0]);
+                v7 = (uint32_t)(call_values[1]);
             }
-            if (v26 != 2) {
+            if (v4 != 2) {
                 {
-                    call_values[0] = sub_201ac((uint32_t)v4, (uint32_t)v5, *(uint32_t *)((uint32_t)v28 + 16), *(uint32_t *)((uint64_t)((uint32_t)v28 + 16) + 0x4));
-                    call_values[1] = v31; /* also returned by the call */
-                    v4 = (uint32_t)(call_values[0]);
-                    v5 = (uint32_t)(call_values[1]);
+                    call_values[0] = sub_201ac((uint32_t)v6, (uint32_t)v7, *(uint32_t *)((uint32_t)v28 + 16), *(uint32_t *)((uint64_t)((uint32_t)v28 + 16) + 0x4));
+                    call_values[1] = v30; /* also returned by the call */
+                    v6 = (uint32_t)(call_values[0]);
+                    v7 = (uint32_t)(call_values[1]);
                 }
             }
         }
     } else {
-        v4 = 0;
-        v5 = 0;
+        v6 = 0;
+        v7 = 0;
     }
 L_201ac:;
-    int32_t v38 = (uint32_t)(sub_201b6(v27));
-    int32_t v39 = (uint32_t)(v31); /* also returned by the call */
-    double v44 = ((union { uint64_t bits; double value; }){ .bits = (uint32_t)(sub_201c2((uint32_t)v4, (uint32_t)v5, (uint32_t)v38, (uint32_t)v39)) }).value;
-    int32_t v45 = v27;
+    int32_t v38 = (uint32_t)(sub_201b6((uint32_t)v1));
+    int32_t v39 = (uint32_t)(v30); /* also returned by the call */
+    double v44 = ((union { uint64_t bits; double value; }){ .bits = (uint32_t)(sub_201c2((uint32_t)v6, (uint32_t)v7, (uint32_t)v38, (uint32_t)v39)) }).value;
+    int32_t v45 = v1;
     int32_t v46 = 0;
-    if ((int32_t)v27 <= 0) {
+    if (v1 <= 0) {
         v44 = 0.0;
     }
     if (v45 > v46) {
@@ -154,79 +157,73 @@ fn average @ 0x20104 (size 206)
     store32(r9, (sp + #0xfffffffffffffff0))
     store32(r10, (sp + #0xfffffffffffffff4))
     store32(r11, (sp + #0xfffffffffffffff8))
-    r10 = (r1 & #0xffffffff)
-    v1 = #0x0
+    v1 = r1
+    v2 = #0x0
     brif ge r1, #0x1 -> 0x20114
   blk1 @ 0x20113:
     br 0x20128
   blk2 @ 0x20114:
-    v2 = (r0 & #0xffffffff)
-    r9 = (r10 & #0x3)
-    brif cc r10, #0x4 -> 0x20120
+    v3 = r0
+    v4 = (v1 & #0x3)
+    brif cc v1, #0x4 -> 0x20120
   blk3 @ 0x2011f:
     br 0x2012e
   blk4 @ 0x20120:
-    v3 = #0x0
-    v4 = #0x0
     v5 = #0x0
-    br 0x20182
-  blk5 @ 0x20128:
-    v4 = #0x0
-    v5 = #0x0
-    br 0x201ac
-  blk6 @ 0x2012e:
-    r11 = (r10 & #0x7ffffffc)
-    r8 = ((v2 - #0x20) & #0xffffffff)
     v6 = #0x0
     v7 = #0x0
-    v8 = #0x0
-    store32(v2, (sp + #0xffffffffffffffd8))
+    br 0x20182
+  blk5 @ 0x20128:
+    v6 = #0x0
+    v7 = #0x0
+    br 0x201ac
+  blk6 @ 0x2012e:
+    r11 = (v1 & #0x7ffffffc)
+    v8 = ((v3 - #0x20) & #0xffffffff)
+    v5 = #0x0
+    v6 = #0x0
+    v7 = #0x0
+    store32(v3, (sp + #0xffffffffffffffd8))
   blk7 @ 0x20148:
-    v9 = load32(((r8 + #0x20) & #0xffffffff))
-    v10 = ((r8 + #0x24) & #0xffffffff)
-    unsupported: ARM ldm r7, {r3, r5, r6, r7} at 0x20150
-    v11 = #0x20157
-    v12:r0, v13:r1 = call 0x20156(r0, r1, r2, r3)
-    v14 = (r5 & #0xffffffff)
-    v15 = (r6 & #0xffffffff)
-    v16 = #0x2015f
-    v17:r0, v18:r1 = call 0x2015e(v12, v13, v14, v15)
-    v19 = load32(((r8 + #0x14) & #0xffffffff))
-    v20 = (r7 & #0xffffffff)
-    v21 = #0x20169
-    v22:r0, v23:r1 = call 0x20168(v17, v18, v20, v19)
-    v24 = load32(((r8 + #0x18) & #0xffffffff))
-    v25 = load32((((r8 + #0x18) & #0xffffffff) + #0x4))
-    v26 = #0x20171
-    v4:r0, v5:r1 = call 0x20170(v22, v23, v24, v25)
-    v3 = ((r4 + #0x4) & #0xffffffff)
-    brif eq r11, v3 -> 0x20176
+    v9 = load32(((v8 + #0x20) & #0xffffffff))
+    v8 = ((v8 + #0x20) & #0xffffffff)
+    v10 = ((v8 + #0x4) & #0xffffffff)
+    v11 = load32(v10)
+    v12 = load32((v10 + #0x4))
+    v13 = load32((v10 + #0x8))
+    v14 = load32((v10 + #0xc))
+    v15:r0, v16:r1 = call 0x20156(v6, v7, v9, v11)
+    v19:r0, v20:r1 = call 0x2015e(v15, v16, v12, v13)
+    v23:r0, v24:r1 = call 0x20168(v19, v20, v14, load32(((v8 + #0x14) & #0xffffffff)))
+    v6:r0, v7:r1 = call 0x20170(v23, v24, load32(((v8 + #0x18) & #0xffffffff)), load32((((v8 + #0x18) & #0xffffffff) + #0x4)))
+    v5 = ((v5 + #0x4) & #0xffffffff)
+    brif eq r11, v5 -> 0x20176
   blk8 @ 0x20175:
     br 0x20148
   blk9 @ 0x20176:
-    v2 = load32((sp + #0xffffffffffffffd8))
-    brif ne r9, #0x0 -> 0x20182
+    v3 = load32((sp + #0xffffffffffffffd8))
+    brif ne v4, #0x0 -> 0x20182
   blk10 @ 0x20181:
     br 0x201ac
   blk11 @ 0x20182:
-    v28 = ((v2 + (v3 << #0x3)) & #0xffffffff)
-    v4:r0, v5:r1 = call 0x20190(v4, v5, load32(((v2 + (v3 << #0x3)) & #0xffffffff)), load32(((v28 + #0x4) & #0xffffffff)))
-    brif ne r9, #0x1 -> 0x20196
+    v28 = ((v3 + (v5 << #0x3)) & #0xffffffff)
+    v6:r0, v7:r1 = call 0x20190(v6, v7, load32(((v3 + (v5 << #0x3)) & #0xffffffff)), load32(((v28 + #0x4) & #0xffffffff)))
+    brif ne v4, #0x1 -> 0x20196
   blk12 @ 0x20195:
     br 0x201ac
   blk13 @ 0x20196:
-    v4:r0, v5:r1 = call 0x2019e(v4, v5, load32(((v28 + #0x8) & #0xffffffff)), load32((((v28 + #0x8) & #0xffffffff) + #0x4)))
-    brif ne r9, #0x2 -> 0x201a4
+    v6:r0, v7:r1 = call 0x2019e(v6, v7, load32(((v28 + #0x8) & #0xffffffff)), load32((((v28 + #0x8) & #0xffffffff) + #0x4)))
+    brif ne v4, #0x2 -> 0x201a4
   blk14 @ 0x201a3:
     br 0x201ac
   blk15 @ 0x201a4:
-    v4:r0, v5:r1 = call 0x201ac(v4, v5, load32(((v28 + #0x10) & #0xffffffff)), load32((((v28 + #0x10) & #0xffffffff) + #0x4)))
+    v6:r0, v7:r1 = call 0x201ac(v6, v7, load32(((v28 + #0x10) & #0xffffffff)), load32((((v28 + #0x10) & #0xffffffff) + #0x4)))
   blk16 @ 0x201ac:
-    v38:r0, v39:r1 = call 0x201b6(r10)
-    v44:r0, r1 = call 0x201c2(v4, v5, v38, v39)
-    v45 = r10
+    v38:r0, v39:r1 = call 0x201b6(v1)
+    v44:r0, r1 = call 0x201c2(v6, v7, v38, v39)
+    v45 = v1
     v46 = #0x0
-    brif gt r10, #0x0 -> 0x201ca
+    brif gt v1, #0x0 -> 0x201ca
   blk17 @ 0x201c9:
     v44 = #0x0
   blk18 @ 0x201ca:
@@ -235,12 +232,13 @@ fn average @ 0x20104 (size 206)
   blk20 @ 0x201cc:
     ret v44
 -- card
-{"addr":"0x20104","approxTokens":240,"blocks":21,"hardReasons":[],"name":"average","nameSources":["symtab","dwarf"],"section":".text","size":206,"unsupported":2}
+{"addr":"0x20104","approxTokens":240,"blocks":21,"hardReasons":[],"name":"average","nameSources":["symtab","dwarf"],"section":".text","size":206,"structures":["struct S1 { int32_t field_0x0; int32_t field_0x4; int32_t field_0x8; int32_t field_0xc; };"],"unsupported":1}
 
 == 0x201d4 lerp
 -- decompile
 /* velk pseudo-C: lerp @ 0x201d4 */
 float lerp(int32_t a0, int32_t a1, int32_t a2) {
+    uint64_t sp = velk_entry_stack_pointer();
     uint64_t v8;
     uint32_t v1;
     uint32_t v3;
@@ -249,6 +247,9 @@ float lerp(int32_t a0, int32_t a1, int32_t a2) {
     int32_t v6;
 
     /* unsupported: AAPCS32 multiword, floating-point or aggregate declaration */
+    *(uint32_t *)(sp - 0x10) = v3;
+    *(uint32_t *)(sp - 0xc) = v4;
+    *(uint32_t *)(sp - 0x8) = v5;
     int32_t v2 = a1;
     {
         uint64_t call_values[2];
@@ -259,9 +260,9 @@ float lerp(int32_t a0, int32_t a1, int32_t a2) {
     }
     int32_t v9 = (uint32_t)(sub_201e8((uint32_t)v6, (uint32_t)a2));
     float v12 = ((union { uint32_t bits; float value; }){ .bits = (uint32_t)(sub_201ee((uint32_t)v9, (uint32_t)a0)) }).value;
-    int32_t v13 = v3;
-    int32_t v14 = v4;
-    int32_t v15 = v5;
+    int32_t v13 = *(uint32_t *)(sp - 0x10);
+    int32_t v14 = *(uint32_t *)(sp - 0xc);
+    int32_t v15 = *(uint32_t *)(sp - 0x8);
     return v12;
 }
 -- signature
@@ -272,21 +273,24 @@ float (int32_t a0, int32_t a1, int32_t a2)
 fn lerp @ 0x201d4 (size 28)
   blk0 @ 0x201d4:
     unsupported: AAPCS32 multiword, floating-point or aggregate declaration
-    v1 = (r0 & #0xffffffff)
-    v2 = (r1 & #0xffffffff)
-    v3 = (v1 & #0xffffffff)
-    v4 = (r2 & #0xffffffff)
+    store32(r4, (sp + #0xfffffffffffffff0))
+    store32(r5, (sp + #0xfffffffffffffff4))
+    store32(r7, (sp + #0xfffffffffffffff8))
+    v1 = r0
+    v2 = r1
+    v3 = v1
+    v4 = r2
     v5 = #0x201e3
     v6:r0, r1 = call 0x201e2(v2, v3, r2, r3)
-    v7 = (v4 & #0xffffffff)
+    v7 = v4
     v8 = #0x201e9
     v9:r0, r1 = call 0x201e8(v6, v7)
-    v10 = (v1 & #0xffffffff)
+    v10 = v1
     v11 = #0x201ef
     v12:r0, r1 = call 0x201ee(v9, v10)
-    v13 = r4
-    v14 = r5
-    v15 = r7
+    v13 = load32((sp + #0xfffffffffffffff0))
+    v14 = load32((sp + #0xfffffffffffffff4))
+    v15 = load32((sp + #0xfffffffffffffff8))
     ret v12
 -- card
 {"addr":"0x201d4","approxTokens":162,"blocks":1,"hardReasons":[],"name":"lerp","nameSources":["symtab","dwarf"],"section":".text","size":28,"unsupported":1}
@@ -295,6 +299,7 @@ fn lerp @ 0x201d4 (size 28)
 -- decompile
 /* velk pseudo-C: truncate_to_int @ 0x201f0 */
 int32_t truncate_to_int(void) {
+    uint64_t sp = velk_entry_stack_pointer();
     uint64_t v1;
     uint64_t v4;
     uint32_t v5;
@@ -303,6 +308,7 @@ int32_t truncate_to_int(void) {
     int32_t v2;
 
     /* unsupported: AAPCS32 multiword, floating-point or aggregate declaration */
+    *(uint32_t *)(sp - 0x8) = v7;
     {
         uint64_t call_values[2];
         call_values[0] = sub_201f6((uint32_t)v1, v4, v5, v6);
@@ -310,7 +316,7 @@ int32_t truncate_to_int(void) {
         v2 = (uint32_t)(call_values[0]);
         v4 = (uint32_t)(call_values[1]);
     }
-    int32_t v3 = v7;
+    int32_t v3 = *(uint32_t *)(sp - 0x8);
     return v2;
 }
 -- signature
@@ -321,9 +327,10 @@ int32_t ()
 fn truncate_to_int @ 0x201f0 (size 8)
   blk0 @ 0x201f0:
     unsupported: AAPCS32 multiword, floating-point or aggregate declaration
+    store32(r7, (sp + #0xfffffffffffffff8))
     v1 = #0x201f7
     v2:r0, r1 = call 0x201f6(r0, r1, r2, r3)
-    v3 = r7
+    v3 = load32((sp + #0xfffffffffffffff8))
     ret v2
 -- card
 {"addr":"0x201f0","approxTokens":114,"blocks":1,"hardReasons":[],"name":"truncate_to_int","nameSources":["symtab","dwarf"],"section":".text","size":8,"unsupported":1}
@@ -332,6 +339,7 @@ fn truncate_to_int @ 0x201f0 (size 8)
 -- decompile
 /* velk pseudo-C: widen @ 0x201f8 */
 double widen(void) {
+    uint64_t sp = velk_entry_stack_pointer();
     uint64_t v1;
     uint64_t v6;
     uint32_t v9;
@@ -339,12 +347,13 @@ double widen(void) {
     uint32_t v11;
 
     /* unsupported: AAPCS32 multiword, floating-point or aggregate declaration */
+    *(uint32_t *)(sp - 0x8) = v11;
     int32_t v2 = (uint32_t)(sub_201fe((uint32_t)v1, v6, v9, v10));
     int32_t v3 = (uint32_t)(v6); /* also returned by the call */
     int32_t v4 = v2;
     int32_t v5 = v3;
     double v7 = ((union { uint64_t bits; double value; }){ .bits = (uint32_t)(sub_20206((uint32_t)v2, (uint32_t)v3, (uint32_t)v4, (uint32_t)v5)) }).value;
-    int32_t v8 = v11;
+    int32_t v8 = *(uint32_t *)(sp - 0x8);
     return ((union { uint64_t bits; double value; }){ .bits = (uint32_t)((union { double value; uint64_t bits; }){ .value = v7 }).bits }).value;
 }
 -- signature
@@ -355,13 +364,14 @@ double ()
 fn widen @ 0x201f8 (size 16)
   blk0 @ 0x201f8:
     unsupported: AAPCS32 multiword, floating-point or aggregate declaration
+    store32(r7, (sp + #0xfffffffffffffff8))
     v1 = #0x201ff
     v2:r0, v3:r1 = call 0x201fe(r0, r1, r2, r3)
-    v4 = (v2 & #0xffffffff)
-    v5 = (v3 & #0xffffffff)
+    v4 = v2
+    v5 = v3
     v6 = #0x20207
     v7:r0, r1 = call 0x20206(v2, v3, v4, v5)
-    v8 = r7
+    v8 = load32((sp + #0xfffffffffffffff8))
     ret v7
 -- card
 {"addr":"0x201f8","approxTokens":132,"blocks":1,"hardReasons":[],"name":"widen","nameSources":["symtab","dwarf"],"section":".text","size":16,"unsupported":1}
@@ -421,18 +431,18 @@ fn compare_doubles @ 0x20208 (size 50)
     store32(r7, (sp + #0xfffffffffffffff4))
     store32(r8, (sp + #0xfffffffffffffff8))
     store32(lr, (sp + #0xfffffffffffffffc))
-    v1 = (r3 & #0xffffffff)
-    v2 = (r2 & #0xffffffff)
-    v3 = (r1 & #0xffffffff)
-    v4 = (r0 & #0xffffffff)
+    v1 = r3
+    v2 = r2
+    v3 = r1
+    v4 = r0
     v5 = #0x20219
     v6:r0, r1 = call 0x20218
-    v7 = (v6 & #0xffffffff)
+    v7 = v6
     v8 = v6
-    r0 = (v4 & #0xffffffff)
-    r1 = (v3 & #0xffffffff)
-    r2 = (v2 & #0xffffffff)
-    r3 = (v1 & #0xffffffff)
+    r0 = v4
+    r1 = v3
+    r2 = v2
+    r3 = v1
     brif eq v8, #0x0 -> 0x20228
   blk1 @ 0x20227:
     v7 = #0x1
@@ -442,6 +452,6 @@ fn compare_doubles @ 0x20208 (size 50)
   blk3 @ 0x20231:
     v7 = #0xffffffff
   blk4 @ 0x20234:
-    ret (v7 & #0xffffffff)
+    ret v7
 -- card
 {"addr":"0x20208","approxTokens":216,"blocks":5,"hardReasons":[],"name":"compare_doubles","nameSources":["symtab","dwarf"],"section":".text","size":50,"unsupported":1}

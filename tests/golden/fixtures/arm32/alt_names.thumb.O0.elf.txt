@@ -39,11 +39,12 @@ int (int x)
 -- ir
 fn alt_helper @ 0x20104 (size 48)
   blk0 @ 0x20104:
+    v2 = r0
     v3 = #0x0
     v4 = #0x0
     br 0x20110
   blk1 @ 0x20110:
-    brif lt v4, r0 -> 0x20118
+    brif lt v4, v2 -> 0x20118
   blk2 @ 0x20117:
     br 0x2012e
   blk3 @ 0x20118:

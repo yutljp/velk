@@ -93,10 +93,7 @@ mod tests {
             }
         }
         let address = binary(BinOp::Add, Expr::reg(sp, 64), Expr::Const(1));
-        assert_eq!(
-            super::super::frame_slot(&address, i64::MAX, sp),
-            Some(i64::MIN)
-        );
+        assert_eq!(super::super::frame_slot(&address, i64::MAX, sp), None);
         assert_eq!(checked_frame_slot(&address, i64::MAX, sp), None);
     }
 }

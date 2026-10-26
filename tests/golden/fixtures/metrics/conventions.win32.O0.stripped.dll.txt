@@ -103,12 +103,12 @@ int32_t ()
 -- ir
 fn call_conventions @ 0x10001080 (size 126)
   blk0 @ 0x10001080:
-    v1:eax, edx = call 0x10001000(load32((esp + #0x4)), #0x1)
-    v2:eax, edx = call 0x10001020(load32((esp + #0x4)), #0x2)
+    v1:eax = call 0x10001000(load32((esp + #0x4)), #0x1)
+    v2:eax = call 0x10001020(load32((esp + #0x4)), #0x2)
     store32((v1 + (v2 & #0xffffffff)), (esp + #0xfffffffffffffff4))
-    v1:eax, edx = call 0x10001040(load32((esp + #0x4)), #0x3, #0x4)
+    v1:eax = call 0x10001040(load32((esp + #0x4)), #0x3, #0x4)
     store32((load32((esp + #0xfffffffffffffff4)) + (v1 & #0xffffffff)), (esp + #0xfffffffffffffff8))
-    v1:eax, edx = call 0x10001060(load32((esp + #0x4)), #0x5)
+    v1:eax = call 0x10001060(load32((esp + #0x4)), #0x5)
     ret ((load32((esp + #0xfffffffffffffff8)) + (v1 & #0xffffffff)) & #0xffffffff)
 -- card
 {"addr":"0x10001080","approxTokens":240,"blocks":1,"hardReasons":[],"name":"call_conventions","nameSources":["dynamic"],"section":".text","size":126,"sizeEstimated":true,"unsupported":0}

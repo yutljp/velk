@@ -622,3 +622,77 @@ fn inventory_matches_the_reviewed_sources() {
         );
     }
 }
+
+#[test]
+fn nested_frame_offsets_and_alias_differences_are_equivalent() {
+    if !Proofs::available() {
+        return;
+    }
+    let mut proofs = Proofs::default();
+    for isa in [Isa::I386, Isa::Arm32] {
+        let sp = crate::arch::stack_pointer(isa);
+        for first in [-512i64, -13, 0, 4, 256] {
+            for second in [-32i64, 0, 12, 1024] {
+                let nested = bin(
+                    BinOp::Sub,
+                    bin(BinOp::Add, Expr::reg(sp, 64), Expr::Const(first as u64)),
+                    Expr::Const(second as u64),
+                );
+                let offset = crate::passes::frame_slots::frame_slot(&nested, 0, sp).unwrap();
+                let canonical = bin(BinOp::Add, Expr::reg(sp, 64), Expr::Const(offset as u64));
+                proofs.expression(
+                    format!("frame offset/{isa:?}/{first}/{second}"),
+                    &nested,
+                    &canonical,
+                    64,
+                );
+                let before = FunctionIr::single_block(
+                    isa,
+                    vec![
+                        Stmt::Assign {
+                            dest: RegRef {
+                                index: 0,
+                                width: 64,
+                            },
+                            value: nested,
+                        },
+                        Stmt::Assign {
+                            dest: RegRef {
+                                index: 1,
+                                width: 64,
+                            },
+                            value: bin(BinOp::Add, Expr::reg(sp, 64), Expr::Const(7)),
+                        },
+                        Stmt::Ret {
+                            value: bin(BinOp::Sub, Expr::reg(0, 64), Expr::reg(1, 64)),
+                        },
+                    ],
+                );
+                let mut after = before.clone();
+                crate::passes::frame_slots::settle(&mut after);
+                proofs.program(
+                    format!("frame aliases/{isa:?}/{first}/{second}"),
+                    &before.blocks[0].stmts,
+                    &after.blocks[0].stmts,
+                );
+            }
+        }
+    }
+    proofs.check();
+}
+
+#[test]
+fn word_pair_join_is_equivalent() {
+    if !Proofs::available() {
+        return;
+    }
+    let mut proofs = Proofs::default();
+    let joined = crate::lift::pairs32::join(Expr::reg(0, 32), Expr::reg(1, 32));
+    let expected = format!(
+        "(concat ((_ extract 31 0) {}) ((_ extract 31 0) {}))",
+        super::term(&Expr::reg(1, 32)),
+        super::term(&Expr::reg(0, 32))
+    );
+    proofs.predicate("join words", &expected, &super::term(&joined));
+    proofs.check();
+}

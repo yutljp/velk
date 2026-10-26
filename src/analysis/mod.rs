@@ -7,13 +7,14 @@ mod indirect;
 mod jump_table;
 pub(crate) mod navigation;
 mod optimization;
+mod pairs32;
 pub mod prototypes;
 pub mod refs;
 pub(crate) mod results;
 #[cfg(test)]
 mod semantics_tests;
 pub(crate) mod shared_structures;
-mod signature;
+pub(crate) mod signature;
 mod structures;
 pub(crate) mod summary;
 pub(crate) mod typing;
@@ -1111,7 +1112,34 @@ fn lift_function(image: &Image, function: &Function) -> Result<Lifted, LiftError
     let types = crate::loader::dwarf::function_types(image, function.addr);
     let declared_signature = types.as_ref().and_then(abi::declaration);
     // A function returning a float returns it in xmm0 or v0.
-    let declared = types.as_ref().and_then(|types| types.ret.as_ref());
+    let inferred = if types.is_none() {
+        crate::lift::pairs32::definition_types(image, function.addr)
+    } else {
+        None
+    };
+    let declared = types
+        .as_ref()
+        .and_then(|types| types.ret.as_ref())
+        .or_else(|| inferred.as_ref().map(|(_, ret)| ret));
+    if matches!(
+        image.isa,
+        crate::loader::Isa::I386 | crate::loader::Isa::Arm32
+    ) && declared.is_some_and(crate::lift::pairs32::wide)
+    {
+        let high = if image.isa == crate::loader::Isa::I386 {
+            2
+        } else {
+            1
+        };
+        for stmt in blocks.iter_mut().flat_map(|block| &mut block.stmts) {
+            if let Stmt::Ret { value } = stmt {
+                *value = crate::lift::pairs32::join(
+                    crate::ir::Expr::reg(0, 32),
+                    crate::ir::Expr::reg(high, 32),
+                );
+            }
+        }
+    }
     // A function of Go's assembly ABI returns what it writes past its
     // arguments.
     let stack_results = stack_results(image, function.addr);
@@ -1322,7 +1350,7 @@ fn lift_function(image: &Image, function: &Function) -> Result<Lifted, LiftError
                 }
                 .to_owned(),
             ),
-            None => signature.ret,
+            None => inferred.map_or(signature.ret, |(_, ret)| ret),
         },
         accesses: signature.accesses,
         members: Vec::new(),

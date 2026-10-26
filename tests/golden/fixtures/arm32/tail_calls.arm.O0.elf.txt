@@ -38,8 +38,8 @@ int (int x)
 -- ir
 fn tail_two @ 0x20124 (size 36)
   blk0 @ 0x20124:
-    v3:r0, r1 = call 0x200f4(((r0 + #0x2) & #0xffffffff))
-    ret v3
+    v2:r0, r1 = call 0x200f4(((r0 + #0x2) & #0xffffffff))
+    ret v2
 -- card
 {"addr":"0x20124","approxTokens":150,"blocks":1,"hardReasons":[],"name":"tail_two","nameSources":["symtab","dwarf"],"section":".text","size":36,"unsupported":0}
 

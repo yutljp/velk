@@ -6,6 +6,9 @@
 /* velk prelude */
 #include <stdint.h>
 
+extern int g_counter; /* address: 0x301f8 */
+extern uint32_t banner; /* address: 0x301f4 */
+
 uint64_t sub_20190();
 uint64_t sub_201b0();
 /* end velk prelude */
@@ -69,17 +72,18 @@ fn array_sum @ 0x20140 (size 124)
 == 0x201bc bump
 -- decompile
 /* velk pseudo-C: bump @ 0x201bc */
+/* ref: 0x301f8 .bss */
 void bump(void) {
-    *(uint32_t *)(0x201cc + *(uint32_t *)(0x201d8)) = *(uint32_t *)(0x201d0 + *(uint32_t *)(0x201dc)) + 1;
+    g_counter += 1;
 }
 -- signature
 void ()
 -- references
-
+0x301f8 .bss
 -- ir
 fn bump @ 0x201bc (size 36)
   blk0 @ 0x201bc:
-    store32((load32(((#0x201d0 + load32(#0x201dc)) & #0xffffffff)) + #0x1), ((#0x201cc + load32(#0x201d8)) & #0xffffffff))
+    store32((load32(#0x301f8) + #0x1), #0x301f8)
     ret #0x0
 -- card
 {"addr":"0x201bc","approxTokens":138,"blocks":1,"hardReasons":[],"name":"bump","nameSources":["symtab","dwarf"],"section":".text","size":36,"unsupported":0}
@@ -87,17 +91,17 @@ fn bump @ 0x201bc (size 36)
 == 0x201e0 banner_first
 -- decompile
 /* velk pseudo-C: banner_first @ 0x201e0 */
+/* ref: 0x301f4 .data */
 int banner_first(void) {
-    return *(uint8_t *)(*(uint32_t *)(0x201ec + *(uint32_t *)(0x201f0)));
+    return *(uint8_t *)(banner);
 }
 -- signature
 int ()
 -- references
-
+0x301f4 .data
 -- ir
 fn banner_first @ 0x201e0 (size 20)
   blk0 @ 0x201e0:
-    v1 = load8(load32(((#0x201ec + load32(#0x201f0)) & #0xffffffff)))
-    ret v1
+    ret (load8(load32(#0x301f4)) & #0xffffffff)
 -- card
 {"addr":"0x201e0","approxTokens":120,"blocks":1,"hardReasons":[],"name":"banner_first","nameSources":["symtab","dwarf"],"section":".text","size":20,"unsupported":0}

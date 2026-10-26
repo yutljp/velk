@@ -97,6 +97,14 @@ pub(super) fn stubs(file: &ObjFile) -> Vec<(u64, String)> {
             object::Architecture::I386 => x86_slots_mode(bytes, section.address(), 32, got),
             object::Architecture::X86_64 => x86_slots(bytes, section.address()),
             object::Architecture::Aarch64 => aarch64_slots(bytes, section.address()),
+            object::Architecture::Arm if file.is_little_endian() => {
+                for (at, slot) in arm_slots(bytes, section.address()) {
+                    if let Some(import) = slots.get(&slot) {
+                        stubs.push((at, import.clone()));
+                    }
+                }
+                continue;
+            }
             _ => Vec::new(),
         };
         for (at, slot) in found {
@@ -108,6 +116,42 @@ pub(super) fn stubs(file: &ObjFile) -> Vec<(u64, String)> {
     stubs.sort();
     stubs.dedup_by_key(|(address, _)| *address);
     stubs
+}
+
+fn arm_slots(bytes: &[u8], base: u64) -> Vec<(u64, u64)> {
+    let words: Vec<u32> = bytes
+        .as_chunks::<4>()
+        .0
+        .iter()
+        .map(|word| u32::from_le_bytes(*word))
+        .collect();
+    let mut slots = Vec::new();
+    for (index, instructions) in words.windows(3).enumerate() {
+        let [first, second, third] = instructions else {
+            continue;
+        };
+        // add ip, pc, #imm; add ip, ip, #imm; ldr pc, [ip, #imm]!
+        if first & 0xffff_f000 != 0xe28f_c000
+            || second & 0xffff_f000 != 0xe28c_c000
+            || third & 0xffff_f000 != 0xe5bc_f000
+        {
+            continue;
+        }
+        let Some(pc) = (index as u64)
+            .checked_mul(4)
+            .and_then(|offset| base.checked_add(offset))
+            .filter(|pc| *pc <= u64::from(u32::MAX) - 8)
+        else {
+            continue;
+        };
+        let immediate = |word: u32| (word & 255).rotate_right(((word >> 8) & 15) * 2);
+        let slot = (pc as u32 + 8)
+            .wrapping_add(immediate(*first))
+            .wrapping_add(immediate(*second))
+            .wrapping_add(third & 4095);
+        slots.push((pc, u64::from(slot)));
+    }
+    slots
 }
 
 /// `(address, imported name)` for each entry of a Mach-O image's sections

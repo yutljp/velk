@@ -7,13 +7,19 @@ The rendered-C tests also need Clang and uv. Python runs through
 `uv run --no-project tests/smt_c.py` and uses only the standard library.
 velk has no additional runtime dependencies.
 
-The [inventory](../tests/smt_inventory.tsv) records 124 grouped rewrite
+The [inventory](../tests/smt_inventory.tsv) records 134 grouped rewrite
 families, source locations, side conditions, applicable widths and current
-coverage. Forty-seven rows have symbolic template or instance checks, 76 have
-open or partial coverage, and one is a nondeterministic refinement rather
-than equality. These counts describe inventory rows, not individual match
-arms or universal proofs of every rule. The inventory is not a completeness
-certificate for every expression transformation in the repository.
+coverage. Rows distinguish symbolic template or instance checks, open or
+partial coverage, and nondeterministic refinement rather than equality.
+These counts describe inventory rows, not individual match arms or universal
+proofs of every rule. The inventory is not a completeness certificate for every
+expression transformation in the repository.
+
+ARM32 checks include symbolic zero, sign and carry flags for carry arithmetic,
+immediate shifted carry extraction, and long multiplication with accumulation.
+Word joining and nested frame offsets have symbolic checks. Frame alias
+subtraction is checked through the real settling pass. Calls, ABI placement,
+image-backed literal reads, frame alignment and general control flow remain open.
 
 ## Connection to the implementation
 

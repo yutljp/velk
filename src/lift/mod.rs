@@ -1,5 +1,6 @@
 mod aarch64;
 mod arm32;
+pub(crate) use arm32::fold_literals;
 pub(crate) use arm32::listing as arm32_listing;
 #[cfg(test)]
 mod atomic_tests;
@@ -7,6 +8,7 @@ mod exits;
 mod flags;
 #[cfg(test)]
 mod hardware;
+pub(crate) mod pairs32;
 mod stack_results;
 mod windows;
 mod x86_64;
@@ -72,6 +74,14 @@ struct CarriedFlags {
 }
 
 const ZERO_CARRIED: u16 = crate::ir::TEMP_BASE + 0x4c;
+
+fn zero_carried(isa: Isa) -> u16 {
+    if isa == Isa::Arm32 {
+        crate::ir::TEMP_BASE + 0x54
+    } else {
+        ZERO_CARRIED
+    }
+}
 
 /// What lifting needs to know of the functions a body calls.
 pub type Summaries<'a> = &'a dyn Fn(u64) -> Summary;
@@ -201,12 +211,60 @@ pub fn lift_with(
     extra_targets: &HashSet<u64>,
     summaries: Summaries<'_>,
 ) -> Result<Vec<Block>, LiftError> {
+    let lifted = lift_unpaired(image, addr, size, extra_targets, summaries);
+    lifted.map(|mut blocks| {
+        if matches!(image.isa, Isa::I386 | Isa::Arm32) {
+            for block in &mut blocks {
+                let mut statements = Vec::new();
+                for mut stmt in std::mem::take(&mut block.stmts) {
+                    let target = match &stmt {
+                        Stmt::Call { target, .. } => *target,
+                        _ => None,
+                    };
+                    let pair = pairs32::call(image, target, &mut stmt);
+                    let word_remainder = pairs32::word_remainder(image, target, &mut stmt);
+                    let remainder = if (pair || word_remainder) && image.isa == Isa::Arm32 {
+                        pairs32::remainder_arguments(image, target, &mut stmt)
+                    } else {
+                        None
+                    };
+                    if let Some(captures) = &remainder {
+                        statements.extend(captures.iter().cloned());
+                    }
+                    statements.push(stmt);
+                    if remainder.is_some() {
+                        statements.push(pairs32::remainder_value());
+                    }
+                    if pair {
+                        statements.extend(pairs32::split_result(image.isa));
+                    }
+                    if word_remainder {
+                        statements.extend(pairs32::split_word_result());
+                    } else if remainder.is_some() {
+                        statements.extend(pairs32::split_remainder());
+                    }
+                }
+                block.stmts = statements;
+            }
+        }
+        drop_stack_probes(&mut blocks, image);
+        blocks
+    })
+}
+
+pub(super) fn lift_unpaired(
+    image: &Image,
+    addr: u64,
+    size: u64,
+    extra_targets: &HashSet<u64>,
+    summaries: Summaries<'_>,
+) -> Result<Vec<Block>, LiftError> {
     let summaries: Summaries<'_> = &|target| calling(summaries(target));
     let addr = image.code_address(addr);
     let Some(bytes) = image.read_vaddr(addr, size) else {
         return Err(LiftError::Unreadable);
     };
-    let lifted = match image.isa {
+    match image.isa {
         Isa::Arm32 => arm32::lift(image, addr, bytes, extra_targets, summaries),
         Isa::AArch64 => {
             let mut blocks = match lift_continuing(
@@ -275,11 +333,7 @@ pub fn lift_with(
             Ok(blocks)
         }
         Isa::Unsupported => Err(LiftError::UnsupportedIsa),
-    };
-    lifted.map(|mut blocks| {
-        drop_stack_probes(&mut blocks, image);
-        blocks
-    })
+    }
 }
 
 /// Drops the calls to the stack probe compilers place before they grow a
@@ -1110,7 +1164,7 @@ fn carry_flags(
     carried
 }
 
-/// An x86 join may have a known zero flag even when its predecessors set it
+/// A join may have a known zero flag even when its predecessors set it
 /// with different operations or widths.
 fn carry_zero(
     isa: Isa,
@@ -1120,7 +1174,7 @@ fn carry_zero(
     predecessors: &[Vec<usize>],
     carried: &mut CarriedFlags,
 ) {
-    if isa != Isa::X86_64 {
+    if !matches!(isa, Isa::X86_64 | Isa::I386 | Isa::Arm32) {
         return;
     }
     let zero = |exit: &Exit| {
@@ -1180,9 +1234,10 @@ fn carry_zero(
         {
             continue;
         }
-        carried
-            .entry
-            .insert(block.start, flags::Flags::zero(Expr::reg(ZERO_CARRIED, 64)));
+        carried.entry.insert(
+            block.start,
+            flags::Flags::zero(Expr::reg(zero_carried(isa), 64)),
+        );
         let mut work = predecessors[index].clone();
         let mut seen = HashSet::new();
         while let Some(pred) = work.pop() {
@@ -1203,6 +1258,7 @@ fn carry_zero(
 /// the branch that leaves it.
 fn finish_block<M: Machine>(
     machine: &M,
+    isa: Isa,
     start: u64,
     mut stmts: Vec<Stmt>,
     carried: &CarriedFlags,
@@ -1239,7 +1295,7 @@ fn finish_block<M: Machine>(
     if carried.zero_exporters.contains(&start)
         && let Some(flags) = &exit
         && let Some(value) = flags
-            .test(crate::ir::Cond::Eq, Isa::X86_64)
+            .test(crate::ir::Cond::Eq, isa)
             .select(Expr::constant(1), Expr::constant(0))
     {
         let at = stmts
@@ -1259,7 +1315,7 @@ fn finish_block<M: Machine>(
             at,
             Stmt::Assign {
                 dest: RegRef {
-                    index: ZERO_CARRIED,
+                    index: zero_carried(isa),
                     width: 64,
                 },
                 value,
@@ -1327,6 +1383,7 @@ fn build<M: Machine>(
                 let stmts = std::mem::take(&mut pending);
                 blocks.push(finish_block(
                     &machine,
+                    image.isa,
                     block_start,
                     stmts,
                     carried,
@@ -1353,6 +1410,7 @@ fn build<M: Machine>(
                 let stmts = std::mem::take(&mut pending);
                 blocks.push(finish_block(
                     &machine,
+                    image.isa,
                     block_start,
                     stmts,
                     carried,
@@ -1369,6 +1427,7 @@ fn build<M: Machine>(
             let stmts = std::mem::take(&mut pending);
             blocks.push(finish_block(
                 &machine,
+                image.isa,
                 block_start,
                 stmts,
                 carried,

@@ -1,4 +1,4 @@
-# arm32/alt_names.thumb.O2.elf: elf arm32 no entry, 2 functions, 0 lift failures, 2 unsupported, 0 gotos
+# arm32/alt_names.thumb.O2.elf: elf arm32 no entry, 2 functions, 0 lift failures, 0 unsupported, 0 gotos
 0x200ec 6 alt_sum3 symtab,dwarf
 0x200f4 56 alt_helper symtab,dwarf
 /* velk prelude */
@@ -26,27 +26,16 @@ fn alt_sum3 @ 0x200ec (size 6)
 -- decompile
 /* velk pseudo-C: alt_helper @ 0x200f4 */
 int alt_helper(int x) {
-    uint32_t v6;
-    uint32_t v8;
-
     int32_t v1 = x;
     int32_t v2 = 1;
     if (x < 1) {
         x = 0;
     }
     if (v1 >= v2) {
-        int32_t v3 = (uint32_t)x - 1;
-        int32_t v4 = (uint32_t)x - 2;
-        /* unsupported: ARM umull.w r1, r2, r1, r2 at 0x20100 */
-        uint32_t v5 = v8 & 0x1;
-        int32_t v7 = v6 * ((uint32_t)x - 3) >> 1;
-        int32_t v9 = x + (uint32_t)v7 * 0x55555556;
-        int32_t v10 = v5 >> 1;
-        /* unsupported: ARM rrx r1, r1 at 0x2011e */
-        int32_t v11 = v6 * 3;
-        int32_t v12 = (uint32_t)x + v11;
-        int32_t v13 = (uint32_t)v12 - 1;
-        return v13;
+        uint64_t v3 = (uint64_t)((uint32_t)x - 1) * ((uint32_t)x - 2);
+        uint32_t v4 = v3;
+        uint8_t v5 = v3 >> 32;
+        return x + (v4 * ((uint32_t)x - 3) >> 1) * 0x55555556 + (v4 >> 1 | (uint64_t)((v5 & 0x1 ^ 0x1) == 0) << 31) * 3 - 1;
     }
     return x;
 }
@@ -67,19 +56,9 @@ fn alt_helper @ 0x200f4 (size 56)
   blk3 @ 0x200fb:
     ret r0
   blk4 @ 0x200fc:
-    v3 = ((r0 - #0x1) & #0xffffffff)
-    v4 = ((r0 - #0x2) & #0xffffffff)
-    unsupported: ARM umull.w r1, r2, r1, r2 at 0x20100
-    v5 = (r2 & #0x1)
-    v6 = #0x5556
-    v7 = ((((r1 * (r0 - #0x3)) & #0xffffffff) >> #0x1) & #0xffffffff)
-    v8 = #0x55555556
-    v9 = ((r0 + (v7 * #0x55555556)) & #0xffffffff)
-    v10 = ((v5 >> #0x1) & #0xffffffff)
-    unsupported: ARM rrx r1, r1 at 0x2011e
-    v11 = ((r1 * #0x3) & #0xffffffff)
-    v12 = ((r0 + v11) & #0xffffffff)
-    v13 = ((v12 - #0x1) & #0xffffffff)
-    ret v13
+    v3 = (((r0 - #0x1) & #0xffffffff) * ((r0 - #0x2) & #0xffffffff))
+    v4 = (v3 & #0xffffffff)
+    v5 = (v3 >> #0x20)
+    ret (((((r0 + ((((v4 * (r0 - #0x3)) & #0xffffffff) >> #0x1) * #0x55555556)) & #0xffffffff) + (((v4 >> #0x1) | (select eq ((v5 & #0x1) ^ #0x1), #0x0 ? #0x1, #0x0 << #0x1f)) * #0x3)) - #0x1) & #0xffffffff)
 -- card
-{"addr":"0x200f4","approxTokens":216,"blocks":5,"hardReasons":[],"name":"alt_helper","nameSources":["symtab","dwarf"],"section":".text","size":56,"unsupported":2}
+{"addr":"0x200f4","approxTokens":216,"blocks":5,"hardReasons":[],"name":"alt_helper","nameSources":["symtab","dwarf"],"section":".text","size":56,"unsupported":0}

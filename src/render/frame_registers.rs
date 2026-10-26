@@ -50,6 +50,37 @@ pub(super) fn rebase(ir: &mut FunctionIr) {
     drop_unread_frame_addresses(ir, sp);
 }
 
+pub(super) fn drop_unused_adjustments(body: &mut String, name: &str) {
+    let adjustment = |line: &str| {
+        let words: Vec<_> = line.split_whitespace().collect();
+        let [dest, "=", source, "+" | "-", delta] = words.as_slice() else {
+            return false;
+        };
+        let Some(delta) = delta.strip_suffix(';') else {
+            return false;
+        };
+        let constant = match delta.strip_prefix("0x") {
+            Some(hex) => u64::from_str_radix(hex, 16).is_ok(),
+            None => delta.parse::<u64>().is_ok(),
+        };
+        *dest == name && *source == name && constant
+    };
+    if body
+        .lines()
+        .any(|line| super::variables::mentions(line, name) && !adjustment(line))
+    {
+        return;
+    }
+    let mut retained = String::new();
+    for line in body.lines() {
+        if !adjustment(line) {
+            retained.push_str(line);
+            retained.push('\n');
+        }
+    }
+    *body = retained;
+}
+
 /// Drops the assignments of local addresses to variables nothing reads
 /// once their uses are rewritten: such an address goes nowhere, and kept,
 /// it would count as one taken.

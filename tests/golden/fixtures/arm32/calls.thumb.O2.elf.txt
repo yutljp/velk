@@ -1,4 +1,4 @@
-# arm32/calls.thumb.O2.elf: elf arm32 no entry, 11 functions, 0 lift failures, 2 unsupported, 0 gotos
+# arm32/calls.thumb.O2.elf: elf arm32 no entry, 11 functions, 0 lift failures, 0 unsupported, 0 gotos
 0x20134 4 twice symtab,dwarf
 0x20138 4 square symtab,dwarf
 0x2013c 26 pick_op symtab,dwarf
@@ -19,7 +19,6 @@ uint64_t is_odd();
 uint64_t square();
 uint64_t sum9();
 uint64_t twice();
-uint64_t velk_entry_stack_pointer(void); /* target entry stack pointer */
 /* end velk prelude */
 
 == 0x20134 twice
@@ -85,17 +84,13 @@ fn pick_op @ 0x2013c (size 26)
 -- decompile
 /* velk pseudo-C: apply_table @ 0x20158 */
 int apply_table(unsigned int index, int x) {
-    uint32_t v1;
-
-    /* unsupported: ARM umull.w r2, r3, r0, r2 at 0x20160 */
-    int32_t v3 = v1 >> 1;
-    int32_t v4 = (uint32_t)v3 * 3;
-    int32_t v5 = v4;
-    int32_t v6 = index - v4;
-    if (index != v5 && v6 == 1) {
-        return ((int32_t)(square((uint32_t)x)));
+    int32_t v3 = ((uint64_t)index * 0xaaaaaaab >> 32 >> 1) * 3;
+    int32_t v5 = index - v3;
+    int32_t v7 = x;
+    if (index != v3 && v5 == 1) {
+        return ((int32_t)(square((uint32_t)v7)));
     }
-    return ((int32_t)(twice((uint32_t)x)));
+    return ((int32_t)(twice((uint32_t)v7)));
 }
 -- signature
 int (unsigned int index, int x)
@@ -104,30 +99,24 @@ int (unsigned int index, int x)
 -- ir
 fn apply_table @ 0x20158 (size 36)
   blk0 @ 0x20158:
-    v1 = #0xaaab
-    v2 = #0xaaaaaaab
-    unsupported: ARM umull.w r2, r3, r0, r2 at 0x20160
-    v3 = ((r3 >> #0x1) & #0xffffffff)
-    v4 = ((v3 * #0x3) & #0xffffffff)
-    v5 = v4
-    v6 = ((r0 - v4) & #0xffffffff)
-    v7 = r0
-    v8 = (r1 & #0xffffffff)
-    brif ne v7, v5 -> 0x20170
+    v3 = ((((r0 * #0xaaaaaaab) >> #0x20) >> #0x1) * #0x3)
+    v5 = ((r0 - v3) & #0xffffffff)
+    v7 = r1
+    brif ne r0, v3 -> 0x20170
   blk1 @ 0x2016f:
     br 0x20178
   blk2 @ 0x20170:
-    brif eq v6, #0x1 -> 0x20174
+    brif eq v5, #0x1 -> 0x20174
   blk3 @ 0x20173:
     br 0x20178
   blk4 @ 0x20174:
-    v9:r0 = call 0x20138(v8)
-    ret v9
+    v7:r0 = call 0x20138(v7)
+    ret v7
   blk5 @ 0x20178:
-    v10:r0 = call 0x20134(v8)
-    ret v10
+    v7:r0 = call 0x20134(v7)
+    ret v7
 -- card
-{"addr":"0x20158","approxTokens":168,"blocks":6,"hardReasons":[],"name":"apply_table","nameSources":["symtab","dwarf"],"section":".text","size":36,"unsupported":1}
+{"addr":"0x20158","approxTokens":168,"blocks":6,"hardReasons":[],"name":"apply_table","nameSources":["symtab","dwarf"],"section":".text","size":36,"unsupported":0}
 
 == 0x2017c apply_pointer
 -- decompile
@@ -227,11 +216,11 @@ fn factorial @ 0x20188 (size 96)
     v3 = #0x1
   blk8 @ 0x201a8:
     v3 = ((r0 * v3) & #0xffffffff)
-    v8 = (r0 - #0x2)
+    v8 = ((r0 - #0x2) & #0xffffffff)
     v3 = (((r0 - #0x1) * v3) & #0xffffffff)
     v10 = (r0 - #0x3)
     r0 = ((r0 - #0x4) & #0xffffffff)
-    v6 = (v6 - #0x4)
+    v6 = ((v6 - #0x4) & #0xffffffff)
     v3 = ((v10 * (v8 * v3)) & #0xffffffff)
     brif eq v6, #0x0 -> 0x201c2
   blk9 @ 0x201c1:
@@ -256,7 +245,7 @@ fn factorial @ 0x20188 (size 96)
   blk17 @ 0x201e3:
     v3 = ((r0 * v3) & #0xffffffff)
   blk18 @ 0x201e4:
-    ret (v3 & #0xffffffff)
+    ret v3
 -- card
 {"addr":"0x20188","approxTokens":240,"blocks":19,"hardReasons":[],"name":"factorial","nameSources":["symtab","dwarf"],"section":".text","size":96,"unsupported":0}
 
@@ -345,7 +334,7 @@ int32_t (int32_t a, int32_t b, int32_t c, int32_t d)
 -- ir
 fn sum9 @ 0x20208 (size 32)
   blk0 @ 0x20208:
-    ret (((((((((r0 + r1) + r2) + r3) + load32(sp)) + load32((sp + #0x4))) + load32((sp + #0x8))) + load32((sp + #0xc))) + load32((sp + #0x10))) & #0xffffffff)
+    ret ((((((((((r0 + r1) + r2) + r3) + load32(sp)) + load32((sp + #0x4))) + load32((sp + #0x8))) & #0xffffffff) + load32((sp + #0xc))) + load32((sp + #0x10))) & #0xffffffff)
 -- card
 {"addr":"0x20208","approxTokens":174,"blocks":1,"hardReasons":[],"name":"sum9","nameSources":["symtab","dwarf"],"section":".text","size":32,"unsupported":0}
 
@@ -371,54 +360,59 @@ fn call_sum9 @ 0x20228 (size 44)
 -- decompile
 /* velk pseudo-C: sum_varargs @ 0x20254 */
 int sum_varargs(int count, ...) {
-    uint64_t sp = velk_entry_stack_pointer();
-    uint32_t v11;
-    int32_t v5;
+    uint64_t v8;
+    uint64_t v9;
+    uint64_t v10;
+    uint64_t v11;
+    uintptr_t v1;
+    int32_t v3;
+    uintptr_t v5;
+    _Alignas(16) struct __attribute__((packed)) { uint32_t f_0; uint8_t gap_4[0x4]; uint32_t f_8; uint32_t f_c; uint32_t f_10; uint32_t f_14; } local_0; /* [sp-18] */
 
-    *(uint32_t *)(sp - 0x10) = v11;
-    int32_t v1 = sp - 12;
-    /* unsupported: ARM stm.w ip, {r1, r2, r3} at 0x2025e */
-    int32_t v2 = sp - 20 + 12;
-    *(uint32_t *)(sp - 0x14) = v2;
+    local_0.f_8 = v11;
+    local_0.f_c = v8;
+    local_0.f_10 = v9;
+    local_0.f_14 = v10;
+    local_0.f_0 = (uintptr_t)(&local_0.f_c);
     if (count >= 1) {
-        int32_t v3 = *(uint32_t *)(sp - 0x14);
-        int32_t v4 = count & 0x3;
+        v1 = local_0.f_0;
+        int32_t v2 = count & 0x3;
         if ((uint32_t)count < 4) {
-            v5 = 0;
+            v3 = 0;
         } else {
-            int32_t v6 = 0x7ffffffc & count;
-            v5 = 0;
+            int32_t v4 = 0x7ffffffc & count;
+            v3 = 0;
             while (true) {
-                int32_t v7 = v3;
-                *(uint32_t *)(sp - 0x14) = (uint32_t)v3 + 4;
-                v6 = (uint32_t)v6 - 4;
-                int32_t v8 = *(uint32_t *)((uint32_t)v7) + v5;
-                *(uint32_t *)(sp - 0x14) = (uint32_t)v7 + 8;
-                int32_t v9 = *(uint32_t *)((uint32_t)v7 + 4);
-                *(uint32_t *)(sp - 0x14) = (uint32_t)v7 + 12;
-                int32_t v10 = *(uint32_t *)((uint32_t)v7 + 8) + ((uint32_t)v9 + v8);
-                v3 = (uint32_t)v7 + 16;
-                *(uint32_t *)(sp - 0x14) = v3;
-                v5 = v10 + *(uint32_t *)((uint32_t)v7 + 12);
-                if (v6 == 0) break;
+                v5 = v1;
+                local_0.f_0 = (uint32_t)v1 + 4;
+                v4 = (uint32_t)v4 - 4;
+                int32_t v6 = *(uint32_t *)((uint32_t)v5) + v3;
+                local_0.f_0 = (uint32_t)v5 + 8;
+                int32_t v7 = *(uint32_t *)((uint32_t)v5 + 4);
+                local_0.f_0 = (uint32_t)v5 + 12;
+                v3 = *(uint32_t *)((uint32_t)v5 + 8) + ((uint32_t)v7 + v6);
+                v1 = (uint32_t)v5 + 16;
+                local_0.f_0 = v1;
+                v3 += *(uint32_t *)((uint32_t)v5 + 12);
+                if (v4 == 0) break;
             }
-            if (v4 == 0) {
-                return v5;
+            if (v2 == 0) {
+                return v3;
             }
         }
-        *(uint32_t *)(sp - 0x14) = (uint32_t)v3 + 4;
-        v5 += *(uint32_t *)((uint32_t)v3);
-        if (v4 != 1) {
-            *(uint32_t *)(sp - 0x14) = (uint32_t)v3 + 8;
-            v5 += *(uint32_t *)((uint32_t)v3 + 4);
-            if (v4 != 2) {
-                v5 += *(uint32_t *)((uint32_t)v3 + 8);
-                *(uint32_t *)(sp - 0x14) = (uint32_t)v3 + 12;
-                return v5;
+        local_0.f_0 = (uint32_t)v1 + 4;
+        v3 += *(uint32_t *)((uint32_t)v1);
+        if (v2 != 1) {
+            local_0.f_0 = (uint32_t)v1 + 8;
+            v3 += *(uint32_t *)((uint32_t)v1 + 4);
+            if (v2 != 2) {
+                v3 += *(uint32_t *)((uint32_t)v1 + 8);
+                local_0.f_0 = (uint32_t)v1 + 12;
+                return v3;
             }
-            return v5;
+            return v3;
         }
-        return v5;
+        return v3;
     }
     return 0;
 }
@@ -430,63 +424,63 @@ int (int count)
 fn sum_varargs @ 0x20254 (size 154)
   blk0 @ 0x20254:
     store32(lr, (sp + #0xfffffffffffffff0))
-    v1 = ((sp + #0xfffffffffffffff4) & #0xffffffff)
-    unsupported: ARM stm.w ip, {r1, r2, r3} at 0x2025e
-    v2 = (((sp + #0xffffffffffffffec) + #0xc) & #0xffffffff)
-    store32(v2, (sp + #0xffffffffffffffec))
+    store32(r1, (sp + #0xfffffffffffffff4))
+    store32(r2, (sp + #0xfffffffffffffff8))
+    store32(r3, (sp + #0xfffffffffffffffc))
+    store32((sp + #0xfffffffffffffff4), (sp + #0xffffffffffffffe8))
     brif ge r0, #0x1 -> 0x2026a
   blk1 @ 0x20269:
     br 0x20278
   blk2 @ 0x2026a:
-    v3 = load32((sp + #0xffffffffffffffec))
-    v4 = (r0 & #0x3)
+    v1 = load32((sp + #0xffffffffffffffe8))
+    v2 = (r0 & #0x3)
     brif cc r0, #0x4 -> 0x20274
   blk3 @ 0x20273:
     br 0x2027c
   blk4 @ 0x20274:
-    v5 = #0x0
+    v3 = #0x0
     br 0x202bc
   blk5 @ 0x20278:
-    v5 = #0x0
+    v3 = #0x0
     br 0x202e4
   blk6 @ 0x2027c:
-    v6 = ((#0x7ffffffc & r0) & #0xffffffff)
-    v5 = #0x0
+    v4 = (#0x7ffffffc & r0)
+    v3 = #0x0
   blk7 @ 0x20288:
-    v7 = (v3 & #0xffffffff)
-    store32((v3 + #0x4), (sp + #0xffffffffffffffec))
-    v6 = ((v6 - #0x4) & #0xffffffff)
-    v8 = ((load32(v7) + v5) & #0xffffffff)
-    store32((v7 + #0x8), (sp + #0xffffffffffffffec))
-    v9 = load32(((v7 + #0x4) & #0xffffffff))
-    store32((v7 + #0xc), (sp + #0xffffffffffffffec))
-    v10 = ((load32(((v7 + #0x8) & #0xffffffff)) + (v9 + v8)) & #0xffffffff)
-    v3 = ((v7 + #0x10) & #0xffffffff)
-    store32(v3, (sp + #0xffffffffffffffec))
-    v5 = ((v10 + load32(((v7 + #0xc) & #0xffffffff))) & #0xffffffff)
-    brif eq v6, #0x0 -> 0x202b6
+    v5 = v1
+    store32((v1 + #0x4), (sp + #0xffffffffffffffe8))
+    v4 = ((v4 - #0x4) & #0xffffffff)
+    v6 = ((load32(v5) + v3) & #0xffffffff)
+    store32((v5 + #0x8), (sp + #0xffffffffffffffe8))
+    v7 = load32(((v5 + #0x4) & #0xffffffff))
+    store32((v5 + #0xc), (sp + #0xffffffffffffffe8))
+    v3 = ((load32(((v5 + #0x8) & #0xffffffff)) + (v7 + v6)) & #0xffffffff)
+    v1 = ((v5 + #0x10) & #0xffffffff)
+    store32(v1, (sp + #0xffffffffffffffe8))
+    v3 = ((v3 + load32(((v5 + #0xc) & #0xffffffff))) & #0xffffffff)
+    brif eq v4, #0x0 -> 0x202b6
   blk8 @ 0x202b5:
     br 0x20288
   blk9 @ 0x202b6:
-    brif ne v4, #0x0 -> 0x202bc
+    brif ne v2, #0x0 -> 0x202bc
   blk10 @ 0x202bb:
     br 0x202e4
   blk11 @ 0x202bc:
-    store32((v3 + #0x4), (sp + #0xffffffffffffffec))
-    v5 = ((v5 + load32(v3)) & #0xffffffff)
-    brif ne v4, #0x1 -> 0x202ca
+    store32((v1 + #0x4), (sp + #0xffffffffffffffe8))
+    v3 = ((v3 + load32(v1)) & #0xffffffff)
+    brif ne v2, #0x1 -> 0x202ca
   blk12 @ 0x202c9:
     br 0x202e4
   blk13 @ 0x202ca:
-    store32((v3 + #0x8), (sp + #0xffffffffffffffec))
-    v5 = ((v5 + load32(((v3 + #0x4) & #0xffffffff))) & #0xffffffff)
-    brif ne v4, #0x2 -> 0x202da
+    store32((v1 + #0x8), (sp + #0xffffffffffffffe8))
+    v3 = ((v3 + load32(((v1 + #0x4) & #0xffffffff))) & #0xffffffff)
+    brif ne v2, #0x2 -> 0x202da
   blk14 @ 0x202d9:
     br 0x202e4
   blk15 @ 0x202da:
-    v5 = ((v5 + load32(((v3 + #0x8) & #0xffffffff))) & #0xffffffff)
-    store32((v3 + #0xc), (sp + #0xffffffffffffffec))
+    v3 = ((v3 + load32(((v1 + #0x8) & #0xffffffff))) & #0xffffffff)
+    store32((v1 + #0xc), (sp + #0xffffffffffffffe8))
   blk16 @ 0x202e4:
-    ret v5
+    ret v3
 -- card
-{"addr":"0x20254","approxTokens":240,"blocks":17,"hardReasons":[],"name":"sum_varargs","nameSources":["symtab","dwarf"],"section":".text","size":154,"unsupported":1}
+{"addr":"0x20254","approxTokens":240,"blocks":17,"hardReasons":[],"name":"sum_varargs","nameSources":["symtab","dwarf"],"section":".text","size":154,"unsupported":0}

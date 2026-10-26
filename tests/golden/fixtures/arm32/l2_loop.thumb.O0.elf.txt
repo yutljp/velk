@@ -42,9 +42,8 @@ fn sum_while @ 0x2011c (size 58)
   blk3 @ 0x20130:
     br 0x20132
   blk4 @ 0x20132:
-    v1 = ((load32((sp + #0xfffffffffffffff8)) + load32((sp + #0xfffffffffffffff4))) & #0xffffffff)
-    store32(v1, (sp + #0xfffffffffffffff8))
-    store32(v1, #0x3021c)
+    store32((load32((sp + #0xfffffffffffffff8)) + load32((sp + #0xfffffffffffffff4))), (sp + #0xfffffffffffffff8))
+    store32(load32((sp + #0xfffffffffffffff8)), #0x3021c)
     br 0x20148
   blk5 @ 0x20148:
     store32((load32((sp + #0xfffffffffffffff4)) + #0x1), (sp + #0xfffffffffffffff4))
@@ -140,9 +139,8 @@ fn sum_skip_odd @ 0x2018c (size 70)
   blk6 @ 0x201ac:
     br 0x201c4
   blk7 @ 0x201ae:
-    v1 = ((load32((sp + #0xfffffffffffffff8)) + load32((sp + #0xfffffffffffffff4))) & #0xffffffff)
-    store32(v1, (sp + #0xfffffffffffffff8))
-    store32(v1, #0x3021c)
+    store32((load32((sp + #0xfffffffffffffff8)) + load32((sp + #0xfffffffffffffff4))), (sp + #0xfffffffffffffff8))
+    store32(load32((sp + #0xfffffffffffffff8)), #0x3021c)
     br 0x201c4
   blk8 @ 0x201c4:
     store32((load32((sp + #0xfffffffffffffff4)) + #0x1), (sp + #0xfffffffffffffff4))

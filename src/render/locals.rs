@@ -322,7 +322,16 @@ pub(super) fn stack_locals_with_roles(
             .filter(|(start, _)| **start >= *slot && (**start < next || **start == *slot))
             .map(|(_, end)| *end)
             .max();
-        let end = proven.unwrap_or(next);
+        let end = if matches!(ir.isa, crate::loader::Isa::I386 | crate::loader::Isa::Arm32)
+            && proven.is_none()
+            && signed.is_none()
+        {
+            // An escaping pointer can advance across other local objects.
+            lowered.push((bottom, 0));
+            0
+        } else {
+            proven.unwrap_or(next)
+        };
         let end = end.max(indexed_extents.get(slot).copied().unwrap_or(end));
         if let Some(size) = end.checked_sub(*slot)
             && size >= i64::from(slot_names[slot].width)

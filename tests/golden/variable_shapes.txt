@@ -67,7 +67,7 @@ arm32/arith_mixed.thumb.O0.elf 0x20154: 4for (
 arm32/arith_mixed.thumb.O2.elf 0x200fc:
 arm32/arith_mixed.thumb.O2.elf 0x20104: 4if ( 4if (
 arm32/arith_mixed.thumb.O2.elf 0x2013c:
-arm32/arith_mixed.thumb.O2.elf 0x20144: 4if ( 4if ( 8if ( 12for ( 16if ( 20break; 12if ( 8else 8if ( 12if ( 12if (
+arm32/arith_mixed.thumb.O2.elf 0x20144: 4if ( 4if ( 8if ( 12while ( 16if ( 12if ( 8else 8if ( 12if ( 12if (
 arm32/calls.arm.O0.elf 0x20174:
 arm32/calls.arm.O0.elf 0x20194:
 arm32/calls.arm.O0.elf 0x201b8: 4if ( 4if (
@@ -100,7 +100,7 @@ arm32/calls.thumb.O0.elf 0x201f0: 4if (
 arm32/calls.thumb.O0.elf 0x20214: 4if (
 arm32/calls.thumb.O0.elf 0x20238:
 arm32/calls.thumb.O0.elf 0x2027c:
-arm32/calls.thumb.O0.elf 0x202a8: 4for (
+arm32/calls.thumb.O0.elf 0x202a8: 4while (
 arm32/calls.thumb.O2.elf 0x20134:
 arm32/calls.thumb.O2.elf 0x20138:
 arm32/calls.thumb.O2.elf 0x2013c: 4if (
@@ -138,7 +138,7 @@ arm32/control.thumb.O2.elf 0x202bc: 4if ( 8if (
 arm32/control.thumb.O2.elf 0x202d8: 4if ( 4if ( 4if ( 4if (
 arm32/control.thumb.O2.elf 0x202ec: 4if ( 8if ( 8if ( 12if ( 12if ( 4if ( 4if ( 8if ( 8if (
 arm32/control.thumb.O2.elf 0x2031c: 4if ( 8if ( 12if ( 12if (
-arm32/control.thumb.O2.elf 0x20348: 4if ( 4if ( 8if ( 12for ( 16if ( 20break; 12if ( 8else 8if ( 12if (
+arm32/control.thumb.O2.elf 0x20348: 4if ( 4if ( 8if ( 12while ( 16if ( 12if ( 8else 8if ( 12if (
 arm32/control.thumb.O2.elf 0x203d0: 4if ( 4if ( 8do { 12if ( 16for ( 20if ( 24if ( 28break; 24if ( 24if ( 28if ( 28if ( 32if ( 32if ( 36break; 32continue; 28break; 24break; 8while (
 arm32/divmod_a64.arm.O0.elf 0x201a4:
 arm32/divmod_a64.arm.O0.elf 0x201c8:
@@ -312,11 +312,11 @@ arm32/divmod_x64.thumb.O2.elf 0x202b0:
 arm32/divmod_x64.thumb.O2.elf 0x202e0:
 arm32/divmod_x64.thumb.O2.elf 0x202ec:
 arm32/divmod_x64.thumb.O2.elf 0x20300:
-arm32/float.arm.O0.elf 0x20108:
+arm32/float.arm.O0.elf 0x20108: 4while ( 8if ( 4if (
 arm32/float.arm.O0.elf 0x201b0:
 arm32/float.arm.O0.elf 0x201e8:
 arm32/float.arm.O0.elf 0x2020c:
-arm32/float.arm.O0.elf 0x20234:
+arm32/float.arm.O0.elf 0x20234: 4if ( 4if ( 4if (
 arm32/float.arm.O2.elf 0x20104: 4if (
 arm32/float.arm.O2.elf 0x2013c:
 arm32/float.arm.O2.elf 0x20148:
@@ -410,7 +410,7 @@ arm32/l2_loop.thumb.O0.elf 0x2018c: 4for ( 8if (
 arm32/l2_loop.thumb.O0.elf 0x201d4: 4for ( 8if (
 arm32/l2_loop.thumb.O2.elf 0x2011c: 4if ( 4if ( 8if ( 8else 12while ( 16if ( 12if ( 8if ( 12if ( 12if ( 12if (
 arm32/l2_loop.thumb.O2.elf 0x2018c: 4if ( 4if ( 4else 8while ( 12if ( 8if ( 4if ( 8if ( 8if (
-arm32/l2_loop.thumb.O2.elf 0x201f4: 4if ( 4if ( 8if ( 8else 12while ( 16if ( 12if ( 8if ( 12if ( 12if ( 12goto
+arm32/l2_loop.thumb.O2.elf 0x201f4: 4if ( 4if ( 8if ( 8else 12while ( 16if ( 12if ( 8if ( 12if ( 12if (
 arm32/l2_loop.thumb.O2.elf 0x20284: 4if ( 4if ( 8while ( 12if ( 12if ( 12if ( 12if ( 12if ( 12if ( 12if (
 arm32/l4_memory.arm.O0.elf 0x20128:
 arm32/l4_memory.arm.O0.elf 0x20170: 4for (
@@ -425,7 +425,7 @@ arm32/l4_memory.thumb.O0.elf 0x20144: 4for (
 arm32/l4_memory.thumb.O0.elf 0x2017c:
 arm32/l4_memory.thumb.O0.elf 0x2018c:
 arm32/l4_memory.thumb.O2.elf 0x20128:
-arm32/l4_memory.thumb.O2.elf 0x20134: 4if ( 4if ( 8if ( 12for ( 16if ( 20break; 12if ( 8else 8if ( 12if ( 12if (
+arm32/l4_memory.thumb.O2.elf 0x20134: 4if ( 4if ( 8if ( 12while ( 16if ( 12if ( 8else 8if ( 12if ( 12if (
 arm32/l4_memory.thumb.O2.elf 0x201a0:
 arm32/l4_memory.thumb.O2.elf 0x201b0:
 arm32/l5_switch.arm.O0.elf 0x2018c: 4if (

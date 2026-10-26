@@ -6,20 +6,22 @@
 /* velk prelude */
 #include <stdbool.h>
 #include <stdint.h>
+
+extern uint32_t sink; /* address: 0x30210 */
 /* end velk prelude */
 
 == 0x2011c sum_while
 -- decompile
 /* velk pseudo-C: sum_while @ 0x2011c */
+/* ref: 0x30210 .bss */
 int sum_while(int n) {
     if (n >= 1) {
         int32_t v2 = 0;
         int32_t v3 = 0;
-        int32_t v4 = 0x2013c + *(uint32_t *)(0x20158);
         while (true) {
             v2 = (uint32_t)v3 + v2;
             v3 = (uint32_t)v3 + 1;
-            *(uint32_t *)((uint32_t)v4) = v2;
+            sink = v2;
             if (n == v3) break;
         }
         return v2;
@@ -29,7 +31,7 @@ int sum_while(int n) {
 -- signature
 int (int n)
 -- references
-
+0x30210 .bss
 -- ir
 fn sum_while @ 0x2011c (size 64)
   blk0 @ 0x2011c:
@@ -40,11 +42,10 @@ fn sum_while @ 0x2011c (size 64)
     v1 = r0
     v2 = #0x0
     v3 = #0x0
-    v4 = (#0x2013c + load32(#0x20158))
   blk3 @ 0x20138:
     v2 = ((v3 + v2) & #0xffffffff)
     v3 = ((v3 + #0x1) & #0xffffffff)
-    store32(v2, v4)
+    store32(v2, #0x30210)
     brif eq v1, v3 -> 0x2014c
   blk4 @ 0x20149:
     br 0x20138
@@ -58,38 +59,35 @@ fn sum_while @ 0x2011c (size 64)
 == 0x2015c count_down
 -- decompile
 /* velk pseudo-C: count_down @ 0x2015c */
+/* ref: 0x30210 .bss */
 int count_down(int n) {
-    int32_t v1 = *(uint32_t *)(0x20184);
     if (n <= 1) {
         n = 1;
     }
-    int32_t v2 = 0;
-    int32_t v3 = 0x20174 + (uint32_t)v1;
+    int32_t v1 = 0;
     while (true) {
-        v2 = (uint32_t)v2 + 1;
-        *(uint32_t *)((uint32_t)v3) = v2;
-        if (n == v2) break;
+        v1 = (uint32_t)v1 + 1;
+        sink = v1;
+        if (n == v1) break;
     }
     return n;
 }
 -- signature
 int (int n)
 -- references
-
+0x30210 .bss
 -- ir
 fn count_down @ 0x2015c (size 44)
   blk0 @ 0x2015c:
-    v1 = load32(#0x20184)
     brif gt r0, #0x1 -> 0x20168
   blk1 @ 0x20165:
     r0 = #0x1
   blk2 @ 0x20168:
-    v2 = #0x0
-    v3 = (#0x20174 + v1)
+    v1 = #0x0
   blk3 @ 0x20170:
-    v2 = ((v2 + #0x1) & #0xffffffff)
-    store32(v2, v3)
-    brif eq r0, v2 -> 0x20180
+    v1 = ((v1 + #0x1) & #0xffffffff)
+    store32(v1, #0x30210)
+    brif eq r0, v1 -> 0x20180
   blk4 @ 0x2017d:
     br 0x20170
   blk5 @ 0x20180:
@@ -100,19 +98,19 @@ fn count_down @ 0x2015c (size 44)
 == 0x20188 sum_skip_odd
 -- decompile
 /* velk pseudo-C: sum_skip_odd @ 0x20188 */
+/* ref: 0x30210 .bss */
 int sum_skip_odd(int n) {
     if (n >= 1) {
         int32_t v2 = 0;
         int32_t v3 = 0;
-        int32_t v4 = 0x201a8 + *(uint32_t *)(0x201c8);
         for (;;) {
-            int32_t v5 = v3 & 0x1;
+            int32_t v4 = v3 & 0x1;
             if ((v3 & 0x1) != 0) {
                 v2 = (uint32_t)v2 + v3;
             }
             v3 = (uint32_t)v3 + 1;
-            if (v5 != 0) {
-                *(uint32_t *)((uint32_t)v4) = v2;
+            if (v4 != 0) {
+                sink = v2;
             }
             if (n == v3) {
                 return v2;
@@ -124,7 +122,7 @@ int sum_skip_odd(int n) {
 -- signature
 int (int n)
 -- references
-
+0x30210 .bss
 -- ir
 fn sum_skip_odd @ 0x20188 (size 68)
   blk0 @ 0x20188:
@@ -135,17 +133,16 @@ fn sum_skip_odd @ 0x20188 (size 68)
     v1 = r0
     v2 = #0x0
     v3 = #0x0
-    v4 = (#0x201a8 + load32(#0x201c8))
   blk3 @ 0x201a4:
-    v5 = (v3 & #0x1)
+    v4 = (v3 & #0x1)
     brif eq (v3 & #0x1), #0x0 -> 0x201ac
   blk4 @ 0x201a9:
     v2 = ((v2 + v3) & #0xffffffff)
   blk5 @ 0x201ac:
     v3 = ((v3 + #0x1) & #0xffffffff)
-    brif eq v5, #0x0 -> 0x201b4
+    brif eq v4, #0x0 -> 0x201b4
   blk6 @ 0x201b1:
-    store32(v2, v4)
+    store32(v2, #0x30210)
   blk7 @ 0x201b4:
     brif ne v1, v3 -> 0x201bc
   blk8 @ 0x201b9:
@@ -161,7 +158,9 @@ fn sum_skip_odd @ 0x20188 (size 68)
 -- decompile
 /* velk pseudo-C: find_first @ 0x201cc */
 int find_first(int *p, int n, int v) {
-    int32_t v1 = (uint32_t)(uintptr_t)p;
+    uintptr_t v1;
+
+    v1 = (uint32_t)(uintptr_t)p;
     if (n >= 1) {
         uint32_t v3 = 0;
         while (*(uint32_t *)(v1 + (v3 << 2)) != v) {
@@ -199,6 +198,6 @@ fn find_first @ 0x201cc (size 68)
   blk7 @ 0x201fc:
     ret #0xffffffff
   blk8 @ 0x20204:
-    ret (v3 & #0xffffffff)
+    ret v3
 -- card
 {"addr":"0x201cc","approxTokens":198,"blocks":9,"hardReasons":[],"name":"find_first","nameSources":["symtab","dwarf"],"section":".text","size":68,"unsupported":0}

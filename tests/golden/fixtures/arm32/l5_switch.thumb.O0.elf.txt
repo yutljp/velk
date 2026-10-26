@@ -30,26 +30,26 @@ uint64_t sub_201a4();
 /* velk pseudo-C: dense @ 0x2018c */
 /* ref: 0x30394 .bss */
 int dense(int x) {
-    uint64_t v1;
+    uint64_t v5;
     uint32_t v6;
     uint32_t v7;
-    int32_t v5;
+    int32_t v4;
     uint32_t local_0; /* [sp-10] */
 
-    uint32_t v2 = (uint32_t)x - 10;
-    int32_t v3 = v2;
-    local_0 = v3;
-    if (v2 <= 15) {
-        int32_t v4 = local_0;
+    uint32_t v1 = (uint32_t)x - 10;
+    int32_t v2 = v1;
+    local_0 = v2;
+    if (v1 <= 15) {
+        int32_t v3 = local_0;
         /* unsupported: ARM tbb [pc, r1] at 0x201a0 */
         {
             uint64_t call_values[2];
-            call_values[0] = sub_201a4((uint32_t)x, v1, v6, v7);
-            call_values[1] = v1; /* also returned by the call */
-            v5 = (uint32_t)(call_values[0]);
-            v1 = (uint32_t)(call_values[1]);
+            call_values[0] = sub_201a4((uint32_t)x, v5, v6, v7);
+            call_values[1] = v5; /* also returned by the call */
+            v4 = (uint32_t)(call_values[0]);
+            v5 = (uint32_t)(call_values[1]);
         }
-        return v5;
+        return v4;
     }
     g_sink = 0;
     return g_sink;
@@ -61,18 +61,17 @@ int (int x)
 -- ir
 fn dense @ 0x2018c (size 164)
   blk0 @ 0x2018c:
-    v1 = r0
-    v2 = ((v1 - #0xa) & #0xffffffff)
-    v3 = (v2 & #0xffffffff)
-    store32(v3, (sp + #0xfffffffffffffff0))
-    brif ls v2, #0xf -> 0x2019e
+    v1 = ((r0 - #0xa) & #0xffffffff)
+    v2 = v1
+    store32(v2, (sp + #0xfffffffffffffff0))
+    brif ls v1, #0xf -> 0x2019e
   blk1 @ 0x2019d:
     br 0x20214
   blk2 @ 0x2019e:
-    v4 = load32((sp + #0xfffffffffffffff0))
+    v3 = load32((sp + #0xfffffffffffffff0))
     unsupported: ARM tbb [pc, r1] at 0x201a0
-    v5:r0, r1 = call 0x201a4(r0, r1, r2, r3)
-    ret v5
+    v4:r0, r1 = call 0x201a4(r0, r1, r2, r3)
+    ret v4
   blk3 @ 0x20214:
     store32(#0x0, #0x30394)
     br 0x20222
@@ -426,18 +425,18 @@ fn sparse @ 0x20350 (size 66)
   blk8 @ 0x2036e:
     br 0x20384
   blk9 @ 0x20370:
-    v3 = #0x64
+    v2 = #0x64
     br 0x2038c
   blk10 @ 0x20376:
-    v3 = #0x7
+    v2 = #0x7
     br 0x2038c
   blk11 @ 0x2037c:
-    v3 = #0x12c
+    v2 = #0x12c
     br 0x2038c
   blk12 @ 0x20384:
-    v3 = #0xffffffff
+    v2 = #0xffffffff
     br 0x2038c
   blk13 @ 0x2038c:
-    ret v3
+    ret v2
 -- card
 {"addr":"0x20350","approxTokens":240,"blocks":14,"hardReasons":[],"name":"sparse","nameSources":["symtab","dwarf"],"section":".text","size":66,"unsupported":0}

@@ -121,6 +121,37 @@ pub fn entry_state(image: &Image) -> Vec<(u16, u64)> {
     goroutine.into_iter().chain(zero).collect()
 }
 
+/// The first core register of an ARM32 logical integer parameter.
+#[must_use]
+pub fn register_pair(ir: &super::FunctionIr, param: &super::Param) -> Option<u16> {
+    let first = crate::lift::pairs32::PARAMETER_BASE;
+    if ir.isa == Isa::Arm32
+        && (first..first + 4).contains(&param.index)
+        && crate::lift::pairs32::wide(&param.ty)
+    {
+        Some(param.index - first)
+    } else {
+        None
+    }
+}
+
+/// Joins the physical input words of an ARM32 logical integer parameter.
+#[must_use]
+pub fn pair_input(register: u16, registers: &[(u16, u64)], seed: u64) -> u64 {
+    let word = |index| {
+        registers
+            .iter()
+            .find(|(register, _)| *register == index)
+            .map_or_else(
+                || hash(seed, 0x1_0000 + u64::from(index)),
+                |(_, value)| *value,
+            )
+            & 0xffff_ffff
+    };
+    let high = register.checked_add(1).map_or(0, word);
+    word(register) | high << 32
+}
+
 #[must_use]
 pub fn return_bits(ret: &CType) -> Option<u32> {
     match ret {

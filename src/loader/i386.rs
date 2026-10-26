@@ -55,21 +55,24 @@ pub(super) fn properties(image: &Image, addr: u64) -> (Convention, Option<u16>) 
     let mut conflicting = false;
     for (index, instruction) in instructions.iter().enumerate() {
         for used in info.info(instruction).used_registers() {
-            let bit = match used.register().full_register() {
-                Register::RCX => 1,
-                Register::RDX => 2,
+            let shift = match used.register().full_register() {
+                Register::RCX => 0,
+                Register::RDX => 4,
                 _ => continue,
             };
+            let bytes = match used.register() {
+                Register::CH | Register::DH => 2,
+                register => (1u8 << register.size().min(4)) - 1,
+            };
+            let bits = bytes << shift;
             if matches!(
                 used.access(),
                 OpAccess::Read | OpAccess::CondRead | OpAccess::ReadWrite | OpAccess::ReadCondWrite
             ) {
-                reads[index] |= bit;
+                reads[index] |= bits;
             }
-            if matches!(used.access(), OpAccess::Write | OpAccess::ReadWrite)
-                && matches!(used.register(), Register::ECX | Register::EDX)
-            {
-                writes[index] |= bit;
+            if matches!(used.access(), OpAccess::Write | OpAccess::ReadWrite) {
+                writes[index] |= bits;
             }
         }
         match instruction.flow_control() {
@@ -88,7 +91,7 @@ pub(super) fn properties(image: &Image, addr: u64) -> (Convention, Option<u16>) 
                 }
             }
             FlowControl::Call | FlowControl::IndirectCall => {
-                writes[index] |= 3;
+                writes[index] = 0xff;
             }
             _ => {}
         }
@@ -119,8 +122,8 @@ pub(super) fn properties(image: &Image, addr: u64) -> (Convention, Option<u16>) 
         }
     }
     let convention = named.unwrap_or_else(|| match incoming.first().copied().unwrap_or(0) {
-        2 | 3 => Convention::Fastcall,
-        1 => Convention::Thiscall,
+        mask if mask & 0xf0 != 0 => Convention::Fastcall,
+        mask if mask & 15 != 0 => Convention::Thiscall,
         _ if cleanup.is_some_and(|bytes| bytes > 0) => Convention::Stdcall,
         _ => Convention::Cdecl,
     });

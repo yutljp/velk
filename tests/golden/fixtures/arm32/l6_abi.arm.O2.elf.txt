@@ -1,4 +1,4 @@
-# arm32/l6_abi.arm.O2.elf: elf arm32 no entry, 5 functions, 0 lift failures, 2 unsupported, 0 gotos
+# arm32/l6_abi.arm.O2.elf: elf arm32 no entry, 5 functions, 0 lift failures, 0 unsupported, 0 gotos
 0x20104 28 tail_target symtab,dwarf
 0x20120 8 tail_direct symtab,dwarf
 0x20128 12 tail_indirect symtab,dwarf
@@ -14,7 +14,7 @@ uint64_t tail_target();
 -- decompile
 /* velk pseudo-C: tail_target @ 0x20104 */
 int tail_target(int x) {
-    return x + ((uint64_t)x << 1) + 1;
+    return (uint32_t)x * 3 + 1;
 }
 -- signature
 int (int x)
@@ -23,7 +23,7 @@ int (int x)
 -- ir
 fn tail_target @ 0x20104 (size 28)
   blk0 @ 0x20104:
-    ret (((r0 + (r0 << #0x1)) + #0x1) & #0xffffffff)
+    ret (((r0 * #0x3) + #0x1) & #0xffffffff)
 -- card
 {"addr":"0x20104","approxTokens":138,"blocks":1,"hardReasons":[],"name":"tail_target","nameSources":["symtab","dwarf"],"section":".text","size":28,"unsupported":0}
 
@@ -76,29 +76,31 @@ int (int a, int b, int c, int d)
 -- ir
 fn six_args @ 0x20134 (size 36)
   blk0 @ 0x20134:
-    ret ((((((r1 + r0) + r2) + r3) + load32(sp)) + load32((sp + #0x4))) & #0xffffffff)
+    ret (((((((r1 + r0) + r2) + r3) & #0xffffffff) + load32(sp)) + load32((sp + #0x4))) & #0xffffffff)
 -- card
 {"addr":"0x20134","approxTokens":150,"blocks":1,"hardReasons":[],"name":"six_args","nameSources":["symtab","dwarf"],"section":".text","size":36,"unsupported":0}
 
 == 0x20158 wide_add
 -- decompile
 /* velk pseudo-C: wide_add @ 0x20158 */
-int32_t wide_add(int32_t a0, int64_t a1, int32_t a2) {
-    /* unsupported: AAPCS32 multiword, floating-point or aggregate declaration */
-    int32_t v1 = (uint32_t)a2 + a0;
-    /* unsupported: ARM adc r1, r3, r1 at 0x2015c */
-    return a0;
+unsigned long long wide_add(unsigned long long a, unsigned long long b) {
+    uint32_t v1 = a;
+    uint32_t v2 = a >> 32;
+    uint32_t v3 = b;
+    uint32_t v4 = b >> 32;
+    return v3 + v1 | (uint64_t)(v4 + v2 + (v3 > (v1 ^ 0xffffffff))) << 32;
 }
 -- signature
-int32_t (int32_t a0, int64_t a1, int32_t a2)
+unsigned long long (unsigned long long a, unsigned long long b)
 -- references
 
 -- ir
 fn wide_add @ 0x20158 (size 12)
   blk0 @ 0x20158:
-    unsupported: AAPCS32 multiword, floating-point or aggregate declaration
-    v1 = ((r2 + r0) & #0xffffffff)
-    unsupported: ARM adc r1, r3, r1 at 0x2015c
-    ret r0
+    r0 = (t97 & #0xffffffff)
+    r1 = (t97 >> #0x20)
+    r2 = (t99 & #0xffffffff)
+    r3 = (t99 >> #0x20)
+    ret (((r2 + r0) & #0xffffffff) | ((((r3 + r1) + select hi r2, (r0 ^ #0xffffffff) ? #0x1, #0x0) & #0xffffffff) << #0x20))
 -- card
-{"addr":"0x20158","approxTokens":114,"blocks":1,"hardReasons":[],"name":"wide_add","nameSources":["symtab","dwarf"],"section":".text","size":12,"unsupported":2}
+{"addr":"0x20158","approxTokens":114,"blocks":1,"hardReasons":[],"name":"wide_add","nameSources":["symtab","dwarf"],"section":".text","size":12,"unsupported":0}

@@ -26,15 +26,16 @@ const MACHINE: usize = crate::arch::aarch64::V0 as usize + 64;
 #[derive(Debug, Clone, PartialEq, Eq)]
 struct State {
     sp: u16,
+    narrow: bool,
     /// What each machine register holds.
     machine: [Value; MACHINE],
     /// What the lifter's other registers, as those it keeps flag operands
     /// in, hold where it is known; one not listed holds nothing known,
     /// which is never any machine register's entry value either.
     others: BTreeMap<u16, Value>,
-    /// What each 8-byte frame slot holds, by its offset from the stack
+    /// What each saved frame slot holds, by its offset from the stack
     /// pointer on entry; a slot not listed holds nothing known.
-    slots: BTreeMap<i64, Value>,
+    slots: BTreeMap<i64, (u8, Value)>,
     /// The frame offsets an address the walk no longer follows may point
     /// at: one stored, passed on, offset by an unknown index, or held
     /// differently on the ways into a join.
@@ -44,9 +45,10 @@ struct State {
 }
 
 impl State {
-    fn entry(sp: u16) -> Self {
+    fn entry(sp: u16, narrow: bool) -> Self {
         State {
             sp,
+            narrow,
             machine: std::array::from_fn(|index| {
                 if index == usize::from(sp) {
                     Value::Frame(0)
@@ -113,6 +115,13 @@ impl State {
                     };
                     return (Value::Constant(value), false);
                 }
+                if self.narrow
+                    && *op == BinOp::And
+                    && (right.0 == Value::Constant(0xffff_ffff))
+                    && matches!(left.0, Value::Frame(_) | Value::Entry(0..=15))
+                {
+                    return left;
+                }
                 if *op == BinOp::Or
                     && let (Value::Frame(at), Value::Constant(mask))
                     | (Value::Constant(mask), Value::Frame(at)) = (left.0, right.0)
@@ -143,10 +152,18 @@ impl State {
                     (Value::Derived(derived), false)
                 };
             }
-            Expr::Reg { index, width: 64 } => return (self.register(*index), false),
+            Expr::Reg { index, width }
+                if *width == 64 || (self.narrow && *width == 32 && *index < 16) =>
+            {
+                return (self.register(*index), false);
+            }
             Expr::Load { addr, width, .. } => {
                 let value = match (width, self.value(addr)) {
-                    (8, Value::Frame(at)) => self.slots.get(&at).copied().unwrap_or(Value::Other),
+                    (width, Value::Frame(at)) => self
+                        .slots
+                        .get(&at)
+                        .filter(|(saved_width, _)| *saved_width == *width)
+                        .map_or(Value::Other, |(_, value)| *value),
                     _ => Value::Other,
                 };
                 return (value, false);
@@ -240,8 +257,13 @@ impl State {
             .collect();
         dropped.extend(self.slots.keys().chain(other.slots.keys()).map(|slot| {
             (
-                self.slots.get(slot).copied().unwrap_or(Value::Other),
-                other.slots.get(slot).copied().unwrap_or(Value::Other),
+                self.slots
+                    .get(slot)
+                    .map_or(Value::Other, |(_, value)| *value),
+                other
+                    .slots
+                    .get(slot)
+                    .map_or(Value::Other, |(_, value)| *value),
             )
         }));
         let mut lost = other.lost;
@@ -278,8 +300,12 @@ impl State {
             self.slots.clear();
             return;
         };
-        self.slots
-            .retain(|slot, _| *slot >= end || slot.checked_add(8).is_some_and(|end| end <= at));
+        self.slots.retain(|slot, (width, _)| {
+            *slot >= end
+                || slot
+                    .checked_add(i64::from(*width))
+                    .is_some_and(|end| end <= at)
+        });
     }
 
     /// Takes note of the frame addresses `expr` lets out of the walk's view.
@@ -309,7 +335,10 @@ impl State {
     fn write_through(&mut self, addr: &Expr, width: u8, clobbered: &[u16]) {
         match self.value(addr) {
             Value::Frame(at) => self.forget_slots(at, width),
-            Value::Derived(_) => self.slots.clear(),
+            Value::Derived(_) => {
+                self.slots.clear();
+                self.lost |= self.narrow;
+            }
             _ => self.write_unplaced(clobbered),
         }
     }
@@ -325,8 +354,8 @@ impl State {
             return;
         }
         let exposed = &self.exposed;
-        self.slots.retain(|slot, value| {
-            let end = slot.saturating_add(8);
+        self.slots.retain(|slot, (width, value)| {
+            let end = slot.saturating_add(i64::from(*width));
             let save = end <= 0
                 && matches!(value, Value::Entry(register) if !clobbered.contains(register));
             if save {
@@ -360,13 +389,21 @@ pub(crate) fn clobbers_knowing(
         return None;
     }
     let clobbered = convention.clobbered();
+    let narrow = matches!(
+        convention,
+        Convention::Cdecl
+            | Convention::Stdcall
+            | Convention::Fastcall
+            | Convention::Thiscall
+            | Convention::Aapcs32
+    );
     let starts: HashMap<u64, usize> = blocks
         .iter()
         .enumerate()
         .map(|(index, block)| (block.start, index))
         .collect();
     let mut entering: Vec<Option<State>> = vec![None; blocks.len()];
-    entering[0] = Some(State::entry(sp));
+    entering[0] = Some(State::entry(sp, narrow));
     let mut pending = std::collections::BTreeSet::from([0]);
     let mut changed = Registers::default();
     let mut visits = 0;
@@ -423,9 +460,10 @@ pub(crate) fn clobbers_knowing(
                         }
                         // The caller's frame above the entry stack pointer is
                         // memory another thread may share.
-                        state
-                            .slots
-                            .retain(|slot, _| slot.checked_add(8).is_some_and(|end| end <= 0));
+                        state.slots.retain(|slot, (width, _)| {
+                            slot.checked_add(i64::from(*width))
+                                .is_some_and(|end| end <= 0)
+                        });
                     } else {
                         for value in inputs {
                             state.expose(value);
@@ -436,9 +474,10 @@ pub(crate) fn clobbers_knowing(
                                 | crate::ir::MachineInstruction::ArmLoadAcquire { .. }
                                 | crate::ir::MachineInstruction::ArmExclusive { .. }
                         ) {
-                            state
-                                .slots
-                                .retain(|slot, _| slot.checked_add(8).is_some_and(|end| end <= 0));
+                            state.slots.retain(|slot, (width, _)| {
+                                slot.checked_add(i64::from(*width))
+                                    .is_some_and(|end| end <= 0)
+                            });
                         }
                     }
                     for output in outputs {
@@ -460,9 +499,9 @@ pub(crate) fn clobbers_knowing(
                     match state.value(addr) {
                         Value::Frame(at) => {
                             state.forget_slots(at, *width);
-                            if *width == 8 {
+                            if *width == 8 || (state.narrow && *width == 4) {
                                 let value = state.value(value);
-                                state.slots.insert(at, value);
+                                state.slots.insert(at, (*width, value));
                             }
                         }
                         _ => state.write_through(addr, *width, clobbered),
@@ -539,10 +578,10 @@ pub(crate) fn clobbers_knowing(
                     break;
                 }
                 Stmt::Ret { .. } => {
-                    if state.register(sp) != Value::Frame(0) {
+                    if state.register(sp) != Value::Frame(0) || (state.narrow && state.lost) {
                         return None;
                     }
-                    let entry = State::entry(sp);
+                    let entry = State::entry(sp, narrow);
                     for (index, (held, was)) in state.machine.iter().zip(&entry.machine).enumerate()
                     {
                         if held != was {

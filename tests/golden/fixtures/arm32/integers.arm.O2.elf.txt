@@ -1,4 +1,4 @@
-# arm32/integers.arm.O2.elf: elf arm32 no entry, 9 functions, 0 lift failures, 3 unsupported, 0 gotos
+# arm32/integers.arm.O2.elf: elf arm32 no entry, 9 functions, 0 lift failures, 0 unsupported, 0 gotos
 0x20124 12 narrow_add symtab,dwarf
 0x20130 8 widen_mul symtab,dwarf
 0x20138 20 mixed_sign symtab,dwarf
@@ -34,8 +34,7 @@ fn narrow_add @ 0x20124 (size 12)
 -- decompile
 /* velk pseudo-C: widen_mul @ 0x20130 */
 unsigned short widen_mul(unsigned char a, unsigned char b) {
-    /* unsupported: ARM smulbb r0, r1, r0 at 0x20130 */
-    return a;
+    return b * a;
 }
 -- signature
 unsigned short (unsigned char a, unsigned char b)
@@ -44,38 +43,26 @@ unsigned short (unsigned char a, unsigned char b)
 -- ir
 fn widen_mul @ 0x20130 (size 8)
   blk0 @ 0x20130:
-    unsupported: ARM smulbb r0, r1, r0 at 0x20130
-    ret r0
+    ret ((sext16(r1) * sext16(r0)) & #0xffffffff)
 -- card
-{"addr":"0x20130","approxTokens":108,"blocks":1,"hardReasons":[],"name":"widen_mul","nameSources":["symtab","dwarf"],"section":".text","size":8,"unsupported":1}
+{"addr":"0x20130","approxTokens":108,"blocks":1,"hardReasons":[],"name":"widen_mul","nameSources":["symtab","dwarf"],"section":".text","size":8,"unsupported":0}
 
 == 0x20138 mixed_sign
 -- decompile
 /* velk pseudo-C: mixed_sign @ 0x20138 */
-int32_t mixed_sign(int32_t a0, int32_t a1) {
-    uint32_t v2;
-
-    /* unsupported: AAPCS32 multiword, floating-point or aggregate declaration */
-    int32_t v1 = (uint32_t)a0 - a1;
-    /* unsupported: ARM rsc r1, r3, r0, asr 31 at 0x20140 */
-    int32_t v3 = v2;
-    return v3;
+long long mixed_sign(int a, unsigned int b) {
+    return a - b | (uint64_t)((uint32_t)(a >> 31) - ((a >= b) ^ 0x1)) << 32;
 }
 -- signature
-int32_t (int32_t a0, int32_t a1)
+long long (int a, unsigned int b)
 -- references
 
 -- ir
 fn mixed_sign @ 0x20138 (size 20)
   blk0 @ 0x20138:
-    unsupported: AAPCS32 multiword, floating-point or aggregate declaration
-    v1 = ((r0 - r1) & #0xffffffff)
-    v2 = #0x0
-    unsupported: ARM rsc r1, r3, r0, asr 31 at 0x20140
-    v3 = (r2 & #0xffffffff)
-    ret v3
+    ret (((r0 - r1) & #0xffffffff) | ((((sext32(r0) >>> #0x1f) - (select cs r0, r1 ? #0x1, #0x0 ^ #0x1)) & #0xffffffff) << #0x20))
 -- card
-{"addr":"0x20138","approxTokens":126,"blocks":1,"hardReasons":[],"name":"mixed_sign","nameSources":["symtab","dwarf"],"section":".text","size":20,"unsupported":2}
+{"addr":"0x20138","approxTokens":126,"blocks":1,"hardReasons":[],"name":"mixed_sign","nameSources":["symtab","dwarf"],"section":".text","size":20,"unsupported":0}
 
 == 0x2014c in_range
 -- decompile
@@ -117,8 +104,8 @@ fn in_range @ 0x2014c (size 32)
 -- decompile
 /* velk pseudo-C: rotate_left @ 0x2016c */
 unsigned int rotate_left(unsigned int x, unsigned int k) {
-    uint8_t t1 = -k & 0x1f;
-    return x >> t1 | x << (32 - t1 & 0x1f);
+    uint8_t v1 = -k;
+    return x >> (v1 & 0x1f) | x << (32 - v1 & 0x1f);
 }
 -- signature
 unsigned int (unsigned int x, unsigned int k)
@@ -127,8 +114,8 @@ unsigned int (unsigned int x, unsigned int k)
 -- ir
 fn rotate_left @ 0x2016c (size 12)
   blk0 @ 0x2016c:
-    t1 = ((#0x0 - r1) & #0x1f)
-    ret (((r0 >> t1) | (r0 << ((#0x20 - t1) & #0x1f))) & #0xffffffff)
+    v1 = (#0x0 - r1)
+    ret (((r0 >> (v1 & #0x1f)) | (r0 << ((#0x20 - (v1 & #0x1f)) & #0x1f))) & #0xffffffff)
 -- card
 {"addr":"0x2016c","approxTokens":114,"blocks":1,"hardReasons":[],"name":"rotate_left","nameSources":["symtab","dwarf"],"section":".text","size":12,"unsupported":0}
 
@@ -214,7 +201,8 @@ int min3(int a, int b, int c) {
     if (a < c) {
         return a;
     }
-    return c;
+    int32_t v1 = c;
+    return v1;
 }
 -- signature
 int (int a, int b, int c)

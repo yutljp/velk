@@ -835,6 +835,11 @@ fn compute(
             if declaration.signature.ret == crate::ir::CType::Void
                 && declaration.signature.params.is_empty()
                 && !declaration.signature.variadic);
+    let wide_return = matches!(
+        image.isa,
+        crate::loader::Isa::I386 | crate::loader::Isa::Arm32
+    ) && crate::lift::pairs32::types(image, addr)
+        .is_some_and(|(_, ret)| crate::lift::pairs32::wide(&ret));
     let summary = Summary {
         arity: Some(if declared_no_arguments {
             0
@@ -878,7 +883,8 @@ fn compute(
         }),
         indirect_result: signature.indirect_result,
         // One returning on the stack leaves nothing in the return register.
-        narrow_return: signature.stack_results.is_empty()
+        narrow_return: !wide_return
+            && signature.stack_results.is_empty()
             && crate::passes::widths::returns_32(&blocks, &|target| {
                 summaries(target).narrow_return
             }),

@@ -35,8 +35,10 @@ fn rect_area @ 0x2011c (size 24)
 -- decompile
 /* velk pseudo-C: record_total @ 0x20134 */
 int32_t record_total(struct record *items, int n) {
+    uintptr_t v1;
+
     if (n >= 1) {
-        int32_t v1 = (uint32_t)(uintptr_t)items + 4;
+        v1 = (uint32_t)(uintptr_t)items + 4;
         int32_t v2 = 0;
         while (true) {
             int32_t v3 = *(int16_t *)((uint32_t)v1 + 4);
@@ -225,7 +227,7 @@ fn flags_level @ 0x201b0 (size 20)
   blk1 @ 0x201b9:
     v1 = ((r0 >> #0x1) & #0x7)
   blk2 @ 0x201bc:
-    ret (v1 & #0xffffffff)
+    ret v1
 -- card
 {"addr":"0x201b0","approxTokens":126,"blocks":3,"hardReasons":[],"name":"flags_level","nameSources":["symtab","dwarf"],"section":".text","size":20,"unsupported":1}
 

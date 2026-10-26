@@ -57,18 +57,16 @@ int (int a, int b)
 -- ir
 fn pick @ 0x20158 (size 68)
   blk0 @ 0x20158:
-    store32(r0, (sp + #0xfffffffffffffff4))
-    store32(r1, (sp + #0xfffffffffffffff0))
-    brif gt load32((sp + #0xfffffffffffffff4)), r1 -> 0x2017c
+    brif gt r0, r1 -> 0x2017c
   blk1 @ 0x20179:
     br 0x20188
   blk2 @ 0x2017c:
-    store32(load32((sp + #0xfffffffffffffff4)), (sp + #0xffffffffffffffec))
+    v1 = r0
     br 0x20190
   blk3 @ 0x20188:
-    store32(load32((sp + #0xfffffffffffffff0)), (sp + #0xffffffffffffffec))
+    v1 = r1
   blk4 @ 0x20190:
-    ret load32((sp + #0xffffffffffffffec))
+    ret v1
 -- card
 {"addr":"0x20158","approxTokens":198,"blocks":5,"hardReasons":[],"name":"pick","nameSources":["symtab","dwarf"],"section":".text","size":68,"unsupported":0}
 

@@ -1,5 +1,5 @@
 # group: locals, casts, total lines, gotos, card approxTokens
-C/C++ debug: 4301, 5724, 22499, 9, 290172
+C/C++ debug: 4342, 5511, 21620, 8, 290778
 C/C++ stripped: 1447, 3150, 16496, 5, 263910
 Go: 69533, 71216, 301510, 328, 1056678
 Rust: 63386, 73879, 332286, 8156, 708624

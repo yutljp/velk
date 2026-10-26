@@ -1,4 +1,4 @@
-# arm32/integers.thumb.O2.elf: elf arm32 no entry, 9 functions, 0 lift failures, 2 unsupported, 0 gotos
+# arm32/integers.thumb.O2.elf: elf arm32 no entry, 9 functions, 0 lift failures, 0 unsupported, 0 gotos
 0x20124 6 narrow_add symtab,dwarf
 0x2012c 4 widen_mul symtab,dwarf
 0x20130 10 mixed_sign symtab,dwarf
@@ -50,29 +50,21 @@ fn widen_mul @ 0x2012c (size 4)
 == 0x20130 mixed_sign
 -- decompile
 /* velk pseudo-C: mixed_sign @ 0x20130 */
-int32_t mixed_sign(int32_t a0, int32_t a1) {
-    /* unsupported: AAPCS32 multiword, floating-point or aggregate declaration */
-    int32_t t1 = a0 >> 31;
-    int32_t v1 = t1;
-    int32_t v2 = (uint32_t)a0 - a1;
-    /* unsupported: ARM sbc r1, r2, 0x0 at 0x20134 */
-    return a0;
+long long mixed_sign(int a, unsigned int b) {
+    uint32_t v2 = a - b;
+    return v2 | (uint64_t)((uint32_t)(a >> 31) - ((v2 + b >= b) ^ 0x1)) << 32;
 }
 -- signature
-int32_t (int32_t a0, int32_t a1)
+long long (int a, unsigned int b)
 -- references
 
 -- ir
 fn mixed_sign @ 0x20130 (size 10)
   blk0 @ 0x20130:
-    unsupported: AAPCS32 multiword, floating-point or aggregate declaration
-    t1 = (sext32(r0) >>> #0x1f)
-    v1 = (t1 & #0xffffffff)
-    v2 = ((r0 - r1) & #0xffffffff)
-    unsupported: ARM sbc r1, r2, 0x0 at 0x20134
-    ret r0
+    v2 = (r0 - r1)
+    ret (v2 | ((((sext32(r0) >>> #0x1f) - (select cs (v2 + r1), r1 ? #0x1, #0x0 ^ #0x1)) & #0xffffffff) << #0x20))
 -- card
-{"addr":"0x20130","approxTokens":120,"blocks":1,"hardReasons":[],"name":"mixed_sign","nameSources":["symtab","dwarf"],"section":".text","size":10,"unsupported":2}
+{"addr":"0x20130","approxTokens":120,"blocks":1,"hardReasons":[],"name":"mixed_sign","nameSources":["symtab","dwarf"],"section":".text","size":10,"unsupported":0}
 
 == 0x2013c in_range
 -- decompile
@@ -114,8 +106,8 @@ fn in_range @ 0x2013c (size 26)
 -- decompile
 /* velk pseudo-C: rotate_left @ 0x20158 */
 unsigned int rotate_left(unsigned int x, unsigned int k) {
-    uint8_t t1 = -k & 0x1f;
-    return x >> t1 | x << (32 - t1 & 0x1f);
+    uint8_t v1 = -k;
+    return x >> (v1 & 0x1f) | x << (32 - v1 & 0x1f);
 }
 -- signature
 unsigned int (unsigned int x, unsigned int k)
@@ -124,8 +116,8 @@ unsigned int (unsigned int x, unsigned int k)
 -- ir
 fn rotate_left @ 0x20158 (size 6)
   blk0 @ 0x20158:
-    t1 = ((#0x0 - r1) & #0x1f)
-    ret (((r0 >> t1) | (r0 << ((#0x20 - t1) & #0x1f))) & #0xffffffff)
+    v1 = (#0x0 - r1)
+    ret (((r0 >> (v1 & #0x1f)) | (r0 << ((#0x20 - (v1 & #0x1f)) & #0x1f))) & #0xffffffff)
 -- card
 {"addr":"0x20158","approxTokens":114,"blocks":1,"hardReasons":[],"name":"rotate_left","nameSources":["symtab","dwarf"],"section":".text","size":6,"unsupported":0}
 
@@ -181,7 +173,7 @@ int (unsigned int x)
 -- ir
 fn popcount @ 0x20160 (size 56)
   blk0 @ 0x20160:
-    v1 = (r0 & #0xffffffff)
+    v1 = r0
     v2 = #0x0
     brif ne r0, #0x0 -> 0x20166
   blk1 @ 0x20165:
@@ -262,7 +254,8 @@ int min3(int a, int b, int c) {
     if (a < c) {
         return a;
     }
-    return c;
+    int32_t v1 = c;
+    return v1;
 }
 -- signature
 int (int a, int b, int c)

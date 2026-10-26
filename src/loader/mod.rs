@@ -221,6 +221,9 @@ pub struct Image {
     pub isa: Isa,
     /// ARM mapping symbols and function entry modes, keyed by physical address.
     pub arm_modes: BTreeMap<u64, ArmMode>,
+    /// Immutable code sections of fixed-address ARM executables, which also hold literal pools.
+    pub(crate) literal_sections: Vec<std::ops::Range<u64>>,
+    pub(crate) literal_relocations: std::collections::BTreeSet<u64>,
     /// The byte order of the file's data, which its debug information
     /// is read in; None when unknown.
     byte_order: Option<object::Endianness>,
@@ -257,6 +260,7 @@ pub struct Image {
     pub result_reads: std::sync::Mutex<HashMap<u64, bool>>,
     /// The lifts made so far, shared by everything that lifts the same.
     pub lifts: crate::lift::Lifts,
+    pub(crate) word_pairs: crate::lift::pairs32::inference::Cache,
     /// Resolved targets from branch relocations and local linkage stubs,
     /// keyed by instruction address.
     pub relocations: BTreeMap<u64, u64>,
@@ -429,6 +433,8 @@ impl Image {
             format: Format::Elf,
             isa,
             arm_modes: BTreeMap::new(),
+            literal_sections: Vec::new(),
+            literal_relocations: Default::default(),
             byte_order: match isa {
                 Isa::I386 | Isa::X86_64 | Isa::AArch64 | Isa::Arm32 => {
                     Some(object::Endianness::Little)
@@ -466,6 +472,7 @@ impl Image {
             exception_handlers: Vec::new(),
             result_reads: Default::default(),
             lifts: Default::default(),
+            word_pairs: Default::default(),
             relocations: BTreeMap::new(),
             relocatable: false,
             go: false,
@@ -1050,6 +1057,29 @@ pub fn load_with_arch(path: &Path, arch: Option<Architecture>) -> Result<Image> 
     let stripped = !functions
         .values()
         .any(|function| function.name.is_some() && function.sources.contains(&NameSource::Symtab));
+    let mut literal_sections = Vec::new();
+    let mut literal_relocations = std::collections::BTreeSet::new();
+    if file.architecture() == object::Architecture::Arm
+        && file.kind() == object::ObjectKind::Executable
+    {
+        for section in file.sections() {
+            if section.kind() != object::SectionKind::Text {
+                continue;
+            }
+            let object::SectionFlags::Elf { sh_flags, .. } = section.flags() else {
+                continue;
+            };
+            if sh_flags.contains(object::elf::SHF_WRITE) {
+                continue;
+            }
+            if let Some(end) = section.address().checked_add(section.size()) {
+                literal_sections.push(section.address()..end);
+            }
+        }
+        if let Some(relocations) = file.dynamic_relocations() {
+            literal_relocations.extend(relocations.map(|(address, _)| address));
+        }
+    }
     let mut image = Image {
         slices,
         slice_offset,
@@ -1057,6 +1087,8 @@ pub fn load_with_arch(path: &Path, arch: Option<Architecture>) -> Result<Image> 
         format: format_of(kind),
         isa: isa_of(file.architecture()),
         arm_modes,
+        literal_sections,
+        literal_relocations,
         byte_order: Some(if file.is_little_endian() {
             object::Endianness::Little
         } else {
@@ -1080,6 +1112,7 @@ pub fn load_with_arch(path: &Path, arch: Option<Architecture>) -> Result<Image> 
         stack_rows: Default::default(),
         result_reads: Default::default(),
         lifts: Default::default(),
+        word_pairs: Default::default(),
         relocations,
         relocatable: file.kind() == object::ObjectKind::Relocatable,
         imports: plt::imports(&file).into_iter().collect(),

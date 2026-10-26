@@ -10,27 +10,27 @@ uint64_t sub_200fa();
 -- decompile
 /* velk pseudo-C: dispatch @ 0x200e4 */
 int dispatch(int x) {
-    uint64_t v1;
+    uint64_t v5;
     uint32_t v6;
     uint32_t v7;
-    int32_t v5;
+    int32_t v4;
     uint32_t local_0; /* [sp-c] */
     uint32_t local_1; /* [sp-4] */
 
-    uint32_t v2 = (uint32_t)x - 10;
-    int32_t v3 = v2;
-    local_0 = v3;
-    if (v2 <= 4) {
-        int32_t v4 = local_0;
+    uint32_t v1 = (uint32_t)x - 10;
+    int32_t v2 = v1;
+    local_0 = v2;
+    if (v1 <= 4) {
+        int32_t v3 = local_0;
         /* unsupported: ARM tbb [pc, r1] at 0x200f6 */
         {
             uint64_t call_values[2];
-            call_values[0] = sub_200fa((uint32_t)x, v1, v6, v7);
-            call_values[1] = v1; /* also returned by the call */
-            v5 = (uint32_t)(call_values[0]);
-            v1 = (uint32_t)(call_values[1]);
+            call_values[0] = sub_200fa((uint32_t)x, v5, v6, v7);
+            call_values[1] = v5; /* also returned by the call */
+            v4 = (uint32_t)(call_values[0]);
+            v5 = (uint32_t)(call_values[1]);
         }
-        return v5;
+        return v4;
     }
     local_1 = 0;
     return local_1;
@@ -42,18 +42,17 @@ int (int x)
 -- ir
 fn dispatch @ 0x200e4 (size 70)
   blk0 @ 0x200e4:
-    v1 = r0
-    v2 = ((v1 - #0xa) & #0xffffffff)
-    v3 = (v2 & #0xffffffff)
-    store32(v3, (sp + #0xfffffffffffffff4))
-    brif ls v2, #0x4 -> 0x200f4
+    v1 = ((r0 - #0xa) & #0xffffffff)
+    v2 = v1
+    store32(v2, (sp + #0xfffffffffffffff4))
+    brif ls v1, #0x4 -> 0x200f4
   blk1 @ 0x200f3:
     br 0x2011e
   blk2 @ 0x200f4:
-    v4 = load32((sp + #0xfffffffffffffff4))
+    v3 = load32((sp + #0xfffffffffffffff4))
     unsupported: ARM tbb [pc, r1] at 0x200f6
-    v5:r0, r1 = call 0x200fa(r0, r1, r2, r3)
-    ret v5
+    v4:r0, r1 = call 0x200fa(r0, r1, r2, r3)
+    ret v4
   blk3 @ 0x2011e:
     store32(#0x0, (sp + #0xfffffffffffffffc))
     br 0x20124

@@ -9,7 +9,7 @@ use crate::loader::dwarf::FunctionTypes;
 
 pub(crate) fn aapcs32_words(types: &FunctionTypes) -> bool {
     let word = |ty: &CType| {
-        (ty.is_narrow() && !ty.is_sse_float()) || ty.is_pointer() || *ty == CType::Void
+        ty.integer().is_some_and(|(bits, _)| bits <= 64) || ty.is_pointer() || *ty == CType::Void
     };
     types
         .params

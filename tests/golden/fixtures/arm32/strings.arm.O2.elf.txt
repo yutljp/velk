@@ -2,22 +2,24 @@
 0x20118 20 pick symtab,dwarf
 /* velk prelude */
 #include <stdint.h>
+
+extern uint32_t kName; /* address: 0x3012c */
 /* end velk prelude */
 
 == 0x20118 pick
 -- decompile
 /* velk pseudo-C: pick @ 0x20118 */
+/* ref: 0x3012c .data */
 int pick(void) {
-    return *(uint8_t *)(*(uint32_t *)(0x20124 + *(uint32_t *)(0x20128)) + 2);
+    return *(uint8_t *)(kName + 2);
 }
 -- signature
 int ()
 -- references
-
+0x3012c .data
 -- ir
 fn pick @ 0x20118 (size 20)
   blk0 @ 0x20118:
-    v1 = load8(((load32(((#0x20124 + load32(#0x20128)) & #0xffffffff)) + #0x2) & #0xffffffff))
-    ret v1
+    ret (load8(((load32(#0x3012c) + #0x2) & #0xffffffff)) & #0xffffffff)
 -- card
 {"addr":"0x20118","approxTokens":120,"blocks":1,"hardReasons":[],"name":"pick","nameSources":["symtab","dwarf"],"section":".text","size":20,"unsupported":0}

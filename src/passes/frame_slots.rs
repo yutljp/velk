@@ -12,7 +12,7 @@ use crate::passes::{copies, frame};
 /// Rewrites every stack access against the entry frame and drops the
 /// adjustments, when the stack pointer is only ever a frame base.
 pub fn settle(ir: &mut FunctionIr) {
-    if ir.isa == crate::loader::Isa::I386 {
+    if matches!(ir.isa, crate::loader::Isa::I386 | crate::loader::Isa::Arm32) {
         settle_i386(ir);
     }
     // A declared call reads the stack pointer as it stands at the call.
@@ -102,6 +102,36 @@ fn substitute_frame_pointer(ir: &mut FunctionIr, frames: &[Option<i64>]) -> bool
     } else {
         crate::arch::frame_pointer(ir.isa)
     };
+    fn adjustment(stmt: &Stmt, fp: u16) -> Option<i64> {
+        let Stmt::Assign { dest, value } = stmt else {
+            return None;
+        };
+        if dest.index != fp {
+            return None;
+        }
+        let value = match value {
+            Expr::Bin {
+                op: BinOp::And,
+                lhs,
+                rhs,
+            } if matches!(rhs.as_ref(), Expr::Const(0xffff_ffff)) => lhs.as_ref(),
+            other => other,
+        };
+        let Expr::Bin { op, lhs, rhs } = value else {
+            return None;
+        };
+        let (Expr::Reg { index, .. }, Expr::Const(delta)) = (lhs.as_ref(), rhs.as_ref()) else {
+            return None;
+        };
+        if *index != fp {
+            return None;
+        }
+        match op {
+            BinOp::Add => Some(*delta as i64),
+            BinOp::Sub => (*delta as i64).checked_neg(),
+            _ => None,
+        }
+    }
     // The setup, its block, and the entry-frame offset it gives the frame
     // pointer: in the entry block, or later where the prologue waits past
     // an early return.
@@ -185,13 +215,24 @@ fn substitute_frame_pointer(ir: &mut FunctionIr, frames: &[Option<i64>]) -> bool
             {
                 continue;
             }
+            if matches!(block.stmts.last(), Some(Stmt::Ret { .. }))
+                && adjustment(stmt, fp).is_some()
+            {
+                continue;
+            }
             let restores = matches!(
                 stmt,
                 Stmt::Assign {
                     value: Expr::Load { .. },
                     ..
                 }
-            ) && matches!(block.stmts.last(), Some(Stmt::Ret { .. }))
+            ) || matches!(stmt, Stmt::Assign { value: Expr::Bin { op: BinOp::And, lhs, rhs }, .. }
+                if matches!(ir.isa, crate::loader::Isa::I386 | crate::loader::Isa::Arm32)
+                    && matches!(lhs.as_ref(), Expr::Load { width: 4, signed: false, .. })
+                    && matches!(rhs.as_ref(), Expr::Const(0xffff_ffff))
+            );
+            let restores = restores
+                && matches!(block.stmts.last(), Some(Stmt::Ret { .. }))
                 && block.stmts[position + 1..]
                     .iter()
                     .all(|later| !crate::ir::visit::statement_reads(later).contains(&fp));
@@ -210,7 +251,9 @@ fn substitute_frame_pointer(ir: &mut FunctionIr, frames: &[Option<i64>]) -> bool
         let Some(mut frame) = frames[index] else {
             return false;
         };
+        let mut base = base;
         for (position, stmt) in block.stmts.iter_mut().enumerate() {
+            let delta = adjustment(stmt, fp);
             // The save before the setup reads the caller's frame pointer.
             if index != setup_block || position > setup_at {
                 let address = Expr::bin(
@@ -219,6 +262,12 @@ fn substitute_frame_pointer(ir: &mut FunctionIr, frames: &[Option<i64>]) -> bool
                     Expr::Const(base.wrapping_sub(frame) as u64),
                 );
                 crate::ir::visit::replace_reads(stmt, &[(fp, address)]);
+            }
+            if let Some(delta) = delta {
+                let Some(next) = base.checked_add(delta) else {
+                    return false;
+                };
+                base = next;
             }
             if let Stmt::Assign { dest, value } = stmt
                 && dest.index == sp
@@ -494,11 +543,8 @@ pub(crate) fn frame_slot(expr: &Expr, frame: i64, sp: u16) -> Option<i64> {
             lhs,
             rhs,
         } => match (lhs.as_ref(), rhs.as_ref()) {
-            (Expr::Reg { index, .. }, Expr::Const(delta)) if *index == sp => {
-                Some(frame.wrapping_add(*delta as i64))
-            }
-            (Expr::Const(delta), Expr::Reg { index, .. }) if *index == sp => {
-                Some(frame.wrapping_add(*delta as i64))
+            (base, Expr::Const(delta)) | (Expr::Const(delta), base) => {
+                frame_slot(base, frame, sp).and_then(|offset| offset.checked_add(*delta as i64))
             }
             _ => None,
         },
@@ -506,9 +552,9 @@ pub(crate) fn frame_slot(expr: &Expr, frame: i64, sp: u16) -> Option<i64> {
             op: BinOp::Sub,
             lhs,
             rhs,
-        } => match (lhs.as_ref(), rhs.as_ref()) {
-            (Expr::Reg { index, .. }, Expr::Const(delta)) if *index == sp => {
-                Some(frame.wrapping_sub(*delta as i64))
+        } => match rhs.as_ref() {
+            Expr::Const(delta) => {
+                frame_slot(lhs, frame, sp).and_then(|offset| offset.checked_sub(*delta as i64))
             }
             _ => None,
         },

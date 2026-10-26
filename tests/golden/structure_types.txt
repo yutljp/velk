@@ -1,7 +1,7 @@
 # fixture: distinct printed structure types across all functions
 alt.o: 0
 arm32/aggregate_abi.arm.O0.elf: 0
-arm32/aggregate_abi.arm.O2.elf: 1
+arm32/aggregate_abi.arm.O2.elf: 0
 arm32/aggregate_abi.thumb.O0.elf: 0
 arm32/aggregate_abi.thumb.O2.elf: 0
 arm32/alt_names.arm.O0.elf: 0
@@ -11,15 +11,15 @@ arm32/alt_names.thumb.O2.elf: 0
 arm32/arith_mixed.arm.O0.elf: 0
 arm32/arith_mixed.arm.O2.elf: 0
 arm32/arith_mixed.thumb.O0.elf: 0
-arm32/arith_mixed.thumb.O2.elf: 0
+arm32/arith_mixed.thumb.O2.elf: 1
 arm32/calls.arm.O0.elf: 0
-arm32/calls.arm.O2.elf: 1
+arm32/calls.arm.O2.elf: 0
 arm32/calls.thumb.O0.elf: 0
 arm32/calls.thumb.O2.elf: 0
 arm32/control.arm.O0.elf: 0
 arm32/control.arm.O2.elf: 0
 arm32/control.thumb.O0.elf: 0
-arm32/control.thumb.O2.elf: 1
+arm32/control.thumb.O2.elf: 2
 arm32/divmod_a64.arm.O0.elf: 0
 arm32/divmod_a64.arm.O2.elf: 0
 arm32/divmod_a64.thumb.O0.elf: 0
@@ -31,7 +31,7 @@ arm32/divmod_x64.thumb.O2.elf: 0
 arm32/float.arm.O0.elf: 0
 arm32/float.arm.O2.elf: 0
 arm32/float.thumb.O0.elf: 0
-arm32/float.thumb.O2.elf: 0
+arm32/float.thumb.O2.elf: 1
 arm32/integers.arm.O0.elf: 0
 arm32/integers.arm.O2.elf: 0
 arm32/integers.thumb.O0.elf: 0
@@ -51,7 +51,7 @@ arm32/l2_loop.thumb.O2.elf: 0
 arm32/l4_memory.arm.O0.elf: 0
 arm32/l4_memory.arm.O2.elf: 0
 arm32/l4_memory.thumb.O0.elf: 0
-arm32/l4_memory.thumb.O2.elf: 0
+arm32/l4_memory.thumb.O2.elf: 2
 arm32/l5_switch.arm.O0.elf: 0
 arm32/l5_switch.arm.O2.elf: 0
 arm32/l5_switch.thumb.O0.elf: 0

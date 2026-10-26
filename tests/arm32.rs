@@ -65,6 +65,13 @@ fn every_arm32_fixture_function_has_valid_c_syntax() {
             }
             let declarations: String = callees
                 .iter()
+                .filter(|name| {
+                    !rendered.lines().any(|line| {
+                        !line.starts_with(char::is_whitespace)
+                            && line.ends_with(';')
+                            && line.contains(&format!(" {name}("))
+                    })
+                })
                 .map(|name| format!("extern uint64_t {name}();\n"))
                 .collect();
             let source = scratch.join("check.c");

@@ -10,8 +10,10 @@
 -- decompile
 /* velk pseudo-C: item_weight @ 0x200f4 */
 int item_weight(struct item *items, int i) {
-    int32_t v3 = (uint32_t)(uintptr_t)items + ((uint32_t)i * 3 << 2);
-    return *(uint32_t *)((uint32_t)v3 + 4) * *(int16_t *)((uint32_t)v3 + 8);
+    uintptr_t v1;
+
+    v1 = (uint32_t)(uintptr_t)items + ((uint32_t)i * 3 << 2);
+    return *(uint32_t *)((uint32_t)v1 + 4) * *(int16_t *)((uint32_t)v1 + 8);
 }
 -- signature
 int (struct item * items, int i)
@@ -20,8 +22,8 @@ int (struct item * items, int i)
 -- ir
 fn item_weight @ 0x200f4 (size 30)
   blk0 @ 0x200f4:
-    v3 = (r0 + ((((r1 * #0x3) & #0xffffffff) << #0x2) & #0xffffffff))
-    ret ((load32(((v3 + #0x4) & #0xffffffff)) * load16(((v3 + #0x8) & #0xffffffff))s) & #0xffffffff)
+    v1 = (r0 + (((r1 * #0x3) & #0xffffffff) << #0x2))
+    ret ((load32(((v1 + #0x4) & #0xffffffff)) * load16(((v1 + #0x8) & #0xffffffff))s) & #0xffffffff)
 -- card
 {"addr":"0x200f4","approxTokens":168,"blocks":1,"hardReasons":[],"name":"item_weight","nameSources":["symtab","dwarf"],"section":".text","size":30,"unsupported":0}
 
@@ -45,7 +47,7 @@ fn cell_set @ 0x20114 (size 44)
     store32(r0, (sp + #0xfffffffffffffffc))
     store32(r1, (sp + #0xfffffffffffffff8))
     store32(r2, (sp + #0xfffffffffffffff4))
-    store32(r2, ((load32((sp + #0xfffffffffffffffc)) + (((r1 * #0x3) & #0xffffffff) << #0x2)) & #0xffffffff))
+    store32(load32((sp + #0xfffffffffffffff4)), ((load32((sp + #0xfffffffffffffffc)) + (((load32((sp + #0xfffffffffffffff8)) * #0x3) & #0xffffffff) << #0x2)) & #0xffffffff))
     store32((load32((sp + #0xfffffffffffffff4)) + #0x1), (((load32((sp + #0xfffffffffffffffc)) + (((load32((sp + #0xfffffffffffffff8)) * #0x3) & #0xffffffff) << #0x2)) + #0x8) & #0xffffffff))
     ret #0x0
 -- card

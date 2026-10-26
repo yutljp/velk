@@ -6,11 +6,14 @@
 /* velk prelude */
 #include <stdbool.h>
 #include <stdint.h>
+
+extern uint32_t sink; /* address: 0x302f0 */
 /* end velk prelude */
 
 == 0x2011c sum_while
 -- decompile
 /* velk pseudo-C: sum_while @ 0x2011c */
+/* ref: 0x302f0 .bss */
 int sum_while(int n) {
     uint32_t result; /* [sp-10] */
     int32_t i; /* [sp-14] */
@@ -18,14 +21,14 @@ int sum_while(int n) {
     result = 0;
     for (i = 0; i < n; i++) {
         result += i;
-        *(uint32_t *)(0x2016c + *(uint32_t *)(0x20188)) = result;
+        sink = result;
     }
     return result;
 }
 -- signature
 int (int n)
 -- references
-
+0x302f0 .bss
 -- ir
 fn sum_while @ 0x2011c (size 112)
   blk0 @ 0x2011c:
@@ -37,9 +40,8 @@ fn sum_while @ 0x2011c (size 112)
   blk2 @ 0x20149:
     br 0x2017c
   blk3 @ 0x2014c:
-    v1 = ((load32((sp + #0xfffffffffffffff0)) + load32((sp + #0xffffffffffffffec))) & #0xffffffff)
-    store32(v1, (sp + #0xfffffffffffffff0))
-    store32(v1, ((#0x2016c + load32(#0x20188)) & #0xffffffff))
+    store32((load32((sp + #0xfffffffffffffff0)) + load32((sp + #0xffffffffffffffec))), (sp + #0xfffffffffffffff0))
+    store32(load32((sp + #0xfffffffffffffff0)), #0x302f0)
     store32((load32((sp + #0xffffffffffffffec)) + #0x1), (sp + #0xffffffffffffffec))
     br 0x2013c
   blk4 @ 0x2017c:
@@ -50,6 +52,7 @@ fn sum_while @ 0x2011c (size 112)
 == 0x2018c count_down
 -- decompile
 /* velk pseudo-C: count_down @ 0x2018c */
+/* ref: 0x302f0 .bss */
 int count_down(int n) {
     int32_t local_0; /* [sp-c] */
     uint32_t result; /* [sp-10] */
@@ -59,7 +62,7 @@ int count_down(int n) {
     while (true) {
         result += 1;
         local_0 += 0xffffffff;
-        *(uint32_t *)(0x201d0 + *(uint32_t *)(0x201e8)) = result;
+        sink = result;
         if (local_0 <= 0) break;
     }
     return result;
@@ -67,7 +70,7 @@ int count_down(int n) {
 -- signature
 int (int n)
 -- references
-
+0x302f0 .bss
 -- ir
 fn count_down @ 0x2018c (size 96)
   blk0 @ 0x2018c:
@@ -76,7 +79,7 @@ fn count_down @ 0x2018c (size 96)
   blk1 @ 0x201a4:
     store32((load32((sp + #0xfffffffffffffff0)) + #0x1), (sp + #0xfffffffffffffff0))
     store32((load32((sp + #0xfffffffffffffff4)) + #0xffffffff), (sp + #0xfffffffffffffff4))
-    store32(load32((sp + #0xfffffffffffffff0)), ((#0x201d0 + load32(#0x201e8)) & #0xffffffff))
+    store32(load32((sp + #0xfffffffffffffff0)), #0x302f0)
     brif le load32((sp + #0xfffffffffffffff4)), #0x0 -> 0x201dc
   blk2 @ 0x201d9:
     br 0x201a4
@@ -88,6 +91,7 @@ fn count_down @ 0x2018c (size 96)
 == 0x201ec sum_skip_odd
 -- decompile
 /* velk pseudo-C: sum_skip_odd @ 0x201ec */
+/* ref: 0x302f0 .bss */
 int sum_skip_odd(int n) {
     uint32_t result; /* [sp-10] */
     int32_t i; /* [sp-14] */
@@ -97,7 +101,7 @@ int sum_skip_odd(int n) {
         if ((i & 0x1) == 0) {
         } else {
             result += i;
-            *(uint32_t *)(0x20250 + *(uint32_t *)(0x2026c)) = result;
+            sink = result;
         }
     }
     return result;
@@ -105,7 +109,7 @@ int sum_skip_odd(int n) {
 -- signature
 int (int n)
 -- references
-
+0x302f0 .bss
 -- ir
 fn sum_skip_odd @ 0x201ec (size 132)
   blk0 @ 0x201ec:
@@ -123,9 +127,8 @@ fn sum_skip_odd @ 0x201ec (size 132)
   blk5 @ 0x2022c:
     br 0x20250
   blk6 @ 0x20230:
-    v1 = ((load32((sp + #0xfffffffffffffff0)) + load32((sp + #0xffffffffffffffec))) & #0xffffffff)
-    store32(v1, (sp + #0xfffffffffffffff0))
-    store32(v1, ((#0x20250 + load32(#0x2026c)) & #0xffffffff))
+    store32((load32((sp + #0xfffffffffffffff0)) + load32((sp + #0xffffffffffffffec))), (sp + #0xfffffffffffffff0))
+    store32(load32((sp + #0xfffffffffffffff0)), #0x302f0)
   blk7 @ 0x20250:
     store32((load32((sp + #0xffffffffffffffec)) + #0x1), (sp + #0xffffffffffffffec))
     br 0x2020c
@@ -138,12 +141,10 @@ fn sum_skip_odd @ 0x201ec (size 132)
 -- decompile
 /* velk pseudo-C: find_first @ 0x20270 */
 int find_first(int *p, int n, int v) {
-    uint32_t local_0; /* [sp-10] */
     int32_t i; /* [sp-1c] */
 
-    local_0 = (uint32_t)(uintptr_t)p;
     for (i = 0; i < n; i++) {
-        if (*(uint32_t *)((local_0 + ((uint64_t)i << 2)) & 0xffffffff) == v) {
+        if (*(uint32_t *)(((uint32_t)(uintptr_t)p + ((uint64_t)i << 2)) & 0xffffffff) == v) {
             return i;
         }
     }
@@ -156,16 +157,13 @@ int (int * p, int n, int v)
 -- ir
 fn find_first @ 0x20270 (size 128)
   blk0 @ 0x20270:
-    store32(r0, (sp + #0xfffffffffffffff0))
-    store32(r1, (sp + #0xffffffffffffffec))
-    store32(r2, (sp + #0xffffffffffffffe8))
     store32(#0x0, (sp + #0xffffffffffffffe4))
   blk1 @ 0x20290:
-    brif lt load32((sp + #0xffffffffffffffe4)), load32((sp + #0xffffffffffffffec)) -> 0x202a0
+    brif lt load32((sp + #0xffffffffffffffe4)), r1 -> 0x202a0
   blk2 @ 0x2029d:
     br 0x202dc
   blk3 @ 0x202a0:
-    brif eq load32(((load32((sp + #0xfffffffffffffff0)) + (load32((sp + #0xffffffffffffffe4)) << #0x2)) & #0xffffffff)), load32((sp + #0xffffffffffffffe8)) -> 0x202bc
+    brif eq load32(((r0 + (load32((sp + #0xffffffffffffffe4)) << #0x2)) & #0xffffffff)), r2 -> 0x202bc
   blk4 @ 0x202b9:
     br 0x202c8
   blk5 @ 0x202bc:

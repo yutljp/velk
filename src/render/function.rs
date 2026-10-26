@@ -1200,6 +1200,9 @@ fn render_with(
     // with no type known for it.
     let own = sanitize(&name);
     let stack_name = crate::ir::reg_name(ir.isa, stack_pointer(ir.isa), 64);
+    if matches!(ir.isa, crate::loader::Isa::I386 | crate::loader::Isa::Arm32) {
+        super::frame_registers::drop_unused_adjustments(&mut body, &stack_name);
+    }
     let stack_provider = (!ctx.names.contains_key(&stack_pointer(ir.isa))
         && variables::mentions(&body, &stack_name))
     .then(|| vacant_name("velk_entry_stack_pointer", &mut call_reserved));

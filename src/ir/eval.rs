@@ -155,6 +155,14 @@ impl<'a> Machine<'a> {
                 .map(|(index, block)| (block.start, index))
                 .collect(),
         };
+        for param in &ir.params {
+            if let Some(register) = super::trials::register_pair(ir, param)
+                && !machine.registers.contains_key(&param.index)
+            {
+                let value = super::trials::pair_input(register, setup.registers, setup.seed);
+                machine.registers.insert(param.index, value);
+            }
+        }
         machine
             .registers
             .insert(crate::arch::stack_pointer(ir.isa), stack_top(ir.isa));

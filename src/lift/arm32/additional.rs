@@ -13,6 +13,19 @@ const COMPARE_RIGHT: u16 = crate::ir::TEMP_BASE + 0x4d;
 
 #[derive(Clone, Copy)]
 pub(in crate::lift) enum Instruction {
+    FloatMemory {
+        register: u8,
+        base: u8,
+        offset: i64,
+        double: bool,
+        load: bool,
+    },
+    HalfMultiply {
+        destination: u8,
+        left: u8,
+        right: u8,
+        halves: u8,
+    },
     Extend {
         destination: u8,
         source: u8,
@@ -35,6 +48,12 @@ pub(in crate::lift) enum Instruction {
     Reverse {
         destination: u8,
         source: u8,
+    },
+    FloatStack {
+        first: u8,
+        count: u8,
+        double: bool,
+        pop: bool,
     },
     Float {
         word: u32,
@@ -71,6 +90,81 @@ pub(super) fn decode(bytes: &[u8], mode: ArmMode) -> Option<Instruction> {
         ArmMode::Data => return None,
     };
     let reg = |shift: u32| ((word >> shift) & 15) as u8;
+    if ((mode == ArmMode::Arm && word >> 28 < 15) || (mode == ArmMode::Thumb && word >> 28 == 14))
+        && word & 0x0f20_0e00 == 0x0d00_0a00
+    {
+        let double = word & 0x100 != 0;
+        let register = if double {
+            reg(12) | ((word >> 18) & 16) as u8
+        } else {
+            (reg(12) * 2) | ((word >> 22) & 1) as u8
+        };
+        let base = reg(16);
+        let load = word & (1 << 20) != 0;
+        if base == 15 && !load {
+            return None;
+        }
+        let offset = i64::from(word & 255) * 4;
+        return Some(Instruction::FloatMemory {
+            register,
+            base,
+            offset: if word & (1 << 23) != 0 {
+                offset
+            } else {
+                -offset
+            },
+            double,
+            load,
+        });
+    }
+    let multiply = match mode {
+        ArmMode::Arm if word >> 28 < 15 && word & 0x0ff0_f090 == 0x0160_0080 => {
+            Some((reg(16), reg(0), reg(8), ((word >> 5) & 3) as u8))
+        }
+        ArmMode::Thumb if word & 0xfff0_f0c0 == 0xfb10_f000 => {
+            let halves = (((word >> 5) & 1) | ((word >> 3) & 2)) as u8;
+            Some((reg(8), reg(16), reg(0), halves))
+        }
+        _ => None,
+    };
+    if let Some((destination, left, right, halves)) = multiply {
+        if [destination, left, right].contains(&15)
+            || (mode == ArmMode::Thumb && [destination, left, right].contains(&13))
+        {
+            return None;
+        }
+        return Some(Instruction::HalfMultiply {
+            destination,
+            left,
+            right,
+            halves,
+        });
+    }
+    if (mode == ArmMode::Arm && word >> 28 < 15) || (mode == ArmMode::Thumb && word >> 28 == 14) {
+        let encoding = word & 0x0fbf_0e00;
+        if matches!(encoding, 0x0d2d_0a00 | 0x0cbd_0a00) {
+            let double = word & 0x100 != 0;
+            let words = (word & 255) as u8;
+            let first = if double {
+                reg(12) | ((word >> 18) & 16) as u8
+            } else {
+                (reg(12) * 2) | ((word >> 22) & 1) as u8
+            };
+            let count = if double { words / 2 } else { words };
+            if words == 0
+                || (double && (!words.is_multiple_of(2) || count > 16))
+                || u16::from(first) + u16::from(count) > 32
+            {
+                return None;
+            }
+            return Some(Instruction::FloatStack {
+                first,
+                count,
+                double,
+                pop: encoding == 0x0cbd_0a00,
+            });
+        }
+    }
     if mode == ArmMode::Arm && word >> 28 < 15 {
         if word & 0x0f8f_03f0 == 0x068f_0070 {
             let signed = word & (1 << 22) == 0;
@@ -180,8 +274,135 @@ fn write(lifter: &mut Lifter<'_>, number: u8, precision: Precision, value: Expr)
 }
 
 impl Instruction {
-    pub(super) fn execute(self, lifter: &mut Lifter<'_>) {
+    pub(super) fn execute(self, lifter: &mut Lifter<'_>, pc: u64, thumb: bool) {
         match self {
+            Self::FloatMemory {
+                register,
+                base,
+                offset,
+                double,
+                load,
+            } => {
+                let value = if base == 15 {
+                    Expr::constant(u64::from(
+                        (pc as u32).wrapping_add(if thumb { 4 } else { 8 }) & !3,
+                    ))
+                } else if matches!(base, 7 | 11 | 13) {
+                    Expr::reg(u16::from(base), 64)
+                } else {
+                    Lifter::read(base, pc, thumb)
+                };
+                let addr = Expr::bin(BinOp::Add, value, Expr::constant(offset as u64));
+                let addr = if matches!(base, 7 | 11 | 13) {
+                    addr
+                } else {
+                    super::low(addr)
+                };
+                let precision = if double {
+                    Precision::Double
+                } else {
+                    Precision::Single
+                };
+                let width = if double { 8 } else { 4 };
+                if load {
+                    write(
+                        lifter,
+                        register,
+                        precision,
+                        super::literal(lifter.image, &addr, width, false).unwrap_or_else(|| {
+                            Expr::Load {
+                                addr: Box::new(addr),
+                                width,
+                                signed: false,
+                            }
+                        }),
+                    );
+                } else {
+                    lifter.stmts.push(Stmt::Store {
+                        addr,
+                        value: read(register, precision),
+                        width,
+                    });
+                }
+            }
+            Self::HalfMultiply {
+                destination,
+                left,
+                right,
+                halves,
+            } => {
+                let half = |register, top| Expr::SignExtend {
+                    value: Box::new(if top {
+                        Expr::bin(
+                            BinOp::Shr,
+                            Expr::reg(u16::from(register), 32),
+                            Expr::constant(16),
+                        )
+                    } else {
+                        Expr::reg(u16::from(register), 32)
+                    }),
+                    width: 2,
+                };
+                lifter.assign(
+                    destination,
+                    Expr::bin(
+                        BinOp::Mul,
+                        half(left, halves & 1 != 0),
+                        half(right, halves & 2 != 0),
+                    ),
+                );
+            }
+            Self::FloatStack {
+                first,
+                count,
+                double,
+                pop,
+            } => {
+                let width = if double { 8 } else { 4 };
+                let bytes = u64::from(count) * u64::from(width);
+                if !pop {
+                    lifter.assign(
+                        13,
+                        Expr::bin(BinOp::Sub, Expr::reg(13, 64), Expr::constant(bytes)),
+                    );
+                }
+                let precision = if double {
+                    Precision::Double
+                } else {
+                    Precision::Single
+                };
+                for slot in 0..count {
+                    let addr = Expr::bin(
+                        BinOp::Add,
+                        Expr::reg(13, 64),
+                        Expr::constant(u64::from(slot) * u64::from(width)),
+                    );
+                    if pop {
+                        write(
+                            lifter,
+                            first + slot,
+                            precision,
+                            Expr::Load {
+                                addr: Box::new(addr),
+                                width,
+                                signed: false,
+                            },
+                        );
+                    } else {
+                        lifter.stmts.push(Stmt::Store {
+                            addr,
+                            value: read(first + slot, precision),
+                            width,
+                        });
+                    }
+                }
+                if pop {
+                    lifter.assign(
+                        13,
+                        Expr::bin(BinOp::Add, Expr::reg(13, 64), Expr::constant(bytes)),
+                    );
+                }
+            }
             Self::Extend {
                 destination,
                 source,
@@ -410,6 +631,41 @@ impl Instruction {
 impl fmt::Display for Instruction {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
+            Self::FloatMemory {
+                register,
+                base,
+                offset,
+                double,
+                load,
+            } => write!(
+                f,
+                "v{} {}{register}, [r{base}, #{offset}]",
+                if *load { "ldr" } else { "str" },
+                if *double { "d" } else { "s" }
+            ),
+            Self::HalfMultiply {
+                destination,
+                left,
+                right,
+                halves,
+            } => write!(
+                f,
+                "smul{}{} r{destination}, r{left}, r{right}",
+                if halves & 1 == 0 { "b" } else { "t" },
+                if halves & 2 == 0 { "b" } else { "t" }
+            ),
+            Self::FloatStack {
+                first,
+                count,
+                double,
+                pop,
+            } => write!(
+                f,
+                "v{} {{{}{first}..{}}}",
+                if *pop { "pop" } else { "push" },
+                if *double { "d" } else { "s" },
+                u16::from(*first) + u16::from(*count) - 1
+            ),
             Self::Extend {
                 destination,
                 source,

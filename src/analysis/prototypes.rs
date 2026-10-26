@@ -665,10 +665,24 @@ const DEMANGLED: &[(&str, &str)] = &[
     ("std::terminate()", "_ZSt9terminatev"),
 ];
 
-/// Functions of the Go and Rust runtimes whose arguments have stayed the
+/// Functions of compiler and language runtimes whose arguments have stayed the
 /// same across releases, as their arguments arrive in the registers of the
 /// language's own convention. A Go `int` and `uintptr` are 64 bits.
 const RUNTIME: &[&str] = &[
+    "int32_t __divsi3(int32_t, int32_t)",
+    "uint32_t __udivsi3(uint32_t, uint32_t)",
+    "int32_t __modsi3(int32_t, int32_t)",
+    "uint32_t __umodsi3(uint32_t, uint32_t)",
+    "int32_t __aeabi_idiv(int32_t, int32_t)",
+    "uint32_t __aeabi_uidiv(uint32_t, uint32_t)",
+    "int32_t __aeabi_idivmod(int32_t, int32_t)",
+    "uint32_t __aeabi_uidivmod(uint32_t, uint32_t)",
+    "int64_t __divdi3(int64_t, int64_t)",
+    "uint64_t __udivdi3(uint64_t, uint64_t)",
+    "int64_t __moddi3(int64_t, int64_t)",
+    "uint64_t __umoddi3(uint64_t, uint64_t)",
+    "int64_t __aeabi_ldivmod(int64_t, int64_t)",
+    "uint64_t __aeabi_uldivmod(uint64_t, uint64_t)",
     "void runtime.memmove(void *, const void *, uintptr_t)",
     "void runtime.memclrNoHeapPointers(void *, uintptr_t)",
     "_Bool runtime.memequal(const void *, const void *, uintptr_t)",
@@ -856,7 +870,7 @@ pub fn for_image(name: &str, image: &Image) -> Option<&'static Prototype> {
     if let Some(prototype) = generated::for_image(name, image) {
         return Some(prototype);
     }
-    of(name, image.format == crate::loader::Format::MachO)
+    of(name, image.format == crate::loader::Format::MachO).or_else(|| runtime(name))
 }
 
 /// The prototype of a function of the Go or Rust runtime, by its name.

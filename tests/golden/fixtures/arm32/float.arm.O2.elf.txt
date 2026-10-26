@@ -60,8 +60,8 @@ float (int32_t a0)
 fn lerp @ 0x2013c (size 12)
   blk0 @ 0x2013c:
     unsupported: AAPCS32 multiword, floating-point or aggregate declaration
-    v1 = ((d2 & #0xffffffff00000000) | (fsub.s(((d0 >> #0x20) & #0xffffffff), (d0 & #0xffffffff)) & #0xffffffff))
-    v2 = ((d0 & #0xffffffff00000000) | (fadd.s((d0 & #0xffffffff), fmul.s((v1 & #0xffffffff), (d1 & #0xffffffff))) & #0xffffffff))
+    v1 = ((d2 & #0xffffffff00000000) | fsub.s((d0 >> #0x20), (d0 & #0xffffffff)))
+    v2 = ((d0 & #0xffffffff00000000) | fadd.s((d0 & #0xffffffff), fmul.s((v1 & #0xffffffff), (d1 & #0xffffffff))))
     ret r0
 -- card
 {"addr":"0x2013c","approxTokens":114,"blocks":1,"hardReasons":[],"name":"lerp","nameSources":["symtab","dwarf"],"section":".text","size":12,"unsupported":1}
@@ -85,7 +85,7 @@ int32_t ()
 fn truncate_to_int @ 0x20148 (size 12)
   blk0 @ 0x20148:
     unsupported: AAPCS32 multiword, floating-point or aggregate declaration
-    v1 = ((d0 & #0xffffffff00000000) | (select ne funord.d(d0, d0), #0x0 ? #0x0, select ne fle.d(d0, #0xc1e0000000000000), #0x0 ? #0x80000000, select ne fle.d(#0x41e0000000000000, d0), #0x0 ? #0x7fffffff, f.dtos32.sat(d0) & #0xffffffff))
+    v1 = ((d0 & #0xffffffff00000000) | select ne funord.d(d0, d0), #0x0 ? #0x0, select ne fle.d(d0, #0xc1e0000000000000), #0x0 ? #0x80000000, select ne fle.d(#0x41e0000000000000, d0), #0x0 ? #0x7fffffff, f.dtos32.sat(d0))
     v2 = (v1 & #0xffffffff)
     ret v2
 -- card

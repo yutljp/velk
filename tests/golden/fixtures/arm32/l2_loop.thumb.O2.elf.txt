@@ -1,4 +1,4 @@
-# arm32/l2_loop.thumb.O2.elf: elf arm32 no entry, 4 functions, 0 lift failures, 0 unsupported, 1 gotos
+# arm32/l2_loop.thumb.O2.elf: elf arm32 no entry, 4 functions, 0 lift failures, 0 unsupported, 0 gotos
 0x2011c 110 sum_while symtab,dwarf
 0x2018c 102 count_down symtab,dwarf
 0x201f4 142 sum_skip_odd symtab,dwarf
@@ -99,7 +99,7 @@ fn sum_while @ 0x2011c (size 110)
     v5 = #0x0
     br 0x2016c
   blk7 @ 0x2013a:
-    v6 = ((#0x7ffffffc & r0) & #0xffffffff)
+    v6 = (#0x7ffffffc & r0)
     v4 = #0x0
     v5 = #0x0
   blk8 @ 0x20148:
@@ -204,7 +204,7 @@ int (int n)
 -- ir
 fn count_down @ 0x2018c (size 102)
   blk0 @ 0x2018c:
-    v1 = (r0 & #0xffffffff)
+    v1 = r0
     brif gt r0, #0x1 -> 0x20194
   blk1 @ 0x20193:
     r0 = #0x1
@@ -294,15 +294,17 @@ int sum_skip_odd(int n) {
         if (v3 != 1) {
             v5 += ((uint32_t)v4 + 1);
             sink = v5;
+            uint8_t t85 = v3 == 2;
             if (v3 != 2) {
+                t85 = (v4 & 0x1) == 0;
             }
-            if (/* eq */ true) { goto L_20270; }
+            if (t85 != 0) {
+                return v5;
+            }
             v5 += ((uint32_t)v4 + 2);
             sink = v5;
             return v5;
         }
-        return v5;
-    L_20270:
         return v5;
     }
     return n;
@@ -363,10 +365,12 @@ fn sum_skip_odd @ 0x201f4 (size 142)
     v5 = ((v5 + (v4 + #0x1)) & #0xffffffff)
     store32(v5, #0x302e8)
   blk18 @ 0x20264:
+    t85 = select eq v3, #0x2 ? #0x1, #0x0
     brif eq v3, #0x2 -> 0x2026e
   blk19 @ 0x2026b:
+    t85 = select eq (v4 & #0x1), #0x0 ? #0x1, #0x0
   blk20 @ 0x2026e:
-    brif eq -> 0x20270
+    brif ne t85, #0x0 -> 0x20270
   blk21 @ 0x2026f:
     br 0x20272
   blk22 @ 0x20270:
@@ -382,6 +386,9 @@ fn sum_skip_odd @ 0x201f4 (size 142)
 -- decompile
 /* velk pseudo-C: find_first @ 0x20284 */
 int find_first(int *p, int n, int v) {
+    uintptr_t v5;
+    uintptr_t v8;
+
     int32_t v2 = 1;
     if (n < 1) {
         p = (int *)0xffffffff;
@@ -389,14 +396,14 @@ int find_first(int *p, int n, int v) {
     if (n >= v2) {
         int32_t v3 = (uint32_t)(uintptr_t)p;
         int32_t v4 = -(uint32_t)n;
-        int32_t v5 = (uint32_t)(uintptr_t)p + 12;
+        v5 = (uint32_t)(uintptr_t)p + 12;
         uint32_t v6 = 0;
         while (*(uint32_t *)((uint32_t)v5 - 12) != v) {
             int32_t v7 = v4 + v6;
             if (v7 == 0xffffffff) {
                 return -1;
             }
-            int32_t v8 = v3 + (v6 << 2);
+            v8 = v3 + (v6 << 2);
             if (*(uint32_t *)((uint32_t)v8 + 4) == v) {
                 return v6 + 1;
             }
@@ -449,12 +456,12 @@ fn find_first @ 0x20284 (size 100)
   blk6 @ 0x202a5:
     ret v6
   blk7 @ 0x202a6:
-    v7 = (v4 + v6)
+    v7 = ((v4 + v6) & #0xffffffff)
     brif ne v7, #0xffffffff -> 0x202ae
   blk8 @ 0x202ad:
     br 0x202d6
   blk9 @ 0x202ae:
-    v8 = (v3 + ((v6 << #0x2) & #0xffffffff))
+    v8 = ((v3 + (v6 << #0x2)) & #0xffffffff)
     brif ne load32(((v8 + #0x4) & #0xffffffff)), r2 -> 0x202b8
   blk10 @ 0x202b7:
     br 0x202dc

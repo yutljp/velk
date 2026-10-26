@@ -28,7 +28,7 @@ int (int x)
 -- ir
 fn classify @ 0x200f4 (size 14)
   blk0 @ 0x200f4:
-    v1 = (r0 & #0xffffffff)
+    v1 = r0
     v2 = v1
     v3 = #0x0
     brif le v1, #0x0 -> 0x200fa
@@ -53,7 +53,8 @@ int clamp(int x, int lo, int hi) {
     if (x >= lo) {
         return hi;
     }
-    return lo;
+    int32_t v1 = lo;
+    return v1;
 }
 -- signature
 int (int x, int lo, int hi)
@@ -96,7 +97,7 @@ int (int x)
 -- ir
 fn sign_of @ 0x20114 (size 14)
   blk0 @ 0x20114:
-    v1 = (r0 & #0xffffffff)
+    v1 = r0
     v2 = v1
     v3 = #0x0
     brif le v1, #0x0 -> 0x2011a

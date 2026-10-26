@@ -1,4 +1,4 @@
-# arm32/aggregate_abi.arm.O2.elf: elf arm32 no entry, 11 functions, 0 lift failures, 58 unsupported, 0 gotos
+# arm32/aggregate_abi.arm.O2.elf: elf arm32 no entry, 11 functions, 0 lift failures, 11 unsupported, 0 gotos
 0x20134 48 abi_pair_adjust symtab,dwarf
 0x20164 40 abi_mixed_adjust symtab,dwarf
 0x2018c 8 abi_hfa1_adjust symtab,dwarf
@@ -19,32 +19,35 @@ uint64_t velk_entry_stack_pointer(void); /* target entry stack pointer */
 == 0x20134 abi_pair_adjust
 -- decompile
 /* velk pseudo-C: abi_pair_adjust @ 0x20134 */
-int32_t abi_pair_adjust(uint32_t *a0, int32_t a1, int32_t a2) {
+int32_t abi_pair_adjust(uint32_t *a0, int64_t a1, uint32_t a2, int32_t a3) {
     uint64_t sp = velk_entry_stack_pointer();
-    uint32_t v7;
-    uint32_t v8;
-    uint32_t v9;
+    uint32_t v11;
+    uint32_t v12;
+    uint32_t v13;
 
     /* unsupported: AAPCS32 multiword, floating-point or aggregate declaration */
-    *(uint32_t *)(sp - 0x10) = v7;
-    *(uint32_t *)(sp - 0xc) = v8;
-    *(uint32_t *)(sp - 0x8) = v9;
+    *(uint32_t *)(sp - 0x10) = v11;
+    *(uint32_t *)(sp - 0xc) = v12;
+    *(uint32_t *)(sp - 0x8) = v13;
     int32_t v1 = *(uint32_t *)(sp + 0x8);
-    int32_t v2 = *(uint32_t *)(sp) ^ v1;
-    int32_t v3 = (uint32_t)a2 + v1;
-    int32_t v4 = *(uint32_t *)(sp + 0x4) ^ *(uint32_t *)(sp + 0xc);
-    /* unsupported: ARM adc r2, r3, lr at 0x20154 */
-    *(uint32_t *)((uint32_t)(uintptr_t)a0) = a1;
-    *(uint32_t *)((uint64_t)(uint32_t)(uintptr_t)a0 + 0x4) = a2;
-    *(uint32_t *)((uint64_t)(uint32_t)(uintptr_t)a0 + 0x8) = v8;
-    *(uint32_t *)((uint32_t)(uintptr_t)a0 + 12) = v7;
-    int32_t v5 = *(uint32_t *)(sp - 0x10);
-    int32_t v6 = *(uint32_t *)(sp - 0xc);
-    v9 = *(uint32_t *)(sp - 0x8);
+    int32_t v2 = *(uint32_t *)(sp + 0xc);
+    int32_t v3 = *(uint32_t *)(sp + 0x4);
+    int32_t v4 = *(uint32_t *)(sp) ^ v1;
+    uint32_t v5 = v1;
+    int32_t v6 = a2 + v1;
+    int32_t v7 = a2 > (v5 ^ 0xffffffff);
+    int32_t v8 = (uint32_t)a3 + v2 + v7;
+    *(uint32_t *)((uint32_t)(uintptr_t)a0) = v6;
+    *(uint32_t *)((uint64_t)(uint32_t)(uintptr_t)a0 + 0x4) = v8;
+    *(uint32_t *)((uint64_t)(uint32_t)(uintptr_t)a0 + 0x8) = v4;
+    *(uint32_t *)((uint32_t)(uintptr_t)a0 + 12) = v3 ^ v2;
+    int32_t v9 = *(uint32_t *)(sp - 0x10);
+    int32_t v10 = *(uint32_t *)(sp - 0xc);
+    v13 = *(uint32_t *)(sp - 0x8);
     return (uint32_t)(uintptr_t)a0;
 }
 -- signature
-int32_t (uint32_t * a0, int32_t a1, int32_t a2)
+int32_t (uint32_t * a0, int64_t a1, uint32_t a2, int32_t a3)
 -- references
 
 -- ir
@@ -55,20 +58,23 @@ fn abi_pair_adjust @ 0x20134 (size 48)
     store32(r5, (sp + #0xfffffffffffffff4))
     store32(r11, (sp + #0xfffffffffffffff8))
     v1 = load32((sp + #0x8))
-    v2 = ((load32(sp) ^ v1) & #0xffffffff)
-    v3 = ((r2 + v1) & #0xffffffff)
-    v4 = ((load32((sp + #0x4)) ^ load32((sp + #0xc))) & #0xffffffff)
-    unsupported: ARM adc r2, r3, lr at 0x20154
-    store32(r1, r0)
-    store32(r2, (r0 + #0x4))
-    store32(r5, (r0 + #0x8))
-    store32(r4, ((r0 + #0xc) & #0xffffffff))
-    v5 = load32((sp + #0xfffffffffffffff0))
-    v6 = load32((sp + #0xfffffffffffffff4))
+    v2 = load32((sp + #0xc))
+    v3 = load32((sp + #0x4))
+    v4 = (load32(sp) ^ v1)
+    v5 = v1
+    v6 = ((r2 + v1) & #0xffffffff)
+    v7 = select hi r2, (v5 ^ #0xffffffff) ? #0x1, #0x0
+    v8 = (((r3 + v2) + v7) & #0xffffffff)
+    store32(v6, r0)
+    store32(v8, (r0 + #0x4))
+    store32(v4, (r0 + #0x8))
+    store32((v3 ^ v2), ((r0 + #0xc) & #0xffffffff))
+    v9 = load32((sp + #0xfffffffffffffff0))
+    v10 = load32((sp + #0xfffffffffffffff4))
     r11 = load32((sp + #0xfffffffffffffff8))
     ret r0
 -- card
-{"accesses":["a0 +0x0:uint32_t, +0x4:uint32_t, +0x8:uint32_t"],"addr":"0x20134","approxTokens":168,"blocks":1,"hardReasons":[],"name":"abi_pair_adjust","nameSources":["symtab","dwarf"],"section":".text","size":48,"unsupported":2}
+{"accesses":["a0 +0x0:uint32_t, +0x4:uint32_t, +0x8:uint32_t"],"addr":"0x20134","approxTokens":168,"blocks":1,"hardReasons":[],"name":"abi_pair_adjust","nameSources":["symtab","dwarf"],"section":".text","size":48,"unsupported":1}
 
 == 0x20164 abi_mixed_adjust
 -- decompile
@@ -187,65 +193,76 @@ fn abi_hfa4_adjust @ 0x201a4 (size 8)
 == 0x201ac abi_exhaust_five
 -- decompile
 /* velk pseudo-C: abi_exhaust_five @ 0x201ac */
-int32_t abi_exhaust_five(int32_t a0, int64_t a1, int32_t a2, int32_t a3) {
+int32_t abi_exhaust_five(int32_t a0, int32_t a1, int32_t a2, int32_t a3) {
     uint64_t sp = velk_entry_stack_pointer();
     uint32_t v1;
-    uint32_t v4;
     uint32_t v5;
-    uint32_t v14;
-    uint32_t v20;
-    uint32_t v24;
-    uint32_t v29;
+    uint32_t v6;
+    uint32_t v10;
+    uint32_t v17;
 
     /* unsupported: AAPCS32 multiword, floating-point or aggregate declaration */
-    int32_t v2 = *(uint32_t *)(sp + 0x20);
-    /* unsupported: ARM umull r5, r6, r2, r4 at 0x201b8 */
-    int32_t v3 = *(uint32_t *)(sp + 0x40);
-    /* unsupported: ARM umull lr, r8, ip, r2 at 0x201c8 */
-    int32_t v6 = *(uint32_t *)(sp + 0x44);
-    int32_t v7 = v4 + a0;
-    /* unsupported: ARM umull ip, r4, r4, r7 at 0x201d4 */
-    int32_t v8 = *(uint32_t *)(sp + 0x1c);
-    int32_t v9 = v1 + a2 * v14;
-    int32_t v10 = (uint32_t)a3 * 3;
-    int32_t v11 = *(uint32_t *)(sp + 0x18);
-    int32_t v12 = v5 + v10;
-    int32_t v13 = (uint32_t)v8 * 5;
-    /* unsupported (2 steps): ARM adc r1, r2, r1 at 0x201f0, ARM umull r2, r3, r3, r2 at 0x201f8 */
-    int32_t v15 = *(uint32_t *)(sp + 0x2c);
-    int32_t v16 = (uint32_t)a0 + a2;
-    int32_t v17 = *(uint32_t *)(sp + 0x20);
-    int32_t v18 = a3 + v4;
-    int32_t v19 = *(uint32_t *)(sp + 0x24);
-    /* unsupported (2 steps): ARM adc r1, r1, r3 at 0x20210, ARM umull r2, r3, r2, r3 at 0x20218 */
-    int32_t v21 = (uint32_t)a0 + a2;
-    int32_t v22 = *(uint32_t *)(sp + 0x28);
-    int32_t v23 = a3 + v4 * 7;
-    /* unsupported (2 steps): ARM adc r1, r1, r3 at 0x2022c, ARM umull r2, r5, r2, r3 at 0x20234 */
-    int32_t v25 = v4 + v5 * a3;
-    int32_t v26 = *(uint32_t *)(sp + 0x34);
-    int32_t v27 = (uint32_t)a0 + a2;
-    int32_t v28 = *(uint32_t *)(sp + 0x30);
-    /* unsupported (2 steps): ARM adc r1, r1, r3 at 0x20248, ARM umull r2, r5, r2, r3 at 0x20250 */
-    int32_t v30 = v4 + v5 * a3;
-    int32_t v31 = (uint32_t)a0 + a2;
-    int32_t v32 = *(uint32_t *)(sp + 0x3c);
-    int32_t v33 = (uint32_t)v32 * 17;
-    /* unsupported: ARM adc r1, r1, r3 at 0x20264 */
-    int32_t v34 = v20 + a2;
-    int32_t v35 = a0 + v29;
-    /* unsupported: ARM adc r1, r1, r2 at 0x20270 */
-    int32_t v36 = a0 + v24;
-    /* unsupported: ARM adc r1, r1, r4 at 0x20278 */
-    int32_t v37 = *(uint32_t *)(sp);
-    int32_t v38 = *(uint32_t *)(sp + 0x4);
-    int32_t v39 = *(uint32_t *)(sp + 0x8);
-    int32_t v40 = *(uint32_t *)(sp + 0xc);
-    int32_t v41 = *(uint32_t *)(sp + 0x10);
-    return a0;
+    uint64_t v2 = (uint64_t)(uint32_t)a2 * 3;
+    uint32_t v3 = v2;
+    uint8_t v4 = v2 >> 32;
+    uint64_t v7 = (uint64_t)*(uint32_t *)(sp + 0x20) * 17;
+    uint32_t v8 = v7;
+    uint8_t v9 = v7 >> 32;
+    int32_t v11 = v3 + a0;
+    uint64_t v12 = (uint64_t)*(uint32_t *)(sp + 0x28) * 19;
+    uint32_t v13 = v12;
+    uint8_t v14 = v12 >> 32;
+    uint8_t v15 = v3 > (a0 ^ 0xffffffff);
+    uint8_t v16 = v4 + (uint32_t)a3 * 3 + a1 + v15;
+    uint64_t v18 = (uint64_t)*(uint32_t *)(sp) * 5;
+    int32_t v19 = v18;
+    uint8_t v20 = v18 >> 32;
+    int32_t v21 = (uint32_t)v11 + v19;
+    uint32_t v22 = (uint32_t)v21 - v19;
+    uint32_t v23 = v19;
+    uint8_t v24 = v22 > (v23 ^ 0xffffffff);
+    uint8_t v25 = v16 + (v20 + *(uint32_t *)(sp + 0x4) * 5) + v24;
+    uint64_t v27 = (uint64_t)*(uint32_t *)(sp + 0x8) * 7;
+    int32_t v28 = v27;
+    uint8_t v29 = v27 >> 32;
+    int32_t v30 = (uint32_t)v21 + v28;
+    uint32_t v31 = (uint32_t)v30 - v28;
+    uint32_t v32 = v28;
+    uint8_t v33 = v31 > (v32 ^ 0xffffffff);
+    uint8_t v34 = v25 + (v29 + *(uint32_t *)(sp + 0xc) * 7) + v33;
+    uint64_t v36 = (uint64_t)*(uint32_t *)(sp + 0x10) * 11;
+    int32_t v37 = v36;
+    uint8_t v38 = v36 >> 32;
+    int32_t v39 = (uint32_t)v30 + v37;
+    uint32_t v40 = (uint32_t)v39 - v37;
+    uint32_t v41 = v37;
+    uint8_t v42 = v40 > (v41 ^ 0xffffffff);
+    uint8_t v43 = v34 + (v38 + *(uint32_t *)(sp + 0x14) * 11) + v42;
+    uint64_t v45 = (uint64_t)*(uint32_t *)(sp + 0x18) * 13;
+    int32_t v46 = v45;
+    uint8_t v47 = v45 >> 32;
+    uint8_t v48 = v47 + *(uint32_t *)(sp + 0x1c) * 13;
+    int32_t v49 = (uint32_t)v39 + v46;
+    uint32_t v50 = (uint32_t)v49 - v46;
+    uint32_t v51 = v46;
+    uint8_t v52 = v50 > (v51 ^ 0xffffffff);
+    uint8_t v53 = (uint32_t)(v43 + v48) + v52;
+    uint8_t v54 = v9 + *(uint32_t *)(sp + 0x24) * 17;
+    uint32_t v55 = v49 + v8;
+    uint8_t v56 = v55 - v8 > (v8 ^ 0xffffffff);
+    uint8_t v57 = (uint32_t)(v53 + v54) + v56;
+    uint32_t v58 = v55 + v13;
+    uint8_t v59 = v58 - v13 > (v13 ^ 0xffffffff);
+    uint8_t v60 = v57 + (v14 + *(uint32_t *)(sp + 0x2c) * 19) + v59;
+    int32_t v61 = v1;
+    int32_t v62 = v5;
+    int32_t v63 = v6;
+    int32_t v64 = v10;
+    int32_t v65 = v17;
+    return v58 | (uint64_t)v60 << 32;
 }
 -- signature
-int32_t (int32_t a0, int64_t a1, int32_t a2, int32_t a3)
+int32_t (int32_t a0, int32_t a1, int32_t a2, int32_t a3)
 -- references
 
 -- ir
@@ -253,270 +270,299 @@ fn abi_exhaust_five @ 0x201ac (size 212)
   blk0 @ 0x201ac:
     unsupported: AAPCS32 multiword, floating-point or aggregate declaration
     v1 = #0x3
-    v2 = load32((sp + #0x20))
-    unsupported: ARM umull r5, r6, r2, r4 at 0x201b8
-    v3 = load32((sp + #0x40))
-    v4 = #0x11
-    v5 = #0x13
-    unsupported: ARM umull lr, r8, ip, r2 at 0x201c8
-    v6 = load32((sp + #0x44))
-    v7 = ((r5 + r0) & #0xffffffff)
-    unsupported: ARM umull ip, r4, r4, r7 at 0x201d4
-    v8 = load32((sp + #0x1c))
-    v9 = ((r4 + (r2 * r7)) & #0xffffffff)
-    v10 = ((r3 * #0x3) & #0xffffffff)
-    v11 = load32((sp + #0x18))
-    v12 = ((r6 + v10) & #0xffffffff)
-    v13 = ((v8 * #0x5) & #0xffffffff)
-    unsupported: ARM adc r1, r2, r1 at 0x201f0
-    v14 = #0x5
-    unsupported: ARM umull r2, r3, r3, r2 at 0x201f8
-    v15 = load32((sp + #0x2c))
-    v16 = ((r0 + r2) & #0xffffffff)
-    v17 = load32((sp + #0x20))
-    v18 = ((r3 + r5) & #0xffffffff)
-    v19 = load32((sp + #0x24))
-    unsupported: ARM adc r1, r1, r3 at 0x20210
-    v20 = #0x7
-    unsupported: ARM umull r2, r3, r2, r3 at 0x20218
-    v21 = ((r0 + r2) & #0xffffffff)
-    v22 = load32((sp + #0x28))
-    v23 = ((r3 + (r5 * #0x7)) & #0xffffffff)
-    unsupported: ARM adc r1, r1, r3 at 0x2022c
-    v24 = #0xb
-    unsupported: ARM umull r2, r5, r2, r3 at 0x20234
-    v25 = ((r5 + (r6 * r3)) & #0xffffffff)
-    v26 = load32((sp + #0x34))
-    v27 = ((r0 + r2) & #0xffffffff)
-    v28 = load32((sp + #0x30))
-    unsupported: ARM adc r1, r1, r3 at 0x20248
-    v29 = #0xd
-    unsupported: ARM umull r2, r5, r2, r3 at 0x20250
-    v30 = ((r5 + (r6 * r3)) & #0xffffffff)
-    v31 = ((r0 + r2) & #0xffffffff)
-    v32 = load32((sp + #0x3c))
-    v33 = ((v32 * #0x11) & #0xffffffff)
-    unsupported: ARM adc r1, r1, r3 at 0x20264
-    v34 = ((r8 + r2) & #0xffffffff)
-    v35 = ((r0 + lr) & #0xffffffff)
-    unsupported: ARM adc r1, r1, r2 at 0x20270
-    v36 = ((r0 + r12) & #0xffffffff)
-    unsupported: ARM adc r1, r1, r4 at 0x20278
-    v37 = load32(sp)
-    v38 = load32((sp + #0x4))
-    v39 = load32((sp + #0x8))
-    v40 = load32((sp + #0xc))
-    v41 = load32((sp + #0x10))
-    ret r0
+    v2 = (r2 * #0x3)
+    v3 = (v2 & #0xffffffff)
+    v4 = (v2 >> #0x20)
+    v5 = #0x11
+    v6 = #0x13
+    v7 = (load32((sp + #0x20)) * #0x11)
+    v8 = (v7 & #0xffffffff)
+    v9 = (v7 >> #0x20)
+    v10 = r0
+    v11 = ((v3 + r0) & #0xffffffff)
+    v12 = (load32((sp + #0x28)) * #0x13)
+    v13 = (v12 & #0xffffffff)
+    v14 = (v12 >> #0x20)
+    v15 = select hi v3, (v10 ^ #0xffffffff) ? #0x1, #0x0
+    v16 = (((((v4 + (r3 * #0x3)) & #0xffffffff) + r1) + v15) & #0xffffffff)
+    v17 = #0x5
+    v18 = (load32(sp) * #0x5)
+    v19 = (v18 & #0xffffffff)
+    v20 = (v18 >> #0x20)
+    v21 = ((v11 + v19) & #0xffffffff)
+    v22 = (v21 - v19)
+    v23 = v19
+    v24 = select hi v22, (v23 ^ #0xffffffff) ? #0x1, #0x0
+    v25 = (((v16 + ((v20 + (load32((sp + #0x4)) * #0x5)) & #0xffffffff)) + v24) & #0xffffffff)
+    v26 = #0x7
+    v27 = (load32((sp + #0x8)) * #0x7)
+    v28 = (v27 & #0xffffffff)
+    v29 = (v27 >> #0x20)
+    v30 = ((v21 + v28) & #0xffffffff)
+    v31 = (v30 - v28)
+    v32 = v28
+    v33 = select hi v31, (v32 ^ #0xffffffff) ? #0x1, #0x0
+    v34 = (((v25 + ((v29 + (load32((sp + #0xc)) * #0x7)) & #0xffffffff)) + v33) & #0xffffffff)
+    v35 = #0xb
+    v36 = (load32((sp + #0x10)) * #0xb)
+    v37 = (v36 & #0xffffffff)
+    v38 = (v36 >> #0x20)
+    v39 = ((v30 + v37) & #0xffffffff)
+    v40 = (v39 - v37)
+    v41 = v37
+    v42 = select hi v40, (v41 ^ #0xffffffff) ? #0x1, #0x0
+    v43 = (((v34 + ((v38 + (load32((sp + #0x14)) * #0xb)) & #0xffffffff)) + v42) & #0xffffffff)
+    v44 = #0xd
+    v45 = (load32((sp + #0x18)) * #0xd)
+    v46 = (v45 & #0xffffffff)
+    v47 = (v45 >> #0x20)
+    v48 = ((v47 + (load32((sp + #0x1c)) * #0xd)) & #0xffffffff)
+    v49 = ((v39 + v46) & #0xffffffff)
+    v50 = (v49 - v46)
+    v51 = v46
+    v52 = select hi v50, (v51 ^ #0xffffffff) ? #0x1, #0x0
+    v53 = (((v43 + v48) + v52) & #0xffffffff)
+    v54 = ((v9 + (load32((sp + #0x24)) * #0x11)) & #0xffffffff)
+    v55 = ((v49 + v8) & #0xffffffff)
+    v56 = select hi (v55 - v8), (v8 ^ #0xffffffff) ? #0x1, #0x0
+    v57 = (((v53 + v54) + v56) & #0xffffffff)
+    v58 = ((v55 + v13) & #0xffffffff)
+    v59 = select hi (v58 - v13), (v13 ^ #0xffffffff) ? #0x1, #0x0
+    v60 = (((v57 + ((v14 + (load32((sp + #0x2c)) * #0x13)) & #0xffffffff)) + v59) & #0xffffffff)
+    v61 = r4
+    v62 = r5
+    v63 = r6
+    v64 = r7
+    v65 = r8
+    ret (v58 | (v60 << #0x20))
 -- card
-{"addr":"0x201ac","approxTokens":240,"blocks":1,"hardReasons":[],"name":"abi_exhaust_five","nameSources":["symtab","dwarf"],"section":".text","size":212,"unsupported":15}
+{"addr":"0x201ac","approxTokens":240,"blocks":1,"hardReasons":[],"name":"abi_exhaust_five","nameSources":["symtab","dwarf"],"section":".text","size":212,"unsupported":1}
 
 == 0x20280 abi_exhaust_seven
 -- decompile
 /* velk pseudo-C: abi_exhaust_seven @ 0x20280 */
-int32_t abi_exhaust_seven(int32_t a0, int64_t a1, int32_t a2, int32_t a3) {
+int32_t abi_exhaust_seven(int32_t a0, int32_t a1, int32_t a2, int32_t a3) {
     uint64_t sp = velk_entry_stack_pointer();
-    uint32_t v2;
-    uint32_t v4;
+    uint32_t v1;
     uint32_t v5;
-    uint32_t v10;
-    uint32_t v21;
-    uint32_t v25;
-    uint32_t v30;
-    uint32_t v37;
-    uint32_t v41;
+    uint32_t v6;
+    uint32_t v13;
+    uint32_t v17;
+    uint32_t v27;
+    uint32_t v36;
 
     /* unsupported: AAPCS32 multiword, floating-point or aggregate declaration */
-    *(uint32_t *)(sp - 0x20) = v2;
-    *(uint32_t *)(sp - 0x1c) = v4;
-    *(uint32_t *)(sp - 0x18) = v5;
-    *(uint32_t *)(sp - 0x14) = v10;
-    *(uint32_t *)(sp - 0x10) = v21;
-    *(uint32_t *)(sp - 0xc) = v25;
-    *(uint32_t *)(sp - 0x8) = v30;
-    int32_t v1 = *(uint32_t *)(sp + 0x30);
-    int32_t v3 = *(uint32_t *)(sp + 0x38);
-    /* unsupported (2 steps): ARM umull r10, r6, r2, r4 at 0x20290, ARM umull lr, r7, ip, sb at 0x2029c */
-    int32_t v6 = *(uint32_t *)(sp + 0x3c);
-    int32_t v7 = (uint32_t)a3 * 3;
-    int32_t v8 = v5 + v7;
-    /* unsupported: ARM umull ip, r4, r8, r2 at 0x202ac */
-    int32_t v9 = v30 + a0;
-    /* unsupported: ARM adc r1, r3, r1 at 0x202b4 */
-    int32_t v11 = v2 + v4 * a2;
-    int32_t v12 = *(uint32_t *)(sp);
-    int32_t v13 = *(uint32_t *)(sp + 0x4);
-    int32_t v14 = *(uint32_t *)(sp + 0x34);
-    /* unsupported: ARM umull r3, r5, r5, r3 at 0x202cc */
-    int32_t v15 = v10 + v2 * v25;
-    int32_t v16 = *(uint32_t *)(sp + 0x14);
-    int32_t v17 = (uint32_t)a0 + a3;
-    int32_t v18 = *(uint32_t *)(sp + 0x8);
-    int32_t v19 = v4 + v5 * 5;
-    int32_t v20 = *(uint32_t *)(sp + 0xc);
-    /* unsupported (2 steps): ARM adc r1, r1, r5 at 0x202ec, ARM umull r3, r5, r3, r5 at 0x202f4 */
-    int32_t v22 = (uint32_t)a0 + a3;
-    int32_t v23 = *(uint32_t *)(sp + 0x10);
-    int32_t v24 = v4 + v5 * 7;
-    /* unsupported (2 steps): ARM adc r1, r1, r5 at 0x20308, ARM umull r3, r6, r3, r5 at 0x20310 */
-    int32_t v26 = v5 + v10 * v4;
-    int32_t v27 = *(uint32_t *)(sp + 0x1c);
-    int32_t v28 = (uint32_t)a0 + a3;
-    int32_t v29 = *(uint32_t *)(sp + 0x18);
-    /* unsupported (2 steps): ARM adc r1, r1, r5 at 0x20324, ARM umull r3, r6, r3, r5 at 0x2032c */
-    int32_t v31 = v5 + v10 * v4;
-    int32_t v32 = *(uint32_t *)(sp + 0x24);
-    int32_t v33 = *(uint32_t *)(sp + 0x2c);
-    int32_t v34 = (uint32_t)a0 + a3;
-    int32_t v35 = *(uint32_t *)(sp + 0x20);
-    int32_t v36 = (uint32_t)v32 * 17;
-    /* unsupported (2 steps): ARM adc r1, r1, r5 at 0x20348, ARM umull r3, r5, r3, r5 at 0x20350 */
-    int32_t v38 = (uint32_t)a0 + a3;
-    int32_t v39 = *(uint32_t *)(sp + 0x28);
-    int32_t v40 = v4 + v5;
-    /* unsupported (2 steps): ARM adc r1, r1, r5 at 0x20360, ARM umull r3, r6, r3, r5 at 0x20368 */
-    int32_t v42 = v5 + v10 * v4;
-    int32_t v43 = (uint32_t)a0 + a3;
-    /* unsupported: ARM adc r1, r1, r5 at 0x20374 */
-    int32_t v44 = a0 + v41;
-    /* unsupported: ARM adc r1, r1, r4 at 0x2037c */
-    int32_t v45 = a0 + v37;
-    /* unsupported: ARM adc r1, r1, r2 at 0x20384 */
-    int32_t v46 = *(uint32_t *)(sp - 0x20);
-    int32_t v47 = *(uint32_t *)(sp - 0x1c);
-    int32_t v48 = *(uint32_t *)(sp - 0x18);
-    int32_t v49 = *(uint32_t *)(sp - 0x14);
-    int32_t v50 = *(uint32_t *)(sp - 0x10);
-    int32_t v51 = *(uint32_t *)(sp - 0xc);
-    int32_t v52 = *(uint32_t *)(sp - 0x8);
-    return a0;
+    uint64_t v2 = (uint64_t)(uint32_t)a2 * 3;
+    uint32_t v3 = v2;
+    uint8_t v4 = v2 >> 32;
+    uint64_t v7 = (uint64_t)*(uint32_t *)(sp + 0x30) * 23;
+    uint32_t v8 = v7;
+    uint8_t v9 = v7 >> 32;
+    uint64_t v10 = (uint64_t)*(uint32_t *)(sp + 0x38) * 29;
+    uint32_t v11 = v10;
+    uint8_t v12 = v10 >> 32;
+    int32_t v14 = v3 + a0;
+    uint8_t v15 = v3 > (a0 ^ 0xffffffff);
+    uint8_t v16 = v4 + (uint32_t)a3 * 3 + a1 + v15;
+    uint8_t v18 = v12 + *(uint32_t *)(sp + 0x3c) * 29;
+    uint64_t v19 = (uint64_t)*(uint32_t *)(sp) * 5;
+    int32_t v20 = v19;
+    uint8_t v21 = v19 >> 32;
+    int32_t v22 = (uint32_t)v14 + v20;
+    uint32_t v23 = (uint32_t)v22 - v20;
+    uint32_t v24 = v20;
+    uint8_t v25 = v23 > (v24 ^ 0xffffffff);
+    uint8_t v26 = v16 + (v21 + *(uint32_t *)(sp + 0x4) * 5) + v25;
+    uint64_t v28 = (uint64_t)*(uint32_t *)(sp + 0x8) * 7;
+    int32_t v29 = v28;
+    uint8_t v30 = v28 >> 32;
+    int32_t v31 = (uint32_t)v22 + v29;
+    uint32_t v32 = (uint32_t)v31 - v29;
+    uint32_t v33 = v29;
+    uint8_t v34 = v32 > (v33 ^ 0xffffffff);
+    uint8_t v35 = v26 + (v30 + *(uint32_t *)(sp + 0xc) * 7) + v34;
+    uint64_t v37 = (uint64_t)*(uint32_t *)(sp + 0x10) * 11;
+    int32_t v38 = v37;
+    uint8_t v39 = v37 >> 32;
+    int32_t v40 = (uint32_t)v31 + v38;
+    uint32_t v41 = (uint32_t)v40 - v38;
+    uint32_t v42 = v38;
+    uint8_t v43 = v41 > (v42 ^ 0xffffffff);
+    uint8_t v44 = v35 + (v39 + *(uint32_t *)(sp + 0x14) * 11) + v43;
+    uint64_t v46 = (uint64_t)*(uint32_t *)(sp + 0x18) * 13;
+    int32_t v47 = v46;
+    uint8_t v48 = v46 >> 32;
+    int32_t v49 = (uint32_t)v40 + v47;
+    uint32_t v50 = (uint32_t)v49 - v47;
+    uint32_t v51 = v47;
+    uint8_t v52 = v50 > (v51 ^ 0xffffffff);
+    uint8_t v53 = v44 + (v48 + *(uint32_t *)(sp + 0x1c) * 13) + v52;
+    uint64_t v55 = (uint64_t)*(uint32_t *)(sp + 0x20) * 17;
+    int32_t v56 = v55;
+    uint8_t v57 = v55 >> 32;
+    int32_t v58 = (uint32_t)v49 + v56;
+    uint32_t v59 = (uint32_t)v58 - v56;
+    uint32_t v60 = v56;
+    uint8_t v61 = v59 > (v60 ^ 0xffffffff);
+    uint8_t v62 = v53 + (v57 + *(uint32_t *)(sp + 0x24) * 17) + v61;
+    uint64_t v64 = (uint64_t)*(uint32_t *)(sp + 0x28) * 19;
+    uint32_t v65 = v64;
+    uint8_t v66 = v64 >> 32;
+    uint32_t v67 = v58 + v65;
+    uint8_t v68 = v67 - v65 > (v65 ^ 0xffffffff);
+    uint8_t v69 = v62 + (v66 + *(uint32_t *)(sp + 0x2c) * 19) + v68;
+    uint32_t v70 = v67 + v8;
+    uint8_t v71 = v70 - v8 > (v8 ^ 0xffffffff);
+    uint8_t v72 = v69 + (v9 + *(uint32_t *)(sp + 0x34) * 23) + v71;
+    uint32_t v73 = v70 + v11;
+    uint8_t v74 = v73 - v11 > (v11 ^ 0xffffffff);
+    uint8_t v75 = (uint32_t)(v72 + v18) + v74;
+    int32_t v76 = v1;
+    int32_t v77 = v5;
+    int32_t v78 = v6;
+    int32_t v79 = v13;
+    int32_t v80 = v17;
+    int32_t v81 = v27;
+    int32_t v82 = v36;
+    return v73 | (uint64_t)v75 << 32;
 }
 -- signature
-int32_t (int32_t a0, int64_t a1, int32_t a2, int32_t a3)
+int32_t (int32_t a0, int32_t a1, int32_t a2, int32_t a3)
 -- references
 
 -- ir
 fn abi_exhaust_seven @ 0x20280 (size 268)
   blk0 @ 0x20280:
     unsupported: AAPCS32 multiword, floating-point or aggregate declaration
-    store32(r4, (sp + #0xffffffffffffffe0))
-    store32(r5, (sp + #0xffffffffffffffe4))
-    store32(r6, (sp + #0xffffffffffffffe8))
-    store32(r7, (sp + #0xffffffffffffffec))
-    store32(r8, (sp + #0xfffffffffffffff0))
-    store32(r9, (sp + #0xfffffffffffffff4))
-    store32(r10, (sp + #0xfffffffffffffff8))
-    v1 = load32((sp + #0x30))
-    v2 = #0x3
-    v3 = load32((sp + #0x38))
-    unsupported: ARM umull r10, r6, r2, r4 at 0x20290
-    v4 = #0x17
-    v5 = #0x1d
-    unsupported: ARM umull lr, r7, ip, sb at 0x2029c
-    v6 = load32((sp + #0x3c))
-    v7 = ((r3 * #0x3) & #0xffffffff)
-    v8 = ((r6 + v7) & #0xffffffff)
-    unsupported: ARM umull ip, r4, r8, r2 at 0x202ac
-    v9 = ((r10 + r0) & #0xffffffff)
-    unsupported: ARM adc r1, r3, r1 at 0x202b4
-    v10 = #0x5
-    v11 = ((r4 + (r5 * r2)) & #0xffffffff)
-    v12 = load32(sp)
-    v13 = load32((sp + #0x4))
-    v14 = load32((sp + #0x34))
-    unsupported: ARM umull r3, r5, r5, r3 at 0x202cc
-    v15 = ((r7 + (r4 * r9)) & #0xffffffff)
-    v16 = load32((sp + #0x14))
-    v17 = ((r0 + r3) & #0xffffffff)
-    v18 = load32((sp + #0x8))
-    v19 = ((r5 + (r6 * #0x5)) & #0xffffffff)
-    v20 = load32((sp + #0xc))
-    unsupported: ARM adc r1, r1, r5 at 0x202ec
-    v21 = #0x7
-    unsupported: ARM umull r3, r5, r3, r5 at 0x202f4
-    v22 = ((r0 + r3) & #0xffffffff)
-    v23 = load32((sp + #0x10))
-    v24 = ((r5 + (r6 * #0x7)) & #0xffffffff)
-    unsupported: ARM adc r1, r1, r5 at 0x20308
-    v25 = #0xb
-    unsupported: ARM umull r3, r6, r3, r5 at 0x20310
-    v26 = ((r6 + (r7 * r5)) & #0xffffffff)
-    v27 = load32((sp + #0x1c))
-    v28 = ((r0 + r3) & #0xffffffff)
-    v29 = load32((sp + #0x18))
-    unsupported: ARM adc r1, r1, r5 at 0x20324
-    v30 = #0xd
-    unsupported: ARM umull r3, r6, r3, r5 at 0x2032c
-    v31 = ((r6 + (r7 * r5)) & #0xffffffff)
-    v32 = load32((sp + #0x24))
-    v33 = load32((sp + #0x2c))
-    v34 = ((r0 + r3) & #0xffffffff)
-    v35 = load32((sp + #0x20))
-    v36 = ((v32 * #0x11) & #0xffffffff)
-    unsupported: ARM adc r1, r1, r5 at 0x20348
-    v37 = #0x11
-    unsupported: ARM umull r3, r5, r3, r5 at 0x20350
-    v38 = ((r0 + r3) & #0xffffffff)
-    v39 = load32((sp + #0x28))
-    v40 = ((r5 + r6) & #0xffffffff)
-    unsupported: ARM adc r1, r1, r5 at 0x20360
-    v41 = #0x13
-    unsupported: ARM umull r3, r6, r3, r5 at 0x20368
-    v42 = ((r6 + (r7 * r5)) & #0xffffffff)
-    v43 = ((r0 + r3) & #0xffffffff)
-    unsupported: ARM adc r1, r1, r5 at 0x20374
-    v44 = ((r0 + lr) & #0xffffffff)
-    unsupported: ARM adc r1, r1, r4 at 0x2037c
-    v45 = ((r0 + r12) & #0xffffffff)
-    unsupported: ARM adc r1, r1, r2 at 0x20384
-    v46 = load32((sp + #0xffffffffffffffe0))
-    v47 = load32((sp + #0xffffffffffffffe4))
-    v48 = load32((sp + #0xffffffffffffffe8))
-    v49 = load32((sp + #0xffffffffffffffec))
-    v50 = load32((sp + #0xfffffffffffffff0))
-    v51 = load32((sp + #0xfffffffffffffff4))
-    v52 = load32((sp + #0xfffffffffffffff8))
-    ret r0
+    v1 = #0x3
+    v2 = (r2 * #0x3)
+    v3 = (v2 & #0xffffffff)
+    v4 = (v2 >> #0x20)
+    v5 = #0x17
+    v6 = #0x1d
+    v7 = (load32((sp + #0x30)) * #0x17)
+    v8 = (v7 & #0xffffffff)
+    v9 = (v7 >> #0x20)
+    v10 = (load32((sp + #0x38)) * #0x1d)
+    v11 = (v10 & #0xffffffff)
+    v12 = (v10 >> #0x20)
+    v13 = r0
+    v14 = ((v3 + r0) & #0xffffffff)
+    v15 = select hi v3, (v13 ^ #0xffffffff) ? #0x1, #0x0
+    v16 = (((((v4 + (r3 * #0x3)) & #0xffffffff) + r1) + v15) & #0xffffffff)
+    v17 = #0x5
+    v18 = ((v12 + (load32((sp + #0x3c)) * #0x1d)) & #0xffffffff)
+    v19 = (load32(sp) * #0x5)
+    v20 = (v19 & #0xffffffff)
+    v21 = (v19 >> #0x20)
+    v22 = ((v14 + v20) & #0xffffffff)
+    v23 = (v22 - v20)
+    v24 = v20
+    v25 = select hi v23, (v24 ^ #0xffffffff) ? #0x1, #0x0
+    v26 = (((v16 + ((v21 + (load32((sp + #0x4)) * #0x5)) & #0xffffffff)) + v25) & #0xffffffff)
+    v27 = #0x7
+    v28 = (load32((sp + #0x8)) * #0x7)
+    v29 = (v28 & #0xffffffff)
+    v30 = (v28 >> #0x20)
+    v31 = ((v22 + v29) & #0xffffffff)
+    v32 = (v31 - v29)
+    v33 = v29
+    v34 = select hi v32, (v33 ^ #0xffffffff) ? #0x1, #0x0
+    v35 = (((v26 + ((v30 + (load32((sp + #0xc)) * #0x7)) & #0xffffffff)) + v34) & #0xffffffff)
+    v36 = #0xb
+    v37 = (load32((sp + #0x10)) * #0xb)
+    v38 = (v37 & #0xffffffff)
+    v39 = (v37 >> #0x20)
+    v40 = ((v31 + v38) & #0xffffffff)
+    v41 = (v40 - v38)
+    v42 = v38
+    v43 = select hi v41, (v42 ^ #0xffffffff) ? #0x1, #0x0
+    v44 = (((v35 + ((v39 + (load32((sp + #0x14)) * #0xb)) & #0xffffffff)) + v43) & #0xffffffff)
+    v45 = #0xd
+    v46 = (load32((sp + #0x18)) * #0xd)
+    v47 = (v46 & #0xffffffff)
+    v48 = (v46 >> #0x20)
+    v49 = ((v40 + v47) & #0xffffffff)
+    v50 = (v49 - v47)
+    v51 = v47
+    v52 = select hi v50, (v51 ^ #0xffffffff) ? #0x1, #0x0
+    v53 = (((v44 + ((v48 + (load32((sp + #0x1c)) * #0xd)) & #0xffffffff)) + v52) & #0xffffffff)
+    v54 = #0x11
+    v55 = (load32((sp + #0x20)) * #0x11)
+    v56 = (v55 & #0xffffffff)
+    v57 = (v55 >> #0x20)
+    v58 = ((v49 + v56) & #0xffffffff)
+    v59 = (v58 - v56)
+    v60 = v56
+    v61 = select hi v59, (v60 ^ #0xffffffff) ? #0x1, #0x0
+    v62 = (((v53 + ((v57 + (load32((sp + #0x24)) * #0x11)) & #0xffffffff)) + v61) & #0xffffffff)
+    v63 = #0x13
+    v64 = (load32((sp + #0x28)) * #0x13)
+    v65 = (v64 & #0xffffffff)
+    v66 = (v64 >> #0x20)
+    v67 = ((v58 + v65) & #0xffffffff)
+    v68 = select hi (v67 - v65), (v65 ^ #0xffffffff) ? #0x1, #0x0
+    v69 = (((v62 + ((v66 + (load32((sp + #0x2c)) * #0x13)) & #0xffffffff)) + v68) & #0xffffffff)
+    v70 = ((v67 + v8) & #0xffffffff)
+    v71 = select hi (v70 - v8), (v8 ^ #0xffffffff) ? #0x1, #0x0
+    v72 = (((v69 + ((v9 + (load32((sp + #0x34)) * #0x17)) & #0xffffffff)) + v71) & #0xffffffff)
+    v73 = ((v70 + v11) & #0xffffffff)
+    v74 = select hi (v73 - v11), (v11 ^ #0xffffffff) ? #0x1, #0x0
+    v75 = (((v72 + v18) + v74) & #0xffffffff)
+    v76 = r4
+    v77 = r5
+    v78 = r6
+    v79 = r7
+    v80 = r8
+    v81 = r9
+    v82 = r10
+    ret (v73 | (v75 << #0x20))
 -- card
-{"addr":"0x20280","approxTokens":240,"blocks":1,"hardReasons":[],"name":"abi_exhaust_seven","nameSources":["symtab","dwarf"],"section":".text","size":268,"unsupported":19}
+{"addr":"0x20280","approxTokens":240,"blocks":1,"hardReasons":[],"name":"abi_exhaust_seven","nameSources":["symtab","dwarf"],"section":".text","size":268,"unsupported":1}
 
 == 0x2038c abi_indirect_make
 -- decompile
 /* velk pseudo-C: abi_indirect_make @ 0x2038c */
-struct S1 { int32_t field_0x0; int32_t field_0x4; int32_t field_0x8; };
-int32_t abi_indirect_make(uint32_t *a0, int32_t a1, int32_t a2, int32_t a3) {
+int32_t abi_indirect_make(uint32_t *a0, int64_t a1, uint32_t a2, int32_t a3) {
     uint64_t sp = velk_entry_stack_pointer();
-    uint32_t v10;
-    uint32_t v11;
-    uint32_t v12;
-    uint32_t v13;
+    uint32_t v19;
+    uint32_t v20;
+    uint32_t v21;
+    uint32_t v22;
 
     /* unsupported: AAPCS32 multiword, floating-point or aggregate declaration */
-    *(uint32_t *)(sp - 0x10) = v10;
-    *(uint32_t *)(sp - 0xc) = v11;
-    *(uint32_t *)(sp - 0x8) = v12;
-    *(uint32_t *)(sp - 0x4) = v13;
-    struct S1 *v1 = (struct S1 *)((sp - 16 + 16) & 0xffffffff);
-    int32_t v2 = v1->field_0x0;
-    int32_t v3 = v1->field_0x4 ^ *(uint32_t *)(sp + 0xc);
-    int32_t v4 = (uint32_t)a2 - v2;
-    int32_t v5 = v2 ^ v1->field_0x8;
-    /* unsupported: ARM sbc r4, r3, r4 at 0x203a8 */
-    int32_t v6 = a2 + v13;
-    /* unsupported: ARM adc r3, r3, ip at 0x203b0 */
-    *(uint32_t *)((uint32_t)(uintptr_t)a0) = a2;
-    *(uint32_t *)((uint64_t)(uint32_t)(uintptr_t)a0 + 0x4) = a3;
-    *(uint32_t *)((uint32_t)(uintptr_t)a0 + 8) = a1;
-    *(uint32_t *)((uint32_t)(uintptr_t)a0 + 12) = v12;
-    *(uint32_t *)((uint32_t)(uintptr_t)a0 + 16) = v11;
-    *(uint32_t *)((uint32_t)(uintptr_t)a0 + 20) = v10;
-    int32_t v7 = *(uint32_t *)(sp - 0x10);
-    int32_t v8 = *(uint32_t *)(sp - 0xc);
-    int32_t v9 = *(uint32_t *)(sp - 0x8);
+    *(uint32_t *)(sp - 0x10) = v19;
+    *(uint32_t *)(sp - 0xc) = v20;
+    *(uint32_t *)(sp - 0x8) = v21;
+    *(uint32_t *)(sp - 0x4) = v22;
+    uint32_t *v1 = (uint32_t *)sp;
+    int32_t v2 = *(uint32_t *)(sp + 0xc);
+    uint32_t *v3 = (uint32_t *)sp;
+    int32_t v4 = *(uint32_t *)(sp);
+    int32_t v5 = *(uint32_t *)(sp + 0x4);
+    uint32_t v6 = *(uint32_t *)(sp + 0x8);
+    int32_t v7 = v5 ^ v2;
+    int32_t v8 = a2 - v4;
+    uint32_t v9 = v4;
+    int32_t v10 = v4 ^ v6;
+    int32_t v11 = a2 >= v9;
+    int32_t v12 = (uint32_t)a3 - v5 - (v11 ^ 0x1);
+    uint32_t v13 = a2 + v6;
+    int32_t v14 = v13 - v6 > (v6 ^ 0xffffffff);
+    int32_t v15 = (uint32_t)a3 + v2 + v14;
+    *(uint32_t *)((uint32_t)(uintptr_t)a0) = v13;
+    *(uint32_t *)((uint64_t)(uint32_t)(uintptr_t)a0 + 0x4) = v15;
+    *(uint32_t *)((uint32_t)(uintptr_t)a0 + 8) = v10;
+    *(uint32_t *)((uint32_t)(uintptr_t)a0 + 12) = v7;
+    *(uint32_t *)((uint32_t)(uintptr_t)a0 + 16) = v8;
+    *(uint32_t *)((uint32_t)(uintptr_t)a0 + 20) = v12;
+    int32_t v16 = *(uint32_t *)(sp - 0x10);
+    int32_t v17 = *(uint32_t *)(sp - 0xc);
+    int32_t v18 = *(uint32_t *)(sp - 0x8);
     return (uint32_t)(uintptr_t)a0;
 }
 -- signature
-int32_t (uint32_t * a0, int32_t a1, int32_t a2, int32_t a3)
+int32_t (uint32_t * a0, int64_t a1, uint32_t a2, int32_t a3)
 -- references
 
 -- ir
@@ -527,89 +573,107 @@ fn abi_indirect_make @ 0x2038c (size 64)
     store32(r5, (sp + #0xfffffffffffffff4))
     store32(r6, (sp + #0xfffffffffffffff8))
     store32(lr, (sp + #0xfffffffffffffffc))
-    v1 = (((sp + #0xfffffffffffffff0) + #0x10) & #0xffffffff)
-    v2 = load32(v1)
-    v3 = ((load32((v1 + #0x4)) ^ load32((sp + #0xc))) & #0xffffffff)
-    v4 = ((r2 - v2) & #0xffffffff)
-    v5 = ((v2 ^ load32((v1 + #0x8))) & #0xffffffff)
-    unsupported: ARM sbc r4, r3, r4 at 0x203a8
-    v6 = ((r2 + lr) & #0xffffffff)
-    unsupported: ARM adc r3, r3, ip at 0x203b0
-    store32(r2, r0)
-    store32(r3, (r0 + #0x4))
-    store32(r1, ((r0 + #0x8) & #0xffffffff))
-    store32(r6, ((r0 + #0xc) & #0xffffffff))
-    store32(r5, ((r0 + #0x10) & #0xffffffff))
-    store32(r4, ((r0 + #0x14) & #0xffffffff))
-    v7 = load32((sp + #0xfffffffffffffff0))
-    v8 = load32((sp + #0xfffffffffffffff4))
-    v9 = load32((sp + #0xfffffffffffffff8))
+    v1 = sp
+    v2 = load32((sp + #0xc))
+    v3 = sp
+    v4 = load32(sp)
+    v5 = load32((sp + #0x4))
+    v6 = load32((sp + #0x8))
+    v7 = (v5 ^ v2)
+    v8 = ((r2 - v4) & #0xffffffff)
+    v9 = v4
+    v10 = (v4 ^ v6)
+    v11 = select cs r2, v9 ? #0x1, #0x0
+    v12 = (((r3 - v5) - (v11 ^ #0x1)) & #0xffffffff)
+    v13 = ((r2 + v6) & #0xffffffff)
+    v14 = select hi (v13 - v6), (v6 ^ #0xffffffff) ? #0x1, #0x0
+    v15 = (((r3 + v2) + v14) & #0xffffffff)
+    store32(v13, r0)
+    store32(v15, (r0 + #0x4))
+    store32(v10, ((r0 + #0x8) & #0xffffffff))
+    store32(v7, ((r0 + #0xc) & #0xffffffff))
+    store32(v8, ((r0 + #0x10) & #0xffffffff))
+    store32(v12, ((r0 + #0x14) & #0xffffffff))
+    v16 = load32((sp + #0xfffffffffffffff0))
+    v17 = load32((sp + #0xfffffffffffffff4))
+    v18 = load32((sp + #0xfffffffffffffff8))
     ret r0
 -- card
-{"accesses":["a0 +0x0:uint32_t, +0x4:uint32_t"],"addr":"0x2038c","approxTokens":192,"blocks":1,"hardReasons":[],"name":"abi_indirect_make","nameSources":["symtab","dwarf"],"section":".text","size":64,"structures":["struct S1 { int32_t field_0x0; int32_t field_0x4; int32_t field_0x8; };"],"unsupported":3}
+{"accesses":["a0 +0x0:uint32_t, +0x4:uint32_t"],"addr":"0x2038c","approxTokens":192,"blocks":1,"hardReasons":[],"name":"abi_indirect_make","nameSources":["symtab","dwarf"],"section":".text","size":64,"unsupported":1}
 
 == 0x203cc abi_exhaust_five_aligned
 -- decompile
 /* velk pseudo-C: abi_exhaust_five_aligned @ 0x203cc */
-int32_t abi_exhaust_five_aligned(int32_t a0, int64_t a1, int32_t a2, int32_t a3) {
+int32_t abi_exhaust_five_aligned(int32_t a0, int32_t a1, int32_t a2, int32_t a3) {
     uint64_t sp = velk_entry_stack_pointer();
     uint32_t v1;
-    uint32_t v4;
     uint32_t v5;
-    uint32_t v14;
-    uint32_t v20;
-    uint32_t v24;
-    uint32_t v29;
+    uint32_t v6;
+    uint32_t v10;
+    uint32_t v17;
 
     /* unsupported: AAPCS32 multiword, floating-point or aggregate declaration */
-    int32_t v2 = *(uint32_t *)(sp + 0x20);
-    /* unsupported: ARM umull r5, r6, r2, r4 at 0x203d8 */
-    int32_t v3 = *(uint32_t *)(sp + 0x40);
-    /* unsupported: ARM umull lr, r8, ip, r2 at 0x203e8 */
-    int32_t v6 = *(uint32_t *)(sp + 0x44);
-    int32_t v7 = v4 + a0;
-    /* unsupported: ARM umull ip, r4, r4, r7 at 0x203f4 */
-    int32_t v8 = *(uint32_t *)(sp + 0x1c);
-    int32_t v9 = v1 + a2 * v14;
-    int32_t v10 = (uint32_t)a3 * 3;
-    int32_t v11 = *(uint32_t *)(sp + 0x18);
-    int32_t v12 = v5 + v10;
-    int32_t v13 = (uint32_t)v8 * 5;
-    /* unsupported (2 steps): ARM adc r1, r2, r1 at 0x20410, ARM umull r2, r3, r3, r2 at 0x20418 */
-    int32_t v15 = *(uint32_t *)(sp + 0x2c);
-    int32_t v16 = (uint32_t)a0 + a2;
-    int32_t v17 = *(uint32_t *)(sp + 0x20);
-    int32_t v18 = a3 + v4;
-    int32_t v19 = *(uint32_t *)(sp + 0x24);
-    /* unsupported (2 steps): ARM adc r1, r1, r3 at 0x20430, ARM umull r2, r3, r2, r3 at 0x20438 */
-    int32_t v21 = (uint32_t)a0 + a2;
-    int32_t v22 = *(uint32_t *)(sp + 0x28);
-    int32_t v23 = a3 + v4 * 7;
-    /* unsupported (2 steps): ARM adc r1, r1, r3 at 0x2044c, ARM umull r2, r5, r2, r3 at 0x20454 */
-    int32_t v25 = v4 + v5 * a3;
-    int32_t v26 = *(uint32_t *)(sp + 0x34);
-    int32_t v27 = (uint32_t)a0 + a2;
-    int32_t v28 = *(uint32_t *)(sp + 0x30);
-    /* unsupported (2 steps): ARM adc r1, r1, r3 at 0x20468, ARM umull r2, r5, r2, r3 at 0x20470 */
-    int32_t v30 = v4 + v5 * a3;
-    int32_t v31 = (uint32_t)a0 + a2;
-    int32_t v32 = *(uint32_t *)(sp + 0x3c);
-    int32_t v33 = (uint32_t)v32 * 17;
-    /* unsupported: ARM adc r1, r1, r3 at 0x20484 */
-    int32_t v34 = v20 + a2;
-    int32_t v35 = a0 + v29;
-    /* unsupported: ARM adc r1, r1, r2 at 0x20490 */
-    int32_t v36 = a0 + v24;
-    /* unsupported: ARM adc r1, r1, r4 at 0x20498 */
-    int32_t v37 = *(uint32_t *)(sp);
-    int32_t v38 = *(uint32_t *)(sp + 0x4);
-    int32_t v39 = *(uint32_t *)(sp + 0x8);
-    int32_t v40 = *(uint32_t *)(sp + 0xc);
-    int32_t v41 = *(uint32_t *)(sp + 0x10);
-    return a0;
+    uint64_t v2 = (uint64_t)(uint32_t)a2 * 3;
+    uint32_t v3 = v2;
+    uint8_t v4 = v2 >> 32;
+    uint64_t v7 = (uint64_t)*(uint32_t *)(sp + 0x20) * 17;
+    uint32_t v8 = v7;
+    uint8_t v9 = v7 >> 32;
+    int32_t v11 = v3 + a0;
+    uint64_t v12 = (uint64_t)*(uint32_t *)(sp + 0x28) * 19;
+    uint32_t v13 = v12;
+    uint8_t v14 = v12 >> 32;
+    uint8_t v15 = v3 > (a0 ^ 0xffffffff);
+    uint8_t v16 = v4 + (uint32_t)a3 * 3 + a1 + v15;
+    uint64_t v18 = (uint64_t)*(uint32_t *)(sp) * 5;
+    int32_t v19 = v18;
+    uint8_t v20 = v18 >> 32;
+    int32_t v21 = (uint32_t)v11 + v19;
+    uint32_t v22 = (uint32_t)v21 - v19;
+    uint32_t v23 = v19;
+    uint8_t v24 = v22 > (v23 ^ 0xffffffff);
+    uint8_t v25 = v16 + (v20 + *(uint32_t *)(sp + 0x4) * 5) + v24;
+    uint64_t v27 = (uint64_t)*(uint32_t *)(sp + 0x8) * 7;
+    int32_t v28 = v27;
+    uint8_t v29 = v27 >> 32;
+    int32_t v30 = (uint32_t)v21 + v28;
+    uint32_t v31 = (uint32_t)v30 - v28;
+    uint32_t v32 = v28;
+    uint8_t v33 = v31 > (v32 ^ 0xffffffff);
+    uint8_t v34 = v25 + (v29 + *(uint32_t *)(sp + 0xc) * 7) + v33;
+    uint64_t v36 = (uint64_t)*(uint32_t *)(sp + 0x10) * 11;
+    int32_t v37 = v36;
+    uint8_t v38 = v36 >> 32;
+    int32_t v39 = (uint32_t)v30 + v37;
+    uint32_t v40 = (uint32_t)v39 - v37;
+    uint32_t v41 = v37;
+    uint8_t v42 = v40 > (v41 ^ 0xffffffff);
+    uint8_t v43 = v34 + (v38 + *(uint32_t *)(sp + 0x14) * 11) + v42;
+    uint64_t v45 = (uint64_t)*(uint32_t *)(sp + 0x18) * 13;
+    int32_t v46 = v45;
+    uint8_t v47 = v45 >> 32;
+    uint8_t v48 = v47 + *(uint32_t *)(sp + 0x1c) * 13;
+    int32_t v49 = (uint32_t)v39 + v46;
+    uint32_t v50 = (uint32_t)v49 - v46;
+    uint32_t v51 = v46;
+    uint8_t v52 = v50 > (v51 ^ 0xffffffff);
+    uint8_t v53 = (uint32_t)(v43 + v48) + v52;
+    uint8_t v54 = v9 + *(uint32_t *)(sp + 0x24) * 17;
+    uint32_t v55 = v49 + v8;
+    uint8_t v56 = v55 - v8 > (v8 ^ 0xffffffff);
+    uint8_t v57 = (uint32_t)(v53 + v54) + v56;
+    uint32_t v58 = v55 + v13;
+    uint8_t v59 = v58 - v13 > (v13 ^ 0xffffffff);
+    uint8_t v60 = v57 + (v14 + *(uint32_t *)(sp + 0x2c) * 19) + v59;
+    int32_t v61 = v1;
+    int32_t v62 = v5;
+    int32_t v63 = v6;
+    int32_t v64 = v10;
+    int32_t v65 = v17;
+    return v58 | (uint64_t)v60 << 32;
 }
 -- signature
-int32_t (int32_t a0, int64_t a1, int32_t a2, int32_t a3)
+int32_t (int32_t a0, int32_t a1, int32_t a2, int32_t a3)
 -- references
 
 -- ir
@@ -617,229 +681,252 @@ fn abi_exhaust_five_aligned @ 0x203cc (size 212)
   blk0 @ 0x203cc:
     unsupported: AAPCS32 multiword, floating-point or aggregate declaration
     v1 = #0x3
-    v2 = load32((sp + #0x20))
-    unsupported: ARM umull r5, r6, r2, r4 at 0x203d8
-    v3 = load32((sp + #0x40))
-    v4 = #0x11
-    v5 = #0x13
-    unsupported: ARM umull lr, r8, ip, r2 at 0x203e8
-    v6 = load32((sp + #0x44))
-    v7 = ((r5 + r0) & #0xffffffff)
-    unsupported: ARM umull ip, r4, r4, r7 at 0x203f4
-    v8 = load32((sp + #0x1c))
-    v9 = ((r4 + (r2 * r7)) & #0xffffffff)
-    v10 = ((r3 * #0x3) & #0xffffffff)
-    v11 = load32((sp + #0x18))
-    v12 = ((r6 + v10) & #0xffffffff)
-    v13 = ((v8 * #0x5) & #0xffffffff)
-    unsupported: ARM adc r1, r2, r1 at 0x20410
-    v14 = #0x5
-    unsupported: ARM umull r2, r3, r3, r2 at 0x20418
-    v15 = load32((sp + #0x2c))
-    v16 = ((r0 + r2) & #0xffffffff)
-    v17 = load32((sp + #0x20))
-    v18 = ((r3 + r5) & #0xffffffff)
-    v19 = load32((sp + #0x24))
-    unsupported: ARM adc r1, r1, r3 at 0x20430
-    v20 = #0x7
-    unsupported: ARM umull r2, r3, r2, r3 at 0x20438
-    v21 = ((r0 + r2) & #0xffffffff)
-    v22 = load32((sp + #0x28))
-    v23 = ((r3 + (r5 * #0x7)) & #0xffffffff)
-    unsupported: ARM adc r1, r1, r3 at 0x2044c
-    v24 = #0xb
-    unsupported: ARM umull r2, r5, r2, r3 at 0x20454
-    v25 = ((r5 + (r6 * r3)) & #0xffffffff)
-    v26 = load32((sp + #0x34))
-    v27 = ((r0 + r2) & #0xffffffff)
-    v28 = load32((sp + #0x30))
-    unsupported: ARM adc r1, r1, r3 at 0x20468
-    v29 = #0xd
-    unsupported: ARM umull r2, r5, r2, r3 at 0x20470
-    v30 = ((r5 + (r6 * r3)) & #0xffffffff)
-    v31 = ((r0 + r2) & #0xffffffff)
-    v32 = load32((sp + #0x3c))
-    v33 = ((v32 * #0x11) & #0xffffffff)
-    unsupported: ARM adc r1, r1, r3 at 0x20484
-    v34 = ((r8 + r2) & #0xffffffff)
-    v35 = ((r0 + lr) & #0xffffffff)
-    unsupported: ARM adc r1, r1, r2 at 0x20490
-    v36 = ((r0 + r12) & #0xffffffff)
-    unsupported: ARM adc r1, r1, r4 at 0x20498
-    v37 = load32(sp)
-    v38 = load32((sp + #0x4))
-    v39 = load32((sp + #0x8))
-    v40 = load32((sp + #0xc))
-    v41 = load32((sp + #0x10))
-    ret r0
+    v2 = (r2 * #0x3)
+    v3 = (v2 & #0xffffffff)
+    v4 = (v2 >> #0x20)
+    v5 = #0x11
+    v6 = #0x13
+    v7 = (load32((sp + #0x20)) * #0x11)
+    v8 = (v7 & #0xffffffff)
+    v9 = (v7 >> #0x20)
+    v10 = r0
+    v11 = ((v3 + r0) & #0xffffffff)
+    v12 = (load32((sp + #0x28)) * #0x13)
+    v13 = (v12 & #0xffffffff)
+    v14 = (v12 >> #0x20)
+    v15 = select hi v3, (v10 ^ #0xffffffff) ? #0x1, #0x0
+    v16 = (((((v4 + (r3 * #0x3)) & #0xffffffff) + r1) + v15) & #0xffffffff)
+    v17 = #0x5
+    v18 = (load32(sp) * #0x5)
+    v19 = (v18 & #0xffffffff)
+    v20 = (v18 >> #0x20)
+    v21 = ((v11 + v19) & #0xffffffff)
+    v22 = (v21 - v19)
+    v23 = v19
+    v24 = select hi v22, (v23 ^ #0xffffffff) ? #0x1, #0x0
+    v25 = (((v16 + ((v20 + (load32((sp + #0x4)) * #0x5)) & #0xffffffff)) + v24) & #0xffffffff)
+    v26 = #0x7
+    v27 = (load32((sp + #0x8)) * #0x7)
+    v28 = (v27 & #0xffffffff)
+    v29 = (v27 >> #0x20)
+    v30 = ((v21 + v28) & #0xffffffff)
+    v31 = (v30 - v28)
+    v32 = v28
+    v33 = select hi v31, (v32 ^ #0xffffffff) ? #0x1, #0x0
+    v34 = (((v25 + ((v29 + (load32((sp + #0xc)) * #0x7)) & #0xffffffff)) + v33) & #0xffffffff)
+    v35 = #0xb
+    v36 = (load32((sp + #0x10)) * #0xb)
+    v37 = (v36 & #0xffffffff)
+    v38 = (v36 >> #0x20)
+    v39 = ((v30 + v37) & #0xffffffff)
+    v40 = (v39 - v37)
+    v41 = v37
+    v42 = select hi v40, (v41 ^ #0xffffffff) ? #0x1, #0x0
+    v43 = (((v34 + ((v38 + (load32((sp + #0x14)) * #0xb)) & #0xffffffff)) + v42) & #0xffffffff)
+    v44 = #0xd
+    v45 = (load32((sp + #0x18)) * #0xd)
+    v46 = (v45 & #0xffffffff)
+    v47 = (v45 >> #0x20)
+    v48 = ((v47 + (load32((sp + #0x1c)) * #0xd)) & #0xffffffff)
+    v49 = ((v39 + v46) & #0xffffffff)
+    v50 = (v49 - v46)
+    v51 = v46
+    v52 = select hi v50, (v51 ^ #0xffffffff) ? #0x1, #0x0
+    v53 = (((v43 + v48) + v52) & #0xffffffff)
+    v54 = ((v9 + (load32((sp + #0x24)) * #0x11)) & #0xffffffff)
+    v55 = ((v49 + v8) & #0xffffffff)
+    v56 = select hi (v55 - v8), (v8 ^ #0xffffffff) ? #0x1, #0x0
+    v57 = (((v53 + v54) + v56) & #0xffffffff)
+    v58 = ((v55 + v13) & #0xffffffff)
+    v59 = select hi (v58 - v13), (v13 ^ #0xffffffff) ? #0x1, #0x0
+    v60 = (((v57 + ((v14 + (load32((sp + #0x2c)) * #0x13)) & #0xffffffff)) + v59) & #0xffffffff)
+    v61 = r4
+    v62 = r5
+    v63 = r6
+    v64 = r7
+    v65 = r8
+    ret (v58 | (v60 << #0x20))
 -- card
-{"addr":"0x203cc","approxTokens":240,"blocks":1,"hardReasons":[],"name":"abi_exhaust_five_aligned","nameSources":["symtab","dwarf"],"section":".text","size":212,"unsupported":15}
+{"addr":"0x203cc","approxTokens":240,"blocks":1,"hardReasons":[],"name":"abi_exhaust_five_aligned","nameSources":["symtab","dwarf"],"section":".text","size":212,"unsupported":1}
 
 == 0x204a0 abi_exhaust_seven_aligned
 -- decompile
 /* velk pseudo-C: abi_exhaust_seven_aligned @ 0x204a0 */
-int32_t abi_exhaust_seven_aligned(int32_t a0, int64_t a1, int32_t a2, int32_t a3) {
+int32_t abi_exhaust_seven_aligned(int32_t a0, int32_t a1, int32_t a2, int32_t a3) {
     uint64_t sp = velk_entry_stack_pointer();
-    uint32_t v2;
-    uint32_t v4;
+    uint32_t v1;
     uint32_t v5;
-    uint32_t v10;
-    uint32_t v21;
-    uint32_t v25;
-    uint32_t v30;
-    uint32_t v37;
-    uint32_t v41;
+    uint32_t v6;
+    uint32_t v13;
+    uint32_t v17;
+    uint32_t v27;
+    uint32_t v36;
 
     /* unsupported: AAPCS32 multiword, floating-point or aggregate declaration */
-    *(uint32_t *)(sp - 0x20) = v2;
-    *(uint32_t *)(sp - 0x1c) = v4;
-    *(uint32_t *)(sp - 0x18) = v5;
-    *(uint32_t *)(sp - 0x14) = v10;
-    *(uint32_t *)(sp - 0x10) = v21;
-    *(uint32_t *)(sp - 0xc) = v25;
-    *(uint32_t *)(sp - 0x8) = v30;
-    int32_t v1 = *(uint32_t *)(sp + 0x30);
-    int32_t v3 = *(uint32_t *)(sp + 0x38);
-    /* unsupported (2 steps): ARM umull r10, r6, r2, r4 at 0x204b0, ARM umull lr, r7, ip, sb at 0x204bc */
-    int32_t v6 = *(uint32_t *)(sp + 0x3c);
-    int32_t v7 = (uint32_t)a3 * 3;
-    int32_t v8 = v5 + v7;
-    /* unsupported: ARM umull ip, r4, r8, r2 at 0x204cc */
-    int32_t v9 = v30 + a0;
-    /* unsupported: ARM adc r1, r3, r1 at 0x204d4 */
-    int32_t v11 = v2 + v4 * a2;
-    int32_t v12 = *(uint32_t *)(sp);
-    int32_t v13 = *(uint32_t *)(sp + 0x4);
-    int32_t v14 = *(uint32_t *)(sp + 0x34);
-    /* unsupported: ARM umull r3, r5, r5, r3 at 0x204ec */
-    int32_t v15 = v10 + v2 * v25;
-    int32_t v16 = *(uint32_t *)(sp + 0x14);
-    int32_t v17 = (uint32_t)a0 + a3;
-    int32_t v18 = *(uint32_t *)(sp + 0x8);
-    int32_t v19 = v4 + v5 * 5;
-    int32_t v20 = *(uint32_t *)(sp + 0xc);
-    /* unsupported (2 steps): ARM adc r1, r1, r5 at 0x2050c, ARM umull r3, r5, r3, r5 at 0x20514 */
-    int32_t v22 = (uint32_t)a0 + a3;
-    int32_t v23 = *(uint32_t *)(sp + 0x10);
-    int32_t v24 = v4 + v5 * 7;
-    /* unsupported (2 steps): ARM adc r1, r1, r5 at 0x20528, ARM umull r3, r6, r3, r5 at 0x20530 */
-    int32_t v26 = v5 + v10 * v4;
-    int32_t v27 = *(uint32_t *)(sp + 0x1c);
-    int32_t v28 = (uint32_t)a0 + a3;
-    int32_t v29 = *(uint32_t *)(sp + 0x18);
-    /* unsupported (2 steps): ARM adc r1, r1, r5 at 0x20544, ARM umull r3, r6, r3, r5 at 0x2054c */
-    int32_t v31 = v5 + v10 * v4;
-    int32_t v32 = *(uint32_t *)(sp + 0x24);
-    int32_t v33 = *(uint32_t *)(sp + 0x2c);
-    int32_t v34 = (uint32_t)a0 + a3;
-    int32_t v35 = *(uint32_t *)(sp + 0x20);
-    int32_t v36 = (uint32_t)v32 * 17;
-    /* unsupported (2 steps): ARM adc r1, r1, r5 at 0x20568, ARM umull r3, r5, r3, r5 at 0x20570 */
-    int32_t v38 = (uint32_t)a0 + a3;
-    int32_t v39 = *(uint32_t *)(sp + 0x28);
-    int32_t v40 = v4 + v5;
-    /* unsupported (2 steps): ARM adc r1, r1, r5 at 0x20580, ARM umull r3, r6, r3, r5 at 0x20588 */
-    int32_t v42 = v5 + v10 * v4;
-    int32_t v43 = (uint32_t)a0 + a3;
-    /* unsupported: ARM adc r1, r1, r5 at 0x20594 */
-    int32_t v44 = a0 + v41;
-    /* unsupported: ARM adc r1, r1, r4 at 0x2059c */
-    int32_t v45 = a0 + v37;
-    /* unsupported: ARM adc r1, r1, r2 at 0x205a4 */
-    int32_t v46 = *(uint32_t *)(sp - 0x20);
-    int32_t v47 = *(uint32_t *)(sp - 0x1c);
-    int32_t v48 = *(uint32_t *)(sp - 0x18);
-    int32_t v49 = *(uint32_t *)(sp - 0x14);
-    int32_t v50 = *(uint32_t *)(sp - 0x10);
-    int32_t v51 = *(uint32_t *)(sp - 0xc);
-    int32_t v52 = *(uint32_t *)(sp - 0x8);
-    return a0;
+    uint64_t v2 = (uint64_t)(uint32_t)a2 * 3;
+    uint32_t v3 = v2;
+    uint8_t v4 = v2 >> 32;
+    uint64_t v7 = (uint64_t)*(uint32_t *)(sp + 0x30) * 23;
+    uint32_t v8 = v7;
+    uint8_t v9 = v7 >> 32;
+    uint64_t v10 = (uint64_t)*(uint32_t *)(sp + 0x38) * 29;
+    uint32_t v11 = v10;
+    uint8_t v12 = v10 >> 32;
+    int32_t v14 = v3 + a0;
+    uint8_t v15 = v3 > (a0 ^ 0xffffffff);
+    uint8_t v16 = v4 + (uint32_t)a3 * 3 + a1 + v15;
+    uint8_t v18 = v12 + *(uint32_t *)(sp + 0x3c) * 29;
+    uint64_t v19 = (uint64_t)*(uint32_t *)(sp) * 5;
+    int32_t v20 = v19;
+    uint8_t v21 = v19 >> 32;
+    int32_t v22 = (uint32_t)v14 + v20;
+    uint32_t v23 = (uint32_t)v22 - v20;
+    uint32_t v24 = v20;
+    uint8_t v25 = v23 > (v24 ^ 0xffffffff);
+    uint8_t v26 = v16 + (v21 + *(uint32_t *)(sp + 0x4) * 5) + v25;
+    uint64_t v28 = (uint64_t)*(uint32_t *)(sp + 0x8) * 7;
+    int32_t v29 = v28;
+    uint8_t v30 = v28 >> 32;
+    int32_t v31 = (uint32_t)v22 + v29;
+    uint32_t v32 = (uint32_t)v31 - v29;
+    uint32_t v33 = v29;
+    uint8_t v34 = v32 > (v33 ^ 0xffffffff);
+    uint8_t v35 = v26 + (v30 + *(uint32_t *)(sp + 0xc) * 7) + v34;
+    uint64_t v37 = (uint64_t)*(uint32_t *)(sp + 0x10) * 11;
+    int32_t v38 = v37;
+    uint8_t v39 = v37 >> 32;
+    int32_t v40 = (uint32_t)v31 + v38;
+    uint32_t v41 = (uint32_t)v40 - v38;
+    uint32_t v42 = v38;
+    uint8_t v43 = v41 > (v42 ^ 0xffffffff);
+    uint8_t v44 = v35 + (v39 + *(uint32_t *)(sp + 0x14) * 11) + v43;
+    uint64_t v46 = (uint64_t)*(uint32_t *)(sp + 0x18) * 13;
+    int32_t v47 = v46;
+    uint8_t v48 = v46 >> 32;
+    int32_t v49 = (uint32_t)v40 + v47;
+    uint32_t v50 = (uint32_t)v49 - v47;
+    uint32_t v51 = v47;
+    uint8_t v52 = v50 > (v51 ^ 0xffffffff);
+    uint8_t v53 = v44 + (v48 + *(uint32_t *)(sp + 0x1c) * 13) + v52;
+    uint64_t v55 = (uint64_t)*(uint32_t *)(sp + 0x20) * 17;
+    int32_t v56 = v55;
+    uint8_t v57 = v55 >> 32;
+    int32_t v58 = (uint32_t)v49 + v56;
+    uint32_t v59 = (uint32_t)v58 - v56;
+    uint32_t v60 = v56;
+    uint8_t v61 = v59 > (v60 ^ 0xffffffff);
+    uint8_t v62 = v53 + (v57 + *(uint32_t *)(sp + 0x24) * 17) + v61;
+    uint64_t v64 = (uint64_t)*(uint32_t *)(sp + 0x28) * 19;
+    uint32_t v65 = v64;
+    uint8_t v66 = v64 >> 32;
+    uint32_t v67 = v58 + v65;
+    uint8_t v68 = v67 - v65 > (v65 ^ 0xffffffff);
+    uint8_t v69 = v62 + (v66 + *(uint32_t *)(sp + 0x2c) * 19) + v68;
+    uint32_t v70 = v67 + v8;
+    uint8_t v71 = v70 - v8 > (v8 ^ 0xffffffff);
+    uint8_t v72 = v69 + (v9 + *(uint32_t *)(sp + 0x34) * 23) + v71;
+    uint32_t v73 = v70 + v11;
+    uint8_t v74 = v73 - v11 > (v11 ^ 0xffffffff);
+    uint8_t v75 = (uint32_t)(v72 + v18) + v74;
+    int32_t v76 = v1;
+    int32_t v77 = v5;
+    int32_t v78 = v6;
+    int32_t v79 = v13;
+    int32_t v80 = v17;
+    int32_t v81 = v27;
+    int32_t v82 = v36;
+    return v73 | (uint64_t)v75 << 32;
 }
 -- signature
-int32_t (int32_t a0, int64_t a1, int32_t a2, int32_t a3)
+int32_t (int32_t a0, int32_t a1, int32_t a2, int32_t a3)
 -- references
 
 -- ir
 fn abi_exhaust_seven_aligned @ 0x204a0 (size 268)
   blk0 @ 0x204a0:
     unsupported: AAPCS32 multiword, floating-point or aggregate declaration
-    store32(r4, (sp + #0xffffffffffffffe0))
-    store32(r5, (sp + #0xffffffffffffffe4))
-    store32(r6, (sp + #0xffffffffffffffe8))
-    store32(r7, (sp + #0xffffffffffffffec))
-    store32(r8, (sp + #0xfffffffffffffff0))
-    store32(r9, (sp + #0xfffffffffffffff4))
-    store32(r10, (sp + #0xfffffffffffffff8))
-    v1 = load32((sp + #0x30))
-    v2 = #0x3
-    v3 = load32((sp + #0x38))
-    unsupported: ARM umull r10, r6, r2, r4 at 0x204b0
-    v4 = #0x17
-    v5 = #0x1d
-    unsupported: ARM umull lr, r7, ip, sb at 0x204bc
-    v6 = load32((sp + #0x3c))
-    v7 = ((r3 * #0x3) & #0xffffffff)
-    v8 = ((r6 + v7) & #0xffffffff)
-    unsupported: ARM umull ip, r4, r8, r2 at 0x204cc
-    v9 = ((r10 + r0) & #0xffffffff)
-    unsupported: ARM adc r1, r3, r1 at 0x204d4
-    v10 = #0x5
-    v11 = ((r4 + (r5 * r2)) & #0xffffffff)
-    v12 = load32(sp)
-    v13 = load32((sp + #0x4))
-    v14 = load32((sp + #0x34))
-    unsupported: ARM umull r3, r5, r5, r3 at 0x204ec
-    v15 = ((r7 + (r4 * r9)) & #0xffffffff)
-    v16 = load32((sp + #0x14))
-    v17 = ((r0 + r3) & #0xffffffff)
-    v18 = load32((sp + #0x8))
-    v19 = ((r5 + (r6 * #0x5)) & #0xffffffff)
-    v20 = load32((sp + #0xc))
-    unsupported: ARM adc r1, r1, r5 at 0x2050c
-    v21 = #0x7
-    unsupported: ARM umull r3, r5, r3, r5 at 0x20514
-    v22 = ((r0 + r3) & #0xffffffff)
-    v23 = load32((sp + #0x10))
-    v24 = ((r5 + (r6 * #0x7)) & #0xffffffff)
-    unsupported: ARM adc r1, r1, r5 at 0x20528
-    v25 = #0xb
-    unsupported: ARM umull r3, r6, r3, r5 at 0x20530
-    v26 = ((r6 + (r7 * r5)) & #0xffffffff)
-    v27 = load32((sp + #0x1c))
-    v28 = ((r0 + r3) & #0xffffffff)
-    v29 = load32((sp + #0x18))
-    unsupported: ARM adc r1, r1, r5 at 0x20544
-    v30 = #0xd
-    unsupported: ARM umull r3, r6, r3, r5 at 0x2054c
-    v31 = ((r6 + (r7 * r5)) & #0xffffffff)
-    v32 = load32((sp + #0x24))
-    v33 = load32((sp + #0x2c))
-    v34 = ((r0 + r3) & #0xffffffff)
-    v35 = load32((sp + #0x20))
-    v36 = ((v32 * #0x11) & #0xffffffff)
-    unsupported: ARM adc r1, r1, r5 at 0x20568
-    v37 = #0x11
-    unsupported: ARM umull r3, r5, r3, r5 at 0x20570
-    v38 = ((r0 + r3) & #0xffffffff)
-    v39 = load32((sp + #0x28))
-    v40 = ((r5 + r6) & #0xffffffff)
-    unsupported: ARM adc r1, r1, r5 at 0x20580
-    v41 = #0x13
-    unsupported: ARM umull r3, r6, r3, r5 at 0x20588
-    v42 = ((r6 + (r7 * r5)) & #0xffffffff)
-    v43 = ((r0 + r3) & #0xffffffff)
-    unsupported: ARM adc r1, r1, r5 at 0x20594
-    v44 = ((r0 + lr) & #0xffffffff)
-    unsupported: ARM adc r1, r1, r4 at 0x2059c
-    v45 = ((r0 + r12) & #0xffffffff)
-    unsupported: ARM adc r1, r1, r2 at 0x205a4
-    v46 = load32((sp + #0xffffffffffffffe0))
-    v47 = load32((sp + #0xffffffffffffffe4))
-    v48 = load32((sp + #0xffffffffffffffe8))
-    v49 = load32((sp + #0xffffffffffffffec))
-    v50 = load32((sp + #0xfffffffffffffff0))
-    v51 = load32((sp + #0xfffffffffffffff4))
-    v52 = load32((sp + #0xfffffffffffffff8))
-    ret r0
+    v1 = #0x3
+    v2 = (r2 * #0x3)
+    v3 = (v2 & #0xffffffff)
+    v4 = (v2 >> #0x20)
+    v5 = #0x17
+    v6 = #0x1d
+    v7 = (load32((sp + #0x30)) * #0x17)
+    v8 = (v7 & #0xffffffff)
+    v9 = (v7 >> #0x20)
+    v10 = (load32((sp + #0x38)) * #0x1d)
+    v11 = (v10 & #0xffffffff)
+    v12 = (v10 >> #0x20)
+    v13 = r0
+    v14 = ((v3 + r0) & #0xffffffff)
+    v15 = select hi v3, (v13 ^ #0xffffffff) ? #0x1, #0x0
+    v16 = (((((v4 + (r3 * #0x3)) & #0xffffffff) + r1) + v15) & #0xffffffff)
+    v17 = #0x5
+    v18 = ((v12 + (load32((sp + #0x3c)) * #0x1d)) & #0xffffffff)
+    v19 = (load32(sp) * #0x5)
+    v20 = (v19 & #0xffffffff)
+    v21 = (v19 >> #0x20)
+    v22 = ((v14 + v20) & #0xffffffff)
+    v23 = (v22 - v20)
+    v24 = v20
+    v25 = select hi v23, (v24 ^ #0xffffffff) ? #0x1, #0x0
+    v26 = (((v16 + ((v21 + (load32((sp + #0x4)) * #0x5)) & #0xffffffff)) + v25) & #0xffffffff)
+    v27 = #0x7
+    v28 = (load32((sp + #0x8)) * #0x7)
+    v29 = (v28 & #0xffffffff)
+    v30 = (v28 >> #0x20)
+    v31 = ((v22 + v29) & #0xffffffff)
+    v32 = (v31 - v29)
+    v33 = v29
+    v34 = select hi v32, (v33 ^ #0xffffffff) ? #0x1, #0x0
+    v35 = (((v26 + ((v30 + (load32((sp + #0xc)) * #0x7)) & #0xffffffff)) + v34) & #0xffffffff)
+    v36 = #0xb
+    v37 = (load32((sp + #0x10)) * #0xb)
+    v38 = (v37 & #0xffffffff)
+    v39 = (v37 >> #0x20)
+    v40 = ((v31 + v38) & #0xffffffff)
+    v41 = (v40 - v38)
+    v42 = v38
+    v43 = select hi v41, (v42 ^ #0xffffffff) ? #0x1, #0x0
+    v44 = (((v35 + ((v39 + (load32((sp + #0x14)) * #0xb)) & #0xffffffff)) + v43) & #0xffffffff)
+    v45 = #0xd
+    v46 = (load32((sp + #0x18)) * #0xd)
+    v47 = (v46 & #0xffffffff)
+    v48 = (v46 >> #0x20)
+    v49 = ((v40 + v47) & #0xffffffff)
+    v50 = (v49 - v47)
+    v51 = v47
+    v52 = select hi v50, (v51 ^ #0xffffffff) ? #0x1, #0x0
+    v53 = (((v44 + ((v48 + (load32((sp + #0x1c)) * #0xd)) & #0xffffffff)) + v52) & #0xffffffff)
+    v54 = #0x11
+    v55 = (load32((sp + #0x20)) * #0x11)
+    v56 = (v55 & #0xffffffff)
+    v57 = (v55 >> #0x20)
+    v58 = ((v49 + v56) & #0xffffffff)
+    v59 = (v58 - v56)
+    v60 = v56
+    v61 = select hi v59, (v60 ^ #0xffffffff) ? #0x1, #0x0
+    v62 = (((v53 + ((v57 + (load32((sp + #0x24)) * #0x11)) & #0xffffffff)) + v61) & #0xffffffff)
+    v63 = #0x13
+    v64 = (load32((sp + #0x28)) * #0x13)
+    v65 = (v64 & #0xffffffff)
+    v66 = (v64 >> #0x20)
+    v67 = ((v58 + v65) & #0xffffffff)
+    v68 = select hi (v67 - v65), (v65 ^ #0xffffffff) ? #0x1, #0x0
+    v69 = (((v62 + ((v66 + (load32((sp + #0x2c)) * #0x13)) & #0xffffffff)) + v68) & #0xffffffff)
+    v70 = ((v67 + v8) & #0xffffffff)
+    v71 = select hi (v70 - v8), (v8 ^ #0xffffffff) ? #0x1, #0x0
+    v72 = (((v69 + ((v9 + (load32((sp + #0x34)) * #0x17)) & #0xffffffff)) + v71) & #0xffffffff)
+    v73 = ((v70 + v11) & #0xffffffff)
+    v74 = select hi (v73 - v11), (v11 ^ #0xffffffff) ? #0x1, #0x0
+    v75 = (((v72 + v18) + v74) & #0xffffffff)
+    v76 = r4
+    v77 = r5
+    v78 = r6
+    v79 = r7
+    v80 = r8
+    v81 = r9
+    v82 = r10
+    ret (v73 | (v75 << #0x20))
 -- card
-{"addr":"0x204a0","approxTokens":240,"blocks":1,"hardReasons":[],"name":"abi_exhaust_seven_aligned","nameSources":["symtab","dwarf"],"section":".text","size":268,"unsupported":19}
+{"addr":"0x204a0","approxTokens":240,"blocks":1,"hardReasons":[],"name":"abi_exhaust_seven_aligned","nameSources":["symtab","dwarf"],"section":".text","size":268,"unsupported":1}

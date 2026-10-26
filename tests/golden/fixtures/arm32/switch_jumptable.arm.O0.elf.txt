@@ -1,7 +1,9 @@
-# arm32/switch_jumptable.arm.O0.elf: elf arm32 no entry, 1 functions, 0 lift failures, 2 unsupported, 0 gotos
+# arm32/switch_jumptable.arm.O0.elf: elf arm32 no entry, 1 functions, 0 lift failures, 1 unsupported, 0 gotos
 0x20104 932 d7 symtab,dwarf
 /* velk prelude */
 #include <stdint.h>
+
+extern uint32_t g; /* address: 0x304a8 */
 
 uint64_t sub_20134();
 uint64_t velk_entry_stack_pointer(void); /* target entry stack pointer */
@@ -10,45 +12,43 @@ uint64_t velk_entry_stack_pointer(void); /* target entry stack pointer */
 == 0x20104 d7
 -- decompile
 /* velk pseudo-C: d7 @ 0x20104 */
+/* ref: 0x304a8 .bss */
 int d7(int x) {
     uint64_t sp = velk_entry_stack_pointer();
     uint64_t v1;
-    uint64_t v7;
+    uint64_t v6;
+    uint32_t v2;
     uint32_t v5;
-    uint32_t v6;
-    uint32_t v8;
+    uint32_t v7;
     int32_t v4;
-    uint32_t local_0; /* [sp-8] */
-    uint32_t local_1; /* [sp-4] */
+    _Alignas(16) struct __attribute__((packed)) { uint32_t f_0; uint8_t gap_4[0x2c]; uint32_t f_30; uint32_t f_34; } local_0; /* [sp-38] */
 
-    local_0 = v7;
-    local_1 = v8;
+    local_0.f_30 = v6;
+    local_0.f_34 = v7;
     sp = sp - 0x8;
-    v7 = sp;
+    v6 = sp;
     sp = sp - 0x30;
-    *(uint32_t *)(v7 - 0x4) = x;
+    *(uint32_t *)(v6 - 0x4) = x;
     *(uint32_t *)(sp) = x;
     if ((uint32_t)x <= 9) {
-        int32_t v2 = *(uint32_t *)(sp);
-        /* unsupported: ARM adr r0, pc, 0x4 at 0x20128 */
-        int32_t v3 = *(uint32_t *)((x + (v1 << 2)) & 0xffffffff);
+        int32_t v3 = *(uint32_t *)(0x20134 + (*(uint32_t *)(sp) << 2));
         /* unsupported: ARM add pc, r0, r1 at 0x20130 */
         {
             uint64_t call_values[2];
-            call_values[0] = sub_20134((uint32_t)x, v1, v5, v6);
+            call_values[0] = sub_20134((uint32_t)x, v1, v2, v5);
             call_values[1] = v1; /* also returned by the call */
             v4 = (uint32_t)(call_values[0]);
             v1 = (uint32_t)(call_values[1]);
         }
         return v4;
     }
-    *(uint32_t *)(0x2043c + *(uint32_t *)(0x204a0)) = 0xffffffff;
-    return *(uint32_t *)(0x20448 + *(uint32_t *)(0x204a4));
+    g = 0xffffffff;
+    return g;
 }
 -- signature
 int (int x)
 -- references
-
+0x304a8 .bss
 -- ir
 fn d7 @ 0x20104 (size 932)
   blk0 @ 0x20104:
@@ -64,15 +64,14 @@ fn d7 @ 0x20104 (size 932)
   blk1 @ 0x20121:
     br 0x2042c
   blk2 @ 0x20124:
-    v2 = load32(sp)
-    unsupported: ARM adr r0, pc, 0x4 at 0x20128
-    v3 = load32(((r0 + (r1 << #0x2)) & #0xffffffff))
+    v2 = #0x20134
+    v3 = load32(((#0x20134 + (load32(sp) << #0x2)) & #0xffffffff))
     unsupported: ARM add pc, r0, r1 at 0x20130
     v4:r0, r1 = call 0x20134(r0, r1, r2, r3)
     ret v4
   blk3 @ 0x2042c:
-    store32(#0xffffffff, ((#0x2043c + load32(#0x204a0)) & #0xffffffff))
+    store32(#0xffffffff, #0x304a8)
   blk4 @ 0x2043c:
-    ret load32(((#0x20448 + load32(#0x204a4)) & #0xffffffff))
+    ret load32(#0x304a8)
 -- card
-{"addr":"0x20104","approxTokens":240,"blocks":5,"hardReasons":[],"name":"d7","nameSources":["symtab","dwarf"],"section":".text","size":932,"unsupported":2}
+{"addr":"0x20104","approxTokens":240,"blocks":5,"hardReasons":[],"name":"d7","nameSources":["symtab","dwarf"],"section":".text","size":932,"unsupported":1}

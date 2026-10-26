@@ -451,7 +451,7 @@ impl Proofs {
         ));
     }
 
-    fn program(&mut self, name: String, before: &[Stmt], after: &[Stmt]) {
+    pub(crate) fn program(&mut self, name: String, before: &[Stmt], after: &[Stmt]) {
         if before.len() == after.len() {
             let mut unchanged = true;
             for (a, b) in before.iter().zip(after) {

@@ -30,6 +30,8 @@ pub(super) fn optimize(
     if ir.isa == crate::loader::Isa::I386 {
         crate::ssa::count_variadic_arguments(&mut ir, image);
         passes::frame_slots::settle_i386(&mut ir);
+    } else if ir.isa == crate::loader::Isa::Arm32 {
+        passes::frame_slots::settle(&mut ir);
     }
     let declared_return = types.as_ref().is_some_and(|types| types.ret.is_some());
     let uniform_32 = passes::widths::specialize_widths(&mut ir, &|target| {
@@ -121,6 +123,12 @@ pub(super) fn optimize(
             }
             _ => false,
         });
+    let word_temporaries: &[u16] =
+        if matches!(ir.isa, crate::loader::Isa::I386 | crate::loader::Isa::Arm32) {
+            &crate::lift::pairs32::TEMPORARIES
+        } else {
+            &[]
+        };
     let general: Vec<u16> = match ir.isa {
         crate::loader::Isa::AArch64 => (0..=30).collect::<Vec<u16>>(),
         _ => (0..16).collect(),
@@ -134,6 +142,7 @@ pub(super) fn optimize(
     .chain(crate::ir::FLAG_OPERANDS)
     .chain(crate::ir::FLAG_CARRIED)
     .chain([crate::ir::EXCHANGE, crate::ir::SWITCH_INDEX])
+    .chain(word_temporaries.iter().copied())
     .collect();
     // Bits no read looks at go first, so the variables they tied split apart;
     // a narrow return reads fewer of them.
@@ -160,7 +169,22 @@ pub(super) fn optimize(
     passed(deadline)?;
     apply_call_return(&mut ir, image);
     passed(deadline)?;
+    let inferred = if types.is_none() {
+        crate::lift::pairs32::definition_types(image, ir.addr)
+    } else {
+        None
+    };
+    let inferred_parameters = if types.is_none() && inferred.is_none() {
+        crate::lift::pairs32::inference::parameters(image, ir.addr)
+    } else {
+        None
+    };
     typing::apply_dwarf_types(types, &mut ir);
+    if let Some((params, ret)) = inferred {
+        super::pairs32::place_inferred(params, ret, &mut ir);
+    } else if let Some(params) = inferred_parameters {
+        super::pairs32::place_inferred_parameters(params, &mut ir);
+    }
     cleanup_after_types(&mut ir, deadline)?;
     passed(deadline)?;
     name_indirect_result(&mut ir);
@@ -177,6 +201,7 @@ pub(super) fn optimize(
         ir.ret_type = result.ty.clone();
     }
     passed(deadline)?;
+    crate::lift::fold_literals(&mut ir, image);
     let references = refs::collect(&ir, image);
     passed(deadline)?;
     passes::frame_slots::settle(&mut ir);
@@ -234,6 +259,7 @@ pub(super) fn optimize(
     ir.pointer_values = pointer_values;
     passed(deadline)?;
     typing::apply_prototypes(&mut ir, image);
+    super::pairs32::type_temporaries(&mut ir);
     prototypes::apply_records(&mut ir, image);
     passed(deadline)?;
     variadic::mark_variadic(&mut ir);

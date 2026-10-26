@@ -48,7 +48,7 @@ src/passes/memory.rs:378	Store-to-load forwarding	Equal address/width; no alias/
 src/passes/memory.rs:471	Fuse load/op/store	Same location; safe effects and use counts	8/16/32/64	open memory model	fn fuse_block(
 src/passes/memory.rs:785	Forward spilled variables	Frame escape/liveness and overlap guards	8/16/32/64	open memory/CFG context	pub fn forward_spilled_variables(
 src/passes/frame_slots.rs:95	Replace frame pointer	Known stack offsets; safe pointer uses	32/64 addresses	open frame/CFG context	fn substitute_frame_pointer(
-src/passes/frame_slots.rs:421	Canonical stack-relative address	Known frame displacement; checked slot calculations	32/64 addresses	open frame context	fn rewrite_expr_frame(
+src/passes/frame_slots.rs:470	Canonical stack-relative address	Known frame displacement; checked slot calculations	32/64 addresses	open frame context	fn rewrite_expr_frame(
 src/passes/division/divisor.rs:67	Unsigned reciprocal certificate	Valid domain/shift; maximum interval error below modulus	8/16/32/64	accepted certificate instances	pub(crate) fn magic_divisor(
 src/passes/division/divisor.rs:24	Signed reciprocal plus sign correction certificate	Positive slip; positive error <modulus; negative <=modulus	8/16/32/64	accepted certificate instances	pub(crate) fn magic_divisor_signed64(
 src/passes/division/divisor.rs:98	Signed widening32 certificate	32-bit multiplier/domain; shift32	32	certificate tested; matcher open	pub(crate) fn magic_divisor_signed(
@@ -72,9 +72,9 @@ src/ssa/ranges.rs:1372	Remove masks/extensions and replace singletons	Possible-b
 src/ssa/ranges.rs:1254	Simplify assigned/returned values	Preserve type masks and partial-write merges	8/16/32/64	pass templates	fn rewrite_value(
 src/ssa/ranges.rs:1285	Fold branches and prune switches	Proven tests/range coverage and executable edges	8/16/32/64	open CFG proof	fn terminate(
 src/ssa/demand.rs:331	Narrow to demanded low bits	All live demanded bits fit; no hidden use	8/16/32/64	open demand analysis	pub fn narrow_partial_writes(
-src/lift/mod.rs:464	Rotation to shifts and OR	Power-of-two width; final result consumed at that width	8/16/32/64	templates	fn rotate(
-src/lift/mod.rs:497	Byte/chunk reversal	Valid chunk dividing byte width	8/16/32/64	templates	fn reverse_bytes(
-src/lift/mod.rs:650	Recover overwritten comparison operand	Matching register and supported add/subtract inverse	8/16/32/64	open flag lifetime	fn recover_operand(
+src/lift/mod.rs:518	Rotation to shifts and OR	Power-of-two width; final result consumed at that width	8/16/32/64	templates	fn rotate(
+src/lift/mod.rs:551	Byte/chunk reversal	Valid chunk dividing byte width	8/16/32/64	templates	fn reverse_bytes(
+src/lift/mod.rs:704	Recover overwritten comparison operand	Matching register and supported add/subtract inverse	8/16/32/64	open flag lifetime	fn recover_operand(
 src/lift/flags.rs:291	Difference conditions	Subtraction N/Z/no-borrow/overflow	1/8/16/32/64	templates	fn own_test(
 src/lift/flags.rs:511	Sum conditions	ISA carry convention and addition N/Z/C/V	1/8/16/32/64	templates	fn sum(a:
 src/lift/flags.rs:291	Logic/result/shift conditions	Only defined flags; cleared flags or known carry	1/8/16/32/64	templates; width override open	fn own_test(
@@ -90,8 +90,8 @@ src/lift/flags.rs:598	Subtract borrow input	Borrow0/1; operands fit width	1/8/16
 src/lift/flags.rs:630	Conjoin recovered conditions	Unknown stays unknown; boolean selects	1/8/16/32/64	conditional flag templates	fn both(
 src/lift/x86_64/operands.rs:253	Partial register write	8/16/high-byte merge;32 zero-extends;64 replaces	8/16/32/64	open lowering	pub(super) fn write_operand(
 src/lift/aarch64/integer.rs:16	Extend then shift operand	Decoded extension kind and source width	8/16/32/64	open lowering	pub(super) fn extend_shift(
-src/lift/arm32.rs:307	Rotated sign/zero extension	Decoded width and rotation	8/16 to32	open lowering	fn extend(
-src/lift/arm32.rs:1071	A32 shifted operand	Architecture shift amount and sign; final low32 result	32	open lowering	fn shift_value(
+src/lift/arm32.rs:310	Rotated sign/zero extension	Decoded width and rotation	8/16 to32	open lowering	fn extend(
+src/lift/arm32.rs:1505	A32 shifted operand	Architecture shift amount and sign; final low32 result	32	open lowering	fn shift_value(
 src/render/expr.rs:360	Remove or apply count mask	Range <=63 or explicit mask63	8/16/32/64	compiled C instances	fn shift_count(
 src/render/expr.rs:374	Choose shift widths and casts	Bounded count; unsigned logical shifts; correct sign width	8/16/32/64	compiled C instances	fn shift(
 src/render/expr.rs:515	Negation and complement shorthand	Unsigned wrap or proven safe signed arithmetic	8/16/32/64	compiled C instances	fn unfitted(
@@ -123,3 +123,13 @@ src/render/abi_objects.rs:320	ABI object access to local object	ABI mapping; ini
 src/render/locals/returns.rs:98	Substitute returned copy	Source still live; assignment truncation retained	8/16/32/64	open structured CFG	fn replace_returns(
 src/render/locals/values.rs:10	Inline values into structured nodes	Single use; compatible types; safe motion/effects	8/16/32/64	open structured CFG	pub(in crate::render) fn fold(
 src/analysis/structures.rs:950	Fold structure scales/indexes	Proven layout and scale	32/64	open structure context	fn rewrite(
+src/lift/arm32.rs:928	Carry arithmetic and flags	Known incoming carry; low32 operands	32	symbolic zero/sign/carry; overflow open	Opcode::ADC | Opcode::SBC | Opcode::RSC =>
+src/lift/arm32.rs:1463	Shifted carry extraction	Immediate shift count and known incoming carry	32	templates	fn shifted_carry(
+src/lift/arm32.rs:1026	Long multiply and accumulate	Distinct output registers; no flag updates	32 to64	templates	Opcode::UMULL | Opcode::SMULL | Opcode::UMLAL | Opcode::SMLAL =>
+src/lift/arm32.rs:332	Read immutable literal bytes	Read-only section; complete checked range; no overlapping relocation	8/16/32/64	open memory/image context	fn literal(
+src/lift/arm32.rs:1380	Rotate through carry	Known incoming carry	32	open lowering	Opcode::RRX =>
+src/lift/pairs32.rs:139	Join physical words	Inputs truncated to32 bits	32 to64	templates	pub(crate) fn join(
+src/lift/pairs32.rs:147	Pair calls and results	Declared or proven integer pair; target ABI	32/64	open calls/ABI context	pub(super) fn call(
+src/lift/pairs32.rs:350	Runtime division remainder	Known helper prototype; capture arguments before clobbers	32/64	open calls context	pub(super) fn remainder_value(
+src/passes/frame_slots/i386.rs:6	Normalize word frame addresses and aliases	Canonical frame; checked offsets; entry alignment at least four	32/64 addresses	alias difference templates; alignment/CFG open	pub(crate) fn settle(
+src/passes/frame_slots.rs:524	Nested constant frame offsets	Checked signed offset arithmetic	64 addresses	templates	pub(crate) fn frame_slot(

@@ -31,20 +31,20 @@ fn classify @ 0x200f4 (size 46)
   blk2 @ 0x20100:
     br 0x20102
   blk3 @ 0x20102:
-    v2 = #0xffffffff
+    v1 = #0xffffffff
     br 0x2011c
   blk4 @ 0x2010a:
     brif ne r0, #0x0 -> 0x20116
   blk5 @ 0x2010e:
     br 0x20110
   blk6 @ 0x20110:
-    v2 = #0x0
+    v1 = #0x0
     br 0x2011c
   blk7 @ 0x20116:
-    v2 = #0x1
+    v1 = #0x1
     br 0x2011c
   blk8 @ 0x2011c:
-    ret v2
+    ret v1
 -- card
 {"addr":"0x200f4","approxTokens":222,"blocks":9,"hardReasons":[],"name":"classify","nameSources":["symtab","dwarf"],"section":".text","size":46,"unsupported":0}
 
@@ -114,12 +114,12 @@ fn sign_of @ 0x20158 (size 32)
   blk2 @ 0x20162:
     br 0x20164
   blk3 @ 0x20164:
-    v2 = #0x1
+    v1 = #0x1
     br 0x20172
   blk4 @ 0x2016a:
-    v2 = ((sext32(r0) >>> #0x1f) & #0xffffffff)
+    v1 = ((sext32(r0) >>> #0x1f) & #0xffffffff)
     br 0x20172
   blk5 @ 0x20172:
-    ret v2
+    ret v1
 -- card
 {"addr":"0x20158","approxTokens":192,"blocks":6,"hardReasons":[],"name":"sign_of","nameSources":["symtab","dwarf"],"section":".text","size":32,"unsupported":0}

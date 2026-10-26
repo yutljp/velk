@@ -1,12 +1,17 @@
-# arm32/float.arm.O0.elf: elf arm32 no entry, 5 functions, 0 lift failures, 10 unsupported, 0 gotos
+# arm32/float.arm.O0.elf: elf arm32 no entry, 5 functions, 0 lift failures, 7 unsupported, 0 gotos
 0x20108 168 average symtab,dwarf
 0x201b0 56 lerp symtab,dwarf
 0x201e8 36 truncate_to_int symtab,dwarf
 0x2020c 40 widen symtab,dwarf
 0x20234 104 compare_doubles symtab,dwarf
 /* velk prelude */
+#include <math.h>
+#include <stdbool.h>
 #include <stdint.h>
 
+struct velk_vector { union { uint64_t u64; int64_t s64; uint32_t u32; int32_t s32; uint16_t u16; int16_t s16; uint8_t u8; int8_t s8; float f32; double f64; } low, high; };
+
+uint64_t sub_20190();
 uint64_t velk_entry_stack_pointer(void); /* target entry stack pointer */
 /* end velk prelude */
 
@@ -16,15 +21,33 @@ uint64_t velk_entry_stack_pointer(void); /* target entry stack pointer */
 double average(int32_t a0, int32_t a1) {
     uint64_t sp = velk_entry_stack_pointer();
     uint64_t v1;
+    uint64_t v8;
     uint32_t v2;
 
     /* unsupported: AAPCS32 multiword, floating-point or aggregate declaration */
     *(uint32_t *)(sp - 0x8) = v1;
     *(uint32_t *)(sp - 0x4) = v2;
     v1 = sp - 8;
-    *(uint32_t *)(v1 - 0x4) = a0;
-    *(uint32_t *)(v1 - 0x8) = a1;
-    /* unsupported: undecodable ARM instruction at 0x2011c: incomplete decoder */
+    *(uint32_t *)(sp - 0xc) = a0;
+    *(uint32_t *)(sp - 0x10) = a1;
+    *(uint64_t *)(sp - 0x18) = 0;
+    *(uint32_t *)(sp - 0x1c) = 0;
+    while (true) {
+        a1 = *(uint32_t *)(v1 - 0x8);
+        if (*(int32_t *)(sp - 0x1c) >= a1) break;
+        double v3 = *(double *)(*(uint32_t *)(v1 - 0x4) + (*(uint32_t *)(sp - 0x1c) << 3));
+        double v4 = *(double *)(sp - 0x18) + v3;
+        *(uint64_t *)(sp - 0x18) = ((union { double value; uint64_t bits; }){ .value = v4 }).bits;
+        *(uint32_t *)(sp - 0x1c) = *(uint32_t *)(sp - 0x1c) + 1;
+    }
+    a0 = *(uint32_t *)(v1 - 0x8);
+    if (a0 <= 0) {
+        double v5 = ((union { uint64_t bits; double value; }){ .bits = (uint32_t)(sub_20190()) }).value;
+        return v5;
+    }
+    int32_t v6 = *(uint64_t *)(sp - 0x18);
+    int32_t v7 = v8 & 0xffffffff00000000 | *(uint32_t *)(v1 - 0x8);
+    /* unsupported: undecodable ARM instruction at 0x20180: incomplete decoder */
 }
 -- signature
 double (int32_t a0, int32_t a1)
@@ -37,27 +60,63 @@ fn average @ 0x20108 (size 168)
     store32(r11, (sp + #0xfffffffffffffff8))
     store32(lr, (sp + #0xfffffffffffffffc))
     r11 = (sp + #0xfffffffffffffff8)
-    store32(r0, (r11 - #0x4))
-    store32(r1, (r11 - #0x8))
-    unsupported: undecodable ARM instruction at 0x2011c: incomplete decoder
+    store32(r0, (sp + #0xfffffffffffffff4))
+    store32(r1, (sp + #0xfffffffffffffff0))
+    v1 = #0x0
+    store64(#0x0, (sp + #0xffffffffffffffe8))
+    v2 = #0x0
+    store32(#0x0, (sp + #0xffffffffffffffe4))
+  blk1 @ 0x2012c:
+    r1 = load32((r11 - #0x8))
+    brif lt load32((sp + #0xffffffffffffffe4)), r1 -> 0x2013c
+  blk2 @ 0x20139:
+    br 0x20168
+  blk3 @ 0x2013c:
+    v3 = load64(((load32((r11 - #0x4)) + (load32((sp + #0xffffffffffffffe4)) << #0x3)) & #0xffffffff))
+    v4 = fadd.d(load64((sp + #0xffffffffffffffe8)), v3)
+    store64(v4, (sp + #0xffffffffffffffe8))
+    store32((load32((sp + #0xffffffffffffffe4)) + #0x1), (sp + #0xffffffffffffffe4))
+    br 0x2012c
+  blk4 @ 0x20168:
+    r0 = load32((r11 - #0x8))
+    brif gt r0, #0x0 -> 0x20174
+  blk5 @ 0x20171:
+    v5:r0, r1 = call 0x20190
+    ret v5
+  blk6 @ 0x20174:
+    v6 = load64((sp + #0xffffffffffffffe8))
+    v7 = ((d0 & #0xffffffff00000000) | load32((r11 - #0x8)))
+    unsupported: undecodable ARM instruction at 0x20180: incomplete decoder
 -- card
-{"addr":"0x20108","approxTokens":132,"blocks":1,"hardReasons":[],"name":"average","nameSources":["symtab","dwarf"],"section":".text","size":168,"unsupported":2}
+{"addr":"0x20108","approxTokens":240,"blocks":7,"hardReasons":[],"name":"average","nameSources":["symtab","dwarf"],"section":".text","size":168,"unsupported":2}
 
 == 0x201b0 lerp
 -- decompile
 /* velk pseudo-C: lerp @ 0x201b0 */
-float lerp(void) {
+float lerp(int32_t a0) {
     uint64_t sp = velk_entry_stack_pointer();
-    uint32_t v1;
-    uint32_t v2;
+    uint64_t v8;
+    uint64_t v9;
+    uint64_t v10;
+    uint32_t v6;
+    uint32_t v7;
 
     /* unsupported: AAPCS32 multiword, floating-point or aggregate declaration */
-    *(uint32_t *)(sp - 0x8) = v1;
-    *(uint32_t *)(sp - 0x4) = v2;
-    /* unsupported: undecodable ARM instruction at 0x201bc: incomplete decoder */
+    *(uint32_t *)(sp - 0x8) = v6;
+    *(uint32_t *)(sp - 0x4) = v7;
+    *(uint32_t *)(sp - 0xc) = v8;
+    *(uint32_t *)(sp - 0x10) = v8 >> 32;
+    *(uint32_t *)(sp - 0x14) = v9;
+    float v1 = ((union { uint32_t bits; float value; }){ .bits = v9 & 0xffffffff00000000 | v8 >> 32 }).value;
+    float v2 = ((union { uint32_t bits; float value; }){ .bits = v10 & 0xffffffff00000000 | v8 & 0xffffffff }).value;
+    float v3 = ((union { uint32_t bits; float value; }){ .bits = ((union { float value; uint32_t bits; }){ .value = v1 }).bits & 0xffffffff00000000 | ((union { float value; uint32_t bits; }){ .value = v1 - v2 }).bits }).value;
+    float v4 = ((union { uint32_t bits; float value; }){ .bits = ((union { float value; uint32_t bits; }){ .value = v2 }).bits & 0xffffffff00000000 | v9 & 0xffffffff }).value;
+    int32_t v5 = v8 & 0xffffffff00000000 | ((union { float value; uint32_t bits; }){ .value = ((union { uint32_t bits; float value; }){ .bits = v8 }).value + v3 * v4 }).bits;
+    v6 = *(uint32_t *)(sp - 0x8);
+    return ((union { uint32_t bits; float value; }){ .bits = (uint32_t)a0 }).value;
 }
 -- signature
-float ()
+float (int32_t a0)
 -- references
 
 -- ir
@@ -66,22 +125,37 @@ fn lerp @ 0x201b0 (size 56)
     unsupported: AAPCS32 multiword, floating-point or aggregate declaration
     store32(r11, (sp + #0xfffffffffffffff8))
     store32(lr, (sp + #0xfffffffffffffffc))
-    unsupported: undecodable ARM instruction at 0x201bc: incomplete decoder
+    store32(d0, (sp + #0xfffffffffffffff4))
+    store32((d0 >> #0x20), (sp + #0xfffffffffffffff0))
+    store32(d1, (sp + #0xffffffffffffffec))
+    v1 = ((d1 & #0xffffffff00000000) | (d0 >> #0x20))
+    v2 = ((d2 & #0xffffffff00000000) | (d0 & #0xffffffff))
+    v3 = ((v1 & #0xffffffff00000000) | fsub.s((v1 & #0xffffffff), (v2 & #0xffffffff)))
+    v4 = ((v2 & #0xffffffff00000000) | (d1 & #0xffffffff))
+    v5 = ((d0 & #0xffffffff00000000) | fadd.s((d0 & #0xffffffff), fmul.s((v3 & #0xffffffff), (v4 & #0xffffffff))))
+    r11 = load32((sp + #0xfffffffffffffff8))
+    ret r0
 -- card
-{"addr":"0x201b0","approxTokens":120,"blocks":1,"hardReasons":[],"name":"lerp","nameSources":["symtab","dwarf"],"section":".text","size":56,"unsupported":2}
+{"addr":"0x201b0","approxTokens":180,"blocks":1,"hardReasons":[],"name":"lerp","nameSources":["symtab","dwarf"],"section":".text","size":56,"unsupported":1}
 
 == 0x201e8 truncate_to_int
 -- decompile
 /* velk pseudo-C: truncate_to_int @ 0x201e8 */
 int32_t truncate_to_int(void) {
     uint64_t sp = velk_entry_stack_pointer();
-    uint32_t v1;
-    uint32_t v2;
+    uint64_t v6;
+    uint32_t v4;
+    uint32_t v5;
 
     /* unsupported: AAPCS32 multiword, floating-point or aggregate declaration */
-    *(uint32_t *)(sp - 0x8) = v1;
-    *(uint32_t *)(sp - 0x4) = v2;
-    /* unsupported: undecodable ARM instruction at 0x201f4: incomplete decoder */
+    *(uint32_t *)(sp - 0x8) = v4;
+    *(uint32_t *)(sp - 0x4) = v5;
+    *(uint64_t *)(sp - 0x10) = v6;
+    double v1 = ((union { uint64_t bits; double value; }){ .bits = v6 }).value;
+    int32_t v2 = v6 & 0xffffffff00000000 | (isunordered(v1, v1) ? 0 : (v1 <= -2147483648.0 ? 0x80000000 : (2147483648.0 <= v1 ? 0x7fffffff : (int32_t)v1)));
+    int32_t v3 = v2;
+    v4 = *(uint32_t *)(sp - 0x8);
+    return v3;
 }
 -- signature
 int32_t ()
@@ -93,22 +167,30 @@ fn truncate_to_int @ 0x201e8 (size 36)
     unsupported: AAPCS32 multiword, floating-point or aggregate declaration
     store32(r11, (sp + #0xfffffffffffffff8))
     store32(lr, (sp + #0xfffffffffffffffc))
-    unsupported: undecodable ARM instruction at 0x201f4: incomplete decoder
+    store64(d0, (sp + #0xfffffffffffffff0))
+    v1 = d0
+    v2 = ((d0 & #0xffffffff00000000) | select ne funord.d(v1, v1), #0x0 ? #0x0, select ne fle.d(v1, #0xc1e0000000000000), #0x0 ? #0x80000000, select ne fle.d(#0x41e0000000000000, v1), #0x0 ? #0x7fffffff, f.dtos32.sat(v1))
+    v3 = (v2 & #0xffffffff)
+    r11 = load32((sp + #0xfffffffffffffff8))
+    ret v3
 -- card
-{"addr":"0x201e8","approxTokens":120,"blocks":1,"hardReasons":[],"name":"truncate_to_int","nameSources":["symtab","dwarf"],"section":".text","size":36,"unsupported":2}
+{"addr":"0x201e8","approxTokens":150,"blocks":1,"hardReasons":[],"name":"truncate_to_int","nameSources":["symtab","dwarf"],"section":".text","size":36,"unsupported":1}
 
 == 0x2020c widen
 -- decompile
 /* velk pseudo-C: widen @ 0x2020c */
 double widen(void) {
     uint64_t sp = velk_entry_stack_pointer();
-    uint32_t v1;
+    uint64_t v4;
     uint32_t v2;
+    uint32_t v3;
 
     /* unsupported: AAPCS32 multiword, floating-point or aggregate declaration */
-    *(uint32_t *)(sp - 0x8) = v1;
-    *(uint32_t *)(sp - 0x4) = v2;
-    /* unsupported: undecodable ARM instruction at 0x20218: incomplete decoder */
+    *(uint32_t *)(sp - 0x8) = v2;
+    *(uint32_t *)(sp - 0x4) = v3;
+    *(uint32_t *)(sp - 0xc) = v4;
+    double v1 = ((union { uint32_t bits; float value; }){ .bits = v4 }).value;
+    /* unsupported: undecodable ARM instruction at 0x20224: incomplete decoder */
 }
 -- signature
 double ()
@@ -120,22 +202,47 @@ fn widen @ 0x2020c (size 40)
     unsupported: AAPCS32 multiword, floating-point or aggregate declaration
     store32(r11, (sp + #0xfffffffffffffff8))
     store32(lr, (sp + #0xfffffffffffffffc))
-    unsupported: undecodable ARM instruction at 0x20218: incomplete decoder
+    store32(d0, (sp + #0xfffffffffffffff4))
+    v1 = f.stof.d((d0 & #0xffffffff))
+    unsupported: undecodable ARM instruction at 0x20224: incomplete decoder
 -- card
-{"addr":"0x2020c","approxTokens":120,"blocks":1,"hardReasons":[],"name":"widen","nameSources":["symtab","dwarf"],"section":".text","size":40,"unsupported":2}
+{"addr":"0x2020c","approxTokens":138,"blocks":1,"hardReasons":[],"name":"widen","nameSources":["symtab","dwarf"],"section":".text","size":40,"unsupported":2}
 
 == 0x20234 compare_doubles
 -- decompile
 /* velk pseudo-C: compare_doubles @ 0x20234 */
 int32_t compare_doubles(void) {
     uint64_t sp = velk_entry_stack_pointer();
-    uint32_t v1;
-    uint32_t v2;
+    uint64_t v5;
+    uint64_t v7;
+    uint64_t v8;
+    uint32_t v6;
 
     /* unsupported: AAPCS32 multiword, floating-point or aggregate declaration */
-    *(uint32_t *)(sp - 0x8) = v1;
-    *(uint32_t *)(sp - 0x4) = v2;
-    /* unsupported: undecodable ARM instruction at 0x20240: incomplete decoder */
+    *(uint32_t *)(sp - 0x8) = v5;
+    *(uint32_t *)(sp - 0x4) = v6;
+    sp = sp - 0x8;
+    v5 = sp;
+    sp = sp - 0x18;
+    *(uint64_t *)(v5 - 0x8) = v7;
+    *(uint64_t *)(sp + 0x8) = v8;
+    struct velk_vector vector = { .low.f64 = *(double *)(v5 - 0x8), .high.f64 = ((union { uint64_t bits; double value; }){ .bits = v8 }).value };
+    double t77 = vector.low.f64;
+    double t78 = vector.high.f64;
+    if (t77 < t78) {
+        *(uint32_t *)(sp + 0x4) = 0xffffffff;
+        return *(uint32_t *)(sp + 0x4);
+    }
+    int32_t v3 = 0;
+    if (*(double *)(sp + 0x8) < *(double *)(v5 - 0x8)) {
+        v3 = 1;
+    }
+    int32_t v4 = 1;
+    if (v3 == 0) {
+        v4 = 0;
+    }
+    *(uint32_t *)(sp + 0x4) = v4;
+    return *(uint32_t *)(sp + 0x4);
 }
 -- signature
 int32_t ()
@@ -147,6 +254,34 @@ fn compare_doubles @ 0x20234 (size 104)
     unsupported: AAPCS32 multiword, floating-point or aggregate declaration
     store32(r11, (sp + #0xfffffffffffffff8))
     store32(lr, (sp + #0xfffffffffffffffc))
-    unsupported: undecodable ARM instruction at 0x20240: incomplete decoder
+    sp = (sp + #0xfffffffffffffff8)
+    r11 = sp
+    sp = (sp - #0x18)
+    store64(d0, (r11 + #0xfffffffffffffff8))
+    store64(d1, (sp + #0x8))
+    v1 = load64((r11 + #0xfffffffffffffff8))
+    v2 = d1
+    t77 = v1
+    t78 = v2
+    brif ne flt.d(t77, t78), #0x0 -> 0x2025c
+  blk1 @ 0x20259:
+    br 0x20268
+  blk2 @ 0x2025c:
+    store32(#0xffffffff, (sp + #0x4))
+    br 0x20290
+  blk3 @ 0x20268:
+    v3 = #0x0
+    brif eq flt.d(load64((sp + #0x8)), load64((r11 + #0xfffffffffffffff8))), #0x0 -> 0x20280
+  blk4 @ 0x2027d:
+    v3 = #0x1
+  blk5 @ 0x20280:
+    v4 = #0x1
+    brif ne v3, #0x0 -> 0x2028c
+  blk6 @ 0x20289:
+    v4 = #0x0
+  blk7 @ 0x2028c:
+    store32(v4, (sp + #0x4))
+  blk8 @ 0x20290:
+    ret load32((sp + #0x4))
 -- card
-{"addr":"0x20234","approxTokens":120,"blocks":1,"hardReasons":[],"name":"compare_doubles","nameSources":["symtab","dwarf"],"section":".text","size":104,"unsupported":2}
+{"addr":"0x20234","approxTokens":240,"blocks":9,"hardReasons":[],"name":"compare_doubles","nameSources":["symtab","dwarf"],"section":".text","size":104,"unsupported":1}
