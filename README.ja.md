@@ -41,7 +41,11 @@ int sum_until_zero(int *p, int n) {
 - バイトシグネチャによる、シンボルを削除したライブラリ関数の識別。
 - macOS、Windows（Win32 と C ランタイム）、Linux（glibc）の生成済み C API 型ライブラリ。
 - プロジェクトファイルへの名前・型・コメントの永続化（`--project`、`--annotate`）。
-- vtable を通じた C++ 仮想呼び出しの解析。
+- C++ RTTI によるクラス名・継承・仮想テーブルの復元（`--classes`）と型付き例外コメント。
+
+C++ の RTTI のクラス名、継承、仮想テーブルは `velk --classes app.elf` で JSON として一覧表示できます。
+スクリプトの `b.classes()` と MCP ツール `velk_classes` も同じ情報を返します。型付きの例外情報は
+C のコメントとして表示します。フィールドと制限は [C++ のクラスと例外テーブル](docs/CPP_CLASSES.ja.md)を参照してください。
 
 ## 使い方
 
@@ -49,6 +53,7 @@ int sum_until_zero(int *p, int n) {
 cargo build --release --locked
 
 velk --functions path/to/binary          # 関数の一覧
+velk --classes   path/to/binary          # C++ クラスを JSON で一覧表示
 velk --decompile path/to/binary main     # 疑似 C
 velk --decompile path/to/binary '*'      # すべての関数
 velk --disasm    path/to/binary 0x1000   # 逆アセンブル

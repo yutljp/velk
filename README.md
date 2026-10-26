@@ -42,7 +42,7 @@ int sum_until_zero(int *p, int n) {
 - Byte signatures to identify stripped library functions.
 - Generated C API type libraries for macOS, Windows (Win32 and the C runtime), and Linux (glibc).
 - Persistent names, types and comments in project files (`--project`, `--annotate`).
-- Analysis of C++ virtual calls through vtables.
+- C++ RTTI class names, inheritance and virtual tables (`--classes`), and typed exception comments.
 
 ## Usage
 
@@ -50,6 +50,7 @@ int sum_until_zero(int *p, int n) {
 cargo build --release --locked
 
 velk --functions path/to/binary          # list functions
+velk --classes   path/to/binary          # list C++ classes as JSON
 velk --decompile path/to/binary main     # decompile one function
 velk --decompile path/to/binary '*'      # decompile all functions
 velk --disasm    path/to/binary 0x1000   # disassemble
@@ -94,6 +95,9 @@ b.functions({ named: true }).slice(0, 5).map(f => ({ addr: f.addr, name: f.name 
 
 Replies are limited in size (see the overview for paging and timeouts). The same API is available from the
 command line with `velk --run script.js`.
+
+The script method `b.classes()` and MCP tool `velk_classes` list the same RTTI metadata as
+`--classes`. See [C++ classes and exception tables](docs/CPP_CLASSES.md) for fields and limits.
 
 ## Documentation
 
