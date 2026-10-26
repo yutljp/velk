@@ -1,4 +1,4 @@
-# type_library_linux_arm64: elf aarch64 0x7c0, 25 functions, 0 lift failures, 2 unsupported, 0 gotos
+# type_library_linux_arm64: elf aarch64 0x7c0, 25 functions, 0 lift failures, 0 unsupported, 0 gotos
 0x6e0 24 _init symtab
 0x720 16 __libc_start_main plt
 0x730 16 __cxa_finalize plt
@@ -355,73 +355,43 @@ fn register_tm_clones @ 0x840 (size 60)
 -- decompile
 /* velk pseudo-C: __do_global_dtors_aux @ 0x880 */
 /* ref: 0x1ffc8 .got */
-/* ref: 0x20000 .got.plt */
 /* ref: 0x20058 .data */
 /* ref: 0x20060 .bss */
 int32_t __do_global_dtors_aux(void) {
-    uint64_t v1;
-    uint64_t v8;
-    uint64_t v9;
-    uint64_t v10;
-    uint64_t v11;
-    int64_t local_0; /* [sp-18] */
-
-    /* unsupported: PACIASP at 0x880 */
-    local_0 = v9;
-    int32_t result = completed_0;
-    if ((result & 0x1) == 0) {
-        if (__cxa_finalize_1ffc8 != 0) {
-            void *v3 = (void *)__dso_handle;
-            __cxa_finalize(v3);
-        }
-        {
-            uint64_t call_values[4];
-            call_values[0] = deregister_tm_clones();
-            call_values[1] = v8; /* also returned by the call */
-            call_values[2] = v10; /* also returned by the call */
-            call_values[3] = v11; /* also returned by the call */
-            v1 = call_values[0];
-            int32_t v4 = call_values[1];
-            int32_t v5 = call_values[2];
-            int32_t v6 = call_values[3];
-        }
-        result = 1;
-        completed_0 = 1;
+    int32_t v1 = completed_0;
+    if ((v1 & 0x1) != 0) {
+        return v1;
     }
-    int32_t v7 = local_0;
-    /* unsupported: AUTIASP at 0x8c8 */
-    return result;
+    if (__cxa_finalize_1ffc8 != 0) {
+        __cxa_finalize((void *)__dso_handle);
+    }
+    deregister_tm_clones();
+    completed_0 = 1;
+    return 1;
 }
 -- signature
 int32_t ()
 -- references
 0x1ffc8 .got
-0x20000 .got.plt
 0x20058 .data
 0x20060 .bss
 -- ir
 fn __do_global_dtors_aux @ 0x880 (size 80)
   blk0 @ 0x880:
-    unsupported: PACIASP at 0x880
-    store64(x30, (sp + #0xffffffffffffffe8))
-    v1 = #0x20000
-    v2 = (load8(#0x20060) & #0xffffffff)
-    brif ne (v2 & #0x1), #0x0 -> 0x8c0
+    v1 = (load8(#0x20060) & #0xffffffff)
+    brif ne (v1 & #0x1), #0x0 -> 0x8c0
   blk1 @ 0x89c:
     brif eq load64(#0x1ffc8), #0x0 -> 0x8b4
   blk2 @ 0x8a8:
-    v3 = load64(#0x20058)
-    x0, x1, d0, d1 = call 0x730(v3)
+    x0, x1, d0, d1 = call 0x730(load64(#0x20058))
   blk3 @ 0x8b4:
-    x0, v4:x1, v5:d0, v6:d1 = call 0x810()
-    v2 = #0x1
+    x0, x1, d0, d1 = call 0x810()
+    v1 = #0x1
     store8(#0x1, #0x20060)
   blk4 @ 0x8c0:
-    v7 = load64((sp + #0xffffffffffffffe8))
-    unsupported: AUTIASP at 0x8c8
-    ret v2
+    ret v1
 -- card
-{"addr":"0x880","approxTokens":216,"blocks":5,"hardReasons":[],"name":"__do_global_dtors_aux","nameSources":["symtab","unwind"],"section":".text","size":80,"unsupported":2}
+{"addr":"0x880","approxTokens":216,"blocks":5,"hardReasons":[],"name":"__do_global_dtors_aux","nameSources":["symtab","unwind"],"section":".text","size":80,"unsupported":0}
 
 == 0x8d0 frame_dummy
 -- decompile

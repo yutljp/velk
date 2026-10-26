@@ -1,0 +1,169 @@
+# universal_arm64.o: macho aarch64 no entry, 4 functions, 0 lift failures, 0 unsupported, 0 gotos
+0x0 12 _sum3 symtab,dynamic
+0xc 68 _helper symtab,dynamic
+0x50 12 _pair_sum symtab,dynamic
+0x5c 164 _sum_arr symtab,dynamic
+
+== 0x0 _sum3
+-- decompile
+/* velk pseudo-C: _sum3 @ 0x0 */
+int32_t sum3(int32_t a0, int32_t a1, int32_t a2) {
+    return a1 + a0 + a2;
+}
+-- signature
+int32_t (int32_t a0, int32_t a1, int32_t a2)
+-- references
+
+-- ir
+fn _sum3 @ 0x0 (size 12)
+  blk0 @ 0x0:
+    ret (((w1 + w0) + w2) & #0xffffffff)
+-- card
+{"addr":"0x0","approxTokens":114,"blocks":1,"hardReasons":[],"name":"_sum3","nameSources":["symtab","dynamic"],"section":"__text","size":12,"sizeEstimated":true,"unsupported":0}
+
+== 0xc _helper
+-- decompile
+/* velk pseudo-C: _helper @ 0xc */
+int32_t helper(int32_t a0) {
+    uint32_t v1 = a0 - 1;
+    if (a0 < 1) {
+        return 0;
+    }
+    uint64_t v2 = (uint64_t)v1 * ((a0 - 2) & 0xffffffff);
+    int32_t v3 = (((v2 * (a0 - 3)) & 0xffffffff) >> 1) * 0x55555556 + a0;
+    uint32_t v6 = v2 >> 1;
+    return v3 + (v6 + (v6 << 1)) - 1;
+}
+-- signature
+int32_t (int32_t a0)
+-- references
+
+-- ir
+fn _helper @ 0xc (size 68)
+  blk0 @ 0xc:
+    v1 = (((x0 & #0xffffffff) - #0x1) & #0xffffffff)
+    brif lt (x0 & #0xffffffff), #0x1 -> 0x48
+  blk1 @ 0x14:
+    v2 = ((v1 & #0xffffffff) * (((x0 & #0xffffffff) - #0x2) & #0xffffffff))
+    v3 = ((((((v2 & #0xffffffff) * ((x0 & #0xffffffff) - #0x3)) & #0xffffffff) >> #0x1) * #0x55555556) + (x0 & #0xffffffff))
+    v2 = (v2 >> #0x1)
+    ret (((v3 + (((v2 & #0xffffffff) + ((v2 & #0xffffffff) << #0x1)) & #0xffffffff)) - #0x1) & #0xffffffff)
+  blk2 @ 0x48:
+    ret #0x0
+-- card
+{"addr":"0xc","approxTokens":186,"blocks":3,"hardReasons":[],"name":"_helper","nameSources":["symtab","dynamic"],"section":"__text","size":68,"sizeEstimated":true,"unsupported":0}
+
+== 0x50 _pair_sum
+-- decompile
+/* velk pseudo-C: _pair_sum @ 0x50 */
+struct S1 { int32_t field_0x0; int32_t field_0x4; };
+int32_t pair_sum(struct S1 *a0) {
+    return a0->field_0x4 + a0->field_0x0;
+}
+-- signature
+int32_t (struct S1 * a0)
+-- references
+
+-- ir
+fn _pair_sum @ 0x50 (size 12)
+  blk0 @ 0x50:
+    ret ((load32((x0 + #0x4)) + load32(x0)) & #0xffffffff)
+-- card
+{"accesses":["a0 +0x0:uint32_t, +0x4:uint32_t"],"addr":"0x50","approxTokens":114,"blocks":1,"hardReasons":[],"name":"_pair_sum","nameSources":["symtab","dynamic"],"section":"__text","size":12,"sizeEstimated":true,"structures":["struct S1 { int32_t field_0x0; int32_t field_0x4; };"],"unsupported":0}
+
+== 0x5c _sum_arr
+-- decompile
+/* velk pseudo-C: _sum_arr @ 0x5c */
+int32_t sum_arr(uint32_t *a0, int32_t a1) {
+    if (a1 < 1) {
+        return 0;
+    }
+    int64_t v2 = a1 & 0x3;
+    uint64_t v3 = 0;
+    int32_t v4 = 0;
+    if ((uint32_t)a1 >= 4) {
+        int32_t v7 = 0;
+        int32_t v8 = 0;
+        int32_t v9 = 0;
+        int64_t v11 = -(uint64_t)((uint32_t)a1 & 0x7ffffffc);
+        uint32_t *v12 = a0 + 0x2;
+        do {
+            v9 = v12[-2] + v9;
+            v4 = v12[-1] + v4;
+            int32_t v13 = *v12;
+            int32_t v14 = v12[1];
+            v12 += 0x4;
+            v7 = v13 + v7;
+            v8 = v14 + v8;
+            v3 -= 4;
+        } while (v11 != v3);
+        v4 += v9;
+        v4 = v8 + v7 + v4;
+        if (v2 == 0) {
+            return v4;
+        }
+        v3 = -v3;
+    }
+    uint32_t *v16 = a0 + v3;
+    do {
+        int32_t v18 = *v16;
+        ++v16;
+        v4 = v18 + v4;
+        --v2;
+    } while (v2 != 0);
+    return v4;
+}
+-- signature
+int32_t (uint32_t * a0, int32_t a1)
+-- references
+
+-- ir
+fn _sum_arr @ 0x5c (size 164)
+  blk0 @ 0x5c:
+    brif lt w1, #0x1 -> 0x80
+  blk1 @ 0x64:
+    v1 = w1
+    v2 = (v1 & #0x3)
+    brif cs w1, #0x4 -> 0x8c
+  blk2 @ 0x74:
+    v3 = #0x0
+    v4 = #0x0
+    br 0xe4
+  blk3 @ 0x80:
+    ret #0x0
+  blk4 @ 0x8c:
+    v3 = #0x0
+    v4 = #0x0
+    v7 = #0x0
+    v8 = #0x0
+    v9 = #0x0
+    v11 = (#0x0 - (v1 & #0x7ffffffc))
+    v12 = (x0 + #0x8)
+  blk5 @ 0xac:
+    v9 = ((load32((v12 + #0xfffffffffffffff8)) + (v9 & #0xffffffff)) & #0xffffffff)
+    v4 = ((load32((v12 + #0xfffffffffffffffc)) + (v4 & #0xffffffff)) & #0xffffffff)
+    v13 = load32(v12)
+    v14 = load32((v12 + #0x4))
+    v12 = (v12 + #0x10)
+    v7 = ((v13 + (v7 & #0xffffffff)) & #0xffffffff)
+    v8 = ((v14 + (v8 & #0xffffffff)) & #0xffffffff)
+    v3 = (v3 - #0x4)
+    brif ne v11, v3 -> 0xac
+  blk6 @ 0xd0:
+    v4 = (((v4 & #0xffffffff) + (v9 & #0xffffffff)) & #0xffffffff)
+    v4 = ((((v8 & #0xffffffff) + (v7 & #0xffffffff)) + (v4 & #0xffffffff)) & #0xffffffff)
+    brif eq v2, #0x0 -> 0xf8
+  blk7 @ 0xe0:
+    v3 = (#0x0 - v3)
+  blk8 @ 0xe4:
+    v16 = (x0 + (v3 << #0x2))
+  blk9 @ 0xe8:
+    v7 = load32(v16)
+    v16 = (v16 + #0x4)
+    v4 = (((v7 & #0xffffffff) + (v4 & #0xffffffff)) & #0xffffffff)
+    v2 = (v2 - #0x1)
+    brif ne v2, #0x0 -> 0xe8
+  blk10 @ 0xf8:
+    ret v4
+-- card
+{"addr":"0x5c","approxTokens":168,"blocks":11,"hardReasons":[],"name":"_sum_arr","nameSources":["symtab","dynamic"],"section":"__text","size":164,"sizeEstimated":true,"unsupported":0}

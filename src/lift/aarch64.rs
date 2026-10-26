@@ -520,7 +520,7 @@ fn lift_instruction(lifter: &mut Lifter, ins: &Instruction, pc: u64) -> bool {
         O::CLZ | O::CLS | O::RBIT => lift_count(lifter, ops, ins.opcode),
         O::REV16 => lift_reverse(lifter, ops, Some(2)),
         O::REV32 => lift_reverse(lifter, ops, Some(4)),
-        O::LDR => lift_load(lifter, ops, O::LDR, pc),
+        O::LDR | O::LDRAA | O::LDRAB => lift_load(lifter, ops, O::LDR, pc),
         O::LDRB => lift_load(lifter, ops, O::LDRB, pc),
         O::LDRH => lift_load(lifter, ops, O::LDRH, pc),
         O::LDRSB => lift_load(lifter, ops, O::LDRSB, pc),
@@ -565,13 +565,13 @@ fn lift_instruction(lifter: &mut Lifter, ins: &Instruction, pc: u64) -> bool {
         O::CBNZ => return lift_compare_branch(lifter, ops, pc, true),
         O::TBZ => return lift_test_branch(lifter, ops, pc, false),
         O::TBNZ => return lift_test_branch(lifter, ops, pc, true),
-        O::BR => {
+        O::BR | O::BRAA | O::BRAAZ | O::BRAB | O::BRABZ => {
             if let Some(target) = lifter.operand(ops[0], 64) {
                 lifter.stmts.push(Stmt::BrIndirect { target });
             }
             return true;
         }
-        O::BLR => {
+        O::BLR | O::BLRAA | O::BLRAAZ | O::BLRAB | O::BLRABZ => {
             // A call leaves the flags undefined.
             lifter.last_compare = None;
             if let Some(through) = lifter.operand(ops[0], 64) {
@@ -602,7 +602,7 @@ fn lift_instruction(lifter: &mut Lifter, ins: &Instruction, pc: u64) -> bool {
             lifter.stmts.push(Stmt::Trap);
             return true;
         }
-        O::RET => {
+        O::RET | O::RETAA | O::RETAB => {
             let value = Lifter::read_reg(0, 64);
             lifter.stmts.push(Stmt::Ret { value });
             return true;
@@ -620,7 +620,40 @@ fn lift_instruction(lifter: &mut Lifter, ins: &Instruction, pc: u64) -> bool {
                 lifter.assign(dest, value);
             }
         }
-        O::HINT => {}
+        // Pointers hold valid addresses without authentication codes in this model.
+        // Signing, authentication and stripping therefore preserve their values.
+        O::PACIA
+        | O::PACIB
+        | O::PACDA
+        | O::PACDB
+        | O::AUTIA
+        | O::AUTIB
+        | O::AUTDA
+        | O::AUTDB
+        | O::PACIZA
+        | O::PACIZB
+        | O::PACDZA
+        | O::PACDZB
+        | O::AUTIZA
+        | O::AUTIZB
+        | O::AUTDZA
+        | O::AUTDZB
+        | O::PACIASP
+        | O::PACIAZ
+        | O::PACIA1716
+        | O::PACIBSP
+        | O::PACIBZ
+        | O::PACIB1716
+        | O::AUTIASP
+        | O::AUTIAZ
+        | O::AUTIA1716
+        | O::AUTIBSP
+        | O::AUTIBZ
+        | O::AUTIB1716
+        | O::XPACI
+        | O::XPACD
+        | O::XPACLRI
+        | O::HINT => {}
         O::CRC32B
         | O::CRC32H
         | O::CRC32W

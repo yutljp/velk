@@ -704,6 +704,24 @@ arm64_macho.o 0xc: 4if (
 arm64_macho.o 0x50:
 arm64_macho.o 0x5c: 4if ( 4if ( 8do { 8while ( 8if ( 4else 4do { 4while (
 arm64_switch.elf 0x210164: 4if (
+arm64e.o 0x0:
+arm64e.o 0xc:
+arm64e.o 0x18:
+arm64e.o 0x24:
+arm64e.o 0x30:
+arm64e.o 0x7c:
+arm64e.o 0x84:
+arm64e.o 0x8c:
+arm64e.o 0x98:
+arm64e.o 0xac:
+arm64e.o 0xb0:
+arm64e.o 0xb4:
+arm64e.o 0xb8:
+arm64e.o 0xbc:
+arm64e.o 0xcc:
+arm64e.o 0xdc:
+arm64e.o 0xec:
+arm64e.o 0xfc:
 calls_a64.elf 0x2102b4:
 calls_a64.elf 0x2102bc:
 calls_a64.elf 0x2102c4:
@@ -12003,7 +12021,7 @@ type_library_linux_arm64 0x7c0:
 type_library_linux_arm64 0x7f4: 4if (
 type_library_linux_arm64 0x810:
 type_library_linux_arm64 0x840:
-type_library_linux_arm64 0x880: 4if ( 8if (
+type_library_linux_arm64 0x880: 4if ( 4if (
 type_library_linux_arm64 0x8d0:
 type_library_linux_arm64 0x8d8:
 type_library_linux_arm64 0x910:
@@ -12053,6 +12071,14 @@ type_library_x86_64 0x1000005a0:
 type_library_x86_64 0x1000005d0:
 type_library_x86_64 0x1000005d8:
 type_library_x86_64 0x1000005de:
+universal_arm64.o 0x0:
+universal_arm64.o 0xc: 4if (
+universal_arm64.o 0x50:
+universal_arm64.o 0x5c: 4if ( 4if ( 8do { 8while ( 8if ( 4do { 4while (
+universal_x86_64.o 0x0:
+universal_x86_64.o 0x10: 4if (
+universal_x86_64.o 0x50:
+universal_x86_64.o 0x60: 4if ( 4if ( 8do { 8while ( 8if ( 4else 4do { 4while (
 windows_types.pe32.dll 0x10001000:
 windows_types.pe32.dll 0x10001010:
 x64_div.o 0x0:

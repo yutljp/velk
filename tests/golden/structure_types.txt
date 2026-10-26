@@ -108,6 +108,7 @@ arm64_loops0.o: 0
 arm64_loops_stripped.o: 0
 arm64_macho.o: 1
 arm64_switch.elf: 0
+arm64e.o: 0
 calls_a64.elf: 0
 calls_a64.o: 0
 codeview/l4_memory.O0.dll: 1
@@ -511,6 +512,8 @@ type_library_linux_arm64: 0
 type_library_linux_x86_64: 0
 type_library_windows.win64.exe: 0
 type_library_x86_64: 0
+universal_arm64.o: 1
+universal_x86_64.o: 1
 windows_types.pe32.dll: 0
 x64_div.o: 0
 x64_div_macho.o: 0

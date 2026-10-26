@@ -75,7 +75,7 @@ const b = velk.open({path:?});
 const f = b.getFunction({function:?});
 const signatures = b.buildSignatures();
 JSON.stringify({{
-  binary: {{ path: b.path, format: b.format, arch: b.arch, entry: b.entry }},
+  binary: {{ path: b.path, format: b.format, arch: b.arch, entry: b.entry, slices: b.slices, sliceOffset: b.sliceOffset }},
   section: b.sections()[0],
   func: Object.fromEntries(Object.entries(f)),
   card: f.card(),

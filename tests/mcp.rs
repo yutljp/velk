@@ -106,7 +106,7 @@ fn errors_are_actionable_and_the_server_recovers() {
     assert!(text(&responses[0]).contains("sum3 (0x0)"));
     assert!(text(&responses[1]).contains("exact function start"));
     assert!(text(&responses[2]).contains("slice(0, 5)"));
-    assert!(text(&responses[3]).contains("single-architecture"));
+    assert!(text(&responses[3]).contains("expected an ELF, PE/COFF or Mach-O file"));
     assert_eq!(text(&responses[4]), "error: Error: broken");
     assert!(text(&responses[5]).contains("increase timeout_ms"));
     assert_eq!(text(&responses[6]), "{\"answer\":42}");

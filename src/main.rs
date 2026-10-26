@@ -42,6 +42,9 @@ const HELP_STYLES: Styles = Styles::styled()
     after_help = "Examples:\n  velk -f app.elf\n  velk -D app.elf main\n  velk --disasm app.elf 0x401000 --limit 20\n  velk --build-signatures app.elf --output signatures.json\n  velk -r analysis.js\n  velk --annotations app.elf\n  velk --xrefs app.elf main\n  velk --path app.elf main helper --depth 4\n  velk --strings app.elf --contains hello\n\nChoose one operation. Use --help to list its arguments and options."
 )]
 struct Cli {
+    /// Select a Mach-O architecture (default: host architecture).
+    #[arg(long, value_enum, conflicts_with_all = ["run", "mcp"])]
+    arch: Option<velk::loader::Architecture>,
     /// Set one annotation from a JSON object.
     #[arg(long, help_heading = "Operations (choose one)")]
     annotate: bool,
@@ -446,6 +449,7 @@ fn main() -> ExitCode {
     if let Some(command) = operation {
         return match velk::project::cli::execute(velk::project::cli::Cli {
             binary: cli.input.expect("clap requires input"),
+            arch: cli.arch,
             project,
             command,
         }) {
@@ -463,7 +467,8 @@ fn main() -> ExitCode {
             }
         };
     }
-    match run(cli.into_command(), project.as_deref()) {
+    let arch = cli.arch;
+    match run(cli.into_command(), project.as_deref(), arch) {
         Ok(code) => code,
         Err(Error::Project(detail)) => {
             eprintln!("{}", json!(detail));
@@ -476,10 +481,14 @@ fn main() -> ExitCode {
     }
 }
 
-fn run(command: Command, project: Option<&Path>) -> Result<ExitCode> {
+fn run(
+    command: Command,
+    project: Option<&Path>,
+    arch: Option<velk::loader::Architecture>,
+) -> Result<ExitCode> {
     match command {
         Command::Navigation { path, query } => {
-            let mut binary = match Binary::open_with_project(&path, project) {
+            let mut binary = match Binary::open_with_options(&path, project, arch) {
                 Ok(binary) => binary,
                 Err(error) => return Err(error),
             };
@@ -490,14 +499,16 @@ fn run(command: Command, project: Option<&Path>) -> Result<ExitCode> {
         }
 
         Command::Functions { path, limit, json } => {
-            let binary = Binary::open_with_project(&path, project)?;
+            let binary = Binary::open_with_options(&path, project, arch)?;
             if json {
                 print_functions_json(&binary, limit);
             } else {
                 print_functions(&binary, limit);
             }
         }
-        Command::Sections { path } => print_sections(&Binary::open_with_project(&path, project)?),
+        Command::Sections { path } => {
+            print_sections(&Binary::open_with_options(&path, project, arch)?)
+        }
         Command::Card {
             path,
             function,
@@ -505,7 +516,7 @@ fn run(command: Command, project: Option<&Path>) -> Result<ExitCode> {
             signatures,
         } => {
             let signatures = signatures.as_deref().map(Database::load).transpose()?;
-            let mut binary = Binary::open_with_project(&path, project)?;
+            let mut binary = Binary::open_with_options(&path, project, arch)?;
             let addr = binary.find(&function)?.addr;
             let card = binary.card(addr, budget, signatures.as_ref(), None)?;
             println!("{:#}", json!(card));
@@ -519,7 +530,7 @@ fn run(command: Command, project: Option<&Path>) -> Result<ExitCode> {
                 Ok(signatures) => signatures,
                 Err(error) => return Err(error),
             };
-            let mut binary = match Binary::open_with_project(&path, project) {
+            let mut binary = match Binary::open_with_options(&path, project, arch) {
                 Ok(binary) => binary,
                 Err(error) => return Err(error),
             };
@@ -547,7 +558,7 @@ fn run(command: Command, project: Option<&Path>) -> Result<ExitCode> {
             function,
             limit,
         } => {
-            let binary = Binary::open_with_project(&path, project)?;
+            let binary = Binary::open_with_options(&path, project, arch)?;
             let addr = binary.find(&function)?.addr;
             let listing = binary.disasm(addr, limit.unwrap_or(usize::MAX))?;
             if Terminal::stdout().interactive() {
@@ -560,13 +571,24 @@ fn run(command: Command, project: Option<&Path>) -> Result<ExitCode> {
             }
         }
         Command::Ir { path, function } => {
-            let mut binary = Binary::open_with_project(&path, project)?;
+            let mut binary = Binary::open_with_options(&path, project, arch)?;
             let addr = binary.find(&function)?.addr;
             let code = binary.analysis(addr, None)?.ir.render();
             print_code(&binary, addr, &function, &code, Language::Ir);
         }
         Command::BuildSignatures { path, output } => {
-            let database = velk::sigs::build(&path, None)?;
+            let database = if arch.is_some() {
+                let mut binary = match Binary::open_with_options(&path, project, arch) {
+                    Ok(binary) => binary,
+                    Err(error) => return Err(error),
+                };
+                match binary.build_signatures(None) {
+                    Ok(result) => result.database,
+                    Err(error) => return Err(error),
+                }
+            } else {
+                velk::sigs::build(&path, None)?
+            };
             write_json(&output, &json!(database))?;
             eprintln!(
                 "{}",
@@ -583,7 +605,7 @@ fn run(command: Command, project: Option<&Path>) -> Result<ExitCode> {
             limit,
         } => {
             let database = Database::load(&signatures)?;
-            let mut binary = Binary::open_with_project(&path, project)?;
+            let mut binary = Binary::open_with_options(&path, project, arch)?;
             let identification = binary.identify(&database, None)?;
             let terminal = Terminal::stdout();
             if terminal.interactive() {
@@ -745,6 +767,18 @@ fn print_code(binary: &Binary, addr: u64, requested: &str, code: &str, language:
 fn print_functions_terminal(binary: &Binary, limit: usize, terminal: Terminal) {
     let image = binary.image();
     let functions = binary.functions();
+    if !image.slices.is_empty() {
+        let names: Vec<&str> = image
+            .slices
+            .iter()
+            .map(|slice| slice.arch.as_str())
+            .collect();
+        println!(
+            "slices: {}, selected offset: {:#x}",
+            names.join(", "),
+            image.slice_offset
+        );
+    }
     let named = functions
         .iter()
         .filter(|function| function.name.is_some())
@@ -849,6 +883,8 @@ fn print_functions_json(binary: &Binary, limit: usize) {
     let summary = json!({
         "format": image.format,
         "arch": image.isa,
+        "slices": image.slices,
+        "sliceOffset": image.slice_offset,
         "entry": image.entry.map(addr::format),
         "sections": image.sections.len(),
         "functionCount": image.functions.len(),
@@ -874,6 +910,18 @@ fn print_functions(binary: &Binary, limit: usize) {
         image.functions.len(),
         functions.iter().filter(|f| f.name.is_some()).count(),
     );
+    if !image.slices.is_empty() {
+        let names: Vec<&str> = image
+            .slices
+            .iter()
+            .map(|slice| slice.arch.as_str())
+            .collect();
+        println!(
+            "slices: {}, selected offset: {:#x}",
+            names.join(", "),
+            image.slice_offset
+        );
+    }
     println!("{:<14} {:>10} {:<26} sources", "addr", "size", "name");
     for function in functions.iter().take(limit) {
         let name: String = function

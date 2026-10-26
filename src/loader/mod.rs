@@ -9,6 +9,7 @@ mod plt;
 mod relocate;
 pub(crate) mod seh;
 mod symbols;
+mod universal;
 mod unwind;
 
 use std::collections::{BTreeMap, HashMap};
@@ -207,6 +208,10 @@ pub struct Summary {
 
 #[derive(Debug)]
 pub struct Image {
+    /// Architectures and byte ranges in a universal Mach-O file.
+    pub slices: Vec<Slice>,
+    /// Offset of the selected Mach-O slice in the input file.
+    pub slice_offset: u64,
     codeview: codeview::Data,
     pub format: Format,
     pub isa: Isa,
@@ -277,6 +282,8 @@ pub enum ArmMode {
     Thumb,
     Data,
 }
+
+pub use universal::{Architecture, Slice};
 
 impl Image {
     pub(crate) fn code_address(&self, address: u64) -> u64 {
@@ -393,6 +400,8 @@ impl Image {
     #[cfg(test)]
     pub(crate) fn from_code(isa: Isa, addr: u64, code: Vec<u8>) -> Self {
         Self {
+            slices: Vec::new(),
+            slice_offset: 0,
             codeview: Default::default(),
             format: Format::Elf,
             isa,
@@ -456,7 +465,10 @@ impl Image {
         let Some(offset) = start.checked_add(vaddr - section.vaddr) else {
             return None;
         };
-        (offset < self.bytes.len() as u64).then_some(offset)
+        let Some(relative) = offset.checked_sub(self.slice_offset) else {
+            return None;
+        };
+        (relative < self.bytes.len() as u64).then_some(offset)
     }
 
     /// The addresses of branch instructions the linker has not bound yet.
@@ -573,12 +585,20 @@ impl Image {
         let Some(end) = start.checked_add(section.size) else {
             return None;
         };
-        self.bytes.get(start as usize..end as usize)
+        self.read(start, end - start)
     }
 
     pub fn read(&self, offset: u64, len: u64) -> Option<&[u8]> {
-        let end = offset.checked_add(len)?;
-        (end <= self.bytes.len() as u64).then(|| &self.bytes[offset as usize..end as usize])
+        let Some(offset) = offset.checked_sub(self.slice_offset) else {
+            return None;
+        };
+        let Some(end) = offset.checked_add(len) else {
+            return None;
+        };
+        let (Ok(start), Ok(end)) = (usize::try_from(offset), usize::try_from(end)) else {
+            return None;
+        };
+        self.bytes.get(start..end)
     }
 
     /// The file's bytes at a virtual address; None where no section holds
@@ -743,6 +763,11 @@ fn symbol_name<'data, S: ObjectSymbol<'data>>(sym: &S) -> Option<String> {
 }
 
 pub fn load(path: &Path) -> Result<Image> {
+    load_with_arch(path, None)
+}
+
+/// Loads a binary, selecting a universal Mach-O slice when requested.
+pub fn load_with_arch(path: &Path, arch: Option<Architecture>) -> Result<Image> {
     let bytes = match std::fs::read(path) {
         Ok(bytes) => bytes,
         Err(source) => {
@@ -752,28 +777,24 @@ pub fn load(path: &Path) -> Result<Image> {
             });
         }
     };
+    let (bytes, slices, slice_offset) = match universal::select(&bytes, arch) {
+        Ok(selection) => selection,
+        Err(error) => return Err(error),
+    };
     let object_error = |source| Error::Object {
         path: path.to_owned(),
         source,
     };
-    let kind = match object::FileKind::parse(&bytes[..]) {
+    let kind = match object::FileKind::parse(bytes) {
         Ok(kind) => kind,
         Err(source) => return Err(object_error(source)),
     };
-    if matches!(
-        kind,
-        object::FileKind::MachOFat32 | object::FileKind::MachOFat64
-    ) {
-        return Err(Error::UniversalMachO {
-            path: path.to_owned(),
-        });
-    }
-    let file = match ObjFile::parse(&bytes[..]) {
+    let file = match ObjFile::parse(bytes) {
         Ok(file) => file,
         Err(source) => return Err(object_error(source)),
     };
     let bases = relocate::layout(&file);
-    let mut relocated = bytes.clone();
+    let mut relocated = bytes.to_vec();
     relocate::apply(&file, &bases, &mut relocated);
     relocate::apply_dynamic(&file, &mut relocated);
 
@@ -792,7 +813,9 @@ pub fn load(path: &Path) -> Result<Image> {
             name: section.name().unwrap_or("<unnamed>").to_owned(),
             vaddr,
             size: section.size(),
-            file_offset: section.file_range().map(|(offset, _)| offset),
+            file_offset: section
+                .file_range()
+                .and_then(|(offset, _)| offset.checked_add(slice_offset)),
             executable: is_executable(section.kind()),
             loaded: relocate::allocated(&section),
             read_only: is_read_only(section.kind(), section.name().unwrap_or("")),
@@ -987,6 +1010,8 @@ pub fn load(path: &Path) -> Result<Image> {
 
     let codeview = codeview::read(path, &file, &bases);
     let mut image = Image {
+        slices,
+        slice_offset,
         codeview,
         format: format_of(kind),
         isa: isa_of(file.architecture()),

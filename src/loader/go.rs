@@ -242,7 +242,7 @@ mod tests {
                     name: name.into(),
                     vaddr,
                     size: bytes.len() as u64,
-                    file_offset: Some(image.bytes.len() as u64),
+                    file_offset: (image.bytes.len() as u64).checked_add(image.slice_offset),
                     executable: false,
                     loaded: true,
                     read_only: false,

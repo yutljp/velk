@@ -1,6 +1,6 @@
 # group: variables with unrelated webs before -> after splitting; live phi joins; fixed register bindings; variables with unknown successors
 C/C++ debug: 98 -> 0; 813; 1; 0
-C/C++ stripped: 83 -> 0; 667; 0; 0
+C/C++ stripped: 85 -> 0; 683; 0; 0
 Go: 6734 -> 0; 30546; 424; 2
 Rust: 8094 -> 0; 50589; 702; 189
 # alt.o | C/C++ stripped: 1 -> 0; 0; 0; 0
@@ -112,6 +112,7 @@ Rust: 8094 -> 0; 50589; 702; 189
 # arm64_loops_stripped.o | C/C++ stripped: 0 -> 0; 9; 0; 0
 # arm64_macho.o | C/C++ stripped: 2 -> 0; 15; 0; 0
 # arm64_switch.elf | C/C++ stripped: 0 -> 0; 0; 0; 0
+# arm64e.o | C/C++ stripped: 0 -> 0; 0; 0; 0
 # calls_a64.elf | C/C++ stripped: 3 -> 0; 23; 0; 0
 # calls_a64.o | C/C++ stripped: 3 -> 0; 23; 0; 0
 # codeview/l4_memory.O0.dll | C/C++ debug: 0 -> 0; 0; 0; 0
@@ -511,10 +512,12 @@ Rust: 8094 -> 0; 50589; 702; 189
 # tail_indirect.o | C/C++ stripped: 0 -> 0; 0; 0; 0
 # tail_indirect_stripped.o | C/C++ stripped: 0 -> 0; 0; 0; 0
 # type_library_arm64 | C/C++ stripped: 0 -> 0; 0; 0; 0
-# type_library_linux_arm64 | C/C++ stripped: 0 -> 0; 2; 0; 0
+# type_library_linux_arm64 | C/C++ stripped: 0 -> 0; 1; 0; 0
 # type_library_linux_x86_64 | C/C++ stripped: 0 -> 0; 0; 0; 0
 # type_library_windows.win64.exe | C/C++ stripped: 0 -> 0; 0; 0; 0
 # type_library_x86_64 | C/C++ stripped: 0 -> 0; 0; 0; 0
+# universal_arm64.o | C/C++ stripped: 2 -> 0; 11; 0; 0
+# universal_x86_64.o | C/C++ stripped: 0 -> 0; 6; 0; 0
 # windows_types.pe32.dll | C/C++ stripped: 0 -> 0; 0; 0; 0
 # x64_div.o | C/C++ stripped: 0 -> 0; 0; 0; 0
 # x64_div_macho.o | C/C++ stripped: 0 -> 0; 0; 0; 0

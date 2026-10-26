@@ -56,25 +56,62 @@ fn damaged_fixtures_never_panic() {
 }
 
 #[test]
-fn universal_macho_explains_how_to_select_an_architecture() {
+fn universal_macho_selects_host_and_lists_unavailable_architectures() {
     let scratch = std::path::PathBuf::from(env!("CARGO_TARGET_TMPDIR"));
     std::fs::create_dir_all(&scratch).unwrap();
+    let arm = std::fs::read(common::fixtures_dir().join("universal_arm64.o")).unwrap();
+    let x86 = std::fs::read(common::fixtures_dir().join("universal_x86_64.o")).unwrap();
     for (name, magic) in [("fat32", 0xcafe_babe_u32), ("fat64", 0xcafe_babf_u32)] {
         let path = scratch.join(name);
         let mut bytes = magic.to_be_bytes().to_vec();
-        bytes.extend_from_slice(&0_u32.to_be_bytes());
-        bytes.resize(32, 0);
+        bytes.extend_from_slice(&2_u32.to_be_bytes());
+        let mut offset = 4096_u64;
+        for (cpu, slice) in [(0x0100_000c_u32, &arm), (0x0100_0007, &x86)] {
+            bytes.extend_from_slice(&cpu.to_be_bytes());
+            bytes.extend_from_slice(&0_u32.to_be_bytes());
+            if magic == 0xcafe_babe {
+                bytes.extend_from_slice(&(offset as u32).to_be_bytes());
+                bytes.extend_from_slice(&(slice.len() as u32).to_be_bytes());
+            } else {
+                bytes.extend_from_slice(&offset.to_be_bytes());
+                bytes.extend_from_slice(&(slice.len() as u64).to_be_bytes());
+            }
+            bytes.extend_from_slice(&0_u32.to_be_bytes());
+            if magic == 0xcafe_babf {
+                bytes.extend_from_slice(&0_u32.to_be_bytes());
+            }
+            offset += slice.len() as u64;
+        }
+        bytes.resize(4096, 0);
+        bytes.extend_from_slice(&arm);
+        bytes.extend_from_slice(&x86);
         std::fs::write(&path, bytes).unwrap();
         let output = std::process::Command::new(env!("CARGO_BIN_EXE_velk"))
-            .arg("--functions")
+            .args(["--functions", "--json"])
+            .arg(&path)
+            .output()
+            .unwrap();
+        assert!(output.status.success(), "{:?}", output.stderr);
+        let listing: serde_json::Value = serde_json::from_slice(&output.stdout).unwrap();
+        let expected = if cfg!(target_arch = "aarch64") {
+            "aarch64"
+        } else {
+            "x86_64"
+        };
+        assert_eq!(listing["arch"], expected);
+        assert!(!listing["functions"].as_array().unwrap().is_empty());
+        assert_eq!(listing["slices"][0]["arch"], "arm64");
+        assert_eq!(listing["slices"][1]["arch"], "x86_64");
+        let output = std::process::Command::new(env!("CARGO_BIN_EXE_velk"))
+            .args(["--functions", "--arch", "arm64e"])
             .arg(&path)
             .output()
             .unwrap();
         assert!(!output.status.success());
         let error = String::from_utf8(output.stderr).unwrap();
         assert_eq!(error.lines().count(), 1, "{error}");
-        assert!(error.contains("universal Mach-O"), "{error}");
-        assert!(error.contains("extract one architecture"), "{error}");
+        assert!(error.contains("no slice matching Arm64e"), "{error}");
+        assert!(error.contains("available slices: arm64, x86_64"), "{error}");
         std::fs::remove_file(path).unwrap();
     }
 }

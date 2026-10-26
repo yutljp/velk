@@ -1,8 +1,8 @@
 declare const velk: {
-  /** Loads a single-architecture ELF, PE/COFF or Mach-O file without decompiling every function.
+  /** Loads an ELF, PE/COFF or Mach-O file without decompiling every function.
    * Reopening an unchanged file reuses cached analysis, even across scripts.
-   * Universal Mach-O files must first be extracted with lipo -thin ARCH. */
-  open(path: string, opts?: { project?: string }): Binary;
+   * Universal Mach-O files open the slice for this machine unless opts.arch picks another. */
+  open(path: string, opts?: { project?: string; arch?: "arm64" | "arm64e" | "x86_64" }): Binary;
   /** Builds instruction signatures from a binary, static archive, or Rust rlib. */
   buildSignatures(path: string): { database: SignatureDb; failures: Failure[] };
 };
@@ -13,6 +13,8 @@ interface Binary {
   format: "elf" | "pe" | "coff" | "macho" | "other";
   arch: "i386" | "x86_64" | "aarch64" | "arm32" | "unsupported";
   entry: Addr | null;
+  slices: { arch: string; cpuType: number; cpuSubtype: number; offset: number; size: number }[];
+  sliceOffset: number;
 
   sections(): Section[];
   /** Incoming references by default; from:true returns references made by the containing function.

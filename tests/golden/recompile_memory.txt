@@ -1,7 +1,7 @@
 # functions left out:
-#   calls: 8008
+#   calls: 8016
 #   computes on floats or vectors: 102
-#   computes on registers alone: 1545
+#   computes on registers alone: 1556
 #   has an unsupported instruction: 125
 #   reads a register that is not a parameter: 126
 #   refers to data: 829
@@ -13,7 +13,7 @@
 #   reaches memory no page can map: 369
 #   reads a register that is not a parameter: 1690
 #   requires an unnormalized target frame: 48
-#   step limit: 1086
+#   step limit: 1090
 #   switch without a matching case: 36
 #   takes a function's address: 108
 # arm32/alt_names.arm.O0.elf: 2 functions, 1 qualify, 1 compile, 0 do not, 1 compared (11 runs), 0 differ
@@ -66,6 +66,7 @@
 # arm64_loops0.o: 4 functions, 2 qualify, 2 compile, 0 do not, 2 compared (22 runs), 0 differ
 # arm64_loops_stripped.o: 4 functions, 2 qualify, 2 compile, 0 do not, 2 compared (22 runs), 0 differ
 # arm64_macho.o: 4 functions, 1 qualify, 1 compile, 0 do not, 1 compared (12 runs), 0 differ
+# arm64e.o: 18 functions, 3 qualify, 3 compile, 0 do not, 3 compared (36 runs), 0 differ
 # calls_a64.elf: 11 functions, 1 qualify, 1 compile, 0 do not, 1 compared (12 runs), 0 differ
 # calls_a64.o: 11 functions, 1 qualify, 1 compile, 0 do not, 1 compared (12 runs), 0 differ
 # codeview/l4_memory.O0.dll: 4 functions, 2 qualify, 2 compile, 0 do not, 2 compared (22 runs), 0 differ
@@ -259,5 +260,7 @@
 # switch_jumptable.o: 1 functions, 1 qualify, 1 compile, 0 do not, 0 compared (0 runs), 0 differ
 # switch_jumptable_x64.o: 1 functions, 1 qualify, 1 compile, 0 do not, 0 compared (0 runs), 0 differ
 # switch_value_table.o: 1 functions, 1 qualify, 1 compile, 0 do not, 1 compared (11 runs), 0 differ
+# universal_arm64.o: 4 functions, 2 qualify, 2 compile, 0 do not, 2 compared (22 runs), 0 differ
+# universal_x86_64.o: 4 functions, 2 qualify, 2 compile, 0 do not, 2 compared (22 runs), 0 differ
 # x64_loops.o: 4 functions, 2 qualify, 2 compile, 0 do not, 2 compared (22 runs), 0 differ
 # x64_loops_stripped.o: 4 functions, 2 qualify, 2 compile, 0 do not, 2 compared (22 runs), 0 differ

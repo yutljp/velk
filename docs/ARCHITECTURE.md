@@ -44,7 +44,8 @@ an `Image`: the sections, the functions with their names and sizes, data symbols
 The lifters for x86-32, x86-64, AArch64 and ARM32 decode each instruction and translate it into IR statements. Supported
 instructions are translated exactly, including flags, partial register writes, vector (SIMD) operations and atomic
 operations. Instructions that read machine state C cannot express (for example `cpuid` or `rdtsc`) are printed as
-compiler intrinsics such as `__rdtsc()`. An instruction velk cannot translate yet is printed as `unsupported`.
+compiler intrinsics such as `__rdtsc()`. An instruction velk cannot translate yet is printed as `unsupported`. arm64e pointer-authentication instructions are lifted as if authentication succeeds: signing and
+authentication keep the address, and authenticated calls, returns, branches and loads use it.
 
 The x86-32 lifter handles ELF and PE, four-byte stack slots, and cdecl, stdcall, fastcall and thiscall integer arguments; calls with unknown argument counts are rejected.
 

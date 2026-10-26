@@ -7,7 +7,7 @@ use crate::analysis::{self, Analysis};
 use crate::card::{self, Card};
 use crate::deadline::passed;
 use crate::error::{Error, LiftError, Result};
-use crate::loader::{self, Function, Image};
+use crate::loader::{self, Architecture, Function, Image};
 use crate::sigs::{self, Database};
 use crate::{disasm, render};
 
@@ -16,14 +16,15 @@ const SHOWN_CANDIDATES: usize = 10;
 /// Loaded binaries, kept across calls so repeated queries reuse the analysis.
 #[derive(Default)]
 pub struct Session {
-    binaries: HashMap<PathBuf, Binary>,
+    binaries: HashMap<(PathBuf, Option<Architecture>), Binary>,
 }
 
 impl Session {
-    pub(crate) fn open_with_project(
+    pub(crate) fn open_with_options(
         &mut self,
         path: &Path,
         project: Option<&Path>,
+        arch: Option<Architecture>,
     ) -> Result<&mut Binary> {
         let path = match std::fs::canonicalize(path) {
             Ok(path) => path,
@@ -37,21 +38,26 @@ impl Session {
         if let Some(project) = project {
             let reuse = self
                 .binaries
-                .get(&path)
+                .get(&(path.clone(), arch))
                 .is_some_and(|binary| binary.project_path == project);
             if !reuse {
-                let binary = match Binary::open_with_project(&path, Some(project)) {
+                let binary = match Binary::open_with_options(&path, Some(project), arch) {
                     Ok(binary) => binary,
                     Err(error) => return Err(error),
                 };
-                self.binaries.insert(path.clone(), binary);
+                self.binaries.insert((path.clone(), arch), binary);
             }
         }
-        self.open(&path)
+        self.open_arch(&path, arch)
     }
 
     /// Loads the file, or returns the cached binary when the file is unchanged.
     pub fn open(&mut self, path: &Path) -> Result<&mut Binary> {
+        self.open_arch(path, None)
+    }
+
+    /// Opens and caches a particular architecture independently.
+    pub fn open_arch(&mut self, path: &Path, arch: Option<Architecture>) -> Result<&mut Binary> {
         let path = match std::fs::canonicalize(path) {
             Ok(path) => path,
             Err(source) => {
@@ -65,7 +71,7 @@ impl Session {
             Ok(value) => value,
             Err(error) => return Err(error),
         };
-        match self.binaries.entry(path) {
+        match self.binaries.entry((path, arch)) {
             Entry::Occupied(entry) if entry.get().modified == modified => {
                 let binary = entry.into_mut();
                 match binary.refresh_project() {
@@ -75,10 +81,11 @@ impl Session {
             }
             Entry::Occupied(mut entry) => {
                 let binary = match Binary::load_project(
-                    entry.key(),
+                    &entry.key().0,
                     modified,
                     Some(&entry.get().project_path),
                     None,
+                    arch,
                 ) {
                     Ok(binary) => binary,
                     Err(error) => return Err(error),
@@ -87,7 +94,8 @@ impl Session {
                 Ok(entry.into_mut())
             }
             Entry::Vacant(entry) => {
-                let binary = match Binary::load(entry.key(), modified) {
+                let binary = match Binary::load_project(&entry.key().0, modified, None, None, arch)
+                {
                     Ok(binary) => binary,
                     Err(error) => return Err(error),
                 };
@@ -105,6 +113,7 @@ pub struct Binary {
     project_path: PathBuf,
     pub(crate) project_digest: Option<String>,
     image: Image,
+    arch: Option<Architecture>,
     symbols: render::Symbols,
     data_ranges: Vec<(u64, u64)>,
     analyses: HashMap<u64, Result<Analysis, LiftError>>,
@@ -140,15 +149,20 @@ impl Binary {
 
     /// Opens a binary with an optional annotation file location.
     pub fn open_with_project(path: &Path, project: Option<&Path>) -> Result<Self> {
+        Self::open_with_options(path, project, None)
+    }
+
+    /// Opens a binary with optional annotations and architecture selection.
+    pub fn open_with_options(
+        path: &Path,
+        project: Option<&Path>,
+        arch: Option<Architecture>,
+    ) -> Result<Self> {
         let modified = match modified(path) {
             Ok(value) => value,
             Err(error) => return Err(error),
         };
-        Self::load_project(path, modified, project, None)
-    }
-
-    fn load(path: &Path, modified: SystemTime) -> Result<Self> {
-        Self::load_project(path, modified, None, None)
+        Self::load_project(path, modified, project, None, arch)
     }
 
     fn load_project(
@@ -156,6 +170,7 @@ impl Binary {
         modified: SystemTime,
         project_path: Option<&Path>,
         mut project_digest: Option<String>,
+        arch: Option<Architecture>,
     ) -> Result<Self> {
         let path = match std::fs::canonicalize(path) {
             Ok(path) => path,
@@ -173,7 +188,7 @@ impl Binary {
             Ok(project) => project,
             Err(error) => return Err(error),
         };
-        let mut image = match loader::load(&path) {
+        let mut image = match loader::load_with_arch(&path, arch) {
             Ok(image) => image,
             Err(error) => return Err(error),
         };
@@ -193,6 +208,7 @@ impl Binary {
             symbols: render::callee_names(&image),
             data_ranges: render::data_ranges(&image),
             image,
+            arch,
             analyses: HashMap::new(),
             shared_analyses: HashMap::new(),
         })
@@ -216,6 +232,7 @@ impl Binary {
                 self.modified,
                 Some(&self.project_path),
                 self.project_digest.clone(),
+                self.arch,
             ) {
                 Ok(binary) => *self = binary,
                 Err(error) => return Err(error),
@@ -789,9 +806,25 @@ impl Binary {
         if let Err(error) = passed(deadline) {
             return Err(error);
         }
-        let database = match sigs::build(&self.path, deadline) {
-            Ok(database) => database,
-            Err(error) => return Err(error),
+        let database = if self.arch.is_some() {
+            let entries = match sigs::image_entries(&self.image, deadline) {
+                Ok(entries) => entries,
+                Err(error) => return Err(error),
+            };
+            let mut database = Database::new(entries);
+            database.sources.push(
+                self.path
+                    .file_name()
+                    .unwrap_or_default()
+                    .to_string_lossy()
+                    .into_owned(),
+            );
+            database
+        } else {
+            match sigs::build(&self.path, deadline) {
+                Ok(database) => database,
+                Err(error) => return Err(error),
+            }
         };
         Ok(SignatureBuild {
             database,

@@ -243,7 +243,7 @@ fn make_entry(name: String, isa: Isa, body: Body, calls: Vec<String>) -> Entry {
     }
 }
 
-fn image_entries(image: &Image, deadline: Option<Instant>) -> Result<Vec<Entry>> {
+pub(crate) fn image_entries(image: &Image, deadline: Option<Instant>) -> Result<Vec<Entry>> {
     let mut entries = Vec::new();
     for function in image.functions.values() {
         if let Err(error) = passed(deadline) {

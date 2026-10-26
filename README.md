@@ -59,6 +59,8 @@ velk --strings   path/to/binary          # strings with references
 
 Run `velk --help` for all options.
 
+Universal Mach-O files open the slice for this machine; pick another with `--arch x86_64` (or `arm64`, `arm64e`).
+
 ## Using velk from an agent
 
 velk does not register itself anywhere. Build it with `cargo build --release`, then register the executable

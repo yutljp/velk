@@ -9,8 +9,8 @@ same path at the start of every script. `velk.open()` discovers functions withou
 decompiling all of them; `card()`, `decompile()` and other function operations
 analyze the selected function and a bounded neighborhood when needed.
 
-Open single-architecture ELF, PE/COFF or Mach-O files. Universal Mach-O files
-must first be extracted, for example with `lipo -thin arm64e input -output thin`.
+Open ELF, PE/COFF or Mach-O files. A universal Mach-O file opens the slice for this
+machine; pass `{arch: "x86_64"}` (or `"arm64"`, `"arm64e"`) to `velk.open` for another.
 Use an absolute binary path when the MCP client's working directory is unknown.
 
 MCP script responses default to 4,000 Unicode characters, including errors and any truncation notice.

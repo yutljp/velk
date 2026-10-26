@@ -10,7 +10,7 @@ use crate::loader::Isa;
 
 mod bytes;
 pub use bytes::build;
-pub(crate) use bytes::identify;
+pub(crate) use bytes::{identify, image_entries};
 const TOKEN_LIMIT: usize = 128;
 const VERSION: u32 = 3;
 

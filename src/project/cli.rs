@@ -8,6 +8,8 @@ use std::path::PathBuf;
 /// Arguments for one JSON annotation operation.
 pub struct Cli {
     pub binary: PathBuf,
+    /// Architecture selected for function analysis.
+    pub arch: Option<crate::loader::Architecture>,
     pub command: Command,
     pub project: Option<PathBuf>,
 }
@@ -44,11 +46,14 @@ pub(crate) fn execute_cached(mut cli: Cli, digest: &mut Option<String>) -> Resul
     let destination = cli.project.unwrap_or_else(|| super::path(&cli.binary));
     match cli.command {
         Command::Origins { function } => {
-            let mut binary =
-                match crate::service::Binary::open_with_project(&cli.binary, Some(&destination)) {
-                    Ok(binary) => binary,
-                    Err(cause) => return Err(cause),
-                };
+            let mut binary = match crate::service::Binary::open_with_options(
+                &cli.binary,
+                Some(&destination),
+                cli.arch,
+            ) {
+                Ok(binary) => binary,
+                Err(cause) => return Err(cause),
+            };
             let address = match binary.find(&function) {
                 Ok(function) => function.addr,
                 Err(cause) => return Err(cause),

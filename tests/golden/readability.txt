@@ -108,6 +108,7 @@ arm64_loops0.o: 49 lines, 0 prelude lines, 9 variables, 0 casts, 0 registers, 0 
 arm64_loops_stripped.o: 63 lines, 0 prelude lines, 13 variables, 4 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
 arm64_macho.o: 74 lines, 29 prelude lines, 23 variables, 6 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
 arm64_switch.elf: 9 lines, 3 prelude lines, 1 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+arm64e.o: 88 lines, 0 prelude lines, 8 variables, 2 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 8 indirect calls
 calls_a64.elf: 118 lines, 45 prelude lines, 19 variables, 5 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 2 indirect calls
 calls_a64.o: 115 lines, 43 prelude lines, 19 variables, 4 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 2 indirect calls
 codeview/l4_memory.O0.dll: 26 lines, 5 prelude lines, 2 variables, 1 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
@@ -507,10 +508,12 @@ tail_calls_stripped.o: 13 lines, 3 prelude lines, 0 variables, 1 casts, 0 regist
 tail_indirect.o: 8 lines, 0 prelude lines, 0 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 1 indirect calls
 tail_indirect_stripped.o: 8 lines, 0 prelude lines, 0 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 1 indirect calls
 type_library_arm64: 31 lines, 9 prelude lines, 3 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
-type_library_linux_arm64: 158 lines, 27 prelude lines, 16 variables, 5 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+type_library_linux_arm64: 135 lines, 27 prelude lines, 4 variables, 5 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
 type_library_linux_x86_64: 103 lines, 27 prelude lines, 5 variables, 4 casts, 3 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
 type_library_windows.win64.exe: 64 lines, 17 prelude lines, 0 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
 type_library_x86_64: 28 lines, 9 prelude lines, 0 variables, 0 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+universal_arm64.o: 60 lines, 0 prelude lines, 16 variables, 4 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+universal_x86_64.o: 57 lines, 0 prelude lines, 7 variables, 2 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
 windows_types.pe32.dll: 10 lines, 5 prelude lines, 0 variables, 3 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
 x64_div.o: 72 lines, 0 prelude lines, 0 variables, 1 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
 x64_div_macho.o: 72 lines, 0 prelude lines, 0 variables, 1 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls

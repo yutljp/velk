@@ -9,13 +9,11 @@ pub enum Error {
         path: PathBuf,
         source: std::io::Error,
     },
-    #[error("{}: {source}; expected a single-architecture ELF, PE/COFF or Mach-O file; extract a Universal Mach-O slice with lipo -thin ARCH", path.display())]
+    #[error("{}: {source}; expected an ELF, PE/COFF or Mach-O file", path.display())]
     Object {
         path: PathBuf,
         source: object::Error,
     },
-    #[error("{}: unsupported universal Mach-O file; extract one architecture before opening it", path.display())]
-    UniversalMachO { path: PathBuf },
     #[error("{}: not a signature database: {source}", path.display())]
     SignatureFile {
         path: PathBuf,
@@ -25,6 +23,8 @@ pub enum Error {
     SignatureData(serde_json::Error),
     #[error("signature database version {} is not supported; rebuild it (expected {expected})", found.map_or("missing".to_owned(), |v| v.to_string()))]
     SignatureVersion { found: Option<u64>, expected: u32 },
+    #[error("Mach-O architecture selection: {0}")]
+    Architecture(String),
     #[error("not an address: \"{0}\" (use 0x-prefixed hex or decimal)")]
     BadAddress(String),
     #[error("no function at 0x{0:x}")]

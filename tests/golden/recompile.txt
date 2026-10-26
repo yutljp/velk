@@ -1,6 +1,6 @@
 # functions left out:
 #   accesses memory: 314
-#   calls: 7936
+#   calls: 7940
 #   computes on floats or vectors: 1
 #   has an unsupported instruction: 106
 #   reads a register that is not a parameter: 5
@@ -8,7 +8,7 @@
 #   requires an external machine-state source: 2
 #   returns no integer: 290
 #   returns nothing: 637
-#   takes an argument that is no integer: 934
+#   takes an argument that is no integer: 945
 #   takes arguments on the stack: 81
 # runs left out:
 #   step limit: 47
@@ -75,6 +75,7 @@
 # arm64_loops0.o: 4 functions, 2 qualify, 2 compile, 0 do not, 2 compared (23 runs), 0 differ
 # arm64_loops_stripped.o: 4 functions, 2 qualify, 2 compile, 0 do not, 2 compared (24 runs), 0 differ
 # arm64_macho.o: 4 functions, 2 qualify, 2 compile, 0 do not, 2 compared (24 runs), 0 differ
+# arm64e.o: 18 functions, 7 qualify, 7 compile, 0 do not, 7 compared (84 runs), 0 differ
 # calls_a64.elf: 11 functions, 6 qualify, 6 compile, 0 do not, 5 compared (53 runs), 0 differ
 # calls_a64.o: 11 functions, 6 qualify, 6 compile, 0 do not, 5 compared (53 runs), 0 differ
 # codeview/loops.O0.dll: 4 functions, 2 qualify, 2 compile, 0 do not, 2 compared (23 runs), 0 differ
@@ -317,6 +318,8 @@
 # type_library_linux_arm64: 25 functions, 2 qualify, 2 compile, 0 do not, 2 compared (24 runs), 0 differ
 # type_library_linux_x86_64: 21 functions, 3 qualify, 3 compile, 0 do not, 3 compared (36 runs), 0 differ
 # type_library_x86_64: 6 functions, 1 qualify, 1 compile, 0 do not, 1 compared (12 runs), 0 differ
+# universal_arm64.o: 4 functions, 2 qualify, 2 compile, 0 do not, 2 compared (24 runs), 0 differ
+# universal_x86_64.o: 4 functions, 2 qualify, 2 compile, 0 do not, 2 compared (24 runs), 0 differ
 # x64_div.o: 18 functions, 18 qualify, 18 compile, 0 do not, 18 compared (216 runs), 0 differ
 # x64_div_macho.o: 18 functions, 18 qualify, 18 compile, 0 do not, 18 compared (216 runs), 0 differ
 # x64_loops.o: 4 functions, 2 qualify, 2 compile, 0 do not, 2 compared (24 runs), 0 differ

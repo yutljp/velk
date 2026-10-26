@@ -82,7 +82,12 @@ fn aarch64(bytes: &[u8], addr: u64, max_lines: usize, extent: Extent) -> Vec<Str
         match decoder.decode(&mut reader) {
             Ok(instruction) => {
                 lines.push(format!("0x{pc:<12x} {instruction}"));
-                if extent == Extent::FirstExit && instruction.opcode == a64::Opcode::RET {
+                if extent == Extent::FirstExit
+                    && matches!(
+                        instruction.opcode,
+                        a64::Opcode::RET | a64::Opcode::RETAA | a64::Opcode::RETAB
+                    )
+                {
                     break;
                 }
             }
