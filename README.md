@@ -61,23 +61,37 @@ Run `velk --help` for all options.
 
 ## Using velk from an agent
 
-Register velk with your MCP client using the `--mcp` flag.
+velk does not register itself anywhere. Build it with `cargo build --release`, then register the executable
+with your agent yourself, giving the full path to the executable:
+
+```sh
+# Claude Code
+claude mcp add --transport stdio velk -- /path/to/velk --mcp
+
+# Codex CLI
+codex mcp add velk -- /path/to/velk --mcp
+```
+
+For clients configured with an `mcpServers` JSON file:
 
 ```json
 {
   "mcpServers": {
-    "velk": { "command": "/absolute/path/to/velk", "args": ["--mcp"] }
+    "velk": { "command": "/path/to/velk", "args": ["--mcp"] }
   }
 }
 ```
 
-The agent writes short JavaScript snippets that query the binary and return only what it needs. The same API is
-available from the command line with `velk --run script.js`.
+The agent calls `velk_read_api` for the overview and worked examples, then writes short JavaScript snippets
+for `velk_run_script` that query the binary and return only what it needs:
 
 ```js
-const b = velk.open("/absolute/path/to/binary");
+const b = velk.open("/path/to/binary");
 b.functions({ named: true }).slice(0, 5).map(f => ({ addr: f.addr, name: f.name }));
 ```
+
+Replies are limited in size (see the overview for paging and timeouts). The same API is available from the
+command line with `velk --run script.js`.
 
 ## Documentation
 

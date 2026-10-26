@@ -1,5 +1,7 @@
 declare const velk: {
-  /** Loads an ELF, PE or Mach-O file; reopening an unchanged file reuses the cached analysis. */
+  /** Loads a single-architecture ELF, PE/COFF or Mach-O file without decompiling every function.
+   * Reopening an unchanged file reuses cached analysis, even across scripts.
+   * Universal Mach-O files must first be extracted with lipo -thin ARCH. */
   open(path: string, opts?: { project?: string }): Binary;
   /** Builds instruction signatures from a binary, static archive, or Rust rlib. */
   buildSignatures(path: string): { database: SignatureDb; failures: Failure[] };
@@ -13,14 +15,22 @@ interface Binary {
   entry: Addr | null;
 
   sections(): Section[];
-  /** Navigation is indexed once per unchanged binary. Depth defaults to one. */
+  /** Incoming references by default; from:true returns references made by the containing function.
+   * The first navigation query builds a whole-binary index and can be slow.
+   * Results carry failures; slice the xrefs array before returning it through MCP. */
   xrefs(target: string | number, opts?: { from?: boolean }): XrefResult;
+  /** Call graph neighbors, excluding candidate indirect calls. Depth defaults to one. */
   callers(target: string | number, opts?: { depth?: number }): GraphResult;
   callees(target: string | number, opts?: { depth?: number }): GraphResult;
+  /** Shortest call path including endpoints; empty if unreachable. Default depth: 32. */
   callPath(from: string | number, to: string | number, opts?: { depth?: number }): PathResult;
+  /** Heuristic text candidates; contains is a case-sensitive substring. Slice result.strings. */
   strings(opts?: { contains?: string }): StringsResult;
-  /** Pass a hex string for integers larger than JavaScript's safe integer range. */
+  /** Decoded immediate matches, excluding branch displacements; slice result.matches.
+   * Pass a hex string for integers larger than JavaScript's safe integer range. */
   constants(value: string | number): ConstantsResult;
+  /** Writes immediately to the project file; pass open's project option for a writable location.
+   * Name edits are reflected in subsequent lookups, summaries, navigation and C. */
   projectSet(annotation: ProjectAnnotation): { ok: boolean };
   projectGet(target: ProjectTarget): ProjectAnnotation | null;
   projectList(): ProjectAnnotation[];
@@ -36,7 +46,8 @@ interface Binary {
 
   /**
    * An address, an exact name, or a case-insensitive substring that matches exactly one name.
-   * Throws when nothing matches or when several functions match.
+   * Addresses must be virtual function starts, not file offsets. No wildcard selector.
+   * Throws with discovery guidance when nothing matches or when several functions match.
    */
   getFunction(nameOrAddr: string | number): Func;
 

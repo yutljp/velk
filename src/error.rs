@@ -9,7 +9,7 @@ pub enum Error {
         path: PathBuf,
         source: std::io::Error,
     },
-    #[error("{}: {source}", path.display())]
+    #[error("{}: {source}; expected a single-architecture ELF, PE/COFF or Mach-O file; extract a Universal Mach-O slice with lipo -thin ARCH", path.display())]
     Object {
         path: PathBuf,
         source: object::Error,

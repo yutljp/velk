@@ -111,10 +111,9 @@ pub fn run(binary: &mut Binary, query: Query, deadline: Option<Instant>) -> Resu
             };
             let callers = matches!(query, Query::Callers { .. });
             let names: std::collections::BTreeMap<_, _> = binary
-                .image()
-                .functions
-                .values()
-                .map(|f| (f.addr, f.name.clone()))
+                .functions()
+                .into_iter()
+                .map(|f| (f.addr, f.name))
                 .chain(
                     binary
                         .image()

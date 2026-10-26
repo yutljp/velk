@@ -60,22 +60,34 @@ velk --strings   path/to/binary          # 参照付きの文字列
 
 ## エージェントから使う
 
-MCP クライアントに `--mcp` 付きで登録します。
+velk が自分でどこかに登録することはありません。`cargo build --release` でビルドしてから、実行ファイルのフルパスを指定して、使うエージェントに自分で登録してください。
+
+```sh
+# Claude Code
+claude mcp add --transport stdio velk -- /path/to/velk --mcp
+
+# Codex CLI
+codex mcp add velk -- /path/to/velk --mcp
+```
+
+`mcpServers` 形式の JSON ファイルで設定するクライアントでは、次のように書きます。
 
 ```json
 {
   "mcpServers": {
-    "velk": { "command": "/absolute/path/to/velk", "args": ["--mcp"] }
+    "velk": { "command": "/path/to/velk", "args": ["--mcp"] }
   }
 }
 ```
 
-JavaScript のスクリプトで解析し、必要な結果だけを返します。同じ API は `velk --run script.js` でも使えます。
+エージェントは `velk_read_api` で概要と使用例を読み、`velk_run_script` に短い JavaScript を渡して、必要な情報だけを取り出します。
 
 ```js
-const b = velk.open("/absolute/path/to/binary");
+const b = velk.open("/path/to/binary");
 b.functions({ named: true }).slice(0, 5).map(f => ({ addr: f.addr, name: f.name }));
 ```
+
+返信の大きさには上限があります（分割取得とタイムアウトは概要を参照してください）。同じ API はコマンドラインから `velk --run script.js` でも使えます。
 
 ## ドキュメント
 

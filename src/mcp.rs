@@ -25,11 +25,17 @@ const MAX_TIMEOUT_MS: u64 = 120_000;
 const TRUNCATION_NOTICE: &str = "\n[truncated; filter or slice inside the script]";
 
 const RUN_DESCRIPTION: &str = "Run synchronous JavaScript against the cached binary-analysis API. \
-Return console output, then the final value. Filter or slice to keep responses small. \
-Read velk_read_api for usage and types.";
+Start with velk_read_api, then e.g. const b = velk.open('/path/to/binary'); \
+b.functions().slice(0, 5).map(f => ({addr:f.addr,name:f.name})). \
+Each call has fresh JS variables; binaries and analysis remain cached. \
+Return console output, then the final value, limited to 4000 characters by default. \
+Slice arrays or C text inside the script to retrieve subsequent pages. \
+Select one function with b.getFunction(nameOrAddr); '*' is not supported. \
+First navigation queries build a whole-binary index and may need a larger timeout_ms.";
 
-const READ_DESCRIPTION: &str =
-    "Read the API overview and topics, or one topic's TypeScript declarations.";
+const READ_DESCRIPTION: &str = "Read this first: omit topic for API overview and worked examples. \
+Use binary for opening, listing, navigation and annotations; func for per-function \
+decompilation and inspection; types for returned object fields.";
 
 const TOPICS: [(&str, &str); 3] = [
     ("binary", include_str!("script/api/binary.d.ts")),
@@ -98,18 +104,20 @@ fn tools() -> Value {
             "inputSchema": {
                 "type": "object",
                 "properties": {
-                    "code": { "type": "string", "description": "JavaScript source" },
+                    "code": { "type": "string", "description": "Synchronous JavaScript; no await or imports. Reopen the binary in each script. The last expression is returned." },
                     "max_output_chars": {
                         "type": "integer",
                         "minimum": MIN_OUTPUT_CHARS,
                         "maximum": MAX_OUTPUT_CHARS,
+                        "default": DEFAULT_OUTPUT_CHARS,
                         "description": format!("Final text limit in Unicode characters; default {DEFAULT_OUTPUT_CHARS}")
                     },
                     "timeout_ms": {
                         "type": "integer",
                         "minimum": 1,
                         "maximum": MAX_TIMEOUT_MS,
-                        "description": format!("Default {DEFAULT_TIMEOUT_MS}")
+                        "default": DEFAULT_TIMEOUT_MS,
+                        "description": "Time budget in milliseconds, checked at JavaScript interrupts and analysis boundaries; first navigation on large binaries can be slow."
                     }
                 },
                 "required": ["code"],
@@ -170,14 +178,24 @@ fn read_api(arguments: &Value) -> (String, bool) {
         None => (include_str!("script/api/index.md").to_owned(), false),
         Some(topic) => match TOPICS.iter().find(|(name, _)| *name == topic) {
             Some((_, text)) => ((*text).to_owned(), false),
-            None => (format!("unknown topic: {topic}"), true),
+            None => (
+                "unknown topic; use binary, func or types, or omit topic for the overview"
+                    .to_owned(),
+                true,
+            ),
         },
     }
 }
 
 fn script_output(output: &str, error: Option<&str>, limit: usize) -> String {
     let error = error
-        .map(|error| format!("error: {error}"))
+        .map(|error| {
+            if error.starts_with("timed out after ") {
+                format!("error: {error}; reduce the work per script or increase timeout_ms (maximum {MAX_TIMEOUT_MS}); interrupted navigation indexing restarts on retry")
+            } else {
+                format!("error: {error}")
+            }
+        })
         .unwrap_or_default();
     let output_chars = output.chars().count();
     let error_chars = error.chars().count();

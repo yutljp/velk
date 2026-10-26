@@ -235,13 +235,7 @@ impl Binary {
             .values()
             .map(|function| {
                 let mut function = function.clone();
-                if let Some(project) = &self.project
-                    && let Some(annotation) = project.get(&crate::project::Target::Function {
-                        address: function.addr,
-                    })
-                {
-                    function.name = annotation.name.clone();
-                }
+                function.name = self.function_name(function.addr).map(str::to_owned);
                 function
             })
             .collect()
@@ -255,6 +249,18 @@ impl Binary {
         &self.image
     }
 
+    fn function_name(&self, address: u64) -> Option<&str> {
+        if let Some(project) = &self.project
+            && let Some(annotation) = project.get(&crate::project::Target::Function { address })
+        {
+            return annotation.name.as_deref();
+        }
+        self.image
+            .functions
+            .get(&address)
+            .and_then(|function| function.name.as_deref())
+    }
+
     /// Builds the navigation index once; interrupted builds are never cached.
     ///
     /// # Panics
@@ -266,7 +272,21 @@ impl Binary {
         }
         if self.navigation.is_none() {
             match crate::xrefs::Index::build(&self.image, deadline) {
-                Ok(index) => self.navigation = Some(index),
+                Ok(mut index) => {
+                    if let Some(project) = &self.project {
+                        for annotation in &project.annotations {
+                            let (crate::project::Target::Function { address }
+                            | crate::project::Target::Global { address }) = annotation.target
+                            else {
+                                continue;
+                            };
+                            if let Some(name) = &annotation.name {
+                                index.rename(address, name);
+                            }
+                        }
+                    }
+                    self.navigation = Some(index);
+                }
                 Err(error) => return Err(error),
             }
         }
@@ -304,10 +324,11 @@ impl Binary {
     }
 
     pub fn summary(&mut self, addr: u64, deadline: Option<Instant>) -> Result<serde_json::Value> {
-        let function = match self.function(addr) {
+        let mut function = match self.function(addr) {
             Ok(function) => function.clone(),
             Err(error) => return Err(error),
         };
+        function.name = self.function_name(function.addr).map(str::to_owned);
         let ir = match self.analysis(addr, deadline) {
             Ok(analysis) => &analysis.ir,
             Err(error) => return Err(error),

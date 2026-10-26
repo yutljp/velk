@@ -55,7 +55,20 @@
         (minSize === undefined || (f.size ?? 0) >= minSize));
     }
     getFunction(target) {
-      return new Func(this.#id, call("find", { bin: this.#id, target: String(address(target)) }));
+      if (target === "*") throw new Error("'*' is not a function selector; select a small batch with b.functions().slice(0, 5) before calling decompile()");
+      try {
+        return new Func(this.#id, call("find", { bin: this.#id, target: String(address(target)) }));
+      } catch (error) {
+        if (error.message.startsWith("no function matches")) {
+          const prefix = String(target).slice(0, 3).toLowerCase();
+          const candidates = this.functions().filter(f => [f.name, ...f.aliases].some(name => name?.toLowerCase().startsWith(prefix))).slice(0, 5);
+          if (candidates.length) error.message += "; candidates: " + candidates.map(f => `${f.name} (${f.addr})`).join(", ");
+          error.message += "; list functions with b.functions().slice(0, 10); for stripped binaries try b.entry or a listed address";
+        } else if (error.message.startsWith("no function at")) {
+          error.message += "; use an exact function start from b.functions().slice(0, 10), not a file offset";
+        }
+        throw error;
+      }
     }
     projectSet(annotation) { this.#functions = undefined; return call("project", { bin: this.#id, action: "set", value: annotation }); }
     projectGet(target) { return call("project", { bin: this.#id, action: "get", value: target }); }

@@ -80,6 +80,18 @@ pub struct Index {
 }
 
 impl Index {
+    pub(crate) fn rename(&mut self, address: u64, name: &str) {
+        let string_refs = self
+            .strings
+            .iter_mut()
+            .flat_map(|literal| &mut literal.xrefs);
+        for reference in self.xrefs.iter_mut().chain(string_refs) {
+            if reference.target == address {
+                reference.name = Some(name.to_owned());
+            }
+        }
+    }
+
     pub(crate) fn build(image: &Image, deadline: Option<Instant>) -> Result<Self> {
         let mut index = Self::default();
         for function in image.functions.values() {

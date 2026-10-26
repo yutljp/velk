@@ -4,20 +4,35 @@ Scripts are plain synchronous JavaScript: no `await`, no imports, no file system
 The output is everything passed to `console.log`, followed by the value of the last expression.
 When several decompiled functions are logged as C text, their support definitions and declarations are collected into one marked prelude at the top of the output. Each `decompile()` result includes its own prelude for standalone use.
 Opened binaries and per-function analysis stay cached between runs.
+JavaScript variables do not: each call evaluates in a fresh context. Reopen the
+same path at the start of every script. `velk.open()` discovers functions without
+decompiling all of them; `card()`, `decompile()` and other function operations
+analyze the selected function and a bounded neighborhood when needed.
+
+Open single-architecture ELF, PE/COFF or Mach-O files. Universal Mach-O files
+must first be extracted, for example with `lipo -thin arm64e input -output thin`.
+Use an absolute binary path when the MCP client's working directory is unknown.
 
 MCP script responses default to 4,000 Unicode characters, including errors and any truncation notice.
 Set `max_output_chars` on `velk_run_script` to request 256–20,000 characters.
 A truncation notice means the text is incomplete: filter, map selected fields, or slice a smaller range in the script before returning it.
 This display limit does not change the arrays the script works with or limit its analysis work.
 For a function summary use `card({budget})`; for selected instructions use `disasm({limit})`.
+The script time budget is `timeout_ms` (default 10,000, maximum 120,000), checked
+at JavaScript interrupts and analysis boundaries rather than a hard wall-clock
+cutoff. The first navigation query builds a whole-binary index; on large files,
+start with function listings or cards and increase the navigation timeout.
+Interrupted index builds restart on retry. Errors have `isError: true` in the MCP
+tool result, with a short message and no runtime stack trace.
 
 Topics (read one with `velk_read_api({ topic })`):
 
-- `binary`: `velk.open(path)` and `Binary`: `sections()`, `functions(filter)`, `getFunction(nameOrAddr)`, `buildSignatures()`, `identify(signatures)`
-- `func`: `Func`: `card({budget})`, `decompile()`, `disasm({limit})`, `ir()`, `signature()`, `references()`, `strings()`, `shapeHash()`
-- `types`: `Addr`, `Section`, `Card`, `Reference`, `Signature`, `SignatureDb`, `Match`, `Failure`
+- `binary`: opening, function discovery, navigation, string/constant queries, persistent annotations and library signatures.
+- `func`: cards, C, disassembly, IR, signatures, origins, references, summaries and call graph queries.
+- `types`: addresses, cards, signatures and all navigation result fields. Annotation types are in `binary`.
 
-Addresses are hex strings such as `"0x1e0"`; inputs also accept numbers.
+Addresses are hex strings such as `"0x1e0"`; inputs also accept numbers within
+JavaScript's safe integer range. They are virtual addresses, not file offsets.
 
 ```js
 const b = velk.open("/path/to/binary");
@@ -26,6 +41,28 @@ b.functions({ named: false, minSize: 200 }).slice(0, 5)
 ```
 
 Return a later slice to inspect another range, or retrieve one selected body with `b.getFunction("main").decompile()`.
+`getFunction()` accepts an exact name or function start address; it also tries a
+unique case-insensitive substring (and names without Mach-O's leading `_`).
+It throws on missing or ambiguous matches. `"*"` is not a function selector.
+For stripped binaries inspect `b.functions().slice(0, 10)` and `b.entry`; an entry
+point need not be a source-level `main`.
+
+To page long C without omitting lines, run these as separate calls, adjusting
+the line range and reducing it if the response still reports truncation:
+
+```js
+const b = velk.open("/path/to/binary");
+b.getFunction("main").decompile().split("\n").slice(0, 40).join("\n");
+```
+
+```js
+const b = velk.open("/path/to/binary");
+b.getFunction("main").decompile().split("\n").slice(40, 80).join("\n");
+```
+
+For several functions select a small batch first; mapping `decompile()` over an
+entire function list still does all that work before the display limit applies.
+Truncated C is incomplete and cannot be compiled as is.
 
 ## Navigation queries
 
@@ -51,6 +88,28 @@ Scripts use `b.xrefs(target, {from})`, `b.callers(target, {depth})`,
 `b.strings({contains})` and `b.constants(value)`. A `Func` also provides
 `xrefs({from})`, `callers({depth})`, `callees({depth})` and `summary()`.
 The navigation index is built once per opened binary and cached in the session.
+These methods return objects containing arrays, not arrays directly. Keep pages
+small, select fields and retain a failure count:
+
+```js
+const b = velk.open("/path/to/binary");
+const result = b.callees("main", {depth: 1});
+({functions: result.functions.slice(0, 10), failures: result.failures.length});
+```
+
+```js
+const b = velk.open("/path/to/binary");
+const result = b.strings({contains: "usage"});
+({total: result.strings.length,
+  strings: result.strings.slice(0, 5).map(s => ({addr:s.addr, text:s.text})),
+  failures: result.failures.length});
+```
+
+Use `b.callers("main").functions`, `b.xrefs("main").xrefs`, and
+`b.constants("0x100").matches` similarly. Change the slice to retrieve the next
+page; rerunning queries reuses the index. `xrefs()` defaults to incoming
+references; `{from:true}` selects references made by the containing function.
+
 Summaries include the inferred signature, size, callees, imports, referenced
 strings and incoming/outgoing reference counts.
 
@@ -136,6 +195,16 @@ import replaces the document. Export creates an empty project if absent.
 `projectRemove(target)`, `projectExport()` and `projectImport(document)`.
 `Func.origins()` returns stable storage selectors; use these instead of printed locals.
 Changes persist immediately and sessions invalidate analysis when projects change.
+For example, name one function and use it in a later script with the same binary
+and project path:
+
+```js
+const b = velk.open("/path/to/binary", {project: "analysis.json"});
+const f = b.getFunction(b.entry ?? b.functions()[0].addr);
+b.projectSet({target:{kind:"function", address:f.addr}, name:"analyzed_entry"});
+b.getFunction("analyzed_entry").decompile();
+```
+
 A session selects one project per binary; reopening with a different explicit
 project switches subsequent requests for that binary to that file.
 

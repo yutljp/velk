@@ -142,7 +142,7 @@ fn eval_named<'js, V: FromJs<'js>>(
     ctx.eval_with_options(source, options)
 }
 
-/// The error with only the script's own stack frames, not the prelude's.
+/// Describes the exception without exposing runtime stack frames.
 fn describe(error: CaughtError) -> String {
     let CaughtError::Exception(exception) = error else {
         return error.to_string();
@@ -151,11 +151,5 @@ fn describe(error: CaughtError) -> String {
         .as_object()
         .get::<_, String>("name")
         .unwrap_or_else(|_| "Error".to_owned());
-    let mut text = format!("{name}: {}", exception.message().unwrap_or_default());
-    let stack = exception.stack().unwrap_or_default();
-    for frame in stack.lines().filter(|line| line.contains(SCRIPT_NAME)) {
-        text.push('\n');
-        text.push_str(frame);
-    }
-    text
+    format!("{name}: {}", exception.message().unwrap_or_default())
 }
