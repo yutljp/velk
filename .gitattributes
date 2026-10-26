@@ -1,0 +1,2 @@
+tests/smt_inventory.tsv merge=union
+tests/smt_sources.sha256 merge=union

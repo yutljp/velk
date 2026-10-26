@@ -1,6 +1,7 @@
 //! Generated inventory metadata and explicit source review checks.
 
 use std::collections::BTreeMap;
+use std::collections::BTreeSet;
 use std::fmt::Write as _;
 use std::fs;
 use std::ops::Range;
@@ -78,7 +79,7 @@ fn generate(inventory: &str, read: impl Fn(&str) -> String) -> Metadata {
         header,
         "site\trewrite\tside_conditions\twidths\tcoverage\tanchor\treviewed_sha256"
     );
-    let mut output = format!("{header}\n");
+    let mut rows: BTreeMap<(String, String), Vec<(String, bool)>> = BTreeMap::new();
     let mut sources = BTreeMap::new();
     let mut digests_by_anchor = BTreeMap::new();
     let mut unreviewed = Vec::new();
@@ -99,15 +100,40 @@ fn generate(inventory: &str, read: impl Fn(&str) -> String) -> Metadata {
             .filter(|byte| *byte == b'\n')
             .count()
             + 1;
-        if fields[6] != digest {
-            unreviewed.push(format!("{path}: {}", fields[1]));
-        }
+        let reviewed = fields[6] == digest;
         digests_by_anchor.insert((path, fields[5]), digest);
-        writeln!(output, "{path}:{}\t{}", location, fields[1..].join("\t"))
-            .expect("write inventory string");
+        let site = format!("{path}:{location}");
+        let row = format!("{site}\t{}", fields[1..].join("\t"));
+        rows.entry((site, fields[1].to_owned()))
+            .or_default()
+            .push((row, reviewed));
+    }
+    let mut output = format!("{header}\n");
+    let mut retained_anchors = BTreeSet::new();
+    for ((site, rewrite), mut group) in rows {
+        group.sort();
+        group.dedup();
+        if group.iter().any(|(_, reviewed)| *reviewed) {
+            group.retain(|(_, reviewed)| *reviewed);
+        }
+        if group.len() > 1 {
+            unreviewed.push(format!("{site}: {rewrite} (duplicate key; review rows)"));
+        }
+        for (row, reviewed) in group {
+            if !reviewed {
+                unreviewed.push(format!("{site}: {rewrite}"));
+            }
+            let fields: Vec<&str> = row.split('\t').collect();
+            let (path, _) = fields[0].rsplit_once(':').expect("generated file and line");
+            retained_anchors.insert((path.to_owned(), fields[5].to_owned()));
+            writeln!(output, "{row}").expect("write inventory string");
+        }
     }
     let mut digests = String::new();
     for ((path, anchor), digest) in digests_by_anchor {
+        if !retained_anchors.contains(&(path.to_owned(), anchor.to_owned())) {
+            continue;
+        }
         writeln!(digests, "{digest}  {path}\t{anchor}").expect("write digest string");
     }
     Metadata {
@@ -130,11 +156,14 @@ fn inventory_matches_the_reviewed_sources() {
         fs::write(&inventory_path, &generated.inventory).expect("write inventory locations");
         fs::write(&digest_path, &generated.digests).expect("write source digests");
     } else {
-        assert_eq!(inventory, generated.inventory, "bless inventory locations");
+        assert_eq!(
+            inventory, generated.inventory,
+            "inventory rows are stale, unsorted or duplicated; run VELK_BLESS=1 and review the affected rows"
+        );
         assert_eq!(
             fs::read_to_string(&digest_path).expect("read source digests"),
             generated.digests,
-            "bless source digests after reviewing coverage"
+            "source digest rows are stale, unsorted or duplicated; run VELK_BLESS=1 and review the affected rows"
         );
     }
     assert!(
@@ -142,6 +171,49 @@ fn inventory_matches_the_reviewed_sources() {
         "review source changes and coverage, then manually update reviewed_sha256:\n{}",
         generated.unreviewed.join("\n")
     );
+}
+
+#[test]
+fn merged_rows_are_canonicalized_without_approving_changes() {
+    let source = "fn rewrite() {}\n";
+    let digest = format!("{:x}", sha2::Sha256::digest(b"fn rewrite() {}"));
+    let header = "site\trewrite\tside_conditions\twidths\tcoverage\tanchor\treviewed_sha256\n";
+    let row = format!("src/example.rs:1\tExample\tNone\t64\topen\tfn rewrite(\t{digest}\n");
+    let old = row.replace(&digest, "old").replace(":1\t", ":9\t");
+    let input = format!("{header}{old}{row}{row}");
+    let generated = generate(&input, |_| source.to_owned());
+    assert_eq!(generated.inventory, format!("{header}{row}"));
+    assert!(generated.unreviewed.is_empty());
+
+    let unresolved = format!("{header}{old}{}", old.replace("old", "other"));
+    let generated = generate(&unresolved, |_| source.to_owned());
+    assert_eq!(generated.inventory.lines().count(), 3);
+    assert!(
+        generated
+            .unreviewed
+            .iter()
+            .any(|row| row.contains("duplicate key"))
+    );
+    assert_eq!(generated.unreviewed.len(), 3);
+
+    let different_coverage = row.replace("\topen\t", "\tpartial\t");
+    let generated = generate(&format!("{header}{row}{different_coverage}"), |_| {
+        source.to_owned()
+    });
+    assert_eq!(generated.inventory.lines().count(), 3);
+    assert!(
+        generated
+            .unreviewed
+            .iter()
+            .any(|row| row.contains("duplicate key"))
+    );
+
+    let source = "fn rewrite() {} fn other() {}";
+    let other = old.replace("fn rewrite(", "fn other(");
+    let generated = generate(&format!("{header}{row}{other}"), |_| source.to_owned());
+    assert_eq!(generated.inventory, format!("{header}{row}"));
+    assert_eq!(generated.digests.lines().count(), 1);
+    assert!(generated.digests.contains("fn rewrite("));
 }
 
 #[test]
@@ -162,7 +234,7 @@ fn regeneration_preserves_review_and_detects_source_changes() {
     let changed = generate(&generated.inventory, |_| {
         "\nfn rewrite() { changed(); }\n".to_owned()
     });
-    assert_eq!(changed.unreviewed, ["src/example.rs: Example"]);
+    assert_eq!(changed.unreviewed, ["src/example.rs:2: Example"]);
     assert_eq!(changed.inventory, inventory.replace(":99\t", ":2\t"));
     assert_ne!(changed.digests, generated.digests);
     let regenerated = generate(&changed.inventory, |_| {
@@ -260,7 +332,7 @@ fn match_arm_review_covers_pattern_guard_and_body() {
         ("original()", "original() + 1"),
     ] {
         let changed = generate(&inventory, |_| source.replace(before, after));
-        assert_eq!(changed.unreviewed, ["src/example.rs: Example"]);
+        assert_eq!(changed.unreviewed, ["src/example.rs:1: Example"]);
     }
 }
 
@@ -313,7 +385,7 @@ fn function_review_includes_attributes_signature_and_comments() {
         ("consume(value)", "consume( value )"),
     ] {
         let changed = generate(&inventory, |_| source.replace(before, after));
-        assert_eq!(changed.unreviewed, ["src/example.rs: Example"]);
+        assert_eq!(changed.unreviewed, ["src/example.rs:2: Example"]);
     }
 }
 

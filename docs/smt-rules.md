@@ -81,8 +81,9 @@ The digest list is sorted by source path and anchor, with one entry for each
 distinct pair; rows sharing an anchor share a digest. Line numbers are excluded
 from digest keys. Moving an unchanged span only requires blessing locations;
 edits outside it do not invalidate its review.
-After merging inventory rows, resolve conflicts in generated locations and
-digests by running:
+Git's union merge driver retains both sides of changes to the inventory and
+digest files. After a merge or rebase, regenerate their sorted rows and remove
+duplicates by running:
 
 ```sh
 VELK_BLESS=1 cargo test --release --lib inventory -- --test-threads 3
@@ -91,6 +92,11 @@ VELK_BLESS=1 cargo test --release --lib inventory -- --test-threads 3
 Keep both sides' rewrite families and reviewed coverage when merging. Each row's
 `rewrite`, `side_conditions`, `widths`, `coverage`, `anchor` and
 `reviewed_sha256` fields are maintained by hand; blessing never changes them.
+If duplicate keys have different reviewed digests, blessing keeps matching
+reviews when the current source matches one. If none matches, it retains the
+rows and fails so they can be reviewed. Conflicting rows with the same matching
+digest also require manual resolution. Run the test without blessing to detect
+duplicate, unsorted or stale rows.
 For a source change, inspect the rewrite and its tests, update the coverage
 and conditions as needed, then manually copy the reviewed source's SHA-256
 from the generated digest list entry for that path and anchor into the affected
