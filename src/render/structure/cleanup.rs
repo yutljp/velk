@@ -7,6 +7,7 @@ pub(crate) use switch::fold_switch_exits;
 pub(crate) use switch::order_switch_cases;
 pub(crate) use switch::share_switch_tails;
 
+use super::breaks_out;
 use crate::ir::{Expr, Stmt};
 use crate::render::structure::Node;
 
@@ -377,16 +378,6 @@ pub(crate) fn prune_unreachable(nodes: &mut Vec<Node>) {
             _ => {}
         }
     }
-}
-
-/// Whether a `break` in `nodes` leaves the loop they are the body of, rather
-/// than an inner loop or a `switch`.
-fn breaks_out(nodes: &[Node]) -> bool {
-    nodes.iter().any(|node| match node {
-        Node::Break => true,
-        Node::If { then, els, .. } => breaks_out(then) || breaks_out(els),
-        _ => false,
-    })
 }
 
 /// Whether a `continue` in `nodes` goes to the loop they are the body of.

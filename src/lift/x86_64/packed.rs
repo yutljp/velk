@@ -10,15 +10,7 @@ fn window(parts: &[Expr], start: u64) -> Expr {
     let Some(first) = parts.get(index) else {
         return Expr::constant(0);
     };
-    let low = Expr::bin(BinOp::Shr, first.clone(), Expr::constant(offset));
-    match parts.get(index + 1) {
-        Some(next) if offset > 0 => Expr::bin(
-            BinOp::Or,
-            low,
-            Expr::bin(BinOp::Shl, next.clone(), Expr::constant(64 - offset)),
-        ),
-        _ => low,
-    }
+    super::super::windows::window(first, parts.get(index + 1), offset)
 }
 
 /// Lane `index` of `bits` from a vector's halves, at the bottom.
@@ -697,6 +689,35 @@ pub(super) fn lift_packed(lifter: &mut Lifter, ins: &Instruction) -> Option<()> 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn windows_match_adjacent_half_expressions() {
+        let parts = [Expr::reg(0, 64), Expr::reg(1, 64), Expr::reg(2, 64)];
+        for count in 1..=parts.len() {
+            for start in 0..(count as u64 * 64) {
+                let (index, offset) = ((start / 64) as usize, start % 64);
+                let low = Expr::bin(BinOp::Shr, parts[index].clone(), Expr::Const(offset));
+                let expected = match parts[..count].get(index + 1) {
+                    Some(next) if offset > 0 => Expr::bin(
+                        BinOp::Or,
+                        low,
+                        Expr::bin(BinOp::Shl, next.clone(), Expr::Const(64 - offset)),
+                    ),
+                    _ => low,
+                };
+                assert_eq!(window(&parts[..count], start), expected);
+            }
+        }
+    }
+
+    #[test]
+    fn windows_zero_fill_past_the_last_half() {
+        for parts in [vec![], vec![Expr::reg(0, 64)]] {
+            for start in [parts.len() as u64 * 64, 128, u64::MAX] {
+                assert_eq!(window(&parts, start), Expr::Const(0));
+            }
+        }
+    }
 
     #[test]
     fn packed_properties_match_all_mnemonics() {

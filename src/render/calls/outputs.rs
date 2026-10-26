@@ -119,11 +119,7 @@ fn assigned_value(output: &CallOutput, value: String, ty: &ValueType, ctx: &Ctx<
     }
     let value = projected(value, output.dest.width, ty);
     if let Some(precision) = ctx.floats.get(&output.dest.index) {
-        let (float, integer) = match precision {
-            crate::ir::Precision::Single => ("float", "uint32_t"),
-            crate::ir::Precision::Double => ("double", "uint64_t"),
-        };
-        format!("((union {{ {integer} bits; {float} value; }}){{ .bits = {value} }}).value")
+        crate::render::expr::bits_float(crate::render::int::Printed::opaque(value, 13), *precision)
     } else if let Some(target) = ctx.pointer_types.get(&output.dest.index) {
         if matches!(output.dest.width, 8 | 16 | 32)
             || matches!(ty, ValueType::Integer { bits, .. } if *bits < 64)

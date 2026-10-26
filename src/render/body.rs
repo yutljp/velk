@@ -40,16 +40,6 @@ pub(super) fn indent(depth: usize, out: &mut String) {
     }
 }
 
-/// Whether a `break` among the nodes leaves the switch they are in, rather
-/// than a loop or switch inside them.
-fn leaves_switch(nodes: &[Node]) -> bool {
-    nodes.iter().any(|node| match node {
-        Node::Break => true,
-        Node::If { then, els, .. } => leaves_switch(then) || leaves_switch(els),
-        _ => false,
-    })
-}
-
 /// Whether the statements up to the next call leave `rax` alone, and the
 /// call, whose arguments are known, reads no more of it than `al`.
 fn only_vector_count(rest: &[Node]) -> bool {
@@ -506,7 +496,7 @@ pub(super) fn render_node(node: &Node, depth: usize, out: &mut String, ctx: &Ctx
                 Some((Node::Break, rest)) => rest,
                 _ => default.as_slice(),
             }
-            && !leaves_switch(rest) =>
+            && !super::structure::breaks_out(rest) =>
         {
             let tests: Vec<String> = arms
                 .iter()

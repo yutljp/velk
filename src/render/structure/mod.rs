@@ -58,6 +58,15 @@ pub enum Node {
     },
 }
 
+/// Whether a break leaves the enclosing loop or switch, rather than a nested one.
+pub(super) fn breaks_out(nodes: &[Node]) -> bool {
+    nodes.iter().any(|node| match node {
+        Node::Break => true,
+        Node::If { then, els, .. } => breaks_out(then) || breaks_out(els),
+        _ => false,
+    })
+}
+
 /// Structures the function by its dominator tree, also with compare chains
 /// rebuilt as switches, keeping the result with the fewest labels, and of
 /// those the fewest gotos. A function
@@ -405,4 +414,56 @@ fn structure_with(ir: &FunctionIr, reordered: bool) -> Vec<Node> {
     let mut nodes = structurer.emit(0, ir.blocks.len());
     tidy(&mut nodes, entries, ir);
     nodes
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn breaks_bind_only_through_conditionals() {
+        use std::slice;
+
+        let conditional = |then, els| Node::If {
+            cond: Cond::Eq,
+            lhs: Expr::reg(0, 64),
+            rhs: Expr::Const(0),
+            then,
+            els,
+        };
+        assert!(!breaks_out(&[]));
+        assert!(breaks_out(&[Node::Break]));
+        assert!(breaks_out(&[conditional(
+            Vec::new(),
+            vec![conditional(vec![Node::Break], Vec::new())]
+        )]));
+        let nested = [
+            Node::Forever {
+                body: vec![Node::Break],
+            },
+            Node::DoWhile {
+                cond: Cond::Eq,
+                lhs: Expr::reg(0, 64),
+                rhs: Expr::Const(0),
+                body: vec![Node::Break],
+            },
+            Node::While {
+                prefix: vec![Node::Break],
+                cond: Cond::Eq,
+                lhs: Expr::reg(0, 64),
+                rhs: Expr::Const(0),
+                body: vec![Node::Break],
+            },
+            Node::Switch {
+                index: Expr::reg(0, 64),
+                arms: vec![(vec![0], vec![Node::Break])],
+                default: Some(vec![Node::Break]),
+            },
+            Node::Continue,
+        ];
+        for node in nested {
+            assert!(!breaks_out(slice::from_ref(&node)), "{node:?}");
+            assert!(!breaks_out(&[conditional(vec![node], Vec::new())]));
+        }
+    }
 }

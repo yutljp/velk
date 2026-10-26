@@ -1,4 +1,27 @@
-use crate::ir::{Expr, Stmt};
+use crate::ir::{BinOp, Expr, Stmt};
+
+/// The ordered terms of a sum, splitting subtraction only of constants.
+pub(crate) fn sum_terms<'e>(expr: &'e Expr, negative: bool, out: &mut Vec<(&'e Expr, bool)>) {
+    match expr {
+        Expr::Bin {
+            op: BinOp::Add,
+            lhs,
+            rhs,
+        } => {
+            sum_terms(lhs, negative, out);
+            sum_terms(rhs, negative, out);
+        }
+        Expr::Bin {
+            op: BinOp::Sub,
+            lhs,
+            rhs,
+        } if matches!(rhs.as_ref(), Expr::Const(_)) => {
+            sum_terms(lhs, negative, out);
+            sum_terms(rhs, !negative, out);
+        }
+        other => out.push((other, negative)),
+    }
+}
 
 pub(crate) fn children(expr: &Expr) -> Vec<&Expr> {
     match expr {
@@ -328,6 +351,33 @@ mod tests {
     use super::*;
     use crate::ir::{BinOp, Cond, Operation, Precision};
     use std::collections::HashSet;
+
+    #[test]
+    fn sum_terms_preserve_order_signs_and_unsplit_expressions() {
+        let a = Expr::reg(1, 64);
+        let b = Expr::reg(2, 64);
+        let scaled = Expr::bin(BinOp::Mul, b.clone(), Expr::Const(8));
+        let difference = Expr::bin(BinOp::Sub, a.clone(), b);
+        let sum = Expr::bin(
+            BinOp::Add,
+            Expr::bin(BinOp::Sub, a.clone(), Expr::Const(5)),
+            Expr::bin(BinOp::Add, scaled.clone(), difference.clone()),
+        );
+        for negative in [false, true] {
+            let mut terms = vec![(&a, false)];
+            sum_terms(&sum, negative, &mut terms);
+            assert_eq!(
+                terms,
+                vec![
+                    (&a, false),
+                    (&a, negative),
+                    (&Expr::Const(5), !negative),
+                    (&scaled, negative),
+                    (&difference, negative),
+                ]
+            );
+        }
+    }
 
     #[test]
     fn register_collectors_cover_every_expression_and_keep_existing_reads() {

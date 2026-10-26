@@ -143,45 +143,13 @@ pub(crate) fn cyclic_blocks(ir: &FunctionIr) -> std::collections::HashSet<usize>
         .blocks
         .iter()
         .map(|block| {
-            let mut next = Vec::new();
-            match block.stmts.last() {
-                Some(Stmt::Brif { target, .. }) | Some(Stmt::BrifFlags { target, .. }) => {
-                    if let Some(target) = index.get(target) {
-                        next.push(*target);
-                    }
-                    next.push(
-                        index
-                            .get(&block.start)
-                            .map(|position| position + 1)
-                            .unwrap_or_default(),
-                    );
-                }
-                Some(Stmt::Br {
-                    target: Some(target),
-                }) => {
-                    if let Some(target) = index.get(target) {
-                        next.push(*target);
-                    }
-                }
-                Some(Stmt::Switch { cases, default, .. }) => {
-                    for (_, target) in cases {
-                        if let Some(target) = index.get(target) {
-                            next.push(*target);
-                        }
-                    }
-                    if let Some(target) = default
-                        && let Some(target) = index.get(target)
-                    {
-                        next.push(*target);
-                    }
-                }
-                Some(Stmt::Ret { .. }) | Some(Stmt::BrIndirect { .. }) | Some(Stmt::Trap) => {}
-                _ => {
-                    if let Some(position) = index.get(&block.start) {
-                        next.push(position + 1);
-                    }
-                }
-            }
+            let fallthrough = index.get(&block.start).map(|position| position + 1);
+            let mut next = normal_successors(
+                block.stmts.last(),
+                fallthrough,
+                |address| index.get(&address).copied(),
+                UnknownBranch::Fallthrough,
+            );
             next.retain(|position| *position < ir.blocks.len());
             next
         })
@@ -334,6 +302,139 @@ mod tests {
     use super::{block_successors_with_exceptions, successors};
     use crate::ir::{Block, Convention, Expr, FunctionIr, Stmt};
     use crate::loader::Isa;
+
+    #[test]
+    fn cyclic_edges_match_start_map_dispatch() {
+        use crate::ir::Cond;
+        use std::collections::{HashMap, HashSet};
+        let branches = vec![
+            Vec::new(),
+            vec![Stmt::Br { target: None }],
+            vec![Stmt::Br { target: Some(8) }],
+            vec![Stmt::Br { target: Some(99) }],
+            vec![Stmt::Brif {
+                cond: Cond::Eq,
+                lhs: Expr::reg(0, 64),
+                rhs: Expr::Const(0),
+                target: 8,
+            }],
+            vec![Stmt::BrifFlags {
+                cond: Cond::Eq,
+                target: 99,
+            }],
+            vec![Stmt::Switch {
+                index: Expr::reg(0, 64),
+                cases: vec![(0, 8), (1, 8), (2, 99)],
+                default: Some(0),
+            }],
+            vec![Stmt::Ret {
+                value: Expr::Const(0),
+            }],
+            vec![Stmt::Trap],
+            vec![Stmt::BrIndirect {
+                target: Expr::reg(0, 64),
+            }],
+        ];
+        for starts in [[0, 8, 16], [0, 0, 8], [8, 0, 8]] {
+            let index: HashMap<u64, usize> = starts
+                .into_iter()
+                .enumerate()
+                .map(|(position, start)| (start, position))
+                .collect();
+            for first in &branches {
+                for second in &branches {
+                    for third in &branches {
+                        let blocks = vec![
+                            Block {
+                                start: starts[0],
+                                stmts: first.clone(),
+                            },
+                            Block {
+                                start: starts[1],
+                                stmts: second.clone(),
+                            },
+                            Block {
+                                start: starts[2],
+                                stmts: third.clone(),
+                            },
+                        ];
+                        let mut successors = Vec::new();
+                        for block in &blocks {
+                            let mut next = Vec::new();
+                            match block.stmts.last() {
+                                Some(Stmt::Brif { target, .. })
+                                | Some(Stmt::BrifFlags { target, .. }) => {
+                                    if let Some(target) = index.get(target) {
+                                        next.push(*target);
+                                    }
+                                    next.push(
+                                        index
+                                            .get(&block.start)
+                                            .map(|position| position + 1)
+                                            .unwrap_or_default(),
+                                    );
+                                }
+                                Some(Stmt::Br {
+                                    target: Some(target),
+                                }) => {
+                                    if let Some(target) = index.get(target) {
+                                        next.push(*target);
+                                    }
+                                }
+                                Some(Stmt::Switch { cases, default, .. }) => {
+                                    for (_, target) in cases {
+                                        if let Some(target) = index.get(target) {
+                                            next.push(*target);
+                                        }
+                                    }
+                                    if let Some(target) = default
+                                        && let Some(target) = index.get(target)
+                                    {
+                                        next.push(*target);
+                                    }
+                                }
+                                Some(Stmt::Ret { .. })
+                                | Some(Stmt::BrIndirect { .. })
+                                | Some(Stmt::Trap) => {}
+                                _ => {
+                                    if let Some(position) = index.get(&block.start) {
+                                        next.push(position + 1);
+                                    }
+                                }
+                            }
+                            next.retain(|position| *position < blocks.len());
+                            let mut actual = super::normal_successors(
+                                block.stmts.last(),
+                                index.get(&block.start).map(|position| position + 1),
+                                |address| index.get(&address).copied(),
+                                super::UnknownBranch::Fallthrough,
+                            );
+                            actual.retain(|position| *position < blocks.len());
+                            assert_eq!(actual, next);
+                            successors.push(next);
+                        }
+                        let mut expected = HashSet::new();
+                        for start in 0..blocks.len() {
+                            let mut seen = HashSet::new();
+                            let mut work = successors[start].clone();
+                            while let Some(next) = work.pop() {
+                                if next == start {
+                                    expected.insert(start);
+                                    break;
+                                }
+                                if seen.insert(next) {
+                                    work.extend(successors[next].iter().copied());
+                                }
+                            }
+                        }
+                        let mut ir = FunctionIr::single_block(Isa::X86_64, Vec::new());
+                        ir.blocks = blocks;
+                        assert_eq!(super::cyclic_blocks(&ir), expected);
+                    }
+                }
+            }
+        }
+    }
 
     #[test]
     fn normal_edge_order_and_unknown_branch_policies() {

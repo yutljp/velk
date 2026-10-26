@@ -118,15 +118,7 @@ pub(super) fn replicate(value: Expr, bits: u8) -> Expr {
 /// 64 bits of `parts` (halves, lowest first) starting at bit `start`.
 pub(super) fn window(parts: &[Expr], start: u64) -> Expr {
     let (index, offset) = ((start / 64) as usize, start % 64);
-    let low = Expr::bin(BinOp::Shr, parts[index].clone(), Expr::constant(offset));
-    match parts.get(index + 1) {
-        Some(next) if offset > 0 => Expr::bin(
-            BinOp::Or,
-            low,
-            Expr::bin(BinOp::Shl, next.clone(), Expr::constant(64 - offset)),
-        ),
-        _ => low,
-    }
+    super::super::windows::window(&parts[index], parts.get(index + 1), offset)
 }
 
 /// The count of a shift by an immediate, or a fixed-point conversion's
@@ -349,4 +341,35 @@ pub(super) fn reverse_lanes(half: Expr, bits: u8, part: u8) -> Expr {
         })
         .reduce(|all, lane| Expr::bin(BinOp::Or, all, lane))
         .unwrap_or(half)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn windows_match_adjacent_half_expressions() {
+        let parts = [Expr::reg(0, 64), Expr::reg(1, 64), Expr::reg(2, 64)];
+        for count in 1..=parts.len() {
+            for start in 0..(count as u64 * 64) {
+                let (index, offset) = ((start / 64) as usize, start % 64);
+                let low = Expr::bin(BinOp::Shr, parts[index].clone(), Expr::Const(offset));
+                let expected = match parts[..count].get(index + 1) {
+                    Some(next) if offset > 0 => Expr::bin(
+                        BinOp::Or,
+                        low,
+                        Expr::bin(BinOp::Shl, next.clone(), Expr::Const(64 - offset)),
+                    ),
+                    _ => low,
+                };
+                assert_eq!(window(&parts[..count], start), expected);
+            }
+        }
+    }
+
+    #[test]
+    #[should_panic(expected = "index out of bounds")]
+    fn windows_require_a_first_half() {
+        window(&[], 0);
+    }
 }

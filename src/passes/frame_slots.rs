@@ -1,4 +1,6 @@
+mod checked;
 mod i386;
+pub(crate) use checked::checked_frame_slot;
 pub(crate) use i386::settle as settle_i386;
 
 use crate::arch::stack_pointer;

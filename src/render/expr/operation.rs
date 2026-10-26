@@ -217,12 +217,7 @@ pub(super) fn render_operation(op: Operation, args: &[Expr], ctx: &Ctx<'_>) -> S
         Operation::IntToFloat { signed, bits, to } => {
             let operand = integral(&args[0], ctx, u32::from(bits));
             // An operand already of the integer type converts as it is.
-            let typed = operand.ty
-                == crate::render::int::Int {
-                    bits: u32::from(bits),
-                    signed,
-                }
-                && operand.exact >= u32::from(bits);
+            let typed = integer_operand(&operand, bits, signed);
             if typed {
                 format!("({}){}", float_type(to), operand.within(12, false).text)
             } else {
@@ -350,6 +345,15 @@ fn implicit_double(expr: &Expr, ctx: &Ctx<'_>, parent: u8, right: bool) -> Optio
     implicit_conversion(expr, Precision::Double, ctx, parent, right)
 }
 
+fn integer_operand(operand: &Printed, bits: u8, signed: bool) -> bool {
+    operand.ty
+        == Int {
+            bits: u32::from(bits),
+            signed,
+        }
+        && operand.exact >= u32::from(bits)
+}
+
 fn implicit_conversion(
     expr: &Expr,
     precision: Precision,
@@ -366,12 +370,7 @@ fn implicit_conversion(
         }
         Operation::IntToFloat { signed, bits, to } if *to == precision => {
             let operand = integral(&args[0], ctx, u32::from(*bits));
-            let typed = operand.ty
-                == Int {
-                    bits: u32::from(*bits),
-                    signed: *signed,
-                }
-                && operand.exact >= u32::from(*bits);
+            let typed = integer_operand(&operand, *bits, *signed);
             let operand = if typed {
                 operand
             } else {
@@ -466,4 +465,64 @@ pub(super) fn is_comparison(op: Operation) -> bool {
             | Operation::FloatLessEqual(_)
             | Operation::FloatUnordered(_)
     )
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn float_bit_conversions_preserve_text_and_printed_properties() {
+        for (precision, float, integer) in [
+            (Precision::Single, "float", "uint32_t"),
+            (Precision::Double, "double", "uint64_t"),
+        ] {
+            for value in ["x", "-0.0", "NAN", "f()", "a + b"] {
+                let bits = float_bits(value.to_owned(), precision);
+                assert_eq!(
+                    bits.text,
+                    format!(
+                        "((union {{ {float} value; {integer} bits; }}){{ .value = {value} }}).bits"
+                    )
+                );
+                assert_eq!(bits.ty, Int::promoted(u32::from(precision.bits()), false));
+                assert_eq!(bits.exact, ALL);
+                assert_eq!(bits.strength, 13);
+                assert_eq!(bits.range, Range::Unsigned(u32::from(precision.bits())));
+                let value = Printed::opaque(value.to_owned(), 13);
+                assert_eq!(
+                    bits_float(value.clone(), precision),
+                    format!(
+                        "((union {{ {integer} bits; {float} value; }}){{ .bits = {} }}).value",
+                        value.text
+                    )
+                );
+            }
+        }
+        for bits in [8, 16, 32, 64] {
+            for signed in [false, true] {
+                for operand_bits in [8, 16, 32, 64] {
+                    for operand_signed in [false, true] {
+                        for exact in [0, 16, 32, 64, ALL] {
+                            let operand = Printed::new(
+                                "x".to_owned(),
+                                Int {
+                                    bits: operand_bits,
+                                    signed: operand_signed,
+                                },
+                                exact,
+                                13,
+                            );
+                            assert_eq!(
+                                integer_operand(&operand, bits, signed),
+                                operand_bits == u32::from(bits)
+                                    && operand_signed == signed
+                                    && exact >= u32::from(bits)
+                            );
+                        }
+                    }
+                }
+            }
+        }
+    }
 }

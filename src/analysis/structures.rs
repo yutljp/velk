@@ -809,25 +809,7 @@ impl Holders {
 /// The terms of a sum, each with whether it is subtracted; only constants
 /// are.
 fn flatten<'e>(expr: &'e Expr, negative: bool, out: &mut Vec<(&'e Expr, bool)>) {
-    match expr {
-        Expr::Bin {
-            op: BinOp::Add,
-            lhs,
-            rhs,
-        } => {
-            flatten(lhs, negative, out);
-            flatten(rhs, negative, out);
-        }
-        Expr::Bin {
-            op: BinOp::Sub,
-            lhs,
-            rhs,
-        } if matches!(rhs.as_ref(), Expr::Const(_)) => {
-            flatten(lhs, negative, out);
-            flatten(rhs, !negative, out);
-        }
-        other => out.push((other, negative)),
-    }
+    crate::ir::visit::sum_terms(expr, negative, out);
 }
 
 /// Puts back into the addresses computed from `param` each register they

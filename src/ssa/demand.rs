@@ -179,7 +179,6 @@ pub(super) fn demanded_bits(
 }
 
 fn private_store_demands(ir: &FunctionIr) -> Option<HashMap<(usize, usize), u64>> {
-    use crate::ir::BinOp;
     let sp = crate::arch::stack_pointer(ir.isa);
     if crate::passes::memory::frame_address_escapes(ir, sp)
         || ir
@@ -191,32 +190,7 @@ fn private_store_demands(ir: &FunctionIr) -> Option<HashMap<(usize, usize), u64>
         return None;
     }
     fn slot(addr: &Expr, frame: i64, sp: u16) -> Option<i64> {
-        let register = |expr: &Expr| matches!(expr, Expr::Reg { index, width: 64 } if *index == sp);
-        let delta = match addr {
-            value if register(value) => 0,
-            Expr::Bin {
-                op: BinOp::Add,
-                lhs,
-                rhs,
-            } => match (lhs.as_ref(), rhs.as_ref()) {
-                (base, Expr::Const(delta)) | (Expr::Const(delta), base) if register(base) => {
-                    i128::from(*delta as i64)
-                }
-                _ => return None,
-            },
-            Expr::Bin {
-                op: BinOp::Sub,
-                lhs,
-                rhs,
-            } if register(lhs) => {
-                let Expr::Const(delta) = rhs.as_ref() else {
-                    return None;
-                };
-                -i128::from(*delta as i64)
-            }
-            _ => return None,
-        };
-        i64::try_from(i128::from(frame) + delta).ok()
+        crate::passes::frame_slots::checked_frame_slot(addr, frame, sp)
     }
     fn range(addr: &Expr, width: u8, frame: i64, sp: u16) -> Option<(i64, i64)> {
         if !(1..=8).contains(&width) {

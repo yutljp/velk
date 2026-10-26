@@ -181,19 +181,8 @@ pub(super) fn stored_value(value: &Expr, bits: u32, ctx: &Ctx<'_>) -> int::Print
     let Some(precision) = value_precision(value, ctx) else {
         return expr::print_value_at(value, ctx, bits, false);
     };
-    let float = match precision {
-        crate::ir::Precision::Single => "float",
-        crate::ir::Precision::Double => "double",
-    };
-    let integer = type_of(precision.bits() / 8, false);
     let value = expr::float_assignment(value, precision, ctx);
-    int::Printed::new(
-        format!("((union {{ {float} value; {integer} bits; }}){{ .value = {value} }}).bits"),
-        int::Int::promoted(u32::from(precision.bits()), false),
-        int::ALL,
-        13,
-    )
-    .ranging(int::Range::Unsigned(u32::from(precision.bits())))
+    expr::float_bits(value, precision)
 }
 
 pub(super) fn narrow_write(index: u16, width: u8, value: String, ctx: &Ctx<'_>) -> String {

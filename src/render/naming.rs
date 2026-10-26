@@ -752,25 +752,7 @@ pub(crate) fn plain_char_access(addr: &Expr, ctx: &Ctx<'_>) -> bool {
 /// The terms of a sum, each with whether it is subtracted; only constants
 /// are.
 pub(crate) fn sum_terms<'e>(expr: &'e Expr, negative: bool, out: &mut Vec<(&'e Expr, bool)>) {
-    match expr {
-        Expr::Bin {
-            op: BinOp::Add,
-            lhs,
-            rhs,
-        } => {
-            sum_terms(lhs, negative, out);
-            sum_terms(rhs, negative, out);
-        }
-        Expr::Bin {
-            op: BinOp::Sub,
-            lhs,
-            rhs,
-        } if matches!(rhs.as_ref(), Expr::Const(_)) => {
-            sum_terms(lhs, negative, out);
-            sum_terms(rhs, !negative, out);
-        }
-        other => out.push((other, negative)),
-    }
+    crate::ir::visit::sum_terms(expr, negative, out);
 }
 
 /// An address through a pointer to elements, `p + i * size + c`, as the

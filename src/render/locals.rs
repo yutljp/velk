@@ -1159,32 +1159,7 @@ pub(super) fn scalar_storage_size(ty: &CType) -> Option<u8> {
 }
 
 fn stack_offset(expr: &Expr, frame: i64, sp: u16) -> Option<i64> {
-    let register = |value: &Expr| matches!(value, Expr::Reg { index, width: 64 } if *index == sp);
-    let delta = match expr {
-        value if register(value) => 0,
-        Expr::Bin {
-            op: BinOp::Add,
-            lhs,
-            rhs,
-        } => match (lhs.as_ref(), rhs.as_ref()) {
-            (value, Expr::Const(delta)) | (Expr::Const(delta), value) if register(value) => {
-                i128::from(*delta as i64)
-            }
-            _ => return None,
-        },
-        Expr::Bin {
-            op: BinOp::Sub,
-            lhs,
-            rhs,
-        } if register(lhs) => {
-            let Expr::Const(delta) = rhs.as_ref() else {
-                return None;
-            };
-            -i128::from(*delta as i64)
-        }
-        _ => return None,
-    };
-    i64::try_from(i128::from(frame) + delta).ok()
+    crate::passes::frame_slots::checked_frame_slot(expr, frame, sp)
 }
 
 fn scalar_parameter_addresses(
