@@ -1,5 +1,6 @@
 //! Signature databases and informational IR shape hashes.
 
+use std::io::Read as _;
 use std::path::Path;
 
 use serde::{Deserialize, Serialize};
@@ -8,9 +9,12 @@ use crate::error::{Error, Result};
 use crate::ir::{BinOp, Expr, FunctionIr, Stmt};
 use crate::loader::Isa;
 
+mod bundled;
 mod bytes;
+pub use bundled::bundled;
+pub(crate) use bundled::for_isa as bundled_for_isa;
 pub use bytes::build;
-pub(crate) use bytes::{identify, image_entries};
+pub(crate) use bytes::{MatchScope, discover_arm32, identify, image_entries};
 const TOKEN_LIMIT: usize = 128;
 const VERSION: u32 = 3;
 
@@ -33,6 +37,12 @@ pub struct Entry {
     /// Direct destination names in instruction order.
     #[serde(default)]
     pub calls: Vec<String>,
+    /// Signature set that supplied this entry.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub set: Option<String>,
+    /// Exact bytes read through supported PC-relative constant loads, in instruction order.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub constants: Vec<Vec<u8>>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -47,6 +57,36 @@ pub struct Database {
     pub sources: Vec<String>,
 }
 
+/// One name and the set supplying its full-body signature.
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+pub struct Candidate {
+    /// Name recorded in the library's symbol table.
+    pub name: String,
+    /// Built-in set identifier, or the user database's source files.
+    pub set: String,
+}
+
+/// Strength of the evidence within the available signature sets.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum Certainty {
+    /// A unique name, exact normalized body, and confirmed direct destinations.
+    Exact,
+    /// More than one name has the same confirmed normalized body.
+    Ambiguous,
+    /// Body bytes agree, but destinations or uniqueness could not be confirmed.
+    Unconfirmed,
+}
+
+/// Library candidates; only exact matches may supply a recovered name.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Evidence {
+    /// Names with identical normalized instruction bodies.
+    pub candidates: Vec<Candidate>,
+    /// Whether all required checks succeeded.
+    pub certainty: Certainty,
+}
+
 impl Database {
     /// Creates a database sorted by function name.
     #[must_use]
@@ -59,17 +99,58 @@ impl Database {
         }
     }
 
-    /// Reads and validates a JSON database, reporting its path on read or parse errors.
+    /// Reads and validates a JSON or gzip-compressed JSON database.
     pub fn load(path: &Path) -> Result<Self> {
-        let text = std::fs::read_to_string(path).map_err(|source| Error::Io {
-            path: path.to_owned(),
-            source,
-        })?;
-        let value = serde_json::from_str(&text).map_err(|source| Error::SignatureFile {
-            path: path.to_owned(),
-            source,
-        })?;
-        Self::from_json(value)
+        let data = match std::fs::read(path) {
+            Ok(data) => data,
+            Err(source) => {
+                return Err(Error::Io {
+                    path: path.to_owned(),
+                    source,
+                });
+            }
+        };
+        let mut decoded = Vec::new();
+        let data = if data.starts_with(&[0x1f, 0x8b]) {
+            let mut decoder = flate2::read::GzDecoder::new(data.as_slice());
+            if let Err(source) = decoder.read_to_end(&mut decoded) {
+                return Err(Error::Io {
+                    path: path.to_owned(),
+                    source,
+                });
+            }
+            decoded.as_slice()
+        } else {
+            data.as_slice()
+        };
+        #[derive(Deserialize)]
+        struct Header {
+            #[serde(default)]
+            version: serde_json::Value,
+        }
+        let header: Header = match serde_json::from_slice(data) {
+            Ok(header) => header,
+            Err(source) => {
+                return Err(Error::SignatureFile {
+                    path: path.to_owned(),
+                    source,
+                });
+            }
+        };
+        let found = header.version.as_u64();
+        if found != Some(u64::from(VERSION)) {
+            return Err(Error::SignatureVersion {
+                found,
+                expected: VERSION,
+            });
+        }
+        match serde_json::from_slice(data) {
+            Ok(database) => Ok(database),
+            Err(source) => Err(Error::SignatureFile {
+                path: path.to_owned(),
+                source,
+            }),
+        }
     }
 
     /// Validates the format version and deserializes a database.
@@ -119,6 +200,8 @@ pub fn entry(name: &str, size: Option<u64>, ir: &FunctionIr) -> Option<Entry> {
         tokens,
         bytes: Vec::new(),
         calls: Vec::new(),
+        set: None,
+        constants: Vec::new(),
     })
 }
 

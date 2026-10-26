@@ -1,0 +1,241 @@
+# ライブラリ関数の名前
+
+velk は、名前のない関数を含むバイナリを開くと組み込みの命令シグネチャを適用します。
+候補名が一つに絞られ、検証も通った関数には、関数一覧と出力 C で名前を付けます。
+既存のシンボル名は保持します。一覧の JSON、JavaScript の `Func`、カードの
+`library` フィールドに、候補名・出典のセット・確実性を返します。MCP でも同じ API を使います。
+
+```sh
+velk -f app --json
+velk --identify app
+velk -D app XXH32
+velk -f app --no-default-signatures
+velk -f app --signatures first.json --signatures second.json
+velk -f app --no-default-signatures --signatures target/library-signatures/libraries.json.gz
+```
+
+```js
+const b = velk.open("app", {signatures: ["extra.json"]});
+b.functions().filter(f => f.library).map(f => ({
+  addr: f.addr, name: f.name, evidence: f.library
+}));
+const disabled = velk.open("app", {defaultSignatures: false});
+```
+
+`exact` は、正規化した関数全体の命令・定数・直接呼び出し先が一致し、有効なセット内で
+名前が一つであることを示します。確率でもソースコードの出典の証明でもありません。
+異なるソース関数が同じ機械語になることもあります。`ambiguous` は複数の名前が残った状態、
+`unconfirmed` は呼び出し先や一意性を確認できなかった状態です。後者二つでは名前を付けません。
+データベースを追加すると名前を再計算するため、別名の追加で復元済みの名前が取り消される場合があります。
+
+## 内容と制限
+
+完全なデータベースには zlib 1.3.2 の Adler-32 実装と xxHash 0.8.3 のスカラー XXH32/XXH64 実装を含みます。
+x86-64、AArch64、x86-32、リトルエンディアンの A32 ARM を Clang 21 の O0・O1・O2・O3・Os でビルドしています。
+xxHash は `XXH_NO_STREAM` と `XXH_NO_XXH3`、zlib は `Z_SOLO` を使い、32 ビットでは
+`NO_DIVIDE` も指定します。コンパイラのパッケージと入力のハッシュは
+[sources.json](../signatures/sources.json) に記録しています。ライブラリのすべてのビルドには
+対応していません。コンパイラ、フラグ、ベクトル実装、インライン化、リンク時最適化が違うと一致しない場合があります。
+
+musl、mbedTLS（TF-PSA-Crypto を含む）、libsodium、OpenSSL libcrypto も収録しています。
+ソースの正確なコミットは [extended-sources.json](../signatures/extended-sources.json) に記録しています。
+同じ 4 アーキテクチャ・5 最適化レベルで GCC 15.2 を使って静的アーカイブをビルドします。
+OpenSSL は `no-asm`・`no-shared`・`no-module`・`no-tests`・`no-apps` を指定します。
+libsodium は [extended.py](../signatures/extended.py) に記載した構成で移植可能な C 実装を使います。
+mbedTLS は既定の構成で、使われない ML-DSA サブモジュールは含めません。
+
+Rust のプログラムは文字列、書式化、ベクター、マップ、集合、パス、入出力、スレッド、
+ミューテックスを各ターゲット・最適化レベルで使います。インストール済みの標準ライブラリは
+事前にコンパイルされたもので、各レベルでコンパイルするのはプログラムとジェネリックなコードです。
+Rust のセットには `std`・`core`・`alloc` のうち型引数やクロージャ固有の名前を持たない関数と、具体的な型のトレイト実装を含め、
+ほかの依存クレートとリンク先の libc は除きます。型名が異なるジェネリックな関数でも同じ機械語に
+なることがあるため、それらは収録しません。コンパイラのバージョン、ターゲットライブラリのハッシュ、ソースのコミットは
+マニフェストに記録しています。
+
+アドレス以外の命令バイトは、即値の定数や関数内分岐を含めて保持します。直接呼び出しと
+関数外への末尾分岐は宛先のバイトをマスクし、候補の呼び出しグラフまたは既存のシンボルで
+宛先名を確認します。宛先が曖昧な呼び出し元も拒否します。同じ名前が異なるアドレスに
+複数ある場合は名前を付けません。x86 の関数内分岐先は命令境界である必要があります。
+
+x86-64 の固定幅 PC 相対ロードと AArch64 のリテラルロードは、ロードされた読み取り専用
+データの参照先バイトがすべて一致する場合だけマスクします。書き込み可能なデータ、
+アドレスの構築、未対応の再配置は拒否します。間接命令のレジスターはシグネチャに保持します。
+Thumb と ARM の PC 相対データ参照には対応していません。AArch64 と ARM はリトルエンディアンだけを照合します。
+
+有効な命令バイトが 4 バイト以上あれば呼び出し先の確認に使えます。名前を付けるには、
+本体が 32 バイト以上で、アドレス以外の命令バイトが 24 バイト以上必要です。
+短い本体は呼び出し先の確認にだけ使い、ライブラリ候補としては公開しません。x86-64 のリーフ関数では R10 と R11 を
+交換した場合も照合します。使う両レジスターは分岐や初期値の読み取りより前に完全に定義される
+必要があり、引数・戻り値・スタック・保存対象のレジスターは固定します。呼び出しや暗黙の
+レジスター使用があれば、この照合方法は使いません。SMT テストは直線的な戻り値の一例を
+確認し、任意の制御フローグラフを証明するものではありません。
+
+A32 は既知の開始位置と [ARM 例外インデックス](https://github.com/ARM-software/abi-aa/blob/main/ehabi32/ehabi32.rst)
+に記録された A32 の開始位置から、到達可能な直接分岐・呼び出しをたどります。
+これにより Thumb の起動コードに続く A32 ライブラリも調べられます。開始位置を追加するには
+本体全体の一致が必要で、名前を付けるには呼び出し先の確認も必要です。
+ほかのアーキテクチャではローダーの既存の関数境界を使い、任意のコードバイトから名前を探しません。
+
+Go の名前は実行時の関数テーブルから取得し、Go のシグネチャセットは追加しません。
+Rust は残っているシンボルやデバッグ情報を使います。シンボルを削除した場合は上記の命令セットで
+照合できます。既存の Rust フィクスチャの結果は
+[rust-measurement.json](../signatures/rust-measurement.json) に別途記録しています。
+
+## 出典・ライセンス・再生成
+
+実行ファイルにはアーキテクチャ別に 4 つの圧縮バイト配列を埋め込み、選んだアーキテクチャだけを
+プロセスごとに一度展開します。全関数に名前があるバイナリでは、明示的な識別要求まで展開を
+延期します。実行時のダウンロードはありません。[sets.json](../signatures/sets.json) に
+各ビルドの圧縮サイズ・項目数・ソースのコミット・ライセンスを記録します。
+組み込みデータはパッカーと単体テストで 2 MiB 以下に制限します。
+[selection.json](../signatures/selection.json) に選択したセットと、完全なデータベースの測定から見積もった各段階の復元数を記録します。
+最終的な組み込みデータは別途測定します。
+呼び出し先が収録されていない項目を再帰的に除外してから選び、同じ本体の別名と利用可能な
+呼び出し先の各ビルドを保持します。x86-64 と AArch64 を i386 と ARM32 より先に検討し、各グループ内では
+圧縮サイズあたりの復元数で貪欲に選ぶ方法で、最適な
+組み合わせであることを証明したものではありません。
+
+完全なデータベースは `target/library-signatures/libraries.json.gz` に生成し、
+リポジトリには保存しません。`--signatures` と JavaScript/MCP の `signatures` オプションは
+JSON と gzip 圧縮の JSON を扱います。生成した `target/library-signatures/defaults.json.gz` が
+ある場合、テストで圧縮バイト配列の全フィールドと照合します。
+マニフェストの項目数と 2 MiB の上限は毎回検査します。
+完全なデータベースがある場合は完全版も測定し、ない場合は組み込み版だけを測定します。
+
+データの隣にライセンス表記と上流の著作権・許諾コメントを保持しています。
+[zlib](../signatures/zlib.LICENSE)、[xxHash](../signatures/xxhash.LICENSE)、
+[musl](../signatures/musl.LICENSE)、[mbedTLS](../signatures/mbedtls.LICENSE)、
+[TF-PSA-Crypto](../signatures/tf-psa-crypto.LICENSE)、
+[libsodium](../signatures/libsodium.LICENSE)、[OpenSSL](../signatures/openssl.LICENSE)、
+Rust の [MIT](../signatures/rust.LICENSE-MIT)・[Apache](../signatures/rust.LICENSE-APACHE) を参照してください。
+選択した条件は Zlib、BSD-2-Clause、MIT（musl が挙げる BSD 表記も保持）、
+mbedTLS と OpenSSL の Apache-2.0、libsodium の ISC、Rust の MIT/Apache-2.0 です。
+`*.NOTICE.gz` は上流の著作権・許諾コメント、`rust.NOTICE.html.gz` はインストール済み標準ライブラリの
+表記を保持します。正規化した機械語を含むため、これらの表記をデータと一緒に配布します。
+
+glibc は収録していません。[LGPL 2.1](https://www.gnu.org/licenses/old-licenses/lgpl-2.1.en.html)
+はライブラリに基づく著作物を扱い、このデータは正規化した機械語を含みます。
+その義務とは独立してシグネチャを再配布できるという許諾は確認できませんでした。
+
+再生成にはマニフェストに記載したコンパイラのパッケージ、LLVM strip、LLD、CMake、Make、Perl、uv、
+Jinja2 のある Python が必要です。`LIBRARY_SOURCES` には、記録したコミットの `musl`・`mbedtls`・
+`libsodium`・`openssl` の変更のないチェックアウトを含むディレクトリを指定します。
+mbedTLS の framework と TF-PSA-Crypto も記録したコミットに合わせます。
+TF-PSA-Crypto では、同じ記録済みコミットの framework を再利用します。
+ソースとツールが揃っていればネットワークは不要です。
+
+```sh
+CARGO_BUILD_JOBS=5 CARGO_PROFILE_RELEASE_INCREMENTAL=true cargo build --release
+UV_CACHE_DIR=target/uv-cache uv run --no-project python signatures/rebuild.py "$LIBRARY_SOURCES"
+CARGO_BUILD_JOBS=5 CARGO_PROFILE_RELEASE_INCREMENTAL=true cargo build --release
+CARGO_BUILD_JOBS=5 CARGO_PROFILE_RELEASE_INCREMENTAL=true VELK_BLESS=1 cargo test --release --test library_signatures -- --test-threads 5
+```
+
+最初のビルドでシグネチャ生成用の実行ファイルを作ります。スクリプトはソースのハッシュ・コミット・
+コンパイラのバージョンを確認し、アーカイブと静的リンクのテストプログラムをビルドします。
+シンボルのある版と削除した版は決定的な gzip ファイルとして `tests/library_signatures/` に保存します。
+正解データ用のファイルはシンボルを保持し、デバッグセクションを除きます。コンパイル時に
+ソースのパスを書き換え、インストール済み sysroot 由来の Rust のソース位置も対象にします。
+OpenSSL は相対ソース名を使い、`SOURCE_DATE_EPOCH=0` でビルド日時を固定します。二度目のビルドで再生成したデータを埋め込みます。
+完了したビルドは `target/library-signatures/extended` に保存するため、スクリプト・フラグ・
+ソースのコミットを変更した場合は、そのディレクトリを空にしてから再生成してください。
+
+シグネチャ生成処理だけを変更した場合は `--refresh-signatures` を使います。
+完全版の測定後に `UV_CACHE_DIR=target/uv-cache uv run --no-project python signatures/pack.py --select`
+で組み込みセットを再選択し、再ビルド・再測定します。完全版は次のように読み込みます。
+
+```sh
+velk -f app --no-default-signatures --signatures target/library-signatures/libraries.json.gz
+```
+
+## 測定
+
+[measurements.json](../signatures/measurements.json) は zlib/xxHash の結果です。
+[extended-measurements.json](../signatures/extended-measurements.json) に追加のライブラリ・
+アーキテクチャ・最適化レベル別の正解数・誤り数・未復元数（100 通り）を記録しています。正解はシンボルを削除する前の実行ファイルの
+ライブラリ関数シンボルすべてで、内部の補助関数や短すぎて照合できない関数も含みます。
+復元した名前をそのアドレスのシンボルと比較し、ラッパー関数への誤命名も確認します。
+測定テストは誤りが一件でもあれば失敗し、記録した件数も照合します。
+CLI・JavaScript・MCP の情報、組み込みセットの無効化、別名追加後の曖昧さ、ネイティブ x86-64
+で出力 C が zlib と同じ値を計算することも確認します。
+
+C のフィクスチャでは、整列・数値変換・書式化（musl）、TLS/X.509 の初期化と SHA-256（mbedTLS）、
+ハッシュと secretbox（libsodium）、SHA・AES・EVP ダイジェスト（libcrypto）を静的リンクします。
+アーカイブから作る項目は、これらのプログラムが使う関数より広い範囲を含みます。
+Rust の正解データにはプログラム内の全 Rust 関数シンボルを含め、標準ライブラリのセットから除いた
+依存クレートやアプリケーションの関数も数えます。対象ライブラリ以外で復元した名前も、
+正解データの全シンボルと比較します。
+
+ネイティブ x86-64 では全 5 レベルのフィクスチャを実行します。musl の `memcmp` と zlib Adler-32 の
+出力 C はコンパイルし、それぞれ 10,000 入力でソース実装と比較します。クロスアーキテクチャでは
+名前とアドレスを照合し、バイナリの実行は行いません。この環境では 32 ビットの実行が SIGSYS で
+拒否され、ARM エミュレーターもありません。
+
+各ライブラリの 20 通りの合計は次のとおりです。
+
+| ライブラリ | 組み込みの正解 | 完全版の正解 | 完全版の未復元 | 誤り |
+| --- | ---: | ---: | ---: | ---: |
+| musl | 245 | 434 | 3,051 | 0 |
+| mbedtls | 1,588 | 2,916 | 36,995 | 0 |
+| libsodium | 352 | 664 | 13,064 | 0 |
+| openssl | 5,428 | 10,061 | 261,682 | 0 |
+| rust | 113 | 113 | 15,325 | 0 |
+
+既存のシンボルを削除した Rust フィクスチャは、発見した 545 関数のうち正解 3・誤り 0・未復元 542 です。
+このフィクスチャは rustc 1.98.1 で作られ、収録セットは rustc 1.99.1 を使っています。
+上記の保守的な照合条件では、多くの関数に名前が付きません。追加した各ライブラリの 1 通りについて
+空のビルドディレクトリから再生成し、命令シグネチャ、正解用・シンボル削除済み・シンボル表の
+圧縮ファイルがすべてバイト単位で一致しました。ほかの組み合わせは、空の状態から二度目のビルドを
+行っていません。
+
+[full-measurements.json](../signatures/full-measurements.json) に完全なデータベースの結果を記録します。
+[extended-measurements.json](../signatures/extended-measurements.json) は組み込みデータの結果です。
+[miss-analysis.json](../signatures/miss-analysis.json) は各ライブラリの未復元例を 100 件ずつ記録します。
+各アーキテクチャ・最適化レベルからアドレス順に等間隔で 5 件を選び、基準データベースで
+最初に失敗する条件を分類します。開始位置の未発見、短い本体、未対応の PC 相対命令、
+未収録の項目、除外した Rust の名前、呼び出し先の確認を区別します。原因を確認できない
+本体の違いは未分類とし、不一致だけからコンパイラのフラグ・レジスター割り当て・
+インライン化を推測しません。
+
+## 未復元例の分類
+
+各行は未復元例 100 件です。「PC・データ」は未対応の PC 相対命令と取得できない定数、「その他」は不正な境界と原因を確認できない本体の違いです。全未復元関数の割合を示すものではありません。
+
+| ライブラリ | 開始位置 | 短い本体 | PC・データ | グラフ | 未収録・除外 | 間接命令 | その他 |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| musl | 28 | 19 | 17 | 7 | 10 | 16 | 3 |
+| mbedtls | 27 | 20 | 8 | 24 | 6 | 1 | 14 |
+| libsodium | 34 | 19 | 14 | 22 | 9 | 1 | 1 |
+| openssl | 33 | 13 | 14 | 17 | 14 | 6 | 3 |
+| rust | 25 | 5 | 25 | 0 | 45 | 0 | 0 |
+
+組み込み配列は 61,915 項目・2,093,031 バイトです。ローカルで生成する完全な JSON データベースは圧縮後 13,066,235 バイトです。
+
+## アーキテクチャ別の結果
+
+5 最適化レベルの合計です。誤り数はすべて 0 です。
+
+| ライブラリ | アーキテクチャ | 組み込みの正解 | 完全版の正解 | 完全版の未復元 |
+| --- | --- | ---: | ---: | ---: |
+| musl | x86_64 | 110 | 112 | 542 |
+| musl | aarch64 | 126 | 129 | 639 |
+| musl | i386 | 4 | 130 | 544 |
+| musl | arm32 | 5 | 63 | 1,326 |
+| mbedtls | x86_64 | 807 | 807 | 6,906 |
+| mbedtls | aarch64 | 781 | 781 | 9,043 |
+| mbedtls | i386 | 0 | 773 | 6,966 |
+| mbedtls | arm32 | 0 | 555 | 14,080 |
+| libsodium | x86_64 | 174 | 177 | 1,759 |
+| libsodium | aarch64 | 178 | 178 | 3,639 |
+| libsodium | i386 | 0 | 180 | 1,754 |
+| libsodium | arm32 | 0 | 129 | 5,912 |
+| openssl | x86_64 | 2,725 | 2,725 | 57,863 |
+| openssl | aarch64 | 2,703 | 2,703 | 61,020 |
+| openssl | i386 | 0 | 2,624 | 57,947 |
+| openssl | arm32 | 0 | 2,009 | 84,852 |
+| rust | x86_64 | 34 | 34 | 3,846 |
+| rust | aarch64 | 36 | 36 | 3,847 |
+| rust | i386 | 19 | 19 | 3,818 |
+| rust | arm32 | 24 | 24 | 3,814 |
+
+サイズ制限の下では x86-64 と AArch64 を優先します。32 ビットの対象には小さい必須セットを保持し、より広い範囲には完全なデータベースを読み込みます。既存のシンボルを削除した Rust フィクスチャは、どちらも正解 3・未復元 542 です。

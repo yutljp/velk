@@ -111,7 +111,11 @@ fn print_functions_terminal(binary: &Binary, limit: usize, terminal: Terminal) {
                 .size
                 .map_or("?".to_owned(), |size| size.to_string()),
             terminal.muted(&format!("{sources:<22}")),
-            function.name.as_deref().unwrap_or("<unnamed>"),
+            format_args!(
+                "{}{}",
+                function.name.as_deref().unwrap_or("<unnamed>"),
+                library_evidence(function)
+            ),
         );
     }
     println!();
@@ -213,7 +217,7 @@ pub(crate) fn print_functions(binary: &Binary, limit: usize) {
                 .size
                 .map_or("?".to_owned(), |size| size.to_string()),
             name,
-            sources.join(","),
+            format_args!("{}{}", sources.join(","), library_evidence(function)),
         );
     }
 }
@@ -289,7 +293,7 @@ pub(crate) fn print_identification(
                 "{} {:>10}  {}  (currently: {})",
                 terminal.address(&format!("{:<18}", addr::format(hit.addr))),
                 hit.size.map_or("?".to_owned(), |size| size.to_string()),
-                hit.matched,
+                format_args!("{} [{}]", hit.matched, evidence_text(&hit.evidence)),
                 hit.current.as_deref().unwrap_or("unnamed"),
             );
             continue;
@@ -298,7 +302,16 @@ pub(crate) fn print_identification(
             "{:<14} {:>6}  {}  (currently: {})",
             addr::format(hit.addr),
             hit.size.map_or("?".to_owned(), |size| size.to_string()),
-            hit.matched,
+            format_args!(
+                "{} [{}; exact]",
+                hit.matched,
+                hit.evidence
+                    .candidates
+                    .iter()
+                    .map(|candidate| candidate.set.as_str())
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            ),
             hit.current.as_deref().unwrap_or("unnamed")
         );
     }
@@ -313,5 +326,30 @@ pub(crate) fn print_identification(
     if terminal.interactive() {
         println!();
     }
+    for (address, evidence) in identification.candidates.iter().take(limit) {
+        println!("{}: {}", addr::format(*address), evidence_text(evidence));
+    }
     report_failures(&identification.failures);
+}
+
+fn evidence_text(evidence: &velk::sigs::Evidence) -> String {
+    let certainty = match evidence.certainty {
+        velk::sigs::Certainty::Exact => "exact",
+        velk::sigs::Certainty::Ambiguous => "ambiguous",
+        velk::sigs::Certainty::Unconfirmed => "unconfirmed",
+    };
+    let candidates: Vec<_> = evidence
+        .candidates
+        .iter()
+        .map(|candidate| format!("{} ({})", candidate.name, candidate.set))
+        .collect();
+    format!("{certainty}: {}", candidates.join(", "))
+}
+
+fn library_evidence(function: &velk::loader::Function) -> String {
+    function
+        .library
+        .as_ref()
+        .map(|evidence| format!(" [{}]", evidence_text(evidence)))
+        .unwrap_or_default()
 }

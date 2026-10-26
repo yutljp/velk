@@ -171,6 +171,9 @@ pub struct Function {
     pub aliases: Vec<String>,
     #[serde(rename = "nameSources")]
     pub sources: Vec<NameSource>,
+    /// Library signature evidence, including candidates that remain unnamed.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub library: Option<Box<crate::sigs::Evidence>>,
 }
 
 impl Function {
@@ -841,6 +844,7 @@ fn upsert(
             size_estimated: false,
             name: None,
             aliases: Vec::new(),
+            library: None,
             sources: Vec::new(),
         })
         .merge(name, size, source);

@@ -811,6 +811,7 @@ mod tests {
             size_estimated: false,
             name: None,
             aliases: Vec::new(),
+            library: None,
             sources: Vec::new(),
         };
         let image = Image::from_code(isa, 0, code);
@@ -859,6 +860,7 @@ mod tests {
             size_estimated: false,
             name: None,
             aliases: Vec::new(),
+            library: None,
             sources: Vec::new(),
         };
         let image = Image::from_code(Isa::AArch64, 0, code);

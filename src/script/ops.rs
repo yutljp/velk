@@ -12,7 +12,7 @@ use crate::addr;
 use crate::card::DEFAULT_BUDGET;
 use crate::deadline::passed;
 use crate::error::{Error, Result};
-use crate::service::{Binary, Failure, Session};
+use crate::service::{Binary, Failure, Session, SignatureOptions};
 use crate::sigs::Database;
 
 /// A binary path with an optional architecture selection.
@@ -27,10 +27,29 @@ pub enum BinaryRef {
         path: PathBuf,
         /// Requested architecture.
         arch: Option<crate::loader::Architecture>,
+        /// Signature selection used by this binary handle.
+        #[serde(default, rename = "signatureOptions")]
+        signature_options: SignatureOptions,
     },
 }
 
 impl BinaryRef {
+    pub(crate) fn open<'session>(
+        &self,
+        session: &'session mut Session,
+    ) -> Result<&'session mut Binary> {
+        session.open_configured(self, self.arch(), &self.signature_options())
+    }
+
+    fn signature_options(&self) -> SignatureOptions {
+        match self {
+            Self::Path(_) => SignatureOptions::default(),
+            Self::Selected {
+                signature_options, ..
+            } => signature_options.clone(),
+        }
+    }
+
     fn arch(&self) -> Option<crate::loader::Architecture> {
         match self {
             Self::Path(_) => None,
@@ -98,6 +117,9 @@ pub enum Request {
         project: Option<PathBuf>,
         /// Requested Mach-O architecture.
         arch: Option<crate::loader::Architecture>,
+        /// Embedded and additional signature sets to use.
+        #[serde(default, rename = "signatureOptions")]
+        signature_options: SignatureOptions,
     },
     /// Lists recovered C++ classes.
     Classes {
@@ -224,7 +246,7 @@ pub fn handle(
             start,
             options,
         } => {
-            let binary = match session.open_arch(&bin, bin.arch()) {
+            let binary = match bin.open(session) {
                 Ok(binary) => binary,
                 Err(error) => return Err(error),
             };
@@ -234,7 +256,7 @@ pub fn handle(
             }
         }
         Request::Navigate { bin, query } => {
-            let binary = match session.open_arch(&bin, bin.arch()) {
+            let binary = match bin.open(session) {
                 Ok(binary) => binary,
                 Err(error) => return Err(error),
             };
@@ -252,14 +274,20 @@ pub fn handle(
             path,
             project,
             arch,
+            signature_options,
         } => {
-            let binary = match session.open_with_options(&path, project.as_deref(), arch) {
+            let binary = match session.open_with_options(
+                &path,
+                project.as_deref(),
+                arch,
+                &signature_options,
+            ) {
                 Ok(binary) => binary,
                 Err(error) => return Err(error),
             };
             let image = binary.image();
             Ok(json!({
-                "id": { "path": binary.path(), "arch": arch },
+                "id": { "path": binary.path(), "arch": arch, "signatureOptions": signature_options },
                 "path": binary.path(),
                 "format": image.format,
                 "arch": image.isa,
@@ -269,18 +297,16 @@ pub fn handle(
             }))
         }
         Request::Classes { bin } => {
-            let binary = match session.open_arch(&bin, bin.arch()) {
+            let binary = match bin.open(session) {
                 Ok(binary) => binary,
                 Err(error) => return Err(error),
             };
             Ok(json!(binary.image().classes()))
         }
-        Request::Sections { bin } => {
-            Ok(json!(session.open_arch(&bin, bin.arch())?.image().sections))
-        }
-        Request::Functions { bin } => Ok(json!(session.open_arch(&bin, bin.arch())?.functions())),
+        Request::Sections { bin } => Ok(json!(bin.open(session)?.image().sections)),
+        Request::Functions { bin } => Ok(json!(bin.open(session)?.functions())),
         Request::Find { bin, target } => {
-            let binary = match session.open_arch(&bin, bin.arch()) {
+            let binary = match bin.open(session) {
                 Ok(binary) => binary,
                 Err(error) => return Err(error),
             };
@@ -296,7 +322,7 @@ pub fn handle(
             ))
         }
         Request::Card { bin, addr, budget } => {
-            let card = session.open_arch(&bin, bin.arch())?.card(
+            let card = bin.open(session)?.card(
                 parse(&addr)?,
                 budget.unwrap_or(DEFAULT_BUDGET),
                 None,
@@ -309,7 +335,7 @@ pub fn handle(
             addr,
             decode_strings,
         } => {
-            let binary = match session.open_arch(&bin, bin.arch()) {
+            let binary = match bin.open(session) {
                 Ok(binary) => binary,
                 Err(error) => return Err(error),
             };
@@ -324,7 +350,7 @@ pub fn handle(
             }
         }
         Request::DecompileMany { bin, addresses } => {
-            let binary = match session.open_arch(&bin, bin.arch()) {
+            let binary = match bin.open(session) {
                 Ok(binary) => binary,
                 Err(error) => return Err(error),
             };
@@ -356,8 +382,7 @@ pub fn handle(
             Ok(json!(output))
         }
         Request::Disasm { bin, addr, limit } => Ok(json!(
-            session
-                .open_arch(&bin, bin.arch())?
+            bin.open(session)?
                 .disasm(parse(&addr)?, limit.unwrap_or(usize::MAX))?
         )),
         Request::Ir { bin, addr } => {
@@ -366,7 +391,7 @@ pub fn handle(
             Ok(json!(analysis.ir.render()))
         }
         Request::Signature { bin, addr } => {
-            let binary = match session.open_arch(&bin, bin.arch()) {
+            let binary = match bin.open(session) {
                 Ok(binary) => binary,
                 Err(error) => return Err(error),
             };
@@ -413,7 +438,7 @@ pub fn handle(
                     Ok(address) => address,
                     Err(error) => return Err(error),
                 };
-                let binary = match session.open_arch(&bin, bin.arch()) {
+                let binary = match bin.open(session) {
                     Ok(binary) => binary,
                     Err(error) => return Err(error),
                 };
@@ -426,13 +451,11 @@ pub fn handle(
             Ok(json!(strings))
         }
         Request::ShapeHash { bin, addr } => Ok(json!(
-            session
-                .open_arch(&bin, bin.arch())?
-                .shape_hash(parse(&addr)?, deadline)?
+            bin.open(session)?.shape_hash(parse(&addr)?, deadline)?
         )),
         Request::BuildSignatures { bin } => {
             if bin.arch().is_some() {
-                let binary = match session.open_arch(&bin, bin.arch()) {
+                let binary = match bin.open(session) {
                     Ok(binary) => binary,
                     Err(error) => return Err(error),
                 };
@@ -454,15 +477,17 @@ pub fn handle(
                 Value::String(path) => Database::load(path.as_ref())?,
                 value => Database::from_json(value)?,
             };
-            let identification = session
-                .open_arch(&bin, bin.arch())?
-                .identify(&database, deadline)?;
+            let identification = bin.open(session)?.identify(&database, deadline)?;
             Ok(json!({
                 "matches": identification.matches.iter().map(|m| json!({
                     "addr": addr::format(m.addr),
                     "size": m.size,
                     "current": m.current,
                     "matched": m.matched,
+                    "evidence": m.evidence,
+                })).collect::<Vec<_>>(),
+                "candidates": identification.candidates.iter().map(|(address, evidence)| json!({
+                    "addr": addr::format(*address), "evidence": evidence,
                 })).collect::<Vec<_>>(),
                 "failures": failures(&identification.failures),
             }))
@@ -480,7 +505,7 @@ fn analysis<'a>(
         Ok(addr) => addr,
         Err(error) => return Err(error),
     };
-    let binary: &'a mut Binary = match session.open_arch(bin, bin.arch()) {
+    let binary: &'a mut Binary = match bin.open(session) {
         Ok(binary) => binary,
         Err(error) => return Err(error),
     };

@@ -38,7 +38,7 @@ int sum_until_zero(int *p, int n) {
 ## 機能
 
 - クロスリファレンス、コールグラフ、文字列・定数の検索と関数の要約。
-- バイトシグネチャによる、シンボルを削除したライブラリ関数の識別。
+- 組み込みシグネチャで[ライブラリ関数名](docs/LIBRARY_SIGNATURES.ja.md)を自動で復元。musl、mbedTLS、libsodium、OpenSSL libcrypto、Rust 標準ライブラリの共通処理、zlib のチェックサム、xxHash の完全なデータベースは別ファイルで読み込み可能。
 - macOS、Windows（Win32 と C ランタイム）、Linux（glibc）の生成済み C API 型ライブラリ。
 - プロジェクトファイルへの名前・型・コメントの永続化（`--project`、`--annotate`）。
 - [プログラムのバージョン比較](docs/COMPARISON.ja.md)、C とブロックの差分確認、対応関数への注釈コピー（`--compare`、`--carry-annotations`）。
@@ -137,6 +137,19 @@ JavaScript API と MCP では `b.search(pattern, options)`、
 `b.readMemory(address, type, {count})`、`b.detectConstants()` を使えます。
 エンコーディング、範囲、型、完全一致する定数の詳細は
 [メモリの問い合わせ](docs/MEMORY.ja.md)を参照してください。
+
+バイナリを開くと、ライブラリシグネチャが自動で適用されます。`velk -f app`
+で復元した名前・出典のセット・確実性を確認し、`velk -D app XXH32` で一致した
+関数の C を表示できます。`--identify app` では名前を確定できなかった候補も表示します。
+組み込みセットを無効にするには `--no-default-signatures` を使います。
+`--signatures custom.json` は繰り返し指定でき、独自のセットを追加します。
+完全なデータベースは文書の再生成スクリプトで作り、
+`--signatures target/library-signatures/libraries.json.gz` で読み込めます。
+同じオプションで gzip 圧縮した JSON も扱えます。
+JavaScript と MCP では
+`velk.open("app", {defaultSignatures: false, signatures: ["custom.json"]})`
+を使います。対応範囲・ライセンス・再生成方法・測定結果は
+[ライブラリシグネチャ](docs/LIBRARY_SIGNATURES.ja.md)を参照してください。
 
 整数の恒等式や解析で追跡した定数値によって、すべての入力に対して結果が
 決まると証明できた条件分岐を除去します。ディスパッチループへ入る状態が

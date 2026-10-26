@@ -12,6 +12,19 @@ use crate::error::LiftError;
 use crate::ir::{BinOp, Block, CallKind, Cond, Expr, RegRef, Stmt};
 use crate::loader::{ArmMode, Image, Isa};
 
+pub(crate) fn position_independent_instruction(bytes: &[u8]) -> bool {
+    matches!(
+        additional::decode(bytes, crate::loader::ArmMode::Arm),
+        Some(
+            additional::Instruction::Extend { .. }
+                | additional::Instruction::Divide { .. }
+                | additional::Instruction::Bitfield { .. }
+                | additional::Instruction::Reverse { .. }
+                | additional::Instruction::HalfMultiply { .. }
+        )
+    )
+}
+
 pub(super) enum Step {
     Guard {
         condition: Cond,

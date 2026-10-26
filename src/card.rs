@@ -26,6 +26,8 @@ pub struct Card {
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub aliases: Vec<String>,
     pub name_sources: Vec<NameSource>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub library: Option<crate::sigs::Evidence>,
     pub size: Option<u64>,
     #[serde(skip_serializing_if = "std::ops::Not::not")]
     pub size_estimated: bool,
@@ -85,6 +87,7 @@ pub fn build(
         name: function.name.clone(),
         aliases: function.aliases.clone(),
         name_sources: function.sources.clone(),
+        library: function.library.as_deref().cloned(),
         size: function.size,
         size_estimated: function.size_estimated,
         section: image.section_at(function.addr).map(|s| s.name.clone()),

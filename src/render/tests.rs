@@ -1888,6 +1888,7 @@ fn symbol_kinds_keep_names_at_the_same_address() {
                 } else {
                     Vec::new()
                 },
+                library: None,
                 sources: Vec::new(),
             },
         );

@@ -110,6 +110,7 @@ ccdb48908c504c913982c58b95184f13cc89a5f75486f71ad1ab25c1d48217b9  src/render/par
 d826496aa0bae181e2e4691f1e3b259c785ae943bbeb1407c9ecb83640092670  src/render/stmt.rs	pub(super) fn conformed(
 6d66b8eacb9df33770d419a62c31c056c11e3de39f10e4c817fc99d2e56a593c  src/render/stmt.rs	pub(super) fn narrow_write(
 288fb5a93ed6d581b878f90d08f8c29714c1e14affefd2f991b9d2dc212bf307  src/render/widths.rs	pub(crate) fn narrow_variables(
+af9af3f338c239142f92a78e7633d8f8a3f0d64d702caab86de5c8cd24e874d3  src/sigs/bytes/registers.rs	pub(super) fn alternative(
 32caccc66f407095f81047c6a597b56a6a6aaa1c2cd56f826ca74dded4a75405  src/ssa/demand.rs	pub fn narrow_partial_writes(
 2e9d0caef1f3f967648c3b44c3bc2a2ab576573ccfe0870193fd4d12f60f4f3c  src/ssa/ranges.rs	fn rewrite(
 843da05dd590cce5d7c4a1103accff0e01313d107fdba5c69f4e70f29e992e64  src/ssa/ranges.rs	fn rewrite_value(

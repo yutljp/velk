@@ -15,20 +15,29 @@ pub(super) fn handle(
     carry: bool,
     deadline: Option<Instant>,
 ) -> Result<Value> {
-    let first_project = match session.open_arch(&first, first.arch()) {
+    let first_project = match first.open(session) {
         Ok(binary) => binary.project_path().to_owned(),
         Err(error) => return Err(error),
     };
-    let second_project = match session.open_arch(&second, second.arch()) {
+    let second_project = match second.open(session) {
         Ok(binary) => binary.project_path().to_owned(),
         Err(error) => return Err(error),
     };
-    let mut first = match Binary::open_with_options(&first, Some(&first_project), first.arch()) {
+    let mut first = match Binary::open_with_signatures(
+        &first,
+        Some(&first_project),
+        first.arch(),
+        &first.signature_options(),
+    ) {
         Ok(binary) => binary,
         Err(error) => return Err(error),
     };
-    let mut second = match Binary::open_with_options(&second, Some(&second_project), second.arch())
-    {
+    let mut second = match Binary::open_with_signatures(
+        &second,
+        Some(&second_project),
+        second.arch(),
+        &second.signature_options(),
+    ) {
         Ok(binary) => binary,
         Err(error) => return Err(error),
     };

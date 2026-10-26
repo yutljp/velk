@@ -2,6 +2,7 @@ mod aarch64;
 mod arm32;
 pub(crate) use arm32::fold_literals;
 pub(crate) use arm32::listing as arm32_listing;
+pub(crate) use arm32::position_independent_instruction as arm32_position_independent_instruction;
 #[cfg(test)]
 mod atomic_tests;
 pub(crate) mod execution;
@@ -2313,6 +2314,7 @@ mod tests {
                     size_estimated: false,
                     name: None,
                     aliases: Vec::new(),
+                    library: None,
                     sources: Vec::new(),
                 };
                 let image = Image::from_code(isa, 0, code);
@@ -2402,6 +2404,7 @@ mod tests {
                 size_estimated: false,
                 name: None,
                 aliases: Vec::new(),
+                library: None,
                 sources: Vec::new(),
             },
         );

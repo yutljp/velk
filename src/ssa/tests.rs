@@ -1222,6 +1222,7 @@ fn variadic_stack_arguments_follow_the_call_kind() {
             size_estimated: false,
             name: Some("printf".to_owned()),
             aliases: Vec::new(),
+            library: None,
             sources: Vec::new(),
         },
     );
@@ -1565,6 +1566,7 @@ fn declared_calls_do_not_reconstruct_variadic_fallback_arguments() {
             size_estimated: false,
             name: Some("printf".to_owned()),
             aliases: Vec::new(),
+            library: None,
             sources: Vec::new(),
         },
     );

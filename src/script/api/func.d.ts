@@ -9,6 +9,8 @@ interface Func {
   sizeEstimated?: true;
   /** Where the function was found: "symtab", "dynamic", "entry", "pclntab", "dwarf", "codeview", "unwind", "function-starts", "objc", "plt", "prologue", "signature". */
   nameSources: string[];
+  /** Exact library evidence or unresolved candidates. Only exact evidence supplies a name. */
+  library?: LibraryEvidence;
 
   /** Execute this function with explicit state and limits. */
   emulate(options?: EmulationOptions): EmulationReport;

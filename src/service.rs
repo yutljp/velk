@@ -10,7 +10,7 @@ use crate::card::{self, Card};
 use crate::deadline::passed;
 use crate::error::{Error, LiftError, Result};
 use crate::loader::{self, Architecture, Function, Image};
-use crate::sigs::{self, Database};
+use crate::sigs::{self, Certainty, Database, MatchScope};
 use crate::{disasm, render};
 
 fn canonicalize(path: &Path) -> Result<PathBuf> {
@@ -25,10 +25,29 @@ fn canonicalize(path: &Path) -> Result<PathBuf> {
 
 const SHOWN_CANDIDATES: usize = 10;
 
+/// Signature databases to apply when a binary is opened.
+#[derive(Debug, Clone, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "camelCase", default)]
+pub struct SignatureOptions {
+    /// Apply the embedded library sets.
+    pub defaults: bool,
+    /// Additional JSON databases, matched together with the enabled sets.
+    pub files: Vec<PathBuf>,
+}
+
+impl Default for SignatureOptions {
+    fn default() -> Self {
+        Self {
+            defaults: true,
+            files: Vec::new(),
+        }
+    }
+}
+
 /// Loaded binaries, kept across calls so repeated queries reuse the analysis.
 #[derive(Default)]
 pub struct Session {
-    binaries: HashMap<(PathBuf, Option<Architecture>), Binary>,
+    binaries: HashMap<(PathBuf, Option<Architecture>, SignatureOptions), Binary>,
 }
 
 impl Session {
@@ -37,6 +56,7 @@ impl Session {
         path: &Path,
         project: Option<&Path>,
         arch: Option<Architecture>,
+        options: &SignatureOptions,
     ) -> Result<&mut Binary> {
         let path = match canonicalize(path) {
             Ok(path) => path,
@@ -45,17 +65,19 @@ impl Session {
         if let Some(project) = project {
             let reuse = self
                 .binaries
-                .get(&(path.clone(), arch))
+                .get(&(path.clone(), arch, options.clone()))
                 .is_some_and(|binary| binary.project_path == project);
             if !reuse {
-                let binary = match Binary::open_with_options(&path, Some(project), arch) {
+                let binary = match Binary::open_with_signatures(&path, Some(project), arch, options)
+                {
                     Ok(binary) => binary,
                     Err(error) => return Err(error),
                 };
-                self.binaries.insert((path.clone(), arch), binary);
+                self.binaries
+                    .insert((path.clone(), arch, options.clone()), binary);
             }
         }
-        self.open_arch(&path, arch)
+        self.open_configured(&path, arch, options)
     }
 
     /// Loads the file, or returns the cached binary when the file is unchanged.
@@ -65,6 +87,15 @@ impl Session {
 
     /// Opens and caches a particular architecture independently.
     pub fn open_arch(&mut self, path: &Path, arch: Option<Architecture>) -> Result<&mut Binary> {
+        self.open_configured(path, arch, &SignatureOptions::default())
+    }
+
+    pub(crate) fn open_configured(
+        &mut self,
+        path: &Path,
+        arch: Option<Architecture>,
+        options: &SignatureOptions,
+    ) -> Result<&mut Binary> {
         let path = match canonicalize(path) {
             Ok(path) => path,
             Err(error) => return Err(error),
@@ -73,7 +104,7 @@ impl Session {
             Ok(value) => value,
             Err(error) => return Err(error),
         };
-        match self.binaries.entry((path, arch)) {
+        match self.binaries.entry((path, arch, options.clone())) {
             Entry::Occupied(entry) if entry.get().modified == modified => {
                 let binary = entry.into_mut();
                 match binary.refresh_project() {
@@ -88,6 +119,7 @@ impl Session {
                     Some(&entry.get().project_path),
                     None,
                     arch,
+                    options,
                 ) {
                     Ok(binary) => binary,
                     Err(error) => return Err(error),
@@ -96,11 +128,12 @@ impl Session {
                 Ok(entry.into_mut())
             }
             Entry::Vacant(entry) => {
-                let binary = match Binary::load_project(&entry.key().0, modified, None, None, arch)
-                {
-                    Ok(binary) => binary,
-                    Err(error) => return Err(error),
-                };
+                let binary =
+                    match Binary::load_project(&entry.key().0, modified, None, None, arch, options)
+                    {
+                        Ok(binary) => binary,
+                        Err(error) => return Err(error),
+                    };
                 Ok(entry.insert(binary))
             }
         }
@@ -118,6 +151,8 @@ pub struct Binary {
     pub(crate) project_digest: Option<String>,
     image: Image,
     arch: Option<Architecture>,
+    signature_options: SignatureOptions,
+    signature_database: Database,
     symbols: render::Symbols,
     data_ranges: Vec<(u64, u64)>,
     analyses: HashMap<u64, Result<Analysis, LiftError>>,
@@ -137,6 +172,7 @@ pub struct SignatureBuild {
 pub struct Identification {
     pub matches: Vec<Match>,
     pub failures: Vec<Failure>,
+    pub candidates: Vec<(u64, sigs::Evidence)>,
 }
 
 pub struct Match {
@@ -144,6 +180,7 @@ pub struct Match {
     pub size: Option<u64>,
     pub current: Option<String>,
     pub matched: String,
+    pub evidence: sigs::Evidence,
 }
 
 impl Binary {
@@ -166,7 +203,28 @@ impl Binary {
             Ok(value) => value,
             Err(error) => return Err(error),
         };
-        Self::load_project(path, modified, project, None, arch)
+        Self::load_project(
+            path,
+            modified,
+            project,
+            None,
+            arch,
+            &SignatureOptions::default(),
+        )
+    }
+
+    /// Opens a binary with independently cached signature options.
+    pub fn open_with_signatures(
+        path: &Path,
+        project: Option<&Path>,
+        arch: Option<Architecture>,
+        options: &SignatureOptions,
+    ) -> Result<Self> {
+        let modified = match modified(path) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
+        Self::load_project(path, modified, project, None, arch, options)
     }
 
     fn load_project(
@@ -175,6 +233,7 @@ impl Binary {
         project_path: Option<&Path>,
         mut project_digest: Option<String>,
         arch: Option<Architecture>,
+        options: &SignatureOptions,
     ) -> Result<Self> {
         let path = match canonicalize(path) {
             Ok(path) => path,
@@ -197,7 +256,36 @@ impl Binary {
         {
             return Err(error);
         }
-        Ok(Self {
+        let needs_defaults = options.defaults
+            && (!options.files.is_empty()
+                || image
+                    .functions
+                    .values()
+                    .any(|function| function.name.is_none()));
+        let mut database = if needs_defaults {
+            sigs::bundled_for_isa(image.isa).clone()
+        } else {
+            Database::new(Vec::new())
+        };
+        for path in &options.files {
+            let mut extra = match Database::load(path) {
+                Ok(database) => database,
+                Err(error) => return Err(error),
+            };
+            let source = path
+                .file_name()
+                .unwrap_or_default()
+                .to_string_lossy()
+                .into_owned();
+            for entry in &mut extra.entries {
+                if entry.set.is_none() {
+                    entry.set = Some(source.clone());
+                }
+            }
+            database.entries.extend(extra.entries);
+            database.sources.extend(extra.sources);
+        }
+        let mut binary = Self {
             navigation: None,
             path: path.to_owned(),
             modified,
@@ -210,9 +298,31 @@ impl Binary {
             data_ranges: render::data_ranges(&image),
             image,
             arch,
+            signature_options: options.clone(),
+            signature_database: database.clone(),
             analyses: HashMap::new(),
             shared_analyses: HashMap::new(),
-        })
+        };
+        if (!options.files.is_empty()
+            || (options.defaults
+                && binary
+                    .image
+                    .functions
+                    .values()
+                    .any(|function| function.name.is_none())))
+            && let Err(error) = binary.apply_signatures(
+                &database,
+                None,
+                if options.files.is_empty() {
+                    MatchScope::Unnamed
+                } else {
+                    MatchScope::All
+                },
+            )
+        {
+            return Err(error);
+        }
+        Ok(binary)
     }
 
     pub(crate) fn refresh_project(&mut self) -> Result<()> {
@@ -234,6 +344,7 @@ impl Binary {
                 Some(&self.project_path),
                 self.project_digest.clone(),
                 self.arch,
+                &self.signature_options,
             ) {
                 Ok(mut binary) => {
                     binary.string_decoding = self.string_decoding;
@@ -565,7 +676,13 @@ impl Binary {
                     .map(|matched| matched.matched)),
                 Err(error) => Err(error),
             },
-            None => Ok(None),
+            None => Ok(self.image.functions.get(&addr).and_then(|function| {
+                let Some(evidence) = function.library.as_ref() else {
+                    return None;
+                };
+                (evidence.certainty == Certainty::Exact)
+                    .then(|| evidence.candidates[0].name.clone())
+            })),
         }
     }
 
@@ -740,7 +857,24 @@ impl Binary {
         if let Some(name) = identified {
             rendered.code.insert_str(
                 0,
-                &format!("/* identified: {} */\n", name.replace("*/", "* /")),
+                &format!(
+                    "/* identified: {}{} */\n",
+                    name.replace("*/", "* /"),
+                    self.image
+                        .functions
+                        .get(&addr)
+                        .and_then(|function| function.library.as_ref())
+                        .map(|evidence| format!(
+                            "; {}; exact",
+                            evidence
+                                .candidates
+                                .iter()
+                                .map(|candidate| candidate.set.replace("*/", "* /"))
+                                .collect::<Vec<_>>()
+                                .join(", ")
+                        ))
+                        .unwrap_or_default()
+                ),
             );
         }
         if let Some(project) = &self.project {
@@ -901,26 +1035,92 @@ impl Binary {
         database: &Database,
         deadline: Option<Instant>,
     ) -> Result<Identification> {
-        let identified = match sigs::identify(&self.image, database, deadline) {
-            Ok(identified) => identified,
+        let mut combined =
+            if self.signature_options.defaults && self.signature_database.entries.is_empty() {
+                sigs::bundled_for_isa(self.image.isa).clone()
+            } else {
+                self.signature_database.clone()
+            };
+        let source = if database.sources.is_empty() {
+            "user database".to_owned()
+        } else {
+            database.sources.join(", ")
+        };
+        for entry in &database.entries {
+            let mut entry = entry.clone();
+            if entry.set.is_none() {
+                entry.set = Some(source.clone());
+            }
+            combined.entries.push(entry);
+        }
+        combined.sources.extend(database.sources.clone());
+        let result = match self.apply_signatures(&combined, deadline, MatchScope::All) {
+            Ok(result) => result,
             Err(error) => return Err(error),
         };
+        self.signature_database = combined;
+        Ok(result)
+    }
+
+    fn apply_signatures(
+        &mut self,
+        database: &Database,
+        deadline: Option<Instant>,
+        scope: MatchScope,
+    ) -> Result<Identification> {
+        let arm_modes = self.image.arm_modes.clone();
+        let discovered = match sigs::discover_arm32(&mut self.image, database, deadline) {
+            Ok(discovered) => discovered,
+            Err(error) => return Err(error),
+        };
+        let identified = match sigs::identify(&self.image, database, deadline, scope) {
+            Ok(identified) => identified,
+            Err(error) => {
+                for address in discovered {
+                    self.image.functions.remove(&address);
+                }
+                self.image.arm_modes = arm_modes;
+                return Err(error);
+            }
+        };
         let mut matches = Vec::new();
-        let mut changed = false;
-        for (addr, matched) in identified {
+        let mut changed = !discovered.is_empty();
+        let mut candidates = Vec::new();
+        for function in self.image.functions.values_mut() {
+            if function.sources.contains(&loader::NameSource::Signature)
+                && function
+                    .library
+                    .as_ref()
+                    .is_some_and(|evidence| evidence.certainty == Certainty::Exact)
+            {
+                function.name = None;
+                changed = true;
+            }
+            function.library = None;
+        }
+        for (addr, evidence) in identified {
             let Some(function) = self.image.functions.get_mut(&addr) else {
                 continue;
             };
+            function.library = Some(Box::new(evidence.clone()));
+            if evidence.certainty != Certainty::Exact {
+                candidates.push((addr, evidence));
+                continue;
+            }
+            let matched = evidence.candidates[0].name.clone();
             let current = function.name.clone();
             matches.push(Match {
                 addr,
                 size: function.size,
                 current: current.clone(),
                 matched: matched.clone(),
+                evidence,
             });
             if current.is_none() {
                 function.name = Some(matched);
-                function.sources.push(loader::NameSource::Signature);
+                if !function.sources.contains(&loader::NameSource::Signature) {
+                    function.sources.push(loader::NameSource::Signature);
+                }
                 changed = true;
             }
         }
@@ -933,6 +1133,7 @@ impl Binary {
         }
         Ok(Identification {
             matches,
+            candidates,
             failures: Vec::new(),
         })
     }
@@ -1032,6 +1233,21 @@ mod tests {
     #[test]
     fn single_function_analysis_is_bounded_and_reused() {
         let mut binary = fixture("go_probe");
+        assert!(
+            binary
+                .image
+                .functions
+                .values()
+                .all(|function| function.name.is_some())
+        );
+        assert!(binary.signature_database.entries.is_empty());
+        assert!(
+            binary
+                .image
+                .functions
+                .values()
+                .all(|function| function.library.is_none())
+        );
         let addr = binary.find("main.main").unwrap().addr;
         let code = binary.decompile(addr, None, None).unwrap();
         assert!(binary.analyses.len() <= 9);

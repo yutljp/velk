@@ -1,0 +1,171 @@
+{
+  "libraries": {
+    "musl": {
+      "commit": "7813e9119eb5fe681b6750b8a033a0490bca0941",
+      "license": "MIT; additional permissive notices retained",
+      "upstream": "https://git.musl-libc.org/git/musl"
+    },
+    "mbedtls": {
+      "commit": "cac9589a97fb9d07a115b42fa10523bc226b5180",
+      "license": "Apache-2.0",
+      "upstream": "https://github.com/Mbed-TLS/mbedtls",
+      "submodules": {
+        "framework": "ced31491c5ec907a6be533512f19dc1779230ac1",
+        "tf-psa-crypto": "607ef78f93568d15d8f9b56d09401b4b9e177f93"
+      },
+      "uninitialized_submodules": {
+        "tf-psa-crypto/drivers/pqcp/mldsa-native": "5772b4f4a0105694b1203abb582273f78fa951b7",
+        "tf-psa-crypto/framework": "ced31491c5ec907a6be533512f19dc1779230ac1"
+      }
+    },
+    "libsodium": {
+      "commit": "60b751cd14418fae2d17e6f1003e43622b3e5a25",
+      "license": "ISC",
+      "upstream": "https://github.com/jedisct1/libsodium"
+    },
+    "openssl": {
+      "commit": "828c39a508fb7f59af38508b242119b714b9c497",
+      "license": "Apache-2.0",
+      "upstream": "https://github.com/openssl/openssl"
+    }
+  },
+  "compilers": {
+    "gcc": "gcc (Ubuntu 15.2.0-16ubuntu1) 15.2.0",
+    "aarch64-linux-gnu-gcc": "aarch64-linux-gnu-gcc (Ubuntu 15.2.0-16ubuntu1) 15.2.0",
+    "arm-linux-gnueabihf-gcc": "arm-linux-gnueabihf-gcc (Ubuntu 15.2.0-16ubuntu1) 15.2.0",
+    "cmake": "cmake version 4.2.3",
+    "make": "GNU Make 4.4.1",
+    "perl": "This is perl 5, version 40, subversion 1 (v5.40.1) built for x86_64-linux-gnu-thread-multi",
+    "ar": "GNU ar (GNU Binutils for Ubuntu) 2.46",
+    "ld": "GNU ld (GNU Binutils for Ubuntu) 2.46",
+    "nm": "GNU nm (GNU Binutils for Ubuntu) 2.46",
+    "uv": "uv 0.13.5 (x86_64-unknown-linux-gnu)"
+  },
+  "rust": "rustc 1.99.1 (58cf8f9c3 2026-10-13)\nbinary: rustc\ncommit-hash: 58cf8f9c35b355199727627d07ae34a4e2846d67\ncommit-date: 2026-10-13\nhost: x86_64-unknown-linux-gnu\nrelease: 1.99.1\nLLVM version: 23.1.1",
+  "python": {
+    "interpreter": "Python 3.14.4",
+    "jinja2": "3.1.6"
+  },
+  "rust_targets": {
+    "x86_64-unknown-linux-gnu": {
+      "libaddr2line-b2546485fb156a81.rlib": "b92a365bcad231e218121951e4761a962cb3a47cdbdfda527dc2e6f337f564ec",
+      "libadler2-e749a99f48dba5bc.rlib": "018c9ad5584ac4821eb9dacaa30a0220e62360b71a09b6b8b709069f34d7c911",
+      "liballoc-3988244237fec6ee.rlib": "1713afb7fc9da7a917293bafdede9562ceddd75700d5a5ff57d4eeb2e42ce9b1",
+      "libcfg_if-77a19c181a6f6522.rlib": "b931e7312afe263b8993a35e9d9937e8dfccd4a556afadcf8f9a7427b6855075",
+      "libcompiler_builtins-2d9557d6e902a200.rlib": "a98391e40d69b94b5d63d4c4dcfcfa76612688ba93e93acd8c9f5e23232dc2b6",
+      "libcore-1d288395a3394ed3.rlib": "b346ce2305e13b1a5ec9ab6e093028caee38227c540cdaf78d7b253f59ae5913",
+      "libgetopts-d370f30754c98ce9.rlib": "452b6eaed2774c50e3f635d0bd30801b501269abaf049281bb814ed04ce1ba7f",
+      "libgimli-a024a39c5ca178d0.rlib": "62cf1d74bc75f84bf5829ca3d01aedd52d6ab9264e376235f6e813e47e15d9b9",
+      "libhashbrown-bd00bf133bcf4229.rlib": "0851a5f28052a130ebb3a757e6de31c880bd493c47ad32a76d7a6ad57f6d427c",
+      "liblibc-6cf0fcd942b0e793.rlib": "08840e04dd64d4cf9985e659ebe553c8b8672544579588cca4d1999958beed59",
+      "libmemchr-e57d23b4cf2c7093.rlib": "5fe7ac19bee9008929af78844623ba80aef51ff40c0144c50085dd0399b4c84f",
+      "libminiz_oxide-4ee1421476c1c513.rlib": "1c2cac3d6b897ebabffd00bd8104020f77566932f40257f344258e1e6031814c",
+      "libobject-9ab214bf508f4fb2.rlib": "88eceffaef2d7006f2b47252107d2b257eacbb1fe8ad0c641200c21774bb1bb3",
+      "libpanic_abort-5cae43b27ff5f42e.rlib": "0dc1179cdff5a02105da8a58e5459eb8d50d5d7ff42fbcb184abc2168b7d4697",
+      "libpanic_unwind-4c962e8757b7fd52.rlib": "4405757e011b71607b273854035143dfc13d5390eadc65f228c68fb30dde51fc",
+      "libproc_macro-012ffcc53aba0ce4.rlib": "37d84ce6901277ee4582f1f147e17bb94b780cc3f409565cf005f8ee65049d4c",
+      "libprofiler_builtins-1eed01feea74fabd.rlib": "d0c0c0625e5ef7023bce42c37178b1d6959d8191ddbd08f95ecbbc7f963aa22f",
+      "librustc_demangle-23edf219dcb73297.rlib": "abfa1e86e1aa11c927b76d8a250e80ef30679771ffdaedbae1e77c34f7a0e1bb",
+      "librustc_literal_escaper-0bcf9fe2451b4cf2.rlib": "3c0f6112624eed607f4e2a2be43fcdb3adf7b3c74c1d7e86b7a73bcd044fc9f4",
+      "librustc_std_workspace_alloc-e4d7e1d94de777fa.rlib": "c5d6935e127a89b363ea265e09c5559dd039676da6dec6aac0e81ac47d1e6248",
+      "librustc_std_workspace_core-fb3f24e4abf4be88.rlib": "d873f3613afe4256d60bcb722552d558f370e981431aca90b22d9df93f85b14a",
+      "librustc_std_workspace_std-5437dec005526111.rlib": "276cd7b63b156775ef64c994c450bceaaa0a18ddb0a7009d35c68ea72be127c6",
+      "libstd-7e719de9c4abc98f.rlib": "ea104615e69d068c8a12c749135c7138b3ec28c7275ae163f91169a03561f75b",
+      "libstd_detect-ce90372c8b94015d.rlib": "21fa7e8e6935292bd1a0071725492a967a99ea2b54129dc77297916f6570ca39",
+      "libsysroot-22c4bd49b12831db.rlib": "1e6ef82108df796bb91a414d42d9943cf0830e0e847ace39fbdc64f35f5e1643",
+      "libtest-a1ccee9d65338c17.rlib": "8ca3b6279ce3b436b6628c0f9a2eaea0283f46675474f1eaa819db7880971ca2",
+      "libunwind-87f8da15080ba246.rlib": "cb05e3b32dc9ee1cc6ec6a9cba01c2ea81eb44cb8c655760d5243a66d1179c5d"
+    },
+    "aarch64-unknown-linux-gnu": {
+      "libaddr2line-de15821c8bbf3ac9.rlib": "60f37527df8764865cc772846a643d492d1d29c2200b065876630681642412cd",
+      "libadler2-373bc5604614c2d0.rlib": "89d080bc6f66cc1433115ea859f95eae75f8fab082435eb0c3617ac4ecc0f7bf",
+      "liballoc-f68e2715e2ac2507.rlib": "6bc65416f4525b7d3cbc979dd6a19a783839412809c1b13a63da8aac073b8350",
+      "libcfg_if-7a1681814558e39c.rlib": "42de9c9353fa6d39c4308e9862b7588cac0072b0da4bac04758d2f71797e000a",
+      "libcompiler_builtins-6d387bb3469b4925.rlib": "7b59f9a21a9c05ace9bab2b7a548e67bd4b1c8e1d06ae511beff0470319c39a9",
+      "libcore-89b975c6293f41a8.rlib": "716788fdcabfffbd160226eecf8a5c42681b14d16a48bbda8078061151545c65",
+      "libgetopts-ad84dcb30a62aec7.rlib": "2c506a9edd106cfa9e3d9794560024604d86a0d5ab21642a6cb91062b91e22d3",
+      "libgimli-e018e0d9e440a4c2.rlib": "c5e6ba1a6524f880d6ad41131e9cef0fa7877be3e25c386e7db87aa240a34103",
+      "libhashbrown-575c05acd191698b.rlib": "37f9ed85435e3528de725664989ee5fb45f27dc5ddfb515d155d38cad8782359",
+      "liblibc-abb54b70dada8e7c.rlib": "fa3a2926cf66cee34009880f2cf2cb097ea36ff3662147db90d455ffc6125757",
+      "libmemchr-2de903bc3b0bd6c8.rlib": "dc4a4901cd7abaf7001f0a93f0fd6b4f93fd64ad662f43025481398af4a40183",
+      "libminiz_oxide-0e6ac45fa02c6559.rlib": "e4a5b4eaf2320d0c1db45377e68a2f8fdc86e6972a216ff639d1a13cbcf26403",
+      "libobject-9ca758dd3597dbbf.rlib": "7d9bab66a6aeda9d852b0968451264006b517ebe51f5ceb5daf6b63f8d0e51d8",
+      "libpanic_abort-2aac0734210ea903.rlib": "bacebf53fc36157494b2805d03564da1240c796231a3ba3d830d592cdcbb9bee",
+      "libpanic_unwind-aefade2573ce0bfe.rlib": "190114ef754af00d1fe9147d45ebb91d50d9bbe02574a24505da0d6e46f418b7",
+      "libproc_macro-089d8088f9a5e8fc.rlib": "b2a7c49f4c5c01b707b995c5d026ffff9c41a95201f8bc5a837aae24bb8e4388",
+      "libprofiler_builtins-f856d7674dbfb2d9.rlib": "4d1fb97a2138d9c6cd829c64ab470110970f177ce8aaa6e0f9ff07cf1688c676",
+      "librustc_demangle-5858d3d08a91f11d.rlib": "a78bed65c1e65c3f4a3ccd5f8655e82bf0765469e80ca033e0b17eeaac96e053",
+      "librustc_literal_escaper-9986c77fcb9d52ab.rlib": "09d77c5846af737378f6a6229b5131806ad34dbebf11366d174e2db84c4dd321",
+      "librustc_std_workspace_alloc-e84a1bed28f9a072.rlib": "e449cd79d200e964030e88b73c25e2eaaf2045a7ab71a73aece0be947ea4a750",
+      "librustc_std_workspace_core-7703448dd424ec43.rlib": "5c544b196d89b37667f207e1fe534634f57df53c6bcb51a7e7bce82ca5ff6d12",
+      "librustc_std_workspace_std-24549a2fdfe64acb.rlib": "d355d854de53046224ca927a9dded763b86f8c6430c0534d7f1cec05a8418302",
+      "libstd-f9f1a1f02cfcb825.rlib": "0328f033e4fbe68382779cac172bbc64088b08ffe37802a5c4e1bfb39bc1d043",
+      "libstd_detect-253925aad6beb300.rlib": "4188dc328b15823ffb6fa7279b478c513f377177b41d95e287fc5f485b10a234",
+      "libsysroot-3d18865ca9059449.rlib": "afdda1a9dbbb195b4493a33a28002e4cf4694f882588866bd0d70be0b162d098",
+      "libtest-308bddd9cbcc769d.rlib": "4bfd5a55cc9d2242b9c6098a1b10cf1e778e277c424d4d5d97af2b20b55860d0",
+      "libunwind-f2aa5c058c216eb9.rlib": "25c87b0f2a110c153b10a43faae2a812138aebd96f94edb44f3078e689f36521"
+    },
+    "i686-unknown-linux-gnu": {
+      "libaddr2line-105e2c53b993eb9e.rlib": "99ad17e4860f973f90664b56b83fe16b4e15f51d5629a750d115c6dc3de2accf",
+      "libadler2-bb0a72a13cfa872c.rlib": "21be58de0f4fd4cea206fcdd8c9370a1ed44ef27ddb2879bc8979edb8b737cf2",
+      "liballoc-32bb9bcaf0eb4df5.rlib": "7bd397ef8be6832d47ac8e7702b35b4af180f25d7096f6f0bc3fc2503b25d939",
+      "libcfg_if-cc204e081e635c43.rlib": "adf2eb7684392693372b69c81766fbae7b6c5b85dc74c28be383329c72df461d",
+      "libcompiler_builtins-d6c258a1d2eb083b.rlib": "2c6b02be15b368bcb70ca5a4abc6a83c28651b43f9f1eb919f1865776d587391",
+      "libcore-8a3dad43bbb880dd.rlib": "be4231fbe44737d74062e594beb8a6d5a88741feeef089ff85b24d7b9277be5f",
+      "libgetopts-a7ec940d22532ddf.rlib": "e3213428b695399d0a47cc6cede8b4541fe038d67b6f4d52adb441d69fe4d72e",
+      "libgimli-21ab91e80a2dfbf8.rlib": "db4eec7ef5dc899e3aa81a46e639c2c8e799d4909e0eb920f2f7a4b8c0df10ff",
+      "libhashbrown-ed5de64a9f6c3fd7.rlib": "a5b7f50d449e83a2906a9e0229430382b6fcfe5e8d7688178048bf500f4fe42e",
+      "liblibc-703c8cd52bfc7604.rlib": "9c6820b9c0045996ce771e167b432a52f3d607abaf3e9e968e4f054fc3a00fbc",
+      "libmemchr-a2064718720318d7.rlib": "f97dd86015eaacf5799af7f810481bf03945f9ffb2748d3fa2e5e76f9ad61849",
+      "libminiz_oxide-e754f469aaf8b10e.rlib": "b397a291820c4a6fcfb38e27b4658be8c845f87fa300d7c736e2f3d9dabff81e",
+      "libobject-1b65a45255006b0b.rlib": "984ba447276931d685e971af910b2e1605bc37a49a8ea5fe2abf54d43e9a0752",
+      "libpanic_abort-d83182bf81e68be2.rlib": "02b226eb85be11700ea3ab33cc279a0226e61f77a0cfa00b88913f59fd48bc62",
+      "libpanic_unwind-a0c472e7ef91bd20.rlib": "9ce812acfd81ce9666797d2474ba0f04d5b9f46b7030262714d8542701caf581",
+      "libproc_macro-6fbd95077a805104.rlib": "a01f5202f52506cd89d872a42250e1a912c33c2dc0093ed30416589e9eb7d253",
+      "libprofiler_builtins-b7d5edf50189606c.rlib": "4a25502527a77a644d3df1397732b3f907c822f762291d6d6b743214aaf9c2b0",
+      "librustc_demangle-8cf82ee34e2f8fbc.rlib": "a6c5668a33a5940adf029b65ad02fab94512659b9c1fadf6fed7aa951401f004",
+      "librustc_literal_escaper-ee9b9b8f8db8c942.rlib": "36351a9b4bf0e05d63811940e307f19a519464e4149652650a940f881f0a8122",
+      "librustc_std_workspace_alloc-9431eb73c27df80a.rlib": "9da3feb2f70ffd3553db17af29f8328ffb5f94b1b957259d460bc2c174580832",
+      "librustc_std_workspace_core-b5115825cca96bf1.rlib": "61114b925839266d9f0d8eb8a91f66869140fcd71fee6f34b4d17bb52385204e",
+      "librustc_std_workspace_std-fb0714b0526afb9b.rlib": "b884243ef64f25818eaaed375ead1b50255d78b17b33e0efb670a9762cd2b634",
+      "libstd-534b84c23c31850e.rlib": "e71be65a3a6ad800d555f65c582ccf86fd53d500c70a692d22e86542d9a01a47",
+      "libstd_detect-2f779be748660930.rlib": "a36f3d45257d3918db50c17cfc5bd24bd3193106772be74c6cc17329b6e4bea5",
+      "libsysroot-07b770388a1db4a6.rlib": "cf523bd630725cfa19579586ecb549458784da8c36e05f5394554fdc908fe381",
+      "libtest-bff5317aed0f963a.rlib": "9d9517a8b5ef965d18b46a2c2500febb62aef6be1bec1d458b5733c77da15d6c",
+      "libunwind-6fb94c457e56689a.rlib": "02e514925b6e4a6616e6f3a5a349363d8fce23bc917cf1e020f5459b1a50f831"
+    },
+    "armv7-unknown-linux-gnueabihf": {
+      "libaddr2line-a759a747f5aa7a27.rlib": "75514fd79df2fc24841c6c98eeb8b3aeb1b17a8728c807a2f954a61222de1fc5",
+      "libadler2-867288c6dbe68d4c.rlib": "68a785d0fe9388d3d37fd1b0b86e3f3b98ecc88d8bee0c21872ea5b62c2f00a8",
+      "liballoc-3508cf98fd395af6.rlib": "55aa5267209305c7f543de9d2343c5778e8bd85ddaf683a7b48ad2c4b3d72dcc",
+      "libcfg_if-0a86ad8f757d5d15.rlib": "11309a08f29b699b19594f594b6044b8bb84ae14fe0575a71235221cf76788ca",
+      "libcompiler_builtins-9a030ccdda7d39ae.rlib": "ac300b23afffd56a6a9078c47b246f57e554bb5bffbf0c41a6e9a67a6336f3e0",
+      "libcore-5b7dbeede1773b1a.rlib": "de5460a5896582c430dd0ab3b556e1f27cfa14e821574dad1d3edd001bc06b5c",
+      "libgetopts-e9110eadf985bf80.rlib": "c348e4e7a4a222a9ac8c9835d28d75ba95aae3dcc383d617f2f4d12f448f7430",
+      "libgimli-f6c40529c0f708f4.rlib": "236b8f9dea5f630e43fd6dee9b4e75975177119874288772c40038da7374cdcf",
+      "libhashbrown-92f3a51881896aae.rlib": "a14a33fb4393c4064cfe55a4158aae8b4b33f4408a46656ed802903c1ce2819a",
+      "liblibc-8809e17e835f45b0.rlib": "44672f582d760ca64943d009875657806d9faa50588e52ae0b5caacee24bd73c",
+      "libmemchr-391111f3cf1f7741.rlib": "60e02b4dbaa711196de6586b4b4d1b1f7303adf5b4ccb336df767af39d098150",
+      "libminiz_oxide-f91cacd8a86afab0.rlib": "0bfc954cf7dcbb1b78b49ba3f3ff4babca4a0be7fd704987525f91eae3fdc909",
+      "libobject-45b0e9d151c0e91c.rlib": "6f5ce6af9b62ee75e4d371eccf92bcb75c6987cc871983e6b91ea028257fedd7",
+      "libpanic_abort-6323ab0d8b041129.rlib": "49f1840bf70782ae18baca5860bc1eb2b2cf8601e11ed236d222e6bf7076c636",
+      "libpanic_unwind-6d7251c5d19be217.rlib": "cfe6abfa92e5a960f669dc06aabfa9af029f2f8e4acba7fd006f587a5e253be6",
+      "libproc_macro-4afa7341eb3470cc.rlib": "eec391b06747abe5cb700007da0fe2f1dcbb615849b86f1804d5b98ed24ef346",
+      "libprofiler_builtins-7ea3349dcf705b83.rlib": "4ba101bdcd26458b4f5bcd591c576dacc9ede6e0e88358215e4a746e3a3b41a4",
+      "librustc_demangle-90e817258237ddd2.rlib": "a72a3d206e35f02777d69d5c3a1ee72735f6e914e9dd37141329ea3d2ad27866",
+      "librustc_literal_escaper-6832558a43d4ecb1.rlib": "f361bdd2919a6f7e1e6fd9e0d5cf077bec7f6291a5ca88d50f5930b7e2cdd15e",
+      "librustc_std_workspace_alloc-74bc712d44fd158f.rlib": "3dd1ed5c319a71db3ae2de5b341c6733c13bb6de9587616fcd09c8e258bb8fcc",
+      "librustc_std_workspace_core-d08eff916fbadf21.rlib": "6ba445cffe05a654e25316388c2d6640b9907c9b6aa0d1eaa03d912faed52390",
+      "librustc_std_workspace_std-82b0197a136ce97a.rlib": "d9ec479aedd950ab58790d6c6a7c33a46631bbae7969747d6e2352499e6de04a",
+      "libstd-ce2f7622a6302440.rlib": "08b843016793fce94f622154a0c89cfcaa286270736c455805dd5a8878fe0cbf",
+      "libstd_detect-32ac77666f9926a4.rlib": "a5b4b52a9eac1e20fbdd3446cda57d5ad8012eccc8ed3b0fc39d98f34e6afadb",
+      "libsysroot-7b3301c3951adcdd.rlib": "6cfebb56d29c564b31ed85c33ea69f2dcb80e0c255b1914d77670c62a3b249fb",
+      "libtest-809b08c4e1e8c02c.rlib": "c970b1a5d3e3415f304964e3531c2167643ad4371a7fb98e776a8884284574fa",
+      "libunwind-e388efed3c2d8a6b.rlib": "c27b12cc783bc718ff3fa14e84486f24214f898c8d0f4a786ff6a65d397254ab"
+    }
+  },
+  "reference_sources": {
+    "musl/memcmp.c": "826b1b5e84d3c0fb68be827c051f6dc0d67da17ee3a444e94be0e5360586916f"
+  },
+  "source_date_epoch": 0
+}

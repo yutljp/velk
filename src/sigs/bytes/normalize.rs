@@ -1,11 +1,13 @@
 //! Instruction normalization for byte signatures.
 use std::collections::HashSet;
 
-use iced_x86::{Decoder, DecoderOptions, FlowControl, Mnemonic};
+use iced_x86::{Decoder, DecoderOptions, FlowControl, InstructionInfoFactory, Mnemonic, OpAccess};
 use yaxpeax_arm::armv8::a64;
 
-use super::{Body, DirectCall, MAX_BYTES, MIN_BYTES};
+use super::{Body, ConstantRead, DirectCall, MAX_BYTES, MIN_BYTES, MIN_NAMED_BYTES};
 use crate::loader::Isa;
+
+mod arm32;
 
 pub(super) fn normalize(
     isa: Isa,
@@ -13,31 +15,84 @@ pub(super) fn normalize(
     addr: u64,
     relocated: &HashSet<usize>,
 ) -> Option<Body> {
+    checked(isa, bytes, addr, relocated).ok()
+}
+
+pub(super) fn checked(
+    isa: Isa,
+    bytes: &[u8],
+    addr: u64,
+    relocated: &HashSet<usize>,
+) -> Result<Body, &'static str> {
     if bytes.len() < MIN_BYTES || bytes.len() as u64 > MAX_BYTES {
-        return None;
+        return Err("function size outside limits");
     }
     let Some(end) = addr.checked_add(bytes.len() as u64) else {
-        return None;
+        return Err("invalid instruction or boundary");
     };
+    if isa == Isa::I386 && end > u64::from(u32::MAX) {
+        return Err("invalid instruction or boundary");
+    }
+    if matches!(isa, Isa::AArch64 | Isa::Arm32) && !addr.is_multiple_of(4) {
+        return Err("invalid instruction or boundary");
+    }
     let mut information = 0usize;
     let mut body = Body {
         bytes: bytes.to_vec(),
         calls: Vec::new(),
+        references: Vec::new(),
+        name_eligible: false,
     };
     match isa {
-        Isa::X86_64 => {
-            let mut decoder = Decoder::with_ip(64, bytes, addr, DecoderOptions::NONE);
+        Isa::X86_64 | Isa::I386 => {
+            let mut decoder = Decoder::with_ip(
+                if isa == Isa::I386 { 32 } else { 64 },
+                bytes,
+                addr,
+                DecoderOptions::NONE,
+            );
+            let mut factory = InstructionInfoFactory::new();
             let mut last_code_end = 0;
             let mut last_flow = FlowControl::Next;
             let mut local_targets = Vec::new();
+            let mut starts = HashSet::new();
             while decoder.can_decode() {
                 let offset = decoder.position();
+                starts.insert(addr + offset as u64);
                 let instruction = decoder.decode();
                 if instruction.is_invalid() {
-                    return None;
+                    return Err("invalid instruction or boundary");
                 }
                 if instruction.is_ip_rel_memory_operand() {
-                    return None;
+                    let info = factory.info(&instruction);
+                    let reads = info.used_memory();
+                    let size = instruction.memory_size().size();
+                    if reads.len() != 1
+                        || reads[0].access() != OpAccess::Read
+                        || !(1..=32).contains(&size)
+                    {
+                        return Err("unsupported PC-relative operand");
+                    }
+                    let constants = decoder.get_constant_offsets(&instruction);
+                    let Some(start) = offset.checked_add(constants.displacement_offset()) else {
+                        return Err("invalid instruction or boundary");
+                    };
+                    if constants.displacement_size() != 4 {
+                        return Err("invalid instruction or boundary");
+                    }
+                    let Some(end) = start.checked_add(4) else {
+                        return Err("invalid instruction or boundary");
+                    };
+                    let Some(displacement) = body.bytes.get_mut(start..end) else {
+                        return Err("invalid instruction or boundary");
+                    };
+                    displacement.fill(0);
+                    body.references.push(ConstantRead {
+                        offset: start,
+                        next: decoder.position(),
+                        target: instruction.ip_rel_memory_address(),
+                        size,
+                    });
                 }
                 let flow = instruction.flow_control();
                 if !matches!(instruction.mnemonic(), Mnemonic::Nop | Mnemonic::Int3) {
@@ -52,21 +107,18 @@ pub(super) fn normalize(
                     let target = instruction.near_branch_target();
                     if (addr..end).contains(&target) {
                         local_targets.push(target);
-                    } else if flow == FlowControl::ConditionalBranch {
-                        return None;
                     }
                 }
                 if matches!(
                     flow,
-                    FlowControl::IndirectCall | FlowControl::IndirectBranch
+                    FlowControl::Call
+                        | FlowControl::UnconditionalBranch
+                        | FlowControl::ConditionalBranch
                 ) {
-                    return None;
-                }
-                if matches!(flow, FlowControl::Call | FlowControl::UnconditionalBranch) {
                     let target = instruction.near_branch_target();
                     let constants = decoder.get_constant_offsets(&instruction);
                     let Some(start) = offset.checked_add(constants.immediate_offset()) else {
-                        return None;
+                        return Err("invalid instruction or boundary");
                     };
                     let width = constants.immediate_size();
                     if flow == FlowControl::Call
@@ -74,13 +126,13 @@ pub(super) fn normalize(
                         || relocated.contains(&start)
                     {
                         if width == 0 {
-                            return None;
+                            return Err("invalid instruction or boundary");
                         }
                         let Some(end) = start.checked_add(width) else {
-                            return None;
+                            return Err("invalid instruction or boundary");
                         };
                         let Some(destination) = body.bytes.get_mut(start..end) else {
-                            return None;
+                            return Err("invalid instruction or boundary");
                         };
                         destination.fill(0);
                         body.calls.push(DirectCall {
@@ -91,15 +143,18 @@ pub(super) fn normalize(
                     }
                 }
             }
+            if local_targets.iter().any(|target| !starts.contains(target)) {
+                return Err("invalid instruction or boundary");
+            }
             if matches!(
                 last_flow,
                 FlowControl::Return | FlowControl::UnconditionalBranch
             ) {
                 let Some(code_end) = addr.checked_add(last_code_end as u64) else {
-                    return None;
+                    return Err("invalid instruction or boundary");
                 };
                 if local_targets.iter().any(|target| *target >= code_end) {
-                    return None;
+                    return Err("invalid instruction or boundary");
                 }
                 body.bytes.truncate(last_code_end);
             }
@@ -107,7 +162,7 @@ pub(super) fn normalize(
         Isa::AArch64 => {
             use yaxpeax_arch::{Decoder as _, ReaderBuilder};
             if !bytes.len().is_multiple_of(4) {
-                return None;
+                return Err("invalid instruction or boundary");
             }
             let mut reader = ReaderBuilder::<u64, u8>::read_at(bytes, 0);
             let decoder = a64::InstDecoder::default();
@@ -117,23 +172,8 @@ pub(super) fn normalize(
             let chunks = bytes.as_chunks::<4>().0;
             for (index, chunk) in chunks.iter().enumerate() {
                 let Ok(instruction) = decoder.decode(&mut reader) else {
-                    return None;
+                    return Err("invalid instruction or boundary");
                 };
-                if matches!(
-                    instruction.opcode,
-                    a64::Opcode::BR
-                        | a64::Opcode::BLR
-                        | a64::Opcode::BRAA
-                        | a64::Opcode::BRAAZ
-                        | a64::Opcode::BRAB
-                        | a64::Opcode::BRABZ
-                        | a64::Opcode::BLRAA
-                        | a64::Opcode::BLRAAZ
-                        | a64::Opcode::BLRAB
-                        | a64::Opcode::BLRABZ
-                ) {
-                    return None;
-                }
                 let offset = index * 4;
                 let word = u32::from_le_bytes(*chunk);
                 if word != 0xd503_201f && word != 0 {
@@ -145,9 +185,31 @@ pub(super) fn normalize(
                             a64::Opcode::RET | a64::Opcode::RETAA | a64::Opcode::RETAB
                         );
                 }
-                // PC-relative data can change independently of the function body.
-                if word & 0x1f00_0000 == 0x1000_0000 || word & 0x3b00_0000 == 0x1800_0000 {
-                    return None;
+                if word & 0x1f00_0000 == 0x1000_0000 {
+                    return Err("unsupported PC-relative operand");
+                }
+                if word & 0x3b00_0000 == 0x1800_0000 {
+                    let size = match (word >> 30, word & 0x0400_0000 != 0) {
+                        (0, _) | (2, false) => 4,
+                        (1, _) => 8,
+                        (2, true) => 16,
+                        _ => return Err("unsupported PC-relative operand"),
+                    };
+                    let delta = i64::from((((word >> 5) & 0x7ffff) << 13) as i32 >> 11);
+                    let Some(target) = addr
+                        .checked_add(offset as u64)
+                        .and_then(|pc| pc.checked_add_signed(delta))
+                    else {
+                        return Err("invalid instruction or boundary");
+                    };
+                    body.bytes[offset..offset + 4]
+                        .copy_from_slice(&(word & !0x00ff_ffe0).to_le_bytes());
+                    body.references.push(ConstantRead {
+                        offset,
+                        next: offset + 4,
+                        target,
+                        size,
+                    });
                 }
                 let conditional =
                     word & 0xff00_0010 == 0x5400_0000 || word & 0x7e00_0000 == 0x3400_0000;
@@ -162,10 +224,10 @@ pub(super) fn normalize(
                         .checked_add(offset as u64)
                         .and_then(|pc| pc.checked_add_signed(i64::from(delta)))
                     else {
-                        return None;
+                        return Err("invalid instruction or boundary");
                     };
                     if !(addr..end).contains(&target) {
-                        return None;
+                        return Err("invalid instruction or boundary");
                     }
                     local_targets.push(target);
                 }
@@ -175,7 +237,7 @@ pub(super) fn normalize(
                         .checked_add(offset as u64)
                         .and_then(|pc| pc.checked_add_signed(delta))
                     else {
-                        return None;
+                        return Err("invalid instruction or boundary");
                     };
                     if (addr..end).contains(&target) {
                         local_targets.push(target);
@@ -196,21 +258,28 @@ pub(super) fn normalize(
             }
             if last_terminal {
                 let Some(code_end) = addr.checked_add(last_code_end as u64) else {
-                    return None;
+                    return Err("invalid instruction or boundary");
                 };
                 if local_targets.iter().any(|target| *target >= code_end) {
-                    return None;
+                    return Err("invalid instruction or boundary");
                 }
                 body.bytes.truncate(last_code_end);
             }
         }
-        Isa::I386 | Isa::Arm32 | Isa::Unsupported => return None,
+        Isa::Arm32 => {
+            if !arm32::normalize(&mut body, addr, end, relocated, &mut information) {
+                return Err("unsupported ARM operand or boundary");
+            }
+        }
+        Isa::Unsupported => return Err("unsupported architecture"),
     }
     if body.bytes.len() < MIN_BYTES {
-        return None;
+        return Err("function size outside limits");
     }
-    if information.saturating_sub(body.calls.iter().map(|call| call.width).sum()) < 24 {
-        return None;
+    let information = information.saturating_sub(body.calls.iter().map(|call| call.width).sum());
+    if information < MIN_BYTES {
+        return Err("insufficient non-address bytes");
     }
-    Some(body)
+    body.name_eligible = body.bytes.len() >= MIN_NAMED_BYTES && information >= 24;
+    Ok(body)
 }

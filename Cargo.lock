@@ -686,6 +686,7 @@ version = "0.1.0"
 dependencies = [
  "clap",
  "cpp_demangle",
+ "flate2",
  "gimli",
  "iced-x86",
  "memchr",

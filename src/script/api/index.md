@@ -147,44 +147,48 @@ values assembled by multiple instructions.
 
 ## Library signatures
 
-Build a JSON database from a named binary, object file, static `.a` archive, or
-Rust `.rlib`, then apply it to a binary of the same instruction set:
+Opening a binary applies embedded zlib checksum and xxHash instruction sets.
+`b.functions()` and `Func.library` expose candidate names, source sets and
+`exact`, `ambiguous` or `unconfirmed` certainty. Only exact matches supply names.
+Set `defaultSignatures: false` to disable the embedded sets. Add user databases
+with `signatures: ["first.json", "second.json"]`; all enabled sets are matched
+together. Handles with different options use separate cached binaries.
 
 ```sh
+velk --functions stripped.bin --json
+velk --identify stripped.bin
+velk --functions stripped.bin --no-default-signatures
 velk --build-signatures library.a --output signatures.json
-velk --identify stripped.bin --signatures signatures.json
 velk --decompile stripped.bin 0x1000 --signatures signatures.json
-velk --card stripped.bin 0x1000 --signatures signatures.json
 ```
-
-Scripts can build a database without opening the archive as a binary:
 
 ```js
+const binary = velk.open("stripped.bin", {signatures: ["extra.json"]});
+binary.functions().filter(f => f.library).map(f => ({
+  addr: f.addr, name: f.name, evidence: f.library
+}));
 const database = velk.buildSignatures("library.a").database;
-const binary = velk.open("stripped.bin");
 const result = binary.identify(database);
-result.matches.map(match => binary.getFunction(match.addr).decompile());
+result.candidates.map(candidate => candidate.evidence);
 ```
 
-`binary.buildSignatures()` builds from the opened binary. `identify` accepts a
-database object or its JSON file path, returns `matches` and `failures`, and names
-unnamed functions. Existing names are preserved; subsequent function listings,
-lookups, and decompilation use the inferred names. CLI `--signatures` applies
-matches before card or decompilation analysis. Without a database, those operations
-do no signature scanning. Source file and archive member names are recorded in
-`database.sources`.
+`buildSignatures` accepts a named binary, object, static `.a` archive or Rust
+`.rlib`. `binary.buildSignatures()` uses the opened binary. `identify` accepts a
+database or JSON file path and adds it to the enabled databases. It returns
+`matches`, unresolved `candidates` and `failures`, and refreshes inferred names
+and analysis caches. An added alias can withdraw a previously recovered name.
+Existing symbol names are preserved. Input files and archive members appear in
+`database.sources`; each embedded entry also has a `set` identifier.
 
-A match requires identical normalized instruction bytes, a unique candidate name,
-and agreement of direct call destinations with independently matched functions.
-Only encoded direct call and external jump destinations are normalized. Bodies
-must contain at least 32 bytes after trailing alignment padding is removed and
-24 non-padding instruction bytes outside encoded destinations. Short, ambiguous,
-unsupported, or unresolved functions are skipped. Indirect control flow,
-PC-relative data references, unsupported relocations, and external conditional
-branches prevent matching. A skipped callee can also prevent its callers from
-matching. Matches identify compiler output, not semantic equivalence; different
-compiler versions or options can reduce coverage. `shapeHash()` is informational
-and is not used for library identification.
+Matching requires complete normalized instruction bodies, immediate constants,
+internal branch structure and confirmed direct-call destinations. Fixed-width
+x86-64 PC-relative constant reads also require identical bytes in read-only data.
+Unsupported address references, relocations, indirect control flow and ambiguous
+names remain unnamed. Bodies need at least 32 bytes after alignment padding is
+removed and 24 non-padding bytes outside encoded destinations. Different
+compilers or flags can prevent matches; exact means agreement within the enabled
+sets, not a proof of source-code origin. `shapeHash()` remains informational.
+See `docs/LIBRARY_SIGNATURES.md` for licenses, coverage and measurements.
 
 ## Comparing program versions
 

@@ -13,6 +13,7 @@ fn image(code: Vec<u8>) -> Image {
             size_estimated: false,
             name: Some("entry".into()),
             aliases: Vec::new(),
+            library: None,
             sources: vec![crate::loader::NameSource::Symtab],
         },
     );

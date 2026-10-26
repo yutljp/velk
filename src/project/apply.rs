@@ -30,6 +30,7 @@ impl Project {
                         size_estimated: true,
                         name: None,
                         aliases: Vec::new(),
+                        library: None,
                         sources: Vec::new(),
                     });
                 }

@@ -1039,6 +1039,7 @@ mod tests {
                     size_estimated: false,
                     name: Some(name.to_owned()),
                     aliases: Vec::new(),
+                    library: None,
                     sources: Vec::new(),
                 },
             );

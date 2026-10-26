@@ -323,6 +323,7 @@ mod tests {
                     size_estimated: false,
                     name: None,
                     aliases: Vec::new(),
+                    library: None,
                     sources: vec![NameSource::Symtab],
                 },
             );

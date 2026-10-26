@@ -11,6 +11,7 @@ fuzzing = []
 [dependencies]
 clap = { version = "4.6.7", features = ["derive"] }
 cpp_demangle = "0.5.1"
+flate2 = "1.1.10"
 gimli = { version = "0.34.0", features = ["read"] }
 iced-x86 = "1.21.0"
 memchr = "2.8.3"

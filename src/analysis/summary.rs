@@ -965,6 +965,7 @@ mod tests {
                 size_estimated: false,
                 name: Some("exception_test".to_owned()),
                 aliases: Vec::new(),
+                library: None,
                 sources: Vec::new(),
             },
         );

@@ -1,8 +1,10 @@
 declare const velk: {
   /** Loads an ELF, PE/COFF or Mach-O file without decompiling every function.
+   * Embedded library sets are enabled unless defaultSignatures is false.
+   * signatures adds JSON or gzip-compressed JSON databases; all enabled sets are matched together.
    * Reopening an unchanged file reuses cached analysis, even across scripts.
    * Universal Mach-O files open the slice for this machine unless opts.arch picks another. */
-  open(path: string, opts?: { project?: string; arch?: "arm64" | "arm64e" | "x86_64" }): Binary;
+  open(path: string, opts?: { project?: string; arch?: "arm64" | "arm64e" | "x86_64"; defaultSignatures?: boolean; signatures?: string[] }): Binary;
   /** Builds instruction signatures from a binary, static archive, or Rust rlib. */
   buildSignatures(path: string): { database: SignatureDb; failures: Failure[] };
 };
@@ -83,7 +85,7 @@ interface Binary {
 
   /** Unique instruction matches with agreeing direct calls. Applies names to unnamed functions
    * and invalidates the function-list cache; subsequent decompilations use the names. */
-  identify(signatures: SignatureDb | string): { matches: Match[]; failures: Failure[] };
+  identify(signatures: SignatureDb | string): { matches: Match[]; candidates: { addr: Addr; evidence: LibraryEvidence }[]; failures: Failure[] };
 }
 
 // const db = velk.open("libc.o").buildSignatures().database;

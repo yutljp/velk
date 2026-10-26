@@ -1,0 +1,400 @@
+{
+  "budget_bytes": 2097152,
+  "method": "Remove entries with unavailable callees recursively. Choose x86-64 and AArch64 sets before i386 and ARM32 sets, then by additional full-database fixture matches per gzip-1 bytes of entries not yet selected, enforcing the budget with gzip-9. Retain body aliases and every eligible callee variant.",
+  "sets": [
+    "libsodium.aarch64.O0.0",
+    "libsodium.aarch64.O1.0",
+    "libsodium.aarch64.O2.0",
+    "libsodium.aarch64.O3.0",
+    "libsodium.aarch64.Os.0",
+    "libsodium.x86_64.O0.0",
+    "libsodium.x86_64.O1.0",
+    "libsodium.x86_64.O2.0",
+    "libsodium.x86_64.Os.0",
+    "mbedtls.aarch64.O0.0",
+    "mbedtls.aarch64.O0.1",
+    "mbedtls.aarch64.O0.2",
+    "mbedtls.aarch64.O1.0",
+    "mbedtls.aarch64.O1.1",
+    "mbedtls.aarch64.O1.2",
+    "mbedtls.aarch64.O2.0",
+    "mbedtls.aarch64.O2.1",
+    "mbedtls.aarch64.O2.2",
+    "mbedtls.aarch64.O3.0",
+    "mbedtls.aarch64.O3.1",
+    "mbedtls.aarch64.O3.2",
+    "mbedtls.aarch64.Os.0",
+    "mbedtls.aarch64.Os.1",
+    "mbedtls.aarch64.Os.2",
+    "mbedtls.x86_64.O0.0",
+    "mbedtls.x86_64.O0.1",
+    "mbedtls.x86_64.O0.2",
+    "mbedtls.x86_64.O1.0",
+    "mbedtls.x86_64.O1.1",
+    "mbedtls.x86_64.O1.2",
+    "mbedtls.x86_64.O2.0",
+    "mbedtls.x86_64.O2.2",
+    "mbedtls.x86_64.O3.0",
+    "mbedtls.x86_64.O3.1",
+    "mbedtls.x86_64.O3.2",
+    "mbedtls.x86_64.Os.0",
+    "mbedtls.x86_64.Os.1",
+    "mbedtls.x86_64.Os.2",
+    "musl.aarch64.O0.0",
+    "musl.aarch64.O1.0",
+    "musl.aarch64.O2.0",
+    "musl.aarch64.Os.0",
+    "musl.x86_64.O0.0",
+    "musl.x86_64.O1.0",
+    "musl.x86_64.O2.0",
+    "musl.x86_64.Os.0",
+    "openssl.aarch64.O0.0",
+    "openssl.aarch64.O1.0",
+    "openssl.aarch64.O2.0",
+    "openssl.aarch64.O3.0",
+    "openssl.aarch64.Os.0",
+    "openssl.x86_64.O0.0",
+    "openssl.x86_64.O1.0",
+    "openssl.x86_64.O2.0",
+    "openssl.x86_64.O3.0",
+    "openssl.x86_64.Os.0",
+    "rust.aarch64.O0",
+    "rust.aarch64.O1",
+    "rust.aarch64.O2",
+    "rust.aarch64.O3",
+    "rust.aarch64.Os",
+    "rust.arm32.O0",
+    "rust.arm32.O1",
+    "rust.arm32.O2",
+    "rust.arm32.O3",
+    "rust.arm32.Os",
+    "rust.i386.O0",
+    "rust.i386.O1",
+    "rust.i386.O2",
+    "rust.i386.O3",
+    "rust.i386.Os",
+    "rust.x86_64.O0",
+    "rust.x86_64.O1",
+    "rust.x86_64.O2",
+    "rust.x86_64.O3",
+    "rust.x86_64.Os",
+    "xxhash-0.8.3-aarch64-O0-clang21",
+    "xxhash-0.8.3-aarch64-O1-clang21",
+    "xxhash-0.8.3-aarch64-O2-clang21",
+    "xxhash-0.8.3-aarch64-O3-clang21",
+    "xxhash-0.8.3-aarch64-Os-clang21",
+    "xxhash-0.8.3-arm32-O0-clang21",
+    "xxhash-0.8.3-arm32-O1-clang21",
+    "xxhash-0.8.3-arm32-O2-clang21",
+    "xxhash-0.8.3-arm32-O3-clang21",
+    "xxhash-0.8.3-arm32-Os-clang21",
+    "xxhash-0.8.3-i386-O0-clang21",
+    "xxhash-0.8.3-i386-O1-clang21",
+    "xxhash-0.8.3-i386-O2-clang21",
+    "xxhash-0.8.3-i386-O3-clang21",
+    "xxhash-0.8.3-i386-Os-clang21",
+    "xxhash-0.8.3-x86_64-O0-clang21",
+    "xxhash-0.8.3-x86_64-O1-clang21",
+    "xxhash-0.8.3-x86_64-O2-clang21",
+    "xxhash-0.8.3-x86_64-O3-clang21",
+    "xxhash-0.8.3-x86_64-Os-clang21",
+    "zlib-1.3.2-aarch64-O0-clang21",
+    "zlib-1.3.2-aarch64-O1-clang21",
+    "zlib-1.3.2-aarch64-O2-clang21",
+    "zlib-1.3.2-aarch64-O3-clang21",
+    "zlib-1.3.2-aarch64-Os-clang21",
+    "zlib-1.3.2-arm32-O0-clang21",
+    "zlib-1.3.2-i386-O0-clang21",
+    "zlib-1.3.2-i386-O1-clang21",
+    "zlib-1.3.2-i386-O2-clang21",
+    "zlib-1.3.2-i386-O3-clang21",
+    "zlib-1.3.2-i386-Os-clang21",
+    "zlib-1.3.2-x86_64-O0-clang21",
+    "zlib-1.3.2-x86_64-O1-clang21",
+    "zlib-1.3.2-x86_64-O2-clang21",
+    "zlib-1.3.2-x86_64-O3-clang21",
+    "zlib-1.3.2-x86_64-Os-clang21"
+  ],
+  "decisions": [
+    {
+      "set": "mbedtls.x86_64.O0.0",
+      "additional_full_database_matches": 99,
+      "embedded_bytes": 62526
+    },
+    {
+      "set": "mbedtls.x86_64.O3.0",
+      "additional_full_database_matches": 63,
+      "embedded_bytes": 69198
+    },
+    {
+      "set": "mbedtls.x86_64.O1.0",
+      "additional_full_database_matches": 35,
+      "embedded_bytes": 71866
+    },
+    {
+      "set": "mbedtls.aarch64.O0.0",
+      "additional_full_database_matches": 116,
+      "embedded_bytes": 107738
+    },
+    {
+      "set": "mbedtls.aarch64.O2.0",
+      "additional_full_database_matches": 44,
+      "embedded_bytes": 113259
+    },
+    {
+      "set": "mbedtls.aarch64.O1.0",
+      "additional_full_database_matches": 32,
+      "embedded_bytes": 115320
+    },
+    {
+      "set": "mbedtls.aarch64.O3.0",
+      "additional_full_database_matches": 8,
+      "embedded_bytes": 116004
+    },
+    {
+      "set": "mbedtls.x86_64.O2.0",
+      "additional_full_database_matches": 1,
+      "embedded_bytes": 116184
+    },
+    {
+      "set": "openssl.aarch64.O2.0",
+      "additional_full_database_matches": 719,
+      "embedded_bytes": 392526
+    },
+    {
+      "set": "mbedtls.aarch64.Os.0",
+      "additional_full_database_matches": 24,
+      "embedded_bytes": 394492
+    },
+    {
+      "set": "openssl.aarch64.Os.0",
+      "additional_full_database_matches": 399,
+      "embedded_bytes": 443255
+    },
+    {
+      "set": "openssl.aarch64.O0.0",
+      "additional_full_database_matches": 838,
+      "embedded_bytes": 575494
+    },
+    {
+      "set": "openssl.aarch64.O1.0",
+      "additional_full_database_matches": 526,
+      "embedded_bytes": 614156
+    },
+    {
+      "set": "openssl.aarch64.O3.0",
+      "additional_full_database_matches": 224,
+      "embedded_bytes": 648699
+    },
+    {
+      "set": "mbedtls.aarch64.O3.2",
+      "additional_full_database_matches": 113,
+      "embedded_bytes": 680699
+    },
+    {
+      "set": "mbedtls.aarch64.Os.2",
+      "additional_full_database_matches": 90,
+      "embedded_bytes": 694904
+    },
+    {
+      "set": "mbedtls.aarch64.O1.2",
+      "additional_full_database_matches": 90,
+      "embedded_bytes": 703489
+    },
+    {
+      "set": "mbedtls.aarch64.O2.2",
+      "additional_full_database_matches": 61,
+      "embedded_bytes": 707707
+    },
+    {
+      "set": "mbedtls.aarch64.O0.2",
+      "additional_full_database_matches": 168,
+      "embedded_bytes": 728555
+    },
+    {
+      "set": "openssl.x86_64.O3.0",
+      "additional_full_database_matches": 884,
+      "embedded_bytes": 1267615
+    },
+    {
+      "set": "mbedtls.x86_64.Os.0",
+      "additional_full_database_matches": 28,
+      "embedded_bytes": 1269440
+    },
+    {
+      "set": "openssl.x86_64.O1.0",
+      "additional_full_database_matches": 518,
+      "embedded_bytes": 1338248
+    },
+    {
+      "set": "openssl.x86_64.Os.0",
+      "additional_full_database_matches": 418,
+      "embedded_bytes": 1377149
+    },
+    {
+      "set": "openssl.x86_64.O0.0",
+      "additional_full_database_matches": 817,
+      "embedded_bytes": 1481260
+    },
+    {
+      "set": "openssl.x86_64.O2.0",
+      "additional_full_database_matches": 88,
+      "embedded_bytes": 1491268
+    },
+    {
+      "set": "mbedtls.x86_64.O3.2",
+      "additional_full_database_matches": 167,
+      "embedded_bytes": 1558109
+    },
+    {
+      "set": "mbedtls.x86_64.Os.2",
+      "additional_full_database_matches": 110,
+      "embedded_bytes": 1578614
+    },
+    {
+      "set": "mbedtls.x86_64.O1.2",
+      "additional_full_database_matches": 99,
+      "embedded_bytes": 1588018
+    },
+    {
+      "set": "mbedtls.x86_64.O0.2",
+      "additional_full_database_matches": 145,
+      "embedded_bytes": 1609219
+    },
+    {
+      "set": "mbedtls.x86_64.O2.2",
+      "additional_full_database_matches": 23,
+      "embedded_bytes": 1612266
+    },
+    {
+      "set": "mbedtls.x86_64.O3.1",
+      "additional_full_database_matches": 13,
+      "embedded_bytes": 1615797
+    },
+    {
+      "set": "mbedtls.x86_64.O1.1",
+      "additional_full_database_matches": 8,
+      "embedded_bytes": 1618648
+    },
+    {
+      "set": "mbedtls.x86_64.Os.1",
+      "additional_full_database_matches": 5,
+      "embedded_bytes": 1620406
+    },
+    {
+      "set": "mbedtls.x86_64.O0.1",
+      "additional_full_database_matches": 11,
+      "embedded_bytes": 1625749
+    },
+    {
+      "set": "mbedtls.aarch64.O0.1",
+      "additional_full_database_matches": 11,
+      "embedded_bytes": 1633472
+    },
+    {
+      "set": "mbedtls.aarch64.Os.1",
+      "additional_full_database_matches": 7,
+      "embedded_bytes": 1634989
+    },
+    {
+      "set": "mbedtls.aarch64.O1.1",
+      "additional_full_database_matches": 7,
+      "embedded_bytes": 1636112
+    },
+    {
+      "set": "mbedtls.aarch64.O3.1",
+      "additional_full_database_matches": 6,
+      "embedded_bytes": 1637126
+    },
+    {
+      "set": "mbedtls.aarch64.O2.1",
+      "additional_full_database_matches": 4,
+      "embedded_bytes": 1637644
+    },
+    {
+      "set": "libsodium.aarch64.O1.0",
+      "additional_full_database_matches": 36,
+      "embedded_bytes": 1667373
+    },
+    {
+      "set": "libsodium.aarch64.O2.0",
+      "additional_full_database_matches": 30,
+      "embedded_bytes": 1677007
+    },
+    {
+      "set": "libsodium.aarch64.Os.0",
+      "additional_full_database_matches": 33,
+      "embedded_bytes": 1689369
+    },
+    {
+      "set": "libsodium.aarch64.O3.0",
+      "additional_full_database_matches": 23,
+      "embedded_bytes": 1699044
+    },
+    {
+      "set": "libsodium.aarch64.O0.0",
+      "additional_full_database_matches": 53,
+      "embedded_bytes": 1716471
+    },
+    {
+      "set": "libsodium.x86_64.O2.0",
+      "additional_full_database_matches": 50,
+      "embedded_bytes": 1768368
+    },
+    {
+      "set": "libsodium.x86_64.Os.0",
+      "additional_full_database_matches": 32,
+      "embedded_bytes": 1785954
+    },
+    {
+      "set": "libsodium.x86_64.O0.0",
+      "additional_full_database_matches": 47,
+      "embedded_bytes": 1805869
+    },
+    {
+      "set": "libsodium.x86_64.O1.0",
+      "additional_full_database_matches": 39,
+      "embedded_bytes": 1826615
+    },
+    {
+      "set": "musl.x86_64.O2.0",
+      "additional_full_database_matches": 39,
+      "embedded_bytes": 1886971
+    },
+    {
+      "set": "musl.x86_64.Os.0",
+      "additional_full_database_matches": 21,
+      "embedded_bytes": 1902087
+    },
+    {
+      "set": "musl.x86_64.O0.0",
+      "additional_full_database_matches": 30,
+      "embedded_bytes": 1930379
+    },
+    {
+      "set": "musl.x86_64.O1.0",
+      "additional_full_database_matches": 19,
+      "embedded_bytes": 1945121
+    },
+    {
+      "set": "musl.aarch64.O2.0",
+      "additional_full_database_matches": 34,
+      "embedded_bytes": 2013773
+    },
+    {
+      "set": "musl.aarch64.Os.0",
+      "additional_full_database_matches": 20,
+      "embedded_bytes": 2028189
+    },
+    {
+      "set": "musl.aarch64.O1.0",
+      "additional_full_database_matches": 29,
+      "embedded_bytes": 2052490
+    },
+    {
+      "set": "musl.aarch64.O0.0",
+      "additional_full_database_matches": 35,
+      "embedded_bytes": 2093031
+    }
+  ]
+}

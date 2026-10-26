@@ -102,6 +102,7 @@ mod tests {
                 size_estimated: false,
                 name: Some("format_call".into()),
                 aliases: Vec::new(),
+                library: None,
                 sources: Vec::new(),
             };
             image.functions.insert(function.addr, function.clone());

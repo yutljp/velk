@@ -530,6 +530,7 @@ fn allocation_ranges_and_pointer_age_limit_copy_folding() {
                 size_estimated: false,
                 name: Some(name.to_owned()),
                 aliases: vec![],
+                library: None,
                 sources: vec![],
             },
         );

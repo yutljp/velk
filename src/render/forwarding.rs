@@ -97,6 +97,7 @@ mod tests {
                 size_estimated: false,
                 name: Some("forward_import".into()),
                 aliases: Vec::new(),
+                library: None,
                 sources: Vec::new(),
             };
             let mut image = Image::from_code(isa, function.addr, bytes);

@@ -1,0 +1,1277 @@
+{
+  "sets": {
+    "libsodium.aarch64.O0": {
+      "library": "libsodium",
+      "arch": "aarch64",
+      "optimization": "O0",
+      "provenance": "extended-sources.json",
+      "source_commit": "60b751cd14418fae2d17e6f1003e43622b3e5a25",
+      "license": "ISC",
+      "entries": 981,
+      "set_ids": [
+        "libsodium.aarch64.O0.0"
+      ]
+    },
+    "libsodium.aarch64.O1": {
+      "library": "libsodium",
+      "arch": "aarch64",
+      "optimization": "O1",
+      "provenance": "extended-sources.json",
+      "source_commit": "60b751cd14418fae2d17e6f1003e43622b3e5a25",
+      "license": "ISC",
+      "entries": 694,
+      "set_ids": [
+        "libsodium.aarch64.O1.0"
+      ]
+    },
+    "libsodium.aarch64.O2": {
+      "library": "libsodium",
+      "arch": "aarch64",
+      "optimization": "O2",
+      "provenance": "extended-sources.json",
+      "source_commit": "60b751cd14418fae2d17e6f1003e43622b3e5a25",
+      "license": "ISC",
+      "entries": 482,
+      "set_ids": [
+        "libsodium.aarch64.O2.0"
+      ]
+    },
+    "libsodium.aarch64.O3": {
+      "library": "libsodium",
+      "arch": "aarch64",
+      "optimization": "O3",
+      "provenance": "extended-sources.json",
+      "source_commit": "60b751cd14418fae2d17e6f1003e43622b3e5a25",
+      "license": "ISC",
+      "entries": 462,
+      "set_ids": [
+        "libsodium.aarch64.O3.0"
+      ]
+    },
+    "libsodium.aarch64.Os": {
+      "library": "libsodium",
+      "arch": "aarch64",
+      "optimization": "Os",
+      "provenance": "extended-sources.json",
+      "source_commit": "60b751cd14418fae2d17e6f1003e43622b3e5a25",
+      "license": "ISC",
+      "entries": 572,
+      "set_ids": [
+        "libsodium.aarch64.Os.0"
+      ]
+    },
+    "libsodium.arm32.O0": {
+      "library": "libsodium",
+      "arch": "arm32",
+      "optimization": "O0",
+      "provenance": "extended-sources.json",
+      "source_commit": "60b751cd14418fae2d17e6f1003e43622b3e5a25",
+      "license": "ISC",
+      "entries": 938,
+      "set_ids": [
+        "libsodium.arm32.O0.0"
+      ]
+    },
+    "libsodium.arm32.O1": {
+      "library": "libsodium",
+      "arch": "arm32",
+      "optimization": "O1",
+      "provenance": "extended-sources.json",
+      "source_commit": "60b751cd14418fae2d17e6f1003e43622b3e5a25",
+      "license": "ISC",
+      "entries": 602,
+      "set_ids": [
+        "libsodium.arm32.O1.0"
+      ]
+    },
+    "libsodium.arm32.O2": {
+      "library": "libsodium",
+      "arch": "arm32",
+      "optimization": "O2",
+      "provenance": "extended-sources.json",
+      "source_commit": "60b751cd14418fae2d17e6f1003e43622b3e5a25",
+      "license": "ISC",
+      "entries": 513,
+      "set_ids": [
+        "libsodium.arm32.O2.0"
+      ]
+    },
+    "libsodium.arm32.O3": {
+      "library": "libsodium",
+      "arch": "arm32",
+      "optimization": "O3",
+      "provenance": "extended-sources.json",
+      "source_commit": "60b751cd14418fae2d17e6f1003e43622b3e5a25",
+      "license": "ISC",
+      "entries": 504,
+      "set_ids": [
+        "libsodium.arm32.O3.0"
+      ]
+    },
+    "libsodium.arm32.Os": {
+      "library": "libsodium",
+      "arch": "arm32",
+      "optimization": "Os",
+      "provenance": "extended-sources.json",
+      "source_commit": "60b751cd14418fae2d17e6f1003e43622b3e5a25",
+      "license": "ISC",
+      "entries": 579,
+      "set_ids": [
+        "libsodium.arm32.Os.0"
+      ]
+    },
+    "libsodium.i386.O0": {
+      "library": "libsodium",
+      "arch": "i386",
+      "optimization": "O0",
+      "provenance": "extended-sources.json",
+      "source_commit": "60b751cd14418fae2d17e6f1003e43622b3e5a25",
+      "license": "ISC",
+      "entries": 1213,
+      "set_ids": [
+        "libsodium.i386.O0.0"
+      ]
+    },
+    "libsodium.i386.O1": {
+      "library": "libsodium",
+      "arch": "i386",
+      "optimization": "O1",
+      "provenance": "extended-sources.json",
+      "source_commit": "60b751cd14418fae2d17e6f1003e43622b3e5a25",
+      "license": "ISC",
+      "entries": 886,
+      "set_ids": [
+        "libsodium.i386.O1.0"
+      ]
+    },
+    "libsodium.i386.O2": {
+      "library": "libsodium",
+      "arch": "i386",
+      "optimization": "O2",
+      "provenance": "extended-sources.json",
+      "source_commit": "60b751cd14418fae2d17e6f1003e43622b3e5a25",
+      "license": "ISC",
+      "entries": 709,
+      "set_ids": [
+        "libsodium.i386.O2.0"
+      ]
+    },
+    "libsodium.i386.O3": {
+      "library": "libsodium",
+      "arch": "i386",
+      "optimization": "O3",
+      "provenance": "extended-sources.json",
+      "source_commit": "60b751cd14418fae2d17e6f1003e43622b3e5a25",
+      "license": "ISC",
+      "entries": 674,
+      "set_ids": [
+        "libsodium.i386.O3.0"
+      ]
+    },
+    "libsodium.i386.Os": {
+      "library": "libsodium",
+      "arch": "i386",
+      "optimization": "Os",
+      "provenance": "extended-sources.json",
+      "source_commit": "60b751cd14418fae2d17e6f1003e43622b3e5a25",
+      "license": "ISC",
+      "entries": 787,
+      "set_ids": [
+        "libsodium.i386.Os.0"
+      ]
+    },
+    "libsodium.x86_64.O0": {
+      "library": "libsodium",
+      "arch": "x86_64",
+      "optimization": "O0",
+      "provenance": "extended-sources.json",
+      "source_commit": "60b751cd14418fae2d17e6f1003e43622b3e5a25",
+      "license": "ISC",
+      "entries": 1216,
+      "set_ids": [
+        "libsodium.x86_64.O0.0"
+      ]
+    },
+    "libsodium.x86_64.O1": {
+      "library": "libsodium",
+      "arch": "x86_64",
+      "optimization": "O1",
+      "provenance": "extended-sources.json",
+      "source_commit": "60b751cd14418fae2d17e6f1003e43622b3e5a25",
+      "license": "ISC",
+      "entries": 890,
+      "set_ids": [
+        "libsodium.x86_64.O1.0"
+      ]
+    },
+    "libsodium.x86_64.O2": {
+      "library": "libsodium",
+      "arch": "x86_64",
+      "optimization": "O2",
+      "provenance": "extended-sources.json",
+      "source_commit": "60b751cd14418fae2d17e6f1003e43622b3e5a25",
+      "license": "ISC",
+      "entries": 848,
+      "set_ids": [
+        "libsodium.x86_64.O2.0"
+      ]
+    },
+    "libsodium.x86_64.O3": {
+      "library": "libsodium",
+      "arch": "x86_64",
+      "optimization": "O3",
+      "provenance": "extended-sources.json",
+      "source_commit": "60b751cd14418fae2d17e6f1003e43622b3e5a25",
+      "license": "ISC",
+      "entries": 815,
+      "set_ids": [
+        "libsodium.x86_64.O3.0"
+      ]
+    },
+    "libsodium.x86_64.Os": {
+      "library": "libsodium",
+      "arch": "x86_64",
+      "optimization": "Os",
+      "provenance": "extended-sources.json",
+      "source_commit": "60b751cd14418fae2d17e6f1003e43622b3e5a25",
+      "license": "ISC",
+      "entries": 946,
+      "set_ids": [
+        "libsodium.x86_64.Os.0"
+      ]
+    },
+    "mbedtls.aarch64.O0": {
+      "library": "mbedtls",
+      "arch": "aarch64",
+      "optimization": "O0",
+      "provenance": "extended-sources.json",
+      "source_commit": "cac9589a97fb9d07a115b42fa10523bc226b5180",
+      "license": "Apache-2.0",
+      "entries": 1504,
+      "set_ids": [
+        "mbedtls.aarch64.O0.0",
+        "mbedtls.aarch64.O0.1",
+        "mbedtls.aarch64.O0.2"
+      ]
+    },
+    "mbedtls.aarch64.O1": {
+      "library": "mbedtls",
+      "arch": "aarch64",
+      "optimization": "O1",
+      "provenance": "extended-sources.json",
+      "source_commit": "cac9589a97fb9d07a115b42fa10523bc226b5180",
+      "license": "Apache-2.0",
+      "entries": 814,
+      "set_ids": [
+        "mbedtls.aarch64.O1.0",
+        "mbedtls.aarch64.O1.1",
+        "mbedtls.aarch64.O1.2"
+      ]
+    },
+    "mbedtls.aarch64.O2": {
+      "library": "mbedtls",
+      "arch": "aarch64",
+      "optimization": "O2",
+      "provenance": "extended-sources.json",
+      "source_commit": "cac9589a97fb9d07a115b42fa10523bc226b5180",
+      "license": "Apache-2.0",
+      "entries": 574,
+      "set_ids": [
+        "mbedtls.aarch64.O2.0",
+        "mbedtls.aarch64.O2.1",
+        "mbedtls.aarch64.O2.2"
+      ]
+    },
+    "mbedtls.aarch64.O3": {
+      "library": "mbedtls",
+      "arch": "aarch64",
+      "optimization": "O3",
+      "provenance": "extended-sources.json",
+      "source_commit": "cac9589a97fb9d07a115b42fa10523bc226b5180",
+      "license": "Apache-2.0",
+      "entries": 565,
+      "set_ids": [
+        "mbedtls.aarch64.O3.0",
+        "mbedtls.aarch64.O3.1",
+        "mbedtls.aarch64.O3.2"
+      ]
+    },
+    "mbedtls.aarch64.Os": {
+      "library": "mbedtls",
+      "arch": "aarch64",
+      "optimization": "Os",
+      "provenance": "extended-sources.json",
+      "source_commit": "cac9589a97fb9d07a115b42fa10523bc226b5180",
+      "license": "Apache-2.0",
+      "entries": 631,
+      "set_ids": [
+        "mbedtls.aarch64.Os.0",
+        "mbedtls.aarch64.Os.1",
+        "mbedtls.aarch64.Os.2"
+      ]
+    },
+    "mbedtls.arm32.O0": {
+      "library": "mbedtls",
+      "arch": "arm32",
+      "optimization": "O0",
+      "provenance": "extended-sources.json",
+      "source_commit": "cac9589a97fb9d07a115b42fa10523bc226b5180",
+      "license": "Apache-2.0",
+      "entries": 1490,
+      "set_ids": [
+        "mbedtls.arm32.O0.0",
+        "mbedtls.arm32.O0.1",
+        "mbedtls.arm32.O0.2"
+      ]
+    },
+    "mbedtls.arm32.O1": {
+      "library": "mbedtls",
+      "arch": "arm32",
+      "optimization": "O1",
+      "provenance": "extended-sources.json",
+      "source_commit": "cac9589a97fb9d07a115b42fa10523bc226b5180",
+      "license": "Apache-2.0",
+      "entries": 697,
+      "set_ids": [
+        "mbedtls.arm32.O1.0",
+        "mbedtls.arm32.O1.1",
+        "mbedtls.arm32.O1.2"
+      ]
+    },
+    "mbedtls.arm32.O2": {
+      "library": "mbedtls",
+      "arch": "arm32",
+      "optimization": "O2",
+      "provenance": "extended-sources.json",
+      "source_commit": "cac9589a97fb9d07a115b42fa10523bc226b5180",
+      "license": "Apache-2.0",
+      "entries": 646,
+      "set_ids": [
+        "mbedtls.arm32.O2.0",
+        "mbedtls.arm32.O2.1",
+        "mbedtls.arm32.O2.2"
+      ]
+    },
+    "mbedtls.arm32.O3": {
+      "library": "mbedtls",
+      "arch": "arm32",
+      "optimization": "O3",
+      "provenance": "extended-sources.json",
+      "source_commit": "cac9589a97fb9d07a115b42fa10523bc226b5180",
+      "license": "Apache-2.0",
+      "entries": 646,
+      "set_ids": [
+        "mbedtls.arm32.O3.0",
+        "mbedtls.arm32.O3.1",
+        "mbedtls.arm32.O3.2"
+      ]
+    },
+    "mbedtls.arm32.Os": {
+      "library": "mbedtls",
+      "arch": "arm32",
+      "optimization": "Os",
+      "provenance": "extended-sources.json",
+      "source_commit": "cac9589a97fb9d07a115b42fa10523bc226b5180",
+      "license": "Apache-2.0",
+      "entries": 654,
+      "set_ids": [
+        "mbedtls.arm32.Os.0",
+        "mbedtls.arm32.Os.1",
+        "mbedtls.arm32.Os.2"
+      ]
+    },
+    "mbedtls.i386.O0": {
+      "library": "mbedtls",
+      "arch": "i386",
+      "optimization": "O0",
+      "provenance": "extended-sources.json",
+      "source_commit": "cac9589a97fb9d07a115b42fa10523bc226b5180",
+      "license": "Apache-2.0",
+      "entries": 1934,
+      "set_ids": [
+        "mbedtls.i386.O0.0",
+        "mbedtls.i386.O0.1",
+        "mbedtls.i386.O0.2"
+      ]
+    },
+    "mbedtls.i386.O1": {
+      "library": "mbedtls",
+      "arch": "i386",
+      "optimization": "O1",
+      "provenance": "extended-sources.json",
+      "source_commit": "cac9589a97fb9d07a115b42fa10523bc226b5180",
+      "license": "Apache-2.0",
+      "entries": 1105,
+      "set_ids": [
+        "mbedtls.i386.O1.0",
+        "mbedtls.i386.O1.1",
+        "mbedtls.i386.O1.2"
+      ]
+    },
+    "mbedtls.i386.O2": {
+      "library": "mbedtls",
+      "arch": "i386",
+      "optimization": "O2",
+      "provenance": "extended-sources.json",
+      "source_commit": "cac9589a97fb9d07a115b42fa10523bc226b5180",
+      "license": "Apache-2.0",
+      "entries": 947,
+      "set_ids": [
+        "mbedtls.i386.O2.0",
+        "mbedtls.i386.O2.1",
+        "mbedtls.i386.O2.2"
+      ]
+    },
+    "mbedtls.i386.O3": {
+      "library": "mbedtls",
+      "arch": "i386",
+      "optimization": "O3",
+      "provenance": "extended-sources.json",
+      "source_commit": "cac9589a97fb9d07a115b42fa10523bc226b5180",
+      "license": "Apache-2.0",
+      "entries": 893,
+      "set_ids": [
+        "mbedtls.i386.O3.0",
+        "mbedtls.i386.O3.1",
+        "mbedtls.i386.O3.2"
+      ]
+    },
+    "mbedtls.i386.Os": {
+      "library": "mbedtls",
+      "arch": "i386",
+      "optimization": "Os",
+      "provenance": "extended-sources.json",
+      "source_commit": "cac9589a97fb9d07a115b42fa10523bc226b5180",
+      "license": "Apache-2.0",
+      "entries": 1053,
+      "set_ids": [
+        "mbedtls.i386.Os.0",
+        "mbedtls.i386.Os.1",
+        "mbedtls.i386.Os.2"
+      ]
+    },
+    "mbedtls.x86_64.O0": {
+      "library": "mbedtls",
+      "arch": "x86_64",
+      "optimization": "O0",
+      "provenance": "extended-sources.json",
+      "source_commit": "cac9589a97fb9d07a115b42fa10523bc226b5180",
+      "license": "Apache-2.0",
+      "entries": 1927,
+      "set_ids": [
+        "mbedtls.x86_64.O0.0",
+        "mbedtls.x86_64.O0.1",
+        "mbedtls.x86_64.O0.2"
+      ]
+    },
+    "mbedtls.x86_64.O1": {
+      "library": "mbedtls",
+      "arch": "x86_64",
+      "optimization": "O1",
+      "provenance": "extended-sources.json",
+      "source_commit": "cac9589a97fb9d07a115b42fa10523bc226b5180",
+      "license": "Apache-2.0",
+      "entries": 1103,
+      "set_ids": [
+        "mbedtls.x86_64.O1.0",
+        "mbedtls.x86_64.O1.1",
+        "mbedtls.x86_64.O1.2"
+      ]
+    },
+    "mbedtls.x86_64.O2": {
+      "library": "mbedtls",
+      "arch": "x86_64",
+      "optimization": "O2",
+      "provenance": "extended-sources.json",
+      "source_commit": "cac9589a97fb9d07a115b42fa10523bc226b5180",
+      "license": "Apache-2.0",
+      "entries": 1051,
+      "set_ids": [
+        "mbedtls.x86_64.O2.0",
+        "mbedtls.x86_64.O2.1",
+        "mbedtls.x86_64.O2.2"
+      ]
+    },
+    "mbedtls.x86_64.O3": {
+      "library": "mbedtls",
+      "arch": "x86_64",
+      "optimization": "O3",
+      "provenance": "extended-sources.json",
+      "source_commit": "cac9589a97fb9d07a115b42fa10523bc226b5180",
+      "license": "Apache-2.0",
+      "entries": 1006,
+      "set_ids": [
+        "mbedtls.x86_64.O3.0",
+        "mbedtls.x86_64.O3.1",
+        "mbedtls.x86_64.O3.2"
+      ]
+    },
+    "mbedtls.x86_64.Os": {
+      "library": "mbedtls",
+      "arch": "x86_64",
+      "optimization": "Os",
+      "provenance": "extended-sources.json",
+      "source_commit": "cac9589a97fb9d07a115b42fa10523bc226b5180",
+      "license": "Apache-2.0",
+      "entries": 1150,
+      "set_ids": [
+        "mbedtls.x86_64.Os.0",
+        "mbedtls.x86_64.Os.1",
+        "mbedtls.x86_64.Os.2"
+      ]
+    },
+    "musl.aarch64.O0": {
+      "library": "musl",
+      "arch": "aarch64",
+      "optimization": "O0",
+      "provenance": "extended-sources.json",
+      "source_commit": "7813e9119eb5fe681b6750b8a033a0490bca0941",
+      "license": "MIT; additional permissive notices retained",
+      "entries": 2612,
+      "set_ids": [
+        "musl.aarch64.O0.0"
+      ]
+    },
+    "musl.aarch64.O1": {
+      "library": "musl",
+      "arch": "aarch64",
+      "optimization": "O1",
+      "provenance": "extended-sources.json",
+      "source_commit": "7813e9119eb5fe681b6750b8a033a0490bca0941",
+      "license": "MIT; additional permissive notices retained",
+      "entries": 1612,
+      "set_ids": [
+        "musl.aarch64.O1.0"
+      ]
+    },
+    "musl.aarch64.O2": {
+      "library": "musl",
+      "arch": "aarch64",
+      "optimization": "O2",
+      "provenance": "extended-sources.json",
+      "source_commit": "7813e9119eb5fe681b6750b8a033a0490bca0941",
+      "license": "MIT; additional permissive notices retained",
+      "entries": 1241,
+      "set_ids": [
+        "musl.aarch64.O2.0"
+      ]
+    },
+    "musl.aarch64.O3": {
+      "library": "musl",
+      "arch": "aarch64",
+      "optimization": "O3",
+      "provenance": "extended-sources.json",
+      "source_commit": "7813e9119eb5fe681b6750b8a033a0490bca0941",
+      "license": "MIT; additional permissive notices retained",
+      "entries": 1216,
+      "set_ids": [
+        "musl.aarch64.O3.0"
+      ]
+    },
+    "musl.aarch64.Os": {
+      "library": "musl",
+      "arch": "aarch64",
+      "optimization": "Os",
+      "provenance": "extended-sources.json",
+      "source_commit": "7813e9119eb5fe681b6750b8a033a0490bca0941",
+      "license": "MIT; additional permissive notices retained",
+      "entries": 1254,
+      "set_ids": [
+        "musl.aarch64.Os.0"
+      ]
+    },
+    "musl.arm32.O0": {
+      "library": "musl",
+      "arch": "arm32",
+      "optimization": "O0",
+      "provenance": "extended-sources.json",
+      "source_commit": "7813e9119eb5fe681b6750b8a033a0490bca0941",
+      "license": "MIT; additional permissive notices retained",
+      "entries": 1070,
+      "set_ids": [
+        "musl.arm32.O0.0"
+      ]
+    },
+    "musl.arm32.O1": {
+      "library": "musl",
+      "arch": "arm32",
+      "optimization": "O1",
+      "provenance": "extended-sources.json",
+      "source_commit": "7813e9119eb5fe681b6750b8a033a0490bca0941",
+      "license": "MIT; additional permissive notices retained",
+      "entries": 1276,
+      "set_ids": [
+        "musl.arm32.O1.0"
+      ]
+    },
+    "musl.arm32.O2": {
+      "library": "musl",
+      "arch": "arm32",
+      "optimization": "O2",
+      "provenance": "extended-sources.json",
+      "source_commit": "7813e9119eb5fe681b6750b8a033a0490bca0941",
+      "license": "MIT; additional permissive notices retained",
+      "entries": 1104,
+      "set_ids": [
+        "musl.arm32.O2.0"
+      ]
+    },
+    "musl.arm32.O3": {
+      "library": "musl",
+      "arch": "arm32",
+      "optimization": "O3",
+      "provenance": "extended-sources.json",
+      "source_commit": "7813e9119eb5fe681b6750b8a033a0490bca0941",
+      "license": "MIT; additional permissive notices retained",
+      "entries": 1091,
+      "set_ids": [
+        "musl.arm32.O3.0"
+      ]
+    },
+    "musl.arm32.Os": {
+      "library": "musl",
+      "arch": "arm32",
+      "optimization": "Os",
+      "provenance": "extended-sources.json",
+      "source_commit": "7813e9119eb5fe681b6750b8a033a0490bca0941",
+      "license": "MIT; additional permissive notices retained",
+      "entries": 1121,
+      "set_ids": [
+        "musl.arm32.Os.0"
+      ]
+    },
+    "musl.i386.O0": {
+      "library": "musl",
+      "arch": "i386",
+      "optimization": "O0",
+      "provenance": "extended-sources.json",
+      "source_commit": "7813e9119eb5fe681b6750b8a033a0490bca0941",
+      "license": "MIT; additional permissive notices retained",
+      "entries": 1765,
+      "set_ids": [
+        "musl.i386.O0.0"
+      ]
+    },
+    "musl.i386.O1": {
+      "library": "musl",
+      "arch": "i386",
+      "optimization": "O1",
+      "provenance": "extended-sources.json",
+      "source_commit": "7813e9119eb5fe681b6750b8a033a0490bca0941",
+      "license": "MIT; additional permissive notices retained",
+      "entries": 1453,
+      "set_ids": [
+        "musl.i386.O1.0"
+      ]
+    },
+    "musl.i386.O2": {
+      "library": "musl",
+      "arch": "i386",
+      "optimization": "O2",
+      "provenance": "extended-sources.json",
+      "source_commit": "7813e9119eb5fe681b6750b8a033a0490bca0941",
+      "license": "MIT; additional permissive notices retained",
+      "entries": 1043,
+      "set_ids": [
+        "musl.i386.O2.0"
+      ]
+    },
+    "musl.i386.O3": {
+      "library": "musl",
+      "arch": "i386",
+      "optimization": "O3",
+      "provenance": "extended-sources.json",
+      "source_commit": "7813e9119eb5fe681b6750b8a033a0490bca0941",
+      "license": "MIT; additional permissive notices retained",
+      "entries": 1050,
+      "set_ids": [
+        "musl.i386.O3.0"
+      ]
+    },
+    "musl.i386.Os": {
+      "library": "musl",
+      "arch": "i386",
+      "optimization": "Os",
+      "provenance": "extended-sources.json",
+      "source_commit": "7813e9119eb5fe681b6750b8a033a0490bca0941",
+      "license": "MIT; additional permissive notices retained",
+      "entries": 1049,
+      "set_ids": [
+        "musl.i386.Os.0"
+      ]
+    },
+    "musl.x86_64.O0": {
+      "library": "musl",
+      "arch": "x86_64",
+      "optimization": "O0",
+      "provenance": "extended-sources.json",
+      "source_commit": "7813e9119eb5fe681b6750b8a033a0490bca0941",
+      "license": "MIT; additional permissive notices retained",
+      "entries": 1523,
+      "set_ids": [
+        "musl.x86_64.O0.0"
+      ]
+    },
+    "musl.x86_64.O1": {
+      "library": "musl",
+      "arch": "x86_64",
+      "optimization": "O1",
+      "provenance": "extended-sources.json",
+      "source_commit": "7813e9119eb5fe681b6750b8a033a0490bca0941",
+      "license": "MIT; additional permissive notices retained",
+      "entries": 1300,
+      "set_ids": [
+        "musl.x86_64.O1.0"
+      ]
+    },
+    "musl.x86_64.O2": {
+      "library": "musl",
+      "arch": "x86_64",
+      "optimization": "O2",
+      "provenance": "extended-sources.json",
+      "source_commit": "7813e9119eb5fe681b6750b8a033a0490bca0941",
+      "license": "MIT; additional permissive notices retained",
+      "entries": 1269,
+      "set_ids": [
+        "musl.x86_64.O2.0"
+      ]
+    },
+    "musl.x86_64.O3": {
+      "library": "musl",
+      "arch": "x86_64",
+      "optimization": "O3",
+      "provenance": "extended-sources.json",
+      "source_commit": "7813e9119eb5fe681b6750b8a033a0490bca0941",
+      "license": "MIT; additional permissive notices retained",
+      "entries": 1260,
+      "set_ids": [
+        "musl.x86_64.O3.0"
+      ]
+    },
+    "musl.x86_64.Os": {
+      "library": "musl",
+      "arch": "x86_64",
+      "optimization": "Os",
+      "provenance": "extended-sources.json",
+      "source_commit": "7813e9119eb5fe681b6750b8a033a0490bca0941",
+      "license": "MIT; additional permissive notices retained",
+      "entries": 1317,
+      "set_ids": [
+        "musl.x86_64.Os.0"
+      ]
+    },
+    "openssl.aarch64.O0": {
+      "library": "openssl",
+      "arch": "aarch64",
+      "optimization": "O0",
+      "provenance": "extended-sources.json",
+      "source_commit": "828c39a508fb7f59af38508b242119b714b9c497",
+      "license": "Apache-2.0",
+      "entries": 10179,
+      "set_ids": [
+        "openssl.aarch64.O0.0"
+      ]
+    },
+    "openssl.aarch64.O1": {
+      "library": "openssl",
+      "arch": "aarch64",
+      "optimization": "O1",
+      "provenance": "extended-sources.json",
+      "source_commit": "828c39a508fb7f59af38508b242119b714b9c497",
+      "license": "Apache-2.0",
+      "entries": 5851,
+      "set_ids": [
+        "openssl.aarch64.O1.0"
+      ]
+    },
+    "openssl.aarch64.O2": {
+      "library": "openssl",
+      "arch": "aarch64",
+      "optimization": "O2",
+      "provenance": "extended-sources.json",
+      "source_commit": "828c39a508fb7f59af38508b242119b714b9c497",
+      "license": "Apache-2.0",
+      "entries": 4120,
+      "set_ids": [
+        "openssl.aarch64.O2.0"
+      ]
+    },
+    "openssl.aarch64.O3": {
+      "library": "openssl",
+      "arch": "aarch64",
+      "optimization": "O3",
+      "provenance": "extended-sources.json",
+      "source_commit": "828c39a508fb7f59af38508b242119b714b9c497",
+      "license": "Apache-2.0",
+      "entries": 3646,
+      "set_ids": [
+        "openssl.aarch64.O3.0"
+      ]
+    },
+    "openssl.aarch64.Os": {
+      "library": "openssl",
+      "arch": "aarch64",
+      "optimization": "Os",
+      "provenance": "extended-sources.json",
+      "source_commit": "828c39a508fb7f59af38508b242119b714b9c497",
+      "license": "Apache-2.0",
+      "entries": 4253,
+      "set_ids": [
+        "openssl.aarch64.Os.0"
+      ]
+    },
+    "openssl.arm32.O0": {
+      "library": "openssl",
+      "arch": "arm32",
+      "optimization": "O0",
+      "provenance": "extended-sources.json",
+      "source_commit": "828c39a508fb7f59af38508b242119b714b9c497",
+      "license": "Apache-2.0",
+      "entries": 10092,
+      "set_ids": [
+        "openssl.arm32.O0.0"
+      ]
+    },
+    "openssl.arm32.O1": {
+      "library": "openssl",
+      "arch": "arm32",
+      "optimization": "O1",
+      "provenance": "extended-sources.json",
+      "source_commit": "828c39a508fb7f59af38508b242119b714b9c497",
+      "license": "Apache-2.0",
+      "entries": 5177,
+      "set_ids": [
+        "openssl.arm32.O1.0"
+      ]
+    },
+    "openssl.arm32.O2": {
+      "library": "openssl",
+      "arch": "arm32",
+      "optimization": "O2",
+      "provenance": "extended-sources.json",
+      "source_commit": "828c39a508fb7f59af38508b242119b714b9c497",
+      "license": "Apache-2.0",
+      "entries": 4610,
+      "set_ids": [
+        "openssl.arm32.O2.0"
+      ]
+    },
+    "openssl.arm32.O3": {
+      "library": "openssl",
+      "arch": "arm32",
+      "optimization": "O3",
+      "provenance": "extended-sources.json",
+      "source_commit": "828c39a508fb7f59af38508b242119b714b9c497",
+      "license": "Apache-2.0",
+      "entries": 4172,
+      "set_ids": [
+        "openssl.arm32.O3.0"
+      ]
+    },
+    "openssl.arm32.Os": {
+      "library": "openssl",
+      "arch": "arm32",
+      "optimization": "Os",
+      "provenance": "extended-sources.json",
+      "source_commit": "828c39a508fb7f59af38508b242119b714b9c497",
+      "license": "Apache-2.0",
+      "entries": 4854,
+      "set_ids": [
+        "openssl.arm32.Os.0"
+      ]
+    },
+    "openssl.i386.O0": {
+      "library": "openssl",
+      "arch": "i386",
+      "optimization": "O0",
+      "provenance": "extended-sources.json",
+      "source_commit": "828c39a508fb7f59af38508b242119b714b9c497",
+      "license": "Apache-2.0",
+      "entries": 11021,
+      "set_ids": [
+        "openssl.i386.O0.0"
+      ]
+    },
+    "openssl.i386.O1": {
+      "library": "openssl",
+      "arch": "i386",
+      "optimization": "O1",
+      "provenance": "extended-sources.json",
+      "source_commit": "828c39a508fb7f59af38508b242119b714b9c497",
+      "license": "Apache-2.0",
+      "entries": 6314,
+      "set_ids": [
+        "openssl.i386.O1.0"
+      ]
+    },
+    "openssl.i386.O2": {
+      "library": "openssl",
+      "arch": "i386",
+      "optimization": "O2",
+      "provenance": "extended-sources.json",
+      "source_commit": "828c39a508fb7f59af38508b242119b714b9c497",
+      "license": "Apache-2.0",
+      "entries": 5213,
+      "set_ids": [
+        "openssl.i386.O2.0"
+      ]
+    },
+    "openssl.i386.O3": {
+      "library": "openssl",
+      "arch": "i386",
+      "optimization": "O3",
+      "provenance": "extended-sources.json",
+      "source_commit": "828c39a508fb7f59af38508b242119b714b9c497",
+      "license": "Apache-2.0",
+      "entries": 4574,
+      "set_ids": [
+        "openssl.i386.O3.0"
+      ]
+    },
+    "openssl.i386.Os": {
+      "library": "openssl",
+      "arch": "i386",
+      "optimization": "Os",
+      "provenance": "extended-sources.json",
+      "source_commit": "828c39a508fb7f59af38508b242119b714b9c497",
+      "license": "Apache-2.0",
+      "entries": 5433,
+      "set_ids": [
+        "openssl.i386.Os.0"
+      ]
+    },
+    "openssl.x86_64.O0": {
+      "library": "openssl",
+      "arch": "x86_64",
+      "optimization": "O0",
+      "provenance": "extended-sources.json",
+      "source_commit": "828c39a508fb7f59af38508b242119b714b9c497",
+      "license": "Apache-2.0",
+      "entries": 11104,
+      "set_ids": [
+        "openssl.x86_64.O0.0"
+      ]
+    },
+    "openssl.x86_64.O1": {
+      "library": "openssl",
+      "arch": "x86_64",
+      "optimization": "O1",
+      "provenance": "extended-sources.json",
+      "source_commit": "828c39a508fb7f59af38508b242119b714b9c497",
+      "license": "Apache-2.0",
+      "entries": 6350,
+      "set_ids": [
+        "openssl.x86_64.O1.0"
+      ]
+    },
+    "openssl.x86_64.O2": {
+      "library": "openssl",
+      "arch": "x86_64",
+      "optimization": "O2",
+      "provenance": "extended-sources.json",
+      "source_commit": "828c39a508fb7f59af38508b242119b714b9c497",
+      "license": "Apache-2.0",
+      "entries": 6055,
+      "set_ids": [
+        "openssl.x86_64.O2.0"
+      ]
+    },
+    "openssl.x86_64.O3": {
+      "library": "openssl",
+      "arch": "x86_64",
+      "optimization": "O3",
+      "provenance": "extended-sources.json",
+      "source_commit": "828c39a508fb7f59af38508b242119b714b9c497",
+      "license": "Apache-2.0",
+      "entries": 5371,
+      "set_ids": [
+        "openssl.x86_64.O3.0"
+      ]
+    },
+    "openssl.x86_64.Os": {
+      "library": "openssl",
+      "arch": "x86_64",
+      "optimization": "Os",
+      "provenance": "extended-sources.json",
+      "source_commit": "828c39a508fb7f59af38508b242119b714b9c497",
+      "license": "Apache-2.0",
+      "entries": 6887,
+      "set_ids": [
+        "openssl.x86_64.Os.0"
+      ]
+    },
+    "rust.aarch64.O0": {
+      "library": "rust",
+      "arch": "aarch64",
+      "optimization": "O0",
+      "provenance": "extended-sources.json",
+      "source_commit": "58cf8f9c35b355199727627d07ae34a4e2846d67",
+      "license": "MIT OR Apache-2.0",
+      "entries": 67,
+      "set_ids": [
+        "rust.aarch64.O0"
+      ]
+    },
+    "rust.aarch64.O1": {
+      "library": "rust",
+      "arch": "aarch64",
+      "optimization": "O1",
+      "provenance": "extended-sources.json",
+      "source_commit": "58cf8f9c35b355199727627d07ae34a4e2846d67",
+      "license": "MIT OR Apache-2.0",
+      "entries": 38,
+      "set_ids": [
+        "rust.aarch64.O1"
+      ]
+    },
+    "rust.aarch64.O2": {
+      "library": "rust",
+      "arch": "aarch64",
+      "optimization": "O2",
+      "provenance": "extended-sources.json",
+      "source_commit": "58cf8f9c35b355199727627d07ae34a4e2846d67",
+      "license": "MIT OR Apache-2.0",
+      "entries": 37,
+      "set_ids": [
+        "rust.aarch64.O2"
+      ]
+    },
+    "rust.aarch64.O3": {
+      "library": "rust",
+      "arch": "aarch64",
+      "optimization": "O3",
+      "provenance": "extended-sources.json",
+      "source_commit": "58cf8f9c35b355199727627d07ae34a4e2846d67",
+      "license": "MIT OR Apache-2.0",
+      "entries": 36,
+      "set_ids": [
+        "rust.aarch64.O3"
+      ]
+    },
+    "rust.aarch64.Os": {
+      "library": "rust",
+      "arch": "aarch64",
+      "optimization": "Os",
+      "provenance": "extended-sources.json",
+      "source_commit": "58cf8f9c35b355199727627d07ae34a4e2846d67",
+      "license": "MIT OR Apache-2.0",
+      "entries": 38,
+      "set_ids": [
+        "rust.aarch64.Os"
+      ]
+    },
+    "rust.arm32.O0": {
+      "library": "rust",
+      "arch": "arm32",
+      "optimization": "O0",
+      "provenance": "extended-sources.json",
+      "source_commit": "58cf8f9c35b355199727627d07ae34a4e2846d67",
+      "license": "MIT OR Apache-2.0",
+      "entries": 60,
+      "set_ids": [
+        "rust.arm32.O0"
+      ]
+    },
+    "rust.arm32.O1": {
+      "library": "rust",
+      "arch": "arm32",
+      "optimization": "O1",
+      "provenance": "extended-sources.json",
+      "source_commit": "58cf8f9c35b355199727627d07ae34a4e2846d67",
+      "license": "MIT OR Apache-2.0",
+      "entries": 30,
+      "set_ids": [
+        "rust.arm32.O1"
+      ]
+    },
+    "rust.arm32.O2": {
+      "library": "rust",
+      "arch": "arm32",
+      "optimization": "O2",
+      "provenance": "extended-sources.json",
+      "source_commit": "58cf8f9c35b355199727627d07ae34a4e2846d67",
+      "license": "MIT OR Apache-2.0",
+      "entries": 30,
+      "set_ids": [
+        "rust.arm32.O2"
+      ]
+    },
+    "rust.arm32.O3": {
+      "library": "rust",
+      "arch": "arm32",
+      "optimization": "O3",
+      "provenance": "extended-sources.json",
+      "source_commit": "58cf8f9c35b355199727627d07ae34a4e2846d67",
+      "license": "MIT OR Apache-2.0",
+      "entries": 29,
+      "set_ids": [
+        "rust.arm32.O3"
+      ]
+    },
+    "rust.arm32.Os": {
+      "library": "rust",
+      "arch": "arm32",
+      "optimization": "Os",
+      "provenance": "extended-sources.json",
+      "source_commit": "58cf8f9c35b355199727627d07ae34a4e2846d67",
+      "license": "MIT OR Apache-2.0",
+      "entries": 31,
+      "set_ids": [
+        "rust.arm32.Os"
+      ]
+    },
+    "rust.i386.O0": {
+      "library": "rust",
+      "arch": "i386",
+      "optimization": "O0",
+      "provenance": "extended-sources.json",
+      "source_commit": "58cf8f9c35b355199727627d07ae34a4e2846d67",
+      "license": "MIT OR Apache-2.0",
+      "entries": 55,
+      "set_ids": [
+        "rust.i386.O0"
+      ]
+    },
+    "rust.i386.O1": {
+      "library": "rust",
+      "arch": "i386",
+      "optimization": "O1",
+      "provenance": "extended-sources.json",
+      "source_commit": "58cf8f9c35b355199727627d07ae34a4e2846d67",
+      "license": "MIT OR Apache-2.0",
+      "entries": 12,
+      "set_ids": [
+        "rust.i386.O1"
+      ]
+    },
+    "rust.i386.O2": {
+      "library": "rust",
+      "arch": "i386",
+      "optimization": "O2",
+      "provenance": "extended-sources.json",
+      "source_commit": "58cf8f9c35b355199727627d07ae34a4e2846d67",
+      "license": "MIT OR Apache-2.0",
+      "entries": 11,
+      "set_ids": [
+        "rust.i386.O2"
+      ]
+    },
+    "rust.i386.O3": {
+      "library": "rust",
+      "arch": "i386",
+      "optimization": "O3",
+      "provenance": "extended-sources.json",
+      "source_commit": "58cf8f9c35b355199727627d07ae34a4e2846d67",
+      "license": "MIT OR Apache-2.0",
+      "entries": 10,
+      "set_ids": [
+        "rust.i386.O3"
+      ]
+    },
+    "rust.i386.Os": {
+      "library": "rust",
+      "arch": "i386",
+      "optimization": "Os",
+      "provenance": "extended-sources.json",
+      "source_commit": "58cf8f9c35b355199727627d07ae34a4e2846d67",
+      "license": "MIT OR Apache-2.0",
+      "entries": 12,
+      "set_ids": [
+        "rust.i386.Os"
+      ]
+    },
+    "rust.x86_64.O0": {
+      "library": "rust",
+      "arch": "x86_64",
+      "optimization": "O0",
+      "provenance": "extended-sources.json",
+      "source_commit": "58cf8f9c35b355199727627d07ae34a4e2846d67",
+      "license": "MIT OR Apache-2.0",
+      "entries": 72,
+      "set_ids": [
+        "rust.x86_64.O0"
+      ]
+    },
+    "rust.x86_64.O1": {
+      "library": "rust",
+      "arch": "x86_64",
+      "optimization": "O1",
+      "provenance": "extended-sources.json",
+      "source_commit": "58cf8f9c35b355199727627d07ae34a4e2846d67",
+      "license": "MIT OR Apache-2.0",
+      "entries": 29,
+      "set_ids": [
+        "rust.x86_64.O1"
+      ]
+    },
+    "rust.x86_64.O2": {
+      "library": "rust",
+      "arch": "x86_64",
+      "optimization": "O2",
+      "provenance": "extended-sources.json",
+      "source_commit": "58cf8f9c35b355199727627d07ae34a4e2846d67",
+      "license": "MIT OR Apache-2.0",
+      "entries": 28,
+      "set_ids": [
+        "rust.x86_64.O2"
+      ]
+    },
+    "rust.x86_64.O3": {
+      "library": "rust",
+      "arch": "x86_64",
+      "optimization": "O3",
+      "provenance": "extended-sources.json",
+      "source_commit": "58cf8f9c35b355199727627d07ae34a4e2846d67",
+      "license": "MIT OR Apache-2.0",
+      "entries": 27,
+      "set_ids": [
+        "rust.x86_64.O3"
+      ]
+    },
+    "rust.x86_64.Os": {
+      "library": "rust",
+      "arch": "x86_64",
+      "optimization": "Os",
+      "provenance": "extended-sources.json",
+      "source_commit": "58cf8f9c35b355199727627d07ae34a4e2846d67",
+      "license": "MIT OR Apache-2.0",
+      "entries": 29,
+      "set_ids": [
+        "rust.x86_64.Os"
+      ]
+    }
+  },
+  "embedded": {
+    "x86_64": {
+      "entries": 32105,
+      "compressed_bytes": 1163797,
+      "uncompressed_bytes": 5812317
+    },
+    "aarch64": {
+      "entries": 28856,
+      "compressed_bytes": 908637,
+      "uncompressed_bytes": 4462438
+    },
+    "i386": {
+      "entries": 141,
+      "compressed_bytes": 8795,
+      "uncompressed_bytes": 34113
+    },
+    "arm32": {
+      "entries": 813,
+      "compressed_bytes": 11802,
+      "uncompressed_bytes": 73885
+    }
+  },
+  "sha256": {
+    "signatures/extended.py": "167d22f801504ae3322f478d975ae3a64adcb972f4f0db98c6ee185f11311c27",
+    "signatures/notices.py": "69983403bb78ca224864b2594172f653455cfeadf8cd414b550bbda2a686810b",
+    "signatures/pack.py": "a3d01d685588e2fd252772779bd951766f5aba7ae27dac2f7825e16cac7e842d",
+    "signatures/rebuild.py": "2a19aa47b948cd52bb7cbd272e14b1b0a8559c9a518a628cf8fac0f9f81b65e4",
+    "signatures/programs/libsodium.c": "d59b5757c1d21be9ba7d92b34cfcc90fccb5ae9e459f4f4200d328f360dbf034",
+    "signatures/programs/mbedtls.c": "74ae0f04ac209ee0968da0494a5b98c00719b6c209dfb9f85aca209d373bc453",
+    "signatures/programs/musl.c": "8fb6caa32d306752a16447bce3850c74fa11d3e20e4eb7191864eefcacaa1721",
+    "signatures/programs/openssl.c": "5c1e7806944c3647cfb881a9d63a314eeca747e7de91f0692f6c6ec3216f4b39",
+    "signatures/programs/rust.rs": "a397580ab900cd3bc30b3ec0906e1f55b58447610a344189a2ccf5bf89e1ec1f"
+  }
+}

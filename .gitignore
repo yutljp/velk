@@ -24,3 +24,8 @@ tests/out*/
 /fuzz/coverage/
 /fuzz/target/
 /tests/__pycache__/
+# Signature JSON databases are generated locally by the rebuild script.
+/signatures/base.json.gz
+/signatures/defaults.json.gz
+/signatures/libraries.json.gz
+/signatures/__pycache__/

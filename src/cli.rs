@@ -230,14 +230,16 @@ pub(super) struct Cli {
         conflicts_with_all = ["emulate", "classes", "compare", "search", "read_memory", "detect_constants", "annotate", "annotation", "annotations", "unannotate", "export_project", "import_project", "origins", "xrefs", "callers", "callees", "path", "strings", "constants", "summary", "sections", "card", "decompile", "disasm", "ir", "build_signatures", "identify", "run", "mcp"]
     )]
     json: bool,
-    /// Signature database; required for --identify, optional for --card and --decompile.
+    /// Disable the embedded library signature sets.
+    #[arg(long)]
+    pub(super) no_default_signatures: bool,
+    /// Add a user signature database to the enabled library sets.
     #[arg(
         long,
         value_name = "FILE",
-        required_if_eq("identify", "true"),
-        conflicts_with_all = ["emulate", "classes", "compare", "search", "read_memory", "detect_constants", "annotate", "annotation", "annotations", "unannotate", "export_project", "import_project", "origins", "xrefs", "callers", "callees", "path", "strings", "constants", "summary", "functions", "sections", "disasm", "ir", "build_signatures", "run", "mcp"]
+        conflicts_with_all = ["build_signatures", "run", "mcp", "annotate", "annotation", "annotations", "unannotate", "export_project", "import_project", "origins"]
     )]
-    signatures: Option<PathBuf>,
+    pub(super) signatures: Vec<PathBuf>,
     /// Signature database to write; required with --build-signatures.
     #[arg(
         long,
@@ -280,12 +282,10 @@ pub(super) enum Command {
         path: PathBuf,
         function: String,
         budget: usize,
-        signatures: Option<PathBuf>,
     },
     Decompile {
         path: PathBuf,
         functions: Vec<String>,
-        signatures: Option<PathBuf>,
     },
     Disasm {
         path: PathBuf,
@@ -302,7 +302,6 @@ pub(super) enum Command {
     },
     Identify {
         path: PathBuf,
-        signatures: PathBuf,
         limit: usize,
     },
     Run {
@@ -426,13 +425,11 @@ impl Cli {
                 input: Some(path),
                 function: Some(function),
                 budget,
-                signatures,
                 ..
             } => Command::Card {
                 path,
                 function,
                 budget: budget.unwrap_or(card::DEFAULT_BUDGET),
-                signatures,
             },
             Self {
                 decompile: true,
@@ -440,7 +437,6 @@ impl Cli {
                 function,
                 destination,
                 additional_functions,
-                signatures,
                 ..
             } => Command::Decompile {
                 path,
@@ -449,7 +445,6 @@ impl Cli {
                     .chain(destination)
                     .chain(additional_functions)
                     .collect(),
-                signatures,
             },
             Self {
                 disasm: true,
@@ -477,12 +472,10 @@ impl Cli {
             Self {
                 identify: true,
                 input: Some(path),
-                signatures: Some(signatures),
                 limit,
                 ..
             } => Command::Identify {
                 path,
-                signatures,
                 limit: limit.unwrap_or(100),
             },
             Self {

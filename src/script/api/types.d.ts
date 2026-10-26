@@ -19,6 +19,7 @@ interface Card {
   name: string | null;
   aliases?: string[];
   nameSources: string[];
+  library?: LibraryEvidence;
   size: number | null;
   sizeEstimated?: true;
   section: string | null;
@@ -55,9 +56,15 @@ interface Signature {
   params: { name: string; type: string }[];
 }
 
+interface LibraryEvidence {
+  /** Exact within the enabled sets, ambiguous between names, or not confirmed by the call graph. */
+  certainty: "exact" | "ambiguous" | "unconfirmed";
+  candidates: { name: string; set: string }[];
+}
+
 interface SignatureDb {
   version: number;
-  entries: { name: string; isa: string; size: number; hash: string; tokens: string[]; bytes: number[]; calls: string[] }[];
+  entries: { name: string; isa: string; size: number; hash: string; tokens: string[]; bytes: number[]; calls: string[]; set?: string; constants?: number[][] }[];
   sources: string[];
 }
 
@@ -67,6 +74,7 @@ interface Match {
   /** The name the binary already gives the function, if any. */
   current: string | null;
   matched: string;
+  evidence: LibraryEvidence;
 }
 
 /** A function whose analysis failed, so it took no part in the result. */

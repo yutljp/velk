@@ -571,11 +571,11 @@ echo "$x86_c" | grep "int32_t reg_add(int32_t a0, int32_t a1)" >/dev/null || fai
 echo "$x86_c" | grep "return (uint32_t)a0 + a1;"         >/dev/null || fail "x86 decompile return"
 ok "x86 decompile"
 
-# 7) instruction signatures reject short functions and match full bodies
+# 7) short bodies confirm callees without supplying names
 "$BIN" --build-signatures $FIX/arm64.o --output $SIGS 2>/dev/null
 [ -s $SIGS ]                          || fail "build-signatures output"
 grep -q '"name": "helper"' $SIGS      || fail "build-signatures entry helper"
-if grep '"name": "sum3"' $SIGS >/dev/null; then fail "short signature accepted"; fi
+grep -q '"name": "sum3"' $SIGS || fail "short callee body missing"
 ident=$("$BIN" --identify $FIX/alt.o --signatures $SIGS 2>/dev/null)
 if echo "$ident" | grep "sum3" >/dev/null; then fail "short match accepted"; fi
 echo "$ident" | grep "helper"                    >/dev/null || fail "identify helper instructions"

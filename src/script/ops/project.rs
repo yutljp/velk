@@ -12,14 +12,14 @@ pub(super) fn handle(
     value: Value,
     deadline: Option<Instant>,
 ) -> Result<Value> {
-    let binary = match session.open_arch(&bin, bin.arch()) {
+    let binary = match bin.open(session) {
         Ok(binary) => binary,
         Err(error) => return Err(error),
     };
     let destination = binary.project_path().to_owned();
     let command = match action.as_str() {
         "origins" => {
-            let binary = match session.open_arch(&bin, bin.arch()) {
+            let binary = match bin.open(session) {
                 Ok(binary) => binary,
                 Err(cause) => return Err(cause),
             };

@@ -513,7 +513,7 @@ rust_demo_arm64: 54042 lines, 942 prelude lines, 10608 variables, 11496 casts, 2
 rust_probe: 54691 lines, 922 prelude lines, 10340 variables, 13032 casts, 11 registers, 0 unsigned, 30 traps, 1367 gotos, 130 indirect calls
 rust_probe_arm64: 54042 lines, 942 prelude lines, 10608 variables, 11496 casts, 24 registers, 0 unsigned, 32 traps, 1333 gotos, 155 indirect calls
 rust_probe_arm64_stripped: 53923 lines, 921 prelude lines, 10604 variables, 11447 casts, 24 registers, 0 unsigned, 32 traps, 1333 gotos, 155 indirect calls
-rust_probe_stripped: 54700 lines, 903 prelude lines, 10494 variables, 13215 casts, 11 registers, 0 unsigned, 31 traps, 1375 gotos, 126 indirect calls
+rust_probe_stripped: 54701 lines, 903 prelude lines, 10494 variables, 13215 casts, 11 registers, 0 unsigned, 31 traps, 1375 gotos, 126 indirect calls
 seh.O0.dll: 100 lines, 8 prelude lines, 14 variables, 15 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
 seh.O2.dll: 69 lines, 8 prelude lines, 6 variables, 2 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
 seh_cpp.O0.dll: 32 lines, 5 prelude lines, 2 variables, 1 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls

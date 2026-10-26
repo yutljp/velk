@@ -89,7 +89,17 @@ fn main() -> ExitCode {
     }
     let arch = cli.arch;
     let decode_strings = !cli.no_string_decoding;
-    match cli::run(cli.into_command(), project.as_deref(), arch, decode_strings) {
+    let signature_options = velk::service::SignatureOptions {
+        defaults: !cli.no_default_signatures,
+        files: cli.signatures.clone(),
+    };
+    match cli::run(
+        cli.into_command(),
+        project.as_deref(),
+        arch,
+        decode_strings,
+        &signature_options,
+    ) {
         Ok(code) => code,
         Err(Error::Project(detail)) => {
             eprintln!("{}", json!(detail));
@@ -322,7 +332,6 @@ mod tests {
                     path: PathBuf::from("binary"),
                     function: "sum3".into(),
                     budget: 360,
-                    signatures: Some(PathBuf::from("db.json")),
                 },
             ),
             (
@@ -330,7 +339,6 @@ mod tests {
                 Command::Decompile {
                     path: PathBuf::from("binary"),
                     functions: vec!["0x1e0".into()],
-                    signatures: Some(PathBuf::from("db.json")),
                 },
             ),
             (
@@ -359,7 +367,6 @@ mod tests {
                 vec!["binary", "--signatures", "db.json", "--limit", "12"],
                 Command::Identify {
                     path: PathBuf::from("binary"),
-                    signatures: PathBuf::from("db.json"),
                     limit: 12,
                 },
             ),
@@ -397,7 +404,6 @@ mod tests {
                 path: PathBuf::from("binary"),
                 function: "sum3".into(),
                 budget: card::DEFAULT_BUDGET,
-                signatures: None,
             }
         );
         assert_eq!(
@@ -412,7 +418,6 @@ mod tests {
             parse(&["-I", "binary", "--signatures", "db.json"]),
             Command::Identify {
                 path: PathBuf::from("binary"),
-                signatures: PathBuf::from("db.json"),
                 limit: 100,
             }
         );
@@ -438,12 +443,10 @@ mod tests {
                 ErrorKind::MissingRequiredArgument
             );
         }
-        for flag in ["--build-signatures", "--identify"] {
-            assert_eq!(
-                error(&[flag, "binary"]).kind(),
-                ErrorKind::MissingRequiredArgument
-            );
-        }
+        assert_eq!(
+            error(&["--build-signatures", "binary"]).kind(),
+            ErrorKind::MissingRequiredArgument
+        );
     }
 
     #[test]
@@ -452,7 +455,6 @@ mod tests {
             vec!["-s", "binary", "--limit", "1"],
             vec!["-d", "binary", "sum3", "--budget", "20"],
             vec!["-D", "binary", "sum3", "--json"],
-            vec!["-d", "binary", "sum3", "--signatures", "db.json"],
             vec!["-f", "binary", "--output", "db.json"],
             vec!["-f", "binary", "sum3"],
             vec!["-s", "binary", "sum3"],
@@ -522,7 +524,6 @@ mod tests {
             vec!["--limit", "1"],
             vec!["--budget", "1"],
             vec!["--json"],
-            vec!["--signatures", "db.json"],
             vec!["--output", "db.json"],
         ] {
             let mut args = vec!["--emulate", "binary", "decode"];
@@ -537,6 +538,39 @@ mod tests {
             Cli::try_parse_from(["velk", "--functions", "binary", "--emulation-options", "{}"])
                 .is_err()
         );
+    }
+
+    #[test]
+    fn signature_options_apply_to_binary_operations() {
+        for operation in [
+            "--functions",
+            "--identify",
+            "--decompile",
+            "--emulate",
+            "--summary",
+        ] {
+            let mut args = vec!["velk", operation, "binary"];
+            if matches!(operation, "--decompile" | "--emulate" | "--summary") {
+                args.push("main");
+            }
+            args.extend([
+                "--no-default-signatures",
+                "--signatures",
+                "first.json",
+                "--signatures",
+                "second.json.gz",
+            ]);
+            let cli = Cli::try_parse_from(args).unwrap();
+            assert!(cli.no_default_signatures);
+            assert_eq!(
+                cli.signatures,
+                [PathBuf::from("first.json"), PathBuf::from("second.json.gz")]
+            );
+        }
+        assert!(matches!(
+            parse(&["--identify", "binary"]),
+            Command::Identify { .. }
+        ));
     }
 
     #[test]

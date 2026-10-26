@@ -39,7 +39,7 @@ int sum_until_zero(int *p, int n) {
 ## Features
 
 - Cross references, call graphs, string and constant searches, and function summaries.
-- Byte signatures to identify stripped library functions.
+- Automatic [library names](docs/LIBRARY_SIGNATURES.md) from embedded signatures, with a separate full database for musl, mbedTLS, libsodium, OpenSSL libcrypto, common Rust standard library code, zlib checksums and xxHash.
 - Generated C API type libraries for macOS, Windows (Win32 and the C runtime), and Linux (glibc).
 - Persistent names, types and comments in project files (`--project`, `--annotate`).
 - [Compare program versions](docs/COMPARISON.md), review C and block differences, and copy annotations to matching functions (`--compare`, `--carry-annotations`).
@@ -140,6 +140,18 @@ The JavaScript API and MCP provide `b.search(pattern, options)`,
 `b.readMemory(address, type, {count})` and `b.detectConstants()`.
 See [memory queries](docs/MEMORY.md) for encodings, bounds, types and exact
 constant signatures.
+
+Library signatures apply automatically when a binary is opened. `velk -f app`
+shows the recovered names, source sets and certainty; `velk -D app XXH32` prints
+a matched function. `--identify app` also lists unresolved candidates.
+Use `--no-default-signatures` to disable the embedded sets and repeat
+`--signatures custom.json` to add user sets. Build the full database with the
+documented rebuild script, then load it with
+`--signatures target/library-signatures/libraries.json.gz`. Gzip-compressed JSON
+uses the same option. JavaScript and MCP accept
+`velk.open("app", {defaultSignatures: false, signatures: ["custom.json"]})`.
+See [library signatures](docs/LIBRARY_SIGNATURES.md) for coverage, licenses,
+rebuilding and measurements.
 
 Constant control-flow predicates are removed only when integer identities or tracked
 constant values prove their result for every input. Dispatch loops whose incoming

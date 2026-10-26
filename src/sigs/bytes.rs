@@ -1,6 +1,6 @@
 //! Conservative instruction signatures for objects, archives, and loaded binaries.
 
-use std::collections::{BTreeMap, HashMap, HashSet};
+use std::collections::HashSet;
 use std::path::Path;
 use std::time::Instant;
 
@@ -11,11 +11,18 @@ use crate::deadline::passed;
 use crate::error::{Error, Result};
 use crate::loader::{Image, Isa};
 
+mod constants;
+mod discover;
+pub(crate) use discover::arm32 as discover_arm32;
+mod matching;
 mod normalize;
+mod registers;
+pub(crate) use matching::{MatchScope, identify};
 #[cfg(test)]
 use normalize::normalize;
 
-const MIN_BYTES: usize = 32;
+const MIN_BYTES: usize = 4;
+const MIN_NAMED_BYTES: usize = 32;
 const MAX_BYTES: u64 = 1 << 20;
 
 #[derive(Debug, PartialEq)]
@@ -25,12 +32,27 @@ struct DirectCall {
     target: u64,
 }
 
+struct ConstantRead {
+    offset: usize,
+    next: usize,
+    target: u64,
+    size: usize,
+}
+
 struct Body {
     bytes: Vec<u8>,
     calls: Vec<DirectCall>,
+    references: Vec<ConstantRead>,
+    name_eligible: bool,
 }
 
-fn make_entry(name: String, isa: Isa, body: Body, calls: Vec<String>) -> Entry {
+fn make_entry(
+    name: String,
+    isa: Isa,
+    body: Body,
+    calls: Vec<String>,
+    constants: Vec<Vec<u8>>,
+) -> Entry {
     Entry {
         name,
         isa,
@@ -39,10 +61,17 @@ fn make_entry(name: String, isa: Isa, body: Body, calls: Vec<String>) -> Entry {
         tokens: Vec::new(),
         bytes: body.bytes,
         calls,
+        set: None,
+        constants,
     }
 }
 
 pub(crate) fn image_entries(image: &Image, deadline: Option<Instant>) -> Result<Vec<Entry>> {
+    if matches!(image.isa, Isa::Arm32 | Isa::AArch64)
+        && image.byte_order() != Some(object::Endianness::Little)
+    {
+        return Ok(Vec::new());
+    }
     let functions: Vec<_> = image.functions.values().collect();
     let found = crate::parallel::map(&functions, |function| {
         if let Err(error) = passed(deadline) {
@@ -51,7 +80,10 @@ pub(crate) fn image_entries(image: &Image, deadline: Option<Instant>) -> Result<
         let (Some(name), Some(size)) = (&function.name, function.size) else {
             return Ok(None);
         };
-        if size > MAX_BYTES {
+        if size > MAX_BYTES
+            || (image.isa == Isa::Arm32
+                && image.arm_mode(function.addr) != crate::loader::ArmMode::Arm)
+        {
             return Ok(None);
         }
         let Some(bytes) = image.read_vaddr(function.addr, size) else {
@@ -74,7 +106,16 @@ pub(crate) fn image_entries(image: &Image, deadline: Option<Instant>) -> Result<
         let Some(calls) = calls else {
             return Ok(None);
         };
-        Ok(Some(make_entry(name.clone(), image.isa, body, calls)))
+        let Some(constants) = constants::image(image, &body) else {
+            return Ok(None);
+        };
+        Ok(Some(make_entry(
+            name.clone(),
+            image.isa,
+            body,
+            calls,
+            constants,
+        )))
     });
     let mut entries = Vec::new();
     for result in found {
@@ -85,112 +126,6 @@ pub(crate) fn image_entries(image: &Image, deadline: Option<Instant>) -> Result<
         }
     }
     Ok(entries)
-}
-
-pub(crate) fn identify(
-    image: &Image,
-    database: &Database,
-    deadline: Option<Instant>,
-) -> Result<Vec<(u64, String)>> {
-    let mut index: HashMap<&[u8], Vec<&Entry>> = HashMap::new();
-    for entry in &database.entries {
-        if entry.isa == image.isa && entry.bytes.len() >= MIN_BYTES {
-            index.entry(&entry.bytes).or_default().push(entry);
-        }
-    }
-    let functions: Vec<_> = image.functions.values().collect();
-    let found = crate::parallel::map(&functions, |function| {
-        if let Err(error) = passed(deadline) {
-            return Err(error);
-        }
-        let Some(size) = function.size.filter(|size| *size <= MAX_BYTES) else {
-            return Ok(None);
-        };
-        let Some(bytes) = image.read_vaddr(function.addr, size) else {
-            return Ok(None);
-        };
-        let Some(body) = normalize::normalize(image.isa, bytes, function.addr, &HashSet::new())
-        else {
-            return Ok(None);
-        };
-        let Some(entries) = index.get(body.bytes.as_slice()) else {
-            return Ok(None);
-        };
-        let first = entries[0];
-        // Repeated copies of the same signature are harmless; aliases are ambiguous.
-        if entries
-            .iter()
-            .any(|entry| entry.name != first.name || entry.calls != first.calls)
-            || first.calls.len() != body.calls.len()
-        {
-            return Ok(None);
-        }
-        Ok(Some((function.addr, (first, body.calls))))
-    });
-    let mut candidates = BTreeMap::new();
-    for result in found {
-        match result {
-            Ok(Some((addr, candidate))) => {
-                candidates.insert(addr, candidate);
-            }
-            Ok(None) => {}
-            Err(error) => return Err(error),
-        }
-    }
-
-    // Prune until every direct edge agrees, including recursive components.
-    loop {
-        if let Err(error) = passed(deadline) {
-            return Err(error);
-        }
-        let rejected: Vec<_> = candidates
-            .iter()
-            .filter_map(|(addr, (entry, calls))| {
-                calls
-                    .iter()
-                    .zip(&entry.calls)
-                    .any(|(call, expected)| {
-                        candidates
-                            .get(&call.target)
-                            .is_none_or(|(callee, _)| &callee.name != expected)
-                    })
-                    .then_some(*addr)
-            })
-            .collect();
-        if rejected.is_empty() {
-            break;
-        }
-        for addr in rejected {
-            candidates.remove(&addr);
-        }
-    }
-    // One name cannot identify multiple distinct functions in the target.
-    let mut counts = HashMap::new();
-    for (entry, _) in candidates.values() {
-        *counts.entry(&entry.name).or_insert(0) += 1;
-    }
-    let duplicate: HashSet<_> = candidates
-        .iter()
-        .filter_map(|(addr, (entry, _))| (counts[&entry.name] != 1).then_some(*addr))
-        .collect();
-    // Removing duplicate destinations must also remove their callers.
-    let mut rejected = duplicate;
-    loop {
-        let previous = rejected.len();
-        for (addr, (_, calls)) in &candidates {
-            if calls.iter().any(|call| rejected.contains(&call.target)) {
-                rejected.insert(*addr);
-            }
-        }
-        if rejected.len() == previous {
-            break;
-        }
-    }
-    Ok(candidates
-        .into_iter()
-        .filter(|(addr, _)| !rejected.contains(addr))
-        .map(|(addr, (entry, _))| (addr, entry.name.clone()))
-        .collect())
 }
 
 /// Builds signatures directly from an object or archive without lifting its functions.
@@ -288,8 +223,13 @@ fn object_entries(
     let isa = match file.architecture() {
         object::Architecture::X86_64 => Isa::X86_64,
         object::Architecture::Aarch64 => Isa::AArch64,
+        object::Architecture::I386 => Isa::I386,
+        object::Architecture::Arm => Isa::Arm32,
         _ => return Ok(()),
     };
+    if matches!(isa, Isa::Arm32 | Isa::AArch64) && file.endianness() != object::Endianness::Little {
+        return Ok(());
+    }
     for section in file.sections() {
         if section.kind() != object::SectionKind::Text {
             continue;
@@ -312,6 +252,9 @@ fn object_entries(
             let Ok(name) = symbol.name() else {
                 continue;
             };
+            if isa == Isa::Arm32 && symbol.address() & 1 != 0 {
+                continue;
+            }
             let Some(offset) = symbol
                 .address()
                 .checked_sub(section.address())
@@ -348,11 +291,21 @@ fn object_entries(
             let Some(body) = normalize::normalize(isa, bytes, symbol.address(), &relocated) else {
                 continue;
             };
+            let Some(constants) = constants::object(file, &body, &relevant, offset) else {
+                continue;
+            };
             let mut calls = Vec::new();
             let mut valid = true;
-            // Only direct branch relocations are supported. Data references are not wildcarded.
+            // Constant loads were checked above; remaining relocations must be direct branches.
             for (at, relocation) in &relevant {
                 let relative = (*at as usize).saturating_sub(offset);
+                if body
+                    .references
+                    .iter()
+                    .any(|reference| reference.offset == relative)
+                {
+                    continue;
+                }
                 if !matches!(relocation.target(), object::RelocationTarget::Symbol(_)) {
                     valid = false;
                     break;
@@ -365,16 +318,21 @@ fn object_entries(
                     } = call;
                     let encoded = bytes.get(*start..start.saturating_add(*width));
                     let zero_addend = match (isa, encoded) {
-                        (Isa::X86_64, Some(encoded)) => encoded.iter().all(|byte| *byte == 0),
+                        (Isa::X86_64 | Isa::I386, Some(encoded)) => encoded.iter().all(|byte| *byte == 0)
+                            || (isa == Isa::I386 && encoded == [0xfc, 0xff, 0xff, 0xff]),
                         (Isa::AArch64, Some(encoded)) if encoded.len() == 4 => {
                             u32::from_le_bytes(encoded.try_into().unwrap_or_default()) & 0x03ff_ffff
                                 == 0
+                        }
+                        (Isa::Arm32, Some(encoded)) if encoded.len() == 4 => {
+                            u32::from_le_bytes(encoded.try_into().unwrap_or_default()) & 0x00ff_ffff
+                                == 0x00ff_fffe
                         }
                         _ => false,
                     };
                     *start == relative
                         && zero_addend
-                        && ((isa == Isa::X86_64
+                        && ((matches!(isa, Isa::X86_64 | Isa::I386)
                             && *width == 4
                             && matches!(
                                 relocation.kind(),
@@ -382,7 +340,8 @@ fn object_entries(
                                     | object::RelocationKind::PltRelative
                             )
                             && relocation.size() == 32
-                            && relocation.addend() == -4)
+                            && (relocation.addend() == -4
+                                || (isa == Isa::I386 && relocation.has_implicit_addend())))
                             || (isa == Isa::AArch64
                                 && relocation.size() == 26
                                 && matches!(
@@ -397,6 +356,10 @@ fn object_entries(
                                     }
                                     _ => false,
                                 }
+                                && relocation.addend() == 0)
+                            || (isa == Isa::Arm32
+                                && matches!(relocation.flags(), object::RelocationFlags::Elf { r_type } if matches!(r_type.0, 28 | 29))
+                                && relocation.has_implicit_addend()
                                 && relocation.addend() == 0))
                 });
                 if !branch {
@@ -453,6 +416,7 @@ fn object_entries(
                     isa,
                     body,
                     calls,
+                    constants,
                 ));
             }
         }
@@ -460,5 +424,7 @@ fn object_entries(
     Ok(())
 }
 
+#[cfg(test)]
+mod diagnostics;
 #[cfg(test)]
 mod tests;
