@@ -245,8 +245,7 @@ int32_t sub_201410(uint32_t *a0, int32_t a1) {
         uint8_t v9 = a0[v7] == 1;
         local_1 = v9;
     }
-    uint8_t v15 = local_1;
-    local_0 = v15;
+    local_0 = local_1;
     return local_0 & 0x1;
 }
 -- signature

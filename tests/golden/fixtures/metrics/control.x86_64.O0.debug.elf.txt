@@ -245,8 +245,7 @@ int short_circuit(int *p, int n) {
         uint8_t v9 = p[v7] == 1;
         local_1 = v9;
     }
-    uint8_t v15 = local_1;
-    local_0 = v15;
+    local_0 = local_1;
     return local_0 & 0x1;
 }
 -- signature

@@ -1,8 +1,10 @@
 mod debug;
 mod indexed;
 mod returns;
+mod values;
 
 pub(super) use returns::fold as fold_returns;
+pub(super) use values::fold as fold_values;
 
 use super::unions::MemberIndex;
 use crate::arch::stack_pointer;

@@ -385,7 +385,7 @@ fn count_operands(stmt: &Stmt, dest: u16) -> usize {
 
 /// Replaces the read of `dest` in the statement with the value; false when
 /// the read's width does not fit the value's.
-pub(super) fn substitute(stmt: &mut Stmt, dest: RegRef, value: &Expr) -> bool {
+pub(crate) fn substitute(stmt: &mut Stmt, dest: RegRef, value: &Expr) -> bool {
     if stmt.declared_call_reads().contains(&dest.index)
         || stmt
             .preserved_output_sources()

@@ -1,5 +1,293 @@
 use super::*;
-use velk::ir::{RegRef, VARIABLE_BASE};
+use velk::ir::{CallKind, CallOutput, RegRef, VARIABLE_BASE};
+
+#[test]
+fn adjacent_call_arguments_keep_output_dependencies() {
+    let temporary = VARIABLE_BASE;
+    let result = VARIABLE_BASE + 1;
+    let unused_result = VARIABLE_BASE + 2;
+    let mut ir = synthetic_ir(
+        "adjacent_call_argument",
+        vec![
+            Param {
+                index: 7,
+                name: "input".into(),
+                ty: CType::U64,
+            },
+            Param {
+                index: 6,
+                name: "flag".into(),
+                ty: CType::U64,
+            },
+        ],
+        CType::U64,
+        vec![Stmt::Brif {
+            cond: Cond::Eq,
+            lhs: Expr::reg(6, 64),
+            rhs: Expr::Const(0),
+            target: 2,
+        }],
+    );
+    for start in [1, 2] {
+        ir.blocks.push(Block {
+            start,
+            stmts: vec![
+                Stmt::Assign {
+                    dest: RegRef {
+                        index: temporary,
+                        width: 64,
+                    },
+                    value: Expr::bin(BinOp::Xor, Expr::reg(7, 64), Expr::Const(start)),
+                },
+                Stmt::Call {
+                    kind: CallKind::Invoke,
+                    target: Some(0x1000),
+                    through: None,
+                    convention: Convention::SysV,
+                    args: Some(vec![Expr::reg(temporary, 64)]),
+                    floats_named: false,
+                    abi: None,
+                    clobbers: None,
+                    outputs: vec![
+                        CallOutput {
+                            register: 0,
+                            dest: RegRef {
+                                index: result,
+                                width: 64,
+                            },
+                        },
+                        CallOutput {
+                            register: 2,
+                            dest: RegRef {
+                                index: unused_result,
+                                width: 64,
+                            },
+                        },
+                    ],
+                    via: None,
+                },
+                Stmt::Ret {
+                    value: Expr::reg(result, 64),
+                },
+            ],
+        });
+    }
+    ir.variable_registers = [(temporary, 1), (result, 0), (unused_result, 2)].into();
+    ir.value_types = [
+        (temporary, CType::U64),
+        (result, CType::U64),
+        (unused_result, CType::U64),
+    ]
+    .into();
+    let code = velk::render::render(&ir, &[], &Default::default(), &[]);
+    syntax::run_printed(
+        &format!("uint64_t sub_1000(uint64_t);\n{code}"),
+        "static unsigned calls; uint64_t sub_1000(uint64_t value) { ++calls; return value + 3; }",
+        "calls = 0; if (adjacent_call_argument(0, 0) != 5 || calls != 1) return 1; calls = 0; return adjacent_call_argument(UINT64_MAX, 1) != 1 || calls != 1;",
+    );
+}
+
+#[test]
+fn adjacent_loads_fold_into_stores_without_crossing_memory_effects() {
+    let mut candidates = Vec::new();
+    for (loaded, stored, bits, read) in [
+        (1, 1, 64, 64),
+        (2, 2, 64, 64),
+        (4, 4, 64, 64),
+        (8, 8, 64, 64),
+        (1, 8, 64, 64),
+        (4, 8, 64, 64),
+        (8, 1, 64, 64),
+        (1, 1, 32, 64),
+        (2, 2, 32, 64),
+        (4, 4, 32, 64),
+        (1, 8, 32, 64),
+        (2, 8, 32, 64),
+        (4, 8, 32, 64),
+        (8, 4, 32, 64),
+        (1, 1, 8, 64),
+        (1, 8, 8, 64),
+        (1, 8, 16, 64),
+        (2, 2, 16, 64),
+        (2, 8, 16, 64),
+        (2, 8, 64, 8),
+        (4, 1, 64, 8),
+    ] {
+        for signed in [false, true] {
+            if bits < 64 && signed {
+                continue;
+            }
+            for intervening in [false, true] {
+                let mut stmts = vec![Stmt::Assign {
+                    dest: RegRef {
+                        index: VARIABLE_BASE,
+                        width: bits,
+                    },
+                    value: Expr::Load {
+                        addr: Box::new(Expr::reg(7, 64)),
+                        width: loaded,
+                        signed,
+                    },
+                }];
+                if intervening {
+                    stmts.push(Stmt::Store {
+                        addr: Expr::reg(6, 64),
+                        value: Expr::Const(7),
+                        width: stored,
+                    });
+                }
+                stmts.extend([
+                    Stmt::Store {
+                        addr: Expr::reg(6, 64),
+                        value: Expr::reg(VARIABLE_BASE, read),
+                        width: stored,
+                    },
+                    Stmt::Ret {
+                        value: Expr::Const(0),
+                    },
+                ]);
+                let mut ir = synthetic_ir(
+                    &format!(
+                        "adjacent_load_store_{loaded}_{stored}_{bits}_{read}_{signed}_{intervening}"
+                    ),
+                    vec![
+                        Param {
+                            index: 7,
+                            name: "input".into(),
+                            ty: CType::pointer_to(CType::U64),
+                        },
+                        Param {
+                            index: 6,
+                            name: "output".into(),
+                            ty: CType::pointer_to(CType::U64),
+                        },
+                    ],
+                    CType::U64,
+                    stmts,
+                );
+                if bits < 64 {
+                    ir.value_types
+                        .insert(VARIABLE_BASE, CType::int(bits / 8, /* signed */ false));
+                }
+                let candidate =
+                    printed_candidate(ir, vec![vec![REGION, REGION + 16], vec![REGION, REGION]]);
+                let projected = read < stored * 8 && read < loaded * 8;
+                if loaded == stored || bits == 32 && loaded == 8 || read == 8 {
+                    assert_eq!(
+                        candidate.code.contains(" v1 ="),
+                        intervening || bits == 32 && loaded == 8 || projected,
+                        "{}",
+                        candidate.code
+                    );
+                }
+                candidates.push(candidate);
+            }
+        }
+    }
+    check_candidates("adjacent-load-stores", candidates, Mode::Memory, &[]);
+}
+
+#[test]
+fn adjacent_unsigned_values_fold_after_branch_variables_split() {
+    let first = VARIABLE_BASE;
+    let second = VARIABLE_BASE + 1;
+    let mut candidates = Vec::new();
+    for (repeated, copy, shift) in [
+        (false, false, false),
+        (true, false, false),
+        (false, true, false),
+        (false, false, true),
+    ] {
+        let mut ir = synthetic_ir(
+            &format!("adjacent_branch_values_{repeated}_{copy}_{shift}"),
+            vec![
+                Param {
+                    index: 7,
+                    name: "x".into(),
+                    ty: CType::U64,
+                },
+                Param {
+                    index: 6,
+                    name: "y".into(),
+                    ty: CType::U64,
+                },
+                Param {
+                    index: 2,
+                    name: "flag".into(),
+                    ty: CType::U64,
+                },
+            ],
+            CType::U64,
+            vec![Stmt::Brif {
+                cond: Cond::Eq,
+                lhs: Expr::reg(2, 64),
+                rhs: Expr::Const(0),
+                target: 2,
+            }],
+        );
+        for start in [1, 2] {
+            ir.blocks.push(Block {
+                start,
+                stmts: vec![
+                    Stmt::Assign {
+                        dest: RegRef {
+                            index: first,
+                            width: 64,
+                        },
+                        value: Expr::bin(
+                            if shift { BinOp::Shr } else { BinOp::Xor },
+                            Expr::reg(7, 64),
+                            Expr::Const(start),
+                        ),
+                    },
+                    Stmt::Assign {
+                        dest: RegRef {
+                            index: second,
+                            width: 64,
+                        },
+                        value: if copy {
+                            Expr::reg(first, 64)
+                        } else {
+                            Expr::bin(
+                                BinOp::Add,
+                                Expr::reg(first, 64),
+                                Expr::reg(if repeated { first } else { 6 }, 64),
+                            )
+                        },
+                    },
+                    Stmt::Ret {
+                        value: if copy {
+                            Expr::bin(BinOp::Xor, Expr::reg(second, 64), Expr::reg(first, 64))
+                        } else {
+                            Expr::reg(second, 64)
+                        },
+                    },
+                ],
+            });
+        }
+        ir.variable_registers = [(first, 0), (second, 1)].into();
+        let ty = if copy { CType::I64 } else { CType::U64 };
+        ir.value_types = [(first, ty.clone()), (second, ty)].into();
+        let inputs: Vec<Vec<u64>> = [0, 1, 0x7fff_ffff_ffff_ffff, 0x8000_0000_0000_0000, u64::MAX]
+            .into_iter()
+            .flat_map(|x| [vec![x, x.rotate_left(3), 0], vec![x, x.rotate_left(3), 1]])
+            .collect();
+        let candidate = printed_candidate(ir, inputs);
+        let declarations = candidate
+            .code
+            .lines()
+            .filter(|line| line.contains("int64_t v") && line.contains(" = "))
+            .count();
+        assert_eq!(
+            declarations,
+            if repeated || copy { 2 } else { 1 },
+            "{}",
+            candidate.code
+        );
+        candidates.push(candidate);
+    }
+    check_candidates("adjacent-branch-values", candidates, Mode::Registers, &[]);
+}
 
 #[test]
 fn printed_volatile_integer_reads_keep_their_order() {

@@ -43,8 +43,7 @@ void copy_bytes(unsigned char *dst, unsigned char *src, uint32_t n) {
                 uint8_t v22 = *(uint8_t *)((v9 + 4) & 0xffffffff);
                 v8 += 4;
                 v11->field_0x4 = v22;
-                uint8_t v23 = *(uint8_t *)((v9 + 5) & 0xffffffff);
-                v11->field_0x5 = v23;
+                v11->field_0x5 = *(uint8_t *)((v9 + 5) & 0xffffffff);
                 v11->field_0x6 = *(uint8_t *)((v9 + 6) & 0xffffffff);
                 if (v21 + v8 + 4 == 0) break;
             }
@@ -53,12 +52,10 @@ void copy_bytes(unsigned char *dst, unsigned char *src, uint32_t n) {
             }
             v4 = v8 + 4;
         }
-        uint8_t v24 = *(uint8_t *)((uint32_t)(uintptr_t)src + v4);
-        *(uint8_t *)((uint32_t)(uintptr_t)dst + v4) = v24;
+        *(uint8_t *)((uint32_t)(uintptr_t)dst + v4) = *(uint8_t *)((uint32_t)(uintptr_t)src + v4);
         if (v1 != 1) {
             int32_t v16 = v4 + 1;
-            uint8_t v25 = *(uint8_t *)((uint32_t)(uintptr_t)src + v16);
-            *(uint8_t *)((uint32_t)(uintptr_t)dst + v16) = v25;
+            *(uint8_t *)((uint32_t)(uintptr_t)dst + v16) = *(uint8_t *)((uint32_t)(uintptr_t)src + v16);
             if (v1 != 2) {
                 int32_t v18 = v4 + 2;
                 *(uint8_t *)((uint32_t)(uintptr_t)dst + v18) = *(uint8_t *)((uint32_t)(uintptr_t)src + v18);

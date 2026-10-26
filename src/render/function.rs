@@ -1166,6 +1166,20 @@ fn render_with(
     }
     ctx.read_once = calls::read_once(&nodes);
     render_nodes(&nodes, 1, &mut body, &ctx);
+    let mut folded = nodes.clone();
+    if super::locals::fold_values(ir, &mut folded, &ctx) {
+        let mut candidate = String::new();
+        ctx.read_once = calls::read_once(&folded);
+        render_nodes(&folded, 1, &mut candidate, &ctx);
+        if super::cost::casts(&candidate) <= super::cost::casts(&body)
+            && candidate.lines().count() <= body.lines().count()
+            && candidate.matches("goto ").count() <= body.matches("goto ").count()
+        {
+            body = candidate;
+        } else {
+            ctx.read_once = calls::read_once(&nodes);
+        }
+    }
     super::initializers::drop_unused_constants(
         &mut body,
         decls

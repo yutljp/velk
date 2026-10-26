@@ -186,15 +186,17 @@ fn named_integer_temporary_folds_into_its_only_use() {
     );
     ir.value_types
         .insert(temp, CType::Named("unsigned long".into()));
+    let original = ir.clone();
     let before = velk::render::render(&ir, &[], &Default::default(), &[]);
-    assert!(before.contains("unsigned long v1"), "{before}");
+    assert!(before.contains("return (input + 1) * 3;"), "{before}");
     velk::passes::read_once::fold_values_read_once(&mut ir);
     let code = velk::render::render(&ir, &[], &Default::default(), &[]);
     assert!(!code.contains(" v1"), "{code}");
+    assert_eq!(code, before);
     check_candidates(
         "named-integer-temporary",
         vec![printed_candidate(
-            ir,
+            original,
             [0, 1, u64::MAX, 1 << 63]
                 .into_iter()
                 .map(|value| vec![value])
