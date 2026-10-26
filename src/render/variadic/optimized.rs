@@ -4,12 +4,26 @@ use crate::ir::{BinOp, Cond, Expr, FunctionIr, RegRef, Stmt};
 /// In a 32-bit sum loop, the cached offset advances by eight until zero, then only the
 /// stack pointer advances. Require the complete loop, including both updates.
 pub(super) fn recover(ir: &mut FunctionIr, list: &List, argument: u16) -> bool {
+    let Some(matched) = match_loop(ir, list, argument) else {
+        return false;
+    };
+    matched.apply(ir);
+    true
+}
+
+struct MatchedLoop {
+    target: u64,
+    init: Stmt,
+    body: Vec<Stmt>,
+}
+
+fn match_loop(ir: &FunctionIr, list: &List, argument: u16) -> Option<MatchedLoop> {
     if !matches!(list.layout, Layout::Aapcs64)
         || list.floating
         || ir.blocks.len() != 10
         || !matches!(ir.ret_type.integer(), Some((32, _)))
     {
-        return false;
+        return None;
     }
     let blocks = &ir.blocks;
     let [
@@ -34,7 +48,7 @@ pub(super) fn recover(ir: &mut FunctionIr, list: &List, argument: u16) -> bool {
         },
     ] = blocks[1].stmts.as_slice()
     else {
-        return false;
+        return None;
     };
     let [
         Stmt::Assign {
@@ -43,7 +57,7 @@ pub(super) fn recover(ir: &mut FunctionIr, list: &List, argument: u16) -> bool {
         Stmt::Assign { .. },
     ] = blocks[2].stmts.as_slice()
     else {
-        return false;
+        return None;
     };
     let [
         Stmt::Assign {
@@ -52,17 +66,17 @@ pub(super) fn recover(ir: &mut FunctionIr, list: &List, argument: u16) -> bool {
         Stmt::Br { .. },
     ] = blocks[5].stmts.as_slice()
     else {
-        return false;
+        return None;
     };
     let [decrement, update_offset, consume, update_stack, exit] = blocks[3].stmts.as_slice() else {
-        return false;
+        return None;
     };
     let Stmt::Assign {
         dest: count,
         value: decrement_value,
     } = decrement
     else {
-        return false;
+        return None;
     };
     let regs = [stack, top, offset, next_stack, next_offset, total];
     if regs
@@ -79,7 +93,7 @@ pub(super) fn recover(ir: &mut FunctionIr, list: &List, argument: u16) -> bool {
             .enumerate()
             .any(|(i, reg)| regs[..i].iter().any(|other| other.index == reg.index))
     {
-        return false;
+        return None;
     }
     let r = |reg: &RegRef| Expr::reg(reg.index, reg.width);
     let assign = |dest: &RegRef, value| Stmt::Assign { dest: *dest, value };
@@ -168,7 +182,7 @@ pub(super) fn recover(ir: &mut FunctionIr, list: &List, argument: u16) -> bool {
             ],
         )
     {
-        return false;
+        return None;
     }
     // No other edge may enter the expansion, or bypass its initialization.
     let edges: Vec<_> = (0..blocks.len())
@@ -192,13 +206,13 @@ pub(super) fn recover(ir: &mut FunctionIr, list: &List, argument: u16) -> bool {
             vec![],
         ]
     {
-        return false;
+        return None;
     }
     let Stmt::Assign { dest, value } = consume else {
-        return false;
+        return None;
     };
     if dest != total {
-        return false;
+        return None;
     }
     let sum = |pointer| {
         Expr::bin(
@@ -217,16 +231,16 @@ pub(super) fn recover(ir: &mut FunctionIr, list: &List, argument: u16) -> bool {
     };
     // Preserve the 32-bit sum; wider consumers need their own argument type proof.
     if *value != sum(stack.index) {
-        return false;
+        return None;
     }
     let replacement = sum(argument);
     let [Stmt::Ret { value: returned }] = blocks[9].stmts.as_slice() else {
-        return false;
+        return None;
     };
     if !same_block(&blocks[8].stmts, &[assign(total, Expr::Const(0))])
         || *returned != Expr::bin(BinOp::And, r(total), Expr::Const(0xffff_ffff))
     {
-        return false;
+        return None;
     }
 
     let protocol = [
@@ -251,30 +265,36 @@ pub(super) fn recover(ir: &mut FunctionIr, list: &List, argument: u16) -> bool {
                 .iter()
                 .any(|reg| reads.contains(reg) || writes.contains(reg))
             {
-                return false;
+                return None;
             }
         }
     }
     let target = blocks[3].start;
     let init = blocks[1].stmts[2].clone();
     let body = vec![decrement.clone(), assign(total, replacement), exit.clone()];
-    ir.blocks[1].stmts = vec![
-        init,
-        Stmt::Br {
+    Some(MatchedLoop { target, init, body })
+}
+
+impl MatchedLoop {
+    fn apply(self, ir: &mut FunctionIr) {
+        let Self { target, init, body } = self;
+        ir.blocks[1].stmts = vec![
+            init,
+            Stmt::Br {
+                target: Some(target),
+            },
+        ];
+        ir.blocks[3].stmts = body;
+        ir.blocks[4].stmts = vec![Stmt::Br {
             target: Some(target),
-        },
-    ];
-    ir.blocks[3].stmts = body;
-    ir.blocks[4].stmts = vec![Stmt::Br {
-        target: Some(target),
-    }];
-    let mut index = 0;
-    ir.blocks.retain(|_| {
-        let keep = !matches!(index, 2 | 5 | 6 | 7);
-        index += 1;
-        keep
-    });
-    true
+        }];
+        let mut index = 0;
+        ir.blocks.retain(|_| {
+            let keep = !matches!(index, 2 | 5 | 6 | 7);
+            index += 1;
+            keep
+        });
+    }
 }
 
 fn same_block(actual: &[Stmt], expected: &[Stmt]) -> bool {

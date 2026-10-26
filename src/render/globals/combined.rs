@@ -204,17 +204,8 @@ pub(in crate::render) fn resolve(code: &str) -> String {
         for declaration in body.declarations {
             let (base, offset) = destinations[&declaration.address];
             let global = &globals[&base];
-            let pointer = if offset != 0 {
-                format!(
-                    "(({} *)((uint8_t *){} + {offset}))",
-                    declaration.ty,
-                    global.pointer()
-                )
-            } else if declaration.ty == global.ty {
-                global.pointer()
-            } else {
-                format!("(({} *){})", declaration.ty, global.pointer())
-            };
+            let pointer =
+                super::view_pointer(&global.pointer(), &global.ty, &declaration.ty, offset);
             let value = if declaration.array {
                 pointer.clone()
             } else if offset == 0 && declaration.ty == global.ty && !global.array {

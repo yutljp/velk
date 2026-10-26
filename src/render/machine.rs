@@ -158,123 +158,8 @@ fn render_inner(
                 address()
             )
         }
-        MachineInstruction::Atomic {
-            op,
-            width,
-            ordering,
-        } => {
-            use crate::ir::{AtomicOp, Ordering};
-            let ty = match width {
-                1 => "uint8_t",
-                2 => "uint16_t",
-                4 => "uint32_t",
-                8 => "uint64_t",
-                _ => "unsigned __int128",
-            };
-            let ptr = if super::expr::print(&inputs[0], ctx, 64).is_pointer()
-                && crate::render::naming::pointer_target(&inputs[0], ctx)
-                    == Some(crate::ir::CType::int(width, false))
-            {
-                input(0)
-            } else if let Some(member) =
-                crate::render::naming::member_access(&inputs[0], width, ctx)
-                && member
-                    .ty
-                    .integer()
-                    .is_some_and(|(bits, _)| bits == u32::from(width) * 8)
-            {
-                if member.ty == crate::ir::CType::int(width, false) {
-                    format!("&{}", member.text)
-                } else {
-                    format!("({ty} *)&{}", member.text)
-                }
-            } else {
-                format!("({ty} *)({})", input(0))
-            };
-            let operand = |index| {
-                let value = super::expr::print(&inputs[index], ctx, 64);
-                if value.is_pointer() {
-                    value.address_integer().text
-                } else {
-                    input(index)
-                }
-            };
-            let order = ordering.builtin();
-            if op == AtomicOp::CompareExchange && outputs.len() == 2 {
-                let expected = super::vacant_name("expected", &mut reserved);
-                let half = u32::from(width) * 4;
-                let lo_ty = if width == 16 { "uint64_t" } else { "uint32_t" };
-                return format!(
-                    "{{ {ty} {expected} = ({ty})({lo_ty})({}) | (({ty})({lo_ty})({}) << {half}); __atomic_compare_exchange_n({ptr}, &{expected}, ({ty})({lo_ty})({}) | (({ty})({lo_ty})({}) << {half}), 0, {order}, {order}); {} = ({lo_ty}){expected}; {} = ({lo_ty})({expected} >> {half}); }}",
-                    input(2),
-                    input(4),
-                    input(1),
-                    input(3),
-                    output(0),
-                    output(1)
-                );
-            }
-            match op {
-                AtomicOp::Load => format!("{} = __atomic_load_n({ptr}, {order});", output(0)),
-                AtomicOp::Store => {
-                    format!("__atomic_store_n({ptr}, {}, {order});", operand(1))
-                }
-                AtomicOp::CompareExchange => {
-                    let expected = super::vacant_name("expected", &mut reserved);
-                    let failure = match ordering {
-                        Ordering::Release => Ordering::Relaxed,
-                        Ordering::AcqRel => Ordering::Acquire,
-                        other => other,
-                    }
-                    .builtin();
-                    if tested {
-                        if ctx.read_once.contains(&outputs[0].index) {
-                            return format!(
-                                "__atomic_compare_exchange_n({ptr}, ({ty}[1]){{{}}}, {}, 0, {order}, {failure})",
-                                operand(2),
-                                operand(1)
-                            );
-                        }
-                        return format!(
-                            "({} = {}, __atomic_compare_exchange_n({ptr}, &{}, {}, 0, {order}, {failure}))",
-                            output(0),
-                            operand(2),
-                            output(0),
-                            operand(1)
-                        );
-                    }
-                    if expected_in_output(inputs, outputs, width, ctx) {
-                        return format!(
-                            "{{ {} = {}; __atomic_compare_exchange_n({ptr}, &{}, {}, 0, {order}, {failure}); }}",
-                            output(0),
-                            operand(2),
-                            output(0),
-                            operand(1)
-                        );
-                    }
-                    format!(
-                        "{{ {ty} {expected} = {}; __atomic_compare_exchange_n({ptr}, &{expected}, {}, 0, {order}, {failure}); {} = {expected}; }}",
-                        operand(2),
-                        operand(1),
-                        output(0)
-                    )
-                }
-                _ => {
-                    let name = match op {
-                        AtomicOp::Add => "fetch_add",
-                        AtomicOp::Sub => "fetch_sub",
-                        AtomicOp::And => "fetch_and",
-                        AtomicOp::Or => "fetch_or",
-                        AtomicOp::Xor => "fetch_xor",
-                        _ => "exchange_n",
-                    };
-                    format!(
-                        "{} = __atomic_{name}({ptr}, {}, {order});",
-                        output(0),
-                        operand(1)
-                    )
-                }
-            }
+        MachineInstruction::Atomic { .. } => {
+            render_atomic(instruction, inputs, outputs, ctx, tested, &mut reserved)
         }
         MachineInstruction::Cpuid => {
             let a = super::vacant_name("a", &mut reserved);
@@ -430,4 +315,135 @@ pub(super) fn in_condition(
         &first[..at],
         &first[at + name.len()..]
     ))
+}
+
+fn render_atomic(
+    instruction: MachineInstruction,
+    inputs: &[Expr],
+    outputs: &[RegRef],
+    ctx: &Ctx<'_>,
+    tested: bool,
+    reserved: &mut std::collections::HashSet<String>,
+) -> String {
+    let MachineInstruction::Atomic {
+        op,
+        width,
+        ordering,
+    } = instruction
+    else {
+        unreachable!("atomic rendering requires an atomic instruction");
+    };
+    let input = |index| render_expr(&inputs[index], ctx);
+    let output = |index: usize| ctx.register(outputs[index].index, outputs[index].width);
+    use crate::ir::{AtomicOp, Ordering};
+    let ty = match width {
+        1 => "uint8_t",
+        2 => "uint16_t",
+        4 => "uint32_t",
+        8 => "uint64_t",
+        _ => "unsigned __int128",
+    };
+    let ptr = if super::expr::print(&inputs[0], ctx, 64).is_pointer()
+        && crate::render::naming::pointer_target(&inputs[0], ctx)
+            == Some(crate::ir::CType::int(width, false))
+    {
+        input(0)
+    } else if let Some(member) = crate::render::naming::member_access(&inputs[0], width, ctx)
+        && member
+            .ty
+            .integer()
+            .is_some_and(|(bits, _)| bits == u32::from(width) * 8)
+    {
+        if member.ty == crate::ir::CType::int(width, false) {
+            format!("&{}", member.text)
+        } else {
+            format!("({ty} *)&{}", member.text)
+        }
+    } else {
+        format!("({ty} *)({})", input(0))
+    };
+    let operand = |index| {
+        let value = super::expr::print(&inputs[index], ctx, 64);
+        if value.is_pointer() {
+            value.address_integer().text
+        } else {
+            input(index)
+        }
+    };
+    let order = ordering.builtin();
+    if op == AtomicOp::CompareExchange && outputs.len() == 2 {
+        let expected = super::vacant_name("expected", reserved);
+        let half = u32::from(width) * 4;
+        let lo_ty = if width == 16 { "uint64_t" } else { "uint32_t" };
+        return format!(
+            "{{ {ty} {expected} = ({ty})({lo_ty})({}) | (({ty})({lo_ty})({}) << {half}); __atomic_compare_exchange_n({ptr}, &{expected}, ({ty})({lo_ty})({}) | (({ty})({lo_ty})({}) << {half}), 0, {order}, {order}); {} = ({lo_ty}){expected}; {} = ({lo_ty})({expected} >> {half}); }}",
+            input(2),
+            input(4),
+            input(1),
+            input(3),
+            output(0),
+            output(1)
+        );
+    }
+    match op {
+        AtomicOp::Load => format!("{} = __atomic_load_n({ptr}, {order});", output(0)),
+        AtomicOp::Store => {
+            format!("__atomic_store_n({ptr}, {}, {order});", operand(1))
+        }
+        AtomicOp::CompareExchange => {
+            let expected = super::vacant_name("expected", reserved);
+            let failure = match ordering {
+                Ordering::Release => Ordering::Relaxed,
+                Ordering::AcqRel => Ordering::Acquire,
+                other => other,
+            }
+            .builtin();
+            if tested {
+                if ctx.read_once.contains(&outputs[0].index) {
+                    return format!(
+                        "__atomic_compare_exchange_n({ptr}, ({ty}[1]){{{}}}, {}, 0, {order}, {failure})",
+                        operand(2),
+                        operand(1)
+                    );
+                }
+                return format!(
+                    "({} = {}, __atomic_compare_exchange_n({ptr}, &{}, {}, 0, {order}, {failure}))",
+                    output(0),
+                    operand(2),
+                    output(0),
+                    operand(1)
+                );
+            }
+            if expected_in_output(inputs, outputs, width, ctx) {
+                return format!(
+                    "{{ {} = {}; __atomic_compare_exchange_n({ptr}, &{}, {}, 0, {order}, {failure}); }}",
+                    output(0),
+                    operand(2),
+                    output(0),
+                    operand(1)
+                );
+            }
+            format!(
+                "{{ {ty} {expected} = {}; __atomic_compare_exchange_n({ptr}, &{expected}, {}, 0, {order}, {failure}); {} = {expected}; }}",
+                operand(2),
+                operand(1),
+                output(0)
+            )
+        }
+        _ => {
+            let name = match op {
+                AtomicOp::Add => "fetch_add",
+                AtomicOp::Sub => "fetch_sub",
+                AtomicOp::And => "fetch_and",
+                AtomicOp::Or => "fetch_or",
+                AtomicOp::Xor => "fetch_xor",
+                _ => "exchange_n",
+            };
+            format!(
+                "{} = __atomic_{name}({ptr}, {}, {order});",
+                output(0),
+                operand(1)
+            )
+        }
+    }
 }

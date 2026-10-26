@@ -91,12 +91,14 @@ fn integer_members(
 
 // Limit projection to a complete straight-line copy and construction. No address
 // or intermediate object survives this pattern, so neither can escape.
-pub(super) fn project(
-    ir: &mut FunctionIr,
-    plan: &mut Plan,
+fn projection(
+    ir: &FunctionIr,
+    plan: &Plan,
     mut reserved: std::collections::HashSet<String>,
-) {
-    let Some(result) = &plan.result else { return };
+) -> Option<Projection> {
+    let Some(result) = &plan.result else {
+        return None;
+    };
     if result.indirect
         || result.pieces.len() != 1
         || !plan.pointers.is_empty()
@@ -105,7 +107,7 @@ pub(super) fn project(
         || plan.captures.len() != plan.params.len()
         || plan.params.is_empty()
     {
-        return;
+        return None;
     }
     let ty = result.ty.to_string();
     let Some(definition) = ir
@@ -113,7 +115,7 @@ pub(super) fn project(
         .iter()
         .find(|definition| definition.name == ty)
     else {
-        return;
+        return None;
     };
     if !ty.starts_with("struct ")
         || definition.size != 8
@@ -123,7 +125,7 @@ pub(super) fn project(
         || !definition.contains.is_empty()
         || plan.params.iter().any(|(_, arg)| arg.to_string() != ty)
     {
-        return;
+        return None;
     }
     let mut members: Vec<_> = ir
         .members
@@ -141,19 +143,19 @@ pub(super) fn project(
                 || super::super::globals::reserved_identifier(&member.name)
         })
     {
-        return;
+        return None;
     }
     let Some(signature) = &ir.declared_signature else {
-        return;
+        return None;
     };
-    let Ok(abi) = &signature.abi else { return };
+    let Ok(abi) = &signature.abi else { return None };
     if abi.arguments.iter().chain(&abi.result).any(|value| {
         !value.aggregate
             || value.size != 8
             || value.alignment != 4
             || value.defined_bits != [(0, 64)]
     }) {
-        return;
+        return None;
     }
     if plan
         .captures
@@ -166,12 +168,12 @@ pub(super) fn project(
                 || piece.class != Some(RegisterClass::Integer)
         })
     {
-        return;
+        return None;
     }
     let stmts = &ir.blocks[0].stmts;
     let count = plan.captures.len();
     if stmts.len() != count.saturating_add(3) {
-        return;
+        return None;
     }
     let sp = crate::arch::stack_pointer(ir.isa);
     let slot = |addr: &Expr| match addr {
@@ -196,23 +198,23 @@ pub(super) fn project(
             width: 8,
         } = stmt
         else {
-            return;
+            return None;
         };
         if *index != capture.register {
-            return;
+            return None;
         }
-        let Some(start) = slot(addr) else { return };
+        let Some(start) = slot(addr) else { return None };
         let Some(end) = start.checked_add(8) else {
-            return;
+            return None;
         };
         if start < -(crate::ir::eval::STACK_SPAN as i64) || end > 0 {
-            return;
+            return None;
         }
         if slots
             .iter()
             .any(|&(other, stop)| start < stop && other < end)
         {
-            return;
+            return None;
         }
         slots.push((start, end));
     }
@@ -223,23 +225,25 @@ pub(super) fn project(
         },
     } = &stmts[count + 2]
     else {
-        return;
+        return None;
     };
     let [Expr::Load { addr, width: 8, .. }] = args.as_slice() else {
-        return;
+        return None;
     };
-    let Some(output) = slot(addr) else { return };
+    let Some(output) = slot(addr) else {
+        return None;
+    };
     let Some(end) = output.checked_add(8) else {
-        return;
+        return None;
     };
     if output < -(crate::ir::eval::STACK_SPAN as i64) || end > 0 {
-        return;
+        return None;
     }
     if slots
         .iter()
         .any(|&(start, stop)| output < stop && start < end)
     {
-        return;
+        return None;
     }
     let mut values = Vec::new();
     for field in 0..2 {
@@ -249,10 +253,10 @@ pub(super) fn project(
             width: 4,
         } = &stmts[count + field]
         else {
-            return;
+            return None;
         };
         if slot(addr) != output.checked_add(field as i64 * 4) {
-            return;
+            return None;
         }
         values.push(value.clone());
     }
@@ -273,10 +277,10 @@ pub(super) fn project(
         let mut pair = Vec::new();
         for member in &members {
             let Some(index) = next.checked_add(1) else {
-                return;
+                return None;
             };
             if index >= crate::ir::VALUE_BASE {
-                return;
+                return None;
             }
             next = index;
             pair.push(index);
@@ -335,12 +339,38 @@ pub(super) fn project(
         .iter_mut()
         .all(|value| replace(value, &slots, &registers, &slot))
     {
-        return;
+        return None;
     }
+    Some(Projection {
+        fields: members.iter().map(|member| member.name.clone()).collect(),
+        captures,
+        values,
+    })
+}
+
+struct Projection {
+    fields: Vec<String>,
+    captures: Vec<Capture>,
+    values: Vec<Expr>,
+}
+
+pub(super) fn project(
+    ir: &mut FunctionIr,
+    plan: &mut Plan,
+    reserved: std::collections::HashSet<String>,
+) {
+    let Some(Projection {
+        fields,
+        captures,
+        values,
+    }) = projection(ir, plan, reserved)
+    else {
+        return;
+    };
     plan.result
         .as_mut()
         .expect("the result was required before validating its fields")
-        .fields = members.iter().map(|member| member.name.clone()).collect();
+        .fields = fields;
     ir.params = captures
         .iter()
         .map(|capture| Param {

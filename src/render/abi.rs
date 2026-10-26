@@ -118,7 +118,15 @@ fn logical_type(ty: &CType, value: &ValueAbi, returned: bool) -> Option<CType> {
     Some(ty.clone())
 }
 
-pub(super) fn prepare(ir: &mut FunctionIr, symbols: &Symbols) -> Option<Plan> {
+struct ValidatedAbi<'ir> {
+    signature: &'ir crate::ir::DeclaredSignature,
+    params: Vec<(String, CType)>,
+    ret: CType,
+    demanded: std::collections::HashMap<u16, u64>,
+    captured: HashSet<u16>,
+}
+
+fn validate(ir: &FunctionIr) -> Option<ValidatedAbi<'_>> {
     let Some(signature) = ir.declared_signature.as_ref() else {
         return None;
     };
@@ -205,6 +213,29 @@ pub(super) fn prepare(ir: &mut FunctionIr, symbols: &Symbols) -> Option<Plan> {
             }
         }
     }
+    Some(ValidatedAbi {
+        signature,
+        params,
+        ret,
+        demanded,
+        captured,
+    })
+}
+
+pub(super) fn prepare(ir: &mut FunctionIr, symbols: &Symbols) -> Option<Plan> {
+    let Some(ValidatedAbi {
+        signature,
+        params,
+        ret,
+        demanded,
+        captured,
+    }) = validate(ir)
+    else {
+        return None;
+    };
+    let Ok(abi) = signature.abi.as_ref() else {
+        unreachable!("ABI validation requires a supported signature");
+    };
     let mut reserved: HashSet<String> = ir
         .params
         .iter()

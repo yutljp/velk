@@ -25,6 +25,46 @@ enum Layout {
     Apple,
 }
 
+struct LayoutDescriptor {
+    offsets: [Option<i64>; 2],
+    stack: i64,
+    tops: [i64; 2],
+    limits: [i64; 2],
+    fields: &'static [(i64, u8)],
+    size: i64,
+}
+
+impl Layout {
+    fn descriptor(self) -> LayoutDescriptor {
+        match self {
+            Self::SysV => LayoutDescriptor {
+                offsets: [Some(0), Some(4)],
+                stack: 8,
+                tops: [16, 16],
+                limits: [48, 176],
+                fields: &[(0, 4), (4, 4), (8, 8), (16, 8)],
+                size: 24,
+            },
+            Self::Aapcs64 => LayoutDescriptor {
+                offsets: [Some(24), Some(28)],
+                stack: 0,
+                tops: [8, 16],
+                limits: [0, 0],
+                fields: &[(0, 8), (8, 8), (16, 8), (24, 4), (28, 4)],
+                size: 32,
+            },
+            Self::Apple => LayoutDescriptor {
+                offsets: [None, None],
+                stack: 0,
+                tops: [8, 16],
+                limits: [0, 0],
+                fields: &[(0, 8)],
+                size: 8,
+            },
+        }
+    }
+}
+
 struct List {
     floating: bool,
     layout: Layout,
@@ -35,20 +75,14 @@ struct List {
 
 impl List {
     fn offset(&self) -> Option<i64> {
-        match self.layout {
-            Layout::SysV => self.base.checked_add(if self.floating { 4 } else { 0 }),
-            Layout::Aapcs64 => self.base.checked_add(if self.floating { 28 } else { 24 }),
-            Layout::Apple => None,
-        }
+        let Some(offset) = self.layout.descriptor().offsets[usize::from(self.floating)] else {
+            return None;
+        };
+        self.base.checked_add(offset)
     }
 
     fn gp_offset(&self) -> i64 {
-        self.base
-            + if matches!(self.layout, Layout::Aapcs64) {
-                24
-            } else {
-                0
-            }
+        self.base + self.layout.descriptor().offsets[0].unwrap_or(0)
     }
 
     fn step(&self) -> i64 {
@@ -56,39 +90,25 @@ impl List {
     }
 
     fn stack(&self) -> i64 {
-        self.base
-            + if matches!(self.layout, Layout::SysV) {
-                8
-            } else {
-                0
-            }
+        self.base + self.layout.descriptor().stack
     }
 
     fn fields(&self) -> Vec<(i64, u8)> {
-        match self.layout {
-            Layout::SysV => vec![
-                (self.base, 4),
-                (self.base + 4, 4),
-                (self.base + 8, 8),
-                (self.base + 16, 8),
-            ],
-            Layout::Aapcs64 => vec![
-                (self.base, 8),
-                (self.base + 8, 8),
-                (self.base + 16, 8),
-                (self.base + 24, 4),
-                (self.base + 28, 4),
-            ],
-            Layout::Apple => vec![(self.base, 8)],
-        }
+        self.layout
+            .descriptor()
+            .fields
+            .iter()
+            .map(|(offset, width)| (self.base + offset, *width))
+            .collect()
     }
 
     fn states(&self) -> Vec<i64> {
+        let limit = self.layout.descriptor().limits[usize::from(self.floating)];
         match self.layout {
-            Layout::SysV if self.floating => (48..=176).step_by(16).collect(),
-            Layout::SysV => (self.named * 8..=48).step_by(8).collect(),
-            Layout::Aapcs64 if self.floating => (-128..=0).step_by(16).collect(),
-            Layout::Aapcs64 => ((self.named - 8) * 8..=0).step_by(8).collect(),
+            Layout::SysV if self.floating => (48..=limit).step_by(16).collect(),
+            Layout::SysV => (self.named * 8..=limit).step_by(8).collect(),
+            Layout::Aapcs64 if self.floating => (-128..=limit).step_by(16).collect(),
+            Layout::Aapcs64 => ((self.named - 8) * 8..=limit).step_by(8).collect(),
             Layout::Apple => vec![0],
         }
     }
@@ -527,13 +547,12 @@ pub(super) fn prepare(ir: &mut FunctionIr, symbols: &Symbols) -> Option<Plan> {
             }
         }
     }
-    let incoming = address(sp, if matches!(layout, Layout::SysV) { 8 } else { 0 });
+    let incoming = address(sp, layout.descriptor().stack);
     for (&(stack, width), value) in &initial.memory {
         if width != 8 || *value != incoming {
             continue;
         }
-        let Some(base) = stack.checked_sub(if matches!(layout, Layout::SysV) { 8 } else { 0 })
-        else {
+        let Some(base) = stack.checked_sub(layout.descriptor().stack) else {
             continue;
         };
         // Keep every subsequent field and extent calculation in range.
@@ -688,10 +707,13 @@ fn valid_initial(ir: &FunctionIr, initial: &State, list: &List) -> bool {
     let (Some(gp_top), Some(fp_top)) = (gp_top, fp_top) else {
         return false;
     };
-    let (gp_field, fp_field, fp_offset_field) = match list.layout {
-        Layout::SysV if gp_top.checked_add(48) == Some(fp_top) => (16, 16, 4),
-        Layout::SysV => return false,
-        _ => (8, 16, 28),
+    if matches!(list.layout, Layout::SysV) && gp_top.checked_add(48) != Some(fp_top) {
+        return false;
+    }
+    let descriptor = list.layout.descriptor();
+    let [gp_field, fp_field] = descriptor.tops;
+    let Some(fp_offset_field) = descriptor.offsets[1] else {
+        return false;
     };
     if saves.stores.iter().any(|(block, position)| {
         let Stmt::Store { addr, value, width } = &ir.blocks[*block].stmts[*position] else {
@@ -715,13 +737,7 @@ fn valid_initial(ir: &FunctionIr, initial: &State, list: &List) -> bool {
 fn mentions_list(expr: &Expr, list: &List) -> bool {
     if let Some(offset) = slot(expr, list.sp)
         && offset >= list.base
-        && offset
-            < list.base
-                + match list.layout {
-                    Layout::SysV => 24,
-                    Layout::Aapcs64 => 32,
-                    Layout::Apple => 8,
-                }
+        && offset < list.base + list.layout.descriptor().size
     {
         return true;
     }
@@ -746,18 +762,14 @@ fn trace(ir: &FunctionIr, list: &List, start: usize, offset: i64, register: u16)
             .memory
             .insert((field, 4), Expr::Const(offset as u32 as u64));
     }
-    let top_field = list.base
-        + if matches!(list.layout, Layout::SysV) || list.floating {
-            16
-        } else {
-            8
-        };
+    let descriptor = list.layout.descriptor();
+    let top_field = list.base + descriptor.tops[usize::from(list.floating)];
     if !matches!(list.layout, Layout::Apple) {
         state.memory.insert((top_field, 8), Expr::reg(TOP, 64));
     }
     let in_register = match list.layout {
-        Layout::SysV => offset < if list.floating { 176 } else { 48 },
-        Layout::Aapcs64 => offset < 0,
+        Layout::SysV => offset < descriptor.limits[usize::from(list.floating)],
+        Layout::Aapcs64 => offset < descriptor.limits[usize::from(list.floating)],
         Layout::Apple => false,
     };
     let expected = if in_register {
@@ -1180,4 +1192,93 @@ fn drop_unused_addresses(ir: &mut FunctionIr, sp: u16, saved: &[(i64, u8)]) {
         return;
     }
     *ir = omitted;
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn layout_fields_and_exhausted_states_keep_their_offsets() {
+        let cases = [
+            (
+                Layout::SysV,
+                false,
+                Some(100),
+                100,
+                108,
+                116,
+                vec![(100, 4), (104, 4), (108, 8), (116, 8)],
+                vec![16, 24, 32, 40, 48],
+            ),
+            (
+                Layout::SysV,
+                true,
+                Some(104),
+                100,
+                108,
+                116,
+                vec![(100, 4), (104, 4), (108, 8), (116, 8)],
+                vec![48, 64, 80, 96, 112, 128, 144, 160, 176],
+            ),
+            (
+                Layout::Aapcs64,
+                false,
+                Some(124),
+                124,
+                100,
+                108,
+                vec![(100, 8), (108, 8), (116, 8), (124, 4), (128, 4)],
+                vec![-48, -40, -32, -24, -16, -8, 0],
+            ),
+            (
+                Layout::Aapcs64,
+                true,
+                Some(128),
+                124,
+                100,
+                116,
+                vec![(100, 8), (108, 8), (116, 8), (124, 4), (128, 4)],
+                vec![-128, -112, -96, -80, -64, -48, -32, -16, 0],
+            ),
+            (
+                Layout::Apple,
+                false,
+                None,
+                100,
+                100,
+                108,
+                vec![(100, 8)],
+                vec![0],
+            ),
+            (
+                Layout::Apple,
+                true,
+                None,
+                100,
+                100,
+                116,
+                vec![(100, 8)],
+                vec![0],
+            ),
+        ];
+        for (layout, floating, offset, gp, stack, top, fields, states) in cases {
+            let list = List {
+                floating,
+                layout,
+                base: 100,
+                sp: 0,
+                named: 2,
+            };
+            assert_eq!(list.offset(), offset);
+            assert_eq!(list.gp_offset(), gp);
+            assert_eq!(list.stack(), stack);
+            assert_eq!(
+                list.base + layout.descriptor().tops[usize::from(floating)],
+                top
+            );
+            assert_eq!(list.fields(), fields);
+            assert_eq!(list.states(), states);
+        }
+    }
 }

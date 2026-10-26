@@ -347,16 +347,7 @@ impl Globals {
             };
             for (address, global) in &group {
                 let offset = address - base;
-                let view_pointer = if offset == 0 && global.view.ty() == ty {
-                    pointer.clone()
-                } else if offset == 0 {
-                    format!("(({} *){pointer})", global.view.ty())
-                } else {
-                    format!(
-                        "(({} *)((uint8_t *){pointer} + {offset}))",
-                        global.view.ty()
-                    )
-                };
+                let view_pointer = view_pointer(&pointer, ty, global.view.ty(), offset);
                 if !array && offset == 0 && global.view.ty() == ty {
                     replacements.insert(format!("*(&{})", global.name), name.clone());
                 } else if array && offset == 0 && global.view.ty() == ty {
@@ -573,6 +564,16 @@ pub(crate) fn reserved_identifier(name: &str) -> bool {
             | "ptrdiff_t"
             | "__builtin_memcpy"
     )
+}
+
+fn view_pointer(pointer: &str, storage_type: &str, view_type: &str, offset: u64) -> String {
+    if offset == 0 && view_type == storage_type {
+        pointer.to_owned()
+    } else if offset == 0 {
+        format!("(({view_type} *){pointer})")
+    } else {
+        format!("(({view_type} *)((uint8_t *){pointer} + {offset}))")
+    }
 }
 
 #[cfg(test)]

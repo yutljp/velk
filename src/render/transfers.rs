@@ -319,7 +319,7 @@ fn ordered(nodes: &[Node], ctx: &Ctx<'_>) -> Option<(usize, String)> {
         let Node::Stmt(Stmt::Assign {
             dest,
             value:
-                Expr::Load {
+                value @ Expr::Load {
                     addr,
                     width: 8,
                     signed: false,
@@ -328,18 +328,7 @@ fn ordered(nodes: &[Node], ctx: &Ctx<'_>) -> Option<(usize, String)> {
         else {
             break;
         };
-        if dest.width != 64
-            || (dest.index < VARIABLE_BASE
-                && crate::arch::vector_half(ctx.isa, dest.index).is_none())
-            || !(ctx.read_once.contains(&dest.index)
-                || ctx.transfer_values.contains(&(
-                    dest.index,
-                    Expr::Load {
-                        addr: addr.clone(),
-                        width: 8,
-                        signed: false,
-                    },
-                )))
+        if !eligible_load(dest, value, ctx)
             || !valid_address(addr, 8, ctx)
             || loads.iter().any(|(index, _)| *index == dest.index)
         {
@@ -481,11 +470,7 @@ fn reordered(nodes: &[Node], ctx: &Ctx<'_>) -> Option<(usize, String)> {
         else {
             break;
         };
-        if dest.width != 64
-            || (dest.index < VARIABLE_BASE
-                && crate::arch::vector_half(ctx.isa, dest.index).is_none())
-            || !(ctx.read_once.contains(&dest.index)
-                || ctx.transfer_values.contains(&(dest.index, value.clone())))
+        if !eligible_load(dest, value, ctx)
             || loads.iter().any(|(register, _)| *register == dest.index)
             || !valid_address(addr, 8, ctx)
         {
@@ -613,4 +598,11 @@ fn reordered(nodes: &[Node], ctx: &Ctx<'_>) -> Option<(usize, String)> {
         }
     }
     Some((consumed, text))
+}
+
+fn eligible_load(dest: &crate::ir::RegRef, value: &Expr, ctx: &Ctx<'_>) -> bool {
+    dest.width == 64
+        && (dest.index >= VARIABLE_BASE || crate::arch::vector_half(ctx.isa, dest.index).is_some())
+        && (ctx.read_once.contains(&dest.index)
+            || ctx.transfer_values.contains(&(dest.index, value.clone())))
 }

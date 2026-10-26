@@ -34,33 +34,7 @@ fn definition(op: Operation) -> Option<String> {
     let (bits, body) = match op {
         Operation::Lanes(LaneOp::Add, 64) => return None,
         Operation::Lanes(lane, bits) => {
-            let value = match lane {
-                LaneOp::Add => "x + y",
-                LaneOp::Sub => "x - y",
-                LaneOp::Mul => "x * y",
-                LaneOp::Equal => "x == y ? mask : 0",
-                LaneOp::GreaterSigned => "sx > sy ? mask : 0",
-                LaneOp::GreaterUnsigned => "x > y ? mask : 0",
-                LaneOp::GreaterEqualSigned => "sx >= sy ? mask : 0",
-                LaneOp::GreaterEqualUnsigned => "x >= y ? mask : 0",
-                LaneOp::MinSigned => "sx <= sy ? x : y",
-                LaneOp::MinUnsigned => "x <= y ? x : y",
-                LaneOp::MaxSigned => "sx >= sy ? x : y",
-                LaneOp::MaxUnsigned => "x >= y ? x : y",
-                LaneOp::ShiftLeft => "b < BITS ? x << b : 0",
-                LaneOp::ShiftRight => "b < BITS ? x >> b : 0",
-                LaneOp::ShiftRightSigned => "sx >> (b < BITS ? b : BITS - 1)",
-                LaneOp::ShiftVariableUnsigned => "(int8_t)y >= BITS || (int8_t)y <= -BITS ? 0 : ((int8_t)y >= 0 ? x << (int8_t)y : x >> -(int8_t)y)",
-                LaneOp::AddSaturatingSigned => "sx + sy < low ? low : (sx + sy > high ? high : sx + sy)",
-                LaneOp::SubSaturatingSigned => "sx - sy < low ? low : (sx - sy > high ? high : sx - sy)",
-                LaneOp::AddSaturatingUnsigned => "(unsigned __int128)x + y > mask ? mask : x + y",
-                LaneOp::SubSaturatingUnsigned => "x < y ? 0 : x - y",
-                LaneOp::Average => "((unsigned __int128)x + y + 1) >> 1",
-                LaneOp::MulHighSigned => "(sx * sy) >> BITS",
-                LaneOp::MulHighUnsigned => "((unsigned __int128)x * y) >> BITS",
-                LaneOp::PopCount => "__builtin_popcountll(x)",
-                LaneOp::CountLeadingZeros => "x ? __builtin_clzll(x) - (64 - BITS) : BITS",
-            };
+            let value = lane_expression(lane);
             (bits, format!("    for (unsigned i = 0; i < 64; i += BITS) {{\n        uint64_t x = (a >> i) & mask, y = (b >> i) & mask;\n        __int128 sx = (int{bits}_t)x, sy = (int{bits}_t)y;\n        __int128 low = -((__int128)1 << (BITS - 1)), high = -low - 1;\n        out |= ((uint64_t)({value}) & mask) << i;\n    }}\n"))
         }
         Operation::Widen { bits, signed, high } => {
@@ -102,4 +76,36 @@ fn definition(op: Operation) -> Option<String> {
         "#ifndef VELK_{name}\n#define VELK_{name}\nstatic inline uint64_t {name}({parameters}) {{\n    const uint64_t mask = UINT64_MAX >> {};\n    uint64_t out = 0;\n{body}    return out;\n}}\n#endif\n\n",
         64 - bits
     ))
+}
+
+fn lane_expression(lane: LaneOp) -> &'static str {
+    match lane {
+        LaneOp::Add => "x + y",
+        LaneOp::Sub => "x - y",
+        LaneOp::Mul => "x * y",
+        LaneOp::Equal => "x == y ? mask : 0",
+        LaneOp::GreaterSigned => "sx > sy ? mask : 0",
+        LaneOp::GreaterUnsigned => "x > y ? mask : 0",
+        LaneOp::GreaterEqualSigned => "sx >= sy ? mask : 0",
+        LaneOp::GreaterEqualUnsigned => "x >= y ? mask : 0",
+        LaneOp::MinSigned => "sx <= sy ? x : y",
+        LaneOp::MinUnsigned => "x <= y ? x : y",
+        LaneOp::MaxSigned => "sx >= sy ? x : y",
+        LaneOp::MaxUnsigned => "x >= y ? x : y",
+        LaneOp::ShiftLeft => "b < BITS ? x << b : 0",
+        LaneOp::ShiftRight => "b < BITS ? x >> b : 0",
+        LaneOp::ShiftRightSigned => "sx >> (b < BITS ? b : BITS - 1)",
+        LaneOp::ShiftVariableUnsigned => {
+            "(int8_t)y >= BITS || (int8_t)y <= -BITS ? 0 : ((int8_t)y >= 0 ? x << (int8_t)y : x >> -(int8_t)y)"
+        }
+        LaneOp::AddSaturatingSigned => "sx + sy < low ? low : (sx + sy > high ? high : sx + sy)",
+        LaneOp::SubSaturatingSigned => "sx - sy < low ? low : (sx - sy > high ? high : sx - sy)",
+        LaneOp::AddSaturatingUnsigned => "(unsigned __int128)x + y > mask ? mask : x + y",
+        LaneOp::SubSaturatingUnsigned => "x < y ? 0 : x - y",
+        LaneOp::Average => "((unsigned __int128)x + y + 1) >> 1",
+        LaneOp::MulHighSigned => "(sx * sy) >> BITS",
+        LaneOp::MulHighUnsigned => "((unsigned __int128)x * y) >> BITS",
+        LaneOp::PopCount => "__builtin_popcountll(x)",
+        LaneOp::CountLeadingZeros => "x ? __builtin_clzll(x) - (64 - BITS) : BITS",
+    }
 }

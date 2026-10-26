@@ -76,12 +76,9 @@ pub(super) fn groups(
                 stack_fields: Vec::new(),
             };
             for (param, (field, field_ty, _)) in ir.stack_params.iter().zip(fields) {
-                let value = if field_ty.is_pointer() {
-                    format!("({field_ty})(uintptr_t){}", param.name)
-                } else {
-                    format!("({field_ty}){}", param.name)
-                };
-                group.initial.push(format!(".{field} = {value}"));
+                group
+                    .initial
+                    .push(initializer(field, &field_ty, &param.name));
                 group.stack_fields.push((
                     param.name.clone(),
                     format!("{}.{field}", group.name),
@@ -132,12 +129,9 @@ pub(super) fn groups(
         };
         for (index, (field, field_ty, _)) in indices.into_iter().zip(fields) {
             if let Some(param) = ir.params.iter().find(|param| param.index == index) {
-                let value = if field_ty.is_pointer() {
-                    format!("({field_ty})(uintptr_t){}", param.name)
-                } else {
-                    format!("({field_ty}){}", param.name)
-                };
-                group.initial.push(format!(".{field} = {value}"));
+                group
+                    .initial
+                    .push(initializer(field, &field_ty, &param.name));
             }
             types.insert(index, field_ty.clone());
             used.insert(index);
@@ -212,6 +206,15 @@ pub(super) fn bind_stack(groups: &[Group], ctx: &mut super::Ctx<'_>) {
             }
         }
     }
+}
+
+fn initializer(field: &str, ty: &CType, source: &str) -> String {
+    let value = if ty.is_pointer() {
+        format!("({ty})(uintptr_t){source}")
+    } else {
+        format!("({ty}){source}")
+    };
+    format!(".{field} = {value}")
 }
 
 #[cfg(test)]
