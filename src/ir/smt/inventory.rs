@@ -3,8 +3,67 @@
 use std::collections::BTreeMap;
 use std::fmt::Write as _;
 use std::fs;
+use std::ops::Range;
 
 use sha2::Digest;
+use syn::spanned::Spanned;
+use syn::visit;
+use syn::visit::Visit;
+
+#[derive(Default)]
+struct RewriteSpans {
+    ranges: Vec<Range<usize>>,
+}
+
+impl<'ast> Visit<'ast> for RewriteSpans {
+    fn visit_item_fn(&mut self, function: &'ast syn::ItemFn) {
+        self.ranges.push(function.span().byte_range());
+        visit::visit_item_fn(self, function);
+    }
+
+    fn visit_impl_item_fn(&mut self, function: &'ast syn::ImplItemFn) {
+        self.ranges.push(function.span().byte_range());
+        visit::visit_impl_item_fn(self, function);
+    }
+
+    fn visit_trait_item_fn(&mut self, function: &'ast syn::TraitItemFn) {
+        if function.default.is_some() {
+            self.ranges.push(function.span().byte_range());
+        }
+        visit::visit_trait_item_fn(self, function);
+    }
+
+    fn visit_arm(&mut self, arm: &'ast syn::Arm) {
+        self.ranges.push(arm.span().byte_range());
+        visit::visit_arm(self, arm);
+    }
+}
+
+fn rewrite_spans(source: &str, path: &str) -> RewriteSpans {
+    let syntax = syn::parse_file(source)
+        .unwrap_or_else(|error| panic!("parse inventory source {path}: {error}"));
+    let mut spans = RewriteSpans::default();
+    spans.visit_file(&syntax);
+    spans
+}
+
+fn rewrite_range(source: &str, spans: &RewriteSpans, anchor: &str) -> Range<usize> {
+    assert!(!anchor.is_empty(), "inventory anchor must not be empty");
+    let locations: Vec<usize> = source
+        .match_indices(anchor)
+        .map(|(offset, _)| offset)
+        .collect();
+    assert_eq!(locations.len(), 1, "anchor must be unique: {anchor}");
+    let start = locations[0];
+    let end = start + anchor.len();
+    spans
+        .ranges
+        .iter()
+        .filter(|range| range.start <= start && end <= range.end)
+        .min_by_key(|range| range.len())
+        .unwrap_or_else(|| panic!("anchor must be inside a function or match arm: {anchor}"))
+        .clone()
+}
 
 struct Metadata {
     inventory: String,
@@ -21,36 +80,35 @@ fn generate(inventory: &str, read: impl Fn(&str) -> String) -> Metadata {
     );
     let mut output = format!("{header}\n");
     let mut sources = BTreeMap::new();
+    let mut digests_by_anchor = BTreeMap::new();
     let mut unreviewed = Vec::new();
     for line in lines {
         let fields: Vec<&str> = line.split('\t').collect();
         assert_eq!(fields.len(), 7, "inventory rows have seven fields: {line}");
         let (path, _) = fields[0].rsplit_once(':').expect("inventory file and line");
-        let (source, digest) = sources.entry(path).or_insert_with(|| {
+        let (source, spans) = sources.entry(path).or_insert_with(|| {
             let source = read(path);
-            let digest = format!("{:x}", sha2::Sha256::digest(source.as_bytes()));
-            (source, digest)
+            let spans = rewrite_spans(&source, path);
+            (source, spans)
         });
-        let locations: Vec<usize> = source
-            .lines()
-            .enumerate()
-            .filter_map(|(index, line)| line.contains(fields[5]).then_some(index + 1))
-            .collect();
-        assert_eq!(locations.len(), 1, "anchor must be unique: {line}");
+        let range = rewrite_range(source, spans, fields[5]);
+        let digest = format!("{:x}", sha2::Sha256::digest(source[range].as_bytes()));
+        let offset = source.find(fields[5]).expect("anchor was found uniquely");
+        let location = source[..offset]
+            .bytes()
+            .filter(|byte| *byte == b'\n')
+            .count()
+            + 1;
         if fields[6] != digest {
             unreviewed.push(format!("{path}: {}", fields[1]));
         }
-        writeln!(
-            output,
-            "{path}:{}\t{}",
-            locations[0],
-            fields[1..].join("\t")
-        )
-        .expect("write inventory string");
+        digests_by_anchor.insert((path, fields[5]), digest);
+        writeln!(output, "{path}:{}\t{}", location, fields[1..].join("\t"))
+            .expect("write inventory string");
     }
     let mut digests = String::new();
-    for (path, (_, digest)) in sources {
-        writeln!(digests, "{digest}  {path}").expect("write digest string");
+    for ((path, anchor), digest) in digests_by_anchor {
+        writeln!(digests, "{digest}  {path}\t{anchor}").expect("write digest string");
     }
     Metadata {
         inventory: output,
@@ -89,7 +147,7 @@ fn inventory_matches_the_reviewed_sources() {
 #[test]
 fn regeneration_preserves_review_and_detects_source_changes() {
     let source = "fn rewrite() {}\n";
-    let digest = format!("{:x}", sha2::Sha256::digest(source.as_bytes()));
+    let digest = format!("{:x}", sha2::Sha256::digest(b"fn rewrite() {}"));
     let inventory = format!(
         "site\trewrite\tside_conditions\twidths\tcoverage\tanchor\treviewed_sha256\n\
          src/example.rs:99\tExample\tNone\t64\topen\tfn rewrite(\t{digest}\n"
@@ -97,7 +155,10 @@ fn regeneration_preserves_review_and_detects_source_changes() {
     let generated = generate(&inventory, |_| source.to_owned());
     assert!(generated.unreviewed.is_empty());
     assert_eq!(generated.inventory, inventory.replace(":99\t", ":1\t"));
-    assert_eq!(generated.digests, format!("{digest}  src/example.rs\n"));
+    assert_eq!(
+        generated.digests,
+        format!("{digest}  src/example.rs\tfn rewrite(\n")
+    );
     let changed = generate(&generated.inventory, |_| {
         "\nfn rewrite() { changed(); }\n".to_owned()
     });
@@ -109,4 +170,163 @@ fn regeneration_preserves_review_and_detects_source_changes() {
     });
     assert_eq!(regenerated.unreviewed, changed.unreviewed);
     assert_eq!(regenerated.inventory, changed.inventory);
+}
+
+#[test]
+fn unrelated_edits_and_moves_preserve_review() {
+    let source = "fn other() { before(); }\nfn rewrite() { original(); }\n";
+    let digest = format!(
+        "{:x}",
+        sha2::Sha256::digest(b"fn rewrite() { original(); }")
+    );
+    let inventory = format!(
+        "site\trewrite\tside_conditions\twidths\tcoverage\tanchor\treviewed_sha256\n\
+         src/example.rs:2\tExample\tNone\t64\topen\tfn rewrite(\t{digest}\n"
+    );
+    let generated = generate(&inventory, |_| source.to_owned());
+    let unrelated = generate(&inventory, |_| source.replace("before()", "after()"));
+    assert!(unrelated.unreviewed.is_empty());
+    assert_eq!(generated.inventory, unrelated.inventory);
+    assert_eq!(generated.digests, unrelated.digests);
+
+    let moved_source = "fn rewrite() { original(); }\nfn other() { before(); }\n";
+    let moved = generate(&inventory, |_| moved_source.to_owned());
+    assert!(moved.unreviewed.is_empty());
+    assert_eq!(moved.inventory, inventory.replace(":2\t", ":1\t"));
+    assert_eq!(generated.digests, moved.digests);
+    let regenerated = generate(&moved.inventory, |_| moved_source.to_owned());
+    assert!(regenerated.unreviewed.is_empty());
+    assert_eq!(regenerated.inventory, moved.inventory);
+    assert_eq!(regenerated.digests, moved.digests);
+}
+
+#[test]
+fn ranges_follow_rust_syntax() {
+    let source = r####"
+// Unicode before the function: 日本語.
+#[inline]
+fn rewrite<T: Trait<{ 1 + 2 }>>(value: T) {
+    let text = r###" } => { "###;
+    let character = '}';
+    /* } /* { */ } */
+    match value {
+        First | Second if guard() => {
+            original(); // }
+        },
+        Third => other(),
+    }
+}
+fn unrelated() {}
+"####;
+    let spans = rewrite_spans(source, "example.rs");
+    let function = &source[rewrite_range(source, &spans, "fn rewrite<")];
+    assert!(function.starts_with("#[inline]\nfn rewrite<"));
+    assert!(function.ends_with("\n}"));
+    assert!(!function.contains("fn unrelated"));
+    let arm = &source[rewrite_range(source, &spans, "original();")];
+    assert_eq!(
+        arm,
+        "First | Second if guard() => {\n            original(); // }\n        },"
+    );
+    assert_eq!(
+        arm,
+        &source[rewrite_range(source, &spans, "First | Second")]
+    );
+    assert_eq!(
+        &source[rewrite_range(source, &spans, "Third =>")],
+        "Third => other(),"
+    );
+}
+
+#[test]
+fn match_arm_review_covers_pattern_guard_and_body() {
+    let arm = "First if guard() => original(),";
+    let source = format!("fn lower() {{ match value {{ {arm} Other => other(), }} }}");
+    let digest = format!("{:x}", sha2::Sha256::digest(arm.as_bytes()));
+    let inventory = format!(
+        "site\trewrite\tside_conditions\twidths\tcoverage\tanchor\treviewed_sha256\n\
+         src/example.rs:1\tExample\tNone\t64\topen\toriginal()\t{digest}\n"
+    );
+    assert!(
+        generate(&inventory, |_| source.to_owned())
+            .unreviewed
+            .is_empty()
+    );
+    let unrelated = generate(&inventory, |_| source.replace("other()", "changed()"));
+    assert!(unrelated.unreviewed.is_empty());
+    for (before, after) in [
+        ("First", "Second"),
+        ("guard()", "!guard()"),
+        ("original()", "original() + 1"),
+    ] {
+        let changed = generate(&inventory, |_| source.replace(before, after));
+        assert_eq!(changed.unreviewed, ["src/example.rs: Example"]);
+    }
+}
+
+#[test]
+fn method_and_nested_arm_ranges_are_selected() {
+    let source = r#"
+trait Example {
+    fn default_method() { original(); }
+}
+impl Example for Value {
+    fn method() {
+        match outer {
+            Outer => match inner {
+                Inner => nested(),
+            },
+        }
+    }
+}
+"#;
+    let spans = rewrite_spans(source, "example.rs");
+    for method in ["default_method", "method"] {
+        let anchor = format!("fn {method}(");
+        let selected = &source[rewrite_range(source, &spans, &anchor)];
+        assert!(selected.starts_with(&anchor));
+        assert!(selected.ends_with('}'));
+    }
+    assert_eq!(
+        &source[rewrite_range(source, &spans, "nested()")],
+        "Inner => nested(),"
+    );
+}
+
+#[test]
+fn function_review_includes_attributes_signature_and_comments() {
+    let source = "#[inline]\nfn rewrite(value: u64) { /* original */ consume(value); }";
+    let digest = format!("{:x}", sha2::Sha256::digest(source.as_bytes()));
+    let inventory = format!(
+        "site\trewrite\tside_conditions\twidths\tcoverage\tanchor\treviewed_sha256\n\
+         src/example.rs:2\tExample\tNone\t64\topen\tfn rewrite(\t{digest}\n"
+    );
+    assert!(
+        generate(&inventory, |_| source.to_owned())
+            .unreviewed
+            .is_empty()
+    );
+    for (before, after) in [
+        ("#[inline]", "#[cold]"),
+        ("u64", "u32"),
+        ("original", "changed"),
+        ("consume(value)", "consume( value )"),
+    ] {
+        let changed = generate(&inventory, |_| source.replace(before, after));
+        assert_eq!(changed.unreviewed, ["src/example.rs: Example"]);
+    }
+}
+
+#[test]
+#[should_panic(expected = "anchor must be unique")]
+fn duplicate_anchors_are_rejected() {
+    let source = "fn rewrite() { original(); original(); }";
+    rewrite_range(source, &rewrite_spans(source, "example.rs"), "original()");
+}
+
+#[test]
+#[should_panic(expected = "anchor must be inside a function or match arm")]
+fn anchors_outside_rewrites_are_rejected() {
+    let source = "const VALUE: u64 = 1;";
+    rewrite_range(source, &rewrite_spans(source, "example.rs"), "VALUE");
 }
