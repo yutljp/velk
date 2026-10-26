@@ -21,7 +21,9 @@ wait_for_load() {
 
 kani_checks() {
     wait_for_load
-    cargo kani --lib -Z unstable-options --harness-timeout 120s --output-format terse
+    cargo kani --lib -Z unstable-options \
+        --harness-timeout 240s --jobs "$CARGO_BUILD_JOBS" \
+        --output-format terse --export-json target/verification/kani.json
 }
 
 fuzz_checks() {

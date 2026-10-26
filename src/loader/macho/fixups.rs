@@ -74,11 +74,7 @@ pub(in crate::loader) fn apply(
                 }
             }
             if let Ok(exports) = file.exports() {
-                for export in exports
-                    .into_iter()
-                    .take(crate::loader::MAX_EXPORTS)
-                    .flatten()
-                {
+                for export in crate::loader::limited_exports(exports.into_iter()).flatten() {
                     if let (
                         object::read::NameOrOrdinal::Name(name),
                         object::read::ExportTarget::Address { address },
@@ -171,20 +167,10 @@ pub(in crate::loader) fn apply(
                 }
                 let value = match pointer {
                     Fixup::Rebase(rebase) => {
-                        // Absolute formats carry the top byte separately from the low target.
-                        if rebase.auth.is_none() && matches!(format.0, 1 | 2 | 10) {
-                            if format.0 == 2 {
-                                (raw & 0xf_ffff_ffff) | ((raw >> 36) & 0xff) << 56
-                            } else {
-                                (raw & 0x7ff_ffff_ffff) | ((raw >> 43) & 0xff) << 56
-                            }
-                        } else {
-                            let low = rebase.target_offset & 0x00ff_ffff_ffff_ffff;
-                            let Some(target) = base.checked_add(low) else {
-                                return Err(format!("pointer at {address:#x}: target overflow"));
-                            };
-                            target | (rebase.target_offset & 0xff00_0000_0000_0000)
-                        }
+                        let Some(target) = rebase_value(base, format.0, raw, rebase) else {
+                            return Err(format!("pointer at {address:#x}: target overflow"));
+                        };
+                        target
                     }
                     Fixup::Bind(bind) => {
                         let Some(import) = names.get(bind.ordinal as usize) else {
@@ -245,6 +231,31 @@ pub(in crate::loader) fn apply(
     }
     Ok(bindings)
 }
+
+fn rebase_value(
+    base: u64,
+    format: u16,
+    raw: u64,
+    rebase: object::read::macho::FixupRebase,
+) -> Option<u64> {
+    // Absolute formats carry the top byte separately from the low target.
+    if rebase.auth.is_none() && matches!(format, 1 | 2 | 10) {
+        if format == 2 {
+            Some((raw & 0xf_ffff_ffff) | ((raw >> 36) & 0xff) << 56)
+        } else {
+            Some((raw & 0x7ff_ffff_ffff) | ((raw >> 43) & 0xff) << 56)
+        }
+    } else {
+        let low = rebase.target_offset & 0x00ff_ffff_ffff_ffff;
+        let Some(target) = base.checked_add(low) else {
+            return None;
+        };
+        Some(target | (rebase.target_offset & 0xff00_0000_0000_0000))
+    }
+}
+
+#[cfg(kani)]
+mod proofs;
 
 #[cfg(test)]
 mod tests;

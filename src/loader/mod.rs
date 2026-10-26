@@ -16,6 +16,23 @@ mod symbols;
 mod universal;
 pub(crate) mod unwind;
 
+fn limited_exports<T>(exports: impl Iterator<Item = T>) -> impl Iterator<Item = T> {
+    exports.take(MAX_EXPORTS)
+}
+
+fn read_range(bytes: &[u8], slice_offset: u64, offset: u64, len: u64) -> Option<&[u8]> {
+    let Some(offset) = offset.checked_sub(slice_offset) else {
+        return None;
+    };
+    let Some(end) = offset.checked_add(len) else {
+        return None;
+    };
+    let (Ok(start), Ok(end)) = (usize::try_from(offset), usize::try_from(end)) else {
+        return None;
+    };
+    bytes.get(start..end)
+}
+
 /// Upper bound on export entries read from one file; a cyclic or self-sharing export trie
 /// would otherwise be walked for ever.
 pub(crate) const MAX_EXPORTS: usize = 1 << 20;
@@ -434,7 +451,7 @@ impl Image {
 
     /// An image holding only little-endian `code`, mapped executable at
     /// `addr`.
-    #[cfg(any(test, kani))]
+    #[cfg(test)]
     pub(crate) fn from_code(isa: Isa, addr: u64, code: Vec<u8>) -> Self {
         Self {
             slices: Vec::new(),
@@ -634,16 +651,7 @@ impl Image {
     }
 
     pub fn read(&self, offset: u64, len: u64) -> Option<&[u8]> {
-        let Some(offset) = offset.checked_sub(self.slice_offset) else {
-            return None;
-        };
-        let Some(end) = offset.checked_add(len) else {
-            return None;
-        };
-        let (Ok(start), Ok(end)) = (usize::try_from(offset), usize::try_from(end)) else {
-            return None;
-        };
-        self.bytes.get(start..end)
+        read_range(&self.bytes, self.slice_offset, offset, len)
     }
 
     /// Relocated image bytes at a virtual address; absent for unbacked data.
@@ -1057,7 +1065,7 @@ pub fn load_with_arch(path: &Path, arch: Option<Architecture>) -> Result<Image> 
     }
 
     if let Ok(exports) = file.exports() {
-        for export in exports.into_iter().take(MAX_EXPORTS).flatten() {
+        for export in limited_exports(exports.into_iter()).flatten() {
             let object::read::ExportTarget::Address { address } = export.target() else {
                 continue;
             };

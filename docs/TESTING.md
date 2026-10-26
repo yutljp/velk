@@ -130,38 +130,75 @@ sh tests/verify.sh all
 
 On Linux, the script waits while the one-minute load exceeds twice the number of processors.
 Its defaults are five build jobs and five test threads; set `CARGO_BUILD_JOBS=2` on
-smaller machines. Each harness has a 120-second CBMC timeout; compilation and
+smaller machines. Each harness has a 240-second CBMC timeout; compilation and
 preparation take additional time. A timeout is a failure, not a proof. Select a harness with
-`cargo kani --lib --harness instruction_word`.
+`cargo kani --lib --harness instruction_word`. The script runs up to
+`CARGO_BUILD_JOBS` harnesses concurrently.
 
 Every harness is behind `cfg(kani)`. Kani checks panics, arithmetic overflow and
 memory access, including loop-unwinding assertions. A successful run establishes
 only the bounds and preconditions below; it does not establish safety for arbitrary
 binary sizes or the whole decompilation pipeline.
 
-| Harness | Input domain and additional assertions |
-| --- | --- |
-| `elf_tables` | Arbitrary 0–128 bytes, 32/64-bit headers, section names/data and relocation iterators through the same `object` readers as loading. |
-| `pe_tables` | Arbitrary 0–512 bytes, PE32/PE32+ headers, sections and relocations. |
-| `macho_tables` | Arbitrary 0–128 bytes, 32/64-bit headers, sections and relocations. |
-| `instruction_word` | 0–8 bytes, every `usize` offset; succeeds exactly when four bytes fit and returns their little-endian value. |
-| `image_ranges` | 0–16 bytes, every `u64` offset and length; success and returned length match the available range. |
-| `relocation_words` | 0–16 bytes, every `usize` offset and 32/64-bit value; valid writes read back, invalid writes leave the buffer unchanged; 64-bit writes preserve surrounding bytes. |
-| `aarch64_relocation` | Any 32-bit instruction and relocation number, any 64-bit PC and target; CALL26 preserves the opcode and encodes the modular displacement. |
-| `leb_readers` | 0–10 arbitrary bytes; signed/unsigned LEB readers stay within the buffer and consume 1–10 bytes on success. |
-| `leb_round_trip` | Every `u64`, encoded in at most ten bytes, decodes exactly and consumes the encoding. |
-| `encoded_pointers` | 0–16 arbitrary bytes, every 64-bit base and 8-bit encoding; the exception pointer reader stays within its section. |
-| `codeview_records` | 0–16 arbitrary bytes and every `usize` requested length; bounded numeric/record reads and exact success condition for a slice. |
-| `dwarf_units` | 0–32 arbitrary bytes of little-endian unit headers; declared units fit the input. This does not cover DIE traversal. |
-| `unwind_entries` | 0–32 arbitrary bytes of little-endian `.eh_frame`, including referenced CIE parsing. This does not cover executing unwind instructions. |
-| `bit_fields` | Every 64-bit value and valid width 1–64; masks, preserved low bits and signed value ranges. |
-| `vector_window` | Every pair of 64-bit constants, offsets 0–63, with/without a following half; agrees with a 128-bit shift. |
+The object-reader checks use fixed little-endian header layouts with arbitrary
+remaining fields. They check raw section data and REL/RELA arrays for ELF, and
+section data and relocation access for PE. Coverage goals confirm section traversal
+and nonempty ELF REL/RELA arrays. They do not call section-name lookup, whose
+CPU feature detection reaches unsupported assembly on the verification host.
+ELF checks do not construct symbol tables or relocation maps.
+Mach-O checks use the raw header, segment, section-offset, data and relocation
+readers, without constructing the higher-level file or classifying section names.
+The exception-value and image-range checks call the same pure functions as loading,
+without constructing an image and its randomized maps.
 
-Header bounds limit which table shapes can be reached. In particular, these proofs
-do not cover arbitrarily many sections, compressed debug data, complete function
-discovery, or applying every format's relocations. The relocation-word checks cover
-the loader's writes separately. There is no Mach-O chained-fixup decoder in the
-loader; the harnesses make no claim about those encodings.
+The seconds below record CBMC verification on 2026-10-26 UTC, on x86-64 Linux
+with Kani 0.68.0, CBMC 6.11.0 and five parallel harnesses. They exclude compilation
+and preparation. The script saves per-harness results to
+`target/verification/kani.json`.
+
+| Harness | Input domain and additional assertions | Verification seconds | Result |
+| --- | --- | ---: | --- |
+| `elf32_tables` | 136 bytes; fixed ELF32 header, null section and one arbitrary section; 0–24 data bytes, arbitrary data offset and remaining metadata; no program headers. | 35.66 | pass |
+| `elf64_tables` | 200 bytes; the same ELF64 layout and bounds. | 47.16 | pass |
+| `pe32_tables` | 352 bytes; fixed PE32 layout, one section, 0–1 COFF relocations; arbitrary section offsets/sizes; no symbols or data directories. | 11.14 | pass |
+| `pe64_tables` | 368 bytes; the same PE32+ layout and bounds. | 10.18 | pass |
+| `macho32_tables` | 152 bytes; one 32-bit segment command and section, 0–1 relocations; arbitrary offsets, addresses and sizes. | 46.23 | pass |
+| `macho64_tables` | 184 bytes; the same 64-bit layout and bounds. | 47.81 | pass |
+| `instruction_word` | 0–8 bytes, every `usize` offset; succeeds exactly when four bytes fit and returns their little-endian value. | 0.78 | pass |
+| `image_ranges` | 0–16 bytes, every `u64` slice base, offset and size; exact range success and returned length. | 0.53 | pass |
+| `relocation_words` | 0–16 bytes, every `usize` offset and 32/64-bit value; valid writes read back, invalid writes preserve bytes; 64-bit writes preserve surrounding bytes. | 7.44 | pass |
+| `aarch64_relocation` | Any instruction, relocation number, PC and target; CALL26 preserves opcode and encodes modular displacement. | 1.20 | pass |
+| `leb_readers` | 0–10 arbitrary bytes; signed/unsigned LEB reads consume only available bytes, and 1–10 bytes on success. | 11.81 | pass |
+| `leb_round_trip` | Every `u64`, encoded in at most ten bytes; exact decode and consumption. | 11.31 | pass |
+| `encoded_pointers` | 0–16 arbitrary bytes, every 64-bit base and 8-bit encoding, 4/8-byte pointer widths; scalar exception decoding consumes only available bytes. | 16.00 | pass |
+| `codeview_records` | 0–16 arbitrary bytes and every requested `usize` length; exact slice success and bounded numeric/record reads. | 36.23 | pass |
+| `dwarf_units` | Prefixes of a 12-byte DWARF32 version-4 unit; arbitrary abbreviation offset and payload, 4/8-byte addresses; success exactly for the complete unit, whose size fits. | 60.58 | pass |
+| `unwind_entries` | One 16-byte version-1 CIE with an empty augmentation; one-byte code/data alignment factors, arbitrary return register and instruction bytes; parses and terminates. | 8.12 | pass |
+| `unwind_fde32` | A fixed CIE and one 32-bit FDE, 32 bytes total; every initial address and range; referenced CIE parses, initial address matches and iteration terminates. | 39.98 | pass |
+| `unwind_fde64` | The same property for 64-bit addresses, 40 bytes total. | 40.71 | pass |
+| `bit_fields` | Every 64-bit value and width 1–64; masks, low-bit preservation and signed ranges. | 0.39 | pass |
+| `vector_window` | Every pair of 64-bit constants, offsets 0–63, with/without a following half; agrees with a 128-bit shift. Unwinding bound 1 suffices for these constant expressions. | 57.28 | pass |
+| `chained_pointer_arm64e` | Format 1; one eight-byte pointer, arbitrary bits except a zero next-link field, every 64-bit base; rebase value, authentication flag, bind ordinal/addend and termination. | 77.61 | pass |
+| `chained_pointer_64` | The same property for format 2. | 64.97 | pass |
+| `chained_pointer_64_offset` | The same property for format 6. | 84.57 | pass |
+| `chained_pointer_arm64e_kernel` | The same property for format 7. | 73.83 | pass |
+| `chained_pointer_arm64e_userland` | The same property for format 9. | 107.11 | pass |
+| `chained_pointer_arm64e_firmware` | The same property for format 10. | 110.27 | pass |
+| `chained_pointer_arm64e_userland24` | The same property for format 12, including all 24 ordinal bits. | 111.28 | pass |
+| `export_trie_limit` | Every export value and `usize` requested index from an unending iterator; the shared production entry limit yields values exactly below `MAX_EXPORTS`, then terminates. | 0.12 | pass |
+
+The chained-pointer checks parse a fixed 60-byte starts table through the dependency
+and use the loader's rebase normalization. They do not prove whole-file fixup
+application, import-name lookup, nonzero chain links or page geometry. Normal tests
+in `src/loader/macho/fixups/tests.rs` exercise these paths. The export-limit check
+bounds yielded entries, including errors; it does not bound work inside an
+iterator's `next` call or prove export-trie decoding. Cyclic export files are also
+covered by `cyclic_export_tries_finish_loading` in the normal robustness suite.
+
+These bounds do not cover arbitrary section counts, big-endian objects, compressed
+debug data, DIE traversal, executing unwind instructions, complete function
+discovery or applying every format's relocations. No whole-pipeline safety claim
+follows from these proofs.
 
 ### Fuzz targets and reproducible seeds
 

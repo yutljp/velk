@@ -97,3 +97,6 @@ pub(super) fn add_functions(file: &object::File<'_>, image: &mut Image) {
         }
     }
 }
+
+#[cfg(kani)]
+mod proofs;

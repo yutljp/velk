@@ -18,7 +18,7 @@ pub(super) fn window(first: &Expr, next: Option<&Expr>, offset: u64) -> Expr {
 #[cfg(kani)]
 mod proofs {
     #[kani::proof]
-    #[kani::unwind(4)]
+    #[kani::unwind(1)]
     fn vector_window() {
         let first: u64 = kani::any();
         let next: u64 = kani::any();

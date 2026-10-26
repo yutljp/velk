@@ -1,5 +1,7 @@
 //! Bounded decoding of Itanium language-specific exception tables.
 
+mod encoding;
+
 use std::collections::BTreeSet;
 
 use crate::loader::Image;
@@ -45,67 +47,20 @@ impl<'a> Reader<'a> {
     }
 
     fn uleb(&mut self) -> Option<u64> {
-        let mut value = 0;
-        for shift in (0..64).step_by(7) {
-            let Some(byte) = self.take(1) else {
-                return None;
-            };
-            if shift == 63 && byte > 1 {
-                return None;
-            }
-            value |= (byte & 0x7f) << shift;
-            if byte & 0x80 == 0 {
-                return Some(value);
-            }
-        }
-        None
+        encoding::uleb(|size| self.take(size))
     }
 
     fn sleb(&mut self) -> Option<i64> {
-        let mut value = 0u64;
-        for shift in (0..64).step_by(7) {
-            let Some(byte) = self.take(1) else {
-                return None;
-            };
-            if shift == 63 && byte != 0 && byte != 0x7f {
-                return None;
-            }
-            value |= (byte & 0x7f) << shift;
-            if byte & 0x80 == 0 {
-                if byte & 0x40 != 0 && shift < 63 {
-                    value |= u64::MAX << (shift + 7);
-                }
-                return Some(value as i64);
-            }
-        }
-        None
+        encoding::sleb(|size| self.take(size))
     }
 
     fn encoded(&mut self, encoding: u8) -> Option<u64> {
-        let place = self.at;
-        let value = match encoding & 0x0f {
-            0 => self.take(u64::from(crate::arch::pointer_bytes(self.image.isa))),
-            1 => self.uleb(),
-            2 => self.take(2),
-            3 => self.take(4),
-            4 | 12 => self.take(8),
-            9 => self.sleb().map(|value| value as u64),
-            10 => self.take(2).map(|value| value as i16 as i64 as u64),
-            11 => self.take(4).map(|value| value as i32 as i64 as u64),
-            _ => None,
-        };
-        let Some(value) = value else {
-            return None;
-        };
-        if value == 0 {
-            return Some(0);
-        }
-        match encoding & 0x70 {
-            0 => Some(value),
-            0x10 if encoding & 0x08 != 0 => place.checked_add_signed(value as i64),
-            0x10 => place.checked_add(value),
-            _ => None,
-        }
+        encoding::encoded(
+            encoding,
+            self.at,
+            crate::arch::pointer_bytes(self.image.isa),
+            |size| self.take(size),
+        )
     }
 }
 
@@ -361,84 +316,5 @@ mod malformed {
         assert_eq!(reader.encoded(0x1c), Some(0xfff));
         let mut reader = Reader::new(&image, 0x1000).unwrap();
         assert_eq!(reader.encoded(0x14), None);
-    }
-}
-
-#[cfg(kani)]
-mod proofs {
-    use super::Reader;
-    use crate::loader::{Image, Isa};
-
-    #[kani::proof]
-    #[kani::unwind(12)]
-    fn leb_readers() {
-        let bytes: [u8; 10] = kani::any();
-        let len: usize = kani::any();
-        kani::assume(len <= bytes.len());
-        let image = Image::from_code(Isa::X86_64, 0, bytes[..len].to_vec());
-        let mut reader = Reader {
-            image: &image,
-            at: 0,
-            end: len as u64,
-        };
-        let unsigned = reader.uleb();
-        assert!(reader.at <= len as u64);
-        if unsigned.is_some() {
-            assert!(reader.at > 0 && reader.at <= 10);
-        }
-        reader.at = 0;
-        let signed = reader.sleb();
-        assert!(reader.at <= len as u64);
-        if signed.is_some() {
-            assert!(reader.at > 0 && reader.at <= 10);
-        }
-    }
-
-    #[kani::proof]
-    #[kani::unwind(12)]
-    fn leb_round_trip() {
-        let value: u64 = kani::any();
-        let mut bytes = [0u8; 10];
-        let mut remaining = value;
-        let mut len = 0;
-        loop {
-            let byte = (remaining & 0x7f) as u8;
-            remaining >>= 7;
-            bytes[len] = byte | if remaining != 0 { 0x80 } else { 0 };
-            len += 1;
-            if remaining == 0 {
-                break;
-            }
-        }
-        let image = Image::from_code(Isa::X86_64, 0, bytes[..len].to_vec());
-        let mut reader = Reader {
-            image: &image,
-            at: 0,
-            end: len as u64,
-        };
-        assert_eq!(reader.uleb(), Some(value));
-        assert_eq!(reader.at, len as u64);
-    }
-}
-
-#[cfg(kani)]
-mod pointer_proofs {
-    #[kani::proof]
-    #[kani::unwind(20)]
-    fn encoded_pointers() {
-        let bytes: [u8; 16] = kani::any();
-        let len: usize = kani::any();
-        kani::assume(len <= bytes.len());
-        let base: u64 = kani::any();
-        let image = crate::loader::Image::from_code(
-            crate::loader::Isa::X86_64,
-            base,
-            bytes[..len].to_vec(),
-        );
-        if let Some(mut reader) = super::Reader::new(&image, base) {
-            let encoding: u8 = kani::any();
-            let _ = reader.encoded(encoding);
-            assert!(reader.at >= base && reader.at <= reader.end);
-        }
     }
 }
