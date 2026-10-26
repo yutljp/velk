@@ -71,6 +71,8 @@ mod integer_storage;
 mod local_expressions;
 #[path = "recompile/long_branches.rs"]
 mod long_branches;
+#[path = "recompile/memory_driver.rs"]
+mod memory_driver;
 #[path = "recompile/pe.rs"]
 mod pe;
 #[path = "recompile/physical_stack.rs"]
@@ -290,6 +292,9 @@ static void velk_fill(uintptr_t start, uint64_t size) {
 static void velk_signal(int sig) { siglongjmp(velk_jump, sig); }
 static void velk_fault(int sig, siginfo_t *info, void *context) {
     (void)context;
+    // Page allocation and initialization are harness work, not execution.
+    struct itimerval stopped = {0}, remaining;
+    setitimer(ITIMER_VIRTUAL, &stopped, &remaining);
     uintptr_t page = (uintptr_t)info->si_addr & ~(uintptr_t)(velk_page - 1);
     if (velk_page_count < 4096 && page >= 0x100000) {
         void *mapped = mmap((void *)page, velk_page, PROT_READ | PROT_WRITE,
@@ -298,6 +303,7 @@ static void velk_fault(int sig, siginfo_t *info, void *context) {
             velk_pages[velk_page_count++] = page;
             velk_fill(page, velk_page);
             velk_fixture_overlay(page, velk_page);
+            setitimer(ITIMER_VIRTUAL, &remaining, 0);
             return;
         }
         if (mapped != MAP_FAILED) {
@@ -309,7 +315,7 @@ static void velk_fault(int sig, siginfo_t *info, void *context) {
 }
 static void velk_timer(long usec) {
     struct itimerval timer = {{0, 0}, {0, usec}};
-    setitimer(ITIMER_REAL, &timer, 0);
+    setitimer(ITIMER_VIRTUAL, &timer, 0);
 }
 int main(void) {
     velk_page = getpagesize();
@@ -318,7 +324,7 @@ int main(void) {
     if (region != (void *)REGION_START) {
         return 2;
     }
-    int signals[] = {SIGILL, SIGTRAP, SIGFPE, SIGALRM};
+    int signals[] = {SIGILL, SIGTRAP, SIGFPE, SIGVTALRM};
     for (unsigned i = 0; i < sizeof signals / sizeof *signals; i++) {
         struct sigaction action = {0};
         action.sa_handler = velk_signal;
@@ -329,6 +335,7 @@ int main(void) {
         struct sigaction action = {0};
         action.sa_sigaction = velk_fault;
         action.sa_flags = SA_SIGINFO | SA_NODEFER;
+        sigaddset(&action.sa_mask, SIGVTALRM);
         sigaction(faults[i], &action, 0);
     }
     char mode;
@@ -356,8 +363,8 @@ int main(void) {
         velk_unreachable = 0;
         int sig = sigsetjmp(velk_jump, 1);
         if (sig == 0) {
-            velk_timer(200000);
             velk_prepare(k, velk_seed);
+            velk_timer(200000);
             uint64_t r = velk_call(k, a);
             velk_timer(0);
             uint64_t sum = 0xcbf29ce484222325ULL;
@@ -371,7 +378,7 @@ int main(void) {
                 printf("unreachable\n");
             } else if (sig == SIGILL || sig == SIGTRAP) {
                 printf("trap\n");
-            } else if (sig == SIGALRM) {
+            } else if (sig == SIGVTALRM) {
                 printf("timeout\n");
             } else {
                 printf("signal %d\n", sig);
