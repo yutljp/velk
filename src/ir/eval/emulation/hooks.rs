@@ -70,10 +70,7 @@ impl Runner<'_> {
         };
         let width = crate::arch::pointer_bytes(self.image.isa);
         let position = (index - convention.arguments().len()) as u64;
-        let address = position.checked_mul(u64::from(width)).and_then(|position| {
-            sp.checked_add_signed(offset)
-                .and_then(|base| base.checked_add(position))
-        });
+        let address = super::stack_argument_address(sp.checked_add_signed(offset), position, width);
         let Some(address) = address else {
             return Err(Stop::Error("hook argument address overflows".to_owned()));
         };
@@ -157,6 +154,43 @@ impl Runner<'_> {
         start
     }
 
+    fn copy_memory(
+        &mut self,
+        hook: Hook,
+        first: u64,
+        source: u64,
+        size: u64,
+    ) -> std::result::Result<u64, Stop> {
+        match self.range(source, size, /* write */ false) {
+            Ok(value) => value,
+            Err(stop) => return Err(stop),
+        };
+        match self.range(first, size, /* write */ true) {
+            Ok(value) => value,
+            Err(stop) => return Err(stop),
+        };
+        if matches!(hook, Hook::Copy) && size != 0 && first < source + size && source < first + size
+        {
+            return Err(Stop::Error(format!(
+                "memcpy ranges overlap at destination 0x{first:x} and source 0x{source:x}; use memmove"
+            )));
+        }
+        let mut bytes = Vec::new();
+        for offset in 0..size {
+            bytes.push(match self.read_byte(source + offset) {
+                Ok(value) => value,
+                Err(stop) => return Err(stop),
+            });
+        }
+        for (offset, byte) in bytes.into_iter().enumerate() {
+            match self.write_byte(first + offset as u64, byte) {
+                Ok(value) => value,
+                Err(stop) => return Err(stop),
+            };
+        }
+        Ok(first)
+    }
+
     pub(super) fn hook(
         &mut self,
         hook: Hook,
@@ -226,37 +260,10 @@ impl Runner<'_> {
                     Ok(value) => value,
                     Err(stop) => return Err(stop),
                 };
-                match self.range(source, size, /* write */ false) {
+                match self.copy_memory(hook, first, source, size) {
                     Ok(value) => value,
                     Err(stop) => return Err(stop),
-                };
-                match self.range(first, size, /* write */ true) {
-                    Ok(value) => value,
-                    Err(stop) => return Err(stop),
-                };
-                if matches!(hook, Hook::Copy)
-                    && size != 0
-                    && first < source + size
-                    && source < first + size
-                {
-                    return Err(Stop::Error(format!(
-                        "memcpy ranges overlap at destination 0x{first:x} and source 0x{source:x}; use memmove"
-                    )));
                 }
-                let mut bytes = Vec::new();
-                for offset in 0..size {
-                    bytes.push(match self.read_byte(source + offset) {
-                        Ok(value) => value,
-                        Err(stop) => return Err(stop),
-                    });
-                }
-                for (offset, byte) in bytes.into_iter().enumerate() {
-                    match self.write_byte(first + offset as u64, byte) {
-                        Ok(value) => value,
-                        Err(stop) => return Err(stop),
-                    };
-                }
-                first
             }
             Hook::Length | Hook::StringCopy => {
                 let source = if matches!(hook, Hook::StringCopy) {

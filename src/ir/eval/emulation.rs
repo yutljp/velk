@@ -11,7 +11,7 @@ use std::time::{Duration, Instant};
 
 use crate::emulation::{HEAP_SIZE, Memory, Options, Report, invalid};
 use crate::error::Result;
-use crate::ir::{Block, CallKind, Convention, Expr, RegRef, Stmt};
+use crate::ir::{Block, CallKind, CallOutput, Convention, Expr, RegRef, Stmt};
 use crate::loader::{Image, Isa};
 use crate::ssa::ranges::Fact;
 
@@ -104,7 +104,81 @@ fn run_with_recovery(
         starts: HashMap::new(),
     };
     let physical = physical_registers(image.isa);
-    for &register in &physical {
+    let stack = match initialize_registers(&mut machine, image, options, &physical) {
+        Ok(stack) => stack,
+        Err(error) => return Err(error),
+    };
+    let width = crate::arch::pointer_bytes(image.isa);
+    if let Err(error) = initialize_arguments(&mut machine, image, start, options, stack, width) {
+        return Err(error);
+    }
+    if let Err(error) = initialize_memory(&mut machine, options) {
+        return Err(error);
+    }
+    let mut ends = HashSet::new();
+    for end in &options.end {
+        match end.value() {
+            Ok(value) => {
+                ends.insert(image.code_address(value));
+            }
+            Err(error) => return Err(error),
+        }
+    }
+    let before = machine.memory.clone();
+    // Caller-provided heap bytes are reserved before malloc starts allocating.
+    let mut heap_next = heap_base;
+    for &address in before.keys() {
+        if (heap_base..heap_base + HEAP_SIZE).contains(&address) {
+            heap_next = heap_next.max(address + 1);
+        }
+    }
+    let mut runner = Runner {
+        machine,
+        facts: HashMap::new(),
+        image,
+        options,
+        deadline: deadline.map_or(limit, |deadline| deadline.min(limit)),
+        steps: 0,
+        address: image.code_address(start),
+        ends,
+        trace: Vec::new(),
+        heap_base,
+        heap_next,
+        return_cleanup: 0,
+        allocations: HashSet::new(),
+        code: HashMap::new(),
+        recovery,
+    };
+    if runner.recovery.is_some() {
+        let sp = crate::arch::stack_pointer(image.isa);
+        for &register in &physical {
+            if register != sp {
+                runner.facts.insert(register, Fact::TOP);
+            }
+        }
+        if matches!(image.isa, Isa::Arm32 | Isa::AArch64) {
+            runner.assign_fact(
+                RegRef {
+                    index: if image.isa == Isa::Arm32 { 14 } else { 30 },
+                    width: width * 8,
+                },
+                Fact::constant(0),
+            );
+        } else {
+            runner.machine.store(stack, 0, width);
+        }
+    }
+    let stopped = runner.execute(start, 0);
+    Ok(runner.report(stopped, &before, stack, &physical))
+}
+
+fn initialize_registers(
+    machine: &mut Machine<'_>,
+    image: &Image,
+    options: &Options,
+    physical: &[u16],
+) -> Result<u64> {
+    for &register in physical {
         machine.registers.insert(register, 0);
     }
     if matches!(image.isa, Isa::X86_64 | Isa::I386) {
@@ -141,7 +215,17 @@ fn run_with_recovery(
             value,
         );
     }
-    let stack = machine.register(sp);
+    Ok(machine.register(sp))
+}
+
+fn initialize_arguments(
+    machine: &mut Machine<'_>,
+    image: &Image,
+    start: u64,
+    options: &Options,
+    stack: u64,
+    width: u8,
+) -> Result<()> {
     let abi = image.convention_of(start);
     if image.go && !options.arguments.is_empty() {
         return Err(invalid(
@@ -166,17 +250,23 @@ fn run_with_recovery(
                 return Err(invalid("convention has no stack arguments"));
             };
             let offset = (index - abi.arguments().len()) as u64;
-            let address = offset.checked_mul(u64::from(width)).and_then(|offset| {
-                stack
-                    .checked_add(base as u64)
-                    .and_then(|base| base.checked_add(offset))
-            });
+            let address = stack_argument_address(stack.checked_add(base as u64), offset, width);
             let Some(address) = address else {
                 return Err(invalid("argument address overflows"));
             };
             machine.store(address, value, width);
         }
     }
+    Ok(())
+}
+
+fn stack_argument_address(base: Option<u64>, position: u64, width: u8) -> Option<u64> {
+    position
+        .checked_mul(u64::from(width))
+        .and_then(|position| base.and_then(|base| base.checked_add(position)))
+}
+
+fn initialize_memory(machine: &mut Machine<'_>, options: &Options) -> Result<()> {
     let mut total = 0usize;
     for write in &options.memory {
         let address = match write.address.value() {
@@ -223,135 +313,91 @@ fn run_with_recovery(
     {
         return Err(invalid(format!("initial state: {error}")));
     }
-    let mut ends = HashSet::new();
-    for end in &options.end {
-        match end.value() {
-            Ok(value) => {
-                ends.insert(image.code_address(value));
-            }
-            Err(error) => return Err(error),
-        }
-    }
-    let before = machine.memory.clone();
-    // Caller-provided heap bytes are reserved before malloc starts allocating.
-    let mut heap_next = heap_base;
-    for &address in before.keys() {
-        if (heap_base..heap_base + HEAP_SIZE).contains(&address) {
-            heap_next = heap_next.max(address + 1);
-        }
-    }
-    let mut runner = Runner {
-        machine,
-        facts: HashMap::new(),
-        image,
-        options,
-        deadline: deadline.map_or(limit, |deadline| deadline.min(limit)),
-        steps: 0,
-        address: image.code_address(start),
-        ends,
-        trace: Vec::new(),
-        heap_base,
-        heap_next,
-        return_cleanup: 0,
-        allocations: HashSet::new(),
-        code: HashMap::new(),
-        recovery,
-    };
-    if runner.recovery.is_some() {
-        for &register in &physical {
-            if register != sp {
-                runner.facts.insert(register, Fact::TOP);
-            }
-        }
-        if matches!(image.isa, Isa::Arm32 | Isa::AArch64) {
-            runner.assign_fact(
-                RegRef {
-                    index: if image.isa == Isa::Arm32 { 14 } else { 30 },
-                    width: width * 8,
-                },
-                Fact::constant(0),
-            );
-        } else {
-            runner.machine.store(stack, 0, width);
-        }
-    }
-    let stopped = runner.execute(start, 0);
-    let (reason, error) = match stopped {
-        Stop::Return => ("return", None),
-        Stop::End => ("end address", None),
-        Stop::Trap => ("trap", None),
-        Stop::Steps => ("step limit", None),
-        Stop::Time => ("time limit", None),
-        Stop::Error(error) => (
-            "error",
-            Some(format!("instruction 0x{:x}: {error}", runner.address)),
-        ),
-    };
-    if image.isa == Isa::Arm32 {
-        let pc = if reason == "return" {
-            runner
-                .register_fact(14, 32)
-                .ok()
-                .and_then(Fact::singleton)
-                .map(|value| value & !1)
-        } else {
-            Some(runner.address)
-        };
-        match pc {
-            Some(pc) => runner.assign_fact(
-                RegRef {
-                    index: 15,
-                    width: 32,
-                },
-                Fact::constant(pc),
-            ),
-            None => runner.assign_fact(
-                RegRef {
-                    index: 15,
-                    width: 32,
-                },
-                Fact::TOP,
-            ),
-        }
-    }
-    let mut registers = BTreeMap::new();
-    for register in physical {
-        let value = runner
-            .register_fact(register, 64)
-            .ok()
-            .and_then(Fact::singleton);
-        registers.insert(
-            crate::ir::reg_name(image.isa, register, 64),
-            value.map_or_else(|| "unknown".to_owned(), crate::addr::format),
-        );
-    }
-    let memory = runner
-        .machine
-        .strict
-        .as_ref()
-        .expect("strict memory")
-        .changes(&before, &runner.machine.memory);
-    let report = Report {
-        registers,
-        return_value: runner
-            .register_fact(crate::arch::RETURN, 64)
-            .ok()
-            .and_then(Fact::singleton)
-            .map_or_else(|| "unknown".to_owned(), crate::addr::format),
-        memory,
-        steps: runner.steps,
-        reason: reason.to_owned(),
-        address: crate::addr::format(runner.address),
-        error,
-        trace: runner.trace,
-        heap_base: crate::addr::format(heap_base),
-        heap_size: HEAP_SIZE,
-        stack_pointer: crate::addr::format(stack),
-    };
-    Ok((report, runner.recovery))
+    Ok(())
 }
 
 impl Runner<'_> {
+    fn report(
+        mut self,
+        stopped: Stop,
+        before: &HashMap<u64, u8>,
+        stack: u64,
+        physical: &[u16],
+    ) -> (Report, Option<strings::Recovery>) {
+        let (reason, error) = match stopped {
+            Stop::Return => ("return", None),
+            Stop::End => ("end address", None),
+            Stop::Trap => ("trap", None),
+            Stop::Steps => ("step limit", None),
+            Stop::Time => ("time limit", None),
+            Stop::Error(error) => (
+                "error",
+                Some(format!("instruction 0x{:x}: {error}", self.address)),
+            ),
+        };
+        if self.image.isa == Isa::Arm32 {
+            let pc = if reason == "return" {
+                self.register_fact(14, 32)
+                    .ok()
+                    .and_then(Fact::singleton)
+                    .map(|value| value & !1)
+            } else {
+                Some(self.address)
+            };
+            match pc {
+                Some(pc) => self.assign_fact(
+                    RegRef {
+                        index: 15,
+                        width: 32,
+                    },
+                    Fact::constant(pc),
+                ),
+                None => self.assign_fact(
+                    RegRef {
+                        index: 15,
+                        width: 32,
+                    },
+                    Fact::TOP,
+                ),
+            }
+        }
+        let mut registers = BTreeMap::new();
+        for &register in physical {
+            let value = self
+                .register_fact(register, 64)
+                .ok()
+                .and_then(Fact::singleton);
+            registers.insert(
+                crate::ir::reg_name(self.image.isa, register, 64),
+                value.map_or_else(|| "unknown".to_owned(), crate::addr::format),
+            );
+        }
+        let memory = self
+            .machine
+            .strict
+            .as_ref()
+            .expect("strict memory")
+            .changes(before, &self.machine.memory);
+        let report = Report {
+            registers,
+            return_value: self
+                .register_fact(crate::arch::RETURN, 64)
+                .ok()
+                .and_then(Fact::singleton)
+                .map_or_else(|| "unknown".to_owned(), crate::addr::format),
+            memory,
+            steps: self.steps,
+            reason: reason.to_owned(),
+            address: crate::addr::format(self.address),
+            error,
+            trace: self.trace,
+            heap_base: crate::addr::format(self.heap_base),
+            heap_size: HEAP_SIZE,
+            stack_pointer: crate::addr::format(stack),
+        };
+        (report, self.recovery)
+    }
+
     fn tick(&mut self) -> std::result::Result<(), Stop> {
         if Instant::now() >= self.deadline {
             return Err(Stop::Time);
@@ -685,63 +731,7 @@ impl Runner<'_> {
                     None => return Err(Stop::Error("switch has no matching case".to_owned())),
                 }
             }
-            Stmt::Ret { value } => {
-                if let Err(stop) = self.check_recovery_return(depth) {
-                    return Err(stop);
-                }
-                let value = match self.value_fact(value) {
-                    Ok(value) => value,
-                    Err(stop) => return Err(stop),
-                };
-                if matches!(self.image.isa, Isa::X86_64 | Isa::I386) {
-                    let instruction = match self.x86_instruction() {
-                        Ok(instruction) => instruction,
-                        Err(stop) => return Err(stop),
-                    };
-                    let width = crate::arch::pointer_bytes(self.image.isa);
-                    let sp = crate::arch::stack_pointer(self.image.isa);
-                    let address = match self.eval(&Expr::reg(sp, width * 8)) {
-                        Ok(value) => value,
-                        Err(stop) => return Err(stop),
-                    };
-                    self.machine.load(address, width);
-                    match self.memory_error() {
-                        Ok(value) => value,
-                        Err(stop) => return Err(stop),
-                    };
-                    let cleanup = if instruction.mnemonic() == iced_x86::Mnemonic::Ret {
-                        if instruction.op_count() == 0 {
-                            0
-                        } else {
-                            u64::from(instruction.immediate16())
-                        }
-                    } else {
-                        self.return_cleanup
-                    };
-                    self.return_cleanup = cleanup;
-                    let Some(stack) = address
-                        .checked_add(u64::from(width))
-                        .and_then(|stack| stack.checked_add(cleanup))
-                    else {
-                        return Err(Stop::Error("return stack address overflows".to_owned()));
-                    };
-                    self.machine.assign(
-                        RegRef {
-                            index: sp,
-                            width: width * 8,
-                        },
-                        stack,
-                    );
-                }
-                self.assign_fact(
-                    RegRef {
-                        index: crate::arch::RETURN,
-                        width: 64,
-                    },
-                    value,
-                );
-                return Err(Stop::Return);
-            }
+            Stmt::Ret { value } => return self.return_statement(value, depth),
             Stmt::Call {
                 kind,
                 target,
@@ -750,61 +740,15 @@ impl Runner<'_> {
                 outputs,
                 ..
             } => {
-                if *kind == CallKind::Syscall {
-                    return Err(Stop::Error(
-                        "system calls require external machine state".to_owned(),
-                    ));
-                }
-                let target = match target {
-                    Some(target) => *target,
-                    None => {
-                        let Some(through) = through else {
-                            return Err(Stop::Error("call target is unknown".to_owned()));
-                        };
-                        if let Expr::Load { addr, .. } = through
-                            && let Expr::Const(slot) = addr.as_ref()
-                            && self.image.imports.contains_key(slot)
-                        {
-                            *slot
-                        } else {
-                            match self.eval(through) {
-                                Ok(value) => value,
-                                Err(stop) => return Err(stop),
-                            }
-                        }
-                    }
-                };
-                let target = match self.imported_target(target) {
-                    Ok(target) => target,
-                    Err(stop) => return Err(stop),
-                };
-                if depth == 0 {
-                    self.recover_inline(target, *convention, *kind);
-                }
-                if let Err(stop) = self.call(target, *convention, *kind, depth) {
+                if let Err(stop) = self.call_statement(
+                    *kind,
+                    *target,
+                    through.as_ref(),
+                    *convention,
+                    outputs,
+                    depth,
+                ) {
                     return Err(stop);
-                }
-                let mut values = Vec::new();
-                for output in outputs {
-                    let value = match self.register_fact(output.register, 64) {
-                        Ok(value) => value,
-                        Err(stop) => return Err(stop),
-                    };
-                    values.push((
-                        output.dest,
-                        value,
-                        self.recovery
-                            .as_ref()
-                            .and_then(|r| r.registers.get(&output.register))
-                            .copied()
-                            .unwrap_or(0),
-                    ));
-                }
-                for (dest, value, origin) in values {
-                    self.assign_fact(dest, value);
-                    if let Some(recovery) = &mut self.recovery {
-                        recovery.registers.insert(dest.index, origin);
-                    }
                 }
             }
             Stmt::Trap => return Err(Stop::Trap),
@@ -836,6 +780,136 @@ impl Runner<'_> {
             }
         }
         Ok(None)
+    }
+
+    fn call_statement(
+        &mut self,
+        kind: CallKind,
+        target: Option<u64>,
+        through: Option<&Expr>,
+        convention: Convention,
+        outputs: &[CallOutput],
+        depth: usize,
+    ) -> std::result::Result<(), Stop> {
+        if kind == CallKind::Syscall {
+            return Err(Stop::Error(
+                "system calls require external machine state".to_owned(),
+            ));
+        }
+        let target = match target {
+            Some(target) => target,
+            None => {
+                let Some(through) = through else {
+                    return Err(Stop::Error("call target is unknown".to_owned()));
+                };
+                if let Expr::Load { addr, .. } = through
+                    && let Expr::Const(slot) = addr.as_ref()
+                    && self.image.imports.contains_key(slot)
+                {
+                    *slot
+                } else {
+                    match self.eval(through) {
+                        Ok(value) => value,
+                        Err(stop) => return Err(stop),
+                    }
+                }
+            }
+        };
+        let target = match self.imported_target(target) {
+            Ok(target) => target,
+            Err(stop) => return Err(stop),
+        };
+        if depth == 0 {
+            self.recover_inline(target, convention, kind);
+        }
+        if let Err(stop) = self.call(target, convention, kind, depth) {
+            return Err(stop);
+        }
+        let mut values = Vec::new();
+        for output in outputs {
+            let value = match self.register_fact(output.register, 64) {
+                Ok(value) => value,
+                Err(stop) => return Err(stop),
+            };
+            values.push((
+                output.dest,
+                value,
+                self.recovery
+                    .as_ref()
+                    .and_then(|r| r.registers.get(&output.register))
+                    .copied()
+                    .unwrap_or(0),
+            ));
+        }
+        for (dest, value, origin) in values {
+            self.assign_fact(dest, value);
+            if let Some(recovery) = &mut self.recovery {
+                recovery.registers.insert(dest.index, origin);
+            }
+        }
+        Ok(())
+    }
+
+    fn return_statement(
+        &mut self,
+        value: &Expr,
+        depth: usize,
+    ) -> std::result::Result<Option<u64>, Stop> {
+        if let Err(stop) = self.check_recovery_return(depth) {
+            return Err(stop);
+        }
+        let value = match self.value_fact(value) {
+            Ok(value) => value,
+            Err(stop) => return Err(stop),
+        };
+        if matches!(self.image.isa, Isa::X86_64 | Isa::I386) {
+            let instruction = match self.x86_instruction() {
+                Ok(instruction) => instruction,
+                Err(stop) => return Err(stop),
+            };
+            let width = crate::arch::pointer_bytes(self.image.isa);
+            let sp = crate::arch::stack_pointer(self.image.isa);
+            let address = match self.eval(&Expr::reg(sp, width * 8)) {
+                Ok(value) => value,
+                Err(stop) => return Err(stop),
+            };
+            self.machine.load(address, width);
+            match self.memory_error() {
+                Ok(value) => value,
+                Err(stop) => return Err(stop),
+            };
+            let cleanup = if instruction.mnemonic() == iced_x86::Mnemonic::Ret {
+                if instruction.op_count() == 0 {
+                    0
+                } else {
+                    u64::from(instruction.immediate16())
+                }
+            } else {
+                self.return_cleanup
+            };
+            self.return_cleanup = cleanup;
+            let Some(stack) = address
+                .checked_add(u64::from(width))
+                .and_then(|stack| stack.checked_add(cleanup))
+            else {
+                return Err(Stop::Error("return stack address overflows".to_owned()));
+            };
+            self.machine.assign(
+                RegRef {
+                    index: sp,
+                    width: width * 8,
+                },
+                stack,
+            );
+        }
+        self.assign_fact(
+            RegRef {
+                index: crate::arch::RETURN,
+                width: 64,
+            },
+            value,
+        );
+        Err(Stop::Return)
     }
 
     fn imported_target(&self, target: u64) -> std::result::Result<u64, Stop> {

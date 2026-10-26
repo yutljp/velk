@@ -183,7 +183,17 @@ fn constants(expr: &Expr) -> Option<Vec<u64>> {
     }
 }
 
-fn rewrite(ir: &mut FunctionIr, header: usize, state: u16) -> Option<usize> {
+struct Transition {
+    value: Expr,
+    targets: HashMap<u64, Vec<u64>>,
+}
+
+struct Transitions {
+    edits: HashMap<usize, Transition>,
+    state_count: usize,
+}
+
+fn region(ir: &FunctionIr, header: usize, state: u16) -> HashSet<usize> {
     let mut region = HashSet::new();
     let mut pending = vec![header];
     while let Some(at) = pending.pop() {
@@ -213,16 +223,10 @@ fn rewrite(ir: &mut FunctionIr, header: usize, state: u16) -> Option<usize> {
             break;
         }
     }
-    if region.contains(&0) {
-        return None;
-    }
-    let decisions = region
-        .iter()
-        .filter(|at| state_register(&ir.blocks[**at]) == Some(state))
-        .count();
-    if decisions < 2 && !matches!(ir.blocks[header].stmts.last(), Some(Stmt::Switch { .. })) {
-        return None;
-    }
+    region
+}
+
+fn prove_transitions(ir: &FunctionIr, region: &HashSet<usize>, state: u16) -> Option<Transitions> {
     // Unknown state definitions anywhere in the function require the original CFG.
     for stmt in ir.blocks.iter().flat_map(|block| &block.stmts) {
         let (written, _) = crate::ir::visit::statement_registers(stmt);
@@ -334,7 +338,7 @@ fn rewrite(ir: &mut FunctionIr, header: usize, state: u16) -> Option<usize> {
         for entry in entries {
             let mut resolved = Vec::new();
             for value in &values {
-                let Some(target) = resolve(ir, &region, entry, state, *value) else {
+                let Some(target) = resolve(ir, region, entry, state, *value) else {
                     return None;
                 };
                 resolved.push(target);
@@ -344,18 +348,25 @@ fn rewrite(ir: &mut FunctionIr, header: usize, state: u16) -> Option<usize> {
         if values.len() == 2 && next.len() != 1 {
             return None;
         }
-        edits.insert(at, (value, targets));
+        edits.insert(at, Transition { value, targets });
     }
     if edits.is_empty() || states.len() < 2 {
         return None;
     }
+    Some(Transitions {
+        edits,
+        state_count: states.len(),
+    })
+}
+
+fn edit_blocks(ir: &FunctionIr, edits: &HashMap<usize, Transition>) -> Option<FunctionIr> {
     let mut blocks = Vec::new();
     // Branches use addresses for identity only; reserve an unused address for a
     // conditional transition's explicit false edge.
     let mut address = ir.blocks.iter().map(|block| block.start).max().unwrap_or(0);
     for (at, original) in ir.blocks.iter().enumerate() {
         let mut block = original.clone();
-        if let Some((value, targets)) = edits.get(&at) {
+        if let Some(Transition { value, targets }) = edits.get(&at) {
             if let Expr::Select { cond, lhs, rhs, .. } = value {
                 let Some(resolved) = targets.values().next() else {
                     return None;
@@ -424,6 +435,27 @@ fn rewrite(ir: &mut FunctionIr, header: usize, state: u16) -> Option<usize> {
     }
     let mut rewritten = ir.clone();
     rewritten.blocks = blocks;
+    Some(rewritten)
+}
+
+fn rewrite(ir: &mut FunctionIr, header: usize, state: u16) -> Option<usize> {
+    let region = region(ir, header, state);
+    if region.contains(&0) {
+        return None;
+    }
+    let decisions = region
+        .iter()
+        .filter(|at| state_register(&ir.blocks[**at]) == Some(state))
+        .count();
+    if decisions < 2 && !matches!(ir.blocks[header].stmts.last(), Some(Stmt::Switch { .. })) {
+        return None;
+    }
+    let Some(transitions) = prove_transitions(ir, &region, state) else {
+        return None;
+    };
+    let Some(mut rewritten) = edit_blocks(ir, &transitions.edits) else {
+        return None;
+    };
     let reached = crate::ir::cfg::reached(&rewritten);
     if region
         .iter()
@@ -435,5 +467,5 @@ fn rewrite(ir: &mut FunctionIr, header: usize, state: u16) -> Option<usize> {
         .blocks
         .retain(|block| reached.contains(&block.start));
     *ir = rewritten;
-    Some(states.len())
+    Some(transitions.state_count)
 }

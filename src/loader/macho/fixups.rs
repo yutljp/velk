@@ -10,6 +10,62 @@ pub(crate) struct Binding {
     pub(crate) addend: i64,
 }
 
+struct PointerFormat {
+    value: u16,
+    next_mask: u64,
+    stride: u64,
+    absolute_bits: Option<u32>,
+}
+
+const POINTER_FORMATS: &[PointerFormat] = &[
+    PointerFormat {
+        value: 1,
+        next_mask: 0x7ff,
+        stride: 8,
+        absolute_bits: Some(43),
+    },
+    PointerFormat {
+        value: 2,
+        next_mask: 0xfff,
+        stride: 4,
+        absolute_bits: Some(36),
+    },
+    PointerFormat {
+        value: 6,
+        next_mask: 0xfff,
+        stride: 4,
+        absolute_bits: None,
+    },
+    PointerFormat {
+        value: 7,
+        next_mask: 0x7ff,
+        stride: 4,
+        absolute_bits: None,
+    },
+    PointerFormat {
+        value: 9,
+        next_mask: 0x7ff,
+        stride: 8,
+        absolute_bits: None,
+    },
+    PointerFormat {
+        value: 10,
+        next_mask: 0x7ff,
+        stride: 4,
+        absolute_bits: Some(43),
+    },
+    PointerFormat {
+        value: 12,
+        next_mask: 0x7ff,
+        stride: 8,
+        absolute_bits: None,
+    },
+];
+
+fn pointer_format(value: u16) -> Option<&'static PointerFormat> {
+    POINTER_FORMATS.iter().find(|format| format.value == value)
+}
+
 pub(in crate::loader) fn apply(
     file: &object::File<'_>,
     bytes: &mut std::borrow::Cow<'_, [u8]>,
@@ -100,17 +156,21 @@ pub(in crate::loader) fn apply(
             };
             let header = starts.header();
             let format = header.pointer_format.get(endian);
-            if !matches!(format.0, 1 | 2 | 6 | 7 | 9 | 10 | 12) {
+            let Some(description) = pointer_format(format.0) else {
                 return Err(format!(
                     "segment {}: unsupported pointer format {format:?}",
                     starts.index()
                 ));
-            }
+            };
             let page_size = u64::from(header.page_size.get(endian));
-            if !matches!(page_size, 0x1000 | 0x4000)
-                || base.checked_add(header.segment_offset.get(endian)) != Some(segment.address())
-                || u64::from(header.page_count.get(endian)) > segment.size().div_ceil(page_size)
-            {
+            if !valid_segment_geometry(
+                page_size,
+                base,
+                header.segment_offset.get(endian),
+                segment.address(),
+                u64::from(header.page_count.get(endian)),
+                segment.size(),
+            ) {
                 return Err(format!("segment {}: invalid page geometry", starts.index()));
             }
             let data = match segment.data() {
@@ -157,11 +217,7 @@ pub(in crate::loader) fn apply(
                         .try_into()
                         .expect("an eight-byte pointer"),
                 );
-                let next = if matches!(format.0, 2 | 6) {
-                    ((raw >> 51) & 0xfff) * 4
-                } else {
-                    ((raw >> 51) & 0x7ff) * if matches!(format.0, 7 | 10) { 4 } else { 8 }
-                };
+                let next = ((raw >> 51) & description.next_mask) * description.stride;
                 if next != 0 && offset % page_size + next + 8 > page_size {
                     return Err(format!("pointer at {address:#x}: chain leaves its page"));
                 }
@@ -173,42 +229,9 @@ pub(in crate::loader) fn apply(
                         target
                     }
                     Fixup::Bind(bind) => {
-                        let Some(import) = names.get(bind.ordinal as usize) else {
-                            return Err(format!(
-                                "pointer at {address:#x}: invalid import ordinal {}",
-                                bind.ordinal
-                            ));
-                        };
-                        let name = match std::str::from_utf8(import.name) {
-                            Ok(name) if !name.is_empty() => name,
-                            _ => {
-                                return Err(format!(
-                                    "pointer at {address:#x}: invalid import name"
-                                ));
-                            }
-                        };
-                        let Some(addend) = import.addend.checked_add(i64::from(bind.addend)) else {
-                            return Err(format!("pointer at {address:#x}: import addend overflow"));
-                        };
-                        if import.dylib == object::macho::BIND_SPECIAL_DYLIB_SELF
-                            && let Some(target) = definitions.get(import.name)
-                        {
-                            let Some(target) = target.checked_add_signed(addend) else {
-                                return Err(format!(
-                                    "pointer at {address:#x}: self-bind target overflow"
-                                ));
-                            };
-                            target
-                        } else {
-                            bindings.insert(
-                                address,
-                                Binding {
-                                    name: name.to_owned(),
-                                    addend,
-                                },
-                            );
-                            // An external address is symbolic; never expose chain bits as a target.
-                            0
+                        match bind_value(address, bind, &names, &definitions, &mut bindings) {
+                            Ok(value) => value,
+                            Err(error) => return Err(error),
                         }
                     }
                     _ => return Err(format!("pointer at {address:#x}: unsupported rebase")),
@@ -232,6 +255,63 @@ pub(in crate::loader) fn apply(
     Ok(bindings)
 }
 
+fn valid_segment_geometry(
+    page_size: u64,
+    base: u64,
+    segment_offset: u64,
+    address: u64,
+    page_count: u64,
+    size: u64,
+) -> bool {
+    matches!(page_size, 0x1000 | 0x4000)
+        && base.checked_add(segment_offset) == Some(address)
+        && page_count <= size.div_ceil(page_size)
+}
+
+fn bind_value(
+    address: u64,
+    bind: object::read::macho::FixupBind,
+    names: &[object::read::macho::DyldChainedImport<'_>],
+    definitions: &BTreeMap<Vec<u8>, u64>,
+    bindings: &mut BTreeMap<u64, Binding>,
+) -> Result<u64, String> {
+    let Some(import) = names.get(bind.ordinal as usize) else {
+        return Err(format!(
+            "pointer at {address:#x}: invalid import ordinal {}",
+            bind.ordinal
+        ));
+    };
+    let name = match std::str::from_utf8(import.name) {
+        Ok(name) if !name.is_empty() => name,
+        _ => {
+            return Err(format!("pointer at {address:#x}: invalid import name"));
+        }
+    };
+    let Some(addend) = import.addend.checked_add(i64::from(bind.addend)) else {
+        return Err(format!("pointer at {address:#x}: import addend overflow"));
+    };
+    if import.dylib == object::macho::BIND_SPECIAL_DYLIB_SELF
+        && let Some(target) = definitions.get(import.name)
+    {
+        let Some(target) = target.checked_add_signed(addend) else {
+            return Err(format!(
+                "pointer at {address:#x}: self-bind target overflow"
+            ));
+        };
+        Ok(target)
+    } else {
+        bindings.insert(
+            address,
+            Binding {
+                name: name.to_owned(),
+                addend,
+            },
+        );
+        // An external address is symbolic; never expose chain bits as a target.
+        Ok(0)
+    }
+}
+
 fn rebase_value(
     base: u64,
     format: u16,
@@ -239,12 +319,11 @@ fn rebase_value(
     rebase: object::read::macho::FixupRebase,
 ) -> Option<u64> {
     // Absolute formats carry the top byte separately from the low target.
-    if rebase.auth.is_none() && matches!(format, 1 | 2 | 10) {
-        if format == 2 {
-            Some((raw & 0xf_ffff_ffff) | ((raw >> 36) & 0xff) << 56)
-        } else {
-            Some((raw & 0x7ff_ffff_ffff) | ((raw >> 43) & 0xff) << 56)
-        }
+    let absolute_bits = pointer_format(format).and_then(|format| format.absolute_bits);
+    if rebase.auth.is_none()
+        && let Some(bits) = absolute_bits
+    {
+        Some((raw & ((1u64 << bits) - 1)) | ((raw >> bits) & 0xff) << 56)
     } else {
         let low = rebase.target_offset & 0x00ff_ffff_ffff_ffff;
         let Some(target) = base.checked_add(low) else {
