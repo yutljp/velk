@@ -34,7 +34,7 @@ JSON.stringify([link.name, c.name, link.decompile(), c.decompile(), c.card().nam
 /// Field names per interface, split into required and optional (`name?:`).
 fn declarations() -> BTreeMap<String, (BTreeSet<String>, BTreeSet<String>)> {
     let mut interfaces = BTreeMap::new();
-    for file in ["binary.d.ts", "func.d.ts", "types.d.ts"] {
+    for file in ["binary.d.ts", "func.d.ts", "types.d.ts", "emulation.d.ts"] {
         let path = common::root().join("src/script/api").join(file);
         let text = std::fs::read_to_string(&path)
             .unwrap_or_else(|error| panic!("{}: {error}", path.display()));
@@ -83,6 +83,8 @@ JSON.stringify({{
   decompile: f.decompile(),
   disasm: f.disasm({{ limit: 3 }}),
   ir: f.ir(),
+  execution: b.emulate(f.addr, {{end: [f.addr]}}),
+  functionExecution: f.emulate({{end: [f.addr]}}),
   signature: f.signature(),
   references: f.references(),
   strings: f.strings(),
@@ -169,6 +171,17 @@ fn script_results_match_the_declarations() {
             &at("sections()[0]"),
         ));
         problems.extend(check(&interfaces, "Card", &result["card"], &at("card()")));
+        for field in ["execution", "functionExecution"] {
+            problems.extend(check(
+                &interfaces,
+                "EmulationReport",
+                &result[field],
+                &at(field),
+            ));
+            assert_eq!(result[field]["reason"], "end address");
+            assert_eq!(result[field]["steps"], 0);
+        }
+
         let navigation = &result["navigation"];
         for (field, interface) in [
             ("xrefs", "XrefResult"),

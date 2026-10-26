@@ -23,6 +23,7 @@ pub(super) fn image(info: &[u8], abbrev: &[u8]) -> Image {
             vaddr: 0,
             size: data.len() as u64,
             file_offset: Some(bytes.len() as u64),
+            file_size: data.len() as u64,
             executable: false,
             loaded: false,
             read_only: true,

@@ -9,6 +9,7 @@ pub mod card;
 pub mod compare;
 mod deadline;
 pub mod disasm;
+pub mod emulation;
 pub mod error;
 pub mod ir;
 pub mod lift;

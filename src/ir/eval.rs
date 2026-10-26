@@ -8,6 +8,8 @@
 
 use std::collections::{BTreeMap, HashMap};
 
+pub(crate) mod emulation;
+
 use super::semantics::{holds, mask, operand_width, sign_extend};
 use super::{BinOp, Block, Expr, FunctionIr, RegRef, Stmt};
 
@@ -68,6 +70,7 @@ enum Flow {
 }
 
 struct Machine<'a> {
+    strict: Option<crate::emulation::Memory<'a>>,
     source: Option<&'a MachineSource<'a>>,
     isa: crate::loader::Isa,
     convention: &'a Convention<'a>,
@@ -140,6 +143,7 @@ pub fn state_after_with_machine(
 impl<'a> Machine<'a> {
     fn new(ir: &'a FunctionIr, setup: &'a Setup<'a>) -> Self {
         let mut machine = Machine {
+            strict: None,
             source: None,
             isa: ir.isa,
             convention: &setup.convention,
@@ -250,16 +254,29 @@ impl Machine<'_> {
         self.memory
             .get(&addr)
             .copied()
-            .unwrap_or_else(|| hash(self.seed, addr) as u8)
+            .unwrap_or_else(|| match &self.strict {
+                Some(memory) => memory.byte(addr),
+                None => hash(self.seed, addr) as u8,
+            })
     }
 
     fn load(&self, addr: u64, bytes: u8) -> u64 {
+        if let Some(memory) = &self.strict
+            && !memory.check(addr, u64::from(bytes), /* write */ false)
+        {
+            return 0;
+        }
         (0..u64::from(bytes)).fold(0, |value, offset| {
             value | (u64::from(self.byte(addr.wrapping_add(offset))) << (8 * offset))
         })
     }
 
     fn store(&mut self, addr: u64, value: u64, bytes: u8) {
+        if let Some(memory) = &self.strict
+            && !memory.check(addr, u64::from(bytes), /* write */ true)
+        {
+            return;
+        }
         for offset in 0..u64::from(bytes) {
             self.memory
                 .insert(addr.wrapping_add(offset), (value >> (8 * offset)) as u8);
@@ -269,10 +286,16 @@ impl Machine<'_> {
     fn eval(&self, expr: &Expr) -> Result<u64, &'static str> {
         Ok(match expr {
             Expr::Apply { op, args } => {
-                let values = args
-                    .iter()
-                    .map(|arg| self.eval(arg))
-                    .collect::<Result<Vec<u64>, _>>()?;
+                let mut values = Vec::new();
+                for arg in args {
+                    match self.eval(arg) {
+                        Ok(value) => values.push(value),
+                        Err(reason) => return Err(reason),
+                    }
+                }
+                if self.strict.is_some() && *op == super::Operation::Undefined {
+                    return Err("undefined operation result");
+                }
                 if super::semantics::faults(*op, &values) {
                     return Err("division by zero");
                 }
@@ -283,23 +306,38 @@ impl Machine<'_> {
                     result
                 }
             }
-            Expr::Reg { index, width } => self.register(*index) & mask(u32::from(*width)),
+            Expr::Reg { index, width } => {
+                if self.strict.is_some() && !self.registers.contains_key(index) {
+                    return Err("read of an undefined register");
+                }
+                self.register(*index) & mask(u32::from(*width))
+            }
             Expr::Const(value) => *value,
             Expr::Load {
                 addr,
                 width,
                 signed,
             } => {
-                let value = self.load(self.eval(addr)?, *width);
+                let value = self.load(
+                    match self.eval(addr) {
+                        Ok(value) => value,
+                        Err(reason) => return Err(reason),
+                    },
+                    *width,
+                );
                 if *signed {
                     sign_extend(value, u32::from(*width) * 8) as u64
                 } else {
                     value
                 }
             }
-            Expr::SignExtend { value, width } => {
-                sign_extend(self.eval(value)?, u32::from(*width) * 8) as u64
-            }
+            Expr::SignExtend { value, width } => sign_extend(
+                match self.eval(value) {
+                    Ok(value) => value,
+                    Err(reason) => return Err(reason),
+                },
+                u32::from(*width) * 8,
+            ) as u64,
             Expr::Select {
                 cond,
                 lhs,
@@ -308,14 +346,40 @@ impl Machine<'_> {
                 els,
             } => {
                 let bits = operand_width(lhs, rhs);
-                if holds(*cond, self.eval(lhs)?, self.eval(rhs)?, bits) {
-                    self.eval(then)?
+                if holds(
+                    *cond,
+                    match self.eval(lhs) {
+                        Ok(value) => value,
+                        Err(reason) => return Err(reason),
+                    },
+                    match self.eval(rhs) {
+                        Ok(value) => value,
+                        Err(reason) => return Err(reason),
+                    },
+                    bits,
+                ) {
+                    match self.eval(then) {
+                        Ok(value) => value,
+                        Err(reason) => return Err(reason),
+                    }
                 } else {
-                    self.eval(els)?
+                    match self.eval(els) {
+                        Ok(value) => value,
+                        Err(reason) => return Err(reason),
+                    }
                 }
             }
             Expr::Bin { op, lhs, rhs } => {
-                let (a, b) = (self.eval(lhs)?, self.eval(rhs)?);
+                let (a, b) = (
+                    match self.eval(lhs) {
+                        Ok(value) => value,
+                        Err(reason) => return Err(reason),
+                    },
+                    match self.eval(rhs) {
+                        Ok(value) => value,
+                        Err(reason) => return Err(reason),
+                    },
+                );
                 let bits = operand_width(lhs, rhs);
                 match op {
                     BinOp::Add => a.wrapping_add(b),

@@ -60,6 +60,7 @@ velk --classes   path/to/binary          # C++ クラスを JSON で一覧表示
 velk --decompile path/to/binary main     # 疑似 C
 velk --decompile path/to/binary '*'      # すべての関数
 velk --disasm    path/to/binary 0x1000   # 逆アセンブル
+velk --emulate path/to/binary sum3 --emulation-options '{"arguments":[1,2,3]}' # 引数を指定して実行
 velk --xrefs     path/to/binary main     # main への参照
 velk --strings   path/to/binary          # 参照付きの文字列
 ```
@@ -67,6 +68,20 @@ velk --strings   path/to/binary          # 参照付きの文字列
 そのほかの操作は `velk --help` を参照してください。
 
 ユニバーサル Mach-O はこのマシンのアーキテクチャを開きます。別のものは `--arch x86_64`（または `arm64`、`arm64e`）で選びます。
+
+## 読み込んだコードの実行
+
+関数名または仮想アドレスを指定し、引数とメモリーの初期値を渡して実行できます。
+
+```sh
+velk --emulate app.elf decode --emulation-options '{"arguments":["0x10000000",6,93],"memory":[{"address":"0x10000000","bytes":[53,56,49,49,50,93]}]}'
+```
+
+JSON の結果にはレジスター、整数の戻り値、変更されたバイト、停止理由を含めます。
+スクリプトでは `b.emulate(start, options)` または
+`b.getFunction(name).emulate(options)`、MCP では `velk_emulate` を使います。
+復号の例、対応するライブラリのフック、エラー、実行の上限は
+[読み込んだコードの実行](docs/EMULATION.ja.md)を参照してください。
 
 ## エージェントから使う
 
@@ -118,6 +133,7 @@ JavaScript API と MCP では `b.search(pattern, options)`、
 - [API の概要](src/script/api/index.md)
 - [アーキテクチャ](docs/ARCHITECTURE.ja.md)
 - [テスト](docs/TESTING.ja.md)
+- [読み込んだコードの実行](docs/EMULATION.ja.md): CLI、JavaScript、MCP で初期状態と上限を指定して実行します。
 
 ## ライセンス
 

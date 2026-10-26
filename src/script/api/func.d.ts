@@ -10,6 +10,8 @@ interface Func {
   /** Where the function was found: "symtab", "dynamic", "entry", "pclntab", "dwarf", "codeview", "unwind", "function-starts", "objc", "plt", "prologue", "signature". */
   nameSources: string[];
 
+  /** Execute this function with explicit state and limits. */
+  emulate(options?: EmulationOptions): EmulationReport;
   /** Summary sized to roughly `budget` tokens (default 240); a larger budget adds disassembly lines. */
   card(opts?: { budget?: number }): Card;
   /** Standalone pseudo-C with support definitions. Throws when the function cannot be lifted.

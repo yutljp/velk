@@ -57,6 +57,7 @@ velk --classes   path/to/binary          # list C++ classes as JSON
 velk --decompile path/to/binary main     # decompile one function
 velk --decompile path/to/binary '*'      # decompile all functions
 velk --disasm    path/to/binary 0x1000   # disassemble
+velk --emulate path/to/binary sum3 --emulation-options '{"arguments":[1,2,3]}' # execute with arguments
 velk --xrefs     path/to/binary main     # references to main
 velk --strings   path/to/binary          # strings with references
 ```
@@ -64,6 +65,20 @@ velk --strings   path/to/binary          # strings with references
 Run `velk --help` for all options.
 
 Universal Mach-O files open the slice for this machine; pick another with `--arch x86_64` (or `arm64`, `arm64e`).
+
+## Running loaded code
+
+Run a function by name or virtual address with initial arguments and memory:
+
+```sh
+velk --emulate app.elf decode --emulation-options '{"arguments":["0x10000000",6,93],"memory":[{"address":"0x10000000","bytes":[53,56,49,49,50,93]}]}'
+```
+
+The JSON result includes registers, the integer return value, changed bytes and the
+stop reason. Scripts use `b.emulate(start, options)` or
+`b.getFunction(name).emulate(options)`; MCP clients use `velk_emulate`.
+See [Running loaded code](docs/EMULATION.md) for the decoding example, supported
+library hooks, errors and execution limits.
 
 ## Using velk from an agent
 
@@ -121,6 +136,7 @@ constant signatures.
 - [Scripting API](src/script/api/index.md)
 - [Architecture](docs/ARCHITECTURE.md)
 - [Testing](docs/TESTING.md)
+- [Running loaded code](docs/EMULATION.md): CLI, JavaScript and MCP execution with explicit state and limits.
 
 ## License
 

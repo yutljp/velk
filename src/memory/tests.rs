@@ -159,6 +159,7 @@ fn negative_integer_patterns_and_zero_initialized_sections_are_bounded() {
     );
     assert!(search(&image, "-129", &options, None).is_err());
     image.sections[0].file_offset = None;
+    image.sections[0].file_size = 0;
     assert_eq!(
         read(&image, 0x1000, "u32", 2, None).unwrap()["values"],
         json!([0, 0])

@@ -216,6 +216,24 @@ pub(super) fn lift(
     targets: &HashSet<u64>,
     summaries: Summaries<'_>,
 ) -> Result<Vec<Block>, LiftError> {
+    lift_in_mode(
+        image,
+        addr,
+        bytes,
+        targets,
+        summaries,
+        super::execution::Mode::Analysis,
+    )
+}
+
+pub(super) fn lift_in_mode(
+    image: &Image,
+    addr: u64,
+    bytes: &[u8],
+    targets: &HashSet<u64>,
+    summaries: Summaries<'_>,
+    mode: super::execution::Mode,
+) -> Result<Vec<Block>, LiftError> {
     if image.format != crate::loader::Format::Elf
         || image.byte_order() != Some(object::Endianness::Little)
         || addr > u64::from(u32::MAX)
@@ -228,13 +246,18 @@ pub(super) fn lift(
     let blocks = super::lift_continuing(
         image,
         summaries,
-        || Lifter {
-            image,
-            summaries,
-            stmts: Vec::new(),
-            flags: None,
-            float_comparison: false,
-            touched: false,
+        || {
+            super::execution::Located::new(
+                Lifter {
+                    image,
+                    summaries,
+                    stmts: Vec::new(),
+                    flags: None,
+                    float_comparison: false,
+                    touched: false,
+                },
+                mode,
+            )
         },
         addr,
         bytes,

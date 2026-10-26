@@ -92,6 +92,7 @@ fn data_reads_writes_and_string_addresses_keep_their_access_kind() {
         vaddr: 0x1100,
         size: 0x1d,
         file_offset: Some(0x100),
+        file_size: 0x1d,
         executable: false,
         loaded: true,
         read_only: false,

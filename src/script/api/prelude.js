@@ -20,6 +20,7 @@
     #call(op, extra = {}) {
       return call(op, { bin: this.#bin, addr: this.addr, ...extra });
     }
+    emulate(options = {}) { return call("emulate", { bin: this.#bin, start: this.addr, options }); }
     card({ budget } = {}) { return this.#call("card", { budget }); }
     decompile() { return this.#call("decompile"); }
     disasm({ limit } = {}) { return this.#call("disasm", { limit }); }
@@ -43,6 +44,10 @@
       Object.assign(this, info);
     }
     classes() { return call("classes", { bin: this.#id }); }
+    emulate(start, options = {}) {
+      if (typeof start === "number" && (!Number.isSafeInteger(start) || start < 0)) throw new RangeError("use a decimal or hex string for a 64-bit address");
+      return call("emulate", { bin: this.#id, start: String(address(start)), options });
+    }
     sections() { return call("sections", { bin: this.#id }); }
     compare(other, { carryAnnotations = false } = {}) {
       const result = call("compare", { first: this.#id, second: other.#id, carryAnnotations });

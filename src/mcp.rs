@@ -37,10 +37,11 @@ const READ_DESCRIPTION: &str = "Read this first: omit topic for API overview and
 Use binary for opening, listing, navigation and annotations; func for per-function \
 decompilation and inspection; types for returned object fields.";
 
-const TOPICS: [(&str, &str); 3] = [
+const TOPICS: [(&str, &str); 4] = [
     ("binary", include_str!("script/api/binary.d.ts")),
     ("func", include_str!("script/api/func.d.ts")),
     ("types", include_str!("script/api/types.d.ts")),
+    ("emulation", include_str!("script/api/emulation.d.ts")),
 ];
 
 /// Serves newline-delimited JSON-RPC requests on standard input and output.
@@ -147,6 +148,21 @@ fn tools() -> Value {
                 },
                 "additionalProperties": false
             }
+        },
+        {
+            "name": "velk_emulate",
+            "description": "Execute a function or virtual address through the IR interpreter. Returns final registers, return value, changed memory, steps, stop reason and optional trace. Read the emulation API topic for options. No system calls or host code execute.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "path": { "type": "string" },
+                    "start": { "type": "string", "description": "Function name or virtual address" },
+                    "options": { "type": "object", "description": "EmulationOptions from the emulation API topic" },
+                    "arch": { "type": "string", "enum": ["x86_64", "arm64", "arm64e"] }
+                },
+                "required": ["path", "start"],
+                "additionalProperties": false
+            }
         }
     ])
 }
@@ -154,6 +170,7 @@ fn tools() -> Value {
 fn call_tool(engine: &Engine, request: &Value) -> std::result::Result<Value, RpcError> {
     let arguments = request.pointer("/params/arguments").unwrap_or(&Value::Null);
     let (text, is_error) = match request.pointer("/params/name").and_then(Value::as_str) {
+        Some("velk_emulate") => emulate(engine, arguments),
         Some("velk_run_script") => run_script(engine, arguments),
         Some("velk_classes") => {
             let Some(path) = arguments.get("path").and_then(Value::as_str) else {
@@ -177,6 +194,43 @@ fn call_tool(engine: &Engine, request: &Value) -> std::result::Result<Value, Rpc
         "content": [{ "type": "text", "text": text }],
         "isError": is_error
     }))
+}
+
+fn emulate(engine: &Engine, arguments: &Value) -> (String, bool) {
+    let Some(path) = arguments.get("path").and_then(Value::as_str) else {
+        return ("missing path".to_owned(), true);
+    };
+    let Some(start) = arguments.get("start").and_then(Value::as_str) else {
+        return ("missing start".to_owned(), true);
+    };
+    let options = arguments
+        .get("options")
+        .cloned()
+        .unwrap_or_else(|| json!({}));
+    let open = json!({ "arch": arguments.get("arch") });
+    let code = format!(
+        "velk.open({}, {}).emulate({}, {})",
+        json!(path),
+        open,
+        json!(start),
+        options
+    );
+    let outcome = engine.run(&code, Some(Duration::from_millis(MAX_TIMEOUT_MS)));
+    match outcome.error {
+        Some(error) => (error, true),
+        None => {
+            let failed = serde_json::from_str::<Value>(&outcome.output)
+                .ok()
+                .and_then(|value| {
+                    value
+                        .get("reason")
+                        .and_then(Value::as_str)
+                        .map(|reason| !matches!(reason, "return" | "end address"))
+                })
+                .unwrap_or(true);
+            (outcome.output, failed)
+        }
+    }
 }
 
 fn run_script(engine: &Engine, arguments: &Value) -> (String, bool) {

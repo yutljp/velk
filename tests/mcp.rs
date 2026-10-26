@@ -63,7 +63,20 @@ fn discovery_and_fresh_scripts_work_over_stdio() {
     ]);
     assert_eq!(responses.len(), 6, "notifications have no response");
     assert_eq!(responses[0]["result"]["protocolVersion"], "2024-11-05");
-    assert_eq!(responses[1]["result"]["tools"].as_array().unwrap().len(), 3);
+    let mut names = Vec::new();
+    for tool in responses[1]["result"]["tools"].as_array().unwrap() {
+        names.push(tool["name"].as_str().unwrap());
+    }
+    names.sort_unstable();
+    assert_eq!(
+        names,
+        [
+            "velk_classes",
+            "velk_emulate",
+            "velk_read_api",
+            "velk_run_script"
+        ]
+    );
     assert!(text(&responses[2]).contains("fresh context"));
     assert!(text(&responses[3]).contains("interface Binary"));
     let mut binary = velk::service::Binary::open(&path).unwrap();

@@ -4,6 +4,7 @@ pub(crate) use arm32::fold_literals;
 pub(crate) use arm32::listing as arm32_listing;
 #[cfg(test)]
 mod atomic_tests;
+pub(crate) mod execution;
 mod exits;
 mod flags;
 #[cfg(test)]
@@ -252,6 +253,22 @@ pub fn lift_with(
     })
 }
 
+pub(crate) fn lift_for_execution(
+    image: &Image,
+    addr: u64,
+    size: u64,
+    targets: &HashSet<u64>,
+) -> Result<Vec<Block>, LiftError> {
+    lift_in_mode(
+        image,
+        addr,
+        size,
+        targets,
+        &|_| Summary::default(),
+        execution::Mode::Execution,
+    )
+}
+
 pub(super) fn lift_unpaired(
     image: &Image,
     addr: u64,
@@ -259,18 +276,41 @@ pub(super) fn lift_unpaired(
     extra_targets: &HashSet<u64>,
     summaries: Summaries<'_>,
 ) -> Result<Vec<Block>, LiftError> {
+    lift_in_mode(
+        image,
+        addr,
+        size,
+        extra_targets,
+        summaries,
+        execution::Mode::Analysis,
+    )
+}
+
+fn lift_in_mode(
+    image: &Image,
+    addr: u64,
+    size: u64,
+    extra_targets: &HashSet<u64>,
+    summaries: Summaries<'_>,
+    mode: execution::Mode,
+) -> Result<Vec<Block>, LiftError> {
     let summaries: Summaries<'_> = &|target| calling(summaries(target));
     let addr = image.code_address(addr);
     let Some(bytes) = image.read_vaddr(addr, size) else {
         return Err(LiftError::Unreadable);
     };
     match image.isa {
-        Isa::Arm32 => arm32::lift(image, addr, bytes, extra_targets, summaries),
+        Isa::Arm32 => match mode {
+            execution::Mode::Analysis => arm32::lift(image, addr, bytes, extra_targets, summaries),
+            execution::Mode::Execution => {
+                arm32::lift_in_mode(image, addr, bytes, extra_targets, summaries, mode)
+            }
+        },
         Isa::AArch64 => {
             let mut blocks = match lift_continuing(
                 image,
                 summaries,
-                || aarch64::Lifter::new(image, summaries),
+                || execution::Located::new(aarch64::Lifter::new(image, summaries), mode),
                 addr,
                 bytes,
                 &aarch64::decode,
@@ -279,14 +319,16 @@ pub(super) fn lift_unpaired(
                 Ok(blocks) => blocks,
                 Err(error) => return Err(error),
             };
-            aarch64::recover_atomic_loops(image, summaries, &mut blocks);
+            if mode == execution::Mode::Analysis {
+                aarch64::recover_atomic_loops(image, summaries, &mut blocks);
+            }
             Ok(blocks)
         }
         Isa::I386 | Isa::X86_64 => {
             let mut blocks = match lift_continuing(
                 image,
                 summaries,
-                || x86_64::Lifter::new(image, summaries),
+                || execution::Located::new(x86_64::Lifter::new(image, summaries), mode),
                 addr,
                 bytes,
                 &if image.isa == Isa::I386 {
@@ -299,6 +341,9 @@ pub(super) fn lift_unpaired(
                 Ok(result) => result,
                 Err(error) => return Err(error),
             };
+            if mode == execution::Mode::Execution {
+                return Ok(blocks);
+            }
             let direction = blocks.iter().flat_map(|block| &block.stmts).any(|stmt| {
                 matches!(stmt, Stmt::Assign { dest, value } if dest.index == x86_64::DIRECTION && *value != Expr::constant(0))
             });

@@ -194,6 +194,7 @@ mod tests {
             vaddr: 0x2010,
             size: 1008,
             file_offset: Some(16),
+            file_size: 1008,
             loaded: true,
             executable: false,
             read_only: true,

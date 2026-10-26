@@ -6,6 +6,8 @@ pub enum Error {
     #[error("memory query: {0}")]
     Memory(String),
 
+    #[error("emulation: {0}")]
+    Emulation(String),
     #[error("{0}")]
     Project(crate::project::ProjectError),
     #[error("{}: {source}", path.display())]

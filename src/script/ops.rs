@@ -63,6 +63,16 @@ pub enum Request {
         #[serde(default, rename = "carryAnnotations")]
         carry_annotations: bool,
     },
+    /// Executes loaded code with explicit state and limits.
+    Emulate {
+        /// Path identifying the binary.
+        bin: BinaryRef,
+        /// Function name or virtual address.
+        start: String,
+        /// Initial state and execution bounds.
+        #[serde(default)]
+        options: crate::emulation::Options,
+    },
     /// Resolves a navigation query.
     Navigate {
         /// Path identifying the binary to analyze.
@@ -192,6 +202,20 @@ pub fn handle(
     deadline: Option<std::time::Instant>,
 ) -> Result<Value> {
     match request {
+        Request::Emulate {
+            bin,
+            start,
+            options,
+        } => {
+            let binary = match session.open_arch(&bin, bin.arch()) {
+                Ok(binary) => binary,
+                Err(error) => return Err(error),
+            };
+            match crate::emulation::run(binary, &start, &options, deadline) {
+                Ok(report) => Ok(json!(report)),
+                Err(error) => Err(error),
+            }
+        }
         Request::Navigate { bin, query } => {
             let binary = match session.open_arch(&bin, bin.arch()) {
                 Ok(binary) => binary,

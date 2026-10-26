@@ -1003,6 +1003,7 @@ mod tests {
             vaddr: 0x1000,
             size: 8,
             file_offset: Some(0x90),
+            file_size: 8,
             executable: false,
             loaded: true,
             read_only: true,

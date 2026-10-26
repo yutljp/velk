@@ -18,6 +18,8 @@ interface Binary {
 
   /** C++ classes described by RTTI; empty when unsupported or absent. */
   classes(): CppClass[];
+  /** Execute a function name or virtual address with explicit state and limits. */
+  emulate(start: string | number, options?: EmulationOptions): EmulationReport;
   sections(): Section[];
   /** Compare two versions. Changed functions come first; ambiguous matches remain unmatched.
    * carryAnnotations writes only unannotated targets in the second binary's project. */

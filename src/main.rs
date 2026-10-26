@@ -36,7 +36,7 @@ const HELP_STYLES: Styles = Styles::styled()
     group(ArgGroup::new("operation").required(true).multiple(false).args([
         "compare", "annotate", "annotation", "annotations", "unannotate", "export_project", "import_project", "origins",
         "functions", "classes", "sections", "card", "decompile", "disasm", "ir",
-        "build_signatures", "identify", "run", "mcp", "xrefs", "callers", "callees", "path", "strings", "constants", "summary", "search", "read_memory", "detect_constants"
+        "build_signatures", "identify", "run", "mcp", "emulate", "xrefs", "callers", "callees", "path", "strings", "constants", "summary", "search", "read_memory", "detect_constants"
     ])),
     group(ArgGroup::new("multi_target").args(["decompile", "path"])),
     group(ArgGroup::new("graph").args(["callers", "callees", "path"])),
@@ -47,11 +47,17 @@ struct Cli {
     #[arg(long, help_heading = "Operations (choose one)")]
     compare: bool,
     /// Copy annotations to matching targets without replacing existing entries.
-    #[arg(long, requires = "compare", conflicts_with_all = ["annotate", "annotation", "annotations", "unannotate", "export_project", "import_project", "origins", "functions", "sections", "card", "decompile", "disasm", "ir", "build_signatures", "identify", "run", "mcp", "xrefs", "callers", "callees", "path", "strings", "constants", "summary"])]
+    #[arg(long, requires = "compare", conflicts_with_all = ["emulate", "annotate", "annotation", "annotations", "unannotate", "export_project", "import_project", "origins", "functions", "sections", "card", "decompile", "disasm", "ir", "build_signatures", "identify", "run", "mcp", "xrefs", "callers", "callees", "path", "strings", "constants", "summary"])]
     carry_annotations: bool,
     /// Project file for the second binary; defaults to its sidecar.
-    #[arg(long, requires = "compare", value_name = "PATH", conflicts_with_all = ["annotate", "annotation", "annotations", "unannotate", "export_project", "import_project", "origins", "functions", "sections", "card", "decompile", "disasm", "ir", "build_signatures", "identify", "run", "mcp", "xrefs", "callers", "callees", "path", "strings", "constants", "summary"])]
+    #[arg(long, requires = "compare", value_name = "PATH", conflicts_with_all = ["emulate", "annotate", "annotation", "annotations", "unannotate", "export_project", "import_project", "origins", "functions", "sections", "card", "decompile", "disasm", "ir", "build_signatures", "identify", "run", "mcp", "xrefs", "callers", "callees", "path", "strings", "constants", "summary"])]
     other_project: Option<PathBuf>,
+    /// Execute a function or address through the IR interpreter; print final state as JSON.
+    #[arg(long, help_heading = "Operations (choose one)")]
+    emulate: bool,
+    /// Initial state and limits as JSON; see docs/EMULATION.md.
+    #[arg(long, requires = "emulate", value_name = "JSON", conflicts_with_all = ["compare", "annotate", "annotation", "annotations", "unannotate", "export_project", "import_project", "origins", "functions", "classes", "sections", "card", "decompile", "disasm", "ir", "build_signatures", "identify", "run", "mcp", "xrefs", "callers", "callees", "path", "strings", "constants", "summary", "search", "read_memory", "detect_constants"])]
+    emulation_options: Option<String>,
     /// Select a Mach-O architecture (default: host architecture).
     #[arg(long, value_enum, conflicts_with_all = ["run", "mcp"])]
     arch: Option<velk::loader::Architecture>,
@@ -171,13 +177,13 @@ struct Cli {
     #[arg(long, help_heading = "Operations (choose one)")]
     summary: bool,
     /// References originating in the target function; only with --xrefs.
-    #[arg(long, requires = "xrefs", conflicts_with_all = ["classes", "search", "read_memory", "detect_constants", "functions", "sections", "card", "decompile", "disasm", "ir", "build_signatures", "identify", "run", "mcp", "callers", "callees", "path", "strings", "constants", "summary"])]
+    #[arg(long, requires = "xrefs", conflicts_with_all = ["emulate", "classes", "search", "read_memory", "detect_constants", "functions", "sections", "card", "decompile", "disasm", "ir", "build_signatures", "identify", "run", "mcp", "callers", "callees", "path", "strings", "constants", "summary"])]
     from: bool,
     /// Maximum call depth; only with --callers, --callees or --path.
-    #[arg(long, requires = "graph", conflicts_with_all = ["classes", "search", "read_memory", "detect_constants", "functions", "sections", "card", "decompile", "disasm", "ir", "build_signatures", "identify", "run", "mcp", "xrefs", "strings", "constants", "summary"])]
+    #[arg(long, requires = "graph", conflicts_with_all = ["emulate", "classes", "search", "read_memory", "detect_constants", "functions", "sections", "card", "decompile", "disasm", "ir", "build_signatures", "identify", "run", "mcp", "xrefs", "strings", "constants", "summary"])]
     depth: Option<usize>,
     /// Case-sensitive substring; only with --strings.
-    #[arg(long, requires = "strings", conflicts_with_all = ["classes", "search", "read_memory", "detect_constants", "functions", "sections", "card", "decompile", "disasm", "ir", "build_signatures", "identify", "run", "mcp", "xrefs", "callers", "callees", "path", "constants", "summary"])]
+    #[arg(long, requires = "strings", conflicts_with_all = ["emulate", "classes", "search", "read_memory", "detect_constants", "functions", "sections", "card", "decompile", "disasm", "ir", "build_signatures", "identify", "run", "mcp", "xrefs", "callers", "callees", "path", "constants", "summary"])]
     contains: Option<String>,
     /// Binary file, or JavaScript file with --run; required except with --mcp.
     #[arg(
@@ -192,6 +198,7 @@ struct Cli {
         required_if_eq_any([
             ("compare", "true"),
             ("annotate", "true"), ("annotation", "true"), ("unannotate", "true"), ("import_project", "true"), ("origins", "true"),
+            ("emulate", "true"),
             ("card", "true"), ("decompile", "true"),
             ("disasm", "true"), ("ir", "true"), ("xrefs", "true"), ("callers", "true"), ("callees", "true"), ("path", "true"), ("constants", "true"), ("summary", "true"), ("search", "true"), ("read_memory", "true")
         ]),
@@ -203,29 +210,29 @@ struct Cli {
         value_name = "FUNCTION",
         requires = "multi_target",
         required_if_eq("path", "true"),
-        conflicts_with_all = ["classes", "search", "read_memory", "detect_constants", "functions", "sections", "card", "disasm", "ir", "build_signatures", "identify", "run", "mcp", "xrefs", "callers", "callees", "strings", "constants", "summary"])]
+        conflicts_with_all = ["emulate", "classes", "search", "read_memory", "detect_constants", "functions", "sections", "card", "disasm", "ir", "build_signatures", "identify", "run", "mcp", "xrefs", "callers", "callees", "strings", "constants", "summary"])]
     destination: Option<String>,
     /// Additional functions to decompile; use '*' for all functions.
-    #[arg(value_name = "FUNCTION", requires = "decompile", conflicts_with_all = ["classes", "search", "read_memory", "detect_constants", "functions", "sections", "card", "disasm", "ir", "build_signatures", "identify", "run", "mcp", "xrefs", "callers", "callees", "path", "strings", "constants", "summary"])]
+    #[arg(value_name = "FUNCTION", requires = "decompile", conflicts_with_all = ["emulate", "classes", "search", "read_memory", "detect_constants", "functions", "sections", "card", "disasm", "ir", "build_signatures", "identify", "run", "mcp", "xrefs", "callers", "callees", "path", "strings", "constants", "summary"])]
     additional_functions: Vec<String>,
     /// Maximum functions (default: 40), matches (default: 100), or instructions (default: all).
     #[arg(
         long,
         value_name = "N",
-        conflicts_with_all = ["classes", "compare", "search", "read_memory", "detect_constants", "annotate", "annotation", "annotations", "unannotate", "export_project", "import_project", "origins", "xrefs", "callers", "callees", "path", "strings", "constants", "summary", "sections", "card", "decompile", "ir", "build_signatures", "run", "mcp"]
+        conflicts_with_all = ["emulate", "classes", "compare", "search", "read_memory", "detect_constants", "annotate", "annotation", "annotations", "unannotate", "export_project", "import_project", "origins", "xrefs", "callers", "callees", "path", "strings", "constants", "summary", "sections", "card", "decompile", "ir", "build_signatures", "run", "mcp"]
     )]
     limit: Option<usize>,
     #[arg(
         long,
         value_name = "TOKENS",
-        conflicts_with_all = ["classes", "compare", "search", "read_memory", "detect_constants", "annotate", "annotation", "annotations", "unannotate", "export_project", "import_project", "origins", "xrefs", "callers", "callees", "path", "strings", "constants", "summary", "functions", "sections", "decompile", "disasm", "ir", "build_signatures", "identify", "run", "mcp"],
+        conflicts_with_all = ["emulate", "classes", "compare", "search", "read_memory", "detect_constants", "annotate", "annotation", "annotations", "unannotate", "export_project", "import_project", "origins", "xrefs", "callers", "callees", "path", "strings", "constants", "summary", "functions", "sections", "decompile", "disasm", "ir", "build_signatures", "identify", "run", "mcp"],
         help = format!("Approximate card size in tokens (default: {}); only with --card", card::DEFAULT_BUDGET)
     )]
     budget: Option<usize>,
     /// Print the function list as JSON; only with --functions.
     #[arg(
         long,
-        conflicts_with_all = ["classes", "compare", "search", "read_memory", "detect_constants", "annotate", "annotation", "annotations", "unannotate", "export_project", "import_project", "origins", "xrefs", "callers", "callees", "path", "strings", "constants", "summary", "sections", "card", "decompile", "disasm", "ir", "build_signatures", "identify", "run", "mcp"]
+        conflicts_with_all = ["emulate", "classes", "compare", "search", "read_memory", "detect_constants", "annotate", "annotation", "annotations", "unannotate", "export_project", "import_project", "origins", "xrefs", "callers", "callees", "path", "strings", "constants", "summary", "sections", "card", "decompile", "disasm", "ir", "build_signatures", "identify", "run", "mcp"]
     )]
     json: bool,
     /// Signature database; required for --identify, optional for --card and --decompile.
@@ -233,7 +240,7 @@ struct Cli {
         long,
         value_name = "FILE",
         required_if_eq("identify", "true"),
-        conflicts_with_all = ["classes", "compare", "search", "read_memory", "detect_constants", "annotate", "annotation", "annotations", "unannotate", "export_project", "import_project", "origins", "xrefs", "callers", "callees", "path", "strings", "constants", "summary", "functions", "sections", "disasm", "ir", "build_signatures", "run", "mcp"]
+        conflicts_with_all = ["emulate", "classes", "compare", "search", "read_memory", "detect_constants", "annotate", "annotation", "annotations", "unannotate", "export_project", "import_project", "origins", "xrefs", "callers", "callees", "path", "strings", "constants", "summary", "functions", "sections", "disasm", "ir", "build_signatures", "run", "mcp"]
     )]
     signatures: Option<PathBuf>,
     /// Signature database to write; required with --build-signatures.
@@ -241,13 +248,18 @@ struct Cli {
         long,
         value_name = "FILE",
         required_if_eq("build_signatures", "true"),
-        conflicts_with_all = ["classes", "compare", "search", "read_memory", "detect_constants", "annotate", "annotation", "annotations", "unannotate", "export_project", "import_project", "origins", "xrefs", "callers", "callees", "path", "strings", "constants", "summary", "functions", "sections", "card", "decompile", "disasm", "ir", "identify", "run", "mcp"]
+        conflicts_with_all = ["emulate", "classes", "compare", "search", "read_memory", "detect_constants", "annotate", "annotation", "annotations", "unannotate", "export_project", "import_project", "origins", "xrefs", "callers", "callees", "path", "strings", "constants", "summary", "functions", "sections", "card", "decompile", "disasm", "ir", "identify", "run", "mcp"]
     )]
     output: Option<PathBuf>,
 }
 
 #[cfg_attr(test, derive(Debug, PartialEq, Eq))]
 enum Command {
+    Emulate {
+        path: PathBuf,
+        start: String,
+        options: Option<String>,
+    },
     Navigation {
         path: PathBuf,
         query: velk::xrefs::query::Query,
@@ -300,6 +312,13 @@ enum Command {
 
 impl Cli {
     fn into_command(self) -> Command {
+        if self.emulate {
+            return Command::Emulate {
+                path: self.input.expect("clap requires input"),
+                start: self.function.expect("clap requires a function or address"),
+                options: self.emulation_options,
+            };
+        }
         if self.search
             || self.read_memory
             || self.detect_constants
@@ -618,6 +637,37 @@ fn run(
     arch: Option<velk::loader::Architecture>,
 ) -> Result<ExitCode> {
     match command {
+        Command::Emulate {
+            path,
+            start,
+            options,
+        } => {
+            let binary = match Binary::open_with_options(&path, project, arch) {
+                Ok(binary) => binary,
+                Err(error) => return Err(error),
+            };
+            let options: velk::emulation::Options = match options {
+                Some(text) => match serde_json::from_str(&text) {
+                    Ok(options) => options,
+                    Err(error) => {
+                        return Err(Error::Emulation(format!("invalid options: {error}")));
+                    }
+                },
+                None => velk::emulation::Options::default(),
+            };
+            let report = match velk::emulation::run(&binary, &start, &options, None) {
+                Ok(report) => report,
+                Err(error) => return Err(error),
+            };
+            println!("{:#}", json!(report));
+            return Ok(
+                if matches!(report.reason.as_str(), "return" | "end address") {
+                    ExitCode::SUCCESS
+                } else {
+                    ExitCode::FAILURE
+                },
+            );
+        }
         Command::Navigation { path, query } => {
             let mut binary = match Binary::open_with_options(&path, project, arch) {
                 Ok(binary) => binary,
@@ -1134,6 +1184,49 @@ mod tests {
                 assert_eq!(error(&args).kind(), ErrorKind::ArgumentConflict, "{args:?}");
             }
         }
+    }
+
+    #[test]
+    fn emulation_preserves_operation_and_option_conflicts() {
+        assert_eq!(
+            parse(&["--emulate", "binary", "decode", "--emulation-options", "{}"]),
+            Command::Emulate {
+                path: PathBuf::from("binary"),
+                start: "decode".to_owned(),
+                options: Some("{}".to_owned()),
+            }
+        );
+        for operation in [
+            "--compare",
+            "--classes",
+            "--search",
+            "--read-memory",
+            "--detect-constants",
+        ] {
+            assert_eq!(
+                error(&["--emulate", operation, "binary", "decode"]).kind(),
+                ErrorKind::ArgumentConflict
+            );
+        }
+        for options in [
+            vec!["--limit", "1"],
+            vec!["--budget", "1"],
+            vec!["--json"],
+            vec!["--signatures", "db.json"],
+            vec!["--output", "db.json"],
+        ] {
+            let mut args = vec!["--emulate", "binary", "decode"];
+            args.extend(options);
+            assert_eq!(error(&args).kind(), ErrorKind::ArgumentConflict);
+        }
+        assert_eq!(
+            error(&["--emulate", "binary"]).kind(),
+            ErrorKind::MissingRequiredArgument
+        );
+        assert!(
+            Cli::try_parse_from(["velk", "--functions", "binary", "--emulation-options", "{}"])
+                .is_err()
+        );
     }
 
     #[test]

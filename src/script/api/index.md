@@ -29,6 +29,7 @@ Topics (read one with `velk_read_api({ topic })`):
 
 - `binary`: opening, function discovery, navigation, string/constant queries, persistent annotations and library signatures.
 - `func`: cards, C, disassembly, IR, signatures, origins, references, summaries and call graph queries.
+- `emulation`: initial registers, arguments, memory, limits, hooks and final execution state.
 - `types`: addresses, cards, signatures and all navigation result fields. Annotation types are in `binary`.
 
 Addresses are hex strings such as `"0x1e0"`; inputs also accept numbers within
@@ -303,3 +304,7 @@ velk --detect-constants BIN
 
 The same JavaScript methods are available through MCP's `velk_run_script`.
 Slice `matches` or `values` before returning large results.
+Run code with `b.emulate(nameOrAddress, options)` or `b.getFunction(name).emulate(options)`.
+The dedicated `velk_emulate` MCP tool takes `{path, start, options, arch?}` and returns
+an execution report. Read the `emulation` topic for its options; see
+[Running loaded code](../../../docs/EMULATION.md) for a string-decoding example.
