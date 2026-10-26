@@ -102,17 +102,6 @@ command line with `velk --run script.js`.
 The script method `b.classes()` and MCP tool `velk_classes` list the same RTTI metadata as
 `--classes`. See [C++ classes and exception tables](docs/CPP_CLASSES.md) for fields and limits.
 
-## Documentation
-
-- [Scripting API](src/script/api/index.md)
-- [Architecture](docs/ARCHITECTURE.md)
-- [Testing](docs/TESTING.md)
-
-## License
-
-Not decided yet.
-
-
 Byte patterns, typed memory and standard constants are also available as JSON:
 
 ```sh
@@ -126,3 +115,13 @@ The JavaScript API and MCP provide `b.search(pattern, options)`,
 `b.readMemory(address, type, {count})` and `b.detectConstants()`.
 See [memory queries](docs/MEMORY.md) for encodings, bounds, types and exact
 constant signatures.
+
+## Documentation
+
+- [Scripting API](src/script/api/index.md)
+- [Architecture](docs/ARCHITECTURE.md)
+- [Testing](docs/TESTING.md)
+
+## License
+
+MIT. See [LICENSE](LICENSE).
