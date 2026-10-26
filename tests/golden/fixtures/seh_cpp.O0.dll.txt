@@ -10,6 +10,9 @@ uint64_t _imported_value__YAHH_Z();
 
 == 0x180001000 cpp_catch
 -- decompile
+/* try { protected code [0x180001018, 0x180001022) }
+   catch (...) { handler L_180001040; }
+   Exception dispatch is described by unwind metadata. */
 /* Windows x64 exception handler: __CxxFrameHandler3 at 0x180001070, data at 0x180002124. */
 /* Exception metadata only; exception dispatch is not represented by standard C. */
 /* C++ try states [0, 0]: catch handler at 0x180001040. */

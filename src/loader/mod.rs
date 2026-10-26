@@ -1,3 +1,4 @@
+pub mod classes;
 mod codeview;
 mod discover;
 pub mod dwarf;
@@ -10,7 +11,7 @@ mod relocate;
 pub(crate) mod seh;
 mod symbols;
 mod universal;
-mod unwind;
+pub(crate) mod unwind;
 
 use std::collections::{BTreeMap, HashMap};
 
@@ -115,6 +116,8 @@ pub enum NameSource {
     Plt,
     Prologue,
     Signature,
+    /// A method or adjustment target found through C++ runtime type information.
+    Rtti,
 }
 
 impl fmt::Display for NameSource {
@@ -132,6 +135,7 @@ impl fmt::Display for NameSource {
             NameSource::Plt => "plt",
             NameSource::Prologue => "prologue",
             NameSource::Signature => "signature",
+            NameSource::Rtti => "rtti",
         })
     }
 }
@@ -263,6 +267,7 @@ pub struct Image {
     pub imports: BTreeMap<u64, String>,
     /// DLL-qualified names of PE imports, keyed by their slots.
     pub(crate) qualified_imports: HashMap<u64, String>,
+    pub(crate) exception_regions: Vec<unwind::Region>,
     /// The landing pads of the exception tables, each with the code ranges
     /// whose calls unwind into it.
     pub landing_pads: BTreeMap<u64, Vec<(u64, u64)>>,
@@ -272,6 +277,7 @@ pub struct Image {
     pub(crate) go_types: std::sync::OnceLock<go::types::Types>,
     /// The C++ virtual tables, by address point. Built on first use.
     pub vtables: std::sync::OnceLock<std::collections::BTreeSet<u64>>,
+    classes: std::sync::OnceLock<Vec<classes::Class>>,
     /// The table each function leaves at the start of the object its first
     /// argument points to, as a constructor does, filled on demand.
     pub installs: std::sync::Mutex<HashMap<u64, Option<u64>>>,
@@ -440,6 +446,7 @@ impl Image {
             imports: BTreeMap::new(),
             qualified_imports: HashMap::new(),
             landing_pads: BTreeMap::new(),
+            exception_regions: Vec::new(),
             exception_handlers: Vec::new(),
             result_reads: Default::default(),
             lifts: Default::default(),
@@ -447,6 +454,7 @@ impl Image {
             relocatable: false,
             go: false,
             vtables: Default::default(),
+            classes: Default::default(),
             installs: Default::default(),
         }
     }
@@ -1053,9 +1061,11 @@ pub fn load_with_arch(path: &Path, arch: Option<Architecture>) -> Result<Image> 
         imports: plt::imports(&file).into_iter().collect(),
         qualified_imports: plt::qualified_imports(&file),
         landing_pads: BTreeMap::new(),
+        exception_regions: Vec::new(),
         exception_handlers: Vec::new(),
         go: false,
         vtables: Default::default(),
+        classes: Default::default(),
         installs: Default::default(),
     };
     image.add_go_functions();
@@ -1074,7 +1084,22 @@ pub fn load_with_arch(path: &Path, arch: Option<Architecture>) -> Result<Image> 
     objc::read(&mut image);
     image.exception_handlers = seh::read(&image);
     seh::discover(&mut image);
-    image.landing_pads = unwind::landing_pads(&image);
+    image.exception_regions = unwind::exception_regions(&image);
+    for handler in &image.exception_handlers {
+        image
+            .exception_regions
+            .extend(handler.regions.iter().cloned());
+    }
+    for region in &image.exception_regions {
+        if image.format == Format::Pe {
+            continue;
+        }
+        image
+            .landing_pads
+            .entry(region.landing_pad)
+            .or_default()
+            .push((region.start, region.end));
+    }
     // Only an image without symbols, debug info or a Go pclntab needs the
     // prologue scan, and only for the code no unwind entry covers.
     if image.functions.values().all(|function| {
@@ -1088,6 +1113,7 @@ pub fn load_with_arch(path: &Path, arch: Option<Architecture>) -> Result<Image> 
         image.scan_prologues();
     }
     image.retain_code_functions();
+    classes::discover(&mut image);
     // An estimated size may cover starts found later; cut it at the next start.
     let starts: Vec<u64> = image.functions.keys().copied().collect();
     for (index, function) in image.functions.values_mut().enumerate() {

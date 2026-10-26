@@ -18,6 +18,8 @@ pub struct Symbols {
     pub functions: HashMap<u64, String>,
     /// C++ method signatures without their owning class.
     pub cpp_methods: HashMap<u64, String>,
+    /// Class names and table ownership supplied by runtime descriptors.
+    pub cpp_classes: Vec<crate::loader::classes::Class>,
     /// Original runtime helper names that establish Go value shapes.
     pub go_value_shapes: HashMap<u64, String>,
     /// Original names of known allocators, before conversion to C identifiers.

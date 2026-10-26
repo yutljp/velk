@@ -133,3 +133,39 @@ interface FunctionSummary {
   outgoingXrefs: number;
   failures: NavigationFailure[];
 }
+
+/** Names from runtime descriptors, without inferred data member sizes. */
+interface CppClass {
+  name: string;
+  typeInfo: Addr;
+  bases: CppBase[];
+  vtables: CppVtable[];
+}
+
+interface CppBase {
+  name: string;
+  offset: number | null;
+  isVirtual: boolean;
+  isPublic: boolean;
+  vtableOffset: number | null;
+  vbtable: CppVirtualBase | null;
+}
+
+interface CppVirtualBase {
+  pointerOffset: number;
+  entryOffset: number;
+  memberOffset: number;
+}
+
+interface CppVtable {
+  address: Addr;
+  offset: number;
+  constructionDisplacement: number | null;
+  methods: CppMethod[];
+}
+
+interface CppMethod {
+  slot: number;
+  address: Addr;
+  name: string | null;
+}

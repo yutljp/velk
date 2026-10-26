@@ -63,7 +63,7 @@ fn discovery_and_fresh_scripts_work_over_stdio() {
     ]);
     assert_eq!(responses.len(), 6, "notifications have no response");
     assert_eq!(responses[0]["result"]["protocolVersion"], "2024-11-05");
-    assert_eq!(responses[1]["result"]["tools"].as_array().unwrap().len(), 2);
+    assert_eq!(responses[1]["result"]["tools"].as_array().unwrap().len(), 3);
     assert!(text(&responses[2]).contains("fresh context"));
     assert!(text(&responses[3]).contains("interface Binary"));
     let mut binary = velk::service::Binary::open(&path).unwrap();
@@ -191,4 +191,18 @@ fn annotations_refresh_navigation_and_later_scripts() {
     assert_eq!(navigation["xrefs"][0]["name"], "analyzed_tail");
     assert_eq!(text(&responses[5]), "tail_one");
     std::fs::remove_dir_all(directory).unwrap();
+}
+
+#[test]
+fn classes_tool_matches_the_script_api() {
+    let path = common::fixtures_dir().join("cpp/rtti.stripped.elf");
+    let responses = exchange(&[
+        tool(1, "velk_classes", json!({"path": path})),
+        script(2, &format!("velk.open({path:?}).classes()")),
+        tool(3, "velk_classes", json!({})),
+    ]);
+    assert_eq!(text(&responses[0]), text(&responses[1]));
+    assert!(text(&responses[0]).contains("Multiple"));
+    assert_eq!(responses[0]["result"]["isError"], false);
+    assert_eq!(responses[2]["result"]["isError"], true);
 }

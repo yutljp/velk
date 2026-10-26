@@ -125,6 +125,19 @@ fn tools() -> Value {
             }
         },
         {
+            "name": "velk_classes",
+            "description": "List C++ classes recovered from RTTI, with vtable addresses, direct bases and offsets, and virtual methods. Unknown method names and dynamic offsets are null.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "path": { "type": "string" },
+                    "arch": { "type": "string", "enum": ["arm64", "arm64e", "x86_64"] }
+                },
+                "required": ["path"],
+                "additionalProperties": false
+            }
+        },
+        {
             "name": "velk_read_api",
             "description": READ_DESCRIPTION,
             "inputSchema": {
@@ -142,6 +155,20 @@ fn call_tool(engine: &Engine, request: &Value) -> std::result::Result<Value, Rpc
     let arguments = request.pointer("/params/arguments").unwrap_or(&Value::Null);
     let (text, is_error) = match request.pointer("/params/name").and_then(Value::as_str) {
         Some("velk_run_script") => run_script(engine, arguments),
+        Some("velk_classes") => {
+            let Some(path) = arguments.get("path").and_then(Value::as_str) else {
+                return Ok(
+                    json!({ "content": [{ "type": "text", "text": "missing path" }], "isError": true }),
+                );
+            };
+            let path = json!(path);
+            let arch = arguments.get("arch").unwrap_or(&Value::Null);
+            let code = format!("velk.open({path}, {{arch:{arch}}}).classes()");
+            run_script(
+                engine,
+                &json!({"code": code, "max_output_chars": MAX_OUTPUT_CHARS}),
+            )
+        }
         Some("velk_read_api") => read_api(arguments),
         Some(_) => return Err((-32602, "unknown tool")),
         None => return Err((-32602, "missing tool name")),

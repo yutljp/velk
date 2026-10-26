@@ -16,6 +16,8 @@ interface Binary {
   slices: { arch: string; cpuType: number; cpuSubtype: number; offset: number; size: number }[];
   sliceOffset: number;
 
+  /** C++ classes described by RTTI; empty when unsupported or absent. */
+  classes(): CppClass[];
   sections(): Section[];
   /** Incoming references by default; from:true returns references made by the containing function.
    * The first navigation query builds a whole-binary index and can be slow.

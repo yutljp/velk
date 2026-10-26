@@ -1,14 +1,14 @@
 # functions left out:
 #   accesses memory: 316
-#   calls: 7940
+#   calls: 8084
 #   computes on floats or vectors: 1
 #   has an unsupported instruction: 106
-#   reads a register that is not a parameter: 5
+#   reads a register that is not a parameter: 6
 #   refers to data: 350
 #   requires an external machine-state source: 2
-#   returns no integer: 290
-#   returns nothing: 637
-#   takes an argument that is no integer: 945
+#   returns no integer: 298
+#   returns nothing: 687
+#   takes an argument that is no integer: 993
 #   takes arguments on the stack: 81
 # runs left out:
 #   step limit: 47
@@ -89,6 +89,9 @@
 # codeview/structs.O2.stripped.dll: 8 functions, 3 qualify, 3 compile, 0 do not, 3 compared (36 runs), 0 differ
 # cold_gcc: 15 functions, 2 qualify, 2 compile, 0 do not, 2 compared (24 runs), 0 differ
 # cold_gcc_stripped: 15 functions, 2 qualify, 2 compile, 0 do not, 2 compared (24 runs), 0 differ
+# cpp/rtti.debug.dylib: 51 functions, 13 qualify, 13 compile, 0 do not, 13 compared (156 runs), 0 differ
+# cpp/rtti.stripped.dylib: 51 functions, 13 qualify, 13 compile, 0 do not, 13 compared (156 runs), 0 differ
+# cpp/rtti.stripped.elf: 44 functions, 1 qualify, 1 compile, 0 do not, 1 compared (12 runs), 0 differ
 # cpp_classes_a64.o: 5 functions, 2 qualify, 2 compile, 0 do not, 2 compared (24 runs), 0 differ
 # cpp_classes_x64.o: 5 functions, 2 qualify, 2 compile, 0 do not, 2 compared (24 runs), 0 differ
 # cpp_demo.o: 3 functions, 2 qualify, 2 compile, 0 do not, 2 compared (24 runs), 0 differ

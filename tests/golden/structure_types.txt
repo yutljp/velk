@@ -131,6 +131,12 @@ codeview/structs.O2.obj: 4
 codeview/structs.O2.stripped.dll: 2
 cold_gcc: 1
 cold_gcc_stripped: 1
+cpp/rtti.debug.dll: 1
+cpp/rtti.debug.dylib: 8
+cpp/rtti.debug.elf: 3
+cpp/rtti.stripped.dll: 2
+cpp/rtti.stripped.dylib: 8
+cpp/rtti.stripped.elf: 5
 cpp_classes_a64.o: 0
 cpp_classes_x64.o: 2
 cpp_demo.o: 0

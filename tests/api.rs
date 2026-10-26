@@ -475,3 +475,39 @@ catch (error) {{ if (error.code !== "invalid_identifier") throw error; }}
     let _ = std::fs::remove_dir_all(directory);
     assert!(outcome.error.is_none(), "{:?}", outcome.error);
 }
+
+#[test]
+fn class_results_match_the_declarations() {
+    let interfaces = declarations();
+    let mut problems = Vec::new();
+    for format in ["elf", "dll", "dylib"] {
+        let path = common::fixtures_dir().join(format!("cpp/rtti.stripped.{format}"));
+        let outcome = Engine::new()
+            .unwrap()
+            .run(&format!("velk.open({path:?}).classes()"), None);
+        assert!(outcome.error.is_none(), "{:?}", outcome.error);
+        let classes: Vec<Value> = serde_json::from_str(&outcome.output).unwrap();
+        assert_eq!(classes.len(), 6);
+        for class in classes {
+            problems.extend(check(&interfaces, "CppClass", &class, format));
+            for base in class["bases"].as_array().unwrap() {
+                problems.extend(check(&interfaces, "CppBase", base, format));
+                if !base["vbtable"].is_null() {
+                    problems.extend(check(
+                        &interfaces,
+                        "CppVirtualBase",
+                        &base["vbtable"],
+                        format,
+                    ));
+                }
+            }
+            for table in class["vtables"].as_array().unwrap() {
+                problems.extend(check(&interfaces, "CppVtable", table, format));
+                for method in table["methods"].as_array().unwrap() {
+                    problems.extend(check(&interfaces, "CppMethod", method, format));
+                }
+            }
+        }
+    }
+    assert!(problems.is_empty(), "{}", problems.join("\n"));
+}

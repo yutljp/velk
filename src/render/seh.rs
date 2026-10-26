@@ -46,3 +46,38 @@ pub(crate) fn comments(handlers: &[Handler], function: u64) -> String {
     }
     output
 }
+
+pub(crate) fn cpp_comments(regions: &[crate::loader::unwind::Region], function: u64) -> String {
+    let mut output = String::new();
+    let mut grouped = std::collections::BTreeMap::<(u64, u64), Vec<_>>::new();
+    for region in regions {
+        if region.function == function && !region.catches.is_empty() {
+            grouped
+                .entry((region.start, region.end))
+                .or_default()
+                .push(region);
+        }
+    }
+    for ((start, end), regions) in grouped {
+        let _ = writeln!(output, "/* try {{ protected code [{start:#x}, {end:#x}) }}");
+        for region in regions {
+            for name in &region.catches {
+                let name = name.replace("*/", "* /");
+                let _ = writeln!(
+                    output,
+                    "   catch ({name}) {{ handler L_{:x}; }}",
+                    region.landing_pad
+                );
+            }
+            if region.cleanup {
+                let _ = writeln!(
+                    output,
+                    "   cleanup {{ handler L_{:x}; }}",
+                    region.landing_pad
+                );
+            }
+        }
+        output.push_str("   Exception dispatch is described by unwind metadata. */\n");
+    }
+    output
+}

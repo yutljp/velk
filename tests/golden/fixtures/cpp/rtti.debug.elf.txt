@@ -1,0 +1,1145 @@
+# cpp/rtti.debug.elf: elf x86_64 0x201bf0, 44 functions, 0 lift failures, 0 unsupported, 0 gotos
+0x201a30 14 Root::Root(int) symtab,dwarf,unwind
+0x201a40 4 Root::value() const symtab,unwind
+0x201a44 1 Root::~Root() symtab,dwarf,unwind
+0x201a50 10 Root::~Root() symtab,dwarf,unwind
+0x201a5a 1 operator delete(void*, unsigned long) symtab,dwarf,unwind
+0x201a60 21 Single::Single(int) symtab,dwarf,unwind
+0x201a78 6 Single::value() const symtab,unwind
+0x201a80 17 Single::~Single() symtab,dwarf,unwind
+0x201aa0 23 Single::~Single() symtab,dwarf,unwind
+0x201ab8 6 Other::other() const symtab,unwind
+0x201abe 1 Other::~Other() symtab,dwarf,unwind
+0x201ac0 10 Other::~Other() symtab,dwarf,unwind
+0x201ad0 41 Multiple::Multiple(int) symtab,dwarf,unwind
+0x201b00 7 Multiple::value() const symtab,unwind
+0x201b08 7 Multiple::other() const symtab,unwind
+0x201b10 9 {virtual override thunk({offset(-16)}, Multiple::other() const)} symtab,dwarf,unwind
+0x201b1a 1 Multiple::~Multiple() symtab,dwarf,unwind
+0x201b1c 1 {virtual override thunk({offset(-16)}, Multiple::~Multiple())} symtab,dwarf,unwind
+0x201b20 10 Multiple::~Multiple() symtab,dwarf,unwind
+0x201b30 9 {virtual override thunk({offset(-16)}, Multiple::~Multiple())} symtab,dwarf,unwind
+0x201b40 26 Virtual::Virtual(int) symtab,dwarf,unwind
+0x201b60 43 Virtual::Virtual(int) symtab,dwarf,unwind
+0x201b90 15 Virtual::value() const symtab,unwind
+0x201ba0 12 {virtual override thunk({virtual offset(0, -24)}, Virtual::value() const)} symtab,dwarf,unwind
+0x201bac 1 Virtual::~Virtual() symtab,dwarf,unwind
+0x201bae 1 Virtual::~Virtual() symtab,dwarf,unwind
+0x201bb0 1 {virtual override thunk({virtual offset(0, -32)}, Virtual::~Virtual())} symtab,dwarf,unwind
+0x201bc0 10 Virtual::~Virtual() symtab,dwarf,unwind
+0x201bd0 12 {virtual override thunk({virtual offset(0, -32)}, Virtual::~Virtual())} symtab,dwarf,unwind
+0x201be0 5 dispatch symtab,dwarf,unwind
+0x201be8 6 dispatch_multiple symtab,dwarf,unwind
+0x201bf0 63 single symtab,entry,dwarf,unwind
+0x201c30 46 multiple symtab,dwarf,unwind
+0x201c60 40 virtual_base symtab,dwarf,unwind
+0x201c90 27 catch_one symtab,dwarf,unwind
+0x201cb0 69 catch_many symtab,dwarf,unwind
+0x201d00 92 catch_nested symtab,dwarf,unwind
+0x201d60 82 catch_cleanup symtab,dwarf,unwind
+0x201db2 1 operator delete(void*) symtab,dwarf,unwind
+0x201dc0 11 Other::Other() symtab,dwarf,unwind
+0x201de0 16 _Unwind_Resume plt
+0x201df0 16 imported_value(int) plt
+0x201e00 16 __cxa_begin_catch plt
+0x201e10 16 __cxa_end_catch plt
+/* velk prelude */
+#include <stdint.h>
+
+struct Root { uint8_t gap_0x0[0x8]; int number; uint8_t gap_0xc[0x4]; };
+struct Virtual { uint8_t gap_0x0[0x8]; int extra; uint8_t gap_0xc[0x14]; };
+
+extern uint32_t _ZL9destroyed; /* address: 0x204160 */
+extern uint8_t Multiple_vtable_0; /* address: 0x202e80 */
+extern uint8_t Multiple_vtable_16; /* address: 0x202eb0 */
+extern uint8_t Other_vtable_0; /* address: 0x202f78 */
+extern uint8_t Root_vtable_0; /* address: 0x202e30 */
+extern uint8_t Single_vtable_0; /* address: 0x202e58 */
+extern uint8_t Virtual_vtable_0; /* address: 0x202ee0 */
+extern uint8_t Virtual_vtable_16; /* address: 0x202f18 */
+
+uint64_t Multiple__Multiple();
+uint64_t Multiple___Multiple_201b20();
+uint64_t Multiple__other();
+uint64_t Other__Other();
+uint64_t Root__Root();
+uint64_t Single__Single();
+uint64_t Single___Single_201a80();
+uint64_t Single__value();
+uint64_t Virtual__Virtual_201b60();
+uint64_t Virtual___Virtual_201bc0();
+uint64_t Virtual__value();
+uint64_t _Z14imported_valuei();
+uint64_t dispatch();
+uint64_t imported_value();
+uint64_t operator_delete_201a5a();
+uint64_t velk_entry_stack_pointer(void); /* target entry stack pointer */
+uint64_t velk_exception_selector(void);
+uint64_t velk_exception_value(void);
+void (_Unwind_Resume)(void *);
+void (__cxa_end_catch)(void);
+void *(__cxa_begin_catch)(void *);
+/* end velk prelude */
+
+== 0x201a30 Root::Root(int)
+-- decompile
+/* C++ object initialization or destruction: Root vtable at 0x202e30. */
+/* velk pseudo-C: Root::Root(int) @ 0x201a30 */
+/* ref: 0x202e30 .data.rel.ro */
+void Root__Root(struct Root *this, int value) {
+    *(uint64_t *)(this) = (uintptr_t)(&Root_vtable_0);
+    this->number = value;
+}
+-- signature
+void (struct Root * this, int value)
+-- references
+0x202e30 .data.rel.ro
+-- ir
+fn Root::Root(int) @ 0x201a30 (size 14)
+  blk0 @ 0x201a30:
+    store64(#0x202e30, rdi)
+    store32(esi, (rdi + #0x8))
+    ret #0x0
+-- card
+{"accesses":["this +0x0:uint64_t, +0x8:uint32_t"],"addr":"0x201a30","approxTokens":120,"blocks":1,"hardReasons":[],"name":"Root::Root(int)","nameSources":["symtab","dwarf","unwind"],"section":".text","size":14,"unsupported":0}
+
+== 0x201a40 Root::value() const
+-- decompile
+/* velk pseudo-C: Root::value() const @ 0x201a40 */
+struct Root { uint8_t gap_0x0[0x8]; int number; uint8_t gap_0xc[0x4]; };
+void Root__value(struct Root *this) {
+    int32_t v1 = this->number;
+}
+-- signature
+void (struct Root * this)
+-- references
+
+-- ir
+fn Root::value() const @ 0x201a40 (size 4)
+  blk0 @ 0x201a40:
+    v1 = load32((rdi + #0x8))
+    ret #0x0
+-- card
+{"accesses":["this +0x8:uint32_t"],"addr":"0x201a40","approxTokens":108,"blocks":1,"hardReasons":[],"name":"Root::value() const","nameSources":["symtab","unwind"],"section":".text","size":4,"unsupported":0}
+
+== 0x201a44 Root::~Root()
+-- decompile
+/* velk pseudo-C: Root::~Root() @ 0x201a44 */
+void Root___Root_201a44(struct Root *this) {
+}
+-- signature
+void (struct Root * this)
+-- references
+
+-- ir
+fn Root::~Root() @ 0x201a44 (size 1)
+  blk0 @ 0x201a44:
+    ret #0x0
+-- card
+{"addr":"0x201a44","approxTokens":102,"blocks":1,"hardReasons":[],"name":"Root::~Root()","nameSources":["symtab","dwarf","unwind"],"section":".text","size":1,"unsupported":0}
+
+== 0x201a50 Root::~Root()
+-- decompile
+/* velk pseudo-C: Root::~Root() @ 0x201a50 */
+void Root___Root_201a50(struct Root *this) {
+    operator_delete_201a5a();
+}
+-- signature
+void (struct Root * this)
+-- references
+
+-- ir
+fn Root::~Root() @ 0x201a50 (size 10)
+  blk0 @ 0x201a50:
+    call 0x201a5a()
+    ret #0x0
+-- card
+{"addr":"0x201a50","approxTokens":108,"blocks":1,"hardReasons":[],"name":"Root::~Root()","nameSources":["symtab","dwarf","unwind"],"section":".text","size":10,"unsupported":0}
+
+== 0x201a5a operator delete(void*, unsigned long)
+-- decompile
+/* velk pseudo-C: operator delete(void*, unsigned long) @ 0x201a5a */
+void operator_delete_201a5a(void *a0, unsigned long a1) {
+}
+-- signature
+void (void * a0, unsigned long a1)
+-- references
+
+-- ir
+fn operator delete(void*, unsigned long) @ 0x201a5a (size 1)
+  blk0 @ 0x201a5a:
+    ret #0x0
+-- card
+{"addr":"0x201a5a","approxTokens":102,"blocks":1,"hardReasons":[],"name":"operator delete(void*, unsigned long)","nameSources":["symtab","dwarf","unwind"],"section":".text","size":1,"unsupported":0}
+
+== 0x201a60 Single::Single(int)
+-- decompile
+/* C++ object initialization or destruction: Single vtable at 0x202e58. */
+/* velk pseudo-C: Single::Single(int) @ 0x201a60 */
+/* ref: 0x202e58 .data.rel.ro */
+void Single__Single(struct Single *this, int value) {
+    Root__Root(this, value);
+    *(uint64_t *)(this) = (uintptr_t)(&Single_vtable_0);
+}
+-- signature
+void (struct Single * this, int value)
+-- references
+0x202e58 .data.rel.ro
+-- ir
+fn Single::Single(int) @ 0x201a60 (size 21)
+  blk0 @ 0x201a60:
+    rax = call 0x201a30(rdi, rsi)
+    store64(#0x202e58, rdi)
+    ret #0x0
+-- card
+{"accesses":["this +0x0:uint64_t"],"addr":"0x201a60","approxTokens":138,"blocks":1,"hardReasons":[],"name":"Single::Single(int)","nameSources":["symtab","dwarf","unwind"],"section":".text","size":21,"unsupported":0}
+
+== 0x201a78 Single::value() const
+-- decompile
+/* velk pseudo-C: Single::value() const @ 0x201a78 */
+void Single__value(struct Single *this) {
+    int32_t v1 = *(uint32_t *)((uint8_t *)this + 0x8);
+}
+-- signature
+void (struct Single * this)
+-- references
+
+-- ir
+fn Single::value() const @ 0x201a78 (size 6)
+  blk0 @ 0x201a78:
+    v1 = load32((rdi + #0x8))
+    ret #0x0
+-- card
+{"accesses":["this +0x8:uint32_t"],"addr":"0x201a78","approxTokens":114,"blocks":1,"hardReasons":[],"name":"Single::value() const","nameSources":["symtab","unwind"],"section":".text","size":6,"unsupported":0}
+
+== 0x201a80 Single::~Single()
+-- decompile
+/* C++ object initialization or destruction: Single vtable at 0x202e58. */
+/* velk pseudo-C: Single::~Single() @ 0x201a80 */
+/* ref: 0x202e58 .data.rel.ro */
+/* ref: 0x204160 .bss */
+void Single___Single_201a80(struct Single *this) {
+    *(uint64_t *)(this) = (uintptr_t)(&Single_vtable_0);
+    _ZL9destroyed += 1;
+}
+-- signature
+void (struct Single * this)
+-- references
+0x202e58 .data.rel.ro
+0x204160 .bss
+-- ir
+fn Single::~Single() @ 0x201a80 (size 17)
+  blk0 @ 0x201a80:
+    store64(#0x202e58, rdi)
+    store32((load32(#0x204160) + #0x1), #0x204160)
+    ret #0x0
+-- card
+{"accesses":["this +0x0:uint64_t"],"addr":"0x201a80","approxTokens":120,"blocks":1,"hardReasons":[],"name":"Single::~Single()","nameSources":["symtab","dwarf","unwind"],"section":".text","size":17,"unsupported":0}
+
+== 0x201aa0 Single::~Single()
+-- decompile
+/* velk pseudo-C: Single::~Single() @ 0x201aa0 */
+void Single___Single_201aa0(struct Single *this) {
+    Single___Single_201a80(this);
+    operator_delete_201a5a();
+}
+-- signature
+void (struct Single * this)
+-- references
+
+-- ir
+fn Single::~Single() @ 0x201aa0 (size 23)
+  blk0 @ 0x201aa0:
+    rax = call 0x201a80(rdi)
+    call 0x201a5a()
+    ret #0x0
+-- card
+{"addr":"0x201aa0","approxTokens":138,"blocks":1,"hardReasons":[],"name":"Single::~Single()","nameSources":["symtab","dwarf","unwind"],"section":".text","size":23,"unsupported":0}
+
+== 0x201ab8 Other::other() const
+-- decompile
+/* velk pseudo-C: Other::other() const @ 0x201ab8 */
+void Other__other(struct Other *this) {
+}
+-- signature
+void (struct Other * this)
+-- references
+
+-- ir
+fn Other::other() const @ 0x201ab8 (size 6)
+  blk0 @ 0x201ab8:
+    ret #0x0
+-- card
+{"addr":"0x201ab8","approxTokens":108,"blocks":1,"hardReasons":[],"name":"Other::other() const","nameSources":["symtab","unwind"],"section":".text","size":6,"unsupported":0}
+
+== 0x201abe Other::~Other()
+-- decompile
+/* velk pseudo-C: Other::~Other() @ 0x201abe */
+void Other___Other_201abe(struct Other *this) {
+}
+-- signature
+void (struct Other * this)
+-- references
+
+-- ir
+fn Other::~Other() @ 0x201abe (size 1)
+  blk0 @ 0x201abe:
+    ret #0x0
+-- card
+{"addr":"0x201abe","approxTokens":102,"blocks":1,"hardReasons":[],"name":"Other::~Other()","nameSources":["symtab","dwarf","unwind"],"section":".text","size":1,"unsupported":0}
+
+== 0x201ac0 Other::~Other()
+-- decompile
+/* velk pseudo-C: Other::~Other() @ 0x201ac0 */
+void Other___Other_201ac0(struct Other *this) {
+    operator_delete_201a5a();
+}
+-- signature
+void (struct Other * this)
+-- references
+
+-- ir
+fn Other::~Other() @ 0x201ac0 (size 10)
+  blk0 @ 0x201ac0:
+    call 0x201a5a()
+    ret #0x0
+-- card
+{"addr":"0x201ac0","approxTokens":108,"blocks":1,"hardReasons":[],"name":"Other::~Other()","nameSources":["symtab","dwarf","unwind"],"section":".text","size":10,"unsupported":0}
+
+== 0x201ad0 Multiple::Multiple(int)
+-- decompile
+/* C++ object initialization or destruction: Multiple vtable at 0x202e80. */
+/* C++ object initialization or destruction: Multiple vtable at 0x202eb0. */
+/* velk pseudo-C: Multiple::Multiple(int) @ 0x201ad0 */
+/* ref: 0x202e80 .data.rel.ro */
+/* ref: 0x202eb0 .data.rel.ro */
+void Multiple__Multiple(struct Multiple *this, int value) {
+    Root__Root(this, value);
+    Other__Other((uint8_t *)this + 0x10);
+    *(uint64_t *)(this) = (uintptr_t)(&Multiple_vtable_0);
+    *(uint64_t *)((uint8_t *)this + 0x10) = (uintptr_t)(&Multiple_vtable_16);
+}
+-- signature
+void (struct Multiple * this, int value)
+-- references
+0x202e80 .data.rel.ro
+0x202eb0 .data.rel.ro
+-- ir
+fn Multiple::Multiple(int) @ 0x201ad0 (size 41)
+  blk0 @ 0x201ad0:
+    v1 = rdi
+    rax = call 0x201a30(rdi, rsi)
+    rax = call 0x201dc0((v1 + #0x10))
+    store64(#0x202e80, v1)
+    store64(#0x202eb0, (v1 + #0x10))
+    ret #0x0
+-- card
+{"accesses":["this +0x0:uint64_t, +0x10:uint64_t"],"addr":"0x201ad0","approxTokens":162,"blocks":1,"hardReasons":[],"name":"Multiple::Multiple(int)","nameSources":["symtab","dwarf","unwind"],"section":".text","size":41,"structures":["struct Multiple__Multiple_s1 { int64_t field_0x0; uint8_t gap_0x8[0x8]; int64_t field_0x10; };"],"unsupported":0}
+
+== 0x201b00 Multiple::value() const
+-- decompile
+/* velk pseudo-C: Multiple::value() const @ 0x201b00 */
+void Multiple__value(struct Multiple *this) {
+    int32_t v1 = *(uint32_t *)((uint8_t *)this + 0x8);
+}
+-- signature
+void (struct Multiple * this)
+-- references
+
+-- ir
+fn Multiple::value() const @ 0x201b00 (size 7)
+  blk0 @ 0x201b00:
+    v1 = load32((rdi + #0x8))
+    ret #0x0
+-- card
+{"accesses":["this +0x8:uint32_t"],"addr":"0x201b00","approxTokens":114,"blocks":1,"hardReasons":[],"name":"Multiple::value() const","nameSources":["symtab","unwind"],"section":".text","size":7,"unsupported":0}
+
+== 0x201b08 Multiple::other() const
+-- decompile
+/* velk pseudo-C: Multiple::other() const @ 0x201b08 */
+void Multiple__other(struct Multiple *this) {
+    int32_t v1 = *(uint32_t *)((uint8_t *)this + 0x8);
+}
+-- signature
+void (struct Multiple * this)
+-- references
+
+-- ir
+fn Multiple::other() const @ 0x201b08 (size 7)
+  blk0 @ 0x201b08:
+    v1 = load32((rdi + #0x8))
+    ret #0x0
+-- card
+{"accesses":["this +0x8:uint32_t"],"addr":"0x201b08","approxTokens":114,"blocks":1,"hardReasons":[],"name":"Multiple::other() const","nameSources":["symtab","unwind"],"section":".text","size":7,"unsupported":0}
+
+== 0x201b10 {virtual override thunk({offset(-16)}, Multiple::other() const)}
+-- decompile
+/* velk pseudo-C: {virtual override thunk({offset(-16)}, Multiple::other() const)} @ 0x201b10 */
+void _virtual_override_thunk__offset__16____Multiple__other___const__(int64_t a0) {
+    Multiple__other(a0 - 16);
+}
+-- signature
+void (int64_t a0)
+-- references
+
+-- ir
+fn {virtual override thunk({offset(-16)}, Multiple::other() const)} @ 0x201b10 (size 9)
+  blk0 @ 0x201b10:
+    eax = call 0x201b08((rdi + #0xfffffffffffffff0))
+    ret #0x0
+-- card
+{"addr":"0x201b10","approxTokens":108,"blocks":1,"hardReasons":[],"name":"{virtual override thunk({offset(-16)}, Multiple::other() const)}","nameSources":["symtab","dwarf","unwind"],"section":".text","size":9,"unsupported":0}
+
+== 0x201b1a Multiple::~Multiple()
+-- decompile
+/* velk pseudo-C: Multiple::~Multiple() @ 0x201b1a */
+void Multiple___Multiple_201b1a(struct Multiple *this) {
+}
+-- signature
+void (struct Multiple * this)
+-- references
+
+-- ir
+fn Multiple::~Multiple() @ 0x201b1a (size 1)
+  blk0 @ 0x201b1a:
+    ret #0x0
+-- card
+{"addr":"0x201b1a","approxTokens":102,"blocks":1,"hardReasons":[],"name":"Multiple::~Multiple()","nameSources":["symtab","dwarf","unwind"],"section":".text","size":1,"unsupported":0}
+
+== 0x201b1c {virtual override thunk({offset(-16)}, Multiple::~Multiple())}
+-- decompile
+/* velk pseudo-C: {virtual override thunk({offset(-16)}, Multiple::~Multiple())} @ 0x201b1c */
+void _virtual_override_thunk__offset__16____Multiple___Multiple_____201b1c(void) {
+}
+-- signature
+void ()
+-- references
+
+-- ir
+fn {virtual override thunk({offset(-16)}, Multiple::~Multiple())} @ 0x201b1c (size 1)
+  blk0 @ 0x201b1c:
+    ret #0x0
+-- card
+{"addr":"0x201b1c","approxTokens":102,"blocks":1,"hardReasons":[],"name":"{virtual override thunk({offset(-16)}, Multiple::~Multiple())}","nameSources":["symtab","dwarf","unwind"],"section":".text","size":1,"unsupported":0}
+
+== 0x201b20 Multiple::~Multiple()
+-- decompile
+/* velk pseudo-C: Multiple::~Multiple() @ 0x201b20 */
+void Multiple___Multiple_201b20(struct Multiple *this) {
+    operator_delete_201a5a();
+}
+-- signature
+void (struct Multiple * this)
+-- references
+
+-- ir
+fn Multiple::~Multiple() @ 0x201b20 (size 10)
+  blk0 @ 0x201b20:
+    call 0x201a5a()
+    ret #0x0
+-- card
+{"addr":"0x201b20","approxTokens":108,"blocks":1,"hardReasons":[],"name":"Multiple::~Multiple()","nameSources":["symtab","dwarf","unwind"],"section":".text","size":10,"unsupported":0}
+
+== 0x201b30 {virtual override thunk({offset(-16)}, Multiple::~Multiple())}
+-- decompile
+/* velk pseudo-C: {virtual override thunk({offset(-16)}, Multiple::~Multiple())} @ 0x201b30 */
+void _virtual_override_thunk__offset__16____Multiple___Multiple_____201b30(void) {
+    Multiple___Multiple_201b20();
+}
+-- signature
+void ()
+-- references
+
+-- ir
+fn {virtual override thunk({offset(-16)}, Multiple::~Multiple())} @ 0x201b30 (size 9)
+  blk0 @ 0x201b30:
+    call 0x201b20()
+    ret #0x0
+-- card
+{"addr":"0x201b30","approxTokens":108,"blocks":1,"hardReasons":[],"name":"{virtual override thunk({offset(-16)}, Multiple::~Multiple())}","nameSources":["symtab","dwarf","unwind"],"section":".text","size":9,"unsupported":0}
+
+== 0x201b40 Virtual::Virtual(int)
+-- decompile
+/* velk pseudo-C: Virtual::Virtual(int) @ 0x201b40 */
+struct Virtual { uint8_t gap_0x0[0x8]; int extra; uint8_t gap_0xc[0x14]; };
+void Virtual__Virtual_201b40(struct Virtual *this, void **vtt, int value) {
+    uint64_t *v1 = *vtt;
+    *(uint64_t *)(this) = (uintptr_t)v1;
+    *(uint64_t *)((uint8_t *)this + v1[-3]) = (uintptr_t)vtt[1];
+    this->extra = 4;
+}
+-- signature
+void (struct Virtual * this, void ** vtt, int value)
+-- references
+
+-- ir
+fn Virtual::Virtual(int) @ 0x201b40 (size 26)
+  blk0 @ 0x201b40:
+    v1 = load64(rsi)
+    store64(v1, rdi)
+    store64(load64((rsi + #0x8)), (rdi + load64((v1 + #0xffffffffffffffe8))))
+    store32(#0x4, (rdi + #0x8))
+    ret #0x0
+-- card
+{"accesses":["this +0x0:uint64_t, +0x8:uint32_t","vtt +0x0:uint64_t, +0x8:uint64_t"],"addr":"0x201b40","approxTokens":138,"blocks":1,"hardReasons":[],"name":"Virtual::Virtual(int)","nameSources":["symtab","dwarf","unwind"],"section":".text","size":26,"unsupported":0}
+
+== 0x201b60 Virtual::Virtual(int)
+-- decompile
+/* C++ object initialization or destruction: Virtual vtable at 0x202ee0. */
+/* C++ object initialization or destruction: Virtual vtable at 0x202f18. */
+/* velk pseudo-C: Virtual::Virtual(int) @ 0x201b60 */
+/* ref: 0x202ee0 .data.rel.ro */
+/* ref: 0x202f18 .data.rel.ro */
+void Virtual__Virtual_201b60(struct Virtual *this, int value) {
+    Root__Root((uint8_t *)this + 0x10, value);
+    *(uint64_t *)(this) = (uintptr_t)(&Virtual_vtable_0);
+    *(uint64_t *)((uint8_t *)this + 0x10) = (uintptr_t)(&Virtual_vtable_16);
+    this->extra = 4;
+}
+-- signature
+void (struct Virtual * this, int value)
+-- references
+0x202ee0 .data.rel.ro
+0x202f18 .data.rel.ro
+-- ir
+fn Virtual::Virtual(int) @ 0x201b60 (size 43)
+  blk0 @ 0x201b60:
+    v1 = rdi
+    rax = call 0x201a30((rdi + #0x10), rsi)
+    store64(#0x202ee0, v1)
+    store64(#0x202f18, (v1 + #0x10))
+    store32(#0x4, (v1 + #0x8))
+    ret #0x0
+-- card
+{"accesses":["this +0x0:uint64_t, +0x8:uint32_t, +0x10:uint64_t"],"addr":"0x201b60","approxTokens":162,"blocks":1,"hardReasons":[],"name":"Virtual::Virtual(int)","nameSources":["symtab","dwarf","unwind"],"section":".text","size":43,"structures":["struct Virtual__Virtual_s1 {\n    int64_t field_0x0;\n    int32_t field_0x8;\n    uint8_t gap_0xc[0x4];\n    int64_t field_0x10;\n};"],"unsupported":0}
+
+== 0x201b90 Virtual::value() const
+-- decompile
+/* velk pseudo-C: Virtual::value() const @ 0x201b90 */
+struct Virtual { uint8_t gap_0x0[0x8]; int extra; uint8_t gap_0xc[0x14]; };
+void Virtual__value(struct Virtual *this) {
+    int32_t v1 = this->extra + *(uint32_t *)((uint8_t *)this + *(uint64_t *)(*(uint64_t *)(this) - 0x18) + 0x8);
+}
+-- signature
+void (struct Virtual * this)
+-- references
+
+-- ir
+fn Virtual::value() const @ 0x201b90 (size 15)
+  blk0 @ 0x201b90:
+    v1 = ((load32((rdi + #0x8)) + load32(((rdi + load64((load64(rdi) + #0xffffffffffffffe8))) + #0x8))) & #0xffffffff)
+    ret #0x0
+-- card
+{"accesses":["this +0x0:uint64_t, +0x8:uint32_t"],"addr":"0x201b90","approxTokens":126,"blocks":1,"hardReasons":[],"name":"Virtual::value() const","nameSources":["symtab","unwind"],"section":".text","size":15,"unsupported":0}
+
+== 0x201ba0 {virtual override thunk({virtual offset(0, -24)}, Virtual::value() const)}
+-- decompile
+/* velk pseudo-C: {virtual override thunk({virtual offset(0, -24)}, Virtual::value() const)} @ 0x201ba0 */
+void _virtual_override_thunk__virtual_offset_0___24____Virtual__value___const__(uint64_t *a0) {
+    Virtual__value((uint8_t *)a0 + *(uint64_t *)(*a0 - 0x18));
+}
+-- signature
+void (uint64_t * a0)
+-- references
+
+-- ir
+fn {virtual override thunk({virtual offset(0, -24)}, Virtual::value() const)} @ 0x201ba0 (size 12)
+  blk0 @ 0x201ba0:
+    rax = call 0x201b90((rdi + load64((load64(rdi) + #0xffffffffffffffe8))))
+    ret #0x0
+-- card
+{"addr":"0x201ba0","approxTokens":114,"blocks":1,"hardReasons":[],"name":"{virtual override thunk({virtual offset(0, -24)}, Virtual::value() const)}","nameSources":["symtab","dwarf","unwind"],"section":".text","size":12,"unsupported":0}
+
+== 0x201bac Virtual::~Virtual()
+-- decompile
+/* velk pseudo-C: Virtual::~Virtual() @ 0x201bac */
+void Virtual___Virtual_201bac(struct Virtual *this, void **vtt) {
+}
+-- signature
+void (struct Virtual * this, void ** vtt)
+-- references
+
+-- ir
+fn Virtual::~Virtual() @ 0x201bac (size 1)
+  blk0 @ 0x201bac:
+    ret #0x0
+-- card
+{"addr":"0x201bac","approxTokens":102,"blocks":1,"hardReasons":[],"name":"Virtual::~Virtual()","nameSources":["symtab","dwarf","unwind"],"section":".text","size":1,"unsupported":0}
+
+== 0x201bae Virtual::~Virtual()
+-- decompile
+/* velk pseudo-C: Virtual::~Virtual() @ 0x201bae */
+void Virtual___Virtual_201bae(struct Virtual *this) {
+}
+-- signature
+void (struct Virtual * this)
+-- references
+
+-- ir
+fn Virtual::~Virtual() @ 0x201bae (size 1)
+  blk0 @ 0x201bae:
+    ret #0x0
+-- card
+{"addr":"0x201bae","approxTokens":102,"blocks":1,"hardReasons":[],"name":"Virtual::~Virtual()","nameSources":["symtab","dwarf","unwind"],"section":".text","size":1,"unsupported":0}
+
+== 0x201bb0 {virtual override thunk({virtual offset(0, -32)}, Virtual::~Virtual())}
+-- decompile
+/* velk pseudo-C: {virtual override thunk({virtual offset(0, -32)}, Virtual::~Virtual())} @ 0x201bb0 */
+void _virtual_override_thunk__virtual_offset_0___32____Virtual___Virtual_____201bb0(void) {
+}
+-- signature
+void ()
+-- references
+
+-- ir
+fn {virtual override thunk({virtual offset(0, -32)}, Virtual::~Virtual())} @ 0x201bb0 (size 1)
+  blk0 @ 0x201bb0:
+    ret #0x0
+-- card
+{"addr":"0x201bb0","approxTokens":102,"blocks":1,"hardReasons":[],"name":"{virtual override thunk({virtual offset(0, -32)}, Virtual::~Virtual())}","nameSources":["symtab","dwarf","unwind"],"section":".text","size":1,"unsupported":0}
+
+== 0x201bc0 Virtual::~Virtual()
+-- decompile
+/* velk pseudo-C: Virtual::~Virtual() @ 0x201bc0 */
+void Virtual___Virtual_201bc0(struct Virtual *this) {
+    operator_delete_201a5a();
+}
+-- signature
+void (struct Virtual * this)
+-- references
+
+-- ir
+fn Virtual::~Virtual() @ 0x201bc0 (size 10)
+  blk0 @ 0x201bc0:
+    call 0x201a5a()
+    ret #0x0
+-- card
+{"addr":"0x201bc0","approxTokens":108,"blocks":1,"hardReasons":[],"name":"Virtual::~Virtual()","nameSources":["symtab","dwarf","unwind"],"section":".text","size":10,"unsupported":0}
+
+== 0x201bd0 {virtual override thunk({virtual offset(0, -32)}, Virtual::~Virtual())}
+-- decompile
+/* velk pseudo-C: {virtual override thunk({virtual offset(0, -32)}, Virtual::~Virtual())} @ 0x201bd0 */
+void _virtual_override_thunk__virtual_offset_0___32____Virtual___Virtual_____201bd0(uint64_t *a0) {
+    int32_t v2 = (uintptr_t)((uint8_t *)a0 + *(uint64_t *)(*a0 - 0x20));
+    Virtual___Virtual_201bc0();
+}
+-- signature
+void (uint64_t * a0)
+-- references
+
+-- ir
+fn {virtual override thunk({virtual offset(0, -32)}, Virtual::~Virtual())} @ 0x201bd0 (size 12)
+  blk0 @ 0x201bd0:
+    v2 = (rdi + load64((load64(rdi) + #0xffffffffffffffe0)))
+    call 0x201bc0()
+    ret #0x0
+-- card
+{"addr":"0x201bd0","approxTokens":114,"blocks":1,"hardReasons":[],"name":"{virtual override thunk({virtual offset(0, -32)}, Virtual::~Virtual())}","nameSources":["symtab","dwarf","unwind"],"section":".text","size":12,"unsupported":0}
+
+== 0x201be0 dispatch
+-- decompile
+/* velk pseudo-C: dispatch @ 0x201be0 */
+int dispatch(struct Root *object) {
+    uint64_t *v1 = *(uint64_t **)(object);
+    return ((uint64_t (*)())*v1)(); /* vtable slot 0 */
+}
+-- signature
+int (struct Root * object)
+-- references
+
+-- ir
+fn dispatch @ 0x201be0 (size 5)
+  blk0 @ 0x201be0:
+    v1 = load64(rdi)
+    v2:rax, rdx, xmm0, xmm1 = call *load64(v1)
+    ret v2
+-- card
+{"accesses":["object +0x0:uint64_t"],"addr":"0x201be0","approxTokens":108,"blocks":1,"hardReasons":[],"name":"dispatch","nameSources":["symtab","dwarf","unwind"],"section":".text","size":5,"unsupported":0}
+
+== 0x201be8 dispatch_multiple
+-- decompile
+/* velk pseudo-C: dispatch_multiple @ 0x201be8 */
+struct Multiple_vtable { uint64_t slots[3]; uint64_t (*other)(); };
+int dispatch_multiple(struct Multiple *object) {
+    uint64_t *v1 = *(uint64_t **)(object);
+    return ((struct Multiple_vtable *)(v1))->other(object); /* vtable slot 3: Multiple__other */
+}
+-- signature
+int (struct Multiple * object)
+-- references
+
+-- ir
+fn dispatch_multiple @ 0x201be8 (size 6)
+  blk0 @ 0x201be8:
+    v1 = load64(rdi)
+    v2:rax, rdx, xmm0, xmm1 = call *load64((v1 + #0x18))(rdi)
+    ret v2
+-- card
+{"accesses":["object +0x0:uint64_t"],"addr":"0x201be8","approxTokens":108,"blocks":1,"hardReasons":[],"name":"dispatch_multiple","nameSources":["symtab","dwarf","unwind"],"section":".text","size":6,"unsupported":0}
+
+== 0x201bf0 single
+-- decompile
+/* velk pseudo-C: single @ 0x201bf0 */
+int single(int value) {
+    uint64_t rsp = velk_entry_stack_pointer();
+    _Alignas(16) uint8_t local_0[0x10]; /* [sp-18] */
+
+    Single__Single(local_0, value & 0xffffffff);
+    int32_t v3 = dispatch(local_0);
+    Single___Single_201a80(local_0);
+    return v3;
+/* landing pad: an exception thrown by a call at 0x201c02-0x201c0a arrives here */
+L_201c1c:
+    Single___Single_201a80(rsp);
+    _Unwind_Resume((void *)velk_exception_value());
+}
+-- signature
+int (int value)
+-- references
+
+-- ir
+fn single @ 0x201bf0 (size 63)
+  blk0 @ 0x201bf0:
+    v2 = (rsp + #0xffffffffffffffe8)
+    rax = call 0x201a60(v2, (rdi & #0xffffffff))
+    v3:rax, rdx, xmm0, xmm1 = call 0x201be0(v2)
+  blk1 @ 0x201c0a:
+    rax = call 0x201a80((rsp + #0xffffffffffffffe8))
+    ret (v3 & #0xffffffff)
+  blk2 @ 0x201c1c:
+    rax = call 0x201a80(rsp)
+    rax, rdx, xmm0, xmm1 = call 0x201de0(exception)
+    trap
+-- card
+{"addr":"0x201bf0","approxTokens":186,"blocks":3,"hardReasons":[],"name":"single","nameSources":["symtab","entry","dwarf","unwind"],"section":".text","size":63,"unsupported":0}
+
+== 0x201c30 multiple
+-- decompile
+/* velk pseudo-C: multiple @ 0x201c30 */
+int multiple(int value) {
+    _Alignas(16) uint8_t local_0[0x18]; /* [sp-28] */
+
+    Multiple__Multiple(local_0, value & 0xffffffff);
+    int32_t v3 = dispatch(local_0);
+    return ((int32_t)(Multiple__other(local_0))) + v3;
+}
+-- signature
+int (int value)
+-- references
+
+-- ir
+fn multiple @ 0x201c30 (size 46)
+  blk0 @ 0x201c30:
+    v2 = (rsp + #0xffffffffffffffd8)
+    rax = call 0x201ad0(v2, (rdi & #0xffffffff))
+    v3:rax, rdx, xmm0, xmm1 = call 0x201be0(v2)
+    v5:rax = call 0x201b08(v2)
+    ret (((v5 & #0xffffffff) + (v3 & #0xffffffff)) & #0xffffffff)
+-- card
+{"addr":"0x201c30","approxTokens":198,"blocks":1,"hardReasons":[],"name":"multiple","nameSources":["symtab","dwarf","unwind"],"section":".text","size":46,"unsupported":0}
+
+== 0x201c60 virtual_base
+-- decompile
+/* velk pseudo-C: virtual_base @ 0x201c60 */
+int virtual_base(int value) {
+    _Alignas(16) uint8_t local_0[0x20]; /* [sp-28] */
+
+    void *v2 = local_0;
+    Virtual__Virtual_201b60(local_0, value & 0xffffffff);
+    int64_t v5 = (uintptr_t)(local_0) + *(uint64_t *)(*(uint64_t *)(local_0) - 0x18);
+    return dispatch(v5);
+}
+-- signature
+int (int value)
+-- references
+
+-- ir
+fn virtual_base @ 0x201c60 (size 40)
+  blk0 @ 0x201c60:
+    v2 = (rsp + #0xffffffffffffffd8)
+    rax = call 0x201b60(v2, (rdi & #0xffffffff))
+    v2 = (v2 + load64((load64((rsp + #0xffffffffffffffd8)) + #0xffffffffffffffe8)))
+    v4:rax, rdx, xmm0, xmm1 = call 0x201be0(v2)
+    ret v4
+-- card
+{"addr":"0x201c60","approxTokens":174,"blocks":1,"hardReasons":[],"name":"virtual_base","nameSources":["symtab","dwarf","unwind"],"section":".text","size":40,"unsupported":0}
+
+== 0x201c90 catch_one
+-- decompile
+/* try { protected code [0x201c91, 0x201c96) }
+   catch (Error) { handler L_201c98; }
+   Exception dispatch is described by unwind metadata. */
+/* velk pseudo-C: catch_one @ 0x201c90 */
+int catch_one(int value) {
+    return imported_value();
+/* landing pad: an exception thrown by a call at 0x201c91-0x201c96 arrives here */
+L_201c98:;
+    uint32_t *v2 = (uint32_t *)(__cxa_begin_catch((void *)velk_exception_value()));
+    int32_t v3 = *v2;
+    __cxa_end_catch();
+    return v3;
+}
+-- signature
+int (int value)
+-- references
+
+-- ir
+fn catch_one @ 0x201c90 (size 27)
+  blk0 @ 0x201c90:
+    v1:rax, rdx, xmm0, xmm1 = call 0x201df0
+  blk1 @ 0x201c96:
+    ret v1
+  blk2 @ 0x201c98:
+    v2:rax, rdx, xmm0, xmm1 = call 0x201e00(exception)
+    v3 = load32(v2)
+    rax, rdx, xmm0, xmm1 = call 0x201e10()
+    ret (v3 & #0xffffffff)
+-- card
+{"addr":"0x201c90","approxTokens":120,"blocks":3,"hardReasons":[],"name":"catch_one","nameSources":["symtab","dwarf","unwind"],"section":".text","size":27,"unsupported":0}
+
+== 0x201cb0 catch_many
+-- decompile
+/* try { protected code [0x201cb3, 0x201cb8) }
+   catch (Error) { handler L_201cbf; }
+   catch (int) { handler L_201cbf; }
+   catch (...) { handler L_201cbf; }
+   Exception dispatch is described by unwind metadata. */
+/* velk pseudo-C: catch_many @ 0x201cb0 */
+int catch_many(int value) {
+    uint64_t rsp = velk_entry_stack_pointer();
+    uint64_t v5;
+    uint64_t v9;
+    uint64_t v10;
+    int32_t v1;
+    uint32_t *v4;
+    int32_t v7;
+
+    rsp = rsp - 0x8;
+    *(uint64_t *)(rsp) = v10;
+    rsp = rsp - 0x8;
+    *(uint64_t *)(rsp) = v9;
+    rsp = rsp - 0x8;
+    *(uint64_t *)(rsp) = v5;
+    return imported_value();
+L_201cb8:
+    return v1;
+/* landing pad: an exception thrown by a call at 0x201cb3-0x201cb8 arrives here */
+L_201cbf:;
+    int32_t v2 = velk_exception_selector();
+    void *v3 = (void *)velk_exception_value();
+    if (v2 != 3) {
+        v4 = (uint32_t *)(__cxa_begin_catch(v3));
+        if (v2 != 2) {
+            __cxa_end_catch();
+            return -1;
+        }
+        v7 = 2;
+    } else {
+        v4 = (uint32_t *)(__cxa_begin_catch(v3));
+        v7 = 1;
+    }
+    v7 += *v4;
+    __cxa_end_catch();
+    return v7;
+}
+-- signature
+int (int value)
+-- references
+
+-- ir
+fn catch_many @ 0x201cb0 (size 69)
+  blk0 @ 0x201cb0:
+    rsp = (rsp + #0xfffffffffffffff8)
+    store64(rbp, rsp)
+    rsp = (rsp + #0xfffffffffffffff8)
+    store64(rbx, rsp)
+    rsp = (rsp + #0xfffffffffffffff8)
+    store64(rax, rsp)
+    v1:rax, rdx, xmm0, xmm1 = call 0x201df0
+  blk1 @ 0x201cb8:
+    ret v1
+  blk2 @ 0x201cbf:
+    v2 = selector
+    v3 = exception
+    brif ne (v2 & #0xffffffff), #0x3 -> 0x201cd6
+  blk3 @ 0x201cca:
+    v4:rax, rdx, xmm0, xmm1 = call 0x201e00(v3)
+    v1 = #0x1
+    br 0x201cea
+  blk4 @ 0x201cd6:
+    v4:rax, rdx, xmm0, xmm1 = call 0x201e00(v3)
+    v1 = #0xffffffff
+    brif ne (v2 & #0xffffffff), #0x2 -> 0x201cec
+  blk5 @ 0x201ce5:
+    v1 = #0x2
+  blk6 @ 0x201cea:
+    v1 = (((v1 & #0xffffffff) + load32(v4)) & #0xffffffff)
+  blk7 @ 0x201cec:
+    rax, rdx, xmm0, xmm1 = call 0x201e10()
+    br 0x201cb8
+-- card
+{"addr":"0x201cb0","approxTokens":144,"blocks":8,"hardReasons":[],"name":"catch_many","nameSources":["symtab","dwarf","unwind"],"section":".text","size":69,"unsupported":0}
+
+== 0x201d00 catch_nested
+-- decompile
+/* try { protected code [0x201d04, 0x201d09) }
+   catch (int) { handler L_201d11; }
+   catch (Error) { handler L_201d11; }
+   Exception dispatch is described by unwind metadata. */
+/* try { protected code [0x201d27, 0x201d2c) }
+   catch (Error) { handler L_201d30; }
+   cleanup { handler L_201d30; }
+   Exception dispatch is described by unwind metadata. */
+/* velk pseudo-C: catch_nested @ 0x201d00 */
+int catch_nested(int value) {
+    uint64_t rsp = velk_entry_stack_pointer();
+    uint64_t v5;
+    uint64_t v7;
+    uint64_t v8;
+    int32_t v1;
+
+    rsp = rsp - 0x8;
+    *(uint64_t *)(rsp) = v8;
+    rsp = rsp - 0x8;
+    *(uint64_t *)(rsp) = v7;
+    rsp = rsp - 0x8;
+    *(uint64_t *)(rsp) = v5;
+    return imported_value();
+L_201d09:
+    return v1;
+/* landing pad: an exception thrown by a call at 0x201d04-0x201d09 arrives here */
+L_201d11:;
+    int32_t v2 = velk_exception_selector();
+    void *v3 = (void *)velk_exception_value();
+    if (v2 == 2) {
+        uint32_t *v4 = (uint32_t *)(__cxa_begin_catch(v3));
+        int32_t v10 = imported_value(*v4);
+        v10 = v10;
+        __cxa_end_catch();
+        return v10;
+    /* landing pad: an exception thrown by a call at 0x201d27-0x201d2c arrives here */
+    L_201d30:
+        v2 = velk_exception_selector();
+        v3 = (void *)velk_exception_value();
+        __cxa_end_catch();
+    }
+L_201d3b:
+    if (v2 != 1) {
+        _Unwind_Resume(v3);
+    }
+    uint32_t *v9 = (uint32_t *)(__cxa_begin_catch(v3));
+    int32_t v11 = *v9 + 3;
+    __cxa_end_catch();
+    return v11;
+}
+-- signature
+int (int value)
+-- references
+
+-- ir
+fn catch_nested @ 0x201d00 (size 92)
+  blk0 @ 0x201d00:
+    rsp = (rsp + #0xfffffffffffffff8)
+    store64(r14, rsp)
+    rsp = (rsp + #0xfffffffffffffff8)
+    store64(rbx, rsp)
+    rsp = (rsp + #0xfffffffffffffff8)
+    store64(rax, rsp)
+    v1:rax, rdx, xmm0, xmm1 = call 0x201df0
+  blk1 @ 0x201d09:
+    ret v1
+  blk2 @ 0x201d11:
+    v2 = selector
+    v3 = exception
+    brif ne (v2 & #0xffffffff), #0x2 -> 0x201d3b
+  blk3 @ 0x201d1d:
+    v4:rax, rdx, xmm0, xmm1 = call 0x201e00(v3)
+    v1:rax, rdx, xmm0, xmm1 = call 0x201df0(load32(v4))
+  blk4 @ 0x201d2c:
+    v1 = (v1 & #0xffffffff)
+    br 0x201d4e
+  blk5 @ 0x201d30:
+    v2 = selector
+    v3 = exception
+    rax, rdx, xmm0, xmm1 = call 0x201e10()
+  blk6 @ 0x201d3b:
+    brif ne (v2 & #0xffffffff), #0x1 -> 0x201d57
+  blk7 @ 0x201d44:
+    v9:rax, rdx, xmm0, xmm1 = call 0x201e00(v3)
+    v1 = ((load32(v9) + #0x3) & #0xffffffff)
+  blk8 @ 0x201d4e:
+    rax, rdx, xmm0, xmm1 = call 0x201e10()
+    br 0x201d09
+  blk9 @ 0x201d57:
+    rax, rdx, xmm0, xmm1 = call 0x201de0(v3)
+    trap
+-- card
+{"addr":"0x201d00","approxTokens":144,"blocks":10,"hardReasons":[],"name":"catch_nested","nameSources":["symtab","dwarf","unwind"],"section":".text","size":92,"unsupported":0}
+
+== 0x201d60 catch_cleanup
+-- decompile
+/* try { protected code [0x201d7a, 0x201d81) }
+   catch (...) { handler L_201d93; }
+   Exception dispatch is described by unwind metadata. */
+/* velk pseudo-C: catch_cleanup @ 0x201d60 */
+int catch_cleanup(int value) {
+    uint64_t rsp = velk_entry_stack_pointer();
+    uint64_t v5;
+
+    rsp = rsp - 0x8;
+    *(uint64_t *)(rsp) = v5;
+    rsp = rsp - 0x10;
+    uint64_t *v2 = (uint64_t *)rsp;
+    Single__Single(rsp, value & 0xffffffff);
+    int32_t v8 = imported_value(((uint32_t)(Single__value(rsp))));
+    int32_t v6 = v8;
+    Single___Single_201a80(rsp);
+    return v6;
+L_201d8b:
+    return v6;
+/* landing pad: an exception thrown by a call at 0x201d7a-0x201d81 arrives here */
+L_201d93:
+    Single___Single_201a80(rsp);
+    __cxa_begin_catch((void *)velk_exception_value());
+    __cxa_end_catch();
+    return -2;
+}
+-- signature
+int (int value)
+-- references
+
+-- ir
+fn catch_cleanup @ 0x201d60 (size 82)
+  blk0 @ 0x201d60:
+    rsp = (rsp + #0xfffffffffffffff8)
+    store64(rbx, rsp)
+    rsp = (rsp - #0x10)
+    v2 = rsp
+    rax = call 0x201a60(v2, (rdi & #0xffffffff))
+    v3:rax = call 0x201a78(v2)
+    v3:rax, rdx, xmm0, xmm1 = call 0x201df0((v3 & #0xffffffff))
+  blk1 @ 0x201d81:
+    v6 = (v3 & #0xffffffff)
+    rax = call 0x201a80(rsp)
+  blk2 @ 0x201d8b:
+    ret (v6 & #0xffffffff)
+  blk3 @ 0x201d93:
+    rax = call 0x201a80(rsp)
+    rax, rdx, xmm0, xmm1 = call 0x201e00(exception)
+    rax, rdx, xmm0, xmm1 = call 0x201e10()
+    v6 = #0xfffffffe
+    br 0x201d8b
+-- card
+{"addr":"0x201d60","approxTokens":198,"blocks":4,"hardReasons":[],"name":"catch_cleanup","nameSources":["symtab","dwarf","unwind"],"section":".text","size":82,"unsupported":0}
+
+== 0x201db2 operator delete(void*)
+-- decompile
+/* velk pseudo-C: operator delete(void*) @ 0x201db2 */
+void operator_delete_201db2(void *a0) {
+}
+-- signature
+void (void * a0)
+-- references
+
+-- ir
+fn operator delete(void*) @ 0x201db2 (size 1)
+  blk0 @ 0x201db2:
+    ret #0x0
+-- card
+{"addr":"0x201db2","approxTokens":102,"blocks":1,"hardReasons":[],"name":"operator delete(void*)","nameSources":["symtab","dwarf","unwind"],"section":".text","size":1,"unsupported":0}
+
+== 0x201dc0 Other::Other()
+-- decompile
+/* C++ object initialization or destruction: Other vtable at 0x202f78. */
+/* velk pseudo-C: Other::Other() @ 0x201dc0 */
+/* ref: 0x202f78 .data.rel.ro */
+void Other__Other(struct Other *this) {
+    *(uint64_t *)(this) = (uintptr_t)(&Other_vtable_0);
+}
+-- signature
+void (struct Other * this)
+-- references
+0x202f78 .data.rel.ro
+-- ir
+fn Other::Other() @ 0x201dc0 (size 11)
+  blk0 @ 0x201dc0:
+    store64(#0x202f78, rdi)
+    ret #0x0
+-- card
+{"accesses":["this +0x0:uint64_t"],"addr":"0x201dc0","approxTokens":114,"blocks":1,"hardReasons":[],"name":"Other::Other()","nameSources":["symtab","dwarf","unwind"],"section":".text","size":11,"unsupported":0}
+
+== 0x201de0 _Unwind_Resume
+-- decompile
+/* velk pseudo-C: _Unwind_Resume @ 0x201de0 */
+/* ref: 0x204140 .got.plt */
+int32_t _Unwind_Resume(void *a0) {
+    _Unwind_Resume(a0);
+}
+-- signature
+int32_t (void * a0)
+-- references
+0x204140 .got.plt
+-- ir
+fn _Unwind_Resume @ 0x201de0 (size 16)
+  blk0 @ 0x201de0:
+    rax, rdx, xmm0, xmm1 = call *load64(#0x204140)(rdi)
+    trap
+-- card
+{"addr":"0x201de0","approxTokens":114,"blocks":1,"hardReasons":[],"name":"_Unwind_Resume","nameSources":["plt"],"section":".plt","size":16,"sizeEstimated":true,"unsupported":0}
+
+== 0x201df0 imported_value(int)
+-- decompile
+/* velk pseudo-C: imported_value(int) @ 0x201df0 */
+/* ref: 0x204148 .got.plt */
+int32_t imported_value(void) {
+    return _Z14imported_valuei();
+}
+-- signature
+int32_t ()
+-- references
+0x204148 .got.plt
+-- ir
+fn imported_value(int) @ 0x201df0 (size 16)
+  blk0 @ 0x201df0:
+    v1:rax, rdx, xmm0, xmm1 = call *load64(#0x204148)
+    ret v1
+-- card
+{"addr":"0x201df0","approxTokens":114,"blocks":1,"hardReasons":[],"name":"imported_value(int)","nameSources":["plt"],"section":".plt","size":16,"sizeEstimated":true,"unsupported":0}
+
+== 0x201e00 __cxa_begin_catch
+-- decompile
+/* velk pseudo-C: __cxa_begin_catch @ 0x201e00 */
+/* ref: 0x204150 .got.plt */
+void *__cxa_begin_catch(void *a0) {
+    return __cxa_begin_catch(a0);
+}
+-- signature
+void * (void * a0)
+-- references
+0x204150 .got.plt
+-- ir
+fn __cxa_begin_catch @ 0x201e00 (size 16)
+  blk0 @ 0x201e00:
+    v1:rax, rdx, xmm0, xmm1 = call *load64(#0x204150)(rdi)
+    ret v1
+-- card
+{"addr":"0x201e00","approxTokens":114,"blocks":1,"hardReasons":[],"name":"__cxa_begin_catch","nameSources":["plt"],"section":".plt","size":16,"sizeEstimated":true,"unsupported":0}
+
+== 0x201e10 __cxa_end_catch
+-- decompile
+/* velk pseudo-C: __cxa_end_catch @ 0x201e10 */
+/* ref: 0x204158 .got.plt */
+void __cxa_end_catch(void) {
+    __cxa_end_catch();
+}
+-- signature
+void ()
+-- references
+0x204158 .got.plt
+-- ir
+fn __cxa_end_catch @ 0x201e10 (size 16)
+  blk0 @ 0x201e10:
+    v1:rax, rdx, xmm0, xmm1 = call *load64(#0x204158)()
+    ret #0x0
+-- card
+{"addr":"0x201e10","approxTokens":114,"blocks":1,"hardReasons":[],"name":"__cxa_end_catch","nameSources":["plt"],"section":".plt","size":16,"sizeEstimated":true,"unsupported":0}

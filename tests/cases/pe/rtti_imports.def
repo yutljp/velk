@@ -1,0 +1,5 @@
+LIBRARY cpp_runtime.dll
+EXPORTS
+    ?imported_value@@YAHH@Z
+    __CxxFrameHandler3
+    ??_7type_info@@6B@

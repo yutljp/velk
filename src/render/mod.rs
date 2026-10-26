@@ -3,6 +3,7 @@ mod abi_objects;
 mod aggregates;
 mod body;
 mod calls;
+pub(crate) mod classes;
 mod cost;
 mod expr;
 mod forwarding;
@@ -165,6 +166,7 @@ pub fn callee_names(image: &crate::loader::Image) -> Symbols {
             .collect(),
         variadic_functions: crate::loader::dwarf::variadic::functions(image),
         functions,
+        cpp_classes: image.classes().to_vec(),
         cpp_methods: image
             .functions
             .iter()
@@ -260,6 +262,7 @@ pub fn callee_names(image: &crate::loader::Image) -> Symbols {
             .collect(),
         ..Symbols::default()
     };
+    classes::name_tables(image, &mut symbols);
     for variable in symbols.library_variables.values() {
         symbols.reserved_names.insert(variable.name.clone());
     }

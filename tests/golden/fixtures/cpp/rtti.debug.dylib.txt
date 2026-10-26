@@ -1,0 +1,1315 @@
+# cpp/rtti.debug.dylib: macho aarch64 no entry, 51 functions, 0 lift failures, 0 unsupported, 0 gotos
+0x6a0 20 Root::Root(int) symtab,function-starts
+0x6b4 4 Root::Root(int) symtab,function-starts
+0x6b8 8 Root::value() const symtab,function-starts
+0x6c0 4 Root::~Root() symtab,function-starts
+0x6c4 4 Root::~Root() symtab,function-starts
+0x6c8 8 Root::~Root() symtab,function-starts
+0x6d0 4 operator delete(void*, unsigned long) symtab,dynamic,function-starts
+0x6d4 32 Single::Single(int) symtab,function-starts
+0x6f4 4 Single::Single(int) symtab,function-starts
+0x6f8 12 Single::value() const symtab,function-starts
+0x704 32 Single::~Single() symtab,function-starts
+0x724 4 Single::~Single() symtab,function-starts
+0x728 24 Single::~Single() symtab,function-starts
+0x740 8 Other::other() const symtab,function-starts
+0x748 4 Other::~Other() symtab,function-starts
+0x74c 4 Other::~Other() symtab,function-starts
+0x750 8 Other::~Other() symtab,function-starts
+0x758 64 Multiple::Multiple(int) symtab,function-starts
+0x798 16 Other::Other() symtab,function-starts
+0x7a8 4 Multiple::Multiple(int) symtab,function-starts
+0x7ac 12 Multiple::value() const symtab,function-starts
+0x7b8 12 Multiple::other() const symtab,function-starts
+0x7c4 8 {virtual override thunk({offset(-16)}, Multiple::other() const)} symtab,function-starts
+0x7cc 4 Multiple::~Multiple() symtab,function-starts
+0x7d0 4 Multiple::~Multiple() symtab,function-starts
+0x7d4 4 {virtual override thunk({offset(-16)}, Multiple::~Multiple())} symtab,function-starts
+0x7d8 8 Multiple::~Multiple() symtab,function-starts
+0x7e0 8 {virtual override thunk({offset(-16)}, Multiple::~Multiple())} symtab,function-starts
+0x7e8 32 Virtual::Virtual(int) symtab,function-starts
+0x808 68 Virtual::Virtual(int) symtab,function-starts
+0x84c 28 Virtual::value() const symtab,function-starts
+0x868 16 {virtual override thunk({virtual offset(0, -24)}, Virtual::value() const)} symtab,function-starts
+0x878 4 Virtual::~Virtual() symtab,function-starts
+0x87c 4 Virtual::~Virtual() symtab,function-starts
+0x880 4 {virtual override thunk({virtual offset(0, -32)}, Virtual::~Virtual())} symtab,function-starts
+0x884 8 Virtual::~Virtual() symtab,function-starts
+0x88c 16 {virtual override thunk({virtual offset(0, -32)}, Virtual::~Virtual())} symtab,function-starts
+0x89c 12 _dispatch symtab,dynamic,function-starts
+0x8a8 12 _dispatch_multiple symtab,dynamic,function-starts
+0x8b4 88 _single symtab,dynamic,function-starts
+0x90c 68 _multiple symtab,dynamic,function-starts
+0x950 64 _virtual_base symtab,dynamic,function-starts
+0x990 48 _catch_one symtab,dynamic,function-starts
+0x9c0 96 _catch_many symtab,dynamic,function-starts
+0xa20 120 _catch_nested symtab,dynamic,function-starts
+0xa98 104 _catch_cleanup symtab,dynamic,function-starts
+0xb00 4 operator delete(void*) symtab,dynamic,function-starts
+0xb04 12 __Unwind_Resume plt
+0xb10 12 imported_value(int) plt
+0xb1c 12 ___cxa_begin_catch plt
+0xb28 12 ___cxa_end_catch plt
+/* velk prelude */
+#include <stdint.h>
+
+extern uint32_t _ZL9destroyed; /* address: 0x8028 */
+extern uint8_t Multiple_vtable_0; /* address: 0x4060 */
+extern uint8_t Multiple_vtable_16; /* address: 0x4090 */
+extern uint8_t Other_vtable_0; /* address: 0x4168 */
+extern uint8_t Root_vtable_0; /* address: 0x4010 */
+extern uint8_t Single_vtable_0; /* address: 0x4038 */
+extern uint8_t Virtual_vtable_0; /* address: 0x40c0 */
+extern uint8_t Virtual_vtable_16; /* address: 0x40f8 */
+
+uint64_t Multiple__Multiple_758();
+uint64_t Multiple__Multiple_7a8();
+uint64_t Multiple___Multiple_7d8();
+uint64_t Multiple__other();
+uint64_t Other__Other();
+uint64_t Root__Root_6a0();
+uint64_t Single__Single_6d4();
+uint64_t Single__Single_6f4();
+uint64_t Single___Single_704();
+uint64_t Single___Single_724();
+uint64_t Single__value();
+uint64_t Virtual__Virtual_808();
+uint64_t Virtual___Virtual_884();
+uint64_t Virtual__value();
+uint64_t _Z14imported_valuei();
+uint64_t dispatch();
+uint64_t imported_value();
+uint64_t operator_delete_6d0();
+uint64_t velk_entry_stack_pointer(void); /* target entry stack pointer */
+uint64_t velk_exception_selector(void);
+uint64_t velk_exception_value(void);
+void (_Unwind_Resume)(void *);
+void (__cxa_end_catch)(void);
+void *(__cxa_begin_catch)(void *);
+/* end velk prelude */
+
+== 0x6a0 Root::Root(int)
+-- decompile
+/* C++ object initialization or destruction: Root vtable at 0x4010. */
+/* velk pseudo-C: Root::Root(int) @ 0x6a0 */
+struct S1 { int64_t field_0x0; int32_t field_0x8; uint8_t gap_0xc[0x4]; int64_t field_0x10; };
+struct S1 *Root__Root_6a0(struct S1 *a0, int32_t a1) {
+    a0->field_0x0 = (uintptr_t)(&Root_vtable_0);
+    a0->field_0x8 = a1;
+    return a0;
+}
+-- signature
+struct S1 * (struct S1 * a0, int32_t a1)
+-- references
+
+-- ir
+fn Root::Root(int) @ 0x6a0 (size 20)
+  blk0 @ 0x6a0:
+    store64(#0x4010, x0)
+    store32(w1, (x0 + #0x8))
+    ret x0
+-- card
+{"accesses":["a0 +0x0:uint64_t, +0x8:uint32_t"],"addr":"0x6a0","approxTokens":126,"blocks":1,"hardReasons":[],"name":"Root::Root(int)","nameSources":["symtab","function-starts"],"section":"__text","size":20,"structures":["struct S1 { int64_t field_0x0; int32_t field_0x8; uint8_t gap_0xc[0x4]; int64_t field_0x10; };"],"unsupported":0}
+
+== 0x6b4 Root::Root(int)
+-- decompile
+/* velk pseudo-C: Root::Root(int) @ 0x6b4 */
+int32_t Root__Root_6b4(int64_t a0, int64_t a1) {
+    Root__Root_6a0(a0, a1);
+    return a0;
+}
+-- signature
+int32_t (int64_t a0, int64_t a1)
+-- references
+
+-- ir
+fn Root::Root(int) @ 0x6b4 (size 4)
+  blk0 @ 0x6b4:
+    call 0x6a0(x0, x1)
+    ret x0
+-- card
+{"addr":"0x6b4","approxTokens":102,"blocks":1,"hardReasons":[],"name":"Root::Root(int)","nameSources":["symtab","function-starts"],"section":"__text","size":4,"unsupported":0}
+
+== 0x6b8 Root::value() const
+-- decompile
+/* velk pseudo-C: Root::value() const @ 0x6b8 */
+int32_t Root__value(uint32_t *a0) {
+    return a0[2];
+}
+-- signature
+int32_t (uint32_t * a0)
+-- references
+
+-- ir
+fn Root::value() const @ 0x6b8 (size 8)
+  blk0 @ 0x6b8:
+    ret load32((x0 + #0x8))
+-- card
+{"addr":"0x6b8","approxTokens":108,"blocks":1,"hardReasons":[],"name":"Root::value() const","nameSources":["symtab","function-starts"],"section":"__text","size":8,"unsupported":0}
+
+== 0x6c0 Root::~Root()
+-- decompile
+/* velk pseudo-C: Root::~Root() @ 0x6c0 */
+int64_t Root___Root_6c0(int64_t a0) {
+    return a0;
+}
+-- signature
+int64_t (int64_t a0)
+-- references
+
+-- ir
+fn Root::~Root() @ 0x6c0 (size 4)
+  blk0 @ 0x6c0:
+    ret x0
+-- card
+{"addr":"0x6c0","approxTokens":102,"blocks":1,"hardReasons":[],"name":"Root::~Root()","nameSources":["symtab","function-starts"],"section":"__text","size":4,"unsupported":0}
+
+== 0x6c4 Root::~Root()
+-- decompile
+/* velk pseudo-C: Root::~Root() @ 0x6c4 */
+int64_t Root___Root_6c4(int64_t a0) {
+    return a0;
+}
+-- signature
+int64_t (int64_t a0)
+-- references
+
+-- ir
+fn Root::~Root() @ 0x6c4 (size 4)
+  blk0 @ 0x6c4:
+    ret x0
+-- card
+{"addr":"0x6c4","approxTokens":102,"blocks":1,"hardReasons":[],"name":"Root::~Root()","nameSources":["symtab","function-starts"],"section":"__text","size":4,"unsupported":0}
+
+== 0x6c8 Root::~Root()
+-- decompile
+/* velk pseudo-C: Root::~Root() @ 0x6c8 */
+int32_t Root___Root_6c8(int64_t a0) {
+    operator_delete_6d0(a0);
+    return a0;
+}
+-- signature
+int32_t (int64_t a0)
+-- references
+
+-- ir
+fn Root::~Root() @ 0x6c8 (size 8)
+  blk0 @ 0x6c8:
+    call 0x6d0(x0)
+    ret x0
+-- card
+{"addr":"0x6c8","approxTokens":108,"blocks":1,"hardReasons":[],"name":"Root::~Root()","nameSources":["symtab","function-starts"],"section":"__text","size":8,"unsupported":0}
+
+== 0x6d0 operator delete(void*, unsigned long)
+-- decompile
+/* velk pseudo-C: operator delete(void*, unsigned long) @ 0x6d0 */
+int64_t operator_delete_6d0(int64_t a0) {
+    return a0;
+}
+-- signature
+int64_t (int64_t a0)
+-- references
+
+-- ir
+fn operator delete(void*, unsigned long) @ 0x6d0 (size 4)
+  blk0 @ 0x6d0:
+    ret x0
+-- card
+{"addr":"0x6d0","approxTokens":102,"blocks":1,"hardReasons":[],"name":"operator delete(void*, unsigned long)","nameSources":["symtab","dynamic","function-starts"],"section":"__text","size":4,"unsupported":0}
+
+== 0x6d4 Single::Single(int)
+-- decompile
+/* C++ object initialization or destruction: Single vtable at 0x4038. */
+/* velk pseudo-C: Single::Single(int) @ 0x6d4 */
+struct S1 { int64_t field_0x0; int32_t field_0x8; };
+void Single__Single_6d4(struct S1 *a0, int64_t a1) {
+    Root__Root_6a0(a0, a1);
+    a0->field_0x0 = (uintptr_t)(&Single_vtable_0);
+}
+-- signature
+void (struct S1 * a0, int64_t a1)
+-- references
+
+-- ir
+fn Single::Single(int) @ 0x6d4 (size 32)
+  blk0 @ 0x6d4:
+    call 0x6a0(x0, x1)
+    store64(#0x4038, x0)
+    ret #0x0
+-- card
+{"accesses":["a0 +0x0:uint64_t"],"addr":"0x6d4","approxTokens":144,"blocks":1,"hardReasons":[],"name":"Single::Single(int)","nameSources":["symtab","function-starts"],"section":"__text","size":32,"structures":["struct S1 { int64_t field_0x0; int32_t field_0x8; };"],"unsupported":0}
+
+== 0x6f4 Single::Single(int)
+-- decompile
+/* velk pseudo-C: Single::Single(int) @ 0x6f4 */
+void Single__Single_6f4(int64_t a0, int64_t a1) {
+    Single__Single_6d4(a0, a1);
+}
+-- signature
+void (int64_t a0, int64_t a1)
+-- references
+
+-- ir
+fn Single::Single(int) @ 0x6f4 (size 4)
+  blk0 @ 0x6f4:
+    call 0x6d4(x0, x1)
+    ret #0x0
+-- card
+{"addr":"0x6f4","approxTokens":102,"blocks":1,"hardReasons":[],"name":"Single::Single(int)","nameSources":["symtab","function-starts"],"section":"__text","size":4,"unsupported":0}
+
+== 0x6f8 Single::value() const
+-- decompile
+/* velk pseudo-C: Single::value() const @ 0x6f8 */
+int32_t Single__value(uint32_t *a0) {
+    return a0[2] + 1;
+}
+-- signature
+int32_t (uint32_t * a0)
+-- references
+
+-- ir
+fn Single::value() const @ 0x6f8 (size 12)
+  blk0 @ 0x6f8:
+    ret ((load32((x0 + #0x8)) + #0x1) & #0xffffffff)
+-- card
+{"accesses":["a0 +0x8:uint32_t"],"addr":"0x6f8","approxTokens":114,"blocks":1,"hardReasons":[],"name":"Single::value() const","nameSources":["symtab","function-starts"],"section":"__text","size":12,"unsupported":0}
+
+== 0x704 Single::~Single()
+-- decompile
+/* C++ object initialization or destruction: Single vtable at 0x4038. */
+/* velk pseudo-C: Single::~Single() @ 0x704 */
+uint64_t *Single___Single_704(uint64_t *a0) {
+    *a0 = (uintptr_t)(&Single_vtable_0);
+    _ZL9destroyed += 1;
+    return a0;
+}
+-- signature
+uint64_t * (uint64_t * a0)
+-- references
+
+-- ir
+fn Single::~Single() @ 0x704 (size 32)
+  blk0 @ 0x704:
+    store64(#0x4038, x0)
+    store32((load32(#0x8028) + #0x1), #0x8028)
+    ret x0
+-- card
+{"accesses":["a0 +0x0:uint64_t"],"addr":"0x704","approxTokens":144,"blocks":1,"hardReasons":[],"name":"Single::~Single()","nameSources":["symtab","function-starts"],"section":"__text","size":32,"unsupported":0}
+
+== 0x724 Single::~Single()
+-- decompile
+/* velk pseudo-C: Single::~Single() @ 0x724 */
+int32_t Single___Single_724(int64_t a0) {
+    Single___Single_704(a0);
+    return a0;
+}
+-- signature
+int32_t (int64_t a0)
+-- references
+
+-- ir
+fn Single::~Single() @ 0x724 (size 4)
+  blk0 @ 0x724:
+    call 0x704(x0)
+    ret x0
+-- card
+{"addr":"0x724","approxTokens":102,"blocks":1,"hardReasons":[],"name":"Single::~Single()","nameSources":["symtab","function-starts"],"section":"__text","size":4,"unsupported":0}
+
+== 0x728 Single::~Single()
+-- decompile
+/* velk pseudo-C: Single::~Single() @ 0x728 */
+int32_t Single___Single_728(int64_t a0) {
+    Single___Single_724(a0);
+    operator_delete_6d0(a0);
+    return a0;
+}
+-- signature
+int32_t (int64_t a0)
+-- references
+
+-- ir
+fn Single::~Single() @ 0x728 (size 24)
+  blk0 @ 0x728:
+    call 0x724(x0)
+    call 0x6d0(x0)
+    ret x0
+-- card
+{"addr":"0x728","approxTokens":132,"blocks":1,"hardReasons":[],"name":"Single::~Single()","nameSources":["symtab","function-starts"],"section":"__text","size":24,"unsupported":0}
+
+== 0x740 Other::other() const
+-- decompile
+/* velk pseudo-C: Other::other() const @ 0x740 */
+int32_t Other__other(void) {
+    return 7;
+}
+-- signature
+int32_t ()
+-- references
+
+-- ir
+fn Other::other() const @ 0x740 (size 8)
+  blk0 @ 0x740:
+    ret #0x7
+-- card
+{"addr":"0x740","approxTokens":108,"blocks":1,"hardReasons":[],"name":"Other::other() const","nameSources":["symtab","function-starts"],"section":"__text","size":8,"unsupported":0}
+
+== 0x748 Other::~Other()
+-- decompile
+/* velk pseudo-C: Other::~Other() @ 0x748 */
+int64_t Other___Other_748(int64_t a0) {
+    return a0;
+}
+-- signature
+int64_t (int64_t a0)
+-- references
+
+-- ir
+fn Other::~Other() @ 0x748 (size 4)
+  blk0 @ 0x748:
+    ret x0
+-- card
+{"addr":"0x748","approxTokens":102,"blocks":1,"hardReasons":[],"name":"Other::~Other()","nameSources":["symtab","function-starts"],"section":"__text","size":4,"unsupported":0}
+
+== 0x74c Other::~Other()
+-- decompile
+/* velk pseudo-C: Other::~Other() @ 0x74c */
+int64_t Other___Other_74c(int64_t a0) {
+    return a0;
+}
+-- signature
+int64_t (int64_t a0)
+-- references
+
+-- ir
+fn Other::~Other() @ 0x74c (size 4)
+  blk0 @ 0x74c:
+    ret x0
+-- card
+{"addr":"0x74c","approxTokens":102,"blocks":1,"hardReasons":[],"name":"Other::~Other()","nameSources":["symtab","function-starts"],"section":"__text","size":4,"unsupported":0}
+
+== 0x750 Other::~Other()
+-- decompile
+/* velk pseudo-C: Other::~Other() @ 0x750 */
+int32_t Other___Other_750(int64_t a0) {
+    operator_delete_6d0(a0);
+    return a0;
+}
+-- signature
+int32_t (int64_t a0)
+-- references
+
+-- ir
+fn Other::~Other() @ 0x750 (size 8)
+  blk0 @ 0x750:
+    call 0x6d0(x0)
+    ret x0
+-- card
+{"addr":"0x750","approxTokens":108,"blocks":1,"hardReasons":[],"name":"Other::~Other()","nameSources":["symtab","function-starts"],"section":"__text","size":8,"unsupported":0}
+
+== 0x758 Multiple::Multiple(int)
+-- decompile
+/* C++ object initialization or destruction: Multiple vtable at 0x4060. */
+/* C++ object initialization or destruction: Multiple vtable at 0x4090. */
+/* velk pseudo-C: Multiple::Multiple(int) @ 0x758 */
+struct S1 { int64_t field_0x0; int32_t field_0x8; uint8_t gap_0xc[0x4]; int64_t field_0x10; };
+struct S1 *Multiple__Multiple_758(struct S1 *a0, int64_t a1) {
+    Root__Root_6a0(a0, a1);
+    Other__Other((uint8_t *)a0 + 0x10);
+    a0->field_0x0 = (uintptr_t)(&Multiple_vtable_0);
+    a0->field_0x10 = (uintptr_t)(&Multiple_vtable_16);
+    return a0;
+}
+-- signature
+struct S1 * (struct S1 * a0, int64_t a1)
+-- references
+
+-- ir
+fn Multiple::Multiple(int) @ 0x758 (size 64)
+  blk0 @ 0x758:
+    v1 = x0
+    call 0x6a0(x0, x1)
+    call 0x798((x0 + #0x10))
+    store64(#0x4060, v1)
+    store64(#0x4090, (v1 + #0x10))
+    ret v1
+-- card
+{"accesses":["a0 +0x0:uint64_t, +0x10:uint64_t"],"addr":"0x758","approxTokens":192,"blocks":1,"hardReasons":[],"name":"Multiple::Multiple(int)","nameSources":["symtab","function-starts"],"section":"__text","size":64,"structures":["struct S1 { int64_t field_0x0; int32_t field_0x8; uint8_t gap_0xc[0x4]; int64_t field_0x10; };"],"unsupported":0}
+
+== 0x798 Other::Other()
+-- decompile
+/* C++ object initialization or destruction: Other vtable at 0x4168. */
+/* velk pseudo-C: Other::Other() @ 0x798 */
+void Other__Other(uint64_t *a0) {
+    *a0 = (uintptr_t)(&Other_vtable_0);
+}
+-- signature
+void (uint64_t * a0)
+-- references
+
+-- ir
+fn Other::Other() @ 0x798 (size 16)
+  blk0 @ 0x798:
+    store64(#0x4168, x0)
+    ret #0x0
+-- card
+{"accesses":["a0 +0x0:uint64_t"],"addr":"0x798","approxTokens":120,"blocks":1,"hardReasons":[],"name":"Other::Other()","nameSources":["symtab","function-starts"],"section":"__text","size":16,"unsupported":0}
+
+== 0x7a8 Multiple::Multiple(int)
+-- decompile
+/* velk pseudo-C: Multiple::Multiple(int) @ 0x7a8 */
+void Multiple__Multiple_7a8(int64_t a0, int64_t a1) {
+    Multiple__Multiple_758(a0, a1);
+}
+-- signature
+void (int64_t a0, int64_t a1)
+-- references
+
+-- ir
+fn Multiple::Multiple(int) @ 0x7a8 (size 4)
+  blk0 @ 0x7a8:
+    call 0x758(x0, x1)
+    ret #0x0
+-- card
+{"addr":"0x7a8","approxTokens":102,"blocks":1,"hardReasons":[],"name":"Multiple::Multiple(int)","nameSources":["symtab","function-starts"],"section":"__text","size":4,"unsupported":0}
+
+== 0x7ac Multiple::value() const
+-- decompile
+/* velk pseudo-C: Multiple::value() const @ 0x7ac */
+int32_t Multiple__value(uint32_t *a0) {
+    return a0[2] + 2;
+}
+-- signature
+int32_t (uint32_t * a0)
+-- references
+
+-- ir
+fn Multiple::value() const @ 0x7ac (size 12)
+  blk0 @ 0x7ac:
+    ret ((load32((x0 + #0x8)) + #0x2) & #0xffffffff)
+-- card
+{"accesses":["a0 +0x8:uint32_t"],"addr":"0x7ac","approxTokens":114,"blocks":1,"hardReasons":[],"name":"Multiple::value() const","nameSources":["symtab","function-starts"],"section":"__text","size":12,"unsupported":0}
+
+== 0x7b8 Multiple::other() const
+-- decompile
+/* velk pseudo-C: Multiple::other() const @ 0x7b8 */
+int32_t Multiple__other(uint32_t *a0) {
+    return a0[2] + 3;
+}
+-- signature
+int32_t (uint32_t * a0)
+-- references
+
+-- ir
+fn Multiple::other() const @ 0x7b8 (size 12)
+  blk0 @ 0x7b8:
+    ret ((load32((x0 + #0x8)) + #0x3) & #0xffffffff)
+-- card
+{"accesses":["a0 +0x8:uint32_t"],"addr":"0x7b8","approxTokens":114,"blocks":1,"hardReasons":[],"name":"Multiple::other() const","nameSources":["symtab","function-starts"],"section":"__text","size":12,"unsupported":0}
+
+== 0x7c4 {virtual override thunk({offset(-16)}, Multiple::other() const)}
+-- decompile
+/* velk pseudo-C: {virtual override thunk({offset(-16)}, Multiple::other() const)} @ 0x7c4 */
+int32_t virtual_override_thunk__offset__16____Multiple__other___const__(int64_t a0) {
+    return Multiple__other(a0 - 16);
+}
+-- signature
+int32_t (int64_t a0)
+-- references
+
+-- ir
+fn {virtual override thunk({offset(-16)}, Multiple::other() const)} @ 0x7c4 (size 8)
+  blk0 @ 0x7c4:
+    v2:x0 = call 0x7b8((x0 - #0x10))
+    ret v2
+-- card
+{"addr":"0x7c4","approxTokens":108,"blocks":1,"hardReasons":[],"name":"{virtual override thunk({offset(-16)}, Multiple::other() const)}","nameSources":["symtab","function-starts"],"section":"__text","size":8,"unsupported":0}
+
+== 0x7cc Multiple::~Multiple()
+-- decompile
+/* velk pseudo-C: Multiple::~Multiple() @ 0x7cc */
+int64_t Multiple___Multiple_7cc(int64_t a0) {
+    return a0;
+}
+-- signature
+int64_t (int64_t a0)
+-- references
+
+-- ir
+fn Multiple::~Multiple() @ 0x7cc (size 4)
+  blk0 @ 0x7cc:
+    ret x0
+-- card
+{"addr":"0x7cc","approxTokens":102,"blocks":1,"hardReasons":[],"name":"Multiple::~Multiple()","nameSources":["symtab","function-starts"],"section":"__text","size":4,"unsupported":0}
+
+== 0x7d0 Multiple::~Multiple()
+-- decompile
+/* velk pseudo-C: Multiple::~Multiple() @ 0x7d0 */
+int64_t Multiple___Multiple_7d0(int64_t a0) {
+    return a0;
+}
+-- signature
+int64_t (int64_t a0)
+-- references
+
+-- ir
+fn Multiple::~Multiple() @ 0x7d0 (size 4)
+  blk0 @ 0x7d0:
+    ret x0
+-- card
+{"addr":"0x7d0","approxTokens":102,"blocks":1,"hardReasons":[],"name":"Multiple::~Multiple()","nameSources":["symtab","function-starts"],"section":"__text","size":4,"unsupported":0}
+
+== 0x7d4 {virtual override thunk({offset(-16)}, Multiple::~Multiple())}
+-- decompile
+/* velk pseudo-C: {virtual override thunk({offset(-16)}, Multiple::~Multiple())} @ 0x7d4 */
+int64_t virtual_override_thunk__offset__16____Multiple___Multiple_____7d4(int64_t a0) {
+    return a0;
+}
+-- signature
+int64_t (int64_t a0)
+-- references
+
+-- ir
+fn {virtual override thunk({offset(-16)}, Multiple::~Multiple())} @ 0x7d4 (size 4)
+  blk0 @ 0x7d4:
+    ret x0
+-- card
+{"addr":"0x7d4","approxTokens":102,"blocks":1,"hardReasons":[],"name":"{virtual override thunk({offset(-16)}, Multiple::~Multiple())}","nameSources":["symtab","function-starts"],"section":"__text","size":4,"unsupported":0}
+
+== 0x7d8 Multiple::~Multiple()
+-- decompile
+/* velk pseudo-C: Multiple::~Multiple() @ 0x7d8 */
+int32_t Multiple___Multiple_7d8(int64_t a0) {
+    operator_delete_6d0(a0);
+    return a0;
+}
+-- signature
+int32_t (int64_t a0)
+-- references
+
+-- ir
+fn Multiple::~Multiple() @ 0x7d8 (size 8)
+  blk0 @ 0x7d8:
+    call 0x6d0(x0)
+    ret x0
+-- card
+{"addr":"0x7d8","approxTokens":108,"blocks":1,"hardReasons":[],"name":"Multiple::~Multiple()","nameSources":["symtab","function-starts"],"section":"__text","size":8,"unsupported":0}
+
+== 0x7e0 {virtual override thunk({offset(-16)}, Multiple::~Multiple())}
+-- decompile
+/* velk pseudo-C: {virtual override thunk({offset(-16)}, Multiple::~Multiple())} @ 0x7e0 */
+int32_t virtual_override_thunk__offset__16____Multiple___Multiple_____7e0(int64_t a0) {
+    int64_t v1 = a0 - 16;
+    Multiple___Multiple_7d8(v1);
+    return v1;
+}
+-- signature
+int32_t (int64_t a0)
+-- references
+
+-- ir
+fn {virtual override thunk({offset(-16)}, Multiple::~Multiple())} @ 0x7e0 (size 8)
+  blk0 @ 0x7e0:
+    v1 = (x0 - #0x10)
+    x1 = call 0x7d8(v1)
+    ret v1
+-- card
+{"addr":"0x7e0","approxTokens":108,"blocks":1,"hardReasons":[],"name":"{virtual override thunk({offset(-16)}, Multiple::~Multiple())}","nameSources":["symtab","function-starts"],"section":"__text","size":8,"unsupported":0}
+
+== 0x7e8 Virtual::Virtual(int)
+-- decompile
+/* velk pseudo-C: Virtual::Virtual(int) @ 0x7e8 */
+struct S1 { uint64_t *field_0x0; int64_t field_0x8; };
+uint64_t *Virtual__Virtual_7e8(uint64_t *a0, struct S1 *a1) {
+    uint64_t *v1 = a1->field_0x0;
+    *a0 = (uintptr_t)v1;
+    *(uint64_t *)((uint8_t *)a0 + v1[-3]) = a1->field_0x8;
+    *(uint32_t *)(a0 + 0x1) = 4;
+    return a0;
+}
+-- signature
+uint64_t * (uint64_t * a0, struct S1 * a1)
+-- references
+
+-- ir
+fn Virtual::Virtual(int) @ 0x7e8 (size 32)
+  blk0 @ 0x7e8:
+    v1 = load64(x1)
+    store64(v1, x0)
+    store64(load64((x1 + #0x8)), (x0 + load64((v1 + #0xffffffffffffffe8))))
+    store32(#0x4, (x0 + #0x8))
+    ret x0
+-- card
+{"accesses":["a0 +0x0:uint64_t, +0x8:uint32_t","a1 +0x0:uint64_t, +0x8:uint64_t"],"addr":"0x7e8","approxTokens":144,"blocks":1,"hardReasons":[],"name":"Virtual::Virtual(int)","nameSources":["symtab","function-starts"],"section":"__text","size":32,"structures":["struct S1 { int64_t field_0x0; int64_t field_0x8; };"],"unsupported":0}
+
+== 0x808 Virtual::Virtual(int)
+-- decompile
+/* C++ object initialization or destruction: Virtual vtable at 0x40c0. */
+/* C++ object initialization or destruction: Virtual vtable at 0x40f8. */
+/* velk pseudo-C: Virtual::Virtual(int) @ 0x808 */
+struct Virtual { int64_t field_0x0; int32_t field_0x8; uint8_t gap_0xc[0x4]; int64_t field_0x10; };
+struct Virtual *Virtual__Virtual_808(struct Virtual *a0, int64_t a1) {
+    Root__Root_6a0((uint8_t *)a0 + 0x10, a1);
+    a0->field_0x0 = (uintptr_t)(&Virtual_vtable_0);
+    a0->field_0x10 = (uintptr_t)(&Virtual_vtable_16);
+    a0->field_0x8 = 4;
+    return a0;
+}
+-- signature
+struct Virtual * (struct Virtual * a0, int64_t a1)
+-- references
+
+-- ir
+fn Virtual::Virtual(int) @ 0x808 (size 68)
+  blk0 @ 0x808:
+    v1 = x0
+    call 0x6a0((x0 + #0x10), x1)
+    store64(#0x40c0, v1)
+    store64(#0x40f8, (v1 + #0x10))
+    store32(#0x4, (v1 + #0x8))
+    ret v1
+-- card
+{"accesses":["a0 +0x0:uint64_t, +0x8:uint32_t, +0x10:uint64_t"],"addr":"0x808","approxTokens":198,"blocks":1,"hardReasons":[],"name":"Virtual::Virtual(int)","nameSources":["symtab","function-starts"],"section":"__text","size":68,"structures":["struct Virtual { int64_t field_0x0; int32_t field_0x8; uint8_t gap_0xc[0x4]; int64_t field_0x10; };"],"unsupported":0}
+
+== 0x84c Virtual::value() const
+-- decompile
+/* velk pseudo-C: Virtual::value() const @ 0x84c */
+int32_t Virtual__value(uint64_t *a0) {
+    return *(uint32_t *)(a0 + 0x1) + *(uint32_t *)((uint8_t *)a0 + *(uint64_t *)(*a0 - 0x18) + 0x8);
+}
+-- signature
+int32_t (uint64_t * a0)
+-- references
+
+-- ir
+fn Virtual::value() const @ 0x84c (size 28)
+  blk0 @ 0x84c:
+    ret ((load32((x0 + #0x8)) + load32(((x0 + load64((load64(x0) + #0xffffffffffffffe8))) + #0x8))) & #0xffffffff)
+-- card
+{"accesses":["a0 +0x0:uint64_t, +0x8:uint32_t"],"addr":"0x84c","approxTokens":138,"blocks":1,"hardReasons":[],"name":"Virtual::value() const","nameSources":["symtab","function-starts"],"section":"__text","size":28,"unsupported":0}
+
+== 0x868 {virtual override thunk({virtual offset(0, -24)}, Virtual::value() const)}
+-- decompile
+/* velk pseudo-C: {virtual override thunk({virtual offset(0, -24)}, Virtual::value() const)} @ 0x868 */
+int32_t virtual_override_thunk__virtual_offset_0___24____Virtual__value___const__(uint64_t *a0) {
+    return Virtual__value((uint8_t *)a0 + *(uint64_t *)(*a0 - 0x18));
+}
+-- signature
+int32_t (uint64_t * a0)
+-- references
+
+-- ir
+fn {virtual override thunk({virtual offset(0, -24)}, Virtual::value() const)} @ 0x868 (size 16)
+  blk0 @ 0x868:
+    v3:x0 = call 0x84c((x0 + load64((load64(x0) + #0xffffffffffffffe8))))
+    ret v3
+-- card
+{"addr":"0x868","approxTokens":120,"blocks":1,"hardReasons":[],"name":"{virtual override thunk({virtual offset(0, -24)}, Virtual::value() const)}","nameSources":["symtab","function-starts"],"section":"__text","size":16,"unsupported":0}
+
+== 0x878 Virtual::~Virtual()
+-- decompile
+/* velk pseudo-C: Virtual::~Virtual() @ 0x878 */
+int64_t Virtual___Virtual_878(int64_t a0) {
+    return a0;
+}
+-- signature
+int64_t (int64_t a0)
+-- references
+
+-- ir
+fn Virtual::~Virtual() @ 0x878 (size 4)
+  blk0 @ 0x878:
+    ret x0
+-- card
+{"addr":"0x878","approxTokens":102,"blocks":1,"hardReasons":[],"name":"Virtual::~Virtual()","nameSources":["symtab","function-starts"],"section":"__text","size":4,"unsupported":0}
+
+== 0x87c Virtual::~Virtual()
+-- decompile
+/* velk pseudo-C: Virtual::~Virtual() @ 0x87c */
+int64_t Virtual___Virtual_87c(int64_t a0) {
+    return a0;
+}
+-- signature
+int64_t (int64_t a0)
+-- references
+
+-- ir
+fn Virtual::~Virtual() @ 0x87c (size 4)
+  blk0 @ 0x87c:
+    ret x0
+-- card
+{"addr":"0x87c","approxTokens":102,"blocks":1,"hardReasons":[],"name":"Virtual::~Virtual()","nameSources":["symtab","function-starts"],"section":"__text","size":4,"unsupported":0}
+
+== 0x880 {virtual override thunk({virtual offset(0, -32)}, Virtual::~Virtual())}
+-- decompile
+/* velk pseudo-C: {virtual override thunk({virtual offset(0, -32)}, Virtual::~Virtual())} @ 0x880 */
+int64_t virtual_override_thunk__virtual_offset_0___32____Virtual___Virtual_____880(int64_t a0) {
+    return a0;
+}
+-- signature
+int64_t (int64_t a0)
+-- references
+
+-- ir
+fn {virtual override thunk({virtual offset(0, -32)}, Virtual::~Virtual())} @ 0x880 (size 4)
+  blk0 @ 0x880:
+    ret x0
+-- card
+{"addr":"0x880","approxTokens":102,"blocks":1,"hardReasons":[],"name":"{virtual override thunk({virtual offset(0, -32)}, Virtual::~Virtual())}","nameSources":["symtab","function-starts"],"section":"__text","size":4,"unsupported":0}
+
+== 0x884 Virtual::~Virtual()
+-- decompile
+/* velk pseudo-C: Virtual::~Virtual() @ 0x884 */
+int32_t Virtual___Virtual_884(int64_t a0) {
+    operator_delete_6d0(a0);
+    return a0;
+}
+-- signature
+int32_t (int64_t a0)
+-- references
+
+-- ir
+fn Virtual::~Virtual() @ 0x884 (size 8)
+  blk0 @ 0x884:
+    call 0x6d0(x0)
+    ret x0
+-- card
+{"addr":"0x884","approxTokens":108,"blocks":1,"hardReasons":[],"name":"Virtual::~Virtual()","nameSources":["symtab","function-starts"],"section":"__text","size":8,"unsupported":0}
+
+== 0x88c {virtual override thunk({virtual offset(0, -32)}, Virtual::~Virtual())}
+-- decompile
+/* velk pseudo-C: {virtual override thunk({virtual offset(0, -32)}, Virtual::~Virtual())} @ 0x88c */
+int32_t virtual_override_thunk__virtual_offset_0___32____Virtual___Virtual_____88c(uint64_t *a0) {
+    int64_t v2 = (uintptr_t)((uint8_t *)a0 + *(uint64_t *)(*a0 - 0x20));
+    Virtual___Virtual_884(v2);
+    return v2;
+}
+-- signature
+int32_t (uint64_t * a0)
+-- references
+
+-- ir
+fn {virtual override thunk({virtual offset(0, -32)}, Virtual::~Virtual())} @ 0x88c (size 16)
+  blk0 @ 0x88c:
+    v2 = (x0 + load64((load64(x0) + #0xffffffffffffffe0)))
+    x1 = call 0x884(v2)
+    ret v2
+-- card
+{"addr":"0x88c","approxTokens":120,"blocks":1,"hardReasons":[],"name":"{virtual override thunk({virtual offset(0, -32)}, Virtual::~Virtual())}","nameSources":["symtab","function-starts"],"section":"__text","size":16,"unsupported":0}
+
+== 0x89c _dispatch
+-- decompile
+/* velk pseudo-C: _dispatch @ 0x89c */
+int32_t dispatch(uint64_t *a0) {
+    uint64_t v1;
+
+    v1 = *(uint64_t *)(*a0);
+    return ((uint64_t (*)())v1)(); /* vtable slot 0 */
+}
+-- signature
+int32_t (uint64_t * a0)
+-- references
+
+-- ir
+fn _dispatch @ 0x89c (size 12)
+  blk0 @ 0x89c:
+    x1 = load64(load64(x0))
+    v2:x0, x1, d0, d1 = call *x1
+    ret v2
+-- card
+{"accesses":["a0 +0x0:uint64_t"],"addr":"0x89c","approxTokens":114,"blocks":1,"hardReasons":[],"name":"_dispatch","nameSources":["symtab","dynamic","function-starts"],"section":"__text","size":12,"unsupported":0}
+
+== 0x8a8 _dispatch_multiple
+-- decompile
+/* velk pseudo-C: _dispatch_multiple @ 0x8a8 */
+struct Multiple_vtable { uint64_t slots[3]; uint64_t (*other)(); };
+struct Root_base { unsigned char bytes[8]; };
+struct Other_base { unsigned char bytes[8]; };
+struct Multiple { union { struct Multiple_vtable *vtable; struct Root_base base_Root; }; unsigned char padding_1[8]; struct Other_base base_Other; };
+int32_t dispatch_multiple(uint64_t *a0) {
+    return ((struct Multiple *)(a0))->vtable->other(a0); /* vtable slot 3: Multiple__other */
+}
+-- signature
+int32_t (uint64_t * a0)
+-- references
+
+-- ir
+fn _dispatch_multiple @ 0x8a8 (size 12)
+  blk0 @ 0x8a8:
+    v2 = load64((load64(x0) + #0x18))
+    v3:x0, x1, d0, d1 = call *v2(x0)
+    ret v3
+-- card
+{"accesses":["a0 +0x0:uint64_t"],"addr":"0x8a8","approxTokens":114,"blocks":1,"hardReasons":[],"name":"_dispatch_multiple","nameSources":["symtab","dynamic","function-starts"],"section":"__text","size":12,"unsupported":0}
+
+== 0x8b4 _single
+-- decompile
+/* velk pseudo-C: _single @ 0x8b4 */
+int64_t single(int64_t a0) {
+    uint64_t v3;
+    int64_t local_0; /* [sp-8] */
+    _Alignas(16) uint8_t local_1[0x10]; /* [sp-30] */
+
+    local_0 = v3;
+    Single__Single_6f4(local_1, a0);
+    int64_t v2 = dispatch(local_1);
+    Single___Single_724(local_1);
+    return v2;
+/* landing pad: an exception thrown by a call at 0x8d0-0x8d8 arrives here */
+L_8f8:
+    Single___Single_724((uint8_t *)&local_0 + 0x8);
+    _Unwind_Resume((void *)velk_exception_value());
+}
+-- signature
+int64_t (int64_t a0)
+-- references
+
+-- ir
+fn _single @ 0x8b4 (size 88)
+  blk0 @ 0x8b4:
+    store64(x30, (sp + #0xfffffffffffffff8))
+    call 0x6f4((sp + #0xffffffffffffffd0), x0)
+    v2:x0, x1, d0, d1 = call 0x89c((sp + #0xffffffffffffffd0))
+  blk1 @ 0x8d8:
+    call 0x724((sp + #0xffffffffffffffd0))
+    ret v2
+  blk2 @ 0x8f8:
+    call 0x724(sp)
+    x0, x1, d0, d1 = call 0xb04(exception)
+    trap
+-- card
+{"addr":"0x8b4","approxTokens":198,"blocks":3,"hardReasons":[],"name":"_single","nameSources":["symtab","dynamic","function-starts"],"section":"__text","size":88,"unsupported":0}
+
+== 0x90c _multiple
+-- decompile
+/* velk pseudo-C: _multiple @ 0x90c */
+int32_t multiple(int64_t a0) {
+    uint64_t v2;
+    int64_t local_0; /* [sp-8] */
+    _Alignas(16) uint8_t local_1[0x18]; /* [sp-38] */
+
+    local_0 = v2;
+    Multiple__Multiple_7a8(local_1, a0);
+    int32_t v3 = dispatch(local_1);
+    return ((int32_t)(Multiple__other(local_1))) + v3;
+}
+-- signature
+int32_t (int64_t a0)
+-- references
+
+-- ir
+fn _multiple @ 0x90c (size 68)
+  blk0 @ 0x90c:
+    store64(x30, (sp + #0xfffffffffffffff8))
+    call 0x7a8((sp + #0xffffffffffffffc8), x0)
+    v3:x0, x1, d0, d1 = call 0x89c((sp + #0xffffffffffffffc8))
+    v5:x0 = call 0x7b8((sp + #0xffffffffffffffc8))
+    ret (((v5 & #0xffffffff) + (v3 & #0xffffffff)) & #0xffffffff)
+-- card
+{"addr":"0x90c","approxTokens":198,"blocks":1,"hardReasons":[],"name":"_multiple","nameSources":["symtab","dynamic","function-starts"],"section":"__text","size":68,"unsupported":0}
+
+== 0x950 _virtual_base
+-- decompile
+/* velk pseudo-C: _virtual_base @ 0x950 */
+int32_t virtual_base(int64_t a0) {
+    uint64_t v2;
+    int64_t local_0; /* [sp-8] */
+    _Alignas(16) uint8_t local_1[0x20]; /* [sp-40] */
+
+    local_0 = v2;
+    Virtual__Virtual_808(local_1, a0);
+    return dispatch((uint8_t *)((uintptr_t)(local_1) + *(uint64_t *)(*(uint64_t *)(local_1) - 0x18)));
+}
+-- signature
+int32_t (int64_t a0)
+-- references
+
+-- ir
+fn _virtual_base @ 0x950 (size 64)
+  blk0 @ 0x950:
+    store64(x30, (sp + #0xfffffffffffffff8))
+    call 0x808((sp + #0xffffffffffffffc0), x0)
+    v4:x0, x1, d0, d1 = call 0x89c(((sp + #0xffffffffffffffc0) + load64((load64((sp + #0xffffffffffffffc0)) + #0xffffffffffffffe8))))
+    ret v4
+-- card
+{"addr":"0x950","approxTokens":192,"blocks":1,"hardReasons":[],"name":"_virtual_base","nameSources":["symtab","dynamic","function-starts"],"section":"__text","size":64,"unsupported":0}
+
+== 0x990 _catch_one
+-- decompile
+/* try { protected code [0x99c, 0x9a0) }
+   catch (Error) { handler L_9ac; }
+   Exception dispatch is described by unwind metadata. */
+/* velk pseudo-C: _catch_one @ 0x990 */
+int32_t catch_one(void) {
+    uint64_t sp = velk_entry_stack_pointer();
+    uint64_t v6;
+    uint64_t v7;
+    uint64_t v8;
+    uint64_t v9;
+    int32_t v1;
+
+    *(uint64_t *)(sp - 0x20) = v7;
+    *(uint64_t *)(sp - 0x18) = v6;
+    sp = sp - 0x20;
+    *(uint64_t *)(sp + 0x10) = v8;
+    *(uint64_t *)(sp + 0x18) = v9;
+    return imported_value();
+L_9a0:
+    return v1;
+/* landing pad: an exception thrown by a call at 0x99c-0x9a0 arrives here */
+L_9ac:;
+    uint32_t *v2 = (uint32_t *)(__cxa_begin_catch((void *)velk_exception_value()));
+    int32_t v4 = *v2;
+    __cxa_end_catch();
+    return v4;
+}
+-- signature
+int32_t ()
+-- references
+
+-- ir
+fn _catch_one @ 0x990 (size 48)
+  blk0 @ 0x990:
+    store64(x20, (sp + #0xffffffffffffffe0))
+    store64(x19, (sp + #0xffffffffffffffe8))
+    sp = (sp + #0xffffffffffffffe0)
+    store64(x29, (sp + #0x10))
+    store64(x30, (sp + #0x18))
+    v1:x0, x1, d0, d1 = call 0xb10
+  blk1 @ 0x9a0:
+    ret v1
+  blk2 @ 0x9ac:
+    v2:x0, x1, d0, d1 = call 0xb1c(exception)
+    v1 = load32(v2)
+    x0, x1, d0, d1 = call 0xb28()
+    br 0x9a0
+-- card
+{"addr":"0x990","approxTokens":138,"blocks":3,"hardReasons":[],"name":"_catch_one","nameSources":["symtab","dynamic","function-starts"],"section":"__text","size":48,"unsupported":0}
+
+== 0x9c0 _catch_many
+-- decompile
+/* try { protected code [0x9cc, 0x9d0) }
+   catch (Error) { handler L_9dc; }
+   catch (int) { handler L_9dc; }
+   catch (...) { handler L_9dc; }
+   Exception dispatch is described by unwind metadata. */
+/* velk pseudo-C: _catch_many @ 0x9c0 */
+int32_t catch_many(void) {
+    uint64_t sp = velk_entry_stack_pointer();
+    uint64_t v9;
+    uint64_t v10;
+    uint64_t v11;
+    uint64_t v12;
+    void *v1;
+    uint32_t *v3;
+    int32_t v5;
+
+    *(uint64_t *)(sp - 0x20) = v10;
+    *(uint64_t *)(sp - 0x18) = v9;
+    sp = sp - 0x20;
+    *(uint64_t *)(sp + 0x10) = v11;
+    *(uint64_t *)(sp + 0x18) = v12;
+    return (uintptr_t)((void *)(imported_value()));
+L_9d0:
+    return (uintptr_t)v1;
+/* landing pad: an exception thrown by a call at 0x9cc-0x9d0 arrives here */
+L_9dc:;
+    int32_t v2 = velk_exception_selector();
+    if (v2 != 3) {
+        v3 = (uint32_t *)(__cxa_begin_catch(v1));
+        if (v2 != 2) {
+            __cxa_end_catch();
+            return -1;
+        }
+        v5 = 2;
+    } else {
+        v3 = (uint32_t *)(__cxa_begin_catch(v1));
+        v5 = 1;
+    }
+    int32_t v7 = *v3 + v5;
+    __cxa_end_catch();
+    return v7;
+}
+-- signature
+int32_t ()
+-- references
+
+-- ir
+fn _catch_many @ 0x9c0 (size 96)
+  blk0 @ 0x9c0:
+    store64(x20, (sp + #0xffffffffffffffe0))
+    store64(x19, (sp + #0xffffffffffffffe8))
+    sp = (sp + #0xffffffffffffffe0)
+    store64(x29, (sp + #0x10))
+    store64(x30, (sp + #0x18))
+    v1:x0, x1, d0, d1 = call 0xb10
+  blk1 @ 0x9d0:
+    ret v1
+  blk2 @ 0x9dc:
+    v2 = selector
+    brif ne (v2 & #0xffffffff), #0x3 -> 0x9f4
+  blk3 @ 0x9e8:
+    v3:x0, x1, d0, d1 = call 0xb1c(v1)
+    x8 = #0x1
+    br 0xa04
+  blk4 @ 0x9f4:
+    v3:x0, x1, d0, d1 = call 0xb1c(v1)
+    brif ne (v2 & #0xffffffff), #0x2 -> 0xa10
+  blk5 @ 0xa00:
+    x8 = #0x2
+  blk6 @ 0xa04:
+    v1 = ((load32(v3) + (x8 & #0xffffffff)) & #0xffffffff)
+    br 0xa14
+  blk7 @ 0xa10:
+    v1 = #0xffffffff
+  blk8 @ 0xa14:
+    x0, x1, d0, d1 = call 0xb28()
+    br 0x9d0
+-- card
+{"addr":"0x9c0","approxTokens":138,"blocks":9,"hardReasons":[],"name":"_catch_many","nameSources":["symtab","dynamic","function-starts"],"section":"__text","size":96,"unsupported":0}
+
+== 0xa20 _catch_nested
+-- decompile
+/* try { protected code [0xa2c, 0xa30) }
+   catch (int) { handler L_a3c; }
+   catch (Error) { handler L_a3c; }
+   Exception dispatch is described by unwind metadata. */
+/* try { protected code [0xa58, 0xa5c) }
+   catch (Error) { handler L_a64; }
+   cleanup { handler L_a64; }
+   Exception dispatch is described by unwind metadata. */
+/* velk pseudo-C: _catch_nested @ 0xa20 */
+int64_t catch_nested(void) {
+    uint64_t sp = velk_entry_stack_pointer();
+    uint64_t v6;
+    uint64_t v7;
+    uint64_t v8;
+    uint64_t v14;
+    void *v1;
+
+    *(uint64_t *)(sp - 0x20) = v7;
+    *(uint64_t *)(sp - 0x18) = v6;
+    sp = sp - 0x20;
+    *(uint64_t *)(sp + 0x10) = v8;
+    *(uint64_t *)(sp + 0x18) = v14;
+    return (uintptr_t)((void *)(imported_value()));
+L_a30:
+    return (uintptr_t)v1;
+/* landing pad: an exception thrown by a call at 0xa2c-0xa30 arrives here */
+L_a3c:;
+    int32_t v2 = velk_exception_selector();
+    int64_t v10 = velk_exception_value();
+    if (v2 == 2) {
+        uint32_t *v4 = (uint32_t *)(__cxa_begin_catch((void *)v10));
+        int64_t v11 = imported_value(*v4);
+        __cxa_end_catch();
+        return v11;
+    /* landing pad: an exception thrown by a call at 0xa58-0xa5c arrives here */
+    L_a64:
+        v2 = velk_exception_selector();
+        v10 = velk_exception_value();
+        __cxa_end_catch();
+    }
+L_a70:
+    if (v2 != 1) {
+        _Unwind_Resume((void *)v10);
+    }
+    uint32_t *v9 = (uint32_t *)(__cxa_begin_catch((void *)v10));
+    int32_t v12 = *v9;
+    uint32_t v13 = v12 + 3;
+    __cxa_end_catch();
+    return v13;
+}
+-- signature
+int64_t ()
+-- references
+
+-- ir
+fn _catch_nested @ 0xa20 (size 120)
+  blk0 @ 0xa20:
+    store64(x20, (sp + #0xffffffffffffffe0))
+    store64(x19, (sp + #0xffffffffffffffe8))
+    sp = (sp + #0xffffffffffffffe0)
+    store64(x29, (sp + #0x10))
+    store64(x30, (sp + #0x18))
+    v1:x0, x1, d0, d1 = call 0xb10
+  blk1 @ 0xa30:
+    ret v1
+  blk2 @ 0xa3c:
+    v2 = selector
+    v1 = exception
+    brif ne (v2 & #0xffffffff), #0x2 -> 0xa70
+  blk3 @ 0xa4c:
+    v4:x0, x1, d0, d1 = call 0xb1c(v1)
+    v1:x0, x1, d0, d1 = call 0xb10(load32(v4))
+  blk4 @ 0xa5c:
+    br 0xa88
+  blk5 @ 0xa64:
+    v2 = selector
+    v1 = exception
+    x0, x1, d0, d1 = call 0xb28()
+  blk6 @ 0xa70:
+    brif ne (v2 & #0xffffffff), #0x1 -> 0xa94
+  blk7 @ 0xa7c:
+    v9:x0, x1, d0, d1 = call 0xb1c(v1)
+    x8 = load32(v9)
+    v1 = (((x8 & #0xffffffff) + #0x3) & #0xffffffff)
+  blk8 @ 0xa88:
+    x0, x1, d0, d1 = call 0xb28()
+    br 0xa30
+  blk9 @ 0xa94:
+    x0, x1, d0, d1 = call 0xb04(v1)
+    trap
+-- card
+{"addr":"0xa20","approxTokens":138,"blocks":10,"hardReasons":[],"name":"_catch_nested","nameSources":["symtab","dynamic","function-starts"],"section":"__text","size":120,"unsupported":0}
+
+== 0xa98 _catch_cleanup
+-- decompile
+/* try { protected code [0xabc, 0xac0) }
+   catch (...) { handler L_ae0; }
+   Exception dispatch is described by unwind metadata. */
+/* velk pseudo-C: _catch_cleanup @ 0xa98 */
+int32_t catch_cleanup(int64_t a0) {
+    uint64_t sp = velk_entry_stack_pointer();
+    uint64_t v2;
+    uint64_t v3;
+    uint64_t v4;
+    uint64_t v5;
+    uint64_t v6;
+
+    sp = sp - 0x30;
+    *(uint64_t *)(sp + 0x10) = v4;
+    *(uint64_t *)(sp + 0x18) = v3;
+    *(uint64_t *)(sp + 0x20) = v5;
+    *(uint64_t *)(sp + 0x28) = v6;
+    v2 = a0;
+    Single__Single_6f4(sp, v2);
+    a0 = Single__value(sp);
+    int32_t v1 = imported_value();
+    Single___Single_724(sp);
+    return v1;
+L_acc:
+    return v1;
+/* landing pad: an exception thrown by a call at 0xabc-0xac0 arrives here */
+L_ae0:
+    Single___Single_724(sp);
+    __cxa_begin_catch((void *)velk_exception_value());
+    __cxa_end_catch();
+    return -2;
+}
+-- signature
+int32_t (int64_t a0)
+-- references
+
+-- ir
+fn _catch_cleanup @ 0xa98 (size 104)
+  blk0 @ 0xa98:
+    sp = (sp - #0x30)
+    store64(x20, (sp + #0x10))
+    store64(x19, (sp + #0x18))
+    store64(x29, (sp + #0x20))
+    store64(x30, (sp + #0x28))
+    x1 = x0
+    call 0x6f4(sp, x1)
+    x0 = call 0x6f8(sp)
+    v1:x0, x1, d0, d1 = call 0xb10
+  blk1 @ 0xac0:
+    call 0x724(sp)
+  blk2 @ 0xacc:
+    ret v1
+  blk3 @ 0xae0:
+    call 0x724(sp)
+    x0, x1, d0, d1 = call 0xb1c(exception)
+    x0, x1, d0, d1 = call 0xb28()
+    v1 = #0xfffffffe
+    br 0xacc
+-- card
+{"addr":"0xa98","approxTokens":204,"blocks":4,"hardReasons":[],"name":"_catch_cleanup","nameSources":["symtab","dynamic","function-starts"],"section":"__text","size":104,"unsupported":0}
+
+== 0xb00 operator delete(void*)
+-- decompile
+/* velk pseudo-C: operator delete(void*) @ 0xb00 */
+int64_t operator_delete_b00(int64_t a0) {
+    return a0;
+}
+-- signature
+int64_t (int64_t a0)
+-- references
+
+-- ir
+fn operator delete(void*) @ 0xb00 (size 4)
+  blk0 @ 0xb00:
+    ret x0
+-- card
+{"addr":"0xb00","approxTokens":102,"blocks":1,"hardReasons":[],"name":"operator delete(void*)","nameSources":["symtab","dynamic","function-starts"],"section":"__text","size":4,"unsupported":0}
+
+== 0xb04 __Unwind_Resume
+-- decompile
+/* velk pseudo-C: __Unwind_Resume @ 0xb04 */
+void _Unwind_Resume(void *a0) {
+    _Unwind_Resume(a0);
+}
+-- signature
+void (void * a0)
+-- references
+
+-- ir
+fn __Unwind_Resume @ 0xb04 (size 12)
+  blk0 @ 0xb04:
+    v1:x0, x1, d0, d1 = call *load64(#0x8000)(x0)
+    ret #0x0
+-- card
+{"addr":"0xb04","approxTokens":114,"blocks":1,"hardReasons":[],"name":"__Unwind_Resume","nameSources":["plt"],"section":"__stubs","size":12,"sizeEstimated":true,"unsupported":0}
+
+== 0xb10 imported_value(int)
+-- decompile
+/* velk pseudo-C: imported_value(int) @ 0xb10 */
+int32_t imported_value(void) {
+    return _Z14imported_valuei();
+}
+-- signature
+int32_t ()
+-- references
+
+-- ir
+fn imported_value(int) @ 0xb10 (size 12)
+  blk0 @ 0xb10:
+    v1:x0, x1, d0, d1 = call *load64(#0x8008)
+    ret v1
+-- card
+{"addr":"0xb10","approxTokens":114,"blocks":1,"hardReasons":[],"name":"imported_value(int)","nameSources":["plt"],"section":"__stubs","size":12,"sizeEstimated":true,"unsupported":0}
+
+== 0xb1c ___cxa_begin_catch
+-- decompile
+/* velk pseudo-C: ___cxa_begin_catch @ 0xb1c */
+void *__cxa_begin_catch(void *a0) {
+    return __cxa_begin_catch(a0);
+}
+-- signature
+void * (void * a0)
+-- references
+
+-- ir
+fn ___cxa_begin_catch @ 0xb1c (size 12)
+  blk0 @ 0xb1c:
+    v1:x0, x1, d0, d1 = call *load64(#0x8010)(x0)
+    ret v1
+-- card
+{"addr":"0xb1c","approxTokens":114,"blocks":1,"hardReasons":[],"name":"___cxa_begin_catch","nameSources":["plt"],"section":"__stubs","size":12,"sizeEstimated":true,"unsupported":0}
+
+== 0xb28 ___cxa_end_catch
+-- decompile
+/* velk pseudo-C: ___cxa_end_catch @ 0xb28 */
+void __cxa_end_catch(void) {
+    __cxa_end_catch();
+}
+-- signature
+void ()
+-- references
+
+-- ir
+fn ___cxa_end_catch @ 0xb28 (size 12)
+  blk0 @ 0xb28:
+    v1:x0, x1, d0, d1 = call *load64(#0x8018)()
+    ret #0x0
+-- card
+{"addr":"0xb28","approxTokens":114,"blocks":1,"hardReasons":[],"name":"___cxa_end_catch","nameSources":["plt"],"section":"__stubs","size":12,"sizeEstimated":true,"unsupported":0}

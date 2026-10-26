@@ -12,6 +12,7 @@ pub(crate) struct Handler {
     pub name: Option<String>,
     pub scopes: Vec<Scope>,
     pub catches: Vec<(i32, i32, u64)>,
+    pub regions: Vec<unwind::Region>,
 }
 
 #[derive(Debug)]
@@ -126,6 +127,7 @@ pub(super) fn read(image: &Image) -> Vec<Handler> {
             name,
             scopes: Vec::new(),
             catches: Vec::new(),
+            regions: Vec::new(),
         };
         match handler.name.as_deref() {
             Some("__C_specific_handler") => {
@@ -167,6 +169,7 @@ pub(super) fn read(image: &Image) -> Vec<Handler> {
                 };
                 handler.data = info;
                 read_catches(image, base, info, &mut handler.catches);
+                handler.regions = cpp_regions(image, base, info, function, &frames);
             }
             _ => {}
         }
@@ -211,7 +214,148 @@ fn read_catches(image: &Image, base: u64, info: u64, catches: &mut Vec<(i32, i32
     }
 }
 
+fn cpp_regions(
+    image: &Image,
+    base: u64,
+    info: u64,
+    function: u64,
+    frames: &std::collections::BTreeMap<u64, u64>,
+) -> Vec<unwind::Region> {
+    let mut regions = Vec::new();
+    let Some(header) = read_bytes(image, info, 40) else {
+        return regions;
+    };
+    if word(header, 0) & 0x1fff_ffff != 0x1993_0522 {
+        return regions;
+    }
+    let rva = |value| base.checked_add(u64::from(value));
+    let (Some(table), Some(ips)) = (rva(word(header, 16)), rva(word(header, 24))) else {
+        return regions;
+    };
+    let count = u64::from(word(header, 12));
+    let ip_count = u64::from(word(header, 20));
+    if count > 4096 || ip_count > 65536 {
+        return regions;
+    }
+    let (Some(rows), Some(ip_rows)) = (
+        read_bytes(image, table, count * 20),
+        read_bytes(image, ips, ip_count * 8),
+    ) else {
+        return regions;
+    };
+    let mut states = Vec::new();
+    for ip in ip_rows.as_chunks::<8>().0 {
+        let Some(address) = rva(word(ip, 0)) else {
+            return regions;
+        };
+        if states
+            .last()
+            .is_some_and(|&(previous, _)| previous >= address)
+        {
+            return regions;
+        }
+        states.push((address, word(ip, 4) as i32));
+    }
+    if states.first().map(|&(address, _)| address) != Some(function) {
+        return regions;
+    }
+    let mut allowed = std::collections::BTreeSet::from([function]);
+    for row in rows.as_chunks::<20>().0 {
+        let count = u64::from(word(row, 12));
+        if count > 4096 {
+            continue;
+        }
+        let Some(table) = rva(word(row, 16)).and_then(|table| read_bytes(image, table, count * 20))
+        else {
+            continue;
+        };
+        for entry in table.as_chunks::<20>().0 {
+            if let Some(address) = rva(word(entry, 12)) {
+                allowed.insert(address);
+            }
+        }
+    }
+    for row in rows.as_chunks::<20>().0 {
+        let low = word(row, 0) as i32;
+        let high = word(row, 4) as i32;
+        let handlers = u64::from(word(row, 12));
+        if low < 0
+            || high < low
+            || word(row, 8) as i32 <= high
+            || word(row, 8) >= word(header, 4)
+            || handlers > 4096
+        {
+            continue;
+        }
+        let Some(table) =
+            rva(word(row, 16)).and_then(|table| read_bytes(image, table, handlers * 20))
+        else {
+            continue;
+        };
+        for entry in table.as_chunks::<20>().0 {
+            let Some(landing_pad) = rva(word(entry, 12)).filter(|address| code(image, *address))
+            else {
+                continue;
+            };
+            let name = if word(entry, 4) == 0 {
+                "...".to_owned()
+            } else {
+                let name = rva(word(entry, 4))
+                    .and_then(|info| super::classes::msvc_type_name(image, info));
+                let Some(mut name) = name else {
+                    continue;
+                };
+                if word(entry, 0) & 8 != 0 {
+                    name.push_str(" &");
+                }
+                name
+            };
+            for (index, &(start, state)) in states.iter().enumerate() {
+                let Some((&frame, &size)) = frames.range(..=start).next_back() else {
+                    continue;
+                };
+                if !allowed.contains(&frame) {
+                    continue;
+                }
+                let Some(end) = frame.checked_add(size) else {
+                    continue;
+                };
+                let finish = states
+                    .get(index + 1)
+                    .map_or(end, |&(address, _)| address)
+                    .min(end);
+                if state < low || state > high || start < frame || start >= finish {
+                    continue;
+                }
+                regions.push(unwind::Region {
+                    function,
+                    start,
+                    end: finish,
+                    landing_pad,
+                    catches: vec![name.clone()],
+                    cleanup: false,
+                });
+            }
+        }
+    }
+    regions
+}
+
 pub(super) fn discover(image: &mut Image) {
+    // Source debug ranges may include funclets with separate unwind frames.
+    for frame in unwind::frames(image) {
+        if !image.exception_handlers.iter().any(|handler| {
+            handler.function == frame.start && handler.name.as_deref() == Some("__CxxFrameHandler3")
+        }) {
+            continue;
+        }
+        if let Some(function) = image.functions.get_mut(&frame.start)
+            && function.size.is_some_and(|size| size > frame.size)
+        {
+            function.size = Some(frame.size);
+            function.size_estimated = false;
+        }
+    }
     for handler in &image.exception_handlers {
         let parent = image
             .functions

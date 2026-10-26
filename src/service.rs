@@ -641,6 +641,13 @@ impl Binary {
             0,
             &render::seh::comments(&self.image.exception_handlers, addr),
         );
+        rendered.code.insert_str(
+            0,
+            &render::seh::cpp_comments(&self.image.exception_regions, addr),
+        );
+        rendered
+            .code
+            .insert_str(0, &render::classes::comments(&ir, &self.image));
         if let Some(name) = identified {
             rendered.code.insert_str(
                 0,

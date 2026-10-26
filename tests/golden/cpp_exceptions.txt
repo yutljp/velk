@@ -1,0 +1,106 @@
+elf debug catch_one: regions=1
+/* try { protected code [0x201c91, 0x201c96) }
+   catch (Error) { handler L_201c98; }
+elf stripped catch_one: regions=1
+/* try { protected code [0x201c91, 0x201c96) }
+   catch (Error) { handler L_201c98; }
+elf debug catch_many: regions=1
+/* try { protected code [0x201cb3, 0x201cb8) }
+   catch (Error) { handler L_201cbf; }
+   catch (int) { handler L_201cbf; }
+   catch (...) { handler L_201cbf; }
+elf stripped catch_many: regions=1
+/* try { protected code [0x201cb3, 0x201cb8) }
+   catch (Error) { handler L_201cbf; }
+   catch (int) { handler L_201cbf; }
+   catch (...) { handler L_201cbf; }
+elf debug catch_nested: regions=2
+/* try { protected code [0x201d04, 0x201d09) }
+   catch (int) { handler L_201d11; }
+   catch (Error) { handler L_201d11; }
+/* try { protected code [0x201d27, 0x201d2c) }
+   catch (Error) { handler L_201d30; }
+   cleanup { handler L_201d30; }
+elf stripped catch_nested: regions=2
+/* try { protected code [0x201d04, 0x201d09) }
+   catch (int) { handler L_201d11; }
+   catch (Error) { handler L_201d11; }
+/* try { protected code [0x201d27, 0x201d2c) }
+   catch (Error) { handler L_201d30; }
+   cleanup { handler L_201d30; }
+elf debug catch_cleanup: regions=1
+/* try { protected code [0x201d7a, 0x201d81) }
+   catch (...) { handler L_201d93; }
+elf stripped catch_cleanup: regions=1
+/* try { protected code [0x201d7a, 0x201d81) }
+   catch (...) { handler L_201d93; }
+dll debug catch_one: regions=1
+/* try { protected code [0x1800012c2, 0x1800012cb) }
+   catch (Error &) { handler L_1800012e0; }
+dll stripped catch_one: regions=1
+/* try { protected code [0x1800012c2, 0x1800012cb) }
+   catch (Error &) { handler L_1800012e0; }
+dll debug catch_many: regions=1
+/* try { protected code [0x180001322, 0x18000132b) }
+   catch (Error &) { handler L_180001340; }
+   catch (int) { handler L_180001370; }
+   catch (...) { handler L_1800013a0; }
+dll stripped catch_many: regions=1
+/* try { protected code [0x180001322, 0x18000132b) }
+   catch (Error &) { handler L_180001340; }
+   catch (int) { handler L_180001370; }
+   catch (...) { handler L_1800013a0; }
+dll debug catch_nested: regions=2
+/* try { protected code [0x1800013e2, 0x1800013eb) }
+   catch (int) { handler L_180001430; }
+   catch (Error &) { handler L_180001400; }
+/* try { protected code [0x180001430, 0x180001457) }
+   catch (Error &) { handler L_180001400; }
+dll stripped catch_nested: regions=2
+/* try { protected code [0x1800013e2, 0x1800013eb) }
+   catch (int) { handler L_180001430; }
+   catch (Error &) { handler L_180001400; }
+/* try { protected code [0x180001430, 0x180001457) }
+   catch (Error &) { handler L_180001400; }
+dll debug catch_cleanup: regions=1
+/* try { protected code [0x18000148a, 0x180001495) }
+   catch (...) { handler L_1800014d0; }
+dll stripped catch_cleanup: regions=1
+/* try { protected code [0x18000148a, 0x180001495) }
+   catch (...) { handler L_1800014d0; }
+dylib debug catch_one: regions=1
+/* try { protected code [0x99c, 0x9a0) }
+   catch (Error) { handler L_9ac; }
+dylib stripped catch_one: regions=1
+/* try { protected code [0x99c, 0x9a0) }
+   catch (Error) { handler L_9ac; }
+dylib debug catch_many: regions=1
+/* try { protected code [0x9cc, 0x9d0) }
+   catch (Error) { handler L_9dc; }
+   catch (int) { handler L_9dc; }
+   catch (...) { handler L_9dc; }
+dylib stripped catch_many: regions=1
+/* try { protected code [0x9cc, 0x9d0) }
+   catch (Error) { handler L_9dc; }
+   catch (int) { handler L_9dc; }
+   catch (...) { handler L_9dc; }
+dylib debug catch_nested: regions=2
+/* try { protected code [0xa2c, 0xa30) }
+   catch (int) { handler L_a3c; }
+   catch (Error) { handler L_a3c; }
+/* try { protected code [0xa58, 0xa5c) }
+   catch (Error) { handler L_a64; }
+   cleanup { handler L_a64; }
+dylib stripped catch_nested: regions=2
+/* try { protected code [0xa2c, 0xa30) }
+   catch (int) { handler L_a3c; }
+   catch (Error) { handler L_a3c; }
+/* try { protected code [0xa58, 0xa5c) }
+   catch (Error) { handler L_a64; }
+   cleanup { handler L_a64; }
+dylib debug catch_cleanup: regions=1
+/* try { protected code [0xabc, 0xac0) }
+   catch (...) { handler L_ae0; }
+dylib stripped catch_cleanup: regions=1
+/* try { protected code [0xabc, 0xac0) }
+   catch (...) { handler L_ae0; }

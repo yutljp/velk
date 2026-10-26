@@ -42,6 +42,7 @@
       this.#id = id;
       Object.assign(this, info);
     }
+    classes() { return call("classes", { bin: this.#id }); }
     sections() { return call("sections", { bin: this.#id }); }
     functions({ name, named, minSize } = {}) {
       this.#functions ??= call("functions", { bin: this.#id }).map((row) => new Func(this.#id, row));

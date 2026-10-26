@@ -78,6 +78,11 @@ pub enum Request {
         /// Requested Mach-O architecture.
         arch: Option<crate::loader::Architecture>,
     },
+    /// Lists recovered C++ classes.
+    Classes {
+        /// Path identifying the binary to analyze.
+        bin: BinaryRef,
+    },
     /// Lists the binary sections.
     Sections {
         /// Path identifying the binary to analyze.
@@ -205,6 +210,13 @@ pub fn handle(
                 "sliceOffset": image.slice_offset,
                 "entry": image.entry.map(addr::format),
             }))
+        }
+        Request::Classes { bin } => {
+            let binary = match session.open_arch(&bin, bin.arch()) {
+                Ok(binary) => binary,
+                Err(error) => return Err(error),
+            };
+            Ok(json!(binary.image().classes()))
         }
         Request::Sections { bin } => {
             Ok(json!(session.open_arch(&bin, bin.arch())?.image().sections))

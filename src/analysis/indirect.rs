@@ -473,6 +473,11 @@ fn vtables(image: &Image) -> &BTreeSet<u64> {
             .filter_map(|(addr, _)| addr.checked_add(16))
             .filter(|point| read_only_word(image, *point).is_some())
             .collect();
+        for class in image.classes() {
+            for table in &class.vtables {
+                found.insert(table.address);
+            }
+        }
         if found.is_empty() && !image.go {
             let addressed = image
                 .addressed

@@ -525,7 +525,7 @@ fn replace_expressions(code: &str, replacements: &HashMap<String, String>) -> St
     output
 }
 
-fn identifier(name: &str) -> String {
+pub(super) fn identifier(name: &str) -> String {
     let name = super::sanitize(name);
     if name.is_empty()
         || name.starts_with(|c: char| c.is_ascii_digit())

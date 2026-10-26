@@ -4,7 +4,14 @@ use crate::ir::{BinOp, Expr, FunctionIr, Stmt, Table};
 
 use super::{Symbols, expr::Ctx};
 
-fn method(call: &Stmt, symbols: &Symbols) -> Option<(u64, String)> {
+#[derive(PartialEq, Eq, PartialOrd, Ord)]
+struct Method {
+    slot: u64,
+    name: String,
+    class: Option<usize>,
+}
+
+fn method(call: &Stmt, symbols: &Symbols) -> Option<Method> {
     let Stmt::Call {
         target: None,
         through: Some(_),
@@ -17,10 +24,37 @@ fn method(call: &Stmt, symbols: &Symbols) -> Option<(u64, String)> {
     if via.table != Table::Vtable || call.has_declared_call() {
         return None;
     }
+    let mut owner = None;
+    let mut ambiguous = via.candidates.is_empty();
+    for candidate in &via.candidates {
+        let mut owners = symbols.cpp_classes.iter().enumerate().filter(|(_, class)| {
+            class.vtables.iter().any(|table| {
+                table.offset == 0
+                    && table
+                        .methods
+                        .iter()
+                        .any(|method| method.slot == via.slot && method.address == *candidate)
+            })
+        });
+        let Some((index, _)) = owners.next() else {
+            ambiguous = true;
+            break;
+        };
+        if owners.next().is_some() || owner.is_some_and(|owner| owner != index) {
+            ambiguous = true;
+            break;
+        }
+        owner = Some(index);
+    }
+    let owner = (!ambiguous).then_some(owner).flatten();
     let mut signature = None;
     for candidate in &via.candidates {
         let Some(source) = symbols.cpp_methods.get(candidate) else {
-            return None;
+            return owner.map(|class| Method {
+                slot: via.slot,
+                name: format!("method_{}", via.slot),
+                class: Some(class),
+            });
         };
         if signature.is_some_and(|known| known != source) {
             return None;
@@ -37,7 +71,11 @@ fn method(call: &Stmt, symbols: &Symbols) -> Option<(u64, String)> {
     {
         return None;
     }
-    Some((via.slot, name.to_owned()))
+    Some(Method {
+        slot: via.slot,
+        name: name.to_owned(),
+        class: owner,
+    })
 }
 
 pub(super) fn prepare(ir: &mut FunctionIr, symbols: &Symbols) {
@@ -92,7 +130,8 @@ pub(super) fn prepare(ir: &mut FunctionIr, symbols: &Symbols) {
 
 #[derive(Default)]
 pub(super) struct Tables {
-    views: BTreeMap<(u64, String), (String, String)>,
+    views: BTreeMap<Method, (String, String)>,
+    bases: BTreeMap<String, Vec<(String, String, i64)>>,
 }
 
 impl Tables {
@@ -102,17 +141,52 @@ impl Tables {
                 .iter()
                 .map(|structure| super::sanitize(&structure.name)),
         );
+        reserved.extend(
+            ir.definitions
+                .iter()
+                .map(|definition| super::sanitize(&definition.name)),
+        );
+        reserved.extend(symbols.user_definitions.iter().cloned());
         let mut tables = Self::default();
         for call in ir.blocks.iter().flat_map(|block| &block.stmts) {
-            let Some(key @ (slot, _)) = method(call, symbols) else {
+            let Some(key) = method(call, symbols) else {
                 continue;
             };
+            let slot = key.slot;
             if slot > 4096 || tables.views.contains_key(&key) {
                 continue;
             }
-            let base = format!("velk_{}_slot_{slot}", key.1);
+            let class = key.class.map(|index| &symbols.cpp_classes[index]);
+            let base = class.map_or_else(
+                || format!("velk_{}_slot_{slot}", key.name),
+                |class| super::globals::identifier(&class.name),
+            );
             let table = super::vacant_name(&format!("{base}_vtable"), reserved);
-            let object = super::vacant_name(&format!("{base}_object"), reserved);
+            let object_base = if class.is_some() {
+                base.clone()
+            } else {
+                format!("{base}_object")
+            };
+            let object = super::vacant_name(&object_base, reserved);
+            if let Some(class) = class {
+                let mut bases = Vec::new();
+                let mut fields = HashSet::from(["vtable".to_owned()]);
+                for base in &class.bases {
+                    let Some(offset) = base.offset else {
+                        continue;
+                    };
+                    // A pointer-sized prefix can represent only disjoint, aligned bases.
+                    if offset < 0 || offset % 8 != 0 || offset > 0x100_0000 {
+                        continue;
+                    }
+                    let name = super::sanitize(&base.name);
+                    let field = super::vacant_name(&format!("base_{name}"), &mut fields);
+                    let tag = super::vacant_name(&format!("{name}_base"), reserved);
+                    bases.push((field, tag, offset));
+                }
+                bases.sort_by_key(|(_, _, offset)| *offset);
+                tables.bases.insert(object.clone(), bases);
+            }
             tables.views.insert(key, (table, object));
         }
         tables
@@ -120,13 +194,15 @@ impl Tables {
 
     pub(super) fn declarations(&self, body: &str) -> String {
         let mut out = String::new();
-        for ((slot, method), (table, object)) in &self.views {
+        for (key, (table, object)) in &self.views {
+            let slot = key.slot;
+            let method = &key.name;
             if !body.contains(&format!("struct {table} *"))
                 && !body.contains(&format!("struct {object} *"))
             {
                 continue;
             }
-            let padding = if *slot == 0 {
+            let padding = if slot == 0 {
                 String::new()
             } else {
                 let padding = if method == "slots" {
@@ -141,14 +217,35 @@ impl Tables {
                 "struct {table} {{ {padding}uint64_t (*{method})(); }};\n"
             ));
             if body.contains(&format!("struct {object} *")) {
-                out.push_str(&format!("struct {object} {{ struct {table} *vtable; }};\n"));
+                let mut fields = format!("struct {table} *vtable;");
+                let mut end = 8;
+                if let Some(bases) = self.bases.get(object) {
+                    for (index, (field, tag, offset)) in bases.iter().enumerate() {
+                        out.push_str(&format!("struct {tag} {{ unsigned char bytes[8]; }};\n"));
+                        if *offset == 0 && index == 0 {
+                            fields = format!(
+                                "union {{ struct {table} *vtable; struct {tag} {field}; }};"
+                            );
+                        } else if *offset >= end {
+                            if *offset > end {
+                                fields.push_str(&format!(
+                                    " unsigned char padding_{index}[{}];",
+                                    offset - end
+                                ));
+                            }
+                            fields.push_str(&format!(" struct {tag} {field};"));
+                            end = offset + 8;
+                        }
+                    }
+                }
+                out.push_str(&format!("struct {object} {{ {fields} }};\n"));
             }
         }
         out
     }
 
     pub(super) fn callee(&self, call: &Stmt, ctx: &Ctx<'_>) -> Option<String> {
-        let Some(key @ (slot, _)) = method(call, ctx.symbols) else {
+        let Some(key) = method(call, ctx.symbols) else {
             return None;
         };
         let Some((table, object)) = self.views.get(&key) else {
@@ -161,7 +258,7 @@ impl Tables {
         else {
             return None;
         };
-        let Some(offset) = slot.checked_mul(8) else {
+        let Some(offset) = key.slot.checked_mul(8) else {
             return None;
         };
         let base = match addr.as_ref() {
@@ -173,7 +270,7 @@ impl Tables {
             base if offset == 0 => base,
             _ => return None,
         };
-        let name = &key.1;
+        let name = &key.name;
         if let Expr::Load { addr, width: 8, .. } = base {
             let text = super::render_value(addr, ctx);
             return Some(format!("((struct {object} *)({text}))->vtable->{name}"));

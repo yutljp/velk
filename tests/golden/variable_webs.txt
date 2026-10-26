@@ -1,6 +1,6 @@
 # group: variables with unrelated webs before -> after splitting; live phi joins; fixed register bindings; variables with unknown successors
-C/C++ debug: 98 -> 0; 813; 1; 0
-C/C++ stripped: 86 -> 0; 691; 0; 0
+C/C++ debug: 101 -> 0; 817; 1; 0
+C/C++ stripped: 91 -> 0; 713; 1; 0
 Go: 6734 -> 0; 30546; 424; 2
 Rust: 8094 -> 0; 50589; 702; 189
 # alt.o | C/C++ stripped: 1 -> 0; 0; 0; 0
@@ -135,6 +135,12 @@ Rust: 8094 -> 0; 50589; 702; 189
 # codeview/structs.O2.stripped.dll | C/C++ stripped: 2 -> 0; 7; 0; 0
 # cold_gcc | C/C++ stripped: 4 -> 0; 10; 0; 0
 # cold_gcc_stripped | C/C++ stripped: 4 -> 0; 10; 0; 0
+# cpp/rtti.debug.dll | C/C++ debug: 1 -> 0; 0; 0; 0
+# cpp/rtti.debug.dylib | C/C++ stripped: 1 -> 0; 9; 0; 0
+# cpp/rtti.debug.elf | C/C++ debug: 2 -> 0; 4; 0; 0
+# cpp/rtti.stripped.dll | C/C++ stripped: 1 -> 0; 0; 1; 0
+# cpp/rtti.stripped.dylib | C/C++ stripped: 1 -> 0; 9; 0; 0
+# cpp/rtti.stripped.elf | C/C++ stripped: 2 -> 0; 4; 0; 0
 # cpp_classes_a64.o | C/C++ stripped: 0 -> 0; 12; 0; 0
 # cpp_classes_x64.o | C/C++ stripped: 0 -> 0; 10; 0; 0
 # cpp_demo.o | C/C++ stripped: 1 -> 0; 0; 0; 0

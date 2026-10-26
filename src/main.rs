@@ -35,7 +35,7 @@ const HELP_STYLES: Styles = Styles::styled()
     override_usage = "velk <OPERATION> [OPTIONS] [INPUT] [FUNCTION]",
     group(ArgGroup::new("operation").required(true).multiple(false).args([
         "annotate", "annotation", "annotations", "unannotate", "export_project", "import_project", "origins",
-        "functions", "sections", "card", "decompile", "disasm", "ir",
+        "functions", "classes", "sections", "card", "decompile", "disasm", "ir",
         "build_signatures", "identify", "run", "mcp", "xrefs", "callers", "callees", "path", "strings", "constants", "summary"
     ])),
     group(ArgGroup::new("multi_target").args(["decompile", "path"])),
@@ -73,6 +73,9 @@ struct Cli {
     /// List the discovered functions.
     #[arg(short = 'f', long, help_heading = "Operations (choose one)")]
     functions: bool,
+    /// List C++ classes, virtual tables and bases as JSON.
+    #[arg(long, help_heading = "Operations (choose one)")]
+    classes: bool,
     /// List the sections.
     #[arg(short = 's', long, help_heading = "Operations (choose one)")]
     sections: bool,
@@ -122,13 +125,13 @@ struct Cli {
     #[arg(long, help_heading = "Operations (choose one)")]
     summary: bool,
     /// References originating in the target function; only with --xrefs.
-    #[arg(long, requires = "xrefs", conflicts_with_all = ["functions", "sections", "card", "decompile", "disasm", "ir", "build_signatures", "identify", "run", "mcp", "callers", "callees", "path", "strings", "constants", "summary"])]
+    #[arg(long, requires = "xrefs", conflicts_with_all = ["classes", "functions", "sections", "card", "decompile", "disasm", "ir", "build_signatures", "identify", "run", "mcp", "callers", "callees", "path", "strings", "constants", "summary"])]
     from: bool,
     /// Maximum call depth; only with --callers, --callees or --path.
-    #[arg(long, requires = "graph", conflicts_with_all = ["functions", "sections", "card", "decompile", "disasm", "ir", "build_signatures", "identify", "run", "mcp", "xrefs", "strings", "constants", "summary"])]
+    #[arg(long, requires = "graph", conflicts_with_all = ["classes", "functions", "sections", "card", "decompile", "disasm", "ir", "build_signatures", "identify", "run", "mcp", "xrefs", "strings", "constants", "summary"])]
     depth: Option<usize>,
     /// Case-sensitive substring; only with --strings.
-    #[arg(long, requires = "strings", conflicts_with_all = ["functions", "sections", "card", "decompile", "disasm", "ir", "build_signatures", "identify", "run", "mcp", "xrefs", "callers", "callees", "path", "constants", "summary"])]
+    #[arg(long, requires = "strings", conflicts_with_all = ["classes", "functions", "sections", "card", "decompile", "disasm", "ir", "build_signatures", "identify", "run", "mcp", "xrefs", "callers", "callees", "path", "constants", "summary"])]
     contains: Option<String>,
     /// Binary file, or JavaScript file with --run; required except with --mcp.
     #[arg(
@@ -145,7 +148,7 @@ struct Cli {
             ("card", "true"), ("decompile", "true"),
             ("disasm", "true"), ("ir", "true"), ("xrefs", "true"), ("callers", "true"), ("callees", "true"), ("path", "true"), ("constants", "true"), ("summary", "true")
         ]),
-        conflicts_with_all = ["functions", "sections", "build_signatures", "identify", "run", "mcp", "strings", "annotations", "export_project"]
+        conflicts_with_all = ["classes", "functions", "sections", "build_signatures", "identify", "run", "mcp", "strings", "annotations", "export_project"]
     )]
     function: Option<String>,
     /// Destination for --path, or a second function to decompile.
@@ -153,29 +156,29 @@ struct Cli {
         value_name = "FUNCTION",
         requires = "multi_target",
         required_if_eq("path", "true"),
-        conflicts_with_all = ["functions", "sections", "card", "disasm", "ir", "build_signatures", "identify", "run", "mcp", "xrefs", "callers", "callees", "strings", "constants", "summary"])]
+        conflicts_with_all = ["classes", "functions", "sections", "card", "disasm", "ir", "build_signatures", "identify", "run", "mcp", "xrefs", "callers", "callees", "strings", "constants", "summary"])]
     destination: Option<String>,
     /// Additional functions to decompile; use '*' for all functions.
-    #[arg(value_name = "FUNCTION", requires = "decompile", conflicts_with_all = ["functions", "sections", "card", "disasm", "ir", "build_signatures", "identify", "run", "mcp", "xrefs", "callers", "callees", "path", "strings", "constants", "summary"])]
+    #[arg(value_name = "FUNCTION", requires = "decompile", conflicts_with_all = ["classes", "functions", "sections", "card", "disasm", "ir", "build_signatures", "identify", "run", "mcp", "xrefs", "callers", "callees", "path", "strings", "constants", "summary"])]
     additional_functions: Vec<String>,
     /// Maximum functions (default: 40), matches (default: 100), or instructions (default: all).
     #[arg(
         long,
         value_name = "N",
-        conflicts_with_all = ["annotate", "annotation", "annotations", "unannotate", "export_project", "import_project", "origins", "xrefs", "callers", "callees", "path", "strings", "constants", "summary", "sections", "card", "decompile", "ir", "build_signatures", "run", "mcp"]
+        conflicts_with_all = ["classes", "annotate", "annotation", "annotations", "unannotate", "export_project", "import_project", "origins", "xrefs", "callers", "callees", "path", "strings", "constants", "summary", "sections", "card", "decompile", "ir", "build_signatures", "run", "mcp"]
     )]
     limit: Option<usize>,
     #[arg(
         long,
         value_name = "TOKENS",
-        conflicts_with_all = ["annotate", "annotation", "annotations", "unannotate", "export_project", "import_project", "origins", "xrefs", "callers", "callees", "path", "strings", "constants", "summary", "functions", "sections", "decompile", "disasm", "ir", "build_signatures", "identify", "run", "mcp"],
+        conflicts_with_all = ["classes", "annotate", "annotation", "annotations", "unannotate", "export_project", "import_project", "origins", "xrefs", "callers", "callees", "path", "strings", "constants", "summary", "functions", "sections", "decompile", "disasm", "ir", "build_signatures", "identify", "run", "mcp"],
         help = format!("Approximate card size in tokens (default: {}); only with --card", card::DEFAULT_BUDGET)
     )]
     budget: Option<usize>,
     /// Print the function list as JSON; only with --functions.
     #[arg(
         long,
-        conflicts_with_all = ["annotate", "annotation", "annotations", "unannotate", "export_project", "import_project", "origins", "xrefs", "callers", "callees", "path", "strings", "constants", "summary", "sections", "card", "decompile", "disasm", "ir", "build_signatures", "identify", "run", "mcp"]
+        conflicts_with_all = ["classes", "annotate", "annotation", "annotations", "unannotate", "export_project", "import_project", "origins", "xrefs", "callers", "callees", "path", "strings", "constants", "summary", "sections", "card", "decompile", "disasm", "ir", "build_signatures", "identify", "run", "mcp"]
     )]
     json: bool,
     /// Signature database; required for --identify, optional for --card and --decompile.
@@ -183,7 +186,7 @@ struct Cli {
         long,
         value_name = "FILE",
         required_if_eq("identify", "true"),
-        conflicts_with_all = ["annotate", "annotation", "annotations", "unannotate", "export_project", "import_project", "origins", "xrefs", "callers", "callees", "path", "strings", "constants", "summary", "functions", "sections", "disasm", "ir", "build_signatures", "run", "mcp"]
+        conflicts_with_all = ["classes", "annotate", "annotation", "annotations", "unannotate", "export_project", "import_project", "origins", "xrefs", "callers", "callees", "path", "strings", "constants", "summary", "functions", "sections", "disasm", "ir", "build_signatures", "run", "mcp"]
     )]
     signatures: Option<PathBuf>,
     /// Signature database to write; required with --build-signatures.
@@ -191,7 +194,7 @@ struct Cli {
         long,
         value_name = "FILE",
         required_if_eq("build_signatures", "true"),
-        conflicts_with_all = ["annotate", "annotation", "annotations", "unannotate", "export_project", "import_project", "origins", "xrefs", "callers", "callees", "path", "strings", "constants", "summary", "functions", "sections", "card", "decompile", "disasm", "ir", "identify", "run", "mcp"]
+        conflicts_with_all = ["classes", "annotate", "annotation", "annotations", "unannotate", "export_project", "import_project", "origins", "xrefs", "callers", "callees", "path", "strings", "constants", "summary", "functions", "sections", "card", "decompile", "disasm", "ir", "identify", "run", "mcp"]
     )]
     output: Option<PathBuf>,
 }
@@ -206,6 +209,9 @@ enum Command {
         path: PathBuf,
         limit: usize,
         json: bool,
+    },
+    Classes {
+        path: PathBuf,
     },
     Sections {
         path: PathBuf,
@@ -293,6 +299,11 @@ impl Cli {
             };
         }
         match self {
+            Self {
+                classes: true,
+                input: Some(path),
+                ..
+            } => Command::Classes { path },
             Self {
                 functions: true,
                 input: Some(path),
@@ -513,6 +524,13 @@ fn run(
             } else {
                 cli_output::print_functions(&binary, limit);
             }
+        }
+        Command::Classes { path } => {
+            let binary = match Binary::open_with_options(&path, project, arch) {
+                Ok(binary) => binary,
+                Err(error) => return Err(error),
+            };
+            println!("{:#}", json!(binary.image().classes()));
         }
         Command::Sections { path } => {
             cli_output::print_sections(&Binary::open_with_options(&path, project, arch)?)

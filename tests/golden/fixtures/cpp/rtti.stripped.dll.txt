@@ -1,0 +1,1039 @@
+# cpp/rtti.stripped.dll: pe x86_64 no entry, 39 functions, 0 lift failures, 0 unsupported, 0 gotos
+0x180001020 32 - rtti
+0x180001040 32 - unwind
+0x180001060 48 - rtti
+0x180001090 32 - rtti
+0x1800010b0 52 - unwind
+0x1800010f0 16 - rtti
+0x180001100 32 - rtti
+0x180001120 80 - unwind
+0x180001170 32 - rtti
+0x180001190 16 dispatch dynamic
+0x1800011a0 16 dispatch_multiple dynamic
+0x1800011b0 63 single dynamic,unwind
+0x1800011f0 32 - unwind
+0x180001210 48 multiple dynamic,unwind
+0x180001240 78 virtual_base dynamic,unwind
+0x180001290 32 - unwind
+0x1800012b0 36 catch_one dynamic,unwind
+0x1800012e0 36 catch_one__catch_0 unwind
+0x180001310 36 catch_many dynamic,unwind
+0x180001340 38 catch_many__catch_0 unwind
+0x180001370 36 catch_many__catch_1 unwind
+0x1800013a0 34 catch_many__catch_2 unwind
+0x1800013d0 36 catch_nested dynamic,unwind
+0x180001400 39 catch_nested__catch_1 unwind
+0x180001430 39 catch_nested__catch_0 unwind
+0x180001460 72 catch_cleanup dynamic,unwind
+0x1800014b0 32 - unwind
+0x1800014d0 36 catch_cleanup__catch_0 unwind
+0x180001530 15 - rtti
+0x180001550 9 - rtti
+0x180001560 15 - rtti
+0x180001570 35 - unwind
+0x1800015a0 35 - unwind
+0x1800015d0 45 - unwind
+0x180001600 35 - unwind,rtti
+0x180001630 52 - unwind,rtti
+0x180001670 16 ??_7type_info@@6B@ plt
+0x180001680 16 __CxxFrameHandler3 plt
+0x180001690 6 ?imported_value@@YAHH@Z plt
+/* velk prelude */
+#include <stdint.h>
+
+extern uint32_t g_1800030e0; /* address: 0x1800030e0 */
+extern uint8_t Multiple_vtable_0; /* address: 0x180002048 */
+extern uint8_t Multiple_vtable_16; /* address: 0x180002068 */
+extern uint8_t Single_vtable_0; /* address: 0x180002028 */
+extern uint8_t Virtual_vtable_24; /* address: 0x180002088 */
+
+uint64_t _imported_value__YAHH_Z();
+uint64_t dispatch();
+uint64_t sub_180001000();
+uint64_t sub_180001040();
+uint64_t sub_180001060();
+uint64_t sub_180001070();
+uint64_t sub_1800010b0();
+uint64_t sub_180001100();
+uint64_t sub_180001120();
+uint64_t sub_180001170();
+uint64_t sub_180001510();
+uint64_t sub_180001520();
+uint64_t sub_180001540();
+uint64_t sub_180001600();
+uint64_t sub_180001630();
+/* end velk prelude */
+
+== 0x180001020 -
+-- decompile
+/* velk pseudo-C: sub_180001020 @ 0x180001020 */
+int32_t sub_180001020(uint32_t *a0) {
+    uint64_t v1;
+
+    return a0[2];
+L_180001024:
+    return v1;
+}
+-- signature
+int32_t (uint32_t * a0)
+-- references
+
+-- ir
+fn <unnamed> @ 0x180001020 (size 32)
+  blk0 @ 0x180001020:
+    ret load32((rcx + #0x8))
+  blk1 @ 0x180001024:
+    ret eax
+-- card
+{"accesses":["a0 +0x8:uint32_t"],"addr":"0x180001020","approxTokens":108,"blocks":2,"hardReasons":[],"name":null,"nameSources":["rtti"],"section":".text","size":32,"sizeEstimated":true,"unsupported":0}
+
+== 0x180001040 -
+-- decompile
+/* C++ object initialization or destruction: Single vtable at 0x180002028. */
+/* velk pseudo-C: sub_180001040 @ 0x180001040 */
+/* ref: 0x180002028 .rdata */
+uint64_t *sub_180001040(uint64_t *a0) {
+    sub_180001000();
+    *a0 = (uintptr_t)(&Single_vtable_0);
+    return a0;
+}
+-- signature
+uint64_t * (uint64_t * a0)
+-- references
+0x180002028 .rdata
+-- ir
+fn <unnamed> @ 0x180001040 (size 32)
+  blk0 @ 0x180001040:
+    v1 = rcx
+    rax, xmm0 = call 0x180001000
+    store64(#0x180002028, v1)
+    ret v1
+-- card
+{"accesses":["a0 +0x0:uint64_t"],"addr":"0x180001040","approxTokens":156,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind"],"section":".text","size":32,"unsupported":0}
+
+== 0x180001060 -
+-- decompile
+/* C++ object initialization or destruction: Single vtable at 0x180002028. */
+/* velk pseudo-C: sub_180001060 @ 0x180001060 */
+/* ref: 0x180002028 .rdata */
+/* ref: 0x1800030e0 .data */
+struct S1 { int64_t field_0x0; int32_t field_0x8; };
+int32_t sub_180001060(struct S1 *a0) {
+    return a0->field_0x8 + 1;
+L_180001066:
+    a0->field_0x0 = (uintptr_t)(&Single_vtable_0);
+    g_1800030e0 += 1;
+    return (uintptr_t)(&Single_vtable_0);
+}
+-- signature
+int32_t (struct S1 * a0)
+-- references
+0x180002028 .rdata
+0x1800030e0 .data
+-- ir
+fn <unnamed> @ 0x180001060 (size 48)
+  blk0 @ 0x180001060:
+    ret ((load32((rcx + #0x8)) + #0x1) & #0xffffffff)
+  blk1 @ 0x180001066:
+    store64(#0x180002028, rcx)
+    store32((load32(#0x1800030e0) + #0x1), #0x1800030e0)
+    ret #0x180002028
+-- card
+{"accesses":["a0 +0x0:uint64_t, +0x8:uint32_t"],"addr":"0x180001060","approxTokens":114,"blocks":2,"hardReasons":[],"name":null,"nameSources":["rtti"],"section":".text","size":48,"sizeEstimated":true,"structures":["struct S1 { int64_t field_0x0; int32_t field_0x8; };"],"unsupported":0}
+
+== 0x180001090 -
+-- decompile
+/* velk pseudo-C: sub_180001090 @ 0x180001090 */
+int64_t sub_180001090(void) {
+    uint64_t v1;
+
+    return 7;
+L_180001096:
+    return v1;
+}
+-- signature
+int64_t ()
+-- references
+
+-- ir
+fn <unnamed> @ 0x180001090 (size 32)
+  blk0 @ 0x180001090:
+    ret #0x7
+  blk1 @ 0x180001096:
+    ret rax
+-- card
+{"addr":"0x180001090","approxTokens":108,"blocks":2,"hardReasons":[],"name":null,"nameSources":["rtti"],"section":".text","size":32,"sizeEstimated":true,"unsupported":0}
+
+== 0x1800010b0 -
+-- decompile
+/* C++ object initialization or destruction: Multiple vtable at 0x180002048. */
+/* C++ object initialization or destruction: Multiple vtable at 0x180002068. */
+/* velk pseudo-C: sub_1800010b0 @ 0x1800010b0 */
+/* ref: 0x180002048 .rdata */
+/* ref: 0x180002068 .rdata */
+struct S1 { int64_t field_0x0; uint8_t gap_0x8[0x8]; int64_t field_0x10; };
+struct S1 *sub_1800010b0(struct S1 *a0) {
+    sub_180001000();
+    sub_180001520((uint8_t *)a0 + 0x10);
+    a0->field_0x0 = (uintptr_t)(&Multiple_vtable_0);
+    a0->field_0x10 = (uintptr_t)(&Multiple_vtable_16);
+    return a0;
+}
+-- signature
+struct S1 * (struct S1 * a0)
+-- references
+0x180002048 .rdata
+0x180002068 .rdata
+-- ir
+fn <unnamed> @ 0x1800010b0 (size 52)
+  blk0 @ 0x1800010b0:
+    v1 = rcx
+    rax, xmm0 = call 0x180001000
+    rax, xmm0 = call 0x180001520((v1 + #0x10))
+    store64(#0x180002048, v1)
+    store64(#0x180002068, (v1 + #0x10))
+    ret v1
+-- card
+{"accesses":["a0 +0x0:uint64_t, +0x10:uint64_t"],"addr":"0x1800010b0","approxTokens":180,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind"],"section":".text","size":52,"structures":["struct S1 { int64_t field_0x0; uint8_t gap_0x8[0x8]; int64_t field_0x10; };"],"unsupported":0}
+
+== 0x1800010f0 -
+-- decompile
+/* velk pseudo-C: sub_1800010f0 @ 0x1800010f0 */
+int32_t sub_1800010f0(uint32_t *a0) {
+    return a0[2] + 2;
+}
+-- signature
+int32_t (uint32_t * a0)
+-- references
+
+-- ir
+fn <unnamed> @ 0x1800010f0 (size 16)
+  blk0 @ 0x1800010f0:
+    ret ((load32((rcx + #0x8)) + #0x2) & #0xffffffff)
+-- card
+{"accesses":["a0 +0x8:uint32_t"],"addr":"0x1800010f0","approxTokens":114,"blocks":1,"hardReasons":[],"name":null,"nameSources":["rtti"],"section":".text","size":16,"sizeEstimated":true,"unsupported":0}
+
+== 0x180001100 -
+-- decompile
+/* velk pseudo-C: sub_180001100 @ 0x180001100 */
+int32_t sub_180001100(uint32_t *a0) {
+    uint64_t v1;
+
+    return a0[-2] + 3;
+L_180001107:
+    return v1;
+}
+-- signature
+int32_t (uint32_t * a0)
+-- references
+
+-- ir
+fn <unnamed> @ 0x180001100 (size 32)
+  blk0 @ 0x180001100:
+    ret ((load32((rcx + #0xfffffffffffffff8)) + #0x3) & #0xffffffff)
+  blk1 @ 0x180001107:
+    ret eax
+-- card
+{"accesses":["a0 +0xfffffffffffffff8:uint32_t"],"addr":"0x180001100","approxTokens":114,"blocks":2,"hardReasons":[],"name":null,"nameSources":["rtti"],"section":".text","size":32,"sizeEstimated":true,"unsupported":0}
+
+== 0x180001120 -
+-- decompile
+/* C++ object initialization or destruction: Virtual vtable at 0x180002088. */
+/* velk pseudo-C: sub_180001120 @ 0x180001120 */
+/* ref: 0x180002078 .rdata */
+/* ref: 0x180002088 .rdata */
+uint64_t *sub_180001120(uint64_t *a0, int64_t a1, int32_t a2) {
+    if (a2 != 0) {
+        *a0 = 0x180002078;
+        sub_180001000(a0 + 0x3);
+    }
+    *(uint64_t *)((uint8_t *)a0 + *(int32_t *)(*a0 + 0x4)) = (uintptr_t)(&Virtual_vtable_24);
+    int64_t v3 = *(int32_t *)(*a0 + 0x4);
+    *(uint32_t *)((uint8_t *)a0 + v3 - 0x4) = v3 - 24;
+    *(uint32_t *)(a0 + 0x1) = 4;
+    return a0;
+}
+-- signature
+uint64_t * (uint64_t * a0, int64_t a1, int32_t a2)
+-- references
+0x180002078 .rdata
+0x180002088 .rdata
+-- ir
+fn <unnamed> @ 0x180001120 (size 80)
+  blk0 @ 0x180001120:
+    v1 = rcx
+    brif eq (r8 & #0xffffffff), #0x0 -> 0x180001140
+  blk1 @ 0x18000112d:
+    store64(#0x180002078, v1)
+    rax, xmm0 = call 0x180001000((v1 + #0x18))
+  blk2 @ 0x180001140:
+    store64(#0x180002088, (v1 + sext32(load32((load64(v1) + #0x4)))))
+    v3 = sext32(load32((load64(v1) + #0x4)))
+    store32((v3 + #0xffffffffffffffe8), ((v1 + v3) + #0xfffffffffffffffc))
+    store32(#0x4, (v1 + #0x8))
+    ret v1
+-- card
+{"accesses":["a0 +0x0:uint64_t, +0x8:uint32_t"],"addr":"0x180001120","approxTokens":228,"blocks":3,"hardReasons":[],"name":null,"nameSources":["unwind"],"section":".text","size":80,"unsupported":0}
+
+== 0x180001170 -
+-- decompile
+/* velk pseudo-C: sub_180001170 @ 0x180001170 */
+int64_t sub_180001170(uint64_t *a0) {
+    uint64_t v1;
+
+    return *(uint32_t *)(a0 - 0x2) + *(uint32_t *)((uint8_t *)a0 + *(int32_t *)(a0[-3] + 0x4) - 0x10);
+L_180001180:
+    return v1;
+}
+-- signature
+int64_t (uint64_t * a0)
+-- references
+
+-- ir
+fn <unnamed> @ 0x180001170 (size 32)
+  blk0 @ 0x180001170:
+    ret ((load32((rcx + #0xfffffffffffffff0)) + load32(((rcx + sext32(load32((load64((rcx + #0xffffffffffffffe8)) + #0x4)))) + #0xfffffffffffffff0))) & #0xffffffff)
+  blk1 @ 0x180001180:
+    ret rax
+-- card
+{"accesses":["a0 +0xffffffffffffffe8:uint64_t, +0xfffffffffffffff0:uint32_t"],"addr":"0x180001170","approxTokens":126,"blocks":2,"hardReasons":[],"name":null,"nameSources":["rtti"],"section":".text","size":32,"sizeEstimated":true,"unsupported":0}
+
+== 0x180001190 dispatch
+-- decompile
+/* velk pseudo-C: dispatch @ 0x180001190 */
+int32_t dispatch(uint64_t *a0) {
+    uint64_t *v1 = (uint64_t *)*a0;
+    return ((uint64_t (*)())*v1)(a0); /* vtable slot 0 */
+}
+-- signature
+int32_t (uint64_t * a0)
+-- references
+
+-- ir
+fn dispatch @ 0x180001190 (size 16)
+  blk0 @ 0x180001190:
+    v1 = load64(rcx)
+    v2:rax, xmm0 = call *load64(v1)(rcx)
+    ret v2
+-- card
+{"accesses":["a0 +0x0:uint64_t"],"addr":"0x180001190","approxTokens":114,"blocks":1,"hardReasons":[],"name":"dispatch","nameSources":["dynamic"],"section":".text","size":16,"sizeEstimated":true,"unsupported":0}
+
+== 0x1800011a0 dispatch_multiple
+-- decompile
+/* velk pseudo-C: dispatch_multiple @ 0x1800011a0 */
+int32_t dispatch_multiple(uint64_t *a0) {
+    uint64_t *v1 = (uint64_t *)a0[2];
+    return ((uint64_t (*)())*v1)(a0 + 0x2);
+}
+-- signature
+int32_t (uint64_t * a0)
+-- references
+
+-- ir
+fn dispatch_multiple @ 0x1800011a0 (size 16)
+  blk0 @ 0x1800011a0:
+    v1 = load64((rcx + #0x10))
+    v3:rax, xmm0 = call *load64(v1)((rcx + #0x10))
+    ret v3
+-- card
+{"addr":"0x1800011a0","approxTokens":120,"blocks":1,"hardReasons":[],"name":"dispatch_multiple","nameSources":["dynamic"],"section":".text","size":16,"sizeEstimated":true,"unsupported":0}
+
+== 0x1800011b0 single
+-- decompile
+/* Windows x64 exception handler: __CxxFrameHandler3 at 0x180001680, data at 0x180002530. */
+/* Exception metadata only; exception dispatch is not represented by standard C. */
+/* velk pseudo-C: single @ 0x1800011b0 */
+int32_t single(void) {
+    _Alignas(16) struct __attribute__((packed)) { uint8_t gap_0[0x10]; int64_t f_10; } local_0; /* [sp-28] */
+
+    local_0.f_10 = -2;
+    sub_180001040(local_0.gap_0);
+    int32_t v2 = dispatch(local_0.gap_0);
+    sub_180001070(local_0.gap_0);
+    return v2;
+}
+-- signature
+int32_t ()
+-- references
+
+-- ir
+fn single @ 0x1800011b0 (size 63)
+  blk0 @ 0x1800011b0:
+    store64(#0xfffffffffffffffe, (rsp + #0xffffffffffffffe8))
+    v1 = (rsp + #0xffffffffffffffd8)
+    rax, xmm0 = call 0x180001040(v1)
+    v2:rax, xmm0 = call 0x180001190(v1)
+    rax = call 0x180001070((rsp + #0xffffffffffffffd8))
+    ret (v2 & #0xffffffff)
+-- card
+{"addr":"0x1800011b0","approxTokens":222,"blocks":1,"hardReasons":[],"name":"single","nameSources":["dynamic","unwind"],"section":".text","size":63,"unsupported":0}
+
+== 0x1800011f0 -
+-- decompile
+/* velk pseudo-C: sub_1800011f0 @ 0x1800011f0 */
+int32_t sub_1800011f0(int64_t a0, int64_t a1) {
+    return sub_180001070(a1 + 32);
+}
+-- signature
+int32_t (int64_t a0, int64_t a1)
+-- references
+
+-- ir
+fn <unnamed> @ 0x1800011f0 (size 32)
+  blk0 @ 0x1800011f0:
+    v2:rax = call 0x180001070((rdx + #0x20))
+    ret v2
+-- card
+{"addr":"0x1800011f0","approxTokens":168,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind"],"section":".text","size":32,"unsupported":0}
+
+== 0x180001210 multiple
+-- decompile
+/* velk pseudo-C: multiple @ 0x180001210 */
+int32_t multiple(void) {
+    _Alignas(16) uint8_t local_0[0x10]; /* [sp-20] */
+    _Alignas(16) uint8_t local_1[0x8]; /* [sp-10] */
+
+    sub_1800010b0(local_0);
+    int32_t v2 = dispatch(local_0);
+    return ((int32_t)(sub_180001100(local_1))) + v2;
+}
+-- signature
+int32_t ()
+-- references
+
+-- ir
+fn multiple @ 0x180001210 (size 48)
+  blk0 @ 0x180001210:
+    v1 = (rsp + #0xffffffffffffffe0)
+    rax, xmm0 = call 0x1800010b0(v1)
+    v2:rax, xmm0 = call 0x180001190(v1)
+    v4:rax = call 0x180001100((rsp + #0xfffffffffffffff0))
+    ret (((v4 & #0xffffffff) + (v2 & #0xffffffff)) & #0xffffffff)
+-- card
+{"addr":"0x180001210","approxTokens":186,"blocks":1,"hardReasons":[],"name":"multiple","nameSources":["dynamic","unwind"],"section":".text","size":48,"structures":["struct S1 { int64_t field_0x0; uint8_t gap_0x8[0x8]; int64_t field_0x10; };"],"unsupported":0}
+
+== 0x180001240 virtual_base
+-- decompile
+/* Windows x64 exception handler: __CxxFrameHandler3 at 0x180001680, data at 0x1800025a0. */
+/* Exception metadata only; exception dispatch is not represented by standard C. */
+/* velk pseudo-C: virtual_base @ 0x180001240 */
+int32_t virtual_base(void) {
+    _Alignas(16) struct __attribute__((packed)) { uint32_t *f_0; uint8_t gap_8[0x20]; int64_t f_28; } local_0; /* [sp-40] */
+
+    local_0.f_28 = -2;
+    sub_180001120((uint8_t *)&local_0, 0, 1);
+    int32_t v2 = dispatch((uint8_t *)((uintptr_t)((uint8_t *)&local_0) + (int32_t)local_0.f_0[1]));
+    sub_180001540((uint8_t *)&local_0);
+    return v2;
+}
+-- signature
+int32_t ()
+-- references
+
+-- ir
+fn virtual_base @ 0x180001240 (size 78)
+  blk0 @ 0x180001240:
+    store64(#0xfffffffffffffffe, (rsp + #0xffffffffffffffe8))
+    rax, xmm0 = call 0x180001120((rsp + #0xffffffffffffffc0), #0x0, #0x1)
+    v2:rax, xmm0 = call 0x180001190(((sext32(load32((load64((rsp + #0xffffffffffffffc0)) + #0x4))) + (rsp + #0xffffffffffffffe8)) + #0xffffffffffffffd8))
+    rax, xmm0 = call 0x180001540((rsp + #0xffffffffffffffc0))
+    ret (v2 & #0xffffffff)
+-- card
+{"addr":"0x180001240","approxTokens":234,"blocks":1,"hardReasons":[],"name":"virtual_base","nameSources":["dynamic","unwind"],"section":".text","size":78,"unsupported":0}
+
+== 0x180001290 -
+-- decompile
+/* velk pseudo-C: sub_180001290 @ 0x180001290 */
+int32_t sub_180001290(int64_t a0, int64_t a1) {
+    return sub_180001540(a1 + 40);
+}
+-- signature
+int32_t (int64_t a0, int64_t a1)
+-- references
+
+-- ir
+fn <unnamed> @ 0x180001290 (size 32)
+  blk0 @ 0x180001290:
+    v3:rax, xmm0 = call 0x180001540((rdx + #0x28))
+    ret v3
+-- card
+{"addr":"0x180001290","approxTokens":168,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind"],"section":".text","size":32,"unsupported":0}
+
+== 0x1800012b0 catch_one
+-- decompile
+/* try { protected code [0x1800012c2, 0x1800012cb) }
+   catch (Error &) { handler L_1800012e0; }
+   Exception dispatch is described by unwind metadata. */
+/* Windows x64 exception handler: __CxxFrameHandler3 at 0x180001680, data at 0x18000260c. */
+/* Exception metadata only; exception dispatch is not represented by standard C. */
+/* C++ try states [0, 0]: catch handler at 0x1800012e0. */
+/* velk pseudo-C: catch_one @ 0x1800012b0 */
+/* ref: 0x180002488 .rdata */
+int32_t catch_one(void) {
+    uint32_t local_1; /* [sp-1c] */
+
+    int32_t v1 = _imported_value__YAHH_Z();
+    local_1 = v1;
+    return v1;
+}
+-- signature
+int32_t ()
+-- references
+0x180002488 .rdata
+-- ir
+fn catch_one @ 0x1800012b0 (size 36)
+  blk0 @ 0x1800012b0:
+    store64(#0xfffffffffffffffe, (rsp + #0xffffffffffffffe8))
+    v1:rax, xmm0 = call *load64(#0x180002488)
+    store32(v1, (rsp + #0xffffffffffffffe4))
+    ret (v1 & #0xffffffff)
+-- card
+{"addr":"0x1800012b0","approxTokens":156,"blocks":1,"hardReasons":[],"name":"catch_one","nameSources":["dynamic","unwind"],"section":".text","size":36,"unsupported":0}
+
+== 0x1800012e0 catch_one__catch_0
+-- decompile
+/* Windows x64 exception handler: __CxxFrameHandler3 at 0x180001680, data at 0x18000260c. */
+/* Exception metadata only; exception dispatch is not represented by standard C. */
+/* C++ try states [0, 0]: catch handler at 0x1800012e0. */
+/* velk pseudo-C: catch_one__catch_0 @ 0x1800012e0 */
+int32_t catch_one__catch_0(int64_t a0, uint64_t *a1) {
+    uint8_t *v1 = (uint8_t *)(a1 + 0x8);
+    *(uint32_t *)(v1 - 0x14) = *(uint32_t *)(*(uint64_t *)(v1 - 0x8));
+    return -2147478837;
+}
+-- signature
+int32_t (int64_t a0, uint64_t * a1)
+-- references
+
+-- ir
+fn catch_one__catch_0 @ 0x1800012e0 (size 36)
+  blk0 @ 0x1800012e0:
+    v1 = (rdx + #0x40)
+    store32(load32(load64((v1 + #0xfffffffffffffff8))), (v1 + #0xffffffffffffffec))
+    ret #0x1800012cb
+-- card
+{"addr":"0x1800012e0","approxTokens":162,"blocks":1,"hardReasons":[],"name":"catch_one__catch_0","nameSources":["unwind"],"section":".text","size":36,"unsupported":0}
+
+== 0x180001310 catch_many
+-- decompile
+/* try { protected code [0x180001322, 0x18000132b) }
+   catch (Error &) { handler L_180001340; }
+   catch (int) { handler L_180001370; }
+   catch (...) { handler L_1800013a0; }
+   Exception dispatch is described by unwind metadata. */
+/* Windows x64 exception handler: __CxxFrameHandler3 at 0x180001680, data at 0x1800026d0. */
+/* Exception metadata only; exception dispatch is not represented by standard C. */
+/* C++ try states [0, 0]: catch handler at 0x180001340. */
+/* C++ try states [0, 0]: catch handler at 0x180001370. */
+/* C++ try states [0, 0]: catch handler at 0x1800013a0. */
+/* velk pseudo-C: catch_many @ 0x180001310 */
+/* ref: 0x180002488 .rdata */
+int32_t catch_many(void) {
+    uint32_t local_1; /* [sp-24] */
+
+    int32_t v1 = _imported_value__YAHH_Z();
+    local_1 = v1;
+    return v1;
+}
+-- signature
+int32_t ()
+-- references
+0x180002488 .rdata
+-- ir
+fn catch_many @ 0x180001310 (size 36)
+  blk0 @ 0x180001310:
+    store64(#0xfffffffffffffffe, (rsp + #0xffffffffffffffe0))
+    v1:rax, xmm0 = call *load64(#0x180002488)
+    store32(v1, (rsp + #0xffffffffffffffdc))
+    ret (v1 & #0xffffffff)
+-- card
+{"addr":"0x180001310","approxTokens":156,"blocks":1,"hardReasons":[],"name":"catch_many","nameSources":["dynamic","unwind"],"section":".text","size":36,"unsupported":0}
+
+== 0x180001340 catch_many__catch_0
+-- decompile
+/* Windows x64 exception handler: __CxxFrameHandler3 at 0x180001680, data at 0x1800026d0. */
+/* Exception metadata only; exception dispatch is not represented by standard C. */
+/* C++ try states [0, 0]: catch handler at 0x180001340. */
+/* C++ try states [0, 0]: catch handler at 0x180001370. */
+/* C++ try states [0, 0]: catch handler at 0x1800013a0. */
+/* velk pseudo-C: catch_many__catch_0 @ 0x180001340 */
+int32_t catch_many__catch_0(int64_t a0, uint64_t *a1) {
+    uint8_t *v1 = (uint8_t *)(a1 + 0x8);
+    *(uint32_t *)(v1 - 0x1c) = *(uint32_t *)(*(uint64_t *)(v1 - 0x8)) + 1;
+    return -2147478741;
+}
+-- signature
+int32_t (int64_t a0, uint64_t * a1)
+-- references
+
+-- ir
+fn catch_many__catch_0 @ 0x180001340 (size 38)
+  blk0 @ 0x180001340:
+    v1 = (rdx + #0x40)
+    store32((load32(load64((v1 + #0xfffffffffffffff8))) + #0x1), (v1 + #0xffffffffffffffe4))
+    ret #0x18000132b
+-- card
+{"addr":"0x180001340","aliases":["catch_many__catch_1__catch_0","catch_many__catch_2__catch_0"],"approxTokens":168,"blocks":1,"hardReasons":[],"name":"catch_many__catch_0","nameSources":["unwind"],"section":".text","size":38,"unsupported":0}
+
+== 0x180001370 catch_many__catch_1
+-- decompile
+/* Windows x64 exception handler: __CxxFrameHandler3 at 0x180001680, data at 0x1800026d0. */
+/* Exception metadata only; exception dispatch is not represented by standard C. */
+/* C++ try states [0, 0]: catch handler at 0x180001340. */
+/* C++ try states [0, 0]: catch handler at 0x180001370. */
+/* C++ try states [0, 0]: catch handler at 0x1800013a0. */
+/* velk pseudo-C: catch_many__catch_1 @ 0x180001370 */
+int32_t catch_many__catch_1(int64_t a0, uint32_t *a1) {
+    uint32_t *v1 = a1 + 0x10;
+    v1[-7] = v1[-3] + 2;
+    return -2147478741;
+}
+-- signature
+int32_t (int64_t a0, uint32_t * a1)
+-- references
+
+-- ir
+fn catch_many__catch_1 @ 0x180001370 (size 36)
+  blk0 @ 0x180001370:
+    v1 = (rdx + #0x40)
+    store32((load32((v1 + #0xfffffffffffffff4)) + #0x2), (v1 + #0xffffffffffffffe4))
+    ret #0x18000132b
+-- card
+{"addr":"0x180001370","aliases":["catch_many__catch_0__catch_1","catch_many__catch_2__catch_1"],"approxTokens":162,"blocks":1,"hardReasons":[],"name":"catch_many__catch_1","nameSources":["unwind"],"section":".text","size":36,"unsupported":0}
+
+== 0x1800013a0 catch_many__catch_2
+-- decompile
+/* Windows x64 exception handler: __CxxFrameHandler3 at 0x180001680, data at 0x1800026d0. */
+/* Exception metadata only; exception dispatch is not represented by standard C. */
+/* C++ try states [0, 0]: catch handler at 0x180001340. */
+/* C++ try states [0, 0]: catch handler at 0x180001370. */
+/* C++ try states [0, 0]: catch handler at 0x1800013a0. */
+/* velk pseudo-C: catch_many__catch_2 @ 0x1800013a0 */
+int32_t catch_many__catch_2(int64_t a0, uint32_t *a1) {
+    a1[9] = 0xffffffff;
+    return -2147478741;
+}
+-- signature
+int32_t (int64_t a0, uint32_t * a1)
+-- references
+
+-- ir
+fn catch_many__catch_2 @ 0x1800013a0 (size 34)
+  blk0 @ 0x1800013a0:
+    store32(#0xffffffff, (rdx + #0x24))
+    ret #0x18000132b
+-- card
+{"addr":"0x1800013a0","aliases":["catch_many__catch_0__catch_2","catch_many__catch_1__catch_2"],"approxTokens":150,"blocks":1,"hardReasons":[],"name":"catch_many__catch_2","nameSources":["unwind"],"section":".text","size":34,"unsupported":0}
+
+== 0x1800013d0 catch_nested
+-- decompile
+/* try { protected code [0x1800013e2, 0x1800013eb) }
+   catch (int) { handler L_180001430; }
+   catch (Error &) { handler L_180001400; }
+   Exception dispatch is described by unwind metadata. */
+/* try { protected code [0x180001430, 0x180001457) }
+   catch (Error &) { handler L_180001400; }
+   Exception dispatch is described by unwind metadata. */
+/* Windows x64 exception handler: __CxxFrameHandler3 at 0x180001680, data at 0x1800027bc. */
+/* Exception metadata only; exception dispatch is not represented by standard C. */
+/* C++ try states [1, 1]: catch handler at 0x180001430. */
+/* C++ try states [0, 2]: catch handler at 0x180001400. */
+/* velk pseudo-C: catch_nested @ 0x1800013d0 */
+/* ref: 0x180002488 .rdata */
+int32_t catch_nested(void) {
+    uint32_t local_1; /* [sp-24] */
+
+    int32_t v1 = _imported_value__YAHH_Z();
+    local_1 = v1;
+    return v1;
+}
+-- signature
+int32_t ()
+-- references
+0x180002488 .rdata
+-- ir
+fn catch_nested @ 0x1800013d0 (size 36)
+  blk0 @ 0x1800013d0:
+    store64(#0xfffffffffffffffe, (rsp + #0xffffffffffffffe0))
+    v1:rax, xmm0 = call *load64(#0x180002488)
+    store32(v1, (rsp + #0xffffffffffffffdc))
+    ret (v1 & #0xffffffff)
+-- card
+{"addr":"0x1800013d0","approxTokens":156,"blocks":1,"hardReasons":[],"name":"catch_nested","nameSources":["dynamic","unwind"],"section":".text","size":36,"unsupported":0}
+
+== 0x180001400 catch_nested__catch_1
+-- decompile
+/* Windows x64 exception handler: __CxxFrameHandler3 at 0x180001680, data at 0x1800027bc. */
+/* Exception metadata only; exception dispatch is not represented by standard C. */
+/* C++ try states [1, 1]: catch handler at 0x180001430. */
+/* C++ try states [0, 2]: catch handler at 0x180001400. */
+/* velk pseudo-C: catch_nested__catch_1 @ 0x180001400 */
+int32_t catch_nested__catch_1(int64_t a0, uint64_t *a1) {
+    uint8_t *v1 = (uint8_t *)(a1 + 0x8);
+    *(uint32_t *)(v1 - 0x1c) = *(uint32_t *)(*(uint64_t *)(v1 - 0x10)) + 3;
+    return -2147478549;
+}
+-- signature
+int32_t (int64_t a0, uint64_t * a1)
+-- references
+
+-- ir
+fn catch_nested__catch_1 @ 0x180001400 (size 39)
+  blk0 @ 0x180001400:
+    v1 = (rdx + #0x40)
+    store32((load32(load64((v1 + #0xfffffffffffffff0))) + #0x3), (v1 + #0xffffffffffffffe4))
+    ret #0x1800013eb
+-- card
+{"addr":"0x180001400","aliases":["catch_nested__catch_0__catch_1"],"approxTokens":168,"blocks":1,"hardReasons":[],"name":"catch_nested__catch_1","nameSources":["unwind"],"section":".text","size":39,"unsupported":0}
+
+== 0x180001430 catch_nested__catch_0
+-- decompile
+/* Windows x64 exception handler: __CxxFrameHandler3 at 0x180001680, data at 0x1800027bc. */
+/* Exception metadata only; exception dispatch is not represented by standard C. */
+/* C++ try states [1, 1]: catch handler at 0x180001430. */
+/* C++ try states [0, 2]: catch handler at 0x180001400. */
+/* velk pseudo-C: catch_nested__catch_0 @ 0x180001430 */
+/* ref: 0x180002488 .rdata */
+int32_t catch_nested__catch_0(int64_t a0, uint32_t *a1) {
+    uint32_t *v1 = a1 + 0x10;
+    v1[-7] = ((int32_t)(_imported_value__YAHH_Z(v1[-1])));
+    return -2147478549;
+}
+-- signature
+int32_t (int64_t a0, uint32_t * a1)
+-- references
+0x180002488 .rdata
+-- ir
+fn catch_nested__catch_0 @ 0x180001430 (size 39)
+  blk0 @ 0x180001430:
+    v1 = (rdx + #0x40)
+    v3:rax, xmm0 = call *load64(#0x180002488)(load32((v1 + #0xfffffffffffffffc)))
+    store32(v3, (v1 + #0xffffffffffffffe4))
+    ret #0x1800013eb
+-- card
+{"addr":"0x180001430","aliases":["catch_nested__catch_1__catch_0"],"approxTokens":162,"blocks":1,"hardReasons":[],"name":"catch_nested__catch_0","nameSources":["unwind"],"section":".text","size":39,"unsupported":0}
+
+== 0x180001460 catch_cleanup
+-- decompile
+/* try { protected code [0x18000148a, 0x180001495) }
+   catch (...) { handler L_1800014d0; }
+   Exception dispatch is described by unwind metadata. */
+/* Windows x64 exception handler: __CxxFrameHandler3 at 0x180001680, data at 0x1800028b0. */
+/* Exception metadata only; exception dispatch is not represented by standard C. */
+/* C++ try states [0, 1]: catch handler at 0x1800014d0. */
+/* velk pseudo-C: catch_cleanup @ 0x180001460 */
+/* ref: 0x180002488 .rdata */
+int32_t catch_cleanup(void) {
+    _Alignas(16) struct __attribute__((packed)) { uint8_t gap_0[0x14]; uint32_t f_14; int64_t f_18; } local_0; /* [sp-30] */
+
+    local_0.f_18 = -2;
+    sub_180001040(local_0.gap_0);
+    uint32_t v2 = sub_180001060(local_0.gap_0);
+    local_0.f_14 = ((int32_t)(_imported_value__YAHH_Z(v2)));
+    sub_180001070(local_0.gap_0);
+    return local_0.f_14;
+}
+-- signature
+int32_t ()
+-- references
+0x180002488 .rdata
+-- ir
+fn catch_cleanup @ 0x180001460 (size 72)
+  blk0 @ 0x180001460:
+    store64(#0xfffffffffffffffe, (rsp + #0xffffffffffffffe8))
+    v1 = (rsp + #0xffffffffffffffd0)
+    rax, xmm0 = call 0x180001040(v1)
+    v2:rax = call 0x180001060(v1)
+    v2:rax, xmm0 = call *load64(#0x180002488)((v2 & #0xffffffff))
+    store32(v2, (rsp + #0xffffffffffffffe4))
+    rax = call 0x180001070((rsp + #0xffffffffffffffd0))
+    ret load32((rsp + #0xffffffffffffffe4))
+-- card
+{"addr":"0x180001460","approxTokens":228,"blocks":1,"hardReasons":[],"name":"catch_cleanup","nameSources":["dynamic","unwind"],"section":".text","size":72,"structures":["struct S1 { int64_t field_0x0; int32_t field_0x8; };"],"unsupported":0}
+
+== 0x1800014b0 -
+-- decompile
+/* velk pseudo-C: sub_1800014b0 @ 0x1800014b0 */
+int32_t sub_1800014b0(int64_t a0, int64_t a1) {
+    return sub_180001070(a1 + 40);
+}
+-- signature
+int32_t (int64_t a0, int64_t a1)
+-- references
+
+-- ir
+fn <unnamed> @ 0x1800014b0 (size 32)
+  blk0 @ 0x1800014b0:
+    v2:rax = call 0x180001070((rdx + #0x28))
+    ret v2
+-- card
+{"addr":"0x1800014b0","approxTokens":168,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind"],"section":".text","size":32,"unsupported":0}
+
+== 0x1800014d0 catch_cleanup__catch_0
+-- decompile
+/* Windows x64 exception handler: __CxxFrameHandler3 at 0x180001680, data at 0x1800028b0. */
+/* Exception metadata only; exception dispatch is not represented by standard C. */
+/* C++ try states [0, 1]: catch handler at 0x1800014d0. */
+/* velk pseudo-C: catch_cleanup__catch_0 @ 0x1800014d0 */
+int32_t catch_cleanup__catch_0(int64_t a0, uint32_t *a1) {
+    a1[15] = 0xfffffffe;
+    return -2147478370;
+}
+-- signature
+int32_t (int64_t a0, uint32_t * a1)
+-- references
+
+-- ir
+fn catch_cleanup__catch_0 @ 0x1800014d0 (size 36)
+  blk0 @ 0x1800014d0:
+    store32(#0xfffffffe, (rdx + #0x3c))
+    ret #0x18000149e
+-- card
+{"addr":"0x1800014d0","approxTokens":162,"blocks":1,"hardReasons":[],"name":"catch_cleanup__catch_0","nameSources":["unwind"],"section":".text","size":36,"unsupported":0}
+
+== 0x180001530 -
+-- decompile
+/* velk pseudo-C: sub_180001530 @ 0x180001530 */
+int64_t sub_180001530(uint32_t *a0) {
+    return sub_180001170((uint8_t *)a0 + (int32_t)-a0[-1]);
+}
+-- signature
+int64_t (uint32_t * a0)
+-- references
+
+-- ir
+fn <unnamed> @ 0x180001530 (size 15)
+  blk0 @ 0x180001530:
+    v2:rax = call 0x180001170((rcx + sext32((#0x0 - load32((rcx + #0xfffffffffffffffc))))))
+    ret v2
+-- card
+{"addr":"0x180001530","approxTokens":126,"blocks":1,"hardReasons":[],"name":null,"nameSources":["rtti"],"section":".text","size":15,"unsupported":0}
+
+== 0x180001550 -
+-- decompile
+/* velk pseudo-C: sub_180001550 @ 0x180001550 */
+int64_t sub_180001550(int64_t a0, int64_t a1) {
+    return sub_180001600(a0 - 16, a1);
+}
+-- signature
+int64_t (int64_t a0, int64_t a1)
+-- references
+
+-- ir
+fn <unnamed> @ 0x180001550 (size 9)
+  blk0 @ 0x180001550:
+    v2:rax, xmm0 = call 0x180001600((rcx + #0xfffffffffffffff0), rdx)
+    ret v2
+-- card
+{"addr":"0x180001550","approxTokens":108,"blocks":1,"hardReasons":[],"name":null,"nameSources":["rtti"],"section":".text","size":9,"unsupported":0}
+
+== 0x180001560 -
+-- decompile
+/* velk pseudo-C: sub_180001560 @ 0x180001560 */
+int64_t sub_180001560(uint32_t *a0, int64_t a1) {
+    return sub_180001630((uint8_t *)a0 + (int32_t)-a0[-1], a1);
+}
+-- signature
+int64_t (uint32_t * a0, int64_t a1)
+-- references
+
+-- ir
+fn <unnamed> @ 0x180001560 (size 15)
+  blk0 @ 0x180001560:
+    v3:rax, xmm0 = call 0x180001630((rcx + sext32((#0x0 - load32((rcx + #0xfffffffffffffffc))))), rdx)
+    ret v3
+-- card
+{"addr":"0x180001560","approxTokens":126,"blocks":1,"hardReasons":[],"name":null,"nameSources":["rtti"],"section":".text","size":15,"unsupported":0}
+
+== 0x180001570 -
+-- decompile
+/* velk pseudo-C: sub_180001570 @ 0x180001570 */
+int64_t sub_180001570(int64_t a0, int32_t a1) {
+    if ((a1 & 0x1) == 0) {
+        return a0;
+    }
+    sub_180001510(a0, 8);
+    return a0;
+}
+-- signature
+int64_t (int64_t a0, int32_t a1)
+-- references
+
+-- ir
+fn <unnamed> @ 0x180001570 (size 35)
+  blk0 @ 0x180001570:
+    v1 = rcx
+    brif eq (rdx & #0x1), #0x0 -> 0x18000158a
+  blk1 @ 0x18000157d:
+    rax, xmm0 = call 0x180001510(v1, #0x8)
+  blk2 @ 0x18000158a:
+    ret v1
+-- card
+{"addr":"0x180001570","approxTokens":168,"blocks":3,"hardReasons":[],"name":null,"nameSources":["unwind"],"section":".text","size":35,"unsupported":0}
+
+== 0x1800015a0 -
+-- decompile
+/* velk pseudo-C: sub_1800015a0 @ 0x1800015a0 */
+int64_t sub_1800015a0(int64_t a0, int32_t a1) {
+    if ((a1 & 0x1) == 0) {
+        return a0;
+    }
+    sub_180001510(a0, 16);
+    return a0;
+}
+-- signature
+int64_t (int64_t a0, int32_t a1)
+-- references
+
+-- ir
+fn <unnamed> @ 0x1800015a0 (size 35)
+  blk0 @ 0x1800015a0:
+    v1 = rcx
+    brif eq (rdx & #0x1), #0x0 -> 0x1800015ba
+  blk1 @ 0x1800015ad:
+    rax, xmm0 = call 0x180001510(v1, #0x10)
+  blk2 @ 0x1800015ba:
+    ret v1
+-- card
+{"addr":"0x1800015a0","approxTokens":168,"blocks":3,"hardReasons":[],"name":null,"nameSources":["unwind"],"section":".text","size":35,"unsupported":0}
+
+== 0x1800015d0 -
+-- decompile
+/* velk pseudo-C: sub_1800015d0 @ 0x1800015d0 */
+int64_t sub_1800015d0(int64_t a0, int32_t a1) {
+    sub_180001070(a0, a1);
+    if ((a1 & 0x1) == 0) {
+        return a0;
+    }
+    sub_180001510(a0, 16);
+    return a0;
+}
+-- signature
+int64_t (int64_t a0, int32_t a1)
+-- references
+
+-- ir
+fn <unnamed> @ 0x1800015d0 (size 45)
+  blk0 @ 0x1800015d0:
+    v1 = rcx
+    rax = call 0x180001070(rcx, rdx)
+    brif eq (rdx & #0x1), #0x0 -> 0x1800015f3
+  blk1 @ 0x1800015e6:
+    rax, xmm0 = call 0x180001510(v1, #0x10)
+  blk2 @ 0x1800015f3:
+    ret v1
+-- card
+{"addr":"0x1800015d0","approxTokens":192,"blocks":3,"hardReasons":[],"name":null,"nameSources":["unwind"],"section":".text","size":45,"unsupported":0}
+
+== 0x180001600 -
+-- decompile
+/* velk pseudo-C: sub_180001600 @ 0x180001600 */
+int64_t sub_180001600(int64_t a0, int32_t a1) {
+    if ((a1 & 0x1) == 0) {
+        return a0;
+    }
+    sub_180001510(a0, 24);
+    return a0;
+}
+-- signature
+int64_t (int64_t a0, int32_t a1)
+-- references
+
+-- ir
+fn <unnamed> @ 0x180001600 (size 35)
+  blk0 @ 0x180001600:
+    v1 = rcx
+    brif eq (rdx & #0x1), #0x0 -> 0x18000161a
+  blk1 @ 0x18000160d:
+    rax, xmm0 = call 0x180001510(v1, #0x18)
+  blk2 @ 0x18000161a:
+    ret v1
+-- card
+{"addr":"0x180001600","approxTokens":168,"blocks":3,"hardReasons":[],"name":null,"nameSources":["unwind","rtti"],"section":".text","size":35,"unsupported":0}
+
+== 0x180001630 -
+-- decompile
+/* velk pseudo-C: sub_180001630 @ 0x180001630 */
+int64_t sub_180001630(int64_t a0, int32_t a1) {
+    int64_t v2 = a0 - 24;
+    sub_180001540(v2);
+    if ((a1 & 0x1) == 0) {
+        return v2;
+    }
+    sub_180001510(v2, 40);
+    return v2;
+}
+-- signature
+int64_t (int64_t a0, int32_t a1)
+-- references
+
+-- ir
+fn <unnamed> @ 0x180001630 (size 52)
+  blk0 @ 0x180001630:
+    v1 = (rdx & #0xffffffff)
+    v2 = (rcx + #0xffffffffffffffe8)
+    rax, xmm0 = call 0x180001540(v2)
+    brif eq (v1 & #0x1), #0x0 -> 0x18000165a
+  blk1 @ 0x18000164d:
+    rax, xmm0 = call 0x180001510(v2, #0x28)
+  blk2 @ 0x18000165a:
+    ret v2
+-- card
+{"addr":"0x180001630","approxTokens":204,"blocks":3,"hardReasons":[],"name":null,"nameSources":["unwind","rtti"],"section":".text","size":52,"unsupported":0}
+
+== 0x180001670 ??_7type_info@@6B@
+-- decompile
+/* velk pseudo-C: ??_7type_info@@6B@ @ 0x180001670 */
+/* ref: 0x180002480 .rdata */
+int32_t ___7type_info__6B_(void) {
+    return ___7type_info__6B_();
+}
+-- signature
+int32_t ()
+-- references
+0x180002480 .rdata
+-- ir
+fn ??_7type_info@@6B@ @ 0x180001670 (size 16)
+  blk0 @ 0x180001670:
+    v1:rax, xmm0 = call *load64(#0x180002480)
+    ret v1
+-- card
+{"addr":"0x180001670","approxTokens":108,"blocks":1,"hardReasons":[],"name":"??_7type_info@@6B@","nameSources":["plt"],"section":".text","size":16,"sizeEstimated":true,"unsupported":0}
+
+== 0x180001680 __CxxFrameHandler3
+-- decompile
+/* velk pseudo-C: __CxxFrameHandler3 @ 0x180001680 */
+/* ref: 0x180002490 .rdata */
+int32_t __CxxFrameHandler3(void) {
+    return __CxxFrameHandler3();
+}
+-- signature
+int32_t ()
+-- references
+0x180002490 .rdata
+-- ir
+fn __CxxFrameHandler3 @ 0x180001680 (size 16)
+  blk0 @ 0x180001680:
+    v1:rax, xmm0 = call *load64(#0x180002490)
+    ret v1
+-- card
+{"addr":"0x180001680","approxTokens":108,"blocks":1,"hardReasons":[],"name":"__CxxFrameHandler3","nameSources":["plt"],"section":".text","size":16,"sizeEstimated":true,"unsupported":0}
+
+== 0x180001690 ?imported_value@@YAHH@Z
+-- decompile
+/* velk pseudo-C: ?imported_value@@YAHH@Z @ 0x180001690 */
+/* ref: 0x180002488 .rdata */
+int32_t _imported_value__YAHH_Z(void) {
+    return _imported_value__YAHH_Z();
+}
+-- signature
+int32_t ()
+-- references
+0x180002488 .rdata
+-- ir
+fn ?imported_value@@YAHH@Z @ 0x180001690 (size 6)
+  blk0 @ 0x180001690:
+    v1:rax, xmm0 = call *load64(#0x180002488)
+    ret v1
+-- card
+{"addr":"0x180001690","approxTokens":102,"blocks":1,"hardReasons":[],"name":"?imported_value@@YAHH@Z","nameSources":["plt"],"section":".text","size":6,"sizeEstimated":true,"unsupported":0}

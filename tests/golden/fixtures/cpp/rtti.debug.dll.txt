@@ -1,0 +1,1261 @@
+# cpp/rtti.debug.dll: pe x86_64 no entry, 49 functions, 0 lift failures, 0 unsupported, 0 gotos
+0x180001000 32 ??0Root@@QEAA@H@Z symtab
+0x180001020 16 ?value@Root@@UEBAHXZ symtab
+0x180001030 16 ??1Root@@UEAA@XZ symtab
+0x180001040 32 ??0Single@@QEAA@H@Z symtab,unwind
+0x180001060 16 ?value@Single@@UEBAHXZ symtab
+0x180001070 32 ??1Single@@UEAA@XZ symtab
+0x180001090 16 ?other@Other@@UEBAHXZ symtab
+0x1800010a0 16 ??1Other@@UEAA@XZ symtab
+0x1800010b0 52 ??0Multiple@@QEAA@H@Z symtab,unwind
+0x1800010f0 16 ?value@Multiple@@UEBAHXZ symtab
+0x180001100 16 ?other@Multiple@@UEBAHXZ symtab
+0x180001110 16 ??1Multiple@@UEAA@XZ symtab
+0x180001120 80 ??0Virtual@@QEAA@H@Z symtab,unwind
+0x180001170 16 ?value@Virtual@@UEBAHXZ symtab
+0x180001180 16 ??1Virtual@@UEAA@XZ symtab
+0x180001190 6 dispatch symtab,dynamic,dwarf
+0x1800011a0 11 dispatch_multiple symtab,dynamic,dwarf
+0x1800011b0 63 single symtab,dynamic,dwarf,unwind
+0x1800011f0 32 ?dtor$2@?0?single@4HA symtab,unwind
+0x180001210 48 multiple symtab,dynamic,dwarf,unwind
+0x180001240 78 virtual_base symtab,dynamic,dwarf,unwind
+0x180001290 32 ?dtor$2@?0?virtual_base@4HA symtab,unwind
+0x1800012b0 36 catch_one symtab,dynamic,dwarf,unwind
+0x1800012e0 36 ?catch$2@?0?catch_one@4HA symtab,unwind
+0x180001310 36 catch_many symtab,dynamic,dwarf,unwind
+0x180001340 38 ?catch$2@?0?catch_many@4HA symtab,unwind
+0x180001370 36 ?catch$3@?0?catch_many@4HA symtab,unwind
+0x1800013a0 34 ?catch$4@?0?catch_many@4HA symtab,unwind
+0x1800013d0 36 catch_nested symtab,dynamic,dwarf,unwind
+0x180001400 39 ?catch$2@?0?catch_nested@4HA symtab,unwind
+0x180001430 39 ?catch$3@?0?catch_nested@4HA symtab,unwind
+0x180001460 72 catch_cleanup symtab,dynamic,dwarf,unwind
+0x1800014b0 32 ?dtor$3@?0?catch_cleanup@4HA symtab,unwind
+0x1800014d0 36 ?catch$4@?0?catch_cleanup@4HA symtab,unwind
+0x180001500 16 ??3@YAXPEAX@Z symtab
+0x180001510 16 ??3@YAXPEAX_K@Z symtab
+0x180001520 16 ??0Other@@QEAA@XZ symtab
+0x180001530 16 ?value@Virtual@@$4PPPPPPPM@A@EBAHXZ symtab
+0x180001540 16 ??_DVirtual@@QEAAXXZ symtab
+0x180001550 16 ??_EMultiple@@WBA@EAAPEAXI@Z symtab
+0x180001560 16 ??_EVirtual@@$4PPPPPPPM@A@EAAPEAXI@Z symtab
+0x180001570 35 ??_GOther@@UEAAPEAXI@Z symtab,unwind
+0x1800015a0 35 ??_GRoot@@UEAAPEAXI@Z symtab,unwind
+0x1800015d0 45 ??_GSingle@@UEAAPEAXI@Z symtab,unwind
+0x180001600 35 ??_GMultiple@@UEAAPEAXI@Z symtab,unwind
+0x180001630 52 ??_GVirtual@@UEAAPEAXI@Z symtab,unwind
+0x180001670 16 ??_7type_info@@6B@ symtab,plt
+0x180001680 16 __CxxFrameHandler3 symtab,plt
+0x180001690 6 ?imported_value@@YAHH@Z plt
+/* velk prelude */
+#include <stdint.h>
+
+struct Root { uint8_t gap_0x0[0x8]; int number; uint8_t gap_0xc[0x4]; };
+struct Virtual { uint8_t gap_0x0[0x8]; int extra; uint8_t gap_0xc[0x1c]; };
+
+extern uint32_t destroyed; /* address: 0x1800030e0 */
+extern uint8_t ___7Multiple__6BOther___; /* address: 0x180002068 */
+extern uint8_t ___7Multiple__6BRoot___; /* address: 0x180002048 */
+extern uint8_t ___7Other__6B_; /* address: 0x1800022b8 */
+extern uint8_t ___7Root__6B_; /* address: 0x180002008 */
+extern uint8_t ___7Single__6B_; /* address: 0x180002028 */
+extern uint8_t ___7Virtual__6B_; /* address: 0x180002088 */
+extern uint8_t ___8Virtual__7B_; /* address: 0x180002078 */
+
+uint64_t __0Multiple__QEAA_H_Z();
+uint64_t __0Other__QEAA_XZ();
+uint64_t __0Root__QEAA_H_Z();
+uint64_t __0Single__QEAA_H_Z();
+uint64_t __0Virtual__QEAA_H_Z();
+uint64_t __1Single__UEAA_XZ();
+uint64_t __3_YAXPEAX_K_Z();
+uint64_t ___DVirtual__QEAAXXZ();
+uint64_t ___GMultiple__UEAAPEAXI_Z();
+uint64_t ___GVirtual__UEAAPEAXI_Z();
+uint64_t _imported_value__YAHH_Z();
+uint64_t _other_Multiple__UEBAHXZ();
+uint64_t _value_Single__UEBAHXZ();
+uint64_t _value_Virtual__UEBAHXZ();
+uint64_t dispatch();
+/* end velk prelude */
+
+== 0x180001000 ??0Root@@QEAA@H@Z
+-- decompile
+/* C++ object initialization or destruction: Root vtable at 0x180002008. */
+/* velk pseudo-C: ??0Root@@QEAA@H@Z @ 0x180001000 */
+/* ref: 0x180002008 .rdata */
+void __0Root__QEAA_H_Z(struct Root *this, int value) {
+    *(uint64_t *)(this) = (uintptr_t)(&___7Root__6B_);
+    this->number = value;
+}
+-- signature
+void (struct Root * this, int value)
+-- references
+0x180002008 .rdata
+-- ir
+fn ??0Root@@QEAA@H@Z @ 0x180001000 (size 32)
+  blk0 @ 0x180001000:
+    v1 = rcx
+    store64(#0x180002008, v1)
+    store32(edx, (v1 + #0x8))
+    ret #0x0
+-- card
+{"accesses":["this +0x0:uint64_t, +0x8:uint32_t"],"addr":"0x180001000","approxTokens":126,"blocks":1,"hardReasons":[],"name":"??0Root@@QEAA@H@Z","nameSources":["symtab"],"section":".text","size":32,"sizeEstimated":true,"structures":["struct __0Root__QEAA_H_Z_s1 { int64_t field_0x0; int32_t field_0x8; };"],"unsupported":0}
+
+== 0x180001020 ?value@Root@@UEBAHXZ
+-- decompile
+/* velk pseudo-C: ?value@Root@@UEBAHXZ @ 0x180001020 */
+struct Root { uint8_t gap_0x0[0x8]; int number; uint8_t gap_0xc[0x4]; };
+void _value_Root__UEBAHXZ(struct Root *this) {
+    int32_t v1 = this->number;
+}
+-- signature
+void (struct Root * this)
+-- references
+
+-- ir
+fn ?value@Root@@UEBAHXZ @ 0x180001020 (size 16)
+  blk0 @ 0x180001020:
+    v1 = load32((rcx + #0x8))
+    ret #0x0
+-- card
+{"accesses":["this +0x8:uint32_t"],"addr":"0x180001020","approxTokens":108,"blocks":1,"hardReasons":[],"name":"?value@Root@@UEBAHXZ","nameSources":["symtab"],"section":".text","size":16,"sizeEstimated":true,"unsupported":0}
+
+== 0x180001030 ??1Root@@UEAA@XZ
+-- decompile
+/* velk pseudo-C: ??1Root@@UEAA@XZ @ 0x180001030 */
+void __1Root__UEAA_XZ(struct Root *this) {
+}
+-- signature
+void (struct Root * this)
+-- references
+
+-- ir
+fn ??1Root@@UEAA@XZ @ 0x180001030 (size 16)
+  blk0 @ 0x180001030:
+    ret #0x0
+-- card
+{"addr":"0x180001030","approxTokens":102,"blocks":1,"hardReasons":[],"name":"??1Root@@UEAA@XZ","nameSources":["symtab"],"section":".text","size":16,"sizeEstimated":true,"unsupported":0}
+
+== 0x180001040 ??0Single@@QEAA@H@Z
+-- decompile
+/* C++ object initialization or destruction: Single vtable at 0x180002028. */
+/* velk pseudo-C: ??0Single@@QEAA@H@Z @ 0x180001040 */
+/* ref: 0x180002028 .rdata */
+void __0Single__QEAA_H_Z(struct Single *this, int value) {
+    __0Root__QEAA_H_Z(this, value);
+    *(uint64_t *)(this) = (uintptr_t)(&___7Single__6B_);
+}
+-- signature
+void (struct Single * this, int value)
+-- references
+0x180002028 .rdata
+-- ir
+fn ??0Single@@QEAA@H@Z @ 0x180001040 (size 32)
+  blk0 @ 0x180001040:
+    v1 = rcx
+    rax = call 0x180001000(rcx, rdx)
+    store64(#0x180002028, v1)
+    ret #0x0
+-- card
+{"accesses":["this +0x0:uint64_t"],"addr":"0x180001040","approxTokens":156,"blocks":1,"hardReasons":[],"name":"??0Single@@QEAA@H@Z","nameSources":["symtab","unwind"],"section":".text","size":32,"unsupported":0}
+
+== 0x180001060 ?value@Single@@UEBAHXZ
+-- decompile
+/* velk pseudo-C: ?value@Single@@UEBAHXZ @ 0x180001060 */
+void _value_Single__UEBAHXZ(struct Single *this) {
+    int32_t v1 = *(uint32_t *)((uint8_t *)this + 0x8);
+}
+-- signature
+void (struct Single * this)
+-- references
+
+-- ir
+fn ?value@Single@@UEBAHXZ @ 0x180001060 (size 16)
+  blk0 @ 0x180001060:
+    v1 = load32((rcx + #0x8))
+    ret #0x0
+-- card
+{"accesses":["this +0x8:uint32_t"],"addr":"0x180001060","approxTokens":114,"blocks":1,"hardReasons":[],"name":"?value@Single@@UEBAHXZ","nameSources":["symtab"],"section":".text","size":16,"sizeEstimated":true,"unsupported":0}
+
+== 0x180001070 ??1Single@@UEAA@XZ
+-- decompile
+/* C++ object initialization or destruction: Single vtable at 0x180002028. */
+/* velk pseudo-C: ??1Single@@UEAA@XZ @ 0x180001070 */
+/* ref: 0x180002028 .rdata */
+/* ref: 0x1800030e0 .data */
+void __1Single__UEAA_XZ(struct Single *this) {
+    *(uint64_t *)(this) = (uintptr_t)(&___7Single__6B_);
+    destroyed += 1;
+}
+-- signature
+void (struct Single * this)
+-- references
+0x180002028 .rdata
+0x1800030e0 .data
+-- ir
+fn ??1Single@@UEAA@XZ @ 0x180001070 (size 32)
+  blk0 @ 0x180001070:
+    store64(#0x180002028, rcx)
+    store32((load32(#0x1800030e0) + #0x1), #0x1800030e0)
+    ret #0x0
+-- card
+{"accesses":["this +0x0:uint64_t"],"addr":"0x180001070","approxTokens":120,"blocks":1,"hardReasons":[],"name":"??1Single@@UEAA@XZ","nameSources":["symtab"],"section":".text","size":32,"sizeEstimated":true,"unsupported":0}
+
+== 0x180001090 ?other@Other@@UEBAHXZ
+-- decompile
+/* velk pseudo-C: ?other@Other@@UEBAHXZ @ 0x180001090 */
+void _other_Other__UEBAHXZ(struct Other *this) {
+}
+-- signature
+void (struct Other * this)
+-- references
+
+-- ir
+fn ?other@Other@@UEBAHXZ @ 0x180001090 (size 16)
+  blk0 @ 0x180001090:
+    ret #0x0
+-- card
+{"addr":"0x180001090","approxTokens":108,"blocks":1,"hardReasons":[],"name":"?other@Other@@UEBAHXZ","nameSources":["symtab"],"section":".text","size":16,"sizeEstimated":true,"unsupported":0}
+
+== 0x1800010a0 ??1Other@@UEAA@XZ
+-- decompile
+/* velk pseudo-C: ??1Other@@UEAA@XZ @ 0x1800010a0 */
+void __1Other__UEAA_XZ(struct Other *this) {
+}
+-- signature
+void (struct Other * this)
+-- references
+
+-- ir
+fn ??1Other@@UEAA@XZ @ 0x1800010a0 (size 16)
+  blk0 @ 0x1800010a0:
+    ret #0x0
+-- card
+{"addr":"0x1800010a0","approxTokens":102,"blocks":1,"hardReasons":[],"name":"??1Other@@UEAA@XZ","nameSources":["symtab"],"section":".text","size":16,"sizeEstimated":true,"unsupported":0}
+
+== 0x1800010b0 ??0Multiple@@QEAA@H@Z
+-- decompile
+/* C++ object initialization or destruction: Multiple vtable at 0x180002048. */
+/* C++ object initialization or destruction: Multiple vtable at 0x180002068. */
+/* velk pseudo-C: ??0Multiple@@QEAA@H@Z @ 0x1800010b0 */
+/* ref: 0x180002048 .rdata */
+/* ref: 0x180002068 .rdata */
+void __0Multiple__QEAA_H_Z(struct Multiple *this, int value) {
+    __0Root__QEAA_H_Z(this, value);
+    __0Other__QEAA_XZ((uint8_t *)this + 0x10);
+    *(uint64_t *)(this) = (uintptr_t)(&___7Multiple__6BRoot___);
+    *(uint64_t *)((uint8_t *)this + 0x10) = (uintptr_t)(&___7Multiple__6BOther___);
+}
+-- signature
+void (struct Multiple * this, int value)
+-- references
+0x180002048 .rdata
+0x180002068 .rdata
+-- ir
+fn ??0Multiple@@QEAA@H@Z @ 0x1800010b0 (size 52)
+  blk0 @ 0x1800010b0:
+    v1 = rcx
+    rax = call 0x180001000(rcx, rdx)
+    rax = call 0x180001520((v1 + #0x10))
+    store64(#0x180002048, v1)
+    store64(#0x180002068, (v1 + #0x10))
+    ret #0x0
+-- card
+{"accesses":["this +0x0:uint64_t, +0x10:uint64_t"],"addr":"0x1800010b0","approxTokens":180,"blocks":1,"hardReasons":[],"name":"??0Multiple@@QEAA@H@Z","nameSources":["symtab","unwind"],"section":".text","size":52,"structures":["struct __0Multiple__QEAA_H_Z_s1 { int64_t field_0x0; uint8_t gap_0x8[0x8]; int64_t field_0x10; };"],"unsupported":0}
+
+== 0x1800010f0 ?value@Multiple@@UEBAHXZ
+-- decompile
+/* velk pseudo-C: ?value@Multiple@@UEBAHXZ @ 0x1800010f0 */
+void _value_Multiple__UEBAHXZ(struct Multiple *this) {
+    int32_t v1 = *(uint32_t *)((uint8_t *)this + 0x8);
+}
+-- signature
+void (struct Multiple * this)
+-- references
+
+-- ir
+fn ?value@Multiple@@UEBAHXZ @ 0x1800010f0 (size 16)
+  blk0 @ 0x1800010f0:
+    v1 = load32((rcx + #0x8))
+    ret #0x0
+-- card
+{"accesses":["this +0x8:uint32_t"],"addr":"0x1800010f0","approxTokens":114,"blocks":1,"hardReasons":[],"name":"?value@Multiple@@UEBAHXZ","nameSources":["symtab"],"section":".text","size":16,"sizeEstimated":true,"unsupported":0}
+
+== 0x180001100 ?other@Multiple@@UEBAHXZ
+-- decompile
+/* velk pseudo-C: ?other@Multiple@@UEBAHXZ @ 0x180001100 */
+void _other_Multiple__UEBAHXZ(struct Multiple *this) {
+    int32_t v1 = *(uint32_t *)((uint8_t *)this - 0x8);
+}
+-- signature
+void (struct Multiple * this)
+-- references
+
+-- ir
+fn ?other@Multiple@@UEBAHXZ @ 0x180001100 (size 16)
+  blk0 @ 0x180001100:
+    v1 = load32((rcx + #0xfffffffffffffff8))
+    ret #0x0
+-- card
+{"accesses":["this +0xfffffffffffffff8:uint32_t"],"addr":"0x180001100","approxTokens":114,"blocks":1,"hardReasons":[],"name":"?other@Multiple@@UEBAHXZ","nameSources":["symtab"],"section":".text","size":16,"sizeEstimated":true,"unsupported":0}
+
+== 0x180001110 ??1Multiple@@UEAA@XZ
+-- decompile
+/* velk pseudo-C: ??1Multiple@@UEAA@XZ @ 0x180001110 */
+void __1Multiple__UEAA_XZ(struct Multiple *this) {
+}
+-- signature
+void (struct Multiple * this)
+-- references
+
+-- ir
+fn ??1Multiple@@UEAA@XZ @ 0x180001110 (size 16)
+  blk0 @ 0x180001110:
+    ret #0x0
+-- card
+{"addr":"0x180001110","approxTokens":102,"blocks":1,"hardReasons":[],"name":"??1Multiple@@UEAA@XZ","nameSources":["symtab"],"section":".text","size":16,"sizeEstimated":true,"unsupported":0}
+
+== 0x180001120 ??0Virtual@@QEAA@H@Z
+-- decompile
+/* C++ object initialization or destruction: Virtual vtable at 0x180002088. */
+/* velk pseudo-C: ??0Virtual@@QEAA@H@Z @ 0x180001120 */
+/* ref: 0x180002078 .rdata */
+/* ref: 0x180002088 .rdata */
+void __0Virtual__QEAA_H_Z(struct Virtual *this, int value, int is_most_derived) {
+    if (is_most_derived != 0) {
+        *(uint64_t *)(this) = (uintptr_t)(&___8Virtual__7B_);
+        __0Root__QEAA_H_Z((uint8_t *)this + 0x18, value);
+    }
+    *(uint64_t *)((uint8_t *)this + *(int32_t *)(*(uint64_t *)(this) + 0x4)) = (uintptr_t)(&___7Virtual__6B_);
+    int64_t v2 = *(int32_t *)(*(uint64_t *)(this) + 0x4);
+    *(uint32_t *)((uint8_t *)this + v2 - 0x4) = v2 - 24;
+    this->extra = 4;
+}
+-- signature
+void (struct Virtual * this, int value, int is_most_derived)
+-- references
+0x180002078 .rdata
+0x180002088 .rdata
+-- ir
+fn ??0Virtual@@QEAA@H@Z @ 0x180001120 (size 80)
+  blk0 @ 0x180001120:
+    v1 = rcx
+    brif eq r8d, #0x0 -> 0x180001140
+  blk1 @ 0x18000112d:
+    store64(#0x180002078, v1)
+    rax = call 0x180001000((v1 + #0x18), rdx)
+  blk2 @ 0x180001140:
+    store64(#0x180002088, (v1 + sext32(load32((load64(v1) + #0x4)))))
+    v2 = sext32(load32((load64(v1) + #0x4)))
+    store32((v2 + #0xffffffffffffffe8), ((v1 + v2) + #0xfffffffffffffffc))
+    store32(#0x4, (v1 + #0x8))
+    ret #0x0
+-- card
+{"accesses":["this +0x0:uint64_t, +0x8:uint32_t"],"addr":"0x180001120","approxTokens":228,"blocks":3,"hardReasons":[],"name":"??0Virtual@@QEAA@H@Z","nameSources":["symtab","unwind"],"section":".text","size":80,"unsupported":0}
+
+== 0x180001170 ?value@Virtual@@UEBAHXZ
+-- decompile
+/* velk pseudo-C: ?value@Virtual@@UEBAHXZ @ 0x180001170 */
+void _value_Virtual__UEBAHXZ(struct Virtual *this) {
+    int32_t v1 = *(uint32_t *)((uint8_t *)this - 0x10) + *(uint32_t *)((uint8_t *)this + *(int32_t *)(*(uint64_t *)((uint8_t *)this - 0x18) + 0x4) - 0x10);
+}
+-- signature
+void (struct Virtual * this)
+-- references
+
+-- ir
+fn ?value@Virtual@@UEBAHXZ @ 0x180001170 (size 16)
+  blk0 @ 0x180001170:
+    v1 = ((load32((rcx + #0xfffffffffffffff0)) + load32(((rcx + sext32(load32((load64((rcx + #0xffffffffffffffe8)) + #0x4)))) + #0xfffffffffffffff0))) & #0xffffffff)
+    ret #0x0
+-- card
+{"accesses":["this +0xffffffffffffffe8:uint64_t, +0xfffffffffffffff0:uint32_t"],"addr":"0x180001170","approxTokens":126,"blocks":1,"hardReasons":[],"name":"?value@Virtual@@UEBAHXZ","nameSources":["symtab"],"section":".text","size":16,"sizeEstimated":true,"unsupported":0}
+
+== 0x180001180 ??1Virtual@@UEAA@XZ
+-- decompile
+/* velk pseudo-C: ??1Virtual@@UEAA@XZ @ 0x180001180 */
+void __1Virtual__UEAA_XZ(struct Virtual *this) {
+}
+-- signature
+void (struct Virtual * this)
+-- references
+
+-- ir
+fn ??1Virtual@@UEAA@XZ @ 0x180001180 (size 16)
+  blk0 @ 0x180001180:
+    ret #0x0
+-- card
+{"addr":"0x180001180","approxTokens":102,"blocks":1,"hardReasons":[],"name":"??1Virtual@@UEAA@XZ","nameSources":["symtab"],"section":".text","size":16,"sizeEstimated":true,"unsupported":0}
+
+== 0x180001190 dispatch
+-- decompile
+/* velk pseudo-C: dispatch @ 0x180001190 */
+int dispatch(struct Root *object) {
+    uint64_t *v1 = *(uint64_t **)(object);
+    return ((uint64_t (*)())*v1)(object); /* vtable slot 0 */
+}
+-- signature
+int (struct Root * object)
+-- references
+
+-- ir
+fn dispatch @ 0x180001190 (size 6)
+  blk0 @ 0x180001190:
+    v1 = load64(rcx)
+    v2:rax, xmm0 = call *load64(v1)(rcx)
+    ret v2
+-- card
+{"accesses":["object +0x0:uint64_t"],"addr":"0x180001190","approxTokens":108,"blocks":1,"hardReasons":[],"name":"dispatch","nameSources":["symtab","dynamic","dwarf"],"section":".text","size":6,"unsupported":0}
+
+== 0x1800011a0 dispatch_multiple
+-- decompile
+/* velk pseudo-C: dispatch_multiple @ 0x1800011a0 */
+int dispatch_multiple(struct Multiple *object) {
+    uint64_t *v1 = *(uint64_t **)((uint8_t *)object + 0x10);
+    return ((uint64_t (*)())*v1)((uint8_t *)object + 0x10);
+}
+-- signature
+int (struct Multiple * object)
+-- references
+
+-- ir
+fn dispatch_multiple @ 0x1800011a0 (size 11)
+  blk0 @ 0x1800011a0:
+    v1 = load64((rcx + #0x10))
+    v3:rax, xmm0 = call *load64(v1)((rcx + #0x10))
+    ret v3
+-- card
+{"addr":"0x1800011a0","approxTokens":114,"blocks":1,"hardReasons":[],"name":"dispatch_multiple","nameSources":["symtab","dynamic","dwarf"],"section":".text","size":11,"unsupported":0}
+
+== 0x1800011b0 single
+-- decompile
+/* Windows x64 exception handler: __CxxFrameHandler3 at 0x180001680, data at 0x180002530. */
+/* Exception metadata only; exception dispatch is not represented by standard C. */
+/* velk pseudo-C: single @ 0x1800011b0 */
+int single(int value) {
+    _Alignas(16) struct __attribute__((packed)) { uint8_t gap_0[0x10]; int64_t f_10; } local_0; /* [sp-28] */
+
+    local_0.f_10 = -2;
+    __0Single__QEAA_H_Z(local_0.gap_0, value & 0xffffffff);
+    int32_t v3 = dispatch(local_0.gap_0);
+    __1Single__UEAA_XZ(local_0.gap_0);
+    return v3;
+}
+-- signature
+int (int value)
+-- references
+
+-- ir
+fn single @ 0x1800011b0 (size 63)
+  blk0 @ 0x1800011b0:
+    store64(#0xfffffffffffffffe, (rsp + #0xffffffffffffffe8))
+    v2 = (rsp + #0xffffffffffffffd8)
+    rax = call 0x180001040(v2, (rcx & #0xffffffff))
+    v3:rax, xmm0 = call 0x180001190(v2)
+    rax = call 0x180001070((rsp + #0xffffffffffffffd8))
+    ret (v3 & #0xffffffff)
+-- card
+{"addr":"0x1800011b0","approxTokens":222,"blocks":1,"hardReasons":[],"name":"single","nameSources":["symtab","dynamic","dwarf","unwind"],"section":".text","size":63,"unsupported":0}
+
+== 0x1800011f0 ?dtor$2@?0?single@4HA
+-- decompile
+/* velk pseudo-C: ?dtor$2@?0?single@4HA @ 0x1800011f0 */
+void _dtor_2__0_single_4HA(int64_t a0, int64_t a1) {
+    __1Single__UEAA_XZ(a1 + 32);
+}
+-- signature
+void (int64_t a0, int64_t a1)
+-- references
+
+-- ir
+fn ?dtor$2@?0?single@4HA @ 0x1800011f0 (size 32)
+  blk0 @ 0x1800011f0:
+    v1:rax = call 0x180001070((rdx + #0x20))
+    ret #0x0
+-- card
+{"addr":"0x1800011f0","approxTokens":168,"blocks":1,"hardReasons":[],"name":"?dtor$2@?0?single@4HA","nameSources":["symtab","unwind"],"section":".text","size":32,"unsupported":0}
+
+== 0x180001210 multiple
+-- decompile
+/* velk pseudo-C: multiple @ 0x180001210 */
+int multiple(int value) {
+    _Alignas(16) uint8_t local_0[0x10]; /* [sp-20] */
+    _Alignas(16) uint8_t local_1[0x8]; /* [sp-10] */
+
+    __0Multiple__QEAA_H_Z(local_0, value & 0xffffffff);
+    int32_t v3 = dispatch(local_0);
+    return ((int32_t)(_other_Multiple__UEBAHXZ(local_1))) + v3;
+}
+-- signature
+int (int value)
+-- references
+
+-- ir
+fn multiple @ 0x180001210 (size 48)
+  blk0 @ 0x180001210:
+    v2 = (rsp + #0xffffffffffffffe0)
+    rax = call 0x1800010b0(v2, (rcx & #0xffffffff))
+    v3:rax, xmm0 = call 0x180001190(v2)
+    v5:rax = call 0x180001100((rsp + #0xfffffffffffffff0))
+    ret (((v5 & #0xffffffff) + (v3 & #0xffffffff)) & #0xffffffff)
+-- card
+{"addr":"0x180001210","approxTokens":186,"blocks":1,"hardReasons":[],"name":"multiple","nameSources":["symtab","dynamic","dwarf","unwind"],"section":".text","size":48,"unsupported":0}
+
+== 0x180001240 virtual_base
+-- decompile
+/* Windows x64 exception handler: __CxxFrameHandler3 at 0x180001680, data at 0x1800025a0. */
+/* Exception metadata only; exception dispatch is not represented by standard C. */
+/* velk pseudo-C: virtual_base @ 0x180001240 */
+int virtual_base(int value) {
+    _Alignas(16) struct __attribute__((packed)) { uint32_t *f_0; uint8_t gap_8[0x20]; int64_t f_28; } local_0; /* [sp-40] */
+
+    local_0.f_28 = -2;
+    __0Virtual__QEAA_H_Z((uint8_t *)&local_0, value & 0xffffffff, 1);
+    int32_t v3 = dispatch((uint8_t *)((uintptr_t)((uint8_t *)&local_0) + (int32_t)local_0.f_0[1]));
+    ___DVirtual__QEAAXXZ();
+    return v3;
+}
+-- signature
+int (int value)
+-- references
+
+-- ir
+fn virtual_base @ 0x180001240 (size 78)
+  blk0 @ 0x180001240:
+    store64(#0xfffffffffffffffe, (rsp + #0xffffffffffffffe8))
+    rax = call 0x180001120((rsp + #0xffffffffffffffc0), (rcx & #0xffffffff), #0x1)
+    v3:rax, xmm0 = call 0x180001190(((sext32(load32((load64((rsp + #0xffffffffffffffc0)) + #0x4))) + (rsp + #0xffffffffffffffe8)) + #0xffffffffffffffd8))
+    call 0x180001540()
+    ret (v3 & #0xffffffff)
+-- card
+{"addr":"0x180001240","approxTokens":234,"blocks":1,"hardReasons":[],"name":"virtual_base","nameSources":["symtab","dynamic","dwarf","unwind"],"section":".text","size":78,"unsupported":0}
+
+== 0x180001290 ?dtor$2@?0?virtual_base@4HA
+-- decompile
+/* velk pseudo-C: ?dtor$2@?0?virtual_base@4HA @ 0x180001290 */
+void _dtor_2__0_virtual_base_4HA(int64_t a0, int64_t a1) {
+    ___DVirtual__QEAAXXZ();
+}
+-- signature
+void (int64_t a0, int64_t a1)
+-- references
+
+-- ir
+fn ?dtor$2@?0?virtual_base@4HA @ 0x180001290 (size 32)
+  blk0 @ 0x180001290:
+    call 0x180001540()
+    ret #0x0
+-- card
+{"addr":"0x180001290","approxTokens":168,"blocks":1,"hardReasons":[],"name":"?dtor$2@?0?virtual_base@4HA","nameSources":["symtab","unwind"],"section":".text","size":32,"unsupported":0}
+
+== 0x1800012b0 catch_one
+-- decompile
+/* try { protected code [0x1800012c2, 0x1800012cb) }
+   catch (Error &) { handler L_1800012e0; }
+   Exception dispatch is described by unwind metadata. */
+/* Windows x64 exception handler: __CxxFrameHandler3 at 0x180001680, data at 0x18000260c. */
+/* Exception metadata only; exception dispatch is not represented by standard C. */
+/* C++ try states [0, 0]: catch handler at 0x1800012e0. */
+/* velk pseudo-C: catch_one @ 0x1800012b0 */
+/* ref: 0x180002488 .rdata */
+int catch_one(int value) {
+    return ((int32_t)(_imported_value__YAHH_Z(value)));
+}
+-- signature
+int (int value)
+-- references
+0x180002488 .rdata
+-- ir
+fn catch_one @ 0x1800012b0 (size 36)
+  blk0 @ 0x1800012b0:
+    v1:rax, xmm0 = call *load64(#0x180002488)(rcx)
+    ret (v1 & #0xffffffff)
+-- card
+{"addr":"0x1800012b0","approxTokens":156,"blocks":1,"hardReasons":[],"name":"catch_one","nameSources":["symtab","dynamic","dwarf","unwind"],"section":".text","size":36,"unsupported":0}
+
+== 0x1800012e0 ?catch$2@?0?catch_one@4HA
+-- decompile
+/* Windows x64 exception handler: __CxxFrameHandler3 at 0x180001680, data at 0x18000260c. */
+/* Exception metadata only; exception dispatch is not represented by standard C. */
+/* C++ try states [0, 0]: catch handler at 0x1800012e0. */
+/* velk pseudo-C: ?catch$2@?0?catch_one@4HA @ 0x1800012e0 */
+int32_t _catch_2__0_catch_one_4HA(int64_t a0, uint64_t *a1) {
+    uint8_t *v1 = (uint8_t *)(a1 + 0x8);
+    *(uint32_t *)(v1 - 0x14) = *(uint32_t *)(*(uint64_t *)(v1 - 0x8));
+    return -2147478837;
+}
+-- signature
+int32_t (int64_t a0, uint64_t * a1)
+-- references
+
+-- ir
+fn ?catch$2@?0?catch_one@4HA @ 0x1800012e0 (size 36)
+  blk0 @ 0x1800012e0:
+    v1 = (rdx + #0x40)
+    store32(load32(load64((v1 + #0xfffffffffffffff8))), (v1 + #0xffffffffffffffec))
+    ret #0x1800012cb
+-- card
+{"addr":"0x1800012e0","aliases":["catch_one__catch_0"],"approxTokens":162,"blocks":1,"hardReasons":[],"name":"?catch$2@?0?catch_one@4HA","nameSources":["symtab","unwind"],"section":".text","size":36,"unsupported":0}
+
+== 0x180001310 catch_many
+-- decompile
+/* try { protected code [0x180001322, 0x18000132b) }
+   catch (Error &) { handler L_180001340; }
+   catch (int) { handler L_180001370; }
+   catch (...) { handler L_1800013a0; }
+   Exception dispatch is described by unwind metadata. */
+/* Windows x64 exception handler: __CxxFrameHandler3 at 0x180001680, data at 0x1800026d0. */
+/* Exception metadata only; exception dispatch is not represented by standard C. */
+/* C++ try states [0, 0]: catch handler at 0x180001340. */
+/* C++ try states [0, 0]: catch handler at 0x180001370. */
+/* C++ try states [0, 0]: catch handler at 0x1800013a0. */
+/* velk pseudo-C: catch_many @ 0x180001310 */
+/* ref: 0x180002488 .rdata */
+int catch_many(int value) {
+    return ((int32_t)(_imported_value__YAHH_Z(value)));
+}
+-- signature
+int (int value)
+-- references
+0x180002488 .rdata
+-- ir
+fn catch_many @ 0x180001310 (size 36)
+  blk0 @ 0x180001310:
+    v1:rax, xmm0 = call *load64(#0x180002488)(rcx)
+    ret (v1 & #0xffffffff)
+-- card
+{"addr":"0x180001310","approxTokens":156,"blocks":1,"hardReasons":[],"name":"catch_many","nameSources":["symtab","dynamic","dwarf","unwind"],"section":".text","size":36,"unsupported":0}
+
+== 0x180001340 ?catch$2@?0?catch_many@4HA
+-- decompile
+/* Windows x64 exception handler: __CxxFrameHandler3 at 0x180001680, data at 0x1800026d0. */
+/* Exception metadata only; exception dispatch is not represented by standard C. */
+/* C++ try states [0, 0]: catch handler at 0x180001340. */
+/* C++ try states [0, 0]: catch handler at 0x180001370. */
+/* C++ try states [0, 0]: catch handler at 0x1800013a0. */
+/* velk pseudo-C: ?catch$2@?0?catch_many@4HA @ 0x180001340 */
+int32_t _catch_2__0_catch_many_4HA(int64_t a0, uint64_t *a1) {
+    uint8_t *v1 = (uint8_t *)(a1 + 0x8);
+    *(uint32_t *)(v1 - 0x1c) = *(uint32_t *)(*(uint64_t *)(v1 - 0x8)) + 1;
+    return -2147478741;
+}
+-- signature
+int32_t (int64_t a0, uint64_t * a1)
+-- references
+
+-- ir
+fn ?catch$2@?0?catch_many@4HA @ 0x180001340 (size 38)
+  blk0 @ 0x180001340:
+    v1 = (rdx + #0x40)
+    store32((load32(load64((v1 + #0xfffffffffffffff8))) + #0x1), (v1 + #0xffffffffffffffe4))
+    ret #0x18000132b
+-- card
+{"addr":"0x180001340","aliases":["catch_many__catch_0","?catch$3@?0?catch_many@4HA__catch_0","?catch$4@?0?catch_many@4HA__catch_0"],"approxTokens":168,"blocks":1,"hardReasons":[],"name":"?catch$2@?0?catch_many@4HA","nameSources":["symtab","unwind"],"section":".text","size":38,"unsupported":0}
+
+== 0x180001370 ?catch$3@?0?catch_many@4HA
+-- decompile
+/* Windows x64 exception handler: __CxxFrameHandler3 at 0x180001680, data at 0x1800026d0. */
+/* Exception metadata only; exception dispatch is not represented by standard C. */
+/* C++ try states [0, 0]: catch handler at 0x180001340. */
+/* C++ try states [0, 0]: catch handler at 0x180001370. */
+/* C++ try states [0, 0]: catch handler at 0x1800013a0. */
+/* velk pseudo-C: ?catch$3@?0?catch_many@4HA @ 0x180001370 */
+int32_t _catch_3__0_catch_many_4HA(int64_t a0, uint32_t *a1) {
+    uint32_t *v1 = a1 + 0x10;
+    v1[-7] = v1[-3] + 2;
+    return -2147478741;
+}
+-- signature
+int32_t (int64_t a0, uint32_t * a1)
+-- references
+
+-- ir
+fn ?catch$3@?0?catch_many@4HA @ 0x180001370 (size 36)
+  blk0 @ 0x180001370:
+    v1 = (rdx + #0x40)
+    store32((load32((v1 + #0xfffffffffffffff4)) + #0x2), (v1 + #0xffffffffffffffe4))
+    ret #0x18000132b
+-- card
+{"addr":"0x180001370","aliases":["catch_many__catch_1","?catch$2@?0?catch_many@4HA__catch_1","?catch$4@?0?catch_many@4HA__catch_1"],"approxTokens":162,"blocks":1,"hardReasons":[],"name":"?catch$3@?0?catch_many@4HA","nameSources":["symtab","unwind"],"section":".text","size":36,"unsupported":0}
+
+== 0x1800013a0 ?catch$4@?0?catch_many@4HA
+-- decompile
+/* Windows x64 exception handler: __CxxFrameHandler3 at 0x180001680, data at 0x1800026d0. */
+/* Exception metadata only; exception dispatch is not represented by standard C. */
+/* C++ try states [0, 0]: catch handler at 0x180001340. */
+/* C++ try states [0, 0]: catch handler at 0x180001370. */
+/* C++ try states [0, 0]: catch handler at 0x1800013a0. */
+/* velk pseudo-C: ?catch$4@?0?catch_many@4HA @ 0x1800013a0 */
+int32_t _catch_4__0_catch_many_4HA(int64_t a0, uint32_t *a1) {
+    a1[9] = 0xffffffff;
+    return -2147478741;
+}
+-- signature
+int32_t (int64_t a0, uint32_t * a1)
+-- references
+
+-- ir
+fn ?catch$4@?0?catch_many@4HA @ 0x1800013a0 (size 34)
+  blk0 @ 0x1800013a0:
+    store32(#0xffffffff, (rdx + #0x24))
+    ret #0x18000132b
+-- card
+{"addr":"0x1800013a0","aliases":["catch_many__catch_2","?catch$2@?0?catch_many@4HA__catch_2","?catch$3@?0?catch_many@4HA__catch_2"],"approxTokens":150,"blocks":1,"hardReasons":[],"name":"?catch$4@?0?catch_many@4HA","nameSources":["symtab","unwind"],"section":".text","size":34,"unsupported":0}
+
+== 0x1800013d0 catch_nested
+-- decompile
+/* try { protected code [0x1800013e2, 0x1800013eb) }
+   catch (int) { handler L_180001430; }
+   catch (Error &) { handler L_180001400; }
+   Exception dispatch is described by unwind metadata. */
+/* try { protected code [0x180001430, 0x180001457) }
+   catch (Error &) { handler L_180001400; }
+   Exception dispatch is described by unwind metadata. */
+/* Windows x64 exception handler: __CxxFrameHandler3 at 0x180001680, data at 0x1800027bc. */
+/* Exception metadata only; exception dispatch is not represented by standard C. */
+/* C++ try states [1, 1]: catch handler at 0x180001430. */
+/* C++ try states [0, 2]: catch handler at 0x180001400. */
+/* velk pseudo-C: catch_nested @ 0x1800013d0 */
+/* ref: 0x180002488 .rdata */
+int catch_nested(int value) {
+    return ((int32_t)(_imported_value__YAHH_Z(value)));
+}
+-- signature
+int (int value)
+-- references
+0x180002488 .rdata
+-- ir
+fn catch_nested @ 0x1800013d0 (size 36)
+  blk0 @ 0x1800013d0:
+    v1:rax, xmm0 = call *load64(#0x180002488)(rcx)
+    ret (v1 & #0xffffffff)
+-- card
+{"addr":"0x1800013d0","approxTokens":156,"blocks":1,"hardReasons":[],"name":"catch_nested","nameSources":["symtab","dynamic","dwarf","unwind"],"section":".text","size":36,"unsupported":0}
+
+== 0x180001400 ?catch$2@?0?catch_nested@4HA
+-- decompile
+/* Windows x64 exception handler: __CxxFrameHandler3 at 0x180001680, data at 0x1800027bc. */
+/* Exception metadata only; exception dispatch is not represented by standard C. */
+/* C++ try states [1, 1]: catch handler at 0x180001430. */
+/* C++ try states [0, 2]: catch handler at 0x180001400. */
+/* velk pseudo-C: ?catch$2@?0?catch_nested@4HA @ 0x180001400 */
+int32_t _catch_2__0_catch_nested_4HA(int64_t a0, uint64_t *a1) {
+    uint8_t *v1 = (uint8_t *)(a1 + 0x8);
+    *(uint32_t *)(v1 - 0x1c) = *(uint32_t *)(*(uint64_t *)(v1 - 0x10)) + 3;
+    return -2147478549;
+}
+-- signature
+int32_t (int64_t a0, uint64_t * a1)
+-- references
+
+-- ir
+fn ?catch$2@?0?catch_nested@4HA @ 0x180001400 (size 39)
+  blk0 @ 0x180001400:
+    v1 = (rdx + #0x40)
+    store32((load32(load64((v1 + #0xfffffffffffffff0))) + #0x3), (v1 + #0xffffffffffffffe4))
+    ret #0x1800013eb
+-- card
+{"addr":"0x180001400","aliases":["catch_nested__catch_1","?catch$3@?0?catch_nested@4HA__catch_1"],"approxTokens":168,"blocks":1,"hardReasons":[],"name":"?catch$2@?0?catch_nested@4HA","nameSources":["symtab","unwind"],"section":".text","size":39,"unsupported":0}
+
+== 0x180001430 ?catch$3@?0?catch_nested@4HA
+-- decompile
+/* Windows x64 exception handler: __CxxFrameHandler3 at 0x180001680, data at 0x1800027bc. */
+/* Exception metadata only; exception dispatch is not represented by standard C. */
+/* C++ try states [1, 1]: catch handler at 0x180001430. */
+/* C++ try states [0, 2]: catch handler at 0x180001400. */
+/* velk pseudo-C: ?catch$3@?0?catch_nested@4HA @ 0x180001430 */
+/* ref: 0x180002488 .rdata */
+int32_t _catch_3__0_catch_nested_4HA(int64_t a0, uint32_t *a1) {
+    uint32_t *v1 = a1 + 0x10;
+    v1[-7] = ((int32_t)(_imported_value__YAHH_Z(v1[-1])));
+    return -2147478549;
+}
+-- signature
+int32_t (int64_t a0, uint32_t * a1)
+-- references
+0x180002488 .rdata
+-- ir
+fn ?catch$3@?0?catch_nested@4HA @ 0x180001430 (size 39)
+  blk0 @ 0x180001430:
+    v1 = (rdx + #0x40)
+    v3:rax, xmm0 = call *load64(#0x180002488)(load32((v1 + #0xfffffffffffffffc)))
+    store32(v3, (v1 + #0xffffffffffffffe4))
+    ret #0x1800013eb
+-- card
+{"addr":"0x180001430","aliases":["catch_nested__catch_0","?catch$2@?0?catch_nested@4HA__catch_0"],"approxTokens":162,"blocks":1,"hardReasons":[],"name":"?catch$3@?0?catch_nested@4HA","nameSources":["symtab","unwind"],"section":".text","size":39,"unsupported":0}
+
+== 0x180001460 catch_cleanup
+-- decompile
+/* try { protected code [0x18000148a, 0x180001495) }
+   catch (...) { handler L_1800014d0; }
+   Exception dispatch is described by unwind metadata. */
+/* Windows x64 exception handler: __CxxFrameHandler3 at 0x180001680, data at 0x1800028b0. */
+/* Exception metadata only; exception dispatch is not represented by standard C. */
+/* C++ try states [0, 1]: catch handler at 0x1800014d0. */
+/* velk pseudo-C: catch_cleanup @ 0x180001460 */
+/* ref: 0x180002488 .rdata */
+int catch_cleanup(int value) {
+    _Alignas(16) struct __attribute__((packed)) { uint8_t gap_0[0x14]; uint32_t f_14; int64_t f_18; } local_0; /* [sp-30] */
+
+    local_0.f_18 = -2;
+    __0Single__QEAA_H_Z(local_0.gap_0, value & 0xffffffff);
+    uint32_t v3 = _value_Single__UEBAHXZ(local_0.gap_0);
+    local_0.f_14 = ((int32_t)(_imported_value__YAHH_Z(v3)));
+    __1Single__UEAA_XZ(local_0.gap_0);
+    return local_0.f_14;
+}
+-- signature
+int (int value)
+-- references
+0x180002488 .rdata
+-- ir
+fn catch_cleanup @ 0x180001460 (size 72)
+  blk0 @ 0x180001460:
+    store64(#0xfffffffffffffffe, (rsp + #0xffffffffffffffe8))
+    v2 = (rsp + #0xffffffffffffffd0)
+    rax = call 0x180001040(v2, (rcx & #0xffffffff))
+    v3:rax = call 0x180001060(v2)
+    v3:rax, xmm0 = call *load64(#0x180002488)((v3 & #0xffffffff))
+    store32(v3, (rsp + #0xffffffffffffffe4))
+    rax = call 0x180001070((rsp + #0xffffffffffffffd0))
+    ret load32((rsp + #0xffffffffffffffe4))
+-- card
+{"addr":"0x180001460","approxTokens":228,"blocks":1,"hardReasons":[],"name":"catch_cleanup","nameSources":["symtab","dynamic","dwarf","unwind"],"section":".text","size":72,"unsupported":0}
+
+== 0x1800014b0 ?dtor$3@?0?catch_cleanup@4HA
+-- decompile
+/* velk pseudo-C: ?dtor$3@?0?catch_cleanup@4HA @ 0x1800014b0 */
+void _dtor_3__0_catch_cleanup_4HA(int64_t a0, int64_t a1) {
+    __1Single__UEAA_XZ(a1 + 40);
+}
+-- signature
+void (int64_t a0, int64_t a1)
+-- references
+
+-- ir
+fn ?dtor$3@?0?catch_cleanup@4HA @ 0x1800014b0 (size 32)
+  blk0 @ 0x1800014b0:
+    v1:rax = call 0x180001070((rdx + #0x28))
+    ret #0x0
+-- card
+{"addr":"0x1800014b0","approxTokens":168,"blocks":1,"hardReasons":[],"name":"?dtor$3@?0?catch_cleanup@4HA","nameSources":["symtab","unwind"],"section":".text","size":32,"unsupported":0}
+
+== 0x1800014d0 ?catch$4@?0?catch_cleanup@4HA
+-- decompile
+/* Windows x64 exception handler: __CxxFrameHandler3 at 0x180001680, data at 0x1800028b0. */
+/* Exception metadata only; exception dispatch is not represented by standard C. */
+/* C++ try states [0, 1]: catch handler at 0x1800014d0. */
+/* velk pseudo-C: ?catch$4@?0?catch_cleanup@4HA @ 0x1800014d0 */
+int32_t _catch_4__0_catch_cleanup_4HA(int64_t a0, uint32_t *a1) {
+    a1[15] = 0xfffffffe;
+    return -2147478370;
+}
+-- signature
+int32_t (int64_t a0, uint32_t * a1)
+-- references
+
+-- ir
+fn ?catch$4@?0?catch_cleanup@4HA @ 0x1800014d0 (size 36)
+  blk0 @ 0x1800014d0:
+    store32(#0xfffffffe, (rdx + #0x3c))
+    ret #0x18000149e
+-- card
+{"addr":"0x1800014d0","aliases":["catch_cleanup__catch_0"],"approxTokens":162,"blocks":1,"hardReasons":[],"name":"?catch$4@?0?catch_cleanup@4HA","nameSources":["symtab","unwind"],"section":".text","size":36,"unsupported":0}
+
+== 0x180001500 ??3@YAXPEAX@Z
+-- decompile
+/* velk pseudo-C: ??3@YAXPEAX@Z @ 0x180001500 */
+void __3_YAXPEAX_Z(void *a0) {
+}
+-- signature
+void (void * a0)
+-- references
+
+-- ir
+fn ??3@YAXPEAX@Z @ 0x180001500 (size 16)
+  blk0 @ 0x180001500:
+    ret #0x0
+-- card
+{"addr":"0x180001500","approxTokens":102,"blocks":1,"hardReasons":[],"name":"??3@YAXPEAX@Z","nameSources":["symtab"],"section":".text","size":16,"sizeEstimated":true,"unsupported":0}
+
+== 0x180001510 ??3@YAXPEAX_K@Z
+-- decompile
+/* velk pseudo-C: ??3@YAXPEAX_K@Z @ 0x180001510 */
+void __3_YAXPEAX_K_Z(void *a0, unsigned long long a1) {
+}
+-- signature
+void (void * a0, unsigned long long a1)
+-- references
+
+-- ir
+fn ??3@YAXPEAX_K@Z @ 0x180001510 (size 16)
+  blk0 @ 0x180001510:
+    ret #0x0
+  blk1 @ 0x180001511:
+    trap
+  blk2 @ 0x180001512:
+    trap
+  blk3 @ 0x180001513:
+    trap
+  blk4 @ 0x180001514:
+    trap
+  blk5 @ 0x180001515:
+    trap
+  blk6 @ 0x180001516:
+    trap
+  blk7 @ 0x180001517:
+    trap
+  blk8 @ 0x180001518:
+    trap
+  blk9 @ 0x180001519:
+    trap
+  blk10 @ 0x18000151a:
+    trap
+  blk11 @ 0x18000151b:
+    trap
+  blk12 @ 0x18000151c:
+    trap
+  blk13 @ 0x18000151d:
+    trap
+  blk14 @ 0x18000151e:
+    trap
+  blk15 @ 0x18000151f:
+    trap
+-- card
+{"addr":"0x180001510","approxTokens":102,"blocks":16,"hardReasons":[],"name":"??3@YAXPEAX_K@Z","nameSources":["symtab"],"section":".text","size":16,"sizeEstimated":true,"unsupported":0}
+
+== 0x180001520 ??0Other@@QEAA@XZ
+-- decompile
+/* C++ object initialization or destruction: Other vtable at 0x1800022b8. */
+/* velk pseudo-C: ??0Other@@QEAA@XZ @ 0x180001520 */
+/* ref: 0x1800022b8 .rdata */
+void __0Other__QEAA_XZ(struct Other *this) {
+    *(uint64_t *)(this) = (uintptr_t)(&___7Other__6B_);
+}
+-- signature
+void (struct Other * this)
+-- references
+0x1800022b8 .rdata
+-- ir
+fn ??0Other@@QEAA@XZ @ 0x180001520 (size 16)
+  blk0 @ 0x180001520:
+    store64(#0x1800022b8, rcx)
+    ret #0x0
+  blk1 @ 0x18000152e:
+    trap
+  blk2 @ 0x18000152f:
+    trap
+-- card
+{"accesses":["this +0x0:uint64_t"],"addr":"0x180001520","approxTokens":120,"blocks":3,"hardReasons":[],"name":"??0Other@@QEAA@XZ","nameSources":["symtab"],"section":".text","size":16,"sizeEstimated":true,"unsupported":0}
+
+== 0x180001530 ?value@Virtual@@$4PPPPPPPM@A@EBAHXZ
+-- decompile
+/* velk pseudo-C: ?value@Virtual@@$4PPPPPPPM@A@EBAHXZ @ 0x180001530 */
+void _value_Virtual___4PPPPPPPM_A_EBAHXZ(uint32_t *a0) {
+    _value_Virtual__UEBAHXZ((uint8_t *)a0 + (int32_t)-a0[-1]);
+}
+-- signature
+void (uint32_t * a0)
+-- references
+
+-- ir
+fn ?value@Virtual@@$4PPPPPPPM@A@EBAHXZ @ 0x180001530 (size 16)
+  blk0 @ 0x180001530:
+    rax = call 0x180001170((rcx + sext32((#0x0 - load32((rcx + #0xfffffffffffffffc))))))
+    ret #0x0
+  blk1 @ 0x18000153f:
+    trap
+-- card
+{"addr":"0x180001530","approxTokens":126,"blocks":2,"hardReasons":[],"name":"?value@Virtual@@$4PPPPPPPM@A@EBAHXZ","nameSources":["symtab"],"section":".text","size":16,"sizeEstimated":true,"unsupported":0}
+
+== 0x180001540 ??_DVirtual@@QEAAXXZ
+-- decompile
+/* velk pseudo-C: ??_DVirtual@@QEAAXXZ @ 0x180001540 */
+void ___DVirtual__QEAAXXZ(struct Virtual *this) {
+}
+-- signature
+void (struct Virtual * this)
+-- references
+
+-- ir
+fn ??_DVirtual@@QEAAXXZ @ 0x180001540 (size 16)
+  blk0 @ 0x180001540:
+    ret #0x0
+  blk1 @ 0x180001541:
+    trap
+  blk2 @ 0x180001542:
+    trap
+  blk3 @ 0x180001543:
+    trap
+  blk4 @ 0x180001544:
+    trap
+  blk5 @ 0x180001545:
+    trap
+  blk6 @ 0x180001546:
+    trap
+  blk7 @ 0x180001547:
+    trap
+  blk8 @ 0x180001548:
+    trap
+  blk9 @ 0x180001549:
+    trap
+  blk10 @ 0x18000154a:
+    trap
+  blk11 @ 0x18000154b:
+    trap
+  blk12 @ 0x18000154c:
+    trap
+  blk13 @ 0x18000154d:
+    trap
+  blk14 @ 0x18000154e:
+    trap
+  blk15 @ 0x18000154f:
+    trap
+-- card
+{"addr":"0x180001540","approxTokens":102,"blocks":16,"hardReasons":[],"name":"??_DVirtual@@QEAAXXZ","nameSources":["symtab"],"section":".text","size":16,"sizeEstimated":true,"unsupported":0}
+
+== 0x180001550 ??_EMultiple@@WBA@EAAPEAXI@Z
+-- decompile
+/* velk pseudo-C: ??_EMultiple@@WBA@EAAPEAXI@Z @ 0x180001550 */
+void ___EMultiple__WBA_EAAPEAXI_Z(int64_t a0, int64_t a1) {
+    ___GMultiple__UEAAPEAXI_Z(a0 - 16, a1);
+}
+-- signature
+void (int64_t a0, int64_t a1)
+-- references
+
+-- ir
+fn ??_EMultiple@@WBA@EAAPEAXI@Z @ 0x180001550 (size 16)
+  blk0 @ 0x180001550:
+    rax = call 0x180001600((rcx + #0xfffffffffffffff0), rdx)
+    ret #0x0
+  blk1 @ 0x180001559:
+    trap
+  blk2 @ 0x18000155a:
+    trap
+  blk3 @ 0x18000155b:
+    trap
+  blk4 @ 0x18000155c:
+    trap
+  blk5 @ 0x18000155d:
+    trap
+  blk6 @ 0x18000155e:
+    trap
+  blk7 @ 0x18000155f:
+    trap
+-- card
+{"addr":"0x180001550","approxTokens":108,"blocks":8,"hardReasons":[],"name":"??_EMultiple@@WBA@EAAPEAXI@Z","nameSources":["symtab"],"section":".text","size":16,"sizeEstimated":true,"unsupported":0}
+
+== 0x180001560 ??_EVirtual@@$4PPPPPPPM@A@EAAPEAXI@Z
+-- decompile
+/* velk pseudo-C: ??_EVirtual@@$4PPPPPPPM@A@EAAPEAXI@Z @ 0x180001560 */
+void ___EVirtual___4PPPPPPPM_A_EAAPEAXI_Z(uint32_t *a0, int64_t a1) {
+    ___GVirtual__UEAAPEAXI_Z((uint8_t *)a0 + (int32_t)-a0[-1], a1);
+}
+-- signature
+void (uint32_t * a0, int64_t a1)
+-- references
+
+-- ir
+fn ??_EVirtual@@$4PPPPPPPM@A@EAAPEAXI@Z @ 0x180001560 (size 16)
+  blk0 @ 0x180001560:
+    rax = call 0x180001630((rcx + sext32((#0x0 - load32((rcx + #0xfffffffffffffffc))))), rdx)
+    ret #0x0
+  blk1 @ 0x18000156f:
+    trap
+-- card
+{"addr":"0x180001560","approxTokens":126,"blocks":2,"hardReasons":[],"name":"??_EVirtual@@$4PPPPPPPM@A@EAAPEAXI@Z","nameSources":["symtab"],"section":".text","size":16,"sizeEstimated":true,"unsupported":0}
+
+== 0x180001570 ??_GOther@@UEAAPEAXI@Z
+-- decompile
+/* velk pseudo-C: ??_GOther@@UEAAPEAXI@Z @ 0x180001570 */
+void *___GOther__UEAAPEAXI_Z(struct Other *this, int should_call_delete) {
+    if ((should_call_delete & 0x1) == 0) {
+        return (void *)this;
+    }
+    __3_YAXPEAX_K_Z();
+    return (void *)this;
+}
+-- signature
+void * (struct Other * this, int should_call_delete)
+-- references
+
+-- ir
+fn ??_GOther@@UEAAPEAXI@Z @ 0x180001570 (size 35)
+  blk0 @ 0x180001570:
+    v1 = rcx
+    brif eq (rdx & #0x1), #0x0 -> 0x18000158a
+  blk1 @ 0x18000157d:
+    call 0x180001510()
+  blk2 @ 0x18000158a:
+    ret v1
+-- card
+{"addr":"0x180001570","aliases":["??_EOther@@UEAAPEAXI@Z"],"approxTokens":168,"blocks":3,"hardReasons":[],"name":"??_GOther@@UEAAPEAXI@Z","nameSources":["symtab","unwind"],"section":".text","size":35,"unsupported":0}
+
+== 0x1800015a0 ??_GRoot@@UEAAPEAXI@Z
+-- decompile
+/* velk pseudo-C: ??_GRoot@@UEAAPEAXI@Z @ 0x1800015a0 */
+void *___GRoot__UEAAPEAXI_Z(struct Root *this, int should_call_delete) {
+    if ((should_call_delete & 0x1) == 0) {
+        return (void *)this;
+    }
+    __3_YAXPEAX_K_Z();
+    return (void *)this;
+}
+-- signature
+void * (struct Root * this, int should_call_delete)
+-- references
+
+-- ir
+fn ??_GRoot@@UEAAPEAXI@Z @ 0x1800015a0 (size 35)
+  blk0 @ 0x1800015a0:
+    v1 = rcx
+    brif eq (rdx & #0x1), #0x0 -> 0x1800015ba
+  blk1 @ 0x1800015ad:
+    call 0x180001510()
+  blk2 @ 0x1800015ba:
+    ret v1
+-- card
+{"addr":"0x1800015a0","aliases":["??_ERoot@@UEAAPEAXI@Z"],"approxTokens":168,"blocks":3,"hardReasons":[],"name":"??_GRoot@@UEAAPEAXI@Z","nameSources":["symtab","unwind"],"section":".text","size":35,"unsupported":0}
+
+== 0x1800015d0 ??_GSingle@@UEAAPEAXI@Z
+-- decompile
+/* velk pseudo-C: ??_GSingle@@UEAAPEAXI@Z @ 0x1800015d0 */
+void *___GSingle__UEAAPEAXI_Z(struct Single *this, int should_call_delete) {
+    __1Single__UEAA_XZ(this);
+    if ((should_call_delete & 0x1) == 0) {
+        return (void *)this;
+    }
+    __3_YAXPEAX_K_Z();
+    return (void *)this;
+}
+-- signature
+void * (struct Single * this, int should_call_delete)
+-- references
+
+-- ir
+fn ??_GSingle@@UEAAPEAXI@Z @ 0x1800015d0 (size 45)
+  blk0 @ 0x1800015d0:
+    v1 = rcx
+    rax = call 0x180001070(rcx)
+    brif eq (rdx & #0x1), #0x0 -> 0x1800015f3
+  blk1 @ 0x1800015e6:
+    call 0x180001510()
+  blk2 @ 0x1800015f3:
+    ret v1
+-- card
+{"addr":"0x1800015d0","aliases":["??_ESingle@@UEAAPEAXI@Z"],"approxTokens":192,"blocks":3,"hardReasons":[],"name":"??_GSingle@@UEAAPEAXI@Z","nameSources":["symtab","unwind"],"section":".text","size":45,"unsupported":0}
+
+== 0x180001600 ??_GMultiple@@UEAAPEAXI@Z
+-- decompile
+/* velk pseudo-C: ??_GMultiple@@UEAAPEAXI@Z @ 0x180001600 */
+void *___GMultiple__UEAAPEAXI_Z(struct Multiple *this, int should_call_delete) {
+    if ((should_call_delete & 0x1) == 0) {
+        return (void *)this;
+    }
+    __3_YAXPEAX_K_Z();
+    return (void *)this;
+}
+-- signature
+void * (struct Multiple * this, int should_call_delete)
+-- references
+
+-- ir
+fn ??_GMultiple@@UEAAPEAXI@Z @ 0x180001600 (size 35)
+  blk0 @ 0x180001600:
+    v1 = rcx
+    brif eq (rdx & #0x1), #0x0 -> 0x18000161a
+  blk1 @ 0x18000160d:
+    call 0x180001510()
+  blk2 @ 0x18000161a:
+    ret v1
+-- card
+{"addr":"0x180001600","aliases":["??_EMultiple@@UEAAPEAXI@Z"],"approxTokens":168,"blocks":3,"hardReasons":[],"name":"??_GMultiple@@UEAAPEAXI@Z","nameSources":["symtab","unwind"],"section":".text","size":35,"unsupported":0}
+
+== 0x180001630 ??_GVirtual@@UEAAPEAXI@Z
+-- decompile
+/* velk pseudo-C: ??_GVirtual@@UEAAPEAXI@Z @ 0x180001630 */
+void *___GVirtual__UEAAPEAXI_Z(struct Virtual *this, int should_call_delete) {
+    int64_t v1 = (uintptr_t)((uint8_t *)this - 0x18);
+    ___DVirtual__QEAAXXZ();
+    if ((should_call_delete & 0x1) == 0) {
+        return (void *)v1;
+    }
+    __3_YAXPEAX_K_Z();
+    return (void *)v1;
+}
+-- signature
+void * (struct Virtual * this, int should_call_delete)
+-- references
+
+-- ir
+fn ??_GVirtual@@UEAAPEAXI@Z @ 0x180001630 (size 52)
+  blk0 @ 0x180001630:
+    v1 = (rcx + #0xffffffffffffffe8)
+    call 0x180001540()
+    brif eq (rdx & #0x1), #0x0 -> 0x18000165a
+  blk1 @ 0x18000164d:
+    call 0x180001510()
+  blk2 @ 0x18000165a:
+    ret v1
+-- card
+{"addr":"0x180001630","aliases":["??_EVirtual@@UEAAPEAXI@Z"],"approxTokens":204,"blocks":3,"hardReasons":[],"name":"??_GVirtual@@UEAAPEAXI@Z","nameSources":["symtab","unwind"],"section":".text","size":52,"unsupported":0}
+
+== 0x180001670 ??_7type_info@@6B@
+-- decompile
+/* velk pseudo-C: ??_7type_info@@6B@ @ 0x180001670 */
+/* ref: 0x180002480 .rdata */
+int32_t ___7type_info__6B_(void) {
+    return ___7type_info__6B_();
+}
+-- signature
+int32_t ()
+-- references
+0x180002480 .rdata
+-- ir
+fn ??_7type_info@@6B@ @ 0x180001670 (size 16)
+  blk0 @ 0x180001670:
+    v1:rax, xmm0 = call *load64(#0x180002480)
+    ret v1
+-- card
+{"addr":"0x180001670","approxTokens":108,"blocks":1,"hardReasons":[],"name":"??_7type_info@@6B@","nameSources":["symtab","plt"],"section":".text","size":16,"sizeEstimated":true,"unsupported":0}
+
+== 0x180001680 __CxxFrameHandler3
+-- decompile
+/* velk pseudo-C: __CxxFrameHandler3 @ 0x180001680 */
+/* ref: 0x180002490 .rdata */
+int32_t __CxxFrameHandler3(void) {
+    return __CxxFrameHandler3();
+}
+-- signature
+int32_t ()
+-- references
+0x180002490 .rdata
+-- ir
+fn __CxxFrameHandler3 @ 0x180001680 (size 16)
+  blk0 @ 0x180001680:
+    v1:rax, xmm0 = call *load64(#0x180002490)
+    ret v1
+-- card
+{"addr":"0x180001680","approxTokens":108,"blocks":1,"hardReasons":[],"name":"__CxxFrameHandler3","nameSources":["symtab","plt"],"section":".text","size":16,"sizeEstimated":true,"unsupported":0}
+
+== 0x180001690 ?imported_value@@YAHH@Z
+-- decompile
+/* velk pseudo-C: ?imported_value@@YAHH@Z @ 0x180001690 */
+/* ref: 0x180002488 .rdata */
+int32_t _imported_value__YAHH_Z(void) {
+    return _imported_value__YAHH_Z();
+}
+-- signature
+int32_t ()
+-- references
+0x180002488 .rdata
+-- ir
+fn ?imported_value@@YAHH@Z @ 0x180001690 (size 6)
+  blk0 @ 0x180001690:
+    v1:rax, xmm0 = call *load64(#0x180002488)
+    ret v1
+-- card
+{"addr":"0x180001690","approxTokens":102,"blocks":1,"hardReasons":[],"name":"?imported_value@@YAHH@Z","nameSources":["plt"],"section":".text","size":6,"sizeEstimated":true,"unsupported":0}
