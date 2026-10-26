@@ -74,7 +74,11 @@ pub(in crate::loader) fn apply(
                 }
             }
             if let Ok(exports) = file.exports() {
-                for export in exports.flatten() {
+                for export in exports
+                    .into_iter()
+                    .take(crate::loader::MAX_EXPORTS)
+                    .flatten()
+                {
                     if let (
                         object::read::NameOrOrdinal::Name(name),
                         object::read::ExportTarget::Address { address },

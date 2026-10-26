@@ -153,13 +153,14 @@ pub fn functions(image: &Image) -> Vec<GoFunction> {
     let count = ftab_len.saturating_sub(1).min(200_000);
     let mut functions = Vec::new();
     for index in 0..count {
-        let entry = ftab_ptr + index * 8;
-        let (Some(entry_off), Some(func_off)) = (u32_at(image, entry), i32_at(image, entry + 4))
+        let entry = ftab_ptr.wrapping_add(index * 8);
+        let (Some(entry_off), Some(func_off)) =
+            (u32_at(image, entry), i32_at(image, entry.wrapping_add(4)))
         else {
             break;
         };
         let function = pclntable.wrapping_add(func_off as i64 as u64);
-        let Some(name_off) = i32_at(image, function + 4) else {
+        let Some(name_off) = i32_at(image, function.wrapping_add(4)) else {
             continue;
         };
         if name_off < 0 || name_off as u64 >= names_len {

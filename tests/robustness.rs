@@ -231,3 +231,41 @@ fn large_symbol_tables_preserve_function_boundaries() {
     assert!(code.contains("return 0x4e1f;"), "{code}");
     std::fs::remove_file(path).unwrap();
 }
+
+fn robustness_input(name: &str) -> std::path::PathBuf {
+    std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("tests/data/robustness")
+        .join(name)
+}
+
+#[test]
+fn go_function_table_near_address_limit_does_not_overflow() {
+    let path = robustness_input("go_table_overflow.elf");
+    let mut binary = Binary::open(&path).expect("the file is a valid ELF");
+    let addrs: Vec<u64> = binary.image().functions.keys().copied().take(20).collect();
+    for addr in addrs {
+        let _ = binary.decompile(addr, None, None);
+    }
+}
+
+#[test]
+fn cyclic_export_tries_finish_loading() {
+    for name in [
+        "export_trie_cycle_macho.bin",
+        "export_trie_cycle_arm64.bin",
+        "export_trie_cycle_x86_64.bin",
+    ] {
+        let path = robustness_input(name);
+        let (sender, receiver) = std::sync::mpsc::channel();
+        std::thread::spawn(move || {
+            let mut binary = Binary::open(&path).expect("the file is a valid Mach-O");
+            let addrs: Vec<u64> = binary.image().functions.keys().copied().take(20).collect();
+            for addr in addrs {
+                let _ = binary.decompile(addr, None, None);
+            }
+            let _ = sender.send(());
+        });
+        let finished = receiver.recv_timeout(std::time::Duration::from_secs(10));
+        assert!(finished.is_ok(), "{name} stalled while loading");
+    }
+}

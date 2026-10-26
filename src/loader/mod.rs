@@ -13,6 +13,10 @@ mod symbols;
 mod universal;
 pub(crate) mod unwind;
 
+/// Upper bound on export entries read from one file; a cyclic or self-sharing export trie
+/// would otherwise be walked for ever.
+pub(crate) const MAX_EXPORTS: usize = 1 << 20;
+
 use std::collections::{BTreeMap, HashMap};
 
 use serde::{Deserialize, Serialize};
@@ -1055,7 +1059,7 @@ pub fn load_with_arch(path: &Path, arch: Option<Architecture>) -> Result<Image> 
     }
 
     if let Ok(exports) = file.exports() {
-        for export in exports.flatten() {
+        for export in exports.into_iter().take(MAX_EXPORTS).flatten() {
             let object::read::ExportTarget::Address { address } = export.target() else {
                 continue;
             };
