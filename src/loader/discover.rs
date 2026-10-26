@@ -232,7 +232,7 @@ pub(crate) fn x86_prologues(bytes: &[u8], base: u64, bitness: u32) -> Vec<u64> {
 pub(crate) fn estimate_sizes(sections: &[Section], functions: &mut BTreeMap<u64, Function>) {
     let addrs: Vec<u64> = functions.keys().copied().collect();
 
-    for addr in &addrs {
+    for (index, addr) in addrs.iter().enumerate() {
         let Some(func) = functions.get(addr) else {
             continue;
         };
@@ -246,10 +246,9 @@ pub(crate) fn estimate_sizes(sections: &[Section], functions: &mut BTreeMap<u64,
             continue;
         };
         let next = addrs
-            .iter()
+            .get(index + 1)
             .copied()
-            .filter(|a| *a > *addr && *a < section.vaddr.saturating_add(section.size))
-            .min();
+            .filter(|next| *next < section.vaddr.saturating_add(section.size));
         let end = next.unwrap_or_else(|| section.vaddr.saturating_add(section.size));
         let delta = end - addr;
         // Code between two starts the symbol table gives belongs to the
@@ -270,7 +269,48 @@ pub(crate) fn estimate_sizes(sections: &[Section], functions: &mut BTreeMap<u64,
 
 #[cfg(test)]
 mod tests {
-    use super::{aarch64_prologues, x86_prologues};
+    use super::{aarch64_prologues, estimate_sizes, x86_prologues};
+
+    #[test]
+    fn estimated_sizes_respect_nearby_starts_explicit_sizes_and_section_ends() {
+        use crate::loader::{Function, Image, Isa, NameSource};
+
+        let mut image = Image::from_code(Isa::X86_64, 0, vec![0xc3; 0x10020]);
+        for (addr, size) in [
+            (0, None),
+            (3, Some(2)),
+            (7, None),
+            (0x10010, None),
+            (0x20000, None),
+        ] {
+            image.functions.insert(
+                addr,
+                Function {
+                    addr,
+                    size,
+                    size_estimated: false,
+                    name: None,
+                    aliases: Vec::new(),
+                    sources: vec![NameSource::Symtab],
+                },
+            );
+        }
+        estimate_sizes(&image.sections, &mut image.functions);
+        for (addr, size, estimated) in [
+            (0, Some(3), true),
+            (3, Some(2), false),
+            (7, Some(0x10009), true),
+            (0x10010, Some(16), true),
+            (0x20000, None, false),
+        ] {
+            let function = &image.functions[&addr];
+            assert_eq!((function.size, function.size_estimated), (size, estimated));
+        }
+        image.functions.get_mut(&7).unwrap().size = None;
+        image.functions.get_mut(&0x10010).unwrap().sources = vec![NameSource::Entry];
+        estimate_sizes(&image.sections, &mut image.functions);
+        assert_eq!(image.functions[&7].size, None);
+    }
 
     fn words(words: &[u32]) -> Vec<u8> {
         words.iter().flat_map(|word| word.to_le_bytes()).collect()

@@ -14,6 +14,8 @@ pub enum Error {
         path: PathBuf,
         source: object::Error,
     },
+    #[error("{}: unsupported universal Mach-O file; extract one architecture before opening it", path.display())]
+    UniversalMachO { path: PathBuf },
     #[error("{}: not a signature database: {source}", path.display())]
     SignatureFile {
         path: PathBuf,

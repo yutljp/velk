@@ -17,6 +17,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::error::{Error, Result};
 use std::fmt;
+use std::ops::Bound;
 use std::path::Path;
 
 use crate::loader::discover::aarch64_prologues;
@@ -759,6 +760,14 @@ pub fn load(path: &Path) -> Result<Image> {
         Ok(kind) => kind,
         Err(source) => return Err(object_error(source)),
     };
+    if matches!(
+        kind,
+        object::FileKind::MachOFat32 | object::FileKind::MachOFat64
+    ) {
+        return Err(Error::UniversalMachO {
+            path: path.to_owned(),
+        });
+    }
     let file = match ObjFile::parse(&bytes[..]) {
         Ok(file) => file,
         Err(source) => return Err(object_error(source)),
@@ -1051,18 +1060,21 @@ pub fn load(path: &Path) -> Result<Image> {
     image.retain_code_functions();
     // An estimated size may cover starts found later; cut it at the next start.
     let starts: Vec<u64> = image.functions.keys().copied().collect();
-    for function in image.functions.values_mut() {
+    for (index, function) in image.functions.values_mut().enumerate() {
         if !function.size_estimated {
             continue;
         }
         let end = function.addr.saturating_add(function.size.unwrap_or(0));
-        if let Some(next) = starts
-            .iter()
-            .copied()
-            .chain(image.fragments.keys().copied())
-            .filter(|start| *start > function.addr && *start < end)
-            .min()
-        {
+        if end <= function.addr {
+            continue;
+        }
+        let next_start = starts.get(index + 1).copied().filter(|start| *start < end);
+        let next_fragment = image
+            .fragments
+            .range((Bound::Excluded(function.addr), Bound::Excluded(end)))
+            .next()
+            .map(|(&start, _)| start);
+        if let Some(next) = next_start.into_iter().chain(next_fragment).min() {
             function.size = Some(next - function.addr);
         }
     }

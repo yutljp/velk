@@ -535,16 +535,12 @@ fn run(command: Command, project: Option<&Path>) -> Result<ExitCode> {
                 }
                 addresses
             };
-            let mut code = String::new();
-            for &addr in &addresses {
-                match binary.decompile(addr, signatures.as_ref(), None) {
-                    Ok(text) => code.push_str(&text),
-                    Err(error) => return Err(error),
-                }
-            }
-            let code = velk::render::combine(&code);
-            let addr = addresses.first().copied().unwrap_or(0);
-            print_code(&binary, addr, &functions.join(", "), &code, Language::C);
+            return Ok(decompile_functions(
+                &mut binary,
+                &addresses,
+                &functions.join(", "),
+                signatures.as_ref(),
+            ));
         }
         Command::Disasm {
             path,
@@ -661,6 +657,32 @@ fn run(command: Command, project: Option<&Path>) -> Result<ExitCode> {
         Command::Mcp => mcp::serve()?,
     }
     Ok(ExitCode::SUCCESS)
+}
+
+fn decompile_functions(
+    binary: &mut Binary,
+    addresses: &[u64],
+    title: &str,
+    signatures: Option<&Database>,
+) -> ExitCode {
+    use std::time::{Duration, Instant};
+
+    let mut code = String::new();
+    let mut status = ExitCode::SUCCESS;
+    for &addr in addresses {
+        let deadline = Instant::now() + Duration::from_secs(10);
+        match binary.decompile(addr, signatures, Some(deadline)) {
+            Ok(text) => code.push_str(&text),
+            Err(error) => {
+                eprintln!("error: function at 0x{addr:x}: {error}");
+                status = ExitCode::FAILURE;
+            }
+        }
+    }
+    let code = velk::render::combine(&code);
+    let addr = addresses.first().copied().unwrap_or(0);
+    print_code(binary, addr, title, &code, Language::C);
+    status
 }
 
 fn write_json(path: &Path, value: &serde_json::Value) -> Result<()> {
