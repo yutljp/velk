@@ -17,6 +17,21 @@ if [ -z "${BIN:-}" ]; then
 fi
 [ -x "$BIN" ] || fail "binary not built"
 
+"$BIN" --help >tests/out/cli-help.txt
+status=0
+"$BIN" >tests/out/cli-stdout.txt 2>tests/out/cli-stderr.txt || status=$?
+[ "$status" -eq 2 ] || fail "no arguments exit status"
+[ ! -s tests/out/cli-stderr.txt ] || fail "no arguments stderr"
+cmp -s tests/out/cli-help.txt tests/out/cli-stdout.txt || fail "no arguments help"
+status=0
+"$BIN" --unknown >tests/out/cli-stdout.txt 2>tests/out/cli-stderr.txt || status=$?
+[ "$status" -eq 2 ] || fail "parse error exit status"
+[ ! -s tests/out/cli-stdout.txt ] || fail "parse error stdout"
+grep -q '^error:' tests/out/cli-stderr.txt || fail "parse error message"
+grep -q 'Usage:' tests/out/cli-stderr.txt || fail "parse error usage"
+grep -q -- '--help' tests/out/cli-stderr.txt || fail "parse error help hint"
+ok "command-line help and errors"
+
 # Navigation uses the same operation flags as the other commands.
 for operation in xrefs callers callees summary; do
   navigation=$("$BIN" --"$operation" "$FIX/tail_calls.o" tail_one)

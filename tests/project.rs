@@ -439,14 +439,44 @@ fn definition_origins_rename_locals_without_changing_results() {
 }
 
 #[test]
-fn invalid_cli_and_duplicate_targets_are_machine_readable() {
+fn parse_errors_are_human_readable() {
+    let help = Command::new(env!("CARGO_BIN_EXE_velk"))
+        .arg("--help")
+        .output()
+        .unwrap();
+    assert_eq!(help.status.code(), Some(0));
+    assert!(help.stderr.is_empty());
+    assert!(String::from_utf8_lossy(&help.stdout).contains("JSON errors after argument parsing"));
+    let empty = Command::new(env!("CARGO_BIN_EXE_velk")).output().unwrap();
+    assert_eq!(empty.status.code(), Some(2));
+    assert!(empty.stderr.is_empty());
+    assert_eq!(empty.stdout, help.stdout);
+    for args in [
+        vec!["--unknown"],
+        vec!["--decompile"],
+        vec!["--functions", "--sections", "binary"],
+        vec!["--annotations"],
+        vec!["--functions", "binary", "--limit", "invalid"],
+    ] {
+        let failure = Command::new(env!("CARGO_BIN_EXE_velk"))
+            .args(args)
+            .output()
+            .unwrap();
+        assert_eq!(failure.status.code(), Some(2));
+        assert!(failure.stdout.is_empty());
+        let message = String::from_utf8_lossy(&failure.stderr);
+        assert!(message.starts_with("error:"), "{message}");
+        assert!(message.contains("Usage:"), "{message}");
+        assert!(message.contains("--help"), "{message}");
+    }
+}
+
+#[test]
+fn project_failures_and_duplicate_targets_are_machine_readable() {
     let fixture = Fixture::new();
     let failure = fixture.cli(&["unknown"]);
-    assert!(!failure.status.success());
-    assert_eq!(
-        serde_json::from_slice::<Value>(&failure.stderr).unwrap()["code"],
-        "invalid_cli"
-    );
+    assert_eq!(failure.status.code(), Some(2));
+    assert!(String::from_utf8_lossy(&failure.stderr).starts_with("error:"));
     let failure = fixture.cli(&["origins", "missing_function"]);
     assert!(!failure.status.success());
     assert_eq!(

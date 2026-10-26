@@ -39,7 +39,7 @@ const HELP_STYLES: Styles = Styles::styled()
     ])),
     group(ArgGroup::new("multi_target").args(["decompile", "path"])),
     group(ArgGroup::new("graph").args(["callers", "callees", "path"])),
-    after_help = "Examples:\n  velk -f app.elf\n  velk -D app.elf main\n  velk --disasm app.elf 0x401000 --limit 20\n  velk --build-signatures app.elf --output signatures.json\n  velk -r analysis.js\n  velk --annotations app.elf\n  velk --xrefs app.elf main\n  velk --path app.elf main helper --depth 4\n  velk --strings app.elf --contains hello\n\nChoose one operation. Use --help to list its arguments and options."
+    after_help = "Examples:\n  velk -f app.elf\n  velk -D app.elf main\n  velk --disasm app.elf 0x401000 --limit 20\n  velk --build-signatures app.elf --output signatures.json\n  velk -r analysis.js\n  velk --annotations app.elf\n  velk --xrefs app.elf main\n  velk --path app.elf main helper --depth 4\n  velk --strings app.elf --contains hello\n\nChoose one operation. Use --help to list its arguments and options.\nProject and annotation operations return JSON results and JSON errors after argument parsing."
 )]
 struct Cli {
     /// Select a Mach-O architecture (default: host architecture).
@@ -397,8 +397,14 @@ fn exit_on_closed_pipe() {
 }
 
 fn main() -> ExitCode {
+    use clap::CommandFactory;
+
     #[cfg(unix)]
     exit_on_closed_pipe();
+    if std::env::args_os().len() == 1 {
+        let _ = Cli::command().print_long_help();
+        return ExitCode::from(2);
+    }
     let cli = match Cli::try_parse() {
         Ok(cli) => cli,
         Err(error)
@@ -410,12 +416,13 @@ fn main() -> ExitCode {
             let _ = error.print();
             return ExitCode::SUCCESS;
         }
-        Err(error) => {
-            eprintln!(
-                "{}",
-                json!({"code":"invalid_cli", "message":error.to_string()})
+        Err(mut error) => {
+            error.insert(
+                clap::error::ContextKind::Usage,
+                clap::error::ContextValue::StyledStr(Cli::command().render_usage()),
             );
-            return ExitCode::FAILURE;
+            let _ = error.print();
+            return ExitCode::from(2);
         }
     };
     let project = cli.project.clone();
