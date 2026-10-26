@@ -515,111 +515,7 @@ impl Structurer<'_> {
                     cases,
                     default,
                 } => {
-                    // Cases sharing a target share a body, and each body
-                    // ends where the next one starts.
-                    let mut arms: Vec<(Vec<i64>, usize)> = Vec::new();
-                    let mut jumps: Vec<(i64, Vec<Node>)> = Vec::new();
-                    for (case_value, address) in cases {
-                        match self.target(*address) {
-                            Some(target) if target > index && target < to => {
-                                match arms.iter_mut().find(|(_, at)| *at == target) {
-                                    Some((values, _)) => values.push(*case_value),
-                                    None => arms.push((vec![*case_value], target)),
-                                }
-                            }
-                            // The case body sits outside this range: inline it
-                            // when it is an epilogue arm, otherwise jump.
-                            _ => {
-                                let body = match self
-                                    .target(*address)
-                                    .and_then(|at| self.return_block(at))
-                                {
-                                    Some(stmts) => self.plain(&stmts),
-                                    None => self.plain(&[Stmt::Br {
-                                        target: Some(*address),
-                                    }]),
-                                };
-                                jumps.push((*case_value, body));
-                            }
-                        }
-                    }
-                    arms.sort_by_key(|(_, target)| *target);
-                    let default_index = default.and_then(|address| self.target(address));
-                    let mut bounds: Vec<usize> = arms.iter().map(|(_, target)| *target).collect();
-                    if let Some(target) = default_index {
-                        bounds.push(target);
-                    }
-                    bounds.sort_unstable();
-                    if arms.is_empty() || bounds.first().copied() != Some(index + 1) {
-                        out.extend(self.plain(&block.stmts));
-                        index += 1;
-                        continue;
-                    }
-                    let end_of = |start: usize| -> usize {
-                        bounds
-                            .iter()
-                            .copied()
-                            .find(|bound| *bound > start)
-                            .unwrap_or(to)
-                    };
-                    out.extend(self.plain(&block.stmts[..block.stmts.len() - 1]));
-                    // The cases print in value order, not in the order their
-                    // bodies fall into each other, so a body that runs into
-                    // the next one says so with a `goto`; only the last falls
-                    // out of the switch.
-                    let last = bounds.last().copied().unwrap_or(to);
-                    let after = end_of(last).max(last);
-                    let falls_into = |start: usize, structurer: &Self| {
-                        let end = end_of(start);
-                        (end < after && !structurer.ends(end - 1)).then_some(end)
-                    };
-                    for start in &bounds {
-                        if let Some(next) = falls_into(*start, self) {
-                            self.targeted.insert(self.blocks[next].start);
-                        }
-                    }
-                    let body_of = |start: usize, structurer: &mut Self| {
-                        let mut body = structurer.emit(start, end_of(start));
-                        if let Some(next) = falls_into(start, structurer) {
-                            match structurer.return_block(next) {
-                                Some(stmts) => body.extend(structurer.plain(&stmts)),
-                                None => body.push(Node::Stmt(Stmt::Br {
-                                    target: Some(structurer.blocks[next].start),
-                                })),
-                            }
-                        }
-                        body
-                    };
-                    let mut rendered: Vec<(Vec<i64>, Vec<Node>)> = Vec::new();
-                    for (values, target) in &arms {
-                        rendered.push((values.clone(), body_of(*target, self)));
-                    }
-                    for (case_value, body) in jumps {
-                        rendered.push((vec![case_value], body));
-                    }
-                    let default_body = match default {
-                        Some(address) => match self.target(*address) {
-                            Some(target) if target > index && target < to => {
-                                Some(body_of(target, self))
-                            }
-                            _ => Some(
-                                match self.target(*address).and_then(|at| self.return_block(at)) {
-                                    Some(stmts) => self.plain(&stmts),
-                                    None => self.plain(&[Stmt::Br {
-                                        target: Some(*address),
-                                    }]),
-                                },
-                            ),
-                        },
-                        None => None,
-                    };
-                    rendered.sort_by_key(|(values, _)| values.first().copied().unwrap_or(0));
-                    out.push(Node::Switch {
-                        index: value.clone(),
-                        arms: rendered,
-                        default: default_body,
-                    });
-                    index = end_of(last).max(last);
+                    index = self.emit_switch(index..to, value, cases, *default, &mut out);
                 }
                 _ => {
                     out.extend(self.plain(&block.stmts));
@@ -629,6 +525,117 @@ impl Structurer<'_> {
         }
 
         out
+    }
+
+    fn emit_switch(
+        &mut self,
+        range: std::ops::Range<usize>,
+        value: &Expr,
+        cases: &[(i64, u64)],
+        default: Option<u64>,
+        out: &mut Vec<Node>,
+    ) -> usize {
+        let (index, to) = (range.start, range.end);
+        let block = &self.blocks[index];
+        // Cases sharing a target share a body, and each body
+        // ends where the next one starts.
+        let mut arms: Vec<(Vec<i64>, usize)> = Vec::new();
+        let mut jumps: Vec<(i64, Vec<Node>)> = Vec::new();
+        for (case_value, address) in cases {
+            match self.target(*address) {
+                Some(target) if target > index && target < to => {
+                    match arms.iter_mut().find(|(_, at)| *at == target) {
+                        Some((values, _)) => values.push(*case_value),
+                        None => arms.push((vec![*case_value], target)),
+                    }
+                }
+                // The case body sits outside this range: inline it
+                // when it is an epilogue arm, otherwise jump.
+                _ => {
+                    let body = match self.target(*address).and_then(|at| self.return_block(at)) {
+                        Some(stmts) => self.plain(&stmts),
+                        None => self.plain(&[Stmt::Br {
+                            target: Some(*address),
+                        }]),
+                    };
+                    jumps.push((*case_value, body));
+                }
+            }
+        }
+        arms.sort_by_key(|(_, target)| *target);
+        let default_index = default.and_then(|address| self.target(address));
+        let mut bounds: Vec<usize> = arms.iter().map(|(_, target)| *target).collect();
+        if let Some(target) = default_index {
+            bounds.push(target);
+        }
+        bounds.sort_unstable();
+        if arms.is_empty() || bounds.first().copied() != Some(index + 1) {
+            out.extend(self.plain(&block.stmts));
+            return index + 1;
+        }
+        let end_of = |start: usize| -> usize {
+            bounds
+                .iter()
+                .copied()
+                .find(|bound| *bound > start)
+                .unwrap_or(to)
+        };
+        out.extend(self.plain(&block.stmts[..block.stmts.len() - 1]));
+        // The cases print in value order, not in the order their
+        // bodies fall into each other, so a body that runs into
+        // the next one says so with a `goto`; only the last falls
+        // out of the switch.
+        let last = bounds.last().copied().unwrap_or(to);
+        let after = end_of(last).max(last);
+        let falls_into = |start: usize, structurer: &Self| {
+            let end = end_of(start);
+            (end < after && !structurer.ends(end - 1)).then_some(end)
+        };
+        for start in &bounds {
+            if let Some(next) = falls_into(*start, self) {
+                self.targeted.insert(self.blocks[next].start);
+            }
+        }
+        let body_of = |start: usize, structurer: &mut Self| {
+            let mut body = structurer.emit(start, end_of(start));
+            if let Some(next) = falls_into(start, structurer) {
+                match structurer.return_block(next) {
+                    Some(stmts) => body.extend(structurer.plain(&stmts)),
+                    None => body.push(Node::Stmt(Stmt::Br {
+                        target: Some(structurer.blocks[next].start),
+                    })),
+                }
+            }
+            body
+        };
+        let mut rendered: Vec<(Vec<i64>, Vec<Node>)> = Vec::new();
+        for (values, target) in &arms {
+            rendered.push((values.clone(), body_of(*target, self)));
+        }
+        for (case_value, body) in jumps {
+            rendered.push((vec![case_value], body));
+        }
+        let default_body = match default {
+            Some(address) => match self.target(address) {
+                Some(target) if target > index && target < to => Some(body_of(target, self)),
+                _ => Some(
+                    match self.target(address).and_then(|at| self.return_block(at)) {
+                        Some(stmts) => self.plain(&stmts),
+                        None => self.plain(&[Stmt::Br {
+                            target: Some(address),
+                        }]),
+                    },
+                ),
+            },
+            None => None,
+        };
+        rendered.sort_by_key(|(values, _)| values.first().copied().unwrap_or(0));
+        out.push(Node::Switch {
+            index: value.clone(),
+            arms: rendered,
+            default: default_body,
+        });
+        end_of(last).max(last)
     }
 
     /// A block that never falls through into the next one.

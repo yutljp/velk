@@ -46,6 +46,40 @@ fn successors(blocks: &[Block], index: &HashMap<u64, usize>, block: usize) -> Ve
     )
 }
 
+fn forest_order(successors: &[Vec<usize>]) -> (Vec<usize>, Vec<usize>) {
+    let count = successors.len();
+    // Reverse postorder by an explicit stack, from the entry and then
+    // from each block it does not reach.
+    let mut order = vec![usize::MAX; count];
+    let mut postorder = Vec::new();
+    let mut visited = vec![false; count];
+    let mut roots = Vec::new();
+    for root in 0..count {
+        if visited[root] {
+            continue;
+        }
+        roots.push(root);
+        let mut stack = vec![(root, 0usize)];
+        visited[root] = true;
+        while let Some((block, next)) = stack.last_mut() {
+            if let Some(successor) = successors[*block].get(*next).copied() {
+                *next += 1;
+                if !visited[successor] {
+                    visited[successor] = true;
+                    stack.push((successor, 0));
+                }
+            } else {
+                postorder.push(*block);
+                stack.pop();
+            }
+        }
+    }
+    for (number, block) in postorder.iter().rev().enumerate() {
+        order[*block] = number;
+    }
+    (order, roots)
+}
+
 impl<'a> Graph<'a> {
     fn new(ir: &'a FunctionIr, absorb: Absorb) -> Graph<'a> {
         let blocks = &ir.blocks;
@@ -58,35 +92,7 @@ impl<'a> Graph<'a> {
         let successors: Vec<Vec<usize>> = (0..count)
             .map(|block| successors(blocks, &index, block))
             .collect();
-        // Reverse postorder by an explicit stack, from the entry and then
-        // from each block it does not reach.
-        let mut order = vec![usize::MAX; count];
-        let mut postorder = Vec::new();
-        let mut visited = vec![false; count];
-        let mut roots = Vec::new();
-        for root in 0..count {
-            if visited[root] {
-                continue;
-            }
-            roots.push(root);
-            let mut stack = vec![(root, 0usize)];
-            visited[root] = true;
-            while let Some((block, next)) = stack.last_mut() {
-                if let Some(successor) = successors[*block].get(*next).copied() {
-                    *next += 1;
-                    if !visited[successor] {
-                        visited[successor] = true;
-                        stack.push((successor, 0));
-                    }
-                } else {
-                    postorder.push(*block);
-                    stack.pop();
-                }
-            }
-        }
-        for (number, block) in postorder.iter().rev().enumerate() {
-            order[*block] = number;
-        }
+        let (order, roots) = forest_order(&successors);
         let idom = forest_dominators(&successors, &roots);
         let mut children = vec![Vec::new(); count];
         for (block, parent) in idom.iter().enumerate() {

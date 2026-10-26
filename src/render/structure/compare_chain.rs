@@ -63,24 +63,12 @@ pub(crate) fn predecessors(ir: &FunctionIr) -> std::collections::HashMap<u64, us
     counts
 }
 
-/// The interval of the value guaranteed on entry by the block's sole incoming
-/// conditional edge, e.g. `x > 4` guarding a subtree that tests 5..9.
-fn incoming_interval(
+fn incoming_comparison(
     ir: &FunctionIr,
-    predecessors: &std::collections::HashMap<u64, usize>,
     destination: usize,
+    destination_start: u64,
     value: &Expr,
-    lo: i64,
-    hi: i64,
-) -> Option<(i64, i64)> {
-    let destination_start = (match ir.blocks.get(destination) {
-        Some(value) => value,
-        None => return None,
-    })
-    .start;
-    if predecessors.get(&destination_start).copied().unwrap_or(0) != 1 {
-        return None;
-    }
+) -> Option<(crate::ir::Cond, i64, bool)> {
     let mut incoming = Vec::new();
     for (source, block) in ir.blocks.iter().enumerate() {
         let Some(last) = block.stmts.last() else {
@@ -104,6 +92,32 @@ fn incoming_interval(
         return None;
     }
     let (_, cond, k, taken_edge) = incoming[0];
+    Some((cond, k, taken_edge))
+}
+
+/// The interval of the value guaranteed on entry by the block's sole incoming
+/// conditional edge, e.g. `x > 4` guarding a subtree that tests 5..9.
+fn incoming_interval(
+    ir: &FunctionIr,
+    predecessors: &std::collections::HashMap<u64, usize>,
+    destination: usize,
+    value: &Expr,
+    lo: i64,
+    hi: i64,
+) -> Option<(i64, i64)> {
+    let destination_start = (match ir.blocks.get(destination) {
+        Some(value) => value,
+        None => return None,
+    })
+    .start;
+    if predecessors.get(&destination_start).copied().unwrap_or(0) != 1 {
+        return None;
+    }
+    let Some((cond, k, taken_edge)) =
+        incoming_comparison(ir, destination, destination_start, value)
+    else {
+        return None;
+    };
     let (taken, rest): (Vec<Range>, Vec<Range>) = match cond {
         crate::ir::Cond::Eq => (
             if (lo..=hi).contains(&k) {
@@ -183,6 +197,34 @@ struct ChainWalk<'a> {
 }
 
 impl ChainWalk<'_> {
+    fn compare_bounds(&self, head: u64) -> Option<(i64, i64, bool)> {
+        // The constants of every compare in the tree, along both edges.
+        let mut lo = i64::MAX;
+        let mut hi = i64::MIN;
+        let mut range_compare = false;
+        let mut pending = vec![head];
+        let mut visited = std::collections::HashSet::new();
+        while let Some(at) = pending.pop() {
+            if !visited.insert(at) {
+                continue;
+            }
+            let Some((cond, k, target)) = self.compare_at(at) else {
+                continue;
+            };
+            if !matches!(cond, crate::ir::Cond::Eq | crate::ir::Cond::Ne) {
+                range_compare = true;
+            }
+            lo = lo.min(k);
+            hi = hi.max(k);
+            pending.push(target);
+            pending.extend(self.next_start(at));
+        }
+        if lo == i64::MAX || hi == i64::MIN {
+            return None;
+        }
+        Some((lo, hi, range_compare))
+    }
+
     fn next_start(&self, at: u64) -> Option<u64> {
         let index = *self.position.get(&at)?;
         self.ir.blocks.get(index + 1).map(|block| block.start)
@@ -557,30 +599,9 @@ pub fn recover_chains(ir: &FunctionIr) -> Vec<ChainSwitch> {
             blocks: Vec::new(),
             failed: false,
         };
-        // The constants of every compare in the tree, along both edges.
-        let mut lo = i64::MAX;
-        let mut hi = i64::MIN;
-        let mut range_compare = false;
-        let mut pending = vec![block.start];
-        let mut visited = std::collections::HashSet::new();
-        while let Some(at) = pending.pop() {
-            if !visited.insert(at) {
-                continue;
-            }
-            let Some((cond, k, target)) = walk.compare_at(at) else {
-                continue;
-            };
-            if !matches!(cond, crate::ir::Cond::Eq | crate::ir::Cond::Ne) {
-                range_compare = true;
-            }
-            lo = lo.min(k);
-            hi = hi.max(k);
-            pending.push(target);
-            pending.extend(walk.next_start(at));
-        }
-        if lo == i64::MAX || hi == i64::MIN {
+        let Some((mut lo, mut hi, range_compare)) = walk.compare_bounds(block.start) else {
             continue;
-        }
+        };
         if range_compare {
             let full_lo = lo.min(0);
             if let Some((entry_lo, entry_hi)) =

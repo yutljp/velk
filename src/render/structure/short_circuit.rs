@@ -312,7 +312,7 @@ fn same_place(ir: &FunctionIr, index: &HashMap<u64, usize>, one: u64, other: u64
 }
 
 /// Where control goes from a block start, past blocks that only jump.
-fn settle(ir: &FunctionIr, index: &HashMap<u64, usize>, mut target: u64) -> u64 {
+pub(super) fn settle(ir: &FunctionIr, index: &HashMap<u64, usize>, mut target: u64) -> u64 {
     for _ in 0..8 {
         match index
             .get(&target)
@@ -850,6 +850,61 @@ mod tests {
 
     #[test]
     fn comparison_chains_preserve_order_and_the_existing_limit() {
+        let mut ir = FunctionIr::single_block(Isa::AArch64, Vec::new());
+        ir.blocks = (0..10)
+            .map(|start| Block {
+                start,
+                stmts: vec![Stmt::Br {
+                    target: Some(start + 1),
+                }],
+            })
+            .collect();
+        ir.blocks.extend([
+            Block {
+                start: 20,
+                stmts: vec![Stmt::Br { target: Some(20) }],
+            },
+            Block {
+                start: 30,
+                stmts: vec![Stmt::Br { target: Some(31) }],
+            },
+            Block {
+                start: 31,
+                stmts: vec![Stmt::Br { target: Some(32) }],
+            },
+            Block {
+                start: 32,
+                stmts: vec![Stmt::Br { target: Some(30) }],
+            },
+            Block {
+                start: 40,
+                stmts: Vec::new(),
+            },
+            Block {
+                start: 50,
+                stmts: vec![Stmt::Br { target: None }],
+            },
+        ]);
+        let index = ir
+            .blocks
+            .iter()
+            .enumerate()
+            .map(|(position, block)| (block.start, position))
+            .collect();
+        for (start, expected) in [
+            (0, 8),
+            (1, 9),
+            (2, 10),
+            (20, 20),
+            (30, 32),
+            (31, 30),
+            (32, 31),
+            (40, 40),
+            (50, 50),
+            (99, 99),
+        ] {
+            assert_eq!(super::settle(&ir, &index, start), expected);
+        }
         for length in [3, 4, 5] {
             let mut body = vec![increment(1)];
             for position in (0..length).rev() {

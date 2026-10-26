@@ -119,19 +119,7 @@ pub(super) fn merged_checks(ir: &FunctionIr) -> Option<FunctionIr> {
         .enumerate()
         .map(|(position, block)| (block.start, position))
         .collect();
-    // Where control goes from a block start, past blocks that only jump.
-    let settle = |mut target: u64| {
-        for _ in 0..8 {
-            match starts
-                .get(&target)
-                .map(|position| ir.blocks[*position].stmts.as_slice())
-            {
-                Some([Stmt::Br { target: Some(next) }]) if *next != target => target = *next,
-                _ => break,
-            }
-        }
-        target
-    };
+    let settle = |target| super::short_circuit::settle(ir, &starts, target);
     // Each conditional exit as (cond, lhs, rhs, taken, otherwise), the
     // condition put the way that compares smaller first.
     type Exit = (Cond, Expr, Expr, u64, u64);
@@ -347,7 +335,10 @@ pub(super) fn unthreaded(ir: &FunctionIr) -> Option<FunctionIr> {
                     target,
                 },
             ] => {
-                let next = ir.blocks.get(position + 1)?.start;
+                let Some(next) = ir.blocks.get(position + 1) else {
+                    return None;
+                };
+                let next = next.start;
                 Some((position, *cond, lhs, rhs, *target, next))
             }
             _ => None,
@@ -362,19 +353,7 @@ pub(super) fn unthreaded(ir: &FunctionIr) -> Option<FunctionIr> {
         .enumerate()
         .map(|(position, block)| (block.start, position))
         .collect();
-    // Where control goes from a block start, past blocks that only jump.
-    let settle = |mut target: u64| {
-        for _ in 0..8 {
-            match starts
-                .get(&target)
-                .map(|position| ir.blocks[*position].stmts.as_slice())
-            {
-                Some([Stmt::Br { target: Some(next) }]) if *next != target => target = *next,
-                _ => break,
-            }
-        }
-        target
-    };
+    let settle = |target| super::short_circuit::settle(ir, &starts, target);
     let original = ir;
     let mut ir = ir.clone();
     let mut next_copy = COPIES + 0x2000_0000;

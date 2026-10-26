@@ -367,6 +367,13 @@ fn rewrite(nodes: &mut [Node], statements: &mut impl Iterator<Item = Stmt>) {
     }
 }
 
+fn matches_exception_site(lowered: &[Stmt], original: &[String]) -> bool {
+    lowered.iter().any(|stmt| {
+        matches!(stmt, Stmt::Call { .. } | Stmt::Unsupported { .. })
+            && original.contains(&format!("{stmt:?}"))
+    })
+}
+
 fn exception_edges(original: &FunctionIr, lowered: &mut FunctionIr) {
     if original.landing_pads.is_empty() {
         return;
@@ -393,10 +400,7 @@ fn exception_edges(original: &FunctionIr, lowered: &mut FunctionIr) {
                 continue;
             };
             for (position, block) in lowered.blocks.iter().enumerate() {
-                if block.stmts.iter().any(|stmt| {
-                    matches!(stmt, Stmt::Call { .. } | Stmt::Unsupported { .. })
-                        && statements.contains(&format!("{stmt:?}"))
-                }) {
+                if matches_exception_site(&block.stmts, &statements) {
                     sites
                         .entry(*pad)
                         .or_default()

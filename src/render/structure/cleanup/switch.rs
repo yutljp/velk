@@ -195,6 +195,60 @@ fn starts_at(body: &[Node], target: u64) -> bool {
         .any(|node| matches!(node, Node::Label(label) if *label == target))
 }
 
+fn same_call(left: &Stmt, right: &Stmt) -> bool {
+    match (left, right) {
+        (
+            Stmt::Call {
+                kind,
+                target,
+                through,
+                convention,
+                args,
+                floats_named,
+                abi: None,
+                outputs,
+                clobbers,
+                via,
+            },
+            Stmt::Call {
+                kind: other_kind,
+                target: other_target,
+                through: other_through,
+                convention: other_convention,
+                args: other_args,
+                floats_named: other_floats_named,
+                abi: None,
+                outputs: other_outputs,
+                clobbers: other_clobbers,
+                via: other_via,
+            },
+        ) => {
+            (
+                kind,
+                target,
+                through,
+                convention,
+                args,
+                floats_named,
+                outputs,
+                clobbers,
+                via,
+            ) == (
+                other_kind,
+                other_target,
+                other_through,
+                other_convention,
+                other_args,
+                other_floats_named,
+                other_outputs,
+                other_clobbers,
+                other_via,
+            )
+        }
+        _ => false,
+    }
+}
+
 fn same_body(left: &[Node], right: &[Node], merge_calls: bool) -> bool {
     use crate::render::structure::merge_exits::statement;
 
@@ -204,53 +258,9 @@ fn same_body(left: &[Node], right: &[Node], merge_calls: bool) -> bool {
             .zip(right)
             .all(|(left, right)| match (left, right) {
                 (
-                    Node::Stmt(Stmt::Call {
-                        kind,
-                        target,
-                        through,
-                        convention,
-                        args,
-                        floats_named,
-                        abi: None,
-                        outputs,
-                        clobbers,
-                        via,
-                    }),
-                    Node::Stmt(Stmt::Call {
-                        kind: other_kind,
-                        target: other_target,
-                        through: other_through,
-                        convention: other_convention,
-                        args: other_args,
-                        floats_named: other_floats_named,
-                        abi: None,
-                        outputs: other_outputs,
-                        clobbers: other_clobbers,
-                        via: other_via,
-                    }),
-                ) if merge_calls => {
-                    (
-                        kind,
-                        target,
-                        through,
-                        convention,
-                        args,
-                        floats_named,
-                        outputs,
-                        clobbers,
-                        via,
-                    ) == (
-                        other_kind,
-                        other_target,
-                        other_through,
-                        other_convention,
-                        other_args,
-                        other_floats_named,
-                        other_outputs,
-                        other_clobbers,
-                        other_via,
-                    )
-                }
+                    Node::Stmt(left @ Stmt::Call { abi: None, .. }),
+                    Node::Stmt(right @ Stmt::Call { abi: None, .. }),
+                ) if merge_calls => same_call(left, right),
                 (Node::Stmt(left), Node::Stmt(right)) => {
                     let Some(left) = statement(left) else {
                         return false;
