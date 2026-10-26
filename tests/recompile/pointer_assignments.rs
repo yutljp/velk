@@ -264,3 +264,73 @@ fn printed_global_offsets_keep_the_data_address_separate() {
         );
     }
 }
+
+#[test]
+fn negative_literal_offsets_wrap_as_integers() {
+    let offset = || Expr::reg(VARIABLE_BASE, 64);
+    let sum = || Expr::reg(VARIABLE_BASE + 1, 64);
+    let assign = |index, value| Stmt::Assign {
+        dest: RegRef { index, width: 64 },
+        value,
+    };
+    let mut ir = synthetic_ir("negative_offset", Vec::new(), CType::U64, Vec::new());
+    ir.blocks = vec![
+        Block {
+            start: 0,
+            stmts: vec![
+                assign(VARIABLE_BASE, Expr::Const((-160i64) as u64)),
+                assign(VARIABLE_BASE + 1, Expr::Const(0)),
+            ],
+        },
+        Block {
+            start: 10,
+            stmts: vec![
+                assign(
+                    VARIABLE_BASE + 1,
+                    Expr::bin(
+                        BinOp::Add,
+                        sum(),
+                        Expr::Load {
+                            addr: Box::new(Expr::bin(
+                                BinOp::Add,
+                                Expr::Const(0x20000100),
+                                offset(),
+                            )),
+                            width: 2,
+                            signed: false,
+                        },
+                    ),
+                ),
+                assign(
+                    VARIABLE_BASE,
+                    Expr::bin(BinOp::Add, offset(), Expr::Const(32)),
+                ),
+                Stmt::Brif {
+                    cond: Cond::Ne,
+                    lhs: offset(),
+                    rhs: Expr::Const(0),
+                    target: 10,
+                },
+            ],
+        },
+        Block {
+            start: 20,
+            stmts: vec![Stmt::Ret { value: sum() }],
+        },
+    ];
+    let candidate = printed_candidate(ir, vec![Vec::new()]);
+    assert!(candidate.code.contains("uint64_t v1"), "{}", candidate.code);
+    assert!(!candidate.code.contains("*v1"), "{}", candidate.code);
+    let code = format!(
+        "static uint16_t data[160];\n{}",
+        candidate
+            .code
+            .replace("0x20000100", "(uintptr_t)(data + 160)")
+    );
+    syntax::run_printed(
+        &code,
+        "",
+        "for (int i = 0; i < 160; ++i) data[i] = i;\n\
+         if (negative_offset() != 560) __builtin_trap();",
+    );
+}

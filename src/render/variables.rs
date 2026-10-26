@@ -267,7 +267,7 @@ pub(super) fn literal_offsets(ir: &FunctionIr) -> HashSet<u16> {
             Stmt::Assign {
                 dest,
                 value: Expr::Const(value),
-            } if *value < 0x1000 => Some(dest.index),
+            } if (-0xfff..0x1000).contains(&(*value as i64)) => Some(dest.index),
             _ => None,
         })
         .collect();
