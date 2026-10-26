@@ -154,6 +154,21 @@ pub(crate) fn cs_neg_chain(
     ))
 }
 
+fn adjusted_branch<'a>(
+    statements: &'a [Stmt],
+    select_index: usize,
+    adjusted: &'a Expr,
+) -> Option<(&'a Expr, Option<usize>)> {
+    match strip_and_mask(adjusted) {
+        Expr::Reg { index, .. } => (0..select_index).rev().take(4).find_map(|position| {
+            assign_of(&statements[position]).and_then(|(dest, value)| {
+                (dest.index == *index).then(|| (strip_and_mask(value), Some(position)))
+            })
+        }),
+        adjusted => Some((adjusted, None)),
+    }
+}
+
 /// Signed `x % 2^k` as `x - (select(x >= 0, x, x + (2^k - 1)) & -2^k)`.
 /// Returns (sub position, select position, adjusted definition, divisor,
 /// dividend, domain bits).
@@ -242,24 +257,9 @@ pub(crate) fn signed_select_mod_chain(
         else {
             continue;
         };
-        // The adjusted branch may be a register defined just before the select.
-        let mut adjusted_def = None;
-        let adjusted = match strip_and_mask(adjusted) {
-            Expr::Reg { index, .. } => {
-                let resolved = (0..select_index).rev().take(4).find_map(|position| {
-                    assign_of(&statements[position]).and_then(|(dest, value)| {
-                        (dest.index == *index).then(|| {
-                            adjusted_def = Some(position);
-                            strip_and_mask(value)
-                        })
-                    })
-                });
-                let Some(adjusted) = resolved else {
-                    continue;
-                };
-                adjusted
-            }
-            adjusted => adjusted,
+        let Some((adjusted, adjusted_def)) = adjusted_branch(statements, select_index, adjusted)
+        else {
+            continue;
         };
         let Expr::Bin {
             op: crate::ir::BinOp::Add,
@@ -369,24 +369,9 @@ pub(crate) fn signed_select_chain(
             _ => (els, then),
         };
         let leaf = strip_and_mask(plain);
-        // The adjusted branch may be a register defined by the preceding `lea`.
-        let mut adjusted_def = None;
-        let adjusted = match strip_and_mask(adjusted) {
-            Expr::Reg { index, .. } => {
-                let resolved = (0..select_index).rev().take(4).find_map(|position| {
-                    assign_of(&statements[position]).and_then(|(dest, value)| {
-                        (dest.index == *index).then(|| {
-                            adjusted_def = Some(position);
-                            strip_and_mask(value)
-                        })
-                    })
-                });
-                match resolved {
-                    Some(value) => value,
-                    None => continue,
-                }
-            }
-            adjusted => adjusted,
+        let Some((adjusted, adjusted_def)) = adjusted_branch(statements, select_index, adjusted)
+        else {
+            continue;
         };
         let (add_index, delta) = match adjusted {
             Expr::Bin {

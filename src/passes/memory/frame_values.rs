@@ -57,15 +57,18 @@ pub(super) fn promote(ir: &mut FunctionIr) {
     }
 }
 
-fn process(
-    ir: &mut FunctionIr,
-    promotion: bool,
-    promoted: &mut bool,
-    call_frames: &[Vec<Option<i64>>],
-) {
+struct FrameAccesses {
+    sp: u16,
+    reached: HashSet<u64>,
+    incoming: Vec<Vec<usize>>,
+    positions: Vec<Vec<i64>>,
+    slots: HashSet<(i64, u8)>,
+}
+
+fn validated_accesses(ir: &FunctionIr) -> Option<FrameAccesses> {
     let sp = crate::arch::stack_pointer(ir.isa);
     if ir.blocks.is_empty() || super::frame_address_escapes(ir, sp) {
-        return;
+        return None;
     }
     let reached = crate::ir::cfg::reached(ir);
     let frames = block_frames(ir, sp);
@@ -77,7 +80,7 @@ fn process(
         let edges =
             crate::ir::cfg::block_successors_with_exceptions(&ir.blocks, index, &ir.landing_pads);
         if edges.unknown_normal || edges.unknown_exceptional || !edges.exceptional.is_empty() {
-            return;
+            return None;
         }
         let exists = |target| ir.blocks.iter().any(|block| block.start == target);
         let unresolved = match block.stmts.last() {
@@ -95,7 +98,7 @@ fn process(
             _ => false,
         };
         if unresolved {
-            return;
+            return None;
         }
         for next in edges.normal {
             incoming[next].push(index);
@@ -103,7 +106,7 @@ fn process(
     }
     for (index, block) in ir.blocks.iter().enumerate() {
         if incoming[index].len() != counts.get(&block.start).copied().unwrap_or(0) {
-            return;
+            return None;
         }
         incoming[index].retain(|from| reached.contains(&ir.blocks[*from].start));
     }
@@ -114,7 +117,7 @@ fn process(
         let edges =
             crate::ir::cfg::block_successors_with_exceptions(&ir.blocks, index, &ir.landing_pads);
         let Some(mut frame) = frames[index] else {
-            return;
+            return None;
         };
         for stmt in &block.stmts {
             positions[index].push(frame);
@@ -128,36 +131,36 @@ fn process(
             for (addr, width) in loads {
                 if let Some(offset) = frame_slot(addr, 0, sp) {
                     if !full_frame_register(addr, sp) {
-                        return;
+                        return None;
                     }
                     let Some(offset) = frame.checked_add(offset) else {
-                        return;
+                        return None;
                     };
                     let Some(end) = offset.checked_add(i64::from(width)) else {
-                        return;
+                        return None;
                     };
                     accesses.push((offset, end, width));
                 }
             }
             if crate::ir::visit::statement_registers(stmt).0.contains(&sp) {
                 let Stmt::Assign { dest, value } = stmt else {
-                    return;
+                    return None;
                 };
                 if dest.width != 64 || !full_frame_register(value, sp) {
-                    return;
+                    return None;
                 }
                 let Some(delta) = super::moved(value, sp) else {
-                    return;
+                    return None;
                 };
                 let Some(next) = frame.checked_add(delta) else {
-                    return;
+                    return None;
                 };
                 frame = next;
             }
         }
         for next in edges.normal {
             if frames[next] != Some(frame) || (next == 0 && frame != 0) {
-                return;
+                return None;
             }
         }
     }
@@ -174,8 +177,33 @@ fn process(
         .map(|(offset, _, width)| (*offset, *width))
         .collect();
     if slots.is_empty() {
-        return;
+        return None;
     }
+    Some(FrameAccesses {
+        sp,
+        reached,
+        incoming,
+        positions,
+        slots,
+    })
+}
+
+fn process(
+    ir: &mut FunctionIr,
+    promotion: bool,
+    promoted: &mut bool,
+    call_frames: &[Vec<Option<i64>>],
+) {
+    let Some(FrameAccesses {
+        sp,
+        reached,
+        incoming,
+        positions,
+        slots,
+    }) = validated_accesses(ir)
+    else {
+        return;
+    };
     if promotion {
         *promoted = promote_slots(ir, &positions, &incoming, &reached, &slots, call_frames);
         return;

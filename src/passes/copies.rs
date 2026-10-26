@@ -161,6 +161,14 @@ fn substitute_in_statement(stmt: &mut Stmt, dest: u16, value: &Expr, ok: &mut bo
         return;
     }
     let width = expr_width(value).unwrap_or(64);
+    if let Stmt::Switch { index, .. } = stmt {
+        substitute_reg_inner(index, dest, width, value, ok);
+    } else {
+        substitute_ordinary(stmt, dest, width, value, ok);
+    }
+}
+
+fn substitute_ordinary(stmt: &mut Stmt, dest: u16, width: u8, value: &Expr, ok: &mut bool) {
     match stmt {
         Stmt::Machine { inputs, .. } => {
             for input in inputs {
@@ -183,7 +191,6 @@ fn substitute_in_statement(stmt: &mut Stmt, dest: u16, value: &Expr, ok: &mut bo
             *ok &= comparison_preserved(*cond, comparison, lhs, rhs);
         }
         Stmt::Ret { value: returned } => substitute_reg_inner(returned, dest, width, value, ok),
-        Stmt::Switch { index, .. } => substitute_reg_inner(index, dest, width, value, ok),
         Stmt::BrIndirect { target } => substitute_reg_inner(target, dest, width, value, ok),
         _ => *ok = false,
     }
@@ -607,24 +614,6 @@ fn substitute_stmt(stmt: &mut Stmt, dest: u16, width: u8, template: &Expr) -> bo
     let mut folded = stmt.clone();
     let mut ok = true;
     match &mut folded {
-        Stmt::Machine { inputs, .. } => {
-            for input in inputs {
-                substitute_reg_inner(input, dest, width, template, &mut ok);
-            }
-        }
-        Stmt::Assign { value, .. } => substitute_reg_inner(value, dest, width, template, &mut ok),
-        Stmt::Store { addr, value, .. } => {
-            substitute_reg_inner(addr, dest, width, template, &mut ok);
-            substitute_reg_inner(value, dest, width, template, &mut ok);
-        }
-        Stmt::Brif { cond, lhs, rhs, .. } => {
-            let comparison = crate::ir::semantics::operand_width(lhs, rhs);
-            substitute_reg_inner(lhs, dest, width, template, &mut ok);
-            substitute_reg_inner(rhs, dest, width, template, &mut ok);
-            ok &= comparison_preserved(*cond, comparison, lhs, rhs);
-        }
-        Stmt::Ret { value } => substitute_reg_inner(value, dest, width, template, &mut ok),
-        Stmt::BrIndirect { target } => substitute_reg_inner(target, dest, width, template, &mut ok),
         // A call naming its arguments reads nothing else of them.
         Stmt::Call {
             through,
@@ -637,7 +626,7 @@ fn substitute_stmt(stmt: &mut Stmt, dest: u16, width: u8, template: &Expr) -> bo
                 substitute_reg_inner(expr, dest, width, template, &mut ok);
             }
         }
-        _ => ok = false,
+        _ => substitute_ordinary(&mut folded, dest, width, template, &mut ok),
     }
     if ok {
         *stmt = folded;

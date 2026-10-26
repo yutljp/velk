@@ -33,9 +33,12 @@ fn immutable(value: &Expr, stable: &dyn Fn(u16) -> bool) -> bool {
     }
 }
 
-/// Share only whole pointer values whose register has a single definition.
-/// Conflicting connected layouts are left unchanged as a group.
-pub(crate) fn share(functions: &mut [&mut FunctionIr], data_ranges: &[(u64, u64)]) {
+struct Components {
+    nodes: BTreeMap<Node, Vec<Node>>,
+    seeds: BTreeMap<Node, Structure>,
+}
+
+fn components(functions: &[&mut FunctionIr], data_ranges: &[(u64, u64)]) -> Components {
     let addresses: HashMap<_, _> = functions
         .iter()
         .enumerate()
@@ -239,6 +242,19 @@ pub(crate) fn share(functions: &mut [&mut FunctionIr], data_ranges: &[(u64, u64)
     for (node, root) in groups {
         components.entry(root).or_default().push(node);
     }
+    Components {
+        nodes: components,
+        seeds,
+    }
+}
+
+/// Share only whole pointer values whose register has a single definition.
+/// Conflicting connected layouts are left unchanged as a group.
+pub(crate) fn share(functions: &mut [&mut FunctionIr], data_ranges: &[(u64, u64)]) {
+    let Components {
+        nodes: components,
+        seeds,
+    } = components(functions, data_ranges);
     let mut reserved: BTreeSet<String> = functions
         .iter()
         .flat_map(|ir| {

@@ -424,10 +424,10 @@ fn narrow_only(
     entry: Option<&std::collections::HashMap<u16, u64>>,
     demands: &std::cell::OnceCell<Option<std::collections::HashMap<u16, u64>>>,
 ) -> bool {
-    let mut writes = false;
-    let mut wide_write = false;
-    let mut reads_narrow = true;
-    let mut seen = false;
+    let mut uses = WidthUses {
+        reads_narrow: true,
+        ..WidthUses::default()
+    };
     let mut excluded_wide = false;
     for (block_index, block) in ir.blocks.iter().enumerate() {
         // A tail call's return reads the callee's result, not this register's value.
@@ -449,23 +449,15 @@ fn narrow_only(
                     .call_outputs()
                     .iter()
                     .any(|output| output.dest.index == register && output.dest.width > 32);
-            collect_uses(
-                stmt,
-                register,
-                output_live,
-                &mut writes,
-                &mut wide_write,
-                &mut reads_narrow,
-                &mut seen,
-            );
+            collect_uses(stmt, register, output_live, &mut uses);
         }
     }
-    if !seen {
+    if !uses.seen {
         return false;
     }
-    if writes
-        && !wide_write
-        && !reads_narrow
+    if uses.writes
+        && !uses.wide_write
+        && !uses.reads_narrow
         && ir.params.iter().any(|param| param.index == register)
     {
         let entry = entry.or_else(|| {
@@ -482,54 +474,100 @@ fn narrow_only(
     {
         return false;
     }
-    if writes { !wide_write } else { reads_narrow }
+    if uses.writes {
+        !uses.wide_write
+    } else {
+        uses.reads_narrow
+    }
 }
 
-fn collect_uses(
-    stmt: &crate::ir::Stmt,
-    register: u16,
-    output_live: bool,
-    writes: &mut bool,
-    wide_write: &mut bool,
-    reads_narrow: &mut bool,
-    seen: &mut bool,
-) {
+#[derive(Default)]
+struct WidthUses {
+    writes: bool,
+    wide_write: bool,
+    reads_narrow: bool,
+    seen: bool,
+}
+
+fn collect_uses(stmt: &crate::ir::Stmt, register: u16, output_live: bool, uses: &mut WidthUses) {
     use crate::ir::Stmt;
     match stmt {
         Stmt::Assign { dest, value } => {
             if dest.index == register {
-                *writes = true;
-                *seen = true;
+                uses.writes = true;
+                uses.seen = true;
                 if dest.width > 32 && !masked_wide(value) {
-                    *wide_write = true;
+                    uses.wide_write = true;
                 }
             }
             // A 64-bit read feeding a 32-bit result uses only its low half.
-            scan_reads(value, register, dest.width <= 32, reads_narrow, seen);
+            scan_reads(
+                value,
+                register,
+                dest.width <= 32,
+                &mut uses.reads_narrow,
+                &mut uses.seen,
+            );
         }
         Stmt::Store { addr, value, width } => {
-            scan_reads(addr, register, false, reads_narrow, seen);
-            scan_reads(value, register, *width <= 4, reads_narrow, seen);
+            scan_reads(
+                addr,
+                register,
+                false,
+                &mut uses.reads_narrow,
+                &mut uses.seen,
+            );
+            scan_reads(
+                value,
+                register,
+                *width <= 4,
+                &mut uses.reads_narrow,
+                &mut uses.seen,
+            );
         }
         Stmt::Brif { lhs, rhs, .. } => {
-            scan_reads(lhs, register, false, reads_narrow, seen);
-            scan_reads(rhs, register, false, reads_narrow, seen);
+            scan_reads(lhs, register, false, &mut uses.reads_narrow, &mut uses.seen);
+            scan_reads(rhs, register, false, &mut uses.reads_narrow, &mut uses.seen);
         }
-        Stmt::Ret { value } => scan_reads(value, register, false, reads_narrow, seen),
-        Stmt::BrIndirect { target } => scan_reads(target, register, false, reads_narrow, seen),
-        Stmt::Switch { index, .. } => scan_reads(index, register, false, reads_narrow, seen),
+        Stmt::Ret { value } => scan_reads(
+            value,
+            register,
+            false,
+            &mut uses.reads_narrow,
+            &mut uses.seen,
+        ),
+        Stmt::BrIndirect { target } => scan_reads(
+            target,
+            register,
+            false,
+            &mut uses.reads_narrow,
+            &mut uses.seen,
+        ),
+        Stmt::Switch { index, .. } => scan_reads(
+            index,
+            register,
+            false,
+            &mut uses.reads_narrow,
+            &mut uses.seen,
+        ),
         // A register passed whole takes the width the callee gives it.
         Stmt::Call { .. } => {
             for output in stmt.call_outputs() {
                 if output.dest.index == register && output_live {
-                    *writes = true;
-                    *seen = true;
-                    *wide_write |= output.dest.width > 32;
+                    uses.writes = true;
+                    uses.seen = true;
+                    uses.wide_write |= output.dest.width > 32;
                 }
             }
             for value in stmt.operands() {
                 if !matches!(value, crate::ir::Expr::Reg { .. }) {
-                    scan_reads(value, register, false, reads_narrow, seen);
+                    scan_reads(
+                        value,
+                        register,
+                        false,
+                        &mut uses.reads_narrow,
+                        &mut uses.seen,
+                    );
                 }
             }
         }

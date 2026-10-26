@@ -746,7 +746,15 @@ fn named(image: &Image, name: &str, imported: bool) -> Summary {
 }
 
 /// A body, its signature and exception ranges, kept when both inputs agree.
-type Seen = (Arc<Vec<Block>>, Arc<signature::Signature>, LandingPads);
+struct Seen {
+    #[allow(
+        clippy::rc_buffer,
+        reason = "The cache retains the body allocation for pointer identity checks."
+    )]
+    blocks: Arc<Vec<Block>>,
+    signature: Arc<signature::Signature>,
+    landing_pads: LandingPads,
+}
 
 type LandingPads = Vec<(u64, Vec<(u64, u64)>)>;
 
@@ -774,10 +782,10 @@ fn compute(
     let extent = addr..addr.saturating_add(function.size.unwrap_or(UNKNOWN_SIZE));
     let landing_pads = super::landing_pads(image, extent);
     let signature = match seen {
-        Some((before, signature, before_pads))
-            if Arc::ptr_eq(before, &blocks) && before_pads == &landing_pads =>
+        Some(before)
+            if Arc::ptr_eq(&before.blocks, &blocks) && before.landing_pads == landing_pads =>
         {
-            signature.clone()
+            before.signature.clone()
         }
         _ => {
             let mut signature_blocks;
@@ -878,7 +886,14 @@ fn compute(
             .then(|| clobbers_of(image, addr, &blocks))
             .flatten(),
     };
-    (summary, Some((blocks, signature, landing_pads)))
+    (
+        summary,
+        Some(Seen {
+            blocks,
+            signature,
+            landing_pads,
+        }),
+    )
 }
 
 /// Whether some path from the entry reaches a return, an unknown jump, or
@@ -965,13 +980,13 @@ mod tests {
         ));
         let (summary, seen) = super::compute(&image, 0, &summaries, None, false);
         let seen = seen.expect("recovered summary");
-        let signature = &seen.1;
+        let signature = &seen.signature;
         let repeated = super::body(&image, 0, &summaries).expect("cached exception body");
         assert!(Arc::ptr_eq(&blocks, &repeated));
         let (_, repeated_seen) = super::compute(&image, 0, &summaries, Some(&seen), false);
         assert!(Arc::ptr_eq(
             signature,
-            &repeated_seen.expect("cached signature").1
+            &repeated_seen.expect("cached signature").signature
         ));
         assert_eq!(signature.stack, vec![0]);
         assert_eq!(summary.stack, 1);
@@ -1011,7 +1026,7 @@ mod tests {
             std::collections::HashSet::from([4])
         );
         let (_, seen) = super::compute(&image, 0, &|_| Summary::default(), None, false);
-        let signature = seen.expect("summary with missing pad").1;
+        let signature = seen.expect("summary with missing pad").signature;
         assert_eq!(signature.stack, vec![0]);
         let main = super::super::lift_function(&image, &image.functions[&0])
             .expect("main with missing pad");
@@ -1035,13 +1050,13 @@ mod tests {
         let summaries = |_| Summary::default();
         let (_, before) = super::compute(&image, 0, &summaries, None, false);
         let before = before.expect("late-call range");
-        assert!(before.1.stack.is_empty());
+        assert!(before.signature.stack.is_empty());
         image.landing_pads.insert(20, vec![(0, 16)]);
         let (_, after) = super::compute(&image, 0, &summaries, Some(&before), false);
         let after = after.expect("expanded protected range");
-        assert!(Arc::ptr_eq(&before.0, &after.0));
-        assert!(!Arc::ptr_eq(&before.1, &after.1));
-        assert_eq!(after.1.stack, vec![0]);
+        assert!(Arc::ptr_eq(&before.blocks, &after.blocks));
+        assert!(!Arc::ptr_eq(&before.signature, &after.signature));
+        assert_eq!(after.signature.stack, vec![0]);
     }
 
     #[test]

@@ -178,14 +178,9 @@ pub(crate) fn remainder_scan(
                     }
                     // `q + (q << k)` / `q + q * c` scales the running factor
                     // by `1 + 2^k` / `1 + c`.
-                    if let Some((identity, factor_term)) = multiplier_step(lhs, rhs, &aliases) {
-                        let factor_step = if identity {
-                            let Some(step) = factor_term.checked_add(1) else {
-                                return None;
-                            };
-                            step
-                        } else {
-                            factor_term
+                    if let Some(factor_term) = multiplier_step(lhs, rhs, &aliases) {
+                        let Some(factor_step) = factor_term.checked_add(1) else {
+                            return None;
                         };
                         let Some(next_factor) = factor.checked_mul(factor_step) else {
                             return None;
@@ -310,9 +305,8 @@ fn shift_leaf(expr: &Expr) -> Option<(u16, u64)> {
 }
 
 /// One multiply-back step, `q + (q << k)` or `q + q * c`, with both operands
-/// reading the same chain register. Returns `2^k` or `c`; the flag is always
-/// true because the plain `q` term is present.
-fn multiplier_step(lhs: &Expr, rhs: &Expr, aliases: &[u16]) -> Option<(bool, u64)> {
+/// reading the same chain register. Returns `2^k` or `c`.
+fn multiplier_step(lhs: &Expr, rhs: &Expr, aliases: &[u16]) -> Option<u64> {
     let operand_factor = |expr: &Expr| -> Option<(u16, u64)> {
         match strip_and_mask(expr) {
             Expr::Bin {
@@ -349,20 +343,20 @@ fn multiplier_step(lhs: &Expr, rhs: &Expr, aliases: &[u16]) -> Option<(bool, u64
     };
     let copy = match operand_factor(rhs) {
         Some((leaf, value)) if unwrap_leaf(strip_and_mask(lhs)) == Some(leaf) => {
-            Some((leaf, value, true))
+            Some((leaf, value))
         }
-        _ => operand_factor(lhs)
-            .filter(|(leaf, _)| unwrap_leaf(strip_and_mask(rhs)) == Some(*leaf))
-            .map(|(leaf, value)| (leaf, value, true)),
+        _ => {
+            operand_factor(lhs).filter(|(leaf, _)| unwrap_leaf(strip_and_mask(rhs)) == Some(*leaf))
+        }
     };
     let Some(copy) = copy else {
         return None;
     };
-    let (leaf, value, _) = copy;
+    let (leaf, value) = copy;
     if !aliases.contains(&leaf) {
         return None;
     }
-    Some((true, value))
+    Some(value)
 }
 
 /// Extends already recorded division rewrites: a quotient `q = x / d` followed
