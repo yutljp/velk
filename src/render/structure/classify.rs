@@ -7,7 +7,9 @@
 //! own in a binary without debug information, so it counts under whichever
 //! of the others its shape matches.
 //!
-//! `VELK_FIXTURES=rust_probe_stripped,go_probe cargo test --release --lib goto_causes -- --ignored --nocapture`
+//! The ignored `goto_causes` test checks every fixture with recorded gotos.
+//! `VELK_FIXTURES` can select a comma-separated subset instead. Counts use the
+//! chosen printed C and its structure before variable lowering changes addresses.
 
 use std::collections::{BTreeMap, HashMap, HashSet};
 
@@ -506,13 +508,76 @@ pub(crate) fn causes(ir: &FunctionIr, nodes: &[Node]) -> Vec<(Cause, u64)> {
         .collect()
 }
 
+struct Capture {
+    code: String,
+    ir: FunctionIr,
+    nodes: Vec<Node>,
+}
+
+thread_local! {
+    static CAPTURES: std::cell::RefCell<Option<Vec<Capture>>> = const {
+        std::cell::RefCell::new(None)
+    };
+}
+
+pub(crate) fn record(ir: &FunctionIr, nodes: &[Node], code: &str) {
+    CAPTURES.with_borrow_mut(|captures| {
+        if let Some(captures) = captures
+            && code.contains("goto ")
+        {
+            captures.push(Capture {
+                code: code.to_owned(),
+                ir: ir.clone(),
+                nodes: nodes.to_vec(),
+            });
+        }
+    });
+}
+
+fn printed_causes(code: &str) -> Vec<(Cause, u64)> {
+    let captures = CAPTURES
+        .with_borrow_mut(Option::take)
+        .expect("capture was enabled");
+    let selected = captures
+        .into_iter()
+        .rev()
+        .find(|capture| code.ends_with(&capture.code));
+    let mut sites = selected.map_or_else(Vec::new, |capture| causes(&capture.ir, &capture.nodes));
+    let mut printed = Vec::new();
+    for (offset, _) in code.match_indices("goto ") {
+        let target = &code[offset + "goto ".len()..];
+        let target = target.strip_prefix("L_").expect("a printed direct branch");
+        let end = target.find(';').expect("a branch terminator");
+        let target = u64::from_str_radix(&target[..end], 16).expect("a label address");
+        let position = sites
+            .iter()
+            .position(|(_, address)| *address == target)
+            .expect("every printed goto has a structured branch");
+        printed.push(sites.remove(position));
+    }
+    printed
+}
+
 #[test]
 #[ignore]
 fn goto_causes() {
     use std::fmt::Write as _;
     let root = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    let fixtures = std::env::var("VELK_FIXTURES")
-        .unwrap_or_else(|_| "rust_probe_stripped,go_probe".to_owned());
+    let selected = std::env::var("VELK_FIXTURES");
+    let fixtures = selected.clone().unwrap_or_else(|_| {
+        let path = root.join("tests/golden/readability.txt");
+        let text = std::fs::read_to_string(&path).expect("recorded fixture readability");
+        let mut fixtures = Vec::new();
+        for line in text.lines() {
+            if line.starts_with('#') || line.contains(", 0 gotos,") {
+                continue;
+            }
+            if let Some((fixture, _)) = line.split_once(": ") {
+                fixtures.push(fixture);
+            }
+        }
+        fixtures.join(",")
+    });
     let examples: usize = std::env::var("VELK_EXAMPLES")
         .ok()
         .and_then(|count| count.parse().ok())
@@ -532,9 +597,12 @@ fn goto_causes() {
         let (mut lines, mut printed) = (0, 0);
         let mut heaviest: Vec<(usize, String)> = Vec::new();
         for addr in addresses {
+            CAPTURES.with_borrow_mut(|captures| *captures = Some(Vec::new()));
             let Ok(text) = binary.decompile(addr, None, None) else {
+                CAPTURES.with_borrow_mut(|captures| *captures = None);
                 continue;
             };
+            let classified = printed_causes(&text);
             lines += text.lines().count();
             let gotos = text.matches("goto ").count();
             printed += gotos;
@@ -547,15 +615,9 @@ fn goto_causes() {
                 write!(texts, "==== {fixture} {name}\n{text}\n").expect("writing to a String");
                 heaviest.push((gotos, format!("{name} ({} lines)", text.lines().count())));
             }
-            let Ok(analysis) = binary.analysis(addr, None) else {
-                continue;
-            };
-            let mut ir = analysis.ir.clone();
-            crate::render::params::fold_saved_parameters(&mut ir);
-            let (nodes, structured) = super::best_structure(&ir);
             let text = std::rc::Rc::new(text);
             let mut seen = HashSet::new();
-            for (cause, target) in causes(&structured, &nodes) {
+            for (cause, target) in classified {
                 writeln!(
                     every,
                     "{fixture} {name} {} lines -> L_{target:x}: {cause:?}",
@@ -587,6 +649,7 @@ fn goto_causes() {
         for (gotos, name) in heaviest.iter().take(8) {
             writeln!(report, "    {gotos} {name}").expect("writing to a String");
         }
+        eprintln!("{fixture}: {printed} printed gotos classified");
     }
     // The shortest functions show each cause most plainly.
     for (cause, list) in &mut found {
@@ -630,6 +693,56 @@ fn goto_causes() {
             row.join(" | "),
             counts.values().sum::<usize>()
         );
+    }
+    let mut summary = String::from(
+        "# Every printed goto, counted once by the first matching control-flow shape.\n\
+         # Reproduce: cargo test --release --lib goto_causes -- --ignored --nocapture\n\
+         # Includes named, stripped, x86-64, AArch64 and ARM fixtures.\n\
+         # These are structural classifications, not recovered source constructs.\n\
+         shape | Rust | Go | C/C++ | total\n",
+    );
+    for (cause, counts) in &table {
+        let mut groups = [0; 3];
+        for (fixture, count) in counts {
+            let group = if fixture.starts_with("rust_") {
+                0
+            } else if fixture.starts_with("go_") {
+                1
+            } else {
+                2
+            };
+            groups[group] += count;
+        }
+        writeln!(
+            summary,
+            "{} | {} | {} | {} | {}",
+            cause.describe(),
+            groups[0],
+            groups[1],
+            groups[2],
+            groups.iter().sum::<usize>()
+        )
+        .expect("writing to a String");
+    }
+    summary.push_str("\n# One example per shape: fixture, function, destination.\n");
+    for (cause, examples) in &found {
+        if let Some((_, fixture, name, target, _)) = examples.first() {
+            writeln!(
+                summary,
+                "{}: {fixture} {name} -> L_{target:x}",
+                cause.describe()
+            )
+            .expect("writing to a String");
+        }
+    }
+    println!("{summary}");
+    if let Ok(dir) = std::env::var("VELK_DUMP") {
+        std::fs::write(std::path::Path::new(&dir).join("report.txt"), &summary)
+            .expect("writing the counts and examples");
+    }
+    if selected.is_err() && std::env::var("VELK_BLESS").as_deref() == Ok("1") {
+        std::fs::write(root.join("tests/golden/goto_shapes.txt"), &summary)
+            .expect("writing the recorded counts and examples");
     }
 }
 

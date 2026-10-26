@@ -89,6 +89,23 @@ fn terminates(nodes: &[Node]) -> bool {
 /// Moves the statements skipped by one arm into the other arm, so the
 /// skipping arm can fall through to the shared label without a jump.
 pub(super) fn fold_forward_exits(nodes: &mut Vec<Node>) {
+    fn tail_targets(nodes: &[Node], targets: &mut Vec<u64>) {
+        match nodes.last() {
+            Some(Node::Stmt(Stmt::Br {
+                target: Some(target),
+            })) => targets.push(*target),
+            Some(Node::If { then, els, .. }) => {
+                tail_targets(then, targets);
+                tail_targets(els, targets);
+            }
+            _ => {}
+        }
+    }
+    for node in nodes.iter_mut() {
+        for child in children_mut(node) {
+            fold_forward_exits(child);
+        }
+    }
     let mut index = nodes.len();
     while let Some(position) = index.checked_sub(1) {
         index = position;
@@ -96,19 +113,21 @@ pub(super) fn fold_forward_exits(nodes: &mut Vec<Node>) {
             continue;
         };
         let destination = [then, els].into_iter().enumerate().find_map(|(arm, body)| {
-            let Some(Node::Stmt(Stmt::Br {
-                target: Some(target),
-            })) = body.last()
-            else {
+            if !ends(body, /* break_leaves */ true) {
                 return None;
-            };
+            }
+            let mut targets = Vec::new();
+            tail_targets(body, &mut targets);
             nodes[position + 1..]
                 .iter()
-                .position(|node| matches!(node, Node::Label(label) if label == target))
+                .position(|node| matches!(node, Node::Label(label) if targets.contains(label)))
                 .map(|offset| (arm, position + 1 + offset))
         });
         let Some((arm, destination)) = destination else {
             continue;
+        };
+        let Node::Label(target) = nodes[destination] else {
+            unreachable!("the destination is a label");
         };
         let skipped: Vec<Node> = nodes.drain(position + 1..destination).collect();
         let Node::If {
@@ -118,20 +137,15 @@ pub(super) fn fold_forward_exits(nodes: &mut Vec<Node>) {
             unreachable!("the branch remains in place");
         };
         if arm == 0 {
-            then.pop();
+            drop_jumps_to_next(then, Some(target));
             els.extend(skipped);
         } else {
-            els.pop();
+            drop_jumps_to_next(els, Some(target));
             then.extend(skipped);
         }
         if then.is_empty() && !els.is_empty() {
             *cond = cond.invert();
             std::mem::swap(then, els);
-        }
-    }
-    for node in nodes.iter_mut() {
-        for child in children_mut(node) {
-            fold_forward_exits(child);
         }
     }
 }
@@ -909,6 +923,64 @@ mod tests {
         assert_eq!(nodes.len(), 2);
         assert!(matches!(&nodes[0], Node::If { then, .. }
             if matches!(then.as_slice(), [Node::Label(10), Node::Continue])));
+    }
+
+    #[test]
+    fn nested_terminal_exits_can_share_the_following_code() {
+        let mut nodes = vec![
+            Node::If {
+                cond: Cond::Eq,
+                lhs: Expr::reg(0, 64),
+                rhs: Expr::Const(0),
+                then: vec![Node::If {
+                    cond: Cond::Eq,
+                    lhs: Expr::reg(1, 64),
+                    rhs: Expr::Const(0),
+                    then: vec![Node::Stmt(Stmt::Br { target: Some(20) })],
+                    els: vec![Node::Stmt(Stmt::Ret {
+                        value: Expr::Const(7),
+                    })],
+                }],
+                els: Vec::new(),
+            },
+            Node::Continue,
+            Node::Label(20),
+        ];
+        super::fold_forward_exits(&mut nodes);
+        assert_eq!(nodes.len(), 2);
+        let Node::If { then, els, .. } = &nodes[0] else {
+            panic!("expected if");
+        };
+        assert!(matches!(els.as_slice(), [Node::Continue]));
+        assert!(matches!(then.as_slice(), [Node::If { then, els, .. }]
+            if then.is_empty() && matches!(els.as_slice(), [Node::Stmt(Stmt::Ret { .. })])));
+    }
+
+    #[test]
+    fn a_nested_exit_with_a_fallthrough_path_keeps_its_jump() {
+        let nested = Node::If {
+            cond: Cond::Eq,
+            lhs: Expr::reg(1, 64),
+            rhs: Expr::Const(0),
+            then: vec![Node::Stmt(Stmt::Br { target: Some(20) })],
+            els: Vec::new(),
+        };
+        let mut nodes = vec![
+            Node::If {
+                cond: Cond::Eq,
+                lhs: Expr::reg(0, 64),
+                rhs: Expr::Const(0),
+                then: vec![nested],
+                els: Vec::new(),
+            },
+            Node::Continue,
+            Node::Label(20),
+        ];
+        super::fold_forward_exits(&mut nodes);
+        assert_eq!(nodes.len(), 3);
+        let mut targets = std::collections::HashSet::new();
+        super::collect_targets(&nodes, &mut targets);
+        assert_eq!(targets, [20].into());
     }
 
     fn branch(target: u64) -> Node {

@@ -1,0 +1,29 @@
+# Every printed goto, counted once by the first matching control-flow shape.
+# Reproduce: cargo test --release --lib goto_causes -- --ignored --nocapture
+# Includes named, stripped, x86-64, AArch64 and ARM fixtures.
+# These are structural classifications, not recovered source constructs.
+shape | Rust | Go | C/C++ | total
+unresolved branch (flags, indirect) | 45 | 0 | 1 | 46
+join with unwind/handler code | 1410 | 0 | 0 | 1410
+irreducible loop | 180 | 0 | 0 | 180
+multi-level break/continue | 321 | 8 | 0 | 329
+short-circuit condition | 670 | 16 | 4 | 690
+jump threading | 981 | 16 | 6 | 1003
+loop rotation (bottom test) | 378 | 0 | 2 | 380
+early return / noreturn merging | 1256 | 6 | 0 | 1262
+loop with several exits | 657 | 30 | 0 | 687
+switch lowering | 638 | 62 | 0 | 700
+common tail merging | 1575 | 140 | 1 | 1716
+
+# One example per shape: fixture, function, destination.
+unresolved branch (flags, indirect): arm32/l2_loop.thumb.O2.elf sum_skip_odd -> L_20270
+join with unwind/handler code: rust_probe_stripped 0x393f0 -> L_39468
+irreducible loop: rust_demo <std::sys::sync::once::futex::Once>::call -> L_2ce27
+multi-level break/continue: rust_probe_stripped 0x4de80 -> L_4df63
+short-circuit condition: rust_probe_stripped 0x50600 -> L_506a5
+jump threading: metrics/memory.win64.O2.debug.dll copy_bytes -> L_1800010a6
+loop rotation (bottom test): metrics/control.win64.O2.debug.dll matrix_trace -> L_180001040
+early return / noreturn merging: rust_probe_stripped 0x4438a -> L_44441
+loop with several exits: rust_demo_arm64 <alloc::collections::btree::map::BTreeMap<u64, gimli::read::abbrev::Abbreviation>>::entry -> L_100025170
+switch lowering: go_probe runtime/debug.SetTraceback -> L_45e1f3
+common tail merging: go_probe_arm64 runtime.traceReader -> L_5f3e8

@@ -175,6 +175,8 @@ fn render_prepared(
     let mut locals =
         super::locals::stack_locals_with_roles(ir, &frames, &variable_types, symbols, &roles);
     locals.bind_register_tops(original);
+    #[cfg(test)]
+    let classification = (structured_ir.clone().into_owned(), nodes.clone());
     let split = match variables {
         Variables::Merged => folded.clone(),
         Variables::Split => super::structure::lower::split_variables(&structured_ir, &mut nodes),
@@ -297,6 +299,8 @@ fn render_prepared(
         },
         PreparedBody {
             nodes,
+            #[cfg(test)]
+            classification,
             roles,
             block_addresses,
             landing_pads: folded.landing_pads.clone(),
@@ -346,6 +350,8 @@ struct EntryStorage<'a> {
 
 struct PreparedBody {
     nodes: Vec<Node>,
+    #[cfg(test)]
+    classification: (FunctionIr, Vec<Node>),
     block_addresses: std::collections::HashSet<u64>,
     landing_pads: Vec<(u64, Vec<(u64, u64)>)>,
     roles: naming::roles::Roles,
@@ -394,6 +400,8 @@ fn render_with(
 ) -> Rendered {
     let PreparedBody {
         mut nodes,
+        #[cfg(test)]
+        classification,
         roles,
         block_addresses,
         landing_pads,
@@ -1385,7 +1393,7 @@ fn render_with(
         );
     }
     out.insert_str(0, &super::support::definitions(&out));
-    Rendered {
+    let rendered = Rendered {
         code: super::prelude::combine(&if variadic.is_some() {
             format!("{}{out}", super::prelude::section("#include <stdarg.h>\n"))
         } else {
@@ -1398,7 +1406,10 @@ fn render_with(
                 provider: provider.clone(),
             })
             .collect(),
-    }
+    };
+    #[cfg(test)]
+    super::structure::classify::record(&classification.0, &classification.1, &rendered.code);
+    rendered
 }
 
 pub(super) fn variable_name(reserved: &mut std::collections::HashSet<String>) -> String {

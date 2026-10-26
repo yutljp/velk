@@ -1,6 +1,6 @@
 mod build;
 #[cfg(test)]
-mod classify;
+pub(super) mod classify;
 mod cleanup;
 pub mod compare_chain;
 mod dominance;
@@ -192,6 +192,10 @@ fn tidy(nodes: &mut Vec<Node>, kept: std::collections::HashSet<u64>, ir: &Functi
         prune(nodes);
         cleanup::share_switch_tails(nodes, /* merge_calls */ ir.landing_pads.is_empty());
     }
+    cleanup::fold_forward_exits(nodes);
+    cleanup::drop_jumps_to_next(nodes, None);
+    prune(nodes);
+    short_circuit::fold_conditions(nodes);
 }
 
 fn contains_switch(nodes: &[Node]) -> bool {

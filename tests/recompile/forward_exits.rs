@@ -2,6 +2,118 @@ use super::*;
 use velk::ir::RegRef;
 
 #[test]
+fn printed_forward_exits_preserve_loop_tests_and_shared_stores() {
+    let counter = velk::ir::VARIABLE_BASE;
+    let value = Expr::reg(counter, 64);
+    let branch = |target| Stmt::Br {
+        target: Some(target),
+    };
+    let assign = |value| Stmt::Assign {
+        dest: RegRef {
+            index: counter,
+            width: 64,
+        },
+        value,
+    };
+    let test = |cond, lhs, rhs, target| Stmt::Brif {
+        cond,
+        lhs,
+        rhs,
+        target,
+    };
+    let mut candidates = Vec::new();
+    for bottom_test in [false, true] {
+        let mut blocks = vec![Block {
+            start: 0,
+            stmts: vec![
+                sc_store(SC_COUNTER, Expr::Const(0)),
+                sc_store(SC_COUNTER + 8, Expr::Const(0)),
+                assign(Expr::Const(0)),
+                test(Cond::Eq, Expr::reg(7, 64), Expr::Const(u64::MAX), 80),
+            ],
+        }];
+        let mut iteration = vec![
+            sc_store(
+                SC_COUNTER,
+                Expr::bin(BinOp::Add, sc_load(SC_COUNTER), Expr::Const(1)),
+            ),
+            test(Cond::Eq, value.clone(), Expr::reg(6, 64), 80),
+        ];
+        let mut step = vec![assign(Expr::bin(BinOp::Add, value.clone(), Expr::Const(1)))];
+        let count_test = sc_store(
+            SC_COUNTER + 8,
+            Expr::bin(BinOp::Add, sc_load(SC_COUNTER + 8), Expr::Const(1)),
+        );
+        if bottom_test {
+            blocks.push(Block {
+                start: 10,
+                stmts: iteration,
+            });
+            step.push(count_test);
+            step.push(test(Cond::Cc, value.clone(), Expr::reg(7, 64), 10));
+        } else {
+            blocks.push(Block {
+                start: 10,
+                stmts: vec![
+                    count_test,
+                    test(Cond::Cs, value.clone(), Expr::reg(7, 64), 40),
+                ],
+            });
+            blocks.push(Block {
+                start: 20,
+                stmts: std::mem::take(&mut iteration),
+            });
+            step.push(branch(10));
+        }
+        blocks.push(Block {
+            start: 30,
+            stmts: step,
+        });
+        for (start, constant) in [(40, 0x123456789), (80, 0x987654321)] {
+            let mut tail = Vec::new();
+            for offset in 0..8 {
+                tail.push(sc_store(
+                    SC_RIGHT + offset * 8,
+                    Expr::Const(constant + offset),
+                ));
+            }
+            tail.push(Stmt::Ret {
+                value: sc_load(SC_COUNTER),
+            });
+            blocks.push(Block { start, stmts: tail });
+        }
+        let ir = sc_ir(
+            if bottom_test {
+                "bottom_exit"
+            } else {
+                "top_exit"
+            },
+            vec![CType::U64; 2],
+            blocks,
+        );
+        let inputs = [0, 1, 2, 5, u64::MAX]
+            .into_iter()
+            .flat_map(|limit| [0, 1, 3, 9].map(|stop| vec![limit, stop]))
+            .collect();
+        let candidate = printed_candidate(ir, inputs);
+        assert_eq!(
+            candidate.code.matches("0x123456789").count(),
+            1,
+            "{}",
+            candidate.code
+        );
+        assert_eq!(
+            candidate.code.matches("0x987654321").count(),
+            1,
+            "{}",
+            candidate.code
+        );
+        candidates.push(candidate);
+    }
+    check_candidates("forward-exit-loops", candidates, Mode::Memory, &[]);
+}
+
+#[test]
 fn printed_forward_exit_preserves_values_from_another_entry() {
     let arguments = Convention::SysV.arguments();
     let variable = velk::ir::VARIABLE_BASE;
