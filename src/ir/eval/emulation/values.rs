@@ -47,6 +47,9 @@ impl Runner<'_> {
                     Ok(value) => value,
                     Err(stop) => return Err(stop),
                 };
+                if self.recovery.is_some() {
+                    return self.recovery_load(address, *width, *signed);
+                }
                 let load = Expr::Load {
                     addr: Box::new(Expr::Const(address)),
                     width: *width,

@@ -37,8 +37,8 @@ interface Binary {
   callees(target: string | number, opts?: { depth?: number }): GraphResult;
   /** Shortest call path including endpoints; empty if unreachable. Default depth: 32. */
   callPath(from: string | number, to: string | number, opts?: { depth?: number }): PathResult;
-  /** Heuristic text candidates; contains is a case-sensitive substring. Slice result.strings. */
-  strings(opts?: { contains?: string }): StringsResult;
+  /** File literals and recovered text; decode defaults to true. contains filters both arrays. */
+  strings(opts?: { contains?: string; decode?: boolean }): StringsResult;
   /** Decoded immediate matches, excluding branch displacements; slice result.matches.
    * Pass a hex string for integers larger than JavaScript's safe integer range. */
   constants(value: string | number): ConstantsResult;

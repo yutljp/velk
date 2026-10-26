@@ -141,6 +141,15 @@ impl Binary {
         let originals = Mutex::new(originals);
         let results = crate::parallel::map(addresses, |&addr| {
             let addr = self.image.code_address(addr);
+            let decoded_strings = if self.string_decoding {
+                match self.decoded_strings.get(&addr) {
+                    Some(strings) => strings.clone(),
+                    None => crate::string_decoding::recover(&self.image, addr, deadline)
+                        .unwrap_or_default(),
+                }
+            } else {
+                Vec::new()
+            };
             if let Some(analysis) = self.shared_analyses.get(&addr) {
                 return match analysis {
                     Ok(analysis) => self
@@ -148,6 +157,7 @@ impl Binary {
                             analysis,
                             &overrides,
                             identified.get(&addr).map(String::as_str),
+                            &decoded_strings,
                             deadline,
                         )
                         .map(|rendered| (rendered.code, None)),
@@ -197,6 +207,7 @@ impl Binary {
                 &analysis,
                 &overrides,
                 identified.get(&addr).map(String::as_str),
+                &decoded_strings,
                 deadline,
             ) {
                 Ok(rendered) => Ok((rendered.code, Some(analysis))),

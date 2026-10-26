@@ -84,6 +84,12 @@ stop reason. Scripts use `b.emulate(start, options)` or
 See [Running loaded code](docs/EMULATION.md) for the decoding example, supported
 library hooks, errors and execution limits.
 
+velk also recovers strings automatically from decoder calls with known buffers,
+lengths and keys, and from inline stack construction. Recovered text appears only
+in comments; `--strings` includes a `decodedStrings` array with buffer, call-site
+and decoder addresses. Use `--no-string-decoding` to disable recovery.
+See [Automatic string recovery](docs/STRING_DECODING.md) for examples and limits.
+
 ## Using velk from an agent
 
 velk does not register itself anywhere. Build it with `cargo build --release`, then register the executable

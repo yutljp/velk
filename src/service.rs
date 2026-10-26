@@ -108,6 +108,8 @@ impl Session {
 }
 
 pub struct Binary {
+    string_decoding: bool,
+    decoded_strings: HashMap<u64, Vec<crate::string_decoding::DecodedString>>,
     navigation: Option<crate::xrefs::Index>,
     path: PathBuf,
     modified: SystemTime,
@@ -202,6 +204,8 @@ impl Binary {
             project,
             project_path,
             project_digest,
+            string_decoding: true,
+            decoded_strings: HashMap::new(),
             symbols: render::callee_names(&image),
             data_ranges: render::data_ranges(&image),
             image,
@@ -231,7 +235,10 @@ impl Binary {
                 self.project_digest.clone(),
                 self.arch,
             ) {
-                Ok(binary) => *self = binary,
+                Ok(mut binary) => {
+                    binary.string_decoding = self.string_decoding;
+                    *self = binary;
+                }
                 Err(error) => return Err(error),
             }
         }
@@ -261,6 +268,53 @@ impl Binary {
 
     pub fn image(&self) -> &Image {
         &self.image
+    }
+
+    /// Enables or disables automatic string comments during decompilation.
+    pub fn set_string_decoding(&mut self, enabled: bool) {
+        self.string_decoding = enabled;
+    }
+
+    /// Recovers strings in one function using only known execution inputs.
+    pub fn decoded_strings_at(
+        &mut self,
+        function: u64,
+        deadline: Option<Instant>,
+    ) -> &[crate::string_decoding::DecodedString] {
+        let function = self.image.code_address(function);
+        if let Entry::Vacant(entry) = self.decoded_strings.entry(function) {
+            let Some(strings) = crate::string_decoding::recover(&self.image, function, deadline)
+            else {
+                return &[];
+            };
+            entry.insert(strings);
+        }
+        match self.decoded_strings.get(&function) {
+            Some(strings) => strings,
+            None => &[],
+        }
+    }
+
+    /// Lists recovered strings, with a two-second bound for the entire scan.
+    pub fn decoded_strings(
+        &mut self,
+        deadline: Option<Instant>,
+    ) -> Vec<crate::string_decoding::DecodedString> {
+        let limit = Instant::now() + std::time::Duration::from_secs(2);
+        let deadline = Some(deadline.map_or(limit, |end| end.min(limit)));
+        let functions: Vec<_> = self.image.functions.keys().copied().collect();
+        let mut result = Vec::new();
+        for function in functions {
+            if crate::deadline::passed(deadline).is_err() {
+                break;
+            }
+            result.extend_from_slice(self.decoded_strings_at(function, deadline));
+        }
+        result.sort_by(|a, b| {
+            (a.function, a.site, a.addr, &a.text).cmp(&(b.function, b.site, b.addr, &b.text))
+        });
+        result.dedup();
+        result
     }
 
     fn function_name(&self, address: u64) -> Option<&str> {
@@ -572,6 +626,11 @@ impl Binary {
         if let Err(error) = self.refresh_project() {
             return Err(error);
         }
+        let decoded_strings = if self.string_decoding {
+            self.decoded_strings_at(addr, deadline).to_vec()
+        } else {
+            Vec::new()
+        };
         let overrides = match self.project_signatures(deadline) {
             Ok(overrides) => overrides,
             Err(error) => return Err(error),
@@ -603,7 +662,13 @@ impl Binary {
         let Some(Ok(analysis)) = self.shared_analyses.get(&addr) else {
             unreachable!("successful analysis is cached");
         };
-        self.render_analysis(analysis, &overrides, identified.as_deref(), deadline)
+        self.render_analysis(
+            analysis,
+            &overrides,
+            identified.as_deref(),
+            &decoded_strings,
+            deadline,
+        )
     }
 
     fn render_analysis(
@@ -611,6 +676,7 @@ impl Binary {
         analysis: &Analysis,
         overrides: &std::collections::BTreeMap<u64, crate::ir::DeclaredSignature>,
         identified: Option<&str>,
+        decoded_strings: &[crate::string_decoding::DecodedString],
         deadline: Option<Instant>,
     ) -> Result<render::Rendered> {
         if let Err(error) = passed(deadline) {
@@ -654,6 +720,7 @@ impl Binary {
             &symbols,
             &self.data_ranges,
         );
+        crate::string_decoding::annotate(&mut rendered.code, decoded_strings, &ir, &symbols);
         if let Some(project) = &self.project
             && let Err(error) = project.validate_rendered_names(&ir, &rendered.code)
         {

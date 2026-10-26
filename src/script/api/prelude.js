@@ -22,13 +22,13 @@
     }
     emulate(options = {}) { return call("emulate", { bin: this.#bin, start: this.addr, options }); }
     card({ budget } = {}) { return this.#call("card", { budget }); }
-    decompile() { return this.#call("decompile"); }
+    decompile({ decodeStrings = true } = {}) { return this.#call("decompile", { decodeStrings }); }
     disasm({ limit } = {}) { return this.#call("disasm", { limit }); }
     ir() { return this.#call("ir"); }
     origins() { return call("project", { bin: this.#bin, action: "origins", value: this.addr }); }
     signature() { return this.#call("signature"); }
     references() { return this.#call("references"); }
-    strings() { return this.#call("strings"); }
+    strings({ decode = true } = {}) { return this.#call("strings", { decode }); }
     shapeHash() { return this.#call("shapeHash"); }
     summary() { return call("navigate", { bin: this.#bin, query: { kind: "summary", target: this.addr } }); }
     xrefs({ from = false } = {}) { return call("navigate", { bin: this.#bin, query: { kind: "xrefs", target: this.addr, from } }); }
@@ -102,7 +102,7 @@
     }
     readMemory(target, type, { count = 1 } = {}) { return call("navigate", { bin: this.#id, query: { kind: "readMemory", target: String(address(target)), type, count } }); }
     detectConstants() { return call("navigate", { bin: this.#id, query: { kind: "detectConstants" } }); }
-    strings({ contains } = {}) { return call("navigate", { bin: this.#id, query: { kind: "strings", contains } }); }
+    strings({ contains, decode = true } = {}) { return call("navigate", { bin: this.#id, query: { kind: "strings", contains, decode } }); }
     constants(value) {
       if (typeof value === "number" && (!Number.isSafeInteger(value) || value < 0)) throw new RangeError("use a decimal or hex string for a 64-bit constant");
       return call("navigate", { bin: this.#id, query: { kind: "constants", value: String(address(value)) } });

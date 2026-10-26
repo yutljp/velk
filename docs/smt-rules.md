@@ -9,6 +9,10 @@ The rendered-C tests also need Clang and uv. Python runs through
 `uv run --no-project tests/smt_c.py` and uses only the standard library.
 velk has no additional runtime dependencies.
 
+Automatic string recovery checks known-bit extraction into stored bytes against
+symbolic inputs for each byte position. Memory mapping and decoder control flow
+are covered by execution tests, not by that bit-vector check.
+
 The [inventory](../tests/smt_inventory.tsv) records grouped rewrite
 families, source locations, side conditions, applicable widths and current
 coverage. Rows distinguish symbolic template or instance checks, open or

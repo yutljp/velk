@@ -2,6 +2,8 @@
 
 mod hooks;
 mod imports;
+mod strings;
+pub(crate) use strings::recover_strings;
 mod values;
 
 use std::collections::{BTreeMap, HashMap, HashSet};
@@ -32,6 +34,7 @@ struct Runner<'a> {
     return_cleanup: u64,
     allocations: HashSet<u64>,
     code: HashMap<u64, Vec<Block>>,
+    recovery: Option<strings::Recovery>,
 }
 
 #[derive(Debug)]
@@ -60,6 +63,16 @@ pub(crate) fn run(
     options: &Options,
     deadline: Option<Instant>,
 ) -> Result<Report> {
+    run_with_recovery(image, start, options, deadline, None).map(|(report, _)| report)
+}
+
+fn run_with_recovery(
+    image: &Image,
+    start: u64,
+    options: &Options,
+    deadline: Option<Instant>,
+    recovery: Option<strings::Recovery>,
+) -> Result<(Report, Option<strings::Recovery>)> {
     let now = Instant::now();
     let Some(limit) = now.checked_add(Duration::from_millis(options.time_limit_ms)) else {
         return Err(invalid("timeLimitMs overflows the clock"));
@@ -242,7 +255,26 @@ pub(crate) fn run(
         return_cleanup: 0,
         allocations: HashSet::new(),
         code: HashMap::new(),
+        recovery,
     };
+    if runner.recovery.is_some() {
+        for &register in &physical {
+            if register != sp {
+                runner.facts.insert(register, Fact::TOP);
+            }
+        }
+        if matches!(image.isa, Isa::Arm32 | Isa::AArch64) {
+            runner.assign_fact(
+                RegRef {
+                    index: if image.isa == Isa::Arm32 { 14 } else { 30 },
+                    width: width * 8,
+                },
+                Fact::constant(0),
+            );
+        } else {
+            runner.machine.store(stack, 0, width);
+        }
+    }
     let stopped = runner.execute(start, 0);
     let (reason, error) = match stopped {
         Stop::Return => ("return", None),
@@ -299,7 +331,7 @@ pub(crate) fn run(
         .as_ref()
         .expect("strict memory")
         .changes(&before, &runner.machine.memory);
-    Ok(Report {
+    let report = Report {
         registers,
         return_value: runner
             .register_fact(crate::arch::RETURN, 64)
@@ -315,7 +347,8 @@ pub(crate) fn run(
         heap_base: crate::addr::format(heap_base),
         heap_size: HEAP_SIZE,
         stack_pointer: crate::addr::format(stack),
-    })
+    };
+    Ok((report, runner.recovery))
 }
 
 impl Runner<'_> {
@@ -346,7 +379,7 @@ impl Runner<'_> {
     }
 
     fn eval(&self, expression: &Expr) -> std::result::Result<u64, Stop> {
-        if self.facts.is_empty() {
+        if self.facts.is_empty() && self.recovery.is_none() {
             return self.concrete(expression);
         }
         match self.value_fact(expression) {
@@ -423,6 +456,9 @@ impl Runner<'_> {
     }
 
     fn execute(&mut self, address: u64, depth: usize) -> Stop {
+        if let Some(recovery) = &mut self.recovery {
+            recovery.depth = depth;
+        }
         if depth > 128 {
             return Stop::Error("call depth exceeds 128".to_owned());
         }
@@ -434,6 +470,9 @@ impl Runner<'_> {
         }
         if self.steps >= self.options.step_limit {
             return Stop::Steps;
+        }
+        if let Err(stop) = self.recovery_entry(depth) {
+            return stop;
         }
         let blocks = match self.lift(self.image.code_address(address)) {
             Ok(blocks) => blocks,
@@ -552,7 +591,8 @@ impl Runner<'_> {
         // Every error here stops this instruction and the entire run.
         match statement {
             Stmt::Assign { dest, value } => {
-                if self.facts.is_empty() {
+                let origin = self.origin(value);
+                if self.facts.is_empty() && self.recovery.is_none() {
                     let value = match self.concrete(value) {
                         Ok(value) => value,
                         Err(stop) => return Err(stop),
@@ -563,10 +603,15 @@ impl Runner<'_> {
                         Ok(fact) => fact,
                         Err(stop) => return Err(stop),
                     };
-                    if (fact.zeros | fact.ones) & super::mask(u32::from(dest.width)) == 0 {
+                    if self.recovery.is_none()
+                        && (fact.zeros | fact.ones) & super::mask(u32::from(dest.width)) == 0
+                    {
                         return Err(Stop::Error("read of an undefined register".to_owned()));
                     }
                     self.assign_fact(*dest, fact);
+                }
+                if let Some(recovery) = &mut self.recovery {
+                    recovery.registers.insert(dest.index, origin);
                 }
             }
             Stmt::Store { addr, value, width } => {
@@ -574,11 +619,21 @@ impl Runner<'_> {
                     Ok(value) => value,
                     Err(stop) => return Err(stop),
                 };
-                let value = match self.eval(value) {
+                let fact = match self.value_fact(value) {
                     Ok(value) => value,
                     Err(stop) => return Err(stop),
                 };
-                self.machine.store(address, value, *width);
+                if self.recovery.is_some() {
+                    let origin = self.origin(value);
+                    if let Err(stop) = self.recovery_store(address, *width, fact, origin) {
+                        return Err(stop);
+                    }
+                } else {
+                    let Some(value) = fact.singleton() else {
+                        return Err(Stop::Error("read of an undefined register".to_owned()));
+                    };
+                    self.machine.store(address, value, *width);
+                }
             }
             Stmt::Brif {
                 cond,
@@ -631,6 +686,9 @@ impl Runner<'_> {
                 }
             }
             Stmt::Ret { value } => {
+                if let Err(stop) = self.check_recovery_return(depth) {
+                    return Err(stop);
+                }
                 let value = match self.value_fact(value) {
                     Ok(value) => value,
                     Err(stop) => return Err(stop),
@@ -720,6 +778,9 @@ impl Runner<'_> {
                     Ok(target) => target,
                     Err(stop) => return Err(stop),
                 };
+                if depth == 0 {
+                    self.recover_inline(target, *convention, *kind);
+                }
                 if let Err(stop) = self.call(target, *convention, *kind, depth) {
                     return Err(stop);
                 }
@@ -729,10 +790,21 @@ impl Runner<'_> {
                         Ok(value) => value,
                         Err(stop) => return Err(stop),
                     };
-                    values.push((output.dest, value));
+                    values.push((
+                        output.dest,
+                        value,
+                        self.recovery
+                            .as_ref()
+                            .and_then(|r| r.registers.get(&output.register))
+                            .copied()
+                            .unwrap_or(0),
+                    ));
                 }
-                for (dest, value) in values {
+                for (dest, value, origin) in values {
                     self.assign_fact(dest, value);
+                    if let Some(recovery) = &mut self.recovery {
+                        recovery.registers.insert(dest.index, origin);
+                    }
                 }
             }
             Stmt::Trap => return Err(Stop::Trap),
@@ -794,7 +866,21 @@ impl Runner<'_> {
             return Ok(target);
         };
         let width = crate::arch::pointer_bytes(self.image.isa);
-        let value = self.machine.load(slot, width);
+        let value = if self.recovery.is_some() {
+            match self.recovery_load(slot, width, false) {
+                Ok(fact) => match fact.singleton() {
+                    Some(value) => value,
+                    None => {
+                        return Err(Stop::Error(
+                            "import target depends on unknown input".to_owned(),
+                        ));
+                    }
+                },
+                Err(stop) => return Err(stop),
+            }
+        } else {
+            self.machine.load(slot, width)
+        };
         if let Err(stop) = self.memory_error() {
             return Err(stop);
         }
@@ -809,6 +895,12 @@ impl Runner<'_> {
     }
 
     fn external_result(&mut self, convention: Convention, value: Option<u64>) {
+        if let Some(recovery) = &mut self.recovery {
+            for &register in convention.clobbered() {
+                recovery.registers.remove(&register);
+            }
+            recovery.registers.remove(&crate::arch::RETURN);
+        }
         for &register in convention.clobbered() {
             self.assign_fact(
                 RegRef {
@@ -893,6 +985,11 @@ impl Runner<'_> {
             Ok(value) => value,
             Err(stop) => return Err(stop),
         };
+        let candidate = if depth == 0 {
+            self.recovery_candidate(convention, kind, old_sp)
+        } else {
+            None
+        };
         let pushed = if kind == CallKind::Invoke {
             convention.pushed_by_call() as u64
         } else {
@@ -909,6 +1006,7 @@ impl Runner<'_> {
             };
             let next = instruction.next_ip();
             self.machine.store(callee_sp, next, pushed as u8);
+            self.recovery_control_store(callee_sp, pushed as u8);
         }
         match self.memory_error() {
             Ok(value) => value,
@@ -936,11 +1034,26 @@ impl Runner<'_> {
             *register < crate::ir::TEMP_BASE || *register == crate::lift::execution::DIRECTION
         });
         let caller = self.address;
+        let temporary_origins: HashMap<_, _> =
+            self.recovery
+                .as_ref()
+                .map_or_else(HashMap::new, |recovery| {
+                    recovery
+                        .registers
+                        .iter()
+                        .filter(|(index, _)| **index >= crate::ir::TEMP_BASE)
+                        .map(|(&index, &origin)| (index, origin))
+                        .collect()
+                });
         let stopped = self.execute(target, depth + 1);
         if !matches!(stopped, Stop::Return) {
             return Err(stopped);
         }
         self.address = caller;
+        if let Some(recovery) = &mut self.recovery {
+            recovery.depth = depth;
+        }
+        self.finish_candidate(candidate, target, caller, callee_sp);
         self.machine.registers.retain(|index, _| {
             *index < crate::ir::TEMP_BASE || *index == crate::lift::execution::DIRECTION
         });
@@ -949,6 +1062,12 @@ impl Runner<'_> {
             *register < crate::ir::TEMP_BASE || *register == crate::lift::execution::DIRECTION
         });
         self.facts.extend(temporary_facts);
+        if let Some(recovery) = &mut self.recovery {
+            recovery
+                .registers
+                .retain(|index, _| *index < crate::ir::TEMP_BASE);
+            recovery.registers.extend(temporary_origins);
+        }
         self.machine.registers.insert(sp, old_sp);
         Ok(())
     }

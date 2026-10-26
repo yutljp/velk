@@ -53,6 +53,8 @@ pub enum Query {
     },
     Strings {
         contains: Option<String>,
+        #[serde(default = "enabled", rename = "decode")]
+        decode: bool,
     },
     Constants {
         value: String,
@@ -63,6 +65,9 @@ pub enum Query {
 }
 fn one_count() -> u64 {
     1
+}
+fn enabled() -> bool {
+    true
 }
 fn one() -> usize {
     1
@@ -105,13 +110,18 @@ pub fn run(binary: &mut Binary, query: Query, deadline: Option<Instant>) -> Resu
             };
             binary.summary(addr, deadline)
         }
-        Query::Strings { contains } => {
+        Query::Strings { contains, decode } => {
+            let decoded = if decode {
+                binary.decoded_strings(deadline)
+            } else {
+                Vec::new()
+            };
             let index = match binary.navigation(deadline) {
                 Ok(index) => index,
                 Err(error) => return Err(error),
             };
             Ok(
-                json!({ "strings": index.strings().iter().filter(|s| contains.as_ref().is_none_or(|text| s.text.contains(text))).collect::<Vec<_>>(), "failures": index.failures }),
+                json!({ "strings": index.strings().iter().filter(|s| contains.as_ref().is_none_or(|text| s.text.contains(text))).collect::<Vec<_>>(), "decodedStrings": decoded.iter().filter(|s| contains.as_ref().is_none_or(|text| s.text.contains(text))).collect::<Vec<_>>(), "failures": index.failures }),
             )
         }
         Query::Xrefs { target, from } => {

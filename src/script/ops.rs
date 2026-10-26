@@ -136,6 +136,9 @@ pub enum Request {
         bin: BinaryRef,
         /// Function address in hexadecimal or decimal.
         addr: String,
+        /// Include automatically recovered strings as comments.
+        #[serde(default = "decode_strings_default", rename = "decodeStrings")]
+        decode_strings: bool,
     },
     /// Renders selected functions concurrently, in address-list order.
     DecompileMany {
@@ -180,6 +183,9 @@ pub enum Request {
         bin: BinaryRef,
         /// Function address in hexadecimal or decimal.
         addr: String,
+        /// Include strings recovered from known execution inputs.
+        #[serde(default = "decode_strings_default")]
+        decode: bool,
     },
     /// Computes a function structure hash.
     ShapeHash {
@@ -202,7 +208,11 @@ pub enum Request {
     },
 }
 
-/// Answers `request`; analysis stops at pass boundaries once `deadline` passes.
+fn decode_strings_default() -> bool {
+    true
+}
+
+/// Executes one request against the session's cached binaries.
 pub fn handle(
     session: &mut Session,
     request: Request,
@@ -294,16 +304,31 @@ pub fn handle(
             )?;
             Ok(json!(card))
         }
-        Request::Decompile { bin, addr } => Ok(json!(
-            session
-                .open_arch(&bin, bin.arch())?
-                .decompile(parse(&addr)?, None, deadline)?
-        )),
+        Request::Decompile {
+            bin,
+            addr,
+            decode_strings,
+        } => {
+            let binary = match session.open_arch(&bin, bin.arch()) {
+                Ok(binary) => binary,
+                Err(error) => return Err(error),
+            };
+            binary.set_string_decoding(decode_strings);
+            let address = match parse(&addr) {
+                Ok(address) => address,
+                Err(error) => return Err(error),
+            };
+            match binary.decompile(address, None, deadline) {
+                Ok(code) => Ok(json!(code)),
+                Err(error) => Err(error),
+            }
+        }
         Request::DecompileMany { bin, addresses } => {
             let binary = match session.open_arch(&bin, bin.arch()) {
                 Ok(binary) => binary,
                 Err(error) => return Err(error),
             };
+            binary.set_string_decoding(true);
             let addresses = match addresses {
                 Some(addresses) => {
                     let mut parsed = Vec::with_capacity(addresses.len());
@@ -378,8 +403,27 @@ pub fn handle(
                 })
             })
             .collect()),
-        Request::Strings { bin, addr } => {
-            Ok(json!(analysis(session, &bin, &addr, deadline)?.strings()))
+        Request::Strings { bin, addr, decode } => {
+            let mut strings = match analysis(session, &bin, &addr, deadline) {
+                Ok(analysis) => analysis.strings(),
+                Err(error) => return Err(error),
+            };
+            if decode {
+                let address = match parse(&addr) {
+                    Ok(address) => address,
+                    Err(error) => return Err(error),
+                };
+                let binary = match session.open_arch(&bin, bin.arch()) {
+                    Ok(binary) => binary,
+                    Err(error) => return Err(error),
+                };
+                for string in binary.decoded_strings_at(address, deadline) {
+                    if !strings.contains(&string.text) {
+                        strings.push(string.text.clone());
+                    }
+                }
+            }
+            Ok(json!(strings))
         }
         Request::ShapeHash { bin, addr } => Ok(json!(
             session

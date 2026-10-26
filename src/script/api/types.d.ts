@@ -115,7 +115,20 @@ interface StringLiteral {
 
 interface StringsResult {
   strings: StringLiteral[];
+  decodedStrings: DecodedString[];
   failures: NavigationFailure[];
+}
+
+/** Observed text from known inputs; addresses belong to the emulated address space. */
+interface DecodedString {
+  addr: Addr;
+  function: Addr;
+  site: Addr;
+  decoder: Addr;
+  decoderName: string | null;
+  stack: boolean;
+  encoding: "utf8" | "utf16le";
+  text: string;
 }
 
 interface ConstantMatch {

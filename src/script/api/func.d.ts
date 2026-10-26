@@ -16,7 +16,7 @@ interface Func {
   card(opts?: { budget?: number }): Card;
   /** Standalone pseudo-C with support definitions. Throws when the function cannot be lifted.
    * For long MCP replies, page lines with .split("\n").slice(start, end).join("\n"). */
-  decompile(): string;
+  decompile(opts?: { decodeStrings?: boolean }): string;
   origins(): { target: ProjectTarget; name?: string; c_type?: string }[];
   /** One line per instruction across the whole function, up to `limit` lines; unlimited if omitted. */
   disasm(opts?: { limit?: number }): string[];
@@ -26,7 +26,8 @@ interface Func {
   /** Constant addresses the function uses, with string literals resolved. */
   references(): Reference[];
   /** The string literals among `references()`. */
-  strings(): string[];
+  /** Referenced literals and recovered text; decode defaults to true. */
+  strings(opts?: { decode?: boolean }): string[];
   /** Hash of the function's normalized shape; equal shapes give equal hashes. */
   shapeHash(): string;
   /** Inferred signature and navigation details; first use may build the whole-binary index. */

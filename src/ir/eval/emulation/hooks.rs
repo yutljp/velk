@@ -39,7 +39,7 @@ pub(super) fn find(name: &str) -> Option<Hook> {
 }
 
 impl Runner<'_> {
-    fn argument(
+    pub(super) fn argument(
         &self,
         index: usize,
         convention: Convention,
@@ -77,6 +77,14 @@ impl Runner<'_> {
         let Some(address) = address else {
             return Err(Stop::Error("hook argument address overflows".to_owned()));
         };
+        if self.recovery.is_some() {
+            return match self.recovery_load(address, width, false) {
+                Ok(fact) => fact
+                    .singleton()
+                    .ok_or_else(|| Stop::Error("undefined stack argument".to_owned())),
+                Err(stop) => Err(stop),
+            };
+        }
         let value = self.machine.load(address, width);
         match self.memory_error() {
             Ok(()) => Ok(value),
@@ -88,6 +96,15 @@ impl Runner<'_> {
         if let Err(stop) = self.tick() {
             return Err(stop);
         }
+        if self.recovery.is_some() {
+            return match self.recovery_load(address, 1, false) {
+                Ok(fact) => fact
+                    .singleton()
+                    .map(|v| v as u8)
+                    .ok_or_else(|| Stop::Error("undefined input byte".to_owned())),
+                Err(stop) => Err(stop),
+            };
+        }
         let value = self.machine.load(address, 1) as u8;
         match self.memory_error() {
             Ok(()) => Ok(value),
@@ -98,6 +115,14 @@ impl Runner<'_> {
     fn write_byte(&mut self, address: u64, value: u8) -> std::result::Result<(), Stop> {
         if let Err(stop) = self.tick() {
             return Err(stop);
+        }
+        if self.recovery.is_some() {
+            return self.recovery_store(
+                address,
+                1,
+                crate::ssa::ranges::Fact::constant(u64::from(value)),
+                0,
+            );
         }
         self.machine.store(address, u64::from(value), 1);
         self.memory_error()

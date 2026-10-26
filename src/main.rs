@@ -133,6 +133,9 @@ struct Cli {
     /// Detected strings with references, as JSON.
     #[arg(long, help_heading = "Operations (choose one)")]
     strings: bool,
+    /// Disable automatic string recovery in strings output and printed C.
+    #[arg(long)]
+    no_string_decoding: bool,
     /// Matching decoded instruction immediates, as JSON.
     #[arg(long, help_heading = "Operations (choose one)")]
     constants: bool,
@@ -378,6 +381,7 @@ impl Cli {
             } else if self.strings {
                 Query::Strings {
                     contains: self.contains,
+                    decode: !self.no_string_decoding,
                 }
             } else if self.constants {
                 Query::Constants { value: target }
@@ -595,7 +599,8 @@ fn main() -> ExitCode {
         };
     }
     let arch = cli.arch;
-    match run(cli.into_command(), project.as_deref(), arch) {
+    let decode_strings = !cli.no_string_decoding;
+    match run(cli.into_command(), project.as_deref(), arch, decode_strings) {
         Ok(code) => code,
         Err(Error::Project(detail)) => {
             eprintln!("{}", json!(detail));
@@ -636,6 +641,7 @@ fn run(
     command: Command,
     project: Option<&Path>,
     arch: Option<velk::loader::Architecture>,
+    decode_strings: bool,
 ) -> Result<ExitCode> {
     match command {
         Command::Emulate {
@@ -723,6 +729,7 @@ fn run(
                 Ok(binary) => binary,
                 Err(error) => return Err(error),
             };
+            binary.set_string_decoding(decode_strings);
             let addresses =
                 if functions.is_empty() || functions.iter().any(|function| function == "*") {
                     binary.image().functions.keys().copied().collect::<Vec<_>>()
