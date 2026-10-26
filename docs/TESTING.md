@@ -237,7 +237,7 @@ of foreign functions are not blocks):
 
 | Location | Related test; Miri limitation |
 | --- | --- |
-| `src/main.rs:478` | `tests::closed_pipe_signal`, compiled only for Miri; the `signal` foreign function is unsupported. |
+| `src/main.rs`, `exit_on_closed_pipe` | `tests::closed_pipe_signal`, compiled only for Miri; the `signal` foreign function is unsupported. |
 | `src/lift/hardware/aarch64.rs:137` | Signal callback installed by the `Page` tests; requires a kernel signal context. Native callback coverage was not checked. |
 | `src/lift/hardware/aarch64.rs:179`, `:183`, `:213`, `:231` | `lifted_instructions_match_the_processor` and the other tests using `Page`; signal setup, executable mapping, generated code and Darwin FFI. |
 | `src/lift/hardware/aarch64.rs:466`, `:473` | `sqdmulh_vector_results_match_the_processor`; inline assembly reads/restores FPSR. |

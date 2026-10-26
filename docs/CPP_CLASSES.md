@@ -22,15 +22,17 @@ byte offset and the fixed member displacement. It does not assert a fixed object
 MSVC tables also report `constructionDisplacement`, the displacement of a construction-time
 vtordisp field; Itanium tables use `null` for that field.
 
-Class recovery supports little-endian 64-bit ELF and Mach-O Itanium descriptors
+Class recovery supports little-endian 32-bit and 64-bit ELF and Mach-O Itanium descriptors
 (`__class_type_info`, `__si_class_type_info`, `__vmi_class_type_info`) and PE MSVC
-image-relative complete object locators and class hierarchies. Itanium runtime descriptor
-kinds must be identified by symbols or relocation/binding names. Mach-O classic binding
-streams are read; chained pointer fixups are not decoded here. MSVC simple class and
-namespace names are decoded; unsupported decorated names are omitted. Unrecognized or
-malformed descriptors do not justify an inferred class layout.
+absolute x86 or image-relative x64 complete object locators and class hierarchies.
+Itanium runtime descriptor kinds must be identified by symbols or relocation/binding
+names. Mach-O classic binding streams are read; for 64-bit images, chained pointer
+fixups are normalized before class recovery. MSVC simple class and namespace names
+are decoded; unsupported decorated names are omitted. Unrecognized or malformed
+descriptors do not justify an inferred class layout.
 
-Virtual calls with unambiguous table ownership can use class-named C structure views.
+Virtual calls with unambiguous table ownership can use class-named C structure views
+for 64-bit pointer loads. The views do not model 32-bit object layouts.
 Base members occupy their recorded, nonoverlapping offsets. These byte views describe
 only pointer-sized prefixes, not the full C++ object's size or data members. Unknown or
 unaligned base locations are omitted from the C view. Table stores use class names and

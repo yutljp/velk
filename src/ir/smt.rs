@@ -31,6 +31,15 @@ pub(crate) const CONDITIONS: [Cond; 14] = [
     Cond::Vc,
 ];
 
+/// Constructs a binary expression without simplifying its operands or operation.
+pub(crate) fn raw_bin(op: BinOp, lhs: Expr, rhs: Expr) -> Expr {
+    Expr::Bin {
+        op,
+        lhs: Box::new(lhs),
+        rhs: Box::new(rhs),
+    }
+}
+
 pub(crate) fn constant(value: u64) -> String {
     format!("(_ bv{value} 64)")
 }
@@ -120,24 +129,6 @@ fn operation(op: Operation, args: &[Value]) -> String {
         return result;
     }
     match op {
-        Operation::CountLeadingZeros(bits) | Operation::CountTrailingZeros(bits) => {
-            let mut total = constant(0);
-            for length in 1..=bits {
-                let start = if matches!(op, Operation::CountLeadingZeros(_)) {
-                    bits - length
-                } else {
-                    0
-                };
-                let end = start + length - 1;
-                let zero = format!("(= ((_ extract {end} {start}) {a}) (_ bv0 {length}))");
-                total = binary(
-                    "bvadd",
-                    &total,
-                    &format!("(ite {zero} {} {})", constant(1), constant(0)),
-                );
-            }
-            total
-        }
         Operation::PopCount(bits) => {
             let mut bytes = Vec::new();
             for start in (0..bits).step_by(8) {

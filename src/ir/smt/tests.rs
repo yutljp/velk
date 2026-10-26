@@ -2,14 +2,6 @@ use super::*;
 use crate::ir::{FunctionIr, RegRef, Stmt};
 use crate::loader::Isa;
 
-fn bin(op: BinOp, lhs: Expr, rhs: Expr) -> Expr {
-    Expr::Bin {
-        op,
-        lhs: Box::new(lhs),
-        rhs: Box::new(rhs),
-    }
-}
-
 fn select(cond: Cond, lhs: Expr, rhs: Expr, then: Expr, els: Expr) -> Expr {
     Expr::Select {
         cond,
@@ -23,8 +15,16 @@ fn select(cond: Cond, lhs: Expr, rhs: Expr, then: Expr, els: Expr) -> Expr {
 #[test]
 fn a_zero_arithmetic_shift_still_truncates_its_operand() {
     for bits in [8, 16, 32] {
-        let input = bin(BinOp::Add, Expr::reg(0, bits), Expr::reg(0, bits));
-        let before = bin(BinOp::Sar, input.clone(), Expr::Const(0));
+        let input = raw_bin(BinOp::Add, Expr::reg(0, bits), Expr::reg(0, bits));
+        let before = raw_bin(BinOp::Sar, input.clone(), Expr::Const(0));
+        assert_eq!(
+            before,
+            Expr::Bin {
+                op: BinOp::Sar,
+                lhs: Box::new(input.clone()),
+                rhs: Box::new(Expr::Const(0)),
+            }
+        );
         let after = Expr::bin(BinOp::Sar, input, Expr::Const(0));
         let register = |index| (index == 0).then_some(1u64 << (bits - 1));
         assert_eq!(
@@ -46,12 +46,12 @@ fn a_zero_arithmetic_shift_still_truncates_its_operand() {
 
 #[test]
 fn merging_masks_keeps_the_width_of_an_enclosing_signed_operation() {
-    let value = bin(
+    let value = raw_bin(
         BinOp::And,
-        bin(BinOp::And, Expr::reg(0, 16), Expr::Const(0xff)),
+        raw_bin(BinOp::And, Expr::reg(0, 16), Expr::Const(0xff)),
         Expr::Const(0xffff),
     );
-    let value = bin(BinOp::Sar, value, Expr::Const(1));
+    let value = raw_bin(BinOp::Sar, value, Expr::Const(1));
     let register = |index| (index == 0).then_some(0x80);
     assert_eq!(
         super::super::semantics::evaluate(&value, &register),
@@ -105,14 +105,14 @@ fn propagated_constants_keep_the_assignment_truncation() {
 
 #[test]
 fn equal_divisions_must_still_evaluate_the_denominator() {
-    let divided = bin(BinOp::DivU, Expr::reg(0, 64), Expr::reg(1, 64));
+    let divided = raw_bin(BinOp::DivU, Expr::reg(0, 64), Expr::reg(1, 64));
     let registers = |index| match index {
         0 => Some(42),
         1 => Some(0),
         _ => None,
     };
     for op in [BinOp::Sub, BinOp::Xor] {
-        let before = bin(op, divided.clone(), divided.clone());
+        let before = raw_bin(op, divided.clone(), divided.clone());
         let after = Expr::bin(op, divided.clone(), divided.clone());
         assert_eq!(super::super::semantics::evaluate(&before, &registers), None);
         assert_eq!(super::super::semantics::evaluate(&after, &registers), None);
@@ -123,9 +123,9 @@ fn equal_divisions_must_still_evaluate_the_denominator() {
 fn an_eight_byte_extension_keeps_the_high_half_of_a_merge() {
     let value = Expr::SignExtend {
         width: 8,
-        value: Box::new(bin(
+        value: Box::new(raw_bin(
             BinOp::Or,
-            bin(BinOp::And, Expr::reg(0, 64), Expr::Const(!0xffff_ffff)),
+            raw_bin(BinOp::And, Expr::reg(0, 64), Expr::Const(!0xffff_ffff)),
             Expr::reg(1, 32),
         )),
     };
@@ -175,7 +175,7 @@ pub(super) fn check_rewrite(proofs: &mut Proofs, name: &str, before: &Expr, afte
         proofs.expression(format!("{name}/context/{cond:?}"), &original, actual, 64);
     }
     for amount in [0, 1] {
-        let original = bin(BinOp::Sar, before.clone(), Expr::Const(amount));
+        let original = raw_bin(BinOp::Sar, before.clone(), Expr::Const(amount));
         let mut ir = FunctionIr::single_block(
             Isa::X86_64,
             vec![Stmt::Ret {
@@ -204,10 +204,10 @@ fn constructors_and_simplification_are_equivalent() {
         let mut cases = Vec::new();
         let mut arbitrary = Expr::reg(0, bits);
         for part in 1..64 / bits {
-            arbitrary = bin(
+            arbitrary = raw_bin(
                 BinOp::Or,
                 arbitrary,
-                bin(
+                raw_bin(
                     BinOp::Shl,
                     Expr::reg(u16::from(part), bits),
                     Expr::Const(u64::from(part) * u64::from(bits)),
@@ -216,15 +216,15 @@ fn constructors_and_simplification_are_equivalent() {
         }
         proofs.expression(
             format!("zero arithmetic shift/arbitrary value/{bits}"),
-            &bin(BinOp::Sar, arbitrary.clone(), c(0)),
+            &raw_bin(BinOp::Sar, arbitrary.clone(), c(0)),
             &Expr::bin(BinOp::Sar, arbitrary, c(0)),
             64,
         );
         for op in [BinOp::Sub, BinOp::Xor] {
-            let divided = bin(BinOp::DivU, x.clone(), y.clone());
+            let divided = raw_bin(BinOp::DivU, x.clone(), y.clone());
             proofs.expression(
                 format!("discard division/{bits}/{op:?}"),
-                &bin(op, divided.clone(), divided.clone()),
+                &raw_bin(op, divided.clone(), divided.clone()),
                 &Expr::bin(op, divided.clone(), divided),
                 64,
             );
@@ -246,7 +246,7 @@ fn constructors_and_simplification_are_equivalent() {
                 (x.clone(), x.clone()),
                 (x.clone(), c(1)),
             ] {
-                let before = bin(op, a.clone(), b.clone());
+                let before = raw_bin(op, a.clone(), b.clone());
                 let after = Expr::bin(op, a, b);
                 check_rewrite(
                     &mut proofs,
@@ -278,7 +278,7 @@ fn constructors_and_simplification_are_equivalent() {
                 ] {
                     proofs.expression(
                         format!("constant/{bits}/{op:?}/{a}/{b}"),
-                        &bin(op, c(a), c(b)),
+                        &raw_bin(op, c(a), c(b)),
                         &Expr::bin(op, c(a), c(b)),
                         64,
                     );
@@ -286,18 +286,18 @@ fn constructors_and_simplification_are_equivalent() {
             }
         }
         for k in [0, 1, 7, 8, 15, 16, 31, 32, 63, 64, 65, 127, u64::MAX] {
-            let shifted = bin(BinOp::Shl, x.clone(), c(k));
+            let shifted = raw_bin(BinOp::Shl, x.clone(), c(k));
             cases.extend([
-                bin(BinOp::Add, x.clone(), shifted.clone()),
-                bin(BinOp::Sub, shifted.clone(), x.clone()),
-                bin(BinOp::Mul, shifted, c(3)),
-                bin(BinOp::Shl, bin(BinOp::Mul, x.clone(), c(3)), c(k)),
-                bin(
+                raw_bin(BinOp::Add, x.clone(), shifted.clone()),
+                raw_bin(BinOp::Sub, shifted.clone(), x.clone()),
+                raw_bin(BinOp::Mul, shifted, c(3)),
+                raw_bin(BinOp::Shl, raw_bin(BinOp::Mul, x.clone(), c(3)), c(k)),
+                raw_bin(
                     BinOp::Or,
                     x.clone(),
-                    bin(
+                    raw_bin(
                         BinOp::Shl,
-                        bin(BinOp::And, bin(BinOp::Shr, x.clone(), c(k)), c(mask)),
+                        raw_bin(BinOp::And, raw_bin(BinOp::Shr, x.clone(), c(k)), c(mask)),
                         c(k),
                     ),
                 ),
@@ -307,22 +307,34 @@ fn constructors_and_simplification_are_equivalent() {
             for delta in [0, 1, 0x100, u64::MAX] {
                 for outer in [BinOp::Add, BinOp::Sub] {
                     for inner in [BinOp::Add, BinOp::Sub] {
-                        cases.push(bin(outer, bin(inner, x.clone(), c(offset)), c(delta)));
+                        cases.push(raw_bin(
+                            outer,
+                            raw_bin(inner, x.clone(), c(offset)),
+                            c(delta),
+                        ));
                     }
                 }
             }
         }
         for kept in [0, 1, 0x7f, 0xff, 0xffff, 0xffff_ffff, u64::MAX] {
             cases.extend([
-                bin(BinOp::And, bin(BinOp::And, x.clone(), c(kept)), c(mask)),
-                bin(
+                raw_bin(BinOp::And, raw_bin(BinOp::And, x.clone(), c(kept)), c(mask)),
+                raw_bin(
                     BinOp::And,
-                    bin(BinOp::Or, bin(BinOp::And, x.clone(), c(!mask)), y.clone()),
+                    raw_bin(
+                        BinOp::Or,
+                        raw_bin(BinOp::And, x.clone(), c(!mask)),
+                        y.clone(),
+                    ),
                     c(kept),
                 ),
             ]);
         }
-        cases.push(bin(BinOp::Sub, c(0), bin(BinOp::Sub, c(0), x.clone())));
+        cases.push(raw_bin(
+            BinOp::Sub,
+            c(0),
+            raw_bin(BinOp::Sub, c(0), x.clone()),
+        ));
         for op in [
             BinOp::Add,
             BinOp::Sub,
@@ -331,12 +343,20 @@ fn constructors_and_simplification_are_equivalent() {
             BinOp::Or,
             BinOp::Xor,
         ] {
-            cases.push(bin(
+            cases.push(raw_bin(
                 BinOp::And,
-                bin(
+                raw_bin(
                     op,
-                    bin(BinOp::And, bin(BinOp::Add, x.clone(), c(1)), c(0xffff_ffff)),
-                    bin(BinOp::And, bin(BinOp::Sub, y.clone(), c(1)), c(0xffff_ffff)),
+                    raw_bin(
+                        BinOp::And,
+                        raw_bin(BinOp::Add, x.clone(), c(1)),
+                        c(0xffff_ffff),
+                    ),
+                    raw_bin(
+                        BinOp::And,
+                        raw_bin(BinOp::Sub, y.clone(), c(1)),
+                        c(0xffff_ffff),
+                    ),
                 ),
                 c(0xffff_ffff),
             ));
@@ -345,29 +365,29 @@ fn constructors_and_simplification_are_equivalent() {
             let low_mask = super::super::semantics::mask(u32::from(bytes) * 8);
             cases.push(Expr::SignExtend {
                 width: bytes,
-                value: Box::new(bin(BinOp::And, x.clone(), c(low_mask))),
+                value: Box::new(raw_bin(BinOp::And, x.clone(), c(low_mask))),
             });
             cases.push(Expr::SignExtend {
                 width: bytes,
-                value: Box::new(bin(
+                value: Box::new(raw_bin(
                     BinOp::Or,
-                    bin(BinOp::And, Expr::reg(0, 64), c(!0xffff_ffff)),
+                    raw_bin(BinOp::And, Expr::reg(0, 64), c(!0xffff_ffff)),
                     Expr::reg(1, 32),
                 )),
             });
             cases.push(Expr::SignExtend {
                 width: bytes,
-                value: Box::new(bin(BinOp::And, x.clone(), c(0))),
+                value: Box::new(raw_bin(BinOp::And, x.clone(), c(0))),
             });
             cases.push(Expr::SignExtend {
                 width: bytes,
-                value: Box::new(bin(
+                value: Box::new(raw_bin(
                     BinOp::Or,
-                    bin(BinOp::And, x.clone(), c(!low_mask)),
+                    raw_bin(BinOp::And, x.clone(), c(!low_mask)),
                     y.clone(),
                 )),
             });
-            cases.push(bin(
+            cases.push(raw_bin(
                 BinOp::And,
                 Expr::Load {
                     addr: Box::new(x.clone()),
@@ -438,7 +458,7 @@ fn lane_identities_and_bit_counts_are_equivalent() {
         }
     }
     for lane in [LaneOp::Sub, LaneOp::Equal] {
-        let divided = bin(BinOp::DivU, Expr::reg(0, 64), Expr::reg(1, 64));
+        let divided = raw_bin(BinOp::DivU, Expr::reg(0, 64), Expr::reg(1, 64));
         let before = Expr::apply(Operation::Lanes(lane, 8), vec![divided.clone(), divided]);
         let mut ir = FunctionIr::single_block(
             Isa::X86_64,
@@ -495,10 +515,10 @@ fn lane_identities_and_bit_counts_are_equivalent() {
                 Expr::apply(Operation::PopCount(64), vec![Expr::reg(1, 64)]),
             );
             assert_eq!(after, &expected, "the two halves sum their own counts");
-            let sum = bin(BinOp::Add, Expr::reg(0, 8), Expr::reg(1, 8));
+            let sum = raw_bin(BinOp::Add, Expr::reg(0, 8), Expr::reg(1, 8));
             proofs.expression(
                 "two byte-count sums fit the widened result",
-                &bin(BinOp::And, sum.clone(), Expr::Const(0xffff)),
+                &raw_bin(BinOp::And, sum.clone(), Expr::Const(0xffff)),
                 &sum,
                 64,
             );
@@ -539,19 +559,19 @@ fn assignment_rewrites_preserve_truncation() {
                 Expr::Const(1u64 << (bits - 1)),
                 Expr::Const(u64::MAX),
                 Expr::reg(0, 64),
-                bin(BinOp::Add, Expr::reg(0, 64), Expr::reg(1, 64)),
+                raw_bin(BinOp::Add, Expr::reg(0, 64), Expr::reg(1, 64)),
                 Expr::SignExtend {
                     value: Box::new(Expr::reg(0, 64)),
                     width: bits / 8,
                 },
             ];
             for op in [BinOp::Sar, BinOp::And, BinOp::Sub] {
-                values.push(bin(op, Expr::reg(0, bits), Expr::Const(1)));
+                values.push(raw_bin(op, Expr::reg(0, bits), Expr::Const(1)));
             }
             for (index, assigned) in values.into_iter().enumerate() {
                 let mut uses = vec![Expr::reg(3, read)];
                 for op in [BinOp::Add, BinOp::Sar, BinOp::DivS, BinOp::ModS] {
-                    uses.push(bin(op, Expr::reg(3, read), Expr::Const(3)));
+                    uses.push(raw_bin(op, Expr::reg(3, read), Expr::Const(3)));
                 }
                 for cond in CONDITIONS {
                     uses.push(select(
@@ -602,13 +622,13 @@ fn nested_frame_offsets_and_alias_differences_are_equivalent() {
         let sp = crate::arch::stack_pointer(isa);
         for first in [-512i64, -13, 0, 4, 256] {
             for second in [-32i64, 0, 12, 1024] {
-                let nested = bin(
+                let nested = raw_bin(
                     BinOp::Sub,
-                    bin(BinOp::Add, Expr::reg(sp, 64), Expr::Const(first as u64)),
+                    raw_bin(BinOp::Add, Expr::reg(sp, 64), Expr::Const(first as u64)),
                     Expr::Const(second as u64),
                 );
                 let offset = crate::passes::frame_slots::frame_slot(&nested, 0, sp).unwrap();
-                let canonical = bin(BinOp::Add, Expr::reg(sp, 64), Expr::Const(offset as u64));
+                let canonical = raw_bin(BinOp::Add, Expr::reg(sp, 64), Expr::Const(offset as u64));
                 proofs.expression(
                     format!("frame offset/{isa:?}/{first}/{second}"),
                     &nested,
@@ -630,10 +650,10 @@ fn nested_frame_offsets_and_alias_differences_are_equivalent() {
                                 index: 1,
                                 width: 64,
                             },
-                            value: bin(BinOp::Add, Expr::reg(sp, 64), Expr::Const(7)),
+                            value: raw_bin(BinOp::Add, Expr::reg(sp, 64), Expr::Const(7)),
                         },
                         Stmt::Ret {
-                            value: bin(BinOp::Sub, Expr::reg(0, 64), Expr::reg(1, 64)),
+                            value: raw_bin(BinOp::Sub, Expr::reg(0, 64), Expr::reg(1, 64)),
                         },
                     ],
                 );

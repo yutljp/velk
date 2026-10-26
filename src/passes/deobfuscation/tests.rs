@@ -1,15 +1,7 @@
 use super::*;
-use crate::ir::smt::{self, Proofs};
+use crate::ir::smt::{self, Proofs, raw_bin};
 use crate::ir::{Block, Cond, RegRef, VARIABLE_BASE};
 use crate::loader::Isa;
-
-fn bin(op: BinOp, lhs: Expr, rhs: Expr) -> Expr {
-    Expr::Bin {
-        op,
-        lhs: Box::new(lhs),
-        rhs: Box::new(rhs),
-    }
-}
 
 #[test]
 fn identities_are_proved_at_every_integer_width() {
@@ -21,33 +13,37 @@ fn identities_are_proved_at_every_integer_width() {
     for bits in [8, 16, 32, 64] {
         let x = Expr::reg(0, bits);
         let mut identities = vec![
-            bin(BinOp::Xor, x.clone(), x.clone()),
-            bin(BinOp::Sub, x.clone(), x.clone()),
-            bin(
+            raw_bin(BinOp::Xor, x.clone(), x.clone()),
+            raw_bin(BinOp::Sub, x.clone(), x.clone()),
+            raw_bin(
                 BinOp::And,
                 x.clone(),
-                bin(BinOp::Xor, x.clone(), Expr::Const(u64::MAX)),
+                raw_bin(BinOp::Xor, x.clone(), Expr::Const(u64::MAX)),
             ),
         ];
         for op in [BinOp::Add, BinOp::Sub] {
             for offset in [1, 3, u64::MAX] {
-                let product = bin(
+                let product = raw_bin(
                     BinOp::Mul,
                     x.clone(),
-                    bin(op, x.clone(), Expr::Const(offset)),
+                    raw_bin(op, x.clone(), Expr::Const(offset)),
                 );
-                identities.push(bin(BinOp::And, product.clone(), Expr::Const(1)));
-                identities.push(bin(BinOp::ModU, product, Expr::Const(2)));
+                identities.push(raw_bin(BinOp::And, product.clone(), Expr::Const(1)));
+                identities.push(raw_bin(BinOp::ModU, product, Expr::Const(2)));
             }
         }
-        identities.push(bin(BinOp::Or, identities[0].clone(), identities[2].clone()));
+        identities.push(raw_bin(
+            BinOp::Or,
+            identities[0].clone(),
+            identities[2].clone(),
+        ));
         for op in [BinOp::Add, BinOp::Sub] {
-            let odd = bin(BinOp::Or, Expr::reg(1, 64), Expr::Const(1));
-            let product = bin(BinOp::Mul, x.clone(), bin(op, x.clone(), odd));
+            let odd = raw_bin(BinOp::Or, Expr::reg(1, 64), Expr::Const(1));
+            let product = raw_bin(BinOp::Mul, x.clone(), raw_bin(op, x.clone(), odd));
             for (reduction, divisor) in [(BinOp::And, 1), (BinOp::ModU, 2)] {
                 proofs.expression(
                     format!("constant-predicate/{bits}/{op:?}/{reduction:?}/odd-offset"),
-                    &bin(reduction, product.clone(), Expr::Const(divisor)),
+                    &raw_bin(reduction, product.clone(), Expr::Const(divisor)),
                     &Expr::Const(0),
                     64,
                 );
@@ -79,12 +75,12 @@ fn identities_are_proved_at_every_integer_width() {
 fn uncertain_or_faulting_expressions_remain() {
     let x = Expr::reg(0, 32);
     for offset in [0, 2, 4] {
-        assert!(!known_zero(&bin(
+        assert!(!known_zero(&raw_bin(
             BinOp::And,
-            bin(
+            raw_bin(
                 BinOp::Mul,
                 x.clone(),
-                bin(BinOp::Add, x.clone(), Expr::Const(offset))
+                raw_bin(BinOp::Add, x.clone(), Expr::Const(offset))
             ),
             Expr::Const(1)
         )));
@@ -95,10 +91,10 @@ fn uncertain_or_faulting_expressions_remain() {
             width: 4,
             signed: false,
         },
-        bin(BinOp::DivU, x.clone(), Expr::Const(0)),
-        bin(BinOp::ModS, x, Expr::Const(0)),
+        raw_bin(BinOp::DivU, x.clone(), Expr::Const(0)),
+        raw_bin(BinOp::ModS, x, Expr::Const(0)),
     ] {
-        assert!(!known_zero(&bin(BinOp::Xor, value.clone(), value)));
+        assert!(!known_zero(&raw_bin(BinOp::Xor, value.clone(), value)));
     }
 }
 

@@ -1,17 +1,9 @@
 //! Match real division chains and prove their returned values symbolically.
 
 use super::*;
-use crate::ir::smt::Proofs;
+use crate::ir::smt::{Proofs, raw_bin};
 use crate::ir::{BinOp, Cond, RegRef};
 use crate::loader::Isa;
-
-fn bin(op: BinOp, lhs: Expr, rhs: Expr) -> Expr {
-    Expr::Bin {
-        op,
-        lhs: Box::new(lhs),
-        rhs: Box::new(rhs),
-    }
-}
 
 fn assign(index: u16, width: u8, value: Expr) -> Stmt {
     Stmt::Assign {
@@ -42,7 +34,7 @@ fn signed_power_of_two_chain_matchers_are_equivalent() {
             let divisor = 1u64 << shift;
             let x = Expr::reg(0, bits);
             for cond in [Cond::Ge, Cond::Lt] {
-                let adjusted = bin(BinOp::Add, x.clone(), Expr::Const(divisor - 1));
+                let adjusted = raw_bin(BinOp::Add, x.clone(), Expr::Const(divisor - 1));
                 let (then, els) = if cond == Cond::Ge {
                     (x.clone(), Expr::reg(2, bits))
                 } else {
@@ -58,7 +50,7 @@ fn signed_power_of_two_chain_matchers_are_equivalent() {
                         statements.push(assign(
                             4,
                             bits,
-                            bin(
+                            raw_bin(
                                 BinOp::And,
                                 Expr::reg(3, bits),
                                 Expr::Const(divisor.wrapping_neg()),
@@ -67,17 +59,17 @@ fn signed_power_of_two_chain_matchers_are_equivalent() {
                         statements.push(assign(
                             5,
                             bits,
-                            bin(BinOp::Sub, x.clone(), Expr::reg(4, bits)),
+                            raw_bin(BinOp::Sub, x.clone(), Expr::reg(4, bits)),
                         ));
                     } else {
                         statements.push(assign(
                             5,
                             bits,
-                            bin(BinOp::Sar, Expr::reg(3, bits), Expr::Const(shift)),
+                            raw_bin(BinOp::Sar, Expr::reg(3, bits), Expr::Const(shift)),
                         ));
                     }
                     let at = statements.len() - 1;
-                    let replacement = bin(
+                    let replacement = raw_bin(
                         if remainder { BinOp::ModS } else { BinOp::DivS },
                         x.clone(),
                         Expr::Const(divisor),
@@ -112,25 +104,25 @@ fn signed_power_of_two_chain_matchers_are_equivalent() {
                 }
             }
             let statements = vec![
-                assign(2, bits, bin(BinOp::Sub, Expr::Const(0), x.clone())),
+                assign(2, bits, raw_bin(BinOp::Sub, Expr::Const(0), x.clone())),
                 assign(
                     3,
                     bits,
-                    bin(BinOp::And, x.clone(), Expr::Const(divisor - 1)),
+                    raw_bin(BinOp::And, x.clone(), Expr::Const(divisor - 1)),
                 ),
                 assign(
                     4,
                     bits,
-                    bin(BinOp::And, Expr::reg(2, bits), Expr::Const(divisor - 1)),
+                    raw_bin(BinOp::And, Expr::reg(2, bits), Expr::Const(divisor - 1)),
                 ),
                 assign(
                     5,
                     bits,
                     selected(
                         Cond::Lt,
-                        bin(BinOp::Sub, Expr::Const(0), x.clone()),
+                        raw_bin(BinOp::Sub, Expr::Const(0), x.clone()),
                         Expr::reg(3, bits),
-                        bin(BinOp::Sub, Expr::Const(0), Expr::reg(4, bits)),
+                        raw_bin(BinOp::Sub, Expr::Const(0), Expr::reg(4, bits)),
                     ),
                 ),
                 Stmt::Ret {
@@ -186,25 +178,25 @@ fn reciprocal_matchers_keep_their_certified_expression_shapes() {
             } else {
                 BinOp::MulHigh
             };
-            let product = bin(product_op, source, Expr::Const(magic));
+            let product = raw_bin(product_op, source, Expr::Const(magic));
             let mut statements = vec![assign(3, 64, product)];
             if signed {
                 statements.push(assign(
                     4,
                     64,
-                    bin(BinOp::Shr, Expr::reg(3, 64), Expr::Const(63)),
+                    raw_bin(BinOp::Shr, Expr::reg(3, 64), Expr::Const(63)),
                 ));
                 if bits == 32 {
                     statements.push(assign(
                         6,
                         64,
-                        bin(BinOp::Shr, Expr::reg(3, 64), Expr::Const(32)),
+                        raw_bin(BinOp::Shr, Expr::reg(3, 64), Expr::Const(32)),
                     ));
                 }
                 statements.push(assign(
                     5,
                     bits,
-                    bin(
+                    raw_bin(
                         BinOp::Add,
                         Expr::reg(if bits == 32 { 6 } else { 3 }, bits),
                         Expr::reg(4, bits),
@@ -214,7 +206,7 @@ fn reciprocal_matchers_keep_their_certified_expression_shapes() {
                 statements.push(assign(
                     5,
                     bits,
-                    bin(
+                    raw_bin(
                         BinOp::Shr,
                         Expr::reg(3, 64),
                         Expr::Const(if bits == 32 { shift } else { shift - 64 }),
@@ -222,7 +214,7 @@ fn reciprocal_matchers_keep_their_certified_expression_shapes() {
                 ));
             }
             let at = statements.len() - 1;
-            let replacement = bin(
+            let replacement = raw_bin(
                 if signed { BinOp::DivS } else { BinOp::DivU },
                 x.clone(),
                 Expr::Const(3),

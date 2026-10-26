@@ -436,32 +436,7 @@ pub(super) fn stack_locals_with_roles(
                 .map(|outer| (*inner, outer))
         })
         .collect();
-    let (mut types, signs, points_to) = slot_types(ir, sp, frames, variables);
-    // A local holding another's address points at what that one holds.
-    for (slot, target) in points_to {
-        let Some(target) = slot_names.get(&target) else {
-            continue;
-        };
-        let element = target
-            .ty
-            .clone()
-            .unwrap_or_else(|| CType::int(target.width, target.signed));
-        types.entry(slot).or_insert(CType::pointer_to(element));
-    }
-    for (slot, ty) in types {
-        if let Some(local) = slot_names.get_mut(&slot)
-            && ty_width(&ty) == Some(local.width)
-        {
-            local.ty = Some(ty);
-        }
-    }
-    // A signed operation on a local makes it signed, and an unsigned one
-    // unsigned unless a signed one reads it too.
-    for (slot, signed) in signs {
-        if let Some(local) = slot_names.get_mut(&slot) {
-            local.signed = signed;
-        }
-    }
+    type_storage(ir, sp, frames, variables, &mut slot_names);
     build_regions(&mut slot_names, &within, &accesses);
     slot_names.retain(|slot, _| !within.contains_key(slot));
     let mut order: Vec<i64> = Vec::new();
@@ -471,66 +446,15 @@ pub(super) fn stack_locals_with_roles(
             order.push(slot);
         }
     }
-    for (number, slot) in order.iter().enumerate() {
-        if let Some(local) = slot_names.get_mut(slot) {
-            local.name = format!("local_{number}");
-        }
-    }
-    for local in slot_names.values_mut() {
-        if local.size > 0 {
-            local.ty = None;
-        }
-    }
-    let mut debug_slots = debug::apply(ir, symbols, &mut slot_names, &accesses);
-    for ((function, offset), name) in &symbols.stack_names {
-        if *function != ir.addr {
-            continue;
-        }
-        if let Some(local) = slot_names.get_mut(offset) {
-            local.name = super::vacant_name(name, &mut reserved);
-            debug_slots.insert(*offset);
-        } else {
-            for local in slot_names.values_mut() {
-                if let Some(field) = local.fields.iter_mut().find(|field| field.slot == *offset) {
-                    field.name = super::vacant_name(name, &mut reserved);
-                    debug_slots.insert(local.slot);
-                }
-            }
-        }
-    }
-    for ((function, offset), ty) in &symbols.stack_types {
-        if *function != ir.addr {
-            continue;
-        }
-        if let Some(local) = slot_names.get_mut(offset) {
-            local.ty = Some(ty.clone());
-            local.signed = ty.integer().is_some_and(|(_, signed)| signed);
-        } else {
-            for local in slot_names.values_mut() {
-                if let Some(field) = local.fields.iter_mut().find(|field| field.slot == *offset) {
-                    field.ty = Some(ty.clone());
-                    field.signed = ty.integer().is_some_and(|(_, signed)| signed);
-                }
-            }
-        }
-    }
-    reserved.extend(slot_names.values().map(|local| local.name.clone()));
-    for slot in &order {
-        if debug_slots.contains(slot) {
-            continue;
-        }
-        let role = accesses
-            .iter()
-            .filter(|(at, ..)| at == &Some(*slot))
-            .find_map(|(_, address, ..)| roles.slot(address));
-        if let Some(local) = slot_names.get_mut(slot)
-            && local.fields.is_empty()
-            && local.size == 0
-            && let Some(role) = role
-        {
-            local.name = super::vacant_name(role, &mut reserved);
-        }
-    }
+    name_storage(
+        ir,
+        symbols,
+        roles,
+        &accesses,
+        &order,
+        &mut slot_names,
+        &mut reserved,
+    );
     let mut parts: HashMap<String, String> = rendered
         .iter()
         .filter_map(|(key, slot)| {
@@ -819,6 +743,112 @@ pub(super) fn stack_locals_with_roles(
             .into_iter()
             .filter_map(|slot| slot_names.remove(&slot))
             .collect(),
+    }
+}
+
+fn type_storage(
+    ir: &FunctionIr,
+    sp: u16,
+    frames: &[Option<i64>],
+    variables: &std::collections::BTreeMap<u16, CType>,
+    slot_names: &mut HashMap<i64, Local>,
+) {
+    let (mut types, signs, points_to) = slot_types(ir, sp, frames, variables);
+    // A local holding another's address points at what that one holds.
+    for (slot, target) in points_to {
+        let Some(target) = slot_names.get(&target) else {
+            continue;
+        };
+        let element = target
+            .ty
+            .clone()
+            .unwrap_or_else(|| CType::int(target.width, target.signed));
+        types.entry(slot).or_insert(CType::pointer_to(element));
+    }
+    for (slot, ty) in types {
+        if let Some(local) = slot_names.get_mut(&slot)
+            && ty_width(&ty) == Some(local.width)
+        {
+            local.ty = Some(ty);
+        }
+    }
+    // A signed operation on a local makes it signed, and an unsigned one
+    // unsigned unless a signed one reads it too.
+    for (slot, signed) in signs {
+        if let Some(local) = slot_names.get_mut(&slot) {
+            local.signed = signed;
+        }
+    }
+}
+
+fn name_storage(
+    ir: &FunctionIr,
+    symbols: &super::Symbols,
+    roles: &super::naming::roles::Roles,
+    accesses: &[FrameAccess],
+    order: &[i64],
+    slot_names: &mut HashMap<i64, Local>,
+    reserved: &mut std::collections::HashSet<String>,
+) {
+    for (number, slot) in order.iter().enumerate() {
+        if let Some(local) = slot_names.get_mut(slot) {
+            local.name = format!("local_{number}");
+        }
+    }
+    for local in slot_names.values_mut() {
+        if local.size > 0 {
+            local.ty = None;
+        }
+    }
+    let mut debug_slots = debug::apply(ir, symbols, slot_names, accesses);
+    for ((function, offset), name) in &symbols.stack_names {
+        if *function != ir.addr {
+            continue;
+        }
+        if let Some(local) = slot_names.get_mut(offset) {
+            local.name = super::vacant_name(name, reserved);
+            debug_slots.insert(*offset);
+        } else {
+            for local in slot_names.values_mut() {
+                if let Some(field) = local.fields.iter_mut().find(|field| field.slot == *offset) {
+                    field.name = super::vacant_name(name, reserved);
+                    debug_slots.insert(local.slot);
+                }
+            }
+        }
+    }
+    for ((function, offset), ty) in &symbols.stack_types {
+        if *function != ir.addr {
+            continue;
+        }
+        if let Some(local) = slot_names.get_mut(offset) {
+            local.ty = Some(ty.clone());
+            local.signed = ty.integer().is_some_and(|(_, signed)| signed);
+        } else {
+            for local in slot_names.values_mut() {
+                if let Some(field) = local.fields.iter_mut().find(|field| field.slot == *offset) {
+                    field.ty = Some(ty.clone());
+                    field.signed = ty.integer().is_some_and(|(_, signed)| signed);
+                }
+            }
+        }
+    }
+    reserved.extend(slot_names.values().map(|local| local.name.clone()));
+    for slot in order {
+        if debug_slots.contains(slot) {
+            continue;
+        }
+        let role = accesses
+            .iter()
+            .filter(|(at, ..)| at == &Some(*slot))
+            .find_map(|(_, address, ..)| roles.slot(address));
+        if let Some(local) = slot_names.get_mut(slot)
+            && local.fields.is_empty()
+            && local.size == 0
+            && let Some(role) = role
+        {
+            local.name = super::vacant_name(role, reserved);
+        }
     }
 }
 

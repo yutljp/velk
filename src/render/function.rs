@@ -1155,50 +1155,14 @@ fn render_with(
     ));
     let decls = locals.decls;
     // The body is rendered first so only slots it names get declared.
-    let mut body = String::new();
-    // A function that returns nothing needs no return at its end, unless a
-    // label stands before it.
-    if ctx.void_return
-        && matches!(nodes.last(), Some(Node::Stmt(Stmt::Ret { .. })))
-        && !matches!(nodes.iter().rev().nth(1), Some(Node::Label(_)))
-    {
-        nodes.pop();
-    }
-    ctx.read_once = calls::read_once(&nodes);
-    render_nodes(&nodes, 1, &mut body, &ctx);
-    let mut folded = nodes.clone();
-    if super::locals::fold_values(ir, &mut folded, &ctx) {
-        let mut candidate = String::new();
-        ctx.read_once = calls::read_once(&folded);
-        render_nodes(&folded, 1, &mut candidate, &ctx);
-        if super::cost::casts(&candidate) <= super::cost::casts(&body)
-            && candidate.lines().count() <= body.lines().count()
-            && candidate.matches("goto ").count() <= body.matches("goto ").count()
-        {
-            body = candidate;
-        } else {
-            ctx.read_once = calls::read_once(&nodes);
-        }
-    }
-    super::initializers::drop_unused_constants(
-        &mut body,
-        decls
-            .iter()
-            .filter(|local| local.size == 0 && local.fields.is_empty() && local.views.is_empty())
-            .map(|local| local.name.clone())
-            .chain(variable_types.iter().filter_map(|(index, ty)| {
-                if ty.integer().is_none()
-                    || matches!(ty, CType::Named(name)
-                        if name.split_whitespace().any(|word| word == "volatile"))
-                {
-                    return None;
-                }
-                Some(ctx.register(*index, 64))
-            })),
+    let mut body = render_body(
+        ir,
+        &mut nodes,
+        &mut ctx,
+        &decls,
+        &variable_types,
+        &vector_groups,
     );
-    if !vector_groups.is_empty() {
-        body = super::vector_values::whole_writes(&body, &vector_groups);
-    }
     let shared_call_values = ctx.call_outputs.shared_declaration(&mut body);
     let segment_bases: Vec<_> = segment_bases
         .iter()
@@ -1410,6 +1374,61 @@ fn render_with(
     #[cfg(test)]
     super::structure::classify::record(&classification.0, &classification.1, &rendered.code);
     rendered
+}
+
+fn render_body(
+    ir: &FunctionIr,
+    nodes: &mut Vec<Node>,
+    ctx: &mut Ctx<'_>,
+    decls: &[super::locals::Local],
+    variable_types: &std::collections::BTreeMap<u16, CType>,
+    vector_groups: &[super::vector_values::Group],
+) -> String {
+    let mut body = String::new();
+    // A function that returns nothing needs no return at its end, unless a
+    // label stands before it.
+    if ctx.void_return
+        && matches!(nodes.last(), Some(Node::Stmt(Stmt::Ret { .. })))
+        && !matches!(nodes.iter().rev().nth(1), Some(Node::Label(_)))
+    {
+        nodes.pop();
+    }
+    ctx.read_once = calls::read_once(nodes);
+    render_nodes(nodes, 1, &mut body, ctx);
+    let mut folded = nodes.clone();
+    if super::locals::fold_values(ir, &mut folded, ctx) {
+        let mut candidate = String::new();
+        ctx.read_once = calls::read_once(&folded);
+        render_nodes(&folded, 1, &mut candidate, ctx);
+        if super::cost::casts(&candidate) <= super::cost::casts(&body)
+            && candidate.lines().count() <= body.lines().count()
+            && candidate.matches("goto ").count() <= body.matches("goto ").count()
+        {
+            body = candidate;
+        } else {
+            ctx.read_once = calls::read_once(nodes);
+        }
+    }
+    super::initializers::drop_unused_constants(
+        &mut body,
+        decls
+            .iter()
+            .filter(|local| local.size == 0 && local.fields.is_empty() && local.views.is_empty())
+            .map(|local| local.name.clone())
+            .chain(variable_types.iter().filter_map(|(index, ty)| {
+                if ty.integer().is_none()
+                    || matches!(ty, CType::Named(name)
+                        if name.split_whitespace().any(|word| word == "volatile"))
+                {
+                    return None;
+                }
+                Some(ctx.register(*index, 64))
+            })),
+    );
+    if !vector_groups.is_empty() {
+        body = super::vector_values::whole_writes(&body, vector_groups);
+    }
+    body
 }
 
 pub(super) fn variable_name(reserved: &mut std::collections::HashSet<String>) -> String {

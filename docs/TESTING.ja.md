@@ -223,7 +223,7 @@ AddressSanitizer、デバッグ表明、オーバーフロー検査を有効に�
 
 | 位置 | 関連テストと Miri の制約 |
 | --- | --- |
-| `src/main.rs:478` | Miri の場合だけコンパイルする `tests::closed_pipe_signal`。外部関数 `signal` は未対応。 |
+| `src/main.rs` の `exit_on_closed_pipe` | Miri の場合だけコンパイルする `tests::closed_pipe_signal`。外部関数 `signal` は未対応。 |
 | `src/lift/hardware/aarch64.rs:137` | `Page` のテストが登録するシグナルコールバック。カーネルのシグナルコンテキストが必要。ネイティブ実行でのコールバックの被覆は未確認。 |
 | `src/lift/hardware/aarch64.rs:179`, `:183`, `:213`, `:231` | `lifted_instructions_match_the_processor` などの `Page` を使うテスト。シグナル設定、実行可能マッピング、生成コード、Darwin FFI。 |
 | `src/lift/hardware/aarch64.rs:466`, `:473` | `sqdmulh_vector_results_match_the_processor`。FPSR の読み出し・復元にインラインアセンブリを使用。 |

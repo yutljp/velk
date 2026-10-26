@@ -2,14 +2,6 @@ use super::*;
 use crate::ir::{CType, FunctionIr, Param, Stmt};
 use crate::loader::Isa;
 
-fn bin(op: BinOp, lhs: Expr, rhs: Expr) -> Expr {
-    Expr::Bin {
-        op,
-        lhs: Box::new(lhs),
-        rhs: Box::new(rhs),
-    }
-}
-
 #[test]
 fn wrapping_arithmetic_avoids_c_overflow() {
     use std::io::Write;
@@ -18,9 +10,9 @@ fn wrapping_arithmetic_avoids_c_overflow() {
         eprintln!("SKIP C overflow regression: clang unavailable");
         return;
     }
-    let value = bin(
+    let value = raw_bin(
         BinOp::And,
-        bin(BinOp::Add, Expr::reg(7, 32), Expr::reg(6, 32)),
+        raw_bin(BinOp::Add, Expr::reg(7, 32), Expr::reg(6, 32)),
         Expr::Const(0xff),
     );
     let mut ir = FunctionIr::single_block(Isa::X86_64, vec![Stmt::Ret { value }]);
@@ -35,11 +27,11 @@ fn wrapping_arithmetic_avoids_c_overflow() {
         })
         .collect();
     let code = crate::render::render(&ir, &[], &crate::render::Symbols::default(), &[]);
-    let index = bin(BinOp::Add, Expr::reg(6, 64), Expr::Const(2));
-    let address = bin(
+    let index = raw_bin(BinOp::Add, Expr::reg(6, 64), Expr::Const(2));
+    let address = raw_bin(
         BinOp::Add,
         Expr::reg(7, 64),
-        bin(BinOp::Mul, index, Expr::Const(8)),
+        raw_bin(BinOp::Mul, index, Expr::Const(8)),
     );
     let mut indexed = FunctionIr::single_block(
         Isa::X86_64,
@@ -69,7 +61,7 @@ fn wrapping_arithmetic_avoids_c_overflow() {
     let mut negated = FunctionIr::single_block(
         Isa::X86_64,
         vec![Stmt::Ret {
-            value: bin(BinOp::Sub, Expr::Const(0), Expr::reg(7, 64)),
+            value: raw_bin(BinOp::Sub, Expr::Const(0), Expr::reg(7, 64)),
         }],
     );
     negated.name = Some("negated_value".to_owned());
@@ -86,7 +78,7 @@ fn wrapping_arithmetic_avoids_c_overflow() {
             let mut divided = FunctionIr::single_block(
                 Isa::X86_64,
                 vec![Stmt::Ret {
-                    value: bin(op, Expr::reg(7, bits), Expr::reg(6, bits)),
+                    value: raw_bin(op, Expr::reg(7, bits), Expr::reg(6, bits)),
                 }],
             );
             divided.name = Some(format!("{name}_{bits}"));
@@ -201,8 +193,8 @@ fn compiled_scalar_c_is_equivalent_to_ir() {
                 let y = Expr::reg(6, read);
                 let mut cases = vec![
                     x.clone(),
-                    bin(BinOp::Sub, Expr::Const(0), x.clone()),
-                    bin(BinOp::Sub, Expr::Const(0), Expr::Const(1)),
+                    raw_bin(BinOp::Sub, Expr::Const(0), x.clone()),
+                    raw_bin(BinOp::Sub, Expr::Const(0), Expr::Const(1)),
                 ];
                 for width in [8, 16, 32, 64] {
                     for op in [
@@ -220,34 +212,34 @@ fn compiled_scalar_c_is_equivalent_to_ir() {
                     BinOp::Or,
                     BinOp::Xor,
                 ] {
-                    cases.push(bin(op, x.clone(), y.clone()));
-                    cases.push(bin(op, x.clone(), Expr::Const(u64::MAX)));
+                    cases.push(raw_bin(op, x.clone(), y.clone()));
+                    cases.push(raw_bin(op, x.clone(), Expr::Const(u64::MAX)));
                 }
                 for op in [BinOp::DivU, BinOp::ModU, BinOp::DivS, BinOp::ModS] {
-                    cases.push(bin(op, x.clone(), Expr::Const(3)));
+                    cases.push(raw_bin(op, x.clone(), Expr::Const(3)));
                     for divisor in [1, u64::MAX, 1 << (read - 1)] {
-                        cases.push(bin(op, x.clone(), Expr::Const(divisor)));
+                        cases.push(raw_bin(op, x.clone(), Expr::Const(divisor)));
                         if op == BinOp::DivS {
                             cases.push(Expr::SignExtend {
-                                value: Box::new(bin(op, x.clone(), Expr::Const(divisor))),
+                                value: Box::new(raw_bin(op, x.clone(), Expr::Const(divisor))),
                                 width: read / 8,
                             });
                         }
                     }
                 }
                 for op in [BinOp::MulHigh, BinOp::MulHighS] {
-                    cases.push(bin(op, x.clone(), Expr::Const(3)));
+                    cases.push(raw_bin(op, x.clone(), Expr::Const(3)));
                 }
                 for op in [BinOp::Shl, BinOp::Shr, BinOp::Sar] {
-                    cases.push(bin(op, x.clone(), y.clone()));
+                    cases.push(raw_bin(op, x.clone(), y.clone()));
                     for amount in [0, 1, 31, 63, 64] {
-                        cases.push(bin(op, x.clone(), Expr::Const(amount)));
+                        cases.push(raw_bin(op, x.clone(), Expr::Const(amount)));
                     }
                 }
                 for mask in [0xff, 0xffff, 0xffff_ffff, u64::MAX] {
-                    cases.push(bin(
+                    cases.push(raw_bin(
                         BinOp::And,
-                        bin(BinOp::Add, x.clone(), y.clone()),
+                        raw_bin(BinOp::Add, x.clone(), y.clone()),
                         Expr::Const(mask),
                     ));
                 }
@@ -399,14 +391,14 @@ fn compiled_assignments_and_return_conversions_are_equivalent() {
             let mask = crate::ir::semantics::mask(u32::from(bits));
             let mut expressions = vec![
                 x.clone(),
-                bin(BinOp::Add, x.clone(), y.clone()),
-                bin(BinOp::Sub, x.clone(), y.clone()),
-                bin(BinOp::Mul, x.clone(), Expr::Const(3)),
+                raw_bin(BinOp::Add, x.clone(), y.clone()),
+                raw_bin(BinOp::Sub, x.clone(), y.clone()),
+                raw_bin(BinOp::Mul, x.clone(), Expr::Const(3)),
             ];
             for op in [BinOp::Add, BinOp::Sub, BinOp::Xor] {
-                expressions.push(bin(
+                expressions.push(raw_bin(
                     BinOp::And,
-                    bin(op, Expr::reg(3, bits), x.clone()),
+                    raw_bin(op, Expr::reg(3, bits), x.clone()),
                     Expr::Const(mask),
                 ));
             }
@@ -430,10 +422,10 @@ fn compiled_assignments_and_return_conversions_are_equivalent() {
                                 value: expression.clone(),
                             },
                             Stmt::Ret {
-                                value: bin(
+                                value: raw_bin(
                                     BinOp::Add,
                                     Expr::reg(3, bits),
-                                    bin(BinOp::Shr, Expr::reg(3, bits), Expr::Const(1)),
+                                    raw_bin(BinOp::Shr, Expr::reg(3, bits), Expr::Const(1)),
                                 ),
                             },
                         ]

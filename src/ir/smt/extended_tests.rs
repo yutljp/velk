@@ -4,14 +4,6 @@ use super::*;
 use crate::ir::{Block, FunctionIr, RegRef};
 use crate::loader::Isa;
 
-fn bin(op: BinOp, lhs: Expr, rhs: Expr) -> Expr {
-    Expr::Bin {
-        op,
-        lhs: Box::new(lhs),
-        rhs: Box::new(rhs),
-    }
-}
-
 fn assign(index: u16, width: u8, value: Expr) -> Stmt {
     Stmt::Assign {
         dest: RegRef { index, width },
@@ -70,14 +62,14 @@ fn branch_offsets_and_round_trips_are_equivalent() {
                     BinOp::Add
                 };
                 let offset = Expr::Const(offset);
-                let inner = bin(op, x.clone(), offset.clone());
+                let inner = raw_bin(op, x.clone(), offset.clone());
                 for masked in [false, true] {
                     let inner = if masked {
-                        bin(BinOp::And, inner.clone(), Expr::Const(0xffff_ffff))
+                        raw_bin(BinOp::And, inner.clone(), Expr::Const(0xffff_ffff))
                     } else {
                         inner.clone()
                     };
-                    let round_trip = bin(inverse, inner, offset.clone());
+                    let round_trip = raw_bin(inverse, inner, offset.clone());
                     for cond in CONDITIONS {
                         let before = branch(cond, round_trip.clone(), Expr::Const(0x80));
                         let mut after = before.clone();
@@ -90,8 +82,11 @@ fn branch_offsets_and_round_trips_are_equivalent() {
                     }
                 }
                 for cond in [Cond::Eq, Cond::Ne] {
-                    let before =
-                        branch(cond, bin(op, x.clone(), offset.clone()), Expr::Const(0xff));
+                    let before = branch(
+                        cond,
+                        raw_bin(op, x.clone(), offset.clone()),
+                        Expr::Const(0xff),
+                    );
                     let mut after = before.clone();
                     crate::passes::simplify::simplify(&mut after);
                     assert_ne!(
@@ -121,24 +116,24 @@ fn sums_substitutions_and_field_partitions_are_equivalent() {
         let x = Expr::reg(0, bits);
         let y = Expr::reg(1, bits);
         for offset in [0, 1, u64::MAX] {
-            let before = bin(
+            let before = raw_bin(
                 BinOp::Add,
-                bin(BinOp::Sub, x.clone(), Expr::Const(offset)),
-                bin(BinOp::Sub, y.clone(), x.clone()),
+                raw_bin(BinOp::Sub, x.clone(), Expr::Const(offset)),
+                raw_bin(BinOp::Sub, y.clone(), x.clone()),
             );
             for negative in [false, true] {
                 let mut terms = Vec::new();
                 crate::ir::visit::sum_terms(&before, negative, &mut terms);
                 let mut after = Expr::Const(0);
                 for (value, subtract) in terms {
-                    after = bin(
+                    after = raw_bin(
                         if subtract { BinOp::Sub } else { BinOp::Add },
                         after,
                         value.clone(),
                     );
                 }
                 let expected = if negative {
-                    bin(BinOp::Sub, Expr::Const(0), before.clone())
+                    raw_bin(BinOp::Sub, Expr::Const(0), before.clone())
                 } else {
                     before.clone()
                 };
@@ -149,9 +144,9 @@ fn sums_substitutions_and_field_partitions_are_equivalent() {
                     64,
                 );
             }
-            let replacement = bin(
+            let replacement = raw_bin(
                 BinOp::And,
-                bin(BinOp::Xor, y.clone(), Expr::Const(offset)),
+                raw_bin(BinOp::Xor, y.clone(), Expr::Const(offset)),
                 Expr::Const(crate::ir::semantics::mask(u32::from(bits))),
             );
             let mut registers = BTreeMap::new();
@@ -165,18 +160,18 @@ fn sums_substitutions_and_field_partitions_are_equivalent() {
         }
         for split in [1, 7, 8, 16, 31, 32, 63] {
             let mask = (1u64 << split) - 1;
-            let before = bin(
+            let before = raw_bin(
                 BinOp::Or,
-                bin(
+                raw_bin(
                     BinOp::Shl,
-                    bin(
+                    raw_bin(
                         BinOp::And,
-                        bin(BinOp::Shr, x.clone(), Expr::Const(split)),
+                        raw_bin(BinOp::Shr, x.clone(), Expr::Const(split)),
                         Expr::Const(!mask >> split),
                     ),
                     Expr::Const(split),
                 ),
-                bin(BinOp::And, x.clone(), Expr::Const(mask)),
+                raw_bin(BinOp::And, x.clone(), Expr::Const(mask)),
             );
             let mut ir = FunctionIr::single_block(
                 Isa::X86_64,
@@ -214,10 +209,10 @@ fn stores_forwarding_and_fusion_are_equivalent() {
         let addr = Expr::reg(2, 64);
         let x = Expr::reg(0, 64);
         for stored in [
-            bin(BinOp::And, x.clone(), Expr::Const(mask)),
-            bin(
+            raw_bin(BinOp::And, x.clone(), Expr::Const(mask)),
+            raw_bin(
                 BinOp::Or,
-                bin(BinOp::And, Expr::reg(1, 64), Expr::Const(!mask)),
+                raw_bin(BinOp::And, Expr::reg(1, 64), Expr::Const(!mask)),
                 x.clone(),
             ),
         ] {
@@ -253,7 +248,7 @@ fn stores_forwarding_and_fusion_are_equivalent() {
                             width,
                         },
                         Stmt::Store {
-                            addr: bin(BinOp::Add, addr.clone(), Expr::Const(overlap)),
+                            addr: raw_bin(BinOp::Add, addr.clone(), Expr::Const(overlap)),
                             value: Expr::reg(1, 64),
                             width: 1,
                         },
@@ -297,7 +292,7 @@ fn stores_forwarding_and_fusion_are_equivalent() {
                 Isa::X86_64,
                 vec![
                     assign(3, bits, load(addr.clone(), width, false)),
-                    assign(3, bits, bin(op, Expr::reg(3, bits), Expr::reg(0, bits))),
+                    assign(3, bits, raw_bin(op, Expr::reg(3, bits), Expr::reg(0, bits))),
                     Stmt::Store {
                         addr: addr.clone(),
                         value: Expr::reg(3, bits),
@@ -343,13 +338,13 @@ fn cfg_propagation_and_demand_are_equivalent() {
         let mask = crate::ir::semantics::mask(u32::from(bits));
         for cond in CONDITIONS {
             for narrow in [false, true] {
-                let merged = bin(
+                let merged = raw_bin(
                     BinOp::Or,
-                    bin(BinOp::And, Expr::reg(3, 64), Expr::Const(!mask)),
-                    bin(BinOp::And, Expr::reg(0, 64), Expr::Const(mask)),
+                    raw_bin(BinOp::And, Expr::reg(3, 64), Expr::Const(!mask)),
+                    raw_bin(BinOp::And, Expr::reg(0, 64), Expr::Const(mask)),
                 );
                 let used = if narrow {
-                    bin(BinOp::And, Expr::reg(3, 64), Expr::Const(mask))
+                    raw_bin(BinOp::And, Expr::reg(3, 64), Expr::Const(mask))
                 } else {
                     Expr::reg(3, 64)
                 };
@@ -363,7 +358,7 @@ fn cfg_propagation_and_demand_are_equivalent() {
                 before.blocks.push(Block {
                     start: 3,
                     stmts: vec![Stmt::Ret {
-                        value: bin(BinOp::Add, Expr::reg(4, 64), Expr::reg(0, 64)),
+                        value: raw_bin(BinOp::Add, Expr::reg(4, 64), Expr::reg(0, 64)),
                     }],
                 });
                 for (name, pass) in passes {
@@ -384,9 +379,9 @@ fn cfg_propagation_and_demand_are_equivalent() {
             assign(
                 3,
                 64,
-                bin(
+                raw_bin(
                     BinOp::And,
-                    bin(BinOp::Add, Expr::reg(0, 32), Expr::reg(1, 32)),
+                    raw_bin(BinOp::Add, Expr::reg(0, 32), Expr::reg(1, 32)),
                     Expr::Const(0xffff_ffff),
                 ),
             ),
@@ -414,23 +409,23 @@ fn quotient_arithmetic_and_range_masks_are_equivalent() {
     for bits in [8, 16, 32, 64] {
         let x = Expr::reg(0, bits);
         for divisor in [0, 1, 2, 3, 8, 17] {
-            let quotient = bin(BinOp::DivU, x.clone(), Expr::Const(divisor));
-            let mut cases = vec![bin(
+            let quotient = raw_bin(BinOp::DivU, x.clone(), Expr::Const(divisor));
+            let mut cases = vec![raw_bin(
                 BinOp::Sub,
                 x.clone(),
-                bin(BinOp::Mul, quotient.clone(), Expr::Const(divisor)),
+                raw_bin(BinOp::Mul, quotient.clone(), Expr::Const(divisor)),
             )];
             for shift in [1, 7, 16, 31] {
                 for masked in [false, true] {
                     let q = if masked {
-                        bin(BinOp::And, quotient.clone(), Expr::Const(0xffff_ffff))
+                        raw_bin(BinOp::And, quotient.clone(), Expr::Const(0xffff_ffff))
                     } else {
                         quotient.clone()
                     };
-                    cases.push(bin(
+                    cases.push(raw_bin(
                         BinOp::Add,
                         q.clone(),
-                        bin(BinOp::Shl, q, Expr::Const(shift)),
+                        raw_bin(BinOp::Shl, q, Expr::Const(shift)),
                     ));
                 }
             }
@@ -459,9 +454,9 @@ fn quotient_arithmetic_and_range_masks_are_equivalent() {
             }
         }
         for (magic, shift) in [(0xaaaa_aaab, 33), (0xcccc_cccd, 34), (0x8080_8081, 39)] {
-            let before = bin(
+            let before = raw_bin(
                 BinOp::Shr,
-                bin(BinOp::Mul, x.clone(), Expr::Const(magic)),
+                raw_bin(BinOp::Mul, x.clone(), Expr::Const(magic)),
                 Expr::Const(shift),
             );
             let after = crate::passes::simplify::algebraic(before.clone());
@@ -708,18 +703,26 @@ fn private_frame_and_spill_rewrites_are_equivalent() {
         let sp = crate::arch::stack_pointer(isa);
         for bits in [32, 64] {
             for offset in [8, 16, 32] {
-                let slot = bin(BinOp::Add, Expr::reg(sp, 64), Expr::Const(offset));
+                let slot = raw_bin(BinOp::Add, Expr::reg(sp, 64), Expr::Const(offset));
                 let mut before = FunctionIr::single_block(
                     isa,
                     vec![
-                        assign(sp, 64, bin(BinOp::Sub, Expr::reg(sp, 64), Expr::Const(64))),
+                        assign(
+                            sp,
+                            64,
+                            raw_bin(BinOp::Sub, Expr::reg(sp, 64), Expr::Const(64)),
+                        ),
                         Stmt::Store {
                             addr: slot.clone(),
                             value: Expr::reg(0, 64),
                             width: bits / 8,
                         },
                         assign(1, 64, load(slot, bits / 8, false)),
-                        assign(sp, 64, bin(BinOp::Add, Expr::reg(sp, 64), Expr::Const(64))),
+                        assign(
+                            sp,
+                            64,
+                            raw_bin(BinOp::Add, Expr::reg(sp, 64), Expr::Const(64)),
+                        ),
                         Stmt::Ret {
                             value: Expr::reg(1, 64),
                         },
@@ -739,7 +742,7 @@ fn private_frame_and_spill_rewrites_are_equivalent() {
                     vec![
                         assign(variable, 64, Expr::reg(0, 64)),
                         Stmt::Store {
-                            addr: bin(
+                            addr: raw_bin(
                                 BinOp::Add,
                                 Expr::reg(sp, 64),
                                 Expr::Const(offset.wrapping_neg()),
@@ -749,7 +752,7 @@ fn private_frame_and_spill_rewrites_are_equivalent() {
                         },
                         Stmt::Ret {
                             value: load(
-                                bin(
+                                raw_bin(
                                     BinOp::Add,
                                     Expr::reg(sp, 64),
                                     Expr::Const(offset.wrapping_neg()),
@@ -789,7 +792,7 @@ fn range_branches_and_switch_pruning_preserve_results() {
                 assign(
                     3,
                     bits,
-                    bin(BinOp::And, Expr::reg(0, 64), Expr::Const(mask)),
+                    raw_bin(BinOp::And, Expr::reg(0, 64), Expr::Const(mask)),
                 ),
             );
             let mut after = before.clone();
@@ -798,7 +801,7 @@ fn range_branches_and_switch_pruning_preserve_results() {
         }
         for value in [
             Expr::Const(1),
-            bin(BinOp::And, Expr::reg(0, 64), Expr::Const(1)),
+            raw_bin(BinOp::And, Expr::reg(0, 64), Expr::Const(1)),
         ] {
             let mut before = FunctionIr::single_block(
                 Isa::X86_64,
