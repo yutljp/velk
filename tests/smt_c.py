@@ -79,6 +79,22 @@ def expression(node, parameters):
         else:
             a = cast(a, old, bits, sign)
         return a, bits, signed, defined
+    if kind == "CallExpr":
+        callee = children[0]
+        while callee["kind"] in ("ImplicitCastExpr", "ParenExpr"):
+            callee = callee["inner"][0]
+        name = callee["referencedDecl"]["name"]
+        if name not in ("__builtin_clzg", "__builtin_ctzg") or len(children) != 3:
+            raise ValueError(f"unsupported C call: {name}")
+        a, width, sign, defined = expression(children[1], parameters)
+        assert not sign
+        fallback, fallback_bits, fallback_sign, fallback_defined = expression(children[2], parameters)
+        result = cast(fallback, fallback_bits, bits, fallback_sign)
+        for bit in range(width):
+            position = bit if name == "__builtin_clzg" else width - bit - 1
+            count = width - position - 1 if name == "__builtin_clzg" else position
+            result = f"(ite (= ((_ extract {position} {position}) {a}) #b1) {bv(count, bits)} {result})"
+        return result, bits, signed, f"(and {defined} {fallback_defined})"
     if kind == "ConditionalOperator":
         condition, cbits, _, cd = expression(children[0], parameters)
         a, _, _, ad = expression(children[1], parameters)

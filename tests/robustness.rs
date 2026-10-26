@@ -62,7 +62,8 @@ fn universal_macho_selects_host_and_lists_unavailable_architectures() {
         let mut offset = 4096_u64;
         for (cpu, slice) in [(0x0100_000c_u32, &arm), (0x0100_0007, &x86)] {
             bytes.extend_from_slice(&cpu.to_be_bytes());
-            bytes.extend_from_slice(&0_u32.to_be_bytes());
+            let subtype = u32::from_le_bytes(slice[8..12].try_into().unwrap());
+            bytes.extend_from_slice(&subtype.to_be_bytes());
             if magic == 0xcafe_babe {
                 bytes.extend_from_slice(&(offset as u32).to_be_bytes());
                 bytes.extend_from_slice(&(slice.len() as u32).to_be_bytes());

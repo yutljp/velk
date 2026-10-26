@@ -109,6 +109,24 @@ struct Value {
 fn operation(op: Operation, args: &[Value]) -> String {
     let a = &args[0].term;
     match op {
+        Operation::CountLeadingZeros(bits) | Operation::CountTrailingZeros(bits) => {
+            let mut total = constant(0);
+            for length in 1..=bits {
+                let start = if matches!(op, Operation::CountLeadingZeros(_)) {
+                    bits - length
+                } else {
+                    0
+                };
+                let end = start + length - 1;
+                let zero = format!("(= ((_ extract {end} {start}) {a}) (_ bv0 {length}))");
+                total = binary(
+                    "bvadd",
+                    &total,
+                    &format!("(ite {zero} {} {})", constant(1), constant(0)),
+                );
+            }
+            total
+        }
         Operation::PopCount(bits) => {
             let mut bytes = Vec::new();
             for start in (0..bits).step_by(8) {

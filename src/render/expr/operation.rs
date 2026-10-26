@@ -153,6 +153,17 @@ fn rounding_function(rounding: Rounding) -> &'static str {
     }
 }
 
+fn zero_count(name: &str, bits: u8, value: &Expr, ctx: &Ctx<'_>) -> String {
+    let width = u32::from(bits);
+    let value = integral(value, ctx, width);
+    let value = if bits < 32 {
+        format!("(uint{bits}_t){}", value.within(12, false).text)
+    } else {
+        value.cast(width, /* signed */ false, width).text
+    };
+    format!("__builtin_{name}g({value}, {bits})")
+}
+
 /// `op` applied to `args`, as C.
 pub(super) fn render_operation(op: Operation, args: &[Expr], ctx: &Ctx<'_>) -> String {
     let infix = |precision, symbol: &str, strength| {
@@ -278,8 +289,8 @@ pub(super) fn render_operation(op: Operation, args: &[Expr], ctx: &Ctx<'_>) -> S
         | Operation::Results => call(&crate::ir::operation_name(op), None),
         // Any value would do; the comment says none was meant.
         Operation::Undefined => "0 /* undefined */".to_owned(),
-        Operation::CountLeadingZeros(bits) => builtin("clz", bits),
-        Operation::CountTrailingZeros(bits) => builtin("ctz", bits),
+        Operation::CountLeadingZeros(bits) => zero_count("clz", bits, &args[0], ctx),
+        Operation::CountTrailingZeros(bits) => zero_count("ctz", bits, &args[0], ctx),
         Operation::PopCount(bits) => builtin("popcount", bits),
         Operation::ReverseBits(bits) => {
             format!(
@@ -413,8 +424,10 @@ pub(super) fn operation(op: Operation, args: &[Expr], expr: &Expr, ctx: &Ctx<'_>
         .ranging(Range::Unsigned(7))
     };
     match op {
-        Operation::CountLeadingZeros(bits) => builtin("clz", bits),
-        Operation::CountTrailingZeros(bits) => builtin("ctz", bits),
+        Operation::CountLeadingZeros(_) | Operation::CountTrailingZeros(_) => {
+            Printed::new(render_operation(op, args, ctx), Int::INT, ALL, 13)
+                .ranging(Range::Unsigned(7))
+        }
         Operation::PopCount(bits) => builtin("popcount", bits),
         Operation::ReverseBits(bits) => Printed::new(
             format!(

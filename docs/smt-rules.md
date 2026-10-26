@@ -7,9 +7,9 @@ The rendered-C tests also need Clang and uv. Python runs through
 `uv run --no-project tests/smt_c.py` and uses only the standard library.
 velk has no additional runtime dependencies.
 
-The [inventory](../tests/smt_inventory.tsv) records 123 grouped rewrite
+The [inventory](../tests/smt_inventory.tsv) records 124 grouped rewrite
 families, source locations, side conditions, applicable widths and current
-coverage. Forty-six rows have symbolic template or instance checks, 76 have
+coverage. Forty-seven rows have symbolic template or instance checks, 76 have
 open or partial coverage, and one is a nondeterministic refinement rather
 than equality. These counts describe inventory rows, not individual match
 arms or universal proofs of every rule. The inventory is not a completeness
@@ -40,9 +40,10 @@ For scalar C, the real renderer generates functions. Clang parses the emitted
 C and supplies a typed AST, including implicit integer promotions and casts.
 The test script translates that AST to bit vectors and validity conditions
 for signed overflow, shifts and division. A result must agree with the IR,
-and the C must be defined whenever the modeled IR is defined. A separate
-Clang/UBSan regression compiles and executes a masked sum, negation and
-negative pointer indexes.
+and the C must be defined whenever the modeled IR is defined. Leading/trailing
+zero counts are checked at 8/16/32/64 bits, including zero inputs and input
+truncation. A separate Clang/UBSan regression compiles and executes a masked
+sum, negation and negative pointer indexes.
 
 Source locations and [source digests](../tests/smt_sources.sha256) are checked
 by a normal unit test. An inventoried source change requires an explicit

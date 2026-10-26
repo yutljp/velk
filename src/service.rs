@@ -395,7 +395,11 @@ impl Binary {
             }
         }
         let functions = self.image.functions.values();
-        if let Some(found) = functions.clone().find(|f| names(f).any(|n| n == target)) {
+        if let Some(found) = functions
+            .clone()
+            .filter(|f| names(f).any(|n| n == target))
+            .min_by_key(|f| f.sources.contains(&loader::NameSource::Plt))
+        {
             return Ok(found);
         }
         if self.image.format == loader::Format::MachO
@@ -935,6 +939,19 @@ mod tests {
                 .join(name),
         )
         .expect("fixture loads")
+    }
+
+    #[test]
+    fn exact_names_prefer_definitions_over_linkage_stubs() {
+        let mut binary = fixture("arm64.o");
+        let definition = binary.find("pair_sum").unwrap().clone();
+        let mut stub = definition.clone();
+        stub.addr = definition.addr.saturating_sub(1);
+        stub.sources = vec![loader::NameSource::Plt];
+        binary.image.functions.insert(stub.addr, stub.clone());
+        assert_eq!(binary.find("pair_sum").unwrap().addr, definition.addr);
+        binary.image.functions.remove(&definition.addr);
+        assert_eq!(binary.find("pair_sum").unwrap().addr, stub.addr);
     }
 
     #[test]

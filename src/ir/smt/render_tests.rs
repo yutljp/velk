@@ -187,6 +187,17 @@ fn compiled_scalar_c_is_equivalent_to_ir() {
                         width: bytes,
                     });
                 }
+                for count_bits in [8, 16, 32, 64] {
+                    for op in [
+                        Operation::CountLeadingZeros(count_bits),
+                        Operation::CountTrailingZeros(count_bits),
+                    ] {
+                        cases.push(Expr::Apply {
+                            op,
+                            args: vec![x.clone()],
+                        });
+                    }
+                }
                 for cond in &CONDITIONS[..10] {
                     cases.push(Expr::Select {
                         cond: *cond,

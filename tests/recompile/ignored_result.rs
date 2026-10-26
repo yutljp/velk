@@ -65,11 +65,7 @@ fn check_result(debug: bool) {
     assert_eq!(ir.params.len(), 1, "{code}");
     let mut source = String::from(HEADER);
     source.push_str("static unsigned effects;\n");
-    source.push_str(if debug || ir.convention == Convention::Aapcs64 {
-        "static void effect(void) { ++effects; }\n"
-    } else {
-        "static void effect(uint64_t ignored) { (void)ignored; ++effects; }\n"
-    });
+    source.push_str("static void effect(void) { ++effects; }\n");
     source.push_str(&code);
     source.push_str("int main(void) {\n");
     for value in 0..256u64 {

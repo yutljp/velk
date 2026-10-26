@@ -11,7 +11,8 @@
 //! address holding the bytes the interpreter's memory holds, and any other
 //! page the compiled code touches is mapped and filled the same way when
 //! it first faults; the region's bytes after the run are compared too, in
-//! `tests/golden/recompile_memory.txt`.
+//! `tests/golden/recompile_memory.txt`, or `recompile_memory_x86_64_linux.txt`
+//! on x86-64 Linux, to keep the exact run counts for each host.
 //!
 //! Compiler and driver results for batches of at most 32 functions are cached
 //! under target/recompile-cache; IR expectations share the cache. Comparisons are recomputed.
@@ -73,6 +74,9 @@ mod local_expressions;
 mod long_branches;
 #[path = "recompile/memory_driver.rs"]
 mod memory_driver;
+
+#[path = "recompile/bit_counts.rs"]
+mod bit_counts;
 #[path = "recompile/pe.rs"]
 mod pe;
 #[path = "recompile/physical_stack.rs"]
@@ -404,7 +408,12 @@ fn printed_code_computes_what_the_ir_does() {
 
 #[test]
 fn printed_code_reads_and_writes_memory_as_the_ir_does() {
-    compare(Mode::Memory, "tests/golden/recompile_memory.txt");
+    let golden = if cfg!(all(target_os = "linux", target_arch = "x86_64")) {
+        "tests/golden/recompile_memory_x86_64_linux.txt"
+    } else {
+        "tests/golden/recompile_memory.txt"
+    };
+    compare(Mode::Memory, golden);
 }
 
 #[test]

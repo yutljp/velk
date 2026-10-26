@@ -60,6 +60,8 @@ __asm__(".intel_syntax noprefix\n"
         "mov [r15 + 80], r10\nmov [r15 + 88], r11\nmov [r15 + 96], r12\n"
         "mov [r15 + 104], r13\nmov [r15 + 112], r14\n"
         "pushfq\npop qword ptr [r15 + 128]\n"
+        /* The C ABI requires DF clear, even after a sequence ending in std. */
+        "cld\n"
         "movdqu [r15 + 136], xmm0\nmovdqu [r15 + 152], xmm1\n"
         "movdqu [r15 + 168], xmm2\nmovdqu [r15 + 184], xmm3\n"
         "movdqu [r15 + 200], xmm4\nmovdqu [r15 + 216], xmm5\n"

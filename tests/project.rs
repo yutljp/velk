@@ -42,7 +42,7 @@ int32_t invoke_ninth(int32_t x) { return ninth(x,x+1,x+2,x+3,x+4,x+5,x+6,x+7,x+8
 int32_t total;
 int32_t global_add(int32_t x) { return total + x; }
 __attribute__((noinline)) void touch(int32_t *p) { *p += 7; }
-int32_t stack_work(int32_t x) { int32_t slots[2] = {x, x+1}; touch(slots); return slots[0] + slots[1]; }
+__attribute__((nodebug)) int32_t stack_work(int32_t x) { int32_t slots[4]; slots[0]=x; slots[1]=x+1; touch(slots); return slots[0] + slots[1]; }
 "#).expect("test source can be written");
         let result = Command::new("clang")
             .args([
@@ -55,6 +55,12 @@ int32_t stack_work(int32_t x) { int32_t slots[2] = {x, x+1}; touch(slots); retur
                     "-shared"
                 },
             ])
+            // These tests annotate definitions and their direct data accesses.
+            .args(if cfg!(target_os = "linux") {
+                &["-Wl,-Bsymbolic"][..]
+            } else {
+                &[]
+            })
             .arg(&source)
             .arg("-o")
             .arg(&fixture.binary)
@@ -256,16 +262,22 @@ fn names_comments_and_parameters_preserve_computation() {
     let fixture = Fixture::native();
     let mut binary = Binary::open(&fixture.binary).unwrap();
     let address = binary.find("triple").unwrap().addr;
-    let parameter = project::origins(&binary.analysis(address, None).unwrap().ir)
+    let ir = &binary.analysis(address, None).unwrap().ir;
+    assert_eq!(ir.params[0].ty.integer(), Some((32, true)));
+    let origins = project::origins(ir);
+    let parameter = origins
         .into_iter()
         .find(|row| row["target"]["kind"] == "parameter")
-        .unwrap()["target"]
-        .clone();
+        .unwrap();
+    let parameter_type = parameter["c_type"].as_str().unwrap();
     fixture.set(json!({"target":{"kind":"function","address":address},"name":"multiply_three"}));
-    fixture.set(json!({"target":parameter,"name":"input"}));
+    fixture.set(json!({"target":parameter["target"],"name":"input"}));
     fixture.set(json!({"target":{"kind":"comment","address":address},"text":"checked */ *??/\n/ return 99; /* \\\nreturn 99; /*"}));
     let code = binary.decompile(address, None, None).unwrap();
-    assert!(code.contains("multiply_three(int32_t input)"), "{code}");
+    assert!(
+        code.contains(&format!("multiply_three({parameter_type} input)")),
+        "{code}"
+    );
     assert!(code.contains("checked * /"));
     fixture.compile_and_run(&format!("{code}\nint32_t triple(int32_t);\nint main(void) {{ for (int32_t i=-100;i<100;i++) if (multiply_three(i)!=triple(i)) return 1; return 0; }}"));
     project::update(&fixture.binary, |project| {
@@ -530,10 +542,29 @@ fn stack_parameter_types_and_signatures_propagate_to_callers() {
     let mut binary = Binary::open(&fixture.binary).unwrap();
     let address = binary.find("ninth").unwrap().addr;
     let caller = binary.find("invoke_ninth").unwrap().addr;
-    let origins = project::origins(&binary.analysis(address, None).unwrap().ir);
+    let ir = &binary.analysis(address, None).unwrap().ir;
+    assert_eq!(ir.ret_type.integer(), Some((32, true)));
+    assert_eq!(ir.params.len() + ir.stack_params.len(), 9);
+    let types = ir
+        .params
+        .iter()
+        .map(|param| &param.ty)
+        .chain(ir.stack_params.iter().map(|param| &param.ty));
+    for (position, ty) in types.enumerate() {
+        // ELF debug types refine stack arguments to int32_t; Mach-O recovery
+        // retains the 64-bit stack slot when no debug type is available.
+        let width = if position < ir.params.len() || cfg!(target_os = "linux") {
+            32
+        } else {
+            64
+        };
+        assert_eq!(ty.integer(), Some((width, true)));
+    }
+    let integer_type = ir.ret_type.to_string();
+    let origins = project::origins(ir);
     let target = origins
         .iter()
-        .find(|row| {
+        .rfind(|row| {
             row["target"]["kind"] == "parameter" && row["target"]["storage"]["kind"] == "stack"
         })
         .expect("a stack parameter")["target"]
@@ -542,7 +573,10 @@ fn stack_parameter_types_and_signatures_propagate_to_callers() {
     let code = binary.decompile(address, None, None).unwrap();
     assert!(code.contains("uint32_t last_value"), "{code}");
     let code = binary.decompile(caller, None, None).unwrap();
-    assert!(code.contains("int32_t ninth(int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t, uint32_t);"), "{code}");
+    let mut parameter_types = vec![integer_type.clone(); 8];
+    parameter_types.push("uint32_t".to_owned());
+    let prototype = format!("{integer_type} ninth({});", parameter_types.join(", "));
+    assert!(code.contains(&prototype), "{code}");
     fixture.set(json!({"target":{"kind":"signature","function":address},"text":"int32_t (int32_t first, int32_t second, int32_t third, int32_t fourth, int32_t fifth, int32_t sixth, int32_t seventh, int32_t eighth, uint32_t ninth_value)"}));
     let code = binary.decompile(address, None, None).unwrap();
     assert!(

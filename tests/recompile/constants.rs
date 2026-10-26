@@ -140,12 +140,15 @@ fn writable_printable_bytes_keep_their_storage() {
     let code = velk::render::render(&analysis.ir, &analysis.references, &Default::default(), &[]);
     assert!(!code.contains("\"hhhhhhhh\""), "{code}");
     let mut code = code;
-    for offset in 0..128 {
-        for suffix in ["ULL", ""] {
-            code = code.replace(
-                &format!("0x{:x}{suffix}", buffer + offset),
-                &format!("(uintptr_t)(buffer + {offset})"),
-            );
+    for offset in (0..128).rev() {
+        let address = buffer + offset;
+        for literal in [format!("0x{address:x}"), address.to_string()] {
+            for suffix in ["ULL", "LL", "U", ""] {
+                code = code.replace(
+                    &format!("{literal}{suffix}"),
+                    &format!("(uintptr_t)(buffer + {offset})"),
+                );
+            }
         }
     }
     let program = Program {

@@ -109,7 +109,8 @@ src/render/expr/condition.rs:6	Zero/truth tests and comparison casts	Eq/Ne zero 
 src/render/expr/condition.rs:130	Remove comparison masks or reread sign	Common C type preserves IR comparison width	8/16/32/64	compiled C instances	fn compared(
 src/render/expr/condition.rs:289	Boolean selects to logical AND/OR/NOT	Truth-valued alternatives; read order retained	1	open nested truth templates	pub(super) fn logic(
 src/render/expr/operation.rs:8	Remove floating mask	Result precision matches and mask covers it	32/64	open IEEE model	pub(super) fn unmasked_float(
-src/render/expr/operation.rs:357	Omit integer/float conversion casts	Source type/range implements operation width/sign	8/16/32/64	open IEEE model	fn implicit_conversion(
+src/render/expr/operation.rs:156	Render leading/trailing zero counts	Unsigned input truncated to operation width; zero returns width	8/16/32/64	compiled C templates	fn zero_count(
+src/render/expr/operation.rs:368	Omit integer/float conversion casts	Source type/range implements operation width/sign	8/16/32/64	open IEEE model	fn implicit_conversion(
 src/render/expr/memory.rs:40	Fold byte pointer arithmetic	Known object origin and checked displacement	32/64 addresses	open C object model	pub(super) fn byte_sum(
 src/render/expr/memory.rs:131	Replace raw load by named access	Alias/layout/access sign and width known	8/16/32/64	open C object model	pub(super) fn load(
 src/render/stmt.rs:54	Drop update masks	Destination truncates to same width	8/16/32/64	open statement context	fn without_update_mask(
