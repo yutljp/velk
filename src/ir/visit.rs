@@ -306,17 +306,7 @@ pub(crate) fn unused_temporaries(ir: &super::FunctionIr) -> Vec<u16> {
 }
 
 pub(crate) fn expr_reads(expr: &Expr, reads: &mut std::collections::HashSet<u16>) {
-    match expr {
-        Expr::Reg { index, .. } => {
-            reads.insert(*index);
-        }
-        Expr::Const(_) => {}
-        _ => {
-            for child in children(expr) {
-                expr_reads(child, reads);
-            }
-        }
-    }
+    collect_reads(expr, reads);
 }
 
 pub(crate) fn assignment_at(
@@ -330,5 +320,40 @@ pub(crate) fn assign_of(stmt: &Stmt) -> Option<(crate::ir::RegRef, &Expr)> {
     match stmt {
         Stmt::Assign { dest, value } => Some((*dest, value)),
         _ => None,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::ir::{BinOp, Cond, Operation, Precision};
+    use std::collections::HashSet;
+
+    #[test]
+    fn register_collectors_cover_every_expression_and_keep_existing_reads() {
+        let expression = Expr::Select {
+            cond: Cond::Eq,
+            lhs: Box::new(Expr::reg(1, 64)),
+            rhs: Box::new(Expr::constant(0)),
+            then: Box::new(Expr::Load {
+                addr: Box::new(Expr::bin(BinOp::Add, Expr::reg(2, 64), Expr::reg(1, 64))),
+                width: 8,
+                signed: false,
+            }),
+            els: Box::new(Expr::apply(
+                Operation::FloatAbs(Precision::Single),
+                vec![Expr::SignExtend {
+                    value: Box::new(Expr::reg(3, 8)),
+                    width: 8,
+                }],
+            )),
+        };
+        let expected = HashSet::from([1, 2, 3, 9]);
+        let mut collected = HashSet::from([9]);
+        collect_reads(&expression, &mut collected);
+        assert_eq!(collected, expected);
+        let mut reads = HashSet::from([9]);
+        expr_reads(&expression, &mut reads);
+        assert_eq!(reads, expected);
     }
 }

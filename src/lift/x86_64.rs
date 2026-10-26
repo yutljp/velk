@@ -237,6 +237,22 @@ fn resolved_target(ins: &Instruction, relocation_target: Option<u64>) -> u64 {
     relocation_target.unwrap_or_else(|| ins.near_branch_target())
 }
 
+fn complete_call(lifter: &mut Lifter, target: u64) -> bool {
+    if (lifter.summaries)(target).noreturn {
+        lifter.stmts.push(Stmt::Trap);
+        return true;
+    }
+    if let Some(bytes) = lifter.image.callee_cleanup(target)
+        && bytes != 0
+    {
+        stack_adjust(lifter, i64::from(bytes));
+    }
+    lifter
+        .stmts
+        .extend(super::stack_results(lifter.image, lifter.summaries, target));
+    false
+}
+
 fn lift_instruction(
     lifter: &mut Lifter,
     ins: &Instruction,
@@ -531,18 +547,9 @@ fn lift_instruction(
                     Some(target),
                 );
                 lifter.stmts.push(made);
-                if (lifter.summaries)(target).noreturn {
-                    lifter.stmts.push(Stmt::Trap);
+                if complete_call(lifter, target) {
                     return true;
                 }
-                if let Some(bytes) = lifter.image.callee_cleanup(target)
-                    && bytes != 0
-                {
-                    stack_adjust(lifter, i64::from(bytes));
-                }
-                lifter
-                    .stmts
-                    .extend(super::stack_results(lifter.image, lifter.summaries, target));
             } else if let Some(through) = operand(lifter, ins, 0) {
                 // A pointer the image fills itself is a call to its function.
                 if let Some(target) = super::pointer_target(lifter.image, &through) {
@@ -552,20 +559,9 @@ fn lift_instruction(
                         lifter.summaries,
                         Some(target),
                     ));
-                    if (lifter.summaries)(target).noreturn {
-                        lifter.stmts.push(Stmt::Trap);
+                    if complete_call(lifter, target) {
                         return true;
                     }
-                    if let Some(bytes) = lifter.image.callee_cleanup(target)
-                        && bytes != 0
-                    {
-                        stack_adjust(lifter, i64::from(bytes));
-                    }
-                    lifter.stmts.extend(super::stack_results(
-                        lifter.image,
-                        lifter.summaries,
-                        target,
-                    ));
                 } else {
                     let noreturn = super::import_called(lifter.image, &through)
                         .is_some_and(|summary| summary.noreturn);

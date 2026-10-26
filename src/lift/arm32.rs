@@ -544,37 +544,26 @@ impl Lifter<'_> {
                 } else {
                     None
                 };
-                let kind = if instruction.opcode == Opcode::BX {
-                    CallKind::Tail
-                } else {
-                    CallKind::Invoke
-                };
                 if let Some(through) = through {
                     // Capture a target in lr before the call writes its link.
                     self.assign_temp(through);
-                    if kind == CallKind::Invoke {
-                        self.assign(14, Expr::constant(next | u64::from(instruction.thumb)));
-                    }
+                    self.assign(14, Expr::constant(next | u64::from(instruction.thumb)));
                     self.stmts.push(super::call_through(
-                        kind,
+                        CallKind::Invoke,
                         self.image,
                         Expr::reg(crate::ir::EXCHANGE, 64),
                     ));
                 } else {
-                    if kind == CallKind::Invoke {
-                        self.assign(14, Expr::constant(next | u64::from(instruction.thumb)));
-                    }
-                    self.stmts
-                        .push(super::call(kind, self.image, self.summaries, target));
+                    self.assign(14, Expr::constant(next | u64::from(instruction.thumb)));
+                    self.stmts.push(super::call(
+                        CallKind::Invoke,
+                        self.image,
+                        self.summaries,
+                        target,
+                    ));
                 }
                 self.flags = None;
                 self.touched = true;
-                if kind == CallKind::Tail {
-                    self.stmts.push(Stmt::Ret {
-                        value: Expr::reg(0, 32),
-                    });
-                    return Some(true);
-                }
             }
             Opcode::MOV | Opcode::MVN | Opcode::MOVT => {
                 let Operand::Reg(reg) = a else {

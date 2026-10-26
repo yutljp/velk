@@ -4,6 +4,38 @@ use super::{
     replicated, shift_count, simd, source_halves, unzip, vector, write_narrow,
 };
 
+fn unary_operation(opcode: a64::Opcode, p: Precision) -> Option<Operation> {
+    use a64::Opcode as O;
+    Some(match opcode {
+        O::FABS => Operation::FloatAbs(p),
+        O::FNEG => Operation::FloatNegate(p),
+        O::FSQRT => Operation::FloatSqrt(p),
+        O::FRINTA => Operation::FloatRound(p, Rounding::NearestAway),
+        O::FRINTM => Operation::FloatRound(p, Rounding::Down),
+        O::FRINTP => Operation::FloatRound(p, Rounding::Up),
+        O::FRINTZ => Operation::FloatRound(p, Rounding::TowardZero),
+        O::FRINTN | O::FRINTX | O::FRINTI => Operation::FloatRound(p, Rounding::NearestEven),
+        _ => return None,
+    })
+}
+
+fn integer_conversion(opcode: a64::Opcode) -> Option<(bool, Rounding)> {
+    use a64::Opcode as O;
+    Some(match opcode {
+        O::FCVTZS => (true, Rounding::TowardZero),
+        O::FCVTZU => (false, Rounding::TowardZero),
+        O::FCVTNS => (true, Rounding::NearestEven),
+        O::FCVTNU => (false, Rounding::NearestEven),
+        O::FCVTAS => (true, Rounding::NearestAway),
+        O::FCVTAU => (false, Rounding::NearestAway),
+        O::FCVTMS => (true, Rounding::Down),
+        O::FCVTMU => (false, Rounding::Down),
+        O::FCVTPS => (true, Rounding::Up),
+        O::FCVTPU => (false, Rounding::Up),
+        _ => return None,
+    })
+}
+
 /// `2^exponent` as a float of `precision`.
 fn power_of_two(exponent: u32, precision: Precision) -> Expr {
     let value = 2f64.powi(exponent as i32);
@@ -141,16 +173,7 @@ pub(super) fn lift_vector_float(lifter: &mut Lifter, ins: &Instruction) -> Optio
         | O::FRINTX
         | O::FRINTI => {
             let p = p?;
-            let op = match ins.opcode {
-                O::FABS => Operation::FloatAbs(p),
-                O::FNEG => Operation::FloatNegate(p),
-                O::FSQRT => Operation::FloatSqrt(p),
-                O::FRINTA => Operation::FloatRound(p, Rounding::NearestAway),
-                O::FRINTM => Operation::FloatRound(p, Rounding::Down),
-                O::FRINTP => Operation::FloatRound(p, Rounding::Up),
-                O::FRINTZ => Operation::FloatRound(p, Rounding::TowardZero),
-                _ => Operation::FloatRound(p, Rounding::NearestEven),
-            };
+            let op = unary_operation(ins.opcode, p)?;
             float_lanes(shape, &[source(ops[1])?], |lane| apply(op, lane))
         }
         // All ones where the comparison holds; against zero, or the
@@ -207,18 +230,7 @@ pub(super) fn lift_vector_float(lifter: &mut Lifter, ins: &Instruction) -> Optio
         | O::FCVTPS
         | O::FCVTPU => {
             let p = p?;
-            let (signed, rounding) = match ins.opcode {
-                O::FCVTZS => (true, Rounding::TowardZero),
-                O::FCVTZU => (false, Rounding::TowardZero),
-                O::FCVTNS => (true, Rounding::NearestEven),
-                O::FCVTNU => (false, Rounding::NearestEven),
-                O::FCVTAS => (true, Rounding::NearestAway),
-                O::FCVTAU => (false, Rounding::NearestAway),
-                O::FCVTMS => (true, Rounding::Down),
-                O::FCVTMU => (false, Rounding::Down),
-                O::FCVTPS => (true, Rounding::Up),
-                _ => (false, Rounding::Up),
-            };
+            let (signed, rounding) = integer_conversion(ins.opcode)?;
             let fraction = shift_count(ops[2]).unwrap_or(0) as u32;
             float_lanes(shape, &[source(ops[1])?], |mut lane| {
                 let value = lane.remove(0);
@@ -351,17 +363,7 @@ pub(super) fn lift_float(lifter: &mut Lifter, ins: &Instruction) -> Option<()> {
         | O::FRINTI => {
             let (slot, bits) = simd(ops[0])?;
             let (a, p) = read(lifter, ops[1])?;
-            let op = match ins.opcode {
-                O::FSQRT => Operation::FloatSqrt(p),
-                O::FNEG => Operation::FloatNegate(p),
-                O::FABS => Operation::FloatAbs(p),
-                O::FRINTA => Operation::FloatRound(p, Rounding::NearestAway),
-                O::FRINTM => Operation::FloatRound(p, Rounding::Down),
-                O::FRINTP => Operation::FloatRound(p, Rounding::Up),
-                O::FRINTZ => Operation::FloatRound(p, Rounding::TowardZero),
-                // frintx and frinti round as the current mode does.
-                _ => Operation::FloatRound(p, Rounding::NearestEven),
-            };
+            let op = unary_operation(ins.opcode, p)?;
             lifter.write_simd(slot, bits, (float(op, vec![a]), Expr::constant(0)));
         }
         // fmadd d, n, m, a is a + n * m; fmsub negates the product, fnmadd
@@ -460,18 +462,7 @@ pub(super) fn lift_float(lifter: &mut Lifter, ins: &Instruction) -> Option<()> {
         | O::FCVTPS
         | O::FCVTPU => {
             let (a, from) = read(lifter, ops[1])?;
-            let (signed, rounding) = match ins.opcode {
-                O::FCVTZS => (true, Rounding::TowardZero),
-                O::FCVTZU => (false, Rounding::TowardZero),
-                O::FCVTNS => (true, Rounding::NearestEven),
-                O::FCVTNU => (false, Rounding::NearestEven),
-                O::FCVTAS => (true, Rounding::NearestAway),
-                O::FCVTAU => (false, Rounding::NearestAway),
-                O::FCVTMS => (true, Rounding::Down),
-                O::FCVTMU => (false, Rounding::Down),
-                O::FCVTPS => (true, Rounding::Up),
-                _ => (false, Rounding::Up),
-            };
+            let (signed, rounding) = integer_conversion(ins.opcode)?;
             // A fixed-point result keeps that many fraction bits.
             let a = match ops[2] {
                 Operand::Immediate(fraction) if fraction > 0 => float(
@@ -663,4 +654,53 @@ pub(super) fn lift_float(lifter: &mut Lifter, ins: &Instruction) -> Option<()> {
         _ => return None,
     }
     Some(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn opcode_properties_preserve_rounding_and_signedness() {
+        use a64::Opcode as O;
+        for p in [Precision::Single, Precision::Double] {
+            for (opcode, expected) in [
+                (O::FABS, Operation::FloatAbs(p)),
+                (O::FNEG, Operation::FloatNegate(p)),
+                (O::FSQRT, Operation::FloatSqrt(p)),
+                (O::FRINTN, Operation::FloatRound(p, Rounding::NearestEven)),
+                (O::FRINTA, Operation::FloatRound(p, Rounding::NearestAway)),
+                (O::FRINTM, Operation::FloatRound(p, Rounding::Down)),
+                (O::FRINTP, Operation::FloatRound(p, Rounding::Up)),
+                (O::FRINTZ, Operation::FloatRound(p, Rounding::TowardZero)),
+                (O::FRINTX, Operation::FloatRound(p, Rounding::NearestEven)),
+                (O::FRINTI, Operation::FloatRound(p, Rounding::NearestEven)),
+            ] {
+                assert_eq!(unary_operation(opcode, p), Some(expected));
+                assert_eq!(integer_conversion(opcode), None);
+            }
+        }
+        for (opcode, signed, rounding) in [
+            (O::FCVTZS, true, Rounding::TowardZero),
+            (O::FCVTZU, false, Rounding::TowardZero),
+            (O::FCVTNS, true, Rounding::NearestEven),
+            (O::FCVTNU, false, Rounding::NearestEven),
+            (O::FCVTAS, true, Rounding::NearestAway),
+            (O::FCVTAU, false, Rounding::NearestAway),
+            (O::FCVTMS, true, Rounding::Down),
+            (O::FCVTMU, false, Rounding::Down),
+            (O::FCVTPS, true, Rounding::Up),
+            (O::FCVTPU, false, Rounding::Up),
+        ] {
+            assert_eq!(integer_conversion(opcode), Some((signed, rounding)));
+            assert_eq!(unary_operation(opcode, Precision::Single), None);
+        }
+        for opcode in [O::FADD, O::FCVT, O::SCVTF, O::UCVTF] {
+            assert_eq!(unary_operation(opcode, Precision::Double), None);
+            assert_eq!(integer_conversion(opcode), None);
+        }
+        assert_eq!(precision(16), None);
+        assert_eq!(precision(32), Some(Precision::Single));
+        assert_eq!(precision(64), Some(Precision::Double));
+    }
 }

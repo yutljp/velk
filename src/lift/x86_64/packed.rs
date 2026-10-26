@@ -104,6 +104,81 @@ pub(super) fn lift_extend(lifter: &mut Lifter, ins: &Instruction) -> Option<()> 
     Some(())
 }
 
+fn lane_operation(mnemonic: Mnemonic) -> Option<(LaneOp, u8)> {
+    use Mnemonic::*;
+    match mnemonic {
+        Paddb => Some((LaneOp::Add, 8)),
+        Paddw => Some((LaneOp::Add, 16)),
+        Paddd => Some((LaneOp::Add, 32)),
+        Psubb => Some((LaneOp::Sub, 8)),
+        Psubw => Some((LaneOp::Sub, 16)),
+        Psubd => Some((LaneOp::Sub, 32)),
+        Pmullw => Some((LaneOp::Mul, 16)),
+        Pcmpeqb => Some((LaneOp::Equal, 8)),
+        Pcmpeqw => Some((LaneOp::Equal, 16)),
+        Pcmpeqd => Some((LaneOp::Equal, 32)),
+        Pcmpeqq => Some((LaneOp::Equal, 64)),
+        Pcmpgtb => Some((LaneOp::GreaterSigned, 8)),
+        Pcmpgtw => Some((LaneOp::GreaterSigned, 16)),
+        Pcmpgtd => Some((LaneOp::GreaterSigned, 32)),
+        Pminub => Some((LaneOp::MinUnsigned, 8)),
+        Pminuw => Some((LaneOp::MinUnsigned, 16)),
+        Pminud => Some((LaneOp::MinUnsigned, 32)),
+        Pmaxub => Some((LaneOp::MaxUnsigned, 8)),
+        Pmaxuw => Some((LaneOp::MaxUnsigned, 16)),
+        Pmaxud => Some((LaneOp::MaxUnsigned, 32)),
+        Pminsb => Some((LaneOp::MinSigned, 8)),
+        Pminsw => Some((LaneOp::MinSigned, 16)),
+        Pminsd => Some((LaneOp::MinSigned, 32)),
+        Pmaxsb => Some((LaneOp::MaxSigned, 8)),
+        Pmaxsw => Some((LaneOp::MaxSigned, 16)),
+        Pmaxsd => Some((LaneOp::MaxSigned, 32)),
+        Paddsb => Some((LaneOp::AddSaturatingSigned, 8)),
+        Paddsw => Some((LaneOp::AddSaturatingSigned, 16)),
+        Paddusb => Some((LaneOp::AddSaturatingUnsigned, 8)),
+        Paddusw => Some((LaneOp::AddSaturatingUnsigned, 16)),
+        Psubsb => Some((LaneOp::SubSaturatingSigned, 8)),
+        Psubsw => Some((LaneOp::SubSaturatingSigned, 16)),
+        Psubusb => Some((LaneOp::SubSaturatingUnsigned, 8)),
+        Psubusw => Some((LaneOp::SubSaturatingUnsigned, 16)),
+        Pavgb => Some((LaneOp::Average, 8)),
+        Pavgw => Some((LaneOp::Average, 16)),
+        Pmulhw => Some((LaneOp::MulHighSigned, 16)),
+        Pmulhuw => Some((LaneOp::MulHighUnsigned, 16)),
+        _ => None,
+    }
+}
+
+fn lane_shift(mnemonic: Mnemonic) -> Option<(LaneOp, u8)> {
+    use Mnemonic::*;
+    match mnemonic {
+        Psllw => Some((LaneOp::ShiftLeft, 16)),
+        Pslld => Some((LaneOp::ShiftLeft, 32)),
+        Psllq => Some((LaneOp::ShiftLeft, 64)),
+        Psrlw => Some((LaneOp::ShiftRight, 16)),
+        Psrld => Some((LaneOp::ShiftRight, 32)),
+        Psrlq => Some((LaneOp::ShiftRight, 64)),
+        Psraw => Some((LaneOp::ShiftRightSigned, 16)),
+        Psrad => Some((LaneOp::ShiftRightSigned, 32)),
+        _ => None,
+    }
+}
+
+fn interleave_properties(mnemonic: Mnemonic) -> Option<(u8, bool)> {
+    use Mnemonic::*;
+    match mnemonic {
+        Punpcklbw => Some((8, false)),
+        Punpcklwd => Some((16, false)),
+        Punpckldq => Some((32, false)),
+        Punpckhbw => Some((8, true)),
+        Punpckhwd => Some((16, true)),
+        Punpckhdq => Some((32, true)),
+        Unpcklps => Some((32, false)),
+        Unpckhps => Some((32, true)),
+        _ => None,
+    }
+}
+
 /// The packed SSE instructions, on each 64-bit half: integer lanes, packed
 /// doubles and singles, shuffles, and sign masks.
 pub(super) fn lift_packed(lifter: &mut Lifter, ins: &Instruction) -> Option<()> {
@@ -143,34 +218,7 @@ pub(super) fn lift_packed(lifter: &mut Lifter, ins: &Instruction) -> Option<()> 
         lifter.assign(slot + 1, 64, high);
         Some(())
     };
-    let lane_op = match ins.mnemonic() {
-        Paddb | Paddw | Paddd => Some(LaneOp::Add),
-        Psubb | Psubw | Psubd => Some(LaneOp::Sub),
-        Pmullw => Some(LaneOp::Mul),
-        Pcmpeqb | Pcmpeqw | Pcmpeqd | Pcmpeqq => Some(LaneOp::Equal),
-        Pcmpgtb | Pcmpgtw | Pcmpgtd => Some(LaneOp::GreaterSigned),
-        Pminub | Pminuw | Pminud => Some(LaneOp::MinUnsigned),
-        Pmaxub | Pmaxuw | Pmaxud => Some(LaneOp::MaxUnsigned),
-        Pminsb | Pminsw | Pminsd => Some(LaneOp::MinSigned),
-        Pmaxsb | Pmaxsw | Pmaxsd => Some(LaneOp::MaxSigned),
-        Paddsb | Paddsw => Some(LaneOp::AddSaturatingSigned),
-        Paddusb | Paddusw => Some(LaneOp::AddSaturatingUnsigned),
-        Psubsb | Psubsw => Some(LaneOp::SubSaturatingSigned),
-        Psubusb | Psubusw => Some(LaneOp::SubSaturatingUnsigned),
-        Pavgb | Pavgw => Some(LaneOp::Average),
-        Pmulhw => Some(LaneOp::MulHighSigned),
-        Pmulhuw => Some(LaneOp::MulHighUnsigned),
-        _ => None,
-    };
-    let lane_bits = |mnemonic: Mnemonic| -> u8 {
-        let name = format!("{mnemonic:?}");
-        match name.chars().last() {
-            Some('b') => 8,
-            Some('w') => 16,
-            Some('d') => 32,
-            _ => 64,
-        }
-    };
+    let lane_op = lane_operation(ins.mnemonic());
     match ins.mnemonic() {
         Pshufb => {
             let Some(source) = halves(0) else {
@@ -242,8 +290,7 @@ pub(super) fn lift_packed(lifter: &mut Lifter, ins: &Instruction) -> Option<()> 
             return Some(());
         }
         _ if lane_op.is_some() => {
-            let op = lane_op?;
-            let bits = lane_bits(ins.mnemonic());
+            let (op, bits) = lane_op?;
             let (a, b) = (halves(0)?, halves(1)?);
             write(
                 lifter,
@@ -323,16 +370,11 @@ pub(super) fn lift_packed(lifter: &mut Lifter, ins: &Instruction) -> Option<()> 
         // Shifts of each lane by an immediate or by the low 64 bits of a
         // register.
         Psllw | Pslld | Psllq | Psrlw | Psrld | Psrlq | Psraw | Psrad => {
-            let bits = lane_bits(ins.mnemonic());
+            let (op, bits) = lane_shift(ins.mnemonic())?;
             let a = halves(0)?;
             let count = match ins.op1_kind() {
                 OpKind::Immediate8 => Expr::constant(u64::from(ins.immediate8())),
                 _ => halves(1)?.0,
-            };
-            let op = match ins.mnemonic() {
-                Psllw | Pslld | Psllq => LaneOp::ShiftLeft,
-                Psrlw | Psrld | Psrlq => LaneOp::ShiftRight,
-                _ => LaneOp::ShiftRightSigned,
             };
             let shifted = |half: Expr| {
                 if bits == 64 && op != LaneOp::ShiftRightSigned {
@@ -390,17 +432,8 @@ pub(super) fn lift_packed(lifter: &mut Lifter, ins: &Instruction) -> Option<()> 
         Punpcklbw | Punpcklwd | Punpckldq | Punpckhbw | Punpckhwd | Punpckhdq | Unpcklps
         | Unpckhps => {
             let (a, b) = (halves(0)?, halves(1)?);
-            let name = format!("{:?}", ins.mnemonic());
-            let bits = match &name[name.len() - 2..] {
-                "bw" => 8,
-                "wd" => 16,
-                _ => 32,
-            };
-            let (x, y) = if name.starts_with("Punpckh") || name == "Unpckhps" {
-                (a.1, b.1)
-            } else {
-                (a.0, b.0)
-            };
+            let (bits, high) = interleave_properties(ins.mnemonic())?;
+            let (x, y) = if high { (a.1, b.1) } else { (a.0, b.0) };
             let interleave = |op| Expr::apply(op, vec![x.clone(), y.clone()]);
             write(
                 lifter,
@@ -659,4 +692,71 @@ pub(super) fn lift_packed(lifter: &mut Lifter, ins: &Instruction) -> Option<()> 
         _ => return None,
     }
     Some(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn packed_properties_match_all_mnemonics() {
+        use Mnemonic::*;
+        for mnemonic in Mnemonic::values() {
+            let name = format!("{mnemonic:?}");
+            let bits = match name.chars().last() {
+                Some('b') => 8,
+                Some('w') => 16,
+                Some('d') => 32,
+                _ => 64,
+            };
+            let operation = match mnemonic {
+                Paddb | Paddw | Paddd => Some(LaneOp::Add),
+                Psubb | Psubw | Psubd => Some(LaneOp::Sub),
+                Pmullw => Some(LaneOp::Mul),
+                Pcmpeqb | Pcmpeqw | Pcmpeqd | Pcmpeqq => Some(LaneOp::Equal),
+                Pcmpgtb | Pcmpgtw | Pcmpgtd => Some(LaneOp::GreaterSigned),
+                Pminub | Pminuw | Pminud => Some(LaneOp::MinUnsigned),
+                Pmaxub | Pmaxuw | Pmaxud => Some(LaneOp::MaxUnsigned),
+                Pminsb | Pminsw | Pminsd => Some(LaneOp::MinSigned),
+                Pmaxsb | Pmaxsw | Pmaxsd => Some(LaneOp::MaxSigned),
+                Paddsb | Paddsw => Some(LaneOp::AddSaturatingSigned),
+                Paddusb | Paddusw => Some(LaneOp::AddSaturatingUnsigned),
+                Psubsb | Psubsw => Some(LaneOp::SubSaturatingSigned),
+                Psubusb | Psubusw => Some(LaneOp::SubSaturatingUnsigned),
+                Pavgb | Pavgw => Some(LaneOp::Average),
+                Pmulhw => Some(LaneOp::MulHighSigned),
+                Pmulhuw => Some(LaneOp::MulHighUnsigned),
+                _ => None,
+            };
+            assert_eq!(
+                lane_operation(mnemonic),
+                operation.map(|op| (op, bits)),
+                "{mnemonic:?}"
+            );
+            let shift = match mnemonic {
+                Psllw | Pslld | Psllq => Some(LaneOp::ShiftLeft),
+                Psrlw | Psrld | Psrlq => Some(LaneOp::ShiftRight),
+                Psraw | Psrad => Some(LaneOp::ShiftRightSigned),
+                _ => None,
+            };
+            assert_eq!(
+                lane_shift(mnemonic),
+                shift.map(|op| (op, bits)),
+                "{mnemonic:?}"
+            );
+            let interleave = match mnemonic {
+                Punpcklbw | Punpcklwd | Punpckldq | Punpckhbw | Punpckhwd | Punpckhdq
+                | Unpcklps | Unpckhps => {
+                    let bits = match &name[name.len() - 2..] {
+                        "bw" => 8,
+                        "wd" => 16,
+                        _ => 32,
+                    };
+                    Some((bits, name.starts_with("Punpckh") || name == "Unpckhps"))
+                }
+                _ => None,
+            };
+            assert_eq!(interleave_properties(mnemonic), interleave, "{mnemonic:?}");
+        }
+    }
 }

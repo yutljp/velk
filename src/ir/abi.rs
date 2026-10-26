@@ -225,20 +225,25 @@ pub(crate) fn classify(
     profile: AbiProfile,
     layout: &TypeLayout,
 ) -> Result<ClassifiedValue, AbiIssue> {
-    let mut defined_bits = Vec::new();
-    let mut slots = [None; 2];
-    let mut unaligned = false;
-    inspect(
-        layout,
-        0,
-        0,
-        &mut 65536,
-        &mut defined_bits,
-        &mut slots,
-        &mut unaligned,
-    )?;
-    merge_ranges(&mut defined_bits);
-    let alignment = layout.alignment.ok_or(AbiIssue::UnknownLayout)?;
+    let mut inspection = Inspection {
+        budget: 65536,
+        ranges: Vec::new(),
+        slots: [None; 2],
+        unaligned: false,
+    };
+    if let Err(issue) = inspect(layout, 0, 0, &mut inspection) {
+        return Err(issue);
+    }
+    let Inspection {
+        mut ranges,
+        slots,
+        unaligned,
+        ..
+    } = inspection;
+    merge_ranges(&mut ranges);
+    let Some(alignment) = layout.alignment else {
+        return Err(AbiIssue::UnknownLayout);
+    };
     let aggregate = matches!(
         layout.kind,
         LayoutKind::Array { .. } | LayoutKind::Struct(_) | LayoutKind::Union(_)
@@ -297,11 +302,14 @@ pub(crate) fn classify(
         size: layout.size,
         alignment,
         natural_alignment: if profile == AbiProfile::Aapcs64 {
-            natural_alignment(layout)?
+            match natural_alignment(layout) {
+                Ok(alignment) => alignment,
+                Err(issue) => return Err(issue),
+            }
         } else {
             alignment
         },
-        defined_bits,
+        defined_bits: ranges,
         passing,
     })
 }
@@ -357,16 +365,20 @@ pub(crate) fn compatible(
     Ok(())
 }
 
+struct Inspection {
+    budget: usize,
+    ranges: Vec<(u64, u64)>,
+    slots: [Option<RegisterClass>; 2],
+    unaligned: bool,
+}
+
 fn inspect(
     layout: &TypeLayout,
     offset: u64,
     depth: u8,
-    budget: &mut usize,
-    ranges: &mut Vec<(u64, u64)>,
-    slots: &mut [Option<RegisterClass>; 2],
-    unaligned: &mut bool,
+    inspection: &mut Inspection,
 ) -> Result<(), AbiIssue> {
-    *budget = match budget.checked_sub(1) {
+    inspection.budget = match inspection.budget.checked_sub(1) {
         Some(value) => value,
         None => return Err(AbiIssue::UnknownLayout),
     };
@@ -388,7 +400,7 @@ fn inspect(
     if offset.checked_add(bits).is_none() {
         return Err(AbiIssue::UnknownLayout);
     }
-    *unaligned |= !offset.is_multiple_of(alignment * 8);
+    inspection.unaligned |= !offset.is_multiple_of(alignment * 8);
     match &layout.kind {
         LayoutKind::Integer | LayoutKind::Boolean | LayoutKind::Pointer | LayoutKind::Float(_) => {
             let class = match layout.kind {
@@ -403,7 +415,7 @@ fn inspect(
                 }
                 _ => return Err(AbiIssue::UnsupportedType),
             };
-            ranges.push((
+            inspection.ranges.push((
                 offset,
                 if matches!(layout.kind, LayoutKind::Boolean) {
                     1
@@ -411,7 +423,7 @@ fn inspect(
                     bits
                 },
             ));
-            mark(slots, offset, bits, class);
+            mark(&mut inspection.slots, offset, bits, class);
         }
         LayoutKind::Array { element, count } => {
             if *count == 0 || element.size.checked_mul(*count) != Some(layout.size) {
@@ -422,10 +434,7 @@ fn inspect(
                     element,
                     offset + index * element.size * 8,
                     depth + 1,
-                    budget,
-                    ranges,
-                    slots,
-                    unaligned,
+                    inspection,
                 ) {
                     return Err(issue);
                 }
@@ -438,11 +447,11 @@ fn inspect(
             let union = matches!(layout.kind, LayoutKind::Union(_));
             let mut end = 0;
             for field in fields {
-                *budget = match budget.checked_sub(1) {
+                inspection.budget = match inspection.budget.checked_sub(1) {
                     Some(value) => value,
                     None => return Err(AbiIssue::UnknownLayout),
                 };
-                let first_range = ranges.len();
+                let first_range = inspection.ranges.len();
                 let field_bits = field
                     .bit_size
                     .unwrap_or(match field.layout.size.checked_mul(8) {
@@ -488,24 +497,22 @@ fn inspect(
                         return Err(AbiIssue::UnsupportedType);
                     }
                     if width != 0 {
-                        ranges.push((field_offset, width));
-                        mark(slots, field_offset, width, RegisterClass::Integer);
+                        inspection.ranges.push((field_offset, width));
+                        mark(
+                            &mut inspection.slots,
+                            field_offset,
+                            width,
+                            RegisterClass::Integer,
+                        );
                     }
                 } else {
-                    if let Err(issue) = inspect(
-                        &field.layout,
-                        field_offset,
-                        depth + 1,
-                        budget,
-                        ranges,
-                        slots,
-                        unaligned,
-                    ) {
+                    if let Err(issue) = inspect(&field.layout, field_offset, depth + 1, inspection)
+                    {
                         return Err(issue);
                     }
                 }
                 if !field.defined {
-                    ranges.truncate(first_range);
+                    inspection.ranges.truncate(first_range);
                 }
             }
         }
