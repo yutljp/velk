@@ -42,6 +42,7 @@ int sum_until_zero(int *p, int n) {
 - Byte signatures to identify stripped library functions.
 - Generated C API type libraries for macOS, Windows (Win32 and the C runtime), and Linux (glibc).
 - Persistent names, types and comments in project files (`--project`, `--annotate`).
+- [Compare program versions](docs/COMPARISON.md), review C and block differences, and copy annotations to matching functions (`--compare`, `--carry-annotations`).
 - C++ RTTI class names, inheritance and virtual tables (`--classes`), and typed exception comments.
 
 ## Usage

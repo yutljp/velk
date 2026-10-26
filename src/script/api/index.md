@@ -170,6 +170,25 @@ matching. Matches identify compiler output, not semantic equivalence; different
 compiler versions or options can reduce coverage. `shapeHash()` is informational
 and is not used for library identification.
 
+## Comparing program versions
+
+`first.compare(second)` compares binaries opened with `velk.open` and returns
+`changed`, `identical`, `onlyFirst`, `onlySecond`, `failures` and `transfer`.
+Matches carry a rule (`name`, `shape` or `references`), similarity, and C and
+optimized-block differences. Ambiguous matches remain unmatched. Identical
+requires equal machine bytes and printed C. Scores describe matching evidence,
+not equivalent behavior.
+
+`first.compare(second, { carryAnnotations: true })` copies names, types and
+comments into unannotated targets in the second project's file. Existing targets
+are preserved and every copied or skipped entry has a reason. Signatures and
+variable annotations require compatible inferred storage and types on the same
+architecture; locals also require identical bytes. Globals
+require unique agreeing reference locations in matched functions. Review types
+when data layouts change. Use `open`'s `project` option to select either file.
+Comparison analyzes all functions; MCP callers should allow a suitable timeout
+and return only the relevant slice of the report.
+
 ## Persistent annotations
 
 The default project file is `<binary>.velk.json` beside the canonical binary.

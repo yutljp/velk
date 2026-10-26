@@ -209,7 +209,7 @@ impl Binary {
         })
     }
 
-    fn refresh_project(&mut self) -> Result<()> {
+    pub(crate) fn refresh_project(&mut self) -> Result<()> {
         if self.project.is_none()
             && matches!(std::fs::symlink_metadata(&self.project_path), Err(error) if error.kind() == std::io::ErrorKind::NotFound)
         {

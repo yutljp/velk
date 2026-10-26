@@ -34,7 +34,7 @@ const HELP_STYLES: Styles = Styles::styled()
     styles = HELP_STYLES,
     override_usage = "velk <OPERATION> [OPTIONS] [INPUT] [FUNCTION]",
     group(ArgGroup::new("operation").required(true).multiple(false).args([
-        "annotate", "annotation", "annotations", "unannotate", "export_project", "import_project", "origins",
+        "compare", "annotate", "annotation", "annotations", "unannotate", "export_project", "import_project", "origins",
         "functions", "classes", "sections", "card", "decompile", "disasm", "ir",
         "build_signatures", "identify", "run", "mcp", "xrefs", "callers", "callees", "path", "strings", "constants", "summary"
     ])),
@@ -43,6 +43,15 @@ const HELP_STYLES: Styles = Styles::styled()
     after_help = "Examples:\n  velk -f app.elf\n  velk -D app.elf main\n  velk --disasm app.elf 0x401000 --limit 20\n  velk --build-signatures app.elf --output signatures.json\n  velk -r analysis.js\n  velk --annotations app.elf\n  velk --xrefs app.elf main\n  velk --path app.elf main helper --depth 4\n  velk --strings app.elf --contains hello\n\nChoose one operation. Use --help to list its arguments and options.\nProject and annotation operations return JSON results and JSON errors after argument parsing."
 )]
 struct Cli {
+    /// Compare INPUT with a second binary supplied as FUNCTION; return JSON.
+    #[arg(long, help_heading = "Operations (choose one)")]
+    compare: bool,
+    /// Copy annotations to matching targets without replacing existing entries.
+    #[arg(long, requires = "compare", conflicts_with_all = ["annotate", "annotation", "annotations", "unannotate", "export_project", "import_project", "origins", "functions", "sections", "card", "decompile", "disasm", "ir", "build_signatures", "identify", "run", "mcp", "xrefs", "callers", "callees", "path", "strings", "constants", "summary"])]
+    carry_annotations: bool,
+    /// Project file for the second binary; defaults to its sidecar.
+    #[arg(long, requires = "compare", value_name = "PATH", conflicts_with_all = ["annotate", "annotation", "annotations", "unannotate", "export_project", "import_project", "origins", "functions", "sections", "card", "decompile", "disasm", "ir", "build_signatures", "identify", "run", "mcp", "xrefs", "callers", "callees", "path", "strings", "constants", "summary"])]
+    other_project: Option<PathBuf>,
     /// Select a Mach-O architecture (default: host architecture).
     #[arg(long, value_enum, conflicts_with_all = ["run", "mcp"])]
     arch: Option<velk::loader::Architecture>,
@@ -144,6 +153,7 @@ struct Cli {
     #[arg(
         value_name = "FUNCTION",
         required_if_eq_any([
+            ("compare", "true"),
             ("annotate", "true"), ("annotation", "true"), ("unannotate", "true"), ("import_project", "true"), ("origins", "true"),
             ("card", "true"), ("decompile", "true"),
             ("disasm", "true"), ("ir", "true"), ("xrefs", "true"), ("callers", "true"), ("callees", "true"), ("path", "true"), ("constants", "true"), ("summary", "true")
@@ -165,20 +175,20 @@ struct Cli {
     #[arg(
         long,
         value_name = "N",
-        conflicts_with_all = ["classes", "annotate", "annotation", "annotations", "unannotate", "export_project", "import_project", "origins", "xrefs", "callers", "callees", "path", "strings", "constants", "summary", "sections", "card", "decompile", "ir", "build_signatures", "run", "mcp"]
+        conflicts_with_all = ["classes", "compare", "annotate", "annotation", "annotations", "unannotate", "export_project", "import_project", "origins", "xrefs", "callers", "callees", "path", "strings", "constants", "summary", "sections", "card", "decompile", "ir", "build_signatures", "run", "mcp"]
     )]
     limit: Option<usize>,
     #[arg(
         long,
         value_name = "TOKENS",
-        conflicts_with_all = ["classes", "annotate", "annotation", "annotations", "unannotate", "export_project", "import_project", "origins", "xrefs", "callers", "callees", "path", "strings", "constants", "summary", "functions", "sections", "decompile", "disasm", "ir", "build_signatures", "identify", "run", "mcp"],
+        conflicts_with_all = ["classes", "compare", "annotate", "annotation", "annotations", "unannotate", "export_project", "import_project", "origins", "xrefs", "callers", "callees", "path", "strings", "constants", "summary", "functions", "sections", "decompile", "disasm", "ir", "build_signatures", "identify", "run", "mcp"],
         help = format!("Approximate card size in tokens (default: {}); only with --card", card::DEFAULT_BUDGET)
     )]
     budget: Option<usize>,
     /// Print the function list as JSON; only with --functions.
     #[arg(
         long,
-        conflicts_with_all = ["classes", "annotate", "annotation", "annotations", "unannotate", "export_project", "import_project", "origins", "xrefs", "callers", "callees", "path", "strings", "constants", "summary", "sections", "card", "decompile", "disasm", "ir", "build_signatures", "identify", "run", "mcp"]
+        conflicts_with_all = ["classes", "compare", "annotate", "annotation", "annotations", "unannotate", "export_project", "import_project", "origins", "xrefs", "callers", "callees", "path", "strings", "constants", "summary", "sections", "card", "decompile", "disasm", "ir", "build_signatures", "identify", "run", "mcp"]
     )]
     json: bool,
     /// Signature database; required for --identify, optional for --card and --decompile.
@@ -186,7 +196,7 @@ struct Cli {
         long,
         value_name = "FILE",
         required_if_eq("identify", "true"),
-        conflicts_with_all = ["classes", "annotate", "annotation", "annotations", "unannotate", "export_project", "import_project", "origins", "xrefs", "callers", "callees", "path", "strings", "constants", "summary", "functions", "sections", "disasm", "ir", "build_signatures", "run", "mcp"]
+        conflicts_with_all = ["classes", "compare", "annotate", "annotation", "annotations", "unannotate", "export_project", "import_project", "origins", "xrefs", "callers", "callees", "path", "strings", "constants", "summary", "functions", "sections", "disasm", "ir", "build_signatures", "run", "mcp"]
     )]
     signatures: Option<PathBuf>,
     /// Signature database to write; required with --build-signatures.
@@ -194,7 +204,7 @@ struct Cli {
         long,
         value_name = "FILE",
         required_if_eq("build_signatures", "true"),
-        conflicts_with_all = ["classes", "annotate", "annotation", "annotations", "unannotate", "export_project", "import_project", "origins", "xrefs", "callers", "callees", "path", "strings", "constants", "summary", "functions", "sections", "card", "decompile", "disasm", "ir", "identify", "run", "mcp"]
+        conflicts_with_all = ["classes", "compare", "annotate", "annotation", "annotations", "unannotate", "export_project", "import_project", "origins", "xrefs", "callers", "callees", "path", "strings", "constants", "summary", "functions", "sections", "card", "decompile", "disasm", "ir", "identify", "run", "mcp"]
     )]
     output: Option<PathBuf>,
 }
@@ -438,6 +448,22 @@ fn main() -> ExitCode {
         }
     };
     let project = cli.project.clone();
+    if cli.compare {
+        let result = compare_binaries(&cli);
+        return match result {
+            Ok(report) => {
+                println!("{}", json!(report));
+                ExitCode::SUCCESS
+            }
+            Err(error) => {
+                eprintln!(
+                    "{}",
+                    json!({"code": "comparison_error", "message": error.to_string()})
+                );
+                ExitCode::FAILURE
+            }
+        };
+    }
     let operation = if cli.annotate {
         Some(velk::project::cli::Command::Set {
             json: cli.function.clone().unwrap_or_default(),
@@ -498,6 +524,30 @@ fn main() -> ExitCode {
             ExitCode::FAILURE
         }
     }
+}
+
+fn compare_binaries(cli: &Cli) -> Result<velk::compare::Report> {
+    let mut first = match Binary::open_with_options(
+        cli.input.as_deref().expect("clap requires input"),
+        cli.project.as_deref(),
+        cli.arch,
+    ) {
+        Ok(binary) => binary,
+        Err(error) => return Err(error),
+    };
+    let mut second = match Binary::open_with_options(
+        Path::new(
+            cli.function
+                .as_deref()
+                .expect("clap requires the second binary"),
+        ),
+        cli.other_project.as_deref(),
+        cli.arch,
+    ) {
+        Ok(binary) => binary,
+        Err(error) => return Err(error),
+    };
+    velk::compare::compare(&mut first, &mut second, cli.carry_annotations, None)
 }
 
 fn run(
@@ -1021,6 +1071,30 @@ mod tests {
                 args.extend(option.iter().copied());
                 assert_eq!(error(&args).kind(), ErrorKind::ArgumentConflict, "{args:?}");
             }
+        }
+    }
+
+    #[test]
+    fn comparison_requires_two_binaries_and_compatible_options() {
+        assert!(
+            Cli::try_parse_from([
+                "velk",
+                "--compare",
+                "first",
+                "second",
+                "--carry-annotations"
+            ])
+            .is_ok()
+        );
+        for args in [
+            vec!["velk", "--compare", "first"],
+            vec!["velk", "--compare", "first", "second", "--json"],
+            vec!["velk", "--compare", "first", "second", "--limit", "1"],
+            vec!["velk", "--compare", "first", "second", "--budget", "1"],
+            vec!["velk", "--functions", "first", "--carry-annotations"],
+            vec!["velk", "--compare", "--functions", "first", "second"],
+        ] {
+            assert!(Cli::try_parse_from(args.clone()).is_err(), "{args:?}");
         }
     }
 

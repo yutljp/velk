@@ -101,6 +101,7 @@ JSON.stringify({{
   }},
   signatures,
   identify: b.identify(signatures.database),
+  comparison: b.compare(b),
   functionCount: b.functions().length,
   namedOnly: b.functions({{ named: true }}).every((g) => g.name !== null),
   byRegExp: b.functions({{ name: /^{function}$/ }}).length,

@@ -44,6 +44,11 @@
     }
     classes() { return call("classes", { bin: this.#id }); }
     sections() { return call("sections", { bin: this.#id }); }
+    compare(other, { carryAnnotations = false } = {}) {
+      const result = call("compare", { first: this.#id, second: other.#id, carryAnnotations });
+      if (carryAnnotations) other.#functions = undefined;
+      return result;
+    }
     functions({ name, named, minSize } = {}) {
       this.#functions ??= call("functions", { bin: this.#id }).map((row) => new Func(this.#id, row));
       const names = (f) => [f.name, ...f.aliases].filter((n) => n !== null);

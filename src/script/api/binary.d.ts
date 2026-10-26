@@ -19,6 +19,9 @@ interface Binary {
   /** C++ classes described by RTTI; empty when unsupported or absent. */
   classes(): CppClass[];
   sections(): Section[];
+  /** Compare two versions. Changed functions come first; ambiguous matches remain unmatched.
+   * carryAnnotations writes only unannotated targets in the second binary's project. */
+  compare(other: Binary, opts?: { carryAnnotations?: boolean }): ComparisonReport;
   /** Incoming references by default; from:true returns references made by the containing function.
    * The first navigation query builds a whole-binary index and can be slow.
    * Results carry failures; slice the xrefs array before returning it through MCP. */
@@ -77,3 +80,16 @@ type ProjectTarget =
   | { kind: "declaration"; name: string };
 type ProjectAnnotation = { target: ProjectTarget; name?: string; c_type?: string; text?: string };
 type AnalysisProject = { version: 1; binary_sha256: string; annotations: ProjectAnnotation[] };
+
+type FunctionComparison = {
+  first: ComparedFunction; second: ComparedFunction;
+  rule: "name" | "shape" | "references"; similarity: number;
+  cDiff: string; blockDiff: string;
+};
+type AnnotationTransfer = { source: ProjectTarget; destination: ProjectTarget | null; reason: string };
+type ComparisonReport = {
+  changed: FunctionComparison[]; identical: FunctionComparison[];
+  onlyFirst: ComparedFunction[]; onlySecond: ComparedFunction[]; failures: string[];
+  transfer: { copied: AnnotationTransfer[]; skipped: AnnotationTransfer[] } | null;
+};
+type ComparedFunction = Pick<Func, "addr" | "name" | "aliases" | "size" | "sizeEstimated" | "nameSources">;

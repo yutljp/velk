@@ -1,5 +1,6 @@
 //! Deserializes and executes the operations exposed to analysis scripts.
 
+mod compare;
 mod project;
 
 use std::path::PathBuf;
@@ -52,6 +53,16 @@ impl std::ops::Deref for BinaryRef {
 #[derive(Deserialize)]
 #[serde(tag = "op", rename_all = "camelCase", deny_unknown_fields)]
 pub enum Request {
+    /// Compares two program versions and optionally carries annotations.
+    Compare {
+        /// Original binary.
+        first: BinaryRef,
+        /// Updated binary.
+        second: BinaryRef,
+        /// Whether to copy annotations into unannotated destination targets.
+        #[serde(default, rename = "carryAnnotations")]
+        carry_annotations: bool,
+    },
     /// Resolves a navigation query.
     Navigate {
         /// Path identifying the binary to analyze.
@@ -188,6 +199,11 @@ pub fn handle(
             };
             crate::xrefs::query::run(binary, query, deadline)
         }
+        Request::Compare {
+            first,
+            second,
+            carry_annotations,
+        } => compare::handle(session, first, second, carry_annotations, deadline),
         Request::Project { bin, action, value } => {
             project::handle(session, bin, action, value, deadline)
         }

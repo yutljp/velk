@@ -41,6 +41,7 @@ int sum_until_zero(int *p, int n) {
 - バイトシグネチャによる、シンボルを削除したライブラリ関数の識別。
 - macOS、Windows（Win32 と C ランタイム）、Linux（glibc）の生成済み C API 型ライブラリ。
 - プロジェクトファイルへの名前・型・コメントの永続化（`--project`、`--annotate`）。
+- [プログラムのバージョン比較](docs/COMPARISON.ja.md)、C とブロックの差分確認、対応関数への注釈コピー（`--compare`、`--carry-annotations`）。
 - C++ RTTI によるクラス名・継承・仮想テーブルの復元（`--classes`）と型付き例外コメント。
 
 C++ の RTTI のクラス名、継承、仮想テーブルは `velk --classes app.elf` で JSON として一覧表示できます。

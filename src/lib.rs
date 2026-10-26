@@ -6,6 +6,7 @@ pub mod addr;
 pub mod analysis;
 pub mod arch;
 pub mod card;
+pub mod compare;
 mod deadline;
 pub mod disasm;
 pub mod error;
