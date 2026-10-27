@@ -282,94 +282,133 @@ pub(crate) fn recover(image: &Image, ir: &FunctionIr, deadline: Option<Instant>)
                 }
                 _ => continue,
             };
-            if crate::deadline::passed(deadline).is_err() {
+            if !resolve(
+                image,
+                ir,
+                &flow,
+                CallCandidate {
+                    resolver,
+                    arguments,
+                    block_start: block.start,
+                    statement,
+                    indirect_call,
+                },
+                deadline,
+                &mut results,
+            ) {
                 return results;
-            }
-            let Some(function) = image.functions.get(&resolver) else {
-                continue;
-            };
-            let Ok(analysis) = crate::analysis::analyze(image, function, deadline) else {
-                continue;
-            };
-            let Some(resolver_ssa) = prepare(&analysis.ir) else {
-                continue;
-            };
-            let resolver_flow = Flow::new(&resolver_ssa);
-            let cyclic = crate::ir::cfg::cyclic_blocks(&resolver_ssa.ir);
-            if cyclic.is_empty() {
-                continue;
-            }
-            let comparisons = resolver_ssa
-                .ir
-                .blocks
-                .iter()
-                .enumerate()
-                .filter(|(index, _)| cyclic.contains(index))
-                .flat_map(|(_, block)| &block.stmts);
-            for comparison in comparisons {
-                let Stmt::Brif {
-                    cond: Cond::Eq | Cond::Ne,
-                    lhs,
-                    rhs,
-                    ..
-                } = comparison
-                else {
-                    continue;
-                };
-                for (hashed, wanted) in [(lhs, rhs), (rhs, lhs)] {
-                    let (hashed, hash_mask) = resolver_flow.comparison(hashed);
-                    let (wanted, wanted_mask) = resolver_flow.comparison(wanted);
-                    if hash_mask != wanted_mask || hash_mask == 0 {
-                        continue;
-                    }
-                    let Some((routine, hash_args)) = resolver_flow.call(hashed) else {
-                        continue;
-                    };
-                    if hash_args.len() != 1 || !resolver_flow.loaded(&hash_args[0], 32) {
-                        continue;
-                    }
-                    let parameter = match resolver_flow.root(wanted) {
-                        Expr::Reg { index, .. } => analysis.ir.params.iter().position(|param| {
-                            param.index == *index
-                                || resolver_ssa.entry.get(&param.index) == Some(index)
-                        }),
-                        Expr::Load { addr, .. } => {
-                            let sp = crate::arch::stack_pointer(ir.isa);
-                            let offset = crate::passes::frame_slots::frame_slot(addr, 0, sp);
-                            analysis
-                                .ir
-                                .stack_params
-                                .iter()
-                                .find(|param| Some(param.offset) == offset)
-                                .map(|param| param.position)
-                        }
-                        _ => None,
-                    };
-                    let Some(argument) = parameter.and_then(|position| arguments.get(position))
-                    else {
-                        continue;
-                    };
-                    let Some(hash) = flow.constant(argument, &mut 128) else {
-                        continue;
-                    };
-                    let mask = hash_mask;
-                    let (candidates, complete) =
-                        evaluate(image, routine, hash & mask, mask, deadline);
-                    results.push(ApiHash {
-                        block: block.start,
-                        statement,
-                        indirect_call,
-                        resolver,
-                        routine,
-                        hash: crate::addr::format(hash & mask),
-                        candidates,
-                        complete,
-                    });
-                }
             }
         }
     }
     results
+}
+
+struct CallCandidate<'a> {
+    resolver: u64,
+    arguments: &'a [Expr],
+    block_start: u64,
+    statement: usize,
+    indirect_call: bool,
+}
+
+fn resolve(
+    image: &Image,
+    ir: &FunctionIr,
+    flow: &Flow<'_>,
+    candidate: CallCandidate<'_>,
+    deadline: Option<Instant>,
+    results: &mut Vec<ApiHash>,
+) -> bool {
+    let CallCandidate {
+        resolver,
+        arguments,
+        block_start,
+        statement,
+        indirect_call,
+    } = candidate;
+    if crate::deadline::passed(deadline).is_err() {
+        return false;
+    }
+    let Some(function) = image.functions.get(&resolver) else {
+        return true;
+    };
+    let Ok(analysis) = crate::analysis::analyze(image, function, deadline) else {
+        return true;
+    };
+    let Some(resolver_ssa) = prepare(&analysis.ir) else {
+        return true;
+    };
+    let resolver_flow = Flow::new(&resolver_ssa);
+    let cyclic = crate::ir::cfg::cyclic_blocks(&resolver_ssa.ir);
+    if cyclic.is_empty() {
+        return true;
+    }
+    let comparisons = resolver_ssa
+        .ir
+        .blocks
+        .iter()
+        .enumerate()
+        .filter(|(index, _)| cyclic.contains(index))
+        .flat_map(|(_, block)| &block.stmts);
+    for comparison in comparisons {
+        let Stmt::Brif {
+            cond: Cond::Eq | Cond::Ne,
+            lhs,
+            rhs,
+            ..
+        } = comparison
+        else {
+            continue;
+        };
+        for (hashed, wanted) in [(lhs, rhs), (rhs, lhs)] {
+            let (hashed, hash_mask) = resolver_flow.comparison(hashed);
+            let (wanted, wanted_mask) = resolver_flow.comparison(wanted);
+            if hash_mask != wanted_mask || hash_mask == 0 {
+                continue;
+            }
+            let Some((routine, hash_args)) = resolver_flow.call(hashed) else {
+                continue;
+            };
+            if hash_args.len() != 1 || !resolver_flow.loaded(&hash_args[0], 32) {
+                continue;
+            }
+            let parameter = match resolver_flow.root(wanted) {
+                Expr::Reg { index, .. } => analysis.ir.params.iter().position(|param| {
+                    param.index == *index || resolver_ssa.entry.get(&param.index) == Some(index)
+                }),
+                Expr::Load { addr, .. } => {
+                    let sp = crate::arch::stack_pointer(ir.isa);
+                    let offset = crate::passes::frame_slots::frame_slot(addr, 0, sp);
+                    analysis
+                        .ir
+                        .stack_params
+                        .iter()
+                        .find(|param| Some(param.offset) == offset)
+                        .map(|param| param.position)
+                }
+                _ => None,
+            };
+            let Some(argument) = parameter.and_then(|position| arguments.get(position)) else {
+                continue;
+            };
+            let Some(hash) = flow.constant(argument, &mut 128) else {
+                continue;
+            };
+            let mask = hash_mask;
+            let (candidates, complete) = evaluate(image, routine, hash & mask, mask, deadline);
+            results.push(ApiHash {
+                block: block_start,
+                statement,
+                indirect_call,
+                resolver,
+                routine,
+                hash: crate::addr::format(hash & mask),
+                candidates,
+                complete,
+            });
+        }
+    }
+    true
 }
 
 fn prepare(ir: &FunctionIr) -> Option<Ssa> {
