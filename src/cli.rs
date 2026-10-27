@@ -47,7 +47,7 @@ pub(super) struct Cli {
     /// Project file for the second binary; defaults to its sidecar.
     #[arg(long, requires = "compare", value_name = "PATH", conflicts_with_all = ["emulate", "annotate", "annotation", "annotations", "unannotate", "export_project", "import_project", "origins", "functions", "sections", "card", "decompile", "disasm", "ir", "build_signatures", "identify", "run", "mcp", "serve", "xrefs", "callers", "callees", "path", "strings", "constants", "summary"])]
     other_project: Option<PathBuf>,
-    /// Execute a function or address through the IR interpreter; print final state as JSON.
+    /// Execute a function or address through the IR interpreter; print a text report (or JSON with --json).
     #[arg(long, help_heading = "Operations (choose one)")]
     emulate: bool,
     /// Initial state and limits as JSON; see velk --api-docs emulation.
@@ -110,7 +110,7 @@ pub(super) struct Cli {
     /// Print a function card as JSON.
     #[arg(short = 'c', long, help_heading = "Operations (choose one)")]
     card: bool,
-    /// Print pseudo-C for one function.
+    /// Print pseudo-C for selected functions, or all functions when none are specified.
     #[arg(short = 'D', long, help_heading = "Operations (choose one)")]
     decompile: bool,
     /// Print the disassembly of one function.
