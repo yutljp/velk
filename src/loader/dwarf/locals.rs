@@ -117,10 +117,6 @@ fn stack_offset(
                 }
                 base = Some(value);
             }
-            // A changing SP-relative location is deliberately rejected above.
-            if register == sp && base.is_none() {
-                return None;
-            }
             base
         }
     }

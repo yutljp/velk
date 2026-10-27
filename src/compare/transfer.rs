@@ -109,9 +109,9 @@ fn globals(left: &Snapshot, right: &Snapshot, pairs: &[Pair]) -> BTreeMap<u64, u
         if first.values().filter(|other| *other == uses).count() != 1 {
             continue;
         }
-        let candidates: Vec<_> = second.iter().filter(|(_, other)| *other == uses).collect();
-        if let [(destination, _)] = candidates.as_slice() {
-            result.insert(*address, **destination);
+        let mut candidates = second.iter().filter(|(_, other)| *other == uses);
+        if let (Some((destination, _)), None) = (candidates.next(), candidates.next()) {
+            result.insert(*address, *destination);
         }
     }
     result

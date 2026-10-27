@@ -315,12 +315,16 @@ impl Index {
     }
 
     fn neighbors(&self, function: u64, callers: bool) -> BTreeSet<u64> {
-        let refs = if callers {
-            self.to(function)
+        let index = if callers {
+            &self.incoming
         } else {
-            self.from(function)
+            &self.outgoing
         };
-        refs.into_iter()
+        index
+            .get(&function)
+            .into_iter()
+            .flatten()
+            .map(|at| &self.xrefs[*at])
             .filter(|xref| xref.kind.call())
             .map(|xref| if callers { xref.function } else { xref.target })
             .collect()

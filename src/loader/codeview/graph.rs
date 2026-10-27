@@ -73,10 +73,9 @@ pub(super) fn read(types: &Types) -> TypeGraph {
                     }
                 }
             }
-            if let Some(definition) = definitions
-                .iter()
-                .find(|definition| Some(&CType::Named(definition.name.clone())) == Some(&spelling))
-            {
+            if let Some(definition) = definitions.iter().find(
+                |definition| matches!(&spelling, CType::Named(name) if definition.name == *name),
+            ) {
                 graph.definitions.insert(source(index), definition.clone());
                 graph.generated_members.insert(source(index), generated);
             }

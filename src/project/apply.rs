@@ -241,10 +241,8 @@ impl Project {
                 }
                 Target::Local { function, storage } if *function == ir.addr => {
                     if let Storage::Stack { offset } = storage {
-                        if !crate::render::project_locals(ir)
-                            .iter()
-                            .any(|(slot, _, _, _)| slot == offset)
-                        {
+                        let locals = crate::render::project_locals(ir);
+                        if !locals.iter().any(|(slot, _, _, _)| slot == offset) {
                             return Err(error(
                                 "unknown_storage",
                                 format!("no local at stack offset {offset} in 0x{function:x}"),
@@ -258,7 +256,7 @@ impl Project {
                                 Ok(size) => size,
                                 Err(cause) => return Err(cause),
                             };
-                            if !crate::render::project_locals(ir)
+                            if !locals
                                 .iter()
                                 .any(|(slot, _, _, available)| slot == offset && *available == size)
                             {
@@ -475,8 +473,7 @@ fn resolve(ir: &FunctionIr, storage: &Storage) -> Result<u16> {
     }
 }
 
-/// Stable storage selectors, with the current inferred spelling and type for inspection.
-/// Lists annotation selectors for the inferred parameters and locals.
+/// Returns stable annotation selectors for inferred parameters and locals, with their names and types.
 #[must_use]
 pub fn origins(ir: &FunctionIr) -> Vec<serde_json::Value> {
     use serde_json::json;

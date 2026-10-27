@@ -172,11 +172,8 @@ fn aggregate_size(
     match entry.tag() {
         gimli::DW_TAG_structure_type | gimli::DW_TAG_union_type => {
             match attribute(&entry, gimli::DW_AT_byte_size)? {
-                AttributeValue::Udata(size) => Some(size),
-                AttributeValue::Data1(size) => Some(u64::from(size)),
-                AttributeValue::Data2(size) => Some(u64::from(size)),
-                AttributeValue::Data4(size) => Some(u64::from(size)),
-                _ => None,
+                AttributeValue::Data8(_) => None,
+                value => byte_count(value),
             }
         }
         gimli::DW_TAG_typedef | gimli::DW_TAG_const_type | gimli::DW_TAG_volatile_type => {

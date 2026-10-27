@@ -17,14 +17,15 @@ pub(super) fn normalize(
     if !body.bytes.len().is_multiple_of(4) || end > u64::from(u32::MAX) {
         return false;
     }
-    let bytes = body.bytes.clone();
     let decoder = InstDecoder::default().allow_nonconforming(false);
     let mut last_end = 0;
     let mut terminal = false;
     let mut local_targets = Vec::new();
-    for (index, chunk) in bytes.as_chunks::<4>().0.iter().enumerate() {
-        let offset = index * 4;
-        let word = u32::from_le_bytes(*chunk);
+    for offset in (0..body.bytes.len()).step_by(4) {
+        let chunk: [u8; 4] = body.bytes[offset..offset + 4]
+            .try_into()
+            .expect("four-byte word");
+        let word = u32::from_le_bytes(chunk);
         if word == 0xe320_f000 || word == 0xe1a0_0000 || word == 0 {
             continue;
         }
@@ -34,7 +35,7 @@ pub(super) fn normalize(
         let mut reader = ReaderBuilder::<u32, u8>::read_at(chunk.as_slice(), 0);
         let instruction = match decoder.decode(&mut reader) {
             Ok(instruction) => instruction,
-            Err(_) if crate::lift::arm32_position_independent_instruction(chunk) => continue,
+            Err(_) if crate::lift::arm32_position_independent_instruction(&chunk) => continue,
             Err(_) => return false,
         };
         let return_branch = instruction.opcode == Opcode::BX

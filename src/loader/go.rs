@@ -21,12 +21,8 @@ pub struct GoFunction {
     pub name: String,
 }
 
-fn bytes_at(image: &Image, addr: u64, len: u64) -> Option<&[u8]> {
-    super::image_reads::bounded_bytes(image, addr, len)
-}
-
 fn u64_at(image: &Image, addr: u64) -> Option<u64> {
-    let Some(bytes) = bytes_at(image, addr, 8) else {
+    let Some(bytes) = super::image_reads::bounded_bytes(image, addr, 8) else {
         return None;
     };
     Some(u64::from_le_bytes([
@@ -76,7 +72,8 @@ fn moduledata(image: &Image, pclntab: u64) -> Option<u64> {
         if section.executable || section.size < 8 {
             continue;
         }
-        let Some(bytes) = bytes_at(image, section.vaddr, section.size) else {
+        let Some(bytes) = super::image_reads::bounded_bytes(image, section.vaddr, section.size)
+        else {
             continue;
         };
         for (index, word) in bytes.as_chunks::<8>().0.iter().enumerate() {
@@ -154,9 +151,9 @@ pub fn functions(image: &Image) -> Vec<GoFunction> {
         return Vec::new();
     };
     let (Some(entries), Some(data), Some(names)) = (
-        bytes_at(image, ftab_ptr, ftab_size),
-        bytes_at(image, pclntable, pclntable_len),
-        bytes_at(image, names, names_len),
+        super::image_reads::bounded_bytes(image, ftab_ptr, ftab_size),
+        super::image_reads::bounded_bytes(image, pclntable, pclntable_len),
+        super::image_reads::bounded_bytes(image, names, names_len),
     ) else {
         return Vec::new();
     };

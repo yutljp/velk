@@ -21,10 +21,6 @@ pub(super) fn handle(
     let cache = binary.input_options().cache.clone();
     let command = match action.as_str() {
         "origins" => {
-            let binary = match bin.open(session) {
-                Ok(binary) => binary,
-                Err(cause) => return Err(cause),
-            };
             let address = match binary.find(value.as_str().unwrap_or_default()) {
                 Ok(function) => function.addr,
                 Err(cause) => return Err(cause),

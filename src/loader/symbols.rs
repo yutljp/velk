@@ -3,13 +3,11 @@ pub(crate) fn demangle(name: &str) -> Option<String> {
         .strip_prefix('_')
         .filter(|_| name.starts_with("__Z") || name.starts_with("__R"))
         .unwrap_or(name);
-    if let Ok(symbol) = rustc_demangle::try_demangle(name) {
-        if name.starts_with("_R") {
-            return Some(format!("{symbol:#}"));
-        }
-        if name.starts_with("_ZN") && name.rsplit_once("17h").is_some() {
-            return Some(format!("{symbol:#}"));
-        }
+    if let Ok(symbol) = rustc_demangle::try_demangle(name)
+        && (name.starts_with("_R")
+            || (name.starts_with("_ZN") && name.rsplit_once("17h").is_some()))
+    {
+        return Some(format!("{symbol:#}"));
     }
     if name.starts_with("_Z")
         && let Ok(symbol) = cpp_demangle::Symbol::new(name)

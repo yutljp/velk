@@ -169,20 +169,14 @@ pub(crate) fn stack_rows(image: &Image) -> Vec<StackRow> {
             continue;
         };
         while let Ok(Some(row)) = rows.next_row() {
-            let at_entry = match row.cfa() {
-                CfaRule::RegisterAndOffset { register, offset } => {
-                    *register == stack && *offset == entry_offset
-                }
-                CfaRule::Expression(_) => continue,
+            let CfaRule::RegisterAndOffset { register, offset } = row.cfa() else {
+                continue;
             };
             out.push(StackRow {
                 start: row.start_address(),
                 end: row.end_address(),
-                at_entry,
-                cfa: match row.cfa() {
-                    CfaRule::RegisterAndOffset { register, offset } => (*register, *offset),
-                    CfaRule::Expression(_) => continue,
-                },
+                at_entry: *register == stack && *offset == entry_offset,
+                cfa: (*register, *offset),
             });
         }
     }

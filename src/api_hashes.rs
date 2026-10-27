@@ -506,8 +506,12 @@ fn evaluate(
 
 pub(crate) fn annotate(code: &mut String, hashes: &[ApiHash]) {
     for hash in hashes {
-        if !hash.candidates.is_empty() && !code.contains(&comment(hash)) {
-            code.push_str(comment(hash).trim_start());
+        if hash.candidates.is_empty() {
+            continue;
+        }
+        let comment = comment(hash);
+        if !code.contains(&comment) {
+            code.push_str(comment.trim_start());
             code.push('\n');
         }
     }

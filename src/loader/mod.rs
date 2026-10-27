@@ -586,6 +586,7 @@ impl Image {
     /// padding that ends the previous function.
     fn scan_prologues(&mut self) {
         let mut found: Vec<u64> = Vec::new();
+        let relocated_branches = (self.isa == Isa::AArch64).then(|| self.relocated_branches());
         for section in &self.sections {
             if !section.executable || plt::is_stub_section(&section.name) {
                 continue;
@@ -594,9 +595,13 @@ impl Image {
                 continue;
             };
             let mut starts = match self.isa {
-                crate::loader::Isa::AArch64 => {
-                    aarch64_prologues(bytes, section.vaddr, &self.relocated_branches())
-                }
+                crate::loader::Isa::AArch64 => aarch64_prologues(
+                    bytes,
+                    section.vaddr,
+                    relocated_branches
+                        .as_ref()
+                        .expect("AArch64 relocations were collected"),
+                ),
                 crate::loader::Isa::I386 | crate::loader::Isa::X86_64 => x86_prologues(
                     bytes,
                     section.vaddr,
@@ -672,13 +677,7 @@ impl Image {
 
     /// Drops functions outside executable sections, such as data symbols.
     fn retain_code_functions(&mut self) {
-        self.functions.retain(|address, _| {
-            self.sections.iter().any(|section| {
-                section.executable
-                    && *address >= section.vaddr
-                    && *address < section.vaddr.saturating_add(section.size)
-            })
-        });
+        retain_code_functions(&self.sections, &mut self.functions);
     }
 
     pub fn section_data(&self, name: &str) -> Option<&[u8]> {
@@ -817,6 +816,16 @@ impl Image {
             );
         }
     }
+}
+
+fn retain_code_functions(sections: &[Section], functions: &mut BTreeMap<u64, Function>) {
+    functions.retain(|address, _| {
+        sections.iter().any(|section| {
+            section.executable
+                && *address >= section.vaddr
+                && *address < section.vaddr.saturating_add(section.size)
+        })
+    });
 }
 
 fn isa_of(arch: object::Architecture) -> Isa {
@@ -1176,13 +1185,7 @@ pub(crate) fn load_input_with_saved(
         upsert(&mut functions, entry, None, None, NameSource::Entry);
     }
 
-    functions.retain(|address, _| {
-        sections.iter().any(|section| {
-            section.executable
-                && *address >= section.vaddr
-                && *address < section.vaddr.saturating_add(section.size)
-        })
-    });
+    retain_code_functions(&sections, &mut functions);
     estimate_sizes(&sections, &mut functions);
 
     let codeview = codeview::read(path, &file, &bases);

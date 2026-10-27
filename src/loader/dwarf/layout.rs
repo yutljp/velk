@@ -49,7 +49,7 @@ fn alignment(value: Option<AttributeValue<Reader<'_>>>) -> Result<Option<u64>, A
         .transpose()
 }
 
-fn inner(
+fn type_offset(
     entry: &gimli::DebuggingInformationEntry<Reader<'_>>,
 ) -> Result<gimli::UnitOffset, AbiIssue> {
     match attribute(entry, gimli::DW_AT_type) {
@@ -77,7 +77,7 @@ pub(super) fn read(
             | gimli::DW_TAG_restrict_type
             | gimli::DW_TAG_atomic_type
     ) {
-        let mut layout = read(unit, inner(&entry)?, depth - 1)?;
+        let mut layout = read(unit, type_offset(&entry)?, depth - 1)?;
         if explicit_alignment.is_some() {
             layout.alignment = explicit_alignment;
         }
@@ -113,7 +113,7 @@ pub(super) fn read(
             (size, Some(size), kind, true)
         }
         gimli::DW_TAG_enumeration_type => {
-            let mut layout = read(unit, inner(&entry)?, depth - 1)?;
+            let mut layout = read(unit, type_offset(&entry)?, depth - 1)?;
             if !matches!(layout.kind, LayoutKind::Integer) {
                 return Err(AbiIssue::UnsupportedType);
             }
@@ -123,7 +123,7 @@ pub(super) fn read(
             return Ok(layout);
         }
         gimli::DW_TAG_array_type => {
-            let element = read(unit, inner(&entry)?, depth - 1)?;
+            let element = read(unit, type_offset(&entry)?, depth - 1)?;
             let count = array_count(unit, offset)?;
             if attribute(&entry, gimli::DW_AT_byte_stride)
                 .and_then(number)
@@ -187,7 +187,7 @@ pub(super) fn read(
                 if attribute(child, gimli::DW_AT_alignment).is_some() {
                     return Err(AbiIssue::UnsupportedType);
                 }
-                let field = read(unit, inner(child)?, depth - 1)?;
+                let field = read(unit, type_offset(child)?, depth - 1)?;
                 trivial &= field.trivial;
                 let bit_size = attribute(child, gimli::DW_AT_bit_size).and_then(number);
                 let at = if union || attribute(child, gimli::DW_AT_data_bit_offset).is_some() {
@@ -302,14 +302,14 @@ pub(super) fn declaration(
         | gimli::DW_TAG_volatile_type
         | gimli::DW_TAG_restrict_type
         | gimli::DW_TAG_atomic_type => {
-            declaration(dwarf, unit, inner(&entry).ok()?, name, depth - 1)
+            declaration(dwarf, unit, type_offset(&entry).ok()?, name, depth - 1)
         }
         gimli::DW_TAG_array_type => {
             let count = array_count(unit, offset).ok()?;
             declaration(
                 dwarf,
                 unit,
-                inner(&entry).ok()?,
+                type_offset(&entry).ok()?,
                 &format!("{name}[{count}]"),
                 depth - 1,
             )
@@ -360,10 +360,10 @@ pub(super) fn generated(
         | gimli::DW_TAG_volatile_type
         | gimli::DW_TAG_restrict_type
         | gimli::DW_TAG_atomic_type => {
-            return generated(dwarf, unit, inner(&entry)?, depth - 1);
+            return generated(dwarf, unit, type_offset(&entry)?, depth - 1);
         }
         gimli::DW_TAG_array_type => {
-            let element = generated(dwarf, unit, inner(&entry)?, depth - 1)?;
+            let element = generated(dwarf, unit, type_offset(&entry)?, depth - 1)?;
             let count = array_count(unit, offset)?;
             return Ok(TypeLayout {
                 size: element
@@ -403,7 +403,7 @@ pub(super) fn generated(
                 .and_then(number)
                 .unwrap_or(0)
         };
-        let offset = inner(child)?;
+        let offset = type_offset(child)?;
         let width = type_size(unit, offset, 8).ok_or(AbiIssue::UnknownLayout)?;
         if at < source_end {
             continue;

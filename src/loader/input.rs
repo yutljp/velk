@@ -107,14 +107,10 @@ fn deserialize_entries<'de, D: serde::Deserializer<'de>>(
         Ok(words) => words,
         Err(error) => return Err(error),
     };
-    let mut entries = Vec::new();
-    for word in words {
-        match word.value() {
-            Ok(value) => entries.push(value),
-            Err(error) => return Err(serde::de::Error::custom(error)),
-        }
-    }
-    Ok(entries)
+    words
+        .into_iter()
+        .map(|word| word.value().map_err(serde::de::Error::custom))
+        .collect()
 }
 
 pub(super) fn load_raw(

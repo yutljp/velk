@@ -18,17 +18,17 @@ use crate::sigs::{self, Certainty, Database, MatchScope};
 use crate::{disasm, render};
 
 fn function_signature(ir: &crate::ir::FunctionIr) -> serde_json::Value {
-    let mut params: Vec<_> = ir
-        .params
-        .iter()
-        .map(|param| serde_json::json!({"name": param.name, "type": param.ty.to_string()}))
-        .collect();
-    if let Ok(scalar) = crate::project::scalar_parameters(ir) {
-        params = scalar
+    let params: Vec<_> = if let Ok(scalar) = crate::project::scalar_parameters(ir) {
+        scalar
             .iter()
             .map(|(name, ty)| serde_json::json!({"name": name, "type": ty.to_string()}))
-            .collect();
+            .collect()
     } else {
+        let mut params: Vec<_> = ir
+            .params
+            .iter()
+            .map(|param| serde_json::json!({"name": param.name, "type": param.ty.to_string()}))
+            .collect();
         let mut stack: Vec<_> = ir.stack_params.iter().collect();
         stack.sort_by_key(|param| param.position);
         for param in stack {
@@ -39,7 +39,8 @@ fn function_signature(ir: &crate::ir::FunctionIr) -> serde_json::Value {
                 }),
             );
         }
-    }
+        params
+    };
     serde_json::json!({
         "return": ir.ret_type.to_string(),
         "parameterCount": params.len(),
@@ -636,8 +637,10 @@ impl Binary {
             .filter(|(_, name)| name.as_str() == target)
             .map(|(addr, _)| *addr)
             .collect();
-        if let [addr] = matches.iter().copied().collect::<Vec<_>>().as_slice() {
-            return Ok(*addr);
+        if matches.len() == 1
+            && let Some(&addr) = matches.first()
+        {
+            return Ok(addr);
         }
         if matches.len() > 1 {
             return Err(Error::AmbiguousName {

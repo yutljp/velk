@@ -43,13 +43,7 @@ fn call_entry<'a>(
     let explicit =
         attribute(entry, gimli::DW_AT_entry_pc).or_else(|| attribute(entry, gimli::DW_AT_low_pc));
     let address = match explicit {
-        Some(value) => Some(
-            match value {
-                AttributeValue::DebugAddrIndex(index) => dwarf.address(unit, index).ok(),
-                value => attribute_offset(dwarf, unit, value),
-            }
-            .ok_or(AbiIssue::UnknownLayout)?,
-        ),
+        Some(value) => Some(attribute_offset(dwarf, unit, value).ok_or(AbiIssue::UnknownLayout)?),
         None => None,
     };
     let mut ranges = Vec::new();

@@ -98,10 +98,8 @@ pub fn run(binary: &mut Binary, query: Query, deadline: Option<Instant>) -> Resu
             let Some(value) = crate::addr::parse(&value) else {
                 return Err(Error::BadAddress(value));
             };
-            match super::constants::search(binary.image(), value, deadline) {
-                Ok(matches) => Ok(json!({ "matches": matches })),
-                Err(error) => Err(error),
-            }
+            super::constants::search(binary.image(), value, deadline)
+                .map(|matches| json!({ "matches": matches }))
         }
         Query::Summary { target } => {
             let addr = match binary.find_address(&target) {

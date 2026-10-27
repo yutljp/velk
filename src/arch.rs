@@ -48,17 +48,13 @@ pub fn machine_registers() -> std::ops::Range<u16> {
 /// half, Some(false) for a low one, which also holds a scalar float.
 #[must_use]
 pub fn vector_half(isa: Isa, index: u16) -> Option<bool> {
-    let base = match isa {
-        Isa::I386 | Isa::X86_64 => x86::XMM0,
-        Isa::AArch64 => aarch64::V0,
-        Isa::Arm32 => {
-            return (arm32::D0..arm32::D0 + 32)
-                .contains(&index)
-                .then(|| (index - arm32::D0) % 2 == 1);
-        }
+    let (base, length) = match isa {
+        Isa::I386 | Isa::X86_64 => (x86::XMM0, 64),
+        Isa::AArch64 => (aarch64::V0, 64),
+        Isa::Arm32 => (arm32::D0, 32),
         Isa::Unsupported => return None,
     };
-    (base..base + 64)
+    (base..base + length)
         .contains(&index)
         .then(|| (index - base) % 2 == 1)
 }

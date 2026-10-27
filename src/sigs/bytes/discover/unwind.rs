@@ -17,7 +17,6 @@ pub(super) fn arm_starts(image: &Image, deadline: Option<Instant>) -> Result<Vec
             continue;
         }
         let mut previous = None;
-        let mut entries = Vec::new();
         for (index, entry) in bytes.as_chunks::<8>().0.iter().enumerate() {
             if let Err(error) = crate::deadline::passed(deadline) {
                 return Err(error);
@@ -56,10 +55,9 @@ pub(super) fn arm_starts(image: &Image, deadline: Option<Instant>) -> Result<Vec
                     && physical >= code.vaddr
                     && physical < code.vaddr.saturating_add(code.size)
             }) {
-                entries.push(physical);
+                starts.push(physical);
             }
         }
-        starts.extend(entries);
     }
     Ok(starts)
 }

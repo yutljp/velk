@@ -104,20 +104,20 @@ pub(in crate::loader) fn apply(
             Ok(fixups) => fixups,
             Err(error) => return Err(format!("header: {error}")),
         };
-        let mut imports = match fixups.imports(endian) {
+        let mut import_iter = match fixups.imports(endian) {
             Ok(imports) => imports,
             Err(error) => return Err(format!("imports: {error}")),
         };
-        let mut names = Vec::new();
+        let mut imports = Vec::new();
         loop {
-            match imports.next() {
-                Ok(Some(import)) => names.push(import),
+            match import_iter.next() {
+                Ok(Some(import)) => imports.push(import),
                 Ok(None) => break,
-                Err(error) => return Err(format!("import {}: {error}", names.len())),
+                Err(error) => return Err(format!("import {}: {error}", imports.len())),
             }
         }
         let mut definitions = BTreeMap::new();
-        if names
+        if imports
             .iter()
             .any(|import| import.dylib == object::macho::BIND_SPECIAL_DYLIB_SELF)
         {
@@ -229,7 +229,7 @@ pub(in crate::loader) fn apply(
                         target
                     }
                     Fixup::Bind(bind) => {
-                        match bind_value(address, bind, &names, &definitions, &mut bindings) {
+                        match bind_value(address, bind, &imports, &definitions, &mut bindings) {
                             Ok(value) => value,
                             Err(error) => return Err(error),
                         }
@@ -271,11 +271,11 @@ fn valid_segment_geometry(
 fn bind_value(
     address: u64,
     bind: object::read::macho::FixupBind,
-    names: &[object::read::macho::DyldChainedImport<'_>],
+    imports: &[object::read::macho::DyldChainedImport<'_>],
     definitions: &BTreeMap<Vec<u8>, u64>,
     bindings: &mut BTreeMap<u64, Binding>,
 ) -> Result<u64, String> {
-    let Some(import) = names.get(bind.ordinal as usize) else {
+    let Some(import) = imports.get(bind.ordinal as usize) else {
         return Err(format!(
             "pointer at {address:#x}: invalid import ordinal {}",
             bind.ordinal

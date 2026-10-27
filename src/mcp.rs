@@ -35,7 +35,7 @@ First navigation queries build a whole-binary index and may need a larger timeou
 
 const READ_DESCRIPTION: &str = "Read this first: omit topic for API overview and worked examples. \
 Use binary for opening, listing, navigation and annotations; func for per-function \
-decompilation and inspection; types for returned object fields.";
+decompilation and inspection; types for returned object fields; emulation for execution.";
 
 /// API topic names and their embedded documentation.
 pub const TOPICS: [(&str, &str); 4] = [

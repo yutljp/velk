@@ -1,17 +1,22 @@
 use super::{Format, Image, NameSource, upsert};
 
 fn word(image: &Image, address: u64, offset: u64, width: u64) -> Option<u64> {
-    let address = address.checked_add(offset)?;
-    let section = image.section_at(address)?;
-    if address.checked_add(width)? > section.vaddr.checked_add(section.size)? {
+    let Some(address) = address.checked_add(offset) else {
+        return None;
+    };
+    let Some(section) = image.section_at(address) else {
+        return None;
+    };
+    let (Some(end), Some(section_end)) = (
+        address.checked_add(width),
+        section.vaddr.checked_add(section.size),
+    ) else {
+        return None;
+    };
+    if !matches!(width, 4 | 8) || end > section_end {
         return None;
     }
-    let bytes = image.read_vaddr(address, width)?;
-    Some(match width {
-        4 => u32::from_le_bytes(bytes.try_into().ok()?) as u64,
-        8 => u64::from_le_bytes(bytes.try_into().ok()?),
-        _ => return None,
-    })
+    super::image_reads::word(image, address, width)
 }
 
 fn string(image: &Image, address: u64, selector: bool) -> Option<String> {
