@@ -158,7 +158,7 @@ pub(super) struct Cli {
     /// Search loaded sections for bytes, text or an integer, as JSON.
     #[arg(long, help_heading = "Operations (choose one)")]
     search: bool,
-    /// Read typed values from a file-backed address, as JSON.
+    /// Read typed values from a loaded address, as JSON.
     #[arg(long, help_heading = "Operations (choose one)")]
     read_memory: bool,
     /// Detect exact standard constant tables and immediate groups, as JSON.
@@ -167,7 +167,7 @@ pub(super) struct Cli {
     /// Search encoding (default: hex).
     #[arg(long, requires = "search", value_parser = ["hex", "ascii", "utf16", "integer"])]
     encoding: Option<String>,
-    /// Integer search width in bytes.
+    /// Integer search width in bytes; required for integer searches.
     #[arg(long, requires = "search", value_parser = ["1", "2", "4", "8"])]
     width: Option<String>,
     /// Search byte order (default: native).
@@ -204,14 +204,14 @@ pub(super) struct Cli {
     /// Case-sensitive substring; only with --strings.
     #[arg(long, requires = "strings", conflicts_with_all = ["emulate", "classes", "search", "read_memory", "detect_constants", "functions", "sections", "card", "decompile", "disasm", "ir", "build_signatures", "identify", "run", "mcp", "serve", "xrefs", "callers", "callees", "path", "constants", "summary"])]
     contains: Option<String>,
-    /// Binary file, or JavaScript file with --run; required except with --mcp or --api-docs.
+    /// Binary file, or JavaScript file with --run; omitted with --mcp, --serve or --api-docs.
     #[arg(
         value_name = "INPUT",
         required_unless_present_any = ["mcp", "serve", "api_docs"],
         conflicts_with_all = ["mcp", "serve", "api_docs"]
     )]
     pub(super) input: Option<PathBuf>,
-    /// Function, address, constant, annotation/target JSON, or project import file.
+    /// Function, address, constant, second binary, annotation/target JSON, or project import file.
     #[arg(
         value_name = "FUNCTION",
         required_if_eq_any([
