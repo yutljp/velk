@@ -29,3 +29,15 @@ pub fn compile_file(command: &mut Command, path: &Path, source: &str) {
     let compiled = run(command, None);
     assert!(compiled.status.success(), "{compiled:?}");
 }
+
+pub fn compile_x86_64_assembly(compiler: &Path, assembly: &Path, object: &Path, source: &str) {
+    compile_file(
+        Command::new(compiler)
+            .args(["--target=x86_64-unknown-linux-gnu", "-c"])
+            .arg(assembly)
+            .arg("-o")
+            .arg(object),
+        assembly,
+        source,
+    );
+}

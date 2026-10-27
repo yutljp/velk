@@ -25,15 +25,7 @@ fn printed_atomic_layouts_preserve_adjacent_and_overlapping_fields() {
         .unwrap();
     }
     source.push_str(".globl atomic_callee\n.type atomic_callee,@function\natomic_callee:\npushq %rbp\nmovq %rsp, %rbp\nlock incq (%rdi)\npopq %rbp\nret\n.size atomic_callee, .-atomic_callee\n.globl atomic_caller\n.type atomic_caller,@function\natomic_caller:\npushq %rbp\nmovq %rsp, %rbp\nsubq $16, %rsp\nmovq %rsi, -8(%rbp)\ncall atomic_callee\nmovq -8(%rbp), %rax\naddq $16, %rsp\npopq %rbp\nret\n.size atomic_caller, .-atomic_caller\n");
-    common::compiler::compile_file(
-        Command::new(compiler())
-            .args(["--target=x86_64-unknown-linux-gnu", "-c"])
-            .arg(&assembly)
-            .arg("-o")
-            .arg(&object),
-        &assembly,
-        &source,
-    );
+    common::compiler::compile_x86_64_assembly(&compiler(), &assembly, &object, &source);
     let mut binary = Binary::open(&object).unwrap();
     let mut text = String::from(HEADER);
     for name in [
