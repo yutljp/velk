@@ -596,3 +596,21 @@ fn library_names_do_not_introduce_recursive_calls() {
         }
     }
 }
+
+#[test]
+fn memory_comparison_accepts_object_pointers_without_casts() {
+    for architecture in ["x86_64", "aarch64"] {
+        let label = format!("{architecture}.clang.O2.debug");
+        let path = common::root().join(format!("tests/data/string_functions/{label}.elf"));
+        let mut binary = fixture_binary(&path, &label);
+        let address = binary.find_address("memory_compare").unwrap();
+        let rendered = binary
+            .decompile_with_dependencies(address, None, None)
+            .unwrap();
+        assert!(
+            rendered.code.contains("__builtin_memcmp(a, b, n)"),
+            "{}",
+            rendered.code
+        );
+    }
+}

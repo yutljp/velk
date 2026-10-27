@@ -61,6 +61,20 @@ fn constant(value: &Expr, predicate: &impl Fn(Cond, &Expr, &Expr) -> Option<bool
     }
 }
 
+fn argument(value: &Expr, function: &str, ctx: &Ctx<'_>) -> String {
+    let printed = crate::render::expr::print(value, ctx, 64);
+    if let Expr::Reg { index, width: 64 } = value
+        && let Some(ty) = ctx.pointer_types.get(index)
+        && ((function == "memcmp" && !ty.contains("volatile") && !ty.contains('('))
+            || ty == "char *"
+            || ty == "const char *")
+        && printed.is_pointer()
+    {
+        return printed.text;
+    }
+    format!("(const char *)(uint64_t)({})", render_expr(value, ctx))
+}
+
 fn comparison(call: &str, function: &str, bytes: Option<u64>, ctx: &Ctx<'_>) -> String {
     let mut reserved: std::collections::HashSet<String> =
         ctx.names.values().map(|name| (*name).to_owned()).collect();
@@ -617,7 +631,7 @@ pub(super) fn render(nodes: &[Node], ctx: &Ctx<'_>) -> Option<String> {
         bytes: None,
     });
     Some(format!(
-        "    return __builtin_strlen((const char *)(uint64_t)({}));\n",
-        render_expr(&source, ctx)
+        "    return __builtin_strlen({});\n",
+        argument(&source, "strlen", ctx)
     ))
 }

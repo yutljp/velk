@@ -131,11 +131,11 @@ b3c7a9e8c5bb8282352b8e49439760d9d45326154bfbdea59a45c31b471d364d  src/render/str
 0d7abab2093fb1d2bfef99342ba34a4223b5528fd3f2e5fbf17a99452faf90ab  src/render/string_functions.rs	fn length(
 590b28fa9e9a6bae913931cabeda1c9b197a2dc37d0218f47e32ff19c960c14b  src/render/string_functions.rs	fn sum(
 0352a8e16a2750215cad722222476154d39bf4b8f9564182407ee4b6fef30949  src/render/string_functions.rs	pub(super) fn is_current_function(
-87b5468a9fb39faa800cfc4a84815e27baf0352339a05e589f6e3c990be0e98f  src/render/string_functions.rs	pub(super) fn render(nodes:
+adbcfc36790472c2163069271fc4c8e26583634d05e9d095c1d9926ab55d4e09  src/render/string_functions.rs	pub(super) fn render(nodes:
 2acba4699826e8b294fb6cd9aaed0b7ef3d2718337d8512cf8c7626152e82e90  src/render/string_functions/bounded.rs	fn equivalent(
 ab8b1e138b056bf4cfdd2960342015ced772750e01c0342576432723a8cdb451  src/render/string_functions/loops.rs	fn equivalent(
 a58e17fe151c2c24805ff39201100f72575cb73b566c1631a46ae812f2dd078c  src/render/string_functions/loops.rs	fn induction(
-c4626afa6094b67d20d06e556582f21c84236df5165959a0b469254dbcf9fcf1  src/render/string_functions/loops.rs	pub(super) fn render(
+8b01b88099a3e2aa7bd17e668ac048feed04327d26b4a1478dfff6a023dd5196  src/render/string_functions/loops.rs	pub(super) fn render(
 77e3da73f79cb91b44f56539e6cbe46b7c6d4ec891e097fa57e3dc9e5f59c862  src/render/transfers.rs	fn fill(nodes:
 d6ed2930da3050a1e796935096262bd31b5c04a40d9547f751d04af0fe1c2c7f  src/render/transfers.rs	fn filled_range<'a>(
 c6a2555762303231a86118191e713279616e150d252086d24de10427275987aa  src/render/transfers.rs	fn string_copy(

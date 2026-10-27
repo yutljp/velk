@@ -727,8 +727,8 @@ pub(super) fn render(
         }
         let cast = ctx.ret_pointer.as_deref().unwrap_or("uint64_t");
         let call = format!(
-            "({cast})__builtin_strchr((const char *)(uint64_t)({}), (int)({}))",
-            render_expr(&bases[0], ctx),
+            "({cast})__builtin_strchr({}, (int)({}))",
+            super::argument(&bases[0], "strchr", ctx),
             render_expr(&target, ctx)
         );
         ctx.inline_functions.borrow_mut().push(InlineFunction {
@@ -792,9 +792,9 @@ pub(super) fn render(
         })
         .unwrap_or_default();
     let call = format!(
-        "__builtin_{function}((const char *)(uint64_t)({}), (const char *)(uint64_t)({}){count})",
-        render_expr(&bases[0], ctx),
-        render_expr(&bases[1], ctx)
+        "__builtin_{function}({}, {}{count})",
+        super::argument(&bases[0], function, ctx),
+        super::argument(&bases[1], function, ctx)
     );
     body.push_str(&super::comparison(&call, function, None, ctx));
     Some(body)

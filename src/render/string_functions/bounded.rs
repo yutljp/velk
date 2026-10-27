@@ -2,7 +2,7 @@
 
 use super::{Values, assignments, evaluate, subtract};
 use crate::ir::{Cond, Expr, Stmt};
-use crate::render::{Ctx, Node, render_expr};
+use crate::render::{Ctx, Node};
 
 const MAX_BYTES: usize = 32;
 
@@ -249,9 +249,9 @@ pub(super) fn render(nodes: &[Node], values: &Values, ctx: &Ctx<'_>) -> Option<S
     }
     // The standard specifies the sign, not the magnitude, of comparison results.
     let call = format!(
-        "__builtin_{function}((const char *)(uint64_t)({}), (const char *)(uint64_t)({}), {bytes})",
-        render_expr(&sources[0], ctx),
-        render_expr(&sources[1], ctx)
+        "__builtin_{function}({}, {}, {bytes})",
+        super::argument(&sources[0], function, ctx),
+        super::argument(&sources[1], function, ctx)
     );
     Some(super::comparison(&call, function, Some(bytes as u64), ctx))
 }
