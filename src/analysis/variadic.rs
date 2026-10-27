@@ -60,7 +60,7 @@ pub(crate) fn register_saves(ir: &FunctionIr) -> Option<RegisterSaves> {
     // The blocks the saves are in, entered one after another: the entry
     // block, then SysV's floating-point saves and the block both ways
     // through them reach.
-    let floats_block = if guard.is_some() { 1 } else { 0 };
+    let float_saves_block = if guard.is_some() { 1 } else { 0 };
     let blocks: Vec<usize> = match guard {
         Some(2) => vec![0, 1, 2],
         Some(_) => return None,
@@ -142,9 +142,9 @@ pub(crate) fn register_saves(ir: &FunctionIr) -> Option<RegisterSaves> {
     if guard.is_some()
         && stores
             .iter()
-            .filter(|(block, _)| *block == floats_block)
+            .filter(|(block, _)| *block == float_saves_block)
             .count()
-            != ir.blocks[floats_block].stmts.len()
+            != ir.blocks[float_saves_block].stmts.len()
     {
         return None;
     }
@@ -226,7 +226,7 @@ mod tests {
     use crate::loader::Isa;
 
     /// An `AArch64` entry saving x`from`..x7 and every vector argument register.
-    fn saving_from(from: u16) -> FunctionIr {
+    fn saves_from_register(from: u16) -> FunctionIr {
         let sp = crate::arch::stack_pointer(Isa::AArch64);
         let store = |register: u16, offset: i64| Stmt::Store {
             addr: Expr::bin(BinOp::Add, Expr::reg(sp, 64), Expr::Const(offset as u64)),
@@ -256,7 +256,7 @@ mod tests {
 
     #[test]
     fn the_saved_registers_past_the_named_ones_are_the_further_arguments() {
-        let mut ir = saving_from(1);
+        let mut ir = saves_from_register(1);
         super::mark_variadic(&mut ir);
         assert!(ir.variadic);
         assert_eq!(ir.params.len(), 1);
@@ -264,7 +264,7 @@ mod tests {
         assert_eq!(ir.blocks[0].stmts.len(), 1);
         // Saving every argument register is an unoptimized function's spill
         // of its parameters.
-        let mut ir = saving_from(0);
+        let mut ir = saves_from_register(0);
         super::mark_variadic(&mut ir);
         assert!(!ir.variadic);
         assert_eq!(ir.params.len(), 8);
@@ -273,7 +273,7 @@ mod tests {
     fn declared_input_reads_keep_saved_registers_as_parameters() {
         let image = crate::loader::Image::from_code(Isa::AArch64, 0, Vec::new());
         for attached in [false, true] {
-            let mut ir = saving_from(1);
+            let mut ir = saves_from_register(1);
             let mut call = crate::lift::call(
                 crate::ir::CallKind::Invoke,
                 &image,

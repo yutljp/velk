@@ -233,7 +233,7 @@ fn vector_values(ssa: &Ssa) -> HashSet<u16> {
                             }) if half(other.index)
                                 && ssa.register_of(other.index) ^ 1
                                     == ssa.register_of(dest.index)
-                                && apart(addr, other_addr) == Some(expected) =>
+                                && address_difference(addr, other_addr) == Some(expected) =>
                             {
                                 Some(other.index)
                             }
@@ -325,7 +325,7 @@ fn lane_operands(
 
 /// How many bytes `high` lies past `low`, when both are the same base plus
 /// constants.
-fn apart(low: &Expr, high: &Expr) -> Option<i64> {
+fn address_difference(low: &Expr, high: &Expr) -> Option<i64> {
     fn split(addr: &Expr) -> (Option<&Expr>, i64) {
         match addr {
             Expr::Const(offset) => (None, *offset as i64),

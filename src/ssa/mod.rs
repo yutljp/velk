@@ -395,7 +395,7 @@ pub fn undefine_clobbered_reads(ir: &mut FunctionIr) {
 /// string's conversions take, where a constant format reaches the call.
 pub fn count_variadic_arguments(ir: &mut FunctionIr, image: &crate::loader::Image) {
     if ir.isa == crate::loader::Isa::I386 {
-        variadic::count_i386(ir, image);
+        variadic::recover_i386_arguments(ir, image);
         return;
     }
     let variadic = |target: u64| {

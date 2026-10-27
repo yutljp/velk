@@ -184,7 +184,7 @@ impl Fact {
 
     /// The bounds as signed numbers of `bits`, of a fact already truncated
     /// to them.
-    fn signed(self, bits: u32) -> (i64, i64) {
+    fn signed_bounds(self, bits: u32) -> (i64, i64) {
         let sign = 1u64 << (bits - 1);
         if self.hi < sign {
             (self.lo as i64, self.hi as i64)
@@ -196,19 +196,19 @@ impl Fact {
     }
 
     /// How many of the low bits are known.
-    fn known_low(self) -> u32 {
+    fn known_low_bit_count(self) -> u32 {
         (self.zeros | self.ones).trailing_ones()
     }
 
     /// The low bits a sum, difference or product of two facts determines
     /// exactly: those below the lowest bit unknown in either.
-    fn low_bits(self, other: Fact, value: u64) -> (u64, u64) {
-        let low = mask(self.known_low().min(other.known_low()));
+    fn known_low_bits(self, other: Fact, value: u64) -> (u64, u64) {
+        let low = mask(self.known_low_bit_count().min(other.known_low_bit_count()));
         (!value & low, value & low)
     }
 
     fn plus(self, other: Fact) -> Fact {
-        let (zeros, ones) = self.low_bits(other, self.ones.wrapping_add(other.ones));
+        let (zeros, ones) = self.known_low_bits(other, self.ones.wrapping_add(other.ones));
         let (lo, hi) = match (self.hi.checked_add(other.hi), self.lo.checked_add(other.lo)) {
             (Some(hi), _) => (self.lo + other.lo, hi),
             // Every sum wraps exactly once.
@@ -222,7 +222,7 @@ impl Fact {
     }
 
     fn minus(self, other: Fact) -> Fact {
-        let (zeros, ones) = self.low_bits(other, self.ones.wrapping_sub(other.ones));
+        let (zeros, ones) = self.known_low_bits(other, self.ones.wrapping_sub(other.ones));
         let (lo, hi) = if self.lo >= other.hi {
             (self.lo - other.hi, self.hi - other.lo)
         } else if self.hi < other.lo {
@@ -238,7 +238,7 @@ impl Fact {
     }
 
     fn times(self, other: Fact) -> Fact {
-        let (mut zeros, ones) = self.low_bits(other, self.ones.wrapping_mul(other.ones));
+        let (mut zeros, ones) = self.known_low_bits(other, self.ones.wrapping_mul(other.ones));
         // A product has the trailing zeros of both factors.
         let trailing = (self.zeros.trailing_ones() + other.zeros.trailing_ones()).min(64);
         zeros |= mask(trailing);
@@ -465,7 +465,7 @@ pub fn of(expr: &Expr) -> Fact {
 #[must_use]
 pub fn decide(cond: Cond, lhs: Fact, rhs: Fact, bits: u32) -> Option<bool> {
     let (a, b) = (lhs.truncate(bits), rhs.truncate(bits));
-    let (sa, sb) = (a.signed(bits), b.signed(bits));
+    let (sa, sb) = (a.signed_bounds(bits), b.signed_bounds(bits));
     let either = |yes: bool, no: bool| {
         if yes {
             Some(true)
@@ -512,7 +512,7 @@ pub fn refine(cond: Cond, lhs: Fact, rhs: Fact, bits: u32) -> Option<Fact> {
         Cond::Hi => a.meet(Fact::range(b.lo.checked_add(1)?, top)?),
         Cond::Cs => a.meet(Fact::range(b.lo, top)?),
         Cond::Lt | Cond::Le | Cond::Gt | Cond::Ge => {
-            let ((mut lo, mut hi), (blo, bhi)) = (a.signed(bits), b.signed(bits));
+            let ((mut lo, mut hi), (blo, bhi)) = (a.signed_bounds(bits), b.signed_bounds(bits));
             match cond {
                 Cond::Lt => hi = hi.min(bhi.checked_sub(1)?),
                 Cond::Le => hi = hi.min(bhi),
@@ -564,14 +564,14 @@ fn constrained(fact: Fact, bits: u32, low: u32, constraint: Fact) -> Option<Fact
 }
 
 /// How many definitions a constraint is followed back through.
-const DEFINITIONS: usize = 4;
+const MAX_DEFINITION_DEPTH: usize = 4;
 /// How many branches a read's narrowing looks back through.
-const DEPTH: usize = 2;
+const MAX_GUARD_DEPTH: usize = 2;
 /// Sweeps after which the solver gives up rather than settle.
-const SWEEPS: usize = 64;
+const MAX_SWEEPS: usize = 64;
 /// Changes to a φ before its moving bounds jump to their ends; twice as
 /// many, and it may hold anything.
-const PATIENCE: u8 = 3;
+const WIDEN_AFTER_CHANGES: u8 = 3;
 
 /// The facts of a function in SSA form, and how branches narrow them.
 pub struct Ranges<'a> {
@@ -592,13 +592,13 @@ pub struct Ranges<'a> {
     /// when first asked in this sweep. The last sweep changes nothing, so
     /// what it was told agrees with the settled facts; a narrowing sweep
     /// only lowers facts, so what it was told earlier is looser, not wrong.
-    told: std::cell::RefCell<HashMap<Edge, Option<Told>>>,
+    told: std::cell::RefCell<HashMap<EdgeConstraintKey, Option<Constraints>>>,
 }
 
 /// An edge between two blocks, a value and how far back reads look.
-type Edge = (usize, usize, u16, usize);
+type EdgeConstraintKey = (usize, usize, u16, usize);
 /// Constraints on the low bits of a value.
-type Told = Vec<(u32, Fact)>;
+type Constraints = Vec<(u32, Fact)>;
 
 impl<'a> Ranges<'a> {
     fn index(value: u16) -> Option<usize> {
@@ -656,7 +656,7 @@ impl<'a> Ranges<'a> {
 
     /// What the edge from `from` to `to` tells of `value`: constraints, each
     /// on its low bits; None when the edge cannot be taken.
-    fn edge(&self, from: usize, to: usize, value: u16, depth: usize) -> Option<Told> {
+    fn edge(&self, from: usize, to: usize, value: u16, depth: usize) -> Option<Constraints> {
         let key = (from, to, value, depth);
         if let Some(told) = self.told.borrow().get(&key) {
             return told.clone();
@@ -666,7 +666,7 @@ impl<'a> Ranges<'a> {
         told
     }
 
-    fn tell(&self, from: usize, to: usize, value: u16, depth: usize) -> Option<Told> {
+    fn tell(&self, from: usize, to: usize, value: u16, depth: usize) -> Option<Constraints> {
         let mut out = Vec::new();
         if self.pads.contains(&to) {
             return Some(out);
@@ -693,14 +693,17 @@ impl<'a> Ranges<'a> {
                 let Some(left) = refine(cond, a, b, bits) else {
                     return None;
                 };
-                let Some(()) = self.constrain(lhs, bits, left, value, DEFINITIONS, &mut out) else {
+                let Some(()) =
+                    self.constrain(lhs, bits, left, value, MAX_DEFINITION_DEPTH, &mut out)
+                else {
                     return None;
                 };
                 if let Some(cond) = swapped(cond) {
                     let Some(right) = refine(cond, b, a, bits) else {
                         return None;
                     };
-                    let Some(()) = self.constrain(rhs, bits, right, value, DEFINITIONS, &mut out)
+                    let Some(()) =
+                        self.constrain(rhs, bits, right, value, MAX_DEFINITION_DEPTH, &mut out)
                     else {
                         return None;
                     };
@@ -720,7 +723,8 @@ impl<'a> Ranges<'a> {
                     .map(|(case, _)| Fact::constant(*case as u64))
                     .reduce(Fact::join);
                 if let Some(fact) = fact {
-                    let Some(()) = self.constrain(index, 64, fact, value, DEFINITIONS, &mut out)
+                    let Some(()) =
+                        self.constrain(index, 64, fact, value, MAX_DEFINITION_DEPTH, &mut out)
                     else {
                         return None;
                     };
@@ -823,14 +827,14 @@ impl<'a> Ranges<'a> {
 
     /// The values a branch's operands are built from, as `constrain`
     /// follows them.
-    fn constrainable(&self, expr: &Expr, definitions: usize, out: &mut Vec<u16>) {
+    fn collect_constraint_values(&self, expr: &Expr, definitions: usize, out: &mut Vec<u16>) {
         match expr {
             Expr::Reg { index, .. } => {
                 out.push(*index);
                 if definitions > 0
                     && let Some((defined, _)) = self.definitions.get(index)
                 {
-                    self.constrainable(defined, definitions - 1, out);
+                    self.collect_constraint_values(defined, definitions - 1, out);
                 }
             }
             Expr::Bin {
@@ -838,7 +842,7 @@ impl<'a> Ranges<'a> {
                 lhs,
                 rhs,
             } if matches!(rhs.as_ref(), Expr::Const(_)) => {
-                self.constrainable(lhs, definitions, out);
+                self.collect_constraint_values(lhs, definitions, out);
             }
             _ => {}
         }
@@ -861,9 +865,9 @@ impl<'a> Ranges<'a> {
         {
             let count = self.changes.entry(value).or_insert(0);
             *count += 1;
-            if *count >= 2 * PATIENCE {
+            if *count >= 2 * WIDEN_AFTER_CHANGES {
                 new = Fact::TOP;
-            } else if *count >= PATIENCE {
+            } else if *count >= WIDEN_AFTER_CHANGES {
                 // Bounds still moving jump to the end they move towards;
                 // narrowing later brings back what the branches bound.
                 if new.hi > old.hi {
@@ -904,9 +908,10 @@ impl<'a> Ranges<'a> {
                 rhs,
                 target,
             }) => {
-                let (Some(a), Some(b)) =
-                    (self.eval(lhs, block, DEPTH), self.eval(rhs, block, DEPTH))
-                else {
+                let (Some(a), Some(b)) = (
+                    self.eval(lhs, block, MAX_GUARD_DEPTH),
+                    self.eval(rhs, block, MAX_GUARD_DEPTH),
+                ) else {
                     return Vec::new();
                 };
                 let target = self.starts.get(target).copied();
@@ -926,7 +931,7 @@ impl<'a> Ranges<'a> {
                 cases,
                 default,
             }) => {
-                let Some(fact) = self.eval(index, block, DEPTH) else {
+                let Some(fact) = self.eval(index, block, MAX_GUARD_DEPTH) else {
                     return Vec::new();
                 };
                 let mut live: Vec<usize> = cases
@@ -974,7 +979,7 @@ impl<'a> Ranges<'a> {
             }
             for stmt in &ssa.ir.blocks[block].stmts {
                 if let Stmt::Assign { dest, value } = stmt
-                    && let Some(fact) = self.eval(value, block, DEPTH)
+                    && let Some(fact) = self.eval(value, block, MAX_GUARD_DEPTH)
                 {
                     let fact = fact.truncate(u32::from(dest.width));
                     changed |= self.set(dest.index, fact, Widening::Disabled, narrowing);
@@ -989,10 +994,10 @@ impl<'a> Ranges<'a> {
 
     /// What `arg` holds as it reaches a φ along the edge from `from` to `to`.
     fn incoming(&self, from: usize, to: usize, arg: u16) -> Option<Fact> {
-        let Some(mut fact) = self.read(arg, 64, from, DEPTH) else {
+        let Some(mut fact) = self.read(arg, 64, from, MAX_GUARD_DEPTH) else {
             return None;
         };
-        let Some(constraints) = self.edge(from, to, arg, DEPTH - 1) else {
+        let Some(constraints) = self.edge(from, to, arg, MAX_GUARD_DEPTH - 1) else {
             return None;
         };
         for (low, constraint) in constraints {
@@ -1093,11 +1098,11 @@ impl<'a> Ranges<'a> {
             let mut values = Vec::new();
             match ssa.ir.blocks[from].stmts.last() {
                 Some(Stmt::Brif { lhs, rhs, .. }) => {
-                    ranges.constrainable(lhs, DEFINITIONS, &mut values);
-                    ranges.constrainable(rhs, DEFINITIONS, &mut values);
+                    ranges.collect_constraint_values(lhs, MAX_DEFINITION_DEPTH, &mut values);
+                    ranges.collect_constraint_values(rhs, MAX_DEFINITION_DEPTH, &mut values);
                 }
                 Some(Stmt::Switch { index, .. }) => {
-                    ranges.constrainable(index, DEFINITIONS, &mut values);
+                    ranges.collect_constraint_values(index, MAX_DEFINITION_DEPTH, &mut values);
                 }
                 _ => {}
             }
@@ -1112,7 +1117,7 @@ impl<'a> Ranges<'a> {
         let mut sweeps = 0;
         while ranges.sweep(false) {
             sweeps += 1;
-            if sweeps > SWEEPS {
+            if sweeps > MAX_SWEEPS {
                 return None;
             }
         }
@@ -1297,8 +1302,8 @@ fn terminate(
             target,
         }) => {
             let (Some(a), Some(b)) = (
-                ranges.eval(lhs, block, DEPTH),
-                ranges.eval(rhs, block, DEPTH),
+                ranges.eval(lhs, block, MAX_GUARD_DEPTH),
+                ranges.eval(rhs, block, MAX_GUARD_DEPTH),
             ) else {
                 return;
             };
@@ -1322,7 +1327,7 @@ fn terminate(
             cases,
             default,
         }) => {
-            let Some(fact) = ranges.eval(index, block, DEPTH) else {
+            let Some(fact) = ranges.eval(index, block, MAX_GUARD_DEPTH) else {
                 return;
             };
             let kept: Vec<(i64, u64)> = cases
@@ -1376,7 +1381,7 @@ fn rewrite(expr: &mut Expr, ranges: &Ranges, block: usize, sensitive: bool, chan
             if !sensitive
                 && super::Ssa::is_value(*index)
                 && let Some(value) = ranges
-                    .read(*index, u32::from(*width), block, DEPTH)
+                    .read(*index, u32::from(*width), block, MAX_GUARD_DEPTH)
                     .and_then(Fact::singleton)
             {
                 *expr = Expr::Const(value);
@@ -1391,7 +1396,7 @@ fn rewrite(expr: &mut Expr, ranges: &Ranges, block: usize, sensitive: bool, chan
             if bits < 64
                 && crate::ir::semantics::width(value) == 64
                 && ranges
-                    .eval(value, block, DEPTH)
+                    .eval(value, block, MAX_GUARD_DEPTH)
                     .is_some_and(|fact| fact.hi < 1 << (bits - 1))
             {
                 *expr = (**value).clone();
@@ -1412,7 +1417,7 @@ fn rewrite(expr: &mut Expr, ranges: &Ranges, block: usize, sensitive: bool, chan
             rewrite(rhs, ranges, block, signed || sensitive, changes);
             if *op == BinOp::And
                 && let Expr::Const(kept) = rhs.as_ref()
-                && let Some(fact) = ranges.eval(lhs, block, DEPTH)
+                && let Some(fact) = ranges.eval(lhs, block, MAX_GUARD_DEPTH)
             {
                 if fact.possible() & !kept == 0 && width(lhs) == outer {
                     *expr = (**lhs).clone();

@@ -21,18 +21,18 @@ enum Value {
 }
 
 /// How many machine registers there are.
-const MACHINE: usize = crate::arch::aarch64::V0 as usize + 64;
+const MACHINE_REGISTER_COUNT: usize = crate::arch::aarch64::V0 as usize + 64;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 struct State {
     sp: u16,
     narrow: bool,
     /// What each machine register holds.
-    machine: [Value; MACHINE],
+    machine: [Value; MACHINE_REGISTER_COUNT],
     /// What the lifter's other registers, as those it keeps flag operands
     /// in, hold where it is known; one not listed holds nothing known,
     /// which is never any machine register's entry value either.
-    others: BTreeMap<u16, Value>,
+    other_registers: BTreeMap<u16, Value>,
     /// What each saved frame slot holds, by its offset from the stack
     /// pointer on entry; a slot not listed holds nothing known.
     slots: BTreeMap<i64, (u8, Value)>,
@@ -63,7 +63,7 @@ impl State {
                     Value::Entry(index as u16)
                 }
             }),
-            others: BTreeMap::new(),
+            other_registers: BTreeMap::new(),
             slots: BTreeMap::new(),
             exposed: BTreeSet::new(),
             lost: false,
@@ -73,7 +73,11 @@ impl State {
     fn register(&self, index: u16) -> Value {
         match self.machine.get(usize::from(index)) {
             Some(value) => *value,
-            None => self.others.get(&index).copied().unwrap_or(Value::Other),
+            None => self
+                .other_registers
+                .get(&index)
+                .copied()
+                .unwrap_or(Value::Other),
         }
     }
 
@@ -81,10 +85,10 @@ impl State {
         match self.machine.get_mut(usize::from(index)) {
             Some(held) => *held = value,
             None if value == Value::Other => {
-                self.others.remove(&index);
+                self.other_registers.remove(&index);
             }
             None => {
-                self.others.insert(index, value);
+                self.other_registers.insert(index, value);
             }
         }
     }
@@ -232,29 +236,30 @@ impl State {
         let mut changed = false;
         // A frame address held on one way in only is no longer followed; a
         // register keeps one computed from it as such, other storage not.
-        for (held, came) in self.machine.iter_mut().zip(&other.machine) {
-            if held == came {
+        for (held, incoming) in self.machine.iter_mut().zip(&other.machine) {
+            if held == incoming {
                 continue;
             }
-            for value in [*held, *came] {
+            for value in [*held, *incoming] {
                 if let Value::Frame(at) = value {
                     changed |= self.exposed.insert(at);
                 }
             }
-            let joined = if matches!(held, Value::Derived(_)) || matches!(came, Value::Derived(_)) {
-                Value::Derived(u64::MAX)
-            } else {
-                Value::Other
-            };
+            let joined =
+                if matches!(held, Value::Derived(_)) || matches!(incoming, Value::Derived(_)) {
+                    Value::Derived(u64::MAX)
+                } else {
+                    Value::Other
+                };
             if *held != joined {
                 *held = joined;
                 changed = true;
             }
         }
-        let mut dropped: Vec<(Value, Value)> = self
-            .others
+        let mut incoming_value_pairs: Vec<(Value, Value)> = self
+            .other_registers
             .keys()
-            .chain(other.others.keys())
+            .chain(other.other_registers.keys())
             // Flag operands describe comparisons, never addresses used by memory operations.
             .filter(|index| {
                 !crate::ir::FLAG_OPERANDS.contains(index)
@@ -262,7 +267,7 @@ impl State {
             })
             .map(|index| (self.register(*index), other.register(*index)))
             .collect();
-        dropped.extend(self.slots.keys().chain(other.slots.keys()).map(|slot| {
+        incoming_value_pairs.extend(self.slots.keys().chain(other.slots.keys()).map(|slot| {
             (
                 self.slots
                     .get(slot)
@@ -274,7 +279,7 @@ impl State {
             )
         }));
         let mut lost = other.lost;
-        for (a, b) in dropped {
+        for (a, b) in incoming_value_pairs {
             if a == b {
                 continue;
             }
@@ -293,12 +298,12 @@ impl State {
             self.lost = true;
             changed = true;
         }
-        let before = (self.others.len(), self.slots.len());
-        self.others
-            .retain(|index, value| other.others.get(index) == Some(value));
+        let before = (self.other_registers.len(), self.slots.len());
+        self.other_registers
+            .retain(|index, value| other.other_registers.get(index) == Some(value));
         self.slots
             .retain(|at, value| other.slots.get(at) == Some(value));
-        changed || before != (self.others.len(), self.slots.len())
+        changed || before != (self.other_registers.len(), self.slots.len())
     }
 
     /// The frame slots a store of `width` bytes at `at` overlaps.
@@ -409,8 +414,8 @@ pub(crate) fn clobbers_knowing(
         .enumerate()
         .map(|(index, block)| (block.start, index))
         .collect();
-    let mut entering: Vec<Option<State>> = vec![None; blocks.len()];
-    entering[0] = Some(State::entry(sp, narrow));
+    let mut entry_states: Vec<Option<State>> = vec![None; blocks.len()];
+    entry_states[0] = Some(State::entry(sp, narrow));
     let mut pending = std::collections::BTreeSet::from([0]);
     let mut changed = Registers::default();
     let mut visits = 0;
@@ -419,11 +424,11 @@ pub(crate) fn clobbers_knowing(
         if visits > VISITS_PER_BLOCK * blocks.len() {
             return None;
         }
-        let mut state = entering[index]
+        let mut state = entry_states[index]
             .clone()
             .expect("a block is queued once entered");
-        let mut flows: Vec<(u64, State)> = Vec::new();
-        let mut ended = false;
+        let mut successors: Vec<(u64, State)> = Vec::new();
+        let mut block_terminated = false;
         for stmt in &blocks[index].stmts {
             match stmt {
                 Stmt::Machine {
@@ -558,24 +563,24 @@ pub(crate) fn clobbers_knowing(
                                 state.set(*register, Value::Other);
                             }
                         }
-                        None => state.machine = [Value::Other; MACHINE],
+                        None => state.machine = [Value::Other; MACHINE_REGISTER_COUNT],
                     }
                 }
                 Stmt::Brif { target, .. } | Stmt::BrifFlags { target, .. } => {
-                    flows.push((*target, state.clone()));
+                    successors.push((*target, state.clone()));
                 }
                 Stmt::Br {
                     target: Some(target),
                 } => {
-                    flows.push((*target, state.clone()));
-                    ended = true;
+                    successors.push((*target, state.clone()));
+                    block_terminated = true;
                     break;
                 }
                 Stmt::Switch { cases, default, .. } => {
                     for target in cases.iter().map(|(_, target)| target).chain(default) {
-                        flows.push((*target, state.clone()));
+                        successors.push((*target, state.clone()));
                     }
-                    ended = true;
+                    block_terminated = true;
                     break;
                 }
                 Stmt::Ret { .. } => {
@@ -589,28 +594,28 @@ pub(crate) fn clobbers_knowing(
                             changed.insert(index as u16);
                         }
                     }
-                    ended = true;
+                    block_terminated = true;
                     break;
                 }
                 Stmt::Trap => {
-                    ended = true;
+                    block_terminated = true;
                     break;
                 }
                 Stmt::Br { target: None } | Stmt::BrIndirect { .. } => return None,
             }
         }
-        if !ended {
+        if !block_terminated {
             // Code that runs off the end of what was lifted may go anywhere.
             let Some(next) = blocks.get(index + 1) else {
                 return None;
             };
-            flows.push((next.start, state));
+            successors.push((next.start, state));
         }
-        for (target, state) in flows {
+        for (target, state) in successors {
             let Some(&target) = starts.get(&target) else {
                 return None;
             };
-            let grew = match &mut entering[target] {
+            let grew = match &mut entry_states[target] {
                 Some(known) => known.join(&state),
                 none => {
                     *none = Some(state);

@@ -181,14 +181,15 @@ fn float_result(blocks: &[crate::ir::Block], image: &Image) -> Option<crate::ir:
         }
     }
     let floats = !returns.is_empty() && returns.iter().all(|state| state.float);
-    let int_first = returns.iter().all(|state| !state.int || state.float_last);
+    let integer_unwritten_or_float_last =
+        returns.iter().all(|state| !state.int || state.float_last);
     let single = returns
         .iter()
         .any(|state| state.precision == Some(Precision::Single))
         && returns
             .iter()
             .all(|state| state.precision != Some(Precision::Double));
-    (floats && int_first).then_some(if single {
+    (floats && integer_unwritten_or_float_last).then_some(if single {
         Precision::Single
     } else {
         Precision::Double
@@ -392,7 +393,7 @@ fn drop_folded_away(ir: &mut FunctionIr, reached: &HashSet<u64>) {
 /// Go code on x86-64 keeps xmm15 zero: it holds zero as a function starts
 /// and after every call. It keeps the goroutine in r14 too, and reloading it
 /// from thread-local storage after a call changes nothing.
-fn zero_fixed_register(blocks: &mut [crate::ir::Block], isa: crate::loader::Isa) {
+fn initialize_go_registers(blocks: &mut [crate::ir::Block], isa: crate::loader::Isa) {
     if isa != crate::loader::Isa::X86_64 {
         return;
     }
@@ -1104,7 +1105,7 @@ fn lift_function(image: &Image, function: &Function) -> Result<Lifted, LiftError
     }
     if image.go {
         drop_stack_growth_check(&mut blocks, image);
-        zero_fixed_register(&mut blocks, image.isa);
+        initialize_go_registers(&mut blocks, image.isa);
     }
     receive_exceptions(&mut blocks, &pads, image.isa);
     let switched: HashSet<u64> = tables.iter().map(|table| table.block_start).collect();

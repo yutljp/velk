@@ -6,7 +6,7 @@ mod pointers;
 
 /// A load or store: its address, its width, and for a load whether it
 /// sign-extends.
-pub(super) struct Touch {
+pub(super) struct MemoryAccess {
     addr: Expr,
     width: u8,
     signed: Option<bool>,
@@ -46,7 +46,7 @@ pub(crate) fn recover(ir: &mut FunctionIr) {
         let index = param.index;
         let direct = !assigned.contains(&index);
         let name = format!("{function}_{}", param.name);
-        let touches = touches_of(ir);
+        let touches = memory_accesses(ir);
         let mut found = array(ir, index, direct, &touches, 2);
         // An index the code scaled into a register of its own is put back
         // into the addresses, where it shows the size.
@@ -54,7 +54,7 @@ pub(crate) fn recover(ir: &mut FunctionIr) {
             && let Some(blocks) = inline_indexes(ir, index, direct)
         {
             let original = std::mem::replace(&mut ir.blocks, blocks);
-            found = array(ir, index, direct, &touches_of(ir), 2);
+            found = array(ir, index, direct, &memory_accesses(ir), 2);
             if found.is_none() {
                 ir.blocks = original;
             }
@@ -115,7 +115,7 @@ pub(crate) fn recover(ir: &mut FunctionIr) {
                 .then_some(dest.index)
         })
         .collect();
-    let mut touches = touches_of(ir);
+    let mut touches = memory_accesses(ir);
     let mut variables: Vec<u16> = touches
         .iter()
         .flat_map(|touch| {
@@ -165,7 +165,7 @@ pub(crate) fn recover(ir: &mut FunctionIr) {
             && let Some(blocks) = inline_indexes(ir, variable, true)
         {
             let original = std::mem::replace(&mut ir.blocks, blocks);
-            let inlined = touches_of(ir);
+            let inlined = memory_accesses(ir);
             found = array(ir, variable, true, &inlined, 2);
             if found.is_none() {
                 ir.blocks = original;
@@ -177,7 +177,7 @@ pub(crate) fn recover(ir: &mut FunctionIr) {
             Some(mut array) => {
                 let normalized = pointers::normalize(ir, &array.phases);
                 if !normalized.is_empty() {
-                    touches = touches_of(ir);
+                    touches = memory_accesses(ir);
                 }
                 array.elements.extend(normalized);
                 array.elements.sort_unstable();
@@ -286,11 +286,11 @@ fn only_offset(ir: &FunctionIr, register: u16) -> bool {
 }
 
 /// Every memory access of the function, including atomic fields.
-pub(super) fn touches_of(ir: &FunctionIr) -> Vec<Touch> {
+pub(super) fn memory_accesses(ir: &FunctionIr) -> Vec<MemoryAccess> {
     let mut touches = Vec::new();
     for stmt in ir.blocks.iter().flat_map(|block| &block.stmts) {
         if let Stmt::Store { addr, width, .. } = stmt {
-            touches.push(Touch {
+            touches.push(MemoryAccess {
                 addr: addr.clone(),
                 width: *width,
                 signed: None,
@@ -303,7 +303,7 @@ pub(super) fn touches_of(ir: &FunctionIr) -> Vec<Touch> {
         } = stmt
             && let Some(addr) = inputs.first()
         {
-            touches.push(Touch {
+            touches.push(MemoryAccess {
                 addr: addr.clone(),
                 width: *width,
                 signed: None,
@@ -317,13 +317,13 @@ pub(super) fn touches_of(ir: &FunctionIr) -> Vec<Touch> {
 }
 
 /// Fields accessed through whole-register copies with consistent widths.
-fn layout(aliases: &[u16], touches: &[Touch]) -> Option<Vec<(u64, CType)>> {
+fn layout(aliases: &[u16], touches: &[MemoryAccess]) -> Option<Vec<(u64, CType)>> {
     layout_aliases(aliases, touches, 2)
 }
 
 pub(super) fn layout_at_least(
     base: u16,
-    touches: &[Touch],
+    touches: &[MemoryAccess],
     minimum: usize,
 ) -> Option<Vec<(u64, CType)>> {
     layout_aliases(&[base], touches, minimum)
@@ -333,10 +333,10 @@ pub(super) fn layout_at_least(
 pub(super) fn layout_with_size(
     ir: &FunctionIr,
     base: u16,
-    touches: &[Touch],
+    touches: &[MemoryAccess],
     size: u64,
 ) -> Option<Vec<(u64, CType)>> {
-    if !(2..=LARGEST).contains(&size) {
+    if !(2..=MAX_STRUCTURE_SIZE).contains(&size) {
         return None;
     }
     let holders = holders(ir, base, true);
@@ -359,11 +359,15 @@ pub(super) fn layout_with_size(
 }
 
 /// A stride supported by indexed accesses, including a single observed field.
-pub(super) fn array_size(ir: &FunctionIr, base: u16, touches: &[Touch]) -> Option<u64> {
+pub(super) fn array_size(ir: &FunctionIr, base: u16, touches: &[MemoryAccess]) -> Option<u64> {
     array(ir, base, true, touches, 1).map(|array| array.size)
 }
 
-fn layout_aliases(aliases: &[u16], touches: &[Touch], minimum: usize) -> Option<Vec<(u64, CType)>> {
+fn layout_aliases(
+    aliases: &[u16],
+    touches: &[MemoryAccess],
+    minimum: usize,
+) -> Option<Vec<(u64, CType)>> {
     let mut fields: BTreeMap<(u64, u8), bool> = BTreeMap::new();
     for touch in touches {
         let mut read = HashSet::new();
@@ -457,7 +461,7 @@ fn field_type(width: u8, signed: bool) -> CType {
 }
 
 /// The largest structure an array is taken to be made of.
-const LARGEST: u64 = 1 << 16;
+const MAX_STRUCTURE_SIZE: u64 = 1 << 16;
 
 /// An array of structures a pointer parameter points into.
 struct Array {
@@ -468,7 +472,10 @@ struct Array {
     phases: Vec<(u16, u64)>,
 }
 
-fn split_touches<'a>(holders: &Holders, touches: &'a [Touch]) -> Option<Vec<(Split, &'a Touch)>> {
+fn split_touches<'a>(
+    holders: &PointerSources,
+    touches: &'a [MemoryAccess],
+) -> Option<Vec<(AddressParts, &'a MemoryAccess)>> {
     let mut touched = Vec::new();
     for touch in touches {
         match holders.split(&touch.addr) {
@@ -490,7 +497,7 @@ fn array(
     ir: &FunctionIr,
     param: u16,
     direct: bool,
-    touches: &[Touch],
+    touches: &[MemoryAccess],
     minimum: usize,
 ) -> Option<Array> {
     let holders = holders(ir, param, direct);
@@ -506,7 +513,7 @@ fn array(
     let scale = splits()
         .flat_map(|split| split.scales.iter().copied())
         .fold(0, gcd);
-    let sizes = 2..=LARGEST;
+    let sizes = 2..=MAX_STRUCTURE_SIZE;
     if scale != 0 {
         return sizes
             .contains(&scale)
@@ -555,8 +562,8 @@ fn arrange(
     size: u64,
     param: u16,
     direct: bool,
-    holders: &Holders,
-    touched: &[(Split, &Touch)],
+    holders: &PointerSources,
+    touched: &[(AddressParts, &MemoryAccess)],
     minimum: usize,
 ) -> Option<Array> {
     // Where in an element each pointer points; a register stepped by whole
@@ -683,7 +690,7 @@ enum Base {
 /// An address as the pointer it starts from, the scales of the indexes it
 /// adds, and its constant.
 #[derive(Debug)]
-struct Split {
+struct AddressParts {
     base: Base,
     scales: Vec<u64>,
     constant: i64,
@@ -692,14 +699,14 @@ struct Split {
 /// Where a parameter's value is kept: the parameter itself, unless the body
 /// assigns it, the stack slots only ever stored from it, and the registers
 /// every definition of which offsets one of those, itself included.
-struct Holders {
+struct PointerSources {
     direct: Option<u16>,
     slots: HashSet<String>,
     /// Each register set from the parameter, with its definitions.
-    definitions: BTreeMap<u16, Vec<Split>>,
+    definitions: BTreeMap<u16, Vec<AddressParts>>,
 }
 
-fn holders(ir: &FunctionIr, param: u16, direct: bool) -> Holders {
+fn holders(ir: &FunctionIr, param: u16, direct: bool) -> PointerSources {
     let stmts = || ir.blocks.iter().flat_map(|block| &block.stmts);
     let mut stored: HashMap<String, bool> = HashMap::new();
     let mut values: BTreeMap<u16, Vec<Option<&Expr>>> = BTreeMap::new();
@@ -721,7 +728,7 @@ fn holders(ir: &FunctionIr, param: u16, direct: bool) -> Holders {
             }
         }
     }
-    let mut holders = Holders {
+    let mut holders = PointerSources {
         direct: direct.then_some(param),
         slots: stored
             .into_iter()
@@ -779,7 +786,7 @@ fn holders(ir: &FunctionIr, param: u16, direct: bool) -> Holders {
         let registers: Vec<u16> = holders.definitions.keys().copied().collect();
         let mut shrank = false;
         for register in registers {
-            let splits: Option<Vec<Split>> = values[&register]
+            let splits: Option<Vec<AddressParts>> = values[&register]
                 .iter()
                 .map(|value| {
                     let Some(value) = value else {
@@ -805,7 +812,7 @@ fn holders(ir: &FunctionIr, param: u16, direct: bool) -> Holders {
     holders
 }
 
-impl Holders {
+impl PointerSources {
     fn base(&self, term: &Expr) -> Option<Base> {
         match term {
             Expr::Reg { index, width: 64 }
@@ -831,7 +838,7 @@ impl Holders {
 
     /// `addr` as one holder of the parameter plus scaled indexes and a
     /// constant, or `None` for any other address.
-    fn split(&self, addr: &Expr) -> Option<Split> {
+    fn split(&self, addr: &Expr) -> Option<AddressParts> {
         let mut terms = Vec::new();
         crate::ir::visit::sum_terms(addr, false, &mut terms);
         let mut base = None;
@@ -863,7 +870,7 @@ impl Holders {
         let Some(base) = base else {
             return None;
         };
-        Some(Split {
+        Some(AddressParts {
             base,
             scales,
             constant,
@@ -1015,7 +1022,7 @@ fn repeated(value: &Expr) -> Option<(&Expr, u64)> {
 /// that add or scale a register `lookup` gives an index for.
 fn rewrite(
     expr: &mut Expr,
-    holders: &Holders,
+    holders: &PointerSources,
     lookup: &mut dyn FnMut(u16) -> Option<(Expr, u64)>,
 ) -> bool {
     let sum = matches!(
@@ -1126,7 +1133,7 @@ fn scaled(term: &Expr) -> Option<(&Expr, u64)> {
     }
 }
 
-fn loads(expr: &Expr, out: &mut Vec<Touch>) {
+fn loads(expr: &Expr, out: &mut Vec<MemoryAccess>) {
     if let Expr::SignExtend { value, width } = expr
         && let Expr::Load {
             addr,
@@ -1135,7 +1142,7 @@ fn loads(expr: &Expr, out: &mut Vec<Touch>) {
         } = value.as_ref()
         && width == loaded
     {
-        out.push(Touch {
+        out.push(MemoryAccess {
             addr: addr.as_ref().clone(),
             width: *width,
             signed: Some(true),
@@ -1149,7 +1156,7 @@ fn loads(expr: &Expr, out: &mut Vec<Touch>) {
         signed,
     } = expr
     {
-        out.push(Touch {
+        out.push(MemoryAccess {
             addr: addr.as_ref().clone(),
             width: *width,
             signed: Some(*signed),

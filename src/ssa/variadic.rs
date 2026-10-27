@@ -3,7 +3,7 @@
 use crate::ir::{Expr, FunctionIr, Stmt};
 use crate::loader::Image;
 
-pub(super) fn count_i386(ir: &mut FunctionIr, image: &Image) {
+pub(super) fn recover_i386_arguments(ir: &mut FunctionIr, image: &Image) {
     let mut pending = Vec::new();
     for (block, contents) in ir.blocks.iter().enumerate() {
         let mut call_index = 0;

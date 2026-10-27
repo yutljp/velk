@@ -239,7 +239,7 @@ fn returns_wide(
         resolved = definition;
     }
     let mut wide: Vec<u16> = Vec::new();
-    collect_wide_regs(resolved, false, &mut wide);
+    collect_wide_registers(resolved, false, &mut wide);
     wide.iter()
         .any(|index| *index == WIDE_VALUE || !narrow_only(ir, *index, outputs, entry, demands))
 }
@@ -248,7 +248,7 @@ fn returns_wide(
 /// load, or a sign extension to 64 bits).
 const WIDE_VALUE: u16 = u16::MAX;
 
-fn collect_wide_regs(expr: &crate::ir::Expr, narrow: bool, wide: &mut Vec<u16>) {
+fn collect_wide_registers(expr: &crate::ir::Expr, narrow: bool, wide: &mut Vec<u16>) {
     use crate::ir::Expr;
     match expr {
         Expr::Reg { index, width } => {
@@ -261,7 +261,7 @@ fn collect_wide_regs(expr: &crate::ir::Expr, narrow: bool, wide: &mut Vec<u16>) 
             if matches!(op, crate::ir::BinOp::And)
                 && matches!(rhs.as_ref(), Expr::Const(mask) if *mask <= 0xffff_ffff)
             {
-                collect_wide_regs(lhs, true, wide);
+                collect_wide_registers(lhs, true, wide);
                 return;
             }
             // A division or remainder is as wide as its dividend.
@@ -280,11 +280,11 @@ fn collect_wide_regs(expr: &crate::ir::Expr, narrow: bool, wide: &mut Vec<u16>) 
                     Expr::Bin { op: crate::ir::BinOp::And, rhs, .. }
                         if matches!(rhs.as_ref(), Expr::Const(0xffff_ffff))
                 );
-                collect_wide_regs(lhs, narrow || dividend_narrow, wide);
+                collect_wide_registers(lhs, narrow || dividend_narrow, wide);
                 return;
             }
-            collect_wide_regs(lhs, narrow, wide);
-            collect_wide_regs(rhs, narrow, wide);
+            collect_wide_registers(lhs, narrow, wide);
+            collect_wide_registers(rhs, narrow, wide);
         }
         // The address width says nothing about the loaded value's width.
         Expr::Load { width, .. } => {
@@ -297,7 +297,7 @@ fn collect_wide_regs(expr: &crate::ir::Expr, narrow: bool, wide: &mut Vec<u16>) 
             if !narrow {
                 wide.push(WIDE_VALUE);
             }
-            collect_wide_regs(value, true, wide);
+            collect_wide_registers(value, true, wide);
         }
         Expr::Select {
             lhs,
@@ -306,10 +306,10 @@ fn collect_wide_regs(expr: &crate::ir::Expr, narrow: bool, wide: &mut Vec<u16>) 
             els,
             ..
         } => {
-            collect_wide_regs(lhs, narrow, wide);
-            collect_wide_regs(rhs, narrow, wide);
-            collect_wide_regs(then, narrow, wide);
-            collect_wide_regs(els, narrow, wide);
+            collect_wide_registers(lhs, narrow, wide);
+            collect_wide_registers(rhs, narrow, wide);
+            collect_wide_registers(then, narrow, wide);
+            collect_wide_registers(els, narrow, wide);
         }
         // An operation's result is as wide as it says, whatever it reads.
         Expr::Apply { .. } => {
@@ -640,10 +640,10 @@ fn masked_wide(value: &crate::ir::Expr) -> bool {
     ) {
         return true;
     }
-    fits32(value)
+    fits_32_bits(value)
 }
 
-fn fits32(value: &crate::ir::Expr) -> bool {
+fn fits_32_bits(value: &crate::ir::Expr) -> bool {
     use crate::ir::Expr;
     match value {
         Expr::Const(number) => (*number >> 32) == 0,
@@ -651,7 +651,7 @@ fn fits32(value: &crate::ir::Expr) -> bool {
         Expr::Load { width, .. } => u32::from(*width) * 8 <= 32,
         Expr::Bin { op, lhs, rhs } => match op {
             crate::ir::BinOp::And | crate::ir::BinOp::Or | crate::ir::BinOp::Xor => {
-                fits32(lhs) && fits32(rhs)
+                fits_32_bits(lhs) && fits_32_bits(rhs)
             }
             // A quotient and a remainder are bounded by their operands, and
             // a right shift only ever loses bits.
@@ -660,10 +660,10 @@ fn fits32(value: &crate::ir::Expr) -> bool {
             | crate::ir::BinOp::ModS
             | crate::ir::BinOp::ModU
             | crate::ir::BinOp::Shr
-            | crate::ir::BinOp::Sar => fits32(lhs) && fits32(rhs),
+            | crate::ir::BinOp::Sar => fits_32_bits(lhs) && fits_32_bits(rhs),
             _ => false,
         },
-        Expr::Select { then, els, .. } => fits32(then) && fits32(els),
+        Expr::Select { then, els, .. } => fits_32_bits(then) && fits_32_bits(els),
         Expr::SignExtend { .. } => false,
         Expr::Apply { .. } => crate::ir::semantics::width(value) <= 32,
     }
@@ -690,7 +690,7 @@ pub(crate) fn apply_pointer_return(ir: &mut FunctionIr) {
 
 pub(crate) fn apply_pointer_return_with(
     ir: &mut FunctionIr,
-    callees: super::signature::Callees<'_>,
+    callees: super::signature::CalleePrototypeLookup<'_>,
 ) {
     use crate::ir::{Expr, Stmt};
     use std::collections::{HashMap, HashSet};

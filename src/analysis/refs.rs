@@ -43,7 +43,7 @@ fn escape(text: &str) -> String {
     text.chars().flat_map(|c| c.escape_default()).collect()
 }
 
-fn strings_at(image: &Image, addr: u64) -> Option<String> {
+fn string_at(image: &Image, addr: u64) -> Option<String> {
     let Some(section) = image.section_at(addr) else {
         return None;
     };
@@ -128,7 +128,7 @@ pub fn collect(ir: &FunctionIr, image: &Image) -> Vec<Reference> {
         };
         let guid = super::prototypes::guid_at(image, addr);
         let mut text = if guid.is_none() {
-            strings_at(image, addr)
+            string_at(image, addr)
         } else {
             None
         };
@@ -143,7 +143,7 @@ pub fn collect(ir: &FunctionIr, image: &Image) -> Vec<Reference> {
             ]);
             if target != 0
                 && image.section_at(target).is_some()
-                && let Some(resolved) = strings_at(image, target)
+                && let Some(resolved) = string_at(image, target)
             {
                 text = Some(resolved);
                 pointer = Some(target);
@@ -221,7 +221,7 @@ pub fn collect(ir: &FunctionIr, image: &Image) -> Vec<Reference> {
             if super::prototypes::guid_at(image, *addr).is_some() {
                 continue;
             }
-            if let Some(text) = strings_at(image, *addr) {
+            if let Some(text) = string_at(image, *addr) {
                 references.retain(|known| known.addr != *addr);
                 references.push(Reference {
                     addr: *addr,

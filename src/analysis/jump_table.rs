@@ -48,7 +48,7 @@ fn recover_once(
     extent: &std::ops::Range<u64>,
     known: &[Recovered],
 ) -> Vec<Recovered> {
-    let starts = image.addressed.get_or_init(|| addressed(image));
+    let starts = image.addressed.get_or_init(|| referenced_addresses(image));
     let held = held_constants(blocks, known);
     let mut recovered = Vec::new();
     for (index, block) in blocks.iter().enumerate() {
@@ -133,7 +133,7 @@ pub fn apply(blocks: &mut [Block], recovered: &[Recovered]) {
         }
         block.stmts.pop();
         // A register the block leaves holding the index names it best.
-        if let Some(register) = holding(block, &entry.index) {
+        if let Some(register) = register_holding_index(block, &entry.index) {
             block.stmts.push(Stmt::Switch {
                 index: Expr::reg(register, 64),
                 cases: entry.cases.clone(),
@@ -210,7 +210,7 @@ pub(super) fn drop_data(
 }
 
 /// A 64-bit register the block's statements leave holding `index`.
-fn holding(block: &Block, index: &Expr) -> Option<u16> {
+fn register_holding_index(block: &Block, index: &Expr) -> Option<u16> {
     let mut environment = std::collections::HashMap::new();
     let mut found = None;
     for stmt in &block.stmts {
@@ -343,7 +343,7 @@ fn held_constants(
 
 /// The addresses `lea r, [rip + d]`, or `adrp` and the `add` right after it,
 /// compute anywhere in the code.
-pub(crate) fn addressed(image: &Image) -> std::collections::HashSet<u64> {
+pub(crate) fn referenced_addresses(image: &Image) -> std::collections::HashSet<u64> {
     let mut out = std::collections::HashSet::new();
     for section in image.sections.iter().filter(|section| section.executable) {
         let Some(bytes) = image.read_vaddr(section.vaddr, section.size) else {
@@ -601,13 +601,13 @@ pub(crate) fn resolve(expr: &Expr, environment: &std::collections::HashMap<u16, 
     }
 }
 
-fn peel(expr: &Expr) -> &Expr {
+fn strip_constant_masks(expr: &Expr) -> &Expr {
     match expr {
         Expr::Bin {
             op: BinOp::And,
             lhs,
             rhs,
-        } if matches!(rhs.as_ref(), Expr::Const(_)) => peel(lhs),
+        } if matches!(rhs.as_ref(), Expr::Const(_)) => strip_constant_masks(lhs),
         _ => expr,
     }
 }
@@ -666,7 +666,7 @@ fn table_pattern(expr: &Expr) -> Option<(u64, u64, Expr, i64, Entry)> {
         rhs,
     } = value
     {
-        let peeled = peel(lhs);
+        let peeled = strip_constant_masks(lhs);
         if let (
             Expr::Load {
                 addr,
@@ -685,12 +685,14 @@ fn table_pattern(expr: &Expr) -> Option<(u64, u64, Expr, i64, Entry)> {
 
     // Variant B: base + sext(load4(table + (index << 2))), the sign extension
     // either in the load or around it.
-    let entry = match peel(value) {
-        Expr::SignExtend { value, width: 4 } => peel(value),
+    let entry = match strip_constant_masks(value) {
+        Expr::SignExtend { value, width: 4 } => strip_constant_masks(value),
         other => other,
     };
-    let signed = matches!(peel(value), Expr::SignExtend { width: 4, .. })
-        || matches!(entry, Expr::Load { signed: true, .. });
+    let signed = matches!(
+        strip_constant_masks(value),
+        Expr::SignExtend { width: 4, .. }
+    ) || matches!(entry, Expr::Load { signed: true, .. });
     if let Expr::Load { addr, width: 4, .. } = entry
         && signed
         && let (Some(table), Some(index)) = (table_address(addr), index_expression(addr))

@@ -127,9 +127,9 @@ mod tests {
     fn a_diamond_joins_at_its_bottom() {
         // 0 -> 1, 2; 1 -> 3; 2 -> 3
         let successors = vec![vec![1, 2], vec![3], vec![3], vec![]];
-        let doms = dominators(&successors);
-        assert_eq!(doms.idom, vec![None, Some(0), Some(0), Some(0)]);
-        let frontier = frontiers(&successors, &doms);
+        let dominators = dominators(&successors);
+        assert_eq!(dominators.idom, vec![None, Some(0), Some(0), Some(0)]);
+        let frontier = frontiers(&successors, &dominators);
         assert_eq!(frontier[1], vec![3]);
         assert_eq!(frontier[2], vec![3]);
         assert!(frontier[0].is_empty());
@@ -139,9 +139,9 @@ mod tests {
     fn a_loop_body_has_its_header_in_its_frontier() {
         // 0 -> 1; 1 -> 2, 3; 2 -> 1
         let successors = vec![vec![1], vec![2, 3], vec![1], vec![]];
-        let doms = dominators(&successors);
-        assert_eq!(doms.idom, vec![None, Some(0), Some(1), Some(1)]);
-        let frontier = frontiers(&successors, &doms);
+        let dominators = dominators(&successors);
+        assert_eq!(dominators.idom, vec![None, Some(0), Some(1), Some(1)]);
+        let frontier = frontiers(&successors, &dominators);
         assert_eq!(frontier[2], vec![1]);
         assert!(frontier[1].contains(&1));
     }

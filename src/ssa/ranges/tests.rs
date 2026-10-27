@@ -42,7 +42,7 @@ impl Random {
     }
 }
 
-const OPS: [BinOp; 15] = [
+const OPERATIONS: [BinOp; 15] = [
     BinOp::Add,
     BinOp::Sub,
     BinOp::Mul,
@@ -68,8 +68,8 @@ fn every_operation_keeps_the_values_it_can_produce() {
     for round in 0..20_000 {
         let (left, left_fact) = random.sample();
         let (right, right_fact) = random.sample();
-        let op = OPS[round % OPS.len()];
-        let (a_width, b_width) = (
+        let op = OPERATIONS[round % OPERATIONS.len()];
+        let (left_width, right_width) = (
             WIDTHS[(random.next() % 4) as usize],
             WIDTHS[(random.next() % 4) as usize],
         );
@@ -79,11 +79,11 @@ fn every_operation_keeps_the_values_it_can_produce() {
         let rhs = if constant {
             Expr::Const(right[0])
         } else {
-            Expr::reg(2, b_width)
+            Expr::reg(2, right_width)
         };
         let expr = Expr::Bin {
             op,
-            lhs: Box::new(Expr::reg(1, a_width)),
+            lhs: Box::new(Expr::reg(1, left_width)),
             rhs: Box::new(rhs),
         };
         let facts = |index: u16| if index == 1 { left_fact } else { right_fact };
@@ -95,7 +95,7 @@ fn every_operation_keeps_the_values_it_can_produce() {
                 if let Some(value) = evaluate(&expr, &registers) {
                     assert!(
                         fact.contains(value),
-                        "{op:?} of {a:#x}/{a_width} and {b:#x}/{b_width} is {value:#x}, \
+                        "{op:?} of {a:#x}/{left_width} and {b:#x}/{right_width} is {value:#x}, \
                          outside {fact:x?} from {left_fact:x?} and {right_fact:x?}"
                     );
                 }
@@ -124,7 +124,7 @@ fn extensions_and_truncations_keep_their_values() {
     }
 }
 
-const CONDS: [Cond; 14] = [
+const CONDITIONS: [Cond; 14] = [
     Cond::Eq,
     Cond::Ne,
     Cond::Cs,
@@ -147,7 +147,7 @@ fn a_comparison_is_decided_and_narrowed_only_as_its_values_allow() {
     for round in 0..20_000 {
         let (left, left_fact) = random.sample();
         let (right, right_fact) = random.sample();
-        let cond = CONDS[round % CONDS.len()];
+        let cond = CONDITIONS[round % CONDITIONS.len()];
         let bits = u32::from(WIDTHS[(random.next() % 4) as usize]);
         let decided = decide(cond, left_fact, right_fact, bits);
         let narrowed = refine(cond, left_fact, right_fact, bits);

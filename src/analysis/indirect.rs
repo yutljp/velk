@@ -399,7 +399,7 @@ impl Tracker<'_> {
                 if self.constructors
                     && let (Some(target), Some(object)) = (target, first)
                     && object != Value::Unknown
-                    && let Some(table) = installed(self.image, *target)
+                    && let Some(table) = installed_table(self.image, *target)
                 {
                     state
                         .memory
@@ -522,7 +522,7 @@ fn vtables(image: &Image) -> &BTreeSet<u64> {
         if found.is_empty() && !image.go {
             let addressed = image
                 .addressed
-                .get_or_init(|| super::jump_table::addressed(image));
+                .get_or_init(|| super::jump_table::referenced_addresses(image));
             found.extend(addressed.iter().copied().filter(|point| {
                 let word = |offset: u64| read_only_word(image, point.wrapping_sub(offset));
                 is_code(image, read_only_word(image, *point))
@@ -596,11 +596,11 @@ fn via(image: &Image, from: Option<(u64, u64)>) -> Via {
 
 /// The table the function at `addr` leaves at offset 0 of the object its
 /// first argument points to, on every path that returns.
-fn installed(image: &Image, addr: u64) -> Option<u64> {
+fn installed_table(image: &Image, addr: u64) -> Option<u64> {
     if let Some(known) = image.installs.lock().expect("installs lock").get(&addr) {
         return *known;
     }
-    let found = installed_by(image, addr);
+    let found = find_installed_table(image, addr);
     image
         .installs
         .lock()
@@ -612,7 +612,7 @@ fn installed(image: &Image, addr: u64) -> Option<u64> {
 /// Constructors are short; longer functions are not looked into.
 const CONSTRUCTOR_SIZE: u64 = 512;
 
-fn installed_by(image: &Image, addr: u64) -> Option<u64> {
+fn find_installed_table(image: &Image, addr: u64) -> Option<u64> {
     let function = image.functions.get(&addr)?;
     let size = function.size.filter(|size| *size <= CONSTRUCTOR_SIZE)?;
     let blocks = crate::lift::lift(image, addr, size, &HashSet::new()).ok()?;
@@ -853,7 +853,7 @@ pub(crate) fn resolve(blocks: &mut [Block], pads: &[(u64, Vec<(u64, u64)>)], ima
                     let results = crate::lift::stack_results(image, &summaries, target);
                     stmts.splice(position + 1..position + 1, results);
                 }
-                drop_feeding(stmts, position, &through);
+                remove_call_target_assignments(stmts, position, &through);
             }
             Decision::Import(slot) => {
                 let imported = Expr::Load {
@@ -862,7 +862,7 @@ pub(crate) fn resolve(blocks: &mut [Block], pads: &[(u64, Vec<(u64, u64)>)], ima
                     signed: false,
                 };
                 stmts[position] = crate::lift::call_through(kind, image, imported);
-                drop_feeding(stmts, position, &through);
+                remove_call_target_assignments(stmts, position, &through);
             }
             Decision::Slot(found) => {
                 let arity = common_arity(image, &found.candidates);
@@ -905,7 +905,7 @@ fn common_arity(image: &Image, candidates: &[u64]) -> Option<usize> {
 /// now direct, went through: each assignment of a register the address
 /// read, last before the call, that nothing reads before the call or the
 /// block's code after it writes the register again or returns.
-fn drop_feeding(stmts: &mut Vec<Stmt>, mut position: usize, through: &Expr) {
+fn remove_call_target_assignments(stmts: &mut Vec<Stmt>, mut position: usize, through: &Expr) {
     let mut pending = HashSet::new();
     crate::ir::visit::collect_reads(through, &mut pending);
     while let Some(register) = pending.iter().next().copied() {

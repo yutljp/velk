@@ -910,7 +910,7 @@ fn unsupported_stack_widths_do_not_establish_input_or_overwrite_proofs() {
     assert_eq!(signature.stack, vec![0]);
 }
 
-fn cfg_call() -> Stmt {
+fn test_call() -> Stmt {
     Stmt::Call {
         kind: crate::ir::CallKind::Invoke,
         target: Some(0x1000),
@@ -925,7 +925,7 @@ fn cfg_call() -> Stmt {
     }
 }
 
-fn cfg_stack(blocks: &[Block], pads: &[(u64, Vec<(u64, u64)>)]) -> Vec<i64> {
+fn stack_argument_offsets(blocks: &[Block], pads: &[(u64, Vec<(u64, u64)>)]) -> Vec<i64> {
     super::stack_arguments(blocks, pads, Isa::AArch64, Convention::Aapcs64).offsets
 }
 
@@ -933,7 +933,7 @@ fn cfg_stack(blocks: &[Block], pads: &[(u64, Vec<(u64, u64)>)]) -> Vec<i64> {
 fn preserved_output_addresses_keep_their_pre_call_origin() {
     let destination = crate::ir::VARIABLE_BASE;
     for preserved in [false, true] {
-        let mut call = cfg_call();
+        let mut call = test_call();
         let Stmt::Call {
             outputs, clobbers, ..
         } = &mut call
@@ -1029,7 +1029,7 @@ fn first_entry_overwrites_keep_their_byte_coverage() {
             },
         ];
         assert_eq!(
-            cfg_stack(&blocks, &[]),
+            stack_argument_offsets(&blocks, &[]),
             if needed { vec![0] } else { vec![] }
         );
     }
@@ -1063,7 +1063,7 @@ fn first_entry_scan_keeps_reads_before_an_opaque_frame_change_only() {
             },
         ];
         assert_eq!(
-            cfg_stack(&blocks, &[]),
+            stack_argument_offsets(&blocks, &[]),
             if early { vec![0] } else { vec![] }
         );
     }
@@ -1110,7 +1110,7 @@ fn unknown_predecessors_meet_frame_and_written_facts() {
                 },
             ];
             assert_eq!(
-                cfg_stack(&blocks, &[]),
+                stack_argument_offsets(&blocks, &[]),
                 if changed_sp { vec![] } else { vec![0] }
             );
         }
@@ -1136,7 +1136,7 @@ fn unknown_predecessors_meet_frame_and_written_facts() {
             },
         ];
         assert_eq!(
-            cfg_stack(&blocks, &[]),
+            stack_argument_offsets(&blocks, &[]),
             if before { vec![] } else { vec![0] }
         );
     }
@@ -1153,7 +1153,7 @@ fn normal_and_exception_predecessors_must_both_overwrite() {
         let blocks = vec![
             Block {
                 start: 0,
-                stmts: vec![cfg_call()],
+                stmts: vec![test_call()],
             },
             Block {
                 start: 4,
@@ -1171,7 +1171,7 @@ fn normal_and_exception_predecessors_must_both_overwrite() {
             },
         ];
         assert_eq!(
-            cfg_stack(&blocks, &[(8, vec![(0, 4)])]),
+            stack_argument_offsets(&blocks, &[(8, vec![(0, 4)])]),
             if both { vec![] } else { vec![0] }
         );
     }
@@ -1185,9 +1185,9 @@ fn exception_states_meet_call_prefixes_instead_of_the_block_exit() {
             if before {
                 first.push(stack_store(31, 0, 8));
             }
-            first.extend([cfg_call(), stack_store(31, 0, 8)]);
+            first.extend([test_call(), stack_store(31, 0, 8)]);
             if second_call {
-                first.push(cfg_call());
+                first.push(test_call());
             }
             first.push(Stmt::Br { target: Some(16) });
             let blocks = vec![
@@ -1207,7 +1207,7 @@ fn exception_states_meet_call_prefixes_instead_of_the_block_exit() {
                 },
             ];
             assert_eq!(
-                cfg_stack(&blocks, &[(8, vec![(0, 8)])]),
+                stack_argument_offsets(&blocks, &[(8, vec![(0, 8)])]),
                 if before { vec![] } else { vec![0] }
             );
         }
@@ -1217,9 +1217,9 @@ fn exception_states_meet_call_prefixes_instead_of_the_block_exit() {
 #[test]
 fn exception_frame_origins_use_the_call_point() {
     for second_call in [false, true] {
-        let mut first = vec![cfg_call(), stack_assign(31, stack_address(31, 16))];
+        let mut first = vec![test_call(), stack_assign(31, stack_address(31, 16))];
         if second_call {
-            first.push(cfg_call());
+            first.push(test_call());
         }
         let blocks = vec![
             Block {
@@ -1245,7 +1245,7 @@ fn exception_frame_origins_use_the_call_point() {
             },
         ];
         assert_eq!(
-            cfg_stack(&blocks, &[(16, vec![(0, 8)])]),
+            stack_argument_offsets(&blocks, &[(16, vec![(0, 8)])]),
             if second_call { vec![] } else { vec![0] }
         );
     }
@@ -1256,7 +1256,7 @@ fn missing_exception_targets_cannot_certify_the_normal_store() {
     let blocks = vec![
         Block {
             start: 0,
-            stmts: vec![cfg_call(), stack_store(31, 0, 8)],
+            stmts: vec![test_call(), stack_store(31, 0, 8)],
         },
         Block {
             start: 8,
@@ -1265,7 +1265,10 @@ fn missing_exception_targets_cannot_certify_the_normal_store() {
             }],
         },
     ];
-    assert_eq!(cfg_stack(&blocks, &[(0x100, vec![(0, 8)])]), vec![0]);
+    assert_eq!(
+        stack_argument_offsets(&blocks, &[(0x100, vec![(0, 8)])]),
+        vec![0]
+    );
 }
 
 #[test]
@@ -1302,7 +1305,7 @@ fn loop_backedges_do_not_replace_the_initial_unwritten_state() {
             },
         ];
         assert_eq!(
-            cfg_stack(&blocks, &[]),
+            stack_argument_offsets(&blocks, &[]),
             if before { vec![] } else { vec![0] }
         );
     }
@@ -1315,7 +1318,7 @@ fn an_exception_range_spanning_call_blocks_keeps_the_earlier_call() {
         if before {
             first.push(stack_store(31, 0, 8));
         }
-        first.push(cfg_call());
+        first.push(test_call());
         let blocks = vec![
             Block {
                 start: 0,
@@ -1327,7 +1330,7 @@ fn an_exception_range_spanning_call_blocks_keeps_the_earlier_call() {
             },
             Block {
                 start: 16,
-                stmts: vec![cfg_call(), Stmt::Br { target: Some(32) }],
+                stmts: vec![test_call(), Stmt::Br { target: Some(32) }],
             },
             Block {
                 start: 24,
@@ -1341,7 +1344,7 @@ fn an_exception_range_spanning_call_blocks_keeps_the_earlier_call() {
             },
         ];
         assert_eq!(
-            cfg_stack(&blocks, &[(24, vec![(0, 24)])]),
+            stack_argument_offsets(&blocks, &[(24, vec![(0, 24)])]),
             if before { vec![] } else { vec![0] }
         );
     }
@@ -1370,13 +1373,13 @@ fn an_entry_backedge_keeps_the_external_unwritten_root() {
             }],
         },
     ];
-    assert_eq!(cfg_stack(&blocks, &[]), vec![0]);
+    assert_eq!(stack_argument_offsets(&blocks, &[]), vec![0]);
 }
 
 #[test]
 fn opaque_exception_effects_remove_the_call_prefix_origin() {
     for opaque in [false, true] {
-        let mut first = vec![cfg_call()];
+        let mut first = vec![test_call()];
         if opaque {
             first.push(Stmt::Unsupported {
                 text: "opaque".to_owned(),
@@ -1403,7 +1406,7 @@ fn opaque_exception_effects_remove_the_call_prefix_origin() {
             },
         ];
         assert_eq!(
-            cfg_stack(&blocks, &[(8, vec![(0, 8)])]),
+            stack_argument_offsets(&blocks, &[(8, vec![(0, 8)])]),
             if opaque { vec![] } else { vec![0] }
         );
     }

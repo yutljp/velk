@@ -6,7 +6,7 @@ use crate::ir::{BinOp, Block, Expr, FunctionIr, Stmt};
 use crate::loader::Image;
 use crate::passes::frame_slots::frame_slot;
 
-struct Stored {
+struct StoredConstant {
     offset: i64,
     width: u8,
     value: u64,
@@ -69,7 +69,7 @@ pub(super) fn forward(ir: &mut FunctionIr, image: &Image) {
     let mut changed = false;
     for (block, frames) in normalized.blocks.iter_mut().zip(call_frames) {
         let mut frames = frames.into_iter();
-        let mut pending: Vec<Stored> = Vec::new();
+        let mut pending: Vec<StoredConstant> = Vec::new();
         let mut calls = Vec::new();
         for stmt in &mut block.stmts {
             let mut preserved = |first_call| {
@@ -119,7 +119,7 @@ pub(super) fn forward(ir: &mut FunctionIr, image: &Image) {
                     if matches!(width, 1 | 2 | 4 | 8)
                         && let Expr::Const(value) = value
                     {
-                        pending.push(Stored {
+                        pending.push(StoredConstant {
                             offset,
                             width: *width,
                             value: *value,
@@ -155,7 +155,7 @@ pub(super) fn forward(ir: &mut FunctionIr, image: &Image) {
 fn replace(
     expr: &mut Expr,
     sp: u16,
-    pending: &mut Vec<Stored>,
+    pending: &mut Vec<StoredConstant>,
     preserved: &mut impl FnMut(usize) -> Option<usize>,
 ) -> bool {
     if pending.is_empty() {
@@ -229,7 +229,7 @@ fn writes_only_frame(image: &Image, address: u64) -> bool {
     };
     let sp = crate::arch::stack_pointer(image.isa);
     crate::passes::frame_slots::settle(&mut ir);
-    if !closed(&ir.blocks) {
+    if !closed_control_flow(&ir.blocks) {
         return false;
     }
     for stmt in ir.blocks.iter().flat_map(|block| &block.stmts) {
@@ -251,13 +251,13 @@ fn writes_only_frame(image: &Image, address: u64) -> bool {
     true
 }
 
-fn closed(blocks: &[Block]) -> bool {
+fn closed_control_flow(blocks: &[Block]) -> bool {
     if blocks.is_empty() {
         return false;
     }
     for (index, block) in blocks.iter().enumerate() {
         let target_exists = |target| blocks.iter().any(|block| block.start == target);
-        let closed = match block.stmts.last() {
+        let closed_control_flow = match block.stmts.last() {
             Some(Stmt::Ret { .. }) => true,
             Some(
                 Stmt::Br { target: None }
@@ -271,7 +271,7 @@ fn closed(blocks: &[Block]) -> bool {
             Some(Stmt::Brif { target, .. }) => target_exists(*target) && index + 1 < blocks.len(),
             _ => index + 1 < blocks.len(),
         };
-        if !closed {
+        if !closed_control_flow {
             return false;
         }
     }
@@ -293,7 +293,7 @@ mod tests {
                 width,
                 signed: false,
             };
-            let mut pending = vec![Stored {
+            let mut pending = vec![StoredConstant {
                 offset: -8,
                 width,
                 value: crate::ir::semantics::mask(u32::from(width) * 8),
@@ -324,22 +324,22 @@ mod tests {
             start: 16,
             stmts: Vec::new(),
         }];
-        assert!(!closed(&blocks));
+        assert!(!closed_control_flow(&blocks));
         blocks[0].stmts.push(Stmt::Br { target: Some(32) });
-        assert!(!closed(&blocks));
+        assert!(!closed_control_flow(&blocks));
         blocks.push(Block {
             start: 32,
             stmts: vec![Stmt::Ret {
                 value: Expr::Const(0),
             }],
         });
-        assert!(closed(&blocks));
+        assert!(closed_control_flow(&blocks));
         blocks[1].stmts = vec![Stmt::Brif {
             cond: crate::ir::Cond::Eq,
             lhs: Expr::Const(0),
             rhs: Expr::Const(0),
             target: 16,
         }];
-        assert!(!closed(&blocks));
+        assert!(!closed_control_flow(&blocks));
     }
 }

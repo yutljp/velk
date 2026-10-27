@@ -154,10 +154,10 @@ fn signed_in_expr(expr: &Expr, signed: &mut HashSet<u16>) {
 }
 
 /// The register Go's x86-64 ABI passes a closure's context in.
-const GO_CLOSURE: u16 = 2;
+const GO_CLOSURE_REGISTER: u16 = 2;
 
 /// The prototype of the library function a call reaches, when known.
-pub type Callees<'a> = &'a dyn Fn(&Stmt) -> Option<&'static Prototype>;
+pub type CalleePrototypeLookup<'a> = &'a dyn Fn(&Stmt) -> Option<&'static Prototype>;
 
 fn inputs_known(blocks: &[Block], landing_pads: &[(u64, Vec<(u64, u64)>)]) -> bool {
     let starts: HashSet<_> = blocks.iter().map(|block| block.start).collect();
@@ -259,7 +259,7 @@ pub fn recover_with(
     isa: Isa,
     convention: Convention,
     go: bool,
-    callees: Callees<'_>,
+    callees: CalleePrototypeLookup<'_>,
 ) -> Signature {
     let (arguments, float_arguments) = match isa {
         Isa::Unsupported => (&[][..], &[][..]),
@@ -354,9 +354,9 @@ pub fn recover_with(
         }
     }
     // A Go function value's code reads its closure's context.
-    if go && isa == Isa::X86_64 && inputs.contains(&GO_CLOSURE) {
+    if go && isa == Isa::X86_64 && inputs.contains(&GO_CLOSURE_REGISTER) {
         params.push(Param {
-            index: GO_CLOSURE,
+            index: GO_CLOSURE_REGISTER,
             name: "closure".to_owned(),
             ty: CType::pointer_to(CType::Void),
         });
@@ -410,7 +410,7 @@ pub fn recover_with(
 fn parameter_types(
     blocks: &[Block],
     isa: Isa,
-    callees: Callees<'_>,
+    callees: CalleePrototypeLookup<'_>,
     params: &mut [Param],
 ) -> HashSet<u16> {
     if params.is_empty() {
@@ -534,7 +534,7 @@ fn parameter_types(
             // A float operation reading memory reads a float there, and a
             // lane operation lanes.
             if let Expr::Apply { op, args } = partial_write_source(value, dest.index) {
-                let read_as = vector_reading(*op);
+                let read_as = vector_operand_type(*op);
                 for arg in args {
                     if let Expr::Load { addr, width, .. } = arg
                         && (read_as != Some(None)
@@ -753,7 +753,7 @@ fn register_inputs(
     let indirect = match isa {
         Isa::AArch64 => Some(8),
         // Go passes a closure's context in rdx.
-        Isa::X86_64 if go => Some(GO_CLOSURE),
+        Isa::X86_64 if go => Some(GO_CLOSURE_REGISTER),
         _ => None,
     };
     let universe: HashSet<u16> = arguments
@@ -1072,7 +1072,7 @@ fn register_predecessors(blocks: &[Block]) -> Vec<Vec<usize>> {
 fn prototype_types(
     blocks: &[Block],
     origins: &Origins,
-    callees: Callees<'_>,
+    callees: CalleePrototypeLookup<'_>,
 ) -> HashMap<u16, CType> {
     let mut offered: HashMap<u16, CType> = HashMap::new();
     origins.walk(blocks, &mut |stmt, origin| {
@@ -1160,7 +1160,7 @@ fn split_address(expr: &Expr) -> Option<(u16, u64)> {
 }
 
 /// The origins of registers written once, and of stack slots by address.
-type Found = (HashMap<u16, u16>, HashMap<String, Option<u16>>);
+type FoundOrigins = (HashMap<u16, u16>, HashMap<String, Option<u16>>);
 
 /// The arguments registers and stack slots hold, as `recover` follows them.
 struct Origins {
@@ -1181,7 +1181,11 @@ impl Origins {
     /// Walks every statement with the arguments the registers hold just
     /// before it, on every path that reaches it, and returns the origins
     /// this walk finds for registers written once and for stack slots.
-    fn walk(&self, blocks: &[Block], visit: &mut dyn FnMut(&Stmt, &HashMap<u16, u16>)) -> Found {
+    fn walk(
+        &self,
+        blocks: &[Block],
+        visit: &mut dyn FnMut(&Stmt, &HashMap<u16, u16>),
+    ) -> FoundOrigins {
         let mut entry: Vec<Option<HashMap<u16, u16>>> = vec![None; blocks.len()];
         if blocks.is_empty() {
             return (self.global.clone(), HashMap::new());
@@ -1261,7 +1265,7 @@ impl Origins {
 
     /// What `stmt` does to the arguments the registers hold, noting in
     /// `found` the slots it fills and the registers written once it sets.
-    fn step(&self, stmt: &Stmt, origin: &mut HashMap<u16, u16>, found: Option<&mut Found>) {
+    fn step(&self, stmt: &Stmt, origin: &mut HashMap<u16, u16>, found: Option<&mut FoundOrigins>) {
         match stmt {
             Stmt::Store {
                 addr,
@@ -1360,7 +1364,7 @@ fn base_origin(expr: &Expr, origin: &HashMap<u16, u16>) -> Option<u16> {
 
 /// How an operation reads its arguments: as floats (`None`), or as lanes
 /// of some bytes.
-fn vector_reading(op: Operation) -> Option<Option<u8>> {
+fn vector_operand_type(op: Operation) -> Option<Option<u8>> {
     match op {
         Operation::Lanes(_, bits)
         | Operation::InterleaveLow(bits)
@@ -1375,10 +1379,10 @@ fn vector_reading(op: Operation) -> Option<Option<u8>> {
 }
 
 /// The registers operations read as floats or as lanes, as
-/// `vector_reading` tells them.
+/// `vector_operand_type` tells them.
 fn vector_operands(expr: &Expr, out: &mut HashMap<u16, Option<u8>>) {
     if let Expr::Apply { op, args } = expr
-        && let Some(held) = vector_reading(*op)
+        && let Some(held) = vector_operand_type(*op)
     {
         for arg in args {
             let register = match arg {

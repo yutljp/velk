@@ -261,7 +261,7 @@ fn merge_layouts(
     nodes: &[Node],
     seeds: &BTreeMap<Node, Structure>,
     functions: &[&mut FunctionIr],
-    touches: &mut HashMap<usize, Vec<super::structures::Touch>>,
+    touches: &mut HashMap<usize, Vec<super::structures::MemoryAccess>>,
 ) -> Option<MergedLayout> {
     let layouts: Vec<_> = nodes.iter().filter_map(|node| seeds.get(node)).collect();
     if layouts.is_empty()
@@ -288,7 +288,7 @@ fn merge_layouts(
             };
             let local_touches = touches
                 .entry(i)
-                .or_insert_with(|| super::structures::touches_of(functions[i]));
+                .or_insert_with(|| super::structures::memory_accesses(functions[i]));
             if let Some(stride) =
                 super::structures::array_size(functions[i], register, local_touches)
             {
@@ -328,7 +328,7 @@ fn merge_layouts(
             }
             let local_touches = touches
                 .entry(i)
-                .or_insert_with(|| super::structures::touches_of(functions[i]));
+                .or_insert_with(|| super::structures::memory_accesses(functions[i]));
             let local = match size {
                 Some(size) => {
                     super::structures::layout_with_size(functions[i], register, local_touches, size)

@@ -109,7 +109,7 @@ pub fn summary(image: &Image, addr: u64) -> Summary {
         return *known;
     }
     if !image.functions.contains_key(&addr) {
-        let entered = entered_inside(image, addr);
+        let entered = summary_for_interior_entry(image, addr);
         image
             .summaries
             .write()
@@ -122,7 +122,7 @@ pub fn summary(image: &Image, addr: u64) -> Summary {
         return *known;
     }
     let (edges, recursive) = call_graph(image, addr, &cache);
-    let parts = parts_from(addr, &edges);
+    let parts = strongly_connected_components(addr, &edges);
     let settled = settle_parts(image, &parts, &recursive, &edges, &cache);
     cache.extend(settled);
     cache.get(&addr).copied().unwrap_or_default()
@@ -146,7 +146,7 @@ pub(crate) fn prepare(
 /// What a call into the middle of a function, as Go's into its code that
 /// zeroes or copies a block, knows of the code from there on: the
 /// registers it changes. The rest is left unknown.
-fn entered_inside(image: &Image, addr: u64) -> Summary {
+fn summary_for_interior_entry(image: &Image, addr: u64) -> Summary {
     let Some((_, function)) = image.functions.range(..addr).next_back() else {
         return Summary::default();
     };
@@ -252,7 +252,7 @@ fn call_graph(
 
 /// The strongly connected parts of the call graph from `root`, callees
 /// before callers.
-fn parts_from(root: u64, edges: &HashMap<u64, Vec<u64>>) -> Vec<Vec<u64>> {
+fn strongly_connected_components(root: u64, edges: &HashMap<u64, Vec<u64>>) -> Vec<Vec<u64>> {
     struct Node {
         index: usize,
         low: usize,
@@ -389,7 +389,7 @@ fn settle_parts(
             });
         }
         _ => {
-            // parts_from puts every callee before its callers.
+            // strongly_connected_components puts every callee before its callers.
             for index in 0..parts.len() {
                 work(index);
             }
@@ -476,7 +476,7 @@ fn settle(
     // changed in the round before.
     let mut pending: Vec<u64> = part.to_vec();
     let mut passes: HashMap<u64, usize> = HashMap::new();
-    let mut seen: HashMap<u64, Seen> = HashMap::new();
+    let mut seen: HashMap<u64, CachedSignature> = HashMap::new();
     let mut unsettled = false;
     while !pending.is_empty() {
         pending.retain(|addr| {
@@ -729,7 +729,7 @@ fn named(image: &Image, name: &str, imported: bool) -> Summary {
 }
 
 /// A body, its signature and exception ranges, kept when both inputs agree.
-struct Seen {
+struct CachedSignature {
     #[allow(
         clippy::rc_buffer,
         reason = "The cache retains the body allocation for pointer identity checks."
@@ -747,9 +747,9 @@ fn compute(
     image: &Image,
     addr: u64,
     summaries: crate::lift::Summaries<'_>,
-    seen: Option<&Seen>,
+    seen: Option<&CachedSignature>,
     with_clobbers: bool,
-) -> (Summary, Option<Seen>) {
+) -> (Summary, Option<CachedSignature>) {
     let named = by_name(image, addr);
     let Some(function) = image.functions.get(&addr) else {
         return (named, None);
@@ -877,7 +877,7 @@ fn compute(
     };
     (
         summary,
-        Some(Seen {
+        Some(CachedSignature {
             blocks,
             signature,
             landing_pads,
