@@ -35,9 +35,7 @@ pub(crate) fn word(image: &Image, address: u64, size: u64) -> Option<u64> {
     let Some(bytes) = bounded_bytes(image, address, size) else {
         return None;
     };
-    let mut value = [0; 8];
-    value[..bytes.len()].copy_from_slice(bytes);
-    Some(u64::from_le_bytes(value))
+    Some(unsigned(bytes, /* little */ true))
 }
 
 pub(crate) fn unsigned(data: &[u8], little: bool) -> u64 {

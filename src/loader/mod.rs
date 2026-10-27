@@ -730,19 +730,12 @@ impl Image {
         let Some(bytes) = self.read_vaddr(address, width) else {
             return None;
         };
-        let mut word = [0; 8];
-        let value = match self.byte_order {
-            Some(object::Endianness::Little) => {
-                word[..bytes.len()].copy_from_slice(bytes);
-                u64::from_le_bytes(word)
-            }
-            Some(object::Endianness::Big) => {
-                word[8 - bytes.len()..].copy_from_slice(bytes);
-                u64::from_be_bytes(word)
-            }
+        let little = match self.byte_order {
+            Some(object::Endianness::Little) => true,
+            Some(object::Endianness::Big) => false,
             None => return None,
         };
-        Some(Pointer::Address(value))
+        Some(Pointer::Address(image_reads::unsigned(bytes, little)))
     }
 
     fn add_go_functions(&mut self) {
@@ -1360,6 +1353,25 @@ pub(crate) fn load_input_with_saved(
 mod byte_order_tests {
     use super::*;
     use object::Endianness;
+
+    #[test]
+    fn pointer_and_word_decoding() {
+        let mut image = Image::from_code(Isa::AArch64, 0x1000, (1..=8).collect());
+        assert!(matches!(
+            image.read_pointer(0x1000),
+            Some(Pointer::Address(0x0807_0605_0403_0201))
+        ));
+        assert_eq!(image_reads::word(&image, 0x1000, 4), Some(0x0403_0201));
+        assert_eq!(image_reads::word(&image, 0x1000, 9), None);
+        assert!(image.read_pointer(0x1001).is_none());
+        image.byte_order = Some(Endianness::Big);
+        assert!(matches!(
+            image.read_pointer(0x1000),
+            Some(Pointer::Address(0x0102_0304_0506_0708))
+        ));
+        image.byte_order = None;
+        assert!(image.read_pointer(0x1000).is_none());
+    }
 
     fn parsed_elf(byte_order: Endianness) -> Image {
         static NEXT: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
