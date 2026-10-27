@@ -429,36 +429,7 @@ pub fn handle(
             }
         }
         Request::DecompileMany { bin, addresses } => {
-            let binary = match bin.open(session) {
-                Ok(binary) => binary,
-                Err(error) => return Err(error),
-            };
-            binary.set_string_decoding(true);
-            let addresses = match addresses {
-                Some(addresses) => {
-                    let mut parsed = Vec::with_capacity(addresses.len());
-                    for address in addresses {
-                        match parse(&address) {
-                            Ok(address) => parsed.push(address),
-                            Err(error) => return Err(error),
-                        }
-                    }
-                    parsed
-                }
-                None => binary.image().functions.keys().copied().collect(),
-            };
-            let results = match binary.decompile_many(&addresses, None, deadline) {
-                Ok(results) => results,
-                Err(error) => return Err(error),
-            };
-            let mut output = Vec::with_capacity(results.len());
-            for (addr, result) in addresses.into_iter().zip(results) {
-                output.push(match result {
-                    Ok(code) => json!({ "addr": crate::addr::format(addr), "code": code, "error": null }),
-                    Err(error) => json!({ "addr": crate::addr::format(addr), "code": null, "error": error.to_string() }),
-                });
-            }
-            Ok(json!(output))
+            decompile_many(session, bin, addresses, deadline)
         }
         Request::Disasm { bin, addr, limit } => Ok(json!(
             bin.open(session)?
@@ -493,28 +464,7 @@ pub fn handle(
                 })
             })
             .collect()),
-        Request::Strings { bin, addr, decode } => {
-            let mut strings = match analysis(session, &bin, &addr, deadline) {
-                Ok(analysis) => analysis.strings(),
-                Err(error) => return Err(error),
-            };
-            if decode {
-                let address = match parse(&addr) {
-                    Ok(address) => address,
-                    Err(error) => return Err(error),
-                };
-                let binary = match bin.open(session) {
-                    Ok(binary) => binary,
-                    Err(error) => return Err(error),
-                };
-                for string in binary.decoded_strings_at(address, deadline) {
-                    if !strings.contains(&string.text) {
-                        strings.push(string.text.clone());
-                    }
-                }
-            }
-            Ok(json!(strings))
-        }
+        Request::Strings { bin, addr, decode } => strings(session, bin, addr, decode, deadline),
         Request::ShapeHash { bin, addr } => Ok(json!(
             bin.open(session)?.shape_hash(parse(&addr)?, deadline)?
         )),
@@ -586,4 +536,71 @@ fn failures(failures: &[Failure]) -> Vec<Value> {
         .iter()
         .map(|f| json!({ "addr": addr::format(f.addr), "error": f.error.to_string() }))
         .collect()
+}
+
+fn decompile_many(
+    session: &mut Session,
+    bin: BinaryRef,
+    addresses: Option<Vec<String>>,
+    deadline: Option<std::time::Instant>,
+) -> Result<Value> {
+    let binary = match bin.open(session) {
+        Ok(binary) => binary,
+        Err(error) => return Err(error),
+    };
+    binary.set_string_decoding(true);
+    let addresses = match addresses {
+        Some(addresses) => {
+            let mut parsed = Vec::with_capacity(addresses.len());
+            for address in addresses {
+                match parse(&address) {
+                    Ok(address) => parsed.push(address),
+                    Err(error) => return Err(error),
+                }
+            }
+            parsed
+        }
+        None => binary.image().functions.keys().copied().collect(),
+    };
+    let results = match binary.decompile_many(&addresses, None, deadline) {
+        Ok(results) => results,
+        Err(error) => return Err(error),
+    };
+    let mut output = Vec::with_capacity(results.len());
+    for (addr, result) in addresses.into_iter().zip(results) {
+        output.push(match result {
+                    Ok(code) => json!({ "addr": crate::addr::format(addr), "code": code, "error": null }),
+                    Err(error) => json!({ "addr": crate::addr::format(addr), "code": null, "error": error.to_string() }),
+                });
+    }
+    Ok(json!(output))
+}
+
+fn strings(
+    session: &mut Session,
+    bin: BinaryRef,
+    addr: String,
+    decode: bool,
+    deadline: Option<std::time::Instant>,
+) -> Result<Value> {
+    let mut strings = match analysis(session, &bin, &addr, deadline) {
+        Ok(analysis) => analysis.strings(),
+        Err(error) => return Err(error),
+    };
+    if decode {
+        let address = match parse(&addr) {
+            Ok(address) => address,
+            Err(error) => return Err(error),
+        };
+        let binary = match bin.open(session) {
+            Ok(binary) => binary,
+            Err(error) => return Err(error),
+        };
+        for string in binary.decoded_strings_at(address, deadline) {
+            if !strings.contains(&string.text) {
+                strings.push(string.text.clone());
+            }
+        }
+    }
+    Ok(json!(strings))
 }

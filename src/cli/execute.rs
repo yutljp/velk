@@ -300,34 +300,37 @@ pub(crate) fn run(
             };
             cli_output::print_identification(&binary, &identification, limit);
         }
-        Command::Run { script } => {
-            let code = match std::fs::read_to_string(&script) {
-                Ok(code) => code,
-                Err(source) => {
-                    return Err(Error::Io {
-                        path: script,
-                        source,
-                    });
-                }
-            };
-            let engine = match script::Engine::new() {
-                Ok(engine) => engine,
-                Err(error) => return Err(error),
-            };
-            let outcome = engine.run(&code, None);
-            if !outcome.output.is_empty() {
-                println!("{}", outcome.output);
-            }
-            if let Some(error) = outcome.error {
-                eprintln!("error: {error}");
-                return Ok(ExitCode::FAILURE);
-            }
-        }
+        Command::Run { script } => return run_script(script),
         Command::Mcp => {
             if let Err(error) = mcp::serve() {
                 return Err(error);
             }
         }
+    }
+    Ok(ExitCode::SUCCESS)
+}
+
+fn run_script(script: std::path::PathBuf) -> Result<ExitCode> {
+    let code = match std::fs::read_to_string(&script) {
+        Ok(code) => code,
+        Err(source) => {
+            return Err(Error::Io {
+                path: script,
+                source,
+            });
+        }
+    };
+    let engine = match script::Engine::new() {
+        Ok(engine) => engine,
+        Err(error) => return Err(error),
+    };
+    let outcome = engine.run(&code, None);
+    if !outcome.output.is_empty() {
+        println!("{}", outcome.output);
+    }
+    if let Some(error) = outcome.error {
+        eprintln!("error: {error}");
+        return Ok(ExitCode::FAILURE);
     }
     Ok(ExitCode::SUCCESS)
 }
