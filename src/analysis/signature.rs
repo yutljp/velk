@@ -614,6 +614,10 @@ fn parameter_types(
         }
     }
 
+    signed_parameters(blocks, &origins)
+}
+
+fn signed_parameters(blocks: &[Block], origins: &Origins) -> HashSet<u16> {
     // Signedness is visible only in comparison conditions.
     let mut signed_args: HashSet<u16> = HashSet::new();
     origins.walk(blocks, &mut |stmt, origin| {
@@ -764,46 +768,7 @@ fn register_inputs(
         .chain(indirect)
         .collect();
 
-    // Registers written on every path to each block; a register read before
-    // it is written is an argument.
-    let mut predecessors: Vec<Vec<usize>> = vec![Vec::new(); blocks.len()];
-    for (index, block) in blocks.iter().enumerate() {
-        let Some(last) = block.stmts.last() else {
-            continue;
-        };
-        let mut targets = Vec::new();
-        let falls_through = match last {
-            Stmt::Brif { target, .. } | Stmt::BrifFlags { target, .. } => {
-                targets.push(*target);
-                true
-            }
-            Stmt::Br {
-                target: Some(target),
-            } => {
-                targets.push(*target);
-                false
-            }
-            Stmt::Switch { cases, default, .. } => {
-                for (_, target) in cases {
-                    targets.push(*target);
-                }
-                if let Some(target) = default {
-                    targets.push(*target);
-                }
-                false
-            }
-            Stmt::Ret { .. } | Stmt::BrIndirect { .. } => false,
-            _ => true,
-        };
-        if falls_through && index + 1 < blocks.len() {
-            predecessors[index + 1].push(index);
-        }
-        for target in targets {
-            if let Some(destination) = blocks.iter().position(|block| block.start == target) {
-                predecessors[destination].push(index);
-            }
-        }
-    }
+    let predecessors = register_predecessors(blocks);
 
     // Internal calls can preserve argument registers the ABI permits them
     // to change. Their summaries determine which entry values survive.
@@ -1060,6 +1025,51 @@ fn register_inputs(
         wide_inputs,
         known_inputs,
     }
+}
+
+fn register_predecessors(blocks: &[Block]) -> Vec<Vec<usize>> {
+    // Registers written on every path to each block; a register read before
+    // it is written is an argument.
+    let mut predecessors: Vec<Vec<usize>> = vec![Vec::new(); blocks.len()];
+    for (index, block) in blocks.iter().enumerate() {
+        let Some(last) = block.stmts.last() else {
+            continue;
+        };
+        let mut targets = Vec::new();
+        let falls_through = match last {
+            Stmt::Brif { target, .. } | Stmt::BrifFlags { target, .. } => {
+                targets.push(*target);
+                true
+            }
+            Stmt::Br {
+                target: Some(target),
+            } => {
+                targets.push(*target);
+                false
+            }
+            Stmt::Switch { cases, default, .. } => {
+                for (_, target) in cases {
+                    targets.push(*target);
+                }
+                if let Some(target) = default {
+                    targets.push(*target);
+                }
+                false
+            }
+            Stmt::Ret { .. } | Stmt::BrIndirect { .. } => false,
+            _ => true,
+        };
+        if falls_through && index + 1 < blocks.len() {
+            predecessors[index + 1].push(index);
+        }
+        for target in targets {
+            if let Some(destination) = blocks.iter().position(|block| block.start == target) {
+                predecessors[destination].push(index);
+            }
+        }
+    }
+
+    predecessors
 }
 
 /// The types library functions give the arguments the body passes them
