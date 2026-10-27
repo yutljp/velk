@@ -6,6 +6,8 @@
 /* velk prelude */
 #include <stdbool.h>
 #include <stdint.h>
+
+struct S1 { uint32_t f_0; uint32_t f_4; uint32_t f_8; };
 /* end velk prelude */
 
 == 0x200fc sum3
@@ -86,7 +88,6 @@ fn pair_sum @ 0x2013c (size 6)
 == 0x20144 sum_arr
 -- decompile
 /* velk pseudo-C: sum_arr @ 0x20144 */
-struct S1 { int32_t field_0x0; int32_t field_0x4; int32_t field_0x8; };
 int sum_arr(int *p, int n) {
     uintptr_t v7;
     uintptr_t v17;
@@ -111,9 +112,9 @@ int sum_arr(int *p, int n) {
                 v6 -= 4;
                 v21 = (uint32_t)v21 + v10;
                 struct S1 *v12 = (struct S1 *)((uint32_t)v7 + 4);
-                v21 = (uint32_t)v21 + v12->field_0x0;
-                v21 = (uint32_t)v21 + v12->field_0x4;
-                v21 = (uint32_t)v21 + v12->field_0x8;
+                v21 += v12->f_0;
+                v21 += v12->f_4;
+                v21 += v12->f_8;
                 if (v8 == v6) break;
             }
             if (v20 == 0) {
@@ -208,4 +209,4 @@ fn sum_arr @ 0x20144 (size 108)
   blk19 @ 0x201ac:
     ret v5
 -- card
-{"addr":"0x20144","approxTokens":240,"blocks":20,"hardReasons":[],"name":"sum_arr","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":108,"structures":["struct S1 { int32_t field_0x0; int32_t field_0x4; int32_t field_0x8; };"],"unsupported":0}
+{"addr":"0x20144","approxTokens":240,"blocks":20,"hardReasons":[],"name":"sum_arr","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":108,"structureLayouts":[{"elementSize":null,"fields":[{"offset":"0x0","size":4,"type":"uint32_t"},{"offset":"0x4","size":4,"type":"uint32_t"},{"offset":"0x8","size":4,"type":"uint32_t"}],"minimumSize":12,"name":"S1","sourceFields":null,"sourceSize":null}],"structures":["struct S1 { uint32_t f_0; uint32_t f_4; uint32_t f_8; };"],"unsupported":0}

@@ -19,6 +19,8 @@
 #include <stdint.h>
 #include <stdio.h>
 
+struct S1 { uint32_t f_0; uint32_t f_4; uint8_t gap_0x8[0x10]; };
+
 extern uint64_t __cxa_finalize_3ff8; /* address: 0x3ff8 */
 extern uint64_t __gmon_start___3fe8; /* address: 0x3fe8 */
 extern uint64_t g_2028; /* address: 0x2028 */
@@ -328,7 +330,6 @@ fn <unnamed> @ 0x1280 (size 16)
 -- decompile
 /* velk pseudo-C: sub_1290 @ 0x1290 */
 /* ref: 0x2004 "missing key %d among %d" */
-struct S1 { int32_t field_0x0; int32_t field_0x4; uint8_t gap_0x8[0x10]; };
 int32_t sub_1290(struct S1 *a0, int a1, int a2) {
     int64_t local_0; /* [sp-78] */
     _Alignas(16) uint8_t local_1[0x50]; /* [sp-68] */
@@ -345,8 +346,8 @@ int32_t sub_1290(struct S1 *a0, int a1, int a2) {
     int64_t v4 = (uint64_t)((int64_t)a1 * 0x3) << 3;
     const char *v5 = (const char *)((uint8_t *)a0 + v4);
     do {
-        if (v3->field_0x0 == a2) {
-            return v3->field_0x4;
+        if (v3->f_0 == a2) {
+            return v3->f_4;
         }
         ++v3;
     } while (v3 != v5);
@@ -411,7 +412,7 @@ fn <unnamed> @ 0x1290 (size 240)
     rax, rdx, xmm0, xmm1 = call 0x10a0()
     trap
 -- card
-{"addr":"0x1290","approxTokens":198,"blocks":11,"hardReasons":[],"name":null,"nameHints":["missing_key__d_among__d"],"nameSources":["unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":240,"strings":["missing key %d among %d"],"structures":["struct S1 { int32_t field_0x0; int32_t field_0x4; uint8_t gap_0x8[0x10]; };"],"unsupported":0}
+{"addr":"0x1290","approxTokens":198,"blocks":11,"hardReasons":[],"name":null,"nameHints":["missing_key__d_among__d"],"nameSources":["unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":240,"strings":["missing key %d among %d"],"structureLayouts":[{"elementSize":24,"fields":[{"offset":"0x0","size":4,"type":"uint32_t"},{"offset":"0x4","size":4,"type":"uint32_t"}],"minimumSize":8,"name":"S1","sourceFields":null,"sourceSize":null}],"structures":["struct S1 { uint32_t f_0; uint32_t f_4; uint8_t gap_0x8[0x10]; };"],"unsupported":0}
 
 == 0x1380 -
 -- decompile

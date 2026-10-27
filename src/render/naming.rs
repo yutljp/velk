@@ -527,7 +527,7 @@ fn field_of<'c>(
 }
 
 /// An address inside an element of an array of structures, as the field
-/// there, `p[i].field_0x8` or `p->field_0x8`, and the field's width.
+/// there, `p[i].f_8` or `p->f_8`, and the field's width.
 fn array_field(addr: &Expr, ctx: &Ctx<'_>) -> Option<(Place, u64)> {
     let (name, _, index, offset, base) = element_terms(addr, ctx)?;
     let structure = pointee_of(base, ctx)?;
@@ -557,7 +557,7 @@ fn array_field(addr: &Expr, ctx: &Ctx<'_>) -> Option<(Place, u64)> {
 }
 
 /// The address of a field inside an element of an array of structures,
-/// `&p[i].field_0x8`; the start of an element reads as `p + i`.
+/// `&p[i].f_8`; the start of an element reads as `p + i`.
 pub(crate) fn field_address(addr: &Expr, ctx: &Ctx<'_>) -> Option<String> {
     if element_index(addr, ctx).is_some() {
         return None;
@@ -927,7 +927,7 @@ mod tests {
         let text = rendered(&ir);
         assert!(text.contains("*(uint8_t *)(p) = 5;"), "{text}");
         assert!(text.contains("return *(uint8_t *)(p);"), "{text}");
-        assert!(!text.contains("field_0x"), "{text}");
+        assert!(!text.contains("f_"), "{text}");
     }
 
     #[test]
@@ -966,7 +966,7 @@ mod tests {
             text.contains("*(uint8_t *)((uint8_t *)p + 0x4) = 5;"),
             "{text}"
         );
-        assert!(!text.contains("field_0x"), "{text}");
+        assert!(!text.contains("f_"), "{text}");
     }
 
     #[test]
@@ -991,13 +991,13 @@ mod tests {
             elements: Vec::new(),
         }];
         let text = rendered(&ir);
-        assert!(text.contains("p->field_0x8 = 5;"), "{text}");
-        assert!(text.contains("return p->field_0x0;"), "{text}");
+        assert!(text.contains("p->f_8 = 5;"), "{text}");
+        assert!(text.contains("return p->f_0;"), "{text}");
         assert!(
             text.contains("*(uint8_t *)((uint8_t *)p + 0x4) = 6;"),
             "{text}"
         );
-        assert!(!text.contains("field_0x4"), "{text}");
+        assert!(!text.contains("f_4"), "{text}");
     }
 
     fn declared_member(stmts: Vec<Stmt>, ty: CType, width: u64, declaration: &str) -> FunctionIr {
@@ -1289,7 +1289,7 @@ mod tests {
             "{text}"
         );
         assert!(!text.contains("arg.value"), "{text}");
-        assert!(!text.contains("field_0x"), "{text}");
+        assert!(!text.contains("f_"), "{text}");
     }
 
     #[test]

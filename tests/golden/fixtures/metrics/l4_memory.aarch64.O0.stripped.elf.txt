@@ -6,6 +6,8 @@
 /* velk prelude */
 #include <stdint.h>
 
+struct S1 { uint32_t f_0; uint32_t f_4; };
+
 extern uint32_t g_2202b0; /* address: 0x2202b0 */
 extern uint64_t g_2202a8; /* address: 0x2202a8 */
 /* end velk prelude */
@@ -13,13 +15,11 @@ extern uint64_t g_2202a8; /* address: 0x2202a8 */
 == 0x2101dc -
 -- decompile
 /* velk pseudo-C: sub_2101dc @ 0x2101dc */
-struct S1 { int32_t field_0x0; int32_t field_0x4; };
-struct S2 { int32_t field_0x0; int32_t field_0x4; };
-int32_t sub_2101dc(struct S1 *a0, struct S2 *a1) {
-    return (uint32_t)a0->field_0x0 * a1->field_0x0 + (uint32_t)a0->field_0x4 * a1->field_0x4;
+int32_t sub_2101dc(struct S1 *a0, struct S1 *a1) {
+    return a0->f_0 * a1->f_0 + a0->f_4 * a1->f_4;
 }
 -- signature
-int32_t (struct S1 * a0, struct S2 * a1)
+int32_t (struct S1 * a0, struct S1 * a1)
 -- references
 
 -- ir
@@ -27,7 +27,7 @@ fn <unnamed> @ 0x2101dc (size 64)
   blk0 @ 0x2101dc:
     ret (((load32(x0) * load32(x1)) + (load32((x0 + #0x4)) * load32((x1 + #0x4)))) & #0xffffffff)
 -- card
-{"addr":"0x2101dc","approxTokens":192,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":64,"structures":["struct S1 { int32_t field_0x0; int32_t field_0x4; };","struct S2 { int32_t field_0x0; int32_t field_0x4; };"],"unsupported":0}
+{"addr":"0x2101dc","approxTokens":192,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":64,"structureLayouts":[{"elementSize":null,"fields":[{"offset":"0x0","size":4,"type":"uint32_t"},{"offset":"0x4","size":4,"type":"uint32_t"}],"minimumSize":8,"name":"S1","sourceFields":null,"sourceSize":null}],"structures":["struct S1 { uint32_t f_0; uint32_t f_4; };"],"unsupported":0}
 
 == 0x21021c -
 -- decompile

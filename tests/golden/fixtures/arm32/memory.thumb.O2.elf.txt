@@ -11,6 +11,8 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+struct S1 { uint8_t gap_0x0[0x3]; uint8_t f_3; uint8_t f_4; uint8_t f_5; uint8_t f_6; };
+
 extern int grid[]; /* address: 0x30214 */
 
 uint64_t grid_get();
@@ -20,13 +22,6 @@ uint64_t sub_201ba();
 == 0x2013c copy_bytes
 -- decompile
 /* velk pseudo-C: copy_bytes @ 0x2013c */
-struct S1 {
-    uint8_t gap_0x0[0x3];
-    uint8_t field_0x3;
-    uint8_t field_0x4;
-    uint8_t field_0x5;
-    uint8_t field_0x6;
-};
 void copy_bytes(unsigned char *dst, unsigned char *src, uint32_t n) {
     uint64_t v3;
     uintptr_t v9;
@@ -46,12 +41,12 @@ void copy_bytes(unsigned char *dst, unsigned char *src, uint32_t n) {
                 v9 = (uint32_t)v7 + v8;
                 uint8_t v10 = *(uint8_t *)((uint32_t)v9 + 3);
                 struct S1 *v11 = (struct S1 *)((uint32_t)v6 + v8);
-                v11->field_0x3 = v10;
+                v11->f_3 = v10;
                 uint8_t v21 = *(uint8_t *)((uint32_t)v9 + 4);
                 v8 = (uint32_t)v8 + 4;
-                v11->field_0x4 = v21;
-                v11->field_0x5 = *(uint8_t *)((uint32_t)v9 + 5);
-                v11->field_0x6 = *(uint8_t *)((uint32_t)v9 + 6);
+                v11->f_4 = v21;
+                v11->f_5 = *(uint8_t *)((uint32_t)v9 + 5);
+                v11->f_6 = *(uint8_t *)((uint32_t)v9 + 6);
                 if (v2 + v8 + 4 == 0) break;
             }
             if (v1 == 0) {
@@ -135,7 +130,7 @@ fn copy_bytes @ 0x2013c (size 108)
   blk15 @ 0x201a2:
     ret #0x0
 -- card
-{"addr":"0x2013c","approxTokens":240,"blocks":16,"hardReasons":[],"name":"copy_bytes","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":108,"structures":["struct S1 {\n    uint8_t gap_0x0[0x3];\n    uint8_t field_0x3;\n    uint8_t field_0x4;\n    uint8_t field_0x5;\n    uint8_t field_0x6;\n};"],"unsupported":0}
+{"addr":"0x2013c","approxTokens":240,"blocks":16,"hardReasons":[],"name":"copy_bytes","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":108,"structureLayouts":[{"elementSize":null,"fields":[{"offset":"0x3","size":1,"type":"uint8_t"},{"offset":"0x4","size":1,"type":"uint8_t"},{"offset":"0x5","size":1,"type":"uint8_t"},{"offset":"0x6","size":1,"type":"uint8_t"}],"minimumSize":7,"name":"S1","sourceFields":null,"sourceSize":null}],"structures":["struct S1 { uint8_t gap_0x0[0x3]; uint8_t f_3; uint8_t f_4; uint8_t f_5; uint8_t f_6; };"],"unsupported":0}
 
 == 0x201a8 fill_bytes
 -- decompile

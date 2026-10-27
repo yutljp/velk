@@ -63,10 +63,18 @@ fn direct_recursive_calls_union_partial_fields_and_keep_padding() {
     share(&mut [&mut last, &mut middle, &mut first], &[]);
     for ir in [&first, &middle, &last] {
         let code = render(ir);
-        assert!(code.contains("struct S1 *a0"), "{code}");
-        assert_eq!(code.matches("struct S1 {").count(), 1, "{code}");
+        assert!(
+            code.contains(&format!("struct {} *a0", ir.structures[0].name)),
+            "{code}"
+        );
+        assert_eq!(
+            code.matches(&format!("struct {} {{", ir.structures[0].name))
+                .count(),
+            1,
+            "{code}"
+        );
         assert!(code.contains("gap_0xc[0x4]"), "{code}");
-        assert!(code.contains("int64_t field_0x20;"), "{code}");
+        assert!(code.contains("int64_t f_20;"), "{code}");
     }
     assert_eq!(first.structures[0].fields.len(), 5);
 }
@@ -177,8 +185,8 @@ fn returned_pointers_and_same_global_connect_types() {
         share(&mut [&mut first, &mut second], &[(0x1000, 8)]);
         assert_eq!(first.structures[0].name, second.structures[0].name);
         let code = render(&second);
-        assert!(code.contains("int64_t field_0x10;"), "{code}");
-        assert!(code.contains("int32_t field_0x0;"), "{code}");
+        assert!(code.contains("int64_t f_10;"), "{code}");
+        assert!(code.contains("int32_t f_0;"), "{code}");
     }
 }
 
@@ -208,11 +216,26 @@ fn shared_printed_layout_compiles_and_preserves_byte_offsets() {
     first.blocks[0].stmts.pop();
     let mut source =
         String::from("#include <stdint.h>\n#include <stddef.h>\n#include <string.h>\n");
-    source.push_str(&render(&first));
-    let second_code = render(&second);
-    let declaration = crate::render::structure_definition(&second.structures[0]);
-    source.push_str(&second_code.replace(&declaration, ""));
-    source.push_str("\n_Static_assert(offsetof(struct S1, field_0x10) == 16, \"offset\");\nint main(void) {\nstruct S1 value; memset(&value, 0xa5, sizeof(value)); f1(&value); f2(&value);\nuint8_t expected[sizeof(value)]; memset(expected, 0xa5, sizeof(expected));\nuint32_t a=1, b=9, d=25; uint64_t c=17;\nmemcpy(expected, &a, 4); memcpy(expected+8, &b, 4); memcpy(expected+16, &c, 8); memcpy(expected+24, &d, 4);\nreturn memcmp(&value, expected, sizeof(value)) != 0; }\n");
+    source.push_str(&crate::render::combine(&format!(
+        "{}{}",
+        render(&first),
+        render(&second)
+    )));
+    assert_eq!(
+        source
+            .matches(&format!("struct {} {{", first.structures[0].name))
+            .count(),
+        1
+    );
+    let mut independent = function(3, &[(0, 8), (8, 8)]);
+    share(&mut [&mut independent], &[]);
+    assert_eq!(first.structures[0].name, independent.structures[0].name);
+    source = crate::render::combine(&format!("{source}{}", render(&independent)));
+    source.push_str("\n_Static_assert(offsetof(struct S1_7, f_10) == 16, \"offset\");\nint main(void) {\nstruct S1_7 value; memset(&value, 0xa5, sizeof(value)); f1(&value); f2(&value);\nuint8_t expected[sizeof(value)]; memset(expected, 0xa5, sizeof(expected));\nuint32_t a=1, b=9, d=25; uint64_t c=17;\nmemcpy(expected, &a, 4); memcpy(expected+8, &b, 4); memcpy(expected+16, &c, 8); memcpy(expected+24, &d, 4);\nreturn memcmp(&value, expected, sizeof(value)) != 0; }\n");
+    let source = source.replace(
+        "struct S1_7",
+        &format!("struct {}", first.structures[0].name),
+    );
     let executable =
         std::env::temp_dir().join(format!("velk-shared-structures-{}", std::process::id()));
     let mut child = Command::new("cc")
@@ -274,7 +297,7 @@ fn pointer_tail_returns_reach_the_callers_layout() {
     share(&mut [&mut first, &mut wrapper, &mut caller], &[]);
     assert_eq!(first.structures[0].name, caller.structures[0].name);
     assert_eq!(wrapper.ret_type, first.ret_type);
-    assert!(render(&wrapper).contains("struct S1 *f2"));
+    assert!(render(&wrapper).contains(&format!("struct {} *f2", wrapper.structures[0].name)));
 }
 
 #[test]
@@ -296,7 +319,7 @@ fn redefined_parameters_do_not_connect_other_functions() {
 }
 
 #[test]
-fn methods_of_one_class_use_one_class_name() {
+fn connected_methods_use_one_generated_layout() {
     let mut first = function(1, &[(0, 4), (8, 4)]);
     let mut second = function(2, &[(16, 8), (24, 4)]);
     first.name = Some("Square::reset()".into());
@@ -305,8 +328,16 @@ fn methods_of_one_class_use_one_class_name() {
     share(&mut [&mut first, &mut second], &[]);
     for ir in [&first, &second] {
         let code = render(ir);
-        assert_eq!(code.matches("struct Square {").count(), 1, "{code}");
-        assert!(code.contains("struct Square *a0"), "{code}");
+        assert_eq!(
+            code.matches(&format!("struct {} {{", ir.structures[0].name))
+                .count(),
+            1,
+            "{code}"
+        );
+        assert!(
+            code.contains(&format!("struct {} *a0", ir.structures[0].name)),
+            "{code}"
+        );
     }
 }
 
@@ -318,9 +349,12 @@ fn two_single_field_functions_recover_their_combined_structure() {
     share(&mut [&mut first, &mut second], &[]);
     for ir in [&first, &second] {
         let code = render(ir);
-        assert!(code.contains("struct S1 *a0"), "{code}");
-        assert!(code.contains("int32_t field_0x0;"), "{code}");
-        assert!(code.contains("int64_t field_0x8;"), "{code}");
+        assert!(
+            code.contains(&format!("struct {} *a0", ir.structures[0].name)),
+            "{code}"
+        );
+        assert!(code.contains("int32_t f_0;"), "{code}");
+        assert!(code.contains("int64_t f_8;"), "{code}");
     }
 }
 
@@ -346,7 +380,7 @@ fn invalid_class_identifiers_use_generated_names() {
         let mut ir = function(1, &[(0, 4), (8, 4)]);
         ir.name = Some(name.into());
         share(&mut [&mut ir], &[]);
-        assert!(render(&ir).contains("struct S1 *a0"));
+        assert!(render(&ir).contains(&format!("struct {} *a0", ir.structures[0].name)));
     }
 }
 
@@ -375,4 +409,288 @@ fn an_unshared_scalar_pointer_keeps_its_type() {
     let before = render(&ir);
     share(&mut [&mut ir], &[]);
     assert_eq!(render(&ir), before);
+}
+
+fn indexed_function(addr: u64, fields: &[(u64, u8)], scale: u64) -> FunctionIr {
+    let mut ir = function(addr, &[]);
+    ir.params.push(Param {
+        index: 6,
+        name: "i".into(),
+        ty: CType::I64,
+    });
+    for (offset, width) in fields {
+        let mut stmt = put(7, *offset, *width);
+        if let Stmt::Store { addr, .. } = &mut stmt {
+            *addr = Expr::bin(
+                BinOp::Add,
+                addr.clone(),
+                Expr::bin(BinOp::Mul, Expr::reg(6, 64), Expr::Const(scale)),
+            );
+        }
+        ir.blocks[0].stmts.push(stmt);
+    }
+    super::super::structures::recover(&mut ir);
+    ir
+}
+
+#[test]
+fn a_single_indexed_field_uses_the_connected_functions_stride() {
+    let mut first = indexed_function(1, &[(0, 4), (8, 4)], 16);
+    let mut second = indexed_function(2, &[(12, 4)], 16);
+    assert!(second.structures.is_empty());
+    first.blocks[0].stmts.push(call(2, Expr::reg(7, 64)));
+    share(&mut [&mut first, &mut second], &[]);
+    assert_eq!(first.params[0].ty, second.params[0].ty);
+    assert_eq!(second.structures[0].size, Some(16));
+    assert_eq!(second.structures[0].fields.len(), 3);
+    let code = render(&second);
+    assert!(code.contains("a0[i].f_c = 13;"), "{code}");
+}
+
+#[test]
+fn partial_indexed_accesses_refuse_conflicting_scales_widths_and_alignment() {
+    for (scale, offset, width) in [(12, 12, 4), (16, 0, 8), (16, 2, 4), (16, 14, 4)] {
+        let mut first = indexed_function(1, &[(0, 4), (8, 4)], 16);
+        let mut second = indexed_function(2, &[(offset, width)], scale);
+        first.blocks[0].stmts.push(call(2, Expr::reg(7, 64)));
+        let before = (render(&first), render(&second));
+        share(&mut [&mut first, &mut second], &[]);
+        assert_eq!((render(&first), render(&second)), before);
+    }
+}
+
+#[test]
+fn shared_array_fields_compile_and_match_byte_stores_on_many_elements() {
+    use std::io::Write;
+    use std::process::{Command, Stdio};
+
+    let mut first = indexed_function(1, &[(0, 4), (8, 4)], 16);
+    let mut second = indexed_function(2, &[(12, 4)], 16);
+    first.blocks[0].stmts.push(call(2, Expr::reg(7, 64)));
+    share(&mut [&mut first, &mut second], &[]);
+    first.blocks[0].stmts.pop();
+    let mut source =
+        String::from("#include <stdint.h>\n#include <stddef.h>\n#include <string.h>\n");
+    source.push_str(&crate::render::combine(&format!(
+        "{}{}",
+        render(&first),
+        render(&second)
+    )));
+    assert_eq!(
+        source
+            .matches(&format!("struct {} {{", first.structures[0].name))
+            .count(),
+        1
+    );
+    source.push_str("\n_Static_assert(sizeof(struct S1_7) == 16, \"stride\");\n_Static_assert(offsetof(struct S1_7, f_c) == 12, \"offset\");\nint main(void) {\nstruct S1_7 values[257]; uint8_t expected[sizeof(values)];\nfor (unsigned seed=0; seed<256; seed++) {\nmemset(values, seed, sizeof(values)); memset(expected, seed, sizeof(expected));\nfor (int i=256; i>=0; i--) {\nf1(values, i); f2(values, i);\nuint32_t a=1,b=9,c=13; memcpy(expected+i*16,&a,4); memcpy(expected+i*16+8,&b,4); memcpy(expected+i*16+12,&c,4);\nif (memcmp(values, expected, sizeof(values))) return 1;\n}} return 0; }\n");
+    let source = source.replace(
+        "struct S1_7",
+        &format!("struct {}", first.structures[0].name),
+    );
+    let executable =
+        std::env::temp_dir().join(format!("velk-shared-arrays-{}", std::process::id()));
+    let mut child = Command::new("cc")
+        .args(["-std=c11", "-O2", "-Werror", "-x", "c", "-", "-o"])
+        .arg(&executable)
+        .stdin(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .expect("C compiler");
+    child
+        .stdin
+        .take()
+        .unwrap()
+        .write_all(source.as_bytes())
+        .unwrap();
+    let output = child.wait_with_output().unwrap();
+    assert!(
+        output.status.success(),
+        "{}\n{source}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let status = Command::new(&executable)
+        .status()
+        .expect("compiled array test");
+    std::fs::remove_file(executable).unwrap();
+    assert!(status.success(), "{source}");
+}
+
+#[test]
+fn two_single_indexed_fields_establish_a_shared_array() {
+    for scale in [8, 16, 24, 32, 65536] {
+        let mut first = indexed_function(1, &[(0, 4)], scale);
+        let mut second = indexed_function(2, &[(4, 4)], scale);
+        first.blocks[0].stmts.push(call(2, Expr::reg(7, 64)));
+        assert!(first.structures.is_empty() && second.structures.is_empty());
+        share(&mut [&mut first, &mut second], &[]);
+        assert_eq!(first.params[0].ty, second.params[0].ty);
+        assert_eq!(first.structures[0].size, Some(scale));
+        assert!(render(&second).contains("a0[i].f_4"));
+    }
+}
+
+#[test]
+fn smt_shared_array_scales_preserve_addresses() {
+    use crate::ir::smt::{Proofs, raw_bin};
+
+    if !Proofs::available() {
+        return;
+    }
+    let mut proofs = Proofs::default();
+    for size in [8, 16, 24, 32, 65536] {
+        for factor in [1, 2, 3, 17] {
+            let mut first = indexed_function(1, &[(0, 4), (4, 4)], size);
+            let mut second = indexed_function(2, &[(size - 4, 4)], size * factor);
+            first.blocks[0].stmts.push(call(2, Expr::reg(7, 64)));
+            share(&mut [&mut first, &mut second], &[]);
+            let layout = &second.structures[0];
+            assert_eq!(layout.size, Some(size));
+            let (offset, _) = layout.fields.last().unwrap();
+            let original = raw_bin(
+                BinOp::Add,
+                Expr::reg(7, 64),
+                raw_bin(
+                    BinOp::Add,
+                    raw_bin(BinOp::Mul, Expr::reg(6, 64), Expr::Const(size * factor)),
+                    Expr::Const(size - 4),
+                ),
+            );
+            let recovered = raw_bin(
+                BinOp::Add,
+                Expr::reg(7, 64),
+                raw_bin(
+                    BinOp::Add,
+                    raw_bin(
+                        BinOp::Mul,
+                        raw_bin(BinOp::Mul, Expr::reg(6, 64), Expr::Const(factor)),
+                        Expr::Const(layout.size.unwrap()),
+                    ),
+                    Expr::Const(*offset),
+                ),
+            );
+            proofs.expression(
+                format!("shared array size {size} factor {factor}"),
+                &original,
+                &recovered,
+                64,
+            );
+        }
+    }
+    proofs.check();
+}
+
+#[test]
+fn partial_array_layouts_follow_x86_64_and_aarch64_argument_registers() {
+    use std::collections::HashMap;
+
+    for (isa, convention) in [
+        (Isa::X86_64, Convention::SysV),
+        (Isa::X86_64, Convention::Win64),
+        (Isa::AArch64, Convention::Aapcs64),
+    ] {
+        let mut first = indexed_function(1, &[(0, 4), (8, 4)], 16);
+        let mut second = indexed_function(2, &[(12, 4)], 16);
+        first.blocks[0].stmts.push(call(2, Expr::reg(7, 64)));
+        let renamed = HashMap::from([
+            (7, convention.arguments()[0]),
+            (6, convention.arguments()[1]),
+        ]);
+        for ir in [&mut first, &mut second] {
+            ir.isa = isa;
+            for param in &mut ir.params {
+                param.index = renamed[&param.index];
+            }
+            for stmt in ir.blocks.iter_mut().flat_map(|block| &mut block.stmts) {
+                for value in stmt.operands_mut() {
+                    crate::ir::visit::rename_registers(value, &renamed);
+                }
+                if let Stmt::Call {
+                    convention: current,
+                    ..
+                } = stmt
+                {
+                    *current = convention;
+                }
+            }
+        }
+        let before = format!("{:?}", second.blocks);
+        share(&mut [&mut first, &mut second], &[]);
+        assert_eq!(first.params[0].ty, second.params[0].ty);
+        assert!(render(&second).contains("a0[i].f_c"));
+        assert_eq!(format!("{:?}", second.blocks), before);
+    }
+}
+
+#[test]
+fn equal_layouts_share_one_declaration_within_a_function() {
+    let mut ir = function(1, &[(0, 4), (8, 4)]);
+    ir.params.push(Param {
+        index: 6,
+        name: "a1".into(),
+        ty: CType::pointer_to(CType::U32),
+    });
+    ir.blocks[0].stmts.extend([put(6, 0, 4), put(6, 8, 4)]);
+    super::super::structures::recover(&mut ir);
+    share(&mut [&mut ir], &[]);
+    let code = render(&ir);
+    assert_eq!(ir.structures.len(), 1, "{code}");
+    assert_eq!(
+        code.matches(&format!("struct {} {{", ir.structures[0].name))
+            .count(),
+        1,
+        "{code}"
+    );
+    assert!(code.contains("a0->f_8 = 9;"), "{code}");
+    assert!(code.contains("a1->f_8 = 9;"), "{code}");
+}
+
+#[test]
+fn adding_fields_keeps_the_tag_and_combined_declarations_are_distinct() {
+    let mut first = function(1, &[(0, 4), (8, 4)]);
+    let mut middle = function(2, &[(16, 4)]);
+    let mut last = function(3, &[(24, 4)]);
+    first.blocks[0].stmts.push(call(2, Expr::reg(7, 64)));
+    middle.blocks[0].stmts.push(call(3, Expr::reg(7, 64)));
+    let mut partial = first.clone();
+    let mut adjacent = middle.clone();
+    share(&mut [&mut partial, &mut adjacent], &[]);
+    share(&mut [&mut first, &mut middle, &mut last], &[]);
+    assert_eq!(partial.structures[0].name, "S1");
+    assert_eq!(partial.structures[0].name, first.structures[0].name);
+    assert_eq!(first.structures[0].name, last.structures[0].name);
+    let code = crate::render::combine(&format!("{}{}", render(&partial), render(&last)));
+    assert!(
+        code.contains(&format!("struct {} {{", partial.structures[0].name)),
+        "{code}"
+    );
+    assert!(code.contains("struct S2 {"), "{code}");
+    assert!(code.contains("f3(struct S2 *a0)"), "{code}");
+}
+
+#[test]
+fn numbering_follows_addresses_and_skips_declared_tags() {
+    let mut first = function(1, &[(0, 4), (8, 4)]);
+    let mut second = function(2, &[(0, 8), (8, 8)]);
+    let mut reversed_first = first.clone();
+    let mut reversed_second = second.clone();
+    share(&mut [&mut first, &mut second], &[]);
+    share(&mut [&mut reversed_second, &mut reversed_first], &[]);
+    assert_eq!(first.structures[0].name, "S1");
+    assert_eq!(second.structures[0].name, "S2");
+    assert_eq!(render(&first), render(&reversed_first));
+    assert_eq!(render(&second), render(&reversed_second));
+    for name in ["struct S1", "union S1"] {
+        let mut declared = function(3, &[(0, 4), (8, 4)]);
+        declared.definitions.push(crate::ir::Definition {
+            name: name.into(),
+            members: vec!["int value;".into()],
+            fields: vec!["value".into()],
+            contains: Vec::new(),
+            size: 4,
+            alignment: None,
+            compatible_profiles: Vec::new(),
+        });
+        share(&mut [&mut declared], &[]);
+        assert_eq!(declared.structures[0].name, "S2");
+    }
 }

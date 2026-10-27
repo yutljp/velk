@@ -4,6 +4,8 @@
 //! tests/golden/metrics.txt; any change fails until blessed with `VELK_BLESS=1`.
 
 mod common;
+#[path = "metrics/structures.rs"]
+mod structures;
 
 use std::collections::{BTreeMap, HashMap};
 use std::fmt::Write as _;
@@ -34,6 +36,7 @@ struct Truth {
     params: Vec<Kind>,
     variadic: bool,
     ret: Kind,
+    layouts: Vec<Option<structures::TruthLayout>>,
 }
 
 #[derive(Default)]
@@ -453,11 +456,16 @@ fn truth(path: &Path) -> BTreeMap<u64, Truth> {
             let Some(name) = name else { continue };
             let ret = type_kind(&unit, entry.attr_value(gimli::DW_AT_type));
             let mut params = Vec::new();
+            let mut layouts = Vec::new();
             let mut variadic = false;
             let mut children = node.children();
             while let Some(child) = children.next().unwrap_or_else(|error| panic!("{error}")) {
                 match child.entry().tag() {
                     gimli::DW_TAG_formal_parameter => {
+                        layouts.push(structures::pointer_layout(
+                            &unit,
+                            child.entry().attr_value(gimli::DW_AT_type),
+                        ));
                         params.push(type_kind(
                             &unit,
                             child.entry().attr_value(gimli::DW_AT_type),
@@ -474,6 +482,7 @@ fn truth(path: &Path) -> BTreeMap<u64, Truth> {
                     params,
                     variadic,
                     ret,
+                    layouts,
                 },
             );
         }

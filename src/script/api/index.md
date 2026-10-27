@@ -15,6 +15,14 @@ UPX ELF/PE recovery requires UPX on PATH. `b.packing` reports successful direct
 decoding and `b.saveUnpacked("recovered.exe")` saves its complete output.
 See [input formats and limits](../../../docs/INPUT.md).
 
+`card().structureLayouts` contains inferred structure tags, hexadecimal field
+offsets, C access types, access widths, minimum observed sizes and known array
+strides. `elementSize` is null when the stride is unknown.
+`sourceFields` and `sourceSize` remain null for inferred layouts: an access
+width, C storage type or stride alone does not prove a source declaration. Overlapping entries
+describe access views and do not establish a source union. `structures` retains
+the generated C declarations. See `docs/STRUCTURES.md` for measurement scope.
+
 Open ELF, PE/COFF or Mach-O files. A universal Mach-O file opens the slice for this
 machine; pass `{arch: "x86_64"}` (or `"arm64"`, `"arm64e"`) to `velk.open` for another.
 Use an absolute binary path when the MCP client's working directory is unknown.

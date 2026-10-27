@@ -264,7 +264,7 @@ fn abi_indirect_make @ 0x21053c (size 76)
     store64((load64((sp + #0xfffffffffffffff0)) - load64((sp + #0xfffffffffffffff8))), (v1 + #0x10))
     ret #0x0
 -- card
-{"addr":"0x21053c","approxTokens":210,"blocks":1,"hardReasons":[],"name":"abi_indirect_make","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":76,"structures":["struct S1 { int64_t field_0x0; int64_t field_0x8; int64_t field_0x10; };"],"unsupported":0}
+{"addr":"0x21053c","approxTokens":210,"blocks":1,"hardReasons":[],"name":"abi_indirect_make","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":76,"structureLayouts":[{"elementSize":null,"fields":[{"offset":"0x0","size":8,"type":"uint64_t"},{"offset":"0x8","size":8,"type":"uint64_t"},{"offset":"0x10","size":8,"type":"uint64_t"}],"minimumSize":24,"name":"S1","sourceFields":null,"sourceSize":null}],"structures":["struct S1 { uint64_t f_0; uint64_t f_8; uint64_t f_10; };"],"unsupported":0}
 
 == 0x210588 abi_exhaust_five_aligned
 -- decompile

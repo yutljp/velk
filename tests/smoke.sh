@@ -309,7 +309,7 @@ ok "relocated DWARF in an object"
 field_ir=$("$BIN" --decompile $FIX/arm64_debug.elf pair_sum 2>/dev/null)
 echo "$field_ir" | grep "p->a"   >/dev/null || fail "DWARF field name for the first member"
 echo "$field_ir" | grep "p->b"   >/dev/null || fail "DWARF field name for the second member"
-echo "$field_ir" | grep "field_0x" >/dev/null && fail "member kept its offset name"
+echo "$field_ir" | grep "f_" >/dev/null && fail "member kept its offset name"
 ok "DWARF member names"
 zero_ir=$("$BIN" --decompile $FIX/arm64.o helper 2>/dev/null)
 echo "$zero_ir" | grep "return 0;" >/dev/null || fail "zero stays a constant"
@@ -464,8 +464,8 @@ ok "flow-sensitive dead stores"
 
 
 pair_ir=$("$BIN" --decompile $FIX/arm64.o pair_sum 2>/dev/null)
-echo "$pair_ir" | grep "a0->field_0x0"   >/dev/null || fail "member access at offset zero"
-echo "$pair_ir" | grep "a0->field_0x4"   >/dev/null || fail "member access at offset four"
+echo "$pair_ir" | grep "a0->f_0"   >/dev/null || fail "member access at offset zero"
+echo "$pair_ir" | grep "a0->f_4"   >/dev/null || fail "member access at offset four"
 echo "$pair_ir" | grep "\*(uint32_t \*)" >/dev/null && fail "member access keeps the cast"
 ok "pointer members"
 msg_ir=$("$BIN" --decompile $FIX/pe64.exe msg_first 2>/dev/null)
@@ -605,9 +605,10 @@ ok "variadic stack arguments"
 
 # 10) struct access recovery
 pair=$("$BIN" --decompile $FIX/arm64.o pair_sum 2>/dev/null)
-echo "$pair" | grep "struct S1 {"  >/dev/null || fail "struct definition"
-echo "$pair" | grep " int32_t field_0x4; " >/dev/null || fail "struct access offsets"
-echo "$pair" | grep "pair_sum(struct S1 \*a0)" >/dev/null || fail "struct parameter type"
+pair_tag=$(echo "$pair" | sed -n 's/.*pair_sum(struct \([A-Za-z_][A-Za-z_0-9]*\) \*a0).*/\1/p')
+[ -n "$pair_tag" ] || fail "struct parameter type"
+echo "$pair" | grep -F "struct $pair_tag {" >/dev/null || fail "struct definition"
+echo "$pair" | grep " uint32_t f_4; " >/dev/null || fail "struct access offsets"
 pair_card=$("$BIN" --card $FIX/arm64.o pair_sum 2>/dev/null)
 echo "$pair_card" | grep '"accesses"'    >/dev/null || fail "card struct accesses"
 ok "struct access recovery"
@@ -627,7 +628,7 @@ ok "signature application"
 
 # 13) typed pointer parameters and the script API (shape hash, signature)
 pair_c=$("$BIN" --decompile $FIX/arm64.o pair_sum 2>/dev/null)
-echo "$pair_c" | grep 'struct S1 \*a0'  >/dev/null || fail "typed pointer parameter"
+echo "$pair_c" | grep -E 'struct [A-Za-z_][A-Za-z_0-9]* \*a0'  >/dev/null || fail "typed pointer parameter"
 script=$(mktemp)
 printf '%s\n' "const f = velk.open('$FIX/arm64.o').getFunction('pair_sum');" \
   'console.log(f.shapeHash().length, f.signature().params.length);' > "$script"

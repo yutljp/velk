@@ -6,6 +6,8 @@
 /* velk prelude */
 #include <stdint.h>
 
+struct S1 { uint32_t f_0; uint32_t f_4; };
+
 extern uint32_t g_counter; /* address: 0x4c */
 extern uint64_t banner; /* address: 0x60 */
 /* end velk prelude */
@@ -13,13 +15,11 @@ extern uint64_t banner; /* address: 0x60 */
 == 0x0 point_dot
 -- decompile
 /* velk pseudo-C: point_dot @ 0x0 */
-struct S1 { int32_t field_0x0; int32_t field_0x4; };
-struct S2 { int32_t field_0x0; int32_t field_0x4; };
-int32_t point_dot(struct S2 *a0, struct S1 *a1) {
-    return (uint32_t)a1->field_0x4 * a0->field_0x4 + (uint32_t)a1->field_0x0 * a0->field_0x0;
+int32_t point_dot(struct S1 *a0, struct S1 *a1) {
+    return a1->f_4 * a0->f_4 + a1->f_0 * a0->f_0;
 }
 -- signature
-int32_t (struct S2 * a0, struct S1 * a1)
+int32_t (struct S1 * a0, struct S1 * a1)
 -- references
 
 -- ir
@@ -27,7 +27,7 @@ fn point_dot @ 0x0 (size 15)
   blk0 @ 0x0:
     ret (((load32((rsi + #0x4)) * load32((rdi + #0x4))) + (load32(rsi) * load32(rdi))) & #0xffffffff)
 -- card
-{"accesses":["a1 +0x0:uint32_t, +0x4:uint32_t"],"addr":"0x0","approxTokens":132,"blocks":1,"hardReasons":[],"name":"point_dot","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":15,"structures":["struct S1 { int32_t field_0x0; int32_t field_0x4; };","struct S2 { int32_t field_0x0; int32_t field_0x4; };"],"unsupported":0}
+{"accesses":["a1 +0x0:uint32_t, +0x4:uint32_t"],"addr":"0x0","approxTokens":132,"blocks":1,"hardReasons":[],"name":"point_dot","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":15,"structureLayouts":[{"elementSize":null,"fields":[{"offset":"0x0","size":4,"type":"uint32_t"},{"offset":"0x4","size":4,"type":"uint32_t"}],"minimumSize":8,"name":"S1","sourceFields":null,"sourceSize":null}],"structures":["struct S1 { uint32_t f_0; uint32_t f_4; };"],"unsupported":0}
 
 == 0x10 array_sum
 -- decompile

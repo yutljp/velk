@@ -24,7 +24,7 @@ fn item_weight @ 0x210174 (size 20)
     v1 = (x0 + (sext32(w1) << #0x4))
     ret ((load32((v1 + #0x8)) * load16((v1 + #0xc))s) & #0xffffffff)
 -- card
-{"addr":"0x210174","approxTokens":126,"blocks":1,"hardReasons":[],"name":"item_weight","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":20,"structures":["struct S1 { uint8_t gap_0x0[0x8]; int32_t field_0x8; int16_t field_0xc; };"],"unsupported":0}
+{"addr":"0x210174","approxTokens":126,"blocks":1,"hardReasons":[],"name":"item_weight","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":20,"structureLayouts":[{"elementSize":null,"fields":[{"offset":"0x8","size":4,"type":"uint32_t"},{"offset":"0xc","size":2,"type":"int16_t"}],"minimumSize":14,"name":"S1","sourceFields":null,"sourceSize":null}],"structures":["struct S1 { uint8_t gap_0x0[0x8]; uint32_t f_8; int16_t f_c; };"],"unsupported":0}
 
 == 0x210188 cell_set
 -- decompile
@@ -47,7 +47,7 @@ fn cell_set @ 0x210188 (size 24)
     store32((w2 + #0x1), (v1 + #0x8))
     ret #0x0
 -- card
-{"addr":"0x210188","approxTokens":132,"blocks":1,"hardReasons":[],"name":"cell_set","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":24,"structures":["struct S1 { int32_t field_0x0; uint8_t gap_0x4[0x4]; int32_t field_0x8; };"],"unsupported":0}
+{"addr":"0x210188","approxTokens":132,"blocks":1,"hardReasons":[],"name":"cell_set","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":24,"structureLayouts":[{"elementSize":null,"fields":[{"offset":"0x0","size":4,"type":"uint32_t"},{"offset":"0x8","size":4,"type":"uint32_t"}],"minimumSize":12,"name":"S1","sourceFields":null,"sourceSize":null}],"structures":["struct S1 { uint32_t f_0; uint8_t gap_0x4[0x4]; uint32_t f_8; };"],"unsupported":0}
 
 == 0x2101a0 item_last_key
 -- decompile

@@ -114,7 +114,7 @@ fn unsigned_dword_packing_saturates_each_lane_and_preserves_the_callers_frame() 
                  int32_t lane = input[i];
                  expected[i] = lane < 0 ? 0 : lane > 65535 ? 65535 : lane;
              }
-             if (pack_memory((struct S1 *)(void *)input, (uintptr_t)output) != 7 || memcmp(output, expected, 16)) return 3;
+             if (pack_memory((void *)input, (uintptr_t)output) != 7 || memcmp(output, expected, 16)) return 3;
              int32_t first = input[0];
              memmove(input, input + 1, 7 * sizeof *input);
              input[7] = first;

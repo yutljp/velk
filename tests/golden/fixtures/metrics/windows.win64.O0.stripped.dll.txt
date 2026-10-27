@@ -9,6 +9,8 @@
 /* velk prelude */
 #include <stdint.h>
 
+struct S1 { uint64_t f_0; uint64_t f_8; uint64_t f_10; };
+
 uint64_t imported_value();
 /* end velk prelude */
 
@@ -85,11 +87,10 @@ fn <unnamed> @ 0x180001070 (size 52)
 == 0x1800010b0 -
 -- decompile
 /* velk pseudo-C: sub_1800010b0 @ 0x1800010b0 */
-struct S1 { int64_t field_0x0; int64_t field_0x8; int64_t field_0x10; };
 struct S1 *sub_1800010b0(struct S1 *result, int64_t a1) {
-    result->field_0x0 = a1;
-    result->field_0x8 = (int64_t)((uint64_t)a1 + 1);
-    result->field_0x10 = a1 ^ 0x9;
+    result->f_0 = a1;
+    result->f_8 = (int64_t)((uint64_t)a1 + 1);
+    result->f_10 = a1 ^ 0x9;
     return result;
 }
 -- signature
@@ -105,7 +106,7 @@ fn <unnamed> @ 0x1800010b0 (size 52)
     store64((load64((rsp + #0xfffffffffffffff0)) ^ #0x9), (rcx + #0x10))
     ret rcx
 -- card
-{"accesses":["result +0x0:uint64_t, +0x8:uint64_t, +0x10:uint64_t"],"addr":"0x1800010b0","approxTokens":180,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":52,"structures":["struct S1 { int64_t field_0x0; int64_t field_0x8; int64_t field_0x10; };"],"unsupported":0}
+{"accesses":["result +0x0:uint64_t, +0x8:uint64_t, +0x10:uint64_t"],"addr":"0x1800010b0","approxTokens":180,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":52,"structureLayouts":[{"elementSize":null,"fields":[{"offset":"0x0","size":8,"type":"uint64_t"},{"offset":"0x8","size":8,"type":"uint64_t"},{"offset":"0x10","size":8,"type":"uint64_t"}],"minimumSize":24,"name":"S1","sourceFields":null,"sourceSize":null}],"structures":["struct S1 { uint64_t f_0; uint64_t f_8; uint64_t f_10; };"],"unsupported":0}
 
 == 0x1800010f0 -
 -- decompile

@@ -5059,7 +5059,7 @@ fn single_use_structure_addresses_preserve_printed_memory_reads() {
         if case == 0 {
             assert!(!code.contains("*v1;"), "{code}");
             assert!(code.contains("struct record {"), "{code}");
-            assert!(code.contains("items[index].field_0x8"), "{code}");
+            assert!(code.contains("items[index].f_8"), "{code}");
         } else {
             assert_eq!(code, render(&original));
         }

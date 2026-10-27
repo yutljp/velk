@@ -5,6 +5,8 @@
 0x201250 73 - unwind,prologue
 /* velk prelude */
 #include <stdint.h>
+
+struct S1 { uint32_t f_0; uint32_t f_4; };
 /* end velk prelude */
 
 == 0x2011c0 -
@@ -58,9 +60,8 @@ fn <unnamed> @ 0x2011e0 (size 65)
 == 0x201230 -
 -- decompile
 /* velk pseudo-C: sub_201230 @ 0x201230 */
-struct S1 { int32_t field_0x0; int32_t field_0x4; };
 int32_t sub_201230(struct S1 *a0) {
-    return (uint32_t)a0->field_0x0 + a0->field_0x4;
+    return a0->f_0 + a0->f_4;
 }
 -- signature
 int32_t (struct S1 * a0)
@@ -71,7 +72,7 @@ fn <unnamed> @ 0x201230 (size 23)
   blk0 @ 0x201230:
     ret ((load32(rdi) + load32((rdi + #0x4))) & #0xffffffff)
 -- card
-{"addr":"0x201230","approxTokens":150,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":23,"structures":["struct S1 { int32_t field_0x0; int32_t field_0x4; };"],"unsupported":0}
+{"addr":"0x201230","approxTokens":150,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":23,"structureLayouts":[{"elementSize":null,"fields":[{"offset":"0x0","size":4,"type":"uint32_t"},{"offset":"0x4","size":4,"type":"uint32_t"}],"minimumSize":8,"name":"S1","sourceFields":null,"sourceSize":null}],"structures":["struct S1 { uint32_t f_0; uint32_t f_4; };"],"unsupported":0}
 
 == 0x201250 -
 -- decompile

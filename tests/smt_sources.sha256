@@ -1,5 +1,7 @@
 45e071b2927704028ba25f7951198442479efc5f46c770213e69db2427609aa4  src/analysis/pairs32.rs	fn narrow_parameter_loads(
 cee97a052f6b4f9baf21204bcd640dad36fe69d07eceae1a024dfe13f9f20182  src/analysis/structures.rs	fn rewrite(
+4edb87fb78bfe24a04c10b58599a9401a4a428cd8699c26480799bc73ec289a0  src/analysis/structures.rs	pub(super) fn layout_with_size(
+6939bd7b68d56ee1a758705aca8089a28d07c3ea4ee44f21d1d53939834632cf  src/analysis/structures/pointers.rs	pub(super) fn normalize(
 bfaf324bc4cb783da31fbb7e9734f1d0505228fe26463bd656e8b02a8fbe8b42  src/ir/eval/emulation/strings.rs	fn stored_byte(
 4b7662d442895f01185e2a8662f07849f34ed5ac8c0ece55980ab92a82fbc27c  src/ir/mod.rs	pub fn bin(
 7ba4d833db4dddb29563e89101973ea76ef0baf15b41170b964b025ca482cbea  src/ir/semantics.rs	pub(crate) fn fold(

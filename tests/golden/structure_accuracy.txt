@@ -1,0 +1,149 @@
+# fixture | metric | correct | wrong | missed
+# Access views compared with direct non-bit-field source members; aggregates are not flattened.
+# Access types and strides need not be declared source types and sizes.
+# Source metrics count only sourceFields/sourceSize; unknown facts count as missed.
+# struct_arrays.aarch64.O0 item_weight parameter 0: access at 0x8: uint32_t (Some(4) bytes), source Scalar { bytes: 4, signed: true } (Some(4) bytes)
+# struct_arrays.aarch64.O0 cell_set parameter 0: access at 0x0: uint32_t (Some(4) bytes), source Scalar { bytes: 4, signed: true } (Some(4) bytes)
+# struct_arrays.aarch64.O0 cell_set parameter 0: access at 0x8: uint32_t (Some(4) bytes), source Scalar { bytes: 4, signed: true } (Some(4) bytes)
+# struct_arrays.aarch64.O0 item_last_key parameter 0: access at 0x0: uint64_t (Some(8) bytes), source Scalar { bytes: 8, signed: true } (Some(8) bytes)
+# struct_arrays.aarch64.O0 item_last_key parameter 0: access at 0x8: uint32_t (Some(4) bytes), source Scalar { bytes: 4, signed: true } (Some(4) bytes)
+struct_arrays.aarch64.O0 | field offsets | 6 | 0 | 3
+struct_arrays.aarch64.O0 | field widths | 6 | 0 | 3
+struct_arrays.aarch64.O0 | field types | 1 | 5 | 3
+struct_arrays.aarch64.O0 | element sizes | 3 | 0 | 0
+struct_arrays.aarch64.O0 | source field offsets | 0 | 0 | 9
+struct_arrays.aarch64.O0 | source field widths | 0 | 0 | 9
+struct_arrays.aarch64.O0 | source field types | 0 | 0 | 9
+struct_arrays.aarch64.O0 | source sizes | 0 | 0 | 3
+# struct_arrays.aarch64.O2 item_weight parameter 0: access at 0x8: uint32_t (Some(4) bytes), source Scalar { bytes: 4, signed: true } (Some(4) bytes)
+# struct_arrays.aarch64.O2 cell_set parameter 0: access at 0x0: uint32_t (Some(4) bytes), source Scalar { bytes: 4, signed: true } (Some(4) bytes)
+# struct_arrays.aarch64.O2 cell_set parameter 0: access at 0x8: uint32_t (Some(4) bytes), source Scalar { bytes: 4, signed: true } (Some(4) bytes)
+# struct_arrays.aarch64.O2 item_last_key parameter 0: access at 0x0: uint64_t (Some(8) bytes), source Scalar { bytes: 8, signed: true } (Some(8) bytes)
+# struct_arrays.aarch64.O2 item_last_key parameter 0: access at 0x8: uint32_t (Some(4) bytes), source Scalar { bytes: 4, signed: true } (Some(4) bytes)
+struct_arrays.aarch64.O2 | field offsets | 6 | 0 | 3
+struct_arrays.aarch64.O2 | field widths | 6 | 0 | 3
+struct_arrays.aarch64.O2 | field types | 1 | 5 | 3
+struct_arrays.aarch64.O2 | element sizes | 3 | 0 | 0
+struct_arrays.aarch64.O2 | source field offsets | 0 | 0 | 9
+struct_arrays.aarch64.O2 | source field widths | 0 | 0 | 9
+struct_arrays.aarch64.O2 | source field types | 0 | 0 | 9
+struct_arrays.aarch64.O2 | source sizes | 0 | 0 | 3
+# struct_arrays.win64.O0 item_weight parameter 0: access at 0x4: uint32_t (Some(4) bytes), source Scalar { bytes: 4, signed: true } (Some(4) bytes)
+# struct_arrays.win64.O0 cell_set parameter 0: access at 0x0: uint32_t (Some(4) bytes), source Scalar { bytes: 4, signed: true } (Some(4) bytes)
+# struct_arrays.win64.O0 cell_set parameter 0: access at 0x8: uint32_t (Some(4) bytes), source Scalar { bytes: 4, signed: true } (Some(4) bytes)
+# struct_arrays.win64.O0 item_last_key parameter 0: access at 0x0: uint32_t (Some(4) bytes), source Scalar { bytes: 4, signed: true } (Some(4) bytes)
+# struct_arrays.win64.O0 item_last_key parameter 0: access at 0x4: uint32_t (Some(4) bytes), source Scalar { bytes: 4, signed: true } (Some(4) bytes)
+struct_arrays.win64.O0 | field offsets | 6 | 0 | 3
+struct_arrays.win64.O0 | field widths | 6 | 0 | 3
+struct_arrays.win64.O0 | field types | 1 | 5 | 3
+struct_arrays.win64.O0 | element sizes | 3 | 0 | 0
+struct_arrays.win64.O0 | source field offsets | 0 | 0 | 9
+struct_arrays.win64.O0 | source field widths | 0 | 0 | 9
+struct_arrays.win64.O0 | source field types | 0 | 0 | 9
+struct_arrays.win64.O0 | source sizes | 0 | 0 | 3
+# struct_arrays.win64.O2 item_weight parameter 0: access at 0x4: uint32_t (Some(4) bytes), source Scalar { bytes: 4, signed: true } (Some(4) bytes)
+# struct_arrays.win64.O2 cell_set parameter 0: access at 0x0: uint32_t (Some(4) bytes), source Scalar { bytes: 4, signed: true } (Some(4) bytes)
+# struct_arrays.win64.O2 cell_set parameter 0: access at 0x8: uint32_t (Some(4) bytes), source Scalar { bytes: 4, signed: true } (Some(4) bytes)
+struct_arrays.win64.O2 | field offsets | 4 | 0 | 5
+struct_arrays.win64.O2 | field widths | 4 | 0 | 5
+struct_arrays.win64.O2 | field types | 1 | 3 | 5
+struct_arrays.win64.O2 | element sizes | 2 | 0 | 1
+struct_arrays.win64.O2 | source field offsets | 0 | 0 | 9
+struct_arrays.win64.O2 | source field widths | 0 | 0 | 9
+struct_arrays.win64.O2 | source field types | 0 | 0 | 9
+struct_arrays.win64.O2 | source sizes | 0 | 0 | 3
+# struct_arrays.x86_64.O0 item_weight parameter 0: access at 0x8: uint32_t (Some(4) bytes), source Scalar { bytes: 4, signed: true } (Some(4) bytes)
+# struct_arrays.x86_64.O0 cell_set parameter 0: access at 0x0: uint32_t (Some(4) bytes), source Scalar { bytes: 4, signed: true } (Some(4) bytes)
+# struct_arrays.x86_64.O0 cell_set parameter 0: access at 0x8: uint32_t (Some(4) bytes), source Scalar { bytes: 4, signed: true } (Some(4) bytes)
+# struct_arrays.x86_64.O0 item_last_key parameter 0: access at 0x0: uint64_t (Some(8) bytes), source Scalar { bytes: 8, signed: true } (Some(8) bytes)
+# struct_arrays.x86_64.O0 item_last_key parameter 0: access at 0x8: uint32_t (Some(4) bytes), source Scalar { bytes: 4, signed: true } (Some(4) bytes)
+struct_arrays.x86_64.O0 | field offsets | 6 | 0 | 3
+struct_arrays.x86_64.O0 | field widths | 6 | 0 | 3
+struct_arrays.x86_64.O0 | field types | 1 | 5 | 3
+struct_arrays.x86_64.O0 | element sizes | 3 | 0 | 0
+struct_arrays.x86_64.O0 | source field offsets | 0 | 0 | 9
+struct_arrays.x86_64.O0 | source field widths | 0 | 0 | 9
+struct_arrays.x86_64.O0 | source field types | 0 | 0 | 9
+struct_arrays.x86_64.O0 | source sizes | 0 | 0 | 3
+# struct_arrays.x86_64.O2 item_weight parameter 0: access at 0x8: uint32_t (Some(4) bytes), source Scalar { bytes: 4, signed: true } (Some(4) bytes)
+# struct_arrays.x86_64.O2 cell_set parameter 0: access at 0x0: uint32_t (Some(4) bytes), source Scalar { bytes: 4, signed: true } (Some(4) bytes)
+# struct_arrays.x86_64.O2 cell_set parameter 0: access at 0x8: uint32_t (Some(4) bytes), source Scalar { bytes: 4, signed: true } (Some(4) bytes)
+struct_arrays.x86_64.O2 | field offsets | 4 | 0 | 5
+struct_arrays.x86_64.O2 | field widths | 4 | 0 | 5
+struct_arrays.x86_64.O2 | field types | 1 | 3 | 5
+struct_arrays.x86_64.O2 | element sizes | 2 | 0 | 1
+struct_arrays.x86_64.O2 | source field offsets | 0 | 0 | 9
+struct_arrays.x86_64.O2 | source field widths | 0 | 0 | 9
+struct_arrays.x86_64.O2 | source field types | 0 | 0 | 9
+struct_arrays.x86_64.O2 | source sizes | 0 | 0 | 3
+# structs.aarch64.O0 rect_area parameter 0: access at 0x0: uint32_t (Some(4) bytes), source Other (Some(8) bytes)
+# structs.aarch64.O0 rect_area parameter 0: access at 0x4 has no direct source member
+# structs.aarch64.O0 rect_area parameter 0: access at 0x8: uint32_t (Some(4) bytes), source Other (Some(8) bytes)
+# structs.aarch64.O0 rect_area parameter 0: access at 0xc has no direct source member
+# structs.aarch64.O0 record_total parameter 0: access at 0x8: uint64_t (Some(8) bytes), source Scalar { bytes: 8, signed: true } (Some(8) bytes)
+structs.aarch64.O0 | field offsets | 4 | 2 | 1
+structs.aarch64.O0 | field widths | 2 | 4 | 1
+structs.aarch64.O0 | field types | 1 | 5 | 1
+structs.aarch64.O0 | element sizes | 1 | 0 | 2
+structs.aarch64.O0 | source field offsets | 0 | 0 | 5
+structs.aarch64.O0 | source field widths | 0 | 0 | 5
+structs.aarch64.O0 | source field types | 0 | 0 | 5
+structs.aarch64.O0 | source sizes | 0 | 0 | 3
+# structs.aarch64.O2 rect_area parameter 0: access at 0x0: uint64_t (Some(8) bytes), source Other (Some(8) bytes)
+# structs.aarch64.O2 rect_area parameter 0: access at 0x8: uint64_t (Some(8) bytes), source Other (Some(8) bytes)
+# structs.aarch64.O2 record_total parameter 0: access at 0x8: uint64_t (Some(8) bytes), source Scalar { bytes: 8, signed: true } (Some(8) bytes)
+structs.aarch64.O2 | field offsets | 4 | 0 | 1
+structs.aarch64.O2 | field widths | 4 | 0 | 1
+structs.aarch64.O2 | field types | 1 | 3 | 1
+structs.aarch64.O2 | element sizes | 1 | 0 | 2
+structs.aarch64.O2 | source field offsets | 0 | 0 | 5
+structs.aarch64.O2 | source field widths | 0 | 0 | 5
+structs.aarch64.O2 | source field types | 0 | 0 | 5
+structs.aarch64.O2 | source sizes | 0 | 0 | 3
+# structs.win64.O0 record_total parameter 0: access at 0x4: uint32_t (Some(4) bytes), source Scalar { bytes: 4, signed: true } (Some(4) bytes)
+structs.win64.O0 | field offsets | 2 | 0 | 3
+structs.win64.O0 | field widths | 2 | 0 | 3
+structs.win64.O0 | field types | 1 | 1 | 3
+structs.win64.O0 | element sizes | 1 | 0 | 2
+structs.win64.O0 | source field offsets | 0 | 0 | 5
+structs.win64.O0 | source field widths | 0 | 0 | 5
+structs.win64.O0 | source field types | 0 | 0 | 5
+structs.win64.O0 | source sizes | 0 | 0 | 3
+# structs.win64.O2 rect_area parameter 0: access at 0x0: uint32_t (Some(4) bytes), source Other (Some(8) bytes)
+# structs.win64.O2 rect_area parameter 0: access at 0x4 has no direct source member
+# structs.win64.O2 rect_area parameter 0: access at 0x8: uint32_t (Some(4) bytes), source Other (Some(8) bytes)
+# structs.win64.O2 rect_area parameter 0: access at 0xc has no direct source member
+structs.win64.O2 | field offsets | 2 | 2 | 3
+structs.win64.O2 | field widths | 0 | 4 | 3
+structs.win64.O2 | field types | 0 | 4 | 3
+structs.win64.O2 | element sizes | 0 | 0 | 3
+structs.win64.O2 | source field offsets | 0 | 0 | 5
+structs.win64.O2 | source field widths | 0 | 0 | 5
+structs.win64.O2 | source field types | 0 | 0 | 5
+structs.win64.O2 | source sizes | 0 | 0 | 3
+# structs.x86_64.O0 rect_area parameter 0: access at 0x0: uint32_t (Some(4) bytes), source Other (Some(8) bytes)
+# structs.x86_64.O0 rect_area parameter 0: access at 0x4 has no direct source member
+# structs.x86_64.O0 rect_area parameter 0: access at 0x8: uint32_t (Some(4) bytes), source Other (Some(8) bytes)
+# structs.x86_64.O0 rect_area parameter 0: access at 0xc has no direct source member
+# structs.x86_64.O0 record_total parameter 0: access at 0x8: uint64_t (Some(8) bytes), source Scalar { bytes: 8, signed: true } (Some(8) bytes)
+structs.x86_64.O0 | field offsets | 4 | 2 | 1
+structs.x86_64.O0 | field widths | 2 | 4 | 1
+structs.x86_64.O0 | field types | 1 | 5 | 1
+structs.x86_64.O0 | element sizes | 1 | 0 | 2
+structs.x86_64.O0 | source field offsets | 0 | 0 | 5
+structs.x86_64.O0 | source field widths | 0 | 0 | 5
+structs.x86_64.O0 | source field types | 0 | 0 | 5
+structs.x86_64.O0 | source sizes | 0 | 0 | 3
+# structs.x86_64.O2 rect_area parameter 0: access at 0x0: uint32_t (Some(4) bytes), source Other (Some(8) bytes)
+# structs.x86_64.O2 rect_area parameter 0: access at 0x4 has no direct source member
+# structs.x86_64.O2 rect_area parameter 0: access at 0x8: uint32_t (Some(4) bytes), source Other (Some(8) bytes)
+# structs.x86_64.O2 rect_area parameter 0: access at 0xc has no direct source member
+# structs.x86_64.O2 record_total parameter 0: access at 0x8: uint64_t (Some(8) bytes), source Scalar { bytes: 8, signed: true } (Some(8) bytes)
+structs.x86_64.O2 | field offsets | 4 | 2 | 1
+structs.x86_64.O2 | field widths | 2 | 4 | 1
+structs.x86_64.O2 | field types | 1 | 5 | 1
+structs.x86_64.O2 | element sizes | 1 | 0 | 2
+structs.x86_64.O2 | source field offsets | 0 | 0 | 5
+structs.x86_64.O2 | source field widths | 0 | 0 | 5
+structs.x86_64.O2 | source field types | 0 | 0 | 5
+structs.x86_64.O2 | source sizes | 0 | 0 | 3

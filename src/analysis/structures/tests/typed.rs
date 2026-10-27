@@ -65,22 +65,22 @@ fn copies_combine_fields_and_preserve_mixed_signed_loads() {
     ir.ret_type = CType::U64;
     recover(&mut ir);
     let text = crate::render::render(&ir, &[], &Default::default(), &[]);
-    assert!(text.contains("a0->field_0x4"), "{text}");
-    assert!(text.contains("->field_0x8"), "{text}");
+    assert!(text.contains("a0->f_4"), "{text}");
+    assert!(text.contains("->f_8"), "{text}");
     assert!(!text.contains("*(uint"), "{text}");
     compile_and_run(
         "copied_fields",
         &text,
         r#"
 int main(void) {
-    _Static_assert(offsetof(struct copied_fields_a0, field_0x4) == 4, "offset");
-    _Static_assert(offsetof(struct copied_fields_a0, field_0x8) == 8, "offset");
+    _Static_assert(offsetof(struct copied_fields_a0, f_4) == 4, "offset");
+    _Static_assert(offsetof(struct copied_fields_a0, f_8) == 8, "offset");
     struct copied_fields_a0 value = {0};
-    value.field_0x4 = -128;
-    value.field_0x8 = 65535;
+    value.f_4 = -128;
+    value.f_8 = 65535;
     if (copied_fields(&value) != 65407) return 1;
-    value.field_0x4 = 127;
-    value.field_0x8 = 32768;
+    value.f_4 = 127;
+    value.f_8 = 32768;
     return copied_fields(&value) != 32895;
 }
 "#,
@@ -114,8 +114,8 @@ fn a_local_structure_array_uses_the_exact_stride() {
     ir.ret_type = CType::U64;
     recover(&mut ir);
     let text = crate::render::render(&ir, &[], &Default::default(), &[]);
-    assert!(text.contains("v1[index].field_0x0 = 91;"), "{text}");
-    assert!(text.contains("v1[index].field_0x8"), "{text}");
+    assert!(text.contains("v1[index].f_0 = 91;"), "{text}");
+    assert!(text.contains("v1[index].f_8"), "{text}");
     compile_and_run(
         "local_array",
         &text,
@@ -123,10 +123,10 @@ fn a_local_structure_array_uses_the_exact_stride() {
 int main(void) {
     _Static_assert(sizeof(struct local_array_s1) == 16, "stride");
     struct local_array_s1 values[3] = {0};
-    values[2].field_0x8 = -17;
+    values[2].f_8 = -17;
     uintptr_t pointer = (uintptr_t)values;
     if (local_array((void *)&pointer, 2) != (uint64_t)-17) return 1;
-    return values[0].field_0x0 != 0 || values[2].field_0x0 != 91;
+    return values[0].f_0 != 0 || values[2].f_0 != 91;
 }
 "#,
     );
@@ -219,8 +219,8 @@ fn call_result_and_copy_use_fixed_fields() {
     symbols.functions.insert(0x1000, "make_pointer".into());
     symbols.function_returns.insert(0x1000, CType::U64);
     let text = crate::render::render(&ir, &[], &symbols, &[]);
-    assert!(text.contains("->field_0x4"), "{text}");
-    assert!(text.contains("->field_0x8"), "{text}");
+    assert!(text.contains("->f_4"), "{text}");
+    assert!(text.contains("->f_8"), "{text}");
     assert!(ir.value_types[&result].pointee_struct().is_some());
     compile_and_run(
         "returned_fields",
@@ -296,18 +296,18 @@ fn a_pointer_followed_through_its_own_field_points_at_a_structure() {
     ir.ret_type = CType::U64;
     recover(&mut ir);
     let text = crate::render::render(&ir, &[], &Default::default(), &[]);
-    assert!(text.contains("->field_0x8"), "{text}");
+    assert!(text.contains("->f_8"), "{text}");
     assert!(!text.contains("*(uint64_t *)("), "{text}");
     compile_and_run(
         "list_walk",
         &text,
         r#"
 int main(void) {
-    _Static_assert(offsetof(struct list_walk_s1, field_0x8) == 8, "offset");
+    _Static_assert(offsetof(struct list_walk_s1, f_8) == 8, "offset");
     struct list_walk_s1 second = {0}, first = {0};
-    second.field_0x8 = 5;
-    first.field_0x0 = &second;
-    first.field_0x8 = 7;
+    second.f_8 = 5;
+    first.f_0 = &second;
+    first.f_8 = 7;
     uintptr_t head = (uintptr_t)&first;
     return list_walk((void *)&head) != 12;
 }
@@ -352,8 +352,8 @@ fn a_local_array_indexed_through_a_scaled_register_uses_its_elements() {
     ir.ret_type = CType::U64;
     recover(&mut ir);
     let text = crate::render::render(&ir, &[], &Default::default(), &[]);
-    assert!(text.contains("[index].field_0x0 = 91;"), "{text}");
-    assert!(text.contains("[index].field_0x8"), "{text}");
+    assert!(text.contains("[index].f_0 = 91;"), "{text}");
+    assert!(text.contains("[index].f_8"), "{text}");
     compile_and_run(
         "scaled_array",
         &text,
@@ -361,10 +361,10 @@ fn a_local_array_indexed_through_a_scaled_register_uses_its_elements() {
 int main(void) {
     _Static_assert(sizeof(struct scaled_array_s1) == 16, "stride");
     struct scaled_array_s1 values[3] = {0};
-    values[2].field_0x8 = -17;
+    values[2].f_8 = -17;
     uintptr_t pointer = (uintptr_t)values;
     if (scaled_array((void *)&pointer, 2) != (uint64_t)-17) return 1;
-    return values[0].field_0x0 != 0 || values[2].field_0x0 != 91;
+    return values[0].f_0 != 0 || values[2].f_0 != 91;
 }
 "#,
     );
@@ -393,19 +393,107 @@ fn a_field_read_at_two_widths_is_a_union_member() {
     recover(&mut ir);
     let text = crate::render::render(&ir, &[], &Default::default(), &[]);
     assert!(text.contains("union {"), "{text}");
-    assert!(text.contains("a0->field_0x0.as_i64 = "), "{text}");
-    assert!(text.contains("a0->field_0x0.as_i32[1]"), "{text}");
+    assert!(text.contains("a0->f_0.as_u64 = "), "{text}");
+    assert!(text.contains("a0->f_0.as_i32[1]"), "{text}");
     assert!(!text.contains("*(int32_t *)"), "{text}");
     compile_and_run(
         "cell_fields",
         &text,
         r#"
 int main(void) {
-    _Static_assert(offsetof(struct cell_fields_a0, field_0x8) == 8, "offset");
+    _Static_assert(offsetof(struct cell_fields_a0, f_8) == 8, "offset");
     struct cell_fields_a0 value = {0};
-    value.field_0x8 = 5;
+    value.f_8 = 5;
     return cell_fields(&value) != (uint64_t)(0x12345678 + 5);
 }
+
 "#,
     );
+}
+
+#[test]
+fn interior_loop_pointers_print_fields_and_preserve_signed_values() {
+    let pointer = VARIABLE_BASE;
+    let count = VARIABLE_BASE + 1;
+    let total = VARIABLE_BASE + 2;
+    for isa in [Isa::X86_64, Isa::AArch64] {
+        let mut ir = pointer_function(vec![
+            assign(pointer, at(7, 8)),
+            assign(count, Expr::Const(257)),
+            assign(total, Expr::Const(0)),
+            Stmt::Br { target: Some(1) },
+        ]);
+        ir.isa = isa;
+        ir.name = Some("sum_fields".into());
+        ir.ret_type = CType::U64;
+        ir.blocks.push(crate::ir::Block {
+            start: 1,
+            stmts: vec![
+                assign(
+                    total,
+                    Expr::bin(
+                        BinOp::Add,
+                        Expr::reg(total, 64),
+                        Expr::bin(
+                            BinOp::Add,
+                            load(
+                                Expr::bin(BinOp::Sub, Expr::reg(pointer, 64), Expr::Const(8)),
+                                4,
+                                true,
+                            ),
+                            Expr::SignExtend {
+                                value: Box::new(load(Expr::reg(pointer, 64), 2, false)),
+                                width: 2,
+                            },
+                        ),
+                    ),
+                ),
+                assign(
+                    pointer,
+                    Expr::bin(BinOp::Add, Expr::reg(pointer, 64), Expr::Const(16)),
+                ),
+                assign(
+                    count,
+                    Expr::bin(BinOp::Sub, Expr::reg(count, 64), Expr::Const(1)),
+                ),
+                Stmt::Brif {
+                    cond: crate::ir::Cond::Ne,
+                    lhs: Expr::reg(count, 64),
+                    rhs: Expr::Const(0),
+                    target: 1,
+                },
+            ],
+        });
+        ir.blocks.push(crate::ir::Block {
+            start: 2,
+            stmts: vec![Stmt::Ret {
+                value: Expr::reg(total, 64),
+            }],
+        });
+        recover(&mut ir);
+        let text = crate::render::render(&ir, &[], &Default::default(), &[]);
+        assert!(text.contains("v1->f_0"), "{text}");
+        assert!(text.contains("v1->f_8"), "{text}");
+        assert!(!text.contains("*(int"), "{text}");
+        compile_and_run(
+            "interior_loop",
+            &text,
+            r#"
+int main(void) {
+    struct sum_fields_a0 values[257];
+    for (unsigned seed = 0; seed < 257; seed++) {
+        uint64_t expected = 0;
+        for (unsigned i = 0; i < 257; i++) {
+            values[i].f_0 = (int32_t)(seed * 0x1020304u + i * 0x1234567u);
+            values[i].f_8 = (int16_t)(seed * 257u + i * 511u);
+            expected += (uint64_t)(int64_t)values[i].f_0;
+            expected += (uint64_t)(int64_t)values[i].f_8;
+        }
+        if (sum_fields(values) != expected) return 1;
+    }
+    return 0;
+}
+"#,
+        );
+    }
 }

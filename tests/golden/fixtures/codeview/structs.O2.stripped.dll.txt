@@ -10,6 +10,9 @@
 /* velk prelude */
 #include <stdint.h>
 
+struct S1 { uint32_t f_0; uint32_t f_4; uint32_t f_8; uint32_t f_c; };
+struct S2 { uint64_t f_0; uint64_t f_8; };
+
 #ifndef VELK_add_lanes32
 #define VELK_add_lanes32
 static inline uint64_t add_lanes32(uint64_t a, uint64_t b) {
@@ -29,9 +32,8 @@ static inline uint64_t add_lanes32(uint64_t a, uint64_t b) {
 == 0x180001000 rect_area
 -- decompile
 /* velk pseudo-C: rect_area @ 0x180001000 */
-struct S1 { int32_t field_0x0; int32_t field_0x4; int32_t field_0x8; int32_t field_0xc; };
 int32_t rect_area(struct S1 *a0) {
-    return ((uint32_t)a0->field_0xc - a0->field_0x4) * ((uint32_t)a0->field_0x8 - a0->field_0x0);
+    return (a0->f_c - a0->f_4) * (a0->f_8 - a0->f_0);
 }
 -- signature
 int32_t (struct S1 * a0)
@@ -42,7 +44,7 @@ fn rect_area @ 0x180001000 (size 16)
   blk0 @ 0x180001000:
     ret (((load32((rcx + #0xc)) - load32((rcx + #0x4))) * (load32((rcx + #0x8)) - load32(rcx))) & #0xffffffff)
 -- card
-{"accesses":["a0 +0x8:uint32_t, +0xc:uint32_t"],"addr":"0x180001000","approxTokens":132,"blocks":1,"hardReasons":[],"name":"rect_area","nameSources":["dynamic"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":16,"sizeEstimated":true,"structures":["struct S1 { int32_t field_0x0; int32_t field_0x4; int32_t field_0x8; int32_t field_0xc; };"],"unsupported":0}
+{"accesses":["a0 +0x8:uint32_t, +0xc:uint32_t"],"addr":"0x180001000","approxTokens":132,"blocks":1,"hardReasons":[],"name":"rect_area","nameSources":["dynamic"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":16,"sizeEstimated":true,"structureLayouts":[{"elementSize":null,"fields":[{"offset":"0x0","size":4,"type":"uint32_t"},{"offset":"0x4","size":4,"type":"uint32_t"},{"offset":"0x8","size":4,"type":"uint32_t"},{"offset":"0xc","size":4,"type":"uint32_t"}],"minimumSize":16,"name":"S1","sourceFields":null,"sourceSize":null}],"structures":["struct S1 { uint32_t f_0; uint32_t f_4; uint32_t f_8; uint32_t f_c; };"],"unsupported":0}
 
 == 0x180001010 record_total
 -- decompile
@@ -151,12 +153,11 @@ fn point_add @ 0x1800010c0 (size 32)
 == 0x1800010e0 big_make
 -- decompile
 /* velk pseudo-C: big_make @ 0x1800010e0 */
-struct S1 { int32_t field_0x0; int32_t field_0x4; int32_t field_0x8; int32_t field_0xc; };
 struct S1 *big_make(struct S1 *a0, int32_t a1) {
-    a0->field_0x0 = a1;
-    a0->field_0x4 = (uint32_t)a1 + 1;
-    a0->field_0x8 = (uint32_t)a1 * 2;
-    a0->field_0xc = (uint32_t)a1 * 3;
+    a0->f_0 = a1;
+    a0->f_4 = (uint32_t)a1 + 1;
+    a0->f_8 = (uint32_t)a1 * 2;
+    a0->f_c = (uint32_t)a1 * 3;
     return a0;
 }
 -- signature
@@ -173,14 +174,13 @@ fn big_make @ 0x1800010e0 (size 32)
     store32((rdx * #0x3), (v1 + #0xc))
     ret v1
 -- card
-{"accesses":["a0 +0x0:uint32_t, +0x4:uint32_t, +0x8:uint32_t, +0xc:uint32_t"],"addr":"0x1800010e0","approxTokens":150,"blocks":1,"hardReasons":[],"name":"big_make","nameSources":["dynamic"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":32,"sizeEstimated":true,"structures":["struct S1 { int32_t field_0x0; int32_t field_0x4; int32_t field_0x8; int32_t field_0xc; };"],"unsupported":0}
+{"accesses":["a0 +0x0:uint32_t, +0x4:uint32_t, +0x8:uint32_t, +0xc:uint32_t"],"addr":"0x1800010e0","approxTokens":150,"blocks":1,"hardReasons":[],"name":"big_make","nameSources":["dynamic"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":32,"sizeEstimated":true,"structureLayouts":[{"elementSize":null,"fields":[{"offset":"0x0","size":4,"type":"uint32_t"},{"offset":"0x4","size":4,"type":"uint32_t"},{"offset":"0x8","size":4,"type":"uint32_t"},{"offset":"0xc","size":4,"type":"uint32_t"}],"minimumSize":16,"name":"S1","sourceFields":null,"sourceSize":null}],"structures":["struct S1 { uint32_t f_0; uint32_t f_4; uint32_t f_8; uint32_t f_c; };"],"unsupported":0}
 
 == 0x180001100 big_sum
 -- decompile
 /* velk pseudo-C: big_sum @ 0x180001100 */
-struct S1 { int64_t field_0x0; int64_t field_0x8; };
-uint32_t big_sum(struct S1 *a0) {
-    uint64_t v1 = add_lanes32(a0->field_0x8, a0->field_0x0);
+uint32_t big_sum(struct S2 *a0) {
+    uint64_t v1 = add_lanes32(a0->f_8, a0->f_0);
     return add_lanes32(v1 >> 32 | v1 >> 32 << 32, v1);
 }
 -- signature
@@ -193,7 +193,7 @@ fn big_sum @ 0x180001100 (size 32)
     v1 = add_lanes32(load64((rcx + #0x8)), load64(rcx))
     ret (add_lanes32((((v1 >> #0x20) & #0xffffffff) | (((v1 >> #0x20) & #0xffffffff) << #0x20)), v1) & #0xffffffff)
 -- card
-{"accesses":["a0 +0x0:uint64_t, +0x8:uint64_t"],"addr":"0x180001100","approxTokens":138,"blocks":1,"hardReasons":[],"name":"big_sum","nameSources":["dynamic"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":32,"sizeEstimated":true,"structures":["struct S1 { int64_t field_0x0; int64_t field_0x8; };"],"unsupported":0}
+{"accesses":["a0 +0x0:uint64_t, +0x8:uint64_t"],"addr":"0x180001100","approxTokens":138,"blocks":1,"hardReasons":[],"name":"big_sum","nameSources":["dynamic"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":32,"sizeEstimated":true,"structureLayouts":[{"elementSize":null,"fields":[{"offset":"0x0","size":8,"type":"uint64_t"},{"offset":"0x8","size":8,"type":"uint64_t"}],"minimumSize":16,"name":"S1","sourceFields":null,"sourceSize":null}],"structures":["struct S1 { uint64_t f_0; uint64_t f_8; };"],"unsupported":0}
 
 == 0x180001120 word_low_byte
 -- decompile

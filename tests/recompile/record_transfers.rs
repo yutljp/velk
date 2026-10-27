@@ -72,7 +72,7 @@ fn printed_partial_record_transfers_keep_members_without_extra_casts() {
         candidate.code
     );
     assert!(
-        candidate.code.contains("dst->field_0x8 = src->field_0x8;"),
+        candidate.code.contains("dst->f_8 = src->f_8;"),
         "{}",
         candidate.code
     );

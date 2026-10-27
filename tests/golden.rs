@@ -164,6 +164,7 @@ fn render_fixture(path: &Path, fixture: &Path) -> (String, Readability) {
             }
         };
         let standalone = decompiled;
+        readability.add_structures(&standalone);
         let decompiled = prelude.extract(&standalone);
         unsupported += decompiled.matches("/* unsupported").count();
         gotos += decompiled.matches("goto ").count();
@@ -272,9 +273,8 @@ struct Readability {
 }
 
 impl Readability {
-    fn add(&mut self, decompiled: &str) {
+    fn add_structures(&mut self, decompiled: &str) {
         let mut definition = None;
-        let mut in_function = false;
         for line in decompiled.lines() {
             if let Some(definition) = &mut definition {
                 *definition += line;
@@ -291,6 +291,12 @@ impl Readability {
             {
                 self.structures.insert(definition);
             }
+        }
+    }
+
+    fn add(&mut self, decompiled: &str) {
+        let mut in_function = false;
+        for line in decompiled.lines() {
             if !line.starts_with(char::is_whitespace) {
                 if line.ends_with(") {") {
                     in_function = true;
@@ -397,6 +403,18 @@ fn is_declaration(code: &str) -> bool {
         && name
             .bytes()
             .all(|byte| byte.is_ascii_alphanumeric() || byte == b'_')
+}
+
+#[test]
+fn structure_counts_include_support_sections_and_all_tag_names() {
+    let mut counts = Readability::default();
+    let code = "/* velk prelude */\nstruct S1 { int x; };\nstruct Ac_0u4_8u4 { int x; int y; };\nstruct named {\n    int x;\n};\n/* end velk prelude */\nint f(void) { return 0; }\n";
+    counts.add_structures(code);
+    counts.add_structures(code);
+    assert_eq!(counts.structures.len(), 3);
+    let body = velk::render::Prelude::default().extract(code);
+    counts.add(&body);
+    assert_eq!(counts.lines, 1);
 }
 
 #[test]

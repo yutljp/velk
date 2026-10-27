@@ -673,7 +673,7 @@ fn render_with(
             let Ok(start) = i64::try_from(start) else {
                 continue;
             };
-            let name = format!("field_0x{start:x}");
+            let name = format!("f_{start:x}");
             if let [(_, ty)] = fields.as_slice() {
                 members.insert(
                     (structure.name.clone(), start),
@@ -1346,6 +1346,8 @@ fn render_with(
     for (name, definition) in definitions {
         if out.matches(&format!("struct {name} ")).count() == 1 {
             out = out.replacen(&definition, "", 1);
+        } else {
+            out = out.replacen(&definition, &super::prelude::section(&definition), 1);
         }
     }
     let globals = ctx.globals.finish(&body, &mut out);
@@ -1517,7 +1519,7 @@ pub(crate) fn structure_definition(structure: &crate::ir::Structure) -> String {
         if offset > end {
             members.push(format!("uint8_t gap_0x{end:x}[0x{:x}];", offset - end));
         }
-        let name = format!("field_0x{offset:x}");
+        let name = format!("f_{offset:x}");
         match fields.as_slice() {
             [(_, ty)] => members.push(format!("{};", declaration(ty, &name))),
             _ => members.push(format!(

@@ -101,7 +101,7 @@ fn ??0Root@@QEAA@H@Z @ 0x180001000 (size 32)
     store32(edx, (v1 + #0x8))
     ret #0x0
 -- card
-{"accesses":["this +0x0:uint64_t, +0x8:uint32_t"],"addr":"0x180001000","approxTokens":126,"blocks":1,"hardReasons":[],"name":"??0Root@@QEAA@H@Z","nameSources":["symtab"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":32,"sizeEstimated":true,"structures":["struct __0Root__QEAA_H_Z_s1 { int64_t field_0x0; int32_t field_0x8; };"],"unsupported":0}
+{"accesses":["this +0x0:uint64_t, +0x8:uint32_t"],"addr":"0x180001000","approxTokens":126,"blocks":1,"hardReasons":[],"name":"??0Root@@QEAA@H@Z","nameSources":["symtab"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":32,"sizeEstimated":true,"structureLayouts":[{"elementSize":null,"fields":[{"offset":"0x0","size":8,"type":"uint64_t"},{"offset":"0x8","size":4,"type":"uint32_t"}],"minimumSize":12,"name":"__0Root__QEAA_H_Z_s1","sourceFields":null,"sourceSize":null}],"structures":["struct __0Root__QEAA_H_Z_s1 { uint64_t f_0; uint32_t f_8; };"],"unsupported":0}
 
 == 0x180001020 ?value@Root@@UEBAHXZ
 -- decompile
@@ -263,7 +263,7 @@ fn ??0Multiple@@QEAA@H@Z @ 0x1800010b0 (size 52)
     store64(#0x180002068, (v1 + #0x10))
     ret #0x0
 -- card
-{"accesses":["this +0x0:uint64_t, +0x10:uint64_t"],"addr":"0x1800010b0","approxTokens":180,"blocks":1,"hardReasons":[],"name":"??0Multiple@@QEAA@H@Z","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":52,"structures":["struct __0Multiple__QEAA_H_Z_s1 { int64_t field_0x0; uint8_t gap_0x8[0x8]; int64_t field_0x10; };"],"unsupported":0}
+{"accesses":["this +0x0:uint64_t, +0x10:uint64_t"],"addr":"0x1800010b0","approxTokens":180,"blocks":1,"hardReasons":[],"name":"??0Multiple@@QEAA@H@Z","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":52,"structureLayouts":[{"elementSize":null,"fields":[{"offset":"0x0","size":8,"type":"uint64_t"},{"offset":"0x10","size":8,"type":"uint64_t"}],"minimumSize":24,"name":"__0Multiple__QEAA_H_Z_s1","sourceFields":null,"sourceSize":null}],"structures":["struct __0Multiple__QEAA_H_Z_s1 { uint64_t f_0; uint8_t gap_0x8[0x8]; uint64_t f_10; };"],"unsupported":0}
 
 == 0x1800010f0 ?value@Multiple@@UEBAHXZ
 -- decompile

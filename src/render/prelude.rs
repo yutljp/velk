@@ -2,6 +2,8 @@
 
 use std::collections::BTreeSet;
 
+mod structures;
+
 const START: &str = "/* velk prelude */\n";
 const END: &str = "/* end velk prelude */\n";
 const PROJECT: &str = "/* velk project declarations */\n";
@@ -9,11 +11,14 @@ const PROJECT: &str = "/* velk project declarations */\n";
 #[derive(Default)]
 pub struct Prelude {
     definitions: BTreeSet<String>,
+    structures: structures::Names,
 }
 
 impl Prelude {
     /// Remove marked support sections, retaining their unique definitions.
     pub fn extract(&mut self, code: &str) -> String {
+        let code = self.structures.resolve(code);
+        let code = code.as_str();
         let mut rest = code;
         let mut body = String::new();
         while let Some((before, after)) = rest.split_once(START) {
@@ -222,7 +227,8 @@ pub(crate) fn project_section(declarations: &str) -> String {
 /// Combine standalone outputs with their support definitions printed once.
 #[must_use]
 pub fn combine(code: &str) -> String {
-    let code = super::globals::resolve(code);
+    let code = structures::Names::default().resolve(code);
+    let code = super::globals::resolve(&code);
     let mut prelude = Prelude::default();
     let body = prelude.extract(&code);
     prelude.bind_definitions(&body);
@@ -241,6 +247,43 @@ mod tests {
         assert!(
             code.find("struct Z;").unwrap() < code.find("struct A {").unwrap(),
             "{code}"
+        );
+    }
+
+    #[test]
+    fn conflicting_numbered_tags_are_renamed_with_their_uses() {
+        let first = format!(
+            "{}struct S1 *first(struct S1 *p) {{ return p; }}\n",
+            section("struct S1 { int a; };\n\nunion S2 { int b; };\n")
+        );
+        let second = format!(
+            "{}struct S1 *second(struct S1 *p) {{ int S1 = 0; puts(\"struct S1\"); /* struct S1 */ return p + S1; }}\n",
+            section("struct S1 { long a; };\n")
+        );
+        let mut prelude = Prelude::default();
+        let body = prelude.extract(&format!("{first}{second}{second}"));
+        let combined = format!("{}{body}", prelude.render());
+        assert!(combined.contains("struct S3 { long a; };"), "{combined}");
+        assert!(combined.contains("union S2 { int b; };"), "{combined}");
+        assert!(
+            combined.contains("struct S3 *second(struct S3 *p)"),
+            "{combined}"
+        );
+        assert!(
+            combined.contains("int S1 = 0; puts(\"struct S1\"); /* struct S1 */ return p + S1;")
+        );
+        assert_eq!(combined.matches("struct S3 { long a; };").count(), 1);
+        assert_eq!(combine(&combined), combined);
+        assert!(
+            prelude
+                .extract(&second)
+                .contains("struct S3 *second(struct S3 *p)")
+        );
+        let combined = combine(&format!("{first}{}", section("union S1 { char c; };\n")));
+        assert!(combined.contains("union S1 { char c; };"), "{combined}");
+        assert!(
+            combined.contains("struct S3 *first(struct S3 *p)"),
+            "{combined}"
         );
     }
 

@@ -2,6 +2,8 @@ use std::collections::{BTreeMap, HashMap, HashSet};
 
 use crate::ir::{BinOp, CType, Expr, FunctionIr, Stmt, Structure};
 
+mod pointers;
+
 /// A load or store: its address, its width, and for a load whether it
 /// sign-extends.
 pub(super) struct Touch {
@@ -45,25 +47,32 @@ pub(crate) fn recover(ir: &mut FunctionIr) {
         let direct = !assigned.contains(&index);
         let name = format!("{function}_{}", param.name);
         let touches = touches_of(ir);
-        let mut found = array(ir, index, direct, &touches);
+        let mut found = array(ir, index, direct, &touches, 2);
         // An index the code scaled into a register of its own is put back
         // into the addresses, where it shows the size.
         if found.is_none()
             && let Some(blocks) = inline_indexes(ir, index, direct)
         {
             let original = std::mem::replace(&mut ir.blocks, blocks);
-            found = array(ir, index, direct, &touches_of(ir));
+            found = array(ir, index, direct, &touches_of(ir), 2);
             if found.is_none() {
                 ir.blocks = original;
             }
         }
         let structure = match found {
-            Some(array) => Structure {
-                name,
-                fields: array.fields,
-                size: Some(array.size),
-                elements: array.elements,
-            },
+            Some(mut array) => {
+                array
+                    .elements
+                    .extend(pointers::normalize(ir, &array.phases));
+                array.elements.sort_unstable();
+                array.elements.dedup();
+                Structure {
+                    name,
+                    fields: array.fields,
+                    size: Some(array.size),
+                    elements: array.elements,
+                }
+            }
             None if !direct || integer => continue,
             None => match layout(&copies(ir, index), &touches) {
                 Some(fields) => Structure {
@@ -149,7 +158,7 @@ pub(crate) fn recover(ir: &mut FunctionIr) {
         {
             continue;
         }
-        let mut found = array(ir, variable, true, &touches);
+        let mut found = array(ir, variable, true, &touches, 2);
         // As for a parameter, an index scaled into a register of its own
         // is put back into the addresses, where it shows the size.
         if found.is_none()
@@ -157,7 +166,7 @@ pub(crate) fn recover(ir: &mut FunctionIr) {
         {
             let original = std::mem::replace(&mut ir.blocks, blocks);
             let inlined = touches_of(ir);
-            found = array(ir, variable, true, &inlined);
+            found = array(ir, variable, true, &inlined, 2);
             if found.is_none() {
                 ir.blocks = original;
             } else {
@@ -165,7 +174,14 @@ pub(crate) fn recover(ir: &mut FunctionIr) {
             }
         }
         let (fields, size, aliases) = match found {
-            Some(array) => {
+            Some(mut array) => {
+                let normalized = pointers::normalize(ir, &array.phases);
+                if !normalized.is_empty() {
+                    touches = touches_of(ir);
+                }
+                array.elements.extend(normalized);
+                array.elements.sort_unstable();
+                array.elements.dedup();
                 let mut aliases = array.elements;
                 aliases.push(variable);
                 (array.fields, Some(array.size), aliases)
@@ -313,6 +329,45 @@ pub(super) fn layout_at_least(
     layout_aliases(&[base], touches, minimum)
 }
 
+/// Check partial accesses against an element size established by another function.
+pub(super) fn layout_with_size(
+    ir: &FunctionIr,
+    base: u16,
+    touches: &[Touch],
+    size: u64,
+) -> Option<Vec<(u64, CType)>> {
+    if !(2..=LARGEST).contains(&size) {
+        return None;
+    }
+    let holders = holders(ir, base, true);
+    let mut touched = Vec::new();
+    for touch in touches {
+        match holders.split(&touch.addr) {
+            Some(split) => touched.push((split, touch)),
+            None if holders.exposes(&touch.addr) => return None,
+            None => {}
+        }
+    }
+    for split in touched
+        .iter()
+        .map(|(split, _)| split)
+        .chain(holders.definitions.values().flatten())
+    {
+        if split.scales.iter().any(|scale| !scale.is_multiple_of(size)) {
+            return None;
+        }
+    }
+    match arrange(size, base, true, &holders, &touched, 0) {
+        Some(array) => Some(array.fields),
+        None => None,
+    }
+}
+
+/// A stride supported by indexed accesses, including a single observed field.
+pub(super) fn array_size(ir: &FunctionIr, base: u16, touches: &[Touch]) -> Option<u64> {
+    array(ir, base, true, touches, 1).map(|array| array.size)
+}
+
 fn layout_aliases(aliases: &[u16], touches: &[Touch], minimum: usize) -> Option<Vec<(u64, CType)>> {
     let mut fields: BTreeMap<(u64, u8), bool> = BTreeMap::new();
     for touch in touches {
@@ -398,12 +453,11 @@ fn settle(fields: &BTreeMap<(u64, u8), bool>) -> Option<Vec<(u64, CType)>> {
     Some(settled)
 }
 
-/// A narrow load says by its extension whether the field is signed; a
-/// full-width one says nothing, and C's integers are signed by default.
+/// Use unsigned storage unless an access explicitly extends the sign.
 fn field_type(width: u8, signed: bool) -> CType {
     CType::Int {
         bytes: width,
-        signed: signed || width >= 4,
+        signed,
     }
 }
 
@@ -416,6 +470,7 @@ struct Array {
     fields: Vec<(u64, CType)>,
     /// Variables that point at the start of an element.
     elements: Vec<u16>,
+    phases: Vec<(u16, u64)>,
 }
 
 /// The array of structures `param` points into: every address computed
@@ -424,7 +479,13 @@ struct Array {
 /// a constant, and the constants modulo that size are the fields. The
 /// fields must sit where C would place them, so that the size is the
 /// structure's own and indexing by it moves as the code does.
-fn array(ir: &FunctionIr, param: u16, direct: bool, touches: &[Touch]) -> Option<Array> {
+fn array(
+    ir: &FunctionIr,
+    param: u16,
+    direct: bool,
+    touches: &[Touch],
+    minimum: usize,
+) -> Option<Array> {
     let holders = holders(ir, param, direct);
     let mut touched = Vec::new();
     for touch in touches {
@@ -447,7 +508,7 @@ fn array(ir: &FunctionIr, param: u16, direct: bool, touches: &[Touch]) -> Option
     if scale != 0 {
         return sizes
             .contains(&scale)
-            .then(|| arrange(scale, param, direct, &holders, &touched))
+            .then(|| arrange(scale, param, direct, &holders, &touched, minimum))
             .flatten();
     }
     // Without an index, the steps of a loop's pointer give the size, or a
@@ -466,7 +527,7 @@ fn array(ir: &FunctionIr, param: u16, direct: bool, touches: &[Touch]) -> Option
     if !sizes.contains(&step) {
         return None;
     }
-    let Some(whole) = arrange(step, param, direct, &holders, &touched) else {
+    let Some(whole) = arrange(step, param, direct, &holders, &touched, minimum) else {
         return None;
     };
     let fields: HashMap<u64, &CType> = whole
@@ -481,7 +542,7 @@ fn array(ir: &FunctionIr, param: u16, direct: bool, touches: &[Touch]) -> Option
             .all(|(offset, ty)| fields.get(&((offset + size) % step)) == Some(&ty))
     });
     match period {
-        Some(size) => arrange(size, param, direct, &holders, &touched),
+        Some(size) => arrange(size, param, direct, &holders, &touched, minimum),
         None => Some(whole),
     }
 }
@@ -494,6 +555,7 @@ fn arrange(
     direct: bool,
     holders: &Holders,
     touched: &[(Split, &Touch)],
+    minimum: usize,
 ) -> Option<Array> {
     // Where in an element each pointer points; a register stepped by whole
     // elements keeps its place.
@@ -512,9 +574,13 @@ fn arrange(
                 continue;
             }
             if let Some(phase) = splits.iter().find_map(|split| {
-                (split.base != own)
-                    .then(|| Some(within(*phases.get(&split.base)?, split.constant)))
-                    .flatten()
+                if split.base == own {
+                    return None;
+                }
+                let Some(from) = phases.get(&split.base) else {
+                    return None;
+                };
+                Some(within(*from, split.constant))
             }) {
                 phases.insert(own, phase);
                 progress = true;
@@ -560,7 +626,7 @@ fn arrange(
             _ => {}
         }
     }
-    if fields.len() < 2 {
+    if fields.len() < minimum {
         return None;
     }
     let mut end = 0;
@@ -569,7 +635,10 @@ fn arrange(
         if *offset < end || !offset.is_multiple_of(width) || !size.is_multiple_of(width) {
             return None;
         }
-        end = offset + width;
+        let Some(next) = offset.checked_add(width) else {
+            return None;
+        };
+        end = next;
     }
     if end > size {
         return None;
@@ -585,6 +654,14 @@ fn arrange(
             .keys()
             .filter(|register| phases[&Base::Register(**register)] == 0)
             .copied()
+            .collect(),
+        phases: holders
+            .definitions
+            .keys()
+            .filter_map(|register| {
+                let phase = phases[&Base::Register(*register)];
+                (phase != 0).then_some((*register, phase))
+            })
             .collect(),
     })
 }
@@ -1061,6 +1138,22 @@ fn scaled(term: &Expr) -> Option<(&Expr, u64)> {
 }
 
 fn loads(expr: &Expr, out: &mut Vec<Touch>) {
+    if let Expr::SignExtend { value, width } = expr
+        && let Expr::Load {
+            addr,
+            width: loaded,
+            ..
+        } = value.as_ref()
+        && width == loaded
+    {
+        out.push(Touch {
+            addr: addr.as_ref().clone(),
+            width: *width,
+            signed: Some(true),
+        });
+        loads(addr, out);
+        return;
+    }
     if let Expr::Load {
         addr,
         width,
@@ -1207,15 +1300,12 @@ mod tests {
             assert!(
                 ir.structures
                     .iter()
-                    .any(|s| s.fields == vec![(0, CType::I64), (8, CType::I64)])
+                    .any(|s| s.fields == vec![(0, CType::U64), (8, CType::U64)])
             );
             let code = crate::render::render(&ir, &[], &Default::default(), &[]);
-            assert!(code.contains("->field_0x8"), "{code}");
-            assert!(code.contains("__atomic_fetch_add((uint64_t *)&"), "{code}");
-            assert!(
-                code.contains("->field_0x0, 0x1, __ATOMIC_SEQ_CST)"),
-                "{code}"
-            );
+            assert!(code.contains("->f_8"), "{code}");
+            assert!(code.contains("__atomic_fetch_add(&"), "{code}");
+            assert!(code.contains("->f_0, 0x1, __ATOMIC_SEQ_CST)"), "{code}");
         }
     }
 
@@ -1246,7 +1336,7 @@ mod tests {
         assert_eq!(ir.params[0].ty.to_string(), "struct sub_0_a0 *");
         assert_eq!(
             ir.structures[0].fields,
-            vec![(0, CType::I32), (8, CType::I64)]
+            vec![(0, CType::U32), (8, CType::U64)]
         );
         assert_eq!(ir.structures[0].size, None);
     }
@@ -1282,7 +1372,7 @@ mod tests {
         assert_eq!(
             structure.fields,
             vec![
-                (0, CType::I64),
+                (0, CType::U64),
                 (
                     0xc,
                     CType::Int {
@@ -1336,7 +1426,7 @@ mod tests {
         assert_eq!(
             structure.fields,
             vec![
-                (8, CType::I64),
+                (8, CType::U64),
                 (
                     0x10,
                     CType::Int {
@@ -1346,7 +1436,7 @@ mod tests {
                 )
             ]
         );
-        assert_eq!(structure.elements, vec![v2]);
+        assert_eq!(structure.elements, vec![v1, v2]);
     }
 
     #[test]
@@ -1378,7 +1468,7 @@ mod tests {
         assert_eq!(ir.structures[0].size, Some(0xc));
         assert_eq!(
             ir.structures[0].fields,
-            vec![(0, CType::I32), (8, CType::I32)]
+            vec![(0, CType::U32), (8, CType::U32)]
         );
     }
 
@@ -1413,7 +1503,7 @@ mod tests {
         assert_eq!(ir.structures[0].size, Some(0x10));
         assert_eq!(
             ir.structures[0].fields,
-            vec![(0, CType::I64), (8, CType::I32)]
+            vec![(0, CType::U64), (8, CType::U32)]
         );
     }
 

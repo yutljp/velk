@@ -7,6 +7,8 @@
 /* velk prelude */
 #include <stdint.h>
 
+struct S1 { uint32_t f_0; uint32_t f_4; uint32_t f_8; uint32_t f_c; };
+
 uint64_t sub_20156();
 uint64_t sub_2015e();
 uint64_t sub_20168();
@@ -30,7 +32,6 @@ uint64_t velk_entry_stack_pointer(void); /* target entry stack pointer */
 == 0x20104 average
 -- decompile
 /* velk pseudo-C: average @ 0x20104 */
-struct S1 { int32_t field_0x0; int32_t field_0x4; int32_t field_0x8; int32_t field_0xc; };
 double average(int32_t a0, int32_t a1) {
     uint64_t sp = velk_entry_stack_pointer();
     uint64_t call_values[2];
@@ -78,10 +79,10 @@ double average(int32_t a0, int32_t a1) {
                 int32_t v9 = *(uint32_t *)((uint32_t)v8 + 32);
                 v8 = (uint32_t)v8 + 32;
                 struct S1 *v10 = (struct S1 *)((uint32_t)v8 + 4);
-                int32_t v11 = v10->field_0x0;
-                int32_t v12 = v10->field_0x4;
-                int32_t v13 = v10->field_0x8;
-                int32_t v14 = v10->field_0xc;
+                int32_t v11 = v10->f_0;
+                int32_t v12 = v10->f_4;
+                int32_t v13 = v10->f_8;
+                int32_t v14 = v10->f_c;
                 int32_t v15 = (uint32_t)(sub_20156((uint32_t)v6, (uint32_t)v7, (uint32_t)v9, (uint32_t)v11));
                 int32_t v16 = (uint32_t)(v30); /* also returned by the call */
                 int32_t v19 = (uint32_t)(sub_2015e((uint32_t)v15, (uint32_t)v16, (uint32_t)v12, (uint32_t)v13));
@@ -232,7 +233,7 @@ fn average @ 0x20104 (size 206)
   blk20 @ 0x201cc:
     ret v44
 -- card
-{"addr":"0x20104","approxTokens":240,"blocks":21,"hardReasons":[],"name":"average","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":206,"structures":["struct S1 { int32_t field_0x0; int32_t field_0x4; int32_t field_0x8; int32_t field_0xc; };"],"unsupported":1}
+{"addr":"0x20104","approxTokens":240,"blocks":21,"hardReasons":[],"name":"average","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":206,"structureLayouts":[{"elementSize":null,"fields":[{"offset":"0x0","size":4,"type":"uint32_t"},{"offset":"0x4","size":4,"type":"uint32_t"},{"offset":"0x8","size":4,"type":"uint32_t"},{"offset":"0xc","size":4,"type":"uint32_t"}],"minimumSize":16,"name":"S1","sourceFields":null,"sourceSize":null}],"structures":["struct S1 { uint32_t f_0; uint32_t f_4; uint32_t f_8; uint32_t f_c; };"],"unsupported":1}
 
 == 0x201d4 lerp
 -- decompile

@@ -381,3 +381,62 @@ fn classes_tool_matches_the_script_api() {
     assert_eq!(responses[0]["result"]["isError"], false);
     assert_eq!(responses[2]["result"]["isError"], true);
 }
+
+#[test]
+fn structure_layout_data_agrees_across_cli_javascript_and_mcp() {
+    for fixture in [
+        "metrics/struct_arrays.x86_64.O2.stripped.elf",
+        "metrics/struct_arrays.aarch64.O2.stripped.elf",
+        "metrics/struct_arrays.win64.O2.stripped.dll",
+    ] {
+        let path = common::fixtures_dir().join(fixture);
+        let mut binary = velk::service::Binary::open(&path).unwrap();
+        let addresses: Vec<_> = binary.image().functions.keys().copied().collect();
+        let mut checked = 0;
+        for addr in addresses {
+            let card = binary
+                .card(addr, velk::card::DEFAULT_BUDGET, None, None)
+                .unwrap();
+            let expected = serde_json::to_value(&card).unwrap();
+            let Some(layouts) = expected.get("structureLayouts") else {
+                continue;
+            };
+            for layout in layouts.as_array().unwrap() {
+                assert!(layout["sourceFields"].is_null());
+                assert!(layout["sourceSize"].is_null());
+                assert!(
+                    layout["elementSize"].as_u64().unwrap()
+                        >= layout["minimumSize"].as_u64().unwrap()
+                );
+                assert!(layout["fields"].as_array().unwrap().len() >= 2);
+            }
+            let address = velk::addr::format(addr);
+            let output = Command::new(env!("CARGO_BIN_EXE_velk"))
+                .arg("--card")
+                .arg(&path)
+                .arg(&address)
+                .output()
+                .unwrap();
+            assert!(output.status.success(), "{output:?}");
+            let cli: Value = serde_json::from_slice(&output.stdout).unwrap();
+            assert_eq!(cli["structureLayouts"], *layouts);
+            let code = format!(
+                "const b=velk.open({path:?}); JSON.stringify(b.getFunction({address:?}).card().structureLayouts)"
+            );
+            let outcome = velk::script::Engine::new().unwrap().run(&code, None);
+            assert!(outcome.error.is_none(), "{:?}", outcome.error);
+            assert_eq!(
+                serde_json::from_str::<Value>(&outcome.output).unwrap(),
+                *layouts
+            );
+            let responses = exchange(&[script(1, &code)]);
+            assert_eq!(responses[0]["result"]["isError"], false);
+            assert_eq!(
+                serde_json::from_str::<Value>(text(&responses[0])).unwrap(),
+                *layouts
+            );
+            checked += 1;
+        }
+        assert!(checked > 0, "{fixture}: no inferred array layouts");
+    }
+}

@@ -46,6 +46,11 @@
 /* velk prelude */
 #include <stdint.h>
 
+struct S1 { uint64_t f_0; uint32_t f_8; uint8_t gap_0xc[0x4]; uint64_t f_10; };
+struct S2 { uint64_t f_0; uint32_t f_8; };
+struct S3 { uint64_t *f_0; uint64_t f_8; };
+struct S4 { uint64_t f_0; uint32_t f_8; uint8_t gap_0xc[0x4]; uint64_t f_10; };
+
 extern uint32_t g_204160; /* address: 0x204160 */
 extern uint8_t Multiple_vtable_0; /* address: 0x202e80 */
 extern uint8_t Multiple_vtable_16; /* address: 0x202eb0 */
@@ -83,10 +88,9 @@ void *(__cxa_begin_catch)(void *);
 /* C++ object initialization or destruction: Root vtable at 0x202e30. */
 /* velk pseudo-C: sub_201a30 @ 0x201a30 */
 /* ref: 0x202e30 .data.rel.ro */
-struct S1 { int64_t field_0x0; int32_t field_0x8; uint8_t gap_0xc[0x4]; int64_t field_0x10; };
 int32_t sub_201a30(struct S1 *a0, int32_t a1) {
-    a0->field_0x0 = (uintptr_t)(&Root_vtable_0);
-    a0->field_0x8 = a1;
+    a0->f_0 = (uintptr_t)(&Root_vtable_0);
+    a0->f_8 = a1;
     return (uintptr_t)(&Root_vtable_0);
 }
 -- signature
@@ -100,7 +104,7 @@ fn <unnamed> @ 0x201a30 (size 14)
     store32(esi, (rdi + #0x8))
     ret #0x202e30
 -- card
-{"accesses":["a0 +0x0:uint64_t, +0x8:uint32_t"],"addr":"0x201a30","approxTokens":120,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":14,"structures":["struct S1 { int64_t field_0x0; int32_t field_0x8; uint8_t gap_0xc[0x4]; int64_t field_0x10; };"],"unsupported":0}
+{"accesses":["a0 +0x0:uint64_t, +0x8:uint32_t"],"addr":"0x201a30","approxTokens":120,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":14,"structureLayouts":[{"elementSize":null,"fields":[{"offset":"0x0","size":8,"type":"uint64_t"},{"offset":"0x8","size":4,"type":"uint32_t"},{"offset":"0x10","size":8,"type":"uint64_t"}],"minimumSize":24,"name":"S1","sourceFields":null,"sourceSize":null}],"structures":["struct S1 { uint64_t f_0; uint32_t f_8; uint8_t gap_0xc[0x4]; uint64_t f_10; };"],"unsupported":0}
 
 == 0x201a40 -
 -- decompile
@@ -174,10 +178,9 @@ fn <unnamed> @ 0x201a5a (size 1)
 /* C++ object initialization or destruction: Single vtable at 0x202e58. */
 /* velk pseudo-C: sub_201a60 @ 0x201a60 */
 /* ref: 0x202e58 .data.rel.ro */
-struct S1 { int64_t field_0x0; int32_t field_0x8; };
-int32_t sub_201a60(struct S1 *a0, int64_t a1) {
+int32_t sub_201a60(struct S2 *a0, int64_t a1) {
     sub_201a30(a0, a1);
-    a0->field_0x0 = (uintptr_t)(&Single_vtable_0);
+    a0->f_0 = (uintptr_t)(&Single_vtable_0);
     return (uintptr_t)(&Single_vtable_0);
 }
 -- signature
@@ -191,7 +194,7 @@ fn <unnamed> @ 0x201a60 (size 21)
     store64(#0x202e58, rdi)
     ret #0x202e58
 -- card
-{"accesses":["a0 +0x0:uint64_t"],"addr":"0x201a60","approxTokens":138,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":21,"structures":["struct S1 { int64_t field_0x0; int32_t field_0x8; };"],"unsupported":0}
+{"accesses":["a0 +0x0:uint64_t"],"addr":"0x201a60","approxTokens":138,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":21,"structureLayouts":[{"elementSize":null,"fields":[{"offset":"0x0","size":8,"type":"uint64_t"},{"offset":"0x8","size":4,"type":"uint32_t"}],"minimumSize":12,"name":"S1","sourceFields":null,"sourceSize":null}],"structures":["struct S1 { uint64_t f_0; uint32_t f_8; };"],"unsupported":0}
 
 == 0x201a78 -
 -- decompile
@@ -314,12 +317,11 @@ fn <unnamed> @ 0x201ac0 (size 10)
 /* velk pseudo-C: sub_201ad0 @ 0x201ad0 */
 /* ref: 0x202e80 .data.rel.ro */
 /* ref: 0x202eb0 .data.rel.ro */
-struct S1 { int64_t field_0x0; int32_t field_0x8; uint8_t gap_0xc[0x4]; int64_t field_0x10; };
 int32_t sub_201ad0(struct S1 *a0, int64_t a1) {
     sub_201a30(a0, a1);
     sub_201dc0((uint8_t *)a0 + 0x10);
-    a0->field_0x0 = (uintptr_t)(&Multiple_vtable_0);
-    a0->field_0x10 = (uintptr_t)(&Multiple_vtable_16);
+    a0->f_0 = (uintptr_t)(&Multiple_vtable_0);
+    a0->f_10 = (uintptr_t)(&Multiple_vtable_16);
     return (uintptr_t)(&Multiple_vtable_16);
 }
 -- signature
@@ -337,7 +339,7 @@ fn <unnamed> @ 0x201ad0 (size 41)
     store64(#0x202eb0, (v1 + #0x10))
     ret #0x202eb0
 -- card
-{"accesses":["a0 +0x0:uint64_t, +0x10:uint64_t"],"addr":"0x201ad0","approxTokens":162,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":41,"structures":["struct S1 { int64_t field_0x0; int32_t field_0x8; uint8_t gap_0xc[0x4]; int64_t field_0x10; };"],"unsupported":0}
+{"accesses":["a0 +0x0:uint64_t, +0x10:uint64_t"],"addr":"0x201ad0","approxTokens":162,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":41,"structureLayouts":[{"elementSize":null,"fields":[{"offset":"0x0","size":8,"type":"uint64_t"},{"offset":"0x8","size":4,"type":"uint32_t"},{"offset":"0x10","size":8,"type":"uint64_t"}],"minimumSize":24,"name":"S1","sourceFields":null,"sourceSize":null}],"structures":["struct S1 { uint64_t f_0; uint32_t f_8; uint8_t gap_0xc[0x4]; uint64_t f_10; };"],"unsupported":0}
 
 == 0x201b00 -
 -- decompile
@@ -462,12 +464,11 @@ fn <unnamed> @ 0x201b30 (size 9)
 == 0x201b40 -
 -- decompile
 /* velk pseudo-C: sub_201b40 @ 0x201b40 */
-struct S1 { uint64_t *field_0x0; int64_t field_0x8; };
-int64_t sub_201b40(uint64_t *a0, struct S1 *a1) {
-    uint64_t *v1 = a1->field_0x0;
+int64_t sub_201b40(uint64_t *a0, struct S3 *a1) {
+    uint64_t *v1 = a1->f_0;
     *a0 = (uintptr_t)v1;
     int64_t v2 = v1[-3];
-    *(uint64_t *)((uint8_t *)a0 + v2) = a1->field_0x8;
+    *(uint64_t *)((uint8_t *)a0 + v2) = a1->f_8;
     *(uint32_t *)(a0 + 0x1) = 4;
     return v2;
 }
@@ -485,7 +486,7 @@ fn <unnamed> @ 0x201b40 (size 26)
     store32(#0x4, (rdi + #0x8))
     ret v2
 -- card
-{"accesses":["a0 +0x0:uint64_t, +0x8:uint32_t","a1 +0x0:uint64_t, +0x8:uint64_t"],"addr":"0x201b40","approxTokens":138,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":26,"structures":["struct S1 { int64_t field_0x0; int64_t field_0x8; };"],"unsupported":0}
+{"accesses":["a0 +0x0:uint64_t, +0x8:uint32_t","a1 +0x0:uint64_t, +0x8:uint64_t"],"addr":"0x201b40","approxTokens":138,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":26,"structureLayouts":[{"elementSize":null,"fields":[{"offset":"0x0","size":8,"type":"uint64_t"},{"offset":"0x8","size":8,"type":"uint64_t"}],"minimumSize":16,"name":"S1","sourceFields":null,"sourceSize":null}],"structures":["struct S1 { uint64_t f_0; uint64_t f_8; };"],"unsupported":0}
 
 == 0x201b60 -
 -- decompile
@@ -494,12 +495,11 @@ fn <unnamed> @ 0x201b40 (size 26)
 /* velk pseudo-C: sub_201b60 @ 0x201b60 */
 /* ref: 0x202ee0 .data.rel.ro */
 /* ref: 0x202f18 .data.rel.ro */
-struct S2 { int64_t field_0x0; int32_t field_0x8; uint8_t gap_0xc[0x4]; int64_t field_0x10; };
-int32_t sub_201b60(struct S2 *a0, int64_t a1) {
+int32_t sub_201b60(struct S4 *a0, int64_t a1) {
     sub_201a30((uint8_t *)a0 + 0x10, a1);
-    a0->field_0x0 = (uintptr_t)(&Virtual_vtable_0);
-    a0->field_0x10 = (uintptr_t)(&Virtual_vtable_16);
-    a0->field_0x8 = 4;
+    a0->f_0 = (uintptr_t)(&Virtual_vtable_0);
+    a0->f_10 = (uintptr_t)(&Virtual_vtable_16);
+    a0->f_8 = 4;
     return (uintptr_t)(&Virtual_vtable_16);
 }
 -- signature
@@ -517,7 +517,7 @@ fn <unnamed> @ 0x201b60 (size 43)
     store32(#0x4, (v1 + #0x8))
     ret #0x202f18
 -- card
-{"accesses":["a0 +0x0:uint64_t, +0x8:uint32_t, +0x10:uint64_t"],"addr":"0x201b60","approxTokens":162,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":43,"structures":["struct S2 { int64_t field_0x0; int32_t field_0x8; uint8_t gap_0xc[0x4]; int64_t field_0x10; };"],"unsupported":0}
+{"accesses":["a0 +0x0:uint64_t, +0x8:uint32_t, +0x10:uint64_t"],"addr":"0x201b60","approxTokens":162,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":43,"structureLayouts":[{"elementSize":null,"fields":[{"offset":"0x0","size":8,"type":"uint64_t"},{"offset":"0x8","size":4,"type":"uint32_t"},{"offset":"0x10","size":8,"type":"uint64_t"}],"minimumSize":24,"name":"S2","sourceFields":null,"sourceSize":null}],"structures":["struct S2 { uint64_t f_0; uint32_t f_8; uint8_t gap_0xc[0x4]; uint64_t f_10; };"],"unsupported":0}
 
 == 0x201b90 -
 -- decompile
@@ -743,7 +743,7 @@ fn <unnamed> @ 0x201c30 (size 46)
     v5:rax = call 0x201b08(v2)
     ret (((v5 & #0xffffffff) + (v3 & #0xffffffff)) & #0xffffffff)
 -- card
-{"addr":"0x201c30","approxTokens":198,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":46,"structures":["struct S1 { int64_t field_0x0; int32_t field_0x8; uint8_t gap_0xc[0x4]; int64_t field_0x10; };"],"unsupported":0}
+{"addr":"0x201c30","approxTokens":198,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":46,"structureLayouts":[{"elementSize":null,"fields":[{"offset":"0x0","size":8,"type":"uint64_t"},{"offset":"0x8","size":4,"type":"uint32_t"},{"offset":"0x10","size":8,"type":"uint64_t"}],"minimumSize":24,"name":"S1","sourceFields":null,"sourceSize":null}],"structures":["struct S1 { uint64_t f_0; uint32_t f_8; uint8_t gap_0xc[0x4]; uint64_t f_10; };"],"unsupported":0}
 
 == 0x201c60 -
 -- decompile
@@ -989,7 +989,6 @@ fn <unnamed> @ 0x201d00 (size 92)
    catch (...) { handler L_201d93; }
    Exception dispatch is described by unwind metadata. */
 /* velk pseudo-C: sub_201d60 @ 0x201d60 */
-struct S1 { int64_t field_0x0; int32_t field_0x8; };
 int32_t sub_201d60(int32_t a0) {
     uint64_t rsp = velk_entry_stack_pointer();
     uint64_t v5;
@@ -997,7 +996,7 @@ int32_t sub_201d60(int32_t a0) {
     rsp = rsp - 0x8;
     *(uint64_t *)(rsp) = v5;
     rsp = rsp - 0x10;
-    struct S1 *v2 = (struct S1 *)rsp;
+    struct S2 *v2 = (struct S2 *)rsp;
     sub_201a60(rsp, a0 & 0xffffffff);
     int32_t v8 = imported_value(((uint32_t)(sub_201a78(rsp))));
     int32_t v6 = v8;
@@ -1038,7 +1037,7 @@ fn <unnamed> @ 0x201d60 (size 82)
     v6 = #0xfffffffe
     br 0x201d8b
 -- card
-{"addr":"0x201d60","approxTokens":198,"blocks":4,"hardReasons":[],"name":null,"nameSources":["unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":82,"structures":["struct S1 { int64_t field_0x0; int32_t field_0x8; };"],"unsupported":0}
+{"addr":"0x201d60","approxTokens":198,"blocks":4,"hardReasons":[],"name":null,"nameSources":["unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":82,"structureLayouts":[{"elementSize":null,"fields":[{"offset":"0x0","size":8,"type":"uint64_t"},{"offset":"0x8","size":4,"type":"uint32_t"}],"minimumSize":12,"name":"S1","sourceFields":null,"sourceSize":null}],"structures":["struct S1 { uint64_t f_0; uint32_t f_8; };"],"unsupported":0}
 
 == 0x201db2 -
 -- decompile

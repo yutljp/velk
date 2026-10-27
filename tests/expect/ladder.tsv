@@ -52,8 +52,8 @@
 3	x64_div.o	pmod8s	has	% 8
 
 # ---- L4 memory: members, arrays, string references ----
-4	l4_memory_a64.o	point_dot	has	field_0x0
-4	l4_memory_a64.o	point_dot	has	field_0x4
+4	l4_memory_a64.o	point_dot	has	f_0
+4	l4_memory_a64.o	point_dot	has	f_4
 4	l4_memory_a64.o	array_sum	has	++v1;
 4	l4_memory_a64.o	array_sum	has	uint32_t *v1 = a0;
 4	l4_memory_a64.o	bump	has	return a0;

@@ -39,6 +39,7 @@ int sum_until_zero(int *p, int n) {
 ## Features
 
 - Cross references, call graphs, string and constant searches, and function summaries.
+- [Recovered structure layouts](docs/STRUCTURES.md), shared access views and strides, with unknown source declarations kept explicit in function cards.
 - Automatic [library names](docs/LIBRARY_SIGNATURES.md) from embedded signatures, with a separate full database for musl, mbedTLS, libsodium, OpenSSL libcrypto, common Rust standard library code, zlib checksums and xxHash.
 - Generated C API type libraries for macOS, Windows (Win32 and the C runtime), and Linux (glibc).
   Windows COM vtable fields retain function prototypes and calling conventions, including

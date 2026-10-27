@@ -1274,7 +1274,7 @@ fn a_pointer_taken_as_an_integer_is_cast() {
 
 #[test]
 fn an_array_of_structures_is_indexed_by_elements() {
-    // struct { int64_t field_0x0; int32_t field_0x8; } of 16 bytes.
+    // struct { int64_t f_0; int32_t f_8; } of 16 bytes.
     let element = VARIABLE_BASE;
     let field = VARIABLE_BASE + 1;
     let scaled = |offset: u64| {
@@ -1337,13 +1337,13 @@ fn an_array_of_structures_is_indexed_by_elements() {
     let text = rendered(&ir);
     for line in [
         "uint8_t gap_0xc[0x4]; };\n",
-        "    a0[a1].field_0x8 = 0;\n",
-        "    a0[2].field_0x8 = 0;\n",
-        "    a0->field_0x8 = 0;\n",
+        "    a0[a1].f_8 = 0;\n",
+        "    a0[2].f_8 = 0;\n",
+        "    a0->f_8 = 0;\n",
         "    struct sub_0_a0 *v1 = a0 + a1;\n",
-        "    v1->field_0x0 = 0;\n",
+        "    v1->f_0 = 0;\n",
         "    v1 += 0x2;\n",
-        "    int32_t v2 = (uintptr_t)&a0[a1].field_0x8;\n",
+        "    int32_t v2 = (uintptr_t)&a0[a1].f_8;\n",
         "    return *(uint32_t *)((uint8_t *)a0 + ((uint64_t)a1 << 4) + 0xc);\n",
     ] {
         assert!(text.contains(line), "{line:?} in {text}");
@@ -2662,9 +2662,9 @@ fn a_structure_field_that_only_holds_pointers_is_a_pointer() {
     }];
     let text = rendered(&ir);
     for line in [
-        "int64_t field_0x0; uint8_t *field_0x8;",
-        "    a0->field_0x8 = a1;\n",
-        "    uint8_t *v1 = a0->field_0x8;\n",
+        "int64_t f_0; uint8_t *f_8;",
+        "    a0->f_8 = a1;\n",
+        "    uint8_t *v1 = a0->f_8;\n",
     ] {
         assert!(text.contains(line), "{line:?} in {text}");
     }

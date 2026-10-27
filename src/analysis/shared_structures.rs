@@ -251,25 +251,14 @@ fn components(functions: &[&mut FunctionIr], data_ranges: &[(u64, u64)]) -> Comp
 /// Share only whole pointer values whose register has a single definition.
 /// Conflicting connected layouts are left unchanged as a group.
 pub(crate) fn share(functions: &mut [&mut FunctionIr], data_ranges: &[(u64, u64)]) {
+    functions.sort_by_key(|ir| ir.addr);
     let Components {
         nodes: components,
         seeds,
     } = components(functions, data_ranges);
-    let mut reserved: BTreeSet<String> = functions
-        .iter()
-        .flat_map(|ir| {
-            ir.definitions
-                .iter()
-                .map(|definition| definition.name.clone())
-                .chain(
-                    ir.structures
-                        .iter()
-                        .map(|layout| format!("struct {}", layout.name)),
-                )
-        })
-        .collect();
-    let mut serial = 1;
     let mut touches = HashMap::new();
+    let mut names: Vec<Structure> = Vec::new();
+    let mut serial = 1;
     for nodes in components.values() {
         let layouts: Vec<_> = nodes.iter().filter_map(|node| seeds.get(node)).collect();
         if layouts.is_empty()
@@ -286,9 +275,27 @@ pub(crate) fn share(functions: &mut [&mut FunctionIr], data_ranges: &[(u64, u64)
             continue;
         }
         let mut fields = BTreeMap::new();
-        let size = layouts.first().and_then(|layout| layout.size);
+        let mut size = layouts.first().and_then(|layout| layout.size);
         let mut valid = true;
         let mut accessed = BTreeSet::new();
+        if layouts.is_empty() {
+            for node in nodes {
+                let Node::Register(i, register) = *node else {
+                    continue;
+                };
+                let local_touches = touches
+                    .entry(i)
+                    .or_insert_with(|| super::structures::touches_of(functions[i]));
+                if let Some(stride) =
+                    super::structures::array_size(functions[i], register, local_touches)
+                {
+                    if size.is_some_and(|size| size != stride) {
+                        valid = false;
+                    }
+                    size = Some(stride);
+                }
+            }
+        }
         for layout in &layouts {
             if layout.size != size {
                 valid = false;
@@ -319,7 +326,16 @@ pub(crate) fn share(functions: &mut [&mut FunctionIr], data_ranges: &[(u64, u64)
                 let local_touches = touches
                     .entry(i)
                     .or_insert_with(|| super::structures::touches_of(functions[i]));
-                match super::structures::layout_at_least(register, local_touches, 0) {
+                let local = match size {
+                    Some(size) => super::structures::layout_with_size(
+                        functions[i],
+                        register,
+                        local_touches,
+                        size,
+                    ),
+                    None => super::structures::layout_at_least(register, local_touches, 0),
+                };
+                match local {
                     Some(local) => {
                         if !local.is_empty() {
                             accessed.insert(i);
@@ -362,51 +378,36 @@ pub(crate) fn share(functions: &mut [&mut FunctionIr], data_ranges: &[(u64, u64)
         if !valid || fields.len() < 2 || (layouts.is_empty() && accessed.len() < 2) {
             continue;
         }
-        let owners: BTreeSet<_> = nodes
+        let fields: Vec<_> = fields.into_iter().collect();
+        let name = if let Some(known) = names
             .iter()
-            .filter_map(|node| match node {
-                Node::Register(i, register)
-                    if functions[*i]
-                        .params
-                        .first()
-                        .is_some_and(|param| param.index == *register) =>
-                {
-                    functions[*i]
-                        .name
-                        .as_deref()
-                        .and_then(|name| name.split('(').next())
-                        .and_then(|name| name.rsplit_once("::"))
-                        .map(|(owner, _)| crate::render::sanitize(owner))
-                }
-                _ => None,
-            })
-            .collect();
-        let name = if owners.len() == 1
-            && owners.first().is_some_and(|owner| {
-                !owner.is_empty()
-                    && !owner.starts_with(|c: char| c.is_ascii_digit())
-                    && !crate::render::reserved_identifier(owner)
-            })
-            && !reserved.contains(&format!(
-                "struct {}",
-                owners.first().expect("exactly one owner was checked above")
-            )) {
-            owners
-                .first()
-                .expect("exactly one owner was checked above")
-                .clone()
+            .find(|known| known.fields == fields && known.size == size)
+        {
+            known.name.clone()
         } else {
-            loop {
+            let name = loop {
                 let name = format!("S{serial}");
                 serial += 1;
-                if !reserved.contains(&format!("struct {name}")) {
+                let conflicts = functions.iter().any(|ir| {
+                    ir.definitions.iter().any(|definition| {
+                        definition.name.split_whitespace().next_back() == Some(name.as_str())
+                    }) || ir.structures.iter().any(|known| {
+                        known.name == name && (known.fields != fields || known.size != size)
+                    })
+                });
+                if !conflicts {
                     break name;
                 }
-            }
+            };
+            names.push(Structure {
+                fields: fields.clone(),
+                size,
+                name: name.clone(),
+                elements: Vec::new(),
+            });
+            name
         };
-        reserved.insert(format!("struct {name}"));
         let ty = CType::pointer_to(CType::Named(format!("struct {name}")));
-        let fields: Vec<_> = fields.into_iter().collect();
         let mut replacements: BTreeMap<usize, BTreeSet<String>> = BTreeMap::new();
         for node in nodes {
             match *node {
@@ -460,12 +461,18 @@ pub(crate) fn share(functions: &mut [&mut FunctionIr], data_ranges: &[(u64, u64)
             }
             elements.sort_unstable();
             elements.dedup();
-            ir.structures.push(Structure {
-                name: name.clone(),
-                fields: fields.clone(),
-                size,
-                elements,
-            });
+            if let Some(known) = ir.structures.iter_mut().find(|layout| layout.name == name) {
+                known.elements.extend(elements);
+                known.elements.sort_unstable();
+                known.elements.dedup();
+            } else {
+                ir.structures.push(Structure {
+                    name: name.clone(),
+                    fields: fields.clone(),
+                    size,
+                    elements,
+                });
+            }
         }
         // Functions with only a partial access still need the shared declaration.
         for node in nodes {

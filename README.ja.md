@@ -38,6 +38,7 @@ int sum_until_zero(int *p, int n) {
 ## 機能
 
 - クロスリファレンス、コールグラフ、文字列・定数の検索と関数の要約。
+- [構造体レイアウトの復元](docs/STRUCTURES.ja.md)、関数間でのアクセスのビューとストライドの共有、不明なソース宣言を明示した関数カード。
 - 組み込みシグネチャで[ライブラリ関数名](docs/LIBRARY_SIGNATURES.ja.md)を自動で復元。musl、mbedTLS、libsodium、OpenSSL libcrypto、Rust 標準ライブラリの共通処理、zlib のチェックサム、xxHash の完全なデータベースは別ファイルで読み込み可能。
 - macOS、Windows（Win32 と C ランタイム）、Linux（glibc）の生成済み C API 型ライブラリ。
   Windows の COM vtable フィールドは、`IUnknown`、`IDispatch`、`IStream` を含め、関数の引数・戻り値の型と呼び出し規約を保持します。

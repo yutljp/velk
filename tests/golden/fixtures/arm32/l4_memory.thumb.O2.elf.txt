@@ -7,6 +7,9 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+struct S1 { uint32_t f_0; uint32_t f_4; };
+struct S2 { uint32_t f_0; uint32_t f_4; uint32_t f_8; };
+
 extern int g_counter; /* address: 0x301c4 */
 extern uint32_t banner; /* address: 0x301c0 */
 /* end velk prelude */
@@ -14,10 +17,9 @@ extern uint32_t banner; /* address: 0x301c0 */
 == 0x20128 point_dot
 -- decompile
 /* velk pseudo-C: point_dot @ 0x20128 */
-struct S1 { int32_t field_0x0; int32_t field_0x4; };
 int point_dot(struct point *a, struct point *b) {
     struct S1 *v1 = (struct S1 *)(uint32_t)(uintptr_t)a;
-    return *(uint32_t *)((uint32_t)(uintptr_t)b) * v1->field_0x0 + *(uint32_t *)((uint64_t)(uint32_t)(uintptr_t)b + 0x4) * v1->field_0x4;
+    return *(uint32_t *)((uint32_t)(uintptr_t)b) * v1->f_0 + *(uint32_t *)((uint64_t)(uint32_t)(uintptr_t)b + 0x4) * v1->f_4;
 }
 -- signature
 int (struct point * a, struct point * b)
@@ -29,12 +31,11 @@ fn point_dot @ 0x20128 (size 12)
     v1 = r0
     ret (((load32(r1) * load32(v1)) + (load32((r1 + #0x4)) * load32((v1 + #0x4)))) & #0xffffffff)
 -- card
-{"accesses":["a +0x0:uint32_t, +0x4:uint32_t"],"addr":"0x20128","approxTokens":126,"blocks":1,"hardReasons":[],"name":"point_dot","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":12,"structures":["struct S1 { int32_t field_0x0; int32_t field_0x4; };"],"unsupported":0}
+{"accesses":["a +0x0:uint32_t, +0x4:uint32_t"],"addr":"0x20128","approxTokens":126,"blocks":1,"hardReasons":[],"name":"point_dot","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":12,"structureLayouts":[{"elementSize":null,"fields":[{"offset":"0x0","size":4,"type":"uint32_t"},{"offset":"0x4","size":4,"type":"uint32_t"}],"minimumSize":8,"name":"S1","sourceFields":null,"sourceSize":null}],"structures":["struct S1 { uint32_t f_0; uint32_t f_4; };"],"unsupported":0}
 
 == 0x20134 array_sum
 -- decompile
 /* velk pseudo-C: array_sum @ 0x20134 */
-struct S1 { int32_t field_0x0; int32_t field_0x4; int32_t field_0x8; };
 int array_sum(int *a, int n) {
     uintptr_t v7;
     uintptr_t v17;
@@ -58,10 +59,10 @@ int array_sum(int *a, int n) {
                 v7 = (uint32_t)v7 + 16;
                 v6 -= 4;
                 v21 = (uint32_t)v21 + v10;
-                struct S1 *v12 = (struct S1 *)((uint32_t)v7 + 4);
-                v21 = (uint32_t)v21 + v12->field_0x0;
-                v21 = (uint32_t)v21 + v12->field_0x4;
-                v21 = (uint32_t)v21 + v12->field_0x8;
+                struct S2 *v12 = (struct S2 *)((uint32_t)v7 + 4);
+                v21 += v12->f_0;
+                v21 += v12->f_4;
+                v21 += v12->f_8;
                 if (v8 == v6) break;
             }
             if (v20 == 0) {
@@ -156,7 +157,7 @@ fn array_sum @ 0x20134 (size 108)
   blk19 @ 0x2019c:
     ret v5
 -- card
-{"addr":"0x20134","approxTokens":240,"blocks":20,"hardReasons":[],"name":"array_sum","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":108,"structures":["struct S1 { int32_t field_0x0; int32_t field_0x4; int32_t field_0x8; };"],"unsupported":0}
+{"addr":"0x20134","approxTokens":240,"blocks":20,"hardReasons":[],"name":"array_sum","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":108,"structureLayouts":[{"elementSize":null,"fields":[{"offset":"0x0","size":4,"type":"uint32_t"},{"offset":"0x4","size":4,"type":"uint32_t"},{"offset":"0x8","size":4,"type":"uint32_t"}],"minimumSize":12,"name":"S1","sourceFields":null,"sourceSize":null}],"structures":["struct S1 { uint32_t f_0; uint32_t f_4; uint32_t f_8; };"],"unsupported":0}
 
 == 0x201a0 bump
 -- decompile

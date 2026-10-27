@@ -6,6 +6,7 @@
 /* velk prelude */
 #include <stdint.h>
 
+struct S1 { uint32_t f_0; uint32_t f_4; };
 struct velk_vector { union { uint64_t u64; int64_t s64; uint32_t u32; int32_t s32; uint16_t u16; int16_t s16; uint8_t u8; int8_t s8; float f32; double f64; } low, high; };
 
 #ifndef VELK_add_lanes32
@@ -86,9 +87,8 @@ fn helper @ 0xc (size 68)
 == 0x50 pair_sum
 -- decompile
 /* velk pseudo-C: pair_sum @ 0x50 */
-struct S1 { int32_t field_0x0; int32_t field_0x4; };
 int32_t pair_sum(struct S1 *a0) {
-    return (uint32_t)a0->field_0x4 + a0->field_0x0;
+    return a0->f_4 + a0->f_0;
 }
 -- signature
 int32_t (struct S1 * a0)
@@ -99,7 +99,7 @@ fn pair_sum @ 0x50 (size 12)
   blk0 @ 0x50:
     ret ((load32((x0 + #0x4)) + load32(x0)) & #0xffffffff)
 -- card
-{"accesses":["a0 +0x0:uint32_t, +0x4:uint32_t"],"addr":"0x50","approxTokens":114,"blocks":1,"hardReasons":[],"name":"pair_sum","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":12,"structures":["struct S1 { int32_t field_0x0; int32_t field_0x4; };"],"unsupported":0}
+{"accesses":["a0 +0x0:uint32_t, +0x4:uint32_t"],"addr":"0x50","approxTokens":114,"blocks":1,"hardReasons":[],"name":"pair_sum","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":12,"structureLayouts":[{"elementSize":null,"fields":[{"offset":"0x0","size":4,"type":"uint32_t"},{"offset":"0x4","size":4,"type":"uint32_t"}],"minimumSize":8,"name":"S1","sourceFields":null,"sourceSize":null}],"structures":["struct S1 { uint32_t f_0; uint32_t f_4; };"],"unsupported":0}
 
 == 0x5c sum_arr
 -- decompile

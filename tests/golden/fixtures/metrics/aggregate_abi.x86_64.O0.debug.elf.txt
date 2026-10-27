@@ -163,7 +163,7 @@ fn abi_hfa3_adjust @ 0x2013a0 (size 55)
     store64(load64((v1 + #0x10)), (rdi + #0x10))
     ret rdi
 -- card
-{"accesses":["a0 +0x0:uint64_t, +0x8:uint64_t, +0x10:uint64_t"],"addr":"0x2013a0","approxTokens":192,"blocks":1,"hardReasons":[],"name":"abi_hfa3_adjust","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":55,"structures":["struct abi_hfa3_adjust_a2 { int64_t field_0x0; int64_t field_0x8; int64_t field_0x10; };","struct S1 { int64_t field_0x0; int64_t field_0x8; int64_t field_0x10; };"],"unsupported":0}
+{"accesses":["a0 +0x0:uint64_t, +0x8:uint64_t, +0x10:uint64_t"],"addr":"0x2013a0","approxTokens":192,"blocks":1,"hardReasons":[],"name":"abi_hfa3_adjust","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":55,"structureLayouts":[{"elementSize":null,"fields":[{"offset":"0x0","size":8,"type":"int64_t"},{"offset":"0x8","size":8,"type":"int64_t"},{"offset":"0x10","size":8,"type":"int64_t"}],"minimumSize":24,"name":"abi_hfa3_adjust_a2","sourceFields":null,"sourceSize":null},{"elementSize":null,"fields":[{"offset":"0x0","size":8,"type":"uint64_t"},{"offset":"0x8","size":8,"type":"uint64_t"},{"offset":"0x10","size":8,"type":"uint64_t"}],"minimumSize":24,"name":"S1","sourceFields":null,"sourceSize":null}],"structures":["struct abi_hfa3_adjust_a2 { int64_t f_0; int64_t f_8; int64_t f_10; };","struct S1 { uint64_t f_0; uint64_t f_8; uint64_t f_10; };"],"unsupported":0}
 
 == 0x2013e0 abi_hfa4_adjust
 -- decompile
@@ -204,7 +204,7 @@ fn abi_hfa4_adjust @ 0x2013e0 (size 63)
     store64(load64((v1 + #0x18)), (rdi + #0x18))
     ret rdi
 -- card
-{"accesses":["a0 +0x0:uint64_t, +0x8:uint64_t, +0x10:uint64_t, +0x18:uint64_t"],"addr":"0x2013e0","approxTokens":204,"blocks":1,"hardReasons":[],"name":"abi_hfa4_adjust","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":63,"structures":["struct abi_hfa4_adjust_a2 {\n    int64_t field_0x0;\n    int64_t field_0x8;\n    int64_t field_0x10;\n    int64_t field_0x18;\n};","struct S1 { int64_t field_0x0; int64_t field_0x8; int64_t field_0x10; int64_t field_0x18; };"],"unsupported":0}
+{"accesses":["a0 +0x0:uint64_t, +0x8:uint64_t, +0x10:uint64_t, +0x18:uint64_t"],"addr":"0x2013e0","approxTokens":204,"blocks":1,"hardReasons":[],"name":"abi_hfa4_adjust","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":63,"structureLayouts":[{"elementSize":null,"fields":[{"offset":"0x0","size":8,"type":"int64_t"},{"offset":"0x8","size":8,"type":"int64_t"},{"offset":"0x10","size":8,"type":"int64_t"},{"offset":"0x18","size":8,"type":"int64_t"}],"minimumSize":32,"name":"abi_hfa4_adjust_a2","sourceFields":null,"sourceSize":null},{"elementSize":null,"fields":[{"offset":"0x0","size":8,"type":"uint64_t"},{"offset":"0x8","size":8,"type":"uint64_t"},{"offset":"0x10","size":8,"type":"uint64_t"},{"offset":"0x18","size":8,"type":"uint64_t"}],"minimumSize":32,"name":"S1","sourceFields":null,"sourceSize":null}],"structures":["struct abi_hfa4_adjust_a2 { int64_t f_0; int64_t f_8; int64_t f_10; int64_t f_18; };","struct S1 { uint64_t f_0; uint64_t f_8; uint64_t f_10; uint64_t f_18; };"],"unsupported":0}
 
 == 0x201420 abi_exhaust_five
 -- decompile
@@ -246,7 +246,7 @@ fn abi_exhaust_five @ 0x201420 (size 96)
     v4 = ((((((rdi + (rsi * #0x3)) + (rdx * #0x5)) + (rcx * #0x7)) + (r8 * #0xb)) + v3) + (load64((v2 + #0x8)) * #0x11))
     ret results((v4 + (r9 * #0x13)))
 -- card
-{"addr":"0x201420","approxTokens":240,"blocks":1,"hardReasons":[],"name":"abi_exhaust_five","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":96,"structures":["struct S1 { int64_t field_0x0; int64_t field_0x8; };"],"unsupported":0}
+{"addr":"0x201420","approxTokens":240,"blocks":1,"hardReasons":[],"name":"abi_exhaust_five","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":96,"structureLayouts":[{"elementSize":null,"fields":[{"offset":"0x0","size":8,"type":"uint64_t"},{"offset":"0x8","size":8,"type":"uint64_t"}],"minimumSize":16,"name":"S1","sourceFields":null,"sourceSize":null}],"structures":["struct S1 { uint64_t f_0; uint64_t f_8; };"],"unsupported":0}
 
 == 0x201480 abi_exhaust_seven
 -- decompile
@@ -287,7 +287,7 @@ fn abi_exhaust_seven @ 0x201480 (size 120)
     v6 = ((((((((rdi + (rsi * #0x3)) + (rdx * #0x5)) + (rcx * #0x7)) + (r8 * #0xb)) + (r9 * #0xd)) + (load64((rsp + #0x8)) * #0x11)) + v5) + (load64((v3 + #0x8)) * #0x17))
     ret (v6 + (load64((rsp + #0x20)) * #0x1d))
 -- card
-{"addr":"0x201480","approxTokens":240,"blocks":1,"hardReasons":[],"name":"abi_exhaust_seven","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":120,"structures":["struct S1 { int64_t field_0x0; int64_t field_0x8; };"],"unsupported":0}
+{"addr":"0x201480","approxTokens":240,"blocks":1,"hardReasons":[],"name":"abi_exhaust_seven","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":120,"structureLayouts":[{"elementSize":null,"fields":[{"offset":"0x0","size":8,"type":"uint64_t"},{"offset":"0x8","size":8,"type":"uint64_t"}],"minimumSize":16,"name":"S1","sourceFields":null,"sourceSize":null}],"structures":["struct S1 { uint64_t f_0; uint64_t f_8; };"],"unsupported":0}
 
 == 0x201500 abi_indirect_make
 -- decompile
@@ -322,7 +322,7 @@ fn abi_indirect_make @ 0x201500 (size 56)
     store64((load64((rsp + #0xffffffffffffffe8)) - load64((rsp + #0xfffffffffffffff0))), (rdi + #0x10))
     ret rdi
 -- card
-{"accesses":["a0 +0x0:uint64_t, +0x8:uint64_t, +0x10:uint64_t"],"addr":"0x201500","approxTokens":198,"blocks":1,"hardReasons":[],"name":"abi_indirect_make","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":56,"structures":["struct S1 { int64_t field_0x0; int64_t field_0x8; int64_t field_0x10; };"],"unsupported":0}
+{"accesses":["a0 +0x0:uint64_t, +0x8:uint64_t, +0x10:uint64_t"],"addr":"0x201500","approxTokens":198,"blocks":1,"hardReasons":[],"name":"abi_indirect_make","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":56,"structureLayouts":[{"elementSize":null,"fields":[{"offset":"0x0","size":8,"type":"uint64_t"},{"offset":"0x8","size":8,"type":"uint64_t"},{"offset":"0x10","size":8,"type":"uint64_t"}],"minimumSize":24,"name":"S1","sourceFields":null,"sourceSize":null}],"structures":["struct S1 { uint64_t f_0; uint64_t f_8; uint64_t f_10; };"],"unsupported":0}
 
 == 0x201540 abi_exhaust_five_aligned
 -- decompile
@@ -364,7 +364,7 @@ fn abi_exhaust_five_aligned @ 0x201540 (size 96)
     v4 = ((((((rdi + (rsi * #0x3)) + (rdx * #0x5)) + (rcx * #0x7)) + (r8 * #0xb)) + v3) + (load64((v2 + #0x8)) * #0x11))
     ret results((v4 + (r9 * #0x13)))
 -- card
-{"addr":"0x201540","approxTokens":240,"blocks":1,"hardReasons":[],"name":"abi_exhaust_five_aligned","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":96,"structures":["struct S1 { int64_t field_0x0; int64_t field_0x8; };"],"unsupported":0}
+{"addr":"0x201540","approxTokens":240,"blocks":1,"hardReasons":[],"name":"abi_exhaust_five_aligned","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":96,"structureLayouts":[{"elementSize":null,"fields":[{"offset":"0x0","size":8,"type":"uint64_t"},{"offset":"0x8","size":8,"type":"uint64_t"}],"minimumSize":16,"name":"S1","sourceFields":null,"sourceSize":null}],"structures":["struct S1 { uint64_t f_0; uint64_t f_8; };"],"unsupported":0}
 
 == 0x2015a0 abi_exhaust_seven_aligned
 -- decompile
@@ -406,4 +406,4 @@ fn abi_exhaust_seven_aligned @ 0x2015a0 (size 120)
     v6 = ((((((((rdi + (rsi * #0x3)) + (rdx * #0x5)) + (rcx * #0x7)) + (r8 * #0xb)) + (r9 * #0xd)) + (load64((rsp + #0x8)) * #0x11)) + v5) + (load64((v3 + #0x8)) * #0x17))
     ret results((v6 + (load64((rsp + #0x20)) * #0x1d)))
 -- card
-{"addr":"0x2015a0","approxTokens":240,"blocks":1,"hardReasons":[],"name":"abi_exhaust_seven_aligned","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":120,"structures":["struct S1 { int64_t field_0x0; int64_t field_0x8; };"],"unsupported":0}
+{"addr":"0x2015a0","approxTokens":240,"blocks":1,"hardReasons":[],"name":"abi_exhaust_seven_aligned","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":120,"structureLayouts":[{"elementSize":null,"fields":[{"offset":"0x0","size":8,"type":"uint64_t"},{"offset":"0x8","size":8,"type":"uint64_t"}],"minimumSize":16,"name":"S1","sourceFields":null,"sourceSize":null}],"structures":["struct S1 { uint64_t f_0; uint64_t f_8; };"],"unsupported":0}

@@ -38,10 +38,36 @@ interface Card {
   accesses?: string[];
   /** Recovered structure declarations shared across direct pointer flows. */
   structures?: string[];
+  /** Inferred layouts with byte offsets, access types and known array strides. */
+  structureLayouts?: StructureLayout[];
   /** Proven predicate and constant dispatcher removals. */
   simplification: Simplification;
   disasmPreview: string[];
   approxTokens: number;
+}
+
+interface StructureField {
+  /** Hexadecimal byte offset from the structure pointer. */
+  offset: Addr;
+  /** C access type; it need not match the original source type. */
+  type: string;
+  /** Access width in bytes. */
+  size: number;
+}
+
+interface StructureLayout {
+  /** Generated C structure tag. */
+  name: string;
+  /** Known array stride in bytes, or null when unknown. */
+  elementSize: number | null;
+  /** End of the last observed field, excluding unobserved trailing bytes. */
+  minimumSize: number;
+  /** Overlapping access views do not prove that the source used a union. */
+  fields: StructureField[];
+  /** Original declared members; null when only access views are known. */
+  sourceFields: StructureField[] | null;
+  /** Original declared size; a stride alone does not establish it. */
+  sourceSize: number | null;
 }
 
 interface Reference {

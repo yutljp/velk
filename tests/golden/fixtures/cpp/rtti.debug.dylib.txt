@@ -53,6 +53,11 @@
 /* velk prelude */
 #include <stdint.h>
 
+struct S1 { uint64_t f_0; uint32_t f_8; uint8_t gap_0xc[0x4]; uint64_t f_10; };
+struct S2 { uint64_t f_0; uint32_t f_8; };
+struct S3 { uint64_t *f_0; uint64_t f_8; };
+struct S4 { uint64_t f_0; uint32_t f_8; uint8_t gap_0xc[0x4]; uint64_t f_10; };
+
 extern uint32_t _ZL9destroyed; /* address: 0x8028 */
 extern uint8_t Multiple_vtable_0; /* address: 0x4060 */
 extern uint8_t Multiple_vtable_16; /* address: 0x4090 */
@@ -92,10 +97,9 @@ void *(__cxa_begin_catch)(void *);
 -- decompile
 /* C++ object initialization or destruction: Root vtable at 0x4010. */
 /* velk pseudo-C: Root::Root(int) @ 0x6a0 */
-struct S1 { int64_t field_0x0; int32_t field_0x8; uint8_t gap_0xc[0x4]; int64_t field_0x10; };
 struct S1 *Root__Root_6a0(struct S1 *a0, int32_t a1) {
-    a0->field_0x0 = (uintptr_t)(&Root_vtable_0);
-    a0->field_0x8 = a1;
+    a0->f_0 = (uintptr_t)(&Root_vtable_0);
+    a0->f_8 = a1;
     return a0;
 }
 -- signature
@@ -109,7 +113,7 @@ fn Root::Root(int) @ 0x6a0 (size 20)
     store32(w1, (x0 + #0x8))
     ret x0
 -- card
-{"accesses":["a0 +0x0:uint64_t, +0x8:uint32_t"],"addr":"0x6a0","approxTokens":126,"blocks":1,"hardReasons":[],"name":"Root::Root(int)","nameSources":["symtab","function-starts"],"section":"__text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":20,"structures":["struct S1 { int64_t field_0x0; int32_t field_0x8; uint8_t gap_0xc[0x4]; int64_t field_0x10; };"],"unsupported":0}
+{"accesses":["a0 +0x0:uint64_t, +0x8:uint32_t"],"addr":"0x6a0","approxTokens":126,"blocks":1,"hardReasons":[],"name":"Root::Root(int)","nameSources":["symtab","function-starts"],"section":"__text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":20,"structureLayouts":[{"elementSize":null,"fields":[{"offset":"0x0","size":8,"type":"uint64_t"},{"offset":"0x8","size":4,"type":"uint32_t"},{"offset":"0x10","size":8,"type":"uint64_t"}],"minimumSize":24,"name":"S1","sourceFields":null,"sourceSize":null}],"structures":["struct S1 { uint64_t f_0; uint32_t f_8; uint8_t gap_0xc[0x4]; uint64_t f_10; };"],"unsupported":0}
 
 == 0x6b4 Root::Root(int)
 -- decompile
@@ -221,10 +225,9 @@ fn operator delete(void*, unsigned long) @ 0x6d0 (size 4)
 -- decompile
 /* C++ object initialization or destruction: Single vtable at 0x4038. */
 /* velk pseudo-C: Single::Single(int) @ 0x6d4 */
-struct S1 { int64_t field_0x0; int32_t field_0x8; };
-void Single__Single_6d4(struct S1 *a0, int64_t a1) {
+void Single__Single_6d4(struct S2 *a0, int64_t a1) {
     Root__Root_6a0(a0, a1);
-    a0->field_0x0 = (uintptr_t)(&Single_vtable_0);
+    a0->f_0 = (uintptr_t)(&Single_vtable_0);
 }
 -- signature
 void (struct S1 * a0, int64_t a1)
@@ -237,7 +240,7 @@ fn Single::Single(int) @ 0x6d4 (size 32)
     store64(#0x4038, x0)
     ret #0x0
 -- card
-{"accesses":["a0 +0x0:uint64_t"],"addr":"0x6d4","approxTokens":144,"blocks":1,"hardReasons":[],"name":"Single::Single(int)","nameSources":["symtab","function-starts"],"section":"__text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":32,"structures":["struct S1 { int64_t field_0x0; int32_t field_0x8; };"],"unsupported":0}
+{"accesses":["a0 +0x0:uint64_t"],"addr":"0x6d4","approxTokens":144,"blocks":1,"hardReasons":[],"name":"Single::Single(int)","nameSources":["symtab","function-starts"],"section":"__text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":32,"structureLayouts":[{"elementSize":null,"fields":[{"offset":"0x0","size":8,"type":"uint64_t"},{"offset":"0x8","size":4,"type":"uint32_t"}],"minimumSize":12,"name":"S1","sourceFields":null,"sourceSize":null}],"structures":["struct S1 { uint64_t f_0; uint32_t f_8; };"],"unsupported":0}
 
 == 0x6f4 Single::Single(int)
 -- decompile
@@ -411,12 +414,11 @@ fn Other::~Other() @ 0x750 (size 8)
 /* C++ object initialization or destruction: Multiple vtable at 0x4060. */
 /* C++ object initialization or destruction: Multiple vtable at 0x4090. */
 /* velk pseudo-C: Multiple::Multiple(int) @ 0x758 */
-struct S1 { int64_t field_0x0; int32_t field_0x8; uint8_t gap_0xc[0x4]; int64_t field_0x10; };
 struct S1 *Multiple__Multiple_758(struct S1 *a0, int64_t a1) {
     Root__Root_6a0(a0, a1);
     Other__Other((uint8_t *)a0 + 0x10);
-    a0->field_0x0 = (uintptr_t)(&Multiple_vtable_0);
-    a0->field_0x10 = (uintptr_t)(&Multiple_vtable_16);
+    a0->f_0 = (uintptr_t)(&Multiple_vtable_0);
+    a0->f_10 = (uintptr_t)(&Multiple_vtable_16);
     return a0;
 }
 -- signature
@@ -433,7 +435,7 @@ fn Multiple::Multiple(int) @ 0x758 (size 64)
     store64(#0x4090, (v1 + #0x10))
     ret v1
 -- card
-{"accesses":["a0 +0x0:uint64_t, +0x10:uint64_t"],"addr":"0x758","approxTokens":192,"blocks":1,"hardReasons":[],"name":"Multiple::Multiple(int)","nameSources":["symtab","function-starts"],"section":"__text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":64,"structures":["struct S1 { int64_t field_0x0; int32_t field_0x8; uint8_t gap_0xc[0x4]; int64_t field_0x10; };"],"unsupported":0}
+{"accesses":["a0 +0x0:uint64_t, +0x10:uint64_t"],"addr":"0x758","approxTokens":192,"blocks":1,"hardReasons":[],"name":"Multiple::Multiple(int)","nameSources":["symtab","function-starts"],"section":"__text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":64,"structureLayouts":[{"elementSize":null,"fields":[{"offset":"0x0","size":8,"type":"uint64_t"},{"offset":"0x8","size":4,"type":"uint32_t"},{"offset":"0x10","size":8,"type":"uint64_t"}],"minimumSize":24,"name":"S1","sourceFields":null,"sourceSize":null}],"structures":["struct S1 { uint64_t f_0; uint32_t f_8; uint8_t gap_0xc[0x4]; uint64_t f_10; };"],"unsupported":0}
 
 == 0x798 Other::Other()
 -- decompile
@@ -618,11 +620,10 @@ fn {virtual override thunk({offset(-16)}, Multiple::~Multiple())} @ 0x7e0 (size 
 == 0x7e8 Virtual::Virtual(int)
 -- decompile
 /* velk pseudo-C: Virtual::Virtual(int) @ 0x7e8 */
-struct S1 { uint64_t *field_0x0; int64_t field_0x8; };
-uint64_t *Virtual__Virtual_7e8(uint64_t *a0, struct S1 *a1) {
-    uint64_t *v1 = a1->field_0x0;
+uint64_t *Virtual__Virtual_7e8(uint64_t *a0, struct S3 *a1) {
+    uint64_t *v1 = a1->f_0;
     *a0 = (uintptr_t)v1;
-    *(uint64_t *)((uint8_t *)a0 + v1[-3]) = a1->field_0x8;
+    *(uint64_t *)((uint8_t *)a0 + v1[-3]) = a1->f_8;
     *(uint32_t *)(a0 + 0x1) = 4;
     return a0;
 }
@@ -639,23 +640,22 @@ fn Virtual::Virtual(int) @ 0x7e8 (size 32)
     store32(#0x4, (x0 + #0x8))
     ret x0
 -- card
-{"accesses":["a0 +0x0:uint64_t, +0x8:uint32_t","a1 +0x0:uint64_t, +0x8:uint64_t"],"addr":"0x7e8","approxTokens":144,"blocks":1,"hardReasons":[],"name":"Virtual::Virtual(int)","nameSources":["symtab","function-starts"],"section":"__text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":32,"structures":["struct S1 { int64_t field_0x0; int64_t field_0x8; };"],"unsupported":0}
+{"accesses":["a0 +0x0:uint64_t, +0x8:uint32_t","a1 +0x0:uint64_t, +0x8:uint64_t"],"addr":"0x7e8","approxTokens":144,"blocks":1,"hardReasons":[],"name":"Virtual::Virtual(int)","nameSources":["symtab","function-starts"],"section":"__text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":32,"structureLayouts":[{"elementSize":null,"fields":[{"offset":"0x0","size":8,"type":"uint64_t"},{"offset":"0x8","size":8,"type":"uint64_t"}],"minimumSize":16,"name":"S1","sourceFields":null,"sourceSize":null}],"structures":["struct S1 { uint64_t f_0; uint64_t f_8; };"],"unsupported":0}
 
 == 0x808 Virtual::Virtual(int)
 -- decompile
 /* C++ object initialization or destruction: Virtual vtable at 0x40c0. */
 /* C++ object initialization or destruction: Virtual vtable at 0x40f8. */
 /* velk pseudo-C: Virtual::Virtual(int) @ 0x808 */
-struct Virtual { int64_t field_0x0; int32_t field_0x8; uint8_t gap_0xc[0x4]; int64_t field_0x10; };
-struct Virtual *Virtual__Virtual_808(struct Virtual *a0, int64_t a1) {
+struct S4 *Virtual__Virtual_808(struct S4 *a0, int64_t a1) {
     Root__Root_6a0((uint8_t *)a0 + 0x10, a1);
-    a0->field_0x0 = (uintptr_t)(&Virtual_vtable_0);
-    a0->field_0x10 = (uintptr_t)(&Virtual_vtable_16);
-    a0->field_0x8 = 4;
+    a0->f_0 = (uintptr_t)(&Virtual_vtable_0);
+    a0->f_10 = (uintptr_t)(&Virtual_vtable_16);
+    a0->f_8 = 4;
     return a0;
 }
 -- signature
-struct Virtual * (struct Virtual * a0, int64_t a1)
+struct S2 * (struct S2 * a0, int64_t a1)
 -- references
 
 -- ir
@@ -668,7 +668,7 @@ fn Virtual::Virtual(int) @ 0x808 (size 68)
     store32(#0x4, (v1 + #0x8))
     ret v1
 -- card
-{"accesses":["a0 +0x0:uint64_t, +0x8:uint32_t, +0x10:uint64_t"],"addr":"0x808","approxTokens":198,"blocks":1,"hardReasons":[],"name":"Virtual::Virtual(int)","nameSources":["symtab","function-starts"],"section":"__text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":68,"structures":["struct Virtual { int64_t field_0x0; int32_t field_0x8; uint8_t gap_0xc[0x4]; int64_t field_0x10; };"],"unsupported":0}
+{"accesses":["a0 +0x0:uint64_t, +0x8:uint32_t, +0x10:uint64_t"],"addr":"0x808","approxTokens":198,"blocks":1,"hardReasons":[],"name":"Virtual::Virtual(int)","nameSources":["symtab","function-starts"],"section":"__text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":68,"structureLayouts":[{"elementSize":null,"fields":[{"offset":"0x0","size":8,"type":"uint64_t"},{"offset":"0x8","size":4,"type":"uint32_t"},{"offset":"0x10","size":8,"type":"uint64_t"}],"minimumSize":24,"name":"S2","sourceFields":null,"sourceSize":null}],"structures":["struct S2 { uint64_t f_0; uint32_t f_8; uint8_t gap_0xc[0x4]; uint64_t f_10; };"],"unsupported":0}
 
 == 0x84c Virtual::value() const
 -- decompile

@@ -33,7 +33,7 @@ fn unsigned_vector_maximum_clears_upper_bits_and_preserves_saved_registers() {
         let printed = binary.decompile(address, None, None).unwrap();
         assert!(!printed.contains("unsupported"), "{printed}");
         let mut assertions = String::new();
-        writeln!(assertions, "for (unsigned position = 0; position < {count}; ++position) {{\nstruct S1 input = {{0, 0}}; struct S2 output = {{-1, -1}};\nfor (unsigned byte = 0; byte < {bits} / 8; ++byte) ((uint8_t *)&input)[position * ({bits} / 8) + byte] = 255;\nif ((uint32_t){name}(&input, &output) != (uint{bits}_t)~0U || (uint64_t)output.field_0x0 != (uint{bits}_t)~0U || output.field_0x8 != 0) __builtin_trap();\n}}").unwrap();
+        writeln!(assertions, "for (unsigned position = 0; position < {count}; ++position) {{\nstruct S1 input = {{0, 0}}; struct S2 output = {{-1, -1}};\nfor (unsigned byte = 0; byte < {bits} / 8; ++byte) ((uint8_t *)&input)[position * ({bits} / 8) + byte] = 255;\nif ((uint32_t){name}(&input, &output) != (uint{bits}_t)~0U || (uint64_t)output.f_0 != (uint{bits}_t)~0U || output.f_8 != 0) __builtin_trap();\n}}").unwrap();
         writeln!(assertions, "for (unsigned trial = 0; trial < 32; ++trial) {{
 struct S1 input = {{-1, -1}}; struct S2 output = {{-1, -1}};
 uint64_t expected = 0;
@@ -43,8 +43,13 @@ for (unsigned lane = 0; lane < {count}; ++lane) {{
     for (unsigned byte = 0; byte < {bits} / 8; ++byte)
         ((uint8_t *)&input)[lane * ({bits} / 8) + byte] = value >> (byte * 8);
 }}
-if ((uint32_t){name}(&input, &output) != expected || (uint64_t)output.field_0x0 != expected || output.field_0x8 != 0) __builtin_trap();
+if ((uint32_t){name}(&input, &output) != expected || (uint64_t)output.f_0 != expected || output.f_8 != 0) __builtin_trap();
 }}").unwrap();
+        let ir = &binary.analysis(address, None).unwrap().ir;
+        for (position, placeholder) in [(0, "struct S1"), (1, "struct S2")] {
+            let target = ir.params[position].ty.pointee_struct().unwrap();
+            assertions = assertions.replace(placeholder, &format!("struct {target}"));
+        }
         syntax::run_printed(&printed, "", &assertions);
     }
     let address = binary.find("preserved_maximum").unwrap().addr;

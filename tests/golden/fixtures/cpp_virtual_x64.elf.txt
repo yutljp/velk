@@ -20,6 +20,10 @@
 /* velk prelude */
 #include <stdint.h>
 
+struct S1 { uint64_t f_0; uint32_t f_8; };
+struct S2 { uint64_t f_0; uint32_t f_8; uint32_t f_c; };
+struct S3 { uint8_t gap_0x0[0x8]; uint32_t f_8; uint32_t f_c; };
+
 extern uint64_t _ZL4used; /* address: 0x204610 */
 
 uint64_t Rect__Rect();
@@ -146,14 +150,13 @@ fn Shape::scaled(int) const @ 0x201410 (size 14)
 -- decompile
 /* velk pseudo-C: Square::Square(int) @ 0x201420 */
 /* ref: 0x202588 .data.rel.ro */
-struct Square { int64_t field_0x0; int32_t field_0x8; };
-int32_t Square__Square(struct Square *a0, int32_t a1) {
-    a0->field_0x0 = 0x202588;
-    a0->field_0x8 = a1;
+int32_t Square__Square(struct S1 *a0, int32_t a1) {
+    a0->f_0 = 0x202588;
+    a0->f_8 = a1;
     return 0x202588;
 }
 -- signature
-int32_t (struct Square * a0, int32_t a1)
+int32_t (struct S1 * a0, int32_t a1)
 -- references
 0x202588 .data.rel.ro
 -- ir
@@ -163,7 +166,7 @@ fn Square::Square(int) @ 0x201420 (size 14)
     store32(esi, (rdi + #0x8))
     ret #0x202588
 -- card
-{"accesses":["a0 +0x0:uint64_t, +0x8:uint32_t"],"addr":"0x201420","approxTokens":120,"blocks":1,"hardReasons":[],"name":"Square::Square(int)","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":14,"structures":["struct Square { int64_t field_0x0; int32_t field_0x8; };"],"unsupported":0}
+{"accesses":["a0 +0x0:uint64_t, +0x8:uint32_t"],"addr":"0x201420","approxTokens":120,"blocks":1,"hardReasons":[],"name":"Square::Square(int)","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":14,"structureLayouts":[{"elementSize":null,"fields":[{"offset":"0x0","size":8,"type":"uint64_t"},{"offset":"0x8","size":4,"type":"uint32_t"}],"minimumSize":12,"name":"S1","sourceFields":null,"sourceSize":null}],"structures":["struct S1 { uint64_t f_0; uint32_t f_8; };"],"unsupported":0}
 
 == 0x201430 Square::area() const
 -- decompile
@@ -188,15 +191,14 @@ fn Square::area() const @ 0x201430 (size 7)
 -- decompile
 /* velk pseudo-C: Rect::Rect(int, int) @ 0x201440 */
 /* ref: 0x2025b8 .data.rel.ro */
-struct Rect { int64_t field_0x0; int32_t field_0x8; int32_t field_0xc; };
-int32_t Rect__Rect(struct Rect *a0, int32_t a1, int32_t a2) {
-    a0->field_0x0 = 0x2025b8;
-    a0->field_0x8 = a1;
-    a0->field_0xc = a2;
+int32_t Rect__Rect(struct S2 *a0, int32_t a1, int32_t a2) {
+    a0->f_0 = 0x2025b8;
+    a0->f_8 = a1;
+    a0->f_c = a2;
     return 0x2025b8;
 }
 -- signature
-int32_t (struct Rect * a0, int32_t a1, int32_t a2)
+int32_t (struct S1 * a0, int32_t a1, int32_t a2)
 -- references
 0x2025b8 .data.rel.ro
 -- ir
@@ -207,17 +209,16 @@ fn Rect::Rect(int, int) @ 0x201440 (size 17)
     store32(edx, (rdi + #0xc))
     ret #0x2025b8
 -- card
-{"accesses":["a0 +0x0:uint64_t, +0x8:uint32_t, +0xc:uint32_t"],"addr":"0x201440","approxTokens":126,"blocks":1,"hardReasons":[],"name":"Rect::Rect(int, int)","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":17,"structures":["struct Rect { int64_t field_0x0; int32_t field_0x8; int32_t field_0xc; };"],"unsupported":0}
+{"accesses":["a0 +0x0:uint64_t, +0x8:uint32_t, +0xc:uint32_t"],"addr":"0x201440","approxTokens":126,"blocks":1,"hardReasons":[],"name":"Rect::Rect(int, int)","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":17,"structureLayouts":[{"elementSize":null,"fields":[{"offset":"0x0","size":8,"type":"uint64_t"},{"offset":"0x8","size":4,"type":"uint32_t"},{"offset":"0xc","size":4,"type":"uint32_t"}],"minimumSize":16,"name":"S1","sourceFields":null,"sourceSize":null}],"structures":["struct S1 { uint64_t f_0; uint32_t f_8; uint32_t f_c; };"],"unsupported":0}
 
 == 0x201460 Rect::area() const
 -- decompile
 /* velk pseudo-C: Rect::area() const @ 0x201460 */
-struct Rect { uint8_t gap_0x0[0x8]; int32_t field_0x8; int32_t field_0xc; };
-int32_t Rect__area(struct Rect *a0) {
-    return (uint32_t)a0->field_0xc * a0->field_0x8;
+int32_t Rect__area(struct S3 *a0) {
+    return a0->f_c * a0->f_8;
 }
 -- signature
-int32_t (struct Rect * a0)
+int32_t (struct S1 * a0)
 -- references
 
 -- ir
@@ -225,17 +226,16 @@ fn Rect::area() const @ 0x201460 (size 8)
   blk0 @ 0x201460:
     ret ((load32((rdi + #0xc)) * load32((rdi + #0x8))) & #0xffffffff)
 -- card
-{"accesses":["a0 +0xc:uint32_t"],"addr":"0x201460","approxTokens":114,"blocks":1,"hardReasons":[],"name":"Rect::area() const","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":8,"structures":["struct Rect { uint8_t gap_0x0[0x8]; int32_t field_0x8; int32_t field_0xc; };"],"unsupported":0}
+{"accesses":["a0 +0xc:uint32_t"],"addr":"0x201460","approxTokens":114,"blocks":1,"hardReasons":[],"name":"Rect::area() const","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":8,"structureLayouts":[{"elementSize":null,"fields":[{"offset":"0x8","size":4,"type":"uint32_t"},{"offset":"0xc","size":4,"type":"uint32_t"}],"minimumSize":16,"name":"S1","sourceFields":null,"sourceSize":null}],"structures":["struct S1 { uint8_t gap_0x0[0x8]; uint32_t f_8; uint32_t f_c; };"],"unsupported":0}
 
 == 0x201470 Rect::scaled(int) const
 -- decompile
 /* velk pseudo-C: Rect::scaled(int) const @ 0x201470 */
-struct Rect { uint8_t gap_0x0[0x8]; int32_t field_0x8; int32_t field_0xc; };
-int32_t Rect__scaled(struct Rect *a0, int32_t a1) {
-    return (uint32_t)a1 * a0->field_0x8 * a0->field_0xc + 1;
+int32_t Rect__scaled(struct S3 *a0, int32_t a1) {
+    return a1 * a0->f_8 * a0->f_c + 1;
 }
 -- signature
-int32_t (struct Rect * a0, int32_t a1)
+int32_t (struct S1 * a0, int32_t a1)
 -- references
 
 -- ir
@@ -243,17 +243,16 @@ fn Rect::scaled(int) const @ 0x201470 (size 12)
   blk0 @ 0x201470:
     ret ((((((rsi & #0xffffffff) * load32((rdi + #0x8))) & #0xffffffff) * load32((rdi + #0xc))) + #0x1) & #0xffffffff)
 -- card
-{"addr":"0x201470","approxTokens":120,"blocks":1,"hardReasons":[],"name":"Rect::scaled(int) const","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":12,"structures":["struct Rect { uint8_t gap_0x0[0x8]; int32_t field_0x8; int32_t field_0xc; };"],"unsupported":0}
+{"addr":"0x201470","approxTokens":120,"blocks":1,"hardReasons":[],"name":"Rect::scaled(int) const","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":12,"structureLayouts":[{"elementSize":null,"fields":[{"offset":"0x8","size":4,"type":"uint32_t"},{"offset":"0xc","size":4,"type":"uint32_t"}],"minimumSize":16,"name":"S1","sourceFields":null,"sourceSize":null}],"structures":["struct S1 { uint8_t gap_0x0[0x8]; uint32_t f_8; uint32_t f_c; };"],"unsupported":0}
 
 == 0x201480 square_area(int)
 -- decompile
 /* velk pseudo-C: square_area(int) @ 0x201480 */
 /* ref: 0x203610 .bss */
 /* ref: 0x204610 .bss */
-struct Square { int64_t field_0x0; int32_t field_0x8; };
 int32_t square_area(int32_t a0) {
     int64_t v1 = _ZL4used;
-    struct Square *v2 = (struct Square *)(int64_t)(0x203610 + (uint64_t)v1);
+    struct S1 *v2 = (struct S1 *)(int64_t)(0x203610 + (uint64_t)v1);
     _ZL4used = (int64_t)((uint64_t)v1 + 16);
     Square__Square(v2, a0 & 0xffffffff);
     int32_t v3 = Square__area(v2); /* via vtable slot 2 */
@@ -276,17 +275,16 @@ fn square_area(int) @ 0x201480 (size 81)
     call 0x201560()
     ret (v3 & #0xffffffff)
 -- card
-{"addr":"0x201480","approxTokens":240,"blocks":1,"hardReasons":[],"name":"square_area(int)","nameSources":["symtab","entry","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":81,"structures":["struct Square { int64_t field_0x0; int32_t field_0x8; };"],"unsupported":0}
+{"addr":"0x201480","approxTokens":240,"blocks":1,"hardReasons":[],"name":"square_area(int)","nameSources":["symtab","entry","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":81,"structureLayouts":[{"elementSize":null,"fields":[{"offset":"0x0","size":8,"type":"uint64_t"},{"offset":"0x8","size":4,"type":"uint32_t"}],"minimumSize":12,"name":"S1","sourceFields":null,"sourceSize":null}],"structures":["struct S1 { uint64_t f_0; uint32_t f_8; };"],"unsupported":0}
 
 == 0x2014e0 rect_scaled(int, int, int)
 -- decompile
 /* velk pseudo-C: rect_scaled(int, int, int) @ 0x2014e0 */
 /* ref: 0x203610 .bss */
 /* ref: 0x204610 .bss */
-struct Rect { int64_t field_0x0; int32_t field_0x8; int32_t field_0xc; };
 int32_t rect_scaled(int32_t a0, int32_t a1, int32_t a2) {
     int64_t v3 = _ZL4used;
-    struct Rect *v4 = (struct Rect *)(int64_t)(0x203610 + (uint64_t)v3);
+    struct S2 *v4 = (struct S2 *)(int64_t)(0x203610 + (uint64_t)v3);
     _ZL4used = (int64_t)((uint64_t)v3 + 16);
     Rect__Rect(v4, a0 & 0xffffffff, a1 & 0xffffffff);
     return Rect__scaled(v4, a2 & 0xffffffff); /* via vtable slot 3 */
@@ -306,7 +304,7 @@ fn rect_scaled(int, int, int) @ 0x2014e0 (size 77)
     v5:rax = call 0x201470(v4, (rdx & #0xffffffff))
     ret v5
 -- card
-{"addr":"0x2014e0","approxTokens":240,"blocks":1,"hardReasons":[],"name":"rect_scaled(int, int, int)","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":77,"structures":["struct Rect { int64_t field_0x0; int32_t field_0x8; int32_t field_0xc; };"],"unsupported":0}
+{"addr":"0x2014e0","approxTokens":240,"blocks":1,"hardReasons":[],"name":"rect_scaled(int, int, int)","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":77,"structureLayouts":[{"elementSize":null,"fields":[{"offset":"0x0","size":8,"type":"uint64_t"},{"offset":"0x8","size":4,"type":"uint32_t"},{"offset":"0xc","size":4,"type":"uint32_t"}],"minimumSize":16,"name":"S1","sourceFields":null,"sourceSize":null}],"structures":["struct S1 { uint64_t f_0; uint32_t f_8; uint32_t f_c; };"],"unsupported":0}
 
 == 0x201530 any_area(Shape const*)
 -- decompile

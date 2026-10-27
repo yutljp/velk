@@ -334,7 +334,7 @@ fn Multiple::Multiple(int) @ 0x201ad0 (size 41)
     store64(#0x202eb0, (v1 + #0x10))
     ret #0x0
 -- card
-{"accesses":["this +0x0:uint64_t, +0x10:uint64_t"],"addr":"0x201ad0","approxTokens":162,"blocks":1,"hardReasons":[],"name":"Multiple::Multiple(int)","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":41,"structures":["struct Multiple__Multiple_s1 { int64_t field_0x0; uint8_t gap_0x8[0x8]; int64_t field_0x10; };"],"unsupported":0}
+{"accesses":["this +0x0:uint64_t, +0x10:uint64_t"],"addr":"0x201ad0","approxTokens":162,"blocks":1,"hardReasons":[],"name":"Multiple::Multiple(int)","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":41,"structureLayouts":[{"elementSize":null,"fields":[{"offset":"0x0","size":8,"type":"uint64_t"},{"offset":"0x10","size":8,"type":"uint64_t"}],"minimumSize":24,"name":"Multiple__Multiple_s1","sourceFields":null,"sourceSize":null}],"structures":["struct Multiple__Multiple_s1 { uint64_t f_0; uint8_t gap_0x8[0x8]; uint64_t f_10; };"],"unsupported":0}
 
 == 0x201b00 Multiple::value() const
 -- decompile
@@ -511,7 +511,7 @@ fn Virtual::Virtual(int) @ 0x201b60 (size 43)
     store32(#0x4, (v1 + #0x8))
     ret #0x0
 -- card
-{"accesses":["this +0x0:uint64_t, +0x8:uint32_t, +0x10:uint64_t"],"addr":"0x201b60","approxTokens":162,"blocks":1,"hardReasons":[],"name":"Virtual::Virtual(int)","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":43,"structures":["struct Virtual__Virtual_s1 {\n    int64_t field_0x0;\n    int32_t field_0x8;\n    uint8_t gap_0xc[0x4];\n    int64_t field_0x10;\n};"],"unsupported":0}
+{"accesses":["this +0x0:uint64_t, +0x8:uint32_t, +0x10:uint64_t"],"addr":"0x201b60","approxTokens":162,"blocks":1,"hardReasons":[],"name":"Virtual::Virtual(int)","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":43,"structureLayouts":[{"elementSize":null,"fields":[{"offset":"0x0","size":8,"type":"uint64_t"},{"offset":"0x8","size":4,"type":"uint32_t"},{"offset":"0x10","size":8,"type":"uint64_t"}],"minimumSize":24,"name":"Virtual__Virtual_s1","sourceFields":null,"sourceSize":null}],"structures":["struct Virtual__Virtual_s1 { uint64_t f_0; uint32_t f_8; uint8_t gap_0xc[0x4]; uint64_t f_10; };"],"unsupported":0}
 
 == 0x201b90 Virtual::value() const
 -- decompile

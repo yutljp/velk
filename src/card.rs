@@ -2,7 +2,7 @@ use serde::Serialize;
 
 use crate::analysis::{Analysis, refs};
 use crate::error::LiftError;
-use crate::ir::Stmt;
+use crate::ir::{CType, Stmt, Structure};
 use crate::loader::{Function, Image, NameSource};
 use crate::{addr, disasm};
 
@@ -16,6 +16,62 @@ pub const DEFAULT_BUDGET: usize = 240;
 pub enum HardReason {
     BoundaryUnknown,
     NameUnknown,
+}
+
+/// A memory access type in a recovered structure, without a source field name.
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct StructureField {
+    /// Byte offset from the structure pointer, written in hexadecimal.
+    pub offset: String,
+    /// The C type used for this access.
+    pub r#type: String,
+    /// Width of the access in bytes.
+    pub size: u64,
+}
+
+/// An inferred layout; its access types need not be the original source types.
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct StructureLayout {
+    /// The generated C structure tag.
+    pub name: String,
+    /// Known array stride in bytes, or null when no stride was established.
+    pub element_size: Option<u64>,
+    /// End of the last observed field, excluding unobserved trailing bytes.
+    pub minimum_size: u64,
+    /// Observed access views; overlapping entries do not prove a source union.
+    pub fields: Vec<StructureField>,
+    /// Original declared members, unknown from memory accesses alone.
+    pub source_fields: Option<Vec<StructureField>>,
+    /// Original declared size, unknown from a stride or minimum access extent alone.
+    pub source_size: Option<u64>,
+}
+
+impl From<&Structure> for StructureLayout {
+    fn from(layout: &Structure) -> Self {
+        let mut minimum_size = 0;
+        let mut fields = Vec::new();
+        for (offset, ty) in &layout.fields {
+            let size = CType::pointer_to(ty.clone())
+                .pointee_size()
+                .map_or(0, u64::from);
+            minimum_size = minimum_size.max(offset.saturating_add(size));
+            fields.push(StructureField {
+                offset: addr::format(*offset),
+                r#type: ty.to_string(),
+                size,
+            });
+        }
+        Self {
+            name: layout.name.clone(),
+            element_size: layout.size,
+            minimum_size,
+            fields,
+            source_fields: None,
+            source_size: None,
+        }
+    }
 }
 
 #[derive(Debug, Serialize)]
@@ -47,6 +103,9 @@ pub struct Card {
     pub accesses: Vec<String>,
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub structures: Vec<String>,
+    /// Recovered field offsets, access types and known array strides.
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub structure_layouts: Vec<StructureLayout>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub identified: Option<String>,
     /// Predicate and dispatcher removals proved during analysis.
@@ -117,6 +176,9 @@ pub fn build(
             })
             .unwrap_or_default(),
         simplification: analysis.map(|a| a.simplification).unwrap_or_default(),
+        structure_layouts: analysis
+            .map(|a| a.ir.structures.iter().map(StructureLayout::from).collect())
+            .unwrap_or_default(),
         identified,
         approx_tokens: disasm_preview.len() * TOKENS_PER_LINE + BASE_TOKENS,
         disasm_preview,

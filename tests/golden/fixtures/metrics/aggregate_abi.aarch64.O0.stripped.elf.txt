@@ -12,6 +12,8 @@
 0x210628 212 - unwind,prologue
 /* velk prelude */
 #include <stdint.h>
+
+struct S1 { uint64_t f_0; uint64_t f_8; uint64_t f_10; };
 /* end velk prelude */
 
 == 0x210244 -
@@ -153,14 +155,13 @@ fn <unnamed> @ 0x210468 (size 212)
 == 0x21053c -
 -- decompile
 /* velk pseudo-C: sub_21053c @ 0x21053c */
-struct S1 { int64_t field_0x0; int64_t field_0x8; int64_t field_0x10; };
 int64_t sub_21053c(int64_t a0, int64_t a1, int64_t a2) {
     uint64_t v2;
 
     struct S1 *v1 = (struct S1 *)v2;
-    v1->field_0x0 = (int64_t)((uint64_t)a0 + a2);
-    v1->field_0x8 = a1 ^ a2;
-    v1->field_0x10 = (int64_t)((uint64_t)a0 - a1);
+    v1->f_0 = (int64_t)((uint64_t)a0 + a2);
+    v1->f_8 = a1 ^ a2;
+    v1->f_10 = (int64_t)((uint64_t)a0 - a1);
     return a0;
 }
 -- signature
@@ -179,7 +180,7 @@ fn <unnamed> @ 0x21053c (size 76)
     store64((load64((sp + #0xfffffffffffffff0)) - load64((sp + #0xfffffffffffffff8))), (v1 + #0x10))
     ret x0
 -- card
-{"addr":"0x21053c","approxTokens":210,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":76,"structures":["struct S1 { int64_t field_0x0; int64_t field_0x8; int64_t field_0x10; };"],"unsupported":0}
+{"addr":"0x21053c","approxTokens":210,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":76,"structureLayouts":[{"elementSize":null,"fields":[{"offset":"0x0","size":8,"type":"uint64_t"},{"offset":"0x8","size":8,"type":"uint64_t"},{"offset":"0x10","size":8,"type":"uint64_t"}],"minimumSize":24,"name":"S1","sourceFields":null,"sourceSize":null}],"structures":["struct S1 { uint64_t f_0; uint64_t f_8; uint64_t f_10; };"],"unsupported":0}
 
 == 0x210588 -
 -- decompile

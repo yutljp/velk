@@ -50,14 +50,14 @@ fn printed_atomic_layouts_preserve_adjacent_and_overlapping_fields() {
         if name == "atomic_overlap" {
             assert!(ir.structures.is_empty(), "{code}");
         } else {
-            assert!(code.contains("field_0x8"), "{code}");
+            assert!(code.contains("f_8"), "{code}");
             assert!(
-                code.contains("&a0->field_") || code.contains("&v1->field_"),
+                code.contains("&a0->f_") || code.contains("&v1->f_"),
                 "{code}"
             );
             assert!(!code.contains("(uint8_t *)"), "{code}");
         }
-        text.push_str(&code.replace("struct S1", &format!("struct {name}_fields")));
+        text.push_str(&code);
     }
     let callee = binary.find("atomic_callee").unwrap().addr;
     let caller = binary.find("atomic_caller").unwrap().addr;
@@ -75,7 +75,7 @@ fn printed_atomic_layouts_preserve_adjacent_and_overlapping_fields() {
     };
     let code = velk::render::render(&ir, &[], &symbols, &[]);
     assert!(!code.contains("rbp"), "{code}");
-    text.push_str("static void atomic_callee(int64_t p) { __atomic_fetch_add((uint64_t *)(uintptr_t)p, 1, __ATOMIC_SEQ_CST); }\n");
+    text.push_str("void atomic_callee(int64_t p) { __atomic_fetch_add((uint64_t *)(uintptr_t)p, 1, __ATOMIC_SEQ_CST); }\n");
     text.push_str(&code);
     text.push_str("int main(void) {\n");
     for value in [0u64, 1, u32::MAX as u64, 1 << 63, u64::MAX] {
@@ -86,7 +86,7 @@ fn printed_atomic_layouts_preserve_adjacent_and_overlapping_fields() {
     );
     text.push_str("return 0; }\n");
     let source = Program {
-        text,
+        text: velk::render::combine(&text),
         ranges: Vec::new(),
     };
     for level in LEVELS {
