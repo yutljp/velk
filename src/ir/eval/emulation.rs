@@ -31,7 +31,7 @@ struct Runner<'a> {
     facts: HashMap<u16, Fact>,
     image: &'a Image,
     options: &'a Options,
-    deadline: Instant,
+    deadline: Option<Instant>,
     steps: usize,
     address: u64,
     ends: HashSet<u64>,
@@ -70,6 +70,20 @@ pub(crate) fn run(
     options: &Options,
     deadline: Option<Instant>,
 ) -> Result<Report> {
+    let Some(limit) = Instant::now().checked_add(Duration::from_millis(options.time_limit_ms))
+    else {
+        return Err(invalid("timeLimitMs overflows the clock"));
+    };
+    let deadline = Some(deadline.map_or(limit, |end| end.min(limit)));
+    run_with_recovery(image, start, options, deadline, None).map(|(report, _)| report)
+}
+
+pub(crate) fn run_bounded(
+    image: &Image,
+    start: u64,
+    options: &Options,
+    deadline: Option<Instant>,
+) -> Result<Report> {
     run_with_recovery(image, start, options, deadline, None).map(|(report, _)| report)
 }
 
@@ -80,10 +94,6 @@ fn run_with_recovery(
     deadline: Option<Instant>,
     recovery: Option<strings::Recovery>,
 ) -> Result<(Report, Option<strings::Recovery>)> {
-    let now = Instant::now();
-    let Some(limit) = now.checked_add(Duration::from_millis(options.time_limit_ms)) else {
-        return Err(invalid("timeLimitMs overflows the clock"));
-    };
     if image.isa == Isa::Unsupported || image.byte_order() == Some(object::Endianness::Big) {
         return Err(invalid(
             "execution requires a supported little-endian architecture",
@@ -155,7 +165,7 @@ fn run_with_recovery(
         facts: HashMap::new(),
         image,
         options,
-        deadline: deadline.map_or(limit, |deadline| deadline.min(limit)),
+        deadline,
         steps: 0,
         address: image.code_address(start),
         ends,
@@ -435,7 +445,10 @@ impl Runner<'_> {
     }
 
     fn tick(&mut self) -> std::result::Result<(), Stop> {
-        if Instant::now() >= self.deadline {
+        if self
+            .deadline
+            .is_some_and(|deadline| Instant::now() >= deadline)
+        {
             return Err(Stop::Time);
         }
         if self.steps >= self.options.step_limit {
@@ -530,7 +543,10 @@ impl Runner<'_> {
                 stmts: Vec::new(),
             });
         }
-        if Instant::now() >= self.deadline {
+        if self
+            .deadline
+            .is_some_and(|deadline| Instant::now() >= deadline)
+        {
             return Err(Stop::Time);
         }
         self.code.insert(address, blocks.clone());
@@ -547,7 +563,10 @@ impl Runner<'_> {
         if self.ends.contains(&self.image.code_address(address)) {
             return Stop::End;
         }
-        if Instant::now() >= self.deadline {
+        if self
+            .deadline
+            .is_some_and(|deadline| Instant::now() >= deadline)
+        {
             return Stop::Time;
         }
         if self.steps >= self.options.step_limit {
@@ -582,7 +601,10 @@ impl Runner<'_> {
                     if self.ends.contains(address) {
                         return Stop::End;
                     }
-                    if Instant::now() >= self.deadline {
+                    if self
+                        .deadline
+                        .is_some_and(|deadline| Instant::now() >= deadline)
+                    {
                         return Stop::Time;
                     }
                     if self.steps >= self.options.step_limit {

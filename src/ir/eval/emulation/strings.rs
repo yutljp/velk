@@ -57,7 +57,6 @@ pub(crate) fn recover_strings(
     }
     let options = Options {
         step_limit: 200_000,
-        time_limit_ms: 100,
         ..Options::default()
     };
     let recovery = Recovery {

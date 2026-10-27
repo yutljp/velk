@@ -1,7 +1,7 @@
 //! Export-name candidates connected to hash resolver results.
 
 use std::collections::HashMap;
-use std::time::{Duration, Instant};
+use std::time::Instant;
 
 use serde::Serialize;
 
@@ -211,8 +211,7 @@ pub(crate) fn recover(image: &Image, ir: &FunctionIr, deadline: Option<Instant>)
         return Vec::new();
     };
     let flow = Flow::new(&ssa);
-    let limit = Instant::now() + Duration::from_millis(1000);
-    let deadline = Some(deadline.map_or(limit, |deadline| deadline.min(limit)));
+    let mut budget = 2_000_000usize;
     let mut results = Vec::new();
     for block in &ssa.ir.blocks {
         let mut call_index = 0;
@@ -294,6 +293,7 @@ pub(crate) fn recover(image: &Image, ir: &FunctionIr, deadline: Option<Instant>)
                     indirect_call,
                 },
                 deadline,
+                &mut budget,
                 &mut results,
             ) {
                 return results;
@@ -317,6 +317,7 @@ fn resolve(
     flow: &Flow<'_>,
     candidate: CallCandidate<'_>,
     deadline: Option<Instant>,
+    budget: &mut usize,
     results: &mut Vec<ApiHash>,
 ) -> bool {
     let CallCandidate {
@@ -395,7 +396,8 @@ fn resolve(
                 continue;
             };
             let mask = hash_mask;
-            let (candidates, complete) = evaluate(image, routine, hash & mask, mask, deadline);
+            let (candidates, complete) =
+                evaluate(image, routine, hash & mask, mask, deadline, budget);
             results.push(ApiHash {
                 block: block_start,
                 statement,
@@ -455,6 +457,7 @@ fn evaluate(
     hash: u64,
     mask: u64,
     deadline: Option<Instant>,
+    budget: &mut usize,
 ) -> (Vec<String>, bool) {
     let Ok(memory) = Memory::new(image) else {
         return (Vec::new(), false);
@@ -463,7 +466,7 @@ fn evaluate(
     let mut candidates = Vec::new();
     let mut complete = true;
     for name in NAMES.lines() {
-        if crate::deadline::passed(deadline).is_err() {
+        if *budget == 0 || crate::deadline::passed(deadline).is_err() {
             return (candidates, false);
         }
         let mut bytes = name.as_bytes().to_vec();
@@ -476,12 +479,13 @@ fn evaluate(
                 value: None,
                 width: None,
             }],
-            step_limit: 10_000,
-            time_limit_ms: 100,
+            step_limit: (*budget).min(10_000),
             ..Options::default()
         };
-        match crate::ir::eval::emulation::run(image, routine, &options, deadline) {
+        *budget -= 1;
+        match crate::ir::eval::emulation::run_bounded(image, routine, &options, deadline) {
             Ok(report) if report.reason == "return" => {
+                *budget = budget.saturating_sub(report.steps);
                 let Some(value) = crate::addr::parse(&report.return_value) else {
                     complete = false;
                     continue;
@@ -490,7 +494,11 @@ fn evaluate(
                     candidates.push(name.to_owned());
                 }
             }
-            _ => complete = false,
+            Ok(report) => {
+                *budget = budget.saturating_sub(report.steps);
+                complete = false;
+            }
+            Err(_) => complete = false,
         }
     }
     (candidates, complete)

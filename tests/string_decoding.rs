@@ -491,3 +491,56 @@ fn existing_fixture_findings_are_reviewable() {
         "Review each recovered string against the fixture source:\n{actual}"
     );
 }
+
+#[test]
+fn whole_binary_scan_reaches_functions_after_first_thousand() {
+    let directory = fixtures();
+    let source = directory.join("many-functions.c");
+    let binary_path = directory.join("many-functions.elf");
+    let mut code = String::new();
+    for index in 0..1001 {
+        code.push_str(&format!("void dummy_{index}(void) {{}}\n"));
+    }
+    code.push_str(&format!(
+        "#include \"{}\"\n",
+        common::root()
+            .join("tests/string_decoding/fixtures.c")
+            .display()
+    ));
+    fs::write(&source, code).unwrap();
+    let output = Command::new("clang")
+        .args([
+            "--target=x86_64-linux-gnu",
+            "-O0",
+            "-fno-builtin",
+            "-fno-stack-protector",
+            "-fno-pie",
+            "-nostdlib",
+            "-static",
+            "-fuse-ld=lld",
+            "-Wl,-e,case_xor",
+            "-Wl,--build-id=none",
+        ])
+        .arg(&source)
+        .arg("-o")
+        .arg(&binary_path)
+        .output()
+        .unwrap();
+    assert!(output.status.success(), "{output:?}");
+    let mut binary = Binary::open(&binary_path).unwrap();
+    let address = binary.find("case_xor").unwrap().addr;
+    assert!(
+        binary
+            .functions()
+            .iter()
+            .filter(|function| function.addr < address)
+            .count()
+            > 1000
+    );
+    assert!(
+        binary
+            .decoded_strings(None)
+            .iter()
+            .any(|string| { string.function == address && string.text == "xor sample text" })
+    );
+}

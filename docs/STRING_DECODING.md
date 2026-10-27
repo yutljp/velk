@@ -64,11 +64,12 @@ Recovery requires transformed bytes. Literal bytes individually assembled on the
 stack additionally qualify at recognized C string uses (`puts`, `strlen`,
 `strcmp`, `strncmp`, `strcpy`). Ordinary byte copies do not qualify.
 
-Each function has a 200000-statement and 100-millisecond budget, including lifting.
+Each function has a 200000-statement budget.
 Recovery tracks at most 64 KiB of written bytes, 200000 byte-write events, 4096 bytes
-per output buffer and 64 results per function. A whole-binary strings scan has a
-two-second budget. Interpreter code-size and call-depth limits also apply; time
-is checked at execution and lifting boundaries. Results are cached per function.
+per output buffer and 64 results per function. A whole-binary strings scan examines
+every function. Interpreter code-size and call-depth
+limits also apply. The caller's deadline is checked at execution and lifting
+boundaries. Results are cached per function.
 Budgets can cause misses. Go calling conventions, unknown lengths, unterminated
 buffers and strings shorter than four characters are left unchanged.
 

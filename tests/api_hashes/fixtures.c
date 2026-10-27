@@ -36,6 +36,11 @@ NOINLINE u32 custom(const char *name) {
     return hash;
 }
 NOINLINE u32 collision(const char *name) { (void)*(volatile const unsigned char *)name; return 42; }
+NOINLINE u32 long_hash(const char *name) {
+    u32 hash = (unsigned char)*name;
+    for (volatile unsigned index = 0; index < 1000000; ++index) hash = hash * 33 + index;
+    return hash;
+}
 
 #define RESOLVER(algorithm) \
 NOINLINE Function resolve_##algorithm(u32 wanted) { \
@@ -51,6 +56,7 @@ RESOLVER(fnv1a)
 RESOLVER(crc32)
 RESOLVER(custom)
 RESOLVER(collision)
+RESOLVER(long_hash)
 
 #if defined(__i386__)
 #define CASE(algorithm, constant) \
@@ -69,6 +75,7 @@ CASE(fnv1a, 0x9c67d227u)
 CASE(crc32, 0x9a1e494fu)
 CASE(custom, 0x7661fdcdu)
 CASE(collision, 42)
+CASE(long_hash, 42)
 #if defined(__i386__)
 NOINLINE Function case_unknown(void) { return resolve_fnv1a(1); }
 #else

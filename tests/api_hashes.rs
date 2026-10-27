@@ -111,6 +111,28 @@ fn collisions_and_unknown_names_remain_explicit() {
 }
 
 #[test]
+fn long_hash_stops_consistently() {
+    for architecture in ["x86_64", "i386", "aarch64"] {
+        let path = fixtures().join(format!("{architecture}.O0.elf"));
+        let mut previous = None;
+        for _ in 0..2 {
+            let mut binary = Binary::open(&path).unwrap();
+            let address = binary.find("case_long_hash").unwrap().addr;
+            let summary = binary.summary(address, None).unwrap();
+            let hashes = &summary["apiHashes"];
+            assert_eq!(hashes.as_array().unwrap().len(), 1, "{summary}");
+            assert_eq!(hashes[0]["complete"], false, "{summary}");
+            let code = binary.decompile(address, None, None).unwrap();
+            let result = (hashes.clone(), code);
+            if let Some(previous) = &previous {
+                assert_eq!(&result, previous);
+            }
+            previous = Some(result);
+        }
+    }
+}
+
+#[test]
 fn public_interfaces_and_documentation_return_the_same_candidates() {
     use std::io::Write as _;
     use std::process::Stdio;

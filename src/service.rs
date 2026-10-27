@@ -543,20 +543,31 @@ impl Binary {
         }
     }
 
-    /// Lists recovered strings, with a two-second bound for the entire scan.
+    /// Lists recovered strings from every function.
     pub fn decoded_strings(
         &mut self,
         deadline: Option<Instant>,
     ) -> Vec<crate::string_decoding::DecodedString> {
-        let limit = Instant::now() + std::time::Duration::from_secs(2);
-        let deadline = Some(deadline.map_or(limit, |end| end.min(limit)));
-        let functions: Vec<_> = self.image.functions.keys().copied().collect();
+        let mut functions: Vec<_> = self.image.functions.keys().copied().collect();
+        functions.sort_unstable();
+        let pending: Vec<_> = functions
+            .iter()
+            .copied()
+            .filter(|function| !self.decoded_strings.contains_key(function))
+            .collect();
+        let recovered = crate::parallel::map(&pending, |&function| {
+            crate::string_decoding::recover(&self.image, function, deadline)
+        });
+        for (function, strings) in pending.into_iter().zip(recovered) {
+            if let Some(strings) = strings {
+                self.decoded_strings.insert(function, strings);
+            }
+        }
         let mut result = Vec::new();
         for function in functions {
-            if crate::deadline::passed(deadline).is_err() {
-                break;
+            if let Some(strings) = self.decoded_strings.get(&function) {
+                result.extend_from_slice(strings);
             }
-            result.extend_from_slice(self.decoded_strings_at(function, deadline));
         }
         result.sort_by(|a, b| {
             (a.function, a.site, a.addr, &a.text).cmp(&(b.function, b.site, b.addr, &b.text))

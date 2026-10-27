@@ -12,7 +12,7 @@ Results appear in `apiHashes` in function summaries: CLI `--summary`, JavaScript
 `hash`, all matching `candidates`, and `complete`. Statement numbers refer to the
 optimized IR, not instruction addresses. An empty candidate list means no name
 matched. Several candidates mean a collision. `complete: false` means at least
-one evaluation failed or the time budget expired; missing results are possible.
+one evaluation failed or a budget expired; missing results are possible.
 `indirectCall` distinguishes an indirect invocation from an i386 function that
 returns the resolver result without invoking it.
 
@@ -34,8 +34,8 @@ The supported architectures are x86-64, i386 and AArch64. Go images are skipped.
 i386 indirect calls with unknown argument counts still
 fail decompilation; the i386 fixtures return the lookup result instead.
 
-Each scan allows 1,000 milliseconds. Each export-name evaluation allows 10,000 IR
-statements and 100 milliseconds, within the caller's deadline. No host API or
+Each scan allows 2,000,000 IR statements and name evaluations in total. Each
+export-name evaluation allows 10,000 IR statements, within the caller's deadline. No host API or
 system call executes. The bundled list is in `src/api_hashes/exports.txt`.
 
 Build the source fixtures before running these examples:
