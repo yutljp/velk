@@ -304,7 +304,8 @@ impl Runner<'_> {
                         }
                         bytes.push(byte as u8);
                     }
-                    let initial_text = crate::string_decoding::text(&bytes).map(|(_, text)| text);
+                    let initial_text =
+                        crate::string_decoding::decode_text(&bytes).map(|(_, text)| text);
                     buffers.push(Buffer {
                         address,
                         size,
@@ -368,7 +369,7 @@ impl Runner<'_> {
                 break;
             }
         }
-        let Some((encoding, text)) = crate::string_decoding::text(&bytes) else {
+        let Some((encoding, text)) = crate::string_decoding::decode_text(&bytes) else {
             return;
         };
         if buffer.initial_text.as_ref() == Some(&text) {

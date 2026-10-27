@@ -55,7 +55,7 @@ impl Runner<'_> {
                     width: *width,
                     signed: *signed,
                 };
-                match self.concrete(&load) {
+                match self.evaluate_concrete(&load) {
                     Ok(value) => Ok(Fact::constant(value)),
                     Err(stop) => Err(stop),
                 }
@@ -93,7 +93,7 @@ impl Runner<'_> {
                         Err(stop) => return Err(stop),
                     }
                 }
-                match self.concrete(&Expr::Apply {
+                match self.evaluate_concrete(&Expr::Apply {
                     op: *op,
                     args: values,
                 }) {

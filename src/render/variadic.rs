@@ -488,7 +488,7 @@ pub(super) fn prepare(ir: &mut FunctionIr, symbols: &Symbols) -> Option<Plan> {
     } else {
         1
     };
-    let predecessors = super::structure::compare_chain::predecessors(&candidate);
+    let predecessors = super::structure::compare_chain::predecessor_counts(&candidate);
     if predecessors
         .get(&candidate.blocks[0].start)
         .copied()
@@ -1005,7 +1005,7 @@ fn recover_access(ir: &mut FunctionIr, list: &List, start: usize, register: u16)
             return false;
         }
     }
-    let predecessors = super::structure::compare_chain::predecessors(ir);
+    let predecessors = super::structure::compare_chain::predecessor_counts(ir);
     for block in removed.iter().copied().chain(std::iter::once(stop.0)) {
         if block == start {
             return false;

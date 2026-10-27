@@ -7,7 +7,7 @@
 
 use std::collections::HashMap;
 
-use super::{Node, compare_chain::predecessors};
+use super::{Node, compare_chain::predecessor_counts};
 use crate::ir::{Cond, Expr, FunctionIr, Stmt};
 
 /// The most tests one joined condition holds.
@@ -162,14 +162,14 @@ pub(super) fn short_circuited(ir: &FunctionIr) -> Option<FunctionIr> {
     let mut ir = ir.clone();
     let mut changed = false;
     let mut block = 0;
-    let mut entries = predecessors(&ir);
+    let mut entries = predecessor_counts(&ir);
     let mut index = block_positions(&ir);
     while block < ir.blocks.len() {
         match join(&ir, &entries, &index, block) {
             Some((stmt, removed)) => {
                 *ir.blocks[block].stmts.last_mut().expect("a test") = stmt;
                 ir.blocks.remove(removed);
-                entries = predecessors(&ir);
+                entries = predecessor_counts(&ir);
                 index = block_positions(&ir);
                 changed = true;
                 // The joined test may complete the one before it in turn.

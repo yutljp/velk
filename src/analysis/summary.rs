@@ -12,7 +12,7 @@ use std::sync::{Arc, OnceLock};
 
 use super::{UNKNOWN_SIZE, signature};
 use crate::ir::{Block, Registers, Stmt};
-use crate::lift::{calling, lift_shared};
+use crate::lift::{call_summary, lift_shared};
 use crate::loader::{Image, NameSource, Summary};
 
 /// Library functions that never return, known by name because their code
@@ -517,7 +517,7 @@ fn settle(
             }
             let merged = merge(current[addr], found);
             // A caller reads only what its lift and its narrow return do.
-            let heard = |summary: Summary| (calling(summary), summary.narrow_return);
+            let heard = |summary: Summary| (call_summary(summary), summary.narrow_return);
             if heard(merged) != heard(current[addr]) {
                 next.extend(callers.get(addr).into_iter().flatten());
             }

@@ -52,7 +52,7 @@ pub fn inline_local_copies(ir: &mut FunctionIr) {
             for position in index + 1..block.stmts.len() {
                 let stmt = &block.stmts[position];
                 if use_at.is_none()
-                    && super::memory::atomic(stmt)
+                    && super::memory::memory_ordering_barrier(stmt)
                     && !super::memory::crosses_atomic(&value, sp, private_frame)
                 {
                     clobbered = true;
@@ -67,7 +67,7 @@ pub fn inline_local_copies(ir: &mut FunctionIr) {
                             | Stmt::Unsupported { .. }
                             | Stmt::Machine { .. }
                     )
-                    && !super::memory::atomic(stmt)
+                    && !super::memory::memory_ordering_barrier(stmt)
                     && !statement_reads(stmt).contains(&dest)
                 {
                     clobbered = true;
@@ -446,7 +446,7 @@ fn copy_propagate_block(
         let mut foldable = true;
         let loads = reads_memory(&template);
         for later in index + 1..block.stmts.len() {
-            if super::memory::atomic(&block.stmts[later])
+            if super::memory::memory_ordering_barrier(&block.stmts[later])
                 && !super::memory::crosses_atomic(&template, sp, private_frame)
             {
                 foldable = false;
@@ -464,7 +464,7 @@ fn copy_propagate_block(
                     Stmt::Call { .. } | Stmt::Unsupported { .. } | Stmt::Machine { .. } => true,
                     _ => false,
                 }
-                && !super::memory::atomic(&block.stmts[later])
+                && !super::memory::memory_ordering_barrier(&block.stmts[later])
             {
                 foldable = false;
                 break;

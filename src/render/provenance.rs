@@ -296,7 +296,7 @@ fn allocation_size(name: &str, args: Option<&[Expr]>, facts: &Facts) -> Option<u
         .unwrap_or(name)
         .trim_start_matches('_');
     use crate::analysis::prototypes::effects::{self, SizeRule};
-    let rule = effects::lookup(name).map_or(SizeRule::Argument(0), |effects| effects.size);
+    let rule = effects::lookup(name).map_or(SizeRule::Argument(0), |effects| effects.result_size);
     match rule {
         SizeRule::Product(first, second) => match (constant(first), constant(second)) {
             (Some(count), Some(size)) => count.checked_mul(size),

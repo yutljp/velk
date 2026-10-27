@@ -401,7 +401,7 @@ fn shift(op: BinOp, lhs: &Expr, rhs: &Expr, ctx: &Ctx<'_>, bits: u32) -> Printed
             },
             value.ty,
             width,
-            if maximum == 0 { value.strength } else { 9 },
+            if maximum == 0 { value.precedence } else { 9 },
         )
         .ranging(Range::Signed(width));
     }
@@ -1387,7 +1387,7 @@ fn masked(lhs: &Expr, mask: u64, ctx: &Ctx<'_>, bits: u32) -> Printed {
     let (text, strength) = if mask == 0xffff_ffff {
         // Arithmetic and shifts bind tighter than `&`, but are
         // parenthesised anyway for readability.
-        let left = if inner.strength > 6 && inner.strength < 12 {
+        let left = if inner.precedence > 6 && inner.precedence < 12 {
             format!("({})", inner.text)
         } else {
             inner.within(6, false).text

@@ -3,9 +3,9 @@ mod declarations;
 use super::unions::MemberIndex;
 use super::{
     CType, Ctx, Expr, FunctionIr, HashMap, Locals, Node, Reference, Rendered, SegmentBase,
-    SegmentBaseRead, Stmt, Symbols, abi, block_frames, calls, expr, globals, indent, int, naming,
-    narrow_registers, params, render_expr, render_nodes, sanitize, stack_bytes, stack_pointer,
-    type_of, variables,
+    SegmentBaseRead, Stmt, Symbols, abi, block_entry_frame_offsets, calls, expr, globals, indent,
+    int, naming, narrow_registers, params, render_expr, render_nodes, sanitize, stack_bytes,
+    stack_pointer, type_of, variables,
 };
 
 #[must_use]
@@ -167,7 +167,7 @@ fn render_prepared(
         .iter()
         .map(|block| block.start)
         .collect();
-    let frames = block_frames(ir, stack_pointer(ir.isa));
+    let frames = block_entry_frame_offsets(ir, stack_pointer(ir.isa));
     let variable_types = variables::variable_types(
         ir,
         &narrow_registers(ir),

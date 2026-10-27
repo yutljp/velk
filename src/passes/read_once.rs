@@ -75,7 +75,7 @@ fn fold(ir: &mut FunctionIr, frame_loads: FrameLoads) {
         .map(|index| live_out(ir, &live_in, index))
         .collect();
     let chained = chained(ir);
-    let predecessors = crate::render::structure::compare_chain::predecessors(ir);
+    let predecessors = crate::render::structure::compare_chain::predecessor_counts(ir);
     let mut uses = std::collections::HashMap::<u16, usize>::new();
     let mut definitions = std::collections::HashMap::<u16, usize>::new();
     for stmt in ir.blocks.iter().flat_map(|block| &block.stmts) {

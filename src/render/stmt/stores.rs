@@ -123,7 +123,7 @@ pub(super) fn render(addr: &Expr, value: &Expr, width: &u8, ctx: &Ctx<'_>) -> St
                             BinOp::Shr | BinOp::Sar => Some(">>"),
                             _ => None,
                         }
-                        && printed.strength == 9
+                        && printed.precedence == 9
                         && let Some(rhs) = printed.text.strip_prefix(&format!("{target} {symbol} "))
                     {
                         return format!("{target} {symbol}= {rhs};");

@@ -476,7 +476,7 @@ impl Runner<'_> {
 
     fn eval(&self, expression: &Expr) -> std::result::Result<u64, Stop> {
         if self.facts.is_empty() && self.recovery.is_none() {
-            return self.concrete(expression);
+            return self.evaluate_concrete(expression);
         }
         match self.value_fact(expression) {
             Ok(fact) => match fact.singleton() {
@@ -487,7 +487,7 @@ impl Runner<'_> {
         }
     }
 
-    fn concrete(&self, expression: &Expr) -> std::result::Result<u64, Stop> {
+    fn evaluate_concrete(&self, expression: &Expr) -> std::result::Result<u64, Stop> {
         let result = self.machine.eval(expression);
         if let Err(stop) = self.memory_error() {
             return Err(stop);
@@ -698,7 +698,7 @@ impl Runner<'_> {
             Stmt::Assign { dest, value } => {
                 let origin = self.origin(value);
                 if self.facts.is_empty() && self.recovery.is_none() {
-                    let value = match self.concrete(value) {
+                    let value = match self.evaluate_concrete(value) {
                         Ok(value) => value,
                         Err(stop) => return Err(stop),
                     };

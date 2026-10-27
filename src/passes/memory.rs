@@ -190,7 +190,7 @@ pub fn forward_stored_values(ir: &mut FunctionIr) {
     }
 }
 
-pub(crate) fn atomic(stmt: &Stmt) -> bool {
+pub(crate) fn memory_ordering_barrier(stmt: &Stmt) -> bool {
     matches!(
         stmt,
         Stmt::Machine {
@@ -494,7 +494,7 @@ fn fuse_block(
         }
         for probe in index + 1..block.stmts.len().min(index + 8) {
             if block.stmts[probe].has_deferred_call_memory()
-                || atomic(&block.stmts[probe])
+                || memory_ordering_barrier(&block.stmts[probe])
                     && (!crosses_atomic(&load, sp, private_frame)
                         || !statement_registers(&block.stmts[probe]).0.is_empty())
             {
@@ -548,7 +548,7 @@ fn fuse_block(
         let mut blocked = false;
         for probe in op_at + 1..block.stmts.len().min(op_at + 8) {
             if block.stmts[probe].has_deferred_call_memory()
-                || atomic(&block.stmts[probe])
+                || memory_ordering_barrier(&block.stmts[probe])
                     && (!crosses_atomic(&load, sp, private_frame)
                         || !crosses_atomic(&rhs, sp, private_frame)
                         || !statement_registers(&block.stmts[probe]).0.is_empty())
@@ -685,7 +685,8 @@ fn store_back(
     }
     for (probe, stmt) in stmts.iter().enumerate().take(index + 8).skip(index + 1) {
         if stmt.has_deferred_call_memory()
-            || atomic(stmt) && (!crosses || !statement_registers(stmt).0.is_empty())
+            || memory_ordering_barrier(stmt)
+                && (!crosses || !statement_registers(stmt).0.is_empty())
         {
             return None;
         }
@@ -713,7 +714,7 @@ fn fusion_barrier(stmt: &Stmt, sources: &std::collections::HashSet<u16>) -> bool
     }
     match stmt {
         Stmt::Assign { value, .. } => super::copies::reads_memory(value),
-        _ => !atomic(stmt),
+        _ => !memory_ordering_barrier(stmt),
     }
 }
 
@@ -775,7 +776,7 @@ pub fn forward_spilled_variables(ir: &mut FunctionIr) {
     }
     // Slots by their offset from the stack pointer on entry, through the
     // frame each block starts in and the moves of the stack pointer in it.
-    let frames = crate::passes::frame_slots::block_frames(ir, sp);
+    let frames = crate::passes::frame_slots::block_entry_frame_offsets(ir, sp);
     let slot = |addr: &Expr, frame: i64| -> Option<i64> {
         let (base, offset) = split_offset(addr);
         matches!(base, Expr::Reg { index, .. } if *index == sp)
@@ -884,7 +885,11 @@ pub fn forward_spilled_variables(ir: &mut FunctionIr) {
         }
     };
     let cyclic = crate::ir::cfg::cyclic_blocks(ir);
-    let atomics = ir.blocks.iter().flat_map(|block| &block.stmts).any(atomic);
+    let atomics = ir
+        .blocks
+        .iter()
+        .flat_map(|block| &block.stmts)
+        .any(memory_ordering_barrier);
     let mut forwarded: Vec<(i64, u8, u16)> = Vec::new();
     let mut dropped: Vec<(usize, usize)> = Vec::new();
     for (offset, uses) in &accesses {

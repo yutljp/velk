@@ -225,7 +225,7 @@ fn fold_parameter_copies(ir: &mut FunctionIr, param: u16, integer_types: Integer
         .blocks
         .iter()
         .flat_map(|block| &block.stmts)
-        .any(crate::passes::memory::atomic);
+        .any(crate::passes::memory::memory_ordering_barrier);
     let private_frame = crate::passes::memory::fixed_private_frame(ir, sp);
     // A slot whose address the code uses for anything but its own loads and
     // stores may change unseen, and a call of unknown arguments may read one

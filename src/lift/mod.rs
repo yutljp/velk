@@ -168,21 +168,21 @@ pub(crate) fn lift_shared_with_targets(
         recorded
             .answers
             .iter()
-            .all(|(target, summary)| calling(summaries(*target)) == *summary)
+            .all(|(target, summary)| call_summary(summaries(*target)) == *summary)
     }) {
         return found.blocks.clone();
     }
     let answers = std::cell::RefCell::new(Vec::new());
     let blocks = lift_with(image, addr, size, extra_targets, &|target| {
         let summary = summaries(target);
-        answers.borrow_mut().push((target, calling(summary)));
+        answers.borrow_mut().push((target, call_summary(summary)));
         summary
     })
     .map(Arc::new);
     let mut answers = answers.into_inner();
     answers.sort_unstable_by_key(|(target, _)| *target);
     answers.dedup_by_key(|(target, _)| *target);
-    let unknown = calling(Summary::default());
+    let unknown = call_summary(Summary::default());
     let without_summaries = answers.iter().all(|(_, answer)| *answer == unknown);
     let mut lifts = image.lifts.0.lock().expect("lifts lock");
     let kept = lifts.entry(key).or_default();
@@ -206,7 +206,7 @@ pub(crate) fn lift_shared_with_targets(
 
 /// What a call needs of its callee's summary. Lifting reads nothing else,
 /// so lifts that differ only in the rest are the same lift.
-pub(crate) fn calling(summary: Summary) -> Summary {
+pub(crate) fn call_summary(summary: Summary) -> Summary {
     Summary {
         pointers: 0,
         indirect_result: false,
@@ -306,7 +306,7 @@ fn lift_in_mode(
     summaries: Summaries<'_>,
     mode: execution::Mode,
 ) -> Result<Vec<Block>, LiftError> {
-    let summaries: Summaries<'_> = &|target| calling(summaries(target));
+    let summaries: Summaries<'_> = &|target| call_summary(summaries(target));
     let addr = image.code_address(addr);
     let Some(bytes) = image.read_vaddr(addr, size) else {
         return Err(LiftError::Unreadable);

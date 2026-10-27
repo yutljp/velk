@@ -37,7 +37,7 @@ pub(super) fn forward(ir: &mut FunctionIr, image: &Image) {
         return;
     }
     let sp = crate::arch::stack_pointer(ir.isa);
-    let frames = crate::passes::frame_slots::block_frames(ir, sp);
+    let frames = crate::passes::frame_slots::block_entry_frame_offsets(ir, sp);
     let mut call_frames = Vec::new();
     for (block, mut frame) in ir.blocks.iter().zip(frames) {
         let mut calls = Vec::new();

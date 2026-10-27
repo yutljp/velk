@@ -379,7 +379,7 @@ pub(crate) fn render_stmt(stmt: &Stmt, ctx: &Ctx<'_>) -> String {
             let printed = expr::print_declared_value(value, ctx, declared.copied());
             let pointer = ctx.pointer_types.get(&dest.index).map(String::as_str);
             let bits = declared.map_or(64, |declared| declared.bits);
-            let printed_strength = printed.strength;
+            let printed_strength = printed.precedence;
             let text = conformed(value, printed, pointer, ctx);
             if let Expr::Bin { op, lhs, .. } = without_update_mask(value, bits)
                 && matches!(without_update_mask(lhs, bits), Expr::Reg { index, .. } if *index == dest.index)

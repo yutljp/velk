@@ -137,7 +137,7 @@ fn execute(ir: &FunctionIr, block: usize, mut state: State, mut path: Vec<usize>
 }
 
 impl Proofs {
-    pub(crate) fn private_function(
+    pub(crate) fn function_return_value(
         &mut self,
         name: impl Into<String>,
         before: &FunctionIr,

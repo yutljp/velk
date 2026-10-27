@@ -218,7 +218,7 @@ pub(super) fn extents(ir: &FunctionIr, sp: u16) -> HashMap<i64, i64> {
     let Some(ranges) = crate::ssa::ranges::Ranges::solve(&ssa) else {
         return extents;
     };
-    let frames = crate::passes::frame_slots::block_frames(ir, sp);
+    let frames = crate::passes::frame_slots::block_entry_frame_offsets(ir, sp);
     for (index, (block, renamed)) in ir.blocks.iter().zip(&ssa.ir.blocks).enumerate() {
         let Some(mut frame) = frames[index] else {
             continue;

@@ -763,7 +763,11 @@ fn private_frame_and_spill_rewrites_are_equivalent() {
                     after.render(),
                     "frame template must be rewritten"
                 );
-                proofs.private_function(format!("frame/{isa:?}/{bits}/{offset}"), &before, &after);
+                proofs.function_return_value(
+                    format!("frame/{isa:?}/{bits}/{offset}"),
+                    &before,
+                    &after,
+                );
                 let variable = crate::ir::VARIABLE_BASE;
                 before = FunctionIr::single_block(
                     isa,
@@ -798,7 +802,11 @@ fn private_frame_and_spill_rewrites_are_equivalent() {
                     after.render(),
                     "spill template must be rewritten"
                 );
-                proofs.private_function(format!("spill/{isa:?}/{bits}/{offset}"), &before, &after);
+                proofs.function_return_value(
+                    format!("spill/{isa:?}/{bits}/{offset}"),
+                    &before,
+                    &after,
+                );
             }
         }
     }

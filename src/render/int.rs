@@ -84,7 +84,7 @@ pub(crate) struct Printed {
     /// extends and the IR's with zeros; `ALL` when they are equal.
     pub(crate) exact: u32,
     /// How tightly the text binds, as the printer's precedence counts.
-    pub(crate) strength: u8,
+    pub(crate) precedence: u8,
     /// What the printed value is known to fit in beyond its type.
     pub(crate) range: Range,
 }
@@ -107,13 +107,13 @@ pub(crate) enum Range {
 }
 
 impl Printed {
-    pub(crate) fn new(text: String, ty: Int, exact: u32, strength: u8) -> Printed {
+    pub(crate) fn new(text: String, ty: Int, exact: u32, precedence: u8) -> Printed {
         Printed {
             text,
             kind: ValueKind::Integer,
             ty,
             exact,
-            strength,
+            precedence,
             range: Range::Any,
         }
     }
@@ -150,17 +150,17 @@ impl Printed {
     }
 
     /// Text whose scalar type the printer does not follow, such as a float.
-    pub(crate) fn opaque(text: String, strength: u8) -> Printed {
+    pub(crate) fn opaque(text: String, precedence: u8) -> Printed {
         Printed {
             kind: ValueKind::Opaque,
-            ..Printed::new(text, Int::U64, ALL, strength)
+            ..Printed::new(text, Int::U64, ALL, precedence)
         }
     }
 
-    pub(crate) fn pointer(text: String, strength: u8) -> Printed {
+    pub(crate) fn pointer(text: String, precedence: u8) -> Printed {
         Printed {
             kind: ValueKind::Pointer,
-            ..Printed::new(text, Int::U64, ALL, strength)
+            ..Printed::new(text, Int::U64, ALL, precedence)
         }
     }
 
@@ -187,15 +187,15 @@ impl Printed {
     /// parenthesized when it binds more loosely; `right` marks the right
     /// operand.
     pub(crate) fn within(&self, parent: u8, right: bool) -> Printed {
-        let binds = (self.strength > parent || (self.strength == parent && !right))
-            && !(parent == 9 && self.strength == 10)
-            && !(matches!(parent, 4..=6) && matches!(self.strength, 7 | 8));
-        if binds || self.strength >= 12 {
+        let binds = (self.precedence > parent || (self.precedence == parent && !right))
+            && !(parent == 9 && self.precedence == 10)
+            && !(matches!(parent, 4..=6) && matches!(self.precedence, 7 | 8));
+        if binds || self.precedence >= 12 {
             self.clone()
         } else {
             Printed {
                 text: format!("({})", self.text),
-                strength: 13,
+                precedence: 13,
                 ..self.clone()
             }
         }

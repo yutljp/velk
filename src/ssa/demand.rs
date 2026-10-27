@@ -213,7 +213,7 @@ fn private_store_demands(ir: &FunctionIr) -> Option<HashMap<(usize, usize), u64>
         }
         Some(())
     }
-    let frames = crate::passes::frame_slots::block_frames(ir, sp);
+    let frames = crate::passes::frame_slots::block_entry_frame_offsets(ir, sp);
     let mut read = Vec::new();
     let mut stores = Vec::new();
     for (block, body) in ir.blocks.iter().enumerate() {

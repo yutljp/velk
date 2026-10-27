@@ -500,7 +500,7 @@ mod tests {
                 );
                 assert_eq!(bits.ty, Int::promoted(u32::from(precision.bits()), false));
                 assert_eq!(bits.exact, ALL);
-                assert_eq!(bits.strength, 13);
+                assert_eq!(bits.precedence, 13);
                 assert_eq!(bits.range, Range::Unsigned(u32::from(precision.bits())));
                 let value = Printed::opaque(value.to_owned(), 13);
                 assert_eq!(

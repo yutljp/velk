@@ -24,12 +24,12 @@ pub fn settle(ir: &mut FunctionIr) {
     {
         return;
     }
-    let frames = block_frames(ir, stack_pointer(ir.isa));
+    let frames = block_entry_frame_offsets(ir, stack_pointer(ir.isa));
     if substitute_frame_pointer(ir, &frames) {
         crate::passes::simplify::simplify(ir);
         frame::elide_callee_saves(ir);
     }
-    let frames = block_frames(ir, stack_pointer(ir.isa));
+    let frames = block_entry_frame_offsets(ir, stack_pointer(ir.isa));
     if !canonical_frame(ir, &frames) {
         return;
     }
@@ -577,7 +577,7 @@ pub(crate) fn frame_slot(expr: &Expr, frame: i64, sp: u16) -> Option<i64> {
 
 /// The frame displacement on entry to each block, propagated over the control
 /// flow; `None` when unreachable or when paths disagree.
-pub(crate) fn block_frames(ir: &FunctionIr, sp: u16) -> Vec<Option<i64>> {
+pub(crate) fn block_entry_frame_offsets(ir: &FunctionIr, sp: u16) -> Vec<Option<i64>> {
     let index: HashMap<u64, usize> = ir
         .blocks
         .iter()

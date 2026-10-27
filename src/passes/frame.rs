@@ -277,7 +277,7 @@ pub fn elide_callee_saves(ir: &mut FunctionIr) {
     }
     let sp = stack_pointer(ir.isa);
     let mut accesses: Vec<Access> = Vec::new();
-    let frames = crate::passes::frame_slots::block_frames(ir, sp);
+    let frames = crate::passes::frame_slots::block_entry_frame_offsets(ir, sp);
     for (block_index, block) in ir.blocks.iter().enumerate() {
         // A block whose frame the paths into it disagree on names no slot.
         let Some(mut frame) = frames[block_index] else {

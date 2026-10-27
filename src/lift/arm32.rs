@@ -1,6 +1,6 @@
 //! Decodes and lifts little-endian A32 and T32 instructions.
 
-mod additional;
+mod instruction_fallback;
 
 use std::collections::HashSet;
 
@@ -14,13 +14,13 @@ use crate::loader::{ArmMode, Image, Isa};
 
 pub(crate) fn position_independent_instruction(bytes: &[u8]) -> bool {
     matches!(
-        additional::decode(bytes, crate::loader::ArmMode::Arm),
+        instruction_fallback::decode(bytes, crate::loader::ArmMode::Arm),
         Some(
-            additional::Instruction::Extend { .. }
-                | additional::Instruction::Divide { .. }
-                | additional::Instruction::Bitfield { .. }
-                | additional::Instruction::Reverse { .. }
-                | additional::Instruction::HalfMultiply { .. }
+            instruction_fallback::Instruction::Extend { .. }
+                | instruction_fallback::Instruction::Divide { .. }
+                | instruction_fallback::Instruction::Bitfield { .. }
+                | instruction_fallback::Instruction::Reverse { .. }
+                | instruction_fallback::Instruction::HalfMultiply { .. }
         )
     )
 }
@@ -32,7 +32,7 @@ pub(super) enum Step {
     },
     Execute {
         instruction: Instruction,
-        additional: Option<additional::Instruction>,
+        additional: Option<instruction_fallback::Instruction>,
         pc: u64,
         next: u64,
         target: Option<u64>,
@@ -130,7 +130,7 @@ fn decode(image: &Image, bytes: &[u8], addr: u64) -> (Vec<Decoded<Step>>, Option
             .allow_nonconforming(false)
             .with_thumb_mode(mode == ArmMode::Thumb);
         let mut reader = ReaderBuilder::<u32, u8>::read_at(&bytes[offset..], 0);
-        let fallback_instruction = additional::decode(&bytes[offset..], mode);
+        let fallback_instruction = instruction_fallback::decode(&bytes[offset..], mode);
         let mut instruction = match decoder.decode(&mut reader) {
             Ok(instruction) => instruction,
             Err(_) if mode == ArmMode::Arm && double_literal(&bytes[offset..]).is_some() => {
@@ -140,7 +140,7 @@ fn decode(image: &Image, bytes: &[u8], addr: u64) -> (Vec<Decoded<Step>>, Option
                 condition: if mode == ArmMode::Thumb {
                     armv7::ConditionCode::AL
                 } else {
-                    additional::condition(bytes[offset + 3] >> 4)
+                    instruction_fallback::condition(bytes[offset + 3] >> 4)
                 },
                 thumb: mode == ArmMode::Thumb,
                 wide: mode == ArmMode::Thumb,
@@ -415,7 +415,7 @@ fn double_literal(bytes: &[u8]) -> Option<Instruction> {
         return None;
     }
     Some(Instruction {
-        condition: additional::condition((word >> 28) as u8),
+        condition: instruction_fallback::condition((word >> 28) as u8),
         opcode: Opcode::LDRD,
         operands: [
             Operand::Reg(armv7::Reg::from_u8(register)),

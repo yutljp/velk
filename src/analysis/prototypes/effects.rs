@@ -12,7 +12,7 @@ pub(crate) enum SizeRule {
 }
 pub(crate) struct Buffer {
     pub(crate) arguments: &'static [usize],
-    pub(crate) size: usize,
+    pub(crate) size_argument: usize,
 }
 pub(crate) struct Naming {
     pub(crate) parameters: &'static [&'static str],
@@ -21,7 +21,7 @@ pub(crate) struct Naming {
 pub(crate) struct Effects {
     pub(crate) buffer: Option<Buffer>,
     pub(crate) allocation: Option<Allocation>,
-    pub(crate) size: SizeRule,
+    pub(crate) result_size: SizeRule,
     pub(crate) naming: Option<Naming>,
 }
 pub(crate) fn lookup(name: &str) -> Option<&'static Effects> {
@@ -32,17 +32,17 @@ pub(crate) fn lookup(name: &str) -> Option<&'static Effects> {
 const PATTERN: Effects = Effects {
     buffer: Some(Buffer {
         arguments: &[0],
-        size: 2,
+        size_argument: 2,
     }),
     allocation: None,
-    size: SizeRule::Argument(0),
+    result_size: SizeRule::Argument(0),
     naming: None,
 };
 
 const ALLOCATE: Effects = Effects {
     buffer: None,
     allocation: Some(Allocation::Fresh),
-    size: SizeRule::Argument(0),
+    result_size: SizeRule::Argument(0),
     naming: None,
 };
 
@@ -52,7 +52,7 @@ const EFFECTS: &[(&str, Effects)] = &[
         Effects {
             buffer: None,
             allocation: None,
-            size: SizeRule::Argument(0),
+            result_size: SizeRule::Argument(0),
             naming: Some(Naming {
                 parameters: &["s"],
                 result: Some("len"),
@@ -64,7 +64,7 @@ const EFFECTS: &[(&str, Effects)] = &[
         Effects {
             buffer: None,
             allocation: None,
-            size: SizeRule::Argument(0),
+            result_size: SizeRule::Argument(0),
             naming: Some(Naming {
                 parameters: &["s", "n"],
                 result: Some("len"),
@@ -76,10 +76,10 @@ const EFFECTS: &[(&str, Effects)] = &[
         Effects {
             buffer: Some(Buffer {
                 arguments: &[0, 1],
-                size: 2,
+                size_argument: 2,
             }),
             allocation: None,
-            size: SizeRule::Argument(0),
+            result_size: SizeRule::Argument(0),
             naming: Some(Naming {
                 parameters: &["dst", "src", "n"],
                 result: None,
@@ -91,10 +91,10 @@ const EFFECTS: &[(&str, Effects)] = &[
         Effects {
             buffer: Some(Buffer {
                 arguments: &[0, 1],
-                size: 2,
+                size_argument: 2,
             }),
             allocation: None,
-            size: SizeRule::Argument(0),
+            result_size: SizeRule::Argument(0),
             naming: Some(Naming {
                 parameters: &["dst", "src", "n"],
                 result: None,
@@ -106,10 +106,10 @@ const EFFECTS: &[(&str, Effects)] = &[
         Effects {
             buffer: Some(Buffer {
                 arguments: &[0],
-                size: 2,
+                size_argument: 2,
             }),
             allocation: None,
-            size: SizeRule::Argument(0),
+            result_size: SizeRule::Argument(0),
             naming: Some(Naming {
                 parameters: &["dst", "c", "n"],
                 result: None,
@@ -121,7 +121,7 @@ const EFFECTS: &[(&str, Effects)] = &[
         Effects {
             buffer: None,
             allocation: None,
-            size: SizeRule::Argument(0),
+            result_size: SizeRule::Argument(0),
             naming: Some(Naming {
                 parameters: &["s1", "s2"],
                 result: None,
@@ -133,7 +133,7 @@ const EFFECTS: &[(&str, Effects)] = &[
         Effects {
             buffer: None,
             allocation: None,
-            size: SizeRule::Argument(0),
+            result_size: SizeRule::Argument(0),
             naming: Some(Naming {
                 parameters: &["s1", "s2", "n"],
                 result: None,
@@ -145,7 +145,7 @@ const EFFECTS: &[(&str, Effects)] = &[
         Effects {
             buffer: None,
             allocation: Some(Allocation::Fresh),
-            size: SizeRule::Argument(0),
+            result_size: SizeRule::Argument(0),
             naming: Some(Naming {
                 parameters: &["size"],
                 result: Some("p"),
@@ -157,7 +157,7 @@ const EFFECTS: &[(&str, Effects)] = &[
         Effects {
             buffer: None,
             allocation: Some(Allocation::Fresh),
-            size: SizeRule::Product(0, 1),
+            result_size: SizeRule::Product(0, 1),
             naming: Some(Naming {
                 parameters: &["n", "size"],
                 result: Some("buf"),
@@ -169,7 +169,7 @@ const EFFECTS: &[(&str, Effects)] = &[
         Effects {
             buffer: None,
             allocation: Some(Allocation::Reallocated),
-            size: SizeRule::Argument(1),
+            result_size: SizeRule::Argument(1),
             naming: Some(Naming {
                 parameters: &["ptr", "size"],
                 result: Some("buf"),
@@ -181,7 +181,7 @@ const EFFECTS: &[(&str, Effects)] = &[
         Effects {
             buffer: None,
             allocation: None,
-            size: SizeRule::Argument(0),
+            result_size: SizeRule::Argument(0),
             naming: Some(Naming {
                 parameters: &["ptr"],
                 result: None,
@@ -193,7 +193,7 @@ const EFFECTS: &[(&str, Effects)] = &[
         Effects {
             buffer: None,
             allocation: None,
-            size: SizeRule::Argument(0),
+            result_size: SizeRule::Argument(0),
             naming: Some(Naming {
                 parameters: &["path", "flags"],
                 result: Some("fd"),
@@ -205,7 +205,7 @@ const EFFECTS: &[(&str, Effects)] = &[
         Effects {
             buffer: None,
             allocation: None,
-            size: SizeRule::Argument(0),
+            result_size: SizeRule::Argument(0),
             naming: Some(Naming {
                 parameters: &["fd", "buf", "n"],
                 result: Some("n"),
@@ -217,7 +217,7 @@ const EFFECTS: &[(&str, Effects)] = &[
         Effects {
             buffer: None,
             allocation: None,
-            size: SizeRule::Argument(0),
+            result_size: SizeRule::Argument(0),
             naming: Some(Naming {
                 parameters: &["fd", "buf", "n"],
                 result: Some("n"),
@@ -237,7 +237,7 @@ const EFFECTS: &[(&str, Effects)] = &[
         Effects {
             buffer: None,
             allocation: Some(Allocation::Fresh),
-            size: SizeRule::Unknown,
+            result_size: SizeRule::Unknown,
             naming: None,
         },
     ),
@@ -246,7 +246,7 @@ const EFFECTS: &[(&str, Effects)] = &[
         Effects {
             buffer: None,
             allocation: Some(Allocation::Fresh),
-            size: SizeRule::Argument(0),
+            result_size: SizeRule::Argument(0),
             naming: None,
         },
     ),
@@ -255,7 +255,7 @@ const EFFECTS: &[(&str, Effects)] = &[
         Effects {
             buffer: None,
             allocation: Some(Allocation::Fresh),
-            size: SizeRule::Argument(0),
+            result_size: SizeRule::Argument(0),
             naming: None,
         },
     ),
@@ -264,7 +264,7 @@ const EFFECTS: &[(&str, Effects)] = &[
         Effects {
             buffer: None,
             allocation: Some(Allocation::Fresh),
-            size: SizeRule::Argument(0),
+            result_size: SizeRule::Argument(0),
             naming: None,
         },
     ),
@@ -273,7 +273,7 @@ const EFFECTS: &[(&str, Effects)] = &[
         Effects {
             buffer: None,
             allocation: Some(Allocation::Fresh),
-            size: SizeRule::Argument(0),
+            result_size: SizeRule::Argument(0),
             naming: None,
         },
     ),
@@ -282,7 +282,7 @@ const EFFECTS: &[(&str, Effects)] = &[
         Effects {
             buffer: None,
             allocation: Some(Allocation::Fresh),
-            size: SizeRule::Argument(0),
+            result_size: SizeRule::Argument(0),
             naming: None,
         },
     ),
@@ -291,7 +291,7 @@ const EFFECTS: &[(&str, Effects)] = &[
         Effects {
             buffer: None,
             allocation: Some(Allocation::Fresh),
-            size: SizeRule::Argument(0),
+            result_size: SizeRule::Argument(0),
             naming: None,
         },
     ),
@@ -300,7 +300,7 @@ const EFFECTS: &[(&str, Effects)] = &[
         Effects {
             buffer: None,
             allocation: Some(Allocation::Fresh),
-            size: SizeRule::Argument(0),
+            result_size: SizeRule::Argument(0),
             naming: None,
         },
     ),
@@ -309,7 +309,7 @@ const EFFECTS: &[(&str, Effects)] = &[
         Effects {
             buffer: None,
             allocation: Some(Allocation::Fresh),
-            size: SizeRule::Argument(0),
+            result_size: SizeRule::Argument(0),
             naming: None,
         },
     ),
@@ -318,7 +318,7 @@ const EFFECTS: &[(&str, Effects)] = &[
         Effects {
             buffer: None,
             allocation: Some(Allocation::Reallocated),
-            size: SizeRule::Argument(3),
+            result_size: SizeRule::Argument(3),
             naming: None,
         },
     ),
@@ -327,7 +327,7 @@ const EFFECTS: &[(&str, Effects)] = &[
         Effects {
             buffer: None,
             allocation: Some(Allocation::Reallocated),
-            size: SizeRule::Argument(3),
+            result_size: SizeRule::Argument(3),
             naming: None,
         },
     ),
@@ -343,7 +343,7 @@ mod tests {
             let effects = lookup(name).unwrap();
             let buffer = effects.buffer.as_ref().unwrap();
             assert_eq!(buffer.arguments, &[0, 1]);
-            assert_eq!(buffer.size, 2);
+            assert_eq!(buffer.size_argument, 2);
             let naming = effects.naming.as_ref().unwrap();
             assert_eq!(naming.parameters, &["dst", "src", "n"]);
             assert_eq!(naming.result, None);
@@ -357,7 +357,7 @@ mod tests {
             let effects = lookup(name).unwrap();
             let buffer = effects.buffer.as_ref().unwrap();
             assert_eq!(buffer.arguments, &[0]);
-            assert_eq!(buffer.size, 2);
+            assert_eq!(buffer.size_argument, 2);
             assert_eq!(effects.naming.is_some(), name == "memset");
         }
         for name in ["unknown", "_malloc", "__rustc::__rust_alloc"] {

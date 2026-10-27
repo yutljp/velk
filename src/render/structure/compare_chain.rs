@@ -51,7 +51,7 @@ pub(crate) fn successors(ir: &FunctionIr, index: usize) -> Vec<usize> {
     crate::ir::cfg::block_successors(&ir.blocks, index)
 }
 
-pub(crate) fn predecessors(ir: &FunctionIr) -> std::collections::HashMap<u64, usize> {
+pub(crate) fn predecessor_counts(ir: &FunctionIr) -> std::collections::HashMap<u64, usize> {
     let mut counts: std::collections::HashMap<u64, usize> = std::collections::HashMap::new();
     for (index, _) in ir.blocks.iter().enumerate() {
         let edges =
@@ -572,7 +572,7 @@ pub fn recover_chains(ir: &FunctionIr) -> Vec<ChainSwitch> {
         .enumerate()
         .map(|(index, block)| (block.start, index))
         .collect();
-    let predecessor_counts = predecessors(ir);
+    let predecessor_counts = predecessor_counts(ir);
     let mut out: Vec<ChainSwitch> = Vec::new();
     for (block_index, block) in ir.blocks.iter().enumerate() {
         let Some(Stmt::Brif { lhs, rhs, .. }) = block.stmts.last() else {
@@ -709,7 +709,9 @@ pub fn apply_chains(ir: &mut FunctionIr, chains: &[ChainSwitch]) {
 
 #[cfg(test)]
 mod tests {
-    use super::{apply_chains, chain_is_available, equality_chain, predecessors, recover_chains};
+    use super::{
+        apply_chains, chain_is_available, equality_chain, predecessor_counts, recover_chains,
+    };
     use crate::ir::{Block, Cond, Expr, FunctionIr, Stmt, eval};
     use crate::loader::Isa;
 
@@ -820,7 +822,7 @@ mod tests {
             .enumerate()
             .map(|(position, block)| (block.start, position))
             .collect();
-        equality_chain(ir, 0, &positions, &predecessors(ir))
+        equality_chain(ir, 0, &positions, &predecessor_counts(ir))
     }
 
     fn compare_dispatch(ir: &FunctionIr, values: &[u64], width: u8, inputs: &[u64]) {
@@ -1237,7 +1239,7 @@ mod tests {
                 finish(0x50, 11),
                 finish(0x60, 12),
             ];
-            assert_eq!(predecessors(&ir).get(&0), Some(&1));
+            assert_eq!(predecessor_counts(&ir).get(&0), Some(&1));
             let chains = recover_chains(&ir);
             assert_eq!(chains.len(), 1);
             assert_eq!(chains[0].blocks, [0, 0x10]);

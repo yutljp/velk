@@ -242,7 +242,7 @@ fn prove_transitions(ir: &FunctionIr, region: &HashSet<usize>, state: u16) -> Op
             _ => return None,
         }
     }
-    let counts = crate::render::structure::compare_chain::predecessors(ir);
+    let counts = crate::render::structure::compare_chain::predecessor_counts(ir);
     let mut predecessors = vec![Vec::new(); ir.blocks.len()];
     for at in 0..ir.blocks.len() {
         for next in crate::ir::cfg::successors(ir, at) {

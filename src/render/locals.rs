@@ -94,7 +94,7 @@ impl Locals {
             return;
         };
         let sp = stack_pointer(ir.isa);
-        let frames = crate::passes::frame_slots::block_frames(ir, sp);
+        let frames = crate::passes::frame_slots::block_entry_frame_offsets(ir, sp);
         let mut starts = std::collections::HashSet::new();
         let mut ends = std::collections::HashSet::new();
         for (position, block) in ir.blocks.iter().enumerate() {
@@ -1232,7 +1232,7 @@ fn buffer_extents(
                 let buffer = name
                     .and_then(crate::analysis::prototypes::effects::lookup)
                     .and_then(|effects| effects.buffer.as_ref());
-                let size = buffer.and_then(|buffer| match args.get(buffer.size) {
+                let size = buffer.and_then(|buffer| match args.get(buffer.size_argument) {
                     Some(Expr::Const(size)) => i64::try_from(*size).ok(),
                     _ => None,
                 });
@@ -2135,7 +2135,7 @@ fn comparison_addresses(
 
 pub(super) fn bind_return_slot(ir: &FunctionIr, provider: &str, ctx: &mut Ctx<'_>) {
     let sp = stack_pointer(ir.isa);
-    let frames = crate::passes::frame_slots::block_frames(ir, sp);
+    let frames = crate::passes::frame_slots::block_entry_frame_offsets(ir, sp);
     let home = ir.convention == crate::ir::Convention::Win64
         && ir.stack_params.is_empty()
         && frame_accesses(ir, sp, &frames)
@@ -2314,7 +2314,7 @@ mod tests {
             Some(Expr::bin(BinOp::Sub, Expr::reg(31, 64), Expr::reg(0, 64))),
             1,
         );
-        let frames = crate::passes::frame_slots::block_frames(&ir, 31);
+        let frames = crate::passes::frame_slots::block_entry_frame_offsets(&ir, 31);
         let locals = stack_locals(&ir, &frames, &Default::default(), &Default::default());
         assert!(locals.slots.is_empty(), "{:?}", locals.slots);
         assert!(locals.parts.is_empty(), "{:?}", locals.parts);
@@ -2327,7 +2327,7 @@ mod tests {
             Some(Expr::bin(BinOp::Add, Expr::reg(31, 64), Expr::Const(16))),
             3,
         );
-        let frames = crate::passes::frame_slots::block_frames(&ir, 31);
+        let frames = crate::passes::frame_slots::block_entry_frame_offsets(&ir, 31);
         let locals = stack_locals(&ir, &frames, &Default::default(), &Default::default());
         assert!(locals.slots.is_empty(), "{:?}", locals.slots);
         assert!(locals.parts.is_empty(), "{:?}", locals.parts);
@@ -2337,7 +2337,7 @@ mod tests {
     #[test]
     fn legacy_stack_binding_keeps_a_stable_sp_origin() {
         let ir = scalar_stack_binding(None, 1);
-        let frames = crate::passes::frame_slots::block_frames(&ir, 31);
+        let frames = crate::passes::frame_slots::block_entry_frame_offsets(&ir, 31);
         let locals = stack_locals(&ir, &frames, &Default::default(), &Default::default());
         assert_eq!(locals.slots.len(), 1);
         assert!(
@@ -2434,7 +2434,7 @@ mod tests {
             Expr::bin(BinOp::Add, Expr::reg(31, 64), Expr::Const(16))
         };
         *ir.blocks[0].stmts.last_mut().unwrap() = Stmt::Ret { value: address };
-        let frames = crate::passes::frame_slots::block_frames(&ir, 31);
+        let frames = crate::passes::frame_slots::block_entry_frame_offsets(&ir, 31);
         stack_locals(&ir, &frames, &Default::default(), &Default::default())
     }
 

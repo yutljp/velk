@@ -1,4 +1,6 @@
-use super::{block_frames, canonical_frame, frame_slot, rewrite_frame, substitute_frame_pointer};
+use super::{
+    block_entry_frame_offsets, canonical_frame, frame_slot, rewrite_frame, substitute_frame_pointer,
+};
 use crate::arch::stack_pointer;
 use crate::ir::{BinOp, Expr, FunctionIr, Stmt};
 use std::collections::HashMap;
@@ -77,7 +79,7 @@ pub(crate) fn settle(ir: &mut FunctionIr) {
             remove_redundant_32_bit_mask(operand, sp);
         }
     }
-    let frames = block_frames(&candidate, sp);
+    let frames = block_entry_frame_offsets(&candidate, sp);
     substitute_frame_pointer(&mut candidate, &frames);
     let statements = candidate
         .blocks
@@ -89,7 +91,7 @@ pub(crate) fn settle(ir: &mut FunctionIr) {
         }
     }
     crate::passes::simplify::simplify(&mut candidate);
-    let frames = block_frames(&candidate, sp);
+    let frames = block_entry_frame_offsets(&candidate, sp);
     for (block, frame) in candidate.blocks.iter_mut().zip(&frames) {
         let Some(mut frame) = *frame else { continue };
         let mut aliases = HashMap::<u16, i64>::new();
@@ -136,7 +138,7 @@ pub(crate) fn settle(ir: &mut FunctionIr) {
     }
     crate::passes::dce::dce(&mut candidate);
     crate::passes::simplify::simplify(&mut candidate);
-    let frames = block_frames(&candidate, sp);
+    let frames = block_entry_frame_offsets(&candidate, sp);
     let bounded = candidate.blocks.iter().zip(&frames).all(|(block, frame)| {
         let Some(mut frame) = *frame else {
             return false;

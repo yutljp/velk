@@ -32,8 +32,8 @@ fn decoded_extend_add_matches_symbolic_rotation_and_addition() {
                         let low = (word as u16).to_le_bytes();
                         [high[0], high[1], low[0], low[1]]
                     };
-                    let instruction =
-                        additional::decode(&bytes, mode).expect("extend-and-add encoding");
+                    let instruction = instruction_fallback::decode(&bytes, mode)
+                        .expect("extend-and-add encoding");
                     let mut lifter = Lifter {
                         image: &image,
                         summaries: &summaries,

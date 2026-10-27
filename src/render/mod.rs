@@ -93,7 +93,7 @@ use std::collections::HashMap;
 
 use crate::analysis::refs::Reference;
 use crate::ir::{BinOp, CType, Expr, FunctionIr, Stmt};
-use crate::passes::frame_slots::block_frames;
+use crate::passes::frame_slots::block_entry_frame_offsets;
 use crate::render::expr::Ctx;
 use crate::render::expr::render_at;
 use crate::render::expr::render_expr;
@@ -425,7 +425,10 @@ pub(crate) fn project_locals(
     ir: &crate::ir::FunctionIr,
 ) -> Vec<(i64, String, crate::ir::CType, u64)> {
     let types = variable_types(ir);
-    let frames = crate::passes::frame_slots::block_frames(ir, crate::arch::stack_pointer(ir.isa));
+    let frames = crate::passes::frame_slots::block_entry_frame_offsets(
+        ir,
+        crate::arch::stack_pointer(ir.isa),
+    );
     let roles = naming::roles::infer(ir, &Symbols::default());
     let locals = locals::stack_locals_with_roles(ir, &frames, &types, &Symbols::default(), &roles);
     let mut seen = std::collections::HashSet::new();

@@ -1,7 +1,7 @@
 use std::collections::HashSet;
 
 use crate::ir::{Expr, FunctionIr, Stmt};
-use crate::passes::frame_slots::{block_frames, frame_slot};
+use crate::passes::frame_slots::{block_entry_frame_offsets, frame_slot};
 
 type Values = Vec<(i64, u8, Expr)>;
 
@@ -25,7 +25,7 @@ pub(super) fn promote(ir: &mut FunctionIr) {
         return;
     }
     // Settling removes stack adjustments, so retain each call's actual frame.
-    let frames = block_frames(ir, sp);
+    let frames = block_entry_frame_offsets(ir, sp);
     let call_frames: Vec<Vec<Option<i64>>> = ir
         .blocks
         .iter()
@@ -71,8 +71,8 @@ fn validated_accesses(ir: &FunctionIr) -> Option<FrameAccesses> {
         return None;
     }
     let reached = crate::ir::cfg::reached(ir);
-    let frames = block_frames(ir, sp);
-    let counts = crate::render::structure::compare_chain::predecessors(ir);
+    let frames = block_entry_frame_offsets(ir, sp);
+    let counts = crate::render::structure::compare_chain::predecessor_counts(ir);
     let mut incoming = vec![Vec::new(); ir.blocks.len()];
     let mut positions = vec![Vec::new(); ir.blocks.len()];
     let mut accesses = Vec::new();
@@ -634,7 +634,7 @@ fn invalidate(stmt: &Stmt, frame: i64, sp: u16, values: &mut Values) {
             values.retain(|(stored, _, _)| *stored != offset);
         }
         _ => {
-            if super::atomic(stmt) {
+            if super::memory_ordering_barrier(stmt) {
                 values.retain(|(offset, width, _)| {
                     offset
                         .checked_add(i64::from(*width))

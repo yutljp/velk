@@ -342,7 +342,7 @@ fn scalar_stack_parameter_parts_reject_ambiguous_frame_addresses() {
             value: load(address, 1),
         },
     ]);
-    let frames = super::block_frames(&ir, sp);
+    let frames = super::block_entry_frame_offsets(&ir, sp);
     let locals = super::stack_locals(&ir, &frames, &Default::default(), &Default::default());
     assert!(locals.parameter_addresses.is_empty());
 }
@@ -2806,7 +2806,7 @@ fn walked_frame_object_offsets_preserve_symbolic_addresses() {
             ],
         );
         ir.frame_bottom = -64;
-        let frames = super::block_frames(&ir, sp);
+        let frames = super::block_entry_frame_offsets(&ir, sp);
         let locals = super::stack_locals(&ir, &frames, &Default::default(), &Default::default());
         assert_eq!(locals.declarations.len(), 1);
         let local = &locals.declarations[0];

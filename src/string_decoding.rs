@@ -42,7 +42,7 @@ pub(crate) fn recover(
     crate::ir::eval::emulation::recover_strings(image, function, deadline)
 }
 
-pub(crate) fn text(bytes: &[u8]) -> Option<(&'static str, String)> {
+pub(crate) fn decode_text(bytes: &[u8]) -> Option<(&'static str, String)> {
     let printable = |text: &str| {
         text.chars().count() >= 4
             && text
@@ -223,17 +223,20 @@ mod tests {
 
     #[test]
     fn text_requires_a_terminator_and_valid_printable_characters() {
-        assert_eq!(text(b"hello\0").unwrap().1, "hello");
-        assert!(text(b"hello").is_none());
-        assert!(text(b"abc\0").is_none());
-        assert!(text(b"ab\x01cd\0").is_none());
-        assert!(text(&[0xff, 0xff, 0xff, 0]).is_none());
+        assert_eq!(decode_text(b"hello\0").unwrap().1, "hello");
+        assert!(decode_text(b"hello").is_none());
+        assert!(decode_text(b"abc\0").is_none());
+        assert!(decode_text(b"ab\x01cd\0").is_none());
+        assert!(decode_text(&[0xff, 0xff, 0xff, 0]).is_none());
         let wide: Vec<u8> = "wide sample\0"
             .encode_utf16()
             .flat_map(u16::to_le_bytes)
             .collect();
-        assert_eq!(text(&wide).unwrap(), ("utf16le", "wide sample".to_owned()));
-        assert!(text(&[0, 0xd8, 0, 0]).is_none());
+        assert_eq!(
+            decode_text(&wide).unwrap(),
+            ("utf16le", "wide sample".to_owned())
+        );
+        assert!(decode_text(&[0, 0xd8, 0, 0]).is_none());
     }
 
     #[test]
