@@ -16,8 +16,8 @@ use super::{Runner, Stop};
 const READ: u8 = 1;
 const TRANSFORMED: u8 = 2;
 const LITERAL: u8 = 4;
-const MAX_BUFFER: u64 = 4096;
-const MAX_MEMORY: usize = 65536;
+const MAX_BUFFER_BYTES: u64 = 4096;
+const MAX_MEMORY_BYTES: usize = 65536;
 
 pub(super) struct Recovery {
     pub(super) function: u64,
@@ -36,7 +36,7 @@ struct MemoryByte {
 }
 
 pub(super) struct Candidate {
-    pointers: Vec<Buffer>,
+    buffers: Vec<Buffer>,
     first_write: usize,
     stack_arguments: Vec<u64>,
 }
@@ -87,7 +87,7 @@ impl Runner<'_> {
             return Err(Stop::Error("invalid load width".to_owned()));
         }
         let recovery = self.recovery.as_ref().expect("automatic execution state");
-        let memory = self.machine.strict.as_ref().expect("strict memory");
+        let memory = self.machine.strict_memory.as_ref().expect("strict memory");
         if !memory.check(address, u64::from(width), /* write */ false) {
             return match self.memory_error() {
                 Err(stop) => Err(stop),
@@ -130,15 +130,17 @@ impl Runner<'_> {
         if width == 0 || width > 8 {
             return Err(Stop::Error("invalid store width".to_owned()));
         }
-        if !self.machine.strict.as_ref().expect("strict memory").check(
-            address,
-            u64::from(width),
-            /* write */ true,
-        ) {
+        if !self
+            .machine
+            .strict_memory
+            .as_ref()
+            .expect("strict memory")
+            .check(address, u64::from(width), /* write */ true)
+        {
             return self.memory_error();
         }
         let recovery = self.recovery.as_mut().expect("automatic execution state");
-        if recovery.memory.len().saturating_add(usize::from(width)) > MAX_MEMORY
+        if recovery.memory.len().saturating_add(usize::from(width)) > MAX_MEMORY_BYTES
             || recovery.writes.len().saturating_add(usize::from(width)) > 200_000
         {
             return Err(Stop::Error("automatic decoding memory limit".to_owned()));
@@ -242,7 +244,7 @@ impl Runner<'_> {
         }
     }
 
-    fn buffer_pointer(&self, value: u64) -> bool {
+    fn is_buffer_pointer(&self, value: u64) -> bool {
         let top = super::super::stack_top(self.image.isa);
         (top.saturating_sub(65536)..top).contains(&value)
             || (self.heap_base..self.heap_base.saturating_add(crate::emulation::HEAP_SIZE))
@@ -279,15 +281,15 @@ impl Runner<'_> {
             }
             arguments.push(value);
         }
-        let mut pointers = Vec::new();
+        let mut buffers = Vec::new();
         for (index, argument) in arguments.iter().enumerate() {
-            let Some(address) = argument.filter(|value| self.buffer_pointer(*value)) else {
+            let Some(address) = argument.filter(|value| self.is_buffer_pointer(*value)) else {
                 continue;
             };
             for value in &arguments[index + 1..] {
-                if let Some(size) = value.filter(|value| (1..=MAX_BUFFER).contains(value)) {
+                if let Some(size) = value.filter(|value| (1..=MAX_BUFFER_BYTES).contains(value)) {
                     let mut bytes = Vec::new();
-                    for offset in 0..size.saturating_add(2).min(MAX_BUFFER) {
+                    for offset in 0..size.saturating_add(2).min(MAX_BUFFER_BYTES) {
                         let Some(at) = address.checked_add(offset) else {
                             break;
                         };
@@ -303,7 +305,7 @@ impl Runner<'_> {
                         bytes.push(byte as u8);
                     }
                     let initial_text = crate::string_decoding::text(&bytes).map(|(_, text)| text);
-                    pointers.push(Buffer {
+                    buffers.push(Buffer {
                         address,
                         size,
                         initial_text,
@@ -313,20 +315,20 @@ impl Runner<'_> {
             }
         }
         Some(Candidate {
-            pointers,
+            buffers,
             first_write: recovery.writes.len(),
             stack_arguments,
         })
     }
 
-    fn observe(
+    fn observe_buffer(
         &mut self,
         buffer: &Buffer,
         decoder: u64,
         site: u64,
         target: Option<u64>,
         literal: bool,
-        since: usize,
+        first_write: usize,
     ) {
         let pointer = buffer.address;
         let top = super::super::stack_top(self.image.isa);
@@ -338,9 +340,9 @@ impl Runner<'_> {
             return;
         }
         let mut bytes = Vec::new();
-        let mut transformed = 0;
-        let mut constructed = 0;
-        for offset in 0..buffer.size.saturating_add(2).min(MAX_BUFFER) {
+        let mut transformed_bytes = 0;
+        let mut constructed_bytes = 0;
+        for offset in 0..buffer.size.saturating_add(2).min(MAX_BUFFER_BYTES) {
             let Some(at) = pointer.checked_add(offset) else {
                 return;
             };
@@ -355,8 +357,8 @@ impl Runner<'_> {
             }
             bytes.push(byte as u8);
             if let Some(byte) = recovery.memory.get(&at) {
-                transformed += usize::from(byte.origin & TRANSFORMED != 0);
-                constructed += usize::from(byte.origin & (LITERAL | READ) == LITERAL);
+                transformed_bytes += usize::from(byte.origin & TRANSFORMED != 0);
+                constructed_bytes += usize::from(byte.origin & (LITERAL | READ) == LITERAL);
             }
             // UTF-16 needs two zero bytes on a code-unit boundary.
             if byte == 0 && offset >= 1 && bytes[bytes.len() - 2] == 0 && offset % 2 == 1 {
@@ -377,13 +379,13 @@ impl Runner<'_> {
         } else {
             text.len()
         };
-        if transformed < size / 2 && !(literal && on_stack && constructed >= size) {
+        if transformed_bytes < size / 2 && !(literal && on_stack && constructed_bytes >= size) {
             return;
         }
         let end = pointer.saturating_add(size as u64);
         let terminator = if encoding == "utf16le" { 2 } else { 1 };
         if decoder != recovery.function
-            && recovery.writes[since..].iter().any(|at| {
+            && recovery.writes[first_write..].iter().any(|at| {
                 *at >= end.saturating_add(terminator) && *at < pointer.saturating_add(buffer.size)
             })
         {
@@ -406,7 +408,7 @@ impl Runner<'_> {
                 return;
             }
         }
-        if !recovery.writes[since..]
+        if !recovery.writes[first_write..]
             .iter()
             .any(|at| *at >= pointer && *at < end)
         {
@@ -459,15 +461,15 @@ impl Runner<'_> {
                 continue;
             }
             if !candidate
-                .pointers
+                .buffers
                 .iter()
                 .any(|p| *at >= p.address && at.saturating_sub(p.address) < p.size)
             {
                 return;
             }
         }
-        for buffer in candidate.pointers {
-            self.observe(
+        for buffer in candidate.buffers {
+            self.observe_buffer(
                 &buffer,
                 decoder,
                 site,
@@ -500,12 +502,12 @@ impl Runner<'_> {
         );
         for index in 0..4 {
             if let Ok(pointer) = self.argument(index, convention, kind)
-                && self.buffer_pointer(pointer)
+                && self.is_buffer_pointer(pointer)
             {
-                self.observe(
+                self.observe_buffer(
                     &Buffer {
                         address: pointer,
-                        size: MAX_BUFFER,
+                        size: MAX_BUFFER_BYTES,
                         initial_text: None,
                     },
                     function,

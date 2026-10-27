@@ -8,7 +8,7 @@ use crate::loader::{Format, Image, Isa};
 
 pub const TRIALS: u64 = 12;
 pub const STEP_LIMIT: usize = 20_000;
-const INTERESTING: [u64; 10] = [
+const BOUNDARY_VALUES: [u64; 10] = [
     0,
     1,
     2,
@@ -23,13 +23,13 @@ const INTERESTING: [u64; 10] = [
 
 /// Go keeps the current goroutine in r14, and every function first compares
 /// the stack pointer with the goroutine's stack guard; a zero guard always passes.
-const GO_G: u64 = 0x5000_0000;
+const GO_GOROUTINE_ADDRESS: u64 = 0x5000_0000;
 const GO_STACK_GUARD: u64 = 0x10;
 const R14: u16 = 14;
 
 pub fn initial_memory(image: &Image) -> Vec<(u64, u64)> {
     if image.go {
-        vec![(GO_G + GO_STACK_GUARD, 0)]
+        vec![(GO_GOROUTINE_ADDRESS + GO_STACK_GUARD, 0)]
     } else {
         Vec::new()
     }
@@ -98,7 +98,7 @@ pub fn registers(image: &Image, trial: u64) -> Vec<(u16, u64)> {
             let pick = hash(trial, position as u64);
             let value = match trial % 3 {
                 0 => pick % 16,
-                1 => INTERESTING[pick as usize % INTERESTING.len()],
+                1 => BOUNDARY_VALUES[pick as usize % BOUNDARY_VALUES.len()],
                 _ => pick,
             };
             (*register, value)
@@ -110,7 +110,7 @@ pub fn registers(image: &Image, trial: u64) -> Vec<(u16, u64)> {
 /// The registers Go code expects set on entry: r14 holds the goroutine,
 /// and on x86-64 xmm15 is zero.
 pub fn entry_state(image: &Image) -> Vec<(u16, u64)> {
-    let goroutine = image.go.then_some((R14, GO_G));
+    let goroutine = image.go.then_some((R14, GO_GOROUTINE_ADDRESS));
     let zero = (image.go && image.isa == Isa::X86_64)
         .then_some([
             (crate::arch::x86::XMM0 + 30, 0),
@@ -153,11 +153,11 @@ pub fn pair_input(register: u16, registers: &[(u16, u64)], seed: u64) -> u64 {
 }
 
 #[must_use]
-pub fn return_bits(ret: &CType) -> Option<u32> {
-    match ret {
+pub fn return_bits(return_type: &CType) -> Option<u32> {
+    match return_type {
         CType::Void | CType::Function { .. } => None,
         CType::Int { bytes, .. } => Some(u32::from(*bytes) * 8),
-        CType::Named(_) => Some(ret.integer().map_or(64, |(bits, _)| bits)),
+        CType::Named(_) => Some(return_type.integer().map_or(64, |(bits, _)| bits)),
         CType::Pointer(_) | CType::Array(_) => Some(64),
     }
 }

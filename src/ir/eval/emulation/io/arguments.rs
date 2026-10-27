@@ -127,8 +127,8 @@ impl Arguments {
             };
             return load(runner, location, width);
         }
-        let pointer = crate::arch::pointer_bytes(runner.image.isa);
-        if width == 8 && pointer == 4 && runner.image.isa == Isa::Arm32 {
+        let pointer_bytes = crate::arch::pointer_bytes(runner.image.isa);
+        if width == 8 && pointer_bytes == 4 && runner.image.isa == Isa::Arm32 {
             self.index = (self.index + 1) & !1;
         }
         let value = match runner.argument(self.index, self.convention, self.kind) {
@@ -136,7 +136,7 @@ impl Arguments {
             Err(stop) => return Err(stop),
         };
         self.index += 1;
-        if width == 8 && pointer == 4 {
+        if width == 8 && pointer_bytes == 4 {
             let high = match runner.argument(self.index, self.convention, self.kind) {
                 Ok(value) => value,
                 Err(stop) => return Err(stop),

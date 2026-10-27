@@ -1,4 +1,4 @@
-use crate::ir::visit::assign_of;
+use crate::ir::visit::assignment;
 use crate::ir::{Expr, Stmt};
 use crate::passes::division::divisor::magic_divisor;
 use crate::passes::division::divisor::magic_divisor_signed;
@@ -25,7 +25,7 @@ pub(crate) fn signed64_chain(
     domain_bits: u64,
     high_part: bool,
 ) -> Option<(usize, Vec<usize>, u64)> {
-    let mut p_aliases: Vec<u16> = vec![dest_index];
+    let mut product_aliases: Vec<u16> = vec![dest_index];
     let mut sign_alias: Option<u16> = None;
     let mut main_alias: Option<u16> = None;
     let mut extra_shift: Option<u64> = None;
@@ -38,7 +38,7 @@ pub(crate) fn signed64_chain(
         .take(start + 8)
         .skip(start + 1)
     {
-        let Some((dest_ref, value)) = assign_of(stmt) else {
+        let Some((dest_ref, value)) = assignment(stmt) else {
             return None;
         };
         let dest = dest_ref.index;
@@ -59,8 +59,8 @@ pub(crate) fn signed64_chain(
                 continue;
             }
             Expr::Reg { index, .. } => {
-                if p_aliases.contains(index) || main_alias == Some(*index) {
-                    p_aliases.push(dest);
+                if product_aliases.contains(index) || main_alias == Some(*index) {
+                    product_aliases.push(dest);
                     steps.push(position);
                     continue;
                 }
@@ -76,12 +76,13 @@ pub(crate) fn signed64_chain(
                     Expr::Reg { index, .. } => Some(*index),
                     _ => None,
                 };
-                let binds_product = base
-                    .is_some_and(|index| p_aliases.contains(&index) || main_alias == Some(index));
+                let binds_product = base.is_some_and(|index| {
+                    product_aliases.contains(&index) || main_alias == Some(index)
+                });
                 if !binds_product {
                     return None;
                 }
-                p_aliases.push(dest);
+                product_aliases.push(dest);
                 steps.push(position);
                 continue;
             }
@@ -94,19 +95,19 @@ pub(crate) fn signed64_chain(
                 ) if matches!(*shift, 63 | 31)
                     || shift.checked_add(1) == Some(u64::from(dest_ref.width)) =>
                 {
-                    if p_aliases.contains(index) && sign_alias.is_none() {
+                    if product_aliases.contains(index) && sign_alias.is_none() {
                         sign_alias = Some(dest);
-                        p_aliases.retain(|other| other != &dest);
+                        product_aliases.retain(|other| other != &dest);
                         steps.push(position);
                         continue;
                     }
                     return None;
                 }
                 (crate::ir::BinOp::Sar, Expr::Reg { index, .. }, Expr::Const(k)) => {
-                    if *k < 63 && p_aliases.contains(index) && main_alias.is_none() {
+                    if *k < 63 && product_aliases.contains(index) && main_alias.is_none() {
                         main_alias = Some(dest);
                         extra_shift = Some(*k);
-                        p_aliases.retain(|other| other != &dest);
+                        product_aliases.retain(|other| other != &dest);
                         steps.push(position);
                         continue;
                     }
@@ -115,10 +116,10 @@ pub(crate) fn signed64_chain(
                 (crate::ir::BinOp::Add, lhs, rhs) => {
                     let lhs = strip_and_mask(lhs);
                     let rhs = strip_and_mask(rhs);
-                    let lhs_main = main_shape(lhs, &p_aliases, main_alias, extra_shift);
-                    let rhs_main = main_shape(rhs, &p_aliases, main_alias, extra_shift);
-                    let lhs_sign = sign_shape(lhs, &p_aliases, sign_alias);
-                    let rhs_sign = sign_shape(rhs, &p_aliases, sign_alias);
+                    let lhs_main = main_shape(lhs, &product_aliases, main_alias, extra_shift);
+                    let rhs_main = main_shape(rhs, &product_aliases, main_alias, extra_shift);
+                    let lhs_sign = sign_shape(lhs, &product_aliases, sign_alias);
+                    let rhs_sign = sign_shape(rhs, &product_aliases, sign_alias);
                     if !((lhs_main && rhs_sign) || (lhs_sign && rhs_main)) {
                         return None;
                     }
@@ -143,7 +144,7 @@ pub(crate) fn signed64_chain(
 
 /// True when a sum operand is the sign flag: `p >> 63` / `p >> 31` or the
 /// register holding it.
-fn sign_shape(expr: &Expr, p_aliases: &[u16], sign_alias: Option<u16>) -> bool {
+fn sign_shape(expr: &Expr, product_aliases: &[u16], sign_alias: Option<u16>) -> bool {
     match expr {
         Expr::Bin {
             op: crate::ir::BinOp::Shr | crate::ir::BinOp::Sar,
@@ -154,7 +155,7 @@ fn sign_shape(expr: &Expr, p_aliases: &[u16], sign_alias: Option<u16>) -> bool {
             if (matches!(rhs.as_ref(), Expr::Const(63)) || matches!(rhs.as_ref(), Expr::Const(31)))
                 && let Some(index) = leaf_index(lhs)
             {
-                return p_aliases.contains(&index);
+                return product_aliases.contains(&index);
             }
         }
         Expr::Reg { index, .. } => return sign_alias == Some(*index),
@@ -174,12 +175,12 @@ fn leaf_index(expr: &Expr) -> Option<u16> {
 /// product shifted right by the chain's extra shift.
 fn main_shape(
     expr: &Expr,
-    p_aliases: &[u16],
+    product_aliases: &[u16],
     main_alias: Option<u16>,
     extra_shift: Option<u64>,
 ) -> bool {
     match expr {
-        Expr::Reg { index, .. } => p_aliases.contains(index) || main_alias == Some(*index),
+        Expr::Reg { index, .. } => product_aliases.contains(index) || main_alias == Some(*index),
         Expr::Bin {
             op: crate::ir::BinOp::Sar,
             lhs,
@@ -187,7 +188,7 @@ fn main_shape(
         } => matches!(
             (lhs.as_ref(), rhs.as_ref()),
             (Expr::Reg { index, .. }, Expr::Const(k))
-                if p_aliases.contains(index) && extra_shift == Some(*k)
+                if product_aliases.contains(index) && extra_shift == Some(*k)
         ),
         _ => false,
     }
@@ -203,7 +204,7 @@ pub(crate) fn unsigned64_chain(
     magic: u64,
     domain_bits: u64,
 ) -> Option<(usize, Vec<usize>, u64)> {
-    let mut p_aliases: Vec<u16> = vec![dest_index];
+    let mut product_aliases: Vec<u16> = vec![dest_index];
     let mut steps: Vec<usize> = Vec::new();
     let mut low_seen = false;
 
@@ -213,7 +214,7 @@ pub(crate) fn unsigned64_chain(
         .take(start + 8)
         .skip(start + 1)
     {
-        let Some((dest_ref, value)) = assign_of(stmt) else {
+        let Some((dest_ref, value)) = assignment(stmt) else {
             return None;
         };
         let dest = dest_ref.index;
@@ -231,8 +232,8 @@ pub(crate) fn unsigned64_chain(
                 continue;
             }
             Expr::Reg { index, .. } => {
-                if p_aliases.contains(index) {
-                    p_aliases.push(dest);
+                if product_aliases.contains(index) {
+                    product_aliases.push(dest);
                     steps.push(position);
                     continue;
                 }
@@ -248,17 +249,17 @@ pub(crate) fn unsigned64_chain(
                     Expr::Reg { index, .. } => Some(*index),
                     _ => None,
                 };
-                let binds_product = base.is_some_and(|index| p_aliases.contains(&index));
+                let binds_product = base.is_some_and(|index| product_aliases.contains(&index));
                 if !binds_product {
                     return None;
                 }
-                p_aliases.push(dest);
+                product_aliases.push(dest);
                 steps.push(position);
                 continue;
             }
             Expr::Bin { op, lhs, rhs } => match (op, lhs.as_ref(), rhs.as_ref()) {
                 (crate::ir::BinOp::Shr, Expr::Reg { index, .. }, Expr::Const(shift)) => {
-                    if *shift == 0 || *shift >= 64 || !p_aliases.contains(index) {
+                    if *shift == 0 || *shift >= 64 || !product_aliases.contains(index) {
                         return None;
                     }
                     let total = 64 + shift;
@@ -290,28 +291,28 @@ pub(crate) fn signed_chain(
         set.insert(dest_index);
         set
     };
-    let mut hi: Option<u16> = None;
+    let mut sign_register: Option<u16> = None;
     let mut steps: Vec<usize> = vec![start];
 
     for position in start + 1..start + 7 {
         let Some(next) = statements.get(position) else {
             return None;
         };
-        let Some((dst_ref, value)) = assign_of(next) else {
+        let Some((dest_ref, value)) = assignment(next) else {
             return None;
         };
-        let dst_index = dst_ref.index;
+        let dest_index = dest_ref.index;
         if let Some((source, shift)) = shift_of(value) {
-            if aliases.contains(&source) && shift == 63 && hi.is_none() {
-                if dst_index == source {
+            if aliases.contains(&source) && shift == 63 && sign_register.is_none() {
+                if dest_index == source {
                     aliases.remove(&source);
                 }
-                hi = Some(dst_index);
+                sign_register = Some(dest_index);
                 steps.push(position);
                 continue;
             }
-            if aliases.contains(&source) && shift == 32 && hi.is_some() {
-                if dst_index == source {
+            if aliases.contains(&source) && shift == 32 && sign_register.is_some() {
+                if dest_index == source {
                     aliases.remove(&source);
                 }
                 steps.push(position);
@@ -322,10 +323,10 @@ pub(crate) fn signed_chain(
                 };
                 // The sum must be the very next statement.
                 if let Some(next) = statements.get(position + 1)
-                    && let Some((_, sum_value)) = assign_of(next)
+                    && let Some((_, sum_value)) = assignment(next)
                 {
                     let sum_value = strip_and_mask(sum_value);
-                    let sum_pairs = |value: &Expr| {
+                    let matching_sum_divisor = |value: &Expr| {
                         let Expr::Bin {
                             op: crate::ir::BinOp::Add,
                             lhs,
@@ -337,10 +338,10 @@ pub(crate) fn signed_chain(
                         let left = unwrap_leaf(lhs.as_ref());
                         let right = unwrap_leaf(rhs.as_ref());
                         let pair = matches!((left, right), (Some(a), Some(b))
-                                if (Some(a) == hi || Some(b) == hi));
+                                if (Some(a) == sign_register || Some(b) == sign_register));
                         pair.then_some(divisor)
                     };
-                    if let Some(divisor) = sum_pairs(sum_value) {
+                    if let Some(divisor) = matching_sum_divisor(sum_value) {
                         return Some((position + 1, steps, divisor));
                     }
                 }
@@ -349,8 +350,8 @@ pub(crate) fn signed_chain(
             return None;
         }
         if let Expr::Reg { index: copied, .. } = value {
-            if aliases.contains(copied) && dst_index != *copied {
-                aliases.insert(dst_index);
+            if aliases.contains(copied) && dest_index != *copied {
+                aliases.insert(dest_index);
                 steps.push(position);
                 continue;
             }

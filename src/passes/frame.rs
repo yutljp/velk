@@ -293,7 +293,7 @@ pub fn elide_callee_saves(ir: &mut FunctionIr) {
                             position,
                             slot,
                             store: true,
-                            reg: *index,
+                            register: *index,
                         });
                     }
                 }
@@ -306,7 +306,7 @@ pub fn elide_callee_saves(ir: &mut FunctionIr) {
                             position,
                             slot,
                             store: false,
-                            reg: dest.index,
+                            register: dest.index,
                         });
                     }
                     if dest.index == sp
@@ -335,10 +335,10 @@ pub fn elide_callee_saves(ir: &mut FunctionIr) {
         let first = &accesses[*save];
         if restores.is_empty()
             || !first.store
-            || first.reg == sp
+            || first.register == sp
             || restores.iter().any(|index| {
                 let restore = &accesses[*index];
-                restore.store || restore.reg != first.reg
+                restore.store || restore.register != first.register
             })
         {
             continue;
@@ -350,7 +350,7 @@ pub fn elide_callee_saves(ir: &mut FunctionIr) {
             .iter()
             .map(|index| (accesses[*index].block, accesses[*index].position))
             .collect();
-        let mut borrowed = false;
+        let mut register_used_elsewhere = false;
         let mut frame_setup: Option<(usize, usize)> = None;
         'scan: for (block_index, block) in ir.blocks.iter().enumerate() {
             for (position, stmt) in block.stmts.iter().enumerate() {
@@ -358,27 +358,27 @@ pub fn elide_callee_saves(ir: &mut FunctionIr) {
                     continue;
                 }
                 let (writes, reads) = statement_registers(stmt);
-                if reads.contains(&first.reg) {
-                    borrowed = true;
+                if reads.contains(&first.register) {
+                    register_used_elsewhere = true;
                     break 'scan;
                 }
-                if writes.contains(&first.reg) {
+                if writes.contains(&first.register) {
                     if frame_setup.is_none() && is_frame_setup(stmt, sp) {
                         frame_setup = Some((block_index, position));
                         continue;
                     }
-                    borrowed = true;
+                    register_used_elsewhere = true;
                     break 'scan;
                 }
             }
         }
-        if borrowed {
+        if register_used_elsewhere {
             // A callee-saved register the body uses is still only preserved
             // for the caller when the entry saves it and each return restores
             // it: the round trip says nothing about the function itself,
             // unless the body reads the saved value through the frame pointer.
-            if callee_saved(ir, first.reg, sp)
-                && !reads_through_frame_pointer(ir, sp)
+            if callee_saved(ir, first.register, sp)
+                && !reads_through_stack_pointer_copy(ir, sp)
                 && saves_entry_value(ir, first)
                 && restores
                     .iter()
@@ -453,7 +453,7 @@ struct Access {
     position: usize,
     slot: i64,
     store: bool,
-    reg: u16,
+    register: u16,
 }
 
 /// Drops the pushes of a scratch register the entry block makes before
@@ -518,7 +518,7 @@ fn saves_entry_value(ir: &FunctionIr, save: &Access) -> bool {
     let writes = |stmts: &[Stmt]| {
         stmts
             .iter()
-            .any(|stmt| statement_registers(stmt).0.contains(&save.reg))
+            .any(|stmt| statement_registers(stmt).0.contains(&save.register))
     };
     if writes(&ir.blocks[save.block].stmts[..save.position]) {
         return false;
@@ -550,7 +550,7 @@ fn restores_on_return(ir: &FunctionIr, restore: &Access) -> bool {
     matches!(stmts.last(), Some(Stmt::Ret { .. }))
         && stmts[restore.position + 1..].iter().all(|stmt| {
             let (writes, reads) = statement_registers(stmt);
-            !writes.contains(&restore.reg) && !reads.contains(&restore.reg)
+            !writes.contains(&restore.register) && !reads.contains(&restore.register)
         })
 }
 
@@ -751,7 +751,7 @@ fn address_uses_stack(expr: &Expr) -> bool {
 
 /// Whether a register set to the stack pointer is read through as an
 /// address: right after a push it addresses the value pushed.
-fn reads_through_frame_pointer(ir: &FunctionIr, sp: u16) -> bool {
+fn reads_through_stack_pointer_copy(ir: &FunctionIr, sp: u16) -> bool {
     let pointers: std::collections::HashSet<u16> = ir
         .blocks
         .iter()

@@ -109,7 +109,7 @@ fn run_with_recovery(
         clobbered: &[],
     };
     let mut machine = Machine {
-        strict: Some(strict),
+        strict_memory: Some(strict),
         source: None,
         isa: image.isa,
         convention: &convention,
@@ -118,7 +118,7 @@ fn run_with_recovery(
         memory: HashMap::new(),
         calls: Vec::new(),
         blocks: &[],
-        starts: HashMap::new(),
+        block_indices_by_address: HashMap::new(),
     };
     let physical = physical_registers(image.isa);
     let stack = match initialize_registers(&mut machine, image, options, &physical) {
@@ -324,11 +324,12 @@ fn initialize_memory(machine: &mut Machine<'_>, options: &Options) -> Result<()>
         if total > HEAP_SIZE as usize {
             return Err(invalid("initial memory writes exceed 16 MiB"));
         }
-        if !machine.strict.as_ref().expect("strict memory").check(
-            address,
-            bytes.len() as u64,
-            /* write */ true,
-        ) {
+        if !machine
+            .strict_memory
+            .as_ref()
+            .expect("strict memory")
+            .check(address, bytes.len() as u64, /* write */ true)
+        {
             break;
         }
         for (offset, byte) in bytes.into_iter().enumerate() {
@@ -336,7 +337,7 @@ fn initialize_memory(machine: &mut Machine<'_>, options: &Options) -> Result<()>
         }
     }
     if let Some(error) = machine
-        .strict
+        .strict_memory
         .as_ref()
         .expect("strict memory")
         .fault
@@ -406,7 +407,7 @@ impl Runner<'_> {
         }
         let memory = self
             .machine
-            .strict
+            .strict_memory
             .as_ref()
             .expect("strict memory")
             .changes(before, &self.machine.memory);
@@ -461,7 +462,7 @@ impl Runner<'_> {
     fn memory_error(&self) -> std::result::Result<(), Stop> {
         match self
             .machine
-            .strict
+            .strict_memory
             .as_ref()
             .expect("strict memory")
             .fault

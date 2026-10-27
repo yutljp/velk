@@ -137,7 +137,7 @@ fn total(expr: &Expr) -> bool {
     }
 }
 
-fn consecutive(lhs: &Expr, rhs: &Expr) -> bool {
+fn differs_by_odd_constant(lhs: &Expr, rhs: &Expr) -> bool {
     let Expr::Bin {
         op,
         lhs: base,
@@ -151,9 +151,9 @@ fn consecutive(lhs: &Expr, rhs: &Expr) -> bool {
         && matches!(offset.as_ref(), Expr::Const(value) if value & 1 != 0)
 }
 
-fn consecutive_product(expr: &Expr) -> bool {
+fn product_with_odd_difference(expr: &Expr) -> bool {
     matches!(expr, Expr::Bin { op: BinOp::Mul, lhs, rhs }
-        if total(lhs) && total(rhs) && (consecutive(lhs, rhs) || consecutive(rhs, lhs)))
+        if total(lhs) && total(rhs) && (differs_by_odd_constant(lhs, rhs) || differs_by_odd_constant(rhs, lhs)))
 }
 
 fn known_zero(expr: &Expr) -> bool {
@@ -162,9 +162,9 @@ fn known_zero(expr: &Expr) -> bool {
     };
     match op {
         BinOp::And if matches!(rhs.as_ref(), Expr::Const(1)) => {
-            consecutive_product(lhs) || (known_zero(lhs) && total(rhs))
+            product_with_odd_difference(lhs) || (known_zero(lhs) && total(rhs))
         }
-        BinOp::ModU if matches!(rhs.as_ref(), Expr::Const(2)) => consecutive_product(lhs),
+        BinOp::ModU if matches!(rhs.as_ref(), Expr::Const(2)) => product_with_odd_difference(lhs),
         BinOp::Xor | BinOp::Sub => lhs == rhs && total(lhs),
         BinOp::Or => known_zero(lhs) && known_zero(rhs),
         BinOp::And => {

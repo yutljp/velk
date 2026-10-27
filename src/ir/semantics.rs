@@ -577,9 +577,9 @@ pub(crate) fn apply(op: Operation, args: &[u64]) -> u64 {
         Operation::Crc32 { castagnoli, bits } => {
             let polynomial: u32 = if castagnoli { 0x82f6_3b78 } else { 0xedb8_8320 };
             let mut crc = args[0] as u32;
-            let data = args[1] & mask(u32::from(bits));
+            let input_bits = args[1] & mask(u32::from(bits));
             for index in 0..u32::from(bits) {
-                let bit = ((data >> index) as u32 ^ crc) & 1;
+                let bit = ((input_bits >> index) as u32 ^ crc) & 1;
                 crc = (crc >> 1) ^ if bit != 0 { polynomial } else { 0 };
             }
             u64::from(crc)

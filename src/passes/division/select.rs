@@ -1,4 +1,4 @@
-use crate::ir::visit::assign_of;
+use crate::ir::visit::assignment;
 use crate::ir::visit::assignment_at;
 use crate::ir::{Expr, Stmt};
 use crate::passes::division::chain_dividend_domain;
@@ -161,7 +161,7 @@ fn adjusted_branch<'a>(
 ) -> Option<(&'a Expr, Option<usize>)> {
     match strip_and_mask(adjusted) {
         Expr::Reg { index, .. } => (0..select_index).rev().take(4).find_map(|position| {
-            assign_of(&statements[position]).and_then(|(dest, value)| {
+            assignment(&statements[position]).and_then(|(dest, value)| {
                 (dest.index == *index).then(|| (strip_and_mask(value), Some(position)))
             })
         }),
@@ -176,7 +176,7 @@ pub(crate) fn signed_select_mod_chain(
     statements: &[Stmt],
 ) -> Option<(usize, usize, Option<usize>, u64, Expr, u64)> {
     for sub_index in 0..statements.len() {
-        let Some((_, sub_value)) = assign_of(&statements[sub_index]) else {
+        let Some((_, sub_value)) = assignment(&statements[sub_index]) else {
             continue;
         };
         let sub_value = strip_and_mask(sub_value);
@@ -192,13 +192,13 @@ pub(crate) fn signed_select_mod_chain(
             continue;
         };
         let Some(and_index) = (0..sub_index).rev().take(4).find(|position| {
-            assign_of(&statements[*position])
+            assignment(&statements[*position])
                 .map(|(dest, _)| dest.index == masked_reg)
                 .unwrap_or(false)
         }) else {
             continue;
         };
-        let Some((_, and_value)) = assign_of(&statements[and_index]) else {
+        let Some((_, and_value)) = assignment(&statements[and_index]) else {
             continue;
         };
         let Expr::Bin {
@@ -221,13 +221,13 @@ pub(crate) fn signed_select_mod_chain(
             continue;
         };
         let Some(select_index) = (0..and_index).rev().take(4).find(|position| {
-            assign_of(&statements[*position])
+            assignment(&statements[*position])
                 .map(|(dest, _)| dest.index == select_src)
                 .unwrap_or(false)
         }) else {
             continue;
         };
-        let Some((_, select_value)) = assign_of(&statements[select_index]) else {
+        let Some((_, select_value)) = assignment(&statements[select_index]) else {
             continue;
         };
         let select_value = strip_and_mask(select_value);
@@ -309,7 +309,7 @@ pub(crate) fn signed_select_chain(
     statements: &[Stmt],
 ) -> Option<(usize, usize, Option<usize>, u64, Expr, u64)> {
     for sar_index in 0..statements.len() {
-        let Some((sar_dest, value)) = assign_of(&statements[sar_index]) else {
+        let Some((sar_dest, value)) = assignment(&statements[sar_index]) else {
             continue;
         };
         let sar_width = sar_dest.width;
@@ -331,11 +331,11 @@ pub(crate) fn signed_select_chain(
             continue;
         }
         let Some(select_index) = (0..sar_index).rev().take(4).find(|position| {
-            assign_of(&statements[*position]).is_some_and(|(dest, _)| dest.index == *src)
+            assignment(&statements[*position]).is_some_and(|(dest, _)| dest.index == *src)
         }) else {
             continue;
         };
-        let Some((_, select_value)) = assign_of(&statements[select_index]) else {
+        let Some((_, select_value)) = assignment(&statements[select_index]) else {
             continue;
         };
         let select_value = strip_and_mask(select_value);

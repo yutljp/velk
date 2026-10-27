@@ -122,7 +122,7 @@ impl Runner<'_> {
                 if word & 0x0e1f_8000 == 0x081d_8000 {
                     let count = u64::from((word & 0xffff).count_ones()) * 4;
                     let add = word & (1 << 23) != 0;
-                    let pre = word & (1 << 24) != 0;
+                    let pre_indexed = word & (1 << 24) != 0;
                     let old_stack = if word & (1 << 21) == 0 {
                         stack
                     } else if add {
@@ -137,8 +137,8 @@ impl Runner<'_> {
                         }
                     };
                     let offset = if add {
-                        count as i64 - if pre { 0 } else { 4 }
-                    } else if pre {
+                        count as i64 - if pre_indexed { 0 } else { 4 }
+                    } else if pre_indexed {
                         -4
                     } else {
                         0

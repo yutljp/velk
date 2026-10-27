@@ -7,7 +7,7 @@ type Values = Vec<(i64, u8, Expr)>;
 
 /// Forwards only exact scalar slots whose incoming values agree on every path.
 pub(super) fn forward(ir: &mut FunctionIr) {
-    process(ir, false, &mut false, &[]);
+    forward_or_promote_frame_values(ir, false, &mut false, &[]);
 }
 
 pub(super) fn promote(ir: &mut FunctionIr) {
@@ -19,7 +19,7 @@ pub(super) fn promote(ir: &mut FunctionIr) {
         .any(|stmt| {
             matches!(stmt, Stmt::Trap)
                 || matches!(stmt, Stmt::Assign { dest, value } if dest.index == sp
-                    && (dest.width != 64 || !full_frame_register(value, sp) || super::moved(value, sp).is_none()))
+                    && (dest.width != 64 || !full_frame_register(value, sp) || super::stack_pointer_delta(value, sp).is_none()))
         })
     {
         return;
@@ -39,7 +39,7 @@ pub(super) fn promote(ir: &mut FunctionIr) {
                 if let Stmt::Assign { dest, value } = stmt
                     && dest.index == sp
                 {
-                    frame = match (frame, super::moved(value, sp)) {
+                    frame = match (frame, super::stack_pointer_delta(value, sp)) {
                         (Some(frame), Some(delta)) => frame.checked_add(delta),
                         _ => None,
                     };
@@ -51,7 +51,7 @@ pub(super) fn promote(ir: &mut FunctionIr) {
     let mut normalized = ir.clone();
     crate::passes::frame_slots::settle(&mut normalized);
     let mut promoted = false;
-    process(&mut normalized, true, &mut promoted, &call_frames);
+    forward_or_promote_frame_values(&mut normalized, true, &mut promoted, &call_frames);
     if promoted {
         *ir = normalized;
     }
@@ -149,7 +149,7 @@ fn validated_accesses(ir: &FunctionIr) -> Option<FrameAccesses> {
                 if dest.width != 64 || !full_frame_register(value, sp) {
                     return None;
                 }
-                let Some(delta) = super::moved(value, sp) else {
+                let Some(delta) = super::stack_pointer_delta(value, sp) else {
                     return None;
                 };
                 let Some(next) = frame.checked_add(delta) else {
@@ -188,7 +188,7 @@ fn validated_accesses(ir: &FunctionIr) -> Option<FrameAccesses> {
     })
 }
 
-fn process(
+fn forward_or_promote_frame_values(
     ir: &mut FunctionIr,
     promotion: bool,
     promoted: &mut bool,

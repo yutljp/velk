@@ -17,7 +17,12 @@ fn accumulate(polynomial: &mut Polynomial, factors: Vec<u8>, coefficient: u64) {
     polynomial.retain(|_, coefficient| *coefficient != 0);
 }
 
-fn inspect(expr: &Expr, registers: &mut Vec<Expr>, nodes: &mut usize, depth: usize) -> bool {
+fn collect_supported_registers(
+    expr: &Expr,
+    registers: &mut Vec<Expr>,
+    nodes: &mut usize,
+    depth: usize,
+) -> bool {
     *nodes += 1;
     if *nodes > 192 || depth > 32 {
         return false;
@@ -38,12 +43,15 @@ fn inspect(expr: &Expr, registers: &mut Vec<Expr>, nodes: &mut usize, depth: usi
                 BinOp::Add | BinOp::Sub | BinOp::Mul | BinOp::And | BinOp::Or | BinOp::Xor | BinOp::Shl,
             lhs,
             rhs,
-        } => inspect(lhs, registers, nodes, depth + 1) && inspect(rhs, registers, nodes, depth + 1),
+        } => {
+            collect_supported_registers(lhs, registers, nodes, depth + 1)
+                && collect_supported_registers(rhs, registers, nodes, depth + 1)
+        }
         _ => false,
     }
 }
 
-fn truth(expr: &Expr, registers: &[Expr], assignment: usize) -> Option<bool> {
+fn evaluate_boolean_assignment(expr: &Expr, registers: &[Expr], assignment: usize) -> Option<bool> {
     match expr {
         Expr::Const(0) => Some(false),
         Expr::Const(u64::MAX) => Some(true),
@@ -59,8 +67,8 @@ fn truth(expr: &Expr, registers: &[Expr], assignment: usize) -> Option<bool> {
             rhs,
         } => {
             let (Some(a), Some(b)) = (
-                truth(lhs, registers, assignment),
-                truth(rhs, registers, assignment),
+                evaluate_boolean_assignment(lhs, registers, assignment),
+                evaluate_boolean_assignment(rhs, registers, assignment),
             ) else {
                 return None;
             };
@@ -88,7 +96,7 @@ fn normalize(expr: &Expr, registers: &[Expr]) -> Option<Polynomial> {
         } => {
             let mut coefficients = Vec::new();
             for assignment in 0..(1 << registers.len()) {
-                let Some(value) = truth(expr, registers, assignment) else {
+                let Some(value) = evaluate_boolean_assignment(expr, registers, assignment) else {
                     return None;
                 };
                 coefficients.push(u64::from(value));
@@ -202,14 +210,14 @@ fn size(expr: &Expr) -> usize {
         .sum::<usize>()
 }
 
-fn mixed(expr: &Expr) -> (bool, bool) {
+fn arithmetic_and_bitwise_presence(expr: &Expr) -> (bool, bool) {
     let mut arithmetic = false;
     let mut bitwise = false;
     if let Expr::Bin { op, lhs, rhs } = expr {
         arithmetic = matches!(op, BinOp::Add | BinOp::Sub | BinOp::Mul | BinOp::Shl);
         bitwise = matches!(op, BinOp::And | BinOp::Or | BinOp::Xor);
         for child in [lhs, rhs] {
-            let (a, b) = mixed(child);
+            let (a, b) = arithmetic_and_bitwise_presence(child);
             arithmetic |= a;
             bitwise |= b;
         }
@@ -217,21 +225,24 @@ fn mixed(expr: &Expr) -> (bool, bool) {
     (arithmetic, bitwise)
 }
 
-fn binary_bitwise(expr: &Expr) -> bool {
+fn has_nonconstant_bitwise_operands(expr: &Expr) -> bool {
     let Expr::Bin { op, lhs, rhs } = expr else {
         return false;
     };
     (matches!(op, BinOp::And | BinOp::Or | BinOp::Xor)
         && !matches!(lhs.as_ref(), Expr::Const(_))
         && !matches!(rhs.as_ref(), Expr::Const(_)))
-        || binary_bitwise(lhs)
-        || binary_bitwise(rhs)
+        || has_nonconstant_bitwise_operands(lhs)
+        || has_nonconstant_bitwise_operands(rhs)
 }
 
 fn replacement(expr: &Expr, preserve_width: bool) -> Option<Expr> {
     let mut registers = Vec::new();
     let mut nodes = 0;
-    if !inspect(expr, &mut registers, &mut nodes, 0) || nodes < 7 || mixed(expr) != (true, true) {
+    if !collect_supported_registers(expr, &mut registers, &mut nodes, 0)
+        || nodes < 7
+        || arithmetic_and_bitwise_presence(expr) != (true, true)
+    {
         return None;
     }
     let Some(polynomial) = normalize(expr, &registers) else {
@@ -240,7 +251,7 @@ fn replacement(expr: &Expr, preserve_width: bool) -> Option<Expr> {
     let width = crate::ir::semantics::width(expr);
     // Expanding scaled complements loses the array index form used for
     // named structure fields. Retain it unless the arithmetic cancels.
-    let combines_bits = binary_bitwise(expr);
+    let combines_bits = has_nonconstant_bitwise_operands(expr);
     let mut best = expr.clone();
     let mut consider = |candidate: Expr| {
         if size(&candidate) < size(&best)

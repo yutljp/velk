@@ -66,7 +66,7 @@ fn address_escapes(ir: &FunctionIr, frames: &[Option<i64>]) -> bool {
             if let Stmt::Assign { dest, value } = stmt
                 && dest.index == sp
             {
-                frame = adjusted(frame, value, sp);
+                frame = adjusted_frame_offset(frame, value, sp);
                 continue;
             }
             let operands: Vec<&Expr> = match stmt {
@@ -149,13 +149,13 @@ fn substitute_frame_pointer(ir: &mut FunctionIr, frames: &[Option<i64>]) -> bool
                     }
                 }
                 Stmt::Assign { dest, value } if dest.index == sp => {
-                    frame = adjusted(frame, value, sp);
+                    frame = adjusted_frame_offset(frame, value, sp);
                 }
                 _ => {}
             }
         }
     }
-    let Some((setup_block, setup_at, base)) = setup else {
+    let Some((setup_block, setup_position, base)) = setup else {
         return false;
     };
     // The frame pointer means the frame only in the blocks the setup
@@ -177,18 +177,18 @@ fn substitute_frame_pointer(ir: &mut FunctionIr, frames: &[Option<i64>]) -> bool
             continue;
         };
         for (site, end) in sites {
-            let holder = ir
+            let call_block = ir
                 .blocks
                 .iter()
                 .enumerate()
                 .filter(|(_, block)| block.start <= *site)
                 .max_by_key(|(_, block)| block.start);
-            if let Some((holder, _)) = holder {
-                successors[holder].push(pad);
+            if let Some((call_block, _)) = call_block {
+                successors[call_block].push(pad);
             }
-            for (within, block) in ir.blocks.iter().enumerate() {
+            for (block_index, block) in ir.blocks.iter().enumerate() {
                 if block.start > *site && block.start < *end {
-                    successors[within].push(pad);
+                    successors[block_index].push(pad);
                 }
             }
         }
@@ -210,7 +210,7 @@ fn substitute_frame_pointer(ir: &mut FunctionIr, frames: &[Option<i64>]) -> bool
     // Any other write restores the caller's frame pointer before a return.
     for (index, block) in ir.blocks.iter().enumerate() {
         for (position, stmt) in block.stmts.iter().enumerate() {
-            if (index, position) == (setup_block, setup_at)
+            if (index, position) == (setup_block, setup_position)
                 || !crate::ir::visit::statement_registers(stmt).0.contains(&fp)
             {
                 continue;
@@ -255,7 +255,7 @@ fn substitute_frame_pointer(ir: &mut FunctionIr, frames: &[Option<i64>]) -> bool
         for (position, stmt) in block.stmts.iter_mut().enumerate() {
             let delta = adjustment(stmt, fp);
             // The save before the setup reads the caller's frame pointer.
-            if index != setup_block || position > setup_at {
+            if index != setup_block || position > setup_position {
                 let address = Expr::bin(
                     BinOp::Add,
                     Expr::reg(sp, 64),
@@ -272,16 +272,16 @@ fn substitute_frame_pointer(ir: &mut FunctionIr, frames: &[Option<i64>]) -> bool
             if let Stmt::Assign { dest, value } = stmt
                 && dest.index == sp
             {
-                frame = adjusted(frame, value, sp);
+                frame = adjusted_frame_offset(frame, value, sp);
             }
         }
     }
-    ir.blocks[setup_block].stmts.remove(setup_at);
+    ir.blocks[setup_block].stmts.remove(setup_position);
     true
 }
 
 /// The frame displacement after `sp = value`.
-fn adjusted(frame: i64, value: &Expr, sp: u16) -> i64 {
+fn adjusted_frame_offset(frame: i64, value: &Expr, sp: u16) -> i64 {
     match value {
         Expr::Bin { op, lhs, rhs } if matches!(lhs.as_ref(), Expr::Reg { index, .. } if *index == sp) => {
             match (op, rhs.as_ref()) {
@@ -315,7 +315,9 @@ pub(crate) fn canonical_frame(ir: &FunctionIr, frames: &[Option<i64>]) -> bool {
             match stmt {
                 // A store through any other pointer leaves the frame alone.
                 Stmt::Store { addr, value, .. } => {
-                    if !frame_only(addr, frame, sp) || !frame_only(value, frame, sp) {
+                    if !uses_stack_pointer_only_in_frame_addresses(addr, frame, sp)
+                        || !uses_stack_pointer_only_in_frame_addresses(value, frame, sp)
+                    {
                         return false;
                     }
                 }
@@ -326,38 +328,43 @@ pub(crate) fn canonical_frame(ir: &FunctionIr, frames: &[Option<i64>]) -> bool {
                         }
                         continue;
                     }
-                    if !frame_only(value, frame, sp) {
+                    if !uses_stack_pointer_only_in_frame_addresses(value, frame, sp) {
                         return false;
                     }
                 }
                 Stmt::Brif { lhs, rhs, .. } => {
-                    if !frame_only(lhs, frame, sp) || !frame_only(rhs, frame, sp) {
+                    if !uses_stack_pointer_only_in_frame_addresses(lhs, frame, sp)
+                        || !uses_stack_pointer_only_in_frame_addresses(rhs, frame, sp)
+                    {
                         return false;
                     }
                 }
                 Stmt::Switch { index, .. } => {
-                    if !frame_only(index, frame, sp) {
+                    if !uses_stack_pointer_only_in_frame_addresses(index, frame, sp) {
                         return false;
                     }
                 }
                 Stmt::BrIndirect { target } => {
-                    if !frame_only(target, frame, sp) {
+                    if !uses_stack_pointer_only_in_frame_addresses(target, frame, sp) {
                         return false;
                     }
                 }
-                Stmt::Ret { value } if !frame_only(value, frame, sp) => {
+                Stmt::Ret { value }
+                    if !uses_stack_pointer_only_in_frame_addresses(value, frame, sp) =>
+                {
                     return false;
                 }
                 Stmt::Machine { inputs, .. }
-                    if inputs.iter().any(|expr| !frame_only(expr, frame, sp)) =>
+                    if inputs.iter().any(|expr| {
+                        !uses_stack_pointer_only_in_frame_addresses(expr, frame, sp)
+                    }) =>
                 {
                     return false;
                 }
                 Stmt::Call { through, args, .. }
-                    if through
-                        .iter()
-                        .chain(args.iter().flatten())
-                        .any(|expr| !frame_only(expr, frame, sp)) =>
+                    if through.iter().chain(args.iter().flatten()).any(|expr| {
+                        !uses_stack_pointer_only_in_frame_addresses(expr, frame, sp)
+                    }) =>
                 {
                     return false;
                 }
@@ -369,7 +376,7 @@ pub(crate) fn canonical_frame(ir: &FunctionIr, frames: &[Option<i64>]) -> bool {
 }
 
 /// True when the stack pointer appears only in frame-slot addresses or loads.
-fn frame_only(expr: &Expr, frame: i64, sp: u16) -> bool {
+fn uses_stack_pointer_only_in_frame_addresses(expr: &Expr, frame: i64, sp: u16) -> bool {
     // A slot's address, such as a local array's, settles like its loads.
     if frame_slot(expr, frame, sp).is_some() {
         return true;
@@ -377,12 +384,17 @@ fn frame_only(expr: &Expr, frame: i64, sp: u16) -> bool {
     match expr {
         Expr::Reg { index, .. } => *index != sp,
         Expr::Const(_) => true,
-        Expr::Bin { lhs, rhs, .. } => frame_only(lhs, frame, sp) && frame_only(rhs, frame, sp),
+        Expr::Bin { lhs, rhs, .. } => {
+            uses_stack_pointer_only_in_frame_addresses(lhs, frame, sp)
+                && uses_stack_pointer_only_in_frame_addresses(rhs, frame, sp)
+        }
         Expr::Load { addr, .. } => match frame_slot(addr, frame, sp) {
             Some(_) => true,
-            None => frame_only(addr, frame, sp),
+            None => uses_stack_pointer_only_in_frame_addresses(addr, frame, sp),
         },
-        Expr::SignExtend { value, .. } => frame_only(value, frame, sp),
+        Expr::SignExtend { value, .. } => {
+            uses_stack_pointer_only_in_frame_addresses(value, frame, sp)
+        }
         Expr::Select {
             lhs,
             rhs,
@@ -390,12 +402,14 @@ fn frame_only(expr: &Expr, frame: i64, sp: u16) -> bool {
             els,
             ..
         } => {
-            frame_only(lhs, frame, sp)
-                && frame_only(rhs, frame, sp)
-                && frame_only(then, frame, sp)
-                && frame_only(els, frame, sp)
+            uses_stack_pointer_only_in_frame_addresses(lhs, frame, sp)
+                && uses_stack_pointer_only_in_frame_addresses(rhs, frame, sp)
+                && uses_stack_pointer_only_in_frame_addresses(then, frame, sp)
+                && uses_stack_pointer_only_in_frame_addresses(els, frame, sp)
         }
-        Expr::Apply { args, .. } => args.iter().all(|arg| frame_only(arg, frame, sp)),
+        Expr::Apply { args, .. } => args
+            .iter()
+            .all(|arg| uses_stack_pointer_only_in_frame_addresses(arg, frame, sp)),
     }
 }
 

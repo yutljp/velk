@@ -52,7 +52,7 @@ fn register_writes(blocks: &[Block], narrow_return: NarrowReturn<'_>) -> HashMap
     writes
 }
 
-fn only_32(writes: &HashMap<u16, Vec<u8>>, register: u16) -> bool {
+fn only_32_bit_writes(writes: &HashMap<u16, Vec<u8>>, register: u16) -> bool {
     writes
         .get(&register)
         .is_some_and(|widths| !widths.is_empty() && widths.iter().all(|width| *width == 32))
@@ -102,7 +102,7 @@ pub fn specialize_widths(
             let Expr::Reg { index, width: 64 } = value else {
                 continue;
             };
-            if only_32(&writes, *index) {
+            if only_32_bit_writes(&writes, *index) {
                 *value = Expr::Reg {
                     index: *index,
                     width: 32,
@@ -167,7 +167,7 @@ pub fn specialize_widths(
         }
     }
 
-    let uniform: HashSet<u16> = reads
+    let registers_used_only_at_32_bits: HashSet<u16> = reads
         .keys()
         .chain(writes.keys())
         .copied()
@@ -184,14 +184,16 @@ pub fn specialize_widths(
 
     for block in &mut ir.blocks {
         for stmt in &mut block.stmts {
-            map_stmt(stmt, &mut |expr| rewrite_read_masks(expr, &uniform));
+            map_stmt(stmt, &mut |expr| {
+                rewrite_read_masks(expr, &registers_used_only_at_32_bits)
+            });
             for dest in crate::ir::visit::statement_destinations_mut(stmt) {
-                if uniform.contains(&dest.index) {
+                if registers_used_only_at_32_bits.contains(&dest.index) {
                     dest.width = 32;
                 }
             }
             if let Stmt::Assign { dest, value } = stmt
-                && uniform.contains(&dest.index)
+                && registers_used_only_at_32_bits.contains(&dest.index)
                 && let Expr::Bin {
                     op: BinOp::And,
                     lhs,
@@ -204,10 +206,13 @@ pub fn specialize_widths(
         }
     }
 
-    uniform
+    registers_used_only_at_32_bits
 }
 
-fn rewrite_read_masks(expr: &Expr, uniform: &std::collections::HashSet<u16>) -> Expr {
+fn rewrite_read_masks(
+    expr: &Expr,
+    registers_used_only_at_32_bits: &std::collections::HashSet<u16>,
+) -> Expr {
     use crate::ir::BinOp;
 
     if let Expr::Bin {
@@ -217,7 +222,7 @@ fn rewrite_read_masks(expr: &Expr, uniform: &std::collections::HashSet<u16>) -> 
     } = expr
         && matches!(rhs.as_ref(), Expr::Const(0xffff_ffff))
         && let Expr::Reg { index, .. } = lhs.as_ref()
-        && uniform.contains(index)
+        && registers_used_only_at_32_bits.contains(index)
     {
         return Expr::Reg {
             index: *index,
@@ -227,20 +232,20 @@ fn rewrite_read_masks(expr: &Expr, uniform: &std::collections::HashSet<u16>) -> 
     match expr {
         Expr::Bin { op, lhs, rhs } => Expr::bin(
             *op,
-            rewrite_read_masks(lhs, uniform),
-            rewrite_read_masks(rhs, uniform),
+            rewrite_read_masks(lhs, registers_used_only_at_32_bits),
+            rewrite_read_masks(rhs, registers_used_only_at_32_bits),
         ),
         Expr::Load {
             addr,
             width,
             signed,
         } => Expr::Load {
-            addr: Box::new(rewrite_read_masks(addr, uniform)),
+            addr: Box::new(rewrite_read_masks(addr, registers_used_only_at_32_bits)),
             width: *width,
             signed: *signed,
         },
         Expr::SignExtend { value, width } => Expr::SignExtend {
-            value: Box::new(rewrite_read_masks(value, uniform)),
+            value: Box::new(rewrite_read_masks(value, registers_used_only_at_32_bits)),
             width: *width,
         },
         Expr::Select {
@@ -251,16 +256,16 @@ fn rewrite_read_masks(expr: &Expr, uniform: &std::collections::HashSet<u16>) -> 
             els,
         } => Expr::Select {
             cond: *cond,
-            lhs: Box::new(rewrite_read_masks(lhs, uniform)),
-            rhs: Box::new(rewrite_read_masks(rhs, uniform)),
-            then: Box::new(rewrite_read_masks(then, uniform)),
-            els: Box::new(rewrite_read_masks(els, uniform)),
+            lhs: Box::new(rewrite_read_masks(lhs, registers_used_only_at_32_bits)),
+            rhs: Box::new(rewrite_read_masks(rhs, registers_used_only_at_32_bits)),
+            then: Box::new(rewrite_read_masks(then, registers_used_only_at_32_bits)),
+            els: Box::new(rewrite_read_masks(els, registers_used_only_at_32_bits)),
         },
         Expr::Apply { op, args } => Expr::Apply {
             op: *op,
             args: args
                 .iter()
-                .map(|arg| rewrite_read_masks(arg, uniform))
+                .map(|arg| rewrite_read_masks(arg, registers_used_only_at_32_bits))
                 .collect(),
         },
         other => other.clone(),
@@ -371,9 +376,9 @@ mod tests {
                 },
             ],
         );
-        let uniform = specialize_widths(&mut ir, &|_| true);
-        assert!(uniform.contains(&VARIABLE_BASE));
-        assert!(!uniform.contains(&(VARIABLE_BASE + 1)));
+        let registers_used_only_at_32_bits = specialize_widths(&mut ir, &|_| true);
+        assert!(registers_used_only_at_32_bits.contains(&VARIABLE_BASE));
+        assert!(!registers_used_only_at_32_bits.contains(&(VARIABLE_BASE + 1)));
         let outputs = ir.blocks[0].stmts[0].call_outputs();
         assert_eq!(
             outputs

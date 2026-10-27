@@ -1,4 +1,4 @@
-use crate::ir::visit::assign_of;
+use crate::ir::visit::assignment;
 use crate::ir::visit::assignment_at;
 use crate::ir::visit::statement_registers;
 use crate::ir::{Expr, Stmt};
@@ -68,7 +68,7 @@ pub(crate) fn remainder_scan(
     let dividend_reg = unwrap_leaf(
         statements
             .get(start)
-            .and_then(assign_of)
+            .and_then(assignment)
             .map_or(&Expr::Const(0), |(_, value)| value),
     );
     let mut aliases: Vec<u16> = vec![dest_index];
@@ -165,7 +165,7 @@ pub(crate) fn remainder_scan(
                             }
                             return aliases.contains(&index);
                         }
-                        if let Some(index) = self_mul_leaf(expr) {
+                        if let Some(index) = multiply_constant_register(expr) {
                             return aliases.contains(&index);
                         }
                         false
@@ -227,7 +227,7 @@ pub(crate) fn remainder_scan(
                 // either a chain register or `msub`'s `q * d`.
                 (crate::ir::BinOp::Sub, _lhs, rhs) => {
                     let rhs = strip_and_mask(rhs);
-                    let accu = match rhs {
+                    let product_register = match rhs {
                         Expr::Reg { .. } => unwrap_leaf(rhs),
                         Expr::Bin {
                             op: crate::ir::BinOp::Mul,
@@ -236,10 +236,10 @@ pub(crate) fn remainder_scan(
                         } => unwrap_leaf(strip_and_mask(lhs)),
                         _ => None,
                     };
-                    let Some(accu) = accu else {
+                    let Some(product_register) = product_register else {
                         return None;
                     };
-                    if factor < 2 || !aliases.contains(&accu) {
+                    if factor < 2 || !aliases.contains(&product_register) {
                         return None;
                     }
                     return Some((position, consumed, factor, signed, width as u64));
@@ -256,7 +256,7 @@ pub(crate) fn remainder_scan(
 /// in the block.
 fn is_shift_of(index: &u16, aliases: &[u16], statements: &[Stmt]) -> bool {
     aliases.contains(index)
-        || statements.iter().any(|stmt| match assign_of(stmt) {
+        || statements.iter().any(|stmt| match assignment(stmt) {
             Some((
                 dest,
                 Expr::Bin {
@@ -269,7 +269,7 @@ fn is_shift_of(index: &u16, aliases: &[u16], statements: &[Stmt]) -> bool {
 }
 
 /// The register of `reg * const`.
-fn self_mul_leaf(expr: &Expr) -> Option<u16> {
+fn multiply_constant_register(expr: &Expr) -> Option<u16> {
     let Expr::Bin {
         op: crate::ir::BinOp::Mul,
         lhs,
@@ -364,7 +364,7 @@ pub(crate) fn apply_remainder_follows(
     replacements: &mut Vec<(usize, Expr)>,
     domains: &mut std::collections::HashSet<(u16, bool)>,
     narrowed: &mut Vec<(u16, bool)>,
-    wide_signed_ret: &mut Vec<u16>,
+    wide_signed_return_registers: &mut Vec<u16>,
 ) {
     let divisions: Vec<(usize, u64, bool, Expr)> = replacements
         .iter()
@@ -424,7 +424,7 @@ pub(crate) fn apply_remainder_follows(
                 domains.insert((root, !unsigned));
                 narrowed.push((sub_dest.index, !unsigned));
             } else if !unsigned {
-                wide_signed_ret.push(sub_dest.index);
+                wide_signed_return_registers.push(sub_dest.index);
             }
         }
         replacements.push((sub_position, replacement));
@@ -439,13 +439,13 @@ fn origin(statements: &[Stmt], position: usize, expr: &Expr) -> Option<(u16, Opt
     };
     let mut position = position;
     loop {
-        let defined = statements[..position]
-            .iter()
-            .rposition(|stmt| matches!(assign_of(stmt), Some((dest, _)) if dest.index == register));
+        let defined = statements[..position].iter().rposition(
+            |stmt| matches!(assignment(stmt), Some((dest, _)) if dest.index == register),
+        );
         let Some(at) = defined else {
             return Some((register, None));
         };
-        let (_, value) = assign_of(&statements[at]).expect("an assignment");
+        let (_, value) = assignment(&statements[at]).expect("an assignment");
         match unwrap_leaf(strip_and_mask(value)) {
             Some(source) if matches!(strip_and_mask(value), Expr::Reg { .. }) => {
                 register = source;
@@ -488,7 +488,7 @@ fn direct_msub_follow(
         let Some(stmt) = statements.get(div_position + probe) else {
             break;
         };
-        let Some((_, value)) = assign_of(stmt) else {
+        let Some((_, value)) = assignment(stmt) else {
             break;
         };
         if matches!(value, Expr::Const(_)) {
@@ -654,7 +654,7 @@ fn single_mult_follow(
 /// The `x` of a remainder's `x - ...` subtract; `0` if the statement is not a
 /// subtract.
 pub(crate) fn remainder_leaf(stmt: &Stmt) -> Expr {
-    match assign_of(stmt) {
+    match assignment(stmt) {
         Some((_, value)) => {
             let value = strip_and_mask(value);
             if let Expr::Bin {

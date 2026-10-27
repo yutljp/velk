@@ -72,7 +72,7 @@ fn wrapping_arithmetic_avoids_c_overflow() {
     }];
     let negative_code =
         crate::render::render(&negated, &[], &crate::render::Symbols::default(), &[]);
-    let mut division_code = String::new();
+    let mut arithmetic_code = String::new();
     for bits in [32, 64] {
         for (name, op) in [("quotient", BinOp::DivS), ("remainder", BinOp::ModS)] {
             let mut divided = FunctionIr::single_block(
@@ -91,7 +91,7 @@ fn wrapping_arithmetic_avoids_c_overflow() {
                     ty: CType::int(bits / 8, true),
                 })
                 .collect();
-            division_code.push_str(&crate::render::render(
+            arithmetic_code.push_str(&crate::render::render(
                 &divided,
                 &[],
                 &crate::render::Symbols::default(),
@@ -116,7 +116,7 @@ fn wrapping_arithmetic_avoids_c_overflow() {
                 name: "input".to_owned(),
                 ty: CType::U64,
             }];
-            division_code.push_str(&crate::render::render(
+            arithmetic_code.push_str(&crate::render::render(
                 &counted,
                 &[],
                 &crate::render::Symbols::default(),
@@ -125,7 +125,7 @@ fn wrapping_arithmetic_avoids_c_overflow() {
         }
     }
     let source = format!(
-        "#include <stdint.h>\n{code}\n{pointer_code}\n{negative_code}\n{division_code}\nint main(void) {{ int64_t data[8] = {{10,20,30,40,50,60,70,80}}; return masked_sum(0x40000000, 0x40000001) != 1 || indexed_value(data + 3, -3) != 30 || indexed_value(data + 3, -5) != 10 || indexed_value(data + 3, 0) != 60 || negated_value(INT64_MIN) != (uint64_t)INT64_MIN || quotient_32(INT32_MIN, -1) != UINT64_C(0x80000000) || remainder_32(INT32_MIN, -1) != 0 || quotient_64(INT64_MIN, -1) != (uint64_t)INT64_MIN || remainder_64(INT64_MIN, -1) != 0 || quotient_64(-7, 3) != (uint64_t)-2 || remainder_32(-7, 3) != UINT64_C(0xffffffff) || leading_8(0) != 8 || leading_8(254) != 0 || trailing_8(256) != 8 || leading_64(0) != 64 || trailing_64(0) != 64; }}\n"
+        "#include <stdint.h>\n{code}\n{pointer_code}\n{negative_code}\n{arithmetic_code}\nint main(void) {{ int64_t data[8] = {{10,20,30,40,50,60,70,80}}; return masked_sum(0x40000000, 0x40000001) != 1 || indexed_value(data + 3, -3) != 30 || indexed_value(data + 3, -5) != 10 || indexed_value(data + 3, 0) != 60 || negated_value(INT64_MIN) != (uint64_t)INT64_MIN || quotient_32(INT32_MIN, -1) != UINT64_C(0x80000000) || remainder_32(INT32_MIN, -1) != 0 || quotient_64(INT64_MIN, -1) != (uint64_t)INT64_MIN || remainder_64(INT64_MIN, -1) != 0 || quotient_64(-7, 3) != (uint64_t)-2 || remainder_32(-7, 3) != UINT64_C(0xffffffff) || leading_8(0) != 8 || leading_8(254) != 0 || trailing_8(256) != 8 || leading_64(0) != 64 || trailing_64(0) != 64; }}\n"
     );
     let directory = format!("target/smt-overflow-{}", std::process::id());
     std::fs::create_dir_all(&directory).expect("create C regression directory");
@@ -183,7 +183,7 @@ fn compiled_scalar_c_is_equivalent_to_ir() {
     let mut originals = BTreeMap::new();
     for bits in [8, 16, 32, 64] {
         let types = [CType::int(bits / 8, false), CType::int(bits / 8, true)];
-        for (is_signed, ty) in types.into_iter().enumerate() {
+        for (signedness_index, ty) in types.into_iter().enumerate() {
             let mut reads = vec![bits];
             if bits < 64 {
                 reads.push(64);
@@ -291,7 +291,7 @@ fn compiled_scalar_c_is_equivalent_to_ir() {
                     }
                 }
                 for (index, value) in cases.into_iter().enumerate() {
-                    let name = format!("smt_c_{bits}_{is_signed}_{read}_{index}");
+                    let name = format!("smt_c_{bits}_{signedness_index}_{read}_{index}");
                     let mut ir = FunctionIr::single_block(
                         Isa::X86_64,
                         vec![Stmt::Ret {
@@ -320,7 +320,7 @@ fn compiled_scalar_c_is_equivalent_to_ir() {
                         let input = low(&format!("r{register}"), u32::from(bits));
                         registers.insert(
                             register,
-                            if is_signed == 1 {
+                            if signedness_index == 1 {
                                 signed(&input, u32::from(bits))
                             } else {
                                 input

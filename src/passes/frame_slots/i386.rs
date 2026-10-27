@@ -4,25 +4,25 @@ use crate::ir::{BinOp, Expr, FunctionIr, Stmt};
 use std::collections::HashMap;
 
 pub(crate) fn settle(ir: &mut FunctionIr) {
-    fn based(expr: &Expr, sp: u16) -> bool {
+    fn uses_stack_pointer_as_base(expr: &Expr, sp: u16) -> bool {
         match expr {
             Expr::Reg { index, .. } if *index == sp => true,
             Expr::Bin {
                 op: BinOp::Add,
                 lhs,
                 rhs,
-            } => based(lhs, sp) || based(rhs, sp),
+            } => uses_stack_pointer_as_base(lhs, sp) || uses_stack_pointer_as_base(rhs, sp),
             Expr::Bin {
                 op: BinOp::Sub,
                 lhs,
                 rhs,
-            } if matches!(rhs.as_ref(), Expr::Const(_)) => based(lhs, sp),
+            } if matches!(rhs.as_ref(), Expr::Const(_)) => uses_stack_pointer_as_base(lhs, sp),
             _ => false,
         }
     }
-    fn unmask(expr: &mut Expr, sp: u16) {
+    fn remove_redundant_32_bit_mask(expr: &mut Expr, sp: u16) {
         for child in crate::ir::visit::children_mut(expr) {
-            unmask(child, sp);
+            remove_redundant_32_bit_mask(child, sp);
         }
         if let Expr::Bin {
             op: BinOp::And,
@@ -30,7 +30,8 @@ pub(crate) fn settle(ir: &mut FunctionIr) {
             rhs,
         } = expr
             && matches!(rhs.as_ref(), Expr::Const(0xffff_ffff))
-            && (based(lhs, sp) || crate::ssa::ranges::of(lhs).possible() <= 0xffff_ffff)
+            && (uses_stack_pointer_as_base(lhs, sp)
+                || crate::ssa::ranges::of(lhs).possible() <= 0xffff_ffff)
         {
             *expr = *lhs.clone();
         }
@@ -73,7 +74,7 @@ pub(crate) fn settle(ir: &mut FunctionIr) {
         .flat_map(|block| &mut block.stmts);
     for stmt in statements {
         for operand in stmt.operands_mut() {
-            unmask(operand, sp);
+            remove_redundant_32_bit_mask(operand, sp);
         }
     }
     let frames = block_frames(&candidate, sp);
@@ -84,7 +85,7 @@ pub(crate) fn settle(ir: &mut FunctionIr) {
         .flat_map(|block| &mut block.stmts);
     for stmt in statements {
         for operand in stmt.operands_mut() {
-            unmask(operand, sp);
+            remove_redundant_32_bit_mask(operand, sp);
         }
     }
     crate::passes::simplify::simplify(&mut candidate);
@@ -105,7 +106,7 @@ pub(crate) fn settle(ir: &mut FunctionIr) {
             }
             crate::ir::visit::replace_reads(stmt, &replacements);
             for operand in stmt.operands_mut() {
-                unmask(operand, sp);
+                remove_redundant_32_bit_mask(operand, sp);
                 fold_addresses(operand, frame, sp);
             }
             let alias = match stmt {

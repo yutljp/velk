@@ -47,25 +47,29 @@ fn rounding_name(rounding: Rounding) -> &'static str {
 
 /// The IR's name for an operation, with its precision or width.
 pub(crate) fn operation_name(op: Operation) -> String {
-    let p = |precision: Precision| match precision {
+    let precision_suffix = |precision: Precision| match precision {
         Precision::Single => "s",
         Precision::Double => "d",
     };
     match op {
-        Operation::FloatAdd(x) => format!("fadd.{}", p(x)),
-        Operation::FloatSub(x) => format!("fsub.{}", p(x)),
-        Operation::FloatMul(x) => format!("fmul.{}", p(x)),
-        Operation::FloatDiv(x) => format!("fdiv.{}", p(x)),
-        Operation::FloatSqrt(x) => format!("fsqrt.{}", p(x)),
-        Operation::FloatNegate(x) => format!("fneg.{}", p(x)),
-        Operation::FloatAbs(x) => format!("fabs.{}", p(x)),
-        Operation::FloatMulAdd(x) => format!("fma.{}", p(x)),
-        Operation::FloatEqual(x) => format!("feq.{}", p(x)),
-        Operation::FloatLess(x) => format!("flt.{}", p(x)),
-        Operation::FloatLessEqual(x) => format!("fle.{}", p(x)),
-        Operation::FloatUnordered(x) => format!("funord.{}", p(x)),
+        Operation::FloatAdd(x) => format!("fadd.{}", precision_suffix(x)),
+        Operation::FloatSub(x) => format!("fsub.{}", precision_suffix(x)),
+        Operation::FloatMul(x) => format!("fmul.{}", precision_suffix(x)),
+        Operation::FloatDiv(x) => format!("fdiv.{}", precision_suffix(x)),
+        Operation::FloatSqrt(x) => format!("fsqrt.{}", precision_suffix(x)),
+        Operation::FloatNegate(x) => format!("fneg.{}", precision_suffix(x)),
+        Operation::FloatAbs(x) => format!("fabs.{}", precision_suffix(x)),
+        Operation::FloatMulAdd(x) => format!("fma.{}", precision_suffix(x)),
+        Operation::FloatEqual(x) => format!("feq.{}", precision_suffix(x)),
+        Operation::FloatLess(x) => format!("flt.{}", precision_suffix(x)),
+        Operation::FloatLessEqual(x) => format!("fle.{}", precision_suffix(x)),
+        Operation::FloatUnordered(x) => format!("funord.{}", precision_suffix(x)),
         Operation::IntToFloat { signed, bits, to } => {
-            format!("{}{bits}tof.{}", if signed { "s" } else { "u" }, p(to))
+            format!(
+                "{}{bits}tof.{}",
+                if signed { "s" } else { "u" },
+                precision_suffix(to)
+            )
         }
         Operation::FloatToInt {
             signed,
@@ -75,13 +79,17 @@ pub(crate) fn operation_name(op: Operation) -> String {
             rounding,
         } => format!(
             "f.{}to{}{bits}{}{}",
-            p(from),
+            precision_suffix(from),
             if signed { "s" } else { "u" },
             rounding_name(rounding),
             if saturating { ".sat" } else { "" }
         ),
-        Operation::FloatRound(x, rounding) => format!("fround{}.{}", rounding_name(rounding), p(x)),
-        Operation::FloatConvert { from, to } => format!("f.{}tof.{}", p(from), p(to)),
+        Operation::FloatRound(x, rounding) => {
+            format!("fround{}.{}", rounding_name(rounding), precision_suffix(x))
+        }
+        Operation::FloatConvert { from, to } => {
+            format!("f.{}tof.{}", precision_suffix(from), precision_suffix(to))
+        }
         Operation::Lanes(op, bits) => format!("{}{bits}", lane_op_name(op)),
         Operation::InterleaveLow(bits) => format!("interleave_low{bits}"),
         Operation::InterleaveHigh(bits) => format!("interleave_high{bits}"),

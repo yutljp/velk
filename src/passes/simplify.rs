@@ -204,12 +204,12 @@ fn move_offset_across(lhs: &mut Expr, rhs: &mut Expr) {
     else {
         return;
     };
-    let Expr::Const(c) = offset.as_ref() else {
+    let Expr::Const(displacement) = offset.as_ref() else {
         return;
     };
     let moved = match op {
-        crate::ir::BinOp::Add => k.wrapping_sub(*c),
-        crate::ir::BinOp::Sub => k.wrapping_add(*c),
+        crate::ir::BinOp::Add => k.wrapping_sub(*displacement),
+        crate::ir::BinOp::Sub => k.wrapping_add(*displacement),
         _ => return,
     };
     let Some(width) = crate::ir::visit::expr_width(inner) else {
@@ -236,15 +236,15 @@ fn simplify_expr(expr: Expr, constants: &HashMap<u16, u64>) -> Expr {
             let bits = crate::ir::semantics::operand_width(&lhs, &rhs);
             let original = matches!(op, BinOp::Sar | BinOp::DivS | BinOp::ModS)
                 .then(|| (lhs.clone(), rhs.clone()));
-            let mut a = simplify_expr(*lhs, constants);
-            let mut b = simplify_expr(*rhs, constants);
+            let mut simplified_lhs = simplify_expr(*lhs, constants);
+            let mut simplified_rhs = simplify_expr(*rhs, constants);
             if let Some((lhs, rhs)) = original
-                && crate::ir::semantics::operand_width(&a, &b) != bits
+                && crate::ir::semantics::operand_width(&simplified_lhs, &simplified_rhs) != bits
             {
                 // These operations take their sign from the operands' width.
-                (a, b) = (*lhs, *rhs);
+                (simplified_lhs, simplified_rhs) = (*lhs, *rhs);
             }
-            fold_offsets(algebraic(Expr::bin(op, a, b)))
+            fold_offsets(algebraic(Expr::bin(op, simplified_lhs, simplified_rhs)))
         }
         Expr::Load {
             addr,
@@ -905,13 +905,13 @@ fn widen_compared_constant(value: &Expr, constant: &mut Expr, bits: u32) -> bool
         | Expr::SignExtend { width, .. } => u32::from(*width) * 8,
         _ => return false,
     };
-    let Expr::Const(c) = constant else {
+    let Expr::Const(constant_value) = constant else {
         return false;
     };
-    if narrow >= bits || *c & crate::ir::semantics::mask(bits) != *c {
+    if narrow >= bits || *constant_value & crate::ir::semantics::mask(bits) != *constant_value {
         return false;
     }
-    *c = crate::ir::semantics::sign_extend(*c, bits) as u64;
+    *constant_value = crate::ir::semantics::sign_extend(*constant_value, bits) as u64;
     true
 }
 
@@ -1159,7 +1159,7 @@ mod magic_tests {
     use super::magic_divisor;
 
     #[test]
-    fn a_magic_multiply_divides_every_32_bit_value() {
+    fn magic_multiply_divides_selected_32_bit_values() {
         // The magic numbers compilers use for unsigned 32-bit division.
         for (magic, shift, divisor) in [
             (0xaaaa_aaab, 33, 3),

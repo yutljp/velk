@@ -10,7 +10,7 @@ mod smt_tests;
 
 use crate::arch;
 use crate::ir::CType;
-use crate::ir::visit::assign_of;
+use crate::ir::visit::assignment;
 use crate::ir::visit::assignment_at;
 use crate::ir::visit::statement_registers;
 use crate::ir::{Expr, FunctionIr, Stmt};
@@ -38,14 +38,14 @@ pub fn recover_divisions(ir: &mut FunctionIr) {
     let mut narrowed: Vec<(u16, bool)> = Vec::new();
     // Signed 64-bit chains prove an int64 dividend, so these widen instead.
     let mut wide_signed: std::collections::HashSet<u16> = std::collections::HashSet::new();
-    let mut wide_signed_ret: Vec<u16> = Vec::new();
+    let mut wide_signed_return_registers: Vec<u16> = Vec::new();
     for block in &mut ir.blocks {
         magic_block(
             block,
             &mut domains,
             &mut narrowed,
             &mut wide_signed,
-            &mut wide_signed_ret,
+            &mut wide_signed_return_registers,
         );
     }
     // A 32-bit quotient written to the return register proves a 32-bit return.
@@ -57,7 +57,10 @@ pub fn recover_divisions(ir: &mut FunctionIr) {
         }
     }
     // A signed 64-bit quotient written to the return register proves an int64 return.
-    if wide_signed_ret.iter().any(|reg| reaches_return(ir, *reg)) {
+    if wide_signed_return_registers
+        .iter()
+        .any(|reg| reaches_return(ir, *reg))
+    {
         ir.ret_type = CType::I64;
     }
     // Retype dividend parameters to the width the chain proved.
@@ -89,7 +92,7 @@ fn reaches_return(ir: &FunctionIr, reg: u16) -> bool {
             })
 }
 
-fn sar_dst_of(block: &crate::ir::Block, index: usize) -> u16 {
+fn statement_register_dest_or_zero(block: &crate::ir::Block, index: usize) -> u16 {
     assignment_at(&block.stmts, index).map_or(0, |(dest, _)| dest.index)
 }
 
@@ -98,7 +101,7 @@ fn magic_block(
     domains: &mut std::collections::HashSet<(u16, bool)>,
     narrowed: &mut Vec<(u16, bool)>,
     wide_signed: &mut std::collections::HashSet<u16>,
-    wide_signed_ret: &mut Vec<u16>,
+    wide_signed_return_registers: &mut Vec<u16>,
 ) {
     let mut consumed: std::collections::HashSet<usize> = std::collections::HashSet::new();
     let mut replacements: Vec<(usize, Expr)> = Vec::new();
@@ -130,7 +133,7 @@ fn magic_block(
     {
         // Check uses of the select's result, not the dividend: the dividend
         // stays live in the rewritten expression.
-        let select_src = sar_dst_of(block, select_index);
+        let select_src = statement_register_dest_or_zero(block, select_index);
         if single_use(block.stmts.as_slice(), select_index, sar_index, select_src)
             && dropped_dest_safe(
                 block.stmts.as_slice(),
@@ -147,11 +150,11 @@ fn magic_block(
                     wide_signed.insert(root);
                 }
             }
-            let sar_dst = sar_dst_of(block, sar_index);
+            let sar_dst = statement_register_dest_or_zero(block, sar_index);
             if domain_bits == 32 {
                 narrowed.push((sar_dst, true));
             } else {
-                wide_signed_ret.push(sar_dst);
+                wide_signed_return_registers.push(sar_dst);
             }
             consumed.insert(select_index);
             if let Some(def) = adjusted_def {
@@ -177,7 +180,7 @@ fn magic_block(
         if consumed.contains(&probe) {
             continue;
         }
-        let Some((dest, value)) = assign_of(&block.stmts[probe]) else {
+        let Some((dest, value)) = assignment(&block.stmts[probe]) else {
             continue;
         };
         if !matches!(value, Expr::Select { .. }) {
@@ -197,7 +200,7 @@ fn magic_block(
         // Every register the chain drops must be dead afterwards: only the
         // select (rewritten in place) and the chain's own steps may read it.
         let safe = steps.iter().all(|step| {
-            let Some((dest, _)) = assign_of(&block.stmts[*step]) else {
+            let Some((dest, _)) = assignment(&block.stmts[*step]) else {
                 return false;
             };
             block.stmts.iter().enumerate().all(|(offset, other)| {
@@ -226,7 +229,7 @@ fn magic_block(
             narrowed.push((dest.index, true));
         } else {
             wide_signed.insert(dividend);
-            wide_signed_ret.push(dest.index);
+            wide_signed_return_registers.push(dest.index);
         }
         replacements.push((probe, remainder(leaf, divisor, false)));
     }
@@ -236,7 +239,7 @@ fn magic_block(
     if let Some((sub_index, select_index, adjusted_def, divisor, leaf, domain_bits)) =
         signed_select_mod_chain(block.stmts.as_slice())
     {
-        let select_src = sar_dst_of(block, select_index);
+        let select_src = statement_register_dest_or_zero(block, select_index);
         if single_use(block.stmts.as_slice(), select_index, sub_index, select_src)
             && dropped_dest_safe(
                 block.stmts.as_slice(),
@@ -253,11 +256,11 @@ fn magic_block(
                     wide_signed.insert(root);
                 }
             }
-            let sub_dst = sar_dst_of(block, sub_index);
+            let sub_dst = statement_register_dest_or_zero(block, sub_index);
             if domain_bits == 32 {
                 narrowed.push((sub_dst, true));
             } else {
-                wide_signed_ret.push(sub_dst);
+                wide_signed_return_registers.push(sub_dst);
             }
             if let Some(def) = adjusted_def {
                 consumed.insert(def);
@@ -271,7 +274,7 @@ fn magic_block(
             index += 1;
             continue;
         }
-        let Some((dest, value)) = assign_of(&block.stmts[index]) else {
+        let Some((dest, value)) = assignment(&block.stmts[index]) else {
             index += 1;
             continue;
         };
@@ -317,7 +320,7 @@ fn magic_block(
                         narrowed.push((sub, signed));
                     } else if signed {
                         wide_signed.insert(root);
-                        wide_signed_ret.push(sub);
+                        wide_signed_return_registers.push(sub);
                     }
                 }
                 consumed.insert(index);
@@ -343,7 +346,7 @@ fn magic_block(
             block
                 .stmts
                 .get(index + 1)
-                .and_then(|step| match assign_of(step) {
+                .and_then(|step| match assignment(step) {
                     Some((_, shr_value)) => {
                         let Some((source, shift)) = shift_of(shr_value) else {
                             return None;
@@ -468,12 +471,12 @@ fn magic_block(
             }
             consumed.insert(index);
             if let Some(stmt) = block.stmts.get(sum_position)
-                && let Some((sum_dst, _)) = assign_of(stmt)
+                && let Some((sum_dst, _)) = assignment(stmt)
             {
                 if effective_domain == 32 {
                     narrowed.push((sum_dst.index, true));
                 } else {
-                    wide_signed_ret.push(sum_dst.index);
+                    wide_signed_return_registers.push(sum_dst.index);
                 }
             }
             replacements.push((sum_position, replacement));
@@ -514,7 +517,7 @@ fn magic_block(
             }
             consumed.insert(index);
             if let Some(stmt) = block.stmts.get(sum_position)
-                && let Some((sum_dst, _)) = assign_of(stmt)
+                && let Some((sum_dst, _)) = assignment(stmt)
             {
                 narrowed.push((sum_dst.index, true));
             }
@@ -532,7 +535,7 @@ fn magic_block(
         &mut replacements,
         domains,
         narrowed,
-        wide_signed_ret,
+        wide_signed_return_registers,
     );
 
     if consumed.is_empty() {
@@ -681,7 +684,7 @@ fn single_use(stmts: &[Stmt], span_start: usize, span_end: usize, reg: u16) -> b
 pub(crate) fn dividend_parameter(statements: &[Stmt], chain_start: usize, leaf: u16) -> u16 {
     let mut current = leaf;
     for position in (0..chain_start).rev() {
-        let Some((dest, value)) = assign_of(&statements[position]) else {
+        let Some((dest, value)) = assignment(&statements[position]) else {
             continue;
         };
         if dest.index != current {
@@ -722,7 +725,7 @@ pub(crate) fn chain_dividend_domain(statements: &[Stmt], chain_start: usize, lea
         return domain;
     };
     for position in (0..chain_start).rev() {
-        let Some((dest, value)) = assign_of(&statements[position]) else {
+        let Some((dest, value)) = assignment(&statements[position]) else {
             continue;
         };
         if dest.index != *index {
@@ -775,7 +778,7 @@ fn dropped_dest_safe(statements: &[Stmt], start: usize, end: usize, position: us
     let Some(stmt) = statements.get(position) else {
         return false;
     };
-    let Some((dest, _)) = assign_of(stmt) else {
+    let Some((dest, _)) = assignment(stmt) else {
         return false;
     };
     let reg = dest.index;

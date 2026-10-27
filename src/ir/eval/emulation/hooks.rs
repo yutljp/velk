@@ -160,7 +160,7 @@ impl Runner<'_> {
         self.memory_error()
     }
 
-    pub(super) fn range(
+    pub(super) fn check_memory_range(
         &self,
         address: u64,
         size: u64,
@@ -172,7 +172,7 @@ impl Runner<'_> {
             )));
         }
         self.machine
-            .strict
+            .strict_memory
             .as_ref()
             .expect("strict memory")
             .check(address, size, write);
@@ -201,11 +201,11 @@ impl Runner<'_> {
         source: u64,
         size: u64,
     ) -> std::result::Result<u64, Stop> {
-        match self.range(source, size, /* write */ false) {
+        match self.check_memory_range(source, size, /* write */ false) {
             Ok(value) => value,
             Err(stop) => return Err(stop),
         };
-        match self.range(first, size, /* write */ true) {
+        match self.check_memory_range(first, size, /* write */ true) {
             Ok(value) => value,
             Err(stop) => return Err(stop),
         };
@@ -283,7 +283,7 @@ impl Runner<'_> {
                     Ok(value) => value,
                     Err(stop) => return Err(stop),
                 };
-                match self.range(first, size, /* write */ true) {
+                match self.check_memory_range(first, size, /* write */ true) {
                     Ok(value) => value,
                     Err(stop) => return Err(stop),
                 };

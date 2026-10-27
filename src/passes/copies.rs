@@ -1,5 +1,5 @@
 use crate::ir::cfg::{live_in, live_out, opaque};
-use crate::ir::visit::assign_of;
+use crate::ir::visit::assignment;
 use crate::ir::visit::children;
 use crate::ir::visit::count_register;
 use crate::ir::visit::expr_reads;
@@ -22,7 +22,7 @@ pub fn inline_local_copies(ir: &mut FunctionIr) {
     let live_out: Vec<_> = (0..ir.blocks.len())
         .map(|index| live_out(ir, &live_in, index))
         .collect();
-    let params = parameters(ir);
+    let params = parameter_registers(ir);
     let sp = crate::arch::stack_pointer(ir.isa);
     let private_frame = super::memory::fixed_private_frame(ir, sp);
     for (position, block) in ir.blocks.iter_mut().enumerate() {
@@ -76,7 +76,7 @@ pub fn inline_local_copies(ir: &mut FunctionIr) {
                 let used = statement_reads(stmt);
                 if used.contains(&dest) {
                     // Folding into two reads would duplicate the value.
-                    reads += count_reg(stmt, dest);
+                    reads += count_register_reads(stmt, dest);
                     use_at = Some(position);
                 }
                 let written = statement_registers(stmt).0;
@@ -112,10 +112,10 @@ pub fn inline_local_copies(ir: &mut FunctionIr) {
                 index += 1;
                 continue;
             }
-            let mut ok = true;
+            let mut substitution_valid = true;
             let mut folded = block.stmts[use_at].clone();
-            substitute_in_statement(&mut folded, dest, &value, &mut ok);
-            if !ok {
+            substitute_in_statement(&mut folded, dest, &value, &mut substitution_valid);
+            if !substitution_valid {
                 index += 1;
                 continue;
             }
@@ -305,7 +305,7 @@ fn reads_elsewhere(
 
 fn copy_propagate_with(
     ir: &mut FunctionIr,
-    avoid_duplication: Duplication,
+    duplication: Duplication,
     eligible: &impl Fn(u16, &Expr) -> bool,
 ) {
     let reads = block_reads(ir);
@@ -316,7 +316,7 @@ fn copy_propagate_with(
     let live_out: Vec<_> = (0..ir.blocks.len())
         .map(|index| live_out(ir, &live_in, index))
         .collect();
-    let params = parameters(ir);
+    let params = parameter_registers(ir);
     let sp = crate::arch::stack_pointer(ir.isa);
     let private_frame = super::memory::fixed_private_frame(ir, sp);
     for (index, block) in ir.blocks.iter_mut().enumerate() {
@@ -329,7 +329,7 @@ fn copy_propagate_with(
             block,
             &outer,
             &params,
-            avoid_duplication,
+            duplication,
             sp,
             private_frame,
             eligible,
@@ -375,7 +375,7 @@ fn further_result_moves(
         )
 }
 
-fn parameters(ir: &FunctionIr) -> std::collections::HashSet<u16> {
+fn parameter_registers(ir: &FunctionIr) -> std::collections::HashSet<u16> {
     ir.params.iter().map(|param| param.index).collect()
 }
 
@@ -389,12 +389,12 @@ fn copy_propagate_block(
     block: &mut crate::ir::Block,
     outer_reads: &std::collections::HashSet<u16>,
     params: &std::collections::HashSet<u16>,
-    avoid_duplication: Duplication,
+    duplication: Duplication,
     sp: u16,
     private_frame: bool,
     eligible: &impl Fn(u16, &Expr) -> bool,
 ) {
-    let avoid_duplication = matches!(avoid_duplication, Duplication::Avoid);
+    let duplication = matches!(duplication, Duplication::Avoid);
     let mut index = 0;
     while index < block.stmts.len() {
         let copy = match &block.stmts[index] {
@@ -489,7 +489,7 @@ fn copy_propagate_block(
         }
         // Removing the copy is safe when the consumer redefines the register
         // or nothing else reads it before its next definition.
-        let rewrites_dest = match assign_of(&block.stmts[consumer]) {
+        let rewrites_dest = match assignment(&block.stmts[consumer]) {
             Some((dest_ref, _)) => dest_ref.index == dest,
             None => false,
         };
@@ -516,14 +516,14 @@ fn copy_propagate_block(
         }
         // Inlining a compound value into two reads would undo CSE, and a
         // choice repeated reads as two.
-        let reads_in_consumer = count_reg(&block.stmts[consumer], dest);
+        let reads_in_consumer = count_register_reads(&block.stmts[consumer], dest);
         if reads_in_consumer > 1
-            && ((avoid_duplication && expr_size(&template) > 1) || contains_select(&template))
+            && ((duplication && expr_size(&template) > 1) || contains_select(&template))
         {
             index += 1;
             continue;
         }
-        if !substitute_stmt(&mut block.stmts[consumer], dest, width, &template) {
+        if !substitute_statement(&mut block.stmts[consumer], dest, width, &template) {
             index += 1;
             continue;
         }
@@ -540,7 +540,7 @@ fn contains_select(expr: &Expr) -> bool {
 }
 
 /// How many times a statement reads one register.
-fn count_reg(stmt: &Stmt, reg: u16) -> usize {
+fn count_register_reads(stmt: &Stmt, reg: u16) -> usize {
     let mut total = stmt
         .preserved_output_sources()
         .iter()
@@ -594,7 +594,7 @@ pub(crate) fn expr_size(expr: &Expr) -> usize {
     1 + children(expr).into_iter().map(expr_size).sum::<usize>()
 }
 
-fn substitute_stmt(stmt: &mut Stmt, dest: u16, width: u8, template: &Expr) -> bool {
+fn substitute_statement(stmt: &mut Stmt, dest: u16, width: u8, template: &Expr) -> bool {
     if stmt.declared_call_reads().contains(&dest)
         || stmt
             .preserved_output_sources()
@@ -1482,22 +1482,32 @@ mod tests {
             abi: Some(crate::ir::calls::test_call_abi(vec![7], false)),
             via: None,
         };
-        assert_eq!(super::count_reg(&call, 7), 2);
+        assert_eq!(super::count_register_reads(&call, 7), 2);
         let original = call.clone();
-        assert!(!super::substitute_stmt(&mut call, 7, 64, &Expr::Const(9)));
+        assert!(!super::substitute_statement(
+            &mut call,
+            7,
+            64,
+            &Expr::Const(9)
+        ));
         assert_eq!(format!("{call:?}"), format!("{original:?}"));
         if let Stmt::Call { abi, .. } = &mut call {
             *abi = None;
         }
-        assert_eq!(super::count_reg(&call, 7), 1);
+        assert_eq!(super::count_register_reads(&call, 7), 1);
         if let Stmt::Call { through, .. } = &mut call {
             *through = Some(Expr::bin(BinOp::Add, Expr::reg(7, 64), Expr::reg(7, 64)));
         }
-        assert_eq!(super::count_reg(&call, 7), 3);
+        assert_eq!(super::count_register_reads(&call, 7), 3);
         if let Stmt::Call { through, .. } = &mut call {
             *through = None;
         }
-        assert!(super::substitute_stmt(&mut call, 7, 64, &Expr::Const(9)));
+        assert!(super::substitute_statement(
+            &mut call,
+            7,
+            64,
+            &Expr::Const(9)
+        ));
         assert!(matches!(call, Stmt::Call { args: Some(args), .. } if args == [Expr::Const(9)]));
     }
 }

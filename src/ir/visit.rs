@@ -351,10 +351,10 @@ pub(crate) fn assignment_at(
     statements: &[Stmt],
     position: usize,
 ) -> Option<(crate::ir::RegRef, &Expr)> {
-    statements.get(position).and_then(assign_of)
+    statements.get(position).and_then(assignment)
 }
 
-pub(crate) fn assign_of(stmt: &Stmt) -> Option<(crate::ir::RegRef, &Expr)> {
+pub(crate) fn assignment(stmt: &Stmt) -> Option<(crate::ir::RegRef, &Expr)> {
     match stmt {
         Stmt::Assign { dest, value } => Some((*dest, value)),
         _ => None,

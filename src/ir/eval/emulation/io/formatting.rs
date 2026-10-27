@@ -57,7 +57,7 @@ impl Runner<'_> {
         format: &[u8],
         args: &mut Arguments,
     ) -> Result<Vec<u8>, Stop> {
-        let pointer = crate::arch::pointer_bytes(self.image.isa);
+        let pointer_bytes = crate::arch::pointer_bytes(self.image.isa);
         let windows = matches!(
             self.image.format,
             crate::loader::Format::Pe | crate::loader::Format::Coff
@@ -137,28 +137,28 @@ impl Runner<'_> {
                 return Err(error("format width or precision exceeds 16 MiB"));
             }
             let mut prefix = Vec::new();
-            let mut digits = Vec::new();
+            let mut formatted_value = Vec::new();
             let numeric = !matches!(conversion, b's' | b'c');
             if conversion == b's' {
-                let base = args.next(self, pointer)?;
+                let base = args.next(self, pointer_bytes)?;
                 if let Some(precision) = spec.precision {
                     for offset in 0..precision {
                         let byte = self.read_byte(super::address(base, offset)?)?;
                         if byte == 0 {
                             break;
                         }
-                        digits.push(byte);
+                        formatted_value.push(byte);
                     }
                 } else {
-                    digits = self.bytes_at(base, None)?;
+                    formatted_value = self.bytes_at(base, None)?;
                 }
             } else if conversion == b'c' {
-                digits.push(args.next(self, 4)? as u8);
+                formatted_value.push(args.next(self, 4)? as u8);
             } else {
                 let width = if conversion == b'p' {
-                    pointer
+                    pointer_bytes
                 } else {
-                    integer_width(&spec.length, pointer, windows)?
+                    integer_width(&spec.length, pointer_bytes, windows)?
                 };
                 let raw = args.next(self, width.max(4))?;
                 let bits = width * 8;
@@ -187,14 +187,14 @@ impl Runner<'_> {
                     b'o' => format!("{absolute:o}"),
                     _ => absolute.to_string(),
                 };
-                digits = text.into_bytes();
+                formatted_value = text.into_bytes();
                 if value == 0 && spec.precision == Some(0) {
-                    digits.clear();
+                    formatted_value.clear();
                 }
                 if conversion == b'p' {
                     if value == 0 {
                         // The modeled libc uses the common Linux null-pointer spelling.
-                        digits = b"(nil)".to_vec();
+                        formatted_value = b"(nil)".to_vec();
                         spec.zero = false;
                         spec.precision = None;
                     } else {
@@ -205,24 +205,26 @@ impl Runner<'_> {
                 }
                 if conversion == b'o'
                     && spec.alternate
-                    && digits.first() != Some(&b'0')
-                    && spec.precision.unwrap_or(0) <= digits.len()
+                    && formatted_value.first() != Some(&b'0')
+                    && spec.precision.unwrap_or(0) <= formatted_value.len()
                 {
                     prefix.push(b'0');
                 }
             }
             let zeros = if numeric {
-                spec.precision.unwrap_or(0).saturating_sub(digits.len())
+                spec.precision
+                    .unwrap_or(0)
+                    .saturating_sub(formatted_value.len())
             } else {
                 0
             };
             let padding = spec
                 .width
-                .saturating_sub(prefix.len() + zeros + digits.len());
+                .saturating_sub(prefix.len() + zeros + formatted_value.len());
             let total = prefix
                 .len()
                 .saturating_add(zeros)
-                .saturating_add(digits.len())
+                .saturating_add(formatted_value.len())
                 .saturating_add(padding);
             if output.len().saturating_add(total) > HEAP_SIZE as usize {
                 return Err(error("formatted output exceeds 16 MiB"));
@@ -236,7 +238,7 @@ impl Runner<'_> {
                 output.resize(output.len() + padding, b'0');
             }
             output.resize(output.len() + zeros, b'0');
-            output.extend_from_slice(&digits);
+            output.extend_from_slice(&formatted_value);
             if spec.left {
                 output.resize(output.len() + padding, b' ');
             }

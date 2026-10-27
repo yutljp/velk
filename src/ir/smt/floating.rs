@@ -3,7 +3,7 @@
 use super::{Value, constant, low};
 use crate::ir::{Operation, Precision, Rounding};
 
-fn format(precision: Precision) -> (u32, u32) {
+fn format_widths(precision: Precision) -> (u32, u32) {
     match precision {
         Precision::Single => (8, 24),
         Precision::Double => (11, 53),
@@ -11,7 +11,7 @@ fn format(precision: Precision) -> (u32, u32) {
 }
 
 fn float(value: &str, precision: Precision) -> String {
-    let (exponent, significand) = format(precision);
+    let (exponent, significand) = format_widths(precision);
     let bits = precision.bits();
     format!(
         "((_ to_fp {exponent} {significand}) ((_ extract {} 0) {value}))",
@@ -115,7 +115,7 @@ pub(super) fn operation(op: Operation, args: &[Value]) -> Option<String> {
         ),
         Operation::FloatRound(_, mode) => format!("(fp.roundToIntegral {} {a})", rounding(mode)),
         Operation::FloatConvert { to, .. } => {
-            let (exponent, significand) = format(to);
+            let (exponent, significand) = format_widths(to);
             return Some(bits(
                 &format!("((_ to_fp {exponent} {significand}) RNE {a})"),
                 to,
@@ -126,7 +126,7 @@ pub(super) fn operation(op: Operation, args: &[Value]) -> Option<String> {
             bits: width,
             to,
         } => {
-            let (exponent, significand) = format(to);
+            let (exponent, significand) = format_widths(to);
             let operator = if signed { "to_fp" } else { "to_fp_unsigned" };
             format!(
                 "((_ {operator} {exponent} {significand}) RNE ((_ extract {} 0) {raw}))",
@@ -141,7 +141,7 @@ pub(super) fn operation(op: Operation, args: &[Value]) -> Option<String> {
             ..
         } => {
             let rounded = format!("(fp.roundToIntegral {} {a})", rounding(mode));
-            let (exponent, significand) = format(precision);
+            let (exponent, significand) = format_widths(precision);
             let boundary = 1u128 << (u32::from(width) - u32::from(signed));
             let upper = format!("((_ to_fp {exponent} {significand}) RNE {boundary}.0)");
             let lower = if signed {

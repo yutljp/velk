@@ -735,39 +735,40 @@ fn cse_keeps_proven_narrow_bindings_at_their_operand_width() {
 #[test]
 fn temporary_slots_exclude_function_annotations_and_call_registers() {
     use crate::ir::{Access, CallKind, CallOutput, Convention, Structure};
-    let at = |offset| TEMP_BASE + offset;
+    let temporary_register = |offset| TEMP_BASE + offset;
     let mut ir = FunctionIr::single_block(Isa::X86_64, vec![]);
     ir.params.push(Param {
-        index: at(0),
+        index: temporary_register(0),
         name: "p".into(),
         ty: CType::U64,
     });
-    ir.signed_params.insert(at(1));
-    ir.pointer_values.push(at(2));
-    ir.value_types.insert(at(3), CType::U64);
-    ir.variable_registers.insert(at(4), at(5));
+    ir.signed_params.insert(temporary_register(1));
+    ir.pointer_values.push(temporary_register(2));
+    ir.value_types.insert(temporary_register(3), CType::U64);
+    ir.variable_registers
+        .insert(temporary_register(4), temporary_register(5));
     ir.accesses.push(Access {
-        register: at(6),
+        register: temporary_register(6),
         fields: vec![],
     });
     ir.structures.push(Structure {
         name: "s".into(),
         fields: vec![],
         size: None,
-        elements: vec![at(7)],
+        elements: vec![temporary_register(7)],
     });
     ir.blocks[0].stmts.push(Stmt::Call {
         kind: CallKind::Invoke,
         target: None,
-        through: Some(Expr::reg(at(8), 64)),
+        through: Some(Expr::reg(temporary_register(8), 64)),
         convention: Convention::SysV,
-        args: Some(vec![Expr::reg(at(9), 64)]),
+        args: Some(vec![Expr::reg(temporary_register(9), 64)]),
         floats_named: true,
         abi: None,
         outputs: vec![CallOutput {
-            register: at(10),
+            register: temporary_register(10),
             dest: RegRef {
-                index: at(11),
+                index: temporary_register(11),
                 width: 64,
             },
         }],
@@ -775,8 +776,8 @@ fn temporary_slots_exclude_function_annotations_and_call_registers() {
         via: None,
     });
     let pool = crate::ir::visit::unused_temporaries(&ir);
-    for register in TEMP_BASE..at(12) {
+    for register in TEMP_BASE..temporary_register(12) {
         assert!(!pool.contains(&register), "named index: {register}");
     }
-    assert_eq!(pool.first(), Some(&at(12)));
+    assert_eq!(pool.first(), Some(&temporary_register(12)));
 }

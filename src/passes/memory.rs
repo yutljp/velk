@@ -108,7 +108,8 @@ pub fn forward_stored_values(ir: &mut FunctionIr) {
                     // remembered `sp`-relative address the other way; any
                     // other move leaves them unknown.
                     if dest.index == sp {
-                        let Some(delta) = moved(value, sp).map(|delta| delta as u64) else {
+                        let Some(delta) = stack_pointer_delta(value, sp).map(|delta| delta as u64)
+                        else {
                             pending.clear();
                             continue;
                         };
@@ -827,7 +828,7 @@ pub fn forward_spilled_variables(ir: &mut FunctionIr) {
                 }
                 Stmt::Assign { dest, value } => {
                     if dest.index == sp {
-                        match moved(value, sp) {
+                        match stack_pointer_delta(value, sp) {
                             Some(delta) => frame = frame.wrapping_add(delta),
                             None => return,
                         }
@@ -999,14 +1000,14 @@ pub fn forward_spilled_variables(ir: &mut FunctionIr) {
             if let Stmt::Assign { dest, value } = stmt
                 && dest.index == sp
             {
-                frame = frame.wrapping_add(moved(value, sp).unwrap_or(0));
+                frame = frame.wrapping_add(stack_pointer_delta(value, sp).unwrap_or(0));
             }
         }
     }
 }
 
 /// How far `sp = value` moves the stack pointer, when by a constant.
-fn moved(value: &Expr, sp: u16) -> Option<i64> {
+fn stack_pointer_delta(value: &Expr, sp: u16) -> Option<i64> {
     let Expr::Bin { op, lhs, rhs } = value else {
         return None;
     };

@@ -188,19 +188,19 @@ pub(crate) fn opaque(block: &Block) -> bool {
 /// them.
 pub(crate) fn live_in(ir: &FunctionIr) -> Vec<HashSet<u16>> {
     let count = ir.blocks.len();
-    let registers = universe(ir);
-    let dense: std::collections::HashMap<u16, usize> = registers
+    let registers = registers_used_or_machine(ir);
+    let register_positions: std::collections::HashMap<u16, usize> = registers
         .iter()
         .enumerate()
         .map(|(position, register)| (*register, position))
         .collect();
     let words = registers.len().div_ceil(64);
     let set = |bits: &mut [u64], register: u16| {
-        let at = dense[&register];
+        let at = register_positions[&register];
         bits[at / 64] |= 1 << (at % 64);
     };
     let clear = |bits: &mut [u64], register: u16| {
-        let at = dense[&register];
+        let at = register_positions[&register];
         bits[at / 64] &= !(1 << (at % 64));
     };
     // What each block reads before writing it, and what it writes.
@@ -257,14 +257,14 @@ pub(crate) fn live_in(ir: &FunctionIr) -> Vec<HashSet<u16>> {
 /// The registers live on leaving block `index`, given `live_in`.
 pub(crate) fn live_out(ir: &FunctionIr, live_in: &[HashSet<u16>], index: usize) -> HashSet<u16> {
     if opaque(&ir.blocks[index]) {
-        return universe(ir).into_iter().collect();
+        return registers_used_or_machine(ir).into_iter().collect();
     }
     live_out_of(live_in, &successors(ir, index))
 }
 
 /// Every register the function's statements name, and the machine registers
 /// of either architecture, which an unmodeled effect may read.
-fn universe(ir: &FunctionIr) -> Vec<u16> {
+fn registers_used_or_machine(ir: &FunctionIr) -> Vec<u16> {
     let mut registers: std::collections::BTreeSet<u16> = crate::arch::machine_registers()
         .chain(crate::ir::FLAG_OPERANDS)
         .chain([crate::ir::EXCHANGE])

@@ -70,7 +70,7 @@ enum Flow {
 }
 
 struct Machine<'a> {
-    strict: Option<crate::emulation::Memory<'a>>,
+    strict_memory: Option<crate::emulation::Memory<'a>>,
     source: Option<&'a MachineSource<'a>>,
     isa: crate::loader::Isa,
     convention: &'a Convention<'a>,
@@ -79,7 +79,7 @@ struct Machine<'a> {
     memory: HashMap<u64, u8>,
     calls: Vec<Call>,
     blocks: &'a [Block],
-    starts: HashMap<u64, usize>,
+    block_indices_by_address: HashMap<u64, usize>,
 }
 
 /// Supplies raw instruction outputs in their declared order. For `WriteFlags`,
@@ -99,11 +99,11 @@ pub fn run_with_machine(ir: &FunctionIr, setup: &Setup<'_>, source: &MachineSour
         Ok(Some(value)) => Outcome::Return {
             value,
             calls: machine.calls,
-            memory: visible(&machine.memory, ir.isa),
+            memory: memory_outside_stack(&machine.memory, ir.isa),
         },
         Ok(None) => Outcome::Trap {
             calls: machine.calls,
-            memory: visible(&machine.memory, ir.isa),
+            memory: memory_outside_stack(&machine.memory, ir.isa),
         },
         Err(reason) => Outcome::Unknown(reason),
     }
@@ -143,7 +143,7 @@ pub fn state_after_with_machine(
 impl<'a> Machine<'a> {
     fn new(ir: &'a FunctionIr, setup: &'a Setup<'a>) -> Self {
         let mut machine = Machine {
-            strict: None,
+            strict_memory: None,
             source: None,
             isa: ir.isa,
             convention: &setup.convention,
@@ -152,7 +152,7 @@ impl<'a> Machine<'a> {
             memory: HashMap::new(),
             calls: Vec::new(),
             blocks: &ir.blocks,
-            starts: ir
+            block_indices_by_address: ir
                 .blocks
                 .iter()
                 .enumerate()
@@ -177,7 +177,7 @@ impl<'a> Machine<'a> {
     }
 }
 
-fn visible(memory: &HashMap<u64, u8>, isa: crate::loader::Isa) -> BTreeMap<u64, u8> {
+fn memory_outside_stack(memory: &HashMap<u64, u8>, isa: crate::loader::Isa) -> BTreeMap<u64, u8> {
     let top = stack_top(isa);
     memory
         .iter()
@@ -254,14 +254,14 @@ impl Machine<'_> {
         self.memory
             .get(&addr)
             .copied()
-            .unwrap_or_else(|| match &self.strict {
+            .unwrap_or_else(|| match &self.strict_memory {
                 Some(memory) => memory.byte(addr),
                 None => hash(self.seed, addr) as u8,
             })
     }
 
     fn load(&self, addr: u64, bytes: u8) -> u64 {
-        if let Some(memory) = &self.strict
+        if let Some(memory) = &self.strict_memory
             && !memory.check(addr, u64::from(bytes), /* write */ false)
         {
             return 0;
@@ -272,7 +272,7 @@ impl Machine<'_> {
     }
 
     fn store(&mut self, addr: u64, value: u64, bytes: u8) {
-        if let Some(memory) = &self.strict
+        if let Some(memory) = &self.strict_memory
             && !memory.check(addr, u64::from(bytes), /* write */ true)
         {
             return;
@@ -293,7 +293,7 @@ impl Machine<'_> {
                         Err(reason) => return Err(reason),
                     }
                 }
-                if self.strict.is_some() && *op == super::Operation::Undefined {
+                if self.strict_memory.is_some() && *op == super::Operation::Undefined {
                     return Err("undefined operation result");
                 }
                 if super::semantics::faults(*op, &values) {
@@ -307,7 +307,7 @@ impl Machine<'_> {
                 }
             }
             Expr::Reg { index, width } => {
-                if self.strict.is_some() && !self.registers.contains_key(index) {
+                if self.strict_memory.is_some() && !self.registers.contains_key(index) {
                     return Err("read of an undefined register");
                 }
                 self.register(*index) & mask(u32::from(*width))
@@ -396,7 +396,7 @@ impl Machine<'_> {
 
     /// A branch to a block, or out of the function: a tail call that returns its callee's result.
     fn jump(&mut self, target: u64) -> Flow {
-        match self.starts.get(&target) {
+        match self.block_indices_by_address.get(&target) {
             Some(index) => Flow::Block(*index),
             None => {
                 self.call(Some(target));
@@ -431,7 +431,7 @@ impl Machine<'_> {
         let mut visits: HashMap<u64, u64> = HashMap::new();
         // How often each flag-only branch, by its target, has been decided:
         // the decision depends on that, not on where the branch sits.
-        let mut decided: HashMap<u64, u64> = HashMap::new();
+        let mut branch_decisions_by_target: HashMap<u64, u64> = HashMap::new();
         let mut steps = 0;
         let mut last_was_call = false;
         while let Some(current) = self.blocks.get(block) {
@@ -491,7 +491,7 @@ impl Machine<'_> {
                         }
                     }
                     Stmt::BrifFlags { target, .. } => {
-                        let count = decided.entry(*target).or_insert(0);
+                        let count = branch_decisions_by_target.entry(*target).or_insert(0);
                         *count += 1;
                         if hash(self.seed, *target ^ (*count << 48)) & 1 == 1 {
                             next = match self.jump(*target) {

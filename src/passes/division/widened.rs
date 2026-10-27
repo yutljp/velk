@@ -1,5 +1,5 @@
 use crate::ir::Expr;
-use crate::ir::visit::assign_of;
+use crate::ir::visit::assignment;
 use crate::passes::division::divisor::magic_divisor_signed64;
 use crate::passes::division::leaf_domain;
 use crate::passes::memory::strip_mask;
@@ -16,7 +16,7 @@ fn signed_const(expr: &Expr) -> Option<u64> {
     }
 }
 
-fn def_before(stmts: &[crate::ir::Stmt], before: usize, reg: u16) -> Option<usize> {
+fn definition_before(stmts: &[crate::ir::Stmt], before: usize, reg: u16) -> Option<usize> {
     (0..before).rev().find(|index| {
         matches!(
             &stmts[*index],
@@ -69,7 +69,7 @@ pub(crate) fn widened_signed_site(stmts: &[crate::ir::Stmt]) -> Option<(usize, E
                 return Some(found);
             }
             let reg = view_base(expr)?;
-            let at = def_before(stmts, probe, reg)?;
+            let at = definition_before(stmts, probe, reg)?;
             shift_statement(&stmts[at])
         };
         let (left, right) = (term(lhs), term(rhs));
@@ -102,10 +102,10 @@ pub(crate) fn widened_signed_site(stmts: &[crate::ir::Stmt]) -> Option<(usize, E
             if amount != 31 || view_base(plain)? != shifted_reg {
                 return None;
             }
-            let view_at = def_before(stmts, probe, shifted_reg)?;
-            let (_, view) = assign_of(&stmts[view_at])?;
+            let view_at = definition_before(stmts, probe, shifted_reg)?;
+            let (_, view) = assignment(&stmts[view_at])?;
             let base = view_base(view).unwrap_or(shifted_reg);
-            let high_at = def_before(stmts, view_at, base)?;
+            let high_at = definition_before(stmts, view_at, base)?;
             let (source, high) = shift_statement(&stmts[high_at])?;
             (high >= 32).then_some((source, high, high_at))
         };
@@ -127,8 +127,8 @@ fn widened_product(
     source: u16,
     shift: u64,
 ) -> Option<(Expr, u64)> {
-    let product_at = def_before(stmts, before, source)?;
-    let (_, product) = assign_of(&stmts[product_at])?;
+    let product_at = definition_before(stmts, before, source)?;
+    let (_, product) = assignment(&stmts[product_at])?;
     let (leaf, magic, _) = magic_product(strip_mask(product))?;
     let divisor = magic_divisor_signed64(magic, shift, 32)?;
     Some((leaf, divisor))
@@ -167,14 +167,14 @@ pub(crate) fn magic_product(value: &Expr) -> Option<(Expr, u64, u64)> {
     }
     // The compiler may emit either operand order, and a widening multiply
     // sign-extends the constant it multiplies by.
-    let (leaf, magic_rhs) = if signed_const(rhs).is_some() {
+    let (leaf, magic_operand) = if signed_const(rhs).is_some() {
         (lhs.as_ref(), rhs.as_ref())
     } else if signed_const(lhs).is_some() {
         (rhs.as_ref(), lhs.as_ref())
     } else {
         return None;
     };
-    let Some(magic) = signed_const(magic_rhs) else {
+    let Some(magic) = signed_const(magic_operand) else {
         return None;
     };
     let high_part = matches!(

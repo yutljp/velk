@@ -13,7 +13,7 @@ fn replace_sum(expr: &mut Expr, sum: &Expr, plain: &Expr) -> usize {
     count
 }
 
-fn patterns(bits: u8) -> Vec<(Expr, Expr)> {
+fn identity_examples(bits: u8) -> Vec<(Expr, Expr)> {
     let x = Expr::reg(0, bits);
     let y = Expr::reg(1, bits);
     let and = bin(BinOp::And, x.clone(), y.clone());
@@ -94,7 +94,7 @@ fn smt_linear_and_polynomial_mba() {
     assert!(Proofs::available(), "z3 is required for MBA proofs");
     let mut proofs = Proofs::default();
     for bits in [8, 16, 32, 64] {
-        for (index, (before, expected)) in patterns(bits).into_iter().enumerate() {
+        for (index, (before, expected)) in identity_examples(bits).into_iter().enumerate() {
             let after =
                 replacement(&before, /* preserve_width */ false).expect("the identity simplifies");
             let registers = [Expr::reg(0, bits), Expr::reg(1, bits)];
@@ -109,7 +109,7 @@ fn smt_linear_and_polynomial_mba() {
             if index >= 6 {
                 // The first obligation proves the sum identity. Congruence
                 // replaces its occurrences before proving the ring step.
-                let (sum, plain) = patterns(bits).remove(0);
+                let (sum, plain) = identity_examples(bits).remove(0);
                 let mut arithmetic = before.clone();
                 assert_eq!(
                     replace_sum(&mut arithmetic, &sum, &plain),
@@ -217,15 +217,19 @@ fn rejects_effects_limits_and_incorrect_coefficients() {
             );
             assert!(replacement(&before, /* preserve_width */ false).is_none());
         }
-        let (constant, _) = patterns(bits).remove(5);
+        let (constant, _) = identity_examples(bits).remove(5);
         assert!(
             replacement(&constant, /* preserve_width */ true).is_none(),
             "width-changing constant must remain"
         );
-        let masked = bin(BinOp::And, patterns(bits).remove(0).0, Expr::Const(0xff));
+        let masked = bin(
+            BinOp::And,
+            identity_examples(bits).remove(0).0,
+            Expr::Const(0xff),
+        );
         assert!(replacement(&masked, /* preserve_width */ false).is_none());
     }
-    let mut large = patterns(64).remove(0).0;
+    let mut large = identity_examples(64).remove(0).0;
     for _ in 0..40 {
         large = bin(BinOp::Add, large, Expr::Const(1));
     }
@@ -238,7 +242,7 @@ fn smt_coefficients_shifts_complements_and_width_contexts() {
     let mut proofs = Proofs::default();
     for bits in [8, 16, 32, 64] {
         let registers = [Expr::reg(0, bits), Expr::reg(1, bits), Expr::reg(2, bits)];
-        let sum = patterns(bits).remove(0).0;
+        let sum = identity_examples(bits).remove(0).0;
         for shift in [0, 1, 7, 8, 15, 16, 31, 32, 63, 64, 65, u64::MAX] {
             let before = bin(
                 BinOp::Sub,
@@ -287,7 +291,7 @@ fn smt_coefficients_shifts_complements_and_width_contexts() {
             64,
         );
         for op in [BinOp::Sar, BinOp::DivS, BinOp::ModS] {
-            let before = bin(op, patterns(bits).remove(5).0, Expr::Const(3));
+            let before = bin(op, identity_examples(bits).remove(5).0, Expr::Const(3));
             let mut after = before.clone();
             rewrite(&mut after, /* preserve_width */ false);
             assert_eq!(
@@ -364,7 +368,7 @@ fn smt_negative_controls_have_counterexamples() {
         if bits < 64 {
             let constant = bin(
                 BinOp::Add,
-                patterns(bits).remove(5).0,
+                identity_examples(bits).remove(5).0,
                 Expr::Const((1u64 << (bits - 1)) - 42),
             );
             let before = bin(BinOp::Sar, constant.clone(), Expr::Const(1));

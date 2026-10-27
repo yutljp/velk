@@ -15,7 +15,7 @@ impl Runner<'_> {
         let mut assignments = 0;
         let mut conversions = 0;
         let mut input_failure = false;
-        let pointer = crate::arch::pointer_bytes(self.image.isa);
+        let pointer_bytes = crate::arch::pointer_bytes(self.image.isa);
         while position < format.len() {
             self.tick()?;
             let byte = format[position];
@@ -154,7 +154,7 @@ impl Runner<'_> {
                 }
                 let width = super::formatting::integer_width(
                     length,
-                    pointer,
+                    pointer_bytes,
                     matches!(
                         self.image.format,
                         crate::loader::Format::Pe | crate::loader::Format::Coff
@@ -164,7 +164,7 @@ impl Runner<'_> {
             }
             conversions += 1;
             if !suppress {
-                let destination = args.next(self, pointer)?;
+                let destination = args.next(self, pointer_bytes)?;
                 self.store_bytes(destination, &bytes)?;
                 assignments += 1;
             }

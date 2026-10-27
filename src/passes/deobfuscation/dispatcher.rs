@@ -84,7 +84,7 @@ fn state_register(block: &Block) -> Option<u16> {
         .filter(|register| *register >= crate::ir::VARIABLE_BASE)
 }
 
-fn pure(block: &Block, state: u16) -> bool {
+fn dispatcher_block(block: &Block, state: u16) -> bool {
     block.stmts.is_empty()
         || matches!(block.stmts.as_slice(), [Stmt::Br { target: Some(_) }])
         || state_register(block) == Some(state)
@@ -197,7 +197,7 @@ fn region(ir: &FunctionIr, header: usize, state: u16) -> HashSet<usize> {
     let mut region = HashSet::new();
     let mut pending = vec![header];
     while let Some(at) = pending.pop() {
-        if pure(&ir.blocks[at], state) && region.insert(at) {
+        if dispatcher_block(&ir.blocks[at], state) && region.insert(at) {
             pending.extend(crate::ir::cfg::successors(ir, at));
         }
     }

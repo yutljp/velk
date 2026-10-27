@@ -142,7 +142,9 @@ impl Runner<'_> {
                 self.machine.store(object, token, pointer);
                 for slot in imports {
                     // Import relocation initializes read-only slots before execution.
-                    if let Err(stop) = self.range(slot, u64::from(pointer), /* write */ false) {
+                    if let Err(stop) =
+                        self.check_memory_range(slot, u64::from(pointer), /* write */ false)
+                    {
                         return Err(format!("standard stream import: {stop:?}"));
                     }
                     for (offset, byte) in
@@ -214,7 +216,7 @@ impl Runner<'_> {
 
     fn store_bytes(&mut self, base: u64, bytes: &[u8]) -> Result<(), Stop> {
         // A failed range check or write aborts the whole hook.
-        self.range(base, bytes.len() as u64, /* write */ true)?;
+        self.check_memory_range(base, bytes.len() as u64, /* write */ true)?;
         for (offset, &byte) in bytes.iter().enumerate() {
             self.write_byte(address(base, offset)?, byte)?;
         }
@@ -232,7 +234,7 @@ impl Runner<'_> {
         if self.recovery.is_some() {
             return Err(error("I/O calls require explicit emulation"));
         }
-        let (operation, variadic) = match operation {
+        let (operation, uses_va_list) = match operation {
             Vprintf => (Printf, true),
             Vfprintf => (Fprintf, true),
             Vsprintf => (Sprintf, true),
@@ -243,7 +245,7 @@ impl Runner<'_> {
             operation => (operation, false),
         };
         let mut args = Arguments::new(convention, kind);
-        if !variadic
+        if !uses_va_list
             && self.image.isa == Isa::AArch64
             && self.image.format == crate::loader::Format::MachO
             && matches!(
@@ -255,7 +257,7 @@ impl Runner<'_> {
                 "variadic I/O hooks require the ELF AArch64 calling convention",
             ));
         }
-        let pointer = crate::arch::pointer_bytes(self.image.isa);
+        let pointer_bytes = crate::arch::pointer_bytes(self.image.isa);
         if matches!(operation, Getchar) {
             if let Some(&byte) = self.input.get(self.input_position) {
                 self.input_position += 1;
@@ -263,7 +265,7 @@ impl Runner<'_> {
             }
             return Ok(u64::from(u32::MAX));
         }
-        let first = args.next(self, pointer)?;
+        let first = args.next(self, pointer_bytes)?;
         match operation {
             Printf | Fprintf | Sprintf | Snprintf => {
                 let mut capacity = None;
@@ -272,17 +274,17 @@ impl Runner<'_> {
                     Printf => first,
                     Fprintf => {
                         stream = self.stream(first, /* input */ false)?;
-                        args.next(self, pointer)?
+                        args.next(self, pointer_bytes)?
                     }
-                    Sprintf => args.next(self, pointer)?,
+                    Sprintf => args.next(self, pointer_bytes)?,
                     Snprintf => {
-                        capacity = Some(args.next(self, pointer)?);
-                        args.next(self, pointer)?
+                        capacity = Some(args.next(self, pointer_bytes)?);
+                        args.next(self, pointer_bytes)?
                     }
                     _ => unreachable!(),
                 };
-                if variadic {
-                    let list = args.next(self, pointer)?;
+                if uses_va_list {
+                    let list = args.next(self, pointer_bytes)?;
                     args.set_list(self, list)?;
                 }
                 let format = self.bytes_at(format, None)?;
@@ -306,7 +308,7 @@ impl Runner<'_> {
                     self.bytes_at(first, None)?
                 };
                 let stream = if matches!(operation, Fputs) {
-                    self.stream(args.next(self, pointer)?, /* input */ false)?
+                    self.stream(args.next(self, pointer_bytes)?, /* input */ false)?
                 } else {
                     1
                 };
@@ -326,19 +328,20 @@ impl Runner<'_> {
                     if !matches!(fd, 1 | 2) {
                         return Err(error(format!("unsupported write fd {fd}")));
                     }
-                    let base = args.next(self, pointer)?;
-                    let count = args.next(self, pointer)?;
+                    let base = args.next(self, pointer_bytes)?;
+                    let count = args.next(self, pointer_bytes)?;
                     (base, count, count, fd as usize)
                 } else {
-                    let size = args.next(self, pointer)?;
-                    let count = args.next(self, pointer)?;
-                    let stream = self.stream(args.next(self, pointer)?, /* input */ false)?;
+                    let size = args.next(self, pointer_bytes)?;
+                    let count = args.next(self, pointer_bytes)?;
+                    let stream =
+                        self.stream(args.next(self, pointer_bytes)?, /* input */ false)?;
                     let Some(total) = size.checked_mul(count) else {
                         return Err(error("fwrite size overflows"));
                     };
                     (first, total, if size == 0 { 0 } else { count }, stream)
                 };
-                self.range(base, count, /* write */ false)?;
+                self.check_memory_range(base, count, /* write */ false)?;
                 let bytes = self.bytes_at(base, Some(count as usize))?;
                 self.emit(stream, &bytes)?;
                 Ok(result)
@@ -350,12 +353,16 @@ impl Runner<'_> {
                         if fd != 0 {
                             return Err(error(format!("unsupported read fd {fd}")));
                         }
-                        (args.next(self, pointer)?, args.next(self, pointer)?, 1)
+                        (
+                            args.next(self, pointer_bytes)?,
+                            args.next(self, pointer_bytes)?,
+                            1,
+                        )
                     }
                     Fread => {
-                        let size = args.next(self, pointer)?;
-                        let count = args.next(self, pointer)?;
-                        self.stream(args.next(self, pointer)?, /* input */ true)?;
+                        let size = args.next(self, pointer_bytes)?;
+                        let count = args.next(self, pointer_bytes)?;
+                        self.stream(args.next(self, pointer_bytes)?, /* input */ true)?;
                         let Some(total) = size.checked_mul(count) else {
                             return Err(error("fread size overflows"));
                         };
@@ -363,7 +370,7 @@ impl Runner<'_> {
                     }
                     Fgets => {
                         let limit = args.next(self, 4)? as u32 as i32;
-                        self.stream(args.next(self, pointer)?, /* input */ true)?;
+                        self.stream(args.next(self, pointer_bytes)?, /* input */ true)?;
                         if limit <= 0 {
                             return Ok(0);
                         }
@@ -417,13 +424,13 @@ impl Runner<'_> {
                 let format = if matches!(operation, Scanf) {
                     first
                 } else {
-                    args.next(self, pointer)?
+                    args.next(self, pointer_bytes)?
                 };
                 if matches!(operation, Fscanf) {
                     self.stream(first, /* input */ true)?;
                 }
-                if variadic {
-                    let list = args.next(self, pointer)?;
+                if uses_va_list {
+                    let list = args.next(self, pointer_bytes)?;
                     args.set_list(self, list)?;
                 }
                 let format = self.bytes_at(format, None)?;

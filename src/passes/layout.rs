@@ -73,12 +73,12 @@ pub fn normalize_layout(ir: &mut FunctionIr) {
     for index in 0..ir.blocks.len() {
         let next = ir.blocks.get(index + 1).map(|block| block.start);
         let last = ir.blocks[index].stmts.last().cloned();
-        let last_index = ir.blocks[index].stmts.len();
+        let statement_count = ir.blocks[index].stmts.len();
         match last {
             Some(Stmt::Br {
                 target: Some(target),
             }) if Some(target) == next => {
-                ir.blocks[index].stmts.remove(last_index - 1);
+                ir.blocks[index].stmts.remove(statement_count - 1);
             }
             Some(Stmt::Br { .. }) => {}
             Some(Stmt::Ret { .. }) | Some(Stmt::BrIndirect { .. }) | Some(Stmt::Trap) => {}
