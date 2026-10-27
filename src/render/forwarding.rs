@@ -33,9 +33,12 @@ pub(super) fn render(ir: &FunctionIr, symbols: &Symbols) -> Option<String> {
     if !prototype.variadic {
         return None;
     }
-    let name = symbols.functions.get(&ir.addr).map_or_else(
-        || sanitize(ir.name.as_deref().unwrap_or("function")),
-        |name| sanitize(name),
+    let name = sanitize(
+        symbols
+            .functions
+            .get(&ir.addr)
+            .map(String::as_str)
+            .unwrap_or(ir.name.as_deref().unwrap_or("function")),
     );
     let mut names = Vec::new();
     let mut params = Vec::new();

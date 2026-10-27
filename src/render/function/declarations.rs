@@ -76,7 +76,6 @@ pub(super) fn emit(input: Input<'_>) -> Declarations {
         }
     }
     let mut out = String::new();
-    let mut declared = 0;
     if let Some(plan) = variadic {
         out.push_str(&format!(
             "    va_list {};\n    va_start({}, {});\n",
@@ -87,12 +86,10 @@ pub(super) fn emit(input: Input<'_>) -> Declarations {
                 .map(|param| param.name.as_str())
                 .unwrap_or(&plan.last)
         ));
-        declared += 1;
     }
     if let Some(provider) = stack_provider {
         indent(1, &mut out);
         out.push_str(&format!("uint64_t {stack_name} = {provider}();\n"));
-        declared += 1;
     }
     if let Some(logical) = logical {
         for declaration in logical.declarations() {
@@ -105,7 +102,6 @@ pub(super) fn emit(input: Input<'_>) -> Declarations {
             indent(1, &mut out);
             out.push_str(&declaration);
             out.push('\n');
-            declared += 1;
         }
     }
     if let Some(incoming) = incoming {
@@ -113,13 +109,11 @@ pub(super) fn emit(input: Input<'_>) -> Declarations {
             indent(1, &mut out);
             out.push_str(&declaration);
             out.push('\n');
-            declared += 1;
         }
     }
     for (_, _, provider, snapshot) in segment_bases {
         indent(1, &mut out);
         out.push_str(&format!("uint64_t {snapshot} = {provider}();\n"));
-        declared += 1;
     }
     // A register the body uses beyond the parameters holds what it holds
     // on entry until the body sets it.
@@ -139,19 +133,16 @@ pub(super) fn emit(input: Input<'_>) -> Declarations {
             } else {
                 out.push_str(&format!("uint64_t {name};\n"));
             }
-            declared += 1;
         }
     }
     if let Some(declaration) = shared_call_values {
         indent(1, &mut out);
         out.push_str(declaration);
-        declared += 1;
     }
     for name in &ctx.call_outputs.declarations {
         if variables::mentions(body, name) {
             indent(1, &mut out);
             out.push_str(&format!("uint64_t {name};\n"));
-            declared += 1;
         }
     }
     for group in go_groups {
@@ -166,7 +157,6 @@ pub(super) fn emit(input: Input<'_>) -> Declarations {
                 group.initial.join(", ")
             ));
         }
-        declared += 1;
     }
     for (index, ty) in variable_types {
         if ir.params.iter().any(|param| param.index == *index) {
@@ -199,13 +189,11 @@ pub(super) fn emit(input: Input<'_>) -> Declarations {
             ty
         };
         out.push_str(&format!("{};\n", declaration(ty, &name)));
-        declared += 1;
     }
     for group in vector_groups {
         if variables::mentions(body, &group.name) {
             indent(1, &mut out);
             out.push_str(&format!("struct velk_vector {};\n", group.name));
-            declared += 1;
         }
     }
     for local in decls {
@@ -238,11 +226,7 @@ pub(super) fn emit(input: Input<'_>) -> Declarations {
             local.slot.unsigned_abs()
         ));
     }
-    declared += decls
-        .iter()
-        .filter(|local| local.width != 0 && body.contains(&local.name))
-        .count();
-    if declared > 0 {
+    if !out.is_empty() {
         out.push('\n');
     }
     let candidates = variable_types

@@ -51,7 +51,7 @@ pub(crate) fn float_operand(
             if !value.is_finite() {
                 return bits_float(print(expr, ctx, 64), precision);
             }
-            let text = if value.is_finite() && value == value.trunc() && value.abs() < 1e15 {
+            let text = if value == value.trunc() && value.abs() < 1e15 {
                 format!("{value:.1}")
             } else {
                 format!("{value:e}")

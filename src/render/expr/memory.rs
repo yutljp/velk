@@ -269,8 +269,6 @@ fn global_load(text: String, width: u8, signed: bool, strength: u8) -> Printed {
     }
 }
 
-/// A local read or written whole by name, and through a cast when the access
-/// covers only part of it.
 /// `(uint8_t *)&local + offset` for a sum of the stack pointer, constants
 /// and other terms whose stack part addresses a local.
 pub(crate) fn local_plus_offset(value: &Expr, ctx: &Ctx<'_>) -> Option<String> {
@@ -332,6 +330,8 @@ pub(in crate::render) fn local_offset_integer(value: &Expr, ctx: &Ctx<'_>) -> Op
     ))
 }
 
+/// A local read or written whole by name, and through a cast when the access
+/// covers only part of it.
 pub(crate) fn slot_access(name: &str, width: u8, signed: bool, ctx: &Ctx<'_>) -> String {
     match ctx.local_widths.get(name) {
         Some(declared) if *declared != width => match ctx

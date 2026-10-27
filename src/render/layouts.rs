@@ -71,13 +71,15 @@ pub(super) fn usable(ir: &FunctionIr, definition: &Definition, name: &str) -> bo
             end = next;
             continue;
         }
-        let matches: Vec<_> = fields
+        let mut matches = fields
             .iter()
-            .filter(|field| format!("{};", declaration(&field.ty, &field.name)) == *text)
-            .collect();
-        let [field] = matches.as_slice() else {
+            .filter(|field| format!("{};", declaration(&field.ty, &field.name)) == *text);
+        let Some(field) = matches.next() else {
             return false;
         };
+        if matches.next().is_some() {
+            return false;
+        }
         let width = match &field.ty {
             CType::Pointer(_) => 8,
             ty => match CType::pointer_to(ty.clone()).pointee_size() {

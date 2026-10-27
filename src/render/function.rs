@@ -502,7 +502,7 @@ fn render_with(
     machine_reserved.extend(type_reservations(ir, &variable_types, &locals));
     // Any other machine register the body uses is a variable of its own;
     // Go keeps the running goroutine in r14.
-    let (used_registers, written_registers) = machine_registers(ir, true);
+    let (used_registers, written_registers) = machine_registers(ir);
     let readonly_floats = ir.params.iter()
         .filter(|param| float_entries.contains(&param.index) && !written_registers.contains(&param.index))
         .filter(|param| matches!(&param.ty, CType::Named(name) if name.split_whitespace().all(|word| matches!(word, "const" | "float" | "double"))))
@@ -1753,7 +1753,6 @@ fn physical_float_parameters(ir: &mut FunctionIr) -> std::collections::HashSet<u
 /// The general and vector slots the body reads or writes, except the stack pointer.
 fn machine_registers(
     ir: &FunctionIr,
-    track_writes: bool,
 ) -> (
     std::collections::BTreeSet<u16>,
     std::collections::HashSet<u16>,
@@ -1768,9 +1767,7 @@ fn machine_registers(
     let mut used = std::collections::HashSet::new();
     let mut written = std::collections::HashSet::new();
     for stmt in ir.blocks.iter().flat_map(|block| &block.stmts) {
-        if track_writes {
-            written.extend(crate::ir::visit::statement_registers(stmt).0);
-        }
+        written.extend(crate::ir::visit::statement_registers(stmt).0);
         for value in stmt.operands() {
             crate::ir::visit::expr_reads(value, &mut used);
         }

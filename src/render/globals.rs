@@ -193,13 +193,7 @@ impl Globals {
         } else if self.repeated.contains(&base) || used.names.contains(&name) {
             name = format!("{base}_{address:x}");
         }
-        let candidate = name.clone();
-        let mut suffix = 2;
-        while used.names.contains(&name) {
-            name = format!("{candidate}_{suffix}");
-            suffix += 1;
-        }
-        used.names.insert(name.clone());
+        let name = super::vacant_name(&name, &mut used.names);
         used.view_names
             .entry(address)
             .or_insert_with(|| name.clone());
