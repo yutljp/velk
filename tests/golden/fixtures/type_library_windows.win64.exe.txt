@@ -15,7 +15,7 @@
 /* velk prelude */
 #include <stdint.h>
 
-struct _FILETIME { _Alignas(4) uint32_t dwLowDateTime; uint32_t dwHighDateTime; };
+struct _FILETIME { __attribute__((aligned(4))) uint32_t dwLowDateTime; uint32_t dwHighDateTime; };
 
 struct HKEY__; int32_t (RegCloseKey)(struct HKEY__ *);
 struct _FILETIME; void (GetSystemTimeAsFileTime)(struct _FILETIME *);

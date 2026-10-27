@@ -14,8 +14,8 @@
 == 0x180001000 rect_area
 -- decompile
 /* velk pseudo-C: rect_area @ 0x180001000 */
-struct point { _Alignas(4) int32_t x; int32_t y; };
-struct rect { _Alignas(4) struct point min; struct point max; };
+struct point { __attribute__((aligned(4))) int32_t x; int32_t y; };
+struct rect { __attribute__((aligned(4))) struct point min; struct point max; };
 int32_t rect_area(struct rect *r) {
     return ((uint32_t)r->max.x - r->min.x) * ((uint32_t)r->max.y - r->min.y);
 }
@@ -34,7 +34,7 @@ fn rect_area @ 0x180001000 (size 37)
 -- decompile
 /* velk pseudo-C: record_total @ 0x180001030 */
 struct record {
-    _Alignas(4) int8_t tag;
+    __attribute__((aligned(4))) int8_t tag;
     uint8_t gap_0x1[0x3];
     int32_t value;
     int16_t count;
@@ -73,7 +73,7 @@ fn record_total @ 0x180001030 (size 107)
 == 0x1800010a0 point_add
 -- decompile
 /* velk pseudo-C: point_add @ 0x1800010a0 */
-struct point { _Alignas(4) int32_t x; int32_t y; };
+struct point { __attribute__((aligned(4))) int32_t x; int32_t y; };
 struct point point_add(struct point a, struct point b) {
     struct point result = {0};
     uint32_t a_x = a.x;
@@ -106,7 +106,7 @@ fn point_add @ 0x1800010a0 (size 46)
 -- decompile
 /* velk pseudo-C: big_make @ 0x1800010d0 */
 /* struct: rcx +0x0:uint32_t, +0x4:uint32_t, +0x8:uint32_t, +0xc:uint32_t */
-struct big { _Alignas(4) int32_t a; int32_t b; int32_t c; int32_t d; };
+struct big { __attribute__((aligned(4))) int32_t a; int32_t b; int32_t c; int32_t d; };
 struct big big_make(int32_t seed) {
     struct big result = {0};
     uint64_t seed_bits = (uint32_t)seed;
@@ -137,7 +137,7 @@ fn big_make @ 0x1800010d0 (size 54)
 -- decompile
 /* velk pseudo-C: big_sum @ 0x180001110 */
 /* struct: rcx +0x0:uint32_t */
-struct big { _Alignas(4) int32_t a; int32_t b; int32_t c; int32_t d; };
+struct big { __attribute__((aligned(4))) int32_t a; int32_t b; int32_t c; int32_t d; };
 int32_t big_sum(struct big value) {
     return (uint32_t)value.a + value.b + value.c + value.d;
 }

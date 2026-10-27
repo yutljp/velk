@@ -9,7 +9,12 @@
 == 0x180001000 item_weight
 -- decompile
 /* velk pseudo-C: item_weight @ 0x180001000 */
-struct item { _Alignas(4) int32_t key; int count; short kind; uint8_t gap_0xa[0x2]; };
+struct item {
+    __attribute__((aligned(4))) int32_t key;
+    int count;
+    short kind;
+    uint8_t gap_0xa[0x2];
+};
 int item_weight(struct item *items, int i) {
     int64_t v1 = (int64_t)i * 3;
     return *(int16_t *)((uint8_t *)items + (int64_t)((uint64_t)v1 * 0x4) + 0x8) * *(uint32_t *)((uint8_t *)items + (int64_t)((uint64_t)v1 * 0x4) + 0x4);
@@ -29,7 +34,7 @@ fn item_weight @ 0x180001000 (size 18)
 == 0x180001020 cell_set
 -- decompile
 /* velk pseudo-C: cell_set @ 0x180001020 */
-struct cell { _Alignas(4) int x; int y; int z; };
+struct cell { __attribute__((aligned(4))) int x; int y; int z; };
 void cell_set(struct cell *cells, int32_t i, int v) {
     int64_t v1 = (int64_t)i * 3;
     *(uint32_t *)((uint8_t *)cells + (int64_t)((uint64_t)v1 * 0x4)) = v;
@@ -52,7 +57,12 @@ fn cell_set @ 0x180001020 (size 20)
 == 0x180001040 item_last_key
 -- decompile
 /* velk pseudo-C: item_last_key @ 0x180001040 */
-struct item { _Alignas(4) int32_t key; int count; short kind; uint8_t gap_0xa[0x2]; };
+struct item {
+    __attribute__((aligned(4))) int32_t key;
+    int count;
+    short kind;
+    uint8_t gap_0xa[0x2];
+};
 int32_t item_last_key(struct item *items, int n) {
     int64_t v1;
     int32_t v2;

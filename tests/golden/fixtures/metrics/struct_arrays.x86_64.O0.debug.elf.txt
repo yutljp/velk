@@ -9,7 +9,7 @@
 == 0x2011a0 item_weight
 -- decompile
 /* velk pseudo-C: item_weight @ 0x2011a0 */
-struct item { _Alignas(8) long key; int count; short kind; uint8_t gap_0xe[0x2]; };
+struct item { __attribute__((aligned(8))) long key; int count; short kind; uint8_t gap_0xe[0x2]; };
 int item_weight(struct item *items, int i) {
     return (uint32_t)items[i].kind * items[i].count;
 }
@@ -27,7 +27,7 @@ fn item_weight @ 0x2011a0 (size 51)
 == 0x2011e0 cell_set
 -- decompile
 /* velk pseudo-C: cell_set @ 0x2011e0 */
-struct cell { _Alignas(4) int x; int y; int z; };
+struct cell { __attribute__((aligned(4))) int x; int y; int z; };
 void cell_set(struct cell *cells, long i, int v) {
     cells[i].x = v;
     cells[i].z = (uint32_t)v + 1;
@@ -51,7 +51,7 @@ fn cell_set @ 0x2011e0 (size 55)
 == 0x201220 item_last_key
 -- decompile
 /* velk pseudo-C: item_last_key @ 0x201220 */
-struct item { _Alignas(8) long key; int count; short kind; uint8_t gap_0xe[0x2]; };
+struct item { __attribute__((aligned(8))) long key; int count; short kind; uint8_t gap_0xe[0x2]; };
 long item_last_key(struct item *items, int n) {
     long key; /* [sp-20] */
     int i; /* [sp-24] */

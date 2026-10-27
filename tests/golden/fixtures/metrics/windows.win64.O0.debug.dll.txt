@@ -86,7 +86,11 @@ fn saved_xmm @ 0x180001070 (size 52)
 -- decompile
 /* velk pseudo-C: make_triple @ 0x1800010b0 */
 /* struct: rcx +0x0:uint64_t, +0x8:uint64_t, +0x10:uint64_t */
-struct triple { _Alignas(8) unsigned long long a; unsigned long long b; unsigned long long c; };
+struct triple {
+    __attribute__((aligned(8))) unsigned long long a;
+    unsigned long long b;
+    unsigned long long c;
+};
 struct triple make_triple(unsigned long long value) {
     struct triple result = {0};
 

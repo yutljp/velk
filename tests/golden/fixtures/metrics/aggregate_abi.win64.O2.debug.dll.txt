@@ -21,7 +21,7 @@ struct S1 { uint64_t f_0; uint64_t f_8; };
 /* velk pseudo-C: abi_pair_adjust @ 0x180001000 */
 /* struct: rcx +0x0:uint64_t, +0x8:uint64_t */
 /* struct: rdx +0x0:uint64_t */
-struct abi_pair { _Alignas(8) unsigned long long low; unsigned long long high; };
+struct abi_pair { __attribute__((aligned(8))) unsigned long long low; unsigned long long high; };
 struct abi_pair abi_pair_adjust(struct abi_pair value, unsigned long long tail) {
     struct abi_pair result = {0};
 
@@ -47,7 +47,7 @@ fn abi_pair_adjust @ 0x180001000 (size 21)
 -- decompile
 /* velk pseudo-C: abi_mixed_adjust @ 0x180001020 */
 /* struct: rcx +0x0:uint64_t, +0x8:uint64_t */
-struct abi_mixed { _Alignas(8) double floating; unsigned long long integer; };
+struct abi_mixed { __attribute__((aligned(8))) double floating; unsigned long long integer; };
 struct abi_mixed abi_mixed_adjust(struct abi_mixed value, unsigned long long delta, double bias) {
     struct abi_mixed result = {0};
     uint64_t bias_bits = 0;
@@ -73,7 +73,7 @@ fn abi_mixed_adjust @ 0x180001020 (size 20)
 == 0x180001040 abi_hfa1_adjust
 -- decompile
 /* velk pseudo-C: abi_hfa1_adjust @ 0x180001040 */
-struct abi_hfa1 { _Alignas(8) double a; };
+struct abi_hfa1 { __attribute__((aligned(8))) double a; };
 struct abi_hfa1 abi_hfa1_adjust(struct abi_hfa1 value, double bias) {
     struct abi_hfa1 result = {0};
     uint64_t value_bits = 0;
@@ -102,7 +102,7 @@ fn abi_hfa1_adjust @ 0x180001040 (size 15)
 /* velk pseudo-C: abi_hfa2_adjust @ 0x180001050 */
 /* struct: rcx +0x0:uint64_t, +0x8:uint64_t */
 /* struct: rdx +0x0:uint64_t, +0x8:uint64_t */
-struct abi_hfa2 { _Alignas(8) double a; double b; };
+struct abi_hfa2 { __attribute__((aligned(8))) double a; double b; };
 struct abi_hfa2 abi_hfa2_adjust(struct abi_hfa2 value, double bias) {
     struct abi_hfa2 result = {0};
     uint64_t bias_bits = 0;
@@ -136,7 +136,7 @@ fn abi_hfa2_adjust @ 0x180001050 (size 20)
 /* velk pseudo-C: abi_hfa3_adjust @ 0x180001070 */
 /* struct: rcx +0x0:uint64_t, +0x8:uint64_t, +0x10:uint64_t */
 /* struct: rdx +0x0:uint64_t, +0x8:uint64_t, +0x10:uint64_t */
-struct abi_hfa3 { _Alignas(8) double a; double b; double c; };
+struct abi_hfa3 { __attribute__((aligned(8))) double a; double b; double c; };
 struct abi_hfa3 abi_hfa3_adjust(struct abi_hfa3 value, double bias) {
     struct abi_hfa3 result = {0};
     uint64_t bias_bits = 0;
@@ -172,7 +172,7 @@ fn abi_hfa3_adjust @ 0x180001070 (size 25)
 /* velk pseudo-C: abi_hfa4_adjust @ 0x180001090 */
 /* struct: rcx +0x0:uint64_t, +0x8:uint64_t, +0x10:uint64_t, +0x18:uint64_t */
 /* struct: rdx +0x0:uint64_t, +0x8:uint64_t, +0x10:uint64_t, +0x18:uint64_t */
-struct abi_hfa4 { _Alignas(8) double a; double b; double c; double d; };
+struct abi_hfa4 { __attribute__((aligned(8))) double a; double b; double c; double d; };
 struct abi_hfa4 abi_hfa4_adjust(struct abi_hfa4 value, double bias) {
     struct abi_hfa4 result = {0};
     uint64_t bias_bits = 0;
@@ -247,9 +247,9 @@ fn abi_exhaust_seven @ 0x180001110 (size 132)
 -- decompile
 /* velk pseudo-C: abi_indirect_make @ 0x1800011a0 */
 /* struct: rcx +0x0:uint64_t, +0x8:uint64_t, +0x10:uint64_t */
-struct abi_pair { _Alignas(8) unsigned long long low; unsigned long long high; };
+struct abi_pair { __attribute__((aligned(8))) unsigned long long low; unsigned long long high; };
 struct abi_triple {
-    _Alignas(8) unsigned long long first;
+    __attribute__((aligned(8))) unsigned long long first;
     unsigned long long second;
     unsigned long long third;
 };

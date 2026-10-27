@@ -24,9 +24,9 @@ struct tagSTATSTG;
 struct tagVARIANT;
 union _LARGE_INTEGER;
 union _ULARGE_INTEGER;
-struct IDispatch { _Alignas(4) struct IDispatchVtbl *lpVtbl; };
+struct IDispatch { __attribute__((aligned(4))) struct IDispatchVtbl *lpVtbl; };
 struct IDispatchVtbl {
-    _Alignas(4) int32_t __attribute__((stdcall)) (*QueryInterface)(struct IDispatch *, const struct _GUID *, void **);
+    __attribute__((aligned(4))) int32_t __attribute__((stdcall)) (*QueryInterface)(struct IDispatch *, const struct _GUID *, void **);
     uint32_t __attribute__((stdcall)) (*AddRef)(struct IDispatch *);
     uint32_t __attribute__((stdcall)) (*Release)(struct IDispatch *);
     int32_t __attribute__((stdcall)) (*GetTypeInfoCount)(struct IDispatch *, unsigned int *);
@@ -34,9 +34,9 @@ struct IDispatchVtbl {
     int32_t __attribute__((stdcall)) (*GetIDsOfNames)(struct IDispatch *, const struct _GUID *, unsigned short **, unsigned int, uint32_t, int32_t *);
     int32_t __attribute__((stdcall)) (*Invoke)(struct IDispatch *, int32_t, const struct _GUID *, uint32_t, unsigned short, struct tagDISPPARAMS *, struct tagVARIANT *, struct tagEXCEPINFO *, unsigned int *);
 };
-struct IStream { _Alignas(4) struct IStreamVtbl *lpVtbl; };
+struct IStream { __attribute__((aligned(4))) struct IStreamVtbl *lpVtbl; };
 struct IStreamVtbl {
-    _Alignas(4) int32_t __attribute__((stdcall)) (*QueryInterface)(struct IStream *, const struct _GUID *, void **);
+    __attribute__((aligned(4))) int32_t __attribute__((stdcall)) (*QueryInterface)(struct IStream *, const struct _GUID *, void **);
     uint32_t __attribute__((stdcall)) (*AddRef)(struct IStream *);
     uint32_t __attribute__((stdcall)) (*Release)(struct IStream *);
     int32_t __attribute__((stdcall)) (*Read)(struct IStream *, void *, uint32_t, uint32_t *);
@@ -51,14 +51,14 @@ struct IStreamVtbl {
     int32_t __attribute__((stdcall)) (*Stat)(struct IStream *, struct tagSTATSTG *, uint32_t);
     int32_t __attribute__((stdcall)) (*Clone)(struct IStream *, struct IStream **);
 };
-struct IUnknown { _Alignas(4) struct IUnknownVtbl *lpVtbl; };
+struct IUnknown { __attribute__((aligned(4))) struct IUnknownVtbl *lpVtbl; };
 struct IUnknownVtbl {
-    _Alignas(4) int32_t __attribute__((stdcall)) (*QueryInterface)(struct IUnknown *, const struct _GUID *, void **);
+    __attribute__((aligned(4))) int32_t __attribute__((stdcall)) (*QueryInterface)(struct IUnknown *, const struct _GUID *, void **);
     uint32_t __attribute__((stdcall)) (*AddRef)(struct IUnknown *);
     uint32_t __attribute__((stdcall)) (*Release)(struct IUnknown *);
 };
 struct _GUID {
-    _Alignas(4) uint32_t Data1;
+    __attribute__((aligned(4))) uint32_t Data1;
     unsigned short Data2;
     unsigned short Data3;
     uint8_t gap_0x8[0x8];

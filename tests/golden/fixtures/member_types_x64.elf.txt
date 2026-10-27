@@ -7,9 +7,9 @@
 == 0x201160 read_outer
 -- decompile
 /* velk pseudo-C: read_outer @ 0x201160 */
-struct inner { _Alignas(4) unsigned int head; };
+struct inner { __attribute__((aligned(4))) unsigned int head; };
 struct outer {
-    _Alignas(8) struct inner first;
+    __attribute__((aligned(8))) struct inner first;
     uint8_t gap_0x4[0x4];
     int *next;
     short count;

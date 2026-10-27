@@ -229,17 +229,8 @@ munmap(memory, 0x10000);
 return 0;
 "#
             );
-            // The separate target compile checks the exact 32-bit layout.
-            // Native execution uses the host's 64-bit pointer alignment.
-            let native_code = if arch == "i686" {
-                code.replace("_Alignas(4)", "_Alignas(8)")
-            } else {
-                code.clone()
-            };
             let program = Program {
-                text: format!(
-                    "{HEADER}{native_code}\n{support}\nint main(void) {{ {assertions} }}"
-                ),
+                text: format!("{HEADER}{code}\n{support}\nint main(void) {{ {assertions} }}"),
                 ranges: Vec::new(),
             };
             let scratch = scratch_dir(&format!("com-{arch}-{function}"));

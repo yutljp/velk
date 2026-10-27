@@ -25,7 +25,7 @@
 #include <stdint.h>
 
 struct group {
-    _Alignas(8) char *gr_name;
+    __attribute__((aligned(8))) char *gr_name;
     char *gr_passwd;
     unsigned int gr_gid;
     uint8_t gap_0x14[0x4];

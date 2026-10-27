@@ -1676,7 +1676,7 @@ fn debug_definitions(
                 && !definition.compatible_profiles.is_empty()
                 && let Some(first) = members.first_mut()
             {
-                *first = format!("_Alignas({alignment}) {first}");
+                *first = format!("__attribute__((aligned({alignment}))) {first}");
             }
             let text = defined(&definition.name, &members);
             if definition.name.starts_with("struct go_")

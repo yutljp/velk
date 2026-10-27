@@ -13,7 +13,7 @@ extern uint64_t banner; /* address: 0x2022c0 */
 == 0x201210 point_dot
 -- decompile
 /* velk pseudo-C: point_dot @ 0x201210 */
-struct point { _Alignas(4) int x; int y; };
+struct point { __attribute__((aligned(4))) int x; int y; };
 int point_dot(struct point *a, struct point *b) {
     return (uint32_t)a->x * b->x + (uint32_t)a->y * b->y;
 }

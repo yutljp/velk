@@ -14,8 +14,8 @@
 == 0x201240 rect_area
 -- decompile
 /* velk pseudo-C: rect_area @ 0x201240 */
-struct point { _Alignas(4) int x; int y; };
-struct rect { _Alignas(4) struct point min; struct point max; };
+struct point { __attribute__((aligned(4))) int x; int y; };
+struct rect { __attribute__((aligned(4))) struct point min; struct point max; };
 int rect_area(struct rect *r) {
     return ((uint32_t)r->max.x - r->min.x) * ((uint32_t)r->max.y - r->min.y);
 }
@@ -34,7 +34,7 @@ fn rect_area @ 0x201240 (size 40)
 -- decompile
 /* velk pseudo-C: record_total @ 0x201270 */
 struct record {
-    _Alignas(8) char tag;
+    __attribute__((aligned(8))) char tag;
     uint8_t gap_0x1[0x7];
     long value;
     short count;
@@ -77,7 +77,7 @@ fn record_total @ 0x201270 (size 109)
 == 0x2012e0 point_add
 -- decompile
 /* velk pseudo-C: point_add @ 0x2012e0 */
-struct point { _Alignas(4) int x; int y; };
+struct point { __attribute__((aligned(4))) int x; int y; };
 struct point point_add(struct point a, struct point b) {
     struct point result = {0};
     uint32_t a_x = a.x;
@@ -110,7 +110,7 @@ fn point_add @ 0x2012e0 (size 36)
 -- decompile
 /* velk pseudo-C: big_make @ 0x201310 */
 /* struct: rdi +0x0:uint64_t, +0x8:uint64_t, +0x10:uint64_t, +0x18:uint64_t */
-struct big { _Alignas(8) long a; long b; long c; long d; };
+struct big { __attribute__((aligned(8))) long a; long b; long c; long d; };
 struct big big_make(long seed) {
     struct big result = {0};
     uint64_t seed_bits = seed;
@@ -140,7 +140,7 @@ fn big_make @ 0x201310 (size 52)
 == 0x201350 big_sum
 -- decompile
 /* velk pseudo-C: big_sum @ 0x201350 */
-struct big { _Alignas(8) long a; long b; long c; long d; };
+struct big { __attribute__((aligned(8))) long a; long b; long c; long d; };
 long big_sum(struct big value) {
     return (int64_t)((uint64_t)(int64_t)((uint64_t)(int64_t)((uint64_t)value.a + value.b) + value.c) + value.d);
 }
@@ -159,7 +159,7 @@ fn big_sum @ 0x201350 (size 25)
 == 0x201370 word_low_byte
 -- decompile
 /* velk pseudo-C: word_low_byte @ 0x201370 */
-union word { _Alignas(4) unsigned int u; float f; unsigned char bytes[4]; };
+union word { __attribute__((aligned(4))) unsigned int u; float f; unsigned char bytes[4]; };
 unsigned char word_low_byte(union word w) {
     uint64_t w_bits = 0;
     __builtin_memcpy(&w_bits, &w, 4);
@@ -181,7 +181,7 @@ fn word_low_byte @ 0x201370 (size 13)
 == 0x201380 flags_level
 -- decompile
 /* velk pseudo-C: flags_level @ 0x201380 */
-struct flags { _Alignas(4) uint8_t gap_0x0[0x4]; };
+struct flags { __attribute__((aligned(4))) uint8_t gap_0x0[0x4]; };
 unsigned int flags_level(struct flags f) {
     uint64_t f_bits = 0;
     __builtin_memcpy(&f_bits, &f, 4);
