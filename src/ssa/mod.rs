@@ -254,7 +254,14 @@ pub fn build(ir: &FunctionIr) -> Option<Ssa> {
                         sources.dedup();
                         sources
                     }
-                    _ => reads.difference(&explicit_reads(stmt)).copied().collect(),
+                    _ => {
+                        let explicit = explicit_reads(stmt);
+                        reads
+                            .iter()
+                            .filter(|register| !explicit.contains(register))
+                            .copied()
+                            .collect()
+                    }
                 };
                 let mut implicit: Vec<(u16, u16)> = unnamed
                     .into_iter()
@@ -266,6 +273,8 @@ pub fn build(ir: &FunctionIr) -> Option<Ssa> {
                 }
                 rename_reads(stmt, &mut |register| builder.current(register));
                 let mut defined = Vec::new();
+                let mut writes: Vec<u16> = writes.into_iter().collect();
+                writes.sort_unstable();
                 for register in writes {
                     let value = builder.fresh(register);
                     builder.stacks.entry(register).or_default().push(value);

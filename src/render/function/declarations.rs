@@ -8,6 +8,7 @@ use super::{
 pub(super) struct Input<'a> {
     pub(super) ir: &'a FunctionIr,
     pub(super) ctx: &'a Ctx<'a>,
+    pub(super) mentions: &'a variables::Mentions<'a>,
     pub(super) body: &'a str,
     pub(super) variadic: Option<&'a super::super::variadic::Plan>,
     pub(super) logical: Option<&'a abi::Plan>,
@@ -34,6 +35,7 @@ pub(super) fn emit(input: Input<'_>) -> Declarations {
         ir,
         ctx,
         body,
+        mentions,
         variadic,
         logical,
         incoming,
@@ -95,7 +97,7 @@ pub(super) fn emit(input: Input<'_>) -> Declarations {
         for declaration in logical.declarations() {
             if logical.pointers.iter().any(|binding| {
                 declaration.starts_with(&format!("uint8_t *{} =", binding.name))
-                    && !variables::mentions(body, &binding.name)
+                    && !mentions.contains(&binding.name)
             }) {
                 continue;
             }
@@ -118,7 +120,7 @@ pub(super) fn emit(input: Input<'_>) -> Declarations {
     // A register the body uses beyond the parameters holds what it holds
     // on entry until the body sets it.
     for (index, name) in machine {
-        if variables::mentions(body, name) && !variable_types.contains_key(index) {
+        if mentions.contains(name) && !variable_types.contains_key(index) {
             indent(1, &mut out);
             if float_entries.contains(index) {
                 let param = ir
@@ -140,7 +142,7 @@ pub(super) fn emit(input: Input<'_>) -> Declarations {
         out.push_str(declaration);
     }
     for name in &ctx.call_outputs.declarations {
-        if variables::mentions(body, name) {
+        if mentions.contains(name) {
             indent(1, &mut out);
             out.push_str(&format!("uint64_t {name};\n"));
         }
@@ -176,8 +178,7 @@ pub(super) fn emit(input: Input<'_>) -> Declarations {
         }
         let name = ctx.register(*index, 64);
         // What a landing pad receives is no variable of the function.
-        if matches!(*index, crate::ir::EXCEPTION | crate::ir::SELECTOR)
-            || !variables::mentions(body, &name)
+        if matches!(*index, crate::ir::EXCEPTION | crate::ir::SELECTOR) || !mentions.contains(&name)
         {
             continue;
         }
@@ -191,7 +192,7 @@ pub(super) fn emit(input: Input<'_>) -> Declarations {
         out.push_str(&format!("{};\n", declaration(ty, &name)));
     }
     for group in vector_groups {
-        if variables::mentions(body, &group.name) {
+        if mentions.contains(&group.name) {
             indent(1, &mut out);
             out.push_str(&format!("struct velk_vector {};\n", group.name));
         }

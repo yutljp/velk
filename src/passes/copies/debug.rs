@@ -72,7 +72,7 @@ pub(crate) fn fold_stack_locals(ir: &mut FunctionIr) -> bool {
                                 < i128::from(other.slot) + i128::from(other.size)
                     })
             });
-            let mut sources = Default::default();
+            let mut sources = rustc_hash::FxHashSet::default();
             expr_reads(&value, &mut sources);
             if !integer
                 || !matches!(width, 1 | 2 | 4 | 8)

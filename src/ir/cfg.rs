@@ -189,7 +189,7 @@ pub(crate) fn opaque(block: &Block) -> bool {
 pub(crate) fn live_in(ir: &FunctionIr) -> Vec<HashSet<u16>> {
     let count = ir.blocks.len();
     let registers = registers_used_or_machine(ir);
-    let register_positions: std::collections::HashMap<u16, usize> = registers
+    let register_positions: rustc_hash::FxHashMap<u16, usize> = registers
         .iter()
         .enumerate()
         .map(|(position, register)| (*register, position))

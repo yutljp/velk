@@ -709,7 +709,11 @@ fn store_back(
 }
 
 fn fusion_barrier(stmt: &Stmt, sources: &std::collections::HashSet<u16>) -> bool {
-    if !statement_registers(stmt).0.is_disjoint(sources) {
+    if statement_registers(stmt)
+        .0
+        .iter()
+        .any(|register| sources.contains(register))
+    {
         return true;
     }
     match stmt {

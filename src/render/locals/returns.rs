@@ -123,7 +123,7 @@ fn replace_returns(nodes: &mut [Node], register: u16, bits: u32, value: &Expr) -
                     *returned = value.clone();
                     replaced = true;
                 } else {
-                    let mut reads = Default::default();
+                    let mut reads = rustc_hash::FxHashSet::default();
                     crate::ir::visit::expr_reads(returned, &mut reads);
                     if reads.contains(&register) {
                         return None;
@@ -137,7 +137,7 @@ fn replace_returns(nodes: &mut [Node], register: u16, bits: u32, value: &Expr) -
                 els,
                 ..
             } => {
-                let mut reads = Default::default();
+                let mut reads = rustc_hash::FxHashSet::default();
                 crate::ir::visit::expr_reads(lhs, &mut reads);
                 crate::ir::visit::expr_reads(rhs, &mut reads);
                 if reads.contains(&register) {

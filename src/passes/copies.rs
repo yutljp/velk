@@ -84,7 +84,7 @@ pub fn inline_local_copies(ir: &mut FunctionIr) {
                     redefined = true;
                     break;
                 }
-                if written.intersection(&sources).next().is_some() {
+                if written.iter().any(|register| sources.contains(register)) {
                     clobbered = true;
                     break;
                 }

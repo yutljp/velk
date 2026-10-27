@@ -645,7 +645,7 @@ fn invalidate(stmt: &Stmt, frame: i64, sp: u16, values: &mut Values) {
             values.retain(|(_, _, value)| {
                 let mut reads = HashSet::new();
                 crate::ir::visit::collect_reads(value, &mut reads);
-                reads.is_disjoint(&writes)
+                writes.iter().all(|register| !reads.contains(register))
             });
         }
     }

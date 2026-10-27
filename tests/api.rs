@@ -619,7 +619,7 @@ fn a_timeout_stops_one_function_analysis() {
     let engine = Engine::new().expect("an engine");
     assert_eq!(engine.run(&open, None).error, None);
     let started = std::time::Instant::now();
-    let limited = engine.run(&script, Some(std::time::Duration::from_millis(100)));
+    let limited = engine.run(&script, Some(unlimited_time / 10));
     let limited_time = started.elapsed();
     eprintln!("function decompilation: limited={limited_time:?}, unlimited={unlimited_time:?}");
     assert!(

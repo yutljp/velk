@@ -187,7 +187,7 @@ fn inputs_known(blocks: &[Block], landing_pads: &[(u64, Vec<(u64, u64)>)]) -> bo
 /// aggregate results can use further vector registers.
 fn needed_assignments(
     blocks: &[Block],
-    registers: &[Vec<(HashSet<u16>, HashSet<u16>)>],
+    registers: &[Vec<(rustc_hash::FxHashSet<u16>, rustc_hash::FxHashSet<u16>)>],
     isa: Isa,
     convention: Convention,
 ) -> Vec<Vec<bool>> {

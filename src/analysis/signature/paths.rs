@@ -10,7 +10,10 @@ type Entries = BTreeMap<Vec<(u16, u64)>, HashSet<u16>>;
 /// Keeps boolean assignments separate at joins so a guarded read does not
 /// require an entry value when every path enabling it first writes it.
 /// Exceeding the state budget leaves the ordinary analysis in use.
-pub(super) fn definite_writes(blocks: &[Block], writes: &[Vec<HashSet<u16>>]) -> Option<Writes> {
+pub(super) fn definite_writes(
+    blocks: &[Block],
+    writes: &[Vec<rustc_hash::FxHashSet<u16>>],
+) -> Option<Writes> {
     let mut guards = HashSet::new();
     for stmt in blocks.iter().flat_map(|block| &block.stmts) {
         if let Stmt::Assign {

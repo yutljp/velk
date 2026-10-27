@@ -840,7 +840,7 @@ impl Stmt {
                 through,
                 ..
             } => {
-                let mut addressing = std::collections::HashSet::new();
+                let mut addressing = rustc_hash::FxHashSet::default();
                 if let Some(through) = through {
                     crate::ir::visit::collect_reads(through, &mut addressing);
                 }

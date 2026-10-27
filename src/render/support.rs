@@ -1,14 +1,15 @@
 //! Headers and type declarations required by standalone output.
 
-use super::function::code_mentions;
+use super::function::code_names;
 
 pub(super) fn definitions(code: &str) -> String {
+    let names_in_code: rustc_hash::FxHashSet<&str> = code_names(code).collect();
     let mut definitions = String::from("#include <stdint.h>\n\n");
     for (names, header) in [
         (&["bool", "true", "false"][..], "stdbool.h"),
         (&["size_t", "ptrdiff_t", "NULL", "wchar_t"][..], "stddef.h"),
     ] {
-        if names.iter().any(|name| code_mentions(code, name)) {
+        if names.iter().any(|name| names_in_code.contains(name)) {
             definitions.push_str(&format!("#include <{header}>\n\n"));
         }
     }
@@ -23,12 +24,12 @@ pub(super) fn definitions(code: &str) -> String {
         "fabs",
         "fabsf",
     ] {
-        if code_mentions(code, name) {
+        if names_in_code.contains(name) {
             definitions.push_str("#include <math.h>\n\n");
             break;
         }
     }
-    if code_mentions(code, "FILE") && !code.contains("#include <wchar.h>") {
+    if names_in_code.contains("FILE") && !code.contains("#include <wchar.h>") {
         definitions.push_str("#include <stdio.h>\n\n");
     }
     for (name, definition) in [
@@ -51,7 +52,7 @@ pub(super) fn definitions(code: &str) -> String {
         ("ssize_t", "typedef intptr_t ssize_t;"),
         ("off_t", "typedef int64_t off_t;"),
     ] {
-        if code_mentions(code, name) {
+        if names_in_code.contains(name) {
             definitions.push_str(&format!("{definition}\n\n"));
         }
     }

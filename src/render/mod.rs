@@ -406,15 +406,15 @@ fn without_parameters(name: &str) -> &str {
 }
 
 pub(crate) fn sanitize(name: &str) -> String {
-    name.chars()
-        .map(|c| {
-            if c.is_ascii_alphanumeric() || c == '_' {
-                c
-            } else {
-                '_'
-            }
-        })
-        .collect()
+    let mut sanitized = String::with_capacity(name.len());
+    for c in name.chars() {
+        sanitized.push(if c.is_ascii_alphanumeric() || c == '_' {
+            c
+        } else {
+            '_'
+        });
+    }
+    sanitized
 }
 
 #[cfg(test)]

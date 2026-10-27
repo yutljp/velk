@@ -19,7 +19,15 @@ impl Registers {
     }
 
     pub fn iter(self) -> impl Iterator<Item = u16> {
-        (0..128).filter(move |index| self.contains(*index))
+        let mut bits = self.0;
+        std::iter::from_fn(move || {
+            if bits == 0 {
+                return None;
+            }
+            let index = bits.trailing_zeros() as u16;
+            bits &= bits - 1;
+            Some(index)
+        })
     }
 }
 
@@ -227,5 +235,20 @@ pub fn reg_name(isa: Isa, index: u16, width: u8) -> String {
             _ => format!("r{index}"),
         },
         Isa::Unsupported => format!("reg{index}"),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::Registers;
+
+    #[test]
+    fn iterates_set_bits_in_order() {
+        assert!(Registers::default().iter().next().is_none());
+        let mut registers = Registers::default();
+        for index in [127, 0, 64, 63, 127, 128, u16::MAX] {
+            registers.insert(index);
+        }
+        assert_eq!(registers.iter().collect::<Vec<_>>(), [0, 63, 64, 127]);
     }
 }

@@ -272,7 +272,7 @@ fn sink_copied_definitions(
         let movable = stmts[definition + 1..copy].iter().all(|stmt| {
             let (writes, read) = statement_registers(stmt);
             !read.contains(&source)
-                && writes.is_disjoint(&reads)
+                && writes.iter().all(|register| !reads.contains(register))
                 && !(loads && matches!(stmt, Stmt::Store { .. } | Stmt::Call { .. }))
         });
         if movable && definition + 1 < copy {

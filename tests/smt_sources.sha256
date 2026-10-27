@@ -1,7 +1,7 @@
 27f033782776255df34fc058285a688aecfe2c8d7dcab734f53e3583a3837c8a  src/analysis/indirect.rs	(BinOp::And, value, Value::Const(0xffff_ffff, _))
 c99b592843571a9975aeaddbb3b4de9e4c14eb1cddfe75cc0b40428ebc63beb3  src/analysis/indirect.rs	fn pointer_value(
 45e071b2927704028ba25f7951198442479efc5f46c770213e69db2427609aa4  src/analysis/pairs32.rs	fn narrow_parameter_loads(
-e83a7bc69e7bc5bbf94f59ca354ba7032a09d8c83cbbbd8fc64c9d8a36eae149  src/analysis/signature/paths.rs	pub(super) fn definite_writes(
+12eb66b021648af2e01e6c881b6bfebdadbfb0a7acf73c6feece9fb4a013d72a  src/analysis/signature/paths.rs	pub(super) fn definite_writes(
 71c6d88d08c29bc422579026a418bccf936e7b6566b9d50c35b6fb189ac2fb64  src/analysis/structures.rs	fn rewrite(
 614640da82c7164dcd1e11a96fa4404941f208170a0b0796344169283f77abf3  src/analysis/structures.rs	pub(super) fn layout_with_size(
 6939bd7b68d56ee1a758705aca8089a28d07c3ea4ee44f21d1d53939834632cf  src/analysis/structures/pointers.rs	pub(super) fn normalize(
@@ -43,7 +43,7 @@ cfccb053d4c55496499be985b667e23d26570c78ab688d0a1cec9299076a0c7f  src/lift/pairs
 3560e55deb042850841ede78bc28b3ade459f7e331cc78f8f15aabe21b4713da  src/lift/x86_64.rs	if target == ins.next_ip() || return_register.is_some()
 7551eca718c573b210e8be8ea22c8fd42544212283ca70ebcfdb5fc9795b01a5  src/lift/x86_64/operands.rs	pub(super) fn write_operand(
 fc2bfecc7d3cb4cd750913e3f859e8fcb6e76f2cfcd3e40cb52ee1174841765f  src/passes/copies.rs	fn copy_propagate_block(
-4351cc23fb2b4b7cc748900fc2066862abd06e2c625c3e5e0a001b96ce49a744  src/passes/copies.rs	pub fn inline_local_copies(
+ae8391c4b49b0e67c90b3b2da8bccc6f9a274062086519869f04014b33cc6809  src/passes/copies.rs	pub fn inline_local_copies(
 dfb8f512c6b6517fdfb4db495e878c954d8baad061290a50e7a2cd8326eecff9  src/passes/copies.rs	pub(crate) fn comparison_preserved(
 90b7743163cdf4392ece0568909b107a63ed935fc8d257c2bba6a40d9a066a9e  src/passes/copies.rs	pub(crate) fn substitute_register_in_expression(
 c48d01d154be4351cfc5f749b6e6697a1bb7199f9cc51b611fc63037d9fe9105  src/passes/copies.rs	pub(crate) fn truncated(
@@ -118,7 +118,7 @@ face9a368d9b9d8c539bed5fbba70ee0fbf97c959bc1ca5824eddf1e38bb1460  src/render/int
 6e649d6d6ef3f2c96c46c6dddad20aff5350673dc77f3021d105ac6665f38b58  src/render/locals.rs	pub(super) fn stack_locals_with_roles(
 757327de648c2f687f7533ed35432c1f479452d63c222fd03091e0af9b411fea  src/render/locals/copies.rs	pub(super) fn fold(
 226cb7f228570597b7fa95535758341fbf527ad3ddf9b34a733e58e84bfa9c26  src/render/locals/indexed.rs	pub(super) fn offsets_frame_pointer(
-84c0748d6bda7543b78ae4fa00877a37545f595ddbf08417076989e91be95668  src/render/locals/returns.rs	fn replace_returns(
+95872dc65f90f0207f519bfa202cc1154177288c79607c6638dfa603bfb73c5d  src/render/locals/returns.rs	fn replace_returns(
 b3edc629dd38eecbf0efeb78b0c444e93b264dab40a97bfe06e942fd9d5ecfe1  src/render/locals/values.rs	pub(in crate::render) fn fold(
 dac402149d5e5232a83d33659175898e752f2c11d9ee76dd4264d5950b713235  src/render/params.rs	fn drop_unused_parameter_outputs(
 ccdb48908c504c913982c58b95184f13cc89a5f75486f71ad1ab25c1d48217b9  src/render/params.rs	fn replace_loads(

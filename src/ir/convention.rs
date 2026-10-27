@@ -123,7 +123,7 @@ impl Convention {
     /// With `floats_named`, the floating-point arguments are named apart.
     #[must_use]
     pub fn call_reads_through(self, through: Option<&Expr>, floats_named: bool) -> Vec<u16> {
-        let mut addressing = std::collections::HashSet::new();
+        let mut addressing = rustc_hash::FxHashSet::default();
         if let Some(through) = through {
             crate::ir::visit::collect_reads(through, &mut addressing);
         }

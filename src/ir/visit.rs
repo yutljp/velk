@@ -1,3 +1,5 @@
+use rustc_hash::FxHashSet;
+
 use crate::ir::{BinOp, Expr, Stmt};
 
 /// The ordered terms of a sum, splitting subtraction only of constants.
@@ -107,7 +109,10 @@ pub(crate) fn expr_width(expr: &Expr) -> Option<u8> {
     }
 }
 
-pub fn collect_reads(expr: &Expr, out: &mut std::collections::HashSet<u16>) {
+pub fn collect_reads<S: std::hash::BuildHasher>(
+    expr: &Expr,
+    out: &mut std::collections::HashSet<u16, S>,
+) {
     match expr {
         Expr::Reg { index, .. } => {
             out.insert(*index);
@@ -223,7 +228,7 @@ pub fn substitute_values(expr: Expr, values: &[(u16, Expr)]) -> Expr {
 }
 
 #[must_use]
-pub fn statement_reads(stmt: &Stmt) -> std::collections::HashSet<u16> {
+pub fn statement_reads(stmt: &Stmt) -> FxHashSet<u16> {
     statement_registers(stmt).1
 }
 
@@ -236,8 +241,8 @@ pub fn statement_destinations_mut(stmt: &mut Stmt) -> Vec<&mut super::RegRef> {
     }
 }
 
-pub(crate) fn statement_writes(stmt: &Stmt) -> std::collections::HashSet<u16> {
-    let mut writes = std::collections::HashSet::new();
+pub(crate) fn statement_writes(stmt: &Stmt) -> FxHashSet<u16> {
+    let mut writes = FxHashSet::default();
     match stmt {
         Stmt::Machine { outputs, .. } => writes.extend(outputs.iter().map(|dest| dest.index)),
         Stmt::Assign { dest, .. } => {
@@ -262,14 +267,9 @@ pub(crate) fn statement_writes(stmt: &Stmt) -> std::collections::HashSet<u16> {
     writes
 }
 
-pub(crate) fn statement_registers(
-    stmt: &Stmt,
-) -> (
-    std::collections::HashSet<u16>,
-    std::collections::HashSet<u16>,
-) {
+pub(crate) fn statement_registers(stmt: &Stmt) -> (FxHashSet<u16>, FxHashSet<u16>) {
     let writes = statement_writes(stmt);
-    let mut reads = std::collections::HashSet::new();
+    let mut reads = FxHashSet::default();
     match stmt {
         Stmt::Machine { inputs, .. } => {
             for input in inputs {
@@ -311,7 +311,7 @@ pub(crate) fn statement_registers(
 /// The temporaries no statement and no annotation of the function names,
 /// nor any with a fixed role, in ascending order.
 pub(crate) fn unused_temporaries(ir: &super::FunctionIr) -> Vec<u16> {
-    let mut used = std::collections::HashSet::new();
+    let mut used = FxHashSet::default();
     used.extend(super::FLAG_OPERANDS);
     used.extend(super::FLAG_CARRIED);
     used.extend([
@@ -343,7 +343,10 @@ pub(crate) fn unused_temporaries(ir: &super::FunctionIr) -> Vec<u16> {
         .collect()
 }
 
-pub(crate) fn expr_reads(expr: &Expr, reads: &mut std::collections::HashSet<u16>) {
+pub(crate) fn expr_reads<S: std::hash::BuildHasher>(
+    expr: &Expr,
+    reads: &mut std::collections::HashSet<u16, S>,
+) {
     collect_reads(expr, reads);
 }
 
@@ -366,6 +369,29 @@ mod tests {
     use super::*;
     use crate::ir::{BinOp, Cond, Operation, Precision};
     use std::collections::HashSet;
+
+    #[test]
+    fn statement_sets_preserve_temporary_and_ssa_indices() {
+        for index in [
+            0,
+            127,
+            128,
+            crate::ir::TEMP_BASE,
+            crate::ir::VARIABLE_BASE,
+            crate::ir::VALUE_BASE,
+            u16::MAX,
+        ] {
+            let stmt = Stmt::Assign {
+                dest: crate::ir::RegRef { index, width: 64 },
+                value: Expr::reg(index, 64),
+            };
+            let (writes, reads) = statement_registers(&stmt);
+            assert_eq!(writes.len(), 1);
+            assert_eq!(reads.len(), 1);
+            assert!(writes.contains(&index));
+            assert!(reads.contains(&index));
+        }
+    }
 
     #[test]
     fn sum_terms_preserve_order_signs_and_unsplit_expressions() {

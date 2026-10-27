@@ -1113,10 +1113,6 @@ fn render_with(
         &vector_groups,
     );
     let shared_call_values = ctx.call_outputs.shared_declaration(&mut body);
-    let segment_bases: Vec<_> = segment_bases
-        .iter()
-        .filter(|(_, _, _, snapshot)| code_mentions(&body, snapshot))
-        .collect();
     // A function whose address the body takes is declared ahead of it,
     // with no type known for it.
     let own = sanitize(&name);
@@ -1124,10 +1120,16 @@ fn render_with(
     if matches!(ir.isa, crate::loader::Isa::I386 | crate::loader::Isa::Arm32) {
         super::frame_registers::drop_unused_adjustments(&mut body, &stack_name);
     }
+    let mentions = variables::Mentions::new(&body);
+    let code_names: rustc_hash::FxHashSet<&str> = code_names(&body).collect();
+    let segment_bases: Vec<_> = segment_bases
+        .iter()
+        .filter(|(_, _, _, snapshot)| code_names.contains(snapshot.as_str()))
+        .collect();
     let stack_provider = (!ctx.names.contains_key(&stack_pointer(ir.isa))
-        && variables::mentions(&body, &stack_name))
+        && mentions.contains(&stack_name))
     .then(|| vacant_name("velk_entry_stack_pointer", &mut call_reserved));
-    let mut call_returns: HashMap<String, &CType> = HashMap::new();
+    let mut call_returns: rustc_hash::FxHashMap<String, &CType> = rustc_hash::FxHashMap::default();
     for (address, ty) in &symbols.import_returns {
         if let Some(name) = symbols.import_name(address) {
             call_returns.insert(sanitize(name), ty);
@@ -1150,7 +1152,7 @@ fn render_with(
                 .functions
                 .get(target)
                 .map_or_else(|| format!("sub_{target:x}"), |name| sanitize(name));
-            if callee == own || !variables::mentions(&body, &callee) {
+            if callee == own || !mentions.contains(&callee) {
                 return None;
             }
             let params = if signature.params.is_empty() {
@@ -1172,9 +1174,7 @@ fn render_with(
         Some(crate::loader::Format::Elf | crate::loader::Format::Pe | crate::loader::Format::Coff)
     ) {
         for (callee, prototype) in &symbols.library_prototypes {
-            if callee == &own
-                || declared_callees.contains_key(callee)
-                || !variables::mentions(&body, callee)
+            if callee == &own || declared_callees.contains_key(callee) || !mentions.contains(callee)
             {
                 continue;
             }
@@ -1182,7 +1182,9 @@ fn render_with(
         }
     }
     for callee in ctx.taken.borrow().iter() {
-        if callee == &own || declared_callees.contains_key(callee) || !code_mentions(&body, callee)
+        if callee == &own
+            || declared_callees.contains_key(callee)
+            || !code_names.contains(callee.as_str())
         {
             continue;
         }
@@ -1204,7 +1206,9 @@ fn render_with(
         .borrow()
         .iter()
         .filter(|taken| {
-            **taken != own && !declared_callees.contains_key(*taken) && code_mentions(&body, taken)
+            **taken != own
+                && !declared_callees.contains_key(*taken)
+                && code_names.contains(taken.as_str())
         })
         .map(|taken| {
             if body.contains(&format!("{taken}(")) {
@@ -1226,21 +1230,21 @@ fn render_with(
         ));
     }
     for (_, _, provider) in &exception_providers {
-        if code_mentions(&body, provider) {
+        if code_names.contains(provider.as_str()) {
             prototypes.push_str(&format!("uint64_t {provider}(void);\n"));
         }
     }
     let provider = &ctx.call_outputs.dynamic_target;
-    if !provider.is_empty() && code_mentions(&body, provider) {
+    if !provider.is_empty() && code_names.contains(provider.as_str()) {
         prototypes.push_str(&format!("uint64_t {provider}(void);\n"));
     }
-    if code_mentions(&body, &ctx.jump_provider) {
+    if code_names.contains(ctx.jump_provider.as_str()) {
         prototypes.push_str(&format!("uint64_t {}(uint64_t);\n", ctx.jump_provider));
     }
     for (_, _, provider, _) in &segment_bases {
         prototypes.push_str(&format!("uint64_t {provider}(void);\n"));
     }
-    if let Some(provider) = return_slot.filter(|provider| code_mentions(&body, provider)) {
+    if let Some(provider) = return_slot.filter(|provider| code_names.contains(provider.as_str())) {
         prototypes.push_str(&format!(
             "uint64_t *{provider}(void); /* target frame's return-address slot */\n"
         ));
@@ -1258,6 +1262,7 @@ fn render_with(
         ir,
         ctx: &ctx,
         body: &body,
+        mentions: &mentions,
         variadic,
         logical,
         incoming,
@@ -1300,7 +1305,7 @@ fn render_with(
     out.insert_str(definitions_at, &debug);
     if vector_groups
         .iter()
-        .any(|group| variables::mentions(&body, &group.name))
+        .any(|group| mentions.contains(&group.name))
     {
         out.insert_str(
             0,
@@ -1481,53 +1486,60 @@ pub(super) fn vacant_name(base: &str, reserved: &mut std::collections::HashSet<S
 }
 
 pub(super) fn code_mentions(text: &str, name: &str) -> bool {
+    code_names(text).any(|identifier| identifier == name)
+}
+
+pub(super) fn code_names(text: &str) -> impl Iterator<Item = &str> {
     let bytes = text.as_bytes();
     let mut at = 0;
     let mut member = false;
-    while at < bytes.len() {
-        if bytes[at..].starts_with(b"//") {
-            while at < bytes.len() && bytes[at] != b'\n' {
-                at += 1;
-            }
-        } else if bytes[at..].starts_with(b"/*") {
-            at += 2;
-            while at < bytes.len() && !bytes[at..].starts_with(b"*/") {
-                at += 1;
-            }
-            at = (at + 2).min(bytes.len());
-        } else if matches!(bytes[at], b'\'' | b'"') {
-            member = false;
-            let quote = bytes[at];
-            at += 1;
-            while at < bytes.len() {
-                let next = bytes[at];
-                at += 1;
-                if next == b'\\' {
-                    at = (at + 1).min(bytes.len());
-                } else if next == quote {
-                    break;
+    std::iter::from_fn(move || {
+        while at < bytes.len() {
+            if bytes[at..].starts_with(b"//") {
+                while at < bytes.len() && bytes[at] != b'\n' {
+                    at += 1;
                 }
-            }
-        } else if bytes[at..].starts_with(b"->") {
-            member = true;
-            at += 2;
-        } else if bytes[at].is_ascii_alphabetic() || bytes[at] == b'_' {
-            let start = at;
-            while at < bytes.len() && (bytes[at].is_ascii_alphanumeric() || bytes[at] == b'_') {
+            } else if bytes[at..].starts_with(b"/*") {
+                at += 2;
+                while at < bytes.len() && !bytes[at..].starts_with(b"*/") {
+                    at += 1;
+                }
+                at = (at + 2).min(bytes.len());
+            } else if matches!(bytes[at], b'\'' | b'"') {
+                member = false;
+                let quote = bytes[at];
+                at += 1;
+                while at < bytes.len() {
+                    let next = bytes[at];
+                    at += 1;
+                    if next == b'\\' {
+                        at = (at + 1).min(bytes.len());
+                    } else if next == quote {
+                        break;
+                    }
+                }
+            } else if bytes[at..].starts_with(b"->") {
+                member = true;
+                at += 2;
+            } else if bytes[at].is_ascii_alphabetic() || bytes[at] == b'_' {
+                let start = at;
+                while at < bytes.len() && (bytes[at].is_ascii_alphanumeric() || bytes[at] == b'_') {
+                    at += 1;
+                }
+                let is_member = member;
+                member = false;
+                if !is_member {
+                    return Some(&text[start..at]);
+                }
+            } else {
+                if !bytes[at].is_ascii_whitespace() {
+                    member = bytes[at] == b'.';
+                }
                 at += 1;
             }
-            if !member && &text[start..at] == name {
-                return true;
-            }
-            member = false;
-        } else {
-            if !bytes[at].is_ascii_whitespace() {
-                member = bytes[at] == b'.';
-            }
-            at += 1;
         }
-    }
-    false
+        None
+    })
 }
 
 /// A structure's definition: on one line when short, else a member a line.

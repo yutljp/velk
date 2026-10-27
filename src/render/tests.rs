@@ -2828,3 +2828,34 @@ fn walked_frame_object_offsets_preserve_symbolic_addresses() {
         proofs.check();
     }
 }
+
+#[test]
+fn indexed_mentions_preserve_word_boundaries_and_code_context() {
+    for text in [
+        "",
+        "abc abc_ abc1 1abc",
+        "πabc雪 _abc abc_",
+        "/* abc */ \"abc\" 'abc' // abc\n",
+        "p-> /* comment */ abc + q. abc; abc()",
+        "/* unterminated abc",
+        "\"unterminated abc",
+    ] {
+        let words = super::variables::Mentions::new(text);
+        let code: rustc_hash::FxHashSet<&str> = super::function::code_names(text).collect();
+        for name in [
+            "", "abc", "abc_", "abc1", "1abc", "_abc", "π", "abc雪", "p->", "abc()",
+        ] {
+            assert_eq!(
+                words.contains(name),
+                super::variables::mentions(text, name),
+                "{text:?} {name:?}"
+            );
+            assert_eq!(
+                code.contains(name),
+                super::code_mentions(text, name),
+                "{text:?} {name:?}"
+            );
+        }
+    }
+    assert_eq!(super::sanitize("name::π雪.1"), "name_____1");
+}

@@ -487,7 +487,12 @@ pub fn origins(ir: &FunctionIr) -> Vec<serde_json::Value> {
     let mut seen = HashSet::new();
     for block in &ir.blocks {
         for (statement, stmt) in block.stmts.iter().enumerate() {
-            for index in crate::ir::visit::statement_registers(stmt).0 {
+            let mut written: Vec<u16> = crate::ir::visit::statement_registers(stmt)
+                .0
+                .into_iter()
+                .collect();
+            written.sort_unstable();
+            for index in written {
                 if !seen.insert(index) || ir.params.iter().any(|p| p.index == index) {
                     continue;
                 }

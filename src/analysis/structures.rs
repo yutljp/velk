@@ -934,7 +934,10 @@ fn inline_indexes(ir: &FunctionIr, param: u16, direct: bool) -> Option<Vec<crate
         let memory = crate::passes::copies::reads_memory(index);
         if at == block && used > position {
             return blocks[at].stmts[position + 1..used].iter().all(|stmt| {
-                reads.is_disjoint(&crate::ir::visit::statement_registers(stmt).0)
+                crate::ir::visit::statement_registers(stmt)
+                    .0
+                    .iter()
+                    .all(|register| !reads.contains(register))
                     && !(memory
                         && matches!(
                             stmt,

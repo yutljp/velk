@@ -831,3 +831,30 @@ pub(crate) fn mentions(text: &str, name: &str) -> bool {
             && !text[at + name.len()..].chars().next().is_some_and(word)
     })
 }
+
+/// Whole words borrowed from a rendered body, including comments and literals.
+pub(super) struct Mentions<'a> {
+    text: &'a str,
+    words: rustc_hash::FxHashSet<&'a str>,
+}
+
+impl<'a> Mentions<'a> {
+    pub(super) fn new(text: &'a str) -> Self {
+        let words = text
+            .split(|c: char| !c.is_ascii_alphanumeric() && c != '_')
+            .collect();
+        Self { text, words }
+    }
+
+    pub(super) fn contains(&self, name: &str) -> bool {
+        if !name.is_empty()
+            && name
+                .bytes()
+                .all(|byte| byte.is_ascii_alphanumeric() || byte == b'_')
+        {
+            self.words.contains(name)
+        } else {
+            mentions(self.text, name)
+        }
+    }
+}
