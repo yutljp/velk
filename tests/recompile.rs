@@ -5611,10 +5611,9 @@ fn integer(ty: &CType) -> bool {
         CType::Int { .. } => true,
         CType::Named(name) => {
             !name.contains(['*', '[', '(']) && {
-                let words: Vec<&str> = name.split_whitespace().collect();
-                !["float", "double", "struct", "union", "class"]
-                    .iter()
-                    .any(|word| words.contains(word))
+                !name
+                    .split_whitespace()
+                    .any(|word| ["float", "double", "struct", "union", "class"].contains(&word))
             }
         }
         CType::Void | CType::Pointer(_) | CType::Array(_) | CType::Function { .. } => false,

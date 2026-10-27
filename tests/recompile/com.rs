@@ -1,5 +1,13 @@
 use super::*;
 
+fn fixture_symbol(arch: &str, function: &str) -> String {
+    if arch == "i686" {
+        format!("_{function}")
+    } else {
+        function.to_owned()
+    }
+}
+
 #[test]
 fn com_method_printing_refuses_unsupported_uses_and_preserves_saved_tables() {
     let mut binary = Binary::open(&common::fixtures_dir().join("com_x86_64.dll")).unwrap();
@@ -85,11 +93,7 @@ fn named_guid_bytes_compile_and_preserve_the_stored_values() {
             );
             let bytes: Vec<_> = guid.bytes.iter().map(ToString::to_string).collect();
             let support = format!("const uint8_t {identifier}[16] = {{{}}};", bytes.join(", "));
-            let name = if arch == "i686" {
-                format!("_{function}")
-            } else {
-                function.to_owned()
-            };
+            let name = fixture_symbol(arch, function);
             let assertions = format!(
                 "const uint8_t *actual = (const uint8_t *){name}(); const uint8_t expected[16] = {{{}}}; for (unsigned i = 0; i < 16; ++i) if (actual[i] != expected[i]) return 1; return 0;",
                 bytes.join(", ")
@@ -201,11 +205,7 @@ static {} __attribute__(({attribute})) callback({}) {{
                 signature.return_type,
                 params.join(", ")
             );
-            let name = if arch == "i686" {
-                format!("_{function}")
-            } else {
-                function.to_owned()
-            };
+            let name = fixture_symbol(arch, function);
             let assertions = format!(
                 r#"
 unsigned char *memory = mmap((void *)0x10000000, 0x10000, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANON | MAP_FIXED, -1, 0);
@@ -249,6 +249,7 @@ return 0;
                     String::from_utf8_lossy(&output.stderr)
                 );
             }
+            std::fs::remove_dir_all(scratch).ok();
         }
     }
 }
@@ -291,4 +292,5 @@ fn every_com_fixture_function_compiles_for_its_windows_target() {
             );
         }
     }
+    std::fs::remove_dir_all(scratch).ok();
 }

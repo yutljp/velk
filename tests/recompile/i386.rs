@@ -1,14 +1,18 @@
 use super::*;
 
-#[test]
-fn i386_fixture_functions_match_reference_values() {
-    let fixtures: Vec<_> = common::fixtures()
+fn i386_fixtures() -> Vec<std::path::PathBuf> {
+    common::fixtures()
         .into_iter()
         .filter(|path| {
             let name = path.to_string_lossy();
             name.contains(".i386.") || name.contains(".win32.")
         })
-        .collect();
+        .collect()
+}
+
+#[test]
+fn i386_fixture_functions_match_reference_values() {
+    let fixtures = i386_fixtures();
     for fixture in &fixtures {
         let mut binary = Binary::open(&common::fixtures_dir().join(fixture)).unwrap();
         let name = fixture.to_string_lossy();
@@ -60,13 +64,7 @@ fn i386_fixture_functions_match_reference_values() {
 
 #[test]
 fn i386_every_fixture_function_compiles() {
-    let fixtures: Vec<_> = common::fixtures()
-        .into_iter()
-        .filter(|path| {
-            let name = path.to_string_lossy();
-            name.contains(".i386.") || name.contains(".win32.")
-        })
-        .collect();
+    let fixtures = i386_fixtures();
     syntax::scan(&fixtures, "i386-syntax");
 }
 
@@ -200,13 +198,11 @@ fn i386_pic_library_calls_keep_their_stack_arguments() {
                 binary.decompile(imported, None, None).unwrap()
             );
             assert!(!code.contains("velk_entry_stack_pointer"), "{code}");
-            {
-                syntax::run_printed(
-                    &code,
-                    "",
-                    &format!("return {function}(-17) != 20 || {thunk}(-17) != 17;"),
-                );
-            }
+            syntax::run_printed(
+                &code,
+                "",
+                &format!("return {function}(-17) != 20 || {thunk}(-17) != 17;"),
+            );
         }
     }
 }

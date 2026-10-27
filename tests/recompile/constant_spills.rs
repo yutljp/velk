@@ -79,15 +79,7 @@ ret
 ",
     );
     names.push(("signed_slot_shift".to_owned(), -0x40000000));
-    std::fs::write(&assembly, source).unwrap();
-    let compiled = Command::new(compiler())
-        .args(["-target", "x86_64-unknown-linux-gnu", "-c"])
-        .arg(&assembly)
-        .arg("-o")
-        .arg(&object)
-        .output()
-        .unwrap();
-    assert!(compiled.status.success(), "{compiled:?}");
+    common::compiler::compile_x86_64_assembly(&compiler(), &assembly, &object, &source);
     let mut binary = Binary::open(&object).unwrap();
     let address = binary.find("pure_callee").unwrap().addr;
     let mut code = binary.decompile(address, None, None).unwrap();

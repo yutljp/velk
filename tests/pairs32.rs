@@ -407,14 +407,6 @@ fn arm_carry_flags_and_vfp_stack_saves_match_printed_c() {
                             u64::from(a) + u64::from(b) > u64::from(u32::MAX),
                         )),
                         "carry_sub" => a.wrapping_sub(b).wrapping_sub(u32::from(a < b)),
-                        "conditional_flags" => {
-                            if a.wrapping_add(128) == 0 && b == 3 {
-                                37
-                            } else {
-                                11
-                            }
-                        }
-                        "single_pop" => a.wrapping_add(1),
                         "copy_multiple" => a ^ b,
                         "or_complement" => a | !b,
                         "shift_pair" => (a >> 1) | (b << 31),
@@ -747,8 +739,9 @@ fn aligned_i386_frame_addresses_use_local_storage() {
     let scratch = common::root().join("target/pairs32-aligned-frame");
     std::fs::create_dir_all(&scratch).unwrap();
     let assembly = scratch.join("aligned.s");
-    std::fs::write(&assembly, ".text\n.global aligned_frame\n.type aligned_frame, @function\naligned_frame:\npush %ebp\nmov %esp, %ebp\nsub $32, %esp\nmov 8(%ebp), %eax\nand $7, %eax\nlea -13(%ebp), %edx\nand $-4, %edx\nmovb $42, (%edx,%eax)\nmovzbl (%edx,%eax), %eax\nleave\nret\n.size aligned_frame, .-aligned_frame\n").unwrap();
-    let mut source = std::fs::read_to_string(&assembly).unwrap();
+    let mut source = String::from(
+        ".text\n.global aligned_frame\n.type aligned_frame, @function\naligned_frame:\npush %ebp\nmov %esp, %ebp\nsub $32, %esp\nmov 8(%ebp), %eax\nand $7, %eax\nlea -13(%ebp), %edx\nand $-4, %edx\nmovb $42, (%edx,%eax)\nmovzbl (%edx,%eax), %eax\nleave\nret\n.size aligned_frame, .-aligned_frame\n",
+    );
     source.push_str(".global frame_distance\n.type frame_distance, @function\nframe_distance:\npush %ebp\nmov %esp, %ebp\nsub $32, %esp\nlea -13(%ebp), %eax\nmov %eax, %edx\nand $-4, %edx\nsub %edx, %eax\nleave\nret\n.size frame_distance, .-frame_distance\n");
     std::fs::write(&assembly, source).unwrap();
     let object = scratch.join("aligned.o");

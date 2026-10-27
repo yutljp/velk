@@ -39,13 +39,17 @@ def compact(entries):
     return bytes(binary)
 
 
+def body_key(entry):
+    return entry['isa'], bytes(entry['bytes']), tuple(map(bytes, entry.get('constants', [])))
+
+
 def select(database):
     entries = database['entries']
     by_set, by_name, by_body = defaultdict(set), defaultdict(set), defaultdict(set)
     for index, entry in enumerate(entries):
         by_set[entry['set']].add(index)
         by_name[entry['isa'], entry['name']].add(index)
-        key = entry['isa'], bytes(entry['bytes']), tuple(map(bytes, entry.get('constants', [])))
+        key = body_key(entry)
         by_body[key].add(index)
     counts = {key: len(indices) for key, indices in by_name.items()}
     callers = defaultdict(set)
@@ -73,7 +77,7 @@ def select(database):
         while pending:
             index = pending.pop()
             entry = entries[index]
-            key = entry['isa'], bytes(entry['bytes']), tuple(map(bytes, entry.get('constants', [])))
+            key = body_key(entry)
             required = set(by_body[key])
             if index in eligible:
                 for call in entry['calls']:
@@ -170,8 +174,8 @@ def main():
     (GENERATED / 'defaults.json.gz').write_bytes(gzip_output.compress(
         json.dumps(defaults, sort_keys=True, separators=(',', ':')).encode()))
     sizes = {}
-    for arch, isa in [('x86_64','x86_64'), ('aarch64','aarch64'), ('i386','i386'), ('arm32','arm32')]:
-        entries = [e for e in defaults['entries'] if e['isa'] == isa]
+    for arch in ['x86_64', 'aarch64', 'i386', 'arm32']:
+        entries = [e for e in defaults['entries'] if e['isa'] == arch]
         binary = compact(entries)
         compressed = gzip_output.compress(binary)
         (GENERATED / f'{arch}.bin.gz').write_bytes(compressed)

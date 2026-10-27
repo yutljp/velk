@@ -14,12 +14,17 @@ fn printed_control_flow_matches_originals() {
             for fixture in ["flattened", "flattened_stores", "predicates"] {
                 let path = common::fixtures_dir().join(format!("{fixture}_{isa}_{optimization}.o"));
                 let mut binary = Binary::open(&path).unwrap();
-                let functions: Vec<_> = binary.image().functions.values().cloned().collect();
+                let functions: Vec<_> = binary
+                    .image()
+                    .functions
+                    .values()
+                    .map(|function| (function.addr, function.name.clone()))
+                    .collect();
                 let mut code = String::from("#include <stdint.h>\n");
                 let mut checks = String::new();
-                for function in functions {
-                    let name = function.name.as_deref().unwrap();
-                    let printed = binary.decompile(function.addr, None, None).unwrap();
+                for (address, name) in functions {
+                    let name = name.as_deref().unwrap();
+                    let printed = binary.decompile(address, None, None).unwrap();
                     code.push_str(&printed);
                     let expected = match name {
                         "original_line" | "flattened_line" => "((x + 3u) ^ 85u)",
@@ -43,7 +48,7 @@ fn printed_control_flow_matches_originals() {
                         "if ((uint32_t){name}(x) != (uint32_t){expected}) return 1;\n"
                     ));
                     if isa == "x86_64" && optimization == "O0" && name.starts_with("flattened_") {
-                        let analysis = binary.analysis(function.addr, None).unwrap();
+                        let analysis = binary.analysis(address, None).unwrap();
                         assert!(
                             analysis.simplification.dispatcher_states_removed >= 3,
                             "{name}"
@@ -53,7 +58,7 @@ fn printed_control_flow_matches_originals() {
                     if name == "variable_transition" {
                         assert_eq!(
                             binary
-                                .analysis(function.addr, None)
+                                .analysis(address, None)
                                 .unwrap()
                                 .simplification
                                 .dispatcher_states_removed,

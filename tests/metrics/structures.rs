@@ -244,37 +244,34 @@ fn stripped_structure_layouts_match_debug_information() {
                 compare(expected, None, &mut source_scores);
             }
         }
-        for (metric, score) in [
-            "field offsets",
-            "field widths",
-            "field types",
-            "element sizes",
-        ]
-        .iter()
-        .zip(scores)
-        {
-            writeln!(
-                output,
-                "{case} | {metric} | {} | {} | {}",
-                score.correct, score.wrong, score.missed
-            )
-            .expect("write score");
-        }
-        for (metric, score) in [
-            "source field offsets",
-            "source field widths",
-            "source field types",
-            "source sizes",
-        ]
-        .iter()
-        .zip(source_scores)
-        {
-            writeln!(
-                output,
-                "{case} | {metric} | {} | {} | {}",
-                score.correct, score.wrong, score.missed
-            )
-            .expect("write source score");
+        for (metrics, scores) in [
+            (
+                [
+                    "field offsets",
+                    "field widths",
+                    "field types",
+                    "element sizes",
+                ],
+                scores,
+            ),
+            (
+                [
+                    "source field offsets",
+                    "source field widths",
+                    "source field types",
+                    "source sizes",
+                ],
+                source_scores,
+            ),
+        ] {
+            for (metric, score) in metrics.iter().zip(scores) {
+                writeln!(
+                    output,
+                    "{case} | {metric} | {} | {} | {}",
+                    score.correct, score.wrong, score.missed
+                )
+                .expect("write score");
+            }
         }
     }
     if let Some(diff) = common::check_expected(

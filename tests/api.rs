@@ -439,17 +439,13 @@ fn script_results_match_the_declarations() {
         }
 
         // The data fields of Binary and Func, without their methods.
-        let fields = |interface: &str| {
-            let (required, optional) = &interfaces[interface];
-            (required.clone(), optional.clone())
-        };
-        let (binary_fields, _) = fields("Binary");
+        let (binary_fields, _) = &interfaces["Binary"];
         for field in binary_fields {
-            if result["binary"].get(&field).is_none() {
+            if result["binary"].get(field).is_none() {
                 problems.push(at(&format!("Binary.{field} is missing")));
             }
         }
-        let (func_required, func_optional) = fields("Func");
+        let (func_required, func_optional) = &interfaces["Func"];
         for field in func_required.iter() {
             if result["func"].get(field).is_none() {
                 problems.push(at(&format!("Func.{field} is missing")));

@@ -51,15 +51,16 @@ while IFS=$'\t' read -r level fixture function kind pattern; do
     continue
   fi
   out=$(rendered "$fixture" "$function")
+  if [ "$kind" = count ] || [ "$kind" = count_min ]; then
+    got=$(sed -n '1s/.*functions: \([0-9]*\).*/\1/p' <<< "$out")
+  fi
   case "$kind" in
     count)
-      got=$(sed -n '1s/.*functions: \([0-9]*\).*/\1/p' <<< "$out")
       [ "$got" = "$pattern" ] && ok=1 || ok=0
       detail="function count $got (expected $pattern)"
       ;;
     count_min)
       # The count depends on the host standard library, so check only a lower bound.
-      got=$(sed -n '1s/.*functions: \([0-9]*\).*/\1/p' <<< "$out")
       [ -n "$got" ] && [ "$got" -ge "$pattern" ] && ok=1 || ok=0
       detail="function count $got (expected >= $pattern)"
       ;;

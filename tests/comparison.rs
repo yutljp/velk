@@ -213,7 +213,7 @@ impl Drop for Fixture {
     }
 }
 
-fn matches(arch: &str, stripped: bool) {
+fn check_comparison_and_transfer(arch: &str, stripped: bool) {
     let fixture = Fixture::new(arch, stripped);
     let mut first = Binary::open(&fixture.first).expect("comparison fixture must be valid");
     let mut second = Binary::open(&fixture.second).expect("comparison fixture must be valid");
@@ -311,19 +311,19 @@ fn matches(arch: &str, stripped: bool) {
 
 #[test]
 fn x86_debug() {
-    matches("x86_64", false);
+    check_comparison_and_transfer("x86_64", false);
 }
 #[test]
 fn x86_stripped() {
-    matches("x86_64", true);
+    check_comparison_and_transfer("x86_64", true);
 }
 #[test]
 fn arm_debug() {
-    matches("aarch64", false);
+    check_comparison_and_transfer("aarch64", false);
 }
 #[test]
 fn arm_stripped() {
-    matches("aarch64", true);
+    check_comparison_and_transfer("aarch64", true);
 }
 
 #[test]

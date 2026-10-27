@@ -1,5 +1,5 @@
-// L7 — Rust: mangled names and the Option/panic path.
-// Expected: mangled names are demangled into readable form; the unwrap path remains.
+// L7 — Rust: mangled names and the Option fallback.
+// Expected: mangled names are demangled into readable form.
 #[inline(never)]
 fn add(a: i32, b: i32) -> i32 { a + b }
 

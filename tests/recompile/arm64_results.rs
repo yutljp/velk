@@ -71,7 +71,12 @@ fn printed_arm64_stores_preserve_the_incoming_result() {
     let scratch = scratch_dir("arm64-preserved-result");
     let source = scratch.join("results.s");
     let object = scratch.join("results.o");
-    std::fs::write(
+    common::compiler::compile_file(
+        Command::new(compiler())
+            .args(["--target=aarch64-unknown-linux-gnu", "-c"])
+            .arg(&source)
+            .arg("-o")
+            .arg(&object),
         &source,
         ".text
 .globl clear_byte
@@ -104,16 +109,7 @@ add sp, sp, #32
 ret
 .size dead_epilogue, .-dead_epilogue
 ",
-    )
-    .unwrap();
-    let compiled = Command::new(compiler())
-        .args(["--target=aarch64-unknown-linux-gnu", "-c"])
-        .arg(&source)
-        .arg("-o")
-        .arg(&object)
-        .output()
-        .unwrap();
-    assert!(compiled.status.success(), "{compiled:?}");
+    );
     let mut binary = Binary::open(&object).unwrap();
     let mut code = String::new();
     for name in ["clear_byte", "compare_store", "dead_epilogue"] {

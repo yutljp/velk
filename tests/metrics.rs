@@ -259,7 +259,7 @@ fn measure(dir: &Path, case: &str) -> (Vec<(&'static str, Score)>, Vec<String>) 
             }
             if count_ok {
                 for (index, (want, got)) in expected.params.iter().zip(&got_params).enumerate() {
-                    compare_kind(&mut scores, "parameter", index, want, got, &mut mismatches);
+                    compare_kind(&mut scores, index, want, got, &mut mismatches);
                 }
             }
         }
@@ -311,7 +311,6 @@ fn measure(dir: &Path, case: &str) -> (Vec<(&'static str, Score)>, Vec<String>) 
 
 fn compare_kind(
     scores: &mut BTreeMap<&'static str, Score>,
-    what: &str,
     index: usize,
     want: &Kind,
     got: &Kind,
@@ -327,7 +326,7 @@ fn compare_kind(
             .add(want == got);
         if want != got {
             mismatches.push(format!(
-                "{what} {index} is {}, expected {}",
+                "parameter {index} is {}, expected {}",
                 describe(got),
                 describe(want)
             ));
@@ -341,7 +340,7 @@ fn compare_kind(
         .add(pointer_ok);
     if !pointer_ok {
         mismatches.push(format!(
-            "{what} {index} is {}, expected {}",
+            "parameter {index} is {}, expected {}",
             describe(got),
             describe(want)
         ));
@@ -361,7 +360,7 @@ fn compare_kind(
             .add(want_bytes == bytes);
         if want_bytes != bytes {
             mismatches.push(format!(
-                "{what} {index} is {bytes} bytes, expected {want_bytes}"
+                "parameter {index} is {bytes} bytes, expected {want_bytes}"
             ));
             return;
         }
@@ -370,7 +369,7 @@ fn compare_kind(
             .expect("known metric")
             .add(want_signed == signed);
         if want_signed != signed {
-            mismatches.push(format!("{what} {index} signedness differs"));
+            mismatches.push(format!("parameter {index} signedness differs"));
         }
     }
 }

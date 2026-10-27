@@ -464,6 +464,8 @@ fn execution_limits_and_permissions_agree_across_interfaces() {
 fn published_emulation_examples_execute() {
     let path = matrix::fixtures().join("x86_64.O0.elf");
     let binary = Binary::open(&path).expect("documentation fixture");
+    let io_path = matrix::fixtures().join("x86_64.O0.io.elf");
+    let io_binary = Binary::open(&io_path).expect("I/O documentation fixture");
     let mut interfaces = Interfaces::new();
     for document in [
         "docs/EMULATION.md",
@@ -486,8 +488,6 @@ fn published_emulation_examples_execute() {
                 .split_whitespace()
                 .nth(3)
                 .expect("documented routine");
-            let io_path = matrix::fixtures().join("x86_64.O0.io.elf");
-            let io_binary = Binary::open(&io_path).expect("I/O documentation fixture");
             let is_io = matches!(start, "check_flag" | "main" | "decode_buffer");
             let report = interfaces.check(
                 if is_io { &io_path } else { &path },

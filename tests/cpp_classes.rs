@@ -125,15 +125,15 @@ fn typed_and_nested_catches_are_printed_in_debug_and_stripped_files() {
             Binary::open(&common::fixtures_dir().join(format!("cpp/rtti.stripped.{format}")))
                 .unwrap();
         for (name, types) in [
-            ("catch_one", vec!["Error"]),
-            ("catch_many", vec!["Error", "int", "..."]),
-            ("catch_nested", vec!["Error", "int"]),
-            ("catch_cleanup", vec!["..."]),
+            ("catch_one", &["Error"][..]),
+            ("catch_many", &["Error", "int", "..."][..]),
+            ("catch_nested", &["Error", "int"][..]),
+            ("catch_cleanup", &["..."][..]),
         ] {
             let address = named.find(name).unwrap().addr;
             for (variant, binary) in [("debug", &mut named), ("stripped", &mut stripped)] {
                 let code = binary.decompile(address, None, None).unwrap();
-                for name in &types {
+                for name in types {
                     assert!(
                         code.contains(&format!("catch ({name}")),
                         "{format} {variant} {name}: {code}"
