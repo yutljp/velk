@@ -173,7 +173,6 @@ pub fn temp_id(index: u16) -> u64 {
 
 #[must_use]
 pub fn reg_name(isa: Isa, index: u16, width: u8) -> String {
-    let _ = (isa, width);
     if index >= VALUE_BASE {
         return format!("s{}", index - VALUE_BASE);
     }
@@ -186,7 +185,7 @@ pub fn reg_name(isa: Isa, index: u16, width: u8) -> String {
         _ => {}
     }
     if is_temp(index) {
-        return format!("t{isode}", isode = temp_id(index));
+        return format!("t{}", temp_id(index));
     }
     match isa {
         Isa::AArch64 if index >= crate::arch::aarch64::V0 => {

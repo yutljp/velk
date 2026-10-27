@@ -4,7 +4,7 @@ use super::{
 };
 use crate::loader::Isa;
 
-/// The name of a lane operation, followed by its lane width.
+/// The name of a lane operation.
 pub(crate) fn lane_op_name(op: LaneOp) -> &'static str {
     match op {
         LaneOp::Add => "add_lanes",

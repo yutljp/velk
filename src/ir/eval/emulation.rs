@@ -138,10 +138,9 @@ fn run_with_recovery(
         },
         None => Vec::new(),
     };
-    let before = machine.memory.clone();
     // Caller-provided heap bytes are reserved before malloc starts allocating.
     let mut heap_next = heap_base;
-    for &address in before.keys() {
+    for &address in machine.memory.keys() {
         if (heap_base..heap_base + HEAP_SIZE).contains(&address) {
             heap_next = heap_next.max(address + 1);
         }

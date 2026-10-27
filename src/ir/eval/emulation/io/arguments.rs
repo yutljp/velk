@@ -19,14 +19,6 @@ enum Variadic {
 }
 
 fn load(runner: &Runner<'_>, location: u64, width: u8) -> Result<u64, Stop> {
-    if runner.recovery.is_some() {
-        return match runner.recovery_load(location, width, /* signed */ false) {
-            Ok(fact) => fact
-                .singleton()
-                .ok_or_else(|| error("undefined va_list argument")),
-            Err(stop) => Err(stop),
-        };
-    }
     let value = runner.machine.load(location, width);
     match runner.memory_error() {
         Ok(()) => Ok(value),
