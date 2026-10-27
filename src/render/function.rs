@@ -31,6 +31,7 @@ pub fn render_with_dependencies(
         return Rendered {
             code: super::prelude::combine(&format!("{}{code}", super::support::definitions(&code))),
             segment_bases: Vec::new(),
+            inline_functions: Vec::new(),
         };
     }
     let Some(merged) = super::structure::merge_exits::merged(ir) else {
@@ -131,6 +132,7 @@ fn render_prepared(
             param.name = name.clone();
         }
     }
+    stack_bytes::protect_parameter_names(&mut folded);
     let float_entries = physical_float_parameters(&mut folded);
     let mut logical = abi::prepare(&mut folded, symbols);
     let mut incoming = if logical.is_none() {
@@ -946,6 +948,7 @@ fn render_with(
         }
     }
     let mut ctx = Ctx {
+        inline_functions: Default::default(),
         ir,
         variadic,
         callee_signatures: ir.callee_signatures.clone(),
@@ -1358,6 +1361,7 @@ fn render_with(
     }
     out.insert_str(0, &super::support::definitions(&out));
     let rendered = Rendered {
+        inline_functions: ctx.inline_functions.take(),
         code: super::prelude::combine(&if variadic.is_some() {
             format!("{}{out}", super::prelude::section("#include <stdarg.h>\n"))
         } else {
@@ -1397,6 +1401,7 @@ fn render_body(
     render_nodes(nodes, 1, &mut body, ctx);
     let mut folded = nodes.clone();
     if super::locals::fold_values(ir, &mut folded, ctx) {
+        let original_functions = ctx.inline_functions.take();
         let mut candidate = String::new();
         ctx.read_once = calls::read_once(&folded);
         render_nodes(&folded, 1, &mut candidate, ctx);
@@ -1406,6 +1411,7 @@ fn render_body(
         {
             body = candidate;
         } else {
+            ctx.inline_functions.replace(original_functions);
             ctx.read_once = calls::read_once(nodes);
         }
     }

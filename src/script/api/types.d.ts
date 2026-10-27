@@ -152,6 +152,7 @@ interface ConstantsResult {
 }
 
 interface FunctionSummary {
+  inlineFunctions: InlineFunction[];
   simplification: Simplification;
   addr: Addr;
   name: string | null;
@@ -163,6 +164,12 @@ interface FunctionSummary {
   incomingXrefs: number;
   outgoingXrefs: number;
   failures: NavigationFailure[];
+}
+
+/** Memory effects replaced by calls in the selected C body. */
+interface InlineFunction {
+  function: string;
+  bytes: number | null;
 }
 
 /** Names from runtime descriptors, without inferred data member sizes. */

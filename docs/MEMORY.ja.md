@@ -117,3 +117,41 @@ PE のファイル内のデータ長とメモリ上のセクション長は区�
 次のファイル領域から読み込むことはありません。`section_tail.dll` はこの境界を三つの
 インターフェースで確認するフィクスチャです。形式の規則は
 [PE 仕様](https://learn.microsoft.com/en-us/windows/win32/debug/pe-format)に従います。
+
+## インライン化されたメモリ関数
+
+レンダラーは命令の並びではなく IR の効果を調べます。同じバイトを繰り返して格納する
+定数ストアが連続した一つの領域を覆う場合、`__builtin_memset` として表示します。
+後のストアは既に設定したバイトと重なっても構いません。隙間、異なるバイト、未対応の
+アドレス式がある場合は個別のストアを残します。ゼロによる初期化も対象です。
+コピーループでは領域が重ならないと証明できる場合に `__builtin_memcpy` を使い、
+読み取りを先に終えるコピーでは `__builtin_memmove` を使う場合があります。
+ループ終了時のポインターとカウントの値を保持します。
+
+```sh
+velk --summary tests/data/inline_functions/aarch64.clang.O2.elf fill13
+```
+
+```js
+const b = velk.open("tests/data/inline_functions/aarch64.clang.O2.elf");
+b.getFunction("fill13").summary().inlineFunctions;
+```
+
+JavaScript の例は MCP の `velk_run_script` でも実行できます。`inlineFunctions` の各要素は
+`function`（`memcpy`、`memmove`、`memset`）と `bytes`（定数のバイト数、実行時の
+カウントなら null）を持ちます。選択された C 本体で置き換えた処理を表し、元からある
+呼び出しや採用しなかった候補は含みません。構造体代入や一時配列を介したコピーは
+含みません。空のリストでも、標準関数がインライン化されていないとは限りません。
+一般的な `strlen`、`strcmp`、方向に応じたコピー、ベクトル検索ループは、これらの
+認識処理では扱いません。
+
+塗りつぶしのテストは小さいストア幅、重なりのオフセット、バイト値を全列挙し、
+x86-64 と AArch64 の IR から表示した関数をコンパイルして実行します。対象領域と
+周囲のバイトの最終値を確認します。volatile アクセス、ハードウェアのフォルト、
+C オブジェクトの由来はモデル化していません。認識するアクセスは、有効な記憶域への
+通常のメモリアクセスとして扱います。
+
+コンパイラーのフィクスチャは Clang 18 と GCC 13 を使い、x86-64 と AArch64 の
+`-O2`、`-O3` を、デバッグ情報あり・なしで扱います。
+`sh tests/make_inline_function_fixtures.sh` で再生成できます。Clang、LLD、
+`x86_64-linux-gnu-gcc`、`aarch64-linux-gnu-gcc` が必要です。

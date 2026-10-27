@@ -157,6 +157,21 @@ pub(super) fn render(
         _ => return None,
     };
     let mut out = String::new();
+    if n != Some(0) {
+        ctx.inline_functions
+            .borrow_mut()
+            .push(super::InlineFunction {
+                function: if matches!(value, Expr::Load { .. }) {
+                    "memcpy".to_owned()
+                } else {
+                    "memset".to_owned()
+                },
+                bytes: match bytes {
+                    Expr::Const(bytes) => Some(bytes),
+                    _ => None,
+                },
+            });
+    }
     if n.is_none() {
         indent(depth, &mut out);
         out.push_str(&render_stmt(init, ctx));

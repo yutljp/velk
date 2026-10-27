@@ -252,7 +252,7 @@ fn restore_frame(expr: &mut Expr, root: &Origins, sp: u16) -> Option<()> {
     Some(())
 }
 
-fn protect_parameter_names(ir: &mut FunctionIr) {
+pub(super) fn protect_parameter_names(ir: &mut FunctionIr) {
     let mut reserved: std::collections::HashSet<_> = ir
         .params
         .iter()

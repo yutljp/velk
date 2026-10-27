@@ -110,10 +110,19 @@ fn copies_and_fills_compile_and_preserve_memory_and_final_registers() {
         ("empty", 32, 1, Some(0xab), 0, None),
     ] {
         let ir = example_ir(name, offset, width, fill, n);
-        let code = crate::render::render(&ir, &[], &Default::default(), &[]);
+        let rendered = crate::render::render_with_dependencies(&ir, &[], &Default::default(), &[]);
+        let code = rendered.code;
         if let Some(builtin) = builtin {
+            assert_eq!(
+                rendered.inline_functions,
+                vec![crate::render::InlineFunction {
+                    function: builtin.trim_start_matches("__builtin_").to_owned(),
+                    bytes: Some(8),
+                }]
+            );
             assert!(code.contains(builtin), "{name}\n{code}");
         } else {
+            assert!(rendered.inline_functions.is_empty());
             assert!(!code.contains("__builtin_mem"), "{name}\n{code}");
         }
         source.push_str(&code);
@@ -125,7 +134,15 @@ fn copies_and_fills_compile_and_preserve_memory_and_final_registers() {
         ty: CType::U64,
     });
     dynamic.blocks[0].stmts[2] = assign(1, Expr::reg(3, 64));
-    let code = crate::render::render(&dynamic, &[], &Default::default(), &[]);
+    let rendered = crate::render::render_with_dependencies(&dynamic, &[], &Default::default(), &[]);
+    assert_eq!(
+        rendered.inline_functions,
+        vec![crate::render::InlineFunction {
+            function: "memset".to_owned(),
+            bytes: None,
+        }]
+    );
+    let code = rendered.code;
     assert!(code.contains("__builtin_memset"), "{code}");
     source.push_str(&code);
     for (name, ty) in [

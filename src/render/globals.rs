@@ -633,6 +633,8 @@ pub(crate) fn reserved_identifier(name: &str) -> bool {
             | "size_t"
             | "ptrdiff_t"
             | "__builtin_memcpy"
+            | "__builtin_memmove"
+            | "__builtin_memset"
     )
 }
 

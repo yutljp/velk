@@ -46,6 +46,7 @@ pub(super) struct ParameterRead {
 }
 
 pub(crate) struct Ctx<'a> {
+    pub(super) inline_functions: std::cell::RefCell<Vec<super::InlineFunction>>,
     pub(super) ir: &'a crate::ir::FunctionIr,
     pub(super) variadic: Option<&'a super::variadic::Plan>,
     pub(super) abi: Option<&'a super::abi::Plan>,

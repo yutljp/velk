@@ -72,6 +72,17 @@ pub struct SegmentBaseRead {
 pub struct Rendered {
     pub code: String,
     pub segment_bases: Vec<SegmentBaseRead>,
+    /// Copy and fill effects replaced by standard function calls.
+    pub inline_functions: Vec<InlineFunction>,
+}
+
+/// One recovered memory operation in the selected C body.
+#[derive(Clone, Debug, Eq, PartialEq, serde::Serialize)]
+pub struct InlineFunction {
+    /// Standard function implementing the effect.
+    pub function: String,
+    /// Constant byte extent, or absent for a runtime count.
+    pub bytes: Option<u64>,
 }
 
 use crate::arch::stack_pointer;

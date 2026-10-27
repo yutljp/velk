@@ -146,6 +146,11 @@ JavaScript API と MCP では `b.search(pattern, options)`、
 エンコーディング、範囲、型、完全一致する定数の詳細は
 [メモリの問い合わせ](docs/MEMORY.ja.md)を参照してください。
 
+コピーと塗りつぶしの処理を `memcpy`、`memmove`、`memset` の組み込み関数として
+表示する場合があります。`velk --summary app function` と JavaScript/MCP の
+`f.summary().inlineFunctions` は、復元した呼び出しと定数のバイト数を返します。
+[認識の制限](docs/MEMORY.ja.md#インライン化されたメモリ関数)を参照してください。
+
 バイナリを開くと、ライブラリシグネチャが自動で適用されます。`velk -f app`
 で復元した名前・出典のセット・確実性を確認し、`velk -D app XXH32` で一致した
 関数の C を表示できます。`--identify app` では名前を確定できなかった候補も表示します。

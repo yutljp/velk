@@ -156,6 +156,7 @@ pub(super) fn stack_locals_with_roles(
 ) -> Locals {
     let sp = stack_pointer(ir.isa);
     let base = Ctx {
+        inline_functions: Default::default(),
         ir,
         variadic: None,
         go_word_types: Default::default(),

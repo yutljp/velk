@@ -149,6 +149,11 @@ The JavaScript API and MCP provide `b.search(pattern, options)`,
 See [memory queries](docs/MEMORY.md) for encodings, bounds, types and exact
 constant signatures.
 
+Copy and fill effects can print as `memcpy`, `memmove` or `memset` builtins.
+`velk --summary app function` and JavaScript/MCP `f.summary().inlineFunctions`
+list the recovered calls and constant byte counts. See
+[recognition limits](docs/MEMORY.md#inlined-memory-functions).
+
 Library signatures apply automatically when a binary is opened. `velk -f app`
 shows the recovered names, source sets and certainty; `velk -D app XXH32` prints
 a matched function. `--identify app` also lists unresolved candidates.

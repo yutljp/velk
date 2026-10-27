@@ -3,6 +3,22 @@ use super::{CType, Ctx, Expr, Node, Stmt, expr, naming};
 use crate::ir::{BinOp, VARIABLE_BASE};
 use std::collections::{HashMap, HashSet};
 
+#[cfg(test)]
+mod tests;
+
+struct Transfer {
+    consumed: usize,
+    text: String,
+    function: Option<super::InlineFunction>,
+}
+
+fn memory_function(function: &str, bytes: u64) -> super::InlineFunction {
+    super::InlineFunction {
+        function: function.to_owned(),
+        bytes: Some(bytes),
+    }
+}
+
 pub(super) fn single_use_loads(ir: &crate::ir::FunctionIr) -> HashSet<(u16, Expr)> {
     if !ir.blocks.iter().any(|block| {
         block.stmts.windows(2).any(|pair| {
@@ -241,12 +257,59 @@ fn record(source: &Expr, destination: &Expr, bytes: u64, ctx: &Ctx<'_>) -> Optio
 /// Repeated byte stores and complete scalar copies. A byte temporary preserves
 /// every byte, including padding, when a copy needs to snapshot overlapping ranges.
 pub(super) fn render(nodes: &[Node], ctx: &Ctx<'_>) -> Option<(usize, String)> {
-    fill(nodes, ctx)
+    let transfer = fill(nodes, ctx)
         .or_else(|| ordered(nodes, ctx))
-        .or_else(|| reordered(nodes, ctx))
+        .or_else(|| reordered(nodes, ctx));
+    let Some(transfer) = transfer else {
+        return None;
+    };
+    if let Some(function) = transfer.function {
+        ctx.inline_functions.borrow_mut().push(function);
+    }
+    Some((transfer.consumed, transfer.text))
 }
 
-fn fill(nodes: &[Node], ctx: &Ctx<'_>) -> Option<(usize, String)> {
+struct FillRange<'a> {
+    start: &'a Expr,
+    bytes: u64,
+}
+
+fn filled_range<'a>(
+    first: &'a Expr,
+    next: &'a Expr,
+    bytes: u64,
+    width: u8,
+) -> Option<FillRange<'a>> {
+    let (Some((base, start)), Some((next_base, next_start))) =
+        (address_terms(first), address_terms(next))
+    else {
+        return None;
+    };
+    if base != next_base {
+        return None;
+    }
+    let Ok(bytes) = i64::try_from(bytes) else {
+        return None;
+    };
+    let (Some(end), Some(next_end)) = (
+        start.checked_add(bytes),
+        next_start.checked_add(i64::from(width)),
+    ) else {
+        return None;
+    };
+    if next_start > end || next_end < start {
+        return None;
+    }
+    let Some(bytes) = end.max(next_end).checked_sub(start.min(next_start)) else {
+        return None;
+    };
+    Some(FillRange {
+        start: if next_start < start { next } else { first },
+        bytes: bytes as u64,
+    })
+}
+
+fn fill(nodes: &[Node], ctx: &Ctx<'_>) -> Option<Transfer> {
     let Some(Node::Stmt(Stmt::Store {
         width: first_width, ..
     })) = nodes.first()
@@ -272,16 +335,22 @@ fn fill(nodes: &[Node], ctx: &Ctx<'_>) -> Option<(usize, String)> {
         let pattern = value & 0xff;
         if (0..*width).any(|part| (value >> (u32::from(part) * 8)) & 0xff != pattern)
             || byte.is_some_and(|byte| byte != pattern)
-            || start.is_some_and(|first| !follows(first, addr, bytes))
         {
             break;
         }
-        let Some(next) = bytes.checked_add(u64::from(*width)) else {
+        let next = match start {
+            Some(first) => filled_range(first, addr, bytes, *width),
+            None => Some(FillRange {
+                start: addr,
+                bytes: u64::from(*width),
+            }),
+        };
+        let Some(next) = next else {
             break;
         };
-        start.get_or_insert(addr);
+        start = Some(next.start);
         byte = Some(pattern);
-        bytes = next;
+        bytes = next.bytes;
         count += 1;
     }
     if count < 2 {
@@ -309,10 +378,14 @@ fn fill(nodes: &[Node], ctx: &Ctx<'_>) -> Option<(usize, String)> {
             return None;
         }
     }
-    Some((count, text))
+    Some(Transfer {
+        consumed: count,
+        text,
+        function: Some(memory_function("memset", bytes)),
+    })
 }
 
-fn ordered(nodes: &[Node], ctx: &Ctx<'_>) -> Option<(usize, String)> {
+fn ordered(nodes: &[Node], ctx: &Ctx<'_>) -> Option<Transfer> {
     let mut loads: Vec<(u16, &Expr)> = Vec::new();
     let mut bytes = 0u64;
     for node in nodes.iter().take(4) {
@@ -428,34 +501,37 @@ fn ordered(nodes: &[Node], ctx: &Ctx<'_>) -> Option<(usize, String)> {
             .map(str::to_owned)
             .collect();
         let temporary = super::vacant_name("transfer", &mut reserved);
-        return Some((
+        return Some(Transfer {
             consumed,
-            format!(
+            text: format!(
                 "{{\n    unsigned char {temporary}[{bytes}];\n    __builtin_memcpy({temporary}, {source}, {bytes});\n    {statements}\n    __builtin_memcpy({destination}, {temporary}, {bytes});\n}}"
             ),
-        ));
+            function: None,
+        });
     }
     if let Some(ty) = record {
         let source = record_value(source_value, &source, bytes, ctx);
         let destination = record_value(destination_value, &destination, bytes, ctx);
-        return Some((
+        return Some(Transfer {
             consumed,
-            if direct {
+            text: if direct {
                 format!("{destination} = {source};")
             } else {
                 format!("{destination} = (({ty}[1]){{{source}}})[0];")
             },
-        ));
+            function: None,
+        });
     }
-    Some((
+    Some(Transfer {
         consumed,
-        format!("__builtin_memmove({destination}, {source}, {bytes});"),
-    ))
+        text: format!("__builtin_memmove({destination}, {source}, {bytes});"),
+        function: Some(memory_function("memmove", bytes)),
+    })
 }
 
 /// Stores may visit the words in a different order, provided every read
 /// happens before the first write and each word keeps its relative offset.
-fn reordered(nodes: &[Node], ctx: &Ctx<'_>) -> Option<(usize, String)> {
+fn reordered(nodes: &[Node], ctx: &Ctx<'_>) -> Option<Transfer> {
     let mut loads = Vec::new();
     for node in nodes.iter().take(4) {
         let Node::Stmt(Stmt::Assign {
@@ -581,9 +657,9 @@ fn reordered(nodes: &[Node], ctx: &Ctx<'_>) -> Option<(usize, String)> {
         let mut position = 0;
         while position < consumed {
             let remaining = &nodes[position..consumed];
-            if let Some((count, text)) =
-                super::aggregates::render(remaining, ctx).or_else(|| self::ordered(remaining, ctx))
-            {
+            if let Some((count, text)) = super::aggregates::render(remaining, ctx).or_else(|| {
+                self::ordered(remaining, ctx).map(|transfer| (transfer.consumed, transfer.text))
+            }) {
                 original_casts += super::cost::transfer_casts(&text);
                 position += count;
             } else if let Node::Stmt(stmt) = &nodes[position] {
@@ -597,7 +673,11 @@ fn reordered(nodes: &[Node], ctx: &Ctx<'_>) -> Option<(usize, String)> {
             return None;
         }
     }
-    Some((consumed, text))
+    Some(Transfer {
+        consumed,
+        text,
+        function: Some(memory_function("memmove", bytes)),
+    })
 }
 
 fn eligible_load(dest: &crate::ir::RegRef, value: &Expr, ctx: &Ctx<'_>) -> bool {

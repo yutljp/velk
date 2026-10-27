@@ -120,3 +120,42 @@ PE file data lengths and mapped section lengths are kept distinct. Reads and
 searches use zero-initialized tails without consuming the next file region.
 `section_tail.dll` checks this boundary through all three interfaces, following
 the [PE specification](https://learn.microsoft.com/en-us/windows/win32/debug/pe-format).
+
+## Inlined memory functions
+
+The renderer recognizes effects in the IR rather than instruction encodings.
+Consecutive constant stores of the same repeated byte become `__builtin_memset`
+when their ranges form one contiguous interval. Later stores may overlap bytes
+already set. Gaps, different bytes and unsupported address expressions keep
+separate stores. This includes zero fills. Copy loops require proven disjoint
+ranges before using `__builtin_memcpy`; snapshot copies can use
+`__builtin_memmove`. The loop renderer retains final pointer and count values.
+
+```sh
+velk --summary tests/data/inline_functions/aarch64.clang.O2.elf fill13
+```
+
+```js
+const b = velk.open("tests/data/inline_functions/aarch64.clang.O2.elf");
+b.getFunction("fill13").summary().inlineFunctions;
+```
+
+The JavaScript example also runs through MCP's `velk_run_script` tool. Each
+`inlineFunctions` entry contains `function` (`memcpy`, `memmove` or `memset`)
+and `bytes` (a constant count, or null for a runtime count). Entries describe
+replacements in the selected C body, not original calls or speculative matches.
+Structure assignments and copies through a temporary array are not listed.
+An empty list does not establish that no standard function was inlined.
+General `strlen`, `strcmp`, direction-dependent copies and vector search loops
+are not recognized by these matchers.
+
+The fill tests exhaust small store widths, overlap offsets and byte values,
+and compile and execute rendered functions for x86-64 and AArch64 IR. They
+check final bytes including surrounding sentinels. These checks do not model
+volatile accesses, hardware faults or C object provenance. Recognized accesses
+are treated as ordinary memory accesses to valid storage.
+
+Compiler fixtures cover Clang 18 and GCC 13 at `-O2` and `-O3` for x86-64 and
+AArch64, with and without debug information. Rebuild them with
+`sh tests/make_inline_function_fixtures.sh`; this needs Clang, LLD,
+`x86_64-linux-gnu-gcc` and `aarch64-linux-gnu-gcc`.

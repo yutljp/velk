@@ -119,6 +119,14 @@ when a rewrite changes.
 
 ## Model and limits
 
+Repeated-byte fill intervals have symbolic byte-array checks for store widths
+1, 2, 4 and 8 bytes, each overlap offset and both store orders in the test
+corpus. The tests call the real interval helper, then compare the original
+stores with stores covering its returned range. Initial memory, base address
+and fill byte are symbolic. Exhaustive small-range checks and compiled rendered
+C complement these queries. This does not prove arbitrary address expressions,
+volatile accesses, faults or C object provenance.
+
 IR arithmetic uses 64-bit modular values. Narrow registers are zero-extended
 reads. Signed shifts, division, remainder and comparisons use the real
 operand-width calculation. Shift counts use their low six bits. Selects

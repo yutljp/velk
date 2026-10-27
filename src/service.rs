@@ -579,6 +579,10 @@ impl Binary {
                     .filter_map(|f| f.name.clone().map(|name| (f.addr, name))),
             )
             .collect();
+        let inline_functions = match self.decompile_with_dependencies(addr, None, deadline) {
+            Ok(rendered) => rendered.inline_functions,
+            Err(error) => return Err(error),
+        };
         let index = match self.navigation(deadline) {
             Ok(index) => index,
             Err(error) => return Err(error),
@@ -587,6 +591,7 @@ impl Binary {
         Ok(serde_json::json!({
             "addr": crate::addr::format(addr), "name": function.name, "size": function.size,
             "signature": signature, "simplification": simplification,
+            "inlineFunctions": inline_functions,
             "callees": index.graph(addr, false, 1).into_iter().map(crate::addr::format).collect::<Vec<_>>(),
             "imports": outgoing.iter().filter_map(|xref| imports.get(&xref.target))
                 .collect::<std::collections::BTreeSet<_>>(),
