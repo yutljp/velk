@@ -71,7 +71,7 @@ fn printed_word_extractions_store_two_bytes_and_preserve_saved_registers() {
         &source,
     );
     let mut binary = Binary::open(&object).unwrap();
-    let mut all = String::new();
+    let mut combined_code = String::new();
     for instruction in ["pextrw", "vpextrw"] {
         for lane in 0..8 {
             let name = format!("extract_{instruction}_{lane}");
@@ -89,16 +89,16 @@ fn printed_word_extractions_store_two_bytes_and_preserve_saved_registers() {
                 ),
             );
             if instruction == "pextrw" && lane == 0 {
-                all.push_str(&code);
+                combined_code.push_str(&code);
             }
         }
     }
     let address = binary.find("extraction_caller").unwrap().addr;
     let code = binary.decompile(address, None, None).unwrap();
     assert!(!code.contains("undefined"), "{code}");
-    all.push_str(&code);
+    combined_code.push_str(&code);
     syntax::run_printed(
-        &velk::render::combine(&all),
+        &velk::render::combine(&combined_code),
         "",
         "uint16_t input[8]={9}; uint16_t out=0; if(extraction_caller((uintptr_t)input,(uintptr_t)&out)!=123 || out!=9) return 1;",
     );
@@ -116,8 +116,8 @@ fn printed_dword_extractions_zero_extend_registers_and_store_four_bytes() {
             for lane in 0..4 {
                 let name = format!("extract_{instruction}_{memory}_{lane}");
                 let target = if memory { "(%rsi)" } else { "%eax" };
-                let result = if memory { "movl $7,%eax\n" } else { "" };
-                writeln!(source, ".globl {name}\n.type {name},@function\n{name}:\nmovdqu (%rdi),%xmm0\nmovq $-1,%rax\n{instruction} ${},%xmm0,{target}\n{result}ret\n.size {name},.-{name}",lane+4).unwrap();
+                let return_instruction = if memory { "movl $7,%eax\n" } else { "" };
+                writeln!(source, ".globl {name}\n.type {name},@function\n{name}:\nmovdqu (%rdi),%xmm0\nmovq $-1,%rax\n{instruction} ${},%xmm0,{target}\n{return_instruction}ret\n.size {name},.-{name}",lane+4).unwrap();
             }
         }
     }

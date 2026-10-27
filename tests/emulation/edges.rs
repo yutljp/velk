@@ -370,7 +370,7 @@ fn execution_limits_and_permissions_agree_across_interfaces() {
             let path = matrix::fixtures().join(format!("{architecture}.{optimization}.elf"));
             let binary = Binary::open(&path).expect("routine fixture");
             let readonly = symbol(&binary, "read_only");
-            let data = symbol(&binary, "writable");
+            let writable_address = symbol(&binary, "writable");
             let code = binary.find("store_byte").expect("store function").addr;
             for (start, options, message, address) in [
                 (
@@ -397,7 +397,12 @@ fn execution_limits_and_permissions_agree_across_interfaces() {
                     "unmapped memory write",
                     0x1234_5000,
                 ),
-                (velk::addr::format(data), json!({}), "non-executable", data),
+                (
+                    velk::addr::format(writable_address),
+                    json!({}),
+                    "non-executable",
+                    writable_address,
+                ),
                 (
                     "0x12345000".to_owned(),
                     json!({}),

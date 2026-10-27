@@ -209,16 +209,16 @@ fn reference(architecture: &str, optimization: &str, inputs: &[(Vec<u8>, u32)]) 
     let directory = fixtures();
     let input = directory.join(format!("{input_architecture}.{optimization}.input"));
     let output = directory.join(format!("{input_architecture}.{optimization}.output"));
-    let mut data = Vec::new();
+    let mut input_bytes = Vec::new();
     for routine in 0..ROUTINES.len() {
         for (bytes, key) in inputs {
             for word in [routine as u32, bytes.len() as u32, *key] {
-                data.extend(word.to_le_bytes());
+                input_bytes.extend(word.to_le_bytes());
             }
-            data.extend(bytes);
+            input_bytes.extend(bytes);
         }
     }
-    fs::write(&input, data).expect("native input");
+    fs::write(&input, input_bytes).expect("native input");
     let status = Command::new(directory.join(format!("{architecture}.{optimization}.native")))
         .stdin(fs::File::open(input).expect("reference input"))
         .stdout(fs::File::create(&output).expect("reference output"))

@@ -25,7 +25,7 @@ prefix = str(Path.cwd()).encode()
 replacement = b'build' + b'_' * (len(prefix) - 5)
 for path in Path('tests/fixtures/codeview').iterdir():
     if path.suffix in ('.obj', '.pdb'):
-        data = path.read_bytes().replace(prefix, replacement)
-        data = data.replace(prefix.replace(b'/', b'\\'), replacement)
-        path.write_bytes(data)
+        bytes = path.read_bytes().replace(prefix, replacement)
+        bytes = bytes.replace(prefix.replace(b'/', b'\\'), replacement)
+        path.write_bytes(bytes)
 PY

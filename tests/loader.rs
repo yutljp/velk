@@ -177,13 +177,15 @@ fn relocated_objects_keep_their_loaded_sections_at_zero() {
         assert_eq!(text.name, ".text", "{fixture}");
         assert!(text.loaded, "{fixture}");
         assert!(image.read_vaddr(0, 1).is_some(), "{fixture}");
-        let data = image
+        let data_section = image
             .sections
             .iter()
             .find(|section| section.name == ".data" && section.size > 0)
             .expect("loaded data");
-        assert!(data.loaded, "{fixture}");
-        assert!(velk::render::data_ranges(image).contains(&(data.vaddr, data.size)));
+        assert!(data_section.loaded, "{fixture}");
+        assert!(
+            velk::render::data_ranges(image).contains(&(data_section.vaddr, data_section.size))
+        );
     }
 }
 

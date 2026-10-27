@@ -54,19 +54,23 @@ fn execute(name: &str, rendered: &Rendered, label: &str, binary: &Binary) {
         "length" => &["a"],
         _ => &["a+8"],
     };
-    let args = arguments(&rendered.code, name, expressions);
+    let arguments = arguments(&rendered.code, name, expressions);
     let check = match name {
-        "length" => format!("a[offset]=0; if ({name}({args}) != reference_length(a)) return 1;"),
+        "length" => {
+            format!("a[offset]=0; if ({name}({arguments}) != reference_length(a)) return 1;")
+        }
         "compare" => format!(
-            "b[(seed*7)%64] ^= (unsigned char)seed; a[offset]=0; b[63-offset]=0; if ({name}({args}) != reference_compare(a,b)) return 1;"
+            "b[(seed*7)%64] ^= (unsigned char)seed; a[offset]=0; b[63-offset]=0; if ({name}({arguments}) != reference_compare(a,b)) return 1;"
         ),
         "copy24" => {
-            format!("{name}({args}); reference_copy24(b+8,b+48); if (memcmp(a,b,96)) return 1;")
+            format!(
+                "{name}({arguments}); reference_copy24(b+8,b+48); if (memcmp(a,b,96)) return 1;"
+            )
         }
         "move16" => format!(
-            "{name}({args}); reference_move16(b+32,b+offset); if (memcmp(a,b,96)) return 1;"
+            "{name}({arguments}); reference_move16(b+32,b+offset); if (memcmp(a,b,96)) return 1;"
         ),
-        _ => format!("{name}({args}); reference_{name}(b+8); if (memcmp(a,b,96)) return 1;"),
+        _ => format!("{name}({arguments}); reference_{name}(b+8); if (memcmp(a,b,96)) return 1;"),
     };
     let mut definitions = String::new();
     let mut initialization = String::new();
@@ -160,9 +164,9 @@ fn optimized_fixtures_compile_and_match_reference_execution() {
                         common::root().join(format!("tests/data/inline_functions/{label}.elf"));
                     let mut binary = Binary::open(&path).unwrap();
                     for name in FUNCTIONS {
-                        let addr = binary.find_address(name).unwrap();
+                        let address = binary.find_address(name).unwrap();
                         let rendered = binary
-                            .decompile_with_dependencies(addr, None, None)
+                            .decompile_with_dependencies(address, None, None)
                             .unwrap();
                         let (expected_function, expected_bytes) = match *name {
                             "fill13" | "zero13" => ("memset", Some(13)),

@@ -91,7 +91,7 @@ fn printed_reordered_transfers_preserve_snapshots_and_word_offsets() {
     for words in [2usize, 3, 4] {
         let inline_part = words / 2;
         for inline in [false, true] {
-            for invalid in 0..4 {
+            for transfer_case in 0..4 {
                 let at = |parameter: usize, part: usize| {
                     Expr::bin(
                         BinOp::Add,
@@ -117,13 +117,13 @@ fn printed_reordered_transfers_preserve_snapshots_and_word_offsets() {
                     }
                 }
                 for position in 0..words {
-                    let part = if invalid == 3 && inline {
+                    let part = if transfer_case == 3 && inline {
                         (position + inline_part + 1) % words
                     } else {
                         (position + inline_part) % words
                     };
                     statements.push(Stmt::Store {
-                        addr: at(0, if invalid == 1 { 0 } else { part }),
+                        addr: at(0, if transfer_case == 1 { 0 } else { part }),
                         value: if inline && part == inline_part {
                             load(part)
                         } else {
@@ -133,7 +133,7 @@ fn printed_reordered_transfers_preserve_snapshots_and_word_offsets() {
                     });
                 }
                 statements.push(Stmt::Ret {
-                    value: if invalid == 2 {
+                    value: if transfer_case == 2 {
                         Expr::reg(VARIABLE_BASE, 64)
                     } else {
                         Expr::Const(0)
@@ -164,11 +164,11 @@ fn printed_reordered_transfers_preserve_snapshots_and_word_offsets() {
                     candidate
                         .code
                         .contains(&format!("__builtin_memmove(dst, src, {});", words * 8)),
-                    invalid == 0 || (invalid == 3 && !inline),
+                    transfer_case == 0 || (transfer_case == 3 && !inline),
                     "{}",
                     candidate.code,
                 );
-                if words == 4 && inline && invalid == 0 {
+                if words == 4 && inline && transfer_case == 0 {
                     assert_eq!(
                         common::check_expected(
                             &common::root().join("tests/golden/reordered_transfer.txt"),

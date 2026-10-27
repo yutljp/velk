@@ -63,9 +63,9 @@ ok "annotation flags"
 pe_json=$("$BIN" --functions $FIX/pe64.exe --json 2>/dev/null)
 echo "$pe_json" | grep '"format": "pe"'          >/dev/null || fail "PE format detect"
 echo "$pe_json" | grep '"arch": "x86_64"'        >/dev/null || fail "PE64 isa detect"
-nf=$(echo "$pe_json" | sed -n 's/.*"functionCount": \([0-9]*\).*/\1/p')
-[ -n "$nf" ] && [ "$nf" -ge 3 ]                     || fail "PE64 function discovery (n=$nf)"
-ok "PE64 functions (n_functions=$nf)"
+function_count=$(echo "$pe_json" | sed -n 's/.*"functionCount": \([0-9]*\).*/\1/p')
+[ -n "$function_count" ] && [ "$function_count" -ge 3 ]                     || fail "PE64 function discovery (n=$function_count)"
+ok "PE64 functions (n_functions=$function_count)"
 
 # 2) PE64: function card contract
 card=$("$BIN" --card $FIX/pe64.exe reg_add --budget 144 2>/dev/null)
@@ -103,11 +103,11 @@ echo "$arr_ir" | grep 'add_lanes32'                 >/dev/null || fail "ir sum_a
 ok "ir sum_arr"
 
 # 5) pseudo-C output
-c3=$("$BIN" --decompile $FIX/arm64.o sum3 2>/dev/null)
-echo "$c3" | grep "int32_t sum3(int32_t a0, int32_t a1, int32_t a2)" >/dev/null || fail "decompile sum3 signature"
-echo "$c3" | grep "return (uint32_t)a1 + a0 + a2;"   >/dev/null || fail "decompile sum3 fold"
-[ "$(echo "$c3" | grep -c '0xffffffff')" -eq 0 ] || fail "decompile sum3 masks"
-echo "$c3" | grep "return "               >/dev/null || fail "decompile sum3 return"
+sum3_c=$("$BIN" --decompile $FIX/arm64.o sum3 2>/dev/null)
+echo "$sum3_c" | grep "int32_t sum3(int32_t a0, int32_t a1, int32_t a2)" >/dev/null || fail "decompile sum3 signature"
+echo "$sum3_c" | grep "return (uint32_t)a1 + a0 + a2;"   >/dev/null || fail "decompile sum3 fold"
+[ "$(echo "$sum3_c" | grep -c '0xffffffff')" -eq 0 ] || fail "decompile sum3 masks"
+echo "$sum3_c" | grep "return "               >/dev/null || fail "decompile sum3 return"
 echo "$sum3_ir" | grep -F "ret (((w1 + w0) + w2) & #0xffffffff)" >/dev/null || fail "ir sum3 width"
 while IFS='|' read -r action name pattern label; do
   case "$action" in
@@ -225,8 +225,8 @@ echo "$use_ir" | grep -E "(= x29|x29 =)" >/dev/null && fail "frame setup elision
 ok "callee-save elision"
 fold_ret=$("$BIN" --decompile $FIX/x64_div.o umod3x 2>/dev/null)
 echo "$fold_ret" | grep "return a0 % 3;"  >/dev/null || fail "temporary inlining into ret"
-sum3_ir2=$("$BIN" --decompile $FIX/arm64.o sum3 2>/dev/null)
-echo "$sum3_ir2" | grep "w8" >/dev/null && fail "temporary inlining (sum3)"
+sum3_c=$("$BIN" --decompile $FIX/arm64.o sum3 2>/dev/null)
+echo "$sum3_c" | grep "w8" >/dev/null && fail "temporary inlining (sum3)"
 ok "temporary inlining"
 abs_ir=$("$BIN" --decompile $FIX/pe64.exe reg_abs 2>/dev/null)
 echo "$abs_ir" | grep -F "((int32_t)-(uint32_t)a0 < 0 ? a0 : -(uint32_t)a0)" >/dev/null || fail "neg and cmovs absolute value"
@@ -298,9 +298,9 @@ dwarf_ir=$("$BIN" --decompile $FIX/arm64_debug.elf helper 2>/dev/null)
 echo "$dwarf_ir" | grep "v1 = (uint32_t)x - 1;"      >/dev/null || fail "narrow DWARF type read without a mask"
 echo "$dwarf_ir" | grep "(x & 0xffffffff)" >/dev/null && fail "narrow DWARF type keeps the mask"
 ok "narrow DWARF types"
-sign_ir2=$("$BIN" --decompile $FIX/pe64.exe reg_sign 2>/dev/null)
-echo "$sign_ir2" | grep "(int8_t)a0;"           >/dev/null || fail "sign-extended value needs no mask"
-echo "$sign_ir2" | grep "(int8_t)a0 & 0xffffffff" >/dev/null && fail "sign-extend mask kept"
+sign_c=$("$BIN" --decompile $FIX/pe64.exe reg_sign 2>/dev/null)
+echo "$sign_c" | grep "(int8_t)a0;"           >/dev/null || fail "sign-extended value needs no mask"
+echo "$sign_c" | grep "(int8_t)a0 & 0xffffffff" >/dev/null && fail "sign-extend mask kept"
 ok "sign-extended widths"
 degraded=$("$BIN" --decompile $FIX/arm64_debug.o sum3 2>/dev/null)
 echo "$degraded" | grep "clang version" >/dev/null && fail "relocated DWARF name leaked"
@@ -383,20 +383,20 @@ loops=$("$BIN" --decompile $FIX/arm64_loops_stripped.o "$loop_addr" 2>/dev/null)
 echo "$loops" | grep "do {"        >/dev/null || fail "stripped object body structured"
 echo "$loops" | grep "break;"      >/dev/null || fail "stripped object loop exit"
 ok "stripped relocatable objects"
-xs=$("$BIN" --functions $FIX/x64_loops_stripped.o 2>/dev/null | sed -n '1s/.*functions: \([0-9]*\).*/\1/p')
-[ "$xs" = "4" ] || fail "stripped x86 object function count ($xs)"
+x86_function_count=$("$BIN" --functions $FIX/x64_loops_stripped.o 2>/dev/null | sed -n '1s/.*functions: \([0-9]*\).*/\1/p')
+[ "$x86_function_count" = "4" ] || fail "stripped x86 object function count ($x86_function_count)"
 ok "stripped x86 objects"
 # A tail call (`b` to another function) ends a function without a `ret`.
-tn=$("$BIN" --functions $FIX/tail_calls_stripped.o 2>/dev/null | sed -n '1s/.*functions: \([0-9]*\).*/\1/p')
-[ "$tn" = "3" ] || fail "tail call boundary ($tn)"
+tail_function_count=$("$BIN" --functions $FIX/tail_calls_stripped.o 2>/dev/null | sed -n '1s/.*functions: \([0-9]*\).*/\1/p')
+[ "$tail_function_count" = "3" ] || fail "tail call boundary ($tail_function_count)"
 tail_addr=$("$BIN" --functions $FIX/tail_calls_stripped.o 2>/dev/null | tail -n +3 | sed -n 2p | awk '{print $1}')
 tail_mid=$("$BIN" --decompile $FIX/tail_calls_stripped.o "$tail_addr" 2>/dev/null)
 echo "$tail_mid" | grep "for (;;)" >/dev/null && fail "unresolved tail call became a loop"
 echo "$tail_mid" | grep "();"        >/dev/null || fail "unresolved tail call rendered"
 ok "tail call boundaries"
 # An indirect tail call (`br x2`) also ends a function.
-in_n=$("$BIN" --functions $FIX/tail_indirect_stripped.o 2>/dev/null | sed -n '1s/.*functions: \([0-9]*\).*/\1/p')
-[ "$in_n" = "2" ] || fail "indirect tail call boundary ($in_n)"
+indirect_tail_function_count=$("$BIN" --functions $FIX/tail_indirect_stripped.o 2>/dev/null | sed -n '1s/.*functions: \([0-9]*\).*/\1/p')
+[ "$indirect_tail_function_count" = "2" ] || fail "indirect tail call boundary ($indirect_tail_function_count)"
 ok "indirect tail calls"
 # A value just stored into a slot feeds its reader directly.
 fwd=$("$BIN" --decompile $FIX/arm64_loops0.o sum_till_neg 2>/dev/null)
@@ -515,18 +515,18 @@ ok "compound assignment"
 
 ok "decompile sum3"
 
-ch=$("$BIN" --decompile $FIX/arm64.o helper 2>/dev/null)
-echo "$ch" | grep "if (a0 < 1)"         >/dev/null || fail "decompile helper branch"
-echo "$ch" | grep "return "               >/dev/null || fail "decompile helper return"
+helper_c=$("$BIN" --decompile $FIX/arm64.o helper 2>/dev/null)
+echo "$helper_c" | grep "if (a0 < 1)"         >/dev/null || fail "decompile helper branch"
+echo "$helper_c" | grep "return "               >/dev/null || fail "decompile helper return"
 ok "decompile helper"
 
-ca=$("$BIN" --decompile $FIX/arm64.o sum_arr 2>/dev/null)
-echo "$ca" | grep "uint32_t \*a0"         >/dev/null || fail "pointer parameter typing"
-echo "$ca" | grep "sum_lanes32("            >/dev/null || fail "decompile sum_arr vector sum"
-echo "$ca" | grep -E 'uint64_t \*v[0-9]+( =|;)' >/dev/null || fail "decompile sum_arr vector pair load"
-echo "$ca" | grep "return 0;"           >/dev/null || fail "decompile sum_arr early return"
-echo "$ca" | grep "do {"                  >/dev/null || fail "decompile sum_arr loop"
-echo "$ca" | grep "} while ("             >/dev/null || fail "decompile sum_arr loop condition"
+sum_arr_c=$("$BIN" --decompile $FIX/arm64.o sum_arr 2>/dev/null)
+echo "$sum_arr_c" | grep "uint32_t \*a0"         >/dev/null || fail "pointer parameter typing"
+echo "$sum_arr_c" | grep "sum_lanes32("            >/dev/null || fail "decompile sum_arr vector sum"
+echo "$sum_arr_c" | grep -E 'uint64_t \*v[0-9]+( =|;)' >/dev/null || fail "decompile sum_arr vector pair load"
+echo "$sum_arr_c" | grep "return 0;"           >/dev/null || fail "decompile sum_arr early return"
+echo "$sum_arr_c" | grep "do {"                  >/dev/null || fail "decompile sum_arr loop"
+echo "$sum_arr_c" | grep "} while ("             >/dev/null || fail "decompile sum_arr loop condition"
 ok "decompile sum_arr"
 
 # 6) x86-64 IR and pseudo-C
@@ -638,22 +638,22 @@ rm -f "$script"
 ok "script API"
 
 # 14) extend-and-shift addressing (value-table switch)
-sw=$("$BIN" --decompile $FIX/arm64_switch.elf dispatch 2>/dev/null)
-echo "$sw" | grep "g_200120\[v1\]"   >/dev/null || fail "extend-shift addressing as a table"
-echo "$sw" | grep "ref: 0x"                >/dev/null || fail "switch table reference"
-if echo "$sw" | grep "unsupported:" >/dev/null; then fail "switch table unsupported"; fi
+switch_c=$("$BIN" --decompile $FIX/arm64_switch.elf dispatch 2>/dev/null)
+echo "$switch_c" | grep "g_200120\[v1\]"   >/dev/null || fail "extend-shift addressing as a table"
+echo "$switch_c" | grep "ref: 0x"                >/dev/null || fail "switch table reference"
+if echo "$switch_c" | grep "unsupported:" >/dev/null; then fail "switch table unsupported"; fi
 ok "table-driven switch"
 
 # 15) switch recovery from an indirect-branch jump table
-jt=$("$BIN" --decompile $FIX/arm64_jumptable.elf d7 2>/dev/null)
-echo "$jt" | grep -F 'if ((uint32_t)a0 <= 9)' >/dev/null || fail "jump-table bounds"
-[ "$(echo "$jt" | grep -Fc 'v1 = g;')" -eq 1 ] || fail "jump-table shared load"
+jump_table_c=$("$BIN" --decompile $FIX/arm64_jumptable.elf d7 2>/dev/null)
+echo "$jump_table_c" | grep -F 'if ((uint32_t)a0 <= 9)' >/dev/null || fail "jump-table bounds"
+[ "$(echo "$jump_table_c" | grep -Fc 'v1 = g;')" -eq 1 ] || fail "jump-table shared load"
 for limit in {0..8}; do
-  echo "$jt" | grep -F "if ((uint32_t)a0 > $limit)" >/dev/null || fail "jump-table case $limit"
+  echo "$jump_table_c" | grep -F "if ((uint32_t)a0 > $limit)" >/dev/null || fail "jump-table case $limit"
 done
-if echo "$jt" | grep "unsupported" >/dev/null; then fail "jump-table unsupported"; fi
-for label in $(echo "$jt" | sed -n 's/.*goto \(L_[0-9a-f]*\);.*/\1/p' | sort -u); do
-  echo "$jt" | grep "$label:" >/dev/null || fail "missing $label"
+if echo "$jump_table_c" | grep "unsupported" >/dev/null; then fail "jump-table unsupported"; fi
+for label in $(echo "$jump_table_c" | sed -n 's/.*goto \(L_[0-9a-f]*\);.*/\1/p' | sort -u); do
+  echo "$jump_table_c" | grep "$label:" >/dev/null || fail "missing $label"
 done
 ok "jump-table switch"
 

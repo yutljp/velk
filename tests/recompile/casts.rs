@@ -480,7 +480,7 @@ fn printed_byte_buffer_accesses_keep_signedness_and_wider_accesses() {
             width,
             signed,
         };
-        let ret = Stmt::Ret { value: read };
+        let return_statement = Stmt::Ret { value: read };
         let mut ir = synthetic_ir(
             if signed {
                 "signed_buffer_byte"
@@ -518,7 +518,7 @@ fn printed_byte_buffer_accesses_keep_signedness_and_wider_accesses() {
                     value: Expr::reg(7, 64),
                     width: 1,
                 },
-                ret.clone(),
+                return_statement.clone(),
             ],
         );
         let mut symbols = velk::render::Symbols::default();
@@ -540,7 +540,7 @@ fn printed_byte_buffer_accesses_keep_signedness_and_wider_accesses() {
             value: Expr::reg(7, 64),
             width: 1,
         });
-        ir.blocks[0].stmts.push(ret);
+        ir.blocks[0].stmts.push(return_statement);
         let mut candidate = printed_candidate(ir, (0..256).map(|value| vec![value]).collect());
         candidate.code = format!("#include <string.h>\n{code}");
         candidates.push(candidate);
@@ -828,7 +828,7 @@ fn printed_integer_argument_parts_preserve_every_byte_and_sign() {
 #[test]
 fn simplified_selections_keep_the_comparison_width() {
     let mut candidates = Vec::new();
-    for (at, (cond, mask, add)) in [
+    for (index, (cond, mask, add)) in [
         (Cond::Lt, 0xaa4c_90f6, 0),
         (Cond::Ge, 0xaa4c_90f6, 0),
         (Cond::Gt, 0xaa4c_90f6, 0),
@@ -847,7 +847,7 @@ fn simplified_selections_keep_the_comparison_width() {
             Expr::Const(0xffff_ffff),
         );
         let ir = synthetic_ir(
-            &format!("masked_selection_{at}"),
+            &format!("masked_selection_{index}"),
             vec![Param {
                 index: 7,
                 name: "x".into(),
@@ -957,7 +957,7 @@ fn signed_comparisons_keep_their_sign_with_unsigned_positive_operands() {
     for bits in [32, 64] {
         for byte in [false, true] {
             for reversed in [false, true] {
-                for (at, cond) in [Cond::Lt, Cond::Ge, Cond::Gt, Cond::Le]
+                for (index, cond) in [Cond::Lt, Cond::Ge, Cond::Gt, Cond::Le]
                     .into_iter()
                     .enumerate()
                 {
@@ -976,7 +976,7 @@ fn signed_comparisons_keep_their_sign_with_unsigned_positive_operands() {
                         (negative, positive)
                     };
                     let ir = synthetic_ir(
-                        &format!("signed_positive_{bits}_{byte}_{reversed}_{at}"),
+                        &format!("signed_positive_{bits}_{byte}_{reversed}_{index}"),
                         vec![
                             Param {
                                 index: 7,

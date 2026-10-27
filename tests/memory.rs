@@ -355,14 +355,14 @@ fn global_annotations_override_detected_table_names() {
 fn pe_virtual_tails_are_zero_without_reading_the_next_file_region() {
     use object::{Object as _, ObjectSection as _};
     let path = common::root().join("tests/data/byte_search/section_tail.dll");
-    let data = std::fs::read(&path).unwrap();
-    let file = object::File::parse(data.as_slice()).unwrap();
+    let bytes = std::fs::read(&path).unwrap();
+    let file = object::File::parse(bytes.as_slice()).unwrap();
     let section = file.section_by_name(".data").unwrap();
     let (file_offset, file_size) = section.file_range().unwrap();
     assert!(section.size() > file_size + 16);
     let next = usize::try_from(file_offset + file_size).unwrap();
     assert_eq!(
-        data[next], 0xa5,
+        bytes[next], 0xa5,
         "the next file region contains different initialized data"
     );
     let start = velk::addr::format(section.address() + file_size - 2);

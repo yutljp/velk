@@ -35,7 +35,7 @@ struct Truth {
     name: String,
     params: Vec<Kind>,
     variadic: bool,
-    ret: Kind,
+    return_kind: Kind,
     layouts: Vec<Option<structures::TruthLayout>>,
 }
 
@@ -263,7 +263,7 @@ fn measure(dir: &Path, case: &str) -> (Vec<(&'static str, Score)>, Vec<String>) 
                 }
             }
         }
-        let void_ok = (expected.ret == Kind::Void) == (got_ret == Kind::Void);
+        let void_ok = (expected.return_kind == Kind::Void) == (got_ret == Kind::Void);
         scores
             .get_mut("return void")
             .expect("known metric")
@@ -272,11 +272,13 @@ fn measure(dir: &Path, case: &str) -> (Vec<(&'static str, Score)>, Vec<String>) 
             mismatches.push(format!(
                 "returns {}, expected {}",
                 ir.ret_type,
-                describe(&expected.ret)
+                describe(&expected.return_kind)
             ));
         }
-        if matches!(expected.ret, Kind::Float { .. }) || matches!(got_ret, Kind::Float { .. }) {
-            let float_ok = expected.ret == got_ret;
+        if matches!(expected.return_kind, Kind::Float { .. })
+            || matches!(got_ret, Kind::Float { .. })
+        {
+            let float_ok = expected.return_kind == got_ret;
             scores
                 .get_mut("float type")
                 .expect("known metric")
@@ -285,12 +287,12 @@ fn measure(dir: &Path, case: &str) -> (Vec<(&'static str, Score)>, Vec<String>) 
                 mismatches.push(format!(
                     "returns {}, expected {}",
                     ir.ret_type,
-                    describe(&expected.ret)
+                    describe(&expected.return_kind)
                 ));
             }
         }
         if let (Kind::Scalar { bytes: want, .. }, Kind::Scalar { bytes: got, .. }) =
-            (&expected.ret, &got_ret)
+            (&expected.return_kind, &got_ret)
         {
             scores
                 .get_mut("return width")
@@ -405,9 +407,9 @@ type Slice<'a> = EndianSlice<'a, LittleEndian>;
 
 /// Functions with a symbol and a DWARF description, by address.
 fn truth(path: &Path) -> BTreeMap<u64, Truth> {
-    let data = std::fs::read(path).unwrap_or_else(|error| panic!("{}: {error}", path.display()));
+    let bytes = std::fs::read(path).unwrap_or_else(|error| panic!("{}: {error}", path.display()));
     let file =
-        object::File::parse(&*data).unwrap_or_else(|error| panic!("{}: {error}", path.display()));
+        object::File::parse(&*bytes).unwrap_or_else(|error| panic!("{}: {error}", path.display()));
     let symbols: HashMap<u64, String> = file
         .symbols()
         .filter(|symbol| symbol.kind() == object::SymbolKind::Text && symbol.size() > 0)
@@ -480,7 +482,7 @@ fn truth(path: &Path) -> BTreeMap<u64, Truth> {
                     name,
                     params,
                     variadic,
-                    ret,
+                    return_kind: ret,
                     layouts,
                 },
             );

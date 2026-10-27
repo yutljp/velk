@@ -218,7 +218,7 @@ fn check_architecture(architecture: &str) {
     check_imported_hooks(architecture);
     let path = fixture(architecture);
     let binary = Binary::open(&path).expect("valid compiled fixture state");
-    let data = binary
+    let data_address = binary
         .image()
         .data_symbols
         .iter()
@@ -228,7 +228,7 @@ fn check_architecture(architecture: &str) {
     let report = execute(
         &binary,
         "decode",
-        json!({"arguments":[data,8,93],"trace":true}),
+        json!({"arguments":[data_address,8,93],"trace":true}),
     );
     assert_returned_value(&report, native_results()[0]);
     assert!(!report.trace.is_empty());
@@ -249,7 +249,7 @@ fn check_architecture(architecture: &str) {
 
     let changed: Vec<u8> = (0..8)
         .map(|offset| {
-            let address = data + offset;
+            let address = data_address + offset;
             for region in &report.memory {
                 let start =
                     velk::addr::parse(&region.address).expect("valid compiled fixture state");
@@ -282,7 +282,7 @@ fn check_architecture(architecture: &str) {
         native_results()[2],
     );
     assert_returned_value(
-        &execute(&binary, "nested", json!({"arguments":[data,8]})),
+        &execute(&binary, "nested", json!({"arguments":[data_address,8]})),
         native_results()[0] ^ native_results()[1],
     );
     let runner = match architecture {

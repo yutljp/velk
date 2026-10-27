@@ -140,10 +140,10 @@ fn com_calls_and_guid_names_are_available_over_stdio() {
             ),
         )]);
         assert_eq!(responses[0]["result"]["isError"], false);
-        let data: Value = serde_json::from_str(text(&responses[0])).unwrap();
-        assert!(data["code"].as_str().unwrap().contains("->lpVtbl->Read("));
-        assert_eq!(data["signature"]["params"].as_array().unwrap().len(), 4);
-        let guid = data["references"]
+        let result: Value = serde_json::from_str(text(&responses[0])).unwrap();
+        assert!(result["code"].as_str().unwrap().contains("->lpVtbl->Read("));
+        assert_eq!(result["signature"]["params"].as_array().unwrap().len(), 4);
+        let guid = result["references"]
             .as_array()
             .unwrap()
             .iter()

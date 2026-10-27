@@ -292,7 +292,7 @@ static uint64_t velk_seed;
 static volatile int velk_unreachable;
 static uintptr_t velk_pages[4096];
 static int velk_page_count;
-static long velk_page;
+static long velk_page_size;
 static uint64_t velk_hash(uint64_t seed, uint64_t key) {
     uint64_t value = seed ^ (key * 0x9e3779b97f4a7c15ULL);
     value = (value ^ (value >> 30)) * 0xbf58476d1ce4e5b9ULL;
@@ -310,19 +310,19 @@ static void velk_fault(int sig, siginfo_t *info, void *context) {
     // Page allocation and initialization are harness work, not execution.
     struct itimerval stopped = {0}, remaining;
     setitimer(ITIMER_VIRTUAL, &stopped, &remaining);
-    uintptr_t page = (uintptr_t)info->si_addr & ~(uintptr_t)(velk_page - 1);
+    uintptr_t page = (uintptr_t)info->si_addr & ~(uintptr_t)(velk_page_size - 1);
     if (velk_page_count < 4096 && page >= 0x100000) {
-        void *mapped = mmap((void *)page, velk_page, PROT_READ | PROT_WRITE,
+        void *mapped = mmap((void *)page, velk_page_size, PROT_READ | PROT_WRITE,
                             MAP_PRIVATE | MAP_ANON, -1, 0);
         if (mapped == (void *)page) {
             velk_pages[velk_page_count++] = page;
-            velk_fill(page, velk_page);
-            velk_fixture_overlay(page, velk_page);
+            velk_fill(page, velk_page_size);
+            velk_fixture_overlay(page, velk_page_size);
             setitimer(ITIMER_VIRTUAL, &remaining, 0);
             return;
         }
         if (mapped != MAP_FAILED) {
-            munmap(mapped, velk_page);
+            munmap(mapped, velk_page_size);
         }
     }
     velk_unreachable = 1;
@@ -333,7 +333,7 @@ static void velk_timer(long usec) {
     setitimer(ITIMER_VIRTUAL, &timer, 0);
 }
 int main(void) {
-    velk_page = getpagesize();
+    velk_page_size = getpagesize();
     void *region = mmap((void *)REGION_START, REGION_BYTES, PROT_READ | PROT_WRITE,
                         MAP_PRIVATE | MAP_ANON, -1, 0);
     if (region != (void *)REGION_START) {
@@ -372,7 +372,7 @@ int main(void) {
             continue;
         }
         while (velk_page_count > 0) {
-            munmap((void *)velk_pages[--velk_page_count], velk_page);
+            munmap((void *)velk_pages[--velk_page_count], velk_page_size);
         }
         velk_fill(REGION_START, REGION_BYTES);
         velk_unreachable = 0;
@@ -3163,7 +3163,7 @@ fn abi_fixture_oracle(name: &str, input: &[u64], slice: ObjectSlice) -> u64 {
 fn assert_abi_fixture_placement(name: &str, abi: &SignatureAbi) {
     let name = name.strip_suffix("_aligned").unwrap_or(name);
     let x86 = abi.profile == AbiProfile::SysV;
-    let ints: &[u16] = if x86 {
+    let integer_registers: &[u16] = if x86 {
         &[7, 6, 2, 1, 8, 9]
     } else {
         &[0, 1, 2, 3, 4, 5, 6, 7]
@@ -3197,7 +3197,10 @@ fn assert_abi_fixture_placement(name: &str, abi: &SignatureAbi) {
     };
     let (arguments, result) = match name {
         "abi_pair_adjust" => (
-            vec![pair(ints[0], ints[1]), integer(ints[2])],
+            vec![
+                pair(integer_registers[0], integer_registers[1]),
+                integer(integer_registers[2]),
+            ],
             pair(0, if x86 { 2 } else { 1 }),
         ),
         "abi_mixed_adjust" if x86 => (
@@ -3217,19 +3220,31 @@ fn assert_abi_fixture_placement(name: &str, abi: &SignatureAbi) {
         "abi_mixed_adjust" => (vec![pair(0, 1), integer(2), float(32)], pair(0, 1)),
         "abi_indirect_make" => (
             vec![
-                pair(ints[usize::from(x86)], ints[usize::from(x86) + 1]),
-                integer(ints[usize::from(x86) + 2]),
+                pair(
+                    integer_registers[usize::from(x86)],
+                    integer_registers[usize::from(x86) + 1],
+                ),
+                integer(integer_registers[usize::from(x86) + 2]),
             ],
             hidden(),
         ),
         "abi_exhaust_five" => {
-            let mut arguments: Vec<_> = ints[..5].iter().copied().map(integer).collect();
+            let mut arguments: Vec<_> = integer_registers[..5]
+                .iter()
+                .copied()
+                .map(integer)
+                .collect();
             arguments.push(if x86 { stack(8, 16) } else { pair(5, 6) });
             arguments.push(integer(if x86 { 9 } else { 7 }));
             (arguments, integer(0))
         }
         "abi_exhaust_seven" => {
-            let mut arguments: Vec<_> = ints.iter().take(7).copied().map(integer).collect();
+            let mut arguments: Vec<_> = integer_registers
+                .iter()
+                .take(7)
+                .copied()
+                .map(integer)
+                .collect();
             if x86 {
                 arguments.push(stack(8, 8));
             }
@@ -3352,7 +3367,7 @@ fn integer_object_ir(size: u64, aggregate_return: bool) -> FunctionIr {
             )
         })
         .collect();
-    let ret = if aggregate_return {
+    let return_type = if aggregate_return {
         ty.clone()
     } else {
         CType::U64
@@ -3375,7 +3390,7 @@ fn integer_object_ir(size: u64, aggregate_return: bool) -> FunctionIr {
             if aggregate_return { "object" } else { "scalar" }
         ),
         params,
-        ret.clone(),
+        return_type.clone(),
         vec![Stmt::Ret { value: expression }],
     );
     ir.definitions.push(Definition {
@@ -3425,7 +3440,7 @@ fn integer_object_ir(size: u64, aggregate_return: bool) -> FunctionIr {
     };
     ir.declared_signature = Some(DeclaredSignature {
         params: vec![("value".into(), ty), ("tail".into(), CType::U64)],
-        ret,
+        ret: return_type,
         variadic: false,
         abi: Ok(SignatureAbi {
             profile: AbiProfile::SysV,
@@ -7160,8 +7175,8 @@ fn program(
                     &format!("{prepare}(k, velk_seed)"),
                 )
                 .replace(
-                    "velk_fixture_overlay(page, velk_page)",
-                    &format!("{overlay}(page, velk_page)"),
+                    "velk_fixture_overlay(page, velk_page_size)",
+                    &format!("{overlay}(page, velk_page_size)"),
                 ),
         );
     } else {

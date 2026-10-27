@@ -111,12 +111,12 @@ fn folded_calls_keep_the_temporary_integer_conversion() {
             if op != BinOp::Sar || ty == CType::I64 {
                 assert!(printed.contains("64_t)(small_result())"), "{printed}");
             }
-            let helper = if op == BinOp::Sar {
+            let function_definition = if op == BinOp::Sar {
                 "static uint64_t small_result(void) { return UINT64_MAX; }"
             } else {
                 "static uint64_t small_result(void) { return 1; }"
             };
-            let code = format!("{helper}\n{printed}");
+            let code = format!("{function_definition}\n{printed}");
             let expected = match op {
                 BinOp::Xor => !1u64,
                 BinOp::Sar => u64::MAX,

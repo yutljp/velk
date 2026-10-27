@@ -1318,8 +1318,8 @@ fn calls_to_declared_callees_pass_and_return_declared_types() {
         "square",
         "pick_op",
     ] {
-        let addr = binary.find(name).expect("a function").addr;
-        let code = binary.decompile(addr, None, None).unwrap();
+        let address = binary.find(name).expect("a function").addr;
+        let code = binary.decompile(address, None, None).unwrap();
         // The callee is declared as its debug information declares it, and
         // its result needs no conversion.
         assert!(!code.contains("((int32_t)("), "{code}");

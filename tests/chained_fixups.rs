@@ -104,9 +104,9 @@ fn tables_globals_and_pointer_reads_see_decoded_addresses_and_addends() {
                 addend: 0
             })
         );
-        let data = data_address(&binary, "_data_pointer");
+        let data_pointer_address = data_address(&binary, "_data_pointer");
         assert_eq!(
-            binary.image().read_pointer(data),
+            binary.image().read_pointer(data_pointer_address),
             Some(Pointer::Import {
                 name: "_imported_data",
                 addend: 12

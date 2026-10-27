@@ -38,12 +38,11 @@ fn fixtures_load_and_lift_in_i386_mode() {
 
 #[test]
 fn elf32_rel_and_pe32_import_slots_have_four_byte_width() {
-    for opt in ["O0", "O2"] {
+    for optimization in ["O0", "O2"] {
         for variant in ["debug", "stripped"] {
-            let image = velk::loader::load(
-                &common::fixtures_dir()
-                    .join(format!("metrics/relocations.i386.{opt}.{variant}.elf")),
-            )
+            let image = velk::loader::load(&common::fixtures_dir().join(format!(
+                "metrics/relocations.i386.{optimization}.{variant}.elf"
+            )))
             .unwrap();
             for (name, expected) in [("selected", None), ("bias_pointer", Some(11))] {
                 let address = *image
@@ -65,9 +64,9 @@ fn elf32_rel_and_pe32_import_slots_have_four_byte_width() {
                 }
             }
             assert!(image.imports.values().any(|name| name == "abs"));
-            let image = velk::loader::load(
-                &common::fixtures_dir().join(format!("metrics/imports.win32.{opt}.{variant}.dll")),
-            )
+            let image = velk::loader::load(&common::fixtures_dir().join(format!(
+                "metrics/imports.win32.{optimization}.{variant}.dll"
+            )))
             .unwrap();
             assert_eq!(image.imports.len(), 1);
             assert!(image.imports.values().any(|name| name == "abs"));

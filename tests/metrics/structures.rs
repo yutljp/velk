@@ -230,8 +230,10 @@ fn stripped_structure_layouts_match_debug_information() {
                 };
                 compare(expected, layout, &mut scores);
                 if let Some(layout) = layout {
-                    let data = velk::card::StructureLayout::from(layout);
-                    assert!(data.source_fields.is_none() && data.source_size.is_none());
+                    let card_layout = velk::card::StructureLayout::from(layout);
+                    assert!(
+                        card_layout.source_fields.is_none() && card_layout.source_size.is_none()
+                    );
                     for difference in differences(expected, layout) {
                         writeln!(
                             output,

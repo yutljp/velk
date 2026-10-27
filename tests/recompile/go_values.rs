@@ -4,7 +4,7 @@ use super::*;
 fn go_register_and_stack_shapes_compile_and_preserve_all_words() {
     let mut source = String::from(HEADER);
     let mut prelude = velk::render::Prelude::default();
-    for (helper, count) in [
+    for (runtime_function, count) in [
         ("printstring", 2),
         ("printslice", 3),
         ("printiface", 2),
@@ -45,7 +45,7 @@ fn go_register_and_stack_shapes_compile_and_preserve_all_words() {
                 value = Expr::bin(BinOp::Xor, value, word(i));
             }
             let mut ir = synthetic_ir(
-                &format!("runtime.{helper}"),
+                &format!("runtime.{runtime_function}"),
                 params,
                 CType::U64,
                 vec![
@@ -91,13 +91,16 @@ fn go_register_and_stack_shapes_compile_and_preserve_all_words() {
                     })
                     .collect();
             }
-            let name = format!("{helper}_{}", if stack { "stack" } else { "register" });
+            let name = format!(
+                "{runtime_function}_{}",
+                if stack { "stack" } else { "register" }
+            );
             let symbols = velk::render::Symbols {
                 functions: [(0, name.clone())].into(),
                 ..Default::default()
             };
             let code = velk::render::render(&ir, &[], &symbols, &[]);
-            let shape = match helper {
+            let shape = match runtime_function {
                 "printstring" => "go_string",
                 "printslice" => "go_slice",
                 _ => "go_iface",
@@ -106,7 +109,7 @@ fn go_register_and_stack_shapes_compile_and_preserve_all_words() {
             assert!(
                 code.contains(if count == 3 {
                     "slice.cap"
-                } else if helper == "printstring" {
+                } else if runtime_function == "printstring" {
                     "string.len"
                 } else {
                     "iface.data"
@@ -117,7 +120,7 @@ fn go_register_and_stack_shapes_compile_and_preserve_all_words() {
             source.push_str(&format!("\nstatic int check_{name}(uint64_t a, uint64_t b, uint64_t c) {{ return {name}(a, b{}) != (((a & ~UINT64_C(255)) | UINT64_C(66)) ^ b{}); }}\n", if count == 3 { ", c" } else { "" }, if count == 3 { " ^ c" } else { "" }));
         }
     }
-    for (helper, count) in [("printstring", 2), ("printslice", 3), ("printiface", 2)] {
+    for (runtime_function, count) in [("printstring", 2), ("printslice", 3), ("printiface", 2)] {
         let registers = [0, 3, 1];
         let words: Vec<_> = registers[..count]
             .iter()
@@ -128,7 +131,7 @@ fn go_register_and_stack_shapes_compile_and_preserve_all_words() {
             value = Expr::bin(BinOp::Xor, value, word.clone());
         }
         let mut ir = synthetic_ir(
-            &format!("forward_{helper}"),
+            &format!("forward_{runtime_function}"),
             registers[..count]
                 .iter()
                 .enumerate()
@@ -157,12 +160,12 @@ fn go_register_and_stack_shapes_compile_and_preserve_all_words() {
         );
         ir.convention = Convention::GoAmd64;
         let symbols = velk::render::Symbols {
-            functions: [(10, format!("sink_{helper}"))].into(),
+            functions: [(10, format!("sink_{runtime_function}"))].into(),
             function_returns: [(10, CType::Void)].into(),
-            go_value_shapes: [(10, format!("runtime.{helper}"))].into(),
+            go_value_shapes: [(10, format!("runtime.{runtime_function}"))].into(),
             ..Default::default()
         };
-        source.push_str(&format!("static uint64_t observed_{helper};\nvoid sink_{helper}(uint64_t a, uint64_t b{}) {{ observed_{helper} = a ^ b{}; }}\n", if count == 3 { ", uint64_t c" } else { "" }, if count == 3 { " ^ c" } else { "" }));
+        source.push_str(&format!("static uint64_t observed_{runtime_function};\nvoid sink_{runtime_function}(uint64_t a, uint64_t b{}) {{ observed_{runtime_function} = a ^ b{}; }}\n", if count == 3 { ", uint64_t c" } else { "" }, if count == 3 { " ^ c" } else { "" }));
         let code = velk::render::render(&ir, &[], &symbols, &[]);
         assert!(code.contains("struct go_"), "{code}");
         source.push_str(&prelude.extract(&code));
@@ -171,13 +174,15 @@ fn go_register_and_stack_shapes_compile_and_preserve_all_words() {
     assert_eq!(definitions.matches("struct go_iface {").count(), 1);
     source.insert_str(HEADER.len(), &definitions);
     source.push_str("\nint main(void) { for (uint64_t i = 0; i < 100; ++i) { uint64_t a = i * UINT64_C(0xfedcba987654321), b = ~a, c = i * UINT64_C(0xdeadbeef12345678);\n");
-    for helper in ["printstring", "printslice", "printiface", "printeface"] {
+    for runtime_function in ["printstring", "printslice", "printiface", "printeface"] {
         for passing in ["stack", "register"] {
-            source.push_str(&format!("if (check_{helper}_{passing}(a,b,c)) return 1;\n"));
+            source.push_str(&format!(
+                "if (check_{runtime_function}_{passing}(a,b,c)) return 1;\n"
+            ));
         }
     }
-    for (helper, count) in [("printstring", 2), ("printslice", 3), ("printiface", 2)] {
-        source.push_str(&format!("if (forward_{helper}(a,b{}) != (a ^ b{}) || observed_{helper} != (a ^ b{})) return 1;\n", if count == 3 { ",c" } else { "" }, if count == 3 { " ^ c" } else { "" }, if count == 3 { " ^ c" } else { "" }));
+    for (runtime_function, count) in [("printstring", 2), ("printslice", 3), ("printiface", 2)] {
+        source.push_str(&format!("if (forward_{runtime_function}(a,b{}) != (a ^ b{}) || observed_{runtime_function} != (a ^ b{})) return 1;\n", if count == 3 { ",c" } else { "" }, if count == 3 { " ^ c" } else { "" }, if count == 3 { " ^ c" } else { "" }));
     }
     source.push_str("} return 0; }\n");
     let scratch = scratch_dir("go-values");

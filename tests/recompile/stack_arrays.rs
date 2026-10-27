@@ -260,7 +260,7 @@ fn printed_stack_arrays_preserve_call_and_indexed_writes() {
             symbols.functions.clear();
         }
         let code = velk::render::render(&ir, &[], &symbols, &[]);
-        let ret = ir.blocks.last().unwrap().stmts.last().unwrap().clone();
+        let return_statement = ir.blocks.last().unwrap().stmts.last().unwrap().clone();
         let extent = if unknown {
             256
         } else {
@@ -286,7 +286,7 @@ fn printed_stack_arrays_preserve_call_and_indexed_writes() {
                 .stmts
                 .push(store(destination + offset, byte, 1));
         }
-        ir.blocks[0].stmts.push(ret);
+        ir.blocks[0].stmts.push(return_statement);
         let mut candidate = printed_candidate(ir, vec![vec![]]);
         candidate.code = format!(
             "#include <string.h>\n{}\n{code}",

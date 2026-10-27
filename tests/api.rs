@@ -50,14 +50,17 @@ fn target_library_types_expose_com_signatures_in_scripts_and_cli() {
         let outcome = Engine::new().unwrap().run(&script, None);
         assert!(outcome.error.is_none(), "{:?}", outcome.error);
         let record: Value = serde_json::from_str(&outcome.output).unwrap();
-        assert!(check(&interfaces, "LibraryRecord", &record, fixture).is_empty());
+        assert!(check_interface_fields(&interfaces, "LibraryRecord", &record, fixture).is_empty());
         assert_eq!(record["size"], 3 * width);
         assert_eq!(record["alignment"], width);
         let fields = record["fields"].as_array().unwrap();
         assert_eq!(fields.len(), 3);
         for field in fields {
-            assert!(check(&interfaces, "LibraryField", field, fixture).is_empty());
-            assert!(check(&interfaces, "LibraryFunction", &field["function"], fixture).is_empty());
+            assert!(check_interface_fields(&interfaces, "LibraryField", field, fixture).is_empty());
+            assert!(
+                check_interface_fields(&interfaces, "LibraryFunction", &field["function"], fixture)
+                    .is_empty()
+            );
             assert_eq!(field["function"]["callingConvention"], convention);
         }
         assert_eq!(fields[0]["name"], "QueryInterface");
@@ -110,11 +113,25 @@ fn com_calls_and_guid_references_match_in_scripts_and_cli() {
         );
         let outcome = Engine::new().unwrap().run(&script, None);
         assert!(outcome.error.is_none(), "{:?}", outcome.error);
-        let data: Value = serde_json::from_str(&outcome.output).unwrap();
-        assert!(data["code"].as_str().unwrap().contains("->lpVtbl->Read("));
-        assert_eq!(data["signature"]["params"].as_array().unwrap().len(), 4);
-        assert_eq!(data["signature"]["params"][0]["type"], "struct IStream *");
-        let guid = data["references"]
+        let script_result: Value = serde_json::from_str(&outcome.output).unwrap();
+        assert!(
+            script_result["code"]
+                .as_str()
+                .unwrap()
+                .contains("->lpVtbl->Read(")
+        );
+        assert_eq!(
+            script_result["signature"]["params"]
+                .as_array()
+                .unwrap()
+                .len(),
+            4
+        );
+        assert_eq!(
+            script_result["signature"]["params"][0]["type"],
+            "struct IStream *"
+        );
+        let guid = script_result["references"]
             .as_array()
             .unwrap()
             .iter()
@@ -129,7 +146,7 @@ fn com_calls_and_guid_references_match_in_scripts_and_cli() {
         assert_eq!(guid["value"], "00000000-0000-0000-c000-000000000046");
         assert_eq!(guid["bytes"].as_array().unwrap().len(), 16);
         assert!(
-            data["unknown"]
+            script_result["unknown"]
                 .as_array()
                 .unwrap()
                 .iter()
@@ -151,7 +168,7 @@ fn com_calls_and_guid_references_match_in_scripts_and_cli() {
         );
         assert_eq!(
             serde_json::from_slice::<Value>(&output.stdout).unwrap(),
-            data
+            script_result
         );
     }
 }
@@ -297,7 +314,7 @@ JSON.stringify({{
         .unwrap_or_else(|error| panic!("{fixture}: {error}: {}", outcome.output))
 }
 
-fn check(
+fn check_interface_fields(
     interfaces: &BTreeMap<String, (BTreeSet<String>, BTreeSet<String>)>,
     interface: &str,
     value: &Value,
@@ -337,15 +354,20 @@ fn script_results_match_the_declarations() {
     for (fixture, function) in cases {
         let result = exercise(fixture, function);
         let at = |field: &str| format!("{fixture} {function} {field}");
-        problems.extend(check(
+        problems.extend(check_interface_fields(
             &interfaces,
             "Section",
             &result["section"],
             &at("sections()[0]"),
         ));
-        problems.extend(check(&interfaces, "Card", &result["card"], &at("card()")));
+        problems.extend(check_interface_fields(
+            &interfaces,
+            "Card",
+            &result["card"],
+            &at("card()"),
+        ));
         for field in ["execution", "functionExecution"] {
-            problems.extend(check(
+            problems.extend(check_interface_fields(
                 &interfaces,
                 "EmulationReport",
                 &result[field],
@@ -371,7 +393,7 @@ fn script_results_match_the_declarations() {
             ("functionCallers", "GraphResult"),
             ("functionCallees", "GraphResult"),
         ] {
-            problems.extend(check(
+            problems.extend(check_interface_fields(
                 &interfaces,
                 interface,
                 &navigation[field],
@@ -386,26 +408,31 @@ fn script_results_match_the_declarations() {
             ("strings", "strings", "StringLiteral"),
         ] {
             for value in navigation[field][array].as_array().into_iter().flatten() {
-                problems.extend(check(&interfaces, interface, value, &at(field)));
+                problems.extend(check_interface_fields(
+                    &interfaces,
+                    interface,
+                    value,
+                    &at(field),
+                ));
             }
         }
         assert_eq!(
             navigation["path"]["path"],
             serde_json::json!([result["func"]["addr"]])
         );
-        problems.extend(check(
+        problems.extend(check_interface_fields(
             &interfaces,
             "Card",
             &result["smallCard"],
             &at("card({budget: 100})"),
         ));
-        problems.extend(check(
+        problems.extend(check_interface_fields(
             &interfaces,
             "Signature",
             &result["signature"],
             &at("signature()"),
         ));
-        problems.extend(check(
+        problems.extend(check_interface_fields(
             &interfaces,
             "SignatureDb",
             &result["signatures"]["database"],
@@ -417,7 +444,7 @@ fn script_results_match_the_declarations() {
             .flatten()
             .enumerate()
         {
-            problems.extend(check(
+            problems.extend(check_interface_fields(
                 &interfaces,
                 "Reference",
                 reference,
@@ -430,7 +457,7 @@ fn script_results_match_the_declarations() {
             .flatten()
             .enumerate()
         {
-            problems.extend(check(
+            problems.extend(check_interface_fields(
                 &interfaces,
                 "Match",
                 hit,
@@ -680,11 +707,16 @@ fn class_results_match_the_declarations() {
         let classes: Vec<Value> = serde_json::from_str(&outcome.output).unwrap();
         assert_eq!(classes.len(), 6);
         for class in classes {
-            problems.extend(check(&interfaces, "CppClass", &class, format));
+            problems.extend(check_interface_fields(
+                &interfaces,
+                "CppClass",
+                &class,
+                format,
+            ));
             for base in class["bases"].as_array().unwrap() {
-                problems.extend(check(&interfaces, "CppBase", base, format));
+                problems.extend(check_interface_fields(&interfaces, "CppBase", base, format));
                 if !base["vbtable"].is_null() {
-                    problems.extend(check(
+                    problems.extend(check_interface_fields(
                         &interfaces,
                         "CppVirtualBase",
                         &base["vbtable"],
@@ -693,9 +725,19 @@ fn class_results_match_the_declarations() {
                 }
             }
             for table in class["vtables"].as_array().unwrap() {
-                problems.extend(check(&interfaces, "CppVtable", table, format));
+                problems.extend(check_interface_fields(
+                    &interfaces,
+                    "CppVtable",
+                    table,
+                    format,
+                ));
                 for method in table["methods"].as_array().unwrap() {
-                    problems.extend(check(&interfaces, "CppMethod", method, format));
+                    problems.extend(check_interface_fields(
+                        &interfaces,
+                        "CppMethod",
+                        method,
+                        format,
+                    ));
                 }
             }
         }

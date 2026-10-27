@@ -203,7 +203,7 @@ fn printed_arm64_table_shift_and_aes_preserve_results() {
             let mut ir = synthetic_ir(&format!("{name}_{output}"), params, CType::U64, vec![]);
             ir.isa = velk::loader::Isa::AArch64;
             ir.blocks = blocks.clone();
-            for stmt in ir.blocks.iter_mut().flat_map(|b| &mut b.stmts) {
+            for stmt in ir.blocks.iter_mut().flat_map(|block| &mut block.stmts) {
                 if let Stmt::Ret { value } = stmt {
                     *value = Expr::reg(output, 64);
                 }
@@ -367,7 +367,7 @@ fn printed_arm64_exclusive_and_system_operations_preserve_memory() {
         );
         ir.isa = velk::loader::Isa::AArch64;
         ir.blocks = velk::lift::lift(&image, 0, size, &Default::default()).unwrap();
-        for stmt in ir.blocks.iter_mut().flat_map(|b| &mut b.stmts) {
+        for stmt in ir.blocks.iter_mut().flat_map(|block| &mut block.stmts) {
             if let Stmt::Ret { value } = stmt {
                 *value = Expr::reg(result, 64);
             }
@@ -464,9 +464,12 @@ fn printed_arm64_structure_accesses_preserve_lanes_and_writeback() {
             } else {
                 Expr::reg(base + output as u16, 64)
             };
-            for stmt in ir.blocks.iter_mut().flat_map(|b| &mut b.stmts) {
-                if let Stmt::Ret { value: ret } = stmt {
-                    *ret = value.clone();
+            for stmt in ir.blocks.iter_mut().flat_map(|block| &mut block.stmts) {
+                if let Stmt::Ret {
+                    value: return_value,
+                } = stmt
+                {
+                    *return_value = value.clone();
                 }
             }
             velk::passes::optimize(&mut ir, false);
@@ -672,14 +675,14 @@ fn printed_arm64_machine_memory_keeps_fixed_string_addresses() {
         ],
     );
     ir.isa = Isa::AArch64;
-    let refs = [velk::analysis::refs::Reference {
+    let references = [velk::analysis::refs::Reference {
         guid: None,
         addr: REGION,
         section: "data".into(),
         text: Some("different bytes".into()),
         pointer: None,
     }];
-    let code = velk::render::render(&ir, &refs, &Default::default(), &[(REGION, 4096)]);
+    let code = velk::render::render(&ir, &references, &Default::default(), &[(REGION, 4096)]);
     assert!(code.contains("\"r\"((uint64_t)(0x300000000000"), "{code}");
     syntax::run_printed(
         &code,

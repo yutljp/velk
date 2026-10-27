@@ -838,13 +838,13 @@ fn printed_call_slots_execute_stack_arguments_and_address_writes() {
     let sp = velk::arch::stack_pointer(Isa::X86_64);
     let mut text = String::from(HEADER);
     text.push_str("static uint64_t frame_write(int64_t *p) { *p = 19; return 3; }\nstatic uint64_t frame_seven(uint64_t a, uint64_t b, uint64_t c, uint64_t d, uint64_t e, uint64_t f, uint64_t g) { return a + b + c + d + e + f + g; }\n");
-    for address in [false, true] {
+    for passes_address in [false, true] {
         let mut invocation = call();
         if let Stmt::Call {
             args, floats_named, ..
         } = &mut invocation
         {
-            *args = Some(if address {
+            *args = Some(if passes_address {
                 vec![slot(16)]
             } else {
                 (1..=6)
@@ -855,7 +855,7 @@ fn printed_call_slots_execute_stack_arguments_and_address_writes() {
             *floats_named = true;
         }
         let mut ir = synthetic_ir(
-            if address {
+            if passes_address {
                 "frame_address_call"
             } else {
                 "frame_stack_call"
@@ -883,7 +883,7 @@ fn printed_call_slots_execute_stack_arguments_and_address_writes() {
         let symbols = velk::render::Symbols {
             functions: [(
                 0x1000,
-                if address {
+                if passes_address {
                     "frame_write".into()
                 } else {
                     "frame_seven".into()
@@ -895,7 +895,7 @@ fn printed_call_slots_execute_stack_arguments_and_address_writes() {
         };
         let code = velk::render::render(&ir, &[], &symbols, &[]);
         assert!(code.contains("/* [sp"), "{code}");
-        if !address {
+        if !passes_address {
             assert!(code.contains("return 11 +"), "{code}");
         }
         text.push_str(&code);

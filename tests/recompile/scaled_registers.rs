@@ -64,21 +64,24 @@ fn scaled_register_sums_preserve_wrapping_and_comparison_widths() {
     .map(|x| vec![x])
     .collect();
     for width in [8, 16, 32, 64] {
-        let x = Expr::reg(7, width);
-        let scale = |factor| Expr::bin(BinOp::Mul, x.clone(), Expr::Const(factor));
+        let input = Expr::reg(7, width);
+        let scale = |factor| Expr::bin(BinOp::Mul, input.clone(), Expr::Const(factor));
         for (case, value) in [
-            ("sum", Expr::bin(BinOp::Add, x.clone(), scale(2))),
-            ("reversed", Expr::bin(BinOp::Add, scale(2), x.clone())),
+            ("sum", Expr::bin(BinOp::Add, input.clone(), scale(2))),
+            ("reversed", Expr::bin(BinOp::Add, scale(2), input.clone())),
             ("difference", Expr::bin(BinOp::Sub, scale(2), scale(5))),
             ("overflow", Expr::bin(BinOp::Add, scale(u64::MAX), scale(2))),
-            ("zero", Expr::bin(BinOp::Add, scale(u64::MAX), x.clone())),
+            (
+                "zero",
+                Expr::bin(BinOp::Add, scale(u64::MAX), input.clone()),
+            ),
             ("nested", Expr::bin(BinOp::Mul, scale(3), Expr::Const(8))),
             (
                 "shift",
                 Expr::bin(
                     BinOp::Add,
-                    x.clone(),
-                    Expr::bin(BinOp::Shl, x.clone(), Expr::Const(65)),
+                    input.clone(),
+                    Expr::bin(BinOp::Shl, input.clone(), Expr::Const(65)),
                 ),
             ),
         ] {
