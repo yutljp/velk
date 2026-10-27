@@ -21,8 +21,9 @@ These counts describe inventory rows, not individual match arms or universal
 proofs of every rule. The inventory is not a completeness certificate for every
 expression transformation in the repository.
 
-ARM32 checks include symbolic zero, sign and carry flags for carry arithmetic,
-immediate shifted carry extraction, and long multiplication with accumulation.
+ARM32 checks cover carry arithmetic's zero, sign, carry and overflow flags,
+rotate-through-carry values and flags, immediate shifted carry extraction,
+and long multiplication with accumulation.
 Word joining and nested frame offsets have symbolic checks. Frame alias
 subtraction is checked through the real settling pass. Calls, ABI placement,
 image-backed literal reads, frame alignment and general control flow remain open.
@@ -30,6 +31,58 @@ Offsets in recovered frame objects have symbolic address checks for i386,
 x86-64, AArch64 and ARM32. Compiled array loops check that the printed function
 uses one object and returns the same values as the C source. C object provenance
 is outside the SMT model.
+
+## Coverage priorities and added obligations
+
+The following order ranks the inventory's open and partial families and the
+ARM32 families checked below. Families in a row have equal priority; this is a
+correctness review order, not a measured defect frequency. The inventory retains
+the remaining scope.
+
+| Priority and reason | Inventory families |
+| --- | --- |
+| 1. Arithmetic, comparisons and flags: a wrong value or branch changes the result. | Integer and vector constant folding; Recover overwritten comparison operand; Carry arithmetic and flags; Remove conditions fixed by dominating guards |
+| 2. Casts, extensions and demanded widths: signed interpretation and discarded bits affect C results. | Remove redundant low32 view; Specialize variables to32 and drop masks; Remove masks/extensions and replace singletons; Narrow to demanded low bits; Division/remainder casts; Omit integer/float conversion casts; Fit return/argument type; Narrow assignment spelling; Narrow printed locals |
+| 3. Shifts: carry supplies a result bit and the outgoing carry. | Rotate through carry |
+| 4. Division idioms: composition must connect the recognized chain to its certificate. | Unsigned reciprocal multiply/shift; Signed high-product quotient; Unsigned high-product quotient; Signed widening quotient; Named widening-product quotient; Multiply-back remainder chain; Following multiply/subtract remainder; Accept quotient equivalence; Accept remainder equivalence |
+| 5. Address folding and memory: address arithmetic needs object, alias and frame facts. | Remove unsigned-load mask; Store-to-load forwarding; Fuse load/op/store; Forward spilled variables; Replace frame pointer; Scale pointer arithmetic and spell negative offsets; Select common type/casts; Fold byte pointer arithmetic; Replace raw load by named access; Promote saved parameters; Stack addresses to array offsets; ABI object access to local object; Fold structure scales/indexes; Read immutable literal bytes; Normalize word frame addresses and aliases; Known-bit extraction into stored bytes |
+| 6. Other effects, control flow and floating expressions: finite scalar templates do not establish these contexts. | Identical-operand sub/xor/and/or; Recursive expression substitution; Remove single-use definition; Inline local copy; Inline into only reader; Share repeated expression; Fold SSA assignments and branches; Remove floating mask; Drop update masks; Substitute returned copy; Inline values into structured nodes; Pair calls and results; Runtime division remainder; Find redundant copies across blocks; Replace redundant structured copies; Drop unused argument-register result bindings; Permute x86 scratch registers for signature matching |
+
+The added checks call the real lowering, simplifier and remainder matchers:
+
+- ARM32 ADC/SBC/RSC compares the zero-extended 32-bit result in the
+  64-bit IR register with the modular sum or difference. Overflow compares the
+  signed 64-bit exact sum or difference (including the incoming carry or borrow)
+  against the 32-bit signed limits.
+  All 32-bit operands and both incoming carry values are symbolic. Negative controls
+  omit the incoming carry/borrow, omit result truncation or invert each NZCV flag.
+- ARM32 RRX compares its 32-bit result with the concatenation of the incoming
+  carry and source bits 31 through 1. The stored NZCV flags are independently
+  symbolic. It checks zero upper bits in the 64-bit IR destination,
+  NZC updates and V preservation,
+  and preservation of all four flags without S. Missing carry and inverted
+  flags are negative controls. Unknown incoming carry must refuse lowering.
+- Remainder scans use 32/64-bit signed and unsigned dividends, divisors
+  2/8/128/2^30, quotient copies and multiply-back steps. Following remainders
+  include inline and named multiplier constants. The production equivalence
+  guard must accept each replacement; symbolic execution compares return values
+  and definedness. Wrong divisors and negated remainders are negative controls.
+  These templates start with a quotient; reciprocal integration and scaled-add
+  scans remain open.
+- Full 32-bit unsigned dividends use multiplier 2^31 and shifts
+  32/33/40/61/63 in a 64-bit product. The actual simplifier must emit division
+  by 2^(shift-31), and both expressions are proved equal. Halving the divisor
+  is a negative control. Non-power-of-two full-width composition remains open.
+
+The ARM32 templates assign a destination distinct from every register read by
+the input and flag expressions. They do not check captures when the destination
+aliases an input.
+
+`Proofs::counterexample` requires SAT for each deliberately wrong equality;
+UNSAT or an exhausted solver limit fails the test. Equality checks require
+UNSAT. Identical queries share work only when their expected results also match.
+The negative controls accompany the added checks; older checks do not all have
+negative controls.
 
 ## Connection to the implementation
 
@@ -196,8 +249,6 @@ not claims that the transformations are unprovable:
   do not exercise the compound-update helper.
 - Frame-pointer replacement: the balanced-frame tests do not exercise saved
   frame-pointer setup and restoration.
-- Multiply-back remainder-chain and following-remainder matchers: the
-  power-of-two matcher tests do not cover their reciprocal/multiplier scans.
 - Floating-mask removal and implicit integer/float conversions in the
   renderer: the C AST translator currently supports integer C, not floating
   expressions or union bit reinterpretations.

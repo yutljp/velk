@@ -475,9 +475,16 @@ fn returned(statements: &[Stmt]) -> Value {
 #[derive(Default)]
 pub(crate) struct Proofs {
     cases: Vec<(String, String)>,
+    negative_cases: Vec<(String, String)>,
 }
 
 impl Proofs {
+    /// Requires a counterexample to a deliberately incorrect equality.
+    pub(crate) fn counterexample(&mut self, name: impl Into<String>, before: &str, wrong: &str) {
+        self.negative_cases
+            .push((name.into(), format!("(not (= {before} {wrong}))")));
+    }
+
     pub(crate) fn available() -> bool {
         match Command::new("z3").arg("-version").output() {
             Ok(output) if output.status.success() => true,
@@ -583,8 +590,10 @@ impl Proofs {
         let mut stdout = BufReader::new(child.stdout.take().expect("piped z3 stdout"));
         let check = "(check-sat-using (then (using-params simplify :som true :sort-sums true :bv-sort-ac true :bv-extract-prop true) reduce-bv-size smt))";
         let mut seen = HashSet::new();
-        for (name, mismatch) in &self.cases {
-            if !seen.insert(mismatch.as_str()) {
+        let cases = self.cases.iter().map(|case| (case, "unsat"));
+        let negative_cases = self.negative_cases.iter().map(|case| (case, "sat"));
+        for ((name, mismatch), expected) in cases.chain(negative_cases) {
+            if !seen.insert((mismatch.as_str(), expected)) {
                 continue;
             }
             // Keep solver heuristics from depending on earlier obligations.
@@ -594,7 +603,7 @@ impl Proofs {
             let mut answer = String::new();
             stdout.read_line(&mut answer).expect("read z3 answer");
             let answer = answer.trim();
-            if answer != "unsat" {
+            if answer != expected {
                 let file_name: String = name
                     .chars()
                     .take(60)
@@ -618,7 +627,7 @@ impl Proofs {
                     .read_to_string(&mut diagnostic)
                     .expect("read SMT diagnostic");
                 child.wait().expect("wait for z3");
-                panic!("SMT proof {name}: {answer}\n{diagnostic}");
+                panic!("SMT proof {name}: expected {expected}, got {answer}\n{diagnostic}");
             }
         }
         drop(stdin);
@@ -627,8 +636,9 @@ impl Proofs {
             "z3 must exit successfully"
         );
         eprintln!(
-            "SMT: {} equivalence obligations proved ({} unique queries)",
+            "SMT: {} equivalence obligations proved, {} negative controls rejected ({} unique queries)",
             self.cases.len(),
+            self.negative_cases.len(),
             seen.len()
         );
     }

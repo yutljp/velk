@@ -2,11 +2,22 @@
 
 use object::{Object, ObjectSection};
 
-fn tables<'data>(file: impl Object<'data>) {
+fn pe_tables<Pe: object::read::pe::ImageNtHeaders>(bytes: &[u8]) {
+    let Ok(file) = object::read::pe::PeFile::<Pe>::parse(bytes) else {
+        return;
+    };
     for section in file.sections() {
         kani::cover!(true, "a section is visited");
-        let _ = section.data();
-        for _ in section.relocations() {}
+        let data = section.data();
+        if let Ok(data) = data {
+            assert!(data.len() <= bytes.len());
+            kani::cover!(!data.is_empty(), "nonempty section data is read");
+        }
+        // The generic PE iterator is empty; read the COFF table directly.
+        if let Ok(relocations) = section.pe_section().coff_relocations(bytes) {
+            assert!(relocations.len() <= 1);
+            kani::cover!(!relocations.is_empty(), "a COFF relocation is read");
+        }
     }
 }
 
@@ -21,6 +32,7 @@ fn elf_tables<Elf: object::read::elf::FileHeader>(bytes: &[u8]) {
         kani::cover!(true, "a section is visited");
         if let Ok(data) = section.data(endian, bytes) {
             assert!(data.len() <= 24);
+            kani::cover!(data.len() == 24, "the largest modeled section is read");
         }
         if let Ok(Some((entries, _))) = section.rel(endian, bytes) {
             kani::cover!(!entries.is_empty(), "a REL entry is read");
@@ -46,8 +58,14 @@ fn macho_tables<Mach: object::read::macho::MachHeader>(bytes: &[u8]) {
                     continue;
                 };
                 kani::cover!(true, "a section is visited");
-                let _ = section.data(endian, bytes, offset);
-                let _ = section.relocations(endian, bytes);
+                if let Ok(data) = section.data(endian, bytes, offset) {
+                    assert!(data.len() <= bytes.len());
+                    kani::cover!(!data.is_empty(), "nonempty section data is read");
+                }
+                if let Ok(relocations) = section.relocations(endian, bytes) {
+                    assert!(relocations.len() <= 1);
+                    kani::cover!(!relocations.is_empty(), "a Mach-O relocation is read");
+                }
             }
         }
     }
@@ -96,9 +114,7 @@ fn pe32_tables() {
     bytes[180..184].fill(0); // No data directories.
     bytes[312] = 0;
     kani::assume(u16::from_le_bytes(bytes[344..346].try_into().unwrap()) <= 1);
-    if let Ok(file) = object::read::pe::PeFile32::parse(&bytes[..]) {
-        tables(file);
-    }
+    pe_tables::<object::pe::ImageNtHeaders32>(&bytes);
 }
 
 #[kani::proof]
@@ -115,9 +131,7 @@ fn pe64_tables() {
     bytes[196..200].fill(0);
     bytes[328] = 0;
     kani::assume(u16::from_le_bytes(bytes[360..362].try_into().unwrap()) <= 1);
-    if let Ok(file) = object::read::pe::PeFile64::parse(&bytes[..]) {
-        tables(file);
-    }
+    pe_tables::<object::pe::ImageNtHeaders64>(&bytes);
 }
 
 #[kani::proof]
@@ -147,7 +161,7 @@ fn macho64_tables() {
 }
 
 #[kani::proof]
-#[kani::unwind(3)]
+#[kani::unwind(17)]
 fn image_ranges() {
     let bytes: [u8; 16] = kani::any();
     let len: usize = kani::any();
@@ -163,7 +177,21 @@ fn image_ranges() {
     );
     if let Some(data) = result {
         assert_eq!(data.len() as u64, size);
+        let start = relative.unwrap() as usize;
+        assert_eq!(data, &bytes[start..start + size as usize]);
     }
+    kani::cover!(
+        result.is_some() && size == 16,
+        "the entire image range is read"
+    );
+    kani::cover!(
+        offset < slice_offset && result.is_none(),
+        "an address below the base is rejected"
+    );
+    kani::cover!(
+        offset == u64::MAX && result.is_none(),
+        "a maximal address is rejected"
+    );
 }
 
 #[kani::proof]
@@ -180,7 +208,19 @@ fn dwarf_units() {
     assert_eq!(matches!(unit, Ok(Some(_))), len == bytes.len());
     if let Ok(Some(unit)) = unit {
         assert_eq!(unit.length_including_self(), len);
+        assert_eq!(unit.version(), 4);
+        assert_eq!(unit.address_size(), bytes[10]);
+        assert_eq!(
+            unit.debug_abbrev_offset().0,
+            u32::from_le_bytes(bytes[6..10].try_into().unwrap()) as usize
+        );
+        assert!(matches!(units.next(), Ok(None)));
+        kani::cover!(
+            unit.address_size() == 8,
+            "a complete 64-bit-address unit is read"
+        );
     }
+    kani::cover!(len == 11, "a truncated unit is checked");
 }
 
 #[kani::proof]
@@ -193,7 +233,14 @@ fn unwind_entries() {
     let frame = gimli::EhFrame::new(&bytes, gimli::LittleEndian);
     let bases = gimli::BaseAddresses::default();
     let mut entries = frame.entries(&bases);
-    assert!(matches!(entries.next(), Ok(Some(gimli::CieOrFde::Cie(_)))));
+    let Some(gimli::CieOrFde::Cie(cie)) = entries.next().unwrap() else {
+        panic!("the entry is a CIE");
+    };
+    assert_eq!(cie.code_alignment_factor(), u64::from(bytes[10]));
+    let data_alignment = ((bytes[11] as i8) << 1) >> 1;
+    assert_eq!(cie.data_alignment_factor(), i64::from(data_alignment));
+    assert_eq!(cie.return_address_register().0, u16::from(bytes[12]));
+    kani::cover!(data_alignment < 0, "a negative data alignment is decoded");
     assert!(matches!(entries.next(), Ok(None)));
 }
 
@@ -221,6 +268,17 @@ fn check_unwind_fde(address_size: u8) {
         u64::from_le_bytes(bytes[24..32].try_into().unwrap())
     };
     assert_eq!(fde.initial_address(), address);
+    let range = if address_size == 4 {
+        u64::from(u32::from_le_bytes(bytes[28..32].try_into().unwrap()))
+    } else {
+        u64::from_le_bytes(bytes[32..40].try_into().unwrap())
+    };
+    assert_eq!(fde.len(), range);
+    kani::cover!(
+        address == u64::MAX >> (64 - 8 * address_size),
+        "the largest address is decoded"
+    );
+    kani::cover!(range > 0, "a nonempty function range is decoded");
     assert!(matches!(entries.next(), Ok(None)));
 }
 

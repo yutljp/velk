@@ -1,16 +1,14 @@
-//! One chained pointer in each supported format.
+//! Bounded chained pointers in each supported format.
 
 use object::LittleEndian;
 use object::read::macho::{DyldChainedFixups, Fixup};
 
-fn check_pointer(format: u16) {
-    let next_mask = if matches!(format, 2 | 6) {
-        0xfff
-    } else {
-        0x7ff
-    };
-    let raw = kani::any::<u64>() & !(next_mask << 51);
-    let base: u64 = kani::any();
+struct RebaseCases {
+    authenticated: bool,
+    overflow: bool,
+}
+
+fn starts(format: u16) -> [u8; 60] {
     let mut bytes = [0u8; 60];
     bytes[4..8].copy_from_slice(&28u32.to_le_bytes());
     bytes[28..32].copy_from_slice(&1u32.to_le_bytes());
@@ -19,6 +17,22 @@ fn check_pointer(format: u16) {
     bytes[40..42].copy_from_slice(&4096u16.to_le_bytes());
     bytes[42..44].copy_from_slice(&format.to_le_bytes());
     bytes[56..58].copy_from_slice(&1u16.to_le_bytes());
+    bytes
+}
+
+fn check_pointer(format: u16) -> RebaseCases {
+    let mut cases = RebaseCases {
+        authenticated: false,
+        overflow: false,
+    };
+    let next_mask = if matches!(format, 2 | 6) {
+        0xfff
+    } else {
+        0x7ff
+    };
+    let raw = kani::any::<u64>() & !((next_mask & !1) << 51);
+    let base: u64 = kani::any();
+    let bytes = starts(format);
     let fixups = DyldChainedFixups::parse(LittleEndian, &bytes).unwrap();
     let mut segments = fixups.segments(LittleEndian).unwrap();
     let segment = segments.next().unwrap().unwrap();
@@ -54,6 +68,9 @@ fn check_pointer(format: u16) {
                 low.checked_add(base).map(|target| target | high << 56)
             };
             assert_eq!(super::rebase_value(base, format, raw, rebase), expected);
+            cases.authenticated = authenticated;
+            cases.overflow = expected.is_none();
+            kani::cover!(!authenticated, "an unauthenticated pointer is rebased");
         }
         Fixup::Bind(binding) => {
             assert!(bind);
@@ -72,37 +89,97 @@ fn check_pointer(format: u16) {
                 (((raw >> 32) as i32) << 13) >> 13
             };
             assert_eq!(binding.addend, addend);
+            kani::cover!(binding.ordinal != 0, "a nonzero ordinal is bound");
         }
         _ => panic!("supported formats decode to rebase or bind"),
     }
-    let next = if wide {
-        ((raw >> 51) & 0xfff) * 4
-    } else {
-        ((raw >> 51) & 0x7ff) * if matches!(format, 7 | 10) { 4 } else { 8 }
-    };
+    let next = (raw >> 51) & next_mask;
     let end = pointers.next();
     if next == 0 {
         assert!(matches!(end, Ok(None)));
+        kani::cover!(true, "a zero link terminates");
     } else {
         assert!(end.is_err());
+        kani::cover!(true, "an out-of-range link is rejected");
     }
     assert!(matches!(pointers.next(), Ok(None)));
+    cases
 }
 
 macro_rules! pointer_proof {
-    ($name:ident, $format:literal) => {
+    ($name:ident, $format:literal, $unwind:literal, [$($case:ident),*]) => {
         #[kani::proof]
-        #[kani::unwind(3)]
+        #[kani::unwind($unwind)]
         fn $name() {
-            check_pointer($format);
+            let cases = check_pointer($format);
+            $(kani::cover!(cases.$case);)*
+            let _ = cases;
         }
     };
 }
 
-pointer_proof!(chained_pointer_arm64e, 1);
-pointer_proof!(chained_pointer_64, 2);
-pointer_proof!(chained_pointer_64_offset, 6);
-pointer_proof!(chained_pointer_arm64e_kernel, 7);
-pointer_proof!(chained_pointer_arm64e_userland, 9);
-pointer_proof!(chained_pointer_arm64e_firmware, 10);
-pointer_proof!(chained_pointer_arm64e_userland24, 12);
+pointer_proof!(chained_pointer_arm64e, 1, 3, [authenticated, overflow]);
+pointer_proof!(chained_pointer_64, 2, 3, []);
+pointer_proof!(chained_pointer_64_offset, 6, 3, [overflow]);
+pointer_proof!(
+    chained_pointer_arm64e_kernel,
+    7,
+    4,
+    [authenticated, overflow]
+);
+pointer_proof!(
+    chained_pointer_arm64e_userland,
+    9,
+    5,
+    [authenticated, overflow]
+);
+pointer_proof!(
+    chained_pointer_arm64e_firmware,
+    10,
+    6,
+    [authenticated, overflow]
+);
+pointer_proof!(
+    chained_pointer_arm64e_userland24,
+    12,
+    7,
+    [authenticated, overflow]
+);
+
+#[kani::proof]
+#[kani::unwind(3)]
+fn chained_pointer_links() {
+    let format: u16 = kani::any();
+    kani::assume(matches!(format, 1 | 2 | 6 | 7 | 9 | 10 | 12));
+    let stride = if matches!(format, 2 | 6 | 7 | 10) {
+        4
+    } else {
+        8
+    };
+    let raw = (8u64 / stride) << 51;
+    let bytes = starts(format);
+    let fixups = DyldChainedFixups::parse(LittleEndian, &bytes).unwrap();
+    let mut segments = fixups.segments(LittleEndian).unwrap();
+    let segment = segments.next().unwrap().unwrap();
+    let mut data = [0u8; 16];
+    data[..8].copy_from_slice(&raw.to_le_bytes());
+    let mut pointers = segment.fixups(LittleEndian, 0, &data);
+    for expected in [0, 8] {
+        let (offset, pointer) = pointers.next().unwrap().unwrap();
+        assert_eq!(offset, expected);
+        let Fixup::Rebase(rebase) = pointer else {
+            panic!("a link with no payload is a rebase");
+        };
+        assert_eq!(rebase.target_offset, 0);
+        assert!(rebase.auth.is_none());
+    }
+    assert!(matches!(pointers.next(), Ok(None)));
+    kani::cover!(
+        stride == 4,
+        "a four-byte-stride link reaches a second pointer"
+    );
+    kani::cover!(
+        stride == 8,
+        "an eight-byte-stride link reaches a second pointer"
+    );
+}

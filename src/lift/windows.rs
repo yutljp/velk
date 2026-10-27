@@ -25,6 +25,11 @@ mod proofs {
         let offset: u64 = kani::any();
         kani::assume(offset < 64);
         let following: bool = kani::any();
+        kani::cover!(
+            following && offset == 63 && next != 0,
+            "a window crosses the half boundary"
+        );
+        kani::cover!(!following && offset == 0, "a window has no following half");
         let first_expr = crate::ir::Expr::Const(first);
         let next_expr = crate::ir::Expr::Const(next);
         let result = super::window(&first_expr, following.then_some(&next_expr), offset);

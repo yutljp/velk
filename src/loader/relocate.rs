@@ -386,10 +386,23 @@ mod proofs {
         super::write_u32(&mut bytes[..len], place, value);
         if place <= len && len - place >= 4 {
             assert_eq!(super::read_u32(&bytes[..len], place), Some(value));
+            for index in 0..bytes.len() {
+                if index < place || index >= place + 4 {
+                    assert_eq!(bytes[index], original[index]);
+                }
+            }
         } else {
             assert_eq!(super::read_u32(&bytes[..len], place), None);
             assert_eq!(bytes, original);
         }
+        kani::cover!(
+            len == 16 && place == 12,
+            "the last complete 32-bit word is written"
+        );
+        kani::cover!(
+            place == usize::MAX,
+            "an overflowing write offset is rejected"
+        );
     }
 
     #[kani::proof]
@@ -407,6 +420,11 @@ mod proofs {
             assert_eq!(
                 patched & 0x03ff_ffff,
                 (value.wrapping_sub(pc) >> 2) as u32 & 0x03ff_ffff
+            );
+            kani::cover!(value < pc, "a backward call is encoded");
+            kani::cover!(
+                value.wrapping_sub(pc) & 3 != 0,
+                "an unaligned call target is checked"
             );
         }
     }

@@ -83,9 +83,32 @@ mod proofs {
         let count: usize = kani::any();
         let result = reader.take(count);
         assert_eq!(result.is_some(), count <= len);
-        let _ = reader.number();
+        if let Some(data) = result {
+            assert_eq!(data, &bytes[..count]);
+            assert_eq!(reader.0, &bytes[count..len]);
+        } else {
+            assert_eq!(reader.0, &bytes[..len]);
+        }
+        let numeric = reader.0;
+        let number = reader.number();
+        assert!(reader.0.len() <= numeric.len());
+        if numeric.len() >= 10 && numeric[..2] == [0x0a, 0x80] {
+            assert_eq!(
+                number,
+                Some(u64::from_le_bytes(numeric[2..10].try_into().unwrap()))
+            );
+            assert_eq!(reader.0, &numeric[10..]);
+        }
+        kani::cover!(
+            number.is_some_and(|value| value > u64::from(u32::MAX)),
+            "a 64-bit numeric leaf is read"
+        );
+        let mut count = 0;
         for (_, record) in super::records(&bytes[..len]) {
             assert!(record.len() <= len);
+            count += 1;
         }
+        assert!(count <= len / 2);
+        kani::cover!(count >= 2, "multiple records are visited");
     }
 }

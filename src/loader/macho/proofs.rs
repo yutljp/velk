@@ -5,6 +5,11 @@ fn export_trie_limit() {
     let value: u64 = kani::any();
     let index: usize = kani::any();
     let mut exports = crate::loader::limited_exports(std::iter::repeat(value));
+    kani::cover!(
+        index == crate::loader::MAX_EXPORTS - 1,
+        "the final allowed export is requested"
+    );
+    kani::cover!(index == usize::MAX, "a maximal index is rejected");
     assert_eq!(
         exports.nth(index),
         (index < crate::loader::MAX_EXPORTS).then_some(value)

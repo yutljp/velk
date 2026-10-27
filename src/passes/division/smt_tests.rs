@@ -1,7 +1,7 @@
 //! Match real division chains and prove their returned values symbolically.
 
 use super::*;
-use crate::ir::smt::{Proofs, raw_bin};
+use crate::ir::smt::{self, Proofs, raw_bin};
 use crate::ir::{BinOp, Cond, RegRef};
 use crate::loader::Isa;
 
@@ -266,6 +266,135 @@ fn reciprocal_matchers_keep_their_certified_expression_shapes() {
             if signed {
                 let domain = format!("(and (>= q 0) (>= r 0) (< r 3) (> {x} 0) (<= {x} {limit}))");
                 proofs.predicate(format!("matched negative certificate/{bits}"), "true", &format!("(=> {domain} (and (< (* q {power}) (* {x} {magic})) (<= (* {x} {magic}) (* (+ q 1) {power}))))"));
+            }
+        }
+    }
+    proofs.check();
+}
+
+#[test]
+fn multiply_back_remainder_matchers_preserve_symbolic_dividends() {
+    use std::collections::HashSet;
+
+    if !Proofs::available() {
+        return;
+    }
+    let mut proofs = Proofs::default();
+    for bits in [32, 64] {
+        for signed in [false, true] {
+            for divisor in [2, 8, 128, 1 << 30] {
+                let x = Expr::reg(0, bits);
+                let quotient = raw_bin(
+                    if signed { BinOp::DivS } else { BinOp::DivU },
+                    x.clone(),
+                    Expr::Const(divisor),
+                );
+                let expected = remainder(x.clone(), divisor, !signed);
+                let mut statements = vec![assign(3, bits, quotient.clone())];
+                if signed {
+                    statements.push(assign(
+                        7,
+                        bits,
+                        raw_bin(
+                            BinOp::Shr,
+                            Expr::reg(3, bits),
+                            Expr::Const(u64::from(bits) - 1),
+                        ),
+                    ));
+                }
+                statements.push(assign(4, bits, Expr::reg(3, bits)));
+                statements.push(assign(
+                    5,
+                    bits,
+                    raw_bin(BinOp::Mul, Expr::reg(4, bits), Expr::Const(divisor)),
+                ));
+                let at = statements.len();
+                statements.push(assign(
+                    6,
+                    bits,
+                    raw_bin(BinOp::Sub, x.clone(), Expr::reg(5, bits)),
+                ));
+                let (matched_at, consumed, matched_divisor, matched_signed, width) =
+                    remainder_scan(&statements, 0, 3).expect("multiply-back chain must match");
+                assert_eq!(
+                    (matched_at, matched_divisor, matched_signed, width),
+                    (at, divisor, signed, u64::from(bits))
+                );
+                assert_eq!(consumed.len(), at - 1);
+                assert!(proof::checked(&statements, 0, at, expected.clone()).is_some());
+                statements.push(Stmt::Ret {
+                    value: Expr::reg(6, bits),
+                });
+                proofs.program(
+                    format!("remainder scan/{bits}/{signed}/{divisor}"),
+                    &statements,
+                    &[Stmt::Ret {
+                        value: expected.clone(),
+                    }],
+                );
+
+                for named_divisor in [false, true] {
+                    let mut statements = vec![assign(3, bits, quotient.clone())];
+                    if named_divisor {
+                        statements.push(assign(4, bits, Expr::Const(divisor)));
+                    }
+                    let factor = if named_divisor {
+                        Expr::reg(4, bits)
+                    } else {
+                        Expr::Const(divisor)
+                    };
+                    let at = statements.len();
+                    statements.push(assign(
+                        6,
+                        bits,
+                        raw_bin(
+                            BinOp::Sub,
+                            x.clone(),
+                            raw_bin(BinOp::Mul, Expr::reg(3, bits), factor),
+                        ),
+                    ));
+                    let mut replacements = vec![(0, quotient.clone())];
+                    let mut consumed = HashSet::new();
+                    apply_remainder_follows(
+                        &statements,
+                        &mut consumed,
+                        &mut replacements,
+                        &mut HashSet::new(),
+                        &mut Vec::new(),
+                        &mut Vec::new(),
+                    );
+                    let [(0, _), (matched_at, actual)] = replacements.as_slice() else {
+                        panic!("following remainder must be replaced");
+                    };
+                    assert_eq!(*matched_at, at);
+                    assert_eq!(*actual, expected);
+                    statements.push(Stmt::Ret {
+                        value: Expr::reg(6, bits),
+                    });
+                    proofs.program(
+                        format!("following remainder/{bits}/{signed}/{divisor}/{named_divisor}"),
+                        &statements,
+                        &[Stmt::Ret {
+                            value: actual.clone(),
+                        }],
+                    );
+                    let wrong = remainder(x.clone(), divisor * 2, !signed);
+                    proofs.counterexample(
+                        format!(
+                            "wrong remainder divisor/{bits}/{signed}/{divisor}/{named_divisor}"
+                        ),
+                        &smt::low(&smt::term(actual), u32::from(bits)),
+                        &smt::low(&smt::term(&wrong), u32::from(bits)),
+                    );
+                }
+                proofs.counterexample(
+                    format!("wrong scan sign/{bits}/{signed}/{divisor}"),
+                    &smt::low(&smt::term(&expected), u32::from(bits)),
+                    &smt::low(
+                        &smt::term(&raw_bin(BinOp::Sub, Expr::Const(0), expected)),
+                        u32::from(bits),
+                    ),
+                );
             }
         }
     }

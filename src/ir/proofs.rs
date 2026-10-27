@@ -8,6 +8,16 @@ fn bit_fields() {
     let mask = super::semantics::mask(bits);
     let signed = super::semantics::sign_extend(value, bits);
     assert_eq!(signed as u64 & mask, value & mask);
+    let shift = 64 - bits;
+    assert_eq!(signed, ((value << shift) as i64) >> shift);
+    kani::cover!(
+        bits == 1 && signed == -1,
+        "one-bit negative extension is reachable"
+    );
+    kani::cover!(
+        bits == 64 && value == 1u64 << 63,
+        "the signed minimum is reachable"
+    );
     if bits < 64 {
         let limit = 1i64 << (bits - 1);
         assert!(signed >= -limit && signed < limit);

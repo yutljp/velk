@@ -130,6 +130,14 @@ mod proofs {
         if let Some(value) = result {
             assert_eq!(value.to_le_bytes(), bytes[offset..offset + 4]);
         }
+        kani::cover!(
+            len == 8 && offset == 4 && result.is_some(),
+            "the last complete word is read"
+        );
+        kani::cover!(
+            offset == usize::MAX && result.is_none(),
+            "an overflowing offset is rejected"
+        );
     }
 }
 

@@ -465,6 +465,13 @@ mod proofs {
             },
         );
         assert!(count <= (entries_len / 8).saturating_sub(1));
+        kani::cover!(count == 2, "two function entries are accepted");
+        kani::cover!(
+            count == 1
+                && entries_len == 24
+                && i32::from_le_bytes(entries[4..8].try_into().unwrap()) < 0,
+            "a rejected first entry does not hide the second"
+        );
     }
 
     #[kani::proof]
@@ -491,5 +498,13 @@ mod proofs {
             assert_eq!(name, &b"main.work"[name_offset as usize..]);
         });
         assert_eq!(count, usize::from(valid));
+        kani::cover!(
+            valid && entry != 0 && name_offset == 6,
+            "a nonzero address and final valid name suffix are accepted"
+        );
+        kani::cover!(
+            u64::from(entry) > u64::MAX - text && count == 0,
+            "an overflowing function address is rejected"
+        );
     }
 }

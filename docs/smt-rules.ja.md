@@ -19,7 +19,8 @@ velk の実行時依存関係は増えていません。
 精緻化を区別しています。これは一覧の行数であり、個々の分岐数や全規則の
 普遍的な証明数ではありません。一覧はすべての式変換を網羅する証明書ではありません。
 
-ARM32 では、キャリー付き演算のゼロ・符号・キャリーフラグ、即値シフトの
+ARM32 では、キャリー付き演算のゼロ・符号・キャリー・オーバーフローフラグ、
+キャリーを通した回転の値とフラグ、即値シフトの
 キャリー抽出、積和を含む長整数乗算を記号的に検証します。ワード結合と
 入れ子のフレームオフセットも記号的に検証します。フレームの別名同士の減算は、
 実際のフレーム正規化パスを通して検証します。呼び出し、ABI 上の配置、バイナリの
@@ -28,6 +29,49 @@ ARM32 では、キャリー付き演算のゼロ・符号・キャリーフラ�
 アドレスを記号的に検証します。配列ループの C 出力が一つのオブジェクトを使うことを
 確認し、コンパイルして元の C ソースと戻り値を比較します。C のポインタの由来は
 SMT モデルの対象外です。
+
+## 検証の優先順位と追加した証明条件
+
+次の順序は、一覧の未検証・部分検証の群と、以下で検証する ARM32 の群を順位付けしたものです。
+同じ行の群は同順位です。正しさを確認する順序であり、不具合頻度の測定ではありません。
+残る未検証範囲は一覧に記録します。群名は一覧の英語表記に対応します。
+
+| 優先順位と理由 | 一覧の群 |
+| --- | --- |
+| 1. 演算・比較・フラグ：値や分岐の誤りが結果を変えます。 | Integer and vector constant folding; Recover overwritten comparison operand; Carry arithmetic and flags; Remove conditions fixed by dominating guards |
+| 2. キャスト・拡張・要求幅：符号の解釈と捨てるビットが C の結果に影響します。 | Remove redundant low32 view; Specialize variables to32 and drop masks; Remove masks/extensions and replace singletons; Narrow to demanded low bits; Division/remainder casts; Omit integer/float conversion casts; Fit return/argument type; Narrow assignment spelling; Narrow printed locals |
+| 3. シフト：入力キャリーは結果のビットと出力キャリーに影響します。 | Rotate through carry |
+| 4. 除算の形：認識した命令列と整数の証明条件を接続する必要があります。 | Unsigned reciprocal multiply/shift; Signed high-product quotient; Unsigned high-product quotient; Signed widening quotient; Named widening-product quotient; Multiply-back remainder chain; Following multiply/subtract remainder; Accept quotient equivalence; Accept remainder equivalence |
+| 5. アドレスとメモリ：オブジェクト、別名、フレームの事実が必要です。 | Remove unsigned-load mask; Store-to-load forwarding; Fuse load/op/store; Forward spilled variables; Replace frame pointer; Scale pointer arithmetic and spell negative offsets; Select common type/casts; Fold byte pointer arithmetic; Replace raw load by named access; Promote saved parameters; Stack addresses to array offsets; ABI object access to local object; Fold structure scales/indexes; Read immutable literal bytes; Normalize word frame addresses and aliases; Known-bit extraction into stored bytes |
+| 6. その他の副作用・制御フロー・浮動小数点式：有限のスカラーテンプレートでは証明できません。 | Identical-operand sub/xor/and/or; Recursive expression substitution; Remove single-use definition; Inline local copy; Inline into only reader; Share repeated expression; Fold SSA assignments and branches; Remove floating mask; Drop update masks; Substitute returned copy; Inline values into structured nodes; Pair calls and results; Runtime division remainder; Find redundant copies across blocks; Replace redundant structured copies; Drop unused argument-register result bindings; Permute x86 scratch registers for signature matching |
+
+追加した検証は実際の命令変換、簡約器、剰余の認識を呼び出します。
+
+- ARM32 ADC/SBC/RSC の 64 ビット IR レジスタへゼロ拡張した 32 ビットの結果を、剰余演算による和・差と比較します。
+  オーバーフローは、入力キャリーまたはボローを含む
+  符号付き 64 ビットの厳密な和・差を 32 ビットの符号付き範囲と比較します。
+  全 32 ビットオペランドと両方の入力キャリー値を記号変数にします。
+  入力キャリー・ボローの欠落、結果の切り詰めの欠落、NZCV の反転を誤った変種として検出します。
+- ARM32 RRX の 32 ビット結果は、入力キャリーと入力のビット 31〜1 の連結と比較します。
+  保存した NZCV はそれぞれ独立した記号変数です。64 ビット IR レジスタの上位が 0 であることも検証します。
+  NZC の更新と V の保存、S なしの場合の全フラグ保存を検証します。
+  キャリーの欠落とフラグ反転を誤った変種として検出します。入力キャリー不明時は変換を拒否します。
+- 剰余の走査は 32/64 ビットの符号付き・符号なし入力、除数 2/8/128/2^30、
+  商のコピーと乗算による引き戻しを対象とします。後続剰余は定数とレジスタに格納した乗数を扱います。
+  実装の等価性検査が置換を受理することと、記号実行による戻り値・定義条件の一致を確認します。
+  誤った除数と剰余の符号反転を誤った変種として検出します。商から始まるテンプレートであり、
+  逆数乗算との統合とシフト加算の走査は未検証です。
+- 全 32 ビットの符号なし入力を乗数 2^31 で 64 ビット乗算し、32/33/40/61/63 ビット右シフトします。
+  実際の簡約器が 2^(shift-31) による除算を出力することと式の等価性を確認します。
+  除数を半分にした変種を検出します。2 の累乗以外の全幅の合成的証明は未検証です。
+
+ARM32 のテンプレートは、入力式とフラグ式で読むすべてのレジスタとは別のレジスタに結果を代入します。
+代入先が入力と同じ場合の値の保存は、このテンプレートでは検証しません。
+
+`Proofs::counterexample` は意図的に誤らせた等式に SAT を要求し、UNSAT または
+ソルバーの上限到達で失敗します。等価性の検証は UNSAT を要求します。
+同一のクエリは期待する結果も同じ場合だけ共有します。追加した検証には誤った変種を併記しますが、
+既存の全検証に併記しているわけではありません。
 
 ## 実装との対応
 
@@ -182,7 +226,6 @@ UBSan 付きコンパイル・実行テストでは変数の除数による商�
 - 複合代入のマスク除去：スカラー代入は別々の変数に分割され、複合代入のヘルパーを
   実行する例になっていません。
 - フレームポインタ置換：保存したフレームポインタの設定と復元は未検証です。
-- 乗算して引き戻す剰余チェーンと後続剰余の認識：逆数と乗数の走査は未検証です。
 - レンダラーの浮動小数点マスク除去と暗黙の整数・浮動小数点変換：C の AST モデルは
   整数 C を対象とし、浮動小数点式や union によるビット再解釈を扱いません。
 - バイトポインタ簡約、名前付きメモリ、保存引数、スタック配列、ABI オブジェクト：

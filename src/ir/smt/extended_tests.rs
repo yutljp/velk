@@ -479,6 +479,34 @@ fn quotient_arithmetic_and_range_masks_are_equivalent() {
 }
 
 #[test]
+fn full_width_power_of_two_reciprocals_are_equivalent() {
+    if !Proofs::available() {
+        return;
+    }
+    let mut proofs = Proofs::default();
+    for shift in [32, 33, 40, 61, 63] {
+        let magic = 1u64 << 31;
+        let divisor = 1u64 << (shift - 31);
+        let before = raw_bin(
+            BinOp::Shr,
+            raw_bin(BinOp::Mul, Expr::reg(0, 32), Expr::Const(magic)),
+            Expr::Const(shift),
+        );
+        let after = crate::passes::simplify::algebraic(before.clone());
+        let expected = raw_bin(BinOp::DivU, Expr::reg(0, 32), Expr::Const(divisor));
+        assert_eq!(after, expected, "the real reciprocal rewrite must match");
+        proofs.expression(format!("full32 reciprocal/{shift}"), &before, &after, 64);
+        let wrong = raw_bin(BinOp::DivU, Expr::reg(0, 32), Expr::Const(divisor / 2));
+        proofs.counterexample(
+            format!("wrong reciprocal shift/{shift}"),
+            &super::term(&after),
+            &super::term(&wrong),
+        );
+    }
+    proofs.check();
+}
+
+#[test]
 fn ieee_constant_folding_matches_the_solver() {
     use crate::ir::{Precision, Rounding};
     if !Proofs::available() {
