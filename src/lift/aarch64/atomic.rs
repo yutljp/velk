@@ -141,25 +141,25 @@ pub(in crate::lift) fn recover_atomic_loops(
 
 pub(super) fn lift(lifter: &mut Lifter, ins: &Instruction) -> bool {
     use a64::Opcode as O;
-    let (op, bytes, ar) = match ins.opcode {
-        O::LDADD(ar) => (AtomicOp::Add, 0, ar),
-        O::LDADDB(ar) => (AtomicOp::Add, 1, ar),
-        O::LDADDH(ar) => (AtomicOp::Add, 2, ar),
-        O::LDCLR(ar) => (AtomicOp::And, 0, ar),
-        O::LDCLRB(ar) => (AtomicOp::And, 1, ar),
-        O::LDCLRH(ar) => (AtomicOp::And, 2, ar),
-        O::LDSET(ar) => (AtomicOp::Or, 0, ar),
-        O::LDSETB(ar) => (AtomicOp::Or, 1, ar),
-        O::LDSETH(ar) => (AtomicOp::Or, 2, ar),
-        O::LDEOR(ar) => (AtomicOp::Xor, 0, ar),
-        O::LDEORB(ar) => (AtomicOp::Xor, 1, ar),
-        O::LDEORH(ar) => (AtomicOp::Xor, 2, ar),
-        O::SWP(ar) => (AtomicOp::Exchange, 0, ar),
-        O::SWPB(ar) => (AtomicOp::Exchange, 1, ar),
-        O::SWPH(ar) => (AtomicOp::Exchange, 2, ar),
-        O::CAS(ar) => (AtomicOp::CompareExchange, 0, ar),
-        O::CASB(ar) => (AtomicOp::CompareExchange, 1, ar),
-        O::CASH(ar) => (AtomicOp::CompareExchange, 2, ar),
+    let (op, bytes, acquire_release) = match ins.opcode {
+        O::LDADD(acquire_release) => (AtomicOp::Add, 0, acquire_release),
+        O::LDADDB(acquire_release) => (AtomicOp::Add, 1, acquire_release),
+        O::LDADDH(acquire_release) => (AtomicOp::Add, 2, acquire_release),
+        O::LDCLR(acquire_release) => (AtomicOp::And, 0, acquire_release),
+        O::LDCLRB(acquire_release) => (AtomicOp::And, 1, acquire_release),
+        O::LDCLRH(acquire_release) => (AtomicOp::And, 2, acquire_release),
+        O::LDSET(acquire_release) => (AtomicOp::Or, 0, acquire_release),
+        O::LDSETB(acquire_release) => (AtomicOp::Or, 1, acquire_release),
+        O::LDSETH(acquire_release) => (AtomicOp::Or, 2, acquire_release),
+        O::LDEOR(acquire_release) => (AtomicOp::Xor, 0, acquire_release),
+        O::LDEORB(acquire_release) => (AtomicOp::Xor, 1, acquire_release),
+        O::LDEORH(acquire_release) => (AtomicOp::Xor, 2, acquire_release),
+        O::SWP(acquire_release) => (AtomicOp::Exchange, 0, acquire_release),
+        O::SWPB(acquire_release) => (AtomicOp::Exchange, 1, acquire_release),
+        O::SWPH(acquire_release) => (AtomicOp::Exchange, 2, acquire_release),
+        O::CAS(acquire_release) => (AtomicOp::CompareExchange, 0, acquire_release),
+        O::CASB(acquire_release) => (AtomicOp::CompareExchange, 1, acquire_release),
+        O::CASH(acquire_release) => (AtomicOp::CompareExchange, 2, acquire_release),
         O::LDAR => (AtomicOp::Load, 0, 2),
         O::LDARB => (AtomicOp::Load, 1, 2),
         O::LDARH => (AtomicOp::Load, 2, 2),
@@ -192,12 +192,12 @@ pub(super) fn lift(lifter: &mut Lifter, ins: &Instruction) -> bool {
     } else {
         destination(ops[1])
     };
-    let mut acquire = ar & 2 != 0;
+    let mut acquire = acquire_release & 2 != 0;
     // The acquire bit is ignored when the RMW result is discarded.
     if !simple && op != AtomicOp::CompareExchange && matches!(ops[1], Operand::Register(_, 31)) {
         acquire = false;
     }
-    let ordering = match (acquire, ar & 1 != 0) {
+    let ordering = match (acquire, acquire_release & 1 != 0) {
         (false, false) => Ordering::Relaxed,
         (true, false) => Ordering::Acquire,
         (false, true) => Ordering::Release,

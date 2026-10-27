@@ -277,8 +277,12 @@ fn vector_loads_match_arm_linux() {
                     ..super::setup(&registers)
                 };
                 let (state, _) = eval::state_after(&ir, &setup).unwrap();
-                let at = (index * 4 + offset_index) * 8;
-                let expected = u64::from_le_bytes(output.stdout[at..at + 8].try_into().unwrap());
+                let output_offset = (index * 4 + offset_index) * 8;
+                let expected = u64::from_le_bytes(
+                    output.stdout[output_offset..output_offset + 8]
+                        .try_into()
+                        .unwrap(),
+                );
                 assert_eq!(
                     state.get(&(crate::arch::arm32::D0 + vector)).copied(),
                     Some(expected),

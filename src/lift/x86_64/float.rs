@@ -6,9 +6,9 @@ use super::{
 /// The scalar SSE floating-point instructions: arithmetic on the low double
 /// or single of an xmm register, which keeps the register's other bits,
 /// conversions, and the compares that set the flags.
-pub(super) fn lift_float(lifter: &mut Lifter, ins: &Instruction) -> Option<()> {
+pub(super) fn lift_float(lifter: &mut Lifter, instruction: &Instruction) -> Option<()> {
     use Mnemonic::*;
-    let precision = match ins.mnemonic() {
+    let precision = match instruction.mnemonic() {
         Addsd | Subsd | Mulsd | Divsd | Sqrtsd | Minsd | Maxsd | Ucomisd | Comisd | Cvtsi2sd
         | Cvttsd2si | Cvtsd2si | Cvtsd2ss | Roundsd => Precision::Double,
         Addss | Subss | Mulss | Divss | Sqrtss | Minss | Maxss | Ucomiss | Comiss | Cvtsi2ss
@@ -17,18 +17,18 @@ pub(super) fn lift_float(lifter: &mut Lifter, ins: &Instruction) -> Option<()> {
     };
     // An xmm operand's low bits, or a value loaded from memory.
     let float_operand = |index: u32, precision: Precision| -> Option<Expr> {
-        match ins.op_kind(index) {
+        match instruction.op_kind(index) {
             OpKind::Register => {
-                let slot = xmm(ins.op_register(index))?;
+                let slot = xmm(instruction.op_register(index))?;
                 Some(Lifter::read_reg(slot, precision.bits()))
             }
-            OpKind::Memory => Some(load_at(memory_address(ins)?, precision.bits() / 8)),
+            OpKind::Memory => Some(load_at(memory_address(instruction)?, precision.bits() / 8)),
             _ => None,
         }
     };
     // The low bits of the destination receive `value`; the rest stay.
     let write_low = |lifter: &mut Lifter, value: Expr, precision: Precision| -> Option<()> {
-        let slot = xmm(ins.op0_register())?;
+        let slot = xmm(instruction.op0_register())?;
         let merged = match precision {
             Precision::Double => value,
             Precision::Single => Expr::bin(
@@ -44,9 +44,9 @@ pub(super) fn lift_float(lifter: &mut Lifter, ins: &Instruction) -> Option<()> {
         lifter.assign(slot, 64, merged);
         Some(())
     };
-    match ins.mnemonic() {
+    match instruction.mnemonic() {
         Addsd | Addss | Subsd | Subss | Mulsd | Mulss | Divsd | Divss => {
-            let op = match ins.mnemonic() {
+            let op = match instruction.mnemonic() {
                 Addsd | Addss => Operation::FloatAdd(precision),
                 Subsd | Subss => Operation::FloatSub(precision),
                 Mulsd | Mulss => Operation::FloatMul(precision),
@@ -67,7 +67,7 @@ pub(super) fn lift_float(lifter: &mut Lifter, ins: &Instruction) -> Option<()> {
         // which a NaN or two zeros never are.
         Minsd | Minss | Maxsd | Maxss => {
             let (a, b) = (float_operand(0, precision)?, float_operand(1, precision)?);
-            let (smaller, larger) = if matches!(ins.mnemonic(), Minsd | Minss) {
+            let (smaller, larger) = if matches!(instruction.mnemonic(), Minsd | Minss) {
                 (a.clone(), b.clone())
             } else {
                 (b.clone(), a.clone())
@@ -89,8 +89,8 @@ pub(super) fn lift_float(lifter: &mut Lifter, ins: &Instruction) -> Option<()> {
             lifter.set_flags(Flags::float_compare(a, b, precision));
         }
         Cvtsi2sd | Cvtsi2ss => {
-            let bits = operand_width(ins, 1)?;
-            let value = operand(lifter, ins, 1)?;
+            let bits = operand_width(instruction, 1)?;
+            let value = operand(lifter, instruction, 1)?;
             let converted = Expr::apply(
                 Operation::IntToFloat {
                     signed: true,
@@ -103,9 +103,9 @@ pub(super) fn lift_float(lifter: &mut Lifter, ins: &Instruction) -> Option<()> {
         }
         // The rounding ones round as the default mode does.
         Cvttsd2si | Cvttss2si | Cvtsd2si | Cvtss2si => {
-            let (index, bits) = gpr(ins.op0_register())?;
+            let (index, bits) = gpr(instruction.op0_register())?;
             let value = float_operand(1, precision)?;
-            let rounding = match ins.mnemonic() {
+            let rounding = match instruction.mnemonic() {
                 Cvttsd2si | Cvttss2si => Rounding::TowardZero,
                 _ => Rounding::NearestEven,
             };
@@ -124,7 +124,7 @@ pub(super) fn lift_float(lifter: &mut Lifter, ins: &Instruction) -> Option<()> {
         // The immediate names the rounding, or with bit 2 the current mode.
         Roundsd | Roundss => {
             let value = float_operand(1, precision)?;
-            let rounding = match ins.immediate8() {
+            let rounding = match instruction.immediate8() {
                 mode if mode & 4 != 0 => Rounding::NearestEven,
                 mode => match mode & 3 {
                     0 => Rounding::NearestEven,

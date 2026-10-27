@@ -18,7 +18,7 @@ fn lifted(isa: Isa, bytes: &[u8], result: Expr) -> FunctionIr {
     ir
 }
 
-fn check(
+fn check_atomic_result(
     mut ir: FunctionIr,
     registers: &[u16],
     initial: u64,
@@ -133,7 +133,14 @@ fn x86_atomic_families_print_compile_and_execute() {
             signed: false,
         };
         let ir = lifted(Isa::X86_64, &bytes, result);
-        code.push_str(&check(ir, &[7, 6, 0], initial, operand, updated, name));
+        code.push_str(&check_atomic_result(
+            ir,
+            &[7, 6, 0],
+            initial,
+            operand,
+            updated,
+            name,
+        ));
         main.push_str(&format!("v = {initial}; if ({name}((uint64_t)&v, {operand}, {initial}) != {updated} || v != {updated}) return 1;\n"));
     }
     assert!(code.contains("__ATOMIC_SEQ_CST"));
@@ -165,7 +172,14 @@ fn arm_atomic_families_print_compile_and_execute() {
             &bytes,
             Expr::reg(if name == "cas" { 1 } else { 2 }, 64),
         );
-        code.push_str(&check(ir, &[0, 1, 2], initial, operand, result, name));
+        code.push_str(&check_atomic_result(
+            ir,
+            &[0, 1, 2],
+            initial,
+            operand,
+            result,
+            name,
+        ));
         main.push_str(&format!("v = {initial}; if ({name}((uint64_t)&v, {operand}, {initial}) != {result} || v != {updated}) return 1;\n"));
     }
     for order in ["RELAXED", "ACQUIRE", "RELEASE", "ACQ_REL"] {
@@ -237,7 +251,7 @@ fn exchange_results_compare_failure_and_flags_survive_optimization() {
         ),
     ] {
         let ir = lifted(Isa::X86_64, &bytes, result);
-        code.push_str(&check(ir, &[7, 6, 0], 5, 3, expected, name));
+        code.push_str(&check_atomic_result(ir, &[7, 6, 0], 5, 3, expected, name));
         main.push_str(&format!(
             "v = 5; if ({name}((uint64_t)&v, 3, 5) != {expected} || v != {memory}) return 1;\n"
         ));
@@ -255,7 +269,7 @@ fn ordinary_memory_values_are_not_forwarded_across_atomic_accesses() {
         0xc3,
     ];
     let ir = lifted(Isa::X86_64, &bytes, Expr::reg(0, 64));
-    let printed = check(ir, &[7, 6, 0], 5, 3, 1, "barrier");
+    let printed = check_atomic_result(ir, &[7, 6, 0], 5, 3, 1, "barrier");
     compile_run(
         &format!(
             "#include <stdint.h>\n{printed}\nint main(void) {{ uint64_t v = 5; return barrier((uint64_t)&v, 3, 5) != 1 || v != 8; }}\n"
@@ -342,7 +356,7 @@ fn exclusive_retry_loop_becomes_one_atomic_update() {
     .flat_map(u32::to_le_bytes)
     .collect();
     let ir = lifted(Isa::AArch64, &bytes, Expr::reg(3, 64));
-    let printed = check(ir, &[0, 1, 2], 5, 3, 8, "exclusive_loop");
+    let printed = check_atomic_result(ir, &[0, 1, 2], 5, 3, 8, "exclusive_loop");
     assert_eq!(
         printed.matches("__atomic_fetch_add").count(),
         1,
@@ -370,7 +384,7 @@ fn exclusive_retry_can_test_the_zero_extended_status_register() {
     .flat_map(u32::to_le_bytes)
     .collect();
     let ir = lifted(Isa::AArch64, &bytes, Expr::reg(2, 64));
-    let printed = check(ir, &[0, 1, 2], 5, 3, 8, "wide_status_loop");
+    let printed = check_atomic_result(ir, &[0, 1, 2], 5, 3, 8, "wide_status_loop");
     assert_eq!(
         printed.matches("__atomic_fetch_add").count(),
         1,

@@ -163,10 +163,13 @@ impl<'a> Lifter<'a> {
 }
 
 /// The registers, as the IR numbers them, an instruction may write.
-fn written_registers(info: &mut iced_x86::InstructionInfoFactory, ins: &Instruction) -> Vec<u16> {
+fn written_registers(
+    instruction_info_factory: &mut iced_x86::InstructionInfoFactory,
+    instruction: &Instruction,
+) -> Vec<u16> {
     use iced_x86::OpAccess;
     let mut out = Vec::new();
-    for used in info.info(ins).used_registers() {
+    for used in instruction_info_factory.info(instruction).used_registers() {
         if !matches!(
             used.access(),
             OpAccess::Write | OpAccess::ReadWrite | OpAccess::CondWrite | OpAccess::ReadCondWrite
@@ -233,8 +236,8 @@ fn is_setcc(mnemonic: Mnemonic) -> bool {
     )
 }
 
-fn resolved_target(ins: &Instruction, relocation_target: Option<u64>) -> u64 {
-    relocation_target.unwrap_or_else(|| ins.near_branch_target())
+fn resolved_target(instruction: &Instruction, relocation_target: Option<u64>) -> u64 {
+    relocation_target.unwrap_or_else(|| instruction.near_branch_target())
 }
 
 fn return_address_register(image: &Image, target: u64) -> Option<u16> {
@@ -864,14 +867,14 @@ fn lift_instruction(
     false
 }
 
-fn branch_target(ins: &Instruction, relocation_target: Option<u64>) -> Option<u64> {
+fn branch_target(instruction: &Instruction, relocation_target: Option<u64>) -> Option<u64> {
     // A repeated string instruction loops back to its own test.
-    if string_size(ins).is_some() && ins.has_rep_prefix() {
-        return Some(ins.ip());
+    if string_size(instruction).is_some() && instruction.has_rep_prefix() {
+        return Some(instruction.ip());
     }
-    match ins.flow_control() {
+    match instruction.flow_control() {
         FlowControl::UnconditionalBranch | FlowControl::ConditionalBranch => {
-            Some(resolved_target(ins, relocation_target))
+            Some(resolved_target(instruction, relocation_target))
         }
         FlowControl::IndirectBranch => relocation_target,
         _ => None,

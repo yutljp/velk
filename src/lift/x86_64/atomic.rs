@@ -6,26 +6,27 @@ use crate::ir::{AtomicOp, MachineInstruction, Ordering};
 
 const OUTPUT: u16 = crate::ir::TEMP_BASE + 0x60;
 
-pub(super) fn lift(lifter: &mut Lifter, ins: &Instruction) -> bool {
-    if !ins.has_lock_prefix()
-        && !(ins.mnemonic() == Mnemonic::Xchg
-            && (ins.op0_kind() == OpKind::Memory || ins.op1_kind() == OpKind::Memory))
+pub(super) fn lift(lifter: &mut Lifter, instruction: &Instruction) -> bool {
+    if !instruction.has_lock_prefix()
+        && !(instruction.mnemonic() == Mnemonic::Xchg
+            && (instruction.op0_kind() == OpKind::Memory
+                || instruction.op1_kind() == OpKind::Memory))
     {
         return false;
     }
-    let width = if ins.mnemonic() == Mnemonic::Cmpxchg16b {
+    let width = if instruction.mnemonic() == Mnemonic::Cmpxchg16b {
         Some(16)
     } else {
-        memory_width(ins)
+        memory_width(instruction)
     };
-    let (Some(mut addr), Some(width)) = (memory_address(ins), width) else {
+    let (Some(mut addr), Some(width)) = (memory_address(instruction), width) else {
         lifter.stmts.push(Stmt::unsupported(format!(
             "atomic operand at 0x{:x}",
-            ins.ip()
+            instruction.ip()
         )));
         return true;
     };
-    let op = match ins.mnemonic() {
+    let op = match instruction.mnemonic() {
         Mnemonic::Add | Mnemonic::Inc | Mnemonic::Xadd => AtomicOp::Add,
         Mnemonic::Sub | Mnemonic::Dec => AtomicOp::Sub,
         Mnemonic::And | Mnemonic::Btr => AtomicOp::And,
@@ -36,25 +37,28 @@ pub(super) fn lift(lifter: &mut Lifter, ins: &Instruction) -> bool {
         _ => {
             lifter.stmts.push(Stmt::unsupported(format!(
                 "atomic {:?} at 0x{:x}",
-                ins.mnemonic(),
-                ins.ip()
+                instruction.mnemonic(),
+                instruction.ip()
             )));
             return true;
         }
     };
     let bits = width * 8;
-    if matches!(ins.mnemonic(), Mnemonic::Cmpxchg8b | Mnemonic::Cmpxchg16b) {
+    if matches!(
+        instruction.mnemonic(),
+        Mnemonic::Cmpxchg8b | Mnemonic::Cmpxchg16b
+    ) {
         wide_compare_exchange(lifter, addr, width);
         return true;
     }
-    let source_index = if ins.op0_kind() == OpKind::Memory {
+    let source_index = if instruction.op0_kind() == OpKind::Memory {
         1
     } else {
         0
     };
-    let source = match ins.mnemonic() {
+    let source = match instruction.mnemonic() {
         Mnemonic::Inc | Mnemonic::Dec => Expr::constant(1),
-        _ => match operand(lifter, ins, source_index) {
+        _ => match operand(lifter, instruction, source_index) {
             Some(source) => source,
             None => {
                 lifter.stmts.push(Stmt::unsupported("atomic source"));
@@ -63,7 +67,7 @@ pub(super) fn lift(lifter: &mut Lifter, ins: &Instruction) -> bool {
         },
     };
     let bit_op = matches!(
-        ins.mnemonic(),
+        instruction.mnemonic(),
         Mnemonic::Bts | Mnemonic::Btr | Mnemonic::Btc
     );
     let bit = Expr::bin(
@@ -71,7 +75,7 @@ pub(super) fn lift(lifter: &mut Lifter, ins: &Instruction) -> bool {
         source.clone(),
         Expr::constant(u64::from(bits - 1)),
     );
-    if bit_op && ins.op1_kind() == OpKind::Register {
+    if bit_op && instruction.op1_kind() == OpKind::Register {
         let signed = Expr::SignExtend {
             value: Box::new(source.clone()),
             width,
@@ -132,7 +136,7 @@ pub(super) fn lift(lifter: &mut Lifter, ins: &Instruction) -> bool {
         // EAX is zero-extended even when a 32-bit comparison succeeds.
         lifter.assign(RAX, bits, old);
     } else if op == AtomicOp::Exchange {
-        write_operand(lifter, ins, source_index, old);
+        write_operand(lifter, instruction, source_index, old);
     } else {
         let binary = match op {
             AtomicOp::Add => BinOp::Add,
@@ -146,13 +150,15 @@ pub(super) fn lift(lifter: &mut Lifter, ins: &Instruction) -> bool {
             AtomicOp::Sub => Flags::difference(old.clone(), source),
             _ => Flags::logic_at(Expr::bin(binary, old.clone(), source), u32::from(bits)),
         };
-        lifter.set_flags(if matches!(ins.mnemonic(), Mnemonic::Inc | Mnemonic::Dec) {
-            flags.keeping_carry()
-        } else {
-            flags
-        });
-        if ins.mnemonic() == Mnemonic::Xadd {
-            write_operand(lifter, ins, 1, old);
+        lifter.set_flags(
+            if matches!(instruction.mnemonic(), Mnemonic::Inc | Mnemonic::Dec) {
+                flags.keeping_carry()
+            } else {
+                flags
+            },
+        );
+        if instruction.mnemonic() == Mnemonic::Xadd {
+            write_operand(lifter, instruction, 1, old);
         }
     }
     true

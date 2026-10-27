@@ -22,12 +22,12 @@ pub(super) fn lift(lifter: &mut Lifter, ins: &Instruction) -> bool {
         O::LD4R => (4, false, true),
         _ => return false,
     };
-    let (first, count, full, element, at) = match ins.operands[0] {
+    let (first, count, full, element, lane_index) = match ins.operands[0] {
         Operand::SIMDRegisterGroup(size, first, element, count) => {
             (first, count, size == a64::SIMDSizeCode::Q, element, None)
         }
-        Operand::SIMDRegisterGroupLane(first, element, count, at) => {
-            (first, count, true, element, Some(at))
+        Operand::SIMDRegisterGroupLane(first, element, count, lane_index) => {
+            (first, count, true, element, Some(lane_index))
         }
         _ => {
             lifter.incomplete.set(true);
@@ -46,7 +46,7 @@ pub(super) fn lift(lifter: &mut Lifter, ins: &Instruction) -> bool {
     };
     if !(1..=4).contains(&count)
         || (structures != 1 && count != structures)
-        || at.is_some_and(|at| u16::from(at) * u16::from(bits) >= 128)
+        || lane_index.is_some_and(|lane_index| u16::from(lane_index) * u16::from(bits) >= 128)
     {
         lifter.incomplete.set(true);
         return true;
@@ -68,11 +68,11 @@ pub(super) fn lift(lifter: &mut Lifter, ins: &Instruction) -> bool {
         width: bytes,
         signed: false,
     };
-    for reg in 0..count {
-        let number = (first + u16::from(reg)) % 32;
+    for register_index in 0..count {
+        let number = (first + u16::from(register_index)) % 32;
         let slot = crate::arch::aarch64::V0 + 2 * number;
-        if let Some(at) = at {
-            let shift = u64::from(at) * u64::from(bits);
+        if let Some(lane_index) = lane_index {
+            let shift = u64::from(lane_index) * u64::from(bits);
             let slot = slot + (shift / 64) as u16;
             let shift = shift % 64;
             let mask = mask_bits(u64::from(bits));
@@ -81,7 +81,7 @@ pub(super) fn lift(lifter: &mut Lifter, ins: &Instruction) -> bool {
                     addr: Expr::bin(
                         BinOp::Add,
                         mem.address.clone(),
-                        Expr::constant(u64::from(reg) * u64::from(bytes)),
+                        Expr::constant(u64::from(register_index) * u64::from(bytes)),
                     ),
                     value: lane_value((slot, shift, u64::from(bits))),
                     width: bytes,
@@ -96,7 +96,7 @@ pub(super) fn lift(lifter: &mut Lifter, ins: &Instruction) -> bool {
                     ),
                     Expr::bin(
                         BinOp::Shl,
-                        load(u64::from(reg) * u64::from(bytes)),
+                        load(u64::from(register_index) * u64::from(bytes)),
                         Expr::constant(shift),
                     ),
                 );
@@ -109,7 +109,7 @@ pub(super) fn lift(lifter: &mut Lifter, ins: &Instruction) -> bool {
                 );
             }
         } else if replicate {
-            let value = lifter.hold(load(u64::from(reg) * u64::from(bytes)));
+            let value = lifter.hold(load(u64::from(register_index) * u64::from(bytes)));
             let half = super::replicate(value, bits);
             lifter.write_vector((slot, full, bits), half.clone(), half);
         } else {
@@ -118,9 +118,9 @@ pub(super) fn lift(lifter: &mut Lifter, ins: &Instruction) -> bool {
             for index in 0..lanes {
                 let shift = u64::from(index) * u64::from(bits);
                 let offset = if structures == 1 {
-                    u64::from(reg) * u64::from(lanes) + u64::from(index)
+                    u64::from(register_index) * u64::from(lanes) + u64::from(index)
                 } else {
-                    u64::from(index) * u64::from(count) + u64::from(reg)
+                    u64::from(index) * u64::from(count) + u64::from(register_index)
                 } * u64::from(bytes);
                 if store {
                     lifter.stmts.push(Stmt::Store {

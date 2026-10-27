@@ -4,17 +4,19 @@ use super::{
     replicated, shift_count, simd, source_halves, unzip, vector, write_narrow,
 };
 
-fn unary_operation(opcode: a64::Opcode, p: Precision) -> Option<Operation> {
+fn unary_operation(opcode: a64::Opcode, precision: Precision) -> Option<Operation> {
     use a64::Opcode as O;
     Some(match opcode {
-        O::FABS => Operation::FloatAbs(p),
-        O::FNEG => Operation::FloatNegate(p),
-        O::FSQRT => Operation::FloatSqrt(p),
-        O::FRINTA => Operation::FloatRound(p, Rounding::NearestAway),
-        O::FRINTM => Operation::FloatRound(p, Rounding::Down),
-        O::FRINTP => Operation::FloatRound(p, Rounding::Up),
-        O::FRINTZ => Operation::FloatRound(p, Rounding::TowardZero),
-        O::FRINTN | O::FRINTX | O::FRINTI => Operation::FloatRound(p, Rounding::NearestEven),
+        O::FABS => Operation::FloatAbs(precision),
+        O::FNEG => Operation::FloatNegate(precision),
+        O::FSQRT => Operation::FloatSqrt(precision),
+        O::FRINTA => Operation::FloatRound(precision, Rounding::NearestAway),
+        O::FRINTM => Operation::FloatRound(precision, Rounding::Down),
+        O::FRINTP => Operation::FloatRound(precision, Rounding::Up),
+        O::FRINTZ => Operation::FloatRound(precision, Rounding::TowardZero),
+        O::FRINTN | O::FRINTX | O::FRINTI => {
+            Operation::FloatRound(precision, Rounding::NearestEven)
+        }
         _ => return None,
     })
 }
@@ -153,13 +155,13 @@ pub(super) fn lift_vector_float(lifter: &mut Lifter, ins: &Instruction) -> Optio
             let accumulator = (Expr::reg(dest.0, 64), Expr::reg(dest.0 + 1, 64));
             let args = [source(ops[1])?, source(ops[2])?, accumulator];
             float_lanes(shape, &args, |mut lane| {
-                let (n, m, acc) = (lane.remove(0), lane.remove(0), lane.remove(0));
+                let (n, m, accumulator) = (lane.remove(0), lane.remove(0), lane.remove(0));
                 let n = if ins.opcode == O::FMLS {
                     apply(Operation::FloatNegate(p), vec![n])
                 } else {
                     n
                 };
-                apply(Operation::FloatMulAdd(p), vec![n, m, acc])
+                apply(Operation::FloatMulAdd(p), vec![n, m, accumulator])
             })
         }
         O::FABS

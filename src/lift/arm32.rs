@@ -130,13 +130,13 @@ fn decode(image: &Image, bytes: &[u8], addr: u64) -> (Vec<Decoded<Step>>, Option
             .allow_nonconforming(false)
             .with_thumb_mode(mode == ArmMode::Thumb);
         let mut reader = ReaderBuilder::<u32, u8>::read_at(&bytes[offset..], 0);
-        let extra = additional::decode(&bytes[offset..], mode);
+        let fallback_instruction = additional::decode(&bytes[offset..], mode);
         let mut instruction = match decoder.decode(&mut reader) {
             Ok(instruction) => instruction,
             Err(_) if mode == ArmMode::Arm && double_literal(&bytes[offset..]).is_some() => {
                 double_literal(&bytes[offset..]).expect("validated double-word literal encoding")
             }
-            Err(_) if extra.is_some() => Instruction {
+            Err(_) if fallback_instruction.is_some() => Instruction {
                 condition: if mode == ArmMode::Thumb {
                     armv7::ConditionCode::AL
                 } else {
@@ -210,7 +210,7 @@ fn decode(image: &Image, bytes: &[u8], addr: u64) -> (Vec<Decoded<Step>>, Option
             next,
             instruction: Step::Execute {
                 instruction,
-                additional: extra,
+                additional: fallback_instruction,
                 pc,
                 next,
                 target: destination,
@@ -779,7 +779,7 @@ impl Lifter<'_> {
                     );
                 }
                 if instruction.s {
-                    let out = match source {
+                    let shifted_carry = match source {
                         Operand::RegShift(shift) => match shift.into_shift() {
                             RegShiftStyle::RegImm(shift) => shifted_carry(
                                 Self::read(shift.shiftee().number(), pc, instruction.thumb),
@@ -791,8 +791,8 @@ impl Lifter<'_> {
                         },
                         _ => None,
                     };
-                    let flags = match out {
-                        Some(out) => shift_flags(value.clone(), out, overflow),
+                    let flags = match shifted_carry {
+                        Some(shifted_carry) => shift_flags(value.clone(), shifted_carry, overflow),
                         None => Flags::result(low(value.clone())),
                     };
                     self.set_flags(flags);
@@ -985,12 +985,12 @@ impl Lifter<'_> {
                 if first.number() == 15 || second.number() == 15 || (load && first == second) {
                     return None;
                 }
-                let Some((mut addr, back)) = self.memory(c, pc, instruction.thumb) else {
+                let Some((mut addr, writeback)) = self.memory(c, pc, instruction.thumb) else {
                     return None;
                 };
                 if load {
                     let mut reads = HashSet::new();
-                    if let Some((base, value)) = &back {
+                    if let Some((base, value)) = &writeback {
                         crate::ir::visit::collect_reads(value, &mut reads);
                         if *base == first.number()
                             || *base == second.number()
@@ -1031,7 +1031,7 @@ impl Lifter<'_> {
                         });
                     }
                 }
-                if let Some((base, value)) = back {
+                if let Some((base, value)) = writeback {
                     self.assign(base, value);
                 }
             }
@@ -1339,7 +1339,7 @@ impl Lifter<'_> {
             } else {
                 right.clone()
             };
-            let out = super::flags::carry_out(&left, &addend, carry, 32);
+            let carry_out = super::flags::carry_out(&left, &addend, carry, 32);
             let result = low(value.clone());
             let zero = Test::Compare(Cond::Eq, result.clone(), Expr::constant(0))
                 .select(Expr::constant(64), Expr::constant(0))
@@ -1368,7 +1368,7 @@ impl Lifter<'_> {
             let byte = Expr::bin(
                 BinOp::Or,
                 Expr::bin(BinOp::Or, zero, sign),
-                Expr::bin(BinOp::Xor, out, Expr::constant(1)),
+                Expr::bin(BinOp::Xor, carry_out, Expr::constant(1)),
             );
             self.set_flags(Flags::stored(byte, Some(overflow)));
         }

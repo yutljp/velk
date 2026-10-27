@@ -34,7 +34,7 @@ pub(super) fn extend_shift(
         let masked = Expr::bin(BinOp::And, value, Expr::constant(mask));
         return Some(Expr::bin(BinOp::Shl, masked, Expr::constant(amount)));
     }
-    let signed_width = match style {
+    let signed_bytes = match style {
         a64::ShiftStyle::SXTB => Some(1),
         a64::ShiftStyle::SXTH => Some(2),
         a64::ShiftStyle::SXTW => Some(4),
@@ -49,7 +49,7 @@ pub(super) fn extend_shift(
             rotated
         });
     }
-    if let Some(bytes) = signed_width {
+    if let Some(bytes) = signed_bytes {
         let widened = Expr::SignExtend {
             value: Box::new(value),
             width: bytes,
@@ -369,7 +369,7 @@ pub(super) fn lift_conditional_compare(lifter: &mut Lifter, ops: [Operand; 4], s
     let (Some(a), Some(b), Some(nzcv)) = (
         lifter.operand(ops[0], width),
         lifter.operand(ops[1], width),
-        immediates(ops[2]),
+        immediate(ops[2]),
     ) else {
         return;
     };
@@ -444,8 +444,8 @@ pub(super) fn lift_bitfield_insert(lifter: &mut Lifter, ops: [Operand; 4]) {
     let (Some(old), Some(source), Some(immr), Some(imms)) = (
         lifter.operand(ops[0], dest.width),
         lifter.operand(ops[1], dest.width),
-        immediates(ops[2]),
-        immediates(ops[3]),
+        immediate(ops[2]),
+        immediate(ops[3]),
     ) else {
         return;
     };
@@ -484,7 +484,7 @@ pub(super) fn mask_bits(bits: u64) -> u64 {
     }
 }
 
-pub(super) fn immediates(operand: Operand) -> Option<u64> {
+pub(super) fn immediate(operand: Operand) -> Option<u64> {
     match operand {
         Operand::Immediate(value) => Some(value as u64),
         Operand::Imm16(value) => Some(value as u64),
@@ -497,7 +497,7 @@ pub(super) fn lift_mov(lifter: &mut Lifter, ops: [Operand; 4], invert: bool) {
     let Some(dest) = destination(ops[0]) else {
         return;
     };
-    let Some(immediate) = immediates(ops[1]) else {
+    let Some(immediate) = immediate(ops[1]) else {
         return;
     };
     let value = if invert {
@@ -543,8 +543,8 @@ pub(super) fn lift_bitfield(lifter: &mut Lifter, ops: [Operand; 4], signed: bool
     };
     let (Some(source), Some(immr), Some(imms)) = (
         lifter.operand(ops[1], dest.width),
-        immediates(ops[2]),
-        immediates(ops[3]),
+        immediate(ops[2]),
+        immediate(ops[3]),
     ) else {
         return;
     };

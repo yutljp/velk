@@ -109,19 +109,19 @@ pub fn lift(
 /// changes, so a lift whose callees all still answer the same is the lift
 /// made again.
 #[derive(Debug, Default)]
-pub struct Lifts(Mutex<HashMap<LiftKey, Kept>>);
+pub struct Lifts(Mutex<HashMap<LiftKey, CachedLifts>>);
 
 type LiftKey = (u64, u64, Vec<u64>);
 
 /// The lifts kept of one function, oldest first.
-type Kept = Vec<Arc<Recorded>>;
+type CachedLifts = Vec<Arc<CachedLift>>;
 
 #[derive(Debug)]
 #[expect(
     clippy::rc_buffer,
     reason = "Shared blocks retain Vec ownership so an unshared lift can be taken without cloning its blocks."
 )]
-struct Recorded {
+struct CachedLift {
     answers: Vec<(u64, Summary)>,
     without_summaries: bool,
     blocks: Result<Arc<Vec<Block>>, LiftError>,
@@ -196,7 +196,7 @@ pub(crate) fn lift_shared_with_targets(
             .unwrap_or(0);
         kept.remove(oldest);
     }
-    kept.push(Arc::new(Recorded {
+    kept.push(Arc::new(CachedLift {
         answers,
         without_summaries,
         blocks: blocks.clone(),
@@ -646,7 +646,7 @@ fn lift_continuing<M: Machine>(
     decode: Decoder<'_, M::Instruction>,
     extra_targets: &HashSet<u64>,
 ) -> Result<Vec<Block>, LiftError> {
-    let mut pulled = exits::Pulled::new();
+    let mut pulled = exits::ContinuedCode::new();
     let mut rounds = 0;
     loop {
         rounds += 1;
@@ -681,7 +681,7 @@ fn decode_with_fragments<M: Machine>(
     addr: u64,
     bytes: &[u8],
     decode: Decoder<'_, M::Instruction>,
-    pulled: &exits::Pulled,
+    pulled: &exits::ContinuedCode,
 ) -> (Vec<Decoded<M::Instruction>>, Option<String>) {
     let (mut decoded, stop) = decode(bytes, addr);
     for (start, size) in pulled {
@@ -1082,7 +1082,7 @@ fn build_carrying<M: Machine>(
     decoded: &[Decoded<M::Instruction>],
     stop: Option<String>,
     extra_targets: &HashSet<u64>,
-) -> Result<(Vec<Block>, exits::Pulled), LiftError> {
+) -> Result<(Vec<Block>, exits::ContinuedCode), LiftError> {
     let none = CarriedFlags::default();
     let (blocks, exits, pulled) = match build(
         image,
@@ -1404,7 +1404,7 @@ fn finish_block<M: Machine>(
 
 /// The blocks, the flags each leaves, and the code its branches out continue
 /// in.
-type Built = (Vec<Block>, HashMap<u64, Exit>, exits::Pulled);
+type BuiltBlocks = (Vec<Block>, HashMap<u64, Exit>, exits::ContinuedCode);
 
 #[expect(
     clippy::too_many_arguments,
@@ -1419,7 +1419,7 @@ fn build<M: Machine>(
     stop: Option<String>,
     extra_targets: &HashSet<u64>,
     carried: &CarriedFlags,
-) -> Result<Built, LiftError> {
+) -> Result<BuiltBlocks, LiftError> {
     let mut exits = HashMap::new();
     // The address of the instruction ending each block that a branch ends.
     let mut ends = HashMap::new();
@@ -1896,7 +1896,7 @@ mod tests {
             0x39, 0xf7, 0x75, 0x05, 0xb8, 5, 0, 0, 0, 0x0f, 0x9c, 0xc0, 0x0f, 0xb6, 0xc0, 0xc3,
         ];
         // cmp w0, w1; b.ne +8; mov w2, #1; cset w0, lt; ret
-        let a64 = words(&[
+        let aarch64_code = words(&[
             0x6b01_001f,
             0x5400_0041,
             0x5280_0022,
@@ -1906,7 +1906,10 @@ mod tests {
         for (a, b) in [(1u64, 2u64), (2, 1), (0xffff_ffff, 1), (3, 3)] {
             let less = u64::from((a as u32 as i32) < (b as u32 as i32));
             assert_eq!(returns(Isa::X86_64, x86.clone(), &[(7, a), (6, b)]), less);
-            assert_eq!(returns(Isa::AArch64, a64.clone(), &[(0, a), (1, b)]), less);
+            assert_eq!(
+                returns(Isa::AArch64, aarch64_code.clone(), &[(0, a), (1, b)]),
+                less
+            );
         }
     }
 
@@ -2120,20 +2123,23 @@ mod tests {
             0xbb11_2233_4455_6677
         );
         let ret = 0xd65f_03c0;
-        let a64 = |word: u32, registers: &[(u16, u64)]| {
+        let run_aarch64 = |word: u32, registers: &[(u16, u64)]| {
             returns(Isa::AArch64, words(&[word, ret]), registers)
         };
         // ror x0, x1, #8
-        assert_eq!(a64(0x93c1_2020, &[(1, x)]), 0x8811_2233_4455_6677);
+        assert_eq!(run_aarch64(0x93c1_2020, &[(1, x)]), 0x8811_2233_4455_6677);
         // orr x0, xzr, x1, ror #8
-        assert_eq!(a64(0xaac1_23e0, &[(1, x)]), 0x8811_2233_4455_6677);
+        assert_eq!(run_aarch64(0xaac1_23e0, &[(1, x)]), 0x8811_2233_4455_6677);
         // rorv w0, w1, w2
-        assert_eq!(a64(0x1ac2_2c20, &[(1, 0x1234_5678), (2, 36)]), 0x8123_4567);
+        assert_eq!(
+            run_aarch64(0x1ac2_2c20, &[(1, 0x1234_5678), (2, 36)]),
+            0x8123_4567
+        );
         // rev x0, x1; rev16 w0, w1
-        assert_eq!(a64(0xdac0_0c20, &[(1, x)]), 0x8877_6655_4433_2211);
-        assert_eq!(a64(0x5ac0_0420, &[(1, 0x1122_3344)]), 0x2211_4433);
+        assert_eq!(run_aarch64(0xdac0_0c20, &[(1, x)]), 0x8877_6655_4433_2211);
+        assert_eq!(run_aarch64(0x5ac0_0420, &[(1, 0x1122_3344)]), 0x2211_4433);
         // orn x0, x1, x2
-        assert_eq!(a64(0xaa22_0020, &[(1, 0xf0), (2, !0x0f)]), 0xff);
+        assert_eq!(run_aarch64(0xaa22_0020, &[(1, 0xf0), (2, !0x0f)]), 0xff);
     }
 
     #[test]
@@ -2201,14 +2207,14 @@ mod tests {
     fn signed_division_requires_a_matching_extension_width() {
         // cdq; idiv rcx: edx becomes 0xffffffff, leaving a positive 128-bit dividend.
         let code = [0x99, 0x48, 0xf7, 0xf9];
-        for (result, expected) in [
+        for (return_code, expected) in [
             (vec![0xc3], 0x7fff_ffff_8000_0000),
             (vec![0x48, 0x89, 0xd0, 0xc3], 0x8000_0000),
         ] {
             assert_eq!(
                 returns(
                     Isa::X86_64,
-                    [code.to_vec(), result].concat(),
+                    [code.to_vec(), return_code].concat(),
                     &[(0, 0x8000_0000), (1, 0x2_0000_0000)]
                 ),
                 expected
@@ -2216,11 +2222,11 @@ mod tests {
         }
         // cqo; idiv ecx: rax is positive, so edx:eax holds positive 0x80000000.
         let code = [0x48, 0x99, 0xf7, 0xf9];
-        for (result, expected) in [(vec![0xc3], 715_827_882), (vec![0x89, 0xd0, 0xc3], 2)] {
+        for (return_code, expected) in [(vec![0xc3], 715_827_882), (vec![0x89, 0xd0, 0xc3], 2)] {
             assert_eq!(
                 returns(
                     Isa::X86_64,
-                    [code.to_vec(), result].concat(),
+                    [code.to_vec(), return_code].concat(),
                     &[(0, 0x8000_0000), (1, 3)]
                 ),
                 expected
@@ -2241,11 +2247,12 @@ mod tests {
     fn unsigned_division_preserves_high_dividend_bits_after_partial_zeroing() {
         for zero in [vec![0x66, 0x31, 0xd2], vec![0x30, 0xd2]] {
             // xor dx, dx (or xor dl, dl); div ecx
-            for (result, expected) in [(vec![0xc3], 0x8000_0000), (vec![0x89, 0xd0, 0xc3], 7)] {
+            for (return_code, expected) in [(vec![0xc3], 0x8000_0000), (vec![0x89, 0xd0, 0xc3], 7)]
+            {
                 assert_eq!(
                     returns(
                         Isa::X86_64,
-                        [zero.clone(), vec![0xf7, 0xf1], result].concat(),
+                        [zero.clone(), vec![0xf7, 0xf1], return_code].concat(),
                         &[(0, 7), (1, 0x2_0000), (2, 0x1_00ff)]
                     ),
                     expected

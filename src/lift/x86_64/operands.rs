@@ -83,8 +83,8 @@ fn high_byte(reg: Register) -> Option<u16> {
     }
 }
 
-pub(super) fn memory_width(ins: &Instruction) -> Option<u8> {
-    Some(match ins.memory_size().size() {
+pub(super) fn memory_width(instruction: &Instruction) -> Option<u8> {
+    Some(match instruction.memory_size().size() {
         1 => 1,
         2 => 2,
         4 => 4,
@@ -93,17 +93,17 @@ pub(super) fn memory_width(ins: &Instruction) -> Option<u8> {
     })
 }
 
-pub(super) fn memory_address(ins: &Instruction) -> Option<Expr> {
-    if ins.memory_base() == Register::RIP {
-        return Some(Expr::constant(ins.ip_rel_memory_address()));
+pub(super) fn memory_address(instruction: &Instruction) -> Option<Expr> {
+    if instruction.memory_base() == Register::RIP {
+        return Some(Expr::constant(instruction.ip_rel_memory_address()));
     }
     let mut address: Option<Expr> = None;
-    if let Some((index, width)) = gpr(ins.memory_base()) {
+    if let Some((index, width)) = gpr(instruction.memory_base()) {
         address = Some(Lifter::read_reg(index, width));
     }
-    if let Some((index, width)) = gpr(ins.memory_index()) {
+    if let Some((index, width)) = gpr(instruction.memory_index()) {
         let mut value = Lifter::read_reg(index, width);
-        let scale = ins.memory_index_scale();
+        let scale = instruction.memory_index_scale();
         if scale > 1 {
             value = Expr::bin(BinOp::Mul, value, Expr::constant(scale as u64));
         }
@@ -112,12 +112,13 @@ pub(super) fn memory_address(ins: &Instruction) -> Option<Expr> {
             None => value,
         });
     }
-    let displacement = if ins.code_size() == iced_x86::CodeSize::Code32
-        && (ins.memory_base() != Register::None || ins.memory_index() != Register::None)
+    let displacement = if instruction.code_size() == iced_x86::CodeSize::Code32
+        && (instruction.memory_base() != Register::None
+            || instruction.memory_index() != Register::None)
     {
-        ins.memory_displacement32() as i32 as i64 as u64
+        instruction.memory_displacement32() as i32 as i64 as u64
     } else {
-        ins.memory_displacement64()
+        instruction.memory_displacement64()
     };
     if displacement != 0 {
         address = Some(match address {
@@ -125,10 +126,10 @@ pub(super) fn memory_address(ins: &Instruction) -> Option<Expr> {
             None => Expr::constant(displacement),
         });
     }
-    let address_bits = gpr(ins.memory_base())
-        .or_else(|| gpr(ins.memory_index()))
+    let address_bits = gpr(instruction.memory_base())
+        .or_else(|| gpr(instruction.memory_index()))
         .map(|(_, width)| width)
-        .unwrap_or_else(|| match ins.code_size() {
+        .unwrap_or_else(|| match instruction.code_size() {
             iced_x86::CodeSize::Code32 => 32,
             iced_x86::CodeSize::Code16 => 16,
             _ => 64,
@@ -142,7 +143,7 @@ pub(super) fn memory_address(ins: &Instruction) -> Option<Expr> {
             )
         });
     }
-    let segment = match ins.memory_segment() {
+    let segment = match instruction.memory_segment() {
         Register::FS => Some(crate::arch::x86::FS_BASE),
         Register::GS => Some(crate::arch::x86::GS_BASE),
         _ => None,
@@ -171,17 +172,20 @@ pub(super) fn load_at(addr: Expr, width: u8) -> Expr {
     }
 }
 
-fn load(lifter: &Lifter, ins: &Instruction) -> Option<Expr> {
-    let Some(mut address) = memory_address(ins) else {
+fn load(lifter: &Lifter, instruction: &Instruction) -> Option<Expr> {
+    let Some(mut address) = memory_address(instruction) else {
         return None;
     };
     if lifter.image.isa == crate::loader::Isa::I386
-        && ins.mnemonic() == iced_x86::Mnemonic::Jmp
-        && ins.memory_base() == Register::EBX
-        && ins.memory_index() == Register::None
-        && lifter.image.section_at(ins.ip()).is_some_and(|section| {
-            matches!(section.name.as_str(), ".plt" | ".plt.sec" | ".plt.got")
-        })
+        && instruction.mnemonic() == iced_x86::Mnemonic::Jmp
+        && instruction.memory_base() == Register::EBX
+        && instruction.memory_index() == Register::None
+        && lifter
+            .image
+            .section_at(instruction.ip())
+            .is_some_and(|section| {
+                matches!(section.name.as_str(), ".plt" | ".plt.sec" | ".plt.got")
+            })
         && let Some(got) = lifter
             .image
             .sections
@@ -190,39 +194,39 @@ fn load(lifter: &Lifter, ins: &Instruction) -> Option<Expr> {
     {
         address = Expr::constant(
             got.vaddr
-                .wrapping_add_signed(i64::from(ins.memory_displacement32() as i32))
+                .wrapping_add_signed(i64::from(instruction.memory_displacement32() as i32))
                 & 0xffff_ffff,
         );
     }
-    let Some(width) = memory_width(ins) else {
+    let Some(width) = memory_width(instruction) else {
         return None;
     };
     Some(load_at(address, width))
 }
 
-fn immediate(ins: &Instruction, index: u32) -> Option<Expr> {
-    let value = match ins.op_kind(index) {
-        OpKind::Immediate8 => ins.immediate8() as u64,
-        OpKind::Immediate8_2nd => ins.immediate8_2nd() as u64,
-        OpKind::Immediate8to16 => ins.immediate8to16() as u16 as u64,
-        OpKind::Immediate8to32 => ins.immediate8to32() as i64 as u64,
-        OpKind::Immediate8to64 => ins.immediate8to64() as u64,
-        OpKind::Immediate16 => ins.immediate16() as u64,
-        OpKind::Immediate32 => ins.immediate32() as u64,
-        OpKind::Immediate32to64 => ins.immediate32to64() as u64,
-        OpKind::Immediate64 => ins.immediate64(),
+fn immediate(instruction: &Instruction, index: u32) -> Option<Expr> {
+    let value = match instruction.op_kind(index) {
+        OpKind::Immediate8 => instruction.immediate8() as u64,
+        OpKind::Immediate8_2nd => instruction.immediate8_2nd() as u64,
+        OpKind::Immediate8to16 => instruction.immediate8to16() as u16 as u64,
+        OpKind::Immediate8to32 => instruction.immediate8to32() as i64 as u64,
+        OpKind::Immediate8to64 => instruction.immediate8to64() as u64,
+        OpKind::Immediate16 => instruction.immediate16() as u64,
+        OpKind::Immediate32 => instruction.immediate32() as u64,
+        OpKind::Immediate32to64 => instruction.immediate32to64() as u64,
+        OpKind::Immediate64 => instruction.immediate64(),
         OpKind::NearBranch16 | OpKind::NearBranch32 | OpKind::NearBranch64 => {
-            ins.near_branch_target()
+            instruction.near_branch_target()
         }
         _ => return None,
     };
     Some(Expr::constant(value))
 }
 
-pub(super) fn operand(lifter: &mut Lifter, ins: &Instruction, index: u32) -> Option<Expr> {
-    let value = match ins.op_kind(index) {
+pub(super) fn operand(lifter: &mut Lifter, instruction: &Instruction, index: u32) -> Option<Expr> {
+    let value = match instruction.op_kind(index) {
         OpKind::Register => {
-            let register = ins.op_register(index);
+            let register = instruction.op_register(index);
             if register == Register::None {
                 return None;
             }
@@ -236,9 +240,9 @@ pub(super) fn operand(lifter: &mut Lifter, ins: &Instruction, index: u32) -> Opt
                 _ => None,
             }
         }
-        OpKind::Memory => load(lifter, ins),
-        _ if index >= ins.op_count() => return None,
-        _ => immediate(ins, index),
+        OpKind::Memory => load(lifter, instruction),
+        _ if index >= instruction.op_count() => return None,
+        _ => immediate(instruction, index),
     };
     if value.is_none() {
         lifter.incomplete = true;
@@ -246,14 +250,19 @@ pub(super) fn operand(lifter: &mut Lifter, ins: &Instruction, index: u32) -> Opt
     value
 }
 
-pub(super) fn write_destination(lifter: &mut Lifter, ins: &Instruction, value: Expr) {
-    write_operand(lifter, ins, 0, value);
+pub(super) fn write_destination(lifter: &mut Lifter, instruction: &Instruction, value: Expr) {
+    write_operand(lifter, instruction, 0, value);
 }
 
-pub(super) fn write_operand(lifter: &mut Lifter, ins: &Instruction, index: u32, value: Expr) {
-    match ins.op_kind(index) {
+pub(super) fn write_operand(
+    lifter: &mut Lifter,
+    instruction: &Instruction,
+    index: u32,
+    value: Expr,
+) {
+    match instruction.op_kind(index) {
         OpKind::Register => {
-            let register = ins.op_register(index);
+            let register = instruction.op_register(index);
             match (gpr(register), high_byte(register)) {
                 (Some((index, width)), _) => lifter.assign(index, width, value),
                 // The second byte replaces bits 8..16 and keeps the rest.
@@ -270,7 +279,9 @@ pub(super) fn write_operand(lifter: &mut Lifter, ins: &Instruction, index: u32, 
             }
         }
         OpKind::Memory => {
-            if let (Some(addr), Some(width)) = (memory_address(ins), memory_width(ins)) {
+            if let (Some(addr), Some(width)) =
+                (memory_address(instruction), memory_width(instruction))
+            {
                 preserve_compare(&mut lifter.last_compare, Write::Memory, &mut lifter.stmts);
                 lifter.stmts.push(Stmt::Store { addr, value, width });
             } else {
@@ -282,11 +293,11 @@ pub(super) fn write_operand(lifter: &mut Lifter, ins: &Instruction, index: u32, 
 }
 
 /// The width in bits of a general register or memory operand.
-pub(super) fn operand_width(ins: &Instruction, index: u32) -> Option<u8> {
-    match ins.op_kind(index) {
-        OpKind::Register if high_byte(ins.op_register(index)).is_some() => Some(8),
-        OpKind::Register => gpr(ins.op_register(index)).map(|(_, width)| width),
-        OpKind::Memory => memory_width(ins).map(|bytes| bytes * 8),
+pub(super) fn operand_width(instruction: &Instruction, index: u32) -> Option<u8> {
+    match instruction.op_kind(index) {
+        OpKind::Register if high_byte(instruction.op_register(index)).is_some() => Some(8),
+        OpKind::Register => gpr(instruction.op_register(index)).map(|(_, width)| width),
+        OpKind::Memory => memory_width(instruction).map(|bytes| bytes * 8),
         _ => None,
     }
 }

@@ -13,7 +13,7 @@ use crate::loader::Image;
 
 /// Code outside the function's extent that its branches continue in, by
 /// start and size.
-pub(super) type Pulled = BTreeMap<u64, u64>;
+pub(super) type ContinuedCode = BTreeMap<u64, u64>;
 
 /// How a branch out of the function leaves it.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -37,14 +37,14 @@ pub(super) fn resolve_exits(
     function: u64,
     blocks: &mut Vec<Block>,
     ends: &HashMap<u64, u64>,
-) -> Pulled {
+) -> ContinuedCode {
     let own = image.functions.get(&function);
     let exact = own.is_some_and(|function| function.size.is_some() && !function.size_estimated);
     let extent = own.and_then(|function| function.size).unwrap_or(0);
     let starts: HashSet<u64> = blocks.iter().map(|block| block.start).collect();
     let heights = stack_heights(blocks, image.isa);
     let mut exits: Vec<u64> = Vec::new();
-    let mut pulled = Pulled::new();
+    let mut continued_code = ContinuedCode::new();
     // The blocks ending in a jump out, which their tail call then ends.
     let mut jumps: Vec<usize> = Vec::new();
     for (index, block) in blocks.iter().enumerate() {
@@ -71,7 +71,7 @@ pub(super) fn resolve_exits(
                 .and_then(|pc| image.stack_at_entry(pc))
                 .or(heights[index].map(|height| height == 0));
             if let Leaving::Continues(start, size) = leaving(image, function, target, at_entry) {
-                pulled.insert(start, size);
+                continued_code.insert(start, size);
             }
         }
         if jump {
@@ -88,7 +88,7 @@ pub(super) fn resolve_exits(
         stmts.extend(tail_call(image, summaries, target));
     }
     if exits.is_empty() {
-        return pulled;
+        return continued_code;
     }
     exits.sort_unstable();
     exits.dedup();
@@ -114,7 +114,7 @@ pub(super) fn resolve_exits(
             stmts: tail_call(image, summaries, Some(target)).into(),
         });
     }
-    pulled
+    continued_code
 }
 
 /// A branch to `target`, with the stack as on entry, or not, or unknown, is

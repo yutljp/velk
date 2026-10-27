@@ -37,7 +37,7 @@ fn pack(lanes: Vec<Expr>, bits: u64) -> Expr {
 
 pub(super) fn lift_extend(lifter: &mut Lifter, ins: &Instruction) -> Option<()> {
     use Mnemonic::*;
-    let (from, to, signed) = match ins.mnemonic() {
+    let (source_bits, destination_bits, signed) = match ins.mnemonic() {
         Pmovzxbw => (8, 16, false),
         Pmovzxbd => (8, 32, false),
         Pmovzxbq => (8, 64, false),
@@ -66,28 +66,32 @@ pub(super) fn lift_extend(lifter: &mut Lifter, ins: &Instruction) -> Option<()> 
             let Some(address) = memory_address(ins) else {
                 return None;
             };
-            load_at(address, (128 / to * from / 8) as u8)
+            load_at(address, (128 / destination_bits * source_bits / 8) as u8)
         }
         _ => return None,
     };
     let half = |high: bool| {
         pack(
-            (0..64 / to)
+            (0..64 / destination_bits)
                 .map(|lane| {
-                    let index = lane + u64::from(high) * (64 / to);
-                    let value = lane_of(&(source.clone(), Expr::Const(0)), index, from);
+                    let index = lane + u64::from(high) * (64 / destination_bits);
+                    let value = lane_of(&(source.clone(), Expr::Const(0)), index, source_bits);
                     let value = if signed {
                         Expr::SignExtend {
                             value: Box::new(value),
-                            width: (from / 8) as u8,
+                            width: (source_bits / 8) as u8,
                         }
                     } else {
                         value
                     };
-                    Expr::bin(BinOp::And, value, Expr::Const(u64::MAX >> (64 - to)))
+                    Expr::bin(
+                        BinOp::And,
+                        value,
+                        Expr::Const(u64::MAX >> (64 - destination_bits)),
+                    )
                 })
                 .collect(),
-            to,
+            destination_bits,
         )
     };
     let high = hold(lifter, half(true));
@@ -374,13 +378,16 @@ pub(super) fn lift_packed(lifter: &mut Lifter, ins: &Instruction) -> Option<()> 
         // Whole-register byte shifts.
         Pslldq | Psrldq => {
             let (low, high) = halves(0)?;
-            let bytes = u64::from(ins.immediate8()).min(16) * 8;
+            let shift_bits = u64::from(ins.immediate8()).min(16) * 8;
             let result = if ins.mnemonic() == Psrldq {
                 let parts = [low, high];
-                (window(&parts, bytes), window(&parts, bytes + 64))
+                (window(&parts, shift_bits), window(&parts, shift_bits + 64))
             } else {
                 let parts = [Expr::constant(0), Expr::constant(0), low, high];
-                (window(&parts, 128 - bytes), window(&parts, 192 - bytes))
+                (
+                    window(&parts, 128 - shift_bits),
+                    window(&parts, 192 - shift_bits),
+                )
             };
             write(lifter, result)?;
         }

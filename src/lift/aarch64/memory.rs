@@ -207,17 +207,20 @@ pub(super) fn lift_pair(lifter: &mut Lifter, ops: [Operand; 4], store: MemoryAcc
         let Some(mem) = memory(ops[2], (bits / 8) as u8) else {
             return;
         };
-        let second_addr = Expr::bin(
+        let second_address = Expr::bin(
             BinOp::Add,
             mem.address.clone(),
             Expr::constant(u64::from(bits / 8)),
         );
         if store {
             lifter.simd_store(first, bits, &mem.address);
-            lifter.simd_store(second, bits, &second_addr);
+            lifter.simd_store(second, bits, &second_address);
         } else {
             // Both loads read memory as it was before either write.
-            let (a, b) = (simd_load(&mem.address, bits), simd_load(&second_addr, bits));
+            let (a, b) = (
+                simd_load(&mem.address, bits),
+                simd_load(&second_address, bits),
+            );
             lifter.write_simd(first, bits, a);
             lifter.write_simd(second, bits, b);
         }
@@ -239,7 +242,7 @@ pub(super) fn lift_pair(lifter: &mut Lifter, ops: [Operand; 4], store: MemoryAcc
     };
     // ldpsw's elements are 32 bits, sign-extended into 64-bit registers.
     let width = if signed { 4 } else { first_bits / 8 };
-    let second_addr = Expr::bin(
+    let second_address = Expr::bin(
         BinOp::Add,
         mem.address.clone(),
         Expr::constant(width as u64),
@@ -257,7 +260,7 @@ pub(super) fn lift_pair(lifter: &mut Lifter, ops: [Operand; 4], store: MemoryAcc
             width,
         });
         lifter.stmts.push(Stmt::Store {
-            addr: second_addr,
+            addr: second_address,
             value: b,
             width,
         });
@@ -267,7 +270,7 @@ pub(super) fn lift_pair(lifter: &mut Lifter, ops: [Operand; 4], store: MemoryAcc
             width,
             signed,
         };
-        let (a, b) = (load(mem.address), load(second_addr));
+        let (a, b) = (load(mem.address), load(second_address));
         // The second address may read the register the first load writes.
         let b = match destination(ops[0]) {
             Some(first)

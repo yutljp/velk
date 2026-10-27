@@ -145,9 +145,12 @@ pub(super) fn source_halves(operand: Operand) -> Option<(Expr, Expr)> {
                 a64::SIMDSizeCode::D => 64,
                 _ => return None,
             };
-            let at = u64::from(lane) * bits;
-            let half = Expr::reg(crate::arch::aarch64::V0 + 2 * number + (at / 64) as u16, 64);
-            let within = at % 64;
+            let bit_offset = u64::from(lane) * bits;
+            let half = Expr::reg(
+                crate::arch::aarch64::V0 + 2 * number + (bit_offset / 64) as u16,
+                64,
+            );
+            let within = bit_offset % 64;
             let value = if bits == 64 {
                 half
             } else {

@@ -24,13 +24,13 @@ pub(super) fn lift(lifter: &mut Lifter, ins: &Instruction) -> bool {
             }
         }
         O::LDAPR | O::LDAPRB | O::LDAPRH | O::LDAPUR | O::LDAPURB | O::LDAPURH => {
-            let Some(register) = register_width(ins.operands[0]) else {
+            let Some(register_bits) = register_width(ins.operands[0]) else {
                 return false;
             };
             let width = match ins.opcode {
                 O::LDAPRB | O::LDAPURB => 1,
                 O::LDAPRH | O::LDAPURH => 2,
-                _ => register / 8,
+                _ => register_bits / 8,
             };
             let Some(mem) = memory::memory(ins.operands[1], 64) else {
                 return false;

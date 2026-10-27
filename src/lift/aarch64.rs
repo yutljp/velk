@@ -14,7 +14,7 @@ pub(super) use atomic::recover_atomic_loops;
 use float::half_immediate;
 use float::{lift_float, lift_vector_float};
 use integer::{
-    destination, extend_shift, immediates, lift_alu, lift_bic, lift_bitfield, lift_bitfield_insert,
+    destination, extend_shift, immediate, lift_alu, lift_bic, lift_bitfield, lift_bitfield_insert,
     lift_conditional_compare, lift_count, lift_cs_family, lift_csel, lift_extract, lift_inverted,
     lift_long_multiply, lift_madd, lift_mov, lift_movk, lift_msub, lift_mul_high, lift_reverse,
     lift_variable_shift, lift_with_carry, mask_bits, register_width,
@@ -329,13 +329,13 @@ fn sets_flags(opcode: a64::Opcode) -> bool {
 
 /// The registers, as the IR numbers them, an instruction may write: every
 /// register it names, and a base it writes back.
-fn written_registers(ins: &Instruction) -> Vec<u16> {
+fn possibly_written_registers(instruction: &Instruction) -> Vec<u16> {
     let vector = |number: u16| {
         let slot = crate::arch::aarch64::V0 + 2 * number;
         [slot, slot + 1]
     };
     let mut out = Vec::new();
-    for operand in ins.operands {
+    for operand in instruction.operands {
         match operand {
             Operand::Register(_, 31) => {}
             Operand::Register(_, index) | Operand::RegisterOrSP(_, index) => out.push(index),
@@ -378,8 +378,8 @@ fn relative_target(operand: Operand, pc: u64) -> Option<u64> {
     }
 }
 
-fn lift_cond_branch(lifter: &mut Lifter, ops: [Operand; 4], code: u8, pc: u64) -> bool {
-    let Some(target) = lifter.target_of(ops[0], pc) else {
+fn lift_conditional_branch(lifter: &mut Lifter, operands: [Operand; 4], code: u8, pc: u64) -> bool {
+    let Some(target) = lifter.target_of(operands[0], pc) else {
         lifter
             .stmts
             .push(Stmt::unsupported("branch target".to_owned()));
@@ -392,13 +392,18 @@ fn lift_cond_branch(lifter: &mut Lifter, ops: [Operand; 4], code: u8, pc: u64) -
     true
 }
 
-fn lift_compare_branch(lifter: &mut Lifter, ops: [Operand; 4], pc: u64, non_zero: bool) -> bool {
+fn lift_compare_branch(
+    lifter: &mut Lifter,
+    operands: [Operand; 4],
+    pc: u64,
+    non_zero: bool,
+) -> bool {
     // `cbz w0` tests only the low half.
-    let width = destination(ops[0]).map_or(64, |register| register.width);
-    let Some(value) = lifter.operand(ops[0], width) else {
+    let width = destination(operands[0]).map_or(64, |register| register.width);
+    let Some(value) = lifter.operand(operands[0], width) else {
         return true;
     };
-    let Some(target) = relative_target(ops[1], pc) else {
+    let Some(target) = relative_target(operands[1], pc) else {
         return true;
     };
     lifter.stmts.push(Stmt::Brif {
@@ -410,14 +415,14 @@ fn lift_compare_branch(lifter: &mut Lifter, ops: [Operand; 4], pc: u64, non_zero
     true
 }
 
-fn lift_test_branch(lifter: &mut Lifter, ops: [Operand; 4], pc: u64, non_zero: bool) -> bool {
-    let Some(value) = lifter.operand(ops[0], 64) else {
+fn lift_test_branch(lifter: &mut Lifter, operands: [Operand; 4], pc: u64, non_zero: bool) -> bool {
+    let Some(value) = lifter.operand(operands[0], 64) else {
         return true;
     };
-    let Some(bit) = immediates(ops[1]) else {
+    let Some(bit) = immediate(operands[1]) else {
         return true;
     };
-    let Some(target) = relative_target(ops[2], pc) else {
+    let Some(target) = relative_target(operands[2], pc) else {
         return true;
     };
     let masked = Expr::bin(BinOp::And, value, Expr::constant(1u64 << (bit & 63)));
@@ -430,25 +435,25 @@ fn lift_test_branch(lifter: &mut Lifter, ops: [Operand; 4], pc: u64, non_zero: b
     true
 }
 
-fn lift_instruction(lifter: &mut Lifter, ins: &Instruction, pc: u64) -> bool {
-    if atomic::lift(lifter, ins)
-        || exclusive::lift(lifter, ins)
-        || structures::lift(lifter, ins)
-        || simd::lift(lifter, ins)
-        || system::lift(lifter, ins)
+fn lift_instruction(lifter: &mut Lifter, instruction: &Instruction, pc: u64) -> bool {
+    if atomic::lift(lifter, instruction)
+        || exclusive::lift(lifter, instruction)
+        || structures::lift(lifter, instruction)
+        || simd::lift(lifter, instruction)
+        || system::lift(lifter, instruction)
     {
         return false;
     }
     use a64::Opcode as O;
-    let ops = ins.operands;
-    if lift_float(lifter, ins).is_some()
-        || lift_vector(lifter, ins).is_some()
-        || lift_vector_float(lifter, ins).is_some()
+    let operands = instruction.operands;
+    if lift_float(lifter, instruction).is_some()
+        || lift_vector(lifter, instruction).is_some()
+        || lift_vector_float(lifter, instruction).is_some()
     {
         return false;
     }
     // Only loads and stores handle vector operands past this point.
-    let vector_operand = ins.operands.iter().any(|operand| {
+    let vector_operand = instruction.operands.iter().any(|operand| {
         matches!(
             operand,
             Operand::SIMDRegister(..)
@@ -461,91 +466,132 @@ fn lift_instruction(lifter: &mut Lifter, ins: &Instruction, pc: u64) -> bool {
     });
     if vector_operand
         && !matches!(
-            ins.opcode,
+            instruction.opcode,
             O::LDR | O::LDUR | O::STR | O::STUR | O::LDP | O::STP | O::LDNP | O::STNP
         )
     {
-        lifter
-            .stmts
-            .push(Stmt::unsupported(format!("{:?} at 0x{pc:x}", ins.opcode)));
+        lifter.stmts.push(Stmt::unsupported(format!(
+            "{:?} at 0x{pc:x}",
+            instruction.opcode
+        )));
         return false;
     }
 
-    match ins.opcode {
-        O::ADD => lift_alu(lifter, ops, BinOp::Add, false),
-        O::ADDS => lift_alu(lifter, ops, BinOp::Add, true),
-        O::SUB => lift_alu(lifter, ops, BinOp::Sub, false),
-        O::SUBS => lift_alu(lifter, ops, BinOp::Sub, true),
-        O::AND => lift_alu(lifter, ops, BinOp::And, false),
-        O::ANDS => lift_alu(lifter, ops, BinOp::And, true),
-        O::ORR => lift_alu(lifter, ops, BinOp::Or, false),
-        O::EOR => lift_alu(lifter, ops, BinOp::Xor, false),
-        O::BIC => lift_bic(lifter, ops, false),
-        O::BICS => lift_bic(lifter, ops, true),
-        O::MUL => lift_madd(lifter, ops, false),
-        O::UMULH => lift_mul_high(lifter, ops, false),
-        O::SMULH => lift_mul_high(lifter, ops, true),
-        O::MADD => lift_madd(lifter, ops, true),
-        O::CSEL => lift_csel(lifter, ops),
-        O::CSINC | O::CSINV | O::CSNEG => lift_cs_family(lifter, ops, ins.opcode),
-        O::MSUB => lift_msub(lifter, ops),
+    match instruction.opcode {
+        O::ADD => lift_alu(lifter, operands, BinOp::Add, false),
+        O::ADDS => lift_alu(lifter, operands, BinOp::Add, true),
+        O::SUB => lift_alu(lifter, operands, BinOp::Sub, false),
+        O::SUBS => lift_alu(lifter, operands, BinOp::Sub, true),
+        O::AND => lift_alu(lifter, operands, BinOp::And, false),
+        O::ANDS => lift_alu(lifter, operands, BinOp::And, true),
+        O::ORR => lift_alu(lifter, operands, BinOp::Or, false),
+        O::EOR => lift_alu(lifter, operands, BinOp::Xor, false),
+        O::BIC => lift_bic(lifter, operands, false),
+        O::BICS => lift_bic(lifter, operands, true),
+        O::MUL => lift_madd(lifter, operands, false),
+        O::UMULH => lift_mul_high(lifter, operands, false),
+        O::SMULH => lift_mul_high(lifter, operands, true),
+        O::MADD => lift_madd(lifter, operands, true),
+        O::CSEL => lift_csel(lifter, operands),
+        O::CSINC | O::CSINV | O::CSNEG => lift_cs_family(lifter, operands, instruction.opcode),
+        O::MSUB => lift_msub(lifter, operands),
         O::UMADDL => {
-            lift_long_multiply(lifter, ops, Signedness::Unsigned, /* subtract */ false)
+            lift_long_multiply(
+                lifter,
+                operands,
+                Signedness::Unsigned,
+                /* subtract */ false,
+            )
         }
-        O::SMADDL => lift_long_multiply(lifter, ops, Signedness::Signed, /* subtract */ false),
+        O::SMADDL => lift_long_multiply(
+            lifter,
+            operands,
+            Signedness::Signed,
+            /* subtract */ false,
+        ),
         O::UMSUBL => {
-            lift_long_multiply(lifter, ops, Signedness::Unsigned, /* subtract */ true)
+            lift_long_multiply(
+                lifter,
+                operands,
+                Signedness::Unsigned,
+                /* subtract */ true,
+            )
         }
-        O::SMSUBL => lift_long_multiply(lifter, ops, Signedness::Signed, /* subtract */ true),
-        O::CCMP => lift_conditional_compare(lifter, ops, false),
-        O::CCMN => lift_conditional_compare(lifter, ops, true),
-        O::ADC => lift_with_carry(lifter, ops, /* subtract */ false, FlagUpdate::Preserve),
-        O::ADCS => lift_with_carry(lifter, ops, /* subtract */ false, FlagUpdate::Set),
-        O::SBC => lift_with_carry(lifter, ops, /* subtract */ true, FlagUpdate::Preserve),
-        O::SBCS => lift_with_carry(lifter, ops, /* subtract */ true, FlagUpdate::Set),
-        O::BFM => lift_bitfield_insert(lifter, ops),
-        O::MOVZ => lift_mov(lifter, ops, false),
-        O::MOVN => lift_mov(lifter, ops, true),
-        O::MOVK => lift_movk(lifter, ops),
-        O::UBFM => lift_bitfield(lifter, ops, false),
-        O::SBFM => lift_bitfield(lifter, ops, true),
-        O::LSLV => lift_variable_shift(lifter, ops, a64::ShiftStyle::LSL),
-        O::LSRV => lift_variable_shift(lifter, ops, a64::ShiftStyle::LSR),
-        O::ASRV => lift_variable_shift(lifter, ops, a64::ShiftStyle::ASR),
-        O::RORV => lift_variable_shift(lifter, ops, a64::ShiftStyle::ROR),
-        O::EXTR => lift_extract(lifter, ops),
-        O::ORN => lift_inverted(lifter, ops, BinOp::Or),
-        O::EON => lift_inverted(lifter, ops, BinOp::Xor),
-        O::REV => lift_reverse(lifter, ops, None),
-        O::CLZ | O::CLS | O::RBIT => lift_count(lifter, ops, ins.opcode),
-        O::REV16 => lift_reverse(lifter, ops, Some(2)),
-        O::REV32 => lift_reverse(lifter, ops, Some(4)),
-        O::LDR | O::LDRAA | O::LDRAB => lift_load(lifter, ops, O::LDR, pc),
-        O::LDRB => lift_load(lifter, ops, O::LDRB, pc),
-        O::LDRH => lift_load(lifter, ops, O::LDRH, pc),
-        O::LDRSB => lift_load(lifter, ops, O::LDRSB, pc),
-        O::LDRSH => lift_load(lifter, ops, O::LDRSH, pc),
-        O::LDRSW => lift_load(lifter, ops, O::LDRSW, pc),
-        O::STR => lift_store(lifter, ops, O::STR),
-        O::STRB => lift_store(lifter, ops, O::STRB),
-        O::STRH => lift_store(lifter, ops, O::STRH),
+        O::SMSUBL => lift_long_multiply(
+            lifter,
+            operands,
+            Signedness::Signed,
+            /* subtract */ true,
+        ),
+        O::CCMP => lift_conditional_compare(lifter, operands, false),
+        O::CCMN => lift_conditional_compare(lifter, operands, true),
+        O::ADC => lift_with_carry(
+            lifter,
+            operands,
+            /* subtract */ false,
+            FlagUpdate::Preserve,
+        ),
+        O::ADCS => lift_with_carry(lifter, operands, /* subtract */ false, FlagUpdate::Set),
+        O::SBC => lift_with_carry(
+            lifter,
+            operands,
+            /* subtract */ true,
+            FlagUpdate::Preserve,
+        ),
+        O::SBCS => lift_with_carry(lifter, operands, /* subtract */ true, FlagUpdate::Set),
+        O::BFM => lift_bitfield_insert(lifter, operands),
+        O::MOVZ => lift_mov(lifter, operands, false),
+        O::MOVN => lift_mov(lifter, operands, true),
+        O::MOVK => lift_movk(lifter, operands),
+        O::UBFM => lift_bitfield(lifter, operands, false),
+        O::SBFM => lift_bitfield(lifter, operands, true),
+        O::LSLV => lift_variable_shift(lifter, operands, a64::ShiftStyle::LSL),
+        O::LSRV => lift_variable_shift(lifter, operands, a64::ShiftStyle::LSR),
+        O::ASRV => lift_variable_shift(lifter, operands, a64::ShiftStyle::ASR),
+        O::RORV => lift_variable_shift(lifter, operands, a64::ShiftStyle::ROR),
+        O::EXTR => lift_extract(lifter, operands),
+        O::ORN => lift_inverted(lifter, operands, BinOp::Or),
+        O::EON => lift_inverted(lifter, operands, BinOp::Xor),
+        O::REV => lift_reverse(lifter, operands, None),
+        O::CLZ | O::CLS | O::RBIT => lift_count(lifter, operands, instruction.opcode),
+        O::REV16 => lift_reverse(lifter, operands, Some(2)),
+        O::REV32 => lift_reverse(lifter, operands, Some(4)),
+        O::LDR | O::LDRAA | O::LDRAB => lift_load(lifter, operands, O::LDR, pc),
+        O::LDRB => lift_load(lifter, operands, O::LDRB, pc),
+        O::LDRH => lift_load(lifter, operands, O::LDRH, pc),
+        O::LDRSB => lift_load(lifter, operands, O::LDRSB, pc),
+        O::LDRSH => lift_load(lifter, operands, O::LDRSH, pc),
+        O::LDRSW => lift_load(lifter, operands, O::LDRSW, pc),
+        O::STR => lift_store(lifter, operands, O::STR),
+        O::STRB => lift_store(lifter, operands, O::STRB),
+        O::STRH => lift_store(lifter, operands, O::STRH),
         // The unscaled forms differ only in how the offset is encoded.
-        O::LDUR => lift_load(lifter, ops, O::LDR, pc),
-        O::LDURB => lift_load(lifter, ops, O::LDRB, pc),
-        O::LDURH => lift_load(lifter, ops, O::LDRH, pc),
-        O::LDURSB => lift_load(lifter, ops, O::LDRSB, pc),
-        O::LDURSH => lift_load(lifter, ops, O::LDRSH, pc),
-        O::LDURSW => lift_load(lifter, ops, O::LDRSW, pc),
-        O::STUR => lift_store(lifter, ops, O::STR),
-        O::STURB => lift_store(lifter, ops, O::STRB),
-        O::STURH => lift_store(lifter, ops, O::STRH),
-        O::SDIV => lift_alu(lifter, ops, BinOp::DivS, false),
-        O::UDIV => lift_alu(lifter, ops, BinOp::DivU, false),
-        O::LDP | O::LDNP => lift_pair(lifter, ops, MemoryAccess::Load, /* signed */ false),
-        O::LDPSW => lift_pair(lifter, ops, MemoryAccess::Load, /* signed */ true),
-        O::STP | O::STNP => lift_pair(lifter, ops, MemoryAccess::Store, /* signed */ false),
+        O::LDUR => lift_load(lifter, operands, O::LDR, pc),
+        O::LDURB => lift_load(lifter, operands, O::LDRB, pc),
+        O::LDURH => lift_load(lifter, operands, O::LDRH, pc),
+        O::LDURSB => lift_load(lifter, operands, O::LDRSB, pc),
+        O::LDURSH => lift_load(lifter, operands, O::LDRSH, pc),
+        O::LDURSW => lift_load(lifter, operands, O::LDRSW, pc),
+        O::STUR => lift_store(lifter, operands, O::STR),
+        O::STURB => lift_store(lifter, operands, O::STRB),
+        O::STURH => lift_store(lifter, operands, O::STRH),
+        O::SDIV => lift_alu(lifter, operands, BinOp::DivS, false),
+        O::UDIV => lift_alu(lifter, operands, BinOp::DivU, false),
+        O::LDP | O::LDNP => lift_pair(
+            lifter,
+            operands,
+            MemoryAccess::Load,
+            /* signed */ false,
+        ),
+        O::LDPSW => lift_pair(lifter, operands, MemoryAccess::Load, /* signed */ true),
+        O::STP | O::STNP => lift_pair(
+            lifter,
+            operands,
+            MemoryAccess::Store,
+            /* signed */ false,
+        ),
         O::B => {
-            let target = lifter.target_of(ops[0], pc);
+            let target = lifter.target_of(operands[0], pc);
             // In an object a branch to itself is an unresolved reference to
             // another function; lift it as a tail call. In a linked image it
             // is an endless loop.
@@ -560,13 +606,13 @@ fn lift_instruction(lifter: &mut Lifter, ins: &Instruction, pc: u64) -> bool {
             lifter.stmts.push(Stmt::Br { target });
             return true;
         }
-        O::Bcc(code) => return lift_cond_branch(lifter, ops, code, pc),
-        O::CBZ => return lift_compare_branch(lifter, ops, pc, false),
-        O::CBNZ => return lift_compare_branch(lifter, ops, pc, true),
-        O::TBZ => return lift_test_branch(lifter, ops, pc, false),
-        O::TBNZ => return lift_test_branch(lifter, ops, pc, true),
+        O::Bcc(code) => return lift_conditional_branch(lifter, operands, code, pc),
+        O::CBZ => return lift_compare_branch(lifter, operands, pc, false),
+        O::CBNZ => return lift_compare_branch(lifter, operands, pc, true),
+        O::TBZ => return lift_test_branch(lifter, operands, pc, false),
+        O::TBNZ => return lift_test_branch(lifter, operands, pc, true),
         O::BR | O::BRAA | O::BRAAZ | O::BRAB | O::BRABZ => {
-            if let Some(target) = lifter.operand(ops[0], 64) {
+            if let Some(target) = lifter.operand(operands[0], 64) {
                 lifter.stmts.push(Stmt::BrIndirect { target });
             }
             return true;
@@ -574,7 +620,7 @@ fn lift_instruction(lifter: &mut Lifter, ins: &Instruction, pc: u64) -> bool {
         O::BLR | O::BLRAA | O::BLRAAZ | O::BLRAB | O::BLRABZ => {
             // A call leaves the flags undefined.
             lifter.last_compare = None;
-            if let Some(through) = lifter.operand(ops[0], 64) {
+            if let Some(through) = lifter.operand(operands[0], 64) {
                 // `blr x30` jumps to the address x30 held before the link.
                 let through = if matches!(through, Expr::Reg { index: LR, .. }) {
                     lifter.hold(through)
@@ -589,7 +635,7 @@ fn lift_instruction(lifter: &mut Lifter, ins: &Instruction, pc: u64) -> bool {
         }
         O::BL => {
             lifter.last_compare = None;
-            let target = lifter.target_of(ops[0], pc);
+            let target = lifter.target_of(operands[0], pc);
             link(lifter, pc);
             let made = call(CallKind::Invoke, lifter.image, lifter.summaries, target);
             lifter.stmts.push(made);
@@ -608,14 +654,16 @@ fn lift_instruction(lifter: &mut Lifter, ins: &Instruction, pc: u64) -> bool {
             return true;
         }
         O::ADRP => {
-            if let (Some(dest), Operand::PCOffset(offset)) = (destination(ops[0]), ops[1]) {
+            if let (Some(dest), Operand::PCOffset(offset)) = (destination(operands[0]), operands[1])
+            {
                 let page = pc & !0xfff;
                 let value = Expr::constant(page.wrapping_add(offset as u64));
                 lifter.assign(dest, value);
             }
         }
         O::ADR => {
-            if let (Some(dest), Operand::PCOffset(offset)) = (destination(ops[0]), ops[1]) {
+            if let (Some(dest), Operand::PCOffset(offset)) = (destination(operands[0]), operands[1])
+            {
                 let value = Expr::constant(pc.wrapping_add(offset as u64));
                 lifter.assign(dest, value);
             }
@@ -662,7 +710,7 @@ fn lift_instruction(lifter: &mut Lifter, ins: &Instruction, pc: u64) -> bool {
         | O::CRC32CH
         | O::CRC32CW
         | O::CRC32CX => {
-            let (castagnoli, bits) = match ins.opcode {
+            let (castagnoli, bits) = match instruction.opcode {
                 O::CRC32B => (false, 8),
                 O::CRC32H => (false, 16),
                 O::CRC32W => (false, 32),
@@ -673,9 +721,9 @@ fn lift_instruction(lifter: &mut Lifter, ins: &Instruction, pc: u64) -> bool {
                 _ => (true, 64),
             };
             if let (Some(dest), Some(crc), Some(data)) = (
-                destination(ops[0]),
-                lifter.operand(ops[1], 32),
-                lifter.operand(ops[2], bits.max(32)),
+                destination(operands[0]),
+                lifter.operand(operands[1], 32),
+                lifter.operand(operands[2], bits.max(32)),
             ) {
                 let value = Expr::apply(Operation::Crc32 { castagnoli, bits }, vec![crc, data]);
                 lifter.assign(dest, value);
@@ -704,12 +752,12 @@ fn lift_instruction(lifter: &mut Lifter, ins: &Instruction, pc: u64) -> bool {
     false
 }
 
-fn branch_target(ins: &Instruction, pc: u64) -> Option<u64> {
+fn branch_target(instruction: &Instruction, pc: u64) -> Option<u64> {
     use a64::Opcode as O;
-    match ins.opcode {
-        O::B | O::Bcc(_) | O::BL => relative_target(ins.operands[0], pc),
-        O::CBZ | O::CBNZ => relative_target(ins.operands[1], pc),
-        O::TBZ | O::TBNZ => relative_target(ins.operands[2], pc),
+    match instruction.opcode {
+        O::B | O::Bcc(_) | O::BL => relative_target(instruction.operands[0], pc),
+        O::CBZ | O::CBNZ => relative_target(instruction.operands[1], pc),
+        O::TBZ | O::TBNZ => relative_target(instruction.operands[2], pc),
         _ => None,
     }
 }
@@ -762,7 +810,7 @@ impl Machine for Lifter<'_> {
                 instruction.opcode
             )));
         }
-        let changed = written_registers(instruction);
+        let changed = possibly_written_registers(instruction);
         let mut unsupported = false;
         for stmt in &mut self.stmts[first..] {
             if let Stmt::Unsupported { writes, .. } = stmt {

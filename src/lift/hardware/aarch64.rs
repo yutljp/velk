@@ -143,7 +143,7 @@ thread_local! {
 
 /// Steps over an undefined instruction or a faulting access in the case's
 /// code, so the case ends and reports it; a fault anywhere else stays fatal.
-extern "C" fn on_illegal(signal: i32, _: *mut c_void, context: *mut c_void) {
+extern "C" fn on_instruction_fault(signal: i32, _: *mut c_void, context: *mut c_void) {
     // The Darwin arm64 layout: the machine context pointer sits 48 bytes
     // into the user context, and its program counter 272 bytes into that.
     // SAFETY: the kernel passes a valid user context to the handler.
@@ -182,7 +182,7 @@ impl Page {
         HANDLER.call_once(|| {
             const SA_SIGINFO: i32 = 0x40;
             let action = SignalAction {
-                handler: on_illegal as *const () as usize,
+                handler: on_instruction_fault as *const () as usize,
                 mask: 0,
                 flags: SA_SIGINFO,
             };
@@ -338,7 +338,7 @@ fn lift_words(words: &[u32]) -> Option<FunctionIr> {
     )
 }
 
-fn check(page: &Page, seed: u64, findings: &mut Findings) {
+fn check_instruction(page: &Page, seed: u64, findings: &mut Findings) {
     // One random instruction, or two, so that one can read the flags or
     // overwrite the operands of the other.
     let mut instructions = Vec::new();
@@ -460,7 +460,7 @@ fn lifted_instructions_match_the_processor() {
     let page = Page::new();
     let mut findings = Findings::default();
     for seed in 0..200_000 {
-        check(&page, seed, &mut findings);
+        check_instruction(&page, seed, &mut findings);
     }
     findings.assert_agreement();
 }
@@ -618,11 +618,11 @@ fn buffer_access(instruction: &a64::Instruction) -> bool {
     );
     let mut base = None;
     let mut writeback = false;
-    let mut data = Vec::new();
+    let mut data_registers = Vec::new();
     let operands_fit = instruction.operands.iter().all(|operand| match *operand {
         Operand::Nothing => true,
         Operand::Register(_, index) | Operand::RegisterOrSP(_, index) => {
-            data.push(index);
+            data_registers.push(index);
             index == 31 || usable(index) && !POINTERS.contains(&index)
         }
         Operand::SIMDRegister(_, number) => number < 8,
@@ -650,13 +650,13 @@ fn buffer_access(instruction: &a64::Instruction) -> bool {
         _ => false,
     });
     let pair_loads_one = matches!(instruction.opcode, O::LDP | O::LDPSW | O::LDNP)
-        && data.len() == 2
-        && data[0] == data[1];
+        && data_registers.len() == 2
+        && data_registers[0] == data_registers[1];
     plain
         && operands_fit
         && !pair_loads_one
         && base.is_some_and(|base| POINTERS.contains(&base))
-        && !(writeback && base.is_some_and(|base| data.contains(&base)))
+        && !(writeback && base.is_some_and(|base| data_registers.contains(&base)))
 }
 
 fn memory_instruction(seed: u64) -> Option<(u32, a64::Instruction)> {

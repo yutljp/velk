@@ -90,16 +90,16 @@ pub(super) fn decode(bytes: &[u8], mode: ArmMode) -> Option<Instruction> {
         }
         ArmMode::Data => return None,
     };
-    let reg = |shift: u32| ((word >> shift) & 15) as u8;
+    let register_number = |shift: u32| ((word >> shift) & 15) as u8;
     let vector_load = match mode {
         ArmMode::Arm => word & 0xffb0_0fff == 0xf420_070f,
         ArmMode::Thumb => word & 0xffb0_0fff == 0xf920_070f,
         ArmMode::Data => false,
     };
-    if vector_load && reg(16) != 15 {
+    if vector_load && register_number(16) != 15 {
         return Some(Instruction::FloatMemory {
-            register: reg(12) | ((word >> 18) & 16) as u8,
-            base: reg(16),
+            register: register_number(12) | ((word >> 18) & 16) as u8,
+            base: register_number(16),
             offset: 0,
             double: true,
             load: true,
@@ -110,11 +110,11 @@ pub(super) fn decode(bytes: &[u8], mode: ArmMode) -> Option<Instruction> {
     {
         let double = word & 0x100 != 0;
         let register = if double {
-            reg(12) | ((word >> 18) & 16) as u8
+            register_number(12) | ((word >> 18) & 16) as u8
         } else {
-            (reg(12) * 2) | ((word >> 22) & 1) as u8
+            (register_number(12) * 2) | ((word >> 22) & 1) as u8
         };
-        let base = reg(16);
+        let base = register_number(16);
         let load = word & (1 << 20) != 0;
         if base == 15 && !load {
             return None;
@@ -133,12 +133,20 @@ pub(super) fn decode(bytes: &[u8], mode: ArmMode) -> Option<Instruction> {
         });
     }
     let multiply = match mode {
-        ArmMode::Arm if word >> 28 < 15 && word & 0x0ff0_f090 == 0x0160_0080 => {
-            Some((reg(16), reg(0), reg(8), ((word >> 5) & 3) as u8))
-        }
+        ArmMode::Arm if word >> 28 < 15 && word & 0x0ff0_f090 == 0x0160_0080 => Some((
+            register_number(16),
+            register_number(0),
+            register_number(8),
+            ((word >> 5) & 3) as u8,
+        )),
         ArmMode::Thumb if word & 0xfff0_f0c0 == 0xfb10_f000 => {
             let halves = (((word >> 5) & 1) | ((word >> 3) & 2)) as u8;
-            Some((reg(8), reg(16), reg(0), halves))
+            Some((
+                register_number(8),
+                register_number(16),
+                register_number(0),
+                halves,
+            ))
         }
         _ => None,
     };
@@ -161,9 +169,9 @@ pub(super) fn decode(bytes: &[u8], mode: ArmMode) -> Option<Instruction> {
             let double = word & 0x100 != 0;
             let words = (word & 255) as u8;
             let first = if double {
-                reg(12) | ((word >> 18) & 16) as u8
+                register_number(12) | ((word >> 18) & 16) as u8
             } else {
-                (reg(12) * 2) | ((word >> 22) & 1) as u8
+                (register_number(12) * 2) | ((word >> 22) & 1) as u8
             };
             let count = if double { words / 2 } else { words };
             if words == 0
@@ -188,53 +196,59 @@ pub(super) fn decode(bytes: &[u8], mode: ArmMode) -> Option<Instruction> {
                 3 => 2,
                 _ => return None,
             };
-            if reg(12) == 15 || reg(0) == 15 {
+            if register_number(12) == 15 || register_number(0) == 15 {
                 return None;
             }
             return Some(Instruction::Extend {
-                destination: reg(12),
-                addend: (reg(16) != 15).then_some(reg(16)),
-                source: reg(0),
+                destination: register_number(12),
+                addend: (register_number(16) != 15).then_some(register_number(16)),
+                source: register_number(0),
                 rotation: ((word >> 10) & 3) as u8 * 8,
                 width,
                 signed,
             });
         }
         if word & 0x0fd0_f0f0 == 0x0710_f010 {
-            if reg(16) == 15 || reg(0) == 15 || reg(8) == 15 {
+            if register_number(16) == 15 || register_number(0) == 15 || register_number(8) == 15 {
                 return None;
             }
             return Some(Instruction::Divide {
-                destination: reg(16),
-                left: reg(0),
-                right: reg(8),
+                destination: register_number(16),
+                left: register_number(0),
+                right: register_number(8),
                 signed: word & (1 << 21) == 0,
             });
         }
-        if word & 0x0fff_0ff0 == 0x06bf_0f30 && reg(12) != 15 && reg(0) != 15 {
+        if word & 0x0fff_0ff0 == 0x06bf_0f30
+            && register_number(12) != 15
+            && register_number(0) != 15
+        {
             return Some(Instruction::Reverse {
-                destination: reg(12),
-                source: reg(0),
+                destination: register_number(12),
+                source: register_number(0),
             });
         }
         if word & 0x0fe0_0070 == 0x07e0_0050 {
             let start = ((word >> 7) & 31) as u8;
             let width = ((word >> 16) & 31) as u8 + 1;
-            if reg(12) == 15 || reg(0) == 15 || u16::from(start) + u16::from(width) > 32 {
+            if register_number(12) == 15
+                || register_number(0) == 15
+                || u16::from(start) + u16::from(width) > 32
+            {
                 return None;
             }
             return Some(Instruction::Bitfield {
-                destination: reg(12),
-                source: reg(0),
+                destination: register_number(12),
+                source: register_number(0),
                 start,
                 width,
             });
         }
     }
     if mode == ArmMode::Thumb && word & 0xffa0_f0c0 == 0xfa00_f080 {
-        let destination = reg(8);
-        let source = reg(0);
-        let base = reg(16);
+        let destination = register_number(8);
+        let source = register_number(0);
+        let base = register_number(16);
         if [destination, source]
             .iter()
             .any(|register| matches!(register, 13 | 15))
@@ -263,7 +277,9 @@ pub(super) fn decode(bytes: &[u8], mode: ArmMode) -> Option<Instruction> {
             0x0ebd_0ac0 => FloatOperation::ToSigned,
             0x0eb4_0a40 => FloatOperation::Compare,
             _ if word & 0x0fff_ffff == 0x0ef1_fa10 => FloatOperation::ReadFlags,
-            _ if word & 0x0fe0_0f7f == 0x0e00_0a10 && reg(12) != 15 => FloatOperation::Move,
+            _ if word & 0x0fe0_0f7f == 0x0e00_0a10 && register_number(12) != 15 => {
+                FloatOperation::Move
+            }
             _ => return None,
         },
     };

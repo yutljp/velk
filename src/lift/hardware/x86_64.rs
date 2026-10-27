@@ -23,11 +23,11 @@ const R15: u16 = 15;
 
 /// The general registers a case may use: the runner keeps the stack in rsp
 /// and its state pointer in r15.
-fn usable(index: u16) -> bool {
+fn usable_register_index(index: u16) -> bool {
     index != RSP && index != R15
 }
 
-fn name(index: u16) -> String {
+fn register_name(index: u16) -> String {
     if index >= crate::arch::x86::XMM0 {
         return crate::ir::reg_name(crate::loader::Isa::X86_64, index, 64);
     }
@@ -197,7 +197,10 @@ fn decode(code: &[u8]) -> Option<Instruction> {
 
 /// Whether `instruction` touches only usable general registers and
 /// immediates, carries on to the next instruction, and needs no privilege.
-fn register_only(instruction: &Instruction, info: &mut InstructionInfoFactory) -> bool {
+fn register_only(
+    instruction: &Instruction,
+    instruction_info_factory: &mut InstructionInfoFactory,
+) -> bool {
     // `movsxd` without REX.W is a plain move on the processor; the
     // translation that runs x86-64 code on AArch64 sign-extends it.
     if instruction.mnemonic() == Mnemonic::Movsxd && instruction.op0_register().size() != 8 {
@@ -234,7 +237,7 @@ fn register_only(instruction: &Instruction, info: &mut InstructionInfoFactory) -
                 | OpKind::Immediate32to64
         )
     });
-    let info = info.info(instruction);
+    let info = instruction_info_factory.info(instruction);
     operands_plain
         && info.used_memory().is_empty()
         && info
@@ -250,7 +253,10 @@ fn usable_register(register: Register) -> bool {
 
 /// A random instruction of up to 15 bytes, decoded from random bytes with an
 /// operand-size or REX prefix now and then.
-fn instruction(seed: u64, info: &mut InstructionInfoFactory) -> Option<(Vec<u8>, Instruction)> {
+fn random_instruction(
+    seed: u64,
+    info: &mut InstructionInfoFactory,
+) -> Option<(Vec<u8>, Instruction)> {
     // Scalar SSE: a mandatory prefix, an opcode of the floating-point
     // groups and a register-to-register operand byte.
     const SSE: [u8; 18] = [
@@ -407,7 +413,11 @@ fn instruction(seed: u64, info: &mut InstructionInfoFactory) -> Option<(Vec<u8>,
 fn compare(seed: u64) -> Vec<u8> {
     let register = |key| {
         let index = (hash(seed, key) % 16) as u8;
-        if usable(u16::from(index)) { index } else { 0 }
+        if usable_register_index(u16::from(index)) {
+            index
+        } else {
+            0
+        }
     };
     let (a, b) = (register(0x10), register(0x11));
     let wide = hash(seed, 0x12) & 1 == 1;
@@ -444,7 +454,7 @@ struct Prepared {
     registers: Vec<(u16, u64)>,
 }
 
-fn prepare(seed: u64, info: &mut InstructionInfoFactory) -> Option<Prepared> {
+fn prepare_case(seed: u64, info: &mut InstructionInfoFactory) -> Option<Prepared> {
     let mut body = compare(seed);
     let Some(decoded) = decode(&body) else {
         return None;
@@ -454,7 +464,7 @@ fn prepare(seed: u64, info: &mut InstructionInfoFactory) -> Option<Prepared> {
         if index == 1 && hash(seed, 7) & 1 == 0 {
             break;
         }
-        let Some((bytes, decoded)) = instruction(seed ^ salt, info) else {
+        let Some((bytes, decoded)) = random_instruction(seed ^ salt, info) else {
             return None;
         };
         body.extend(bytes);
@@ -466,7 +476,7 @@ fn prepare(seed: u64, info: &mut InstructionInfoFactory) -> Option<Prepared> {
         (undefined & !defined) | instruction.rflags_undefined()
     });
     let registers = (0..16u16)
-        .filter(|index| usable(*index))
+        .filter(|index| usable_register_index(*index))
         .map(|index| (index, value(seed, 0x100 + u64::from(index))))
         .chain(vector_slots().map(|slot| (slot, float_bits(seed, 0x200 + u64::from(slot)))))
         .collect();
@@ -489,7 +499,7 @@ fn lifted_instructions_match_the_processor() {
     let mut findings = Findings::default();
     let mut prepared = Vec::new();
     for seed in 0..60_000 {
-        let Some(case) = prepare(seed, &mut info) else {
+        let Some(case) = prepare_case(seed, &mut info) else {
             continue;
         };
         let Some(ir) = lifted(Isa::X86_64, [case.body.as_slice(), &[0xc3]].concat()) else {
@@ -537,7 +547,7 @@ fn lifted_instructions_match_the_processor() {
             let inputs: Vec<String> = case
                 .registers
                 .iter()
-                .map(|(index, value)| format!("{}={value:#x}", name(*index)))
+                .map(|(index, value)| format!("{}={value:#x}", register_name(*index)))
                 .collect();
             format!("{}\n  in: {}", code.join(" ; "), inputs.join(" "))
         };
@@ -549,7 +559,7 @@ fn lifted_instructions_match_the_processor() {
                 Some(word) => outcome.vectors[word],
                 None => outcome.registers[usize::from(index)],
             },
-            name,
+            register_name,
             |index, a, b| {
                 if index >= crate::arch::x86::XMM0 {
                     same_float_bits(a, b)
@@ -741,8 +751,9 @@ fn memory_instruction(
     let addressed = details.used_memory().iter().all(|memory| {
         POINTERS.contains(&gpr(memory.base()).map_or(u16::MAX, |(index, _)| index))
             && (memory.index() == Register::None
-                || gpr(memory.index())
-                    .is_some_and(|(index, _)| !POINTERS.contains(&index) && usable(index)))
+                || gpr(memory.index()).is_some_and(|(index, _)| {
+                    !POINTERS.contains(&index) && usable_register_index(index)
+                }))
             && (memory.displacement() as i64).unsigned_abs() <= 1024
             && memory.segment() == Register::DS
     });
@@ -815,7 +826,7 @@ fn lifted_memory_operands_match_the_processor() {
         }
         findings.tried += 1;
         let registers: Vec<(u16, u64)> = (0..16u16)
-            .filter(|index| usable(*index))
+            .filter(|index| usable_register_index(*index))
             .map(|index| (index, case.registers[usize::from(index)]))
             .chain(vector_slots().map(|slot| {
                 (
@@ -876,7 +887,7 @@ fn lifted_memory_operands_match_the_processor() {
                 (!same).then(|| {
                     format!(
                         "{}: lifted {lifted:#x}, processor {:#x}",
-                        name(*index),
+                        register_name(*index),
                         real(*index)
                     )
                 })
@@ -983,7 +994,7 @@ fn fixture_simd_flags_and_reverse_strings_match_the_processor() {
         let ir = lifted(Isa::X86_64, [case.code.as_slice(), &[0xc3]].concat()).expect("lifted");
         assert!(unsupported(&ir).is_none(), "{}", ir.render());
         let registers: Vec<_> = (0..16u16)
-            .filter(|index| usable(*index))
+            .filter(|index| usable_register_index(*index))
             .map(|index| (index, case.registers[usize::from(index)]))
             .chain(vector_slots().map(|index| (index, case.vectors[vector_word(index).unwrap()])))
             .collect();
@@ -1018,7 +1029,7 @@ fn fixture_simd_flags_and_reverse_strings_match_the_processor() {
                 after.get(index).unwrap_or(initial),
                 &actual,
                 "case {kind}, register {}\n{}",
-                name(*index),
+                register_name(*index),
                 ir.render()
             );
         }
