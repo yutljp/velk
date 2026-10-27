@@ -101,4 +101,108 @@ fn place_named_parameters(
     }
     ir.params = registers;
     ir.stack_params = stack;
+    narrow_parameter_loads(ir);
+}
+
+fn narrow_parameter_loads(ir: &mut FunctionIr) {
+    fn walk(expr: &mut Expr, params: &[StackParam], sp: u16) {
+        for child in crate::ir::visit::children_mut(expr) {
+            walk(child, params, sp);
+        }
+        let Expr::Bin {
+            op: BinOp::And,
+            lhs,
+            rhs,
+        } = expr
+        else {
+            return;
+        };
+        let Expr::Const(mask) = rhs.as_ref() else {
+            return;
+        };
+        let Expr::Load { addr, width: 4, .. } = lhs.as_ref() else {
+            return;
+        };
+        let Some(offset) = crate::passes::frame_slots::frame_slot(addr, 0, sp) else {
+            return;
+        };
+        let Some(param) = params
+            .iter()
+            .find(|param| param.offset == offset && param.size == 4)
+        else {
+            return;
+        };
+        let Some((bits, false)) = param.ty.integer() else {
+            return;
+        };
+        if !matches!(bits, 8 | 16) || *mask != (1u64 << bits) - 1 {
+            return;
+        }
+        // The ABI allocates a readable word here. Only the declared value's bytes survive
+        // the mask, whose expression width equals the unsigned narrow load's width.
+        *expr = Expr::Load {
+            addr: addr.clone(),
+            width: (bits / 8) as u8,
+            signed: false,
+        };
+    }
+    let sp = crate::arch::stack_pointer(ir.isa);
+    let statements = ir.blocks.iter_mut().flat_map(|block| &mut block.stmts);
+    for stmt in statements {
+        for operand in stmt.operands_mut() {
+            walk(operand, &ir.stack_params, sp);
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::ir::smt::Proofs;
+    use crate::ir::{CType, Stmt};
+    use crate::loader::Isa;
+
+    #[test]
+    fn masked_parameter_loads_preserve_values_and_signed_contexts() {
+        if !Proofs::available() {
+            return;
+        }
+        let mut proofs = Proofs::default();
+        for isa in [Isa::I386, Isa::Arm32] {
+            for bits in [8, 16] {
+                for shift in [0, 7, 15, 31] {
+                    let value = Expr::bin(
+                        BinOp::And,
+                        Expr::Load {
+                            addr: Box::new(Expr::reg(crate::arch::stack_pointer(isa), 64)),
+                            width: 4,
+                            signed: false,
+                        },
+                        Expr::Const((1 << bits) - 1),
+                    );
+                    let value = Expr::Bin {
+                        op: BinOp::Sar,
+                        lhs: Box::new(value),
+                        rhs: Box::new(Expr::Const(shift)),
+                    };
+                    let mut ir = FunctionIr::single_block(isa, vec![Stmt::Ret { value }]);
+                    ir.stack_params.push(StackParam {
+                        offset: 0,
+                        size: 4,
+                        name: "value".into(),
+                        ty: CType::int((bits / 8) as u8, false),
+                        position: 0,
+                    });
+                    let before = ir.clone();
+                    narrow_parameter_loads(&mut ir);
+                    proofs.function(
+                        format!("masked parameter/{isa:?}/{bits}/{shift}"),
+                        &before,
+                        &ir,
+                    );
+                }
+            }
+        }
+        proofs.check();
+    }
 }

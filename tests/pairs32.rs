@@ -45,6 +45,9 @@ fn check_word_pairs(debug: bool) {
             if debug {
                 compiler.arg("-g");
             }
+            if target.starts_with("i386") {
+                compiler.arg("-mno-sse");
+            }
             if !mode.is_empty() {
                 compiler.arg(mode);
             }

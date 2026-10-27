@@ -29,3 +29,22 @@ uint64_t guarded_sub64(uint64_t a, uint64_t b) {
     if (((a ^ b) & (trial ^ b)) & sign) return a;
     return a - b;
 }
+
+#define OBSERVE_BINARY(name) \
+    uint32_t observe_##name(uint64_t a, uint64_t b) { return name(a, b) >> 32; }
+OBSERVE_BINARY(add64)
+OBSERVE_BINARY(sub64)
+OBSERVE_BINARY(mul64)
+OBSERVE_BINARY(call64)
+OBSERVE_BINARY(div64)
+OBSERVE_BINARY(mod64)
+OBSERVE_BINARY(guarded_mod64)
+OBSERVE_BINARY(guarded_sub64)
+OBSERVE_BINARY(signed_div64)
+OBSERVE_BINARY(signed_mod64)
+uint32_t observe_left64(uint64_t a, uint32_t n) { return left64(a, n) >> 32; }
+uint32_t observe_right64(uint64_t a, uint32_t n) { return right64(a, n) >> 32; }
+uint32_t observe_byte64(uint64_t a, uint32_t b) { return byte64(a, b) >> 32; }
+uint32_t observe_mixed64(uint32_t tag, uint64_t a, uint32_t gap, uint64_t b) {
+    return mixed64(tag, a, gap, b) >> 32;
+}

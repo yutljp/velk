@@ -1,3 +1,4 @@
+45e071b2927704028ba25f7951198442479efc5f46c770213e69db2427609aa4  src/analysis/pairs32.rs	fn narrow_parameter_loads(
 cee97a052f6b4f9baf21204bcd640dad36fe69d07eceae1a024dfe13f9f20182  src/analysis/structures.rs	fn rewrite(
 bfaf324bc4cb783da31fbb7e9734f1d0505228fe26463bd656e8b02a8fbe8b42  src/ir/eval/emulation/strings.rs	fn stored_byte(
 4b7662d442895f01185e2a8662f07849f34ed5ac8c0ece55980ab92a82fbc27c  src/ir/mod.rs	pub fn bin(
@@ -5,6 +6,7 @@ bfaf324bc4cb783da31fbb7e9734f1d0505228fe26463bd656e8b02a8fbe8b42  src/ir/eval/em
 29dfa59a046d778499a990e755cdfb9178863fd620857a755e5f89084bcddb2b  src/ir/visit.rs	pub fn substitute_values(
 6d7cb4d71393d62009d85bd952e56f17c67d511b883beaee6a7e32e08410890f  src/ir/visit.rs	pub(crate) fn sum_terms
 e5fc34df75b12d2f44f64542369a8bf92dc442ffd428b3d7d85a0e328c9d4694  src/lift/aarch64/integer.rs	pub(super) fn extend_shift(
+a1c5b3116f4ba458882c29aea4a6c6f3469b0b2117a78c102c4ddc4a342db89d  src/lift/arm32.rs	Opcode::ADC | Opcode::SBC | Opcode::RSC =>
 2d065407efaec6fdfec01eebb35739a418905a5682e2b1a0ad0244796c935f8d  src/lift/arm32.rs	Opcode::RRX =>
 8357760a41fdf4f1226a03ba00492fea372f654d47f619f024ba8eea383ed7bd  src/lift/arm32.rs	Opcode::UMULL | Opcode::SMULL | Opcode::UMLAL | Opcode::SMLAL =>
 ed01c7c56aa69b0cd954f1d92ed78e57539d2226adb95801080fa38e8134d599  src/lift/arm32.rs	fn carry_arithmetic(
@@ -30,6 +32,9 @@ c1910e73cbfd43756aaa4cd69e93d15044c36f13cee1bad12044db8a5157af59  src/lift/mod.r
 ed337801dcded318477c5a60211a0cbd068d7aa254a08dd78fcd0b30bcf21ea0  src/lift/pairs32.rs	pub(crate) fn join(
 e999659cdccf345eb8e92fcacc613d76b0c21bceb3a99a819581c1e1964a8e27  src/lift/pairs32.rs	pub(super) fn call(
 6106c134670fcdf136cd9199c693d4ae01cc89c73ce75a6f92f00a065ba77f2e  src/lift/pairs32.rs	pub(super) fn remainder_value(
+cfccb053d4c55496499be985b667e23d26570c78ab688d0a1cec9299076a0c7f  src/lift/pairs32.rs	pub(super) fn split_result(
+0cd4a8f764dc058d61bb3f44a36c900e2f0b871b6ab1d115e201962028c7d39d  src/lift/x86_64.rs	fn return_address_register(
+3560e55deb042850841ede78bc28b3ade459f7e331cc78f8f15aabe21b4713da  src/lift/x86_64.rs	if target == ins.next_ip() || return_register.is_some()
 5d74978bc3a41f6f5d2044c3d9a8bdd06db7bdca6a84d2e37e905decd73d8d3d  src/lift/x86_64/operands.rs	pub(super) fn write_operand(
 f939ae1b72a32ca6383f8a9a3c3f6e06fa0b8319d32e2a83152c5ef0ab4cfa81  src/passes/copies.rs	fn copy_propagate_block(
 109b7d2fb2fbacde55392e637570bcb08fb992c97d3bd92c28ec68becbe5e6b6  src/passes/copies.rs	pub fn inline_local_copies(

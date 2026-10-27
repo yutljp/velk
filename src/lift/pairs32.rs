@@ -1,5 +1,6 @@
 //! Scalar integer declarations whose values occupy two 32-bit words.
 
+mod callers;
 pub(crate) mod inference;
 
 use crate::ir::{BinOp, CType, Expr, Stmt};

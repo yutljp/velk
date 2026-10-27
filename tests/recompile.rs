@@ -9294,3 +9294,6 @@ mod vector_extensions;
 
 #[path = "recompile/i386.rs"]
 mod i386;
+
+#[path = "recompile/word_pairs.rs"]
+mod word_pairs;

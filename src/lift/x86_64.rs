@@ -237,6 +237,33 @@ fn resolved_target(ins: &Instruction, relocation_target: Option<u64>) -> u64 {
     relocation_target.unwrap_or_else(|| ins.near_branch_target())
 }
 
+fn return_address_register(image: &Image, target: u64) -> Option<u16> {
+    let Some(end) = target.checked_add(4) else {
+        return None;
+    };
+    if !image.sections.iter().any(|section| {
+        section.executable
+            && section.vaddr <= target
+            && section
+                .vaddr
+                .checked_add(section.size)
+                .is_some_and(|limit| end <= limit)
+    }) {
+        return None;
+    }
+    let Some([0x8b, modrm, 0x24, 0xc3]) = image.read_vaddr(target, 4) else {
+        return None;
+    };
+    if modrm & 0xc7 != 0x04 {
+        return None;
+    }
+    let register = u16::from((modrm >> 3) & 7);
+    if register == RSP {
+        return None;
+    }
+    Some(register)
+}
+
 fn complete_call(lifter: &mut Lifter, target: u64) -> bool {
     if (lifter.summaries)(target).noreturn {
         lifter.stmts.push(Stmt::Trap);
@@ -521,16 +548,23 @@ fn lift_instruction(
         Mnemonic::Call => {
             if lifter.image.isa == crate::loader::Isa::I386
                 && ins.op0_kind() == OpKind::NearBranch32
-                && resolved_target(ins, relocation_target) == ins.next_ip()
             {
-                stack_adjust(lifter, -4);
-                preserve_compare(&mut lifter.last_compare, Write::Memory, &mut lifter.stmts);
-                lifter.stmts.push(Stmt::Store {
-                    addr: Lifter::read_reg(RSP, 32),
-                    value: Expr::constant(ins.next_ip()),
-                    width: 4,
-                });
-                return false;
+                let target = resolved_target(ins, relocation_target);
+                let return_register = return_address_register(lifter.image, target);
+                if target == ins.next_ip() || return_register.is_some() {
+                    stack_adjust(lifter, -4);
+                    preserve_compare(&mut lifter.last_compare, Write::Memory, &mut lifter.stmts);
+                    lifter.stmts.push(Stmt::Store {
+                        addr: Lifter::read_reg(RSP, 32),
+                        value: Expr::constant(ins.next_ip()),
+                        width: 4,
+                    });
+                    if let Some(register) = return_register {
+                        lifter.assign(register, 32, Expr::constant(ins.next_ip()));
+                        stack_adjust(lifter, 4);
+                    }
+                    return false;
+                }
             }
             // A call leaves the flags undefined: none of the compare before
             // it is read after it.

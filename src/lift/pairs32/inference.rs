@@ -2,15 +2,15 @@
 
 use std::collections::{HashMap, HashSet};
 use std::fmt;
-use std::sync::Mutex;
+use std::sync::{Mutex, OnceLock};
 
 use crate::ir::{BinOp, CType, Cond, Expr, Stmt};
 use crate::loader::{Image, Isa};
 
 #[derive(Clone)]
-struct Declaration {
+pub(super) struct Declaration {
     params: Vec<CType>,
-    ret: Option<CType>,
+    pub(super) ret: Option<CType>,
 }
 
 impl fmt::Debug for Declaration {
@@ -21,7 +21,10 @@ impl fmt::Debug for Declaration {
 }
 
 #[derive(Debug, Default)]
-pub(crate) struct Cache(Mutex<HashMap<(u64, u64, u8), Option<Declaration>>>);
+pub(crate) struct Cache {
+    types: Mutex<HashMap<(u64, u64, u8), Option<Declaration>>>,
+    pub(super) callers: OnceLock<HashMap<u64, super::callers::CallEvidence>>,
+}
 
 pub(super) fn types(image: &Image, address: u64) -> Option<(Vec<CType>, CType)> {
     let Some(Declaration { params, ret }) = declaration(image, address, 2) else {
@@ -34,7 +37,7 @@ pub(crate) fn parameters(image: &Image, address: u64) -> Option<Vec<CType>> {
     declaration(image, address, 2).map(|declaration| declaration.params)
 }
 
-fn declaration(image: &Image, address: u64, depth: u8) -> Option<Declaration> {
+pub(super) fn declaration(image: &Image, address: u64, depth: u8) -> Option<Declaration> {
     if !matches!(image.isa, Isa::I386 | Isa::Arm32) || image.go {
         return None;
     }
@@ -62,7 +65,7 @@ fn declaration(image: &Image, address: u64, depth: u8) -> Option<Declaration> {
     let key = (address, size, depth);
     if let Some(types) = image
         .word_pairs
-        .0
+        .types
         .lock()
         .expect("word-pair cache lock")
         .get(&key)
@@ -72,7 +75,7 @@ fn declaration(image: &Image, address: u64, depth: u8) -> Option<Declaration> {
     let inferred = infer(image, address, size, depth);
     image
         .word_pairs
-        .0
+        .types
         .lock()
         .expect("word-pair cache lock")
         .insert(key, inferred.clone());
@@ -161,12 +164,8 @@ struct State {
 }
 
 impl State {
-    fn invalidate_call_registers(&mut self, isa: Isa) {
-        for register in if isa == Isa::I386 {
-            &[0, 1, 2][..]
-        } else {
-            &[0, 1, 2, 3, 12][..]
-        } {
+    fn invalidate_call_registers(&mut self, convention: crate::ir::Convention) {
+        for register in convention.clobbered() {
             self.registers.remove(register);
         }
     }
@@ -234,14 +233,34 @@ impl Evidence {
             Expr::Load { addr, width, .. } if matches!(width, 1 | 2 | 4) => {
                 let address = self.eval(addr, state);
                 let Some(offset) = address.frame else {
-                    return Value::default();
+                    return Value {
+                        known: address.constant.is_some(),
+                        ..Value::default()
+                    };
                 };
                 if let Some(value) = state.stack.get(&offset) {
                     let mut value = *value;
                     if *width != 4 {
+                        let mask = (1u64 << (u32::from(*width) * 8)) - 1;
+                        value.known = value.bits() & mask == mask;
                         value.word = None;
+                        value.frame = None;
+                        value.constant = value.constant.map(|constant| constant & mask);
                     }
                     value
+                } else if let Some(value) = state.stack.get(&(offset & !3)).filter(|_| *width != 4)
+                {
+                    let shift = (offset & 3) as u32 * 8;
+                    if shift + u32::from(*width) * 8 > 32 {
+                        return Value::default();
+                    }
+                    let value = *value;
+                    let mask = ((1u64 << (u32::from(*width) * 8)) - 1) << shift;
+                    Value {
+                        inputs: value.inputs,
+                        known: value.bits() & mask == mask,
+                        ..Value::default()
+                    }
                 } else {
                     if state.unknown_stack {
                         return Value::default();
@@ -319,7 +338,7 @@ impl Evidence {
                 }
             });
         let Some(Declaration { params, ret }) = declared else {
-            state.invalidate_call_registers(image.isa);
+            state.invalidate_call_registers(*convention);
             return Some(CallEffects {
                 partial: true,
                 narrow: false,
@@ -370,7 +389,7 @@ impl Evidence {
             }
         }
         self.used |= inputs;
-        state.invalidate_call_registers(image.isa);
+        state.invalidate_call_registers(*convention);
         state.registers.insert(
             0,
             Value {
@@ -745,21 +764,24 @@ fn infer(image: &Image, address: u64, size: u64, depth: u8) -> Option<Declaratio
                         }
                         continue;
                     };
-                    let Some(last) = offset.checked_add(i64::from(*width) - 1) else {
-                        return None;
-                    };
-                    for slot in [offset & !3, last & !3] {
-                        let mut stored = state.stack.get(&slot).copied().unwrap_or_default();
-                        stored.inputs |= value.inputs;
-                        stored.known &= value.known;
-                        stored.word = None;
-                        stored.wide_words = None;
-                        stored.constant = None;
-                        stored.frame = None;
-                        stored.known_bits = 0;
-                        stored.boolean = false;
-                        stored.carry = false;
-                        state.stack.insert(slot, stored);
+                    for byte in 0..*width {
+                        let Some(address) = offset.checked_add(i64::from(byte)) else {
+                            return None;
+                        };
+                        let slot = address & !3;
+                        let stored = state.stack.get(&slot).copied().unwrap_or_default();
+                        let shift = (address & 3) as u32 * 8;
+                        let known = (value.bits() >> (u32::from(byte) * 8)) & 0xff;
+                        let known_bits = (stored.bits() & !(0xff << shift)) | (known << shift);
+                        state.stack.insert(
+                            slot,
+                            Value {
+                                inputs: stored.inputs | value.inputs,
+                                known: known_bits & 0xffff_ffff == 0xffff_ffff,
+                                known_bits,
+                                ..Value::default()
+                            },
+                        );
                     }
                 }
                 Stmt::Call { .. } => {
@@ -827,26 +849,28 @@ fn infer(image: &Image, address: u64, size: u64, depth: u8) -> Option<Declaratio
     if evidence.reads >> 16 != 0 || evidence.pairs & (evidence.pairs << 1) != 0 {
         return None;
     }
-    let high_result = returns
-        .iter()
-        .any(|(_, high)| high.high || (high.left_shifts | high.right_shifts) != 0);
+    let mut caller_evidence = super::callers::evidence(image, address, depth);
+    let words_read = 64 - evidence.reads.leading_zeros();
+    let candidates = if words_read == 0 {
+        0
+    } else {
+        (1u64 << words_read) - 1
+    };
+    caller_evidence.pairs &= candidates & 0x7fff;
+    evidence.pairs |= caller_evidence.pairs;
+    evidence.parameter_pairs |= caller_evidence.pairs;
+    evidence.used |= caller_evidence.pairs | (caller_evidence.pairs << 1);
+    if evidence.pairs & (evidence.pairs << 1) != 0 {
+        return None;
+    }
+    let changes_high =
+        image.isa != Isa::Arm32 || returns.iter().any(|(_, high)| high.word != Some(1));
     let ret = if !partial
         && !returns.is_empty()
-        && evidence.pairs != 0
-        && high_result
-        && returns.iter().all(|(low, high)| {
-            low.known
-                && high.known
-                && (high.high
-                    || ((high.left_shifts | high.right_shifts) != 0
-                        && (high.left_shifts | high.right_shifts)
-                            & !(evidence.pairs | (evidence.pairs << 1))
-                            == 0)
-                    || high.constant.is_some()
-                    || high
-                        .word
-                        .is_some_and(|word| word > 0 && evidence.pairs & (1 << (word - 1)) != 0))
-        }) {
+        && caller_evidence.high_result
+        && changes_high
+        && returns.iter().all(|(low, high)| low.known && high.known)
+    {
         for (_, high) in &returns {
             evidence.used |= high.inputs;
         }

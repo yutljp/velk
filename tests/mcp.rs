@@ -98,6 +98,86 @@ fn com_calls_and_guid_names_are_available_over_stdio() {
 }
 
 #[test]
+fn scalar_word_results_match_cli_javascript_and_mcp() {
+    for (target, mode) in [
+        ("i386-linux-gnu", ""),
+        ("armv7a-linux-gnueabihf", "-mthumb"),
+    ] {
+        let scratch = common::root().join(format!("target/mcp-word-results-{target}"));
+        std::fs::create_dir_all(&scratch).unwrap();
+        let source = scratch.join("original.c");
+        let object = scratch.join("original.o");
+        let image = scratch.join("original.elf");
+        let mut compiler = Command::new("clang");
+        compiler.args(["-target", target, "-c", "-O0", "-fno-inline", "-fno-pic"]);
+        if !mode.is_empty() {
+            compiler.arg(mode);
+        }
+        common::compiler::compile_file(
+            compiler.arg(&source).arg("-o").arg(&object),
+            &source,
+            include_str!("recompile/word_pairs.c"),
+        );
+        let linked = Command::new("ld.lld")
+            .args([
+                "-m",
+                if target.starts_with("i386") {
+                    "elf_i386"
+                } else {
+                    "armelf_linux_eabi"
+                },
+                "--entry=stack_caller",
+            ])
+            .arg(&object)
+            .arg("-o")
+            .arg(&image)
+            .output()
+            .unwrap();
+        assert!(linked.status.success(), "{linked:?}");
+        let mut binary = velk::service::Binary::open(&image).unwrap();
+        let address = binary.find("g").unwrap().addr;
+        let expected = binary.decompile(address, None, None).unwrap();
+        assert!(
+            binary
+                .analysis(address, None)
+                .unwrap()
+                .ir
+                .ret_type
+                .integer()
+                .is_some_and(|(bits, _)| bits == 64),
+            "{expected}"
+        );
+        let cli = Command::new(env!("CARGO_BIN_EXE_velk"))
+            .arg("-D")
+            .arg(&image)
+            .arg("g")
+            .output()
+            .unwrap();
+        assert!(cli.status.success(), "{cli:?}");
+        assert_eq!(
+            String::from_utf8(cli.stdout).unwrap().trim(),
+            expected.trim()
+        );
+        let code = format!("velk.open({image:?}).getFunction('g').decompile()");
+        let script_path = scratch.join("decompile.js");
+        std::fs::write(&script_path, format!("console.log({code});")).unwrap();
+        let javascript = Command::new(env!("CARGO_BIN_EXE_velk"))
+            .arg("--run")
+            .arg(script_path)
+            .output()
+            .unwrap();
+        assert!(javascript.status.success(), "{javascript:?}");
+        assert_eq!(
+            String::from_utf8(javascript.stdout).unwrap().trim(),
+            expected.trim()
+        );
+        let responses = exchange(&[script(0, &code)]);
+        assert_eq!(responses[0]["result"]["isError"], false);
+        assert_eq!(text(&responses[0]), expected);
+    }
+}
+
+#[test]
 fn discovery_and_fresh_scripts_work_over_stdio() {
     let path = common::fixtures_dir().join("arm64.o");
     let responses = exchange(&[
