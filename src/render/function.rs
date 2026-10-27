@@ -1408,6 +1408,9 @@ fn render_body(
     variable_types: &std::collections::BTreeMap<u16, CType>,
     vector_groups: &[super::vector_values::Group],
 ) -> String {
+    if let Some(body) = super::string_functions::render(nodes, ctx) {
+        return body;
+    }
     let mut body = String::new();
     // A function that returns nothing needs no return at its end, unless a
     // label stands before it.

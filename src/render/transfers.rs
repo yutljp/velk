@@ -258,6 +258,7 @@ fn record(source: &Expr, destination: &Expr, bytes: u64, ctx: &Ctx<'_>) -> Optio
 /// every byte, including padding, when a copy needs to snapshot overlapping ranges.
 pub(super) fn render(nodes: &[Node], ctx: &Ctx<'_>) -> Option<(usize, String)> {
     let transfer = fill(nodes, ctx)
+        .or_else(|| string_copy(nodes, ctx))
         .or_else(|| ordered(nodes, ctx))
         .or_else(|| reordered(nodes, ctx));
     let Some(transfer) = transfer else {
@@ -272,6 +273,91 @@ pub(super) fn render(nodes: &[Node], ctx: &Ctx<'_>) -> Option<(usize, String)> {
 struct FillRange<'a> {
     start: &'a Expr,
     bytes: u64,
+}
+
+fn string_copy(nodes: &[Node], ctx: &Ctx<'_>) -> Option<Transfer> {
+    if super::string_functions::is_current_function("strcpy", ctx) {
+        return None;
+    }
+    let mut start = None;
+    let mut bytes = 0;
+    let mut stored = std::collections::BTreeMap::new();
+    let mut count = 0;
+    let mut candidate = None;
+    for node in nodes.iter().take(32) {
+        let Node::Stmt(Stmt::Store {
+            addr,
+            value: Expr::Const(value),
+            width,
+        }) = node
+        else {
+            break;
+        };
+        if !matches!(width, 1 | 2 | 4 | 8) || !valid_address(addr, u64::from(*width), ctx) {
+            break;
+        }
+        let Some((_, offset)) = address_terms(addr) else {
+            break;
+        };
+        let next = match start {
+            Some(first) => filled_range(first, addr, bytes, *width),
+            None => Some(FillRange {
+                start: addr,
+                bytes: u64::from(*width),
+            }),
+        };
+        let Some(next) = next else { break };
+        for part in 0..*width {
+            let Some(offset) = offset.checked_add(i64::from(part)) else {
+                return None;
+            };
+            stored.insert(offset, (value >> (u32::from(part) * 8)) as u8);
+        }
+        start = Some(next.start);
+        bytes = next.bytes;
+        count += 1;
+        if count < 2
+            || bytes < 4
+            || stored.len() as u64 != bytes
+            || stored.last_key_value().map(|(_, byte)| *byte) != Some(0)
+        {
+            continue;
+        }
+        if stored
+            .values()
+            .take(stored.len() - 1)
+            .any(|byte| !(0x20..0x7f).contains(byte) && *byte != b'\t')
+        {
+            continue;
+        }
+        let mut literal = String::new();
+        for byte in stored.values().take(stored.len() - 1) {
+            match byte {
+                0 => {
+                    literal.clear();
+                    break;
+                }
+                b'"' => literal.push_str("\\\""),
+                b'\\' => literal.push_str("\\\\"),
+                b'?' => literal.push_str("\\?"),
+                b'\t' => literal.push_str("\\t"),
+                0x20..=0x7e => literal.push(char::from(*byte)),
+                _ => literal.push_str(&format!("\\{byte:03o}")),
+            }
+        }
+        if literal.is_empty() {
+            continue;
+        }
+        let Some(destination) = copy_address(next.start, bytes, View::Unsigned(1), ctx) else {
+            continue;
+        };
+        candidate = Some(Transfer {
+            consumed: count,
+            text: format!("__builtin_strcpy((char *)({destination}), \"{literal}\");"),
+            function: Some(memory_function("strcpy", bytes)),
+        });
+    }
+    candidate
 }
 
 fn filled_range<'a>(

@@ -131,6 +131,20 @@ separate stores. This includes zero fills. Copy loops require proven disjoint
 ranges before using `__builtin_memcpy`; snapshot copies can use
 `__builtin_memmove`. The loop renderer retains final pointer and count values.
 
+Scalar byte scans can become `__builtin_strlen` or `__builtin_strchr` when
+symbolic register updates, stopping conditions and returns agree with the call.
+Comparison loops and finite byte comparisons can become `strcmp`, `strncmp`
+or `memcmp` calls with results normalized to -1, 0 or 1. The call result is
+normalized too: the C standard guarantees its sign, not its magnitude. A loop
+returning a byte difference is therefore retained. Finite comparisons are
+limited to 32 bytes. Runtime-count comparisons retain a zero-count guard,
+including when their pointers are null. Connected constant stores ending in one zero byte can
+become `__builtin_strcpy` with a literal of at least three printable ASCII bytes
+(tabs are also allowed); short or non-text patterns, embedded zeros and gaps prevent this
+replacement. General pointer-to-pointer string copies retain their loops
+because overlapping inputs have not been excluded.
+String calls are also withheld when they would call the function being printed recursively.
+
 ```sh
 velk --summary tests/data/inline_functions/aarch64.clang.O2.elf fill13
 ```
@@ -141,13 +155,24 @@ b.getFunction("fill13").summary().inlineFunctions;
 ```
 
 The JavaScript example also runs through MCP's `velk_run_script` tool. Each
-`inlineFunctions` entry contains `function` (`memcpy`, `memmove` or `memset`)
-and `bytes` (a constant count, or null for a runtime count). Entries describe
+`inlineFunctions` entry contains `function` (`memcpy`, `memmove`, `memset`,
+`strlen`, `strcmp`, `strncmp`, `memcmp`, `strchr` or `strcpy`)
+and `bytes` (a constant count, or null for a runtime count or string scan).
+For a literal string copy, the count includes its terminator. Entries describe
 replacements in the selected C body, not original calls or speculative matches.
 Structure assignments and copies through a temporary array are not listed.
 An empty list does not establish that no standard function was inlined.
-General `strlen`, `strcmp`, direction-dependent copies and vector search loops
-are not recognized by these matchers.
+Unsupported control flow, word-at-a-time scans, vector searches and vector
+comparisons retain their original expressions and loops.
+
+```sh
+velk --summary tests/data/string_functions/aarch64.clang.O2.debug.elf length
+```
+
+```js
+const b = velk.open("tests/data/string_functions/aarch64.clang.O2.debug.elf");
+b.getFunction("length").summary().inlineFunctions;
+```
 
 The fill tests exhaust small store widths, overlap offsets and byte values,
 and compile and execute rendered functions for x86-64 and AArch64 IR. They
@@ -155,7 +180,9 @@ check final bytes including surrounding sentinels. These checks do not model
 volatile accesses, hardware faults or C object provenance. Recognized accesses
 are treated as ordinary memory accesses to valid storage.
 
-Compiler fixtures cover Clang 18 and GCC 13 at `-O2` and `-O3` for x86-64 and
-AArch64, with and without debug information. Rebuild them with
-`sh tests/make_inline_function_fixtures.sh`; this needs Clang, LLD,
+Compiler fixtures cover `-O2` and `-O3` for x86-64 and AArch64, with and
+without debug information. The memory fixtures record Clang 18 and GCC 13;
+the string fixtures record Clang 21 and GCC 15. Rebuild them with
+`sh tests/make_inline_function_fixtures.sh` and
+`sh tools/make_string_function_fixtures.sh`. These require Clang, LLD,
 `x86_64-linux-gnu-gcc` and `aarch64-linux-gnu-gcc`.

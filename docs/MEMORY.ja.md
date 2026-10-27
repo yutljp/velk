@@ -128,6 +128,18 @@ PE のファイル内のデータ長とメモリ上のセクション長は区�
 読み取りを先に終えるコピーでは `__builtin_memmove` を使う場合があります。
 ループ終了時のポインターとカウントの値を保持します。
 
+スカラーのバイト走査では、記号的なレジスターの更新、停止条件、戻り値が一致すると
+`__builtin_strlen` や `__builtin_strchr` に置き換えます。比較ループと有限のバイト比較では、
+結果を -1、0、1 に正規化する `strcmp`、`strncmp`、`memcmp` を使う場合があります。
+C 規格が保証するのは結果の符号なので、呼び出し結果も正規化します。
+バイトの差そのものを返すループは残します。有限の比較は 32 バイトまでです。
+実行時のカウントがゼロなら、ポインターが null でも呼び出さずにゼロを返します。
+連続する定数ストアの最後のバイトだけがゼロで、表示可能な ASCII 文字が 3 バイト以上
+（タブも可）なら、リテラルを使う `__builtin_strcpy` に置き換える場合があります。
+短いバイト列や非テキストのバイト列、途中にゼロや隙間がある場合は置き換えません。
+一般のポインター間の文字列コピーは、領域の重なりを除外できないためループを残します。
+表示中の関数自身への再帰呼び出しになる場合も、文字列関数への置換を行いません。
+
 ```sh
 velk --summary tests/data/inline_functions/aarch64.clang.O2.elf fill13
 ```
@@ -138,12 +150,21 @@ b.getFunction("fill13").summary().inlineFunctions;
 ```
 
 JavaScript の例は MCP の `velk_run_script` でも実行できます。`inlineFunctions` の各要素は
-`function`（`memcpy`、`memmove`、`memset`）と `bytes`（定数のバイト数、実行時の
-カウントなら null）を持ちます。選択された C 本体で置き換えた処理を表し、元からある
+`function`（`memcpy`、`memmove`、`memset`、`strlen`、`strcmp`、`strncmp`、`memcmp`、
+`strchr`、`strcpy`）と `bytes`（定数のバイト数、実行時のカウントや文字列走査なら null）
+を持ちます。リテラルのコピーでは終端のゼロも数えます。選択された C 本体で置き換えた処理を表し、元からある
 呼び出しや採用しなかった候補は含みません。構造体代入や一時配列を介したコピーは
 含みません。空のリストでも、標準関数がインライン化されていないとは限りません。
-一般的な `strlen`、`strcmp`、方向に応じたコピー、ベクトル検索ループは、これらの
-認識処理では扱いません。
+未対応の制御フロー、ワード単位の走査、ベクトルの検索や比較は元の式やループを残します。
+
+```sh
+velk --summary tests/data/string_functions/aarch64.clang.O2.debug.elf length
+```
+
+```js
+const b = velk.open("tests/data/string_functions/aarch64.clang.O2.debug.elf");
+b.getFunction("length").summary().inlineFunctions;
+```
 
 塗りつぶしのテストは小さいストア幅、重なりのオフセット、バイト値を全列挙し、
 x86-64 と AArch64 の IR から表示した関数をコンパイルして実行します。対象領域と
@@ -151,7 +172,9 @@ x86-64 と AArch64 の IR から表示した関数をコンパイルして実行
 C オブジェクトの由来はモデル化していません。認識するアクセスは、有効な記憶域への
 通常のメモリアクセスとして扱います。
 
-コンパイラーのフィクスチャは Clang 18 と GCC 13 を使い、x86-64 と AArch64 の
-`-O2`、`-O3` を、デバッグ情報あり・なしで扱います。
-`sh tests/make_inline_function_fixtures.sh` で再生成できます。Clang、LLD、
+コンパイラーのフィクスチャは x86-64 と AArch64 の `-O2`、`-O3` を、
+デバッグ情報あり・なしで扱います。メモリ関数には Clang 18 と GCC 13、
+文字列関数には Clang 21 と GCC 15 の記録があります。
+`sh tests/make_inline_function_fixtures.sh` と
+`sh tools/make_string_function_fixtures.sh` で再生成できます。Clang、LLD、
 `x86_64-linux-gnu-gcc`、`aarch64-linux-gnu-gcc` が必要です。

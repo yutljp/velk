@@ -126,8 +126,19 @@ ccdb48908c504c913982c58b95184f13cc89a5f75486f71ad1ab25c1d48217b9  src/render/par
 97b1142514dba360bf78897e31128c196f46b6da02ff3f956be93f31114a193b  src/render/stmt.rs	fn without_update_mask(
 d826496aa0bae181e2e4691f1e3b259c785ae943bbeb1407c9ecb83640092670  src/render/stmt.rs	pub(super) fn conformed(
 6d66b8eacb9df33770d419a62c31c056c11e3de39f10e4c817fc99d2e56a593c  src/render/stmt.rs	pub(super) fn narrow_write(
+869f0bacb069c78391d845f0c6dda4bda302af52853fe629e8b6735e8441b8db  src/render/string_functions.rs	fn comparison(
+b3c7a9e8c5bb8282352b8e49439760d9d45326154bfbdea59a45c31b471d364d  src/render/string_functions.rs	fn evaluate(
+0d7abab2093fb1d2bfef99342ba34a4223b5528fd3f2e5fbf17a99452faf90ab  src/render/string_functions.rs	fn length(
+590b28fa9e9a6bae913931cabeda1c9b197a2dc37d0218f47e32ff19c960c14b  src/render/string_functions.rs	fn sum(
+0352a8e16a2750215cad722222476154d39bf4b8f9564182407ee4b6fef30949  src/render/string_functions.rs	pub(super) fn is_current_function(
+87b5468a9fb39faa800cfc4a84815e27baf0352339a05e589f6e3c990be0e98f  src/render/string_functions.rs	pub(super) fn render(nodes:
+2acba4699826e8b294fb6cd9aaed0b7ef3d2718337d8512cf8c7626152e82e90  src/render/string_functions/bounded.rs	fn equivalent(
+ab8b1e138b056bf4cfdd2960342015ced772750e01c0342576432723a8cdb451  src/render/string_functions/loops.rs	fn equivalent(
+a58e17fe151c2c24805ff39201100f72575cb73b566c1631a46ae812f2dd078c  src/render/string_functions/loops.rs	fn induction(
+c4626afa6094b67d20d06e556582f21c84236df5165959a0b469254dbcf9fcf1  src/render/string_functions/loops.rs	pub(super) fn render(
 6d9d113b5ed0047189bc84ee757e2a890e31de328a28632e7db30d6594fc6b84  src/render/transfers.rs	fn fill(nodes:
 d6ed2930da3050a1e796935096262bd31b5c04a40d9547f751d04af0fe1c2c7f  src/render/transfers.rs	fn filled_range<'a>(
+a8c0db3f0569267a10caf03727b569e70ce78466f8fbc251ca3ea5fd76d30c9a  src/render/transfers.rs	fn string_copy(
 288fb5a93ed6d581b878f90d08f8c29714c1e14affefd2f991b9d2dc212bf307  src/render/widths.rs	pub(crate) fn narrow_variables(
 af9af3f338c239142f92a78e7633d8f8a3f0d64d702caab86de5c8cd24e874d3  src/sigs/bytes/registers.rs	pub(super) fn alternative(
 32caccc66f407095f81047c6a597b56a6a6aaa1c2cd56f826ca74dded4a75405  src/ssa/demand.rs	pub fn narrow_partial_writes(

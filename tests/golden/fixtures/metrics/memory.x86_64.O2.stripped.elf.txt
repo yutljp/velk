@@ -171,14 +171,7 @@ fn <unnamed> @ 0x201310 (size 15)
 -- decompile
 /* velk pseudo-C: sub_201320 @ 0x201320 */
 int64_t sub_201320(uint8_t *a0) {
-    uint8_t v2;
-
-    int64_t result = -1;
-    do {
-        v2 = a0[(int64_t)((uint64_t)result + 1)];
-        result = (int64_t)((uint64_t)result + 1);
-    } while (v2 != 0);
-    return result;
+    return __builtin_strlen((const char *)(uint64_t)(a0));
 }
 -- signature
 int64_t (uint8_t * a0)

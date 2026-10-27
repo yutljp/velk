@@ -174,14 +174,7 @@ fn <unnamed> @ 0x2102c4 (size 12)
 -- decompile
 /* velk pseudo-C: sub_2102d0 @ 0x2102d0 */
 int64_t sub_2102d0(uint8_t *a0) {
-    int32_t v2;
-
-    int64_t v1 = 0;
-    do {
-        v2 = a0[v1];
-        v1 = (int64_t)((uint64_t)v1 + 1);
-    } while (v2 != 0);
-    return (int64_t)((uint64_t)v1 - 1);
+    return __builtin_strlen((const char *)(uint64_t)(a0));
 }
 -- signature
 int64_t (uint8_t * a0)

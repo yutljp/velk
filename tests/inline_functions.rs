@@ -169,6 +169,7 @@ fn optimized_fixtures_compile_and_match_reference_execution() {
                             "fill24" => ("memset", Some(24)),
                             "copy24" => ("memmove", Some(24)),
                             "move16" => ("memmove", Some(16)),
+                            "length" => ("strlen", None),
                             _ => ("", None),
                         };
                         if rendered.inline_functions.iter().any(|call| {

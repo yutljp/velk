@@ -25,6 +25,7 @@ mod provenance;
 pub(crate) mod seh;
 mod stack_bytes;
 mod stmt;
+mod string_functions;
 mod string_loops;
 pub mod structure;
 mod support;
@@ -73,7 +74,7 @@ pub struct SegmentBaseRead {
 pub struct Rendered {
     pub code: String,
     pub segment_bases: Vec<SegmentBaseRead>,
-    /// Copy and fill effects replaced by standard function calls.
+    /// Memory and string effects replaced by standard function calls.
     pub inline_functions: Vec<InlineFunction>,
 }
 

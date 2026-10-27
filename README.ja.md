@@ -173,8 +173,9 @@ JavaScript API と MCP では `b.search(pattern, options)`、
 エンコーディング、範囲、型、完全一致する定数の詳細は
 [メモリの問い合わせ](docs/MEMORY.ja.md)を参照してください。
 
-コピーと塗りつぶしの処理を `memcpy`、`memmove`、`memset` の組み込み関数として
-表示する場合があります。`velk --summary app function` と JavaScript/MCP の
+コピー、塗りつぶし、スカラーの文字列処理を標準関数の組み込み関数として表示する場合があります。
+`strlen`、比較結果の符号への正規化、`strchr`、リテラルの `strcpy` も対象です。
+`velk --summary app function` と JavaScript/MCP の
 `f.summary().inlineFunctions` は、復元した呼び出しと定数のバイト数を返します。
 [認識の制限](docs/MEMORY.ja.md#インライン化されたメモリ関数)を参照してください。
 

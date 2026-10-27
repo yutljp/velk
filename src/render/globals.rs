@@ -660,6 +660,12 @@ pub(crate) fn reserved_identifier(name: &str) -> bool {
             | "__builtin_memcpy"
             | "__builtin_memmove"
             | "__builtin_memset"
+            | "__builtin_strlen"
+            | "__builtin_strcmp"
+            | "__builtin_strncmp"
+            | "__builtin_memcmp"
+            | "__builtin_strchr"
+            | "__builtin_strcpy"
     )
 }
 

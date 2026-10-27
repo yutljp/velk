@@ -172,14 +172,7 @@ fn fill_bytes @ 0x2102c4 (size 12)
 -- decompile
 /* velk pseudo-C: string_length @ 0x2102d0 */
 unsigned long string_length(char *s) {
-    int32_t v2;
-
-    int64_t v1 = 0;
-    do {
-        v2 = (uint8_t)s[v1];
-        v1 = (int64_t)((uint64_t)v1 + 1);
-    } while (v2 != 0);
-    return (int64_t)((uint64_t)v1 - 1);
+    return __builtin_strlen((const char *)(uint64_t)(s));
 }
 -- signature
 unsigned long (char * s)

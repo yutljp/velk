@@ -301,3 +301,13 @@ faulting inputs, unsupported masks and search limits. These are bounded template
 not a proof for every polynomial tree accepted by the implementation.
 
 Emulated printf integer magnitudes have symbolic width checks and concrete helper instances for 8, 16, 32 and 64 bits. Formatting is compared with host libc by execution tests.
+
+String effect checks use symbolic 64-bit affine state calculations and a
+partition of unsigned byte pairs by equality, order and zero values. SMT checks
+cover those calculations and the partition's comparison predicates. Scalar
+loops additionally require matching initial state, updates on every continuing
+path, and matching returns at termination. Finite comparison cases check every
+possible first mismatch and terminator position. These are compositional checks;
+they do not prove arbitrary loops, vector scans, memory validity or faults.
+
+Finite comparisons also check acyclic compiler CFGs for both architectures against symbolic byte-array comparison models. Terminated constant stores compare each store width against byte-wise array writes.
