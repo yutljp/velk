@@ -1,11 +1,12 @@
 """Retain upstream copyright and license comments beside the generated sets."""
 
-import gzip
 from pathlib import Path
 import re
 import subprocess
 
-ROOT = Path(__file__).resolve().parent.parent
+import gzip_output
+
+ROOT = Path(__file__).resolve().parents[2]
 
 
 def write(sources):
@@ -27,7 +28,7 @@ def write(sources):
             if comments:
                 notices.append(str(path.relative_to(source)) + '\n' + '\n'.join(comments))
         encoded = '\n\n'.join(notices).encode()
-        (ROOT / f'signatures/{library}.NOTICE.gz').write_bytes(gzip.compress(encoded, mtime=0))
+        (ROOT / f'target/library-signatures/{library}.NOTICE.gz').write_bytes(gzip_output.compress(encoded))
     sysroot = Path(subprocess.check_output(['rustc', '--print', 'sysroot'], text=True).strip())
     data = (sysroot / 'share/doc/rust/COPYRIGHT-library.html').read_bytes()
-    (ROOT / 'signatures/rust.NOTICE.html.gz').write_bytes(gzip.compress(data, mtime=0))
+    (ROOT / 'target/library-signatures/rust.NOTICE.html.gz').write_bytes(gzip_output.compress(data))

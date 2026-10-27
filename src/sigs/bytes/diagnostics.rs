@@ -1,4 +1,4 @@
-//! Reproducible samples of missed library names, using the checked-in ground truth.
+//! Reproducible samples of missed library names, using generated ground truth.
 
 use std::collections::BTreeMap;
 use std::fs;
@@ -12,7 +12,7 @@ use super::*;
 use crate::sigs::Certainty;
 
 fn fixture(name: &str) -> PathBuf {
-    let data = fs::read(format!("tests/library_signatures/{name}.gz")).unwrap();
+    let data = fs::read(format!("target/library-signatures/fixtures/{name}.gz")).unwrap();
     let mut bytes = Vec::new();
     GzDecoder::new(data.as_slice())
         .read_to_end(&mut bytes)
@@ -80,7 +80,7 @@ fn classify_missed_names() {
     let report = json!({"method":"Five evenly spaced misses by address in each architecture and optimization variant; first failing check wins.",
         "counts":counts, "samples":samples});
     let path = std::env::var("SIGNATURE_ANALYSIS_OUTPUT")
-        .unwrap_or_else(|_| "signatures/miss-analysis.json".to_owned());
+        .unwrap_or_else(|_| "target/library-signatures/miss-analysis.json".to_owned());
     fs::write(
         path,
         format!("{}\n", serde_json::to_string_pretty(&report).unwrap()),

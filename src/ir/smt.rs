@@ -6,12 +6,12 @@ use std::process::{Command, Stdio};
 
 use super::{BinOp, Cond, Expr, LaneOp, Operation, Stmt};
 
-mod extended_tests;
 mod floating;
 mod integer;
 mod inventory;
 mod program;
 mod render_tests;
+mod rewrite_tests;
 mod tests;
 
 pub(crate) const CONDITIONS: [Cond; 14] = [

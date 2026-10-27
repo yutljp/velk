@@ -3,7 +3,9 @@
     "musl": {
       "commit": "7813e9119eb5fe681b6750b8a033a0490bca0941",
       "license": "MIT; additional permissive notices retained",
-      "upstream": "https://git.musl-libc.org/git/musl"
+      "upstream": "https://git.musl-libc.org/git/musl",
+      "tree_sha256": "044b421347e1f7f18110aa10c27f3b16b2ca61b8e73bb43b4563eb4c88f2c764",
+      "submodule_tree_sha256": {}
     },
     "mbedtls": {
       "commit": "cac9589a97fb9d07a115b42fa10523bc226b5180",
@@ -16,17 +18,26 @@
       "uninitialized_submodules": {
         "tf-psa-crypto/drivers/pqcp/mldsa-native": "5772b4f4a0105694b1203abb582273f78fa951b7",
         "tf-psa-crypto/framework": "ced31491c5ec907a6be533512f19dc1779230ac1"
+      },
+      "tree_sha256": "8fb608ef0aae03cd48467119bd3cd002fb78bcca39d6ef76424698c060656cdb",
+      "submodule_tree_sha256": {
+        "framework": "a407570110ecf3ba1207668bc86f6bf40c9b384e29bab970966aa7ed2ab8ebb8",
+        "tf-psa-crypto": "fa2b717bdb5d077ca43d7bb0e79b8b8d4edd32e2cdd85dac0ed8c48200052634"
       }
     },
     "libsodium": {
       "commit": "60b751cd14418fae2d17e6f1003e43622b3e5a25",
       "license": "ISC",
-      "upstream": "https://github.com/jedisct1/libsodium"
+      "upstream": "https://github.com/jedisct1/libsodium",
+      "tree_sha256": "e06e4da5c76096ce17910166ea2a87afe2240ef89c53359358c1e772d32838ab",
+      "submodule_tree_sha256": {}
     },
     "openssl": {
       "commit": "828c39a508fb7f59af38508b242119b714b9c497",
       "license": "Apache-2.0",
-      "upstream": "https://github.com/openssl/openssl"
+      "upstream": "https://github.com/openssl/openssl",
+      "tree_sha256": "09637faa8d5b36d2c54ff12c6ca1ad0d5727825a1dc4f4fb8c68568420231256",
+      "submodule_tree_sha256": {}
     }
   },
   "compilers": {

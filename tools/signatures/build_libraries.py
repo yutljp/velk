@@ -2,7 +2,6 @@
 
 import argparse
 from concurrent.futures import ThreadPoolExecutor
-import gzip
 import hashlib
 import json
 import os
@@ -13,8 +12,10 @@ import sys
 
 sys.dont_write_bytecode = True
 
-ROOT = Path(__file__).resolve().parent.parent
-OUT = ROOT / 'target/library-signatures/extended'
+import gzip_output
+
+ROOT = Path(__file__).resolve().parents[2]
+OUT = ROOT / 'target/library-signatures/libraries'
 LEVELS = ('O0', 'O1', 'O2', 'O3', 'Os')
 TARGETS = {
     'x86_64': ('gcc', [], 'x86_64-linux-gnu', 'linux-x86_64', 'x86_64-unknown-linux-gnu'),
@@ -36,8 +37,9 @@ def output(args, directory=ROOT):
 
 
 def pack(path):
-    destination = ROOT / 'tests/library_signatures' / (path.name + '.gz')
-    destination.write_bytes(gzip.compress(path.read_bytes(), mtime=0))
+    destination = ROOT / 'target/library-signatures/fixtures' / (path.name + '.gz')
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    destination.write_bytes(gzip_output.compress(path.read_bytes()))
 
 
 def signatures(path, stem, accepted=None):
@@ -90,7 +92,7 @@ def build_c(library, arch, level, source):
         if not archive.exists():
             run([source / 'configure', '--disable-shared', '--disable-wrapper', '--enable-optimize=',
                  f'--target={host}', 'AR=ar', 'RANLIB=ranlib', f'CC={cc}', f'CFLAGS={" ".join(flags)}'], directory, log)
-            run(['make', '-j5', 'AR=ar', 'RANLIB=ranlib', 'lib/libc.a', 'obj/crt/crt1.o', 'obj/crt/crti.o', 'obj/crt/crtn.o',
+            run(['make', '-j2', 'AR=ar', 'RANLIB=ranlib', 'lib/libc.a', 'obj/crt/crt1.o', 'obj/crt/crti.o', 'obj/crt/crtn.o',
                  f'CFLAGS={" ".join(flags)}'], directory, log)
         archives = [archive]
         includes = ['-nostdinc', '-I', directory / 'obj/include', '-I', source / 'arch' / ('i386' if arch == 'i386' else {'arm32':'arm'}.get(arch, arch)), '-I', source / 'arch/generic', '-I', source / 'include']
@@ -105,7 +107,7 @@ def build_c(library, arch, level, source):
                  f'-DCMAKE_C_FLAGS={" ".join(flags)}', '-DCMAKE_BUILD_TYPE=', '-DCMAKE_SYSTEM_NAME=Linux', '-DCMAKE_POLICY_VERSION_MINIMUM=3.5',
                  '-DENABLE_TESTING=OFF', '-DENABLE_PROGRAMS=OFF', '-DMBEDTLS_FATAL_WARNINGS=OFF',
                  '-DTF_PSA_CRYPTO_FATAL_WARNINGS=OFF', f'-DPython3_EXECUTABLE={wrapper}'], directory, log)
-            run(['cmake', '--build', directory, '-j5'], directory, log)
+            run(['cmake', '--build', directory, '-j2'], directory, log)
         archives = [archive, directory / 'library/libmbedx509.a', directory / 'tf-psa-crypto/core/libtfpsacrypto.a']
         includes = ['-I', source / 'include', '-I', source / 'tf-psa-crypto/include', '-I', source / 'tf-psa-crypto/drivers/builtin/include']
         link = [*archives, '-lpthread']
@@ -116,7 +118,7 @@ def build_c(library, arch, level, source):
             (directory / 'apps/include').mkdir(parents=True, exist_ok=True)
             run(['perl', source / 'Configure', openssl_target, 'no-shared', 'no-tests', 'no-apps', 'no-asm',
                  'no-module', f'CC={cc}', *flags], directory, log)
-            run(['make', '-j5', 'build_libs'], directory, log)
+            run(['make', '-j2', 'build_libs'], directory, log)
         archives = [archive]
         includes = ['-I', directory / 'include', '-I', source / 'include']
         link = [archive, '-ldl', '-lpthread']
@@ -140,7 +142,7 @@ def build_c(library, arch, level, source):
                                  *[f'-D{d}=1' for d in defines], '-DTLS=_Thread_local', '-I', directory / 'include', '-I', directory / 'include/sodium',
                                  '-I', source / 'src/libsodium/include', '-I', source / 'src/libsodium/include/sodium',
                                  '-c', path, '-o', obj])
-            with ThreadPoolExecutor(max_workers=5) as pool:
+            with ThreadPoolExecutor(max_workers=2) as pool:
                 list(pool.map(lambda command: run(command, directory, log), commands))
             run(['ar', 'rcsD', archive, *objects], directory, log)
         archives = [archive]
@@ -153,7 +155,7 @@ def build_c(library, arch, level, source):
         entries.extend(signatures(archive, f'{stem}.{index}'))
     executable = OUT / (stem + '.elf')
     run([cc, *flags, '-static', '-no-pie', '-Wl,--build-id=none', *includes,
-         ROOT / f'signatures/programs/{library}.c', *link, '-o', executable], directory, log)
+         ROOT / f'tools/signatures/programs/{library}.c', *link, '-o', executable], directory, log)
     save_fixture(executable, names, stem)
     return entries
 
@@ -166,8 +168,8 @@ def build_rust(arch, level):
     linker.write_text(f'#!/bin/sh\nexec {cc} {" ".join(flags)} "$@"\n')
     linker.chmod(0o755)
     rust_sources = Path(output(['rustc', '--print', 'sysroot'])) / 'lib/rustlib/src/rust'
-    run(['rustc', ROOT / 'signatures/programs/rust.rs', '--edition=2024', '--target', target,
-         '--remap-path-prefix', f'{ROOT}=.', '--remap-path-prefix', f'{rust_sources}=rust', '-C', f'opt-level={level[1:]}', '-C', f'linker={linker}', '-C', 'target-feature=+crt-static',
+    run(['rustc', ROOT / 'tools/signatures/programs/rust.rs', '--edition=2024', '--target', target,
+         '--remap-path-prefix', f'{ROOT}=.', '--remap-path-prefix', f'{ROOT / "tools/signatures/programs"}=./signatures/programs', '--remap-path-prefix', f'{rust_sources}=rust', '-C', f'opt-level={level[1:]}', '-C', f'linker={linker}', '-C', 'target-feature=+crt-static',
          '-C', 'relocation-model=static', '-C', 'force-unwind-tables=yes', '-C', 'link-arg=-Wl,--build-id=none',
          '-o', executable], ROOT, OUT / 'rust.log')
     names = {name for name in text_symbols(executable) if name.startswith(('_R', '_ZN'))}
@@ -195,7 +197,7 @@ def build_rust(arch, level):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('sources', type=Path, help='directory containing the four pinned source clones')
+    parser.add_argument('sources', nargs='?', type=Path, default=ROOT / 'target/library-signatures/sources', help='directory containing the pinned source checkouts')
     parser.add_argument('--library', choices=['musl', 'mbedtls', 'libsodium', 'openssl', 'rust'])
     parser.add_argument('--arch', choices=TARGETS)
     parser.add_argument('--level', choices=LEVELS)
@@ -207,10 +209,10 @@ def main():
         wrapper = OUT / 'tools' / name
         wrapper.write_text('#!/bin/sh\nexec uv run --no-project /usr/bin/python3 \"$@\"\n')
         wrapper.chmod(0o755)
-    manifest_path = ROOT / 'signatures/extended-sources.json'
+    manifest_path = ROOT / 'tools/signatures/library_sources.json'
     manifest = json.loads(manifest_path.read_text())
     for name, expected in manifest['reference_sources'].items():
-        path = ROOT / 'signatures/sources' / name
+        path = args.sources / 'references/memcmp.c'
         if hashlib.sha256(path.read_bytes()).hexdigest() != expected:
             raise SystemExit(f'wrong reference source checksum: {name}')
     for tool, expected in manifest['compilers'].items():
@@ -232,7 +234,7 @@ def main():
         source = args.sources.resolve() / library
         if output(['git', 'rev-parse', 'HEAD'], source) != record['commit']:
             raise SystemExit(f'wrong source commit: {library}')
-        if output(['git', 'status', '--porcelain', '--untracked-files=no'], source):
+        if output(['git', 'status', '--porcelain', '--untracked-files=all'], source):
             raise SystemExit(f'modified source files: {library}')
         for relative, commit in record.get('submodules', {}).items():
             if output(['git', 'rev-parse', 'HEAD'], source / relative) != commit:
@@ -245,20 +247,23 @@ def main():
     local_openssl = OUT / 'openssl-source'
     if not local_openssl.exists():
         shutil.copytree(args.sources.resolve() / 'openssl', local_openssl, ignore=shutil.ignore_patterns('.git', '.env*', '*.pem', 'id_rsa', 'credentials.*', 'secrets.*', 'idapro.hexlic'))
-    import notices
-    notices.write(args.sources.resolve())
+    import collect_notices
+    collect_notices.write(args.sources.resolve())
     for arch in ([args.arch] if args.arch else TARGETS):
         for level in ([args.level] if args.level else LEVELS):
             for library in ([args.library] if args.library else ['musl', 'mbedtls', 'libsodium', 'openssl', 'rust']):
                 stem = f'{library}.{arch}.{level}'
                 cache = OUT / (stem + '.entries.json')
-                if args.refresh_signatures or not cache.exists():
+                fixture_dir = ROOT / 'target/library-signatures/fixtures'
+                fixtures = [fixture_dir / (stem + suffix + '.gz')
+                            for suffix in ('.elf', '.stripped.elf', '.truth.json')]
+                if args.refresh_signatures or not cache.exists() or not all(path.exists() for path in fixtures):
                     print(f'Building {stem}', flush=True)
                     entries = build_rust(arch, level) if library == 'rust' else build_c(library, arch, level, local_mbedtls if library == 'mbedtls' else local_openssl if library == 'openssl' else args.sources.resolve() / library)
                     cache.write_text(json.dumps(entries, separators=(',', ':')))
                 print(f'{stem}: {len(json.loads(cache.read_text()))} signatures', flush=True)
-    import pack
-    pack.main()
+    import pack_database
+    pack_database.main()
 
 
 if __name__ == '__main__':

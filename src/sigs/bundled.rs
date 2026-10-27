@@ -149,7 +149,7 @@ mod tests {
     #[test]
     fn compact_sets_match_manifest_and_stay_within_budget() {
         let manifest: serde_json::Value =
-            serde_json::from_str(include_str!("../../signatures/sets.json")).unwrap();
+            serde_json::from_str(include_str!("../../tools/signatures/sets.json")).unwrap();
         for isa in [Isa::X86_64, Isa::AArch64, Isa::I386, Isa::Arm32] {
             let database = for_isa(isa);
             let arch = match isa {

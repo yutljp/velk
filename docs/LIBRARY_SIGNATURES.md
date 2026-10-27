@@ -38,13 +38,13 @@ xxHash 0.8.3's scalar XXH32/XXH64 implementation. They cover x86-64, AArch64,
 x86-32 and little-endian A32 ARM with Clang 21 at O0, O1, O2, O3 and Os. xxHash is built with
 `XXH_NO_STREAM` and `XXH_NO_XXH3`; zlib uses `Z_SOLO`, with `NO_DIVIDE` on the
 32-bit targets. The script records the exact compiler package and input hashes
-in [sources.json](../signatures/sources.json). Additional sets contain musl, mbedTLS (including TF-PSA-Crypto), libsodium and
+in [sources.json](../tools/signatures/sources.json). Additional sets contain musl, mbedTLS (including TF-PSA-Crypto), libsodium and
 OpenSSL libcrypto at the exact source revisions in
-[extended-sources.json](../signatures/extended-sources.json). Their static archives
+[library_sources.json](../tools/signatures/library_sources.json). Their static archives
 are built with GCC 15.2 for the same four architectures and five optimization
 levels. OpenSSL uses `no-asm`, `no-shared`, `no-module`, `no-tests` and `no-apps`;
 libsodium uses portable C implementations, with the configuration in
-[extended.py](../signatures/extended.py). mbedTLS uses its default configuration;
+[build_libraries.py](../tools/signatures/build_libraries.py). mbedTLS uses its default configuration;
 the unused ML-DSA submodule is absent.
 
 Rust programs exercise strings, formatting, vectors, maps, sets, paths, I/O,
@@ -92,17 +92,17 @@ code bytes are not searched for names.
 Go names come from its runtime function tables; no Go signature set is added.
 Rust symbols and debug information are used when present. Stripped Rust can use
 the instruction sets described above. The existing stripped Rust fixture is
-measured separately in [rust-measurement.json](../signatures/rust-measurement.json).
+measured separately; its counts are listed below.
 
 ## Sources, licenses and rebuilding
 
 The executable embeds four compressed byte arrays, one per architecture. Only
 the selected architecture is decoded, once per process. Opening a binary whose
 functions are all named defers this load until explicit identification is
-requested. There is no runtime download. [sets.json](../signatures/sets.json)
+requested. There is no runtime download. [sets.json](../tools/signatures/sets.json)
 records the compressed sizes, entry counts, source commits and licenses of every build.
 The selected embedded subset is limited to 2 MiB by the packer and a unit test.
-[selection.json](../signatures/selection.json) records the selected sets and the
+[selection.json](../tools/signatures/selection.json) records the selected sets and the
 coverage estimates from the full-database measurements at each selection step.
 The final embedded subset is measured separately. Entries with unavailable
 callees are removed recursively before selection; body aliases and available
@@ -116,7 +116,7 @@ it is not stored in the repository. `--signatures` and the JavaScript/MCP
 `target/library-signatures/defaults.json.gz` contains the embedded entries;
 a test compares every field with the compact data when that file is available.
 The manifest counts and the 2 MiB limit are checked on every test run.
-Full-database measurement tests run when the generated full database is present;
+When the corpus tests are explicitly included, full-database measurements run when the generated full database is present;
 otherwise they measure only the embedded sets.
 
 License notices and upstream copyright comments accompany the data:
@@ -137,32 +137,40 @@ addresses works based on the library; these sets contain normalized machine code
 No permission to redistribute such signatures independently of those obligations
 was established.
 
-Rebuilding requires the compiler packages in the manifests, LLVM strip, LLD,
-CMake, Make, Perl, uv and Python with Jinja2. Set `LIBRARY_SOURCES` to a directory
-containing clean `musl`, `mbedtls`, `libsodium` and `openssl` checkouts at the recorded
-commits. The mbedTLS framework and TF-PSA-Crypto checkouts must also match the
-manifest. The framework at the same recorded commit is reused for TF-PSA-Crypto.
-No network access is needed once those sources and tools are present.
+The `signatures` Compose service uses the reference Dockerfile with the compiler
+versions recorded in the manifests. The scripts reject different tool versions.
+Sources are fetched at build time into `target/library-signatures/sources`.
+The source manifest records URLs, commits and SHA-256 hashes: individual files for
+zlib/xxHash and Git tree listings (including submodule entries) for the other
+libraries. Existing checkouts must be clean. The local `include/string.h` supplies
+only declarations for freestanding compilation.
 
 ```sh
-CARGO_BUILD_JOBS=5 CARGO_PROFILE_RELEASE_INCREMENTAL=true cargo build --release
-UV_CACHE_DIR=target/uv-cache uv run --no-project python signatures/rebuild.py "$LIBRARY_SOURCES"
-CARGO_BUILD_JOBS=5 CARGO_PROFILE_RELEASE_INCREMENTAL=true cargo build --release
-CARGO_BUILD_JOBS=5 CARGO_PROFILE_RELEASE_INCREMENTAL=true VELK_BLESS=1 cargo test --release --test library_signatures -- --test-threads 5
+docker compose run --rm signatures
+cargo test --release --test library_signatures -- --include-ignored --test-threads 3
 ```
 
-The first build supplies the signature builder. The script verifies source
-checksums, commits and compiler versions, builds the archives and static test
-programs, and saves stripped and unstripped fixtures as deterministic gzip files
-in `tests/library_signatures/`. Reference files keep symbols but omit debug
-sections. Source paths are remapped during compilation, including Rust source
-locations from the installed sysroot. OpenSSL uses relative source names and
-`SOURCE_DATE_EPOCH=0` for its build date. The second build embeds
-the rebuilt data. Use a clean `target/library-signatures/extended` directory when
-changing the script, flags or source revisions; completed builds are cached there.
-Use `--refresh-signatures` when only the signature builder changed. After measuring
-the full database, `UV_CACHE_DIR=target/uv-cache uv run --no-project python signatures/pack.py --select`
-chooses the embedded sets again; rebuild and rerun measurements afterwards.
+The first command builds the signature builder, fetches the sources, verifies
+versions and hashes, and builds the archives, static programs and full database.
+All generated files stay under `target/library-signatures/`, including compressed
+reference, stripped and symbol-map files in `fixtures/`. The repository keeps the
+40 zlib/xxHash variants (80 compressed files, 134,185 bytes) for default tests.
+The native Adler-32 comparison links the system zlib development library.
+The two tests that require the complete corpus are ignored by default; generate
+it before running them with `--include-ignored`.
+
+Reference files keep symbols but omit debug sections. Compilation remaps source
+paths, including Rust sysroot paths. OpenSSL uses relative source names and
+`SOURCE_DATE_EPOCH=0`. Completed library builds are cached in
+`target/library-signatures/libraries`; remove that directory when changing build
+flags or source revisions. `build_libraries.py --refresh-signatures` reuses cached
+archives when only the signature builder changes. Tests write counts and set
+coverage under `target/library-signatures/`, without blessing repository files.
+`pack_database.py --select` writes a proposed selection there after full-database
+measurement. The packer writes `*.bin.gz`, `sets.json` and databases there too.
+To update embedded data, review and copy the generated byte arrays and notice files into
+`signatures/` and the manifests into `tools/signatures/`, then rebuild and test.
+
 To load the rebuilt full database:
 
 ```sh
@@ -171,15 +179,13 @@ velk -f app --no-default-signatures --signatures target/library-signatures/libra
 
 ## Measurements
 
-[measurements.json](../signatures/measurements.json) records the zlib/xxHash results.
-[extended-measurements.json](../signatures/extended-measurements.json) records embedded results;
-[full-measurements.json](../signatures/full-measurements.json) records full-database results. Both record
-correct, wrong and missed names for every additional library, architecture and
-optimization level (100 combinations). Ground truth
+The tests write zlib/xxHash, embedded and full-database counts under
+`target/library-signatures/`. The additional libraries cover 100 combinations of
+library, architecture and optimization level. Ground truth
 is every library function symbol in the unstripped executable, including local
 helpers and functions too short to match. Each recovered name is compared at its
 address with the symbol table; wrapper functions are also checked for false names.
-The measurement test rejects any wrong name and checks the recorded counts.
+The measurement test rejects any wrong name. The tables below retain the recorded conclusions; generated counts are not repository snapshots.
 It also checks CLI, JavaScript and MCP evidence, disabled defaults, ambiguity
 after adding aliases, and generated C against zlib's result on native x86-64.
 
@@ -192,12 +198,14 @@ excluded from the standard library sets. The test also checks recovered names
 outside each library against all reference symbols.
 
 Native x86-64 fixtures run at all five levels. The generated C for musl `memcmp`
-and zlib Adler-32 is compiled and compared with their source implementations on
+is compiled against its fetched source; zlib Adler-32 is compared with the system zlib on
 10,000 inputs each. Cross-architecture measurements check names and addresses;
-they do not execute the binaries. This environment rejects 32-bit execution with
-SIGSYS and has no ARM emulator.
+they do not execute the binaries. The cross-architecture tests do not require an emulator.
 
-Across the 20 variants of each library, the recorded totals are:
+The 20 zlib variants have 26 correct names, 62 missed and no wrong names;
+the 20 xxHash variants have 114 correct, 130 missed and no wrong names.
+
+Across the 20 variants of each additional library, the recorded totals are:
 
 | Library | Embedded correct | Full correct | Full missed | Wrong |
 | --- | ---: | ---: | ---: | ---: |
@@ -214,9 +222,8 @@ rules above. Clean rebuilds of one variant of each new library produced identica
 signature entries and compressed reference, stripped and symbol-map files;
 the other variants were not rebuilt from scratch a second time.
 
-[miss-analysis.json](../signatures/miss-analysis.json) records 100 sampled misses
-per library, five evenly spaced addresses in each architecture/optimization
-variant. It uses the baseline database and records the first failing check.
+The miss sample contains 100 misses per library, five evenly spaced addresses
+in each architecture/optimization variant. It records the first failing check.
 The samples distinguish missing starts, short bodies, unsupported PC-relative
 operands, missing entries, excluded Rust names and call confirmation. Body
 differences without a demonstrated cause remain unclassified; compiler flags,
@@ -264,3 +271,8 @@ Counts sum the five optimization levels. Every wrong count is zero.
 | rust | arm32 | 24 | 24 | 3,814 |
 
 The size budget prioritizes x86-64 and AArch64. The 32-bit targets retain the smaller mandatory sets; load the full database for broader coverage. The existing stripped Rust fixture has 3 correct names and 542 missed with either database.
+
+A recorded latency run used one warm-up and 15 samples per executable. Median
+single-function times with embedded signatures were 0.646 seconds for
+`go_probe main.main` and 0.076 seconds for `rust_probe rust_probe::main`.
+These timings describe that run, rather than a limit for other machines.

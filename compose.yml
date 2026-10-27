@@ -18,6 +18,26 @@ x-reference: &reference
   working_dir: /work
 
 services:
+  signatures:
+    <<: *reference
+    build:
+      context: ./docker
+      args:
+        UBUNTU_VERSION: "resolute-20260421@sha256:f3d28607ddd78734bb7f71f117f3c6706c666b8b76cbff7c9ff6e5718d46ff64"
+        UV_VERSION: "0.13.5"
+        CLANG_MAJOR: "21"
+        RUST_VERSION: "1.99.1"
+        GO_VERSION: "1.23.4"
+        SIGNATURE_BUILD: "1"
+    image: velk-signatures:ubuntu26.04-clang21-rust1.99
+    volumes:
+      - .:/work
+    environment:
+      CARGO_BUILD_JOBS: "2"
+      CARGO_PROFILE_RELEASE_INCREMENTAL: "true"
+      UV_CACHE_DIR: /work/target/uv-cache
+    command: ["sh", "-ec", "cargo build --release; uv run --no-project python tools/signatures/fetch_sources.py --all; uv run --no-project python tools/signatures/build_fixtures.py"]
+
   fixtures:
     <<: *reference
     volumes:

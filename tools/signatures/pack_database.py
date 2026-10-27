@@ -8,9 +8,11 @@ import struct
 import sys
 from collections import defaultdict, deque
 
-ROOT = Path(__file__).resolve().parent.parent
+import gzip_output
+
+ROOT = Path(__file__).resolve().parents[2]
 GENERATED = ROOT / 'target/library-signatures'
-OUT = GENERATED / 'extended'
+OUT = GENERATED / 'libraries'
 
 
 def blob(value):
@@ -85,14 +87,16 @@ def select(database):
         parts = defaultdict(list)
         for index in indices:
             parts[entries[index]['isa']].append(entries[index])
-        return sum(len(gzip.compress(compact(part), compresslevel=level, mtime=0)) for part in parts.values())
+        return sum(len(gzip_output.compress(compact(part), compresslevel=level)) for part in parts.values())
 
-    path = ROOT / 'signatures/selection.json'
+    path = ROOT / 'tools/signatures/selection.json'
+    if '--select' in sys.argv:
+        path = GENERATED / 'selection.json'
     if '--select' not in sys.argv:
         selection = json.loads(path.read_text())
         return closure(set().union(*(by_set[name] & eligible for name in selection['sets'])))
     coverage = {name: set(matches) for name, matches in
-                json.loads((ROOT / 'signatures/set-coverage.json').read_text()).items()}
+                json.loads((ROOT / 'target/library-signatures/set-coverage.json').read_text()).items()}
     mandatory = {name for name in by_set if name.startswith(('zlib-', 'xxhash-', 'rust.'))}
     chosen = set(mandatory)
     selected = closure(set().union(*(by_set[name] & eligible for name in chosen)))
@@ -144,7 +148,7 @@ def main():
     available = {path.name.removesuffix('.entries.json') for path in OUT.glob('*.entries.json')}
     if expected != available:
         raise SystemExit(f'incomplete library builds: missing {sorted(expected - available)}; unexpected {sorted(available - expected)}')
-    manifest = json.loads((ROOT / 'signatures/extended-sources.json').read_text())
+    manifest = json.loads((ROOT / 'tools/signatures/library_sources.json').read_text())
     sets = {}
     for path in sorted(OUT.glob('*.entries.json')):
         stem = path.name.removesuffix('.entries.json')
@@ -153,28 +157,28 @@ def main():
         database['entries'].extend(entries)
         database['sources'].append(stem)
         sets[stem] = {'library': library, 'arch': arch, 'optimization': level,
-                      'provenance': 'extended-sources.json',
+                      'provenance': 'library_sources.json',
                       'source_commit': manifest['rust'].split('commit-hash: ')[1].splitlines()[0]
                           if library == 'rust' else manifest['libraries'][library]['commit'],
                       'license': 'MIT OR Apache-2.0' if library == 'rust' else manifest['libraries'][library]['license'],
                       'entries': len(entries), 'set_ids': sorted({entry['set'] for entry in entries})}
     database['entries'].sort(key=lambda e: (e['set'], e['name'], e['bytes']))
     data = json.dumps(database, sort_keys=True, separators=(',', ':')).encode()
-    (GENERATED / 'libraries.json.gz').write_bytes(gzip.compress(data, mtime=0))
+    (GENERATED / 'libraries.json.gz').write_bytes(gzip_output.compress(data))
     selected = select(database)
     defaults = dict(database, entries=[entry for index, entry in enumerate(database['entries']) if index in selected])
-    (GENERATED / 'defaults.json.gz').write_bytes(gzip.compress(
-        json.dumps(defaults, sort_keys=True, separators=(',', ':')).encode(), mtime=0))
+    (GENERATED / 'defaults.json.gz').write_bytes(gzip_output.compress(
+        json.dumps(defaults, sort_keys=True, separators=(',', ':')).encode()))
     sizes = {}
     for arch, isa in [('x86_64','x86_64'), ('aarch64','aarch64'), ('i386','i386'), ('arm32','arm32')]:
         entries = [e for e in defaults['entries'] if e['isa'] == isa]
         binary = compact(entries)
-        compressed = gzip.compress(binary, mtime=0)
-        (ROOT / f'signatures/{arch}.bin.gz').write_bytes(compressed)
+        compressed = gzip_output.compress(binary)
+        (GENERATED / f'{arch}.bin.gz').write_bytes(compressed)
         sizes[arch] = {'entries': len(entries), 'compressed_bytes': len(compressed), 'uncompressed_bytes': len(binary)}
     if sum(part['compressed_bytes'] for part in sizes.values()) > 2 * 1024 * 1024:
-        raise SystemExit('embedded signatures exceed 2 MiB; rerun pack.py --select after measuring')
-    (ROOT / 'signatures/sets.json').write_text(json.dumps({'sets':sets,'embedded':sizes,'sha256':{str(path.relative_to(ROOT)): hashlib.sha256(path.read_bytes()).hexdigest() for path in sorted((ROOT / 'signatures').glob('*.py')) + sorted((ROOT / 'signatures/programs').glob('*'))}}, indent=2)+'\n')
+        raise SystemExit('embedded signatures exceed 2 MiB; rerun pack_database.py --select after measuring')
+    (GENERATED / 'sets.json').write_text(json.dumps({'sets':sets,'embedded':sizes,'sha256':{str(path.relative_to(ROOT)): hashlib.sha256(path.read_bytes()).hexdigest() for path in sorted((ROOT / 'tools/signatures').glob('*.py')) + sorted((ROOT / 'tools/signatures/programs').glob('*'))}}, indent=2)+'\n')
     print(json.dumps(sizes, indent=2))
 
 

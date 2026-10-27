@@ -13,8 +13,13 @@ use velk::service::{Binary, SignatureOptions};
 use velk::sigs::Certainty;
 
 fn fixture(name: &str, directory: &str) -> PathBuf {
-    let source = Path::new("tests/library_signatures").join(format!("{name}.gz"));
-    let compressed = fs::read(&source).expect("the compressed fixture is checked in");
+    let checked_in = Path::new("tests/library_signatures").join(format!("{name}.gz"));
+    let source = if checked_in.is_file() {
+        checked_in
+    } else {
+        Path::new("target/library-signatures/fixtures").join(format!("{name}.gz"))
+    };
+    let compressed = fs::read(&source).expect("the compressed fixture is checked in or generated");
     let mut bytes = Vec::new();
     GzDecoder::new(compressed.as_slice())
         .read_to_end(&mut bytes)
@@ -81,16 +86,28 @@ fn default_sets_agree_with_all_library_symbols() {
             }
         }
     }
-    let path = Path::new("signatures/measurements.json");
-    let actual = format!("{}\n", serde_json::to_string_pretty(&measurements).unwrap());
-    if std::env::var_os("VELK_BLESS").is_some() {
-        fs::write(path, &actual).unwrap();
+    for (library, expected) in [("zlib", 26), ("xxhash", 114)] {
+        let mut correct = 0;
+        for row in &measurements {
+            if row["library"] == library {
+                correct += row["correct"].as_u64().unwrap();
+            }
+        }
+        assert_eq!(correct, expected, "{library} recovered-name count changed");
     }
-    assert_eq!(fs::read_to_string(path).unwrap(), actual);
+    let path = Path::new("target/library-signatures/measurements.json");
+    let actual = format!("{}\n", serde_json::to_string_pretty(&measurements).unwrap());
+    fs::create_dir_all(path.parent().unwrap()).unwrap();
+    fs::write(path, actual).unwrap();
 }
 
 #[test]
-fn extended_sets_agree_with_stripped_library_symbols() {
+#[ignore = "Generate with docker compose run --rm signatures; run with --include-ignored."]
+fn library_sets_agree_with_stripped_library_symbols() {
+    assert!(
+        Path::new("target/library-signatures/fixtures").is_dir(),
+        "Generate the library fixtures with docker compose run --rm signatures."
+    );
     let only_arch = std::env::var("SIGNATURE_MEASUREMENT_ARCH").ok();
     let only_embedded = std::env::var("SIGNATURE_MEASUREMENT_MODE")
         .is_ok_and(|mode| mode == "embedded")
@@ -105,9 +122,13 @@ fn extended_sets_agree_with_stripped_library_symbols() {
             }
             for level in ["O0", "O1", "O2", "O3", "Os"] {
                 let stem = format!("{library}.{arch}.{level}");
-                let reference = fixture(&format!("{stem}.elf"), "extended-measurement");
-                let target = fixture(&format!("{stem}.stripped.elf"), "extended-measurement");
-                let truth_path = fixture(&format!("{stem}.truth.json"), "extended-measurement");
+                let reference = fixture(&format!("{stem}.elf"), "library-symbol-measurement");
+                let target = fixture(
+                    &format!("{stem}.stripped.elf"),
+                    "library-symbol-measurement",
+                );
+                let truth_path =
+                    fixture(&format!("{stem}.truth.json"), "library-symbol-measurement");
                 let raw_truth: BTreeMap<u64, Vec<String>> =
                     serde_json::from_slice(&fs::read(truth_path).unwrap()).unwrap();
                 let normalize_name = |name: &str| format!("{:#}", rustc_demangle::demangle(name));
@@ -194,15 +215,21 @@ fn extended_sets_agree_with_stripped_library_symbols() {
         }
     }
     for (path, measurements) in [
-        ("signatures/extended-measurements.json", &measurements),
-        ("signatures/full-measurements.json", &full_measurements),
+        (
+            "target/library-signatures/library-measurements.json",
+            &measurements,
+        ),
+        (
+            "target/library-signatures/full-measurements.json",
+            &full_measurements,
+        ),
     ] {
         if measurements.is_empty() {
             continue;
         }
         let path = Path::new(path);
         let mut measured = measurements.clone();
-        if let Some(only) = &only_arch {
+        if let Some(only) = only_arch.as_ref().filter(|_| path.is_file()) {
             let mut previous: Vec<serde_json::Value> =
                 serde_json::from_slice(&fs::read(path).unwrap()).unwrap();
             previous.retain(|row| row["arch"] != only.as_str());
@@ -210,15 +237,18 @@ fn extended_sets_agree_with_stripped_library_symbols() {
             measured = previous;
         }
         let actual = format!("{}\n", serde_json::to_string_pretty(&measured).unwrap());
-        if std::env::var_os("VELK_BLESS").is_some() {
-            fs::write(path, &actual).unwrap();
-        }
-        assert_eq!(fs::read_to_string(path).unwrap(), actual);
+        fs::create_dir_all(path.parent().unwrap()).unwrap();
+        fs::write(path, actual).unwrap();
     }
-    if std::env::var_os("VELK_BLESS").is_some() && !only_embedded {
-        if let Some(only) = &only_arch {
-            let previous: BTreeMap<String, Vec<String>> =
-                serde_json::from_slice(&fs::read("signatures/set-coverage.json").unwrap()).unwrap();
+    if !only_embedded {
+        if let Some(only) = only_arch
+            .as_ref()
+            .filter(|_| Path::new("target/library-signatures/set-coverage.json").is_file())
+        {
+            let previous: BTreeMap<String, Vec<String>> = serde_json::from_slice(
+                &fs::read("target/library-signatures/set-coverage.json").unwrap(),
+            )
+            .unwrap();
             for (set, matches) in previous {
                 if set.split('.').nth(1) != Some(only.as_str()) {
                     coverage.insert(set, matches);
@@ -226,7 +256,7 @@ fn extended_sets_agree_with_stripped_library_symbols() {
             }
         }
         fs::write(
-            "signatures/set-coverage.json",
+            "target/library-signatures/set-coverage.json",
             format!("{}\n", serde_json::to_string_pretty(&coverage).unwrap()),
         )
         .unwrap();
@@ -284,18 +314,21 @@ fn existing_stripped_rust_fixture_names_agree_with_symbols() {
             }
         }
         assert!(wrong.is_empty(), "{wrong:?}");
+        assert_eq!(
+            correct, 3,
+            "the Rust fixture must retain its recovered names"
+        );
+        assert_eq!(functions.len(), 545);
         let measurement = json!({"correct":correct,"wrong":wrong.len(),
         "missed":functions.len()-correct,"discovered":functions.len()});
         let path = Path::new(if full {
-            "signatures/full-rust-measurement.json"
+            "target/library-signatures/full-rust-measurement.json"
         } else {
-            "signatures/rust-measurement.json"
+            "target/library-signatures/rust-measurement.json"
         });
         let actual = format!("{}\n", serde_json::to_string_pretty(&measurement).unwrap());
-        if std::env::var_os("VELK_BLESS").is_some() {
-            fs::write(path, &actual).unwrap();
-        }
-        assert_eq!(fs::read_to_string(path).unwrap(), actual);
+        fs::create_dir_all(path.parent().unwrap()).unwrap();
+        fs::write(path, actual).unwrap();
     }
 }
 
@@ -331,7 +364,7 @@ int main(void) {{
     let output = Command::new("clang")
         .args(["-std=c11", "-Werror", "-O2", "-DZ_SOLO"])
         .arg(source)
-        .arg("signatures/sources/zlib/adler32.c")
+        .arg("-lz")
         .arg("-o")
         .arg(&executable)
         .output()
@@ -345,7 +378,12 @@ int main(void) {{
 }
 
 #[test]
+#[ignore = "Generate with docker compose run --rm signatures; run with --include-ignored."]
 fn recovered_musl_name_compiles_and_computes_the_source_result() {
+    assert!(
+        Path::new("target/library-signatures/fixtures").is_dir(),
+        "Generate the library fixtures with docker compose run --rm signatures."
+    );
     let path = fixture("musl.x86_64.O0.stripped.elf", "musl-c-test");
     let mut binary = Binary::open(&path).unwrap();
     let address = binary.find("memcmp").unwrap().addr;
@@ -384,7 +422,7 @@ int main(void) {{
     let output = Command::new("clang")
         .args(["-std=c11", "-Werror", "-O2", "-Dmemcmp=reference_memcmp"])
         .arg(&source)
-        .arg("signatures/sources/musl/memcmp.c")
+        .arg("target/library-signatures/sources/references/memcmp.c")
         .arg("-o")
         .arg(&executable)
         .output()

@@ -268,7 +268,7 @@ by the finite acyclic templates. FP exception flags, dynamic rounding modes
 and processor-specific NaN payload selection are not modeled. Floating
 arithmetic folds that produce NaNs remain deliberately unfurled.
 
-New proof entry points are `extended_tests` and `program` under `ir::smt`,
+New proof entry points are `rewrite_tests` and `program` under `ir::smt`,
 `division::smt_tests`, `division::proof::smt_tests`, the architecture lowering
 SMT tests, and `compiled_assignments_and_return_conversions_are_equivalent`.
 Every solver test must submit at least one nontrivial obligation. Zero-count

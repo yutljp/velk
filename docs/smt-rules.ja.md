@@ -242,7 +242,7 @@ volatile とフォルトを伴うメモリ、ABI 捕捉、呼び出し側の安�
 動的丸めモード、プロセッサ固有の NaN ペイロード選択も扱いません。結果が NaN となる
 浮動小数点演算の畳み込みは引き続き行いません。
 
-新しい入口は `ir::smt` の `extended_tests` と `program`、`division::smt_tests`、
+新しい入口は `ir::smt` の `rewrite_tests` と `program`、`division::smt_tests`、
 `division::proof::smt_tests`、各アーキテクチャの SMT テスト、
 `compiled_assignments_and_return_conversions_are_equivalent` です。
 各ソルバーテストは少なくとも 1 件の非自明な証明条件を提出する必要があります。

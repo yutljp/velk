@@ -13,7 +13,6 @@
     "xxhash": "BSD-2-Clause"
   },
   "sha256": {
-    "include/string.h": "911f37ea9217af28fb0017cb4b0e02d85eca4be35dbd87a1ad20738529936543",
     "xxhash/xxhash.c": "5c3591fe6e6c86a619eb26760e9520e37a6fd5152882ab5ad93f912e2a855966",
     "xxhash/xxhash.h": "17973c0dc49d9854ca26caa191f0e12f7a424b68858d9a78de3860d959d85e4b",
     "zlib/adler32.c": "9cd1443a24ff2a3053961695bd432035c58347386a420d3388232376ebabe211",
@@ -24,5 +23,15 @@
   "tools": {
     "ld.lld": "Ubuntu LLD 21.1.8 (compatible with GNU linkers)",
     "llvm-strip": "llvm-strip, compatible with GNU strip\nUbuntu LLVM version 21.1.8\n  Optimized build."
+  },
+  "repositories": {
+    "zlib": {
+      "url": "https://github.com/madler/zlib",
+      "commit": "da607da739fa6047df13e66a2af6b8bec7c2a498"
+    },
+    "xxhash": {
+      "url": "https://github.com/Cyan4973/xxHash",
+      "commit": "e626a72bc2321cd320e953a0ccf1584cad60f363"
+    }
   }
 }

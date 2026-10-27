@@ -1,7 +1,6 @@
 #!/usr/bin/env -S uv run --no-project python
 """Rebuild embedded sets and stripped, statically linked measurement fixtures."""
 
-import gzip
 import hashlib
 import json
 from pathlib import Path
@@ -10,9 +9,11 @@ import sys
 
 sys.dont_write_bytecode = True
 
-ROOT = Path(__file__).resolve().parent.parent
+import gzip_output
+
+ROOT = Path(__file__).resolve().parents[2]
 OUT = ROOT / "target" / "library-signatures"
-SOURCES = ROOT / "signatures" / "sources"
+SOURCES = OUT / "sources"
 TARGETS = {
     "x86_64": ["--target=x86_64-linux-gnu"],
     "aarch64": ["--target=aarch64-linux-gnu"],
@@ -26,8 +27,10 @@ def run(*args):
 
 
 def main():
+    import fetch_sources
+    fetch_sources.main()
     OUT.mkdir(parents=True, exist_ok=True)
-    manifest = json.loads((ROOT / "signatures" / "sources.json").read_text())
+    manifest = json.loads((ROOT / "tools" / "signatures" / "sources.json").read_text())
     for name, expected in manifest["sha256"].items():
         actual = hashlib.sha256((SOURCES / name).read_bytes()).hexdigest()
         if actual != expected:
@@ -44,7 +47,7 @@ def main():
         for level in ("O0", "O1", "O2", "O3", "Os"):
             common = ["clang", *target, f"-{level}", "-fno-stack-protector",
                       "-fno-pic", "-fno-pie", "-ffreestanding", "-funwind-tables",
-                      "-I", str(SOURCES / "include")]
+                      "-I", str(ROOT / "tools/signatures/include")]
             for library, source, defines in (
                 ("zlib", "adler32.c", ["-DZ_SOLO"] + (["-DNO_DIVIDE"] if arch in ("i386", "arm32") else [])),
                 ("xxhash", "xxhash.c", ["-DXXH_NO_STREAM", "-DXXH_NO_XXH3"]),
@@ -75,17 +78,17 @@ def main():
                     "-fuse-ld=lld", "-Wl,-e,_start", "-Wl,--build-id=none",
                     str(wrapper), str(obj), "-o", str(executable))
                 run("llvm-strip", "--strip-all", str(executable), "-o", str(OUT / f"{stem}.stripped.elf"))
-    fixture_dir = ROOT / "tests" / "library_signatures"
+    fixture_dir = OUT / "fixtures"
     fixture_dir.mkdir(parents=True, exist_ok=True)
     for path in sorted(OUT.glob("*.elf")):
-        (fixture_dir / (path.name + ".gz")).write_bytes(gzip.compress(path.read_bytes(), mtime=0))
+        (fixture_dir / (path.name + ".gz")).write_bytes(gzip_output.compress(path.read_bytes()))
     # Keep each variant's set provenance.
     database["entries"].sort(key=lambda entry: (entry["set"], entry["name"]))
     encoded = json.dumps(database, separators=(",", ":"), sort_keys=True).encode()
-    (OUT / "base.json.gz").write_bytes(gzip.compress(encoded, mtime=0))
+    (OUT / "base.json.gz").write_bytes(gzip_output.compress(encoded))
     print(f"{len(database['entries'])} entries, {len(encoded)} JSON bytes")
-    import extended
-    extended.main()
+    import build_libraries
+    build_libraries.main()
 
 
 if __name__ == "__main__":
