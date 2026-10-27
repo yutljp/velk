@@ -405,80 +405,11 @@ pub(super) fn stack_locals_with_roles(
         });
         local.size = local.size.max(end.saturating_sub(start));
     }
-    // An untyped address still needs scalar storage when no extent is known.
-    for local in slot_names.values_mut() {
-        if local.width == 0 {
-            local.width = if local.size > 0 { 1 } else { 8 };
-        }
-        // Only a load's extension says how the value is signed: one of 32
-        // bits or fewer that no load extends with its sign is read whole
-        // without one.
-        local.signed = if local.width <= 4 {
-            sign_loads.contains(&local.slot)
-        } else {
-            !zero_loads.contains(&local.slot)
-        };
-    }
-    let mut ordered: Vec<_> = slot_names.keys().copied().collect();
-    ordered.sort_unstable();
-    let mut outer: Option<i64> = None;
-    for slot in ordered {
-        if let Some(start) = outer {
-            let end = start.saturating_add(
-                slot_names[&start]
-                    .size
-                    .max(i64::from(slot_names[&start].width)),
-            );
-            if slot < end {
-                let next_end = slot.saturating_add(
-                    slot_names[&slot]
-                        .size
-                        .max(i64::from(slot_names[&slot].width)),
-                );
-                if (next_end > end || slot_names[&start].size > 0 || slot_names[&slot].size > 0)
-                    && let Some(local) = slot_names.get_mut(&start)
-                {
-                    local.size = end.max(next_end).saturating_sub(start);
-                }
-                continue;
-            }
-        }
-        outer = Some(slot);
-    }
-    // A slot that lies within a wider local is part of it: as a local of its
-    // own, the wider one would not see what is written there.
-    let within: HashMap<i64, i64> = slot_names
-        .keys()
-        .filter_map(|inner| {
-            let end = inner.saturating_add(
-                slot_names[inner]
-                    .size
-                    .max(i64::from(slot_names[inner].width)),
-            );
-            slot_names
-                .values()
-                .filter(|outer| {
-                    outer.slot < *inner
-                        && end
-                            <= outer
-                                .slot
-                                .saturating_add(outer.size.max(i64::from(outer.width)))
-                })
-                .map(|outer| outer.slot)
-                .min()
-                .map(|outer| (*inner, outer))
-        })
-        .collect();
+    let within = merge_overlapping_slots(&mut slot_names, &sign_loads, &zero_loads);
     type_storage(ir, sp, frames, variables, &mut slot_names);
     build_regions(&mut slot_names, &within, &accesses);
     slot_names.retain(|slot, _| !within.contains_key(slot));
-    let mut order: Vec<i64> = Vec::new();
-    for slot in accesses.iter().filter_map(|(slot, ..)| *slot) {
-        let slot = within.get(&slot).copied().unwrap_or(slot);
-        if slot_names.contains_key(&slot) && !order.contains(&slot) {
-            order.push(slot);
-        }
-    }
+    let order = declaration_order(&accesses, &within, &slot_names);
     name_storage(
         ir,
         symbols,
@@ -520,18 +451,7 @@ pub(super) fn stack_locals_with_roles(
         .values()
         .map(|local| (local.name.clone(), local.width))
         .collect();
-    for local in slot_names.values_mut() {
-        for field in &mut local.fields {
-            field.name = if field.name.starts_with('[') {
-                format!("{}{}", local.name, field.name)
-            } else {
-                format!("{}.{}", local.name, field.name)
-            };
-            for view in &mut field.views {
-                view.name = format!("{}.{}", field.name, view.name);
-            }
-        }
-    }
+    name_fields(&mut slot_names);
     // An address names the field there, or the widest union member there,
     // whose other members of the same address are its views.
     let mut views: HashMap<String, Vec<(u8, String)>> = HashMap::new();
@@ -770,6 +690,108 @@ pub(super) fn stack_locals_with_roles(
             .filter_map(|slot| slot_names.remove(&slot))
             .collect(),
     }
+}
+
+fn declaration_order(
+    accesses: &[FrameAccess],
+    within: &HashMap<i64, i64>,
+    slot_names: &HashMap<i64, Local>,
+) -> Vec<i64> {
+    let mut order: Vec<i64> = Vec::new();
+    for slot in accesses.iter().filter_map(|(slot, ..)| *slot) {
+        let slot = within.get(&slot).copied().unwrap_or(slot);
+        if slot_names.contains_key(&slot) && !order.contains(&slot) {
+            order.push(slot);
+        }
+    }
+    order
+}
+
+fn name_fields(slot_names: &mut HashMap<i64, Local>) {
+    for local in slot_names.values_mut() {
+        for field in &mut local.fields {
+            field.name = if field.name.starts_with('[') {
+                format!("{}{}", local.name, field.name)
+            } else {
+                format!("{}.{}", local.name, field.name)
+            };
+            for view in &mut field.views {
+                view.name = format!("{}.{}", field.name, view.name);
+            }
+        }
+    }
+}
+
+fn merge_overlapping_slots(
+    slot_names: &mut HashMap<i64, Local>,
+    sign_loads: &std::collections::HashSet<i64>,
+    zero_loads: &std::collections::HashSet<i64>,
+) -> HashMap<i64, i64> {
+    // An untyped address still needs scalar storage when no extent is known.
+    for local in slot_names.values_mut() {
+        if local.width == 0 {
+            local.width = if local.size > 0 { 1 } else { 8 };
+        }
+        // Only a load's extension says how the value is signed: one of 32
+        // bits or fewer that no load extends with its sign is read whole
+        // without one.
+        local.signed = if local.width <= 4 {
+            sign_loads.contains(&local.slot)
+        } else {
+            !zero_loads.contains(&local.slot)
+        };
+    }
+    let mut ordered: Vec<_> = slot_names.keys().copied().collect();
+    ordered.sort_unstable();
+    let mut outer: Option<i64> = None;
+    for slot in ordered {
+        if let Some(start) = outer {
+            let end = start.saturating_add(
+                slot_names[&start]
+                    .size
+                    .max(i64::from(slot_names[&start].width)),
+            );
+            if slot < end {
+                let next_end = slot.saturating_add(
+                    slot_names[&slot]
+                        .size
+                        .max(i64::from(slot_names[&slot].width)),
+                );
+                if (next_end > end || slot_names[&start].size > 0 || slot_names[&slot].size > 0)
+                    && let Some(local) = slot_names.get_mut(&start)
+                {
+                    local.size = end.max(next_end).saturating_sub(start);
+                }
+                continue;
+            }
+        }
+        outer = Some(slot);
+    }
+    // A slot that lies within a wider local is part of it: as a local of its
+    // own, the wider one would not see what is written there.
+    let within: HashMap<i64, i64> = slot_names
+        .keys()
+        .filter_map(|inner| {
+            let end = inner.saturating_add(
+                slot_names[inner]
+                    .size
+                    .max(i64::from(slot_names[inner].width)),
+            );
+            slot_names
+                .values()
+                .filter(|outer| {
+                    outer.slot < *inner
+                        && end
+                            <= outer
+                                .slot
+                                .saturating_add(outer.size.max(i64::from(outer.width)))
+                })
+                .map(|outer| outer.slot)
+                .min()
+                .map(|outer| (*inner, outer))
+        })
+        .collect();
+    within
 }
 
 fn type_storage(
