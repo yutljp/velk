@@ -148,14 +148,9 @@ pub fn build(ir: &FunctionIr) -> Option<Ssa> {
     }
     let count = ir.blocks.len();
     let successors: Vec<Vec<usize>> = (0..count).map(|index| successors(ir, index)).collect();
-    let mut predecessors = vec![Vec::new(); count];
+    let mut predecessors = dom::predecessors(&successors);
     if count > 0 {
-        predecessors[0].push(ENTRY);
-    }
-    for (block, next) in successors.iter().enumerate() {
-        for successor in next {
-            predecessors[*successor].push(block);
-        }
+        predecessors[0].insert(0, ENTRY);
     }
     let dominators = dom::dominators(&successors);
     let frontier = dom::frontiers(&successors, &dominators);

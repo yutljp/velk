@@ -174,23 +174,21 @@ pub(super) fn stack_arguments(
                     frame.remove(&register);
                 }
             }
-            if let Stmt::Assign { dest, .. } = stmt
-                && let Some(at) = assigned
-            {
-                if tracked(dest.index) {
-                    frame.insert(dest.index, at);
-                }
-                if dest.index != sp && dest.index != fp && at >= start {
-                    held.insert(dest.index, at);
-                }
-            }
-            for (destination, at) in preserved {
+            let mut insert = |destination, at| {
                 if tracked(destination) {
                     frame.insert(destination, at);
                 }
                 if destination != sp && destination != fp && at >= start {
                     held.insert(destination, at);
                 }
+            };
+            if let Stmt::Assign { dest, .. } = stmt
+                && let Some(at) = assigned
+            {
+                insert(dest.index, at);
+            }
+            for (destination, at) in preserved {
+                insert(destination, at);
             }
         };
     let graph: Vec<_> = (0..blocks.len())

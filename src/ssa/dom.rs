@@ -7,6 +7,16 @@ pub(crate) struct Dominators {
     pub idom: Vec<Option<usize>>,
 }
 
+pub(super) fn predecessors(successors: &[Vec<usize>]) -> Vec<Vec<usize>> {
+    let mut predecessors = vec![Vec::new(); successors.len()];
+    for (block, next) in successors.iter().enumerate() {
+        for successor in next {
+            predecessors[*successor].push(block);
+        }
+    }
+    predecessors
+}
+
 pub(crate) fn dominators(successors: &[Vec<usize>]) -> Dominators {
     let count = successors.len();
     let mut order = Vec::with_capacity(count);
@@ -34,12 +44,7 @@ pub(crate) fn dominators(successors: &[Vec<usize>]) -> Dominators {
     for (index, block) in order.iter().enumerate() {
         position[*block] = index;
     }
-    let mut predecessors = vec![Vec::new(); count];
-    for (block, next) in successors.iter().enumerate() {
-        for successor in next {
-            predecessors[*successor].push(block);
-        }
-    }
+    let predecessors = predecessors(successors);
     let mut idom: Vec<Option<usize>> = vec![None; count];
     idom[0] = Some(0);
     let intersect = |idom: &[Option<usize>], mut a: usize, mut b: usize| {
@@ -82,12 +87,7 @@ pub(crate) fn dominators(successors: &[Vec<usize>]) -> Dominators {
 /// The dominance frontier of each block: where its dominance ends.
 pub(crate) fn frontiers(successors: &[Vec<usize>], dominators: &Dominators) -> Vec<Vec<usize>> {
     let count = successors.len();
-    let mut predecessors = vec![Vec::new(); count];
-    for (block, next) in successors.iter().enumerate() {
-        for successor in next {
-            predecessors[*successor].push(block);
-        }
-    }
+    let predecessors = predecessors(successors);
     let reachable = |block: usize| block == 0 || dominators.idom[block].is_some();
     let mut frontier = vec![Vec::new(); count];
     for (block, from) in predecessors.iter().enumerate() {

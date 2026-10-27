@@ -45,6 +45,13 @@ struct State {
 }
 
 impl State {
+    fn forget_above_entry(&mut self) {
+        self.slots.retain(|slot, (width, _)| {
+            slot.checked_add(i64::from(*width))
+                .is_some_and(|end| end <= 0)
+        });
+    }
+
     fn entry(sp: u16, narrow: bool) -> Self {
         State {
             sp,
@@ -460,10 +467,7 @@ pub(crate) fn clobbers_knowing(
                         }
                         // The caller's frame above the entry stack pointer is
                         // memory another thread may share.
-                        state.slots.retain(|slot, (width, _)| {
-                            slot.checked_add(i64::from(*width))
-                                .is_some_and(|end| end <= 0)
-                        });
+                        state.forget_above_entry();
                     } else {
                         for value in inputs {
                             state.expose(value);
@@ -474,10 +478,7 @@ pub(crate) fn clobbers_knowing(
                                 | crate::ir::MachineInstruction::ArmLoadAcquire { .. }
                                 | crate::ir::MachineInstruction::ArmExclusive { .. }
                         ) {
-                            state.slots.retain(|slot, (width, _)| {
-                                slot.checked_add(i64::from(*width))
-                                    .is_some_and(|end| end <= 0)
-                            });
+                            state.forget_above_entry();
                         }
                     }
                     for output in outputs {

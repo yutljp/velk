@@ -507,6 +507,14 @@ fn parameter_types(
             }
         }
     };
+    let note_integer_loads =
+        |value: &Expr, origin: &HashMap<u16, u16>, elements: &mut HashMap<u16, (bool, CType)>| {
+            let mut nested = Vec::new();
+            integer_loads(value, &mut nested);
+            for (addr, width) in nested {
+                note(addr, width, None, None, origin, elements);
+            }
+        };
     let mut code_pointers: HashSet<u16> = HashSet::new();
     origins.walk(blocks, &mut |stmt, origin| match stmt {
         Stmt::Assign { dest, value } => {
@@ -521,11 +529,7 @@ fn parameter_types(
                 );
             } else {
                 // Memory an integer operation reads holds integers.
-                let mut nested = Vec::new();
-                integer_loads(value, &mut nested);
-                for (addr, width) in nested {
-                    note(addr, width, None, None, origin, &mut pointer_elements);
-                }
+                note_integer_loads(value, origin, &mut pointer_elements);
             }
             // A float operation reading memory reads a float there, and a
             // lane operation lanes.
@@ -572,19 +576,11 @@ fn parameter_types(
         // Memory a compare or a return reads holds integers too.
         Stmt::Brif { lhs, rhs, .. } => {
             for value in [lhs, rhs] {
-                let mut nested = Vec::new();
-                integer_loads(value, &mut nested);
-                for (addr, width) in nested {
-                    note(addr, width, None, None, origin, &mut pointer_elements);
-                }
+                note_integer_loads(value, origin, &mut pointer_elements);
             }
         }
         Stmt::Ret { value } => {
-            let mut nested = Vec::new();
-            integer_loads(value, &mut nested);
-            for (addr, width) in nested {
-                note(addr, width, None, None, origin, &mut pointer_elements);
-            }
+            note_integer_loads(value, origin, &mut pointer_elements);
         }
         // An argument the code calls or jumps through points at code.
         Stmt::Call {

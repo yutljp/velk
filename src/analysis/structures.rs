@@ -340,14 +340,9 @@ pub(super) fn layout_with_size(
         return None;
     }
     let holders = holders(ir, base, true);
-    let mut touched = Vec::new();
-    for touch in touches {
-        match holders.split(&touch.addr) {
-            Some(split) => touched.push((split, touch)),
-            None if holders.exposes(&touch.addr) => return None,
-            None => {}
-        }
-    }
+    let Some(touched) = split_touches(&holders, touches) else {
+        return None;
+    };
     for split in touched
         .iter()
         .map(|(split, _)| split)
@@ -473,6 +468,18 @@ struct Array {
     phases: Vec<(u16, u64)>,
 }
 
+fn split_touches<'a>(holders: &Holders, touches: &'a [Touch]) -> Option<Vec<(Split, &'a Touch)>> {
+    let mut touched = Vec::new();
+    for touch in touches {
+        match holders.split(&touch.addr) {
+            Some(split) => touched.push((split, touch)),
+            None if holders.exposes(&touch.addr) => return None,
+            None => {}
+        }
+    }
+    Some(touched)
+}
+
 /// The array of structures `param` points into: every address computed
 /// from it, directly, through a stack slot holding it, or through a
 /// register set from it, adds indexes scaled by multiples of one size and
@@ -487,14 +494,9 @@ fn array(
     minimum: usize,
 ) -> Option<Array> {
     let holders = holders(ir, param, direct);
-    let mut touched = Vec::new();
-    for touch in touches {
-        match holders.split(&touch.addr) {
-            Some(split) => touched.push((split, touch)),
-            None if holders.exposes(&touch.addr) => return None,
-            None => {}
-        }
-    }
+    let Some(touched) = split_touches(&holders, touches) else {
+        return None;
+    };
     let splits = || {
         touched
             .iter()

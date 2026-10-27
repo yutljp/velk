@@ -206,8 +206,6 @@ fn same_static_address_connects_but_null_does_not() {
 
 #[test]
 fn shared_printed_layout_compiles_and_preserves_byte_offsets() {
-    use std::io::Write;
-    use std::process::{Command, Stdio};
     let mut first = function(1, &[(0, 4), (8, 4)]);
     let mut second = function(2, &[(16, 8), (24, 4)]);
     // The flow is checked separately from the executable bodies.
@@ -236,32 +234,7 @@ fn shared_printed_layout_compiles_and_preserves_byte_offsets() {
         "struct S1_7",
         &format!("struct {}", first.structures[0].name),
     );
-    let executable =
-        std::env::temp_dir().join(format!("velk-shared-structures-{}", std::process::id()));
-    let mut child = Command::new("cc")
-        .args(["-std=c11", "-Werror", "-x", "c", "-", "-o"])
-        .arg(&executable)
-        .stdin(Stdio::piped())
-        .stderr(Stdio::piped())
-        .spawn()
-        .expect("C compiler");
-    child
-        .stdin
-        .take()
-        .unwrap()
-        .write_all(source.as_bytes())
-        .unwrap();
-    let compiled = child.wait_with_output().unwrap();
-    assert!(
-        compiled.status.success(),
-        "{}\n{source}",
-        String::from_utf8_lossy(&compiled.stderr)
-    );
-    let status = Command::new(&executable)
-        .status()
-        .expect("compiled program");
-    std::fs::remove_file(executable).unwrap();
-    assert!(status.success(), "{source}");
+    compile_and_run(&source, &["-std=c11", "-Werror"], "velk-shared-structures");
 }
 
 #[test]
@@ -461,9 +434,6 @@ fn partial_indexed_accesses_refuse_conflicting_scales_widths_and_alignment() {
 
 #[test]
 fn shared_array_fields_compile_and_match_byte_stores_on_many_elements() {
-    use std::io::Write;
-    use std::process::{Command, Stdio};
-
     let mut first = indexed_function(1, &[(0, 4), (8, 4)], 16);
     let mut second = indexed_function(2, &[(12, 4)], 16);
     first.blocks[0].stmts.push(call(2, Expr::reg(7, 64)));
@@ -487,32 +457,11 @@ fn shared_array_fields_compile_and_match_byte_stores_on_many_elements() {
         "struct S1_7",
         &format!("struct {}", first.structures[0].name),
     );
-    let executable =
-        std::env::temp_dir().join(format!("velk-shared-arrays-{}", std::process::id()));
-    let mut child = Command::new("cc")
-        .args(["-std=c11", "-O2", "-Werror", "-x", "c", "-", "-o"])
-        .arg(&executable)
-        .stdin(Stdio::piped())
-        .stderr(Stdio::piped())
-        .spawn()
-        .expect("C compiler");
-    child
-        .stdin
-        .take()
-        .unwrap()
-        .write_all(source.as_bytes())
-        .unwrap();
-    let output = child.wait_with_output().unwrap();
-    assert!(
-        output.status.success(),
-        "{}\n{source}",
-        String::from_utf8_lossy(&output.stderr)
+    compile_and_run(
+        &source,
+        &["-std=c11", "-O2", "-Werror"],
+        "velk-shared-arrays",
     );
-    let status = Command::new(&executable)
-        .status()
-        .expect("compiled array test");
-    std::fs::remove_file(executable).unwrap();
-    assert!(status.success(), "{source}");
 }
 
 #[test]
@@ -693,4 +642,36 @@ fn numbering_follows_addresses_and_skips_declared_tags() {
         share(&mut [&mut declared], &[]);
         assert_eq!(declared.structures[0].name, "S2");
     }
+}
+
+fn compile_and_run(source: &str, options: &[&str], name: &str) {
+    use std::io::Write;
+    use std::process::{Command, Stdio};
+
+    let executable = std::env::temp_dir().join(format!("{name}-{}", std::process::id()));
+    let mut child = Command::new("cc")
+        .args(options)
+        .args(["-x", "c", "-", "-o"])
+        .arg(&executable)
+        .stdin(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .expect("C compiler");
+    child
+        .stdin
+        .take()
+        .unwrap()
+        .write_all(source.as_bytes())
+        .unwrap();
+    let output = child.wait_with_output().unwrap();
+    assert!(
+        output.status.success(),
+        "{}\n{source}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let status = Command::new(&executable)
+        .status()
+        .expect("compiled program");
+    std::fs::remove_file(executable).unwrap();
+    assert!(status.success(), "{source}");
 }

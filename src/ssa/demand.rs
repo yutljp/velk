@@ -382,12 +382,12 @@ pub fn narrow_partial_writes(ir: &mut FunctionIr) {
             _ => None,
         };
         let (keep, written) = match (kept(lhs), kept(rhs)) {
-            (Some(keep), _) => (keep, rhs.as_ref().clone()),
-            (None, Some(keep)) => (keep, lhs.as_ref().clone()),
+            (Some(keep), _) => (keep, rhs),
+            (None, Some(keep)) => (keep, lhs),
             _ => continue,
         };
         if demand.get(&dest.index).copied().unwrap_or(0) & keep == 0 {
-            *value = written;
+            *value = std::mem::replace(written.as_mut(), Expr::Const(0));
             changed = true;
         }
     }

@@ -214,9 +214,7 @@ pub fn collect(ir: &FunctionIr, image: &Image) -> Vec<Reference> {
             let Some(section) = image.section_at(*addr) else {
                 continue;
             };
-            let read_only = ["rodata", "rdata", "cstring", "__const"]
-                .iter()
-                .any(|kind| section.name.contains(kind));
+            let read_only = string_section(&section.name);
             if !read_only {
                 continue;
             }
@@ -266,6 +264,12 @@ pub fn collect(ir: &FunctionIr, image: &Image) -> Vec<Reference> {
     references
 }
 
+fn string_section(name: &str) -> bool {
+    ["rodata", "rdata", "cstring", "__const"]
+        .iter()
+        .any(|kind| name.contains(kind))
+}
+
 /// The `length` printable characters at `addr` in data, when they are.
 fn sized_string(image: &Image, addr: u64, length: u64) -> Option<(String, String)> {
     if !(2..=256).contains(&length) {
@@ -273,14 +277,16 @@ fn sized_string(image: &Image, addr: u64, length: u64) -> Option<(String, String
     }
     // Only read-only data holds string literals; a size passed with a count
     // could fall anywhere else.
-    let section = image.section_at(addr)?;
-    let read_only = ["rodata", "rdata", "cstring", "__const"]
-        .iter()
-        .any(|kind| section.name.contains(kind));
+    let Some(section) = image.section_at(addr) else {
+        return None;
+    };
+    let read_only = string_section(&section.name);
     if section.executable || !read_only {
         return None;
     }
-    let bytes = image.read_vaddr(addr, length)?;
+    let Some(bytes) = image.read_vaddr(addr, length) else {
+        return None;
+    };
     if !bytes
         .iter()
         .all(|b| (0x20..0x7f).contains(b) || matches!(b, b'\t' | b'\n'))

@@ -1,5 +1,6 @@
 use super::*;
-use crate::ir::{CallKind, Convention, Expr, FunctionIr, RegRef, Stmt};
+use crate::ir::abi::{LayoutField, LayoutKind, TypeLayout};
+use crate::ir::{CallKind, Convention, Expr, FunctionIr, Precision, RegRef, Stmt};
 use crate::loader::Isa;
 
 fn declaration_for(profile: AbiProfile, count: usize) -> Arc<CallDeclaration> {
@@ -349,7 +350,6 @@ fn attachment_skips_unknown_callee_without_changing_call() {
 mod declarations {
     use super::*;
     use crate::ir::CType;
-    use crate::ir::abi::{LayoutField, LayoutKind, TypeLayout};
     use crate::ir::calls::{CallType, TypeGraph};
     use crate::loader::Isa;
     use crate::loader::dwarf::FunctionTypes;
@@ -1361,48 +1361,11 @@ mod declarations {
 
 mod input_tests {
     use super::*;
-    use crate::ir::abi::{LayoutField, LayoutKind, TypeLayout};
     use crate::ir::{
-        AbiLocation, AbiPiece, Block, Convention, Expr, FunctionIr, Passing, Precision,
-        SignatureAbi, Stmt, ValueAbi,
+        AbiLocation, AbiPiece, Block, Convention, Expr, FunctionIr, Passing, SignatureAbi, Stmt,
+        ValueAbi,
     };
     use crate::loader::{Format, Isa};
-
-    fn integer() -> TypeLayout {
-        TypeLayout {
-            size: 8,
-            alignment: Some(8),
-            kind: LayoutKind::Integer,
-            trivial: true,
-        }
-    }
-
-    fn double() -> TypeLayout {
-        TypeLayout {
-            kind: LayoutKind::Float(Precision::Double),
-            ..integer()
-        }
-    }
-
-    fn structure(fields: Vec<TypeLayout>) -> TypeLayout {
-        TypeLayout {
-            size: fields.len() as u64 * 8,
-            alignment: Some(8),
-            trivial: true,
-            kind: LayoutKind::Struct(
-                fields
-                    .into_iter()
-                    .enumerate()
-                    .map(|(at, layout)| LayoutField {
-                        bit_offset: at as u64 * 64,
-                        bit_size: None,
-                        defined: true,
-                        layout,
-                    })
-                    .collect(),
-            ),
-        }
-    }
 
     fn record(binding: SignatureAbi) -> Arc<CallDeclaration> {
         Arc::new(CallDeclaration {
@@ -2215,48 +2178,11 @@ mod input_tests {
 
 mod output_tests {
     use super::*;
-    use crate::ir::abi::{LayoutField, LayoutKind, TypeLayout};
     use crate::ir::{
         AbiLocation, AbiPiece, BinOp, Block, CallOutput, Convention, Expr, FunctionIr, Passing,
-        Precision, RegRef, RegisterClass, Registers, SignatureAbi, Stmt, ValueAbi,
+        RegRef, RegisterClass, Registers, SignatureAbi, Stmt, ValueAbi,
     };
     use crate::loader::{Format, Isa};
-
-    fn integer() -> TypeLayout {
-        TypeLayout {
-            size: 8,
-            alignment: Some(8),
-            kind: LayoutKind::Integer,
-            trivial: true,
-        }
-    }
-
-    fn double() -> TypeLayout {
-        TypeLayout {
-            kind: LayoutKind::Float(Precision::Double),
-            ..integer()
-        }
-    }
-
-    fn structure(fields: Vec<TypeLayout>) -> TypeLayout {
-        TypeLayout {
-            size: fields.len() as u64 * 8,
-            alignment: Some(8),
-            trivial: true,
-            kind: LayoutKind::Struct(
-                fields
-                    .into_iter()
-                    .enumerate()
-                    .map(|(at, layout)| LayoutField {
-                        bit_offset: at as u64 * 64,
-                        bit_size: None,
-                        defined: true,
-                        layout,
-                    })
-                    .collect(),
-            ),
-        }
-    }
 
     fn binding(profile: AbiProfile, result: Option<&TypeLayout>) -> SignatureAbi {
         crate::analysis::abi::allocate(profile, &[], result).unwrap()
@@ -2746,5 +2672,41 @@ mod output_tests {
         for transformed in stages(&ir) {
             assert_eq!(eval::run(&transformed, &setup), expected);
         }
+    }
+}
+
+fn integer() -> TypeLayout {
+    TypeLayout {
+        size: 8,
+        alignment: Some(8),
+        kind: LayoutKind::Integer,
+        trivial: true,
+    }
+}
+
+fn double() -> TypeLayout {
+    TypeLayout {
+        kind: LayoutKind::Float(Precision::Double),
+        ..integer()
+    }
+}
+
+fn structure(fields: Vec<TypeLayout>) -> TypeLayout {
+    TypeLayout {
+        size: fields.len() as u64 * 8,
+        alignment: Some(8),
+        trivial: true,
+        kind: LayoutKind::Struct(
+            fields
+                .into_iter()
+                .enumerate()
+                .map(|(at, layout)| LayoutField {
+                    bit_offset: at as u64 * 64,
+                    bit_size: None,
+                    defined: true,
+                    layout,
+                })
+                .collect(),
+        ),
     }
 }

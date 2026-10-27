@@ -625,6 +625,11 @@ fn held_across_calls(
     let mut entry: Vec<Option<Option<u16>>> = vec![None; ir.blocks.len()];
     entry[0] = Some(None);
     let mut work = vec![0];
+    let merge = |before, current| match before {
+        None => current,
+        Some(old) if old == current => current,
+        Some(_) => None,
+    };
     let mut seen: Option<Option<u16>> = None;
     while let Some(index) = work.pop() {
         let mut current = entry[index].expect("visited");
@@ -636,11 +641,7 @@ fn held_across_calls(
                 }
                 Stmt::Call { .. } if matches!(stmts.get(position + 1), Some(Stmt::Ret { .. })) => {}
                 Stmt::Call { .. } => {
-                    seen = Some(match seen {
-                        None => current,
-                        Some(before) if before == current => current,
-                        Some(_) => None,
-                    });
+                    seen = Some(merge(seen, current));
                 }
                 _ => {}
             }
@@ -649,11 +650,7 @@ fn held_across_calls(
             if dominators.idom[next].is_none() && next != 0 {
                 continue;
             }
-            let merged = match entry[next] {
-                None => current,
-                Some(old) if old == current => current,
-                Some(_) => None,
-            };
+            let merged = merge(entry[next], current);
             if entry[next] != Some(merged) {
                 entry[next] = Some(merged);
                 work.push(next);

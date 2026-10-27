@@ -358,22 +358,12 @@ fn drop_unreached(blocks: &mut Vec<crate::ir::Block>) {
         if at >= blocks.len() || std::mem::replace(&mut seen[at], true) {
             continue;
         }
-        let falls = at + 1;
-        match blocks[at].stmts.last() {
-            Some(Stmt::Br {
-                target: Some(target),
-            }) => pending.extend(index.get(target)),
-            Some(Stmt::Brif { target, .. } | Stmt::BrifFlags { target, .. }) => {
-                pending.extend(index.get(target));
-                pending.push(falls);
-            }
-            Some(Stmt::Switch { cases, default, .. }) => {
-                pending.extend(cases.iter().filter_map(|(_, target)| index.get(target)));
-                pending.extend(default.iter().filter_map(|target| index.get(target)));
-            }
-            Some(Stmt::Ret { .. } | Stmt::Trap) => {}
-            _ => pending.push(falls),
-        }
+        pending.extend(crate::ir::cfg::normal_successors(
+            blocks[at].stmts.last(),
+            (at + 1 < blocks.len()).then_some(at + 1),
+            |address| index.get(&address).copied(),
+            crate::ir::cfg::UnknownBranch::Fallthrough,
+        ));
     }
     let mut position = 0;
     blocks.retain(|_| {

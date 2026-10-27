@@ -29,6 +29,23 @@ pub(crate) fn lookup(name: &str) -> Option<&'static Effects> {
         .iter()
         .find_map(|(symbol, effects)| (*symbol == name).then_some(effects))
 }
+const PATTERN: Effects = Effects {
+    buffer: Some(Buffer {
+        arguments: &[0],
+        size: 2,
+    }),
+    allocation: None,
+    size: SizeRule::Argument(0),
+    naming: None,
+};
+
+const ALLOCATE: Effects = Effects {
+    buffer: None,
+    allocation: Some(Allocation::Fresh),
+    size: SizeRule::Argument(0),
+    naming: None,
+};
+
 const EFFECTS: &[(&str, Effects)] = &[
     (
         "strlen",
@@ -207,87 +224,14 @@ const EFFECTS: &[(&str, Effects)] = &[
             }),
         },
     ),
-    (
-        "memset_pattern16",
-        Effects {
-            buffer: Some(Buffer {
-                arguments: &[0],
-                size: 2,
-            }),
-            allocation: None,
-            size: SizeRule::Argument(0),
-            naming: None,
-        },
-    ),
-    (
-        "memset_pattern8",
-        Effects {
-            buffer: Some(Buffer {
-                arguments: &[0],
-                size: 2,
-            }),
-            allocation: None,
-            size: SizeRule::Argument(0),
-            naming: None,
-        },
-    ),
-    (
-        "memset_pattern4",
-        Effects {
-            buffer: Some(Buffer {
-                arguments: &[0],
-                size: 2,
-            }),
-            allocation: None,
-            size: SizeRule::Argument(0),
-            naming: None,
-        },
-    ),
-    (
-        "rust_alloc",
-        Effects {
-            buffer: None,
-            allocation: Some(Allocation::Fresh),
-            size: SizeRule::Argument(0),
-            naming: None,
-        },
-    ),
-    (
-        "rust_alloc_zeroed",
-        Effects {
-            buffer: None,
-            allocation: Some(Allocation::Fresh),
-            size: SizeRule::Argument(0),
-            naming: None,
-        },
-    ),
-    (
-        "rdl_alloc",
-        Effects {
-            buffer: None,
-            allocation: Some(Allocation::Fresh),
-            size: SizeRule::Argument(0),
-            naming: None,
-        },
-    ),
-    (
-        "rdl_alloc_zeroed",
-        Effects {
-            buffer: None,
-            allocation: Some(Allocation::Fresh),
-            size: SizeRule::Argument(0),
-            naming: None,
-        },
-    ),
-    (
-        "runtime.mallocgc",
-        Effects {
-            buffer: None,
-            allocation: Some(Allocation::Fresh),
-            size: SizeRule::Argument(0),
-            naming: None,
-        },
-    ),
+    ("memset_pattern16", PATTERN),
+    ("memset_pattern8", PATTERN),
+    ("memset_pattern4", PATTERN),
+    ("rust_alloc", ALLOCATE),
+    ("rust_alloc_zeroed", ALLOCATE),
+    ("rdl_alloc", ALLOCATE),
+    ("rdl_alloc_zeroed", ALLOCATE),
+    ("runtime.mallocgc", ALLOCATE),
     (
         "runtime.newobject",
         Effects {

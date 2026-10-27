@@ -3,7 +3,7 @@ c99b592843571a9975aeaddbb3b4de9e4c14eb1cddfe75cc0b40428ebc63beb3  src/analysis/i
 45e071b2927704028ba25f7951198442479efc5f46c770213e69db2427609aa4  src/analysis/pairs32.rs	fn narrow_parameter_loads(
 e83a7bc69e7bc5bbf94f59ca354ba7032a09d8c83cbbbd8fc64c9d8a36eae149  src/analysis/signature/paths.rs	pub(super) fn definite_writes(
 cee97a052f6b4f9baf21204bcd640dad36fe69d07eceae1a024dfe13f9f20182  src/analysis/structures.rs	fn rewrite(
-4edb87fb78bfe24a04c10b58599a9401a4a428cd8699c26480799bc73ec289a0  src/analysis/structures.rs	pub(super) fn layout_with_size(
+f114faafe1cfe7ab02fbae682e48a98083a5875453295d0a2a6460c38c739527  src/analysis/structures.rs	pub(super) fn layout_with_size(
 6939bd7b68d56ee1a758705aca8089a28d07c3ea4ee44f21d1d53939834632cf  src/analysis/structures/pointers.rs	pub(super) fn normalize(
 7e6a214c97a5cda4a23524bb41e5ac94a66d0d40aee000aa3d41c931e2668b58  src/ir/eval/emulation/io/formatting.rs	fn signed_magnitude(
 bfaf324bc4cb783da31fbb7e9734f1d0505228fe26463bd656e8b02a8fbe8b42  src/ir/eval/emulation/strings.rs	fn stored_byte(
@@ -141,7 +141,7 @@ d6ed2930da3050a1e796935096262bd31b5c04a40d9547f751d04af0fe1c2c7f  src/render/tra
 c6a2555762303231a86118191e713279616e150d252086d24de10427275987aa  src/render/transfers.rs	fn string_copy(
 bfdcdef48102d3e0d46218a589765c63baaff91dc48d6173ab2f781ceec3508d  src/render/widths.rs	pub(crate) fn narrow_variables(
 af9af3f338c239142f92a78e7633d8f8a3f0d64d702caab86de5c8cd24e874d3  src/sigs/bytes/registers.rs	pub(super) fn alternative(
-32caccc66f407095f81047c6a597b56a6a6aaa1c2cd56f826ca74dded4a75405  src/ssa/demand.rs	pub fn narrow_partial_writes(
+eac82fbdaf5ab099c6e9fc01e16cae910eac2360cd6a45a5d0d7b6d3eb005106  src/ssa/demand.rs	pub fn narrow_partial_writes(
 2e9d0caef1f3f967648c3b44c3bc2a2ab576573ccfe0870193fd4d12f60f4f3c  src/ssa/ranges.rs	fn rewrite(
 843da05dd590cce5d7c4a1103accff0e01313d107fdba5c69f4e70f29e992e64  src/ssa/ranges.rs	fn rewrite_value(
 0edb85ac358d393ed51078465e2015e4b7f2e4d2e9fe601fc35e27c809d5cb52  src/ssa/ranges.rs	fn terminate(
