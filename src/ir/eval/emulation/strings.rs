@@ -194,18 +194,15 @@ impl Runner<'_> {
                 lhs,
                 rhs,
             } => {
-                if let Expr::Const(mask) = rhs.as_ref() {
+                let constant = match (lhs.as_ref(), rhs.as_ref()) {
+                    (other, Expr::Const(mask)) | (Expr::Const(mask), other) => Some((mask, other)),
+                    _ => None,
+                };
+                if let Some((mask, other)) = constant {
                     return if mask & 255 == 0 {
                         LITERAL
                     } else {
-                        self.origin(lhs)
-                    };
-                }
-                if let Expr::Const(mask) = lhs.as_ref() {
-                    return if mask & 255 == 0 {
-                        LITERAL
-                    } else {
-                        self.origin(rhs)
+                        self.origin(other)
                     };
                 }
                 self.origin(lhs) | self.origin(rhs)

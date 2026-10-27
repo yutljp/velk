@@ -457,31 +457,9 @@ impl Expr {
 
     #[must_use]
     pub fn bin(op: BinOp, lhs: Expr, rhs: Expr) -> Self {
-        if let (Expr::Const(a), Expr::Const(b)) = (&lhs, &rhs) {
-            let value = match op {
-                BinOp::Add => a.wrapping_add(*b),
-                BinOp::Sub => a.wrapping_sub(*b),
-                BinOp::Mul => a.wrapping_mul(*b),
-                BinOp::And => *a & *b,
-                BinOp::Or => *a | *b,
-                BinOp::Xor => *a ^ *b,
-                BinOp::Shl => a.wrapping_shl(*b as u32),
-                BinOp::Shr => a.wrapping_shr(*b as u32),
-                BinOp::Sar => (*a as i64).wrapping_shr(*b as u32) as u64,
-                BinOp::DivS if *b != 0 => (*a as i64).wrapping_div(*b as i64) as u64,
-                BinOp::ModS if *b != 0 => (*a as i64).wrapping_rem(*b as i64) as u64,
-                BinOp::DivU if *b != 0 => a / b,
-                BinOp::ModU if *b != 0 => a % b,
-                BinOp::MulHigh => ((u128::from(*a) * u128::from(*b)) >> 64) as u64,
-                BinOp::MulHighS => ((i128::from(*a as i64) * i128::from(*b as i64)) >> 64) as u64,
-                BinOp::DivS | BinOp::ModS | BinOp::DivU | BinOp::ModU => {
-                    return Expr::Bin {
-                        op,
-                        lhs: Box::new(lhs),
-                        rhs: Box::new(rhs),
-                    };
-                }
-            };
+        if let (Expr::Const(a), Expr::Const(b)) = (&lhs, &rhs)
+            && let Some(value) = semantics::scalar(op, *a, *b, 64)
+        {
             return Expr::Const(value);
         }
         if matches!(op, BinOp::Shl | BinOp::Shr | BinOp::Sar) && matches!(rhs, Expr::Const(0)) {

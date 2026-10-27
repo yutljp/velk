@@ -537,20 +537,16 @@ impl Proofs {
     }
 
     pub(crate) fn program(&mut self, name: String, before: &[Stmt], after: &[Stmt]) {
-        if before.len() == after.len() {
-            let mut unchanged = true;
-            for (a, b) in before.iter().zip(after) {
-                unchanged &= match (a, b) {
-                    (Stmt::Assign { dest: a, value: x }, Stmt::Assign { dest: b, value: y }) => {
-                        a == b && x == y
-                    }
-                    (Stmt::Ret { value: a }, Stmt::Ret { value: b }) => a == b,
-                    _ => false,
-                };
-            }
-            if unchanged {
-                return;
-            }
+        if before.len() == after.len()
+            && before.iter().zip(after).all(|(a, b)| match (a, b) {
+                (Stmt::Assign { dest: a, value: x }, Stmt::Assign { dest: b, value: y }) => {
+                    a == b && x == y
+                }
+                (Stmt::Ret { value: a }, Stmt::Ret { value: b }) => a == b,
+                _ => false,
+            })
+        {
+            return;
         }
         let before = returned(before);
         let after = returned(after);

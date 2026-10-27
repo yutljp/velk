@@ -212,24 +212,7 @@ fn render_stmt(stmt: &Stmt, isa: Isa) -> String {
         Stmt::Call {
             target,
             through,
-            args: Some(args),
-            outputs,
-            ..
-        } => {
-            let args: Vec<String> = args.iter().map(|arg| arg.render(isa)).collect();
-            let assigned = render_call_outputs(isa, outputs);
-            let call = match (target, through) {
-                (Some(target), _) => format!("call 0x{target:x}({})", args.join(", ")),
-                (None, Some(through)) => {
-                    format!("call *{}({})", through.render(isa), args.join(", "))
-                }
-                (None, None) => format!("call <dynamic>({})", args.join(", ")),
-            };
-            format!("{assigned}{call}")
-        }
-        Stmt::Call {
-            target,
-            through,
+            args,
             outputs,
             ..
         } => {
@@ -239,7 +222,14 @@ fn render_stmt(stmt: &Stmt, isa: Isa) -> String {
                 (None, Some(through)) => format!("call *{}", through.render(isa)),
                 (None, None) => "call <dynamic>".to_owned(),
             };
-            format!("{assigned}{call}")
+            let suffix = match args {
+                Some(args) => {
+                    let args: Vec<String> = args.iter().map(|arg| arg.render(isa)).collect();
+                    format!("({})", args.join(", "))
+                }
+                None => String::new(),
+            };
+            format!("{assigned}{call}{suffix}")
         }
         Stmt::Ret { value } => format!("ret {}", value.render(isa)),
         Stmt::Machine {
