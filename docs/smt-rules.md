@@ -4,6 +4,11 @@ The normal Rust unit suite includes test-only Z3 checks. Run them with
 `cargo test --release --lib smt -- --test-threads 3 --nocapture`.
 Integer predicate and dominating-guard checks also run with
 `cargo test --release --lib passes::deobfuscation -- --test-threads 3`.
+Parameter recovery has an acyclic boolean-guard template that checks whether
+replacing an excluded entry register value changes the return value or memory.
+General parameter recovery across loops and calls is outside that proof.
+Native 32-bit pointer offset normalization also has symbolic checks; memory
+alias decisions are checked with concrete wraparound cases.
 Z3 must be on PATH. The tests print a clear skip message when it is absent.
 The rendered-C tests also need Clang and uv. Python runs through
 `uv run --no-project tests/smt_c.py` and uses only the standard library.

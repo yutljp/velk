@@ -82,6 +82,10 @@ interface Reference {
 interface Signature {
   return: string;
   params: { name: string; type: string }[];
+  /** Named parameters, including those passed on the stack. */
+  parameterCount: number;
+  callingConvention: string;
+  variadic: boolean;
 }
 
 interface LibraryEvidence {
@@ -185,12 +189,27 @@ interface FunctionSummary {
   name: string | null;
   size: number | null;
   signature: Signature;
+  calls: RecoveredCall[];
   callees: Addr[];
   imports: string[];
   strings: StringLiteral[];
   incomingXrefs: number;
   outgoingXrefs: number;
   failures: NavigationFailure[];
+}
+
+/** Calls remaining in the analyzed IR; statement numbers are not machine addresses. */
+interface RecoveredCall {
+  block: Addr;
+  statement: number;
+  target: Addr | null;
+  indirect: boolean;
+  callingConvention: string;
+  /** Null when the argument count could not be recovered. */
+  argumentCount: number | null;
+  candidates: Addr[];
+  /** A usable declaration or the callee's recovered signature, when available. */
+  signature: Signature | null;
 }
 
 /** Memory effects replaced by calls in the selected C body. */

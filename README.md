@@ -160,6 +160,11 @@ Copy and fill effects can print as `memcpy`, `memmove` or `memset` builtins.
 list the recovered calls and constant byte counts. See
 [recognition limits](docs/MEMORY.md#inlined-memory-functions).
 
+Function summaries include `signature.callingConvention`, `signature.parameterCount`
+and `signature.variadic`, plus a `calls` array with recovered targets and argument
+counts. JavaScript `f.signature()` returns the same signature fields; MCP exposes
+them through `velk_run_script`. See [function signatures](docs/CALLS.md) for limits.
+
 Library signatures apply automatically when a binary is opened. `velk -f app`
 shows the recovered names, source sets and certainty; `velk -D app XXH32` prints
 a matched function. `--identify app` also lists unresolved candidates.

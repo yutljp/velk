@@ -117,6 +117,12 @@ Scripts use `b.xrefs(target, {from})`, `b.callers(target, {depth})`,
 `b.callees(target, {depth})`, `b.callPath(from, to, {depth})`,
 `b.strings({contains})` and `b.constants(value)`. A `Func` also provides
 `xrefs({from})`, `callers({depth})`, `callees({depth})` and `summary()`.
+`signature()` and `summary().signature` include `callingConvention`,
+`parameterCount` (including stack parameters) and `variadic`.
+`summary().calls` lists analyzed calls with their block and statement index,
+target, indirect status, calling convention, argument count and candidates.
+Unknown targets and argument counts are null; an empty candidate list means
+no candidates were recovered.
 The navigation index is built once per opened binary and cached in the session.
 These methods return objects containing arrays, not arrays directly. Keep pages
 small, select fields and retain a failure count:

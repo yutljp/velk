@@ -13,6 +13,38 @@ use crate::loader::{self, Architecture, Function, Image};
 use crate::sigs::{self, Certainty, Database, MatchScope};
 use crate::{disasm, render};
 
+fn function_signature(ir: &crate::ir::FunctionIr) -> serde_json::Value {
+    let mut params: Vec<_> = ir
+        .params
+        .iter()
+        .map(|param| serde_json::json!({"name": param.name, "type": param.ty.to_string()}))
+        .collect();
+    if let Ok(scalar) = crate::project::scalar_parameters(ir) {
+        params = scalar
+            .iter()
+            .map(|(name, ty)| serde_json::json!({"name": name, "type": ty.to_string()}))
+            .collect();
+    } else {
+        let mut stack: Vec<_> = ir.stack_params.iter().collect();
+        stack.sort_by_key(|param| param.position);
+        for param in stack {
+            params.insert(
+                param.position.min(params.len()),
+                serde_json::json!({
+                    "name": param.name, "type": param.ty.to_string(),
+                }),
+            );
+        }
+    }
+    serde_json::json!({
+        "return": ir.ret_type.to_string(),
+        "parameterCount": params.len(),
+        "params": params,
+        "callingConvention": format!("{:?}", ir.convention),
+        "variadic": ir.variadic,
+    })
+}
+
 fn canonicalize(path: &Path) -> Result<PathBuf> {
     match std::fs::canonicalize(path) {
         Ok(path) => Ok(path),
@@ -552,20 +584,92 @@ impl Binary {
         self.find(target).map(|function| function.addr)
     }
 
+    /// Returns recovered parameter types, count, calling convention and variadic status.
+    pub fn signature(&mut self, addr: u64, deadline: Option<Instant>) -> Result<serde_json::Value> {
+        let ir = match self.annotated_ir(addr, deadline) {
+            Ok(ir) => ir,
+            Err(error) => return Err(error),
+        };
+        let mut signature = function_signature(&ir);
+        if self.symbols.variadic_functions.get(&ir.addr).copied()
+            == Some(ir.params.len().saturating_add(ir.stack_params.len()))
+        {
+            signature["variadic"] = serde_json::Value::Bool(true);
+        }
+        Ok(signature)
+    }
+
     pub fn summary(&mut self, addr: u64, deadline: Option<Instant>) -> Result<serde_json::Value> {
         let mut function = match self.function(addr) {
             Ok(function) => function.clone(),
             Err(error) => return Err(error),
         };
         function.name = self.function_name(function.addr).map(str::to_owned);
+        let signature = match self.signature(addr, deadline) {
+            Ok(signature) => signature,
+            Err(error) => return Err(error),
+        };
         let (ir, simplification) = match self.analysis(addr, deadline) {
             Ok(analysis) => (&analysis.ir, analysis.simplification),
             Err(error) => return Err(error),
         };
-        let signature = serde_json::json!({
-            "return": ir.ret_type.to_string(),
-            "params": ir.params.iter().map(|p| serde_json::json!({"name": p.name, "type": p.ty.to_string()})).collect::<Vec<_>>(),
-        });
+        let mut calls = Vec::new();
+        let mut targets = Vec::new();
+        for block in &ir.blocks {
+            for (position, stmt) in block.stmts.iter().enumerate() {
+                let crate::ir::Stmt::Call {
+                    target,
+                    through,
+                    convention,
+                    args,
+                    via,
+                    ..
+                } = stmt
+                else {
+                    continue;
+                };
+                calls.push(serde_json::json!({
+                    "block": crate::addr::format(block.start),
+                    "statement": position,
+                    "target": target.map(crate::addr::format),
+                    "indirect": through.is_some(),
+                    "callingConvention": format!("{convention:?}"),
+                    "argumentCount": args.as_ref().map(Vec::len),
+                    "candidates": via.iter().flat_map(|via| &via.candidates)
+                        .copied().map(crate::addr::format).collect::<Vec<_>>(),
+                    "signature": target.and_then(|target| ir.callee_signatures.get(&target))
+                        .map(|signature| serde_json::json!({
+                            "return": signature.ret.to_string(),
+                            "params": signature.params.iter().map(|(name, ty)|
+                                serde_json::json!({"name": name, "type": ty.to_string()})
+                            ).collect::<Vec<_>>(),
+                            "parameterCount": signature.params.len(),
+                            "callingConvention": format!("{convention:?}"),
+                            "variadic": signature.variadic,
+                        })),
+                }));
+                if let Some(target) = target {
+                    targets.push((calls.len() - 1, *target));
+                }
+            }
+        }
+        for (position, target) in targets {
+            if !calls[position]["signature"].is_null()
+                || !self.image.functions.contains_key(&target)
+            {
+                continue;
+            }
+            let recovered = if target == addr {
+                signature.clone()
+            } else {
+                match self.signature(target, deadline) {
+                    Ok(signature) => signature,
+                    Err(Error::TimedOut) => return Err(Error::TimedOut),
+                    Err(_) => continue,
+                }
+            };
+            calls[position]["signature"] = recovered;
+        }
         let imports: std::collections::BTreeMap<_, _> = self
             .image
             .imports
@@ -590,7 +694,7 @@ impl Binary {
         let outgoing = index.from(addr);
         Ok(serde_json::json!({
             "addr": crate::addr::format(addr), "name": function.name, "size": function.size,
-            "signature": signature, "simplification": simplification,
+            "signature": signature, "calls": calls, "simplification": simplification,
             "inlineFunctions": inline_functions,
             "callees": index.graph(addr, false, 1).into_iter().map(crate::addr::format).collect::<Vec<_>>(),
             "imports": outgoing.iter().filter_map(|xref| imports.get(&xref.target))

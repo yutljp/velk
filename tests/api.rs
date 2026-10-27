@@ -157,6 +157,26 @@ fn com_calls_and_guid_references_match_in_scripts_and_cli() {
 }
 
 #[test]
+fn documented_call_summary_example_runs() {
+    for document in ["docs/CALLS.md", "docs/CALLS.ja.md"] {
+        let text = std::fs::read_to_string(common::root().join(document)).unwrap();
+        let script = text
+            .split_once("```js\n")
+            .unwrap()
+            .1
+            .split_once("```")
+            .unwrap()
+            .0;
+        let outcome = Engine::new().unwrap().run(script, None);
+        assert!(outcome.error.is_none(), "{document}: {:?}", outcome.error);
+        let value: Value = serde_json::from_str(&outcome.output).unwrap();
+        assert_eq!(value["signature"]["variadic"], true);
+        assert_eq!(value["signature"]["parameterCount"], 1);
+        assert_eq!(value["signature"], value["summary"]["signature"]);
+    }
+}
+
+#[test]
 fn macho_lookup_accepts_c_and_link_names() {
     let path = common::fixtures_dir().join("arm64_macho.o");
     let script = format!(

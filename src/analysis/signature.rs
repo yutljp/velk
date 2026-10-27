@@ -6,6 +6,7 @@ use crate::analysis::prototypes::{Prototype, preferred};
 use crate::ir::{Access, Block, CType, Convention, Expr, Operation, Param, Stmt};
 use crate::loader::Isa;
 
+mod paths;
 mod stack;
 
 use stack::{StackFrame, stack_arguments};
@@ -798,20 +799,22 @@ fn register_inputs(
         }
     }
 
-    // Code compiled to the convention takes no argument past a call in a
-    // register the convention lets the call change, whatever the callee
-    // really leaves there: a read of one is no argument either.
+    // Internal calls can preserve argument registers the ABI permits them
+    // to change. Their summaries determine which entry values survive.
     let call_writes = |stmt: &Stmt| match stmt {
         Stmt::Call { convention, .. } => {
             let mut written: Vec<_> = crate::ir::visit::statement_writes(stmt)
                 .into_iter()
                 .collect();
-            written.extend(convention.clobbered().iter().copied().filter(|register| {
-                !stmt
-                    .call_outputs()
-                    .iter()
-                    .any(|output| output.register == *register)
-            }));
+            if go || *convention == Convention::Aapcs64 {
+                // Save/restore reads can otherwise introduce extra arguments.
+                written.extend(convention.clobbered().iter().copied().filter(|register| {
+                    !stmt
+                        .call_outputs()
+                        .iter()
+                        .any(|output| output.register == *register)
+                }));
+            }
             for (output, source) in stmt.preserved_output_sources() {
                 let dest = stmt.call_outputs()[output].dest;
                 if dest.index == source && dest.width == 64 {
@@ -908,9 +911,34 @@ fn register_inputs(
         Vec::new()
     };
     let needed = needed_assignments(blocks, &registers, isa, convention);
+    let path_writes = if known_inputs {
+        let writes: Vec<Vec<_>> = blocks
+            .iter()
+            .map(|block| {
+                block
+                    .stmts
+                    .iter()
+                    .map(|stmt| match stmt {
+                        Stmt::Call { .. } => call_writes(stmt).into_iter().collect(),
+                        Stmt::Unsupported { .. } => float_arguments.iter().copied().collect(),
+                        _ => crate::ir::visit::statement_writes(stmt),
+                    })
+                    .collect()
+            })
+            .collect();
+        paths::definite_writes(blocks, &writes)
+    } else {
+        None
+    };
     for (index, block) in blocks.iter().enumerate() {
         let mut written = entry[index].clone();
         for (position, stmt) in block.stmts.iter().enumerate() {
+            if let Some(paths) = &path_writes {
+                let Some(before) = &paths[index][position] else {
+                    continue;
+                };
+                written.clone_from(before);
+            }
             // Results can pass incoming values through without an explicit read.
             if known_inputs && matches!(stmt, Stmt::Ret { .. }) {
                 for register in convention.results() {

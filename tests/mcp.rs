@@ -178,6 +178,44 @@ fn scalar_word_results_match_cli_javascript_and_mcp() {
 }
 
 #[test]
+fn calling_convention_data_matches_cli_and_javascript() {
+    let path = common::fixtures_dir().join("metrics/calls.x86_64.O0.debug.elf");
+    for (function, count, variadic) in [
+        ("sum_varargs", 1, true),
+        ("sum9", 9, false),
+        ("call_sum9", 1, false),
+    ] {
+        let output = Command::new(env!("CARGO_BIN_EXE_velk"))
+            .arg("--summary")
+            .arg(&path)
+            .arg(function)
+            .output()
+            .unwrap();
+        assert!(output.status.success(), "{output:?}");
+        let cli: Value = serde_json::from_slice(&output.stdout).unwrap();
+        assert_eq!(cli["signature"]["callingConvention"], "SysV");
+        assert_eq!(cli["signature"]["variadic"], variadic);
+        assert_eq!(cli["signature"]["parameterCount"], count);
+        assert!(cli["calls"].is_array());
+        if function == "call_sum9" {
+            assert_eq!(cli["calls"][0]["signature"]["parameterCount"], 9);
+            assert_eq!(cli["calls"][0]["argumentCount"], 9);
+        }
+        let code = format!(
+            "const f=velk.open({path:?}).getFunction({function:?}); JSON.stringify({{signature:f.signature(),summary:f.summary()}})"
+        );
+        let output = velk::script::Engine::new().unwrap().run(&code, None);
+        assert!(output.error.is_none(), "{:?}", output.error);
+        let javascript: Value = serde_json::from_str(&output.output).unwrap();
+        assert_eq!(javascript["signature"], cli["signature"]);
+        assert_eq!(javascript["summary"], cli);
+        let replies = exchange(&[script(1, &code)]);
+        let mcp: Value = serde_json::from_str(text(&replies[0])).unwrap();
+        assert_eq!(mcp, javascript);
+    }
+}
+
+#[test]
 fn discovery_and_fresh_scripts_work_over_stdio() {
     let path = common::fixtures_dir().join("arm64.o");
     let responses = exchange(&[

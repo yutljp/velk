@@ -156,6 +156,12 @@ JavaScript API と MCP では `b.search(pattern, options)`、
 `f.summary().inlineFunctions` は、復元した呼び出しと定数のバイト数を返します。
 [認識の制限](docs/MEMORY.ja.md#インライン化されたメモリ関数)を参照してください。
 
+関数の概要には `signature.callingConvention`、`signature.parameterCount`、
+`signature.variadic` と、復元した呼び出し先や引数の個数を示す `calls` 配列が
+含まれます。JavaScript の `f.signature()` も同じシグネチャのフィールドを返し、
+MCP では `velk_run_script` から取得できます。
+制限は[関数のシグネチャ](docs/CALLS.ja.md)を参照してください。
+
 バイナリを開くと、ライブラリシグネチャが自動で適用されます。`velk -f app`
 で復元した名前・出典のセット・確実性を確認し、`velk -D app XXH32` で一致した
 関数の C を表示できます。`--identify app` では名前を確定できなかった候補も表示します。

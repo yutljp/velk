@@ -466,36 +466,7 @@ pub fn handle(
                 Ok(address) => address,
                 Err(error) => return Err(error),
             };
-            let ir = match binary.annotated_ir(address, deadline) {
-                Ok(ir) => ir,
-                Err(error) => return Err(error),
-            };
-            let params = match crate::project::scalar_parameters(&ir) {
-                Ok(params) => params,
-                Err(_)
-                    if ir.params.is_empty()
-                        && matches!(
-                            ir.convention,
-                            crate::ir::Convention::Cdecl | crate::ir::Convention::Stdcall
-                        ) =>
-                {
-                    let mut params: Vec<_> = ir.stack_params.iter().collect();
-                    params.sort_by_key(|param| param.position);
-                    params
-                        .into_iter()
-                        .map(|param| (param.name.clone(), param.ty.clone()))
-                        .collect()
-                }
-                Err(_) => ir
-                    .params
-                    .iter()
-                    .map(|param| (param.name.clone(), param.ty.clone()))
-                    .collect(),
-            };
-            Ok(json!({
-                "return": ir.ret_type.to_string(),
-                "params": params.iter().map(|(name, ty)| json!({ "name": name, "type": ty.to_string() })).collect::<Vec<_>>(),
-            }))
+            binary.signature(address, deadline)
         }
         Request::References { bin, addr } => Ok(analysis(session, &bin, &addr, deadline)?
             .references

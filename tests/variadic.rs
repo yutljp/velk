@@ -52,6 +52,14 @@ fn integer_lists_recompile(directory: &str, targets: &[(&str, &str, &str)]) {
             .or_else(|_| binary.find("_sum"))
             .expect("the compiled fixture must contain the requested function")
             .addr;
+        let summary = binary
+            .summary(address, None)
+            .expect("variadic function summary");
+        assert_eq!(summary["signature"]["variadic"], true, "{name}: {summary}");
+        assert_eq!(
+            summary["signature"]["parameterCount"], 1,
+            "{name}: {summary}"
+        );
         let code = binary
             .decompile(address, None, None)
             .expect("the compiled fixture must support decompilation");

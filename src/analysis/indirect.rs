@@ -135,6 +135,17 @@ struct Tracker<'a> {
 }
 
 impl Tracker<'_> {
+    fn pointer_value(&self, value: Value) -> Value {
+        if crate::arch::pointer_bytes(self.image.isa) != 4 {
+            return value;
+        }
+        match value {
+            Value::Const(value, from) => Value::Const(u64::from(value as u32), from),
+            Value::Sym(base, offset) => Value::Sym(base, u64::from(offset as u32)),
+            other => other,
+        }
+    }
+
     fn returned(&self, target: u64, convention: Convention) -> Option<u64> {
         let Some(returns) = self.returns.as_ref() else {
             return None;
@@ -167,8 +178,12 @@ impl Tracker<'_> {
     /// `stored_width` bytes at `stored`.
     fn may_alias(&self, stored: Value, stored_width: u8, addr: Value, width: u8) -> bool {
         let overlap = |a: u64, b: u64| {
-            let distance = a.wrapping_sub(b) as i64;
-            distance < i64::from(width) && -distance < i64::from(stored_width)
+            let distance = if crate::arch::pointer_bytes(self.image.isa) == 4 {
+                i64::from((a as u32).wrapping_sub(b as u32) as i32)
+            } else {
+                a.wrapping_sub(b) as i64
+            };
+            distance < i64::from(width) && distance > -i64::from(stored_width)
         };
         match (stored, addr) {
             (Value::Sym(a, x), Value::Sym(b, y)) if a == b => overlap(x, y),
@@ -187,6 +202,9 @@ impl Tracker<'_> {
                 (Value::Const(value, _), width) => {
                     Value::Const(value & crate::ir::semantics::mask(u32::from(width)), None)
                 }
+                (value @ Value::Sym(..), 32) if crate::arch::pointer_bytes(self.image.isa) == 4 => {
+                    self.pointer_value(value)
+                }
                 _ => Value::Unknown,
             },
             Expr::Const(value) => Value::Const(*value, None),
@@ -200,6 +218,12 @@ impl Tracker<'_> {
                     }
                     (BinOp::Sub, Value::Sym(base, offset), Value::Const(value, _)) => {
                         Value::Sym(base, offset.wrapping_sub(value))
+                    }
+                    (BinOp::And, value, Value::Const(0xffff_ffff, _))
+                    | (BinOp::And, Value::Const(0xffff_ffff, _), value)
+                        if crate::arch::pointer_bytes(self.image.isa) == 4 =>
+                    {
+                        self.pointer_value(value)
                     }
                     (_, Value::Const(a, _), Value::Const(b, _)) => {
                         match Expr::bin(*op, Expr::Const(a), Expr::Const(b)) {
@@ -221,15 +245,15 @@ impl Tracker<'_> {
                     }
                     other => (self.eval(state, other, site, loads), 0),
                 };
-                let addr = match table {
+                let addr = self.pointer_value(match table {
                     Value::Const(table, _) => Value::Const(table.wrapping_add(offset), None),
                     Value::Sym(base, at) => Value::Sym(base, at.wrapping_add(offset)),
                     Value::Unknown | Value::Import(_) => Value::Unknown,
-                };
+                });
                 let name = Base::Def(site.0, site.1, *loads);
                 *loads += 1;
                 self.loads.borrow_mut().insert(name, addr);
-                if *width == 8 {
+                if *width == crate::arch::pointer_bytes(self.image.isa) {
                     if let Value::Const(slot, _) = addr
                         && self.image.imports.contains_key(&slot)
                         && self
@@ -240,7 +264,7 @@ impl Tracker<'_> {
                     {
                         return Value::Import(slot);
                     }
-                    if let Some(value) = state.memory.get(&(addr.key(), 8)) {
+                    if let Some(value) = state.memory.get(&(addr.key(), *width)) {
                         return *value;
                     }
                     if let (Value::Const(at, _), Value::Const(table, _)) = (addr, table)
@@ -303,13 +327,28 @@ impl Tracker<'_> {
                     (Value::Const(value, _), width) => {
                         Value::Const(value & crate::ir::semantics::mask(u32::from(width)), None)
                     }
+                    (value @ Value::Sym(..), 32)
+                        if crate::arch::pointer_bytes(self.image.isa) == 4 =>
+                    {
+                        self.pointer_value(value)
+                    }
                     _ => Value::Unknown,
+                };
+                let value = if dest.index < 16 {
+                    self.pointer_value(value)
+                } else {
+                    value
                 };
                 state.regs.insert(dest.index, value);
             }
             Stmt::Store { addr, value, width } => {
-                let addr = self.eval(state, addr, site, &mut loads);
+                let addr = self.pointer_value(self.eval(state, addr, site, &mut loads));
                 let value = self.eval(state, value, site, &mut loads);
+                let value = if *width == 4 {
+                    self.pointer_value(value)
+                } else {
+                    value
+                };
                 self.forget(state, Some((addr, *width)));
                 if addr != Value::Unknown && value != Value::Unknown {
                     state.memory.insert((addr.key(), *width), value);
@@ -457,22 +496,13 @@ fn read_only_word(image: &Image, addr: u64) -> Option<u64> {
     let Some(section) = image.section_at(addr) else {
         return None;
     };
-    let Some(end) = addr.checked_add(8) else {
-        return None;
-    };
-    if !section.read_only
-        || end > section.vaddr.saturating_add(section.size)
-        || image.imports.contains_key(&addr)
-    {
+    if !section.read_only {
         return None;
     }
-    let Some(bytes) = image.read_vaddr(addr, 8) else {
-        return None;
-    };
-    let Ok(bytes) = bytes.try_into() else {
-        return None;
-    };
-    Some(u64::from_le_bytes(bytes))
+    match image.read_pointer(addr) {
+        Some(crate::loader::Pointer::Address(address)) => Some(address),
+        _ => None,
+    }
 }
 
 fn is_code(image: &Image, word: Option<u64>) -> bool {
@@ -966,6 +996,152 @@ mod tests {
     use super::*;
     use crate::ir::{CallOutput, RegRef, VARIABLE_BASE};
     use crate::loader::{Function, Isa, Section};
+
+    #[test]
+    fn pointer_offsets_smt_preserve_native_addresses() {
+        use crate::ir::smt::{Proofs, raw_bin};
+        let image = Image::from_code(Isa::I386, 0, Vec::new());
+        let tracker = Tracker {
+            image: &image,
+            sp: 4,
+            loads: Default::default(),
+            constructors: false,
+            returns: None,
+        };
+        let mut proofs = Proofs::default();
+        for offset in [
+            0,
+            1,
+            u64::from(u32::MAX),
+            0x1_0000_0000,
+            i64::MAX as u64,
+            u64::MAX,
+        ] {
+            let before = raw_bin(
+                BinOp::And,
+                raw_bin(BinOp::Add, Expr::reg(4, 64), Expr::Const(offset)),
+                Expr::Const(u64::from(u32::MAX)),
+            );
+            let Value::Sym(_, narrowed) = tracker.eval(&State::entry(), &before, (0, 0), &mut 0)
+            else {
+                panic!("symbolic pointer must retain its base");
+            };
+            let after = raw_bin(BinOp::Add, Expr::reg(4, 32), Expr::Const(narrowed));
+            proofs.expression(format!("pointer-offset/{offset:x}"), &before, &after, 32);
+        }
+        if Proofs::available() {
+            proofs.check();
+        }
+        assert!(tracker.may_alias(
+            Value::Sym(Base::Entry(4), 0xffff_fffe),
+            4,
+            Value::Sym(Base::Entry(4), 0),
+            1
+        ));
+        assert!(!tracker.may_alias(
+            Value::Sym(Base::Entry(4), 0xffff_fffe),
+            2,
+            Value::Sym(Base::Entry(4), 0),
+            1
+        ));
+        assert!(tracker.may_alias(Value::Const(0, None), 8, Value::Const(1 << 63, None), 8));
+        let wide_image = Image::from_code(Isa::X86_64, 0, Vec::new());
+        let wide_tracker = Tracker {
+            image: &wide_image,
+            ..tracker
+        };
+        assert!(!wide_tracker.may_alias(Value::Const(0, None), 8, Value::Const(1 << 63, None), 8));
+    }
+
+    #[test]
+    fn stored_code_addresses_use_the_target_pointer_width() {
+        for (isa, code) in [
+            (Isa::I386, vec![0x8b, 0x44, 0x24, 4, 0xc3]),
+            (Isa::X86_64, vec![0x8d, 0x47, 1, 0xc3]),
+            (
+                Isa::Arm32,
+                [0xe2800001u32, 0xe12fff1e]
+                    .into_iter()
+                    .flat_map(u32::to_le_bytes)
+                    .collect(),
+            ),
+            (
+                Isa::AArch64,
+                [0x11000400u32, 0xd65f03c0]
+                    .into_iter()
+                    .flat_map(u32::to_le_bytes)
+                    .collect(),
+            ),
+        ] {
+            let size = code.len() as u64;
+            let mut image = Image::from_code(isa, 0x80, code);
+            image.functions.insert(
+                0x80,
+                Function {
+                    addr: 0x80,
+                    size: Some(size),
+                    size_estimated: false,
+                    name: Some("increment".to_owned()),
+                    aliases: Vec::new(),
+                    library: None,
+                    sources: Vec::new(),
+                },
+            );
+            let width = crate::arch::pointer_bytes(isa);
+            for offset in [0, 8, 24, u64::from(u32::MAX)] {
+                for overlap in [false, true] {
+                    let slot = Expr::bin(
+                        BinOp::Add,
+                        Expr::reg(crate::arch::stack_pointer(isa), 64),
+                        Expr::Const(offset),
+                    );
+                    let mut stmts = vec![Stmt::Store {
+                        addr: slot.clone(),
+                        value: Expr::Const(0x80),
+                        width,
+                    }];
+                    if overlap {
+                        stmts.push(Stmt::Store {
+                            addr: slot.clone(),
+                            value: Expr::reg(3, 64),
+                            width: 1,
+                        });
+                    }
+                    stmts.push(crate::lift::call_through(
+                        crate::ir::CallKind::Invoke,
+                        &image,
+                        Expr::Load {
+                            addr: Box::new(slot),
+                            width,
+                            signed: false,
+                        },
+                    ));
+                    stmts.push(Stmt::Ret {
+                        value: Expr::reg(0, 64),
+                    });
+                    let mut blocks = [Block { start: 0, stmts }];
+                    resolve(&mut blocks, &[], &image);
+                    let call = blocks[0]
+                        .stmts
+                        .iter()
+                        .find(|stmt| matches!(stmt, Stmt::Call { .. }))
+                        .unwrap();
+                    assert_eq!(
+                        matches!(
+                            call,
+                            Stmt::Call {
+                                target: Some(0x80),
+                                through: None,
+                                ..
+                            }
+                        ),
+                        !overlap,
+                        "{isa:?}: {call:?}"
+                    );
+                }
+            }
+        }
+    }
 
     fn pointer_factory(isa: Isa, table: bool, factory: Vec<u8>) -> (Image, Vec<Block>) {
         let (caller, target) = match isa {

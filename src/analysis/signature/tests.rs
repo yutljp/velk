@@ -3,6 +3,118 @@ use crate::ir::{BinOp, Block, Convention, Expr, RegRef, Stmt};
 use crate::loader::{Format, Isa};
 
 #[test]
+fn argument_reads_after_internal_calls_follow_the_callee_clobbers() {
+    for (isa, convention) in [
+        (Isa::X86_64, Convention::SysV),
+        (Isa::X86_64, Convention::Win64),
+        (Isa::AArch64, Convention::Aapcs64),
+        (Isa::Arm32, Convention::Aapcs32),
+        (Isa::I386, Convention::Fastcall),
+    ] {
+        let register = convention.arguments()[1];
+        for preserved in [false, true] {
+            let clobbers = preserved.then_some(crate::ir::Registers::default());
+            let blocks = [Block {
+                start: 0,
+                stmts: vec![
+                    Stmt::Call {
+                        kind: crate::ir::CallKind::Invoke,
+                        target: Some(0x1000),
+                        through: None,
+                        convention,
+                        args: Some(Vec::new()),
+                        floats_named: true,
+                        abi: None,
+                        clobbers,
+                        outputs: crate::ir::fallback_call_outputs(convention, clobbers),
+                        via: None,
+                    },
+                    Stmt::Store {
+                        addr: Expr::Const(0x2000),
+                        value: Expr::reg(register, 32),
+                        width: 4,
+                    },
+                    Stmt::Ret {
+                        value: Expr::Const(0),
+                    },
+                ],
+            }];
+            let signature = recover(&blocks, isa, convention, false);
+            assert_eq!(
+                signature.params.len(),
+                if preserved && convention != Convention::Aapcs64 {
+                    2
+                } else {
+                    0
+                }
+            );
+        }
+    }
+}
+
+#[test]
+fn boolean_guard_smt_checks_only_inputs_read_on_feasible_paths() {
+    for guarded in [false, true] {
+        let assign = |index, value| Stmt::Assign {
+            dest: RegRef { index, width: 64 },
+            value: Expr::Const(value),
+        };
+        let blocks = [
+            Block {
+                start: 0,
+                stmts: vec![
+                    assign(2, 0),
+                    Stmt::Brif {
+                        cond: crate::ir::Cond::Eq,
+                        lhs: Expr::reg(7, 32),
+                        rhs: Expr::Const(0),
+                        target: 20,
+                    },
+                ],
+            },
+            Block {
+                start: 10,
+                stmts: vec![assign(1, 42), assign(2, 1)],
+            },
+            Block {
+                start: 20,
+                stmts: vec![Stmt::Brif {
+                    cond: crate::ir::Cond::Eq,
+                    lhs: Expr::reg(if guarded { 2 } else { 6 }, 32),
+                    rhs: Expr::Const(0),
+                    target: 40,
+                }],
+            },
+            Block {
+                start: 30,
+                stmts: vec![Stmt::Store {
+                    addr: Expr::Const(0x2000),
+                    value: Expr::reg(1, 64),
+                    width: 8,
+                }],
+            },
+            Block {
+                start: 40,
+                stmts: vec![Stmt::Ret {
+                    value: Expr::Const(0),
+                }],
+            },
+        ];
+        let signature = recover(&blocks, Isa::X86_64, Convention::SysV, false);
+        assert_eq!(signature.params.len(), if guarded { 1 } else { 4 });
+        if guarded && crate::ir::smt::Proofs::available() {
+            let mut before = crate::ir::FunctionIr::single_block(Isa::X86_64, Vec::new());
+            before.blocks = blocks.to_vec();
+            let mut after = before.clone();
+            after.blocks[0].stmts.insert(0, assign(1, 0));
+            let mut proofs = crate::ir::smt::Proofs::default();
+            proofs.function("boolean-guard-entry-value", &before, &after);
+            proofs.check();
+        }
+    }
+}
+
+#[test]
 fn a_register_written_in_an_earlier_block_is_not_an_argument() {
     let blocks = vec![
         Block {

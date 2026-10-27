@@ -462,9 +462,8 @@ fn settle(
         // One calling itself depends on itself.
         callers.entry(*caller).or_default().push(*caller);
     }
-    // In a cycle the registers each function changes are settled on their
-    // own; until they are, a call into the cycle changes what the
-    // convention lets it, which is all the other fields need.
+    // Settle register changes before recovering arguments across calls in
+    // the cycle, which may preserve argument registers.
     let clobbers = if cyclic {
         settle_clobbers(image, part, &callers, outside)
     } else {
@@ -492,11 +491,18 @@ fn settle(
         });
         let found = {
             let lookup = |target: u64| {
-                current
+                let mut summary = current
                     .get(&target)
                     .copied()
                     .or_else(|| outside(target))
-                    .unwrap_or_default()
+                    .unwrap_or_default();
+                if !image.go
+                    && image.isa != crate::loader::Isa::AArch64
+                    && let Some(known) = clobbers.get(&target)
+                {
+                    summary.clobbers = *known;
+                }
+                summary
             };
             crate::parallel::map(&pending, |addr| {
                 compute(image, *addr, &lookup, seen.get(addr), !cyclic)
