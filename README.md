@@ -47,6 +47,7 @@ int sum_until_zero(int *p, int n) {
   `b.libraryType("struct IUnknownVtbl")`, also through CLI scripts and MCP.
   Calls with supported interface types print as `object->lpVtbl->Method(object, ...)`.
   Referenced IIDs and CLSIDs are named from header GUID values. See [Windows COM](docs/WINDOWS_COM.md).
+- [Saved analysis](docs/ANALYSIS_CACHE.md) in `<binary>.velk-cache`; move it with `--cache PATH` or `VELK_CACHE`, or disable it with `--cache off` (`VELK_CACHE=off`).
 - Persistent names, types and comments in project files (`--project`, `--annotate`).
 - [Compare program versions](docs/COMPARISON.md), review C and block differences, and copy annotations to matching functions (`--compare`, `--carry-annotations`).
 - C++ RTTI class names, inheritance and virtual tables (`--classes`), and typed exception comments.

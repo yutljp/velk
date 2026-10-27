@@ -26,3 +26,7 @@ tests/out*/
 /tests/__pycache__/
 # Python caches for the signature build tools.
 /tools/signatures/__pycache__/
+
+# Disposable binary analysis results.
+*.velk-cache
+*.velk-cache.*.tmp

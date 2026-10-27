@@ -7,18 +7,21 @@ mod references;
 pub(crate) use itanium::type_name as itanium_type_name;
 pub(crate) use msvc::type_name as msvc_type_name;
 
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 use super::{Format, Image, Isa};
 
 /// A class identified by runtime type information.
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Class {
     /// Demangled runtime name.
     pub name: String,
     /// Address of the runtime type descriptor.
-    #[serde(serialize_with = "crate::addr::serialize")]
+    #[serde(
+        serialize_with = "crate::addr::serialize",
+        deserialize_with = "crate::addr::deserialize"
+    )]
     pub type_info: u64,
     /// Direct bases, in runtime descriptor order.
     pub bases: Vec<Base>,
@@ -27,7 +30,7 @@ pub struct Class {
 }
 
 /// One direct base relationship. RTTI does not describe data member sizes.
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Base {
     /// Runtime name of the base class.
@@ -45,7 +48,7 @@ pub struct Base {
 }
 
 /// MSVC's dynamic virtual base location.
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct VirtualBase {
     /// Offset of the vbptr in the object.
@@ -57,11 +60,14 @@ pub struct VirtualBase {
 }
 
 /// A virtual table address point, where the first method pointer resides.
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Vtable {
     /// Address of the first method pointer.
-    #[serde(serialize_with = "crate::addr::serialize")]
+    #[serde(
+        serialize_with = "crate::addr::serialize",
+        deserialize_with = "crate::addr::deserialize"
+    )]
     pub address: u64,
     /// Offset of this table's subobject within the complete object.
     pub offset: i64,
@@ -72,12 +78,15 @@ pub struct Vtable {
 }
 
 /// One virtual method entry. Names absent from the file remain unknown.
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Method {
     /// Zero-based pointer slot.
     pub slot: u64,
     /// Code address, which may be an adjustment thunk.
-    #[serde(serialize_with = "crate::addr::serialize")]
+    #[serde(
+        serialize_with = "crate::addr::serialize",
+        deserialize_with = "crate::addr::deserialize"
+    )]
     pub address: u64,
     /// Symbol or debug name, when available.
     pub name: Option<String>,

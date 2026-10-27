@@ -123,7 +123,7 @@ pub struct Section {
 }
 
 /// Where a function's start, name or size was found.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum NameSource {
     Symtab,
@@ -163,13 +163,16 @@ impl fmt::Display for NameSource {
     }
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Function {
-    #[serde(serialize_with = "crate::addr::serialize")]
+    #[serde(
+        serialize_with = "crate::addr::serialize",
+        deserialize_with = "crate::addr::deserialize"
+    )]
     pub addr: u64,
     pub size: Option<u64>,
-    #[serde(skip_serializing_if = "std::ops::Not::not")]
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub size_estimated: bool,
     pub name: Option<String>,
     /// Further names other symbols give the same address.
@@ -203,7 +206,7 @@ impl Function {
 }
 
 /// What a call needs to know of its callee.
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Summary {
     /// How many integer argument registers it reads, when known.
     pub arity: Option<usize>,
@@ -260,6 +263,8 @@ pub struct Image {
     /// The regular symbol table has no named, defined code symbols.
     pub stripped: bool,
     bytes: bytes::Bytes,
+    pub(crate) input_digest: [u8; 32],
+    pub(crate) debug_path: Option<std::path::PathBuf>,
     pub sections: Vec<Section>,
     pub functions: BTreeMap<u64, Function>,
     /// The names of the data objects the symbol tables define.
@@ -312,14 +317,14 @@ pub struct Image {
     pub(crate) go_types: std::sync::OnceLock<go::types::Types>,
     /// The C++ virtual tables, by address point. Built on first use.
     pub vtables: std::sync::OnceLock<std::collections::BTreeSet<u64>>,
-    classes: std::sync::OnceLock<Vec<classes::Class>>,
+    pub(crate) classes: std::sync::OnceLock<Vec<classes::Class>>,
     /// The table each function leaves at the start of the object its first
     /// argument points to, as a constructor does, filled on demand.
     pub installs: std::sync::Mutex<HashMap<u64, Option<u64>>>,
 }
 
 /// The instruction mode or data selected by ARM mapping symbols.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum ArmMode {
     Arm,
     Thumb,
@@ -455,6 +460,8 @@ impl Image {
     /// `addr`.
     fn code_image(isa: Isa, addr: u64, code: bytes::Bytes) -> Self {
         Self {
+            input_digest: code.digest(),
+            debug_path: None,
             slices: Vec::new(),
             slice_offset: 0,
             codeview: Default::default(),
@@ -903,23 +910,39 @@ pub fn load(path: &Path) -> Result<Image> {
 
 /// Loads a binary, selecting a universal Mach-O slice when requested.
 pub fn load_with_arch(path: &Path, arch: Option<Architecture>) -> Result<Image> {
-    load_input(path, &OpenOptions { arch, raw: None })
+    load_input(
+        path,
+        &OpenOptions {
+            arch,
+            raw: None,
+            cache: None,
+        },
+    )
 }
 
 /// Loads a normal or explicitly described raw image.
 pub fn load_input(path: &Path, options: &OpenOptions) -> Result<Image> {
+    load_input_with_saved(path, options, |_| None)
+}
+
+pub(crate) fn load_input_with_saved(
+    path: &Path,
+    options: &OpenOptions,
+    saved: impl FnOnce(&Image) -> Option<crate::service::cache::Saved>,
+) -> Result<Image> {
     if let Some(raw) = &options.raw {
         if options.arch.is_some() {
             return Err(Error::Raw(
                 "raw and Mach-O architecture options conflict".to_owned(),
             ));
         }
-        return input::load_raw(path, raw);
+        return input::load_raw(path, raw, saved);
     }
     let input = match bytes::Bytes::read(path) {
         Ok(bytes) => bytes,
         Err(error) => return Err(error),
     };
+    let input_digest = input.digest();
     let (input, packing, recovered) = if let Some(report) = packed::detect(&input) {
         let recovered = match packed::unpack(&input) {
             Ok(bytes) => bytes,
@@ -1197,6 +1220,8 @@ pub fn load_input(path: &Path, options: &OpenOptions) -> Result<Image> {
         }
     }
     let mut image = Image {
+        input_digest,
+        debug_path: crate::service::cache::debug_path(path, bytes),
         slices,
         slice_offset,
         codeview,
@@ -1256,6 +1281,10 @@ pub fn load_input(path: &Path, options: &OpenOptions) -> Result<Image> {
     for (address, binding) in bindings {
         image.imports.insert(address, binding.name);
         image.import_addends.insert(address, binding.addend);
+    }
+    if let Some(saved) = saved(&image) {
+        saved.restore(&mut image);
+        return Ok(image);
     }
     image.add_go_functions();
     image.add_dwarf_functions();

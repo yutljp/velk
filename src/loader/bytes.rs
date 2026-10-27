@@ -70,6 +70,11 @@ impl Bytes {
         }
     }
 
+    pub(super) fn digest(&self) -> [u8; 32] {
+        use sha2::Digest;
+        sha2::Sha256::digest(self.as_slice()).into()
+    }
+
     pub(super) fn as_slice(&self) -> &[u8] {
         self
     }

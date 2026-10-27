@@ -1,7 +1,9 @@
 use crate::loader::Isa;
 
 /// A set of machine registers, one bit for each index below 128.
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
+#[derive(
+    Debug, Clone, Copy, Default, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize,
+)]
 pub struct Registers(pub u128);
 
 impl Registers {

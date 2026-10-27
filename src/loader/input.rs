@@ -15,6 +15,9 @@ pub struct OpenOptions {
     pub arch: Option<super::Architecture>,
     /// Explicit description of headerless bytes.
     pub raw: Option<RawOptions>,
+    /// Persistent cache path or false to disable it; omission uses `VELK_CACHE`.
+    #[serde(default)]
+    pub cache: Option<crate::service::CacheLocation>,
 }
 
 /// The instruction set of headerless code.
@@ -114,7 +117,11 @@ fn deserialize_entries<'de, D: serde::Deserializer<'de>>(
     Ok(entries)
 }
 
-pub(super) fn load_raw(path: &Path, options: &RawOptions) -> Result<Image> {
+pub(super) fn load_raw(
+    path: &Path,
+    options: &RawOptions,
+    saved: impl FnOnce(&Image) -> Option<crate::service::cache::Saved>,
+) -> Result<Image> {
     if options.byte_order != ByteOrder::Little {
         return Err(Error::Raw("big-endian code is not supported".to_owned()));
     }
@@ -201,6 +208,10 @@ pub(super) fn load_raw(path: &Path, options: &RawOptions) -> Result<Image> {
             image.entry = Some(address);
         }
         upsert(&mut image.functions, address, None, None, NameSource::Entry);
+    }
+    if let Some(saved) = saved(&image) {
+        saved.restore(&mut image);
+        return Ok(image);
     }
     image.scan_prologues();
     discover::estimate_sizes(&image.sections, &mut image.functions);

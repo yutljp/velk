@@ -1,4 +1,7 @@
 mod batch;
+pub(crate) mod cache;
+
+pub use cache::Location as CacheLocation;
 
 use std::borrow::Cow;
 use std::collections::HashMap;
@@ -94,7 +97,11 @@ impl Session {
         self.open_input_with_signatures(
             path,
             project,
-            &loader::OpenOptions { arch, raw: None },
+            &loader::OpenOptions {
+                arch,
+                raw: None,
+                cache: None,
+            },
             signatures,
         )
     }
@@ -139,7 +146,10 @@ impl Session {
             .entry((path, options.clone(), signatures.clone()))
         {
             Entry::Occupied(entry)
-                if entry.get().modified == modified
+                if entry.get().source_digest.is_some()
+                    && entry.get().source_digest
+                        == cache::source_digest(&entry.key().0, signatures)
+                    && entry.get().modified == modified
                     && project.is_none_or(|project| entry.get().project_path == project) =>
             {
                 let binary = entry.into_mut();
@@ -161,6 +171,7 @@ impl Session {
                     Ok(binary) => binary,
                     Err(error) => return Err(error),
                 };
+                entry.get_mut().cache = None;
                 entry.insert(binary);
                 Ok(entry.into_mut())
             }
@@ -183,6 +194,8 @@ impl Session {
 }
 
 pub struct Binary {
+    cache: Option<cache::Cache>,
+    source_digest: Option<String>,
     string_decoding: bool,
     decoded_strings: HashMap<u64, Vec<crate::string_decoding::DecodedString>>,
     navigation: Option<crate::xrefs::Index>,
@@ -241,7 +254,15 @@ impl Binary {
         project: Option<&Path>,
         arch: Option<Architecture>,
     ) -> Result<Self> {
-        Self::open_input(path, project, &loader::OpenOptions { arch, raw: None })
+        Self::open_input(
+            path,
+            project,
+            &loader::OpenOptions {
+                arch,
+                raw: None,
+                cache: None,
+            },
+        )
     }
 
     /// Opens a normal or raw image with explicit mapping options.
@@ -274,7 +295,11 @@ impl Binary {
         Self::open_input_with_signatures(
             path,
             project,
-            &loader::OpenOptions { arch, raw: None },
+            &loader::OpenOptions {
+                arch,
+                raw: None,
+                cache: None,
+            },
             signatures,
         )
     }
@@ -325,18 +350,46 @@ impl Binary {
             }
             options.raw = Some(raw.clone());
         }
-        let mut image = match loader::load_input(&path, &options) {
+        let mut source_digest = None;
+        let mut cache = None;
+        let mut reused = false;
+        let mut image = match loader::load_input_with_saved(&path, &options, |image| {
+            source_digest = cache::image_source_digest(image, signatures);
+            cache = cache::Cache::new(
+                &path,
+                &project_path,
+                image.debug_path.as_deref(),
+                source_digest.as_deref(),
+                &options,
+                signatures,
+                project.as_ref(),
+            );
+            let saved = cache.as_mut().and_then(cache::Cache::read);
+            reused = saved.is_some();
+            saved
+        }) {
             Ok(image) => image,
             Err(error) => return Err(error),
         };
-        crate::analysis::absorb_jump_table_cases(&mut image);
-        if let Some(project) = &project
+        if !reused {
+            crate::analysis::absorb_jump_table_cases(&mut image);
+        }
+        if !reused
+            && let Some(project) = &project
             && let Err(error) = project.classify(&mut image)
         {
             return Err(error);
         }
         let needs_defaults = signatures.defaults
-            && (!signatures.files.is_empty() || sigs::has_unnamed_candidates(&image));
+            && (!signatures.files.is_empty()
+                || if reused {
+                    cache.as_ref().is_some_and(|cache| cache.needs_defaults)
+                } else {
+                    sigs::has_unnamed_candidates(&image)
+                });
+        if let Some(cache) = &mut cache {
+            cache.needs_defaults = needs_defaults;
+        }
         let mut database = if needs_defaults {
             Cow::Borrowed(sigs::bundled_for_isa(image.isa))
         } else {
@@ -361,6 +414,8 @@ impl Binary {
             database.to_mut().sources.extend(extra.sources);
         }
         let mut binary = Self {
+            cache: None,
+            source_digest,
             navigation: None,
             path: path.to_owned(),
             modified,
@@ -378,7 +433,8 @@ impl Binary {
             analyses: HashMap::new(),
             shared_analyses: HashMap::new(),
         };
-        if (!signatures.files.is_empty() || needs_defaults)
+        if !reused
+            && (!signatures.files.is_empty() || needs_defaults)
             && let Err(error) = binary.apply_signatures(
                 &database,
                 None,
@@ -392,6 +448,12 @@ impl Binary {
             return Err(error);
         }
         binary.signature_database = database;
+        if let Some(cache) = &mut cache
+            && !reused
+        {
+            cache.write(&binary.image, binary.navigation.as_ref());
+        }
+        binary.cache = cache;
         Ok(binary)
     }
 
@@ -418,6 +480,7 @@ impl Binary {
             ) {
                 Ok(mut binary) => {
                     binary.string_decoding = self.string_decoding;
+                    self.cache = None;
                     *self = binary;
                 }
                 Err(error) => return Err(error),
@@ -522,6 +585,9 @@ impl Binary {
     pub fn navigation(&mut self, deadline: Option<Instant>) -> Result<&crate::xrefs::Index> {
         if let Err(error) = passed(deadline) {
             return Err(error);
+        }
+        if self.navigation.is_none() {
+            self.navigation = self.cache.as_mut().and_then(cache::Cache::read_navigation);
         }
         if self.navigation.is_none() {
             match crate::xrefs::Index::build(&self.image, deadline) {
@@ -1196,6 +1262,7 @@ impl Binary {
         database: &Database,
         deadline: Option<Instant>,
     ) -> Result<Identification> {
+        self.cache = None;
         let mut combined =
             if self.signature_options.defaults && self.signature_database.entries.is_empty() {
                 sigs::bundled_for_isa(self.image.isa).clone()
@@ -1341,6 +1408,17 @@ fn modified(path: &Path) -> Result<SystemTime> {
         })
 }
 
+impl Drop for Binary {
+    fn drop(&mut self) {
+        if std::thread::panicking() {
+            return;
+        }
+        if let Some(cache) = &mut self.cache {
+            cache.write(&self.image, self.navigation.as_ref());
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1348,10 +1426,15 @@ mod tests {
     use crate::loader::Isa;
 
     fn fixture(name: &str) -> Binary {
-        Binary::open(
+        Binary::open_input(
             &Path::new(env!("CARGO_MANIFEST_DIR"))
                 .join("tests/fixtures")
                 .join(name),
+            None,
+            &loader::OpenOptions {
+                cache: Some(CacheLocation::Enabled(false)),
+                ..loader::OpenOptions::default()
+            },
         )
         .expect("fixture loads")
     }

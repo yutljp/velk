@@ -67,6 +67,7 @@ fn extracted(
     let path = directory.join("code.bin");
     fs::write(&path, bytes).expect("writing extracted code");
     let options = OpenOptions {
+        cache: None,
         arch: None,
         raw: Some(RawOptions {
             arch,
@@ -257,6 +258,7 @@ fn raw_strings_search_annotations_and_cached_mappings_work() {
     let path = directory.join("code.bin");
     fs::write(&path, b"\xb8\x2a\x00\x00\x00\xc3hello raw world\0").unwrap();
     let options = OpenOptions {
+        cache: None,
         arch: None,
         raw: Some(RawOptions {
             arch: RawArchitecture::X86_64,
@@ -391,6 +393,7 @@ fn malformed_mappings_fail_without_guessing_an_architecture() {
             &path,
             None,
             &OpenOptions {
+                cache: None,
                 arch: None,
                 raw: Some(raw),
             },
@@ -405,6 +408,7 @@ fn malformed_mappings_fail_without_guessing_an_architecture() {
             &path,
             None,
             &OpenOptions {
+                cache: None,
                 arch: None,
                 raw: Some(valid)
             }

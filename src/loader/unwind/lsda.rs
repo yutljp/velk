@@ -7,7 +7,7 @@ use std::collections::BTreeSet;
 use crate::loader::Image;
 use crate::loader::classes;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub(crate) struct Region {
     pub function: u64,
     pub start: u64,

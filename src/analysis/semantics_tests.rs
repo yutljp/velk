@@ -316,10 +316,12 @@ fn collect(dir: &Path, relative: &Path, found: &mut Vec<PathBuf>) {
         let name = relative.join(path.file_name().expect("a directory entry has a name"));
         if path.is_dir() {
             collect(&path, &name, found);
-        } else if path
-            .extension()
-            .is_none_or(|extension| extension != "txt" && extension != "pdb")
-        {
+        } else if path.extension().is_none_or(|extension| {
+            !matches!(
+                extension.to_str(),
+                Some("txt" | "pdb" | "velk-cache" | "tmp")
+            )
+        }) {
             found.push(name);
         }
     }

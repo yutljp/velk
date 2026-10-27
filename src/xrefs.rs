@@ -13,28 +13,37 @@ mod tests;
 use std::collections::{BTreeMap, BTreeSet, VecDeque};
 use std::time::Instant;
 
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 use crate::deadline::passed;
 use crate::error::Result;
 use crate::ir::{CallKind, Expr, Stmt};
 use crate::loader::Image;
 
-#[derive(Debug, Clone, Serialize, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
 #[serde(rename_all = "camelCase")]
 pub struct Xref {
-    #[serde(serialize_with = "crate::addr::serialize")]
+    #[serde(
+        serialize_with = "crate::addr::serialize",
+        deserialize_with = "crate::addr::deserialize"
+    )]
     pub function: u64,
-    #[serde(serialize_with = "crate::addr::serialize")]
+    #[serde(
+        serialize_with = "crate::addr::serialize",
+        deserialize_with = "crate::addr::deserialize"
+    )]
     pub block: u64,
     pub statement: usize,
-    #[serde(serialize_with = "crate::addr::serialize")]
+    #[serde(
+        serialize_with = "crate::addr::serialize",
+        deserialize_with = "crate::addr::deserialize"
+    )]
     pub target: u64,
     pub kind: Kind,
     pub name: Option<String>,
 }
 
-#[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
 #[serde(rename_all = "camelCase")]
 pub enum Kind {
     Call,
@@ -53,19 +62,25 @@ impl Kind {
     }
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Failure {
-    #[serde(serialize_with = "crate::addr::serialize")]
+    #[serde(
+        serialize_with = "crate::addr::serialize",
+        deserialize_with = "crate::addr::deserialize"
+    )]
     pub function: u64,
     pub error: String,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct StringLiteral {
-    #[serde(serialize_with = "crate::addr::serialize")]
+    #[serde(
+        serialize_with = "crate::addr::serialize",
+        deserialize_with = "crate::addr::deserialize"
+    )]
     pub addr: u64,
     pub section: String,
-    pub encoding: &'static str,
+    pub encoding: String,
     pub text: String,
     pub bytes: usize,
     pub xrefs: Vec<Xref>,
@@ -386,5 +401,36 @@ fn expression(expr: &Expr, kind: Kind, image: &Image, add: &mut impl FnMut(u64, 
                 expression(child, Kind::Address, image, add);
             }
         }
+    }
+}
+
+#[derive(Serialize, Deserialize)]
+pub(crate) struct SavedIndex {
+    xrefs: Vec<Xref>,
+    failures: Vec<Failure>,
+    strings: Vec<StringLiteral>,
+}
+
+impl SavedIndex {
+    pub(crate) fn capture(index: &Index) -> Self {
+        Self {
+            xrefs: index.xrefs.clone(),
+            failures: index.failures.clone(),
+            strings: index.strings.clone(),
+        }
+    }
+
+    pub(crate) fn restore(self) -> Index {
+        let mut index = Index {
+            xrefs: self.xrefs,
+            failures: self.failures,
+            strings: self.strings,
+            ..Index::default()
+        };
+        for (at, xref) in index.xrefs.iter().enumerate() {
+            index.incoming.entry(xref.target).or_default().push(at);
+            index.outgoing.entry(xref.function).or_default().push(at);
+        }
+        index
     }
 }

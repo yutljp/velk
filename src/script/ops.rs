@@ -32,6 +32,8 @@ pub enum BinaryRef {
         signature_options: SignatureOptions,
         /// Explicit headerless mapping.
         raw: Option<crate::loader::RawOptions>,
+        /// Persistent cache path or false to disable it.
+        cache: Option<crate::service::CacheLocation>,
     },
 }
 
@@ -55,7 +57,10 @@ impl BinaryRef {
     fn options(&self) -> crate::loader::OpenOptions {
         match self {
             Self::Path(_) => crate::loader::OpenOptions::default(),
-            Self::Selected { arch, raw, .. } => crate::loader::OpenOptions {
+            Self::Selected {
+                arch, raw, cache, ..
+            } => crate::loader::OpenOptions {
+                cache: cache.clone(),
                 arch: *arch,
                 raw: raw.clone(),
             },
@@ -141,6 +146,8 @@ pub enum Request {
         signature_options: SignatureOptions,
         /// Explicit headerless mapping.
         raw: Option<crate::loader::RawOptions>,
+        /// Persistent cache path or false to disable it.
+        cache: Option<crate::service::CacheLocation>,
     },
     /// Saves a completely recovered executable to a new file.
     SaveUnpacked {
@@ -304,11 +311,16 @@ pub fn handle(
             arch,
             signature_options,
             raw,
+            cache,
         } => {
             let binary = match session.open_input_with_signatures(
                 &path,
                 project.as_deref(),
-                &crate::loader::OpenOptions { arch, raw },
+                &crate::loader::OpenOptions {
+                    arch,
+                    raw,
+                    cache: cache.clone(),
+                },
                 &signature_options,
             ) {
                 Ok(binary) => binary,
@@ -316,7 +328,7 @@ pub fn handle(
             };
             let image = binary.image();
             Ok(json!({
-                "id": { "path": binary.path(), "arch": arch, "raw": binary.input_options().raw, "signatureOptions": signature_options },
+                "id": { "path": binary.path(), "arch": arch, "raw": binary.input_options().raw, "cache": cache, "signatureOptions": signature_options },
                 "path": binary.path(),
                 "format": image.format,
                 "packing": image.packing,

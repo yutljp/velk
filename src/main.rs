@@ -68,6 +68,13 @@ fn main() -> ExitCode {
     };
     let project = cli.project.clone();
     let input_options = velk::loader::OpenOptions {
+        cache: cli.cache.clone().map(|value| {
+            if value == "off" {
+                velk::service::CacheLocation::Enabled(false)
+            } else {
+                velk::service::CacheLocation::Path(value.into())
+            }
+        }),
         arch: cli.arch,
         raw: cli.raw_arch.map(|arch| velk::loader::RawOptions {
             arch,
@@ -129,6 +136,7 @@ fn main() -> ExitCode {
             binary: cli.input.expect("clap requires input"),
             arch: cli.arch,
             raw: input_options.raw,
+            cache: input_options.cache,
             project,
             command,
         }) {

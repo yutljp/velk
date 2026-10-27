@@ -26,3 +26,15 @@ pub fn serialize_option<S: serde::Serializer>(
         None => serializer.serialize_none(),
     }
 }
+
+pub fn deserialize<'de, D: serde::Deserializer<'de>>(deserializer: D) -> Result<u64, D::Error> {
+    use serde::Deserialize;
+    let text = match String::deserialize(deserializer) {
+        Ok(text) => text,
+        Err(error) => return Err(error),
+    };
+    match parse(&text) {
+        Some(address) => Ok(address),
+        None => Err(serde::de::Error::custom("invalid address")),
+    }
+}

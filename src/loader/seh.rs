@@ -4,7 +4,7 @@ use object::Object;
 
 use super::{Image, Isa, NameSource, unwind, upsert};
 
-#[derive(Debug)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub(crate) struct Handler {
     pub function: u64,
     pub address: u64,
@@ -15,7 +15,7 @@ pub(crate) struct Handler {
     pub regions: Vec<unwind::Region>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub(crate) struct Scope {
     pub begin: u64,
     pub end: u64,

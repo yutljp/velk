@@ -149,6 +149,7 @@ fn tools() -> Value {
                 "type": "object",
                 "properties": {
                     "path": { "type": "string" },
+                    "cache": { "type": ["string", "boolean"], "description": "Cache file path, or false to disable persistence" },
                     "arch": { "type": "string", "enum": ["arm64", "arm64e", "x86_64"] }
                 },
                 "required": ["path"],
@@ -173,6 +174,7 @@ fn tools() -> Value {
                 "type": "object",
                 "properties": {
                     "path": { "type": "string" },
+                    "cache": { "type": ["string", "boolean"], "description": "Cache file path, or false to disable persistence" },
                     "start": { "type": "string", "description": "Function name or virtual address" },
                     "options": { "type": "object", "description": "EmulationOptions from the emulation API topic" },
                     "arch": { "type": "string", "enum": ["x86_64", "arm64", "arm64e"] },
@@ -214,8 +216,8 @@ fn call_tool(engine: &Engine, request: &Value) -> std::result::Result<Value, Rpc
 
 fn classes_script(path: &str, arguments: &Value) -> String {
     let path = json!(path);
-    let arch = arguments.get("arch").unwrap_or(&Value::Null);
-    format!("velk.open({path}, {{arch:{arch}}}).classes()")
+    let options = json!({"arch": arguments.get("arch"), "cache": arguments.get("cache")});
+    format!("velk.open({path}, {options}).classes()")
 }
 
 fn emulation_script(path: &str, start: &str, arguments: &Value) -> String {
@@ -223,7 +225,7 @@ fn emulation_script(path: &str, start: &str, arguments: &Value) -> String {
         .get("options")
         .cloned()
         .unwrap_or_else(|| json!({}));
-    let open = json!({ "arch": arguments.get("arch"), "raw": arguments.get("raw") });
+    let open = json!({ "arch": arguments.get("arch"), "raw": arguments.get("raw"), "cache": arguments.get("cache") });
     format!(
         "velk.open({}, {}).emulate({}, {})",
         json!(path),

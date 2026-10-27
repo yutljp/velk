@@ -89,6 +89,9 @@ pub(super) struct Cli {
     /// List stable parameter and local storage targets for a function.
     #[arg(long, help_heading = "Operations (choose one)")]
     pub(super) origins: bool,
+    /// Analysis cache file; use off to disable (default: `VELK_CACHE` or `<binary>.velk-cache`).
+    #[arg(long, value_name = "PATH|off", conflicts_with_all = ["run", "mcp"])]
+    pub(super) cache: Option<String>,
     /// Annotation file location; defaults to <binary>.velk.json.
     #[arg(long, value_name = "PATH", conflicts_with_all = ["run", "mcp"])]
     pub(super) project: Option<PathBuf>,

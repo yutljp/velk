@@ -45,6 +45,7 @@ int sum_until_zero(int *p, int n) {
   `b.libraryType("struct IUnknownVtbl")` で対象のレイアウトを確認できます。CLI のスクリプトと MCP からも利用できます。
   対応するインターフェイスの型が分かる呼び出しは `object->lpVtbl->Method(object, ...)` と表示します。
   参照する IID と CLSID はヘッダーの GUID 値に基づいて名前を付けます。[Windows COM](docs/WINDOWS_COM.ja.md)を参照してください。
+- [解析結果を保存](docs/ANALYSIS_CACHE.ja.md)する `<binary>.velk-cache`。`--cache PATH` または `VELK_CACHE` で保存先を変更し、`--cache off`（`VELK_CACHE=off`）で無効化できます。
 - プロジェクトファイルへの名前・型・コメントの永続化（`--project`、`--annotate`）。
 - [プログラムのバージョン比較](docs/COMPARISON.ja.md)、C とブロックの差分確認、対応関数への注釈コピー（`--compare`、`--carry-annotations`）。
 - C++ RTTI によるクラス名・継承・仮想テーブルの復元（`--classes`）と型付き例外コメント。

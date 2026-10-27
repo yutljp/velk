@@ -3,8 +3,10 @@ declare const velk: {
    * Embedded library sets are enabled unless defaultSignatures is false.
    * signatures adds JSON or gzip-compressed JSON databases; all enabled sets are matched together.
    * Reopening an unchanged file reuses cached analysis, even across scripts.
+   * cache selects a persistent cache file; false disables it, true uses the default sidecar.
+   * Omission uses VELK_CACHE (a path or "off"), then <binary>.velk-cache.
    * Universal Mach-O files open the slice for this machine unless opts.arch picks another. */
-  open(path: string, opts?: { project?: string; arch?: "arm64" | "arm64e" | "x86_64"; raw?: RawOptions; defaultSignatures?: boolean; signatures?: string[] }): Binary;
+  open(path: string, opts?: { cache?: string | boolean; project?: string; arch?: "arm64" | "arm64e" | "x86_64"; raw?: RawOptions; defaultSignatures?: boolean; signatures?: string[] }): Binary;
   /** Builds instruction signatures from a binary, static archive, or Rust rlib. */
   buildSignatures(path: string): { database: SignatureDb; failures: Failure[] };
 };

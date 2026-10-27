@@ -4,6 +4,10 @@ Scripts are plain synchronous JavaScript: no `await`, no imports, no file system
 The output is everything passed to `console.log`, followed by the value of the last expression.
 When several decompiled functions are logged as C text, their support definitions and declarations are collected into one marked prelude at the top of the output. Each `decompile()` result includes its own prelude for standalone use.
 Opened binaries and per-function analysis stay cached between runs.
+Derived whole-image results also persist in `<binary>.velk-cache`.
+Use `velk.open(path, {cache: "analysis.json"})` to choose a file or
+`velk.open(path, {cache: false})` to disable persistence. Omission uses
+`VELK_CACHE` (a path or `off`), then the default sidecar.
 JavaScript variables do not: each call evaluates in a fresh context. Reopen the
 same path at the start of every script. `velk.open()` discovers functions without
 decompiling all of them; `card()`, `decompile()` and other function operations

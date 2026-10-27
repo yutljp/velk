@@ -41,10 +41,12 @@ fn collect(dir: &Path, relative: &Path, found: &mut Vec<PathBuf>) {
         let path = entry.path();
         if path.is_dir() {
             collect(&path, &relative.join(&name), found);
-        } else if path
-            .extension()
-            .is_none_or(|extension| extension != "txt" && extension != "pdb")
-        {
+        } else if path.extension().is_none_or(|extension| {
+            !matches!(
+                extension.to_str(),
+                Some("txt" | "pdb" | "velk-cache" | "tmp")
+            )
+        }) {
             found.push(relative.join(name));
         }
     }

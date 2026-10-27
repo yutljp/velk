@@ -19,7 +19,7 @@ pub(super) fn strings(image: &Image) -> Vec<StringLiteral> {
 }
 
 pub(super) fn extract(bytes: &[u8], base: u64, section: &str, result: &mut Vec<StringLiteral>) {
-    let mut add = |start: usize, end: usize, encoding, text: String| {
+    let mut add = |start: usize, end: usize, encoding: &str, text: String| {
         if text.chars().count() < 4
             || !text
                 .chars()
@@ -33,7 +33,7 @@ pub(super) fn extract(bytes: &[u8], base: u64, section: &str, result: &mut Vec<S
         result.push(StringLiteral {
             addr,
             section: section.to_owned(),
-            encoding,
+            encoding: encoding.to_owned(),
             text,
             bytes: end - start,
             xrefs: Vec::new(),

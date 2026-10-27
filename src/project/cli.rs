@@ -12,6 +12,8 @@ pub struct Cli {
     pub arch: Option<crate::loader::Architecture>,
     /// Explicit headerless mapping.
     pub raw: Option<crate::loader::RawOptions>,
+    /// Persistent analysis cache selection.
+    pub cache: Option<crate::service::CacheLocation>,
     pub command: Command,
     pub project: Option<PathBuf>,
 }
@@ -51,6 +53,7 @@ pub(crate) fn execute_cached(mut cli: Cli, digest: &mut Option<String>) -> Resul
             &cli.binary,
             Some(&destination),
             &crate::loader::OpenOptions {
+                cache: cli.cache.clone(),
                 arch: cli.arch,
                 raw: cli.raw.clone(),
             },
@@ -64,6 +67,7 @@ pub(crate) fn execute_cached(mut cli: Cli, digest: &mut Option<String>) -> Resul
                 &cli.binary,
                 Some(&destination),
                 &crate::loader::OpenOptions {
+                    cache: cli.cache.clone(),
                     arch: cli.arch,
                     raw: cli.raw.clone(),
                 },

@@ -18,6 +18,7 @@ pub(super) fn handle(
     };
     let destination = binary.project_path().to_owned();
     let raw = binary.input_options().raw.clone();
+    let cache = binary.input_options().cache.clone();
     let command = match action.as_str() {
         "origins" => {
             let binary = match bin.open(session) {
@@ -88,6 +89,7 @@ pub(super) fn handle(
             binary: bin.to_path_buf(),
             arch: bin.arch(),
             raw,
+            cache,
             project: Some(destination),
             command,
         },
