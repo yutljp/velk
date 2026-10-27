@@ -1,16 +1,16 @@
 use super::*;
 
 const BASE: u64 = 0x1_0000_0000;
-const FIXUPS: usize = 0x3000;
+const FIXUPS_OFFSET: usize = 0x3000;
 
-fn u16_at(bytes: &mut [u8], at: usize, value: u16) {
-    bytes[at..at + 2].copy_from_slice(&value.to_le_bytes());
+fn u16_at(bytes: &mut [u8], offset: usize, value: u16) {
+    bytes[offset..offset + 2].copy_from_slice(&value.to_le_bytes());
 }
-fn u32_at(bytes: &mut [u8], at: usize, value: u32) {
-    bytes[at..at + 4].copy_from_slice(&value.to_le_bytes());
+fn u32_at(bytes: &mut [u8], offset: usize, value: u32) {
+    bytes[offset..offset + 4].copy_from_slice(&value.to_le_bytes());
 }
-fn u64_at(bytes: &mut [u8], at: usize, value: u64) {
-    bytes[at..at + 8].copy_from_slice(&value.to_le_bytes());
+fn u64_at(bytes: &mut [u8], offset: usize, value: u64) {
+    bytes[offset..offset + 8].copy_from_slice(&value.to_le_bytes());
 }
 
 fn fixture(format: u16, pointers: &[u64], import_format: u32, addend: i64) -> Vec<u8> {
@@ -21,37 +21,37 @@ fn fixture(format: u16, pointers: &[u64], import_format: u32, addend: i64) -> Ve
     u32_at(&mut bytes, 16, 3);
     u32_at(&mut bytes, 20, 160);
     for (index, name) in [b"__TEXT", b"__DATA"].iter().enumerate() {
-        let at = 32 + index * 72;
-        u32_at(&mut bytes, at, 0x19);
-        u32_at(&mut bytes, at + 4, 72);
-        bytes[at + 8..at + 14].copy_from_slice(*name);
-        u64_at(&mut bytes, at + 24, BASE + index as u64 * 0x1000);
-        u64_at(&mut bytes, at + 32, 0x1000);
-        u64_at(&mut bytes, at + 40, index as u64 * 0x1000);
-        u64_at(&mut bytes, at + 48, 0x1000);
+        let offset = 32 + index * 72;
+        u32_at(&mut bytes, offset, 0x19);
+        u32_at(&mut bytes, offset + 4, 72);
+        bytes[offset + 8..offset + 14].copy_from_slice(*name);
+        u64_at(&mut bytes, offset + 24, BASE + index as u64 * 0x1000);
+        u64_at(&mut bytes, offset + 32, 0x1000);
+        u64_at(&mut bytes, offset + 40, index as u64 * 0x1000);
+        u64_at(&mut bytes, offset + 48, 0x1000);
     }
     u32_at(&mut bytes, 176, 0x8000_0034);
     u32_at(&mut bytes, 180, 16);
-    u32_at(&mut bytes, 184, FIXUPS as u32);
+    u32_at(&mut bytes, 184, FIXUPS_OFFSET as u32);
     u32_at(&mut bytes, 188, 0x100);
-    u32_at(&mut bytes, FIXUPS + 4, 28);
-    u32_at(&mut bytes, FIXUPS + 8, 68);
-    u32_at(&mut bytes, FIXUPS + 12, 96);
-    u32_at(&mut bytes, FIXUPS + 16, 1);
-    u32_at(&mut bytes, FIXUPS + 20, import_format);
-    u32_at(&mut bytes, FIXUPS + 28, 2);
-    u32_at(&mut bytes, FIXUPS + 36, 16);
-    u32_at(&mut bytes, FIXUPS + 44, 24);
-    u16_at(&mut bytes, FIXUPS + 48, 0x1000);
-    u16_at(&mut bytes, FIXUPS + 50, format);
-    u64_at(&mut bytes, FIXUPS + 52, 0x1000);
-    u16_at(&mut bytes, FIXUPS + 64, 1);
+    u32_at(&mut bytes, FIXUPS_OFFSET + 4, 28);
+    u32_at(&mut bytes, FIXUPS_OFFSET + 8, 68);
+    u32_at(&mut bytes, FIXUPS_OFFSET + 12, 96);
+    u32_at(&mut bytes, FIXUPS_OFFSET + 16, 1);
+    u32_at(&mut bytes, FIXUPS_OFFSET + 20, import_format);
+    u32_at(&mut bytes, FIXUPS_OFFSET + 28, 2);
+    u32_at(&mut bytes, FIXUPS_OFFSET + 36, 16);
+    u32_at(&mut bytes, FIXUPS_OFFSET + 44, 24);
+    u16_at(&mut bytes, FIXUPS_OFFSET + 48, 0x1000);
+    u16_at(&mut bytes, FIXUPS_OFFSET + 50, format);
+    u64_at(&mut bytes, FIXUPS_OFFSET + 52, 0x1000);
+    u16_at(&mut bytes, FIXUPS_OFFSET + 64, 1);
     if import_format == 2 {
-        u32_at(&mut bytes, FIXUPS + 72, addend as u32);
+        u32_at(&mut bytes, FIXUPS_OFFSET + 72, addend as u32);
     } else if import_format == 3 {
-        u64_at(&mut bytes, FIXUPS + 76, addend as u64);
+        u64_at(&mut bytes, FIXUPS_OFFSET + 76, addend as u64);
     }
-    bytes[FIXUPS + 96..FIXUPS + 104].copy_from_slice(b"_object\0");
+    bytes[FIXUPS_OFFSET + 96..FIXUPS_OFFSET + 104].copy_from_slice(b"_object\0");
     for (index, pointer) in pointers.iter().enumerate() {
         u64_at(&mut bytes, 0x1000 + index * 8, *pointer);
     }
@@ -67,8 +67,8 @@ fn decode(bytes: &[u8]) -> Result<(Vec<u8>, BTreeMap<u64, Binding>), String> {
     }
 }
 
-fn pointer(bytes: &[u8], at: usize) -> u64 {
-    u64::from_le_bytes(bytes[at..at + 8].try_into().unwrap())
+fn pointer(bytes: &[u8], offset: usize) -> u64 {
+    u64::from_le_bytes(bytes[offset..offset + 8].try_into().unwrap())
 }
 
 #[test]
@@ -162,15 +162,15 @@ fn userland24_uses_all_twenty_four_ordinal_bits() {
 fn malformed_chains_fail_with_context() {
     let original = fixture(6, &[0], 1, 0);
     for (at, value) in [
-        (FIXUPS, 1),
-        (FIXUPS + 4, u32::MAX),
-        (FIXUPS + 8, u32::MAX),
-        (FIXUPS + 12, u32::MAX),
-        (FIXUPS + 16, u32::MAX),
-        (FIXUPS + 20, 99),
-        (FIXUPS + 24, 1),
-        (FIXUPS + 36, u32::MAX),
-        (FIXUPS + 44, u32::MAX),
+        (FIXUPS_OFFSET, 1),
+        (FIXUPS_OFFSET + 4, u32::MAX),
+        (FIXUPS_OFFSET + 8, u32::MAX),
+        (FIXUPS_OFFSET + 12, u32::MAX),
+        (FIXUPS_OFFSET + 16, u32::MAX),
+        (FIXUPS_OFFSET + 20, 99),
+        (FIXUPS_OFFSET + 24, 1),
+        (FIXUPS_OFFSET + 36, u32::MAX),
+        (FIXUPS_OFFSET + 44, u32::MAX),
     ] {
         let mut bytes = original.clone();
         u32_at(&mut bytes, at, value);
@@ -188,22 +188,22 @@ fn malformed_chains_fail_with_context() {
     let raw = (1 << 63) | (1 << 24);
     assert!(decode(&fixture(6, &[raw], 3, i64::MAX)).is_err());
     let mut bytes = original;
-    u16_at(&mut bytes, FIXUPS + 50, 8);
+    u16_at(&mut bytes, FIXUPS_OFFSET + 50, 8);
     assert!(decode(&bytes).is_err());
 }
 
 #[test]
 fn multiple_starts_in_a_page_are_independent_chains() {
     let mut bytes = fixture(6, &[0x123, 0x456], 1, 0);
-    u32_at(&mut bytes, FIXUPS + 8, 80);
-    u32_at(&mut bytes, FIXUPS + 44, 28);
-    u16_at(&mut bytes, FIXUPS + 66, 0x8001);
-    u16_at(&mut bytes, FIXUPS + 68, 0);
-    u16_at(&mut bytes, FIXUPS + 70, 0x8008);
+    u32_at(&mut bytes, FIXUPS_OFFSET + 8, 80);
+    u32_at(&mut bytes, FIXUPS_OFFSET + 44, 28);
+    u16_at(&mut bytes, FIXUPS_OFFSET + 66, 0x8001);
+    u16_at(&mut bytes, FIXUPS_OFFSET + 68, 0);
+    u16_at(&mut bytes, FIXUPS_OFFSET + 70, 0x8008);
     let (patched, _) = decode(&bytes).unwrap();
     assert_eq!(pointer(&patched, 0x1000), BASE + 0x123);
     assert_eq!(pointer(&patched, 0x1008), BASE + 0x456);
-    u16_at(&mut bytes, FIXUPS + 70, 0x8000);
+    u16_at(&mut bytes, FIXUPS_OFFSET + 70, 0x8000);
     assert!(decode(&bytes).is_err());
 }
 
@@ -213,14 +213,15 @@ fn large_userland24_ordinals_resolve_the_correct_import() {
         let raw = (u64::from(authenticated) << 63) | (1 << 62) | 0x10000;
         let mut bytes = fixture(12, &[raw], 1, 0);
         let symbols = 68 + 4 * 0x10001;
-        bytes.resize(FIXUPS + symbols + 16, 0);
-        let size = (bytes.len() - FIXUPS) as u32;
+        bytes.resize(FIXUPS_OFFSET + symbols + 16, 0);
+        let size = (bytes.len() - FIXUPS_OFFSET) as u32;
         u32_at(&mut bytes, 188, size);
-        u32_at(&mut bytes, FIXUPS + 12, symbols as u32);
-        u32_at(&mut bytes, FIXUPS + 16, 0x10001);
-        bytes[FIXUPS + 68..FIXUPS + symbols].fill(0);
-        u32_at(&mut bytes, FIXUPS + 68 + 4 * 0x10000, 8 << 9);
-        bytes[FIXUPS + symbols..FIXUPS + symbols + 16].copy_from_slice(b"_object\0_target\0");
+        u32_at(&mut bytes, FIXUPS_OFFSET + 12, symbols as u32);
+        u32_at(&mut bytes, FIXUPS_OFFSET + 16, 0x10001);
+        bytes[FIXUPS_OFFSET + 68..FIXUPS_OFFSET + symbols].fill(0);
+        u32_at(&mut bytes, FIXUPS_OFFSET + 68 + 4 * 0x10000, 8 << 9);
+        bytes[FIXUPS_OFFSET + symbols..FIXUPS_OFFSET + symbols + 16]
+            .copy_from_slice(b"_object\0_target\0");
         let (_, bindings) = decode(&bytes).unwrap();
         assert_eq!(bindings[&(BASE + 0x1000)].name, "_target");
     }

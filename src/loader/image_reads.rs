@@ -38,14 +38,14 @@ pub(crate) fn word(image: &Image, address: u64, size: u64) -> Option<u64> {
     Some(unsigned(bytes, /* little */ true))
 }
 
-pub(crate) fn unsigned(data: &[u8], little: bool) -> u64 {
+pub(crate) fn unsigned(bytes: &[u8], little: bool) -> u64 {
     let mut value = 0u64;
     if little {
-        for byte in data.iter().rev() {
+        for byte in bytes.iter().rev() {
             value = (value << 8) | u64::from(*byte);
         }
     } else {
-        for byte in data {
+        for byte in bytes {
             value = (value << 8) | u64::from(*byte);
         }
     }

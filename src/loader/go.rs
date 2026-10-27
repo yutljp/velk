@@ -439,19 +439,19 @@ mod proofs {
     #[kani::unwind(9)]
     fn go_table_walk() {
         let entries: [u8; 24] = kani::any();
-        let data: [u8; 16] = kani::any();
+        let table_bytes: [u8; 16] = kani::any();
         let names: [u8; 8] = kani::any();
         let entries_len: usize = kani::any();
         let data_len: usize = kani::any();
         let names_len: usize = kani::any();
         kani::assume(entries_len <= entries.len());
-        kani::assume(data_len <= data.len());
+        kani::assume(data_len <= table_bytes.len());
         kani::assume(names_len <= names.len());
         let text: u64 = kani::any();
         let mut count = 0;
         super::walk_table(
             &entries[..entries_len],
-            &data[..data_len],
+            &table_bytes[..data_len],
             &names[..names_len],
             text,
             |addr, name| {
@@ -481,19 +481,25 @@ mod proofs {
         let mut entries = [0; 16];
         entries[..4].copy_from_slice(&entry.to_le_bytes());
         entries[4..8].copy_from_slice(&offset.to_le_bytes());
-        let mut data = [0; 8];
-        data[4..].copy_from_slice(&name_offset.to_le_bytes());
+        let mut table_bytes = [0; 8];
+        table_bytes[4..].copy_from_slice(&name_offset.to_le_bytes());
         let valid = offset == 0
             && name_offset >= 0
             && name_offset <= 6
             && u64::from(entry) <= u64::MAX - text;
         let mut count = 0;
-        super::walk_table(&entries, &data, b"main.work\0", text, |addr, name| {
-            count += 1;
-            assert!(valid);
-            assert_eq!(addr, text + u64::from(entry));
-            assert_eq!(name, &b"main.work"[name_offset as usize..]);
-        });
+        super::walk_table(
+            &entries,
+            &table_bytes,
+            b"main.work\0",
+            text,
+            |addr, name| {
+                count += 1;
+                assert!(valid);
+                assert_eq!(addr, text + u64::from(entry));
+                assert_eq!(name, &b"main.work"[name_offset as usize..]);
+            },
+        );
         assert_eq!(count, usize::from(valid));
         kani::cover!(
             valid && entry != 0 && name_offset == 6,

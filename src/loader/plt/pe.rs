@@ -105,8 +105,8 @@ pub(super) fn stubs<Pe: object::read::pe::ImageNtHeaders>(
         let returns: HashSet<_> = if file.architecture() == object::Architecture::I386 {
             iced_x86::Decoder::with_ip(32, bytes, section.address(), iced_x86::DecoderOptions::NONE)
                 .into_iter()
-                .filter(|ins| ins.flow_control() == iced_x86::FlowControl::Return)
-                .map(|ins| ins.next_ip())
+                .filter(|instruction| instruction.flow_control() == iced_x86::FlowControl::Return)
+                .map(|instruction| instruction.next_ip())
                 .collect()
         } else {
             Default::default()

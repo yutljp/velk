@@ -128,14 +128,14 @@ fn abbreviations() -> Vec<u8> {
 
 fn dwarf<'a>(
     info: &'a [u8],
-    abbrev: &'a [u8],
+    abbreviations: &'a [u8],
     ranges: &'a [u8],
 ) -> Dwarf<EndianSlice<'a, LittleEndian>> {
     Dwarf::load(|id| -> Result<_, gimli::Error> {
         Ok(EndianSlice::new(
             match id {
                 SectionId::DebugInfo => info,
-                SectionId::DebugAbbrev => abbrev,
+                SectionId::DebugAbbrev => abbreviations,
                 SectionId::DebugRanges => ranges,
                 _ => &[],
             },
@@ -185,7 +185,7 @@ enum CallingConvention {
     Unsupported,
 }
 
-fn inherited(
+fn inherited_declaration(
     cycle: Origin,
     cross_unit: UnitReference,
     extra_parameter: Parameters,
@@ -243,7 +243,7 @@ fn inherited(
 
 #[test]
 fn inherited_call_declaration_keeps_return_and_parameter_types() {
-    let (info, function, integer) = inherited(
+    let (info, function, integer) = inherited_declaration(
         Origin::Declaration,
         UnitReference::Local,
         Parameters::Inherited,
@@ -267,7 +267,7 @@ fn inherited_call_declaration_keeps_return_and_parameter_types() {
 #[test]
 fn cyclic_and_cross_unit_origins_do_not_become_void_declarations() {
     for (cycle, cross_unit) in [(true, false), (false, true)] {
-        let (info, function, _) = inherited(
+        let (info, function, _) = inherited_declaration(
             if cycle {
                 Origin::Cyclic
             } else {
@@ -295,7 +295,7 @@ fn cyclic_and_cross_unit_origins_do_not_become_void_declarations() {
 
 #[test]
 fn inconsistent_inherited_parameter_lists_are_unknown() {
-    let (info, function, _) = inherited(
+    let (info, function, _) = inherited_declaration(
         Origin::Declaration,
         UnitReference::Local,
         Parameters::Extra,
@@ -315,7 +315,7 @@ fn inconsistent_inherited_parameter_lists_are_unknown() {
 #[test]
 fn inherited_prototype_and_calling_convention_remain_required() {
     for (prototyped, normal) in [(false, true), (true, false)] {
-        let (info, function, _) = inherited(
+        let (info, function, _) = inherited_declaration(
             Origin::Declaration,
             UnitReference::Local,
             Parameters::Inherited,
@@ -387,7 +387,7 @@ fn pointer_array_shapes_are_read_without_byte_size_and_conflicts_are_rejected() 
         let mut dies = vec![1, 2, 0];
         let functions = [function(&mut dies), function(&mut dies)];
         let mut arrays = Vec::new();
-        let mut element_refs = Vec::new();
+        let mut element_references = Vec::new();
         for (result, dimensions) in functions.into_iter().zip([&shapes.0, &shapes.1]) {
             let pointer = dies.len() + 11;
             dies.push(11);
@@ -395,7 +395,7 @@ fn pointer_array_shapes_are_read_without_byte_size_and_conflicts_are_rejected() 
             let array = dies.len() + 11;
             arrays.push(array);
             dies.push(12);
-            element_refs.push(reference(&mut dies));
+            element_references.push(reference(&mut dies));
             for count in dimensions {
                 dies.extend([13, *count]);
             }
@@ -407,7 +407,7 @@ fn pointer_array_shapes_are_read_without_byte_size_and_conflicts_are_rejected() 
         dies.push(6);
         dies.extend(b"unsigned long\0");
         dies.extend([8, 7, 0]);
-        for at in element_refs {
+        for at in element_references {
             patch(&mut dies, at, integer);
         }
         let info = information(&dies);
@@ -437,7 +437,7 @@ fn pointer_array_shapes_are_read_without_byte_size_and_conflicts_are_rejected() 
 fn pointer_bitfield_positions_are_read_and_conflicting_declarations_rejected() {
     let mut dies = vec![1, 2, 0];
     let functions = [function(&mut dies), function(&mut dies)];
-    let mut integer_refs = Vec::new();
+    let mut integer_references = Vec::new();
     let mut structures = Vec::new();
     for (result, positions) in functions.into_iter().zip([[0u8, 4], [4, 0]]) {
         let pointer = dies.len() + 11;
@@ -451,7 +451,7 @@ fn pointer_bitfield_positions_are_read_and_conflicting_declarations_rejected() {
         for (name, offset) in [b"a\0", b"b\0"].into_iter().zip(positions) {
             dies.push(15);
             dies.extend(name);
-            integer_refs.push(reference(&mut dies));
+            integer_references.push(reference(&mut dies));
             dies.extend([offset, 4]);
         }
         dies.push(0);
@@ -462,7 +462,7 @@ fn pointer_bitfield_positions_are_read_and_conflicting_declarations_rejected() {
     dies.push(6);
     dies.extend(b"unsigned long\0");
     dies.extend([8, 7, 0]);
-    for at in integer_refs {
+    for at in integer_references {
         patch(&mut dies, at, integer);
     }
     let info = information(&dies);

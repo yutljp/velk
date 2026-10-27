@@ -12,9 +12,10 @@ use super::*;
 use crate::sigs::Certainty;
 
 fn fixture(name: &str) -> PathBuf {
-    let data = fs::read(format!("target/library-signatures/fixtures/{name}.gz")).unwrap();
+    let compressed_bytes =
+        fs::read(format!("target/library-signatures/fixtures/{name}.gz")).unwrap();
     let mut bytes = Vec::new();
-    GzDecoder::new(data.as_slice())
+    GzDecoder::new(compressed_bytes.as_slice())
         .read_to_end(&mut bytes)
         .unwrap();
     let directory = Path::new("target/signature-diagnostics");
@@ -34,9 +35,9 @@ fn classify_missed_names() {
     let mut samples = Vec::new();
     let mut counts = BTreeMap::<String, BTreeMap<String, usize>>::new();
     for library in ["musl", "mbedtls", "libsodium", "openssl", "rust"] {
-        for arch in ["x86_64", "aarch64", "i386", "arm32"] {
+        for architecture in ["x86_64", "aarch64", "i386", "arm32"] {
             for level in ["O0", "O1", "O2", "O3", "Os"] {
-                let stem = format!("{library}.{arch}.{level}");
+                let stem = format!("{library}.{architecture}.{level}");
                 let path = fixture(&format!("{stem}.stripped.elf"));
                 let mut image = crate::loader::load(&path).unwrap();
                 crate::analysis::absorb_jump_table_cases(&mut image);
@@ -104,14 +105,14 @@ fn classify(
     let Some(bytes) = image.read_vaddr(address, size) else {
         return "function bytes unavailable";
     };
-    let body = match normalize::checked(image.isa, bytes, address, &HashSet::new()) {
+    let body = match normalize::normalize_checked(image.isa, bytes, address, &HashSet::new()) {
         Ok(body) => body,
         Err(reason) => return reason,
     };
     if !body.name_eligible {
         return "function too short or insufficient non-address bytes";
     }
-    let Some(constants) = constants::image(image, &body) else {
+    let Some(constants) = constants::image_constants(image, &body) else {
         return "constant is writable, executable or unavailable";
     };
     if let Some(evidence) = evidence {

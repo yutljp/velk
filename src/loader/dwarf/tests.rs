@@ -14,10 +14,13 @@ pub(super) fn information(dies: &[u8]) -> Vec<u8> {
 }
 
 /// An image whose only sections are the given debug information.
-pub(super) fn image(info: &[u8], abbrev: &[u8]) -> Image {
+pub(super) fn image(information: &[u8], abbreviations: &[u8]) -> Image {
     let mut bytes = Vec::new();
     let mut sections = Vec::new();
-    for (name, data) in [(".debug_info", info), (".debug_abbrev", abbrev)] {
+    for (name, data) in [
+        (".debug_info", information),
+        (".debug_abbrev", abbreviations),
+    ] {
         sections.push(crate::loader::Section {
             name: name.to_owned(),
             vaddr: 0,
@@ -137,12 +140,12 @@ fn invalid_local_location_does_not_hide_the_next_variable() {
     dies.extend(0x1000u64.to_le_bytes());
     dies.extend(0x20u32.to_le_bytes());
     dies.extend([1, 0x9c]); // DW_OP_call_frame_cfa
-    let mut refs = Vec::new();
+    let mut type_references = Vec::new();
     for (name, expr) in [("invalid", &[0xff][..]), ("value", &[0x91, 0x78][..])] {
         dies.push(3);
         dies.extend(name.as_bytes());
         dies.push(0);
-        refs.push(dies.len());
+        type_references.push(dies.len());
         dies.extend([0; 4]);
         dies.push(expr.len() as u8);
         dies.extend(expr);
@@ -150,7 +153,7 @@ fn invalid_local_location_does_not_hide_the_next_variable() {
     dies.push(0);
     let ty = u32::try_from(dies.len() + 11).unwrap();
     dies.extend([4, b'i', b'n', b't', 0, 4, 5, 0]);
-    for offset in refs {
+    for offset in type_references {
         dies[offset..offset + 4].copy_from_slice(&ty.to_le_bytes());
     }
     let image = image(&information(&dies), &abbrev);

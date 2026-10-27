@@ -37,18 +37,18 @@ pub enum Query {
     },
     Callers {
         target: String,
-        #[serde(default = "one")]
+        #[serde(default = "default_graph_depth")]
         depth: usize,
     },
     Callees {
         target: String,
-        #[serde(default = "one")]
+        #[serde(default = "default_graph_depth")]
         depth: usize,
     },
     Path {
         from: String,
         to: String,
-        #[serde(default = "path_depth")]
+        #[serde(default = "default_path_depth")]
         depth: usize,
     },
     Strings {
@@ -69,10 +69,10 @@ fn one_count() -> u64 {
 fn enabled() -> bool {
     true
 }
-fn one() -> usize {
+fn default_graph_depth() -> usize {
     1
 }
-fn path_depth() -> usize {
+fn default_path_depth() -> usize {
     32
 }
 

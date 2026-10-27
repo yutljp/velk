@@ -47,14 +47,14 @@ pub(super) fn properties(image: &Image, addr: u64) -> (Convention, Option<u16>) 
         .enumerate()
         .map(|(index, instruction)| (instruction.ip(), index))
         .collect();
-    let mut info = InstructionInfoFactory::new();
+    let mut instruction_info_factory = InstructionInfoFactory::new();
     let mut reads = vec![0u8; instructions.len()];
     let mut writes = reads.clone();
     let mut successors = vec![Vec::new(); instructions.len()];
     let mut cleanup = None;
     let mut conflicting = false;
     for (index, instruction) in instructions.iter().enumerate() {
-        for used in info.info(instruction).used_registers() {
+        for used in instruction_info_factory.info(instruction).used_registers() {
             let shift = match used.register().full_register() {
                 Register::RCX => 0,
                 Register::RDX => 4,

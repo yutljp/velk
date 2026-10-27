@@ -36,8 +36,8 @@ fn check_pointer(format: u16) -> RebaseCases {
     let fixups = DyldChainedFixups::parse(LittleEndian, &bytes).unwrap();
     let mut segments = fixups.segments(LittleEndian).unwrap();
     let segment = segments.next().unwrap().unwrap();
-    let data = raw.to_le_bytes();
-    let mut pointers = segment.fixups(LittleEndian, base, &data);
+    let pointer_bytes = raw.to_le_bytes();
+    let mut pointers = segment.fixups(LittleEndian, base, &pointer_bytes);
     let (offset, pointer) = pointers.next().unwrap().unwrap();
     assert_eq!(offset, 0);
     let wide = matches!(format, 2 | 6);
@@ -161,9 +161,9 @@ fn chained_pointer_links() {
     let fixups = DyldChainedFixups::parse(LittleEndian, &bytes).unwrap();
     let mut segments = fixups.segments(LittleEndian).unwrap();
     let segment = segments.next().unwrap().unwrap();
-    let mut data = [0u8; 16];
-    data[..8].copy_from_slice(&raw.to_le_bytes());
-    let mut pointers = segment.fixups(LittleEndian, 0, &data);
+    let mut pointer_bytes = [0u8; 16];
+    pointer_bytes[..8].copy_from_slice(&raw.to_le_bytes());
+    let mut pointers = segment.fixups(LittleEndian, 0, &pointer_bytes);
     for expected in [0, 8] {
         let (offset, pointer) = pointers.next().unwrap().unwrap();
         assert_eq!(offset, expected);

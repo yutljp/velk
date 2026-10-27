@@ -5,7 +5,7 @@ use object::{Object, ObjectSection, ObjectSymbol};
 use super::Body;
 use crate::loader::Image;
 
-pub(super) fn image(image: &Image, body: &Body) -> Option<Vec<Vec<u8>>> {
+pub(super) fn image_constants(image: &Image, body: &Body) -> Option<Vec<Vec<u8>>> {
     let mut values = Vec::new();
     for reference in &body.references {
         let Some(end) = reference.target.checked_add(reference.size as u64) else {
@@ -28,7 +28,7 @@ pub(super) fn image(image: &Image, body: &Body) -> Option<Vec<Vec<u8>>> {
     Some(values)
 }
 
-pub(super) fn object(
+pub(super) fn object_constants(
     file: &object::File<'_>,
     body: &Body,
     relocations: &[&(u64, object::Relocation)],

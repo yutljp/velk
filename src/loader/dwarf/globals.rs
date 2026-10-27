@@ -35,11 +35,12 @@ pub(super) fn read(
         if entry.tag() != gimli::DW_TAG_variable {
             continue;
         }
-        let Some(AttributeValue::Exprloc(expr)) = attribute(entry, gimli::DW_AT_location) else {
+        let Some(AttributeValue::Exprloc(expression)) = attribute(entry, gimli::DW_AT_location)
+        else {
             continue;
         };
-        let mut ops = expr.operations(unit.encoding());
-        let address = match ops.next() {
+        let mut operations = expression.operations(unit.encoding());
+        let address = match operations.next() {
             Ok(Some(Operation::Address { address })) => address,
             Ok(Some(Operation::AddressIndex { index })) => match dwarf.address(unit, index) {
                 Ok(address) => address,
@@ -47,7 +48,7 @@ pub(super) fn read(
             },
             _ => continue,
         };
-        if !matches!(ops.next(), Ok(None)) || !image.data_symbols.contains_key(&address) {
+        if !matches!(operations.next(), Ok(None)) || !image.data_symbols.contains_key(&address) {
             continue;
         }
         let Some(AttributeValue::UnitRef(offset)) = attribute(entry, gimli::DW_AT_type) else {

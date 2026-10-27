@@ -88,7 +88,7 @@ fn methods(image: &mut Image, list: u64, owner: &str, kind: char) {
         else {
             continue;
         };
-        let (name, imp) = if small {
+        let (name, implementation_address) = if small {
             let name = relative(image, entry, 0).and_then(|address| {
                 if flags & 0x4000_0000 != 0 {
                     Some(address)
@@ -100,21 +100,21 @@ fn methods(image: &mut Image, list: u64, owner: &str, kind: char) {
         } else {
             (word(image, entry, 0, 8), word(image, entry, 16, 8))
         };
-        let (Some(name), Some(imp)) = (name, imp) else {
+        let (Some(name), Some(implementation_address)) = (name, implementation_address) else {
             continue;
         };
         let Some(selector) = string(image, name, true) else {
             continue;
         };
         if !image
-            .section_at(imp)
+            .section_at(implementation_address)
             .is_some_and(|section| section.executable)
         {
             continue;
         }
         upsert(
             &mut image.functions,
-            imp,
+            implementation_address,
             Some(format!("{kind}[{owner} {selector}]")),
             None,
             NameSource::Objc,
@@ -217,7 +217,7 @@ mod tests {
             for index in 0..2 {
                 let small = flags & 0x8000_0000 != 0;
                 let entry = 0x28 + index * if small { 12 } else { 24 };
-                let imp = if index == 0 { 0x2300u64 } else { 0x2000 };
+                let implementation_address = if index == 0 { 0x2300u64 } else { 0x2000 };
                 if small {
                     let name = if flags & 0x4000_0000 != 0 {
                         0x2100
@@ -228,11 +228,13 @@ mod tests {
                     image.bytes[entry..entry + 4]
                         .copy_from_slice(&((name - (0x2000 + entry) as i64) as i32).to_le_bytes());
                     image.bytes[entry + 8..entry + 12].copy_from_slice(
-                        &((imp as i64 - (0x2000 + entry + 8) as i64) as i32).to_le_bytes(),
+                        &((implementation_address as i64 - (0x2000 + entry + 8) as i64) as i32)
+                            .to_le_bytes(),
                     );
                 } else {
                     image.bytes[entry..entry + 8].copy_from_slice(&0x2100u64.to_le_bytes());
-                    image.bytes[entry + 16..entry + 24].copy_from_slice(&imp.to_le_bytes());
+                    image.bytes[entry + 16..entry + 24]
+                        .copy_from_slice(&implementation_address.to_le_bytes());
                 }
             }
             methods(&mut image, 0x2020, "Example", '-');

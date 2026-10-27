@@ -173,15 +173,15 @@ pub(in crate::loader) fn apply(
             ) {
                 return Err(format!("segment {}: invalid page geometry", starts.index()));
             }
-            let data = match segment.data() {
-                Ok(data) => data,
+            let segment_bytes = match segment.data() {
+                Ok(segment_bytes) => segment_bytes,
                 Err(error) => return Err(format!("segment {} data: {error}", starts.index())),
             };
             let (file_offset, file_size) = segment.file_range();
-            let mut pointers = starts.fixups(endian, base, data);
+            let mut pointers = starts.fixups(endian, base, segment_bytes);
             let mut visited = std::collections::BTreeSet::new();
             // Even repeated multi-start entries must be bounded by the file size.
-            for _ in 0..=data.len() / 4 {
+            for _ in 0..=segment_bytes.len() / 4 {
                 let (offset, pointer) = match pointers.next() {
                     Ok(Some(pointer)) => pointer,
                     Ok(None) => break,
@@ -213,7 +213,7 @@ pub(in crate::loader) fn apply(
                 }
                 visited.insert(offset);
                 let raw = u64::from_le_bytes(
-                    data[offset as usize..end as usize]
+                    segment_bytes[offset as usize..end as usize]
                         .try_into()
                         .expect("an eight-byte pointer"),
                 );

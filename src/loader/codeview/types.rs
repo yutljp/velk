@@ -8,7 +8,7 @@ use std::collections::BTreeMap;
 #[derive(Debug, Default)]
 pub(super) struct Types(pub BTreeMap<u32, (u16, Vec<u8>)>);
 
-pub(super) fn name(text: &str) -> bool {
+pub(super) fn valid_identifier(text: &str) -> bool {
     let mut chars = text.chars();
     text.len() <= 96
         && chars
@@ -114,10 +114,13 @@ impl Types {
                 self.spelling(inner, depth - 1)
             }
             0x1002 => {
-                let (Some(inner), Some(attrs)) = (data.u32(), data.u32()) else {
+                let (Some(inner), Some(attributes)) = (data.u32(), data.u32()) else {
                     return None;
                 };
-                if attrs & 0x1f != 12 || (attrs >> 5) & 7 != 0 || (attrs >> 13) & 0x3f != 8 {
+                if attributes & 0x1f != 12
+                    || (attributes >> 5) & 7 != 0
+                    || (attributes >> 13) & 0x3f != 8
+                {
                     return None;
                 }
                 match self.spelling(inner, depth - 1) {
@@ -130,7 +133,7 @@ impl Types {
                 let Some((_, _, text, _)) = self.structure(index) else {
                     return None;
                 };
-                name(&text).then(|| CType::Named(format!("struct {text}")))
+                valid_identifier(&text).then(|| CType::Named(format!("struct {text}")))
             }
             0x1503 => {
                 let Some(inner) = data.u32() else { return None };
@@ -198,7 +201,7 @@ impl Types {
             let (Some(ty), Some(at), Some(text)) = (data.u32(), data.number(), data.name()) else {
                 return None;
             };
-            if !name(&text) {
+            if !valid_identifier(&text) {
                 return None;
             }
             fields.push((text, ty, at));
@@ -397,7 +400,7 @@ impl Types {
             let Some((flags, fields, text, size)) = self.structure(index) else {
                 continue;
             };
-            if flags & 0x80 != 0 || !name(&text) {
+            if flags & 0x80 != 0 || !valid_identifier(&text) {
                 continue;
             }
             let Some(layout) = self.layout_with_budget(index, 16, &mut budget) else {

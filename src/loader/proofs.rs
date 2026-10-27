@@ -8,10 +8,10 @@ fn pe_tables<Pe: object::read::pe::ImageNtHeaders>(bytes: &[u8]) {
     };
     for section in file.sections() {
         kani::cover!(true, "a section is visited");
-        let data = section.data();
-        if let Ok(data) = data {
-            assert!(data.len() <= bytes.len());
-            kani::cover!(!data.is_empty(), "nonempty section data is read");
+        let section_data = section.data();
+        if let Ok(section_bytes) = section_data {
+            assert!(section_bytes.len() <= bytes.len());
+            kani::cover!(!section_bytes.is_empty(), "nonempty section data is read");
         }
         // The generic PE iterator is empty; read the COFF table directly.
         if let Ok(relocations) = section.pe_section().coff_relocations(bytes) {
@@ -30,9 +30,12 @@ fn elf_tables<Elf: object::read::elf::FileHeader>(bytes: &[u8]) {
     };
     for section in sections.iter() {
         kani::cover!(true, "a section is visited");
-        if let Ok(data) = section.data(endian, bytes) {
-            assert!(data.len() <= 24);
-            kani::cover!(data.len() == 24, "the largest modeled section is read");
+        if let Ok(section_bytes) = section.data(endian, bytes) {
+            assert!(section_bytes.len() <= 24);
+            kani::cover!(
+                section_bytes.len() == 24,
+                "the largest modeled section is read"
+            );
         }
         if let Ok(Some((entries, _))) = section.rel(endian, bytes) {
             kani::cover!(!entries.is_empty(), "a REL entry is read");
@@ -51,16 +54,16 @@ fn macho_tables<Mach: object::read::macho::MachHeader>(bytes: &[u8]) {
     let endian = header.endian().unwrap();
     let mut commands = header.load_commands(endian, bytes, 0).unwrap();
     while let Ok(Some(command)) = commands.next() {
-        if let Ok(Some((segment, data))) = Mach::Segment::from_command(command) {
-            let sections = segment.sections(endian, data).unwrap();
+        if let Ok(Some((segment, segment_bytes))) = Mach::Segment::from_command(command) {
+            let sections = segment.sections(endian, segment_bytes).unwrap();
             for entry in segment.section_offsets(endian, sections) {
                 let Ok((section, offset)) = entry else {
                     continue;
                 };
                 kani::cover!(true, "a section is visited");
-                if let Ok(data) = section.data(endian, bytes, offset) {
-                    assert!(data.len() <= bytes.len());
-                    kani::cover!(!data.is_empty(), "nonempty section data is read");
+                if let Ok(section_bytes) = section.data(endian, bytes, offset) {
+                    assert!(section_bytes.len() <= bytes.len());
+                    kani::cover!(!section_bytes.is_empty(), "nonempty section data is read");
                 }
                 if let Ok(relocations) = section.relocations(endian, bytes) {
                     assert!(relocations.len() <= 1);
@@ -175,10 +178,10 @@ fn image_ranges() {
         result.is_some(),
         relative.is_some_and(|offset| offset <= len as u64 && size <= len as u64 - offset)
     );
-    if let Some(data) = result {
-        assert_eq!(data.len() as u64, size);
+    if let Some(range_bytes) = result {
+        assert_eq!(range_bytes.len() as u64, size);
         let start = relative.unwrap() as usize;
-        assert_eq!(data, &bytes[start..start + size as usize]);
+        assert_eq!(range_bytes, &bytes[start..start + size as usize]);
     }
     kani::cover!(
         result.is_some() && size == 16,

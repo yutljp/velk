@@ -114,8 +114,14 @@ pub(super) fn read(
             )
         })
         .collect();
-    if let Ok(Some(info)) = file.pdb_info() {
-        return inputs::pdb(path, info.path(), info.age(), info.guid(), &sections);
+    if let Ok(Some(pdb_info)) = file.pdb_info() {
+        return inputs::pdb(
+            path,
+            pdb_info.path(),
+            pdb_info.age(),
+            pdb_info.guid(),
+            &sections,
+        );
     }
     inputs::coff(file, &sections)
 }

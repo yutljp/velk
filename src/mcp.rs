@@ -56,7 +56,7 @@ pub fn serve() -> Result<()> {
             continue;
         }
         let response = match serde_json::from_str::<Value>(&line) {
-            Ok(request) => handle(&engine, &request),
+            Ok(request) => dispatch_request(&engine, &request),
             Err(_) => Some(reply(Value::Null, Err(PARSE_ERROR))),
         };
         if let Some(response) = response {
@@ -68,7 +68,7 @@ pub fn serve() -> Result<()> {
 }
 
 /// Answers a request; notifications, which carry no id, get no reply.
-fn handle(engine: &Engine, request: &Value) -> Option<Value> {
+fn dispatch_request(engine: &Engine, request: &Value) -> Option<Value> {
     let id = request.get("id")?.clone();
     let result = match request.get("method").and_then(Value::as_str) {
         Some("initialize") => Ok(json!({
@@ -102,7 +102,7 @@ pub fn fuzz_request(engine: &Engine, bytes: &[u8]) {
         }
         arguments.remove("path");
     }
-    let _ = handle(engine, &request);
+    let _ = dispatch_request(engine, &request);
 }
 
 fn reply(id: Value, result: std::result::Result<Value, RpcError>) -> Value {
@@ -347,7 +347,7 @@ mod tests {
     #[test]
     fn a_short_script_keeps_the_text_only_protocol_response() {
         let engine = Engine::new().expect("a script engine");
-        let response = handle(
+        let response = dispatch_request(
             &engine,
             &json!({
                 "jsonrpc": "2.0",

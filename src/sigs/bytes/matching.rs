@@ -14,7 +14,7 @@ pub(crate) enum MatchScope {
     All,
 }
 
-struct Possible<'database> {
+struct PossibleMatch<'database> {
     entries: Vec<&'database Entry>,
     calls: Vec<DirectCall>,
     name_eligible: bool,
@@ -76,7 +76,7 @@ pub(crate) fn identify(
         if entries.is_empty() {
             return Ok(None);
         }
-        let Some(constants) = constants::image(image, &body) else {
+        let Some(constants) = constants::image_constants(image, &body) else {
             return Ok(None);
         };
         let entries: Vec<_> = entries
@@ -92,7 +92,7 @@ pub(crate) fn identify(
         });
         Ok(Some((
             function.addr,
-            Possible {
+            PossibleMatch {
                 entries,
                 calls: body.calls,
                 name_eligible: body.name_eligible,
@@ -225,10 +225,10 @@ pub(crate) fn identify(
 
 fn destinations_confirmed(
     image: &Image,
-    body: &Possible<'_>,
+    body: &PossibleMatch<'_>,
     entry: &Entry,
     confirmed: &HashSet<u64>,
-    possible: &BTreeMap<u64, Possible<'_>>,
+    possible: &BTreeMap<u64, PossibleMatch<'_>>,
 ) -> bool {
     body.calls.iter().zip(&entry.calls).all(|(call, expected)| {
         known_name(image, call.target, expected)

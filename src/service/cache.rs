@@ -480,10 +480,10 @@ pub(crate) fn debug_path(binary: &Path, bytes: &[u8]) -> Option<PathBuf> {
     let Ok(file) = object::File::parse(bytes) else {
         return None;
     };
-    let Ok(Some(info)) = file.pdb_info() else {
+    let Ok(Some(pdb_info)) = file.pdb_info() else {
         return None;
     };
-    let filename = info
+    let filename = pdb_info
         .path()
         .rsplit(|byte| matches!(byte, b'/' | b'\\'))
         .next()

@@ -16,7 +16,7 @@ pub(super) fn add_functions(file: &object::File<'_>, image: &mut Image) {
     let mut base = None;
     let mut file_offset = 0;
     let mut entry = None;
-    let mut data = None;
+    let mut function_starts_command = None;
     while let Ok(Some(command)) = commands.next() {
         match command.variant() {
             Ok(LoadCommandVariant::Segment64(segment, _))
@@ -28,7 +28,7 @@ pub(super) fn add_functions(file: &object::File<'_>, image: &mut Image) {
             Ok(LoadCommandVariant::LinkeditData(command))
                 if command.cmd.get(endian) == object::macho::LC_FUNCTION_STARTS =>
             {
-                data = Some(command);
+                function_starts_command = Some(command);
             }
             Ok(LoadCommandVariant::EntryPoint(command)) => {
                 entry = Some(command.entryoff.get(endian));
@@ -51,10 +51,11 @@ pub(super) fn add_functions(file: &object::File<'_>, image: &mut Image) {
         image.entry = Some(address);
         upsert(&mut image.functions, address, None, None, NameSource::Entry);
     }
-    let Some(data) = data else {
+    let Some(function_starts_command) = function_starts_command else {
         return;
     };
-    let Ok(mut addresses) = data.function_starts(endian, file.data(), base) else {
+    let Ok(mut addresses) = function_starts_command.function_starts(endian, file.data(), base)
+    else {
         return;
     };
     let mut starts = Vec::new();

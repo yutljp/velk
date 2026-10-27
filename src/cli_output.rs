@@ -28,7 +28,7 @@ pub(crate) fn report_failures(failures: &[Failure]) {
 pub(crate) fn print_code(
     binary: &Binary,
     addr: u64,
-    requested: &str,
+    requested_name: &str,
     code: &str,
     language: Language,
 ) {
@@ -42,7 +42,7 @@ pub(crate) fn print_code(
         .iter()
         .find(|function| function.addr == addr)
         .and_then(|function| function.name.as_deref())
-        .unwrap_or(requested);
+        .unwrap_or(requested_name);
     let title = match language {
         Language::C => "Pseudo-C",
         Language::Ir => "IR",

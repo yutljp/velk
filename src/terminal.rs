@@ -211,10 +211,10 @@ impl Terminal {
     }
 }
 
-fn assembly_word(ch: char) -> bool {
-    ch.is_ascii_alphanumeric()
-        || matches!(ch, '_' | '.' | '@' | '$' | '#' | '%')
-        || (!ch.is_ascii() && !ch.is_whitespace())
+fn assembly_word(character: char) -> bool {
+    character.is_ascii_alphanumeric()
+        || matches!(character, '_' | '.' | '@' | '$' | '#' | '%')
+        || (!character.is_ascii() && !character.is_whitespace())
 }
 
 fn assembly_mnemonic(word: &str, operands: &str) -> &'static str {

@@ -70,17 +70,20 @@ fn globals(left: &Snapshot, right: &Snapshot, pairs: &[Pair]) -> BTreeMap<u64, u
     let mut first = Uses::new();
     let mut second = Uses::new();
     for (index, pair) in pairs.iter().enumerate() {
-        let a = &left.entries[pair.first];
-        let b = &right.entries[pair.second];
+        let first_entry = &left.entries[pair.first];
+        let second_entry = &right.entries[pair.second];
         if left.isa != right.isa
-            || a.hash.is_none()
-            || a.hash != b.hash
-            || a.constants != b.constants
-            || a.block_starts.len() != b.block_starts.len()
+            || first_entry.hash.is_none()
+            || first_entry.hash != second_entry.hash
+            || first_entry.constants != second_entry.constants
+            || first_entry.block_starts.len() != second_entry.block_starts.len()
         {
             continue;
         }
-        for (snapshot, entry, uses) in [(left, a, &mut first), (right, b, &mut second)] {
+        for (snapshot, entry, uses) in [
+            (left, first_entry, &mut first),
+            (right, second_entry, &mut second),
+        ] {
             for reference in &snapshot.references {
                 if reference.function != entry.function.addr
                     || !matches!(reference.kind, Kind::Read | Kind::Write | Kind::Address)
@@ -127,23 +130,26 @@ fn target(
     if let Target::Comment { address } = source {
         let mut destinations = BTreeSet::new();
         for pair in pairs {
-            let a = &left.entries[pair.first];
-            let b = &right.entries[pair.second];
-            if *address == a.function.addr {
-                destinations.insert(b.function.addr);
+            let first_entry = &left.entries[pair.first];
+            let second_entry = &right.entries[pair.second];
+            if *address == first_entry.function.addr {
+                destinations.insert(second_entry.function.addr);
                 continue;
             }
-            if left.isa != right.isa || a.bytes.is_none() || a.bytes != b.bytes {
+            if left.isa != right.isa
+                || first_entry.bytes.is_none()
+                || first_entry.bytes != second_entry.bytes
+            {
                 continue;
             }
-            let Some(offset) = address.checked_sub(a.function.addr) else {
+            let Some(offset) = address.checked_sub(first_entry.function.addr) else {
                 continue;
             };
-            let Some(bytes) = &a.bytes else {
+            let Some(bytes) = &first_entry.bytes else {
                 continue;
             };
             if usize::try_from(offset).is_ok_and(|offset| offset < bytes.len())
-                && let Some(mapped) = b.function.addr.checked_add(offset)
+                && let Some(mapped) = second_entry.function.addr.checked_add(offset)
             {
                 destinations.insert(mapped);
             }
@@ -174,30 +180,41 @@ fn target(
     else {
         return None;
     };
-    let a = &left.entries[pair.first];
-    let b = &right.entries[pair.second];
-    let destination = b.function.addr;
+    let first_entry = &left.entries[pair.first];
+    let second_entry = &right.entries[pair.second];
+    let destination = second_entry.function.addr;
     match source {
         Target::Function { .. } => Some(Target::Function {
             address: destination,
         }),
-        _ if left.isa != right.isa || a.layout.is_none() || a.layout != b.layout => None,
+        _ if left.isa != right.isa
+            || first_entry.layout.is_none()
+            || first_entry.layout != second_entry.layout =>
+        {
+            None
+        }
         Target::Signature { .. } => Some(Target::Signature {
             function: destination,
         }),
         Target::Parameter { storage, .. } | Target::Local { storage, .. } => {
-            if matches!(source, Target::Local { .. }) && (a.bytes.is_none() || a.bytes != b.bytes) {
+            if matches!(source, Target::Local { .. })
+                && (first_entry.bytes.is_none() || first_entry.bytes != second_entry.bytes)
+            {
                 return None;
             }
-            if !a.origins.contains(source) {
+            if !first_entry.origins.contains(source) {
                 return None;
             }
             let mut storage = storage.clone();
             if let Storage::Definition { block, .. } = &mut storage {
-                let Some(index) = a.block_starts.iter().position(|start| start == block) else {
+                let Some(index) = first_entry
+                    .block_starts
+                    .iter()
+                    .position(|start| start == block)
+                else {
                     return None;
                 };
-                let Some(start) = b.block_starts.get(index) else {
+                let Some(start) = second_entry.block_starts.get(index) else {
                     return None;
                 };
                 *block = *start;
@@ -213,7 +230,7 @@ fn target(
                     storage,
                 }
             };
-            b.origins.contains(&mapped).then_some(mapped)
+            second_entry.origins.contains(&mapped).then_some(mapped)
         }
         _ => None,
     }

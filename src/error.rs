@@ -31,7 +31,7 @@ pub enum Error {
     },
     #[error("not a signature database: {0}")]
     SignatureData(serde_json::Error),
-    #[error("signature database version {} is not supported; rebuild it (expected {expected})", found.map_or("missing".to_owned(), |v| v.to_string()))]
+    #[error("signature database version {} is not supported; rebuild it (expected {expected})", found.map_or("missing".to_owned(), |version| version.to_string()))]
     SignatureVersion { found: Option<u64>, expected: u32 },
     #[error("Mach-O architecture selection: {0}")]
     Architecture(String),

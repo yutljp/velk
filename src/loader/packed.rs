@@ -13,7 +13,7 @@ use crate::error::{Error, Result};
 
 const MAX_FILE_SIZE: u64 = 128 << 20;
 const TIME_LIMIT: Duration = Duration::from_secs(10);
-static NEXT: AtomicU64 = AtomicU64::new(0);
+static NEXT_SEQUENCE: AtomicU64 = AtomicU64::new(0);
 
 /// Packer identification and the decoder selected for recovery.
 #[derive(Debug, Clone, Serialize)]
@@ -103,7 +103,7 @@ impl Drop for Scratch {
 
 fn scratch() -> Result<Scratch> {
     for _ in 0..32 {
-        let sequence = NEXT.fetch_add(1, Ordering::Relaxed);
+        let sequence = NEXT_SEQUENCE.fetch_add(1, Ordering::Relaxed);
         let path =
             std::env::temp_dir().join(format!("velk-unpack-{}-{sequence}", std::process::id()));
         let mut builder = fs::DirBuilder::new();

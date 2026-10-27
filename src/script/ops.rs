@@ -301,9 +301,9 @@ pub fn handle(
             first,
             second,
             carry_annotations,
-        } => compare::handle(session, first, second, carry_annotations, deadline),
+        } => compare::compare(session, first, second, carry_annotations, deadline),
         Request::Project { bin, action, value } => {
-            project::handle(session, bin, action, value, deadline)
+            project::execute_action(session, bin, action, value, deadline)
         }
         Request::Open {
             path,
@@ -494,12 +494,12 @@ pub fn handle(
             };
             let identification = bin.open(session)?.identify(&database, deadline)?;
             Ok(json!({
-                "matches": identification.matches.iter().map(|m| json!({
-                    "addr": addr::format(m.addr),
-                    "size": m.size,
-                    "current": m.current,
-                    "matched": m.matched,
-                    "evidence": m.evidence,
+                "matches": identification.matches.iter().map(|matched| json!({
+                    "addr": addr::format(matched.addr),
+                    "size": matched.size,
+                    "current": matched.current,
+                    "matched": matched.matched,
+                    "evidence": matched.evidence,
                 })).collect::<Vec<_>>(),
                 "candidates": identification.candidates.iter().map(|(address, evidence)| json!({
                     "addr": addr::format(*address), "evidence": evidence,
@@ -534,7 +534,7 @@ fn parse(text: &str) -> Result<u64> {
 fn failures(failures: &[Failure]) -> Vec<Value> {
     failures
         .iter()
-        .map(|f| json!({ "addr": addr::format(f.addr), "error": f.error.to_string() }))
+        .map(|failure| json!({ "addr": addr::format(failure.addr), "error": failure.error.to_string() }))
         .collect()
 }
 

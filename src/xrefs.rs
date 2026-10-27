@@ -218,8 +218,8 @@ impl Index {
                 }
                 if let Stmt::Store { addr, value, .. } = stmt {
                     let addr = crate::analysis::navigation::resolve(addr, &values);
-                    expression(&addr, Kind::Write, image, &mut add);
-                    expression(
+                    add_expression_references(&addr, Kind::Write, image, &mut add);
+                    add_expression_references(
                         &crate::analysis::navigation::resolve(value, &values),
                         Kind::Address,
                         image,
@@ -227,7 +227,7 @@ impl Index {
                     );
                 } else {
                     for operand in stmt.operands() {
-                        expression(
+                        add_expression_references(
                             &crate::analysis::navigation::resolve(operand, &values),
                             Kind::Address,
                             image,
@@ -392,17 +392,22 @@ fn name(image: &Image, target: u64) -> Option<String> {
         .or_else(|| image.data_symbols.get(&target).cloned())
 }
 
-fn expression(expr: &Expr, kind: Kind, image: &Image, add: &mut impl FnMut(u64, Kind)) {
+fn add_expression_references(
+    expr: &Expr,
+    kind: Kind,
+    image: &Image,
+    add: &mut impl FnMut(u64, Kind),
+) {
     match expr {
         Expr::Const(addr)
             if image.section_at(*addr).is_some() || image.imports.contains_key(addr) =>
         {
             add(*addr, kind)
         }
-        Expr::Load { addr, .. } => expression(addr, Kind::Read, image, add),
+        Expr::Load { addr, .. } => add_expression_references(addr, Kind::Read, image, add),
         _ => {
             for child in crate::ir::visit::children(expr) {
-                expression(child, Kind::Address, image, add);
+                add_expression_references(child, Kind::Address, image, add);
             }
         }
     }

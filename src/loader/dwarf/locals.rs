@@ -16,15 +16,15 @@ enum Location {
 }
 
 fn expression(
-    expr: gimli::Expression<Reader<'_>>,
+    expression: gimli::Expression<Reader<'_>>,
     unit: &Unit<Reader<'_>>,
     frame_base: bool,
 ) -> Option<Location> {
-    let mut ops = expr.operations(unit.encoding());
-    let Ok(Some(op)) = ops.next() else {
+    let mut operations = expression.operations(unit.encoding());
+    let Ok(Some(operation)) = operations.next() else {
         return None;
     };
-    let location = match op {
+    let location = match operation {
         Operation::Register { register } if frame_base => Location::Register(register, 0),
         Operation::Register { register } => Location::ValueRegister(register),
         Operation::CallFrameCFA => Location::Cfa,
@@ -34,7 +34,7 @@ fn expression(
         } => Location::Register(register, offset),
         _ => return None,
     };
-    match ops.next() {
+    match operations.next() {
         Ok(None) => Some(location),
         _ => None,
     }
@@ -144,7 +144,7 @@ pub(super) fn read<'a>(
     let end = range.end;
     let frame = attribute(function, gimli::DW_AT_frame_base)
         .and_then(|value| location(dwarf, unit, value, start, end, true))
-        .and_then(|loc| stack_offset(image, loc, start, end, true));
+        .and_then(|location| stack_offset(image, location, start, end, true));
     let Ok(mut entries) = unit.entries_at_offset(function.offset()) else {
         return Vec::new();
     };
@@ -188,18 +188,18 @@ pub(super) fn read<'a>(
         let Some(ty) = type_name(dwarf, unit, ty, 16).filter(plausible_type) else {
             continue;
         };
-        let Some(loc) = attribute(entry, gimli::DW_AT_location)
+        let Some(location) = attribute(entry, gimli::DW_AT_location)
             .and_then(|value| location(dwarf, unit, value, start, end, false))
         else {
             continue;
         };
-        if let Location::ValueRegister(reg) = loc {
+        if let Location::ValueRegister(register) = location {
             let register = match image.isa {
-                Isa::I386 if reg.0 < 8 => Some(reg.0),
+                Isa::I386 if register.0 < 8 => Some(register.0),
                 Isa::X86_64 => [0, 2, 1, 3, 6, 7, 5, 4, 8, 9, 10, 11, 12, 13, 14, 15]
-                    .get(usize::from(reg.0))
+                    .get(usize::from(register.0))
                     .copied(),
-                Isa::AArch64 if reg.0 < 31 => Some(reg.0),
+                Isa::AArch64 if register.0 < 31 => Some(register.0),
                 _ => None,
             };
             if let Some(register) = register {
@@ -207,7 +207,7 @@ pub(super) fn read<'a>(
             }
             continue;
         }
-        let slot = match loc {
+        let slot = match location {
             Location::Frame(offset) => frame.and_then(|frame| frame.checked_add(offset)),
             other => stack_offset(image, other, start, end, false),
         };

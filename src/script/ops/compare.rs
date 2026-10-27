@@ -8,11 +8,11 @@ use super::BinaryRef;
 use crate::error::Result;
 use crate::service::{Binary, Session};
 
-pub(super) fn handle(
+pub(super) fn compare(
     session: &mut Session,
     first: BinaryRef,
     second: BinaryRef,
-    carry: bool,
+    carry_annotations: bool,
     deadline: Option<Instant>,
 ) -> Result<Value> {
     let first_project = match first.open(session) {
@@ -41,7 +41,7 @@ pub(super) fn handle(
         Ok(binary) => binary,
         Err(error) => return Err(error),
     };
-    match crate::compare::compare(&mut first, &mut second, carry, deadline) {
+    match crate::compare::compare(&mut first, &mut second, carry_annotations, deadline) {
         Ok(report) => Ok(json!(report)),
         Err(error) => Err(error),
     }

@@ -103,7 +103,7 @@ impl Database {
 
     /// Reads and validates a JSON or gzip-compressed JSON database.
     pub fn load(path: &Path) -> Result<Self> {
-        let data = match std::fs::read(path) {
+        let file_bytes = match std::fs::read(path) {
             Ok(data) => data,
             Err(source) => {
                 return Err(Error::Io {
@@ -113,8 +113,8 @@ impl Database {
             }
         };
         let mut decoded = Vec::new();
-        let data = if data.starts_with(&[0x1f, 0x8b]) {
-            let mut decoder = flate2::read::GzDecoder::new(data.as_slice());
+        let json_bytes = if file_bytes.starts_with(&[0x1f, 0x8b]) {
+            let mut decoder = flate2::read::GzDecoder::new(file_bytes.as_slice());
             if let Err(source) = decoder.read_to_end(&mut decoded) {
                 return Err(Error::Io {
                     path: path.to_owned(),
@@ -123,14 +123,14 @@ impl Database {
             }
             decoded.as_slice()
         } else {
-            data.as_slice()
+            file_bytes.as_slice()
         };
         #[derive(Deserialize)]
         struct Header {
             #[serde(default)]
             version: serde_json::Value,
         }
-        let header: Header = match serde_json::from_slice(data) {
+        let header: Header = match serde_json::from_slice(json_bytes) {
             Ok(header) => header,
             Err(source) => {
                 return Err(Error::SignatureFile {
@@ -146,7 +146,7 @@ impl Database {
                 expected: VERSION,
             });
         }
-        match serde_json::from_slice(data) {
+        match serde_json::from_slice(json_bytes) {
             Ok(database) => Ok(database),
             Err(source) => Err(Error::SignatureFile {
                 path: path.to_owned(),

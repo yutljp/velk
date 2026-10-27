@@ -112,13 +112,13 @@ pub(crate) fn image_entries(image: &Image, deadline: Option<Instant>) -> Result<
                 image
                     .functions
                     .get(&call.target)
-                    .and_then(|f| f.name.clone())
+                    .and_then(|function| function.name.clone())
             })
             .collect();
         let Some(calls) = calls else {
             return Ok(None);
         };
-        let Some(constants) = constants::image(image, &body) else {
+        let Some(constants) = constants::image_constants(image, &body) else {
             return Ok(None);
         };
         Ok(Some(make_entry(
@@ -145,8 +145,8 @@ pub fn build(path: &Path, deadline: Option<Instant>) -> Result<Database> {
     if let Err(error) = passed(deadline) {
         return Err(error);
     }
-    let data = match std::fs::read(path) {
-        Ok(data) => data,
+    let file_bytes = match std::fs::read(path) {
+        Ok(file_bytes) => file_bytes,
         Err(source) => {
             return Err(Error::Io {
                 path: path.to_owned(),
@@ -161,8 +161,8 @@ pub fn build(path: &Path, deadline: Option<Instant>) -> Result<Database> {
         .unwrap_or_default()
         .to_string_lossy()
         .into_owned();
-    if data.starts_with(b"!<arch>\n") {
-        let archive = match object::read::archive::ArchiveFile::parse(data.as_slice()) {
+    if file_bytes.starts_with(b"!<arch>\n") {
+        let archive = match object::read::archive::ArchiveFile::parse(file_bytes.as_slice()) {
             Ok(archive) => archive,
             Err(source) => {
                 return Err(Error::Object {
@@ -184,7 +184,7 @@ pub fn build(path: &Path, deadline: Option<Instant>) -> Result<Database> {
                     });
                 }
             };
-            let bytes = match member.data(data.as_slice()) {
+            let bytes = match member.data(file_bytes.as_slice()) {
                 Ok(bytes) => bytes,
                 Err(source) => {
                     return Err(Error::Object {
@@ -204,7 +204,7 @@ pub fn build(path: &Path, deadline: Option<Instant>) -> Result<Database> {
                 ));
             }
         }
-    } else if let Ok(file) = object::File::parse(data.as_slice())
+    } else if let Ok(file) = object::File::parse(file_bytes.as_slice())
         && file.kind() == object::ObjectKind::Relocatable
     {
         if let Err(error) = object_entries(&file, &mut entries, deadline) {
@@ -246,16 +246,17 @@ fn object_entries(
         if section.kind() != object::SectionKind::Text {
             continue;
         }
-        let Ok(data) = section.data() else {
+        let Ok(section_bytes) = section.data() else {
             continue;
         };
         let mut symbols: Vec<_> = file
             .symbols()
-            .filter(|s| {
-                s.kind() == object::SymbolKind::Text && s.section_index() == Some(section.index())
+            .filter(|symbol| {
+                symbol.kind() == object::SymbolKind::Text
+                    && symbol.section_index() == Some(section.index())
             })
             .collect();
-        symbols.sort_by_key(|s| s.address());
+        symbols.sort_by_key(|symbol| symbol.address());
         let relocations: Vec<_> = section.relocations().collect();
         for (index, symbol) in symbols.iter().enumerate() {
             if let Err(error) = passed(deadline) {
@@ -279,9 +280,9 @@ fn object_entries(
             } else {
                 symbols[index + 1..]
                     .iter()
-                    .find(|s| s.address() > symbol.address())
-                    .map(|s| s.address())
-                    .or_else(|| section.address().checked_add(data.len() as u64))
+                    .find(|candidate| candidate.address() > symbol.address())
+                    .map(|symbol| symbol.address())
+                    .or_else(|| section.address().checked_add(section_bytes.len() as u64))
             };
             let Some(end) = end
                 .and_then(|v| v.checked_sub(section.address()))
@@ -289,27 +290,31 @@ fn object_entries(
             else {
                 continue;
             };
-            let Some(bytes) = data.get(offset..end) else {
+            let Some(bytes) = section_bytes.get(offset..end) else {
                 continue;
             };
-            let relevant: Vec<_> = relocations
+            let function_relocations: Vec<_> = relocations
                 .iter()
                 .filter(|(at, _)| (*at as u128) >= offset as u128 && (*at as u128) < end as u128)
                 .collect();
-            let relocated: HashSet<usize> = relevant
+            let relocation_offsets: HashSet<usize> = function_relocations
                 .iter()
                 .map(|(at, _)| (*at as usize).saturating_sub(offset))
                 .collect();
-            let Some(body) = normalize::normalize(isa, bytes, symbol.address(), &relocated) else {
+            let Some(body) =
+                normalize::normalize(isa, bytes, symbol.address(), &relocation_offsets)
+            else {
                 continue;
             };
-            let Some(constants) = constants::object(file, &body, &relevant, offset) else {
+            let Some(constants) =
+                constants::object_constants(file, &body, &function_relocations, offset)
+            else {
                 continue;
             };
             let mut calls = Vec::new();
             let mut valid = true;
             // Constant loads were checked above; remaining relocations must be direct branches.
-            for (at, relocation) in &relevant {
+            for (at, relocation) in &function_relocations {
                 let relative = (*at as usize).saturating_sub(offset);
                 if body
                     .references
@@ -388,7 +393,7 @@ fn object_entries(
                     target,
                     ..
                 } = call;
-                let relocation = relevant
+                let relocation = function_relocations
                     .iter()
                     .find(|(at, _)| (*at as usize).saturating_sub(offset) == *start);
                 let name = match relocation {

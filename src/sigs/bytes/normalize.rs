@@ -15,10 +15,10 @@ pub(super) fn normalize(
     addr: u64,
     relocated: &HashSet<usize>,
 ) -> Option<Body> {
-    checked(isa, bytes, addr, relocated).ok()
+    normalize_checked(isa, bytes, addr, relocated).ok()
 }
 
-pub(super) fn checked(
+pub(super) fn normalize_checked(
     isa: Isa,
     bytes: &[u8],
     addr: u64,
@@ -36,7 +36,7 @@ pub(super) fn checked(
     if matches!(isa, Isa::AArch64 | Isa::Arm32) && !addr.is_multiple_of(4) {
         return Err("invalid instruction or boundary");
     }
-    let mut information = 0usize;
+    let mut informative_bytes = 0usize;
     let mut body = Body {
         bytes: bytes.to_vec(),
         calls: Vec::new(),
@@ -64,8 +64,8 @@ pub(super) fn checked(
                     return Err("invalid instruction or boundary");
                 }
                 if instruction.is_ip_rel_memory_operand() {
-                    let info = factory.info(&instruction);
-                    let reads = info.used_memory();
+                    let instruction_info = factory.info(&instruction);
+                    let reads = instruction_info.used_memory();
                     let size = instruction.memory_size().size();
                     if reads.len() != 1
                         || reads[0].access() != OpAccess::Read
@@ -96,7 +96,7 @@ pub(super) fn checked(
                 }
                 let flow = instruction.flow_control();
                 if !matches!(instruction.mnemonic(), Mnemonic::Nop | Mnemonic::Int3) {
-                    information += instruction.len();
+                    informative_bytes += instruction.len();
                     last_code_end = decoder.position();
                     last_flow = flow;
                 }
@@ -177,7 +177,7 @@ pub(super) fn checked(
                 let offset = index * 4;
                 let word = u32::from_le_bytes(*chunk);
                 if word != 0xd503_201f && word != 0 {
-                    information += 4;
+                    informative_bytes += 4;
                     last_code_end = offset + 4;
                     last_terminal = word & 0xfc00_0000 == 0x1400_0000
                         || matches!(
@@ -267,7 +267,7 @@ pub(super) fn checked(
             }
         }
         Isa::Arm32 => {
-            if !arm32::normalize(&mut body, addr, end, relocated, &mut information) {
+            if !arm32::normalize(&mut body, addr, end, relocated, &mut informative_bytes) {
                 return Err("unsupported ARM operand or boundary");
             }
         }
@@ -276,10 +276,11 @@ pub(super) fn checked(
     if body.bytes.len() < MIN_BYTES {
         return Err("function size outside limits");
     }
-    let information = information.saturating_sub(body.calls.iter().map(|call| call.width).sum());
-    if information < MIN_BYTES {
+    let informative_bytes =
+        informative_bytes.saturating_sub(body.calls.iter().map(|call| call.width).sum());
+    if informative_bytes < MIN_BYTES {
         return Err("insufficient non-address bytes");
     }
-    body.name_eligible = body.bytes.len() >= MIN_NAMED_BYTES && information >= 24;
+    body.name_eligible = body.bytes.len() >= MIN_NAMED_BYTES && informative_bytes >= 24;
     Ok(body)
 }

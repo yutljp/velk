@@ -3,7 +3,7 @@
 use super::{
     Data, Procedure, locations,
     records::{Reader, records, u32_at},
-    types::{Types, name},
+    types::{Types, valid_identifier},
 };
 use crate::ir::calls::{FunctionSource, TypeSource};
 use crate::ir::{AbiIssue, CType, DebugLocal};
@@ -28,7 +28,7 @@ impl Variable {
 }
 
 #[derive(Debug)]
-struct Pending {
+struct PendingProcedure {
     addr: u64,
     size: u64,
     name: String,
@@ -42,7 +42,7 @@ struct Pending {
 }
 
 pub(super) fn read(data: &mut Data, bytes: &[u8], sections: &[(u64, u64)], ids: bool) {
-    let mut pending: Option<Pending> = None;
+    let mut pending: Option<PendingProcedure> = None;
     let mut budget = bytes.len() / 4;
     for (kind, bytes) in records(bytes) {
         let mut reader = Reader(bytes);
@@ -98,7 +98,7 @@ pub(super) fn read(data: &mut Data, bytes: &[u8], sections: &[(u64, u64)], ids: 
                         _ => u32::MAX,
                     };
                 }
-                pending = Some(Pending {
+                pending = Some(PendingProcedure {
                     addr,
                     size: u64::from(size),
                     name: text,
@@ -216,7 +216,11 @@ pub(super) fn read(data: &mut Data, bytes: &[u8], sections: &[(u64, u64)], ids: 
     }
 }
 
-fn register_location(function: &mut Pending, mut reader: Reader<'_>, sections: &[(u64, u64)]) {
+fn register_location(
+    function: &mut PendingProcedure,
+    mut reader: Reader<'_>,
+    sections: &[(u64, u64)],
+) {
     let Some(variable) = function
         .current
         .and_then(|index| function.variables.get_mut(index))
@@ -251,7 +255,7 @@ fn register_location(function: &mut Pending, mut reader: Reader<'_>, sections: &
 }
 
 fn frame_location(
-    function: &mut Pending,
+    function: &mut PendingProcedure,
     mut reader: Reader<'_>,
     sections: &[(u64, u64)],
     kind: u16,
@@ -323,7 +327,7 @@ fn source(index: u32) -> TypeSource {
     }
 }
 
-fn finish(data: &mut Data, function: Pending, budget: &mut usize) {
+fn finish(data: &mut Data, function: PendingProcedure, budget: &mut usize) {
     let types = &data.types;
     let signature = types
         .procedure(function.ty)
@@ -346,7 +350,7 @@ fn finish(data: &mut Data, function: Pending, budget: &mut usize) {
                 registers: function
                     .variables
                     .iter()
-                    .filter(|var| name(&var.name))
+                    .filter(|var| valid_identifier(&var.name))
                     .filter_map(|var| var.register.map(|reg| (reg, var.name.clone())))
                     .collect(),
                 params: args
@@ -359,7 +363,7 @@ fn finish(data: &mut Data, function: Pending, budget: &mut usize) {
                                 .filter(|var| {
                                     parameters.len() == args.len()
                                         && types.spelling(var.ty, 16) == types.spelling(*ty, 16)
-                                        && name(&var.name)
+                                        && valid_identifier(&var.name)
                                 })
                                 .map(|var| var.name.clone()),
                             types.spelling(*ty, 16),
@@ -367,8 +371,8 @@ fn finish(data: &mut Data, function: Pending, budget: &mut usize) {
                     })
                     .collect(),
                 ret: types.spelling(ret, 16),
-                ret_aggregate_size: aggregate(types, ret),
-                param_aggregate_sizes: args.iter().map(|ty| aggregate(types, *ty)).collect(),
+                ret_aggregate_size: aggregate_size(types, ret),
+                param_aggregate_sizes: args.iter().map(|ty| aggregate_size(types, *ty)).collect(),
                 variadic,
                 members: Vec::new(),
                 definitions: Vec::new(),
@@ -409,7 +413,7 @@ fn finish(data: &mut Data, function: Pending, budget: &mut usize) {
             .variables
             .into_iter()
             .filter_map(|var| {
-                if !name(&var.name) {
+                if !valid_identifier(&var.name) {
                     return None;
                 }
                 var.location
@@ -419,7 +423,7 @@ fn finish(data: &mut Data, function: Pending, budget: &mut usize) {
     });
 }
 
-fn aggregate(types: &Types, index: u32) -> Option<u64> {
+fn aggregate_size(types: &Types, index: u32) -> Option<u64> {
     match types.spelling(index, 16) {
         Some(CType::Named(text)) if text.starts_with("struct ") => {
             types.layout(index, 16).map(|layout| layout.size)

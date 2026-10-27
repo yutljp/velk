@@ -79,18 +79,18 @@ pub(super) fn read(types: &Types) -> TypeGraph {
                 graph.definitions.insert(source(index), definition.clone());
                 graph.generated_members.insert(source(index), generated);
             }
-        } else if let Some((kind, mut data)) = types.record(index) {
+        } else if let Some((kind, mut record_reader)) = types.record(index) {
             match kind {
                 0x1001 => {
                     tag = gimli::DW_TAG_const_type.0;
                     encoding = None;
-                    if let Some(inner) = data.u32() {
+                    if let Some(inner) = record_reader.u32() {
                         references.push(source(inner));
                     }
                 }
                 0x1503 => {
                     tag = gimli::DW_TAG_array_type.0;
-                    if let Some(inner) = data.u32() {
+                    if let Some(inner) = record_reader.u32() {
                         references.push(source(inner));
                     }
                     if let Ok(layout) = &layout

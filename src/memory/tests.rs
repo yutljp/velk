@@ -99,11 +99,11 @@ fn values_are_signed_and_section_bounded() {
 
 #[test]
 fn floating_strings_and_pointer_width_follow_the_image() {
-    let mut data = 1.5f32.to_le_bytes().to_vec();
-    data.extend_from_slice(&(-2.5f64).to_le_bytes());
-    data.extend_from_slice(&[0x00, 0xd8, 0x00, 0xdc, 0, 0]);
-    data.extend_from_slice(b"abc\0def\0");
-    let image = Image::from_code(Isa::I386, 0, data);
+    let mut bytes = 1.5f32.to_le_bytes().to_vec();
+    bytes.extend_from_slice(&(-2.5f64).to_le_bytes());
+    bytes.extend_from_slice(&[0x00, 0xd8, 0x00, 0xdc, 0, 0]);
+    bytes.extend_from_slice(b"abc\0def\0");
+    let image = Image::from_code(Isa::I386, 0, bytes);
     assert_eq!(
         read(&image, 0, "f32", 1, None).unwrap()["values"],
         json!([1.5])

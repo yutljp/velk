@@ -9,7 +9,7 @@ use sha2::Sha256;
 use super::{Project, error, io};
 use crate::error::Result;
 
-static NEXT: AtomicU64 = AtomicU64::new(0);
+static NEXT_TEMPORARY_FILE_ID: AtomicU64 = AtomicU64::new(0);
 
 /// Returns the default sidecar path for the supplied binary path.
 #[must_use]
@@ -153,7 +153,7 @@ pub(crate) fn update_cached<T>(
     temporary.push(format!(
         ".{}.{}.tmp",
         std::process::id(),
-        NEXT.fetch_add(1, Ordering::Relaxed)
+        NEXT_TEMPORARY_FILE_ID.fetch_add(1, Ordering::Relaxed)
     ));
     let temporary = PathBuf::from(temporary);
     let mut file = match OpenOptions::new()

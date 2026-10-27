@@ -54,7 +54,9 @@ pub(super) fn architecture(isa: Isa) -> Option<Architecture> {
     })
 }
 
-fn inputs(image: &Image) -> Option<(EhFrame<gimli::EndianSlice<'_, LittleEndian>>, BaseAddresses)> {
+fn eh_frame_and_bases(
+    image: &Image,
+) -> Option<(EhFrame<gimli::EndianSlice<'_, LittleEndian>>, BaseAddresses)> {
     let Some(section) = image
         .sections
         .iter()
@@ -62,10 +64,10 @@ fn inputs(image: &Image) -> Option<(EhFrame<gimli::EndianSlice<'_, LittleEndian>
     else {
         return None;
     };
-    let Some(data) = image.section_data(&section.name) else {
+    let Some(bytes) = image.section_data(&section.name) else {
         return None;
     };
-    let mut eh_frame = EhFrame::new(data, LittleEndian);
+    let mut eh_frame = EhFrame::new(bytes, LittleEndian);
     eh_frame.set_address_size(crate::arch::pointer_bytes(image.isa));
     let bases = BaseAddresses::default().set_eh_frame(section.vaddr);
     Some((eh_frame, bases))
@@ -75,7 +77,7 @@ pub(crate) fn frames(image: &Image) -> Vec<Frame> {
     if image.format == crate::loader::Format::Pe {
         return pe::frames(image);
     }
-    let Some((eh_frame, bases)) = inputs(image) else {
+    let Some((eh_frame, bases)) = eh_frame_and_bases(image) else {
         return Vec::new();
     };
     let Some(Architecture {
@@ -144,7 +146,7 @@ pub(crate) struct StackRow {
 /// Every row of every frame description, by address. A frame address kept
 /// in another register than the stack pointer means a frame is set up.
 pub(crate) fn stack_rows(image: &Image) -> Vec<StackRow> {
-    let Some((eh_frame, bases)) = inputs(image) else {
+    let Some((eh_frame, bases)) = eh_frame_and_bases(image) else {
         return Vec::new();
     };
     let Some(Architecture {
@@ -156,7 +158,7 @@ pub(crate) fn stack_rows(image: &Image) -> Vec<StackRow> {
         return Vec::new();
     };
     let mut context = Box::new(UnwindContext::new());
-    let mut out = Vec::new();
+    let mut rows = Vec::new();
     let mut entries = eh_frame.entries(&bases);
     while let Ok(Some(entry)) = entries.next() {
         let CieOrFde::Fde(partial) = entry else {
@@ -165,14 +167,14 @@ pub(crate) fn stack_rows(image: &Image) -> Vec<StackRow> {
         let Ok(fde) = partial.parse(EhFrame::cie_from_offset) else {
             continue;
         };
-        let Ok(mut rows) = fde.rows(&eh_frame, &bases, &mut context) else {
+        let Ok(mut unwind_rows) = fde.rows(&eh_frame, &bases, &mut context) else {
             continue;
         };
-        while let Ok(Some(row)) = rows.next_row() {
+        while let Ok(Some(row)) = unwind_rows.next_row() {
             let CfaRule::RegisterAndOffset { register, offset } = row.cfa() else {
                 continue;
             };
-            out.push(StackRow {
+            rows.push(StackRow {
                 start: row.start_address(),
                 end: row.end_address(),
                 at_entry: *register == stack && *offset == entry_offset,
@@ -180,15 +182,15 @@ pub(crate) fn stack_rows(image: &Image) -> Vec<StackRow> {
             });
         }
     }
-    out.sort_by_key(|row| row.start);
-    out
+    rows.sort_by_key(|row| row.start);
+    rows
 }
 
 /// The landing pads the exception tables name, each with the code ranges
 /// whose calls unwind into it.
 pub(crate) fn exception_regions(image: &Image) -> Vec<Region> {
     let mut regions = macho::regions(image);
-    let Some((eh_frame, bases)) = inputs(image) else {
+    let Some((eh_frame, bases)) = eh_frame_and_bases(image) else {
         return regions;
     };
     let mut entries = eh_frame.entries(&bases);

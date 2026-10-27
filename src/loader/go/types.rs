@@ -71,11 +71,12 @@ impl Reader<'_> {
             return None;
         };
         let size = u64::from_le_bytes(bytes[..8].try_into().expect("eight bytes"));
-        let align = bytes[21];
-        if size > 1 << 30 || !align.is_power_of_two() || align > 8 || bytes[22] != align {
+        let alignment = bytes[21];
+        if size > 1 << 30 || !alignment.is_power_of_two() || alignment > 8 || bytes[22] != alignment
+        {
             return None;
         }
-        Some((size, align, bytes[23] & 31))
+        Some((size, alignment, bytes[23] & 31))
     }
 
     fn scalar(&self, addr: u64) -> Option<(CType, u64, u8)> {

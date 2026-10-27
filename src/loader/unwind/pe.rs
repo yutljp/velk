@@ -5,11 +5,11 @@ pub(super) fn frames(image: &Image) -> Vec<Frame> {
     if image.isa != Isa::X86_64 {
         return Vec::new();
     }
-    let Some((base, data)) = crate::loader::seh::exception_directory(image) else {
+    let Some((base, entries)) = crate::loader::seh::exception_directory(image) else {
         return Vec::new();
     };
     let mut frames = Vec::new();
-    for entry in data.as_chunks::<12>().0 {
+    for entry in entries.as_chunks::<12>().0 {
         let rva = |offset| {
             u64::from(u32::from_le_bytes(
                 entry[offset..offset + 4]

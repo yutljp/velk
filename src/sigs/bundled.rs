@@ -33,14 +33,14 @@ pub(crate) fn for_isa(isa: Isa) -> &'static Database {
     static I386: OnceLock<Database> = OnceLock::new();
     static ARM32: OnceLock<Database> = OnceLock::new();
     static EMPTY: OnceLock<Database> = OnceLock::new();
-    let (slot, data): (&OnceLock<Database>, &[u8]) = match isa {
+    let (slot, compressed_bytes): (&OnceLock<Database>, &[u8]) = match isa {
         Isa::X86_64 => (&X86_64, include_bytes!("../../signatures/x86_64.bin.gz")),
         Isa::AArch64 => (&AARCH64, include_bytes!("../../signatures/aarch64.bin.gz")),
         Isa::I386 => (&I386, include_bytes!("../../signatures/i386.bin.gz")),
         Isa::Arm32 => (&ARM32, include_bytes!("../../signatures/arm32.bin.gz")),
         Isa::Unsupported => return EMPTY.get_or_init(|| Database::new(Vec::new())),
     };
-    slot.get_or_init(|| decode(data, isa))
+    slot.get_or_init(|| decode(compressed_bytes, isa))
 }
 
 fn count(reader: &mut Cursor<Vec<u8>>) -> u32 {
@@ -70,10 +70,10 @@ fn string(reader: &mut Cursor<Vec<u8>>) -> String {
     String::from_utf8(bytes(reader)).expect("embedded names are UTF-8")
 }
 
-fn decode(data: &[u8], isa: Isa) -> Database {
+fn decode(compressed_bytes: &[u8], isa: Isa) -> Database {
     crate::timing::scope!("sigs::decode");
     let mut decoded = Vec::new();
-    GzDecoder::new(data)
+    GzDecoder::new(compressed_bytes)
         .read_to_end(&mut decoded)
         .expect("embedded database is valid gzip");
     let mut reader = Cursor::new(decoded);

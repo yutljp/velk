@@ -47,10 +47,10 @@ impl<'a> Msf<'a> {
             let Some(start) = (block as usize).checked_mul(block_size) else {
                 return None;
             };
-            let Some(data) = bytes.get(start..start.saturating_add(block_size)) else {
+            let Some(block_bytes) = bytes.get(start..start.saturating_add(block_size)) else {
                 return None;
             };
-            directory.extend_from_slice(data);
+            directory.extend_from_slice(block_bytes);
         }
         directory.truncate(size);
         let mut reader = Reader(&directory);
@@ -76,14 +76,14 @@ impl<'a> Msf<'a> {
             if count > reader.0.len() / 4 {
                 return None;
             }
-            let mut stream = Vec::new();
+            let mut stream_blocks = Vec::new();
             for _ in 0..count {
                 let Some(block) = reader.u32() else {
                     return None;
                 };
-                stream.push(block);
+                stream_blocks.push(block);
             }
-            blocks.push(stream);
+            blocks.push(stream_blocks);
         }
         Some(Self {
             bytes,
@@ -158,8 +158,8 @@ impl<'a> Msf<'a> {
             if u32_at(&symbols, 0) != Some(4) {
                 continue;
             }
-            if let Some(data) = symbols.get(4..size) {
-                out.push(data.to_vec());
+            if let Some(symbol_records) = symbols.get(4..size) {
+                out.push(symbol_records.to_vec());
             }
         }
         out

@@ -190,14 +190,15 @@ pub(super) fn read(
                 let field = read(unit, type_offset(child)?, depth - 1)?;
                 trivial &= field.trivial;
                 let bit_size = attribute(child, gimli::DW_AT_bit_size).and_then(number);
-                let at = if union || attribute(child, gimli::DW_AT_data_bit_offset).is_some() {
-                    0
-                } else {
-                    attribute(child, gimli::DW_AT_data_member_location)
-                        .and_then(number)
-                        .ok_or(AbiIssue::UnknownLayout)?
-                };
-                let bit_offset = field_bit_offset(child, at, field.size, bit_size)?;
+                let byte_offset =
+                    if union || attribute(child, gimli::DW_AT_data_bit_offset).is_some() {
+                        0
+                    } else {
+                        attribute(child, gimli::DW_AT_data_member_location)
+                            .and_then(number)
+                            .ok_or(AbiIssue::UnknownLayout)?
+                    };
+                let bit_offset = field_bit_offset(child, byte_offset, field.size, bit_size)?;
                 let defined = bit_size.is_none() || attribute(child, gimli::DW_AT_name).is_some();
                 fields.push(LayoutField {
                     bit_offset,
@@ -225,14 +226,14 @@ pub(super) fn read(
 
 fn field_bit_offset(
     entry: &gimli::DebuggingInformationEntry<Reader<'_>>,
-    at: u64,
+    byte_offset: u64,
     storage_size: u64,
     bit_size: Option<u64>,
 ) -> Result<u64, AbiIssue> {
     if let Some(offset) = attribute(entry, gimli::DW_AT_data_bit_offset) {
         return number(offset).ok_or(AbiIssue::UnknownLayout);
     }
-    let start = at.checked_mul(8).ok_or(AbiIssue::UnknownLayout)?;
+    let start = byte_offset.checked_mul(8).ok_or(AbiIssue::UnknownLayout)?;
     match attribute(entry, gimli::DW_AT_bit_offset) {
         Some(offset) => {
             let offset = number(offset).ok_or(AbiIssue::UnknownLayout)?;
@@ -396,7 +397,7 @@ pub(super) fn generated(
         if child.tag() != gimli::DW_TAG_member {
             continue;
         }
-        let at = if union {
+        let byte_offset = if union {
             0
         } else {
             attribute(child, gimli::DW_AT_data_member_location)
@@ -405,7 +406,7 @@ pub(super) fn generated(
         };
         let offset = type_offset(child)?;
         let width = type_size(unit, offset, 8).ok_or(AbiIssue::UnknownLayout)?;
-        if at < source_end {
+        if byte_offset < source_end {
             continue;
         }
         let named = attribute(child, gimli::DW_AT_name)
@@ -422,13 +423,13 @@ pub(super) fn generated(
         } else if union {
             continue;
         } else {
-            bytes(width.min(original.size.saturating_sub(at)))
+            bytes(width.min(original.size.saturating_sub(byte_offset)))
         };
         if field.size == 0 {
             continue;
         }
-        if !union && at > source_end {
-            let gap = bytes(at - source_end);
+        if !union && byte_offset > source_end {
+            let gap = bytes(byte_offset - source_end);
             fields.push(LayoutField {
                 bit_offset: generated_end * 8,
                 bit_size: None,
@@ -436,7 +437,7 @@ pub(super) fn generated(
                 defined: true,
             });
             generated_end = generated_end
-                .checked_add(at - source_end)
+                .checked_add(byte_offset - source_end)
                 .ok_or(AbiIssue::UnknownLayout)?;
         }
         let alignment = field.alignment.ok_or(AbiIssue::UnknownLayout)?;
@@ -446,7 +447,7 @@ pub(super) fn generated(
         } else {
             rounded(generated_end, alignment)?
         };
-        if placed != at {
+        if placed != byte_offset {
             return Err(AbiIssue::IncompatibleDefinition);
         }
         generated_end = generated_end.max(
@@ -457,7 +458,9 @@ pub(super) fn generated(
         source_end = if union {
             0
         } else {
-            at.checked_add(field.size).ok_or(AbiIssue::UnknownLayout)?
+            byte_offset
+                .checked_add(field.size)
+                .ok_or(AbiIssue::UnknownLayout)?
         };
         fields.push(LayoutField {
             bit_offset: placed.checked_mul(8).ok_or(AbiIssue::UnknownLayout)?,

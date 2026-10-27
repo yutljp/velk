@@ -87,17 +87,17 @@ pub(crate) fn bytes(image: &Image, address: u64, size: u64) -> Result<Cow<'_, [u
         }
         return Ok(Cow::Owned(vec![0; size]));
     }
-    if let Some(data) = section_bytes(image, section)
+    if let Some(section_bytes) = section_bytes(image, section)
         && let Some(end) = start.checked_add(size)
     {
-        if let Some(data) = data.get(start..end) {
-            return Ok(Cow::Borrowed(data));
+        if let Some(requested_bytes) = section_bytes.get(start..end) {
+            return Ok(Cow::Borrowed(requested_bytes));
         }
         if size > 16 * 1024 * 1024 {
             return Err(error("read exceeds 16 MiB"));
         }
         let mut value = vec![0; size];
-        if let Some(prefix) = data.get(start..) {
+        if let Some(prefix) = section_bytes.get(start..) {
             value[..prefix.len()].copy_from_slice(prefix);
         }
         return Ok(Cow::Owned(value));
@@ -151,7 +151,7 @@ fn pattern(image: &Image, text: &str, options: &Search) -> Result<Vec<Option<u8>
         Ok(little) => little,
         Err(error) => return Err(error),
     };
-    let data = match options.encoding.as_str() {
+    let pattern = match options.encoding.as_str() {
         "hex" => {
             let mut result = Vec::new();
             for token in text.split_whitespace() {
@@ -222,19 +222,19 @@ fn pattern(image: &Image, text: &str, options: &Search) -> Result<Vec<Option<u8>
             } else {
                 value.to_be_bytes()
             };
-            let data = if little {
+            let encoded_bytes = if little {
                 &encoded[..usize::from(width)]
             } else {
                 &encoded[8 - usize::from(width)..]
             };
-            data.iter().copied().map(Some).collect()
+            encoded_bytes.iter().copied().map(Some).collect()
         }
         _ => return Err(error("encoding must be hex, ascii, utf16 or integer")),
     };
-    if data.is_empty() {
+    if pattern.is_empty() {
         return Err(error("search pattern is empty"));
     }
-    Ok(data)
+    Ok(pattern)
 }
 
 pub(crate) fn containing_function(image: &Image, address: u64) -> Option<u64> {
@@ -306,7 +306,7 @@ pub(crate) fn search(
             continue;
         };
         let file_data = match section_bytes(image, section) {
-            Some(data) => data,
+            Some(bytes) => bytes,
             None if section.file_offset.is_none() && image.section_file_size(section) == 0 => &[],
             None => continue,
         };

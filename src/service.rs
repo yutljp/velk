@@ -527,18 +527,19 @@ impl Binary {
     /// Recovers strings in one function using only known execution inputs.
     pub fn decoded_strings_at(
         &mut self,
-        function: u64,
+        function_address: u64,
         deadline: Option<Instant>,
     ) -> &[crate::string_decoding::DecodedString] {
-        let function = self.image.code_address(function);
-        if let Entry::Vacant(entry) = self.decoded_strings.entry(function) {
-            let Some(strings) = crate::string_decoding::recover(&self.image, function, deadline)
+        let function_address = self.image.code_address(function_address);
+        if let Entry::Vacant(entry) = self.decoded_strings.entry(function_address) {
+            let Some(strings) =
+                crate::string_decoding::recover(&self.image, function_address, deadline)
             else {
                 return &[];
             };
             entry.insert(strings);
         }
-        match self.decoded_strings.get(&function) {
+        match self.decoded_strings.get(&function_address) {
             Some(strings) => strings,
             None => &[],
         }
@@ -755,8 +756,8 @@ impl Binary {
                 self.image
                     .functions
                     .values()
-                    .filter(|f| f.sources.contains(&loader::NameSource::Plt))
-                    .filter_map(|f| f.name.clone().map(|name| (f.addr, name))),
+                    .filter(|function| function.sources.contains(&loader::NameSource::Plt))
+                    .filter_map(|function| function.name.clone().map(|name| (function.addr, name))),
             )
             .collect();
         let inline_functions = match self.decompile_with_dependencies(addr, None, deadline) {
@@ -776,7 +777,7 @@ impl Binary {
             "callees": index.graph(addr, false, 1).into_iter().map(crate::addr::format).collect::<Vec<_>>(),
             "imports": outgoing.iter().filter_map(|xref| imports.get(&xref.target))
                 .collect::<std::collections::BTreeSet<_>>(),
-            "strings": index.strings().iter().filter(|s| s.xrefs.iter().any(|xref| xref.function == addr)).collect::<Vec<_>>(),
+            "strings": index.strings().iter().filter(|string| string.xrefs.iter().any(|xref| xref.function == addr)).collect::<Vec<_>>(),
             "incomingXrefs": index.to(addr).len(), "outgoingXrefs": outgoing.len(),
             "failures": index.failures,
         }))
@@ -800,7 +801,7 @@ impl Binary {
         let functions = self.image.functions.values();
         if let Some(found) = functions
             .clone()
-            .filter(|f| names(f).any(|n| n == target))
+            .filter(|f| names(f).any(|name| name == target))
             .min_by_key(|f| f.sources.contains(&loader::NameSource::Plt))
         {
             return Ok(found);
@@ -808,14 +809,14 @@ impl Binary {
         if self.image.format == loader::Format::MachO
             && let Some(found) = functions
                 .clone()
-                .find(|f| names(f).any(|n| n.strip_prefix('_') == Some(target)))
+                .find(|f| names(f).any(|name| name.strip_prefix('_') == Some(target)))
         {
             return Ok(found);
         }
         let needle = target.to_lowercase();
         let partial: Vec<&Function> = functions
             .filter(|f| {
-                names(f).any(|n| n.to_lowercase().contains(&needle))
+                names(f).any(|name| name.to_lowercase().contains(&needle))
                     || self
                         .project
                         .as_ref()

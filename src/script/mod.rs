@@ -47,9 +47,9 @@ impl Engine {
         let runtime = Runtime::new().map_err(Error::Engine)?;
         runtime.set_memory_limit(MEMORY_LIMIT);
         let deadline = Rc::new(Cell::new(None::<Instant>));
-        let watched = Rc::clone(&deadline);
+        let watched_deadline = Rc::clone(&deadline);
         runtime.set_interrupt_handler(Some(Box::new(move || {
-            watched
+            watched_deadline
                 .get()
                 .is_some_and(|deadline| Instant::now() > deadline)
         })));

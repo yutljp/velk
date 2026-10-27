@@ -67,15 +67,15 @@ fn aarch64_big_endian_objects_do_not_use_little_endian_sets() {
         section: SymbolSection::Section(section),
         flags: object::SymbolFlags::None,
     });
-    let data = object.write().unwrap();
-    let file = object::File::parse(data.as_slice()).unwrap();
+    let object_bytes = object.write().unwrap();
+    let file = object::File::parse(object_bytes.as_slice()).unwrap();
     let mut entries = Vec::new();
     object_entries(&file, &mut entries, None).unwrap();
     assert!(entries.is_empty());
     let directory = std::path::Path::new("target/signature-big-endian-test");
     std::fs::create_dir_all(directory).unwrap();
     let path = directory.join("leaf.o");
-    std::fs::write(&path, data).unwrap();
+    std::fs::write(&path, object_bytes).unwrap();
     let image = crate::loader::load(&path).unwrap();
     assert!(image_entries(&image, None).unwrap().is_empty());
     let body = normalize(Isa::AArch64, &bytes, 0, &HashSet::new()).unwrap();
@@ -434,8 +434,8 @@ fn archive_build_records_members_and_relocations() {
     std::fs::create_dir_all(dir).unwrap();
     let archive = dir.join("calls.a");
     let member = branch_object(-4, object::SymbolKind::Text);
-    let mut data = b"!<arch>\n".to_vec();
-    data.extend_from_slice(
+    let mut archive_bytes = b"!<arch>\n".to_vec();
+    archive_bytes.extend_from_slice(
         format!(
             "{:<16}{:<12}{:<6}{:<6}{:<8}{:<10}`\n",
             "calls.o/",
@@ -447,11 +447,11 @@ fn archive_build_records_members_and_relocations() {
         )
         .as_bytes(),
     );
-    data.extend_from_slice(&member);
+    archive_bytes.extend_from_slice(&member);
     if !member.len().is_multiple_of(2) {
-        data.push(b'\n');
+        archive_bytes.push(b'\n');
     }
-    std::fs::write(&archive, data).unwrap();
+    std::fs::write(&archive, archive_bytes).unwrap();
     let database = build(&archive, None).unwrap();
     assert_eq!(database.entries.len(), 2);
     assert_eq!(database.sources, vec!["calls.a:calls.o"]);
@@ -530,12 +530,12 @@ fn constant_object(value: u32) -> Vec<u8> {
         object::Endianness::Little,
     );
     let text = object.add_section(Vec::new(), b".text".to_vec(), object::SectionKind::Text);
-    let data = object.add_section(
+    let data_section = object.add_section(
         Vec::new(),
         b".rodata".to_vec(),
         object::SectionKind::ReadOnlyData,
     );
-    object.append_section_data(data, &value.to_le_bytes(), 4);
+    object.append_section_data(data_section, &value.to_le_bytes(), 4);
     let mut bytes = vec![0x8b, 0x05, 0, 0, 0, 0];
     bytes.extend_from_slice(&[0x83, 0xc0, 1].repeat(12));
     bytes.push(0xc3);
@@ -547,7 +547,7 @@ fn constant_object(value: u32) -> Vec<u8> {
         kind: object::SymbolKind::Data,
         scope: object::SymbolScope::Linkage,
         weak: false,
-        section: SymbolSection::Section(data),
+        section: SymbolSection::Section(data_section),
         flags: object::SymbolFlags::None,
     });
     object.add_symbol(Symbol {

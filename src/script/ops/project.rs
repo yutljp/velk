@@ -5,7 +5,7 @@ use crate::service::Session;
 use serde_json::{Value, json};
 use std::time::Instant;
 
-pub(super) fn handle(
+pub(super) fn execute_action(
     session: &mut Session,
     bin: BinaryRef,
     action: String,

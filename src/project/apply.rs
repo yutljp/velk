@@ -178,7 +178,7 @@ impl Project {
                         symbols.data.insert(*address, name.clone());
                     }
                     if let Some(ty) = ty {
-                        let (size, _) = match types.size(&ty) {
+                        let (size, _) = match types.layout(&ty) {
                             Ok(size) => size,
                             Err(cause) => return Err(cause),
                         };
@@ -252,7 +252,7 @@ impl Project {
                             symbols.stack_names.insert((ir.addr, *offset), name.clone());
                         }
                         if let Some(ty) = ty {
-                            let (size, _) = match types.size(&ty) {
+                            let (size, _) = match types.layout(&ty) {
                                 Ok(size) => size,
                                 Err(cause) => return Err(cause),
                             };
@@ -287,7 +287,7 @@ impl Project {
                             });
                         }
                     } else {
-                        let index = match resolve(ir, storage) {
+                        let index = match resolve_local_storage(ir, storage) {
                             Ok(index) => index,
                             Err(cause) => return Err(cause),
                         };
@@ -419,7 +419,7 @@ impl Project {
     }
 }
 
-fn resolve(ir: &FunctionIr, storage: &Storage) -> Result<u16> {
+fn resolve_local_storage(ir: &FunctionIr, storage: &Storage) -> Result<u16> {
     let register = match storage {
         Storage::Register { register } | Storage::Definition { register, .. } => *register,
         Storage::Stack { .. } => unreachable!(),

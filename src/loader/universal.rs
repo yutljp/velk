@@ -136,18 +136,18 @@ pub(super) fn select(
     let range = usize::try_from(slice.offset)
         .ok()
         .zip(usize::try_from(slice.size).ok());
-    let data = range.and_then(|(offset, size)| {
+    let slice_bytes = range.and_then(|(offset, size)| {
         offset
             .checked_add(size)
             .and_then(|end| bytes.get(offset..end))
     });
-    let Some(data) = data else {
+    let Some(slice_bytes) = slice_bytes else {
         return Err(error(format!(
             "{} slice at {:#x} with size {:#x} is outside the file",
             slice.arch, slice.offset, slice.size
         )));
     };
-    let header = match object::File::parse(data) {
+    let header = match object::File::parse(slice_bytes) {
         Ok(object::File::MachO64(file)) => {
             let header = file.macho_header();
             (
@@ -171,5 +171,5 @@ pub(super) fn select(
         ));
     }
     let offset = slice.offset;
-    Ok((data, available, offset))
+    Ok((slice_bytes, available, offset))
 }

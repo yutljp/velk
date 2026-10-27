@@ -46,10 +46,10 @@ pub(super) fn exception_directory(image: &Image) -> Option<(u64, &[u8])> {
     let Some(directory) = file.data_directory(object::pe::IMAGE_DIRECTORY_ENTRY_EXCEPTION) else {
         return None;
     };
-    let Ok(data) = directory.data(file.data(), &file.section_table()) else {
+    let Ok(directory_bytes) = directory.data(file.data(), &file.section_table()) else {
         return None;
     };
-    Some((file.relative_address_base(), data))
+    Some((file.relative_address_base(), directory_bytes))
 }
 
 pub(super) fn read(image: &Image) -> Vec<Handler> {
@@ -99,7 +99,7 @@ pub(super) fn read(image: &Image) -> Vec<Handler> {
         let Some(bytes) = read_bytes(image, handler_data, 8) else {
             continue;
         };
-        let (Some(address), Some(data)) = (
+        let (Some(address), Some(table_address)) = (
             base.checked_add(u64::from(word(bytes, 0))),
             handler_data.checked_add(4),
         ) else {
@@ -112,7 +112,7 @@ pub(super) fn read(image: &Image) -> Vec<Handler> {
         let mut handler = Handler {
             function,
             address,
-            data,
+            data: table_address,
             name,
             scopes: Vec::new(),
             catches: Vec::new(),
@@ -121,7 +121,8 @@ pub(super) fn read(image: &Image) -> Vec<Handler> {
         match handler.name.as_deref() {
             Some("__C_specific_handler") => {
                 let count = u64::from(word(bytes, 4));
-                let Some(table) = read_bytes(image, data.saturating_add(4), count * 16) else {
+                let Some(table) = read_bytes(image, table_address.saturating_add(4), count * 16)
+                else {
                     continue;
                 };
                 for row in table.as_chunks::<16>().0 {
@@ -153,12 +154,14 @@ pub(super) fn read(image: &Image) -> Vec<Handler> {
                 }
             }
             Some("__CxxFrameHandler3") => {
-                let Some(info) = base.checked_add(u64::from(word(bytes, 4))) else {
+                let Some(function_info_address) = base.checked_add(u64::from(word(bytes, 4)))
+                else {
                     continue;
                 };
-                handler.data = info;
-                read_catches(image, base, info, &mut handler.catches);
-                handler.regions = cpp_regions(image, base, info, function, &frames);
+                handler.data = function_info_address;
+                read_catches(image, base, function_info_address, &mut handler.catches);
+                handler.regions =
+                    cpp_regions(image, base, function_info_address, function, &frames);
             }
             _ => {}
         }
@@ -167,8 +170,13 @@ pub(super) fn read(image: &Image) -> Vec<Handler> {
     handlers
 }
 
-fn read_catches(image: &Image, base: u64, info: u64, catches: &mut Vec<(i32, i32, u64)>) {
-    let Some(header) = read_bytes(image, info, 40) else {
+fn read_catches(
+    image: &Image,
+    base: u64,
+    function_info_address: u64,
+    catches: &mut Vec<(i32, i32, u64)>,
+) {
+    let Some(header) = read_bytes(image, function_info_address, 40) else {
         return;
     };
     if word(header, 0) & 0x1fff_ffff != 0x1993_0522 {
@@ -206,12 +214,12 @@ fn read_catches(image: &Image, base: u64, info: u64, catches: &mut Vec<(i32, i32
 fn cpp_regions(
     image: &Image,
     base: u64,
-    info: u64,
+    function_info_address: u64,
     function: u64,
     frames: &std::collections::BTreeMap<u64, u64>,
 ) -> Vec<unwind::Region> {
     let mut regions = Vec::new();
-    let Some(header) = read_bytes(image, info, 40) else {
+    let Some(header) = read_bytes(image, function_info_address, 40) else {
         return regions;
     };
     if word(header, 0) & 0x1fff_ffff != 0x1993_0522 {
@@ -289,8 +297,9 @@ fn cpp_regions(
             let name = if word(entry, 4) == 0 {
                 "...".to_owned()
             } else {
-                let name = rva(word(entry, 4))
-                    .and_then(|info| super::classes::msvc_type_name(image, info));
+                let name = rva(word(entry, 4)).and_then(|type_descriptor_address| {
+                    super::classes::msvc_type_name(image, type_descriptor_address)
+                });
                 let Some(mut name) = name else {
                     continue;
                 };

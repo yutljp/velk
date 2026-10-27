@@ -394,7 +394,7 @@ impl Image {
     /// The targets of the direct calls `xorps xmm15, xmm15` follows: Go
     /// zeroes xmm15 again after calling into the assembly ABI, which uses it.
     fn assembly_callees(&self) -> std::collections::HashSet<u64> {
-        let mut out = std::collections::HashSet::new();
+        let mut callees = std::collections::HashSet::new();
         // ABI0-to-register wrappers initialize the fixed registers before
         // their call, rather than restoring them after an assembly call.
         for function in self.functions.values() {
@@ -425,7 +425,7 @@ impl Image {
                             0xe8,
                         ]
                 }) {
-                    out.insert(function.addr);
+                    callees.insert(function.addr);
                     break;
                 }
                 if matches!(
@@ -448,12 +448,12 @@ impl Image {
                 }
                 let displacement =
                     i32::from_le_bytes(bytes[at + 1..at + 5].try_into().expect("four bytes"));
-                out.insert(
+                callees.insert(
                     (section.vaddr + at as u64 + 5).wrapping_add(displacement as i64 as u64),
                 );
             }
         }
-        out
+        callees
     }
 
     /// An image holding only little-endian `code`, mapped executable at
@@ -902,8 +902,12 @@ fn upsert(
         .merge(name, size, source);
 }
 
-fn symbol_name<'data, S: ObjectSymbol<'data>>(sym: &S) -> Option<String> {
-    sym.name().ok().filter(|n| !n.is_empty()).map(str::to_owned)
+fn symbol_name<'data, S: ObjectSymbol<'data>>(symbol: &S) -> Option<String> {
+    symbol
+        .name()
+        .ok()
+        .filter(|n| !n.is_empty())
+        .map(str::to_owned)
 }
 
 pub fn load(path: &Path) -> Result<Image> {

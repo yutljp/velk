@@ -143,8 +143,8 @@ fn scan_aarch64(
         let Ok(instruction) = decoder.decode(&mut reader) else {
             continue;
         };
-        for (operand, arg) in instruction.operands.iter().enumerate() {
-            match arg {
+        for (operand, operand_value) in instruction.operands.iter().enumerate() {
+            match operand_value {
                 a64::Operand::Immediate(immediate) => add(pc, operand, *immediate as u64),
                 a64::Operand::Imm64(immediate) => add(pc, operand, *immediate),
                 a64::Operand::ImmShift(immediate, shift) => {
@@ -198,8 +198,8 @@ fn scan_arm32(
         ) {
             continue;
         }
-        for (operand, arg) in instruction.operands.iter().enumerate() {
-            let immediate = match arg {
+        for (operand, operand_value) in instruction.operands.iter().enumerate() {
+            let immediate = match operand_value {
                 Operand::Imm12(value) => u64::from(*value),
                 Operand::Imm32(value) => u64::from(*value),
                 _ => continue,

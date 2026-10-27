@@ -273,11 +273,11 @@ fn unique_pairs(
     }
     let mut candidates = Vec::new();
     let mut incoming = BTreeMap::<usize, usize>::new();
-    for (a, left) in first.entries.iter().enumerate() {
+    for (first_index, left) in first.entries.iter().enumerate() {
         if let Err(error) = passed(deadline) {
             return Err(error);
         }
-        if used_first.contains(&a) {
+        if used_first.contains(&first_index) {
             continue;
         }
         let mut found = BTreeSet::<usize>::new();
@@ -286,18 +286,18 @@ fn unique_pairs(
                 found.extend(matches);
             }
         }
-        for b in &found {
-            *incoming.entry(*b).or_default() += 1;
+        for second_index in &found {
+            *incoming.entry(*second_index).or_default() += 1;
         }
         if found.len() == 1 {
-            candidates.push((a, *found.first().expect("one candidate exists")));
+            candidates.push((first_index, *found.first().expect("one candidate exists")));
         }
     }
-    for (a, b) in candidates {
-        if incoming.get(&b) == Some(&1) {
+    for (first_index, second_index) in candidates {
+        if incoming.get(&second_index) == Some(&1) {
             pairs.push(Pair {
-                first: a,
-                second: b,
+                first: first_index,
+                second: second_index,
                 rule,
                 similarity: 1.0,
             });
@@ -347,15 +347,19 @@ fn context_pairs(
             .map(|at| features(second, at, pairs, false))
             .collect();
         let mut scores = Vec::new();
-        for (a, lhs) in left.iter().enumerate() {
+        for (first_index, lhs) in left.iter().enumerate() {
             if let Err(error) = passed(deadline) {
                 return Err(error);
             }
-            if pairs.iter().any(|pair| pair.first == a) || first.entries[a].hash.is_none() {
+            if pairs.iter().any(|pair| pair.first == first_index)
+                || first.entries[first_index].hash.is_none()
+            {
                 continue;
             }
-            for (b, rhs) in right.iter().enumerate() {
-                if pairs.iter().any(|pair| pair.second == b) || second.entries[b].hash.is_none() {
+            for (second_index, rhs) in right.iter().enumerate() {
+                if pairs.iter().any(|pair| pair.second == second_index)
+                    || second.entries[second_index].hash.is_none()
+                {
                     continue;
                 }
                 let common: Vec<_> = lhs.intersection(rhs).collect();
@@ -370,21 +374,25 @@ fn context_pairs(
                 let union = lhs.union(rhs).count();
                 let score = common.len() as f64 / union.max(1) as f64;
                 if score >= 0.55 {
-                    scores.push((a, b, score));
+                    scores.push((first_index, second_index, score));
                 }
             }
         }
         let mut added = Vec::new();
-        for &(a, b, score) in &scores {
-            let ambiguous = scores.iter().any(|&(other_a, other_b, other_score)| {
-                (other_a == a || other_b == b)
-                    && (other_a, other_b) != (a, b)
-                    && other_score + 0.15 > score
-            });
+        for &(first_index, second_index, score) in &scores {
+            let ambiguous =
+                scores
+                    .iter()
+                    .any(|&(other_first_index, other_second_index, other_score)| {
+                        (other_first_index == first_index || other_second_index == second_index)
+                            && (other_first_index, other_second_index)
+                                != (first_index, second_index)
+                            && other_score + 0.15 > score
+                    });
             if !ambiguous {
                 added.push(Pair {
-                    first: a,
-                    second: b,
+                    first: first_index,
+                    second: second_index,
                     rule: "references",
                     similarity: score,
                 });
@@ -474,24 +482,27 @@ fn finish(
         transfer: None,
     };
     for pair in &pairs {
-        let a = &left.entries[pair.first];
-        let b = &right.entries[pair.second];
+        let first_entry = &left.entries[pair.first];
+        let second_entry = &right.entries[pair.second];
         let matched = FunctionMatch {
-            first: a.function.clone(),
-            second: b.function.clone(),
+            first: first_entry.function.clone(),
+            second: second_entry.function.clone(),
             rule: pair.rule,
             similarity: pair.similarity,
             c_diff: diff(
-                a.code.as_deref().unwrap_or("/* C unavailable */"),
-                b.code.as_deref().unwrap_or("/* C unavailable */"),
+                first_entry.code.as_deref().unwrap_or("/* C unavailable */"),
+                second_entry
+                    .code
+                    .as_deref()
+                    .unwrap_or("/* C unavailable */"),
             ),
-            block_diff: diff(&a.blocks, &b.blocks),
+            block_diff: diff(&first_entry.blocks, &second_entry.blocks),
         };
         if left.isa == right.isa
-            && a.bytes.is_some()
-            && a.bytes == b.bytes
-            && a.code.is_some()
-            && a.code == b.code
+            && first_entry.bytes.is_some()
+            && first_entry.bytes == second_entry.bytes
+            && first_entry.code.is_some()
+            && first_entry.code == second_entry.code
         {
             report.identical.push(matched);
         } else {

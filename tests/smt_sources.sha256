@@ -140,7 +140,7 @@ a58e17fe151c2c24805ff39201100f72575cb73b566c1631a46ae812f2dd078c  src/render/str
 d6ed2930da3050a1e796935096262bd31b5c04a40d9547f751d04af0fe1c2c7f  src/render/transfers.rs	fn filled_range<'a>(
 c6a2555762303231a86118191e713279616e150d252086d24de10427275987aa  src/render/transfers.rs	fn string_copy(
 bfdcdef48102d3e0d46218a589765c63baaff91dc48d6173ab2f781ceec3508d  src/render/widths.rs	pub(crate) fn narrow_variables(
-af9af3f338c239142f92a78e7633d8f8a3f0d64d702caab86de5c8cd24e874d3  src/sigs/bytes/registers.rs	pub(super) fn alternative(
+26f830b012a0705cb34935621e00778faed704abfe59a539505868ae5cd93da0  src/sigs/bytes/registers.rs	pub(super) fn alternative(
 eac82fbdaf5ab099c6e9fc01e16cae910eac2360cd6a45a5d0d7b6d3eb005106  src/ssa/demand.rs	pub fn narrow_partial_writes(
 2e9d0caef1f3f967648c3b44c3bc2a2ab576573ccfe0870193fd4d12f60f4f3c  src/ssa/ranges.rs	fn rewrite(
 843da05dd590cce5d7c4a1103accff0e01313d107fdba5c69f4e70f29e992e64  src/ssa/ranges.rs	fn rewrite_value(

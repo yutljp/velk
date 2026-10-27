@@ -121,7 +121,7 @@ impl Reader<'_> {
             Ok(size) => size,
             Err(error) => return Err(error),
         };
-        let data = match bytes(self.image, address, size) {
+        let value_bytes = match bytes(self.image, address, size) {
             Ok(data) => data,
             Err(error) => return Err(error),
         };
@@ -188,7 +188,7 @@ impl Reader<'_> {
             }
             return Ok((Value::Object(result), size));
         }
-        let raw = unsigned(&data, self.little);
+        let raw = unsigned(&value_bytes, self.little);
         let value = match name {
             "f32" | "float" => {
                 let value = f32::from_bits(raw as u32);
@@ -282,11 +282,11 @@ impl Reader<'_> {
             let Some(at) = address.checked_add(consumed - width) else {
                 return Err(error("string address overflow"));
             };
-            let data = match bytes(self.image, at, width) {
+            let unit_bytes = match bytes(self.image, at, width) {
                 Ok(data) => data,
                 Err(error) => return Err(error),
             };
-            let unit = unsigned(&data, self.little) as u16;
+            let unit = unsigned(&unit_bytes, self.little) as u16;
             if unit == 0 {
                 break;
             }
@@ -298,8 +298,8 @@ impl Reader<'_> {
                 Err(_) => return Err(error(format!("invalid UTF-16 string at 0x{address:x}"))),
             }
         } else {
-            let data: Vec<u8> = units.into_iter().map(|unit| unit as u8).collect();
-            match String::from_utf8(data) {
+            let bytes: Vec<u8> = units.into_iter().map(|unit| unit as u8).collect();
+            match String::from_utf8(bytes) {
                 Ok(text) => text,
                 Err(_) => return Err(error(format!("C string at 0x{address:x} is not UTF-8"))),
             }

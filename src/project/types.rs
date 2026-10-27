@@ -121,7 +121,7 @@ impl Types {
         Ok(ty)
     }
 
-    pub fn size(&self, ty: &CType) -> Result<(u64, u64)> {
+    pub fn layout(&self, ty: &CType) -> Result<(u64, u64)> {
         match ty {
             CType::Pointer(_) => Ok((8, 8)),
             CType::Int { bytes, .. } => Ok((u64::from(*bytes), u64::from(*bytes))),
@@ -136,7 +136,7 @@ impl Types {
         }
     }
 
-    fn named(&self, text: &str) -> Result<(String, CType)> {
+    fn parse_named_declaration(&self, text: &str) -> Result<(String, CType)> {
         let text = text.trim();
         if !text.is_ascii() {
             return Err(error(
@@ -184,7 +184,7 @@ impl Types {
         let mut parsed = Vec::new();
         if !params.trim().is_empty() && params.trim() != "void" {
             for param in params.split(',') {
-                let (name, ty) = match self.named(param) {
+                let (name, ty) = match self.parse_named_declaration(param) {
                     Ok(param) => param,
                     Err(cause) => return Err(cause),
                 };
@@ -245,7 +245,7 @@ impl Types {
     }
 
     fn typedef_declaration(&mut self, name: &str, alias: &str, emitted: String) -> Result<()> {
-        let (found, ty) = match self.named(alias) {
+        let (found, ty) = match self.parse_named_declaration(alias) {
             Ok(value) => value,
             Err(cause) => return Err(cause),
         };
@@ -258,7 +258,7 @@ impl Types {
                 "typedef name is duplicate or does not match its key",
             ));
         }
-        let (size, align) = match self.size(&ty) {
+        let (size, align) = match self.layout(&ty) {
             Ok(layout) => layout,
             Err(cause) => return Err(cause),
         };
@@ -321,7 +321,7 @@ impl Types {
         let mut fields = Vec::new();
         let mut contains = Vec::new();
         for field in body.trim().trim_end_matches(';').split(';') {
-            let (field, ty) = match self.named(field) {
+            let (field, ty) = match self.parse_named_declaration(field) {
                 Ok(value) => value,
                 Err(cause) => return Err(cause),
             };
@@ -334,7 +334,7 @@ impl Types {
             if fields.contains(&field) {
                 return Err(error("invalid_declaration", "duplicate struct field"));
             }
-            let (size, align) = match self.size(&ty) {
+            let (size, align) = match self.layout(&ty) {
                 Ok(layout) => layout,
                 Err(cause) => return Err(cause),
             };

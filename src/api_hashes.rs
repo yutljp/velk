@@ -10,7 +10,7 @@ use crate::ir::{BinOp, Cond, Expr, FunctionIr, Stmt};
 use crate::loader::Image;
 use crate::ssa::Ssa;
 
-const NAMES: &str = include_str!("api_hashes/exports.txt");
+const EXPORT_NAMES: &str = include_str!("api_hashes/exports.txt");
 
 /// A hash comparison connected to a returned address or indirect invocation.
 /// Names are candidates, not proof of the module present at runtime.
@@ -93,7 +93,7 @@ impl<'a> Flow<'a> {
         self.calls.get(index).copied()
     }
 
-    fn comparison<'e>(&'e self, mut value: &'e Expr) -> (&'e Expr, u64) {
+    fn comparison_source_and_mask<'e>(&'e self, mut value: &'e Expr) -> (&'e Expr, u64) {
         let mut mask = u64::MAX;
         for _ in 0..64 {
             match value {
@@ -144,7 +144,7 @@ impl<'a> Flow<'a> {
             return None;
         }
         *remaining -= 1;
-        let (value, mask) = self.comparison(value);
+        let (value, mask) = self.comparison_source_and_mask(value);
         match value {
             Expr::Const(value) => Some(*value & mask),
             Expr::Bin { op, lhs, rhs } => {
@@ -162,9 +162,9 @@ impl<'a> Flow<'a> {
         }
     }
 
-    fn loaded(&self, value: &Expr, depth: usize) -> bool {
+    fn loaded(&self, value: &Expr, node_limit: usize) -> bool {
         let mut pending = vec![value];
-        for _ in 0..depth {
+        for _ in 0..node_limit {
             let Some(value) = pending.pop() else {
                 return false;
             };
@@ -207,7 +207,7 @@ pub(crate) fn recover(image: &Image, ir: &FunctionIr, deadline: Option<Instant>)
     }) {
         return Vec::new();
     }
-    let Some(ssa) = prepare(ir) else {
+    let Some(ssa) = prepare_ssa(ir) else {
         return Vec::new();
     };
     let flow = Flow::new(&ssa);
@@ -247,7 +247,7 @@ pub(crate) fn recover(image: &Image, ir: &FunctionIr, deadline: Option<Instant>)
                     through: Some(through),
                     ..
                 } => {
-                    let (through, mask) = flow.comparison(through);
+                    let (through, mask) = flow.comparison_source_and_mask(through);
                     if mask & pointer_mask != pointer_mask {
                         continue;
                     }
@@ -270,7 +270,7 @@ pub(crate) fn recover(image: &Image, ir: &FunctionIr, deadline: Option<Instant>)
                                 let Stmt::Ret { value } = stmt else {
                                     return false;
                                 };
-                                let (value, mask) = flow.comparison(value);
+                                let (value, mask) = flow.comparison_source_and_mask(value);
                                 mask & pointer_mask == pointer_mask
                                     && flow.call(value) == Some((*target, args.as_slice()))
                             });
@@ -336,7 +336,7 @@ fn resolve(
     let Ok(analysis) = crate::analysis::analyze(image, function, deadline) else {
         return true;
     };
-    let Some(resolver_ssa) = prepare(&analysis.ir) else {
+    let Some(resolver_ssa) = prepare_ssa(&analysis.ir) else {
         return true;
     };
     let resolver_flow = Flow::new(&resolver_ssa);
@@ -362,8 +362,8 @@ fn resolve(
             continue;
         };
         for (hashed, wanted) in [(lhs, rhs), (rhs, lhs)] {
-            let (hashed, hash_mask) = resolver_flow.comparison(hashed);
-            let (wanted, wanted_mask) = resolver_flow.comparison(wanted);
+            let (hashed, hash_mask) = resolver_flow.comparison_source_and_mask(hashed);
+            let (wanted, wanted_mask) = resolver_flow.comparison_source_and_mask(wanted);
             if hash_mask != wanted_mask || hash_mask == 0 {
                 continue;
             }
@@ -413,7 +413,7 @@ fn resolve(
     true
 }
 
-fn prepare(ir: &FunctionIr) -> Option<Ssa> {
+fn prepare_ssa(ir: &FunctionIr) -> Option<Ssa> {
     let mut normalized = ir.clone();
     crate::passes::frame::drop_dead_frame_stores(&mut normalized);
     crate::passes::memory::promote_frame_slots(&mut normalized);
@@ -465,7 +465,7 @@ fn evaluate(
     let address = memory.heap_base;
     let mut candidates = Vec::new();
     let mut complete = true;
-    for name in NAMES.lines() {
+    for name in EXPORT_NAMES.lines() {
         if *budget == 0 || crate::deadline::passed(deadline).is_err() {
             return (candidates, false);
         }

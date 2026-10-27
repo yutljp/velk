@@ -100,8 +100,8 @@ fn malformed_cpp_tables_are_bounded() {
         std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/seh_cpp.O2.dll");
     for offset in [0, 12, 16] {
         let mut image = super::super::load(&path).unwrap();
-        let info = image.exception_handlers[0].data;
-        write_word(&mut image, info + offset, u32::MAX);
+        let function_info_address = image.exception_handlers[0].data;
+        write_word(&mut image, function_info_address + offset, u32::MAX);
         let handlers = read(&image);
         assert!(!handlers.is_empty());
         assert!(handlers.iter().all(|h| h.catches.is_empty()));

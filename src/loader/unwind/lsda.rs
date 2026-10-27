@@ -236,14 +236,14 @@ fn catch_type(image: &Image, table: Option<u64>, encoding: u8, filter: u64) -> O
     let Some(mut reader) = Reader::new(image, at) else {
         return None;
     };
-    let Some(mut info) = reader.encoded(encoding) else {
+    let Some(mut type_info_address) = reader.encoded(encoding) else {
         return None;
     };
-    if info == 0 {
+    if type_info_address == 0 {
         return Some("...".to_owned());
     }
     if encoding & 0x80 != 0 {
-        if let Some(name) = image.imports.get(&info) {
+        if let Some(name) = image.imports.get(&type_info_address) {
             let name = crate::loader::demangle_name(name);
             return name
                 .trim_start_matches('_')
@@ -252,14 +252,14 @@ fn catch_type(image: &Image, table: Option<u64>, encoding: u8, filter: u64) -> O
         }
         let Some(pointer) = classes::word(
             image,
-            info,
+            type_info_address,
             u64::from(crate::arch::pointer_bytes(image.isa)),
         ) else {
             return None;
         };
-        info = pointer;
+        type_info_address = pointer;
     }
-    classes::itanium_type_name(image, info)
+    classes::itanium_type_name(image, type_info_address)
 }
 
 #[cfg(test)]

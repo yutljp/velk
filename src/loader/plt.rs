@@ -304,14 +304,14 @@ pub(super) fn local_branches(file: &ObjFile) -> BTreeMap<u64, u64> {
             section.address(),
             iced_x86::DecoderOptions::NONE,
         );
-        for ins in decoder {
+        for instruction in decoder {
             if matches!(
-                ins.flow_control(),
+                instruction.flow_control(),
                 iced_x86::FlowControl::Call | iced_x86::FlowControl::UnconditionalBranch
-            ) && ins.op0_kind() == iced_x86::OpKind::NearBranch32
-                && let Some(target) = targets.get(&ins.near_branch_target())
+            ) && instruction.op0_kind() == iced_x86::OpKind::NearBranch32
+                && let Some(target) = targets.get(&instruction.near_branch_target())
             {
-                branches.insert(ins.ip(), *target);
+                branches.insert(instruction.ip(), *target);
             }
         }
     }

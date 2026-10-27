@@ -33,9 +33,9 @@ pub(super) fn alternative(isa: Isa, body: &Body) -> Option<Vec<u8>> {
         {
             return None;
         }
-        let info = factory.info(&instruction);
+        let instruction_info = factory.info(&instruction);
         for (index, full) in [Register::R10, Register::R11].iter().enumerate() {
-            let uses: Vec<_> = info
+            let uses: Vec<_> = instruction_info
                 .used_registers()
                 .iter()
                 .filter(|used| used.register().full_register() == *full)
