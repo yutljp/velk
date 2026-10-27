@@ -1,0 +1,2 @@
+x86_64-w64-mingw32-gcc (GCC) 13-win32
+i686-w64-mingw32-gcc (GCC) 13-win32

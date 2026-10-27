@@ -1067,6 +1067,17 @@ pub(crate) fn apply_partial_return(ir: &mut FunctionIr) {
 fn place_parameters(types: &crate::loader::dwarf::FunctionTypes, ir: &mut FunctionIr) {
     use crate::ir::{Convention, StackParam};
     let convention = ir.convention;
+    if ir.isa == crate::loader::Isa::I386
+        && matches!(convention, Convention::Cdecl | Convention::Stdcall)
+        && types.params.iter().any(|(_, ty)| {
+            ty.as_ref()
+                .and_then(crate::analysis::prototypes::record_name)
+                .is_some_and(crate::analysis::prototypes::is_i386_com_interface)
+        })
+    {
+        super::pairs32::place_parameters(types, ir);
+        return;
+    }
     if matches!(convention, Convention::Cdecl | Convention::Aapcs32)
         && types
             .params

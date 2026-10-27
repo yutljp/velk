@@ -673,6 +673,7 @@ fn printed_arm64_machine_memory_keeps_fixed_string_addresses() {
     );
     ir.isa = Isa::AArch64;
     let refs = [velk::analysis::refs::Reference {
+        guid: None,
         addr: REGION,
         section: "data".into(),
         text: Some("different bytes".into()),

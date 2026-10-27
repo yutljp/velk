@@ -1,6 +1,7 @@
 pub(crate) mod abi;
 pub(crate) mod calls;
 mod clobbers;
+mod com;
 mod constant_spills;
 mod go_types;
 mod indirect;

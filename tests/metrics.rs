@@ -395,7 +395,7 @@ fn kind_of(ty: &CType) -> Kind {
         },
         CType::Named(name) if name == "double" => Kind::Float { bytes: 8 },
         CType::Named(name) if name == "float" => Kind::Float { bytes: 4 },
-        CType::Array(_) | CType::Named(_) => Kind::Other,
+        CType::Array(_) | CType::Named(_) | CType::Function { .. } => Kind::Other,
     }
 }
 

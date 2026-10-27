@@ -403,9 +403,13 @@ fn plausible_type(ty: &CType) -> bool {
     let text = ty.to_string();
     !text.is_empty()
         && text.len() <= 96
-        && text
-            .chars()
-            .all(|c| c.is_ascii_alphanumeric() || matches!(c, '_' | ' ' | '*' | '[' | ']'))
+        && match ty {
+            CType::Pointer(target) | CType::Array(target) => plausible_type(target),
+            CType::Function { .. } => false,
+            _ => text
+                .chars()
+                .all(|c| c.is_ascii_alphanumeric() || matches!(c, '_' | ' ' | '*' | '[' | ']')),
+        }
 }
 
 fn attribute_offset(

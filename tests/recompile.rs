@@ -79,6 +79,8 @@ mod memory_driver;
 
 #[path = "recompile/bit_counts.rs"]
 mod bit_counts;
+#[path = "recompile/com.rs"]
+mod com;
 #[path = "recompile/pe.rs"]
 mod pe;
 #[path = "recompile/physical_stack.rs"]
@@ -5615,7 +5617,7 @@ fn integer(ty: &CType) -> bool {
                     .any(|word| words.contains(word))
             }
         }
-        CType::Void | CType::Pointer(_) | CType::Array(_) => false,
+        CType::Void | CType::Pointer(_) | CType::Array(_) | CType::Function { .. } => false,
     }
 }
 

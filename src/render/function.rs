@@ -77,6 +77,7 @@ fn render_unmerged(
         });
     }
     super::virtual_calls::prepare(&mut folded, symbols);
+    super::com_calls::prepare(&mut folded, symbols);
     let variadic = super::variadic::prepare(&mut folded, symbols);
     crate::analysis::variadic::drop_register_saves(&mut folded);
     params::fold_saved_parameters(&mut folded);
@@ -1033,6 +1034,7 @@ fn render_with(
         globals: {
             let mut globals = globals::Globals::new(symbols, reserved);
             globals.add_types(ir, &arrays);
+            globals.add_guids(references);
             globals
         },
         data_ranges,
@@ -1594,27 +1596,75 @@ fn debug_definitions(
     fn place<'a>(
         definition: &'a crate::ir::Definition,
         all: &'a [crate::ir::Definition],
+        members: &[crate::ir::Member],
+        code: &str,
         ordered: &mut Vec<&'a crate::ir::Definition>,
+        visited: &mut std::collections::HashSet<String>,
         depth: usize,
     ) {
-        if depth > 8 || ordered.iter().any(|placed| placed.name == definition.name) {
+        if depth > 8 || !visited.insert(definition.name.clone()) {
             return;
         }
         for inner in &definition.contains {
             if let Some(inner) = all.iter().find(|candidate| candidate.name == *inner) {
-                place(inner, all, ordered, depth + 1);
+                place(inner, all, members, code, ordered, visited, depth + 1);
+            }
+        }
+        for member in members {
+            if definition.name.strip_prefix("struct ") != Some(member.structure.as_str())
+                || !code.contains(&format!("->{}", member.name))
+            {
+                continue;
+            }
+            let Some(name) = crate::analysis::prototypes::record_name(&member.ty) else {
+                continue;
+            };
+            if let Some(inner) = all.iter().find(|candidate| candidate.name == name) {
+                place(inner, all, members, code, ordered, visited, depth + 1);
             }
         }
         ordered.push(definition);
     }
+    let mut visited = std::collections::HashSet::new();
     for definition in ir
         .definitions
         .iter()
         .filter(|definition| needed(definition))
     {
-        place(definition, &ir.definitions, &mut ordered, 0);
+        place(
+            definition,
+            &ir.definitions,
+            &ir.members,
+            code,
+            &mut ordered,
+            &mut visited,
+            0,
+        );
     }
-    ordered
+    let mut forwards = Vec::new();
+    for definition in &ordered {
+        if !definition
+            .members
+            .iter()
+            .any(|member| member.contains("(*"))
+        {
+            continue;
+        }
+        for member in &definition.members {
+            let words: Vec<&str> = member
+                .split(|c: char| !c.is_ascii_alphanumeric() && c != '_')
+                .filter(|word| !word.is_empty())
+                .collect();
+            for pair in words.windows(2) {
+                if matches!(pair[0], "struct" | "union") {
+                    forwards.push(format!("{} {};\n", pair[0], pair[1]));
+                }
+            }
+        }
+    }
+    forwards.sort();
+    forwards.dedup();
+    let declarations: String = ordered
         .iter()
         .filter(|definition| !user_definitions.contains(&definition.name))
         .map(|definition| {
@@ -1636,7 +1686,15 @@ fn debug_definitions(
                 text
             }
         })
-        .collect()
+        .collect();
+    if forwards.is_empty() {
+        declarations
+    } else {
+        format!(
+            "{}{declarations}",
+            super::prelude::section(&forwards.concat())
+        )
+    }
 }
 
 fn physical_float_parameters(ir: &mut FunctionIr) -> std::collections::HashSet<u16> {
@@ -1802,11 +1860,7 @@ fn union_declaration(field: &super::locals::Local, name: &str) -> String {
 
 /// `name` declared as `ty`, the star of a pointer next to the name.
 pub(crate) fn declaration(ty: &CType, name: &str) -> String {
-    if ty.is_pointer() {
-        format!("{ty}{name}")
-    } else {
-        format!("{ty} {name}")
-    }
+    ty.declaration(name)
 }
 
 fn signature(ir: &FunctionIr) -> String {

@@ -4,6 +4,7 @@ mod aggregates;
 mod body;
 mod calls;
 pub(crate) mod classes;
+mod com_calls;
 mod cost;
 mod expr;
 mod forwarding;

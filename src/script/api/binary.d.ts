@@ -28,6 +28,9 @@ interface Binary {
 
   /** C++ classes described by RTTI; empty when unsupported or absent. */
   classes(): CppClass[];
+  /** Generated header structure for this format and architecture; null if unavailable.
+   * Names include the C tag, for example "struct IUnknownVtbl". */
+  libraryType(name: string): LibraryRecord | null;
   /** Execute a function name or virtual address with explicit state and limits. */
   emulate(start: string | number, options?: EmulationOptions): EmulationReport;
   sections(): Section[];

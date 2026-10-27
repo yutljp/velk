@@ -653,6 +653,7 @@ fn raw_memory_calls_preserve_bytes_past_a_string_terminator() {
         ],
     );
     let references = [velk::analysis::refs::Reference {
+        guid: None,
         addr: 0x2000,
         section: ".rodata".into(),
         text: Some("ABC".into()),

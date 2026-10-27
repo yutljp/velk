@@ -37,7 +37,7 @@ extern uint64_t __dso_handle; /* address: 0x4038 */
 extern uint64_t __gmon_start___3fd0; /* address: 0x3fd0 */
 extern uint8_t completed_0; /* address: 0x4040 */
 
-int (__libc_start_main)(void *, int, char **, void *, void *, void *, void *);
+int (__libc_start_main)(int (*)(int, char **, char **), int, char **, void (*)(void), void (*)(void), void (*)(void), void *);
 int (fsync)(int);
 int (kill)(int, int);
 int (mprotect)(void *, size_t, int);
@@ -207,7 +207,7 @@ fn __cxa_finalize @ 0x1090 (size 8)
 == 0x10a0 _start
 -- decompile
 /* velk pseudo-C: _start @ 0x10a0 */
-int32_t _start(int64_t a0, int64_t a1, void *a2) {
+int32_t _start(int64_t a0, int64_t a1, void (*a2)(void)) {
     uint64_t rsp = velk_entry_stack_pointer();
     uint64_t v1;
     int64_t local_0; /* [sp+0] */
@@ -216,10 +216,10 @@ int32_t _start(int64_t a0, int64_t a1, void *a2) {
     int64_t v2 = local_0;
     local_0 = v1;
     local_1 = rsp;
-    /* unresolved call signature */ ((int (*)())__libc_start_main)((void *)main, v2, (char **)(rsp + 8), 0x0, 0x0, a2);
+    /* unresolved call signature */ ((int (*)())__libc_start_main)((int (*)(int, char **, char **))main, v2, (char **)(rsp + 8), 0x0, 0x0, a2);
 }
 -- signature
-int32_t (int64_t a0, int64_t a1, void * a2)
+int32_t (int64_t a0, int64_t a1, void (*)(void) a2)
 -- references
 
 -- ir

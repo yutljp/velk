@@ -311,7 +311,8 @@ fn value_at(value: &Expr, ctx: &Ctx<'_>, bits: u32, integer: bool) -> Printed {
         ),
         Expr::Const(address)
             if (ctx.symbols.data.contains_key(address)
-                || ctx.symbols.import_slots.contains_key(address))
+                || ctx.symbols.import_slots.contains_key(address)
+                || ctx.globals.target(*address).is_some())
                 && let Some(name) = global_pointer(value, View::Unsigned(1), ctx) =>
         {
             Printed::pointer(name, 13)

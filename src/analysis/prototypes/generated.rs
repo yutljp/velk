@@ -3,8 +3,9 @@
 //! Each format uses its own lazily loaded dataset. Target-specific declarations
 //! and record layouts are checked by the generator with the target compiler.
 //! Unsupported calling sequences remain with the handwritten declarations.
-//! Aggregate values, callbacks, variadic calls, and mixed integer/float parameters
-//! are excluded. Unsupported typedef
+//! Aggregate values, variadic calls, and mixed integer/float parameters
+//! are excluded from import signatures. Function pointer fields retain their
+//! prototypes and calling conventions. Unsupported typedef
 //! spellings resolve to scalar or pointer types; their original spellings remain
 //! in the source data.
 
@@ -83,6 +84,59 @@ struct Library {
     variables: HashMap<&'static str, Variable<'static>>,
 }
 
+pub(super) fn record(name: &str, image: &Image) -> Option<super::LibraryRecord> {
+    let Some(library) = image_library(image) else {
+        return None;
+    };
+    let Some(record) = library.records.get(name) else {
+        return None;
+    };
+    let mut fields = Vec::new();
+    for field in &record.fields {
+        let ty = super::parse_type(field.ty);
+        let function = match &ty {
+            CType::Pointer(target) => match target.as_ref() {
+                CType::Function {
+                    params,
+                    ret,
+                    convention,
+                    variadic,
+                } => {
+                    let convention = match convention {
+                        crate::ir::Convention::Stdcall => "stdcall",
+                        crate::ir::Convention::Fastcall => "fastcall",
+                        crate::ir::Convention::Thiscall => "thiscall",
+                        crate::ir::Convention::Win64 => "win64",
+                        _ => "c",
+                    };
+                    Some(super::LibraryFunction {
+                        parameters: params.iter().map(ToString::to_string).collect(),
+                        return_type: ret.to_string(),
+                        calling_convention: convention.to_owned(),
+                        variadic: *variadic,
+                    })
+                }
+                _ => None,
+            },
+            _ => None,
+        };
+        fields.push(super::LibraryField {
+            name: field.name.to_owned(),
+            offset: field.offset,
+            width: field.width,
+            c_type: ty.to_string(),
+            function,
+        });
+    }
+    Some(super::LibraryRecord {
+        name: name.to_owned(),
+        size: record.size,
+        alignment: record.align,
+        opaque: record.opaque,
+        fields,
+    })
+}
+
 #[derive(Deserialize)]
 struct Targets<'a> {
     version: u32,
@@ -104,6 +158,8 @@ struct Target<'a> {
     conventions: HashMap<&'a str, &'a str>,
     #[serde(default, borrow)]
     typedefs: HashMap<&'a str, &'a str>,
+    #[serde(default, borrow)]
+    guids: HashMap<&'a str, [u8; 16]>,
 }
 
 struct TargetLibrary {
@@ -111,10 +167,28 @@ struct TargetLibrary {
     imports: HashMap<&'static str, &'static str>,
     conventions: HashMap<&'static str, &'static str>,
     typedefs: HashMap<&'static str, &'static str>,
+    guids: HashMap<[u8; 16], Vec<&'static str>>,
 }
 
 static WINDOWS: OnceLock<HashMap<&'static str, TargetLibrary>> = OnceLock::new();
 static LINUX: OnceLock<HashMap<&'static str, TargetLibrary>> = OnceLock::new();
+
+pub(crate) fn is_i386_com_interface(name: &str) -> bool {
+    if !name.starts_with("struct I") {
+        return false;
+    }
+    let libraries = WINDOWS.get_or_init(|| targets(include_str!("windows.json")));
+    libraries["i686-w64-mingw32"]
+        .library
+        .records
+        .get(name)
+        .is_some_and(|record| {
+            record
+                .fields
+                .iter()
+                .any(|field| field.offset == 0 && field.name == "lpVtbl" && field.width == 4)
+        })
+}
 
 fn targets(text: &'static str) -> HashMap<&'static str, TargetLibrary> {
     let source: Targets<'static> =
@@ -124,6 +198,13 @@ fn targets(text: &'static str) -> HashMap<&'static str, TargetLibrary> {
         .targets
         .into_iter()
         .map(|(name, target)| {
+            let mut guids = HashMap::<[u8; 16], Vec<&str>>::new();
+            for (name, bytes) in target.guids {
+                guids.entry(bytes).or_default().push(name);
+            }
+            for names in guids.values_mut() {
+                names.sort_unstable();
+            }
             (
                 name,
                 TargetLibrary {
@@ -139,10 +220,53 @@ fn targets(text: &'static str) -> HashMap<&'static str, TargetLibrary> {
                     imports: target.imports,
                     conventions: target.conventions,
                     typedefs: target.typedefs,
+                    guids,
                 },
             )
         })
         .collect()
+}
+
+pub(super) fn guid_at(image: &Image, address: u64) -> Option<super::LibraryGuid> {
+    if !matches!(image.format, Format::Pe | Format::Coff) {
+        return None;
+    }
+    let Some(section) = image.section_at(address) else {
+        return None;
+    };
+    if section.executable || !section.read_only {
+        return None;
+    }
+    if !address
+        .checked_sub(section.vaddr)
+        .and_then(|offset| offset.checked_add(16))
+        .is_some_and(|end| end <= section.size && end <= section.file_size)
+    {
+        return None;
+    }
+    let Some(bytes) = image.read_vaddr(address, 16) else {
+        return None;
+    };
+    let Ok(bytes) = <[u8; 16]>::try_from(bytes) else {
+        return None;
+    };
+    let Some(library) = target_library(image) else {
+        return None;
+    };
+    let Some(names) = library.guids.get(&bytes) else {
+        return None;
+    };
+    let first = u32::from_le_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]);
+    let second = u16::from_le_bytes([bytes[4], bytes[5]]);
+    let third = u16::from_le_bytes([bytes[6], bytes[7]]);
+    Some(super::LibraryGuid {
+        names: names.iter().map(|name| (*name).to_owned()).collect(),
+        value: format!(
+            "{first:08x}-{second:04x}-{third:04x}-{:02x}{:02x}-{:02x}{:02x}{:02x}{:02x}{:02x}{:02x}",
+            bytes[8], bytes[9], bytes[10], bytes[11], bytes[12], bytes[13], bytes[14], bytes[15]
+        ),
+        bytes,
+    })
 }
 
 fn target_library(image: &Image) -> Option<&'static TargetLibrary> {
@@ -372,6 +496,28 @@ pub(crate) fn record_name(ty: &CType) -> Option<&str> {
     }
 }
 
+fn record_dependencies(ty: &CType, pending: &mut Vec<String>) {
+    match ty {
+        CType::Function { params, ret, .. } => {
+            record_dependencies(ret, pending);
+            for param in params {
+                record_dependencies(param, pending);
+            }
+        }
+        CType::Pointer(target) | CType::Array(target) => record_dependencies(target, pending),
+        _ => {
+            if let Some(name) = record_name(ty) {
+                pending.push(name.to_owned());
+            } else if let CType::Named(name) = ty
+                && let name = name.strip_prefix("const ").unwrap_or(name)
+                && name.starts_with("union ")
+            {
+                pending.push(name.to_owned());
+            }
+        }
+    }
+}
+
 /// Add only records reached by typed values, without replacing debug types.
 pub(crate) fn apply_records(ir: &mut FunctionIr, image: &Image) {
     let Some(library) = image_library(image) else {
@@ -385,22 +531,27 @@ pub(crate) fn apply_records(ir: &mut FunctionIr, image: &Image) {
         .chain([&ir.ret_type]);
     let mut pending = Vec::new();
     for ty in types {
-        if let Some(name) = record_name(ty) {
-            pending.push(name.to_owned());
-        }
+        record_dependencies(ty, &mut pending);
     }
     let mut visited = HashSet::new();
     while let Some(name) = pending.pop() {
-        if !visited.insert(name.clone())
-            || ir
-                .definitions
-                .iter()
-                .any(|definition| definition.name == name)
+        if !visited.insert(name.clone()) {
+            continue;
+        }
+        if ir
+            .definitions
+            .iter()
+            .any(|definition| definition.name == name)
             || ir
                 .members
                 .iter()
                 .any(|member| format!("struct {}", member.structure) == name)
         {
+            for member in &ir.members {
+                if name.strip_prefix("struct ") == Some(member.structure.as_str()) {
+                    record_dependencies(&member.ty, &mut pending);
+                }
+            }
             continue;
         }
         let Some(record) = library.records.get(name.as_str()) else {
@@ -423,9 +574,7 @@ pub(crate) fn apply_records(ir: &mut FunctionIr, image: &Image) {
                 members.push(format!("uint8_t gap_0x{offset:x}[0x{:x}];", at - offset));
             }
             let ty = super::parse_type(text);
-            if let Some(inner) = record_name(&ty) {
-                pending.push(inner.to_owned());
-            }
+            record_dependencies(&ty, &mut pending);
             members.push(format!("{};", crate::render::declaration(&ty, field_name)));
             fields.push(field_name.to_owned());
             ir.members.push(Member {
@@ -462,6 +611,166 @@ pub(crate) fn apply_records(ir: &mut FunctionIr, image: &Image) {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn guid_matches_require_complete_read_only_windows_data() {
+        let datasets = targets(include_str!("windows.json"));
+        assert!(datasets["i686-w64-mingw32"].guids.len() >= 600);
+        assert_eq!(
+            datasets["i686-w64-mingw32"].guids,
+            datasets["x86_64-w64-mingw32"].guids
+        );
+        for arch in ["x86_64", "i686"] {
+            let mut image = crate::loader::load(
+                &std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+                    .join(format!("tests/fixtures/com_{arch}.dll")),
+            )
+            .unwrap();
+            let address = *image
+                .data_symbols
+                .iter()
+                .find(|(_, name)| name.trim_start_matches('_') == "IID_IUnknown")
+                .unwrap()
+                .0;
+            let guid = guid_at(&image, address).unwrap();
+            assert!(guid.names.iter().any(|name| name == "IID_IUnknown"));
+            assert_eq!(guid.value, "00000000-0000-0000-c000-000000000046");
+            assert_eq!(
+                guid.bytes,
+                [0, 0, 0, 0, 0, 0, 0, 0, 0xc0, 0, 0, 0, 0, 0, 0, 0x46]
+            );
+            let start = image.section_at(address).unwrap().vaddr;
+            let section = image
+                .sections
+                .iter()
+                .position(|section| section.vaddr == start)
+                .unwrap();
+            let size = image.sections[section].size;
+            let file_size = image.sections[section].file_size;
+            image.sections[section].size = address - start + 15;
+            assert!(guid_at(&image, address).is_none());
+            image.sections[section].size = size;
+            image.sections[section].file_size = address - start + 15;
+            assert!(guid_at(&image, address).is_none());
+            image.sections[section].file_size = file_size;
+            image.sections[section].read_only = false;
+            assert!(guid_at(&image, address).is_none());
+            image.sections[section].read_only = true;
+            image.sections[section].executable = true;
+            assert!(guid_at(&image, address).is_none());
+            image.sections[section].executable = false;
+            image.format = Format::Elf;
+            assert!(guid_at(&image, address).is_none());
+            assert!(guid_at(&image, u64::MAX).is_none());
+        }
+    }
+
+    #[test]
+    fn windows_vtables_retain_typed_methods_and_target_layouts() {
+        let libraries = targets(include_str!("windows.json"));
+        for (target, data) in libraries {
+            let width = if target.starts_with("i686") { 4 } else { 8 };
+            let convention = if width == 4 {
+                crate::ir::Convention::Stdcall
+            } else {
+                crate::ir::Convention::Win64
+            };
+            for interface in ["IUnknown", "IDispatch", "IStream"] {
+                let name = format!("struct {interface}Vtbl");
+                let record = &data.library.records[name.as_str()];
+                assert!(record.fields.len() >= 3, "{target}: {name}");
+                for (slot, method) in ["QueryInterface", "AddRef", "Release"].iter().enumerate() {
+                    let field = &record.fields[slot];
+                    assert_eq!(field.name, *method, "{target}: {name}");
+                    assert_eq!(field.offset, slot as u64 * width);
+                    assert_eq!(field.width, width);
+                    let CType::Pointer(ty) = super::super::parse_type(field.ty) else {
+                        panic!("{}", field.ty)
+                    };
+                    let CType::Function {
+                        params,
+                        ret,
+                        convention: actual,
+                        variadic,
+                    } = *ty
+                    else {
+                        panic!("{}", field.ty)
+                    };
+                    assert_eq!(actual, convention);
+                    assert!(!variadic);
+                    assert_eq!(params.len(), if slot == 0 { 3 } else { 1 });
+                    assert_eq!(params[0].pointee_struct(), Some(interface));
+                    assert_eq!(ret.integer(), Some((32, slot == 0)));
+                }
+            }
+            let stream = &data.library.records["struct IStreamVtbl"];
+            assert_eq!(stream.fields.len(), 14, "{target}");
+            assert!(
+                stream
+                    .fields
+                    .iter()
+                    .any(|field| field.name == "Read" && field.offset == 3 * width)
+            );
+        }
+    }
+
+    #[test]
+    fn rendered_windows_function_pointer_declarations_compile_for_both_targets() {
+        use std::process::Command;
+
+        for (target, data) in targets(include_str!("windows.json")) {
+            let mut pending = Vec::new();
+            let mut declarations = Vec::new();
+            for record in data.library.records.values() {
+                for field in &record.fields {
+                    let ty = super::super::parse_type(field.ty);
+                    if !field.ty.contains("(*") {
+                        continue;
+                    }
+                    record_dependencies(&ty, &mut pending);
+                    let name = format!("callback_{}", declarations.len());
+                    declarations.push(format!(
+                        "typedef {};\n",
+                        crate::render::declaration(&ty, &name)
+                    ));
+                }
+            }
+            assert!(
+                declarations.len() > 1000,
+                "{target}: {}",
+                declarations.len()
+            );
+            pending.sort();
+            pending.dedup();
+            let mut text = String::from("#include <stdint.h>\n#include <stddef.h>\n");
+            for tag in pending {
+                text.push_str(&format!("{tag};\n"));
+            }
+            text.extend(declarations);
+            let directory = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+                .join("target/library-function-fields");
+            std::fs::create_dir_all(&directory).unwrap();
+            let source = directory.join(format!("{target}.c"));
+            std::fs::write(&source, text).unwrap();
+            let output = Command::new("clang")
+                .args([
+                    "-target",
+                    target,
+                    "-ffreestanding",
+                    "-std=c11",
+                    "-fsyntax-only",
+                    "-Werror",
+                ])
+                .arg(&source)
+                .output()
+                .unwrap();
+            assert!(
+                output.status.success(),
+                "{target}: {}",
+                String::from_utf8_lossy(&output.stderr)
+            );
+        }
+    }
 
     #[test]
     fn i386_stdcall_import_cleanup_preserves_following_arguments() {

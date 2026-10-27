@@ -295,6 +295,9 @@ fn identity_output(call: &Stmt, output: &CallOutput, ctx: &Ctx<'_>) -> bool {
 }
 
 pub(super) fn expression(call: &Stmt, ctx: &Ctx<'_>) -> String {
+    if let Some(expression) = super::com_calls::expression(call, ctx) {
+        return expression;
+    }
     let Stmt::Call {
         target,
         through,

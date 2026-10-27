@@ -188,6 +188,9 @@ fn order(definition: &str) -> u8 {
     ]
     .iter()
     .any(|prefix| definition.starts_with(prefix))
+        || ((definition.starts_with("struct ") || definition.starts_with("union "))
+            && definition.ends_with(';')
+            && !definition.contains(['{', '(']))
     {
         1
     } else if definition.starts_with("typedef ")
@@ -229,6 +232,17 @@ pub fn combine(code: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn record_tags_precede_function_pointer_parameters() {
+        let code = combine(&section(
+            "struct Z;\nstruct A { int (*Method)(struct Z *); };\n",
+        ));
+        assert!(
+            code.find("struct Z;").unwrap() < code.find("struct A {").unwrap(),
+            "{code}"
+        );
+    }
 
     #[test]
     fn declarations_are_grouped_and_remain_deduplicated() {

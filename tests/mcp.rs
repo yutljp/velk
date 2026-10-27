@@ -46,6 +46,58 @@ fn text(response: &Value) -> &str {
 }
 
 #[test]
+fn com_library_types_are_data_over_stdio() {
+    for (fixture, width, convention) in [
+        ("crt_windows.i686.exe", 4, "stdcall"),
+        ("type_library_windows.win64.exe", 8, "win64"),
+    ] {
+        let path = common::fixtures_dir().join(fixture);
+        let responses = exchange(&[script(
+            1,
+            &format!("velk.open({path:?}).libraryType('struct IUnknownVtbl')"),
+        )]);
+        assert_eq!(responses[0]["result"]["isError"], false);
+        let record: Value = serde_json::from_str(text(&responses[0])).unwrap();
+        assert_eq!(record["size"], 3 * width);
+        assert_eq!(record["fields"][0]["name"], "QueryInterface");
+        assert_eq!(
+            record["fields"][0]["function"]["callingConvention"],
+            convention
+        );
+        assert_eq!(record["fields"][1]["offset"], width);
+    }
+}
+
+#[test]
+fn com_calls_and_guid_names_are_available_over_stdio() {
+    for arch in ["x86_64", "i686"] {
+        let path = common::fixtures_dir().join(format!("com_{arch}.dll"));
+        let responses = exchange(&[script(
+            1,
+            &format!(
+                "const b = velk.open({path:?}); ({{code:b.getFunction('com_read').decompile(), signature:b.getFunction('com_read').signature(), references:b.getFunction('com_file_dialog_class').references()}})"
+            ),
+        )]);
+        assert_eq!(responses[0]["result"]["isError"], false);
+        let data: Value = serde_json::from_str(text(&responses[0])).unwrap();
+        assert!(data["code"].as_str().unwrap().contains("->lpVtbl->Read("));
+        assert_eq!(data["signature"]["params"].as_array().unwrap().len(), 4);
+        let guid = data["references"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find_map(|reference| reference.get("guid").filter(|guid| !guid.is_null()))
+            .unwrap();
+        assert!(
+            guid["names"]
+                .as_array()
+                .unwrap()
+                .contains(&Value::String("CLSID_FileOpenDialog".into()))
+        );
+    }
+}
+
+#[test]
 fn discovery_and_fresh_scripts_work_over_stdio() {
     let path = common::fixtures_dir().join("arm64.o");
     let responses = exchange(&[

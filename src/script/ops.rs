@@ -84,6 +84,13 @@ impl std::ops::Deref for BinaryRef {
 #[derive(Deserialize)]
 #[serde(tag = "op", rename_all = "camelCase", deny_unknown_fields)]
 pub enum Request {
+    /// Reads a target header's structure layout and function pointer signatures.
+    LibraryType {
+        /// Path identifying the binary and its target.
+        bin: BinaryRef,
+        /// The C structure tag, including `struct`.
+        name: String,
+    },
     /// Compares two program versions and optionally carries annotations.
     Compare {
         /// Original binary.
@@ -329,6 +336,16 @@ pub fn handle(
                 Err(error) => Err(error),
             }
         }
+        Request::LibraryType { bin, name } => {
+            let binary = match bin.open(session) {
+                Ok(binary) => binary,
+                Err(error) => return Err(error),
+            };
+            Ok(json!(crate::analysis::prototypes::record(
+                &name,
+                binary.image()
+            )))
+        }
         Request::Classes { bin } => {
             let binary = match bin.open(session) {
                 Ok(binary) => binary,
@@ -455,6 +472,20 @@ pub fn handle(
             };
             let params = match crate::project::scalar_parameters(&ir) {
                 Ok(params) => params,
+                Err(_)
+                    if ir.params.is_empty()
+                        && matches!(
+                            ir.convention,
+                            crate::ir::Convention::Cdecl | crate::ir::Convention::Stdcall
+                        ) =>
+                {
+                    let mut params: Vec<_> = ir.stack_params.iter().collect();
+                    params.sort_by_key(|param| param.position);
+                    params
+                        .into_iter()
+                        .map(|param| (param.name.clone(), param.ty.clone()))
+                        .collect()
+                }
                 Err(_) => ir
                     .params
                     .iter()
@@ -475,6 +506,7 @@ pub fn handle(
                     "section": reference.section,
                     "text": reference.text,
                     "pointer": reference.pointer.map(addr::format),
+                    "guid": reference.guid,
                 })
             })
             .collect()),

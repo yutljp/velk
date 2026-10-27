@@ -85,6 +85,7 @@ Windows と Linux のデータとフィクスチャは参照環境で生成し�
 ```sh
 docker compose build fixtures
 docker compose run --rm fixtures uv run tests/generate_type_library.py --platform windows
+docker compose run --rm fixtures uv run tests/test_generate_type_library.py
 docker compose run --rm fixtures uv run tests/generate_type_library.py --platform linux
 docker compose run --rm fixtures sh tests/make_type_library_fixtures.sh linux
 ```
@@ -92,6 +93,19 @@ docker compose run --rm fixtures sh tests/make_type_library_fixtures.sh linux
 Windows データとリフターは x86-64 と x86-32 に対応します。
 Linux のデータとフィクスチャは x86-64 と AArch64 を対象とします。各ターゲットの
 コンパイラーで宣言とパディングを含む構造体のサイズ、アラインメント、フィールドのオフセットを検証します。
+
+関数ポインタのフィールドは、呼び出し規約を含む型の互換性もコンパイラで確認します。
+Rust のテストでは、出力された宣言を Windows の両対象向けにコンパイルします。
+型やアラインメントを表現できないフィールドはパディングとして残します。
+ヘッダーのライセンス表記は [windows.LICENSE](../src/analysis/prototypes/windows.LICENSE) にあります。
+
+スクリプト API は、メソッドの引数・戻り値の型と呼び出し規約を含むレイアウトをデータとして返します。
+次の例は CLI の `-r` と MCP の `velk_run_script` でも実行できます。
+
+```js
+const b = velk.open("tests/fixtures/type_library_windows.win64.exe");
+b.libraryType("struct IUnknownVtbl");
+```
 
 一部のグループには専用のスクリプトがあります。`tests/make_pe_fixtures.sh` (Windows PE)、`tests/make_codeview.sh`
 (CodeView / PDB)、`tests/make_seh_fixtures.sh` (Windows SEH)、`tests/make_objc_fixtures.sh` (Objective-C)、

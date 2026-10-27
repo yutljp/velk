@@ -59,6 +59,55 @@ def undefinitions(names):
     return [f"#undef {name}" for name in sorted(set(names)) if re.fullmatch(r"[A-Za-z_]\w*", name)]
 
 
+def split_parameters(text):
+    pieces, start, depth = [], 0, 0
+    for at, char in enumerate(text + ","):
+        if char == "(":
+            depth += 1
+        elif char == ")":
+            depth -= 1
+        elif char == "," and depth == 0:
+            pieces.append(text[start:at].strip())
+            start = at + 1
+    return pieces
+
+
+def field_declaration(text, name):
+    if re.search(r"\(\*+\)", text):
+        return re.sub(r"\((\*+)\)", lambda match: f"({match[1]}{name})", text, count=1)
+    return f"{text} {name}"
+
+
+def guid_constants(nodes):
+    def unwrap(node):
+        while node.get("kind") in ("ImplicitCastExpr", "CStyleCastExpr", "ConstantExpr", "ParenExpr") and len(node.get("inner", [])) == 1:
+            node = node["inner"][0]
+        return node
+
+    values = {}
+    for node in nodes:
+        name = node.get("name", "")
+        if node.get("kind") != "VarDecl" or not name.startswith(("IID_", "CLSID_")):
+            continue
+        initializers = [unwrap(inner) for inner in node.get("inner", [])]
+        initializers = [inner for inner in initializers if inner.get("kind") == "InitListExpr"]
+        if len(initializers) != 1:
+            continue
+        fields = [unwrap(inner) for inner in initializers[0].get("inner", [])]
+        if len(fields) != 4 or fields[3].get("kind") != "InitListExpr":
+            continue
+        octets = [unwrap(inner) for inner in fields[3].get("inner", [])]
+        fields = fields[:3] + octets
+        if len(octets) != 8 or any(field.get("kind") != "IntegerLiteral" for field in fields):
+            continue
+        data = bytearray()
+        for field, width in zip(fields, [4, 2, 2] + [1] * 8):
+            value = int(field["value"]) & ((1 << (width * 8)) - 1)
+            data.extend(value.to_bytes(width, "little"))
+        values[name] = list(data)
+    return values
+
+
 def extract(clang, sdk, target, source):
     args = compiler_args(clang, sdk, target) + ["-fsyntax-only", str(source)]
     nodes = json.loads(run(args + ["-Xclang", "-ast-dump=json"]))["inner"]
@@ -135,8 +184,8 @@ def extract(clang, sdk, target, source):
     for ident, name in enum_names.items():
         if name.startswith("enum "):
             enum_spellings[name] = ident
-    tags = {"struct " + n["name"] for n in nodes
-            if n.get("kind") == "RecordDecl" and n.get("name") and n.get("tagUsed") == "struct"}
+    tags = {n["tagUsed"] + " " + n["name"] for n in nodes
+            if n.get("kind") == "RecordDecl" and n.get("name") and n.get("tagUsed") in ("struct", "union")}
     used_typedefs = set()
 
     def normalize(text, depth=0):
@@ -146,8 +195,32 @@ def extract(clang, sdk, target, source):
         text = " ".join(text.split())
         if text.endswith(" const"):
             text = text[:-6].strip()
+        attribute = re.search(r"\s+__attribute__\(\((\w+)\)\)$", text)
+        function_text = text[:attribute.start()] if attribute else text
+        function = re.fullmatch(r"(.+?)\(\s*(\*+)\s*\)\s*\((.*)\)", function_text)
+        if function:
+            result, stars, arguments = function.groups()
+            convention = attribute[1] if attribute else None
+            if convention not in (None, "cdecl", "stdcall", "fastcall", "thiscall", "ms_abi"):
+                return None
+            result = normalize(result, depth + 1)
+            arguments = split_parameters(arguments)
+            if not arguments or arguments == [""]:
+                # A declaration without a prototype has unknown parameters.
+                return None
+            normalized = [arg if arg == "..." else normalize(re.sub(r"(?<!\w)const$", "", arg).strip(), depth + 1)
+                          for arg in arguments]
+            if result is None or any(arg is None for arg in normalized):
+                return None
+            attribute = convention
+            if "mingw" in target and not target.startswith("i686"):
+                attribute = "ms_abi"
+            attribute = f" __attribute__(({attribute}))" if attribute and attribute != "cdecl" else ""
+            return f'{result}{attribute} ({stars})({", ".join(normalized)})'
         if text.endswith("*"):
             inner = normalize(text[:-1], depth + 1)
+            if inner and re.search(r"\(\*+\)", inner):
+                return re.sub(r"\((\*+)\)", r"(*\1)", inner, count=1)
             return inner + " *" if inner else None
         if text.startswith("volatile "):
             inner = normalize(text[9:], depth + 1)
@@ -180,7 +253,10 @@ def extract(clang, sdk, target, source):
         for f, offset in zip(fields, offsets):
             ty = normalize(f["type"]["qualType"])
             base = (ty or "").removeprefix("const ")
-            width = SCALARS["uintptr_t"] if ty and ty.endswith("*") else SCALARS.get(base, 0)
+            width = SCALARS["uintptr_t"] if ty and (ty.endswith("*") or re.search(r"\(\*+\)", ty)) else SCALARS.get(base, 0)
+            if ty and re.search(r"\(\*+\)", ty) and (offset % width or align < width):
+                # A naturally aligned declaration cannot describe a packed callback.
+                continue
             # Unknown and array fields retain their bytes as padding.
             if width and f.get("name"):
                 members.append([offset, f["name"], ty, width])
@@ -213,7 +289,7 @@ def extract(clang, sdk, target, source):
         ret = normalize(result.strip())
         params = [normalize(p["type"]["qualType"]) for p in n.get("inner", []) if p.get("kind") == "ParmVarDecl"]
         types = [ret] + params
-        if any(t is None or (not t.endswith("*") and t.removeprefix("const ") not in SCALARS) for t in types):
+        if any(t is None or "(" in t or "union " in t or (not t.endswith("*") and t.removeprefix("const ") not in SCALARS) for t in types):
             rejected += 1
             continue
         floating = [t in ("float", "double") for t in params]
@@ -251,7 +327,7 @@ def extract(clang, sdk, target, source):
             current = current + 1 if value is None else value
             values[c["name"]] = current
         constants[enum_names[n["id"]]] = {"type": enum_types[n["id"]], "values": values}
-    return {"functions": functions, "records": records, "typedefs": aliases, "enums": constants, "conventions": conventions}, rejected
+    return {"functions": functions, "records": records, "typedefs": aliases, "enums": constants, "conventions": conventions, "guids": guid_constants(nodes)}, rejected
 
 
 def header_variables(clang, sdk, target, headers):
@@ -266,7 +342,8 @@ def header_variables(clang, sdk, target, headers):
     with tempfile.TemporaryDirectory() as temp:
         source = Path(temp) / "variables.c"
         for header in sorted(headers, key=lambda h: (len(h), h)):
-            source.write_text(f"#include <{header}>\n")
+            prefix = "#include <winsock2.h>\n#include <windows.h>\n" if "mingw" in target else ""
+            source.write_text(prefix + f"#include <{header}>\n")
             args = compiler_args(clang, sdk, target)
             result = subprocess.run(args + ["-fsyntax-only", str(source), "-H",
                                             "-Xclang", "-ast-dump=json"],
@@ -299,6 +376,16 @@ def header_variables(clang, sdk, target, headers):
             source.write_text(source.read_text() + "\n".join(checks) + "\n")
             run(args + ["-fsyntax-only", str(source)])
     return variables
+
+
+def header_guids(clang, target, headers):
+    with tempfile.TemporaryDirectory() as temp:
+        source = Path(temp) / "guids.c"
+        source.write_text("#include <initguid.h>\n" + "".join(f"#include <{h}>\n" for h in headers))
+        args = compiler_args(clang, None, target)
+        nodes = json.loads(run(args + ["-fsyntax-only", str(source), "-Xclang", "-ast-dump=json"]))["inner"]
+        dependencies = run(args + ["-M", "-MT", "guids", str(source)])
+        return guid_constants(nodes), dependencies
 
 
 def main():
@@ -403,7 +490,11 @@ def verify_target(clang, target, headers, data, sdk=None):
             for at, field, text, width in record["fields"]:
                 if at > offset:
                     members.append(f"uint8_t gap_0x{offset:x}[{at-offset}];")
-                members.append(f"{rename(printed_type(text, target))} {field};")
+                members.append(field_declaration(rename(printed_type(text, target)), field) + ";")
+                if re.search(r"\(\*+\)", text):
+                    alias = f"velk_field_{len(lines)}"
+                    lines.extend([f"typedef {field_declaration(text, alias)};",
+                                  f'_Static_assert(__builtin_types_compatible_p(__typeof__((({name} *)0)->{field}), {alias}), "{field}");'])
                 offset = at + width
             if offset < record["size"]:
                 members.append(f'uint8_t gap_0x{offset:x}[{record["size"]-offset}];')
@@ -470,7 +561,7 @@ def generate_platform(args):
                     symbol = symbol.removeprefix("_")
                 symbol = symbol.split("@")[0]
                 exports.setdefault(symbol, []).append(dll + ".dll")
-        data = {kind: {} for kind in ["functions", "records", "typedefs", "enums", "conventions"]}
+        data = {kind: {} for kind in ["functions", "records", "typedefs", "enums", "conventions", "guids"]}
         conflicts = {kind: set() for kind in data}
         hashes = {}
         rejected = 0
@@ -484,6 +575,9 @@ def generate_platform(args):
                     extracted["functions"] = {k: v for k, v in extracted["functions"].items() if k in exports}
                 verify_target(args.clang, target, group, extracted)
                 dependencies = run(compiler_args(args.clang, None, target) + ["-M", "-MT", "headers", str(source)])
+                if windows:
+                    extracted["guids"], guid_dependencies = header_guids(args.clang, target, group)
+                    dependencies += " " + guid_dependencies
                 for dependency in dependencies.replace("\\\n", " ").split()[1:]:
                     path = Path(dependency)
                     if path.is_file() and dependency.startswith("/usr/"):
@@ -512,7 +606,7 @@ def generate_platform(args):
         datasets[target] = data
         print(target, {kind: len(data[kind]) for kind in ["functions", "records", "typedefs"]})
     result = {"version": 2, "source": {"compiler": run([args.clang, "--version"]).splitlines()[0],
-              "headers": headers, "header_sha256": header_hashes}, "targets": datasets}
+              "headers": headers, "guid_header": "initguid.h" if windows else None, "header_sha256": header_hashes}, "targets": datasets}
     output = args.output if args.output != Path("src/analysis/prototypes/macos.json") else Path(f"src/analysis/prototypes/{args.platform}.json")
     write_targets(output, result)
 

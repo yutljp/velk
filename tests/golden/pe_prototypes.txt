@@ -22,6 +22,26 @@ codeview/structs.O2.dll: imports 0/0
   calls 0/0, lift failures 0
 codeview/structs.O2.stripped.dll: imports 0/0
   calls 0/0, lift failures 0
+com_i686.dll: imports 1/1
+  ole32.dll!CreateStreamOnHGlobal: known
+  calls 1/7, lift failures 0
+  0x703c1000:2: unknown
+  0x703c1016:2: unknown
+  0x703c102c:2: unknown
+  0x703c1051:2: unknown
+  0x703c107f:2: unknown
+  0x703c10ad:2: unknown
+  0x703c10cb:0: known
+com_x86_64.dll: imports 1/1
+  ole32.dll!CreateStreamOnHGlobal: known
+  calls 1/7, lift failures 0
+  0x36ed91000:1: unknown
+  0x36ed9100f:1: unknown
+  0x36ed9101e:1: unknown
+  0x36ed9102c:1: unknown
+  0x36ed9103b:1: unknown
+  0x36ed9104a:1: unknown
+  0x36ed91059:0: known
 cpp/rtti.debug.dll: imports 0/3
   cpp_runtime.dll!??_7type_info@@6B@: unknown
   cpp_runtime.dll!?imported_value@@YAHH@Z: unknown

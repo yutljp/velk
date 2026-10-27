@@ -6,9 +6,8 @@
 //! Platform declarations and record layouts come from generated header libraries.
 //! Unsupported declarations use the tables below.
 //!
-//! The declarations are written as C declares them, apart from three
-//! simplifications: a pointer to a function is written `void (*)(...)` and
-//! taken for a pointer to code, an array parameter is written as the pointer
+//! The declarations are written as C declares them, with two
+//! simplifications: an array parameter is written as the pointer
 //! it decays to, and a typedef is used only where its width and sign agree
 //! between Linux on x86-64 and `AArch64` and macOS on arm64.
 
@@ -35,7 +34,78 @@ pub struct LibraryVariable {
     pub header: String,
 }
 
-pub(crate) use generated::{apply_records, i386_import, is_library_record, record_name};
+/// A target header's structure layout and supported fields.
+#[derive(Debug, Clone, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct LibraryRecord {
+    /// The C structure tag, including `struct`.
+    pub name: String,
+    /// Size in bytes for the selected target.
+    pub size: u64,
+    /// Alignment in bytes for the selected target.
+    pub alignment: u64,
+    /// Whether the library withholds the structure definition.
+    pub opaque: bool,
+    /// Supported fields in byte offset order; omitted bytes remain padding.
+    pub fields: Vec<LibraryField>,
+}
+
+/// One field of a header-derived structure.
+#[derive(Debug, Clone, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct LibraryField {
+    /// The field's C identifier.
+    pub name: String,
+    /// Byte offset from the beginning of the structure.
+    pub offset: u64,
+    /// Size in bytes for the selected target.
+    pub width: u64,
+    /// The field's abstract C type.
+    pub c_type: String,
+    /// Signature when this field is a pointer to a function.
+    pub function: Option<LibraryFunction>,
+}
+
+/// The prototype stored in a function pointer field.
+#[derive(Debug, Clone, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct LibraryFunction {
+    /// Abstract C types in source parameter order.
+    pub parameters: Vec<String>,
+    /// The abstract C result type.
+    pub return_type: String,
+    /// The calling convention: c, stdcall, fastcall, thiscall, or win64.
+    pub calling_convention: String,
+    /// Whether additional arguments follow the fixed parameters.
+    pub variadic: bool,
+}
+
+/// A header-defined IID or CLSID found as sixteen little-endian GUID bytes.
+#[derive(Debug, Clone, serde::Serialize)]
+pub struct LibraryGuid {
+    /// All matching header identifiers, in alphabetical order.
+    pub names: Vec<String>,
+    /// The conventional hexadecimal GUID spelling.
+    pub value: String,
+    /// The bytes as stored in Windows data.
+    pub bytes: [u8; 16],
+}
+
+/// Recognizes an IID or CLSID entirely within a read-only Windows data section.
+#[must_use]
+pub fn guid_at(image: &Image, address: u64) -> Option<LibraryGuid> {
+    generated::guid_at(image, address)
+}
+
+/// Returns a generated structure layout for the image's format and architecture.
+#[must_use]
+pub fn record(name: &str, image: &Image) -> Option<LibraryRecord> {
+    generated::record(name, image)
+}
+
+pub(crate) use generated::{
+    apply_records, i386_import, is_i386_com_interface, is_library_record, record_name,
+};
 
 /// What a function takes and returns.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -768,22 +838,7 @@ fn parse(declaration: &'static str) -> (&'static str, Prototype) {
     let mut params = Vec::new();
     let mut variadic = false;
     let mut format = None;
-    let mut depth = 0;
-    let mut start = 0;
-    let mut pieces = Vec::new();
-    for (at, c) in list.char_indices() {
-        match c {
-            '(' => depth += 1,
-            ')' => depth -= 1,
-            ',' if depth == 0 => {
-                pieces.push(&list[start..at]);
-                start = at + 1;
-            }
-            _ => {}
-        }
-    }
-    pieces.push(&list[start..]);
-    for piece in pieces.iter().map(|piece| piece.trim()) {
+    for piece in split_parameters(list) {
         match piece {
             "void" | "" => {}
             "..." => variadic = true,
@@ -816,12 +871,68 @@ fn parse(declaration: &'static str) -> (&'static str, Prototype) {
     )
 }
 
+fn split_parameters(list: &str) -> Vec<&str> {
+    let mut depth = 0_u32;
+    let mut start = 0;
+    let mut pieces = Vec::new();
+    for (at, c) in list.char_indices() {
+        match c {
+            '(' => depth = depth.saturating_add(1),
+            ')' => depth = depth.saturating_sub(1),
+            ',' if depth == 0 => {
+                pieces.push(list[start..at].trim());
+                start = at + 1;
+            }
+            _ => {}
+        }
+    }
+    pieces.push(list[start..].trim());
+    pieces
+}
+
 /// `const char *` as the pointer to `const char` it is.
-fn parse_type(text: &str) -> CType {
+pub(crate) fn parse_type(text: &str) -> CType {
     let text = text.trim();
-    // A pointer to a function points at code.
-    if text.contains("(*") {
-        return CType::pointer_to(CType::Void);
+    if let Some(open) = text.find("(*") {
+        let head = text[..open].trim();
+        let rest = &text[open + 1..];
+        let pointers = rest.bytes().take_while(|byte| *byte == b'*').count();
+        if let Some(list) = rest[pointers..]
+            .strip_prefix(")(")
+            .and_then(|s| s.strip_suffix(')'))
+        {
+            let (result, convention) =
+                if let Some(result) = head.strip_suffix("__attribute__((stdcall))") {
+                    (result, crate::ir::Convention::Stdcall)
+                } else if let Some(result) = head.strip_suffix("__attribute__((ms_abi))") {
+                    (result, crate::ir::Convention::Win64)
+                } else if let Some(result) = head.strip_suffix("__attribute__((fastcall))") {
+                    (result, crate::ir::Convention::Fastcall)
+                } else if let Some(result) = head.strip_suffix("__attribute__((thiscall))") {
+                    (result, crate::ir::Convention::Thiscall)
+                } else {
+                    (head, crate::ir::Convention::Cdecl)
+                };
+            let mut params = Vec::new();
+            let mut variadic = false;
+            for param in split_parameters(list) {
+                match param {
+                    "" | "void" => {}
+                    "..." => variadic = true,
+                    param => params.push(parse_type(param)),
+                }
+            }
+            let mut ty = CType::Function {
+                params,
+                ret: Box::new(parse_type(result)),
+                variadic,
+                convention,
+            };
+            for _ in 0..pointers {
+                ty = CType::pointer_to(ty);
+            }
+            return ty;
+        }
     }
     match text.strip_suffix('*') {
         Some(target) => CType::pointer_to(parse_type(target)),
@@ -1080,8 +1191,53 @@ pub(crate) fn all_conversion_types(format: &str, scans: bool) -> Vec<CType> {
 
 #[cfg(test)]
 mod tests {
-    use super::{LIBRARY, RUNTIME, conversion_types, layout, of, parse, runtime};
+    use super::{LIBRARY, RUNTIME, conversion_types, layout, of, parse, parse_type, runtime};
     use crate::ir::CType;
+
+    #[test]
+    fn function_pointer_types_retain_signatures_and_conventions() {
+        for (text, convention) in [
+            (
+                "int (*)(const void *, const void *)",
+                crate::ir::Convention::Cdecl,
+            ),
+            (
+                "int __attribute__((stdcall)) (*)(struct IUnknown *, const int *, void **)",
+                crate::ir::Convention::Stdcall,
+            ),
+            (
+                "void * __attribute__((ms_abi)) (*)(unsigned int)",
+                crate::ir::Convention::Win64,
+            ),
+            ("void (*)(void)", crate::ir::Convention::Cdecl),
+            ("int (*)(const char *, ...)", crate::ir::Convention::Cdecl),
+            (
+                "int (*)(void (*)(int), void *)",
+                crate::ir::Convention::Cdecl,
+            ),
+        ] {
+            let ty = parse_type(text);
+            let CType::Pointer(target) = &ty else {
+                panic!("{text}")
+            };
+            let CType::Function {
+                convention: actual, ..
+            } = target.as_ref()
+            else {
+                panic!("{text}")
+            };
+            assert_eq!(*actual, convention, "{text}");
+            assert_eq!(parse_type(&ty.to_string()), ty, "{text}");
+            let declaration = crate::render::declaration(&ty, "Method");
+            assert!(declaration.contains("(*Method)("), "{declaration}");
+        }
+        let ty = parse_type("void (**)(int)");
+        assert_eq!(ty.to_string(), "void (**)(int)");
+        assert_eq!(
+            crate::render::declaration(&ty, "methods"),
+            "void (**methods)(int)"
+        );
+    }
 
     #[test]
     fn library_names_give_their_arity() {
@@ -1114,7 +1270,10 @@ mod tests {
         assert_eq!(strlen.params[0].to_string(), "const char *");
         let qsort = of("qsort", false).expect("known");
         assert_eq!(qsort.params.len(), 4);
-        assert_eq!(qsort.params[3], CType::pointer_to(CType::Void));
+        assert_eq!(
+            qsort.params[3].to_string(),
+            "int (*)(const void *, const void *)"
+        );
         assert_eq!(qsort.ret, CType::Void);
         assert_eq!(qsort.pointers(), 0b1001);
         let strtol = of("strtol", false).expect("known");

@@ -90,6 +90,7 @@ Generate the Windows and Linux datasets and fixtures in the reference environmen
 ```sh
 docker compose build fixtures
 docker compose run --rm fixtures uv run tests/generate_type_library.py --platform windows
+docker compose run --rm fixtures uv run tests/test_generate_type_library.py
 docker compose run --rm fixtures uv run tests/generate_type_library.py --platform linux
 docker compose run --rm fixtures sh tests/make_type_library_fixtures.sh linux
 ```
@@ -97,6 +98,19 @@ docker compose run --rm fixtures sh tests/make_type_library_fixtures.sh linux
 The Windows dataset and lifters support x86-64 and x86-32.
 Linux data and fixtures cover x86-64 and AArch64. Each target's signatures and
 padded structure sizes, alignments, and field offsets are checked by its compiler.
+Function pointer fields are also checked for type compatibility, including their calling
+conventions. The Rust tests compile their printed declarations for both Windows targets.
+Fields whose types or alignment cannot be represented remain padding.
+The header license notices are in [windows.LICENSE](../src/analysis/prototypes/windows.LICENSE).
+
+The script API returns these layouts as data, including method parameters, result types,
+and calling conventions. This example also runs through the CLI's `-r` operation and MCP's
+`velk_run_script` tool:
+
+```js
+const b = velk.open("tests/fixtures/type_library_windows.win64.exe");
+b.libraryType("struct IUnknownVtbl");
+```
 
 Some groups have their own scripts: `tests/make_pe_fixtures.sh` (Windows PE), `tests/make_codeview.sh`
 (CodeView / PDB), `tests/make_seh_fixtures.sh` (Windows SEH), `tests/make_objc_fixtures.sh` (Objective-C) and

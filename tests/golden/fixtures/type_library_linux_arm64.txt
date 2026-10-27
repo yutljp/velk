@@ -42,7 +42,7 @@ extern uint64_t __gmon_start___1ffd0; /* address: 0x1ffd0 */
 extern uint64_t g_1ffd8; /* address: 0x1ffd8 */
 extern uint8_t completed_0; /* address: 0x20060 */
 
-int (__libc_start_main)(void *, int, char **, void *, void *, void *, void *);
+int (__libc_start_main)(int (*)(int, char **, char **), int, char **, void (*)(void), void (*)(void), void (*)(void), void *);
 int (fsync)(int);
 int (kill)(int, int);
 int (mprotect)(void *, size_t, int);
@@ -80,11 +80,11 @@ fn _init @ 0x6e0 (size 24)
 -- decompile
 /* velk pseudo-C: __libc_start_main @ 0x720 */
 /* ref: 0x20000 .got.plt */
-int __libc_start_main(void *a0, int a1, char **a2, void *a3, void *a4, void *a5, void *a6) {
+int __libc_start_main(int (*a0)(int, char **, char **), int a1, char **a2, void (*a3)(void), void (*a4)(void), void (*a5)(void), void *a6) {
     return __libc_start_main(a0, a1, a2, a3, a4, a5, a6);
 }
 -- signature
-int (void * a0, int a1, char ** a2, void * a3, void * a4, void * a5, void * a6)
+int (int (*)(int, char **, char **) a0, int a1, char ** a2, void (*)(void) a3, void (*)(void) a4, void (*)(void) a5, void * a6)
 -- references
 0x20000 .got.plt
 -- ir
@@ -270,14 +270,14 @@ fn mprotect @ 0x7b0 (size 16)
 -- decompile
 /* velk pseudo-C: _start @ 0x7c0 */
 /* ref: 0x1ffd8 .got */
-int32_t _start(void *a0, int64_t a1) {
+int32_t _start(void (*a0)(void), int64_t a1) {
     uint64_t sp = velk_entry_stack_pointer();
 
-    __libc_start_main((void *)g_1ffd8, a1, (char **)(sp + 8), 0x0, 0x0, a0, (void *)sp);
+    __libc_start_main((int (*)(int, char **, char **))g_1ffd8, a1, (char **)(sp + 8), 0x0, 0x0, a0, (void *)sp);
     abort();
 }
 -- signature
-int32_t (void * a0)
+int32_t (void (*)(void) a0)
 -- references
 0x1ffd8 .got
 -- ir

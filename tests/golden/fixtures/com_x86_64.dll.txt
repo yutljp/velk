@@ -1,0 +1,278 @@
+# com_x86_64.dll: pe x86_64 no entry, 11 functions, 0 lift failures, 0 unsupported, 0 gotos
+0x36ed91000 15 com_add_ref symtab,dynamic,dwarf,unwind
+0x36ed9100f 15 com_release symtab,dynamic,dwarf,unwind
+0x36ed9101e 14 com_query symtab,dynamic,dwarf,unwind
+0x36ed9102c 15 com_read symtab,dynamic,dwarf,unwind
+0x36ed9103b 15 com_write symtab,dynamic,dwarf,unwind
+0x36ed9104a 15 com_type_info_count symtab,dynamic,dwarf,unwind
+0x36ed91059 28 com_create_stream symtab,dynamic,dwarf,unwind
+0x36ed91080 8 com_unknown_id symtab,dynamic,dwarf,unwind
+0x36ed91088 8 com_stream_id symtab,dynamic,dwarf,unwind
+0x36ed91090 8 com_file_dialog_class symtab,dynamic,dwarf,unwind
+0x36ed91098 8 com_unknown_bytes symtab,dynamic,dwarf,unwind
+/* velk prelude */
+#include <stdint.h>
+
+struct IDispatch;
+struct IStream;
+struct ITypeInfo;
+struct IUnknown;
+struct _GUID;
+struct tagDISPPARAMS;
+struct tagEXCEPINFO;
+struct tagSTATSTG;
+struct tagVARIANT;
+union _LARGE_INTEGER;
+union _ULARGE_INTEGER;
+struct IDispatch { _Alignas(8) struct IDispatchVtbl *lpVtbl; };
+struct IDispatchVtbl {
+    _Alignas(8) int32_t __attribute__((ms_abi)) (*QueryInterface)(struct IDispatch *, const struct _GUID *, void **);
+    uint32_t __attribute__((ms_abi)) (*AddRef)(struct IDispatch *);
+    uint32_t __attribute__((ms_abi)) (*Release)(struct IDispatch *);
+    int32_t __attribute__((ms_abi)) (*GetTypeInfoCount)(struct IDispatch *, unsigned int *);
+    int32_t __attribute__((ms_abi)) (*GetTypeInfo)(struct IDispatch *, unsigned int, uint32_t, struct ITypeInfo **);
+    int32_t __attribute__((ms_abi)) (*GetIDsOfNames)(struct IDispatch *, const struct _GUID *, unsigned short **, unsigned int, uint32_t, int32_t *);
+    int32_t __attribute__((ms_abi)) (*Invoke)(struct IDispatch *, int32_t, const struct _GUID *, uint32_t, unsigned short, struct tagDISPPARAMS *, struct tagVARIANT *, struct tagEXCEPINFO *, unsigned int *);
+};
+struct IStream { _Alignas(8) struct IStreamVtbl *lpVtbl; };
+struct IStreamVtbl {
+    _Alignas(8) int32_t __attribute__((ms_abi)) (*QueryInterface)(struct IStream *, const struct _GUID *, void **);
+    uint32_t __attribute__((ms_abi)) (*AddRef)(struct IStream *);
+    uint32_t __attribute__((ms_abi)) (*Release)(struct IStream *);
+    int32_t __attribute__((ms_abi)) (*Read)(struct IStream *, void *, uint32_t, uint32_t *);
+    int32_t __attribute__((ms_abi)) (*Write)(struct IStream *, const void *, uint32_t, uint32_t *);
+    int32_t __attribute__((ms_abi)) (*Seek)(struct IStream *, union _LARGE_INTEGER, uint32_t, union _ULARGE_INTEGER *);
+    int32_t __attribute__((ms_abi)) (*SetSize)(struct IStream *, union _ULARGE_INTEGER);
+    int32_t __attribute__((ms_abi)) (*CopyTo)(struct IStream *, struct IStream *, union _ULARGE_INTEGER, union _ULARGE_INTEGER *, union _ULARGE_INTEGER *);
+    int32_t __attribute__((ms_abi)) (*Commit)(struct IStream *, uint32_t);
+    int32_t __attribute__((ms_abi)) (*Revert)(struct IStream *);
+    int32_t __attribute__((ms_abi)) (*LockRegion)(struct IStream *, union _ULARGE_INTEGER, union _ULARGE_INTEGER, uint32_t);
+    int32_t __attribute__((ms_abi)) (*UnlockRegion)(struct IStream *, union _ULARGE_INTEGER, union _ULARGE_INTEGER, uint32_t);
+    int32_t __attribute__((ms_abi)) (*Stat)(struct IStream *, struct tagSTATSTG *, uint32_t);
+    int32_t __attribute__((ms_abi)) (*Clone)(struct IStream *, struct IStream **);
+};
+struct IUnknown { _Alignas(8) struct IUnknownVtbl *lpVtbl; };
+struct IUnknownVtbl {
+    _Alignas(8) int32_t __attribute__((ms_abi)) (*QueryInterface)(struct IUnknown *, const struct _GUID *, void **);
+    uint32_t __attribute__((ms_abi)) (*AddRef)(struct IUnknown *);
+    uint32_t __attribute__((ms_abi)) (*Release)(struct IUnknown *);
+};
+struct _GUID {
+    _Alignas(4) uint32_t Data1;
+    unsigned short Data2;
+    unsigned short Data3;
+    uint8_t gap_0x8[0x8];
+};
+
+extern const uint8_t CLSID_FileOpenDialog[]; /* address: 0x36ed921d0 */
+extern const uint8_t IID_IStream[]; /* address: 0x36ed94940 */
+extern const uint8_t IID_IUnknown[]; /* address: 0x36ed94b30 */
+extern uint8_t bytes_0; /* address: 0x36ed92000 */
+
+struct IStream; int32_t (CreateStreamOnHGlobal)(void *, int, struct IStream **);
+/* end velk prelude */
+
+== 0x36ed91000 com_add_ref
+-- decompile
+/* velk pseudo-C: com_add_ref @ 0x36ed91000 */
+uint32_t com_add_ref(struct IUnknown *object) {
+    return object->lpVtbl->AddRef(object);
+}
+-- signature
+uint32_t (struct IUnknown * object)
+-- references
+
+-- ir
+fn com_add_ref @ 0x36ed91000 (size 15)
+  blk0 @ 0x36ed91000:
+    v1 = load64(rcx)
+    v2:rax, xmm0 = call *load64((v1 + #0x8))(rcx)
+    ret v2
+-- card
+{"accesses":["object +0x0:uint64_t"],"addr":"0x36ed91000","approxTokens":126,"blocks":1,"hardReasons":[],"name":"com_add_ref","nameSources":["symtab","dynamic","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":15,"unsupported":0}
+
+== 0x36ed9100f com_release
+-- decompile
+/* velk pseudo-C: com_release @ 0x36ed9100f */
+uint32_t com_release(struct IUnknown *object) {
+    return object->lpVtbl->Release(object);
+}
+-- signature
+uint32_t (struct IUnknown * object)
+-- references
+
+-- ir
+fn com_release @ 0x36ed9100f (size 15)
+  blk0 @ 0x36ed9100f:
+    v1 = load64(rcx)
+    v2:rax, xmm0 = call *load64((v1 + #0x10))(rcx)
+    ret v2
+-- card
+{"accesses":["object +0x0:uint64_t"],"addr":"0x36ed9100f","approxTokens":126,"blocks":1,"hardReasons":[],"name":"com_release","nameSources":["symtab","dynamic","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":15,"unsupported":0}
+
+== 0x36ed9101e com_query
+-- decompile
+/* velk pseudo-C: com_query @ 0x36ed9101e */
+int32_t com_query(struct IUnknown *object, struct _GUID *iid, void **result) {
+    return object->lpVtbl->QueryInterface(object, (const struct _GUID *)iid, result);
+}
+-- signature
+int32_t (struct IUnknown * object, struct _GUID * iid, void ** result)
+-- references
+
+-- ir
+fn com_query @ 0x36ed9101e (size 14)
+  blk0 @ 0x36ed9101e:
+    v1 = load64(rcx)
+    v2:rax, xmm0 = call *load64(v1)(rcx, rdx, r8)
+    ret v2
+-- card
+{"accesses":["object +0x0:uint64_t"],"addr":"0x36ed9101e","approxTokens":126,"blocks":1,"hardReasons":[],"name":"com_query","nameSources":["symtab","dynamic","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":14,"unsupported":0}
+
+== 0x36ed9102c com_read
+-- decompile
+/* velk pseudo-C: com_read @ 0x36ed9102c */
+int32_t com_read(struct IStream *stream, void *buffer, uint32_t size, uint32_t *read) {
+    return stream->lpVtbl->Read(stream, buffer, size, read);
+}
+-- signature
+int32_t (struct IStream * stream, void * buffer, uint32_t size, uint32_t * read)
+-- references
+
+-- ir
+fn com_read @ 0x36ed9102c (size 15)
+  blk0 @ 0x36ed9102c:
+    v1 = load64(rcx)
+    v2:rax, xmm0 = call *load64((v1 + #0x18))(rcx, rdx, r8, r9)
+    ret v2
+-- card
+{"accesses":["stream +0x0:uint64_t"],"addr":"0x36ed9102c","approxTokens":126,"blocks":1,"hardReasons":[],"name":"com_read","nameSources":["symtab","dynamic","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":15,"unsupported":0}
+
+== 0x36ed9103b com_write
+-- decompile
+/* velk pseudo-C: com_write @ 0x36ed9103b */
+int32_t com_write(struct IStream *stream, void *buffer, uint32_t size, uint32_t *written) {
+    return stream->lpVtbl->Write(stream, buffer, size, written);
+}
+-- signature
+int32_t (struct IStream * stream, void * buffer, uint32_t size, uint32_t * written)
+-- references
+
+-- ir
+fn com_write @ 0x36ed9103b (size 15)
+  blk0 @ 0x36ed9103b:
+    v1 = load64(rcx)
+    v2:rax, xmm0 = call *load64((v1 + #0x20))(rcx, rdx, r8, r9)
+    ret v2
+-- card
+{"accesses":["stream +0x0:uint64_t"],"addr":"0x36ed9103b","approxTokens":126,"blocks":1,"hardReasons":[],"name":"com_write","nameSources":["symtab","dynamic","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":15,"unsupported":0}
+
+== 0x36ed9104a com_type_info_count
+-- decompile
+/* velk pseudo-C: com_type_info_count @ 0x36ed9104a */
+int32_t com_type_info_count(struct IDispatch *object, unsigned int *count) {
+    return object->lpVtbl->GetTypeInfoCount(object, count);
+}
+-- signature
+int32_t (struct IDispatch * object, unsigned int * count)
+-- references
+
+-- ir
+fn com_type_info_count @ 0x36ed9104a (size 15)
+  blk0 @ 0x36ed9104a:
+    v1 = load64(rcx)
+    v2:rax, xmm0 = call *load64((v1 + #0x18))(rcx, rdx)
+    ret v2
+-- card
+{"accesses":["object +0x0:uint64_t"],"addr":"0x36ed9104a","approxTokens":126,"blocks":1,"hardReasons":[],"name":"com_type_info_count","nameSources":["symtab","dynamic","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":15,"unsupported":0}
+
+== 0x36ed91059 com_create_stream
+-- decompile
+/* velk pseudo-C: com_create_stream @ 0x36ed91059 */
+/* ref: 0x36ed99038 .idata */
+int32_t com_create_stream(struct IStream **stream) {
+    return CreateStreamOnHGlobal(0x0, 1, stream);
+}
+-- signature
+int32_t (struct IStream ** stream)
+-- references
+0x36ed99038 .idata
+-- ir
+fn com_create_stream @ 0x36ed91059 (size 28)
+  blk0 @ 0x36ed91059:
+    v1:rax, xmm0 = call *load64(#0x36ed99038)(#0x0, #0x1, rcx)
+    ret v1
+-- card
+{"addr":"0x36ed91059","approxTokens":138,"blocks":1,"hardReasons":[],"name":"com_create_stream","nameSources":["symtab","dynamic","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":28,"unsupported":0}
+
+== 0x36ed91080 com_unknown_id
+-- decompile
+/* velk pseudo-C: com_unknown_id @ 0x36ed91080 */
+/* ref: 0x36ed94b30 IID_IUnknown (00000000-0000-0000-c000-000000000046) */
+struct _GUID *com_unknown_id(void) {
+    return (struct _GUID *)IID_IUnknown;
+}
+-- signature
+struct _GUID * ()
+-- references
+0x36ed94b30 IID_IUnknown (00000000-0000-0000-c000-000000000046)
+-- ir
+fn com_unknown_id @ 0x36ed91080 (size 8)
+  blk0 @ 0x36ed91080:
+    ret #0x36ed94b30
+-- card
+{"addr":"0x36ed91080","approxTokens":108,"blocks":1,"hardReasons":[],"name":"com_unknown_id","nameSources":["symtab","dynamic","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":8,"unsupported":0}
+
+== 0x36ed91088 com_stream_id
+-- decompile
+/* velk pseudo-C: com_stream_id @ 0x36ed91088 */
+/* ref: 0x36ed94940 IID_IStream (0000000c-0000-0000-c000-000000000046) */
+struct _GUID *com_stream_id(void) {
+    return (struct _GUID *)IID_IStream;
+}
+-- signature
+struct _GUID * ()
+-- references
+0x36ed94940 IID_IStream (0000000c-0000-0000-c000-000000000046)
+-- ir
+fn com_stream_id @ 0x36ed91088 (size 8)
+  blk0 @ 0x36ed91088:
+    ret #0x36ed94940
+-- card
+{"addr":"0x36ed91088","approxTokens":108,"blocks":1,"hardReasons":[],"name":"com_stream_id","nameSources":["symtab","dynamic","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":8,"unsupported":0}
+
+== 0x36ed91090 com_file_dialog_class
+-- decompile
+/* velk pseudo-C: com_file_dialog_class @ 0x36ed91090 */
+/* ref: 0x36ed921d0 CLSID_FileOpenDialog (dc1c5a9c-e88a-4dde-a5a1-60f82a20aef7) */
+struct _GUID *com_file_dialog_class(void) {
+    return (struct _GUID *)CLSID_FileOpenDialog;
+}
+-- signature
+struct _GUID * ()
+-- references
+0x36ed921d0 CLSID_FileOpenDialog (dc1c5a9c-e88a-4dde-a5a1-60f82a20aef7)
+-- ir
+fn com_file_dialog_class @ 0x36ed91090 (size 8)
+  blk0 @ 0x36ed91090:
+    ret #0x36ed921d0
+-- card
+{"addr":"0x36ed91090","approxTokens":108,"blocks":1,"hardReasons":[],"name":"com_file_dialog_class","nameSources":["symtab","dynamic","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":8,"unsupported":0}
+
+== 0x36ed91098 com_unknown_bytes
+-- decompile
+/* velk pseudo-C: com_unknown_bytes @ 0x36ed91098 */
+/* ref: 0x36ed92000 .rdata */
+unsigned char *com_unknown_bytes(void) {
+    return (unsigned char *)(&bytes_0);
+}
+-- signature
+unsigned char * ()
+-- references
+0x36ed92000 .rdata
+-- ir
+fn com_unknown_bytes @ 0x36ed91098 (size 8)
+  blk0 @ 0x36ed91098:
+    ret #0x36ed92000
+-- card
+{"addr":"0x36ed91098","approxTokens":108,"blocks":1,"hardReasons":[],"name":"com_unknown_bytes","nameSources":["symtab","dynamic","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":8,"unsupported":0}

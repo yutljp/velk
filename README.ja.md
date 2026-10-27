@@ -40,6 +40,10 @@ int sum_until_zero(int *p, int n) {
 - クロスリファレンス、コールグラフ、文字列・定数の検索と関数の要約。
 - 組み込みシグネチャで[ライブラリ関数名](docs/LIBRARY_SIGNATURES.ja.md)を自動で復元。musl、mbedTLS、libsodium、OpenSSL libcrypto、Rust 標準ライブラリの共通処理、zlib のチェックサム、xxHash の完全なデータベースは別ファイルで読み込み可能。
 - macOS、Windows（Win32 と C ランタイム）、Linux（glibc）の生成済み C API 型ライブラリ。
+  Windows の COM vtable フィールドは、`IUnknown`、`IDispatch`、`IStream` を含め、関数の引数・戻り値の型と呼び出し規約を保持します。
+  `b.libraryType("struct IUnknownVtbl")` で対象のレイアウトを確認できます。CLI のスクリプトと MCP からも利用できます。
+  対応するインターフェイスの型が分かる呼び出しは `object->lpVtbl->Method(object, ...)` と表示します。
+  参照する IID と CLSID はヘッダーの GUID 値に基づいて名前を付けます。[Windows COM](docs/WINDOWS_COM.ja.md)を参照してください。
 - プロジェクトファイルへの名前・型・コメントの永続化（`--project`、`--annotate`）。
 - [プログラムのバージョン比較](docs/COMPARISON.ja.md)、C とブロックの差分確認、対応関数への注釈コピー（`--compare`、`--carry-annotations`）。
 - C++ RTTI によるクラス名・継承・仮想テーブルの復元（`--classes`）と型付き例外コメント。

@@ -41,6 +41,11 @@ int sum_until_zero(int *p, int n) {
 - Cross references, call graphs, string and constant searches, and function summaries.
 - Automatic [library names](docs/LIBRARY_SIGNATURES.md) from embedded signatures, with a separate full database for musl, mbedTLS, libsodium, OpenSSL libcrypto, common Rust standard library code, zlib checksums and xxHash.
 - Generated C API type libraries for macOS, Windows (Win32 and the C runtime), and Linux (glibc).
+  Windows COM vtable fields retain function prototypes and calling conventions, including
+  `IUnknown`, `IDispatch`, and `IStream`. Scripts can inspect target layouts with
+  `b.libraryType("struct IUnknownVtbl")`, also through CLI scripts and MCP.
+  Calls with supported interface types print as `object->lpVtbl->Method(object, ...)`.
+  Referenced IIDs and CLSIDs are named from header GUID values. See [Windows COM](docs/WINDOWS_COM.md).
 - Persistent names, types and comments in project files (`--project`, `--annotate`).
 - [Compare program versions](docs/COMPARISON.md), review C and block differences, and copy annotations to matching functions (`--compare`, `--carry-annotations`).
 - C++ RTTI class names, inheritance and virtual tables (`--classes`), and typed exception comments.

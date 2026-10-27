@@ -45,6 +45,7 @@ interface Card {
 }
 
 interface Reference {
+  guid: { names: string[]; value: string; bytes: number[] } | null;
   addr: Addr;
   section: string;
   text: string | null;
@@ -237,4 +238,28 @@ interface DetectedConstant {
 interface DetectedConstantsResult {
   matches: DetectedConstant[];
   failures: Failure[];
+}
+/** A structure layout extracted from target compiler headers. */
+interface LibraryRecord {
+  name: string;
+  size: number;
+  alignment: number;
+  opaque: boolean;
+  /** Fields whose types are supported; gaps represent omitted bytes. */
+  fields: LibraryField[];
+}
+
+interface LibraryField {
+  name: string;
+  offset: number;
+  width: number;
+  cType: string;
+  function: LibraryFunction | null;
+}
+
+interface LibraryFunction {
+  parameters: string[];
+  returnType: string;
+  callingConvention: "c" | "stdcall" | "fastcall" | "thiscall" | "win64";
+  variadic: boolean;
 }

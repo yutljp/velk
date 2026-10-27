@@ -28,6 +28,7 @@ pub(super) fn optimize(
         types,
     } = lifted;
     if ir.isa == crate::loader::Isa::I386 {
+        super::com::recover_i386(&mut ir, image, types.as_ref());
         crate::ssa::count_variadic_arguments(&mut ir, image);
         passes::frame_slots::settle_i386(&mut ir);
     } else if ir.isa == crate::loader::Isa::Arm32 {
@@ -196,7 +197,8 @@ pub(super) fn optimize(
         typing::apply_pointer_return_with(&mut ir, &|stmt| prototypes::called(image, stmt));
     }
     // It returns the pointer it wrote the result through.
-    if ir.declared_signature.is_none()
+    if !declared_return
+        && ir.declared_signature.is_none()
         && let Some(result) = ir.params.iter().find(|param| param.name == "result")
     {
         ir.ret_type = result.ty.clone();

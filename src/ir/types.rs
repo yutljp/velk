@@ -144,6 +144,12 @@ pub enum CType {
     },
     Pointer(Box<CType>),
     Array(Box<CType>),
+    Function {
+        params: Vec<CType>,
+        ret: Box<CType>,
+        variadic: bool,
+        convention: super::Convention,
+    },
     /// A type named by the debug info, kept as written (`struct pair`, `unsigned int`).
     Named(String),
 }
@@ -207,7 +213,7 @@ impl CType {
                 Some((bits, _)) => bits <= 32,
                 None => narrow_c_name(name),
             },
-            CType::Void | CType::Pointer(_) | CType::Array(_) => false,
+            CType::Void | CType::Pointer(_) | CType::Array(_) | CType::Function { .. } => false,
         }
     }
 
@@ -253,7 +259,7 @@ impl CType {
                 };
                 Some((bits, !unsigned))
             }
-            CType::Void | CType::Pointer(_) | CType::Array(_) => None,
+            CType::Void | CType::Pointer(_) | CType::Array(_) | CType::Function { .. } => None,
         }
     }
 
@@ -278,6 +284,45 @@ impl CType {
                 _ => None,
             },
             _ => None,
+        }
+    }
+
+    /// Declare a value, including names nested inside function pointer declarators.
+    #[must_use]
+    pub fn declaration(&self, name: &str) -> String {
+        match self {
+            Self::Pointer(target) => {
+                let name = if matches!(target.as_ref(), Self::Function { .. } | Self::Array(_)) {
+                    format!("(*{name})")
+                } else {
+                    format!("*{name}")
+                };
+                target.declaration(&name)
+            }
+            Self::Function {
+                params,
+                ret,
+                variadic,
+                convention,
+            } => {
+                let mut params: Vec<String> = params.iter().map(ToString::to_string).collect();
+                if *variadic {
+                    params.push("...".to_owned());
+                } else if params.is_empty() {
+                    params.push("void".to_owned());
+                }
+                let attribute = match convention {
+                    super::Convention::Stdcall => "__attribute__((stdcall)) ",
+                    super::Convention::Fastcall => "__attribute__((fastcall)) ",
+                    super::Convention::Thiscall => "__attribute__((thiscall)) ",
+                    super::Convention::Win64 => "__attribute__((ms_abi)) ",
+                    _ => "",
+                };
+                ret.declaration(&format!("{attribute}{name}({})", params.join(", ")))
+            }
+            Self::Array(element) => element.declaration(&format!("{name}[]")),
+            _ if name.is_empty() => self.to_string(),
+            _ => format!("{self} {name}"),
         }
     }
 }
@@ -355,9 +400,21 @@ impl fmt::Display for CType {
                     u32::from(*bytes) * 8
                 )
             }
-            CType::Pointer(target) if target.is_pointer() => write!(f, "{target}*"),
-            CType::Pointer(target) => write!(f, "{target} *"),
+            CType::Pointer(target) => {
+                let mut base = target.as_ref();
+                while let CType::Pointer(inner) = base {
+                    base = inner;
+                }
+                if matches!(base, CType::Function { .. } | CType::Array(_)) {
+                    f.write_str(&self.declaration(""))
+                } else if target.is_pointer() {
+                    write!(f, "{target}*")
+                } else {
+                    write!(f, "{target} *")
+                }
+            }
             CType::Array(element) => write!(f, "{element} []"),
+            CType::Function { .. } => f.write_str(&self.declaration("")),
             CType::Named(name) => f.write_str(name),
         }
     }

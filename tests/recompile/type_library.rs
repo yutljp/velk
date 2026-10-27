@@ -247,6 +247,7 @@ fn windows_pointer_arguments_preserve_bytes_after_a_string_terminator() {
             ],
         );
         let references = [velk::analysis::refs::Reference {
+            guid: None,
             addr: 0x2000,
             section: ".rdata".into(),
             text: Some(reference.into()),

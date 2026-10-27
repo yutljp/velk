@@ -83,6 +83,10 @@ UNSAT or an exhausted solver limit fails the test. Equality checks require
 UNSAT. Identical queries share work only when their expected results also match.
 The negative controls accompany the added checks; older checks do not all have
 negative controls.
+COM vtable load substitution checks the real renderer preparation on both Windows
+fixtures with symbolic input registers and byte-array memory. The check observes
+the indirect target before the call. Method ABI matching is covered by the
+compiled execution tests rather than this equivalence check.
 
 ## Connection to the implementation
 

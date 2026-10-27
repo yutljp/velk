@@ -10,6 +10,153 @@ use serde_json::Value;
 use velk::script::Engine;
 
 #[test]
+fn windows_header_documentation_examples_run() {
+    for file in [
+        "docs/WINDOWS_COM.md",
+        "docs/WINDOWS_COM.ja.md",
+        "docs/TESTING.md",
+        "docs/TESTING.ja.md",
+    ] {
+        let text = std::fs::read_to_string(common::root().join(file)).unwrap();
+        let example = text
+            .split("```js\n")
+            .nth(1)
+            .unwrap()
+            .split("```")
+            .next()
+            .unwrap();
+        let outcome = Engine::new().unwrap().run(example, None);
+        assert!(outcome.error.is_none(), "{file}: {:?}", outcome.error);
+        assert!(
+            serde_json::from_str::<Value>(&outcome.output).is_ok(),
+            "{file}: {}",
+            outcome.output
+        );
+    }
+}
+
+#[test]
+fn target_library_types_expose_com_signatures_in_scripts_and_cli() {
+    use std::process::Command;
+
+    let interfaces = declarations();
+    for (fixture, width, convention) in [
+        ("crt_windows.i686.exe", 4, "stdcall"),
+        ("type_library_windows.win64.exe", 8, "win64"),
+    ] {
+        let path = common::fixtures_dir().join(fixture);
+        let script =
+            format!("JSON.stringify(velk.open({path:?}).libraryType('struct IUnknownVtbl'))");
+        let outcome = Engine::new().unwrap().run(&script, None);
+        assert!(outcome.error.is_none(), "{:?}", outcome.error);
+        let record: Value = serde_json::from_str(&outcome.output).unwrap();
+        assert!(check(&interfaces, "LibraryRecord", &record, fixture).is_empty());
+        assert_eq!(record["size"], 3 * width);
+        assert_eq!(record["alignment"], width);
+        let fields = record["fields"].as_array().unwrap();
+        assert_eq!(fields.len(), 3);
+        for field in fields {
+            assert!(check(&interfaces, "LibraryField", field, fixture).is_empty());
+            assert!(check(&interfaces, "LibraryFunction", &field["function"], fixture).is_empty());
+            assert_eq!(field["function"]["callingConvention"], convention);
+        }
+        assert_eq!(fields[0]["name"], "QueryInterface");
+        assert_eq!(
+            fields[0]["function"]["parameters"]
+                .as_array()
+                .unwrap()
+                .len(),
+            3
+        );
+        assert_eq!(fields[0]["function"]["returnType"], "int32_t");
+        assert_eq!(fields[1]["offset"], width);
+
+        let directory = common::root().join("target/library-type-api");
+        std::fs::create_dir_all(&directory).unwrap();
+        let file = directory.join(format!("{width}.js"));
+        std::fs::write(&file, &script).unwrap();
+        let output = Command::new(env!("CARGO_BIN_EXE_velk"))
+            .arg("-r")
+            .arg(file)
+            .output()
+            .unwrap();
+        assert!(
+            output.status.success(),
+            "{}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+        assert_eq!(
+            serde_json::from_slice::<Value>(&output.stdout).unwrap(),
+            record
+        );
+    }
+    let path = common::fixtures_dir().join("arm64.o");
+    let outcome = Engine::new().unwrap().run(
+        &format!("velk.open({path:?}).libraryType('struct IUnknownVtbl')"),
+        None,
+    );
+    assert!(outcome.error.is_none(), "{:?}", outcome.error);
+    assert_eq!(outcome.output, "null");
+}
+
+#[test]
+fn com_calls_and_guid_references_match_in_scripts_and_cli() {
+    use std::process::Command;
+
+    for arch in ["x86_64", "i686"] {
+        let path = common::fixtures_dir().join(format!("com_{arch}.dll"));
+        let script = format!(
+            "const b = velk.open({path:?}); JSON.stringify({{code:b.getFunction('com_read').decompile(), signature:b.getFunction('com_read').signature(), references:b.getFunction('com_unknown_id').references(), unknown:b.getFunction('com_unknown_bytes').references()}})"
+        );
+        let outcome = Engine::new().unwrap().run(&script, None);
+        assert!(outcome.error.is_none(), "{:?}", outcome.error);
+        let data: Value = serde_json::from_str(&outcome.output).unwrap();
+        assert!(data["code"].as_str().unwrap().contains("->lpVtbl->Read("));
+        assert_eq!(data["signature"]["params"].as_array().unwrap().len(), 4);
+        assert_eq!(data["signature"]["params"][0]["type"], "struct IStream *");
+        let guid = data["references"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find_map(|reference| reference.get("guid").filter(|guid| !guid.is_null()))
+            .unwrap();
+        assert!(
+            guid["names"]
+                .as_array()
+                .unwrap()
+                .contains(&Value::String("IID_IUnknown".into()))
+        );
+        assert_eq!(guid["value"], "00000000-0000-0000-c000-000000000046");
+        assert_eq!(guid["bytes"].as_array().unwrap().len(), 16);
+        assert!(
+            data["unknown"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .all(|reference| reference["guid"].is_null())
+        );
+        let directory = common::root().join("target/com-api");
+        std::fs::create_dir_all(&directory).unwrap();
+        let file = directory.join(format!("{arch}.js"));
+        std::fs::write(&file, script).unwrap();
+        let output = Command::new(env!("CARGO_BIN_EXE_velk"))
+            .arg("-r")
+            .arg(file)
+            .output()
+            .unwrap();
+        assert!(
+            output.status.success(),
+            "{}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+        assert_eq!(
+            serde_json::from_slice::<Value>(&output.stdout).unwrap(),
+            data
+        );
+    }
+}
+
+#[test]
 fn macho_lookup_accepts_c_and_link_names() {
     let path = common::fixtures_dir().join("arm64_macho.o");
     let script = format!(

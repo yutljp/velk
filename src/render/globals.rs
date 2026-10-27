@@ -289,6 +289,37 @@ impl Globals {
         );
     }
 
+    pub(super) fn add_guids(&mut self, references: &[crate::analysis::refs::Reference]) {
+        for reference in references {
+            let Some(guid) = &reference.guid else {
+                continue;
+            };
+            let Some(name) = guid.names.first() else {
+                continue;
+            };
+            if self.types.contains_key(&reference.addr) {
+                continue;
+            }
+            if self.names.get(&reference.addr).is_none_or(|name| {
+                self.repeated.contains(name) || self.used.borrow().names.contains(name)
+            }) {
+                let mut used = self.used.borrow_mut();
+                used.names.extend(self.names.values().cloned());
+                let base = self
+                    .names
+                    .get(&reference.addr)
+                    .map_or(name.as_str(), String::as_str);
+                let name = super::vacant_name(base, &mut used.names);
+                self.names.insert(reference.addr, name);
+            }
+            self.types.insert(
+                reference.addr,
+                CType::Array(Box::new(CType::Named("const uint8_t".to_owned()))),
+            );
+            self.sizes.insert(reference.addr, 16);
+        }
+    }
+
     pub(super) fn target(&self, address: u64) -> Option<CType> {
         self.types.get(&address).map(|ty| match ty {
             CType::Array(element) => element.as_ref().clone(),

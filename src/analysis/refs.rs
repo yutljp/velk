@@ -14,11 +14,21 @@ pub struct Reference {
     pub section: String,
     pub text: Option<String>,
     pub pointer: Option<u64>,
+    /// Matching Windows header GUID identifiers and their exact bytes.
+    pub guid: Option<super::prototypes::LibraryGuid>,
 }
 
 impl Reference {
     #[must_use]
     pub fn describe(&self) -> String {
+        if let Some(guid) = &self.guid {
+            return format!(
+                "0x{:x} {} ({})",
+                self.addr,
+                guid.names.join(" / "),
+                guid.value
+            );
+        }
         match (&self.text, self.pointer) {
             (Some(text), Some(pointer)) => {
                 format!("0x{:x} -> 0x{pointer:x} \"{}\"", self.addr, escape(text))
@@ -116,9 +126,15 @@ pub fn collect(ir: &FunctionIr, image: &Image) -> Vec<Reference> {
         let Some(section) = image.section_at(addr) else {
             continue;
         };
-        let mut text = strings_at(image, addr);
+        let guid = super::prototypes::guid_at(image, addr);
+        let mut text = if guid.is_none() {
+            strings_at(image, addr)
+        } else {
+            None
+        };
         let mut pointer = None;
         if text.is_none()
+            && guid.is_none()
             && !section.executable
             && let Some(bytes) = image.read_vaddr(addr, 8)
         {
@@ -141,6 +157,7 @@ pub fn collect(ir: &FunctionIr, image: &Image) -> Vec<Reference> {
             section: section.name.clone(),
             text,
             pointer,
+            guid,
         });
     }
     // A call passing a pointer and a length, as Go and Rust pass a string,
@@ -203,6 +220,9 @@ pub fn collect(ir: &FunctionIr, image: &Image) -> Vec<Reference> {
             if !read_only {
                 continue;
             }
+            if super::prototypes::guid_at(image, *addr).is_some() {
+                continue;
+            }
             if let Some(text) = strings_at(image, *addr) {
                 references.retain(|known| known.addr != *addr);
                 references.push(Reference {
@@ -210,6 +230,7 @@ pub fn collect(ir: &FunctionIr, image: &Image) -> Vec<Reference> {
                     section: section.name.clone(),
                     text: Some(text),
                     pointer: None,
+                    guid: super::prototypes::guid_at(image, *addr),
                 });
             }
         }
@@ -221,7 +242,9 @@ pub fn collect(ir: &FunctionIr, image: &Image) -> Vec<Reference> {
                 continue;
             }
             let known = references.iter().position(|known| known.addr == *addr);
-            if known.is_some_and(|known| references[known].text.is_some()) {
+            if known.is_some_and(|known| {
+                references[known].text.is_some() || references[known].guid.is_some()
+            }) {
                 continue;
             }
             let Some((section, text)) = sized_string(image, *addr, *length) else {
@@ -234,6 +257,7 @@ pub fn collect(ir: &FunctionIr, image: &Image) -> Vec<Reference> {
                     section,
                     text: Some(text),
                     pointer: None,
+                    guid: super::prototypes::guid_at(image, *addr),
                 }),
             }
         }

@@ -155,7 +155,7 @@ pub fn pair_input(register: u16, registers: &[(u16, u64)], seed: u64) -> u64 {
 #[must_use]
 pub fn return_bits(ret: &CType) -> Option<u32> {
     match ret {
-        CType::Void => None,
+        CType::Void | CType::Function { .. } => None,
         CType::Int { bytes, .. } => Some(u32::from(*bytes) * 8),
         CType::Named(_) => Some(ret.integer().map_or(64, |(bits, _)| bits)),
         CType::Pointer(_) | CType::Array(_) => Some(64),

@@ -84,6 +84,7 @@ fa42ab7a72b796809389efb5368cc58dad8ffedf02a1df2c4d6596e81f81c60a  src/passes/sim
 beb2106c620f03b1139236314af060c3bda8a23a699a8751ec029eb43150b55f  src/passes/simplify.rs	fn widen_compared_constant(
 426b94eea844af7eb097cffc013e1a3f7787351f401e9562b9e63edf3d56d046  src/passes/widths.rs	pub fn specialize_widths(
 cf000670e99aed0861b79b3b5ca9a8baec01ef2a7f1fced76d08f1af1ee2b06a  src/render/abi_objects.rs	fn rewrite_value(
+16fce2828e25b27180dd5f20db3f5a494806541affa5ccabb1bdd9728ca0af24  src/render/com_calls.rs	pub(super) fn prepare(
 05d0feb7a50dc3bee4c032dcec12a89472d6afaaf1925511cda5a19d473666c3  src/render/expr.rs	fn arithmetic(
 8df2dbe74346448d460560b383a2dffed0a0cee250e150e7dbfd212dd3c38ab9  src/render/expr.rs	fn binary(
 8dc10fe62c3170f4b4429128e0061d1083133b92781488748b151131805800bf  src/render/expr.rs	fn high_product(
