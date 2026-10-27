@@ -217,6 +217,10 @@ fn components(functions: &[&mut FunctionIr], data_ranges: &[(u64, u64)]) -> Comp
             }
         }
     }
+    group_nodes(&edges, seeds)
+}
+
+fn group_nodes(edges: &[(Node, Node)], seeds: BTreeMap<Node, Structure>) -> Components {
     let mut groups: BTreeMap<Node, Node> = edges
         .iter()
         .flat_map(|(a, b)| [(*a, *a), (*b, *b)])
@@ -225,7 +229,7 @@ fn components(functions: &[&mut FunctionIr], data_ranges: &[(u64, u64)]) -> Comp
     // Propagate the lowest node to a fixed point, including recursive calls.
     loop {
         let mut changed = false;
-        for (a, b) in &edges {
+        for (a, b) in edges {
             let root = groups[a].min(groups[b]);
             for node in [a, b] {
                 if groups[node] != root {
@@ -248,6 +252,136 @@ fn components(functions: &[&mut FunctionIr], data_ranges: &[(u64, u64)]) -> Comp
     }
 }
 
+struct MergedLayout {
+    fields: Vec<(u64, CType)>,
+    size: Option<u64>,
+}
+
+fn merge_layouts(
+    nodes: &[Node],
+    seeds: &BTreeMap<Node, Structure>,
+    functions: &[&mut FunctionIr],
+    touches: &mut HashMap<usize, Vec<super::structures::Touch>>,
+) -> Option<MergedLayout> {
+    let layouts: Vec<_> = nodes.iter().filter_map(|node| seeds.get(node)).collect();
+    if layouts.is_empty()
+        && nodes
+            .iter()
+            .filter_map(|node| match node {
+                Node::Register(i, _) => Some(*i),
+                _ => None,
+            })
+            .collect::<BTreeSet<_>>()
+            .len()
+            < 2
+    {
+        return None;
+    }
+    let mut fields = BTreeMap::new();
+    let mut size = layouts.first().and_then(|layout| layout.size);
+    let mut valid = true;
+    let mut accessed = BTreeSet::new();
+    if layouts.is_empty() {
+        for node in nodes {
+            let Node::Register(i, register) = *node else {
+                continue;
+            };
+            let local_touches = touches
+                .entry(i)
+                .or_insert_with(|| super::structures::touches_of(functions[i]));
+            if let Some(stride) =
+                super::structures::array_size(functions[i], register, local_touches)
+            {
+                if size.is_some_and(|size| size != stride) {
+                    valid = false;
+                }
+                size = Some(stride);
+            }
+        }
+    }
+    for layout in &layouts {
+        if layout.size != size {
+            valid = false;
+        }
+        for (offset, ty) in &layout.fields {
+            if let Some(previous) = fields.insert(*offset, ty.clone())
+                && previous != *ty
+            {
+                valid = false;
+            }
+        }
+    }
+    for node in nodes {
+        if seeds.contains_key(node) {
+            continue;
+        }
+        if let Node::Register(i, register) = *node {
+            let given = functions[i]
+                .params
+                .iter()
+                .find(|param| param.index == register)
+                .map(|param| &param.ty)
+                .or_else(|| functions[i].value_types.get(&register));
+            if given.is_some_and(|ty| matches!(ty, CType::Pointer(target) if matches!(target.as_ref(), CType::Named(_)))) {
+                valid = false;
+                continue;
+            }
+            let local_touches = touches
+                .entry(i)
+                .or_insert_with(|| super::structures::touches_of(functions[i]));
+            let local = match size {
+                Some(size) => {
+                    super::structures::layout_with_size(functions[i], register, local_touches, size)
+                }
+                None => super::structures::layout_at_least(register, local_touches, 0),
+            };
+            match local {
+                Some(local) => {
+                    if !local.is_empty() {
+                        accessed.insert(i);
+                    }
+                    for (offset, ty) in local {
+                        if let Some(previous) = fields.insert(offset, ty.clone())
+                            && previous != ty
+                        {
+                            valid = false;
+                        }
+                    }
+                }
+                None => valid = false,
+            }
+        }
+    }
+    let mut end = 0u64;
+    for (offset, ty) in &fields {
+        let Some(width) = CType::pointer_to(ty.clone()).pointee_size().map(u64::from) else {
+            valid = false;
+            break;
+        };
+        if width == 0
+            || !offset.is_multiple_of(width)
+            || *offset < end
+            || size.is_some_and(|size| !size.is_multiple_of(width))
+        {
+            valid = false;
+            break;
+        }
+        let Some(next) = offset.checked_add(width) else {
+            valid = false;
+            break;
+        };
+        end = next;
+    }
+    if size.is_some_and(|size| end > size) {
+        valid = false;
+    }
+    if !valid || fields.len() < 2 || (layouts.is_empty() && accessed.len() < 2) {
+        return None;
+    }
+    let fields: Vec<_> = fields.into_iter().collect();
+    Some(MergedLayout { fields, size })
+}
+
 /// Share only whole pointer values whose register has a single definition.
 /// Conflicting connected layouts are left unchanged as a group.
 pub(crate) fn share(functions: &mut [&mut FunctionIr], data_ranges: &[(u64, u64)]) {
@@ -260,125 +394,11 @@ pub(crate) fn share(functions: &mut [&mut FunctionIr], data_ranges: &[(u64, u64)
     let mut names: Vec<Structure> = Vec::new();
     let mut serial = 1;
     for nodes in components.values() {
-        let layouts: Vec<_> = nodes.iter().filter_map(|node| seeds.get(node)).collect();
-        if layouts.is_empty()
-            && nodes
-                .iter()
-                .filter_map(|node| match node {
-                    Node::Register(i, _) => Some(*i),
-                    _ => None,
-                })
-                .collect::<BTreeSet<_>>()
-                .len()
-                < 2
-        {
+        let Some(MergedLayout { fields, size }) =
+            merge_layouts(nodes, &seeds, functions, &mut touches)
+        else {
             continue;
-        }
-        let mut fields = BTreeMap::new();
-        let mut size = layouts.first().and_then(|layout| layout.size);
-        let mut valid = true;
-        let mut accessed = BTreeSet::new();
-        if layouts.is_empty() {
-            for node in nodes {
-                let Node::Register(i, register) = *node else {
-                    continue;
-                };
-                let local_touches = touches
-                    .entry(i)
-                    .or_insert_with(|| super::structures::touches_of(functions[i]));
-                if let Some(stride) =
-                    super::structures::array_size(functions[i], register, local_touches)
-                {
-                    if size.is_some_and(|size| size != stride) {
-                        valid = false;
-                    }
-                    size = Some(stride);
-                }
-            }
-        }
-        for layout in &layouts {
-            if layout.size != size {
-                valid = false;
-            }
-            for (offset, ty) in &layout.fields {
-                if let Some(previous) = fields.insert(*offset, ty.clone())
-                    && previous != *ty
-                {
-                    valid = false;
-                }
-            }
-        }
-        for node in nodes {
-            if seeds.contains_key(node) {
-                continue;
-            }
-            if let Node::Register(i, register) = *node {
-                let given = functions[i]
-                    .params
-                    .iter()
-                    .find(|param| param.index == register)
-                    .map(|param| &param.ty)
-                    .or_else(|| functions[i].value_types.get(&register));
-                if given.is_some_and(|ty| matches!(ty, CType::Pointer(target) if matches!(target.as_ref(), CType::Named(_)))) {
-                    valid = false;
-                    continue;
-                }
-                let local_touches = touches
-                    .entry(i)
-                    .or_insert_with(|| super::structures::touches_of(functions[i]));
-                let local = match size {
-                    Some(size) => super::structures::layout_with_size(
-                        functions[i],
-                        register,
-                        local_touches,
-                        size,
-                    ),
-                    None => super::structures::layout_at_least(register, local_touches, 0),
-                };
-                match local {
-                    Some(local) => {
-                        if !local.is_empty() {
-                            accessed.insert(i);
-                        }
-                        for (offset, ty) in local {
-                            if let Some(previous) = fields.insert(offset, ty.clone())
-                                && previous != ty
-                            {
-                                valid = false;
-                            }
-                        }
-                    }
-                    None => valid = false,
-                }
-            }
-        }
-        let mut end = 0u64;
-        for (offset, ty) in &fields {
-            let Some(width) = CType::pointer_to(ty.clone()).pointee_size().map(u64::from) else {
-                valid = false;
-                break;
-            };
-            if width == 0
-                || !offset.is_multiple_of(width)
-                || *offset < end
-                || size.is_some_and(|size| !size.is_multiple_of(width))
-            {
-                valid = false;
-                break;
-            }
-            let Some(next) = offset.checked_add(width) else {
-                valid = false;
-                break;
-            };
-            end = next;
-        }
-        if size.is_some_and(|size| end > size) {
-            valid = false;
-        }
-        if !valid || fields.len() < 2 || (layouts.is_empty() && accessed.len() < 2) {
-            continue;
-        }
-        let fields: Vec<_> = fields.into_iter().collect();
+        };
         let name = if let Some(known) = names
             .iter()
             .find(|known| known.fields == fields && known.size == size)
