@@ -106,8 +106,7 @@ pub(super) fn replicate(value: Expr, bits: u8) -> Expr {
         return value;
     }
     let lane = (1u64 << bits) - 1;
-    let ones =
-        (0..64 / u32::from(bits)).fold(0u64, |out, index| out | 1 << (index * u32::from(bits)));
+    let ones = replicated(1, bits);
     Expr::bin(
         BinOp::Mul,
         Expr::bin(BinOp::And, value, Expr::constant(lane)),

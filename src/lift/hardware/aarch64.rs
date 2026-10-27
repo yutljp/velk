@@ -94,6 +94,19 @@ type State = [u64; 46];
 
 const VECTORS: usize = 30;
 
+fn registers(initial: &State) -> Vec<(u16, u64)> {
+    (0..28u16)
+        .filter(|index| usable(*index))
+        .map(|index| (index, initial[usize::from(index)]))
+        .chain((0..16).map(|half| {
+            (
+                crate::arch::aarch64::V0 + half as u16,
+                initial[VECTORS + half],
+            )
+        }))
+        .collect()
+}
+
 unsafe extern "C" {
     fn mmap(
         addr: *mut c_void,
@@ -372,12 +385,7 @@ fn check(page: &Page, seed: u64, findings: &mut Findings) {
     }
     findings.tried += 1;
 
-    let vector_slot = |half: usize| crate::arch::aarch64::V0 + half as u16;
-    let registers: Vec<(u16, u64)> = (0..28u16)
-        .filter(|index| usable(*index))
-        .map(|index| (index, initial[usize::from(index)]))
-        .chain((0..16).map(|half| (vector_slot(half), initial[VECTORS + half])))
-        .collect();
+    let registers = registers(&initial);
     let processor = |index: u16| match index.checked_sub(crate::arch::aarch64::V0) {
         Some(half) => state[VECTORS + usize::from(half)],
         None => state[usize::from(index)],
@@ -535,26 +543,8 @@ fn sqdmulh_vector_results_match_the_processor() {
                     "processor rejected {decoded} ({word:#010x})"
                 );
                 assert_eq!(state[NZCV], initial[NZCV], "{decoded}, row {row}: NZCV");
-                let registers: Vec<_> = (0..28u16)
-                    .filter(|index| usable(*index))
-                    .map(|index| (index, initial[usize::from(index)]))
-                    .chain((0..16).map(|half| {
-                        (
-                            crate::arch::aarch64::V0 + half as u16,
-                            initial[VECTORS + half],
-                        )
-                    }))
-                    .collect();
-                let setup = eval::Setup {
-                    seed: 0,
-                    convention: eval::Convention {
-                        arguments: &[],
-                        clobbered: &[],
-                    },
-                    registers: &registers,
-                    memory: &[],
-                    step_limit: 100,
-                };
+                let registers = registers(&initial);
+                let setup = super::setup(&registers);
                 let (after, memory) =
                     eval::state_after(&ir, &setup).expect("modeled SQDMULH result");
                 assert!(memory.is_empty());
@@ -731,16 +721,7 @@ fn lifted_memory_accesses_match_the_processor() {
             continue;
         }
         findings.tried += 1;
-        let registers: Vec<(u16, u64)> = (0..28u16)
-            .filter(|index| usable(*index))
-            .map(|index| (index, initial[usize::from(index)]))
-            .chain((0..16).map(|half| {
-                (
-                    crate::arch::aarch64::V0 + half as u16,
-                    initial[VECTORS + half],
-                )
-            }))
-            .collect();
+        let registers = registers(&initial);
         let words: Vec<(u64, u64)> = before
             .chunks(8)
             .enumerate()
@@ -906,16 +887,7 @@ fn scalar_half_immediates_match_the_processor_without_status_changes() {
                 assert_eq!(after_status, before_status, "{word:#010x}: FPSR");
                 assert_eq!(after_control, actual_control, "{word:#010x}: FPCR");
                 assert_eq!(state[NZCV], initial[NZCV], "{word:#010x}: NZCV");
-                let registers: Vec<_> = (0..28u16)
-                    .filter(|index| usable(*index))
-                    .map(|index| (index, initial[usize::from(index)]))
-                    .chain((0..16).map(|half| {
-                        (
-                            crate::arch::aarch64::V0 + half as u16,
-                            initial[VECTORS + half],
-                        )
-                    }))
-                    .collect();
+                let registers = registers(&initial);
                 let setup = super::setup(&registers);
                 let (after, memory) = eval::state_after(&ir, &setup).expect("a complete move");
                 assert!(memory.is_empty());

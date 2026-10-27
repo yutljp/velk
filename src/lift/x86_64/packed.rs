@@ -368,13 +368,7 @@ pub(super) fn lift_packed(lifter: &mut Lifter, ins: &Instruction) -> Option<()> 
                 OpKind::Immediate8 => Expr::constant(u64::from(ins.immediate8())),
                 _ => halves(1)?.0,
             };
-            let shifted = |half: Expr| {
-                if bits == 64 && op != LaneOp::ShiftRightSigned {
-                    lanes(op, 64, half, count.clone())
-                } else {
-                    lanes(op, bits, half, count.clone())
-                }
-            };
+            let shifted = |half: Expr| lanes(op, bits, half, count.clone());
             write(lifter, (shifted(a.0), shifted(a.1)))?;
         }
         // Whole-register byte shifts.

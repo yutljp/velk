@@ -240,11 +240,12 @@ pub fn lift_with(
                     } else {
                         None
                     };
-                    if let Some(captures) = &remainder {
-                        statements.extend(captures.iter().cloned());
+                    let has_remainder = remainder.is_some();
+                    if let Some(captures) = remainder {
+                        statements.extend(captures);
                     }
                     statements.push(stmt);
-                    if remainder.is_some() {
+                    if has_remainder {
                         statements.push(pairs32::remainder_value());
                     }
                     if pair {
@@ -252,7 +253,7 @@ pub fn lift_with(
                     }
                     if word_remainder {
                         statements.extend(pairs32::split_word_result());
-                    } else if remainder.is_some() {
+                    } else if has_remainder {
                         statements.extend(pairs32::split_remainder());
                     }
                 }
@@ -790,8 +791,6 @@ fn reads_memory(expr: &Expr) -> bool {
     matches!(expr, Expr::Load { .. }) || children(expr).into_iter().any(reads_memory)
 }
 
-/// The argument registers a call to `target` passes, when the number the
-/// callee takes is known.
 /// The arguments of a call reading `count` registers and `stack` slots
 /// past them, as they stand at the call.
 pub(crate) fn arguments(
@@ -940,23 +939,17 @@ pub(crate) fn call(
 /// `call [slot]`, where the slot holds a known function's address and the
 /// program cannot write another there.
 pub(crate) fn pointer_target(image: &Image, through: &Expr) -> Option<u64> {
-    let Expr::Load { addr, width, .. } = through else {
+    let Some(slot) = pointer_slot(image, through) else {
         return None;
     };
-    if *width != crate::arch::pointer_bytes(image.isa) {
-        return None;
-    }
-    let Expr::Const(slot) = addr.as_ref() else {
-        return None;
-    };
-    let Some(section) = image.section_at(*slot) else {
+    let Some(section) = image.section_at(slot) else {
         return None;
     };
     if section.executable || !section.read_only {
         return None;
     }
     let word = crate::arch::pointer_bytes(image.isa);
-    let Some(bytes) = image.read_vaddr(*slot, u64::from(word)) else {
+    let Some(bytes) = image.read_vaddr(slot, u64::from(word)) else {
         return None;
     };
     let target = if word == 4 {
@@ -973,8 +966,7 @@ pub(crate) fn pointer_target(image: &Image, through: &Expr) -> Option<u64> {
     image.functions.contains_key(&target).then_some(target)
 }
 
-/// The name of the import whose slot `through` loads.
-pub(crate) fn import_name<'a>(image: &'a Image, through: &Expr) -> Option<&'a str> {
+fn pointer_slot(image: &Image, through: &Expr) -> Option<u64> {
     let Expr::Load { addr, width, .. } = through else {
         return None;
     };
@@ -984,14 +976,22 @@ pub(crate) fn import_name<'a>(image: &'a Image, through: &Expr) -> Option<&'a st
     let Expr::Const(slot) = addr.as_ref() else {
         return None;
     };
+    Some(*slot)
+}
+
+/// The name of the import whose slot `through` loads.
+pub(crate) fn import_name<'a>(image: &'a Image, through: &Expr) -> Option<&'a str> {
+    let Some(slot) = pointer_slot(image, through) else {
+        return None;
+    };
     if image
         .import_addends
-        .get(slot)
+        .get(&slot)
         .is_some_and(|addend| *addend != 0)
     {
         return None;
     }
-    image.imports.get(slot).map(String::as_str)
+    image.imports.get(&slot).map(String::as_str)
 }
 
 /// The import a call through `through` reaches, when it loads a slot the

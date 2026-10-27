@@ -42,6 +42,8 @@ fn integer_instructions_match_linux_i386() {
     let mut assembly = String::from(".text\n.globl _start\n_start:\n");
     let mut expected = Vec::new();
     for instruction in instructions {
+        let ir =
+            lifted(Isa::I386, [*instruction, &[0xc3]].concat()).expect("integer instruction lifts");
         for seed in 0..128 {
             let a = value(seed, 0) as u32;
             let b = value(seed, 1) as u32;
@@ -59,19 +61,8 @@ fn integer_instructions_match_linux_i386() {
                 write!(assembly, "{byte}").unwrap();
             }
             assembly.push_str("\npush %eax\nmov $4, %eax\nmov $1, %ebx\nmov %esp, %ecx\nmov $4, %edx\nint $0x80\nadd $4, %esp\n");
-            let ir = lifted(Isa::I386, [*instruction, &[0xc3]].concat())
-                .expect("integer instruction lifts");
             let registers = [(0, u64::from(a)), (3, u64::from(b)), (1, u64::from(count))];
-            let setup = eval::Setup {
-                seed: 0,
-                convention: eval::Convention {
-                    arguments: &[],
-                    clobbered: &[],
-                },
-                registers: &registers,
-                memory: &[],
-                step_limit: 100,
-            };
+            let setup = super::setup(&registers);
             let eval::Outcome::Return { value, .. } = eval::run(&ir, &setup) else {
                 panic!("integer instruction did not return: {instruction:02x?}");
             };

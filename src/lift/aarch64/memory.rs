@@ -8,14 +8,10 @@ pub(super) struct Memory {
     pub(super) writeback: Option<(RegRef, Expr)>,
 }
 
-fn read_base(operand: u16) -> Expr {
-    Expr::reg(operand, 64)
-}
-
 pub(super) fn memory(operand: Operand, width: u8) -> Option<Memory> {
     match operand {
         Operand::RegPreIndex(reg, offset, writeback) => {
-            let base = read_base(reg);
+            let base = Expr::reg(reg, 64);
             let address = if offset == 0 {
                 base
             } else {
@@ -31,7 +27,7 @@ pub(super) fn memory(operand: Operand, width: u8) -> Option<Memory> {
             })
         }
         Operand::RegPostIndex(reg, offset) => {
-            let base = read_base(reg);
+            let base = Expr::reg(reg, 64);
             let updated = if offset == 0 {
                 base.clone()
             } else {
@@ -53,7 +49,7 @@ pub(super) fn memory(operand: Operand, width: u8) -> Option<Memory> {
             })
         }
         Operand::RegPostIndexReg(reg, increment) => {
-            let base = read_base(reg);
+            let base = Expr::reg(reg, 64);
             Some(Memory {
                 address: base.clone(),
                 writeback: Some((
@@ -66,7 +62,7 @@ pub(super) fn memory(operand: Operand, width: u8) -> Option<Memory> {
             })
         }
         Operand::RegRegOffset(base_reg, index_reg, size, style, amount) => {
-            let base = read_base(base_reg);
+            let base = Expr::reg(base_reg, 64);
             let index_width = if size == SizeCode::X { 64 } else { 32 };
             let index = Lifter::read_reg(index_reg, index_width);
             let Some(index) = extend_shift(style, amount as u64, index, size) else {

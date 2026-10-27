@@ -15,7 +15,7 @@ e5fc34df75b12d2f44f64542369a8bf92dc442ffd428b3d7d85a0e328c9d4694  src/lift/aarch
 a1c5b3116f4ba458882c29aea4a6c6f3469b0b2117a78c102c4ddc4a342db89d  src/lift/arm32.rs	Opcode::ADC | Opcode::SBC | Opcode::RSC =>
 2d065407efaec6fdfec01eebb35739a418905a5682e2b1a0ad0244796c935f8d  src/lift/arm32.rs	Opcode::RRX =>
 8357760a41fdf4f1226a03ba00492fea372f654d47f619f024ba8eea383ed7bd  src/lift/arm32.rs	Opcode::UMULL | Opcode::SMULL | Opcode::UMLAL | Opcode::SMLAL =>
-ed01c7c56aa69b0cd954f1d92ed78e57539d2226adb95801080fa38e8134d599  src/lift/arm32.rs	fn carry_arithmetic(
+524882afe8d85fee309d85cde35002c6a5da4718d144a59f1935d73ce3e6e808  src/lift/arm32.rs	fn carry_arithmetic(
 69d7ab725abfe3cdba0ce51c147446aa756839b30054a233bd27fd2772b98633  src/lift/arm32.rs	fn extend(
 958a54b6adab0e5822f7b267e71600cc1c7ff052c6a230664eb2124c04890cb2  src/lift/arm32.rs	fn literal(
 0313d5aefd9cadd061254c3b0c990480ec0b43995c8f898c6f00fa50ff4ff002  src/lift/arm32.rs	fn shift_value(

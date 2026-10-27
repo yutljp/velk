@@ -355,8 +355,7 @@ fn collect(image: &Image) -> HashMap<u64, CallEvidence> {
                     Stmt::Unsupported { .. } | Stmt::Machine { .. } | Stmt::BrIndirect { .. }
                 )
             });
-        let examined = blocks.iter().take(if complete { 1 } else { blocks.len() });
-        for block in examined {
+        for block in &blocks {
             let mut state = entry.clone();
             for stmt in &block.stmts {
                 state.serial += 1;
@@ -422,7 +421,7 @@ fn collect(image: &Image) -> HashMap<u64, CallEvidence> {
                                 }
                             }
                         }
-                        calls
+                        let evidence = calls
                             .entry(*target)
                             .and_modify(|evidence| evidence.pairs &= pairs)
                             .or_insert(CallEvidence {
@@ -430,9 +429,7 @@ fn collect(image: &Image) -> HashMap<u64, CallEvidence> {
                                 ..CallEvidence::default()
                             });
                         for (word, source) in sources {
-                            calls.get_mut(target).expect("call was inserted").sources
-                                [usize::from(word)]
-                            .push(source);
+                            evidence.sources[usize::from(word)].push(source);
                         }
                         state.clobber(*convention);
                         let object = Object::Result(*target, state.serial);

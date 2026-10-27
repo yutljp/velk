@@ -237,12 +237,15 @@ fn register_only(instruction: &Instruction, info: &mut InstructionInfoFactory) -
     let info = info.info(instruction);
     operands_plain
         && info.used_memory().is_empty()
-        && info.used_registers().iter().all(|used| {
-            let register = used.register();
-            (register.is_gpr()
-                && !matches!(register.full_register(), Register::RSP | Register::R15))
-                || ((register.is_xmm() || register.is_ymm()) && register.number() < 8)
-        })
+        && info
+            .used_registers()
+            .iter()
+            .all(|used| usable_register(used.register()))
+}
+
+fn usable_register(register: Register) -> bool {
+    (register.is_gpr() && !matches!(register.full_register(), Register::RSP | Register::R15))
+        || ((register.is_xmm() || register.is_ymm()) && register.number() < 8)
 }
 
 /// A random instruction of up to 15 bytes, decoded from random bytes with an
@@ -743,11 +746,10 @@ fn memory_instruction(
             && (memory.displacement() as i64).unsigned_abs() <= 1024
             && memory.segment() == Register::DS
     });
-    let registers = details.used_registers().iter().all(|used| {
-        let register = used.register();
-        (register.is_gpr() && !matches!(register.full_register(), Register::RSP | Register::R15))
-            || ((register.is_xmm() || register.is_ymm()) && register.number() < 8)
-    });
+    let registers = details
+        .used_registers()
+        .iter()
+        .all(|used| usable_register(used.register()));
     (addressed && registers && !details.used_memory().is_empty()).then_some((bytes, decoded))
 }
 
@@ -946,6 +948,7 @@ fn fixture_simd_flags_and_reverse_strings_match_the_processor() {
         vec![0xfd, 0xeb, 0, 0xf3, 0xac, 0xfc],
     ]);
     let mut cases = Vec::new();
+    let mut kinds = Vec::new();
     for (kind, code) in codes.iter().enumerate() {
         for seed in 0..256 {
             let mut registers = std::array::from_fn(|index| value(seed, index as u64));
@@ -964,32 +967,18 @@ fn fixture_simd_flags_and_reverse_strings_match_the_processor() {
             let memory = (0..BUFFER_SIZE)
                 .map(|index| hash(seed, index as u64) as u8)
                 .collect();
-            cases.push((
-                kind,
-                Case {
-                    code: code.clone(),
-                    registers,
-                    vectors,
-                    flags: 0x202 | (hash(seed, 42) & ARITHMETIC_FLAGS),
-                    memory: Some(memory),
-                },
-            ));
+            kinds.push(kind);
+            cases.push(Case {
+                code: code.clone(),
+                registers,
+                vectors,
+                flags: 0x202 | (hash(seed, 42) & ARITHMETIC_FLAGS),
+                memory: Some(memory),
+            });
         }
     }
-    let outcomes = run(
-        runner,
-        &cases
-            .iter()
-            .map(|(_, case)| Case {
-                code: case.code.clone(),
-                registers: case.registers,
-                vectors: case.vectors,
-                flags: case.flags,
-                memory: case.memory.clone(),
-            })
-            .collect::<Vec<_>>(),
-    );
-    for ((kind, case), outcome) in cases.iter().zip(outcomes) {
+    let outcomes = run(runner, &cases);
+    for ((kind, case), outcome) in kinds.iter().zip(&cases).zip(outcomes) {
         assert_eq!(outcome.signal, 0, "instruction case {kind}");
         let ir = lifted(Isa::X86_64, [case.code.as_slice(), &[0xc3]].concat()).expect("lifted");
         assert!(unsupported(&ir).is_none(), "{}", ir.render());

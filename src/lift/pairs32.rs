@@ -336,18 +336,16 @@ pub(super) fn remainder_arguments(
                 index: TEMPORARIES[0],
                 width: 64,
             },
-            value: left.clone(),
+            value: std::mem::replace(left, Expr::reg(TEMPORARIES[0], 64)),
         },
         Stmt::Assign {
             dest: crate::ir::RegRef {
                 index: TEMPORARIES[1],
                 width: 64,
             },
-            value: right.clone(),
+            value: std::mem::replace(right, Expr::reg(TEMPORARIES[1], 64)),
         },
     ];
-    *left = Expr::reg(TEMPORARIES[0], 64);
-    *right = Expr::reg(TEMPORARIES[1], 64);
     Some(captures)
 }
 

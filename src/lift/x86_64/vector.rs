@@ -267,19 +267,14 @@ fn lift_xmm(lifter: &mut Lifter, ins: &Instruction) -> Option<()> {
         preserve_compare(&mut lifter.last_compare, Write::Memory, &mut lifter.stmts);
         lifter.stmts.push(Stmt::Store { addr, value, width });
     };
-    // A VEX move of a 128-bit register, or a non-temporal one, moves as the
-    // plain one does; the IR keeps no bits above 128.
-    let narrow = (0..ins.op_count()).all(|index| {
-        ins.op_kind(index) != OpKind::Register
-            || !ins.op_register(index).is_ymm() && !ins.op_register(index).is_zmm()
-    });
+    // Normalize VEX and non-temporal moves to their plain equivalents.
     let mnemonic = match ins.mnemonic() {
-        Vmovdqu | Vmovdqu8 | Vmovdqu16 | Vmovdqu32 | Vmovdqu64 if narrow => Movdqu,
-        Vmovdqa | Vmovdqa32 | Vmovdqa64 | Vmovntdq | Movntdq if narrow => Movdqa,
-        Vmovups if narrow => Movups,
-        Vmovaps | Vmovntps | Movntps if narrow => Movaps,
-        Vmovupd if narrow => Movupd,
-        Vmovapd | Vmovntpd | Movntpd if narrow => Movapd,
+        Vmovdqu | Vmovdqu8 | Vmovdqu16 | Vmovdqu32 | Vmovdqu64 => Movdqu,
+        Vmovdqa | Vmovdqa32 | Vmovdqa64 | Vmovntdq | Movntdq => Movdqa,
+        Vmovups => Movups,
+        Vmovaps | Vmovntps | Movntps => Movaps,
+        Vmovupd => Movupd,
+        Vmovapd | Vmovntpd | Movntpd => Movapd,
         other => other,
     };
     match (mnemonic, ins.op0_kind(), ins.op1_kind()) {
@@ -288,7 +283,7 @@ fn lift_xmm(lifter: &mut Lifter, ins: &Instruction) -> Option<()> {
             Vpxor | Vpand | Vpor | Vpandn | Vxorps | Vxorpd | Vandps | Vandpd | Vorps | Vorpd,
             OpKind::Register,
             OpKind::Register,
-        ) if narrow && ins.op_count() == 3 => {
+        ) if ins.op_count() == 3 => {
             let (to, first) = (destination?, source?);
             let (second_low, second_high) = match ins.op2_kind() {
                 OpKind::Register => {
@@ -318,7 +313,7 @@ fn lift_xmm(lifter: &mut Lifter, ins: &Instruction) -> Option<()> {
         }
         // One 16-bit lane written from a general register or memory, or read
         // out to a general register.
-        (Pinsrw | Vpinsrw, OpKind::Register, _) if narrow => {
+        (Pinsrw | Vpinsrw, OpKind::Register, _) => {
             let to = destination?;
             let value_index = if mnemonic == Vpinsrw { 2 } else { 1 };
             let value = match ins.op_kind(value_index) {
@@ -354,7 +349,7 @@ fn lift_xmm(lifter: &mut Lifter, ins: &Instruction) -> Option<()> {
             Pextrb | Vpextrb | Pextrw | Vpextrw | Pextrd | Vpextrd | Pextrq | Vpextrq,
             OpKind::Register | OpKind::Memory,
             OpKind::Register,
-        ) if narrow => {
+        ) => {
             let Some(from) = source else {
                 return None;
             };

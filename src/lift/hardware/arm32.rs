@@ -9,6 +9,27 @@ use crate::ir::FunctionIr;
 use crate::ir::eval;
 use crate::loader;
 
+fn compile(assembly: &Path, executable: &Path, entry: &str) {
+    let build = Command::new("clang")
+        .args([
+            "--target=armv7a-linux-gnueabihf",
+            "-fuse-ld=lld",
+            "-nostdlib",
+            "-static",
+        ])
+        .arg(format!("-Wl,-e,{entry}"))
+        .arg(assembly)
+        .arg("-o")
+        .arg(executable)
+        .output()
+        .unwrap();
+    assert!(
+        build.status.success(),
+        "{}",
+        String::from_utf8_lossy(&build.stderr)
+    );
+}
+
 #[test]
 fn integer_instructions_match_arm_linux() {
     use std::fmt::Write as _;
@@ -105,24 +126,7 @@ fn integer_instructions_match_arm_linux() {
         let assembly = scratch.join(format!("{mode}.s"));
         let executable = scratch.join(format!("{mode}.elf"));
         fs::write(&assembly, source).unwrap();
-        let build = Command::new("clang")
-            .args([
-                "--target=armv7a-linux-gnueabihf",
-                "-fuse-ld=lld",
-                "-nostdlib",
-                "-static",
-                "-Wl,-e,_start",
-            ])
-            .arg(&assembly)
-            .arg("-o")
-            .arg(&executable)
-            .output()
-            .unwrap();
-        assert!(
-            build.status.success(),
-            "{}",
-            String::from_utf8_lossy(&build.stderr)
-        );
+        compile(&assembly, &executable, "_start");
         let output = super::docker_run(
             "linux/arm/v7",
             "alpine:3.20",
@@ -228,24 +232,7 @@ fn vector_loads_match_arm_linux() {
         let assembly = scratch.join(format!("{mode}.s"));
         let executable = scratch.join(format!("{mode}.elf"));
         fs::write(&assembly, source).unwrap();
-        let build = Command::new("clang")
-            .args([
-                "--target=armv7a-linux-gnueabihf",
-                "-fuse-ld=lld",
-                "-nostdlib",
-                "-static",
-                "-Wl,-e,_start",
-            ])
-            .arg(&assembly)
-            .arg("-o")
-            .arg(&executable)
-            .output()
-            .unwrap();
-        assert!(
-            build.status.success(),
-            "{}",
-            String::from_utf8_lossy(&build.stderr)
-        );
+        compile(&assembly, &executable, "_start");
         let output = super::docker_run(
             "linux/arm/v7",
             "alpine:3.20",
@@ -314,24 +301,7 @@ fn vector_load_printed_c_matches_arm_linux() {
         let fixture = scratch.join(format!("{mode}.s"));
         let image = scratch.join(format!("{mode}-fixture"));
         fs::write(&fixture, assembly).unwrap();
-        let build = Command::new("clang")
-            .args([
-                "--target=armv7a-linux-gnueabihf",
-                "-fuse-ld=lld",
-                "-nostdlib",
-                "-static",
-                "-Wl,-e,vector_copy",
-            ])
-            .arg(&fixture)
-            .arg("-o")
-            .arg(&image)
-            .output()
-            .unwrap();
-        assert!(
-            build.status.success(),
-            "{}",
-            String::from_utf8_lossy(&build.stderr)
-        );
+        compile(&fixture, &image, "vector_copy");
         let mut binary = crate::service::Binary::open(&image).unwrap();
         let address = binary.find("vector_copy").unwrap().addr;
         let code = binary.decompile(address, None, None).unwrap();

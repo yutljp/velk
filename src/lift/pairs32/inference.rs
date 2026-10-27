@@ -414,7 +414,8 @@ impl Evidence {
         {
             value.narrow = true;
         }
-        if runtime_result(image, *target) == Some(RuntimeResult::WordRemainder) {
+        let runtime = runtime_result(image, *target);
+        if runtime == Some(RuntimeResult::WordRemainder) {
             state.registers.insert(
                 1,
                 Value {
@@ -428,7 +429,7 @@ impl Evidence {
         if ret.is_none() {
             state.registers.remove(&0);
         }
-        if runtime_result(image, *target) == Some(RuntimeResult::WideRemainder) {
+        if runtime == Some(RuntimeResult::WideRemainder) {
             state.registers.insert(
                 2,
                 Value {

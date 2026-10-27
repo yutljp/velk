@@ -3,7 +3,7 @@
 //! registers, and must leave the same registers and satisfy the same
 //! conditions.
 //!
-//! Each case follows a flag-setting compare, so an instruction that reads
+//! Each random instruction follows a flag-setting compare, so one that reads
 //! the flags reads ones the lifter knows.
 
 #[cfg(all(target_arch = "aarch64", target_os = "macos"))]

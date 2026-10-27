@@ -1309,12 +1309,7 @@ impl Lifter<'_> {
         let (Some(left), Some(right)) = (operand(left), operand(right)) else {
             return None;
         };
-        let Some(carry) = self
-            .flags
-            .as_ref()
-            .map_or(Test::Unknown, |flags| flags.test(Cond::Cs, Isa::Arm32))
-            .select(Expr::constant(1), Expr::constant(0))
-        else {
+        let Some(carry) = carry else {
             return None;
         };
         self.assign_temp(carry);
