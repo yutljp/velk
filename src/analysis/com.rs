@@ -105,10 +105,12 @@ pub(super) fn recover_i386(
     {
         return;
     }
+    let supported_type =
+        |ty: &CType| ty.is_pointer() || ty.integer().is_some_and(|(bits, _)| bits <= 32);
     let mut parameters = HashMap::new();
     for (position, (_, ty)) in types.params.iter().enumerate() {
         let Some(ty) = ty else { return };
-        if !ty.is_pointer() && !ty.integer().is_some_and(|(bits, _)| bits <= 32) {
+        if !supported_type(ty) {
             return;
         }
         let Ok(layout) = &types.param_layouts[position] else {
@@ -203,16 +205,10 @@ pub(super) fn recover_i386(
                 else {
                     return;
                 };
-                if !ret.is_pointer()
-                    && *ret != CType::Void
-                    && !ret.integer().is_some_and(|(bits, _)| bits <= 32)
-                {
+                if *ret != CType::Void && !supported_type(&ret) {
                     return;
                 }
-                if params
-                    .iter()
-                    .any(|ty| !ty.is_pointer() && !ty.integer().is_some_and(|(bits, _)| bits <= 32))
-                {
+                if params.iter().any(|ty| !supported_type(ty)) {
                     return;
                 }
                 count = Some(params.len());

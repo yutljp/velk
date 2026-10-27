@@ -618,7 +618,6 @@ fn parameter_types(
 }
 
 fn signed_parameters(blocks: &[Block], origins: &Origins) -> HashSet<u16> {
-    // Signedness is visible only in comparison conditions.
     let mut signed_args: HashSet<u16> = HashSet::new();
     origins.walk(blocks, &mut |stmt, origin| {
         let mut signed: HashSet<u16> = HashSet::new();
@@ -1360,15 +1359,7 @@ fn copy_origin(expr: &Expr, origin: &HashMap<u16, u16>) -> Option<u16> {
 }
 
 fn base_origin(expr: &Expr, origin: &HashMap<u16, u16>) -> Option<u16> {
-    match expr {
-        Expr::Reg { index, .. } => origin.get(index).copied(),
-        Expr::Bin {
-            op: crate::ir::BinOp::Add | crate::ir::BinOp::Sub,
-            lhs,
-            ..
-        } => base_origin(lhs, origin),
-        _ => None,
-    }
+    base_register(expr).and_then(|index| origin.get(&index).copied())
 }
 
 /// How an operation reads its arguments: as floats (`None`), or as lanes

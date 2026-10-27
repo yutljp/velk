@@ -251,7 +251,6 @@ fn vector_values(ssa: &Ssa) -> HashSet<u16> {
             }
         }
     }
-    let phis: Vec<&Phi> = ssa.phis.iter().flatten().collect();
     loop {
         let before = vectors.len();
         for (value, reads) in &derived {
@@ -259,7 +258,7 @@ fn vector_values(ssa: &Ssa) -> HashSet<u16> {
                 vectors.insert(*value);
             }
         }
-        for phi in &phis {
+        for phi in ssa.phis.iter().flatten() {
             if half(phi.value) && phi.args.iter().any(|arg| vectors.contains(arg)) {
                 vectors.insert(phi.value);
             }

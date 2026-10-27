@@ -7,15 +7,7 @@ pub struct Recovered {
     pub index: Expr,
     pub cases: Vec<(i64, u64)>,
     pub default: Option<u64>,
-    /// Where the table lies and how many bytes it takes, which the tests
-    /// read the cases' targets from.
-    #[cfg_attr(
-        not(test),
-        allow(
-            dead_code,
-            reason = "The table location is inspected only by recovery tests."
-        )
-    )]
+    /// The table location and size, used to remove decoded table data.
     pub table: (u64, u64),
 }
 
@@ -98,13 +90,7 @@ pub(crate) fn bound(block: &Block) -> Option<(i64, Option<u64>, i64, Expr)> {
     };
     // The bounds check may test `x - k`; folding `k` into the case values
     // lets the switch read `x` with the source's own case values.
-    let mut environment = std::collections::HashMap::new();
-    for stmt in &block.stmts {
-        if let Stmt::Assign { dest, value } = stmt {
-            let resolved = resolve(value, &environment);
-            environment.insert(dest.index, resolved);
-        }
-    }
+    let environment = environment_from(block, std::collections::HashMap::new());
     let resolved = cancel(resolve(lhs, &environment));
     let checked = unwrap_mask(&resolved);
     let (minimum, switch_base) = match checked {
@@ -380,14 +366,9 @@ pub(crate) fn addressed(image: &Image) -> std::collections::HashSet<u64> {
                 }
             }
             crate::loader::Isa::AArch64 => {
-                let words: Vec<u32> = bytes
-                    .as_chunks::<4>()
-                    .0
-                    .iter()
-                    .map(|chunk| u32::from_le_bytes(*chunk))
-                    .collect();
+                let words = bytes.as_chunks::<4>().0;
                 for (index, pair) in words.windows(2).enumerate() {
-                    let (adrp, add) = (pair[0], pair[1]);
+                    let (adrp, add) = (u32::from_le_bytes(pair[0]), u32::from_le_bytes(pair[1]));
                     // ADRP xd, then ADD xd', xd, #imm12 without a shift.
                     if adrp & 0x9f00_0000 != 0x9000_0000
                         || add & 0xffc0_0000 != 0x9100_0000

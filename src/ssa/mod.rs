@@ -78,88 +78,27 @@ fn named(expr: &Expr, out: &mut HashSet<u16>) {
 
 fn explicit_reads(stmt: &Stmt) -> HashSet<u16> {
     let mut out = HashSet::new();
-    match stmt {
-        Stmt::Machine { inputs, .. } => {
-            for input in inputs {
-                named(input, &mut out);
-            }
-        }
-        Stmt::Assign { value, .. } | Stmt::Ret { value } => named(value, &mut out),
-        Stmt::Store { addr, value, .. } => {
-            named(addr, &mut out);
-            named(value, &mut out);
-        }
-        Stmt::Brif { lhs, rhs, .. } => {
-            named(lhs, &mut out);
-            named(rhs, &mut out);
-        }
-        Stmt::BrIndirect { target } => named(target, &mut out),
-        Stmt::Switch { index, .. } => named(index, &mut out),
-        Stmt::Call { through, args, .. } => {
-            for value in through.iter().chain(args.iter().flatten()) {
-                named(value, &mut out);
-            }
-        }
-        _ => {}
+    for operand in stmt.operands() {
+        named(operand, &mut out);
     }
     out
 }
 
 /// Renames each register an expression reads by `rename`, keeping widths.
 fn rename_expr(expr: &mut Expr, rename: &mut dyn FnMut(u16) -> u16) {
-    match expr {
-        Expr::Reg { index, .. } => *index = rename(*index),
-        Expr::Const(_) => {}
-        Expr::Bin { lhs, rhs, .. } => {
-            rename_expr(lhs, rename);
-            rename_expr(rhs, rename);
-        }
-        Expr::Load { addr, .. } => rename_expr(addr, rename),
-        Expr::SignExtend { value, .. } => rename_expr(value, rename),
-        Expr::Select {
-            lhs,
-            rhs,
-            then,
-            els,
-            ..
-        } => {
-            for expr in [lhs, rhs, then, els] {
-                rename_expr(expr, rename);
-            }
-        }
-        Expr::Apply { args, .. } => {
-            for arg in args {
-                rename_expr(arg, rename);
-            }
+    if let Expr::Reg { index, .. } = expr {
+        *index = rename(*index);
+    } else {
+        for child in crate::ir::visit::children_mut(expr) {
+            rename_expr(child, rename);
         }
     }
 }
 
 /// Renames the registers a statement reads, not the one it assigns.
 fn rename_reads(stmt: &mut Stmt, rename: &mut dyn FnMut(u16) -> u16) {
-    match stmt {
-        Stmt::Machine { inputs, .. } => {
-            for input in inputs {
-                rename_expr(input, rename);
-            }
-        }
-        Stmt::Assign { value, .. } | Stmt::Ret { value } => rename_expr(value, rename),
-        Stmt::Store { addr, value, .. } => {
-            rename_expr(addr, rename);
-            rename_expr(value, rename);
-        }
-        Stmt::Brif { lhs, rhs, .. } => {
-            rename_expr(lhs, rename);
-            rename_expr(rhs, rename);
-        }
-        Stmt::BrIndirect { target } => rename_expr(target, rename),
-        Stmt::Switch { index, .. } => rename_expr(index, rename),
-        Stmt::Call { through, args, .. } => {
-            for value in through.iter_mut().chain(args.iter_mut().flatten()) {
-                rename_expr(value, rename);
-            }
-        }
-        _ => {}
+    for operand in stmt.operands_mut() {
+        rename_expr(operand, rename);
     }
 }
 
@@ -578,7 +517,7 @@ pub fn count_variadic_arguments(ir: &mut FunctionIr, image: &crate::loader::Imag
     }
 }
 
-/// The NUL-terminated text at `address`, within its section.
+/// The text at `address`, up to a NUL byte or 256 bytes within its section.
 pub(crate) fn c_string(image: &crate::loader::Image, address: u64) -> Option<String> {
     let section = image.section_at(address)?;
     let available = (section.vaddr + section.size)

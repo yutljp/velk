@@ -122,7 +122,7 @@ fn rounded(value: u64, alignment: u64) -> Result<u64, AbiIssue> {
         .ok_or(AbiIssue::UnknownLayout)
 }
 
-fn result(profile: AbiProfile, classified: &ClassifiedValue) -> Result<ValueAbi, AbiIssue> {
+fn result_binding(profile: AbiProfile, classified: &ClassifiedValue) -> Result<ValueAbi, AbiIssue> {
     let passing = match &classified.passing {
         ValueClass::Registers(pieces) => {
             let integers: &[u16] = match profile {
@@ -350,9 +350,9 @@ pub(crate) fn allocate(
     let result = returned
         .map(|layout| {
             let representative = canonical(layout)?;
-            let binding = result(profile, &classify(profile, &representative)?)?;
+            let binding = result_binding(profile, &classify(profile, &representative)?)?;
             for alternative in alternatives(layout)? {
-                let alternative = result(profile, &classify(profile, &alternative)?)?;
+                let alternative = result_binding(profile, &classify(profile, &alternative)?)?;
                 if !same_binding(&binding, &alternative) {
                     return Err(AbiIssue::UnknownLayout);
                 }

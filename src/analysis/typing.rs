@@ -204,14 +204,14 @@ impl SignEvidence {
 }
 
 /// The last value assigned to a register anywhere in the body.
-fn last_definition(ir: &FunctionIr, index: u16) -> Option<crate::ir::Expr> {
+fn last_definition(ir: &FunctionIr, index: u16) -> Option<&crate::ir::Expr> {
     let mut found = None;
     for block in &ir.blocks {
         for stmt in &block.stmts {
             if let crate::ir::Stmt::Assign { dest, value } = stmt
                 && dest.index == index
             {
-                found = Some(value.clone());
+                found = Some(value);
             }
         }
     }
@@ -231,7 +231,7 @@ fn returns_wide(
     };
     // Look through a wide register read to its last definition: a 32-bit
     // division is not wide just because it lands in a 64-bit register.
-    let mut resolved = value.clone();
+    let mut resolved = value;
     if let crate::ir::Expr::Reg { index, width } = value
         && *width > 32
         && let Some(definition) = last_definition(ir, *index)
@@ -239,7 +239,7 @@ fn returns_wide(
         resolved = definition;
     }
     let mut wide: Vec<u16> = Vec::new();
-    collect_wide_regs(&resolved, false, &mut wide);
+    collect_wide_regs(resolved, false, &mut wide);
     wide.iter()
         .any(|index| *index == WIDE_VALUE || !narrow_only(ir, *index, outputs, entry, demands))
 }

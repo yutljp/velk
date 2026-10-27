@@ -1142,7 +1142,7 @@ fn a_loop_back_to_the_entry_joins_the_entry_value() {
 }
 
 #[test]
-fn a_partial_write_only_its_low_byte_is_read_of_drops_the_rest() {
+fn partial_write_drops_unread_upper_bits() {
     // r11b = 4; store8(r11): the bits r11 kept are never read.
     let keep = Expr::bin(BinOp::And, Expr::reg(11, 64), Expr::Const(!0xff));
     let mut ir = FunctionIr::single_block(

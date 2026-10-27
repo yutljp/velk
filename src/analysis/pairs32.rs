@@ -48,9 +48,10 @@ fn place_named_parameters(
     let mut registers = Vec::new();
     let mut stack = Vec::new();
     let mut reads = Vec::new();
-    for (position, ((name, _), (location, wide))) in parameters.iter().zip(locations).enumerate() {
+    for (position, (((name, _), ty), (location, wide))) in
+        parameters.iter().zip(params).zip(locations).enumerate()
+    {
         let name = name.clone().unwrap_or_else(|| format!("a{position}"));
-        let ty = params[position].clone();
         match location {
             Location::Register(index) => {
                 let parameter = if wide {

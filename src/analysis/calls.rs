@@ -37,6 +37,18 @@ pub(crate) fn declaration(image: &Image, address: u64) -> Answer {
 }
 
 #[cfg(test)]
+fn physical_outputs(outputs: &[crate::ir::CallOutput]) -> bool {
+    !outputs.iter().enumerate().any(|(at, output)| {
+        output.dest.index != output.register
+            || output.dest.width != 64
+            || !crate::arch::machine_registers().contains(&output.register)
+            || outputs[..at].iter().any(|before| {
+                before.register == output.register || before.dest.index == output.dest.index
+            })
+    })
+}
+
+#[cfg(test)]
 pub(crate) fn attach_outputs(image: &Image, blocks: &mut [crate::ir::Block]) {
     if image.go {
         return;
@@ -60,14 +72,7 @@ pub(crate) fn attach_outputs(image: &Image, blocks: &mut [crate::ir::Block]) {
             continue;
         }
         // This hook precedes SSA; a renamed or shared destination is not a physical output.
-        if outputs.iter().enumerate().any(|(at, output)| {
-            output.dest.index != output.register
-                || output.dest.width != 64
-                || !crate::arch::machine_registers().contains(&output.register)
-                || outputs[..at].iter().any(|before| {
-                    before.register == output.register || before.dest.index == output.dest.index
-                })
-        }) {
+        if !physical_outputs(outputs) {
             continue;
         }
         let Ok(Some(declaration)) = declaration(image, *address) else {
@@ -126,14 +131,7 @@ pub(crate) fn attach_inputs(image: &Image, blocks: &mut [crate::ir::Block]) {
         if abi.is_some() || *convention != expected {
             continue;
         }
-        if outputs.iter().enumerate().any(|(at, output)| {
-            output.dest.index != output.register
-                || output.dest.width != 64
-                || !crate::arch::machine_registers().contains(&output.register)
-                || outputs[..at].iter().any(|before| {
-                    before.register == output.register || before.dest.index == output.dest.index
-                })
-        }) {
+        if !physical_outputs(outputs) {
             continue;
         }
         let Ok(Some(record)) = declaration(image, *target) else {
@@ -388,7 +386,7 @@ pub(crate) fn printable_signatures(
         let signature = &declaration.signature;
         // A call of the function itself is printed with the types its
         // definition is printed with, when those are the declared ones.
-        let own = *target != ir.addr
+        let compatible = *target != ir.addr
             || (ir.ret_type == signature.ret
                 && ir.params.len() == signature.params.len()
                 && ir
@@ -396,7 +394,7 @@ pub(crate) fn printable_signatures(
                     .iter()
                     .zip(&signature.params)
                     .all(|(param, (_, ty))| param.ty == *ty));
-        if own
+        if compatible
             && args
                 .as_ref()
                 .is_some_and(|args| args.len() == signature.params.len())

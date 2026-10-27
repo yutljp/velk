@@ -321,7 +321,7 @@ pub fn propagate(ssa: &mut Ssa) -> bool {
     let decided: HashMap<usize, Option<u64>> = (0..count)
         .filter(|block| executable[*block])
         .filter_map(|block| {
-            let edges: Vec<usize> = ssa.successors[block].clone();
+            let edges = &ssa.successors[block];
             let live: Vec<usize> = edges
                 .iter()
                 .copied()

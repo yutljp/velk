@@ -74,18 +74,18 @@ pub(crate) fn recover(ir: &mut FunctionIr) {
                 }
             }
             None if !direct || integer => continue,
-            None => match layout(&copies(ir, index), &touches) {
-                Some(fields) => Structure {
-                    name,
-                    fields,
-                    size: None,
-                    elements: copies(ir, index)
-                        .into_iter()
-                        .filter(|copy| *copy != index)
-                        .collect(),
-                },
-                None => continue,
-            },
+            None => {
+                let aliases = copies(ir, index);
+                match layout(&aliases, &touches) {
+                    Some(fields) => Structure {
+                        name,
+                        fields,
+                        size: None,
+                        elements: aliases.into_iter().filter(|copy| *copy != index).collect(),
+                    },
+                    None => continue,
+                }
+            }
         };
         ir.params[at].ty = CType::pointer_to(CType::Named(format!("struct {}", structure.name)));
         if structure.size.is_none() {
@@ -821,7 +821,7 @@ impl Holders {
     /// Whether `value` adds something to a holder of the parameter.
     fn adds_to(&self, value: &Expr) -> bool {
         let mut terms = Vec::new();
-        flatten(value, false, &mut terms);
+        crate::ir::visit::sum_terms(value, false, &mut terms);
         terms
             .iter()
             .any(|(term, negative)| !negative && self.base(term).is_some())
@@ -831,7 +831,7 @@ impl Holders {
     /// constant, or `None` for any other address.
     fn split(&self, addr: &Expr) -> Option<Split> {
         let mut terms = Vec::new();
-        flatten(addr, false, &mut terms);
+        crate::ir::visit::sum_terms(addr, false, &mut terms);
         let mut base = None;
         let mut scales = Vec::new();
         let mut constant: i64 = 0;
@@ -883,12 +883,6 @@ impl Holders {
     }
 }
 
-/// The terms of a sum, each with whether it is subtracted; only constants
-/// are.
-fn flatten<'e>(expr: &'e Expr, negative: bool, out: &mut Vec<(&'e Expr, bool)>) {
-    crate::ir::visit::sum_terms(expr, negative, out);
-}
-
 /// Puts back into the addresses computed from `param` each register they
 /// add that holds a scaled index, `i << n`, `i * k` or `i + i * k`, set
 /// once where `i` reads as it does at the address, and drops the registers
@@ -928,7 +922,7 @@ fn inline_indexes(ir: &FunctionIr, param: u16, direct: bool) -> Option<Vec<crate
     let same = |index: &Expr, (block, position): (usize, usize), (at, used): (usize, usize)| {
         let mut reads = HashSet::new();
         crate::ir::visit::collect_reads(index, &mut reads);
-        let memory = reads_memory(index);
+        let memory = crate::passes::copies::reads_memory(index);
         if at == block && used > position {
             return blocks[at].stmts[position + 1..used].iter().all(|stmt| {
                 reads.is_disjoint(&crate::ir::visit::statement_registers(stmt).0)
@@ -1013,13 +1007,6 @@ fn repeated(value: &Expr) -> Option<(&Expr, u64)> {
             let (index, times) = scaled(other)?;
             (index == one.as_ref()).then_some((one.as_ref(), times.wrapping_add(1)))
         })
-}
-
-fn reads_memory(expr: &Expr) -> bool {
-    matches!(expr, Expr::Load { .. })
-        || crate::ir::visit::children(expr)
-            .into_iter()
-            .any(reads_memory)
 }
 
 /// Replaces, in each sum adding to a holder of the parameter, the terms

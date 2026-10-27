@@ -54,7 +54,6 @@ pub(crate) fn blocks(image: &Image, function: &Function) -> Result<Vec<Block>, L
 }
 
 pub(crate) fn resolve(expr: &Expr, values: &std::collections::HashMap<u16, Expr>) -> Expr {
-    let mut resolved = expr.clone();
     if let Expr::Reg { index, width } = expr {
         if let Some(Expr::Const(value)) = values.get(index) {
             return Expr::Const(if *width >= 64 {
@@ -63,8 +62,9 @@ pub(crate) fn resolve(expr: &Expr, values: &std::collections::HashMap<u16, Expr>
                 *value & ((1u64 << width) - 1)
             });
         }
-        return resolved;
+        return expr.clone();
     }
+    let mut resolved = expr.clone();
     for child in crate::ir::visit::children_mut(&mut resolved) {
         *child = resolve(child, values);
     }

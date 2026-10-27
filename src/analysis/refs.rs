@@ -230,7 +230,7 @@ pub fn collect(ir: &FunctionIr, image: &Image) -> Vec<Reference> {
                     section: section.name.clone(),
                     text: Some(text),
                     pointer: None,
-                    guid: super::prototypes::guid_at(image, *addr),
+                    guid: None,
                 });
             }
         }

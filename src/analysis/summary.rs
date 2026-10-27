@@ -464,14 +464,10 @@ fn settle(
     }
     // Settle register changes before recovering arguments across calls in
     // the cycle, which may preserve argument registers.
-    let clobbers = if cyclic {
-        settle_clobbers(image, part, &callers, outside)
-    } else {
-        HashMap::new()
-    };
+    let clobbers = settle_clobbers(image, part, &callers, outside);
     let mut current: HashMap<u64, Summary> = part
         .iter()
-        .map(|addr| (*addr, assumed(image, *addr, cyclic)))
+        .map(|addr| (*addr, assumed(image, *addr, /* cyclic */ true)))
         .collect();
     // Start from what can only grow: no arguments, and returning unless the
     // name says otherwise; a pass can only add arguments and remove
@@ -505,7 +501,13 @@ fn settle(
                 summary
             };
             crate::parallel::map(&pending, |addr| {
-                compute(image, *addr, &lookup, seen.get(addr), !cyclic)
+                compute(
+                    image,
+                    *addr,
+                    &lookup,
+                    seen.get(addr),
+                    /* with_clobbers */ false,
+                )
             })
         };
         let mut next = Vec::new();
@@ -516,7 +518,7 @@ fn settle(
             let merged = merge(current[addr], found);
             // A caller reads only what its lift and its narrow return do.
             let heard = |summary: Summary| (calling(summary), summary.narrow_return);
-            if cyclic && heard(merged) != heard(current[addr]) {
+            if heard(merged) != heard(current[addr]) {
                 next.extend(callers.get(addr).into_iter().flatten());
             }
             current.insert(*addr, merged);
