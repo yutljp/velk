@@ -376,10 +376,10 @@ pub(super) fn prepare(ir: &mut FunctionIr, symbols: &Symbols) -> Option<Plan> {
     }) {
         return None;
     }
-    let pointer_regs: HashSet<_> = pointers.iter().map(|binding| binding.register).collect();
+    let pointer_registers: HashSet<_> = pointers.iter().map(|binding| binding.register).collect();
     if rewritten.params.iter().any(|param| {
         !captured.contains(&param.index)
-            && !pointer_regs.contains(&param.index)
+            && !pointer_registers.contains(&param.index)
             && demanded.get(&param.index).copied().unwrap_or(0) != 0
     }) {
         return None;

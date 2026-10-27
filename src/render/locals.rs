@@ -85,7 +85,7 @@ pub(crate) struct Locals {
     pub(super) views: HashMap<String, Vec<(u8, String)>>,
     pub(super) parameter_addresses: HashMap<(String, u8), String>,
     pub(super) parameter_reads: HashMap<(String, u8), super::expr::ParameterRead>,
-    pub(super) decls: Vec<Local>,
+    pub(super) declarations: Vec<Local>,
 }
 
 impl Locals {
@@ -112,7 +112,7 @@ impl Locals {
             }
         }
         ends.retain(|end| !starts.contains(end));
-        for local in &self.decls {
+        for local in &self.declarations {
             if local.size == 0 {
                 continue;
             }
@@ -122,7 +122,7 @@ impl Locals {
             if !ends.contains(&end) {
                 continue;
             }
-            for next in self.decls.iter().filter(|next| next.slot == end) {
+            for next in self.declarations.iter().filter(|next| next.slot == end) {
                 for (key, name) in &self.slots {
                     if *name == next.name {
                         self.parts.insert(key.clone(), local.byte_address(end));
@@ -284,7 +284,7 @@ pub(super) fn stack_locals_with_roles(
         .iter()
         .filter_map(|(slot, ..)| *slot)
         .fold(lowest_frame(ir, frames, sp).min(ir.frame_bottom), i64::min);
-    let mut lowered: Vec<(i64, i64)> = Vec::new();
+    let mut merged_ranges: Vec<(i64, i64)> = Vec::new();
     let argument_accesses = stack_arguments(ir, sp, frames);
     let in_parameter = |slot: i64| {
         ir.stack_params.iter().any(|param| {
@@ -292,9 +292,9 @@ pub(super) fn stack_locals_with_roles(
                 .is_some_and(|within| within >= 0 && (within as u64) < param.size)
         })
     };
-    let walked =
+    let frame_pointer_indexed =
         !ir.variadic && !buffers.is_empty() && indexed::offsets_frame_pointer(ir, sp, frames);
-    let frame_end = if walked {
+    let frame_end = if frame_pointer_indexed {
         // An induction pointer can advance past the last access before its
         // exit test. Keep such addresses in the same object as the frame.
         argument_accesses
@@ -312,10 +312,10 @@ pub(super) fn stack_locals_with_roles(
     } else {
         0
     };
-    if walked && bottom < 0 {
+    if frame_pointer_indexed && bottom < 0 {
         // Separate slots do not establish separate objects when a pointer
         // reaches them at offsets whose bounds have not been proved.
-        lowered.push((bottom, frame_end));
+        merged_ranges.push((bottom, frame_end));
     }
     for (slot, _, width, signed) in &accesses {
         let Some(slot) = slot else { continue };
@@ -361,7 +361,7 @@ pub(super) fn stack_locals_with_roles(
             && signed.is_none()
         {
             // An escaping pointer can advance across other local objects.
-            lowered.push((bottom, 0));
+            merged_ranges.push((bottom, 0));
             0
         } else {
             proven.unwrap_or(next)
@@ -389,10 +389,10 @@ pub(super) fn stack_locals_with_roles(
             )
             && start < *slot
         {
-            lowered.push((start, end.max(slot.saturating_add(1))));
+            merged_ranges.push((start, end.max(slot.saturating_add(1))));
         }
     }
-    for (start, end) in lowered {
+    for (start, end) in merged_ranges {
         let local = slot_names.entry(start).or_insert_with(|| Local {
             name: String::new(),
             slot: start,
@@ -405,11 +405,11 @@ pub(super) fn stack_locals_with_roles(
         });
         local.size = local.size.max(end.saturating_sub(start));
     }
-    let within = merge_overlapping_slots(&mut slot_names, &sign_loads, &zero_loads);
+    let enclosing_slots = merge_overlapping_slots(&mut slot_names, &sign_loads, &zero_loads);
     type_storage(ir, sp, frames, variables, &mut slot_names);
-    build_regions(&mut slot_names, &within, &accesses);
-    slot_names.retain(|slot, _| !within.contains_key(slot));
-    let order = declaration_order(&accesses, &within, &slot_names);
+    build_regions(&mut slot_names, &enclosing_slots, &accesses);
+    slot_names.retain(|slot, _| !enclosing_slots.contains_key(slot));
+    let order = declaration_order(&accesses, &enclosing_slots, &slot_names);
     name_storage(
         ir,
         symbols,
@@ -425,7 +425,7 @@ pub(super) fn stack_locals_with_roles(
             let Some(slot) = slot else {
                 return None;
             };
-            let outer = within.get(slot).copied().unwrap_or(*slot);
+            let outer = enclosing_slots.get(slot).copied().unwrap_or(*slot);
             let Some(local) = slot_names.get(&outer) else {
                 return None;
             };
@@ -457,7 +457,7 @@ pub(super) fn stack_locals_with_roles(
     let mut views: HashMap<String, Vec<(u8, String)>> = HashMap::new();
     for (key, slot) in &rendered {
         let Some(slot) = slot else { continue };
-        let outer = within.get(slot).copied().unwrap_or(*slot);
+        let outer = enclosing_slots.get(slot).copied().unwrap_or(*slot);
         let Some(local) = slot_names.get(&outer) else {
             continue;
         };
@@ -494,10 +494,10 @@ pub(super) fn stack_locals_with_roles(
     // first byte, not from a field C would scale it by or bound it to.
     for (key, slot) in &rendered {
         let Some(slot) = slot else { continue };
-        if !indexed.contains(slot) && !(walked && buffers.contains(slot)) {
+        if !indexed.contains(slot) && !(frame_pointer_indexed && buffers.contains(slot)) {
             continue;
         }
-        let outer = within.get(slot).copied().unwrap_or(*slot);
+        let outer = enclosing_slots.get(slot).copied().unwrap_or(*slot);
         let Some(local) = slot_names
             .get(&outer)
             .filter(|local| !local.fields.is_empty())
@@ -570,7 +570,7 @@ pub(super) fn stack_locals_with_roles(
                         .slot
                         .checked_add(local.size.max(i64::from(local.width)))
                         .is_some_and(|end| *slot <= end)
-                    && !within.contains_key(&local.slot)
+                    && !enclosing_slots.contains_key(&local.slot)
             })
             .min_by_key(|local| local.slot)
         else {
@@ -657,7 +657,7 @@ pub(super) fn stack_locals_with_roles(
             if !parts.contains_key(key) {
                 return None;
             }
-            let outer = within.get(slot).copied().unwrap_or(*slot);
+            let outer = enclosing_slots.get(slot).copied().unwrap_or(*slot);
             let Some(local) = slot_names.get(&outer).filter(|local| local.size > 0) else {
                 return None;
             };
@@ -685,7 +685,7 @@ pub(super) fn stack_locals_with_roles(
         views,
         parameter_addresses,
         parameter_reads,
-        decls: order
+        declarations: order
             .into_iter()
             .filter_map(|slot| slot_names.remove(&slot))
             .collect(),
@@ -1223,7 +1223,9 @@ fn buffer_extents(
                     {
                         symbols.import_name(slot)
                     }
-                    None => target.and_then(|target| symbols.semantic_function(target)),
+                    None => {
+                        target.and_then(|target| symbols.original_or_printed_function_name(target))
+                    }
                     _ => None,
                 };
                 let name = name.map(|name| name.trim_start_matches('_'));
@@ -2248,8 +2250,8 @@ mod tests {
             position: 0,
         });
         let locals = stack_locals(&ir, &[Some(0)], &Default::default(), &Default::default());
-        assert_eq!(locals.decls.len(), 1);
-        let local = &locals.decls[0];
+        assert_eq!(locals.declarations.len(), 1);
+        let local = &locals.declarations[0];
         let parameter = local.byte_address(8);
         assert!(!locals.parts.values().any(|address| *address == parameter));
         assert!(!locals.bounds.values().any(|address| *address == parameter));

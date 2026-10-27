@@ -10,7 +10,7 @@ pub(super) enum Statement {
     Branch(u64),
 }
 
-pub(super) fn statement(stmt: &Stmt) -> Option<Statement> {
+pub(super) fn comparable_statement(stmt: &Stmt) -> Option<Statement> {
     match stmt {
         Stmt::Assign { dest, value } => Some(Statement::Assign(*dest, value.clone())),
         Stmt::Store { addr, value, width } => {
@@ -40,7 +40,7 @@ pub(in crate::render) fn merged(ir: &FunctionIr) -> Option<FunctionIr> {
     {
         return None;
     }
-    let shared = super::motion::shared(ir);
+    let shared = super::motion::share_assignments(ir);
     let ir = shared.as_ref().unwrap_or(ir);
     // Intern suffixes from the end, so each statement is visited once.
     let mut suffixes = HashMap::new();
@@ -54,7 +54,7 @@ pub(in crate::render) fn merged(ir: &FunctionIr) -> Option<FunctionIr> {
         }
         let mut suffix = 0;
         for (position, stmt) in block.stmts.iter().enumerate().rev() {
-            let Some(key) = statement(stmt) else {
+            let Some(key) = comparable_statement(stmt) else {
                 break;
             };
             // Only the final statement may transfer control.

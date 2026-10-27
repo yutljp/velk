@@ -250,7 +250,7 @@ fn same_call(left: &Stmt, right: &Stmt) -> bool {
 }
 
 fn same_body(left: &[Node], right: &[Node], merge_calls: bool) -> bool {
-    use crate::render::structure::merge_exits::statement;
+    use crate::render::structure::merge_exits::comparable_statement;
 
     left.len() == right.len()
         && left
@@ -262,10 +262,10 @@ fn same_body(left: &[Node], right: &[Node], merge_calls: bool) -> bool {
                     Node::Stmt(right @ Stmt::Call { abi: None, .. }),
                 ) if merge_calls => same_call(left, right),
                 (Node::Stmt(left), Node::Stmt(right)) => {
-                    let Some(left) = statement(left) else {
+                    let Some(left) = comparable_statement(left) else {
                         return false;
                     };
-                    Some(left) == statement(right)
+                    Some(left) == comparable_statement(right)
                 }
                 (Node::Break, Node::Break) => true,
                 (
@@ -321,7 +321,7 @@ fn same_body(left: &[Node], right: &[Node], merge_calls: bool) -> bool {
 
 /// Shares identical label-free case bodies, straight-line tails, and successive case prefixes.
 pub(crate) fn share_switch_tails(nodes: &mut [Node], merge_calls: bool) {
-    use crate::render::structure::merge_exits::{Statement, statement};
+    use crate::render::structure::merge_exits::{Statement, comparable_statement};
 
     let key = |body: &[Node]| -> Option<Vec<Option<Statement>>> {
         if !ends(body, true) {
@@ -332,7 +332,7 @@ pub(crate) fn share_switch_tails(nodes: &mut [Node], merge_calls: bool) {
             match node {
                 Node::Break if position + 1 == body.len() => out.push(None),
                 Node::Stmt(stmt) => {
-                    let Some(stmt) = statement(stmt) else {
+                    let Some(stmt) = comparable_statement(stmt) else {
                         return None;
                     };
                     if matches!(stmt, Statement::Branch(_))
@@ -437,7 +437,7 @@ pub(crate) fn share_switch_tails(nodes: &mut [Node], merge_calls: bool) {
 
 /// Consecutive cases that extend the preceding body can share its statements.
 fn share_case_prefixes(node: &Node) -> Option<Node> {
-    use crate::render::structure::merge_exits::statement;
+    use crate::render::structure::merge_exits::comparable_statement;
 
     let Node::Switch {
         index: index @ Expr::Reg {
@@ -485,7 +485,7 @@ fn share_case_prefixes(node: &Node) -> Option<Node> {
             if matches!(stmt, Stmt::Assign { dest, .. } if dest.index == *register) {
                 return None;
             }
-            let Some(key) = statement(stmt) else {
+            let Some(key) = comparable_statement(stmt) else {
                 return None;
             };
             keys.push(key);
@@ -537,13 +537,13 @@ fn share_case_prefixes(node: &Node) -> Option<Node> {
 pub(crate) fn absorb_switch_tests(nodes: &mut Vec<Node>) {
     let mut reads = HashMap::new();
     count_reads(nodes, &mut reads);
-    absorb_in(nodes, &reads);
+    absorb_switch_tests_in_nodes(nodes, &reads);
 }
 
-fn absorb_in(nodes: &mut Vec<Node>, reads: &HashMap<u16, usize>) {
+fn absorb_switch_tests_in_nodes(nodes: &mut Vec<Node>, reads: &HashMap<u16, usize>) {
     for node in nodes.iter_mut() {
         for body in children_mut(node) {
-            absorb_in(body, reads);
+            absorb_switch_tests_in_nodes(body, reads);
         }
     }
     let mut index = 0;
@@ -677,28 +677,28 @@ fn narrowed(expr: &Expr) -> Expr {
 
 /// How many times the code reads each register.
 fn count_reads(nodes: &[Node], counts: &mut HashMap<u16, usize>) {
-    fn expr(value: &Expr, counts: &mut HashMap<u16, usize>) {
+    fn count_expr_reads(value: &Expr, counts: &mut HashMap<u16, usize>) {
         if let Expr::Reg { index, .. } = value {
             *counts.entry(*index).or_default() += 1;
         }
         for child in crate::ir::visit::children(value) {
-            expr(child, counts);
+            count_expr_reads(child, counts);
         }
     }
     for node in nodes {
         match node {
             Node::Stmt(stmt) => {
                 for operand in stmt.operands() {
-                    expr(operand, counts);
+                    count_expr_reads(operand, counts);
                 }
             }
             Node::If { lhs, rhs, .. }
             | Node::DoWhile { lhs, rhs, .. }
             | Node::While { lhs, rhs, .. } => {
-                expr(lhs, counts);
-                expr(rhs, counts);
+                count_expr_reads(lhs, counts);
+                count_expr_reads(rhs, counts);
             }
-            Node::Switch { index, .. } => expr(index, counts),
+            Node::Switch { index, .. } => count_expr_reads(index, counts),
             Node::Label(_) | Node::Break | Node::Continue | Node::Forever { .. } => {}
         }
         for body in children(node) {

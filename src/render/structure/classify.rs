@@ -86,7 +86,12 @@ struct Frame {
     follow: Option<u64>,
 }
 
-fn sites(nodes: &[Node], next: Option<u64>, frames: &mut Vec<Frame>, out: &mut Vec<Site>) {
+fn collect_branch_sites(
+    nodes: &[Node],
+    next: Option<u64>,
+    frames: &mut Vec<Frame>,
+    out: &mut Vec<Site>,
+) {
     for (position, node) in nodes.iter().enumerate() {
         let after = match nodes.get(position + 1) {
             Some(Node::Label(label)) => Some(*label),
@@ -109,8 +114,8 @@ fn sites(nodes: &[Node], next: Option<u64>, frames: &mut Vec<Frame>, out: &mut V
                 frames: frames.clone(),
             }),
             Node::If { then, els, .. } => {
-                sites(then, after, frames, out);
-                sites(els, after, frames, out);
+                collect_branch_sites(then, after, frames, out);
+                collect_branch_sites(els, after, frames, out);
             }
             Node::Forever { body } | Node::DoWhile { body, .. } => {
                 frames.push(Frame {
@@ -118,7 +123,7 @@ fn sites(nodes: &[Node], next: Option<u64>, frames: &mut Vec<Frame>, out: &mut V
                     header,
                     follow: after,
                 });
-                sites(body, header, frames, out);
+                collect_branch_sites(body, header, frames, out);
                 frames.pop();
             }
             Node::While { prefix, body, .. } => {
@@ -127,8 +132,8 @@ fn sites(nodes: &[Node], next: Option<u64>, frames: &mut Vec<Frame>, out: &mut V
                     header,
                     follow: after,
                 });
-                sites(prefix, None, frames, out);
-                sites(body, header, frames, out);
+                collect_branch_sites(prefix, None, frames, out);
+                collect_branch_sites(body, header, frames, out);
                 frames.pop();
             }
             Node::Switch { arms, default, .. } => {
@@ -138,7 +143,7 @@ fn sites(nodes: &[Node], next: Option<u64>, frames: &mut Vec<Frame>, out: &mut V
                     follow: after,
                 });
                 for body in arms.iter().map(|(_, body)| body).chain(default.iter()) {
-                    sites(body, None, frames, out);
+                    collect_branch_sites(body, None, frames, out);
                 }
                 frames.pop();
             }
@@ -281,9 +286,9 @@ impl<'a> Flow<'a> {
         false
     }
 
-    /// Whether `t` is where a loop with exits to more than one place
+    /// Whether `target_block` is where a loop with exits to more than one place
     /// leaves to.
-    fn loop_exits(&self, t: usize) -> bool {
+    fn is_multiple_loop_exit(&self, target_block: usize) -> bool {
         let headers: HashSet<usize> = self.latches.values().copied().collect();
         headers.into_iter().any(|header| {
             let mut body = vec![false; self.ir.blocks.len()];
@@ -305,11 +310,11 @@ impl<'a> Flow<'a> {
                 .filter(|exit| !body[*exit])
                 .map(|exit| self.through_jumps(exit))
                 .collect();
-            exits.len() > 1 && exits.contains(&self.through_jumps(t))
+            exits.len() > 1 && exits.contains(&self.through_jumps(target_block))
         })
     }
 
-    fn test(&self, block: usize) -> Option<(&crate::ir::Expr, &crate::ir::Expr)> {
+    fn branch_operands(&self, block: usize) -> Option<(&crate::ir::Expr, &crate::ir::Expr)> {
         match self.ir.blocks[block].stmts.last() {
             Some(Stmt::Brif { lhs, rhs, .. }) => Some((lhs, rhs)),
             _ => None,
@@ -317,7 +322,7 @@ impl<'a> Flow<'a> {
     }
 
     /// A block that only tests, after at most a few assignments.
-    fn only_tests(&self, block: usize) -> bool {
+    fn is_short_conditional_block(&self, block: usize) -> bool {
         let stmts = &self.ir.blocks[block].stmts;
         matches!(stmts.last(), Some(Stmt::Brif { .. }))
             && stmts.len() <= 4
@@ -334,13 +339,16 @@ impl<'a> Flow<'a> {
             | Stmt::Brif { target, .. } => *target,
             _ => return Cause::Unresolved,
         };
-        let Some(&t) = self.index.get(&target) else {
+        let Some(&target_block) = self.index.get(&target) else {
             return Cause::Synthetic;
         };
-        if self.predecessors[t].iter().any(|from| !self.reached[*from]) {
+        if self.predecessors[target_block]
+            .iter()
+            .any(|from| !self.reached[*from])
+        {
             return Cause::Handler;
         }
-        if self.component[t].is_some_and(|own| self.irreducible.contains(&own)) {
+        if self.component[target_block].is_some_and(|own| self.irreducible.contains(&own)) {
             return Cause::Irreducible;
         }
         let innermost = site.frames.len().checked_sub(1);
@@ -354,58 +362,63 @@ impl<'a> Flow<'a> {
                 return Cause::MultiLevel;
             }
         }
-        let preds = &self.predecessors[t];
+        let predecessors = &self.predecessors[target_block];
         // p tests and goes to t or to c, which only tests again and also
         // goes to t: `if (a && b)` or `if (a || b)`.
-        let short_circuit = preds.iter().any(|c| {
-            self.only_tests(*c)
-                && self.predecessors[*c]
+        let short_circuit = predecessors.iter().any(|conditional_block| {
+            self.is_short_conditional_block(*conditional_block)
+                && self.predecessors[*conditional_block]
                     .iter()
-                    .any(|p| self.test(*p).is_some() && self.successors[*p].contains(&t))
+                    .any(|preceding_block| {
+                        self.branch_operands(*preceding_block).is_some()
+                            && self.successors[*preceding_block].contains(&target_block)
+                    })
         });
         if short_circuit {
             return Cause::ShortCircuit;
         }
         // c tests and goes to t; p reaches t too without passing c, below a
         // block that made the same test.
-        let threaded = preds.iter().any(|c| {
-            let Some(tested) = self.test(*c) else {
+        let threaded = predecessors.iter().any(|conditional_block| {
+            let Some(tested) = self.branch_operands(*conditional_block) else {
                 return false;
             };
-            preds.iter().any(|p| {
-                p != c && !self.dominates(*c, *p) && {
-                    let mut up = self.idom[*p];
-                    let mut found = false;
-                    while let Some(block) = up {
-                        if block != *c && self.test(block) == Some(tested) {
-                            found = true;
-                            break;
+            predecessors.iter().any(|alternate_predecessor| {
+                alternate_predecessor != conditional_block
+                    && !self.dominates(*conditional_block, *alternate_predecessor)
+                    && {
+                        let mut up = self.idom[*alternate_predecessor];
+                        let mut found = false;
+                        while let Some(block) = up {
+                            if block != *conditional_block
+                                && self.branch_operands(block) == Some(tested)
+                            {
+                                found = true;
+                                break;
+                            }
+                            up = self.idom[block];
                         }
-                        up = self.idom[block];
+                        found
                     }
-                    found
-                }
             })
         });
         if threaded {
             return Cause::Threading;
         }
-        if self
-            .latches
-            .get(&t)
-            .is_some_and(|header| *header != t && self.test(t).is_some())
-        {
+        if self.latches.get(&target_block).is_some_and(|header| {
+            *header != target_block && self.branch_operands(target_block).is_some()
+        }) {
             return Cause::Rotation;
         }
-        let end = self.through_jumps(t);
+        let end = self.through_jumps(target_block);
         if self.straight_tail(end) {
             return Cause::ReturnMerge;
         }
-        if self.loop_exits(t) {
+        if self.is_multiple_loop_exit(target_block) {
             return Cause::LoopExits;
         }
         if site.frames.last().is_some_and(|frame| !frame.is_loop)
-            || preds.iter().any(|from| {
+            || predecessors.iter().any(|from| {
                 matches!(
                     self.ir.blocks[*from].stmts.last(),
                     Some(Stmt::Switch { .. })
@@ -414,10 +427,11 @@ impl<'a> Flow<'a> {
         {
             return Cause::Switch;
         }
-        if preds.len() > 1 {
+        if predecessors.len() > 1 {
             return Cause::CommonTail;
         }
-        if !site.frames.iter().any(|frame| frame.is_loop) && self.component[t].is_some() {
+        if !site.frames.iter().any(|frame| frame.is_loop) && self.component[target_block].is_some()
+        {
             return Cause::Backward;
         }
         Cause::Other
@@ -488,7 +502,7 @@ fn components(successors: &[Vec<usize>]) -> Vec<Option<usize>> {
 /// The cause of each goto the structured code `nodes` of `ir` holds.
 pub(crate) fn causes(ir: &FunctionIr, nodes: &[Node]) -> Vec<(Cause, u64)> {
     let mut found = Vec::new();
-    sites(nodes, None, &mut Vec::new(), &mut found);
+    collect_branch_sites(nodes, None, &mut Vec::new(), &mut found);
     let flow = Flow::new(ir);
     found
         .iter()

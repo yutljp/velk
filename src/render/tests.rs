@@ -440,7 +440,7 @@ fn a_signed_comparison_of_a_masked_byte_reads_the_byte_as_signed() {
 fn an_unsigned_comparison_of_a_signed_parameter_reads_it_unsigned() {
     use crate::ir::Cond;
     // C compares a signed parameter signed.
-    let test = |cond| {
+    let render_comparison = |cond| {
         compared(
             Isa::X86_64,
             &[(7, CType::I64)],
@@ -450,9 +450,9 @@ fn an_unsigned_comparison_of_a_signed_parameter_reads_it_unsigned() {
             Expr::Const(1),
         )
     };
-    assert_eq!(test(Cond::Gt), "a0 > 1");
-    assert_eq!(test(Cond::Hi), "(uint64_t)a0 > 1");
-    assert_eq!(test(Cond::Cc), "(uint64_t)a0 < 1");
+    assert_eq!(render_comparison(Cond::Gt), "a0 > 1");
+    assert_eq!(render_comparison(Cond::Hi), "(uint64_t)a0 > 1");
+    assert_eq!(render_comparison(Cond::Cc), "(uint64_t)a0 < 1");
 }
 
 #[test]
@@ -2808,8 +2808,8 @@ fn walked_frame_object_offsets_preserve_symbolic_addresses() {
         ir.frame_bottom = -64;
         let frames = super::block_frames(&ir, sp);
         let locals = super::stack_locals(&ir, &frames, &Default::default(), &Default::default());
-        assert_eq!(locals.decls.len(), 1);
-        let local = &locals.decls[0];
+        assert_eq!(locals.declarations.len(), 1);
+        let local = &locals.declarations[0];
         assert_eq!((local.slot, local.size), (-80, 96));
         for slot in [-80, -32, -8, 0, 16] {
             let offset = slot - local.slot;

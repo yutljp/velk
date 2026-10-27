@@ -2,7 +2,7 @@ use crate::ir::{FunctionIr, Stmt};
 
 /// The first address given to a copied block: no code lies this high, so
 /// the copies' starts never meet a real one.
-const COPIES: u64 = 0xc000_0000_0000_0000;
+const COPY_ADDRESS_BASE: u64 = 0xc000_0000_0000_0000;
 
 /// The function with each short block that several branches enter, and
 /// that only assigns, stores or calls before going on, copied into each of
@@ -12,13 +12,13 @@ const COPIES: u64 = 0xc000_0000_0000_0000;
 /// where structuring needs no `goto`.
 pub(super) fn tail_duplicated(ir: &FunctionIr) -> Option<FunctionIr> {
     let mut ir = ir.clone();
-    let mut next_copy = COPIES;
+    let mut next_copy = COPY_ADDRESS_BASE;
     let mut changed = false;
     let mut candidate = 1;
     while candidate < ir.blocks.len() {
         let block = &ir.blocks[candidate];
         let short = block.stmts.len() <= 3
-            && block.start < COPIES
+            && block.start < COPY_ADDRESS_BASE
             // Keep shared constant setup together instead of repeating it in each arm.
             && !(block.stmts.iter().filter(|stmt| matches!(stmt, Stmt::Assign { .. })).count() >= 2
                 && block.stmts.iter().all(|stmt| {
@@ -26,7 +26,7 @@ pub(super) fn tail_duplicated(ir: &FunctionIr) -> Option<FunctionIr> {
                         | Stmt::Br { target: Some(_) })
                 }))
             && block.stmts.iter().enumerate().all(|(position, stmt)| {
-                straight(stmt)
+                is_straight_line_statement(stmt)
                     || (position + 1 == block.stmts.len()
                         && matches!(stmt, Stmt::Br { target: Some(_) }))
             });
@@ -54,7 +54,7 @@ pub(super) fn tail_duplicated(ir: &FunctionIr) -> Option<FunctionIr> {
         let body: Vec<Stmt> = ir.blocks[candidate]
             .stmts
             .iter()
-            .filter(|stmt| straight(stmt))
+            .filter(|stmt| is_straight_line_statement(stmt))
             .cloned()
             .chain(std::iter::once(Stmt::Br {
                 target: Some(follow),
@@ -99,7 +99,7 @@ pub(super) fn tail_duplicated(ir: &FunctionIr) -> Option<FunctionIr> {
 }
 
 /// A statement that goes on to the next.
-fn straight(stmt: &Stmt) -> bool {
+fn is_straight_line_statement(stmt: &Stmt) -> bool {
     matches!(
         stmt,
         Stmt::Assign { .. } | Stmt::Store { .. } | Stmt::Call { .. }
@@ -119,7 +119,7 @@ pub(super) fn merged_checks(ir: &FunctionIr) -> Option<FunctionIr> {
         .enumerate()
         .map(|(position, block)| (block.start, position))
         .collect();
-    let settle = |target| super::short_circuit::settle(ir, &starts, target);
+    let settle = |target| super::short_circuit::follow_branches(ir, &starts, target);
     // Each conditional exit as (cond, lhs, rhs, taken, otherwise), the
     // condition put the way that compares smaller first.
     type Exit = (Cond, Expr, Expr, u64, u64);
@@ -146,7 +146,7 @@ pub(super) fn merged_checks(ir: &FunctionIr) -> Option<FunctionIr> {
         exits.push((position, exit));
     }
     let mut ir = ir.clone();
-    let mut next_copy = COPIES + 0x1000_0000;
+    let mut next_copy = COPY_ADDRESS_BASE + 0x1000_0000;
     let mut changed = false;
     let mut done = vec![false; exits.len()];
     for first in 0..exits.len() {
@@ -353,10 +353,10 @@ pub(super) fn unthreaded(ir: &FunctionIr) -> Option<FunctionIr> {
         .enumerate()
         .map(|(position, block)| (block.start, position))
         .collect();
-    let settle = |target| super::short_circuit::settle(ir, &starts, target);
+    let settle = |target| super::short_circuit::follow_branches(ir, &starts, target);
     let original = ir;
     let mut ir = ir.clone();
-    let mut next_copy = COPIES + 0x2000_0000;
+    let mut next_copy = COPY_ADDRESS_BASE + 0x2000_0000;
     // Jumps to add after a block that falls into its branch's new place.
     let mut jumps: Vec<(usize, u64)> = Vec::new();
     let mut changed = false;

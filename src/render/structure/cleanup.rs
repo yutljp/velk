@@ -987,7 +987,7 @@ mod tests {
         );
     }
 
-    fn test(then: Vec<Node>) -> Node {
+    fn conditional_branch(then: Vec<Node>) -> Node {
         Node::If {
             cond: Cond::Ne,
             lhs: Expr::reg(0, 64),
@@ -1012,7 +1012,7 @@ mod tests {
         })
     }
 
-    fn ret() -> Node {
+    fn return_node() -> Node {
         Node::Stmt(Stmt::Ret {
             value: Expr::constant(0),
         })
@@ -1022,7 +1022,10 @@ mod tests {
     fn a_loop_that_starts_with_its_only_way_on_is_a_while() {
         // for (;;) { if (r0 != 0) { f(); continue; } return 0; }
         let mut nodes = vec![Node::Forever {
-            body: vec![test(vec![call(), Node::Continue]), ret()],
+            body: vec![
+                conditional_branch(vec![call(), Node::Continue]),
+                return_node(),
+            ],
         }];
         super::shape_forever_loops(&mut nodes);
         assert!(
@@ -1036,7 +1039,11 @@ mod tests {
     fn a_loop_that_continues_on_a_last_test_is_a_do_while() {
         // for (;;) { f(); if (r0 != 0) continue; return 0; }
         let mut nodes = vec![Node::Forever {
-            body: vec![call(), test(vec![Node::Continue]), ret()],
+            body: vec![
+                call(),
+                conditional_branch(vec![Node::Continue]),
+                return_node(),
+            ],
         }];
         super::shape_forever_loops(&mut nodes);
         assert!(
@@ -1052,10 +1059,10 @@ mod tests {
         // A continue before the test would go to the test in a do/while.
         let mut nodes = vec![Node::Forever {
             body: vec![
-                test(vec![Node::Continue]),
+                conditional_branch(vec![Node::Continue]),
                 call(),
-                test(vec![Node::Continue]),
-                ret(),
+                conditional_branch(vec![Node::Continue]),
+                return_node(),
             ],
         }];
         super::shape_forever_loops(&mut nodes);
@@ -1069,9 +1076,9 @@ mod tests {
     fn a_loop_left_by_a_break_keeps_its_shape_and_what_follows() {
         let mut nodes = vec![
             Node::Forever {
-                body: vec![test(vec![Node::Break]), call()],
+                body: vec![conditional_branch(vec![Node::Break]), call()],
             },
-            ret(),
+            return_node(),
         ];
         super::shape_forever_loops(&mut nodes);
         super::prune_unreachable(&mut nodes);
@@ -1092,7 +1099,7 @@ mod tests {
                     call(),
                 ],
             },
-            ret(),
+            return_node(),
         ];
         super::prune_unreachable(&mut nodes);
         assert!(
@@ -1109,7 +1116,7 @@ mod tests {
             cond: Cond::Eq,
             lhs: Expr::reg(1, 64),
             rhs: Expr::constant(0),
-            body: vec![call(), test(vec![Node::Continue]), call()],
+            body: vec![call(), conditional_branch(vec![Node::Continue]), call()],
         }];
         super::fold_trailing_continues(&mut nodes);
         let [Node::While { body, .. }] = nodes.as_slice() else {
@@ -1133,22 +1140,25 @@ mod tests {
     #[test]
     fn a_bounds_check_around_a_full_switch_becomes_its_default() {
         // v = w0 - 10; if (v > 1) return 0; else switch (w0) { 10, 11 }.
-        let v = crate::ir::VARIABLE_BASE;
-        let arms = vec![(vec![10], vec![ret()]), (vec![11], vec![ret()])];
+        let variable = crate::ir::VARIABLE_BASE;
+        let arms = vec![
+            (vec![10], vec![return_node()]),
+            (vec![11], vec![return_node()]),
+        ];
         let shape = |arms: Vec<(Vec<i64>, Vec<Node>)>| {
             vec![
                 Node::Stmt(Stmt::Assign {
                     dest: crate::ir::RegRef {
-                        index: v,
+                        index: variable,
                         width: 64,
                     },
                     value: Expr::bin(crate::ir::BinOp::Sub, Expr::reg(0, 32), Expr::constant(10)),
                 }),
                 Node::If {
                     cond: Cond::Hi,
-                    lhs: Expr::reg(v, 64),
+                    lhs: Expr::reg(variable, 64),
                     rhs: Expr::constant(1),
-                    then: vec![ret()],
+                    then: vec![return_node()],
                     els: vec![switch(arms)],
                 },
             ]
@@ -1181,10 +1191,10 @@ mod tests {
                     Expr::constant(0xffff_ffff),
                 ),
                 rhs: Expr::constant(1),
-                then: vec![ret()],
+                then: vec![return_node()],
                 els: Vec::new(),
             },
-            switch(vec![(vec![50], vec![ret()])]),
+            switch(vec![(vec![50], vec![return_node()])]),
         ];
         super::absorb_switch_tests(&mut nodes);
         assert!(
@@ -1198,10 +1208,10 @@ mod tests {
                 cond: Cond::Eq,
                 lhs: Expr::reg(0, 64),
                 rhs: Expr::constant(1),
-                then: vec![ret()],
+                then: vec![return_node()],
                 els: Vec::new(),
             },
-            switch(vec![(vec![50], vec![ret()])]),
+            switch(vec![(vec![50], vec![return_node()])]),
         ];
         super::absorb_switch_tests(&mut nodes);
         assert_eq!(nodes.len(), 2);

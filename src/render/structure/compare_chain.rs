@@ -572,7 +572,7 @@ pub fn recover_chains(ir: &FunctionIr) -> Vec<ChainSwitch> {
         .enumerate()
         .map(|(index, block)| (block.start, index))
         .collect();
-    let preds = predecessors(ir);
+    let predecessor_counts = predecessors(ir);
     let mut out: Vec<ChainSwitch> = Vec::new();
     for (block_index, block) in ir.blocks.iter().enumerate() {
         let Some(Stmt::Brif { lhs, rhs, .. }) = block.stmts.last() else {
@@ -584,7 +584,7 @@ pub fn recover_chains(ir: &FunctionIr) -> Vec<ChainSwitch> {
         if out.iter().any(|chain| chain.blocks.contains(&block.start)) {
             continue;
         }
-        if let Some(chain) = equality_chain(ir, block_index, &position, &preds) {
+        if let Some(chain) = equality_chain(ir, block_index, &position, &predecessor_counts) {
             if chain_is_available(&chain.blocks, chain.block_start, ir.blocks[0].start, &out) {
                 out.push(chain);
             }
@@ -605,7 +605,7 @@ pub fn recover_chains(ir: &FunctionIr) -> Vec<ChainSwitch> {
         if range_compare {
             let full_lo = lo.min(0);
             if let Some((entry_lo, entry_hi)) =
-                incoming_interval(ir, &preds, block_index, lhs, full_lo, hi)
+                incoming_interval(ir, &predecessor_counts, block_index, lhs, full_lo, hi)
             {
                 lo = full_lo.max(entry_lo);
                 hi = hi.min(entry_hi);
@@ -651,7 +651,7 @@ pub fn recover_chains(ir: &FunctionIr) -> Vec<ChainSwitch> {
             continue;
         }
         if walk.blocks.iter().skip(1).any(|start| {
-            preds.get(start).copied().unwrap_or(0) != 1
+            predecessor_counts.get(start).copied().unwrap_or(0) != 1
                 || ir.blocks[position[start]].stmts.len() != 1
         }) {
             continue;

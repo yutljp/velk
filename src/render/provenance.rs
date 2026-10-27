@@ -16,7 +16,7 @@ enum Base {
 struct Pointer {
     base: Base,
     offset: u64,
-    created: usize,
+    created_at: usize,
 }
 
 pub(super) struct Facts {
@@ -35,7 +35,7 @@ impl Facts {
                     facts.values.entry(index).or_insert(Pointer {
                         base: Base::Unknown(0, index),
                         offset: 0,
-                        created: 0,
+                        created_at: 0,
                     });
                 }
             }
@@ -46,7 +46,7 @@ impl Facts {
                 Pointer {
                     base: Base::Frame,
                     offset: offset as u64,
-                    created: 0,
+                    created_at: 0,
                 },
             );
         }
@@ -68,7 +68,7 @@ impl Facts {
                             Pointer {
                                 base: Base::Unknown(time, dest.index),
                                 offset: 0,
-                                created: time,
+                                created_at: time,
                             },
                         );
                     }
@@ -83,13 +83,13 @@ impl Facts {
                             ctx.symbols
                                 .allocator_names
                                 .get(&target)
-                                .or_else(|| ctx.symbols.semantic_function(target))
+                                .or_else(|| ctx.symbols.original_or_printed_function_name(target))
                         })
                         .or_else(|| {
                             via.as_ref()
                                 .and_then(|via| ctx.symbols.import_name(&via.slot))
                         });
-                    let allocation = name.and_then(|name| allocator(name));
+                    let allocation = name.and_then(|name| allocation_is_reallocated(name));
                     let size = name.and_then(|name| allocation_size(name, args.as_deref(), &facts));
                     // Other calls may release objects whose addresses remain in registers.
                     if allocation != Some(false) {
@@ -110,7 +110,7 @@ impl Facts {
                             Pointer {
                                 base: Base::Heap(time, reallocated, size),
                                 offset: 0,
-                                created: time,
+                                created_at: time,
                             },
                         );
                     }
@@ -142,7 +142,7 @@ impl Facts {
                             Pointer {
                                 base: Base::Frame,
                                 offset: offset as u64,
-                                created: 0,
+                                created_at: 0,
                             },
                         );
                     }
@@ -154,7 +154,7 @@ impl Facts {
 
     fn discard_freshness(&mut self) {
         for pointer in self.values.values_mut() {
-            pointer.created = usize::MAX;
+            pointer.created_at = usize::MAX;
             if let Base::Heap(time, _, size) = pointer.base {
                 pointer.base = Base::Heap(time, true, size);
             }
@@ -167,7 +167,7 @@ impl Facts {
             Expr::Const(offset) => Some(Pointer {
                 base: Base::Absolute,
                 offset: *offset,
-                created: 0,
+                created_at: 0,
             }),
             Expr::Bin { op, lhs, rhs } if matches!(op, BinOp::Add | BinOp::Sub) => {
                 let Some(mut pointer) = self.pointer(lhs) else {
@@ -221,7 +221,9 @@ impl Facts {
                     .checked_add(bytes)
                     .is_some_and(|end| end <= size) =>
             {
-                frame(old) || global(old) || (!reallocated && old.created < time && old.offset == 0)
+                frame(old)
+                    || global(old)
+                    || (!reallocated && old.created_at < time && old.offset == 0)
             }
             _ => false,
         };
@@ -229,7 +231,7 @@ impl Facts {
     }
 }
 
-pub(super) fn allocator(name: &str) -> Option<bool> {
+pub(super) fn allocation_is_reallocated(name: &str) -> Option<bool> {
     let name = name.strip_prefix("__rustc::").unwrap_or(name);
     crate::analysis::prototypes::effects::lookup(name.trim_start_matches('_'))
         .and_then(|effects| effects.allocation)
@@ -328,10 +330,10 @@ mod tests {
             ("rdl_realloc", true, Some(17)),
             ("runtime.newobject", false, None),
         ] {
-            assert_eq!(allocator(name), Some(reallocated));
+            assert_eq!(allocation_is_reallocated(name), Some(reallocated));
             assert_eq!(allocation_size(name, Some(&args), &facts), size);
         }
-        assert_eq!(allocator("unknown"), None);
+        assert_eq!(allocation_is_reallocated("unknown"), None);
         assert_eq!(allocation_size("unknown", Some(&args), &facts), Some(7));
         assert_eq!(allocation_size("malloc", None, &facts), None);
         let overflow = [Expr::Const(u64::MAX), Expr::Const(2)];

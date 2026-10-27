@@ -2,9 +2,9 @@ use std::collections::{BTreeMap, BTreeSet, VecDeque};
 
 use crate::ir::{BinOp, CType, Expr, FunctionIr, Stmt};
 
-const LIMIT: usize = 64 * 8;
+const MAX_FRAME_BYTES: usize = 64 * 8;
 pub(super) type Origins = BTreeMap<u16, Option<i64>>;
-type Written = [bool; LIMIT];
+type InitializedBytes = [bool; MAX_FRAME_BYTES];
 
 #[derive(Clone, Copy)]
 struct Frame {
@@ -17,14 +17,14 @@ pub(super) struct Plan {
     pub register: u16,
     pub name: String,
     pub size: usize,
-    pub seeds: Vec<(usize, String)>,
+    pub parameters: Vec<(usize, String)>,
     pub accesses: BTreeSet<(usize, u8)>,
 }
 
 impl Plan {
     pub fn declarations(&self) -> Vec<String> {
         let mut lines = vec![format!("unsigned char {}[0x{:x}];", self.name, self.size)];
-        lines.extend(self.seeds.iter().map(|(offset, name)| {
+        lines.extend(self.parameters.iter().map(|(offset, name)| {
             format!(
                 "__builtin_memcpy({} + 0x{offset:x}, &(uint64_t){{(uint64_t){name}}}, 8);",
                 self.name
@@ -55,7 +55,7 @@ fn prepare_inner(ir: &mut FunctionIr) -> Option<Option<Plan>> {
     let Some(start) = ir.convention.stack_arguments() else {
         return None;
     };
-    let Some(limit) = start.checked_add(LIMIT as i64) else {
+    let Some(limit) = start.checked_add(MAX_FRAME_BYTES as i64) else {
         return None;
     };
     let sp = crate::arch::stack_pointer(ir.isa);
@@ -69,8 +69,8 @@ fn prepare_inner(ir: &mut FunctionIr) -> Option<Option<Plan>> {
     let Some(entries) = origins(ir, &entry) else {
         return None;
     };
-    let mut seeds = Vec::new();
-    let mut initialized = [false; LIMIT];
+    let mut parameters = Vec::new();
+    let mut initialized = [false; MAX_FRAME_BYTES];
     let mut size = 0;
     for param in &ir.stack_params {
         if param.size != 8 || !matches!(param.ty, CType::Int { bytes: 8, .. }) {
@@ -85,11 +85,14 @@ fn prepare_inner(ir: &mut FunctionIr) -> Option<Option<Plan>> {
         let Some(end) = offset.checked_add(8) else {
             return None;
         };
-        if offset % 8 != 0 || end > LIMIT || initialized[offset..end].iter().any(|bit| *bit) {
+        if offset % 8 != 0
+            || end > MAX_FRAME_BYTES
+            || initialized[offset..end].iter().any(|bit| *bit)
+        {
             return None;
         }
         initialized[offset..end].fill(true);
-        seeds.push((offset, param.name.clone()));
+        parameters.push((offset, param.name.clone()));
         size = size.max(end);
     }
     let mut used = BTreeSet::new();
@@ -115,11 +118,11 @@ fn prepare_inner(ir: &mut FunctionIr) -> Option<Option<Plan>> {
         register,
         name: String::new(),
         size,
-        seeds,
+        parameters,
         accesses: BTreeSet::new(),
     };
     let mut crossing = false;
-    let mut facts = Vec::new();
+    let mut block_accesses = Vec::new();
     let variable_registers = &ir.variable_registers;
     for (block, body) in ir.blocks.iter_mut().enumerate() {
         let Some(mut state) = entries[block].clone() else {
@@ -193,16 +196,16 @@ fn prepare_inner(ir: &mut FunctionIr) -> Option<Option<Plan>> {
             transfer(&original, &mut state);
         }
         body.stmts = rewritten;
-        facts.push(block_facts);
+        block_accesses.push(block_facts);
     }
-    let Some(_) = initialized_reads(ir, &facts, initialized) else {
+    let Some(_) = validate_initialized_reads(ir, &block_accesses, initialized) else {
         return None;
     };
     if !crossing {
         if plan.accesses.is_empty()
             || plan.accesses.iter().any(|&(offset, width)| {
                 !plan
-                    .seeds
+                    .parameters
                     .iter()
                     .any(|&(start, _)| start <= offset && offset + usize::from(width) <= start + 8)
             })
@@ -220,7 +223,7 @@ fn prepare_inner(ir: &mut FunctionIr) -> Option<Option<Plan>> {
         return Some(None);
     }
     protect_parameter_names(ir);
-    plan.seeds = ir
+    plan.parameters = ir
         .stack_params
         .iter()
         .map(|param| {
@@ -374,14 +377,16 @@ fn rewrite_value(
     state: &Origins,
     frame: Frame,
     plan: &mut Plan,
-    facts: &mut Vec<(usize, u8, bool)>,
+    block_accesses: &mut Vec<(usize, u8, bool)>,
 ) -> Option<()> {
     if let Expr::Load { addr, width, .. } = expr {
-        if let Some(offset) = match rewrite_address(addr, *width, state, frame, plan, facts) {
-            Some(value) => value,
-            None => return None,
-        } {
-            facts.push((offset, *width, false));
+        if let Some(offset) =
+            match rewrite_address(addr, *width, state, frame, plan, block_accesses) {
+                Some(value) => value,
+                None => return None,
+            }
+        {
+            block_accesses.push((offset, *width, false));
         }
         return Some(());
     }
@@ -389,7 +394,7 @@ fn rewrite_value(
         return None;
     }
     for child in crate::ir::visit::children_mut(expr) {
-        let Some(_) = rewrite_value(child, state, frame, plan, facts) else {
+        let Some(_) = rewrite_value(child, state, frame, plan, block_accesses) else {
             return None;
         };
     }
@@ -402,7 +407,7 @@ fn rewrite_address(
     state: &Origins,
     frame: Frame,
     plan: &mut Plan,
-    facts: &mut Vec<(usize, u8, bool)>,
+    block_accesses: &mut Vec<(usize, u8, bool)>,
 ) -> Option<Option<usize>> {
     match origin(expr, state) {
         Some(Some(offset)) => {
@@ -439,7 +444,7 @@ fn rewrite_address(
         Some(None) => None,
         None => {
             // A non-frame address may itself be loaded from the incoming frame.
-            let Some(_) = rewrite_value(expr, state, frame, plan, facts) else {
+            let Some(_) = rewrite_value(expr, state, frame, plan, block_accesses) else {
                 return None;
             };
             Some(None)
@@ -459,10 +464,10 @@ fn address(register: u16, offset: i64) -> Expr {
     }
 }
 
-fn initialized_reads(
+fn validate_initialized_reads(
     ir: &FunctionIr,
-    facts: &[Vec<(usize, u8, bool)>],
-    seeded: Written,
+    block_accesses: &[Vec<(usize, u8, bool)>],
+    seeded: InitializedBytes,
 ) -> Option<()> {
     let mut entries = vec![None; ir.blocks.len()];
     entries[0] = Some(seeded);
@@ -471,7 +476,7 @@ fn initialized_reads(
         let Some(mut written) = entries[block] else {
             return None;
         };
-        for &(offset, width, store) in &facts[block] {
+        for &(offset, width, store) in &block_accesses[block] {
             if store {
                 written[offset..offset + usize::from(width)].fill(true);
             }
@@ -487,7 +492,7 @@ fn initialized_reads(
             }
         }
     }
-    for (block, accesses) in facts.iter().enumerate() {
+    for (block, accesses) in block_accesses.iter().enumerate() {
         let Some(mut written) = entries[block] else {
             return None;
         };
@@ -885,7 +890,7 @@ mod tests {
         stored.stack_params.clear();
         let original = stored.clone();
         let plan = prepare(&mut stored).unwrap();
-        assert!(plan.seeds.is_empty());
+        assert!(plan.parameters.is_empty());
         assert_eq!(
             outcome(&original, plan.register),
             outcome(&stored, plan.register)

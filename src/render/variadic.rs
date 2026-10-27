@@ -1038,10 +1038,10 @@ fn recover_access(ir: &mut FunctionIr, list: &List, start: usize, register: u16)
     ir.blocks[start].stmts.push(Stmt::Br {
         target: Some(target),
     });
-    let mut b = 0;
+    let mut block_index = 0;
     ir.blocks.retain(|_| {
-        let keep = !removed.contains(&b);
-        b += 1;
+        let keep = !removed.contains(&block_index);
+        block_index += 1;
         keep
     });
     true

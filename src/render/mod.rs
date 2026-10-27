@@ -213,7 +213,7 @@ pub fn callee_names(image: &crate::loader::Image) -> Symbols {
                 let Some(name) = function.name.as_ref() else {
                     return None;
                 };
-                if provenance::allocator(name).is_some() {
+                if provenance::allocation_is_reallocated(name).is_some() {
                     Some((*address, name.clone()))
                 } else {
                     None
@@ -322,7 +322,7 @@ pub(crate) fn short_name(name: &str) -> String {
     };
     // `<Type as Trait>::method` is the type's method.
     if let Some(inner) = base.strip_prefix('<')
-        && let Some(close) = matching_close(inner)
+        && let Some(close) = matching_angle_close(inner)
     {
         let (qualified, rest) = (&inner[..close], &inner[close + 1..]);
         let owner = without_generics(qualified.split(" as ").next().unwrap_or(qualified));
@@ -350,7 +350,7 @@ pub(crate) fn structure_prefix(name: Option<&str>, addr: u64) -> String {
 }
 
 /// Where the `>` closing the `<` before `text` falls in it.
-fn matching_close(text: &str) -> Option<usize> {
+fn matching_angle_close(text: &str) -> Option<usize> {
     let mut depth = 1usize;
     for (at, c) in text.char_indices() {
         match c {
@@ -430,7 +430,7 @@ pub(crate) fn project_locals(
     let locals = locals::stack_locals_with_roles(ir, &frames, &types, &Symbols::default(), &roles);
     let mut seen = std::collections::HashSet::new();
     locals
-        .decls
+        .declarations
         .iter()
         .flat_map(|local| local.named())
         .filter(|local| seen.insert(local.slot))

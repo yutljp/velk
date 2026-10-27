@@ -3,7 +3,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 #[derive(Default)]
-pub(super) struct Names {
+pub(super) struct StructureTagNames {
     definitions: BTreeMap<String, String>,
     tags: BTreeMap<String, String>,
     reserved: BTreeSet<String>,
@@ -33,7 +33,7 @@ fn definitions(code: &str) -> Vec<(String, String)> {
     result
 }
 
-impl Names {
+impl StructureTagNames {
     pub(super) fn resolve(&mut self, code: &str) -> String {
         for (tag, definition) in definitions(code) {
             self.reserved.insert(tag.clone());

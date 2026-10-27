@@ -81,7 +81,7 @@ fn prepare_inner(ir: &mut FunctionIr, objects: &[Object]) -> Option<Vec<Binding>
     let Some(entries) = block_entries(ir, &entry) else {
         return None;
     };
-    let Some(_) = initialized_objects(ir, objects, &entries, &entry) else {
+    let Some(_) = validate_object_initialization(ir, objects, &entries, &entry) else {
         return None;
     };
     let mut used: BTreeSet<u16> = ir.params.iter().map(|param| param.index).collect();
@@ -386,9 +386,9 @@ fn address_at(register: u16, offset: i64) -> Expr {
     }
 }
 
-type Written = Vec<Vec<(u64, u64)>>;
+type WrittenBitRanges = Vec<Vec<(u64, u64)>>;
 
-fn initialized_objects(
+fn validate_object_initialization(
     ir: &FunctionIr,
     objects: &[Object],
     origins: &[Option<State>],
@@ -413,7 +413,7 @@ fn initialized_objects(
         }
     }
     let empty = vec![Vec::new(); objects.len()];
-    let mut entries: Vec<Option<Written>> = vec![None; ir.blocks.len()];
+    let mut entries: Vec<Option<WrittenBitRanges>> = vec![None; ir.blocks.len()];
     entries[0] = Some(empty.clone());
     let mut pending = VecDeque::from([0]);
     while let Some(index) = pending.pop_front() {
@@ -483,7 +483,7 @@ fn initialized_loads(
     expr: &Expr,
     state: &State,
     objects: &[Object],
-    written: &Written,
+    written: &WrittenBitRanges,
 ) -> Option<()> {
     if let Expr::Load { addr, width, .. } = expr
         && let Some((index, offset)) = (match object_access(addr, *width, state, objects) {
@@ -517,7 +517,7 @@ fn record_store(
     stmt: &Stmt,
     state: &State,
     objects: &[Object],
-    written: &mut Written,
+    written: &mut WrittenBitRanges,
 ) -> Option<()> {
     if let Stmt::Store { addr, width, .. } = stmt
         && let Some((index, offset)) = (match object_access(addr, *width, state, objects) {

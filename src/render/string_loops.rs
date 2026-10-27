@@ -4,7 +4,7 @@ use crate::ir::{BinOp, Cond, Expr, RegRef, Stmt};
 #[cfg(test)]
 mod tests;
 
-fn advanced(stmt: &Stmt, size: u64) -> Option<RegRef> {
+fn advanced_register(stmt: &Stmt, size: u64) -> Option<RegRef> {
     let Stmt::Assign { dest, value } = stmt else {
         return None;
     };
@@ -70,7 +70,7 @@ pub(super) fn render(
         let Node::Stmt(stmt) = step else {
             return None;
         };
-        let Some(pointer) = advanced(stmt, u64::from(*width)) else {
+        let Some(pointer) = advanced_register(stmt, u64::from(*width)) else {
             return None;
         };
         if pointer.index == count.index || pointers.contains(&pointer) {
@@ -85,7 +85,7 @@ pub(super) fn render(
     else {
         return None;
     };
-    if !pointers.iter().any(|p| p.index == *destination) {
+    if !pointers.iter().any(|pointer| pointer.index == *destination) {
         return None;
     }
     let address = |value: &Expr| {

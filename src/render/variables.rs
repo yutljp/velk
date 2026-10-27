@@ -220,7 +220,7 @@ pub(crate) fn variable_types(
             None => CType::Int { bytes: 8, signed },
         };
         let ty = match ir.value_types.get(&index) {
-            Some(given) => agreeing(
+            Some(given) => compatible_type(
                 ty,
                 given,
                 narrow.contains(&index),
@@ -300,17 +300,17 @@ fn derived_structure(ir: &FunctionIr, index: u16) -> Option<CType> {
         }
         _ => return None,
     };
-    scaled_offset(offset, definition.size).then(|| param.ty.clone())
+    is_multiple_of_size(offset, definition.size).then(|| param.ty.clone())
 }
 
-fn scaled_offset(expr: &Expr, size: u64) -> bool {
+fn is_multiple_of_size(expr: &Expr, size: u64) -> bool {
     match expr {
         Expr::Const(offset) => (*offset as i64).unsigned_abs().is_multiple_of(size),
         Expr::Bin {
             op: BinOp::Add | BinOp::Sub,
             lhs,
             rhs,
-        } => scaled_offset(lhs, size) && scaled_offset(rhs, size),
+        } => is_multiple_of_size(lhs, size) && is_multiple_of_size(rhs, size),
         Expr::Bin {
             op: BinOp::Mul,
             lhs,
@@ -531,7 +531,7 @@ enum PointerUse {
 /// The type a prototype gives a variable where it agrees with how the body
 /// uses it: a pointer the body does no arithmetic on, and that the
 /// accesses through it say no more of; an integer as wide as its reads.
-fn agreeing(used: CType, given: &CType, narrow: bool, arithmetic: PointerUse) -> CType {
+fn compatible_type(used: CType, given: &CType, narrow: bool, arithmetic: PointerUse) -> CType {
     let arithmetic = matches!(arithmetic, PointerUse::Arithmetic);
     if used.is_sse_float() || used.pointee_struct().is_some() {
         return used;

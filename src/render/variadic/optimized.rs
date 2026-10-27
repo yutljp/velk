@@ -13,7 +13,7 @@ pub(super) fn recover(ir: &mut FunctionIr, list: &List, argument: u16) -> bool {
 
 struct MatchedLoop {
     target: u64,
-    init: Stmt,
+    initialization: Stmt,
     body: Vec<Stmt>,
 }
 
@@ -78,8 +78,8 @@ fn match_loop(ir: &FunctionIr, list: &List, argument: u16) -> Option<MatchedLoop
     else {
         return None;
     };
-    let regs = [stack, top, offset, next_stack, next_offset, total];
-    if regs
+    let registers = [stack, top, offset, next_stack, next_offset, total];
+    if registers
         .iter()
         .any(|reg| reg.index == count.index || reg.index == list.sp)
         || [stack, top, offset, next_stack, total]
@@ -88,16 +88,16 @@ fn match_loop(ir: &FunctionIr, list: &List, argument: u16) -> Option<MatchedLoop
         || next_offset.width != 32
         || count.width != 32
         || count.index == list.sp
-        || regs
+        || registers
             .iter()
             .enumerate()
-            .any(|(i, reg)| regs[..i].iter().any(|other| other.index == reg.index))
+            .any(|(i, reg)| registers[..i].iter().any(|other| other.index == reg.index))
     {
         return None;
     }
-    let r = |reg: &RegRef| Expr::reg(reg.index, reg.width);
+    let register_expression = |reg: &RegRef| Expr::reg(reg.index, reg.width);
     let assign = |dest: &RegRef, value| Stmt::Assign { dest: *dest, value };
-    let br = |block: usize| Stmt::Br {
+    let branch = |block: usize| Stmt::Br {
         target: Some(blocks[block].start),
     };
     let load = |field, width| Expr::Load {
@@ -105,19 +105,29 @@ fn match_loop(ir: &FunctionIr, list: &List, argument: u16) -> Option<MatchedLoop
         width,
         signed: false,
     };
-    let masked_offset = Expr::bin(BinOp::And, r(offset), Expr::Const(0xffff_ffff));
+    let masked_offset = Expr::bin(
+        BinOp::And,
+        register_expression(offset),
+        Expr::Const(0xffff_ffff),
+    );
     if *header != blocks[4].start
         || *stack_load != load(list.stack(), 8)
         || *top_load != load(list.base + 8, 8)
         || *offset_load != load(list.gp_offset(), 4)
-        || *decrement_value != Expr::bin(BinOp::Sub, r(count), Expr::Const(1))
-        || !same(update_offset, &assign(offset, r(next_offset)))
-        || !same(update_stack, &assign(stack, r(next_stack)))
+        || *decrement_value != Expr::bin(BinOp::Sub, register_expression(count), Expr::Const(1))
+        || !same(
+            update_offset,
+            &assign(offset, register_expression(next_offset)),
+        )
+        || !same(
+            update_stack,
+            &assign(stack, register_expression(next_stack)),
+        )
         || !same(
             exit,
             &Stmt::Brif {
                 cond: Cond::Eq,
-                lhs: r(count),
+                lhs: register_expression(count),
                 rhs: Expr::Const(0),
                 target: blocks[9].start,
             },
@@ -125,14 +135,14 @@ fn match_loop(ir: &FunctionIr, list: &List, argument: u16) -> Option<MatchedLoop
         || !same_block(
             &blocks[2].stmts,
             &[
-                assign(next_stack, r(stack)),
+                assign(next_stack, register_expression(stack)),
                 assign(
                     stack,
                     Expr::bin(
                         BinOp::Add,
-                        r(top),
+                        register_expression(top),
                         Expr::SignExtend {
-                            value: Box::new(r(offset)),
+                            value: Box::new(register_expression(offset)),
                             width: 4,
                         },
                     ),
@@ -143,12 +153,19 @@ fn match_loop(ir: &FunctionIr, list: &List, argument: u16) -> Option<MatchedLoop
             &blocks[4].stmts,
             &[Stmt::Brif {
                 cond: Cond::Ne,
-                lhs: Expr::bin(BinOp::And, r(offset), Expr::Const(0x8000_0000)),
+                lhs: Expr::bin(
+                    BinOp::And,
+                    register_expression(offset),
+                    Expr::Const(0x8000_0000),
+                ),
                 rhs: Expr::Const(0),
                 target: blocks[6].start,
             }],
         )
-        || !same_block(&blocks[5].stmts, &[assign(next_offset, r(offset)), br(7)])
+        || !same_block(
+            &blocks[5].stmts,
+            &[assign(next_offset, register_expression(offset)), branch(7)],
+        )
         || !same_block(
             &blocks[6].stmts,
             &[
@@ -158,7 +175,7 @@ fn match_loop(ir: &FunctionIr, list: &List, argument: u16) -> Option<MatchedLoop
                 ),
                 Stmt::Store {
                     addr: address(list.sp, list.gp_offset()),
-                    value: r(next_offset),
+                    value: register_expression(next_offset),
                     width: 4,
                 },
                 Stmt::Brif {
@@ -175,10 +192,10 @@ fn match_loop(ir: &FunctionIr, list: &List, argument: u16) -> Option<MatchedLoop
                 assign(next_stack, address(stack.index, 8)),
                 Stmt::Store {
                     addr: address(list.sp, list.stack()),
-                    value: r(next_stack),
+                    value: register_expression(next_stack),
                     width: 8,
                 },
-                br(3),
+                branch(3),
             ],
         )
     {
@@ -224,7 +241,11 @@ fn match_loop(ir: &FunctionIr, list: &List, argument: u16) -> Option<MatchedLoop
                     width: 4,
                     signed: false,
                 },
-                Expr::bin(BinOp::And, r(total), Expr::Const(0xffff_ffff)),
+                Expr::bin(
+                    BinOp::And,
+                    register_expression(total),
+                    Expr::Const(0xffff_ffff),
+                ),
             ),
             Expr::Const(0xffff_ffff),
         )
@@ -238,7 +259,12 @@ fn match_loop(ir: &FunctionIr, list: &List, argument: u16) -> Option<MatchedLoop
         return None;
     };
     if !same_block(&blocks[8].stmts, &[assign(total, Expr::Const(0))])
-        || *returned != Expr::bin(BinOp::And, r(total), Expr::Const(0xffff_ffff))
+        || *returned
+            != Expr::bin(
+                BinOp::And,
+                register_expression(total),
+                Expr::Const(0xffff_ffff),
+            )
     {
         return None;
     }
@@ -250,16 +276,20 @@ fn match_loop(ir: &FunctionIr, list: &List, argument: u16) -> Option<MatchedLoop
         next_stack.index,
         next_offset.index,
     ];
-    for (b, block) in blocks.iter().enumerate() {
-        for (p, stmt) in block.stmts.iter().enumerate() {
-            if matches!(b, 2 | 4 | 5 | 6 | 7)
-                || (b == 1 && matches!(p, 0 | 1 | 3 | 4))
-                || (b == 3 && matches!(p, 1 | 3))
+    for (block_index, block) in blocks.iter().enumerate() {
+        for (position, stmt) in block.stmts.iter().enumerate() {
+            if matches!(block_index, 2 | 4 | 5 | 6 | 7)
+                || (block_index == 1 && matches!(position, 0 | 1 | 3 | 4))
+                || (block_index == 3 && matches!(position, 1 | 3))
             {
                 continue;
             }
             let rewritten = assign(total, replacement.clone());
-            let stmt = if b == 3 && p == 2 { &rewritten } else { stmt };
+            let stmt = if block_index == 3 && position == 2 {
+                &rewritten
+            } else {
+                stmt
+            };
             let (writes, reads) = crate::ir::visit::statement_registers(stmt);
             if protocol
                 .iter()
@@ -270,16 +300,24 @@ fn match_loop(ir: &FunctionIr, list: &List, argument: u16) -> Option<MatchedLoop
         }
     }
     let target = blocks[3].start;
-    let init = blocks[1].stmts[2].clone();
+    let initialization = blocks[1].stmts[2].clone();
     let body = vec![decrement.clone(), assign(total, replacement), exit.clone()];
-    Some(MatchedLoop { target, init, body })
+    Some(MatchedLoop {
+        target,
+        initialization,
+        body,
+    })
 }
 
 impl MatchedLoop {
     fn apply(self, ir: &mut FunctionIr) {
-        let Self { target, init, body } = self;
+        let Self {
+            target,
+            initialization,
+            body,
+        } = self;
         ir.blocks[1].stmts = vec![
-            init,
+            initialization,
             Stmt::Br {
                 target: Some(target),
             },

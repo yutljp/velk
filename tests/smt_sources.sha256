@@ -110,19 +110,19 @@ de8cfd4bb564d169aa30f8a822756a3b89199468b4c2d65c4dc9d2f3d7892b50  src/render/exp
 8ff487a64264bf0ce20c673a63e787dc912ca994daa50850e7264c2d77e4376f  src/render/expr/condition.rs	pub(super) fn logic(
 5f132c9a8f51d39925b03107e0a61d4ebbeb876297aac718672f209e6338f0fc  src/render/expr/memory.rs	pub(super) fn byte_sum(
 2e2366ab6cbadb484fa72b10afa2ace59edefe6b7835bef978458338ac3a2e41  src/render/expr/memory.rs	pub(super) fn load(
-61d8194bb18d5a62670361f01e64862692d41ddeec6a998bdc801c3e155c94fc  src/render/expr/operation.rs	fn implicit_conversion(
+9f248fb1ed75b0f579c24ab2ea326e9e91e19548437e39082446cac406327927  src/render/expr/operation.rs	fn implicit_conversion(
 684ddef656914168032d3dd77cfd4346c26bbeda59af34a408f0a08dc8a43d89  src/render/expr/operation.rs	fn zero_count(
 d1f44b5f551f47752db50cff2a0942fc53721352bc5a78e27f5679e6933472b1  src/render/expr/operation.rs	pub(super) fn unmasked_float(
 face9a368d9b9d8c539bed5fbba70ee0fbf97c959bc1ca5824eddf1e38bb1460  src/render/int.rs	pub(crate) fn cast(
 17d6f2e00352d782d6d899663a1eae144fe544c13a92bd5ac68488d7bb35f380  src/render/int.rs	pub(crate) fn fit(
-5cd9e3fa62ef60687717d4604a5377da5a3dd8233e29d64dcd9e7e7f869faffd  src/render/locals.rs	pub(super) fn stack_locals_with_roles(
+ac5df4082eb90d340042f58c5611d14aa40431e24a0d4cf2bd07eca68acc56fb  src/render/locals.rs	pub(super) fn stack_locals_with_roles(
 757327de648c2f687f7533ed35432c1f479452d63c222fd03091e0af9b411fea  src/render/locals/copies.rs	pub(super) fn fold(
 226cb7f228570597b7fa95535758341fbf527ad3ddf9b34a733e58e84bfa9c26  src/render/locals/indexed.rs	pub(super) fn offsets_frame_pointer(
 84c0748d6bda7543b78ae4fa00877a37545f595ddbf08417076989e91be95668  src/render/locals/returns.rs	fn replace_returns(
 b3edc629dd38eecbf0efeb78b0c444e93b264dab40a97bfe06e942fd9d5ecfe1  src/render/locals/values.rs	pub(in crate::render) fn fold(
 dac402149d5e5232a83d33659175898e752f2c11d9ee76dd4264d5950b713235  src/render/params.rs	fn drop_unused_parameter_outputs(
 ccdb48908c504c913982c58b95184f13cc89a5f75486f71ad1ab25c1d48217b9  src/render/params.rs	fn replace_loads(
-1421a24a55592f421ed96efe3b24671a757e764bfec8cdd8c1365df650b6212f  src/render/stack_bytes.rs	fn rewrite_address(
+f6d2b0045015ba544bb52366dfc3e54acfc9c37a44a54824e871799ca1145187  src/render/stack_bytes.rs	fn rewrite_address(
 97b1142514dba360bf78897e31128c196f46b6da02ff3f956be93f31114a193b  src/render/stmt.rs	fn without_update_mask(
 d826496aa0bae181e2e4691f1e3b259c785ae943bbeb1407c9ecb83640092670  src/render/stmt.rs	pub(super) fn conformed(
 6d66b8eacb9df33770d419a62c31c056c11e3de39f10e4c817fc99d2e56a593c  src/render/stmt.rs	pub(super) fn narrow_write(
@@ -136,10 +136,10 @@ b3c7a9e8c5bb8282352b8e49439760d9d45326154bfbdea59a45c31b471d364d  src/render/str
 ab8b1e138b056bf4cfdd2960342015ced772750e01c0342576432723a8cdb451  src/render/string_functions/loops.rs	fn equivalent(
 a58e17fe151c2c24805ff39201100f72575cb73b566c1631a46ae812f2dd078c  src/render/string_functions/loops.rs	fn induction(
 c4626afa6094b67d20d06e556582f21c84236df5165959a0b469254dbcf9fcf1  src/render/string_functions/loops.rs	pub(super) fn render(
-6d9d113b5ed0047189bc84ee757e2a890e31de328a28632e7db30d6594fc6b84  src/render/transfers.rs	fn fill(nodes:
+77e3da73f79cb91b44f56539e6cbe46b7c6d4ec891e097fa57e3dc9e5f59c862  src/render/transfers.rs	fn fill(nodes:
 d6ed2930da3050a1e796935096262bd31b5c04a40d9547f751d04af0fe1c2c7f  src/render/transfers.rs	fn filled_range<'a>(
-a8c0db3f0569267a10caf03727b569e70ce78466f8fbc251ca3ea5fd76d30c9a  src/render/transfers.rs	fn string_copy(
-288fb5a93ed6d581b878f90d08f8c29714c1e14affefd2f991b9d2dc212bf307  src/render/widths.rs	pub(crate) fn narrow_variables(
+c6a2555762303231a86118191e713279616e150d252086d24de10427275987aa  src/render/transfers.rs	fn string_copy(
+bfdcdef48102d3e0d46218a589765c63baaff91dc48d6173ab2f781ceec3508d  src/render/widths.rs	pub(crate) fn narrow_variables(
 af9af3f338c239142f92a78e7633d8f8a3f0d64d702caab86de5c8cd24e874d3  src/sigs/bytes/registers.rs	pub(super) fn alternative(
 32caccc66f407095f81047c6a597b56a6a6aaa1c2cd56f826ca74dded4a75405  src/ssa/demand.rs	pub fn narrow_partial_writes(
 2e9d0caef1f3f967648c3b44c3bc2a2ab576573ccfe0870193fd4d12f60f4f3c  src/ssa/ranges.rs	fn rewrite(

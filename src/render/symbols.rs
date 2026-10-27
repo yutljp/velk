@@ -54,7 +54,7 @@ impl Symbols {
         self.import_slots.get(slot)
     }
 
-    pub(crate) fn semantic_function(&self, address: u64) -> Option<&String> {
+    pub(crate) fn original_or_printed_function_name(&self, address: u64) -> Option<&String> {
         self.original_functions
             .get(&address)
             .or_else(|| self.functions.get(&address))

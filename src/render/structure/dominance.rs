@@ -20,7 +20,7 @@ struct Graph<'a> {
     successors: Vec<Vec<usize>>,
     /// Reverse-postorder number of each block; `usize::MAX` if unreachable.
     order: Vec<usize>,
-    idom: Vec<Option<usize>>,
+    immediate_dominators: Vec<Option<usize>>,
     /// Dominator-tree children, in reverse postorder.
     children: Vec<Vec<usize>>,
     /// Reached by more than one forward edge.
@@ -28,7 +28,7 @@ struct Graph<'a> {
     /// The blocks of the loop each header heads, by header.
     loops: HashMap<usize, Vec<bool>>,
     /// Where each loop's own tests, at its header and latches, leave it to.
-    tests: HashMap<usize, Vec<usize>>,
+    loop_test_exits: HashMap<usize, Vec<usize>>,
     index: HashMap<u64, usize>,
     /// Loop exits whose code sits where the loop leaves to them, ahead of a
     /// `break`, rather than after the loop.
@@ -93,9 +93,9 @@ impl<'a> Graph<'a> {
             .map(|block| successors(blocks, &index, block))
             .collect();
         let (order, roots) = forest_order(&successors);
-        let idom = forest_dominators(&successors, &roots);
+        let immediate_dominators = forest_dominators(&successors, &roots);
         let mut children = vec![Vec::new(); count];
-        for (block, parent) in idom.iter().enumerate() {
+        for (block, parent) in immediate_dominators.iter().enumerate() {
             if let Some(parent) = parent {
                 children[*parent].push(block);
             }
@@ -107,7 +107,7 @@ impl<'a> Graph<'a> {
             if upper == lower {
                 return true;
             }
-            match idom[lower] {
+            match immediate_dominators[lower] {
                 Some(up) => lower = up,
                 None => return false,
             }
@@ -149,7 +149,7 @@ impl<'a> Graph<'a> {
             }
         }
         let mut loops = HashMap::new();
-        let mut tests: HashMap<usize, Vec<usize>> = HashMap::new();
+        let mut loop_test_exits: HashMap<usize, Vec<usize>> = HashMap::new();
         for (header, sources) in &latches {
             let mut body = vec![false; count];
             body[*header] = true;
@@ -166,18 +166,18 @@ impl<'a> Graph<'a> {
                 .flat_map(|test| successors[*test].iter().copied())
                 .filter(|exit| !body[*exit])
                 .collect();
-            tests.insert(*header, exits);
+            loop_test_exits.insert(*header, exits);
             loops.insert(*header, body);
         }
         let mut graph = Graph {
             blocks,
             successors,
             order,
-            idom,
+            immediate_dominators,
             children,
             merge,
             loops,
-            tests,
+            loop_test_exits,
             index,
             absorbed: std::collections::HashSet::new(),
             absorb,
@@ -202,7 +202,7 @@ impl<'a> Graph<'a> {
         for header in self.loops.keys() {
             let exits: Vec<usize> = (0..self.blocks.len())
                 .filter(|exit| {
-                    self.idom[*exit]
+                    self.immediate_dominators[*exit]
                         .is_some_and(|parent| self.hoisted(parent, *exit) == Some(*header))
                 })
                 .collect();
@@ -211,9 +211,9 @@ impl<'a> Graph<'a> {
             }
             // A short return already reads in place at each branch to it.
             let private = |exit: &usize| {
-                let parent = self.idom[*exit].expect("an exit has a parent");
+                let parent = self.immediate_dominators[*exit].expect("an exit has a parent");
                 !self.merge[*exit]
-                    && (absorb == Absorb::Every || !self.tests[header].contains(exit))
+                    && (absorb == Absorb::Every || !self.loop_test_exits[header].contains(exit))
                     && self.successors[parent].contains(exit)
                     && !self
                         .through_jumps(*exit)
@@ -336,7 +336,7 @@ impl<'a> Graph<'a> {
         if header {
             let mut leaving: Vec<usize> = (0..self.blocks.len())
                 .filter(|other| {
-                    let Some(parent) = self.idom[*other] else {
+                    let Some(parent) = self.immediate_dominators[*other] else {
                         return false;
                     };
                     parent != block
@@ -486,7 +486,7 @@ impl<'a> Graph<'a> {
         self.enclosing(from)
             .into_iter()
             .filter(|header| !self.in_loop(*header, target))
-            .all(|header| !self.tests[&header].contains(&target))
+            .all(|header| !self.loop_test_exits[&header].contains(&target))
     }
 
     /// The block a chain of blocks that only jump on ends at.
@@ -535,7 +535,7 @@ impl<'a> Graph<'a> {
     /// the target in the same loops. A switch emits each target once even
     /// when another case enters it; that edge still has its label.
     fn inlinable(&self, from: usize, target: usize) -> bool {
-        self.idom[target] == Some(from)
+        self.immediate_dominators[target] == Some(from)
             && (!self.merge[target]
                 || (self.switch_cases
                     && matches!(self.blocks[from].stmts.last(), Some(Stmt::Switch { .. }))))
@@ -600,7 +600,7 @@ impl Next {
 
 /// What runs once the node at `position` completes, `next` being what the
 /// end of the sequence reaches.
-fn after_of(nodes: &[Node], position: usize, next: &Next) -> Next {
+fn next_after_node(nodes: &[Node], position: usize, next: &Next) -> Next {
     let mut labels = Vec::new();
     for node in &nodes[position + 1..] {
         match node {
@@ -661,7 +661,7 @@ pub(super) fn entries(ir: &FunctionIr) -> Vec<u64> {
     }
     let graph = Graph::new(ir, Absorb::Nothing);
     (1..ir.blocks.len())
-        .filter(|block| graph.idom[*block].is_none() && !graph.padding(*block))
+        .filter(|block| graph.immediate_dominators[*block].is_none() && !graph.padding(*block))
         .map(|block| ir.blocks[block].start)
         .collect()
 }
@@ -670,7 +670,7 @@ pub(super) fn entries(ir: &FunctionIr) -> Vec<u64> {
 fn resolve(nodes: &mut Vec<Node>, next: &Next, enclosing: &mut Vec<Enclosing>) {
     let mut position = 0;
     while position < nodes.len() {
-        let after = after_of(nodes, position, next);
+        let after = next_after_node(nodes, position, next);
         let header = match position.checked_sub(1).map(|before| &nodes[before]) {
             Some(Node::Label(label)) => Some(*label),
             _ => None,
@@ -1161,7 +1161,7 @@ fn structure_with(ir: &FunctionIr, absorb: Absorb, switch_cases: bool) -> Option
     // Code the entry does not reach, and joins of it with code the entry
     // does reach, follow the function's own code.
     for block in 1..ir.blocks.len() {
-        if graph.idom[block].is_none() && !graph.padding(block) {
+        if graph.immediate_dominators[block].is_none() && !graph.padding(block) {
             let Some(body) = graph.tree(block, 0) else {
                 return None;
             };

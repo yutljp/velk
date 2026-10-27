@@ -260,7 +260,7 @@ fn projection(
         }
         values.push(value.clone());
     }
-    let mut next = ir
+    let mut last_register_index = ir
         .params
         .iter()
         .map(|param| param.index)
@@ -276,13 +276,13 @@ fn projection(
     for capture in &plan.captures {
         let mut pair = Vec::new();
         for member in &members {
-            let Some(index) = next.checked_add(1) else {
+            let Some(index) = last_register_index.checked_add(1) else {
                 return None;
             };
             if index >= crate::ir::VALUE_BASE {
                 return None;
             }
-            next = index;
+            last_register_index = index;
             pair.push(index);
             let base = format!("{}_{}", capture.object, member.name);
             if super::super::globals::reserved_identifier(&base) {

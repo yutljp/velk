@@ -122,7 +122,7 @@ fn drop_unread_frame_addresses(ir: &mut FunctionIr, sp: u16) {
 /// store address, or the base of a constant offset from one. Elsewhere, as under a
 /// mask, the stack pointer could not be named as a local.
 fn rebase_value(expr: &mut Expr, state: &Origins, sp: u16, frame: i64, pointer: bool) {
-    let written = match expr {
+    let stack_pointer_expression = match expr {
         Expr::Reg { index, width: 64 } => *index == sp,
         Expr::Bin {
             op: BinOp::Add,
@@ -135,7 +135,7 @@ fn rebase_value(expr: &mut Expr, state: &Origins, sp: u16, frame: i64, pointer: 
         _ => false,
     };
     if pointer
-        && !written
+        && !stack_pointer_expression
         && base_register(expr).is_some()
         && let Some(Some(offset)) = origin(expr, state)
         && offset < 0
@@ -225,7 +225,7 @@ fn unspill(ir: &mut FunctionIr, sp: u16) {
         if *width != 8 || *offset >= 0 || *target >= 0 || taken.contains(offset) {
             continue;
         }
-        let only = accesses.iter().all(|(other, other_width, other_stored)| {
+        let has_exclusive_access = accesses.iter().all(|(other, other_width, other_stored)| {
             let overlaps =
                 *other < offset + 8 && other.saturating_add(i64::from(*other_width)) > *offset;
             !overlaps
@@ -233,7 +233,7 @@ fn unspill(ir: &mut FunctionIr, sp: u16) {
                     && *other_width == 8
                     && other_stored.is_none_or(|value| value == Some(*target)))
         });
-        if only {
+        if has_exclusive_access {
             spills.insert(*offset, *target);
         }
     }
@@ -297,14 +297,14 @@ fn frame_uses(
         taken.insert(offset);
         return;
     }
-    let offset = matches!(expr, Expr::Bin { op: BinOp::Add, lhs, rhs }
+    let constant_offset = matches!(expr, Expr::Bin { op: BinOp::Add, lhs, rhs }
         if matches!(lhs.as_ref(), Expr::Const(_)) || matches!(rhs.as_ref(), Expr::Const(_)));
     for child in crate::ir::visit::children(expr) {
         frame_uses(
             child,
             state,
             OperandUse::Value,
-            pointer && offset,
+            pointer && constant_offset,
             accesses,
             taken,
         );

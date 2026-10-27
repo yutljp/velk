@@ -2,7 +2,7 @@
 
 /// Casts to a scalar, pointer or structure type, such as `(int8_t)` or `(struct s1 *)`.
 pub(crate) fn casts(code: &str) -> usize {
-    cast_types(code)
+    parenthesized_text(code)
         .filter(|ty| {
             let ty = ty.trim();
             let mut inner = ty.trim_end_matches([' ', '*']);
@@ -43,7 +43,7 @@ pub(crate) fn casts(code: &str) -> usize {
 /// Counts casts using the narrower type recognition used to select memory transfers.
 pub(crate) fn transfer_casts(text: &str) -> usize {
     let mut count = 0;
-    for ty in cast_types(text) {
+    for ty in parenthesized_text(text) {
         let ty = ty.trim_end_matches([' ', '*']);
         if ty.ends_with("_t")
             && ty
@@ -63,7 +63,7 @@ pub(crate) fn transfer_casts(text: &str) -> usize {
     count
 }
 
-fn cast_types(code: &str) -> impl Iterator<Item = &str> {
+fn parenthesized_text(code: &str) -> impl Iterator<Item = &str> {
     code.match_indices('(').filter_map(|(start, _)| {
         let rest = &code[start + 1..];
         let Some(end) = rest.find(')') else {

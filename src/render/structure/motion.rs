@@ -1,7 +1,7 @@
 use crate::ir::visit::statement_registers;
 use crate::ir::{Expr, FunctionIr, Stmt};
 
-fn same(left: &Stmt, right: &Stmt) -> bool {
+fn same_assignment(left: &Stmt, right: &Stmt) -> bool {
     match (left, right) {
         (Stmt::Assign { dest: a, value: x }, Stmt::Assign { dest: b, value: y }) => {
             a == b && x == y
@@ -11,10 +11,10 @@ fn same(left: &Stmt, right: &Stmt) -> bool {
 }
 
 // Keep memory reads and potentially trapping operations in place.
-fn pure(expr: &Expr) -> bool {
+fn safe_to_move_expression(expr: &Expr) -> bool {
     match expr {
         Expr::Const(_) | Expr::Reg { .. } => true,
-        Expr::SignExtend { value, .. } => pure(value),
+        Expr::SignExtend { value, .. } => safe_to_move_expression(value),
         Expr::Bin {
             op:
                 crate::ir::BinOp::Add
@@ -24,25 +24,27 @@ fn pure(expr: &Expr) -> bool {
                 | crate::ir::BinOp::Xor,
             lhs,
             rhs,
-        } => pure(lhs) && pure(rhs),
+        } => safe_to_move_expression(lhs) && safe_to_move_expression(rhs),
         _ => false,
     }
 }
 
 fn movable(stmt: &Stmt) -> bool {
     match stmt {
-        Stmt::Assign { value, .. } => pure(value),
+        Stmt::Assign { value, .. } => safe_to_move_expression(value),
         _ => false,
     }
 }
 
 fn independent(left: &Stmt, right: &Stmt) -> bool {
-    if !matches!(right, Stmt::Assign { value, .. } if pure(value)) {
+    if !matches!(right, Stmt::Assign { value, .. } if safe_to_move_expression(value)) {
         return false;
     }
-    let (lw, lr) = statement_registers(left);
-    let (rw, rr) = statement_registers(right);
-    lw.is_disjoint(&rw) && lw.is_disjoint(&rr) && rw.is_disjoint(&lr)
+    let (left_writes, left_reads) = statement_registers(left);
+    let (right_writes, right_reads) = statement_registers(right);
+    left_writes.is_disjoint(&right_writes)
+        && left_writes.is_disjoint(&right_reads)
+        && right_writes.is_disjoint(&left_reads)
 }
 
 fn body_end(stmts: &[Stmt]) -> usize {
@@ -55,7 +57,7 @@ fn body_end(stmts: &[Stmt]) -> usize {
 
 /// Move identical setup to joins, and identical branch prefixes before the test.
 /// Only independent register assignments may be crossed; memory order is unchanged.
-pub(super) fn shared(ir: &FunctionIr) -> Option<FunctionIr> {
+pub(super) fn share_assignments(ir: &FunctionIr) -> Option<FunctionIr> {
     if !ir.landing_pads.is_empty()
         || ir
             .blocks
@@ -106,7 +108,7 @@ pub(super) fn shared(ir: &FunctionIr) -> Option<FunctionIr> {
                     let body = &out.blocks[*from].stmts;
                     let end = body_end(body);
                     let Some(position) = (0..end).rev().find(|position| {
-                        same(&body[*position], stmt)
+                        same_assignment(&body[*position], stmt)
                             && body[*position + 1..end]
                                 .iter()
                                 .all(|other| independent(stmt, other))
@@ -144,7 +146,7 @@ pub(super) fn shared(ir: &FunctionIr) -> Option<FunctionIr> {
                     out.blocks[*to]
                         .stmts
                         .first()
-                        .is_some_and(|other| same(other, &stmt))
+                        .is_some_and(|other| same_assignment(other, &stmt))
                 })
             {
                 break;
@@ -156,13 +158,18 @@ pub(super) fn shared(ir: &FunctionIr) -> Option<FunctionIr> {
             let complete = match test {
                 Stmt::Brif {
                     target, lhs, rhs, ..
-                } => resolved(target) && from + 1 < ir.blocks.len() && pure(lhs) && pure(rhs),
+                } => {
+                    resolved(target)
+                        && from + 1 < ir.blocks.len()
+                        && safe_to_move_expression(lhs)
+                        && safe_to_move_expression(rhs)
+                }
                 Stmt::Switch {
                     index,
                     cases,
                     default: Some(default),
                 } => {
-                    pure(index)
+                    safe_to_move_expression(index)
                         && resolved(default)
                         && cases.iter().all(|(_, target)| resolved(target))
                 }
@@ -241,8 +248,11 @@ mod tests {
     #[test]
     fn sinks_interleaved_constants_but_preserves_observers() {
         let ir = diamond();
-        let shared = shared(&ir).unwrap();
-        assert!(same(&shared.blocks[3].stmts[0], &ir.blocks[1].stmts[0]));
+        let shared = share_assignments(&ir).unwrap();
+        assert!(same_assignment(
+            &shared.blocks[3].stmts[0],
+            &ir.blocks[1].stmts[0]
+        ));
         for observer in [
             assign(2, Expr::reg(1, 64)),
             Stmt::Store {
@@ -279,7 +289,7 @@ mod tests {
                 rhs: Expr::Const(0),
                 target: 20,
             };
-            assert!(super::shared(&ir).is_none());
+            assert!(super::share_assignments(&ir).is_none());
         }
     }
 
@@ -290,15 +300,18 @@ mod tests {
         ir.blocks[2].stmts.push(Stmt::Ret {
             value: Expr::reg(1, 64),
         });
-        let result = shared(&ir).unwrap();
-        assert!(same(&result.blocks[0].stmts[0], &ir.blocks[1].stmts[0]));
+        let result = share_assignments(&ir).unwrap();
+        assert!(same_assignment(
+            &result.blocks[0].stmts[0],
+            &ir.blocks[1].stmts[0]
+        ));
         ir.blocks[0].stmts[0] = Stmt::Brif {
             cond: Cond::Eq,
             lhs: Expr::reg(1, 64),
             rhs: Expr::Const(0),
             target: 20,
         };
-        assert!(shared(&ir).is_none());
+        assert!(share_assignments(&ir).is_none());
         ir.blocks[0].stmts[0] = Stmt::Brif {
             cond: Cond::Eq,
             lhs: Expr::reg(0, 64),
@@ -306,19 +319,19 @@ mod tests {
             target: 20,
         };
         ir.blocks[3].stmts = vec![Stmt::Br { target: Some(20) }];
-        assert!(shared(&ir).is_none());
+        assert!(share_assignments(&ir).is_none());
     }
 
     #[test]
     fn excludes_unknown_edges_and_exception_entries() {
         let mut ir = diamond();
         ir.landing_pads.push((30, vec![(10, 20)]));
-        assert!(shared(&ir).is_none());
+        assert!(share_assignments(&ir).is_none());
         ir.landing_pads.clear();
         ir.blocks[3].stmts = vec![Stmt::BrIndirect {
             target: Expr::reg(0, 64),
         }];
-        assert!(shared(&ir).is_none());
+        assert!(share_assignments(&ir).is_none());
     }
 
     #[test]
@@ -328,9 +341,15 @@ mod tests {
             ir.blocks[at].stmts.insert(1, assign(3, Expr::reg(1, 64)));
         }
         ir.blocks[2].stmts.pop();
-        let result = shared(&ir).unwrap();
-        assert!(same(&result.blocks[3].stmts[0], &ir.blocks[1].stmts[0]));
-        assert!(same(&result.blocks[3].stmts[1], &ir.blocks[1].stmts[1]));
+        let result = share_assignments(&ir).unwrap();
+        assert!(same_assignment(
+            &result.blocks[3].stmts[0],
+            &ir.blocks[1].stmts[0]
+        ));
+        assert!(same_assignment(
+            &result.blocks[3].stmts[1],
+            &ir.blocks[1].stmts[1]
+        ));
         assert_eq!(result.blocks[1].stmts.len(), 2);
         assert_eq!(result.blocks[2].stmts.len(), 1);
     }
@@ -347,12 +366,15 @@ mod tests {
             cases: vec![(0, 10), (1, 10), (2, 20)],
             default: Some(20),
         }];
-        let result = shared(&ir).unwrap();
-        assert!(same(&result.blocks[0].stmts[0], &ir.blocks[1].stmts[0]));
+        let result = share_assignments(&ir).unwrap();
+        assert!(same_assignment(
+            &result.blocks[0].stmts[0],
+            &ir.blocks[1].stmts[0]
+        ));
         if let Stmt::Switch { cases, .. } = &mut ir.blocks[0].stmts[0] {
             cases.push((3, 999));
         }
-        assert!(shared(&ir).is_none());
+        assert!(share_assignments(&ir).is_none());
     }
 
     #[test]
@@ -369,7 +391,7 @@ mod tests {
                 dest: RegRef { index: 1, width },
                 value: Expr::Const(20),
             };
-            assert!(shared(&ir).is_none());
+            assert!(share_assignments(&ir).is_none());
         }
         let mut ir = diamond();
         for at in [1, 2] {
@@ -381,6 +403,6 @@ mod tests {
             rhs: Expr::Const(0),
             target: 20,
         }];
-        assert!(shared(&ir).is_none());
+        assert!(share_assignments(&ir).is_none());
     }
 }

@@ -390,7 +390,7 @@ mod tests {
 
     #[test]
     fn conditional_jump_inlines_a_closed_return_tree() {
-        let ret = || {
+        let return_node = || {
             Node::Stmt(Stmt::Ret {
                 value: Expr::Const(1),
             })
@@ -402,14 +402,14 @@ mod tests {
                 rhs: Expr::Const(0),
                 target: 10,
             }),
-            ret(),
+            return_node(),
             Node::Label(10),
             Node::If {
                 cond: Cond::Eq,
                 lhs: Expr::reg(1, 64),
                 rhs: Expr::Const(0),
-                then: vec![ret()],
-                els: vec![ret()],
+                then: vec![return_node()],
+                els: vec![return_node()],
             },
         ];
         inline_return_tails(&mut nodes);

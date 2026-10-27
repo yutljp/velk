@@ -90,7 +90,7 @@ fn combined_guard(first: Expr, second: Expr, body: &[Node], either: bool) -> Opt
         then: Box::new(then),
         els: Box::new(els),
     };
-    if tests(&condition) > MAX_TESTS {
+    if comparison_count(&condition) > MAX_TESTS {
         return None;
     }
     Some(Node::If {
@@ -112,7 +112,7 @@ fn nested_guard(node: &Node) -> Option<Node> {
 }
 
 fn terminal_guards(first: &Node, second: &Node) -> Option<Node> {
-    use super::merge_exits::statement;
+    use super::merge_exits::comparable_statement;
 
     let (Some((first, body)), Some((second, other))) =
         (selected_guard(first), selected_guard(second))
@@ -126,7 +126,7 @@ fn terminal_guards(first: &Node, second: &Node) -> Option<Node> {
     };
     let same = match (last, other_last) {
         (Node::Stmt(one @ (Stmt::Ret { .. } | Stmt::Br { target: Some(_) })), Node::Stmt(two)) => {
-            statement(one) == statement(two)
+            comparable_statement(one) == comparable_statement(two)
         }
         (Node::Stmt(Stmt::Trap), Node::Stmt(Stmt::Trap))
         | (Node::Break, Node::Break)
@@ -142,7 +142,7 @@ fn terminal_guards(first: &Node, second: &Node) -> Option<Node> {
         else {
             return None;
         };
-        if statement(one) != statement(two) {
+        if comparable_statement(one) != comparable_statement(two) {
             return None;
         }
     }
@@ -163,14 +163,14 @@ pub(super) fn short_circuited(ir: &FunctionIr) -> Option<FunctionIr> {
     let mut changed = false;
     let mut block = 0;
     let mut entries = predecessors(&ir);
-    let mut index = positions(&ir);
+    let mut index = block_positions(&ir);
     while block < ir.blocks.len() {
         match join(&ir, &entries, &index, block) {
             Some((stmt, removed)) => {
                 *ir.blocks[block].stmts.last_mut().expect("a test") = stmt;
                 ir.blocks.remove(removed);
                 entries = predecessors(&ir);
-                index = positions(&ir);
+                index = block_positions(&ir);
                 changed = true;
                 // The joined test may complete the one before it in turn.
                 block = block.saturating_sub(1);
@@ -181,7 +181,7 @@ pub(super) fn short_circuited(ir: &FunctionIr) -> Option<FunctionIr> {
     changed.then_some(ir)
 }
 
-fn positions(ir: &FunctionIr) -> HashMap<u64, usize> {
+fn block_positions(ir: &FunctionIr) -> HashMap<u64, usize> {
     ir.blocks
         .iter()
         .enumerate()
@@ -278,7 +278,7 @@ fn join(
             then: Box::new(then),
             els: Box::new(els),
         };
-        if tests(&joined) > MAX_TESTS {
+        if comparison_count(&joined) > MAX_TESTS {
             continue;
         }
         let stmt = Stmt::Brif {
@@ -295,7 +295,10 @@ fn join(
 /// Whether going to `one` does what going to `other` does: they lead to
 /// the same block, or to blocks that only return the same value.
 fn same_place(ir: &FunctionIr, index: &HashMap<u64, usize>, one: u64, other: u64) -> bool {
-    let (one, other) = (settle(ir, index, one), settle(ir, index, other));
+    let (one, other) = (
+        follow_branches(ir, index, one),
+        follow_branches(ir, index, other),
+    );
     if one == other {
         return true;
     }
@@ -312,7 +315,11 @@ fn same_place(ir: &FunctionIr, index: &HashMap<u64, usize>, one: u64, other: u64
 }
 
 /// Where control goes from a block start, past blocks that only jump.
-pub(super) fn settle(ir: &FunctionIr, index: &HashMap<u64, usize>, mut target: u64) -> u64 {
+pub(super) fn follow_branches(
+    ir: &FunctionIr,
+    index: &HashMap<u64, usize>,
+    mut target: u64,
+) -> u64 {
     for _ in 0..8 {
         match index
             .get(&target)
@@ -350,13 +357,23 @@ fn is_truth(expr: &Expr) -> bool {
 }
 
 /// How many comparisons a truth value makes.
-fn tests(expr: &Expr) -> usize {
+fn comparison_count(expr: &Expr) -> usize {
     match expr {
         Expr::Select { lhs, then, els, .. } => {
-            let own = if is_truth(lhs) { tests(lhs) } else { 1 };
+            let own = if is_truth(lhs) {
+                comparison_count(lhs)
+            } else {
+                1
+            };
             own + [then, els]
                 .into_iter()
-                .map(|value| if is_truth(value) { tests(value) } else { 0 })
+                .map(|value| {
+                    if is_truth(value) {
+                        comparison_count(value)
+                    } else {
+                        0
+                    }
+                })
                 .sum::<usize>()
         }
         _ => 0,
@@ -903,7 +920,7 @@ mod tests {
             (50, 50),
             (99, 99),
         ] {
-            assert_eq!(super::settle(&ir, &index, start), expected);
+            assert_eq!(super::follow_branches(&ir, &index, start), expected);
         }
         for length in [3, 4, 5] {
             let mut body = vec![increment(1)];

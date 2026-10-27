@@ -11,7 +11,7 @@ const PROJECT: &str = "/* velk project declarations */\n";
 #[derive(Default)]
 pub struct Prelude {
     definitions: BTreeSet<String>,
-    structures: structures::Names,
+    structures: structures::StructureTagNames,
 }
 
 impl Prelude {
@@ -117,7 +117,7 @@ impl Prelude {
             return String::new();
         }
         let mut definitions: Vec<_> = self.definitions.iter().collect();
-        definitions.sort_by_key(|definition| order(definition));
+        definitions.sort_by_key(|definition| definition_order(definition));
         let mut dependencies = vec![0usize; definitions.len()];
         let mut dependents = vec![Vec::new(); definitions.len()];
         for (record, other) in definitions.iter().enumerate() {
@@ -165,7 +165,7 @@ impl Prelude {
         let mut output = START.to_owned();
         let mut previous: Option<(u8, bool)> = None;
         for definition in ordered {
-            let group = match order(definition) {
+            let group = match definition_order(definition) {
                 1 | 2 => 1,
                 group => group,
             };
@@ -183,7 +183,7 @@ impl Prelude {
     }
 }
 
-fn order(definition: &str) -> u8 {
+fn definition_order(definition: &str) -> u8 {
     if definition.starts_with(PROJECT) || definition.starts_with("#include ") {
         0
     } else if [
@@ -227,7 +227,7 @@ pub(crate) fn project_section(declarations: &str) -> String {
 /// Combine standalone outputs with their support definitions printed once.
 #[must_use]
 pub fn combine(code: &str) -> String {
-    let code = structures::Names::default().resolve(code);
+    let code = structures::StructureTagNames::default().resolve(code);
     let code = super::globals::resolve(&code);
     let mut prelude = Prelude::default();
     let body = prelude.extract(&code);

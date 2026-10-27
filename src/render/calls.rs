@@ -635,7 +635,7 @@ pub(super) fn call_in_reader(
     if !declared.integer {
         return None;
     }
-    let whole = |expr: &Expr| match expr {
+    let is_result_or_masked_result = |expr: &Expr| match expr {
         Expr::Bin {
             op: BinOp::And,
             lhs,
@@ -645,7 +645,7 @@ pub(super) fn call_in_reader(
         }
         _ => *expr == Expr::reg(dest, result.width),
     };
-    let apart = |exprs: &[&Expr]| exprs.iter().all(|expr| !reads_memory(expr));
+    let do_not_read_memory = |exprs: &[&Expr]| exprs.iter().all(|expr| !reads_memory(expr));
     // All operands are evaluated, and none can access memory or fault before
     // the call. Keep conditional evaluation and unmodeled operations separate.
     fn arithmetic(expr: &Expr) -> bool {
@@ -670,7 +670,7 @@ pub(super) fn call_in_reader(
             args: Some(args),
             ..
         }) => {
-            let Some(at) = args.iter().position(whole) else {
+            let Some(at) = args.iter().position(is_result_or_masked_result) else {
                 return None;
             };
             let others: Vec<&Expr> = through
@@ -682,14 +682,18 @@ pub(super) fn call_in_reader(
                         .map(|(_, arg)| arg),
                 )
                 .collect();
-            if !apart(&others) {
+            if !do_not_read_memory(&others) {
                 return None;
             }
             false
         }
-        Node::Stmt(Stmt::Store { addr, value, .. }) if whole(value) && apart(&[addr]) => false,
+        Node::Stmt(Stmt::Store { addr, value, .. })
+            if is_result_or_masked_result(value) && do_not_read_memory(&[addr]) =>
+        {
+            false
+        }
         Node::Stmt(Stmt::Assign { value, .. } | Stmt::Ret { value })
-            if whole(value) || reads_result(value) =>
+            if is_result_or_masked_result(value) || reads_result(value) =>
         {
             false
         }
@@ -698,7 +702,11 @@ pub(super) fn call_in_reader(
             lhs,
             rhs,
             ..
-        } if (whole(lhs) && apart(&[rhs])) || (whole(rhs) && apart(&[lhs])) => true,
+        } if (is_result_or_masked_result(lhs) && do_not_read_memory(&[rhs]))
+            || (is_result_or_masked_result(rhs) && do_not_read_memory(&[lhs])) =>
+        {
+            true
+        }
         _ => return None,
     };
     if !super::via_comment(call, ctx).is_empty() {

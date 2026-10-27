@@ -41,7 +41,7 @@ pub(crate) fn narrow_variables(
     pointers: &HashSet<u16>,
 ) -> HashMap<u16, Narrow> {
     let held = crate::render::int::value_bits(ir);
-    let saved = saved(ir, &held);
+    let saved = saved_casts(ir, &held);
     let decide = |readers: &Readers| -> HashMap<u16, Narrow> {
         ints.iter()
             .filter_map(|index| {
@@ -99,7 +99,7 @@ pub(crate) fn narrow_variables(
 /// or a cast to fewer bits and a narrow one would not: an assignment of a
 /// value masked to them or of a register read narrower, and a narrower
 /// read of the register itself.
-fn saved(ir: &FunctionIr, held: &HashMap<u16, u32>) -> HashMap<(u16, u32), usize> {
+fn saved_casts(ir: &FunctionIr, held: &HashMap<u16, u32>) -> HashMap<(u16, u32), usize> {
     fn reads(expr: &Expr, held: &HashMap<u16, u32>, counts: &mut HashMap<(u16, u32), usize>) {
         match expr {
             Expr::Reg { index, width }
@@ -200,7 +200,7 @@ pub(crate) fn read_bits(
                         .and_then(|param| param.ty.integer())
                         .map_or(64, |(bits, _)| bits)
                 };
-                reads.expr(value, bits);
+                reads.read_expression(value, bits);
             }
             // A choice stored in place is printed as a compare-and-exchange,
             // which reads its values whole.
@@ -209,12 +209,12 @@ pub(crate) fn read_bits(
                 value: value @ Expr::Select { .. },
                 ..
             } => {
-                reads.expr(addr, 64);
-                reads.expr(value, 64);
+                reads.read_expression(addr, 64);
+                reads.read_expression(value, 64);
             }
             Stmt::Store { addr, value, width } => {
-                reads.expr(addr, 64);
-                reads.expr(value, u32::from(*width) * 8);
+                reads.read_expression(addr, 64);
+                reads.read_expression(value, u32::from(*width) * 8);
             }
             Stmt::Brif { lhs, rhs, .. } => reads.compared(lhs, rhs),
             Stmt::Switch { index, .. } => reads.compared(index, &Expr::Const(0)),
@@ -224,14 +224,14 @@ pub(crate) fn read_bits(
                     args,
                 } => {
                     for (at, arg) in args.iter().enumerate() {
-                        reads.expr(arg, if at == 0 { returned } else { 64 });
+                        reads.read_expression(arg, if at == 0 { returned } else { 64 });
                     }
                 }
-                _ => reads.expr(value, returned),
+                _ => reads.read_expression(value, returned),
             },
             _ => {
                 for value in stmt.operands() {
-                    reads.expr(value, 64);
+                    reads.read_expression(value, 64);
                 }
             }
         }
@@ -296,18 +296,18 @@ impl Reads<'_> {
                 self.widens(side, Some(other), bits);
             }
         }
-        self.expr(lhs, bits);
-        self.expr(rhs, bits);
+        self.read_expression(lhs, bits);
+        self.read_expression(rhs, bits);
     }
 
     /// The registers `expr` reads, when its reader looks at its low `bits`.
-    fn expr(&mut self, expr: &Expr, bits: u32) {
+    fn read_expression(&mut self, expr: &Expr, bits: u32) {
         let bits = bits.min(64);
         match expr {
             Expr::Reg { index, width } => self.note(*index, bits.min(u32::from(*width))),
             Expr::Const(_) => {}
-            Expr::Load { addr, .. } => self.expr(addr, 64),
-            Expr::SignExtend { value, width } => self.expr(value, u32::from(*width) * 8),
+            Expr::Load { addr, .. } => self.read_expression(addr, 64),
+            Expr::SignExtend { value, width } => self.read_expression(value, u32::from(*width) * 8),
             Expr::Select {
                 lhs,
                 rhs,
@@ -316,8 +316,8 @@ impl Reads<'_> {
                 ..
             } => {
                 self.compared(lhs, rhs);
-                self.expr(then, bits);
-                self.expr(els, bits);
+                self.read_expression(then, bits);
+                self.read_expression(els, bits);
             }
             Expr::Apply { op, args } => {
                 let bits = match op {
@@ -334,7 +334,7 @@ impl Reads<'_> {
                     _ => 64,
                 };
                 for arg in args {
-                    self.expr(arg, bits);
+                    self.read_expression(arg, bits);
                 }
             }
             Expr::Bin { op, lhs, rhs } => match op {
@@ -348,65 +348,65 @@ impl Reads<'_> {
                     {
                         self.readers.extended.insert((*index, kept));
                     }
-                    self.expr(lhs, bits.min(kept));
+                    self.read_expression(lhs, bits.min(kept));
                 }
                 // A sum through a pointer or a frame address is printed as
                 // an index or an offset, whole.
-                BinOp::Add | BinOp::Sub if bits < 64 && self.addresses(expr) => {
-                    self.expr(lhs, 64);
-                    self.expr(rhs, 64);
+                BinOp::Add | BinOp::Sub if bits < 64 && self.contains_pointer_term(expr) => {
+                    self.read_expression(lhs, 64);
+                    self.read_expression(rhs, 64);
                 }
                 BinOp::Sub if matches!(lhs.as_ref(), Expr::Const(0)) => {
                     self.widens(rhs, None, bits);
-                    self.expr(rhs, bits);
+                    self.read_expression(rhs, bits);
                 }
                 BinOp::Xor if matches!(rhs.as_ref(), Expr::Const(u64::MAX)) => {
                     self.widens(lhs, None, bits);
-                    self.expr(lhs, bits);
+                    self.read_expression(lhs, bits);
                 }
                 BinOp::Add | BinOp::Sub | BinOp::Mul => {
-                    if crate::render::int::zero_bits_in(expr, self.held) > 31 {
+                    if crate::render::int::value_width_in(expr, self.held) > 31 {
                         self.widens(lhs, Some(rhs), bits);
                         self.widens(rhs, Some(lhs), bits);
                     }
-                    self.expr(lhs, bits);
-                    self.expr(rhs, bits);
+                    self.read_expression(lhs, bits);
+                    self.read_expression(rhs, bits);
                 }
                 BinOp::And | BinOp::Or | BinOp::Xor => {
-                    self.expr(lhs, bits);
-                    self.expr(rhs, bits);
+                    self.read_expression(lhs, bits);
+                    self.read_expression(rhs, bits);
                 }
                 BinOp::Shl => {
-                    if crate::render::int::zero_bits_in(expr, self.held) > 31 {
+                    if crate::render::int::value_width_in(expr, self.held) > 31 {
                         self.widens(lhs, None, bits);
                     }
                     let kept = match rhs.as_ref() {
                         Expr::Const(amount) if *amount < 64 => bits.saturating_sub(*amount as u32),
                         _ => bits,
                     };
-                    self.expr(lhs, kept);
-                    self.expr(rhs, 64);
+                    self.read_expression(lhs, kept);
+                    self.read_expression(rhs, 64);
                 }
                 BinOp::Shr => {
                     let needed = match rhs.as_ref() {
                         Expr::Const(amount) => bits.saturating_add((*amount).min(64) as u32),
                         _ => 64,
                     };
-                    self.expr(lhs, needed);
-                    self.expr(rhs, 64);
+                    self.read_expression(lhs, needed);
+                    self.read_expression(rhs, 64);
                 }
                 BinOp::Sar => {
-                    self.expr(lhs, operand_width(lhs, rhs));
-                    self.expr(rhs, 64);
+                    self.read_expression(lhs, operand_width(lhs, rhs));
+                    self.read_expression(rhs, 64);
                 }
                 BinOp::DivS | BinOp::ModS => {
                     let width = operand_width(lhs, rhs);
-                    self.expr(lhs, width);
-                    self.expr(rhs, width);
+                    self.read_expression(lhs, width);
+                    self.read_expression(rhs, width);
                 }
                 BinOp::DivU | BinOp::ModU | BinOp::MulHigh | BinOp::MulHighS => {
-                    self.expr(lhs, 64);
-                    self.expr(rhs, 64);
+                    self.read_expression(lhs, 64);
+                    self.read_expression(rhs, 64);
                 }
             },
         }
@@ -414,7 +414,7 @@ impl Reads<'_> {
 
     /// Whether a term of the sum `expr` is a pointer, or a 64-bit value
     /// loaded from memory that may be one.
-    fn addresses(&self, expr: &Expr) -> bool {
+    fn contains_pointer_term(&self, expr: &Expr) -> bool {
         let mut terms = Vec::new();
         crate::render::naming::sum_terms(expr, false, &mut terms);
         terms.iter().any(|(term, _)| match term {

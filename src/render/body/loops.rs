@@ -97,7 +97,7 @@ pub(super) fn for_loop(
     } else {
         rest
     };
-    if let crate::render::naming::roles::Counter::Slot(addr) = counter
+    if let crate::render::naming::roles::NamedPlace::Slot(addr) = counter
         && !ctx.slots.contains_key(&render_expr(&addr, ctx))
     {
         return None;
@@ -124,18 +124,18 @@ pub(super) fn for_loop(
             }
         }
     };
-    let mut out = String::new();
-    indent(depth, &mut out);
-    out.push_str(&format!(
+    let mut output = String::new();
+    indent(depth, &mut output);
+    output.push_str(&format!(
         "for ({}; {}; {}) {{\n",
         clause(init),
         condition(*cond, lhs, rhs, ctx),
         step_text
     ));
-    render_nodes(rest, depth + 1, &mut out, ctx);
-    indent(depth, &mut out);
-    out.push_str("}\n");
-    Some(out)
+    render_nodes(rest, depth + 1, &mut output, ctx);
+    indent(depth, &mut output);
+    output.push_str("}\n");
+    Some(output)
 }
 
 // Prove the first bottom test from a preceding early-return guard. Walk

@@ -228,7 +228,7 @@ pub(super) fn render_operation(op: Operation, args: &[Expr], ctx: &Ctx<'_>) -> S
         Operation::IntToFloat { signed, bits, to } => {
             let operand = integral(&args[0], ctx, u32::from(bits));
             // An operand already of the integer type converts as it is.
-            let typed = integer_operand(&operand, bits, signed);
+            let typed = matches_integer_type(&operand, bits, signed);
             if typed {
                 format!("({}){}", float_type(to), operand.within(12, false).text)
             } else {
@@ -356,7 +356,7 @@ fn implicit_double(expr: &Expr, ctx: &Ctx<'_>, parent: u8, right: bool) -> Optio
     implicit_conversion(expr, Precision::Double, ctx, parent, right)
 }
 
-fn integer_operand(operand: &Printed, bits: u8, signed: bool) -> bool {
+fn matches_integer_type(operand: &Printed, bits: u8, signed: bool) -> bool {
     operand.ty
         == Int {
             bits: u32::from(bits),
@@ -381,7 +381,7 @@ fn implicit_conversion(
         }
         Operation::IntToFloat { signed, bits, to } if *to == precision => {
             let operand = integral(&args[0], ctx, u32::from(*bits));
-            let typed = integer_operand(&operand, *bits, *signed);
+            let typed = matches_integer_type(&operand, *bits, *signed);
             let operand = if typed {
                 operand
             } else {
@@ -527,7 +527,7 @@ mod tests {
                                 13,
                             );
                             assert_eq!(
-                                integer_operand(&operand, bits, signed),
+                                matches_integer_type(&operand, bits, signed),
                                 operand_bits == u32::from(bits)
                                     && operand_signed == signed
                                     && exact >= u32::from(bits)

@@ -6,7 +6,7 @@
 /// overlapping accesses `group` (offset from the object's start, width)
 /// fill, each a whole number of its widths into the object.
 pub(crate) fn cell(group: &[(i64, u8)]) -> Option<u8> {
-    let natural =
+    let is_naturally_aligned =
         |offset: i64, width: u8| matches!(width, 1 | 2 | 4 | 8) && offset % i64::from(width) == 0;
     let Some(start) = group.iter().map(|(offset, _)| *offset).min() else {
         return None;
@@ -21,8 +21,11 @@ pub(crate) fn cell(group: &[(i64, u8)]) -> Option<u8> {
     let Ok(size) = u8::try_from(stop - start) else {
         return None;
     };
-    (natural(start, size) && group.iter().all(|(offset, width)| natural(*offset, *width)))
-        .then_some(size)
+    (is_naturally_aligned(start, size)
+        && group
+            .iter()
+            .all(|(offset, width)| is_naturally_aligned(*offset, *width)))
+    .then_some(size)
 }
 
 #[derive(Clone, Copy)]

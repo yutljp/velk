@@ -14,7 +14,7 @@ pub(super) fn fold_saved_parameters(ir: &mut FunctionIr) {
     drop_unused_parameter_outputs(ir);
     let params: Vec<u16> = ir.params.iter().map(|param| param.index).collect();
     for param in params {
-        fold(ir, param, IntegerTypes::Exact);
+        fold_parameter_copies(ir, param, IntegerTypes::Exact);
     }
 }
 
@@ -89,7 +89,7 @@ pub(super) fn integer_copy_candidate(ir: &FunctionIr) -> Option<FunctionIr> {
     let mut candidate = ir.clone();
     let before: usize = ir.blocks.iter().map(|block| block.stmts.len()).sum();
     for param in params {
-        fold(&mut candidate, param, IntegerTypes::SameWidth);
+        fold_parameter_copies(&mut candidate, param, IntegerTypes::SameWidth);
     }
     let after: usize = candidate.blocks.iter().map(|block| block.stmts.len()).sum();
     (after < before).then_some(candidate)
@@ -219,7 +219,7 @@ fn slot_accesses(ir: &FunctionIr, slot_of: &impl Fn(&Expr) -> Option<u64>) -> Ve
     accesses
 }
 
-fn fold(ir: &mut FunctionIr, param: u16, integer_types: IntegerTypes) {
+fn fold_parameter_copies(ir: &mut FunctionIr, param: u16, integer_types: IntegerTypes) {
     let sp = stack_pointer(ir.isa);
     let atomics = ir
         .blocks
@@ -551,7 +551,7 @@ fn replace_loads(stmt: &mut Stmt, held: &impl Fn(&Expr) -> bool, param: u16) {
 /// True when the stack pointer appears only as the whole address of a load
 /// or store, or as such an address plus a constant.
 fn stack_only_as_slots(ir: &FunctionIr, sp: u16) -> bool {
-    fn ok(expr: &Expr, sp: u16, address: bool) -> bool {
+    fn stack_pointer_use_is_safe(expr: &Expr, sp: u16, address: bool) -> bool {
         match expr {
             Expr::Reg { index, .. } => *index != sp || address,
             Expr::Bin {
@@ -564,19 +564,27 @@ fn stack_only_as_slots(ir: &FunctionIr, sp: u16) -> bool {
             {
                 true
             }
-            Expr::Load { addr, .. } => ok(addr, sp, true),
+            Expr::Load { addr, .. } => stack_pointer_use_is_safe(addr, sp, true),
             other => crate::ir::visit::children(other)
                 .into_iter()
-                .all(|child| ok(child, sp, false)),
+                .all(|child| stack_pointer_use_is_safe(child, sp, false)),
         }
     }
     ir.blocks
         .iter()
         .flat_map(|block| &block.stmts)
         .all(|stmt| match stmt {
-            Stmt::Store { addr, value, .. } => ok(addr, sp, true) && ok(value, sp, false),
-            Stmt::Assign { dest, value } => dest.index != sp && ok(value, sp, false),
-            other => other.operands().into_iter().all(|expr| ok(expr, sp, false)),
+            Stmt::Store { addr, value, .. } => {
+                stack_pointer_use_is_safe(addr, sp, true)
+                    && stack_pointer_use_is_safe(value, sp, false)
+            }
+            Stmt::Assign { dest, value } => {
+                dest.index != sp && stack_pointer_use_is_safe(value, sp, false)
+            }
+            other => other
+                .operands()
+                .into_iter()
+                .all(|expr| stack_pointer_use_is_safe(expr, sp, false)),
         })
 }
 

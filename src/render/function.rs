@@ -35,10 +35,10 @@ pub fn render_with_dependencies(
         };
     }
     let Some(merged) = super::structure::merge_exits::merged(ir) else {
-        return render_unmerged(ir, references, symbols, data_ranges, Variables::Split);
+        return render_function(ir, references, symbols, data_ranges, Variables::Split);
     };
-    let original = render_unmerged(ir, references, symbols, data_ranges, Variables::Merged);
-    let candidate = render_unmerged(&merged, references, symbols, data_ranges, Variables::Merged);
+    let original = render_function(ir, references, symbols, data_ranges, Variables::Merged);
+    let candidate = render_function(&merged, references, symbols, data_ranges, Variables::Merged);
     let lines = candidate.code.lines().count();
     let gotos = candidate.code.matches("goto ").count();
     let original_lines = original.code.lines().count();
@@ -47,9 +47,9 @@ pub fn render_with_dependencies(
         && gotos <= original_gotos
         && (lines < original_lines || gotos < original_gotos)
     {
-        render_unmerged(&merged, references, symbols, data_ranges, Variables::Split)
+        render_function(&merged, references, symbols, data_ranges, Variables::Split)
     } else {
-        render_unmerged(ir, references, symbols, data_ranges, Variables::Split)
+        render_function(ir, references, symbols, data_ranges, Variables::Split)
     }
 }
 
@@ -59,7 +59,7 @@ enum Variables {
     Split,
 }
 
-fn render_unmerged(
+fn render_function(
     ir: &FunctionIr,
     references: &[Reference],
     symbols: &Symbols,
@@ -200,7 +200,7 @@ fn render_prepared(
         let params: std::collections::HashSet<_> =
             ir.params.iter().map(|param| param.index).collect();
         let mut reserved: std::collections::HashSet<String> = locals
-            .decls
+            .declarations
             .iter()
             .flat_map(|local| local.named())
             .map(|local| local.name.clone())
@@ -222,7 +222,7 @@ fn render_prepared(
                 .values()
                 .chain(
                     locals
-                        .decls
+                        .declarations
                         .iter()
                         .flat_map(|local| local.named())
                         .filter_map(|local| local.ty.as_ref()),
@@ -240,7 +240,7 @@ fn render_prepared(
             .chain(ir.stack_params.iter().map(|param| param.name.clone()))
             .chain(
                 locals
-                    .decls
+                    .declarations
                     .iter()
                     .flat_map(|local| local.named())
                     .map(|local| local.name.clone()),
@@ -271,7 +271,7 @@ fn render_prepared(
             .chain(variable_types.values())
             .chain(
                 locals
-                    .decls
+                    .declarations
                     .iter()
                     .flat_map(|local| local.named())
                     .filter_map(|local| local.ty.as_ref()),
@@ -375,7 +375,7 @@ fn type_reservations(
         .chain(variable_types.values())
         .chain(
             locals
-                .decls
+                .declarations
                 .iter()
                 .flat_map(|local| local.named())
                 .filter_map(|local| local.ty.as_ref()),
@@ -434,17 +434,17 @@ fn render_with(
             }
         }
     }
-    let wide_params: std::collections::HashSet<u16> = ir
+    let wide_parameters: std::collections::HashSet<u16> = ir
         .params
         .iter()
         .filter(|param| !param.ty.is_narrow())
         .map(|param| param.index)
         .collect();
-    let narrow_regs = narrow_registers(ir);
+    let narrow_registers = narrow_registers(ir);
     let float_return = float_return(&ir.ret_type);
     let mut variable_types = variables::variable_types(
         ir,
-        &narrow_regs,
+        &narrow_registers,
         float_return,
         variables::MixedAccess::Bytes,
     );
@@ -472,7 +472,7 @@ fn render_with(
         .chain(ir.params.iter().map(|param| param.name.clone()))
         .chain(
             locals
-                .decls
+                .declarations
                 .iter()
                 .flat_map(|local| local.named())
                 .map(|local| local.name.clone()),
@@ -585,7 +585,7 @@ fn render_with(
         names.insert(*index, name);
     }
     // The printer introduces reads of physical call results not present as IR operands.
-    let machine_ints = machine
+    let machine_integers = machine
         .iter()
         .map(|(index, _)| *index)
         .filter(|index| {
@@ -600,8 +600,8 @@ fn render_with(
         .collect();
     let machine_widths = crate::render::widths::narrow_variables(
         ir,
-        &machine_ints,
-        &narrow_regs,
+        &machine_integers,
+        &narrow_registers,
         &Default::default(),
     );
     for (index, width) in machine_widths {
@@ -728,7 +728,7 @@ fn render_with(
     );
     plain_chars.extend(
         locals
-            .decls
+            .declarations
             .iter()
             .flat_map(|local| local.named())
             .filter(|local| local.ty.as_ref().is_some_and(plain_char))
@@ -736,7 +736,7 @@ fn render_with(
     );
     let local_types = || {
         locals
-            .decls
+            .declarations
             .iter()
             .flat_map(|local| local.named())
             .filter_map(|local| local.ty.as_ref().map(|ty| (local.name.clone(), ty)))
@@ -756,7 +756,7 @@ fn render_with(
         .map(|name| (*name).to_owned())
         .chain(
             locals
-                .decls
+                .declarations
                 .iter()
                 .flat_map(|local| local.named())
                 .map(|local| local.name.clone()),
@@ -932,10 +932,10 @@ fn render_with(
         frame_origins: super::provenance::frame_origins(ir),
         frame_addresses: Vec::new(),
         local_widths: locals.widths,
-        local_aggregates: super::aggregates::layouts(&locals.decls),
+        local_aggregates: super::aggregates::layouts(&locals.declarations),
         local_views: locals.views,
         local_pointer_types: locals
-            .decls
+            .declarations
             .iter()
             .flat_map(|local| local.named())
             .filter_map(|local| {
@@ -946,7 +946,7 @@ fn render_with(
             })
             .collect(),
         local_floats: locals
-            .decls
+            .declarations
             .iter()
             .flat_map(|local| local.named())
             .filter_map(|local| {
@@ -962,7 +962,7 @@ fn render_with(
             })
             .collect(),
         signed_locals: locals
-            .decls
+            .declarations
             .iter()
             .flat_map(|local| local.named())
             .filter(|local| match &local.ty {
@@ -973,7 +973,7 @@ fn render_with(
             .collect(),
         local_element_types,
         local_scaled,
-        wide_params,
+        wide_params: wide_parameters,
         symbols,
         globals: {
             let mut globals = globals::Globals::new(symbols, reserved);
@@ -988,7 +988,7 @@ fn render_with(
         plain_chars,
         arrays,
         scaled_offsets: naming::address_offsets(ir),
-        narrow_regs,
+        narrow_regs: narrow_registers,
         floats,
         scaled,
         returned: declared(&ir.ret_type, false),
@@ -1102,7 +1102,7 @@ fn render_with(
             )
         )
     ));
-    let decls = locals.decls;
+    let decls = locals.declarations;
     // The body is rendered first so only slots it names get declared.
     let mut body = render_body(
         ir,
@@ -1576,7 +1576,7 @@ fn union_views(start: u64, fields: &[(u64, CType)]) -> Vec<(i64, u8, bool)> {
 
 fn defined(name: &str, members: &[String]) -> String {
     let line = format!("{name} {{ {} }};", members.join(" "));
-    if line.len() <= STRUCTURE_LINE {
+    if line.len() <= MAX_INLINE_STRUCTURE_LENGTH {
         return format!("{line}\n");
     }
     let mut text = format!("{name} {{\n");
@@ -1911,4 +1911,4 @@ fn signature(ir: &FunctionIr) -> String {
 }
 
 /// The longest structure definition written on one line.
-const STRUCTURE_LINE: usize = 100;
+const MAX_INLINE_STRUCTURE_LENGTH: usize = 100;

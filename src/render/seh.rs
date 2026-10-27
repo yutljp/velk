@@ -4,7 +4,10 @@ use crate::loader::seh::Handler;
 
 pub(crate) fn comments(handlers: &[Handler], function: u64) -> String {
     let mut output = String::new();
-    for handler in handlers.iter().filter(|h| h.function == function) {
+    for handler in handlers
+        .iter()
+        .filter(|handler| handler.function == function)
+    {
         let name = match handler.name.as_deref() {
             Some("__C_specific_handler") => "__C_specific_handler",
             Some("__CxxFrameHandler3") => "__CxxFrameHandler3",

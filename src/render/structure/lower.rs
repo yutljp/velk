@@ -19,7 +19,7 @@ struct Lowering {
 }
 
 impl Lowering {
-    fn fresh(&mut self) -> u64 {
+    fn fresh_address(&mut self) -> u64 {
         loop {
             self.next = self.next.checked_add(1).unwrap_or(0);
             if self.used.insert(self.next) {
@@ -32,7 +32,7 @@ impl Lowering {
         self.blocks.last_mut().expect("a block").stmts.push(stmt);
     }
 
-    fn note(&mut self) {
+    fn record_location(&mut self) {
         let block = self.blocks.len() - 1;
         self.locations.push((block, self.blocks[block].stmts.len()));
     }
@@ -49,14 +49,14 @@ impl Lowering {
     }
 
     fn branch(&mut self, cond: Cond, lhs: &Expr, rhs: &Expr, target: u64) {
-        self.note();
+        self.record_location();
         self.push(Stmt::Brif {
             cond,
             lhs: lhs.clone(),
             rhs: rhs.clone(),
             target,
         });
-        let next = self.fresh();
+        let next = self.fresh_address();
         self.blocks.push(Block {
             start: next,
             stmts: Vec::new(),
@@ -66,7 +66,7 @@ impl Lowering {
     /// Ends the block with `stmt`, which leaves it, and starts an unreachable one.
     fn leave(&mut self, stmt: Stmt) {
         self.push(stmt);
-        let next = self.fresh();
+        let next = self.fresh_address();
         self.blocks.push(Block {
             start: next,
             stmts: Vec::new(),
@@ -82,7 +82,7 @@ impl Lowering {
     fn node(&mut self, node: &Node, exit: Option<u64>, repeat: Option<u64>) {
         match node {
             Node::Stmt(stmt) => {
-                self.note();
+                self.record_location();
                 match stmt {
                     Stmt::Call { .. }
                     | Stmt::Br { .. }
@@ -92,7 +92,7 @@ impl Lowering {
                     | Stmt::Switch { .. } => self.leave(stmt.clone()),
                     Stmt::Brif { .. } | Stmt::BrifFlags { .. } => {
                         self.push(stmt.clone());
-                        let next = self.fresh();
+                        let next = self.fresh_address();
                         self.blocks.push(Block {
                             start: next,
                             stmts: Vec::new(),
@@ -111,7 +111,7 @@ impl Lowering {
                 then,
                 els,
             } => {
-                let (taken, join) = (self.fresh(), self.fresh());
+                let (taken, join) = (self.fresh_address(), self.fresh_address());
                 self.branch(*cond, lhs, rhs, taken);
                 self.nodes(els, exit, repeat);
                 self.leave(Stmt::Br { target: Some(join) });
@@ -120,7 +120,7 @@ impl Lowering {
                 self.begin(join);
             }
             Node::Forever { body } => {
-                let (header, after) = (self.fresh(), self.fresh());
+                let (header, after) = (self.fresh_address(), self.fresh_address());
                 self.begin(header);
                 self.nodes(body, Some(after), Some(header));
                 self.leave(Stmt::Br {
@@ -135,7 +135,7 @@ impl Lowering {
                 rhs,
                 body,
             } => {
-                let (header, after) = (self.fresh(), self.fresh());
+                let (header, after) = (self.fresh_address(), self.fresh_address());
                 self.begin(header);
                 self.nodes(prefix, Some(after), Some(header));
                 self.branch(cond.invert(), lhs, rhs, after);
@@ -151,7 +151,11 @@ impl Lowering {
                 rhs,
                 body,
             } => {
-                let (header, test, after) = (self.fresh(), self.fresh(), self.fresh());
+                let (header, test, after) = (
+                    self.fresh_address(),
+                    self.fresh_address(),
+                    self.fresh_address(),
+                );
                 self.begin(header);
                 self.nodes(body, Some(after), Some(test));
                 self.begin(test);
@@ -163,9 +167,9 @@ impl Lowering {
                 arms,
                 default,
             } => {
-                let after = self.fresh();
-                let labels: Vec<u64> = arms.iter().map(|_| self.fresh()).collect();
-                let fallback = default.as_ref().map(|_| self.fresh());
+                let after = self.fresh_address();
+                let labels: Vec<u64> = arms.iter().map(|_| self.fresh_address()).collect();
+                let fallback = default.as_ref().map(|_| self.fresh_address());
                 let cases = arms
                     .iter()
                     .zip(&labels)
@@ -173,7 +177,7 @@ impl Lowering {
                         values.iter().map(move |value| (*value, *label))
                     })
                     .collect();
-                self.note();
+                self.record_location();
                 self.leave(Stmt::Switch {
                     index: index.clone(),
                     cases,
@@ -208,7 +212,7 @@ fn lowered(ir: &FunctionIr, nodes: &[Node]) -> (FunctionIr, Vec<(usize, usize)>)
         locations: Vec::new(),
         used: ir.blocks.iter().map(|block| block.start).collect(),
     };
-    let start = lowering.fresh();
+    let start = lowering.fresh_address();
     lowering.blocks.push(Block {
         start,
         stmts: Vec::new(),

@@ -73,7 +73,7 @@ pub(super) fn single_use_loads(ir: &crate::ir::FunctionIr) -> HashSet<(u16, Expr
 }
 
 // Only pure address arithmetic can be evaluated after the other loads.
-fn address(value: &Expr, ctx: &Ctx<'_>) -> bool {
+fn is_pure_address(value: &Expr, ctx: &Ctx<'_>) -> bool {
     let key = super::render_expr(value, ctx);
     if ctx.slots.contains_key(&key) || ctx.local_parts.contains_key(&key) {
         return false;
@@ -92,12 +92,12 @@ fn address(value: &Expr, ctx: &Ctx<'_>) -> bool {
             op: BinOp::Add | BinOp::Sub | BinOp::Mul,
             lhs,
             rhs,
-        } => address(lhs, ctx) && address(rhs, ctx),
+        } => is_pure_address(lhs, ctx) && is_pure_address(rhs, ctx),
         _ => false,
     }
 }
 
-fn valid_address(value: &Expr, bytes: u64, ctx: &Ctx<'_>) -> bool {
+fn is_transfer_address(value: &Expr, bytes: u64, ctx: &Ctx<'_>) -> bool {
     // Adjacency in the image does not prove that named globals form one C object.
     if matches!(value, Expr::Const(address)
         if ctx.globals.containing(*address).is_some() || ctx.globals.target(*address).is_some())
@@ -115,11 +115,11 @@ fn valid_address(value: &Expr, bytes: u64, ctx: &Ctx<'_>) -> bool {
                 .is_some_and(|offset| offset.checked_add(bytes).is_some_and(|end| end <= *size))
         });
     }
-    address(value, ctx)
+    is_pure_address(value, ctx)
 }
 
 fn copy_address(value: &Expr, bytes: u64, view: View, ctx: &Ctx<'_>) -> Option<String> {
-    if !valid_address(value, bytes, ctx) {
+    if !is_transfer_address(value, bytes, ctx) {
         return None;
     }
     let key = super::render_expr(value, ctx);
@@ -208,7 +208,12 @@ fn record_value(value: &Expr, pointer: &str, bytes: u64, ctx: &Ctx<'_>) -> Strin
     format!("*({pointer})")
 }
 
-fn record(source: &Expr, destination: &Expr, bytes: u64, ctx: &Ctx<'_>) -> Option<String> {
+fn copyable_record_type(
+    source: &Expr,
+    destination: &Expr,
+    bytes: u64,
+    ctx: &Ctx<'_>,
+) -> Option<String> {
     let Some(CType::Named(ty)) = naming::pointer_target(source, ctx) else {
         return None;
     };
@@ -259,8 +264,8 @@ fn record(source: &Expr, destination: &Expr, bytes: u64, ctx: &Ctx<'_>) -> Optio
 pub(super) fn render(nodes: &[Node], ctx: &Ctx<'_>) -> Option<(usize, String)> {
     let transfer = fill(nodes, ctx)
         .or_else(|| string_copy(nodes, ctx))
-        .or_else(|| ordered(nodes, ctx))
-        .or_else(|| reordered(nodes, ctx));
+        .or_else(|| ordered_copy(nodes, ctx))
+        .or_else(|| reordered_copy(nodes, ctx));
     let Some(transfer) = transfer else {
         return None;
     };
@@ -293,7 +298,7 @@ fn string_copy(nodes: &[Node], ctx: &Ctx<'_>) -> Option<Transfer> {
         else {
             break;
         };
-        if !matches!(width, 1 | 2 | 4 | 8) || !valid_address(addr, u64::from(*width), ctx) {
+        if !matches!(width, 1 | 2 | 4 | 8) || !is_transfer_address(addr, u64::from(*width), ctx) {
             break;
         }
         let Some((_, offset)) = address_terms(addr) else {
@@ -415,7 +420,7 @@ fn fill(nodes: &[Node], ctx: &Ctx<'_>) -> Option<Transfer> {
         else {
             break;
         };
-        if !matches!(width, 1 | 2 | 4 | 8) || !valid_address(addr, u64::from(*width), ctx) {
+        if !matches!(width, 1 | 2 | 4 | 8) || !is_transfer_address(addr, u64::from(*width), ctx) {
             break;
         }
         let pattern = value & 0xff;
@@ -471,7 +476,7 @@ fn fill(nodes: &[Node], ctx: &Ctx<'_>) -> Option<Transfer> {
     })
 }
 
-fn ordered(nodes: &[Node], ctx: &Ctx<'_>) -> Option<Transfer> {
+fn ordered_copy(nodes: &[Node], ctx: &Ctx<'_>) -> Option<Transfer> {
     let mut loads: Vec<(u16, &Expr)> = Vec::new();
     let mut bytes = 0u64;
     for node in nodes.iter().take(4) {
@@ -488,7 +493,7 @@ fn ordered(nodes: &[Node], ctx: &Ctx<'_>) -> Option<Transfer> {
             break;
         };
         if !eligible_load(dest, value, ctx)
-            || !valid_address(addr, 8, ctx)
+            || !is_transfer_address(addr, 8, ctx)
             || loads.iter().any(|(index, _)| *index == dest.index)
         {
             break;
@@ -504,7 +509,7 @@ fn ordered(nodes: &[Node], ctx: &Ctx<'_>) -> Option<Transfer> {
     if !matches!(loads.len(), 2 | 4) {
         return None;
     }
-    let mut between = Vec::new();
+    let mut intervening_statements = Vec::new();
     for node in nodes.iter().skip(loads.len()).take(4) {
         let Node::Stmt(stmt @ Stmt::Assign { dest, value }) = node else {
             break;
@@ -517,7 +522,7 @@ fn ordered(nodes: &[Node], ctx: &Ctx<'_>) -> Option<Transfer> {
         {
             return None;
         }
-        between.push(stmt);
+        intervening_statements.push(stmt);
     }
     let mut destination = None;
     for (part, (register, _)) in loads.iter().enumerate() {
@@ -525,11 +530,11 @@ fn ordered(nodes: &[Node], ctx: &Ctx<'_>) -> Option<Transfer> {
             addr,
             value,
             width: 8,
-        })) = nodes.get(loads.len() + between.len() + part)
+        })) = nodes.get(loads.len() + intervening_statements.len() + part)
         else {
             return None;
         };
-        if *value != Expr::reg(*register, 64) || !valid_address(addr, 8, ctx) {
+        if *value != Expr::reg(*register, 64) || !is_transfer_address(addr, 8, ctx) {
             return None;
         }
         if let Some(first) = destination {
@@ -545,8 +550,8 @@ fn ordered(nodes: &[Node], ctx: &Ctx<'_>) -> Option<Transfer> {
     };
     // Recovering storage should not introduce a longer snapshot block.
     if loads.len() == 2
-        && !between.is_empty()
-        && (!address(loads[0].1, ctx) || !address(destination, ctx))
+        && !intervening_statements.is_empty()
+        && (!is_pure_address(loads[0].1, ctx) || !is_pure_address(destination, ctx))
     {
         return None;
     }
@@ -560,10 +565,11 @@ fn ordered(nodes: &[Node], ctx: &Ctx<'_>) -> Option<Transfer> {
     if loads.iter().any(|(register, _)| reads.contains(register)) {
         return None;
     }
-    if !valid_address(loads[0].1, bytes, ctx) || !valid_address(destination, bytes, ctx) {
+    if !is_transfer_address(loads[0].1, bytes, ctx) || !is_transfer_address(destination, bytes, ctx)
+    {
         return None;
     }
-    let record = record(loads[0].1, destination, bytes, ctx);
+    let record = copyable_record_type(loads[0].1, destination, bytes, ctx);
     let direct = disjoint(loads[0].1, destination, bytes)
         || whole_elements(loads[0].1, destination, bytes, ctx);
     let source_value = loads[0].1;
@@ -574,9 +580,9 @@ fn ordered(nodes: &[Node], ctx: &Ctx<'_>) -> Option<Transfer> {
     let Some(destination) = copy_address(destination, bytes, View::Unsigned(1), ctx) else {
         return None;
     };
-    let consumed = loads.len() * 2 + between.len();
-    if !between.is_empty() {
-        let statements = between
+    let consumed = loads.len() * 2 + intervening_statements.len();
+    if !intervening_statements.is_empty() {
+        let statements = intervening_statements
             .iter()
             .map(|stmt| super::render_stmt(stmt, ctx))
             .collect::<Vec<_>>()
@@ -617,7 +623,7 @@ fn ordered(nodes: &[Node], ctx: &Ctx<'_>) -> Option<Transfer> {
 
 /// Stores may visit the words in a different order, provided every read
 /// happens before the first write and each word keeps its relative offset.
-fn reordered(nodes: &[Node], ctx: &Ctx<'_>) -> Option<Transfer> {
+fn reordered_copy(nodes: &[Node], ctx: &Ctx<'_>) -> Option<Transfer> {
     let mut loads = Vec::new();
     for node in nodes.iter().take(4) {
         let Node::Stmt(Stmt::Assign {
@@ -634,7 +640,7 @@ fn reordered(nodes: &[Node], ctx: &Ctx<'_>) -> Option<Transfer> {
         };
         if !eligible_load(dest, value, ctx)
             || loads.iter().any(|(register, _)| *register == dest.index)
-            || !valid_address(addr, 8, ctx)
+            || !is_transfer_address(addr, 8, ctx)
         {
             return None;
         }
@@ -698,7 +704,7 @@ fn reordered(nodes: &[Node], ctx: &Ctx<'_>) -> Option<Transfer> {
             } if part == 0 && sources.len() > loads.len() => loads.len(),
             _ => return None,
         };
-        if stores.iter().any(|(other, _)| *other == index) || !valid_address(addr, 8, ctx) {
+        if stores.iter().any(|(other, _)| *other == index) || !is_transfer_address(addr, 8, ctx) {
             return None;
         }
         stores.push((index, addr));
@@ -744,7 +750,8 @@ fn reordered(nodes: &[Node], ctx: &Ctx<'_>) -> Option<Transfer> {
         while position < consumed {
             let remaining = &nodes[position..consumed];
             if let Some((count, text)) = super::aggregates::render(remaining, ctx).or_else(|| {
-                self::ordered(remaining, ctx).map(|transfer| (transfer.consumed, transfer.text))
+                self::ordered_copy(remaining, ctx)
+                    .map(|transfer| (transfer.consumed, transfer.text))
             }) {
                 original_casts += super::cost::transfer_casts(&text);
                 position += count;

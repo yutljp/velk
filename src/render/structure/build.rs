@@ -17,7 +17,7 @@ pub(crate) struct Structurer<'a> {
 }
 
 impl Structurer<'_> {
-    fn target(&self, address: u64) -> Option<usize> {
+    fn block_index(&self, address: u64) -> Option<usize> {
         self.index.get(&address).copied()
     }
 
@@ -35,7 +35,7 @@ impl Structurer<'_> {
                     lhs,
                     rhs,
                     target,
-                }) if self.target(*target) == Some(index) => {
+                }) if self.block_index(*target) == Some(index) => {
                     latch = Some((position, *cond, lhs.clone(), rhs.clone()));
                     break;
                 }
@@ -53,9 +53,10 @@ impl Structurer<'_> {
             if region.contains(&other) {
                 continue;
             }
-            if branch_targets(block)
-                .any(|target| self.target(target).is_some_and(|at| region.contains(&at)))
-            {
+            if branch_targets(block).any(|target| {
+                self.block_index(target)
+                    .is_some_and(|at| region.contains(&at))
+            }) {
                 return None;
             }
         }
@@ -75,7 +76,7 @@ impl Structurer<'_> {
             if let Some(Stmt::Br {
                 target: Some(target),
             }) = block.stmts.last()
-                && self.target(*target) == Some(index)
+                && self.block_index(*target) == Some(index)
             {
                 return Some(position);
             }
@@ -114,7 +115,7 @@ impl Structurer<'_> {
                 Some(Stmt::Br {
                     target: Some(target),
                 }) => {
-                    let Some(target) = self.target(*target) else {
+                    let Some(target) = self.block_index(*target) else {
                         return None;
                     };
                     if target >= to {
@@ -152,7 +153,7 @@ impl Structurer<'_> {
             else {
                 return None;
             };
-            let Some(target) = self.target(target) else {
+            let Some(target) = self.block_index(target) else {
                 return None;
             };
             let Some(rest) = self.blocks.get(target) else {
@@ -199,7 +200,7 @@ impl Structurer<'_> {
             Some(Stmt::Br {
                 target: Some(target),
             }) => {
-                let target = self.target(*target)?;
+                let target = self.block_index(*target)?;
                 (target > from && target <= limit).then_some(target)
             }
             _ => None,
@@ -267,7 +268,7 @@ impl Structurer<'_> {
                 {
                     body.remove(0);
                 }
-                body.extend(self.inlined(latch));
+                body.extend(self.block_without_terminator(latch));
                 rewrite_loop_exits(&mut body, exit, Some(block.start));
                 fold_exit_branches(&mut body, exit);
                 fold_label_branches(&mut body);
@@ -278,10 +279,10 @@ impl Structurer<'_> {
 
             // A bottom-tested loop starts here and ends at its latch.
             if let Some((latch, cond, lhs, rhs)) = self.bottom_latch(index, to) {
-                let mut body = self.plain(&block.stmts);
+                let mut body = self.statement_nodes(&block.stmts);
                 body.extend(self.emit(index + 1, latch));
                 // The latch's own statements run at the end of each pass.
-                body.extend(self.inlined(latch));
+                body.extend(self.block_without_terminator(latch));
                 let exit = self.blocks.get(latch + 1).map(|next| next.start);
                 rewrite_loop_exits(&mut body, exit, Some(block.start));
                 out.push(Node::DoWhile {
@@ -306,13 +307,14 @@ impl Structurer<'_> {
                     rhs,
                     target,
                 } => {
-                    let destination = self.target(*target);
+                    let destination = self.block_index(*target);
                     let fallthrough = index + 1;
 
                     if let Some(destination) = destination {
                         // do-while: conditional branch back to this block.
                         if destination == index {
-                            let mut body = self.plain(&block.stmts[..block.stmts.len() - 1]);
+                            let mut body =
+                                self.statement_nodes(&block.stmts[..block.stmts.len() - 1]);
                             let exit = self.blocks.get(index + 1).map(|block| block.start);
                             rewrite_loop_exits(&mut body, exit, Some(block.start));
                             out.push(Node::DoWhile {
@@ -332,12 +334,13 @@ impl Structurer<'_> {
                                 && latch + 1 == destination
                             {
                                 let mut body = self.emit(fallthrough, latch);
-                                body.extend(self.inlined(latch));
-                                let prefix = self.plain(&block.stmts[..block.stmts.len() - 1]);
+                                body.extend(self.block_without_terminator(latch));
+                                let prefix =
+                                    self.statement_nodes(&block.stmts[..block.stmts.len() - 1]);
                                 // `Node::While` carries the continue predicate,
                                 // the inverse of the header's exit test.
-                                // What the code after the loop reads must stay assigned.
-                                let after: std::collections::HashSet<u16> = self
+                                // Registers read by other blocks must stay assigned.
+                                let other_reads: std::collections::HashSet<u16> = self
                                     .blocks
                                     .iter()
                                     .enumerate()
@@ -346,7 +349,7 @@ impl Structurer<'_> {
                                     .flat_map(crate::ir::visit::statement_reads)
                                     .collect();
                                 let (prefix, lhs, rhs) =
-                                    fold_header(prefix, lhs, rhs, &body, &after);
+                                    fold_header(prefix, lhs, rhs, &body, &other_reads);
                                 rewrite_loop_exits(
                                     &mut body,
                                     self.blocks.get(destination).map(|block| block.start),
@@ -368,7 +371,9 @@ impl Structurer<'_> {
                             if destination > fallthrough
                                 && self.region_falls_into(fallthrough, destination)
                             {
-                                out.extend(self.plain(&block.stmts[..block.stmts.len() - 1]));
+                                out.extend(
+                                    self.statement_nodes(&block.stmts[..block.stmts.len() - 1]),
+                                );
                                 let then = self.emit(fallthrough, destination);
                                 out.push(Node::If {
                                     cond: cond.invert(),
@@ -389,11 +394,13 @@ impl Structurer<'_> {
                                 && join > destination
                                 && destination > fallthrough
                                 && (fallthrough + 1..destination)
-                                    .all(|between| self.only_returns(between))
+                                    .all(|between| self.can_inline_return(between))
                             {
                                 let cond = cond.invert();
-                                out.extend(self.plain(&block.stmts[..block.stmts.len() - 1]));
-                                let then = self.inlined(fallthrough);
+                                out.extend(
+                                    self.statement_nodes(&block.stmts[..block.stmts.len() - 1]),
+                                );
+                                let then = self.block_without_terminator(fallthrough);
                                 let els = self.emit(destination, join);
                                 out.push(Node::If {
                                     cond,
@@ -409,13 +416,16 @@ impl Structurer<'_> {
                             // if/else: both arms converge on the same forward join.
                             let join_fallthrough = self.terminal_edge(fallthrough, to);
                             let join_target = self.terminal_edge(destination, to);
-                            if let (Some(a), Some(b)) = (join_fallthrough, join_target)
-                                && a == b
-                                && a == destination + 1
+                            if let (Some(fallthrough_join), Some(target_join)) =
+                                (join_fallthrough, join_target)
+                                && fallthrough_join == target_join
+                                && fallthrough_join == destination + 1
                                 && destination == fallthrough + 1
                             {
-                                out.extend(self.plain(&block.stmts[..block.stmts.len() - 1]));
-                                let then = self.emit(destination, a);
+                                out.extend(
+                                    self.statement_nodes(&block.stmts[..block.stmts.len() - 1]),
+                                );
+                                let then = self.emit(destination, fallthrough_join);
                                 let els = self.emit(fallthrough, destination);
                                 out.push(Node::If {
                                     cond: *cond,
@@ -424,7 +434,7 @@ impl Structurer<'_> {
                                     then,
                                     els,
                                 });
-                                index = a;
+                                index = fallthrough_join;
                                 continue;
                             }
 
@@ -433,7 +443,7 @@ impl Structurer<'_> {
                             // so the remaining `goto`s still resolve.
                             if let Some(latch) = self.back_edge_latch(index, to) {
                                 let mut body = self.emit(index, latch);
-                                body.extend(self.inlined(latch));
+                                body.extend(self.block_without_terminator(latch));
                                 out.push(Node::Forever { body });
                                 index = latch + 1;
                                 continue;
@@ -443,9 +453,11 @@ impl Structurer<'_> {
                             if destination + 1 == to
                                 && join_fallthrough.is_none()
                                 && join_target.is_none()
-                                && self.ends(destination - 1)
+                                && self.prevents_fallthrough(destination - 1)
                             {
-                                out.extend(self.plain(&block.stmts[..block.stmts.len() - 1]));
+                                out.extend(
+                                    self.statement_nodes(&block.stmts[..block.stmts.len() - 1]),
+                                );
                                 let then = self.emit(destination, to);
                                 let els = self.emit(fallthrough, destination);
                                 out.push(Node::If {
@@ -464,12 +476,12 @@ impl Structurer<'_> {
                         if let Some(stmts) = self.return_block(destination)
                             && destination != index
                         {
-                            out.extend(self.plain(&block.stmts[..block.stmts.len() - 1]));
+                            out.extend(self.statement_nodes(&block.stmts[..block.stmts.len() - 1]));
                             out.push(Node::If {
                                 cond: *cond,
                                 lhs: lhs.clone(),
                                 rhs: rhs.clone(),
-                                then: self.plain(&stmts),
+                                then: self.statement_nodes(&stmts),
                                 els: Vec::new(),
                             });
                             index += 1;
@@ -477,30 +489,30 @@ impl Structurer<'_> {
                         }
                     }
 
-                    out.extend(self.plain(&block.stmts));
+                    out.extend(self.statement_nodes(&block.stmts));
                     index += 1;
                 }
                 Stmt::Br {
                     target: Some(target),
                 } => {
-                    let destination = self.target(*target);
+                    let destination = self.block_index(*target);
                     // A branch straight back to this block never exits.
                     if destination == Some(index) {
-                        let body = self.plain(&block.stmts[..block.stmts.len() - 1]);
+                        let body = self.statement_nodes(&block.stmts[..block.stmts.len() - 1]);
                         out.push(Node::Forever { body });
                         index += 1;
                         continue;
                     }
                     if let Some(stmts) = destination.and_then(|index| self.return_block(index)) {
-                        out.extend(self.plain(&block.stmts[..block.stmts.len() - 1]));
-                        out.extend(self.plain(&stmts));
+                        out.extend(self.statement_nodes(&block.stmts[..block.stmts.len() - 1]));
+                        out.extend(self.statement_nodes(&stmts));
                         index += 1;
                         continue;
                     }
                     if destination == Some(index + 1) {
-                        out.extend(self.plain(&block.stmts[..block.stmts.len() - 1]));
+                        out.extend(self.statement_nodes(&block.stmts[..block.stmts.len() - 1]));
                     } else {
-                        out.extend(self.plain(&block.stmts));
+                        out.extend(self.statement_nodes(&block.stmts));
                     }
                     index += 1;
                 }
@@ -512,7 +524,7 @@ impl Structurer<'_> {
                     index = self.emit_switch(index..to, value, cases, *default, &mut out);
                 }
                 _ => {
-                    out.extend(self.plain(&block.stmts));
+                    out.extend(self.statement_nodes(&block.stmts));
                     index += 1;
                 }
             }
@@ -536,7 +548,7 @@ impl Structurer<'_> {
         let mut arms: Vec<(Vec<i64>, usize)> = Vec::new();
         let mut jumps: Vec<(i64, Vec<Node>)> = Vec::new();
         for (case_value, address) in cases {
-            match self.target(*address) {
+            match self.block_index(*address) {
                 Some(target) if target > index && target < to => {
                     match arms.iter_mut().find(|(_, at)| *at == target) {
                         Some((values, _)) => values.push(*case_value),
@@ -546,9 +558,12 @@ impl Structurer<'_> {
                 // The case body sits outside this range: inline it
                 // when it is an epilogue arm, otherwise jump.
                 _ => {
-                    let body = match self.target(*address).and_then(|at| self.return_block(at)) {
-                        Some(stmts) => self.plain(&stmts),
-                        None => self.plain(&[Stmt::Br {
+                    let body = match self
+                        .block_index(*address)
+                        .and_then(|at| self.return_block(at))
+                    {
+                        Some(stmts) => self.statement_nodes(&stmts),
+                        None => self.statement_nodes(&[Stmt::Br {
                             target: Some(*address),
                         }]),
                     };
@@ -557,14 +572,14 @@ impl Structurer<'_> {
             }
         }
         arms.sort_by_key(|(_, target)| *target);
-        let default_index = default.and_then(|address| self.target(address));
+        let default_index = default.and_then(|address| self.block_index(address));
         let mut bounds: Vec<usize> = arms.iter().map(|(_, target)| *target).collect();
         if let Some(target) = default_index {
             bounds.push(target);
         }
         bounds.sort_unstable();
         if arms.is_empty() || bounds.first().copied() != Some(index + 1) {
-            out.extend(self.plain(&block.stmts));
+            out.extend(self.statement_nodes(&block.stmts));
             return index + 1;
         }
         let end_of = |start: usize| -> usize {
@@ -574,7 +589,7 @@ impl Structurer<'_> {
                 .find(|bound| *bound > start)
                 .unwrap_or(to)
         };
-        out.extend(self.plain(&block.stmts[..block.stmts.len() - 1]));
+        out.extend(self.statement_nodes(&block.stmts[..block.stmts.len() - 1]));
         // The cases print in value order, not in the order their
         // bodies fall into each other, so a body that runs into
         // the next one says so with a `goto`; only the last falls
@@ -583,7 +598,7 @@ impl Structurer<'_> {
         let after = end_of(last).max(last);
         let falls_into = |start: usize, structurer: &Self| {
             let end = end_of(start);
-            (end < after && !structurer.ends(end - 1)).then_some(end)
+            (end < after && !structurer.prevents_fallthrough(end - 1)).then_some(end)
         };
         for start in &bounds {
             if let Some(next) = falls_into(*start, self) {
@@ -594,7 +609,7 @@ impl Structurer<'_> {
             let mut body = structurer.emit(start, end_of(start));
             if let Some(next) = falls_into(start, structurer) {
                 match structurer.return_block(next) {
-                    Some(stmts) => body.extend(structurer.plain(&stmts)),
+                    Some(stmts) => body.extend(structurer.statement_nodes(&stmts)),
                     None => body.push(Node::Stmt(Stmt::Br {
                         target: Some(structurer.blocks[next].start),
                     })),
@@ -610,12 +625,15 @@ impl Structurer<'_> {
             rendered.push((vec![case_value], body));
         }
         let default_body = match default {
-            Some(address) => match self.target(address) {
+            Some(address) => match self.block_index(address) {
                 Some(target) if target > index && target < to => Some(body_of(target, self)),
                 _ => Some(
-                    match self.target(address).and_then(|at| self.return_block(at)) {
-                        Some(stmts) => self.plain(&stmts),
-                        None => self.plain(&[Stmt::Br {
+                    match self
+                        .block_index(address)
+                        .and_then(|at| self.return_block(at))
+                    {
+                        Some(stmts) => self.statement_nodes(&stmts),
+                        None => self.statement_nodes(&[Stmt::Br {
                             target: Some(address),
                         }]),
                     },
@@ -633,7 +651,7 @@ impl Structurer<'_> {
     }
 
     /// A block that never falls through into the next one.
-    fn ends(&self, index: usize) -> bool {
+    fn prevents_fallthrough(&self, index: usize) -> bool {
         matches!(
             self.blocks[index].stmts.last(),
             Some(
@@ -649,7 +667,7 @@ impl Structurer<'_> {
     /// A block that ends in a return and branches nowhere, reached only by
     /// branches that can inline it: an unknown-flags branch or a switch
     /// jumps to it by label.
-    fn only_returns(&self, index: usize) -> bool {
+    fn can_inline_return(&self, index: usize) -> bool {
         let start = self.blocks[index].start;
         let jumped_to = self
             .blocks
@@ -678,17 +696,17 @@ impl Structurer<'_> {
 
     /// A block folded into an enclosing shape, without its closing branch;
     /// its label stays when something else jumps to it.
-    fn inlined(&self, index: usize) -> Vec<Node> {
+    fn block_without_terminator(&self, index: usize) -> Vec<Node> {
         let block = &self.blocks[index];
         let mut nodes = Vec::new();
         if self.targeted.contains(&block.start) {
             nodes.push(Node::Label(block.start));
         }
-        nodes.extend(self.plain(&block.stmts[..block.stmts.len().saturating_sub(1)]));
+        nodes.extend(self.statement_nodes(&block.stmts[..block.stmts.len().saturating_sub(1)]));
         nodes
     }
 
-    fn plain(&self, stmts: &[Stmt]) -> Vec<Node> {
+    fn statement_nodes(&self, stmts: &[Stmt]) -> Vec<Node> {
         stmts.iter().cloned().map(Node::Stmt).collect()
     }
 }

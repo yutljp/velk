@@ -67,7 +67,7 @@ fn discover(
             continue;
         };
         let line = lines[position];
-        let for_init = if matches!(placement, Placement::Scoped)
+        let for_initializer = if matches!(placement, Placement::Scoped)
             && line.trim_end().ends_with('{')
             && line.matches(';').count() == 2
         {
@@ -77,11 +77,11 @@ fn discover(
         } else {
             None
         };
-        let assignment = for_init.map_or(line.trim_start(), |(init, _)| init);
+        let assignment = for_initializer.map_or(line.trim_start(), |(init, _)| init);
         let Some(value) = assignment.strip_prefix(&format!("{name} = ")) else {
             continue;
         };
-        let terminated = for_init.is_some()
+        let terminated = for_initializer.is_some()
             || line.trim_end().ends_with(';')
             || (matches!(placement, Placement::Scoped)
                 && line
@@ -110,7 +110,7 @@ fn discover(
             }
         } else {
             let mut scope = scopes[position].clone();
-            if for_init.is_some() {
+            if for_initializer.is_some() {
                 scope.push(position);
             }
             let scope = &scope;
@@ -171,14 +171,17 @@ fn discover(
             continue;
         }
         declarations.replace_range(at..at + old.len(), "");
-        if for_init.is_none() && position > 0 && lines[position - 1].trim_end().ends_with(':') {
+        if for_initializer.is_none()
+            && position > 0
+            && lines[position - 1].trim_end().ends_with(':')
+        {
             replacements.insert(
                 position - 1,
                 format!("{};\n", lines[position - 1].trim_end()),
             );
         }
         let indent = &line[..line.len() - line.trim_start().len()];
-        let initialized = match for_init {
+        let initialized = match for_initializer {
             Some((_, rest)) => format!("{indent}for ({declaration} = {value};{rest}"),
             None => format!("{indent}{declaration} = {value}"),
         };

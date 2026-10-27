@@ -263,7 +263,7 @@ pub(crate) fn wrapped(exact: u32, ty: Int) -> u32 {
 
 /// The number of bits the IR's value of `expr` fits in.
 pub(crate) fn zero_bits(expr: &Expr, ctx: &Ctx<'_>) -> u32 {
-    zero_bits_in(expr, &ctx.value_bits)
+    value_width_in(expr, &ctx.value_bits)
 }
 
 /// The bits each variable's values fit in, from what is assigned to it:
@@ -294,7 +294,7 @@ pub(crate) fn value_bits(ir: &FunctionIr) -> HashMap<u16, u32> {
     for _ in 0..=64 {
         let mut changed = false;
         for (index, value) in &assigned {
-            let mut bits = zero_bits_in(value, &known).min(range_bits(value, &known));
+            let mut bits = value_width_in(value, &known).min(range_bits(value, &known));
             let entry = known.entry(*index).or_insert(0);
             if bits > *entry {
                 let times = grown.entry(*index).or_insert(0);
@@ -330,8 +330,8 @@ fn range_bits(expr: &Expr, known: &HashMap<u16, u32>) -> u32 {
     crate::ssa::ranges::expression(expr, &read).map_or(64, |fact| 64 - fact.hi.leading_zeros())
 }
 
-pub(super) fn zero_bits_in(expr: &Expr, known: &HashMap<u16, u32>) -> u32 {
-    let bits = |expr| zero_bits_in(expr, known);
+pub(super) fn value_width_in(expr: &Expr, known: &HashMap<u16, u32>) -> u32 {
+    let bits = |expr| value_width_in(expr, known);
     match expr {
         Expr::Reg { index, width } => {
             u32::from(*width).min(known.get(index).copied().unwrap_or(64))
@@ -439,7 +439,7 @@ mod tests {
         for (amount, left, right) in [(63, 64, 0), (64, 8, 8), (65, 9, 7), (128, 8, 8)] {
             for (op, expected) in [(BinOp::Shl, left), (BinOp::Shr, right)] {
                 let value = Expr::bin(op, Expr::reg(7, 64), Expr::Const(amount));
-                assert_eq!(zero_bits_in(&value, &known), expected, "{op:?} {amount}");
+                assert_eq!(value_width_in(&value, &known), expected, "{op:?} {amount}");
             }
         }
     }
@@ -452,7 +452,7 @@ mod tests {
             for amount in [0, 1, 31, 32, 40, 63, 64, 65, 127, 128, u64::MAX] {
                 for op in [BinOp::Shl, BinOp::Shr] {
                     let expr = Expr::bin(op, Expr::reg(7, 64), Expr::Const(amount));
-                    let bound = zero_bits_in(&expr, &known);
+                    let bound = value_width_in(&expr, &known);
                     for value in [0, 1, 1u64 << (width - 1), source_mask] {
                         let result = crate::ir::semantics::evaluate(&expr, &|index| {
                             (index == 7).then_some(value)

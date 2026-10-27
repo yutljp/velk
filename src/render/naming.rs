@@ -1,8 +1,8 @@
 pub(super) mod roles;
 mod scales;
 
-pub(super) use scales::address_registers as address_offsets;
-pub(super) use scales::registers as scaled_offsets;
+pub(super) use scales::address_register_scales as address_offsets;
+pub(super) use scales::register_scales as scaled_offsets;
 
 use crate::ir::{BinOp, CType, Expr, FunctionIr, Precision, Stmt};
 use crate::render::expr::Ctx;
@@ -19,24 +19,30 @@ pub(crate) fn narrow_registers(ir: &FunctionIr) -> std::collections::HashSet<u16
             match stmt {
                 Stmt::Machine { inputs, .. } => {
                     for input in inputs {
-                        scan_reads(input, &mut seen, &mut wide);
+                        collect_register_read_widths(input, &mut seen, &mut wide);
                     }
                 }
-                Stmt::Assign { value, .. } => scan_reads(value, &mut seen, &mut wide),
+                Stmt::Assign { value, .. } => {
+                    collect_register_read_widths(value, &mut seen, &mut wide)
+                }
                 Stmt::Store { addr, value, .. } => {
-                    scan_reads(addr, &mut seen, &mut wide);
-                    scan_reads(value, &mut seen, &mut wide);
+                    collect_register_read_widths(addr, &mut seen, &mut wide);
+                    collect_register_read_widths(value, &mut seen, &mut wide);
                 }
                 Stmt::Brif { lhs, rhs, .. } => {
-                    scan_reads(lhs, &mut seen, &mut wide);
-                    scan_reads(rhs, &mut seen, &mut wide);
+                    collect_register_read_widths(lhs, &mut seen, &mut wide);
+                    collect_register_read_widths(rhs, &mut seen, &mut wide);
                 }
-                Stmt::Ret { value } => scan_reads(value, &mut seen, &mut wide),
-                Stmt::BrIndirect { target } => scan_reads(target, &mut seen, &mut wide),
-                Stmt::Switch { index, .. } => scan_reads(index, &mut seen, &mut wide),
+                Stmt::Ret { value } => collect_register_read_widths(value, &mut seen, &mut wide),
+                Stmt::BrIndirect { target } => {
+                    collect_register_read_widths(target, &mut seen, &mut wide)
+                }
+                Stmt::Switch { index, .. } => {
+                    collect_register_read_widths(index, &mut seen, &mut wide)
+                }
                 Stmt::Call { .. } => {
                     for value in stmt.operands() {
-                        scan_reads(value, &mut seen, &mut wide);
+                        collect_register_read_widths(value, &mut seen, &mut wide);
                     }
                 }
                 _ => {}
@@ -52,7 +58,7 @@ pub(crate) fn narrow_registers(ir: &FunctionIr) -> std::collections::HashSet<u16
         .collect()
 }
 
-pub(crate) fn scan_reads(
+pub(crate) fn collect_register_read_widths(
     expr: &Expr,
     seen: &mut std::collections::HashSet<u16>,
     wide: &mut std::collections::HashSet<u16>,
@@ -72,14 +78,14 @@ pub(crate) fn scan_reads(
                 && let Expr::Reg { index, .. } = lhs.as_ref()
             {
                 seen.insert(*index);
-                scan_reads(rhs, seen, wide);
+                collect_register_read_widths(rhs, seen, wide);
                 return;
             }
-            scan_reads(lhs, seen, wide);
-            scan_reads(rhs, seen, wide);
+            collect_register_read_widths(lhs, seen, wide);
+            collect_register_read_widths(rhs, seen, wide);
         }
-        Expr::Load { addr, .. } => scan_reads(addr, seen, wide),
-        Expr::SignExtend { value, .. } => scan_reads(value, seen, wide),
+        Expr::Load { addr, .. } => collect_register_read_widths(addr, seen, wide),
+        Expr::SignExtend { value, .. } => collect_register_read_widths(value, seen, wide),
         Expr::Select {
             lhs,
             rhs,
@@ -87,14 +93,14 @@ pub(crate) fn scan_reads(
             els,
             ..
         } => {
-            scan_reads(lhs, seen, wide);
-            scan_reads(rhs, seen, wide);
-            scan_reads(then, seen, wide);
-            scan_reads(els, seen, wide);
+            collect_register_read_widths(lhs, seen, wide);
+            collect_register_read_widths(rhs, seen, wide);
+            collect_register_read_widths(then, seen, wide);
+            collect_register_read_widths(els, seen, wide);
         }
         Expr::Apply { args, .. } => {
             for arg in args {
-                scan_reads(arg, seen, wide);
+                collect_register_read_widths(arg, seen, wide);
             }
         }
     }

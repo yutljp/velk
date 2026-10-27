@@ -186,7 +186,7 @@ fn copies_and_fills_compile_and_preserve_memory_and_final_registers() {
         code.push(0xc3);
         let image = crate::loader::Image::from_code(Isa::X86_64, 0, code.clone());
         ir.blocks = crate::lift::lift(&image, 0, code.len() as u64, &Default::default()).unwrap();
-        for stmt in ir.blocks.iter_mut().flat_map(|b| &mut b.stmts) {
+        for stmt in ir.blocks.iter_mut().flat_map(|block| &mut block.stmts) {
             if matches!(stmt, Stmt::Ret { .. }) {
                 *stmt = result.clone();
             }

@@ -134,7 +134,7 @@ fn assigned_value(output: &CallOutput, value: String, ty: &ValueType, ctx: &Ctx<
     }
 }
 
-fn commit(output: &CallOutput, value: String, ty: &ValueType, ctx: &Ctx<'_>) -> String {
+fn render_assignment(output: &CallOutput, value: String, ty: &ValueType, ctx: &Ctx<'_>) -> String {
     let value = assigned_value(output, value, ty, ctx);
     format!(
         "{} = {value};",
@@ -292,7 +292,7 @@ pub(in crate::render) fn render(call: &Stmt, ctx: &Ctx<'_>) -> String {
         && scalar == Some(*output)
         && !preserved.iter().any(|(preserved, _)| preserved == index)
     {
-        return commit(output, text, &scalar_type, ctx);
+        return render_assignment(output, text, &scalar_type, ctx);
     }
     let (_, mut reads) = crate::ir::visit::statement_registers(call);
     reads.extend(
@@ -315,7 +315,7 @@ pub(in crate::render) fn render(call: &Stmt, ctx: &Ctx<'_>) -> String {
                 .any(|(index, used)| used == output && !preserved.iter().any(|(at, _)| at == index))
         });
         let mut lines = match primary {
-            Some(output) => vec![commit(output, text, &scalar_type, ctx)],
+            Some(output) => vec![render_assignment(output, text, &scalar_type, ctx)],
             None => vec![format!("{text};")],
         };
         for (index, output) in &used {
@@ -345,7 +345,7 @@ pub(in crate::render) fn render(call: &Stmt, ctx: &Ctx<'_>) -> String {
             };
             lines.push(format!(
                 "{}{}",
-                commit(output, source, &ty, ctx),
+                render_assignment(output, source, &ty, ctx),
                 if void || preserved.iter().any(|(at, _)| at == index) {
                     ""
                 } else {
@@ -403,7 +403,7 @@ pub(in crate::render) fn render(call: &Stmt, ctx: &Ctx<'_>) -> String {
     for (at, (_, output)) in used.iter().enumerate() {
         lines.push(format!(
             "    {}",
-            commit(
+            render_assignment(
                 output,
                 format!("{temporary}[{at}]"),
                 &ValueType::Integer {

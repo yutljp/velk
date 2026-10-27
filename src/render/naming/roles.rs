@@ -4,22 +4,22 @@ use crate::ir::{Expr, FunctionIr, Stmt};
 use crate::render::{Symbols, structure::Node};
 
 #[derive(Clone, PartialEq, Eq)]
-pub(in crate::render) enum Counter {
+pub(in crate::render) enum NamedPlace {
     Register(u16),
     Slot(Expr),
 }
 
-fn reads(expr: &Expr, counter: &Counter) -> bool {
+fn reads(expr: &Expr, counter: &NamedPlace) -> bool {
     match (counter, expr) {
-        (Counter::Register(index), Expr::Reg { index: read, .. }) => index == read,
-        (Counter::Slot(addr), Expr::Load { addr: read, .. }) if addr == read.as_ref() => true,
+        (NamedPlace::Register(index), Expr::Reg { index: read, .. }) => index == read,
+        (NamedPlace::Slot(addr), Expr::Load { addr: read, .. }) if addr == read.as_ref() => true,
         _ => crate::ir::visit::children(expr)
             .into_iter()
             .any(|child| reads(child, counter)),
     }
 }
 
-fn loop_counter(init: &Stmt, looped: &Node) -> Option<Counter> {
+fn loop_counter(init: &Stmt, looped: &Node) -> Option<NamedPlace> {
     match looped {
         Node::While {
             prefix,
@@ -44,21 +44,21 @@ pub(in crate::render) fn counted(
     lhs: &Expr,
     rhs: &Expr,
     body: &[Node],
-) -> Option<Counter> {
+) -> Option<NamedPlace> {
     let Some((Node::Stmt(step), _)) = body.split_last() else {
         return None;
     };
     let counter = match init {
-        Stmt::Assign { dest, .. } => Counter::Register(dest.index),
-        Stmt::Store { addr, .. } => Counter::Slot(addr.clone()),
+        Stmt::Assign { dest, .. } => NamedPlace::Register(dest.index),
+        Stmt::Store { addr, .. } => NamedPlace::Slot(addr.clone()),
         _ => return None,
     };
     let steps = match (&counter, step) {
-        (Counter::Register(index), Stmt::Assign { dest, value }) => {
+        (NamedPlace::Register(index), Stmt::Assign { dest, value }) => {
             dest.index == *index && reads(value, &counter)
         }
         (
-            Counter::Slot(addr),
+            NamedPlace::Slot(addr),
             Stmt::Store {
                 addr: written,
                 value,
@@ -72,11 +72,11 @@ pub(in crate::render) fn counted(
 
 #[derive(Default)]
 pub(in crate::render) struct Roles {
-    candidates: Vec<(Counter, Option<&'static str>)>,
+    candidates: Vec<(NamedPlace, Option<&'static str>)>,
 }
 
 impl Roles {
-    fn suggest(&mut self, counter: Counter, name: &'static str) {
+    fn suggest(&mut self, counter: NamedPlace, name: &'static str) {
         if let Some((_, previous)) = self.candidates.iter_mut().find(|(key, _)| *key == counter) {
             if *previous != Some(name) {
                 *previous = None;
@@ -94,7 +94,7 @@ impl Roles {
 
     pub(in crate::render) fn register(&self, index: u16) -> Option<&'static str> {
         self.candidates.iter().find_map(|(key, name)| {
-            (*key == Counter::Register(index))
+            (*key == NamedPlace::Register(index))
                 .then_some(*name)
                 .flatten()
         })
@@ -102,22 +102,22 @@ impl Roles {
 
     pub(in crate::render) fn slot(&self, addr: &Expr) -> Option<&'static str> {
         self.candidates.iter().find_map(|(key, name)| {
-            matches!(key, Counter::Slot(key) if key == addr)
+            matches!(key, NamedPlace::Slot(key) if key == addr)
                 .then_some(*name)
                 .flatten()
         })
     }
 }
 
-fn value(expr: &Expr) -> Option<Counter> {
+fn named_place(expr: &Expr) -> Option<NamedPlace> {
     match expr {
-        Expr::Reg { index, .. } => Some(Counter::Register(*index)),
-        Expr::Load { addr, .. } => Some(Counter::Slot(addr.as_ref().clone())),
+        Expr::Reg { index, .. } => Some(NamedPlace::Register(*index)),
+        Expr::Load { addr, .. } => Some(NamedPlace::Slot(addr.as_ref().clone())),
         _ => None,
     }
 }
 
-fn loops(nodes: &[Node], depth: usize, roles: &mut Roles) {
+fn suggest_loop_names(nodes: &[Node], depth: usize, roles: &mut Roles) {
     for (position, node) in nodes.iter().enumerate() {
         if let Node::Stmt(init) = node
             && let Some(looped) = nodes.get(position + 1)
@@ -127,18 +127,18 @@ fn loops(nodes: &[Node], depth: usize, roles: &mut Roles) {
         }
         match node {
             Node::While { body, .. } | Node::DoWhile { body, .. } | Node::Forever { body } => {
-                loops(body, depth.saturating_add(1), roles);
+                suggest_loop_names(body, depth.saturating_add(1), roles);
             }
             Node::If { then, els, .. } => {
-                loops(then, depth, roles);
-                loops(els, depth, roles);
+                suggest_loop_names(then, depth, roles);
+                suggest_loop_names(els, depth, roles);
             }
             Node::Switch { arms, default, .. } => {
                 for (_, body) in arms {
-                    loops(body, depth, roles);
+                    suggest_loop_names(body, depth, roles);
                 }
                 if let Some(body) = default {
-                    loops(body, depth, roles);
+                    suggest_loop_names(body, depth, roles);
                 }
             }
             _ => {}
@@ -164,7 +164,7 @@ pub(in crate::render) fn infer_with_nodes(
             *writes.entry(dest.index).or_default() += 1;
         }
         if let Stmt::Ret { value: expr } = stmt {
-            returned.push(value(expr));
+            returned.push(named_place(expr));
         }
         let Stmt::Call {
             target,
@@ -178,7 +178,7 @@ pub(in crate::render) fn infer_with_nodes(
             continue;
         };
         let name = target
-            .and_then(|address| symbols.semantic_function(address))
+            .and_then(|address| symbols.original_or_printed_function_name(address))
             .or_else(|| match through {
                 Some(Expr::Load { addr, width: 8, .. }) => match addr.as_ref() {
                     Expr::Const(slot) => symbols.import_name(slot),
@@ -198,7 +198,7 @@ pub(in crate::render) fn infer_with_nodes(
         let (params, result) = (hints.parameters, hints.result);
         if let Some(args) = args {
             for (arg, name) in args.iter().zip(params) {
-                if let Some(counter) = value(arg) {
+                if let Some(counter) = named_place(arg) {
                     roles.suggest(counter, name);
                 }
             }
@@ -206,7 +206,7 @@ pub(in crate::render) fn infer_with_nodes(
         if let Some(name) = result {
             for output in outputs {
                 if convention.results().first() == Some(&output.register) {
-                    call_results.suggest(Counter::Register(output.dest.index), name);
+                    call_results.suggest(NamedPlace::Register(output.dest.index), name);
                 }
             }
         }
@@ -216,7 +216,7 @@ pub(in crate::render) fn infer_with_nodes(
         && returned.iter().all(|other| other.as_ref() == Some(counter))
     {
         let assigned = match counter {
-            Counter::Register(index) => {
+            NamedPlace::Register(index) => {
                 if ir.blocks.iter().flat_map(|block| &block.stmts).any(|stmt| {
                     stmt.call_outputs()
                         .iter()
@@ -227,7 +227,7 @@ pub(in crate::render) fn infer_with_nodes(
                     writes.get(index).copied().unwrap_or(0)
                 }
             }
-            Counter::Slot(addr) => ir
+            NamedPlace::Slot(addr) => ir
                 .blocks
                 .iter()
                 .flat_map(|block| &block.stmts)
@@ -239,7 +239,7 @@ pub(in crate::render) fn infer_with_nodes(
         }
     }
     let mut counters = Roles::default();
-    loops(nodes, 0, &mut counters);
+    suggest_loop_names(nodes, 0, &mut counters);
     roles.prefer(counters);
     roles
 }

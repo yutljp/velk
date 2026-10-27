@@ -28,7 +28,7 @@ struct Webs {
     unrelated: BTreeMap<u16, usize>,
     phis: usize,
     bindings: usize,
-    unknown: usize,
+    unknown_successor_variables: usize,
 }
 
 fn webs(ir: &FunctionIr) -> Webs {
@@ -66,18 +66,18 @@ fn webs(ir: &FunctionIr) -> Webs {
             phi_joins += 1;
         }
     }
-    let mut definitions = HashMap::new();
+    let mut reads_by_definition = HashMap::new();
     for stmt in ssa.ir.blocks.iter().flat_map(|block| &block.stmts) {
         if let Stmt::Assign { dest, .. } = stmt {
             let mut reads = HashSet::new();
             for operand in stmt.operands() {
                 velk::ir::visit::collect_reads(operand, &mut reads);
             }
-            definitions.insert(dest.index, reads.into_iter().collect::<Vec<_>>());
+            reads_by_definition.insert(dest.index, reads.into_iter().collect::<Vec<_>>());
         }
     }
     for phi in ssa.phis.iter().flatten() {
-        definitions.insert(phi.value, phi.args.clone());
+        reads_by_definition.insert(phi.value, phi.args.clone());
     }
     for phi in ssa.phis.iter().flatten() {
         let origin = ssa.register_of(phi.value);
@@ -93,7 +93,7 @@ fn webs(ir: &FunctionIr) -> Webs {
                 continue;
             }
             join(&mut parent, phi.value, value);
-            if let Some(reads) = definitions.get(&value) {
+            if let Some(reads) = reads_by_definition.get(&value) {
                 pending.extend(reads);
             }
         }
@@ -260,14 +260,14 @@ fn webs(ir: &FunctionIr) -> Webs {
         .map(|output| output.register)
         .collect();
     let mut bindings = 0;
-    let mut unknown = 0;
+    let mut unknown_successor_variables = 0;
     for (variable, roots) in definitions {
         if roots.len() < 2 {
             continue;
         }
         // Implicit ABI operands must retain their physical register binding.
         if unknown_successors {
-            unknown += 1;
+            unknown_successor_variables += 1;
         } else if variable < VARIABLE_BASE
             && (fixed.contains(&variable)
                 || (ir.declared_signature.is_some()
@@ -285,7 +285,7 @@ fn webs(ir: &FunctionIr) -> Webs {
         unrelated,
         phis: phi_joins,
         bindings,
-        unknown,
+        unknown_successor_variables,
     }
 }
 
@@ -300,7 +300,7 @@ fn fixture_variables_keep_unrelated_webs_separate() {
         let mut before = 0;
         let mut phis = 0;
         let mut bindings = 0;
-        let mut unknown = 0;
+        let mut unknown_successor_variables = 0;
         let mut details = String::new();
         for function in functions {
             let Ok(analysis) = binary.analysis(function.addr, None) else {
@@ -313,7 +313,7 @@ fn fixture_variables_keep_unrelated_webs_separate() {
             count += found.unrelated.len();
             phis += found.phis;
             bindings += found.bindings;
-            unknown += found.unknown;
+            unknown_successor_variables += found.unknown_successor_variables;
             for (variable, roots) in found.unrelated {
                 writeln!(
                     details,
@@ -340,16 +340,18 @@ fn fixture_variables_keep_unrelated_webs_separate() {
             before,
             phis,
             bindings,
-            unknown,
+            unknown_successor_variables,
             details,
         )
     });
     let mut totals: BTreeMap<&str, (usize, usize, usize, usize, usize)> = BTreeMap::new();
     let mut details = String::new();
-    for (fixture, group, count, before, phis, bindings, unknown, found) in results {
+    for (fixture, group, count, before, phis, bindings, unknown_successor_variables, found) in
+        results
+    {
         writeln!(
             details,
-            "# {} | {group}: {before} -> {count}; {phis}; {bindings}; {unknown}",
+            "# {} | {group}: {before} -> {count}; {phis}; {bindings}; {unknown_successor_variables}",
             fixture.display()
         )
         .unwrap();
@@ -357,7 +359,7 @@ fn fixture_variables_keep_unrelated_webs_separate() {
         total.0 += count;
         total.1 += phis;
         total.2 += bindings;
-        total.3 += unknown;
+        total.3 += unknown_successor_variables;
         total.4 += before;
         details.push_str(&found);
     }
@@ -365,10 +367,10 @@ fn fixture_variables_keep_unrelated_webs_separate() {
     let mut report = String::from(
         "# group: variables with unrelated webs before -> after splitting; live phi joins; fixed register bindings; variables with unknown successors\n",
     );
-    for (group, (count, phis, bindings, unknown, before)) in totals {
+    for (group, (count, phis, bindings, unknown_successor_variables, before)) in totals {
         writeln!(
             report,
-            "{group}: {before} -> {count}; {phis}; {bindings}; {unknown}"
+            "{group}: {before} -> {count}; {phis}; {bindings}; {unknown_successor_variables}"
         )
         .unwrap();
     }
@@ -600,7 +602,7 @@ fn implicit_call_operands_keep_their_register_binding() {
     };
     let found = webs(&ir);
     assert!(found.unrelated.is_empty());
-    assert_eq!(found.unknown, 1);
+    assert_eq!(found.unknown_successor_variables, 1);
 }
 
 #[test]

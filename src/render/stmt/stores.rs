@@ -9,7 +9,7 @@ use crate::render::{
 };
 
 pub(super) fn render(addr: &Expr, value: &Expr, width: &u8, ctx: &Ctx<'_>) -> String {
-    let stored = u32::from(*width) * 8;
+    let stored_bits = u32::from(*width) * 8;
     let member = member_access(addr, *width, ctx);
     let precision = value_precision(value, ctx);
     if naming::object_member(addr, *width, ctx)
@@ -17,18 +17,18 @@ pub(super) fn render(addr: &Expr, value: &Expr, width: &u8, ctx: &Ctx<'_>) -> St
         && let Some(address) = expr::copy_address(addr, *width, ctx)
     {
         let ty = type_of(*width, false);
-        let value = conformed(value, stored_value(value, stored, ctx), None, ctx);
+        let value = conformed(value, stored_value(value, stored_bits, ctx), None, ctx);
         return format!("__builtin_memcpy({address}, &({ty}){{{value}}}, {width});");
     }
     let view = precision
-        .filter(|precision| u32::from(precision.bits()) == stored)
+        .filter(|precision| u32::from(precision.bits()) == stored_bits)
         .map_or(globals::View::Unsigned(*width), globals::View::Float);
     if let Some(target) = naming::global_access_as(addr, view, ctx)
         .or_else(|| naming::array_access_as(addr, *width, view, ctx))
         .or_else(|| naming::flat_array_access_as(addr, *width, view, ctx))
     {
         if let Some(precision) = precision
-            && u32::from(precision.bits()) == stored
+            && u32::from(precision.bits()) == stored_bits
         {
             return format!(
                 "{target} = {};",
@@ -37,10 +37,10 @@ pub(super) fn render(addr: &Expr, value: &Expr, width: &u8, ctx: &Ctx<'_>) -> St
         }
         return match update_of_same_location(addr, value, *width, ctx) {
             Some((op, rhs)) if precision.is_none() => {
-                format!("{target} {op}= {};", render_at(rhs, ctx, stored))
+                format!("{target} {op}= {};", render_at(rhs, ctx, stored_bits))
             }
             _ => {
-                let printed = stored_value(value, stored, ctx);
+                let printed = stored_value(value, stored_bits, ctx);
                 format!("{target} = {};", conformed(value, printed, None, ctx))
             }
         };
@@ -60,10 +60,14 @@ pub(super) fn render(addr: &Expr, value: &Expr, width: &u8, ctx: &Ctx<'_>) -> St
                 .filter(|_| precision.is_none() && member.integer().is_some())
             {
                 Some((op, rhs)) => {
-                    format!("{} {op}= {};", member.text, render_at(rhs, ctx, stored))
+                    format!(
+                        "{} {op}= {};",
+                        member.text,
+                        render_at(rhs, ctx, stored_bits)
+                    )
                 }
                 None => {
-                    let printed = stored_value(value, stored, ctx);
+                    let printed = stored_value(value, stored_bits, ctx);
                     let pointer = member.ty.is_pointer().then(|| member.ty.to_string());
                     format!(
                         "{} = {};",
@@ -96,22 +100,22 @@ pub(super) fn render(addr: &Expr, value: &Expr, width: &u8, ctx: &Ctx<'_>) -> St
             match update_of_same_location(addr, value, *width, ctx).filter(|_| precision.is_none())
             {
                 Some((op, rhs)) => {
-                    format!("{} {}= {};", target, op, render_at(rhs, ctx, stored))
+                    format!("{} {}= {};", target, op, render_at(rhs, ctx, stored_bits))
                 }
                 None => {
                     let pointer = (target == *name)
                         .then(|| ctx.local_pointer_types.get(name))
                         .flatten()
                         .map(String::as_str);
-                    let printed = stored_value(value, stored, ctx);
+                    let printed = stored_value(value, stored_bits, ctx);
                     if pointer.is_none()
                         && target == *name
-                        && let Expr::Bin { op, lhs, .. } = without_update_mask(value, stored)
+                        && let Expr::Bin { op, lhs, .. } = without_update_mask(value, stored_bits)
                         && let Expr::Load {
                             addr: read,
                             width: read_width,
                             ..
-                        } = without_update_mask(lhs, stored)
+                        } = without_update_mask(lhs, stored_bits)
                         && read.as_ref() == addr
                         && read_width == width
                         && let Some(symbol) = match op {
@@ -132,7 +136,7 @@ pub(super) fn render(addr: &Expr, value: &Expr, width: &u8, ctx: &Ctx<'_>) -> St
             "*({} *)({}) = {};",
             type_of(*width, false),
             expr::local_plus_offset(addr, ctx).unwrap_or(address),
-            conformed(value, stored_value(value, stored, ctx), None, ctx)
+            conformed(value, stored_value(value, stored_bits, ctx), None, ctx)
         ),
     }
 }

@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use crate::ir::{BinOp, Expr, FunctionIr, Stmt, VARIABLE_BASE};
 
-pub(in crate::render) fn registers(ir: &FunctionIr) -> HashMap<u16, u64> {
+pub(in crate::render) fn register_scales(ir: &FunctionIr) -> HashMap<u16, u64> {
     let mut scales = HashMap::new();
     let mut writes = HashMap::<u16, usize>::new();
     for stmt in ir.blocks.iter().flat_map(|block| &block.stmts) {
@@ -60,8 +60,8 @@ pub(in crate::render) fn registers(ir: &FunctionIr) -> HashMap<u16, u64> {
     scales
 }
 
-pub(in crate::render) fn address_registers(ir: &FunctionIr) -> HashMap<u16, u64> {
-    let mut scales = registers(ir);
+pub(in crate::render) fn address_register_scales(ir: &FunctionIr) -> HashMap<u16, u64> {
+    let mut scales = register_scales(ir);
     if !ir.landing_pads.is_empty() {
         return scales;
     }
