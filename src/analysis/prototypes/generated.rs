@@ -520,9 +520,6 @@ fn record_dependencies(ty: &CType, pending: &mut Vec<String>) {
 
 /// Add only records reached by typed values, without replacing debug types.
 pub(crate) fn apply_records(ir: &mut FunctionIr, image: &Image) {
-    let Some(library) = image_library(image) else {
-        return;
-    };
     let params = ir.params.iter().map(|param| &param.ty);
     let stack_params = ir.stack_params.iter().map(|param| &param.ty);
     let types = params
@@ -533,6 +530,13 @@ pub(crate) fn apply_records(ir: &mut FunctionIr, image: &Image) {
     for ty in types {
         record_dependencies(ty, &mut pending);
     }
+    // The renderer also checks existing definitions against header records.
+    if pending.is_empty() && ir.definitions.is_empty() {
+        return;
+    }
+    let Some(library) = image_library(image) else {
+        return;
+    };
     let mut visited = HashSet::new();
     while let Some(name) = pending.pop() {
         if !visited.insert(name.clone()) {

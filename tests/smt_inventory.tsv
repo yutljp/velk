@@ -38,9 +38,9 @@ src/lift/flags.rs:591	Add carry input	Carry0/1; operands fit width	1/8/16/32/64	
 src/lift/flags.rs:598	Subtract borrow input	Borrow0/1; operands fit width	1/8/16/32/64	templates	pub(super) fn borrow_out(	7faa89e938a27e7070c0d1e87f272100ef4994c319cb1078ff26302b485aead5
 src/lift/flags.rs:630	Conjoin recovered conditions	Unknown stays unknown; boolean selects	1/8/16/32/64	conditional flag templates	fn both(	d956cf29bc459ad50d824d968b439adb435c95f144f13e3d81bc75c58b6ca4ff
 src/lift/flags.rs:706	Fixed NZCV conditions	Four explicit flag bits	1	exhaustive16 flags	fn fixed_holds(	f948d185292495f7f67688701f1279cb041834991a27a7a2bd83e1ea40414205
-src/lift/mod.rs:570	Rotation to shifts and OR	Power-of-two width; final result consumed at that width	8/16/32/64	templates	fn rotate(	9eefe353c18520471179f93993db35b8c116c950a4df037d34eb20ce362689c0
-src/lift/mod.rs:603	Byte/chunk reversal	Valid chunk dividing byte width	8/16/32/64	templates	fn reverse_bytes(	c1910e73cbfd43756aaa4cd69e93d15044c36f13cee1bad12044db8a5157af59
-src/lift/mod.rs:756	Recover overwritten comparison operand	Matching register and supported add/subtract inverse	8/16/32/64	add/sub inverse templates; open flag lifetime	fn recover_operand(	8a1c12aadfaa4c3cd60a1055edb77605af981a8c578974032166e96b38bd6a6f
+src/lift/mod.rs:580	Rotation to shifts and OR	Power-of-two width; final result consumed at that width	8/16/32/64	templates	fn rotate(	9eefe353c18520471179f93993db35b8c116c950a4df037d34eb20ce362689c0
+src/lift/mod.rs:613	Byte/chunk reversal	Valid chunk dividing byte width	8/16/32/64	templates	fn reverse_bytes(	c1910e73cbfd43756aaa4cd69e93d15044c36f13cee1bad12044db8a5157af59
+src/lift/mod.rs:766	Recover overwritten comparison operand	Matching register and supported add/subtract inverse	8/16/32/64	add/sub inverse templates; open flag lifetime	fn recover_operand(	8a1c12aadfaa4c3cd60a1055edb77605af981a8c578974032166e96b38bd6a6f
 src/lift/pairs32.rs:140	Join physical words	Inputs truncated to32 bits	32 to64	templates	pub(crate) fn join(	ed337801dcded318477c5a60211a0cbd068d7aa254a08dd78fcd0b30bcf21ea0
 src/lift/pairs32.rs:148	Pair calls and results	Declared or proven integer pair; target ABI	32/64	open calls/ABI context	pub(super) fn call(	e999659cdccf345eb8e92fcacc613d76b0c21bceb3a99a819581c1e1964a8e27
 src/lift/pairs32.rs:281	Split a scalar result into physical words	Scalar integer result; low word and high word use separate registers	64 to32	symbolic split and join round trip; ABI context open	pub(super) fn split_result(	cfccb053d4c55496499be985b667e23d26570c78ab688d0a1cec9299076a0c7f

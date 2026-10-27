@@ -123,12 +123,12 @@ type Kept = Vec<Arc<Recorded>>;
 )]
 struct Recorded {
     answers: Vec<(u64, Summary)>,
+    without_summaries: bool,
     blocks: Result<Arc<Vec<Block>>, LiftError>,
 }
 
-/// The lifts kept of one function: knowing no callee, as the call graph is
-/// found, and knowing them all.
-const KEPT_LIFTS: usize = 2;
+/// Retain a lift without callee summaries alongside recent summarized lifts.
+const KEPT_LIFTS: usize = 3;
 
 /// `lift_with` and no extra block starts, sharing the lift with every other
 /// caller that gets the same summaries.
@@ -182,13 +182,23 @@ pub(crate) fn lift_shared_with_targets(
     let mut answers = answers.into_inner();
     answers.sort_unstable_by_key(|(target, _)| *target);
     answers.dedup_by_key(|(target, _)| *target);
+    let unknown = calling(Summary::default());
+    let without_summaries = answers.iter().all(|(_, answer)| *answer == unknown);
     let mut lifts = image.lifts.0.lock().expect("lifts lock");
     let kept = lifts.entry(key).or_default();
+    if let Some(recorded) = kept.iter().find(|recorded| recorded.answers == answers) {
+        return recorded.blocks.clone();
+    }
     if kept.len() == KEPT_LIFTS {
-        kept.remove(0);
+        let oldest = kept
+            .iter()
+            .position(|recorded| recorded.without_summaries == without_summaries)
+            .unwrap_or(0);
+        kept.remove(oldest);
     }
     kept.push(Arc::new(Recorded {
         answers,
+        without_summaries,
         blocks: blocks.clone(),
     }));
     blocks
@@ -2385,6 +2395,36 @@ mod tests {
         let again = super::lift_shared_with_targets(&image, 0, 6, &targets, &summaries)
             .expect("retained previous version");
         assert!(std::sync::Arc::ptr_eq(&first, &again));
+    }
+
+    #[test]
+    fn caller_analysis_retains_the_lift_without_callee_summaries() {
+        for (isa, code) in [
+            (Isa::X86_64, vec![0xe8, 0x1b, 0, 0, 0, 0xc3]),
+            (Isa::I386, vec![0xe8, 0x1b, 0, 0, 0, 0xc3]),
+            (Isa::AArch64, vec![0x08, 0, 0, 0x94, 0xc0, 0x03, 0x5f, 0xd6]),
+            (Isa::Arm32, vec![0x06, 0, 0, 0xeb, 0x1e, 0xff, 0x2f, 0xe1]),
+        ] {
+            let size = code.len() as u64;
+            let image = Image::from_code(isa, 0, code);
+            let unknown = |_| crate::loader::Summary::default();
+            let first = super::lift_shared(&image, 0, size, &unknown).unwrap();
+            for arity in 0..5 {
+                let summaries = |_| crate::loader::Summary {
+                    arity: Some(arity),
+                    ..Default::default()
+                };
+                let cached = super::lift_shared(&image, 0, size, &summaries).unwrap();
+                assert!(!std::sync::Arc::ptr_eq(&first, &cached), "{isa}");
+                let uncached =
+                    super::lift_with(&image, 0, size, &HashSet::new(), &summaries).unwrap();
+                assert_eq!(format!("{cached:?}"), format!("{uncached:?}"));
+            }
+            let again = super::lift_shared(&image, 0, size, &unknown).unwrap();
+            assert!(std::sync::Arc::ptr_eq(&first, &again), "{isa}");
+            let lifts = image.lifts.0.lock().unwrap();
+            assert!(lifts.values().all(|kept| kept.len() <= super::KEPT_LIFTS));
+        }
     }
 
     /// The kind and arguments of the first call lifted from `bytes`.

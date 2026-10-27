@@ -1,5 +1,6 @@
 mod batch;
 
+use std::borrow::Cow;
 use std::collections::HashMap;
 use std::collections::hash_map::Entry;
 use std::path::{Path, PathBuf};
@@ -193,7 +194,7 @@ pub struct Binary {
     image: Image,
     options: loader::OpenOptions,
     signature_options: SignatureOptions,
-    signature_database: Database,
+    signature_database: Cow<'static, Database>,
     symbols: render::Symbols,
     data_ranges: Vec<(u64, u64)>,
     analyses: HashMap<u64, Result<Analysis, LiftError>>,
@@ -341,9 +342,9 @@ impl Binary {
                     .values()
                     .any(|function| function.name.is_none()));
         let mut database = if needs_defaults {
-            sigs::bundled_for_isa(image.isa).clone()
+            Cow::Borrowed(sigs::bundled_for_isa(image.isa))
         } else {
-            Database::new(Vec::new())
+            Cow::Owned(Database::new(Vec::new()))
         };
         for path in &signatures.files {
             let mut extra = match Database::load(path) {
@@ -360,8 +361,8 @@ impl Binary {
                     entry.set = Some(source.clone());
                 }
             }
-            database.entries.extend(extra.entries);
-            database.sources.extend(extra.sources);
+            database.to_mut().entries.extend(extra.entries);
+            database.to_mut().sources.extend(extra.sources);
         }
         let mut binary = Self {
             navigation: None,
@@ -377,7 +378,7 @@ impl Binary {
             image,
             options,
             signature_options: signatures.clone(),
-            signature_database: database.clone(),
+            signature_database: Cow::Owned(Database::new(Vec::new())),
             analyses: HashMap::new(),
             shared_analyses: HashMap::new(),
         };
@@ -400,6 +401,7 @@ impl Binary {
         {
             return Err(error);
         }
+        binary.signature_database = database;
         Ok(binary)
     }
 
@@ -1198,7 +1200,7 @@ impl Binary {
             if self.signature_options.defaults && self.signature_database.entries.is_empty() {
                 sigs::bundled_for_isa(self.image.isa).clone()
             } else {
-                self.signature_database.clone()
+                self.signature_database.as_ref().clone()
             };
         let source = if database.sources.is_empty() {
             "user database".to_owned()
@@ -1217,7 +1219,7 @@ impl Binary {
             Ok(result) => result,
             Err(error) => return Err(error),
         };
-        self.signature_database = combined;
+        self.signature_database = Cow::Owned(combined);
         Ok(result)
     }
 
@@ -1387,6 +1389,17 @@ mod tests {
                 expected[&addr]
             );
         }
+    }
+
+    #[test]
+    fn default_signature_databases_are_shared_between_binaries() {
+        let first = fixture("pe64.exe");
+        let second = fixture("pe64.exe");
+        assert!(matches!(first.signature_database, Cow::Borrowed(_)));
+        assert!(std::ptr::eq(
+            first.signature_database.as_ref(),
+            second.signature_database.as_ref(),
+        ));
     }
 
     #[test]

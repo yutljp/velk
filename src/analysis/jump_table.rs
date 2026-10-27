@@ -33,6 +33,12 @@ impl Recovered {
 /// where the next table would begin. A table's address held in a register
 /// since an earlier block counts, as found through the tables already read.
 pub fn recover(blocks: &[Block], image: &Image, extent: std::ops::Range<u64>) -> Vec<Recovered> {
+    if !blocks
+        .iter()
+        .any(|block| matches!(block.stmts.last(), Some(Stmt::BrIndirect { .. })))
+    {
+        return Vec::new();
+    }
     let mut recovered = recover_once(blocks, image, &extent, &[]);
     for _ in 0..4 {
         let again = recover_once(blocks, image, &extent, &recovered);
@@ -773,6 +779,43 @@ fn unscale(expr: Expr) -> Expr {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn direct_control_flow_does_not_scan_table_addresses() {
+        for isa in [
+            crate::loader::Isa::X86_64,
+            crate::loader::Isa::AArch64,
+            crate::loader::Isa::I386,
+            crate::loader::Isa::Arm32,
+        ] {
+            let image = Image::from_code(isa, 0, Vec::new());
+            let blocks = vec![
+                Block {
+                    start: 0,
+                    stmts: vec![Stmt::Brif {
+                        cond: crate::ir::Cond::Eq,
+                        lhs: Expr::reg(0, 32),
+                        rhs: Expr::Const(0),
+                        target: 8,
+                    }],
+                },
+                Block {
+                    start: 4,
+                    stmts: vec![Stmt::Ret {
+                        value: Expr::Const(1),
+                    }],
+                },
+                Block {
+                    start: 8,
+                    stmts: vec![Stmt::Ret {
+                        value: Expr::Const(2),
+                    }],
+                },
+            ];
+            assert!(recover(&blocks, &image, 0..12).is_empty());
+            assert!(image.addressed.get().is_none());
+        }
+    }
 
     #[test]
     fn table_data_keeps_normal_exceptional_and_unknown_entries() {

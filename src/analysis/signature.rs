@@ -413,6 +413,9 @@ fn parameter_types(
     callees: Callees<'_>,
     params: &mut [Param],
 ) -> HashSet<u16> {
+    if params.is_empty() {
+        return HashSet::new();
+    }
     // Which argument each register is derived from through copies and
     // base-preserving arithmetic, so loads through it type that argument.
     // A stack slot every store fills from one argument passes it on too, as
@@ -644,6 +647,9 @@ fn parameter_types(
 }
 
 fn parameter_accesses(blocks: &[Block], params: &[Param]) -> Vec<Access> {
+    if params.is_empty() {
+        return Vec::new();
+    }
     // Field offsets count from the argument itself: a register only copied
     // from it, never one advanced from it.
     let mut copies: HashMap<u16, u16> = params
