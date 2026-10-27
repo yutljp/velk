@@ -27,7 +27,7 @@ const HELP_STYLES: Styles = Styles::styled()
     override_usage = "velk <OPERATION> [OPTIONS] [INPUT] [FUNCTION]",
     group(ArgGroup::new("operation").required(true).multiple(false).args([
         "compare", "annotate", "annotation", "annotations", "unannotate", "export_project", "import_project", "origins",
-        "functions", "classes", "sections", "card", "decompile", "disasm", "ir",
+        "api_docs", "functions", "classes", "sections", "card", "decompile", "disasm", "ir",
         "build_signatures", "identify", "run", "mcp", "emulate", "xrefs", "callers", "callees", "path", "strings", "constants", "summary", "search", "read_memory", "detect_constants"
     ])),
     group(ArgGroup::new("multi_target").args(["decompile", "path"])),
@@ -35,6 +35,9 @@ const HELP_STYLES: Styles = Styles::styled()
     after_help = "Examples:\n  velk -f app.elf\n  velk -D app.elf main\n  velk --disasm app.elf 0x401000 --limit 20\n  velk --build-signatures app.elf --output signatures.json\n  velk -r analysis.js\n  velk --annotations app.elf\n  velk --xrefs app.elf main\n  velk --path app.elf main helper --depth 4\n  velk --strings app.elf --contains hello\n\nChoose one operation. Use --help to list its arguments and options.\nProject and annotation operations return JSON results and JSON errors after argument parsing."
 )]
 pub(super) struct Cli {
+    /// List API topics, or print the documentation for one topic.
+    #[arg(long, exclusive = true, num_args = 0..=1, default_missing_value = "", value_name = "TOPIC", help_heading = "Operations (choose one)")]
+    api_docs: Option<String>,
     /// Compare INPUT with a second binary supplied as FUNCTION; return JSON.
     #[arg(long, help_heading = "Operations (choose one)")]
     compare: bool,
@@ -47,7 +50,7 @@ pub(super) struct Cli {
     /// Execute a function or address through the IR interpreter; print final state as JSON.
     #[arg(long, help_heading = "Operations (choose one)")]
     emulate: bool,
-    /// Initial state and limits as JSON; see docs/EMULATION.md.
+    /// Initial state and limits as JSON; see velk --api-docs emulation.
     #[arg(long, requires = "emulate", value_name = "JSON", conflicts_with_all = ["compare", "annotate", "annotation", "annotations", "unannotate", "export_project", "import_project", "origins", "functions", "classes", "sections", "card", "decompile", "disasm", "ir", "build_signatures", "identify", "run", "mcp", "xrefs", "callers", "callees", "path", "strings", "constants", "summary", "search", "read_memory", "detect_constants"])]
     emulation_options: Option<String>,
     /// Instruction set for a headerless input file.
@@ -198,11 +201,11 @@ pub(super) struct Cli {
     /// Case-sensitive substring; only with --strings.
     #[arg(long, requires = "strings", conflicts_with_all = ["emulate", "classes", "search", "read_memory", "detect_constants", "functions", "sections", "card", "decompile", "disasm", "ir", "build_signatures", "identify", "run", "mcp", "xrefs", "callers", "callees", "path", "constants", "summary"])]
     contains: Option<String>,
-    /// Binary file, or JavaScript file with --run; required except with --mcp.
+    /// Binary file, or JavaScript file with --run; required except with --mcp or --api-docs.
     #[arg(
         value_name = "INPUT",
-        required_unless_present = "mcp",
-        conflicts_with = "mcp"
+        required_unless_present_any = ["mcp", "api_docs"],
+        conflicts_with_all = ["mcp", "api_docs"]
     )]
     pub(super) input: Option<PathBuf>,
     /// Function, address, constant, annotation/target JSON, or project import file.
@@ -270,6 +273,9 @@ pub(super) struct Cli {
 
 #[cfg_attr(test, derive(Debug, PartialEq, Eq))]
 pub(super) enum Command {
+    Api {
+        topic: String,
+    },
     Compare {
         path: PathBuf,
         other: PathBuf,
@@ -330,6 +336,9 @@ pub(super) enum Command {
 
 impl Cli {
     pub(super) fn into_command(self) -> Command {
+        if let Some(topic) = self.api_docs {
+            return Command::Api { topic };
+        }
         if self.compare {
             return Command::Compare {
                 path: self.input.expect("clap requires input"),

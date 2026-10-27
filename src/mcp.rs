@@ -37,7 +37,8 @@ const READ_DESCRIPTION: &str = "Read this first: omit topic for API overview and
 Use binary for opening, listing, navigation and annotations; func for per-function \
 decompilation and inspection; types for returned object fields.";
 
-const TOPICS: [(&str, &str); 4] = [
+/// API topic names and their embedded documentation.
+pub const TOPICS: [(&str, &str); 4] = [
     ("binary", include_str!("script/api/binary.d.ts")),
     ("func", include_str!("script/api/func.d.ts")),
     ("types", include_str!("script/api/types.d.ts")),
@@ -292,7 +293,7 @@ fn read_api(arguments: &Value) -> (String, bool) {
         Some(topic) => match TOPICS.iter().find(|(name, _)| *name == topic) {
             Some((_, text)) => ((*text).to_owned(), false),
             None => (
-                "unknown topic; use binary, func or types, or omit topic for the overview"
+                "unknown topic; use binary, func, types or emulation, or omit topic for the overview"
                     .to_owned(),
                 true,
             ),

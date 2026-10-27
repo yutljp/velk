@@ -41,6 +41,18 @@ pub(crate) fn run(
     signature_options: &velk::service::SignatureOptions,
 ) -> Result<ExitCode> {
     match command {
+        Command::Api { topic } => {
+            if topic.is_empty() {
+                for (name, _) in mcp::TOPICS {
+                    println!("{name}");
+                }
+            } else if let Some((_, text)) = mcp::TOPICS.iter().find(|(name, _)| *name == topic) {
+                print!("{text}");
+            } else {
+                eprintln!("error: unknown API topic {topic:?}; use velk --api-docs to list topics");
+                return Ok(ExitCode::FAILURE);
+            }
+        }
         Command::Compare {
             path,
             other,

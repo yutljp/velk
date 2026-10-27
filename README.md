@@ -87,6 +87,9 @@ See [input formats and limits](docs/INPUT.md).
 
 ## Running loaded code
 
+Run `velk --api-docs` to list the embedded API topics, or `velk --api-docs emulation` to
+read the execution options and results in the terminal.
+
 Run a function by name or virtual address with initial arguments and memory:
 
 ```sh

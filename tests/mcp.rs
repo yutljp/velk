@@ -46,6 +46,67 @@ fn text(response: &Value) -> &str {
 }
 
 #[test]
+fn cli_api_matches_mcp() {
+    let responses = exchange(&[json!({"jsonrpc":"2.0", "id":1, "method":"tools/list"})]);
+    let tools = responses[0]["result"]["tools"].as_array().unwrap();
+    let api = tools
+        .iter()
+        .find(|tool| tool["name"] == "velk_read_api")
+        .unwrap();
+    let topics = api["inputSchema"]["properties"]["topic"]["enum"]
+        .as_array()
+        .unwrap();
+    let list = Command::new(env!("CARGO_BIN_EXE_velk"))
+        .arg("--api-docs")
+        .output()
+        .unwrap();
+    assert!(list.status.success());
+    let names = String::from_utf8(list.stdout).unwrap();
+    assert_eq!(
+        names.lines().collect::<Vec<_>>(),
+        topics
+            .iter()
+            .map(|v| v.as_str().unwrap())
+            .collect::<Vec<_>>()
+    );
+    for topic in topics {
+        let name = topic.as_str().unwrap();
+        let response = exchange(&[tool(1, "velk_read_api", json!({"topic": name}))]);
+        let output = Command::new(env!("CARGO_BIN_EXE_velk"))
+            .args(["--api-docs", name])
+            .output()
+            .unwrap();
+        assert!(output.status.success());
+        assert_eq!(
+            String::from_utf8(output.stdout).unwrap(),
+            text(&response[0])
+        );
+    }
+    for args in [
+        &["--help"][..],
+        &["--api-docs", "unknown"][..],
+        &["--emulate"][..],
+    ] {
+        let output = Command::new(env!("CARGO_BIN_EXE_velk"))
+            .args(args)
+            .output()
+            .unwrap();
+        assert_eq!(output.status.success(), args == ["--help"]);
+        let text = format!(
+            "{}{}",
+            String::from_utf8_lossy(&output.stdout),
+            String::from_utf8_lossy(&output.stderr)
+        );
+        assert!(!text.contains("docs/") && !text.contains(".md"), "{text}");
+    }
+    let conflict = Command::new(env!("CARGO_BIN_EXE_velk"))
+        .args(["--api-docs", "--save-unpacked", "output"])
+        .output()
+        .unwrap();
+    assert!(!conflict.status.success());
+}
+
+#[test]
 fn com_library_types_are_data_over_stdio() {
     for (fixture, width, convention) in [
         ("crt_windows.i686.exe", 4, "stdcall"),
