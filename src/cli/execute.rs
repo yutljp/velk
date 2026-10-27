@@ -86,6 +86,7 @@ pub(crate) fn run(
             path,
             start,
             options,
+            json,
         } => {
             let binary = match crate::open_binary(&path, project, input_options, signature_options)
             {
@@ -105,7 +106,21 @@ pub(crate) fn run(
                 Ok(report) => report,
                 Err(error) => return Err(error),
             };
-            println!("{:#}", json!(report));
+            if json {
+                println!("{:#}", json!(report));
+            } else {
+                println!(
+                    "Stop: {} at {}\nReturn: {}",
+                    report.reason, report.address, report.return_value
+                );
+                if let Some(error) = &report.error {
+                    println!("Error: {error}");
+                }
+                println!("stdout:\n{}\nstderr:\n{}", report.stdout, report.stderr);
+                for read in &report.reads {
+                    println!("{}: {}", read.address, read.value);
+                }
+            }
             return Ok(
                 if matches!(report.reason.as_str(), "return" | "end address") {
                     ExitCode::SUCCESS

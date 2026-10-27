@@ -99,7 +99,7 @@ impl Interfaces {
         };
         let success = matches!(expected["reason"].as_str(), Some("return" | "end address"));
         let cli = Command::new(env!("CARGO_BIN_EXE_velk"))
-            .arg("--emulate")
+            .args(["--emulate", "--json"])
             .arg(path)
             .arg(start)
             .arg("--emulation-options")

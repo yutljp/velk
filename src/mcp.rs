@@ -170,7 +170,7 @@ fn tools() -> Value {
         },
         {
             "name": "velk_emulate",
-            "description": "Execute a function or virtual address through the IR interpreter. Returns final registers, return value, changed memory, steps, stop reason and optional trace. Read the emulation API topic for options. No system calls or host code execute.",
+            "description": "Execute a function or virtual address through the IR interpreter. Returns stdout, stderr, requested memory reads, final registers, return value, changed memory, steps, stop reason and optional trace. Read the emulation API topic for options. No system calls or host code execute.",
             "inputSchema": {
                 "type": "object",
                 "properties": {

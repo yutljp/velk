@@ -2,6 +2,8 @@
 
 mod hooks;
 mod imports;
+mod io;
+mod reads;
 mod strings;
 pub(crate) use strings::recover_strings;
 mod values;
@@ -20,6 +22,11 @@ use super::Machine;
 const MAX_CODE_SIZE: u64 = 1 << 16;
 
 struct Runner<'a> {
+    streams: [u64; 3],
+    input: Vec<u8>,
+    input_position: usize,
+    stdout: Vec<u8>,
+    stderr: Vec<u8>,
     machine: Machine<'a>,
     facts: HashMap<u16, Fact>,
     image: &'a Image,
@@ -124,6 +131,13 @@ fn run_with_recovery(
             Err(error) => return Err(error),
         }
     }
+    let input = match &options.stdin {
+        Some(input) => match input.bytes() {
+            Ok(bytes) => bytes,
+            Err(error) => return Err(error),
+        },
+        None => Vec::new(),
+    };
     let before = machine.memory.clone();
     // Caller-provided heap bytes are reserved before malloc starts allocating.
     let mut heap_next = heap_base;
@@ -133,6 +147,11 @@ fn run_with_recovery(
         }
     }
     let mut runner = Runner {
+        streams: [0; 3],
+        input,
+        input_position: 0,
+        stdout: Vec::new(),
+        stderr: Vec::new(),
         machine,
         facts: HashMap::new(),
         image,
@@ -149,6 +168,10 @@ fn run_with_recovery(
         code: HashMap::new(),
         recovery,
     };
+    if let Err(error) = runner.initialize_io(start, stack) {
+        return Err(invalid(error));
+    }
+    let before = runner.machine.memory.clone();
     if runner.recovery.is_some() {
         let sp = crate::arch::stack_pointer(image.isa);
         for &register in &physical {
@@ -324,7 +347,7 @@ impl Runner<'_> {
         stack: u64,
         physical: &[u16],
     ) -> (Report, Option<strings::Recovery>) {
-        let (reason, error) = match stopped {
+        let (mut reason, mut error) = match stopped {
             Stop::Return => ("return", None),
             Stop::End => ("end address", None),
             Stop::Trap => ("trap", None),
@@ -378,7 +401,21 @@ impl Runner<'_> {
             .as_ref()
             .expect("strict memory")
             .changes(before, &self.machine.memory);
+        let reads = match self.read_results() {
+            Ok(reads) => reads,
+            Err(message) => {
+                reason = "error";
+                error = Some(match error {
+                    Some(cause) => format!("{cause}; post-run read: {message}"),
+                    None => format!("post-run read: {message}"),
+                });
+                Vec::new()
+            }
+        };
         let report = Report {
+            stdout: String::from_utf8_lossy(&self.stdout).into_owned(),
+            stderr: String::from_utf8_lossy(&self.stderr).into_owned(),
+            reads,
             registers,
             return_value: self
                 .register_fact(crate::arch::RETURN, 64)

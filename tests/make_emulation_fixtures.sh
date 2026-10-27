@@ -20,8 +20,12 @@ for architecture in x86_64 i386 aarch64 arm32 thumb32; do
             -fno-vectorize -fno-slp-vectorize \
             -fPIC -shared -nostdlib -fuse-ld=lld tests/emulation/hooks.c \
             -o "$out/$architecture.$optimization.hooks.elf"
+        clang --target="$target" $mode "-$optimization" -fno-builtin -fno-stack-protector \
+            -fno-vectorize -fno-slp-vectorize -fPIC -shared -nostdlib -fuse-ld=lld \
+            tests/emulation/io.c -o "$out/$architecture.$optimization.io.elf"
     done
 done
+clang -O2 -DNATIVE -fno-builtin tests/emulation/io.c -o "$out/host.io.native"
 for mode in arm thumb; do
     clang --target=armv7-linux-gnueabihf -m"$mode" -march=armv7ve -nostdlib -static \
         -fuse-ld=lld -Wl,-e,extend_byte -Wl,--build-id=none tests/emulation/extensions.S \
@@ -45,3 +49,13 @@ else
 fi
 clang --version > "$out/toolchain.txt"
 ld.lld --version >> "$out/toolchain.txt"
+
+cat > "$out/imports.def" <<'IMPORTS'
+LIBRARY msvcrt.dll
+EXPORTS
+printf
+sscanf
+IMPORTS
+clang --target=aarch64-windows-msvc -O1 -fno-builtin -c tests/emulation/windows_io.c -o "$out/arm64.obj"
+lld-link /lib /def:"$out/imports.def" /machine:arm64 /out:"$out/arm64.lib"
+lld-link /dll /noentry /nodefaultlib /out:"$out/arm64.dll" "$out/arm64.obj" "$out/arm64.lib"

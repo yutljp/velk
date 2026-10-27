@@ -48,10 +48,118 @@ pub struct MemoryWrite {
     pub width: Option<u8>,
 }
 
+/// Input bytes, supplied directly or loaded from a file before execution.
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum Input {
+    /// UTF-8 text.
+    Text(String),
+    /// Hexadecimal byte pairs, with optional ASCII whitespace.
+    Hex(String),
+    /// File read by the host before execution.
+    File(String),
+}
+
+impl Input {
+    pub(crate) fn bytes(&self) -> Result<Vec<u8>> {
+        use std::io::Read;
+        let bytes = match self {
+            Self::Text(text) => text.as_bytes().to_vec(),
+            Self::Hex(text) => {
+                let digits: Vec<u8> = text
+                    .bytes()
+                    .filter(|byte| !byte.is_ascii_whitespace())
+                    .collect();
+                if !digits.len().is_multiple_of(2) {
+                    return Err(invalid("stdin hex needs pairs of digits"));
+                }
+                let mut bytes = Vec::new();
+                for pair in digits.as_chunks::<2>().0 {
+                    let (Some(high), Some(low)) = (
+                        (pair[0] as char).to_digit(16),
+                        (pair[1] as char).to_digit(16),
+                    ) else {
+                        return Err(invalid("stdin contains an invalid hex digit"));
+                    };
+                    bytes.push((high * 16 + low) as u8);
+                }
+                bytes
+            }
+            Self::File(path) => {
+                let file = match std::fs::File::open(path) {
+                    Ok(file) => file,
+                    Err(error) => return Err(invalid(format!("stdin file {path}: {error}"))),
+                };
+                let mut bytes = Vec::new();
+                if let Err(error) = file.take(HEAP_SIZE + 1).read_to_end(&mut bytes) {
+                    return Err(invalid(format!("stdin file {path}: {error}")));
+                }
+                bytes
+            }
+        };
+        if bytes.len() as u64 > HEAP_SIZE {
+            return Err(invalid("stdin exceeds 16 MiB"));
+        }
+        Ok(bytes)
+    }
+}
+
+/// How to display bytes read after execution.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum ReadFormat {
+    /// UTF-8 text, replacing invalid sequences.
+    #[default]
+    String,
+    /// An array of byte values.
+    Bytes,
+    /// Hexadecimal byte pairs.
+    Hex,
+    /// Unsigned little-endian integers, represented as decimal strings.
+    Integers,
+}
+
+/// A mapped memory range to read after execution.
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct MemoryRead {
+    /// Exactly one of address, symbol and register must be supplied.
+    pub address: Option<Word>,
+    /// A defined data symbol.
+    pub symbol: Option<String>,
+    /// A full register name whose final value is the address.
+    pub register: Option<String>,
+    /// Byte count; omit to read up to a terminating NUL (at most 16 MiB).
+    pub length: Option<usize>,
+    /// Display format, default string.
+    #[serde(default)]
+    pub format: ReadFormat,
+    /// Integer width in bytes (1, 2, 4, 8); required for integers.
+    pub width: Option<u8>,
+}
+
+/// The bytes and formatted value of a requested post-execution read.
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ReadResult {
+    /// Start address in hexadecimal.
+    pub address: String,
+    /// Exact byte values, excluding the terminating NUL for unbounded reads.
+    pub bytes: Vec<u8>,
+    /// Text, byte array, hex dump, or array of decimal integer strings.
+    pub value: serde_json::Value,
+}
+
 /// Initial state and execution bounds. Each run starts from a fresh image.
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 #[serde(default, rename_all = "camelCase", deny_unknown_fields)]
 pub struct Options {
+    /// Stdin bytes consumed in order by input hooks; absent means EOF.
+    pub stdin: Option<Input>,
+    /// Main arguments, including argv[0]; supplies argc and a NUL-terminated argv.
+    pub argv: Option<Vec<String>>,
+    /// Memory ranges to inspect after execution.
+    pub reads: Vec<MemoryRead>,
     /// Stop before executing any of these instruction addresses.
     pub end: Vec<Word>,
     /// Initial values keyed by full machine register name.
@@ -75,6 +183,9 @@ pub struct Options {
 impl Default for Options {
     fn default() -> Self {
         Self {
+            stdin: None,
+            argv: None,
+            reads: Vec::new(),
             end: Vec::new(),
             registers: BTreeMap::new(),
             arguments: Vec::new(),
@@ -104,6 +215,12 @@ pub struct MemoryChange {
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Report {
+    /// Captured stdout, decoded as UTF-8 with replacement for invalid sequences.
+    pub stdout: String,
+    /// Captured stderr, decoded as UTF-8 with replacement for invalid sequences.
+    pub stderr: String,
+    /// Requested memory reads.
+    pub reads: Vec<ReadResult>,
     /// Machine register names mapped to hexadecimal values, or "unknown".
     pub registers: BTreeMap<String, String>,
     /// Integer return register in hexadecimal, or "unknown" when not defined.

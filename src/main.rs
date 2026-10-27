@@ -568,6 +568,7 @@ mod tests {
                 path: PathBuf::from("binary"),
                 start: "decode".to_owned(),
                 options: Some("{}".to_owned()),
+                json: false,
             }
         );
         for operation in [
@@ -585,7 +586,6 @@ mod tests {
         for options in [
             vec!["--limit", "1"],
             vec!["--budget", "1"],
-            vec!["--json"],
             vec!["--output", "db.json"],
         ] {
             let mut args = vec!["--emulate", "binary", "decode"];

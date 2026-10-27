@@ -245,10 +245,10 @@ pub(super) struct Cli {
         help = format!("Approximate card size in tokens (default: {}); only with --card", card::DEFAULT_BUDGET)
     )]
     budget: Option<usize>,
-    /// Print the function list as JSON; only with --functions.
+    /// Print function lists or emulation results as JSON.
     #[arg(
         long,
-        conflicts_with_all = ["emulate", "classes", "compare", "search", "read_memory", "detect_constants", "annotate", "annotation", "annotations", "unannotate", "export_project", "import_project", "origins", "xrefs", "callers", "callees", "path", "strings", "constants", "summary", "sections", "card", "decompile", "disasm", "ir", "build_signatures", "identify", "run", "mcp"]
+        conflicts_with_all = ["classes", "compare", "search", "read_memory", "detect_constants", "annotate", "annotation", "annotations", "unannotate", "export_project", "import_project", "origins", "xrefs", "callers", "callees", "path", "strings", "constants", "summary", "sections", "card", "decompile", "disasm", "ir", "build_signatures", "identify", "run", "mcp"]
     )]
     json: bool,
     /// Disable the embedded library signature sets.
@@ -286,6 +286,7 @@ pub(super) enum Command {
         path: PathBuf,
         start: String,
         options: Option<String>,
+        json: bool,
     },
     Navigation {
         path: PathBuf,
@@ -352,6 +353,7 @@ impl Cli {
                 path: self.input.expect("clap requires input"),
                 start: self.function.expect("clap requires a function or address"),
                 options: self.emulation_options,
+                json: self.json,
             };
         }
         if self.search

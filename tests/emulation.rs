@@ -3,6 +3,8 @@
 mod common;
 #[path = "emulation/edges.rs"]
 mod edges;
+#[path = "emulation/io.rs"]
+mod io;
 #[path = "emulation/matrix.rs"]
 mod matrix;
 
@@ -424,7 +426,7 @@ fn cli_javascript_and_mcp_share_the_execution_result() {
     let path = fixture("i386");
     let options = json!({"arguments":[1,2,3,4,5,6,7,8,9]});
     let output = Command::new(env!("CARGO_BIN_EXE_velk"))
-        .args(["--emulate"])
+        .args(["--emulate", "--json"])
         .arg(&path)
         .arg("sum9")
         .arg("--emulation-options")
@@ -479,6 +481,7 @@ fn library_hooks_match_native_memory_and_unknown_calls_stop() {
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 __attribute__((noinline)) uint64_t exercise(unsigned char *p, const char *q) {
     memset(p, 0xaa, 8);
     memmove(p + 1, p, 5);
@@ -517,8 +520,8 @@ __attribute__((noinline)) int zero_allocation(volatile unsigned char *p) {
     free(q);
     return result;
 }
-__attribute__((noinline)) int redirect_puts(const char *s) { (void)s; return 77; }
-__attribute__((noinline)) int unknown_call(const char *s) { return puts(s); }
+__attribute__((noinline)) int redirect_access(const char *s) { (void)s; return 77; }
+__attribute__((noinline)) int unknown_call(const char *s) { return access(s, 0); }
 __attribute__((noinline)) int bad_copy(char *p) { memcpy(p + 1, p, 5); return 1; }
 __attribute__((noinline)) void store(unsigned char *p) { *p = 7; }
 int main(void) {
@@ -630,16 +633,16 @@ int main(void) {
         report
             .error
             .expect("valid compiled fixture state")
-            .contains("puts")
+            .contains("access")
     );
-    let (&puts_slot, puts_name) = binary
+    let (&access_slot, access_name) = binary
         .image()
         .imports
         .iter()
-        .find(|(_, name)| name.trim_start_matches('_') == "puts")
-        .expect("puts import slot");
+        .find(|(_, name)| name.trim_start_matches('_') == "access")
+        .expect("access import slot");
     let mut options = json!({"arguments":["0x10000000"],"callReturns":{}});
-    options["callReturns"][puts_name] = json!(13);
+    options["callReturns"][access_name] = json!(13);
     returned(&execute(&binary, "unknown_call", options), 13);
     returned(
         &execute(
@@ -650,14 +653,14 @@ int main(void) {
         0,
     );
     let redirect = binary
-        .find("redirect_puts")
+        .find("redirect_access")
         .expect("the replacement function")
         .addr;
     returned(
         &execute(
             &binary,
             "unknown_call",
-            json!({"arguments":["0x10000000"],"memory":[{"address":puts_slot,"value":redirect,"width":8}]}),
+            json!({"arguments":["0x10000000"],"memory":[{"address":access_slot,"value":redirect,"width":8}]}),
         ),
         77,
     );

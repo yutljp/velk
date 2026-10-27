@@ -299,3 +299,5 @@ sum identity with a symbolic polynomial ring check. Coefficient and shift
 instances cover wrapping boundaries. Negative controls use changed coefficients,
 faulting inputs, unsupported masks and search limits. These are bounded templates,
 not a proof for every polynomial tree accepted by the implementation.
+
+Emulated printf integer magnitudes have symbolic width checks and concrete helper instances for 8, 16, 32 and 64 bits. Formatting is compared with host libc by execution tests.

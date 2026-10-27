@@ -93,11 +93,14 @@ read the execution options and results in the terminal.
 Run a function by name or virtual address with initial arguments and memory:
 
 ```sh
-velk --emulate app.elf decode --emulation-options '{"arguments":["0x10000000",6,93],"memory":[{"address":"0x10000000","bytes":[53,56,49,49,50,93]}]}'
+velk --emulate app.elf decode --emulation-options '{"arguments":["0x10000000",6,93],"memory":[{"address":"0x10000000","bytes":[53,56,49,49,50,93]}],"reads":[{"address":"0x10000000"}]}'
 ```
 
-The JSON result includes registers, the integer return value, changed bytes and the
-stop reason. Scripts use `b.emulate(start, options)` or
+The result includes registers, the integer return value, changed bytes and the
+stop reason. The CLI defaults to a text report; add `--json` for JSON.
+Use `stdin: {text: "candidate\n"}` for program input, `argv` for main arguments,
+and `reads` to inspect a symbol, address or final register pointer. Captured output
+is returned in `stdout` and `stderr`. Scripts use `b.emulate(start, options)` or
 `b.getFunction(name).emulate(options)`; MCP clients use `velk_emulate`.
 See [Running loaded code](docs/EMULATION.md) for the decoding example, supported
 library hooks, errors and execution limits.

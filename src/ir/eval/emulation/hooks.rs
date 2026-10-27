@@ -14,9 +14,40 @@ pub(super) enum Hook {
     Allocate,
     AllocateZero,
     Free,
+    Io(super::io::Operation),
 }
 
 const HOOKS: &[(&str, Hook)] = &[
+    ("printf", Hook::Io(super::io::Operation::Printf)),
+    ("fprintf", Hook::Io(super::io::Operation::Fprintf)),
+    ("sprintf", Hook::Io(super::io::Operation::Sprintf)),
+    ("snprintf", Hook::Io(super::io::Operation::Snprintf)),
+    ("puts", Hook::Io(super::io::Operation::Puts)),
+    ("putchar", Hook::Io(super::io::Operation::Putchar)),
+    ("fputs", Hook::Io(super::io::Operation::Fputs)),
+    ("fwrite", Hook::Io(super::io::Operation::Fwrite)),
+    ("write", Hook::Io(super::io::Operation::Write)),
+    ("read", Hook::Io(super::io::Operation::Read)),
+    ("fread", Hook::Io(super::io::Operation::Fread)),
+    ("fgets", Hook::Io(super::io::Operation::Fgets)),
+    ("gets", Hook::Io(super::io::Operation::Gets)),
+    ("getchar", Hook::Io(super::io::Operation::Getchar)),
+    ("scanf", Hook::Io(super::io::Operation::Scanf)),
+    ("fscanf", Hook::Io(super::io::Operation::Fscanf)),
+    ("sscanf", Hook::Io(super::io::Operation::Sscanf)),
+    ("__isoc99_scanf", Hook::Io(super::io::Operation::Scanf)),
+    ("__isoc99_fscanf", Hook::Io(super::io::Operation::Fscanf)),
+    ("__isoc99_sscanf", Hook::Io(super::io::Operation::Sscanf)),
+    ("vprintf", Hook::Io(super::io::Operation::Vprintf)),
+    ("vfprintf", Hook::Io(super::io::Operation::Vfprintf)),
+    ("vsprintf", Hook::Io(super::io::Operation::Vsprintf)),
+    ("vsnprintf", Hook::Io(super::io::Operation::Vsnprintf)),
+    ("vscanf", Hook::Io(super::io::Operation::Vscanf)),
+    ("vfscanf", Hook::Io(super::io::Operation::Vfscanf)),
+    ("vsscanf", Hook::Io(super::io::Operation::Vsscanf)),
+    ("__isoc99_vscanf", Hook::Io(super::io::Operation::Vscanf)),
+    ("__isoc99_vfscanf", Hook::Io(super::io::Operation::Vfscanf)),
+    ("__isoc99_vsscanf", Hook::Io(super::io::Operation::Vsscanf)),
     ("memcpy", Hook::Copy),
     ("memmove", Hook::Move),
     ("memset", Hook::Set),
@@ -30,7 +61,11 @@ const HOOKS: &[(&str, Hook)] = &[
 ];
 
 pub(super) fn find(name: &str) -> Option<Hook> {
-    let name = name.strip_prefix('_').unwrap_or(name);
+    let name = if name.starts_with("__isoc99_") {
+        name
+    } else {
+        name.strip_prefix('_').unwrap_or(name)
+    };
     let name = name.split('@').next().unwrap_or(name);
     HOOKS
         .iter()
@@ -89,7 +124,7 @@ impl Runner<'_> {
         }
     }
 
-    fn read_byte(&mut self, address: u64) -> std::result::Result<u8, Stop> {
+    pub(super) fn read_byte(&mut self, address: u64) -> std::result::Result<u8, Stop> {
         if let Err(stop) = self.tick() {
             return Err(stop);
         }
@@ -109,7 +144,7 @@ impl Runner<'_> {
         }
     }
 
-    fn write_byte(&mut self, address: u64, value: u8) -> std::result::Result<(), Stop> {
+    pub(super) fn write_byte(&mut self, address: u64, value: u8) -> std::result::Result<(), Stop> {
         if let Err(stop) = self.tick() {
             return Err(stop);
         }
@@ -125,7 +160,12 @@ impl Runner<'_> {
         self.memory_error()
     }
 
-    fn range(&self, address: u64, size: u64, write: bool) -> std::result::Result<(), Stop> {
+    pub(super) fn range(
+        &self,
+        address: u64,
+        size: u64,
+        write: bool,
+    ) -> std::result::Result<(), Stop> {
         if size > HEAP_SIZE {
             return Err(Stop::Error(format!(
                 "hook memory operation at 0x{address:x} exceeds 16 MiB"
@@ -139,7 +179,7 @@ impl Runner<'_> {
         self.memory_error()
     }
 
-    fn allocate(&mut self, size: u64) -> u64 {
+    pub(super) fn allocate(&mut self, size: u64) -> u64 {
         let Some(start) = self.heap_next.checked_add(15).map(|value| value & !15) else {
             return 0;
         };
@@ -197,12 +237,16 @@ impl Runner<'_> {
         convention: Convention,
         kind: CallKind,
     ) -> std::result::Result<u64, Stop> {
+        if let Hook::Io(operation) = hook {
+            return self.io_hook(operation, convention, kind);
+        }
         // An invalid argument or memory access aborts the hook and the run.
         let first = match self.argument(0, convention, kind) {
             Ok(value) => value,
             Err(stop) => return Err(stop),
         };
         let value = match hook {
+            Hook::Io(_) => unreachable!("I/O hooks return above"),
             Hook::Allocate => self.allocate(first),
             Hook::AllocateZero => {
                 let count = match self.argument(1, convention, kind) {

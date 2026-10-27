@@ -144,6 +144,7 @@ pub(super) fn apply_dynamic(file: &ObjFile, bytes: &mut Cow<'_, [u8]>) {
         object::Architecture::I386 => (8, &[1, 6, 7]),
         object::Architecture::X86_64 => (8, &[1, 6, 7]),
         object::Architecture::Aarch64 => (1027, &[257, 1025, 1026]),
+        object::Architecture::Arm => (23, &[21]),
         _ => return,
     };
     let word = if file.is_64() { 8 } else { 4 };

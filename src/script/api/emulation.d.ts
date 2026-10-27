@@ -1,6 +1,11 @@
 /** Use strings for values above 2^53 - 1. Addresses are virtual addresses. */
 type EmulationWord = number | string;
 interface EmulationOptions {
+  /** Stdin consumed in order; absent means EOF. At most 16 MiB. */
+  stdin?: {text: string} | {hex: string} | {file: string};
+  /** Main arguments including argv[0]; mutually exclusive with arguments. */
+  argv?: string[];
+  reads?: EmulationRead[];
   /** Stop before executing one of these instruction addresses. */
   end?: EmulationWord[];
   /** Full register names, for example rax, eax (i386), x0, sp, or r0. */
@@ -20,6 +25,10 @@ interface EmulationOptions {
   skipCalls?: boolean;
 }
 interface EmulationReport {
+  /** Captured bytes decoded as UTF-8 with replacement for invalid sequences. */
+  stdout: string;
+  stderr: string;
+  reads: {address: string; bytes: number[]; value: string | number[] | string[]}[];
   /** Hexadecimal values, or "unknown" for unspecified call effects. */
   registers: Record<string, string>;
   /** Hexadecimal integer result, or "unknown" when no result is defined. */
@@ -33,4 +42,16 @@ interface EmulationReport {
   heapBase: string;
   heapSize: number;
   stackPointer: string;
+}
+
+/** Read mapped memory after execution; omit length to stop before NUL. */
+interface EmulationRead {
+  /** Exactly one of address, symbol, register. */
+  address?: EmulationWord;
+  symbol?: string;
+  register?: string;
+  length?: number;
+  format?: "string" | "bytes" | "hex" | "integers";
+  /** Required for integers; unsigned little endian, returned as decimal strings. */
+  width?: 1 | 2 | 4 | 8;
 }

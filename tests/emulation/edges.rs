@@ -486,9 +486,12 @@ fn published_emulation_examples_execute() {
                 .split_whitespace()
                 .nth(3)
                 .expect("documented routine");
+            let io_path = matrix::fixtures().join("x86_64.O0.io.elf");
+            let io_binary = Binary::open(&io_path).expect("I/O documentation fixture");
+            let is_io = matches!(start, "check_flag" | "main" | "decode_buffer");
             let report = interfaces.check(
-                &path,
-                &binary,
+                if is_io { &io_path } else { &path },
+                if is_io { &io_binary } else { &binary },
                 start,
                 serde_json::from_str(options).expect("documented JSON"),
             );
@@ -497,6 +500,12 @@ fn published_emulation_examples_execute() {
                     matrix::bytes_after(&report, HEAP, &[53, 56, 49, 49, 50, 93]),
                     b"hello\0"
                 );
+            } else if start == "check_flag" {
+                assert_eq!(report["stdout"], "Correct\n");
+            } else if start == "main" {
+                assert_eq!(report["stdout"], "argc=2 argv0=app argv1=candidate\n");
+            } else if start == "decode_buffer" {
+                assert_eq!(report["reads"][0]["value"], "hello");
             } else {
                 assert_eq!(matrix::value(&report), 6);
             }

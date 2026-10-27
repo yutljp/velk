@@ -15,10 +15,10 @@ unsigned key)` を実行する例です。符号化されたバッファーを�
 イメージがその範囲を占める場合は、後述の方法で `heapBase` を確認してください。
 
 ```sh
-velk --emulate app.elf decode --emulation-options '{"arguments":["0x10000000",6,93],"memory":[{"address":"0x10000000","bytes":[53,56,49,49,50,93]}],"stepLimit":100000,"timeLimitMs":1000}'
+velk --emulate app.elf decode --emulation-options '{"arguments":["0x10000000",6,93],"memory":[{"address":"0x10000000","bytes":[53,56,49,49,50,93]}],"reads":[{"address":"0x10000000"}],"stepLimit":100000,"timeLimitMs":1000}'
 ```
 
-結果は JSON です。`memory` は変更された連続領域ごとに `address`、最終的な
+結果は既定でテキスト（`--json` で JSON） です。`memory` は変更された連続領域ごとに `address`、最終的な
 `bytes`、`hex` ダンプを示します。この例の復号結果は `68 65 6c 6c 6f 00`
 （"hello"）です。初期書き込み後の状態と比較し、実行による変更だけを返します。
 変更されなかったバイトは省略します。
@@ -31,11 +31,11 @@ const b = velk.open("app.elf");
 const r = b.emulate("decode", {
   arguments: ["0x10000000", 6, 93],
   memory: [{address: "0x10000000", bytes: [53, 56, 49, 49, 50, 93]}],
+  reads: [{address: "0x10000000"}],
   trace: true
 });
 if (r.reason !== "return") throw new Error(r.error ?? r.reason);
-const bytes = r.memory.find(region => region.address === "0x10000000").bytes;
-String.fromCharCode(...bytes.slice(0, bytes.indexOf(0)));
+r.reads[0].value;
 ```
 
 `b.getFunction("decode").emulate(options)` でも実行できます。`b.emulate()` の
@@ -117,3 +117,48 @@ x86-64、AArch64、x86-32、ARM32、Thumb を対象にします。戻り値と�
 実行方法、MCP の完全なレポートも比較します。macOS では参照用の arm64 と
 x86-64 の実行ファイル自体もエミュレートします。この文書の CLI と JavaScript の
 例、README ファイルのエミュレーションコマンドもテストとして実行します。
+
+## 標準入出力と実行後のメモリ
+
+CLI は停止理由、戻り値、stdout、stderr、指定したメモリをテキストで表示します。
+`--json` を付けると完全な JSON を表示します。JavaScript と MCP は同じデータを返します。
+
+```sh
+velk --emulate app.elf check_flag --emulation-options '{"stdin":{"text":"flag{input}\n"}}'
+velk --emulate app.elf main --emulation-options '{"argv":["app","candidate"]}'
+velk --emulate app.elf decode_buffer --emulation-options '{"reads":[{"symbol":"decoded"}]}'
+```
+
+`stdin` は `text`（UTF-8）、`hex`（空白を含められる16進バイト列）、`file`
+（実行前にホストで読むファイル）のいずれか一つです。上限は16 MiBで、未指定なら EOF
+になります。入力フックは一つの入力列を順に消費します。`argv` はプログラム名を含み、
+argc と末尾がヌルポインタの argv を設定します。`arguments` や Go 関数とは併用できません。
+
+`stdout` と `stderr` は各16 MiBまでです。不正な UTF-8 は置換文字になります。
+`printf`、`fprintf`、`sprintf`、`snprintf` は `%d %i %u %x %X %o %c %s %p %%`、
+整数の長さ `hh h l ll j z t`、フラグ `- + # 0`、幅と精度（`*` を含む）に対応します。
+`%p` は `0x` 付き16進数、ゼロは `(nil)` です。浮動小数点、ワイド文字、位置指定、
+`%n` はエラーになります。printf と scanf の v で始まる関数は対象の va_list を読み取ります。AArch64 Mach-O の直接の可変引数 I/O は引数配置が未実装のため停止します。アーキテクチャのテスト行列は ELF を使います。`snprintf` は切り詰め前の長さを返します。
+
+入力は fd 0 の `read`、`fread`、`fgets`、`gets`、`getchar`、`scanf`、`fscanf`、
+`sscanf`（`__isoc99_` 名も含む）に対応します。走査は `d i u x X o s c`、幅、
+代入抑制に対応し、未対応の変換は指定子を含むエラーになります。定義またはインポートされた
+`stdin`、`stdout`、`stderr` に標準ストリームを用意します。それ以外のストリームはエラーです。
+`puts`、`putchar`、`fputs`、`fwrite`、fd 1 と2の `write` は出力を記録します。
+ファイル操作とシステムコールは実行しません。
+
+`reads` はエラーや制限で停止した場合も実行後のメモリを読みます。各項目に `address`、
+定義済みデータの `symbol`、最終ポインタを含む完全な `register` 名のいずれか一つを指定します。
+バイト数 `length` を省略すると NUL まで読みます。合計の上限は16 MiBです。
+`format` は `string`（既定）、`bytes`、`hex`（空白区切り）、`integers` です。
+整数は `width` 1、2、4、8が必須で、長さは幅の倍数にします。符号なしリトルエンディアンを
+10進文字列で返します。結果の `reads` に `address`、`bytes`、`value` が入ります。
+未マップメモリ、不明なレジスタやシンボル、NUL のない文字列はエラーになります。
+読み取りの上限は実行ステップ数とは独立しています。
+
+ストリームと argv は malloc より前にヒープ領域を確保します。先行するフックが不明にした
+未使用レジスタを後続の可変引数関数が保存しようとすると、実行が停止する場合があります。
+
+自動的な文字列復元では stdin の設定も I/O フックの実行もしません。入力に依存する復号は明示的にエミュレーションします。
+
+Windows ARM64 の幅のフィクスチャは、64ビットのポインタと32ビットの `long` の出力と走査を検査します。インポート先を明示してフックを呼びます。未解決の PE インポートサンクには対応していません。

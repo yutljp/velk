@@ -15,10 +15,10 @@ This example assumes `app.elf` contains that routine and the heap starts at
 `0x10000000`. Check `heapBase` as described below if the image occupies that range:
 
 ```sh
-velk --emulate app.elf decode --emulation-options '{"arguments":["0x10000000",6,93],"memory":[{"address":"0x10000000","bytes":[53,56,49,49,50,93]}],"stepLimit":100000,"timeLimitMs":1000}'
+velk --emulate app.elf decode --emulation-options '{"arguments":["0x10000000",6,93],"memory":[{"address":"0x10000000","bytes":[53,56,49,49,50,93]}],"reads":[{"address":"0x10000000"}],"stepLimit":100000,"timeLimitMs":1000}'
 ```
 
-The result is JSON. `memory` lists contiguous changed regions, each with an
+The CLI prints a short text report by default. Add `--json` for the complete JSON report. `memory` lists contiguous changed regions, each with an
 `address`, final `bytes`, and a `hex` dump. The decoded buffer in this example is
 `68 65 6c 6c 6f 00` ("hello"). Initial writes are the comparison baseline: only
 changes made by execution appear in the result. Unchanged bytes are omitted.
@@ -31,11 +31,11 @@ const b = velk.open("app.elf");
 const r = b.emulate("decode", {
   arguments: ["0x10000000", 6, 93],
   memory: [{address: "0x10000000", bytes: [53, 56, 49, 49, 50, 93]}],
+  reads: [{address: "0x10000000"}],
   trace: true
 });
 if (r.reason !== "return") throw new Error(r.error ?? r.reason);
-const bytes = r.memory.find(region => region.address === "0x10000000").bytes;
-String.fromCharCode(...bytes.slice(0, bytes.indexOf(0)));
+r.reads[0].value;
 ```
 
 `b.getFunction("decode").emulate(options)` runs a selected function. An arbitrary
@@ -49,6 +49,54 @@ MCP clients can call `velk_emulate` with `{path, start, options, arch?}`. It ret
 the complete JSON report as text. Use `velk_run_script` to select fields or slice
 large dumps. `velk_read_api` with `topic: "emulation"` describes every option and
 result field.
+
+## Input, output and memory reads
+
+For a function that reads a line from stdin and prints its verdict:
+
+```sh
+velk --emulate app.elf check_flag --emulation-options '{"stdin":{"text":"flag{input}\n"}}'
+velk --emulate app.elf main --emulation-options '{"argv":["app","candidate"]}'
+velk --emulate app.elf decode_buffer --emulation-options '{"reads":[{"symbol":"decoded"}]}'
+```
+
+`stdin` accepts exactly one of `text` (UTF-8), `hex` (byte pairs with optional
+whitespace), or `file` (a host file read before execution). Input is limited to
+16 MiB. Missing input means EOF. `argv` includes the program name at index zero;
+it prepares argc and a pointer array terminated by a null pointer. It cannot be
+combined with `arguments` or used for Go functions.
+
+`stdout` and `stderr` contain captured text, decoded as UTF-8 with replacement
+for invalid sequences. Each stream is limited to 16 MiB. `printf`, `fprintf`,
+`sprintf`, and `snprintf` support `%d %i %u %x %X %o %c %s %p %%`, integer lengths
+`hh`, `h`, `l`, `ll`, `j`, `z`, `t`, flags `- + # 0`, field widths and precision,
+including `*`. Strings support byte precision. `%p` uses hexadecimal with `0x`
+and `(nil)` for zero. Wide characters, floating conversions, positional arguments,
+`%n` stop with an error. The v-prefixed printf and scanf entry points accept
+target va_list objects. Direct variadic I/O on AArch64 Mach-O stops because its argument placement
+is not implemented. The architecture fixture matrix uses ELF. `sprintf` writes a terminating
+NUL; `snprintf` returns the full length and writes at most capacity minus one bytes.
+
+The input hooks are `read` on fd 0, `fread`, `fgets`, `gets`, `getchar`, `scanf`,
+`fscanf`, and `sscanf` (including their v-prefixed forms and `__isoc99_` names). Scanning supports integer
+conversions `d i u x X o`, `s`, `c`, widths and assignment suppression. Other
+conversions stop with the unsupported specifier in the error. Standard FILE
+pointers are supplied for imported or defined `stdin`, `stdout`, and `stderr`.
+Other streams stop with an error. Stream objects and argv reserve heap space
+before malloc runs. `puts`, `putchar`, `fputs`, `fwrite`, and `write`
+on fd 1 or 2 append to the captured streams. File operations and system calls
+are not modeled.
+
+`reads` requests memory after execution, including after an execution error or
+limit. Each entry selects exactly one of `address`, a defined data `symbol`, or
+a full `register` name containing the final pointer. Supply a byte `length` or
+omit it to read up to a terminating NUL. The total read budget is 16 MiB.
+`format` is `string` (default), `bytes`, `hex` (space-separated byte pairs), or
+`integers`. Integer reads require `width` 1, 2, 4 or 8 and a byte length divisible
+by that width; values are unsigned little-endian decimal strings. Results appear
+in `reads`, each with `address`, exact `bytes`, and formatted `value`. Unmapped
+memory, undefined registers, missing symbols and unterminated strings produce
+an error report. The read budget is independent of the execution step limit.
 
 ## State and limits
 
@@ -96,7 +144,8 @@ an explicit result takes precedence over a library hook and skips its effects.
 `skipCalls: true` returns zero for unhandled calls. These options model only the
 integer result and do not supply a call's other effects. Registers the convention
 allows a modeled call to overwrite are reported as `"unknown"`, except its defined
-result. Partial writes preserve known bits; using unknown bits stops the run.
+result. A later variadic function can stop when its prologue spills unused
+registers left unknown by an earlier hook. Partial writes preserve known bits; using unknown bits stops the run.
 A void result, such as `free`, leaves the integer result unknown. Hooks still run
 when `skipCalls` is set.
 System calls always stop.
@@ -122,3 +171,7 @@ reports across the library, CLI, both JavaScript entry points and MCP. On macOS,
 the arm64 and x86-64 reference executables are also emulated. The suite executes
 the CLI and JavaScript examples in this document and the emulation commands in
 the README files.
+
+Automatic string recovery does not supply stdin or execute I/O hooks. Input-dependent decoders require explicit emulation.
+
+The Windows ARM64 width fixture checks printing and scanning a 32-bit `long` with 64-bit pointers. It invokes hooks with explicit import targets; unresolved PE import thunks remain unsupported.

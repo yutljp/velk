@@ -95,12 +95,17 @@ Linux ではバイナリのローダーが入力のスナップショットを�
 関数名または仮想アドレスを指定し、引数とメモリーの初期値を渡して実行できます。
 
 ```sh
-velk --emulate app.elf decode --emulation-options '{"arguments":["0x10000000",6,93],"memory":[{"address":"0x10000000","bytes":[53,56,49,49,50,93]}]}'
+velk --emulate app.elf decode --emulation-options '{"arguments":["0x10000000",6,93],"memory":[{"address":"0x10000000","bytes":[53,56,49,49,50,93]}],"reads":[{"address":"0x10000000"}]}'
 ```
 
 JSON の結果にはレジスター、整数の戻り値、変更されたバイト、停止理由を含めます。
 スクリプトでは `b.emulate(start, options)` または
 `b.getFunction(name).emulate(options)`、MCP では `velk_emulate` を使います。
+エミュレーションの CLI は既定でテキストを表示し、`--json` で JSON を返します。
+`stdin: {text: "candidate\n"}` で入力、`argv` で main の引数を渡せます。
+`stdout` と `stderr` に出力を記録します。`reads` はシンボル、アドレス、最終レジスタ値の
+メモリを読みます。詳細は [実行の説明](docs/EMULATION.ja.md) を参照してください。
+
 復号の例、対応するライブラリのフック、エラー、実行の上限は
 [読み込んだコードの実行](docs/EMULATION.ja.md)を参照してください。
 
