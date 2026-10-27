@@ -26,7 +26,7 @@ fn original @ 0x0 (size 8)
   blk0 @ 0x0:
     ret ((w0 + #0x7) & #0xffffffff)
 -- card
-{"addr":"0x0","approxTokens":108,"blocks":1,"hardReasons":[],"name":"original","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":8,"unsupported":0}
+{"addr":"0x0","approxTokens":108,"blocks":1,"hardReasons":[],"name":"original","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":8,"unsupported":0}
 
 == 0x8 original64
 -- decompile
@@ -43,7 +43,7 @@ fn original64 @ 0x8 (size 8)
   blk0 @ 0x8:
     ret (x0 + #0x7)
 -- card
-{"addr":"0x8","approxTokens":108,"blocks":1,"hardReasons":[],"name":"original64","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":8,"unsupported":0}
+{"addr":"0x8","approxTokens":108,"blocks":1,"hardReasons":[],"name":"original64","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":8,"unsupported":0}
 
 == 0x10 original_fixed
 -- decompile
@@ -60,7 +60,7 @@ fn original_fixed @ 0x10 (size 16)
   blk0 @ 0x10:
     ret (((w0 + ((w0 & #0x1) << #0x1)) + #0x7) & #0xffffffff)
 -- card
-{"addr":"0x10","approxTokens":120,"blocks":1,"hardReasons":[],"name":"original_fixed","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":16,"unsupported":0}
+{"addr":"0x10","approxTokens":120,"blocks":1,"hardReasons":[],"name":"original_fixed","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":16,"unsupported":0}
 
 == 0x20 opaque_parity
 -- decompile
@@ -77,7 +77,7 @@ fn opaque_parity @ 0x20 (size 32)
   blk0 @ 0x20:
     ret ((select eq ((w0 * (w0 ^ #0xffffffffffffffff)) & #0x1), #0x0 ? #0x7, #0xffffffed + w0) & #0xffffffff)
 -- card
-{"addr":"0x20","approxTokens":144,"blocks":1,"hardReasons":[],"name":"opaque_parity","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":32,"unsupported":0}
+{"addr":"0x20","approxTokens":144,"blocks":1,"hardReasons":[],"name":"opaque_parity","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":32,"unsupported":0}
 
 == 0x40 opaque_parity64
 -- decompile
@@ -94,7 +94,7 @@ fn opaque_parity64 @ 0x40 (size 32)
   blk0 @ 0x40:
     ret (select eq (((x0 & #0xffffffff) * ((x0 & #0xffffffff) ^ #0xffffffffffffffff)) & #0x1), #0x0 ? #0x7, #0xffffffffffffffed + x0)
 -- card
-{"addr":"0x40","approxTokens":144,"blocks":1,"hardReasons":[],"name":"opaque_parity64","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":32,"unsupported":0}
+{"addr":"0x40","approxTokens":144,"blocks":1,"hardReasons":[],"name":"opaque_parity64","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":32,"unsupported":0}
 
 == 0x60 opaque_bits
 -- decompile
@@ -111,7 +111,7 @@ fn opaque_bits @ 0x60 (size 8)
   blk0 @ 0x60:
     ret ((w0 + #0x7) & #0xffffffff)
 -- card
-{"addr":"0x60","approxTokens":108,"blocks":1,"hardReasons":[],"name":"opaque_bits","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":8,"unsupported":0}
+{"addr":"0x60","approxTokens":108,"blocks":1,"hardReasons":[],"name":"opaque_bits","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":8,"unsupported":0}
 
 == 0x68 opaque_fixed
 -- decompile
@@ -128,7 +128,7 @@ fn opaque_fixed @ 0x68 (size 16)
   blk0 @ 0x68:
     ret (((w0 + ((w0 & #0x1) << #0x1)) + #0x7) & #0xffffffff)
 -- card
-{"addr":"0x68","approxTokens":120,"blocks":1,"hardReasons":[],"name":"opaque_fixed","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":16,"unsupported":0}
+{"addr":"0x68","approxTokens":120,"blocks":1,"hardReasons":[],"name":"opaque_fixed","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":16,"unsupported":0}
 
 == 0x78 variable_predicate
 -- decompile
@@ -145,4 +145,4 @@ fn variable_predicate @ 0x78 (size 24)
   blk0 @ 0x78:
     ret ((select eq (w0 & #0x1), #0x0 ? #0x7, #0xffffffed + w0) & #0xffffffff)
 -- card
-{"addr":"0x78","approxTokens":132,"blocks":1,"hardReasons":[],"name":"variable_predicate","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":24,"unsupported":0}
+{"addr":"0x78","approxTokens":132,"blocks":1,"hardReasons":[],"name":"variable_predicate","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":24,"unsupported":0}

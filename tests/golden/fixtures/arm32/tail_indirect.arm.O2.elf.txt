@@ -21,7 +21,7 @@ fn via_ptr @ 0x200ec (size 12)
     v3:r0, r1 = call *r0(((r1 + #0x1) & #0xffffffff))
     ret v3
 -- card
-{"addr":"0x200ec","approxTokens":114,"blocks":1,"hardReasons":[],"name":"via_ptr","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":12,"unsupported":0}
+{"addr":"0x200ec","approxTokens":114,"blocks":1,"hardReasons":[],"name":"via_ptr","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":12,"unsupported":0}
 
 == 0x200f8 after_ptr
 -- decompile
@@ -38,4 +38,4 @@ fn after_ptr @ 0x200f8 (size 24)
   blk0 @ 0x200f8:
     ret ((r0 + #0x5) & #0xffffffff)
 -- card
-{"addr":"0x200f8","approxTokens":132,"blocks":1,"hardReasons":[],"name":"after_ptr","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":24,"unsupported":0}
+{"addr":"0x200f8","approxTokens":132,"blocks":1,"hardReasons":[],"name":"after_ptr","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":24,"unsupported":0}

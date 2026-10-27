@@ -39,7 +39,7 @@ fn _library_group @ 0x100000560 (size 48)
     rax, rdx, xmm0, xmm1 = call 0x1000005d8(#0x7, v1, #0x0, #0x0, #0x0)
     ret load32((v1 + #0x10))
 -- card
-{"accesses":["a0 +0x10:uint32_t"],"addr":"0x100000560","approxTokens":192,"blocks":1,"hardReasons":[],"name":"_library_group","nameSources":["symtab","dynamic","function-starts"],"section":"__text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":48,"unsupported":0}
+{"accesses":["a0 +0x10:uint32_t"],"addr":"0x100000560","approxTokens":192,"blocks":1,"hardReasons":[],"name":"_library_group","nameSources":["symtab","dynamic","function-starts"],"section":"__text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":48,"unsupported":0}
 
 == 0x100000590 _library_wide_length
 -- decompile
@@ -57,7 +57,7 @@ fn _library_wide_length @ 0x100000590 (size 16)
     v1:rax, rdx, xmm0, xmm1 = call 0x1000005de(rdi)
     ret v1
 -- card
-{"addr":"0x100000590","approxTokens":120,"blocks":1,"hardReasons":[],"name":"_library_wide_length","nameSources":["symtab","dynamic","function-starts"],"section":"__text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":16,"unsupported":0}
+{"addr":"0x100000590","approxTokens":120,"blocks":1,"hardReasons":[],"name":"_library_wide_length","nameSources":["symtab","dynamic","function-starts"],"section":"__text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":16,"unsupported":0}
 
 == 0x1000005a0 _library_group_at
 -- decompile
@@ -78,7 +78,7 @@ fn _library_group_at @ 0x1000005a0 (size 48)
     eax, rdx, xmm0, xmm1 = call 0x1000005d8(#0x7, v2, #0x0, #0x0, #0x0)
     ret load32(((v2 + (v1 << #0x5)) + #0x10))
 -- card
-{"addr":"0x1000005a0","approxTokens":204,"blocks":1,"hardReasons":[],"name":"_library_group_at","nameSources":["symtab","dynamic","function-starts"],"section":"__text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":48,"unsupported":0}
+{"addr":"0x1000005a0","approxTokens":204,"blocks":1,"hardReasons":[],"name":"_library_group_at","nameSources":["symtab","dynamic","function-starts"],"section":"__text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":48,"unsupported":0}
 
 == 0x1000005d0 _main
 -- decompile
@@ -95,7 +95,7 @@ fn _main @ 0x1000005d0 (size 8)
   blk0 @ 0x1000005d0:
     ret #0x0
 -- card
-{"addr":"0x1000005d0","approxTokens":126,"blocks":1,"hardReasons":[],"name":"_main","nameSources":["symtab","dynamic","entry","function-starts"],"section":"__text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":8,"unsupported":0}
+{"addr":"0x1000005d0","approxTokens":126,"blocks":1,"hardReasons":[],"name":"_main","nameSources":["symtab","dynamic","entry","function-starts"],"section":"__text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":8,"unsupported":0}
 
 == 0x1000005d8 _getgrgid_r
 -- decompile
@@ -114,7 +114,7 @@ fn _getgrgid_r @ 0x1000005d8 (size 6)
     v1:rax, rdx, xmm0, xmm1 = call *load64(#0x100002000)(rdi, rsi, rdx, rcx, r8)
     ret v1
 -- card
-{"addr":"0x1000005d8","approxTokens":102,"blocks":1,"hardReasons":[],"name":"_getgrgid_r","nameSources":["plt"],"section":"__stubs","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":6,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x1000005d8","approxTokens":102,"blocks":1,"hardReasons":[],"name":"_getgrgid_r","nameSources":["plt"],"section":"__stubs","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":6,"sizeEstimated":true,"unsupported":0}
 
 == 0x1000005de _wcslen
 -- decompile
@@ -133,4 +133,4 @@ fn _wcslen @ 0x1000005de (size 6)
     v1:rax, rdx, xmm0, xmm1 = call *load64(#0x100002008)(rdi)
     ret v1
 -- card
-{"addr":"0x1000005de","approxTokens":102,"blocks":1,"hardReasons":[],"name":"_wcslen","nameSources":["plt"],"section":"__stubs","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":6,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x1000005de","approxTokens":102,"blocks":1,"hardReasons":[],"name":"_wcslen","nameSources":["plt"],"section":"__stubs","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":6,"sizeEstimated":true,"unsupported":0}

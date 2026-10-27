@@ -37,7 +37,7 @@ fn <unnamed> @ 0x2011c0 (size 54)
   blk3 @ 0x2011f1:
     ret v2
 -- card
-{"addr":"0x2011c0","approxTokens":180,"blocks":4,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":54,"unsupported":0}
+{"addr":"0x2011c0","approxTokens":180,"blocks":4,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":54,"unsupported":0}
 
 == 0x201200 -
 -- decompile
@@ -68,7 +68,7 @@ fn <unnamed> @ 0x201200 (size 61)
   blk3 @ 0x201238:
     ret v2
 -- card
-{"addr":"0x201200","approxTokens":186,"blocks":4,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":61,"unsupported":0}
+{"addr":"0x201200","approxTokens":186,"blocks":4,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":61,"unsupported":0}
 
 == 0x201240 -
 -- decompile
@@ -114,7 +114,7 @@ fn <unnamed> @ 0x201240 (size 94)
   blk5 @ 0x201299:
     ret load32((rsp + #0xffffffffffffffe8))
 -- card
-{"addr":"0x201240","approxTokens":192,"blocks":6,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":94,"unsupported":0}
+{"addr":"0x201240","approxTokens":192,"blocks":6,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":94,"unsupported":0}
 
 == 0x2012a0 -
 -- decompile
@@ -163,4 +163,4 @@ fn <unnamed> @ 0x2012a0 (size 119)
   blk8 @ 0x201312:
     ret load32((rsp + #0xffffffffffffffe8))
 -- card
-{"addr":"0x2012a0","approxTokens":180,"blocks":9,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":119,"unsupported":0}
+{"addr":"0x2012a0","approxTokens":180,"blocks":9,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":119,"unsupported":0}

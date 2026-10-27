@@ -55,7 +55,7 @@ fn udiv3 @ 0x201a4 (size 36)
     v3:r0, r1 = call 0x201c0(r0, #0x3)
     ret v3
 -- card
-{"addr":"0x201a4","approxTokens":150,"blocks":1,"hardReasons":[],"name":"udiv3","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":36,"unsupported":0}
+{"addr":"0x201a4","approxTokens":150,"blocks":1,"hardReasons":[],"name":"udiv3","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":36,"unsupported":0}
 
 == 0x201c8 udiv10
 -- decompile
@@ -73,7 +73,7 @@ fn udiv10 @ 0x201c8 (size 36)
     v3:r0, r1 = call 0x201e4(r0, #0xa)
     ret v3
 -- card
-{"addr":"0x201c8","approxTokens":150,"blocks":1,"hardReasons":[],"name":"udiv10","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":36,"unsupported":0}
+{"addr":"0x201c8","approxTokens":150,"blocks":1,"hardReasons":[],"name":"udiv10","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":36,"unsupported":0}
 
 == 0x201ec udiv64
 -- decompile
@@ -91,7 +91,7 @@ fn udiv64 @ 0x201ec (size 36)
     v3:r0, r1 = call 0x20208(r0, #0x40)
     ret v3
 -- card
-{"addr":"0x201ec","approxTokens":150,"blocks":1,"hardReasons":[],"name":"udiv64","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":36,"unsupported":0}
+{"addr":"0x201ec","approxTokens":150,"blocks":1,"hardReasons":[],"name":"udiv64","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":36,"unsupported":0}
 
 == 0x20210 hdiv3
 -- decompile
@@ -126,7 +126,7 @@ fn hdiv3 @ 0x20210 (size 96)
     v5 = (v10 >> #0x20)
     ret ((v10 & #0xffffffff) | ((((v5 + (v9 * #0xaaaaaaaa)) + (((v2 - (select cs v1, v3 ? #0x1, #0x0 ^ #0x1)) & #0xffffffff) * #0xaaaaaaab)) & #0xffffffff) << #0x20))
 -- card
-{"addr":"0x20210","approxTokens":240,"blocks":1,"hardReasons":[],"name":"hdiv3","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":96,"unsupported":0}
+{"addr":"0x20210","approxTokens":240,"blocks":1,"hardReasons":[],"name":"hdiv3","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":96,"unsupported":0}
 
 == 0x20270 hdiv10
 -- decompile
@@ -163,7 +163,7 @@ fn hdiv10 @ 0x20270 (size 108)
     v6 = (v11 >> #0x20)
     ret ((v11 & #0xffffffff) | ((((v6 + (v10 * #0xcccccccc)) + ((((v1 >> #0x1) - (select cs v2, v4 ? #0x1, #0x0 ^ #0x1)) & #0xffffffff) * #0xcccccccd)) & #0xffffffff) << #0x20))
 -- card
-{"addr":"0x20270","approxTokens":240,"blocks":1,"hardReasons":[],"name":"hdiv10","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":108,"unsupported":0}
+{"addr":"0x20270","approxTokens":240,"blocks":1,"hardReasons":[],"name":"hdiv10","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":108,"unsupported":0}
 
 == 0x202dc sdiv3
 -- decompile
@@ -181,7 +181,7 @@ fn sdiv3 @ 0x202dc (size 36)
     v3:r0, r1 = call 0x202f8(r0, #0x3)
     ret v3
 -- card
-{"addr":"0x202dc","approxTokens":150,"blocks":1,"hardReasons":[],"name":"sdiv3","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":36,"unsupported":0}
+{"addr":"0x202dc","approxTokens":150,"blocks":1,"hardReasons":[],"name":"sdiv3","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":36,"unsupported":0}
 
 == 0x20300 sdiv10
 -- decompile
@@ -199,7 +199,7 @@ fn sdiv10 @ 0x20300 (size 36)
     v3:r0, r1 = call 0x2031c(r0, #0xa)
     ret v3
 -- card
-{"addr":"0x20300","approxTokens":150,"blocks":1,"hardReasons":[],"name":"sdiv10","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":36,"unsupported":0}
+{"addr":"0x20300","approxTokens":150,"blocks":1,"hardReasons":[],"name":"sdiv10","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":36,"unsupported":0}
 
 == 0x20324 sdiv16
 -- decompile
@@ -217,7 +217,7 @@ fn sdiv16 @ 0x20324 (size 36)
     v3:r0, r1 = call 0x20340(r0, #0x10)
     ret v3
 -- card
-{"addr":"0x20324","approxTokens":150,"blocks":1,"hardReasons":[],"name":"sdiv16","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":36,"unsupported":0}
+{"addr":"0x20324","approxTokens":150,"blocks":1,"hardReasons":[],"name":"sdiv16","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":36,"unsupported":0}
 
 == 0x20348 ldiv16
 -- decompile
@@ -246,7 +246,7 @@ fn ldiv16 @ 0x20348 (size 60)
     v1 = ((v1 + v4) & #0xffffffff)
     ret ((((v3 >> #0x4) | (v1 << #0x1c)) & #0xffffffff) | (((sext32(v1) >>> #0x4) & #0xffffffff) << #0x20))
 -- card
-{"addr":"0x20348","approxTokens":186,"blocks":1,"hardReasons":[],"name":"ldiv16","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":60,"unsupported":0}
+{"addr":"0x20348","approxTokens":186,"blocks":1,"hardReasons":[],"name":"ldiv16","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":60,"unsupported":0}
 
 == 0x20384 smod3
 -- decompile
@@ -276,7 +276,7 @@ fn smod3 @ 0x20384 (size 52)
     v3 = #0x55555556
     unsupported: undecodable ARM instruction at 0x203a0: incomplete decoder
 -- card
-{"addr":"0x20384","approxTokens":144,"blocks":1,"hardReasons":[],"name":"smod3","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":52,"unsupported":1}
+{"addr":"0x20384","approxTokens":144,"blocks":1,"hardReasons":[],"name":"smod3","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":52,"unsupported":1}
 
 == 0x203b8 umod3
 -- decompile
@@ -293,7 +293,7 @@ fn umod3 @ 0x203b8 (size 52)
   blk0 @ 0x203b8:
     ret ((r0 - ((((r0 * #0xaaaaaaab) >> #0x20) >> #0x1) * #0x3)) & #0xffffffff)
 -- card
-{"addr":"0x203b8","approxTokens":174,"blocks":1,"hardReasons":[],"name":"umod3","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":52,"unsupported":0}
+{"addr":"0x203b8","approxTokens":174,"blocks":1,"hardReasons":[],"name":"umod3","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":52,"unsupported":0}
 
 == 0x203ec umod10
 -- decompile
@@ -310,7 +310,7 @@ fn umod10 @ 0x203ec (size 52)
   blk0 @ 0x203ec:
     ret ((r0 - (((((r0 * #0xcccccccd) >> #0x20) >> #0x3) * #0x5) << #0x1)) & #0xffffffff)
 -- card
-{"addr":"0x203ec","approxTokens":174,"blocks":1,"hardReasons":[],"name":"umod10","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":52,"unsupported":0}
+{"addr":"0x203ec","approxTokens":174,"blocks":1,"hardReasons":[],"name":"umod10","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":52,"unsupported":0}
 
 == 0x20420 smod10
 -- decompile
@@ -340,7 +340,7 @@ fn smod10 @ 0x20420 (size 56)
     v3 = #0x66666667
     unsupported: undecodable ARM instruction at 0x2043c: incomplete decoder
 -- card
-{"addr":"0x20420","approxTokens":144,"blocks":1,"hardReasons":[],"name":"smod10","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":56,"unsupported":1}
+{"addr":"0x20420","approxTokens":144,"blocks":1,"hardReasons":[],"name":"smod10","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":56,"unsupported":1}
 
 == 0x20458 lmod10
 -- decompile
@@ -366,7 +366,7 @@ fn lmod10 @ 0x20458 (size 56)
     r0, r1 = call 0x20480(r0, r1, #0xa, #0x0)
     ret undefined()
 -- card
-{"addr":"0x20458","approxTokens":180,"blocks":1,"hardReasons":[],"name":"lmod10","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":56,"unsupported":0}
+{"addr":"0x20458","approxTokens":180,"blocks":1,"hardReasons":[],"name":"lmod10","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":56,"unsupported":0}
 
 == 0x20490 umod10b
 -- decompile
@@ -395,7 +395,7 @@ fn umod10b @ 0x20490 (size 88)
     v3 = (v3 + v4)
     ret (((v1 & #0x1) | (((v3 - ((((v3 * #0xcccccccd) >> #0x20) & #0xfffffffc) + (((v3 * #0xcccccccd) >> #0x20) >> #0x2))) & #0xffffffff) << #0x1)) & #0xffffffff)
 -- card
-{"addr":"0x20490","approxTokens":228,"blocks":1,"hardReasons":[],"name":"umod10b","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":88,"unsupported":0}
+{"addr":"0x20490","approxTokens":228,"blocks":1,"hardReasons":[],"name":"umod10b","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":88,"unsupported":0}
 
 == 0x204e8 lmod16
 -- decompile
@@ -426,7 +426,7 @@ fn lmod16 @ 0x204e8 (size 60)
     v1 = ((v1 - v5) & #0xffffffff)
     ret (v1 | ((((v2 - ((v2 + v4) & #0xffffffff)) - (select cs (v1 + v5), v5 ? #0x1, #0x0 ^ #0x1)) & #0xffffffff) << #0x20))
 -- card
-{"addr":"0x204e8","approxTokens":186,"blocks":1,"hardReasons":[],"name":"lmod16","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":60,"unsupported":0}
+{"addr":"0x204e8","approxTokens":186,"blocks":1,"hardReasons":[],"name":"lmod16","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":60,"unsupported":0}
 
 == 0x20524 smod4
 -- decompile
@@ -443,7 +443,7 @@ fn smod4 @ 0x20524 (size 44)
   blk0 @ 0x20524:
     ret ((r0 - ((r0 + (((sext32(r0) >>> #0x1f) & #0xffffffff) >> #0x1e)) & #0xfffffffc)) & #0xffffffff)
 -- card
-{"addr":"0x20524","approxTokens":162,"blocks":1,"hardReasons":[],"name":"smod4","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":44,"unsupported":0}
+{"addr":"0x20524","approxTokens":162,"blocks":1,"hardReasons":[],"name":"smod4","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":44,"unsupported":0}
 
 == 0x20550 negate
 -- decompile
@@ -460,7 +460,7 @@ fn negate @ 0x20550 (size 36)
   blk0 @ 0x20550:
     ret ((#0x0 - r0) & #0xffffffff)
 -- card
-{"addr":"0x20550","approxTokens":150,"blocks":1,"hardReasons":[],"name":"negate","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":36,"unsupported":0}
+{"addr":"0x20550","approxTokens":150,"blocks":1,"hardReasons":[],"name":"negate","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":36,"unsupported":0}
 
 == 0x20574 is_neg
 -- decompile
@@ -485,7 +485,7 @@ fn is_neg @ 0x20574 (size 44)
   blk2 @ 0x20594:
     ret v1
 -- card
-{"addr":"0x20574","approxTokens":162,"blocks":3,"hardReasons":[],"name":"is_neg","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":44,"unsupported":0}
+{"addr":"0x20574","approxTokens":162,"blocks":3,"hardReasons":[],"name":"is_neg","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":44,"unsupported":0}
 
 == 0x205a0 is_zero
 -- decompile
@@ -510,7 +510,7 @@ fn is_zero @ 0x205a0 (size 44)
   blk2 @ 0x205c0:
     ret v1
 -- card
-{"addr":"0x205a0","approxTokens":162,"blocks":3,"hardReasons":[],"name":"is_zero","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":44,"unsupported":0}
+{"addr":"0x205a0","approxTokens":162,"blocks":3,"hardReasons":[],"name":"is_zero","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":44,"unsupported":0}
 
 == 0x205cc is_pos
 -- decompile
@@ -535,7 +535,7 @@ fn is_pos @ 0x205cc (size 44)
   blk2 @ 0x205ec:
     ret v1
 -- card
-{"addr":"0x205cc","approxTokens":162,"blocks":3,"hardReasons":[],"name":"is_pos","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":44,"unsupported":0}
+{"addr":"0x205cc","approxTokens":162,"blocks":3,"hardReasons":[],"name":"is_pos","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":44,"unsupported":0}
 
 == 0x205f8 lnegate
 -- decompile
@@ -552,7 +552,7 @@ fn lnegate @ 0x205f8 (size 36)
   blk0 @ 0x205f8:
     ret ((#0x0 - r0) & #0xffffffff)
 -- card
-{"addr":"0x205f8","approxTokens":150,"blocks":1,"hardReasons":[],"name":"lnegate","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":36,"unsupported":0}
+{"addr":"0x205f8","approxTokens":150,"blocks":1,"hardReasons":[],"name":"lnegate","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":36,"unsupported":0}
 
 == 0x2061c lmod3
 -- decompile
@@ -578,7 +578,7 @@ fn lmod3 @ 0x2061c (size 56)
     r0, r1 = call 0x20644(r0, r1, #0x3, #0x0)
     ret undefined()
 -- card
-{"addr":"0x2061c","approxTokens":180,"blocks":1,"hardReasons":[],"name":"lmod3","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":56,"unsupported":0}
+{"addr":"0x2061c","approxTokens":180,"blocks":1,"hardReasons":[],"name":"lmod3","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":56,"unsupported":0}
 
 == 0x20654 ldiv3
 -- decompile
@@ -605,7 +605,7 @@ fn ldiv3 @ 0x20654 (size 48)
     v5:r0, v6:r1 = call 0x2067c(r0, r1, #0x3, #0x0)
     ret (v5 | (v6 << #0x20))
 -- card
-{"addr":"0x20654","approxTokens":168,"blocks":1,"hardReasons":[],"name":"ldiv3","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":48,"unsupported":0}
+{"addr":"0x20654","approxTokens":168,"blocks":1,"hardReasons":[],"name":"ldiv3","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":48,"unsupported":0}
 
 == 0x20684 ldiv10
 -- decompile
@@ -632,4 +632,4 @@ fn ldiv10 @ 0x20684 (size 48)
     v5:r0, v6:r1 = call 0x206ac(r0, r1, #0xa, #0x0)
     ret (v5 | (v6 << #0x20))
 -- card
-{"addr":"0x20684","approxTokens":168,"blocks":1,"hardReasons":[],"name":"ldiv10","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":48,"unsupported":0}
+{"addr":"0x20684","approxTokens":168,"blocks":1,"hardReasons":[],"name":"ldiv10","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":48,"unsupported":0}

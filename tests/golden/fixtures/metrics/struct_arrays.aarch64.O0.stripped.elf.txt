@@ -22,7 +22,7 @@ fn <unnamed> @ 0x210184 (size 56)
   blk0 @ 0x210184:
     ret ((load16(((x0 + (sext32(w1) << #0x4)) + #0xc))s * load32(((x0 + (sext32(w1) << #0x4)) + #0x8))) & #0xffffffff)
 -- card
-{"addr":"0x210184","approxTokens":180,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":56,"structures":["struct S1 { uint8_t gap_0x0[0x8]; int32_t field_0x8; int16_t field_0xc; uint8_t gap_0xe[0x2]; };"],"unsupported":0}
+{"addr":"0x210184","approxTokens":180,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":56,"structures":["struct S1 { uint8_t gap_0x0[0x8]; int32_t field_0x8; int16_t field_0xc; uint8_t gap_0xe[0x2]; };"],"unsupported":0}
 
 == 0x2101bc -
 -- decompile
@@ -47,7 +47,7 @@ fn <unnamed> @ 0x2101bc (size 76)
     store32((load32((sp + #0xffffffffffffffec)) + #0x1), ((load64((sp + #0xfffffffffffffff8)) + (load64((sp + #0xfffffffffffffff0)) * #0xc)) + #0x8))
     ret x0
 -- card
-{"addr":"0x2101bc","approxTokens":210,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":76,"structures":["struct S1 { int32_t field_0x0; uint8_t gap_0x4[0x4]; int32_t field_0x8; };"],"unsupported":0}
+{"addr":"0x2101bc","approxTokens":210,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":76,"structures":["struct S1 { int32_t field_0x0; uint8_t gap_0x4[0x4]; int32_t field_0x8; };"],"unsupported":0}
 
 == 0x210208 -
 -- decompile
@@ -94,4 +94,4 @@ fn <unnamed> @ 0x210208 (size 128)
   blk8 @ 0x21027c:
     ret load64((sp + #0xffffffffffffffe8))
 -- card
-{"addr":"0x210208","approxTokens":240,"blocks":9,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":128,"structures":["struct S1 { int64_t field_0x0; int32_t field_0x8; uint8_t gap_0xc[0x4]; };"],"unsupported":0}
+{"addr":"0x210208","approxTokens":240,"blocks":9,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":128,"structures":["struct S1 { int64_t field_0x0; int32_t field_0x8; uint8_t gap_0xc[0x4]; };"],"unsupported":0}

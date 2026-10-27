@@ -30,7 +30,7 @@ fn reg_add @ 0x0 (size 16)
   blk0 @ 0x0:
     ret ((rcx + rdx) & #0xffffffff)
 -- card
-{"addr":"0x0","approxTokens":108,"blocks":1,"hardReasons":[],"name":"reg_add","nameSources":["symtab"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":16,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x0","approxTokens":108,"blocks":1,"hardReasons":[],"name":"reg_add","nameSources":["symtab"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":16,"sizeEstimated":true,"unsupported":0}
 
 == 0x10 reg_mul
 -- decompile
@@ -47,7 +47,7 @@ fn reg_mul @ 0x10 (size 16)
   blk0 @ 0x10:
     ret ((ecx * edx) & #0xffffffff)
 -- card
-{"addr":"0x10","approxTokens":114,"blocks":1,"hardReasons":[],"name":"reg_mul","nameSources":["symtab"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":16,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x10","approxTokens":114,"blocks":1,"hardReasons":[],"name":"reg_mul","nameSources":["symtab"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":16,"sizeEstimated":true,"unsupported":0}
 
 == 0x20 reg_sign
 -- decompile
@@ -64,7 +64,7 @@ fn reg_sign @ 0x20 (size 16)
   blk0 @ 0x20:
     ret ((sext16(rdx) + sext8(rcx)) & #0xffffffff)
 -- card
-{"addr":"0x20","approxTokens":120,"blocks":1,"hardReasons":[],"name":"reg_sign","nameSources":["symtab"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":16,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x20","approxTokens":120,"blocks":1,"hardReasons":[],"name":"reg_sign","nameSources":["symtab"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":16,"sizeEstimated":true,"unsupported":0}
 
 == 0x30 reg_max
 -- decompile
@@ -81,7 +81,7 @@ fn reg_max @ 0x30 (size 16)
   blk0 @ 0x30:
     ret select gt ecx, edx ? ecx, edx
 -- card
-{"addr":"0x30","approxTokens":120,"blocks":1,"hardReasons":[],"name":"reg_max","nameSources":["symtab"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":16,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x30","approxTokens":120,"blocks":1,"hardReasons":[],"name":"reg_max","nameSources":["symtab"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":16,"sizeEstimated":true,"unsupported":0}
 
 == 0x40 reg_negative
 -- decompile
@@ -98,7 +98,7 @@ fn reg_negative @ 0x40 (size 16)
   blk0 @ 0x40:
     ret (ecx >> #0x1f)
 -- card
-{"addr":"0x40","approxTokens":114,"blocks":1,"hardReasons":[],"name":"reg_negative","nameSources":["symtab"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":16,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x40","approxTokens":114,"blocks":1,"hardReasons":[],"name":"reg_negative","nameSources":["symtab"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":16,"sizeEstimated":true,"unsupported":0}
 
 == 0x50 reg_abs
 -- decompile
@@ -115,7 +115,7 @@ fn reg_abs @ 0x50 (size 16)
   blk0 @ 0x50:
     ret select lt ((#0x0 - ecx) & #0xffffffff), #0x0 ? ecx, ((#0x0 - ecx) & #0xffffffff)
 -- card
-{"addr":"0x50","approxTokens":120,"blocks":1,"hardReasons":[],"name":"reg_abs","nameSources":["symtab"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":16,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x50","approxTokens":120,"blocks":1,"hardReasons":[],"name":"reg_abs","nameSources":["symtab"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":16,"sizeEstimated":true,"unsupported":0}
 
 == 0x60 msg_first
 -- decompile
@@ -132,7 +132,7 @@ fn msg_first @ 0x60 (size 16)
   blk0 @ 0x60:
     ret (sext8(load8((load64(#0xb0) + #0x1))) & #0xffffffff)
 -- card
-{"addr":"0x60","approxTokens":114,"blocks":1,"hardReasons":[],"name":"msg_first","nameSources":["symtab"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":16,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x60","approxTokens":114,"blocks":1,"hardReasons":[],"name":"msg_first","nameSources":["symtab"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":16,"sizeEstimated":true,"unsupported":0}
 
 == 0x70 reg_div
 -- decompile
@@ -149,7 +149,7 @@ fn reg_div @ 0x70 (size 16)
   blk0 @ 0x70:
     ret (ecx / edx)
 -- card
-{"addr":"0x70","approxTokens":126,"blocks":1,"hardReasons":[],"name":"reg_div","nameSources":["symtab"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":16,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x70","approxTokens":126,"blocks":1,"hardReasons":[],"name":"reg_div","nameSources":["symtab"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":16,"sizeEstimated":true,"unsupported":0}
 
 == 0x80 reg_mod
 -- decompile
@@ -166,7 +166,7 @@ fn reg_mod @ 0x80 (size 16)
   blk0 @ 0x80:
     ret (ecx % edx)
 -- card
-{"addr":"0x80","approxTokens":132,"blocks":1,"hardReasons":[],"name":"reg_mod","nameSources":["symtab"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":16,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x80","approxTokens":132,"blocks":1,"hardReasons":[],"name":"reg_mod","nameSources":["symtab"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":16,"sizeEstimated":true,"unsupported":0}
 
 == 0x90 entry
 -- decompile
@@ -189,4 +189,4 @@ fn entry @ 0x90 (size 30)
     store32(#0x23, (rsp + #0xfffffffffffffff8))
     ret load64((rsp + #0xfffffffffffffff8))
 -- card
-{"addr":"0x90","approxTokens":150,"blocks":1,"hardReasons":[],"name":"entry","nameSources":["symtab"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":30,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x90","approxTokens":150,"blocks":1,"hardReasons":[],"name":"entry","nameSources":["symtab"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":30,"sizeEstimated":true,"unsupported":0}

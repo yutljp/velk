@@ -19,9 +19,11 @@
 関数カードと JavaScript の `Function.summary()` は、MCP 経由のスクリプトでも
 `simplification` オブジェクトを返します。
 
-- `simplified`: 条件分岐またはディスパッチャを除去したか。
+- `simplified`: 式、条件分岐、ディスパッチャのいずれかを簡略化したか。
 - `predicatesRemoved`: 結果が定数と証明された条件分岐の数。
 - `dispatcherStatesRemoved`: 検査を迂回する直接分岐に置き換えた、流入する定数状態の種類数。
+- `mbaExpressionsSimplified`: ビット演算と算術演算を混ぜた式の置換の数。
+  [式の簡略化](MBA.ja.md)を参照してください。
 
 `tests/cases/control_flow/` には、直線的な処理、分岐、ループについて、
 平坦化した関数と元の関数を用意しています。整数の条件式と、ディスパッチャを

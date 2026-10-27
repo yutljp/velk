@@ -31,7 +31,7 @@ fn -[Counter add:with:] @ 0x100000960 (size 8)
   blk0 @ 0x100000960:
     ret (x3 + x2)
 -- card
-{"addr":"0x100000960","approxTokens":108,"blocks":1,"hardReasons":[],"name":"-[Counter add:with:]","nameSources":["function-starts","objc"],"section":"__text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":8,"unsupported":0}
+{"addr":"0x100000960","approxTokens":108,"blocks":1,"hardReasons":[],"name":"-[Counter add:with:]","nameSources":["function-starts","objc"],"section":"__text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":8,"unsupported":0}
 
 == 0x100000968 +[Counter answer]
 -- decompile
@@ -48,7 +48,7 @@ fn +[Counter answer] @ 0x100000968 (size 8)
   blk0 @ 0x100000968:
     ret #0x2a
 -- card
-{"addr":"0x100000968","approxTokens":108,"blocks":1,"hardReasons":[],"name":"+[Counter answer]","nameSources":["function-starts","objc"],"section":"__text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":8,"unsupported":0}
+{"addr":"0x100000968","approxTokens":108,"blocks":1,"hardReasons":[],"name":"+[Counter answer]","nameSources":["function-starts","objc"],"section":"__text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":8,"unsupported":0}
 
 == 0x100000970 -[Counter value]
 -- decompile
@@ -65,7 +65,7 @@ fn -[Counter value] @ 0x100000970 (size 8)
   blk0 @ 0x100000970:
     ret load64(x0)
 -- card
-{"addr":"0x100000970","approxTokens":108,"blocks":1,"hardReasons":[],"name":"-[Counter value]","nameSources":["function-starts","objc"],"section":"__text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":8,"unsupported":0}
+{"addr":"0x100000970","approxTokens":108,"blocks":1,"hardReasons":[],"name":"-[Counter value]","nameSources":["function-starts","objc"],"section":"__text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":8,"unsupported":0}
 
 == 0x100000978 -[Counter setValue:]
 -- decompile
@@ -84,7 +84,7 @@ fn -[Counter setValue:] @ 0x100000978 (size 8)
     store64(x2, x0)
     ret x0
 -- card
-{"accesses":["a0 +0x0:uint64_t"],"addr":"0x100000978","approxTokens":108,"blocks":1,"hardReasons":[],"name":"-[Counter setValue:]","nameSources":["function-starts","objc"],"section":"__text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":8,"unsupported":0}
+{"accesses":["a0 +0x0:uint64_t"],"addr":"0x100000978","approxTokens":108,"blocks":1,"hardReasons":[],"name":"-[Counter setValue:]","nameSources":["function-starts","objc"],"section":"__text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":8,"unsupported":0}
 
 == 0x100000980 -[Counter twice:]
 -- decompile
@@ -101,7 +101,7 @@ fn -[Counter twice:] @ 0x100000980 (size 8)
   blk0 @ 0x100000980:
     ret (x2 << #0x1)
 -- card
-{"addr":"0x100000980","approxTokens":108,"blocks":1,"hardReasons":[],"name":"-[Counter twice:]","nameSources":["function-starts","objc"],"section":"__text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":8,"unsupported":0}
+{"addr":"0x100000980","approxTokens":108,"blocks":1,"hardReasons":[],"name":"-[Counter twice:]","nameSources":["function-starts","objc"],"section":"__text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":8,"unsupported":0}
 
 == 0x100000988 -
 -- decompile
@@ -120,7 +120,7 @@ fn <unnamed> @ 0x100000988 (size 20)
     v4:x0, x1, d0, d1 = call 0x1000009ac(x0, load64(#0x100008138), x1, x2)
     ret v4
 -- card
-{"addr":"0x100000988","approxTokens":126,"blocks":1,"hardReasons":[],"name":null,"nameHints":["add_with"],"nameSources":["function-starts"],"section":"__text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":20,"strings":["add:with:"],"unsupported":0}
+{"addr":"0x100000988","approxTokens":126,"blocks":1,"hardReasons":[],"name":null,"nameHints":["add_with"],"nameSources":["function-starts"],"section":"__text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":20,"strings":["add:with:"],"unsupported":0}
 
 == 0x10000099c -
 -- decompile
@@ -137,7 +137,7 @@ fn <unnamed> @ 0x10000099c (size 8)
   blk0 @ 0x10000099c:
     ret (x0 + #0x3)
 -- card
-{"addr":"0x10000099c","approxTokens":108,"blocks":1,"hardReasons":[],"name":null,"nameSources":["function-starts"],"section":"__text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":8,"unsupported":0}
+{"addr":"0x10000099c","approxTokens":108,"blocks":1,"hardReasons":[],"name":null,"nameSources":["function-starts"],"section":"__text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":8,"unsupported":0}
 
 == 0x1000009a4 -
 -- decompile
@@ -154,7 +154,7 @@ fn <unnamed> @ 0x1000009a4 (size 8)
   blk0 @ 0x1000009a4:
     ret #0x0
 -- card
-{"addr":"0x1000009a4","approxTokens":108,"blocks":1,"hardReasons":["name-unknown"],"name":null,"nameSources":["entry","function-starts"],"section":"__text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":8,"unsupported":0}
+{"addr":"0x1000009a4","approxTokens":108,"blocks":1,"hardReasons":["name-unknown"],"name":null,"nameSources":["entry","function-starts"],"section":"__text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":8,"unsupported":0}
 
 == 0x1000009ac _objc_msgSend
 -- decompile
@@ -173,4 +173,4 @@ fn _objc_msgSend @ 0x1000009ac (size 12)
     v1:x0, x1, d0, d1 = call *load64(#0x100008000)
     ret v1
 -- card
-{"addr":"0x1000009ac","approxTokens":114,"blocks":1,"hardReasons":[],"name":"_objc_msgSend","nameSources":["plt"],"section":"__stubs","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":12,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x1000009ac","approxTokens":114,"blocks":1,"hardReasons":[],"name":"_objc_msgSend","nameSources":["plt"],"section":"__stubs","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":12,"sizeEstimated":true,"unsupported":0}

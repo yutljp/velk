@@ -74,7 +74,7 @@ fn _init @ 0x6e0 (size 24)
     v1:x0, x1, d0, d1 = call 0x7f4()
     ret v1
 -- card
-{"addr":"0x6e0","approxTokens":132,"blocks":1,"hardReasons":[],"name":"_init","nameSources":["symtab"],"section":".init","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":24,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x6e0","approxTokens":132,"blocks":1,"hardReasons":[],"name":"_init","nameSources":["symtab"],"section":".init","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":24,"sizeEstimated":true,"unsupported":0}
 
 == 0x720 __libc_start_main
 -- decompile
@@ -93,7 +93,7 @@ fn __libc_start_main @ 0x720 (size 16)
     v1:x0, x1, d0, d1 = call *load64(#0x20000)(x0, x1, x2, x3, x4, x5, x6)
     ret v1
 -- card
-{"addr":"0x720","approxTokens":120,"blocks":1,"hardReasons":[],"name":"__libc_start_main","nameSources":["plt"],"section":".plt","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":16,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x720","approxTokens":120,"blocks":1,"hardReasons":[],"name":"__libc_start_main","nameSources":["plt"],"section":".plt","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":16,"sizeEstimated":true,"unsupported":0}
 
 == 0x730 __cxa_finalize
 -- decompile
@@ -112,7 +112,7 @@ fn __cxa_finalize @ 0x730 (size 16)
     v1:x0, x1, d0, d1 = call *load64(#0x20008)(x0)
     ret #0x0
 -- card
-{"addr":"0x730","approxTokens":120,"blocks":1,"hardReasons":[],"name":"__cxa_finalize","nameSources":["plt"],"section":".plt","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":16,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x730","approxTokens":120,"blocks":1,"hardReasons":[],"name":"__cxa_finalize","nameSources":["plt"],"section":".plt","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":16,"sizeEstimated":true,"unsupported":0}
 
 == 0x740 kill
 -- decompile
@@ -131,7 +131,7 @@ fn kill @ 0x740 (size 16)
     v1:x0, x1, d0, d1 = call *load64(#0x20010)(x0, x1)
     ret v1
 -- card
-{"addr":"0x740","approxTokens":120,"blocks":1,"hardReasons":[],"name":"kill","nameSources":["plt"],"section":".plt","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":16,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x740","approxTokens":120,"blocks":1,"hardReasons":[],"name":"kill","nameSources":["plt"],"section":".plt","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":16,"sizeEstimated":true,"unsupported":0}
 
 == 0x750 fsync
 -- decompile
@@ -150,7 +150,7 @@ fn fsync @ 0x750 (size 16)
     v1:x0, x1, d0, d1 = call *load64(#0x20018)(x0)
     ret v1
 -- card
-{"addr":"0x750","approxTokens":120,"blocks":1,"hardReasons":[],"name":"fsync","nameSources":["plt"],"section":".plt","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":16,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x750","approxTokens":120,"blocks":1,"hardReasons":[],"name":"fsync","nameSources":["plt"],"section":".plt","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":16,"sizeEstimated":true,"unsupported":0}
 
 == 0x760 pthread_kill
 -- decompile
@@ -169,7 +169,7 @@ fn pthread_kill @ 0x760 (size 16)
     v1:x0, x1, d0, d1 = call *load64(#0x20020)(x0, x1)
     ret v1
 -- card
-{"addr":"0x760","approxTokens":120,"blocks":1,"hardReasons":[],"name":"pthread_kill","nameSources":["plt"],"section":".plt","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":16,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x760","approxTokens":120,"blocks":1,"hardReasons":[],"name":"pthread_kill","nameSources":["plt"],"section":".plt","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":16,"sizeEstimated":true,"unsupported":0}
 
 == 0x770 shutdown
 -- decompile
@@ -188,7 +188,7 @@ fn shutdown @ 0x770 (size 16)
     v1:x0, x1, d0, d1 = call *load64(#0x20028)(x0, x1)
     ret v1
 -- card
-{"addr":"0x770","approxTokens":120,"blocks":1,"hardReasons":[],"name":"shutdown","nameSources":["plt"],"section":".plt","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":16,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x770","approxTokens":120,"blocks":1,"hardReasons":[],"name":"shutdown","nameSources":["plt"],"section":".plt","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":16,"sizeEstimated":true,"unsupported":0}
 
 == 0x780 __gmon_start__
 -- decompile
@@ -207,7 +207,7 @@ fn __gmon_start__ @ 0x780 (size 16)
     v1:x0, x1, d0, d1 = call *load64(#0x20030)
     ret v1
 -- card
-{"addr":"0x780","approxTokens":120,"blocks":1,"hardReasons":[],"name":"__gmon_start__","nameSources":["plt"],"section":".plt","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":16,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x780","approxTokens":120,"blocks":1,"hardReasons":[],"name":"__gmon_start__","nameSources":["plt"],"section":".plt","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":16,"sizeEstimated":true,"unsupported":0}
 
 == 0x790 abort
 -- decompile
@@ -226,7 +226,7 @@ fn abort @ 0x790 (size 16)
     v1:x0, x1, d0, d1 = call *load64(#0x20038)()
     ret #0x0
 -- card
-{"addr":"0x790","approxTokens":120,"blocks":1,"hardReasons":[],"name":"abort","nameSources":["plt"],"section":".plt","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":16,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x790","approxTokens":120,"blocks":1,"hardReasons":[],"name":"abort","nameSources":["plt"],"section":".plt","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":16,"sizeEstimated":true,"unsupported":0}
 
 == 0x7a0 getgrgid_r
 -- decompile
@@ -245,7 +245,7 @@ fn getgrgid_r @ 0x7a0 (size 16)
     v1:x0, x1, d0, d1 = call *load64(#0x20040)(x0, x1, x2, x3, x4)
     ret v1
 -- card
-{"addr":"0x7a0","approxTokens":120,"blocks":1,"hardReasons":[],"name":"getgrgid_r","nameSources":["plt"],"section":".plt","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":16,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x7a0","approxTokens":120,"blocks":1,"hardReasons":[],"name":"getgrgid_r","nameSources":["plt"],"section":".plt","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":16,"sizeEstimated":true,"unsupported":0}
 
 == 0x7b0 mprotect
 -- decompile
@@ -264,7 +264,7 @@ fn mprotect @ 0x7b0 (size 16)
     v1:x0, x1, d0, d1 = call *load64(#0x20048)(x0, x1, x2)
     ret v1
 -- card
-{"addr":"0x7b0","approxTokens":120,"blocks":1,"hardReasons":[],"name":"mprotect","nameSources":["plt"],"section":".plt","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":16,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x7b0","approxTokens":120,"blocks":1,"hardReasons":[],"name":"mprotect","nameSources":["plt"],"section":".plt","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":16,"sizeEstimated":true,"unsupported":0}
 
 == 0x7c0 _start
 -- decompile
@@ -287,7 +287,7 @@ fn _start @ 0x7c0 (size 52)
     x0, x1, d0, d1 = call 0x790()
     trap
 -- card
-{"addr":"0x7c0","approxTokens":174,"blocks":1,"hardReasons":[],"name":"_start","nameSources":["symtab","entry","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":52,"unsupported":0}
+{"addr":"0x7c0","approxTokens":174,"blocks":1,"hardReasons":[],"name":"_start","nameSources":["symtab","entry","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":52,"unsupported":0}
 
 == 0x7f4 call_weak_fn
 -- decompile
@@ -317,7 +317,7 @@ fn call_weak_fn @ 0x7f4 (size 20)
   blk2 @ 0x804:
     ret #0x0
 -- card
-{"addr":"0x7f4","approxTokens":126,"blocks":3,"hardReasons":[],"name":"call_weak_fn","nameSources":["symtab"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":20,"unsupported":0}
+{"addr":"0x7f4","approxTokens":126,"blocks":3,"hardReasons":[],"name":"call_weak_fn","nameSources":["symtab"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":20,"unsupported":0}
 
 == 0x810 deregister_tm_clones
 -- decompile
@@ -335,7 +335,7 @@ fn deregister_tm_clones @ 0x810 (size 48)
   blk1 @ 0x83c:
     ret #0x0
 -- card
-{"addr":"0x810","approxTokens":168,"blocks":2,"hardReasons":[],"name":"deregister_tm_clones","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":1,"simplified":true},"size":48,"unsupported":0}
+{"addr":"0x810","approxTokens":168,"blocks":2,"hardReasons":[],"name":"deregister_tm_clones","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":1,"simplified":true},"size":48,"unsupported":0}
 
 == 0x840 register_tm_clones
 -- decompile
@@ -355,7 +355,7 @@ fn register_tm_clones @ 0x840 (size 60)
   blk1 @ 0x878:
     ret #0x20060
 -- card
-{"addr":"0x840","approxTokens":186,"blocks":2,"hardReasons":[],"name":"register_tm_clones","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":1,"simplified":true},"size":60,"unsupported":0}
+{"addr":"0x840","approxTokens":186,"blocks":2,"hardReasons":[],"name":"register_tm_clones","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":1,"simplified":true},"size":60,"unsupported":0}
 
 == 0x880 __do_global_dtors_aux
 -- decompile
@@ -397,7 +397,7 @@ fn __do_global_dtors_aux @ 0x880 (size 80)
   blk4 @ 0x8c0:
     ret v1
 -- card
-{"addr":"0x880","approxTokens":216,"blocks":5,"hardReasons":[],"name":"__do_global_dtors_aux","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":80,"unsupported":0}
+{"addr":"0x880","approxTokens":216,"blocks":5,"hardReasons":[],"name":"__do_global_dtors_aux","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":80,"unsupported":0}
 
 == 0x8d0 frame_dummy
 -- decompile
@@ -415,7 +415,7 @@ fn frame_dummy @ 0x8d0 (size 8)
     v1:x0, x1, d0, d1 = call 0x840()
     ret v1
 -- card
-{"addr":"0x8d0","approxTokens":108,"blocks":1,"hardReasons":[],"name":"frame_dummy","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":8,"unsupported":0}
+{"addr":"0x8d0","approxTokens":108,"blocks":1,"hardReasons":[],"name":"frame_dummy","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":8,"unsupported":0}
 
 == 0x8d8 linux_group
 -- decompile
@@ -435,7 +435,7 @@ fn linux_group @ 0x8d8 (size 56)
     x0, x1, d0, d1 = call 0x7a0(#0x7, v1, #0x0, #0x0, #0x0)
     ret load32((v1 + #0x10))
 -- card
-{"accesses":["a0 +0x10:uint32_t"],"addr":"0x8d8","approxTokens":180,"blocks":1,"hardReasons":[],"name":"linux_group","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":56,"unsupported":0}
+{"accesses":["a0 +0x10:uint32_t"],"addr":"0x8d8","approxTokens":180,"blocks":1,"hardReasons":[],"name":"linux_group","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":56,"unsupported":0}
 
 == 0x910 linux_file
 -- decompile
@@ -453,7 +453,7 @@ fn linux_file @ 0x910 (size 4)
     v1:x0, x1, d0, d1 = call 0x750(x0)
     ret v1
 -- card
-{"addr":"0x910","approxTokens":102,"blocks":1,"hardReasons":[],"name":"linux_file","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":4,"unsupported":0}
+{"addr":"0x910","approxTokens":102,"blocks":1,"hardReasons":[],"name":"linux_file","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":4,"unsupported":0}
 
 == 0x914 linux_process
 -- decompile
@@ -471,7 +471,7 @@ fn linux_process @ 0x914 (size 8)
     v1:x0, x1, d0, d1 = call 0x740(x0, #0x0)
     ret v1
 -- card
-{"addr":"0x914","approxTokens":108,"blocks":1,"hardReasons":[],"name":"linux_process","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":8,"unsupported":0}
+{"addr":"0x914","approxTokens":108,"blocks":1,"hardReasons":[],"name":"linux_process","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":8,"unsupported":0}
 
 == 0x91c linux_memory
 -- decompile
@@ -489,7 +489,7 @@ fn linux_memory @ 0x91c (size 8)
     v1:x0, x1, d0, d1 = call 0x7b0(x0, x1, #0x1)
     ret v1
 -- card
-{"addr":"0x91c","approxTokens":108,"blocks":1,"hardReasons":[],"name":"linux_memory","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":8,"unsupported":0}
+{"addr":"0x91c","approxTokens":108,"blocks":1,"hardReasons":[],"name":"linux_memory","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":8,"unsupported":0}
 
 == 0x924 linux_socket
 -- decompile
@@ -507,7 +507,7 @@ fn linux_socket @ 0x924 (size 8)
     v1:x0, x1, d0, d1 = call 0x770(x0, #0x0)
     ret v1
 -- card
-{"addr":"0x924","approxTokens":108,"blocks":1,"hardReasons":[],"name":"linux_socket","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":8,"unsupported":0}
+{"addr":"0x924","approxTokens":108,"blocks":1,"hardReasons":[],"name":"linux_socket","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":8,"unsupported":0}
 
 == 0x92c linux_thread
 -- decompile
@@ -525,7 +525,7 @@ fn linux_thread @ 0x92c (size 8)
     v1:x0, x1, d0, d1 = call 0x760(x0, #0x0)
     ret v1
 -- card
-{"addr":"0x92c","approxTokens":108,"blocks":1,"hardReasons":[],"name":"linux_thread","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":8,"unsupported":0}
+{"addr":"0x92c","approxTokens":108,"blocks":1,"hardReasons":[],"name":"linux_thread","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":8,"unsupported":0}
 
 == 0x934 main
 -- decompile
@@ -542,7 +542,7 @@ fn main @ 0x934 (size 8)
   blk0 @ 0x934:
     ret #0x0
 -- card
-{"addr":"0x934","approxTokens":108,"blocks":1,"hardReasons":[],"name":"main","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":8,"unsupported":0}
+{"addr":"0x934","approxTokens":108,"blocks":1,"hardReasons":[],"name":"main","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":8,"unsupported":0}
 
 == 0x93c _fini
 -- decompile
@@ -559,4 +559,4 @@ fn _fini @ 0x93c (size 20)
   blk0 @ 0x93c:
     ret x0
 -- card
-{"addr":"0x93c","approxTokens":126,"blocks":1,"hardReasons":[],"name":"_fini","nameSources":["symtab"],"section":".fini","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":20,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x93c","approxTokens":126,"blocks":1,"hardReasons":[],"name":"_fini","nameSources":["symtab"],"section":".fini","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":20,"sizeEstimated":true,"unsupported":0}

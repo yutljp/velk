@@ -21,7 +21,7 @@ fn classify @ 0x0 (size 16)
   blk0 @ 0x0:
     ret (select ge edi, #0x0 ? (select ne edi, #0x0 ? #0x1, #0x0 & #0xff), #0xffffffff & #0xffffffff)
 -- card
-{"addr":"0x0","approxTokens":132,"blocks":1,"hardReasons":[],"name":"classify","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":16,"unsupported":0}
+{"addr":"0x0","approxTokens":132,"blocks":1,"hardReasons":[],"name":"classify","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":16,"unsupported":0}
 
 == 0x10 clamp
 -- decompile
@@ -38,7 +38,7 @@ fn clamp @ 0x10 (size 13)
   blk0 @ 0x10:
     ret select lt edi, esi ? esi, select lt edi, edx ? edi, edx
 -- card
-{"addr":"0x10","approxTokens":132,"blocks":1,"hardReasons":[],"name":"clamp","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":13,"unsupported":0}
+{"addr":"0x10","approxTokens":132,"blocks":1,"hardReasons":[],"name":"clamp","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":13,"unsupported":0}
 
 == 0x20 sign_of
 -- decompile
@@ -55,4 +55,4 @@ fn sign_of @ 0x20 (size 20)
   blk0 @ 0x20:
     ret (select le edi, #0x0 ? ((#0x0 - (select ne edi, #0x0 ? #0x1, #0x0 & #0xff)) & #0xffffffff), #0x1 & #0xffffffff)
 -- card
-{"addr":"0x20","approxTokens":144,"blocks":1,"hardReasons":[],"name":"sign_of","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":20,"unsupported":0}
+{"addr":"0x20","approxTokens":144,"blocks":1,"hardReasons":[],"name":"sign_of","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":20,"unsupported":0}

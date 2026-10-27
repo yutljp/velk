@@ -21,4 +21,4 @@ fn pick @ 0x0 (size 16)
   blk0 @ 0x0:
     ret (load8((load64(#0x28) + #0x2)) & #0xffffffff)
 -- card
-{"addr":"0x0","approxTokens":120,"blocks":1,"hardReasons":[],"name":"pick","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":16,"unsupported":0}
+{"addr":"0x0","approxTokens":120,"blocks":1,"hardReasons":[],"name":"pick","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":16,"unsupported":0}

@@ -20,7 +20,7 @@ fn alt_sum3 @ 0x180001000 (size 34)
   blk0 @ 0x180001000:
     ret (((ecx + edx) + r8d) & #0xffffffff)
 -- card
-{"addr":"0x180001000","approxTokens":150,"blocks":1,"hardReasons":[],"name":"alt_sum3","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":34,"unsupported":0}
+{"addr":"0x180001000","approxTokens":150,"blocks":1,"hardReasons":[],"name":"alt_sum3","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":34,"unsupported":0}
 
 == 0x180001030 alt_helper
 -- decompile
@@ -50,4 +50,4 @@ fn alt_helper @ 0x180001030 (size 73)
   blk3 @ 0x180001070:
     ret v2
 -- card
-{"addr":"0x180001030","approxTokens":186,"blocks":4,"hardReasons":[],"name":"alt_helper","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":73,"unsupported":0}
+{"addr":"0x180001030","approxTokens":186,"blocks":4,"hardReasons":[],"name":"alt_helper","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":73,"unsupported":0}

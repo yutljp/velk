@@ -44,7 +44,7 @@ fn <unnamed> @ 0x0 (size 40)
   blk3 @ 0x24:
     ret x0
 -- card
-{"addr":"0x0","approxTokens":156,"blocks":4,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":40,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x0","approxTokens":156,"blocks":4,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":40,"sizeEstimated":true,"unsupported":0}
 
 == 0x28 -
 -- decompile
@@ -72,7 +72,7 @@ fn <unnamed> @ 0x28 (size 40)
   blk2 @ 0x48:
     ret #0x0
 -- card
-{"addr":"0x28","approxTokens":144,"blocks":3,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":40,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x28","approxTokens":144,"blocks":3,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":40,"sizeEstimated":true,"unsupported":0}
 
 == 0x50 -
 -- decompile
@@ -116,7 +116,7 @@ fn <unnamed> @ 0x50 (size 40)
   blk3 @ 0x70:
     ret v3
 -- card
-{"addr":"0x50","approxTokens":156,"blocks":4,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":40,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x50","approxTokens":156,"blocks":4,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":40,"sizeEstimated":true,"unsupported":0}
 
 == 0x78 -
 -- decompile
@@ -164,4 +164,4 @@ fn <unnamed> @ 0x78 (size 56)
   blk5 @ 0xa8:
     ret #0x0
 -- card
-{"addr":"0x78","approxTokens":168,"blocks":6,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":56,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x78","approxTokens":168,"blocks":6,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":56,"sizeEstimated":true,"unsupported":0}

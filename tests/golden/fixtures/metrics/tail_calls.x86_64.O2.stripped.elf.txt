@@ -23,7 +23,7 @@ fn <unnamed> @ 0x201180 (size 14)
   blk0 @ 0x201180:
     ret (((rdi * #0x3) + #0x1) & #0xffffffff)
 -- card
-{"addr":"0x201180","approxTokens":126,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":14,"unsupported":0}
+{"addr":"0x201180","approxTokens":126,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":14,"unsupported":0}
 
 == 0x201190 -
 -- decompile
@@ -41,7 +41,7 @@ fn <unnamed> @ 0x201190 (size 8)
     v2:rax = call 0x201180((((rdi & #0xffffffff) + #0x2) & #0xffffffff))
     ret v2
 -- card
-{"addr":"0x201190","approxTokens":108,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":8,"unsupported":0}
+{"addr":"0x201190","approxTokens":108,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":8,"unsupported":0}
 
 == 0x2011a0 -
 -- decompile
@@ -58,4 +58,4 @@ fn <unnamed> @ 0x2011a0 (size 12)
   blk0 @ 0x2011a0:
     ret ((edi + #0xfffffffffffffff9) & #0xffffffff)
 -- card
-{"addr":"0x2011a0","approxTokens":120,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":12,"unsupported":0}
+{"addr":"0x2011a0","approxTokens":120,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":12,"unsupported":0}

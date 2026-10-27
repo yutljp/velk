@@ -22,7 +22,7 @@ fn add3 @ 0x0 (size 12)
   blk0 @ 0x0:
     ret (((w1 + w0) + w2) & #0xffffffff)
 -- card
-{"addr":"0x0","approxTokens":114,"blocks":1,"hardReasons":[],"name":"add3","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":12,"unsupported":0}
+{"addr":"0x0","approxTokens":114,"blocks":1,"hardReasons":[],"name":"add3","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":12,"unsupported":0}
 
 == 0xc scale
 -- decompile
@@ -39,7 +39,7 @@ fn scale @ 0xc (size 16)
   blk0 @ 0xc:
     ret (((w0 * #0x7) + #0x3) & #0xffffffff)
 -- card
-{"addr":"0xc","approxTokens":120,"blocks":1,"hardReasons":[],"name":"scale","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":16,"unsupported":0}
+{"addr":"0xc","approxTokens":120,"blocks":1,"hardReasons":[],"name":"scale","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":16,"unsupported":0}
 
 == 0x1c pick
 -- decompile
@@ -56,7 +56,7 @@ fn pick @ 0x1c (size 12)
   blk0 @ 0x1c:
     ret select gt w0, w1 ? w0, w1
 -- card
-{"addr":"0x1c","approxTokens":114,"blocks":1,"hardReasons":[],"name":"pick","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":12,"unsupported":0}
+{"addr":"0x1c","approxTokens":114,"blocks":1,"hardReasons":[],"name":"pick","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":12,"unsupported":0}
 
 == 0x28 negate
 -- decompile
@@ -73,4 +73,4 @@ fn negate @ 0x28 (size 8)
   blk0 @ 0x28:
     ret ((#0x0 - w0) & #0xffffffff)
 -- card
-{"addr":"0x28","approxTokens":108,"blocks":1,"hardReasons":[],"name":"negate","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":8,"unsupported":0}
+{"addr":"0x28","approxTokens":108,"blocks":1,"hardReasons":[],"name":"negate","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":8,"unsupported":0}

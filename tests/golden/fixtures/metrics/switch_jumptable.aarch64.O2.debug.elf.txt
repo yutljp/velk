@@ -209,4 +209,4 @@ fn d7 @ 0x210184 (size 736)
     store32(v1, #0x220464)
     ret (v1 & #0xffffffff)
 -- card
-{"addr":"0x210184","approxTokens":240,"blocks":24,"hardReasons":[],"name":"d7","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":1,"simplified":true},"size":736,"unsupported":0}
+{"addr":"0x210184","approxTokens":240,"blocks":24,"hardReasons":[],"name":"d7","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":1,"simplified":true},"size":736,"unsupported":0}

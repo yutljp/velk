@@ -192,4 +192,4 @@ fn d7 @ 0x2011c0 (size 527)
     store32(v2, #0x2023d0)
     ret load32(#0x2023d0)
 -- card
-{"addr":"0x2011c0","approxTokens":150,"blocks":14,"hardReasons":[],"name":"d7","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":527,"unsupported":0}
+{"addr":"0x2011c0","approxTokens":150,"blocks":14,"hardReasons":[],"name":"d7","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":527,"unsupported":0}

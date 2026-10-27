@@ -50,4 +50,4 @@ fn frame_bounds @ 0x0 (size 92)
   blk4 @ 0x50:
     ret v4
 -- card
-{"addr":"0x0","approxTokens":234,"blocks":5,"hardReasons":[],"name":"frame_bounds","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":92,"unsupported":0}
+{"addr":"0x0","approxTokens":234,"blocks":5,"hardReasons":[],"name":"frame_bounds","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":92,"unsupported":0}

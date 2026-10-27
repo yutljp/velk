@@ -41,7 +41,7 @@ fn classify @ 0x200f4 (size 14)
   blk4 @ 0x20100:
     ret v1
 -- card
-{"addr":"0x200f4","approxTokens":132,"blocks":5,"hardReasons":[],"name":"classify","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":14,"unsupported":0}
+{"addr":"0x200f4","approxTokens":132,"blocks":5,"hardReasons":[],"name":"classify","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":14,"unsupported":0}
 
 == 0x20104 clamp
 -- decompile
@@ -73,7 +73,7 @@ fn clamp @ 0x20104 (size 16)
   blk4 @ 0x20110:
     ret r2
 -- card
-{"addr":"0x20104","approxTokens":144,"blocks":5,"hardReasons":[],"name":"clamp","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":16,"unsupported":0}
+{"addr":"0x20104","approxTokens":144,"blocks":5,"hardReasons":[],"name":"clamp","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":16,"unsupported":0}
 
 == 0x20114 sign_of
 -- decompile
@@ -110,4 +110,4 @@ fn sign_of @ 0x20114 (size 14)
   blk4 @ 0x20120:
     ret v1
 -- card
-{"addr":"0x20114","approxTokens":132,"blocks":5,"hardReasons":[],"name":"sign_of","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":14,"unsupported":0}
+{"addr":"0x20114","approxTokens":132,"blocks":5,"hardReasons":[],"name":"sign_of","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":14,"unsupported":0}

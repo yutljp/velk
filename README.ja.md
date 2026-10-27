@@ -166,6 +166,11 @@ JavaScript と MCP では
 `simplification` に、`simplified`、`predicatesRemoved`、
 `dispatcherStatesRemoved` を返します。[制御フローの簡略化](docs/CONTROL_FLOW.ja.md)を参照してください。
 
+ビット演算と算術演算を混ぜた式を、和、ビット演算、定数、短い多項式に
+簡略化します。関数カードとサマリの `simplification.mbaExpressionsSimplified`
+は、採用した式の置換の数です。対象となる式と制限は
+[式の簡略化](docs/MBA.ja.md)を参照してください。
+
 ## ドキュメント
 
 - [API の概要](src/script/api/index.md)

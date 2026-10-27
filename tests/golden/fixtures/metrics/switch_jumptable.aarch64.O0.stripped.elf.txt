@@ -288,4 +288,4 @@ fn <unnamed> @ 0x21018c (size 880)
   blk81 @ 0x2104ec:
     ret load32(#0x2204fc)
 -- card
-{"addr":"0x21018c","approxTokens":240,"blocks":82,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":880,"unsupported":0}
+{"addr":"0x21018c","approxTokens":240,"blocks":82,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":880,"unsupported":0}

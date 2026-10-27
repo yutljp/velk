@@ -12,6 +12,7 @@ interface Simplification {
   simplified: boolean;
   predicatesRemoved: number;
   dispatcherStatesRemoved: number;
+  mbaExpressionsSimplified: number;
 }
 
 interface Card {

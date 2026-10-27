@@ -26,7 +26,7 @@ fn point_dot @ 0x0 (size 50)
   blk0 @ 0x0:
     ret (((load32(rcx) * load32(rdx)) + (load32((rcx + #0x4)) * load32((rdx + #0x4)))) & #0xffffffff)
 -- card
-{"addr":"0x0","approxTokens":180,"blocks":1,"hardReasons":[],"name":"point_dot","nameSources":["symtab","codeview"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":50,"unsupported":0}
+{"addr":"0x0","approxTokens":180,"blocks":1,"hardReasons":[],"name":"point_dot","nameSources":["symtab","codeview"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":50,"unsupported":0}
 
 == 0x40 array_sum
 -- decompile
@@ -59,7 +59,7 @@ fn array_sum @ 0x40 (size 77)
   blk3 @ 0x84:
     ret load32((rsp + #0xffffffffffffffec))
 -- card
-{"addr":"0x40","approxTokens":198,"blocks":4,"hardReasons":[],"name":"array_sum","nameSources":["symtab","codeview"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":77,"unsupported":0}
+{"addr":"0x40","approxTokens":198,"blocks":4,"hardReasons":[],"name":"array_sum","nameSources":["symtab","codeview"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":77,"unsupported":0}
 
 == 0x90 bump
 -- decompile
@@ -77,7 +77,7 @@ fn bump @ 0x90 (size 16)
     store32((load32(#0xb8) + #0x1), #0xb8)
     ret #0x0
 -- card
-{"addr":"0x90","approxTokens":120,"blocks":1,"hardReasons":[],"name":"bump","nameSources":["symtab","codeview"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":16,"unsupported":0}
+{"addr":"0x90","approxTokens":120,"blocks":1,"hardReasons":[],"name":"bump","nameSources":["symtab","codeview"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":16,"unsupported":0}
 
 == 0xa0 banner_first
 -- decompile
@@ -94,4 +94,4 @@ fn banner_first @ 0xa0 (size 11)
   blk0 @ 0xa0:
     ret (sext8(load8(load64(#0xb0))) & #0xffffffff)
 -- card
-{"addr":"0xa0","approxTokens":114,"blocks":1,"hardReasons":[],"name":"banner_first","nameSources":["symtab","codeview"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":11,"unsupported":0}
+{"addr":"0xa0","approxTokens":114,"blocks":1,"hardReasons":[],"name":"banner_first","nameSources":["symtab","codeview"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":11,"unsupported":0}

@@ -25,7 +25,7 @@ fn tail_target @ 0x180001000 (size 25)
   blk0 @ 0x180001000:
     ret ((((rcx & #0xffffffff) * #0x3) + #0x1) & #0xffffffff)
 -- card
-{"addr":"0x180001000","approxTokens":156,"blocks":1,"hardReasons":[],"name":"tail_target","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":25,"unsupported":0}
+{"addr":"0x180001000","approxTokens":156,"blocks":1,"hardReasons":[],"name":"tail_target","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":25,"unsupported":0}
 
 == 0x180001020 tail_direct
 -- decompile
@@ -43,7 +43,7 @@ fn tail_direct @ 0x180001020 (size 26)
     v1:rax = call 0x180001000((((rcx & #0xffffffff) + #0x2) & #0xffffffff))
     ret v1
 -- card
-{"addr":"0x180001020","approxTokens":144,"blocks":1,"hardReasons":[],"name":"tail_direct","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":26,"unsupported":0}
+{"addr":"0x180001020","approxTokens":144,"blocks":1,"hardReasons":[],"name":"tail_direct","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":26,"unsupported":0}
 
 == 0x180001040 tail_indirect
 -- decompile
@@ -61,7 +61,7 @@ fn tail_indirect @ 0x180001040 (size 33)
     v3:rax, xmm0 = call *rcx((((rdx & #0xffffffff) + #0x1) & #0xffffffff))
     ret v3
 -- card
-{"addr":"0x180001040","approxTokens":156,"blocks":1,"hardReasons":[],"name":"tail_indirect","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":33,"unsupported":0}
+{"addr":"0x180001040","approxTokens":156,"blocks":1,"hardReasons":[],"name":"tail_indirect","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":33,"unsupported":0}
 
 == 0x180001070 six_args
 -- decompile
@@ -78,7 +78,7 @@ fn six_args @ 0x180001070 (size 57)
   blk0 @ 0x180001070:
     ret ((((((ecx + edx) + r8d) + r9d) + load32((rsp + #0x28))) + load32((rsp + #0x30))) & #0xffffffff)
 -- card
-{"addr":"0x180001070","approxTokens":186,"blocks":1,"hardReasons":[],"name":"six_args","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":57,"unsupported":0}
+{"addr":"0x180001070","approxTokens":186,"blocks":1,"hardReasons":[],"name":"six_args","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":57,"unsupported":0}
 
 == 0x1800010b0 wide_add
 -- decompile
@@ -95,4 +95,4 @@ fn wide_add @ 0x1800010b0 (size 27)
   blk0 @ 0x1800010b0:
     ret (rcx + rdx)
 -- card
-{"addr":"0x1800010b0","approxTokens":138,"blocks":1,"hardReasons":[],"name":"wide_add","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":27,"unsupported":0}
+{"addr":"0x1800010b0","approxTokens":138,"blocks":1,"hardReasons":[],"name":"wide_add","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":27,"unsupported":0}

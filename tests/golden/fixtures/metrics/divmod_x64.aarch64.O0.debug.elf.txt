@@ -36,7 +36,7 @@ fn l3 @ 0x2102ec (size 28)
   blk0 @ 0x2102ec:
     ret (x0 / #0x3)
 -- card
-{"addr":"0x2102ec","approxTokens":138,"blocks":1,"hardReasons":[],"name":"l3","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":28,"unsupported":0}
+{"addr":"0x2102ec","approxTokens":138,"blocks":1,"hardReasons":[],"name":"l3","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":28,"unsupported":0}
 
 == 0x210308 l10
 -- decompile
@@ -53,7 +53,7 @@ fn l10 @ 0x210308 (size 28)
   blk0 @ 0x210308:
     ret (x0 / #0xa)
 -- card
-{"addr":"0x210308","approxTokens":138,"blocks":1,"hardReasons":[],"name":"l10","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":28,"unsupported":0}
+{"addr":"0x210308","approxTokens":138,"blocks":1,"hardReasons":[],"name":"l10","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":28,"unsupported":0}
 
 == 0x210324 h3
 -- decompile
@@ -70,7 +70,7 @@ fn h3 @ 0x210324 (size 28)
   blk0 @ 0x210324:
     ret (x0 / #0x3)
 -- card
-{"addr":"0x210324","approxTokens":138,"blocks":1,"hardReasons":[],"name":"h3","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":28,"unsupported":0}
+{"addr":"0x210324","approxTokens":138,"blocks":1,"hardReasons":[],"name":"h3","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":28,"unsupported":0}
 
 == 0x210340 h10
 -- decompile
@@ -87,7 +87,7 @@ fn h10 @ 0x210340 (size 28)
   blk0 @ 0x210340:
     ret (x0 / #0xa)
 -- card
-{"addr":"0x210340","approxTokens":138,"blocks":1,"hardReasons":[],"name":"h10","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":28,"unsupported":0}
+{"addr":"0x210340","approxTokens":138,"blocks":1,"hardReasons":[],"name":"h10","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":28,"unsupported":0}
 
 == 0x21035c u64
 -- decompile
@@ -104,7 +104,7 @@ fn u64 @ 0x21035c (size 28)
   blk0 @ 0x21035c:
     ret (w0 / #0x3)
 -- card
-{"addr":"0x21035c","approxTokens":138,"blocks":1,"hardReasons":[],"name":"u64","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":28,"unsupported":0}
+{"addr":"0x21035c","approxTokens":138,"blocks":1,"hardReasons":[],"name":"u64","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":28,"unsupported":0}
 
 == 0x210378 sdiv16x
 -- decompile
@@ -121,7 +121,7 @@ fn sdiv16x @ 0x210378 (size 28)
   blk0 @ 0x210378:
     ret (w0 / #0x10)
 -- card
-{"addr":"0x210378","approxTokens":138,"blocks":1,"hardReasons":[],"name":"sdiv16x","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":28,"unsupported":0}
+{"addr":"0x210378","approxTokens":138,"blocks":1,"hardReasons":[],"name":"sdiv16x","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":28,"unsupported":0}
 
 == 0x210394 ldiv16x
 -- decompile
@@ -138,7 +138,7 @@ fn ldiv16x @ 0x210394 (size 28)
   blk0 @ 0x210394:
     ret (x0 / #0x10)
 -- card
-{"addr":"0x210394","approxTokens":138,"blocks":1,"hardReasons":[],"name":"ldiv16x","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":28,"unsupported":0}
+{"addr":"0x210394","approxTokens":138,"blocks":1,"hardReasons":[],"name":"ldiv16x","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":28,"unsupported":0}
 
 == 0x2103b0 umod3x
 -- decompile
@@ -155,7 +155,7 @@ fn umod3x @ 0x2103b0 (size 36)
   blk0 @ 0x2103b0:
     ret ((w0 % #0x3) & #0xffffffff)
 -- card
-{"addr":"0x2103b0","approxTokens":150,"blocks":1,"hardReasons":[],"name":"umod3x","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":36,"unsupported":0}
+{"addr":"0x2103b0","approxTokens":150,"blocks":1,"hardReasons":[],"name":"umod3x","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":36,"unsupported":0}
 
 == 0x2103d4 smod3x
 -- decompile
@@ -172,7 +172,7 @@ fn smod3x @ 0x2103d4 (size 36)
   blk0 @ 0x2103d4:
     ret ((w0 - ((w0 / #0x3) * #0x3)) & #0xffffffff)
 -- card
-{"addr":"0x2103d4","approxTokens":150,"blocks":1,"hardReasons":[],"name":"smod3x","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":36,"unsupported":0}
+{"addr":"0x2103d4","approxTokens":150,"blocks":1,"hardReasons":[],"name":"smod3x","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":36,"unsupported":0}
 
 == 0x2103f8 pmod8x
 -- decompile
@@ -189,7 +189,7 @@ fn pmod8x @ 0x2103f8 (size 36)
   blk0 @ 0x2103f8:
     ret ((w0 % #0x8) & #0xffffffff)
 -- card
-{"addr":"0x2103f8","approxTokens":150,"blocks":1,"hardReasons":[],"name":"pmod8x","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":36,"unsupported":0}
+{"addr":"0x2103f8","approxTokens":150,"blocks":1,"hardReasons":[],"name":"pmod8x","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":36,"unsupported":0}
 
 == 0x21041c pmod8s
 -- decompile
@@ -206,7 +206,7 @@ fn pmod8s @ 0x21041c (size 36)
   blk0 @ 0x21041c:
     ret ((w0 - ((w0 / #0x8) * #0x8)) & #0xffffffff)
 -- card
-{"addr":"0x21041c","approxTokens":150,"blocks":1,"hardReasons":[],"name":"pmod8s","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":36,"unsupported":0}
+{"addr":"0x21041c","approxTokens":150,"blocks":1,"hardReasons":[],"name":"pmod8s","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":36,"unsupported":0}
 
 == 0x210440 pmod16l
 -- decompile
@@ -223,7 +223,7 @@ fn pmod16l @ 0x210440 (size 36)
   blk0 @ 0x210440:
     ret (x0 - ((x0 / #0x10) * #0x10))
 -- card
-{"addr":"0x210440","approxTokens":150,"blocks":1,"hardReasons":[],"name":"pmod16l","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":36,"unsupported":0}
+{"addr":"0x210440","approxTokens":150,"blocks":1,"hardReasons":[],"name":"pmod16l","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":36,"unsupported":0}
 
 == 0x210464 pdiv16l
 -- decompile
@@ -240,7 +240,7 @@ fn pdiv16l @ 0x210464 (size 28)
   blk0 @ 0x210464:
     ret (x0 / #0x10)
 -- card
-{"addr":"0x210464","approxTokens":138,"blocks":1,"hardReasons":[],"name":"pdiv16l","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":28,"unsupported":0}
+{"addr":"0x210464","approxTokens":138,"blocks":1,"hardReasons":[],"name":"pdiv16l","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":28,"unsupported":0}
 
 == 0x210480 lmod10x
 -- decompile
@@ -257,7 +257,7 @@ fn lmod10x @ 0x210480 (size 36)
   blk0 @ 0x210480:
     ret (x0 - ((x0 / #0xa) * #0xa))
 -- card
-{"addr":"0x210480","approxTokens":150,"blocks":1,"hardReasons":[],"name":"lmod10x","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":36,"unsupported":0}
+{"addr":"0x210480","approxTokens":150,"blocks":1,"hardReasons":[],"name":"lmod10x","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":36,"unsupported":0}
 
 == 0x2104a4 umod10x
 -- decompile
@@ -274,7 +274,7 @@ fn umod10x @ 0x2104a4 (size 36)
   blk0 @ 0x2104a4:
     ret (x0 % #0xa)
 -- card
-{"addr":"0x2104a4","approxTokens":150,"blocks":1,"hardReasons":[],"name":"umod10x","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":36,"unsupported":0}
+{"addr":"0x2104a4","approxTokens":150,"blocks":1,"hardReasons":[],"name":"umod10x","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":36,"unsupported":0}
 
 == 0x2104c8 pdiv64
 -- decompile
@@ -291,7 +291,7 @@ fn pdiv64 @ 0x2104c8 (size 28)
   blk0 @ 0x2104c8:
     ret (w0 / #0x40)
 -- card
-{"addr":"0x2104c8","approxTokens":138,"blocks":1,"hardReasons":[],"name":"pdiv64","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":28,"unsupported":0}
+{"addr":"0x2104c8","approxTokens":138,"blocks":1,"hardReasons":[],"name":"pdiv64","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":28,"unsupported":0}
 
 == 0x2104e4 qdiv64
 -- decompile
@@ -308,7 +308,7 @@ fn qdiv64 @ 0x2104e4 (size 28)
   blk0 @ 0x2104e4:
     ret (x0 / #0x40)
 -- card
-{"addr":"0x2104e4","approxTokens":138,"blocks":1,"hardReasons":[],"name":"qdiv64","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":28,"unsupported":0}
+{"addr":"0x2104e4","approxTokens":138,"blocks":1,"hardReasons":[],"name":"qdiv64","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":28,"unsupported":0}
 
 == 0x210500 pdiv10
 -- decompile
@@ -325,4 +325,4 @@ fn pdiv10 @ 0x210500 (size 28)
   blk0 @ 0x210500:
     ret (w0 / #0xa)
 -- card
-{"addr":"0x210500","approxTokens":138,"blocks":1,"hardReasons":[],"name":"pdiv10","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":28,"unsupported":0}
+{"addr":"0x210500","approxTokens":138,"blocks":1,"hardReasons":[],"name":"pdiv10","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":28,"unsupported":0}

@@ -48,4 +48,4 @@ fn d7 @ 0x20104 (size 1156)
     store32(#0xffffffff, #0x30588)
     ret #0xffffffff
 -- card
-{"addr":"0x20104","approxTokens":240,"blocks":5,"hardReasons":[],"name":"d7","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":1156,"unsupported":1}
+{"addr":"0x20104","approxTokens":240,"blocks":5,"hardReasons":[],"name":"d7","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":1156,"unsupported":1}

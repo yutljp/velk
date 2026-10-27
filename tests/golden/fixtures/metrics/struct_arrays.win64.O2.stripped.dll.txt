@@ -22,7 +22,7 @@ fn <unnamed> @ 0x180001000 (size 32)
   blk0 @ 0x180001000:
     ret ((sext16(load16(((rcx + (sext32(rdx) * #0xc)) + #0x8))) * load32(((rcx + (sext32(rdx) * #0xc)) + #0x4))) & #0xffffffff)
 -- card
-{"addr":"0x180001000","approxTokens":126,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":32,"sizeEstimated":true,"structures":["struct S1 { uint8_t gap_0x0[0x4]; int32_t field_0x4; uint16_t field_0x8; uint8_t gap_0xa[0x2]; };"],"unsupported":0}
+{"addr":"0x180001000","approxTokens":126,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":32,"sizeEstimated":true,"structures":["struct S1 { uint8_t gap_0x0[0x4]; int32_t field_0x4; uint16_t field_0x8; uint8_t gap_0xa[0x2]; };"],"unsupported":0}
 
 == 0x180001020 -
 -- decompile
@@ -45,7 +45,7 @@ fn <unnamed> @ 0x180001020 (size 32)
     store32((r8d + #0x1), ((rcx + (sext32(edx) * #0xc)) + #0x8))
     ret v1
 -- card
-{"addr":"0x180001020","approxTokens":132,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":32,"sizeEstimated":true,"structures":["struct S1 { int32_t field_0x0; uint8_t gap_0x4[0x4]; int32_t field_0x8; };"],"unsupported":0}
+{"addr":"0x180001020","approxTokens":132,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":32,"sizeEstimated":true,"structures":["struct S1 { int32_t field_0x0; uint8_t gap_0x4[0x4]; int32_t field_0x8; };"],"unsupported":0}
 
 == 0x180001040 -
 -- decompile
@@ -131,4 +131,4 @@ fn <unnamed> @ 0x180001040 (size 108)
   blk13 @ 0x1800010ab:
     ret v2
 -- card
-{"addr":"0x180001040","approxTokens":138,"blocks":14,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":108,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x180001040","approxTokens":138,"blocks":14,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":108,"sizeEstimated":true,"unsupported":0}

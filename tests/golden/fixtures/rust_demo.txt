@@ -615,7 +615,7 @@ fn rust_demo::main @ 0x14f90 (size 57)
     v1:rax, rdx, xmm0, xmm1 = call 0x3b540(#0x5091, (rsp + #0xfffffffffffffff0))
     ret #0x0
 -- card
-{"addr":"0x14f90","approxTokens":162,"blocks":1,"hardReasons":[],"name":"rust_demo::main","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":57,"unsupported":0}
+{"addr":"0x14f90","approxTokens":162,"blocks":1,"hardReasons":[],"name":"rust_demo::main","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":57,"unsupported":0}
 
 == 0x43250 memchr::arch::x86_64::memchr::memchr_raw::detect
 -- decompile
@@ -772,4 +772,4 @@ fn memchr::arch::x86_64::memchr::memchr_raw::detect @ 0x43250 (size 463)
   blk26 @ 0x43405:
     ret #0x0
 -- card
-{"accesses":["a2 +0xfffffffffffffff0:uint64_t, +0xfffffffffffffff8:uint64_t"],"addr":"0x43250","approxTokens":222,"blocks":27,"hardReasons":[],"name":"memchr::arch::x86_64::memchr::memchr_raw::detect","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":463,"unsupported":0}
+{"accesses":["a2 +0xfffffffffffffff0:uint64_t, +0xfffffffffffffff8:uint64_t"],"addr":"0x43250","approxTokens":222,"blocks":27,"hardReasons":[],"name":"memchr::arch::x86_64::memchr::memchr_raw::detect","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":463,"unsupported":0}

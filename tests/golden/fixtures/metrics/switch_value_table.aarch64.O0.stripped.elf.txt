@@ -73,4 +73,4 @@ fn <unnamed> @ 0x210154 (size 172)
   blk16 @ 0x2101f4:
     ret v3
 -- card
-{"addr":"0x210154","approxTokens":240,"blocks":17,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":172,"unsupported":0}
+{"addr":"0x210154","approxTokens":240,"blocks":17,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":172,"unsupported":0}

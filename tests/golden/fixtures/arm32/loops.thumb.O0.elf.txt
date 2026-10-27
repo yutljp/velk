@@ -39,7 +39,7 @@ fn count_bits @ 0x200fc (size 42)
   blk4 @ 0x20120:
     ret v2
 -- card
-{"addr":"0x200fc","approxTokens":216,"blocks":5,"hardReasons":[],"name":"count_bits","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":42,"unsupported":0}
+{"addr":"0x200fc","approxTokens":216,"blocks":5,"hardReasons":[],"name":"count_bits","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":42,"unsupported":0}
 
 == 0x20128 sum_until
 -- decompile
@@ -77,7 +77,7 @@ fn sum_until @ 0x20128 (size 48)
   blk6 @ 0x20152:
     ret v2
 -- card
-{"addr":"0x20128","approxTokens":240,"blocks":7,"hardReasons":[],"name":"sum_until","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":48,"unsupported":0}
+{"addr":"0x20128","approxTokens":240,"blocks":7,"hardReasons":[],"name":"sum_until","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":48,"unsupported":0}
 
 == 0x20158 sum_till_neg
 -- decompile
@@ -129,7 +129,7 @@ fn sum_till_neg @ 0x20158 (size 68)
   blk9 @ 0x20196:
     ret load32((sp + #0xfffffffffffffff4))
 -- card
-{"addr":"0x20158","approxTokens":240,"blocks":10,"hardReasons":[],"name":"sum_till_neg","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":68,"unsupported":0}
+{"addr":"0x20158","approxTokens":240,"blocks":10,"hardReasons":[],"name":"sum_till_neg","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":68,"unsupported":0}
 
 == 0x2019c sum_until_zero
 -- decompile
@@ -193,4 +193,4 @@ fn sum_until_zero @ 0x2019c (size 86)
   blk13 @ 0x201ec:
     ret load32((sp + #0xfffffffffffffff4))
 -- card
-{"addr":"0x2019c","approxTokens":240,"blocks":14,"hardReasons":[],"name":"sum_until_zero","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":86,"unsupported":0}
+{"addr":"0x2019c","approxTokens":240,"blocks":14,"hardReasons":[],"name":"sum_until_zero","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":86,"unsupported":0}

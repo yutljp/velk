@@ -37,7 +37,7 @@ fn average @ 0x20104 (size 56)
   blk2 @ 0x2010c:
     unsupported: undecodable ARM instruction at 0x2010c: incomplete decoder
 -- card
-{"addr":"0x20104","approxTokens":114,"blocks":3,"hardReasons":[],"name":"average","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":56,"unsupported":2}
+{"addr":"0x20104","approxTokens":114,"blocks":3,"hardReasons":[],"name":"average","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":56,"unsupported":2}
 
 == 0x2013c lerp
 -- decompile
@@ -64,7 +64,7 @@ fn lerp @ 0x2013c (size 12)
     v2 = ((d0 & #0xffffffff00000000) | fadd.s((d0 & #0xffffffff), fmul.s((v1 & #0xffffffff), (d1 & #0xffffffff))))
     ret r0
 -- card
-{"addr":"0x2013c","approxTokens":114,"blocks":1,"hardReasons":[],"name":"lerp","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":12,"unsupported":1}
+{"addr":"0x2013c","approxTokens":114,"blocks":1,"hardReasons":[],"name":"lerp","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":12,"unsupported":1}
 
 == 0x20148 truncate_to_int
 -- decompile
@@ -89,7 +89,7 @@ fn truncate_to_int @ 0x20148 (size 12)
     v2 = (v1 & #0xffffffff)
     ret v2
 -- card
-{"addr":"0x20148","approxTokens":114,"blocks":1,"hardReasons":[],"name":"truncate_to_int","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":12,"unsupported":1}
+{"addr":"0x20148","approxTokens":114,"blocks":1,"hardReasons":[],"name":"truncate_to_int","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":12,"unsupported":1}
 
 == 0x20154 widen
 -- decompile
@@ -114,7 +114,7 @@ fn widen @ 0x20154 (size 12)
     v2 = fadd.d(v1, v1)
     ret r0
 -- card
-{"addr":"0x20154","approxTokens":114,"blocks":1,"hardReasons":[],"name":"widen","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":12,"unsupported":1}
+{"addr":"0x20154","approxTokens":114,"blocks":1,"hardReasons":[],"name":"widen","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":12,"unsupported":1}
 
 == 0x20160 compare_doubles
 -- decompile
@@ -160,4 +160,4 @@ fn compare_doubles @ 0x20160 (size 24)
   blk4 @ 0x20174:
     ret v1
 -- card
-{"addr":"0x20160","approxTokens":132,"blocks":5,"hardReasons":[],"name":"compare_doubles","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":24,"unsupported":1}
+{"addr":"0x20160","approxTokens":132,"blocks":5,"hardReasons":[],"name":"compare_doubles","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":24,"unsupported":1}

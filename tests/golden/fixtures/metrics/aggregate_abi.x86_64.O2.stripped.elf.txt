@@ -31,7 +31,7 @@ fn <unnamed> @ 0x201220 (size 8)
   blk0 @ 0x201220:
     ret (rdi + rdx)
 -- card
-{"addr":"0x201220","approxTokens":114,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":8,"unsupported":0}
+{"addr":"0x201220","approxTokens":114,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":8,"unsupported":0}
 
 == 0x201230 -
 -- decompile
@@ -48,7 +48,7 @@ fn <unnamed> @ 0x201230 (size 11)
   blk0 @ 0x201230:
     ret (rdi ^ rsi)
 -- card
-{"addr":"0x201230","approxTokens":120,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":11,"unsupported":0}
+{"addr":"0x201230","approxTokens":120,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":11,"unsupported":0}
 
 == 0x201240 -
 -- decompile
@@ -65,7 +65,7 @@ fn <unnamed> @ 0x201240 (size 5)
   blk0 @ 0x201240:
     ret fadd.d(xmm0, xmm1)
 -- card
-{"addr":"0x201240","approxTokens":108,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":5,"unsupported":0}
+{"addr":"0x201240","approxTokens":108,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":5,"unsupported":0}
 
 == 0x201250 -
 -- decompile
@@ -81,7 +81,7 @@ fn <unnamed> @ 0x201250 (size 5)
   blk0 @ 0x201250:
     ret #0x0
 -- card
-{"addr":"0x201250","approxTokens":108,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":5,"unsupported":0}
+{"addr":"0x201250","approxTokens":108,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":5,"unsupported":0}
 
 == 0x201260 -
 -- decompile
@@ -111,7 +111,7 @@ fn <unnamed> @ 0x201260 (size 33)
     store64(load64((rsp + #0x18)), (rdi + #0x10))
     ret v1
 -- card
-{"accesses":["a0 +0x0:uint64_t, +0x8:uint64_t, +0x10:uint64_t"],"addr":"0x201260","approxTokens":144,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":33,"structures":["struct sub_201260_a2 { int64_t field_0x0; int64_t field_0x8; int64_t field_0x10; };","struct S1 { int64_t field_0x0; int64_t field_0x8; int64_t field_0x10; };"],"unsupported":0}
+{"accesses":["a0 +0x0:uint64_t, +0x8:uint64_t, +0x10:uint64_t"],"addr":"0x201260","approxTokens":144,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":33,"structures":["struct sub_201260_a2 { int64_t field_0x0; int64_t field_0x8; int64_t field_0x10; };","struct S1 { int64_t field_0x0; int64_t field_0x8; int64_t field_0x10; };"],"unsupported":0}
 
 == 0x201290 -
 -- decompile
@@ -149,7 +149,7 @@ fn <unnamed> @ 0x201290 (size 33)
     store64(v1, (rdi + #0x18))
     ret v2
 -- card
-{"accesses":["a0 +0x0:uint64_t, +0x8:uint64_t, +0x10:uint64_t, +0x18:uint64_t"],"addr":"0x201290","approxTokens":144,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":33,"structures":["struct sub_201290_a2 {\n    int64_t field_0x0;\n    int64_t field_0x8;\n    int64_t field_0x10;\n    int64_t field_0x18;\n};"],"unsupported":0}
+{"accesses":["a0 +0x0:uint64_t, +0x8:uint64_t, +0x10:uint64_t, +0x18:uint64_t"],"addr":"0x201290","approxTokens":144,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":33,"structures":["struct sub_201290_a2 {\n    int64_t field_0x0;\n    int64_t field_0x8;\n    int64_t field_0x10;\n    int64_t field_0x18;\n};"],"unsupported":0}
 
 == 0x2012c0 -
 -- decompile
@@ -166,7 +166,7 @@ fn <unnamed> @ 0x2012c0 (size 85)
   blk0 @ 0x2012c0:
     ret ((((r9 * #0x13) + (((r8 * #0xb) + (rcx * #0x7)) + ((rdx * #0x5) + ((rsi * #0x3) + rdi)))) + (load64((rsp + #0x8)) * #0xd)) + (load64((rsp + #0x10)) * #0x11))
 -- card
-{"addr":"0x2012c0","approxTokens":234,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":85,"unsupported":0}
+{"addr":"0x2012c0","approxTokens":234,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":85,"unsupported":0}
 
 == 0x201320 -
 -- decompile
@@ -183,7 +183,7 @@ fn <unnamed> @ 0x201320 (size 126)
   blk0 @ 0x201320:
     ret (((load64((rsp + #0x20)) * #0x1d) + ((load64((rsp + #0x8)) * #0x11) + ((r9 * #0xd) + (((r8 * #0xb) + (rcx * #0x7)) + ((rdx * #0x5) + ((rsi * #0x3) + rdi)))))) + ((load64((rsp + #0x18)) * #0x17) + (load64((rsp + #0x10)) * #0x13)))
 -- card
-{"addr":"0x201320","approxTokens":240,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":126,"unsupported":0}
+{"addr":"0x201320","approxTokens":240,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":126,"unsupported":0}
 
 == 0x2013a0 -
 -- decompile
@@ -208,7 +208,7 @@ fn <unnamed> @ 0x2013a0 (size 25)
     store64((rsi - rdx), (v1 + #0x10))
     ret v1
 -- card
-{"accesses":["a0 +0x0:uint64_t, +0x8:uint64_t, +0x10:uint64_t"],"addr":"0x2013a0","approxTokens":144,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":25,"structures":["struct S1 { int64_t field_0x0; int64_t field_0x8; int64_t field_0x10; };"],"unsupported":0}
+{"accesses":["a0 +0x0:uint64_t, +0x8:uint64_t, +0x10:uint64_t"],"addr":"0x2013a0","approxTokens":144,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":25,"structures":["struct S1 { int64_t field_0x0; int64_t field_0x8; int64_t field_0x10; };"],"unsupported":0}
 
 == 0x2013c0 -
 -- decompile
@@ -225,7 +225,7 @@ fn <unnamed> @ 0x2013c0 (size 85)
   blk0 @ 0x2013c0:
     ret ((((r9 * #0x13) + (((r8 * #0xb) + (rcx * #0x7)) + ((rdx * #0x5) + ((rsi * #0x3) + rdi)))) + (load64((rsp + #0x8)) * #0xd)) + (load64((rsp + #0x10)) * #0x11))
 -- card
-{"addr":"0x2013c0","approxTokens":234,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":85,"unsupported":0}
+{"addr":"0x2013c0","approxTokens":234,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":85,"unsupported":0}
 
 == 0x201420 -
 -- decompile
@@ -242,4 +242,4 @@ fn <unnamed> @ 0x201420 (size 126)
   blk0 @ 0x201420:
     ret (((load64((rsp + #0x20)) * #0x1d) + ((load64((rsp + #0x8)) * #0x11) + ((r9 * #0xd) + (((r8 * #0xb) + (rcx * #0x7)) + ((rdx * #0x5) + ((rsi * #0x3) + rdi)))))) + ((load64((rsp + #0x18)) * #0x17) + (load64((rsp + #0x10)) * #0x13)))
 -- card
-{"addr":"0x201420","approxTokens":240,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":126,"unsupported":0}
+{"addr":"0x201420","approxTokens":240,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":126,"unsupported":0}

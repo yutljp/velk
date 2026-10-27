@@ -23,7 +23,7 @@ fn tail_one @ 0x0 (size 28)
   blk0 @ 0x0:
     ret (((w0 * #0x3) + #0x1) & #0xffffffff)
 -- card
-{"addr":"0x0","approxTokens":138,"blocks":1,"hardReasons":[],"name":"tail_one","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":28,"unsupported":0}
+{"addr":"0x0","approxTokens":138,"blocks":1,"hardReasons":[],"name":"tail_one","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":28,"unsupported":0}
 
 == 0x1c tail_two
 -- decompile
@@ -41,7 +41,7 @@ fn tail_two @ 0x1c (size 8)
     v2:x0 = call 0x0((((x0 & #0xffffffff) + #0x2) & #0xffffffff))
     ret v2
 -- card
-{"addr":"0x1c","approxTokens":108,"blocks":1,"hardReasons":[],"name":"tail_two","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":8,"unsupported":0}
+{"addr":"0x1c","approxTokens":108,"blocks":1,"hardReasons":[],"name":"tail_two","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":8,"unsupported":0}
 
 == 0x24 tail_three
 -- decompile
@@ -58,4 +58,4 @@ fn tail_three @ 0x24 (size 24)
   blk0 @ 0x24:
     ret ((w0 - #0x7) & #0xffffffff)
 -- card
-{"addr":"0x24","approxTokens":132,"blocks":1,"hardReasons":[],"name":"tail_three","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":24,"unsupported":0}
+{"addr":"0x24","approxTokens":132,"blocks":1,"hardReasons":[],"name":"tail_three","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":24,"unsupported":0}

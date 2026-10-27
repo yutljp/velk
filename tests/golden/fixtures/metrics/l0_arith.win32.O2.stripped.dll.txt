@@ -22,7 +22,7 @@ fn add3 @ 0x10001000 (size 16)
   blk0 @ 0x10001000:
     ret (((load32((esp + #0x8)) + load32((esp + #0x4))) + load32((esp + #0xc))) & #0xffffffff)
 -- card
-{"addr":"0x10001000","approxTokens":120,"blocks":1,"hardReasons":[],"name":"add3","nameSources":["dynamic"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":16,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x10001000","approxTokens":120,"blocks":1,"hardReasons":[],"name":"add3","nameSources":["dynamic"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":16,"sizeEstimated":true,"unsupported":0}
 
 == 0x10001010 scale
 -- decompile
@@ -41,7 +41,7 @@ fn scale @ 0x10001010 (size 32)
     v1 = load32((esp + #0x4))
     ret (((((v1 & #0xffffffff) * #0x8) - (v1 & #0xffffffff)) + #0x3) & #0xffffffff)
 -- card
-{"addr":"0x10001010","approxTokens":126,"blocks":1,"hardReasons":[],"name":"scale","nameSources":["dynamic"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":32,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x10001010","approxTokens":126,"blocks":1,"hardReasons":[],"name":"scale","nameSources":["dynamic"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":32,"sizeEstimated":true,"unsupported":0}
 
 == 0x10001030 pick
 -- decompile
@@ -58,7 +58,7 @@ fn pick @ 0x10001030 (size 16)
   blk0 @ 0x10001030:
     ret select gt load32((esp + #0x4)), load32((esp + #0x8)) ? load32((esp + #0x4)), load32((esp + #0x8))
 -- card
-{"addr":"0x10001030","approxTokens":126,"blocks":1,"hardReasons":[],"name":"pick","nameSources":["dynamic"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":16,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x10001030","approxTokens":126,"blocks":1,"hardReasons":[],"name":"pick","nameSources":["dynamic"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":16,"sizeEstimated":true,"unsupported":0}
 
 == 0x10001040 negate
 -- decompile
@@ -75,4 +75,4 @@ fn negate @ 0x10001040 (size 7)
   blk0 @ 0x10001040:
     ret ((#0x0 - load32((esp + #0x4))) & #0xffffffff)
 -- card
-{"addr":"0x10001040","approxTokens":114,"blocks":1,"hardReasons":[],"name":"negate","nameSources":["dynamic"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":7,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x10001040","approxTokens":114,"blocks":1,"hardReasons":[],"name":"negate","nameSources":["dynamic"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":7,"sizeEstimated":true,"unsupported":0}

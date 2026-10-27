@@ -25,7 +25,7 @@ fn original_line @ 0x0 (size 18)
   blk0 @ 0x0:
     ret (((edi + #0x3) & #0xffffffff) ^ #0x55)
 -- card
-{"addr":"0x0","approxTokens":144,"blocks":1,"hardReasons":[],"name":"original_line","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":18,"unsupported":0}
+{"addr":"0x0","approxTokens":144,"blocks":1,"hardReasons":[],"name":"original_line","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":18,"unsupported":0}
 
 == 0x20 flattened_line
 -- decompile
@@ -52,7 +52,7 @@ fn flattened_line @ 0x20 (size 107)
   blk3 @ 0x86:
     ret v2
 -- card
-{"addr":"0x20","approxTokens":150,"blocks":4,"hardReasons":[],"name":"flattened_line","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":3,"predicatesRemoved":0,"simplified":true},"size":107,"unsupported":0}
+{"addr":"0x20","approxTokens":150,"blocks":4,"hardReasons":[],"name":"flattened_line","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":3,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":true},"size":107,"unsupported":0}
 
 == 0x90 original_branch
 -- decompile
@@ -83,7 +83,7 @@ fn original_branch @ 0x90 (size 46)
   blk3 @ 0xb6:
     ret ((v1 + #0x7) & #0xffffffff)
 -- card
-{"addr":"0x90","approxTokens":162,"blocks":4,"hardReasons":[],"name":"original_branch","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":46,"unsupported":0}
+{"addr":"0x90","approxTokens":162,"blocks":4,"hardReasons":[],"name":"original_branch","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":46,"unsupported":0}
 
 == 0xc0 flattened_branch
 -- decompile
@@ -121,7 +121,7 @@ fn flattened_branch @ 0xc0 (size 147)
   blk6 @ 0x14e:
     ret v5
 -- card
-{"addr":"0xc0","approxTokens":150,"blocks":7,"hardReasons":[],"name":"flattened_branch","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":4,"predicatesRemoved":0,"simplified":true},"size":147,"unsupported":0}
+{"addr":"0xc0","approxTokens":150,"blocks":7,"hardReasons":[],"name":"flattened_branch","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":4,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":true},"size":147,"unsupported":0}
 
 == 0x160 original_loop
 -- decompile
@@ -152,7 +152,7 @@ fn original_loop @ 0x160 (size 59)
   blk3 @ 0x196:
     ret v2
 -- card
-{"addr":"0x160","approxTokens":198,"blocks":4,"hardReasons":[],"name":"original_loop","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":59,"unsupported":0}
+{"addr":"0x160","approxTokens":198,"blocks":4,"hardReasons":[],"name":"original_loop","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":59,"unsupported":0}
 
 == 0x1a0 flattened_loop
 -- decompile
@@ -186,7 +186,7 @@ fn flattened_loop @ 0x1a0 (size 141)
   blk4 @ 0x228:
     ret v4
 -- card
-{"addr":"0x1a0","approxTokens":162,"blocks":5,"hardReasons":[],"name":"flattened_loop","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":3,"predicatesRemoved":0,"simplified":true},"size":141,"unsupported":0}
+{"addr":"0x1a0","approxTokens":162,"blocks":5,"hardReasons":[],"name":"flattened_loop","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":3,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":true},"size":141,"unsupported":0}
 
 == 0x230 variable_transition
 -- decompile
@@ -231,4 +231,4 @@ fn variable_transition @ 0x230 (size 71)
   blk9 @ 0x272:
     ret v2
 -- card
-{"addr":"0x230","approxTokens":150,"blocks":10,"hardReasons":[],"name":"variable_transition","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":71,"unsupported":0}
+{"addr":"0x230","approxTokens":150,"blocks":10,"hardReasons":[],"name":"variable_transition","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":71,"unsupported":0}

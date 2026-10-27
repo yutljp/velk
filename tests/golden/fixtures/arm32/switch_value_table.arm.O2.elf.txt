@@ -49,4 +49,4 @@ fn dispatch @ 0x200ec (size 32)
   blk6 @ 0x20104:
     ret v2
 -- card
-{"addr":"0x200ec","approxTokens":138,"blocks":7,"hardReasons":[],"name":"dispatch","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":32,"unsupported":0}
+{"addr":"0x200ec","approxTokens":138,"blocks":7,"hardReasons":[],"name":"dispatch","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":32,"unsupported":0}

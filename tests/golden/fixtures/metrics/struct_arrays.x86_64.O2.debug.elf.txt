@@ -24,7 +24,7 @@ fn item_weight @ 0x201180 (size 18)
     v1 = (sext32(esi) << #0x4)
     ret ((sext16(load16(((rdi + v1) + #0xc))) * load32(((rdi + v1) + #0x8))) & #0xffffffff)
 -- card
-{"addr":"0x201180","approxTokens":126,"blocks":1,"hardReasons":[],"name":"item_weight","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":18,"unsupported":0}
+{"addr":"0x201180","approxTokens":126,"blocks":1,"hardReasons":[],"name":"item_weight","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":18,"unsupported":0}
 
 == 0x2011a0 cell_set
 -- decompile
@@ -47,7 +47,7 @@ fn cell_set @ 0x2011a0 (size 14)
     store32((edx + #0x1), ((rdi + (v1 * #0x4)) + #0x8))
     ret #0x0
 -- card
-{"addr":"0x2011a0","approxTokens":126,"blocks":1,"hardReasons":[],"name":"cell_set","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":14,"unsupported":0}
+{"addr":"0x2011a0","approxTokens":126,"blocks":1,"hardReasons":[],"name":"cell_set","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":14,"unsupported":0}
 
 == 0x2011b0 item_last_key
 -- decompile
@@ -133,4 +133,4 @@ fn item_last_key @ 0x2011b0 (size 100)
     v3 = load64((v6 + #0xfffffffffffffff8))
     br 0x2011f0
 -- card
-{"addr":"0x2011b0","approxTokens":180,"blocks":14,"hardReasons":[],"name":"item_last_key","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":100,"unsupported":0}
+{"addr":"0x2011b0","approxTokens":180,"blocks":14,"hardReasons":[],"name":"item_last_key","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":100,"unsupported":0}

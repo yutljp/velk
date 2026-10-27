@@ -28,7 +28,7 @@ fn _cdecl_add @ 0x10001000 (size 9)
   blk0 @ 0x10001000:
     ret ((load32((esp + #0x8)) + load32((esp + #0x4))) & #0xffffffff)
 -- card
-{"addr":"0x10001000","aliases":["cdecl_add"],"approxTokens":114,"blocks":1,"hardReasons":[],"name":"_cdecl_add","nameSources":["symtab","dynamic","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":9,"unsupported":0}
+{"addr":"0x10001000","aliases":["cdecl_add"],"approxTokens":114,"blocks":1,"hardReasons":[],"name":"_cdecl_add","nameSources":["symtab","dynamic","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":9,"unsupported":0}
 
 == 0x10001010 _stdcall_add@8
 -- decompile
@@ -45,7 +45,7 @@ fn _stdcall_add@8 @ 0x10001010 (size 11)
   blk0 @ 0x10001010:
     ret ((load32((esp + #0x8)) + load32((esp + #0x4))) & #0xffffffff)
 -- card
-{"addr":"0x10001010","aliases":["stdcall_add"],"approxTokens":114,"blocks":1,"hardReasons":[],"name":"_stdcall_add@8","nameSources":["symtab","dynamic","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":11,"unsupported":0}
+{"addr":"0x10001010","aliases":["stdcall_add"],"approxTokens":114,"blocks":1,"hardReasons":[],"name":"_stdcall_add@8","nameSources":["symtab","dynamic","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":11,"unsupported":0}
 
 == 0x10001020 @fastcall_add@12
 -- decompile
@@ -62,7 +62,7 @@ fn @fastcall_add@12 @ 0x10001020 (size 10)
   blk0 @ 0x10001020:
     ret (((ecx + edx) + load32((esp + #0x4))) & #0xffffffff)
 -- card
-{"addr":"0x10001020","aliases":["fastcall_add"],"approxTokens":114,"blocks":1,"hardReasons":[],"name":"@fastcall_add@12","nameSources":["symtab","dynamic","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":10,"unsupported":0}
+{"addr":"0x10001020","aliases":["fastcall_add"],"approxTokens":114,"blocks":1,"hardReasons":[],"name":"@fastcall_add@12","nameSources":["symtab","dynamic","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":10,"unsupported":0}
 
 == 0x10001030 _thiscall_add
 -- decompile
@@ -79,7 +79,7 @@ fn _thiscall_add @ 0x10001030 (size 9)
   blk0 @ 0x10001030:
     ret ((ecx + load32((esp + #0x4))) & #0xffffffff)
 -- card
-{"addr":"0x10001030","aliases":["thiscall_add"],"approxTokens":114,"blocks":1,"hardReasons":[],"name":"_thiscall_add","nameSources":["symtab","dynamic","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":9,"unsupported":0}
+{"addr":"0x10001030","aliases":["thiscall_add"],"approxTokens":114,"blocks":1,"hardReasons":[],"name":"_thiscall_add","nameSources":["symtab","dynamic","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":9,"unsupported":0}
 
 == 0x10001040 _call_conventions
 -- decompile
@@ -107,4 +107,4 @@ fn _call_conventions @ 0x10001040 (size 65)
     v2:eax = call 0x10001030(v1, #0x5)
     ret (((v2 & #0xffffffff) + (v8 & #0xffffffff)) & #0xffffffff)
 -- card
-{"addr":"0x10001040","aliases":["call_conventions"],"approxTokens":240,"blocks":1,"hardReasons":[],"name":"_call_conventions","nameSources":["symtab","dynamic","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":65,"unsupported":0}
+{"addr":"0x10001040","aliases":["call_conventions"],"approxTokens":240,"blocks":1,"hardReasons":[],"name":"_call_conventions","nameSources":["symtab","dynamic","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":65,"unsupported":0}

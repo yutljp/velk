@@ -30,7 +30,7 @@ fn reg_add @ 0x140001000 (size 16)
   blk0 @ 0x140001000:
     ret ((rcx + rdx) & #0xffffffff)
 -- card
-{"addr":"0x140001000","approxTokens":108,"blocks":1,"hardReasons":[],"name":"reg_add","nameSources":["dynamic"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":16,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x140001000","approxTokens":108,"blocks":1,"hardReasons":[],"name":"reg_add","nameSources":["dynamic"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":16,"sizeEstimated":true,"unsupported":0}
 
 == 0x140001010 reg_mul
 -- decompile
@@ -47,7 +47,7 @@ fn reg_mul @ 0x140001010 (size 16)
   blk0 @ 0x140001010:
     ret ((ecx * edx) & #0xffffffff)
 -- card
-{"addr":"0x140001010","approxTokens":114,"blocks":1,"hardReasons":[],"name":"reg_mul","nameSources":["dynamic"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":16,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x140001010","approxTokens":114,"blocks":1,"hardReasons":[],"name":"reg_mul","nameSources":["dynamic"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":16,"sizeEstimated":true,"unsupported":0}
 
 == 0x140001020 reg_sign
 -- decompile
@@ -64,7 +64,7 @@ fn reg_sign @ 0x140001020 (size 16)
   blk0 @ 0x140001020:
     ret ((sext16(rdx) + sext8(rcx)) & #0xffffffff)
 -- card
-{"addr":"0x140001020","approxTokens":120,"blocks":1,"hardReasons":[],"name":"reg_sign","nameSources":["dynamic"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":16,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x140001020","approxTokens":120,"blocks":1,"hardReasons":[],"name":"reg_sign","nameSources":["dynamic"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":16,"sizeEstimated":true,"unsupported":0}
 
 == 0x140001030 reg_max
 -- decompile
@@ -81,7 +81,7 @@ fn reg_max @ 0x140001030 (size 16)
   blk0 @ 0x140001030:
     ret select gt ecx, edx ? ecx, edx
 -- card
-{"addr":"0x140001030","approxTokens":120,"blocks":1,"hardReasons":[],"name":"reg_max","nameSources":["dynamic"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":16,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x140001030","approxTokens":120,"blocks":1,"hardReasons":[],"name":"reg_max","nameSources":["dynamic"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":16,"sizeEstimated":true,"unsupported":0}
 
 == 0x140001040 reg_negative
 -- decompile
@@ -98,7 +98,7 @@ fn reg_negative @ 0x140001040 (size 16)
   blk0 @ 0x140001040:
     ret (ecx >> #0x1f)
 -- card
-{"addr":"0x140001040","approxTokens":114,"blocks":1,"hardReasons":[],"name":"reg_negative","nameSources":["dynamic"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":16,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x140001040","approxTokens":114,"blocks":1,"hardReasons":[],"name":"reg_negative","nameSources":["dynamic"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":16,"sizeEstimated":true,"unsupported":0}
 
 == 0x140001050 reg_abs
 -- decompile
@@ -115,7 +115,7 @@ fn reg_abs @ 0x140001050 (size 16)
   blk0 @ 0x140001050:
     ret select lt ((#0x0 - ecx) & #0xffffffff), #0x0 ? ecx, ((#0x0 - ecx) & #0xffffffff)
 -- card
-{"addr":"0x140001050","approxTokens":120,"blocks":1,"hardReasons":[],"name":"reg_abs","nameSources":["dynamic"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":16,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x140001050","approxTokens":120,"blocks":1,"hardReasons":[],"name":"reg_abs","nameSources":["dynamic"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":16,"sizeEstimated":true,"unsupported":0}
 
 == 0x140001060 msg_first
 -- decompile
@@ -133,7 +133,7 @@ fn msg_first @ 0x140001060 (size 16)
   blk0 @ 0x140001060:
     ret (sext8(load8((load64(#0x140003000) + #0x1))) & #0xffffffff)
 -- card
-{"addr":"0x140001060","approxTokens":114,"blocks":1,"hardReasons":[],"name":"msg_first","nameHints":["velk_ref_string"],"nameSources":["dynamic"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":16,"sizeEstimated":true,"strings":["velk-ref-string"],"unsupported":0}
+{"addr":"0x140001060","approxTokens":114,"blocks":1,"hardReasons":[],"name":"msg_first","nameHints":["velk_ref_string"],"nameSources":["dynamic"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":16,"sizeEstimated":true,"strings":["velk-ref-string"],"unsupported":0}
 
 == 0x140001070 reg_div
 -- decompile
@@ -150,7 +150,7 @@ fn reg_div @ 0x140001070 (size 16)
   blk0 @ 0x140001070:
     ret (ecx / edx)
 -- card
-{"addr":"0x140001070","approxTokens":126,"blocks":1,"hardReasons":[],"name":"reg_div","nameSources":["dynamic"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":16,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x140001070","approxTokens":126,"blocks":1,"hardReasons":[],"name":"reg_div","nameSources":["dynamic"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":16,"sizeEstimated":true,"unsupported":0}
 
 == 0x140001080 reg_mod
 -- decompile
@@ -167,7 +167,7 @@ fn reg_mod @ 0x140001080 (size 16)
   blk0 @ 0x140001080:
     ret (ecx % edx)
 -- card
-{"addr":"0x140001080","approxTokens":132,"blocks":1,"hardReasons":[],"name":"reg_mod","nameSources":["dynamic"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":16,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x140001080","approxTokens":132,"blocks":1,"hardReasons":[],"name":"reg_mod","nameSources":["dynamic"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":16,"sizeEstimated":true,"unsupported":0}
 
 == 0x140001090 -
 -- decompile
@@ -190,4 +190,4 @@ fn <unnamed> @ 0x140001090 (size 30)
     store32(#0x23, (rsp + #0xfffffffffffffff8))
     ret load64((rsp + #0xfffffffffffffff8))
 -- card
-{"addr":"0x140001090","approxTokens":150,"blocks":1,"hardReasons":["name-unknown"],"name":null,"nameSources":["entry"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":30,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x140001090","approxTokens":150,"blocks":1,"hardReasons":["name-unknown"],"name":null,"nameSources":["entry"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":30,"sizeEstimated":true,"unsupported":0}

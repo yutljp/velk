@@ -22,7 +22,7 @@ fn <unnamed> @ 0x201190 (size 6)
   blk0 @ 0x201190:
     ret (((rdi + rsi) + edx) & #0xffffffff)
 -- card
-{"addr":"0x201190","approxTokens":114,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":6,"unsupported":0}
+{"addr":"0x201190","approxTokens":114,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":6,"unsupported":0}
 
 == 0x2011a0 -
 -- decompile
@@ -39,7 +39,7 @@ fn <unnamed> @ 0x2011a0 (size 13)
   blk0 @ 0x2011a0:
     ret ((((rdi * #0x8) - (rdi & #0xffffffff)) + #0x3) & #0xffffffff)
 -- card
-{"addr":"0x2011a0","approxTokens":120,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":13,"unsupported":0}
+{"addr":"0x2011a0","approxTokens":120,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":13,"unsupported":0}
 
 == 0x2011b0 -
 -- decompile
@@ -56,7 +56,7 @@ fn <unnamed> @ 0x2011b0 (size 8)
   blk0 @ 0x2011b0:
     ret select gt edi, esi ? edi, esi
 -- card
-{"addr":"0x2011b0","approxTokens":120,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":8,"unsupported":0}
+{"addr":"0x2011b0","approxTokens":120,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":8,"unsupported":0}
 
 == 0x2011c0 -
 -- decompile
@@ -73,4 +73,4 @@ fn <unnamed> @ 0x2011c0 (size 5)
   blk0 @ 0x2011c0:
     ret ((#0x0 - edi) & #0xffffffff)
 -- card
-{"addr":"0x2011c0","approxTokens":114,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":5,"unsupported":0}
+{"addr":"0x2011c0","approxTokens":114,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":5,"unsupported":0}

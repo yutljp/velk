@@ -32,4 +32,4 @@ fn dispatch @ 0x201170 (size 23)
   blk2 @ 0x201186:
     ret v2
 -- card
-{"addr":"0x201170","approxTokens":144,"blocks":3,"hardReasons":[],"name":"dispatch","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":23,"unsupported":0}
+{"addr":"0x201170","approxTokens":144,"blocks":3,"hardReasons":[],"name":"dispatch","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":23,"unsupported":0}

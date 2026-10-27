@@ -36,7 +36,7 @@ fn twice @ 0x20134 (size 4)
   blk0 @ 0x20134:
     ret ((r0 << #0x1) & #0xffffffff)
 -- card
-{"addr":"0x20134","approxTokens":108,"blocks":1,"hardReasons":[],"name":"twice","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":4,"unsupported":0}
+{"addr":"0x20134","approxTokens":108,"blocks":1,"hardReasons":[],"name":"twice","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":4,"unsupported":0}
 
 == 0x20138 square
 -- decompile
@@ -53,7 +53,7 @@ fn square @ 0x20138 (size 4)
   blk0 @ 0x20138:
     ret ((r0 * r0) & #0xffffffff)
 -- card
-{"addr":"0x20138","approxTokens":108,"blocks":1,"hardReasons":[],"name":"square","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":4,"unsupported":0}
+{"addr":"0x20138","approxTokens":108,"blocks":1,"hardReasons":[],"name":"square","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":4,"unsupported":0}
 
 == 0x2013c pick_op
 -- decompile
@@ -78,7 +78,7 @@ fn pick_op @ 0x2013c (size 26)
   blk2 @ 0x20152:
     ret v1
 -- card
-{"addr":"0x2013c","approxTokens":150,"blocks":3,"hardReasons":[],"name":"pick_op","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":26,"unsupported":0}
+{"addr":"0x2013c","approxTokens":150,"blocks":3,"hardReasons":[],"name":"pick_op","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":26,"unsupported":0}
 
 == 0x20158 apply_table
 -- decompile
@@ -116,7 +116,7 @@ fn apply_table @ 0x20158 (size 36)
     v7:r0 = call 0x20134(v7)
     ret v7
 -- card
-{"addr":"0x20158","approxTokens":168,"blocks":6,"hardReasons":[],"name":"apply_table","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":36,"unsupported":0}
+{"addr":"0x20158","approxTokens":168,"blocks":6,"hardReasons":[],"name":"apply_table","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":36,"unsupported":0}
 
 == 0x2017c apply_pointer
 -- decompile
@@ -134,7 +134,7 @@ fn apply_pointer @ 0x2017c (size 12)
     v4:r0, r1 = call *r0(r1)
     ret ((v4 + #0x1) & #0xffffffff)
 -- card
-{"addr":"0x2017c","approxTokens":132,"blocks":1,"hardReasons":[],"name":"apply_pointer","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":12,"unsupported":0}
+{"addr":"0x2017c","approxTokens":132,"blocks":1,"hardReasons":[],"name":"apply_pointer","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":12,"unsupported":0}
 
 == 0x20188 factorial
 -- decompile
@@ -247,7 +247,7 @@ fn factorial @ 0x20188 (size 96)
   blk18 @ 0x201e4:
     ret v3
 -- card
-{"addr":"0x20188","approxTokens":240,"blocks":19,"hardReasons":[],"name":"factorial","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":96,"unsupported":0}
+{"addr":"0x20188","approxTokens":240,"blocks":19,"hardReasons":[],"name":"factorial","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":96,"unsupported":0}
 
 == 0x201e8 is_odd
 -- decompile
@@ -283,7 +283,7 @@ fn is_odd @ 0x201e8 (size 14)
     v4:r0, r1 = call 0x201f8(((r0 - #0x1) & #0xffffffff))
     ret v4
 -- card
-{"addr":"0x201e8","approxTokens":132,"blocks":5,"hardReasons":[],"name":"is_odd","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":14,"unsupported":0}
+{"addr":"0x201e8","approxTokens":132,"blocks":5,"hardReasons":[],"name":"is_odd","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":14,"unsupported":0}
 
 == 0x201f8 is_even
 -- decompile
@@ -319,7 +319,7 @@ fn is_even @ 0x201f8 (size 14)
     v4:r0, r1 = call 0x201e8(((r0 - #0x1) & #0xffffffff))
     ret v4
 -- card
-{"addr":"0x201f8","approxTokens":132,"blocks":5,"hardReasons":[],"name":"is_even","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":14,"unsupported":0}
+{"addr":"0x201f8","approxTokens":132,"blocks":5,"hardReasons":[],"name":"is_even","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":14,"unsupported":0}
 
 == 0x20208 sum9
 -- decompile
@@ -336,7 +336,7 @@ fn sum9 @ 0x20208 (size 32)
   blk0 @ 0x20208:
     ret ((((((((((r0 + r1) + r2) + r3) + load32(sp)) + load32((sp + #0x4))) + load32((sp + #0x8))) & #0xffffffff) + load32((sp + #0xc))) + load32((sp + #0x10))) & #0xffffffff)
 -- card
-{"addr":"0x20208","approxTokens":174,"blocks":1,"hardReasons":[],"name":"sum9","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":32,"unsupported":0}
+{"addr":"0x20208","approxTokens":174,"blocks":1,"hardReasons":[],"name":"sum9","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":32,"unsupported":0}
 
 == 0x20228 call_sum9
 -- decompile
@@ -354,7 +354,7 @@ fn call_sum9 @ 0x20228 (size 44)
     v1:r0 = call 0x20208(r0, #0x1, #0x2, #0x3, #0x4, #0x5, #0x6, #0x7, #0x8)
     ret v1
 -- card
-{"addr":"0x20228","approxTokens":192,"blocks":1,"hardReasons":[],"name":"call_sum9","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":44,"unsupported":0}
+{"addr":"0x20228","approxTokens":192,"blocks":1,"hardReasons":[],"name":"call_sum9","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":44,"unsupported":0}
 
 == 0x20254 sum_varargs
 -- decompile
@@ -483,4 +483,4 @@ fn sum_varargs @ 0x20254 (size 154)
   blk16 @ 0x202e4:
     ret v3
 -- card
-{"addr":"0x20254","approxTokens":240,"blocks":17,"hardReasons":[],"name":"sum_varargs","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":154,"unsupported":0}
+{"addr":"0x20254","approxTokens":240,"blocks":17,"hardReasons":[],"name":"sum_varargs","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":154,"unsupported":0}

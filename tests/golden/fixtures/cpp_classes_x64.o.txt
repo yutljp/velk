@@ -52,7 +52,7 @@ fn total_area(Shape const* const*, int) @ 0x0 (size 69)
   blk5 @ 0x38:
     ret (v4 & #0xffffffff)
 -- card
-{"addr":"0x0","approxTokens":216,"blocks":6,"hardReasons":[],"name":"total_area(Shape const* const*, int)","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":69,"unsupported":0}
+{"addr":"0x0","approxTokens":216,"blocks":6,"hardReasons":[],"name":"total_area(Shape const* const*, int)","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":69,"unsupported":0}
 
 == 0x50 clamp_int(int)
 -- decompile
@@ -71,7 +71,7 @@ fn clamp_int(int) @ 0x50 (size 22)
     v1 = (select lt edi, #0xff ? edi, #0xff & #0xffffffff)
     ret (select gt (v1 & #0xffffffff), #0x0 ? (v1 & #0xffffffff), #0x0 & #0xffffffff)
 -- card
-{"addr":"0x50","approxTokens":138,"blocks":1,"hardReasons":[],"name":"clamp_int(int)","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":22,"unsupported":0}
+{"addr":"0x50","approxTokens":138,"blocks":1,"hardReasons":[],"name":"clamp_int(int)","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":22,"unsupported":0}
 
 == 0x70 clamp_long(long)
 -- decompile
@@ -90,7 +90,7 @@ fn clamp_long(long) @ 0x70 (size 35)
     v1 = select lt rdi, #0x3e8 ? rdi, #0x3e8
     ret select ge v1, #0xfffffffffffffc19 ? v1, #0xfffffffffffffc18
 -- card
-{"addr":"0x70","approxTokens":138,"blocks":1,"hardReasons":[],"name":"clamp_long(long)","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":35,"unsupported":0}
+{"addr":"0x70","approxTokens":138,"blocks":1,"hardReasons":[],"name":"clamp_long(long)","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":35,"unsupported":0}
 
 == 0xa0 dot_sum(Vec2 const&, Vec2 const&)
 -- decompile
@@ -109,7 +109,7 @@ fn dot_sum(Vec2 const&, Vec2 const&) @ 0xa0 (size 14)
   blk0 @ 0xa0:
     ret (((load32((rsi + #0x4)) + load32((rdi + #0x4))) * (load32(rsi) + load32(rdi))) & #0xffffffff)
 -- card
-{"accesses":["a1 +0x0:uint32_t, +0x4:uint32_t"],"addr":"0xa0","approxTokens":132,"blocks":1,"hardReasons":[],"name":"dot_sum(Vec2 const&, Vec2 const&)","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":14,"structures":["struct S1 { int32_t field_0x0; int32_t field_0x4; };","struct S2 { int32_t field_0x0; int32_t field_0x4; };"],"unsupported":0}
+{"accesses":["a1 +0x0:uint32_t, +0x4:uint32_t"],"addr":"0xa0","approxTokens":132,"blocks":1,"hardReasons":[],"name":"dot_sum(Vec2 const&, Vec2 const&)","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":14,"structures":["struct S1 { int32_t field_0x0; int32_t field_0x4; };","struct S2 { int32_t field_0x0; int32_t field_0x4; };"],"unsupported":0}
 
 == 0xb0 increment(int&)
 -- decompile
@@ -127,4 +127,4 @@ fn increment(int&) @ 0xb0 (size 3)
     store32((load32(rdi) + #0x1), rdi)
     ret #0x0
 -- card
-{"accesses":["a0 +0x0:uint32_t"],"addr":"0xb0","approxTokens":108,"blocks":1,"hardReasons":[],"name":"increment(int&)","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":3,"unsupported":0}
+{"accesses":["a0 +0x0:uint32_t"],"addr":"0xb0","approxTokens":108,"blocks":1,"hardReasons":[],"name":"increment(int&)","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":3,"unsupported":0}

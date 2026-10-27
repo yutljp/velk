@@ -8,40 +8,52 @@ mod dispatcher;
 #[cfg(test)]
 mod tests;
 
-/// Control-flow simplifications proved by the analysis.
+/// Expression and control-flow simplifications proved by the analysis.
 #[derive(Debug, Default, Clone, Copy, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Simplification {
-    /// Whether a predicate or dispatcher was removed.
+    /// Whether an expression, predicate or dispatcher was simplified.
     pub simplified: bool,
     /// Conditional branches proved constant.
     pub predicates_removed: usize,
     /// Distinct constant states whose dispatcher tests were bypassed.
     pub dispatcher_states_removed: usize,
+    /// Mixed bitwise/arithmetic expression trees replaced by shorter equivalents.
+    pub mba_expressions_simplified: usize,
 }
 
 impl Simplification {
     pub(crate) fn add(&mut self, other: Self) {
         self.predicates_removed += other.predicates_removed;
         self.dispatcher_states_removed += other.dispatcher_states_removed;
-        self.simplified = self.predicates_removed != 0 || self.dispatcher_states_removed != 0;
+        self.mba_expressions_simplified += other.mba_expressions_simplified;
+        self.simplified = self.predicates_removed != 0
+            || self.dispatcher_states_removed != 0
+            || self.mba_expressions_simplified != 0;
     }
 }
 
 pub(crate) fn simplify(ir: &mut FunctionIr) -> Simplification {
     crate::timing::scope!("deobfuscation::simplify");
+    let mba = super::mba::simplify(ir);
     if !ir.blocks.iter().any(|block| {
         matches!(
             block.stmts.last(),
             Some(Stmt::Brif { .. } | Stmt::Switch { .. })
         )
     }) {
-        return Simplification::default();
+        return Simplification {
+            simplified: mba != 0,
+            mba_expressions_simplified: mba,
+            ..Default::default()
+        };
     }
     let original = ir.clone();
     let mut changes = predicates(ir);
+    changes.mba_expressions_simplified = mba;
     changes.dispatcher_states_removed = dispatcher::remove(ir);
-    changes.simplified = changes.predicates_removed != 0 || changes.dispatcher_states_removed != 0;
+    changes.simplified =
+        changes.predicates_removed != 0 || changes.dispatcher_states_removed != 0 || mba != 0;
     if changes.simplified {
         super::copies::copy_propagate_guarded(ir);
         super::simplify::simplify(ir);
@@ -107,6 +119,7 @@ pub(super) fn predicates(ir: &mut FunctionIr) -> Simplification {
         simplified: removed != 0,
         predicates_removed: removed,
         dispatcher_states_removed: 0,
+        mba_expressions_simplified: 0,
     }
 }
 

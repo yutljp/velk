@@ -37,7 +37,7 @@ fn <unnamed> @ 0x180001000 (size 32)
   blk2 @ 0x18000101b:
     ret v1
 -- card
-{"addr":"0x180001000","approxTokens":156,"blocks":3,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":32,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x180001000","approxTokens":156,"blocks":3,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":32,"sizeEstimated":true,"unsupported":0}
 
 == 0x180001020 -
 -- decompile
@@ -67,7 +67,7 @@ fn <unnamed> @ 0x180001020 (size 64)
   blk2 @ 0x18000104f:
     ret #0x0
 -- card
-{"addr":"0x180001020","approxTokens":180,"blocks":3,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":64,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x180001020","approxTokens":180,"blocks":3,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":64,"sizeEstimated":true,"unsupported":0}
 
 == 0x180001060 -
 -- decompile
@@ -112,7 +112,7 @@ fn <unnamed> @ 0x180001060 (size 48)
   blk4 @ 0x180001084:
     ret v1
 -- card
-{"addr":"0x180001060","approxTokens":186,"blocks":5,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":48,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x180001060","approxTokens":186,"blocks":5,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":48,"sizeEstimated":true,"unsupported":0}
 
 == 0x180001090 -
 -- decompile
@@ -155,4 +155,4 @@ fn <unnamed> @ 0x180001090 (size 44)
   blk5 @ 0x1800010b9:
     ret #0x0
 -- card
-{"addr":"0x180001090","approxTokens":192,"blocks":6,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":44,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x180001090","approxTokens":192,"blocks":6,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":44,"sizeEstimated":true,"unsupported":0}

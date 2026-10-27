@@ -25,7 +25,7 @@ fn tail_target @ 0x20104 (size 20)
   blk0 @ 0x20104:
     ret (((r0 * #0x3) + #0x1) & #0xffffffff)
 -- card
-{"addr":"0x20104","approxTokens":150,"blocks":1,"hardReasons":[],"name":"tail_target","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":20,"unsupported":0}
+{"addr":"0x20104","approxTokens":150,"blocks":1,"hardReasons":[],"name":"tail_target","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":20,"unsupported":0}
 
 == 0x20118 tail_direct
 -- decompile
@@ -43,7 +43,7 @@ fn tail_direct @ 0x20118 (size 18)
     v2:r0 = call 0x20104(((r0 + #0x2) & #0xffffffff))
     ret v2
 -- card
-{"addr":"0x20118","approxTokens":144,"blocks":1,"hardReasons":[],"name":"tail_direct","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":18,"unsupported":0}
+{"addr":"0x20118","approxTokens":144,"blocks":1,"hardReasons":[],"name":"tail_direct","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":18,"unsupported":0}
 
 == 0x2012c tail_indirect
 -- decompile
@@ -61,7 +61,7 @@ fn tail_indirect @ 0x2012c (size 20)
     v4:r0, r1 = call *r0(((r1 + #0x1) & #0xffffffff))
     ret v4
 -- card
-{"addr":"0x2012c","approxTokens":156,"blocks":1,"hardReasons":[],"name":"tail_indirect","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":20,"unsupported":0}
+{"addr":"0x2012c","approxTokens":156,"blocks":1,"hardReasons":[],"name":"tail_indirect","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":20,"unsupported":0}
 
 == 0x20140 six_args
 -- decompile
@@ -78,7 +78,7 @@ fn six_args @ 0x20140 (size 44)
   blk0 @ 0x20140:
     ret ((((((r0 + r1) + r2) + r3) + load32(sp)) + load32((sp + #0x4))) & #0xffffffff)
 -- card
-{"addr":"0x20140","approxTokens":216,"blocks":1,"hardReasons":[],"name":"six_args","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":44,"unsupported":0}
+{"addr":"0x20140","approxTokens":216,"blocks":1,"hardReasons":[],"name":"six_args","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":44,"unsupported":0}
 
 == 0x2016c wide_add
 -- decompile
@@ -105,4 +105,4 @@ fn wide_add @ 0x2016c (size 26)
     v3 = select hi (v2 - v1), (v1 ^ #0xffffffff) ? #0x1, #0x0
     ret (v2 | ((((r1 + r3) + v3) & #0xffffffff) << #0x20))
 -- card
-{"addr":"0x2016c","approxTokens":174,"blocks":1,"hardReasons":[],"name":"wide_add","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":26,"unsupported":0}
+{"addr":"0x2016c","approxTokens":174,"blocks":1,"hardReasons":[],"name":"wide_add","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":26,"unsupported":0}

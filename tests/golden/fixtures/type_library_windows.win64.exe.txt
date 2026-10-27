@@ -43,7 +43,7 @@ fn windows_file @ 0x140001000 (size 15)
     v1:rax, xmm0 = call *load64(#0x1400050b8)(rcx)
     ret v1
 -- card
-{"addr":"0x140001000","approxTokens":120,"blocks":1,"hardReasons":[],"name":"windows_file","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":15,"unsupported":0}
+{"addr":"0x140001000","approxTokens":120,"blocks":1,"hardReasons":[],"name":"windows_file","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":15,"unsupported":0}
 
 == 0x14000100f windows_process
 -- decompile
@@ -62,7 +62,7 @@ fn windows_process @ 0x14000100f (size 28)
     v1:rax, xmm0 = call *load64(#0x1400050c8)(#0x400, #0x0, (rcx & #0xffffffff))
     ret v1
 -- card
-{"addr":"0x14000100f","approxTokens":138,"blocks":1,"hardReasons":[],"name":"windows_process","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":28,"unsupported":0}
+{"addr":"0x14000100f","approxTokens":138,"blocks":1,"hardReasons":[],"name":"windows_process","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":28,"unsupported":0}
 
 == 0x14000102b windows_memory
 -- decompile
@@ -81,7 +81,7 @@ fn windows_memory @ 0x14000102b (size 35)
     v1:rax, xmm0 = call *load64(#0x1400050d0)(#0x0, rcx, #0x3000, #0x4)
     ret v1
 -- card
-{"addr":"0x14000102b","approxTokens":144,"blocks":1,"hardReasons":[],"name":"windows_memory","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":35,"unsupported":0}
+{"addr":"0x14000102b","approxTokens":144,"blocks":1,"hardReasons":[],"name":"windows_memory","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":35,"unsupported":0}
 
 == 0x14000104e windows_registry
 -- decompile
@@ -100,7 +100,7 @@ fn windows_registry @ 0x14000104e (size 15)
     v1:rax, xmm0 = call *load64(#0x1400050a0)(rcx)
     ret v1
 -- card
-{"addr":"0x14000104e","approxTokens":120,"blocks":1,"hardReasons":[],"name":"windows_registry","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":15,"unsupported":0}
+{"addr":"0x14000104e","approxTokens":120,"blocks":1,"hardReasons":[],"name":"windows_registry","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":15,"unsupported":0}
 
 == 0x14000105d windows_socket
 -- decompile
@@ -119,7 +119,7 @@ fn windows_socket @ 0x14000105d (size 31)
     v1:rax, xmm0 = call *load64(#0x1400050e0)(#0x2, #0x1, #0x6)
     ret v1
 -- card
-{"addr":"0x14000105d","approxTokens":138,"blocks":1,"hardReasons":[],"name":"windows_socket","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":31,"unsupported":0}
+{"addr":"0x14000105d","approxTokens":138,"blocks":1,"hardReasons":[],"name":"windows_socket","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":31,"unsupported":0}
 
 == 0x14000107c windows_thread
 -- decompile
@@ -138,7 +138,7 @@ fn windows_thread @ 0x14000107c (size 15)
     v1:rax, xmm0 = call *load64(#0x1400050b0)()
     ret v1
 -- card
-{"addr":"0x14000107c","approxTokens":120,"blocks":1,"hardReasons":[],"name":"windows_thread","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":15,"unsupported":0}
+{"addr":"0x14000107c","approxTokens":120,"blocks":1,"hardReasons":[],"name":"windows_thread","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":15,"unsupported":0}
 
 == 0x14000108b windows_time
 -- decompile
@@ -159,7 +159,7 @@ fn windows_time @ 0x14000108b (size 23)
     rax, xmm0 = call *load64(#0x1400050c0)(rcx)
     ret load32((v1 + #0x4))
 -- card
-{"accesses":["a0 +0x4:uint32_t"],"addr":"0x14000108b","approxTokens":144,"blocks":1,"hardReasons":[],"name":"windows_time","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":23,"unsupported":0}
+{"accesses":["a0 +0x4:uint32_t"],"addr":"0x14000108b","approxTokens":144,"blocks":1,"hardReasons":[],"name":"windows_time","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":23,"unsupported":0}
 
 == 0x1400010a2 fixture_entry
 -- decompile
@@ -175,7 +175,7 @@ fn fixture_entry @ 0x1400010a2 (size 1)
   blk0 @ 0x1400010a2:
     ret #0x0
 -- card
-{"addr":"0x1400010a2","approxTokens":102,"blocks":1,"hardReasons":[],"name":"fixture_entry","nameSources":["symtab","entry","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":1,"unsupported":0}
+{"addr":"0x1400010a2","approxTokens":102,"blocks":1,"hardReasons":[],"name":"fixture_entry","nameSources":["symtab","entry","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":1,"unsupported":0}
 
 == 0x1400010b0 VirtualAlloc
 -- decompile
@@ -194,7 +194,7 @@ fn VirtualAlloc @ 0x1400010b0 (size 8)
     v1:rax, xmm0 = call *load64(#0x1400050d0)(rcx, rdx, r8, r9)
     ret v1
 -- card
-{"addr":"0x1400010b0","approxTokens":114,"blocks":1,"hardReasons":[],"name":"VirtualAlloc","nameSources":["plt"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":8,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x1400010b0","approxTokens":114,"blocks":1,"hardReasons":[],"name":"VirtualAlloc","nameSources":["plt"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":8,"sizeEstimated":true,"unsupported":0}
 
 == 0x1400010b8 OpenProcess
 -- decompile
@@ -213,7 +213,7 @@ fn OpenProcess @ 0x1400010b8 (size 8)
     v1:rax, xmm0 = call *load64(#0x1400050c8)(rcx, rdx, r8)
     ret v1
 -- card
-{"addr":"0x1400010b8","approxTokens":114,"blocks":1,"hardReasons":[],"name":"OpenProcess","nameSources":["plt"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":8,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x1400010b8","approxTokens":114,"blocks":1,"hardReasons":[],"name":"OpenProcess","nameSources":["plt"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":8,"sizeEstimated":true,"unsupported":0}
 
 == 0x1400010c0 GetSystemTimeAsFileTime
 -- decompile
@@ -232,7 +232,7 @@ fn GetSystemTimeAsFileTime @ 0x1400010c0 (size 8)
     v1:rax, xmm0 = call *load64(#0x1400050c0)(rcx)
     ret #0x0
 -- card
-{"addr":"0x1400010c0","approxTokens":114,"blocks":1,"hardReasons":[],"name":"GetSystemTimeAsFileTime","nameSources":["plt"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":8,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x1400010c0","approxTokens":114,"blocks":1,"hardReasons":[],"name":"GetSystemTimeAsFileTime","nameSources":["plt"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":8,"sizeEstimated":true,"unsupported":0}
 
 == 0x1400010c8 GetFileType
 -- decompile
@@ -251,7 +251,7 @@ fn GetFileType @ 0x1400010c8 (size 8)
     v1:rax, xmm0 = call *load64(#0x1400050b8)(rcx)
     ret v1
 -- card
-{"addr":"0x1400010c8","approxTokens":114,"blocks":1,"hardReasons":[],"name":"GetFileType","nameSources":["plt"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":8,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x1400010c8","approxTokens":114,"blocks":1,"hardReasons":[],"name":"GetFileType","nameSources":["plt"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":8,"sizeEstimated":true,"unsupported":0}
 
 == 0x1400010d0 GetCurrentThreadId
 -- decompile
@@ -270,4 +270,4 @@ fn GetCurrentThreadId @ 0x1400010d0 (size 80)
     v1:rax, xmm0 = call *load64(#0x1400050b0)()
     ret v1
 -- card
-{"addr":"0x1400010d0","approxTokens":174,"blocks":1,"hardReasons":[],"name":"GetCurrentThreadId","nameSources":["plt"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":80,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x1400010d0","approxTokens":174,"blocks":1,"hardReasons":[],"name":"GetCurrentThreadId","nameSources":["plt"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":80,"sizeEstimated":true,"unsupported":0}

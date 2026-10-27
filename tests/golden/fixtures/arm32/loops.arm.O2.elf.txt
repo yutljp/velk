@@ -63,7 +63,7 @@ fn count_bits @ 0x200fc (size 40)
   blk7 @ 0x20120:
     ret v4
 -- card
-{"addr":"0x200fc","approxTokens":156,"blocks":8,"hardReasons":[],"name":"count_bits","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":40,"unsupported":0}
+{"addr":"0x200fc","approxTokens":156,"blocks":8,"hardReasons":[],"name":"count_bits","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":40,"unsupported":0}
 
 == 0x20124 sum_until
 -- decompile
@@ -102,7 +102,7 @@ fn sum_until @ 0x20124 (size 48)
     v4 = (v3 >> #0x20)
     ret ((((((v3 & #0xffffffff) >> #0x1) | (select eq ((v4 & #0x1) ^ #0x1), #0x0 ? #0x1, #0x0 << #0x1f)) + (r0 << #0x1)) - #0x1) & #0xffffffff)
 -- card
-{"addr":"0x20124","approxTokens":168,"blocks":5,"hardReasons":[],"name":"sum_until","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":48,"unsupported":0}
+{"addr":"0x20124","approxTokens":168,"blocks":5,"hardReasons":[],"name":"sum_until","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":48,"unsupported":0}
 
 == 0x20154 sum_till_neg
 -- decompile
@@ -160,7 +160,7 @@ fn sum_till_neg @ 0x20154 (size 60)
   blk8 @ 0x20188:
     ret #0x0
 -- card
-{"addr":"0x20154","approxTokens":186,"blocks":9,"hardReasons":[],"name":"sum_till_neg","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":60,"unsupported":0}
+{"addr":"0x20154","approxTokens":186,"blocks":9,"hardReasons":[],"name":"sum_till_neg","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":60,"unsupported":0}
 
 == 0x20190 sum_until_zero
 -- decompile
@@ -217,4 +217,4 @@ fn sum_until_zero @ 0x20190 (size 56)
   blk9 @ 0x201c4:
     ret v2
 -- card
-{"addr":"0x20190","approxTokens":180,"blocks":10,"hardReasons":[],"name":"sum_until_zero","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":56,"unsupported":0}
+{"addr":"0x20190","approxTokens":180,"blocks":10,"hardReasons":[],"name":"sum_until_zero","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":56,"unsupported":0}

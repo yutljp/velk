@@ -1302,7 +1302,7 @@ fn runtime.printstring @ 0x40bd0 (size 128)
     v4:x0, x1, d0, d1 = call 0x40420(x0, x1, x1)
     ret v4
 -- card
-{"addr":"0x40bd0","approxTokens":228,"blocks":2,"hardReasons":[],"name":"runtime.printstring","nameSources":["pclntab"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":128,"unsupported":0}
+{"addr":"0x40bd0","approxTokens":228,"blocks":2,"hardReasons":[],"name":"runtime.printstring","nameSources":["pclntab"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":128,"unsupported":0}
 
 == 0x77420 main.add
 -- decompile
@@ -1319,7 +1319,7 @@ fn main.add @ 0x77420 (size 16)
   blk0 @ 0x77420:
     ret (x0 + x1)
 -- card
-{"addr":"0x77420","approxTokens":108,"blocks":1,"hardReasons":[],"name":"main.add","nameSources":["pclntab"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":16,"unsupported":0}
+{"addr":"0x77420","approxTokens":108,"blocks":1,"hardReasons":[],"name":"main.add","nameSources":["pclntab"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":16,"unsupported":0}
 
 == 0x77430 main.twice
 -- decompile
@@ -1343,7 +1343,7 @@ fn main.twice @ 0x77430 (size 64)
     v2:x0 = call 0x77420(x0, x0)
     ret v2
 -- card
-{"addr":"0x77430","approxTokens":162,"blocks":2,"hardReasons":[],"name":"main.twice","nameSources":["pclntab"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":64,"unsupported":0}
+{"addr":"0x77430","approxTokens":162,"blocks":2,"hardReasons":[],"name":"main.twice","nameSources":["pclntab"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":64,"unsupported":0}
 
 == 0x77470 main.main
 -- decompile
@@ -1381,4 +1381,4 @@ fn main.main @ 0x77470 (size 80)
     v2:x0, x1, d0, d1 = call 0x403c0(v2, v3, undefined())
     ret v2
 -- card
-{"addr":"0x77470","approxTokens":198,"blocks":2,"hardReasons":[],"name":"main.main","nameSources":["pclntab"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":80,"unsupported":0}
+{"addr":"0x77470","approxTokens":198,"blocks":2,"hardReasons":[],"name":"main.main","nameSources":["pclntab"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":80,"unsupported":0}

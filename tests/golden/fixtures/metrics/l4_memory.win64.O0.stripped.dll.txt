@@ -27,7 +27,7 @@ fn <unnamed> @ 0x180001000 (size 50)
   blk0 @ 0x180001000:
     ret (((load32(rcx) * load32(rdx)) + (load32((rcx + #0x4)) * load32((rdx + #0x4)))) & #0xffffffff)
 -- card
-{"addr":"0x180001000","approxTokens":180,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":50,"structures":["struct S1 { int32_t field_0x0; int32_t field_0x4; };","struct S2 { int32_t field_0x0; int32_t field_0x4; };"],"unsupported":0}
+{"addr":"0x180001000","approxTokens":180,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":50,"structures":["struct S1 { int32_t field_0x0; int32_t field_0x4; };","struct S2 { int32_t field_0x0; int32_t field_0x4; };"],"unsupported":0}
 
 == 0x180001040 -
 -- decompile
@@ -60,7 +60,7 @@ fn <unnamed> @ 0x180001040 (size 77)
   blk3 @ 0x180001084:
     ret load32((rsp + #0xffffffffffffffec))
 -- card
-{"addr":"0x180001040","approxTokens":198,"blocks":4,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":77,"unsupported":0}
+{"addr":"0x180001040","approxTokens":198,"blocks":4,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":77,"unsupported":0}
 
 == 0x180001090 -
 -- decompile
@@ -82,7 +82,7 @@ fn <unnamed> @ 0x180001090 (size 16)
     store32(v1, #0x180003008)
     ret v1
 -- card
-{"addr":"0x180001090","approxTokens":120,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":16,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x180001090","approxTokens":120,"blocks":1,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":16,"sizeEstimated":true,"unsupported":0}
 
 == 0x1800010a0 -
 -- decompile
@@ -100,4 +100,4 @@ fn <unnamed> @ 0x1800010a0 (size 12)
   blk0 @ 0x1800010a0:
     ret (sext8(load8(load64(#0x180003000))) & #0xffffffff)
 -- card
-{"addr":"0x1800010a0","approxTokens":114,"blocks":1,"hardReasons":[],"name":null,"nameHints":["velk_ladder"],"nameSources":["prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":12,"sizeEstimated":true,"strings":["velk ladder"],"unsupported":0}
+{"addr":"0x1800010a0","approxTokens":114,"blocks":1,"hardReasons":[],"name":null,"nameHints":["velk_ladder"],"nameSources":["prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":12,"sizeEstimated":true,"strings":["velk ladder"],"unsupported":0}

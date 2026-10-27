@@ -27,7 +27,7 @@ fn narrow_add @ 0x20124 (size 26)
   blk0 @ 0x20124:
     ret (sext8(((r0 & #0xff) + (r1 & #0xff))) & #0xffffffff)
 -- card
-{"addr":"0x20124","approxTokens":150,"blocks":1,"hardReasons":[],"name":"narrow_add","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":26,"unsupported":0}
+{"addr":"0x20124","approxTokens":150,"blocks":1,"hardReasons":[],"name":"narrow_add","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":26,"unsupported":0}
 
 == 0x20140 widen_mul
 -- decompile
@@ -44,7 +44,7 @@ fn widen_mul @ 0x20140 (size 24)
   blk0 @ 0x20140:
     ret ((r1 & #0xff) * (r0 & #0xff))
 -- card
-{"addr":"0x20140","approxTokens":144,"blocks":1,"hardReasons":[],"name":"widen_mul","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":24,"unsupported":0}
+{"addr":"0x20140","approxTokens":144,"blocks":1,"hardReasons":[],"name":"widen_mul","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":24,"unsupported":0}
 
 == 0x20158 mixed_sign
 -- decompile
@@ -65,7 +65,7 @@ fn mixed_sign @ 0x20158 (size 22)
     v4 = ((v1 - v3) & #0xffffffff)
     ret (v4 | ((((sext32(v1) >>> #0x1f) - (select cs (v4 + v3), v3 ? #0x1, #0x0 ^ #0x1)) & #0xffffffff) << #0x20))
 -- card
-{"addr":"0x20158","approxTokens":156,"blocks":1,"hardReasons":[],"name":"mixed_sign","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":22,"unsupported":0}
+{"addr":"0x20158","approxTokens":156,"blocks":1,"hardReasons":[],"name":"mixed_sign","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":22,"unsupported":0}
 
 == 0x20170 in_range
 -- decompile
@@ -103,7 +103,7 @@ fn in_range @ 0x20170 (size 50)
   blk6 @ 0x20198:
     ret v2
 -- card
-{"addr":"0x20170","approxTokens":234,"blocks":7,"hardReasons":[],"name":"in_range","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":50,"unsupported":0}
+{"addr":"0x20170","approxTokens":234,"blocks":7,"hardReasons":[],"name":"in_range","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":50,"unsupported":0}
 
 == 0x201a4 rotate_left
 -- decompile
@@ -122,7 +122,7 @@ fn rotate_left @ 0x201a4 (size 18)
     v2 = (#0x0 - r1)
     ret (((r0 >> (v2 & #0x1f)) | (r0 << ((#0x20 - (v2 & #0x1f)) & #0x1f))) & #0xffffffff)
 -- card
-{"addr":"0x201a4","approxTokens":150,"blocks":1,"hardReasons":[],"name":"rotate_left","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":18,"unsupported":0}
+{"addr":"0x201a4","approxTokens":150,"blocks":1,"hardReasons":[],"name":"rotate_left","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":18,"unsupported":0}
 
 == 0x201b8 popcount
 -- decompile
@@ -156,7 +156,7 @@ fn popcount @ 0x201b8 (size 38)
   blk4 @ 0x201d8:
     ret v3
 -- card
-{"addr":"0x201b8","approxTokens":210,"blocks":5,"hardReasons":[],"name":"popcount","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":38,"unsupported":0}
+{"addr":"0x201b8","approxTokens":210,"blocks":5,"hardReasons":[],"name":"popcount","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":38,"unsupported":0}
 
 == 0x201e0 byte_swap
 -- decompile
@@ -173,7 +173,7 @@ fn byte_swap @ 0x201e0 (size 34)
   blk0 @ 0x201e0:
     ret (((((#0xff00 & (r0 >> #0x8)) | (r0 >> #0x18)) | ((r0 & #0xff00) << #0x8)) | (r0 << #0x18)) & #0xffffffff)
 -- card
-{"addr":"0x201e0","approxTokens":162,"blocks":1,"hardReasons":[],"name":"byte_swap","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":34,"unsupported":0}
+{"addr":"0x201e0","approxTokens":162,"blocks":1,"hardReasons":[],"name":"byte_swap","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":34,"unsupported":0}
 
 == 0x20204 min3
 -- decompile
@@ -223,7 +223,7 @@ fn min3 @ 0x20204 (size 62)
   blk10 @ 0x2023c:
     ret v1
 -- card
-{"addr":"0x20204","approxTokens":240,"blocks":11,"hardReasons":[],"name":"min3","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":62,"unsupported":0}
+{"addr":"0x20204","approxTokens":240,"blocks":11,"hardReasons":[],"name":"min3","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":62,"unsupported":0}
 
 == 0x20244 labs_value
 -- decompile
@@ -255,4 +255,4 @@ fn labs_value @ 0x20244 (size 34)
   blk5 @ 0x20260:
     ret v1
 -- card
-{"addr":"0x20244","approxTokens":192,"blocks":6,"hardReasons":[],"name":"labs_value","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":34,"unsupported":0}
+{"addr":"0x20244","approxTokens":192,"blocks":6,"hardReasons":[],"name":"labs_value","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":34,"unsupported":0}

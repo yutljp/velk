@@ -201,4 +201,4 @@ fn d7 @ 0x2011c0 (size 592)
   blk43 @ 0x201408:
     ret load32(#0x202410)
 -- card
-{"addr":"0x2011c0","approxTokens":234,"blocks":44,"hardReasons":[],"name":"d7","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":592,"unsupported":0}
+{"addr":"0x2011c0","approxTokens":234,"blocks":44,"hardReasons":[],"name":"d7","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":592,"unsupported":0}

@@ -37,7 +37,7 @@ fn count_bits @ 0x0 (size 49)
   blk3 @ 0x2c:
     ret v3
 -- card
-{"addr":"0x0","approxTokens":174,"blocks":4,"hardReasons":[],"name":"count_bits","nameSources":["symtab","codeview"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":49,"unsupported":0}
+{"addr":"0x0","approxTokens":174,"blocks":4,"hardReasons":[],"name":"count_bits","nameSources":["symtab","codeview"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":49,"unsupported":0}
 
 == 0x40 sum_until
 -- decompile
@@ -67,7 +67,7 @@ fn sum_until @ 0x40 (size 68)
   blk3 @ 0x7b:
     ret v2
 -- card
-{"addr":"0x40","approxTokens":180,"blocks":4,"hardReasons":[],"name":"sum_until","nameSources":["symtab","codeview"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":68,"unsupported":0}
+{"addr":"0x40","approxTokens":180,"blocks":4,"hardReasons":[],"name":"sum_until","nameSources":["symtab","codeview"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":68,"unsupported":0}
 
 == 0x90 sum_till_neg
 -- decompile
@@ -109,7 +109,7 @@ fn sum_till_neg @ 0x90 (size 99)
   blk5 @ 0xea:
     ret load32((rsp + #0xffffffffffffffec))
 -- card
-{"addr":"0x90","approxTokens":186,"blocks":6,"hardReasons":[],"name":"sum_till_neg","nameSources":["symtab","codeview"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":99,"unsupported":0}
+{"addr":"0x90","approxTokens":186,"blocks":6,"hardReasons":[],"name":"sum_till_neg","nameSources":["symtab","codeview"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":99,"unsupported":0}
 
 == 0x100 sum_until_zero
 -- decompile
@@ -156,4 +156,4 @@ fn sum_until_zero @ 0x100 (size 111)
   blk8 @ 0x166:
     ret load32((rsp + #0xffffffffffffffec))
 -- card
-{"addr":"0x100","approxTokens":174,"blocks":9,"hardReasons":[],"name":"sum_until_zero","nameSources":["symtab","codeview"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":111,"unsupported":0}
+{"addr":"0x100","approxTokens":174,"blocks":9,"hardReasons":[],"name":"sum_until_zero","nameSources":["symtab","codeview"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":111,"unsupported":0}

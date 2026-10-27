@@ -45,7 +45,7 @@ fn sum_while @ 0x201200 (size 70)
   blk3 @ 0x201241:
     ret load32((rsp + #0xfffffffffffffff0))
 -- card
-{"addr":"0x201200","approxTokens":198,"blocks":4,"hardReasons":[],"name":"sum_while","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":70,"unsupported":0}
+{"addr":"0x201200","approxTokens":198,"blocks":4,"hardReasons":[],"name":"sum_while","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":70,"unsupported":0}
 
 == 0x201250 count_down
 -- decompile
@@ -81,7 +81,7 @@ fn count_down @ 0x201250 (size 56)
   blk2 @ 0x201283:
     ret load32((rsp + #0xfffffffffffffff0))
 -- card
-{"addr":"0x201250","approxTokens":198,"blocks":3,"hardReasons":[],"name":"count_down","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":56,"unsupported":0}
+{"addr":"0x201250","approxTokens":198,"blocks":3,"hardReasons":[],"name":"count_down","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":56,"unsupported":0}
 
 == 0x201290 sum_skip_odd
 -- decompile
@@ -126,7 +126,7 @@ fn sum_skip_odd @ 0x201290 (size 90)
   blk6 @ 0x2012e5:
     ret load32((rsp + #0xfffffffffffffff0))
 -- card
-{"addr":"0x201290","approxTokens":174,"blocks":7,"hardReasons":[],"name":"sum_skip_odd","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":90,"unsupported":0}
+{"addr":"0x201290","approxTokens":174,"blocks":7,"hardReasons":[],"name":"sum_skip_odd","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":90,"unsupported":0}
 
 == 0x2012f0 find_first
 -- decompile
@@ -169,4 +169,4 @@ fn find_first @ 0x2012f0 (size 95)
   blk7 @ 0x20134a:
     ret load32((rsp + #0xfffffffffffffff4))
 -- card
-{"addr":"0x2012f0","approxTokens":198,"blocks":8,"hardReasons":[],"name":"find_first","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":95,"unsupported":0}
+{"addr":"0x2012f0","approxTokens":198,"blocks":8,"hardReasons":[],"name":"find_first","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":95,"unsupported":0}

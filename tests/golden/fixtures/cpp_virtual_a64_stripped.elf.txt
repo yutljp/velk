@@ -44,7 +44,7 @@ fn <unnamed> @ 0x210394 (size 4)
   blk0 @ 0x210394:
     trap
 -- card
-{"addr":"0x210394","approxTokens":102,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":4,"unsupported":0}
+{"addr":"0x210394","approxTokens":102,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":4,"unsupported":0}
 
 == 0x210398 -
 -- decompile
@@ -68,7 +68,7 @@ fn <unnamed> @ 0x210398 (size 40)
     store64((v1 + ((x0 + #0xf) & #0xfffffffffffffff0)), #0x2315c8)
     ret (#0x2305c8 + v1)
 -- card
-{"addr":"0x210398","approxTokens":156,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":40,"unsupported":0}
+{"addr":"0x210398","approxTokens":156,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":40,"unsupported":0}
 
 == 0x2103c0 -
 -- decompile
@@ -85,7 +85,7 @@ fn <unnamed> @ 0x2103c0 (size 4)
   blk0 @ 0x2103c0:
     ret x0
 -- card
-{"addr":"0x2103c0","approxTokens":102,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":4,"unsupported":0}
+{"addr":"0x2103c0","approxTokens":102,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":4,"unsupported":0}
 
 == 0x2103c4 -
 -- decompile
@@ -102,7 +102,7 @@ fn <unnamed> @ 0x2103c4 (size 4)
   blk0 @ 0x2103c4:
     ret x0
 -- card
-{"addr":"0x2103c4","approxTokens":102,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":4,"unsupported":0}
+{"addr":"0x2103c4","approxTokens":102,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":4,"unsupported":0}
 
 == 0x2103c8 -
 -- decompile
@@ -119,7 +119,7 @@ fn <unnamed> @ 0x2103c8 (size 4)
   blk0 @ 0x2103c8:
     trap
 -- card
-{"addr":"0x2103c8","approxTokens":102,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":4,"unsupported":0}
+{"addr":"0x2103c8","approxTokens":102,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":4,"unsupported":0}
 
 == 0x2103cc -
 -- decompile
@@ -141,7 +141,7 @@ fn <unnamed> @ 0x2103cc (size 44)
     v3:x0, x1, d0, d1 = call *v2(x0)
     ret (((v3 & #0xffffffff) * (v1 & #0xffffffff)) & #0xffffffff)
 -- card
-{"addr":"0x2103cc","approxTokens":162,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":44,"unsupported":0}
+{"addr":"0x2103cc","approxTokens":162,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":44,"unsupported":0}
 
 == 0x2103f8 -
 -- decompile
@@ -163,7 +163,7 @@ fn <unnamed> @ 0x2103f8 (size 20)
     store64(#0x220548, x0)
     ret #0x0
 -- card
-{"accesses":["a0 +0x0:uint64_t, +0x8:uint32_t"],"addr":"0x2103f8","approxTokens":126,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":20,"structures":["struct S1 { int64_t field_0x0; int32_t field_0x8; };"],"unsupported":0}
+{"accesses":["a0 +0x0:uint64_t, +0x8:uint32_t"],"addr":"0x2103f8","approxTokens":126,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":20,"structures":["struct S1 { int64_t field_0x0; int32_t field_0x8; };"],"unsupported":0}
 
 == 0x21040c -
 -- decompile
@@ -182,7 +182,7 @@ fn <unnamed> @ 0x21040c (size 12)
     v1 = load32((x0 + #0x8))
     ret ((v1 * v1) & #0xffffffff)
 -- card
-{"accesses":["a0 +0x8:uint32_t"],"addr":"0x21040c","approxTokens":114,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":12,"unsupported":0}
+{"accesses":["a0 +0x8:uint32_t"],"addr":"0x21040c","approxTokens":114,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":12,"unsupported":0}
 
 == 0x210418 -
 -- decompile
@@ -206,7 +206,7 @@ fn <unnamed> @ 0x210418 (size 20)
     store64(#0x220578, x0)
     ret #0x0
 -- card
-{"accesses":["a0 +0x0:uint64_t, +0x8:uint32_t, +0xc:uint32_t"],"addr":"0x210418","approxTokens":126,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":20,"structures":["struct S1 { int64_t field_0x0; int32_t field_0x8; int32_t field_0xc; };"],"unsupported":0}
+{"accesses":["a0 +0x0:uint64_t, +0x8:uint32_t, +0xc:uint32_t"],"addr":"0x210418","approxTokens":126,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":20,"structures":["struct S1 { int64_t field_0x0; int32_t field_0x8; int32_t field_0xc; };"],"unsupported":0}
 
 == 0x21042c -
 -- decompile
@@ -224,7 +224,7 @@ fn <unnamed> @ 0x21042c (size 12)
   blk0 @ 0x21042c:
     ret ((load32((x0 + #0xc)) * load32((x0 + #0x8))) & #0xffffffff)
 -- card
-{"accesses":["a0 +0x8:uint32_t, +0xc:uint32_t"],"addr":"0x21042c","approxTokens":114,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":12,"structures":["struct S1 { uint8_t gap_0x0[0x8]; int32_t field_0x8; int32_t field_0xc; };"],"unsupported":0}
+{"accesses":["a0 +0x8:uint32_t, +0xc:uint32_t"],"addr":"0x21042c","approxTokens":114,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":12,"structures":["struct S1 { uint8_t gap_0x0[0x8]; int32_t field_0x8; int32_t field_0xc; };"],"unsupported":0}
 
 == 0x210438 -
 -- decompile
@@ -242,7 +242,7 @@ fn <unnamed> @ 0x210438 (size 20)
   blk0 @ 0x210438:
     ret (((((load32((x0 + #0x8)) * w1) & #0xffffffff) * load32((x0 + #0xc))) + #0x1) & #0xffffffff)
 -- card
-{"accesses":["a0 +0x8:uint32_t, +0xc:uint32_t"],"addr":"0x210438","approxTokens":126,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":20,"structures":["struct S1 { uint8_t gap_0x0[0x8]; int32_t field_0x8; int32_t field_0xc; };"],"unsupported":0}
+{"accesses":["a0 +0x8:uint32_t, +0xc:uint32_t"],"addr":"0x210438","approxTokens":126,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":20,"structures":["struct S1 { uint8_t gap_0x0[0x8]; int32_t field_0x8; int32_t field_0xc; };"],"unsupported":0}
 
 == 0x21044c -
 -- decompile
@@ -272,7 +272,7 @@ fn <unnamed> @ 0x21044c (size 108)
     call 0x210530((#0x2305c8 + v1))
     ret (v4 & #0xffffffff)
 -- card
-{"addr":"0x21044c","approxTokens":240,"blocks":1,"hardReasons":["name-unknown"],"name":null,"nameSources":["entry","unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":108,"unsupported":0}
+{"addr":"0x21044c","approxTokens":240,"blocks":1,"hardReasons":["name-unknown"],"name":null,"nameSources":["entry","unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":108,"unsupported":0}
 
 == 0x2104b8 -
 -- decompile
@@ -299,7 +299,7 @@ fn <unnamed> @ 0x2104b8 (size 92)
     v6:x0 = call 0x210438((#0x2305c8 + v1), (x2 & #0xffffffff))
     ret v6
 -- card
-{"addr":"0x2104b8","approxTokens":234,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":92,"unsupported":0}
+{"addr":"0x2104b8","approxTokens":234,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":92,"unsupported":0}
 
 == 0x210514 -
 -- decompile
@@ -319,7 +319,7 @@ fn <unnamed> @ 0x210514 (size 12)
     v3:x0, x1, d0, d1 = call *v2(x0)
     ret v3
 -- card
-{"accesses":["a0 +0x0:uint64_t"],"addr":"0x210514","approxTokens":114,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":12,"unsupported":0}
+{"accesses":["a0 +0x0:uint64_t"],"addr":"0x210514","approxTokens":114,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":12,"unsupported":0}
 
 == 0x210520 -
 -- decompile
@@ -339,7 +339,7 @@ fn <unnamed> @ 0x210520 (size 12)
     v3:x0, x1, d0, d1 = call *v2(x0, x1)
     ret v3
 -- card
-{"accesses":["a0 +0x0:uint64_t"],"addr":"0x210520","approxTokens":114,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":12,"unsupported":0}
+{"accesses":["a0 +0x0:uint64_t"],"addr":"0x210520","approxTokens":114,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":12,"unsupported":0}
 
 == 0x21052c -
 -- decompile
@@ -356,7 +356,7 @@ fn <unnamed> @ 0x21052c (size 4)
   blk0 @ 0x21052c:
     ret x0
 -- card
-{"addr":"0x21052c","approxTokens":102,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":4,"unsupported":0}
+{"addr":"0x21052c","approxTokens":102,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":4,"unsupported":0}
 
 == 0x210530 -
 -- decompile
@@ -373,7 +373,7 @@ fn <unnamed> @ 0x210530 (size 4)
   blk0 @ 0x210530:
     ret x0
 -- card
-{"addr":"0x210530","approxTokens":102,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":4,"unsupported":0}
+{"addr":"0x210530","approxTokens":102,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":4,"unsupported":0}
 
 == 0x210534 -
 -- decompile
@@ -390,4 +390,4 @@ fn <unnamed> @ 0x210534 (size 4)
   blk0 @ 0x210534:
     ret x0
 -- card
-{"addr":"0x210534","approxTokens":102,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":4,"unsupported":0}
+{"addr":"0x210534","approxTokens":102,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":4,"unsupported":0}

@@ -21,7 +21,7 @@ fn via_ptr @ 0x180001000 (size 9)
     v3:rax, xmm0 = call *rcx(((rdx + #0x1) & #0xffffffff))
     ret v3
 -- card
-{"addr":"0x180001000","approxTokens":114,"blocks":1,"hardReasons":[],"name":"via_ptr","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":9,"unsupported":0}
+{"addr":"0x180001000","approxTokens":114,"blocks":1,"hardReasons":[],"name":"via_ptr","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":9,"unsupported":0}
 
 == 0x180001010 after_ptr
 -- decompile
@@ -38,4 +38,4 @@ fn after_ptr @ 0x180001010 (size 14)
   blk0 @ 0x180001010:
     ret (((rcx & #0xffffffff) + #0x5) & #0xffffffff)
 -- card
-{"addr":"0x180001010","approxTokens":132,"blocks":1,"hardReasons":[],"name":"after_ptr","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":14,"unsupported":0}
+{"addr":"0x180001010","approxTokens":132,"blocks":1,"hardReasons":[],"name":"after_ptr","nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":14,"unsupported":0}

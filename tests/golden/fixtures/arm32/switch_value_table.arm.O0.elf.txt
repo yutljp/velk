@@ -73,4 +73,4 @@ fn dispatch @ 0x200e4 (size 152)
   blk4 @ 0x20170:
     ret load32((r11 - #0x4))
 -- card
-{"addr":"0x200e4","approxTokens":240,"blocks":5,"hardReasons":[],"name":"dispatch","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":152,"unsupported":1}
+{"addr":"0x200e4","approxTokens":240,"blocks":5,"hardReasons":[],"name":"dispatch","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":152,"unsupported":1}

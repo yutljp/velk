@@ -117,7 +117,7 @@ fn sum_while @ 0x0 (size 239)
   blk9 @ 0xee:
     ret v3
 -- card
-{"addr":"0x0","approxTokens":162,"blocks":10,"hardReasons":[],"name":"sum_while","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":239,"unsupported":0}
+{"addr":"0x0","approxTokens":162,"blocks":10,"hardReasons":[],"name":"sum_while","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":239,"unsupported":0}
 
 == 0xf0 count_down
 -- decompile
@@ -196,7 +196,7 @@ fn count_down @ 0xf0 (size 157)
   blk7 @ 0x18c:
     ret v1
 -- card
-{"addr":"0xf0","approxTokens":240,"blocks":8,"hardReasons":[],"name":"count_down","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":157,"unsupported":0}
+{"addr":"0xf0","approxTokens":240,"blocks":8,"hardReasons":[],"name":"count_down","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":157,"unsupported":0}
 
 == 0x190 sum_skip_odd
 -- decompile
@@ -257,7 +257,7 @@ fn sum_skip_odd @ 0x190 (size 71)
   blk8 @ 0x1d6:
     ret v2
 -- card
-{"addr":"0x190","approxTokens":138,"blocks":9,"hardReasons":[],"name":"sum_skip_odd","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":1,"simplified":true},"size":71,"unsupported":0}
+{"addr":"0x190","approxTokens":138,"blocks":9,"hardReasons":[],"name":"sum_skip_odd","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":1,"simplified":true},"size":71,"unsupported":0}
 
 == 0x1e0 find_first
 -- decompile
@@ -296,4 +296,4 @@ fn find_first @ 0x1e0 (size 33)
   blk5 @ 0x1fe:
     ret (v2 & #0xffffffff)
 -- card
-{"addr":"0x1e0","approxTokens":168,"blocks":6,"hardReasons":[],"name":"find_first","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":33,"unsupported":0}
+{"addr":"0x1e0","approxTokens":168,"blocks":6,"hardReasons":[],"name":"find_first","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":33,"unsupported":0}

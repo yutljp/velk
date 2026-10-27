@@ -48,4 +48,4 @@ fn frame_bounds @ 0x0 (size 100)
   blk4 @ 0x5c:
     ret v5
 -- card
-{"addr":"0x0","approxTokens":210,"blocks":5,"hardReasons":[],"name":"frame_bounds","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":100,"unsupported":0}
+{"addr":"0x0","approxTokens":210,"blocks":5,"hardReasons":[],"name":"frame_bounds","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":100,"unsupported":0}

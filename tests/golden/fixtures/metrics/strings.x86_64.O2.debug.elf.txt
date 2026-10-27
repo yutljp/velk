@@ -22,4 +22,4 @@ fn pick @ 0x2011b0 (size 12)
   blk0 @ 0x2011b0:
     ret (sext8(load8((load64(#0x2021c0) + #0x2))) & #0xffffffff)
 -- card
-{"addr":"0x2011b0","approxTokens":114,"blocks":1,"hardReasons":[],"name":"pick","nameHints":["velk_aarch64_string"],"nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":12,"strings":["velk-aarch64-string"],"unsupported":0}
+{"addr":"0x2011b0","approxTokens":114,"blocks":1,"hardReasons":[],"name":"pick","nameHints":["velk_aarch64_string"],"nameSources":["symtab","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":12,"strings":["velk-aarch64-string"],"unsupported":0}

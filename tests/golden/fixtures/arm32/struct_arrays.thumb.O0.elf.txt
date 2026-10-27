@@ -25,7 +25,7 @@ fn item_weight @ 0x200f4 (size 30)
     v1 = (r0 + (((r1 * #0x3) & #0xffffffff) << #0x2))
     ret ((load32(((v1 + #0x4) & #0xffffffff)) * load16(((v1 + #0x8) & #0xffffffff))s) & #0xffffffff)
 -- card
-{"addr":"0x200f4","approxTokens":168,"blocks":1,"hardReasons":[],"name":"item_weight","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":30,"unsupported":0}
+{"addr":"0x200f4","approxTokens":168,"blocks":1,"hardReasons":[],"name":"item_weight","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":30,"unsupported":0}
 
 == 0x20114 cell_set
 -- decompile
@@ -51,7 +51,7 @@ fn cell_set @ 0x20114 (size 44)
     store32((load32((sp + #0xfffffffffffffff4)) + #0x1), (((load32((sp + #0xfffffffffffffffc)) + (((load32((sp + #0xfffffffffffffff8)) * #0x3) & #0xffffffff) << #0x2)) + #0x8) & #0xffffffff))
     ret #0x0
 -- card
-{"addr":"0x20114","approxTokens":204,"blocks":1,"hardReasons":[],"name":"cell_set","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":44,"unsupported":0}
+{"addr":"0x20114","approxTokens":204,"blocks":1,"hardReasons":[],"name":"cell_set","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":44,"unsupported":0}
 
 == 0x20140 item_last_key
 -- decompile
@@ -101,4 +101,4 @@ fn item_last_key @ 0x20140 (size 76)
   blk10 @ 0x20186:
     ret load32((sp + #0xfffffffffffffff4))
 -- card
-{"addr":"0x20140","approxTokens":240,"blocks":11,"hardReasons":[],"name":"item_last_key","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":76,"unsupported":0}
+{"addr":"0x20140","approxTokens":240,"blocks":11,"hardReasons":[],"name":"item_last_key","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":76,"unsupported":0}

@@ -68,7 +68,7 @@ fn crt_stdio @ 0x140001000 (size 14)
     v1:rax, xmm0 = call 0x140001118(rcx, rdx)
     ret v1
 -- card
-{"addr":"0x140001000","approxTokens":120,"blocks":1,"hardReasons":[],"name":"crt_stdio","nameSources":["dynamic","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":14,"unsupported":0}
+{"addr":"0x140001000","approxTokens":120,"blocks":1,"hardReasons":[],"name":"crt_stdio","nameSources":["dynamic","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":14,"unsupported":0}
 
 == 0x14000100e crt_alloc
 -- decompile
@@ -86,7 +86,7 @@ fn crt_alloc @ 0x14000100e (size 14)
     v1:rax, xmm0 = call 0x140001110(rcx, rdx)
     ret v1
 -- card
-{"addr":"0x14000100e","approxTokens":120,"blocks":1,"hardReasons":[],"name":"crt_alloc","nameSources":["dynamic","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":14,"unsupported":0}
+{"addr":"0x14000100e","approxTokens":120,"blocks":1,"hardReasons":[],"name":"crt_alloc","nameSources":["dynamic","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":14,"unsupported":0}
 
 == 0x14000101c crt_number
 -- decompile
@@ -104,7 +104,7 @@ fn crt_number @ 0x14000101c (size 20)
     v1:rax, xmm0 = call 0x140001148(rcx, rdx, #0xa)
     ret v1
 -- card
-{"addr":"0x14000101c","approxTokens":126,"blocks":1,"hardReasons":[],"name":"crt_number","nameSources":["dynamic","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":20,"unsupported":0}
+{"addr":"0x14000101c","approxTokens":126,"blocks":1,"hardReasons":[],"name":"crt_number","nameSources":["dynamic","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":20,"unsupported":0}
 
 == 0x140001030 crt_string
 -- decompile
@@ -122,7 +122,7 @@ fn crt_string @ 0x140001030 (size 14)
     v1:rax, xmm0 = call 0x140001138(rcx, rdx)
     ret v1
 -- card
-{"addr":"0x140001030","approxTokens":120,"blocks":1,"hardReasons":[],"name":"crt_string","nameSources":["dynamic","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":14,"unsupported":0}
+{"addr":"0x140001030","approxTokens":120,"blocks":1,"hardReasons":[],"name":"crt_string","nameSources":["dynamic","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":14,"unsupported":0}
 
 == 0x14000103e crt_wide
 -- decompile
@@ -140,7 +140,7 @@ fn crt_wide @ 0x14000103e (size 14)
     v1:rax, xmm0 = call 0x140001158(rcx)
     ret v1
 -- card
-{"addr":"0x14000103e","approxTokens":120,"blocks":1,"hardReasons":[],"name":"crt_wide","nameSources":["dynamic","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":14,"unsupported":0}
+{"addr":"0x14000103e","approxTokens":120,"blocks":1,"hardReasons":[],"name":"crt_wide","nameSources":["dynamic","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":14,"unsupported":0}
 
 == 0x14000104c crt_time
 -- decompile
@@ -159,7 +159,7 @@ fn crt_time @ 0x14000104c (size 15)
     v1:rax, xmm0 = call *load64(#0x140002284)(rcx)
     ret v1
 -- card
-{"addr":"0x14000104c","approxTokens":120,"blocks":1,"hardReasons":[],"name":"crt_time","nameSources":["dynamic","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":15,"unsupported":0}
+{"addr":"0x14000104c","approxTokens":120,"blocks":1,"hardReasons":[],"name":"crt_time","nameSources":["dynamic","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":15,"unsupported":0}
 
 == 0x14000105b crt_math
 -- decompile
@@ -179,7 +179,7 @@ fn crt_math @ 0x14000105b (size 15)
     rax, v1:xmm0 = call *load64(#0x1400022b4)(xmm0)
     ret v1
 -- card
-{"addr":"0x14000105b","approxTokens":120,"blocks":1,"hardReasons":[],"name":"crt_math","nameSources":["dynamic","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":15,"unsupported":0}
+{"addr":"0x14000105b","approxTokens":120,"blocks":1,"hardReasons":[],"name":"crt_math","nameSources":["dynamic","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":15,"unsupported":0}
 
 == 0x14000106a crt_secure
 -- decompile
@@ -198,7 +198,7 @@ fn crt_secure @ 0x14000106a (size 15)
     v1:rax, xmm0 = call *load64(#0x1400022c4)(rcx, rdx, r8)
     ret v1
 -- card
-{"addr":"0x14000106a","approxTokens":120,"blocks":1,"hardReasons":[],"name":"crt_secure","nameSources":["dynamic","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":15,"unsupported":0}
+{"addr":"0x14000106a","approxTokens":120,"blocks":1,"hardReasons":[],"name":"crt_secure","nameSources":["dynamic","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":15,"unsupported":0}
 
 == 0x140001079 crt_wide_secure
 -- decompile
@@ -217,7 +217,7 @@ fn crt_wide_secure @ 0x140001079 (size 15)
     v1:rax, xmm0 = call *load64(#0x1400022d4)(rcx, rdx, r8)
     ret v1
 -- card
-{"addr":"0x140001079","approxTokens":120,"blocks":1,"hardReasons":[],"name":"crt_wide_secure","nameSources":["dynamic","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":15,"unsupported":0}
+{"addr":"0x140001079","approxTokens":120,"blocks":1,"hardReasons":[],"name":"crt_wide_secure","nameSources":["dynamic","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":15,"unsupported":0}
 
 == 0x140001088 crt_process
 -- decompile
@@ -236,7 +236,7 @@ fn crt_process @ 0x140001088 (size 15)
     v1:rax, xmm0 = call *load64(#0x14000227c)()
     ret v1
 -- card
-{"addr":"0x140001088","approxTokens":120,"blocks":1,"hardReasons":[],"name":"crt_process","nameSources":["dynamic","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":15,"unsupported":0}
+{"addr":"0x140001088","approxTokens":120,"blocks":1,"hardReasons":[],"name":"crt_process","nameSources":["dynamic","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":15,"unsupported":0}
 
 == 0x140001097 crt_io
 -- decompile
@@ -255,7 +255,7 @@ fn crt_io @ 0x140001097 (size 15)
     v1:rax, xmm0 = call *load64(#0x14000226c)(rcx)
     ret v1
 -- card
-{"addr":"0x140001097","approxTokens":120,"blocks":1,"hardReasons":[],"name":"crt_io","nameSources":["dynamic","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":15,"unsupported":0}
+{"addr":"0x140001097","approxTokens":120,"blocks":1,"hardReasons":[],"name":"crt_io","nameSources":["dynamic","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":15,"unsupported":0}
 
 == 0x1400010a6 crt_errno
 -- decompile
@@ -274,7 +274,7 @@ fn crt_errno @ 0x1400010a6 (size 15)
     v1:rax, xmm0 = call *load64(#0x140002274)()
     ret v1
 -- card
-{"addr":"0x1400010a6","approxTokens":120,"blocks":1,"hardReasons":[],"name":"crt_errno","nameSources":["dynamic","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":15,"unsupported":0}
+{"addr":"0x1400010a6","approxTokens":120,"blocks":1,"hardReasons":[],"name":"crt_errno","nameSources":["dynamic","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":15,"unsupported":0}
 
 == 0x1400010b5 crt_locale
 -- decompile
@@ -292,7 +292,7 @@ fn crt_locale @ 0x1400010b5 (size 14)
     v1:rax, xmm0 = call 0x140001130(rcx, rdx)
     ret v1
 -- card
-{"addr":"0x1400010b5","approxTokens":120,"blocks":1,"hardReasons":[],"name":"crt_locale","nameSources":["dynamic","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":14,"unsupported":0}
+{"addr":"0x1400010b5","approxTokens":120,"blocks":1,"hardReasons":[],"name":"crt_locale","nameSources":["dynamic","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":14,"unsupported":0}
 
 == 0x1400010c3 crt_ctype
 -- decompile
@@ -311,7 +311,7 @@ fn crt_ctype @ 0x1400010c3 (size 15)
     v1:rax, xmm0 = call *load64(#0x14000229c)(rcx)
     ret v1
 -- card
-{"addr":"0x1400010c3","approxTokens":120,"blocks":1,"hardReasons":[],"name":"crt_ctype","nameSources":["dynamic","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":15,"unsupported":0}
+{"addr":"0x1400010c3","approxTokens":120,"blocks":1,"hardReasons":[],"name":"crt_ctype","nameSources":["dynamic","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":15,"unsupported":0}
 
 == 0x1400010d2 crt_format
 -- decompile
@@ -330,7 +330,7 @@ fn crt_format @ 0x1400010d2 (size 23)
     v1:rax, xmm0 = call 0x140001128(#0x140002000, (rcx & #0xffffffff))
     ret v1
 -- card
-{"addr":"0x1400010d2","approxTokens":132,"blocks":1,"hardReasons":[],"name":"crt_format","nameSources":["dynamic","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":23,"unsupported":0}
+{"addr":"0x1400010d2","approxTokens":132,"blocks":1,"hardReasons":[],"name":"crt_format","nameSources":["dynamic","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":23,"unsupported":0}
 
 == 0x1400010e9 -
 -- decompile
@@ -346,7 +346,7 @@ fn <unnamed> @ 0x1400010e9 (size 1)
   blk0 @ 0x1400010e9:
     ret #0x0
 -- card
-{"addr":"0x1400010e9","approxTokens":102,"blocks":1,"hardReasons":["name-unknown"],"name":null,"nameSources":["entry","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":1,"unsupported":0}
+{"addr":"0x1400010e9","approxTokens":102,"blocks":1,"hardReasons":["name-unknown"],"name":null,"nameSources":["entry","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":1,"unsupported":0}
 
 == 0x1400010f0 _close
 -- decompile
@@ -365,7 +365,7 @@ fn _close @ 0x1400010f0 (size 8)
     v1:rax, xmm0 = call *load64(#0x14000226c)(rcx)
     ret v1
 -- card
-{"addr":"0x1400010f0","approxTokens":114,"blocks":1,"hardReasons":[],"name":"_close","nameSources":["plt"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":8,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x1400010f0","approxTokens":114,"blocks":1,"hardReasons":[],"name":"_close","nameSources":["plt"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":8,"sizeEstimated":true,"unsupported":0}
 
 == 0x1400010f8 _errno
 -- decompile
@@ -384,7 +384,7 @@ fn _errno @ 0x1400010f8 (size 8)
     v1:rax, xmm0 = call *load64(#0x140002274)()
     ret v1
 -- card
-{"addr":"0x1400010f8","approxTokens":114,"blocks":1,"hardReasons":[],"name":"_errno","nameSources":["plt"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":8,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x1400010f8","approxTokens":114,"blocks":1,"hardReasons":[],"name":"_errno","nameSources":["plt"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":8,"sizeEstimated":true,"unsupported":0}
 
 == 0x140001100 _getpid
 -- decompile
@@ -403,7 +403,7 @@ fn _getpid @ 0x140001100 (size 8)
     v1:rax, xmm0 = call *load64(#0x14000227c)()
     ret v1
 -- card
-{"addr":"0x140001100","approxTokens":114,"blocks":1,"hardReasons":[],"name":"_getpid","nameSources":["plt"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":8,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x140001100","approxTokens":114,"blocks":1,"hardReasons":[],"name":"_getpid","nameSources":["plt"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":8,"sizeEstimated":true,"unsupported":0}
 
 == 0x140001108 _time64
 -- decompile
@@ -422,7 +422,7 @@ fn _time64 @ 0x140001108 (size 8)
     v1:rax, xmm0 = call *load64(#0x140002284)(rcx)
     ret v1
 -- card
-{"addr":"0x140001108","approxTokens":114,"blocks":1,"hardReasons":[],"name":"_time64","nameSources":["plt"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":8,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x140001108","approxTokens":114,"blocks":1,"hardReasons":[],"name":"_time64","nameSources":["plt"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":8,"sizeEstimated":true,"unsupported":0}
 
 == 0x140001110 calloc
 -- decompile
@@ -441,7 +441,7 @@ fn calloc @ 0x140001110 (size 8)
     v1:rax, xmm0 = call *load64(#0x14000228c)(rcx, rdx)
     ret v1
 -- card
-{"addr":"0x140001110","approxTokens":114,"blocks":1,"hardReasons":[],"name":"calloc","nameSources":["plt"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":8,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x140001110","approxTokens":114,"blocks":1,"hardReasons":[],"name":"calloc","nameSources":["plt"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":8,"sizeEstimated":true,"unsupported":0}
 
 == 0x140001118 fputs
 -- decompile
@@ -460,7 +460,7 @@ fn fputs @ 0x140001118 (size 8)
     v1:rax, xmm0 = call *load64(#0x140002294)(rcx, rdx)
     ret v1
 -- card
-{"addr":"0x140001118","approxTokens":114,"blocks":1,"hardReasons":[],"name":"fputs","nameSources":["plt"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":8,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x140001118","approxTokens":114,"blocks":1,"hardReasons":[],"name":"fputs","nameSources":["plt"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":8,"sizeEstimated":true,"unsupported":0}
 
 == 0x140001120 isalpha
 -- decompile
@@ -479,7 +479,7 @@ fn isalpha @ 0x140001120 (size 8)
     v1:rax, xmm0 = call *load64(#0x14000229c)(rcx)
     ret v1
 -- card
-{"addr":"0x140001120","approxTokens":114,"blocks":1,"hardReasons":[],"name":"isalpha","nameSources":["plt"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":8,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x140001120","approxTokens":114,"blocks":1,"hardReasons":[],"name":"isalpha","nameSources":["plt"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":8,"sizeEstimated":true,"unsupported":0}
 
 == 0x140001128 printf
 -- decompile
@@ -500,7 +500,7 @@ fn printf @ 0x140001128 (size 8)
     v1:rax, xmm0 = call *load64(#0x1400022a4)
     ret v1
 -- card
-{"addr":"0x140001128","approxTokens":114,"blocks":1,"hardReasons":[],"name":"printf","nameSources":["plt"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":8,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x140001128","approxTokens":114,"blocks":1,"hardReasons":[],"name":"printf","nameSources":["plt"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":8,"sizeEstimated":true,"unsupported":0}
 
 == 0x140001130 setlocale
 -- decompile
@@ -519,7 +519,7 @@ fn setlocale @ 0x140001130 (size 8)
     v1:rax, xmm0 = call *load64(#0x1400022ac)(rcx, rdx)
     ret v1
 -- card
-{"addr":"0x140001130","approxTokens":114,"blocks":1,"hardReasons":[],"name":"setlocale","nameSources":["plt"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":8,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x140001130","approxTokens":114,"blocks":1,"hardReasons":[],"name":"setlocale","nameSources":["plt"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":8,"sizeEstimated":true,"unsupported":0}
 
 == 0x140001138 strchr
 -- decompile
@@ -538,7 +538,7 @@ fn strchr @ 0x140001138 (size 8)
     v1:rax, xmm0 = call *load64(#0x1400022bc)(rcx, rdx)
     ret v1
 -- card
-{"addr":"0x140001138","approxTokens":114,"blocks":1,"hardReasons":[],"name":"strchr","nameSources":["plt"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":8,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x140001138","approxTokens":114,"blocks":1,"hardReasons":[],"name":"strchr","nameSources":["plt"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":8,"sizeEstimated":true,"unsupported":0}
 
 == 0x140001140 strcpy_s
 -- decompile
@@ -557,7 +557,7 @@ fn strcpy_s @ 0x140001140 (size 8)
     v1:rax, xmm0 = call *load64(#0x1400022c4)(rcx, rdx, r8)
     ret v1
 -- card
-{"addr":"0x140001140","approxTokens":114,"blocks":1,"hardReasons":[],"name":"strcpy_s","nameSources":["plt"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":8,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x140001140","approxTokens":114,"blocks":1,"hardReasons":[],"name":"strcpy_s","nameSources":["plt"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":8,"sizeEstimated":true,"unsupported":0}
 
 == 0x140001148 strtol
 -- decompile
@@ -576,7 +576,7 @@ fn strtol @ 0x140001148 (size 8)
     v1:rax, xmm0 = call *load64(#0x1400022cc)(rcx, rdx, r8)
     ret v1
 -- card
-{"addr":"0x140001148","approxTokens":114,"blocks":1,"hardReasons":[],"name":"strtol","nameSources":["plt"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":8,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x140001148","approxTokens":114,"blocks":1,"hardReasons":[],"name":"strtol","nameSources":["plt"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":8,"sizeEstimated":true,"unsupported":0}
 
 == 0x140001150 wcscpy_s
 -- decompile
@@ -595,7 +595,7 @@ fn wcscpy_s @ 0x140001150 (size 8)
     v1:rax, xmm0 = call *load64(#0x1400022d4)(rcx, rdx, r8)
     ret v1
 -- card
-{"addr":"0x140001150","approxTokens":114,"blocks":1,"hardReasons":[],"name":"wcscpy_s","nameSources":["plt"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":8,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x140001150","approxTokens":114,"blocks":1,"hardReasons":[],"name":"wcscpy_s","nameSources":["plt"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":8,"sizeEstimated":true,"unsupported":0}
 
 == 0x140001158 wcslen
 -- decompile
@@ -614,4 +614,4 @@ fn wcslen @ 0x140001158 (size 8)
     v1:rax, xmm0 = call *load64(#0x1400022dc)(rcx)
     ret v1
 -- card
-{"addr":"0x140001158","approxTokens":114,"blocks":1,"hardReasons":[],"name":"wcslen","nameSources":["plt"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":8,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x140001158","approxTokens":114,"blocks":1,"hardReasons":[],"name":"wcslen","nameSources":["plt"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":8,"sizeEstimated":true,"unsupported":0}

@@ -178,7 +178,7 @@ fn <unnamed> @ 0x201220 (size 242)
   blk22 @ 0x20130f:
     ret #0x0
 -- card
-{"addr":"0x201220","approxTokens":198,"blocks":23,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":242,"unsupported":0}
+{"addr":"0x201220","approxTokens":198,"blocks":23,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":242,"unsupported":0}
 
 == 0x201320 -
 -- decompile
@@ -207,7 +207,7 @@ fn <unnamed> @ 0x201320 (size 26)
   blk3 @ 0x201339:
     ret v1
 -- card
-{"accesses":["a2 +0x0:uint32_t"],"addr":"0x201320","approxTokens":168,"blocks":4,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":26,"unsupported":0}
+{"accesses":["a2 +0x0:uint32_t"],"addr":"0x201320","approxTokens":168,"blocks":4,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":26,"unsupported":0}
 
 == 0x201340 -
 -- decompile
@@ -233,7 +233,7 @@ fn <unnamed> @ 0x201340 (size 23)
   blk2 @ 0x201356:
     ret v1
 -- card
-{"addr":"0x201340","approxTokens":138,"blocks":3,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":23,"unsupported":0}
+{"addr":"0x201340","approxTokens":138,"blocks":3,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":23,"unsupported":0}
 
 == 0x201360 -
 -- decompile
@@ -286,7 +286,7 @@ fn <unnamed> @ 0x201360 (size 61)
   blk9 @ 0x201397:
     ret #0x1e
 -- card
-{"addr":"0x201360","approxTokens":144,"blocks":10,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":61,"unsupported":0}
+{"addr":"0x201360","approxTokens":144,"blocks":10,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":61,"unsupported":0}
 
 == 0x2013a0 -
 -- decompile
@@ -319,7 +319,7 @@ fn <unnamed> @ 0x2013a0 (size 34)
   blk4 @ 0x2013c1:
     ret v1
 -- card
-{"addr":"0x2013a0","approxTokens":174,"blocks":5,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":34,"unsupported":0}
+{"addr":"0x2013a0","approxTokens":174,"blocks":5,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":34,"unsupported":0}
 
 == 0x2013d0 -
 -- decompile
@@ -410,7 +410,7 @@ fn <unnamed> @ 0x2013d0 (size 183)
   blk8 @ 0x201486:
     ret v3
 -- card
-{"addr":"0x2013d0","approxTokens":150,"blocks":9,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":183,"unsupported":0}
+{"addr":"0x2013d0","approxTokens":150,"blocks":9,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":183,"unsupported":0}
 
 == 0x201490 -
 -- decompile
@@ -486,4 +486,4 @@ fn <unnamed> @ 0x201490 (size 112)
   blk10 @ 0x2014ff:
     ret v1
 -- card
-{"addr":"0x201490","approxTokens":174,"blocks":11,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":112,"unsupported":0}
+{"addr":"0x201490","approxTokens":174,"blocks":11,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":112,"unsupported":0}

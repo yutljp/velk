@@ -51,7 +51,7 @@ fn copy_bytes @ 0x2013c (size 104)
   blk4 @ 0x2019c:
     ret #0x0
 -- card
-{"addr":"0x2013c","approxTokens":240,"blocks":5,"hardReasons":[],"name":"copy_bytes","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":104,"unsupported":0}
+{"addr":"0x2013c","approxTokens":240,"blocks":5,"hardReasons":[],"name":"copy_bytes","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":104,"unsupported":0}
 
 == 0x201a4 fill_bytes
 -- decompile
@@ -87,7 +87,7 @@ fn fill_bytes @ 0x201a4 (size 92)
   blk4 @ 0x201f8:
     ret #0x0
 -- card
-{"addr":"0x201a4","approxTokens":234,"blocks":5,"hardReasons":[],"name":"fill_bytes","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":92,"unsupported":0}
+{"addr":"0x201a4","approxTokens":234,"blocks":5,"hardReasons":[],"name":"fill_bytes","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":92,"unsupported":0}
 
 == 0x20200 string_length
 -- decompile
@@ -117,7 +117,7 @@ fn string_length @ 0x20200 (size 76)
   blk4 @ 0x20240:
     ret load32((sp + #0xfffffffffffffff0))
 -- card
-{"addr":"0x20200","approxTokens":210,"blocks":5,"hardReasons":[],"name":"string_length","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":76,"unsupported":0}
+{"addr":"0x20200","approxTokens":210,"blocks":5,"hardReasons":[],"name":"string_length","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":76,"unsupported":0}
 
 == 0x2024c grid_get
 -- decompile
@@ -135,7 +135,7 @@ fn grid_get @ 0x2024c (size 68)
   blk0 @ 0x2024c:
     ret load32(((#0x3038c + ((r0 & #0x3) << #0x5)) + ((r1 & #0x7) << #0x2)))
 -- card
-{"addr":"0x2024c","approxTokens":192,"blocks":1,"hardReasons":[],"name":"grid_get","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":68,"unsupported":0}
+{"addr":"0x2024c","approxTokens":192,"blocks":1,"hardReasons":[],"name":"grid_get","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":68,"unsupported":0}
 
 == 0x20290 grid_set
 -- decompile
@@ -157,7 +157,7 @@ fn grid_set @ 0x20290 (size 76)
     store32(load32((sp + #0xffffffffffffffec)), ((#0x3038c + ((load32((sp + #0xfffffffffffffff4)) & #0x3) << #0x5)) + ((load32((sp + #0xfffffffffffffff0)) & #0x7) << #0x2)))
     ret #0x0
 -- card
-{"addr":"0x20290","approxTokens":204,"blocks":1,"hardReasons":[],"name":"grid_set","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":76,"unsupported":0}
+{"addr":"0x20290","approxTokens":204,"blocks":1,"hardReasons":[],"name":"grid_set","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":76,"unsupported":0}
 
 == 0x202dc pointer_distance
 -- decompile
@@ -175,7 +175,7 @@ fn pointer_distance @ 0x202dc (size 48)
     v3:r0, r1 = call 0x20304(((r1 - r0) & #0xffffffff), #0x4)
     ret v3
 -- card
-{"addr":"0x202dc","approxTokens":168,"blocks":1,"hardReasons":[],"name":"pointer_distance","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":48,"unsupported":0}
+{"addr":"0x202dc","approxTokens":168,"blocks":1,"hardReasons":[],"name":"pointer_distance","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":48,"unsupported":0}
 
 == 0x2030c read_volatile
 -- decompile
@@ -202,7 +202,7 @@ fn read_volatile @ 0x2030c (size 60)
     store32(load32(load32((sp + #0xfffffffffffffff4))), (sp + #0xffffffffffffffec))
     ret ((load32((sp + #0xfffffffffffffff0)) + load32((sp + #0xffffffffffffffec))) & #0xffffffff)
 -- card
-{"addr":"0x2030c","approxTokens":186,"blocks":1,"hardReasons":[],"name":"read_volatile","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":60,"unsupported":0}
+{"addr":"0x2030c","approxTokens":186,"blocks":1,"hardReasons":[],"name":"read_volatile","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":60,"unsupported":0}
 
 == 0x20348 swap_ints
 -- decompile
@@ -232,4 +232,4 @@ fn swap_ints @ 0x20348 (size 68)
     store32(load32((sp + #0xffffffffffffffec)), load32((sp + #0xfffffffffffffff0)))
     ret #0x0
 -- card
-{"addr":"0x20348","approxTokens":198,"blocks":1,"hardReasons":[],"name":"swap_ints","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":68,"unsupported":0}
+{"addr":"0x20348","approxTokens":198,"blocks":1,"hardReasons":[],"name":"swap_ints","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":68,"unsupported":0}

@@ -201,4 +201,4 @@ fn <unnamed> @ 0x180001000 (size 568)
   blk43 @ 0x18000122d:
     ret load32(#0x180003000)
 -- card
-{"addr":"0x180001000","approxTokens":228,"blocks":44,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":568,"unsupported":0}
+{"addr":"0x180001000","approxTokens":228,"blocks":44,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":568,"unsupported":0}

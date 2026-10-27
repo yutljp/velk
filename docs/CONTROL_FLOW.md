@@ -20,10 +20,12 @@ remain unchanged.
 Function cards and `Function.summary()` in JavaScript, including scripts run through
 MCP, return a `simplification` object:
 
-- `simplified`: whether a predicate or dispatcher was removed.
+- `simplified`: whether an expression, predicate or dispatcher was simplified.
 - `predicatesRemoved`: the number of conditional branches proved constant.
 - `dispatcherStatesRemoved`: the number of distinct incoming constant states whose
   dispatcher tests were bypassed.
+- `mbaExpressionsSimplified`: the number of mixed bitwise/arithmetic expression
+  replacements. See [expression simplification](MBA.md).
 
 The fixtures in `tests/cases/control_flow/` contain flattened and original
 straight-line, branching and looping functions, integer predicates, and a variable

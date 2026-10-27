@@ -7,6 +7,7 @@ pub mod division;
 pub mod frame;
 pub mod frame_slots;
 pub mod layout;
+mod mba;
 pub mod memory;
 pub mod read_once;
 pub mod simplify;
@@ -41,7 +42,9 @@ pub fn optimize(ir: &mut FunctionIr, has_jump_tables: bool) -> deobfuscation::Si
         dce::dce(ir);
     }
     memory::fuse_load_op_store(ir);
-    let changes = deobfuscation::predicates(ir);
+    let mut changes = deobfuscation::predicates(ir);
+    changes.mba_expressions_simplified = mba::simplify(ir);
+    changes.simplified |= changes.mba_expressions_simplified != 0;
     simplify::simplify(ir);
     dce::dce(ir);
     changes

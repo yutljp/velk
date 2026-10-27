@@ -24,7 +24,7 @@ fn item_weight @ 0x180001000 (size 18)
     v1 = (sext32(rdx) * #0x3)
     ret ((sext16(load16(((rcx + (v1 * #0x4)) + #0x8))) * load32(((rcx + (v1 * #0x4)) + #0x4))) & #0xffffffff)
 -- card
-{"addr":"0x180001000","approxTokens":126,"blocks":1,"hardReasons":[],"name":"item_weight","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":18,"unsupported":0}
+{"addr":"0x180001000","approxTokens":126,"blocks":1,"hardReasons":[],"name":"item_weight","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":18,"unsupported":0}
 
 == 0x180001020 cell_set
 -- decompile
@@ -47,7 +47,7 @@ fn cell_set @ 0x180001020 (size 20)
     store32((r8d + #0x1), ((rcx + (v1 * #0x4)) + #0x8))
     ret #0x0
 -- card
-{"addr":"0x180001020","approxTokens":132,"blocks":1,"hardReasons":[],"name":"cell_set","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":20,"unsupported":0}
+{"addr":"0x180001020","approxTokens":132,"blocks":1,"hardReasons":[],"name":"cell_set","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":20,"unsupported":0}
 
 == 0x180001040 item_last_key
 -- decompile
@@ -134,4 +134,4 @@ fn item_last_key @ 0x180001040 (size 108)
   blk13 @ 0x1800010ab:
     ret v2
 -- card
-{"addr":"0x180001040","approxTokens":138,"blocks":14,"hardReasons":[],"name":"item_last_key","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":108,"unsupported":0}
+{"addr":"0x180001040","approxTokens":138,"blocks":14,"hardReasons":[],"name":"item_last_key","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":108,"unsupported":0}

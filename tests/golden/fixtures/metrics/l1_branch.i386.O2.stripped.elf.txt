@@ -23,7 +23,7 @@ fn classify @ 0x1220 (size 17)
     v1 = (select gt load32((esp + #0x4)), #0x0 ? #0x1, #0x0 & #0xff)
     ret (sext8(((v1 & #0xff) - (select lt load32((esp + #0x4)), #0x0 ? #0x1, #0x0 & #0xff))) & #0xffffffff)
 -- card
-{"addr":"0x1220","approxTokens":132,"blocks":1,"hardReasons":[],"name":"classify","nameSources":["dynamic","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":17,"unsupported":0}
+{"addr":"0x1220","approxTokens":132,"blocks":1,"hardReasons":[],"name":"classify","nameSources":["dynamic","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":17,"unsupported":0}
 
 == 0x1240 clamp
 -- decompile
@@ -42,7 +42,7 @@ fn clamp @ 0x1240 (size 23)
     v1 = load32((esp + #0x4))
     ret select lt (v1 & #0xffffffff), load32((esp + #0x8)) ? load32((esp + #0x8)), select lt (v1 & #0xffffffff), load32((esp + #0xc)) ? (v1 & #0xffffffff), load32((esp + #0xc))
 -- card
-{"addr":"0x1240","approxTokens":144,"blocks":1,"hardReasons":[],"name":"clamp","nameSources":["dynamic","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":23,"unsupported":0}
+{"addr":"0x1240","approxTokens":144,"blocks":1,"hardReasons":[],"name":"clamp","nameSources":["dynamic","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":23,"unsupported":0}
 
 == 0x1260 sign_of
 -- decompile
@@ -61,4 +61,4 @@ fn sign_of @ 0x1260 (size 17)
     v1 = (select gt load32((esp + #0x4)), #0x0 ? #0x1, #0x0 & #0xff)
     ret (sext8(((v1 & #0xff) - (select lt load32((esp + #0x4)), #0x0 ? #0x1, #0x0 & #0xff))) & #0xffffffff)
 -- card
-{"addr":"0x1260","approxTokens":132,"blocks":1,"hardReasons":[],"name":"sign_of","nameSources":["dynamic","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":17,"unsupported":0}
+{"addr":"0x1260","approxTokens":132,"blocks":1,"hardReasons":[],"name":"sign_of","nameSources":["dynamic","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":17,"unsupported":0}

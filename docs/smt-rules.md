@@ -212,3 +212,14 @@ Every solver test must submit at least one nontrivial obligation. Zero-count
 printing uses Clang generic `__builtin_clzg` / `__builtin_ctzg`, whose
 second argument supplies the zero result. The rendered C corpus and UBSan
 execution check both zero inputs and narrow operands with high input bits.
+
+Mixed bitwise/arithmetic checks exercise the actual normalizer and accepted
+replacement search at 8, 16, 32 and 64 bits. They check all 256 Boolean
+functions of three inputs compositionally: each Boolean assignment uses an
+arbitrary shared bit mask, and linearity combines the bit positions.
+Direct symbolic checks cover linear sum/XOR/OR identities,
+constant cancellation and scaling. The quadratic template composes the proved
+sum identity with a symbolic polynomial ring check. Coefficient and shift
+instances cover wrapping boundaries. Negative controls use changed coefficients,
+faulting inputs, unsupported masks and search limits. These are bounded templates,
+not a proof for every polynomial tree accepted by the implementation.

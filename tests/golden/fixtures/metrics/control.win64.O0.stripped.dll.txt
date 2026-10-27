@@ -60,7 +60,7 @@ fn <unnamed> @ 0x180001000 (size 138)
   blk10 @ 0x180001081:
     ret load32((rsp + #0xffffffffffffffec))
 -- card
-{"addr":"0x180001000","approxTokens":240,"blocks":11,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":138,"unsupported":0}
+{"addr":"0x180001000","approxTokens":240,"blocks":11,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":138,"unsupported":0}
 
 == 0x180001090 -
 -- decompile
@@ -99,7 +99,7 @@ fn <unnamed> @ 0x180001090 (size 78)
   blk5 @ 0x1800010d5:
     ret load32((rsp + #0xffffffffffffffec))
 -- card
-{"addr":"0x180001090","approxTokens":144,"blocks":6,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":78,"unsupported":0}
+{"addr":"0x180001090","approxTokens":144,"blocks":6,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":78,"unsupported":0}
 
 == 0x1800010e0 -
 -- decompile
@@ -157,7 +157,7 @@ fn <unnamed> @ 0x1800010e0 (size 112)
   blk7 @ 0x180001147:
     ret load32((rsp + #0xfffffffffffffff8))
 -- card
-{"addr":"0x1800010e0","approxTokens":228,"blocks":8,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":112,"unsupported":0}
+{"addr":"0x1800010e0","approxTokens":228,"blocks":8,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":112,"unsupported":0}
 
 == 0x180001150 -
 -- decompile
@@ -217,7 +217,7 @@ fn <unnamed> @ 0x180001150 (size 117)
   blk13 @ 0x1800011bc:
     ret v3
 -- card
-{"addr":"0x180001150","approxTokens":138,"blocks":14,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":117,"unsupported":0}
+{"addr":"0x180001150","approxTokens":138,"blocks":14,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":117,"unsupported":0}
 
 == 0x1800011d0 -
 -- decompile
@@ -267,7 +267,7 @@ fn <unnamed> @ 0x1800011d0 (size 104)
   blk5 @ 0x18000122a:
     ret (load8((rsp + #0xffffffffffffffef)) & #0x1)
 -- card
-{"addr":"0x1800011d0","approxTokens":240,"blocks":6,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":104,"unsupported":0}
+{"addr":"0x1800011d0","approxTokens":240,"blocks":6,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":104,"unsupported":0}
 
 == 0x180001240 -
 -- decompile
@@ -307,7 +307,7 @@ fn <unnamed> @ 0x180001240 (size 94)
   blk6 @ 0x180001295:
     ret load32((rsp + #0xffffffffffffffec))
 -- card
-{"addr":"0x180001240","approxTokens":174,"blocks":7,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":94,"unsupported":0}
+{"addr":"0x180001240","approxTokens":174,"blocks":7,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":94,"unsupported":0}
 
 == 0x1800012a0 -
 -- decompile
@@ -358,4 +358,4 @@ fn <unnamed> @ 0x1800012a0 (size 149)
   blk11 @ 0x18000132c:
     ret load32((rsp + #0xfffffffffffffffc))
 -- card
-{"addr":"0x1800012a0","approxTokens":240,"blocks":12,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":149,"unsupported":0}
+{"addr":"0x1800012a0","approxTokens":240,"blocks":12,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":149,"unsupported":0}

@@ -33,7 +33,7 @@ fn -[Counter add:with:] @ 0x1000008b0 (size 32)
   blk0 @ 0x1000008b0:
     ret (rdx + rcx)
 -- card
-{"addr":"0x1000008b0","approxTokens":156,"blocks":1,"hardReasons":[],"name":"-[Counter add:with:]","nameSources":["symtab","function-starts","objc"],"section":"__text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":32,"unsupported":0}
+{"addr":"0x1000008b0","approxTokens":156,"blocks":1,"hardReasons":[],"name":"-[Counter add:with:]","nameSources":["symtab","function-starts","objc"],"section":"__text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":32,"unsupported":0}
 
 == 0x1000008d0 +[Counter answer]
 -- decompile
@@ -50,7 +50,7 @@ fn +[Counter answer] @ 0x1000008d0 (size 32)
   blk0 @ 0x1000008d0:
     ret #0x2a
 -- card
-{"addr":"0x1000008d0","approxTokens":138,"blocks":1,"hardReasons":[],"name":"+[Counter answer]","nameSources":["symtab","function-starts","objc"],"section":"__text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":32,"unsupported":0}
+{"addr":"0x1000008d0","approxTokens":138,"blocks":1,"hardReasons":[],"name":"+[Counter answer]","nameSources":["symtab","function-starts","objc"],"section":"__text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":32,"unsupported":0}
 
 == 0x1000008f0 -[Counter value]
 -- decompile
@@ -67,7 +67,7 @@ fn -[Counter value] @ 0x1000008f0 (size 32)
   blk0 @ 0x1000008f0:
     ret load64(rdi)
 -- card
-{"addr":"0x1000008f0","approxTokens":144,"blocks":1,"hardReasons":[],"name":"-[Counter value]","nameSources":["symtab","function-starts","objc"],"section":"__text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":32,"unsupported":0}
+{"addr":"0x1000008f0","approxTokens":144,"blocks":1,"hardReasons":[],"name":"-[Counter value]","nameSources":["symtab","function-starts","objc"],"section":"__text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":32,"unsupported":0}
 
 == 0x100000910 -[Counter setValue:]
 -- decompile
@@ -87,7 +87,7 @@ fn -[Counter setValue:] @ 0x100000910 (size 32)
     store64(rdx, v1)
     ret v1
 -- card
-{"addr":"0x100000910","approxTokens":156,"blocks":1,"hardReasons":[],"name":"-[Counter setValue:]","nameSources":["symtab","function-starts","objc"],"section":"__text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":32,"unsupported":0}
+{"addr":"0x100000910","approxTokens":156,"blocks":1,"hardReasons":[],"name":"-[Counter setValue:]","nameSources":["symtab","function-starts","objc"],"section":"__text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":32,"unsupported":0}
 
 == 0x100000930 -[Counter(Extra) twice:]
 -- decompile
@@ -104,7 +104,7 @@ fn -[Counter(Extra) twice:] @ 0x100000930 (size 32)
   blk0 @ 0x100000930:
     ret (rdx << #0x1)
 -- card
-{"addr":"0x100000930","aliases":["-[Counter twice:]"],"approxTokens":150,"blocks":1,"hardReasons":[],"name":"-[Counter(Extra) twice:]","nameSources":["symtab","function-starts","objc"],"section":"__text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":32,"unsupported":0}
+{"addr":"0x100000930","aliases":["-[Counter twice:]"],"approxTokens":150,"blocks":1,"hardReasons":[],"name":"-[Counter(Extra) twice:]","nameSources":["symtab","function-starts","objc"],"section":"__text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":32,"unsupported":0}
 
 == 0x100000950 _send_value
 -- decompile
@@ -125,7 +125,7 @@ fn _send_value @ 0x100000950 (size 64)
     v4:rax, rdx, xmm0, xmm1 = call *load64(#0x100001060)(rdi, load64(#0x1000021e0), rsi, rdx)
     ret v4
 -- card
-{"addr":"0x100000950","approxTokens":180,"blocks":1,"hardReasons":[],"name":"_send_value","nameHints":["add_with"],"nameSources":["symtab","dynamic","function-starts"],"section":"__text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":64,"strings":["add:with:"],"unsupported":0}
+{"addr":"0x100000950","approxTokens":180,"blocks":1,"hardReasons":[],"name":"_send_value","nameHints":["add_with"],"nameSources":["symtab","dynamic","function-starts"],"section":"__text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":64,"strings":["add:with:"],"unsupported":0}
 
 == 0x100000990 _use_block
 -- decompile
@@ -144,7 +144,7 @@ fn _use_block @ 0x100000990 (size 48)
     v1:rax = call 0x1000009c0(#0x100001020, rdi)
     ret v1
 -- card
-{"addr":"0x100000990","approxTokens":174,"blocks":1,"hardReasons":[],"name":"_use_block","nameSources":["symtab","dynamic","function-starts"],"section":"__text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":48,"unsupported":0}
+{"addr":"0x100000990","approxTokens":174,"blocks":1,"hardReasons":[],"name":"_use_block","nameSources":["symtab","dynamic","function-starts"],"section":"__text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":48,"unsupported":0}
 
 == 0x1000009c0 ___use_block_block_invoke
 -- decompile
@@ -161,7 +161,7 @@ fn ___use_block_block_invoke @ 0x1000009c0 (size 32)
   blk0 @ 0x1000009c0:
     ret (rsi + #0x3)
 -- card
-{"addr":"0x1000009c0","approxTokens":150,"blocks":1,"hardReasons":[],"name":"___use_block_block_invoke","nameSources":["symtab","function-starts"],"section":"__text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":32,"unsupported":0}
+{"addr":"0x1000009c0","approxTokens":150,"blocks":1,"hardReasons":[],"name":"___use_block_block_invoke","nameSources":["symtab","function-starts"],"section":"__text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":32,"unsupported":0}
 
 == 0x1000009e0 _main
 -- decompile
@@ -178,4 +178,4 @@ fn _main @ 0x1000009e0 (size 15)
   blk0 @ 0x1000009e0:
     ret #0x0
 -- card
-{"addr":"0x1000009e0","approxTokens":132,"blocks":1,"hardReasons":[],"name":"_main","nameSources":["symtab","dynamic","entry","function-starts"],"section":"__text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":15,"unsupported":0}
+{"addr":"0x1000009e0","approxTokens":132,"blocks":1,"hardReasons":[],"name":"_main","nameSources":["symtab","dynamic","entry","function-starts"],"section":"__text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":15,"unsupported":0}

@@ -39,7 +39,7 @@ c48d01d154be4351cfc5f749b6e6697a1bb7199f9cc51b611fc63037d9fe9105  src/passes/cop
 25ec9b3762edc680b8c305354d4c3900a2af57f3e7f332e3d68154c42fc7db30  src/passes/copies/available.rs	pub(crate) fn redundant_copy_renames(
 b268fed46c1c248ef95a4d6dc9eb4be0837cadb5a5462ba1ab354565ead67711  src/passes/cse.rs	fn bind(
 fa89ed532162a6a0eacadefea7346f93f4d5335e54f2a3a2a9348d52fe43265a  src/passes/deobfuscation.rs	fn known_zero(
-19495e9b0c105415a107a6b0b818071b3706956518920ef2c32f5f1ccd97ec1e  src/passes/deobfuscation.rs	pub(super) fn predicates(
+76fb5a2e6be1f4b62700948aa5b6ee6b16c1c688fd4ea412ffaf1530bfc5b25a  src/passes/deobfuscation.rs	pub(super) fn predicates(
 39065c0caa21d6dc9ace234baf63f27fcc7fa4deca2bee374cf949f70dd4ffad  src/passes/division/chains.rs	pub(crate) fn signed64_chain(
 89bfed301167a96397f148530229c8ca256f4dc5b0192b8d00e79a0731b98553  src/passes/division/chains.rs	pub(crate) fn signed_chain(
 f399e589973707a10e7f84bd8ba68fde87e23dd9d6daaf596f48380ae24a458d  src/passes/division/chains.rs	pub(crate) fn unsigned64_chain(
@@ -61,6 +61,9 @@ cb7a40433706030dc8bcd5722f91160417c267873956e91356ad81d8ea7b5f0f  src/passes/div
 7a9c52f673b2eae08beec3d66c5fb767a3c4e4b53c98fbe56ade6512e399c720  src/passes/frame_slots.rs	fn substitute_frame_pointer(
 b8e5280b11d95fb960372bb9b7c3398c52d527e17239324156eb38b9a94ccec1  src/passes/frame_slots.rs	pub(crate) fn frame_slot(
 785fe911e6d0d8fe550c4d86bad740c554f0f1b2ad4b8ac2200eaa6576d9c8db  src/passes/frame_slots/i386.rs	pub(crate) fn settle(
+352ad9b3fda729b3ddb7079562bb7a7b39abba5f3fa3b92fb76dfda8a366c867  src/passes/mba.rs	fn expression(
+b83dfb8fb2a02b0e58fc8668ef92d456366ad7d5e78848a93c77bdbb032af27a  src/passes/mba.rs	fn normalize(
+e9b71b33bacfcb2a14e6ebbff400524323f782d50246edde7298b54e7c51b3fd  src/passes/mba.rs	fn replacement(
 601c40bb591571226ab048738f92a0d0b660ad2d8fa9b831adaede208103a28d  src/passes/memory.rs	fn forward_expr(
 40e140658dd9b5838476f90a55f46ec20a7265fba92061169f8c3854631080e5  src/passes/memory.rs	fn fuse_block(
 6b9e69037e815e18de32a03419edaefa5f613dd262048fd89b89e380ffb7799e  src/passes/memory.rs	pub fn forward_spilled_variables(

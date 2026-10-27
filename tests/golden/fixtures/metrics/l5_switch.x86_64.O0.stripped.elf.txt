@@ -174,7 +174,7 @@ fn <unnamed> @ 0x201400 (size 234)
   blk19 @ 0x2014de:
     ret load32(#0x202760)
 -- card
-{"addr":"0x201400","approxTokens":198,"blocks":20,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":234,"unsupported":0}
+{"addr":"0x201400","approxTokens":198,"blocks":20,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":234,"unsupported":0}
 
 == 0x2014f0 -
 -- decompile
@@ -193,7 +193,7 @@ fn <unnamed> @ 0x2014f0 (size 21)
     store32((load32(#0x202760) + #0xb), #0x202760)
     ret #0x0
 -- card
-{"addr":"0x2014f0","approxTokens":138,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":21,"unsupported":0}
+{"addr":"0x2014f0","approxTokens":138,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":21,"unsupported":0}
 
 == 0x201510 -
 -- decompile
@@ -212,7 +212,7 @@ fn <unnamed> @ 0x201510 (size 21)
     store32((load32(#0x202760) ^ #0x12), #0x202760)
     ret #0x0
 -- card
-{"addr":"0x201510","approxTokens":138,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":21,"unsupported":0}
+{"addr":"0x201510","approxTokens":138,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":21,"unsupported":0}
 
 == 0x201530 -
 -- decompile
@@ -231,7 +231,7 @@ fn <unnamed> @ 0x201530 (size 21)
     store32((load32(#0x202760) - #0x19), #0x202760)
     ret #0x0
 -- card
-{"addr":"0x201530","approxTokens":138,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":21,"unsupported":0}
+{"addr":"0x201530","approxTokens":138,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":21,"unsupported":0}
 
 == 0x201550 -
 -- decompile
@@ -250,7 +250,7 @@ fn <unnamed> @ 0x201550 (size 21)
     store32((load32(#0x202760) | #0x20), #0x202760)
     ret #0x0
 -- card
-{"addr":"0x201550","approxTokens":138,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":21,"unsupported":0}
+{"addr":"0x201550","approxTokens":138,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":21,"unsupported":0}
 
 == 0x201570 -
 -- decompile
@@ -269,7 +269,7 @@ fn <unnamed> @ 0x201570 (size 21)
     store32((load32(#0x202760) + #0x27), #0x202760)
     ret #0x0
 -- card
-{"addr":"0x201570","approxTokens":138,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":21,"unsupported":0}
+{"addr":"0x201570","approxTokens":138,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":21,"unsupported":0}
 
 == 0x201590 -
 -- decompile
@@ -288,7 +288,7 @@ fn <unnamed> @ 0x201590 (size 21)
     store32((load32(#0x202760) ^ #0x2e), #0x202760)
     ret #0x0
 -- card
-{"addr":"0x201590","approxTokens":138,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":21,"unsupported":0}
+{"addr":"0x201590","approxTokens":138,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":21,"unsupported":0}
 
 == 0x2015b0 -
 -- decompile
@@ -307,7 +307,7 @@ fn <unnamed> @ 0x2015b0 (size 21)
     store32((load32(#0x202760) - #0x35), #0x202760)
     ret #0x0
 -- card
-{"addr":"0x2015b0","approxTokens":138,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":21,"unsupported":0}
+{"addr":"0x2015b0","approxTokens":138,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":21,"unsupported":0}
 
 == 0x2015d0 -
 -- decompile
@@ -326,7 +326,7 @@ fn <unnamed> @ 0x2015d0 (size 21)
     store32((load32(#0x202760) | #0x3c), #0x202760)
     ret #0x0
 -- card
-{"addr":"0x2015d0","approxTokens":138,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":21,"unsupported":0}
+{"addr":"0x2015d0","approxTokens":138,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":21,"unsupported":0}
 
 == 0x2015f0 -
 -- decompile
@@ -345,7 +345,7 @@ fn <unnamed> @ 0x2015f0 (size 21)
     store32((load32(#0x202760) + #0x43), #0x202760)
     ret #0x0
 -- card
-{"addr":"0x2015f0","approxTokens":138,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":21,"unsupported":0}
+{"addr":"0x2015f0","approxTokens":138,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":21,"unsupported":0}
 
 == 0x201610 -
 -- decompile
@@ -364,7 +364,7 @@ fn <unnamed> @ 0x201610 (size 21)
     store32((load32(#0x202760) ^ #0x4a), #0x202760)
     ret #0x0
 -- card
-{"addr":"0x201610","approxTokens":138,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":21,"unsupported":0}
+{"addr":"0x201610","approxTokens":138,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":21,"unsupported":0}
 
 == 0x201630 -
 -- decompile
@@ -383,7 +383,7 @@ fn <unnamed> @ 0x201630 (size 21)
     store32((load32(#0x202760) - #0x51), #0x202760)
     ret #0x0
 -- card
-{"addr":"0x201630","approxTokens":138,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":21,"unsupported":0}
+{"addr":"0x201630","approxTokens":138,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":21,"unsupported":0}
 
 == 0x201650 -
 -- decompile
@@ -402,7 +402,7 @@ fn <unnamed> @ 0x201650 (size 21)
     store32((load32(#0x202760) | #0x58), #0x202760)
     ret #0x0
 -- card
-{"addr":"0x201650","approxTokens":138,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":21,"unsupported":0}
+{"addr":"0x201650","approxTokens":138,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":21,"unsupported":0}
 
 == 0x201670 -
 -- decompile
@@ -421,7 +421,7 @@ fn <unnamed> @ 0x201670 (size 21)
     store32((load32(#0x202760) + #0x5f), #0x202760)
     ret #0x0
 -- card
-{"addr":"0x201670","approxTokens":138,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":21,"unsupported":0}
+{"addr":"0x201670","approxTokens":138,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":21,"unsupported":0}
 
 == 0x201690 -
 -- decompile
@@ -440,7 +440,7 @@ fn <unnamed> @ 0x201690 (size 21)
     store32((load32(#0x202760) ^ #0x66), #0x202760)
     ret #0x0
 -- card
-{"addr":"0x201690","approxTokens":138,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":21,"unsupported":0}
+{"addr":"0x201690","approxTokens":138,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":21,"unsupported":0}
 
 == 0x2016b0 -
 -- decompile
@@ -459,7 +459,7 @@ fn <unnamed> @ 0x2016b0 (size 21)
     store32((load32(#0x202760) - #0x6d), #0x202760)
     ret #0x0
 -- card
-{"addr":"0x2016b0","approxTokens":138,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":21,"unsupported":0}
+{"addr":"0x2016b0","approxTokens":138,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":21,"unsupported":0}
 
 == 0x2016d0 -
 -- decompile
@@ -478,7 +478,7 @@ fn <unnamed> @ 0x2016d0 (size 21)
     store32((load32(#0x202760) | #0x74), #0x202760)
     ret #0x0
 -- card
-{"addr":"0x2016d0","approxTokens":138,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":21,"unsupported":0}
+{"addr":"0x2016d0","approxTokens":138,"blocks":1,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":21,"unsupported":0}
 
 == 0x2016f0 -
 -- decompile
@@ -528,4 +528,4 @@ fn <unnamed> @ 0x2016f0 (size 111)
   blk10 @ 0x20175a:
     ret v3
 -- card
-{"addr":"0x2016f0","approxTokens":144,"blocks":11,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":111,"unsupported":0}
+{"addr":"0x2016f0","approxTokens":144,"blocks":11,"hardReasons":[],"name":null,"nameSources":["unwind","prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":111,"unsupported":0}

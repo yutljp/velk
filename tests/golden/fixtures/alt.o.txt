@@ -20,7 +20,7 @@ fn alt_sum3 @ 0x0 (size 12)
   blk0 @ 0x0:
     ret (((w1 + w0) + w2) & #0xffffffff)
 -- card
-{"addr":"0x0","approxTokens":114,"blocks":1,"hardReasons":[],"name":"alt_sum3","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":12,"unsupported":0}
+{"addr":"0x0","approxTokens":114,"blocks":1,"hardReasons":[],"name":"alt_sum3","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":12,"unsupported":0}
 
 == 0xc alt_helper
 -- decompile
@@ -52,4 +52,4 @@ fn alt_helper @ 0xc (size 68)
   blk2 @ 0x48:
     ret #0x0
 -- card
-{"addr":"0xc","approxTokens":186,"blocks":3,"hardReasons":[],"name":"alt_helper","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":68,"unsupported":0}
+{"addr":"0xc","approxTokens":186,"blocks":3,"hardReasons":[],"name":"alt_helper","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":68,"unsupported":0}

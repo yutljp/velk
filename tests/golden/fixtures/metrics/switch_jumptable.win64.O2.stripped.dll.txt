@@ -193,4 +193,4 @@ fn <unnamed> @ 0x180001000 (size 528)
     store32(v6, #0x180003000)
     ret load32(#0x180003000)
 -- card
-{"addr":"0x180001000","approxTokens":150,"blocks":14,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":528,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x180001000","approxTokens":150,"blocks":14,"hardReasons":[],"name":null,"nameSources":["prologue"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":528,"sizeEstimated":true,"unsupported":0}

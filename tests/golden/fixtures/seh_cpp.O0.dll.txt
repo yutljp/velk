@@ -47,7 +47,7 @@ fn cpp_catch @ 0x180001000 (size 58)
   blk3 @ 0x180001031:
     ret load32((rsp + #0xffffffffffffffec))
 -- card
-{"addr":"0x180001000","approxTokens":162,"blocks":4,"hardReasons":[],"name":"cpp_catch","nameSources":["dynamic","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":58,"unsupported":0}
+{"addr":"0x180001000","approxTokens":162,"blocks":4,"hardReasons":[],"name":"cpp_catch","nameSources":["dynamic","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":58,"unsupported":0}
 
 == 0x180001040 cpp_catch__catch_0
 -- decompile
@@ -69,7 +69,7 @@ fn cpp_catch__catch_0 @ 0x180001040 (size 34)
     store32(#0xfffffff5, (rdx + #0x34))
     ret #0x18000102f
 -- card
-{"addr":"0x180001040","approxTokens":150,"blocks":1,"hardReasons":[],"name":"cpp_catch__catch_0","nameSources":["unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":34,"unsupported":0}
+{"addr":"0x180001040","approxTokens":150,"blocks":1,"hardReasons":[],"name":"cpp_catch__catch_0","nameSources":["unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":34,"unsupported":0}
 
 == 0x180001070 __CxxFrameHandler3
 -- decompile
@@ -88,4 +88,4 @@ fn __CxxFrameHandler3 @ 0x180001070 (size 6)
     v1:rax, xmm0 = call *load64(#0x1800020b0)
     ret v1
 -- card
-{"addr":"0x180001070","approxTokens":102,"blocks":1,"hardReasons":[],"name":"__CxxFrameHandler3","nameSources":["plt"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":6,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x180001070","approxTokens":102,"blocks":1,"hardReasons":[],"name":"__CxxFrameHandler3","nameSources":["plt"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":6,"sizeEstimated":true,"unsupported":0}

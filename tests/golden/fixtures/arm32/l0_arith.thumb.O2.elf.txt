@@ -22,7 +22,7 @@ fn add3 @ 0x200fc (size 6)
   blk0 @ 0x200fc:
     ret (((r0 + r1) + r2) & #0xffffffff)
 -- card
-{"addr":"0x200fc","approxTokens":114,"blocks":1,"hardReasons":[],"name":"add3","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":6,"unsupported":0}
+{"addr":"0x200fc","approxTokens":114,"blocks":1,"hardReasons":[],"name":"add3","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":6,"unsupported":0}
 
 == 0x20104 scale
 -- decompile
@@ -39,7 +39,7 @@ fn scale @ 0x20104 (size 8)
   blk0 @ 0x20104:
     ret (((r0 * #0x7) + #0x3) & #0xffffffff)
 -- card
-{"addr":"0x20104","approxTokens":114,"blocks":1,"hardReasons":[],"name":"scale","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":8,"unsupported":0}
+{"addr":"0x20104","approxTokens":114,"blocks":1,"hardReasons":[],"name":"scale","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":8,"unsupported":0}
 
 == 0x2010c pick
 -- decompile
@@ -64,7 +64,7 @@ fn pick @ 0x2010c (size 8)
   blk2 @ 0x20112:
     ret r0
 -- card
-{"addr":"0x2010c","approxTokens":120,"blocks":3,"hardReasons":[],"name":"pick","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":8,"unsupported":0}
+{"addr":"0x2010c","approxTokens":120,"blocks":3,"hardReasons":[],"name":"pick","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":8,"unsupported":0}
 
 == 0x20114 negate
 -- decompile
@@ -81,4 +81,4 @@ fn negate @ 0x20114 (size 4)
   blk0 @ 0x20114:
     ret ((#0x0 - r0) & #0xffffffff)
 -- card
-{"addr":"0x20114","approxTokens":108,"blocks":1,"hardReasons":[],"name":"negate","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":4,"unsupported":0}
+{"addr":"0x20114","approxTokens":108,"blocks":1,"hardReasons":[],"name":"negate","nameSources":["symtab","dwarf"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":4,"unsupported":0}

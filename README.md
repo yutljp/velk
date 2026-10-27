@@ -168,6 +168,12 @@ keep the dispatcher. Function cards and JavaScript/MCP function summaries includ
 `simplification`, with `simplified`, `predicatesRemoved`, and
 `dispatcherStatesRemoved`. See [control-flow simplification](docs/CONTROL_FLOW.md).
 
+Mixed bitwise and arithmetic expressions can simplify to sums, bitwise operations,
+constants and shorter polynomials. Function cards and summaries also report
+`simplification.mbaExpressionsSimplified`, the number of accepted expression
+replacements. See [expression simplification](docs/MBA.md) for supported forms
+and limits.
+
 ## Documentation
 
 - [Scripting API](src/script/api/index.md)

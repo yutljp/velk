@@ -27,7 +27,7 @@ fn add_bias @ 0x12f0 (size 8)
   blk0 @ 0x12f0:
     ret ((load32((esp + #0x4)) + #0x7) & #0xffffffff)
 -- card
-{"addr":"0x12f0","approxTokens":114,"blocks":1,"hardReasons":[],"name":"add_bias","nameSources":["dynamic","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":8,"unsupported":0}
+{"addr":"0x12f0","approxTokens":114,"blocks":1,"hardReasons":[],"name":"add_bias","nameSources":["dynamic","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":8,"unsupported":0}
 
 == 0x1300 imported
 -- decompile
@@ -45,7 +45,7 @@ fn imported @ 0x1300 (size 36)
     v1:eax, edx = call 0x1380(load32((esp + #0x4)))
     ret (((v1 & #0xffffffff) + #0x3) & #0xffffffff)
 -- card
-{"addr":"0x1300","approxTokens":168,"blocks":1,"hardReasons":[],"name":"imported","nameSources":["dynamic","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":36,"unsupported":0}
+{"addr":"0x1300","approxTokens":168,"blocks":1,"hardReasons":[],"name":"imported","nameSources":["dynamic","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":36,"unsupported":0}
 
 == 0x1330 via_plt
 -- decompile
@@ -63,7 +63,7 @@ fn via_plt @ 0x1330 (size 33)
     v1:eax = call 0x12f0(load32((esp + #0x4)))
     ret (v1 & #0xffffffff)
 -- card
-{"addr":"0x1330","approxTokens":162,"blocks":1,"hardReasons":[],"name":"via_plt","nameSources":["dynamic","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":33,"unsupported":0}
+{"addr":"0x1330","approxTokens":162,"blocks":1,"hardReasons":[],"name":"via_plt","nameSources":["dynamic","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":33,"unsupported":0}
 
 == 0x1370 add_bias
 -- decompile
@@ -81,7 +81,7 @@ fn add_bias @ 0x1370 (size 16)
     v1:eax = call 0x12f0(load32((esp + #0x4)))
     ret v1
 -- card
-{"addr":"0x1370","approxTokens":114,"blocks":1,"hardReasons":[],"name":"add_bias","nameSources":["plt"],"section":".plt","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":16,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x1370","approxTokens":114,"blocks":1,"hardReasons":[],"name":"add_bias","nameSources":["plt"],"section":".plt","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":16,"sizeEstimated":true,"unsupported":0}
 
 == 0x1380 abs
 -- decompile
@@ -99,4 +99,4 @@ fn abs @ 0x1380 (size 16)
     v1:eax, edx = call *load32(#0x3424)(load32((esp + #0x4)))
     ret (v1 & #0xffffffff)
 -- card
-{"addr":"0x1380","approxTokens":114,"blocks":1,"hardReasons":[],"name":"abs","nameSources":["plt"],"section":".plt","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":16,"sizeEstimated":true,"unsupported":0}
+{"addr":"0x1380","approxTokens":114,"blocks":1,"hardReasons":[],"name":"abs","nameSources":["plt"],"section":".plt","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":16,"sizeEstimated":true,"unsupported":0}

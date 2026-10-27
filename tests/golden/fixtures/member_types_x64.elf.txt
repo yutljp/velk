@@ -27,4 +27,4 @@ fn read_outer @ 0x201160 (size 36)
   blk0 @ 0x201160:
     ret (((load32(rdi) + load32(load64((rdi + #0x8)))) + sext16(load16((rdi + #0x10)))) & #0xffffffff)
 -- card
-{"addr":"0x201160","approxTokens":174,"blocks":1,"hardReasons":[],"name":"read_outer","nameSources":["symtab","entry","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":36,"unsupported":0}
+{"addr":"0x201160","approxTokens":174,"blocks":1,"hardReasons":[],"name":"read_outer","nameSources":["symtab","entry","dwarf","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":36,"unsupported":0}

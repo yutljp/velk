@@ -30,4 +30,4 @@ fn dispatch @ 0x0 (size 36)
   blk2 @ 0x1c:
     ret #0x0
 -- card
-{"addr":"0x0","approxTokens":138,"blocks":3,"hardReasons":[],"name":"dispatch","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"predicatesRemoved":0,"simplified":false},"size":36,"unsupported":0}
+{"addr":"0x0","approxTokens":138,"blocks":3,"hardReasons":[],"name":"dispatch","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":36,"unsupported":0}
