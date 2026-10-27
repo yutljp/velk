@@ -286,23 +286,23 @@ def extract(clang, sdk, target, source):
         if parameters.lstrip().startswith("*"):
             rejected += 1
             continue
-        ret = normalize(result.strip())
-        params = [normalize(p["type"]["qualType"]) for p in n.get("inner", []) if p.get("kind") == "ParmVarDecl"]
-        types = [ret] + params
+        return_type = normalize(result.strip())
+        parameter_types = [normalize(p["type"]["qualType"]) for p in n.get("inner", []) if p.get("kind") == "ParmVarDecl"]
+        types = [return_type] + parameter_types
         if any(t is None or "(" in t or "union " in t or (not t.endswith("*") and t.removeprefix("const ") not in SCALARS) for t in types):
             rejected += 1
             continue
-        floating = [t in ("float", "double") for t in params]
+        floating = [t in ("float", "double") for t in parameter_types]
         if any(floating) and not all(floating):
             # Calls currently list integer arguments before floating ones.
             rejected += 1
             continue
-        if len(params) > (4 if "mingw" in target else 8 if any(floating) else 6) or " ()" in n["type"]["qualType"]:
+        if len(parameter_types) > (4 if "mingw" in target else 8 if any(floating) else 6) or " ()" in n["type"]["qualType"]:
             # Import summaries do not describe arguments on the stack.
             rejected += 1
             continue
         conventions[name] = "stdcall" if "stdcall" in n["type"]["qualType"] else "c"
-        functions[name] = ret + " " + name + "(" + (", ".join(params) or "void") + ")"
+        functions[name] = return_type + " " + name + "(" + (", ".join(parameter_types) or "void") + ")"
     # Typedef and enum spelling is retained for provenance, even where the
     # runtime deliberately uses a scalar type or declines the signature.
     aliases = {name: typedefs[name] for name in sorted(used_typedefs)

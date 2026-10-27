@@ -3,8 +3,8 @@
 import gzip
 
 
-def compress(data, compresslevel=9):
-    encoded = bytearray(gzip.compress(data, compresslevel=compresslevel, mtime=0))
+def compress(input_bytes, compresslevel=9):
+    encoded = bytearray(gzip.compress(input_bytes, compresslevel=compresslevel, mtime=0))
     # Python versions differ in the operating-system byte of the gzip header.
     encoded[9] = 3
     return bytes(encoded)

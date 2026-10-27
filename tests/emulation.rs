@@ -126,7 +126,7 @@ fn build_fixture(architecture: &str) -> PathBuf {
     path
 }
 
-fn native() -> &'static [u32; 4] {
+fn native_results() -> &'static [u32; 4] {
     static RESULTS: OnceLock<[u32; 4]> = OnceLock::new();
     RESULTS.get_or_init(|| {
         let scratch = common::root().join(format!("target/emulation-tests/native-{}", std::process::id()));
@@ -158,7 +158,7 @@ fn execute(binary: &Binary, start: &str, value: Value) -> Report {
     emulation::run(binary, start, &options, None).expect("valid compiled fixture state")
 }
 
-fn returned(report: &Report, value: u32) {
+fn assert_returned_value(report: &Report, value: u32) {
     assert_eq!(report.reason, "return", "{report:?}");
     assert_eq!(
         velk::addr::parse(&report.return_value).expect("valid compiled fixture state") as u32,
@@ -205,7 +205,7 @@ fn check_imported_hooks(architecture: &str) {
     assert!(output.status.success(), "{architecture}: {output:?}");
     let binary = Binary::open(&scratch.join("imports.elf")).expect("loading imported calls");
     let report = execute(&binary, "hooked", json!({"arguments":["0x10000000"]}));
-    returned(&report, 4);
+    assert_returned_value(&report, 4);
     let region = report
         .memory
         .iter()
@@ -230,7 +230,7 @@ fn check_architecture(architecture: &str) {
         "decode",
         json!({"arguments":[data,8,93],"trace":true}),
     );
-    returned(&report, native()[0]);
+    assert_returned_value(&report, native_results()[0]);
     assert!(!report.trace.is_empty());
     if matches!(architecture, "arm32" | "thumb32") {
         let fault = execute(&binary, "fault", json!({"arguments":["0x12345000"]}));
@@ -268,22 +268,22 @@ fn check_architecture(architecture: &str) {
     assert_eq!(changed, expected);
     let decoded =
         json!({"arguments":["0x10000000",8],"memory":[{"address":"0x10000000","bytes":expected}]});
-    returned(&execute(&binary, "checksum", decoded), native()[1]);
-    returned(
+    assert_returned_value(&execute(&binary, "checksum", decoded), native_results()[1]);
+    assert_returned_value(
         &execute(
             &binary,
             "tail",
             json!({"arguments":["0x10000000",8],"memory":[{"address":"0x10000000","bytes":expected}]}),
         ),
-        native()[1],
+        native_results()[1],
     );
-    returned(
+    assert_returned_value(
         &execute(&binary, "sum9", json!({"arguments":[1,2,3,4,5,6,7,8,9]})),
-        native()[2],
+        native_results()[2],
     );
-    returned(
+    assert_returned_value(
         &execute(&binary, "nested", json!({"arguments":[data,8]})),
-        native()[0] ^ native()[1],
+        native_results()[0] ^ native_results()[1],
     );
     let runner = match architecture {
         "aarch64" => Some("qemu-aarch64"),
@@ -316,7 +316,7 @@ fn check_architecture(architecture: &str) {
                 .iter()
                 .map(|bytes| u32::from_le_bytes(*bytes))
                 .collect();
-            assert_eq!(values.as_slice(), native(), "{architecture}");
+            assert_eq!(values.as_slice(), native_results(), "{architecture}");
             eprintln!("{architecture}: compiled C matches architecture runner and emulation");
         }
         Err(error) if runner.is_some() && error.kind() == std::io::ErrorKind::NotFound => {
@@ -563,7 +563,7 @@ int main(void) {
     let binary = Binary::open(&path).expect("valid compiled fixture state");
     let options = json!({"arguments":["0x10000000","0x10000100"],"memory":[{"address":"0x10000100","bytes":[104,101,108,108,111,0]}]});
     let report = execute(&binary, "exercise", options);
-    returned(
+    assert_returned_value(
         &report,
         u64::from_le_bytes(
             output.stdout[32..40]
@@ -589,7 +589,7 @@ int main(void) {
         "hook_value",
         json!({"arguments":["0x10000000"],"registers":{"r10":123,"rbx":123}}),
     );
-    returned(&modeled, 0x1000_0000);
+    assert_returned_value(&modeled, 0x1000_0000);
     assert_eq!(modeled.registers["r10"], "unknown");
     assert_eq!(modeled.registers["rbx"], "0x7b");
     let unknown = execute(
@@ -604,7 +604,7 @@ int main(void) {
             .expect("undefined register diagnostic")
             .contains("undefined register")
     );
-    returned(
+    assert_returned_value(
         &execute(
             &binary,
             "byte_registers",
@@ -619,7 +619,7 @@ int main(void) {
     let no_result = execute(&binary, "no_integer_result", json!({}));
     assert_eq!(no_result.reason, "return", "{no_result:?}");
     assert_eq!(no_result.return_value, "unknown");
-    returned(
+    assert_returned_value(
         &execute(
             &binary,
             "zero_allocation",
@@ -643,8 +643,8 @@ int main(void) {
         .expect("access import slot");
     let mut options = json!({"arguments":["0x10000000"],"callReturns":{}});
     options["callReturns"][access_name] = json!(13);
-    returned(&execute(&binary, "unknown_call", options), 13);
-    returned(
+    assert_returned_value(&execute(&binary, "unknown_call", options), 13);
+    assert_returned_value(
         &execute(
             &binary,
             "unknown_call",
@@ -656,7 +656,7 @@ int main(void) {
         .find("redirect_access")
         .expect("the replacement function")
         .addr;
-    returned(
+    assert_returned_value(
         &execute(
             &binary,
             "unknown_call",
@@ -706,5 +706,5 @@ fn dll_image_and_heap_use_separate_address_ranges() {
     let mut options =
         json!({"memory":[{"address":state.heap_base,"value":4660,"width":2}],"callReturns":{}});
     options["callReturns"][name] = json!(77);
-    returned(&execute(&binary, "windows_error", options), 77);
+    assert_returned_value(&execute(&binary, "windows_error", options), 77);
 }

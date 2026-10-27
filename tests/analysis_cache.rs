@@ -11,7 +11,7 @@ use serde_json::{Value, json};
 use velk::loader::OpenOptions;
 use velk::service::{Binary, CacheLocation};
 
-fn scratch(name: &str) -> PathBuf {
+fn cache_test_directory(name: &str) -> PathBuf {
     let path = common::root()
         .join("target/analysis-cache-tests")
         .join(format!("{name}-{}", std::process::id()));
@@ -26,7 +26,7 @@ fn options(path: &Path) -> OpenOptions {
     }
 }
 
-fn cli(path: &Path, cache: &str) -> std::process::Output {
+fn list_functions_cli(path: &Path, cache: &str) -> std::process::Output {
     Command::new(env!("CARGO_BIN_EXE_velk"))
         .args(["--cache", cache, "--functions", "--json"])
         .arg(path)
@@ -36,7 +36,7 @@ fn cli(path: &Path, cache: &str) -> std::process::Output {
 
 #[test]
 fn cached_c_and_navigation_match_uncached_results_on_every_architecture() {
-    let directory = scratch("architectures");
+    let directory = cache_test_directory("architectures");
     for (name, fixture) in [
         ("x86_64", "../raw_fixtures/l0_arith_x64.nodebug.o"),
         ("i386", "metrics/l0_arith.i386.O2.stripped.elf"),
@@ -136,12 +136,12 @@ int main(void) {{
 
 #[test]
 fn cli_handles_damage_parallel_writers_and_disabled_cache() {
-    let directory = scratch("cli");
+    let directory = cache_test_directory("cli");
     let binary = directory.join("input.o");
     fs::copy(common::fixtures_dir().join("tail_calls.o"), &binary).unwrap();
     let path = directory.join("analysis.json");
     let path_text = path.to_str().unwrap();
-    let expected = cli(&binary, "off");
+    let expected = list_functions_cli(&binary, "off");
     assert!(expected.status.success(), "{expected:?}");
     for bytes in [
         b"{".as_slice(),
@@ -150,7 +150,7 @@ fn cli_handles_damage_parallel_writers_and_disabled_cache() {
         b"{\"payload\":\"partial\"}",
     ] {
         fs::write(&path, bytes).unwrap();
-        let result = cli(&binary, path_text);
+        let result = list_functions_cli(&binary, path_text);
         assert!(result.status.success(), "{result:?}");
         assert_eq!(result.stdout, expected.stdout);
         assert!(result.stderr.is_empty(), "{result:?}");
@@ -174,7 +174,10 @@ fn cli_handles_damage_parallel_writers_and_disabled_cache() {
         assert_eq!(result.stdout, expected.stdout);
         assert!(result.stderr.is_empty(), "{result:?}");
     }
-    assert_eq!(cli(&binary, path_text).stdout, expected.stdout);
+    assert_eq!(
+        list_functions_cli(&binary, path_text).stdout,
+        expected.stdout
+    );
     assert!(fs::read_dir(&directory).unwrap().all(|entry| {
         !entry
             .unwrap()
@@ -202,7 +205,7 @@ fn cli_handles_damage_parallel_writers_and_disabled_cache() {
     assert_eq!(result.stdout, expected.stdout);
     let default_path = binary.with_file_name("input.o.velk-cache");
     let _ = fs::remove_file(&default_path);
-    assert!(cli(&binary, "off").status.success());
+    assert!(list_functions_cli(&binary, "off").status.success());
     assert!(!default_path.exists());
     let result = Command::new(env!("CARGO_BIN_EXE_velk"))
         .env_remove("VELK_CACHE")
@@ -218,13 +221,13 @@ fn cli_handles_damage_parallel_writers_and_disabled_cache() {
 #[test]
 fn unwritable_destination_warns_once_and_preserves_output() {
     use std::os::unix::fs::PermissionsExt;
-    let directory = scratch("permissions");
+    let directory = cache_test_directory("permissions");
     let path = common::fixtures_dir().join("tail_calls.o");
     fs::set_permissions(&directory, fs::Permissions::from_mode(0o555)).unwrap();
-    let result = cli(&path, directory.join("cache.json").to_str().unwrap());
+    let result = list_functions_cli(&path, directory.join("cache.json").to_str().unwrap());
     fs::set_permissions(&directory, fs::Permissions::from_mode(0o755)).unwrap();
     assert!(result.status.success(), "{result:?}");
-    assert_eq!(result.stdout, cli(&path, "off").stdout);
+    assert_eq!(result.stdout, list_functions_cli(&path, "off").stdout);
     let diagnostic = String::from_utf8(result.stderr).unwrap();
     assert_eq!(
         diagnostic.matches("analysis cache: cannot save").count(),
@@ -235,7 +238,7 @@ fn unwritable_destination_warns_once_and_preserves_output() {
 
 #[test]
 fn javascript_and_mcp_use_the_same_cache_options() {
-    let directory = scratch("interfaces");
+    let directory = cache_test_directory("interfaces");
     let path = common::fixtures_dir().join("tail_calls.o");
     let cache = directory.join("script.json");
     let code = format!(
@@ -295,7 +298,7 @@ fn javascript_and_mcp_use_the_same_cache_options() {
 
 #[test]
 fn documentation_examples_run_with_the_documented_precedence() {
-    let directory = scratch("documentation");
+    let directory = cache_test_directory("documentation");
     let source_path = directory.join("app.c");
     common::compiler::compile_file(
         Command::new("clang")
@@ -343,7 +346,7 @@ fn documentation_examples_run_with_the_documented_precedence() {
 
 #[test]
 fn cached_metadata_preserves_entries_classes_and_exception_information() {
-    let directory = scratch("formats");
+    let directory = cache_test_directory("formats");
     for fixture in [
         "arm64_macho.o",
         "pe64.exe",
@@ -379,7 +382,7 @@ fn cached_metadata_preserves_entries_classes_and_exception_information() {
 #[test]
 fn project_changes_rebuild_function_lists_and_reference_names() {
     use sha2::{Digest, Sha256};
-    let directory = scratch("annotations");
+    let directory = cache_test_directory("annotations");
     let path = directory.join("input.o");
     fs::copy(common::fixtures_dir().join("tail_calls.o"), &path).unwrap();
     let project_path = directory.join("project.json");
@@ -422,7 +425,7 @@ fn project_changes_rebuild_function_lists_and_reference_names() {
 
 #[test]
 fn mcp_tools_forward_explicit_cache_selection() {
-    let directory = scratch("mcp-tools");
+    let directory = cache_test_directory("mcp-tools");
     let path = common::fixtures_dir().join("tail_calls.o");
     let disabled = directory.join("disabled.cache");
     let mut child = Command::new(env!("CARGO_BIN_EXE_velk"))

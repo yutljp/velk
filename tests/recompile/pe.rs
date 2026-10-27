@@ -73,9 +73,9 @@ fn every_pe_function_compiles() {
 #[test]
 fn windows_aggregate_results_preserve_every_field() {
     let mut candidates = Vec::new();
-    for opt in ["O0", "O2"] {
+    for optimization in ["O0", "O2"] {
         let mut binary = Binary::open(
-            &common::fixtures_dir().join(format!("metrics/windows.win64.{opt}.debug.dll")),
+            &common::fixtures_dir().join(format!("metrics/windows.win64.{optimization}.debug.dll")),
         )
         .unwrap();
         let address = binary.find("make_triple").unwrap().addr;
@@ -112,9 +112,9 @@ fn windows_aggregate_results_preserve_every_field() {
 #[test]
 fn windows_imports_keep_arguments_and_saved_xmm_values() {
     let scratch = scratch_dir("windows-imports");
-    for opt in ["O0", "O2"] {
+    for optimization in ["O0", "O2"] {
         let mut binary = Binary::open(
-            &common::fixtures_dir().join(format!("metrics/windows.win64.{opt}.debug.dll")),
+            &common::fixtures_dir().join(format!("metrics/windows.win64.{optimization}.debug.dll")),
         )
         .unwrap();
         assert!(
@@ -149,7 +149,7 @@ fn windows_imports_keep_arguments_and_saved_xmm_values() {
                 let executable = build(&source, &scratch, level, &[]);
                 assert!(
                     Command::new(executable).status().unwrap().success(),
-                    "{opt} {name}: {code}"
+                    "{optimization} {name}: {code}"
                 );
             }
         }
@@ -160,9 +160,9 @@ fn windows_imports_keep_arguments_and_saved_xmm_values() {
 #[test]
 fn windows_stack_arguments_and_probes_preserve_results() {
     let scratch = scratch_dir("windows-stack");
-    for opt in ["O0", "O2"] {
+    for optimization in ["O0", "O2"] {
         let debug = Binary::open(
-            &common::fixtures_dir().join(format!("metrics/windows.win64.{opt}.debug.dll")),
+            &common::fixtures_dir().join(format!("metrics/windows.win64.{optimization}.debug.dll")),
         )
         .unwrap();
         let addresses: Vec<_> = ["large_frame", "stack_arguments"]
@@ -170,9 +170,9 @@ fn windows_stack_arguments_and_probes_preserve_results() {
             .map(|name| (name, debug.find(name).unwrap().addr))
             .collect();
         for variant in ["debug", "stripped"] {
-            let mut binary = Binary::open(
-                &common::fixtures_dir().join(format!("metrics/windows.win64.{opt}.{variant}.dll")),
-            )
+            let mut binary = Binary::open(&common::fixtures_dir().join(format!(
+                "metrics/windows.win64.{optimization}.{variant}.dll"
+            )))
             .unwrap();
             for &(name, address) in &addresses {
                 let ir = &binary.analysis(address, None).unwrap().ir;
@@ -216,7 +216,7 @@ int main(void) {
                     let executable = build(&source, &scratch, level, &[]);
                     assert!(
                         Command::new(executable).status().unwrap().success(),
-                        "{opt} {variant} {name}: {code}"
+                        "{optimization} {variant} {name}: {code}"
                     );
                 }
             }
@@ -228,10 +228,11 @@ int main(void) {
 #[test]
 fn windows_long_types_keep_their_recorded_widths() {
     let scratch = scratch_dir("windows-long");
-    for opt in ["O0", "O2"] {
+    for optimization in ["O0", "O2"] {
         for (case, name) in [("integers", "labs_value"), ("calls", "sum9")] {
             let mut binary = Binary::open(
-                &common::fixtures_dir().join(format!("metrics/{case}.win64.{opt}.debug.dll")),
+                &common::fixtures_dir()
+                    .join(format!("metrics/{case}.win64.{optimization}.debug.dll")),
             )
             .unwrap();
             let address = binary.find(name).unwrap().addr;
@@ -273,7 +274,7 @@ int main(void) {
                 let executable = build(&source, &scratch, level, &[]);
                 assert!(
                     Command::new(executable).status().unwrap().success(),
-                    "{opt} {name}: {code}"
+                    "{optimization} {name}: {code}"
                 );
             }
         }
@@ -284,14 +285,15 @@ int main(void) {
 #[test]
 fn windows_argument_register_saves_share_the_target_frame() {
     let mut candidates = Vec::new();
-    for opt in ["O0", "O2"] {
+    for optimization in ["O0", "O2"] {
         let debug = Binary::open(
-            &common::fixtures_dir().join(format!("metrics/calls.win64.{opt}.debug.dll")),
+            &common::fixtures_dir().join(format!("metrics/calls.win64.{optimization}.debug.dll")),
         )
         .unwrap();
         let address = debug.find("sum_varargs").unwrap().addr;
         let mut binary = Binary::open(
-            &common::fixtures_dir().join(format!("metrics/calls.win64.{opt}.stripped.dll")),
+            &common::fixtures_dir()
+                .join(format!("metrics/calls.win64.{optimization}.stripped.dll")),
         )
         .unwrap();
         let mut ir = binary.analysis(address, None).unwrap().ir.clone();
@@ -324,15 +326,15 @@ fn windows_argument_register_saves_share_the_target_frame() {
 #[test]
 fn windows_integer_and_float_arguments_share_positions() {
     let scratch = scratch_dir("windows-argument-positions");
-    for opt in ["O0", "O2"] {
-        let debug = Binary::open(
-            &common::fixtures_dir().join(format!("metrics/aggregate_abi.win64.{opt}.debug.dll")),
-        )
+    for optimization in ["O0", "O2"] {
+        let debug = Binary::open(&common::fixtures_dir().join(format!(
+            "metrics/aggregate_abi.win64.{optimization}.debug.dll"
+        )))
         .unwrap();
         let address = debug.find("abi_hfa1_adjust").unwrap().addr;
-        let mut binary = Binary::open(
-            &common::fixtures_dir().join(format!("metrics/aggregate_abi.win64.{opt}.stripped.dll")),
-        )
+        let mut binary = Binary::open(&common::fixtures_dir().join(format!(
+            "metrics/aggregate_abi.win64.{optimization}.stripped.dll"
+        )))
         .unwrap();
         let ir = &binary.analysis(address, None).unwrap().ir;
         assert_eq!(
@@ -363,7 +365,7 @@ int main(void) {{
             let executable = build(&source, &scratch, level, &[]);
             assert!(
                 Command::new(executable).status().unwrap().success(),
-                "{opt}: {code}"
+                "{optimization}: {code}"
             );
         }
     }

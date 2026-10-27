@@ -9,15 +9,15 @@
 # promote it to has/nothas (a passing known_* row is reported so it is not forgotten).
 set -uo pipefail
 cd "$(dirname "$0")/.."
-FIX=tests/fixtures
+FIXTURES_DIR=tests/fixtures
 
 BIN=${BIN:-}
 EXPECT=tests/expect/ladder.tsv
-ONLY=
+ONLY_LEVEL=
 
 while [ $# -gt 0 ]; do
   case "$1" in
-    --level) shift; ONLY=${1:-} ;;
+    --level) shift; ONLY_LEVEL=${1:-} ;;
     -h|--help) sed -n '2,9p' "$0"; exit 0 ;;
     *) echo "unknown option: $1" >&2; exit 2 ;;
   esac
@@ -34,9 +34,9 @@ fi
 rendered() {  # fixture function -> pseudo-C (function "-" gives the `functions` listing)
   local fixture=$1 function=$2
   if [ "$function" = "-" ]; then
-    "$BIN" --functions "$FIX/$fixture" --limit 100000 2>/dev/null
+    "$BIN" --functions "$FIXTURES_DIR/$fixture" --limit 100000 2>/dev/null
   else
-    "$BIN" --decompile "$FIX/$fixture" "$function" 2>/dev/null
+    "$BIN" --decompile "$FIXTURES_DIR/$fixture" "$function" 2>/dev/null
   fi
 }
 
@@ -45,8 +45,8 @@ trap 'rm -f "$results"' EXIT
 
 while IFS=$'\t' read -r level fixture function kind pattern; do
   case "$level" in ''|'#'*) continue ;; esac
-  [ -n "$ONLY" ] && [ "$level" != "$ONLY" ] && continue
-  if [ ! -f "$FIX/$fixture" ]; then
+  [ -n "$ONLY_LEVEL" ] && [ "$level" != "$ONLY_LEVEL" ] && continue
+  if [ ! -f "$FIXTURES_DIR/$fixture" ]; then
     printf 'FAIL\t%s\t%s/%s\tmissing fixture\n' "$level" "$fixture" "$function" >> "$results"
     continue
   fi
@@ -104,7 +104,7 @@ while IFS=$'\t' read -r level fixture function kind pattern; do
   esac
 done < "$EXPECT"
 
-fixture_cc=$(head -1 $FIX/toolchain.txt 2>/dev/null || true)
+fixture_cc=$(head -1 $FIXTURES_DIR/toolchain.txt 2>/dev/null || true)
 echo "fixtures: ${fixture_cc:-unknown}"
 echo "== passes per level =="
 awk -F'\t' '{ t[$2]++; if ($1=="PASS"||$1=="PROMOTE") p[$2]++ }

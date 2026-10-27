@@ -2,7 +2,7 @@ use sha2::{Digest, Sha256};
 use std::fs;
 use std::path::Path;
 
-fn hash_sources(path: &Path, hash: &mut Sha256) {
+fn hash_build_inputs(path: &Path, hash: &mut Sha256) {
     if path.is_dir() {
         let mut paths: Vec<_> = fs::read_dir(path)
             .expect("source directory")
@@ -10,7 +10,7 @@ fn hash_sources(path: &Path, hash: &mut Sha256) {
             .collect();
         paths.sort();
         for path in paths {
-            hash_sources(&path, hash);
+            hash_build_inputs(&path, hash);
         }
     } else {
         println!("cargo::rerun-if-changed={}", path.display());
@@ -24,7 +24,7 @@ fn hash_sources(path: &Path, hash: &mut Sha256) {
 fn main() {
     let mut hash = Sha256::new();
     for path in ["src", "signatures", "Cargo.toml", "Cargo.lock", "build.rs"] {
-        hash_sources(Path::new(path), &mut hash);
+        hash_build_inputs(Path::new(path), &mut hash);
     }
     println!("cargo::rustc-env=VELK_ANALYSIS_BUILD={:x}", hash.finalize());
 }

@@ -125,7 +125,7 @@ fn native_hook(
     output.stdout
 }
 
-fn error(report: &Value, text: &str, address: u64) {
+fn assert_error(report: &Value, text: &str, address: u64) {
     assert_eq!(report["reason"], "error", "{report}");
     let message = report["error"].as_str().expect("error diagnostic");
     assert!(message.contains(text), "{message}");
@@ -330,7 +330,7 @@ fn hooks_match_libc_and_check_mapped_boundaries() {
                     hook,
                     json!({"arguments":args,"memory":memory}),
                 );
-                error(&report, message, address);
+                assert_error(&report, message, address);
             }
             let report = interfaces.check(
                 &path,
@@ -338,7 +338,7 @@ fn hooks_match_libc_and_check_mapped_boundaries() {
                 "hook_copy",
                 json!({"arguments":[HEAP+1,HEAP,5]}),
             );
-            error(&report, "overlap", HEAP + 1);
+            assert_error(&report, "overlap", HEAP + 1);
             assert!(
                 report["error"]
                     .as_str()
@@ -405,7 +405,7 @@ fn execution_limits_and_permissions_agree_across_interfaces() {
                     0x1234_5000,
                 ),
             ] {
-                error(
+                assert_error(
                     &interfaces.check(&path, &binary, &start, options),
                     message,
                     address,

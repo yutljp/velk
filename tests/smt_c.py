@@ -11,8 +11,8 @@ import sys
 
 
 def integer_type(node):
-    info = node["type"]
-    text = info.get("desugaredQualType", info["qualType"])
+    type_info = node["type"]
+    text = type_info.get("desugaredQualType", type_info["qualType"])
     text = text.replace("const ", "")
     if text == "_Bool":
         return 1, False

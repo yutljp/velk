@@ -70,12 +70,11 @@ fn i386_every_fixture_function_compiles() {
 
 #[test]
 fn i386_calling_conventions_preserve_arguments_and_cleanup() {
-    for opt in ["O0", "O2"] {
+    for optimization in ["O0", "O2"] {
         for variant in ["debug", "stripped"] {
-            let mut binary = Binary::open(
-                &common::fixtures_dir()
-                    .join(format!("metrics/conventions.win32.{opt}.{variant}.dll")),
-            )
+            let mut binary = Binary::open(&common::fixtures_dir().join(format!(
+                "metrics/conventions.win32.{optimization}.{variant}.dll"
+            )))
             .unwrap();
             for (function, expected, arguments) in [
                 ("cdecl_add", Convention::Cdecl, "17, 3"),
@@ -114,11 +113,11 @@ fn i386_calling_conventions_preserve_arguments_and_cleanup() {
 
 #[test]
 fn i386_import_arguments_follow_the_cdecl_stack_layout() {
-    for opt in ["O0", "O2"] {
+    for optimization in ["O0", "O2"] {
         for variant in ["debug", "stripped"] {
-            let mut binary = Binary::open(
-                &common::fixtures_dir().join(format!("metrics/imports.win32.{opt}.{variant}.dll")),
-            )
+            let mut binary = Binary::open(&common::fixtures_dir().join(format!(
+                "metrics/imports.win32.{optimization}.{variant}.dll"
+            )))
             .unwrap();
             let address = binary.find("import_call").unwrap().addr;
             let rendered = velk::render::callee_names(binary.image()).functions[&address].clone();
@@ -135,12 +134,11 @@ fn i386_import_arguments_follow_the_cdecl_stack_layout() {
 
 #[test]
 fn i386_pic_calls_to_defined_plt_symbols_keep_stack_arguments() {
-    for opt in ["O0", "O2"] {
+    for optimization in ["O0", "O2"] {
         for variant in ["debug", "stripped"] {
-            let mut binary = Binary::open(
-                &common::fixtures_dir()
-                    .join(format!("metrics/relocations.i386.{opt}.{variant}.elf")),
-            )
+            let mut binary = Binary::open(&common::fixtures_dir().join(format!(
+                "metrics/relocations.i386.{optimization}.{variant}.elf"
+            )))
             .unwrap();
             let callee = binary
                 .image()
@@ -171,12 +169,11 @@ fn i386_pic_calls_to_defined_plt_symbols_keep_stack_arguments() {
 
 #[test]
 fn i386_pic_library_calls_keep_their_stack_arguments() {
-    for opt in ["O0", "O2"] {
+    for optimization in ["O0", "O2"] {
         for variant in ["debug", "stripped"] {
-            let mut binary = Binary::open(
-                &common::fixtures_dir()
-                    .join(format!("metrics/relocations.i386.{opt}.{variant}.elf")),
-            )
+            let mut binary = Binary::open(&common::fixtures_dir().join(format!(
+                "metrics/relocations.i386.{optimization}.{variant}.elf"
+            )))
             .unwrap();
             let imported = binary.find("imported").unwrap().addr;
             let stub = binary

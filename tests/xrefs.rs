@@ -13,23 +13,36 @@ fn fixture(name: &str) -> Binary {
 #[test]
 fn fixture_calls_and_bounded_paths() {
     let mut binary = fixture("cpp_virtual_x64.elf");
-    let even = binary.find("Square::area() const").unwrap().addr;
-    let odd = binary.find("square_area(int)").unwrap().addr;
+    let method_address = binary.find("Square::area() const").unwrap().addr;
+    let caller_address = binary.find("square_area(int)").unwrap().addr;
     let indirect = binary.find("any_area(Shape const*)").unwrap().addr;
-    let printed = binary.decompile(odd, None, None).unwrap();
+    let printed = binary.decompile(caller_address, None, None).unwrap();
     let index = binary.navigation(None).unwrap();
     assert!(index.failures.is_empty());
     assert!(
         index
-            .to(even)
+            .to(method_address)
             .iter()
-            .any(|xref| xref.function == odd && xref.kind == Kind::ResolvedCall)
+            .any(|xref| xref.function == caller_address && xref.kind == Kind::ResolvedCall)
     );
-    assert_eq!(index.path(odd, even, 0), Vec::<u64>::new());
-    assert_eq!(index.path(odd, even, 1), vec![odd, even]);
-    assert_eq!(index.path(even, even, 0), vec![even]);
-    assert_eq!(index.graph(odd, false, 0), Vec::<u64>::new());
-    assert!(index.graph(even, true, 1).contains(&odd));
+    assert_eq!(
+        index.path(caller_address, method_address, 0),
+        Vec::<u64>::new()
+    );
+    assert_eq!(
+        index.path(caller_address, method_address, 1),
+        vec![caller_address, method_address]
+    );
+    assert_eq!(
+        index.path(method_address, method_address, 0),
+        vec![method_address]
+    );
+    assert_eq!(index.graph(caller_address, false, 0), Vec::<u64>::new());
+    assert!(
+        index
+            .graph(method_address, true, 1)
+            .contains(&caller_address)
+    );
     assert!(
         index
             .from(indirect)
@@ -37,10 +50,17 @@ fn fixture_calls_and_bounded_paths() {
             .any(|xref| xref.kind == Kind::CandidateCall)
     );
     assert!(index.graph(indirect, false, 1).is_empty());
-    assert!(!index.graph(even, true, usize::MAX).contains(&even));
+    assert!(
+        !index
+            .graph(method_address, true, usize::MAX)
+            .contains(&method_address)
+    );
     let pointer = index as *const _;
     assert_eq!(binary.navigation(None).unwrap() as *const _, pointer);
-    assert_eq!(binary.decompile(odd, None, None).unwrap(), printed);
+    assert_eq!(
+        binary.decompile(caller_address, None, None).unwrap(),
+        printed
+    );
 }
 
 #[test]

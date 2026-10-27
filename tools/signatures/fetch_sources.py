@@ -13,14 +13,14 @@ MANIFESTS = ROOT / 'tools/signatures'
 
 def download(url, destination, expected):
     if destination.is_file():
-        data = destination.read_bytes()
+        source_bytes = destination.read_bytes()
     else:
         with urllib.request.urlopen(url, timeout=120) as response:
-            data = response.read()
-    if hashlib.sha256(data).hexdigest() != expected:
+            source_bytes = response.read()
+    if hashlib.sha256(source_bytes).hexdigest() != expected:
         raise SystemExit(f'source checksum mismatch: {destination}')
     destination.parent.mkdir(parents=True, exist_ok=True)
-    destination.write_bytes(data)
+    destination.write_bytes(source_bytes)
 
 
 def checkout(destination, url, commit, expected):

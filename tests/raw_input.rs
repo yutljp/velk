@@ -45,7 +45,7 @@ fn cases() -> [(RawArchitecture, &'static str); 5] {
     ]
 }
 
-fn extracted(
+fn extract_function(
     arch: RawArchitecture,
     fixture: &str,
     directory: &str,
@@ -87,7 +87,7 @@ fn normalized(code: &str, name: &str, address: u64) -> String {
 #[test]
 fn extracted_functions_print_and_execute_like_the_original_on_every_architecture() {
     for (arch, fixture) in cases() {
-        let (mut original, path, options) = extracted(arch, fixture, "semantics");
+        let (mut original, path, options) = extract_function(arch, fixture, "semantics");
         let mut raw = Binary::open_input(&path, None, &options).unwrap();
         let original_address = original.find("add3").unwrap().addr;
         let raw_code = raw.decompile(0x7000, None, None).unwrap();
@@ -199,7 +199,7 @@ fn mcp(requests: &[Value]) -> Vec<Value> {
 #[test]
 fn cli_scripts_and_mcp_accept_each_mapping_and_the_documented_examples() {
     for (arch, fixture) in cases() {
-        let (_, path, options) = extracted(arch, fixture, "interfaces");
+        let (_, path, options) = extract_function(arch, fixture, "interfaces");
         let raw = options.raw.as_ref().unwrap();
         let arch_name = serde_json::to_value(arch).unwrap();
         let listing = Command::new(env!("CARGO_BIN_EXE_velk"))

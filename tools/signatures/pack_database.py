@@ -15,27 +15,27 @@ GENERATED = ROOT / 'target/library-signatures'
 OUT = GENERATED / 'libraries'
 
 
-def blob(value):
+def encode_length_prefixed(value):
     data = value.encode() if isinstance(value, str) else bytes(value)
     return struct.pack('<I', len(data)) + data
 
 
-def compact(entries):
+def encode_compact_database(entries):
     entries = sorted(entries, key=lambda e: (e['name'], e['bytes'], e['set']))
     sources = sorted({e['set'] for e in entries})
     binary = bytearray(b'VELKSIG1')
     binary += struct.pack('<I', len(sources))
     for source in sources:
-        binary += blob(source)
+        binary += encode_length_prefixed(source)
     binary += struct.pack('<I', len(entries))
     for entry in entries:
-        binary += blob(entry['name']) + blob(entry['set']) + blob(entry['bytes'])
+        binary += encode_length_prefixed(entry['name']) + encode_length_prefixed(entry['set']) + encode_length_prefixed(entry['bytes'])
         binary += struct.pack('<I', len(entry['calls']))
         for call in entry['calls']:
-            binary += blob(call)
+            binary += encode_length_prefixed(call)
         binary += struct.pack('<I', len(entry.get('constants', [])))
         for constant in entry.get('constants', []):
-            binary += blob(constant)
+            binary += encode_length_prefixed(constant)
     return bytes(binary)
 
 
@@ -72,7 +72,7 @@ def select(database):
             pending.extend(callers[key])
     print(f'{len(eligible)} entries have every callee available', flush=True)
 
-    def closure(indices):
+    def required_entries(indices):
         result, pending = set(indices), list(indices)
         while pending:
             index = pending.pop()
@@ -87,32 +87,32 @@ def select(database):
                 pending.append(index)
         return result
 
-    def size(indices, level=9):
+    def compressed_size(indices, level=9):
         parts = defaultdict(list)
         for index in indices:
             parts[entries[index]['isa']].append(entries[index])
-        return sum(len(gzip_output.compress(compact(part), compresslevel=level)) for part in parts.values())
+        return sum(len(gzip_output.compress(encode_compact_database(part), compresslevel=level)) for part in parts.values())
 
     path = ROOT / 'tools/signatures/selection.json'
     if '--select' in sys.argv:
         path = GENERATED / 'selection.json'
     if '--select' not in sys.argv:
         selection = json.loads(path.read_text())
-        return closure(set().union(*(by_set[name] & eligible for name in selection['sets'])))
+        return required_entries(set().union(*(by_set[name] & eligible for name in selection['sets'])))
     coverage = {name: set(matches) for name, matches in
                 json.loads((ROOT / 'target/library-signatures/set-coverage.json').read_text()).items()}
     mandatory = {name for name in by_set if name.startswith(('zlib-', 'xxhash-', 'rust.'))}
     chosen = set(mandatory)
-    selected = closure(set().union(*(by_set[name] & eligible for name in chosen)))
+    selected = required_entries(set().union(*(by_set[name] & eligible for name in chosen)))
     covered = set().union(*(coverage.get(name, set()) for name in chosen))
-    closures = {name: closure(indices & eligible) for name, indices in by_set.items() if name not in chosen}
+    closures = {name: required_entries(indices & eligible) for name, indices in by_set.items() if name not in chosen}
     remaining = set(closures)
     budget = 2 * 1024 * 1024
     decisions = []
     costs = None
     while remaining:
         if costs is None:
-            costs = {name: max(1, size(closures[name] - selected, level=1))
+            costs = {name: max(1, compressed_size(closures[name] - selected, level=1))
                      for name in remaining if coverage.get(name, set()) - covered}
         if not costs:
             break
@@ -127,7 +127,7 @@ def select(database):
         if not benefit:
             continue
         proposed = selected | closures[name]
-        compressed = size(proposed)
+        compressed = compressed_size(proposed)
         if compressed > budget:
             continue
         selected = proposed
@@ -176,7 +176,7 @@ def main():
     sizes = {}
     for arch in ['x86_64', 'aarch64', 'i386', 'arm32']:
         entries = [e for e in defaults['entries'] if e['isa'] == arch]
-        binary = compact(entries)
+        binary = encode_compact_database(entries)
         compressed = gzip_output.compress(binary)
         (GENERATED / f'{arch}.bin.gz').write_bytes(compressed)
         sizes[arch] = {'entries': len(entries), 'compressed_bytes': len(compressed), 'uncompressed_bytes': len(binary)}

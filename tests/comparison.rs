@@ -310,19 +310,19 @@ fn check_comparison_and_transfer(arch: &str, stripped: bool) {
 }
 
 #[test]
-fn x86_debug() {
+fn x86_64_debug() {
     check_comparison_and_transfer("x86_64", false);
 }
 #[test]
-fn x86_stripped() {
+fn x86_64_stripped() {
     check_comparison_and_transfer("x86_64", true);
 }
 #[test]
-fn arm_debug() {
+fn aarch64_debug() {
     check_comparison_and_transfer("aarch64", false);
 }
 #[test]
-fn arm_stripped() {
+fn aarch64_stripped() {
     check_comparison_and_transfer("aarch64", true);
 }
 

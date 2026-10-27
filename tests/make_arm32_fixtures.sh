@@ -9,9 +9,9 @@ for source in "$ROOT"/tests/cases/c/*.c; do
     for mode in arm thumb; do
         target=armv7a-linux-gnueabihf
         [ "$mode" = arm ] || target=thumbv7m-none-eabi
-        for opt in O0 O2; do
-            base="$OUT/$name.$mode.$opt"
-            clang "--target=$target" "-$opt" -g -fno-inline "-ffile-prefix-map=$ROOT=." -c "$source" -o "$base.o"
+        for optimization in O0 O2; do
+            base="$OUT/$name.$mode.$optimization"
+            clang "--target=$target" "-$optimization" -g -fno-inline "-ffile-prefix-map=$ROOT=." -c "$source" -o "$base.o"
             ld.lld -m armelf --entry=0 --unresolved-symbols=ignore-all -o "$base.elf" "$base.o"
             rm "$base.o"
         done

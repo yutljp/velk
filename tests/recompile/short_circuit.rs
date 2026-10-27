@@ -4,7 +4,7 @@ pub(super) const SC_COUNTER: u64 = REGION + 0x80;
 const SC_LEFT: u64 = REGION + 0x100;
 pub(super) const SC_RIGHT: u64 = REGION + 0x108;
 
-fn sc_reg(position: usize) -> Expr {
+fn argument_register(position: usize) -> Expr {
     Expr::reg([7, 6, 2][position], 64)
 }
 
@@ -24,14 +24,14 @@ pub(super) fn sc_store(address: u64, value: Expr) -> Stmt {
     }
 }
 
-fn sc_increment() -> Stmt {
+fn increment_counter() -> Stmt {
     sc_store(
         SC_COUNTER,
         Expr::bin(BinOp::Add, sc_load(SC_COUNTER), Expr::Const(1)),
     )
 }
 
-fn sc_branch(test: &(Cond, Expr, Expr), invert: bool, target: u64) -> Stmt {
+fn conditional_branch(test: &(Cond, Expr, Expr), invert: bool, target: u64) -> Stmt {
     Stmt::Brif {
         cond: if invert { test.0.invert() } else { test.0 },
         lhs: test.1.clone(),
@@ -56,7 +56,7 @@ pub(super) fn sc_ir(name: &str, types: Vec<CType>, blocks: Vec<Block>) -> Functi
     ir
 }
 
-fn sc_pair_candidate(
+fn short_circuit_pair_candidate(
     name: &str,
     types: Vec<CType>,
     mut prefix: Vec<Stmt>,
@@ -66,7 +66,7 @@ fn sc_pair_candidate(
     inputs: Vec<Vec<u64>>,
 ) -> Candidate {
     prefix.push(sc_store(SC_COUNTER, Expr::Const(0)));
-    prefix.push(sc_branch(&first, !or, 0x30));
+    prefix.push(conditional_branch(&first, !or, 0x30));
     let blocks = vec![
         Block {
             start: 0,
@@ -74,7 +74,7 @@ fn sc_pair_candidate(
         },
         Block {
             start: 0x10,
-            stmts: vec![sc_branch(&second, !or, 0x30)],
+            stmts: vec![conditional_branch(&second, !or, 0x30)],
         },
         Block {
             start: 0x20,
@@ -83,7 +83,7 @@ fn sc_pair_candidate(
                     value: Expr::Const(0),
                 }]
             } else {
-                vec![sc_increment()]
+                vec![increment_counter()]
             },
         },
         Block {
@@ -100,7 +100,7 @@ fn sc_pair_candidate(
     printed_candidate(sc_ir(name, types, blocks), inputs)
 }
 
-fn sc_assert_oracle(candidate: &Candidate, expected: &[(u64, u64)]) {
+fn assert_expected_outcomes(candidate: &Candidate, expected: &[(u64, u64)]) {
     assert_eq!(candidate.inputs.len(), expected.len());
     let fixture = Fixture {
         name: "short-circuit oracle".into(),
@@ -141,15 +141,15 @@ fn sc_assert_oracle(candidate: &Candidate, expected: &[(u64, u64)]) {
 }
 
 pub(super) fn printed_short_circuit_conditions_keep_order_and_effects() {
-    let nonzero = |position| (Cond::Ne, sc_reg(position), Expr::Const(0));
-    let division = || Expr::bin(BinOp::DivU, Expr::Const(100), sc_reg(0));
+    let nonzero = |position| (Cond::Ne, argument_register(position), Expr::Const(0));
+    let division = || Expr::bin(BinOp::DivU, Expr::Const(100), argument_register(0));
     let mut candidates = Vec::new();
     let truth_inputs: Vec<Vec<u64>> = [0, 1, 2, u64::MAX]
         .into_iter()
         .flat_map(|a| [0, 1, 2, u64::MAX].into_iter().map(move |b| vec![a, b]))
         .collect();
     for or in [false, true] {
-        let candidate = sc_pair_candidate(
+        let candidate = short_circuit_pair_candidate(
             if or { "short_or" } else { "short_and" },
             vec![CType::U64; 2],
             Vec::new(),
@@ -173,7 +173,7 @@ pub(super) fn printed_short_circuit_conditions_keep_order_and_effects() {
                 }
             })
             .collect();
-        sc_assert_oracle(&candidate, &wanted);
+        assert_expected_outcomes(&candidate, &wanted);
         candidates.push(candidate);
     }
     let mut mixed_inputs = Vec::new();
@@ -199,20 +199,24 @@ pub(super) fn printed_short_circuit_conditions_keep_order_and_effects() {
                         start: 0,
                         stmts: vec![
                             sc_store(SC_COUNTER, Expr::Const(0)),
-                            sc_branch(&nonzero(0), false, if grouped { 0x20 } else { 0x30 }),
+                            conditional_branch(
+                                &nonzero(0),
+                                false,
+                                if grouped { 0x20 } else { 0x30 },
+                            ),
                         ],
                     },
                     Block {
                         start: 0x10,
-                        stmts: vec![sc_branch(&nonzero(1), true, 0x40)],
+                        stmts: vec![conditional_branch(&nonzero(1), true, 0x40)],
                     },
                     Block {
                         start: 0x20,
-                        stmts: vec![sc_branch(&nonzero(2), true, 0x40)],
+                        stmts: vec![conditional_branch(&nonzero(2), true, 0x40)],
                     },
                     Block {
                         start: 0x30,
-                        stmts: vec![sc_increment()],
+                        stmts: vec![increment_counter()],
                     },
                     Block {
                         start: 0x40,
@@ -236,7 +240,7 @@ pub(super) fn printed_short_circuit_conditions_keep_order_and_effects() {
                 (u64::from(yes), u64::from(yes))
             })
             .collect();
-        sc_assert_oracle(&candidate, &wanted);
+        assert_expected_outcomes(&candidate, &wanted);
         assert!(
             candidate
                 .code
@@ -250,13 +254,13 @@ pub(super) fn printed_short_circuit_conditions_keep_order_and_effects() {
     }
     let divisors = [0, 1, 2, 10, 11, u64::MAX];
     for or in [false, true] {
-        let candidate = sc_pair_candidate(
+        let candidate = short_circuit_pair_candidate(
             if or { "short_div_or" } else { "short_div_and" },
             vec![CType::U64],
             Vec::new(),
             (
                 if or { Cond::Eq } else { Cond::Ne },
-                sc_reg(0),
+                argument_register(0),
                 Expr::Const(0),
             ),
             (Cond::Hi, division(), Expr::Const(10)),
@@ -278,10 +282,10 @@ pub(super) fn printed_short_circuit_conditions_keep_order_and_effects() {
                 }
             })
             .collect();
-        sc_assert_oracle(&candidate, &wanted);
+        assert_expected_outcomes(&candidate, &wanted);
         candidates.push(candidate);
     }
-    let guarded_load = sc_pair_candidate(
+    let guarded_load = short_circuit_pair_candidate(
         "short_guarded_load",
         vec![CType::pointer_to(CType::U64), CType::U64],
         vec![
@@ -292,7 +296,7 @@ pub(super) fn printed_short_circuit_conditions_keep_order_and_effects() {
         (
             Cond::Eq,
             Expr::Load {
-                addr: Box::new(sc_reg(0)),
+                addr: Box::new(argument_register(0)),
                 width: 8,
                 signed: false,
             },
@@ -306,7 +310,7 @@ pub(super) fn printed_short_circuit_conditions_keep_order_and_effects() {
             vec![SC_RIGHT, 2],
         ],
     );
-    sc_assert_oracle(&guarded_load, &[(0, 0), (0, 0), (1, 1), (0, 0)]);
+    assert_expected_outcomes(&guarded_load, &[(0, 0), (0, 0), (1, 1), (0, 0)]);
     candidates.push(guarded_load);
 
     let store_barrier = printed_candidate(
@@ -319,19 +323,23 @@ pub(super) fn printed_short_circuit_conditions_keep_order_and_effects() {
                     stmts: vec![
                         sc_store(SC_COUNTER, Expr::Const(0)),
                         sc_store(SC_LEFT, Expr::Const(0)),
-                        sc_branch(&nonzero(0), true, 0x30),
+                        conditional_branch(&nonzero(0), true, 0x30),
                     ],
                 },
                 Block {
                     start: 0x10,
                     stmts: vec![
                         sc_store(SC_LEFT, Expr::Const(1)),
-                        sc_branch(&(Cond::Ne, sc_load(SC_LEFT), Expr::Const(0)), true, 0x30),
+                        conditional_branch(
+                            &(Cond::Ne, sc_load(SC_LEFT), Expr::Const(0)),
+                            true,
+                            0x30,
+                        ),
                     ],
                 },
                 Block {
                     start: 0x20,
-                    stmts: vec![sc_increment()],
+                    stmts: vec![increment_counter()],
                 },
                 Block {
                     start: 0x30,
@@ -343,7 +351,7 @@ pub(super) fn printed_short_circuit_conditions_keep_order_and_effects() {
         ),
         vec![vec![0], vec![1], vec![2], vec![u64::MAX]],
     );
-    sc_assert_oracle(&store_barrier, &[(0, 0), (1, 1), (1, 1), (1, 1)]);
+    assert_expected_outcomes(&store_barrier, &[(0, 0), (1, 1), (1, 1), (1, 1)]);
     candidates.push(store_barrier);
 
     let sequential = printed_candidate(
@@ -355,20 +363,20 @@ pub(super) fn printed_short_circuit_conditions_keep_order_and_effects() {
                     start: 0,
                     stmts: vec![
                         sc_store(SC_COUNTER, Expr::Const(0)),
-                        sc_branch(&nonzero(0), true, 0x20),
+                        conditional_branch(&nonzero(0), true, 0x20),
                     ],
                 },
                 Block {
                     start: 0x10,
-                    stmts: vec![sc_increment()],
+                    stmts: vec![increment_counter()],
                 },
                 Block {
                     start: 0x20,
-                    stmts: vec![sc_branch(&nonzero(1), true, 0x40)],
+                    stmts: vec![conditional_branch(&nonzero(1), true, 0x40)],
                 },
                 Block {
                     start: 0x30,
-                    stmts: vec![sc_increment()],
+                    stmts: vec![increment_counter()],
                 },
                 Block {
                     start: 0x40,
@@ -387,7 +395,7 @@ pub(super) fn printed_short_circuit_conditions_keep_order_and_effects() {
             (count, count)
         })
         .collect();
-    sc_assert_oracle(&sequential, &wanted);
+    assert_expected_outcomes(&sequential, &wanted);
     candidates.push(sequential);
 
     let bits = [
@@ -416,16 +424,19 @@ pub(super) fn printed_short_circuit_conditions_keep_order_and_effects() {
         op: Operation::FloatLess(Precision::Double),
         args: vec![sc_load(SC_LEFT), sc_load(SC_RIGHT)],
     };
-    let candidate = sc_pair_candidate(
+    let candidate = short_circuit_pair_candidate(
         "short_unordered_and",
         vec![CType::U64; 3],
-        vec![sc_store(SC_LEFT, sc_reg(0)), sc_store(SC_RIGHT, sc_reg(1))],
+        vec![
+            sc_store(SC_LEFT, argument_register(0)),
+            sc_store(SC_RIGHT, argument_register(1)),
+        ],
         (Cond::Eq, less(), Expr::Const(0)),
         nonzero(2),
         false,
         inputs,
     );
-    sc_assert_oracle(&candidate, &wanted);
+    assert_expected_outcomes(&candidate, &wanted);
     candidates.push(candidate);
     let inputs = vec![
         vec![0x7ff8_0000_0000_0042, 1.0_f64.to_bits(), 0],
@@ -433,20 +444,23 @@ pub(super) fn printed_short_circuit_conditions_keep_order_and_effects() {
         vec![1.0_f64.to_bits(), 2.0_f64.to_bits(), 1],
         vec![1.0_f64.to_bits(), 2.0_f64.to_bits(), 20],
     ];
-    let candidate = sc_pair_candidate(
+    let candidate = short_circuit_pair_candidate(
         "short_unordered_or",
         vec![CType::U64; 3],
-        vec![sc_store(SC_LEFT, sc_reg(0)), sc_store(SC_RIGHT, sc_reg(1))],
+        vec![
+            sc_store(SC_LEFT, argument_register(0)),
+            sc_store(SC_RIGHT, argument_register(1)),
+        ],
         (Cond::Eq, less(), Expr::Const(0)),
         (
             Cond::Hi,
-            Expr::bin(BinOp::DivU, Expr::Const(100), sc_reg(2)),
+            Expr::bin(BinOp::DivU, Expr::Const(100), argument_register(2)),
             Expr::Const(10),
         ),
         true,
         inputs,
     );
-    sc_assert_oracle(&candidate, &[(7, 0), (7, 0), (7, 0), (0, 0)]);
+    assert_expected_outcomes(&candidate, &[(7, 0), (7, 0), (7, 0), (0, 0)]);
     candidates.push(candidate);
     assert_eq!(candidates.len(), 11);
     assert_eq!(

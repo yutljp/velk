@@ -301,7 +301,7 @@ fn a_printed_function_change_only_recompiles_its_fixture() {
     };
     let mut fixtures = [make_fixture("cache_first"), make_fixture("cache_second")];
     // Observe actual syntax checks and builds, including on a warm cache.
-    let checks = || COMPILATIONS.get();
+    let compilation_count = || COMPILATIONS.get();
     let unique = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
         .unwrap()
@@ -309,17 +309,17 @@ fn a_printed_function_change_only_recompiles_its_fixture() {
     for fixture in &mut fixtures {
         writeln!(fixture.candidates[0].code, "/* {unique} */").unwrap();
     }
-    let before = checks();
+    let before = compilation_count();
     let verify = |fixtures: &[Fixture]| {
         for result in check(fixtures, &scratch, Mode::Registers, &[]) {
             assert_comparison_runs(&result, 1, 1);
         }
     };
     verify(&fixtures);
-    let cold = checks() - before;
+    let cold = compilation_count() - before;
     assert_eq!(cold, 6);
     verify(&fixtures);
-    let warm = checks();
+    let warm = compilation_count();
     if std::env::var_os("VELK_RECOMPILE_NO_CACHE").is_some_and(|value| value == "1") {
         assert!(warm > before + cold);
     } else {
@@ -328,20 +328,20 @@ fn a_printed_function_change_only_recompiles_its_fixture() {
             .code
             .push_str("\n/* changed printed function */\n");
         verify(&fixtures);
-        assert_eq!(checks() - warm, 3);
+        assert_eq!(compilation_count() - warm, 3);
         let length =
             fixtures[0].candidates[0].code.len() - "\n/* changed printed function */\n".len();
         fixtures[0].candidates[0].code.truncate(length);
-        let changed = checks();
+        let changed = compilation_count();
         verify(&fixtures);
-        assert_eq!(checks(), changed);
+        assert_eq!(compilation_count(), changed);
         fixtures[0].candidates[0].ir.blocks[0].stmts = vec![Stmt::Ret {
             value: Expr::Const(9),
         }];
         let results = check(&fixtures, &scratch, Mode::Registers, &[]);
         assert_eq!(results[0].differing, 1);
         assert_eq!(results[1].differing, 0);
-        assert_eq!(checks() - changed, 2);
+        assert_eq!(compilation_count() - changed, 2);
     }
     println!(
         "fixture cache: cold={cold}, warm=0, one changed fixture=3, restored=0 compiler calls"

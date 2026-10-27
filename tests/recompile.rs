@@ -5634,7 +5634,7 @@ struct Findings {
 
 /// What a run of the compiled code printed.
 #[derive(Clone, PartialEq)]
-enum Ran {
+enum ExecutionOutcome {
     /// The result, and the region's checksum after the run in the memory
     /// pass.
     Value(u64, Option<u64>),
@@ -5873,11 +5873,15 @@ fn check_batch(
     );
     let execution_seconds = execution_started.elapsed().as_secs_f64();
     let comparison_started = std::time::Instant::now();
-    let outputs: Vec<Vec<Ran>> = printed
+    let outputs: Vec<Vec<ExecutionOutcome>> = printed
         .iter()
         .map(|output| {
-            let mut ran: Vec<Ran> = output.lines().map(parse_ran).collect();
-            ran.resize(expected.len(), Ran::Other("the program stopped".to_owned()));
+            let mut ran: Vec<ExecutionOutcome> =
+                output.lines().map(parse_execution_outcome).collect();
+            ran.resize(
+                expected.len(),
+                ExecutionOutcome::Other("the program stopped".to_owned()),
+            );
             ran
         })
         .collect();
@@ -5889,7 +5893,7 @@ fn check_batch(
         // addresses, leaves the compiled code nothing to read there.
         if outputs
             .iter()
-            .any(|ran| ran[position] == Ran::Other("unreachable".to_owned()))
+            .any(|ran| ran[position] == ExecutionOutcome::Other("unreachable".to_owned()))
         {
             *result
                 .skipped
@@ -5898,7 +5902,7 @@ fn check_batch(
             continue;
         }
         result.runs += 1;
-        let differing: Vec<(&str, &Ran)> = LEVELS
+        let differing: Vec<(&str, &ExecutionOutcome)> = LEVELS
             .iter()
             .zip(&outputs)
             .map(|(level, ran)| (*level, &ran[position]))
@@ -6547,35 +6551,37 @@ fn same_outcome(a: &Outcome, b: &Outcome, candidate: &Candidate) -> bool {
     }
 }
 
-fn agrees(ran: &Ran, run: &Expected, candidate: &Candidate) -> bool {
+fn agrees(ran: &ExecutionOutcome, run: &Expected, candidate: &Candidate) -> bool {
     match (ran, &run.outcome) {
-        (Ran::Value(value, sum), ExpectedOutcome::Return { value: wanted }) => {
+        (ExecutionOutcome::Value(value, sum), ExpectedOutcome::Return { value: wanted }) => {
             (candidate.void || value & mask(candidate) == wanted & mask(candidate))
                 && *sum == run.checksum
         }
-        (Ran::Other(text), ExpectedOutcome::Trap) => text == "trap",
+        (ExecutionOutcome::Other(text), ExpectedOutcome::Trap) => text == "trap",
         _ => false,
     }
 }
 
-fn describe(ran: &Ran, mask: u64) -> String {
+fn describe(ran: &ExecutionOutcome, mask: u64) -> String {
     match ran {
-        Ran::Value(value, None) => format!("0x{:x}", value & mask),
-        Ran::Value(value, Some(sum)) => format!("0x{:x} and memory {sum:x}", value & mask),
-        Ran::Other(text) => text.clone(),
+        ExecutionOutcome::Value(value, None) => format!("0x{:x}", value & mask),
+        ExecutionOutcome::Value(value, Some(sum)) => {
+            format!("0x{:x} and memory {sum:x}", value & mask)
+        }
+        ExecutionOutcome::Other(text) => text.clone(),
     }
 }
 
-fn parse_ran(line: &str) -> Ran {
+fn parse_execution_outcome(line: &str) -> ExecutionOutcome {
     match line.strip_prefix("v ") {
         Some(words) => {
             let mut words = words
                 .split_whitespace()
                 .map(|word| u64::from_str_radix(word, 16).expect("a hex value"));
             let value = words.next().expect("a value");
-            Ran::Value(value, words.next())
+            ExecutionOutcome::Value(value, words.next())
         }
-        None => Ran::Other(line.to_owned()),
+        None => ExecutionOutcome::Other(line.to_owned()),
     }
 }
 

@@ -5,13 +5,14 @@ use velk::loader::{self, NameSource};
 
 #[test]
 fn windows_unwind_ranges_bound_stripped_functions() {
-    for opt in ["O0", "O2"] {
+    for optimization in ["O0", "O2"] {
         let debug = loader::load(
-            &common::fixtures_dir().join(format!("metrics/windows.win64.{opt}.debug.dll")),
+            &common::fixtures_dir().join(format!("metrics/windows.win64.{optimization}.debug.dll")),
         )
         .unwrap();
         let stripped = loader::load(
-            &common::fixtures_dir().join(format!("metrics/windows.win64.{opt}.stripped.dll")),
+            &common::fixtures_dir()
+                .join(format!("metrics/windows.win64.{optimization}.stripped.dll")),
         )
         .unwrap();
         assert_eq!(stripped.entry, None);

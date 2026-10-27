@@ -9,7 +9,7 @@ import gzip_output
 ROOT = Path(__file__).resolve().parents[2]
 
 
-def write(sources):
+def write_notices(sources):
     for library in ('musl', 'mbedtls', 'libsodium', 'openssl'):
         source = sources / library
         notices = []
@@ -30,5 +30,5 @@ def write(sources):
         encoded = '\n\n'.join(notices).encode()
         (ROOT / f'target/library-signatures/{library}.NOTICE.gz').write_bytes(gzip_output.compress(encoded))
     sysroot = Path(subprocess.check_output(['rustc', '--print', 'sysroot'], text=True).strip())
-    data = (sysroot / 'share/doc/rust/COPYRIGHT-library.html').read_bytes()
-    (ROOT / 'target/library-signatures/rust.NOTICE.html.gz').write_bytes(gzip_output.compress(data))
+    copyright_html = (sysroot / 'share/doc/rust/COPYRIGHT-library.html').read_bytes()
+    (ROOT / 'target/library-signatures/rust.NOTICE.html.gz').write_bytes(gzip_output.compress(copyright_html))

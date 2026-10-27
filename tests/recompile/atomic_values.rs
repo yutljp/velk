@@ -1,7 +1,7 @@
 use super::*;
 use velk::ir::{AtomicOp, MachineInstruction, Ordering, RegRef, VARIABLE_BASE};
 
-fn atomic(ordering: Ordering) -> Stmt {
+fn atomic_add(ordering: Ordering) -> Stmt {
     Stmt::Machine {
         instruction: MachineInstruction::Atomic {
             op: AtomicOp::Add,
@@ -16,7 +16,7 @@ fn atomic(ordering: Ordering) -> Stmt {
     }
 }
 
-fn params() -> Vec<Param> {
+fn atomic_parameters() -> Vec<Param> {
     vec![
         Param {
             index: 7,
@@ -59,7 +59,7 @@ fn printed_private_values_cross_atomics_without_moving_shared_loads() {
             let name = format!("private_atomic_{i}_{promotion}");
             let mut ir = synthetic_ir(
                 &name,
-                params(),
+                atomic_parameters(),
                 CType::U64,
                 vec![
                     Stmt::Store {
@@ -67,7 +67,7 @@ fn printed_private_values_cross_atomics_without_moving_shared_loads() {
                         value: Expr::reg(6, 64),
                         width: 8,
                     },
-                    atomic(ordering),
+                    atomic_add(ordering),
                     Stmt::Ret {
                         value: load(slot.clone()),
                     },
@@ -92,7 +92,7 @@ fn printed_private_values_cross_atomics_without_moving_shared_loads() {
         let name = format!("shared_atomic_{i}");
         let mut ir = synthetic_ir(
             &name,
-            params(),
+            atomic_parameters(),
             CType::U64,
             vec![
                 Stmt::Assign {
@@ -102,7 +102,7 @@ fn printed_private_values_cross_atomics_without_moving_shared_loads() {
                     },
                     value: load(Expr::reg(7, 64)),
                 },
-                atomic(ordering),
+                atomic_add(ordering),
                 Stmt::Ret {
                     value: Expr::reg(VARIABLE_BASE, 64),
                 },
@@ -121,7 +121,7 @@ fn printed_private_values_cross_atomics_without_moving_shared_loads() {
         let name = format!("global_atomic_{i}");
         let mut ir = synthetic_ir(
             &name,
-            params(),
+            atomic_parameters(),
             CType::U64,
             vec![
                 Stmt::Assign {
@@ -131,7 +131,7 @@ fn printed_private_values_cross_atomics_without_moving_shared_loads() {
                     },
                     value: load(Expr::Const(0x3000_0000_0000)),
                 },
-                atomic(ordering),
+                atomic_add(ordering),
                 Stmt::Ret {
                     value: Expr::reg(VARIABLE_BASE, 64),
                 },
@@ -155,14 +155,14 @@ fn printed_private_values_cross_atomics_without_moving_shared_loads() {
         ));
     }
     let slot = Expr::bin(BinOp::Add, Expr::reg(4, 64), Expr::Const((-8i64) as u64));
-    let mut barrier = atomic(Ordering::SeqCst);
+    let mut barrier = atomic_add(Ordering::SeqCst);
     let Stmt::Machine { outputs, .. } = &mut barrier else {
         unreachable!()
     };
     outputs[0].index = 6;
     let mut saved = synthetic_ir(
         "atomic_redefines_saved_value",
-        params(),
+        atomic_parameters(),
         CType::U64,
         vec![
             Stmt::Store {
@@ -187,7 +187,7 @@ fn printed_private_values_cross_atomics_without_moving_shared_loads() {
     text.push_str(&code);
     checks
         .push_str("x = 41; if (atomic_redefines_saved_value(&x, 73) != 73 || x != 42) return 6;\n");
-    let mut pointer_params = params();
+    let mut pointer_params = atomic_parameters();
     pointer_params[1].ty = CType::pointer_to(CType::U64);
     let pointer_value = synthetic_ir(
         "atomic_pointer_value",
@@ -238,7 +238,7 @@ fn printed_private_values_cross_atomics_without_moving_shared_loads() {
 fn incoming_and_atomic_frame_slots_are_not_forwarded() {
     for offset in [-8i64, 8] {
         let slot = Expr::bin(BinOp::Add, Expr::reg(4, 64), Expr::Const(offset as u64));
-        let mut barrier = atomic(Ordering::SeqCst);
+        let mut barrier = atomic_add(Ordering::SeqCst);
         if offset < 0 {
             let Stmt::Machine { inputs, .. } = &mut barrier else {
                 unreachable!()
@@ -247,7 +247,7 @@ fn incoming_and_atomic_frame_slots_are_not_forwarded() {
         }
         let mut ir = synthetic_ir(
             "shared_frame_atomic",
-            params(),
+            atomic_parameters(),
             CType::U64,
             vec![
                 Stmt::Store {

@@ -36,9 +36,9 @@ struct __attribute__((packed)) Packed { char tag; Query method; };
                 for name in ["size_t", "ssize_t", "intptr_t", "uintptr_t", "ptrdiff_t"]:
                     generator.SCALARS[name] = width
                 generator.SCALARS["long"] = generator.SCALARS["unsigned long"] = 4
-                data, _ = generator.extract("clang", None, target, source)
-                self.assertEqual(data["guids"]["IID_TypeTest"], list(bytes.fromhex("67452381cdab01ef23456789abcdefff")))
-                fields = data["records"]["struct Vtable"]["fields"]
+                type_library, _ = generator.extract("clang", None, target, source)
+                self.assertEqual(type_library["guids"]["IID_TypeTest"], list(bytes.fromhex("67452381cdab01ef23456789abcdefff")))
+                fields = type_library["records"]["struct Vtable"]["fields"]
                 self.assertEqual([field[1] for field in fields],
                                  ["QueryInterface", "AddRef", "Allocate", "Visit", "Format", "Queries", "Seek"])
                 self.assertEqual([field[0] for field in fields], [i * width for i in range(7)])
@@ -51,10 +51,10 @@ struct __attribute__((packed)) Packed { char tag; Query method; };
                 self.assertIn("(**)", fields[5][2])
                 self.assertIn("union Position", fields[6][2])
                 self.assertIn("stdcall" if width == 4 else "ms_abi", fields[0][2])
-                packed = data["records"]["struct Packed"]
+                packed = type_library["records"]["struct Packed"]
                 self.assertEqual(packed["size"], width + 1)
                 self.assertEqual(packed["fields"], [[0, "tag", "char", 1]])
-                generator.verify_target("clang", target, [str(source)], data)
+                generator.verify_target("clang", target, [str(source)], type_library)
 
 
 if __name__ == "__main__":
