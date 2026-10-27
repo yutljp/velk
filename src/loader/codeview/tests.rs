@@ -103,7 +103,7 @@ fn malformed_symbols_do_not_hide_valid_procedures_or_reassign_locations() {
         procedure(0x1110, 16),
     ]
     .concat();
-    let mut data = Data {
+    let mut data = CodeViewData {
         types: scalar_types(),
         ..Default::default()
     };
@@ -118,7 +118,7 @@ fn malformed_symbols_do_not_hide_valid_procedures_or_reassign_locations() {
             .is_empty()
     );
     assert_eq!(data.procedures[1].addr, 0x1010);
-    let mut overflow = Data::default();
+    let mut overflow = CodeViewData::default();
     symbols::read(
         &mut overflow,
         &procedure(0x1110, 1),
@@ -137,7 +137,7 @@ fn legacy_frame_locations_and_full_register_ranges_are_read() {
             variable.extend_from_slice(&334u16.to_le_bytes());
         }
         variable.extend_from_slice(b"counter\0");
-        let mut data = Data {
+        let mut data = CodeViewData {
             types: scalar_types(),
             ..Default::default()
         };
@@ -160,7 +160,7 @@ fn legacy_frame_locations_and_full_register_ranges_are_read() {
     range.extend_from_slice(&0u32.to_le_bytes());
     range.extend_from_slice(&1u16.to_le_bytes());
     range.extend_from_slice(&16u16.to_le_bytes());
-    let mut data = Data {
+    let mut data = CodeViewData {
         types: scalar_types(),
         ..Default::default()
     };

@@ -10,7 +10,7 @@ pub(in crate::render) fn byte_pointer(expr: &Expr, ctx: &Ctx<'_>) -> Option<Stri
             Some(format!("(uint8_t *){}", ctx.register(*index, 64)))
         }
         Expr::Load { .. }
-            if let Some((name, element)) = crate::render::naming::scalar_pointer(expr, ctx)
+            if let Some((name, element)) = crate::render::naming::element_pointer(expr, ctx)
                 && element != 1 =>
         {
             Some(format!("(uint8_t *){name}"))
@@ -174,7 +174,7 @@ pub(super) fn load(addr: &Expr, width: u8, signed: bool, ctx: &Ctx<'_>) -> Print
         }
         return value.cast(bits, signed, if signed { 64 } else { ALL });
     }
-    if crate::render::naming::object_member(addr, width, ctx).is_none()
+    if crate::render::naming::object_access(addr, width, ctx).is_none()
         && let Some(indexed) = crate::render::naming::flat_array_access(addr, width, ctx)
     {
         let strength = if indexed.starts_with('*') { 12 } else { 13 };
@@ -182,7 +182,7 @@ pub(super) fn load(addr: &Expr, width: u8, signed: bool, ctx: &Ctx<'_>) -> Print
     }
     let member = member_access(addr, width, ctx)
         .filter(|member| member.integer().is_some() || member.ty.is_pointer());
-    if crate::render::naming::object_member(addr, width, ctx)
+    if crate::render::naming::object_access(addr, width, ctx)
         .is_none_or(|member| member.precision().is_some())
         && let Some(text) = copied_load(addr, width, ctx)
     {

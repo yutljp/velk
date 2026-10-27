@@ -245,7 +245,7 @@ pub struct Image {
     pub slices: Vec<Slice>,
     /// Offset of the selected Mach-O slice in the input file.
     pub slice_offset: u64,
-    codeview: codeview::Data,
+    codeview: codeview::CodeViewData,
     pub format: Format,
     /// Successful recovery of a packed input, when applicable.
     pub packing: Option<packed::Report>,

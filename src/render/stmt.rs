@@ -85,7 +85,7 @@ pub(super) fn argument(value: &Expr, ctx: &Ctx<'_>) -> String {
 /// A returned value, of which the caller sees what the return type holds.
 pub(super) fn returned(value: &Expr, ctx: &Ctx<'_>) -> String {
     let printed = expr::print_declared_value(value, ctx, ctx.returned);
-    conformed(value, printed, ctx.ret_pointer.as_deref(), ctx)
+    conformed(value, printed, ctx.return_pointer_type.as_deref(), ctx)
 }
 
 /// The value as C takes it into a pointer of type `pointer`, or into an
@@ -330,9 +330,9 @@ pub(crate) fn render_stmt(stmt: &Stmt, ctx: &Ctx<'_>) -> String {
         Stmt::Assign { dest, value } => {
             // A destination whose readers only use the low 32 bits takes its
             // 32-bit register name.
-            let target = if ctx.narrow_regs.contains(&dest.index)
+            let target = if ctx.narrow_registers.contains(&dest.index)
                 && dest.index != 0
-                && !ctx.wide_params.contains(&dest.index)
+                && !ctx.wide_parameters.contains(&dest.index)
             {
                 ctx.register(dest.index, 32)
             } else {

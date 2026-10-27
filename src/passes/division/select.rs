@@ -10,7 +10,7 @@ use crate::passes::division::unwrap_leaf;
 /// `and t, t, mask` / `csneg r, m, t, mi`. The select's condition tests the
 /// negated dividend's sign. Returns the steps to drop, the divisor, and the
 /// dividend register and width.
-pub(crate) fn cs_neg_chain(
+pub(crate) fn conditional_negation_chain(
     statements: &[Stmt],
     select_index: usize,
 ) -> Option<(Vec<usize>, u64, u16, u8)> {

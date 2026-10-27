@@ -388,7 +388,7 @@ impl Place {
     }
 }
 
-pub(super) fn object_member(addr: &Expr, width: u8, ctx: &Ctx<'_>) -> Option<Place> {
+pub(super) fn object_access(addr: &Expr, width: u8, ctx: &Ctx<'_>) -> Option<Place> {
     if let Some((base, offset)) = member_address(addr)
         && let Some(abi) = ctx.abi
         && let Some(binding) = abi.pointers.iter().find(|binding| binding.register == base)
@@ -438,7 +438,7 @@ pub(crate) fn member_access(addr: &Expr, width: u8, ctx: &Ctx<'_>) -> Option<Pla
     {
         return Some(Place { text, ty });
     }
-    if let Some(member) = object_member(addr, width, ctx) {
+    if let Some(member) = object_access(addr, width, ctx) {
         return Some(member);
     }
     if crate::render::locals::offset_local(addr, crate::arch::stack_pointer(ctx.isa)).is_some()
@@ -664,7 +664,7 @@ pub(super) fn pointer_target(expr: &Expr, ctx: &Ctx<'_>) -> Option<CType> {
                 if super::expr::byte_pointer(term, ctx).is_some() {
                     Some((*term, *negative, 0))
                 } else {
-                    scalar_pointer(term, ctx).map(|(_, size)| (*term, *negative, size))
+                    element_pointer(term, ctx).map(|(_, size)| (*term, *negative, size))
                 }
             });
             let Some((base, false, size)) = bases.next() else {
@@ -696,7 +696,7 @@ fn size_of(ty: &CType, ctx: &Ctx<'_>) -> Option<u64> {
 
 /// The name of a pointer to elements and the size of each: a register, or
 /// a local the frame holds it in.
-pub(crate) fn scalar_pointer(expr: &Expr, ctx: &Ctx<'_>) -> Option<(String, u64)> {
+pub(crate) fn element_pointer(expr: &Expr, ctx: &Ctx<'_>) -> Option<(String, u64)> {
     match expr {
         Expr::Const(address) => {
             let Some((base, _)) = ctx.globals.containing(*address) else {
@@ -782,7 +782,7 @@ fn element_terms<'e>(addr: &'e Expr, ctx: &Ctx<'_>) -> Option<(String, u64, Expr
         .enumerate()
         .filter(|(_, (_, negative))| !negative)
         .filter_map(|(at, (term, _))| {
-            let Some(pointer) = scalar_pointer(term, ctx) else {
+            let Some(pointer) = element_pointer(term, ctx) else {
                 return None;
             };
             Some((at, pointer))

@@ -49,7 +49,7 @@ pub(crate) fn float_operand(
                 Precision::Single => f64::from(f32::from_bits(*bits as u32)),
             };
             if !value.is_finite() {
-                return bits_float(print(expr, ctx, 64), precision);
+                return bits_to_float(print(expr, ctx, 64), precision);
             }
             let text = if value == value.trunc() && value.abs() < 1e15 {
                 format!("{value:.1}")
@@ -78,7 +78,7 @@ pub(crate) fn float_operand(
                     || u32::from(*width) < u32::from(precision.bits())) =>
         {
             let bits = print(&Expr::reg(*index, *width), ctx, 64);
-            bits_float(bits, precision)
+            bits_to_float(bits, precision)
         }
         Expr::Reg { index, .. } => ctx.register(*index, 64),
         Expr::Apply { op, args }
@@ -110,7 +110,7 @@ pub(crate) fn float_operand(
                 return member.text;
             }
             if let Some(bits) = copied_load(addr, *width, ctx) {
-                return bits_float(Printed::opaque(bits, 12), precision);
+                return bits_to_float(Printed::opaque(bits, 12), precision);
             }
             let view = View::Float(precision);
             if let Some(indexed) = crate::render::naming::array_access_as(addr, *width, view, ctx)
@@ -128,12 +128,12 @@ pub(crate) fn float_operand(
                 },
             }
         }
-        _ if ctx.bit_values() => bits_float(print(expr, ctx, 64), precision),
+        _ if ctx.bit_values() => bits_to_float(print(expr, ctx, 64), precision),
         _ => operand(expr, ctx, parent, right),
     }
 }
 
-pub(in crate::render) fn bits_float(bits: Printed, precision: Precision) -> String {
+pub(in crate::render) fn bits_to_float(bits: Printed, precision: Precision) -> String {
     let (float, integer) = match precision {
         Precision::Single => ("float", "uint32_t"),
         Precision::Double => ("double", "uint64_t"),
@@ -504,7 +504,7 @@ mod tests {
                 assert_eq!(bits.range, Range::Unsigned(u32::from(precision.bits())));
                 let value = Printed::opaque(value.to_owned(), 13);
                 assert_eq!(
-                    bits_float(value.clone(), precision),
+                    bits_to_float(value.clone(), precision),
                     format!(
                         "((union {{ {integer} bits; {float} value; }}){{ .bits = {} }}).value",
                         value.text

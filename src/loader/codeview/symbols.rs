@@ -1,7 +1,7 @@
 //! Procedure declarations and fixed storage from `CodeView` symbols.
 
 use super::{
-    Data, Procedure, locations,
+    CodeViewData, Procedure, locations,
     records::{Reader, records, u32_at},
     types::{Types, valid_identifier},
 };
@@ -41,7 +41,7 @@ struct PendingProcedure {
     inlined: Option<usize>,
 }
 
-pub(super) fn read(data: &mut Data, bytes: &[u8], sections: &[(u64, u64)], ids: bool) {
+pub(super) fn read(data: &mut CodeViewData, bytes: &[u8], sections: &[(u64, u64)], ids: bool) {
     let mut pending: Option<PendingProcedure> = None;
     let mut budget = bytes.len() / 4;
     for (kind, bytes) in records(bytes) {
@@ -327,7 +327,7 @@ fn source(index: u32) -> TypeSource {
     }
 }
 
-fn finish(data: &mut Data, function: PendingProcedure, budget: &mut usize) {
+fn finish(data: &mut CodeViewData, function: PendingProcedure, budget: &mut usize) {
     let types = &data.types;
     let signature = types
         .procedure(function.ty)
@@ -432,7 +432,7 @@ fn aggregate_size(types: &Types, index: u32) -> Option<u64> {
     }
 }
 
-pub(super) fn locals(data: &Data, image: &Image, procedure: &Procedure) -> Vec<DebugLocal> {
+pub(super) fn locals(data: &CodeViewData, image: &Image, procedure: &Procedure) -> Vec<DebugLocal> {
     let Some(total) = procedure.total else {
         return Vec::new();
     };

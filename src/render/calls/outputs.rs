@@ -119,7 +119,10 @@ fn assigned_value(output: &CallOutput, value: String, ty: &ValueType, ctx: &Ctx<
     }
     let value = projected(value, output.dest.width, ty);
     if let Some(precision) = ctx.floats.get(&output.dest.index) {
-        crate::render::expr::bits_float(crate::render::int::Printed::opaque(value, 13), *precision)
+        crate::render::expr::bits_to_float(
+            crate::render::int::Printed::opaque(value, 13),
+            *precision,
+        )
     } else if let Some(target) = ctx.pointer_types.get(&output.dest.index) {
         if matches!(output.dest.width, 8 | 16 | 32)
             || matches!(ty, ValueType::Integer { bits, .. } if *bits < 64)
@@ -214,7 +217,7 @@ pub(in crate::render) fn returned(call: &Stmt, value: &Expr, ctx: &Ctx<'_>) -> O
         return None;
     }
     if dest.width == 64
-        && let Some(pointer) = &ctx.ret_pointer
+        && let Some(pointer) = &ctx.return_pointer_type
         && ctx.pointer_types.get(&dest.index) == Some(pointer)
     {
         let Some(value) = captured(call, ctx) else {

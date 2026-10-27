@@ -3,7 +3,7 @@ use crate::ir::{Expr, FunctionIr, Stmt, VARIABLE_BASE};
 
 /// Uses an integer stack variable in place of the register copied into it,
 /// only when every read sees the same complete value in the slot.
-pub(crate) fn fold_debug_locals(ir: &mut FunctionIr) -> bool {
+pub(crate) fn fold_stack_locals(ir: &mut FunctionIr) -> bool {
     let sp = crate::arch::stack_pointer(ir.isa);
     if !crate::passes::memory::fixed_private_frame(ir, sp) {
         return false;

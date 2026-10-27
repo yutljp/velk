@@ -1,7 +1,7 @@
 use super::operation::{is_comparison, render_operation};
 use super::{Ctx, load, print};
 use crate::ir::{BinOp, Cond, Expr};
-use crate::render::int::{ALL, Int, Printed, converted, zero_bits};
+use crate::render::int::{ALL, Int, Printed, converted, value_width};
 
 pub(crate) fn condition(cond: Cond, lhs: &Expr, rhs: &Expr, ctx: &Ctx<'_>) -> String {
     if matches!(cond, Cond::Eq | Cond::Ne)
@@ -222,7 +222,7 @@ fn compares(
     // Or the value C compares is the IR's operand, extended as the
     // comparison reads it.
     let unsigned = if printed.exact == ALL {
-        printed.unsigned_bits().min(zero_bits(expr, ctx))
+        printed.unsigned_bits().min(value_width(expr, ctx))
     } else {
         printed.unsigned_bits()
     };

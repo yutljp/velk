@@ -23,7 +23,7 @@ use crate::passes::division::remainder::apply_remainder_follows;
 use crate::passes::division::remainder::remainder_leaf;
 use crate::passes::division::remainder::remainder_scan;
 use crate::passes::division::remainder::remainder_tail;
-use crate::passes::division::select::cs_neg_chain;
+use crate::passes::division::select::conditional_negation_chain;
 use crate::passes::division::select::signed_select_chain;
 use crate::passes::division::select::signed_select_mod_chain;
 use crate::passes::division::widened::magic_product;
@@ -186,7 +186,8 @@ fn magic_block(
         if !matches!(value, Expr::Select { .. }) {
             continue;
         }
-        let Some((steps, divisor, dividend, width)) = cs_neg_chain(block.stmts.as_slice(), probe)
+        let Some((steps, divisor, dividend, width)) =
+            conditional_negation_chain(block.stmts.as_slice(), probe)
         else {
             continue;
         };

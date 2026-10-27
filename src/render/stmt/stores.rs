@@ -12,7 +12,7 @@ pub(super) fn render(addr: &Expr, value: &Expr, width: &u8, ctx: &Ctx<'_>) -> St
     let stored_bits = u32::from(*width) * 8;
     let member = member_access(addr, *width, ctx);
     let precision = value_precision(value, ctx);
-    if naming::object_member(addr, *width, ctx)
+    if naming::object_access(addr, *width, ctx)
         .is_none_or(|member| member.precision().is_some() && member.precision() != precision)
         && let Some(address) = expr::copy_address(addr, *width, ctx)
     {

@@ -610,11 +610,13 @@ fn installed_table(image: &Image, addr: u64) -> Option<u64> {
 }
 
 /// Constructors are short; longer functions are not looked into.
-const CONSTRUCTOR_SIZE: u64 = 512;
+const MAX_ANALYZED_FUNCTION_SIZE: u64 = 512;
 
 fn find_installed_table(image: &Image, addr: u64) -> Option<u64> {
     let function = image.functions.get(&addr)?;
-    let size = function.size.filter(|size| *size <= CONSTRUCTOR_SIZE)?;
+    let size = function
+        .size
+        .filter(|size| *size <= MAX_ANALYZED_FUNCTION_SIZE)?;
     let blocks = crate::lift::lift(image, addr, size, &HashSet::new()).ok()?;
     let first = *image.convention_of(addr).arguments().first()?;
     let tracker = Tracker {
@@ -656,7 +658,7 @@ fn returned_by(image: &Image, addr: u64) -> Option<u64> {
     }
     let size = function
         .size
-        .filter(|size| *size != 0 && *size <= CONSTRUCTOR_SIZE)?;
+        .filter(|size| *size != 0 && *size <= MAX_ANALYZED_FUNCTION_SIZE)?;
     let end = addr.checked_add(size)?;
     let convention = image.convention_of(addr);
     if !matches!(

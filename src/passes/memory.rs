@@ -533,7 +533,7 @@ fn fuse_block(
         };
         let mut update = super::copies::truncated(value, written.width);
         let mut valid = true;
-        super::copies::substitute_reg_inner(&mut update, dest, 64, &load, &mut valid);
+        super::copies::substitute_register_in_expression(&mut update, dest, 64, &load, &mut valid);
         if !valid {
             index += 1;
             continue;

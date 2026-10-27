@@ -10,7 +10,7 @@ use crate::ir::{Cond, Expr, FunctionIr, Stmt, VARIABLE_BASE};
 use crate::passes::frame::reads_outside_frame;
 
 mod debug;
-pub(crate) use debug::fold_debug_locals;
+pub(crate) use debug::fold_stack_locals;
 mod available;
 pub(crate) use available::redundant_copy_renames;
 
@@ -162,7 +162,7 @@ fn substitute_in_statement(stmt: &mut Stmt, dest: u16, value: &Expr, ok: &mut bo
     }
     let width = expr_width(value).unwrap_or(64);
     if let Stmt::Switch { index, .. } = stmt {
-        substitute_reg_inner(index, dest, width, value, ok);
+        substitute_register_in_expression(index, dest, width, value, ok);
     } else {
         substitute_ordinary(stmt, dest, width, value, ok);
     }
@@ -172,26 +172,32 @@ fn substitute_ordinary(stmt: &mut Stmt, dest: u16, width: u8, value: &Expr, ok: 
     match stmt {
         Stmt::Machine { inputs, .. } => {
             for input in inputs {
-                substitute_reg_inner(input, dest, width, value, ok);
+                substitute_register_in_expression(input, dest, width, value, ok);
             }
         }
-        Stmt::Assign { value: target, .. } => substitute_reg_inner(target, dest, width, value, ok),
+        Stmt::Assign { value: target, .. } => {
+            substitute_register_in_expression(target, dest, width, value, ok)
+        }
         Stmt::Store {
             addr,
             value: stored,
             ..
         } => {
-            substitute_reg_inner(addr, dest, width, value, ok);
-            substitute_reg_inner(stored, dest, width, value, ok);
+            substitute_register_in_expression(addr, dest, width, value, ok);
+            substitute_register_in_expression(stored, dest, width, value, ok);
         }
         Stmt::Brif { cond, lhs, rhs, .. } => {
             let comparison = crate::ir::semantics::operand_width(lhs, rhs);
-            substitute_reg_inner(lhs, dest, width, value, ok);
-            substitute_reg_inner(rhs, dest, width, value, ok);
+            substitute_register_in_expression(lhs, dest, width, value, ok);
+            substitute_register_in_expression(rhs, dest, width, value, ok);
             *ok &= comparison_preserved(*cond, comparison, lhs, rhs);
         }
-        Stmt::Ret { value: returned } => substitute_reg_inner(returned, dest, width, value, ok),
-        Stmt::BrIndirect { target } => substitute_reg_inner(target, dest, width, value, ok),
+        Stmt::Ret { value: returned } => {
+            substitute_register_in_expression(returned, dest, width, value, ok)
+        }
+        Stmt::BrIndirect { target } => {
+            substitute_register_in_expression(target, dest, width, value, ok)
+        }
         _ => *ok = false,
     }
 }
@@ -262,7 +268,7 @@ pub(crate) fn integer_expression_candidate(ir: &FunctionIr) -> Option<FunctionIr
     }
     let statements: usize = ir.blocks.iter().map(|block| block.stmts.len()).sum();
     let mut folded = ir.clone();
-    if folded.debug_locals.is_empty() && fold_debug_locals(&mut folded) {
+    if folded.debug_locals.is_empty() && fold_stack_locals(&mut folded) {
         super::read_once::fold_values_read_once(&mut folded);
     }
     copy_propagate_with(&mut folded, Duplication::Avoid, &|index, value| {
@@ -615,7 +621,7 @@ fn substitute_statement(stmt: &mut Stmt, dest: u16, width: u8, template: &Expr) 
             ..
         } if !convention.unnamed_reads(*floats_named).contains(&dest) => {
             for expr in through.iter_mut().chain(args.iter_mut()) {
-                substitute_reg_inner(expr, dest, width, template, &mut ok);
+                substitute_register_in_expression(expr, dest, width, template, &mut ok);
             }
         }
         _ => substitute_ordinary(&mut folded, dest, width, template, &mut ok),
@@ -626,7 +632,7 @@ fn substitute_statement(stmt: &mut Stmt, dest: u16, width: u8, template: &Expr) 
     ok
 }
 
-pub(crate) fn substitute_reg_inner(
+pub(crate) fn substitute_register_in_expression(
     expr: &mut Expr,
     dest: u16,
     width: u8,
@@ -682,8 +688,8 @@ pub(crate) fn substitute_reg_inner(
                 crate::ir::BinOp::Sar | crate::ir::BinOp::DivS | crate::ir::BinOp::ModS
             );
             let before = crate::ir::semantics::operand_width(lhs, rhs);
-            substitute_reg_inner(lhs, dest, width, template, ok);
-            substitute_reg_inner(rhs, dest, width, template, ok);
+            substitute_register_in_expression(lhs, dest, width, template, ok);
+            substitute_register_in_expression(rhs, dest, width, template, ok);
             if sensitive && before != crate::ir::semantics::operand_width(lhs, rhs) {
                 *ok = false;
             }
@@ -696,17 +702,21 @@ pub(crate) fn substitute_reg_inner(
             els,
         } => {
             let comparison = crate::ir::semantics::operand_width(lhs, rhs);
-            substitute_reg_inner(lhs, dest, width, template, ok);
-            substitute_reg_inner(rhs, dest, width, template, ok);
-            substitute_reg_inner(then, dest, width, template, ok);
-            substitute_reg_inner(els, dest, width, template, ok);
+            substitute_register_in_expression(lhs, dest, width, template, ok);
+            substitute_register_in_expression(rhs, dest, width, template, ok);
+            substitute_register_in_expression(then, dest, width, template, ok);
+            substitute_register_in_expression(els, dest, width, template, ok);
             *ok &= comparison_preserved(*cond, comparison, lhs, rhs);
         }
-        Expr::Load { addr, .. } => substitute_reg_inner(addr, dest, width, template, ok),
-        Expr::SignExtend { value, .. } => substitute_reg_inner(value, dest, width, template, ok),
+        Expr::Load { addr, .. } => {
+            substitute_register_in_expression(addr, dest, width, template, ok)
+        }
+        Expr::SignExtend { value, .. } => {
+            substitute_register_in_expression(value, dest, width, template, ok)
+        }
         Expr::Apply { args, .. } => {
             for arg in args {
-                substitute_reg_inner(arg, dest, width, template, ok);
+                substitute_register_in_expression(arg, dest, width, template, ok);
             }
         }
         _ => {}

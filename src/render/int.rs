@@ -262,7 +262,7 @@ pub(crate) fn wrapped(exact: u32, ty: Int) -> u32 {
 }
 
 /// The number of bits the IR's value of `expr` fits in.
-pub(crate) fn zero_bits(expr: &Expr, ctx: &Ctx<'_>) -> u32 {
+pub(crate) fn value_width(expr: &Expr, ctx: &Ctx<'_>) -> u32 {
     value_width_in(expr, &ctx.value_bits)
 }
 
@@ -404,7 +404,7 @@ pub(crate) fn fit(mut printed: Printed, expr: &Expr, bits: u32, ctx: &Ctx<'_>) -
     if printed.kind != ValueKind::Integer {
         return printed;
     }
-    let zero = zero_bits(expr, ctx);
+    let zero = value_width(expr, ctx);
     // A value right in all the bits of its type is the IR's value when that
     // fits in fewer bits, or in as many without a sign.
     if printed.exact >= printed.ty.bits

@@ -130,7 +130,7 @@ fn signed_power_of_two_chain_matchers_are_equivalent() {
                 },
             ];
             assert!(
-                cs_neg_chain(&statements, 3).is_some(),
+                conditional_negation_chain(&statements, 3).is_some(),
                 "sign-select matcher accepts"
             );
             let before = FunctionIr::single_block(Isa::AArch64, statements);

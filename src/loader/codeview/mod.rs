@@ -20,7 +20,7 @@ use std::path::Path;
 pub(super) const SOURCE: u64 = u64::MAX;
 
 #[derive(Debug, Default)]
-pub(crate) struct Data {
+pub(crate) struct CodeViewData {
     types: types::Types,
     ids: types::Types,
     procedures: Vec<Procedure>,
@@ -37,7 +37,7 @@ struct Procedure {
     variables: Vec<(String, u32, u16, i64)>,
 }
 
-impl Data {
+impl CodeViewData {
     pub(super) fn functions(&self) -> Vec<super::dwarf::DwarfFunction> {
         self.procedures
             .iter()
@@ -95,12 +95,12 @@ pub(super) fn read(
     path: &Path,
     file: &object::File<'_>,
     bases: &HashMap<SectionIndex, u64>,
-) -> Data {
+) -> CodeViewData {
     if file.format() != object::BinaryFormat::Coff && file.format() != object::BinaryFormat::Pe {
-        return Data::default();
+        return CodeViewData::default();
     }
     if file.architecture() != object::Architecture::X86_64 {
-        return Data::default();
+        return CodeViewData::default();
     }
     let sections: Vec<_> = file
         .sections()

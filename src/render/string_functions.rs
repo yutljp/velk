@@ -614,7 +614,7 @@ pub(super) fn render(nodes: &[Node], ctx: &Ctx<'_>) -> Option<String> {
     if let Some(text) = loops::render(nodes, &initial, iteration, ctx) {
         return Some(text);
     }
-    if ctx.ret_pointer.is_some() {
+    if ctx.return_pointer_type.is_some() {
         return None;
     }
     if let Some(text) = bounded::render(nodes, &initial, ctx) {

@@ -11,7 +11,7 @@ pub(super) use memory::copy_address;
 pub(super) use memory::local_offset_integer;
 use memory::{byte_sum, load};
 pub(crate) use memory::{local_plus_offset, slot_access};
-pub(super) use operation::bits_float;
+pub(super) use operation::bits_to_float;
 pub(super) use operation::float_assignment;
 pub(super) use operation::float_bits;
 pub(crate) use operation::float_operand;
@@ -23,7 +23,9 @@ use std::collections::HashMap;
 
 use crate::ir::{BinOp, CType, Cond, Expr, Member, Operation, Precision, reg_name};
 use crate::loader::Isa;
-use crate::render::int::{ALL, Int, Printed, Range, ValueKind, converted, fit, wrapped, zero_bits};
+use crate::render::int::{
+    ALL, Int, Printed, Range, ValueKind, converted, fit, value_width, wrapped,
+};
 use crate::render::sanitize;
 
 /// How a parameter or variable is declared.
@@ -96,7 +98,7 @@ pub(crate) struct Ctx<'a> {
     /// Locals declared as signed integers.
     pub(super) signed_locals: std::collections::HashSet<String>,
     /// Parameters wider than 32 bits: masking one is a real truncation.
-    pub(super) wide_params: std::collections::HashSet<u16>,
+    pub(super) wide_parameters: std::collections::HashSet<u16>,
     pub(super) symbols: &'a super::Symbols,
     pub(super) globals: crate::render::globals::Globals,
     /// Non-executable `(start, size)` ranges: a constant address inside one is a global.
@@ -113,7 +115,7 @@ pub(crate) struct Ctx<'a> {
     pub(super) arrays: HashMap<String, crate::render::naming::Layout>,
     pub(super) scaled_offsets: HashMap<u16, u64>,
     /// Registers whose readers only ever look at the low 32 bits.
-    pub(super) narrow_regs: std::collections::HashSet<u16>,
+    pub(super) narrow_registers: std::collections::HashSet<u16>,
     /// Variables holding floats, with their precision.
     pub(super) floats: HashMap<u16, Precision>,
     pub(super) readonly_floats: HashMap<u16, (String, Precision)>,
@@ -126,7 +128,7 @@ pub(crate) struct Ctx<'a> {
     pub(super) pointer_types: HashMap<u16, String>,
     /// The pointer type each pointer local is declared with.
     pub(super) local_pointer_types: HashMap<String, String>,
-    pub(super) ret_pointer: Option<String>,
+    pub(super) return_pointer_type: Option<String>,
     /// The integer type each named register is declared with.
     pub(super) declared: HashMap<u16, Declared>,
     /// The bits each variable's values fit in.
@@ -415,7 +417,7 @@ fn shift(op: BinOp, lhs: &Expr, rhs: &Expr, ctx: &Ctx<'_>, bits: u32) -> Printed
     };
     let mut value = print_in(lhs, ctx, read, ConstantUse::Hex).address_integer();
     let value_bits = value.unsigned_bits().min(if value.exact == ALL {
-        zero_bits(lhs, ctx)
+        value_width(lhs, ctx)
     } else {
         ALL
     });
@@ -566,7 +568,7 @@ fn unfitted(value: &Expr, ctx: &Ctx<'_>, bits: u32, usage: ConstantUse) -> Print
         } if matches!(lhs.as_ref(), Expr::Const(0)) => {
             // A value equal to the IR's and short of the sign bit negates
             // without overflow.
-            let small = zero_bits(rhs, ctx);
+            let small = value_width(rhs, ctx);
             let keeps = |negated: &Printed| {
                 if negated.exact == ALL && negated.ty.signed && small < negated.ty.bits {
                     64
@@ -1000,7 +1002,7 @@ fn binary(
             strength,
         );
     }
-    let (zero_left, zero_right) = (zero_bits(left, ctx), zero_bits(right, ctx));
+    let (zero_left, zero_right) = (value_width(left, ctx), value_width(right, ctx));
     let keeps = |lhs: &Printed, rhs: &Printed| {
         let ty = lhs.ty.common(rhs.ty);
         let (a, b) = (converted(lhs, ty), converted(rhs, ty));
@@ -1364,7 +1366,7 @@ fn signed_constant(value: u64, width: u32) -> Printed {
 fn masked(lhs: &Expr, mask: u64, ctx: &Ctx<'_>, bits: u32) -> Printed {
     let kept = mask.count_ones();
     let inner = integral(lhs, ctx, bits.min(kept));
-    let alone = if (inner.exact == ALL && zero_bits(lhs, ctx) <= kept)
+    let alone = if (inner.exact == ALL && value_width(lhs, ctx) <= kept)
         || (inner.exact >= kept && inner.unsigned_bits() <= kept)
     {
         ALL
@@ -1543,7 +1545,7 @@ mod tests {
             ("a + b", 10, ".bits = a + b"),
         ] {
             let value = Printed::new(text.to_owned(), Int::U64, ALL, strength);
-            let text = super::operation::bits_float(value, Precision::Double);
+            let text = super::operation::bits_to_float(value, Precision::Double);
             assert!(text.contains(expected), "{text}");
         }
     }

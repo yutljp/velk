@@ -486,7 +486,7 @@ fn constant_returns_require_exact_bounded_extents() {
     image.functions.get_mut(&0x40).unwrap().size_estimated = true;
     assert_eq!(returned_by(&image, 0x40), None);
     image.functions.get_mut(&0x40).unwrap().size_estimated = false;
-    for size in [None, Some(0), Some(CONSTRUCTOR_SIZE + 1)] {
+    for size in [None, Some(0), Some(MAX_ANALYZED_FUNCTION_SIZE + 1)] {
         image.functions.get_mut(&0x40).unwrap().size = size;
         assert_eq!(returned_by(&image, 0x40), None);
     }

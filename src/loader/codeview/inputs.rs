@@ -1,7 +1,7 @@
 //! PDB sidecar and embedded COFF debug-information readers.
 
 use super::records::{Reader, u32_at};
-use super::{Data, msf, symbols, types};
+use super::{CodeViewData, msf, symbols, types};
 use object::{Object, ObjectSection, ObjectSymbol};
 use std::path::Path;
 
@@ -32,8 +32,8 @@ pub(super) fn pdb(
     age: u32,
     guid: [u8; 16],
     sections: &[(u64, u64)],
-) -> Data {
-    let mut data = Data::default();
+) -> CodeViewData {
+    let mut data = CodeViewData::default();
     // Resolve the filename beside the image; never follow a build machine's path.
     let filename = filename
         .rsplit(|byte| matches!(byte, b'/' | b'\\'))
@@ -71,26 +71,26 @@ pub(super) fn pdb(
         || u32_at(&dbi, 8) != Some(age)
         || dbi.get(58..60) != Some(0x8664u16.to_le_bytes().as_slice())
     {
-        return Data::default();
+        return CodeViewData::default();
     }
     let sizes = [24, 28, 32, 36, 40, 52].map(|at| u32_at(&dbi, at).unwrap_or(u32::MAX) as usize);
     let Some(offset) = sizes
         .into_iter()
         .try_fold(64usize, |sum, size| sum.checked_add(size))
     else {
-        return Data::default();
+        return CodeViewData::default();
     };
     let Some(size) = u32_at(&dbi, 48).map(|size| size as usize) else {
-        return Data::default();
+        return CodeViewData::default();
     };
     let Some(table) = dbi.get(offset..offset.saturating_add(size)) else {
-        return Data::default();
+        return CodeViewData::default();
     };
     for at in [6, 8] {
         if let Some(entry) = table.get(at..at + 2)
             && entry != u16::MAX.to_le_bytes().as_slice()
         {
-            return Data::default();
+            return CodeViewData::default();
         }
     }
     for symbols in msf.modules() {
@@ -99,8 +99,8 @@ pub(super) fn pdb(
     data
 }
 
-pub(super) fn coff(file: &object::File<'_>, sections: &[(u64, u64)]) -> Data {
-    let mut data = Data::default();
+pub(super) fn coff(file: &object::File<'_>, sections: &[(u64, u64)]) -> CodeViewData {
+    let mut data = CodeViewData::default();
     for section in file.sections() {
         if section.name().ok() == Some(".debug$T")
             && let Ok(bytes) = section.data()

@@ -725,7 +725,7 @@ pub(super) fn render(
         if super::is_current_function("strchr", ctx) {
             return None;
         }
-        let cast = ctx.ret_pointer.as_deref().unwrap_or("uint64_t");
+        let cast = ctx.return_pointer_type.as_deref().unwrap_or("uint64_t");
         let call = format!(
             "({cast})__builtin_strchr({}, (int)({}))",
             super::argument(&bases[0], "strchr", ctx),
@@ -737,7 +737,7 @@ pub(super) fn render(
         });
         return Some(format!("    return {call};\n"));
     }
-    if ctx.ret_pointer.is_some() {
+    if ctx.return_pointer_type.is_some() {
         return None;
     }
     let Some((bits, _)) = ctx.ir.ret_type.integer() else {

@@ -142,7 +142,7 @@ fn render_prepared(
         None
     };
     super::frame_registers::rebase(&mut folded);
-    if !folded.debug_locals.is_empty() && crate::passes::copies::fold_debug_locals(&mut folded) {
+    if !folded.debug_locals.is_empty() && crate::passes::copies::fold_stack_locals(&mut folded) {
         crate::passes::read_once::fold_values_read_once(&mut folded);
     }
     let mut types = variables::variable_types(
@@ -973,7 +973,7 @@ fn render_with(
             .collect(),
         local_element_types,
         local_scaled,
-        wide_params: wide_parameters,
+        wide_parameters,
         symbols,
         globals: {
             let mut globals = globals::Globals::new(symbols, reserved);
@@ -988,7 +988,7 @@ fn render_with(
         plain_chars,
         arrays,
         scaled_offsets: naming::address_offsets(ir),
-        narrow_regs: narrow_registers,
+        narrow_registers,
         floats,
         scaled,
         returned: declared(&ir.ret_type, false),
@@ -1001,7 +1001,7 @@ fn render_with(
             .filter(|(_, ty)| ty.is_pointer())
             .map(|(index, ty)| (index, ty.to_string().trim_end().to_owned()))
             .collect(),
-        ret_pointer: ir
+        return_pointer_type: ir
             .ret_type
             .is_pointer()
             .then(|| ir.ret_type.to_string().trim_end().to_owned()),
@@ -1051,7 +1051,7 @@ fn render_with(
     // A pointer read as one scalar is no structure, and one to a structure
     // the debug info names needs no note of its fields.
     for (access, line) in ir.accesses.iter().zip(ir.access_lines()) {
-        if naming::scalar_pointer(&Expr::reg(access.register, 64), &ctx).is_none()
+        if naming::element_pointer(&Expr::reg(access.register, 64), &ctx).is_none()
             && !ctx.element_types.get(&access.register).is_some_and(
                 |target| matches!(target, CType::Named(name) if name.starts_with("struct ")),
             )

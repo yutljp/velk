@@ -1,4 +1,4 @@
-use super::expr::{Ctx, bits_float, print_value_at};
+use super::expr::{Ctx, bits_to_float, print_value_at};
 use super::int::{ALL, Int, Printed};
 use crate::ir::Expr;
 
@@ -18,9 +18,9 @@ pub(super) fn indirect(target: &Expr, ctx: &Ctx<'_>) -> String {
     if ctx.void_return {
         format!("{call}; return;")
     } else if let Some(precision) = ctx.float_return {
-        let value = bits_float(Printed::new(call, Int::U64, ALL, 13), precision);
+        let value = bits_to_float(Printed::new(call, Int::U64, ALL, 13), precision);
         format!("return {value};")
-    } else if let Some(ty) = &ctx.ret_pointer {
+    } else if let Some(ty) = &ctx.return_pointer_type {
         format!("return ({ty})(uintptr_t){call};")
     } else {
         format!("return {call};")

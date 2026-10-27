@@ -10,7 +10,7 @@ use crate::ir::{
     VARIABLE_BASE,
 };
 use crate::passes::copies::{
-    comparison_preserved, left_by_call, reads_memory, substitute_reg_inner, truncated,
+    comparison_preserved, left_by_call, reads_memory, substitute_register_in_expression, truncated,
 };
 
 /// The most expression nodes a value may have to move into its reader.
@@ -426,7 +426,7 @@ pub(crate) fn substitute(stmt: &mut Stmt, dest: RegRef, value: &Expr) -> bool {
     let mut ok = true;
     for operand in stmt.operands_mut() {
         substitute_masked(operand, dest, value);
-        substitute_reg_inner(operand, dest.index, width, value, &mut ok);
+        substitute_register_in_expression(operand, dest.index, width, value, &mut ok);
     }
     ok && match (&*stmt, original_width) {
         (Stmt::Brif { cond, lhs, rhs, .. }, Some(width)) => {
