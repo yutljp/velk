@@ -183,6 +183,8 @@ interface ConstantsResult {
 }
 
 interface FunctionSummary {
+  /** Export-name candidates from emulated hash comparisons linked to indirect calls. */
+  apiHashes: ApiHash[];
   inlineFunctions: InlineFunction[];
   simplification: Simplification;
   addr: Addr;
@@ -196,6 +198,18 @@ interface FunctionSummary {
   incomingXrefs: number;
   outgoingXrefs: number;
   failures: NavigationFailure[];
+}
+
+/** A name match alone does not establish which library is loaded at runtime. */
+interface ApiHash {
+  block: Addr;
+  statement: number;
+  indirectCall: boolean;
+  resolver: Addr;
+  routine: Addr;
+  hash: string;
+  candidates: string[];
+  complete: boolean;
 }
 
 /** Calls remaining in the analyzed IR; statement numbers are not machine addresses. */

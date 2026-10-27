@@ -2,6 +2,8 @@ use std::collections::{HashMap, HashSet};
 
 #[derive(Default, Clone)]
 pub struct Symbols {
+    /// Candidate export names attached to an indirect call expression.
+    pub api_hash_comments: HashMap<(u64, crate::ir::Expr), String>,
     pub user_definitions: HashSet<String>,
     pub unnamed_functions: HashSet<u64>,
     pub original_functions: HashMap<u64, String>,

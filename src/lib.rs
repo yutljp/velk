@@ -4,6 +4,7 @@ extern crate self as velk;
 
 pub mod addr;
 pub mod analysis;
+pub mod api_hashes;
 pub mod arch;
 pub mod card;
 pub mod compare;

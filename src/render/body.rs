@@ -370,13 +370,26 @@ fn fused_call(call: &Stmt, next: &Stmt, ctx: &Ctx<'_>) -> Option<String> {
 /// What a call that was or is indirect reads its callee's address from,
 /// as a comment after it.
 pub(super) fn via_comment(stmt: &Stmt, ctx: &Ctx<'_>) -> String {
+    let mut comment = match stmt {
+        Stmt::Call {
+            target: None,
+            through: Some(through),
+            ..
+        } => ctx
+            .symbols
+            .api_hash_comments
+            .get(&(ctx.ir.addr, through.clone()))
+            .cloned()
+            .unwrap_or_default(),
+        _ => String::new(),
+    };
     let Stmt::Call {
         target,
         via: Some(via),
         ..
     } = stmt
     else {
-        return String::new();
+        return comment;
     };
     let name = |addr: u64| {
         ctx.symbols
@@ -384,10 +397,11 @@ pub(super) fn via_comment(stmt: &Stmt, ctx: &Ctx<'_>) -> String {
             .get(&addr)
             .map_or_else(|| format!("sub_{addr:x}"), |name| sanitize(name))
     };
-    match target {
+    comment.push_str(&match target {
         Some(_) => format!(" /* via {} */", via.describe(&name)),
         None => format!(" /* {} */", via.describe(&name)),
-    }
+    });
+    comment
 }
 
 pub(super) fn render_node(node: &Node, depth: usize, out: &mut String, ctx: &Ctx<'_>) {

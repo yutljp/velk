@@ -1,0 +1,568 @@
+//! Export-name candidates connected to hash resolver results.
+
+use std::collections::HashMap;
+use std::time::{Duration, Instant};
+
+use serde::Serialize;
+
+use crate::emulation::{Memory, MemoryWrite, Options, Word};
+use crate::ir::{BinOp, Cond, Expr, FunctionIr, Stmt};
+use crate::loader::Image;
+use crate::ssa::Ssa;
+
+const NAMES: &str = include_str!("api_hashes/exports.txt");
+
+/// A hash comparison connected to a returned address or indirect invocation.
+/// Names are candidates, not proof of the module present at runtime.
+#[derive(Clone, Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ApiHash {
+    /// Basic block containing the lookup or indirect call.
+    #[serde(serialize_with = "crate::addr::serialize")]
+    pub block: u64,
+    /// Statement within the optimized block, not a machine address.
+    pub statement: usize,
+    /// True for an indirect invocation; false for a returned lookup result.
+    pub indirect_call: bool,
+    /// Function returning the address used by the indirect call.
+    #[serde(serialize_with = "crate::addr::serialize")]
+    pub resolver: u64,
+    /// Function evaluated on each export name.
+    #[serde(serialize_with = "crate::addr::serialize")]
+    pub routine: u64,
+    /// Compared constant, in hexadecimal.
+    pub hash: String,
+    /// All matching names from the bundled list; collisions remain visible.
+    pub candidates: Vec<String>,
+    /// Whether every name in the bundled list was evaluated successfully.
+    pub complete: bool,
+}
+
+struct Flow<'a> {
+    assignments: HashMap<u16, (&'a Expr, u8)>,
+    calls: HashMap<u16, (u64, &'a [Expr])>,
+}
+
+impl<'a> Flow<'a> {
+    fn new(ssa: &'a Ssa) -> Self {
+        let mut flow = Self {
+            assignments: HashMap::new(),
+            calls: HashMap::new(),
+        };
+        for stmt in ssa.ir.blocks.iter().flat_map(|block| &block.stmts) {
+            match stmt {
+                Stmt::Assign { dest, value } => {
+                    flow.assignments.insert(dest.index, (value, dest.width));
+                }
+                Stmt::Call {
+                    target: Some(target),
+                    args: Some(args),
+                    outputs,
+                    through: None,
+                    ..
+                } => {
+                    for output in outputs {
+                        if output.register == crate::arch::RETURN {
+                            flow.calls.insert(output.dest.index, (*target, args));
+                        }
+                    }
+                }
+                _ => {}
+            }
+        }
+        flow
+    }
+
+    fn root<'e>(&'e self, mut value: &'e Expr) -> &'e Expr {
+        for _ in 0..64 {
+            match value {
+                Expr::Reg { index, .. } => match self.assignments.get(index) {
+                    Some((assigned, 64)) => value = assigned,
+                    _ => return value,
+                },
+                _ => return value,
+            }
+        }
+        value
+    }
+
+    fn call(&self, value: &Expr) -> Option<(u64, &'a [Expr])> {
+        let Expr::Reg { index, .. } = self.root(value) else {
+            return None;
+        };
+        self.calls.get(index).copied()
+    }
+
+    fn comparison<'e>(&'e self, mut value: &'e Expr) -> (&'e Expr, u64) {
+        let mut mask = u64::MAX;
+        for _ in 0..64 {
+            match value {
+                Expr::Reg { index, width } => {
+                    if *width < 64 {
+                        mask &= (1u64 << width) - 1;
+                    }
+                    match self.assignments.get(index) {
+                        Some((assigned, written)) => {
+                            if *written < 32 && *width > *written {
+                                return (value, mask);
+                            }
+                            if *written < 64 {
+                                mask &= (1u64 << written) - 1;
+                            }
+                            value = assigned;
+                        }
+                        None => return (value, mask),
+                    }
+                }
+                Expr::Bin {
+                    op: BinOp::And,
+                    lhs,
+                    rhs,
+                } => {
+                    let Expr::Const(bits) = rhs.as_ref() else {
+                        return (value, mask);
+                    };
+                    mask &= bits;
+                    value = lhs;
+                }
+                Expr::Load {
+                    width,
+                    signed: false,
+                    ..
+                } if *width < 8 => {
+                    mask &= (1u64 << (u32::from(*width) * 8)) - 1;
+                    return (value, mask);
+                }
+                _ => return (value, mask),
+            }
+        }
+        (value, mask)
+    }
+
+    fn constant(&self, value: &Expr, remaining: &mut usize) -> Option<u64> {
+        if *remaining == 0 {
+            return None;
+        }
+        *remaining -= 1;
+        let (value, mask) = self.comparison(value);
+        match value {
+            Expr::Const(value) => Some(*value & mask),
+            Expr::Bin { op, lhs, rhs } => {
+                let (Some(lhs), Some(rhs)) =
+                    (self.constant(lhs, remaining), self.constant(rhs, remaining))
+                else {
+                    return None;
+                };
+                match Expr::bin(*op, Expr::Const(lhs), Expr::Const(rhs)) {
+                    Expr::Const(value) => Some(value & mask),
+                    _ => None,
+                }
+            }
+            _ => None,
+        }
+    }
+
+    fn loaded(&self, value: &Expr, depth: usize) -> bool {
+        let mut pending = vec![value];
+        for _ in 0..depth {
+            let Some(value) = pending.pop() else {
+                return false;
+            };
+            let value = self.root(value);
+            if matches!(value, Expr::Load { .. }) {
+                return true;
+            }
+            pending.extend(crate::ir::visit::children(value));
+        }
+        false
+    }
+}
+
+pub(crate) fn recover(image: &Image, ir: &FunctionIr, deadline: Option<Instant>) -> Vec<ApiHash> {
+    if image.go
+        || !matches!(
+            image.isa,
+            crate::loader::Isa::X86_64 | crate::loader::Isa::I386 | crate::loader::Isa::AArch64
+        )
+    {
+        return Vec::new();
+    }
+    if !ir.blocks.iter().flat_map(|block| &block.stmts).any(|stmt| {
+        matches!(
+            stmt,
+            Stmt::Call {
+                target: None,
+                through: Some(_),
+                ..
+            }
+        )
+    }) && !(ir.isa == crate::loader::Isa::I386 && ir.blocks.iter().flat_map(|block| &block.stmts)
+        .any(|stmt| matches!(stmt, Stmt::Call { target: Some(_), args: Some(args), .. } if args.iter().any(|arg| matches!(arg, Expr::Const(_)))))) {
+        return Vec::new();
+    }
+    let mut calls = ir.blocks.iter().flat_map(|block| &block.stmts);
+    if !calls.any(|stmt| {
+        matches!(stmt,
+        Stmt::Call { target: Some(_), through: None, args: Some(args), .. } if !args.is_empty())
+    }) {
+        return Vec::new();
+    }
+    let Some(ssa) = prepare(ir) else {
+        return Vec::new();
+    };
+    let flow = Flow::new(&ssa);
+    let limit = Instant::now() + Duration::from_millis(1000);
+    let deadline = Some(deadline.map_or(limit, |deadline| deadline.min(limit)));
+    let mut results = Vec::new();
+    for block in &ssa.ir.blocks {
+        let mut call_index = 0;
+        for stmt in &block.stmts {
+            if !matches!(stmt, Stmt::Call { .. }) {
+                continue;
+            }
+            let original = ir
+                .blocks
+                .iter()
+                .find(|original| original.start == block.start);
+            let position = original.and_then(|original| {
+                original
+                    .stmts
+                    .iter()
+                    .enumerate()
+                    .filter(|(_, stmt)| matches!(stmt, Stmt::Call { .. }))
+                    .nth(call_index)
+                    .map(|(position, _)| position)
+            });
+            call_index += 1;
+            let Some(statement) = position else {
+                continue;
+            };
+            let pointer_mask = if crate::arch::pointer_bytes(ir.isa) == 4 {
+                u64::from(u32::MAX)
+            } else {
+                u64::MAX
+            };
+            let (resolver, arguments, indirect_call) = match stmt {
+                Stmt::Call {
+                    target: None,
+                    through: Some(through),
+                    ..
+                } => {
+                    let (through, mask) = flow.comparison(through);
+                    if mask & pointer_mask != pointer_mask {
+                        continue;
+                    }
+                    let Some((resolver, arguments)) = flow.call(through) else {
+                        continue;
+                    };
+                    (resolver, arguments, true)
+                }
+                Stmt::Call {
+                    target: Some(target),
+                    args: Some(args),
+                    ..
+                } if ir.isa == crate::loader::Isa::I386 => {
+                    let returned =
+                        ssa.ir
+                            .blocks
+                            .iter()
+                            .flat_map(|block| &block.stmts)
+                            .any(|stmt| {
+                                let Stmt::Ret { value } = stmt else {
+                                    return false;
+                                };
+                                let (value, mask) = flow.comparison(value);
+                                mask & pointer_mask == pointer_mask
+                                    && flow.call(value) == Some((*target, args.as_slice()))
+                            });
+                    if !returned {
+                        continue;
+                    }
+                    (*target, args.as_slice(), false)
+                }
+                _ => continue,
+            };
+            if crate::deadline::passed(deadline).is_err() {
+                return results;
+            }
+            let Some(function) = image.functions.get(&resolver) else {
+                continue;
+            };
+            let Ok(analysis) = crate::analysis::analyze(image, function, deadline) else {
+                continue;
+            };
+            let Some(resolver_ssa) = prepare(&analysis.ir) else {
+                continue;
+            };
+            let resolver_flow = Flow::new(&resolver_ssa);
+            let cyclic = crate::ir::cfg::cyclic_blocks(&resolver_ssa.ir);
+            if cyclic.is_empty() {
+                continue;
+            }
+            let comparisons = resolver_ssa
+                .ir
+                .blocks
+                .iter()
+                .enumerate()
+                .filter(|(index, _)| cyclic.contains(index))
+                .flat_map(|(_, block)| &block.stmts);
+            for comparison in comparisons {
+                let Stmt::Brif {
+                    cond: Cond::Eq | Cond::Ne,
+                    lhs,
+                    rhs,
+                    ..
+                } = comparison
+                else {
+                    continue;
+                };
+                for (hashed, wanted) in [(lhs, rhs), (rhs, lhs)] {
+                    let (hashed, hash_mask) = resolver_flow.comparison(hashed);
+                    let (wanted, wanted_mask) = resolver_flow.comparison(wanted);
+                    if hash_mask != wanted_mask || hash_mask == 0 {
+                        continue;
+                    }
+                    let Some((routine, hash_args)) = resolver_flow.call(hashed) else {
+                        continue;
+                    };
+                    if hash_args.len() != 1 || !resolver_flow.loaded(&hash_args[0], 32) {
+                        continue;
+                    }
+                    let parameter = match resolver_flow.root(wanted) {
+                        Expr::Reg { index, .. } => analysis.ir.params.iter().position(|param| {
+                            param.index == *index
+                                || resolver_ssa.entry.get(&param.index) == Some(index)
+                        }),
+                        Expr::Load { addr, .. } => {
+                            let sp = crate::arch::stack_pointer(ir.isa);
+                            let offset = crate::passes::frame_slots::frame_slot(addr, 0, sp);
+                            analysis
+                                .ir
+                                .stack_params
+                                .iter()
+                                .find(|param| Some(param.offset) == offset)
+                                .map(|param| param.position)
+                        }
+                        _ => None,
+                    };
+                    let Some(argument) = parameter.and_then(|position| arguments.get(position))
+                    else {
+                        continue;
+                    };
+                    let Some(hash) = flow.constant(argument, &mut 128) else {
+                        continue;
+                    };
+                    let mask = hash_mask;
+                    let (candidates, complete) =
+                        evaluate(image, routine, hash & mask, mask, deadline);
+                    results.push(ApiHash {
+                        block: block.start,
+                        statement,
+                        indirect_call,
+                        resolver,
+                        routine,
+                        hash: crate::addr::format(hash & mask),
+                        candidates,
+                        complete,
+                    });
+                }
+            }
+        }
+    }
+    results
+}
+
+fn prepare(ir: &FunctionIr) -> Option<Ssa> {
+    let mut normalized = ir.clone();
+    crate::passes::frame::drop_dead_frame_stores(&mut normalized);
+    crate::passes::memory::promote_frame_slots(&mut normalized);
+    crate::passes::memory::forward_stored_values(&mut normalized);
+    let Some(mut ssa) = crate::ssa::build(&normalized) else {
+        return None;
+    };
+    let sp = crate::arch::stack_pointer(ir.isa);
+    if let Some(entry) = ssa.entry.get(&sp).copied() {
+        let values = [(entry, Expr::reg(sp, 64))];
+        for block in &mut ssa.ir.blocks {
+            for stmt in &mut block.stmts {
+                crate::ir::visit::replace_reads(stmt, &values);
+            }
+        }
+    }
+    let mut inputs = Vec::new();
+    for param in &ir.params {
+        if let Some(entry) = ssa.entry.get(&param.index).copied() {
+            inputs.push(Stmt::Assign {
+                dest: crate::ir::RegRef {
+                    index: entry,
+                    width: 64,
+                },
+                value: Expr::reg(param.index, 64),
+            });
+        }
+    }
+    if let Some(block) = ssa.ir.blocks.first_mut() {
+        inputs.append(&mut block.stmts);
+        block.stmts = inputs;
+    }
+    crate::passes::memory::forward_spilled_variables(&mut ssa.ir);
+    crate::passes::memory::forward_stored_values(&mut ssa.ir);
+    Some(ssa)
+}
+
+fn evaluate(
+    image: &Image,
+    routine: u64,
+    hash: u64,
+    mask: u64,
+    deadline: Option<Instant>,
+) -> (Vec<String>, bool) {
+    let Ok(memory) = Memory::new(image) else {
+        return (Vec::new(), false);
+    };
+    let address = memory.heap_base;
+    let mut candidates = Vec::new();
+    let mut complete = true;
+    for name in NAMES.lines() {
+        if crate::deadline::passed(deadline).is_err() {
+            return (candidates, false);
+        }
+        let mut bytes = name.as_bytes().to_vec();
+        bytes.push(0);
+        let options = Options {
+            arguments: vec![Word::Text(crate::addr::format(address))],
+            memory: vec![MemoryWrite {
+                address: Word::Text(crate::addr::format(address)),
+                bytes: Some(bytes),
+                value: None,
+                width: None,
+            }],
+            step_limit: 10_000,
+            time_limit_ms: 100,
+            ..Options::default()
+        };
+        match crate::ir::eval::emulation::run(image, routine, &options, deadline) {
+            Ok(report) if report.reason == "return" => {
+                let Some(value) = crate::addr::parse(&report.return_value) else {
+                    complete = false;
+                    continue;
+                };
+                if value & mask == hash {
+                    candidates.push(name.to_owned());
+                }
+            }
+            _ => complete = false,
+        }
+    }
+    (candidates, complete)
+}
+
+pub(crate) fn annotate(code: &mut String, hashes: &[ApiHash]) {
+    for hash in hashes {
+        if !hash.candidates.is_empty() && !code.contains(&comment(hash)) {
+            code.push_str(comment(hash).trim_start());
+            code.push('\n');
+        }
+    }
+}
+
+fn comment(hash: &ApiHash) -> String {
+    format!(
+        " /* API hash {} at block 0x{:x}, statement {}: candidates {}{} */",
+        hash.hash,
+        hash.block,
+        hash.statement,
+        hash.candidates.join(", "),
+        if hash.complete {
+            ""
+        } else {
+            " (incomplete search)"
+        },
+    )
+}
+
+pub(crate) fn add_comments(
+    hashes: &[ApiHash],
+    ir: &FunctionIr,
+    symbols: &mut crate::render::Symbols,
+) {
+    for hash in hashes {
+        if hash.candidates.is_empty() {
+            continue;
+        }
+        let call = ir
+            .blocks
+            .iter()
+            .find(|block| block.start == hash.block)
+            .and_then(|block| block.stmts.get(hash.statement));
+        if let Some(Stmt::Call {
+            target: None,
+            through: Some(through),
+            ..
+        }) = call
+        {
+            let occurrences = ir.blocks.iter().flat_map(|block| &block.stmts).filter(|stmt| {
+                matches!(stmt, Stmt::Call { target: None, through: Some(other), .. } if other == through)
+            }).count();
+            if occurrences != 1 {
+                continue;
+            }
+            symbols
+                .api_hash_comments
+                .insert((ir.addr, through.clone()), comment(hash));
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn constant_arguments_keep_read_widths_and_masks() {
+        let value = Expr::Const(0x1234_5678_9abc_def0);
+        let flow = Flow {
+            assignments: HashMap::from([(1, (&value, 64))]),
+            calls: HashMap::new(),
+        };
+        for (width, expected) in [
+            (8, 0xf0),
+            (16, 0xdef0),
+            (32, 0x9abc_def0),
+            (64, 0x1234_5678_9abc_def0),
+        ] {
+            assert_eq!(
+                flow.constant(&Expr::reg(1, width), &mut 128),
+                Some(expected)
+            );
+        }
+        let masked = Expr::bin(BinOp::And, Expr::reg(1, 64), Expr::Const(0xff));
+        assert_eq!(flow.constant(&masked, &mut 128), Some(0xf0));
+        assert_eq!(flow.constant(&masked, &mut 0), None);
+        let flow = Flow {
+            assignments: HashMap::from([(1, (&value, 32))]),
+            calls: HashMap::new(),
+        };
+        assert_eq!(
+            flow.constant(&Expr::reg(1, 64), &mut 128),
+            Some(0x9abc_def0)
+        );
+        let flow = Flow {
+            assignments: HashMap::from([(1, (&value, 16))]),
+            calls: HashMap::new(),
+        };
+        assert_eq!(flow.constant(&Expr::reg(1, 64), &mut 128), None);
+        assert_eq!(flow.constant(&Expr::reg(1, 16), &mut 128), Some(0xdef0));
+    }
+
+    #[test]
+    fn cyclic_assignments_do_not_produce_a_constant_or_load() {
+        let value = Expr::reg(1, 64);
+        let flow = Flow {
+            assignments: HashMap::from([(1, (&value, 64))]),
+            calls: HashMap::new(),
+        };
+        assert_eq!(flow.constant(&value, &mut 128), None);
+        assert!(!flow.loaded(&value, 128));
+    }
+}

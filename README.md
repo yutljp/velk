@@ -104,6 +104,11 @@ in comments; `--strings` includes a `decodedStrings` array with buffer, call-sit
 and decoder addresses. Use `--no-string-decoding` to disable recovery.
 See [Automatic string recovery](docs/STRING_DECODING.md) for examples and limits.
 
+Function summaries include `apiHashes`: export-name candidates found by evaluating
+hash routines used in name-table walks. The C includes comments with matching names.
+These are candidates, since a hash does not identify the loaded library.
+See [API hashes](docs/API_HASHES.md) for the supported data flow and limits.
+
 ## Using velk from an agent
 
 velk does not register itself anywhere. Build it with `cargo build --release`, then register the executable

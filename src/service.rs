@@ -662,6 +662,10 @@ impl Binary {
             };
             calls[position]["signature"] = recovered;
         }
+        let api_hashes = match self.shared_analyses.get(&addr) {
+            Some(Ok(analysis)) => crate::api_hashes::recover(&self.image, &analysis.ir, deadline),
+            _ => Vec::new(),
+        };
         let imports: std::collections::BTreeMap<_, _> = self
             .image
             .imports
@@ -688,6 +692,7 @@ impl Binary {
             "addr": crate::addr::format(addr), "name": function.name, "size": function.size,
             "signature": signature, "calls": calls, "simplification": simplification,
             "inlineFunctions": inline_functions,
+            "apiHashes": api_hashes,
             "callees": index.graph(addr, false, 1).into_iter().map(crate::addr::format).collect::<Vec<_>>(),
             "imports": outgoing.iter().filter_map(|xref| imports.get(&xref.target))
                 .collect::<std::collections::BTreeSet<_>>(),
@@ -982,6 +987,10 @@ impl Binary {
                     .insert(target, signature.clone());
             }
         }
+        let api_hashes = crate::api_hashes::recover(&self.image, &ir, deadline);
+        if api_hashes.iter().any(|hash| !hash.candidates.is_empty()) {
+            crate::api_hashes::add_comments(&api_hashes, &ir, symbols.to_mut());
+        }
         let mut rendered = render::render_with_dependencies(
             &ir,
             &analysis.references,
@@ -989,6 +998,7 @@ impl Binary {
             &self.data_ranges,
         );
         crate::string_decoding::annotate(&mut rendered.code, decoded_strings, &ir, &symbols);
+        crate::api_hashes::annotate(&mut rendered.code, &api_hashes);
         if let Some(project) = &self.project
             && let Err(error) = project.validate_rendered_names(&ir, &rendered.code)
         {

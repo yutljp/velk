@@ -343,6 +343,11 @@ velk --detect-constants BIN
 
 The same JavaScript methods are available through MCP's `velk_run_script`.
 Slice `matches` or `values` before returning large results.
+Function summaries include `apiHashes`: name candidates from emulated export hash
+comparisons connected to indirect calls. Entries include block/statement positions,
+resolver and routine addresses, the constant hash, all candidates and a completion
+flag. Names do not prove which module is loaded. See `docs/API_HASHES.md` for limits.
+
 Run code with `b.emulate(nameOrAddress, options)` or `b.getFunction(name).emulate(options)`.
 The dedicated `velk_emulate` MCP tool takes `{path, start, options, arch?}` and returns
 an execution report. Read the `emulation` topic for its options; see
