@@ -14,9 +14,6 @@ pub(crate) fn remainder_tail(stmts: &[Stmt], from: usize, reg: u16) -> bool {
     for stmt in &stmts[from..] {
         let (_, reads) = statement_registers(stmt);
         if !reads.contains(&reg) {
-            if unwound {
-                continue;
-            }
             continue;
         }
         if unwound {
@@ -105,7 +102,7 @@ pub(crate) fn remainder_scan(
                 let Expr::Reg { index, .. } = lhs.as_ref() else {
                     return None;
                 };
-                if !aliases.contains(index) && !is_shift_of(index, &aliases, statements) {
+                if !is_shift_of(index, &aliases, statements) {
                     return None;
                 }
                 aliases.push(dest);

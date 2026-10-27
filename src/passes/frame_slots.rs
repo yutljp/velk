@@ -368,8 +368,7 @@ pub(crate) fn canonical_frame(ir: &FunctionIr, frames: &[Option<i64>]) -> bool {
     true
 }
 
-/// True when the stack pointer appears in the value only as the address of a
-/// frame-slot load.
+/// True when the stack pointer appears only in frame-slot addresses or loads.
 fn frame_only(expr: &Expr, frame: i64, sp: u16) -> bool {
     // A slot's address, such as a local array's, settles like its loads.
     if frame_slot(expr, frame, sp).is_some() {

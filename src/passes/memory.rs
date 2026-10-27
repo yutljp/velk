@@ -108,30 +108,7 @@ pub fn forward_stored_values(ir: &mut FunctionIr) {
                     // remembered `sp`-relative address the other way; any
                     // other move leaves them unknown.
                     if dest.index == sp {
-                        let delta = match value {
-                            Expr::Bin {
-                                op: crate::ir::BinOp::Add,
-                                lhs,
-                                rhs,
-                            } if matches!(lhs.as_ref(), Expr::Reg { index, .. } if *index == sp) => {
-                                match rhs.as_ref() {
-                                    Expr::Const(delta) => Some(*delta),
-                                    _ => None,
-                                }
-                            }
-                            Expr::Bin {
-                                op: crate::ir::BinOp::Sub,
-                                lhs,
-                                rhs,
-                            } if matches!(lhs.as_ref(), Expr::Reg { index, .. } if *index == sp) => {
-                                match rhs.as_ref() {
-                                    Expr::Const(delta) => Some(delta.wrapping_neg()),
-                                    _ => None,
-                                }
-                            }
-                            _ => None,
-                        };
-                        let Some(delta) = delta else {
+                        let Some(delta) = moved(value, sp).map(|delta| delta as u64) else {
                             pending.clear();
                             continue;
                         };
@@ -581,7 +558,7 @@ fn fuse_block(
             let (writes, reads) = statement_registers(&block.stmts[probe]);
             if let Some((addr, value)) = store_pair(&block.stmts[probe])
                 && addr == &address
-                && reads_temporary(value, dest) == Some(true)
+                && reads_temporary(value, dest)
             {
                 store_at = Some(probe);
                 break;
@@ -714,7 +691,7 @@ fn store_back(
         let (writes, reads) = statement_registers(stmt);
         if let Some((addr, value)) = store_pair(stmt)
             && addr == address
-            && reads_temporary(value, dest) == Some(true)
+            && reads_temporary(value, dest)
         {
             store_at = Some(probe);
             break;
@@ -747,11 +724,11 @@ fn store_pair(stmt: &Stmt) -> Option<(&Expr, &Expr)> {
 }
 
 /// True when the expression is a read of the register, possibly masked.
-fn reads_temporary(value: &Expr, dest: u16) -> Option<bool> {
+fn reads_temporary(value: &Expr, dest: u16) -> bool {
     let Expr::Reg { index, .. } = strip_mask(value) else {
-        return Some(false);
+        return false;
     };
-    Some(*index == dest)
+    *index == dest
 }
 
 /// Peels a `& mask` off the expression when the mask only truncates.

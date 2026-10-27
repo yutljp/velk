@@ -54,7 +54,7 @@ fn truth(expr: &Expr, registers: &[Expr], assignment: usize) -> Option<bool> {
             Some(assignment & (1 << index) != 0)
         }
         Expr::Bin {
-            op: BinOp::And | BinOp::Or | BinOp::Xor,
+            op: op @ (BinOp::And | BinOp::Or | BinOp::Xor),
             lhs,
             rhs,
         } => {
@@ -64,9 +64,9 @@ fn truth(expr: &Expr, registers: &[Expr], assignment: usize) -> Option<bool> {
             ) else {
                 return None;
             };
-            match expr {
-                Expr::Bin { op: BinOp::And, .. } => Some(a & b),
-                Expr::Bin { op: BinOp::Or, .. } => Some(a | b),
+            match op {
+                BinOp::And => Some(a & b),
+                BinOp::Or => Some(a | b),
                 _ => Some(a ^ b),
             }
         }

@@ -106,13 +106,11 @@ pub fn inline_local_copies(ir: &mut FunctionIr) {
                 continue;
             }
             // Skip a reader that overwrites a register the value reads.
-            if let Stmt::Assign { dest: reader, .. } = &block.stmts[use_at] {
-                let mut reader_sources = std::collections::HashSet::new();
-                crate::ir::visit::collect_reads(&value, &mut reader_sources);
-                if reader_sources.contains(&reader.index) {
-                    index += 1;
-                    continue;
-                }
+            if let Stmt::Assign { dest: reader, .. } = &block.stmts[use_at]
+                && sources.contains(&reader.index)
+            {
+                index += 1;
+                continue;
             }
             let mut ok = true;
             let mut folded = block.stmts[use_at].clone();
@@ -202,13 +200,13 @@ fn substitute_ordinary(stmt: &mut Stmt, dest: u16, width: u8, value: &Expr, ok: 
 /// extension or a small expression) into its only consumer when the widths
 /// match, so no value is extended or truncated by accident.
 pub fn copy_propagate(ir: &mut FunctionIr) {
-    copy_propagate_with(ir, /* avoid_duplication */ false, &|_, _| true);
+    copy_propagate_with(ir, Duplication::Permit, &|_, _| true);
 }
 
 /// Copy propagation for use after CSE: does not duplicate a compound value
 /// into several reads of one consumer.
 pub fn copy_propagate_guarded(ir: &mut FunctionIr) {
-    copy_propagate_with(ir, /* avoid_duplication */ true, &|_, _| true);
+    copy_propagate_with(ir, Duplication::Avoid, &|_, _| true);
 }
 
 /// Folds computed integer temporaries without removing pointer or register bindings.
@@ -267,17 +265,13 @@ pub(crate) fn integer_expression_candidate(ir: &FunctionIr) -> Option<FunctionIr
     if folded.debug_locals.is_empty() && fold_debug_locals(&mut folded) {
         super::read_once::fold_values_read_once(&mut folded);
     }
-    copy_propagate_with(
-        &mut folded,
-        /* avoid_duplication */ true,
-        &|index, value| {
-            index >= VARIABLE_BASE
-                && matches!(types.get(&index), Some(crate::ir::CType::Int { .. }))
-                && matches!(value, Expr::Bin { .. } | Expr::SignExtend { .. })
-                && !reads_outside_frame(value)
-                && !super::read_once::faults(value)
-        },
-    );
+    copy_propagate_with(&mut folded, Duplication::Avoid, &|index, value| {
+        index >= VARIABLE_BASE
+            && matches!(types.get(&index), Some(crate::ir::CType::Int { .. }))
+            && matches!(value, Expr::Bin { .. } | Expr::SignExtend { .. })
+            && !reads_outside_frame(value)
+            && !super::read_once::faults(value)
+    });
     let remaining: usize = folded.blocks.iter().map(|block| block.stmts.len()).sum();
     (remaining < statements).then_some(folded)
 }
@@ -311,7 +305,7 @@ fn reads_elsewhere(
 
 fn copy_propagate_with(
     ir: &mut FunctionIr,
-    avoid_duplication: bool,
+    avoid_duplication: Duplication,
     eligible: &impl Fn(u16, &Expr) -> bool,
 ) {
     let reads = block_reads(ir);
@@ -335,11 +329,7 @@ fn copy_propagate_with(
             block,
             &outer,
             &params,
-            if avoid_duplication {
-                Duplication::Avoid
-            } else {
-                Duplication::Permit
-            },
+            avoid_duplication,
             sp,
             private_frame,
             eligible,

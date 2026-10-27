@@ -16,7 +16,7 @@ pub(crate) fn redundant_copy_renames(ir: &FunctionIr) -> Option<HashMap<u16, u16
     let mut copies = HashMap::new();
     let mut excluded = HashSet::new();
     for stmt in ir.blocks.iter().flat_map(|block| &block.stmts) {
-        let (writes, _) = visit::statement_registers(stmt);
+        let (writes, reads) = visit::statement_registers(stmt);
         let copy = match stmt {
             Stmt::Assign {
                 dest,
@@ -43,7 +43,7 @@ pub(crate) fn redundant_copy_renames(ir: &FunctionIr) -> Option<HashMap<u16, u16
         excluded.extend(stmt.declared_call_reads());
         excluded.extend(stmt.unnamed_call_reads());
         if matches!(stmt, Stmt::Call { .. }) {
-            excluded.extend(visit::statement_registers(stmt).1);
+            excluded.extend(reads);
         }
         excluded.extend(
             stmt.preserved_output_sources()

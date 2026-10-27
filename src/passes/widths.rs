@@ -167,7 +167,10 @@ pub fn specialize_widths(
         }
     }
 
-    let uniform: HashSet<u16> = (0..u16::MAX)
+    let uniform: HashSet<u16> = reads
+        .keys()
+        .chain(writes.keys())
+        .copied()
         .filter(|index| {
             let read_all_32 = reads
                 .get(index)
@@ -175,7 +178,7 @@ pub fn specialize_widths(
             let write_all_32 = writes
                 .get(index)
                 .is_none_or(|widths| widths.iter().all(|width| *width == 32));
-            (reads.contains_key(index) || writes.contains_key(index)) && read_all_32 && write_all_32
+            *index != u16::MAX && read_all_32 && write_all_32
         })
         .collect();
 

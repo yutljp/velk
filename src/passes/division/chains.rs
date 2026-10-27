@@ -321,8 +321,7 @@ pub(crate) fn signed_chain(
                     return None;
                 };
                 // The sum must be the very next statement.
-                let mut probe = statements.iter().skip(position + 1).enumerate();
-                if let Some((_, next)) = probe.next()
+                if let Some(next) = statements.get(position + 1)
                     && let Some((_, sum_value)) = assign_of(next)
                 {
                     let sum_value = strip_and_mask(sum_value);

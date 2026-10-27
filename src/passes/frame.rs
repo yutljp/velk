@@ -439,19 +439,12 @@ pub fn elide_callee_saves(ir: &mut FunctionIr) {
         }
     }
     for (block_index, block) in ir.blocks.iter_mut().enumerate() {
-        let mut keep = vec![true; block.stmts.len()];
-        for (position, slot) in keep.iter_mut().enumerate() {
-            if drop.contains(&(block_index, position)) {
-                *slot = false;
-            }
-        }
-        let kept: Vec<Stmt> = block
-            .stmts
-            .drain(..)
-            .zip(keep)
-            .filter_map(|(stmt, keep)| keep.then_some(stmt))
-            .collect();
-        block.stmts = kept;
+        let mut position = 0;
+        block.stmts.retain(|_| {
+            let keep = !drop.contains(&(block_index, position));
+            position += 1;
+            keep
+        });
     }
 }
 
@@ -463,7 +456,6 @@ struct Access {
     reg: u16,
 }
 
-/// A register a call preserves, other than the stack pointer.
 /// Drops the pushes of a scratch register the entry block makes before
 /// writing it, as `push rax` does to align the stack: the register holds no
 /// argument there, and no load reads the slot.

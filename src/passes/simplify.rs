@@ -491,7 +491,6 @@ fn reassembled(expr: &Expr) -> Option<Expr> {
     })
 }
 
-/// Removes a double negation and the addition or subtraction of zero.
 /// The bit count a vector sums out of per-byte counts, as `AArch64` counts
 /// the bits of a general register: `uaddlv(cnt(x))` is `popcount(x)`.
 fn counted_bits(expr: &Expr) -> Option<Expr> {

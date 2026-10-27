@@ -279,11 +279,6 @@ fn magic_block(
             index += 1;
             continue;
         };
-        if magic == 0 {
-            index += 1;
-            continue;
-        }
-
         // Remainder chain `x - (x / d) * d`, rewritten to `x % d`.
         if let Some((sub_position, chain_steps, divisor, signed, width)) =
             remainder_scan(block.stmts.as_slice(), index, dest.index)

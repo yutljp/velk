@@ -208,13 +208,7 @@ impl Groups {
         if a == b {
             return false;
         }
-        let group = |leader: u16| {
-            self.members
-                .get(&leader)
-                .cloned()
-                .unwrap_or_else(|| vec![leader])
-        };
-        let (first, second) = (group(a), group(b));
+        let (first, second) = (self.group(a), self.group(b));
         if first.iter().any(|x| entry.contains(x)) && second.iter().any(|x| entry.contains(x)) {
             return false;
         }
@@ -302,10 +296,7 @@ pub(crate) fn rename(stmt: &mut Stmt, renamed: &HashMap<u16, u16>) {
 }
 
 fn load_free(expr: &Expr) -> bool {
-    match expr {
-        Expr::Load { .. } => false,
-        _ => crate::ir::visit::children(expr).into_iter().all(load_free),
-    }
+    !super::copies::reads_memory(expr)
 }
 
 #[cfg(test)]

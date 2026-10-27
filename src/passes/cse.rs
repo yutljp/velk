@@ -272,9 +272,5 @@ fn count_nodes(expr: &Expr, counts: &mut std::collections::HashMap<Expr, usize>)
 
 /// Loads may be volatile, so a subtree that contains one is never shared.
 fn load_free(expr: &Expr) -> bool {
-    match expr {
-        Expr::Load { .. } => false,
-        Expr::Reg { .. } | Expr::Const(_) => true,
-        _ => children(expr).into_iter().all(load_free),
-    }
+    !super::copies::reads_memory(expr)
 }

@@ -104,14 +104,16 @@ pub(crate) fn fold_debug_locals(ir: &mut FunctionIr) -> bool {
                 }
                 valid
             };
+            let incoming = |block: usize, outgoing: &[bool]| {
+                block != 0
+                    && !predecessors[block].is_empty()
+                    && predecessors[block].iter().all(|from| outgoing[*from])
+            };
             let mut outgoing = vec![false; ir.blocks.len()];
             loop {
                 let mut progress = false;
                 for block in 0..ir.blocks.len() {
-                    let incoming = block != 0
-                        && !predecessors[block].is_empty()
-                        && predecessors[block].iter().all(|from| outgoing[*from]);
-                    let next = transfer(block, incoming);
+                    let next = transfer(block, incoming(block, &outgoing));
                     progress |= outgoing[block] != next;
                     outgoing[block] = next;
                 }
@@ -122,9 +124,7 @@ pub(crate) fn fold_debug_locals(ir: &mut FunctionIr) -> bool {
             let mut replacements = Vec::new();
             let mut safe = true;
             for (block, body) in ir.blocks.iter().enumerate() {
-                let mut valid = block != 0
-                    && !predecessors[block].is_empty()
-                    && predecessors[block].iter().all(|from| outgoing[*from]);
+                let mut valid = incoming(block, &outgoing);
                 for (position, stmt) in body.stmts.iter().enumerate() {
                     if (block, position) == store_at {
                         valid = true;

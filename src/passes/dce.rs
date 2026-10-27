@@ -94,7 +94,7 @@ pub fn dce(ir: &mut FunctionIr) {
         // nothing changes.
         loop {
             let before = block.stmts.len();
-            drop_dead_constants(block, &outer);
+            drop_dead_assignments(block, &outer);
             if block.stmts.len() == before {
                 break;
             }
@@ -102,7 +102,10 @@ pub fn dce(ir: &mut FunctionIr) {
     }
 }
 
-fn drop_dead_constants(block: &mut crate::ir::Block, outer_reads: &std::collections::HashSet<u16>) {
+fn drop_dead_assignments(
+    block: &mut crate::ir::Block,
+    outer_reads: &std::collections::HashSet<u16>,
+) {
     let mut keep: Vec<bool> = vec![true; block.stmts.len()];
     for (index, stmt) in block.stmts.iter().enumerate() {
         let Stmt::Assign { dest, value } = stmt else {

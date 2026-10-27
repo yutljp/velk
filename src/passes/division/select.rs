@@ -287,17 +287,7 @@ pub(crate) fn signed_select_mod_chain(
         if root_plain != root_arm || root_plain != root_sub {
             continue;
         }
-        let domain = if matches!(
-            leaf,
-            Expr::Bin {
-                op: crate::ir::BinOp::And,
-                ..
-            }
-        ) {
-            32
-        } else {
-            chain_dividend_domain(statements, select_index, &leaf)
-        };
+        let domain = chain_dividend_domain(statements, select_index, &leaf);
         let Some(Expr::Bin { lhs, .. }) = super::proof::checked(
             statements,
             select_index,
@@ -408,13 +398,7 @@ pub(crate) fn signed_select_chain(
         let domain = if src_width == 32 || sar_width == 32 {
             32
         } else {
-            match leaf {
-                Expr::Bin {
-                    op: crate::ir::BinOp::And,
-                    ..
-                } => 32,
-                _ => chain_dividend_domain(statements, select_index, leaf),
-            }
+            chain_dividend_domain(statements, select_index, leaf)
         };
         let Some(Expr::Bin { lhs, .. }) = super::proof::checked(
             statements,

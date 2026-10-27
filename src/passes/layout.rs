@@ -81,16 +81,6 @@ pub fn normalize_layout(ir: &mut FunctionIr) {
                 ir.blocks[index].stmts.remove(last_index - 1);
             }
             Some(Stmt::Br { .. }) => {}
-            Some(Stmt::Brif { .. }) | Some(Stmt::BrifFlags { .. }) | Some(Stmt::Switch { .. }) => {
-                let original = fallthrough.get(&ir.blocks[index].start).copied().flatten();
-                if let Some(original) = original
-                    && Some(original) != next
-                {
-                    ir.blocks[index].stmts.push(Stmt::Br {
-                        target: Some(original),
-                    });
-                }
-            }
             Some(Stmt::Ret { .. }) | Some(Stmt::BrIndirect { .. }) | Some(Stmt::Trap) => {}
             // A block that fell through keeps going where it went before.
             _ => {

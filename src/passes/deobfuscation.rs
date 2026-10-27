@@ -151,20 +151,20 @@ fn consecutive(lhs: &Expr, rhs: &Expr) -> bool {
         && matches!(offset.as_ref(), Expr::Const(value) if value & 1 != 0)
 }
 
+fn consecutive_product(expr: &Expr) -> bool {
+    matches!(expr, Expr::Bin { op: BinOp::Mul, lhs, rhs }
+        if total(lhs) && total(rhs) && (consecutive(lhs, rhs) || consecutive(rhs, lhs)))
+}
+
 fn known_zero(expr: &Expr) -> bool {
     let Expr::Bin { op, lhs, rhs } = expr else {
         return matches!(expr, Expr::Const(0));
     };
     match op {
         BinOp::And if matches!(rhs.as_ref(), Expr::Const(1)) => {
-            matches!(lhs.as_ref(), Expr::Bin { op: BinOp::Mul, lhs, rhs }
-                if total(lhs) && total(rhs) && (consecutive(lhs, rhs) || consecutive(rhs, lhs)))
-                || (known_zero(lhs) && total(rhs))
+            consecutive_product(lhs) || (known_zero(lhs) && total(rhs))
         }
-        BinOp::ModU if matches!(rhs.as_ref(), Expr::Const(2)) => {
-            matches!(lhs.as_ref(), Expr::Bin { op: BinOp::Mul, lhs, rhs }
-                if total(lhs) && total(rhs) && (consecutive(lhs, rhs) || consecutive(rhs, lhs)))
-        }
+        BinOp::ModU if matches!(rhs.as_ref(), Expr::Const(2)) => consecutive_product(lhs),
         BinOp::Xor | BinOp::Sub => lhs == rhs && total(lhs),
         BinOp::Or => known_zero(lhs) && known_zero(rhs),
         BinOp::And => {

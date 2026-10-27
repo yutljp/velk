@@ -43,16 +43,16 @@ cfccb053d4c55496499be985b667e23d26570c78ab688d0a1cec9299076a0c7f  src/lift/pairs
 3560e55deb042850841ede78bc28b3ade459f7e331cc78f8f15aabe21b4713da  src/lift/x86_64.rs	if target == ins.next_ip() || return_register.is_some()
 5d74978bc3a41f6f5d2044c3d9a8bdd06db7bdca6a84d2e37e905decd73d8d3d  src/lift/x86_64/operands.rs	pub(super) fn write_operand(
 f939ae1b72a32ca6383f8a9a3c3f6e06fa0b8319d32e2a83152c5ef0ab4cfa81  src/passes/copies.rs	fn copy_propagate_block(
-109b7d2fb2fbacde55392e637570bcb08fb992c97d3bd92c28ec68becbe5e6b6  src/passes/copies.rs	pub fn inline_local_copies(
+71b23353c60f800b516184032600fa695dcb88a1b7d959702abc102952580fde  src/passes/copies.rs	pub fn inline_local_copies(
 dfb8f512c6b6517fdfb4db495e878c954d8baad061290a50e7a2cd8326eecff9  src/passes/copies.rs	pub(crate) fn comparison_preserved(
 f2e3a4c02abe58fce57005ad3dfbe915a50e42b4d4b1aac0e4cd393dc4ef24b2  src/passes/copies.rs	pub(crate) fn substitute_reg_inner(
 c48d01d154be4351cfc5f749b6e6697a1bb7199f9cc51b611fc63037d9fe9105  src/passes/copies.rs	pub(crate) fn truncated(
-25ec9b3762edc680b8c305354d4c3900a2af57f3e7f332e3d68154c42fc7db30  src/passes/copies/available.rs	pub(crate) fn redundant_copy_renames(
+91527bae8446d899dbe12d0cfb9bd1fafad3410d7f4569ac859b5fa94a53325c  src/passes/copies/available.rs	pub(crate) fn redundant_copy_renames(
 b268fed46c1c248ef95a4d6dc9eb4be0837cadb5a5462ba1ab354565ead67711  src/passes/cse.rs	fn bind(
-fa89ed532162a6a0eacadefea7346f93f4d5335e54f2a3a2a9348d52fe43265a  src/passes/deobfuscation.rs	fn known_zero(
+67f11ce086dcff5c52009518432fa8ce87f0d0a61fba198e40232d412ec683f3  src/passes/deobfuscation.rs	fn known_zero(
 76fb5a2e6be1f4b62700948aa5b6ee6b16c1c688fd4ea412ffaf1530bfc5b25a  src/passes/deobfuscation.rs	pub(super) fn predicates(
 39065c0caa21d6dc9ace234baf63f27fcc7fa4deca2bee374cf949f70dd4ffad  src/passes/division/chains.rs	pub(crate) fn signed64_chain(
-89bfed301167a96397f148530229c8ca256f4dc5b0192b8d00e79a0731b98553  src/passes/division/chains.rs	pub(crate) fn signed_chain(
+d83f95a398bc8365776d2bed012197e97eaa4b1f7ad00a7883b645dc9f69457a  src/passes/division/chains.rs	pub(crate) fn signed_chain(
 f399e589973707a10e7f84bd8ba68fde87e23dd9d6daaf596f48380ae24a458d  src/passes/division/chains.rs	pub(crate) fn unsigned64_chain(
 5485a81014ced44ff316e182ff20696dcdc84b8b5f5590c8d00e90c20e25934f  src/passes/division/divisor.rs	pub(crate) fn magic_divisor(
 3b138ddb52608e7d6162edd161047c7c00dd1db56bd2489d4078c30cc29fde38  src/passes/division/divisor.rs	pub(crate) fn magic_divisor_signed(
@@ -63,10 +63,10 @@ f2b56ce28e9f595006cef1008f92aa91afce7bb0bdb4e024fe8b3394e2ff7b26  src/passes/div
 43e7cd7ed1932ab6564b50140f146529df7218b4522075f839de6f60ec89f4e1  src/passes/division/proof.rs	fn remainder(
 4312dd29564dd2e869d1f5e0a32e5de941704c62600d5a3d1a883475e94cd49c  src/passes/division/proof.rs	fn signed(
 e10af8df392b8193867698e781edada594fbeb69f5c828c9a06ce070150efc4f  src/passes/division/remainder.rs	pub(crate) fn apply_remainder_follows(
-c787d822474745874bee113927f981314eb890bd991ba697b9a442c03dd5740a  src/passes/division/remainder.rs	pub(crate) fn remainder_scan(
+e934eae5613e41617e35e1ca6402565ad416c0c24d904757e1e14eb1aee91983  src/passes/division/remainder.rs	pub(crate) fn remainder_scan(
 be6b55f3147f256545103ca33ba1ee96cec80b488a76157a30215828f6a595d8  src/passes/division/select.rs	pub(crate) fn cs_neg_chain(
-cb7a40433706030dc8bcd5722f91160417c267873956e91356ad81d8ea7b5f0f  src/passes/division/select.rs	pub(crate) fn signed_select_chain(
-421469de09f08ad4a0d7a8a146f46b9415db7183ad4f22c72e3cd3c7a4447fb3  src/passes/division/select.rs	pub(crate) fn signed_select_mod_chain(
+a3fcc7d14dacb5a9648a27699aba4ccd1c847b2b81b57cdadfb0c6d692880caf  src/passes/division/select.rs	pub(crate) fn signed_select_chain(
+071a0065457502bd02e7f16c1bc8fe66ec5da2a6ffa0398da93caa849ecbb440  src/passes/division/select.rs	pub(crate) fn signed_select_mod_chain(
 547c8a37037f29a957ef28e4c7693d8442c156528e65ce2416ecdb4950c4afcb  src/passes/division/widened.rs	pub(crate) fn widened_signed_site(
 3e52b15819b80cbd7560f6c23f178eb5dad489200d2e432e44da628306dafa82  src/passes/frame_slots.rs	fn rewrite_expr_frame(
 7a9c52f673b2eae08beec3d66c5fb767a3c4e4b53c98fbe56ade6512e399c720  src/passes/frame_slots.rs	fn substitute_frame_pointer(
@@ -76,14 +76,14 @@ b8e5280b11d95fb960372bb9b7c3398c52d527e17239324156eb38b9a94ccec1  src/passes/fra
 b83dfb8fb2a02b0e58fc8668ef92d456366ad7d5e78848a93c77bdbb032af27a  src/passes/mba.rs	fn normalize(
 e9b71b33bacfcb2a14e6ebbff400524323f782d50246edde7298b54e7c51b3fd  src/passes/mba.rs	fn replacement(
 601c40bb591571226ab048738f92a0d0b660ad2d8fa9b831adaede208103a28d  src/passes/memory.rs	fn forward_expr(
-40e140658dd9b5838476f90a55f46ec20a7265fba92061169f8c3854631080e5  src/passes/memory.rs	fn fuse_block(
+2c8e15697e06dc92a46ce2d50bfb154c4af9607fdd83ace0e62ca8b70a0794a8  src/passes/memory.rs	fn fuse_block(
 6b9e69037e815e18de32a03419edaefa5f613dd262048fd89b89e380ffb7799e  src/passes/memory.rs	pub fn forward_spilled_variables(
 534a95756fc30892ed8b0c01421be1f601d26291431ecff12fad1343cabcaeaa  src/passes/read_once.rs	fn substitute_masked(
 1160180c855fdf4935e375750b2eeec1c62376f2e5a47c1316bee43759ce364a  src/passes/read_once.rs	fn substitute_tested(
 c5a7402e04c4ee34345b72a8615b8acb9e3f2a5778912d3f420b0b46c0a7a412  src/passes/read_once.rs	pub(crate) fn substitute(
 9a458e849bb099e039ec101d30123155ab9d086d47d40f02d5b5afc53f3c2549  src/passes/simplify.rs	fn algebraic(
 41e906bb6303fae6ac302e9466aadcd70390e98ad2b9b801626ed13c455007f4  src/passes/simplify.rs	fn cancel_round_trip(
-eb9253bdaa5916e8e7d4a347b3a96008d9f7e3dca404bad020226ef4d2822791  src/passes/simplify.rs	fn counted_bits(
+7354505c2c69e08efd4a8bf8633a78455d33d9bf7752c0753143e5229b5f053c  src/passes/simplify.rs	fn counted_bits(
 053a3eae1c860f38b76b25ece224da18c96a651bcfc0ca05810a993a7f557fa2  src/passes/simplify.rs	fn fold_offsets(
 1ac730240514ca620d2262399770256ef6743ad005159d06d5d83f8ac1a315d5  src/passes/simplify.rs	fn low32(
 25ffe570500d18feb54c134b3381bdb5cc9609a3ba968796de77f0b1cc38c688  src/passes/simplify.rs	fn magic_divisor(
@@ -93,7 +93,7 @@ fa42ab7a72b796809389efb5368cc58dad8ffedf02a1df2c4d6596e81f81c60a  src/passes/sim
 5c99932ca7481e7f89d0a754930466c54833bb308f20a5dedf816cd8fa2c6d20  src/passes/simplify.rs	fn simplify_expr(
 555d04605106a1b244072565fee53b508ee386ec0d6b8b85321eb478f8bd11ee  src/passes/simplify.rs	fn simplify_stmt(
 beb2106c620f03b1139236314af060c3bda8a23a699a8751ec029eb43150b55f  src/passes/simplify.rs	fn widen_compared_constant(
-426b94eea844af7eb097cffc013e1a3f7787351f401e9562b9e63edf3d56d046  src/passes/widths.rs	pub fn specialize_widths(
+d87598fc18f0d0c26f64484ab4945d194bf611e66108573fa29b86b0b4782354  src/passes/widths.rs	pub fn specialize_widths(
 cf000670e99aed0861b79b3b5ca9a8baec01ef2a7f1fced76d08f1af1ee2b06a  src/render/abi_objects.rs	fn rewrite_value(
 16fce2828e25b27180dd5f20db3f5a494806541affa5ccabb1bdd9728ca0af24  src/render/com_calls.rs	pub(super) fn prepare(
 05d0feb7a50dc3bee4c032dcec12a89472d6afaaf1925511cda5a19d473666c3  src/render/expr.rs	fn arithmetic(

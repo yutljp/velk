@@ -52,24 +52,24 @@ pub(crate) fn reuse_pointers(ir: &mut FunctionIr) {
             narrow_reads(operand, &mut excluded);
         }
     }
-    let mut kinds: BTreeMap<u16, Vec<u16>> = BTreeMap::new();
+    let mut origins: BTreeMap<u16, Vec<u16>> = BTreeMap::new();
     for (&variable, &origin) in &ir.variable_registers {
         if variable >= VARIABLE_BASE
             && defined.contains(&variable)
             && !excluded.contains(&variable)
             && types.get(&variable).is_some_and(|ty| known_layout(ir, ty))
         {
-            kinds.entry(origin).or_default().push(variable);
+            origins.entry(origin).or_default().push(variable);
         }
     }
-    if !kinds.values().any(|kind| kind.len() > 1) {
+    if !origins.values().any(|variables| variables.len() > 1) {
         return;
     }
     let (interferes, _, entry) = interference(ir, &|_| None);
     let mut groups = Groups::default();
-    for kind in kinds.values() {
-        for (at, variable) in kind.iter().enumerate() {
-            for earlier in &kind[..at] {
+    for variables in origins.values() {
+        for (at, variable) in variables.iter().enumerate() {
+            for earlier in &variables[..at] {
                 if types[earlier] == types[variable]
                     && groups.join(*earlier, *variable, &interferes, &entry)
                 {
