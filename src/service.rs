@@ -336,11 +336,7 @@ impl Binary {
             return Err(error);
         }
         let needs_defaults = signatures.defaults
-            && (!signatures.files.is_empty()
-                || image
-                    .functions
-                    .values()
-                    .any(|function| function.name.is_none()));
+            && (!signatures.files.is_empty() || sigs::has_unnamed_candidates(&image));
         let mut database = if needs_defaults {
             Cow::Borrowed(sigs::bundled_for_isa(image.isa))
         } else {
@@ -382,13 +378,7 @@ impl Binary {
             analyses: HashMap::new(),
             shared_analyses: HashMap::new(),
         };
-        if (!signatures.files.is_empty()
-            || (signatures.defaults
-                && binary
-                    .image
-                    .functions
-                    .values()
-                    .any(|function| function.name.is_none())))
+        if (!signatures.files.is_empty() || needs_defaults)
             && let Err(error) = binary.apply_signatures(
                 &database,
                 None,
@@ -1229,6 +1219,7 @@ impl Binary {
         deadline: Option<Instant>,
         scope: MatchScope,
     ) -> Result<Identification> {
+        crate::timing::scope!("service::apply_signatures");
         let arm_modes = self.image.arm_modes.clone();
         let discovered = match sigs::discover_arm32(&mut self.image, database, deadline) {
             Ok(discovered) => discovered,
@@ -1393,13 +1384,35 @@ mod tests {
 
     #[test]
     fn default_signature_databases_are_shared_between_binaries() {
-        let first = fixture("pe64.exe");
-        let second = fixture("pe64.exe");
+        let first = fixture("cpp_virtual_x64_stripped.elf");
+        let second = fixture("cpp_virtual_x64_stripped.elf");
         assert!(matches!(first.signature_database, Cow::Borrowed(_)));
         assert!(std::ptr::eq(
             first.signature_database.as_ref(),
             second.signature_database.as_ref(),
         ));
+    }
+
+    #[test]
+    fn short_unnamed_functions_do_not_load_default_signatures() {
+        let mut binary = fixture("pe64.exe");
+        assert!(binary.signature_database.entries.is_empty());
+        let mut eager = fixture("pe64.exe");
+        let result = eager
+            .apply_signatures(
+                sigs::bundled_for_isa(eager.image.isa),
+                None,
+                MatchScope::Unnamed,
+            )
+            .unwrap();
+        assert!(result.matches.is_empty());
+        assert!(result.candidates.is_empty());
+        for function in binary.functions() {
+            assert_eq!(
+                binary.decompile(function.addr, None, None).unwrap(),
+                eager.decompile(function.addr, None, None).unwrap(),
+            );
+        }
     }
 
     #[test]

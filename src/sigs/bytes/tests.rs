@@ -1,6 +1,45 @@
 use super::*;
 
 #[test]
+fn unnamed_candidates_preserve_size_limits_and_arm_discovery() {
+    for isa in [Isa::I386, Isa::X86_64, Isa::AArch64, Isa::Arm32] {
+        let mut image = Image::from_code(isa, 0x1000, Vec::new());
+        assert!(!has_unnamed_candidates(&image));
+        image.functions.insert(
+            0x1000,
+            crate::loader::Function {
+                addr: 0x1000,
+                size: None,
+                size_estimated: false,
+                name: None,
+                aliases: Vec::new(),
+                sources: Vec::new(),
+                library: None,
+            },
+        );
+        for size in [
+            None,
+            Some(0),
+            Some(31),
+            Some(32),
+            Some(MAX_BYTES),
+            Some(MAX_BYTES + 1),
+            Some(u64::MAX),
+        ] {
+            image.functions.get_mut(&0x1000).unwrap().size = size;
+            assert_eq!(
+                has_unnamed_candidates(&image),
+                isa == Isa::Arm32 || size.is_some_and(|size| (32..=MAX_BYTES).contains(&size)),
+                "{isa:?}: {size:?}",
+            );
+            image.functions.get_mut(&0x1000).unwrap().name = Some("known".to_owned());
+            assert!(!has_unnamed_candidates(&image));
+            image.functions.get_mut(&0x1000).unwrap().name = None;
+        }
+    }
+}
+
+#[test]
 fn short_functions_are_not_signatures() {
     assert!(normalize(Isa::X86_64, &[0x90; 31], 0, &HashSet::new()).is_none());
     assert!(normalize(Isa::AArch64, &[0; 28], 0, &HashSet::new()).is_none());

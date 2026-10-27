@@ -66,6 +66,18 @@ fn make_entry(
     }
 }
 
+pub(crate) fn has_unnamed_candidates(image: &Image) -> bool {
+    // Normalization cannot lengthen a body, so shorter functions cannot produce naming evidence.
+    // ARM discovery can find functions outside the current function extents.
+    image.functions.values().any(|function| {
+        function.name.is_none()
+            && (image.isa == Isa::Arm32
+                || function
+                    .size
+                    .is_some_and(|size| (MIN_NAMED_BYTES as u64..=MAX_BYTES).contains(&size)))
+    })
+}
+
 pub(crate) fn image_entries(image: &Image, deadline: Option<Instant>) -> Result<Vec<Entry>> {
     if matches!(image.isa, Isa::Arm32 | Isa::AArch64)
         && image.byte_order() != Some(object::Endianness::Little)

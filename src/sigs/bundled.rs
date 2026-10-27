@@ -71,6 +71,7 @@ fn string(reader: &mut Cursor<Vec<u8>>) -> String {
 }
 
 fn decode(data: &[u8], isa: Isa) -> Database {
+    crate::timing::scope!("sigs::decode");
     let mut decoded = Vec::new();
     GzDecoder::new(data)
         .read_to_end(&mut decoded)

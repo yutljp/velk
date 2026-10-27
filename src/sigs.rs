@@ -14,7 +14,9 @@ mod bytes;
 pub use bundled::bundled;
 pub(crate) use bundled::for_isa as bundled_for_isa;
 pub use bytes::build;
-pub(crate) use bytes::{MatchScope, discover_arm32, identify, image_entries};
+pub(crate) use bytes::{
+    MatchScope, discover_arm32, has_unnamed_candidates, identify, image_entries,
+};
 const TOKEN_LIMIT: usize = 128;
 const VERSION: u32 = 3;
 
