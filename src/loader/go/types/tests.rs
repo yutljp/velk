@@ -117,6 +117,102 @@ fn malformed_layouts_are_refused() {
 }
 
 #[test]
+fn standalone_shapes_require_valid_runtime_types() {
+    use crate::ir::{BinOp, Expr, FunctionIr, Param, Stmt};
+
+    let image = sample();
+    let types = Types {
+        start: 0x1000,
+        end: 0x1800,
+        ..Types::default()
+    };
+    for (addr, name, fields) in [
+        (0x1300, "struct go_string", vec!["ptr", "len"]),
+        (0x1340, "struct go_slice", vec!["ptr", "len", "cap"]),
+        (0x1380, "struct go_iface", vec!["type", "data"]),
+    ] {
+        let layout = types.layout(&image, addr).unwrap();
+        assert_eq!(layout.definition.name, name);
+        assert_eq!(
+            layout
+                .members
+                .iter()
+                .map(|member| member.name.as_str())
+                .collect::<Vec<_>>(),
+            fields
+        );
+        assert!(
+            layout
+                .members
+                .iter()
+                .all(|member| member.structure == name[7..])
+        );
+        for (index, field) in fields.iter().enumerate() {
+            let mut ir = FunctionIr::single_block(
+                Isa::X86_64,
+                vec![Stmt::Ret {
+                    value: Expr::Load {
+                        addr: Box::new(Expr::bin(
+                            BinOp::Add,
+                            Expr::reg(7, 64),
+                            Expr::Const(index as u64 * 8),
+                        )),
+                        width: 8,
+                        signed: false,
+                    },
+                }],
+            );
+            ir.name = Some("read_value".into());
+            ir.ret_type = CType::U64;
+            ir.params.push(Param {
+                index: 7,
+                name: "value".into(),
+                ty: CType::pointer_to(CType::Named(name.into())),
+            });
+            ir.members = layout.members.clone();
+            ir.definitions.push(layout.definition.clone());
+            let code = crate::render::render(&ir, &[], &Default::default(), &[]);
+            assert!(code.contains(&format!("value->{field}")), "{code}");
+            let source = format!(
+                "#include <stdint.h>\n#include <string.h>\n{code}\nint main(void) {{ {name} value; for (uint64_t i = 0; i < 100; ++i) {{ uint64_t bits = i * UINT64_C(0xfedcba987654321); memcpy((char *)&value + {}, &bits, 8); if (read_value(&value) != bits) return 1; }} return 0; }}\n",
+                index * 8
+            );
+            let scratch = std::env::temp_dir().join(format!(
+                "velk-go-shape-{}-{addr:x}-{index}",
+                std::process::id()
+            ));
+            std::fs::create_dir_all(&scratch).unwrap();
+            let input = scratch.join("shape.c");
+            std::fs::write(&input, &source).unwrap();
+            for level in ["-O0", "-O2"] {
+                let executable = scratch.join(level);
+                let output = std::process::Command::new("clang")
+                    .args(["-fwrapv", "-fno-strict-aliasing", level])
+                    .arg(&input)
+                    .arg("-o")
+                    .arg(&executable)
+                    .output()
+                    .unwrap();
+                assert!(
+                    output.status.success(),
+                    "{source}\n{}",
+                    String::from_utf8_lossy(&output.stderr)
+                );
+                assert!(
+                    std::process::Command::new(executable)
+                        .status()
+                        .unwrap()
+                        .success()
+                );
+            }
+            std::fs::remove_dir_all(scratch).unwrap();
+        }
+    }
+    assert!(types.layout(&image, 0x13c0).is_none());
+    assert!(types.layout(&image, u64::MAX).is_none());
+}
+
+#[test]
 fn printed_shapes_and_record_layout_compile_with_exact_offsets() {
     use crate::ir::{BinOp, Expr, FunctionIr, Param, Stmt};
     let image = sample();

@@ -343,12 +343,34 @@ pub(crate) fn read(image: &Image) -> Types {
 impl Types {
     pub(crate) fn layout(&self, image: &Image, addr: u64) -> Option<Layout> {
         self.layouts.get(&addr).cloned().or_else(|| {
-            Reader {
+            let reader = Reader {
                 image,
                 start: self.start,
                 end: self.end,
+            };
+            if let Some(layout) = reader.structure(addr) {
+                return Some(layout);
             }
-            .structure(addr)
+            let Some((CType::Named(name), _, _)) = reader.scalar(addr) else {
+                return None;
+            };
+            let Some(definition) = shapes().into_iter().find(|shape| shape.name == name) else {
+                return None;
+            };
+            let members = shape_fields(&name)
+                .into_iter()
+                .map(|(field, ty, offset)| Member {
+                    structure: name.trim_start_matches("struct ").to_owned(),
+                    offset: offset as i64,
+                    name: field.to_owned(),
+                    ty,
+                    width: 8,
+                })
+                .collect();
+            Some(Layout {
+                definition,
+                members,
+            })
         })
     }
 }

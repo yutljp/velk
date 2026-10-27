@@ -49,14 +49,94 @@ pub(super) fn apply(ir: &mut FunctionIr, image: &Image) {
         let Some(layout) = types.layout(image, *descriptor) else {
             continue;
         };
+        if matches!(
+            layout.definition.name.as_str(),
+            "struct go_string" | "struct go_slice" | "struct go_iface"
+        ) && !ir
+            .blocks
+            .iter()
+            .flat_map(|block| &block.stmts)
+            .any(|stmt| shape_access(stmt, output.dest.index, layout.definition.size))
+        {
+            continue;
+        }
+        if matches!(
+            layout.definition.name.as_str(),
+            "struct go_string" | "struct go_slice" | "struct go_iface"
+        ) && ir.blocks.iter().flat_map(|block| &block.stmts).any(|stmt| {
+            let Stmt::Store {
+                addr,
+                value,
+                width: 8,
+            } = stmt
+            else {
+                return false;
+            };
+            let offset = match addr {
+                Expr::Reg { index, width: 64 } if *index == output.dest.index => 0,
+                Expr::Bin {
+                    op: crate::ir::BinOp::Add,
+                    lhs,
+                    rhs,
+                } => match (lhs.as_ref(), rhs.as_ref()) {
+                    (Expr::Reg { index, width: 64 }, Expr::Const(offset))
+                    | (Expr::Const(offset), Expr::Reg { index, width: 64 })
+                        if *index == output.dest.index =>
+                    {
+                        *offset
+                    }
+                    _ => return false,
+                },
+                _ => return false,
+            };
+            if offset != 0 && !(layout.definition.name == "struct go_iface" && offset == 8) {
+                return false;
+            }
+            match value {
+                Expr::Const(0) => false,
+                Expr::Reg { index, width: 64 } => !ir
+                    .value_types
+                    .get(index)
+                    .or_else(|| {
+                        ir.params
+                            .iter()
+                            .find(|param| param.index == *index)
+                            .map(|param| &param.ty)
+                    })
+                    .is_some_and(CType::is_pointer),
+                _ => true,
+            }
+        }) {
+            continue;
+        }
         let ty = CType::pointer_to(CType::Named(layout.definition.name.clone()));
+        if matches!(
+            layout.definition.name.as_str(),
+            "struct go_string" | "struct go_slice" | "struct go_iface"
+        ) {
+            for structure in &mut ir.structures {
+                structure
+                    .elements
+                    .retain(|index| *index != output.dest.index);
+            }
+        }
         ir.value_types.insert(output.dest.index, ty);
         ir.pointer_values.push(output.dest.index);
         layouts.insert(*descriptor, layout);
     }
+    let mut added = std::collections::HashSet::new();
     for layout in layouts.into_values() {
+        if !added.insert(layout.definition.name.clone()) {
+            continue;
+        }
         ir.members.extend(layout.members);
-        ir.definitions.push(layout.definition);
+        if !ir
+            .definitions
+            .iter()
+            .any(|definition| definition.name == layout.definition.name)
+        {
+            ir.definitions.push(layout.definition);
+        }
     }
     if ir
         .definitions
@@ -75,11 +155,81 @@ pub(super) fn apply(ir: &mut FunctionIr, image: &Image) {
     }
 }
 
+fn shape_access(stmt: &Stmt, register: u16, size: u64) -> bool {
+    fn address(expr: &Expr, register: u16, size: u64) -> bool {
+        let offset = match expr {
+            Expr::Reg { index, width: 64 } if *index == register => 0,
+            Expr::Bin {
+                op: crate::ir::BinOp::Add,
+                lhs,
+                rhs,
+            } => match (lhs.as_ref(), rhs.as_ref()) {
+                (Expr::Reg { index, width: 64 }, Expr::Const(offset))
+                | (Expr::Const(offset), Expr::Reg { index, width: 64 })
+                    if *index == register =>
+                {
+                    *offset
+                }
+                _ => return false,
+            },
+            _ => return false,
+        };
+        offset % 8 == 0 && offset < size
+    }
+    fn loads(expr: &Expr, register: u16, size: u64) -> bool {
+        if let Expr::Load { addr, width: 8, .. } = expr
+            && address(addr, register, size)
+        {
+            return true;
+        }
+        crate::ir::visit::children(expr)
+            .into_iter()
+            .any(|child| loads(child, register, size))
+    }
+    match stmt {
+        Stmt::Store { addr, value, width } => {
+            (*width == 8 && address(addr, register, size))
+                || loads(addr, register, size)
+                || loads(value, register, size)
+        }
+        Stmt::Assign { value, .. } | Stmt::Ret { value } => loads(value, register, size),
+        Stmt::Brif { lhs, rhs, .. } => loads(lhs, register, size) || loads(rhs, register, size),
+        Stmt::BrIndirect { target } => loads(target, register, size),
+        Stmt::Switch { index, .. } => loads(index, register, size),
+        Stmt::Machine { inputs, .. } => inputs.iter().any(|expr| loads(expr, register, size)),
+        Stmt::Call { through, args, .. } => through
+            .iter()
+            .chain(args.iter().flatten())
+            .any(|expr| loads(expr, register, size)),
+        _ => false,
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::ir::{CallKind, CallOutput, Convention, RegRef, VARIABLE_BASE};
     use crate::loader::Isa;
+
+    #[test]
+    fn standalone_shape_requires_a_full_field_access() {
+        for (offset, width, expected) in [(0, 8, true), (8, 8, true), (16, 8, false), (8, 4, false)]
+        {
+            let stmt = Stmt::Ret {
+                value: Expr::Load {
+                    addr: Box::new(Expr::bin(
+                        crate::ir::BinOp::Add,
+                        Expr::reg(7, 64),
+                        Expr::Const(offset),
+                    )),
+                    width,
+                    signed: false,
+                },
+            };
+            assert_eq!(shape_access(&stmt, 7, 16), expected);
+            assert!(!shape_access(&stmt, 8, 16));
+        }
+    }
 
     #[test]
     fn allocated_runtime_record_fields_compile_and_preserve_bits() {
