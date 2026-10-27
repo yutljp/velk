@@ -257,30 +257,28 @@ impl<'a> Flow<'a> {
     }
 
     /// The statements from `block` on that run without a branch, and how
-    /// they end: true for a return or a trap.
-    fn straight_tail(&self, mut block: usize) -> (usize, bool) {
-        let mut length = 0;
+    /// they end in a return or a trap.
+    fn straight_tail(&self, mut block: usize) -> bool {
         let mut seen = HashSet::new();
         while seen.insert(block) {
             let stmts = &self.ir.blocks[block].stmts;
-            length += stmts.len();
             match stmts.last() {
-                Some(Stmt::Ret { .. } | Stmt::Trap) => return (length, true),
+                Some(Stmt::Ret { .. } | Stmt::Trap) => return true,
                 Some(Stmt::Br {
                     target: Some(target),
                 }) => match self.index.get(target) {
                     Some(next) => block = *next,
-                    None => return (length, false),
+                    None => return false,
                 },
                 Some(Stmt::Brif { .. } | Stmt::BrifFlags { .. } | Stmt::Switch { .. })
                 | Some(Stmt::BrIndirect { .. } | Stmt::Br { target: None }) => {
-                    return (length, false);
+                    return false;
                 }
                 _ if block + 1 < self.ir.blocks.len() => block += 1,
-                _ => return (length, false),
+                _ => return false,
             }
         }
-        (length, false)
+        false
     }
 
     /// Whether `t` is where a loop with exits to more than one place
@@ -400,7 +398,7 @@ impl<'a> Flow<'a> {
             return Cause::Rotation;
         }
         let end = self.through_jumps(t);
-        if self.straight_tail(end).1 {
+        if self.straight_tail(end) {
             return Cause::ReturnMerge;
         }
         if self.loop_exits(t) {

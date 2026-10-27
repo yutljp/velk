@@ -11,25 +11,8 @@ const TAIL_LINES: usize = 8;
 
 pub(crate) fn flatten_early_returns(nodes: &mut Vec<Node>) {
     for node in nodes.iter_mut() {
-        match node {
-            Node::If { then, els, .. } => {
-                flatten_early_returns(then);
-                flatten_early_returns(els);
-            }
-            Node::DoWhile { body, .. } | Node::Forever { body } => flatten_early_returns(body),
-            Node::While { prefix, body, .. } => {
-                flatten_early_returns(prefix);
-                flatten_early_returns(body);
-            }
-            Node::Switch { arms, default, .. } => {
-                for (_, body) in arms {
-                    flatten_early_returns(body);
-                }
-                if let Some(body) = default {
-                    flatten_early_returns(body);
-                }
-            }
-            Node::Break | Node::Continue | Node::Label(_) | Node::Stmt(_) => {}
+        for child in children_mut(node) {
+            flatten_early_returns(child);
         }
     }
 

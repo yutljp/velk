@@ -190,17 +190,19 @@ pub(super) fn mutable_copy_candidate(ir: &FunctionIr) -> Option<FunctionIr> {
 #[derive(Clone, Copy, PartialEq, Eq, Hash)]
 enum Source {
     Register(u16),
-    /// The 8 bytes at this offset from the stack pointer.
+    /// The stack offset from the stack pointer.
     Slot(u64),
 }
 
 fn slot_accesses(ir: &FunctionIr, slot_of: &impl Fn(&Expr) -> Option<u64>) -> Vec<(u64, u8, bool)> {
-    fn loads(expr: &Expr, out: &mut Vec<(Expr, u8)>) {
-        if let Expr::Load { addr, width, .. } = expr {
-            out.push((addr.as_ref().clone(), *width));
+    fn loads(expr: &Expr, slot_of: &impl Fn(&Expr) -> Option<u64>, out: &mut Vec<(u64, u8, bool)>) {
+        if let Expr::Load { addr, width, .. } = expr
+            && let Some(slot) = slot_of(addr)
+        {
+            out.push((slot, *width, false));
         }
         for child in crate::ir::visit::children(expr) {
-            loads(child, out);
+            loads(child, slot_of, out);
         }
     }
     let mut accesses: Vec<(u64, u8, bool)> = Vec::new();
@@ -210,15 +212,9 @@ fn slot_accesses(ir: &FunctionIr, slot_of: &impl Fn(&Expr) -> Option<u64>) -> Ve
         {
             accesses.push((slot, *width, true));
         }
-        let mut loaded = Vec::new();
         for operand in stmt.operands() {
-            loads(operand, &mut loaded);
+            loads(operand, slot_of, &mut accesses);
         }
-        accesses.extend(
-            loaded
-                .iter()
-                .filter_map(|(addr, width)| slot_of(addr).map(|slot| (slot, *width, false))),
-        );
     }
     accesses
 }

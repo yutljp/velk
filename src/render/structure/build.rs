@@ -65,10 +65,9 @@ impl Structurer<'_> {
     /// The first later block that closes a loop with an unconditional branch
     /// back to this block.
     fn back_edge_latch(&self, index: usize, to: usize) -> Option<usize> {
-        let Some(block) = self.blocks.get(index) else {
+        let Some(_) = self.blocks.get(index) else {
             return None;
         };
-        let header = block.start;
         for position in index + 1..to {
             let Some(block) = self.blocks.get(position) else {
                 return None;
@@ -87,7 +86,6 @@ impl Structurer<'_> {
                 return None;
             }
         }
-        let _ = header;
         None
     }
 
@@ -214,11 +212,7 @@ impl Structurer<'_> {
             return false;
         }
         for index in from..to {
-            let next = if index + 1 < to {
-                Some(self.blocks[index + 1].start)
-            } else {
-                Some(self.blocks[to].start)
-            };
+            let next = Some(self.blocks[index + 1].start);
             match self.blocks[index].stmts.last() {
                 Some(Stmt::Br {
                     target: Some(target),

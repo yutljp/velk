@@ -222,7 +222,7 @@ pub(super) fn in_condition(
         return None;
     }
     let super::Node::If {
-        cond: Cond::Eq | Cond::Ne,
+        cond: cond @ (Cond::Eq | Cond::Ne),
         lhs,
         rhs,
         ..
@@ -262,9 +262,6 @@ pub(super) fn in_condition(
         {
             return None;
         }
-        let super::Node::If { cond, .. } = next else {
-            return None;
-        };
         let expression = render_inner(*instruction, inputs, outputs, ctx, true);
         let negate = if *cond == Cond::Ne { "!" } else { "" };
         let mut rendered = String::new();
@@ -287,9 +284,6 @@ pub(super) fn in_condition(
         .strip_prefix(&prefix)
         .and_then(|text| text.strip_suffix(';'))
     else {
-        return None;
-    };
-    let super::Node::If { cond, .. } = next else {
         return None;
     };
     let first = format!(

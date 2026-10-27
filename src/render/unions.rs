@@ -2,7 +2,7 @@
 //! accesses share and the members that name each of them. Stack regions and
 //! recovered structures declare their overlapping accesses this way.
 
-/// The size of the aligned cell of two, four or eight bytes that the
+/// The size of the aligned cell of one, two, four or eight bytes that the
 /// overlapping accesses `group` (offset from the object's start, width)
 /// fill, each a whole number of its widths into the object.
 pub(crate) fn cell(group: &[(i64, u8)]) -> Option<u8> {

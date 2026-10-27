@@ -607,25 +607,8 @@ pub(crate) fn prune_labels(nodes: &mut Vec<Node>, used: &std::collections::HashS
         _ => true,
     });
     for node in nodes.iter_mut() {
-        match node {
-            Node::If { then, els, .. } => {
-                prune_labels(then, used);
-                prune_labels(els, used);
-            }
-            Node::DoWhile { body, .. } | Node::Forever { body } => prune_labels(body, used),
-            Node::Switch { arms, default, .. } => {
-                for (_, body) in arms {
-                    prune_labels(body, used);
-                }
-                if let Some(body) = default {
-                    prune_labels(body, used);
-                }
-            }
-            Node::While { prefix, body, .. } => {
-                prune_labels(prefix, used);
-                prune_labels(body, used);
-            }
-            _ => {}
+        for child in children_mut(node) {
+            prune_labels(child, used);
         }
     }
 }
@@ -805,26 +788,11 @@ fn invert_loops(nodes: &mut Vec<Node>, known: &std::collections::HashSet<u16>) {
 /// The registers the nodes write, at any depth.
 fn writes_in(nodes: &[Node], out: &mut std::collections::HashSet<u16>) {
     for node in nodes {
-        match node {
-            Node::Stmt(stmt) => out.extend(crate::ir::visit::statement_registers(stmt).0),
-            Node::If { then, els, .. } => {
-                writes_in(then, out);
-                writes_in(els, out);
-            }
-            Node::DoWhile { body, .. } | Node::Forever { body } => writes_in(body, out),
-            Node::While { prefix, body, .. } => {
-                writes_in(prefix, out);
-                writes_in(body, out);
-            }
-            Node::Switch { arms, default, .. } => {
-                for (_, body) in arms {
-                    writes_in(body, out);
-                }
-                if let Some(body) = default {
-                    writes_in(body, out);
-                }
-            }
-            Node::Label(_) | Node::Break | Node::Continue => {}
+        if let Node::Stmt(stmt) = node {
+            out.extend(crate::ir::visit::statement_registers(stmt).0);
+        }
+        for child in children(node) {
+            writes_in(child, out);
         }
     }
 }

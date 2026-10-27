@@ -61,14 +61,13 @@ impl Symbols {
     }
 
     pub(super) fn use_macho_c_names(&mut self) {
-        let names: HashSet<_> = self
+        let occupied: HashSet<_> = self
             .functions
             .values()
             .chain(self.import_slots.values())
             .chain(self.data.values())
-            .cloned()
+            .map(|name| super::sanitize(name))
             .collect();
-        let occupied: HashSet<_> = names.iter().map(|name| super::sanitize(name)).collect();
         for name in self
             .functions
             .values_mut()

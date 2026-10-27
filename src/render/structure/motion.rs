@@ -78,9 +78,7 @@ pub(super) fn shared(ir: &FunctionIr) -> Option<FunctionIr> {
     let mut incoming = vec![Vec::new(); ir.blocks.len()];
     for (from, successors) in edges.iter().enumerate() {
         for to in successors {
-            if !incoming[*to].contains(&from) {
-                incoming[*to].push(from);
-            }
+            incoming[*to].push(from);
         }
     }
     for (join, predecessors) in incoming.iter().enumerate().skip(1) {
@@ -141,7 +139,7 @@ pub(super) fn shared(ir: &FunctionIr) -> Option<FunctionIr> {
             continue;
         }
         while let Some(stmt) = out.blocks[successors[0]].stmts.first().cloned() {
-            if !matches!(&stmt, Stmt::Assign { value, .. } if pure(value))
+            if !movable(&stmt)
                 || !successors.iter().all(|to| {
                     out.blocks[*to]
                         .stmts

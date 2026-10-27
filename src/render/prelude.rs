@@ -116,7 +116,7 @@ impl Prelude {
         if self.definitions.is_empty() {
             return String::new();
         }
-        let mut definitions: Vec<_> = self.definitions.iter().cloned().collect();
+        let mut definitions: Vec<_> = self.definitions.iter().collect();
         definitions.sort_by_key(|definition| order(definition));
         let mut dependencies = vec![0usize; definitions.len()];
         let mut dependents = vec![Vec::new(); definitions.len()];

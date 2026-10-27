@@ -215,7 +215,7 @@ fn webs(ir: &FunctionIr) -> Webs {
             }
         }
     }
-    let bound_values: Vec<u16> = ssa
+    let bound_values = ssa
         .entry
         .values()
         .copied()
@@ -238,8 +238,7 @@ fn webs(ir: &FunctionIr) -> Webs {
                 .flat_map(|block| &block.stmts)
                 .flat_map(Stmt::call_outputs)
                 .map(|output| output.dest.index),
-        )
-        .collect();
+        );
     let mut bound: BTreeMap<u16, HashSet<usize>> = BTreeMap::new();
     for value in bound_values {
         bound

@@ -9,7 +9,6 @@ use crate::render::{
 };
 
 pub(super) fn render(addr: &Expr, value: &Expr, width: &u8, ctx: &Ctx<'_>) -> String {
-    // Memory keeps of the value the bits stored.
     let stored = u32::from(*width) * 8;
     let member = member_access(addr, *width, ctx);
     let precision = value_precision(value, ctx);

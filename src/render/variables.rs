@@ -133,7 +133,7 @@ pub(crate) fn variable_types(
     }
     uses.spread_accesses(&pointer_copies, &integer_copies);
     // What a float variable is loaded from holds floats.
-    for (dest, base) in uses.loaded.clone() {
+    for &(dest, base) in &uses.loaded {
         if let Some(Some(precision)) = uses.floats.get(&dest).copied() {
             uses.float_elements.insert(base, precision);
         }
@@ -141,7 +141,7 @@ pub(crate) fn variable_types(
     let signs = SignEvidence::of_variables(ir);
     let mut types = BTreeMap::new();
     let mut ints = HashSet::new();
-    for index in uses.seen.clone() {
+    for &index in &uses.seen {
         if !crate::ir::is_temp(index) {
             continue;
         }
@@ -657,7 +657,7 @@ impl Uses {
     fn spread_floats(&mut self) {
         loop {
             let mut changed = false;
-            for (dest, source) in self.copies.clone() {
+            for &(dest, source) in &self.copies {
                 for (from, to) in [(source, dest), (dest, source)] {
                     if let Some(Some(precision)) = self.floats.get(&from).copied()
                         && !self.floats.contains_key(&to)

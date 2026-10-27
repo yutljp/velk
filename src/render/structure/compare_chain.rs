@@ -188,7 +188,7 @@ fn incoming_interval(
 
 struct ChainWalk<'a> {
     ir: &'a FunctionIr,
-    position: std::collections::HashMap<u64, usize>,
+    position: &'a std::collections::HashMap<u64, usize>,
     value: Expr,
     cases: std::collections::BTreeMap<i64, u64>,
     default: Option<u64>,
@@ -592,7 +592,7 @@ pub fn recover_chains(ir: &FunctionIr) -> Vec<ChainSwitch> {
         }
         let mut walk = ChainWalk {
             ir,
-            position: position.clone(),
+            position: &position,
             value: lhs.clone(),
             cases: std::collections::BTreeMap::new(),
             default: None,
@@ -714,7 +714,7 @@ mod tests {
     use crate::loader::Isa;
 
     /// `if (n <op> k) goto target; ...` over one 32-bit value, falling
-    /// through to a return of 1.
+    /// through to a return of the block address.
     fn chain(compares: &[(Cond, u64, u64)]) -> FunctionIr {
         let mut ir = FunctionIr::single_block(Isa::AArch64, Vec::new());
         ir.blocks.clear();

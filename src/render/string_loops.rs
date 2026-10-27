@@ -191,8 +191,6 @@ pub(super) fn render(
         indent(inner, &mut out);
         out.push_str(&call);
         out.push('\n');
-    }
-    if n != Some(0) {
         for pointer in pointers {
             let stmt = Stmt::Assign {
                 dest: pointer,

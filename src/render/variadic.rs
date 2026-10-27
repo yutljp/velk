@@ -770,8 +770,7 @@ fn trace(ir: &FunctionIr, list: &List, start: usize, offset: i64, register: u16)
         state.memory.insert((top_field, 8), Expr::reg(TOP, 64));
     }
     let in_register = match list.layout {
-        Layout::SysV => offset < descriptor.limits[usize::from(list.floating)],
-        Layout::Aapcs64 => offset < descriptor.limits[usize::from(list.floating)],
+        Layout::SysV | Layout::Aapcs64 => offset < descriptor.limits[usize::from(list.floating)],
         Layout::Apple => false,
     };
     let expected = if in_register {
@@ -958,6 +957,11 @@ fn recover_access(ir: &mut FunctionIr, list: &List, start: usize, register: u16)
         }
     }
     // Every deleted definition must be used entirely inside the expansion.
+    let temporaries: Vec<_> = writes
+        .iter()
+        .filter(|(offset, _)| !list.fields().iter().any(|(field, _)| field == offset))
+        .copied()
+        .collect();
     for (b, block) in ir.blocks.iter().enumerate() {
         for (p, stmt) in block.stmts.iter().enumerate() {
             if positions.contains(&(b, p)) {
@@ -970,11 +974,6 @@ fn recover_access(ir: &mut FunctionIr, list: &List, start: usize, register: u16)
             {
                 return false;
             }
-            let temporaries: Vec<_> = writes
-                .iter()
-                .filter(|(offset, _)| !list.fields().iter().any(|(field, _)| field == offset))
-                .copied()
-                .collect();
             if stmt
                 .operands()
                 .iter()
