@@ -120,25 +120,59 @@ impl Prelude {
         definitions.sort_by_key(|definition| definition_order(definition));
         let mut dependencies = vec![0usize; definitions.len()];
         let mut dependents = vec![Vec::new(); definitions.len()];
+        let mut records = rustc_hash::FxHashMap::default();
+        let mut unusual = Vec::new();
         for (record, other) in definitions.iter().enumerate() {
             let Some((name, _)) = other.split_once(" {") else {
                 continue;
             };
-            if !name.starts_with("struct ") && !name.starts_with("union ") {
+            let Some(tag) = name
+                .strip_prefix("struct ")
+                .or_else(|| name.strip_prefix("union "))
+            else {
                 continue;
+            };
+            if tag.is_empty() || tag.contains(' ') {
+                unusual.push((record, format!("{name} ")));
+            } else {
+                records.entry(name).or_insert_with(Vec::new).push(record);
             }
-            let prefix = format!("{name} ");
-            for (index, definition) in definitions.iter().enumerate() {
-                if index != record
-                    && definition.match_indices(&prefix).any(|(at, _)| {
+        }
+        for (index, definition) in definitions.iter().enumerate() {
+            let mut found = rustc_hash::FxHashSet::default();
+            for keyword in ["struct ", "union "] {
+                for (at, _) in definition.match_indices(keyword) {
+                    let tag_start = at + keyword.len();
+                    let Some(end) = definition[tag_start..].find(' ') else {
+                        continue;
+                    };
+                    let end = tag_start + end;
+                    let Some(matching) = records.get(&definition[at..end]) else {
+                        continue;
+                    };
+                    if !definition[end + 1..].trim_start().starts_with('*') {
+                        for &record in matching {
+                            if index != record {
+                                found.insert(record);
+                            }
+                        }
+                    }
+                }
+            }
+            for (record, prefix) in &unusual {
+                if index != *record
+                    && definition.match_indices(prefix).any(|(at, _)| {
                         !definition[at + prefix.len()..]
                             .trim_start()
                             .starts_with('*')
                     })
                 {
-                    dependencies[index] += 1;
-                    dependents[record].push(index);
+                    found.insert(*record);
                 }
+            }
+            for record in found {
+                dependencies[index] += 1;
+                dependents[record].push(index);
             }
         }
         let mut ready: BTreeSet<usize> = dependencies
@@ -248,6 +282,14 @@ mod tests {
             code.find("struct Z;").unwrap() < code.find("struct A {").unwrap(),
             "{code}"
         );
+    }
+
+    #[test]
+    fn record_dependencies_include_substrings_and_ignore_pointers() {
+        let definitions = "struct Z { int x; };\n\nstruct A { int xstruct Z value; };\n\nstruct B { struct Z *pointer; };\n";
+        let output = combine(&section(definitions));
+        assert!(output.find("struct Z {").unwrap() < output.find("struct A {").unwrap());
+        assert!(output.find("struct B {").unwrap() < output.find("struct Z {").unwrap());
     }
 
     #[test]
