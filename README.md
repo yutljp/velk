@@ -87,6 +87,15 @@ See [input formats and limits](docs/INPUT.md).
 
 ## Running loaded code
 
+Programs can use `velk --serve` for newline-delimited JSON. Each request contains
+`id`, `code`, and optionally `timeout_ms`; each reply contains the same `id`, a
+JSON `result` or an `error` with `message` and `stack`, and a `log` array. Results
+are not truncated, and opened binaries remain cached between requests:
+
+```sh
+printf '%s\n' '{"id":1,"code":"console.log(\"hello\"); ({answer:42})"}' | velk --serve
+```
+
 Run `velk --api-docs` to list the embedded API topics, or `velk --api-docs emulation` to
 read the execution options and results in the terminal.
 

@@ -306,6 +306,11 @@ pub(crate) fn run(
                 return Err(error);
             }
         }
+        Command::Serve => {
+            if let Err(error) = velk::serve::serve() {
+                return Err(error);
+            }
+        }
     }
     Ok(ExitCode::SUCCESS)
 }

@@ -23,6 +23,7 @@ pub mod passes;
 pub mod project;
 pub mod render;
 pub mod script;
+pub mod serve;
 pub mod service;
 pub mod sigs;
 pub mod ssa;

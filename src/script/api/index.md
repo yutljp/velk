@@ -1,5 +1,16 @@
 # velk script API
 
+Programs can use `velk --serve` for newline-delimited JSON requests and replies.
+Each request has an `id`, `code`, and optional `timeout_ms`. Replies contain the
+same `id`, a JSON `result` or an `error` with `message` and `stack`, and a `log`
+array of console messages. Results are not truncated. For example:
+
+```sh
+printf '%s\n' '{"id":1,"code":"console.log(\"hello\"); ({answer:42})"}' | velk --serve
+```
+
+An undefined completion value is returned as null. Values must be JSON-serializable.
+
 Scripts are plain synchronous JavaScript: no `await`, no imports, no file system.
 The output is everything passed to `console.log`, followed by the value of the last expression.
 When several decompiled functions are logged as C text, their support definitions and declarations are collected into one marked prelude at the top of the output. Each `decompile()` result includes its own prelude for standalone use.

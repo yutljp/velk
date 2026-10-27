@@ -38,11 +38,12 @@ Use binary for opening, listing, navigation and annotations; func for per-functi
 decompilation and inspection; types for returned object fields; emulation for execution.";
 
 /// API topic names and their embedded documentation.
-pub const TOPICS: [(&str, &str); 4] = [
+pub const TOPICS: [(&str, &str); 5] = [
     ("binary", include_str!("script/api/binary.d.ts")),
     ("func", include_str!("script/api/func.d.ts")),
     ("types", include_str!("script/api/types.d.ts")),
     ("emulation", include_str!("script/api/emulation.d.ts")),
+    ("overview", include_str!("script/api/index.md")),
 ];
 
 /// Serves newline-delimited JSON-RPC requests on standard input and output.
@@ -293,7 +294,7 @@ fn read_api(arguments: &Value) -> (String, bool) {
         Some(topic) => match TOPICS.iter().find(|(name, _)| *name == topic) {
             Some((_, text)) => ((*text).to_owned(), false),
             None => (
-                "unknown topic; use binary, func, types or emulation, or omit topic for the overview"
+                "unknown topic; use binary, func, types, emulation or overview, or omit topic for the overview"
                     .to_owned(),
                 true,
             ),

@@ -33,6 +33,12 @@ pub struct Outcome {
     pub output: String,
     /// Evaluation failure or timeout, when one occurred.
     pub error: Option<String>,
+    /// JSON completion value.
+    pub result: serde_json::Value,
+    /// Captured console messages.
+    pub log: Vec<String>,
+    /// JavaScript stack trace, if available.
+    pub stack: Option<String>,
 }
 
 impl Engine {
@@ -57,37 +63,103 @@ impl Engine {
     /// Evaluates code, stopping at interrupt or analysis boundaries after the timeout.
     #[must_use]
     pub fn run(&self, code: &str, timeout: Option<Duration>) -> Outcome {
+        self.run_inner(code, timeout, /* structured */ false)
+    }
+
+    /// Evaluates code and captures its JSON completion value and console messages.
+    #[must_use]
+    pub fn run_structured(&self, code: &str, timeout: Option<Duration>) -> Outcome {
+        self.run_inner(code, timeout, /* structured */ true)
+    }
+
+    fn run_inner(&self, code: &str, timeout: Option<Duration>, structured: bool) -> Outcome {
         let context = match Context::full(&self.runtime) {
             Ok(context) => context,
             Err(error) => {
                 return Outcome {
                     output: String::new(),
                     error: Some(error.to_string()),
+                    result: serde_json::Value::Null,
+                    log: Vec::new(),
+                    stack: None,
                 };
             }
         };
         let deadline = timeout.map(|timeout| Instant::now() + timeout);
         self.deadline.set(deadline);
-        let mut outcome = context.with(|ctx| self.evaluate(&ctx, code));
+        let mut outcome = context.with(|ctx| self.evaluate(&ctx, code, structured));
         self.deadline.set(None);
         // A run past its time is a timeout even when the work it overran
         // finished.
         if deadline.is_some_and(|deadline| Instant::now() > deadline) {
             let millis = timeout.unwrap_or_default().as_millis();
             outcome.error = Some(format!("timed out after {millis} ms"));
+            outcome.stack = None;
         }
         outcome.output = crate::render::combine(&outcome.output);
         outcome
     }
 
-    fn evaluate<'js>(&self, ctx: &Ctx<'js>, code: &str) -> Outcome {
+    fn evaluate<'js>(&self, ctx: &Ctx<'js>, code: &str, structured_mode: bool) -> Outcome {
         let result = self
             .install(ctx)
             .and_then(|()| eval_named::<Value>(ctx, code, SCRIPT_NAME));
-        let (value, error) = match result.catch(ctx) {
-            Ok(value) => (value, None),
-            Err(error) => (Value::new_undefined(ctx.clone()), Some(describe(error))),
+        let (value, error, stack) = match result.catch(ctx) {
+            Ok(value) => (value, None, None),
+            Err(error) => {
+                let stack = match &error {
+                    CaughtError::Exception(exception) => {
+                        exception.as_object().get::<_, String>("stack").ok()
+                    }
+                    _ => None,
+                };
+                (
+                    Value::new_undefined(ctx.clone()),
+                    Some(describe(error)),
+                    stack,
+                )
+            }
         };
+        if structured_mode {
+            if self
+                .deadline
+                .get()
+                .is_some_and(|deadline| Instant::now() > deadline)
+            {
+                self.deadline
+                    .set(Some(Instant::now() + Duration::from_millis(100)));
+            }
+            let structured = ctx
+                .globals()
+                .get::<_, Function>("__velkStructured")
+                .and_then(|finish| finish.call::<_, String>((value.clone(),)))
+                .catch(ctx);
+            let (structured, structured_error) = match structured {
+                Ok(text) => match serde_json::from_str::<serde_json::Value>(&text) {
+                    Ok(value) => (value, None),
+                    Err(error) => (serde_json::Value::Null, Some(error.to_string())),
+                },
+                Err(error) => (serde_json::Value::Null, Some(describe(error))),
+            };
+            return Outcome {
+                output: String::new(),
+                error: error.or(structured_error).or_else(|| {
+                    structured
+                        .get("error")
+                        .and_then(serde_json::Value::as_str)
+                        .map(str::to_owned)
+                }),
+                result: structured
+                    .get("result")
+                    .cloned()
+                    .unwrap_or(serde_json::Value::Null),
+                log: structured
+                    .get("log")
+                    .and_then(|value| serde_json::from_value(value.clone()).ok())
+                    .unwrap_or_default(),
+                stack,
+            };
+        }
         let finished = ctx
             .globals()
             .get::<_, Function>("__velkFinish")
@@ -106,6 +178,9 @@ impl Engine {
         Outcome {
             output,
             error: error.or(failure),
+            result: serde_json::Value::Null,
+            log: Vec::new(),
+            stack,
         }
     }
 

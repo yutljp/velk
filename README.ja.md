@@ -89,6 +89,15 @@ Linux ではバイナリのローダーが入力のスナップショットを�
 
 ## 読み込んだコードの実行
 
+プログラムからは `velk --serve` を使い、改行区切りの JSON を送受信できます。
+リクエストには `id`、`code`、任意の `timeout_ms` を指定します。応答には同じ
+`id`、JSON の `result` または `message` と `stack` を持つ `error`、コンソール出力の
+`log` 配列が含まれます。結果は切り詰められず、開いたバイナリはリクエスト間でキャッシュされます。
+
+```sh
+printf '%s\n' '{"id":1,"code":"console.log(\"hello\"); ({answer:42})"}' | velk --serve
+```
+
 `velk --api-docs` で組み込み API のトピックを一覧表示し、
 `velk --api-docs emulation` で実行オプションと結果を端末で確認できます。
 
