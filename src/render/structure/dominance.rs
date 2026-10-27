@@ -15,7 +15,7 @@ use crate::ir::{Block, FunctionIr, Stmt};
 /// Deeper dominator trees fall back to the other structurer.
 const MAX_DEPTH: usize = 1500;
 
-struct Graph<'a> {
+pub(super) struct Graph<'a> {
     blocks: &'a [Block],
     successors: Vec<Vec<usize>>,
     /// Reverse-postorder number of each block; `usize::MAX` if unreachable.
@@ -27,6 +27,8 @@ struct Graph<'a> {
     merge: Vec<bool>,
     /// The blocks of the loop each header heads, by header.
     loops: HashMap<usize, Vec<bool>>,
+    /// The loop headers containing each block, innermost first.
+    enclosing: Vec<Vec<usize>>,
     /// Where each loop's own tests, at its header and latches, leave it to.
     loop_test_exits: HashMap<usize, Vec<usize>>,
     index: HashMap<u64, usize>,
@@ -81,7 +83,7 @@ fn forest_order(successors: &[Vec<usize>]) -> (Vec<usize>, Vec<usize>) {
 }
 
 impl<'a> Graph<'a> {
-    fn new(ir: &'a FunctionIr, absorb: Absorb) -> Graph<'a> {
+    pub(super) fn new(ir: &'a FunctionIr) -> Graph<'a> {
         let blocks = &ir.blocks;
         let count = blocks.len();
         let index: HashMap<u64, usize> = blocks
@@ -169,7 +171,20 @@ impl<'a> Graph<'a> {
             loop_test_exits.insert(*header, exits);
             loops.insert(*header, body);
         }
-        let mut graph = Graph {
+        let mut enclosing = vec![Vec::new(); count];
+        let mut headers: Vec<(usize, usize)> = loops
+            .iter()
+            .map(|(header, body)| (*header, body.iter().filter(|inside| **inside).count()))
+            .collect();
+        headers.sort_by_key(|(_, size)| *size);
+        for (header, _) in headers {
+            for (block, inside) in loops[&header].iter().enumerate() {
+                if *inside {
+                    enclosing[block].push(header);
+                }
+            }
+        }
+        Graph {
             blocks,
             successors,
             order,
@@ -177,16 +192,13 @@ impl<'a> Graph<'a> {
             children,
             merge,
             loops,
+            enclosing,
             loop_test_exits,
             index,
             absorbed: std::collections::HashSet::new(),
-            absorb,
+            absorb: Absorb::Nothing,
             switch_cases: false,
-        };
-        if absorb != Absorb::Nothing {
-            graph.absorbed = graph.absorbed_exits(absorb);
         }
-        graph
     }
 
     /// The exits of each loop with several that are entered by one branch
@@ -259,15 +271,8 @@ impl<'a> Graph<'a> {
     }
 
     /// The loop headers containing `block`, innermost first.
-    fn enclosing(&self, block: usize) -> Vec<usize> {
-        let mut headers: Vec<usize> = self
-            .loops
-            .iter()
-            .filter(|(_, body)| body[block])
-            .map(|(header, _)| *header)
-            .collect();
-        headers.sort_by_key(|header| self.loops[header].iter().filter(|inside| **inside).count());
-        headers
+    fn enclosing(&self, block: usize) -> &[usize] {
+        &self.enclosing[block]
     }
 
     /// Where a child the code of `parent` reaches goes: `None` inside
@@ -275,7 +280,8 @@ impl<'a> Graph<'a> {
     /// `parent` but not the child, which the child then follows.
     fn hoisted(&self, parent: usize, child: usize) -> Option<usize> {
         self.enclosing(parent)
-            .into_iter()
+            .iter()
+            .copied()
             .rfind(|header| !self.in_loop(*header, child))
     }
 
@@ -484,7 +490,8 @@ impl<'a> Graph<'a> {
     /// sit at the branch without splitting a loop's shape.
     fn leaves_aside(&self, from: usize, target: usize) -> bool {
         self.enclosing(from)
-            .into_iter()
+            .iter()
+            .copied()
             .filter(|header| !self.in_loop(*header, target))
             .all(|header| !self.loop_test_exits[&header].contains(&target))
     }
@@ -655,15 +662,13 @@ fn forest_dominators(successors: &[Vec<usize>], roots: &[usize]) -> Vec<Option<u
 
 /// The blocks the entry does not reach, which start code of their own
 /// (an exception handler, or the target of a jump not followed).
-pub(super) fn entries(ir: &FunctionIr) -> Vec<u64> {
-    if ir.blocks.is_empty() {
-        return Vec::new();
+impl Graph<'_> {
+    pub(super) fn entries(&self) -> Vec<u64> {
+        (1..self.blocks.len())
+            .filter(|block| self.immediate_dominators[*block].is_none() && !self.padding(*block))
+            .map(|block| self.blocks[block].start)
+            .collect()
     }
-    let graph = Graph::new(ir, Absorb::Nothing);
-    (1..ir.blocks.len())
-        .filter(|block| graph.immediate_dominators[*block].is_none() && !graph.padding(*block))
-        .map(|block| ir.blocks[block].start)
-        .collect()
 }
 
 /// Rewrites each jump as falling through, `break`, `continue` or a goto.
@@ -1135,42 +1140,40 @@ fn while_loop(body: &[Node]) -> Option<Node> {
 
 /// The function structured by its dominator tree, or None when the tree is
 /// too deep to walk.
+#[cfg(test)]
 pub(super) fn structure(ir: &FunctionIr) -> Option<Vec<Node>> {
-    structure_with(ir, Absorb::Nothing, false)
+    Graph::new(ir).structure(Absorb::Nothing, /* switch_cases */ false)
 }
 
-/// The same, with each loop's exits that one branch alone enters placed
-/// where the loop leaves to them, so the others follow the loop.
-pub(super) fn structure_absorbing(ir: &FunctionIr, absorb: Absorb) -> Option<Vec<Node>> {
-    structure_with(ir, absorb, false)
-}
-
-pub(super) fn structure_switches(ir: &FunctionIr, absorb: Absorb) -> Option<Vec<Node>> {
-    structure_with(ir, absorb, true)
-}
-
-fn structure_with(ir: &FunctionIr, absorb: Absorb, switch_cases: bool) -> Option<Vec<Node>> {
-    if ir.blocks.is_empty() {
-        return Some(Vec::new());
-    }
-    let mut graph = Graph::new(ir, absorb);
-    graph.switch_cases = switch_cases;
-    let Some(mut nodes) = graph.tree(0, 0) else {
-        return None;
-    };
-    // Code the entry does not reach, and joins of it with code the entry
-    // does reach, follow the function's own code.
-    for block in 1..ir.blocks.len() {
-        if graph.immediate_dominators[block].is_none() && !graph.padding(block) {
-            let Some(body) = graph.tree(block, 0) else {
-                return None;
-            };
-            nodes.extend(body);
+impl Graph<'_> {
+    pub(super) fn structure(&mut self, absorb: Absorb, switch_cases: bool) -> Option<Vec<Node>> {
+        if self.blocks.is_empty() {
+            return Some(Vec::new());
         }
+        self.absorb = absorb;
+        self.absorbed = if absorb == Absorb::Nothing {
+            std::collections::HashSet::new()
+        } else {
+            self.absorbed_exits(absorb)
+        };
+        self.switch_cases = switch_cases;
+        let Some(mut nodes) = self.tree(0, 0) else {
+            return None;
+        };
+        // Code the entry does not reach, and joins of it with code the entry
+        // does reach, follow the function's own code.
+        for block in 1..self.blocks.len() {
+            if self.immediate_dominators[block].is_none() && !self.padding(block) {
+                let Some(body) = self.tree(block, 0) else {
+                    return None;
+                };
+                nodes.extend(body);
+            }
+        }
+        resolve(&mut nodes, &Next::default(), &mut Vec::new());
+        shape(&mut nodes);
+        Some(nodes)
     }
-    resolve(&mut nodes, &Next::default(), &mut Vec::new());
-    shape(&mut nodes);
-    Some(nodes)
 }
 
 #[cfg(test)]
@@ -1179,6 +1182,79 @@ mod tests {
     use crate::ir::{BinOp, Block, Cond, Expr, FunctionIr, RegRef, Stmt};
     use crate::loader::Isa;
     use crate::render::structure::Node;
+
+    #[test]
+    fn structure_variants_reset_options_when_reusing_the_graph() {
+        let ir = function(vec![
+            (0, vec![brif(40)]),
+            (
+                8,
+                vec![Stmt::Switch {
+                    index: Expr::reg(0, 64),
+                    cases: vec![(0, 16), (1, 24)],
+                    default: Some(32),
+                }],
+            ),
+            (
+                16,
+                vec![assign(0, Expr::Const(1)), Stmt::Br { target: Some(0) }],
+            ),
+            (
+                24,
+                vec![assign(0, Expr::Const(2)), Stmt::Br { target: Some(48) }],
+            ),
+            (32, vec![ret()]),
+            (
+                40,
+                vec![assign(0, Expr::Const(3)), Stmt::Br { target: Some(48) }],
+            ),
+            (48, vec![ret()]),
+            (56, vec![Stmt::Trap]),
+            (64, vec![ret()]),
+        ]);
+        let mut reused = super::Graph::new(&ir);
+        assert_eq!(reused.entries(), vec![64]);
+        for _ in 0..2 {
+            for absorb in [
+                super::Absorb::Every,
+                super::Absorb::Nothing,
+                super::Absorb::Private,
+            ] {
+                for switch_cases in [true, false] {
+                    let expected = super::Graph::new(&ir).structure(absorb, switch_cases);
+                    let actual = reused.structure(absorb, switch_cases);
+                    assert_eq!(format!("{actual:?}"), format!("{expected:?}"));
+                    assert_eq!(reused.entries(), vec![64]);
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn enclosing_headers_keep_loop_size_and_iteration_order() {
+        for targets in [[0, 0, 8, 8], [24, 0, 8, 0], [8, 16, 0, 8], [0, 8, 16, 24]] {
+            let ir = function(vec![
+                (0, vec![brif(targets[0])]),
+                (8, vec![brif(targets[1])]),
+                (16, vec![brif(targets[2])]),
+                (24, vec![brif(targets[3])]),
+                (32, vec![ret()]),
+            ]);
+            let graph = super::Graph::new(&ir);
+            for block in 0..ir.blocks.len() {
+                let mut expected: Vec<usize> = graph
+                    .loops
+                    .iter()
+                    .filter(|(_, body)| body[block])
+                    .map(|(header, _)| *header)
+                    .collect();
+                expected.sort_by_key(|header| {
+                    graph.loops[header].iter().filter(|inside| **inside).count()
+                });
+                assert_eq!(graph.enclosing(block), expected);
+            }
+        }
+    }
 
     #[test]
     fn indexed_edges_preserve_duplicates_and_stop_unknown_branches() {

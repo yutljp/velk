@@ -15,6 +15,7 @@ pub(super) fn tail_duplicated(ir: &FunctionIr) -> Option<FunctionIr> {
     let mut next_copy = COPY_ADDRESS_BASE;
     let mut changed = false;
     let mut candidate = 1;
+    let mut incoming = None;
     while candidate < ir.blocks.len() {
         let block = &ir.blocks[candidate];
         let short = block.stmts.len() <= 3
@@ -37,15 +38,23 @@ pub(super) fn tail_duplicated(ir: &FunctionIr) -> Option<FunctionIr> {
             }) => Some(*target),
             _ => ir.blocks.get(candidate + 1).map(|next| next.start),
         };
-        let entered: Vec<usize> = (0..ir.blocks.len())
-            .filter(|from| {
-                crate::render::structure::compare_chain::successors(&ir, *from).contains(&candidate)
-            })
-            .collect();
         let (true, Some(follow)) = (short, follow) else {
             candidate += 1;
             continue;
         };
+        let predecessors = incoming.get_or_insert_with(|| {
+            let mut incoming = vec![Vec::new(); ir.blocks.len()];
+            for from in 0..ir.blocks.len() {
+                let mut next = crate::render::structure::compare_chain::successors(&ir, from);
+                next.sort_unstable();
+                next.dedup();
+                for to in next {
+                    incoming[to].push(from);
+                }
+            }
+            incoming
+        });
+        let entered = &predecessors[candidate];
         if entered.len() < 2 || entered.contains(&candidate) {
             candidate += 1;
             continue;
@@ -63,7 +72,7 @@ pub(super) fn tail_duplicated(ir: &FunctionIr) -> Option<FunctionIr> {
         // Each branch to the block goes to a copy of its own; one falling
         // into it falls into a copy placed after it.
         let mut copies = Vec::new();
-        for from in &entered {
+        for from in entered {
             let copy = next_copy;
             next_copy += 1;
             let falls = *from + 1 == candidate
@@ -94,6 +103,8 @@ pub(super) fn tail_duplicated(ir: &FunctionIr) -> Option<FunctionIr> {
             ir.blocks.insert(from + 1, block);
         }
         changed = true;
+        // Removing and inserting blocks changes both indices and edges.
+        incoming = None;
     }
     changed.then_some(ir)
 }
@@ -473,5 +484,102 @@ fn implied(
         Some(!holds)
     } else {
         None
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::COPY_ADDRESS_BASE;
+    use crate::ir::{Block, Cond, Expr, FunctionIr, Stmt};
+    use crate::loader::Isa;
+
+    #[test]
+    fn tail_copies_keep_source_order_and_refresh_edges_after_removal() {
+        let branch = |target| Stmt::Br {
+            target: Some(target),
+        };
+        let store = |value| Stmt::Store {
+            addr: Expr::reg(7, 64),
+            value: Expr::Const(value),
+            width: 8,
+        };
+        let switch = |first, second| Stmt::Switch {
+            index: Expr::reg(0, 64),
+            cases: vec![(0, first), (1, first), (2, second)],
+            default: Some(8),
+        };
+        let conditional = |target| Stmt::Brif {
+            cond: Cond::Eq,
+            lhs: Expr::reg(0, 64),
+            rhs: Expr::Const(0),
+            target,
+        };
+        let ret = Stmt::Ret {
+            value: Expr::Const(0),
+        };
+        let mut ir = FunctionIr::single_block(Isa::X86_64, Vec::new());
+        ir.blocks = vec![
+            Block {
+                start: 0,
+                stmts: vec![switch(16, 32)],
+            },
+            Block {
+                start: 8,
+                stmts: vec![branch(16)],
+            },
+            Block {
+                start: 16,
+                stmts: vec![store(1), branch(24)],
+            },
+            Block {
+                start: 24,
+                stmts: vec![conditional(32)],
+            },
+            Block {
+                start: 32,
+                stmts: vec![store(2), branch(40)],
+            },
+            Block {
+                start: 40,
+                stmts: vec![ret.clone()],
+            },
+        ];
+        let copied = super::tail_duplicated(&ir).expect("both stores have two incoming blocks");
+        let base = COPY_ADDRESS_BASE;
+        let expected = vec![
+            Block {
+                start: 0,
+                stmts: vec![switch(base, base + 2)],
+            },
+            Block {
+                start: 8,
+                stmts: vec![branch(base + 1)],
+            },
+            Block {
+                start: 24,
+                stmts: vec![conditional(base + 3)],
+            },
+            Block {
+                start: base + 3,
+                stmts: vec![store(2), branch(40)],
+            },
+            Block {
+                start: 40,
+                stmts: vec![ret],
+            },
+            Block {
+                start: base,
+                stmts: vec![store(1), branch(24)],
+            },
+            Block {
+                start: base + 1,
+                stmts: vec![store(1), branch(24)],
+            },
+            Block {
+                start: base + 2,
+                stmts: vec![store(2), branch(40)],
+            },
+        ];
+        assert_eq!(format!("{:?}", copied.blocks), format!("{expected:?}"));
     }
 }

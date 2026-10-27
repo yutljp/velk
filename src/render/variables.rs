@@ -825,11 +825,36 @@ fn base(addr: &Expr) -> Option<u16> {
 
 /// Whether `name` stands in `text` as a whole word.
 pub(crate) fn mentions(text: &str, name: &str) -> bool {
-    let word = |c: char| c.is_ascii_alphanumeric() || c == '_';
-    text.match_indices(name).any(|(at, _)| {
-        !text[..at].chars().next_back().is_some_and(word)
-            && !text[at + name.len()..].chars().next().is_some_and(word)
-    })
+    WordSearch::new(name).contains(text)
+}
+
+/// A whole-word search whose substring finder can be reused across lines.
+pub(super) struct WordSearch<'a> {
+    finder: memchr::memmem::Finder<'a>,
+}
+
+impl<'a> WordSearch<'a> {
+    pub(super) fn new(name: &'a str) -> Self {
+        Self {
+            finder: memchr::memmem::Finder::new(name),
+        }
+    }
+
+    pub(super) fn contains(&self, text: &str) -> bool {
+        let word = |byte: u8| byte.is_ascii_alphanumeric() || byte == b'_';
+        let bytes = text.as_bytes();
+        let name = self.finder.needle();
+        if name.is_empty() {
+            // Empty string matches occur only at UTF-8 character boundaries.
+            return text.match_indices("").any(|(at, _)| {
+                (at == 0 || !word(bytes[at - 1])) && !bytes.get(at).copied().is_some_and(word)
+            });
+        }
+        self.finder.find_iter(bytes).any(|at| {
+            (at == 0 || !word(bytes[at - 1]))
+                && !bytes.get(at + name.len()).copied().is_some_and(word)
+        })
+    }
 }
 
 /// Whole words borrowed from a rendered body, including comments and literals.

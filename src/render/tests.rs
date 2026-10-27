@@ -2839,12 +2839,21 @@ fn indexed_mentions_preserve_word_boundaries_and_code_context() {
         "p-> /* comment */ abc + q. abc; abc()",
         "/* unterminated abc",
         "\"unterminated abc",
+        "aaaaa a-a-a πππ 雪abc雪\n\0abc",
     ] {
         let words = super::variables::Mentions::new(text);
         let code: rustc_hash::FxHashSet<&str> = super::function::code_names(text).collect();
         for name in [
-            "", "abc", "abc_", "abc1", "1abc", "_abc", "π", "abc雪", "p->", "abc()",
+            "", "abc", "abc_", "abc1", "1abc", "_abc", "π", "abc雪", "p->", "abc()", "aaa", "a-a",
+            "ππ", "\0abc", "雪",
         ] {
+            let word = |c: char| c.is_ascii_alphanumeric() || c == '_';
+            let expected = text.match_indices(name).any(|(at, _)| {
+                !text[..at].chars().next_back().is_some_and(word)
+                    && !text[at + name.len()..].chars().next().is_some_and(word)
+            });
+            let search = super::variables::WordSearch::new(name);
+            assert_eq!(search.contains(text), expected, "{text:?} {name:?}");
             assert_eq!(
                 words.contains(name),
                 super::variables::mentions(text, name),

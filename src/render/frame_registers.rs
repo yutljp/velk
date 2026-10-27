@@ -51,6 +51,7 @@ pub(super) fn rebase(ir: &mut FunctionIr) {
 }
 
 pub(super) fn drop_unused_adjustments(body: &mut String, name: &str) {
+    let search = super::variables::WordSearch::new(name);
     let adjustment = |line: &str| {
         let words: Vec<_> = line.split_whitespace().collect();
         let [dest, "=", source, "+" | "-", delta] = words.as_slice() else {
@@ -67,7 +68,7 @@ pub(super) fn drop_unused_adjustments(body: &mut String, name: &str) {
     };
     if body
         .lines()
-        .any(|line| super::variables::mentions(line, name) && !adjustment(line))
+        .any(|line| search.contains(line) && !adjustment(line))
     {
         return;
     }

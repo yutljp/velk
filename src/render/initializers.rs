@@ -60,10 +60,8 @@ fn discover(
     }
     let mut replacements = HashMap::new();
     for (name, declaration) in candidates {
-        let Some(position) = lines
-            .iter()
-            .position(|line| super::variables::mentions(line, &name))
-        else {
+        let search = super::variables::WordSearch::new(&name);
+        let Some(position) = lines.iter().position(|line| search.contains(line)) else {
             continue;
         };
         let line = lines[position];
@@ -87,7 +85,7 @@ fn discover(
                 && line
                     .split_once("; /*")
                     .is_some_and(|(_, comment)| comment.trim_end().ends_with("*/")));
-        if !terminated || super::variables::mentions(value, &name) {
+        if !terminated || search.contains(value) {
             continue;
         }
         if matches!(placement, Placement::Assignments) {
@@ -104,7 +102,7 @@ fn discover(
             let consumed: usize = lines[..=position].iter().map(|line| line.len()).sum();
             if indentation < 4
                 || after_label
-                || (indentation != 4 && !scoped_uses(&body[consumed..], indentation, &name))
+                || (indentation != 4 && !scoped_uses(&body[consumed..], indentation, &search))
             {
                 continue;
             }
@@ -130,15 +128,13 @@ fn discover(
                 .iter()
                 .enumerate()
                 .skip(position + 1)
-                .any(|(at, line)| {
-                    super::variables::mentions(line, &name) && !scopes[at].starts_with(scope)
-                })
+                .any(|(at, line)| search.contains(line) && !scopes[at].starts_with(scope))
             {
                 continue;
             }
             let last_use = lines
                 .iter()
-                .rposition(|line| super::variables::mentions(line, &name))
+                .rposition(|line| search.contains(line))
                 .expect("first assignment mentions the local");
             // A switch dispatch or a goto must not bypass the initializer.
             if lines
@@ -167,7 +163,7 @@ fn discover(
         };
         let mut others = declarations.clone();
         others.replace_range(at..at + old.len(), "");
-        if super::variables::mentions(&others, &name) {
+        if search.contains(&others) {
             continue;
         }
         declarations.replace_range(at..at + old.len(), "");
@@ -194,7 +190,7 @@ fn discover(
 }
 
 // A less-indented line bounds the scope conservatively, including case labels.
-fn scoped_uses(body: &str, indentation: usize, name: &str) -> bool {
+fn scoped_uses(body: &str, indentation: usize, search: &super::variables::WordSearch<'_>) -> bool {
     let mut offset = 0;
     for line in body.split_inclusive('\n') {
         let text = line.trim_start();
@@ -202,11 +198,9 @@ fn scoped_uses(body: &str, indentation: usize, name: &str) -> bool {
             && !text.starts_with("/*")
             && line.len() - text.len() < indentation
         {
-            return !super::variables::mentions(&body[offset..], name);
+            return !search.contains(&body[offset..]);
         }
-        if text.trim_end().ends_with(':')
-            || (line.contains('&') && super::variables::mentions(line, name))
-        {
+        if text.trim_end().ends_with(':') || (line.contains('&') && search.contains(line)) {
             return false;
         }
         offset += line.len();
@@ -217,10 +211,11 @@ fn scoped_uses(body: &str, indentation: usize, name: &str) -> bool {
 /// Removes constant assignments to scalar locals whose values and addresses are unused.
 pub(super) fn drop_unused_constants(body: &mut String, names: impl Iterator<Item = String>) {
     for name in names {
+        let search = super::variables::WordSearch::new(&name);
         let prefix = format!("{name} = ");
         let unused = body
             .lines()
-            .filter(|line| super::variables::mentions(line, &name))
+            .filter(|line| search.contains(line))
             .all(|line| {
                 let Some(value) = line
                     .trim()

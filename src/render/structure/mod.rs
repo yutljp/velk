@@ -212,11 +212,14 @@ pub(super) fn case_falls_through(nodes: &[Node]) -> bool {
 }
 
 fn by_dominance(ir: &FunctionIr) -> Option<Vec<Node>> {
-    let Some(mut nodes) = dominance::structure(ir) else {
+    let mut graph = dominance::Graph::new(ir);
+    let Some(mut nodes) =
+        graph.structure(dominance::Absorb::Nothing, /* switch_cases */ false)
+    else {
         return None;
     };
     // Code the entry does not reach keeps its label, which names where it starts.
-    let entries: std::collections::HashSet<u64> = dominance::entries(ir).into_iter().collect();
+    let entries: std::collections::HashSet<u64> = graph.entries().into_iter().collect();
     cleanup_structure(&mut nodes, entries.clone(), ir);
     if label_count(&nodes) == 0 {
         return Some(nodes);
@@ -234,7 +237,7 @@ fn by_dominance(ir: &FunctionIr) -> Option<Vec<Node>> {
         dominance::Absorb::Every,
     ] {
         if absorb != dominance::Absorb::Nothing
-            && let Some(mut absorbing) = dominance::structure_absorbing(ir, absorb)
+            && let Some(mut absorbing) = graph.structure(absorb, /* switch_cases */ false)
         {
             cleanup_structure(&mut absorbing, entries.clone(), ir);
             if cost(&absorbing) < cost(&best) && labels_resolve(ir, &absorbing) {
@@ -243,7 +246,7 @@ fn by_dominance(ir: &FunctionIr) -> Option<Vec<Node>> {
         }
         if switches
             && label_count(&best) != 0
-            && let Some(mut candidate) = dominance::structure_switches(ir, absorb)
+            && let Some(mut candidate) = graph.structure(absorb, /* switch_cases */ true)
         {
             cleanup_structure(&mut candidate, entries.clone(), ir);
             if cost(&candidate) < cost(&best) && labels_resolve(ir, &candidate) {
