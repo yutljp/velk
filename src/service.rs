@@ -17,7 +17,7 @@ use crate::loader::{self, Architecture, Function, Image};
 use crate::sigs::{self, Certainty, Database, MatchScope};
 use crate::{disasm, render};
 
-fn function_signature(ir: &crate::ir::FunctionIr) -> serde_json::Value {
+pub(crate) fn function_signature(ir: &crate::ir::FunctionIr) -> serde_json::Value {
     let params: Vec<_> = if let Ok(scalar) = crate::project::scalar_parameters(ir) {
         scalar
             .iter()
@@ -200,6 +200,7 @@ pub struct Binary {
     string_decoding: bool,
     decoded_strings: HashMap<u64, Vec<crate::string_decoding::DecodedString>>,
     navigation: Option<crate::xrefs::Index>,
+    similarity: Option<crate::similar::Index>,
     path: PathBuf,
     modified: SystemTime,
     project: Option<crate::project::Project>,
@@ -418,6 +419,7 @@ impl Binary {
             cache: None,
             source_digest,
             navigation: None,
+            similarity: None,
             path: path.to_owned(),
             modified,
             project,
@@ -1236,6 +1238,56 @@ impl Binary {
             .map_err(|source| Error::Lift { addr, source })
     }
 
+    /// Builds a similarity index once, reusing cached function analyses.
+    /// Interrupted builds are discarded. Project and signature changes invalidate it.
+    ///
+    /// # Panics
+    ///
+    /// Panics if a successful index build leaves the similarity cache empty.
+    pub fn similarity_index(
+        &mut self,
+        deadline: Option<Instant>,
+    ) -> Result<&crate::similar::Index> {
+        if let Err(error) = self.refresh_project() {
+            return Err(error);
+        }
+        if let Err(error) = passed(deadline) {
+            return Err(error);
+        }
+        if self.similarity.is_none() {
+            let index = match crate::similar::Index::build(self, deadline) {
+                Ok(index) => index,
+                Err(error) => return Err(error),
+            };
+            self.similarity = Some(index);
+        }
+        Ok(self
+            .similarity
+            .as_ref()
+            .expect("successful build inserted the index"))
+    }
+
+    /// Returns similar functions in this binary, excluding the query itself.
+    pub fn similar(
+        &mut self,
+        addr: u64,
+        limit: usize,
+        deadline: Option<Instant>,
+    ) -> Result<crate::similar::Report> {
+        let addr = self.image.code_address(addr);
+        if let Err(error) = self.analysis(addr, deadline) {
+            return Err(error);
+        }
+        let index = match self.similarity_index(deadline) {
+            Ok(index) => index,
+            Err(error) => return Err(error),
+        };
+        let Some(features) = index.features(addr) else {
+            return Err(Error::NoFunctionAt(addr));
+        };
+        index.search(&features, Some(addr), limit, deadline)
+    }
+
     pub fn shape_hash(&mut self, addr: u64, deadline: Option<Instant>) -> Result<String> {
         Ok(sigs::shape_hash(&self.analysis(addr, deadline)?.ir))
     }
@@ -1278,6 +1330,7 @@ impl Binary {
         deadline: Option<Instant>,
     ) -> Result<Identification> {
         self.cache = None;
+        self.similarity = None;
         let mut combined =
             if self.signature_options.defaults && self.signature_database.entries.is_empty() {
                 sigs::bundled_for_isa(self.image.isa).clone()
@@ -1371,6 +1424,7 @@ impl Binary {
         if changed {
             self.image.summaries = Default::default();
             self.navigation = None;
+            self.similarity = None;
             self.symbols = render::callee_names(&self.image);
             self.analyses.clear();
             self.shared_analyses.clear();
@@ -1452,6 +1506,58 @@ mod tests {
             },
         )
         .expect("fixture loads")
+    }
+
+    #[test]
+    fn similarity_index_reuses_analyses_and_discards_interrupted_builds() {
+        let mut binary = fixture("arm64.o");
+        assert!(matches!(
+            binary.similarity_index(Some(Instant::now())),
+            Err(Error::TimedOut)
+        ));
+        assert!(binary.similarity.is_none());
+        let addr = binary.find("pair_sum").unwrap().addr;
+        let first = serde_json::to_value(binary.similar(addr, 3, None).unwrap()).unwrap();
+        let count = binary.analyses.len();
+        let shared_count = binary.shared_analyses.len();
+        let original = binary.similarity.as_ref().unwrap() as *const _;
+        let second = serde_json::to_value(binary.similar(addr, 3, None).unwrap()).unwrap();
+        assert_eq!(original, binary.similarity.as_ref().unwrap() as *const _);
+        assert_eq!(first, second);
+        assert_eq!(count, binary.analyses.len());
+        assert_eq!(shared_count, binary.shared_analyses.len());
+        binary.identify(&Database::new(Vec::new()), None).unwrap();
+        assert!(binary.similarity.is_none());
+    }
+
+    #[test]
+    fn similarity_index_keeps_candidates_after_one_analysis_fails() {
+        let mut binary = fixture("arm64.o");
+        let failed = binary.find("pair_sum").unwrap().addr;
+        binary
+            .shared_analyses
+            .insert(failed, Err(LiftError::Unreadable));
+        let index = binary.similarity_index(None).unwrap();
+        assert!(index.features(failed).is_none());
+        let addr = binary.find("sum3").unwrap().addr;
+        let report = binary.similar(addr, usize::MAX, None).unwrap();
+        assert!(!report.matches.is_empty());
+        assert!(
+            report
+                .matches
+                .iter()
+                .all(|candidate| candidate.function.addr != failed)
+        );
+        assert!(
+            report
+                .failures
+                .iter()
+                .any(|failure| failure.function == failed)
+        );
+        assert!(matches!(
+            binary.similar(failed, 1, None),
+            Err(Error::Lift { .. })
+        ));
     }
 
     #[test]

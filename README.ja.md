@@ -213,6 +213,17 @@ JavaScript と MCP では
 は、採用した式の置換の数です。対象となる式と制限は
 [式の簡略化](docs/MBA.ja.md)を参照してください。
 
+解析した構造と参照が似ている関数を検索できます。
+
+```sh
+velk --similar pair_sum tests/fixtures/arm64.o --in tests/fixtures/arm64_macho.o --limit 5 --json
+```
+
+JavaScript と MCP では `f.similar({in: other, limit: 5})` を使います。
+`in` を省略すると、同じバイナリ内で `f` 自身を除いて検索します。
+スコアは特徴の重なりを表し、一致の確率や動作の等価性を表しません。
+重み、根拠、キャッシュ、制約は[関数の類似度](docs/SIMILARITY.ja.md)を参照してください。
+
 ## ドキュメント
 
 - [API の概要](src/script/api/index.md)

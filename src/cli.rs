@@ -26,7 +26,7 @@ const HELP_STYLES: Styles = Styles::styled()
     styles = HELP_STYLES,
     override_usage = "velk <OPERATION> [OPTIONS] [INPUT] [FUNCTION]",
     group(ArgGroup::new("operation").required(true).multiple(false).args([
-        "compare", "annotate", "annotation", "annotations", "unannotate", "export_project", "import_project", "origins",
+        "similar", "compare", "annotate", "annotation", "annotations", "unannotate", "export_project", "import_project", "origins",
         "api_docs", "functions", "classes", "sections", "card", "decompile", "disasm", "ir",
         "build_signatures", "identify", "run", "mcp", "serve", "emulate", "explore", "xrefs", "callers", "callees", "path", "strings", "constants", "summary", "search", "read_memory", "detect_constants"
     ])),
@@ -38,6 +38,17 @@ pub(super) struct Cli {
     /// List API topics, or print the documentation for one topic.
     #[arg(long, exclusive = true, num_args = 0..=1, default_missing_value = "", value_name = "TOPIC", help_heading = "Operations (choose one)")]
     api_docs: Option<String>,
+    /// Rank functions similar to FUNCTION in INPUT.
+    #[arg(
+        long,
+        value_name = "FUNCTION",
+        conflicts_with_all = ["function", "budget", "output"],
+        help_heading = "Operations (choose one)"
+    )]
+    similar: Option<String>,
+    /// Binary to search with --similar; omission searches INPUT.
+    #[arg(long = "in", requires = "similar", value_name = "OTHER")]
+    similar_in: Option<PathBuf>,
     /// Compare INPUT with a second binary supplied as FUNCTION; return JSON.
     #[arg(long, help_heading = "Operations (choose one)")]
     compare: bool,
@@ -251,7 +262,7 @@ pub(super) struct Cli {
     /// Additional functions to decompile; use '*' for all functions.
     #[arg(value_name = "FUNCTION", requires = "decompile", conflicts_with_all = ["emulate", "explore", "classes", "search", "read_memory", "detect_constants", "functions", "sections", "card", "disasm", "ir", "build_signatures", "identify", "run", "mcp", "serve", "xrefs", "callers", "callees", "path", "strings", "constants", "summary"])]
     additional_functions: Vec<String>,
-    /// Maximum functions (default: 40), matches (default: 100), or instructions (default: all).
+    /// Maximum results (similarity: 10, functions: 40, signatures: 100) or instructions (default: all).
     #[arg(
         long,
         value_name = "N",
@@ -295,6 +306,13 @@ pub(super) struct Cli {
 pub(super) enum Command {
     Api {
         topic: String,
+    },
+    Similar {
+        path: PathBuf,
+        target: String,
+        other: Option<PathBuf>,
+        limit: usize,
+        json: bool,
     },
     Compare {
         path: PathBuf,
@@ -366,6 +384,15 @@ impl Cli {
     pub(super) fn into_command(self) -> Command {
         if let Some(topic) = self.api_docs {
             return Command::Api { topic };
+        }
+        if let Some(target) = self.similar {
+            return Command::Similar {
+                path: self.input.expect("clap requires input"),
+                target,
+                other: self.similar_in,
+                limit: self.limit.unwrap_or(10),
+                json: self.json,
+            };
         }
         if self.compare {
             return Command::Compare {

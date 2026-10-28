@@ -26,6 +26,7 @@ pub mod script;
 pub mod serve;
 pub mod service;
 pub mod sigs;
+pub mod similar;
 pub mod ssa;
 pub mod string_decoding;
 pub mod symbolic;

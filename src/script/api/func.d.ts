@@ -32,6 +32,10 @@ interface Func {
   strings(opts?: { decode?: boolean }): string[];
   /** Hash of the function's normalized shape; equal shapes give equal hashes. */
   shapeHash(): string;
+  /** Ranked feature overlap; default limit is 10. First use indexes functions.
+   * Omitting in searches this binary and excludes this function.
+   * Scores are not probabilities or proof of equivalent behavior. */
+  similar(opts?: { in?: Binary; limit?: number }): SimilarityReport;
   /** Inferred signature and navigation details; first use may build the whole-binary index. */
   summary(): FunctionSummary;
   xrefs(opts?: { from?: boolean }): XrefResult;
@@ -42,3 +46,21 @@ interface Func {
 // const f = velk.open("a.out").getFunction("0x1e0");
 // f.signature();
 // f.decompile();
+
+interface SimilarityReport {
+  matches: SimilarityMatch[];
+  failures: NavigationFailure[];
+}
+
+interface SimilarityMatch {
+  function: Pick<Func, "addr" | "name" | "aliases" | "size" | "nameSources" | "library"> & { sizeEstimated?: true };
+  score: number;
+  evidence: SimilarityEvidence[];
+}
+
+interface SimilarityEvidence {
+  feature: string;
+  weight: number;
+  similarity: number;
+  shared: string[];
+}

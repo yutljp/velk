@@ -214,6 +214,17 @@ constants and shorter polynomials. Function cards and summaries also report
 replacements. See [expression simplification](docs/MBA.md) for supported forms
 and limits.
 
+Find functions with similar analyzed structure and references:
+
+```sh
+velk --similar pair_sum tests/fixtures/arm64.o --in tests/fixtures/arm64_macho.o --limit 5 --json
+```
+
+JavaScript and MCP expose the same search as `f.similar({in: other, limit: 5})`.
+Omit `in` to search the same binary, excluding `f`. Scores measure feature overlap,
+not the probability of a match or equivalent behavior. See [function similarity](docs/SIMILARITY.md)
+for the weights, evidence, cache behavior and limitations.
+
 ## Documentation
 
 - [Scripting API](src/script/api/index.md)

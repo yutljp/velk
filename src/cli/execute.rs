@@ -53,6 +53,63 @@ pub(crate) fn run(
                 return Ok(ExitCode::FAILURE);
             }
         }
+        Command::Similar {
+            path,
+            target,
+            other,
+            limit,
+            json: as_json,
+        } => {
+            let mut binary =
+                match crate::open_binary(&path, project, input_options, signature_options) {
+                    Ok(binary) => binary,
+                    Err(error) => return Err(error),
+                };
+            let addr = match binary.find(&target) {
+                Ok(function) => function.addr,
+                Err(error) => return Err(error),
+            };
+            let report = if let Some(other) = other {
+                let mut destination =
+                    match crate::open_binary(&other, None, input_options, signature_options) {
+                        Ok(binary) => binary,
+                        Err(error) => return Err(error),
+                    };
+                match velk::similar::search(&mut binary, addr, &mut destination, limit, None) {
+                    Ok(report) => report,
+                    Err(error) => return Err(error),
+                }
+            } else {
+                match binary.similar(addr, limit, None) {
+                    Ok(report) => report,
+                    Err(error) => return Err(error),
+                }
+            };
+            if as_json {
+                println!("{}", json!(report));
+            } else {
+                for candidate in &report.matches {
+                    println!(
+                        "{:.6}  0x{:x}  {}",
+                        candidate.score,
+                        candidate.function.addr,
+                        candidate.function.name.as_deref().unwrap_or("<unnamed>")
+                    );
+                    for evidence in &candidate.evidence {
+                        println!(
+                            "  {}: {:.6} x {:.2}  {}",
+                            evidence.feature,
+                            evidence.similarity,
+                            evidence.weight,
+                            evidence.shared.join(", ")
+                        );
+                    }
+                }
+                for failure in &report.failures {
+                    eprintln!("0x{:x}: {}", failure.function, failure.error);
+                }
+            }
+        }
         Command::Compare {
             path,
             other,

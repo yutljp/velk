@@ -11,6 +11,8 @@
   };
   const address = (value) => (typeof value === "number" ? "0x" + value.toString(16) : value);
 
+  const binaryIds = new WeakMap();
+
   class Func {
     #bin;
     constructor(bin, row) {
@@ -29,6 +31,10 @@
     signature() { return this.#call("signature"); }
     references() { return this.#call("references"); }
     strings({ decode = true } = {}) { return this.#call("strings", { decode }); }
+    similar({ in: other, limit } = {}) {
+      if (other !== undefined && !binaryIds.has(other)) throw new TypeError("in must be a Binary");
+      return call("similar", { bin: this.#bin, target: this.addr, other: other === undefined ? undefined : binaryIds.get(other), limit });
+    }
     shapeHash() { return this.#call("shapeHash"); }
     summary() { return call("navigate", { bin: this.#bin, query: { kind: "summary", target: this.addr } }); }
     xrefs({ from = false } = {}) { return call("navigate", { bin: this.#bin, query: { kind: "xrefs", target: this.addr, from } }); }
@@ -66,6 +72,7 @@
     #functions;
     constructor({ id, ...info }) {
       this.#id = id;
+      binaryIds.set(this, id);
       Object.assign(this, info);
     }
     decompile(functions) { return call("decompileMany", { bin: this.#id, addresses: functions?.map(f => f.addr) }); }

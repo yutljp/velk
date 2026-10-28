@@ -2,6 +2,7 @@
 
 mod compare;
 mod project;
+mod similar;
 
 use std::path::PathBuf;
 
@@ -95,6 +96,17 @@ pub enum Request {
         bin: BinaryRef,
         /// The C structure tag, including `struct`.
         name: String,
+    },
+    /// Ranks functions by cached analysis features.
+    Similar {
+        /// Source binary.
+        bin: BinaryRef,
+        /// Source function name or address.
+        target: String,
+        /// Optional destination binary; omission searches the source and excludes itself.
+        other: Option<BinaryRef>,
+        /// Maximum candidates; omission returns ten.
+        limit: Option<usize>,
     },
     /// Compares two program versions and optionally carries annotations.
     Compare {
@@ -318,6 +330,12 @@ pub fn handle(
             };
             crate::xrefs::query::run(binary, query, deadline)
         }
+        Request::Similar {
+            bin,
+            target,
+            other,
+            limit,
+        } => similar::search(session, bin, target, other, limit.unwrap_or(10), deadline),
         Request::Compare {
             first,
             second,

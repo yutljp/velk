@@ -279,6 +279,7 @@ JSON.stringify({{
   references: f.references(),
   strings: f.strings(),
   shapeHash: f.shapeHash(),
+  similarity: f.similar({{limit:3}}),
   navigation: {{
     xrefs: b.xrefs(f.addr),
     callers: b.callers(f.addr),
@@ -375,6 +376,29 @@ fn script_results_match_the_declarations() {
             ));
             assert_eq!(result[field]["reason"], "end address");
             assert_eq!(result[field]["steps"], 0);
+        }
+
+        problems.extend(check_interface_fields(
+            &interfaces,
+            "SimilarityReport",
+            &result["similarity"],
+            &at("similar()"),
+        ));
+        for candidate in result["similarity"]["matches"].as_array().unwrap() {
+            problems.extend(check_interface_fields(
+                &interfaces,
+                "SimilarityMatch",
+                candidate,
+                &at("similar().matches[]"),
+            ));
+            for evidence in candidate["evidence"].as_array().unwrap() {
+                problems.extend(check_interface_fields(
+                    &interfaces,
+                    "SimilarityEvidence",
+                    evidence,
+                    &at("similar().matches[].evidence[]"),
+                ));
+            }
         }
 
         let navigation = &result["navigation"];
