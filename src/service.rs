@@ -4,9 +4,10 @@ pub(crate) mod cache;
 pub use cache::Location as CacheLocation;
 
 use std::borrow::Cow;
-use std::collections::HashMap;
 use std::collections::hash_map::Entry;
+use std::collections::{BTreeMap, HashMap};
 use std::path::{Path, PathBuf};
+use std::sync::OnceLock;
 use std::time::{Instant, SystemTime};
 
 use crate::analysis::{self, Analysis};
@@ -210,6 +211,7 @@ pub struct Binary {
     options: loader::OpenOptions,
     signature_options: SignatureOptions,
     signature_database: Cow<'static, Database>,
+    symbolic_identifications: OnceLock<BTreeMap<u64, sigs::Evidence>>,
     symbols: render::Symbols,
     data_ranges: Vec<(u64, u64)>,
     analyses: HashMap<u64, Result<Analysis, LiftError>>,
@@ -433,6 +435,7 @@ impl Binary {
             options,
             signature_options: signatures.clone(),
             signature_database: Cow::Owned(Database::new(Vec::new())),
+            symbolic_identifications: OnceLock::new(),
             analyses: HashMap::new(),
             shared_analyses: HashMap::new(),
         };
@@ -1323,6 +1326,28 @@ impl Binary {
         })
     }
 
+    pub(crate) fn symbolic_identifications(&self) -> Result<&BTreeMap<u64, sigs::Evidence>> {
+        if let Some(matches) = self.symbolic_identifications.get() {
+            return Ok(matches);
+        }
+        let database =
+            if self.signature_options.defaults && self.signature_database.entries.is_empty() {
+                sigs::bundled_for_isa(self.image.isa)
+            } else {
+                self.signature_database.as_ref()
+            };
+        let matches: BTreeMap<u64, sigs::Evidence> =
+            match sigs::identify(&self.image, database, None, MatchScope::All) {
+                Ok(matches) => matches.into_iter().collect(),
+                Err(error) => return Err(error),
+            };
+        let _ = self.symbolic_identifications.set(matches);
+        Ok(self
+            .symbolic_identifications
+            .get()
+            .expect("identifications were initialized"))
+    }
+
     /// Matches instruction signatures and names unnamed functions; Err once `deadline` passes.
     pub fn identify(
         &mut self,
@@ -1364,6 +1389,7 @@ impl Binary {
         deadline: Option<Instant>,
         scope: MatchScope,
     ) -> Result<Identification> {
+        let _ = self.symbolic_identifications.take();
         crate::timing::scope!("service::apply_signatures");
         let arm_modes = self.image.arm_modes.clone();
         let discovered = match sigs::discover_arm32(&mut self.image, database, deadline) {
@@ -1605,6 +1631,51 @@ mod tests {
             first.signature_database.as_ref(),
             second.signature_database.as_ref(),
         ));
+    }
+
+    #[test]
+    fn symbolic_identification_checks_named_functions_with_default_signatures() {
+        use std::io::Read as _;
+
+        let path = Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("tests/library_signatures/xxhash.x86_64.O2.elf.gz");
+        let compressed = std::fs::read(path).expect("read library fixture");
+        let mut decoder = flate2::read::GzDecoder::new(compressed.as_slice());
+        let mut bytes = Vec::new();
+        decoder
+            .read_to_end(&mut bytes)
+            .expect("decode library fixture");
+        let path = Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("target")
+            .join(format!("symbolic-signatures-{}.elf", std::process::id()));
+        std::fs::write(&path, bytes).expect("write library fixture");
+        let mut binary = Binary::open_with_signatures(
+            &path,
+            None,
+            None,
+            &SignatureOptions {
+                defaults: false,
+                files: Vec::new(),
+            },
+        )
+        .expect("open named library fixture");
+        binary.signature_options.defaults = true;
+        assert!(binary.signature_database.entries.is_empty());
+        let address = binary.find_address("XXH32").expect("named function");
+        let matches = binary
+            .symbolic_identifications()
+            .expect("identify functions");
+        let evidence = matches
+            .get(&address)
+            .expect("named function identification");
+        assert_eq!(evidence.certainty, Certainty::Exact);
+        assert!(
+            evidence
+                .candidates
+                .iter()
+                .any(|candidate| candidate.name == "XXH32")
+        );
+        std::fs::remove_file(path).expect("remove library fixture");
     }
 
     #[test]

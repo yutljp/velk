@@ -198,9 +198,44 @@ pub(crate) fn run(
             } else {
                 println!("{} ({} states)", report.reason, report.paths);
                 if let Some(inputs) = &report.inputs {
-                    println!("Inputs: {}", json!(inputs));
+                    print_symbolic_bytes("stdin", &inputs.stdin);
+                    print_symbolic_bytes("stdout", &inputs.stdout);
+                    for (index, bytes) in inputs.argv.iter().enumerate() {
+                        print_symbolic_bytes(&format!("argv[{index}]"), bytes);
+                    }
+                    let mut range_start = None;
+                    let mut previous = None;
+                    let mut bytes = Vec::new();
+                    let mut memory: Vec<_> = inputs.memory.iter().collect();
+                    memory.sort_by_key(|(address, _)| velk::addr::parse(address));
+                    for (address, byte) in memory {
+                        let Some(address) = velk::addr::parse(address) else {
+                            return Err(Error::Symbolic(format!(
+                                "invalid input memory address: {address}"
+                            )));
+                        };
+                        if previous.and_then(|value: u64| value.checked_add(1)) != Some(address)
+                            && let Some(start) = range_start.take()
+                        {
+                            print_symbolic_bytes(&format!("memory[0x{start:x}]"), &bytes);
+                            bytes.clear();
+                        }
+                        range_start.get_or_insert(address);
+                        previous = Some(address);
+                        bytes.push(*byte);
+                    }
+                    if let Some(start) = range_start {
+                        print_symbolic_bytes(&format!("memory[0x{start:x}]"), &bytes);
+                    }
+                    println!("Arguments: {}", json!(inputs.arguments));
+                    println!("Registers: {}", json!(inputs.registers));
                 }
-                println!("Path: {}", report.path.join(" -> "));
+                match (report.path.first(), report.path.last()) {
+                    (Some(first), Some(last)) => {
+                        println!("Path: {} addresses ({first} -> {last})", report.path.len())
+                    }
+                    _ => println!("Path: 0 addresses"),
+                }
                 for diagnostic in &report.diagnostics {
                     println!("{diagnostic}");
                 }
@@ -442,6 +477,16 @@ pub(crate) fn run(
         }
     }
     Ok(ExitCode::SUCCESS)
+}
+
+fn print_symbolic_bytes(label: &str, bytes: &[u8]) {
+    let escaped: String = bytes
+        .iter()
+        .flat_map(|byte| std::ascii::escape_default(*byte))
+        .map(char::from)
+        .collect();
+    let hex: Vec<String> = bytes.iter().map(|byte| format!("{byte:02x}")).collect();
+    println!("{label}: \"{escaped}\" (hex: {})", hex.join(" "));
 }
 
 fn run_script(script: std::path::PathBuf) -> Result<ExitCode> {

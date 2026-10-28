@@ -329,3 +329,5 @@ they do not prove arbitrary loops, vector scans, memory validity or faults.
 Finite comparisons also check acyclic compiler CFGs for both architectures against symbolic byte-array comparison models. Terminated constant stores compare each store width against byte-wise array writes.
 
 String comparison flag storage has SMT checks for all comparison conditions at 8, 16, 32 and 64 bits. Native x86-64 comparisons check string instruction memory effects, flags, counts and directions; rendered C is also compiled and compared with assembly.
+
+Saturating pack checks compare arbitrary 64-bit halves with scalar signed-lane extraction, clamping, and truncation for 16/32/64-bit input lanes, for both signed and unsigned destinations. Constant instances also compare packing with the concrete evaluator. Symbolic execution tests check narrowing, packing, and leading-zero counts on both supported architectures.

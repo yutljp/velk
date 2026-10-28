@@ -110,6 +110,40 @@ pub(super) fn operation(op: Operation, args: &[Value]) -> Option<String> {
                 );
             }
         }
+        Operation::Pack { from, unsigned } => {
+            let from = u32::from(from);
+            let narrow = from / 2;
+            let minimum = if unsigned {
+                0
+            } else {
+                -(1i64 << (narrow - 1)) as u64
+            };
+            let maximum = if unsigned {
+                super::super::semantics::mask(narrow)
+            } else {
+                (1u64 << (narrow - 1)) - 1
+            };
+            for index in 0..128 / from {
+                let source = if index < 64 / from { a } else { &args[1].term };
+                let lane = signed(&field(source, (index % (64 / from)) * from, from), from);
+                let held = format!(
+                    "(ite (bvslt {lane} {}) {} (ite (bvsgt {lane} {}) {} {lane}))",
+                    constant(minimum),
+                    constant(minimum),
+                    constant(maximum),
+                    constant(maximum)
+                );
+                result = binary(
+                    "bvor",
+                    &result,
+                    &binary(
+                        "bvshl",
+                        &low(&held, narrow),
+                        &constant(u64::from(index * narrow)),
+                    ),
+                );
+            }
+        }
         Operation::SumLanes(bits) => {
             let bits = u32::from(bits);
             for value in args {

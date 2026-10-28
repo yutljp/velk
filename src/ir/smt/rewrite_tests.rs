@@ -709,6 +709,14 @@ fn integer_and_lane_constant_folding_matches_the_solver() {
             Operation::InterleaveLow(bits),
             Operation::InterleaveHigh(bits),
             Operation::Narrow(bits * 2),
+            Operation::Pack {
+                from: bits * 2,
+                unsigned: false,
+            },
+            Operation::Pack {
+                from: bits * 2,
+                unsigned: true,
+            },
         ];
         for signed in [false, true] {
             for high in [false, true] {
@@ -926,6 +934,78 @@ fn range_branches_and_switch_pruning_preserve_results() {
                 format!("SCCP switch/{bits}/{:?}", before.blocks),
                 &before,
                 &after,
+            );
+        }
+    }
+    proofs.check();
+}
+
+#[test]
+fn packed_lanes_match_scalar_saturation() {
+    if !Proofs::available() {
+        return;
+    }
+    let mut proofs = Proofs::default();
+    for from in [16u8, 32, 64] {
+        for unsigned in [false, true] {
+            let narrow = from / 2;
+            let minimum = if unsigned {
+                0
+            } else {
+                (-(1i64 << (narrow - 1))) as u64
+            };
+            let maximum = if unsigned {
+                (1u64 << narrow) - 1
+            } else {
+                (1u64 << (narrow - 1)) - 1
+            };
+            let mut reference = Expr::Const(0);
+            for index in 0..128 / u32::from(from) {
+                let source = Expr::reg(if index < 64 / u32::from(from) { 0 } else { 1 }, 64);
+                let shifted = raw_bin(
+                    BinOp::Shr,
+                    source,
+                    Expr::Const(u64::from(
+                        (index % (64 / u32::from(from))) * u32::from(from),
+                    )),
+                );
+                let lane = Expr::SignExtend {
+                    value: Box::new(shifted),
+                    width: from / 8,
+                };
+                let upper = Expr::Select {
+                    cond: Cond::Gt,
+                    lhs: Box::new(lane.clone()),
+                    rhs: Box::new(Expr::Const(maximum)),
+                    then: Box::new(Expr::Const(maximum)),
+                    els: Box::new(lane.clone()),
+                };
+                let held = Expr::Select {
+                    cond: Cond::Lt,
+                    lhs: Box::new(lane),
+                    rhs: Box::new(Expr::Const(minimum)),
+                    then: Box::new(Expr::Const(minimum)),
+                    els: Box::new(upper),
+                };
+                let low = raw_bin(BinOp::And, held, Expr::Const((1u64 << narrow) - 1));
+                reference = raw_bin(
+                    BinOp::Or,
+                    reference,
+                    raw_bin(
+                        BinOp::Shl,
+                        low,
+                        Expr::Const(u64::from(index * u32::from(narrow))),
+                    ),
+                );
+            }
+            proofs.expression(
+                format!("pack scalar saturation/{from}/{unsigned}"),
+                &Expr::Apply {
+                    op: Operation::Pack { from, unsigned },
+                    args: vec![Expr::reg(0, 64), Expr::reg(1, 64)],
+                },
+                &reference,
+                64,
             );
         }
     }

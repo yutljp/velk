@@ -85,6 +85,8 @@ pub struct State {
     input_registers: BTreeMap<u16, Term>,
     returns: Vec<ReturnFrame>,
     stop: Option<String>,
+    model_diagnostics: Vec<String>,
+    model_call_kind: CallKind,
     branch_observations: Option<Rc<RefCell<BranchObservations>>>,
 }
 
@@ -175,6 +177,8 @@ impl State {
             input_registers: BTreeMap::new(),
             returns: Vec::new(),
             stop: None,
+            model_diagnostics: Vec::new(),
+            model_call_kind: CallKind::Invoke,
             branch_observations: None,
         };
         let memory = state.mapped_memory(image)?;
@@ -754,7 +758,13 @@ impl State {
             && (args.len() != op.arity()
                 || !matches!(
                     op,
-                    crate::ir::Operation::InterleaveLow(8 | 16 | 32)
+                    crate::ir::Operation::Narrow(16 | 32 | 64)
+                        | crate::ir::Operation::Pack {
+                            from: 16 | 32 | 64,
+                            ..
+                        }
+                        | crate::ir::Operation::CountLeadingZeros(8 | 16 | 32 | 64)
+                        | crate::ir::Operation::InterleaveLow(8 | 16 | 32)
                         | crate::ir::Operation::InterleaveHigh(8 | 16 | 32)
                         | crate::ir::Operation::Widen {
                             bits: 8 | 16 | 32,
@@ -831,21 +841,45 @@ impl State {
     }
 
     fn jump(&mut self, binary: &Binary, target: u64) -> Result<()> {
-        let Some(block) = self
+        if let Some(block) = self
             .cursor
             .blocks
             .iter()
             .position(|block| block.start == target)
-        else {
-            self.cursor = Cursor {
-                blocks: Rc::from(lift(binary.image(), target)?),
-                block: 0,
-                statement: 0,
-            };
+        {
+            self.cursor.block = block;
+            self.cursor.statement = 0;
             return Ok(());
+        }
+        let blocks = if binary.image().functions.contains_key(&target)
+            || binary.image().imports.contains_key(&target)
+        {
+            vec![Block {
+                start: target,
+                stmts: vec![Stmt::Call {
+                    kind: CallKind::Tail,
+                    target: Some(target),
+                    through: None,
+                    convention: binary.image().convention_of(target),
+                    args: None,
+                    floats_named: false,
+                    abi: None,
+                    outputs: Vec::new(),
+                    clobbers: None,
+                    via: None,
+                }],
+            }]
+        } else {
+            match lift(binary.image(), target) {
+                Ok(blocks) => blocks,
+                Err(error) => return Err(error),
+            }
         };
-        self.cursor.block = block;
-        self.cursor.statement = 0;
+        self.cursor = Cursor {
+            blocks: Rc::from(blocks),
+            block: 0,
+            statement: 0,
+        };
         Ok(())
     }
 
@@ -896,7 +930,7 @@ impl State {
             let before = self.clone();
             self.steps += 1;
             self.cursor.statement += 1;
-            match self.statement(binary, &statement) {
+            match self.statement(binary, &statement, until) {
                 Ok(Some(Step::Branch(states))) => {
                     self.stop = Some("state has forked; step a successor".to_owned());
                     return Ok(Step::Branch(states));
@@ -936,7 +970,12 @@ impl State {
         }
     }
 
-    fn statement(&mut self, binary: &Binary, statement: &Stmt) -> Evaluation<Option<Step>> {
+    fn statement(
+        &mut self,
+        binary: &Binary,
+        statement: &Stmt,
+        until: &[u64],
+    ) -> Evaluation<Option<Step>> {
         match statement {
             Stmt::Assign { dest, value } => {
                 if dest.index == crate::lift::execution::ADDRESS {
@@ -1072,79 +1111,12 @@ impl State {
                         None => return Err(invalid("unsupported call target").into()),
                     },
                 };
-                self.call(binary, target, *convention, *kind, outputs)?;
+                self.call(binary, target, *convention, *kind, outputs, until)?;
             }
             Stmt::Ret { value } => {
                 let value = self.eval(binary, value)?;
                 self.registers.insert(crate::arch::RETURN, value);
-                let Some(frame) = self.returns.pop() else {
-                    return Ok(Some(Step::Stopped("return".to_owned())));
-                };
-                if frame.pushed != 0 {
-                    let sp = crate::arch::stack_pointer(binary.image().isa);
-                    let stack = self.resolve(self.read_register(sp)?)?;
-                    let target = self.eval(
-                        binary,
-                        &Expr::Load {
-                            addr: Box::new(Expr::Const(stack)),
-                            width: frame.pushed as u8,
-                            signed: false,
-                        },
-                    )?;
-                    if self.resolve(target)? != frame.return_address {
-                        return Err(invalid("unsupported changed return address").into());
-                    }
-                    let instruction =
-                        super::emulation::x86_instruction_at(binary.image(), self.address)
-                            .map_err(invalid)?;
-                    let cleanup = if instruction.mnemonic() == iced_x86::Mnemonic::Ret
-                        && instruction.op_count() != 0
-                    {
-                        u64::from(instruction.immediate16())
-                    } else {
-                        0
-                    };
-                    let stack = stack
-                        .checked_add(frame.pushed)
-                        .and_then(|value| value.checked_add(cleanup))
-                        .ok_or_else(|| invalid("return stack overflows"))?;
-                    self.registers.insert(sp, Term::constant(stack));
-                }
-                if binary.image().isa == Isa::AArch64 {
-                    let bytes = binary
-                        .image()
-                        .read_vaddr(self.address, 4)
-                        .ok_or_else(|| invalid("missing return instruction"))?;
-                    let word = u32::from_le_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]);
-                    if word & 0xffff_fc1f != 0xd65f_0000 {
-                        return Err(invalid("unsupported authenticated return").into());
-                    }
-                    let register = ((word >> 5) & 31) as u16;
-                    let target = self.resolve(self.read_register(register)?)?;
-                    if target != frame.return_address {
-                        return Err(invalid("unsupported changed return address").into());
-                    }
-                }
-                let mut outputs = Vec::new();
-                for output in &frame.outputs {
-                    outputs.push((output.dest, self.registers.get(&output.register).cloned()));
-                }
-                self.registers.retain(|index, _| {
-                    *index < crate::ir::TEMP_BASE || *index == crate::lift::execution::DIRECTION
-                });
-                self.registers.extend(frame.temporaries);
-                for (dest, value) in outputs {
-                    match value {
-                        Some(value) => {
-                            self.registers
-                                .insert(dest.index, self.low(&value, u32::from(dest.width))?);
-                        }
-                        None => {
-                            self.registers.remove(&dest.index);
-                        }
-                    }
-                }
-                self.cursor = frame.cursor;
+                return self.return_from_call(binary, /* machine_return */ true);
             }
             Stmt::Machine {
                 instruction:
@@ -1259,7 +1231,13 @@ impl State {
             if !state.satisfiable()? {
                 continue;
             }
-            match state.step(binary, &until)? {
+            let step = state.step(binary, &until)?;
+            for diagnostic in &state.model_diagnostics {
+                if !report.diagnostics.contains(diagnostic) {
+                    report.diagnostics.push(diagnostic.clone());
+                }
+            }
+            match step {
                 Step::Reached if avoid.contains(&state.address) => {
                     report.diagnostics.push("avoided".to_owned());
                 }
@@ -1290,24 +1268,23 @@ impl State {
                 Step::Stopped(reason) => report.diagnostics.push(reason),
             }
         }
-        if report.reason == "paths exhausted" && !report.diagnostics.is_empty() {
-            if report.diagnostics.iter().all(|reason| reason == "avoided") {
+        let failures: Vec<&String> = report
+            .diagnostics
+            .iter()
+            .filter(|reason| !reason.starts_with("libc model at "))
+            .collect();
+        if report.reason == "paths exhausted" && !failures.is_empty() {
+            if failures.iter().all(|reason| reason.as_str() == "avoided") {
                 report.reason = "all paths avoided".to_owned();
-            } else if report
-                .diagnostics
+            } else if failures
                 .iter()
                 .any(|reason| reason.contains("address enumeration bound"))
             {
                 report.reason = "address enumeration bound reached".to_owned();
-            } else if report
-                .diagnostics
-                .iter()
-                .any(|reason| reason.contains("budget"))
-            {
+            } else if failures.iter().any(|reason| reason.contains("budget")) {
                 report.reason = "step budget".to_owned();
-            } else if let Some(reason) = report
-                .diagnostics
-                .iter()
+            } else if let Some(reason) = failures
+                .into_iter()
                 .find(|reason| reason.contains("unsupported"))
             {
                 report.reason = reason.clone();
@@ -1367,9 +1344,10 @@ impl State {
         convention: crate::ir::Convention,
         kind: CallKind,
         outputs: &[CallOutput],
+        until: &[u64],
     ) -> Evaluation<()> {
-        if kind != CallKind::Invoke {
-            return Err(invalid("unsupported symbolic tail call").into());
+        if kind == CallKind::Syscall {
+            return Err(invalid("unsupported symbolic system call").into());
         }
         let image = binary.image();
         let name = image.imports.get(&target).map(String::as_str).or_else(|| {
@@ -1379,9 +1357,40 @@ impl State {
                 .filter(|function| function.sources.contains(&crate::loader::NameSource::Plt))
                 .and_then(|function| function.name.as_deref())
         });
+        let identification = if name.is_none() && !until.contains(&target) {
+            binary.symbolic_identifications()?.get(&target)
+        } else {
+            None
+        };
+        let candidate = identification.and_then(|evidence| {
+            let Some(first) = evidence.candidates.first() else {
+                return None;
+            };
+            (evidence.certainty == crate::sigs::Certainty::Exact
+                && evidence
+                    .candidates
+                    .iter()
+                    .all(|candidate| candidate.name == first.name)
+                && super::emulation::hooks::find(&first.name).is_some())
+            .then_some(first)
+        });
+        let name = name.or_else(|| candidate.map(|candidate| candidate.name.as_str()));
         if let Some(name) = name {
+            if let Some(candidate) = candidate {
+                let diagnostic = format!(
+                    "libc model at 0x{target:x}: {} (exact signature from {})",
+                    candidate.name, candidate.set
+                );
+                if !self.model_diagnostics.contains(&diagnostic) {
+                    self.model_diagnostics.push(diagnostic);
+                }
+            }
+            self.model_call_kind = kind;
             let result = self.libc(binary, name, convention)?;
             for &register in convention.clobbered() {
+                if kind == CallKind::Tail && self.isa == Isa::AArch64 && register == 30 {
+                    continue;
+                }
                 let mut unknown = self.symbolic()?;
                 unknown.defined = 0;
                 self.registers.insert(register, unknown);
@@ -1402,11 +1411,28 @@ impl State {
                     }
                 }
             }
+            if kind == CallKind::Tail
+                && let Some(Step::Stopped(reason)) =
+                    self.return_from_call(binary, /* machine_return */ false)?
+            {
+                self.stop = Some(reason);
+            }
             return Ok(());
         }
         let blocks = lift(image, target)?;
         if let Some(observations) = &self.branch_observations {
             record_branches(observations, &blocks);
+        }
+        if kind == CallKind::Tail {
+            self.registers.retain(|index, _| {
+                *index < crate::ir::TEMP_BASE || *index == crate::lift::execution::DIRECTION
+            });
+            self.cursor = Cursor {
+                blocks: Rc::from(blocks),
+                block: 0,
+                statement: 0,
+            };
+            return Ok(());
         }
         let sp = crate::arch::stack_pointer(image.isa);
         let old_sp = self.resolve(self.read_register(sp)?)?;
@@ -1459,6 +1485,86 @@ impl State {
 }
 
 impl State {
+    fn return_from_call(
+        &mut self,
+        binary: &Binary,
+        machine_return: bool,
+    ) -> Evaluation<Option<Step>> {
+        let Some(frame) = self.returns.pop() else {
+            return Ok(Some(Step::Stopped("return".to_owned())));
+        };
+        if frame.pushed != 0 {
+            let sp = crate::arch::stack_pointer(binary.image().isa);
+            let stack = self.resolve(self.read_register(sp)?)?;
+            let target = self.eval(
+                binary,
+                &Expr::Load {
+                    addr: Box::new(Expr::Const(stack)),
+                    width: frame.pushed as u8,
+                    signed: false,
+                },
+            )?;
+            if self.resolve(target)? != frame.return_address {
+                return Err(invalid("unsupported changed return address").into());
+            }
+            let instruction = super::emulation::x86_instruction_at(binary.image(), self.address)
+                .map_err(invalid)?;
+            let cleanup = if machine_return
+                && instruction.mnemonic() == iced_x86::Mnemonic::Ret
+                && instruction.op_count() != 0
+            {
+                u64::from(instruction.immediate16())
+            } else {
+                0
+            };
+            let stack = stack
+                .checked_add(frame.pushed)
+                .and_then(|value| value.checked_add(cleanup))
+                .ok_or_else(|| invalid("return stack overflows"))?;
+            self.registers.insert(sp, Term::constant(stack));
+        }
+        if binary.image().isa == Isa::AArch64 {
+            let bytes = binary
+                .image()
+                .read_vaddr(self.address, 4)
+                .ok_or_else(|| invalid("missing return instruction"))?;
+            let word = u32::from_le_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]);
+            if machine_return && word & 0xffff_fc1f != 0xd65f_0000 {
+                return Err(invalid("unsupported authenticated return").into());
+            }
+            let register = if machine_return {
+                ((word >> 5) & 31) as u16
+            } else {
+                30
+            };
+            let target = self.resolve(self.read_register(register)?)?;
+            if target != frame.return_address {
+                return Err(invalid("unsupported changed return address").into());
+            }
+        }
+        let mut outputs = Vec::new();
+        for output in &frame.outputs {
+            outputs.push((output.dest, self.registers.get(&output.register).cloned()));
+        }
+        self.registers.retain(|index, _| {
+            *index < crate::ir::TEMP_BASE || *index == crate::lift::execution::DIRECTION
+        });
+        self.registers.extend(frame.temporaries);
+        for (dest, value) in outputs {
+            match value {
+                Some(value) => {
+                    self.registers
+                        .insert(dest.index, self.low(&value, u32::from(dest.width))?);
+                }
+                None => {
+                    self.registers.remove(&dest.index);
+                }
+            }
+        }
+        self.cursor = frame.cursor;
+        Ok(None)
+    }
+
     fn initialize_argument(
         &mut self,
         binary: &Binary,
@@ -1529,7 +1635,13 @@ impl State {
                 break;
             }
             report.paths += 1;
-            match state.step(binary, &[]) {
+            let step = state.step(binary, &[]);
+            for diagnostic in &state.model_diagnostics {
+                if !report.diagnostics.contains(diagnostic) {
+                    report.diagnostics.push(diagnostic.clone());
+                }
+            }
+            match step {
                 Ok(Step::Branch(states)) => pending.extend(states.into_iter().rev()),
                 Ok(Step::Stopped(reason)) if reason == "return" || reason == "trap" => {}
                 result => {

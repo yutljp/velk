@@ -1286,3 +1286,425 @@ fn unreachable_conditional_instructions_are_reported() {
         assert_ne!(unreachable[0].taken, unreachable[1].taken);
     }
 }
+
+#[test]
+fn tail_calls_preserve_returns_and_require_exact_library_evidence() {
+    use velk::service::SignatureOptions;
+    use velk::sigs::{self, Database};
+
+    if !solver_available() {
+        return;
+    }
+    for arch in ["x86_64", "aarch64"] {
+        let path = fixtures().join(format!("{arch}-O0.elf"));
+        let mut database = sigs::build(&path, None).expect("build instruction signatures");
+        database
+            .entries
+            .retain(|entry| entry.name == "local_length");
+        assert_eq!(database.entries.len(), 1);
+        database.entries[0].name = "_strlen".into();
+        for ambiguous in [false, true] {
+            let mut entries = database.entries.clone();
+            if ambiguous {
+                let mut alias = entries[0].clone();
+                alias.name = "other_length".into();
+                entries.push(alias);
+            }
+            let database_path = fixtures().join(format!(
+                "{arch}-{ambiguous}-budget-unsupported-address enumeration bound.json"
+            ));
+            std::fs::write(
+                &database_path,
+                serde_json::to_vec(&Database::new(entries)).expect("serialize signatures"),
+            )
+            .expect("write signatures");
+            let signatures = SignatureOptions {
+                defaults: false,
+                files: vec![database_path],
+            };
+            let mut binary = Binary::open_with_signatures(&path, None, None, &signatures)
+                .expect("open with signatures");
+            let target = binary
+                .find_address("local_length")
+                .expect("local length entry");
+            let stop_options: Options =
+                serde_json::from_value(json!({"find":[target], "argumentValues":["0x10000000"]}))
+                    .expect("static entry stop options");
+            for name in ["tail_length", "nested_tail"] {
+                let report =
+                    symbolic::explore(&binary, name, &stop_options).expect("stop at static entry");
+                assert!(report.found, "{arch} {name}: {report:?}");
+                assert_eq!(report.path.last(), Some(&format!("0x{target:x}")));
+                assert!(
+                    report
+                        .diagnostics
+                        .iter()
+                        .all(|message| !message.contains("exact signature"))
+                );
+            }
+            for (name, expected) in [("tail_length", 3), ("tail_import", 3), ("nested_tail", 10)] {
+                let options: Options = serde_json::from_value(json!({
+                    "argumentValues":["0x10000000"],
+                    "memory":[{"address":"0x10000000","size":4}],
+                    "returns":{"eq":expected}
+                }))
+                .expect("tail options");
+                let report = symbolic::solve(&binary, name, &options).expect("solve tail call");
+                assert!(report.found, "{arch} {ambiguous} {name}: {report:?}");
+                let modeled = report
+                    .diagnostics
+                    .iter()
+                    .any(|message| message.contains("exact signature"));
+                assert_eq!(modeled, !ambiguous && name != "tail_import", "{report:?}");
+                assert!(
+                    report
+                        .diagnostics
+                        .iter()
+                        .filter(|message| message.starts_with("libc model at "))
+                        .count()
+                        <= 1,
+                    "{report:?}"
+                );
+                if !ambiguous && name == "nested_tail" {
+                    use serde_json::Value;
+                    use std::process::Stdio;
+                    let expected = json!(&report);
+                    let output = Command::new(env!("CARGO_BIN_EXE_velk"))
+                        .args(["--solve", name, "--returns", "eq:10", "--json", "--no-default-signatures", "--signatures"])
+                        .arg(&signatures.files[0])
+                        .args(["--symbolic-options", &serde_json::to_string(&json!({"argumentValues":["0x10000000"],"memory":[{"address":"0x10000000","size":4}]})).expect("CLI options")])
+                        .arg(&path).output().expect("static model CLI");
+                    assert!(output.status.success(), "{output:?}");
+                    assert_eq!(
+                        serde_json::from_slice::<Value>(&output.stdout).expect("CLI JSON"),
+                        expected
+                    );
+                    let code = format!(
+                        "velk.open({}, {{defaultSignatures:false, signatures:{}, cache:false}}).solve('nested_tail', {})",
+                        json!(path),
+                        json!(signatures.files),
+                        json!({"argumentValues":["0x10000000"],"memory":[{"address":"0x10000000","size":4}],"returns":{"eq":10}})
+                    );
+                    let engine = velk::script::Engine::new().expect("script engine");
+                    let outcome = engine.run(&code, None);
+                    assert!(outcome.error.is_none(), "{:?}", outcome.error);
+                    assert_eq!(
+                        serde_json::from_str::<Value>(&outcome.output).expect("script JSON"),
+                        expected
+                    );
+                    let child = Command::new(env!("CARGO_BIN_EXE_velk"))
+                        .arg("--mcp")
+                        .stdin(Stdio::piped())
+                        .stdout(Stdio::piped())
+                        .spawn()
+                        .expect("MCP process");
+                    let request = json!({"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"velk_run_script","arguments":{"code":code}}});
+                    let output = common::mcp_request(child, &request);
+                    let response: Value =
+                        serde_json::from_slice(&output.stdout).expect("MCP response");
+                    assert_eq!(response["result"]["isError"], false, "{response}");
+                    assert_eq!(
+                        serde_json::from_str::<Value>(
+                            response["result"]["content"][0]["text"]
+                                .as_str()
+                                .expect("MCP text")
+                        )
+                        .expect("MCP report"),
+                        expected
+                    );
+                }
+                let inputs = report.inputs.expect("tail inputs");
+                let bytes: Vec<_> = inputs.memory.values().copied().collect();
+                assert!(bytes[..3].iter().all(|byte| *byte != 0));
+                assert_eq!(bytes[3], 0);
+                #[cfg(target_os = "linux")]
+                {
+                    use std::io::Write as _;
+                    use std::process::Stdio;
+                    let mut child = Command::new(fixtures().join("native-calls"))
+                        .stdin(Stdio::piped())
+                        .spawn()
+                        .expect("native tail calls");
+                    child
+                        .stdin
+                        .take()
+                        .expect("native stdin")
+                        .write_all(&bytes)
+                        .expect("native input");
+                    assert!(child.wait().expect("native result").success());
+                }
+            }
+            if !ambiguous {
+                let options: Options = serde_json::from_value(json!({
+                    "argumentValues":["0x10000000"],
+                    "memory":[{"address":"0x10000000","size":4}],
+                    "returns":{"eq":"0xffffffffffffffff"}
+                }))
+                .expect("impossible return options");
+                let report = symbolic::solve(&binary, "tail_length", &options)
+                    .expect("search with identified model");
+                assert!(!report.found, "{arch}: {report:?}");
+                assert_eq!(report.reason, "paths exhausted", "{arch}: {report:?}");
+                assert!(report.diagnostics.iter().any(|message| {
+                    message.starts_with("libc model at ") && message.contains("budget-unsupported")
+                }));
+
+                let options: Options = serde_json::from_value(json!({
+                    "argumentValues":["0x10000000"],
+                    "memory":[{"address":"0x10000000","size":4}],
+                    "returns":{"eq":3}
+                }))
+                .expect("return options");
+                let state = State::new(&binary, "tail_length", &options).expect("symbolic state");
+                let mut priming = state.clone();
+                assert!(matches!(
+                    priming.step(&binary, &[]).expect("prime identification"),
+                    Step::Branch(_)
+                ));
+                let disabled = Binary::open_with_signatures(
+                    &path,
+                    None,
+                    None,
+                    &SignatureOptions {
+                        defaults: false,
+                        files: Vec::new(),
+                    },
+                )
+                .expect("open without signatures");
+                let report = state
+                    .clone()
+                    .explore(&disabled, &options)
+                    .expect("search without signatures");
+                assert!(report.found, "{arch}: {report:?}");
+                assert!(
+                    report
+                        .diagnostics
+                        .iter()
+                        .all(|message| !message.starts_with("libc model at ")),
+                    "{arch}: {report:?}"
+                );
+
+                let mut alias = database.entries[0].clone();
+                alias.name = "other_length".into();
+                binary
+                    .identify(&Database::new(vec![alias]), None)
+                    .expect("add ambiguous signature");
+                assert_eq!(
+                    binary.image().functions[&target]
+                        .library
+                        .as_ref()
+                        .expect("library evidence")
+                        .certainty,
+                    velk::sigs::Certainty::Ambiguous
+                );
+                let report = state
+                    .explore(&binary, &options)
+                    .expect("search with ambiguous signatures");
+                assert!(report.found, "{arch}: {report:?}");
+                assert!(
+                    report
+                        .diagnostics
+                        .iter()
+                        .all(|message| !message.starts_with("libc model at ")),
+                    "{arch}: {report:?}"
+                );
+            }
+        }
+    }
+}
+
+#[test]
+fn text_reports_show_bytes_and_bounded_path_summaries() {
+    if !solver_available() {
+        return;
+    }
+    let path = fixtures().join("x86_64-O0.elf");
+    for (operation, name, options) in [
+        (
+            "--solve",
+            "tail_length",
+            json!({"argumentValues":["0x10000000"], "memory":[{"address":"0x10000000","size":4}], "returns":{"eq":3}}),
+        ),
+        (
+            "--explore",
+            "getchar_password",
+            json!({"stdin":4,"find":[binary("x86_64",0).find("success").expect("success").addr]}),
+        ),
+        (
+            "--explore",
+            "arguments",
+            json!({"argv":[1,3],"find":[binary("x86_64",0).find("success").expect("success").addr]}),
+        ),
+    ] {
+        let mut command = Command::new(env!("CARGO_BIN_EXE_velk"));
+        if operation == "--solve" {
+            command.args(["--returns", "eq:3"]);
+        } else {
+            command.args([
+                "--find",
+                &format!("0x{:x}", options["find"][0].as_u64().expect("find address")),
+            ]);
+        }
+        let output = command
+            .args([operation, name, "--symbolic-options", &options.to_string()])
+            .arg(&path)
+            .output()
+            .expect("text report");
+        assert!(output.status.success(), "{:?}", output);
+        let text = String::from_utf8(output.stdout).expect("UTF-8 text report");
+        let expected = match name {
+            "tail_length" => "memory[0x10000000]:",
+            "arguments" => "argv[1]: \"yes\" (hex: 79 65 73)",
+            _ => "stdin: \"velk\" (hex: 76 65 6c 6b)",
+        };
+        assert!(text.contains(expected), "{text}");
+        if name == "tail_length" {
+            assert!(text.contains("\\x00\" (hex:"), "{text}");
+        }
+        let path_line = text
+            .lines()
+            .find(|line| line.starts_with("Path:"))
+            .expect("path summary");
+        assert!(path_line.contains(" addresses (0x"), "{path_line}");
+        assert_eq!(path_line.matches(" -> ").count(), 1);
+    }
+}
+
+#[test]
+fn symbolic_narrow_pack_and_leading_zeros_match_scalar_values() {
+    use velk::ir::{Expr, Operation};
+
+    if !solver_available() {
+        return;
+    }
+    let values = [0, 1, u64::MAX, 0x8000_7fff_0080_007f, 0xffff_0100_00ff_0000];
+    for arch in ["x86_64", "aarch64"] {
+        let binary = binary(arch, 0);
+        let mut state =
+            State::new(&binary, "password", &Options::default()).expect("expression state");
+        let a = state.symbolic().expect("first input");
+        let b = state.symbolic().expect("second input");
+        state.write_register(0, a.clone()).expect("first register");
+        state.write_register(1, b.clone()).expect("second register");
+        for bits in [16u8, 32, 64] {
+            for (index, &first) in values.iter().enumerate() {
+                let second = values[(index + 2) % values.len()];
+                let mut sample = state.clone();
+                sample
+                    .constrain(Cond::Eq, &a, &Term::constant(first), 64)
+                    .expect("first value");
+                sample
+                    .constrain(Cond::Eq, &b, &Term::constant(second), 64)
+                    .expect("second value");
+                for op in [
+                    Operation::Narrow(bits),
+                    Operation::Pack {
+                        from: bits,
+                        unsigned: false,
+                    },
+                    Operation::Pack {
+                        from: bits,
+                        unsigned: true,
+                    },
+                    Operation::CountLeadingZeros(bits),
+                ] {
+                    let mut args = vec![Expr::reg(0, 64), Expr::reg(1, 64)];
+                    args.truncate(op.arity());
+                    let expression = Expr::Apply { op, args };
+                    let term = sample
+                        .expression(&binary, &expression)
+                        .expect("symbolic operation");
+                    let mut expected = 0;
+                    if matches!(op, Operation::CountLeadingZeros(_)) {
+                        let value = first & (u64::MAX >> (64 - bits));
+                        expected = u64::from(value.leading_zeros() - (64 - u32::from(bits)));
+                    } else {
+                        for lane in 0..128 / u32::from(bits) {
+                            let half = if lane < 64 / u32::from(bits) {
+                                first
+                            } else {
+                                second
+                            };
+                            let shift = (lane % (64 / u32::from(bits))) * u32::from(bits);
+                            let value = ((half >> shift) << (64 - bits)) as i64 >> (64 - bits);
+                            let narrow = bits / 2;
+                            let value = match op {
+                                Operation::Pack { unsigned: true, .. } => {
+                                    value.clamp(0, (1i64 << narrow) - 1)
+                                }
+                                Operation::Pack {
+                                    unsigned: false, ..
+                                } => {
+                                    value.clamp(-(1i64 << (narrow - 1)), (1i64 << (narrow - 1)) - 1)
+                                }
+                                _ => value,
+                            };
+                            expected |= (value as u64 & ((1u64 << narrow) - 1))
+                                << (lane * u32::from(narrow));
+                        }
+                    }
+                    let mut mismatch = sample.clone();
+                    mismatch
+                        .constrain(Cond::Ne, &term, &Term::constant(expected), 64)
+                        .expect("operation comparison");
+                    assert!(
+                        !mismatch.satisfiable().expect("operation equality"),
+                        "{arch} {op:?} {first:x} {second:x}"
+                    );
+                }
+            }
+        }
+    }
+}
+
+#[test]
+fn tail_libc_models_read_stack_arguments_at_function_entry_offsets() {
+    if !solver_available() {
+        return;
+    }
+    for arch in ["x86_64", "aarch64"] {
+        let binary = binary(arch, 0);
+        let mut arguments = vec![
+            json!("0x10000000"),
+            json!(
+                binary
+                    .image()
+                    .data_symbols
+                    .iter()
+                    .find(|(_, name)| name.as_str() == "scan_format")
+                    .map(|(address, _)| *address)
+                    .expect("scan format")
+            ),
+        ];
+        for index in 0..7 {
+            arguments.push(json!(0x10000020u64 + index));
+        }
+        let options: Options = serde_json::from_value(json!({
+            "argumentValues":arguments,
+            "memory":[{"address":"0x10000000","size":7}],
+            "returns":{"eq":7}
+        }))
+        .expect("stack scan options");
+        let report = symbolic::solve(&binary, "tail_scan", &options).expect("tail scan");
+        assert!(report.found, "{arch}: {report:?}");
+        let inputs = report.inputs.expect("scan inputs");
+        let bytes: Vec<_> = inputs.memory.values().copied().collect();
+        assert!(bytes.iter().all(|byte| *byte != 0));
+        #[cfg(target_os = "linux")]
+        {
+            use std::io::Write as _;
+            use std::process::Stdio;
+            let mut child = Command::new(fixtures().join("native-calls"))
+                .stdin(Stdio::piped())
+                .spawn()
+                .expect("native stack arguments");
+            child
+                .stdin
+                .take()
+                .expect("native stdin")
+                .write_all(&bytes)
+                .expect("native input");
+            assert!(child.wait().expect("native result").success());
+        }
+    }
+}

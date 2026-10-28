@@ -4,7 +4,7 @@ use super::{Evaluation, State, Term};
 use crate::ir::eval::emulation::hooks::{self, Hook};
 use crate::ir::eval::emulation::io::{self, Operation};
 use crate::ir::smt;
-use crate::ir::{CallKind, Convention, Expr};
+use crate::ir::{Convention, Expr};
 use crate::service::Binary;
 use crate::symbolic::invalid;
 
@@ -36,7 +36,10 @@ impl State {
         let Some(base) = convention.stack_arguments() else {
             return Err(invalid("unsupported hook argument convention").into());
         };
-        let Some(offset) = CallKind::Invoke.stack_offset(self.isa, convention, base) else {
+        let Some(offset) = self
+            .model_call_kind
+            .stack_offset(self.isa, convention, base)
+        else {
             return Err(invalid("invalid hook stack argument offset").into());
         };
         let stack = match self.read_register(crate::arch::stack_pointer(self.isa)) {
