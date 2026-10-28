@@ -58,7 +58,7 @@ fn __cxa_pure_virtual @ 0x2013a0 (size 2)
 int64_t operator_new(int64_t a0) {
     int64_t v1 = _ZL4used;
     _ZL4used = ((int64_t)((uint64_t)a0 + 15) & 0xfffffffffffffff0) + v1;
-    return (int64_t)(0x203610 + (uint64_t)v1);
+    return 0x203610 + (uint64_t)v1;
 }
 -- signature
 int64_t (int64_t a0)

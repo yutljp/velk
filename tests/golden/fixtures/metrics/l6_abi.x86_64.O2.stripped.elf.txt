@@ -84,7 +84,7 @@ fn <unnamed> @ 0x2011e0 (size 14)
 -- decompile
 /* velk pseudo-C: sub_2011f0 @ 0x2011f0 */
 int64_t sub_2011f0(int64_t a0, int64_t a1) {
-    return (int64_t)((uint64_t)a0 + a1);
+    return (uint64_t)a0 + a1;
 }
 -- signature
 int64_t (int64_t a0, int64_t a1)

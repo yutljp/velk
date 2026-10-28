@@ -85,7 +85,7 @@ int sum_till_neg(int *p, int n) {
             break;
         }
         v6 = (uint32_t)v6 + v5;
-        i = (int64_t)((uint64_t)i + 1);
+        i = (uint64_t)i + 1;
     } while (v3 != i);
     return v6;
 }
@@ -122,7 +122,7 @@ int sum_until_zero(int *p, int n) {
         return 0;
     }
     int32_t v3 = 0;
-    for (int64_t i = 0; i < (uint32_t)n; i = (int64_t)((uint64_t)i + 1)) {
+    for (int64_t i = 0; i < (uint32_t)n; i = (uint64_t)i + 1) {
         int32_t v4 = p[i];
         if (v4 == 0) {
             break;

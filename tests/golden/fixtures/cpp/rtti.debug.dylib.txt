@@ -600,7 +600,7 @@ fn Multiple::~Multiple() @ 0x7d8 (size 8)
 -- decompile
 /* velk pseudo-C: {virtual override thunk({offset(-16)}, Multiple::~Multiple())} @ 0x7e0 */
 int32_t virtual_override_thunk__offset__16____Multiple___Multiple_____7e0(int64_t a0) {
-    int64_t v1 = (int64_t)((uint64_t)a0 - 16);
+    int64_t v1 = (uint64_t)a0 - 16;
     Multiple___Multiple_7d8(v1);
     return v1;
 }

@@ -241,7 +241,7 @@ helper_cse=$("$BIN" --decompile $FIX/arm64.o helper 2>/dev/null)
 echo "$helper_cse" | grep "t1" >/dev/null && fail "temporary for a 32-bit register read"
 ok "two-round inlining"
 div_ir=$("$BIN" --decompile $FIX/pe64.exe reg_div 2>/dev/null)
-echo "$div_ir" | grep -F "return (int32_t)((int64_t)a0 / a1);" >/dev/null || fail "runtime division inlining"
+echo "$div_ir" | grep -F "return (int64_t)a0 / a1;" >/dev/null || fail "runtime division inlining"
 mod_ir=$("$BIN" --decompile $FIX/pe64.exe reg_mod 2>/dev/null)
 echo "$mod_ir" | grep -F "a0 % a1" >/dev/null || fail "idiv remainder dividend"
 ok "runtime division and remainder"

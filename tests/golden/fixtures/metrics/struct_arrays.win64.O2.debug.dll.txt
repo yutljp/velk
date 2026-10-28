@@ -82,7 +82,7 @@ int32_t item_last_key(struct item *items, int n) {
             if ((int32_t)*v5 > 0) {
                 v2 = v5[-1];
             }
-            v1 = (int64_t)((uint64_t)v1 + 2);
+            v1 = (uint64_t)v1 + 2;
             v5 += 0x6;
         } while (v4 != v1);
         if ((n & 0x1) == 0) {
@@ -92,7 +92,7 @@ int32_t item_last_key(struct item *items, int n) {
         v1 = 0;
         v2 = 0;
     }
-    int64_t v6 = (int64_t)((uint64_t)v1 * 3);
+    int64_t v6 = (uint64_t)v1 * 3;
     if (*(int32_t *)((uint8_t *)items + (int64_t)((uint64_t)v6 * 0x4) + 0x4) <= 0) {
         return v2;
     }

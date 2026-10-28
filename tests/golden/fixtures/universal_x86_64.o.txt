@@ -94,7 +94,7 @@ int32_t sum_arr(uint32_t *a0, int32_t a1) {
             v4 += a0[(int64_t)((uint64_t)v3 + 5)];
             v4 += a0[(int64_t)((uint64_t)v3 + 6)];
             v4 += a0[(int64_t)((uint64_t)v3 + 7)];
-            v3 = (int64_t)((uint64_t)v3 + 8);
+            v3 = (uint64_t)v3 + 8;
         } while (v1 != v3);
         if (v2 == 0) {
             return v4;
@@ -107,7 +107,7 @@ int32_t sum_arr(uint32_t *a0, int32_t a1) {
     int64_t i = 0;
     do {
         v4 += v13[i];
-        i = (int64_t)((uint64_t)i + 1);
+        i = (uint64_t)i + 1;
     } while (v2 != i);
     return v4;
 }

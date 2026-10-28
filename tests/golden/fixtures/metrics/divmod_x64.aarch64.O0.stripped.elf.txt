@@ -212,7 +212,7 @@ fn <unnamed> @ 0x21041c (size 36)
 -- decompile
 /* velk pseudo-C: sub_210440 @ 0x210440 */
 int64_t sub_210440(int64_t a0) {
-    return (int64_t)((uint64_t)a0 - (int64_t)((uint64_t)(a0 / 16) * 16));
+    return (uint64_t)a0 - (int64_t)((uint64_t)(a0 / 16) * 16);
 }
 -- signature
 int64_t (int64_t a0)
@@ -246,7 +246,7 @@ fn <unnamed> @ 0x210464 (size 28)
 -- decompile
 /* velk pseudo-C: sub_210480 @ 0x210480 */
 int64_t sub_210480(int64_t a0) {
-    return (int64_t)((uint64_t)a0 - (int64_t)((uint64_t)(a0 / 10) * 10));
+    return (uint64_t)a0 - (int64_t)((uint64_t)(a0 / 10) * 10);
 }
 -- signature
 int64_t (int64_t a0)

@@ -87,6 +87,13 @@ pub(crate) struct Printed {
     pub(crate) precedence: u8,
     /// What the printed value is known to fit in beyond its type.
     pub(crate) range: Range,
+    pub(super) conversion: Option<Box<Conversion>>,
+}
+
+#[derive(Clone, Debug)]
+pub(super) struct Conversion {
+    bits: u32,
+    operand: Printed,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -115,6 +122,7 @@ impl Printed {
             exact,
             precedence,
             range: Range::Any,
+            conversion: None,
         }
     }
 
@@ -204,6 +212,13 @@ impl Printed {
     /// The value cast to the `bits`-bit type of the given sign, which then
     /// agrees with the IR's in `exact` bits.
     pub(crate) fn cast(self, bits: u32, signed: bool, exact: u32) -> Printed {
+        if self
+            .conversion
+            .as_ref()
+            .is_some_and(|cast| cast.bits >= bits)
+        {
+            return self.without_casts(bits).cast(bits, signed, exact);
+        }
         if self.kind == ValueKind::Integer
             && self.ty == Int::promoted(bits, signed)
             && (bits >= 32
@@ -215,11 +230,12 @@ impl Printed {
         {
             return Printed { exact, ..self };
         }
-        Printed::new(
+        let operand = self;
+        let mut printed = Printed::new(
             format!(
                 "({}){}",
                 type_of((bits / 8) as u8, signed),
-                self.within(12, false).text
+                operand.within(12, false).text
             ),
             Int::promoted(bits, signed),
             exact,
@@ -229,7 +245,36 @@ impl Printed {
             Range::Signed(bits)
         } else {
             Range::Unsigned(bits)
-        })
+        });
+        if operand.kind == ValueKind::Integer {
+            printed.conversion = Some(Box::new(Conversion { bits, operand }));
+        }
+        printed
+    }
+
+    /// Omits outer integer casts when the destination keeps only `bits` bits.
+    /// This must only be used at an integer assignment, return or fixed parameter.
+    pub(crate) fn assigned(self, bits: u32) -> Printed {
+        if self.kind == ValueKind::Integer {
+            self.without_casts(bits)
+        } else {
+            self
+        }
+    }
+
+    fn without_casts(mut self, bits: u32) -> Printed {
+        while self
+            .conversion
+            .as_ref()
+            .is_some_and(|cast| cast.bits >= bits)
+        {
+            self = self
+                .conversion
+                .take()
+                .expect("outer cast was present")
+                .operand;
+        }
+        self
     }
 }
 
@@ -478,6 +523,58 @@ mod tests {
         let opaque = Printed::opaque("sqrt(x)".to_owned(), 13).address_integer();
         assert_eq!(opaque.kind, ValueKind::Opaque);
         assert_eq!(opaque.text, "sqrt(x)");
+    }
+
+    #[test]
+    fn destination_conversion_omits_only_outer_integer_casts() {
+        let value = printed(Int::U64, ALL);
+        assert_eq!(value.clone().cast(32, false, 32).assigned(32).text, "x");
+        assert_eq!(
+            value.clone().cast(32, false, 32).assigned(64).text,
+            "(uint32_t)x"
+        );
+        assert_eq!(
+            value.clone().cast(32, true, 32).cast(16, false, 16).text,
+            "(uint16_t)x"
+        );
+        assert_eq!(value.cast(64, true, 64).cast(64, false, ALL).text, "x");
+        assert_eq!(
+            Printed::pointer("p".into(), 13)
+                .cast(64, false, ALL)
+                .assigned(64)
+                .text,
+            "(uint64_t)p"
+        );
+    }
+
+    #[test]
+    fn integer_cast_removal_smt() {
+        use crate::ir::smt::{self, Proofs};
+
+        if !Proofs::available() {
+            return;
+        }
+        let mut proofs = Proofs::default();
+        for intermediate in [8, 16, 32, 64] {
+            for destination in [8, 16, 32, 64] {
+                for signed in [false, true] {
+                    let converted = if signed {
+                        smt::signed("r7", intermediate)
+                    } else {
+                        smt::low("r7", intermediate)
+                    };
+                    let before = smt::low(&converted, destination);
+                    let after = smt::low("r7", destination);
+                    let name = format!("cast/{intermediate}/{signed}/{destination}");
+                    if intermediate >= destination {
+                        proofs.predicate(name, &before, &after);
+                    } else {
+                        proofs.counterexample(name, &before, &after);
+                    }
+                }
+            }
+        }
+        proofs.check();
     }
 
     fn printed(ty: Int, exact: u32) -> Printed {

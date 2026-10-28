@@ -205,7 +205,7 @@ int64_t sub_201430(int64_t a0) {
     if (a0 >= 0) {
         return v1;
     }
-    return (int64_t)-(uint64_t)v1;
+    return -(uint64_t)v1;
 }
 -- signature
 int64_t (int64_t a0)

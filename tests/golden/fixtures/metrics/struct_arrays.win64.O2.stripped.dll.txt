@@ -70,7 +70,7 @@ int32_t sub_180001040(uint32_t *a0, int32_t a1) {
             if ((int32_t)*v5 > 0) {
                 v2 = v5[-1];
             }
-            v1 = (int64_t)((uint64_t)v1 + 2);
+            v1 = (uint64_t)v1 + 2;
             v5 += 0x6;
         } while (v4 != v1);
         if ((a1 & 0x1) == 0) {
@@ -80,7 +80,7 @@ int32_t sub_180001040(uint32_t *a0, int32_t a1) {
         v1 = 0;
         v2 = 0;
     }
-    int64_t v6 = (int64_t)((uint64_t)v1 * 3);
+    int64_t v6 = (uint64_t)v1 * 3;
     if ((int32_t)a0[(int64_t)((uint64_t)v6 + 1)] <= 0) {
         return v2;
     }

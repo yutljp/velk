@@ -68,36 +68,36 @@ int32_t sub_201220(uint32_t *a0, int32_t a1) {
                 if (v6 == j) {
                     v7 += v9[v8];
                 }
-                j = (int64_t)((uint64_t)v10 + 1);
+                j = (uint64_t)v10 + 1;
                 if (v6 == j) {
                     v7 += v9[v8];
                 }
-                j = (int64_t)((uint64_t)j + 1);
+                j = (uint64_t)j + 1;
                 if (v6 == j) {
                     v7 += v9[v8];
                 }
-                j = (int64_t)((uint64_t)j + 1);
+                j = (uint64_t)j + 1;
                 if (v6 == j) {
                     v7 += v9[v8];
                 }
-                j = (int64_t)((uint64_t)j + 1);
+                j = (uint64_t)j + 1;
             } while (j != v3);
-            v10 = (int64_t)((uint64_t)v10 + 4);
+            v10 = (uint64_t)v10 + 4;
         } else {
             v10 = 0;
         }
         if (v2 != 0) {
-            int64_t v18 = (int64_t)((uint64_t)v10 + v5);
+            int64_t v18 = (uint64_t)v10 + v5;
             int64_t j_2 = 0;
             do {
                 if (v18 == j_2) {
                     v7 += v9[v8];
                 }
-                j_2 = (int64_t)((uint64_t)j_2 - 1);
+                j_2 = (uint64_t)j_2 - 1;
             } while (v4 != j_2);
         }
-        v6 = (int64_t)((uint64_t)v6 + 1);
-        v5 = (int64_t)((uint64_t)v5 - 1);
+        v6 = (uint64_t)v6 + 1;
+        v5 = (uint64_t)v5 - 1;
     } while (v6 != (uint32_t)a1);
     return v7;
 }
@@ -344,7 +344,7 @@ int32_t sub_2013d0(uint32_t *a0, int32_t a1) {
             vector.high.u64 = add_lanes32(vector.high.u64, greater_lanes32(vector_3.high.u64, 0) & vector_3.high.u64);
             vector_2.low.u64 = add_lanes32(vector_2.low.u64, greater_lanes32(vector_4.low.u64, 0) & vector_4.low.u64);
             vector_2.high.u64 = add_lanes32(vector_2.high.u64, greater_lanes32(vector_4.high.u64, 0) & vector_4.high.u64);
-            v6 = (int64_t)((uint64_t)v6 + 32);
+            v6 = (uint64_t)v6 + 32;
         } while (v4 != v6);
         uint64_t v16 = add_lanes32(add_lanes32(vector_2.high.u64, vector.high.u64), add_lanes32(vector_2.low.u64, vector.low.u64));
         v3 = add_lanes32(v16 >> 32 | v16 >> 32 << 32, v16);
@@ -358,7 +358,7 @@ int32_t sub_2013d0(uint32_t *a0, int32_t a1) {
     do {
         int32_t v17 = a0[v2];
         v3 = (uint32_t)v3 + (v17 <= 0 ? 0 : v17);
-        v2 = (int64_t)((uint64_t)v2 + 1);
+        v2 = (uint64_t)v2 + 1;
     } while ((uint32_t)a1 != v2);
     return v3;
 }
@@ -433,14 +433,14 @@ int32_t sub_201490(uint32_t *a0, int32_t a1, int32_t a2) {
             int64_t j = 0;
             do {
                 if (v4[j] + v9 == a2) {
-                    return (int64_t)((uint64_t)j - v6);
+                    return (uint64_t)j - v6;
                 }
-                j = (int64_t)((uint64_t)j + 1);
+                j = (uint64_t)j + 1;
             } while (v5 != j);
         }
         v6 = (uint32_t)v6 + v3;
         ++v4;
-        v5 = (int64_t)((uint64_t)v5 - 1);
+        v5 = (uint64_t)v5 - 1;
     } while (v7 != (uint32_t)a1);
     return v1;
 }

@@ -271,7 +271,7 @@ int find_first(int *p, int n, int v) {
     }
     int64_t v2 = 0;
     while (p[v2] != v) {
-        v2 = (int64_t)((uint64_t)v2 + 1);
+        v2 = (uint64_t)v2 + 1;
         if ((uint32_t)n == v2) {
             return -1;
         }

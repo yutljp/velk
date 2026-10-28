@@ -32,7 +32,7 @@ fn original @ 0x0 (size 4)
 -- decompile
 /* velk pseudo-C: original64 @ 0x10 */
 int64_t original64(int64_t a0) {
-    return (int64_t)((uint64_t)a0 + 7);
+    return (uint64_t)a0 + 7;
 }
 -- signature
 int64_t (int64_t a0)

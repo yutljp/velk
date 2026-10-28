@@ -66,7 +66,7 @@ int32_t sub_2101a0(struct S3 *a0, int32_t a1) {
         if ((int32_t)v4->f_8 >= 1) {
             v2 = v4->f_0;
         }
-        v3 = (int64_t)((uint64_t)v3 - 1);
+        v3 = (uint64_t)v3 - 1;
         ++v4;
     } while (v3 != 0);
     return v2;

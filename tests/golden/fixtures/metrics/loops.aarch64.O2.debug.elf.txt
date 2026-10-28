@@ -90,7 +90,7 @@ int sum_till_neg(int *p, int n) {
         }
         v4 = *p;
         ++p;
-        v1 = (int64_t)((uint64_t)v1 - 1);
+        v1 = (uint64_t)v1 - 1;
         v2 = v4 + v3;
     } while ((v4 & 0x80000000) == 0);
     return v3;
@@ -134,7 +134,7 @@ int sum_until_zero(int *p, int n) {
         if (v4 == 0) {
             break;
         }
-        v3 = (int64_t)((uint64_t)v3 - 1);
+        v3 = (uint64_t)v3 - 1;
         v2 = (uint32_t)(v4 & ~(v4 >> 31)) + v2;
     } while (v3 != 0);
     return v2;

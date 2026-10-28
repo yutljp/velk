@@ -1299,7 +1299,17 @@ pub(super) fn print_declared_value(
     );
     let printed = declared_constant(value, printed, declared);
     if integer {
-        printed.address_integer()
+        // Unsigned bytes can denote _Bool, whose conversion tests the whole value.
+        let declared = declared.expect("an integer destination has a declaration");
+        let printed = printed.address_integer();
+        // Some 32-bit address locals are emitted as uintptr_t, which can be wider
+        // when the C is compiled on another architecture.
+        let narrow_address = declared.bits <= 32 && matches!(ctx.isa, Isa::I386 | Isa::Arm32);
+        if (declared.signed || declared.bits > 8) && !narrow_address {
+            printed.assigned(declared.bits)
+        } else {
+            printed
+        }
     } else {
         printed
     }
@@ -1647,7 +1657,7 @@ mod tests {
                     signed: true,
                 };
                 let text = global_returned(value, CType::U64, &[CType::U64]);
-                assert!(text.contains(&format!("({ty})")), "{text}");
+                assert_eq!(text.contains(&format!("({ty})")), width < 8, "{text}");
                 assert!(
                     text.contains(&format!("extern uint{}_t counter", width * 8)),
                     "{text}"

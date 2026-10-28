@@ -32,7 +32,7 @@ fn original @ 0x0 (size 8)
 -- decompile
 /* velk pseudo-C: original64 @ 0x8 */
 int64_t original64(int64_t a0) {
-    return (int64_t)((uint64_t)a0 + 7);
+    return (uint64_t)a0 + 7;
 }
 -- signature
 int64_t (int64_t a0)
@@ -83,7 +83,7 @@ fn opaque_parity @ 0x20 (size 32)
 -- decompile
 /* velk pseudo-C: opaque_parity64 @ 0x40 */
 int64_t opaque_parity64(int64_t a0) {
-    return (int64_t)((uint64_t)(((int64_t)((uint64_t)a0 * ~a0) & 0x1) == 0 ? 7 : -19) + a0);
+    return (uint64_t)(((int64_t)((uint64_t)a0 * ~a0) & 0x1) == 0 ? 7 : -19) + a0;
 }
 -- signature
 int64_t (int64_t a0)

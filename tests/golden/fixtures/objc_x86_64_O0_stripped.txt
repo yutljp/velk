@@ -21,7 +21,7 @@ uint64_t sub_1000009c0();
 -- decompile
 /* velk pseudo-C: -[Counter add:with:] @ 0x1000008b0 */
 int64_t _Counter_add_with__(int64_t a0, int64_t a1, int64_t a2, int64_t a3) {
-    return (int64_t)((uint64_t)a2 + a3);
+    return (uint64_t)a2 + a3;
 }
 -- signature
 int64_t (int64_t a0, int64_t a1, int64_t a2, int64_t a3)
@@ -149,7 +149,7 @@ fn <unnamed> @ 0x100000990 (size 48)
 -- decompile
 /* velk pseudo-C: sub_1000009c0 @ 0x1000009c0 */
 int64_t sub_1000009c0(int64_t a0, int64_t a1) {
-    return (int64_t)((uint64_t)a1 + 3);
+    return (uint64_t)a1 + 3;
 }
 -- signature
 int64_t (int64_t a0, int64_t a1)

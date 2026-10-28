@@ -66,7 +66,7 @@ int array_sum(int *a, int n) {
             vector_2.high.u64 = add_lanes32(vector_2.high.u64, *(uint64_t *)(a + (int64_t)((uint64_t)(v7 / 4) + 0x2)));
             vector.low.u64 = add_lanes32(vector.low.u64, *(uint64_t *)(a + (int64_t)((uint64_t)(v7 / 4) + 0x4)));
             vector.high.u64 = add_lanes32(vector.high.u64, *(uint64_t *)(a + (int64_t)((uint64_t)(v7 / 4) + 0x6)));
-            v7 = (int64_t)((uint64_t)v7 + 32);
+            v7 = (uint64_t)v7 + 32;
         } while (v4 != v7);
         uint64_t v17 = add_lanes32(add_lanes32(vector.high.u64, vector_2.high.u64), add_lanes32(vector.low.u64, vector_2.low.u64));
         v3 = add_lanes32(v17 >> 32 | v17 >> 32 << 32, v17);
@@ -79,7 +79,7 @@ int array_sum(int *a, int n) {
     }
     do {
         v3 = (uint32_t)v3 + a[v2];
-        v2 = (int64_t)((uint64_t)v2 + 1);
+        v2 = (uint64_t)v2 + 1;
     } while ((uint32_t)n != v2);
     return v3;
 }

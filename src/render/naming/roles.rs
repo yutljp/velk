@@ -429,10 +429,7 @@ mod tests {
         );
         let text = crate::render::render(&ir, &[], &Symbols::default(), &[]);
         assert!(text.contains("int64_t result = 1;"), "{text}");
-        assert!(
-            text.contains("return (int64_t)((uint64_t)result + 2);"),
-            "{text}"
-        );
+        assert!(text.contains("return (uint64_t)result + 2;"), "{text}");
     }
     #[test]
     fn counted_register_and_stack_loops_use_i_in_printed_c() {

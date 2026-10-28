@@ -253,7 +253,7 @@ fn smod10 @ 0x2104fc (size 36)
 -- decompile
 /* velk pseudo-C: lmod10 @ 0x210520 */
 long long lmod10(long long x) {
-    return (int64_t)((uint64_t)x - (int64_t)((uint64_t)(x / 10) * 10));
+    return (uint64_t)x - (int64_t)((uint64_t)(x / 10) * 10);
 }
 -- signature
 long long (long long x)
@@ -287,7 +287,7 @@ fn umod10b @ 0x210544 (size 36)
 -- decompile
 /* velk pseudo-C: lmod16 @ 0x210568 */
 long long lmod16(long long x) {
-    return (int64_t)((uint64_t)x - (int64_t)((uint64_t)(x / 16) * 16));
+    return (uint64_t)x - (int64_t)((uint64_t)(x / 16) * 16);
 }
 -- signature
 long long (long long x)
@@ -389,7 +389,7 @@ fn is_pos @ 0x210604 (size 28)
 -- decompile
 /* velk pseudo-C: lnegate @ 0x210620 */
 long lnegate(long x) {
-    return (int64_t)-(uint64_t)x;
+    return -(uint64_t)x;
 }
 -- signature
 long (long x)
@@ -406,7 +406,7 @@ fn lnegate @ 0x210620 (size 28)
 -- decompile
 /* velk pseudo-C: lmod3 @ 0x21063c */
 long long lmod3(long long x) {
-    return (int64_t)((uint64_t)x - (int64_t)((uint64_t)(x / 3) * 3));
+    return (uint64_t)x - (int64_t)((uint64_t)(x / 3) * 3);
 }
 -- signature
 long long (long long x)

@@ -205,7 +205,7 @@ long labs_value(long x) {
     if (x >= 0) {
         return v1;
     }
-    return (int64_t)-(uint64_t)v1;
+    return -(uint64_t)v1;
 }
 -- signature
 long (long x)

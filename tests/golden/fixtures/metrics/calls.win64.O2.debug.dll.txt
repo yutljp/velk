@@ -460,7 +460,7 @@ int sum_varargs(int count, ...) {
                 vector.low.u64 = add_lanes32(vector.low.u64, vector_3.low.u32 | vector_3.high.u64 << 32);
                 vector.high.u64 = add_lanes32(vector.high.u64, vector_3.high.u64);
                 v1 += 0x4;
-                v11 = (int64_t)((uint64_t)v11 - 4);
+                v11 = (uint64_t)v11 - 4;
             } while (v11 != 0);
             local_0 = v1;
             uint64_t v31 = add_lanes32(vector.low.u64, vector_2.low.u64);
@@ -478,7 +478,7 @@ int sum_varargs(int count, ...) {
         int32_t i = 0;
         do {
             uint32_t *v21 = (uint32_t *)v29;
-            v29 = (int64_t)((uint64_t)v29 + 8);
+            v29 = (uint64_t)v29 + 8;
             local_0 = (void *)v29;
             v5 += *v21;
             i = (uint32_t)i - 1;

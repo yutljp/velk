@@ -31,7 +31,7 @@ fn item_weight @ 0x201180 (size 18)
 /* velk pseudo-C: cell_set @ 0x2011a0 */
 struct cell { __attribute__((aligned(4))) int x; int y; int z; };
 void cell_set(struct cell *cells, long i, int v) {
-    int64_t v1 = (int64_t)((uint64_t)i * 3);
+    int64_t v1 = (uint64_t)i * 3;
     *(uint32_t *)((uint8_t *)cells + (int64_t)((uint64_t)v1 * 0x4)) = v;
     *(uint32_t *)((uint8_t *)cells + (int64_t)((uint64_t)v1 * 0x4) + 0x8) = (uint32_t)v + 1;
 }

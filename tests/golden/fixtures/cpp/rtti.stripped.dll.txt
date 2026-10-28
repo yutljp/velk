@@ -956,7 +956,7 @@ fn <unnamed> @ 0x180001600 (size 35)
 -- decompile
 /* velk pseudo-C: sub_180001630 @ 0x180001630 */
 int64_t sub_180001630(int64_t a0, int32_t a1) {
-    int64_t v2 = (int64_t)((uint64_t)a0 - 24);
+    int64_t v2 = (uint64_t)a0 - 24;
     sub_180001540(v2);
     if ((a1 & 0x1) == 0) {
         return v2;

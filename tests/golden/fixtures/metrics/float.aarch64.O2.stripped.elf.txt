@@ -28,7 +28,7 @@ double sub_21019c(double *a0, int32_t a1) {
             double v7 = v4[-1];
             double v8 = *v4;
             double v9 = v4[1];
-            v5 = (int64_t)((uint64_t)v5 - 4);
+            v5 = (uint64_t)v5 - 4;
             v4 += 0x4;
             v1 = v1 + v6 + v7 + v8 + v9;
         } while (v5 != 0);
@@ -43,7 +43,7 @@ double sub_21019c(double *a0, int32_t a1) {
     do {
         double v17 = *v16;
         ++v16;
-        v14 = (int64_t)((uint64_t)v14 - 1);
+        v14 = (uint64_t)v14 - 1;
         v1 = v1 + v17;
     } while (v14 != 0);
     return v1 / a1;

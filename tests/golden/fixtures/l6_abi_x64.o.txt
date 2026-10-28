@@ -84,7 +84,7 @@ fn six_args @ 0x30 (size 14)
 -- decompile
 /* velk pseudo-C: wide_add @ 0x40 */
 int64_t wide_add(int64_t a0, int64_t a1) {
-    return (int64_t)((uint64_t)a0 + a1);
+    return (uint64_t)a0 + a1;
 }
 -- signature
 int64_t (int64_t a0, int64_t a1)

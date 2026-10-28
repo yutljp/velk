@@ -31,7 +31,7 @@ double average(double *values, int n) {
                 v2 = v2 + values[(int64_t)((uint64_t)i + 5)];
                 v2 = v2 + values[(int64_t)((uint64_t)i + 6)];
                 v2 = v2 + values[(int64_t)((uint64_t)i + 7)];
-                i = (int64_t)((uint64_t)i + 8);
+                i = (uint64_t)i + 8;
             } while (v3 != i);
             if (v4 == 0) {
                 if (n <= 0) {
@@ -46,7 +46,7 @@ double average(double *values, int n) {
         int64_t i_2 = 0;
         do {
             v2 = v2 + v14[i_2];
-            i_2 = (int64_t)((uint64_t)i_2 + 1);
+            i_2 = (uint64_t)i_2 + 1;
         } while (v4 != i_2);
     }
     if (n <= 0) {

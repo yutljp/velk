@@ -113,7 +113,7 @@ int32_t sum_arr(uint32_t *a0, int32_t a1) {
         int32_t v18 = *v16;
         ++v16;
         v4 = (uint32_t)v18 + v4;
-        v2 = (int64_t)((uint64_t)v2 - 1);
+        v2 = (uint64_t)v2 - 1;
     } while (v2 != 0);
     return v4;
 }

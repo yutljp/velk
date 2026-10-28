@@ -31,7 +31,7 @@ int64_t sub_210214(uint8_t *a0, uint8_t *a1, uint64_t a2) {
                 {
                     unsigned char transfer[32];
                     __builtin_memcpy(transfer, v2 - 0x2, 32);
-                    v4 = (int64_t)((uint64_t)v4 - 32);
+                    v4 = (uint64_t)v4 - 32;
                     v2 += 0x4;
                     __builtin_memcpy(v3 - 0x2, transfer, 32);
                 }
@@ -50,11 +50,11 @@ int64_t sub_210214(uint8_t *a0, uint8_t *a1, uint64_t a2) {
         v1 = a2 & 0xfffffffffffffff8;
         uint64_t *v19 = (uint64_t *)(a1 + v18);
         uint64_t *v20 = (uint64_t *)(a0 + v18);
-        v18 = (int64_t)((uint64_t)v18 - v1);
+        v18 = (uint64_t)v18 - v1;
         do {
             int64_t v21 = *v19;
             ++v19;
-            v18 = (int64_t)((uint64_t)v18 + 8);
+            v18 = (uint64_t)v18 + 8;
             *v20 = v21;
             ++v20;
         } while (v18 != 0);
@@ -69,7 +69,7 @@ L_2102a4:;
     do {
         uint8_t v17 = *v16;
         ++v16;
-        v14 = (int64_t)((uint64_t)v14 - 1);
+        v14 = (uint64_t)v14 - 1;
         *v15 = v17;
         ++v15;
     } while (v14 != 0);

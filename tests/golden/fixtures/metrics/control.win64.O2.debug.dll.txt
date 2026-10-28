@@ -70,38 +70,38 @@ int matrix_trace(int *m, int n) {
                 if (v8 == j) {
                     v6 = (uint32_t)v6 + m[v9];
                 }
-                j = (int64_t)((uint64_t)v10 + 1);
+                j = (uint64_t)v10 + 1;
                 if (v8 == j) {
                     v6 = (uint32_t)v6 + m[v9];
                 }
-                j = (int64_t)((uint64_t)j + 1);
+                j = (uint64_t)j + 1;
                 if (v8 == j) {
                     v6 = (uint32_t)v6 + m[v9];
                 }
-                j = (int64_t)((uint64_t)j + 1);
+                j = (uint64_t)j + 1;
                 if (v8 == j) {
                     v6 = (uint32_t)v6 + m[v9];
                 }
-                j = (int64_t)((uint64_t)j + 1);
+                j = (uint64_t)j + 1;
             } while (j != v4);
             if (v3 == 0) {
                 goto L_180001040;
             }
-            v10 = (int64_t)((uint64_t)v10 + 4);
+            v10 = (uint64_t)v10 + 4;
         } else {
             v10 = 0;
         }
-        v18 = (int64_t)((uint64_t)v10 + v7);
+        v18 = (uint64_t)v10 + v7;
         j_2 = 0;
         do {
             if (v18 == j_2) {
                 v6 = (uint32_t)v6 + m[v9];
             }
-            j_2 = (int64_t)((uint64_t)j_2 - 1);
+            j_2 = (uint64_t)j_2 - 1;
         } while (v5 != j_2);
     L_180001040:
-        v8 = (int64_t)((uint64_t)v8 + 1);
-        v7 = (int64_t)((uint64_t)v7 - 1);
+        v8 = (uint64_t)v8 + 1;
+        v7 = (uint64_t)v7 - 1;
     } while (v8 != (uint32_t)n);
     return v6;
 }
@@ -348,7 +348,7 @@ int skip_negatives(int *p, int n) {
             vector.high.u64 = add_lanes32(vector.high.u64, greater_lanes32(vector_3.high.u64, 0) & vector_3.high.u64);
             vector_2.low.u64 = add_lanes32(vector_2.low.u64, greater_lanes32(vector_4.low.u64, 0) & vector_4.low.u64);
             vector_2.high.u64 = add_lanes32(vector_2.high.u64, greater_lanes32(vector_4.high.u64, 0) & vector_4.high.u64);
-            v6 = (int64_t)((uint64_t)v6 + 32);
+            v6 = (uint64_t)v6 + 32;
         } while (v4 != v6);
         uint64_t v16 = add_lanes32(add_lanes32(vector_2.high.u64, vector.high.u64), add_lanes32(vector_2.low.u64, vector.low.u64));
         v3 = add_lanes32(v16 >> 32 | v16 >> 32 << 32, v16);
@@ -362,7 +362,7 @@ int skip_negatives(int *p, int n) {
     do {
         int32_t v17 = p[v2];
         v3 = (uint32_t)v3 + (v17 <= 0 ? 0 : v17);
-        v2 = (int64_t)((uint64_t)v2 + 1);
+        v2 = (uint64_t)v2 + 1;
     } while ((uint32_t)n != v2);
     return v3;
 }
@@ -437,14 +437,14 @@ int find_pair(int *p, int n, int target) {
             int64_t j = 0;
             do {
                 if ((uint32_t)v4[j] + v9 == target) {
-                    return (int64_t)((uint64_t)j - v6);
+                    return (uint64_t)j - v6;
                 }
-                j = (int64_t)((uint64_t)j + 1);
+                j = (uint64_t)j + 1;
             } while (v5 != j);
         }
         v6 = (uint32_t)v6 + v3;
         ++v4;
-        v5 = (int64_t)((uint64_t)v5 - 1);
+        v5 = (uint64_t)v5 - 1;
     } while (v7 != (uint32_t)n);
     return v1;
 }

@@ -217,7 +217,7 @@ fn is_even @ 0x2104a0 (size 76)
 -- decompile
 /* velk pseudo-C: sum9 @ 0x2104ec */
 long sum9(long a, long b, long c, long d, long e, long f, long g, long h, long i) {
-    return (int64_t)((uint64_t)(int64_t)((uint64_t)(int64_t)((uint64_t)(int64_t)((uint64_t)(int64_t)((uint64_t)(int64_t)((uint64_t)(int64_t)((uint64_t)a + b) + c) + d) + e) + f) + g) + h) + i;
+    return (int64_t)((uint64_t)a + b + c + d + e + f + g + h) + i;
 }
 -- signature
 long (long a, long b, long c, long d, long e, long f, long g, long h)

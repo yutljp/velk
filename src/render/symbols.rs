@@ -158,7 +158,7 @@ mod tests {
         ir.ret_type = crate::ir::CType::I32;
         let code = super::super::render(&ir, &[], &symbols, &[(8, 4)]);
         assert!(code.contains("extern int64_t object;"), "{code}");
-        assert!(code.contains("(int64_t)object;"), "{code}");
+        assert!(code.contains("return object;"), "{code}");
     }
 
     #[test]

@@ -13,7 +13,7 @@ int64_t frame_bounds(int64_t a0) {
     uint64_t *i = (uint64_t *)(local_0);
     do {
         *i = a0;
-        a0 = (int64_t)((uint64_t)(int64_t)((uint64_t)a0 * 0x19660d) + 0x3c6ef35f);
+        a0 = (uint64_t)a0 * 0x19660d + 0x3c6ef35f;
         ++i;
     } while (i != (void *)(local_0 + 0x200));
     int64_t result = 0;

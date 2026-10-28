@@ -61,10 +61,10 @@ int matrix_trace(int *m, int n) {
         return 0;
     }
     int32_t v2 = 0;
-    for (int64_t i = 0; i < (uint32_t)n; i = (int64_t)((uint64_t)i + 1)) {
-        uint32_t v4 = (int64_t)((uint64_t)i * n);
+    for (int64_t i = 0; i < (uint32_t)n; i = (uint64_t)i + 1) {
+        uint32_t v4 = (uint64_t)i * n;
         int *v5 = m + i;
-        for (int64_t j = 0; j < (uint32_t)n; j = (int64_t)((uint64_t)j + 1)) {
+        for (int64_t j = 0; j < (uint32_t)n; j = (uint64_t)j + 1) {
             if (i == j) {
                 v2 = (uint32_t)v5[v4] + v2;
             }
@@ -272,7 +272,7 @@ int skip_negatives(int *p, int n) {
         do {
             struct velk_vector vector = { .low.u64 = v8[-2], .high.u64 = v8[-1] };
             struct velk_vector vector_2 = { .low.u64 = *v8, .high.u64 = v8[1] };
-            v9 = (int64_t)((uint64_t)v9 - 8);
+            v9 = (uint64_t)v9 - 8;
             v8 += 0x4;
             v4 = add_lanes32(max_lanes32(vector.low.u64, 0), v4);
             v5 = add_lanes32(max_lanes32(vector.high.u64, 0), v5);
@@ -292,7 +292,7 @@ int skip_negatives(int *p, int n) {
     do {
         int32_t v17 = *v14;
         ++v14;
-        v15 = (int64_t)((uint64_t)v15 - 1);
+        v15 = (uint64_t)v15 - 1;
         v3 = (uint32_t)(v17 & ~(v17 >> 31)) + v3;
     } while (v15 != 0);
     return v3;
@@ -376,13 +376,13 @@ int find_pair(int *p, int n, int target) {
                     if ((uint32_t)v12 + v8 == target) {
                         return v11;
                     }
-                    v9 = (int64_t)((uint64_t)v9 - 1);
+                    v9 = (uint64_t)v9 - 1;
                     v11 = (uint32_t)v11 + 1;
                 } while (v6 != v9);
             }
-            v6 = (int64_t)((uint64_t)v6 + 1);
+            v6 = (uint64_t)v6 + 1;
             v5 = (uint32_t)v5 + v3;
-            v4 = (int64_t)((uint64_t)v4 + 4);
+            v4 = (uint64_t)v4 + 4;
             v1 = v7;
         } while (v7 != (uint32_t)n);
     }

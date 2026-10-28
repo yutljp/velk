@@ -105,6 +105,7 @@ f006069b236f8305266edce75bb9289c5bc4c6ac814c452042d2fe243fe21ced  src/render/exp
 233e0e70f56ca7df31d1b067550fbced5a03a4c745790fe51a1fcdf2b17e9e60  src/render/expr.rs	fn shift(
 b00ae40caccfac18642500d008cbf19aafb732f15dcbc9c72d41ee9af1fb935b  src/render/expr.rs	fn shift_count(
 94d70017f8b320948aa8a3f146a379ad44b08c7c6e0082263eaa12edb8273319  src/render/expr.rs	fn unfitted(
+02ea33969c543eeb26143fdb316a7e32d8a9bf55b6d14d00c060a47ef20b9003  src/render/expr.rs	pub(super) fn print_declared_value(
 4883fa4c92bccb350a54dd882053ad366297b400eed643fd2451f68d53aa5ffd  src/render/expr/condition.rs	fn compared(
 7638d3b4b055a843f6b577fbc6da54311870dbabb30aaa46d05022b958a2e96e  src/render/expr/condition.rs	pub(crate) fn condition(
 8ff487a64264bf0ce20c673a63e787dc912ca994daa50850e7264c2d77e4376f  src/render/expr/condition.rs	pub(super) fn logic(
@@ -113,7 +114,9 @@ b0091cdf38df79b16172f7e8ea2a6eb01cc82212bfa7d7856019f8cf4f94e8b2  src/render/exp
 9f248fb1ed75b0f579c24ab2ea326e9e91e19548437e39082446cac406327927  src/render/expr/operation.rs	fn implicit_conversion(
 684ddef656914168032d3dd77cfd4346c26bbeda59af34a408f0a08dc8a43d89  src/render/expr/operation.rs	fn zero_count(
 d1f44b5f551f47752db50cff2a0942fc53721352bc5a78e27f5679e6933472b1  src/render/expr/operation.rs	pub(super) fn unmasked_float(
-face9a368d9b9d8c539bed5fbba70ee0fbf97c959bc1ca5824eddf1e38bb1460  src/render/int.rs	pub(crate) fn cast(
+12cd2139a722a65807824c26c314f175a7d48ec1b34289b07a52c54ec682c190  src/render/int.rs	fn without_casts(
+7ec18f2b0e972056a5ca88e102e8a63ebe759949b7adc5129fded7112a76beaa  src/render/int.rs	pub(crate) fn assigned(
+194a209a48bef39faef97ae460e8181453c76302b4ebb07da31c57b748b80190  src/render/int.rs	pub(crate) fn cast(
 90722a245ac596a508f88cfe3c156f6fd9c4948cfa404fbb029b832af2037cec  src/render/int.rs	pub(crate) fn fit(
 6e649d6d6ef3f2c96c46c6dddad20aff5350673dc77f3021d105ac6665f38b58  src/render/locals.rs	pub(super) fn stack_locals_with_roles(
 757327de648c2f687f7533ed35432c1f479452d63c222fd03091e0af9b411fea  src/render/locals/copies.rs	pub(super) fn fold(

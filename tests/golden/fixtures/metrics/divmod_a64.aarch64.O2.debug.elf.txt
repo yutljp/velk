@@ -389,7 +389,7 @@ fn is_pos @ 0x2104e4 (size 12)
 -- decompile
 /* velk pseudo-C: lnegate @ 0x2104f0 */
 long lnegate(long x) {
-    return (int64_t)-(uint64_t)x;
+    return -(uint64_t)x;
 }
 -- signature
 long (long x)

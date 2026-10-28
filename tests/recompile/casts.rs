@@ -1,6 +1,81 @@
 use super::*;
 
 #[test]
+fn narrow_address_assignments_keep_truncation_on_32_bit_targets() {
+    let path = common::fixtures_dir().join("arm32/control.arm.O2.elf");
+    let mut binary = Binary::open(&path).expect("open ARM32 control flow fixture");
+    let addr = binary
+        .image()
+        .functions
+        .values()
+        .find(|function| function.name.as_deref() == Some("short_circuit"))
+        .expect("short_circuit fixture function")
+        .addr;
+    let code = binary
+        .decompile(addr, None, None)
+        .expect("decompile short_circuit");
+    assert!(code.contains("v1 = (uint32_t)(uintptr_t)p;"), "{code}");
+}
+
+#[test]
+fn integer_destinations_supply_outer_conversions() {
+    let mut candidates = Vec::new();
+    for isa in [Isa::X86_64, Isa::I386, Isa::AArch64, Isa::Arm32] {
+        let input_bits = if matches!(isa, Isa::I386 | Isa::Arm32) {
+            32
+        } else {
+            64
+        };
+        for bits in [16, 32, 64] {
+            for signed in [false, true] {
+                let mut ir = synthetic_ir(
+                    &format!("destination_{isa:?}_{bits}_{signed}"),
+                    vec![Param {
+                        index: 7,
+                        name: "x".into(),
+                        ty: CType::int(input_bits / 8, false),
+                    }],
+                    CType::int(bits / 8, signed),
+                    vec![Stmt::Ret {
+                        value: Expr::SignExtend {
+                            value: Box::new(Expr::reg(7, input_bits)),
+                            width: bits / 8,
+                        },
+                    }],
+                );
+                ir.isa = isa;
+                let candidate = printed_candidate(
+                    ir,
+                    [
+                        0,
+                        1,
+                        0x7fff,
+                        0x8000,
+                        0xffff,
+                        0x7fff_ffff,
+                        0x8000_0000,
+                        0xffff_ffff,
+                        1 << 63,
+                        u64::MAX,
+                    ]
+                    .into_iter()
+                    .map(|x| vec![x & (u64::MAX >> (64 - input_bits))])
+                    .collect(),
+                );
+                assert!(candidate.code.contains("return x;"), "{}", candidate.code);
+                candidates.push(candidate);
+            }
+        }
+    }
+    check_candidates(
+        "integer-destination-conversions",
+        candidates,
+        Mode::Registers,
+        &[],
+    );
+}
+
+#[test]
 fn mixed_width_pointer_variables_use_bytes_without_changing_accesses() {
     use velk::ir::{RegRef, VARIABLE_BASE};
 

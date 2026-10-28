@@ -82,14 +82,14 @@ int64_t sub_2101f0(struct S2 *a0, int32_t a1) {
         do {
             int64_t v8 = v6[-1].f_8;
             int64_t v9 = v6[-1].f_10;
-            v7 = (int64_t)((uint64_t)v7 - 2);
+            v7 = (uint64_t)v7 - 2;
             int64_t v10 = v6->f_8;
             int64_t v11 = v6->f_10;
             v6 += 0x2;
-            v3 = (int64_t)((uint64_t)(int64_t)((uint64_t)v8 * v9) + v3);
-            v5 = (int64_t)((uint64_t)(int64_t)((uint64_t)v10 * v11) + v5);
+            v3 = (uint64_t)v8 * v9 + v3;
+            v5 = (uint64_t)v10 * v11 + v5;
         } while (v7 != 0);
-        v3 = (int64_t)((uint64_t)v5 + v3);
+        v3 = (uint64_t)v5 + v3;
         if (v2 == (uint32_t)a1) {
             return v3;
         }
@@ -102,9 +102,9 @@ int64_t sub_2101f0(struct S2 *a0, int32_t a1) {
     do {
         int64_t v14 = v13->f_8;
         int64_t v15 = v13->f_10;
-        v12 = (int64_t)((uint64_t)v12 - 1);
+        v12 = (uint64_t)v12 - 1;
         ++v13;
-        v3 = (int64_t)((uint64_t)(int64_t)((uint64_t)v14 * v15) + v3);
+        v3 = (uint64_t)v14 * v15 + v3;
     } while (v12 != 0);
     return v3;
 }

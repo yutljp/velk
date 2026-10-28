@@ -1318,7 +1318,7 @@ fn runtime.printstring @ 0x430e20 (size 128)
 -- decompile
 /* velk pseudo-C: main.add @ 0x466ca0 */
 int64_t main_add(int64_t a0, int64_t a1) {
-    return (int64_t)((uint64_t)a0 + a1);
+    return (uint64_t)a0 + a1;
 }
 -- signature
 int64_t (int64_t a0, int64_t a1)
@@ -1337,14 +1337,14 @@ fn main.add @ 0x466ca0 (size 32)
 int64_t main_divmod(int64_t a0, int64_t a1) {
     switch (a1) {
     case -1:;
-        uint64_t v1 = (int64_t)-(uint64_t)a0;
+        uint64_t v1 = -(uint64_t)a0;
         uint8_t v2 = 0;
         return v1; /* also returns v2 */
     case 0:
         runtime_panicdivide();
     default:;
-        uint64_t v3 = (int64_t)((__int128)a0 % a1);
-        uint64_t v4 = (int64_t)((__int128)a0 / a1);
+        uint64_t v3 = (__int128)a0 % a1;
+        uint64_t v4 = (__int128)a0 / a1;
         return v4; /* also returns v3 */
     }
 }
@@ -1381,8 +1381,8 @@ int64_t main_sumSlice(uint64_t *a0, int64_t a1) {
     int64_t result = 0;
     while (a1 > v1) {
         int64_t v3 = a0[v1];
-        v1 = (int64_t)((uint64_t)v1 + 1);
-        result = (int64_t)((uint64_t)result + v3);
+        v1 = (uint64_t)v1 + 1;
+        result = (uint64_t)result + v3;
     }
     return result;
 }

@@ -600,7 +600,7 @@ fn <unnamed> @ 0x7d8 (size 8)
 -- decompile
 /* velk pseudo-C: sub_7e0 @ 0x7e0 */
 int32_t sub_7e0(int64_t a0) {
-    int64_t v1 = (int64_t)((uint64_t)a0 - 16);
+    int64_t v1 = (uint64_t)a0 - 16;
     sub_7d8(v1);
     return v1;
 }

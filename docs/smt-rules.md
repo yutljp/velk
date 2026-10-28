@@ -1,5 +1,15 @@
 # Expression equivalence tests
 
+Integer cast removal checks signed and unsigned intermediate conversions at
+8/16/32/64 bits. An outer assignment or cast may omit an intermediate cast
+whose width is at least the destination width: the destination keeps the same
+low bits. Negative controls retain a narrower intermediate conversion before
+widening. Printed C recompilation checks cover integer returns for all four
+instruction sets; pointer conversions and unsigned byte destinations are excluded
+from assignment cast removal because the latter can denote `_Bool`. Destinations
+of at most 32 bits on i386 and ARM32 also retain their casts: address locals may
+be declared as `uintptr_t`, which is wider when compiled on a 64-bit host.
+
 The normal Rust unit suite includes test-only Z3 checks. Run them with
 `cargo test --release --lib smt -- --test-threads 3 --nocapture`.
 Integer predicate and dominating-guard checks also run with

@@ -1459,7 +1459,7 @@ fn a_mask_stays_on_a_sum_that_can_carry_out_of_it() {
         CType::I32,
         mask(Expr::bin(BinOp::Add, low(1), low(0)), 0xffff_ffff),
     );
-    assert_eq!(text, "(int64_t)((uint64_t)a1 + a0)");
+    assert_eq!(text, "(uint64_t)a1 + a0");
 }
 
 #[test]

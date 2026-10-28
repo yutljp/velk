@@ -212,7 +212,7 @@ fn pmod8s @ 0x21041c (size 36)
 -- decompile
 /* velk pseudo-C: pmod16l @ 0x210440 */
 long long pmod16l(long long x) {
-    return (int64_t)((uint64_t)x - (int64_t)((uint64_t)(x / 16) * 16));
+    return (uint64_t)x - (int64_t)((uint64_t)(x / 16) * 16);
 }
 -- signature
 long long (long long x)
@@ -246,7 +246,7 @@ fn pdiv16l @ 0x210464 (size 28)
 -- decompile
 /* velk pseudo-C: lmod10x @ 0x210480 */
 long long lmod10x(long long x) {
-    return (int64_t)((uint64_t)x - (int64_t)((uint64_t)(x / 10) * 10));
+    return (uint64_t)x - (int64_t)((uint64_t)(x / 10) * 10);
 }
 -- signature
 long long (long long x)

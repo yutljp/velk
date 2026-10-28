@@ -389,7 +389,7 @@ fn <unnamed> @ 0x201550 (size 8)
 -- decompile
 /* velk pseudo-C: sub_201560 @ 0x201560 */
 int64_t sub_201560(int64_t a0) {
-    return (int64_t)-(uint64_t)a0;
+    return -(uint64_t)a0;
 }
 -- signature
 int64_t (int64_t a0)

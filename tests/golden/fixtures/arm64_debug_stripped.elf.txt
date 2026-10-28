@@ -122,7 +122,7 @@ int sum_arr(int *p, int n) {
         do {
             struct velk_vector vector = { .low.u64 = v8[-2], .high.u64 = v8[-1] };
             struct velk_vector vector_2 = { .low.u64 = *v8, .high.u64 = v8[1] };
-            v9 = (int64_t)((uint64_t)v9 - 8);
+            v9 = (uint64_t)v9 - 8;
             v8 += 0x4;
             v4 = add_lanes32(vector.low.u64, v4);
             v5 = add_lanes32(vector.high.u64, v5);
@@ -142,7 +142,7 @@ int sum_arr(int *p, int n) {
     do {
         int32_t v18 = *v15;
         ++v15;
-        v16 = (int64_t)((uint64_t)v16 - 1);
+        v16 = (uint64_t)v16 - 1;
         v3 = (uint32_t)v18 + v3;
     } while (v16 != 0);
     return v3;
