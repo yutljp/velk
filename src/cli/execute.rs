@@ -142,15 +142,53 @@ pub(crate) fn run(
         Command::Explore {
             path,
             start,
-            options,
+            mut options,
             json,
+            opaque,
+            options_json,
         } => {
             let binary = match crate::open_binary(&path, project, input_options, signature_options)
             {
                 Ok(binary) => binary,
                 Err(error) => return Err(error),
             };
-            let report = match velk::symbolic::explore(&binary, &start, &options) {
+            if let Some(text) = options_json {
+                let mut parsed: velk::symbolic::Options = match serde_json::from_str(&text) {
+                    Ok(parsed) => parsed,
+                    Err(error) => {
+                        return Err(velk::error::Error::Symbolic(format!(
+                            "invalid symbolic options: {error}"
+                        )));
+                    }
+                };
+                if options.returns.is_some() {
+                    parsed.returns = options.returns;
+                }
+                if options.stdin != 0 {
+                    parsed.stdin = options.stdin;
+                }
+                if !options.find.is_empty() {
+                    parsed.find = options.find;
+                }
+                if !options.avoid.is_empty() {
+                    parsed.avoid = options.avoid;
+                }
+                options = parsed;
+            }
+            if opaque {
+                let report = match velk::symbolic::branch_feasibility(&binary, &start, &options) {
+                    Ok(report) => report,
+                    Err(error) => return Err(error),
+                };
+                println!("{:#}", json!(report));
+                return Ok(ExitCode::SUCCESS);
+            }
+            let result = if options.returns.is_some() {
+                velk::symbolic::solve(&binary, &start, &options)
+            } else {
+                velk::symbolic::explore(&binary, &start, &options)
+            };
+            let report = match result {
                 Ok(report) => report,
                 Err(error) => return Err(error),
             };

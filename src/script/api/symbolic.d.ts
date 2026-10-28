@@ -4,10 +4,12 @@
  * Only little-endian x86-64 and AArch64 are supported.
  */
 interface SymbolicOptions {
+  returns?: {eq: number | string} | {ne: number | string} | {lt: number | string} | {gt: number | string};
+  stdinDescriptors?: number[];
   find?: (number | string)[];
   avoid?: (number | string)[];
   stdin?: number;
-  /** Symbolic scalar argument indices, starting at zero. Register arguments only. */
+  /** Symbolic scalar argument indices, starting at zero. System V x86-64 and AAPCS64 also accept stack arguments. */
   arguments?: number[];
   argumentValues?: (number | string)[];
   /** Length of each symbolic argv string, including argv[0]. Bytes cannot be zero. */
@@ -21,6 +23,8 @@ interface SymbolicOptions {
 }
 interface SymbolicInputs {
   stdin: number[];
+  /** Output bytes evaluated under the same assignment as the inputs. */
+  stdout: number[];
   argv: number[][];
   arguments: Record<number, string>;
   memory: Record<string, number>;
@@ -53,7 +57,16 @@ interface Symbolic {
   address(): string;
   dispose(): void;
 }
+interface BranchFeasibilityReport {
+  branches: {address: string; taken: boolean; status: "unsat" | "unknown"; reason: string | null}[];
+  complete: boolean;
+  paths: number;
+  diagnostics: string[];
+}
 interface Binary {
+  /** Signed 64-bit lt/gt, bitwise eq/ne, on the outermost return. */
+  solve(start: string | number, options: SymbolicOptions): SymbolicReport;
+  branchFeasibility(start: string | number, options?: SymbolicOptions): BranchFeasibilityReport;
   explore(start: string | number, options: SymbolicOptions): SymbolicReport;
   symbolic(start: string | number, options?: SymbolicOptions): Symbolic;
 }
@@ -65,8 +78,15 @@ interface Binary {
 // s.constrain(x, "eq", s.constant(42));
 // s.evaluate(x); // ["0x2a"]
 // Limits: scalar IR expressions, branches, concrete-address memory and internal calls.
-// getchar and read(fd=0) accept symbolic stdin. Other imports, flag-only branches,
-// machine operations, switch statements and Apply operations with symbolic operands stop with diagnostics.
+// Bounded libc models: scanf/fscanf/sscanf (%d/%u/%x/%s/%c, widths and suppression),
+// fgets/gets/getline, getchar/read, strlen/strnlen, strcmp/strncmp/memcmp,
+// memcpy/memmove/memset, strcpy/strncpy/strchr, atoi/strtol (base 10/16),
+// ASCII toupper/tolower, puts/printf (%d/%u/%x/%s/%c/%%).
+// Variadic AArch64 I/O requires ELF; strtol rejects the Windows data model.
+// read uses descriptor zero or stdinDescriptors. Stream input requires stdin.
+// Other imports, formats, flag-only branches, machine operations and symbolic Apply stop.
+// Models charge stepLimit. Memory/string operations are bounded to 65536 bytes;
+// unbounded string scans have a finite input-derived bound (at least 4096).
 // Symbolic addresses fork up to addressLimit; hitting the bound is reported.
 // A failed bounded search does not prove that a target is unreachable.
 

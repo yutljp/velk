@@ -3,6 +3,8 @@ type EmulationWord = number | string;
 interface EmulationOptions {
   /** Stdin consumed in order; absent means EOF. At most 16 MiB. */
   stdin?: {text: string} | {hex: string} | {file: string};
+  /** Additional descriptors bound to the same stdin stream. */
+  stdinDescriptors?: number[];
   /** Main arguments including argv[0]; mutually exclusive with arguments. */
   argv?: string[];
   reads?: EmulationRead[];

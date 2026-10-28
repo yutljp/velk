@@ -311,11 +311,13 @@ fn discovery_and_fresh_scripts_work_over_stdio() {
     assert_eq!(
         names,
         [
+            "velk_branch_feasibility",
             "velk_classes",
             "velk_emulate",
             "velk_explore",
             "velk_read_api",
-            "velk_run_script"
+            "velk_run_script",
+            "velk_solve"
         ]
     );
     assert!(text(&responses[2]).contains("fresh context"));

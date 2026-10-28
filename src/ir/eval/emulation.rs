@@ -292,7 +292,7 @@ fn initialize_arguments(
     Ok(())
 }
 
-fn stack_argument_address(base: Option<u64>, position: u64, width: u8) -> Option<u64> {
+pub(super) fn stack_argument_address(base: Option<u64>, position: u64, width: u8) -> Option<u64> {
     position
         .checked_mul(u64::from(width))
         .and_then(|position| base.and_then(|base| base.checked_add(position)))

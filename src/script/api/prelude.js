@@ -83,6 +83,8 @@
       return call("emulate", { bin: this.#id, start: String(address(start)), options });
     }
     explore(start, options = {}) { return call("explore", { bin: this.#id, start: String(address(start)), options }); }
+    solve(start, options = {}) { return call("solve", { bin: this.#id, start: String(address(start)), options }); }
+    branchFeasibility(start, options = {}) { return call("branchFeasibility", { bin: this.#id, start: String(address(start)), options }); }
     symbolic(start, options = {}) { return new Symbolic(this.#id, call("symbolic", { bin: this.#id, action: "create", start: String(address(start)), options })); }
     saveUnpacked(path) { return call("saveUnpacked", { bin: this.#id, path }); }
     sections() { return call("sections", { bin: this.#id }); }

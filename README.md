@@ -242,3 +242,5 @@ It requires an external Z3 or Bitwuzla process. Rust, JavaScript (`b.explore` an
 `b.symbolic`) and MCP (`velk_explore`) expose the same search. See
 [Symbolic execution](docs/SYMBOLIC.md) and `velk --api-docs symbolic` for inputs,
 state operations and deterministic limits.
+
+Return conditions (`b.solve`, `--solve check --returns eq:1`) and branch feasibility (`b.branchFeasibility`, `--opaque check`) use the same bounded executor and libc models.

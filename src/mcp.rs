@@ -199,6 +199,32 @@ fn tools() -> Value {
                 },
                 "required": ["path", "start", "options"], "additionalProperties": false
             }
+        },
+        {
+            "name": "velk_solve",
+            "description": "Find inputs satisfying a return condition, returning concrete inputs and visited addresses. Requires an external SMT solver. Read the symbolic API topic for options and limits.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "path": {"type": "string"}, "start": {"type": "string"},
+                    "options": {"type": "object"}, "cache": {"type": ["string", "boolean"]},
+                    "arch": {"type": "string"}, "raw": {"type": "object"}
+                },
+                "required": ["path", "start", "options"], "additionalProperties": false
+            }
+        },
+        {
+            "name": "velk_branch_feasibility",
+            "description": "Report infeasible conditional branch sides with unsat or unknown proof status and incomplete-search diagnostics. Requires an external SMT solver. Read the symbolic API topic for options and limits.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "path": {"type": "string"}, "start": {"type": "string"},
+                    "options": {"type": "object"}, "cache": {"type": ["string", "boolean"]},
+                    "arch": {"type": "string"}, "raw": {"type": "object"}
+                },
+                "required": ["path", "start", "options"], "additionalProperties": false
+            }
         }
     ])
 }
@@ -206,14 +232,19 @@ fn tools() -> Value {
 fn call_tool(engine: &Engine, request: &Value) -> std::result::Result<Value, RpcError> {
     let arguments = request.pointer("/params/arguments").unwrap_or(&Value::Null);
     let (text, is_error) = match request.pointer("/params/name").and_then(Value::as_str) {
-        Some("velk_explore") => {
+        Some(name @ ("velk_explore" | "velk_solve" | "velk_branch_feasibility")) => {
             let Some(path) = arguments.get("path").and_then(Value::as_str) else {
                 return Err((-32602, "missing path"));
             };
             let Some(start) = arguments.get("start").and_then(Value::as_str) else {
                 return Err((-32602, "missing start"));
             };
-            let code = execution_script(path, start, arguments, "explore");
+            let action = match name {
+                "velk_solve" => "solve",
+                "velk_branch_feasibility" => "branchFeasibility",
+                _ => "explore",
+            };
+            let code = execution_script(path, start, arguments, action);
             let outcome = evaluate_script(engine, &code, MAX_TIMEOUT_MS);
             match outcome.error {
                 Some(error) => (error, true),
@@ -222,7 +253,7 @@ fn call_tool(engine: &Engine, request: &Value) -> std::result::Result<Value, Rpc
                         .ok()
                         .and_then(|value| value.get("found").and_then(Value::as_bool))
                         .is_none_or(|found| !found);
-                    (outcome.output, failed)
+                    (outcome.output, failed && name != "velk_branch_feasibility")
                 }
             }
         }

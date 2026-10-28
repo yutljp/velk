@@ -8,6 +8,15 @@ pub(crate) enum Hook {
     Move,
     Set,
     Length,
+    LengthN,
+    Getline,
+    MemoryCompare,
+    StringCopyN,
+    Character,
+    Integer,
+    IntegerEnd,
+    Upper,
+    Lower,
     Compare,
     CompareN,
     StringCopy,
@@ -52,6 +61,15 @@ const HOOKS: &[(&str, Hook)] = &[
     ("memmove", Hook::Move),
     ("memset", Hook::Set),
     ("strlen", Hook::Length),
+    ("strnlen", Hook::LengthN),
+    ("getline", Hook::Getline),
+    ("memcmp", Hook::MemoryCompare),
+    ("strncpy", Hook::StringCopyN),
+    ("strchr", Hook::Character),
+    ("atoi", Hook::Integer),
+    ("strtol", Hook::IntegerEnd),
+    ("toupper", Hook::Upper),
+    ("tolower", Hook::Lower),
     ("strcmp", Hook::Compare),
     ("strncmp", Hook::CompareN),
     ("strcpy", Hook::StringCopy),
@@ -309,6 +327,24 @@ impl Runner<'_> {
                     Err(stop) => return Err(stop),
                 }
             }
+            Hook::Getline => return self.getline_hook(first, convention, kind),
+            Hook::Upper | Hook::Lower => {
+                let value = first as u32;
+                if matches!(hook, Hook::Upper) && (97..=122).contains(&value) {
+                    u64::from(value - 32)
+                } else if matches!(hook, Hook::Lower) && (65..=90).contains(&value) {
+                    u64::from(value + 32)
+                } else {
+                    u64::from(value)
+                }
+            }
+            Hook::LengthN
+            | Hook::StringCopyN
+            | Hook::Character
+            | Hook::Integer
+            | Hook::IntegerEnd => {
+                return self.scalar_string_hook(hook, first, convention, kind);
+            }
             Hook::Length | Hook::StringCopy => {
                 let source = if matches!(hook, Hook::StringCopy) {
                     match self.argument(1, convention, kind) {
@@ -347,12 +383,12 @@ impl Runner<'_> {
                     size
                 }
             }
-            Hook::Compare | Hook::CompareN => {
+            Hook::Compare | Hook::CompareN | Hook::MemoryCompare => {
                 let second = match self.argument(1, convention, kind) {
                     Ok(value) => value,
                     Err(stop) => return Err(stop),
                 };
-                let limit = if matches!(hook, Hook::CompareN) {
+                let limit = if !matches!(hook, Hook::Compare) {
                     match self.argument(2, convention, kind) {
                         Ok(value) => value,
                         Err(stop) => return Err(stop),
@@ -379,7 +415,7 @@ impl Runner<'_> {
                         result = u64::from((i32::from(left) - i32::from(right)) as u32);
                         break;
                     }
-                    if left == 0 {
+                    if left == 0 && !matches!(hook, Hook::MemoryCompare) {
                         break;
                     }
                 }
@@ -393,5 +429,199 @@ impl Runner<'_> {
         };
         self.machine.registers.insert(crate::arch::RETURN, value);
         Ok(value)
+    }
+}
+
+impl Runner<'_> {
+    // Argument and memory failures abort the call rather than guessing a result.
+    fn scalar_string_hook(
+        &mut self,
+        hook: Hook,
+        first: u64,
+        convention: Convention,
+        kind: CallKind,
+    ) -> Result<u64, Stop> {
+        if matches!(hook, Hook::IntegerEnd)
+            && matches!(
+                self.image.format,
+                crate::loader::Format::Pe | crate::loader::Format::Coff
+            )
+        {
+            return Err(Stop::Error("unsupported strtol data model".into()));
+        }
+        let second = if matches!(hook, Hook::Integer) {
+            0
+        } else {
+            self.argument(1, convention, kind)?
+        };
+        if matches!(hook, Hook::Integer | Hook::IntegerEnd) {
+            let base = if matches!(hook, Hook::IntegerEnd) {
+                self.argument(2, convention, kind)?
+            } else {
+                10
+            };
+            if !matches!(base, 10 | 16) {
+                return Err(Stop::Error("unsupported strtol base".into()));
+            }
+            let mut offset = 0u64;
+            let mut bytes = Vec::new();
+            loop {
+                let Some(address) = first.checked_add(offset) else {
+                    return Err(Stop::Error("integer string address overflows".into()));
+                };
+                let byte = self.read_byte(address)?;
+                if byte == 0 {
+                    break;
+                }
+                bytes.push(byte);
+                offset = offset.saturating_add(1);
+            }
+            let mut position = 0;
+            while bytes.get(position).is_some_and(u8::is_ascii_whitespace) {
+                position += 1;
+            }
+            let negative = bytes.get(position) == Some(&b'-');
+            if negative || bytes.get(position) == Some(&b'+') {
+                position += 1;
+            }
+            if base == 16
+                && bytes.get(position) == Some(&b'0')
+                && matches!(bytes.get(position + 1), Some(b'x' | b'X'))
+                && bytes.get(position + 2).is_some_and(u8::is_ascii_hexdigit)
+            {
+                position += 2;
+            }
+            let start = position;
+            let mut value = 0u64;
+            let limit = if negative {
+                1u64 << 63
+            } else {
+                i64::MAX as u64
+            };
+            while let Some(&byte) = bytes.get(position) {
+                let digit = match byte {
+                    b'0'..=b'9' => u64::from(byte - b'0'),
+                    b'a'..=b'f' if base == 16 => u64::from(byte - b'a' + 10),
+                    b'A'..=b'F' if base == 16 => u64::from(byte - b'A' + 10),
+                    _ => break,
+                };
+                value = value.saturating_mul(base).saturating_add(digit).min(limit);
+                position += 1;
+            }
+            if matches!(hook, Hook::IntegerEnd) && second != 0 {
+                let Some(address) =
+                    first.checked_add(if position > start { position as u64 } else { 0 })
+                else {
+                    return Err(Stop::Error("strtol end address overflows".into()));
+                };
+                self.machine.store(second, address, 8);
+                self.memory_error()?;
+            }
+            let result = if negative {
+                value.wrapping_neg()
+            } else {
+                value
+            };
+            return Ok(if matches!(hook, Hook::Integer) {
+                u64::from(result as u32)
+            } else {
+                result
+            });
+        }
+        let source = if matches!(hook, Hook::StringCopyN) {
+            second
+        } else {
+            first
+        };
+        let maximum = if matches!(hook, Hook::StringCopyN) {
+            self.argument(2, convention, kind)?
+        } else if matches!(hook, Hook::LengthN) {
+            second
+        } else {
+            HEAP_SIZE
+        };
+        if maximum > HEAP_SIZE {
+            return Err(Stop::Error("string operation exceeds 16 MiB".into()));
+        }
+        let mut ended = false;
+        for offset in 0..maximum {
+            let Some(address) = source.checked_add(offset) else {
+                return Err(Stop::Error("string address overflows".into()));
+            };
+            let byte = if ended { 0 } else { self.read_byte(address)? };
+            if matches!(hook, Hook::Character) && byte == second as u8 {
+                return Ok(address);
+            }
+            if matches!(hook, Hook::StringCopyN) {
+                let Some(destination) = first.checked_add(offset) else {
+                    return Err(Stop::Error("string destination overflows".into()));
+                };
+                self.write_byte(destination, byte)?;
+            }
+            if byte == 0 {
+                if matches!(hook, Hook::LengthN) {
+                    return Ok(offset);
+                }
+                if matches!(hook, Hook::Character) {
+                    return Ok(0);
+                }
+                ended = true;
+            }
+        }
+        Ok(if matches!(hook, Hook::StringCopyN) {
+            first
+        } else if matches!(hook, Hook::Character) {
+            0
+        } else {
+            maximum
+        })
+    }
+}
+
+impl Runner<'_> {
+    // A failed pointer, stream or memory operation aborts this input call.
+    fn getline_hook(
+        &mut self,
+        pointer: u64,
+        convention: Convention,
+        kind: CallKind,
+    ) -> Result<u64, Stop> {
+        let capacity_pointer = self.argument(1, convention, kind)?;
+        let stream = self.argument(2, convention, kind)?;
+        if stream == 0 || stream != self.streams[0] {
+            return Err(Stop::Error("unsupported getline stream".into()));
+        }
+        let mut bytes = Vec::new();
+        while let Some(byte) = super::io::next_input(&self.input, &mut self.input_position) {
+            self.tick()?;
+            bytes.push(byte);
+            if byte == 10 {
+                break;
+            }
+        }
+        if bytes.is_empty() {
+            return Ok(u64::MAX);
+        }
+        let length = bytes.len();
+        bytes.push(0);
+        let mut destination = self.machine.load(pointer, 8);
+        let capacity = self.machine.load(capacity_pointer, 8);
+        self.memory_error()?;
+        if destination == 0 || capacity < bytes.len() as u64 {
+            destination = self.allocate(bytes.len() as u64);
+            if destination == 0 {
+                return Ok(u64::MAX);
+            }
+            self.machine.store(pointer, destination, 8);
+            self.machine.store(capacity_pointer, bytes.len() as u64, 8);
+            self.memory_error()?;
+        }
+        for (offset, byte) in bytes.into_iter().enumerate() {
+            let Some(address) = destination.checked_add(offset as u64) else {
+                return Err(Stop::Error("getline destination overflows".into()));
+            };
+            self.write_byte(address, byte)?;
+        }
+        Ok(length as u64)
     }
 }

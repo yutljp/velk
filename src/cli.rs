@@ -28,12 +28,13 @@ const HELP_STYLES: Styles = Styles::styled()
     group(ArgGroup::new("operation").required(true).multiple(false).args([
         "similar", "compare", "annotate", "annotation", "annotations", "unannotate", "export_project", "import_project", "origins",
         "api_docs", "functions", "classes", "sections", "card", "decompile", "disasm", "ir",
-        "build_signatures", "identify", "run", "mcp", "serve", "emulate", "explore", "xrefs", "callers", "callees", "path", "strings", "constants", "summary", "search", "read_memory", "detect_constants"
+        "build_signatures", "identify", "run", "mcp", "serve", "emulate", "explore", "solve", "opaque", "xrefs", "callers", "callees", "path", "strings", "constants", "summary", "search", "read_memory", "detect_constants"
     ])),
     group(ArgGroup::new("multi_target").args(["decompile", "path"])),
     group(ArgGroup::new("graph").args(["callers", "callees", "path"])),
     after_help = "Examples:\n  velk -f app.elf\n  velk -D app.elf main\n  velk --disasm app.elf 0x401000 --limit 20\n  velk --build-signatures app.elf --output signatures.json\n  velk -r analysis.js\n  velk --annotations app.elf\n  velk --xrefs app.elf main\n  velk --path app.elf main helper --depth 4\n  velk --strings app.elf --contains hello\n\nChoose one operation. Use --help to list its arguments and options.\nProject and annotation operations return JSON results and JSON errors after argument parsing."
 )]
+#[command(group(clap::ArgGroup::new("symbolic_operation").args(["explore", "solve", "opaque"]).multiple(false)))]
 pub(super) struct Cli {
     /// List API topics, or print the documentation for one topic.
     #[arg(long, exclusive = true, num_args = 0..=1, default_missing_value = "", value_name = "TOPIC", help_heading = "Operations (choose one)")]
@@ -53,10 +54,10 @@ pub(super) struct Cli {
     #[arg(long, help_heading = "Operations (choose one)")]
     compare: bool,
     /// Copy annotations to matching targets without replacing existing entries.
-    #[arg(long, requires = "compare", conflicts_with_all = ["emulate", "explore", "annotate", "annotation", "annotations", "unannotate", "export_project", "import_project", "origins", "functions", "sections", "card", "decompile", "disasm", "ir", "build_signatures", "identify", "run", "mcp", "serve", "xrefs", "callers", "callees", "path", "strings", "constants", "summary"])]
+    #[arg(long, requires = "compare", conflicts_with_all = ["emulate", "explore", "solve", "opaque", "annotate", "annotation", "annotations", "unannotate", "export_project", "import_project", "origins", "functions", "sections", "card", "decompile", "disasm", "ir", "build_signatures", "identify", "run", "mcp", "serve", "xrefs", "callers", "callees", "path", "strings", "constants", "summary"])]
     carry_annotations: bool,
     /// Project file for the second binary; defaults to its sidecar.
-    #[arg(long, requires = "compare", value_name = "PATH", conflicts_with_all = ["emulate", "explore", "annotate", "annotation", "annotations", "unannotate", "export_project", "import_project", "origins", "functions", "sections", "card", "decompile", "disasm", "ir", "build_signatures", "identify", "run", "mcp", "serve", "xrefs", "callers", "callees", "path", "strings", "constants", "summary"])]
+    #[arg(long, requires = "compare", value_name = "PATH", conflicts_with_all = ["emulate", "explore", "solve", "opaque", "annotate", "annotation", "annotations", "unannotate", "export_project", "import_project", "origins", "functions", "sections", "card", "decompile", "disasm", "ir", "build_signatures", "identify", "run", "mcp", "serve", "xrefs", "callers", "callees", "path", "strings", "constants", "summary"])]
     other_project: Option<PathBuf>,
     /// Execute a function or address through the IR interpreter; print a text report (or JSON with --json).
     #[arg(long, help_heading = "Operations (choose one)")]
@@ -69,14 +70,35 @@ pub(super) struct Cli {
         help_heading = "Operations (choose one)"
     )]
     explore: Option<String>,
+    /// Solve a condition on this function's return value.
+    #[arg(
+        long,
+        requires = "returns",
+        value_name = "FUNCTION",
+        help_heading = "Operations (choose one)"
+    )]
+    solve: Option<String>,
+    /// Report infeasible conditional branch sides.
+    #[arg(
+        long,
+        value_name = "FUNCTION",
+        help_heading = "Operations (choose one)"
+    )]
+    opaque: Option<String>,
+    /// Return comparison: eq:VALUE, ne:VALUE, lt:VALUE, or gt:VALUE (64-bit signed ordering).
+    #[arg(long, requires = "solve", value_parser = parse_return_condition)]
+    returns: Option<velk::symbolic::ReturnCondition>,
+    /// Symbolic initial state and bounds as JSON.
+    #[arg(long, requires = "symbolic_operation", value_name = "JSON")]
+    symbolic_options: Option<String>,
     /// Target virtual address (repeatable).
     #[arg(long, requires = "explore", value_parser = crate::parse_address)]
     find: Vec<u64>,
     /// Address whose paths are discarded (repeatable).
-    #[arg(long, requires = "explore", value_parser = crate::parse_address)]
+    #[arg(long, requires = "symbolic_operation", value_parser = crate::parse_address)]
     avoid: Vec<u64>,
     /// Number of symbolic stdin bytes.
-    #[arg(long, requires = "explore")]
+    #[arg(long, requires = "symbolic_operation")]
     stdin: Option<usize>,
     /// Initial state and limits as JSON; see velk --api-docs emulation.
     #[arg(long, requires = "emulate", value_name = "JSON", conflicts_with_all = ["compare", "annotate", "annotation", "annotations", "unannotate", "export_project", "import_project", "origins", "functions", "classes", "sections", "card", "decompile", "disasm", "ir", "build_signatures", "identify", "run", "mcp", "serve", "xrefs", "callers", "callees", "path", "strings", "constants", "summary", "search", "read_memory", "detect_constants"])]
@@ -224,13 +246,13 @@ pub(super) struct Cli {
     #[arg(long, help_heading = "Operations (choose one)")]
     summary: bool,
     /// References originating in the target function; only with --xrefs.
-    #[arg(long, requires = "xrefs", conflicts_with_all = ["emulate", "explore", "classes", "search", "read_memory", "detect_constants", "functions", "sections", "card", "decompile", "disasm", "ir", "build_signatures", "identify", "run", "mcp", "serve", "callers", "callees", "path", "strings", "constants", "summary"])]
+    #[arg(long, requires = "xrefs", conflicts_with_all = ["emulate", "explore", "solve", "opaque", "classes", "search", "read_memory", "detect_constants", "functions", "sections", "card", "decompile", "disasm", "ir", "build_signatures", "identify", "run", "mcp", "serve", "callers", "callees", "path", "strings", "constants", "summary"])]
     from: bool,
     /// Maximum call depth; only with --callers, --callees or --path.
-    #[arg(long, requires = "graph", conflicts_with_all = ["emulate", "explore", "classes", "search", "read_memory", "detect_constants", "functions", "sections", "card", "decompile", "disasm", "ir", "build_signatures", "identify", "run", "mcp", "serve", "xrefs", "strings", "constants", "summary"])]
+    #[arg(long, requires = "graph", conflicts_with_all = ["emulate", "explore", "solve", "opaque", "classes", "search", "read_memory", "detect_constants", "functions", "sections", "card", "decompile", "disasm", "ir", "build_signatures", "identify", "run", "mcp", "serve", "xrefs", "strings", "constants", "summary"])]
     depth: Option<usize>,
     /// Case-sensitive substring; only with --strings.
-    #[arg(long, requires = "strings", conflicts_with_all = ["emulate", "explore", "classes", "search", "read_memory", "detect_constants", "functions", "sections", "card", "decompile", "disasm", "ir", "build_signatures", "identify", "run", "mcp", "serve", "xrefs", "callers", "callees", "path", "constants", "summary"])]
+    #[arg(long, requires = "strings", conflicts_with_all = ["emulate", "explore", "solve", "opaque", "classes", "search", "read_memory", "detect_constants", "functions", "sections", "card", "decompile", "disasm", "ir", "build_signatures", "identify", "run", "mcp", "serve", "xrefs", "callers", "callees", "path", "constants", "summary"])]
     contains: Option<String>,
     /// Binary file, or JavaScript file with --run; omitted with --mcp, --serve or --api-docs.
     #[arg(
@@ -257,22 +279,22 @@ pub(super) struct Cli {
         value_name = "FUNCTION",
         requires = "multi_target",
         required_if_eq("path", "true"),
-        conflicts_with_all = ["emulate", "explore", "classes", "search", "read_memory", "detect_constants", "functions", "sections", "card", "disasm", "ir", "build_signatures", "identify", "run", "mcp", "serve", "xrefs", "callers", "callees", "strings", "constants", "summary"])]
+        conflicts_with_all = ["emulate", "explore", "solve", "opaque", "classes", "search", "read_memory", "detect_constants", "functions", "sections", "card", "disasm", "ir", "build_signatures", "identify", "run", "mcp", "serve", "xrefs", "callers", "callees", "strings", "constants", "summary"])]
     destination: Option<String>,
     /// Additional functions to decompile; use '*' for all functions.
-    #[arg(value_name = "FUNCTION", requires = "decompile", conflicts_with_all = ["emulate", "explore", "classes", "search", "read_memory", "detect_constants", "functions", "sections", "card", "disasm", "ir", "build_signatures", "identify", "run", "mcp", "serve", "xrefs", "callers", "callees", "path", "strings", "constants", "summary"])]
+    #[arg(value_name = "FUNCTION", requires = "decompile", conflicts_with_all = ["emulate", "explore", "solve", "opaque", "classes", "search", "read_memory", "detect_constants", "functions", "sections", "card", "disasm", "ir", "build_signatures", "identify", "run", "mcp", "serve", "xrefs", "callers", "callees", "path", "strings", "constants", "summary"])]
     additional_functions: Vec<String>,
     /// Maximum results (similarity: 10, functions: 40, signatures: 100) or instructions (default: all).
     #[arg(
         long,
         value_name = "N",
-        conflicts_with_all = ["emulate", "explore", "classes", "compare", "search", "read_memory", "detect_constants", "annotate", "annotation", "annotations", "unannotate", "export_project", "import_project", "origins", "xrefs", "callers", "callees", "path", "strings", "constants", "summary", "sections", "card", "decompile", "ir", "build_signatures", "run", "mcp", "serve"]
+        conflicts_with_all = ["emulate", "explore", "solve", "opaque", "classes", "compare", "search", "read_memory", "detect_constants", "annotate", "annotation", "annotations", "unannotate", "export_project", "import_project", "origins", "xrefs", "callers", "callees", "path", "strings", "constants", "summary", "sections", "card", "decompile", "ir", "build_signatures", "run", "mcp", "serve"]
     )]
     limit: Option<usize>,
     #[arg(
         long,
         value_name = "TOKENS",
-        conflicts_with_all = ["emulate", "explore", "classes", "compare", "search", "read_memory", "detect_constants", "annotate", "annotation", "annotations", "unannotate", "export_project", "import_project", "origins", "xrefs", "callers", "callees", "path", "strings", "constants", "summary", "functions", "sections", "decompile", "disasm", "ir", "build_signatures", "identify", "run", "mcp", "serve"],
+        conflicts_with_all = ["emulate", "explore", "solve", "opaque", "classes", "compare", "search", "read_memory", "detect_constants", "annotate", "annotation", "annotations", "unannotate", "export_project", "import_project", "origins", "xrefs", "callers", "callees", "path", "strings", "constants", "summary", "functions", "sections", "decompile", "disasm", "ir", "build_signatures", "identify", "run", "mcp", "serve"],
         help = format!("Approximate card size in tokens (default: {}); only with --card", card::DEFAULT_BUDGET)
     )]
     budget: Option<usize>,
@@ -297,7 +319,7 @@ pub(super) struct Cli {
         long,
         value_name = "FILE",
         required_if_eq("build_signatures", "true"),
-        conflicts_with_all = ["emulate", "explore", "classes", "compare", "search", "read_memory", "detect_constants", "annotate", "annotation", "annotations", "unannotate", "export_project", "import_project", "origins", "xrefs", "callers", "callees", "path", "strings", "constants", "summary", "functions", "sections", "card", "decompile", "disasm", "ir", "identify", "run", "mcp", "serve"]
+        conflicts_with_all = ["emulate", "explore", "solve", "opaque", "classes", "compare", "search", "read_memory", "detect_constants", "annotate", "annotation", "annotations", "unannotate", "export_project", "import_project", "origins", "xrefs", "callers", "callees", "path", "strings", "constants", "summary", "functions", "sections", "card", "decompile", "disasm", "ir", "identify", "run", "mcp", "serve"]
     )]
     output: Option<PathBuf>,
 }
@@ -325,6 +347,8 @@ pub(super) enum Command {
         start: String,
         options: velk::symbolic::Options,
         json: bool,
+        opaque: bool,
+        options_json: Option<String>,
     },
     Emulate {
         path: PathBuf,
@@ -402,7 +426,7 @@ impl Cli {
                 carry_annotations: self.carry_annotations,
             };
         }
-        if let Some(start) = self.explore {
+        if let Some(start) = self.explore.or(self.solve).or(self.opaque.clone()) {
             let word = |value| velk::emulation::Word::Text(format!("0x{value:x}"));
             return Command::Explore {
                 path: self.input.expect("clap requires input"),
@@ -411,9 +435,12 @@ impl Cli {
                     find: self.find.into_iter().map(word).collect(),
                     avoid: self.avoid.into_iter().map(word).collect(),
                     stdin: self.stdin.unwrap_or(0),
+                    returns: self.returns,
                     ..Default::default()
                 },
                 json: self.json,
+                opaque: self.opaque.is_some(),
+                options_json: self.symbolic_options,
             };
         }
         if self.emulate {
@@ -615,4 +642,26 @@ pub(super) fn parse() -> Result<Cli, ExitCode> {
         }
     };
     Ok(cli)
+}
+
+fn parse_return_condition(text: &str) -> Result<velk::symbolic::ReturnCondition, String> {
+    let Some((operator, value)) = text.split_once(':') else {
+        return Err("expected eq:VALUE, ne:VALUE, lt:VALUE, or gt:VALUE".into());
+    };
+    let word = velk::emulation::Word::Text(value.into());
+    if value.starts_with('-') {
+        if let Err(error) = value.parse::<i64>() {
+            return Err(format!("invalid signed return constant: {error}"));
+        }
+    } else if let Err(error) = crate::parse_address(value) {
+        return Err(error);
+    }
+    use velk::symbolic::ReturnCondition;
+    match operator {
+        "eq" => Ok(ReturnCondition::Eq(word)),
+        "ne" => Ok(ReturnCondition::Ne(word)),
+        "lt" => Ok(ReturnCondition::Lt(word)),
+        "gt" => Ok(ReturnCondition::Gt(word)),
+        _ => Err("unknown return comparison".into()),
+    }
 }

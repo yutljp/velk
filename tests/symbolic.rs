@@ -29,7 +29,9 @@ fn solver_available() -> bool {
 fn fixtures() -> &'static Path {
     static DIRECTORY: OnceLock<PathBuf> = OnceLock::new();
     DIRECTORY.get_or_init(|| {
-        let out = common::root().join("target/symbolic-fixtures");
+        let out = common::root()
+            .join("target/symbolic-fixtures")
+            .join(std::process::id().to_string());
         let result = Command::new("bash")
             .arg(common::root().join("tools/make_symbolic_fixtures.sh"))
             .arg(&out)
@@ -792,4 +794,495 @@ fn imported_stop_addresses_are_rejected_instead_of_ignored() {
     let error = symbolic::explore(&binary, "getchar_password", &options)
         .expect_err("imported stop is unsupported");
     assert!(error.to_string().contains("imported address"));
+}
+
+#[test]
+fn libc_return_solutions_replay() {
+    if !solver_available() {
+        return;
+    }
+    for arch in ["x86_64", "aarch64"] {
+        for opt in [0, 2] {
+            let binary = binary(arch, opt);
+            for (name, length) in [
+                ("scan_stream", 3),
+                ("scan_stack", 9),
+                ("scan_decimal", 2),
+                ("scan_unsigned", 2),
+                ("scan_hex", 2),
+                ("scan_text", 3),
+                ("scan_characters", 3),
+                ("scan_string", 2),
+                ("line_compare", 3),
+                ("allocated_line", 3),
+                ("integer_check", 2),
+                ("integer_hex", 2),
+                ("copy_check", 3),
+                ("output_check", 1),
+                ("bound_descriptor", 1),
+            ] {
+                let options: Options = serde_json::from_value(json!({"stdin": length, "returns": {"eq": 1}, "pathLimit": 4096, "stdinDescriptors": [7]})).expect("return options");
+                let report = symbolic::solve(&binary, name, &options).expect("return search");
+                assert!(report.found, "{arch} O{opt} {name}: {report:?}");
+                let inputs = report.inputs.expect("satisfying input");
+                #[cfg(target_os = "linux")]
+                {
+                    use std::io::Write as _;
+                    use std::process::Stdio;
+                    let mut child = Command::new(fixtures().join("native-libc"))
+                        .arg(name)
+                        .stdin(Stdio::piped())
+                        .stdout(Stdio::piped())
+                        .spawn()
+                        .expect("native checker");
+                    child
+                        .stdin
+                        .take()
+                        .expect("native input pipe")
+                        .write_all(&inputs.stdin)
+                        .expect("native input");
+                    let native = child.wait_with_output().expect("native result");
+                    assert!(
+                        native.status.success(),
+                        "{arch} O{opt} {name}: {:?}",
+                        inputs.stdin
+                    );
+                    assert_eq!(native.stdout, inputs.stdout, "native {arch} O{opt} {name}");
+                }
+                let options = serde_json::from_value(json!({"stdin": {"hex": inputs.stdin.iter().map(|b|format!("{b:02x}")).collect::<String>()}, "stdinDescriptors": [7]})).expect("replay options");
+                let concrete =
+                    emulation::run(&binary, name, &options, None).expect("concrete replay");
+                assert_eq!(
+                    concrete.return_value, "0x1",
+                    "{arch} O{opt} {name}: {concrete:?}"
+                );
+                assert_eq!(
+                    concrete.stdout.as_bytes(),
+                    inputs.stdout,
+                    "{arch} O{opt} {name}"
+                );
+            }
+        }
+    }
+}
+
+#[test]
+fn stack_switch_and_branch_proofs() {
+    if !solver_available() {
+        return;
+    }
+    for arch in ["x86_64", "aarch64"] {
+        for opt in [0, 2] {
+            let binary = binary(arch, opt);
+            for (name, options) in [
+                (
+                    "stack_check",
+                    json!({"arguments":[9], "argumentValues":[1,2,3,4,5,6,7,8,9,0], "returns":{"eq":1}}),
+                ),
+                (
+                    "switch_check",
+                    json!({"arguments":[0],"returns":{"eq":1},"addressLimit":16}),
+                ),
+            ] {
+                let options = serde_json::from_value(options).expect("search options");
+                let report =
+                    symbolic::solve(&binary, name, &options).expect("scalar return search");
+                assert!(report.found, "{arch} O{opt} {name}: {report:?}");
+                let inputs = report.inputs.expect("scalar inputs");
+                let count = inputs.arguments.keys().max().copied().unwrap_or(0) + 1;
+                let values: Vec<String> = (0..count)
+                    .map(|index| {
+                        inputs
+                            .arguments
+                            .get(&index)
+                            .cloned()
+                            .unwrap_or_else(|| "0x0".into())
+                    })
+                    .collect();
+                let options =
+                    serde_json::from_value(json!({"arguments":values})).expect("scalar replay");
+                let concrete =
+                    emulation::run(&binary, name, &options, None).expect("scalar concrete replay");
+                assert_eq!(concrete.return_value, "0x1", "{concrete:?}");
+            }
+            for name in [
+                "even_predicate",
+                "square_predicate",
+                "normal_predicate",
+                "repeated_branch",
+            ] {
+                let options: Options =
+                    serde_json::from_value(json!({"arguments":[0,1]})).expect("branch options");
+                let report =
+                    symbolic::branch_feasibility(&binary, name, &options).expect("branch proof");
+                assert!(report.complete, "{arch} O{opt} {name}: {report:?}");
+                assert!(report.branches.iter().all(|b| b.status == "unsat"));
+                if opt == 0 && matches!(name, "even_predicate" | "square_predicate") {
+                    assert!(!report.branches.is_empty(), "{arch} {name}");
+                }
+                if matches!(name, "normal_predicate" | "repeated_branch") {
+                    assert!(report.branches.is_empty(), "{report:?}");
+                }
+            }
+        }
+    }
+}
+
+#[test]
+fn return_and_feasibility_interfaces_agree() {
+    use serde_json::Value;
+    use std::process::Stdio;
+    if !solver_available() {
+        return;
+    }
+    let path = fixtures().join("x86_64-O0.elf");
+    let engine = velk::script::Engine::new().expect("script engine");
+    for (name, action, tool, flags, options) in [
+        (
+            "scan_decimal",
+            "solve",
+            "velk_solve",
+            vec![
+                "--solve",
+                "scan_decimal",
+                "--returns",
+                "eq:1",
+                "--stdin",
+                "2",
+            ],
+            json!({"stdin":2,"returns":{"eq":1}}),
+        ),
+        (
+            "even_predicate",
+            "branchFeasibility",
+            "velk_branch_feasibility",
+            vec![
+                "--opaque",
+                "even_predicate",
+                "--symbolic-options",
+                "{\"arguments\":[0]}",
+            ],
+            json!({"arguments":[0]}),
+        ),
+    ] {
+        let output = Command::new(env!("CARGO_BIN_EXE_velk"))
+            .args(flags)
+            .arg("--json")
+            .arg(&path)
+            .output()
+            .expect("CLI run");
+        assert!(
+            output.status.success(),
+            "{}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+        let cli: Value = serde_json::from_slice(&output.stdout).expect("CLI JSON");
+        let code = match action {
+            "solve" => format!(
+                "velk.open({}).solve({},{options})",
+                json!(path),
+                json!(name)
+            ),
+            _ => format!(
+                "velk.open({}).branchFeasibility({},{options})",
+                json!(path),
+                json!(name)
+            ),
+        };
+        let outcome = engine.run(&code, None);
+        assert!(outcome.error.is_none(), "{:?}", outcome.error);
+        assert_eq!(
+            serde_json::from_str::<Value>(&outcome.output).expect("JS JSON"),
+            cli
+        );
+        let child = Command::new(env!("CARGO_BIN_EXE_velk"))
+            .arg("--mcp")
+            .stdin(Stdio::piped())
+            .stdout(Stdio::piped())
+            .spawn()
+            .expect("MCP process");
+        let output = common::mcp_request(
+            child,
+            &json!({"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":tool,"arguments":{"path":path,"start":name,"options":options}}}),
+        );
+        let response: Value = serde_json::from_slice(&output.stdout).expect("MCP JSON");
+        assert_eq!(response["result"]["isError"], false, "{response}");
+        assert_eq!(
+            serde_json::from_str::<Value>(
+                response["result"]["content"][0]["text"]
+                    .as_str()
+                    .expect("MCP text")
+            )
+            .expect("MCP report"),
+            cli
+        );
+    }
+}
+
+#[test]
+#[cfg_attr(
+    not(target_os = "linux"),
+    ignore = "compares ASCII C locale and strtol behavior with Linux libc"
+)]
+fn integer_and_case_models_match_native_edges() {
+    if !solver_available() {
+        return;
+    }
+    let cases = [
+        "",
+        "0",
+        "+",
+        "-",
+        "  -42rest",
+        "+42",
+        "0x",
+        "0x2a",
+        "0XFF!",
+        "-8000000000000000",
+        "9223372036854775807",
+        "9223372036854775808",
+        "-9223372036854775809",
+        "18446744073709551615",
+        "9999999999999999999999999999999999999999",
+    ];
+    for arch in ["x86_64", "aarch64"] {
+        let binary = binary(arch, 2);
+        for base in [10, 16] {
+            for text in cases {
+                for name in ["integer_value", "integer_end"] {
+                    let reference = Command::new(fixtures().join("native-libc"))
+                        .args([name, text, &base.to_string()])
+                        .output()
+                        .expect("native conversion");
+                    assert!(reference.status.success());
+                    let expected =
+                        String::from_utf8(reference.stdout).expect("native ASCII result");
+                    let options: Options = serde_json::from_value(
+                        json!({"argumentValues":["0x10000000",base],"returns":{"eq":expected}}),
+                    )
+                    .expect("integer options");
+                    let mut state = State::new(&binary, name, &options).expect("integer state");
+                    let bytes: Vec<Term> = text
+                        .bytes()
+                        .chain([0])
+                        .map(|byte| Term::constant(u64::from(byte)))
+                        .collect();
+                    state
+                        .write_memory(&binary, 0x10000000, &bytes)
+                        .expect("conversion input");
+                    let report = state.explore(&binary, &options).expect("integer solve");
+                    assert!(report.found, "{arch} {name} {base} {text:?}: {report:?}");
+                    let setup = serde_json::from_value(json!({"arguments":["0x10000000",base],"memory":[{"address":"0x10000000","bytes":text.bytes().chain([0]).collect::<Vec<_>>()}]})).expect("integer replay options");
+                    let concrete =
+                        emulation::run(&binary, name, &setup, None).expect("integer replay");
+                    assert_eq!(
+                        concrete.return_value, expected,
+                        "{arch} {name} {base} {text:?}"
+                    );
+                }
+            }
+        }
+        for c in [0, 1, 32, 64, 65, 90, 91, 96, 97, 122, 123, 127, 128, 255] {
+            let reference = Command::new(fixtures().join("native-libc"))
+                .args(["case_value", &c.to_string(), "0"])
+                .output()
+                .expect("native case conversion");
+            let expected = String::from_utf8(reference.stdout).expect("case result");
+            let options: Options =
+                serde_json::from_value(json!({"argumentValues":[c],"returns":{"eq":expected}}))
+                    .expect("case options");
+            let report = symbolic::solve(&binary, "case_value", &options).expect("case solve");
+            assert!(report.found, "{arch} {c}: {report:?}");
+            let setup =
+                serde_json::from_value(json!({"arguments":[c]})).expect("case replay options");
+            let concrete =
+                emulation::run(&binary, "case_value", &setup, None).expect("case replay");
+            assert_eq!(concrete.return_value, expected);
+        }
+    }
+}
+
+#[test]
+fn incomplete_branch_search_does_not_claim_unsat() {
+    if !solver_available() {
+        return;
+    }
+    let binary = binary("x86_64", 0);
+    let options: Options =
+        serde_json::from_value(json!({"arguments":[0],"pathLimit":1})).expect("bounded options");
+    let report =
+        symbolic::branch_feasibility(&binary, "even_predicate", &options).expect("bounded proof");
+    assert!(!report.complete, "{report:?}");
+    assert!(!report.branches.is_empty());
+    assert!(report.branches.iter().all(|b| {
+        b.status == "unknown"
+            && b.reason
+                .as_deref()
+                .is_some_and(|s| s.contains("path budget"))
+    }));
+    for condition in [
+        json!({"eq":1}),
+        json!({"ne":0}),
+        json!({"lt":2}),
+        json!({"gt":0}),
+    ] {
+        let options: Options = serde_json::from_value(json!({"arguments":[0],"returns":condition}))
+            .expect("return condition");
+        let report =
+            symbolic::solve(&binary, "normal_predicate", &options).expect("comparison solve");
+        assert!(report.found, "{report:?}");
+        let inputs = report.inputs.expect("comparison inputs");
+        let setup = serde_json::from_value(json!({"arguments":[inputs.arguments[&0]]}))
+            .expect("comparison replay options");
+        let concrete =
+            emulation::run(&binary, "normal_predicate", &setup, None).expect("comparison replay");
+        let value = u64::from_str_radix(concrete.return_value.trim_start_matches("0x"), 16)
+            .expect("returned integer");
+        assert!(match condition
+            .as_object()
+            .expect("condition")
+            .keys()
+            .next()
+            .expect("operator")
+            .as_str()
+        {
+            "eq" => value == 1,
+            "ne" => value != 0,
+            "lt" => (value as i64) < 2,
+            "gt" => (value as i64) > 0,
+            _ => false,
+        });
+    }
+}
+
+#[test]
+fn signed_return_constants_accept_numbers_and_strings() {
+    if !solver_available() {
+        return;
+    }
+    for arch in ["x86_64", "aarch64"] {
+        let binary = binary(arch, 2);
+        for condition in [
+            json!({"eq":-1}),
+            json!({"ne":"-1"}),
+            json!({"lt":-1}),
+            json!({"gt":"-2"}),
+        ] {
+            let options: Options =
+                serde_json::from_value(json!({"arguments":[0],"returns":condition}))
+                    .expect("signed condition");
+            let report =
+                symbolic::solve(&binary, "signed_identity", &options).expect("signed solve");
+            assert!(report.found, "{report:?}");
+            let inputs = report.inputs.expect("signed inputs");
+            let setup = serde_json::from_value(json!({"arguments":[inputs.arguments[&0]]}))
+                .expect("signed replay options");
+            let concrete =
+                emulation::run(&binary, "signed_identity", &setup, None).expect("signed replay");
+            let value = u64::from_str_radix(concrete.return_value.trim_start_matches("0x"), 16)
+                .expect("return bits") as i64;
+            let op = condition
+                .as_object()
+                .expect("condition")
+                .keys()
+                .next()
+                .expect("operator");
+            assert!(match op.as_str() {
+                "eq" => value == -1,
+                "ne" => value != -1,
+                "lt" => value < -1,
+                "gt" => value > -2,
+                _ => false,
+            });
+        }
+    }
+    let output = Command::new(env!("CARGO_BIN_EXE_velk"))
+        .args([
+            "--solve",
+            "signed_identity",
+            "--returns",
+            "lt:-1",
+            "--symbolic-options",
+            "{\"arguments\":[0]}",
+            "--json",
+        ])
+        .arg(fixtures().join("x86_64-O2.elf"))
+        .output()
+        .expect("signed CLI");
+    assert!(
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let report: serde_json::Value =
+        serde_json::from_slice(&output.stdout).expect("signed CLI report");
+    let setup = serde_json::from_value(json!({"arguments":[report["inputs"]["arguments"]["0"]]}))
+        .expect("signed CLI replay");
+    let concrete = emulation::run(&binary("x86_64", 2), "signed_identity", &setup, None)
+        .expect("signed CLI concrete replay");
+    let value = u64::from_str_radix(concrete.return_value.trim_start_matches("0x"), 16)
+        .expect("signed CLI return") as i64;
+    assert!(value < -1);
+}
+
+#[test]
+fn solve_rejects_address_goals_in_options() {
+    if solver_available() {
+        let binary = binary("x86_64", 0);
+        let options: Options =
+            serde_json::from_value(json!({"find":[1],"returns":{"eq":1}})).expect("mixed goals");
+        let state = State::new(&binary, "normal_predicate", &options).expect("mixed goal state");
+        let error = state
+            .explore(&binary, &options)
+            .expect_err("mixed goals must be rejected");
+        assert!(error.to_string().contains("mutually exclusive"));
+    }
+
+    let path = fixtures().join("x86_64-O0.elf");
+    let output = Command::new(env!("CARGO_BIN_EXE_velk"))
+        .args([
+            "--solve",
+            "normal_predicate",
+            "--returns",
+            "eq:1",
+            "--symbolic-options",
+            "{\"find\":[1]}",
+        ])
+        .arg(path)
+        .output()
+        .expect("invalid goal CLI");
+    assert!(!output.status.success());
+    assert!(
+        String::from_utf8_lossy(&output.stderr)
+            .contains("solve requires returns and no find addresses"),
+        "{output:?}"
+    );
+}
+
+#[test]
+fn unreachable_conditional_instructions_are_reported() {
+    if !solver_available() {
+        return;
+    }
+    for arch in ["x86_64", "aarch64"] {
+        let binary = binary(arch, 0);
+        let options =
+            serde_json::from_value(json!({"arguments":[0]})).expect("unreachable options");
+        let report = symbolic::branch_feasibility(&binary, "unreachable_branches", &options)
+            .expect("unreachable proof");
+        assert!(report.complete, "{report:?}");
+        assert!(report.branches.iter().all(|b| b.status == "unsat"));
+        let unreachable: Vec<_> = report
+            .branches
+            .iter()
+            .filter(|b| {
+                b.reason
+                    .as_deref()
+                    .is_some_and(|s| s.contains("instruction is unreachable"))
+            })
+            .collect();
+        assert_eq!(unreachable.len(), 2, "{arch}: {report:?}");
+        assert_eq!(unreachable[0].address, unreachable[1].address);
+        assert_ne!(unreachable[0].taken, unreachable[1].taken);
+    }
 }

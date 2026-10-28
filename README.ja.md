@@ -241,3 +241,5 @@ MIT ライセンスです。[LICENSE](LICENSE) を参照してください。
 `b.symbolic`）、MCP（`velk_explore`）からも同じ探索を使えます。入力、状態 API、
 決定的な上限については [シンボリック実行](docs/SYMBOLIC.ja.md) と
 `velk --api-docs symbolic` を参照してください。
+
+戻り値条件（`b.solve`、`--solve check --returns eq:1`）と分岐の実行可能性（`b.branchFeasibility`、`--opaque check`）も同じ上限付き実行器と libc モデルを使います。

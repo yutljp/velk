@@ -184,6 +184,11 @@ impl Solver {
         match self.response()?.as_str() {
             "unsat" => return Ok(None),
             "sat" => {}
+            "unknown" => {
+                self.send("(get-info :reason-unknown)")?;
+                let reason = self.response()?;
+                return Err(invalid(format!("solver returned unknown: {reason}")));
+            }
             answer => {
                 return Err(invalid(format!(
                     "solver did not decide satisfiability: {answer}"
@@ -252,6 +257,27 @@ mod tests {
         );
         assert_eq!(solver.query(&["false".to_owned()], None).unwrap(), None);
         assert_eq!(solver.query(&[], None).unwrap(), Some(0));
+    }
+
+    #[test]
+    fn unknown_includes_the_solver_reason() {
+        if !Command::new("z3")
+            .arg("-version")
+            .output()
+            .is_ok_and(|output| output.status.success())
+        {
+            return;
+        }
+        let mut solver = Solver::command("z3 -in").unwrap();
+        let term = solver.define(None).unwrap();
+        solver.send("(set-option :rlimit 1)").unwrap();
+        let error = solver
+            .query(
+                &[format!("(= (bvmul {term} {term}) #x0000000000000007)")],
+                None,
+            )
+            .unwrap_err();
+        assert!(error.to_string().contains("reason-unknown"), "{error}");
     }
 
     #[test]

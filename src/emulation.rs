@@ -156,6 +156,8 @@ pub struct ReadResult {
 pub struct Options {
     /// Stdin bytes consumed in order by input hooks; absent means EOF.
     pub stdin: Option<Input>,
+    /// Additional descriptors bound to stdin.
+    pub stdin_descriptors: Vec<u32>,
     /// Main arguments, including argv[0]; supplies argc and a NUL-terminated argv.
     pub argv: Option<Vec<String>>,
     /// Memory ranges to inspect after execution.
@@ -184,6 +186,7 @@ impl Default for Options {
     fn default() -> Self {
         Self {
             stdin: None,
+            stdin_descriptors: Vec::new(),
             argv: None,
             reads: Vec::new(),
             end: Vec::new(),

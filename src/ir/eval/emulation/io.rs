@@ -357,7 +357,7 @@ impl Runner<'_> {
                 let (base, limit, size) = match operation {
                     Read => {
                         let fd = first as u32 as i32;
-                        if fd != 0 {
+                        if fd != 0 && !self.options.stdin_descriptors.contains(&(fd as u32)) {
                             return Err(error(format!("unsupported read fd {fd}")));
                         }
                         (

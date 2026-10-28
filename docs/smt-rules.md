@@ -1,5 +1,7 @@
 # Expression equivalence tests
 
+Symbolic libc checks prove ASCII case conversion against an enumerated mapping and integer overflow detection against 128-bit digit accumulation for bases 10 and 16. Defined-bit propagation has symbolic checks for bitwise operations and constant shifts; native and concrete replay cover conversion edge cases.
+
 Integer cast removal checks signed and unsigned intermediate conversions at
 8/16/32/64 bits. An outer assignment or cast may omit an intermediate cast
 whose width is at least the destination width: the destination keeps the same

@@ -128,6 +128,26 @@ pub enum Request {
         #[serde(default)]
         options: crate::symbolic::Options,
     },
+    /// Searches lifted code for a satisfying return value.
+    Solve {
+        /// Open binary.
+        bin: BinaryRef,
+        /// Function name or virtual address.
+        start: String,
+        /// Symbolic inputs and deterministic limits.
+        #[serde(default)]
+        options: crate::symbolic::Options,
+    },
+    /// Searches lifted code for infeasible branch sides.
+    BranchFeasibility {
+        /// Open binary.
+        bin: BinaryRef,
+        /// Function name or virtual address.
+        start: String,
+        /// Symbolic inputs and deterministic limits.
+        #[serde(default)]
+        options: crate::symbolic::Options,
+    },
     /// Executes loaded code with explicit state and limits.
     Emulate {
         /// Path identifying the binary.
@@ -308,6 +328,29 @@ pub fn handle(
                 Err(error) => return Err(error),
             };
             crate::symbolic::explore(binary, &start, &options).map(|report| json!(report))
+        }
+        Request::Solve {
+            bin,
+            start,
+            options,
+        } => {
+            let binary = match bin.open(session) {
+                Ok(binary) => binary,
+                Err(error) => return Err(error),
+            };
+            crate::symbolic::solve(binary, &start, &options).map(|report| json!(report))
+        }
+        Request::BranchFeasibility {
+            bin,
+            start,
+            options,
+        } => {
+            let binary = match bin.open(session) {
+                Ok(binary) => binary,
+                Err(error) => return Err(error),
+            };
+            crate::symbolic::branch_feasibility(binary, &start, &options)
+                .map(|report| json!(report))
         }
         Request::Emulate {
             bin,

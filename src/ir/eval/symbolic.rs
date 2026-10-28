@@ -1,5 +1,7 @@
 //! Symbolic evaluation of lifted expressions using the shared SMT translation.
 
+mod libc;
+
 use std::cell::RefCell;
 use std::collections::{BTreeMap, HashSet};
 use std::rc::Rc;
@@ -18,6 +20,7 @@ use crate::symbolic::{Inputs, Options, Report, Solver, invalid};
 pub struct Term {
     text: String,
     concrete: Option<u64>,
+    defined: u64,
     session: Option<Rc<RefCell<Solver>>>,
 }
 
@@ -28,6 +31,7 @@ impl Term {
         Self {
             text: smt::constant(value),
             concrete: Some(value),
+            defined: u64::MAX,
             session: None,
         }
     }
@@ -49,6 +53,11 @@ struct ReturnFrame {
     return_address: u64,
 }
 
+#[derive(Default)]
+struct BranchObservations {
+    sides: BTreeMap<u64, [bool; 2]>,
+}
+
 /// A forkable execution state. Forks share immutable solver definitions only.
 #[derive(Clone)]
 pub struct State {
@@ -66,12 +75,16 @@ pub struct State {
     path: Vec<String>,
     stdin: Vec<Term>,
     input_position: usize,
+    stdout: Vec<Term>,
+    stdin_stream: u64,
+    heap_next: u64,
     argv: Vec<Vec<Term>>,
     arguments: BTreeMap<usize, Term>,
     input_memory: BTreeMap<u64, Term>,
     input_registers: BTreeMap<u16, Term>,
     returns: Vec<ReturnFrame>,
     stop: Option<String>,
+    branch_observations: Option<Rc<RefCell<BranchObservations>>>,
 }
 
 /// Result of stepping to a branch, target address, or execution boundary.
@@ -149,12 +162,16 @@ impl State {
             path: Vec::new(),
             stdin: Vec::new(),
             input_position: 0,
+            stdout: Vec::new(),
+            stdin_stream: 0,
+            heap_next: 0,
             argv: Vec::new(),
             arguments: BTreeMap::new(),
             input_memory: BTreeMap::new(),
             input_registers: BTreeMap::new(),
             returns: Vec::new(),
             stop: None,
+            branch_observations: None,
         };
         let physical = super::emulation::physical_registers(image.isa);
         for &register in &physical {
@@ -177,20 +194,14 @@ impl State {
         }
         let convention = image.convention_of(address);
         for (index, value) in options.argument_values.iter().enumerate() {
-            let Some(&register) = convention.arguments().get(index) else {
-                return Err(invalid("stack arguments are not supported"));
-            };
             let term = Term::constant(value.value()?);
             state.arguments.insert(index, term.clone());
-            state.registers.insert(register, term);
+            state.initialize_argument(binary, index, term, stack)?;
         }
         for &index in &options.arguments {
-            let Some(&register) = convention.arguments().get(index) else {
-                return Err(invalid("symbolic stack arguments are not supported"));
-            };
             let term = state.symbolic()?;
             state.arguments.insert(index, term.clone());
-            state.registers.insert(register, term);
+            state.initialize_argument(binary, index, term, stack)?;
         }
         for &index in &options.registers {
             if !physical.contains(&index) {
@@ -290,6 +301,7 @@ impl State {
                 .registers
                 .insert(convention.arguments()[1], Term::constant(base));
         }
+        state.initialize_streams(binary)?;
         Ok(state)
     }
 
@@ -299,6 +311,7 @@ impl State {
         Ok(Term {
             text,
             concrete: None,
+            defined: u64::MAX,
             session: Some(Rc::clone(&self.solver)),
         })
     }
@@ -313,6 +326,7 @@ impl State {
         Ok(Term {
             text,
             concrete: None,
+            defined: u64::MAX,
             session: Some(Rc::clone(&self.solver)),
         })
     }
@@ -393,6 +407,7 @@ impl State {
         }
         for (offset, byte) in bytes.iter().enumerate() {
             let byte = self.low(byte, 8)?;
+            self.require_defined(&byte, 8)?;
             let at = address + offset as u64;
             if self.steps == 0 {
                 self.input_memory.insert(at, byte.clone());
@@ -406,6 +421,8 @@ impl State {
     pub fn constrain(&mut self, cond: Cond, lhs: &Term, rhs: &Term, bits: u32) -> Result<()> {
         self.check_term(lhs)?;
         self.check_term(rhs)?;
+        self.require_defined(lhs, bits)?;
+        self.require_defined(rhs, bits)?;
         if !(1..=64).contains(&bits) {
             return Err(invalid("constraint width must be 1..64"));
         }
@@ -433,6 +450,7 @@ impl State {
     }
 
     fn enumerate(&self, term: &Term, count: usize) -> Result<Vec<u64>> {
+        self.require_defined(term, 64)?;
         let mut constraints = self.constraints.clone();
         let mut values = Vec::new();
         for _ in 0..count {
@@ -460,6 +478,7 @@ impl State {
     }
 
     fn extreme(&self, term: &Term, constraints: &[String], maximum: bool) -> Result<Option<u64>> {
+        self.require_defined(term, 64)?;
         if self.solver.borrow_mut().query(constraints, None)?.is_none() {
             return Ok(None);
         }
@@ -489,13 +508,27 @@ impl State {
 
     fn low(&self, value: &Term, bits: u32) -> Result<Term> {
         self.check_term(value)?;
+        let mask = semantics::mask(bits);
         match value.concrete {
-            Some(value) => Ok(Term::constant(value & semantics::mask(bits))),
-            None => self.bind(smt::low(&value.text, bits)),
+            Some(value) => Ok(Term::constant(value & mask)),
+            None => {
+                let mut result = self.bind(smt::low(&value.text, bits))?;
+                result.defined = value.defined | !mask;
+                Ok(result)
+            }
         }
     }
 
+    fn require_defined(&self, value: &Term, bits: u32) -> Result<()> {
+        let mask = semantics::mask(bits);
+        if value.defined & mask != mask {
+            return Err(invalid("value depends on an undefined register"));
+        }
+        Ok(())
+    }
+
     fn resolve(&self, term: Term) -> Evaluation<u64> {
+        self.require_defined(&term, 64)?;
         if let Some(value) = term.concrete {
             return Ok(value);
         }
@@ -529,6 +562,7 @@ impl State {
         if width == 0 || width > 8 {
             return Err(invalid("invalid memory width"));
         }
+        self.require_defined(term, u32::from(width) * 8)?;
         let memory = Memory::new(image).map_err(invalid)?;
         if !memory.check(address, u64::from(width), /* write */ true) {
             return Err(memory_failure(&memory));
@@ -601,6 +635,8 @@ impl State {
                 let a = self.eval(binary, lhs)?;
                 let b = self.eval(binary, rhs)?;
                 let bits = semantics::operand_width(lhs, rhs);
+                self.require_defined(&a, bits)?;
+                self.require_defined(&b, bits)?;
                 if let (Some(a), Some(b)) = (a.concrete, b.concrete) {
                     return self.eval(
                         binary,
@@ -695,7 +731,18 @@ impl State {
         {
             return Err(invalid("arithmetic may be undefined (division by zero)").into());
         }
-        Ok(self.bind(translated.term)?)
+        let mut result = self.bind(translated.term)?;
+        if operands.iter().any(|(_, term)| term.defined != u64::MAX) {
+            result.defined = match expression {
+                Expr::Bin { op, .. } => {
+                    let a = &operands[0].1;
+                    let b = &operands[1].1;
+                    defined_binary(*op, a, b)
+                }
+                _ => 0,
+            };
+        }
+        Ok(result)
     }
 
     /// Evaluates a lifted expression in the current register and memory state.
@@ -845,8 +892,10 @@ impl State {
             } => {
                 let a = self.eval(binary, lhs)?;
                 let b = self.eval(binary, rhs)?;
-                let test =
-                    smt::condition(*cond, &a.text, &b.text, semantics::operand_width(lhs, rhs));
+                let bits = semantics::operand_width(lhs, rhs);
+                self.require_defined(&a, bits)?;
+                self.require_defined(&b, bits)?;
+                let test = smt::condition(*cond, &a.text, &b.text, bits);
                 let mut taken = self.clone();
                 taken.constraints.push(test.clone());
                 if let Err(error) = taken.jump(binary, *target) {
@@ -855,12 +904,60 @@ impl State {
                 let mut fallthrough = self.clone();
                 fallthrough.constraints.push(format!("(not {test})"));
                 let mut successors = Vec::new();
-                for state in [taken, fallthrough] {
-                    if state.satisfiable()? {
+                if let Some(observations) = &self.branch_observations {
+                    observations
+                        .borrow_mut()
+                        .sides
+                        .entry(self.address)
+                        .or_default();
+                }
+                for (index, state) in [taken, fallthrough].into_iter().enumerate() {
+                    let feasible = state.satisfiable()?;
+                    if let Some(observations) = &self.branch_observations {
+                        observations
+                            .borrow_mut()
+                            .sides
+                            .entry(self.address)
+                            .or_default()[index] |= feasible;
+                    }
+                    if feasible {
                         successors.push(state);
                     }
                 }
                 return Ok(Some(Step::Branch(successors)));
+            }
+            Stmt::Switch {
+                index,
+                cases,
+                default,
+            } => {
+                let index = self.eval(binary, index)?;
+                let mut states = Vec::new();
+                let mut otherwise = self.clone();
+                for &(value, target) in cases {
+                    let test = format!("(= {} {})", index.text, smt::constant(value as u64));
+                    otherwise.constraints.push(format!("(not {test})"));
+                    let mut state = self.clone();
+                    state.constraints.push(test);
+                    if state.satisfiable()? {
+                        if let Err(error) = state.jump(binary, target) {
+                            state.stop = Some(error.to_string());
+                        }
+                        states.push(state);
+                    }
+                }
+                if otherwise.satisfiable()? {
+                    match default {
+                        Some(target) => {
+                            if let Err(error) = otherwise.jump(binary, *target) {
+                                otherwise.stop = Some(error.to_string());
+                            }
+                        }
+                        None => otherwise.stop = Some("unsupported switch without default".into()),
+                    }
+                    states.push(otherwise);
+                }
+                return Ok(Some(Step::Branch(states)));
             }
             Stmt::Br {
                 target: Some(target),
@@ -1024,11 +1121,19 @@ impl State {
                 .registers
                 .insert(index, crate::addr::format(choose(term)?));
         }
+        for byte in &self.stdout {
+            result.stdout.push(choose(byte)? as u8);
+        }
         Ok(result)
     }
 
     /// Explores successors from this state in deterministic depth-first order.
     pub fn explore(self, binary: &Binary, options: &Options) -> Result<Report> {
+        if options.returns.is_some() && !options.find.is_empty() {
+            return Err(invalid(
+                "find addresses and return conditions are mutually exclusive",
+            ));
+        }
         let find: Vec<u64> = options
             .find
             .iter()
@@ -1039,7 +1144,7 @@ impl State {
             .iter()
             .map(crate::emulation::Word::value)
             .collect::<Result<_>>()?;
-        if find.is_empty() {
+        if find.is_empty() && options.returns.is_none() {
             return Err(invalid("at least one find address is required"));
         }
         let until: Vec<u64> = find.iter().chain(&avoid).copied().collect();
@@ -1074,6 +1179,21 @@ impl State {
                     return Ok(report);
                 }
                 Step::Branch(states) => pending.extend(states.into_iter().rev()),
+                Step::Stopped(reason) if reason == "return" && options.returns.is_some() => {
+                    let Some(condition) = &options.returns else {
+                        continue;
+                    };
+                    let (cond, value) = condition.comparison()?;
+                    let returned = state.read_register(crate::arch::RETURN)?;
+                    state.constrain(cond, &returned, &Term::constant(value), 64)?;
+                    if state.satisfiable()? {
+                        report.found = true;
+                        report.reason = "found".into();
+                        report.inputs = Some(state.inputs()?);
+                        report.path = state.path;
+                        return Ok(report);
+                    }
+                }
                 Step::Stopped(reason) => report.diagnostics.push(reason),
             }
         }
@@ -1167,43 +1287,11 @@ impl State {
                 .and_then(|function| function.name.as_deref())
         });
         if let Some(name) = name {
-            use super::emulation::hooks::{self, Hook};
-            use super::emulation::io::{self, Operation};
-            let result = match hooks::find(name) {
-                Some(Hook::Io(Operation::Getchar)) => {
-                    io::next_input(&self.stdin, &mut self.input_position)
-                        .unwrap_or_else(|| Term::constant(u64::from(u32::MAX)))
-                }
-                Some(Hook::Io(Operation::Read)) => {
-                    let mut args = Vec::new();
-                    for &register in convention.arguments().iter().take(3) {
-                        args.push(self.resolve(self.read_register(register)?)?);
-                    }
-                    if args.len() != 3 || args[0] as u32 != 0 {
-                        return Err(invalid("unsupported read descriptor or convention").into());
-                    }
-                    if args[2] > crate::emulation::HEAP_SIZE {
-                        return Err(invalid("input operation exceeds 16 MiB").into());
-                    }
-                    let count = (args[2] as usize)
-                        .min(self.stdin.len().saturating_sub(self.input_position));
-                    if count > self.options.step_limit.saturating_sub(self.steps) {
-                        return Err(invalid("step budget in input hook").into());
-                    }
-                    let mut bytes = Vec::new();
-                    for _ in 0..count {
-                        if let Some(byte) = io::next_input(&self.stdin, &mut self.input_position) {
-                            bytes.push(byte);
-                        }
-                    }
-                    self.write_memory(binary, args[1], &bytes)?;
-                    self.steps += count;
-                    Term::constant(count as u64)
-                }
-                _ => return Err(invalid(format!("unsupported symbolic import: {name}")).into()),
-            };
+            let result = self.libc(binary, name, convention)?;
             for &register in convention.clobbered() {
-                self.registers.remove(&register);
+                let mut unknown = self.symbolic()?;
+                unknown.defined = 0;
+                self.registers.insert(register, unknown);
             }
             self.registers.insert(crate::arch::RETURN, result);
             let mut values = Vec::new();
@@ -1224,6 +1312,9 @@ impl State {
             return Ok(());
         }
         let blocks = lift(image, target)?;
+        if let Some(observations) = &self.branch_observations {
+            record_branches(observations, &blocks);
+        }
         let sp = crate::arch::stack_pointer(image.isa);
         let old_sp = self.resolve(self.read_register(sp)?)?;
         let pushed = convention.pushed_by_call() as u64;
@@ -1271,5 +1362,282 @@ impl State {
         };
         self.registers.insert(sp, Term::constant(stack));
         Ok(())
+    }
+}
+
+impl State {
+    fn initialize_argument(
+        &mut self,
+        binary: &Binary,
+        index: usize,
+        term: Term,
+        stack: u64,
+    ) -> Result<()> {
+        if let Some(&register) = self.convention.arguments().get(index) {
+            self.registers.insert(register, term);
+            return Ok(());
+        }
+        if !matches!(
+            self.convention,
+            crate::ir::Convention::SysV | crate::ir::Convention::Aapcs64
+        ) {
+            return Err(invalid("unsupported stack argument convention"));
+        }
+        let base = stack.checked_add_signed(
+            self.convention
+                .stack_arguments()
+                .expect("supported convention"),
+        );
+        let address = super::emulation::stack_argument_address(
+            base,
+            (index - self.convention.arguments().len()) as u64,
+            8,
+        );
+        let Some(address) = address else {
+            return Err(invalid("stack argument address overflows"));
+        };
+        self.store(binary.image(), address, &term, 8)
+    }
+    /// Explores reachable branch contexts before classifying an infeasible side.
+    pub fn branch_feasibility(
+        mut self,
+        binary: &Binary,
+        options: &Options,
+    ) -> Result<crate::symbolic::FeasibilityReport> {
+        if !options.find.is_empty() || !options.avoid.is_empty() || options.returns.is_some() {
+            return Err(invalid(
+                "branch feasibility does not accept find, avoid, or returns",
+            ));
+        }
+        let observations = Rc::new(RefCell::new(BranchObservations::default()));
+        record_branches(&observations, &self.cursor.blocks);
+        self.branch_observations = Some(Rc::clone(&observations));
+        let mut pending = vec![self];
+        let mut report = crate::symbolic::FeasibilityReport {
+            branches: Vec::new(),
+            complete: true,
+            paths: 0,
+            diagnostics: Vec::new(),
+        };
+        while let Some(mut state) = pending.pop() {
+            if report.paths >= options.path_limit {
+                report.complete = false;
+                report.diagnostics.push("path budget".into());
+                break;
+            }
+            report.paths += 1;
+            match state.step(binary, &[]) {
+                Ok(Step::Branch(states)) => pending.extend(states.into_iter().rev()),
+                Ok(Step::Stopped(reason)) if reason == "return" || reason == "trap" => {}
+                result => {
+                    report.complete = false;
+                    report.diagnostics.push(match result {
+                        Err(error) => error.to_string(),
+                        Ok(Step::Stopped(reason)) => reason,
+                        _ => "unexpected address stop".into(),
+                    });
+                }
+            }
+        }
+        report.diagnostics.sort();
+        report.diagnostics.dedup();
+        for (&address, sides) in observations.borrow().sides.iter() {
+            for (index, &feasible) in sides.iter().enumerate() {
+                if !feasible {
+                    report.branches.push(crate::symbolic::BranchProof {
+                        address: crate::addr::format(address),
+                        taken: index == 0,
+                        status: if report.complete { "unsat" } else { "unknown" }.into(),
+                        reason: if report.complete && !sides[0] && !sides[1] {
+                            Some("branch instruction is unreachable under the assumptions".into())
+                        } else if report.complete {
+                            None
+                        } else {
+                            Some(report.diagnostics.join("; "))
+                        },
+                    });
+                }
+            }
+        }
+        Ok(report)
+    }
+}
+
+fn defined_binary(op: crate::ir::BinOp, a: &Term, b: &Term) -> u64 {
+    match op {
+        crate::ir::BinOp::And => {
+            (a.defined & b.defined) | a.concrete.map_or(0, |v| !v) | b.concrete.map_or(0, |v| !v)
+        }
+        crate::ir::BinOp::Or => {
+            (a.defined & b.defined) | a.concrete.unwrap_or(0) | b.concrete.unwrap_or(0)
+        }
+        crate::ir::BinOp::Xor => a.defined & b.defined,
+        crate::ir::BinOp::Shl if b.defined == u64::MAX && b.concrete.is_some() => {
+            let count = b.concrete.unwrap_or(0) as u32 & 63;
+            (a.defined << count) | !((u64::MAX) << count)
+        }
+        crate::ir::BinOp::Shr if b.defined == u64::MAX && b.concrete.is_some() => {
+            let count = b.concrete.unwrap_or(0) as u32 & 63;
+            (a.defined >> count) | !((u64::MAX) >> count)
+        }
+        _ => 0,
+    }
+}
+
+fn record_branches(observations: &Rc<RefCell<BranchObservations>>, blocks: &[Block]) {
+    for block in blocks {
+        let mut address = block.start;
+        for statement in &block.stmts {
+            match statement {
+                Stmt::Assign {
+                    dest,
+                    value: Expr::Const(value),
+                } if dest.index == crate::lift::execution::ADDRESS => address = *value,
+                Stmt::Brif { .. } | Stmt::BrifFlags { .. } => {
+                    observations.borrow_mut().sides.entry(address).or_default();
+                }
+                _ => {}
+            }
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn an_invalid_switch_target_does_not_discard_other_cases() {
+        if !smt::Proofs::available() {
+            return;
+        }
+        let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/alt.o");
+        let binary = Binary::open(&path).expect("switch test image");
+        let address = *binary
+            .image()
+            .functions
+            .keys()
+            .next()
+            .expect("fixture function");
+        let options = Options {
+            arguments: vec![0],
+            ..Options::default()
+        };
+        let mut state =
+            State::new(&binary, &crate::addr::format(address), &options).expect("switch state");
+        let register = state.convention.arguments()[0];
+        state.cursor = Cursor {
+            blocks: Rc::from(vec![
+                Block {
+                    start: 0,
+                    stmts: vec![Stmt::Switch {
+                        index: Expr::reg(register, 64),
+                        cases: vec![(0, u64::MAX), (1, 1)],
+                        default: Some(2),
+                    }],
+                },
+                Block {
+                    start: 1,
+                    stmts: vec![Stmt::Ret {
+                        value: Expr::Const(1),
+                    }],
+                },
+                Block {
+                    start: 2,
+                    stmts: vec![Stmt::Ret {
+                        value: Expr::Const(0),
+                    }],
+                },
+            ]),
+            block: 0,
+            statement: 0,
+        };
+        let Step::Branch(states) = state.step(&binary, &[]).expect("switch successors") else {
+            panic!("symbolic switch must fork");
+        };
+        assert_eq!(states.len(), 3);
+        let mut returned = Vec::new();
+        let mut invalid = 0;
+        for mut state in states {
+            match state.step(&binary, &[]).expect("case step") {
+                Step::Stopped(reason) if reason == "return" => {
+                    let term = state
+                        .read_register(crate::arch::RETURN)
+                        .expect("case return");
+                    returned.extend(state.evaluate(&term, 1).expect("case value"));
+                }
+                Step::Stopped(reason) if reason.contains("unmapped executable address") => {
+                    invalid += 1
+                }
+                _ => panic!("unexpected switch case outcome"),
+            }
+        }
+        returned.sort_unstable();
+        assert_eq!(returned, [0, 1]);
+        assert_eq!(invalid, 1);
+    }
+
+    #[test]
+    fn smt_defined_bits_survive_partial_writes() {
+        use crate::ir::BinOp;
+        use crate::ir::smt::Proofs;
+        if !Proofs::available() {
+            return;
+        }
+        let mut proofs = Proofs::default();
+        for op in [BinOp::And, BinOp::Or, BinOp::Xor, BinOp::Shl, BinOp::Shr] {
+            for mask in [0, 0xff, 0xffff, 0xffff_0000, u64::MAX] {
+                for constant in [
+                    None,
+                    Some(0),
+                    Some(1),
+                    Some(8),
+                    Some(0xff),
+                    Some(!0xff),
+                    Some(64),
+                ] {
+                    let mut a = Term::constant(0);
+                    a.concrete = None;
+                    a.defined = mask;
+                    let mut b = Term::constant(constant.unwrap_or(0));
+                    if constant.is_none() {
+                        b.concrete = None;
+                        b.defined = mask;
+                    }
+                    let defined = smt::constant(defined_binary(op, &a, &b));
+                    let operation = match op {
+                        BinOp::And => "bvand",
+                        BinOp::Or => "bvor",
+                        BinOp::Xor => "bvxor",
+                        BinOp::Shl => "bvshl",
+                        BinOp::Shr => "bvlshr",
+                        _ => unreachable!(),
+                    };
+                    let left = constant.map_or_else(|| "r1".into(), smt::constant);
+                    let right = constant.map_or_else(|| "r3".into(), smt::constant);
+                    let left = if matches!(op, BinOp::Shl | BinOp::Shr) {
+                        format!("(bvand {left} {})", smt::constant(63))
+                    } else {
+                        left
+                    };
+                    let right = if matches!(op, BinOp::Shl | BinOp::Shr) {
+                        format!("(bvand {right} {})", smt::constant(63))
+                    } else {
+                        right
+                    };
+                    let assumption = format!(
+                        "(and (= (bvand r0 {0}) (bvand r2 {0})) (= (bvand r1 {0}) (bvand r3 {0})))",
+                        smt::constant(mask)
+                    );
+                    proofs.predicate(format!("{op:?} {mask:x} {constant:?}"), &format!("(=> {assumption} (= (bvand ({operation} r0 {left}) {defined}) (bvand ({operation} r2 {right}) {defined})))"), "true");
+                }
+            }
+        }
+        proofs.counterexample(
+            "undefined high byte",
+            "(bvand r0 #xffffffffffffffff)",
+            "(bvand r0 #x00000000000000ff)",
+        );
+        proofs.check();
     }
 }
