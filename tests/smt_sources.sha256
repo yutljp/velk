@@ -10,6 +10,7 @@ bfaf324bc4cb783da31fbb7e9734f1d0505228fe26463bd656e8b02a8fbe8b42  src/ir/eval/em
 578a542e6ba9d1dead163884fc6f975edeee5517fc87482d5e8022c3b3d77f74  src/ir/eval/symbolic.rs	fn defined_binary(
 c20fb33f9b497d99de05fcaa000e9512b312bc1c6406ca14e8de9f590224ad53  src/ir/eval/symbolic/libc.rs	fn case_conversion(
 f71c7b87a5d2924200666a3a2dfcdc6066976cb617db183678a20cd3e2f14bcf  src/ir/eval/symbolic/libc.rs	fn integer_overflow(
+e9159f253635c2a240d81f23f05ab61aa9d0862e46c32879f4c1b667d36c661f  src/ir/eval/symbolic/memory.rs	fn table_value(
 8491fafd370971c78168e15e5a18f21d6cf80f987f44ace07d7dabd8e428d57c  src/ir/mod.rs	pub fn bin(
 7ba4d833db4dddb29563e89101973ea76ef0baf15b41170b964b025ca482cbea  src/ir/semantics.rs	pub(crate) fn fold(
 29dfa59a046d778499a990e755cdfb9178863fd620857a755e5f89084bcddb2b  src/ir/visit.rs	pub fn substitute_values(

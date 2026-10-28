@@ -1,6 +1,7 @@
 //! Symbolic evaluation of lifted expressions using the shared SMT translation.
 
 mod libc;
+mod memory;
 
 use std::cell::RefCell;
 use std::collections::{BTreeMap, HashSet};
@@ -601,7 +602,18 @@ impl State {
                 if *width == 0 || *width > 8 {
                     return Err(invalid("invalid load width").into());
                 }
-                let address = self.resolve(self.eval(binary, addr)?)?;
+                let address = match self.resolve(self.eval(binary, addr)?) {
+                    Ok(address) => address,
+                    Err(Failure::Address(term, values, limited)) => {
+                        if let Some(value) =
+                            self.table_load(binary, &term, &values, *width, *signed)?
+                        {
+                            return Ok(value);
+                        }
+                        return Err(Failure::Address(term, values, limited));
+                    }
+                    Err(error) => return Err(error),
+                };
                 let bytes = self.read_memory(binary, address, usize::from(*width))?;
                 let mut text = smt::constant(0);
                 let mut concrete = Some(0u64);
@@ -698,8 +710,24 @@ impl State {
                 Err(reason) => Err(invalid(reason).into()),
             };
         }
-        if matches!(expression, Expr::Apply { .. }) {
-            return Err(invalid("operation with symbolic operands is not supported").into());
+        if let Expr::Apply { op, args } = expression
+            && (args.len() != op.arity()
+                || !matches!(
+                    op,
+                    crate::ir::Operation::InterleaveLow(8 | 16 | 32)
+                        | crate::ir::Operation::InterleaveHigh(8 | 16 | 32)
+                        | crate::ir::Operation::Widen {
+                            bits: 8 | 16 | 32,
+                            ..
+                        }
+                        | crate::ir::Operation::SumLanes(8 | 16 | 32 | 64)
+                        | crate::ir::Operation::Lanes(
+                            crate::ir::LaneOp::Add | crate::ir::LaneOp::ShiftRight,
+                            8 | 16 | 32 | 64
+                        )
+                ))
+        {
+            return Err(invalid(format!("unsupported symbolic operation: {op:?}")).into());
         }
         let terms: Vec<(&Expr, &str)> = operands
             .iter()

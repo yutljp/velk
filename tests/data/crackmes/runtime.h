@@ -1,0 +1,12 @@
+typedef unsigned long size_t;
+extern long read(int, void *, size_t);
+extern int scanf(const char *, ...);
+extern char *fgets(char *, int, void *);
+extern void *stdin;
+extern int puts(const char *);
+extern size_t strlen(const char *);
+extern int strcmp(const char *, const char *);
+extern int strncmp(const char *, const char *, size_t);
+extern int memcmp(const void *, const void *, size_t);
+extern void *memcpy(void *, const void *, size_t);
+extern long strtol(const char *, char **, int);

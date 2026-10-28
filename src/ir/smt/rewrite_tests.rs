@@ -19,6 +19,56 @@ fn load(addr: Expr, width: u8, signed: bool) -> Expr {
     }
 }
 
+#[test]
+fn vector_byte_sums_match_scalar_addition() {
+    if !Proofs::available() {
+        return;
+    }
+    let input = Expr::reg(0, 32);
+    let mut reference = Expr::Const(0);
+    for shift in [0, 8, 16, 24] {
+        let byte = raw_bin(
+            BinOp::And,
+            raw_bin(BinOp::Shr, input.clone(), Expr::Const(shift)),
+            Expr::Const(255),
+        );
+        reference = raw_bin(BinOp::Add, reference, byte);
+    }
+    let widened = Expr::apply(
+        Operation::Widen {
+            bits: 8,
+            signed: false,
+            high: false,
+        },
+        vec![input.clone()],
+    );
+    let arm_sum = Expr::apply(Operation::SumLanes(16), vec![widened, Expr::Const(0)]);
+    let interleaved = Expr::apply(Operation::InterleaveLow(8), vec![input, Expr::Const(0)]);
+    let high = raw_bin(BinOp::Shr, interleaved.clone(), Expr::Const(32));
+    let duplicated = raw_bin(
+        BinOp::Or,
+        high.clone(),
+        raw_bin(BinOp::Shl, high, Expr::Const(32)),
+    );
+    let pairs = Expr::apply(
+        Operation::Lanes(LaneOp::Add, 16),
+        vec![duplicated, interleaved],
+    );
+    let shifted = Expr::apply(
+        Operation::Lanes(LaneOp::ShiftRight, 32),
+        vec![pairs.clone(), Expr::Const(16)],
+    );
+    let x86_sum = raw_bin(
+        BinOp::And,
+        Expr::apply(Operation::Lanes(LaneOp::Add, 16), vec![shifted, pairs]),
+        Expr::Const(65535),
+    );
+    let mut proofs = Proofs::default();
+    proofs.expression("AArch64 byte sum", &arm_sum, &reference, 64);
+    proofs.expression("x86 byte sum", &x86_sum, &reference, 64);
+    proofs.check();
+}
+
 fn branch(cond: Cond, lhs: Expr, rhs: Expr) -> FunctionIr {
     let mut ir = FunctionIr::single_block(
         Isa::X86_64,
