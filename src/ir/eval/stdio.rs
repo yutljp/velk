@@ -2,6 +2,19 @@
 
 use std::collections::BTreeMap;
 
+use super::emulation::io::Operation;
+
+pub(super) fn stream_index(operation: Operation) -> Option<usize> {
+    use Operation::*;
+    match operation {
+        Fopen | Fclose | Fflush | Setvbuf | Fileno | Feof | Ferror => Some(0),
+        Fgets => Some(2),
+        Fread | Fwrite => Some(3),
+        Fputs => Some(1),
+        _ => None,
+    }
+}
+
 pub(super) fn valid_buffering_mode(mode: u32, format: crate::loader::Format) -> bool {
     if matches!(
         format,
@@ -104,6 +117,45 @@ impl<T: Clone> Files<T> {
             Some(stream) => Ok(stream),
             None => Err(format!("invalid FILE pointer 0x{token:x}")),
         }
+    }
+
+    pub fn set_buffering(
+        &mut self,
+        token: u64,
+        standard: bool,
+        mode: u32,
+        format: crate::loader::Format,
+    ) -> Result<u64, String> {
+        if !standard && let Err(error) = self.stream(token) {
+            return Err(error);
+        }
+        if !valid_buffering_mode(mode, format) {
+            return Ok(u64::from(u32::MAX));
+        }
+        if let Some(stream) = self.streams.get_mut(&token) {
+            stream.buffering = mode;
+        }
+        Ok(0)
+    }
+
+    pub fn indicator(&mut self, token: u64, operation: Operation) -> Result<u64, String> {
+        let stream = match self.stream(token) {
+            Ok(stream) => stream,
+            Err(error) => return Err(error),
+        };
+        let result = match operation {
+            Operation::Fileno => u64::from(stream.descriptor),
+            Operation::Feof => u64::from(stream.eof),
+            Operation::Ferror => u64::from(stream.error),
+            _ => 0,
+        };
+        if matches!(operation, Operation::Fclose) {
+            if let Err(error) = self.flush(token) {
+                return Err(error);
+            }
+            self.streams.remove(&token);
+        }
+        Ok(result)
     }
 
     pub fn read(&mut self, token: u64) -> Result<Option<T>, String> {

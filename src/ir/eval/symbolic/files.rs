@@ -16,12 +16,8 @@ impl State {
         operation: Operation,
     ) -> Evaluation<Option<Term>> {
         use Operation::*;
-        let stream_index = match operation {
-            Fopen | Fclose | Fflush | Setvbuf | Fileno | Feof | Ferror => 0,
-            Fgets => 2,
-            Fread | Fwrite => 3,
-            Fputs => 1,
-            _ => return Ok(None),
+        let Some(stream_index) = crate::ir::eval::stdio::stream_index(operation) else {
+            return Ok(None);
         };
         let mut values = Vec::new();
         for index in 0..=stream_index {
@@ -74,18 +70,9 @@ impl State {
                 let _buffer = self.number(binary, convention, 1)?;
                 let mode = self.number(binary, convention, 2)? as u32;
                 let _size = self.number(binary, convention, 3)?;
-                if !standard {
-                    self.files
-                        .stream(token)
-                        .map_err(|error| super::Failure::Error(invalid(error)))?;
-                }
-                if !crate::ir::eval::stdio::valid_buffering_mode(mode, binary.image().format) {
-                    return Ok(Some(Term::constant(u64::from(u32::MAX))));
-                }
-                if let Some(stream) = self.files.streams.get_mut(&token) {
-                    stream.buffering = mode;
-                }
-                0
+                self.files
+                    .set_buffering(token, standard, mode, binary.image().format)
+                    .map_err(|error| super::Failure::Error(invalid(error)))?
             }
             Fclose | Fileno | Feof | Ferror => {
                 if standard {
@@ -102,23 +89,9 @@ impl State {
                         .into()),
                     };
                 }
-                let stream = self
-                    .files
-                    .stream(token)
-                    .map_err(|error| super::Failure::Error(invalid(error)))?;
-                let result = match operation {
-                    Fileno => u64::from(stream.descriptor),
-                    Feof => u64::from(stream.eof),
-                    Ferror => u64::from(stream.error),
-                    _ => 0,
-                };
-                if matches!(operation, Fclose) {
-                    self.files
-                        .flush(token)
-                        .map_err(|error| super::Failure::Error(invalid(error)))?;
-                    self.files.streams.remove(&token);
-                }
-                result
+                self.files
+                    .indicator(token, operation)
+                    .map_err(|error| super::Failure::Error(invalid(error)))?
             }
             Fputs | Fwrite => {
                 self.files

@@ -13,12 +13,8 @@ impl Runner<'_> {
         kind: CallKind,
     ) -> Result<Option<u64>, Stop> {
         use Operation::*;
-        let stream_index = match operation {
-            Fopen | Fclose | Fflush | Setvbuf | Fileno | Feof | Ferror => 0,
-            Fgets => 2,
-            Fread | Fwrite => 3,
-            Fputs => 1,
-            _ => return Ok(None),
+        let Some(stream_index) = crate::ir::eval::stdio::stream_index(operation) else {
+            return Ok(None);
         };
         let width = crate::arch::pointer_bytes(self.image.isa);
         let mut args = Arguments::new(convention, kind);
@@ -58,16 +54,10 @@ impl Runner<'_> {
                 let _buffer = args.next(self, width)?;
                 let mode = args.next(self, 4)? as u32;
                 let _size = args.next(self, width)?;
-                if !standard {
-                    self.files.stream(token).map_err(error)?;
-                }
-                if !crate::ir::eval::stdio::valid_buffering_mode(mode, self.image.format) {
-                    return Ok(Some(u64::from(u32::MAX)));
-                }
-                if let Some(stream) = self.files.streams.get_mut(&token) {
-                    stream.buffering = mode;
-                }
-                Ok(Some(0))
+                self.files
+                    .set_buffering(token, standard, mode, self.image.format)
+                    .map(Some)
+                    .map_err(error)
             }
             Fclose | Fileno | Feof | Ferror => {
                 if standard {
@@ -83,18 +73,10 @@ impl Runner<'_> {
                         ))),
                     };
                 }
-                let stream = self.files.stream(token).map_err(error)?;
-                let result = match operation {
-                    Fileno => u64::from(stream.descriptor),
-                    Feof => u64::from(stream.eof),
-                    Ferror => u64::from(stream.error),
-                    _ => 0,
-                };
-                if matches!(operation, Fclose) {
-                    self.files.flush(token).map_err(error)?;
-                    self.files.streams.remove(&token);
-                }
-                Ok(Some(result))
+                self.files
+                    .indicator(token, operation)
+                    .map(Some)
+                    .map_err(error)
             }
             Fputs | Fwrite => {
                 self.files.stream(token).map_err(error)?;

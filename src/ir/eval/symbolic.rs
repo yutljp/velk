@@ -3,6 +3,7 @@
 mod files;
 mod libc;
 mod memory;
+mod syscalls;
 
 use std::cell::RefCell;
 use std::collections::{BTreeMap, HashSet};
@@ -24,6 +25,18 @@ pub struct Term {
     concrete: Option<u64>,
     defined: u64,
     session: Option<Rc<RefCell<Solver>>>,
+}
+
+impl State {
+    fn output_descriptor(descriptor: u32) -> bool {
+        matches!(descriptor, 1 | 2)
+    }
+
+    fn write_output(&mut self, descriptor: u32, bytes: Vec<Term>) {
+        if descriptor == 1 {
+            self.stdout.extend(bytes);
+        }
+    }
 }
 
 impl Term {
