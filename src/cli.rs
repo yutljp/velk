@@ -345,7 +345,7 @@ pub(super) enum Command {
     Explore {
         path: PathBuf,
         start: String,
-        options: velk::symbolic::Options,
+        options: Box<velk::symbolic::Options>,
         json: bool,
         opaque: bool,
         options_json: Option<String>,
@@ -431,13 +431,13 @@ impl Cli {
             return Command::Explore {
                 path: self.input.expect("clap requires input"),
                 start,
-                options: velk::symbolic::Options {
+                options: Box::new(velk::symbolic::Options {
                     find: self.find.into_iter().map(word).collect(),
                     avoid: self.avoid.into_iter().map(word).collect(),
                     stdin: self.stdin.unwrap_or(0),
                     returns: self.returns,
                     ..Default::default()
-                },
+                }),
                 json: self.json,
                 opaque: self.opaque.is_some(),
                 options_json: self.symbolic_options,

@@ -23,6 +23,10 @@ pub struct MemoryInput {
 #[derive(Clone, Debug, Deserialize, PartialEq, Eq)]
 #[serde(default, rename_all = "camelCase", deny_unknown_fields)]
 pub struct Options {
+    /// Base of a dedicated 4 KiB thread-local mapping; chosen automatically when absent.
+    pub tls_base: Option<crate::emulation::Word>,
+    /// Stack guard, truncated to pointer width; default 0x6a09e667bb67ae00.
+    pub canary: Option<crate::emulation::Word>,
     /// Addresses to reach before executing the instruction there.
     pub find: Vec<crate::emulation::Word>,
     /// Comparison on the outermost return value.
@@ -56,6 +60,8 @@ pub struct Options {
 impl Default for Options {
     fn default() -> Self {
         Self {
+            tls_base: None,
+            canary: None,
             find: Vec::new(),
             returns: None,
             avoid: Vec::new(),

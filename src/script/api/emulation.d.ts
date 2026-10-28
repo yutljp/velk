@@ -1,6 +1,10 @@
 /** Use strings for values above 2^53 - 1. Addresses are virtual addresses. */
 type EmulationWord = number | string;
 interface EmulationOptions {
+  /** Dedicated 4 KiB thread-local mapping; chosen automatically by default. */
+  tlsBase?: number | string;
+  /** Stack guard, truncated to pointer width; default "0x6a09e667bb67ae00". */
+  canary?: number | string;
   /** Stdin consumed in order; absent means EOF. At most 16 MiB. */
   stdin?: {text: string} | {hex: string} | {file: string};
   /** Additional descriptors bound to the same stdin stream. */
@@ -37,7 +41,7 @@ interface EmulationReport {
   returnValue: string;
   memory: { address: string; bytes: number[]; hex: string }[];
   steps: number;
-  reason: "return" | "end address" | "trap" | "step limit" | "time limit" | "error";
+  reason: "return" | "end address" | "trap" | "stack check failed" | "step limit" | "time limit" | "error";
   address: string;
   error: string | null;
   trace: string[];

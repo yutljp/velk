@@ -50,6 +50,18 @@ MCP では `velk_emulate` に `{path, start, options, arch?}` を渡します。
 `velk_run_script` を使います。`velk_read_api` の `topic: "emulation"` で
 すべてのオプションと結果の型を確認できます。
 
+実行ごとに独立した 4 KiB のスレッドローカル領域をマップします。`tlsBase` で
+自動選択されるベースを上書きでき、重複やアドレスのオーバーフローは拒否します。
+x86-64 の FS ベース、i386 の GS ベース、AArch64 の `tpidr_el0` をこの領域に設定します。
+固定のスタックガードは `0x6a09e667bb67ae00`（i386 は下位 32 ビット）で、`canary`
+で上書きできます。格納先は FS + `0x28`、GS + `0x14`、およびこのオフセットを使う
+AArch64 sysreg ビルドの TP + `0x28` です。AArch64 glibc はグローバルガードを使い、
+定義された `__stack_chk_guard` データシンボルも初期化します。x86 の自己ポインターを
+除き、残りはゼロです。これはスタック保護の初期状態であり、TLS ローダーではありません。
+明示したレジスター値とメモリー入力を優先します。`__stack_chk_fail` または
+`__stack_chk_fail_local` の呼び出しで `stack check failed` として停止し、
+シンボリック探索では診断にこの理由を含めます。
+
 ## 状態と制限
 
 - `registers` は完全なレジスター名と符号なし値の対応です。例は `rax`、
@@ -99,7 +111,7 @@ C の `int` として返します。割り当てはヒープ内で整列し、�
 
 結果には最終 `registers`、整数 `returnValue`、変更メモリー、`steps`、停止
 `address`、`reason`、`error`、任意の `trace` を含めます。停止理由は `return`、
-`end address`、`trap`、`step limit`、`time limit`、`error` です。CLI は復帰か
+`end address`、`trap`、`stack check failed`、`step limit`、`time limit`、`error` です。CLI は復帰か
 終了アドレスの場合だけ成功します。MCP は他の停止をエラーとし、レポートを維持します。
 不正な初期設定は入力エラーです。
 

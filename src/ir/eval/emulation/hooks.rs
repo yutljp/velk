@@ -4,6 +4,7 @@ use super::{CallKind, Convention, HEAP_SIZE, Runner, Stop};
 
 #[derive(Clone, Copy)]
 pub(crate) enum Hook {
+    StackCheckFail,
     Copy,
     Move,
     Set,
@@ -27,6 +28,8 @@ pub(crate) enum Hook {
 }
 
 const HOOKS: &[(&str, Hook)] = &[
+    ("__stack_chk_fail", Hook::StackCheckFail),
+    ("__stack_chk_fail_local", Hook::StackCheckFail),
     ("printf", Hook::Io(super::io::Operation::Printf)),
     ("fprintf", Hook::Io(super::io::Operation::Fprintf)),
     ("sprintf", Hook::Io(super::io::Operation::Sprintf)),
@@ -79,7 +82,7 @@ const HOOKS: &[(&str, Hook)] = &[
 ];
 
 pub(crate) fn find(name: &str) -> Option<Hook> {
-    let name = if name.starts_with("__isoc99_") {
+    let name = if name.starts_with("__isoc99_") || name.starts_with("__stack_chk_") {
         name
     } else {
         name.strip_prefix('_').unwrap_or(name)
@@ -255,6 +258,9 @@ impl Runner<'_> {
         convention: Convention,
         kind: CallKind,
     ) -> std::result::Result<u64, Stop> {
+        if let Hook::StackCheckFail = hook {
+            return Err(Stop::StackCheckFail);
+        }
         if let Hook::Io(operation) = hook {
             return self.io_hook(operation, convention, kind);
         }
@@ -264,7 +270,9 @@ impl Runner<'_> {
             Err(stop) => return Err(stop),
         };
         let value = match hook {
-            Hook::Io(_) => unreachable!("I/O hooks return above"),
+            Hook::StackCheckFail | Hook::Io(_) => {
+                unreachable!("terminal and I/O hooks return above")
+            }
             Hook::Allocate => self.allocate(first),
             Hook::AllocateZero => {
                 let count = match self.argument(1, convention, kind) {

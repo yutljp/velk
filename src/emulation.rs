@@ -1,6 +1,7 @@
 //! Bounded execution of loaded machine code through the IR interpreter.
 
 mod memory;
+pub(crate) mod tls;
 pub(crate) use memory::{HEAP_SIZE, Memory};
 
 use std::collections::BTreeMap;
@@ -154,6 +155,10 @@ pub struct ReadResult {
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 #[serde(default, rename_all = "camelCase", deny_unknown_fields)]
 pub struct Options {
+    /// Base of a dedicated 4 KiB thread-local mapping; chosen automatically when absent.
+    pub tls_base: Option<Word>,
+    /// Stack guard, truncated to pointer width; default 0x6a09e667bb67ae00.
+    pub canary: Option<Word>,
     /// Stdin bytes consumed in order by input hooks; absent means EOF.
     pub stdin: Option<Input>,
     /// Additional descriptors bound to stdin.
@@ -185,6 +190,8 @@ pub struct Options {
 impl Default for Options {
     fn default() -> Self {
         Self {
+            tls_base: None,
+            canary: None,
             stdin: None,
             stdin_descriptors: Vec::new(),
             argv: None,

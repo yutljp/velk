@@ -196,6 +196,7 @@ pub fn reg_name(isa: Isa, index: u16, width: u8) -> String {
         return format!("t{}", temp_id(index));
     }
     match isa {
+        Isa::AArch64 if index == crate::arch::aarch64::TPIDR_EL0 => "tpidr_el0".to_owned(),
         Isa::AArch64 if index >= crate::arch::aarch64::V0 => {
             let number = (index - crate::arch::aarch64::V0) / 2;
             match ((index - crate::arch::aarch64::V0) % 2, width) {

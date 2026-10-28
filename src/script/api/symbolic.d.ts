@@ -1,9 +1,13 @@
 /** Symbolic execution needs z3 -in or bitwuzla on PATH, or VELK_SOLVER (a command line).
  * Bounds count IR statements and states; they do not use elapsed time.
- * Initial physical registers are zero except the stack pointer, as in emulation.
+ * Initial physical registers are zero except the stack and thread pointers, as in emulation.
  * Only little-endian x86-64 and AArch64 are supported.
  */
 interface SymbolicOptions {
+  /** Dedicated 4 KiB thread-local mapping; chosen automatically by default. */
+  tlsBase?: number | string;
+  /** Stack guard, truncated to pointer width; default "0x6a09e667bb67ae00". */
+  canary?: number | string;
   returns?: {eq: number | string} | {ne: number | string} | {lt: number | string} | {gt: number | string};
   stdinDescriptors?: number[];
   find?: (number | string)[];

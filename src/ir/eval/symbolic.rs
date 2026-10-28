@@ -174,9 +174,25 @@ impl State {
             stop: None,
             branch_observations: None,
         };
+        let memory = state.mapped_memory(image)?;
+        let initial = match crate::emulation::tls::initial(image, &memory, options.canary.as_ref())
+        {
+            Ok(initial) => initial,
+            Err(error) => return Err(invalid(error)),
+        };
+        for (address, byte) in initial {
+            state
+                .memory
+                .insert(address, Term::constant(u64::from(byte)));
+        }
         let physical = super::emulation::physical_registers(image.isa);
         for &register in &physical {
             state.registers.insert(register, Term::constant(0));
+        }
+        if let Some(register) = crate::emulation::tls::register(image.isa) {
+            state
+                .registers
+                .insert(register, Term::constant(memory.tls_base));
         }
         let stack = super::stack_top(image.isa) - if image.isa == Isa::X86_64 { 8 } else { 0 };
         state
@@ -236,7 +252,7 @@ impl State {
             if !options.arguments.is_empty() || !options.argument_values.is_empty() {
                 return Err(invalid("argv and scalar arguments are mutually exclusive"));
             }
-            let memory = Memory::new(image).map_err(invalid)?;
+            let memory = state.mapped_memory(image)?;
             let heap_end = memory
                 .heap_base
                 .checked_add(crate::emulation::HEAP_SIZE)
@@ -376,10 +392,24 @@ impl State {
         Ok(())
     }
 
+    pub(super) fn mapped_memory<'image>(&self, image: &'image Image) -> Result<Memory<'image>> {
+        let base = match &self.options.tls_base {
+            Some(word) => match word.value() {
+                Ok(value) => Some(value),
+                Err(error) => return Err(error),
+            },
+            None => None,
+        };
+        match Memory::with_tls(image, base) {
+            Ok(memory) => Ok(memory),
+            Err(error) => Err(invalid(error)),
+        }
+    }
+
     /// Reads byte terms from concrete addresses using emulation's memory mapping.
     pub fn read_memory(&self, binary: &Binary, address: u64, size: usize) -> Result<Vec<Term>> {
         self.check_binary(binary)?;
-        let memory = Memory::new(binary.image()).map_err(invalid)?;
+        let memory = self.mapped_memory(binary.image())?;
         if !memory.check(address, size as u64, /* write */ false) {
             return Err(memory_failure(&memory));
         }
@@ -402,7 +432,7 @@ impl State {
     /// Writes low eight bits of each term to writable concrete byte addresses.
     pub fn write_memory(&mut self, binary: &Binary, address: u64, bytes: &[Term]) -> Result<()> {
         self.check_binary(binary)?;
-        let memory = Memory::new(binary.image()).map_err(invalid)?;
+        let memory = self.mapped_memory(binary.image())?;
         if !memory.check(address, bytes.len() as u64, /* write */ true) {
             return Err(memory_failure(&memory));
         }
@@ -564,7 +594,7 @@ impl State {
             return Err(invalid("invalid memory width"));
         }
         self.require_defined(term, u32::from(width) * 8)?;
-        let memory = Memory::new(image).map_err(invalid)?;
+        let memory = self.mapped_memory(image)?;
         if !memory.check(address, u64::from(width), /* write */ true) {
             return Err(memory_failure(&memory));
         }
@@ -1098,6 +1128,24 @@ impl State {
                     }
                 }
                 self.cursor = frame.cursor;
+            }
+            Stmt::Machine {
+                instruction:
+                    crate::ir::MachineInstruction::ArmSystem {
+                        register: 0x5e82,
+                        write,
+                    },
+                inputs,
+                outputs,
+            } if self.isa == Isa::AArch64 => {
+                let register = crate::arch::aarch64::TPIDR_EL0;
+                if *write {
+                    let value = self.eval(binary, &inputs[0])?;
+                    self.registers.insert(register, value);
+                } else {
+                    let value = self.read_register(register)?;
+                    self.registers.insert(outputs[0].index, value);
+                }
             }
             Stmt::Trap => return Ok(Some(Step::Stopped("trap".to_owned()))),
             Stmt::Unsupported { text, .. } => {

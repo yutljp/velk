@@ -24,6 +24,8 @@ pub mod x86 {
 }
 
 pub mod aarch64 {
+    /// The EL0 software thread identifier, used as the thread-local base.
+    pub const TPIDR_EL0: u16 = 96;
     /// x30, where a call leaves the address it returns to.
     pub const LR: u16 = 30;
     pub const SP: u16 = 31;

@@ -142,11 +142,12 @@ pub(crate) fn run(
         Command::Explore {
             path,
             start,
-            mut options,
+            options,
             json,
             opaque,
             options_json,
         } => {
+            let mut options = *options;
             let binary = match crate::open_binary(&path, project, input_options, signature_options)
             {
                 Ok(binary) => binary,

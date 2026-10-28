@@ -138,6 +138,9 @@ impl State {
         let Some(hook) = hooks::find(name) else {
             return Err(invalid(format!("unsupported symbolic import: {name}")).into());
         };
+        if matches!(hook, Hook::StackCheckFail) {
+            return Err(invalid("stack check failed").into());
+        }
         if matches!(hook, Hook::IntegerEnd)
             && matches!(
                 binary.image().format,
@@ -757,7 +760,7 @@ impl State {
 
 impl State {
     pub(super) fn initialize_streams(&mut self, binary: &Binary) -> crate::error::Result<()> {
-        let memory = crate::emulation::Memory::new(binary.image()).map_err(invalid)?;
+        let memory = self.mapped_memory(binary.image())?;
         let mut next = memory.heap_base;
         for &address in self.memory.keys() {
             if (memory.heap_base..memory.heap_base.saturating_add(crate::emulation::HEAP_SIZE))
@@ -850,7 +853,7 @@ impl State {
             let Some(end) = destination.checked_add(bytes.len() as u64) else {
                 return Err(invalid("getline allocation overflows").into());
             };
-            let memory = crate::emulation::Memory::new(binary.image()).map_err(invalid)?;
+            let memory = self.mapped_memory(binary.image())?;
             if end > memory.heap_base.saturating_add(crate::emulation::HEAP_SIZE) {
                 return Err(invalid("getline exceeds heap").into());
             }

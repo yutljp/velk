@@ -49,6 +49,7 @@ enum Stop {
     Return,
     End,
     Trap,
+    StackCheckFail,
     Steps,
     Time,
     Error(String),
@@ -58,7 +59,7 @@ pub(crate) fn physical_registers(isa: Isa) -> Vec<u16> {
     match isa {
         Isa::X86_64 => (0..82).collect(),
         Isa::I386 => (0..8).chain(16..82).collect(),
-        Isa::AArch64 => (0..96).collect(),
+        Isa::AArch64 => (0..97).collect(),
         Isa::Arm32 => (0..16).chain(64..96).collect(),
         Isa::Unsupported => Vec::new(),
     }
@@ -99,7 +100,16 @@ fn run_with_recovery(
             "execution requires a supported little-endian architecture",
         ));
     }
-    let strict = match Memory::new(image) {
+    let strict = match Memory::with_tls(
+        image,
+        match &options.tls_base {
+            Some(word) => match word.value() {
+                Ok(value) => Some(value),
+                Err(error) => return Err(error),
+            },
+            None => None,
+        },
+    ) {
         Ok(memory) => memory,
         Err(error) => return Err(invalid(error)),
     };
@@ -228,6 +238,18 @@ fn initialize_registers(
             0
         };
     machine.registers.insert(sp, stack);
+    let memory = machine
+        .strict_memory
+        .as_ref()
+        .expect("execution uses mapped memory");
+    let initial = match crate::emulation::tls::initial(image, memory, options.canary.as_ref()) {
+        Ok(initial) => initial,
+        Err(error) => return Err(invalid(error)),
+    };
+    if let Some(register) = crate::emulation::tls::register(image.isa) {
+        machine.registers.insert(register, memory.tls_base);
+    }
+    machine.memory.extend(initial);
     for (name, word) in &options.registers {
         let found = physical
             .iter()
@@ -360,6 +382,7 @@ impl Runner<'_> {
         let (mut reason, mut error) = match stopped {
             Stop::Return => ("return", None),
             Stop::End => ("end address", None),
+            Stop::StackCheckFail => ("stack check failed", None),
             Stop::Trap => ("trap", None),
             Stop::Steps => ("step limit", None),
             Stop::Time => ("time limit", None),
@@ -808,6 +831,36 @@ impl Runner<'_> {
             }
             Stmt::Br { target: None } => {
                 return Err(Stop::Error("branch target is unknown".to_owned()));
+            }
+            Stmt::Machine {
+                instruction:
+                    crate::ir::MachineInstruction::ArmSystem {
+                        register: 0x5e82,
+                        write,
+                    },
+                inputs,
+                outputs,
+            } if self.image.isa == Isa::AArch64 => {
+                let register = crate::arch::aarch64::TPIDR_EL0;
+                if *write {
+                    let value = match self.eval(&inputs[0]) {
+                        Ok(value) => value,
+                        Err(stop) => return Err(stop),
+                    };
+                    self.assign_fact(
+                        RegRef {
+                            index: register,
+                            width: 64,
+                        },
+                        Fact::constant(value),
+                    );
+                } else {
+                    let value = match self.register_fact(register, 64) {
+                        Ok(value) => value,
+                        Err(stop) => return Err(stop),
+                    };
+                    self.assign_fact(outputs[0], value);
+                }
             }
             Stmt::Machine { .. } => {
                 return Err(Stop::Error(

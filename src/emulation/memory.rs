@@ -9,12 +9,15 @@ use super::MemoryChange;
 
 const DEFAULT_HEAP_BASE: u64 = 0x1000_0000;
 pub(crate) const HEAP_SIZE: u64 = 1 << 24;
+const TLS_SIZE: u64 = 0x1000;
 const STACK_SIZE: u64 = 1 << 20;
 
 pub(crate) struct Memory<'a> {
     image: &'a Image,
     pub(crate) heap_base: u64,
     heap_end: u64,
+    pub(crate) tls_base: u64,
+    tls_end: u64,
     stack_start: u64,
     stack_end: u64,
     pub(crate) fault: RefCell<Option<String>>,
@@ -22,6 +25,10 @@ pub(crate) struct Memory<'a> {
 
 impl<'a> Memory<'a> {
     pub(crate) fn new(image: &'a Image) -> Result<Self, String> {
+        Self::with_tls(image, None)
+    }
+
+    pub(crate) fn with_tls(image: &'a Image, base: Option<u64>) -> Result<Self, String> {
         let stack_end = crate::ir::eval::stack_top(image.isa) + 0x1000;
         let stack_start = stack_end - STACK_SIZE;
         let mut ranges = vec![(stack_start, stack_end)];
@@ -47,7 +54,7 @@ impl<'a> Memory<'a> {
         } else {
             stack_start
         };
-        for (start, end) in ranges {
+        for &(start, end) in &ranges {
             let Some(heap_end) = heap_base.checked_add(HEAP_SIZE) else {
                 return Err("heap address overflows".to_owned());
             };
@@ -61,7 +68,29 @@ impl<'a> Memory<'a> {
         let Some(heap_end) = heap_base.checked_add(HEAP_SIZE).filter(|end| *end <= limit) else {
             return Err("no address range is available for the heap".to_owned());
         };
+        ranges.push((heap_base, heap_end));
+        ranges.sort_unstable();
+        let mut tls_base = base.unwrap_or(0x2000_0000);
+        for &(start, end) in &ranges {
+            let Some(tls_end) = tls_base.checked_add(TLS_SIZE) else {
+                return Err("thread-local range overflows".to_owned());
+            };
+            if start < tls_end && end > tls_base {
+                if base.is_some() {
+                    return Err("thread-local range overlaps mapped memory".to_owned());
+                }
+                let Some(next) = end.checked_add(TLS_SIZE - 1) else {
+                    return Err("no address range is available for thread-local storage".to_owned());
+                };
+                tls_base = next & !(TLS_SIZE - 1);
+            }
+        }
+        let Some(tls_end) = tls_base.checked_add(TLS_SIZE).filter(|end| *end <= limit) else {
+            return Err("thread-local range exceeds the address space".to_owned());
+        };
         Ok(Self {
+            tls_base,
+            tls_end,
             image,
             heap_base,
             heap_end,
@@ -72,7 +101,8 @@ impl<'a> Memory<'a> {
     }
 
     fn zero_area(&self, address: u64) -> bool {
-        (self.heap_base..self.heap_end).contains(&address)
+        (self.tls_base..self.tls_end).contains(&address)
+            || (self.heap_base..self.heap_end).contains(&address)
             || (self.stack_start..self.stack_end).contains(&address)
     }
 
@@ -86,6 +116,8 @@ impl<'a> Memory<'a> {
             if self.zero_area(at) {
                 let limit = if (self.heap_base..self.heap_end).contains(&at) {
                     self.heap_end
+                } else if (self.tls_base..self.tls_end).contains(&at) {
+                    self.tls_end
                 } else {
                     self.stack_end
                 };
@@ -210,5 +242,33 @@ mod tests {
         assert_eq!(memory.byte(memory.heap_base), 0);
         assert!(memory.check(memory.heap_base, HEAP_SIZE, /* write */ true));
         assert!(!memory.check(address, 1, /* write */ true));
+    }
+}
+
+#[cfg(test)]
+mod tls_tests {
+    use super::*;
+
+    #[test]
+    fn thread_local_storage_avoids_sections_and_checks_both_boundaries() {
+        for isa in [
+            crate::loader::Isa::X86_64,
+            crate::loader::Isa::I386,
+            crate::loader::Isa::AArch64,
+        ] {
+            let image = Image::from_code(isa, 0x2000_0000, vec![0xc3]);
+            let memory = Memory::new(&image).expect("TLS follows the section");
+            assert_eq!(memory.tls_base, 0x2000_1000);
+            assert!(memory.check(memory.tls_base, TLS_SIZE, /* write */ true));
+            assert!(!memory.check(memory.tls_base - 1, 1, /* write */ false));
+            assert!(!memory.check(memory.tls_base + TLS_SIZE - 1, 2, /* write */ true));
+            assert!(Memory::with_tls(&image, Some(0x2000_0000)).is_err());
+            assert!(Memory::with_tls(&image, Some(DEFAULT_HEAP_BASE)).is_err());
+            assert!(Memory::with_tls(&image, Some(crate::ir::eval::stack_top(isa))).is_err());
+            assert!(Memory::with_tls(&image, Some(u64::MAX)).is_err());
+            if isa == crate::loader::Isa::I386 {
+                assert!(Memory::with_tls(&image, Some((1u64 << 32) - TLS_SIZE + 1)).is_err());
+            }
+        }
     }
 }

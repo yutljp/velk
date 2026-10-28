@@ -50,6 +50,18 @@ the complete JSON report as text. Use `velk_run_script` to select fields or slic
 large dumps. `velk_read_api` with `topic: "emulation"` describes every option and
 result field.
 
+Each execution starts with a separate 4 KiB thread-local mapping. `tlsBase`
+overrides its automatically selected base; overlapping or overflowing ranges are
+rejected. The x86-64 FS base, i386 GS base, and AArch64 `tpidr_el0` point there.
+The fixed stack guard is `0x6a09e667bb67ae00` (low 32 bits on i386); `canary`
+overrides it. Guards occupy FS + `0x28`, GS + `0x14`, and TP + `0x28` for
+AArch64 sysreg builds using that offset. AArch64 glibc uses the global guard;
+defined `__stack_chk_guard` data symbols are initialized too. Other TLS contents
+are zero except x86 self pointers. This supplies stack protection state, not a
+runtime TLS loader. Explicit register and memory inputs take precedence.
+Calls to `__stack_chk_fail` or `__stack_chk_fail_local` stop with
+`stack check failed`; symbolic searches include that reason in diagnostics.
+
 ## Input, output and memory reads
 
 For a function that reads a line from stdin and prints its verdict:
@@ -152,7 +164,7 @@ System calls always stop.
 
 The report includes final `registers`, the integer `returnValue`, changed memory,
 `steps`, the stopping `address`, `reason`, `error`, and an optional `trace`. Stop
-reasons are `return`, `end address`, `trap`, `step limit`, `time limit`, and `error`.
+reasons are `return`, `end address`, `trap`, `stack check failed`, `step limit`, `time limit`, and `error`.
 The CLI succeeds only for return or end address. MCP marks other stops as errors,
 while preserving the report. Invalid setup produces an input error.
 

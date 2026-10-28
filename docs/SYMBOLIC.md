@@ -24,7 +24,19 @@ s.evaluate(x); // ["0x2a"]
 
 A `Symbolic` state can read and write register and memory terms, add comparisons, check satisfiability, enumerate unsigned values, compute unsigned minimum and maximum, clone with `fork()`, and step to a branch or address. `step()` returns independently constrained successor states at a branch. Terms belong to their solver session; forks share that session. Dispose of JavaScript states with `dispose()` when finished. Rust exposes `velk::symbolic::{State, Term, Step, Options, explore}`. MCP provides `velk_explore`, `velk_solve`, and `velk_branch_feasibility` with `path`, `start` and `options` arguments.
 
-Initial physical registers are zero except the stack pointer, following concrete emulation. `arguments` selects scalar argument indices; `argumentValues` sets other arguments. `argv` supplies symbolic string lengths, including argv[0]; their bytes cannot be zero, and terminators are concrete. `memory` selects writable mapped byte ranges. Register inputs use physical register indices. Memory addresses can be strings to retain all 64 bits.
+Each execution starts with a separate 4 KiB thread-local mapping. `tlsBase`
+overrides its automatically selected base; overlapping or overflowing ranges are
+rejected. The x86-64 FS base, i386 GS base, and AArch64 `tpidr_el0` point there.
+The fixed stack guard is `0x6a09e667bb67ae00` (low 32 bits on i386); `canary`
+overrides it. Guards occupy FS + `0x28`, GS + `0x14`, and TP + `0x28` for
+AArch64 sysreg builds using that offset. AArch64 glibc uses the global guard;
+defined `__stack_chk_guard` data symbols are initialized too. Other TLS contents
+are zero except x86 self pointers. This supplies stack protection state, not a
+runtime TLS loader. Explicit register and memory inputs take precedence.
+Calls to `__stack_chk_fail` or `__stack_chk_fail_local` stop with
+`stack check failed`; symbolic searches include that reason in diagnostics.
+
+Initial physical registers are zero except the stack and thread pointers, following concrete emulation. `arguments` selects scalar argument indices; `argumentValues` sets other arguments. `argv` supplies symbolic string lengths, including argv[0]; their bytes cannot be zero, and terminators are concrete. `memory` selects writable mapped byte ranges. Register inputs use physical register indices. Memory addresses can be strings to retain all 64 bits.
 
 Limits are deterministic: `stepLimit` defaults to 100000 IR statements per path, `pathLimit` to 256 visited states, and `addressLimit` to eight possible values per symbolic address. Address values are enumerated in increasing unsigned order. Each value gets a constrained successor; an extra diagnostic reports when more values exist. Branches are searched in depth-first order, taken side first. Concrete inputs use successive unsigned minima under the complete path constraints, so the assignment is consistent across inputs. There is no execution wall-time budget. A solver that does not respond can block the calling operation.
 
@@ -48,3 +60,5 @@ uv run --no-project tests/crackmes.py --cases table sum --variants elf > target/
 ```
 
 Omit `--cases` and `--variants` to evaluate all programs and built variants. The builder uses freestanding ELF imports for both architectures at `-O0` and `-O2`, with stack protection and sibling-call optimization disabled, matching the symbolic fixture build. On Linux it also builds dynamic and static libc executables when the corresponding compiler is available. Evaluation records CLI exploration and return searches separately, including elapsed seconds, diagnostics, concrete inputs, and native replay results. The default external evaluation timeout is 60 seconds per search; it is separate from symbolic execution's deterministic limits. Cross-architecture replay uses QEMU when available; otherwise the report identifies execution of the same C program on the host architecture. A missing replay binary produces `unverified`, and a rejected input produces `wrong`. Successful replay requires exit status zero and exactly `success` followed by a newline. Freestanding input stubs are never used for native validation.
+
+The builder also creates stack-protected byte-sum and table examples at both optimization levels, plus an i386 byte-sum example. AArch64 variants cover global and TP + `0x28` guards. Regression tests replay solved inputs against host executables built with stack protection.
