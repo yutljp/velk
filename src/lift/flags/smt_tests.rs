@@ -15,6 +15,59 @@ fn decided(test: Test) -> Option<String> {
     }
 }
 
+#[test]
+fn condition_values_preserve_tests() {
+    if !Proofs::available() {
+        return;
+    }
+    let mut proofs = Proofs::default();
+    for bits in [8, 16, 32, 64] {
+        for isa in [Isa::Arm32, Isa::AArch64, Isa::I386, Isa::X86_64] {
+            for flags in [
+                Flags::difference(Expr::reg(0, bits), Expr::reg(1, bits)),
+                Flags::sum(Expr::reg(0, bits), Expr::reg(1, bits)),
+            ] {
+                let (byte, overflow) = super::super::condition_values(&flags, isa)
+                    .expect("arithmetic sets all condition flags");
+                let restored = Flags::stored(byte, Some(overflow));
+                for cond in CONDITIONS {
+                    let original = decided(flags.test(cond, isa)).expect("condition is known");
+                    let reconstructed =
+                        decided(restored.test(cond, isa)).expect("condition is known");
+                    proofs.predicate(
+                        format!(
+                            "condition values/{bits}/{isa:?}/{:?}/{cond:?}",
+                            flags.source
+                        ),
+                        &original,
+                        &reconstructed,
+                    );
+                }
+                if matches!(isa, Isa::I386 | Isa::X86_64) {
+                    for even in [false, true] {
+                        let original = decided(flags.parity(even)).expect("parity is known");
+                        let reconstructed =
+                            decided(restored.parity(even)).expect("parity is known");
+                        proofs.predicate(
+                            format!("condition parity/{bits}/{isa:?}/{:?}/{even}", flags.source),
+                            &original,
+                            &reconstructed,
+                        );
+                    }
+                    let original = decided(flags.adjust()).expect("adjust is known");
+                    let reconstructed = decided(restored.adjust()).expect("adjust is known");
+                    proofs.predicate(
+                        format!("condition adjust/{bits}/{isa:?}/{:?}", flags.source),
+                        &original,
+                        &reconstructed,
+                    );
+                }
+            }
+        }
+    }
+    proofs.check();
+}
+
 fn reference(cond: Cond, n: &str, z: &str, c: &str, v: &str) -> String {
     match cond {
         Cond::Eq => z.to_owned(),

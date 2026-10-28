@@ -5,6 +5,7 @@ mod com;
 mod constant_spills;
 mod go_types;
 mod indirect;
+pub(crate) use indirect::constant_branch_targets;
 mod jump_table;
 pub(crate) mod navigation;
 mod optimization;

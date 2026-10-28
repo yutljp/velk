@@ -53,6 +53,9 @@ and long multiplication with accumulation.
 Word joining and nested frame offsets have symbolic checks. Frame alias
 subtraction is checked through the real settling pass. Calls, ABI placement,
 image-backed literal reads, frame alignment and general control flow remain open.
+Condition flags packed for control-flow joins have symbolic checks for addition
+and subtraction at 8, 16, 32 and 64 bits, including x86 parity and adjust.
+The checks do not establish which paths reach a join.
 Offsets in recovered frame objects have symbolic address checks for i386,
 x86-64, AArch64 and ARM32. Compiled array loops check that the printed function
 uses one object and returns the same values as the C source. C object provenance

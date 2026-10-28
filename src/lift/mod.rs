@@ -2,6 +2,7 @@ mod aarch64;
 mod arm32;
 pub(crate) use arm32::fold_literals;
 pub(crate) use arm32::listing as arm32_listing;
+pub(crate) use arm32::literal as arm32_literal;
 pub(crate) use arm32::position_independent_instruction as arm32_position_independent_instruction;
 #[cfg(test)]
 mod atomic_tests;
@@ -73,9 +74,12 @@ struct CarriedFlags {
     entry: HashMap<u64, flags::Flags>,
     exporters: HashSet<u64>,
     zero_exporters: HashSet<u64>,
+    condition_exporters: HashSet<u64>,
 }
 
 const ZERO_CARRIED: u16 = crate::ir::TEMP_BASE + 0x4c;
+const CONDITION_BYTE: u16 = crate::ir::TEMP_BASE + 0x55;
+const CONDITION_OVERFLOW: u16 = crate::ir::TEMP_BASE + 0x56;
 
 fn zero_carried(isa: Isa) -> u16 {
     if isa == Isa::Arm32 {
@@ -1120,6 +1124,14 @@ fn build_carrying<M: Machine>(
     };
     let predecessors = flag_predecessors(&blocks);
     let mut carried = carry_flags(&blocks, &exits, extra_targets, &predecessors);
+    carry_conditions(
+        image.isa,
+        &blocks,
+        &exits,
+        extra_targets,
+        &predecessors,
+        &mut carried,
+    );
     carry_zero(
         image.isa,
         &blocks,
@@ -1145,6 +1157,98 @@ fn build_carrying<M: Machine>(
         Err(error) => return Err(error),
     };
     Ok((blocks, pulled))
+}
+
+fn condition_values(flags: &flags::Flags, isa: Isa) -> Option<(Expr, Expr)> {
+    use crate::ir::{BinOp, Cond};
+    let bit = |cond| {
+        flags
+            .test(cond, isa)
+            .select(Expr::constant(1), Expr::constant(0))
+    };
+    let (Some(negative), Some(zero), Some(not_carry), Some(overflow)) =
+        (bit(Cond::Mi), bit(Cond::Eq), bit(Cond::Cc), bit(Cond::Vs))
+    else {
+        return None;
+    };
+    let mut byte = Expr::bin(
+        BinOp::Or,
+        Expr::bin(
+            BinOp::Or,
+            Expr::bin(BinOp::Shl, negative, Expr::constant(7)),
+            Expr::bin(BinOp::Shl, zero, Expr::constant(6)),
+        ),
+        not_carry,
+    );
+    if matches!(isa, Isa::I386 | Isa::X86_64) {
+        let Some(parity) = flags
+            .parity(true)
+            .select(Expr::constant(1), Expr::constant(0))
+        else {
+            return None;
+        };
+        let Some(adjust) = flags.adjust().select(Expr::constant(1), Expr::constant(0)) else {
+            return None;
+        };
+        byte = Expr::bin(
+            BinOp::Or,
+            byte,
+            Expr::bin(BinOp::Shl, parity, Expr::constant(2)),
+        );
+        byte = Expr::bin(
+            BinOp::Or,
+            byte,
+            Expr::bin(BinOp::Shl, adjust, Expr::constant(4)),
+        );
+    }
+    Some((byte, overflow))
+}
+
+fn carry_conditions(
+    isa: Isa,
+    blocks: &[Block],
+    exits: &HashMap<u64, Exit>,
+    extra_targets: &HashSet<u64>,
+    predecessors: &[Vec<usize>],
+    carried: &mut CarriedFlags,
+) {
+    if !matches!(isa, Isa::Arm32 | Isa::AArch64 | Isa::I386 | Isa::X86_64) {
+        return;
+    }
+    if !blocks.iter().any(reads_unknown_flags) {
+        return;
+    }
+    let known = known_flag_entries(blocks, exits, extra_targets, predecessors, |index, exit| {
+        !blocks[index]
+            .stmts
+            .iter()
+            .any(|stmt| matches!(stmt, Stmt::Unsupported { .. }))
+            && exit
+                .flags
+                .as_ref()
+                .and_then(|flags| condition_values(flags, isa))
+                .is_some()
+    });
+    for (index, block) in blocks.iter().enumerate() {
+        if !known[index] || !reads_unknown_flags(block) || carried.entry.contains_key(&block.start)
+        {
+            continue;
+        }
+        carried.entry.insert(
+            block.start,
+            flags::Flags::stored(
+                Expr::reg(CONDITION_BYTE, 64),
+                Some(Expr::reg(CONDITION_OVERFLOW, 64)),
+            ),
+        );
+        flag_exporters(
+            blocks,
+            exits,
+            predecessors,
+            index,
+            &mut carried.condition_exporters,
+        );
+    }
 }
 
 /// Normal predecessors in block and successor order, including repeated edges.
@@ -1226,29 +1330,12 @@ fn carry_flags(
             break;
         }
     }
-    // The blocks that set the flags a reading block takes, through blocks
-    // that pass them along.
-    let exporters = |index: usize, exporters: &mut HashSet<u64>| {
-        let mut work = predecessors[index].clone();
-        let mut seen = HashSet::new();
-        while let Some(pred) = work.pop() {
-            if !seen.insert(pred) {
-                continue;
-            }
-            match exit(pred) {
-                Some(Exit { touched: true, .. }) => {
-                    exporters.insert(blocks[pred].start);
-                }
-                _ => work.extend(predecessors[pred].iter().copied()),
-            }
-        }
-    };
     for (index, block) in blocks.iter().enumerate() {
         if let Some(shape) = &entry[index]
             && reads_unknown_flags(block)
         {
             carried.entry.insert(block.start, shape.clone());
-            exporters(index, &mut carried.exporters);
+            flag_exporters(blocks, exits, predecessors, index, &mut carried.exporters);
         }
     }
     carried
@@ -1274,6 +1361,36 @@ fn carry_zero(
                 .select(Expr::constant(1), Expr::constant(0))
         })
     };
+    let known = known_flag_entries(blocks, exits, extra_targets, predecessors, |_, exit| {
+        zero(exit).is_some()
+    });
+    for (index, block) in blocks.iter().enumerate() {
+        if !known[index] || !reads_unknown_flags(block) || carried.entry.contains_key(&block.start)
+        {
+            continue;
+        }
+        carried.entry.insert(
+            block.start,
+            flags::Flags::zero(Expr::reg(zero_carried(isa), 64)),
+        );
+        flag_exporters(
+            blocks,
+            exits,
+            predecessors,
+            index,
+            &mut carried.zero_exporters,
+        );
+    }
+}
+
+/// Reachable entries whose every incoming path supplies the requested flags.
+fn known_flag_entries(
+    blocks: &[Block],
+    exits: &HashMap<u64, Exit>,
+    extra_targets: &HashSet<u64>,
+    predecessors: &[Vec<usize>],
+    available: impl Fn(usize, &Exit) -> bool,
+) -> Vec<bool> {
     let mut reachable = vec![false; blocks.len()];
     let mut work = if blocks.is_empty() {
         Vec::new()
@@ -1306,7 +1423,7 @@ fn carry_zero(
             if !predecessors[index]
                 .iter()
                 .all(|pred| match exits.get(&blocks[*pred].start) {
-                    Some(exit) if exit.touched => zero(exit).is_some(),
+                    Some(exit) if exit.touched => available(*pred, exit),
                     Some(_) => known[*pred],
                     None => false,
                 })
@@ -1319,27 +1436,27 @@ fn carry_zero(
             break;
         }
     }
-    for (index, block) in blocks.iter().enumerate() {
-        if !known[index] || !reads_unknown_flags(block) || carried.entry.contains_key(&block.start)
-        {
+    known
+}
+
+fn flag_exporters(
+    blocks: &[Block],
+    exits: &HashMap<u64, Exit>,
+    predecessors: &[Vec<usize>],
+    index: usize,
+    exporters: &mut HashSet<u64>,
+) {
+    let mut work = predecessors[index].clone();
+    let mut seen = HashSet::new();
+    while let Some(pred) = work.pop() {
+        if !seen.insert(pred) {
             continue;
         }
-        carried.entry.insert(
-            block.start,
-            flags::Flags::zero(Expr::reg(zero_carried(isa), 64)),
-        );
-        let mut work = predecessors[index].clone();
-        let mut seen = HashSet::new();
-        while let Some(pred) = work.pop() {
-            if !seen.insert(pred) {
-                continue;
+        match exits.get(&blocks[pred].start) {
+            Some(exit) if exit.touched => {
+                exporters.insert(blocks[pred].start);
             }
-            match exits.get(&blocks[pred].start) {
-                Some(exit) if exit.touched => {
-                    carried.zero_exporters.insert(blocks[pred].start);
-                }
-                _ => work.extend(predecessors[pred].iter().copied()),
-            }
+            _ => work.extend(predecessors[pred].iter().copied()),
         }
     }
 }
@@ -1355,6 +1472,34 @@ fn finish_block(
     carried: &CarriedFlags,
     exits: &mut HashMap<u64, Exit>,
 ) -> Block {
+    if carried.condition_exporters.contains(&start)
+        && touched
+        && let Some(flags) = &exit
+        && let Some((byte, overflow)) = condition_values(flags, isa)
+    {
+        let at = stmts
+            .iter()
+            .position(|stmt| {
+                matches!(
+                    stmt,
+                    Stmt::Br { .. }
+                        | Stmt::Brif { .. }
+                        | Stmt::BrifFlags { .. }
+                        | Stmt::Switch { .. }
+                        | Stmt::BrIndirect { .. }
+                )
+            })
+            .unwrap_or(stmts.len());
+        stmts.splice(
+            at..at,
+            [(CONDITION_BYTE, byte), (CONDITION_OVERFLOW, overflow)]
+                .into_iter()
+                .map(|(index, value)| Stmt::Assign {
+                    dest: RegRef { index, width: 64 },
+                    value,
+                }),
+        );
+    }
     if carried.exporters.contains(&start)
         && touched
         && let Some(flags) = &exit
@@ -1569,6 +1714,10 @@ fn build<M: Machine>(
                 *target = *next;
             }
         }
+    }
+    if image.isa == Isa::Arm32 {
+        let starts = blocks.iter().map(|block| block.start).collect();
+        arm32::resolve_internal_pc_loads(image, &mut blocks, &starts);
     }
     let pulled = exits::resolve_exits(image, summaries, start, &mut blocks, &ends);
     drop_unread_compare_operands(&mut blocks);

@@ -9482,7 +9482,7 @@ rust_demo_arm64 0x10001e2ec: 4if ( 4if ( 8if (
 rust_demo_arm64 0x10001e36c: 4if ( 4if ( 8if (
 rust_demo_arm64 0x10001e400: 4if ( 4if ( 4for ( 8if ( 12break; 8if ( 8else 8if ( 8if (
 rust_demo_arm64 0x10001e500: 4if (
-rust_demo_arm64 0x10001e54c: 4if ( 8switch ( 8case 12if ( 12if ( 12switch ( 12case 12case 16goto 12case 16if ( 16if ( 16break; 12case 16if ( 16if ( 16break; 12default: 12if ( 8case 12break; 8default: 8if (
+rust_demo_arm64 0x10001e54c: 4if ( 8switch ( 8case 12if ( 12if ( 12switch ( 12case 12case 16goto 12case 12case 16if ( 16if ( 16break; 12default: 12if ( 8case 12break; 8default: 8if (
 rust_demo_arm64 0x10001e680:
 rust_demo_arm64 0x10001e68c:
 rust_demo_arm64 0x10001e698: 4if (
@@ -10697,7 +10697,7 @@ rust_probe_arm64 0x10001e2ec: 4if ( 4if ( 8if (
 rust_probe_arm64 0x10001e36c: 4if ( 4if ( 8if (
 rust_probe_arm64 0x10001e400: 4if ( 4if ( 4for ( 8if ( 12break; 8if ( 8else 8if ( 8if (
 rust_probe_arm64 0x10001e500: 4if (
-rust_probe_arm64 0x10001e54c: 4if ( 8switch ( 8case 12if ( 12if ( 12switch ( 12case 12case 16goto 12case 16if ( 16if ( 16break; 12case 16if ( 16if ( 16break; 12default: 12if ( 8case 12break; 8default: 8if (
+rust_probe_arm64 0x10001e54c: 4if ( 8switch ( 8case 12if ( 12if ( 12switch ( 12case 12case 16goto 12case 12case 16if ( 16if ( 16break; 12default: 12if ( 8case 12break; 8default: 8if (
 rust_probe_arm64 0x10001e680:
 rust_probe_arm64 0x10001e68c:
 rust_probe_arm64 0x10001e698: 4if (
@@ -11367,7 +11367,7 @@ rust_probe_arm64_stripped 0x10001e2ec: 4if ( 4if ( 8if (
 rust_probe_arm64_stripped 0x10001e36c: 4if ( 4if ( 8if (
 rust_probe_arm64_stripped 0x10001e400: 4if ( 4if ( 4for ( 8if ( 12break; 8if ( 8else 8if ( 8if (
 rust_probe_arm64_stripped 0x10001e500: 4if (
-rust_probe_arm64_stripped 0x10001e54c: 4if ( 8switch ( 8case 12if ( 12if ( 12switch ( 12case 12case 16goto 12case 16if ( 16if ( 16break; 12case 16if ( 16if ( 16break; 12default: 12if ( 8case 12break; 8default: 8if (
+rust_probe_arm64_stripped 0x10001e54c: 4if ( 8switch ( 8case 12if ( 12if ( 12switch ( 12case 12case 16goto 12case 12case 16if ( 16if ( 16break; 12default: 12if ( 8case 12break; 8default: 8if (
 rust_probe_arm64_stripped 0x10001e680:
 rust_probe_arm64_stripped 0x10001e68c:
 rust_probe_arm64_stripped 0x10001e698: 4if (

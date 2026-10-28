@@ -21,7 +21,7 @@ a1c5b3116f4ba458882c29aea4a6c6f3469b0b2117a78c102c4ddc4a342db89d  src/lift/arm32
 8357760a41fdf4f1226a03ba00492fea372f654d47f619f024ba8eea383ed7bd  src/lift/arm32.rs	Opcode::UMULL | Opcode::SMULL | Opcode::UMLAL | Opcode::SMLAL =>
 35fa026398fd31717aa2d6d291b4b33b9c1aeb03fa0cd930097243c52680f53b  src/lift/arm32.rs	fn carry_arithmetic(
 69d7ab725abfe3cdba0ce51c147446aa756839b30054a233bd27fd2772b98633  src/lift/arm32.rs	fn extend(
-958a54b6adab0e5822f7b267e71600cc1c7ff052c6a230664eb2124c04890cb2  src/lift/arm32.rs	fn literal(
+86f1ec0d338f644d35b0201b68bcfc456d24c698be417cf725bbd162b4267b0a  src/lift/arm32.rs	fn literal(
 0313d5aefd9cadd061254c3b0c990480ec0b43995c8f898c6f00fa50ff4ff002  src/lift/arm32.rs	fn shift_value(
 1484aa121fca2a4f6514f303b1265240c1d45427f0f1695b88e8bdf805415cc7  src/lift/arm32.rs	fn shifted_carry(
 83ce027dd0b696cadca1e8e82dd516a712cabd1a161ab688500f7cfd27244281  src/lift/arm32/instruction_fallback.rs	super::extend(Expr::reg(u16::from(source), 32), width, signed, rotation);
@@ -36,6 +36,7 @@ f3942e76e9439d86ae88922586d9a2aafd137669cd3ab7fdb5c6fc1432ffd17c  src/lift/flags
 434945d44f50371a777fabf73992ac230e3f48de0fa110ff29268a5c5c5eb89d  src/lift/flags.rs	pub fn test(
 7faa89e938a27e7070c0d1e87f272100ef4994c319cb1078ff26302b485aead5  src/lift/flags.rs	pub(super) fn borrow_out(
 a0242bf5503efec30bf53133c773222a839bc32a3c1bbad1d42f5fd5a13c4f6c  src/lift/flags.rs	pub(super) fn carry_out(
+f44fa8a592896a8a930d0bc8cc8b7f24a27a2d647acdb36c1d9d591e83483eaa  src/lift/mod.rs	fn condition_values(
 8a1c12aadfaa4c3cd60a1055edb77605af981a8c578974032166e96b38bd6a6f  src/lift/mod.rs	fn recover_operand(
 c1910e73cbfd43756aaa4cd69e93d15044c36f13cee1bad12044db8a5157af59  src/lift/mod.rs	fn reverse_bytes(
 9eefe353c18520471179f93993db35b8c116c950a4df037d34eb20ce362689c0  src/lift/mod.rs	fn rotate(

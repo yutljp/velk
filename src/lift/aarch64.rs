@@ -827,7 +827,11 @@ impl Machine for Lifter<'_> {
                 }
             }
         }
-        self.flags_touched |= unsupported || sets_flags(instruction.opcode);
+        let selects = matches!(
+            instruction.opcode,
+            a64::Opcode::CSEL | a64::Opcode::CSINC | a64::Opcode::CSINV | a64::Opcode::CSNEG
+        );
+        self.flags_touched |= (unsupported && !selects) || sets_flags(instruction.opcode);
         ended
     }
 

@@ -258,27 +258,59 @@ pub(super) fn lift_in_mode(
     {
         return Err(LiftError::UnsupportedIsa);
     }
-    let blocks = super::lift_continuing(
-        image,
-        summaries,
-        || {
-            super::execution::Located::new(
-                Lifter {
-                    image,
-                    summaries,
-                    stmts: Vec::new(),
-                    flags: None,
-                    float_comparison: false,
-                    touched: false,
-                },
-                mode,
-            )
-        },
-        addr,
-        bytes,
-        &|bytes, address| decode(image, bytes, address),
-        targets,
-    );
+    let mut targets = targets.clone();
+    let (decoded, _) = decode(image, bytes, addr);
+    let starts: HashSet<u64> = decoded.iter().map(|instruction| instruction.pc).collect();
+    let blocks = loop {
+        let blocks = super::lift_continuing(
+            image,
+            summaries,
+            || {
+                super::execution::Located::new(
+                    Lifter {
+                        image,
+                        summaries,
+                        stmts: Vec::new(),
+                        flags: None,
+                        float_comparison: false,
+                        touched: false,
+                    },
+                    mode,
+                )
+            },
+            addr,
+            bytes,
+            &|bytes, address| decode(image, bytes, address),
+            &targets,
+        );
+        let mut blocks = match blocks {
+            Ok(blocks) => blocks,
+            Err(error) => return Err(error),
+        };
+        let found = resolve_internal_pc_loads(image, &mut blocks, &starts);
+        let split = !found.is_subset(&targets);
+        targets.extend(found);
+        for block in &mut blocks {
+            if !matches!(block.stmts.last(), Some(Stmt::BrIndirect { target })
+                if *target == Expr::reg(crate::ir::EXCHANGE, 64))
+            {
+                continue;
+            }
+            // A tail call cannot convey a changed non-argument register.
+            if mode == super::execution::Mode::Analysis
+                && matches!(block.stmts.iter().rev().nth(1),
+                    Some(Stmt::Assign { dest, .. }) if dest.index > 3)
+            {
+                *block.stmts.last_mut().expect("indirect branch") = Stmt::unsupported(
+                    "ARM PC load with writeback requires a proven internal target",
+                );
+                block.stmts.push(Stmt::Trap);
+            }
+        }
+        if !split {
+            break Ok(blocks);
+        }
+    };
     match blocks {
         Ok(mut blocks) => {
             if unsupported_declaration(image, addr)
@@ -293,6 +325,48 @@ pub(super) fn lift_in_mode(
         }
         Err(error) => Err(error),
     }
+}
+
+/// Resolves only destinations decoded in the instruction mode selected by the load.
+pub(super) fn resolve_internal_pc_loads(
+    image: &Image,
+    blocks: &mut [Block],
+    starts: &HashSet<u64>,
+) -> HashSet<u64> {
+    if !blocks.iter().any(|block| {
+        matches!(block.stmts.last(),
+        Some(Stmt::BrIndirect { target }) if *target == Expr::reg(crate::ir::EXCHANGE, 64))
+    }) {
+        return HashSet::new();
+    }
+    let proven = crate::analysis::constant_branch_targets(blocks, image);
+    let mut targets = HashSet::new();
+    for block in blocks {
+        if !matches!(block.stmts.last(), Some(Stmt::BrIndirect { target })
+            if *target == Expr::reg(crate::ir::EXCHANGE, 64))
+        {
+            continue;
+        }
+        let Some(&value) = proven.get(&block.start) else {
+            continue;
+        };
+        let destination = value & !1;
+        let mode = if value & 1 != 0 {
+            ArmMode::Thumb
+        } else {
+            ArmMode::Arm
+        };
+        if starts.contains(&destination)
+            && image.arm_mode(destination) == mode
+            && (mode == ArmMode::Thumb || destination & 3 == 0)
+        {
+            targets.insert(destination);
+            *block.stmts.last_mut().expect("indirect branch") = Stmt::Br {
+                target: Some(destination),
+            };
+        }
+    }
+    targets
 }
 
 fn unsupported_declaration(image: &Image, address: u64) -> bool {
@@ -367,7 +441,7 @@ fn bitfield(value: Expr, start: u64, width: u64) -> Expr {
     Expr::bin(BinOp::And, shifted, Expr::constant((1u64 << width) - 1))
 }
 
-fn literal(image: &Image, addr: &Expr, width: u8, signed: bool) -> Option<Expr> {
+pub(crate) fn literal(image: &Image, addr: &Expr, width: u8, signed: bool) -> Option<Expr> {
     if !matches!(width, 1 | 2 | 4 | 8) {
         return None;
     }
@@ -1062,12 +1136,37 @@ impl Lifter<'_> {
                     if reg.number() == 15 {
                         if instruction.opcode == Opcode::LDR
                             && addr == Expr::reg(13, 64)
-                            && let Some((13, value)) = back
-                            && value == Expr::bin(BinOp::Add, Expr::reg(13, 64), Expr::constant(4))
+                            && let Some((13, value)) = &back
+                            && *value == Expr::bin(BinOp::Add, Expr::reg(13, 64), Expr::constant(4))
                         {
-                            self.assign(13, value);
+                            self.assign(13, value.clone());
                             self.stmts.push(Stmt::Ret {
                                 value: Expr::reg(0, 32),
+                            });
+                            return Some(true);
+                        }
+                        if instruction.opcode == Opcode::LDR
+                            && matches!(
+                                b,
+                                Operand::RegDerefPreindexOffset(..)
+                                    | Operand::RegDerefPreindexReg(..)
+                                    | Operand::RegDerefPreindexRegShift(..)
+                            )
+                            && let Some((base, value)) = back
+                            && base != 15
+                        {
+                            let target =
+                                literal(self.image, &addr, 4, false).unwrap_or_else(|| {
+                                    Expr::Load {
+                                        addr: Box::new(addr),
+                                        width: 4,
+                                        signed: false,
+                                    }
+                                });
+                            self.assign_temp(target);
+                            self.assign(base, value);
+                            self.stmts.push(Stmt::BrIndirect {
+                                target: Expr::reg(crate::ir::EXCHANGE, 64),
                             });
                             return Some(true);
                         }

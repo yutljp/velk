@@ -238,6 +238,29 @@ impl Tracker<'_> {
                     _ => Value::Unknown,
                 }
             }
+            Expr::Select {
+                cond,
+                lhs,
+                rhs,
+                then,
+                els,
+            } if self.image.isa == crate::loader::Isa::Arm32 => {
+                match (
+                    self.eval(state, lhs, site, loads),
+                    self.eval(state, rhs, site, loads),
+                ) {
+                    (Value::Const(a, _), Value::Const(b, _)) => {
+                        let bits = crate::ir::semantics::operand_width(lhs, rhs);
+                        let value = if crate::ir::semantics::holds(*cond, a, b, bits) {
+                            then
+                        } else {
+                            els
+                        };
+                        self.eval(state, value, site, loads)
+                    }
+                    _ => Value::Unknown,
+                }
+            }
             Expr::Load { addr, width, .. } => {
                 let (table, offset) = match addr.as_ref() {
                     Expr::Bin {
@@ -484,12 +507,48 @@ fn successors(blocks: &[Block], pads: &[(u64, Vec<(u64, u64)>)], index: usize) -
     out
 }
 
+/// Constant indirect destinations proved from statements in the same block.
+/// Unknown entry values prevent assumptions about unresolved incoming edges.
+pub(crate) fn constant_branch_targets(blocks: &[Block], image: &Image) -> HashMap<u64, u64> {
+    let tracker = Tracker {
+        image,
+        sp: crate::arch::stack_pointer(image.isa),
+        loads: Default::default(),
+        constructors: false,
+        returns: None,
+    };
+    let mut targets = HashMap::new();
+    for (index, block) in blocks.iter().enumerate() {
+        let mut state = State {
+            regs: BTreeMap::new(),
+            rest: Rest::Unknown,
+            memory: BTreeMap::new(),
+        };
+        for (position, stmt) in block.stmts.iter().enumerate() {
+            let site = (index as u32, position as u32);
+            if let Stmt::BrIndirect { target } = stmt
+                && let Value::Const(target, _) = tracker.eval(&state, target, site, &mut 0)
+            {
+                targets.insert(block.start, target);
+            }
+            tracker.step(&mut state, stmt, site);
+        }
+    }
+    targets
+}
+
 /// The word at `addr` in constant data.
 fn read_only_word(image: &Image, addr: u64) -> Option<u64> {
     let Some(section) = image.section_at(addr) else {
         return None;
     };
     if !section.read_only {
+        if image.isa == crate::loader::Isa::Arm32
+            && let Some(Expr::Const(value)) =
+                crate::lift::arm32_literal(image, &Expr::Const(addr), 4, false)
+        {
+            return Some(value);
+        }
         return None;
     }
     match image.read_pointer(addr) {
