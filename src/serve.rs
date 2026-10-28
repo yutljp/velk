@@ -8,12 +8,16 @@ use serde_json::value::RawValue;
 use serde_json::{Value, json};
 
 use crate::error::{Error, Result};
-use crate::script::Engine;
+use crate::script::{Engine, ScriptSession};
 
 /// Reads requests from standard input and writes one response per line.
 pub fn serve() -> Result<()> {
     let engine = match Engine::new() {
         Ok(engine) => engine,
+        Err(error) => return Err(error),
+    };
+    let session = match engine.session() {
+        Ok(session) => session,
         Err(error) => return Err(error),
     };
     let mut output = std::io::stdout().lock();
@@ -36,7 +40,7 @@ pub fn serve() -> Result<()> {
                 if id.is_some() {
                     request["id"] = json!(true);
                 }
-                let response = handle(&engine, &request);
+                let response = handle(&session, &request);
                 let id = if response.get("id").is_some_and(|id| !id.is_null()) {
                     id.as_ref().map_or("null", |id| id.get()).to_owned()
                 } else {
@@ -64,7 +68,7 @@ pub fn serve() -> Result<()> {
     Ok(())
 }
 
-fn handle(engine: &Engine, request: &Value) -> Value {
+fn handle(session: &ScriptSession<'_>, request: &Value) -> Value {
     let Some(id) = request.get("id") else {
         return json!({"id": null, "error": {"message": "missing id", "stack": null}, "log": []});
     };
@@ -76,7 +80,7 @@ fn handle(engine: &Engine, request: &Value) -> Value {
         .and_then(Value::as_u64)
         .unwrap_or(10_000)
         .clamp(1, 120_000);
-    let outcome = engine.run_structured(code, Some(Duration::from_millis(millis)));
+    let outcome = session.run_structured(code, Some(Duration::from_millis(millis)));
     match outcome.error {
         Some(error) => {
             json!({"id": id, "error": {"message": error, "stack": outcome.stack}, "log": outcome.log})

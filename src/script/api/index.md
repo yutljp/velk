@@ -3,7 +3,11 @@
 Programs can use `velk --serve` for newline-delimited JSON requests and replies.
 Each request has an `id`, `code`, and optional `timeout_ms`. Replies contain the
 same `id`, a JSON `result` or an `error` with `message` and `stack`, and a `log`
-array of console messages. Results are not truncated. For example:
+array of console messages from that request. Results are not truncated. JavaScript
+globals, opened binaries, and symbolic states persist for the life of the process.
+An error or timeout does not end the session. A context holds at most 256 live
+symbolic states and 65,536 term handles. Dispose symbolic states when no longer
+needed to free their slots. MCP script calls use separate contexts. For example:
 
 ```sh
 printf '%s\n' '{"id":1,"code":"console.log(\"hello\"); ({answer:42})"}' | velk --serve

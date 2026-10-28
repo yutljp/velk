@@ -90,7 +90,9 @@ See [input formats and limits](docs/INPUT.md).
 Programs can use `velk --serve` for newline-delimited JSON. Each request contains
 `id`, `code`, and optionally `timeout_ms`; each reply contains the same `id`, a
 JSON `result` or an `error` with `message` and `stack`, and a `log` array. Results
-are not truncated, and opened binaries remain cached between requests:
+are not truncated. JavaScript globals, opened binaries, and symbolic states persist
+for the life of the process. Each log contains only that request's output; an error
+or timeout does not end the session. Dispose symbolic states when no longer needed:
 
 ```sh
 printf '%s\n' '{"id":1,"code":"console.log(\"hello\"); ({answer:42})"}' | velk --serve

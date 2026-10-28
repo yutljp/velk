@@ -11,6 +11,9 @@ use crate::script::ops::BinaryRef;
 use crate::service::Session;
 use crate::symbolic::{State, Step, Term, invalid};
 
+const STATE_LIMIT: usize = 256;
+const TERM_LIMIT: usize = 65_536;
+
 #[derive(Default)]
 pub(super) struct Registry {
     states: BTreeMap<usize, State>,
@@ -19,7 +22,10 @@ pub(super) struct Registry {
 }
 
 impl Registry {
-    fn insert(&mut self, state: State) -> Result<usize> {
+    fn insert(&mut self, state: State, reserved: usize) -> Result<usize> {
+        if self.states.len() >= STATE_LIMIT.saturating_sub(reserved) {
+            return Err(invalid("symbolic state limit reached"));
+        }
         let index = self.next;
         self.next = self
             .next
@@ -29,10 +35,13 @@ impl Registry {
         Ok(index)
     }
 
-    fn term(&mut self, term: Term) -> Value {
+    fn term(&mut self, term: Term) -> Result<Value> {
+        if self.terms.len() >= TERM_LIMIT {
+            return Err(invalid("symbolic term limit reached"));
+        }
         let id = self.terms.len();
         self.terms.push(term);
-        json!({"id": id})
+        Ok(json!({"id": id}))
     }
 
     fn lookup(&self, value: &Value) -> Result<Term> {
@@ -63,7 +72,7 @@ pub(super) fn handle(
         let start: String = field(&request, "start")?;
         let options = field(&request, "options")?;
         return registry
-            .insert(State::new(binary, &start, &options)?)
+            .insert(State::new(binary, &start, &options)?, 0)
             .map(|id| json!(id));
     }
     let id: usize = field(&request, "state")?;
@@ -74,13 +83,13 @@ pub(super) fn handle(
         return Ok(Value::Null);
     }
     let result = (|| match action.as_str() {
-        "fork" => Ok(json!(registry.insert(state.clone())?)),
-        "term" => Ok(registry.term(state.symbolic()?)),
+        "fork" => Ok(json!(registry.insert(state.clone(), 1)?)),
+        "term" => registry.term(state.symbolic()?),
         "constant" => {
             let value: crate::emulation::Word = field(&request, "value")?;
-            Ok(registry.term(Term::constant(value.value()?)))
+            registry.term(Term::constant(value.value()?))
         }
-        "readRegister" => Ok(registry.term(state.read_register(field(&request, "index")?)?)),
+        "readRegister" => registry.term(state.read_register(field(&request, "index")?)?),
         "writeRegister" => {
             let term = registry.lookup(&request["term"])?;
             state.write_register(field(&request, "index")?, term)?;
@@ -89,7 +98,13 @@ pub(super) fn handle(
         "readMemory" => {
             let at: crate::emulation::Word = field(&request, "at")?;
             let terms = state.read_memory(binary, at.value()?, field(&request, "size")?)?;
-            let handles: Vec<Value> = terms.into_iter().map(|term| registry.term(term)).collect();
+            if terms.len() > TERM_LIMIT.saturating_sub(registry.terms.len()) {
+                return Err(invalid("symbolic term limit reached"));
+            }
+            let handles: Vec<Value> = terms
+                .into_iter()
+                .map(|term| registry.term(term))
+                .collect::<Result<_>>()?;
             Ok(json!(handles))
         }
         "writeMemory" => {
@@ -153,9 +168,12 @@ pub(super) fn handle(
                 ),
                 Step::Stopped(reason) => Ok(json!({"reason": reason})),
                 Step::Branch(states) => {
+                    if states.len() > STATE_LIMIT.saturating_sub(registry.states.len() + 1) {
+                        return Err(invalid("symbolic state limit reached"));
+                    }
                     let mut ids = Vec::new();
                     for state in states {
-                        ids.push(registry.insert(state)?);
+                        ids.push(registry.insert(state, 1)?);
                     }
                     Ok(json!({"reason": "branch", "states": ids}))
                 }

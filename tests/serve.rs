@@ -19,11 +19,11 @@ fn requests_share_a_process_and_preserve_json_values() {
         "{\"id\":18446744073709551617,\"code\":\"1\"}".to_owned(),
         json!({"id":{"key":1},"code":"console.log('hello', 42); ({address:'0xffffffffffffffff', value:[true,null]})"}).to_string(),
         json!({"id":2,"code":"'x'.repeat(1100000)"}).to_string(),
-        json!({"id":3,"code":"throw new Error('failure')"}).to_string(),
+        json!({"id":3,"code":"globalThis.saved = 41; throw new Error('failure')"}).to_string(),
         json!({"id":4,"code":"console.log('before timeout'); while (true) {}","timeout_ms":5}).to_string(),
         "invalid".to_owned(),
         json!({"id":7,"code":"velk.open('target/serve-return.bin', {raw:{arch:'x86_64',base:'0xffffffffffff0000'},cache:false}).entry"}).to_string(),
-        json!({"id":5,"code":"42"}).to_string(),
+        json!({"id":5,"code":"saved + 1"}).to_string(),
     ];
     let mut replies = Vec::new();
     for request in requests {
@@ -60,6 +60,7 @@ fn requests_share_a_process_and_preserve_json_values() {
     assert!(replies[5]["id"].is_null());
     assert_eq!(replies[6]["result"], "0xffffffffffff0000");
     assert_eq!(replies[7]["result"], 42);
+    assert_eq!(replies[7]["log"], json!([]));
     input.write_all(b"\xff\n").expect("invalid UTF-8 request");
     input.flush().expect("flush request");
     let mut line = String::new();
@@ -74,6 +75,78 @@ fn requests_share_a_process_and_preserve_json_values() {
     assert_eq!(reply["result"], 7);
     drop(input);
     assert!(child.wait().expect("wait for EOF").success());
+    std::fs::remove_file(binary).expect("remove raw binary");
+}
+
+#[test]
+fn symbolic_states_persist_until_disposed() {
+    if !["z3", "bitwuzla"].iter().any(|program| {
+        Command::new(program)
+            .arg("--version")
+            .output()
+            .is_ok_and(|output| output.status.success())
+    }) {
+        return;
+    }
+    let binary = "target/serve-symbolic.bin";
+    std::fs::write(binary, [0xc3]).expect("write raw binary");
+    let mut child = Command::new(env!("CARGO_BIN_EXE_velk"))
+        .arg("--serve")
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .spawn()
+        .expect("start server");
+    let mut input = child.stdin.take().expect("stdin");
+    let mut output = BufReader::new(child.stdout.take().expect("stdout"));
+    let scripts = [
+        "globalThis.b = velk.open('target/serve-symbolic.bin', {raw:{arch:'x86_64',base:'0x1000'},cache:false}); globalThis.s = b.symbolic('0x1000', {arguments:[0]}); globalThis.x = s.readRegister(7); globalThis.c = s.constant(42); 'created'",
+        "s.step([s.address()]).reason",
+        "s.constrain(x, 'eq', c); s.satisfiable()",
+        "s.evaluate(x)",
+        "s.dispose(); 'disposed'",
+        "s.address()",
+        "globalThis.t = b.symbolic('0x1000'); globalThis.forks = []; for (let i = 0; i < 255; i++) forks.push(t.fork()); 'full'",
+        "t.fork()",
+        "forks.pop().dispose(); t.fork().dispose(); 'reused'",
+        "for (let i = 0; i < 65536; i++) t.constant(i);",
+        "t.address()",
+    ];
+    let mut replies = Vec::new();
+    for (id, code) in scripts.iter().enumerate() {
+        writeln!(input, "{}", json!({"id":id,"code":code})).expect("request");
+        input.flush().expect("flush");
+        let mut line = String::new();
+        output.read_line(&mut line).expect("reply");
+        replies.push(serde_json::from_str::<Value>(&line).expect("JSON reply"));
+    }
+    assert_eq!(replies[0]["result"], "created", "{:?}", replies[0]);
+    assert_eq!(replies[1]["result"], "address");
+    assert_eq!(replies[2]["result"], true);
+    assert_eq!(replies[3]["result"], json!(["0x2a"]));
+    assert_eq!(replies[4]["result"], "disposed");
+    assert!(
+        replies[5]["error"]["message"]
+            .as_str()
+            .expect("error")
+            .contains("unknown symbolic state handle")
+    );
+    assert_eq!(replies[6]["result"], "full", "{:?}", replies[6]);
+    assert!(
+        replies[7]["error"]["message"]
+            .as_str()
+            .expect("error")
+            .contains("state limit")
+    );
+    assert_eq!(replies[8]["result"], "reused");
+    assert!(
+        replies[9]["error"]["message"]
+            .as_str()
+            .expect("error")
+            .contains("term limit")
+    );
+    assert_eq!(replies[10]["result"], "0x1000");
+    drop(input);
+    assert!(child.wait().expect("wait").success());
     std::fs::remove_file(binary).expect("remove raw binary");
 }
 

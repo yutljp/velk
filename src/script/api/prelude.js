@@ -139,6 +139,7 @@
   }
 
   const output = [];
+  Object.defineProperty(globalThis, "__velkReset", { value: () => { output.length = 0; } });
   const show = (value) => (typeof value === "string" ? value : JSON.stringify(value) ?? String(value));
   const log = (...values) => { output.push(values.map(show).join(" ")); };
 

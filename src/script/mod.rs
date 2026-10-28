@@ -28,6 +28,12 @@ pub struct Engine {
     deadline: Rc<Cell<Option<Instant>>>,
 }
 
+/// A JavaScript context retained across evaluations.
+pub struct ScriptSession<'a> {
+    engine: &'a Engine,
+    context: Context,
+}
+
 /// Captured output and any failure from one script evaluation.
 pub struct Outcome {
     /// Text emitted by the script and its final value.
@@ -73,6 +79,18 @@ impl Engine {
         self.run_inner(code, timeout, /* structured */ true)
     }
 
+    /// Creates a context whose globals and handles persist across evaluations.
+    pub fn session(&self) -> Result<ScriptSession<'_>> {
+        let context = Context::full(&self.runtime).map_err(Error::Engine)?;
+        context
+            .with(|ctx| self.install(&ctx))
+            .map_err(Error::Engine)?;
+        Ok(ScriptSession {
+            engine: self,
+            context,
+        })
+    }
+
     fn run_inner(&self, code: &str, timeout: Option<Duration>, structured: bool) -> Outcome {
         let context = match Context::full(&self.runtime) {
             Ok(context) => context,
@@ -86,6 +104,32 @@ impl Engine {
                 };
             }
         };
+        let installed = context.with(|ctx| self.install(&ctx));
+        if let Err(error) = installed {
+            return Outcome {
+                output: String::new(),
+                error: Some(error.to_string()),
+                result: serde_json::Value::Null,
+                log: Vec::new(),
+                stack: None,
+            };
+        }
+        self.run_context(&context, code, timeout, structured)
+    }
+
+    fn run_context(
+        &self,
+        context: &Context,
+        code: &str,
+        timeout: Option<Duration>,
+        structured: bool,
+    ) -> Outcome {
+        context.with(|ctx| {
+            let _ = ctx
+                .globals()
+                .get::<_, Function>("__velkReset")
+                .and_then(|reset| reset.call::<_, ()>(()));
+        });
         let deadline = timeout.map(|timeout| Instant::now() + timeout);
         self.deadline.set(deadline);
         let mut outcome = context.with(|ctx| self.evaluate(&ctx, code, structured));
@@ -102,9 +146,7 @@ impl Engine {
     }
 
     fn evaluate<'js>(&self, ctx: &Ctx<'js>, code: &str, structured_mode: bool) -> Outcome {
-        let result = self
-            .install(ctx)
-            .and_then(|()| eval_named::<Value>(ctx, code, SCRIPT_NAME));
+        let result = eval_named::<Value>(ctx, code, SCRIPT_NAME);
         let (value, error, stack) = match result.catch(ctx) {
             Ok(value) => (value, None, None),
             Err(error) => {
@@ -216,6 +258,15 @@ impl Engine {
         )?;
         ctx.globals().set("__velk", native)?;
         eval_named(ctx, PRELUDE, PRELUDE_NAME)
+    }
+}
+
+impl ScriptSession<'_> {
+    /// Evaluates one request and captures its result and console messages.
+    #[must_use]
+    pub fn run_structured(&self, code: &str, timeout: Option<Duration>) -> Outcome {
+        self.engine
+            .run_context(&self.context, code, timeout, /* structured */ true)
     }
 }
 

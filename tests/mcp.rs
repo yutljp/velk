@@ -46,6 +46,15 @@ fn text(response: &Value) -> &str {
 }
 
 #[test]
+fn script_calls_have_separate_globals() {
+    let responses = exchange(&[
+        script(1, "globalThis.saved = 42"),
+        script(2, "typeof saved"),
+    ]);
+    assert_eq!(text(&responses[1]), "undefined");
+}
+
+#[test]
 fn cli_api_matches_mcp() {
     let responses = exchange(&[json!({"jsonrpc":"2.0", "id":1, "method":"tools/list"})]);
     let tools = responses[0]["result"]["tools"].as_array().unwrap();
