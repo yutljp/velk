@@ -397,9 +397,10 @@ fn ??1Virtual@@UEAA@XZ @ 0x180001180 (size 16)
 == 0x180001190 dispatch
 -- decompile
 /* velk pseudo-C: dispatch @ 0x180001190 */
+struct Root_vtable { uint64_t (*value)(); };
+struct Root_2 { struct Root_vtable *vtable; };
 int dispatch(struct Root *object) {
-    uint64_t *v1 = *(uint64_t **)(object);
-    return ((uint64_t (*)())*v1)(object); /* vtable slot 0 */
+    return ((struct Root_2 *)(object))->vtable->value(object); /* vtable slot 0: _value_Root__UEBAHXZ, _value_Single__UEBAHXZ, _value_Multiple__UEBAHXZ, _value_Virtual___4PPPPPPPM_A_EBAHXZ */
 }
 -- signature
 int (struct Root * object)

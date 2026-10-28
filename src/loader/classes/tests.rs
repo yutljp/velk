@@ -183,3 +183,65 @@ fn elf32_type_names_keep_the_high_address_bit() {
         Some("Root".to_owned())
     );
 }
+
+#[test]
+fn virtual_targets_follow_the_base_subobject_offset() {
+    use std::collections::HashSet;
+
+    let image = fixture("elf");
+    let mut classes = image.classes().to_vec();
+    let target = |name: &str, offset| {
+        classes
+            .iter()
+            .find(|class| class.name == name)
+            .unwrap()
+            .vtables
+            .iter()
+            .find(|table| table.offset == offset)
+            .unwrap()
+            .methods[0]
+            .address
+    };
+    let expected = HashSet::from([
+        target("Root", 0),
+        target("Single", 0),
+        target("Multiple", 0),
+        target("Virtual", 16),
+    ]);
+    assert_eq!(virtual_targets(&classes, "Root", 0), expected);
+    assert_eq!(
+        virtual_targets(&classes, "Other", 0),
+        HashSet::from([target("Other", 0), target("Multiple", 16),])
+    );
+    let virtual_class = classes
+        .iter_mut()
+        .find(|class| class.name == "Virtual")
+        .unwrap();
+    virtual_class.bases[0].offset = None;
+    let possible: Vec<_> = virtual_class
+        .vtables
+        .iter()
+        .map(|table| table.methods[0].address)
+        .collect();
+    let targets = virtual_targets(&classes, "Root", 0);
+    assert!(possible.iter().all(|target| targets.contains(target)));
+    let virtual_class = classes
+        .iter_mut()
+        .find(|class| class.name == "Virtual")
+        .unwrap();
+    virtual_class.bases[0].offset = Some(16);
+    let multiple = classes
+        .iter_mut()
+        .find(|class| class.name == "Multiple")
+        .unwrap();
+    multiple.bases[0].name = "Virtual".to_owned();
+    multiple.bases[0].offset = Some(8);
+    let secondary = multiple
+        .vtables
+        .iter()
+        .find(|table| table.offset == 16)
+        .unwrap()
+        .methods[0]
+        .address;
+    assert!(virtual_targets(&classes, "Root", 0).contains(&secondary));
+}

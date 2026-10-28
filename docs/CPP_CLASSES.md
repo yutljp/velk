@@ -39,6 +39,23 @@ unaligned base locations are omitted from the C view. Table stores use class nam
 identify object initialization or destruction; a table store alone cannot distinguish a
 constructor from a destructor.
 
+Supported scalar parameter bindings restrict virtual-slot candidates to the
+parameter's recovered class and its derived classes, including the recorded
+base-subobject offsets.
+Adjacent table-pointer loads can print as `object->vtable->method(object, ...)`.
+Scalar DWARF method declarations can provide member prototypes when all candidates
+agree and their ABI bindings are supported. Object-pointer parameters in these
+prototypes use `void *`. A signed 32-bit result is converted to its register bits
+when the caller reads the full register. Missing or conflicting prototypes keep an indirect call. A member call can use
+an unprototyped pointer when only its slot is known; unknown ownership can retain
+the raw call.
+
+For example, the linked ELF fixture prints a typed `Multiple_vtable` member:
+
+```sh
+velk -D tests/fixtures/cpp/rtti.debug.elf dispatch_multiple
+```
+
 Exception tables print comment blocks such as:
 
 ```c

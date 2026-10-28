@@ -810,6 +810,13 @@ pub(crate) fn resolve(blocks: &mut [Block], pads: &[(u64, Vec<(u64, u64)>)], ima
         constructors: !vtables(image).is_empty(),
         returns: (pads.is_empty() && closed_normal_flow(blocks, Edges::Any)).then(Default::default),
     };
+    let types = if image.classes().is_empty() {
+        None
+    } else {
+        blocks.first().and_then(|block| {
+            crate::loader::dwarf::virtual_calls::function_types(image, block.start)
+        })
+    };
     let entry = tracker.solve(blocks, pads);
     let mut decisions = Vec::new();
     for (index, block) in blocks.iter().enumerate() {
@@ -823,7 +830,7 @@ pub(crate) fn resolve(blocks: &mut [Block], pads: &[(u64, Vec<(u64, u64)>)], ima
                     through: Some(through),
                     ..
                 } = stmt
-                && let Some(decision) = decide(&tracker, &state, through, site)
+                && let Some(decision) = decide(&tracker, &state, through, site, types.as_ref())
             {
                 decisions.push((index, position, decision));
             }
@@ -956,6 +963,7 @@ fn decide(
     state: &State,
     through: &Expr,
     site: (u32, u32),
+    types: Option<&crate::loader::dwarf::FunctionTypes>,
 ) -> Option<Decision> {
     let image = tracker.image;
     let mut loads = 0;
@@ -978,7 +986,34 @@ fn decide(
             }
             let slot = offset / 8;
             let mut candidates = candidates(image, slot);
-            if candidates.len() > MAX_CANDIDATES {
+            let mut typed = false;
+            if let Some(Value::Sym(Base::Entry(register), 0)) = loaded.get(&table)
+                && let Some(types) = types
+                && !types.variadic
+                && types.ret.as_ref().is_some_and(|ty| {
+                    ty.is_pointer()
+                        || ty.integer().is_some_and(|(bits, _)| bits <= 64)
+                        || *ty == crate::ir::CType::Void
+                })
+                && types.params.iter().all(|(_, ty)| {
+                    ty.as_ref().is_some_and(|ty| {
+                        ty.is_pointer() || ty.integer().is_some_and(|(bits, _)| bits <= 64)
+                    })
+                })
+                && let Ok(profile) = types.abi_profile
+                && let Some(position) = super::abi::convention(profile)
+                    .arguments()
+                    .iter()
+                    .position(|arg| arg == register)
+                && let Some((_, Some(ty))) = types.params.get(position)
+                && let Some(name) = ty.pointee_struct()
+                && image.classes().iter().any(|class| class.name == name)
+            {
+                let targets = crate::loader::classes::virtual_targets(image.classes(), name, slot);
+                candidates.retain(|candidate| targets.contains(candidate));
+                typed = true;
+            }
+            if !typed && candidates.len() > MAX_CANDIDATES {
                 candidates.clear();
             }
             Some(Decision::Slot(Via {

@@ -63,7 +63,7 @@ fn call_entry<'a>(
     ))
 }
 
-fn call_origins(
+pub(super) fn call_origins(
     unit: &Unit<EndianSlice<'_, LittleEndian>>,
     offset: gimli::UnitOffset<usize>,
 ) -> Result<Vec<gimli::UnitOffset<usize>>, AbiIssue> {

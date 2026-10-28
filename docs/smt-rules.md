@@ -113,6 +113,9 @@ COM vtable load substitution checks the real renderer preparation on both Window
 fixtures with symbolic input registers and byte-array memory. The check observes
 the indirect target before the call. Method ABI matching is covered by the
 compiled execution tests rather than this equivalence check.
+C++ virtual target substitution also checks the renderer preparation on x86-64
+and AArch64 fixtures with symbolic registers and byte-array memory. It observes
+the loaded call target; prototype compatibility is checked by execution tests.
 
 ## Connection to the implementation
 

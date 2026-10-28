@@ -217,6 +217,9 @@ fn return_type<'a>(call: &Stmt, ctx: &'a Ctx<'_>) -> Option<&'a crate::ir::CType
     else {
         return None;
     };
+    if let Some(signature) = ctx.virtual_tables.signature(call, ctx) {
+        return Some(&signature.ret);
+    }
     match through {
         Some(Expr::Load { addr, width: 8, .. }) if let Expr::Const(slot) = addr.as_ref() => {
             ctx.symbols.import_returns.get(slot)
@@ -383,7 +386,10 @@ pub(super) fn expression(call: &Stmt, ctx: &Ctx<'_>) -> String {
         None
     };
     let own = through.is_none() && *target == Some(ctx.ir.addr);
-    let parameters: Option<Vec<&crate::ir::CType>> = if own {
+    let virtual_signature = ctx.virtual_tables.signature(call, ctx);
+    let parameters: Option<Vec<&crate::ir::CType>> = if let Some(signature) = virtual_signature {
+        Some(signature.params.iter().map(|(_, ty)| ty).collect())
+    } else if own {
         if let Some(plan) = ctx.abi {
             Some(plan.params.iter().map(|(_, ty)| ty).collect())
         } else {
@@ -416,7 +422,7 @@ pub(super) fn expression(call: &Stmt, ctx: &Ctx<'_>) -> String {
     // A callee whose declaration is known takes each argument as the type
     // it declares: an integer converts to its parameter's width as C
     // converts it, and a pointer is passed as one.
-    if through.is_none()
+    if (through.is_none() || virtual_signature.is_some())
         && let Some(parameters) = &parameters
         && parameters.len() == args.len()
     {

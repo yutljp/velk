@@ -442,6 +442,26 @@ pub(crate) fn printable_signatures(
     found
 }
 
+/// Scalar virtual-call declarations with object pointers represented as void pointers.
+pub(crate) fn virtual_signature(image: &Image, address: u64) -> Option<DeclaredSignature> {
+    let Some(types) = crate::loader::dwarf::virtual_calls::function_types(image, address) else {
+        return None;
+    };
+    let mut signature = super::abi::callee_declaration(&types);
+    for (_, ty) in &mut signature.params {
+        if ty.is_pointer() {
+            *ty = CType::Pointer(Box::new(CType::Void));
+        }
+    }
+    if !printable(&signature, image.convention_of(address))
+        || (signature.ret.integer().is_some_and(|(bits, _)| bits == 32)
+            && !super::summary::summary(image, address).narrow_return)
+    {
+        return None;
+    }
+    Some(signature)
+}
+
 fn printable(signature: &DeclaredSignature, convention: crate::ir::Convention) -> bool {
     use crate::ir::{AbiLocation, Passing, RegisterClass};
     let Ok(abi) = &signature.abi else {

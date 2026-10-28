@@ -667,9 +667,11 @@ fn <unnamed> @ 0x201be0 (size 5)
 -- decompile
 /* velk pseudo-C: sub_201be8 @ 0x201be8 */
 struct Multiple_vtable { uint64_t slots[3]; uint64_t (*method_3)(); };
+struct Root_base { unsigned char bytes[8]; };
+struct Other_base { unsigned char bytes[8]; };
+struct Multiple { union { struct Multiple_vtable *vtable; struct Root_base base_Root; }; unsigned char padding_1[8]; struct Other_base base_Other; };
 int32_t sub_201be8(uint64_t *a0) {
-    uint64_t *v1 = (uint64_t *)*a0;
-    return ((struct Multiple_vtable *)(v1))->method_3(a0); /* vtable slot 3: sub_201b08 */
+    return ((struct Multiple *)(a0))->vtable->method_3(a0); /* vtable slot 3: sub_201b08 */
 }
 -- signature
 int32_t (uint64_t * a0)

@@ -180,6 +180,16 @@ pub fn callee_names(image: &crate::loader::Image) -> Symbols {
         variadic_functions: crate::loader::dwarf::variadic::functions(image),
         functions,
         cpp_classes: image.classes().to_vec(),
+        cpp_signatures: image
+            .classes()
+            .iter()
+            .flat_map(|class| &class.vtables)
+            .flat_map(|table| &table.methods)
+            .filter_map(|method| {
+                crate::analysis::calls::virtual_signature(image, method.address)
+                    .map(|signature| (method.address, signature))
+            })
+            .collect(),
         cpp_methods: image
             .functions
             .iter()
@@ -187,6 +197,14 @@ pub fn callee_names(image: &crate::loader::Image) -> Symbols {
                 let Some(source) = function.name.as_deref() else {
                     return None;
                 };
+                if let Some(decorated) = source.strip_prefix('?')
+                    && let Some((method, _)) = decorated.split_once('@')
+                    && !method.is_empty()
+                    && sanitize(method) == method
+                    && !globals::reserved_identifier(method)
+                {
+                    return Some((*addr, format!("{method}()")));
+                }
                 let Some((head, tail)) = source.split_once('(') else {
                     return None;
                 };

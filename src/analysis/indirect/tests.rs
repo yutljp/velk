@@ -731,7 +731,7 @@ fn returned_pointer_facts_do_not_cross_register_clobbers() {
         signed: false,
     };
     assert!(matches!(
-        decide(&tracker, &state, &load(0), (0, 1)),
+        decide(&tracker, &state, &load(0), (0, 1), None),
         Some(Decision::Direct(0x80, _))
     ));
     let mut assigned = state.clone();
@@ -746,7 +746,7 @@ fn returned_pointer_facts_do_not_cross_register_clobbers() {
         },
         (0, 1),
     );
-    assert!(decide(&tracker, &assigned, &load(0), (0, 2)).is_none());
+    assert!(decide(&tracker, &assigned, &load(0), (0, 2), None).is_none());
     tracker.step(
         &mut state,
         &Stmt::Assign {
@@ -765,9 +765,9 @@ fn returned_pointer_facts_do_not_cross_register_clobbers() {
         None,
     );
     tracker.step(&mut state, &unknown, (0, 2));
-    assert!(decide(&tracker, &state, &load(0), (0, 3)).is_none());
+    assert!(decide(&tracker, &state, &load(0), (0, 3), None).is_none());
     assert!(matches!(
-        decide(&tracker, &state, &load(3), (0, 3)),
+        decide(&tracker, &state, &load(3), (0, 3), None),
         Some(Decision::Direct(0x80, _))
     ));
 }

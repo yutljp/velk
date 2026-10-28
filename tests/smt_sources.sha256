@@ -148,6 +148,7 @@ a58e17fe151c2c24805ff39201100f72575cb73b566c1631a46ae812f2dd078c  src/render/str
 77e3da73f79cb91b44f56539e6cbe46b7c6d4ec891e097fa57e3dc9e5f59c862  src/render/transfers.rs	fn fill(nodes:
 d6ed2930da3050a1e796935096262bd31b5c04a40d9547f751d04af0fe1c2c7f  src/render/transfers.rs	fn filled_range<'a>(
 c6a2555762303231a86118191e713279616e150d252086d24de10427275987aa  src/render/transfers.rs	fn string_copy(
+9d8b67c41b4ec6446e770a9f25b123b38eada5dc6bdc637503859d0470e6fc9e  src/render/virtual_calls.rs	pub(super) fn prepare(
 bfdcdef48102d3e0d46218a589765c63baaff91dc48d6173ab2f781ceec3508d  src/render/widths.rs	pub(crate) fn narrow_variables(
 26f830b012a0705cb34935621e00778faed704abfe59a539505868ae5cd93da0  src/sigs/bytes/registers.rs	pub(super) fn alternative(
 eac82fbdaf5ab099c6e9fc01e16cae910eac2360cd6a45a5d0d7b6d3eb005106  src/ssa/demand.rs	pub fn narrow_partial_writes(

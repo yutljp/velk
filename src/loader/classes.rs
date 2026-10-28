@@ -245,3 +245,80 @@ pub(super) fn discover(image: &mut Image) {
         }
     }
 }
+
+/// Includes every recovered class that inherits from the named class.
+fn derived_classes<'a>(classes: &'a [Class], name: &'a str) -> std::collections::HashSet<&'a str> {
+    let mut names = std::collections::HashSet::from([name]);
+    loop {
+        let mut changed = false;
+        for class in classes {
+            if class
+                .bases
+                .iter()
+                .any(|base| names.contains(base.name.as_str()))
+            {
+                changed |= names.insert(class.name.as_str());
+            }
+        }
+        if !changed {
+            return names;
+        }
+    }
+}
+
+/// Possible methods at a slot of a pointer to the named base subobject.
+pub(crate) fn virtual_targets(
+    classes: &[Class],
+    name: &str,
+    slot: u64,
+) -> std::collections::HashSet<u64> {
+    let names = derived_classes(classes, name);
+    let mut targets = std::collections::HashSet::new();
+    for class in classes {
+        if !names.contains(class.name.as_str()) {
+            continue;
+        }
+        let mut pending = vec![(class.name.as_str(), 0i64)];
+        let mut visited = std::collections::HashSet::new();
+        let mut offsets = std::collections::HashSet::new();
+        let mut unknown = false;
+        while let Some((current, offset)) = pending.pop() {
+            if visited.len() >= 4096 {
+                unknown = true;
+                break;
+            }
+            if !visited.insert((current, offset)) {
+                continue;
+            }
+            if current == name {
+                offsets.insert(offset);
+                continue;
+            }
+            let Some(current) = classes.iter().find(|class| class.name == current) else {
+                unknown = true;
+                continue;
+            };
+            for base in &current.bases {
+                if base.is_virtual && current.name != class.name {
+                    unknown = true;
+                    continue;
+                }
+                let Some(next) = base.offset.and_then(|base| offset.checked_add(base)) else {
+                    unknown = true;
+                    continue;
+                };
+                pending.push((base.name.as_str(), next));
+            }
+        }
+        for table in &class.vtables {
+            if unknown || offsets.contains(&table.offset) {
+                for method in &table.methods {
+                    if method.slot == slot {
+                        targets.insert(method.address);
+                    }
+                }
+            }
+        }
+    }
+    targets
+}

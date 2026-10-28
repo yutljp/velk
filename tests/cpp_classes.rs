@@ -480,3 +480,243 @@ fn classes_and_offsets_use_the_32_bit_abi_in_debug_and_stripped_images() {
         }
     }
 }
+
+#[test]
+fn recovered_virtual_prototypes_preserve_full_register_results() {
+    use velk::ir::{CType, Stmt};
+
+    for format in ["elf", "dll"] {
+        let mut binary =
+            Binary::open(&common::fixtures_dir().join(format!("cpp/rtti.debug.{format}"))).unwrap();
+        let address = binary.find("dispatch").unwrap().addr;
+        let mut ir = binary.analysis(address, None).unwrap().ir.clone();
+        let mut symbols = velk::render::callee_names(binary.image());
+        let class = symbols
+            .cpp_classes
+            .iter()
+            .find(|class| class.name == "Root")
+            .unwrap();
+        let target = class
+            .vtables
+            .iter()
+            .find(|table| table.offset == 0)
+            .unwrap()
+            .methods[0]
+            .address;
+        assert!(symbols.cpp_signatures.contains_key(&target), "{format}");
+        ir.ret_type = CType::U64;
+        ir.definitions.clear();
+        ir.params[0].ty = CType::pointer_to(CType::U64);
+        for stmt in ir.blocks.iter_mut().flat_map(|block| &mut block.stmts) {
+            if let Stmt::Call { via: Some(via), .. } = stmt {
+                via.candidates = vec![target];
+            }
+        }
+        let code = velk::render::render(&ir, &[], &symbols, &[]);
+        assert!(code.contains("(*value)(void *)"), "{code}");
+        assert!(code.contains("->vtable->value("), "{code}");
+        let mut source = code;
+        source.push_str(
+            r#"
+static int method(void *object) { return (int)((uint64_t *)object)[1]; }
+int main(void) {
+    uintptr_t table[] = {(uintptr_t)method};
+    uint64_t object[] = {(uintptr_t)table, 0};
+    uint32_t values[] = {0, 1, 0x7fffffff, 0x80000000, 0xfffffff9, 0xffffffff};
+    for (unsigned i = 0; i < 6; ++i) {
+        object[1] = values[i];
+        if (dispatch((void *)object) != (uint64_t)values[i]) return 1;
+    }
+    return 0;
+}
+"#,
+        );
+        let directory = common::root().join(format!("target/cpp-virtual-prototype-{format}"));
+        std::fs::create_dir_all(&directory).unwrap();
+        for opt in ["-O0", "-O2"] {
+            let executable = directory.join(&opt[1..]);
+            let output = common::compiler::run(
+                Command::new("clang")
+                    .args(["-x", "c", "-std=c11", opt, "-o"])
+                    .arg(&executable)
+                    .arg("-"),
+                Some(&source),
+            );
+            assert!(
+                output.status.success(),
+                "{}\n{source}",
+                String::from_utf8_lossy(&output.stderr)
+            );
+            assert!(
+                Command::new(&executable).status().unwrap().success(),
+                "{source}"
+            );
+        }
+        symbols
+            .cpp_signatures
+            .get_mut(&target)
+            .unwrap()
+            .params
+            .clear();
+        let code = velk::render::render(&ir, &[], &symbols, &[]);
+        assert!(code.contains("(*value)()"), "{code}");
+    }
+}
+
+#[test]
+fn virtual_call_targets_match_recovered_slots() {
+    use velk::ir::{Stmt, Table};
+
+    let mut fixtures = Vec::new();
+    for format in FORMATS {
+        for variant in ["debug", "stripped"] {
+            fixtures.push(format!("cpp/rtti.{variant}.{format}"));
+        }
+    }
+    for arch in ["x64", "a64"] {
+        fixtures.push(format!("cpp_virtual_{arch}.elf"));
+        fixtures.push(format!("cpp_virtual_{arch}_stripped.elf"));
+    }
+    let mut golden = String::new();
+    for fixture in fixtures {
+        let reference = Binary::open(
+            &common::fixtures_dir().join(
+                fixture
+                    .replace(".stripped.", ".debug.")
+                    .replace("_stripped", ""),
+            ),
+        )
+        .unwrap();
+        let mut tables: Vec<_> = reference
+            .image()
+            .classes()
+            .iter()
+            .flat_map(|class| &class.vtables)
+            .map(|table| table.address)
+            .collect();
+        for (address, name) in &reference.image().data_symbols {
+            if name.trim_start_matches('_').starts_with("ZTV") {
+                tables.push(address.checked_add(16).unwrap());
+            }
+        }
+        let mut binary = Binary::open(&common::fixtures_dir().join(&fixture)).unwrap();
+        let addresses: Vec<_> = binary.image().functions.keys().copied().collect();
+        let mut calls = 0;
+        let mut direct = 0;
+        let mut named = 0;
+        let mut raw = 0;
+        for address in addresses {
+            let ir = binary.analysis(address, None).unwrap().ir.clone();
+            for stmt in ir.blocks.iter().flat_map(|block| &block.stmts) {
+                let Stmt::Call {
+                    target,
+                    via: Some(via),
+                    ..
+                } = stmt
+                else {
+                    continue;
+                };
+                if via.table != Table::Vtable {
+                    continue;
+                }
+                calls += 1;
+                direct += usize::from(target.is_some());
+                for candidate in target.iter().chain(&via.candidates) {
+                    assert!(
+                        tables.iter().any(|table| {
+                            let at = table.checked_add(via.slot.checked_mul(8).unwrap()).unwrap();
+                            matches!(binary.image().read_pointer(at), Some(velk::loader::Pointer::Address(found)) if found == *candidate)
+                        }),
+                        "{fixture} {address:#x}: {via:?}"
+                    );
+                }
+            }
+            let code = binary.decompile(address, None, None).unwrap();
+            for line in code.lines().filter(|line| line.contains("/* vtable slot")) {
+                named += usize::from(line.contains("->"));
+                raw += usize::from(line.contains("(*)())"));
+            }
+        }
+        assert_eq!(calls, direct + named + raw, "{fixture}");
+        writeln!(
+            golden,
+            "{fixture}: direct={direct} named={named} unresolved={raw}"
+        )
+        .unwrap();
+    }
+    if let Some(difference) = common::check_expected(
+        &common::root().join("tests/golden/virtual_calls.txt"),
+        &golden,
+    ) {
+        panic!("{difference}");
+    }
+}
+
+#[test]
+fn virtual_calls_match_in_cli_javascript_and_mcp() {
+    use std::process::Stdio;
+
+    use serde_json::Value;
+    use serde_json::json;
+
+    for format in ["elf", "dll"] {
+        let path = common::fixtures_dir().join(format!("cpp/rtti.debug.{format}"));
+        let mut binary = Binary::open(&path).unwrap();
+        let address = binary.find("dispatch").unwrap().addr;
+        let expected = binary.decompile(address, None, None).unwrap();
+        assert!(expected.contains("->vtable->value("), "{expected}");
+        let output = Command::new(env!("CARGO_BIN_EXE_velk"))
+            .args(["--cache", "off", "-D"])
+            .arg(&path)
+            .arg("dispatch")
+            .output()
+            .unwrap();
+        assert!(output.status.success(), "{output:?}");
+        assert_eq!(
+            String::from_utf8(output.stdout).unwrap().trim(),
+            expected.trim()
+        );
+        let script = format!(
+            "JSON.stringify({{code:velk.open({path:?}).getFunction('dispatch').decompile()}})"
+        );
+        let outcome = velk::script::Engine::new().unwrap().run(&script, None);
+        assert!(outcome.error.is_none(), "{:?}", outcome.error);
+        let value: Value = serde_json::from_str(&outcome.output).unwrap();
+        assert_eq!(value["code"], expected);
+        let child = Command::new(env!("CARGO_BIN_EXE_velk"))
+            .arg("--mcp")
+            .stdin(Stdio::piped())
+            .stdout(Stdio::piped())
+            .spawn()
+            .unwrap();
+        let output = common::mcp_request(
+            child,
+            &json!({
+                "jsonrpc":"2.0", "id":1, "method":"tools/call",
+                "params":{"name":"velk_run_script", "arguments":{"code":script}}
+            }),
+        );
+        assert!(output.status.success(), "{output:?}");
+        let response: Value = serde_json::from_slice(&output.stdout).unwrap();
+        assert_eq!(response["result"]["isError"], false, "{response}");
+        let text = response["result"]["content"][0]["text"].as_str().unwrap();
+        assert_eq!(serde_json::from_str::<Value>(text).unwrap(), value);
+    }
+    for document in ["docs/CPP_CLASSES.md", "docs/CPP_CLASSES.ja.md"] {
+        let text = std::fs::read_to_string(common::root().join(document)).unwrap();
+        let command = text
+            .lines()
+            .find(|line| line.starts_with("velk -D "))
+            .unwrap();
+        let output = Command::new(env!("CARGO_BIN_EXE_velk"))
+            .args(command.split_whitespace().skip(1))
+            .output()
+            .unwrap();
+        assert!(output.status.success(), "{output:?}");
+        assert!(
+            String::from_utf8(output.stdout)
+                .unwrap()
+                .contains("int (*other)(void *)")
+        );
+    }
+}

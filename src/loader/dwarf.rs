@@ -13,6 +13,7 @@ mod globals;
 mod layout;
 mod locals;
 pub(crate) mod variadic;
+pub(crate) mod virtual_calls;
 
 use aggregates::{definitions, definitions_with_sources, structure_members};
 
