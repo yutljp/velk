@@ -3985,6 +3985,7 @@ fn synthetic_ir(name: &str, params: Vec<Param>, ret_type: CType, stmts: Vec<Stmt
         declared_signature: None,
         params,
         stack_params: Vec::new(),
+        stack_spills: None,
         debug_locals: Vec::new(),
         debug_registers: Vec::new(),
         debug_globals: Vec::new(),
@@ -6498,6 +6499,7 @@ fn interpret(
         .code
         .contains("/* target frame's return-address slot */")
         || candidate.code.contains("/* target entry stack pointer */")
+        || candidate.code.contains("/* entry stack offset: ")
     {
         let sp = velk::arch::stack_pointer(candidate.ir.isa);
         if candidate.marshalling.is_some()
@@ -7081,6 +7083,32 @@ fn program(
             "uint64_t {provider}(void) {{ return 0x{frame:x}ULL; }}"
         )
         .expect("formatting into a String cannot fail");
+    }
+    let mut argument_providers = BTreeSet::new();
+    for &index in alive {
+        for line in candidates[index].code.lines() {
+            let Some(line) = line.strip_prefix("extern uint8_t *") else {
+                continue;
+            };
+            let Some((provider, offset)) = line.split_once("; /* entry stack offset: 0x") else {
+                continue;
+            };
+            let Some(offset) = offset.strip_suffix(" */") else {
+                continue;
+            };
+            let offset = u64::from_str_radix(offset, 16).expect("a rendered stack offset");
+            argument_providers.insert((provider, offset));
+        }
+    }
+    for (provider, offset) in argument_providers {
+        writeln!(
+            text,
+            "uint8_t *{provider} = (uint8_t *)(uintptr_t)0x{:x}ULL;",
+            frame
+                .checked_add(offset)
+                .expect("a bounded test frame offset")
+        )
+        .expect("writing to a String");
     }
     if mode == Mode::Memory {
         writeln!(

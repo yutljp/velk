@@ -15,6 +15,7 @@ pub(super) struct Input<'a> {
     pub(super) incoming: Option<&'a stack_bytes::Plan>,
     pub(super) stack_provider: Option<&'a str>,
     pub(super) stack_name: &'a str,
+    pub(super) caller_argument: Option<&'a super::super::locals::CallerArgument>,
     pub(super) segment_bases: &'a [&'a (SegmentBase, u16, String, String)],
     pub(super) machine: &'a [(u16, String)],
     pub(super) float_entries: &'a std::collections::HashSet<u16>,
@@ -41,6 +42,7 @@ pub(super) fn emit(input: Input<'_>) -> Declarations {
         incoming,
         stack_provider,
         stack_name,
+        caller_argument,
         segment_bases,
         machine,
         float_entries,
@@ -92,6 +94,14 @@ pub(super) fn emit(input: Input<'_>) -> Declarations {
     if let Some(provider) = stack_provider {
         indent(1, &mut out);
         out.push_str(&format!("uint64_t {stack_name} = {provider}();\n"));
+    }
+    if let Some(argument) = caller_argument
+        && mentions.contains(&argument.name)
+    {
+        out.push_str(&format!(
+            "    uint8_t *{} = {};\n",
+            argument.name, argument.provider
+        ));
     }
     if let Some(logical) = logical {
         for declaration in logical.declarations() {

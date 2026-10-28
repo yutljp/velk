@@ -157,11 +157,7 @@ fn printed_small_spill_with_overlapping_store_keeps_its_bytes() {
             [0, 255, 256, 65535].into_iter().map(|x| vec![x]).collect(),
         );
         if offset == -1 {
-            assert!(
-                candidate.code.contains("velk_entry_stack_pointer"),
-                "{}",
-                candidate.code
-            );
+            assert!(candidate.code.contains("arg_0"), "{}", candidate.code);
         } else {
             assert!(candidate.code.contains("[sp"), "{}", candidate.code);
         }

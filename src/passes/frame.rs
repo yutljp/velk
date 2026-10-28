@@ -8,6 +8,16 @@ use crate::ir::{Expr, FunctionIr, Stmt};
 /// frame address escapes.
 pub fn drop_dead_frame_stores(ir: &mut FunctionIr) {
     let sp = stack_pointer(ir.isa);
+    let spills = if ir
+        .blocks
+        .iter()
+        .flat_map(|block| &block.stmts)
+        .any(|stmt| statement_registers(stmt).0.contains(&sp))
+    {
+        None
+    } else {
+        crate::passes::memory::spill_range(ir)
+    };
     // Every frame-slot range the body reads, and whether a frame address escapes.
     let mut read: Vec<(u64, u8)> = Vec::new();
     let mut escaped = false;
@@ -21,7 +31,9 @@ pub fn drop_dead_frame_stores(ir: &mut FunctionIr) {
             match stmt {
                 Stmt::Store { addr, value, width } => {
                     if let Some(slot) = frame_slot_of(addr, sp) {
-                        if crate::passes::memory::private_address(addr, *width, sp) {
+                        if crate::passes::frame_slots::checked_frame_slot(addr, 0, sp).is_some_and(
+                            |offset| crate::passes::memory::private_slot(offset, *width, spills),
+                        ) {
                             stores.push((position, index, slot, *width));
                         }
                     } else {
@@ -796,6 +808,126 @@ mod tests {
 
     const RSP: u16 = 4;
     const RBP: u16 = 5;
+
+    #[test]
+    fn stores_crossing_abi_spill_bounds_remain() {
+        use crate::ir::Convention;
+
+        for (isa, convention, spills, start, end) in [
+            (Isa::X86_64, Convention::Win64, None, 8_i64, 40_i64),
+            (Isa::X86_64, Convention::GoAmd64, Some((24, 40)), 24, 40),
+            (Isa::AArch64, Convention::Aapcs64, Some((24, 40)), 24, 40),
+        ] {
+            let sp = crate::arch::stack_pointer(isa);
+            for (offset, bits) in [(start - 1, 64), (end - 1, 64), (start, 32)] {
+                let mut ir = FunctionIr::single_block(
+                    isa,
+                    vec![
+                        Stmt::Store {
+                            addr: Expr::bin(
+                                BinOp::Add,
+                                Expr::reg(sp, bits),
+                                Expr::Const(offset as u64),
+                            ),
+                            value: Expr::Const(42),
+                            width: 2,
+                        },
+                        Stmt::Ret {
+                            value: Expr::Const(0),
+                        },
+                    ],
+                );
+                ir.convention = convention;
+                ir.stack_spills = spills;
+                assert!(!crate::passes::memory::private_slot(
+                    end,
+                    0,
+                    crate::passes::memory::spill_range(&ir)
+                ));
+                assert!(!crate::passes::memory::private_slot(0, 0, None));
+                drop_dead_frame_stores(&mut ir);
+                crate::passes::memory::forward_spilled_variables(&mut ir);
+                assert_eq!(
+                    ir.blocks[0].stmts.len(),
+                    2,
+                    "{convention:?}/{offset}/{bits}: {}",
+                    ir.render()
+                );
+                ir.blocks[0].stmts.insert(
+                    0,
+                    assign(
+                        sp,
+                        Expr::bin(BinOp::Add, Expr::reg(sp, 64), Expr::Const(64)),
+                    ),
+                );
+                drop_dead_frame_stores(&mut ir);
+                crate::passes::memory::forward_spilled_variables(&mut ir);
+                assert_eq!(ir.blocks[0].stmts.len(), 3, "{}", ir.render());
+            }
+        }
+    }
+
+    #[test]
+    fn abi_spills_are_private_but_stack_outputs_remain() {
+        use crate::ir::Convention;
+
+        for (isa, convention, spills, spill, output) in [
+            (Isa::X86_64, Convention::Win64, None, 8, 40),
+            (Isa::X86_64, Convention::GoAmd64, Some((24, 40)), 24, 8),
+            (Isa::AArch64, Convention::Aapcs64, Some((24, 40)), 24, 8),
+            (Isa::X86_64, Convention::SysV, None, -8, 8),
+            (Isa::I386, Convention::Cdecl, None, -8, 4),
+            (Isa::I386, Convention::Stdcall, None, -8, 4),
+            (Isa::Arm32, Convention::Aapcs32, None, -8, 0),
+        ] {
+            let sp = crate::arch::stack_pointer(isa);
+            for width in [1, 2, 4, 8] {
+                let address = |offset: i64| {
+                    Expr::bin(BinOp::Add, Expr::reg(sp, 64), Expr::Const(offset as u64))
+                };
+                for read in [false, true] {
+                    let mut ir = FunctionIr::single_block(
+                        isa,
+                        vec![
+                            Stmt::Store {
+                                addr: address(spill),
+                                value: Expr::Const(42),
+                                width,
+                            },
+                            Stmt::Store {
+                                addr: address(output),
+                                value: Expr::Const(17),
+                                width,
+                            },
+                            Stmt::Ret {
+                                value: if read {
+                                    Expr::Load {
+                                        addr: Box::new(address(spill)),
+                                        width,
+                                        signed: false,
+                                    }
+                                } else {
+                                    Expr::Const(0)
+                                },
+                            },
+                        ],
+                    );
+                    ir.convention = convention;
+                    ir.stack_spills = spills;
+                    drop_dead_frame_stores(&mut ir);
+                    assert_eq!(
+                        ir.blocks[0].stmts.len(),
+                        if read { 3 } else { 2 },
+                        "{convention:?}/{width}: {}",
+                        ir.render()
+                    );
+                    assert!(ir.blocks[0].stmts.iter().any(
+                        |stmt| matches!(stmt, Stmt::Store { addr, .. } if *addr == address(output))
+                    ));
+                }
+            }
+        }
+    }
 
     #[test]
     fn unread_stores_outside_the_private_frame_remain() {

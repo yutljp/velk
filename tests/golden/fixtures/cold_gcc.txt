@@ -27,6 +27,7 @@ extern uint64_t __dso_handle; /* address: 0x4008 */
 extern uint64_t __gmon_start___3fe8; /* address: 0x3fe8 */
 extern uint64_t g_2028; /* address: 0x2028 */
 extern uint64_t g_2030; /* address: 0x2030 */
+extern uint8_t *_start_11a0_arg_0; /* entry stack offset: 0x0 */
 extern uint8_t completed_0; /* address: 0x4028 */
 
 int (__fprintf_chk)(FILE *, int, const char *, ...);
@@ -36,7 +37,6 @@ uint64_t __gmon_start__();
 uint64_t deregister_tm_clones();
 uint64_t lookup();
 uint64_t register_tm_clones();
-uint64_t velk_entry_stack_pointer(void); /* target entry stack pointer */
 void (__cxa_finalize)(void *);
 void (__stack_chk_fail)(void);
 void main();
@@ -194,14 +194,14 @@ fn main @ 0x1120 (size 124)
 -- decompile
 /* velk pseudo-C: _start @ 0x11a0 */
 int32_t _start(int64_t a0, int64_t a1, void (*a2)(void)) {
-    uint64_t rsp = velk_entry_stack_pointer();
+    uint8_t *arg_0 = _start_11a0_arg_0;
     uint64_t v1;
     int64_t local_0; /* [sp-8] */
 
-    int64_t v2 = *(uint64_t *)(rsp);
-    *(uint64_t *)(rsp) = v1;
-    local_0 = rsp;
-    /* unresolved call signature */ ((int (*)())__libc_start_main)((int (*)(int, char **, char **))main, v2, (char **)(rsp + 8), 0x0, 0x0, a2);
+    int64_t v2 = *(uint64_t *)(arg_0);
+    *(uint64_t *)(arg_0) = v1;
+    local_0 = (uintptr_t)(arg_0);
+    /* unresolved call signature */ ((int (*)())__libc_start_main)((int (*)(int, char **, char **))main, v2, (char **)(arg_0 + 0x8), 0x0, 0x0, a2);
 }
 -- signature
 int32_t (int64_t a0, int64_t a1, void (*)(void) a2)

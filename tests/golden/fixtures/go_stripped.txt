@@ -1,4 +1,4 @@
-# go_stripped: elf x86_64 0x4650a0, 1285 functions, 0 lift failures, 0 unsupported, 57 gotos
+# go_stripped: elf x86_64 0x4650a0, 1285 functions, 0 lift failures, 0 unsupported, 56 gotos
 0x401000 96 internal/abi.Kind.String pclntab
 0x401060 128 internal/abi.Name.IsBlank pclntab
 0x4010e0 192 internal/abi.Name.Name pclntab
@@ -1289,7 +1289,6 @@
 
 struct go_string { uint8_t * ptr; int64_t len; };
 
-uint64_t *velk_return_address_slot(void); /* target frame's return-address slot */
 uint64_t main_add();
 uint64_t main_twice();
 uint64_t runtime_gwrite();
@@ -1305,7 +1304,6 @@ void runtime_printint();
 int64_t runtime_printstring(int64_t a0, int64_t a1) {
     struct go_string string = { .ptr = (uint8_t *)(uintptr_t)a0, .len = (int64_t)a1 };
 
-    *(uint64_t *)((uintptr_t)(velk_return_address_slot() + 1)) = (uintptr_t)string.ptr;
     return runtime_gwrite((uintptr_t)string.ptr, string.len, string.len);
 }
 -- signature
@@ -1317,8 +1315,6 @@ fn runtime.printstring @ 0x430e20 (size 128)
   blk0 @ 0x430e20:
     br 0x430e26
   blk1 @ 0x430e26:
-    store64(rax, (rsp + #0x8))
-    store64(rax, (rsp + #0xffffffffffffffd0))
     v3:rax, rbx, rcx, rdi, rsi, r8, r9, r10, r11, xmm0, xmm1, xmm2, xmm3 = call 0x430660(rax, rbx, rbx)
     ret v3
 -- card

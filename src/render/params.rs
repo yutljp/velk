@@ -324,9 +324,12 @@ fn fold_parameter_copies(ir: &mut FunctionIr, param: u16, integer_types: Integer
             .iter()
             .flat_map(|block| &block.stmts)
             .any(|stmt| matches!(stmt, Stmt::Call { args: None, .. }));
+    let spill_range = crate::passes::memory::spill_range(ir);
     let slot_of = |addr: &Expr| match addr {
         _ if !slots
-            || !crate::passes::memory::private_address(addr, 1, sp)
+            || !crate::passes::frame_slots::checked_frame_slot(addr, 0, sp).is_some_and(
+                |offset| crate::passes::memory::private_slot(offset, 1, spill_range),
+            )
             || (atomics
                 && (!private_frame || !crate::passes::memory::private_address(addr, 8, sp))) =>
         {
@@ -508,10 +511,12 @@ fn fold_parameter_copies(ir: &mut FunctionIr, param: u16, integer_types: Integer
             .max()
             .unwrap_or(0);
         let start = slot as i64;
-        let Some(end) = start
-            .checked_add(extent)
-            .filter(|end| extent > 0 && *end <= 0)
-        else {
+        let Some(end) = start.checked_add(extent).filter(|_| {
+            extent > 0
+                && u8::try_from(extent).is_ok_and(|width| {
+                    crate::passes::memory::private_slot(start, width, spill_range)
+                })
+        }) else {
             return false;
         };
         ir.stack_params.iter().all(|param| {

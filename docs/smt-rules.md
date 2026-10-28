@@ -141,6 +141,9 @@ Caller-memory templates check final memory after dead-store removal and spill
 forwarding at 8/16/32/64 bits on all four instruction sets, including stores
 that cross the entry stack boundary. Parameter-spill folding also checks
 final memory for caller-frame and crossing stores at those widths and instruction sets.
+ABI spill templates check results and caller-visible memory for Windows x64 home space,
+Go register spill storage on x86-64 and AArch64, and private slots under the C ABIs.
+Only the spill bytes are excluded from the final memory comparison.
 Flag tests compare the real recovered predicates with independent flag formulas.
 Rotation and byte reversal tests compare the real lowered expressions with
 bit-vector rotation and byte extraction. Variable rotation counts are partitioned

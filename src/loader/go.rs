@@ -2,7 +2,19 @@
 
 use crate::loader::Image;
 
+mod stack;
 pub(crate) mod types;
+
+pub(crate) fn stack_spills(image: &Image, addr: u64) -> Option<(i64, i64)> {
+    if !image.go {
+        return None;
+    }
+    image
+        .go_stack_spills
+        .get_or_init(|| stack::ranges(image))
+        .get(&addr)
+        .copied()
+}
 
 const MODULE_NAMES: u64 = 8;
 const MODULE_PC_TABLE: u64 = 104;

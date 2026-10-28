@@ -198,7 +198,7 @@ fn executable_section_stores_compile_and_match_native_memory() {
 }
 
 #[test]
-fn caller_memory_stores_use_the_entry_stack_pointer() {
+fn caller_memory_stores_use_named_stack_arguments() {
     let mut binary = Binary::open(&fixtures().join("stack.elf")).unwrap();
     for name in ["caller_stores", "text_caller_stores", "parameter_stores"] {
         let address = binary.find(name).unwrap().addr;
@@ -212,7 +212,9 @@ fn caller_memory_stores_use_the_entry_stack_pointer() {
         assert_eq!(stores, 4, "{name}: {}", ir.render());
         let code = binary.decompile(address, None, None).unwrap();
         interfaces(&fixtures().join("stack.elf"), name, &code);
-        assert!(code.contains("velk_entry_stack_pointer"), "{name}: {code}");
+        assert!(!code.contains("velk_entry_stack_pointer"), "{name}: {code}");
+        assert!(!code.contains("rsp"), "{name}: {code}");
+        assert!(code.contains("arg_8"), "{name}: {code}");
         let source = fixtures().join(format!("{name}.c"));
         let executable = fixtures().join(name);
         let (argument, byte, word, dword, qword) = if name == "parameter_stores" {
@@ -230,7 +232,7 @@ fn caller_memory_stores_use_the_entry_stack_pointer() {
             "{code}\n\
             #include <string.h>\n\
             static uint64_t memory[8];\n\
-            uint64_t velk_entry_stack_pointer(void) {{ return (uintptr_t)memory; }}\n\
+            uint8_t *{name}_{address:x}_arg_8 = (uint8_t *)memory + 8;\n\
             int main(void) {{\n\
               memset(memory,0xa5,sizeof(memory));\n\
               if ({name}({argument}) != 0) return 1;\n\
@@ -252,6 +254,173 @@ fn caller_memory_stores_use_the_entry_stack_pointer() {
             output.status.success(),
             "{}\n{source_text}",
             String::from_utf8_lossy(&output.stderr)
+        );
+        assert!(
+            Command::new(executable).status().unwrap().success(),
+            "{source_text}"
+        );
+    }
+}
+
+#[test]
+fn abi_spills_and_stack_outputs_compile_and_match_memory() {
+    use velk::ir::{BinOp, Block, CType, Convention, Expr, Param};
+
+    for (architecture, convention, spills, spill, output) in [
+        ("x86_64", Convention::Win64, None, 8_i64, 40_i64),
+        ("x86_64", Convention::GoAmd64, Some((24, 40)), 24, 8),
+        ("aarch64", Convention::Aapcs64, Some((24, 40)), 24, 8),
+        ("x86_64", Convention::SysV, None, -8, 8),
+        ("i386", Convention::Cdecl, None, -8, 4),
+        ("i386", Convention::Stdcall, None, -8, 4),
+        ("arm", Convention::Aapcs32, None, -8, 0),
+    ] {
+        let mut binary = Binary::open(&fixtures().join(format!("{architecture}.elf"))).unwrap();
+        let address = binary.find("read_executable").unwrap().addr;
+        let template = binary.analysis(address, None).unwrap().ir.clone();
+        let sp = velk::arch::stack_pointer(template.isa);
+        let register = convention.arguments().first().copied().unwrap_or(0);
+        let at = |offset: i64| Expr::bin(BinOp::Add, Expr::reg(sp, 64), Expr::Const(offset as u64));
+        let mut source =
+            String::from("#include <stdint.h>\n#include <string.h>\nstatic uint8_t memory[64];\n");
+        let mut checks = String::new();
+        for width in [1, 2, 4, 8] {
+            for read in [false, true] {
+                let name = format!("stack_output_{width}_{read}");
+                let mut ir = template.clone();
+                ir.convention = convention;
+                ir.stack_spills = spills;
+                ir.stack_params.clear();
+                ir.declared_signature = None;
+                ir.params = vec![Param {
+                    index: register,
+                    name: "value".into(),
+                    ty: CType::U64,
+                }];
+                ir.name = Some(name.clone());
+                ir.ret_type = CType::U64;
+                ir.blocks = vec![Block {
+                    start: address,
+                    stmts: vec![
+                        Stmt::Store {
+                            addr: at(spill),
+                            value: Expr::reg(register, 64),
+                            width,
+                        },
+                        Stmt::Store {
+                            addr: at(output),
+                            value: Expr::reg(register, 64),
+                            width,
+                        },
+                        Stmt::Ret {
+                            value: if read {
+                                Expr::Load {
+                                    addr: Box::new(at(spill)),
+                                    width,
+                                    signed: false,
+                                }
+                            } else {
+                                Expr::Const(0)
+                            },
+                        },
+                    ],
+                }];
+                velk::passes::frame::drop_dead_frame_stores(&mut ir);
+                assert_eq!(ir.blocks[0].stmts.len(), if read { 3 } else { 2 });
+                let code = velk::render::render(&ir, &[], &Default::default(), &[]);
+                assert!(
+                    !code.contains("velk_entry_stack_pointer"),
+                    "{convention:?}: {code}"
+                );
+                assert!(
+                    !code
+                        .lines()
+                        .filter_map(|line| line.split("/*").next())
+                        .flat_map(
+                            |line| line.split(|c: char| !c.is_ascii_alphanumeric() && c != '_')
+                        )
+                        .any(|word| matches!(word, "rsp" | "sp" | "esp")),
+                    "{convention:?}: {code}"
+                );
+                source.push_str(&code);
+                source.push_str(&format!(
+                    "\nuint8_t *{name}_{address:x}_arg_{output:x} = memory + {output};\n"
+                ));
+                let mask = u64::MAX >> (64 - 8 * width);
+                let expected = if read {
+                    format!("(value & UINT64_C({mask}))")
+                } else {
+                    "0".into()
+                };
+                checks.push_str(&format!("memset(memory,0xa5,64); memset(expected,0xa5,64); memcpy(expected+{output},&value,{width}); if ({name}(value) != {expected} || memcmp(memory,expected,64)) return 1;\n"));
+            }
+        }
+        source.push_str(&format!("\nint main(void) {{ uint8_t expected[64]; for (uint64_t i=0;i<1024;++i) {{ uint64_t value = i<4 ? (uint64_t[]){{0,1,UINT64_C(0x8000000000000000),UINT64_MAX}}[i] : i*UINT64_C(0x9e3779b97f4a7c15); {checks} }} return 0; }}\n"));
+        let name = format!("{architecture}-{convention:?}-stack");
+        let input = fixtures().join(format!("{name}.c"));
+        let executable = fixtures().join(name);
+        std::fs::write(&input, &source).unwrap();
+        let compiled = Command::new("clang")
+            .args(["-std=c17", "-Werror=implicit-function-declaration", "-O2"])
+            .arg(&input)
+            .arg("-o")
+            .arg(&executable)
+            .output()
+            .unwrap();
+        assert!(
+            compiled.status.success(),
+            "{}\n{source}",
+            String::from_utf8_lossy(&compiled.stderr)
+        );
+        assert!(
+            Command::new(executable).status().unwrap().success(),
+            "{source}"
+        );
+    }
+}
+
+#[test]
+fn go_register_spills_disappear_from_every_interface() {
+    for (fixture, address) in [
+        ("go_probe", 0x466d00),
+        ("go_probe_arm64", 0x77490),
+        ("go_stripped", 0x466cc0),
+        ("go_stripped_arm64", 0x77430),
+    ] {
+        let path = common::root().join("tests/fixtures").join(fixture);
+        let mut binary = Binary::open(&path).unwrap();
+        let code = binary.decompile(address, None, None).unwrap();
+        assert!(
+            !code.contains("velk_entry_stack_pointer"),
+            "{fixture}: {code}"
+        );
+        assert!(
+            !code
+                .split(|c: char| !c.is_ascii_alphanumeric() && c != '_')
+                .any(|word| matches!(word, "rsp" | "sp")),
+            "{fixture}: {code}"
+        );
+        interfaces(&path, &format!("0x{address:x}"), &code);
+        if fixture.contains("stripped") {
+            continue;
+        }
+        let source = fixtures().join(format!("{fixture}-sum.c"));
+        let executable = fixtures().join(format!("{fixture}-sum"));
+        let source_text = format!(
+            "{code}\nint main(void) {{ uint64_t data[64]; for (uint64_t i=0;i<1024;++i) {{ uint64_t sum=0; for (int j=0;j<64;++j) data[j]=(i+j)*UINT64_C(0x9e3779b97f4a7c15); for (int n=0;n<=64;++n) {{ if ((uint64_t)main_sumSlice(data,n) != sum) return 1; if (n<64) sum+=data[n]; }} }} return 0; }}\n"
+        );
+        std::fs::write(&source, &source_text).unwrap();
+        let compiled = Command::new("clang")
+            .args(["-std=c17", "-Werror=implicit-function-declaration", "-O2"])
+            .arg(&source)
+            .arg("-o")
+            .arg(&executable)
+            .output()
+            .unwrap();
+        assert!(
+            compiled.status.success(),
+            "{}\n{source_text}",
+            String::from_utf8_lossy(&compiled.stderr)
         );
         assert!(
             Command::new(executable).status().unwrap().success(),
@@ -350,10 +519,11 @@ fn stores_crossing_the_frame_boundary_keep_caller_bytes() {
             ir.name = Some(name.clone());
             velk::passes::frame::drop_dead_frame_stores(&mut ir);
             let rendered = velk::render::render(&ir, &[], &Default::default(), &[]);
-            assert!(rendered.contains("velk_entry_stack_pointer"), "{rendered}");
+            assert!(!rendered.contains("velk_entry_stack_pointer"), "{rendered}");
+            code.push_str(&format!("\nuint8_t *{name}_{address:x}_arg_0;\n"));
             code.push_str(&rendered);
             let destination = if width == 1 { 16 } else { 15 };
-            checks.push_str(&format!("memset(memory,0xa5,64); memset(expected,0xa5,64); memcpy(expected+{destination},&value,{width}); {name}(value); if (memcmp(memory,expected,64)) return 1;\n"));
+            checks.push_str(&format!("memset(memory,0xa5,64); memset(expected,0xa5,64); memcpy(expected+{destination},&value,{width}); {name}_{address:x}_arg_0 = (uint8_t *)memory + 16; {name}(value); if (memcmp(memory,expected,64)) return 1;\n"));
         }
     }
     code = velk::render::combine(&code);

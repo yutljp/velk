@@ -56,10 +56,11 @@ fn go_abi0_wrapper_recovers_stack_parameters_and_result() {
     assert_eq!(ir.convention, Convention::GoAbi0);
     assert_eq!(ir.stack_params.len(), 3);
     let code = binary.decompile(0x466160, None, None).unwrap();
-    assert!(code.contains("velk_entry_stack_pointer"), "{code}");
+    assert!(!code.contains("velk_entry_stack_pointer"), "{code}");
+    assert!(!code.contains("rsp"), "{code}");
     assert!(code.contains("return"), "{code}");
     let mut source = String::from(HEADER);
-    source.push_str("\nstatic uint64_t stack[8];\nuint64_t velk_entry_stack_pointer(void) { return (uintptr_t)stack; }\n");
+    source.push_str("\nstatic uint64_t stack[8];\nuint8_t *runtime_write_466160_arg_20 = (uint8_t *)stack + 0x20;\n");
     source.push_str("\nstatic uint64_t runtime_write_45fe40(int64_t a, int64_t b, uint32_t c) { return (uint32_t)((uint64_t)a * 7 + (uint64_t)b * 13 + c); }\n");
     source.push_str(&code);
     source.push_str("\nint main(void) { for (unsigned i = 0; i < 100; ++i) { int64_t a = (int64_t)((uint64_t)i * 0xfedcba987654321ULL); int64_t b = -a; uint32_t c = i * 123456789u; uint32_t expected = runtime_write_45fe40(a, b, c); if (runtime_write_466160(a, b, c) != (int32_t)expected) return 1; uint32_t stored; __builtin_memcpy(&stored, (unsigned char *)stack + 0x20, 4); if (stored != expected) return 2; } return 0; }\n");

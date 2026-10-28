@@ -933,6 +933,8 @@ pub struct FunctionIr {
     pub declared_signature: Option<DeclaredSignature>,
     /// Parameters the debug info places in the caller's stack frame.
     pub stack_params: Vec<StackParam>,
+    /// Entry-stack bounds of register argument spill storage, when known.
+    pub stack_spills: Option<(i64, i64)>,
     pub debug_locals: Vec<DebugLocal>,
     pub debug_registers: Vec<(u16, String)>,
     /// Fixed-address objects with source types from debug information.
@@ -985,6 +987,7 @@ impl FunctionIr {
             params: Vec::new(),
             declared_signature: None,
             stack_params: Vec::new(),
+            stack_spills: None,
             debug_locals: Vec::new(),
             debug_registers: Vec::new(),
             debug_globals: Vec::new(),

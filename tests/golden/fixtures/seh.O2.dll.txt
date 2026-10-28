@@ -12,7 +12,6 @@
 /* velk prelude */
 #include <stdint.h>
 
-uint64_t *velk_return_address_slot(void); /* target frame's return-address slot */
 uint64_t choose_filter();
 uint64_t imported_value();
 uint64_t sub_1800010b0();
@@ -124,7 +123,6 @@ fn seh_finally @ 0x180001060 (size 40)
 -- decompile
 /* velk pseudo-C: seh_finally__finally_0 @ 0x180001090 */
 void seh_finally__finally_0(int64_t a0, int64_t a1) {
-    *(uint64_t *)((uintptr_t)velk_return_address_slot() + 0x10) = a1;
     sub_1800010b0((uint32_t *)(int64_t)((uint64_t)a1 + 48));
 }
 -- signature
@@ -134,7 +132,6 @@ void (int64_t a0, int64_t a1)
 -- ir
 fn seh_finally__finally_0 @ 0x180001090 (size 29)
   blk0 @ 0x180001090:
-    store64(rdx, (rsp + #0x10))
     call 0x1800010b0((rdx + #0x30))
     ret #0x0
 -- card
@@ -198,7 +195,6 @@ fn seh_nested @ 0x1800010c0 (size 42)
 -- decompile
 /* velk pseudo-C: seh_nested__finally_0 @ 0x1800010f0 */
 int32_t seh_nested__finally_0(int64_t a0, int64_t a1) {
-    *(uint64_t *)((uintptr_t)velk_return_address_slot() + 0x10) = a1;
     return sub_180001110();
 }
 -- signature
@@ -208,7 +204,6 @@ int32_t (int64_t a0, int64_t a1)
 -- ir
 fn seh_nested__finally_0 @ 0x1800010f0 (size 28)
   blk0 @ 0x1800010f0:
-    store64(rdx, (rsp + #0x10))
     v1:rax, xmm0 = call 0x180001110()
     ret v1
 -- card

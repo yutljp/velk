@@ -338,12 +338,7 @@ fn promote_slots(
     let mut ordered: Vec<_> = slots.iter().copied().collect();
     ordered.sort_unstable();
     for (offset, width) in ordered {
-        // Incoming stack arguments belong to the caller.
-        if offset >= 0
-            || offset
-                .checked_add(i64::from(width))
-                .is_none_or(|end| end > 0)
-        {
+        if !super::private_slot(offset, width, super::spill_range(ir)) {
             continue;
         }
         if ir.blocks.iter().enumerate().any(|(index, block)| {

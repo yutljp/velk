@@ -318,6 +318,7 @@ pub struct Image {
     /// The image carries a Go pclntab, so its functions follow the Go ABI.
     pub go: bool,
     pub(crate) go_types: std::sync::OnceLock<go::types::Types>,
+    pub(crate) go_stack_spills: std::sync::OnceLock<HashMap<u64, (i64, i64)>>,
     /// The C++ virtual tables, by address point. Built on first use.
     pub vtables: std::sync::OnceLock<std::collections::BTreeSet<u64>>,
     pub(crate) classes: std::sync::OnceLock<Vec<classes::Class>>,
@@ -503,6 +504,7 @@ impl Image {
             branches_to: Default::default(),
             addressed: Default::default(),
             go_types: Default::default(),
+            go_stack_spills: Default::default(),
             go_abi0: Default::default(),
             stack_rows: Default::default(),
             imports: BTreeMap::new(),
@@ -1264,6 +1266,7 @@ pub(crate) fn load_input_with_saved(
         branches_to: Default::default(),
         addressed: Default::default(),
         go_types: Default::default(),
+        go_stack_spills: Default::default(),
         go_abi0: Default::default(),
         stack_rows: Default::default(),
         result_reads: Default::default(),

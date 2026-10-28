@@ -930,6 +930,7 @@ fn render_with(
             value_bits.remove(&capture.register);
         }
     }
+    let caller_argument = locals.caller_argument;
     let mut ctx = Ctx {
         inline_functions: Default::default(),
         ir,
@@ -1327,6 +1328,14 @@ fn render_with(
             "uint64_t {provider}(void); /* target entry stack pointer */\n"
         ));
     }
+    if let Some(argument) = &caller_argument
+        && mentions.contains(&argument.name)
+    {
+        prototypes.push_str(&format!(
+            "extern uint8_t *{}; /* entry stack offset: 0x{:x} */\n",
+            argument.provider, argument.offset
+        ));
+    }
     for (_, _, provider) in &exception_providers {
         if code_names.contains(provider.as_str()) {
             prototypes.push_str(&format!("uint64_t {provider}(void);\n"));
@@ -1363,6 +1372,7 @@ fn render_with(
         incoming,
         stack_provider: stack_provider.as_deref(),
         stack_name: &stack_name,
+        caller_argument: caller_argument.as_ref(),
         segment_bases: &segment_bases,
         machine: &machine,
         float_entries: &float_entries,

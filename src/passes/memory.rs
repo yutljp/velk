@@ -233,6 +233,26 @@ pub(crate) fn private_address(addr: &Expr, width: u8, sp: u16) -> bool {
         .is_some_and(|end| end <= 0)
 }
 
+pub(crate) fn spill_range(ir: &FunctionIr) -> Option<(i64, i64)> {
+    if ir.convention == crate::ir::Convention::Win64 {
+        Some((8, 40))
+    } else {
+        ir.stack_spills
+    }
+}
+
+/// Whether a complete access lies in storage the ABI gives to the callee.
+pub(crate) fn private_slot(offset: i64, width: u8, spills: Option<(i64, i64)>) -> bool {
+    // A bare address must point inside the storage, rather than past its end.
+    let Some(end) = offset.checked_add(i64::from(width.max(1))) else {
+        return false;
+    };
+    if end <= 0 {
+        return true;
+    }
+    spills.is_some_and(|(start, limit)| offset >= start && end <= limit)
+}
+
 fn private_loads(value: &Expr, sp: u16) -> bool {
     match value {
         Expr::Load { addr, width, .. } => {
@@ -775,6 +795,11 @@ pub fn forward_spilled_variables(ir: &mut FunctionIr) {
             .iter()
             .flat_map(|block| &block.stmts)
             .any(|stmt| matches!(stmt, Stmt::Unsupported { .. }) || stmt.has_deferred_call_memory())
+        || ir.blocks.iter().flat_map(|block| &block.stmts).any(|stmt| {
+            stmt.operands()
+                .into_iter()
+                .any(|value| !frame_values::full_frame_register(value, sp))
+        })
     {
         return;
     }
@@ -782,9 +807,14 @@ pub fn forward_spilled_variables(ir: &mut FunctionIr) {
     // frame each block starts in and the moves of the stack pointer in it.
     let frames = crate::passes::frame_slots::block_entry_frame_offsets(ir, sp);
     let slot = |addr: &Expr, frame: i64| -> Option<i64> {
+        if !frame_values::full_frame_register(addr, sp) {
+            return None;
+        }
         let (base, offset) = split_offset(addr);
-        matches!(base, Expr::Reg { index, .. } if *index == sp)
-            .then_some(frame.wrapping_add(offset))
+        if !matches!(base, Expr::Reg { index, .. } if *index == sp) {
+            return None;
+        }
+        frame.checked_add(offset)
     };
     // Every access of each slot: (block, position, width, is store).
     let mut accesses: HashMap<i64, Vec<(usize, usize, u8, bool)>> = HashMap::new();
@@ -899,7 +929,7 @@ pub fn forward_spilled_variables(ir: &mut FunctionIr) {
         };
         let (store_block, store_at, width) = (*store_block, *store_at, *width);
         if !matches!(width, 4 | 8)
-            || offset.checked_add(i64::from(width)).is_none_or(|end| end > 0)
+            || !private_slot(*offset, width, spill_range(ir))
             || passed.contains(offset)
             || uses.iter().any(|(.., used, _)| *used != width)
             // Another access reaching into the slot from elsewhere.

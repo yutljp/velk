@@ -1352,6 +1352,7 @@ fn lift_function(image: &Image, function: &Function) -> Result<Lifted, LiftError
         params: signature.params,
         declared_signature,
         stack_params,
+        stack_spills: crate::loader::go::stack_spills(image, function.addr),
         debug_globals: types
             .as_ref()
             .map(|types| types.globals.clone())

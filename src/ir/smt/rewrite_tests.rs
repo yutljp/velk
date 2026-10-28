@@ -1053,3 +1053,88 @@ fn caller_frame_stores_preserve_memory() {
     }
     proofs.check();
 }
+
+#[test]
+fn abi_spill_removal_preserves_results_and_caller_memory() {
+    use crate::ir::Convention;
+
+    if !Proofs::available() {
+        return;
+    }
+    let mut proofs = Proofs::default();
+    for (isa, convention, spills, slot, output) in [
+        (Isa::X86_64, Convention::Win64, None, 8_u64, 40_u64),
+        (Isa::X86_64, Convention::GoAmd64, Some((24, 40)), 24, 8),
+        (Isa::AArch64, Convention::Aapcs64, Some((24, 40)), 24, 8),
+        (Isa::I386, Convention::Cdecl, None, (-8_i64) as u64, 4),
+        (Isa::I386, Convention::Stdcall, None, (-8_i64) as u64, 4),
+        (Isa::X86_64, Convention::SysV, None, (-8_i64) as u64, 8),
+        (Isa::Arm32, Convention::Aapcs32, None, (-8_i64) as u64, 0),
+    ] {
+        let sp = crate::arch::stack_pointer(isa);
+        let address = |offset| raw_bin(BinOp::Add, Expr::reg(sp, 64), Expr::Const(offset));
+        for width in [1, 2, 4, 8] {
+            for read in [false, true] {
+                let mut before = FunctionIr::single_block(
+                    isa,
+                    vec![
+                        assign(crate::ir::VARIABLE_BASE, 64, Expr::reg(0, 64)),
+                        Stmt::Store {
+                            addr: address(slot),
+                            value: Expr::reg(crate::ir::VARIABLE_BASE, 64),
+                            width,
+                        },
+                        Stmt::Store {
+                            addr: address(output),
+                            value: Expr::reg(1, 64),
+                            width,
+                        },
+                        Stmt::Ret {
+                            value: if read {
+                                load(address(slot), width, false)
+                            } else {
+                                Expr::Const(0)
+                            },
+                        },
+                    ],
+                );
+                before.convention = convention;
+                before.stack_spills = spills;
+                let mut after = before.clone();
+                crate::passes::frame::drop_dead_frame_stores(&mut after);
+                crate::passes::memory::forward_spilled_variables(&mut after);
+                // Exclude only the ABI's private bytes from the final memory comparison.
+                for ir in [&mut before, &mut after] {
+                    let position = ir.blocks[0].stmts.len() - 1;
+                    ir.blocks[0].stmts.insert(
+                        position,
+                        Stmt::Store {
+                            addr: address(slot),
+                            value: Expr::Const(0),
+                            width,
+                        },
+                    );
+                }
+                // Capture the result before clearing its backing slot.
+                for ir in [&mut before, &mut after] {
+                    let position = ir.blocks[0].stmts.len() - 1;
+                    let Stmt::Ret { value } = &mut ir.blocks[0].stmts[position] else {
+                        unreachable!()
+                    };
+                    let value =
+                        std::mem::replace(value, Expr::reg(crate::ir::VARIABLE_BASE + 1, 64));
+                    ir.blocks[0].stmts.insert(
+                        position - 1,
+                        assign(crate::ir::VARIABLE_BASE + 1, 64, value),
+                    );
+                }
+                proofs.function(
+                    format!("ABI spill/{isa:?}/{convention:?}/{width}/{read}"),
+                    &before,
+                    &after,
+                );
+            }
+        }
+    }
+    proofs.check();
+}

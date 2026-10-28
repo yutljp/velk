@@ -673,7 +673,9 @@ fn printed_promoted_slots_execute_joins_loops_and_alias_fallbacks() {
         velk::passes::memory::promote_frame_slots(&mut optimized);
         let text = printed(&optimized);
         assert_eq!(
-            !text.contains("/* [sp") && !text.contains("rsp"),
+            !text.contains("/* [sp")
+                && !text.contains("rsp")
+                && !text.contains("/* entry stack offset: "),
             promoted,
             "{text}"
         );

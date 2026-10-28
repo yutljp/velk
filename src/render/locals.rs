@@ -1,3 +1,5 @@
+mod caller_arguments;
+pub(super) use caller_arguments::CallerArgument;
 mod copies;
 mod debug;
 mod indexed;
@@ -86,6 +88,7 @@ pub(crate) struct Locals {
     pub(super) parameter_addresses: HashMap<(String, u8), String>,
     pub(super) parameter_reads: HashMap<(String, u8), super::expr::ParameterRead>,
     pub(super) declarations: Vec<Local>,
+    pub(super) caller_argument: Option<CallerArgument>,
 }
 
 impl Locals {
@@ -226,11 +229,11 @@ pub(super) fn stack_locals_with_roles(
         let Some(slot) = slot else {
             continue;
         };
-        if *slot >= 0
-            || slot
-                .checked_add(i64::from(*width))
-                .is_none_or(|end| end > 0)
-        {
+        if !crate::passes::memory::private_slot(
+            *slot,
+            *width,
+            crate::passes::memory::spill_range(ir),
+        ) {
             continue;
         }
         if !slot_names.contains_key(slot) {
@@ -684,7 +687,8 @@ pub(super) fn stack_locals_with_roles(
             ))
         })
         .collect();
-    Locals {
+    let mut locals = Locals {
+        caller_argument: None,
         slots,
         parts,
         bounds,
@@ -697,7 +701,9 @@ pub(super) fn stack_locals_with_roles(
             .into_iter()
             .filter_map(|slot| slot_names.remove(&slot))
             .collect(),
-    }
+    };
+    locals.caller_argument = locals.bind_caller_arguments(ir, &argument_accesses, symbols, &base);
+    locals
 }
 
 fn declaration_order(

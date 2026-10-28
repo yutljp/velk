@@ -1831,8 +1831,9 @@ fn standalone_recursive_narrow_returns_zero_extend_before_wide_uses() {
 fn caller_stack_arguments_are_not_local_object_end_addresses() {
     let mut binary = Binary::open(&common::fixtures_dir().join("cold_gcc_stripped")).unwrap();
     let code = binary.decompile(0x11a0, None, None).unwrap();
-    assert!(code.contains("(char **)(rsp + 8)"), "{code}");
-    assert!(code.contains("velk_entry_stack_pointer"), "{code}");
+    assert!(code.contains("(char **)(arg_0 + 0x8)"), "{code}");
+    assert!(!code.contains("rsp"), "{code}");
+    assert!(!code.contains("velk_entry_stack_pointer"), "{code}");
     let scratch = scratch_dir("caller-stack-address");
     assert_eq!(
         check(&code, &scratch.join("function.c"), &BTreeMap::new()),
