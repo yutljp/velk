@@ -51,10 +51,22 @@ impl StructureTagNames {
                     continue;
                 }
                 let definition = rename(&definition, &replacements);
-                let Some(digits) = tag.strip_prefix('S') else {
-                    continue;
-                };
-                if digits.is_empty() || !digits.bytes().all(|byte| byte.is_ascii_digit()) {
+                let digits = tag
+                    .strip_prefix('S')
+                    .filter(|digits| {
+                        !digits.is_empty() && digits.bytes().all(|byte| byte.is_ascii_digit())
+                    })
+                    .or_else(|| {
+                        let Some((_, suffix)) = tag.rsplit_once('_') else {
+                            return None;
+                        };
+                        suffix
+                            .strip_prefix('s')
+                            .or_else(|| suffix.strip_prefix('a'))
+                    });
+                if !digits.is_some_and(|digits| {
+                    !digits.is_empty() && digits.bytes().all(|byte| byte.is_ascii_digit())
+                }) {
                     continue;
                 }
                 let name = if let Some(name) = self.definitions.get(&definition) {

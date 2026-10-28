@@ -368,11 +368,22 @@ fn layout_aliases(
     touches: &[MemoryAccess],
     minimum: usize,
 ) -> Option<Vec<(u64, CType)>> {
+    fn uses_address(expr: &Expr, aliases: &[u16]) -> bool {
+        match expr {
+            Expr::Reg { index, .. } => aliases.contains(index),
+            Expr::Load { .. } => false,
+            other => crate::ir::visit::children(other)
+                .into_iter()
+                .any(|child| uses_address(child, aliases)),
+        }
+    }
     let mut fields: BTreeMap<(u64, u8), bool> = BTreeMap::new();
+    let mut indirect = false;
     for touch in touches {
-        let mut read = HashSet::new();
-        crate::ir::visit::collect_reads(&touch.addr, &mut read);
-        if !aliases.iter().any(|base| read.contains(base)) {
+        if !uses_address(&touch.addr, aliases) {
+            let mut reads = HashSet::new();
+            crate::ir::visit::collect_reads(&touch.addr, &mut reads);
+            indirect |= aliases.iter().any(|base| reads.contains(base));
             continue;
         }
         let offset = match &touch.addr {
@@ -396,6 +407,18 @@ fn layout_aliases(
             return None;
         }
         *fields.entry((offset, touch.width)).or_default() |= touch.signed.unwrap_or(false);
+    }
+    if indirect {
+        let mut end = 0;
+        for (offset, width) in fields.keys() {
+            if *offset < end {
+                return None;
+            }
+            let Some(next) = offset.checked_add(u64::from(*width)) else {
+                return None;
+            };
+            end = next;
+        }
     }
     let Some(settled) = settle(&fields) else {
         return None;

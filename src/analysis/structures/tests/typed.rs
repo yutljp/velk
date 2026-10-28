@@ -497,3 +497,88 @@ int main(void) {
         );
     }
 }
+
+#[test]
+fn indirect_accesses_do_not_conflict_with_the_outer_pointer_layout() {
+    use crate::ir::{BinOp, CType, Expr, FunctionIr, Param, Stmt};
+    use crate::loader::Isa;
+
+    let load = |addr, width| Expr::Load {
+        addr: Box::new(addr),
+        width,
+        signed: false,
+    };
+    let address = |offset| Expr::bin(BinOp::Add, Expr::reg(7, 64), Expr::Const(offset));
+    for isa in [Isa::X86_64, Isa::AArch64] {
+        let mut ir = FunctionIr::single_block(
+            isa,
+            vec![
+                Stmt::Store {
+                    addr: address(16),
+                    value: Expr::Const(1),
+                    width: 4,
+                },
+                Stmt::Ret {
+                    value: Expr::bin(
+                        BinOp::Add,
+                        load(address(16), 4),
+                        load(
+                            Expr::bin(BinOp::Add, load(address(0), 8), Expr::Const(8)),
+                            4,
+                        ),
+                    ),
+                },
+            ],
+        );
+        ir.params.push(Param {
+            index: 7,
+            name: "a0".into(),
+            ty: CType::pointer_to(CType::U64),
+        });
+        ir.name = Some("indirect_fields".into());
+        ir.ret_type = CType::U64;
+        super::super::recover(&mut ir);
+        let code = crate::render::render(&ir, &[], &Default::default(), &[]);
+        assert_eq!(
+            ir.structures[0].fields,
+            vec![(0, CType::U64), (16, CType::U32)]
+        );
+        assert!(code.contains("a0->f_0"), "{code}");
+        assert!(code.contains("a0->f_10"), "{code}");
+        compile_and_run(
+            "indirect_fields",
+            &code,
+            r#"
+int main(void) {
+    struct indirect_fields_a0 value = {0};
+    _Alignas(8) uint32_t child[4] = {0};
+    value.f_0 = (uintptr_t)child;
+    for (uint64_t seed = 0; seed < 65536; seed++) {
+        child[2] = (uint32_t)(seed * 65537);
+        value.f_10 = (uint32_t)seed;
+        if (indirect_fields(&value) != 1 + (uint64_t)child[2]) return 1;
+        if (value.f_10 != 1 || value.f_0 != (uintptr_t)child) return 2;
+    }
+    return 0;
+}
+"#,
+        );
+    }
+}
+
+#[test]
+fn conflicting_outer_widths_with_an_indirect_access_stay_as_casts() {
+    let nested = load(at(7, 0), 8, false);
+    let mut ir = pointer_function(vec![
+        assign(VARIABLE_BASE, load(at(7, 16), 8, false)),
+        assign(VARIABLE_BASE + 1, load(at(7, 16), 4, false)),
+        Stmt::Ret {
+            value: load(Expr::bin(BinOp::Add, nested, Expr::Const(8)), 4, false),
+        },
+    ]);
+    recover(&mut ir);
+    let code = crate::render::render(&ir, &[], &Default::default(), &[]);
+    assert!(ir.structures.is_empty(), "{code}");
+    assert!(code.contains("*(uint64_t *)(a0 + 0x4)"), "{code}");
+    assert!(code.contains("a0[4]"), "{code}");
+}

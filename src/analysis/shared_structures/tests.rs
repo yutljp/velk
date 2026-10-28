@@ -675,3 +675,224 @@ fn compile_and_run(source: &str, options: &[&str], name: &str) {
     std::fs::remove_file(executable).unwrap();
     assert!(status.success(), "{source}");
 }
+
+#[test]
+fn repeated_field_loads_merge_only_observed_compatible_fields() {
+    for (isa, convention) in [
+        (Isa::X86_64, Convention::SysV),
+        (Isa::X86_64, Convention::Win64),
+        (Isa::AArch64, Convention::Aapcs64),
+    ] {
+        for conflicting in [false, true] {
+            let base = convention.arguments()[0];
+            let first = VARIABLE_BASE;
+            let second = VARIABLE_BASE + 1;
+            let mut ir = function(1, &[]);
+            ir.isa = isa;
+            ir.params[0].index = base;
+            for (register, offset, width) in
+                [(first, 0, 8), (second, if conflicting { 4 } else { 16 }, 4)]
+            {
+                ir.blocks[0].stmts.push(Stmt::Assign {
+                    dest: RegRef {
+                        index: register,
+                        width: 64,
+                    },
+                    value: Expr::Load {
+                        addr: Box::new(Expr::bin(BinOp::Add, Expr::reg(base, 64), Expr::Const(8))),
+                        width: 8,
+                        signed: false,
+                    },
+                });
+                ir.blocks[0].stmts.push(put(register, offset, width));
+                ir.pointer_values.push(register);
+            }
+            let before = format!("{:?}", ir.blocks);
+            share(&mut [&mut ir], &[]);
+            let code = render(&ir);
+            assert_eq!(format!("{:?}", ir.blocks), before);
+            if conflicting {
+                assert!(ir.structures.is_empty(), "{code}");
+            } else {
+                assert_eq!(
+                    ir.structures[0].fields,
+                    vec![(0, CType::U64), (16, CType::U32)]
+                );
+                assert!(code.contains("->f_0 = 1;"), "{code}");
+                assert!(code.contains("->f_10 = 17;"), "{code}");
+                assert!(!code.contains("f_8;"), "{code}");
+            }
+        }
+    }
+}
+
+#[test]
+fn changing_field_bases_and_narrow_loads_do_not_connect_layouts() {
+    for narrow in [false, true] {
+        let mut ir = function(1, &[]);
+        for (register, offset) in [(VARIABLE_BASE, 0), (VARIABLE_BASE + 1, 16)] {
+            ir.blocks[0].stmts.push(Stmt::Assign {
+                dest: RegRef {
+                    index: register,
+                    width: 64,
+                },
+                value: Expr::Load {
+                    addr: Box::new(Expr::reg(7, 64)),
+                    width: if narrow { 4 } else { 8 },
+                    signed: false,
+                },
+            });
+            ir.blocks[0].stmts.push(put(register, offset, 4));
+            ir.pointer_values.push(register);
+        }
+        if !narrow {
+            ir.blocks[0].stmts.push(Stmt::Assign {
+                dest: RegRef {
+                    index: 7,
+                    width: 32,
+                },
+                value: Expr::Const(0),
+            });
+        }
+        let before = render(&ir);
+        share(&mut [&mut ir], &[]);
+        assert_eq!(render(&ir), before);
+    }
+}
+
+#[test]
+fn shared_loaded_pointer_fields_compile_and_preserve_memory() {
+    for isa in [Isa::X86_64, Isa::AArch64] {
+        let mut ir = function(1, &[]);
+        ir.isa = isa;
+        for (register, offset, width) in [(VARIABLE_BASE, 0, 8), (VARIABLE_BASE + 1, 16, 4)] {
+            ir.blocks[0].stmts.push(Stmt::Assign {
+                dest: RegRef {
+                    index: register,
+                    width: 64,
+                },
+                value: Expr::Load {
+                    addr: Box::new(Expr::reg(7, 64)),
+                    width: 8,
+                    signed: false,
+                },
+            });
+            ir.blocks[0].stmts.push(put(register, offset, width));
+            ir.pointer_values.push(register);
+        }
+        share(&mut [&mut ir], &[]);
+        let mut source = String::from("#include <stdint.h>\n#include <string.h>\n");
+        source.push_str(&render(&ir));
+        source.push_str("\nint main(void) {\n_Alignas(8) unsigned char actual[32], expected[32];\nuintptr_t pointer = (uintptr_t)actual;\nfor (unsigned seed=0; seed<256; seed++) {\nmemset(actual, seed, sizeof(actual)); memset(expected, seed, sizeof(expected));\nf1((void *)&pointer);\nuint64_t a=1; uint32_t b=17; memcpy(expected,&a,8); memcpy(expected+16,&b,4);\nif (memcmp(actual,expected,sizeof(actual))) return 1;\n} return 0; }\n");
+        compile_and_run(
+            &source,
+            &["-std=c11", "-O2", "-Werror"],
+            "velk-loaded-fields",
+        );
+    }
+}
+
+#[test]
+fn a_stored_pointer_carries_its_layout_to_a_field_load() {
+    let mut ir = function(1, &[(0, 4), (8, 4)]);
+    ir.params.push(Param {
+        index: 6,
+        name: "a1".into(),
+        ty: CType::pointer_to(CType::U64),
+    });
+    ir.blocks[0].stmts.extend([
+        Stmt::Store {
+            addr: Expr::reg(6, 64),
+            value: Expr::reg(7, 64),
+            width: 8,
+        },
+        Stmt::Assign {
+            dest: RegRef {
+                index: VARIABLE_BASE,
+                width: 64,
+            },
+            value: Expr::Load {
+                addr: Box::new(Expr::reg(6, 64)),
+                width: 8,
+                signed: false,
+            },
+        },
+        put(VARIABLE_BASE, 16, 8),
+    ]);
+    ir.pointer_values.push(VARIABLE_BASE);
+    share(&mut [&mut ir], &[]);
+    let code = render(&ir);
+    assert_eq!(ir.structures[0].fields.len(), 3, "{code}");
+    assert_eq!(ir.value_types[&VARIABLE_BASE], ir.params[0].ty);
+    assert!(code.contains("->f_10 = 17;"), "{code}");
+    let source = format!(
+        "#include <stdint.h>\n#include <string.h>\n{code}\nint main(void) {{\n_Alignas(8) unsigned char actual[32], expected[32];\nuintptr_t pointer = 0;\nfor (unsigned seed=0; seed<256; seed++) {{\nmemset(actual,seed,sizeof(actual)); memset(expected,seed,sizeof(expected));\nf1((void *)actual,(void *)&pointer);\nuint32_t a=1,b=9; uint64_t c=17; memcpy(expected,&a,4); memcpy(expected+8,&b,4); memcpy(expected+16,&c,8);\nif (pointer != (uintptr_t)actual || memcmp(actual,expected,sizeof(actual))) return 1;\n}} return 0; }}\n"
+    );
+    compile_and_run(
+        &source,
+        &["-std=c11", "-O2", "-Werror"],
+        "velk-stored-fields",
+    );
+}
+
+#[test]
+fn field_loads_through_a_whole_pointer_copy_share_their_layout() {
+    let mut ir = function(1, &[]);
+    let copy = VARIABLE_BASE;
+    ir.blocks[0].stmts.push(Stmt::Assign {
+        dest: RegRef {
+            index: copy,
+            width: 64,
+        },
+        value: Expr::reg(7, 64),
+    });
+    for (register, base, offset) in [(copy + 1, 7, 0), (copy + 2, copy, 16)] {
+        ir.blocks[0].stmts.push(Stmt::Assign {
+            dest: RegRef {
+                index: register,
+                width: 64,
+            },
+            value: Expr::Load {
+                addr: Box::new(Expr::reg(base, 64)),
+                width: 8,
+                signed: false,
+            },
+        });
+        ir.blocks[0].stmts.push(put(register, offset, 4));
+        ir.pointer_values.push(register);
+    }
+    share(&mut [&mut ir], &[]);
+    let code = render(&ir);
+    assert_eq!(
+        ir.structures[0].fields,
+        vec![(0, CType::U32), (16, CType::U32)],
+        "{code}"
+    );
+    assert!(code.contains("->f_10 = 17;"), "{code}");
+}
+
+#[test]
+fn distinct_recovered_layouts_with_the_same_tag_compile_together() {
+    for tag in ["parse_s1", "parse_a0", "Socket_s1"] {
+        let first = format!(
+            "/* velk prelude */\nstruct {tag} {{ uint32_t f_0; }};\n/* end velk prelude */\nuint32_t first(void) {{ struct {tag} value = {{7}}; return value.f_0; }}\n"
+        );
+        let second = format!(
+            "/* velk prelude */\nstruct {tag} {{ uint64_t f_8; }};\n/* end velk prelude */\nuint64_t second(void) {{ struct {tag} value = {{11}}; return value.f_8; }}\n"
+        );
+        let code = crate::render::combine(&format!("{first}{second}"));
+        assert_eq!(
+            code.matches(&format!("struct {tag} {{")).count(),
+            1,
+            "{code}"
+        );
+        let source = format!(
+            "#include <stdint.h>\n{code}\nint main(void) {{ return first() != 7 || second() != 11; }}\n"
+        );
+        compile_and_run(
+            &source,
+            &["-std=c11", "-O2", "-Werror"],
+            "velk-structure-tags",
+        );
+    }
+}

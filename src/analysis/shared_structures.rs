@@ -12,6 +12,27 @@ enum Node {
     Global(u64),
     Address(u64),
     Computed(usize, usize),
+    Field(usize, u16, u64),
+}
+
+fn field_address(value: &Expr) -> Option<(u16, u64)> {
+    match value {
+        Expr::Reg { index, width: 64 } => Some((*index, 0)),
+        Expr::Bin {
+            op: crate::ir::BinOp::Add,
+            lhs,
+            rhs,
+        } => match (lhs.as_ref(), rhs.as_ref()) {
+            (Expr::Reg { index, width: 64 }, Expr::Const(offset))
+            | (Expr::Const(offset), Expr::Reg { index, width: 64 })
+                if *offset < 1 << 31 =>
+            {
+                Some((*index, *offset))
+            }
+            _ => None,
+        },
+        _ => None,
+    }
 }
 
 fn structure_name(ty: &CType) -> Option<&str> {
@@ -81,6 +102,40 @@ fn components(functions: &[&mut FunctionIr], data_ranges: &[(u64, u64)]) -> Comp
             .iter()
             .any(|(start, size)| address >= *start && address - start < *size)
     };
+    let mut copies = Vec::new();
+    for (i, ir) in functions.iter().enumerate() {
+        for stmt in ir.blocks.iter().flat_map(|block| &block.stmts) {
+            if let Stmt::Assign {
+                dest,
+                value: Expr::Reg { index, width: 64 },
+            } = stmt
+                && dest.width == 64
+                && stable(i, dest.index)
+                && stable(i, *index)
+            {
+                copies.push((Node::Register(i, dest.index), Node::Register(i, *index)));
+            }
+        }
+    }
+    let mut bases = BTreeMap::new();
+    for (root, aliases) in group_nodes(&copies, BTreeMap::new()).nodes {
+        for alias in aliases {
+            bases.insert(alias, root);
+        }
+    }
+    let field = |i: usize, address: &Expr| {
+        let Some((register, offset)) = field_address(address) else {
+            return None;
+        };
+        if !stable(i, register) {
+            return None;
+        }
+        let base = Node::Register(i, register);
+        let Node::Register(_, register) = bases.get(&base).copied().unwrap_or(base) else {
+            return None;
+        };
+        Some(Node::Field(i, register, offset))
+    };
     let computed: Vec<BTreeMap<String, usize>> = functions
         .iter()
         .enumerate()
@@ -106,7 +161,7 @@ fn components(functions: &[&mut FunctionIr], data_ranges: &[(u64, u64)]) -> Comp
         Expr::Reg { index, width: 64 } if stable(i, *index) => Some(Node::Register(i, *index)),
         Expr::Load { addr, width: 8, .. } => match addr.as_ref() {
             Expr::Const(address) if data_address(*address) => Some(Node::Global(*address)),
-            _ => None,
+            other => field(i, other),
         },
         Expr::Const(address) if data_address(*address) => Some(Node::Address(*address)),
         Expr::Bin { .. } => computed[i]
@@ -162,6 +217,17 @@ fn components(functions: &[&mut FunctionIr], data_ranges: &[(u64, u64)]) -> Comp
                 } if data_address(*address) => {
                     if let Some(from) = node(i, value) {
                         edges.push((Node::Global(*address), from));
+                    }
+                }
+                Stmt::Store {
+                    addr,
+                    value,
+                    width: 8,
+                } => {
+                    if let Some(field) = field(i, addr)
+                        && let Some(from) = node(i, value)
+                    {
+                        edges.push((field, from));
                     }
                 }
                 Stmt::Call {
@@ -267,12 +333,8 @@ fn merge_layouts(
     if layouts.is_empty()
         && nodes
             .iter()
-            .filter_map(|node| match node {
-                Node::Register(i, _) => Some(*i),
-                _ => None,
-            })
-            .collect::<BTreeSet<_>>()
-            .len()
+            .filter(|node| matches!(node, Node::Register(..)))
+            .count()
             < 2
     {
         return None;
@@ -338,7 +400,7 @@ fn merge_layouts(
             match local {
                 Some(local) => {
                     if !local.is_empty() {
-                        accessed.insert(i);
+                        accessed.insert((i, register));
                     }
                     for (offset, ty) in local {
                         if let Some(previous) = fields.insert(offset, ty.clone())
