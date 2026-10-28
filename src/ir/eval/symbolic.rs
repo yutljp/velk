@@ -143,9 +143,6 @@ impl State {
                 "symbolic execution supports little-endian i386, x86-64 and AArch64",
             ));
         }
-        if image.isa == Isa::I386 && !options.argv.is_empty() {
-            return Err(invalid("symbolic i386 argv is unsupported"));
-        }
         let address = binary.find_address(start)?;
         let blocks = lift(image, address)?;
         let solver = Rc::new(RefCell::new(Solver::new()?));
@@ -279,13 +276,14 @@ impl State {
                     );
                 }
             }
+            let width = crate::arch::pointer_bytes(image.isa);
             let strings = options
                 .argv
                 .iter()
                 .copied()
                 .fold(options.argv.len(), usize::saturating_add);
             let required = (options.argv.len() + 1)
-                .saturating_mul(8)
+                .saturating_mul(width as usize)
                 .saturating_add(strings);
             if base
                 .checked_add(required as u64)
@@ -294,10 +292,15 @@ impl State {
                 return Err(invalid("argv exceeds heap capacity"));
             }
             let mut address = base
-                .checked_add((options.argv.len() as u64 + 1).saturating_mul(8))
+                .checked_add((options.argv.len() as u64 + 1).saturating_mul(u64::from(width)))
                 .ok_or_else(|| invalid("argv table overflows"))?;
             for (index, &length) in options.argv.iter().enumerate() {
-                state.store(image, base + index as u64 * 8, &Term::constant(address), 8)?;
+                state.store(
+                    image,
+                    base + index as u64 * u64::from(width),
+                    &Term::constant(address),
+                    width,
+                )?;
                 let mut bytes = Vec::new();
                 for _ in 0..length {
                     let byte = state.symbolic_byte()?;
@@ -318,21 +321,19 @@ impl State {
             }
             state.store(
                 image,
-                base + options.argv.len() as u64 * 8,
+                base + options.argv.len() as u64 * u64::from(width),
                 &Term::constant(0),
-                8,
+                width,
             )?;
-            state.registers.insert(
-                convention.arguments()[0],
+            state.initialize_argument(
+                binary,
+                0,
                 Term::constant(options.argv.len() as u64),
-            );
-            state
-                .registers
-                .insert(convention.arguments()[1], Term::constant(base));
+                stack,
+            )?;
+            state.initialize_argument(binary, 1, Term::constant(base), stack)?;
         }
-        if image.isa != Isa::I386 {
-            state.initialize_streams(binary)?;
-        }
+        state.initialize_streams(binary)?;
         Ok(state)
     }
 
@@ -1271,7 +1272,9 @@ impl State {
         let failures: Vec<&String> = report
             .diagnostics
             .iter()
-            .filter(|reason| !reason.starts_with("libc model at "))
+            .filter(|reason| {
+                !reason.starts_with("libc model at ") && !reason.starts_with("import model at ")
+            })
             .collect();
         if report.reason == "paths exhausted" && !failures.is_empty() {
             if failures.iter().all(|reason| reason.as_str() == "avoided") {
@@ -1385,8 +1388,19 @@ impl State {
                     self.model_diagnostics.push(diagnostic);
                 }
             }
+            if candidate.is_none() {
+                let diagnostic = format!("import model at 0x{target:x}: {name} (import symbol)");
+                if !self.model_diagnostics.contains(&diagnostic) {
+                    self.model_diagnostics.push(diagnostic);
+                }
+            }
             self.model_call_kind = kind;
             let result = self.libc(binary, name, convention)?;
+            let result = if self.isa == Isa::I386 {
+                self.low(&result, 32)?
+            } else {
+                result
+            };
             for &register in convention.clobbered() {
                 if kind == CallKind::Tail && self.isa == Isa::AArch64 && register == 30 {
                     continue;

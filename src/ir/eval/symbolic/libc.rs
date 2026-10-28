@@ -49,10 +49,11 @@ impl State {
             },
             Err(error) => return Err(error.into()),
         };
+        let width = crate::arch::pointer_bytes(self.isa);
         let address = super::super::emulation::stack_argument_address(
             stack.checked_add_signed(offset),
             (index - convention.arguments().len()) as u64,
-            8,
+            width,
         );
         let Some(address) = address else {
             return Err(invalid("hook argument address overflows").into());
@@ -61,7 +62,7 @@ impl State {
             binary,
             &Expr::Load {
                 addr: Box::new(Expr::Const(address)),
-                width: 8,
+                width,
                 signed: false,
             },
         )
@@ -152,9 +153,6 @@ impl State {
         name: &str,
         convention: Convention,
     ) -> Evaluation<Term> {
-        if self.isa == crate::loader::Isa::I386 {
-            return Err(invalid("symbolic i386 library calls are unsupported").into());
-        }
         let Some(hook) = hooks::find(name) else {
             return Err(invalid(format!("unsupported symbolic import: {name}")).into());
         };
@@ -327,7 +325,12 @@ impl State {
                         }) else {
                             return Err(invalid("strtol end pointer overflows").into());
                         };
-                        self.store(binary.image(), end, &Term::constant(address), 8)?;
+                        self.store(
+                            binary.image(),
+                            end,
+                            &Term::constant(address),
+                            crate::arch::pointer_bytes(self.isa),
+                        )?;
                     }
                 }
                 Ok(if matches!(hook, Hook::Integer) {
@@ -351,6 +354,9 @@ impl State {
         base: u64,
         kind: IntegerKind,
     ) -> Evaluation<ParsedInteger> {
+        let bits = u32::from(crate::arch::pointer_bytes(self.isa)) * 8;
+        let negative_limit = 1u64 << (bits - 1);
+        let positive_limit = negative_limit - 1;
         let mut position = 0;
         while position < input.len() && self.whitespace(&input[position])? {
             self.tick()?;
@@ -412,9 +418,9 @@ impl State {
             let limit = if matches!(kind, IntegerKind::Scan) {
                 u64::MAX
             } else if negative {
-                1u64 << 63
+                negative_limit
             } else {
-                i64::MAX as u64
+                positive_limit
             };
             overflow = format!(
                 "(or {overflow} {})",
@@ -429,9 +435,9 @@ impl State {
             position += 1;
         }
         let limit = if negative {
-            1u64 << 63
+            negative_limit
         } else {
-            i64::MAX as u64
+            positive_limit
         };
         let signed = if negative {
             format!("(bvneg {})", value.text)
@@ -855,6 +861,7 @@ impl State {
 
 impl State {
     pub(super) fn initialize_streams(&mut self, binary: &Binary) -> crate::error::Result<()> {
+        let width = crate::arch::pointer_bytes(self.isa);
         let memory = self.mapped_memory(binary.image())?;
         let mut next = memory.heap_base;
         for &address in self.memory.keys() {
@@ -896,18 +903,23 @@ impl State {
                 self.stdin_stream = token;
             }
             let object = token + 8;
-            self.store(binary.image(), object, &Term::constant(token), 8)?;
+            self.store(binary.image(), object, &Term::constant(token), width)?;
             for slot in imports {
-                if !memory.check(slot, 8, false) {
+                if !memory.check(slot, u64::from(width), false) {
                     return Err(invalid("invalid stream import slot"));
                 }
-                for (offset, byte) in object.to_le_bytes().into_iter().enumerate() {
+                for (offset, byte) in object
+                    .to_le_bytes()
+                    .into_iter()
+                    .take(width as usize)
+                    .enumerate()
+                {
                     self.memory
                         .insert(slot + offset as u64, Term::constant(u64::from(byte)));
                 }
             }
             for slot in objects {
-                self.store(binary.image(), slot, &Term::constant(token), 8)?;
+                self.store(binary.image(), slot, &Term::constant(token), width)?;
             }
         }
         self.heap_next = next;
@@ -936,9 +948,10 @@ impl State {
         }
         let length = bytes.len();
         bytes.push(Term::constant(0));
+        let width = crate::arch::pointer_bytes(self.isa);
         let load = |address| Expr::Load {
             addr: Box::new(Expr::Const(address)),
-            width: 8,
+            width,
             signed: false,
         };
         let mut destination = self.resolve(self.eval(binary, &load(pointer))?)?;
@@ -953,12 +966,12 @@ impl State {
                 return Err(invalid("getline exceeds heap").into());
             }
             self.heap_next = end;
-            self.store(binary.image(), pointer, &Term::constant(destination), 8)?;
+            self.store(binary.image(), pointer, &Term::constant(destination), width)?;
             self.store(
                 binary.image(),
                 capacity_pointer,
                 &Term::constant(bytes.len() as u64),
-                8,
+                width,
             )?;
         }
         self.write_memory(binary, destination, &bytes)?;
@@ -992,6 +1005,53 @@ fn case_conversion(value: &str, hook: Hook) -> String {
 mod tests {
     use super::*;
     #[test]
+    fn i386_models_read_only_the_requested_stack_slots() {
+        use crate::ir::CallKind;
+        use crate::symbolic::Options;
+
+        if !crate::ir::smt::Proofs::available() {
+            return;
+        }
+        let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("tests/fixtures/metrics/l0_arith.i386.O0.debug.elf");
+        let binary = Binary::open(&path).expect("i386 fixture");
+        let address = *binary
+            .image()
+            .functions
+            .keys()
+            .next()
+            .expect("fixture function");
+        let mut state = State::new(&binary, &format!("0x{address:x}"), &Options::default())
+            .expect("i386 state");
+        let top = crate::ir::eval::stack_top(crate::loader::Isa::I386);
+        let stack = crate::arch::stack_pointer(crate::loader::Isa::I386);
+        state.registers.insert(stack, Term::constant(top - 8));
+        state.model_call_kind = CallKind::Tail;
+        state
+            .store(binary.image(), top - 4, &Term::constant(0x10000000), 4)
+            .expect("one pointer argument");
+        let Ok(length) = state.libc(&binary, "strlen", Convention::Cdecl) else {
+            panic!("one argument model must fit the last stack slot");
+        };
+        assert_eq!(length.concrete, Some(0));
+        state.model_call_kind = CallKind::Invoke;
+        state
+            .store(binary.image(), top - 8, &Term::constant(0x10000000), 4)
+            .expect("first argument");
+        state
+            .store(binary.image(), top - 4, &Term::constant(0), 4)
+            .expect("second argument");
+        let Ok(length) = state.libc(&binary, "strnlen", Convention::Cdecl) else {
+            panic!("two argument model must fit the last two stack slots");
+        };
+        assert_eq!(length.concrete, Some(0));
+        let unknown = state.libc(&binary, "unmodeled_input", Convention::Cdecl);
+        assert!(
+            matches!(unknown, Err(super::super::Failure::Error(error)) if error.to_string().contains("unsupported symbolic import: unmodeled_input"))
+        );
+    }
+
+    #[test]
     fn smt_integer_overflow_matches_wide_arithmetic() {
         use crate::ir::smt::Proofs;
         if !Proofs::available() {
@@ -999,7 +1059,13 @@ mod tests {
         }
         let mut proofs = Proofs::default();
         for base in [10, 16] {
-            for limit in [i64::MAX as u64, 1u64 << 63, u64::MAX] {
+            for limit in [
+                i32::MAX as u64,
+                1u64 << 31,
+                i64::MAX as u64,
+                1u64 << 63,
+                u64::MAX,
+            ] {
                 for digit in 0..base {
                     let reference = format!(
                         "(bvugt (bvadd (bvmul ((_ zero_extend 64) r0) (_ bv{base} 128)) (_ bv{digit} 128)) (_ bv{limit} 128))"

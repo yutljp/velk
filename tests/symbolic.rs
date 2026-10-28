@@ -77,7 +77,7 @@ fn crackme_paths_match_concrete_execution() {
     if !solver_available() {
         return;
     }
-    for arch in ["x86_64", "aarch64"] {
+    for arch in ["i386", "x86_64", "aarch64"] {
         for opt in [0, 2] {
             let binary = binary(arch, opt);
             for name in [
@@ -801,7 +801,7 @@ fn libc_return_solutions_replay() {
     if !solver_available() {
         return;
     }
-    for arch in ["x86_64", "aarch64"] {
+    for arch in ["i386", "x86_64", "aarch64"] {
         for opt in [0, 2] {
             let binary = binary(arch, opt);
             for (name, length) in [
@@ -1706,5 +1706,256 @@ fn tail_libc_models_read_stack_arguments_at_function_entry_offsets() {
                 .expect("native input");
             assert!(child.wait().expect("native result").success());
         }
+    }
+}
+
+#[test]
+fn i386_argv_and_library_interfaces_replay() {
+    use serde_json::Value;
+    use std::io::Write as _;
+    use std::process::Stdio;
+
+    if !solver_available() {
+        return;
+    }
+    let engine = velk::script::Engine::new().expect("script engine");
+    for opt in [0, 2] {
+        let path = fixtures().join(format!("i386-O{opt}.elf"));
+        let binary = Binary::open(&path).expect("i386 fixture");
+        for (name, input) in [
+            ("argv_one", json!({"argv":[1]})),
+            ("argv_two", json!({"argv":[0,3]})),
+            ("argv_three", json!({"argv":[1,0,3]})),
+            ("scan_stream", json!({"stdin":3})),
+            ("scan_stack", json!({"stdin":9})),
+            ("scan_decimal", json!({"stdin":2})),
+            ("scan_unsigned", json!({"stdin":2})),
+            ("scan_hex", json!({"stdin":2})),
+            ("scan_text", json!({"stdin":3})),
+            ("scan_characters", json!({"stdin":3})),
+            ("scan_string", json!({"stdin":2})),
+            ("line_compare", json!({"stdin":3})),
+            ("allocated_line", json!({"stdin":3})),
+            ("integer_check", json!({"stdin":2})),
+            ("integer_hex", json!({"stdin":2})),
+            ("copy_check", json!({"stdin":3})),
+            ("output_check", json!({"stdin":1})),
+            (
+                "bound_descriptor",
+                json!({"stdin":1,"stdinDescriptors":[7]}),
+            ),
+        ] {
+            let mut options = input;
+            options["returns"] = json!({"eq":1});
+            options["pathLimit"] = json!(4096);
+            let output = Command::new(env!("CARGO_BIN_EXE_velk"))
+                .args([
+                    "--solve",
+                    name,
+                    "--returns",
+                    "eq:1",
+                    "--json",
+                    "--symbolic-options",
+                ])
+                .arg(options.to_string())
+                .arg(&path)
+                .output()
+                .expect("CLI solve");
+            assert!(
+                output.status.success(),
+                "{name}: {}",
+                String::from_utf8_lossy(&output.stderr)
+            );
+            let cli: Value = serde_json::from_slice(&output.stdout).expect("CLI JSON");
+            assert_eq!(cli["found"], true, "O{opt} {name}: {cli}");
+            if name != "argv_one" {
+                assert!(
+                    cli["diagnostics"]
+                        .as_array()
+                        .expect("diagnostics")
+                        .iter()
+                        .any(|message| message
+                            .as_str()
+                            .is_some_and(|message| message.contains("import symbol"))),
+                    "{name}: {cli}"
+                );
+            }
+            let outcome = engine.run(
+                &format!(
+                    "velk.open({}).solve({},{options})",
+                    json!(path),
+                    json!(name)
+                ),
+                None,
+            );
+            assert!(outcome.error.is_none(), "{name}: {:?}", outcome.error);
+            assert_eq!(
+                serde_json::from_str::<Value>(&outcome.output).expect("JS report"),
+                cli
+            );
+            let child = Command::new(env!("CARGO_BIN_EXE_velk"))
+                .arg("--mcp")
+                .stdin(Stdio::piped())
+                .stdout(Stdio::piped())
+                .spawn()
+                .expect("MCP process");
+            let output = common::mcp_request(
+                child,
+                &json!({"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"velk_solve","arguments":{"path":path,"start":name,"options":options}}}),
+            );
+            let response: Value = serde_json::from_slice(&output.stdout).expect("MCP JSON");
+            assert_eq!(response["result"]["isError"], false, "{response}");
+            let mcp: Value = serde_json::from_str(
+                response["result"]["content"][0]["text"]
+                    .as_str()
+                    .expect("MCP text"),
+            )
+            .expect("MCP report");
+            assert_eq!(mcp, cli);
+            let search = serde_json::from_value(options).expect("search options");
+            let report = symbolic::solve(&binary, name, &search).expect("API solve");
+            assert_eq!(serde_json::to_value(&report).expect("API report"), cli);
+            let inputs = report.inputs.expect("solved input");
+            let argv: Vec<String> = inputs
+                .argv
+                .iter()
+                .map(|bytes| {
+                    assert!(!bytes.contains(&0));
+                    String::from_utf8(bytes.clone()).expect("ASCII fixture argv")
+                })
+                .collect();
+            let mut native = Command::new(fixtures().join("native-libc"))
+                .arg(name)
+                .args(&argv)
+                .stdin(Stdio::piped())
+                .stdout(Stdio::piped())
+                .spawn()
+                .expect("C reference");
+            native
+                .stdin
+                .take()
+                .expect("reference input")
+                .write_all(&inputs.stdin)
+                .expect("write reference input");
+            let reference = native.wait_with_output().expect("C reference result");
+            assert!(reference.status.success(), "O{opt} {name}: {inputs:?}");
+            assert_eq!(reference.stdout, inputs.stdout, "O{opt} {name}");
+            let mut replay = json!({"stdin":{"hex":inputs.stdin.iter().map(|byte| format!("{byte:02x}")).collect::<String>()},"stdinDescriptors":[7]});
+            if name.starts_with("argv_") {
+                replay["argv"] = json!(argv);
+            }
+            let replay = serde_json::from_value(replay).expect("replay options");
+            let concrete = emulation::run(&binary, name, &replay, None).expect("concrete replay");
+            assert!(concrete.error.is_none(), "O{opt} {name}: {concrete:?}");
+            assert_eq!(concrete.return_value, "0x1", "O{opt} {name}: {concrete:?}");
+            assert_eq!(concrete.stdout.as_bytes(), inputs.stdout);
+        }
+    }
+}
+
+#[test]
+fn i386_strtol_limits_and_end_pointers_replay() {
+    if !solver_available() {
+        return;
+    }
+    for opt in [0, 2] {
+        let binary = binary("i386", opt);
+        for (text, base, value, end) in [
+            ("", 10, 0u64, 0u64),
+            ("+", 10, 0, 0),
+            ("  -42rest", 10, 0xffffffd6, 5),
+            ("2147483647", 10, 0x7fffffff, 10),
+            ("2147483648", 10, 0x7fffffff, 10),
+            ("-2147483648", 10, 0x80000000, 11),
+            ("-2147483649", 10, 0x80000000, 11),
+            ("99999999999999999999", 10, 0x7fffffff, 20),
+            ("0x", 16, 0, 1),
+            ("0x2arest", 16, 42, 4),
+            ("7fffffff", 16, 0x7fffffff, 8),
+            ("80000000", 16, 0x7fffffff, 8),
+            ("-80000000", 16, 0x80000000, 9),
+            ("-80000001", 16, 0x80000000, 9),
+        ] {
+            for (name, expected) in [("integer_value", value), ("integer_end", end)] {
+                let options: Options = serde_json::from_value(json!({
+                    "argumentValues":["0x10000000",base], "returns":{"eq":expected}
+                }))
+                .expect("conversion options");
+                let mut state = State::new(&binary, name, &options).expect("conversion state");
+                let bytes: Vec<Term> = text
+                    .bytes()
+                    .chain([0])
+                    .map(|byte| Term::constant(u64::from(byte)))
+                    .collect();
+                state
+                    .write_memory(&binary, 0x10000000, &bytes)
+                    .expect("conversion text");
+                let report = state.explore(&binary, &options).expect("conversion solve");
+                assert!(report.found, "O{opt} {name} {text:?}: {report:?}");
+                let setup = serde_json::from_value(json!({"arguments":["0x10000000",base],"memory":[{"address":"0x10000000","bytes":text.bytes().chain([0]).collect::<Vec<_>>()}]})).expect("conversion replay");
+                let concrete =
+                    emulation::run(&binary, name, &setup, None).expect("conversion replay");
+                assert!(concrete.error.is_none(), "{concrete:?}");
+                assert_eq!(
+                    concrete.return_value,
+                    format!("0x{expected:x}"),
+                    "O{opt} {name} {text:?}"
+                );
+            }
+        }
+    }
+}
+
+#[test]
+fn i386_tail_library_returns_use_eax() {
+    if !solver_available() {
+        return;
+    }
+    for opt in [0, 2] {
+        let binary = binary("i386", opt);
+        let options: Options =
+            serde_json::from_value(json!({"returns":{"eq":"0xffffffff"}})).expect("EOF options");
+        let report = symbolic::solve(&binary, "tail_getchar", &options).expect("tail input model");
+        assert!(report.found, "O{opt}: {report:?}");
+        let replay = emulation::run(
+            &binary,
+            "tail_getchar",
+            &emulation::Options::default(),
+            None,
+        )
+        .expect("tail EOF replay");
+        assert_eq!(replay.return_value, "0xffffffff");
+        let native = Command::new(fixtures().join("native-libc"))
+            .arg("tail_getchar")
+            .stdin(std::process::Stdio::null())
+            .output()
+            .expect("native EOF reference");
+        assert!(native.status.success(), "O{opt}: {native:?}");
+    }
+}
+
+#[test]
+fn import_diagnostics_preserve_all_paths_avoided() {
+    if !solver_available() {
+        return;
+    }
+    for arch in ["i386", "x86_64", "aarch64"] {
+        let binary = binary(arch, 0);
+        let options: Options = serde_json::from_value(json!({
+            "stdin":4,
+            "find":[binary.find("password").expect("unreached target").addr],
+            "avoid":[binary.find("success").expect("success").addr, binary.find("failure").expect("failure").addr]
+        })).expect("avoided paths options");
+        let report =
+            symbolic::explore(&binary, "getchar_password", &options).expect("avoid search");
+        assert!(!report.found, "{arch}: {report:?}");
+        assert_eq!(report.reason, "all paths avoided", "{arch}: {report:?}");
+        assert!(
+            report
+                .diagnostics
+                .iter()
+                .any(|message| message.contains("import symbol")),
+            "{arch}: {report:?}"
+        );
     }
 }

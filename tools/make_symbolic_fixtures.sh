@@ -3,7 +3,7 @@ set -euo pipefail
 out=${1:?output directory required}
 mkdir -p "$out"
 source_dir=$(cd "$(dirname "$0")/../tests/data" && pwd)
-for arch in x86_64 aarch64; do
+for arch in i386 x86_64 aarch64; do
     clang --target="$arch-unknown-linux-gnu" -O2 -fPIC -ffreestanding -c \
         "$source_dir/symbolic_streams.c" -o "$out/$arch-streams.o"
     ld.lld -shared -soname "lib$arch-input.so" "$out/$arch-streams.o" -o "$out/lib$arch-input.so"
@@ -24,6 +24,6 @@ for arch in x86_64 aarch64; do
 done
 if [ "$(uname -s)" = Linux ]; then
     clang "$source_dir/symbolic_calls.S" "$source_dir/symbolic_calls_native.c" -o "$out/native-calls"
-    clang -O2 -ffreestanding "$source_dir/symbolic_libc.c" \
-        "$source_dir/symbolic_native.c" -o "$out/native-libc"
 fi
+clang -O2 -ffreestanding "$source_dir/symbolic_libc.c" \
+    "$source_dir/symbolic_native.c" -o "$out/native-libc"

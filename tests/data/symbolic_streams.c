@@ -17,6 +17,7 @@ int strncmp(const char *a, const char *b, unsigned long n) { (void)n; return str
 int memcmp(const void *a, const void *b, unsigned long n) { return strncmp(a,b,n); }
 unsigned long strlen(const char *s) { (void)s; return 0; }
 unsigned long strnlen(const char *s, unsigned long n) { (void)n; return strlen(s); }
+void *memmove(void *a, const void *b, unsigned long n) { (void)b; (void)n; return a; }
 void *memcpy(void *a, const void *b, unsigned long n) { (void)b; (void)n; return a; }
 void *memset(void *a, int c, unsigned long n) { (void)c; (void)n; return a; }
 char *strcpy(char *a, const char *b) { (void)b; return a; }

@@ -366,6 +366,7 @@ mod tests {
     #[test]
     fn call_stack_coordinates_distinguish_invoke_tail_and_syscall() {
         for (isa, convention, entry, invoke) in [
+            (Isa::I386, Convention::Cdecl, 4, 0),
             (Isa::X86_64, Convention::SysV, 8, 0),
             (Isa::X86_64, Convention::Win64, 40, 32),
             (Isa::X86_64, Convention::GoAbi0, 8, 0),

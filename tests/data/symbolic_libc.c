@@ -6,13 +6,19 @@ extern int sscanf(const char *, const char *, ...);
 extern char *fgets(char *, int, void *);
 extern char *gets(char *);
 extern long getline(char **, size_t *, void *);
+#ifdef __APPLE__
+extern void *__stdinp;
+#define stdin __stdinp
+#else
 extern void *stdin;
+#endif
 extern long read(int, void *, size_t);
 extern int strcmp(const char *, const char *);
 extern int strncmp(const char *, const char *, size_t);
 extern int memcmp(const void *, const void *, size_t);
 extern size_t strlen(const char *);
 extern size_t strnlen(const char *, size_t);
+extern void *memmove(void *, const void *, size_t);
 extern void *memcpy(void *, const void *, size_t);
 extern void *memset(void *, int, size_t);
 extern char *strcpy(char *, const char *);
@@ -43,10 +49,13 @@ int copy_check(void) {
     a[3] = 0;
     memset(b, 0, 4); memcpy(b, a, 3);
     if (strlen(b) != 3 || strnlen(b, 2) != 2) return 0;
+    memmove(b + 1, b, 2);
+    if (b[1] != a[0] || b[2] != a[1]) return 0;
+    memmove(b, a, 3);
     strcpy(a, b); strncpy(b, a, 4);
     return strchr(b, 'e') == b + 1 && strcmp(a, "yes") == 0;
 }
-int output_check(void) { int c = getchar(); puts("ok"); printf("%c %u %x %d", c, (unsigned)c, (unsigned)c, -c); printf(" %u %u %u %u %u %u %u %u %u", (unsigned)c, (unsigned)c, (unsigned)c, (unsigned)c, (unsigned)c, (unsigned)c, (unsigned)c, (unsigned)c, (unsigned)c); return toupper(c) == 'Y' && tolower(c) == 'y'; }
+int output_check(void) { int c = getchar(); puts("ok"); printf("%s %%", "ok"); printf("%c %u %x %d", c, (unsigned)c, (unsigned)c, -c); printf(" %u %u %u %u %u %u %u %u %u", (unsigned)c, (unsigned)c, (unsigned)c, (unsigned)c, (unsigned)c, (unsigned)c, (unsigned)c, (unsigned)c, (unsigned)c); return toupper(c) == 'Y' && tolower(c) == 'y'; }
 int bound_descriptor(void) { char c; return read(7, &c, 1) == 1 && c == 'y'; }
 __attribute__((noinline)) int stack_check(unsigned long a, unsigned long b, unsigned long c, unsigned long d, unsigned long e, unsigned long f, unsigned long g, unsigned long h, unsigned long i, unsigned long j) {
     return a == 1 && f == 6 && g == 7 && i == 9 && j == 42 && b+c+d+e+h == 22;
@@ -76,3 +85,7 @@ unsigned case_value(unsigned c) { return ((unsigned)toupper((int)c) << 8) ^ (uns
 long signed_identity(long value) { return value; }
 
 int unreachable_branches(unsigned x) { if ((x*(x+1)) & 1) { if (x == 42) return 2; return 3; } return 0; }
+
+int argv_one(int argc, char **argv) { return argc == 1 && argv[1] == 0 && argv[0][0] == 'y' && argv[0][1] == 0; }
+int argv_two(int argc, char **argv) { return argc == 2 && argv[2] == 0 && argv[0][0] == 0 && strcmp(argv[1], "yes") == 0; }
+int argv_three(int argc, char **argv) { return argc == 3 && argv[3] == 0 && argv[0][0] == 'x' && argv[1][0] == 0 && strcmp(argv[2], "yes") == 0; }

@@ -10,7 +10,13 @@ extern int scan_decimal(void), scan_unsigned(void), scan_hex(void), scan_text(vo
 extern int scan_characters(void), scan_string(void), line_compare(void), allocated_line(void);
 extern int integer_check(void), integer_hex(void), copy_check(void), output_check(void);
 extern int bound_descriptor(void);
+extern int argv_one(int, char **), argv_two(int, char **), argv_three(int, char **);
 int main(int argc, char **argv) {
+    if (argc >= 3) {
+        if (strcmp(argv[1], "argv_one") == 0) return !argv_one(argc-2, argv+2);
+        if (strcmp(argv[1], "argv_two") == 0) return !argv_two(argc-2, argv+2);
+        if (strcmp(argv[1], "argv_three") == 0) return !argv_three(argc-2, argv+2);
+    }
     if (argc == 4) {
         unsigned base = (unsigned)strtoul(argv[3], 0, 10);
         unsigned long value;
@@ -22,6 +28,7 @@ int main(int argc, char **argv) {
         return 0;
     }
     if (argc != 2) return 2;
+    if (strcmp(argv[1], "tail_getchar") == 0) return getchar() == EOF ? 0 : 1;
     const struct { const char *name; int (*function)(void); } checks[] = {
         {"scan_stream", scan_stream}, {"scan_stack", scan_stack},
         {"scan_decimal", scan_decimal}, {"scan_unsigned", scan_unsigned},

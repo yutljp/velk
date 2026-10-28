@@ -501,11 +501,8 @@ impl Runner<'_> {
             }
             let start = position;
             let mut value = 0u64;
-            let limit = if negative {
-                1u64 << 63
-            } else {
-                i64::MAX as u64
-            };
+            let sign = 1u64 << (u32::from(crate::arch::pointer_bytes(self.image.isa)) * 8 - 1);
+            let limit = if negative { sign } else { sign - 1 };
             while let Some(&byte) = bytes.get(position) {
                 let digit = match byte {
                     b'0'..=b'9' => u64::from(byte - b'0'),
@@ -522,7 +519,8 @@ impl Runner<'_> {
                 else {
                     return Err(Stop::Error("strtol end address overflows".into()));
                 };
-                self.machine.store(second, address, 8);
+                self.machine
+                    .store(second, address, crate::arch::pointer_bytes(self.image.isa));
                 self.memory_error()?;
             }
             let result = if negative {
@@ -594,7 +592,11 @@ impl Runner<'_> {
         convention: Convention,
         kind: CallKind,
     ) -> Result<u64, Stop> {
-        let capacity_pointer = self.argument(1, convention, kind)?;
+        let width = crate::arch::pointer_bytes(self.image.isa);
+        let capacity_pointer = match self.argument(1, convention, kind) {
+            Ok(value) => value,
+            Err(stop) => return Err(stop),
+        };
         let stream = self.argument(2, convention, kind)?;
         if stream == 0 || stream != self.streams[0] {
             return Err(Stop::Error("unsupported getline stream".into()));
@@ -612,16 +614,17 @@ impl Runner<'_> {
         }
         let length = bytes.len();
         bytes.push(0);
-        let mut destination = self.machine.load(pointer, 8);
-        let capacity = self.machine.load(capacity_pointer, 8);
+        let mut destination = self.machine.load(pointer, width);
+        let capacity = self.machine.load(capacity_pointer, width);
         self.memory_error()?;
         if destination == 0 || capacity < bytes.len() as u64 {
             destination = self.allocate(bytes.len() as u64);
             if destination == 0 {
                 return Ok(u64::MAX);
             }
-            self.machine.store(pointer, destination, 8);
-            self.machine.store(capacity_pointer, bytes.len() as u64, 8);
+            self.machine.store(pointer, destination, width);
+            self.machine
+                .store(capacity_pointer, bytes.len() as u64, width);
             self.memory_error()?;
         }
         for (offset, byte) in bytes.into_iter().enumerate() {

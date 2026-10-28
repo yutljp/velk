@@ -1,7 +1,7 @@
 /** Symbolic execution needs z3 -in or bitwuzla on PATH, or VELK_SOLVER (a command line).
  * Bounds count IR statements and states; they do not use elapsed time.
  * Initial physical registers are zero except the stack and thread pointers, as in emulation.
- * Only little-endian x86-64 and AArch64 are supported.
+ * Only little-endian i386, x86-64 and AArch64 are supported.
  */
 interface SymbolicOptions {
   /** Dedicated 4 KiB thread-local mapping; chosen automatically by default. */
@@ -13,7 +13,7 @@ interface SymbolicOptions {
   find?: (number | string)[];
   avoid?: (number | string)[];
   stdin?: number;
-  /** Symbolic scalar argument indices, starting at zero. System V x86-64 and AAPCS64 also accept stack arguments. */
+  /** Symbolic scalar argument indices, starting at zero. i386 cdecl, System V x86-64 and AAPCS64 accept stack arguments. */
   arguments?: number[];
   argumentValues?: (number | string)[];
   /** Length of each symbolic argv string, including argv[0]. Bytes cannot be zero. */

@@ -1,3 +1,11 @@
+#if defined(__i386__)
+.text
+.global tail_getchar
+.type tail_getchar,@function
+tail_getchar:
+jmp getchar@PLT
+.size tail_getchar,.-tail_getchar
+#else
 .text
 .global local_length
 .type local_length,%function
@@ -88,3 +96,5 @@ b sscanf
 scan_format:
 .asciz "%c%c%c%c%c%c%c"
 .size scan_format,.-scan_format
+
+#endif
