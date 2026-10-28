@@ -436,7 +436,7 @@ fn linux_thread @ 0x11f0 (size 7)
 == 0x1200 main
 -- decompile
 /* velk pseudo-C: main @ 0x1200 */
-int32_t main(void) {
+int main(void) {
     return 0;
 }
 -- signature

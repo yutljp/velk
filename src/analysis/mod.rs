@@ -26,7 +26,7 @@ use std::time::Instant;
 
 use crate::deadline::passed;
 use crate::error::{Error, LiftError};
-use crate::ir::{FunctionIr, Stmt};
+use crate::ir::{CType, FunctionIr, Stmt};
 use crate::lift;
 use crate::loader::{Function, Image};
 use optimization::optimize;
@@ -38,6 +38,10 @@ pub const UNKNOWN_SIZE: u64 = 256;
 
 #[derive(Debug, Clone)]
 pub struct Analysis {
+    /// Scalar parameter types of analyzed callees, independent of return-register widths.
+    pub callee_parameters: std::collections::BTreeMap<u64, Vec<CType>>,
+    /// Recovered structure names used by analyzed callees.
+    pub callee_structures: std::collections::BTreeMap<u64, std::collections::HashSet<String>>,
     /// Predicate and dispatcher removals proved during analysis.
     pub simplification: crate::passes::deobfuscation::Simplification,
     pub ir: FunctionIr,

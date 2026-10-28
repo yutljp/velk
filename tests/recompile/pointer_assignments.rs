@@ -2,6 +2,369 @@ use super::*;
 use velk::ir::{RegRef, VALUE_BASE, VARIABLE_BASE};
 
 #[test]
+fn word_pointer_assignments_to_byte_pointers_preserve_offsets() {
+    for isa in [Isa::X86_64, Isa::AArch64] {
+        let convention = Convention::of(isa, velk::loader::Format::Elf, false);
+        let argument = convention.arguments()[0];
+        let mut ir = synthetic_ir(
+            "byte_view",
+            vec![Param {
+                index: argument,
+                name: "words".into(),
+                ty: CType::pointer_to(CType::U32),
+            }],
+            CType::U32,
+            vec![
+                Stmt::Assign {
+                    dest: RegRef {
+                        index: VARIABLE_BASE,
+                        width: 64,
+                    },
+                    value: Expr::reg(argument, 64),
+                },
+                Stmt::Ret {
+                    value: Expr::Load {
+                        addr: Box::new(Expr::bin(
+                            BinOp::Add,
+                            Expr::reg(VARIABLE_BASE, 64),
+                            Expr::Const(3),
+                        )),
+                        width: 1,
+                        signed: false,
+                    },
+                },
+            ],
+        );
+        ir.isa = isa;
+        ir.convention = convention;
+        ir.value_types
+            .insert(VARIABLE_BASE, CType::pointer_to(CType::int(1, false)));
+        let code = velk::render::render(&ir, &[], &Default::default(), &[]);
+        assert!(code.contains("(uint8_t *)words"), "{code}");
+        syntax::run_printed(
+            &code,
+            "",
+            "for (uint32_t i=0; i<1024; ++i) { uint32_t word = i * 0x1234567U; if (byte_view(&word) != ((uint8_t *)&word)[3]) return 1; } return 0;",
+        );
+    }
+}
+
+#[test]
+fn word_buffer_arguments_compile_with_separately_printed_byte_parameters() {
+    let scratch = scratch_dir("pointer-arguments");
+    for isa in [Isa::X86_64, Isa::AArch64] {
+        let convention = Convention::of(isa, velk::loader::Format::Elf, false);
+        let argument = convention.arguments()[0];
+        for known in 0..2 {
+            let mut symbols = velk::render::Symbols {
+                functions: [(0x1000, "read_byte".into())].into(),
+                ..Default::default()
+            };
+            let mut ir = synthetic_ir(
+                "word_buffer",
+                vec![Param {
+                    index: argument,
+                    name: "words".into(),
+                    ty: CType::pointer_to(CType::U32),
+                }],
+                CType::U64,
+                vec![
+                    Stmt::Call {
+                        abi: None,
+                        kind: velk::ir::CallKind::Invoke,
+                        target: Some(0x1000),
+                        through: None,
+                        convention,
+                        args: Some(vec![Expr::reg(argument, 64)]),
+                        floats_named: false,
+                        outputs: velk::ir::fallback_call_outputs(convention, None),
+                        clobbers: None,
+                        via: None,
+                    },
+                    Stmt::Ret {
+                        value: Expr::reg(0, 64),
+                    },
+                ],
+            );
+            ir.isa = isa;
+            ir.convention = convention;
+            if known == 1 {
+                ir.callee_signatures.insert(
+                    0x1000,
+                    DeclaredSignature {
+                        params: vec![("bytes".into(), CType::pointer_to(CType::int(1, false)))],
+                        ret: CType::U64,
+                        variadic: false,
+                        abi: Err(velk::ir::AbiIssue::UnknownLayout),
+                    },
+                );
+            } else {
+                symbols
+                    .function_parameters
+                    .insert(0x1000, vec![CType::pointer_to(CType::int(1, false))]);
+            }
+            let caller = velk::render::render(&ir, &[], &symbols, &[]);
+            let code = velk::render::combine(&format!(
+                "{caller}\nuint64_t read_byte(uint8_t *bytes) {{\n    return bytes[3];\n}}\n"
+            ));
+            assert!(code.contains("read_byte((uint8_t *)words)"), "{code}");
+            let source = scratch.join("argument.c");
+            std::fs::write(&source, &code).expect("write pointer argument test");
+            let compile = || {
+                Command::new(compiler())
+                    .args([
+                        "-std=gnu11",
+                        "-fsyntax-only",
+                        "-Werror=incompatible-pointer-types",
+                    ])
+                    .arg(&source)
+                    .output()
+                    .expect("start C compiler")
+            };
+            let accepted = compile();
+            assert!(
+                accepted.status.success(),
+                "{}",
+                String::from_utf8_lossy(&accepted.stderr)
+            );
+            std::fs::write(&source, code.replace("(uint8_t *)words", "words"))
+                .expect("write unconverted pointer argument");
+            let rejected = compile();
+            assert!(!rejected.status.success(), "{code}");
+            assert!(
+                String::from_utf8_lossy(&rejected.stderr).contains("incompatible pointer types"),
+                "{}",
+                String::from_utf8_lossy(&rejected.stderr)
+            );
+            syntax::run_printed(
+                &code,
+                "",
+                "for (uint32_t i=0; i<1024; ++i) { uint32_t word = i * 0x1234567U; if (word_buffer(&word) != ((uint8_t *)&word)[3]) return 1; } return 0;",
+            );
+        }
+    }
+    std::fs::remove_dir_all(scratch).expect("remove pointer argument test");
+}
+
+#[test]
+fn compatible_pointer_arguments_keep_their_types() {
+    for isa in [Isa::X86_64, Isa::AArch64] {
+        let convention = Convention::of(isa, velk::loader::Format::Elf, false);
+        let argument = convention.arguments()[0];
+        for name in [None, Some("record"), Some("S1")] {
+            let target = if let Some(name) = name {
+                CType::Named(format!("struct {name}"))
+            } else {
+                CType::int(1, false)
+            };
+            let pointer = CType::pointer_to(target);
+            let symbols = velk::render::Symbols {
+                functions: [(0x1000, "read_value".into())].into(),
+                function_parameters: [(0x1000, vec![pointer.clone()])].into(),
+                ..Default::default()
+            };
+            let mut ir = synthetic_ir(
+                "read_buffer",
+                vec![Param {
+                    index: argument,
+                    name: "buffer".into(),
+                    ty: pointer,
+                }],
+                CType::U64,
+                vec![
+                    Stmt::Call {
+                        abi: None,
+                        kind: velk::ir::CallKind::Invoke,
+                        target: Some(0x1000),
+                        through: None,
+                        convention,
+                        args: Some(vec![Expr::reg(argument, 64)]),
+                        floats_named: false,
+                        outputs: velk::ir::fallback_call_outputs(convention, None),
+                        clobbers: None,
+                        via: None,
+                    },
+                    Stmt::Ret {
+                        value: Expr::reg(0, 64),
+                    },
+                ],
+            );
+            ir.isa = isa;
+            ir.convention = convention;
+            if let Some(name) = name {
+                ir.structures.push(velk::ir::Structure {
+                    name: name.into(),
+                    fields: vec![(0, CType::int(1, false))],
+                    size: Some(1),
+                    elements: vec![],
+                });
+            }
+            let caller = velk::render::render(&ir, &[], &symbols, &[]);
+            assert!(caller.contains("read_value(buffer)"), "{caller}");
+            let parameter = if let Some(name) = name {
+                format!("struct {name} *")
+            } else {
+                "uint8_t *".to_owned()
+            };
+            let code = velk::render::combine(&format!(
+                "{caller}\nuint64_t read_value({parameter}value) {{ return *(uint8_t *)value; }}\n"
+            ));
+            let value = if let Some(name) = name {
+                format!("struct {name} value = {{42}};")
+            } else {
+                "uint8_t value = 42;".to_owned()
+            };
+            syntax::run_printed(
+                &code,
+                "",
+                &format!("{value} return read_buffer(&value) != 42;"),
+            );
+        }
+    }
+}
+
+#[test]
+fn integer_addresses_passed_to_recovered_structures_need_a_pointer_conversion() {
+    let scratch = scratch_dir("structure-argument");
+    for isa in [Isa::X86_64, Isa::AArch64] {
+        let convention = Convention::of(isa, velk::loader::Format::Elf, false);
+        let argument = convention.arguments()[0];
+        let pointer = CType::pointer_to(CType::Named("struct record".into()));
+        let symbols = velk::render::Symbols {
+            functions: [(0x1000, "read_value".into())].into(),
+            function_parameters: [(0x1000, vec![pointer])].into(),
+            function_structures: [(0x1000, ["record".to_owned()].into())].into(),
+            ..Default::default()
+        };
+        let mut ir = synthetic_ir(
+            "read_address",
+            vec![Param {
+                index: argument,
+                name: "address".into(),
+                ty: CType::U64,
+            }],
+            CType::U64,
+            vec![
+                Stmt::Call {
+                    abi: None,
+                    kind: velk::ir::CallKind::Invoke,
+                    target: Some(0x1000),
+                    through: None,
+                    convention,
+                    args: Some(vec![Expr::reg(argument, 64)]),
+                    floats_named: false,
+                    outputs: velk::ir::fallback_call_outputs(convention, None),
+                    clobbers: None,
+                    via: None,
+                },
+                Stmt::Ret {
+                    value: Expr::reg(0, 64),
+                },
+            ],
+        );
+        ir.isa = isa;
+        ir.convention = convention;
+        let caller = velk::render::render(&ir, &[], &symbols, &[]);
+        assert!(caller.contains("read_value((void *)address)"), "{caller}");
+        let code = velk::render::combine(&format!(
+            "struct record {{ uint8_t f_0; }};\n{caller}\nuint64_t read_value(struct record *value) {{\n    return value->f_0;\n}}\n"
+        ));
+        let source = scratch.join("argument.c");
+        std::fs::write(&source, code.replace("(void *)address", "address"))
+            .expect("write unconverted structure argument");
+        let rejected = Command::new(compiler())
+            .args(["-std=gnu11", "-fsyntax-only", "-Werror=int-conversion"])
+            .arg(&source)
+            .output()
+            .expect("start C compiler");
+        assert!(!rejected.status.success(), "{code}");
+        assert!(
+            String::from_utf8_lossy(&rejected.stderr)
+                .contains("incompatible integer to pointer conversion"),
+            "{}",
+            String::from_utf8_lossy(&rejected.stderr)
+        );
+        syntax::run_printed(
+            &code,
+            "",
+            "struct record value = {42}; return read_address((uintptr_t)&value) != 42;",
+        );
+    }
+    std::fs::remove_dir_all(scratch).expect("remove structure argument test");
+}
+
+#[test]
+fn pointer_arguments_to_integer_parameters_need_an_address_conversion() {
+    let scratch = scratch_dir("integer-argument");
+    for isa in [Isa::X86_64, Isa::AArch64] {
+        let convention = Convention::of(isa, velk::loader::Format::Elf, false);
+        let argument = convention.arguments()[0];
+        let symbols = velk::render::Symbols {
+            functions: [(0x1000, "read_address_value".into())].into(),
+            function_parameters: [(0x1000, vec![CType::U64])].into(),
+            ..Default::default()
+        };
+        let mut ir = synthetic_ir(
+            "pass_pointer",
+            vec![Param {
+                index: argument,
+                name: "buffer".into(),
+                ty: CType::pointer_to(CType::int(1, false)),
+            }],
+            CType::U64,
+            vec![
+                Stmt::Call {
+                    abi: None,
+                    kind: velk::ir::CallKind::Invoke,
+                    target: Some(0x1000),
+                    through: None,
+                    convention,
+                    args: Some(vec![Expr::reg(argument, 64)]),
+                    floats_named: false,
+                    outputs: velk::ir::fallback_call_outputs(convention, None),
+                    clobbers: None,
+                    via: None,
+                },
+                Stmt::Ret {
+                    value: Expr::reg(0, 64),
+                },
+            ],
+        );
+        ir.isa = isa;
+        ir.convention = convention;
+        let caller = velk::render::render(&ir, &[], &symbols, &[]);
+        assert!(
+            caller.contains("read_address_value((uintptr_t)buffer)"),
+            "{caller}"
+        );
+        let code = velk::render::combine(&format!(
+            "{caller}\nuint64_t read_address_value(uint64_t value) {{\n    return value;\n}}\n"
+        ));
+        let source = scratch.join("argument.c");
+        std::fs::write(&source, code.replace("(uintptr_t)buffer", "buffer"))
+            .expect("write unconverted integer argument");
+        let rejected = Command::new(compiler())
+            .args(["-std=gnu11", "-fsyntax-only", "-Werror=int-conversion"])
+            .arg(&source)
+            .output()
+            .expect("start C compiler");
+        assert!(!rejected.status.success(), "{code}");
+        assert!(
+            String::from_utf8_lossy(&rejected.stderr)
+                .contains("incompatible pointer to integer conversion"),
+            "{}",
+            String::from_utf8_lossy(&rejected.stderr)
+        );
+        syntax::run_printed(
+            &code,
+            "",
+            "uint8_t value = 42; return pass_pointer(&value) != (uintptr_t)&value;",
+        );
+    }
+    std::fs::remove_dir_all(scratch).expect("remove integer argument test");
+}
+
+#[test]
 fn printed_indexed_stack_pointer_assignments_preserve_byte_offsets() {
     let index = Convention::SysV.arguments()[0];
     let slot = |offset: i64| Expr::bin(BinOp::Add, Expr::reg(4, 64), Expr::Const(offset as u64));

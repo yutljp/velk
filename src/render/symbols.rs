@@ -2,6 +2,10 @@ use std::collections::{HashMap, HashSet};
 
 #[derive(Default, Clone)]
 pub struct Symbols {
+    /// Scalar parameter types recovered independently of callee return types.
+    pub function_parameters: HashMap<u64, Vec<crate::ir::CType>>,
+    /// Recovered structure names used by analyzed callees.
+    pub function_structures: HashMap<u64, HashSet<String>>,
     /// Candidate export names attached to an indirect call expression.
     pub api_hash_comments: HashMap<(u64, crate::ir::Expr), String>,
     pub user_definitions: HashSet<String>,

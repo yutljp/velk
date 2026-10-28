@@ -119,7 +119,7 @@ int32_t seh_finally(int32_t a0) {
     result = a0;
     local_2 = ((int32_t)(imported_value(a0 & 0xffffffff)));
     result = local_2;
-    sub_180001100(0 /* undefined */, local_3);
+    sub_180001100(0 /* undefined */, (uint32_t *)(local_3));
     return result;
 }
 -- signature
@@ -145,7 +145,7 @@ fn seh_finally @ 0x1800010a0 (size 64)
 -- decompile
 /* velk pseudo-C: seh_finally__finally_0 @ 0x1800010e0 */
 int32_t seh_finally__finally_0(int64_t a0, int64_t a1) {
-    return sub_180001100(a0 & 0xffffffffffffff00 | 0x1, (int64_t)((uint64_t)a1 + 48));
+    return sub_180001100(a0 & 0xffffffffffffff00 | 0x1, (uint32_t *)(int64_t)((uint64_t)a1 + 48));
 }
 -- signature
 int32_t (int64_t a0, int64_t a1)
@@ -200,7 +200,7 @@ int32_t seh_nested(int32_t a0) {
     local_0 = a0;
     local_1 = ((int32_t)(imported_value(a0 & 0xffffffff)));
     local_2 = local_1;
-    sub_1800011c0(1, local_4);
+    sub_1800011c0(1, (uintptr_t)(local_4));
     return local_2;
 L_180001171:
     *(uint64_t *)(v3 - 0x20) = v1;

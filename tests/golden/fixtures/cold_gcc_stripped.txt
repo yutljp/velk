@@ -183,7 +183,7 @@ int64_t sub_1120(int32_t a0) {
     local_0.f_20 = 0x6f7774;
     local_0.f_18 = v4;
     local_0.f_28 = 0;
-    return sub_1290(&local_0.f_0, 2, a0 & 0xffffffff);
+    return sub_1290((struct S1 *)(&local_0.f_0), 2, a0 & 0xffffffff);
 }
 -- signature
 int64_t (int32_t a0)

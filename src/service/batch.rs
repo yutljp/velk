@@ -37,11 +37,18 @@ pub(super) fn neighbors(image: &Image, analysis: &Analysis) -> Vec<u64> {
             outputs,
             ..
         } = stmt
-            && (args.iter().any(|arg| {
-                let mut reads = std::collections::HashSet::new();
-                crate::ir::visit::collect_reads(arg, &mut reads);
-                reads.into_iter().any(pointer)
-            }) || outputs.iter().any(|output| pointer(output.dest.index)))
+            && ((!image.go
+                && image.functions.get(target).is_some_and(|function| {
+                    !function.sources.contains(&crate::loader::NameSource::Plt)
+                }))
+                || args.iter().any(|arg| {
+                    let mut reads = std::collections::HashSet::new();
+                    crate::ir::visit::collect_reads(arg, &mut reads);
+                    (!image.go && reads.contains(&crate::arch::stack_pointer(ir.isa)))
+                        || reads.into_iter().any(pointer)
+                })
+                || (!image.go && analysis::summary::summary(image, *target).pointers != 0)
+                || outputs.iter().any(|output| pointer(output.dest.index)))
             && image.functions.contains_key(target)
         {
             neighbors.insert(*target);
@@ -52,6 +59,74 @@ pub(super) fn neighbors(image: &Image, analysis: &Analysis) -> Vec<u64> {
     }
     neighbors.remove(&addr);
     neighbors.into_iter().take(8).collect()
+}
+
+pub(super) fn share_parameters(functions: &mut [Analysis], go: bool) {
+    if go {
+        return;
+    }
+    let mut parameters = HashMap::new();
+    for analysis in functions.iter() {
+        let ir = &analysis.ir;
+        if ir.variadic
+            || matches!(
+                ir.convention,
+                crate::ir::Convention::GoAmd64 | crate::ir::Convention::GoAbi0
+            )
+            || ir
+                .params
+                .iter()
+                .any(|param| !param.ty.is_pointer() && param.ty.integer().is_none())
+        {
+            continue;
+        }
+        if !ir.stack_params.is_empty()
+            || ir.declared_signature.as_ref().is_some_and(|signature| {
+                signature.params.len() != ir.params.len()
+                    || signature
+                        .params
+                        .iter()
+                        .zip(&ir.params)
+                        .any(|((_, ty), param)| *ty != param.ty)
+            })
+        {
+            continue;
+        }
+        parameters.insert(
+            ir.addr,
+            (
+                ir.convention,
+                ir.params
+                    .iter()
+                    .map(|param| param.ty.clone())
+                    .collect::<Vec<_>>(),
+                ir.structures
+                    .iter()
+                    .map(|structure| structure.name.clone())
+                    .collect::<std::collections::HashSet<_>>(),
+            ),
+        );
+    }
+    for analysis in functions {
+        for stmt in analysis.ir.blocks.iter().flat_map(|block| &block.stmts) {
+            if let crate::ir::Stmt::Call {
+                target: Some(target),
+                through: None,
+                args: Some(args),
+                convention,
+                ..
+            } = stmt
+                && let Some((callee_convention, types, structures)) = parameters.get(target)
+                && convention == callee_convention
+                && args.len() == types.len()
+            {
+                analysis.callee_parameters.insert(*target, types.clone());
+                analysis
+                    .callee_structures
+                    .insert(*target, structures.clone());
+            }
+        }
+    }
 }
 
 fn original(
@@ -199,6 +274,7 @@ impl Binary {
                 .map(|analysis| &mut analysis.ir)
                 .collect();
             analysis::shared_structures::share(&mut irs, &self.data_ranges);
+            share_parameters(&mut functions, self.image.go);
             let analysis = functions
                 .into_iter()
                 .find(|analysis| analysis.ir.addr == addr)

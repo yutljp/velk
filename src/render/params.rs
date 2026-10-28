@@ -10,6 +10,85 @@ use crate::arch::stack_pointer;
 use crate::ir::{BinOp, Expr, FunctionIr, Stmt, VARIABLE_BASE};
 use crate::passes::copies::left_by_call;
 
+pub(super) fn standard_main(ir: &mut FunctionIr, symbols: &super::Symbols) {
+    let name = symbols
+        .original_or_printed_function_name(ir.addr)
+        .map(String::as_str)
+        .or(ir.name.as_deref());
+    if !matches!(name, Some("main" | "_main")) {
+        return;
+    }
+    let arguments = ir.convention.arguments();
+    let register_count = ir
+        .params
+        .iter()
+        .filter_map(|param| {
+            arguments
+                .iter()
+                .position(|index| *index == param.index)
+                .map(|position| position + 1)
+        })
+        .max()
+        .unwrap_or(0);
+    let stack_count = ir
+        .stack_params
+        .iter()
+        .map(|param| param.position.saturating_add(1))
+        .max()
+        .unwrap_or(0);
+    let count = register_count.max(stack_count);
+    if count > 3 {
+        return;
+    }
+    let count = if count == 1 { 2 } else { count };
+    for (position, name) in ["argc", "argv", "envp"].into_iter().enumerate().take(count) {
+        let ty = if position == 0 {
+            crate::ir::CType::Named("int".into())
+        } else {
+            crate::ir::CType::pointer_to(crate::ir::CType::pointer_to(crate::ir::CType::Named(
+                "char".into(),
+            )))
+        };
+        if let Some(param) = ir
+            .stack_params
+            .iter_mut()
+            .find(|param| param.position == position)
+        {
+            param.name = name.into();
+            param.ty = ty;
+        } else if let Some(index) = arguments.get(position) {
+            if let Some(param) = ir.params.iter_mut().find(|param| param.index == *index) {
+                param.name = name.into();
+                param.ty = ty;
+            } else {
+                ir.params.push(crate::ir::Param {
+                    index: *index,
+                    name: name.into(),
+                    ty,
+                });
+            }
+        } else if let Some(base) = ir.convention.stack_arguments() {
+            let size = u64::from(crate::arch::pointer_bytes(ir.isa));
+            let offset = base.saturating_add(
+                (position.saturating_sub(arguments.len()) as i64).saturating_mul(size as i64),
+            );
+            ir.stack_params.push(crate::ir::StackParam {
+                offset,
+                size,
+                name: name.into(),
+                ty,
+                position,
+            });
+        }
+    }
+    ir.params
+        .sort_by_key(|param| arguments.iter().position(|index| *index == param.index));
+    ir.stack_params.sort_by_key(|param| param.position);
+    ir.ret_type = crate::ir::CType::Named("int".into());
+    ir.declared_signature = None;
+    ir.variadic = false;
+}
+
 pub(super) fn fold_saved_parameters(ir: &mut FunctionIr) {
     drop_unused_parameter_outputs(ir);
     let params: Vec<u16> = ir.params.iter().map(|param| param.index).collect();

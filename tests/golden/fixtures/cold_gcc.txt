@@ -173,7 +173,7 @@ fn __fprintf_chk @ 0x10d0 (size 16)
 == 0x1120 main
 -- decompile
 /* velk pseudo-C: main @ 0x1120 */
-int64_t main(int32_t a0) {
+int main(int argc, char **argv) {
     _Alignas(16) struct __attribute__((packed)) { int64_t f_0; int64_t f_8; int64_t f_10; int64_t f_18; int64_t f_20; int64_t f_28; uint8_t gap_30[0x18]; } local_0; /* [sp-48] */
 
     int64_t v1 = g_2028;
@@ -184,7 +184,7 @@ int64_t main(int32_t a0) {
     local_0.f_20 = 0x6f7774;
     local_0.f_18 = v4;
     local_0.f_28 = 0;
-    return lookup(&local_0.f_0, 2, a0 & 0xffffffff);
+    return lookup((struct S1 *)(&local_0.f_0), 2, argc & 0xffffffff);
 }
 -- signature
 int64_t (int32_t a0)

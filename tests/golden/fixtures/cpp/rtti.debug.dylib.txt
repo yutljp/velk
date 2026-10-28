@@ -119,7 +119,7 @@ fn Root::Root(int) @ 0x6a0 (size 20)
 -- decompile
 /* velk pseudo-C: Root::Root(int) @ 0x6b4 */
 int32_t Root__Root_6b4(int64_t a0, int64_t a1) {
-    Root__Root_6a0(a0, a1);
+    Root__Root_6a0((void *)a0, a1);
     return a0;
 }
 -- signature
@@ -246,7 +246,7 @@ fn Single::Single(int) @ 0x6d4 (size 32)
 -- decompile
 /* velk pseudo-C: Single::Single(int) @ 0x6f4 */
 void Single__Single_6f4(int64_t a0, int64_t a1) {
-    Single__Single_6d4(a0, a1);
+    Single__Single_6d4((uint64_t *)a0, a1);
 }
 -- signature
 void (int64_t a0, int64_t a1)
@@ -303,7 +303,7 @@ fn Single::~Single() @ 0x704 (size 32)
 -- decompile
 /* velk pseudo-C: Single::~Single() @ 0x724 */
 int32_t Single___Single_724(int64_t a0) {
-    Single___Single_704(a0);
+    Single___Single_704((uint64_t *)a0);
     return a0;
 }
 -- signature
@@ -416,7 +416,7 @@ fn Other::~Other() @ 0x750 (size 8)
 /* velk pseudo-C: Multiple::Multiple(int) @ 0x758 */
 struct S1 *Multiple__Multiple_758(struct S1 *a0, int64_t a1) {
     Root__Root_6a0(a0, a1);
-    Other__Other((uint8_t *)a0 + 0x10);
+    Other__Other((uint64_t *)((uint8_t *)a0 + 0x10));
     a0->f_0 = (uintptr_t)(&Multiple_vtable_0);
     a0->f_10 = (uintptr_t)(&Multiple_vtable_16);
     return a0;
@@ -460,7 +460,7 @@ fn Other::Other() @ 0x798 (size 16)
 -- decompile
 /* velk pseudo-C: Multiple::Multiple(int) @ 0x7a8 */
 void Multiple__Multiple_7a8(int64_t a0, int64_t a1) {
-    Multiple__Multiple_758(a0, a1);
+    Multiple__Multiple_758((void *)a0, a1);
 }
 -- signature
 void (int64_t a0, int64_t a1)
@@ -512,7 +512,7 @@ fn Multiple::other() const @ 0x7b8 (size 12)
 -- decompile
 /* velk pseudo-C: {virtual override thunk({offset(-16)}, Multiple::other() const)} @ 0x7c4 */
 int32_t virtual_override_thunk__offset__16____Multiple__other___const__(int64_t a0) {
-    return Multiple__other((int64_t)((uint64_t)a0 - 16));
+    return Multiple__other((uint32_t *)(int64_t)((uint64_t)a0 - 16));
 }
 -- signature
 int32_t (int64_t a0)
@@ -648,7 +648,7 @@ fn Virtual::Virtual(int) @ 0x7e8 (size 32)
 /* C++ object initialization or destruction: Virtual vtable at 0x40f8. */
 /* velk pseudo-C: Virtual::Virtual(int) @ 0x808 */
 struct S4 *Virtual__Virtual_808(struct S4 *a0, int64_t a1) {
-    Root__Root_6a0((uint8_t *)a0 + 0x10, a1);
+    Root__Root_6a0((struct S1 *)((uint8_t *)a0 + 0x10), a1);
     a0->f_0 = (uintptr_t)(&Virtual_vtable_0);
     a0->f_10 = (uintptr_t)(&Virtual_vtable_16);
     a0->f_8 = 4;
@@ -691,7 +691,7 @@ fn Virtual::value() const @ 0x84c (size 28)
 -- decompile
 /* velk pseudo-C: {virtual override thunk({virtual offset(0, -24)}, Virtual::value() const)} @ 0x868 */
 int32_t virtual_override_thunk__virtual_offset_0___24____Virtual__value___const__(uint64_t *a0) {
-    return Virtual__value((uint8_t *)a0 + *(uint64_t *)(*a0 - 0x18));
+    return Virtual__value((uint64_t *)((uint8_t *)a0 + *(uint64_t *)(*a0 - 0x18)));
 }
 -- signature
 int32_t (uint64_t * a0)
@@ -850,13 +850,13 @@ int64_t single(int64_t a0) {
     _Alignas(16) uint8_t local_1[0x10]; /* [sp-30] */
 
     local_0 = v3;
-    Single__Single_6f4(local_1, a0);
-    int64_t v2 = dispatch(local_1);
-    Single___Single_724(local_1);
+    Single__Single_6f4((uintptr_t)(local_1), a0);
+    int64_t v2 = dispatch((uint64_t *)(local_1));
+    Single___Single_724((uintptr_t)(local_1));
     return v2;
 /* landing pad: an exception thrown by a call at 0x8d0-0x8d8 arrives here */
 L_8f8:
-    Single___Single_724((uint8_t *)&local_0 + 0x8);
+    Single___Single_724((uintptr_t)((uint8_t *)&local_0 + 0x8));
     _Unwind_Resume((void *)velk_exception_value());
 }
 -- signature
@@ -888,9 +888,9 @@ int32_t multiple(int64_t a0) {
     _Alignas(16) uint8_t local_1[0x18]; /* [sp-38] */
 
     local_0 = v2;
-    Multiple__Multiple_7a8(local_1, a0);
-    int32_t v3 = dispatch(local_1);
-    return (uint32_t)((int32_t)(Multiple__other(local_1))) + v3;
+    Multiple__Multiple_7a8((uintptr_t)(local_1), a0);
+    int32_t v3 = dispatch((uint64_t *)(local_1));
+    return (uint32_t)((int32_t)(Multiple__other((uint32_t *)(local_1)))) + v3;
 }
 -- signature
 int32_t (int64_t a0)
@@ -916,8 +916,8 @@ int32_t virtual_base(int64_t a0) {
     _Alignas(16) uint8_t local_1[0x20]; /* [sp-40] */
 
     local_0 = v2;
-    Virtual__Virtual_808(local_1, a0);
-    return dispatch((uint8_t *)((uintptr_t)(local_1) + *(uint64_t *)(*(uint64_t *)(local_1) - 0x18)));
+    Virtual__Virtual_808((struct S1 *)(local_1), a0);
+    return dispatch((uint64_t *)((uintptr_t)(local_1) + *(uint64_t *)(*(uint64_t *)(local_1) - 0x18)));
 }
 -- signature
 int32_t (int64_t a0)
@@ -1183,7 +1183,7 @@ int32_t catch_cleanup(int64_t a0) {
     *(uint64_t *)(sp + 0x28) = v6;
     v2 = a0;
     Single__Single_6f4(sp, v2);
-    a0 = Single__value(sp);
+    a0 = Single__value((uint32_t *)sp);
     int32_t v1 = imported_value();
     Single___Single_724(sp);
     return v1;

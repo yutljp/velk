@@ -81,6 +81,10 @@ mod memory_driver;
 mod bit_counts;
 #[path = "recompile/com.rs"]
 mod com;
+#[path = "recompile/crackmes.rs"]
+mod crackmes;
+#[path = "recompile/main_signatures.rs"]
+mod main_signatures;
 #[path = "recompile/pe.rs"]
 mod pe;
 #[path = "recompile/physical_stack.rs"]

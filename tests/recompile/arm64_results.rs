@@ -56,7 +56,7 @@ if ((uint32_t){name}(&input, &output) != expected || (uint64_t)output.f_0 != exp
     let printed = binary.decompile(address, None, None).unwrap();
     assert!(!printed.contains("undefined"), "{printed}");
     let code = format!(
-        "static uint64_t maximum_0(int64_t a, int64_t b) {{ (void)a; (void)b; return 0; }}\n{printed}"
+        "static uint64_t maximum_0(void *a, void *b) {{ (void)a; (void)b; return 0; }}\n{printed}"
     );
     syntax::run_printed(
         &code,

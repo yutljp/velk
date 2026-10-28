@@ -530,7 +530,7 @@ fn linux_thread @ 0x92c (size 8)
 == 0x934 main
 -- decompile
 /* velk pseudo-C: main @ 0x934 */
-int32_t main(void) {
+int main(void) {
     return 0;
 }
 -- signature

@@ -1044,6 +1044,18 @@ impl Binary {
         let addr = analysis.ir.addr;
         let mut ir = std::borrow::Cow::Borrowed(&analysis.ir);
         let mut symbols = std::borrow::Cow::Borrowed(&self.symbols);
+        if !analysis.callee_parameters.is_empty() {
+            symbols
+                .to_mut()
+                .function_parameters
+                .extend(analysis.callee_parameters.clone());
+        }
+        if !analysis.callee_structures.is_empty() {
+            symbols
+                .to_mut()
+                .function_structures
+                .extend(analysis.callee_structures.clone());
+        }
         if let Some(project) = &self.project {
             if let Err(error) = project.apply(ir.to_mut(), symbols.to_mut()) {
                 return Err(error);
@@ -1218,6 +1230,7 @@ impl Binary {
             .map(|analysis| &mut analysis.ir)
             .collect();
         analysis::shared_structures::share(&mut irs, &self.data_ranges);
+        batch::share_parameters(&mut functions, self.image.go);
         if let Err(error) = passed(deadline) {
             return Err(error);
         }
@@ -1777,6 +1790,8 @@ mod tests {
         binary.analyses.insert(
             addr,
             Ok(Analysis {
+                callee_parameters: Default::default(),
+                callee_structures: Default::default(),
                 ir,
                 references: Vec::new(),
                 simplification: Default::default(),

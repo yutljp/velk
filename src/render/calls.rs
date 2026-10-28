@@ -398,6 +398,12 @@ pub(super) fn expression(call: &Stmt, ctx: &Ctx<'_>) -> String {
     };
     let own = through.is_none() && *target == Some(ctx.ir.addr);
     let virtual_signature = ctx.virtual_tables.signature(call, ctx);
+    let recovered_parameters = virtual_signature.is_none()
+        && !own
+        && target.is_some_and(|address| {
+            !ctx.callee_signatures.contains_key(&address)
+                && ctx.symbols.function_parameters.contains_key(&address)
+        });
     let parameters: Option<Vec<&crate::ir::CType>> = if let Some(signature) = virtual_signature {
         Some(signature.params.iter().map(|(_, ty)| ty).collect())
     } else if own {
@@ -429,6 +435,11 @@ pub(super) fn expression(call: &Stmt, ctx: &Ctx<'_>) -> String {
         target
             .and_then(|target| ctx.callee_signatures.get(&target))
             .map(|signature| signature.params.iter().map(|(_, ty)| ty).collect())
+            .or_else(|| {
+                target
+                    .and_then(|target| ctx.symbols.function_parameters.get(&target))
+                    .map(|types| types.iter().collect())
+            })
     };
     // A callee whose declaration is known takes each argument as the type
     // it declares: an integer converts to its parameter's width as C
@@ -438,6 +449,12 @@ pub(super) fn expression(call: &Stmt, ctx: &Ctx<'_>) -> String {
         && parameters.len() == args.len()
     {
         for ((text, value), ty) in args.iter_mut().zip(values.iter().flatten()).zip(parameters) {
+            if recovered_parameters
+                && ty.integer().is_some()
+                && !super::expr::print_value_at(value, ctx, 64, false).is_pointer()
+            {
+                continue;
+            }
             *text = match ty.integer() {
                 Some((bits, signed)) if !ty.is_pointer() => {
                     super::expr::print_declared_value(
@@ -453,13 +470,22 @@ pub(super) fn expression(call: &Stmt, ctx: &Ctx<'_>) -> String {
                     .text
                 }
                 _ => {
-                    let pointer = ty.to_string();
-                    super::conformed(
-                        value,
-                        super::expr::print_value_at(value, ctx, 64, false),
-                        Some(&pointer),
-                        ctx,
-                    )
+                    let recovered_structure = ty.pointee_struct().is_some_and(|name| {
+                        ctx.ir
+                            .structures
+                            .iter()
+                            .any(|structure| structure.name == name)
+                            || target
+                                .and_then(|address| ctx.symbols.function_structures.get(&address))
+                                .is_some_and(|names| names.contains(name))
+                    });
+                    let printed = super::expr::print_value_at(value, ctx, 64, false);
+                    let pointer = if recovered_structure && !printed.is_pointer() {
+                        "void *".to_owned()
+                    } else {
+                        ty.to_string()
+                    };
+                    super::conformed(value, printed, Some(&pointer), ctx)
                 }
             };
         }

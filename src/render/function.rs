@@ -133,6 +133,7 @@ fn render_prepared(
             param.name = name.clone();
         }
     }
+    params::standard_main(&mut folded, symbols);
     stack_bytes::protect_parameter_names(&mut folded);
     let float_entries = physical_float_parameters(&mut folded);
     let mut logical = abi::prepare(&mut folded, symbols);

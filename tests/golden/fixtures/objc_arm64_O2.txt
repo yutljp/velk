@@ -142,7 +142,7 @@ fn _use_block @ 0x10000099c (size 8)
 == 0x1000009a4 _main
 -- decompile
 /* velk pseudo-C: _main @ 0x1000009a4 */
-int32_t main(void) {
+int main(void) {
     return 0;
 }
 -- signature

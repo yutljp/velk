@@ -57,7 +57,7 @@ ret
 .size mask_caller, .-mask_caller
 ",
             "mask_caller",
-            "static uint64_t mask_callee(int64_t p) { *(uint64_t *)(uintptr_t)p = 1; return 0; }",
+            "static uint64_t mask_callee(uint64_t *p) { *p = 1; return 0; }",
         ),
         (
             "aarch64-unknown-linux-gnu",

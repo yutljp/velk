@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 out=${1:?output directory required}
+shift
 source_dir=$(cd "$(dirname "$0")/data/crackmes" && pwd)
 mkdir -p "$out"
 for arch in x86_64 aarch64; do
@@ -13,7 +14,7 @@ for arch in x86_64 aarch64; do
             base="$out/$arch-O$opt-$name"
             clang --target="$arch-unknown-linux-gnu" -O"$opt" -g -ffreestanding \
                 -fno-stack-protector -fno-optimize-sibling-calls \
-                -c "$source" -o "$base.o"
+                "$@" -c "$source" -o "$base.o"
             ld.lld -e main "$base.o" -L"$out" -l"$arch-input" -o "$base.elf"
             if [ "$(uname -s)" = Linux ]; then
                 host_arch=$(uname -m)
@@ -26,7 +27,7 @@ for arch in x86_64 aarch64; do
                         if [ "$linkage" = static ]; then flags=(-static); fi
                         "$compiler" -O"$opt" -g -fno-builtin -fno-stack-protector \
                             -fno-optimize-sibling-calls ${flags[@]+"${flags[@]}"} \
-                            "$source" -o "$base-$linkage"
+                            "$@" "$source" -o "$base-$linkage"
                     done
                 fi
             fi

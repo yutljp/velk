@@ -48,11 +48,12 @@
 
 struct S1 { uint64_t f_0; uint32_t f_8; uint8_t gap_0xc[0x4]; uint64_t f_10; };
 struct S2 { uint64_t f_0; uint32_t f_8; };
-struct S3 { uint8_t gap_0x0[0x2c]; uint32_t f_2c; uint8_t gap_0x30[0x8]; uint64_t f_38; };
-struct S4 { uint8_t gap_0x0[0x24]; uint32_t f_24; uint8_t gap_0x28[0x10]; uint64_t f_38; };
-struct S5 { uint8_t gap_0x0[0x24]; uint32_t f_24; uint8_t gap_0x28[0xc]; uint32_t f_34; };
-struct S6 { uint8_t gap_0x0[0x24]; uint32_t f_24; uint8_t gap_0x28[0x8]; uint64_t f_30; };
-struct S7 { uint8_t gap_0x0[0x24]; uint32_t f_24; uint8_t gap_0x28[0x14]; uint32_t f_3c; };
+struct S3 { uint64_t f_0; uint8_t gap_0x8[0x8]; uint64_t f_10; };
+struct S4 { uint8_t gap_0x0[0x2c]; uint32_t f_2c; uint8_t gap_0x30[0x8]; uint64_t f_38; };
+struct S5 { uint8_t gap_0x0[0x24]; uint32_t f_24; uint8_t gap_0x28[0x10]; uint64_t f_38; };
+struct S6 { uint8_t gap_0x0[0x24]; uint32_t f_24; uint8_t gap_0x28[0xc]; uint32_t f_34; };
+struct S7 { uint8_t gap_0x0[0x24]; uint32_t f_24; uint8_t gap_0x28[0x8]; uint64_t f_30; };
+struct S8 { uint8_t gap_0x0[0x24]; uint32_t f_24; uint8_t gap_0x28[0x14]; uint32_t f_3c; };
 
 extern uint32_t g_1800030e0; /* address: 0x1800030e0 */
 extern uint8_t Multiple_vtable_0; /* address: 0x180002048 */
@@ -223,7 +224,7 @@ fn <unnamed> @ 0x180001090 (size 32)
 /* ref: 0x180002068 .rdata */
 struct S1 *sub_1800010b0(struct S1 *a0, int64_t a1) {
     sub_180001000(a0, a1);
-    sub_180001520((uint8_t *)a0 + 0x10);
+    sub_180001520((uint64_t *)((uint8_t *)a0 + 0x10));
     a0->f_0 = (uintptr_t)(&Multiple_vtable_0);
     a0->f_10 = (uintptr_t)(&Multiple_vtable_16);
     return a0;
@@ -294,7 +295,7 @@ fn <unnamed> @ 0x180001100 (size 32)
 uint64_t *sub_180001120(uint64_t *a0, int64_t a1, int32_t a2) {
     if (a2 != 0) {
         *a0 = 0x180002078;
-        sub_180001000(a0 + 0x3, a1);
+        sub_180001000((struct S1 *)(a0 + 0x3), a1);
     }
     *(uint64_t *)((uint8_t *)a0 + *(int32_t *)(*a0 + 0x4)) = (uintptr_t)(&Virtual_vtable_24);
     int64_t v2 = *(int32_t *)(*a0 + 0x4);
@@ -396,9 +397,9 @@ int32_t single(int32_t a0) {
     _Alignas(16) struct __attribute__((packed)) { uint8_t gap_0[0x10]; int64_t f_10; } local_0; /* [sp-28] */
 
     local_0.f_10 = -2;
-    sub_180001040(local_0.gap_0, a0 & 0xffffffff);
-    int32_t v3 = dispatch(local_0.gap_0);
-    sub_180001070(local_0.gap_0);
+    sub_180001040((uint64_t *)(local_0.gap_0), a0 & 0xffffffff);
+    int32_t v3 = dispatch((uint64_t *)(local_0.gap_0));
+    sub_180001070((uint64_t *)(local_0.gap_0));
     return v3;
 }
 -- signature
@@ -421,7 +422,7 @@ fn single @ 0x1800011b0 (size 63)
 -- decompile
 /* velk pseudo-C: sub_1800011f0 @ 0x1800011f0 */
 int64_t sub_1800011f0(int64_t a0, int64_t a1) {
-    return sub_180001070((int64_t)((uint64_t)a1 + 32));
+    return sub_180001070((uint64_t *)(int64_t)((uint64_t)a1 + 32));
 }
 -- signature
 int64_t (int64_t a0, int64_t a1)
@@ -442,9 +443,9 @@ int32_t multiple(int32_t a0) {
     _Alignas(16) uint8_t local_0[0x10]; /* [sp-20] */
     _Alignas(16) uint8_t local_1[0x8]; /* [sp-10] */
 
-    sub_1800010b0(local_0, a0 & 0xffffffff);
-    int32_t v3 = dispatch(local_0);
-    return (uint32_t)((int32_t)(sub_180001100(local_1))) + v3;
+    sub_1800010b0((struct S3 *)(local_0), a0 & 0xffffffff);
+    int32_t v3 = dispatch((struct S3 *)(local_0));
+    return (uint32_t)((int32_t)(sub_180001100((uint32_t *)(local_1)))) + v3;
 }
 -- signature
 int32_t (int32_t a0)
@@ -470,8 +471,8 @@ int32_t virtual_base(int32_t a0) {
     _Alignas(16) struct __attribute__((packed)) { uint32_t *f_0; uint8_t gap_8[0x20]; int64_t f_28; } local_0; /* [sp-40] */
 
     local_0.f_28 = -2;
-    sub_180001120((uint8_t *)&local_0, a0 & 0xffffffff, 1);
-    int64_t v3 = dispatch((uint8_t *)((uintptr_t)((uint8_t *)&local_0) + (int32_t)local_0.f_0[1]));
+    sub_180001120((uint64_t *)((uint8_t *)&local_0), a0 & 0xffffffff, 1);
+    int64_t v3 = dispatch((uint64_t *)((uintptr_t)((uint8_t *)&local_0) + (int32_t)local_0.f_0[1]));
     sub_180001540(v3);
     return v3;
 }
@@ -547,7 +548,7 @@ fn catch_one @ 0x1800012b0 (size 36)
 /* Exception metadata only; exception dispatch is not represented by standard C. */
 /* C++ try states [0, 0]: catch handler at 0x1800012e0. */
 /* velk pseudo-C: catch_one__catch_0 @ 0x1800012e0 */
-int64_t catch_one__catch_0(int64_t a0, struct S3 *a1) {
+int64_t catch_one__catch_0(int64_t a0, struct S4 *a1) {
     a1->f_2c = *(uint32_t *)(a1->f_38);
     return 0x1800012cb;
 }
@@ -607,7 +608,7 @@ fn catch_many @ 0x180001310 (size 36)
 /* C++ try states [0, 0]: catch handler at 0x180001370. */
 /* C++ try states [0, 0]: catch handler at 0x1800013a0. */
 /* velk pseudo-C: catch_many__catch_0 @ 0x180001340 */
-int64_t catch_many__catch_0(int64_t a0, struct S4 *a1) {
+int64_t catch_many__catch_0(int64_t a0, struct S5 *a1) {
     a1->f_24 = *(uint32_t *)(a1->f_38) + 1;
     return 0x18000132b;
 }
@@ -632,7 +633,7 @@ fn catch_many__catch_0 @ 0x180001340 (size 38)
 /* C++ try states [0, 0]: catch handler at 0x180001370. */
 /* C++ try states [0, 0]: catch handler at 0x1800013a0. */
 /* velk pseudo-C: catch_many__catch_1 @ 0x180001370 */
-int64_t catch_many__catch_1(int64_t a0, struct S5 *a1) {
+int64_t catch_many__catch_1(int64_t a0, struct S6 *a1) {
     a1->f_24 = a1->f_34 + 2;
     return 0x18000132b;
 }
@@ -716,7 +717,7 @@ fn catch_nested @ 0x1800013d0 (size 36)
 /* C++ try states [1, 1]: catch handler at 0x180001430. */
 /* C++ try states [0, 2]: catch handler at 0x180001400. */
 /* velk pseudo-C: catch_nested__catch_1 @ 0x180001400 */
-int64_t catch_nested__catch_1(int64_t a0, struct S6 *a1) {
+int64_t catch_nested__catch_1(int64_t a0, struct S7 *a1) {
     a1->f_24 = *(uint32_t *)(a1->f_30) + 3;
     return 0x1800013eb;
 }
@@ -741,7 +742,7 @@ fn catch_nested__catch_1 @ 0x180001400 (size 39)
 /* C++ try states [0, 2]: catch handler at 0x180001400. */
 /* velk pseudo-C: catch_nested__catch_0 @ 0x180001430 */
 /* ref: 0x180002488 .rdata */
-int64_t catch_nested__catch_0(int64_t a0, struct S7 *a1) {
+int64_t catch_nested__catch_0(int64_t a0, struct S8 *a1) {
     a1->f_24 = ((int32_t)(_imported_value__YAHH_Z(a1->f_3c)));
     return 0x1800013eb;
 }
@@ -773,10 +774,10 @@ int32_t catch_cleanup(int32_t a0) {
     _Alignas(16) struct __attribute__((packed)) { uint8_t gap_0[0x14]; uint32_t f_14; int64_t f_18; } local_0; /* [sp-30] */
 
     local_0.f_18 = -2;
-    sub_180001040(local_0.gap_0, a0 & 0xffffffff);
-    uint32_t v3 = sub_180001060(local_0.gap_0);
+    sub_180001040((struct S2 *)(local_0.gap_0), a0 & 0xffffffff);
+    uint32_t v3 = sub_180001060((struct S2 *)(local_0.gap_0));
     local_0.f_14 = ((int32_t)(_imported_value__YAHH_Z(v3)));
-    sub_180001070(local_0.gap_0);
+    sub_180001070((uint64_t *)(local_0.gap_0));
     return local_0.f_14;
 }
 -- signature
@@ -801,7 +802,7 @@ fn catch_cleanup @ 0x180001460 (size 72)
 -- decompile
 /* velk pseudo-C: sub_1800014b0 @ 0x1800014b0 */
 int64_t sub_1800014b0(int64_t a0, int64_t a1) {
-    return sub_180001070((int64_t)((uint64_t)a1 + 40));
+    return sub_180001070((uint64_t *)(int64_t)((uint64_t)a1 + 40));
 }
 -- signature
 int64_t (int64_t a0, int64_t a1)
@@ -911,7 +912,7 @@ fn <unnamed> @ 0x180001520 (size 16)
 -- decompile
 /* velk pseudo-C: sub_180001530 @ 0x180001530 */
 int64_t sub_180001530(uint32_t *a0) {
-    return sub_180001170((uint8_t *)a0 + (int32_t)-a0[-1]);
+    return sub_180001170((uint64_t *)((uint8_t *)a0 + (int32_t)-a0[-1]));
 }
 -- signature
 int64_t (uint32_t * a0)
@@ -993,7 +994,7 @@ fn <unnamed> @ 0x180001550 (size 9)
 -- decompile
 /* velk pseudo-C: sub_180001560 @ 0x180001560 */
 int64_t sub_180001560(uint32_t *a0, int64_t a1) {
-    return sub_180001630((uint8_t *)a0 + (int32_t)-a0[-1], a1);
+    return sub_180001630((uintptr_t)((uint8_t *)a0 + (int32_t)-a0[-1]), a1);
 }
 -- signature
 int64_t (uint32_t * a0, int64_t a1)
@@ -1067,7 +1068,7 @@ fn <unnamed> @ 0x1800015a0 (size 35)
 -- decompile
 /* velk pseudo-C: sub_1800015d0 @ 0x1800015d0 */
 int64_t sub_1800015d0(int64_t a0, int32_t a1) {
-    int64_t v2 = sub_180001070(a0);
+    int64_t v2 = sub_180001070((uint64_t *)a0);
     if ((a1 & 0x1) == 0) {
         return a0;
     }
