@@ -2,6 +2,8 @@ use std::path::PathBuf;
 
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
+    #[error("symbolic execution: {0}")]
+    Symbolic(String),
     #[error("raw input: {0}")]
     Raw(String),
     #[error("packed input: {0}")]

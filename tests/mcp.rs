@@ -304,6 +304,7 @@ fn discovery_and_fresh_scripts_work_over_stdio() {
         [
             "velk_classes",
             "velk_emulate",
+            "velk_explore",
             "velk_read_api",
             "velk_run_script"
         ]

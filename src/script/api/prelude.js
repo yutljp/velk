@@ -36,6 +36,31 @@
     callees({ depth = 1 } = {}) { return call("navigate", { bin: this.#bin, query: { kind: "callees", target: this.addr, depth } }); }
   }
 
+  class Symbolic {
+    #bin;
+    #id;
+    constructor(bin, id) { this.#bin = bin; this.#id = id; }
+    #call(action, extra = {}) { return call("symbolic", { bin: this.#bin, state: this.#id, action, ...extra }); }
+    step(until = []) {
+      const result = this.#call("step", { until: until.map(address) });
+      if (result.states) result.states = result.states.map(id => new Symbolic(this.#bin, id));
+      return result;
+    }
+    fork() { return new Symbolic(this.#bin, this.#call("fork")); }
+    symbolic() { return this.#call("term"); }
+    constant(value) { return this.#call("constant", { value: String(address(value)) }); }
+    readRegister(index) { return this.#call("readRegister", { index }); }
+    writeRegister(index, term) { this.#call("writeRegister", { index, term }); }
+    readMemory(at, size) { return this.#call("readMemory", { at: String(address(at)), size }); }
+    writeMemory(at, terms) { this.#call("writeMemory", { at: String(address(at)), terms }); }
+    constrain(lhs, condition, rhs, bits = 64) { this.#call("constrain", { lhs, condition, rhs, bits }); }
+    satisfiable() { return this.#call("satisfiable"); }
+    evaluate(term, count = 1) { return this.#call("evaluate", { term, count }); }
+    bounds(term) { return this.#call("bounds", { term }); }
+    address() { return this.#call("address"); }
+    dispose() { this.#call("dispose"); }
+  }
+
   class Binary {
     #id;
     #functions;
@@ -50,6 +75,8 @@
       if (typeof start === "number" && (!Number.isSafeInteger(start) || start < 0)) throw new RangeError("use a decimal or hex string for a 64-bit address");
       return call("emulate", { bin: this.#id, start: String(address(start)), options });
     }
+    explore(start, options = {}) { return call("explore", { bin: this.#id, start: String(address(start)), options }); }
+    symbolic(start, options = {}) { return new Symbolic(this.#id, call("symbolic", { bin: this.#id, action: "create", start: String(address(start)), options })); }
     saveUnpacked(path) { return call("saveUnpacked", { bin: this.#id, path }); }
     sections() { return call("sections", { bin: this.#id }); }
     compare(other, { carryAnnotations = false } = {}) {

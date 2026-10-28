@@ -38,10 +38,11 @@ Use binary for opening, listing, navigation and annotations; func for per-functi
 decompilation and inspection; types for returned object fields; emulation for execution.";
 
 /// API topic names and their embedded documentation.
-pub const TOPICS: [(&str, &str); 5] = [
+pub const TOPICS: [(&str, &str); 6] = [
     ("binary", include_str!("script/api/binary.d.ts")),
     ("func", include_str!("script/api/func.d.ts")),
     ("types", include_str!("script/api/types.d.ts")),
+    ("symbolic", include_str!("script/api/symbolic.d.ts")),
     ("emulation", include_str!("script/api/emulation.d.ts")),
     ("overview", include_str!("script/api/index.md")),
 ];
@@ -185,6 +186,19 @@ fn tools() -> Value {
                 "required": ["path", "start"],
                 "additionalProperties": false
             }
+        },
+        {
+            "name": "velk_explore",
+            "description": "Find a satisfiable path to a virtual address, returning concrete inputs and visited addresses. Requires an external SMT solver. Read the symbolic API topic for options and limits.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "path": {"type": "string"}, "start": {"type": "string"},
+                    "options": {"type": "object"}, "cache": {"type": ["string", "boolean"]},
+                    "arch": {"type": "string"}, "raw": {"type": "object"}
+                },
+                "required": ["path", "start", "options"], "additionalProperties": false
+            }
         }
     ])
 }
@@ -192,6 +206,26 @@ fn tools() -> Value {
 fn call_tool(engine: &Engine, request: &Value) -> std::result::Result<Value, RpcError> {
     let arguments = request.pointer("/params/arguments").unwrap_or(&Value::Null);
     let (text, is_error) = match request.pointer("/params/name").and_then(Value::as_str) {
+        Some("velk_explore") => {
+            let Some(path) = arguments.get("path").and_then(Value::as_str) else {
+                return Err((-32602, "missing path"));
+            };
+            let Some(start) = arguments.get("start").and_then(Value::as_str) else {
+                return Err((-32602, "missing start"));
+            };
+            let code = execution_script(path, start, arguments, "explore");
+            let outcome = evaluate_script(engine, &code, MAX_TIMEOUT_MS);
+            match outcome.error {
+                Some(error) => (error, true),
+                None => {
+                    let failed = serde_json::from_str::<Value>(&outcome.output)
+                        .ok()
+                        .and_then(|value| value.get("found").and_then(Value::as_bool))
+                        .is_none_or(|found| !found);
+                    (outcome.output, failed)
+                }
+            }
+        }
         Some("velk_emulate") => emulate(engine, arguments),
         Some("velk_run_script") => run_script(engine, arguments),
         Some("velk_classes") => {
@@ -222,14 +256,14 @@ fn classes_script(path: &str, arguments: &Value) -> String {
     format!("velk.open({path}, {options}).classes()")
 }
 
-fn emulation_script(path: &str, start: &str, arguments: &Value) -> String {
+fn execution_script(path: &str, start: &str, arguments: &Value, method: &str) -> String {
     let options = arguments
         .get("options")
         .cloned()
         .unwrap_or_else(|| json!({}));
     let open = json!({ "arch": arguments.get("arch"), "raw": arguments.get("raw"), "cache": arguments.get("cache") });
     format!(
-        "velk.open({}, {}).emulate({}, {})",
+        "velk.open({}, {}).{method}({}, {})",
         json!(path),
         open,
         json!(start),
@@ -248,7 +282,7 @@ fn emulate(engine: &Engine, arguments: &Value) -> (String, bool) {
     let Some(start) = arguments.get("start").and_then(Value::as_str) else {
         return ("missing start".to_owned(), true);
     };
-    let code = emulation_script(path, start, arguments);
+    let code = execution_script(path, start, arguments, "emulate");
     let outcome = evaluate_script(engine, &code, MAX_TIMEOUT_MS);
     match outcome.error {
         Some(error) => (error, true),

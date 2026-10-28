@@ -82,6 +82,39 @@ pub(crate) fn run(
                 }
             });
         }
+        Command::Explore {
+            path,
+            start,
+            options,
+            json,
+        } => {
+            let binary = match crate::open_binary(&path, project, input_options, signature_options)
+            {
+                Ok(binary) => binary,
+                Err(error) => return Err(error),
+            };
+            let report = match velk::symbolic::explore(&binary, &start, &options) {
+                Ok(report) => report,
+                Err(error) => return Err(error),
+            };
+            if json {
+                println!("{:#}", json!(report));
+            } else {
+                println!("{} ({} states)", report.reason, report.paths);
+                if let Some(inputs) = &report.inputs {
+                    println!("Inputs: {}", json!(inputs));
+                }
+                println!("Path: {}", report.path.join(" -> "));
+                for diagnostic in &report.diagnostics {
+                    println!("{diagnostic}");
+                }
+            }
+            return Ok(if report.found {
+                ExitCode::SUCCESS
+            } else {
+                ExitCode::FAILURE
+            });
+        }
         Command::Emulate {
             path,
             start,

@@ -3,7 +3,7 @@
 use super::{CallKind, Convention, HEAP_SIZE, Runner, Stop};
 
 #[derive(Clone, Copy)]
-pub(super) enum Hook {
+pub(crate) enum Hook {
     Copy,
     Move,
     Set,
@@ -60,7 +60,7 @@ const HOOKS: &[(&str, Hook)] = &[
     ("free", Hook::Free),
 ];
 
-pub(super) fn find(name: &str) -> Option<Hook> {
+pub(crate) fn find(name: &str) -> Option<Hook> {
     let name = if name.starts_with("__isoc99_") {
         name
     } else {

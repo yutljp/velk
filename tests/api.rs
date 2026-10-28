@@ -532,10 +532,14 @@ fn script_results_match_the_declarations() {
 
 #[test]
 fn every_declared_method_is_exercised() {
-    let source =
+    let mut source =
         std::fs::read_to_string(common::root().join("tests/api.rs")).expect("reading this test");
+    source.push_str(
+        &std::fs::read_to_string(common::root().join("tests/symbolic.rs"))
+            .expect("reading symbolic API tests"),
+    );
     let mut missing = Vec::new();
-    for file in ["binary.d.ts", "func.d.ts"] {
+    for file in ["binary.d.ts", "func.d.ts", "symbolic.d.ts"] {
         let text = std::fs::read_to_string(common::root().join("src/script/api").join(file))
             .expect("reading the declarations");
         for line in text.lines() {

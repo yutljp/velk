@@ -9,6 +9,7 @@
 use std::collections::{BTreeMap, HashMap};
 
 pub(crate) mod emulation;
+pub(crate) mod symbolic;
 
 use super::semantics::{holds, mask, operand_width, sign_extend};
 use super::{Block, Expr, FunctionIr, RegRef, Stmt};
@@ -284,11 +285,20 @@ impl Machine<'_> {
     }
 
     fn eval(&self, expr: &Expr) -> Result<u64, &'static str> {
+        self.eval_resolved(expr, &[])
+    }
+
+    fn eval_resolved(&self, expr: &Expr, resolved: &[(&Expr, u64)]) -> Result<u64, &'static str> {
+        for (operand, value) in resolved {
+            if std::ptr::eq(*operand, expr) {
+                return Ok(*value);
+            }
+        }
         Ok(match expr {
             Expr::Apply { op, args } => {
                 let mut values = Vec::new();
                 for arg in args {
-                    match self.eval(arg) {
+                    match self.eval_resolved(arg, resolved) {
                         Ok(value) => values.push(value),
                         Err(reason) => return Err(reason),
                     }
@@ -319,7 +329,7 @@ impl Machine<'_> {
                 signed,
             } => {
                 let value = self.load(
-                    match self.eval(addr) {
+                    match self.eval_resolved(addr, resolved) {
                         Ok(value) => value,
                         Err(reason) => return Err(reason),
                     },
@@ -332,7 +342,7 @@ impl Machine<'_> {
                 }
             }
             Expr::SignExtend { value, width } => sign_extend(
-                match self.eval(value) {
+                match self.eval_resolved(value, resolved) {
                     Ok(value) => value,
                     Err(reason) => return Err(reason),
                 },
@@ -348,22 +358,22 @@ impl Machine<'_> {
                 let bits = operand_width(lhs, rhs);
                 if holds(
                     *cond,
-                    match self.eval(lhs) {
+                    match self.eval_resolved(lhs, resolved) {
                         Ok(value) => value,
                         Err(reason) => return Err(reason),
                     },
-                    match self.eval(rhs) {
+                    match self.eval_resolved(rhs, resolved) {
                         Ok(value) => value,
                         Err(reason) => return Err(reason),
                     },
                     bits,
                 ) {
-                    match self.eval(then) {
+                    match self.eval_resolved(then, resolved) {
                         Ok(value) => value,
                         Err(reason) => return Err(reason),
                     }
                 } else {
-                    match self.eval(els) {
+                    match self.eval_resolved(els, resolved) {
                         Ok(value) => value,
                         Err(reason) => return Err(reason),
                     }
@@ -371,11 +381,11 @@ impl Machine<'_> {
             }
             Expr::Bin { op, lhs, rhs } => {
                 let (a, b) = (
-                    match self.eval(lhs) {
+                    match self.eval_resolved(lhs, resolved) {
                         Ok(value) => value,
                         Err(reason) => return Err(reason),
                     },
-                    match self.eval(rhs) {
+                    match self.eval_resolved(rhs, resolved) {
                         Ok(value) => value,
                         Err(reason) => return Err(reason),
                     },

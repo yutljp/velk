@@ -3,7 +3,6 @@ mod print;
 #[cfg(kani)]
 mod proofs;
 mod registers;
-#[cfg(test)]
 pub(crate) mod smt;
 
 pub use calls::CallAbi;

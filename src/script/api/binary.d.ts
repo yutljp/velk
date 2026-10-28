@@ -34,6 +34,8 @@ interface Binary {
    * Names include the C tag, for example "struct IUnknownVtbl". */
   libraryType(name: string): LibraryRecord | null;
   /** Execute a function name or virtual address with explicit state and limits. */
+  explore(start: string | number, options: SymbolicOptions): SymbolicReport;
+  symbolic(start: string | number, options?: SymbolicOptions): Symbolic;
   emulate(start: string | number, options?: EmulationOptions): EmulationReport;
   sections(): Section[];
   /** Compare two versions. Changed functions come first; ambiguous matches remain unmatched.

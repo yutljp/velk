@@ -1,19 +1,31 @@
-//! Test-only equivalence checks of expressions produced by the Rust rewrites.
+//! Bit-vector translation shared by symbolic evaluation and equivalence checks.
 
-use std::collections::{BTreeMap, HashSet};
+use std::collections::BTreeMap;
+#[cfg(test)]
+use std::collections::HashSet;
+#[cfg(test)]
 use std::io::BufReader;
+#[cfg(test)]
 use std::process::{Command, Stdio};
 
-use super::{BinOp, Cond, Expr, LaneOp, Operation, Stmt};
+#[cfg(test)]
+use super::Stmt;
+use super::{BinOp, Cond, Expr, LaneOp, Operation};
 
 mod floating;
 mod integer;
+#[cfg(test)]
 mod inventory;
+#[cfg(test)]
 mod program;
+#[cfg(test)]
 mod render_tests;
+#[cfg(test)]
 mod rewrite_tests;
+#[cfg(test)]
 mod tests;
 
+#[cfg(test)]
 pub(crate) const CONDITIONS: [Cond; 14] = [
     Cond::Eq,
     Cond::Ne,
@@ -32,6 +44,7 @@ pub(crate) const CONDITIONS: [Cond; 14] = [
 ];
 
 /// Constructs a binary expression without simplifying its operands or operation.
+#[cfg(test)]
 pub(crate) fn raw_bin(op: BinOp, lhs: Expr, rhs: Expr) -> Expr {
     Expr::Bin {
         op,
@@ -115,9 +128,9 @@ pub(crate) fn condition(cond: Cond, a: &str, b: &str, bits: u32) -> String {
     }
 }
 
-struct Value {
-    term: String,
-    defined: String,
+pub(crate) struct Value {
+    pub(crate) term: String,
+    pub(crate) defined: String,
 }
 
 fn operation(op: Operation, args: &[Value]) -> String {
@@ -299,11 +312,34 @@ fn operation(op: Operation, args: &[Value]) -> String {
     }
 }
 
+#[cfg(test)]
 fn value(expr: &Expr, registers: &BTreeMap<u16, String>) -> Value {
     memory_value(expr, registers, "memory")
 }
 
+#[cfg(test)]
 fn memory_value(expr: &Expr, registers: &BTreeMap<u16, String>, memory: &str) -> Value {
+    memory_value_resolved(expr, registers, memory, &[])
+}
+
+pub(crate) fn resolved_value(expr: &Expr, operands: &[(&Expr, &str)]) -> Value {
+    memory_value_resolved(expr, &BTreeMap::new(), "memory", operands)
+}
+
+fn memory_value_resolved(
+    expr: &Expr,
+    registers: &BTreeMap<u16, String>,
+    memory: &str,
+    resolved: &[(&Expr, &str)],
+) -> Value {
+    for (operand, term) in resolved {
+        if std::ptr::eq(*operand, expr) {
+            return Value {
+                term: (*term).to_owned(),
+                defined: "true".to_owned(),
+            };
+        }
+    }
     let mut defined = Vec::new();
     let term = match expr {
         Expr::Const(n) => constant(*n),
@@ -319,7 +355,7 @@ fn memory_value(expr: &Expr, registers: &BTreeMap<u16, String>, memory: &str) ->
             width,
             signed: is_signed,
         } => {
-            let addr = memory_value(addr, registers, memory);
+            let addr = memory_value_resolved(addr, registers, memory, resolved);
             defined.push(addr.defined);
             let mut loaded = constant(0);
             for byte in 0..*width {
@@ -341,13 +377,13 @@ fn memory_value(expr: &Expr, registers: &BTreeMap<u16, String>, memory: &str) ->
             value: inner,
             width,
         } => {
-            let inner = memory_value(inner, registers, memory);
+            let inner = memory_value_resolved(inner, registers, memory, resolved);
             defined.push(inner.defined);
             signed(&inner.term, u32::from(*width) * 8)
         }
         Expr::Bin { op, lhs, rhs } => {
-            let a = memory_value(lhs, registers, memory);
-            let b = memory_value(rhs, registers, memory);
+            let a = memory_value_resolved(lhs, registers, memory, resolved);
+            let b = memory_value_resolved(rhs, registers, memory, resolved);
             defined.extend([a.defined, b.defined]);
             let bits = super::semantics::operand_width(lhs, rhs);
             let (a, b) = (a.term, b.term);
@@ -412,16 +448,16 @@ fn memory_value(expr: &Expr, registers: &BTreeMap<u16, String>, memory: &str) ->
             then,
             els,
         } => {
-            let a = memory_value(lhs, registers, memory);
-            let b = memory_value(rhs, registers, memory);
+            let a = memory_value_resolved(lhs, registers, memory, resolved);
+            let b = memory_value_resolved(rhs, registers, memory, resolved);
             let test = condition(
                 *cond,
                 &a.term,
                 &b.term,
                 super::semantics::operand_width(lhs, rhs),
             );
-            let then = memory_value(then, registers, memory);
-            let els = memory_value(els, registers, memory);
+            let then = memory_value_resolved(then, registers, memory, resolved);
+            let els = memory_value_resolved(els, registers, memory, resolved);
             defined.extend([
                 a.defined,
                 b.defined,
@@ -432,7 +468,7 @@ fn memory_value(expr: &Expr, registers: &BTreeMap<u16, String>, memory: &str) ->
         Expr::Apply { op, args } => {
             let args: Vec<Value> = args
                 .iter()
-                .map(|arg| memory_value(arg, registers, memory))
+                .map(|arg| memory_value_resolved(arg, registers, memory, resolved))
                 .collect();
             defined.extend(args.iter().map(|arg| arg.defined.clone()));
             operation(*op, &args)
@@ -444,21 +480,23 @@ fn memory_value(expr: &Expr, registers: &BTreeMap<u16, String>, memory: &str) ->
     }
 }
 
+#[cfg(test)]
 pub(crate) fn term(expr: &Expr) -> String {
     value(expr, &BTreeMap::new()).term
 }
 
-fn returned(statements: &[Stmt]) -> Value {
+#[cfg(test)]
+fn returned(statements: &[super::Stmt]) -> Value {
     let mut registers = BTreeMap::new();
     let mut defined = Vec::new();
     for statement in statements {
         match statement {
-            Stmt::Assign { dest, value: expr } => {
+            super::Stmt::Assign { dest, value: expr } => {
                 let assigned = value(expr, &registers);
                 defined.push(assigned.defined);
                 registers.insert(dest.index, low(&assigned.term, u32::from(dest.width)));
             }
-            Stmt::Ret { value: expr } => {
+            super::Stmt::Ret { value: expr } => {
                 let result = value(expr, &registers);
                 defined.push(result.defined);
                 return Value {
@@ -472,12 +510,14 @@ fn returned(statements: &[Stmt]) -> Value {
     panic!("SMT statement sequence must return a value");
 }
 
+#[cfg(test)]
 #[derive(Default)]
 pub(crate) struct Proofs {
     cases: Vec<(String, String)>,
     negative_cases: Vec<(String, String)>,
 }
 
+#[cfg(test)]
 impl Proofs {
     /// Requires a counterexample to a deliberately incorrect equality.
     pub(crate) fn counterexample(&mut self, name: impl Into<String>, before: &str, wrong: &str) {

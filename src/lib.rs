@@ -28,6 +28,7 @@ pub mod service;
 pub mod sigs;
 pub mod ssa;
 pub mod string_decoding;
+pub mod symbolic;
 mod tables;
 mod timing;
 pub mod xrefs;

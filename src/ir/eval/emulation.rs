@@ -1,8 +1,8 @@
 //! Strict execution using the interpreter's expression and register semantics.
 
-mod hooks;
+pub(crate) mod hooks;
 mod imports;
-mod io;
+pub(crate) mod io;
 mod reads;
 mod strings;
 pub(crate) use strings::recover_strings;
@@ -54,7 +54,7 @@ enum Stop {
     Error(String),
 }
 
-fn physical_registers(isa: Isa) -> Vec<u16> {
+pub(crate) fn physical_registers(isa: Isa) -> Vec<u16> {
     match isa {
         Isa::X86_64 => (0..82).collect(),
         Isa::I386 => (0..8).chain(16..82).collect(),
@@ -662,30 +662,7 @@ impl Runner<'_> {
     }
 
     fn x86_instruction(&self) -> std::result::Result<iced_x86::Instruction, Stop> {
-        let Some(section) = self.image.section_at(self.address) else {
-            return Err(Stop::Error(format!(
-                "unmapped instruction at 0x{:x}",
-                self.address
-            )));
-        };
-        let available = section
-            .size
-            .saturating_sub(self.address - section.vaddr)
-            .min(15);
-        let Some(bytes) = self.image.read_vaddr(self.address, available) else {
-            return Err(Stop::Error(format!(
-                "missing instruction bytes at 0x{:x}",
-                self.address
-            )));
-        };
-        let bits = if self.image.isa == Isa::I386 { 32 } else { 64 };
-        let instruction =
-            iced_x86::Decoder::with_ip(bits, bytes, self.address, iced_x86::DecoderOptions::NONE)
-                .decode();
-        if instruction.is_invalid() {
-            return Err(Stop::Error("invalid x86 instruction".to_owned()));
-        }
-        Ok(instruction)
+        x86_instruction_at(self.image, self.address).map_err(Stop::Error)
     }
 
     fn statement(
@@ -1204,4 +1181,24 @@ impl Runner<'_> {
         self.machine.registers.insert(sp, old_sp);
         Ok(())
     }
+}
+
+pub(crate) fn x86_instruction_at(
+    image: &Image,
+    address: u64,
+) -> std::result::Result<iced_x86::Instruction, String> {
+    let Some(section) = image.section_at(address) else {
+        return Err(format!("unmapped instruction at 0x{address:x}"));
+    };
+    let available = section.size.saturating_sub(address - section.vaddr).min(15);
+    let Some(bytes) = image.read_vaddr(address, available) else {
+        return Err(format!("missing instruction bytes at 0x{address:x}"));
+    };
+    let bits = if image.isa == Isa::I386 { 32 } else { 64 };
+    let instruction =
+        iced_x86::Decoder::with_ip(bits, bytes, address, iced_x86::DecoderOptions::NONE).decode();
+    if instruction.is_invalid() {
+        return Err("invalid x86 instruction".to_owned());
+    }
+    Ok(instruction)
 }

@@ -12,7 +12,7 @@ use crate::loader::Isa;
 use super::{HEAP_SIZE, Runner, Stop};
 
 #[derive(Clone, Copy)]
-pub(super) enum Operation {
+pub(crate) enum Operation {
     Printf,
     Fprintf,
     Sprintf,
@@ -46,6 +46,14 @@ fn error(message: impl Into<String>) -> Stop {
 fn address(base: u64, offset: usize) -> Result<u64, Stop> {
     base.checked_add(offset as u64)
         .ok_or_else(|| error("I/O memory address overflows"))
+}
+
+pub(crate) fn next_input<T: Clone>(input: &[T], position: &mut usize) -> Option<T> {
+    let byte = input.get(*position).cloned();
+    if byte.is_some() {
+        *position += 1;
+    }
+    byte
 }
 
 impl Runner<'_> {
@@ -259,8 +267,7 @@ impl Runner<'_> {
         }
         let pointer_bytes = crate::arch::pointer_bytes(self.image.isa);
         if matches!(operation, Getchar) {
-            if let Some(&byte) = self.input.get(self.input_position) {
-                self.input_position += 1;
+            if let Some(byte) = next_input(&self.input, &mut self.input_position) {
                 return Ok(u64::from(byte));
             }
             return Ok(u64::from(u32::MAX));

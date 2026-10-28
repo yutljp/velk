@@ -2,6 +2,7 @@
 #![deny(missing_docs)]
 
 pub mod ops;
+mod symbolic;
 
 use std::cell::{Cell, RefCell};
 use std::rc::Rc;
@@ -187,17 +188,28 @@ impl Engine {
     fn install<'js>(&self, ctx: &Ctx<'js>) -> rquickjs::Result<()> {
         let session = Rc::clone(&self.session);
         let deadline = Rc::clone(&self.deadline);
+        let symbols = RefCell::new(symbolic::Registry::default());
         let native = Function::new(
             ctx.clone(),
             move |ctx: Ctx<'js>, request: String| -> rquickjs::Result<String> {
-                let request = serde_json::from_str(&request).map_err(|error| {
+                let value: serde_json::Value = serde_json::from_str(&request).map_err(|error| {
                     Exception::throw_type(&ctx, &format!("invalid request: {error}"))
                 })?;
                 let deadline = deadline.get();
                 if deadline.is_some_and(|deadline| Instant::now() > deadline) {
                     return Err(Exception::throw_message(&ctx, &Error::TimedOut.to_string()));
                 }
-                ops::handle(&mut session.borrow_mut(), request, deadline)
+                let result = if value.get("op").and_then(serde_json::Value::as_str)
+                    == Some("symbolic")
+                {
+                    symbolic::handle(&mut session.borrow_mut(), &mut symbols.borrow_mut(), value)
+                } else {
+                    let request = serde_json::from_value(value).map_err(|error| {
+                        Exception::throw_type(&ctx, &format!("invalid request: {error}"))
+                    })?;
+                    ops::handle(&mut session.borrow_mut(), request, deadline)
+                };
+                result
                     .map(|value| value.to_string())
                     .map_err(|error| Exception::throw_message(&ctx, &error.to_string()))
             },

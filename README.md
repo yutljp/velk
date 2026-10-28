@@ -222,3 +222,10 @@ and limits.
 ## License
 
 MIT. See [LICENSE](LICENSE).
+
+Symbolic execution searches for inputs that reach a virtual address:
+`velk --explore check --find 0x401100 --stdin 8 app.elf` (`--json` returns JSON).
+It requires an external Z3 or Bitwuzla process. Rust, JavaScript (`b.explore` and
+`b.symbolic`) and MCP (`velk_explore`) expose the same search. See
+[Symbolic execution](docs/SYMBOLIC.md) and `velk --api-docs symbolic` for inputs,
+state operations and deterministic limits.
