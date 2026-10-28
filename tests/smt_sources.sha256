@@ -37,7 +37,7 @@ f3942e76e9439d86ae88922586d9a2aafd137669cd3ab7fdb5c6fc1432ffd17c  src/lift/flags
 434945d44f50371a777fabf73992ac230e3f48de0fa110ff29268a5c5c5eb89d  src/lift/flags.rs	pub fn test(
 7faa89e938a27e7070c0d1e87f272100ef4994c319cb1078ff26302b485aead5  src/lift/flags.rs	pub(super) fn borrow_out(
 a0242bf5503efec30bf53133c773222a839bc32a3c1bbad1d42f5fd5a13c4f6c  src/lift/flags.rs	pub(super) fn carry_out(
-f44fa8a592896a8a930d0bc8cc8b7f24a27a2d647acdb36c1d9d591e83483eaa  src/lift/mod.rs	fn condition_values(
+d0029ec024391cd1ddd3e71a84caa88c09bd9b79f709d5c7aeca8a451d17d0d2  src/lift/mod.rs	fn condition_values(
 8a1c12aadfaa4c3cd60a1055edb77605af981a8c578974032166e96b38bd6a6f  src/lift/mod.rs	fn recover_operand(
 c1910e73cbfd43756aaa4cd69e93d15044c36f13cee1bad12044db8a5157af59  src/lift/mod.rs	fn reverse_bytes(
 9eefe353c18520471179f93993db35b8c116c950a4df037d34eb20ce362689c0  src/lift/mod.rs	fn rotate(
@@ -48,7 +48,7 @@ cfccb053d4c55496499be985b667e23d26570c78ab688d0a1cec9299076a0c7f  src/lift/pairs
 0cd4a8f764dc058d61bb3f44a36c900e2f0b871b6ab1d115e201962028c7d39d  src/lift/x86_64.rs	fn return_address_register(
 3560e55deb042850841ede78bc28b3ade459f7e331cc78f8f15aabe21b4713da  src/lift/x86_64.rs	if target == ins.next_ip() || return_register.is_some()
 7551eca718c573b210e8be8ea22c8fd42544212283ca70ebcfdb5fc9795b01a5  src/lift/x86_64/operands.rs	pub(super) fn write_operand(
-df293fc258c33655bebda68d3ed189bab99247473eae0fe8584dfc7c1f30a7a7  src/lift/x86_64/string.rs	fn save_flags(
+4920ec6326772be6b61bd0c3aa896ab737ee70027599b0c86edc321a9847739d  src/lift/x86_64/string.rs	fn save_flags(
 fc2bfecc7d3cb4cd750913e3f859e8fcb6e76f2cfcd3e40cb52ee1174841765f  src/passes/copies.rs	fn copy_propagate_block(
 ae8391c4b49b0e67c90b3b2da8bccc6f9a274062086519869f04014b33cc6809  src/passes/copies.rs	pub fn inline_local_copies(
 dfb8f512c6b6517fdfb4db495e878c954d8baad061290a50e7a2cd8326eecff9  src/passes/copies.rs	pub(crate) fn comparison_preserved(

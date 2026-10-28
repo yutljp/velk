@@ -177,7 +177,7 @@ fn copies_and_fills_compile_and_preserve_memory_and_final_registers() {
     ] {
         let mut ir = example_ir(name, 32, width, fill, 1);
         let result = ir.blocks[3].stmts[0].clone();
-        let mut code = vec![0x48, 0x89, 0xd6, 0x48, 0x8d, 0x7a, 32, 0xb9, 1, 0, 0, 0];
+        let mut code = vec![0x48, 0x89, 0xd6, 0x48, 0x8d, 0x7a, 32, 0xb9, 2, 0, 0, 0];
         if let Some(value) = fill {
             code.extend([0x48, 0xb8]);
             code.extend(value.to_le_bytes());
@@ -193,7 +193,12 @@ fn copies_and_fills_compile_and_preserve_memory_and_final_registers() {
         }
         crate::passes::optimize(&mut ir, false);
         let code = crate::render::render(&ir, &[], &Default::default(), &[]);
-        assert!(!code.contains("unsupported"), "{code}");
+        let operation = if fill.is_some() {
+            "__builtin_memset"
+        } else {
+            "__builtin_memcpy"
+        };
+        assert!(code.contains(operation), "{code}");
         source.push_str(&code);
     }
     source.push_str(r#"
@@ -207,11 +212,11 @@ int main(void) {
     if (dynamic(a, 0) != 32 || a[32] != 0) return 30;
     if (dynamic(a, 8) != 40 || a[32] != 0xab || a[39] != 0xab || a[40] != 0) return 31;
     for (int i = 0; i < 64; i++) a[i] = i + 1;
-    if (rep_bytes(a) != 34 || a[32] != 1 || a[33] != 34) return 32;
-    if (rep_words(a) != 36 || a[32] != 1 || a[33] != 2) return 33;
-    if (rep_dwords(a) != 40 || a[35] != 4) return 35;
-    if (rep_qwords(a) != 48 || a[39] != 8) return 36;
-    if (rep_fill(a) != 40 || a[32] != 0xab || a[39] != 0xab) return 34;
+    if (rep_bytes(a) != 36 || a[32] != 1 || a[33] != 2) return 32;
+    if (rep_words(a) != 40 || a[32] != 1 || a[33] != 2) return 33;
+    if (rep_dwords(a) != 48 || a[35] != 4) return 35;
+    if (rep_qwords(a) != 64 || a[39] != 8) return 36;
+    if (rep_fill(a) != 48 || a[32] != 0xab || a[39] != 0xab) return 34;
     for (int k = 0; k < 7; k++) {
         for (int i = 0; i < 64; i++) a[i] = b[i] = i + 1;
         uint64_t result;

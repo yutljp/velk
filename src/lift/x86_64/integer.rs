@@ -722,18 +722,15 @@ pub(super) fn with_carry(lifter: &mut Lifter, instruction: &Instruction, subtrac
 /// of `ah`, with bit 1 set; unsupported when the flags here leave one open.
 pub(super) fn lift_lahf(lifter: &mut Lifter, instruction: &Instruction) {
     let bits = lifter.last_compare.as_ref().and_then(|flags| {
-        [
-            (lifter.test(Cond::Mi), 7),
-            (lifter.test(Cond::Eq), 6),
-            (flags.adjust(), 4),
-            (flags.parity(true), 2),
-            (lifter.test(Cond::Cc), 0),
-        ]
-        .into_iter()
-        .try_fold(Expr::constant(2), |byte, (test, bit)| {
-            let value = test.select(Expr::constant(1 << bit), Expr::constant(0))?;
-            Some(Expr::bin(BinOp::Or, byte, value))
-        })
+        flags
+            .byte_tests(crate::loader::Isa::X86_64)
+            .into_iter()
+            .try_fold(Expr::constant(2), |byte, (test, bit)| {
+                let Some(value) = test.select(Expr::constant(1 << bit), Expr::constant(0)) else {
+                    return None;
+                };
+                Some(Expr::bin(BinOp::Or, byte, value))
+            })
     });
     let Some(byte) = bits else {
         lifter.stmts.push(Stmt::unsupported(format!(

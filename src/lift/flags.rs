@@ -83,6 +83,16 @@ pub(super) enum Test {
 }
 
 impl Flags {
+    pub(super) fn byte_tests(&self, isa: Isa) -> [(Test, u32); 5] {
+        [
+            (self.test(Cond::Mi, isa), 7),
+            (self.test(Cond::Eq, isa), 6),
+            (self.adjust(), 4),
+            (self.parity(true), 2),
+            (self.test(Cond::Cc, isa), 0),
+        ]
+    }
+
     pub fn difference(lhs: Expr, rhs: Expr) -> Self {
         Self::new(Source::Difference, lhs, rhs)
     }

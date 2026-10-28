@@ -42,13 +42,7 @@ fn save_flags(flags: Option<&Flags>, isa: crate::loader::Isa) -> Vec<Stmt> {
     let mut byte = Expr::constant(2);
     let unknown = || Expr::reg(crate::ir::TEMP_BASE + 0x50, 64);
     if let Some(flags) = flags {
-        for (test, bit) in [
-            (flags.test(Cond::Mi, isa), 7),
-            (flags.test(Cond::Eq, isa), 6),
-            (flags.adjust(), 4),
-            (flags.parity(true), 2),
-            (flags.test(Cond::Cc, isa), 0),
-        ] {
+        for (test, bit) in flags.byte_tests(isa) {
             let value = test.select(Expr::constant(1 << bit), Expr::constant(0));
             byte = Expr::bin(BinOp::Or, byte, value.unwrap_or_else(unknown));
         }

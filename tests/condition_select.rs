@@ -9,18 +9,26 @@ use serde_json::{Value, json};
 use velk::ir::{CType, Param, Stmt, eval};
 use velk::service::Binary;
 
+fn fixtures() -> &'static std::path::Path {
+    static OUT: std::sync::OnceLock<std::path::PathBuf> = std::sync::OnceLock::new();
+    OUT.get_or_init(|| {
+        let root = common::root();
+        let out = root.join(format!("target/condition-test-{}", std::process::id()));
+        assert!(
+            Command::new("sh")
+                .arg(root.join("tools/make_condition_fixtures.sh"))
+                .arg(&out)
+                .status()
+                .expect("fixture build starts")
+                .success()
+        );
+        out
+    })
+}
+
 #[test]
-fn condition_joins_and_pc_loads() {
-    let root = common::root();
-    let out = root.join(format!("target/condition-test-{}", std::process::id()));
-    assert!(
-        Command::new("sh")
-            .arg(root.join("tools/make_condition_fixtures.sh"))
-            .arg(&out)
-            .status()
-            .unwrap()
-            .success()
-    );
+fn condition_joins() {
+    let out = fixtures();
     let mut printed = String::new();
     let mut checks = String::new();
     for architecture in ["arm32", "aarch64", "x86_64", "i386"] {
@@ -172,7 +180,11 @@ fn condition_joins_and_pc_loads() {
             .success()
     );
     assert!(Command::new(out.join("check")).status().unwrap().success());
+}
 
+#[test]
+fn internal_pc_targets() {
+    let out = fixtures();
     let mut binary = Binary::open(&out.join("arm32.elf")).unwrap();
     let ip = binary.find("pc_load_ip").unwrap().addr;
     let ip_code = binary.decompile(ip, None, None).unwrap();
@@ -256,6 +268,12 @@ fn condition_joins_and_pc_loads() {
         );
         assert!(Command::new(binary_path).status().unwrap().success());
     }
+}
+
+#[test]
+fn rejected_pc_targets() {
+    let out = fixtures();
+    let mut binary = Binary::open(&out.join("arm32.elf")).unwrap();
     for name in ["invalid_mode", "unaligned", "outside"] {
         let function = binary.find(&format!("pc_internal_{name}")).unwrap().clone();
         let code = binary.decompile(function.addr, None, None).unwrap();
@@ -275,8 +293,19 @@ fn condition_joins_and_pc_loads() {
             "{code}"
         );
     }
+}
+
+#[test]
+fn interfaces() {
+    let out = fixtures();
     check_interfaces(&out.join("arm32.elf"), "pc_internal_arm");
     check_interfaces(&out.join("x86_64.elf"), "select_vs");
+}
+
+#[test]
+fn pc_load_modes() {
+    let out = fixtures();
+    let mut binary = Binary::open(&out.join("arm32.elf")).unwrap();
     let arm = binary.find("pc_load_arm").unwrap().clone();
     let thumb_target = binary.find("pc_load_thumb").unwrap().addr + 4;
     let mut exchange = binary.analysis(arm.addr, None).unwrap().ir.clone();

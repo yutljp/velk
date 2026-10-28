@@ -1162,14 +1162,20 @@ fn build_carrying<M: Machine>(
 
 fn condition_values(flags: &flags::Flags, isa: Isa) -> Option<(Expr, Expr)> {
     use crate::ir::{BinOp, Cond};
-    let bit = |cond| {
-        flags
-            .test(cond, isa)
-            .select(Expr::constant(1), Expr::constant(0))
-    };
-    let (Some(negative), Some(zero), Some(not_carry), Some(overflow)) =
-        (bit(Cond::Mi), bit(Cond::Eq), bit(Cond::Cc), bit(Cond::Vs))
-    else {
+    let [
+        (negative, _),
+        (zero, _),
+        (adjust, _),
+        (parity, _),
+        (not_carry, _),
+    ] = flags.byte_tests(isa);
+    let bit = |test: flags::Test| test.select(Expr::constant(1), Expr::constant(0));
+    let (Some(negative), Some(zero), Some(not_carry), Some(overflow)) = (
+        bit(negative),
+        bit(zero),
+        bit(not_carry),
+        bit(flags.test(Cond::Vs, isa)),
+    ) else {
         return None;
     };
     let mut byte = Expr::bin(
@@ -1182,13 +1188,10 @@ fn condition_values(flags: &flags::Flags, isa: Isa) -> Option<(Expr, Expr)> {
         not_carry,
     );
     if matches!(isa, Isa::I386 | Isa::X86_64) {
-        let Some(parity) = flags
-            .parity(true)
-            .select(Expr::constant(1), Expr::constant(0))
-        else {
+        let Some(parity) = bit(parity) else {
             return None;
         };
-        let Some(adjust) = flags.adjust().select(Expr::constant(1), Expr::constant(0)) else {
+        let Some(adjust) = bit(adjust) else {
             return None;
         };
         byte = Expr::bin(
