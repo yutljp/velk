@@ -80,15 +80,32 @@ pub(super) fn share_parameters(functions: &mut [Analysis], go: bool) {
         {
             continue;
         }
-        if !ir.stack_params.is_empty()
-            || ir.declared_signature.as_ref().is_some_and(|signature| {
-                signature.params.len() != ir.params.len()
-                    || signature
-                        .params
-                        .iter()
-                        .zip(&ir.params)
-                        .any(|((_, ty), param)| *ty != param.ty)
-            })
+        if ir.declared_signature.as_ref().is_some_and(|signature| {
+            signature.params.len() != ir.params.len()
+                || signature
+                    .params
+                    .iter()
+                    .zip(&ir.params)
+                    .any(|((_, ty), param)| *ty != param.ty)
+        }) {
+            continue;
+        }
+        let mut types = Vec::new();
+        let mut registers = ir.params.iter();
+        for position in 0..ir.params.len().saturating_add(ir.stack_params.len()) {
+            if let Some(param) = ir
+                .stack_params
+                .iter()
+                .find(|param| param.position == position)
+            {
+                types.push(param.ty.clone());
+            } else if let Some(param) = registers.next() {
+                types.push(param.ty.clone());
+            }
+        }
+        if types
+            .iter()
+            .any(|ty| !ty.is_pointer() && ty.integer().is_none())
         {
             continue;
         }
@@ -96,10 +113,7 @@ pub(super) fn share_parameters(functions: &mut [Analysis], go: bool) {
             ir.addr,
             (
                 ir.convention,
-                ir.params
-                    .iter()
-                    .map(|param| param.ty.clone())
-                    .collect::<Vec<_>>(),
+                types,
                 ir.structures
                     .iter()
                     .map(|structure| structure.name.clone())
@@ -274,7 +288,6 @@ impl Binary {
                 .map(|analysis| &mut analysis.ir)
                 .collect();
             analysis::shared_structures::share(&mut irs, &self.data_ranges);
-            share_parameters(&mut functions, self.image.go);
             for address in super::declarations::callers(&self.image, root) {
                 if functions.iter().any(|analysis| analysis.ir.addr == address) {
                     continue;
@@ -288,6 +301,7 @@ impl Binary {
                     Err(error) => return Err(error),
                 }
             }
+            share_parameters(&mut functions, self.image.go);
             super::declarations::recover(&self.image, &mut functions);
             let analysis = functions
                 .into_iter()

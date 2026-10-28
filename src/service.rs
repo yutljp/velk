@@ -1244,7 +1244,6 @@ impl Binary {
             .map(|analysis| &mut analysis.ir)
             .collect();
         analysis::shared_structures::share(&mut irs, &self.data_ranges);
-        batch::share_parameters(&mut functions, self.image.go);
         for address in declaration_callers {
             if functions.iter().any(|analysis| analysis.ir.addr == address) {
                 continue;
@@ -1258,6 +1257,7 @@ impl Binary {
                 Err(error) => return Err(error),
             }
         }
+        batch::share_parameters(&mut functions, self.image.go);
         declarations::recover(&self.image, &mut functions);
         if let Err(error) = passed(deadline) {
             return Err(error);

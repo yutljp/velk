@@ -27,6 +27,8 @@ mod atomic_layouts;
 mod atomic_spelling;
 #[path = "recompile/atomic_values.rs"]
 mod atomic_values;
+#[path = "recompile/body_types.rs"]
+mod body_types;
 #[path = "recompile/cache.rs"]
 mod cache;
 #[path = "recompile/call_arithmetic.rs"]

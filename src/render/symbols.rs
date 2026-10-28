@@ -80,6 +80,7 @@ impl Symbols {
             .chain(self.data.values())
             .map(|name| super::sanitize(name))
             .collect();
+        let mut renamed = Vec::new();
         for name in self
             .functions
             .values_mut()
@@ -99,7 +100,13 @@ impl Symbols {
             {
                 continue;
             }
+            renamed.push((super::sanitize(name), candidate.to_owned()));
             *name = candidate.to_owned();
+        }
+        for (original, name) in renamed {
+            if let Some(prototype) = self.library_prototypes.remove(&original) {
+                self.library_prototypes.insert(name, prototype);
+            }
         }
     }
 
@@ -129,6 +136,12 @@ mod tests {
                 (5, "_taken".into()),
             ]),
             import_slots: HashMap::from([(6, "_memcpy".into())]),
+            library_prototypes: HashMap::from([(
+                "_memcpy".into(),
+                crate::analysis::prototypes::of("memcpy", false)
+                    .unwrap()
+                    .clone(),
+            )]),
             data: HashMap::from([(7, "taken".into()), (8, "_object".into())]),
             ..Default::default()
         };
@@ -156,6 +169,8 @@ mod tests {
             );
         }
         assert_eq!(symbols.import_slots[&6], "memcpy");
+        assert!(symbols.library_prototypes.contains_key("memcpy"));
+        assert!(!symbols.library_prototypes.contains_key("_memcpy"));
         assert_eq!(symbols.data[&8], "object");
         let mut ir = crate::ir::FunctionIr::single_block(
             crate::loader::Isa::AArch64,

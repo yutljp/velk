@@ -801,7 +801,11 @@ fn compute(
                 image.go,
                 &|stmt| super::prototypes::called(image, stmt),
             );
-            if function.sources.contains(&NameSource::Call) {
+            if function.sources.contains(&NameSource::Call)
+                || (image.isa == crate::loader::Isa::I386
+                    && recovered.params.is_empty()
+                    && recovered.stack.is_empty())
+            {
                 signature::add_register_parameters(
                     &mut recovered,
                     signature_body,

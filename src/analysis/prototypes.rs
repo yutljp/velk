@@ -982,6 +982,24 @@ pub fn for_image(name: &str, image: &Image) -> Option<&'static Prototype> {
     if let Some(prototype) = generated::for_image(name, image) {
         return Some(prototype);
     }
+    let c_name = undecorated(name, image.format == crate::loader::Format::MachO);
+    let c_name = if image.format == crate::loader::Format::MachO {
+        c_name.strip_prefix('_').unwrap_or(c_name)
+    } else {
+        c_name
+    };
+    if c_name == "vprintf"
+        && image.isa == crate::loader::Isa::X86_64
+        && matches!(
+            image.format,
+            crate::loader::Format::Elf | crate::loader::Format::MachO
+        )
+    {
+        // The array va_list parameter decays to a pointer on System V x86-64.
+        // Its element tag is compiler-internal, so use an untyped object pointer.
+        static VPRINTF: OnceLock<Prototype> = OnceLock::new();
+        return Some(VPRINTF.get_or_init(|| parse("int vprintf(const char *, void *)").1));
+    }
     of(name, image.format == crate::loader::Format::MachO).or_else(|| runtime(name))
 }
 

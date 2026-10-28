@@ -251,7 +251,7 @@ fn recover(blocks: &[Block], isa: Isa, convention: Convention, go: bool) -> Sign
     recover_with(blocks, &[], isa, convention, go, &|_| None)
 }
 
-/// Add non-ABI register inputs for functions discovered through direct calls.
+/// Add non-ABI register inputs after removing register saves and frame setup.
 pub(super) fn add_register_parameters(
     signature: &mut Signature,
     blocks: &[Block],
@@ -268,6 +268,9 @@ pub(super) fn add_register_parameters(
     ir.convention = convention;
     ir.blocks = blocks.to_vec();
     ir.landing_pads = landing_pads.to_vec();
+    if isa == Isa::I386 {
+        crate::passes::frame_slots::settle_i386(&mut ir);
+    }
     crate::passes::frame::elide_frame_pointer(&mut ir);
     crate::passes::frame::elide_callee_saves(&mut ir);
     crate::passes::frame_slots::settle(&mut ir);
@@ -297,6 +300,12 @@ pub(super) fn add_register_parameters(
         signature.arguments.insert(register);
     }
     signature.inputs = Some(recovered.incoming);
+    signature.signed.extend(parameter_types(
+        &ir.blocks,
+        isa,
+        &|_| None,
+        &mut signature.params,
+    ));
     signature.accesses = parameter_accesses(blocks, &signature.params);
 }
 

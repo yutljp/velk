@@ -532,6 +532,25 @@ pub(super) fn expression(call: &Stmt, ctx: &Ctx<'_>) -> String {
             *text = super::conformed(value, printed, pointer.as_deref(), ctx);
         }
     }
+    // Recovered va_list storage has a different C type from the header's
+    // compiler-internal array element. The object address is unchanged.
+    if callee == "vprintf"
+        && ctx
+            .symbols
+            .library_prototypes
+            .get(&callee)
+            .is_some_and(|prototype| {
+                matches!(prototype.params.get(1), Some(crate::ir::CType::Pointer(target))
+                if target.as_ref() == &crate::ir::CType::Void)
+            })
+        && let Some((text, value)) = args
+            .get_mut(1)
+            .zip(values.as_ref().and_then(|values| values.get(1)))
+        && super::naming::pointer_target(value, ctx) != Some(crate::ir::CType::Void)
+        && !text.starts_with("(void *)")
+    {
+        *text = format!("(void *)({text})");
+    }
     let selector_slot = match values.as_ref().and_then(|args| args.get(1)) {
         Some(Expr::Load { addr, width: 8, .. }) => match addr.as_ref() {
             Expr::Const(slot) => Some(*slot),

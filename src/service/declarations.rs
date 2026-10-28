@@ -1,4 +1,4 @@
-//! Parameter evidence for functions whose bodies do not read arguments.
+//! Analysis dependencies and parameter evidence for call declarations.
 
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -41,6 +41,14 @@ pub(super) fn callers(image: &Image, root: &Analysis) -> BTreeSet<u64> {
         if unknown_import(image, target) {
             addresses.extend(crate::analysis::results::callers(image, target));
             continue;
+        }
+        if target != root.ir.addr
+            && image
+                .functions
+                .get(&target)
+                .is_some_and(|function| !function.sources.contains(&crate::loader::NameSource::Plt))
+        {
+            addresses.insert(target);
         }
         let summary = crate::analysis::summary::summary(image, target);
         if summary.arity.is_some_and(|count| count != 0)

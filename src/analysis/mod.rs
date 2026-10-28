@@ -1265,7 +1265,11 @@ fn lift_function(image: &Image, function: &Function) -> Result<Lifted, LiftError
         image.go,
         &|stmt| prototypes::called(image, stmt),
     );
-    if function.sources.contains(&crate::loader::NameSource::Call) {
+    if function.sources.contains(&crate::loader::NameSource::Call)
+        || (image.isa == crate::loader::Isa::I386
+            && signature.params.is_empty()
+            && signature.stack.is_empty())
+    {
         signature::add_register_parameters(
             &mut signature,
             &blocks,

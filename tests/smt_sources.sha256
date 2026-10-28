@@ -42,7 +42,7 @@ f44fa8a592896a8a930d0bc8cc8b7f24a27a2d647acdb36c1d9d591e83483eaa  src/lift/mod.r
 c1910e73cbfd43756aaa4cd69e93d15044c36f13cee1bad12044db8a5157af59  src/lift/mod.rs	fn reverse_bytes(
 9eefe353c18520471179f93993db35b8c116c950a4df037d34eb20ce362689c0  src/lift/mod.rs	fn rotate(
 ed337801dcded318477c5a60211a0cbd068d7aa254a08dd78fcd0b30bcf21ea0  src/lift/pairs32.rs	pub(crate) fn join(
-e999659cdccf345eb8e92fcacc613d76b0c21bceb3a99a819581c1e1964a8e27  src/lift/pairs32.rs	pub(super) fn call(
+4b59f65de20cc297e2b7cee93328253a0b09484f5f77cd4c4515c8e694e28aaf  src/lift/pairs32.rs	pub(super) fn call(
 6106c134670fcdf136cd9199c693d4ae01cc89c73ce75a6f92f00a065ba77f2e  src/lift/pairs32.rs	pub(super) fn remainder_value(
 cfccb053d4c55496499be985b667e23d26570c78ab688d0a1cec9299076a0c7f  src/lift/pairs32.rs	pub(super) fn split_result(
 0cd4a8f764dc058d61bb3f44a36c900e2f0b871b6ab1d115e201962028c7d39d  src/lift/x86_64.rs	fn return_address_register(

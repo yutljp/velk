@@ -147,6 +147,14 @@ pub(crate) fn join(low: Expr, high: Expr) -> Expr {
 
 pub(super) fn call(image: &Image, target: Option<u64>, stmt: &mut Stmt) -> bool {
     let Some(target) = target else { return false };
+    // A local i386 function may use register arguments even when its source
+    // declaration uses cdecl. Keep the physical arguments recovered from its body.
+    if image.isa == Isa::I386
+        && matches!(stmt, Stmt::Call { args: Some(args), .. }
+            if args.iter().any(|arg| matches!(arg, Expr::Reg { .. })))
+    {
+        return false;
+    }
     let inferred = types(image, target);
     let (params, ret) = match inferred {
         Some((params, ret)) => (params, Some(ret)),

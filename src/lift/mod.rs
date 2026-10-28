@@ -924,9 +924,10 @@ pub(crate) fn call(
             }
         }
     }
-    if target
-        .and_then(|target| image.functions.get(&target))
-        .is_some_and(|function| function.sources.contains(&crate::loader::NameSource::Call))
+    if (image.isa == crate::loader::Isa::I386
+        || target
+            .and_then(|target| image.functions.get(&target))
+            .is_some_and(|function| function.sources.contains(&crate::loader::NameSource::Call)))
         && let (Some(args), Some(inputs)) = (&mut args, summary.and_then(|summary| summary.inputs))
     {
         for register in inputs.iter() {
