@@ -42,7 +42,7 @@ fn called_and_file_entries_preserve_the_enclosing_code() {
         }
         let output = compiler
             .arg(format!("--target={arch}-unknown-linux-gnu"))
-            .args(["-c", "tests/cases/discovery.S", "-o"])
+            .args(["-c", "tests/data/discovery.S", "-o"])
             .arg(&object)
             .output()
             .unwrap();
@@ -247,7 +247,7 @@ fn runtime_startup_proves_an_interior_entry() {
             compiler.arg("-DDIRECT_STARTUP");
         }
         let output = compiler
-            .args(["-c", "tests/cases/discovery.S", "-o"])
+            .args(["-c", "tests/data/discovery.S", "-o"])
             .arg(&object)
             .output()
             .unwrap();

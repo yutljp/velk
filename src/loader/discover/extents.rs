@@ -83,10 +83,9 @@ fn reachable_end(image: &Image, start: u64, limit: u64) -> u64 {
                 return limit;
             };
             let mut decoder = Decoder::with_ip(bitness, bytes, address, DecoderOptions::NONE);
-            let instruction = decoder.decode();
-            if instruction.is_invalid() {
+            let Some(instruction) = super::decode(&mut decoder) else {
                 return limit;
-            }
+            };
             end = end.max(instruction.next_ip());
             if matches!(
                 instruction.mnemonic(),
@@ -94,11 +93,7 @@ fn reachable_end(image: &Image, start: u64, limit: u64) -> u64 {
             ) {
                 break;
             }
-            let target = image
-                .relocations
-                .get(&address)
-                .copied()
-                .unwrap_or_else(|| instruction.near_branch_target());
+            let target = super::branch_target(image, &instruction);
             match instruction.flow_control() {
                 FlowControl::ConditionalBranch => pending.push(target),
                 FlowControl::UnconditionalBranch => {
@@ -107,7 +102,7 @@ fn reachable_end(image: &Image, start: u64, limit: u64) -> u64 {
                 }
                 // An unresolved dispatch can reach cases beyond any candidate boundary.
                 FlowControl::IndirectBranch => return limit,
-                FlowControl::Return | FlowControl::Exception => break,
+                _ if super::ends_path(&instruction) => break,
                 _ => {}
             }
             address = instruction.next_ip();

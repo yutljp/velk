@@ -29,6 +29,32 @@ fn add_entry(image: &mut super::Image, address: u64) {
     }
 }
 
+fn decode(decoder: &mut iced_x86::Decoder<'_>) -> Option<iced_x86::Instruction> {
+    let instruction = decoder.decode();
+    if instruction.is_invalid() {
+        None
+    } else {
+        Some(instruction)
+    }
+}
+
+fn branch_target(image: &super::Image, instruction: &iced_x86::Instruction) -> u64 {
+    image
+        .relocations
+        .get(&instruction.ip())
+        .copied()
+        .unwrap_or_else(|| instruction.near_branch_target())
+}
+
+fn ends_path(instruction: &iced_x86::Instruction) -> bool {
+    matches!(
+        instruction.flow_control(),
+        iced_x86::FlowControl::Return
+            | iced_x86::FlowControl::IndirectBranch
+            | iced_x86::FlowControl::Exception
+    )
+}
+
 /// Follow reachable x86 instructions, including call-only code inside symbol ranges.
 pub(super) fn direct_calls(image: &mut super::Image) {
     use iced_x86::{Decoder, DecoderOptions, FlowControl};
@@ -81,15 +107,10 @@ pub(super) fn direct_calls(image: &mut super::Image) {
                 if !seen.insert(address) {
                     break;
                 }
-                let instruction = decoder.decode();
-                if instruction.is_invalid() {
+                let Some(instruction) = decode(&mut decoder) else {
                     break;
-                }
-                let target = image
-                    .relocations
-                    .get(&address)
-                    .copied()
-                    .unwrap_or_else(|| instruction.near_branch_target());
+                };
+                let target = branch_target(image, &instruction);
                 match instruction.flow_control() {
                     FlowControl::Call => {
                         if target != instruction.next_ip()
@@ -105,9 +126,7 @@ pub(super) fn direct_calls(image: &mut super::Image) {
                         pending.push(target);
                         break;
                     }
-                    FlowControl::Return | FlowControl::IndirectBranch | FlowControl::Exception => {
-                        break;
-                    }
+                    _ if ends_path(&instruction) => break,
                     _ => {}
                 }
                 if contiguous.is_none() {
