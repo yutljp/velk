@@ -163,6 +163,8 @@ pub struct Options {
     pub stdin: Option<Input>,
     /// Additional descriptors bound to stdin.
     pub stdin_descriptors: Vec<u32>,
+    /// Explicit virtual paths and file bytes; no host files are opened.
+    pub files: BTreeMap<String, Vec<u8>>,
     /// Main arguments, including argv[0]; supplies argc and a NUL-terminated argv.
     pub argv: Option<Vec<String>>,
     /// Memory ranges to inspect after execution.
@@ -194,6 +196,7 @@ impl Default for Options {
             canary: None,
             stdin: None,
             stdin_descriptors: Vec::new(),
+            files: BTreeMap::new(),
             argv: None,
             reads: Vec::new(),
             end: Vec::new(),
@@ -225,6 +228,8 @@ pub struct MemoryChange {
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Report {
+    /// Virtual file contents committed by fflush or fclose.
+    pub files: BTreeMap<String, Vec<u8>>,
     /// Captured stdout, decoded as UTF-8 with replacement for invalid sequences.
     pub stdout: String,
     /// Captured stderr, decoded as UTF-8 with replacement for invalid sequences.

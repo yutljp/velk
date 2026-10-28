@@ -28,6 +28,13 @@ pub(crate) enum Hook {
 }
 
 const HOOKS: &[(&str, Hook)] = &[
+    ("fopen", Hook::Io(super::io::Operation::Fopen)),
+    ("fclose", Hook::Io(super::io::Operation::Fclose)),
+    ("fflush", Hook::Io(super::io::Operation::Fflush)),
+    ("setvbuf", Hook::Io(super::io::Operation::Setvbuf)),
+    ("fileno", Hook::Io(super::io::Operation::Fileno)),
+    ("feof", Hook::Io(super::io::Operation::Feof)),
+    ("ferror", Hook::Io(super::io::Operation::Ferror)),
     ("__stack_chk_fail", Hook::StackCheckFail),
     ("__stack_chk_fail_local", Hook::StackCheckFail),
     ("printf", Hook::Io(super::io::Operation::Printf)),

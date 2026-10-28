@@ -9,6 +9,7 @@
 use std::collections::{BTreeMap, HashMap};
 
 pub(crate) mod emulation;
+mod stdio;
 pub(crate) mod symbolic;
 mod syscalls;
 

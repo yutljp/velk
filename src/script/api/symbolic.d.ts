@@ -10,6 +10,9 @@ interface SymbolicOptions {
   canary?: number | string;
   returns?: {eq: number | string} | {ne: number | string} | {lt: number | string} | {gt: number | string};
   stdinDescriptors?: number[];
+  /** Virtual paths with fixed-length arrays; each byte becomes an independent symbolic input.
+   * Array values are ignored. No host files. Modes r/w/a/r+ and b variants preserve bytes. */
+  files?: Record<string, number[]>;
   find?: (number | string)[];
   avoid?: (number | string)[];
   stdin?: number;
@@ -26,6 +29,10 @@ interface SymbolicOptions {
   addressLimit?: number; // default 8; 1..256
 }
 interface SymbolicInputs {
+  /** Initial file byte assignment. Each supplied byte becomes an independent symbolic input. */
+  files: Record<string, number[]>;
+  /** File contents committed by fflush/fclose under the same assignment. */
+  fileOutputs: Record<string, number[]>;
   stdin: number[];
   /** Output bytes evaluated under the same assignment as the inputs. */
   stdout: number[];
@@ -87,7 +94,8 @@ interface Binary {
 // memcpy/memmove/memset, strcpy/strncpy/strchr, atoi/strtol (base 10/16),
 // ASCII toupper/tolower, puts/printf (%d/%u/%x/%s/%c/%%).
 // Variadic AArch64 I/O requires ELF; strtol rejects the Windows data model.
-// read uses descriptor zero or stdinDescriptors. Stream input requires stdin.
+// read uses descriptor zero or stdinDescriptors. File streams require an explicit files entry.
+// fopen/fclose/fread/fwrite/fgets/fputs/fflush/setvbuf/fileno/feof/ferror model virtual files.
 // Other imports, formats, flag-only branches, machine operations and symbolic Apply stop.
 // Models charge stepLimit. Memory/string operations are bounded to 65536 bytes;
 // unbounded string scans have a finite input-derived bound (at least 4096).

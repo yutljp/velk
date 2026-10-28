@@ -22,6 +22,7 @@ use super::Machine;
 const MAX_CODE_SIZE: u64 = 1 << 16;
 
 struct Runner<'a> {
+    files: super::stdio::Files<u8>,
     streams: [u64; 3],
     input: Vec<u8>,
     input_position: usize,
@@ -167,6 +168,10 @@ fn run_with_recovery(
         }
     }
     let mut runner = Runner {
+        files: match super::stdio::Files::new(options.files.clone()) {
+            Ok(files) => files,
+            Err(error) => return Err(invalid(error)),
+        },
         streams: [0; 3],
         input,
         input_position: 0,
@@ -448,6 +453,7 @@ impl Runner<'_> {
             }
         };
         let report = Report {
+            files: self.files.committed.clone(),
             stdout: String::from_utf8_lossy(&self.stdout).into_owned(),
             stderr: String::from_utf8_lossy(&self.stderr).into_owned(),
             reads,

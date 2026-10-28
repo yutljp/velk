@@ -9,6 +9,9 @@ interface EmulationOptions {
   stdin?: {text: string} | {hex: string} | {file: string};
   /** Additional descriptors bound to the same stdin stream. */
   stdinDescriptors?: number[];
+  /** Virtual path-to-byte map; every opened path needs an entry. No host file access.
+   * Modes r/w/a/r+ and b variants preserve bytes without text translation. */
+  files?: Record<string, number[]>;
   /** Main arguments including argv[0]; mutually exclusive with arguments. */
   argv?: string[];
   reads?: EmulationRead[];
@@ -31,6 +34,8 @@ interface EmulationOptions {
   skipCalls?: boolean;
 }
 interface EmulationReport {
+  /** File contents committed by fflush/fclose; no host writes. */
+  files: Record<string, number[]>;
   /** Captured bytes decoded as UTF-8 with replacement for invalid sequences. */
   stdout: string;
   stderr: string;

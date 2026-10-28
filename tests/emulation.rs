@@ -7,6 +7,8 @@ mod edges;
 mod io;
 #[path = "emulation/matrix.rs"]
 mod matrix;
+#[path = "emulation/streams.rs"]
+mod streams;
 
 use std::fs;
 use std::path::PathBuf;

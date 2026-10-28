@@ -200,6 +200,12 @@ pub(crate) fn run(
                 if let Some(inputs) = &report.inputs {
                     print_symbolic_bytes("stdin", &inputs.stdin);
                     print_symbolic_bytes("stdout", &inputs.stdout);
+                    for (path, bytes) in &inputs.files {
+                        print_symbolic_bytes(&format!("file[{path:?}]"), bytes);
+                    }
+                    for (path, bytes) in &inputs.file_outputs {
+                        print_symbolic_bytes(&format!("file output[{path:?}]"), bytes);
+                    }
                     for (index, bytes) in inputs.argv.iter().enumerate() {
                         print_symbolic_bytes(&format!("argv[{index}]"), bytes);
                     }
@@ -281,6 +287,9 @@ pub(crate) fn run(
                     println!("Error: {error}");
                 }
                 println!("stdout:\n{}\nstderr:\n{}", report.stdout, report.stderr);
+                for (path, bytes) in &report.files {
+                    print_symbolic_bytes(&format!("file[{path:?}]"), bytes);
+                }
                 for read in &report.reads {
                     println!("{}: {}", read.address, read.value);
                 }

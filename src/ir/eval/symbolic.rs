@@ -1,5 +1,6 @@
 //! Symbolic evaluation of lifted expressions using the shared SMT translation.
 
+mod files;
 mod libc;
 mod memory;
 
@@ -74,10 +75,13 @@ pub struct State {
     steps: usize,
     options: Options,
     path: Vec<String>,
+    files: super::stdio::Files<Term>,
+    input_files: BTreeMap<String, Vec<Term>>,
     stdin: Vec<Term>,
     input_position: usize,
     stdout: Vec<Term>,
     stdin_stream: u64,
+    standard_streams: [u64; 3],
     heap_next: u64,
     argv: Vec<Vec<Term>>,
     arguments: BTreeMap<usize, Term>,
@@ -132,6 +136,10 @@ impl State {
             .memory
             .iter()
             .fold(total, |total, range| total.saturating_add(range.size));
+        let total = options
+            .files
+            .values()
+            .fold(total, |n, bytes| n.saturating_add(bytes.len()));
         if total.saturating_add(options.argv.len()) > 65536 {
             return Err(invalid("symbolic byte inputs exceed 65536"));
         }
@@ -163,10 +171,13 @@ impl State {
             steps: 0,
             options: options.clone(),
             path: Vec::new(),
+            files: super::stdio::Files::new(BTreeMap::new()).map_err(invalid)?,
+            input_files: BTreeMap::new(),
             stdin: Vec::new(),
             input_position: 0,
             stdout: Vec::new(),
             stdin_stream: 0,
+            standard_streams: [0; 3],
             heap_next: 0,
             argv: Vec::new(),
             arguments: BTreeMap::new(),
@@ -253,6 +264,14 @@ impl State {
                 state.input_memory.insert(at, byte);
             }
         }
+        for (path, bytes) in &options.files {
+            let mut terms = Vec::new();
+            for _ in bytes {
+                terms.push(state.symbolic_byte()?);
+            }
+            state.input_files.insert(path.clone(), terms);
+        }
+        state.files = super::stdio::Files::new(state.input_files.clone()).map_err(invalid)?;
         for _ in 0..options.stdin {
             let byte = state.symbolic_byte()?;
             state.stdin.push(byte);
@@ -1162,6 +1181,13 @@ impl State {
                 .push(format!("(= {} {})", term.text, smt::constant(value)));
             Ok(value)
         };
+        for (path, terms) in &self.input_files {
+            let mut bytes = Vec::new();
+            for term in terms {
+                bytes.push(choose(term)? as u8);
+            }
+            result.files.insert(path.clone(), bytes);
+        }
         for byte in &self.stdin {
             result.stdin.push(choose(byte)? as u8);
         }
@@ -1189,6 +1215,13 @@ impl State {
         }
         for byte in &self.stdout {
             result.stdout.push(choose(byte)? as u8);
+        }
+        for (path, terms) in &self.files.committed {
+            let mut bytes = Vec::new();
+            for term in terms {
+                bytes.push(choose(term)? as u8);
+            }
+            result.file_outputs.insert(path.clone(), bytes);
         }
         Ok(result)
     }

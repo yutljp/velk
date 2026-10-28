@@ -68,11 +68,16 @@ impl State {
         )
     }
 
-    fn number(&self, binary: &Binary, convention: Convention, index: usize) -> Evaluation<u64> {
+    pub(super) fn number(
+        &self,
+        binary: &Binary,
+        convention: Convention,
+        index: usize,
+    ) -> Evaluation<u64> {
         self.resolve(self.argument(binary, convention, index)?)
     }
 
-    fn tick(&mut self) -> Evaluation<()> {
+    pub(super) fn tick(&mut self) -> Evaluation<()> {
         if self.steps >= self.options.step_limit {
             return Err(invalid("step budget in libc model").into());
         }
@@ -88,7 +93,7 @@ impl State {
         Ok(self.read_memory(binary, address, 1)?.remove(0))
     }
 
-    fn test(&self, condition: String) -> Evaluation<bool> {
+    pub(super) fn test(&self, condition: String) -> Evaluation<bool> {
         let term = self.bind(format!(
             "(ite {condition} {} {})",
             smt::constant(1),
@@ -117,7 +122,12 @@ impl State {
         ))
     }
 
-    fn string(&mut self, binary: &Binary, address: u64, maximum: usize) -> Evaluation<Vec<Term>> {
+    pub(super) fn string(
+        &mut self,
+        binary: &Binary,
+        address: u64,
+        maximum: usize,
+    ) -> Evaluation<Vec<Term>> {
         let mut bytes = Vec::new();
         for offset in 0..maximum {
             let byte = self.byte(binary, address, offset)?;
@@ -129,16 +139,21 @@ impl State {
         Err(invalid("string exceeds symbolic model bound").into())
     }
 
-    fn model_bound(&self) -> usize {
+    pub(super) fn model_bound(&self) -> usize {
         // Every loop also charges the per-path statement budget.
         self.options
             .stdin
+            .saturating_add(
+                self.input_files
+                    .values()
+                    .fold(0usize, |count, bytes| count.saturating_add(bytes.len())),
+            )
             .saturating_add(self.input_memory.len())
             .saturating_add(self.options.argv.iter().sum::<usize>())
             .clamp(4096, 65536)
     }
 
-    fn concrete_format(&mut self, binary: &Binary, address: u64) -> Evaluation<Vec<u8>> {
+    pub(super) fn concrete_format(&mut self, binary: &Binary, address: u64) -> Evaluation<Vec<u8>> {
         let terms = self.string(binary, address, self.model_bound())?;
         let mut bytes = Vec::new();
         for term in terms {
@@ -168,6 +183,9 @@ impl State {
             return Err(invalid("unsupported symbolic strtol data model").into());
         }
         if let Hook::Io(operation) = hook {
+            if let Some(result) = self.file_hook(binary, convention, operation)? {
+                return Ok(result);
+            }
             return self.input_output(binary, convention, operation);
         }
         if matches!(hook, Hook::Upper | Hook::Lower) {
@@ -899,6 +917,7 @@ impl State {
                 return Err(invalid("stream setup exceeds heap"));
             };
             next = end;
+            self.standard_streams[index] = token;
             if index == 0 {
                 self.stdin_stream = token;
             }

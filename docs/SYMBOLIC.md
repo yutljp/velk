@@ -46,7 +46,7 @@ This implementation supports little-endian i386, x86-64 and AArch64, scalar arit
 
 `b.branchFeasibility("check", {arguments: [0]})`, `symbolic::branch_feasibility`, and `velk --opaque check --symbolic-options '{"arguments":[0]}' app.elf` explore reachable contexts. A branch side is reported as `unsat` only if no context admits it and exploration finishes. Limits, solver failures, or unsupported operations make the analysis incomplete; unwitnessed sides have `unknown` status and a reason. Ordinary branches with witnesses on both sides are omitted. An unvisited conditional instruction has both sides reported as unreachable after exhaustive exploration; incomplete exploration marks unwitnessed sides unknown. The analysis rejects find, avoid, and return conditions. To add assumptions, use concrete argument values, bounded symbolic memory, or Rust state constraints before `branch_feasibility`.
 
-Libc models share the emulator's import table and input-consumption helper. Static functions can also use a model when instruction signature matching identifies exactly one library function name with confirmed destinations. Ambiguous and unconfirmed matches execute lifted code. Diagnostics state the address, function name, and signature set used by each static model, or identify the import symbol used by an imported model. Supported input calls are `getchar`, `read`, `fgets`, `gets`, `getline`, and `scanf`/`fscanf`/`sscanf`. Scanning supports `%d`, `%u`, `%x`, `%s`, `%c`, decimal widths, and assignment suppression. Stream input accepts only stdin; `read` also accepts descriptors explicitly bound through `stdinDescriptors`. String and memory models cover `strlen`, `strnlen`, `strcmp`, `strncmp`, `memcmp`, `memcpy`, `memmove`, `memset`, `strcpy`, `strncpy`, and `strchr`. Integer models cover `atoi` and `strtol` with base 10 or 16; case conversion uses ASCII. `puts` and `printf` record output, with concrete or symbolic `%d`, `%u`, `%x`, `%s`, and `%c` arguments and `%%`. Output bytes are in `inputs.stdout`, evaluated consistently with the returned inputs. A model's nonzero comparison result uses the byte difference; libc guarantees its sign. Allocation capacities and successful puts return values are model choices, rather than host libc implementation details.
+Libc models share the emulator's import table and input-consumption helper. Static functions can also use a model when instruction signature matching identifies exactly one library function name with confirmed destinations. Ambiguous and unconfirmed matches execute lifted code. Diagnostics state the address, function name, and signature set used by each static model, or identify the import symbol used by an imported model. Supported input calls are `getchar`, `read`, `fgets`, `gets`, `getline`, and `scanf`/`fscanf`/`sscanf`. Scanning supports `%d`, `%u`, `%x`, `%s`, `%c`, decimal widths, and assignment suppression. Scanning and getline accept only stdin; `read` also accepts descriptors explicitly bound through `stdinDescriptors`. String and memory models cover `strlen`, `strnlen`, `strcmp`, `strncmp`, `memcmp`, `memcpy`, `memmove`, `memset`, `strcpy`, `strncpy`, and `strchr`. Integer models cover `atoi` and `strtol` with base 10 or 16; case conversion uses ASCII. `puts` and `printf` record output, with concrete or symbolic `%d`, `%u`, `%x`, `%s`, and `%c` arguments and `%%`. Output bytes are in `inputs.stdout`, evaluated consistently with the returned inputs. A model's nonzero comparison result uses the byte difference; libc guarantees its sign. Allocation capacities and successful puts return values are model choices, rather than host libc implementation details.
 
 Variadic AArch64 I/O requires ELF; `strtol` rejects the Windows data model. Models charge the statement budget. Memory operations have a 65536-byte bound. String scans use a finite bound derived from symbolic input sizes, at least 4096 and at most 65536 bytes; exceeding it stops the path. Unmodelled imports, unsupported formats, unmodelled `Apply` operations with symbolic operands, machine operations, flag-only branches report diagnostics. Stops at imported addresses are rejected; use the call-site instruction address. Code ranges are limited to 64 KiB and symbolic byte inputs to 65536. Arithmetic that may divide by zero stops the path. Loops and recursion also consume the per-path step budget.
 
@@ -64,3 +64,28 @@ Omit `--cases` and `--variants` to evaluate all programs and built variants. The
 The builder also creates stack-protected byte-sum and table examples at both optimization levels, plus an i386 byte-sum example. AArch64 variants cover global and TP + `0x28` guards. Regression tests replay solved inputs against host executables built with stack protection.
 
 Linux ELF `read`, `write`, `exit` and `exit_group` syscalls use symbolic stdin and captured stdout. Unknown syscall numbers stop with a diagnostic. i386 supports the library models and symbolic argv with 4-byte cdecl stack arguments and pointers. The argv count is concrete, its pointer table ends with null, and zero-length strings have a concrete zero terminator.
+
+## Symbolic file inputs
+
+`files` accepts the same virtual paths and byte arrays as emulation. Each supplied
+byte becomes an independent symbolic byte: the array fixes the length, not its
+values. The initial bytes are shared across reopenings; stream reads consume them
+in position order, and writes replace the corresponding terms. File inputs count
+toward the 65536-byte total input limit. Stream operations have the same bounds
+and mode semantics described in [Running loaded code](EMULATION.md), except that
+individual symbolic transfers are limited to 65536 bytes.
+
+For a function that checks five bytes read from `input`:
+
+```sh
+velk --solve solve_file --returns eq:1 app.elf --symbolic-options '{"files":{"input":[0,0,0,0,0]}}' --json
+```
+
+JavaScript uses `b.solve("solve_file", {files: {input: [0,0,0,0,0]}, returns: {eq: 1}})`;
+MCP uses `velk_solve` with the same `options`. `explore` and the state API also
+accept `files`. File terms participate in the existing path constraints and the
+same consistent input assignment as stdin, arguments and memory. `inputs.files`
+contains concrete initial bytes keyed by path; pass that map as emulation's
+`files` to replay. `inputs.fileOutputs` contains committed file contents evaluated
+under that assignment. `fgets` branches on symbolic newline bytes, so line
+boundaries remain part of the solved path.

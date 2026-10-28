@@ -1,6 +1,7 @@
 //! Bounded standard stream input and output.
 
 mod arguments;
+mod files;
 mod formatting;
 mod scanning;
 
@@ -13,6 +14,13 @@ use super::{HEAP_SIZE, Runner, Stop};
 
 #[derive(Clone, Copy)]
 pub(crate) enum Operation {
+    Fopen,
+    Fclose,
+    Fflush,
+    Setvbuf,
+    Fileno,
+    Feof,
+    Ferror,
     Printf,
     Fprintf,
     Sprintf,
@@ -242,6 +250,9 @@ impl Runner<'_> {
         if self.recovery.is_some() {
             return Err(error("I/O calls require explicit emulation"));
         }
+        if let Some(result) = self.file_hook(operation, convention, kind)? {
+            return Ok(result);
+        }
         let (operation, uses_va_list) = match operation {
             Vprintf => (Printf, true),
             Vfprintf => (Fprintf, true),
@@ -455,6 +466,7 @@ impl Runner<'_> {
                 }
                 Ok(result)
             }
+            Fopen | Fclose | Fflush | Setvbuf | Fileno | Feof | Ferror => unreachable!(),
             Getchar | Vprintf | Vfprintf | Vsprintf | Vsnprintf | Vscanf | Vfscanf | Vsscanf => {
                 unreachable!()
             }

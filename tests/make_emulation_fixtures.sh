@@ -23,8 +23,12 @@ for architecture in x86_64 i386 aarch64 arm32 thumb32; do
         clang --target="$target" $mode "-$optimization" -fno-builtin -fno-stack-protector \
             -fno-vectorize -fno-slp-vectorize -fPIC -shared -nostdlib -fuse-ld=lld \
             tests/emulation/io.c -o "$out/$architecture.$optimization.io.elf"
+        clang --target="$target" $mode "-$optimization" -fno-builtin -fno-stack-protector \
+            -fno-vectorize -fno-slp-vectorize -fPIC -shared -nostdlib -fuse-ld=lld \
+            tests/emulation/streams.c -o "$out/$architecture.$optimization.streams.elf"
     done
 done
+clang -O2 -DNATIVE -fno-builtin tests/emulation/streams.c -o "$out/host.streams.native"
 clang -O2 -DNATIVE -fno-builtin tests/emulation/io.c -o "$out/host.io.native"
 for mode in arm thumb; do
     clang --target=armv7-linux-gnueabihf -m"$mode" -march=armv7ve -nostdlib -static \

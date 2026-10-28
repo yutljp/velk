@@ -334,3 +334,7 @@ Finite comparisons also check acyclic compiler CFGs for both architectures again
 String comparison flag storage has SMT checks for all comparison conditions at 8, 16, 32 and 64 bits. Native x86-64 comparisons check string instruction memory effects, flags, counts and directions; rendered C is also compiled and compared with assembly.
 
 Saturating pack checks compare arbitrary 64-bit halves with scalar signed-lane extraction, clamping, and truncation for 16/32/64-bit input lanes, for both signed and unsigned destinations. Constant instances also compare packing with the concrete evaluator. Symbolic execution tests check narrowing, packing, and leading-zero counts on both supported architectures.
+
+File-transfer checks prove complete-element counts for element sizes 1, 2, 4 and 8,
+with 20-bit element counts and a partial final element. A negative control rejects
+rounding up partial elements. Stream state and memory effects use execution tests.

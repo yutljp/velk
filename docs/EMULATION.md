@@ -94,7 +94,7 @@ The input hooks are `read` on fd 0, `fread`, `fgets`, `gets`, `getchar`, `scanf`
 conversions `d i u x X o`, `s`, `c`, widths and assignment suppression. Other
 conversions stop with the unsupported specifier in the error. Standard FILE
 pointers are supplied for imported or defined `stdin`, `stdout`, and `stderr`.
-Other streams stop with an error. Stream objects and argv reserve heap space
+Other streams require explicit file inputs. Stream objects and argv reserve heap space
 before malloc runs. `puts`, `putchar`, `fputs`, `fwrite`, and `write`
 on fd 1 or 2 append to the captured streams.
 
@@ -188,3 +188,37 @@ the README files.
 Automatic string recovery does not supply stdin or execute I/O hooks. Input-dependent decoders require explicit emulation.
 
 The Windows ARM64 width fixture checks printing and scanning a 32-bit `long` with 64-bit pointers. It invokes hooks with explicit import targets; unresolved PE import thunks remain unsupported.
+
+## File streams
+
+Supply `files: {"input": [79, 75, 10], "output": []}` in execution options to
+make virtual paths available. Paths match exactly. Every opened path, including
+an output file, needs an entry; no host directory or file is read implicitly.
+Use `--emulation-options` on the CLI, the options argument in JavaScript, or
+`options` in `velk_emulate`. For a function that opens `input`:
+
+```sh
+velk --emulate app.elf read_file --emulation-options '{"files":{"input":[79,75,10]}}' --json
+```
+
+`fopen`, `fclose`, `fread`, `fwrite`, `fgets`, `fputs`, `fflush`, `setvbuf`,
+`fileno`, `feof`, and `ferror` support these virtual files. Modes are `r`, `w`,
+`a`, `r+`, `rb`, `wb`, `ab`, `r+b`, and `rb+`. Text and binary modes both preserve
+bytes, including NUL, CR, LF and non-UTF-8 bytes, without newline translation.
+Paths must be UTF-8. `w` truncates; `a` writes at the current end; `r+` reads and
+writes at one position. An attempted read past the end sets EOF; reaching the
+end exactly does not. Reading a write-only stream or writing a read-only stream
+sets its error indicator and returns failure. Zero-size transfers return zero.
+`fread` returns complete elements, consuming any partial final element too.
+`fgets` includes a newline and adds NUL; size one writes NUL without reading.
+Successful `fputs` returns zero, a permitted nonnegative result.
+
+`setvbuf` records the buffering mode without changing transfer behavior.
+`fflush(file)`, `fflush(NULL)` and `fclose` commit captured file contents to the
+report's `files` map. An outer function return does not implicitly close files.
+Pending writes are visible to other virtual streams but absent from that map
+until committed. No host writes occur. File contents total at most 16 MiB.
+Descriptors start at three and are not reused. Descriptor-based `read`/`write`,
+formatted I/O, seeking, clearing indicators, and `getline` on virtual files are
+unsupported. Unknown paths, unsupported open modes, and invalid or closed
+`FILE *` values stop with diagnostics naming the path or value.

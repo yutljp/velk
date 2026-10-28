@@ -37,6 +37,8 @@ pub struct Options {
     pub stdin: usize,
     /// Additional descriptors bound to the same stdin stream.
     pub stdin_descriptors: Vec<u32>,
+    /// Virtual file inputs; each array fixes a length of independent symbolic bytes.
+    pub files: BTreeMap<String, Vec<u8>>,
     /// Symbolic argument indices, starting at zero.
     pub arguments: Vec<usize>,
     /// Concrete values for arguments not selected as symbolic.
@@ -67,6 +69,7 @@ impl Default for Options {
             avoid: Vec::new(),
             stdin: 0,
             stdin_descriptors: Vec::new(),
+            files: BTreeMap::new(),
             arguments: Vec::new(),
             argument_values: Vec::new(),
             argv: Vec::new(),
@@ -84,6 +87,10 @@ impl Default for Options {
 #[derive(Clone, Debug, Default, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
 pub struct Inputs {
+    /// Initial file bytes under the satisfying assignment, keyed by virtual path.
+    pub files: BTreeMap<String, Vec<u8>>,
+    /// File contents committed by fflush or fclose under the same assignment.
+    pub file_outputs: BTreeMap<String, Vec<u8>>,
     /// Stdin bytes in consumption order.
     pub stdin: Vec<u8>,
     /// Recorded output bytes under this same satisfying assignment.

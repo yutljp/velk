@@ -471,6 +471,8 @@ fn published_emulation_examples_execute() {
     let binary = Binary::open(&path).expect("documentation fixture");
     let io_path = matrix::fixtures().join("x86_64.O0.io.elf");
     let io_binary = Binary::open(&io_path).expect("I/O documentation fixture");
+    let file_path = matrix::fixtures().join("x86_64.O0.streams.elf");
+    let file_binary = Binary::open(&file_path).expect("file documentation fixture");
     let mut interfaces = Interfaces::new();
     for document in [
         "docs/EMULATION.md",
@@ -494,9 +496,16 @@ fn published_emulation_examples_execute() {
                 .nth(3)
                 .expect("documented routine");
             let is_io = matches!(start, "check_flag" | "main" | "decode_buffer");
+            let (example_path, example_binary) = if start == "read_file" {
+                (&file_path, &file_binary)
+            } else if is_io {
+                (&io_path, &io_binary)
+            } else {
+                (&path, &binary)
+            };
             let report = interfaces.check(
-                if is_io { &io_path } else { &path },
-                if is_io { &io_binary } else { &binary },
+                example_path,
+                example_binary,
                 start,
                 serde_json::from_str(options).expect("documented JSON"),
             );
@@ -505,6 +514,9 @@ fn published_emulation_examples_execute() {
                     matrix::bytes_after(&report, HEAP, &[53, 56, 49, 49, 50, 93]),
                     b"hello\0"
                 );
+            } else if start == "read_file" {
+                assert_eq!(report["reason"], "return", "{report}");
+                assert_eq!(report["files"]["input"], json!([79, 75, 10]));
             } else if start == "check_flag" {
                 assert_eq!(report["stdout"], "Correct\n");
             } else if start == "main" {
