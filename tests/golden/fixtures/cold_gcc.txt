@@ -214,12 +214,11 @@ fn main @ 0x1120 (size 124)
 int32_t _start(int64_t a0, int64_t a1, void (*a2)(void)) {
     uint64_t rsp = velk_entry_stack_pointer();
     uint64_t v1;
-    int64_t local_0; /* [sp+0] */
-    int64_t local_1; /* [sp-8] */
+    int64_t local_0; /* [sp-8] */
 
-    int64_t v2 = local_0;
-    local_0 = v1;
-    local_1 = rsp;
+    int64_t v2 = *(uint64_t *)(rsp);
+    *(uint64_t *)(rsp) = v1;
+    local_0 = rsp;
     /* unresolved call signature */ ((int (*)())__libc_start_main)((int (*)(int, char **, char **))main, v2, (char **)(rsp + 8), 0x0, 0x0, a2);
 }
 -- signature

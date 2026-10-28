@@ -21,7 +21,9 @@ pub fn drop_dead_frame_stores(ir: &mut FunctionIr) {
             match stmt {
                 Stmt::Store { addr, value, width } => {
                     if let Some(slot) = frame_slot_of(addr, sp) {
-                        stores.push((position, index, slot, *width));
+                        if crate::passes::memory::private_address(addr, *width, sp) {
+                            stores.push((position, index, slot, *width));
+                        }
                     } else {
                         // The address may be computed from slots it loads.
                         collect_frame_reads(addr, sp, &mut read);
@@ -795,6 +797,41 @@ mod tests {
     const RSP: u16 = 4;
     const RBP: u16 = 5;
 
+    #[test]
+    fn unread_stores_outside_the_private_frame_remain() {
+        for isa in [Isa::X86_64, Isa::I386, Isa::AArch64, Isa::Arm32] {
+            let sp = crate::arch::stack_pointer(isa);
+            for width in [1, 2, 4, 8] {
+                for offset in [-8_i64, -1, 0, 8, i64::MAX] {
+                    let addr = Expr::bin(BinOp::Add, Expr::reg(sp, 64), Expr::Const(offset as u64));
+                    let mut ir = FunctionIr::single_block(
+                        isa,
+                        vec![
+                            Stmt::Store {
+                                addr,
+                                value: Expr::Const(42),
+                                width,
+                            },
+                            Stmt::Ret {
+                                value: Expr::Const(0),
+                            },
+                        ],
+                    );
+                    drop_dead_frame_stores(&mut ir);
+                    let private = offset
+                        .checked_add(i64::from(width))
+                        .is_some_and(|end| end <= 0);
+                    assert_eq!(
+                        ir.blocks[0].stmts.len(),
+                        if private { 1 } else { 2 },
+                        "{isa:?}/{width}/{offset}: {}",
+                        ir.render()
+                    );
+                }
+            }
+        }
+    }
+
     fn assign(index: u16, value: Expr) -> Stmt {
         Stmt::Assign {
             dest: RegRef { index, width: 64 },
@@ -1210,7 +1247,7 @@ mod tests {
         let mut ir = FunctionIr::single_block(
             Isa::AArch64,
             vec![
-                store(0, Expr::Const(9), 8),
+                store(-8, Expr::Const(9), 8),
                 Stmt::Call {
                     kind: crate::ir::CallKind::Invoke,
                     target: Some(0x1000),

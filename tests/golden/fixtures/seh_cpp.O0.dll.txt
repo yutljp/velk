@@ -5,6 +5,7 @@
 /* velk prelude */
 #include <stdint.h>
 
+uint64_t *velk_return_address_slot(void); /* target frame's return-address slot */
 uint64_t _imported_value__YAHH_Z();
 /* end velk prelude */
 
@@ -56,6 +57,7 @@ fn cpp_catch @ 0x180001000 (size 58)
 /* C++ try states [0, 0]: catch handler at 0x180001040. */
 /* velk pseudo-C: cpp_catch__catch_0 @ 0x180001040 */
 int64_t cpp_catch__catch_0(int64_t a0, uint32_t *a1) {
+    *(uint64_t *)((uintptr_t)velk_return_address_slot() + 0x10) = (uintptr_t)a1;
     a1[13] = 0xfffffff5;
     return 0x18000102f;
 }
@@ -66,6 +68,7 @@ int64_t (int64_t a0, uint32_t * a1)
 -- ir
 fn cpp_catch__catch_0 @ 0x180001040 (size 34)
   blk0 @ 0x180001040:
+    store64(rdx, (rsp + #0x10))
     store32(#0xfffffff5, (rdx + #0x34))
     ret #0x18000102f
 -- card

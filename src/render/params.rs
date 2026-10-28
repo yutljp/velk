@@ -317,6 +317,7 @@ fn fold_parameter_copies(ir: &mut FunctionIr, param: u16, integer_types: Integer
             .any(|stmt| matches!(stmt, Stmt::Call { args: None, .. }));
     let slot_of = |addr: &Expr| match addr {
         _ if !slots
+            || !crate::passes::memory::private_address(addr, 1, sp)
             || (atomics
                 && (!private_frame || !crate::passes::memory::private_address(addr, 8, sp))) =>
         {
@@ -498,7 +499,10 @@ fn fold_parameter_copies(ir: &mut FunctionIr, param: u16, integer_types: Integer
             .max()
             .unwrap_or(0);
         let start = slot as i64;
-        let Some(end) = start.checked_add(extent).filter(|_| extent > 0) else {
+        let Some(end) = start
+            .checked_add(extent)
+            .filter(|end| extent > 0 && *end <= 0)
+        else {
             return false;
         };
         ir.stack_params.iter().all(|param| {
@@ -678,6 +682,52 @@ mod tests {
     const OTHER: u64 = 0xfedc_ba98_7654_3210;
 
     #[test]
+    fn caller_frame_parameter_spills_preserve_memory() {
+        use crate::ir::smt::Proofs;
+
+        if !Proofs::available() {
+            return;
+        }
+        let mut proofs = Proofs::default();
+        for isa in [Isa::X86_64, Isa::I386, Isa::AArch64, Isa::Arm32] {
+            let sp = stack_pointer(isa);
+            for width in [1, 2, 4, 8] {
+                for offset in [0, 8, u64::MAX] {
+                    if width == 1 && offset == u64::MAX {
+                        continue;
+                    }
+                    let mut before = FunctionIr::single_block(
+                        isa,
+                        vec![
+                            Stmt::Store {
+                                addr: Expr::bin(BinOp::Add, Expr::reg(sp, 64), Expr::Const(offset)),
+                                value: Expr::reg(0, 64),
+                                width,
+                            },
+                            Stmt::Ret {
+                                value: Expr::Const(0),
+                            },
+                        ],
+                    );
+                    before.params.push(Param {
+                        index: 0,
+                        name: "value".into(),
+                        ty: CType::int(width, false),
+                    });
+                    let mut after = before.clone();
+                    fold_saved_parameters(&mut after);
+                    proofs.function(
+                        format!("parameter store/{isa:?}/{width}/{offset}"),
+                        &before,
+                        &after,
+                    );
+                }
+            }
+        }
+        proofs.check();
+    }
+
+    #[test]
     fn parameter_result_bindings_stay_when_a_successor_reads_them() {
         let mut ir = FunctionIr::single_block(
             Isa::X86_64,
@@ -814,7 +864,7 @@ mod tests {
     }
 
     #[test]
-    fn adjacent_private_spills_still_fold() {
+    fn only_private_spills_fold() {
         for (input, slot) in [(8, 0), (8, 16), (0, -8)] {
             let mut ir = function(
                 input,
@@ -835,6 +885,13 @@ mod tests {
             assert_eq!(outcome(&ir, slot), expected);
             fold_saved_parameters(&mut ir);
             assert_eq!(outcome(&ir, slot), expected);
+            if slot >= 0 {
+                assert!(matches!(
+                    ir.blocks[0].stmts.first(),
+                    Some(Stmt::Store { .. })
+                ));
+                continue;
+            }
             assert!(matches!(
                 ir.blocks[0].stmts.as_slice(),
                 [Stmt::Ret {

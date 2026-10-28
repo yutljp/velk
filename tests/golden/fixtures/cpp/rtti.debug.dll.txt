@@ -68,6 +68,7 @@ extern uint8_t ___7Single__6B_; /* address: 0x180002028 */
 extern uint8_t ___7Virtual__6B_; /* address: 0x180002088 */
 extern uint8_t ___8Virtual__7B_; /* address: 0x180002078 */
 
+uint64_t *velk_return_address_slot(void); /* target frame's return-address slot */
 uint64_t __0Multiple__QEAA_H_Z();
 uint64_t __0Other__QEAA_XZ();
 uint64_t __0Root__QEAA_H_Z();
@@ -469,6 +470,7 @@ fn single @ 0x1800011b0 (size 63)
 -- decompile
 /* velk pseudo-C: ?dtor$2@?0?single@4HA @ 0x1800011f0 */
 void _dtor_2__0_single_4HA(int64_t a0, int64_t a1) {
+    *(uint64_t *)((uintptr_t)velk_return_address_slot() + 0x10) = a1;
     __1Single__UEAA_XZ((struct Single *)(int64_t)((uint64_t)a1 + 32));
 }
 -- signature
@@ -478,6 +480,7 @@ void (int64_t a0, int64_t a1)
 -- ir
 fn ?dtor$2@?0?single@4HA @ 0x1800011f0 (size 32)
   blk0 @ 0x1800011f0:
+    store64(rdx, (rsp + #0x10))
     v1:rax = call 0x180001070((rdx + #0x20))
     ret #0x0
 -- card
@@ -542,6 +545,7 @@ fn virtual_base @ 0x180001240 (size 78)
 -- decompile
 /* velk pseudo-C: ?dtor$2@?0?virtual_base@4HA @ 0x180001290 */
 void _dtor_2__0_virtual_base_4HA(int64_t a0, int64_t a1) {
+    *(uint64_t *)((uintptr_t)velk_return_address_slot() + 0x10) = a1;
     ___DVirtual__QEAAXXZ();
 }
 -- signature
@@ -551,6 +555,7 @@ void (int64_t a0, int64_t a1)
 -- ir
 fn ?dtor$2@?0?virtual_base@4HA @ 0x180001290 (size 32)
   blk0 @ 0x180001290:
+    store64(rdx, (rsp + #0x10))
     call 0x180001540()
     ret #0x0
 -- card
@@ -588,6 +593,7 @@ fn catch_one @ 0x1800012b0 (size 36)
 /* C++ try states [0, 0]: catch handler at 0x1800012e0. */
 /* velk pseudo-C: ?catch$2@?0?catch_one@4HA @ 0x1800012e0 */
 int64_t _catch_2__0_catch_one_4HA(int64_t a0, struct S1 *a1) {
+    *(uint64_t *)((uintptr_t)velk_return_address_slot() + 0x10) = (uintptr_t)a1;
     a1->f_2c = *(uint32_t *)(a1->f_38);
     return 0x1800012cb;
 }
@@ -598,6 +604,7 @@ int64_t (int64_t a0, struct S1 * a1)
 -- ir
 fn ?catch$2@?0?catch_one@4HA @ 0x1800012e0 (size 36)
   blk0 @ 0x1800012e0:
+    store64(rdx, (rsp + #0x10))
     v1 = rdx
     store32(load32(load64((v1 + #0x38))), (v1 + #0x2c))
     ret #0x1800012cb
@@ -642,6 +649,7 @@ fn catch_many @ 0x180001310 (size 36)
 /* C++ try states [0, 0]: catch handler at 0x1800013a0. */
 /* velk pseudo-C: ?catch$2@?0?catch_many@4HA @ 0x180001340 */
 int64_t _catch_2__0_catch_many_4HA(int64_t a0, struct S2 *a1) {
+    *(uint64_t *)((uintptr_t)velk_return_address_slot() + 0x10) = (uintptr_t)a1;
     a1->f_24 = *(uint32_t *)(a1->f_38) + 1;
     return 0x18000132b;
 }
@@ -652,6 +660,7 @@ int64_t (int64_t a0, struct S1 * a1)
 -- ir
 fn ?catch$2@?0?catch_many@4HA @ 0x180001340 (size 38)
   blk0 @ 0x180001340:
+    store64(rdx, (rsp + #0x10))
     v1 = rdx
     store32((load32(load64((v1 + #0x38))) + #0x1), (v1 + #0x24))
     ret #0x18000132b
@@ -667,6 +676,7 @@ fn ?catch$2@?0?catch_many@4HA @ 0x180001340 (size 38)
 /* C++ try states [0, 0]: catch handler at 0x1800013a0. */
 /* velk pseudo-C: ?catch$3@?0?catch_many@4HA @ 0x180001370 */
 int64_t _catch_3__0_catch_many_4HA(int64_t a0, struct S3 *a1) {
+    *(uint64_t *)((uintptr_t)velk_return_address_slot() + 0x10) = (uintptr_t)a1;
     a1->f_24 = a1->f_34 + 2;
     return 0x18000132b;
 }
@@ -677,6 +687,7 @@ int64_t (int64_t a0, struct S1 * a1)
 -- ir
 fn ?catch$3@?0?catch_many@4HA @ 0x180001370 (size 36)
   blk0 @ 0x180001370:
+    store64(rdx, (rsp + #0x10))
     v1 = rdx
     store32((load32((v1 + #0x34)) + #0x2), (v1 + #0x24))
     ret #0x18000132b
@@ -692,6 +703,7 @@ fn ?catch$3@?0?catch_many@4HA @ 0x180001370 (size 36)
 /* C++ try states [0, 0]: catch handler at 0x1800013a0. */
 /* velk pseudo-C: ?catch$4@?0?catch_many@4HA @ 0x1800013a0 */
 int64_t _catch_4__0_catch_many_4HA(int64_t a0, uint32_t *a1) {
+    *(uint64_t *)((uintptr_t)velk_return_address_slot() + 0x10) = (uintptr_t)a1;
     a1[9] = 0xffffffff;
     return 0x18000132b;
 }
@@ -702,6 +714,7 @@ int64_t (int64_t a0, uint32_t * a1)
 -- ir
 fn ?catch$4@?0?catch_many@4HA @ 0x1800013a0 (size 34)
   blk0 @ 0x1800013a0:
+    store64(rdx, (rsp + #0x10))
     store32(#0xffffffff, (rdx + #0x24))
     ret #0x18000132b
 -- card
@@ -745,6 +758,7 @@ fn catch_nested @ 0x1800013d0 (size 36)
 /* C++ try states [0, 2]: catch handler at 0x180001400. */
 /* velk pseudo-C: ?catch$2@?0?catch_nested@4HA @ 0x180001400 */
 int64_t _catch_2__0_catch_nested_4HA(int64_t a0, struct S4 *a1) {
+    *(uint64_t *)((uintptr_t)velk_return_address_slot() + 0x10) = (uintptr_t)a1;
     a1->f_24 = *(uint32_t *)(a1->f_30) + 3;
     return 0x1800013eb;
 }
@@ -755,6 +769,7 @@ int64_t (int64_t a0, struct S1 * a1)
 -- ir
 fn ?catch$2@?0?catch_nested@4HA @ 0x180001400 (size 39)
   blk0 @ 0x180001400:
+    store64(rdx, (rsp + #0x10))
     v1 = rdx
     store32((load32(load64((v1 + #0x30))) + #0x3), (v1 + #0x24))
     ret #0x1800013eb
@@ -770,6 +785,7 @@ fn ?catch$2@?0?catch_nested@4HA @ 0x180001400 (size 39)
 /* velk pseudo-C: ?catch$3@?0?catch_nested@4HA @ 0x180001430 */
 /* ref: 0x180002488 .rdata */
 int64_t _catch_3__0_catch_nested_4HA(int64_t a0, struct S5 *a1) {
+    *(uint64_t *)((uintptr_t)velk_return_address_slot() + 0x10) = (uintptr_t)a1;
     a1->f_24 = ((int32_t)(_imported_value__YAHH_Z(a1->f_3c)));
     return 0x1800013eb;
 }
@@ -780,6 +796,7 @@ int64_t (int64_t a0, struct S1 * a1)
 -- ir
 fn ?catch$3@?0?catch_nested@4HA @ 0x180001430 (size 39)
   blk0 @ 0x180001430:
+    store64(rdx, (rsp + #0x10))
     v1 = rdx
     v3:rax, xmm0 = call *load64(#0x180002488)(load32((v1 + #0x3c)))
     store32(v3, (v1 + #0x24))
@@ -829,6 +846,7 @@ fn catch_cleanup @ 0x180001460 (size 72)
 -- decompile
 /* velk pseudo-C: ?dtor$3@?0?catch_cleanup@4HA @ 0x1800014b0 */
 void _dtor_3__0_catch_cleanup_4HA(int64_t a0, int64_t a1) {
+    *(uint64_t *)((uintptr_t)velk_return_address_slot() + 0x10) = a1;
     __1Single__UEAA_XZ((struct Single *)(int64_t)((uint64_t)a1 + 40));
 }
 -- signature
@@ -838,6 +856,7 @@ void (int64_t a0, int64_t a1)
 -- ir
 fn ?dtor$3@?0?catch_cleanup@4HA @ 0x1800014b0 (size 32)
   blk0 @ 0x1800014b0:
+    store64(rdx, (rsp + #0x10))
     v1:rax = call 0x180001070((rdx + #0x28))
     ret #0x0
 -- card
@@ -850,6 +869,7 @@ fn ?dtor$3@?0?catch_cleanup@4HA @ 0x1800014b0 (size 32)
 /* C++ try states [0, 1]: catch handler at 0x1800014d0. */
 /* velk pseudo-C: ?catch$4@?0?catch_cleanup@4HA @ 0x1800014d0 */
 int64_t _catch_4__0_catch_cleanup_4HA(int64_t a0, uint32_t *a1) {
+    *(uint64_t *)((uintptr_t)velk_return_address_slot() + 0x10) = (uintptr_t)a1;
     a1[15] = 0xfffffffe;
     return 0x18000149e;
 }
@@ -860,6 +880,7 @@ int64_t (int64_t a0, uint32_t * a1)
 -- ir
 fn ?catch$4@?0?catch_cleanup@4HA @ 0x1800014d0 (size 36)
   blk0 @ 0x1800014d0:
+    store64(rdx, (rsp + #0x10))
     store32(#0xfffffffe, (rdx + #0x3c))
     ret #0x18000149e
 -- card

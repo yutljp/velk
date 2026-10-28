@@ -1277,6 +1277,7 @@ uint64_t runtime_gwrite();
 uint64_t runtime_printlock();
 uint64_t runtime_printnl();
 uint64_t runtime_printunlock();
+uint64_t velk_entry_stack_pointer(void); /* target entry stack pointer */
 void runtime_printint();
 /* end velk prelude */
 
@@ -1284,9 +1285,11 @@ void runtime_printint();
 -- decompile
 /* velk pseudo-C: runtime.printstring @ 0x40bd0 */
 int64_t runtime_printstring(int64_t a0, int64_t a1) {
+    uint64_t sp = velk_entry_stack_pointer();
     uint64_t v2;
 
     int32_t v1 = *(uint64_t *)(v2 + 0x10);
+    *(uint64_t *)(sp + 0x8) = a0;
     return runtime_gwrite(a0, a1, a1);
 }
 -- signature
@@ -1299,6 +1302,8 @@ fn runtime.printstring @ 0x40bd0 (size 128)
     v1 = load64((x28 + #0x10))
     br 0x40bdc
   blk1 @ 0x40bdc:
+    store64(x0, (sp + #0x8))
+    store64(x0, (sp + #0xffffffffffffffd0))
     v4:x0, x1, d0, d1 = call 0x40420(x0, x1, x1)
     ret v4
 -- card

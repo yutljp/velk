@@ -226,6 +226,13 @@ pub(super) fn stack_locals_with_roles(
         let Some(slot) = slot else {
             continue;
         };
+        if *slot >= 0
+            || slot
+                .checked_add(i64::from(*width))
+                .is_none_or(|end| end > 0)
+        {
+            continue;
+        }
         if !slot_names.contains_key(slot) {
             let name = format!("local_{}", slot_names.len());
             slot_names.insert(

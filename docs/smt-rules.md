@@ -136,8 +136,12 @@ Straight-line tests execute assignments symbolically, including destination
 truncation, before and after eight real optimization passes. A second executor
 models acyclic branches, switches, traps and byte stores. It compares return
 values, definedness and final memory. Private-frame tests observe the return
-value and definedness, allowing writes to unescaped frame slots to disappear. Flag tests
-compare the real recovered predicates with independent flag formulas.
+value and definedness, allowing writes to unescaped frame slots to disappear.
+Caller-memory templates check final memory after dead-store removal and spill
+forwarding at 8/16/32/64 bits on all four instruction sets, including stores
+that cross the entry stack boundary. Parameter-spill folding also checks
+final memory for caller-frame and crossing stores at those widths and instruction sets.
+Flag tests compare the real recovered predicates with independent flag formulas.
 Rotation and byte reversal tests compare the real lowered expressions with
 bit-vector rotation and byte extraction. Variable rotation counts are partitioned
 by every possible residue modulo the width (8/16/32/64). Each query binds the low

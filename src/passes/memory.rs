@@ -889,11 +889,6 @@ pub fn forward_spilled_variables(ir: &mut FunctionIr) {
         }
     };
     let cyclic = crate::ir::cfg::cyclic_blocks(ir);
-    let atomics = ir
-        .blocks
-        .iter()
-        .flat_map(|block| &block.stmts)
-        .any(memory_ordering_barrier);
     let mut forwarded: Vec<(i64, u8, u16)> = Vec::new();
     let mut dropped: Vec<(usize, usize)> = Vec::new();
     for (offset, uses) in &accesses {
@@ -904,7 +899,7 @@ pub fn forward_spilled_variables(ir: &mut FunctionIr) {
         };
         let (store_block, store_at, width) = (*store_block, *store_at, *width);
         if !matches!(width, 4 | 8)
-            || (atomics && offset.checked_add(i64::from(width)).is_none_or(|end| end > 0))
+            || offset.checked_add(i64::from(width)).is_none_or(|end| end > 0)
             || passed.contains(offset)
             || uses.iter().any(|(.., used, _)| *used != width)
             // Another access reaching into the slot from elsewhere.

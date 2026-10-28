@@ -88,7 +88,7 @@ fn copies_across_branches_preserve_snapshots_and_remove_redundant_names() {
 }
 
 #[test]
-fn unused_go_results_do_not_keep_parameter_spills() {
+fn incoming_go_parameter_spills_preserve_memory() {
     let slot = Expr::bin(BinOp::Add, Expr::reg(4, 64), Expr::Const(16));
     let result = VARIABLE_BASE;
     let mut ir = synthetic_ir(
@@ -162,10 +162,12 @@ fn unused_go_results_do_not_keep_parameter_spills() {
     let code = velk::render::render(&ir, &[], &symbols, &[]);
     assert!(!code.contains("[sp"), "{code}");
     assert!(code.contains("second"), "{code}");
+    assert!(code.contains("velk_entry_stack_pointer"), "{code}");
+    let helpers = "static uint64_t stack[8]; uint64_t velk_entry_stack_pointer(void) { return (uintptr_t)stack; } uint64_t go_result(uint64_t x) { return x + 17; }";
     syntax::run_printed(
         &code,
-        "uint64_t go_result(uint64_t x) { return x + 17; }",
-        "for (uint64_t i = 0; i < 100; ++i) { uint64_t x = i * UINT64_C(0xfedcba987654321), y = ~x; if (saved_go_argument(x, y) != ((x + 17) ^ y)) return 1; } return 0;",
+        helpers,
+        "for (uint64_t i = 0; i < 100; ++i) { uint64_t x = i * UINT64_C(0xfedcba987654321), y = ~x; if (saved_go_argument(x, y) != ((x + 17) ^ y) || stack[2] != y) return 1; } return 0;",
     );
     ir.name = Some("saved_go_pointer".into());
     ir.params[1].ty = CType::pointer_to(CType::int(1, false));
@@ -173,8 +175,8 @@ fn unused_go_results_do_not_keep_parameter_spills() {
     assert!(!code.contains("[sp"), "{code}");
     syntax::run_printed(
         &code,
-        "uint64_t go_result(uint64_t x) { return x + 17; }",
-        "uint8_t data[2]; for (uint64_t i = 0; i < 100; ++i) { uint8_t *p = &data[i % 2]; if (saved_go_pointer(i, p) != ((i + 17) ^ (uintptr_t)p)) return 1; } return 0;",
+        helpers,
+        "uint8_t data[2]; for (uint64_t i = 0; i < 100; ++i) { uint8_t *p = &data[i % 2]; if (saved_go_pointer(i, p) != ((i + 17) ^ (uintptr_t)p) || stack[2] != (uintptr_t)p) return 1; } return 0;",
     );
 }
 

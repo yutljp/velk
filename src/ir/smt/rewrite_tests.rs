@@ -1011,3 +1011,45 @@ fn packed_lanes_match_scalar_saturation() {
     }
     proofs.check();
 }
+
+#[test]
+fn caller_frame_stores_preserve_memory() {
+    if !Proofs::available() {
+        return;
+    }
+    let mut proofs = Proofs::default();
+    for isa in [Isa::X86_64, Isa::I386, Isa::AArch64, Isa::Arm32] {
+        let sp = crate::arch::stack_pointer(isa);
+        let input = if sp == 0 { 1 } else { 0 };
+        for width in [1, 2, 4, 8] {
+            for offset in [0_u64, 8, 32, i64::MAX as u64, u64::MAX] {
+                if offset == u64::MAX && width == 1 {
+                    continue;
+                }
+                let before = FunctionIr::single_block(
+                    isa,
+                    vec![
+                        assign(crate::ir::VARIABLE_BASE, 64, Expr::reg(input, 64)),
+                        Stmt::Store {
+                            addr: raw_bin(BinOp::Add, Expr::reg(sp, 64), Expr::Const(offset)),
+                            value: Expr::reg(crate::ir::VARIABLE_BASE, 64),
+                            width,
+                        },
+                        Stmt::Ret {
+                            value: Expr::Const(0),
+                        },
+                    ],
+                );
+                let mut after = before.clone();
+                crate::passes::frame::drop_dead_frame_stores(&mut after);
+                crate::passes::memory::forward_spilled_variables(&mut after);
+                proofs.function(
+                    format!("caller memory/{isa:?}/{width}/{offset}"),
+                    &before,
+                    &after,
+                );
+            }
+        }
+    }
+    proofs.check();
+}

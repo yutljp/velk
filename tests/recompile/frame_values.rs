@@ -689,7 +689,7 @@ fn printed_promoted_slots_execute_joins_loops_and_alias_fallbacks() {
         candidate.ir = ir;
         candidates.push(candidate);
     }
-    check_candidates("promoted-frame-slots", candidates, Mode::Registers, &[]);
+    check_candidates("promoted-frame-slots", candidates, Mode::Memory, &[]);
 }
 
 #[test]
