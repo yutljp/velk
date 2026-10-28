@@ -1,4 +1,4 @@
-# go_stripped_arm64: elf aarch64 0x75830, 1269 functions, 0 lift failures, 8 unsupported, 79 gotos
+# go_stripped_arm64: elf aarch64 0x75830, 1269 functions, 0 lift failures, 8 unsupported, 76 gotos
 0x11000 144 internal/abi.Kind.String pclntab
 0x11090 192 internal/abi.Name.IsBlank pclntab
 0x11150 208 internal/abi.Name.Name pclntab

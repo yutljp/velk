@@ -207,5 +207,11 @@ fn complemented_structure_indexes_keep_named_fields() {
         .expect("the fixture includes stable sorting")
         .addr;
     let printed = binary.decompile(address, None, None).unwrap();
-    assert!(printed.contains(".high.s64 = v98[~v139].f_8"), "{printed}");
+    assert!(
+        printed.lines().any(|line| {
+            line.split_once(".high.s64 = ")
+                .is_some_and(|(_, value)| value.contains("[~") && value.contains("].f_8"))
+        }),
+        "{printed}"
+    );
 }

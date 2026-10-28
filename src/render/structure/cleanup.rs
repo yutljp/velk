@@ -89,6 +89,10 @@ fn terminates(nodes: &[Node]) -> bool {
 /// Moves the statements skipped by one arm into the other arm, so the
 /// skipping arm can fall through to the shared label without a jump.
 pub(super) fn fold_forward_exits(nodes: &mut Vec<Node>) {
+    fold_forward_exits_to(nodes, None);
+}
+
+fn fold_forward_exits_to(nodes: &mut Vec<Node>, follow: Option<u64>) {
     fn tail_targets(nodes: &[Node], targets: &mut Vec<u64>) {
         match nodes.last() {
             Some(Node::Stmt(Stmt::Br {
@@ -101,9 +105,19 @@ pub(super) fn fold_forward_exits(nodes: &mut Vec<Node>) {
             _ => {}
         }
     }
-    for node in nodes.iter_mut() {
-        for child in children_mut(node) {
-            fold_forward_exits(child);
+    for position in 0..nodes.len() {
+        let next = match nodes.get(position + 1) {
+            Some(Node::Label(label)) => Some(*label),
+            Some(_) => None,
+            None => follow,
+        };
+        if let Node::If { then, els, .. } = &mut nodes[position] {
+            fold_forward_exits_to(then, next);
+            fold_forward_exits_to(els, next);
+        } else {
+            for child in children_mut(&mut nodes[position]) {
+                fold_forward_exits_to(child, None);
+            }
         }
     }
     let mut index = nodes.len();
@@ -118,16 +132,20 @@ pub(super) fn fold_forward_exits(nodes: &mut Vec<Node>) {
             }
             let mut targets = Vec::new();
             tail_targets(body, &mut targets);
-            nodes[position + 1..]
-                .iter()
-                .position(|node| matches!(node, Node::Label(label) if targets.contains(label)))
-                .map(|offset| (arm, position + 1 + offset))
+            for (offset, node) in nodes[position + 1..].iter().enumerate() {
+                if let Node::Label(label) = node
+                    && targets.contains(label)
+                {
+                    return Some((arm, position + 1 + offset, *label));
+                }
+            }
+            match follow {
+                Some(target) if targets.contains(&target) => Some((arm, nodes.len(), target)),
+                _ => None,
+            }
         });
-        let Some((arm, destination)) = destination else {
+        let Some((arm, destination, target)) = destination else {
             continue;
-        };
-        let Node::Label(target) = nodes[destination] else {
-            unreachable!("the destination is a label");
         };
         let skipped: Vec<Node> = nodes.drain(position + 1..destination).collect();
         let Node::If {
@@ -842,6 +860,79 @@ mod tests {
     use super::fold_exit_branches;
     use crate::ir::{Cond, Expr, Stmt};
     use crate::render::structure::Node;
+
+    #[test]
+    fn nested_forward_exits_preserve_return_values_and_memory_smt() {
+        use crate::ir::smt::Proofs;
+        use crate::ir::{BinOp, FunctionIr};
+        use crate::loader::Isa;
+        use crate::render::structure::lower;
+
+        let guard = |register, then, els| Node::If {
+            cond: Cond::Eq,
+            lhs: Expr::reg(register, 64),
+            rhs: Expr::Const(0),
+            then,
+            els,
+        };
+        let load = Expr::Load {
+            addr: Box::new(Expr::reg(3, 64)),
+            width: 8,
+            signed: false,
+        };
+        let store = Node::Stmt(Stmt::Store {
+            addr: Expr::reg(3, 64),
+            value: Expr::bin(BinOp::Add, load.clone(), Expr::Const(1)),
+            width: 8,
+        });
+        let available = Proofs::available();
+        let mut proofs = Proofs::default();
+        for isa in [Isa::I386, Isa::X86_64, Isa::AArch64, Isa::Arm32] {
+            for depth in 1..=3 {
+                for in_else in [false, true] {
+                    let mut body = vec![
+                        guard(
+                            0,
+                            vec![Node::Stmt(Stmt::Br { target: Some(10) })],
+                            Vec::new(),
+                        ),
+                        store.clone(),
+                    ];
+                    for register in 1..=depth {
+                        body = if in_else {
+                            vec![guard(register, Vec::new(), body)]
+                        } else {
+                            vec![guard(register, body, Vec::new())]
+                        };
+                    }
+                    let mut before = body;
+                    before.extend([
+                        Node::Label(10),
+                        store.clone(),
+                        Node::Stmt(Stmt::Ret {
+                            value: load.clone(),
+                        }),
+                    ]);
+                    let mut after = before.clone();
+                    super::fold_forward_exits(&mut after);
+                    let mut targets = std::collections::HashSet::new();
+                    super::collect_targets(&after, &mut targets);
+                    assert!(targets.is_empty(), "{after:?}");
+                    if available {
+                        let ir = FunctionIr::single_block(isa, Vec::new());
+                        proofs.function(
+                            format!("nested forward exit {isa:?} depth {depth} else {in_else}"),
+                            &lower::lower(&ir, &before),
+                            &lower::lower(&ir, &after),
+                        );
+                    }
+                }
+            }
+        }
+        if available {
+            proofs.check();
+        }
+    }
 
     #[test]
     fn forward_exit_moves_only_the_skipped_path() {

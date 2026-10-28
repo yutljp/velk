@@ -546,7 +546,7 @@ pub(crate) fn record(ir: &FunctionIr, nodes: &[Node], code: &str) {
     });
 }
 
-fn printed_causes(code: &str) -> Vec<(Cause, u64)> {
+fn printed_causes(code: &str, fixture: &str) -> Vec<(Cause, u64)> {
     let captures = CAPTURES
         .with_borrow_mut(Option::take)
         .expect("capture was enabled");
@@ -554,6 +554,27 @@ fn printed_causes(code: &str) -> Vec<(Cause, u64)> {
         .into_iter()
         .rev()
         .find(|capture| code.ends_with(&capture.code));
+    if let Some(capture) = &selected
+        && let Ok(directory) = std::env::var("VELK_DUMP")
+    {
+        use std::io::Write as _;
+
+        let mut shape = String::new();
+        sketch(&capture.nodes, 0, &mut shape);
+        let mut file = std::fs::OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open(std::path::Path::new(&directory).join("cfg.txt"))
+            .expect("a CFG dump file");
+        writeln!(
+            file,
+            "==== {fixture} {} @ {:#x}\n{}\n{shape}",
+            capture.ir.name.as_deref().unwrap_or("unnamed"),
+            capture.ir.addr,
+            capture.ir.render(),
+        )
+        .expect("writing the CFG and structured shape");
+    }
     let mut sites = selected.map_or_else(Vec::new, |capture| causes(&capture.ir, &capture.nodes));
     let mut printed = Vec::new();
     for (offset, _) in code.match_indices("goto ") {
@@ -614,7 +635,7 @@ fn goto_causes() {
                 CAPTURES.with_borrow_mut(|captures| *captures = None);
                 continue;
             };
-            let classified = printed_causes(&text);
+            let classified = printed_causes(&text, fixture);
             lines += text.lines().count();
             let gotos = text.matches("goto ").count();
             printed += gotos;

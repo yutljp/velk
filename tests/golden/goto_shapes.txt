@@ -3,27 +3,27 @@
 # Includes named, stripped, x86-64, AArch64 and ARM fixtures.
 # These are structural classifications, not recovered source constructs.
 shape | Rust | Go | C/C++ | total
-unresolved branch (flags, indirect) | 45 | 0 | 1 | 46
-join with unwind/handler code | 1410 | 0 | 0 | 1410
-irreducible loop | 180 | 0 | 0 | 180
+unresolved branch (flags, indirect) | 45 | 0 | 0 | 45
+join with unwind/handler code | 1407 | 0 | 0 | 1407
+irreducible loop | 165 | 0 | 0 | 165
 multi-level break/continue | 321 | 8 | 0 | 329
-short-circuit condition | 670 | 16 | 4 | 690
-jump threading | 981 | 16 | 6 | 1003
-loop rotation (bottom test) | 378 | 0 | 2 | 380
-early return / noreturn merging | 1256 | 6 | 0 | 1262
-loop with several exits | 657 | 30 | 0 | 687
-switch lowering | 638 | 62 | 0 | 700
-common tail merging | 1575 | 140 | 1 | 1716
+short-circuit condition | 676 | 14 | 4 | 694
+jump threading | 921 | 14 | 6 | 941
+loop rotation (bottom test) | 366 | 0 | 2 | 368
+early return / noreturn merging | 1154 | 6 | 0 | 1160
+loop with several exits | 639 | 30 | 0 | 669
+switch lowering | 635 | 62 | 0 | 697
+common tail merging | 1521 | 130 | 1 | 1652
 
 # One example per shape: fixture, function, destination.
-unresolved branch (flags, indirect): arm32/l2_loop.thumb.O2.elf sum_skip_odd -> L_20270
+unresolved branch (flags, indirect): rust_probe_arm64_stripped 0x100011598 -> L_100011c5c
 join with unwind/handler code: rust_probe_stripped 0x393f0 -> L_39468
 irreducible loop: rust_demo <std::sys::sync::once::futex::Once>::call -> L_2ce27
-multi-level break/continue: rust_probe_stripped 0x4de80 -> L_4df63
-short-circuit condition: rust_probe_stripped 0x50600 -> L_506a5
+multi-level break/continue: rust_demo <core::ffi::c_str::CStr>::from_bytes_with_nul -> L_4df63
+short-circuit condition: rust_demo core::slice::memchr::memchr_aligned -> L_506a5
 jump threading: metrics/memory.win64.O2.debug.dll copy_bytes -> L_1800010a6
-loop rotation (bottom test): metrics/control.win64.O2.debug.dll matrix_trace -> L_180001040
-early return / noreturn merging: rust_probe_stripped 0x4438a -> L_44441
+loop rotation (bottom test): metrics/control.win64.O2.stripped.dll 0x180001000 -> L_180001040
+early return / noreturn merging: rust_probe_stripped 0x3aae0 -> L_3abb9
 loop with several exits: rust_demo_arm64 <alloc::collections::btree::map::BTreeMap<u64, gimli::read::abbrev::Abbreviation>>::entry -> L_100025170
 switch lowering: go_probe runtime/debug.SetTraceback -> L_45e1f3
 common tail merging: go_probe_arm64 runtime.traceReader -> L_5f3e8

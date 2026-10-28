@@ -88,12 +88,12 @@ pub(crate) fn inline_return_tails(nodes: &mut Vec<Node>) {
         }
         true
     }
-    fn collect(nodes: &mut [Node], tails: &mut HashMap<u64, Vec<Node>>) {
+    fn collect(nodes: &[Node], following: &[&Node], tails: &mut HashMap<u64, Vec<Node>>) {
         for index in 0..nodes.len() {
             if let Node::Label(label) = nodes[index] {
                 let mut tail = Vec::new();
                 let mut remaining = TAIL_STATEMENTS + 1;
-                for next in &nodes[index + 1..] {
+                for next in nodes[index + 1..].iter().chain(following.iter().copied()) {
                     if matches!(next, Node::Label(_)) {
                         continue;
                     }
@@ -107,8 +107,23 @@ pub(crate) fn inline_return_tails(nodes: &mut Vec<Node>) {
                     }
                 }
             }
-            for child in children_mut(&mut nodes[index]) {
-                collect(child, tails);
+            if let Node::If { then, els, .. } = &nodes[index] {
+                // Either arm falls through to the enclosing sequence. Keep
+                // only as much of that sequence as a bounded tail can use.
+                let continuation: Vec<&Node> = nodes[index + 1..]
+                    .iter()
+                    .chain(following.iter().copied())
+                    .filter(|node| !matches!(node, Node::Label(_)))
+                    .take(TAIL_STATEMENTS + 1)
+                    .collect();
+                collect(then, &continuation, tails);
+                collect(els, &continuation, tails);
+            } else {
+                // Loop bodies repeat and switch cases may fall into another
+                // case, so neither inherits the enclosing continuation.
+                for child in children(&nodes[index]) {
+                    collect(child, &[], tails);
+                }
             }
         }
     }
@@ -151,7 +166,7 @@ pub(crate) fn inline_return_tails(nodes: &mut Vec<Node>) {
         }
     }
     let mut tails = HashMap::new();
-    collect(nodes, &mut tails);
+    collect(nodes, &[], &mut tails);
     let mut counts = HashMap::new();
     jumps(nodes, &mut counts);
     tails.retain(|label, tail| {
@@ -358,7 +373,258 @@ fn drop_unread(nodes: &mut Vec<Node>, read: &std::collections::HashSet<u16>) {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::ir::{Cond, Expr};
+    use crate::ir::{BinOp, Cond, Expr, FunctionIr};
+    use crate::loader::Isa;
+    use crate::render::structure::lower;
+
+    fn guard(then: Vec<Node>, els: Vec<Node>) -> Node {
+        Node::If {
+            cond: Cond::Eq,
+            lhs: Expr::reg(0, 64),
+            rhs: Expr::Const(0),
+            then,
+            els,
+        }
+    }
+
+    fn increment() -> Node {
+        Node::Stmt(Stmt::Store {
+            addr: Expr::reg(1, 64),
+            value: Expr::bin(
+                BinOp::Add,
+                Expr::Load {
+                    addr: Box::new(Expr::reg(1, 64)),
+                    width: 8,
+                    signed: false,
+                },
+                Expr::Const(1),
+            ),
+            width: 8,
+        })
+    }
+
+    #[test]
+    fn return_continuations_preserve_values_and_memory_smt() {
+        use crate::ir::smt::Proofs;
+
+        let available = Proofs::available();
+        let mut proofs = Proofs::default();
+        for isa in [Isa::I386, Isa::X86_64, Isa::AArch64, Isa::Arm32] {
+            for depth in 1..=3 {
+                for in_else in [false, true] {
+                    let mut body = vec![Node::Label(10), increment()];
+                    for _ in 0..depth {
+                        body = if in_else {
+                            vec![guard(vec![increment()], body)]
+                        } else {
+                            vec![guard(body, vec![increment()])]
+                        };
+                    }
+                    let mut before = vec![guard(
+                        vec![Node::Stmt(Stmt::Br { target: Some(10) })],
+                        Vec::new(),
+                    )];
+                    before.extend(body);
+                    before.push(increment());
+                    before.push(Node::Stmt(Stmt::Ret {
+                        value: Expr::Load {
+                            addr: Box::new(Expr::reg(1, 64)),
+                            width: 8,
+                            signed: false,
+                        },
+                    }));
+                    let mut after = before.clone();
+                    inline_return_tails(&mut after);
+                    assert!(matches!(&after[0], Node::If { then, .. }
+                        if matches!(then.as_slice(), [Node::Stmt(Stmt::Store { .. }),
+                            Node::Stmt(Stmt::Store { .. }), Node::Stmt(Stmt::Ret { .. })])));
+                    if available {
+                        let ir = FunctionIr::single_block(isa, Vec::new());
+                        proofs.function(
+                            format!("return continuation {isa:?} depth {depth} else {in_else}"),
+                            &lower::lower(&ir, &before),
+                            &lower::lower(&ir, &after),
+                        );
+                    }
+                }
+            }
+        }
+        if available {
+            proofs.check();
+        }
+    }
+
+    #[test]
+    fn return_continuations_stop_at_loops_and_switch_cases() {
+        let body = vec![Node::Label(10), increment()];
+        for construct in [
+            Node::Forever { body: body.clone() },
+            Node::DoWhile {
+                cond: Cond::Eq,
+                lhs: Expr::reg(0, 64),
+                rhs: Expr::Const(0),
+                body: body.clone(),
+            },
+            Node::While {
+                prefix: Vec::new(),
+                cond: Cond::Eq,
+                lhs: Expr::reg(0, 64),
+                rhs: Expr::Const(0),
+                body: body.clone(),
+            },
+            Node::Switch {
+                index: Expr::reg(0, 64),
+                arms: vec![(vec![0], body)],
+                default: Some(vec![increment()]),
+            },
+        ] {
+            let mut nodes = vec![
+                Node::Stmt(Stmt::Br { target: Some(10) }),
+                construct,
+                Node::Stmt(Stmt::Ret {
+                    value: Expr::Const(0),
+                }),
+            ];
+            inline_return_tails(&mut nodes);
+            assert!(matches!(nodes[0], Node::Stmt(Stmt::Br { .. })));
+        }
+    }
+
+    #[test]
+    fn return_continuations_keep_the_total_copy_bound() {
+        let tail = vec![Node::Label(10), increment()];
+        let mut nodes = vec![
+            Node::Stmt(Stmt::Br { target: Some(10) }),
+            guard(tail, Vec::new()),
+        ];
+        nodes.extend(std::iter::repeat_with(increment).take(TAIL_STATEMENTS));
+        nodes.push(Node::Stmt(Stmt::Ret {
+            value: Expr::Const(0),
+        }));
+        inline_return_tails(&mut nodes);
+        assert!(matches!(nodes[0], Node::Stmt(Stmt::Br { .. })));
+    }
+
+    #[test]
+    fn printed_return_continuations_execute_the_shared_stores_once() {
+        use crate::ir::{CType, Param};
+        use std::fs;
+        use std::process::Command;
+
+        let directory = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("target")
+            .join(format!("return-continuations-{}", std::process::id()));
+        fs::create_dir_all(&directory).unwrap();
+        let mut source = String::from("#include <stdint.h>\n");
+        for (index, isa) in [Isa::I386, Isa::X86_64, Isa::AArch64, Isa::Arm32]
+            .into_iter()
+            .enumerate()
+        {
+            let mut ir = FunctionIr::single_block(isa, Vec::new());
+            ir.name = Some(format!("continuation_{index}"));
+            ir.params = vec![
+                Param {
+                    index: 0,
+                    name: "flag".to_owned(),
+                    ty: CType::U64,
+                },
+                Param {
+                    index: 1,
+                    name: "cell".to_owned(),
+                    ty: CType::pointer_to(CType::U64),
+                },
+            ];
+            let mut nodes = vec![
+                guard(vec![Node::Stmt(Stmt::Br { target: Some(10) })], Vec::new()),
+                guard(vec![Node::Label(10), increment()], vec![increment()]),
+                increment(),
+                Node::Stmt(Stmt::Ret {
+                    value: Expr::Load {
+                        addr: Box::new(Expr::reg(1, 64)),
+                        width: 8,
+                        signed: false,
+                    },
+                }),
+            ];
+            inline_return_tails(&mut nodes);
+            let code =
+                crate::render::render(&lower::lower(&ir, &nodes), &[], &Default::default(), &[]);
+            assert!(!code.contains("goto "), "{isa}: {code}");
+            source.push_str(&code);
+            ir.name = Some(format!("forward_{index}"));
+            let test = |mask, then| Node::If {
+                cond: Cond::Eq,
+                lhs: Expr::bin(BinOp::And, Expr::reg(0, 64), Expr::Const(mask)),
+                rhs: Expr::Const(0),
+                then,
+                els: Vec::new(),
+            };
+            let mut forward = vec![
+                test(
+                    1,
+                    vec![
+                        test(2, vec![Node::Stmt(Stmt::Br { target: Some(10) })]),
+                        increment(),
+                    ],
+                ),
+                Node::Label(10),
+                increment(),
+                Node::Stmt(Stmt::Ret {
+                    value: Expr::Load {
+                        addr: Box::new(Expr::reg(1, 64)),
+                        width: 8,
+                        signed: false,
+                    },
+                }),
+            ];
+            super::super::fold_forward_exits(&mut forward);
+            let code =
+                crate::render::render(&lower::lower(&ir, &forward), &[], &Default::default(), &[]);
+            assert!(!code.contains("goto "), "{isa}: {code}");
+            source.push_str(&code);
+        }
+        source.push_str(
+            "int main(void) {\n\
+             uint64_t flags[] = {0, 1, 2, 3, UINT64_MAX};\n\
+             for (unsigned i = 0; i < 5; ++i) {\n\
+             for (uint64_t seed = 0; seed < 257; ++seed) {\n\
+             uint64_t cell = UINT64_MAX - seed;\n\
+             uint64_t expected = cell + 2;\n",
+        );
+        for index in 0..4 {
+            source.push_str(&format!(
+                "cell = UINT64_MAX - seed;\n\
+                 if (continuation_{index}(flags[i], &cell) != expected || cell != expected) return 1;\n"
+            ));
+            source.push_str(&format!(
+                "cell = UINT64_MAX - seed;\n\
+                 expected = cell + 1 + ((flags[i] & 1) == 0 && (flags[i] & 2) != 0);\n\
+                 if (forward_{index}(flags[i], &cell) != expected || cell != expected) return 2;\n\
+                 expected = UINT64_MAX - seed + 2;\n"
+            ));
+        }
+        source.push_str("}} return 0; }\n");
+        let input = directory.join("continuations.c");
+        let executable = directory.join("continuations");
+        fs::write(&input, source).unwrap();
+        for optimization in ["-O0", "-O2"] {
+            let compiled = Command::new("clang")
+                .args([
+                    "-std=c11",
+                    "-Werror=implicit-function-declaration",
+                    optimization,
+                ])
+                .arg(&input)
+                .arg("-o")
+                .arg(&executable)
+                .output()
+                .unwrap();
+            assert!(compiled.status.success(), "{compiled:?}");
+            let result = Command::new(&executable).output().unwrap();
+            assert!(result.status.success(), "{result:?}");
+        }
+        fs::remove_dir_all(directory).unwrap();
+    }
 
     #[test]
     fn nested_label_invalidates_constants_after_the_branch() {
