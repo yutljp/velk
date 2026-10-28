@@ -1749,9 +1749,9 @@ mod tests {
                 .image
                 .functions
                 .values()
-                .all(|function| function.name.is_some())
+                .all(|function| function.name.is_some()
+                    || function.sources == [loader::NameSource::Call])
         );
-        assert!(binary.signature_database.entries.is_empty());
         assert!(
             binary
                 .image

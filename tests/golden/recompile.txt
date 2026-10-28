@@ -6,9 +6,9 @@
 #   reads a register that is not a parameter: 58
 #   refers to data: 362
 #   requires an external machine-state source: 2
-#   returns no integer: 305
-#   returns nothing: 692
-#   takes an argument that is no integer: 994
+#   returns no integer: 311
+#   returns nothing: 704
+#   takes an argument that is no integer: 1000
 #   takes arguments on the stack: 81
 # runs left out:
 #   step limit: 50
@@ -111,9 +111,9 @@
 # flattened_stores_x86_64_O2.o: 7 functions, 7 qualify, 7 compile, 0 do not, 7 compared (84 runs), 0 differ
 # flattened_x86_64_O0.o: 7 functions, 7 qualify, 7 compile, 0 do not, 7 compared (84 runs), 0 differ
 # flattened_x86_64_O2.o: 7 functions, 7 qualify, 7 compile, 0 do not, 7 compared (84 runs), 0 differ
-# go_probe: 1275 functions, 11 qualify, 11 compile, 0 do not, 11 compared (132 runs), 0 differ
+# go_probe: 1287 functions, 11 qualify, 11 compile, 0 do not, 11 compared (132 runs), 0 differ
 # go_probe_arm64: 1271 functions, 9 qualify, 9 compile, 0 do not, 9 compared (108 runs), 0 differ
-# go_stripped: 1273 functions, 11 qualify, 11 compile, 0 do not, 11 compared (132 runs), 0 differ
+# go_stripped: 1285 functions, 11 qualify, 11 compile, 0 do not, 11 compared (132 runs), 0 differ
 # go_stripped_arm64: 1269 functions, 9 qualify, 9 compile, 0 do not, 9 compared (108 runs), 0 differ
 # l0_arith_a64.o: 4 functions, 4 qualify, 4 compile, 0 do not, 4 compared (48 runs), 0 differ
 # l0_arith_x64.o: 4 functions, 4 qualify, 4 compile, 0 do not, 4 compared (48 runs), 0 differ

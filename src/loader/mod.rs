@@ -138,7 +138,7 @@ pub enum NameSource {
     Objc,
     Plt,
     Prologue,
-    /// A reachable direct call targets this address.
+    /// A reachable call targets this address directly or through runtime startup.
     Call,
     Signature,
     /// A method or adjustment target found through C++ runtime type information.
@@ -675,6 +675,7 @@ impl Image {
             }
         }
         estimate_sizes(&self.sections, &mut self.functions);
+        discover::refine_sizes(self);
         true
     }
 
@@ -1357,6 +1358,7 @@ pub(crate) fn load_input_with_saved(
         }
     }
     estimate_sizes(&image.sections, &mut image.functions);
+    discover::refine_sizes(&mut image);
     Ok(image)
 }
 

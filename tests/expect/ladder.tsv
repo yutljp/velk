@@ -77,7 +77,7 @@
 
 # ---- L7 language runtimes: Go pclntab / Rust demangling / stripped ----
 7	go_stripped	-	has	main.add
-7	go_stripped	-	count	1273
+7	go_stripped	-	count	1285
 7	go_probe	-	has	main.divmod
 7	go_probe	-	has	main.sumSlice
 7	go_probe	main.add	has	int64_t main_add(int64_t a0, int64_t a1)

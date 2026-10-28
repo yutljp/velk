@@ -1,4 +1,4 @@
-# go_stripped: elf x86_64 0x4650a0, 1273 functions, 0 lift failures, 0 unsupported, 57 gotos
+# go_stripped: elf x86_64 0x4650a0, 1285 functions, 0 lift failures, 0 unsupported, 57 gotos
 0x401000 96 internal/abi.Kind.String pclntab
 0x401060 128 internal/abi.Name.IsBlank pclntab
 0x4010e0 192 internal/abi.Name.Name pclntab
@@ -1160,7 +1160,19 @@
 0x463fc0 32 runtime.panicSlice3C pclntab
 0x463fe0 32 runtime.getfp pclntab
 0x464000 384 runtime.duffzero pclntab
+0x4640b8 200 - call
+0x4640dd 163 - call
+0x46410b 117 - call
+0x464114 108 - call
+0x464118 104 - call
+0x464139 71 - call
+0x464146 58 - call
+0x46414b 53 - call
+0x464150 48 - call
 0x464180 928 runtime.duffcopy pclntab
+0x464420 256 - call
+0x4644ac 116 - call
+0x4644ba 102 - call
 0x464520 768 runtime.memclrNoHeapPointers pclntab
 0x464820 1728 runtime.memmove pclntab
 0x464ee0 448 runtime.asyncPreempt pclntab

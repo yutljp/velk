@@ -1,7 +1,7 @@
 # group: variables with unrelated webs before -> after splitting; live phi joins; fixed register bindings; variables with unknown successors
 C/C++ debug: 145 -> 0; 822; 1; 0
 C/C++ stripped: 97 -> 0; 761; 0; 0
-Go: 6730 -> 0; 30524; 438; 2
+Go: 6724 -> 0; 29894; 408; 2
 Rust: 8106 -> 0; 51031; 708; 189
 # alt.o | C/C++ stripped: 1 -> 0; 0; 0; 0
 # arm32/aggregate_abi.arm.O0.elf | C/C++ debug: 0 -> 0; 0; 0; 0
@@ -162,9 +162,9 @@ Rust: 8106 -> 0; 51031; 708; 189
 # flattened_x86_64_O2.o | C/C++ stripped: 0 -> 0; 6; 0; 0
 # frame_bounds_a64.o | C/C++ stripped: 1 -> 0; 4; 0; 0
 # frame_bounds_x64.o | C/C++ stripped: 0 -> 0; 4; 0; 0
-# go_probe | Go: 1498 -> 0; 6908; 99; 0
+# go_probe | Go: 1495 -> 0; 6593; 84; 0
 # go_probe_arm64 | Go: 1867 -> 0; 8356; 120; 1
-# go_stripped | Go: 1498 -> 0; 6906; 99; 0
+# go_stripped | Go: 1495 -> 0; 6591; 84; 0
 # go_stripped_arm64 | Go: 1867 -> 0; 8354; 120; 1
 # l0_arith_a64.o | C/C++ stripped: 0 -> 0; 0; 0; 0
 # l0_arith_x64.o | C/C++ stripped: 0 -> 0; 0; 0; 0

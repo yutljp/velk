@@ -4,12 +4,38 @@ use crate::loader::Function;
 use crate::loader::NameSource;
 use crate::loader::Section;
 
+mod extents;
+mod startup;
+
+pub(super) use extents::refine as refine_sizes;
+
+/// Keep the enclosing extent available to entries that share its instructions.
+fn add_entry(image: &mut super::Image, address: u64) {
+    if image.functions.contains_key(&address) {
+        return;
+    }
+    let end = image
+        .functions
+        .range(..address)
+        .rev()
+        .find_map(|(_, function)| {
+            let end = function.addr.checked_add(function.size.unwrap_or(0));
+            end.filter(|end| address < *end)
+        });
+    let size = end.map(|end| end - address);
+    super::upsert(&mut image.functions, address, None, size, NameSource::Call);
+    if let Some(function) = image.functions.get_mut(&address) {
+        function.size_estimated = size.is_some();
+    }
+}
+
 /// Follow reachable x86 instructions, including call-only code inside symbol ranges.
 pub(super) fn direct_calls(image: &mut super::Image) {
     use iced_x86::{Decoder, DecoderOptions, FlowControl};
     if !matches!(image.isa, super::Isa::X86_64 | super::Isa::I386) {
         return;
     }
+    startup::discover(image);
     let bitness = if image.isa == super::Isa::I386 {
         32
     } else {
@@ -78,14 +104,10 @@ pub(super) fn direct_calls(image: &mut super::Image) {
         }
         let mut added = false;
         while let Some(address) = called.pop_first() {
-            if image.functions.contains_key(&address)
-                || seen.contains(&address)
-                || image.fragment_at(address).is_some()
-            {
+            if image.functions.contains_key(&address) || image.fragment_at(address).is_some() {
                 continue;
             }
-            // Code already reachable from an existing entry remains part of it.
-            super::upsert(&mut image.functions, address, None, None, NameSource::Call);
+            add_entry(image, address);
             pending.push(address);
             added = true;
             break;
@@ -390,6 +412,69 @@ pub(crate) fn estimate_sizes(sections: &[Section], functions: &mut BTreeMap<u64,
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn size_estimation_preserves_shared_entries_after_scanned_starts_are_removed() {
+        use crate::loader::{Image, Isa, NameSource};
+        let mut code = vec![0x90; 32];
+        code[31] = 0xc3;
+        let mut image = Image::from_code(Isa::X86_64, 0, code);
+        super::super::upsert(&mut image.functions, 0, None, Some(32), NameSource::Symtab);
+        image.functions.get_mut(&0).unwrap().size_estimated = true;
+        super::add_entry(&mut image, 8);
+        super::add_entry(&mut image, 16);
+        super::super::upsert(&mut image.functions, 24, None, None, NameSource::Prologue);
+        assert!(image.drop_scanned_starts(&std::collections::HashSet::from([24])));
+        assert_eq!(image.functions[&0].size, Some(32));
+        assert_eq!(image.functions[&8].size, Some(24));
+        assert_eq!(image.functions[&16].size, Some(16));
+    }
+
+    #[test]
+    fn called_branch_targets_are_entries_but_uncalled_labels_are_not() {
+        use crate::loader::{Image, Isa};
+
+        for isa in [Isa::X86_64, Isa::I386] {
+            // jmp 7; call 7; ret. Both entries reach 7 before calls are added.
+            let mut image = Image::from_code(isa, 0, vec![0xeb, 5, 0xe8, 0, 0, 0, 0, 0xc3]);
+            super::super::upsert(
+                &mut image.functions,
+                0,
+                None,
+                None,
+                super::NameSource::Entry,
+            );
+            super::super::upsert(
+                &mut image.functions,
+                2,
+                None,
+                None,
+                super::NameSource::Entry,
+            );
+            // A call to its next instruction is a PC materialization idiom.
+            super::direct_calls(&mut image);
+            assert!(!image.functions.contains_key(&7));
+
+            let mut image = Image::from_code(isa, 0, vec![0xeb, 6, 0xe8, 1, 0, 0, 0, 0xc3, 0xc3]);
+            super::super::upsert(
+                &mut image.functions,
+                0,
+                None,
+                None,
+                super::NameSource::Entry,
+            );
+            super::super::upsert(
+                &mut image.functions,
+                2,
+                None,
+                None,
+                super::NameSource::Entry,
+            );
+            super::direct_calls(&mut image);
+            assert!(image.functions.contains_key(&8));
+            assert!(!image.functions.contains_key(&7));
+        }
+    }
+
     #[test]
     fn instruction_words_reject_overflow_and_truncation() {
         for offset in [usize::MAX, usize::MAX - 1, usize::MAX - 3, 1, 4] {
