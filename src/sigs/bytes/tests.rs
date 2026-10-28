@@ -40,6 +40,72 @@ fn unnamed_candidates_preserve_size_limits_and_arm_discovery() {
 }
 
 #[test]
+fn call_entries_need_independent_naming_evidence() {
+    for isa in [Isa::I386, Isa::X86_64, Isa::AArch64] {
+        let mut code = if isa == Isa::AArch64 {
+            let mut bytes = 0x9100_0400u32.to_le_bytes().repeat(10);
+            bytes.extend(0xd65f_03c0u32.to_le_bytes());
+            bytes
+        } else {
+            let mut bytes = [0x83, 0xc0, 1].repeat(14);
+            bytes.push(0xc3);
+            bytes
+        };
+        let size = code.len() as u64;
+        let body = normalize(isa, &code, 0x1000, &HashSet::new()).unwrap();
+        let database = Database::new(vec![make_entry(
+            "leaf".to_owned(),
+            isa,
+            body,
+            Vec::new(),
+            Vec::new(),
+        )]);
+        let mut image = Image::from_code(isa, 0x1000, code.clone());
+        let function = Function {
+            addr: 0x1000,
+            size: Some(size),
+            size_estimated: true,
+            name: None,
+            aliases: Vec::new(),
+            sources: vec![NameSource::Call],
+            library: None,
+        };
+        image.functions.insert(function.addr, function.clone());
+        assert!(has_unnamed_candidates(&image));
+        let matches = identify(&image, &database, None, MatchScope::Unnamed).unwrap();
+        assert_eq!(matches.len(), 1);
+        assert_eq!(matches[0].1.certainty, crate::sigs::Certainty::Exact);
+
+        let mut enclosing = function.clone();
+        enclosing.addr = 0x800;
+        enclosing.name = Some("outer".to_owned());
+        enclosing.sources = vec![NameSource::Symtab];
+        enclosing.size = Some(0x800 + size);
+        image.functions.insert(enclosing.addr, enclosing);
+        assert!(!has_unnamed_candidates(&image));
+        assert!(
+            identify(&image, &database, None, MatchScope::Unnamed)
+                .unwrap()
+                .is_empty()
+        );
+        image.functions.get_mut(&0x800).unwrap().size = Some(0x800);
+        assert!(has_unnamed_candidates(&image));
+
+        // An estimated extent can include padding after a short linkage jump.
+        if isa == Isa::AArch64 {
+            code = 0xd503_201fu32.to_le_bytes().repeat(11);
+            code[..4].copy_from_slice(&0x1400_1000u32.to_le_bytes());
+        } else {
+            code.fill(0x90);
+            code[..5].copy_from_slice(&[0xe9, 0, 1, 0, 0]);
+        }
+        let mut stub = Image::from_code(isa, 0x1000, code);
+        stub.functions.insert(function.addr, function);
+        assert!(!has_unnamed_candidates(&stub));
+    }
+}
+
+#[test]
 fn short_functions_are_not_signatures() {
     assert!(normalize(Isa::X86_64, &[0x90; 31], 0, &HashSet::new()).is_none());
     assert!(normalize(Isa::AArch64, &[0; 28], 0, &HashSet::new()).is_none());

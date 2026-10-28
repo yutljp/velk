@@ -1,6 +1,51 @@
 use super::*;
 
 #[test]
+fn unqualified_windows_names_leave_type_library_unloaded() {
+    use crate::loader::{Function, NameSource};
+
+    if std::env::var_os("VELK_PROTOTYPE_LOOKUP_CHILD").is_none() {
+        let output = std::process::Command::new(std::env::current_exe().unwrap())
+            .args([
+                "--exact",
+                concat!(
+                    "analysis::prototypes::generated::tests::",
+                    "unqualified_windows_names_leave_type_library_unloaded",
+                ),
+                "--nocapture",
+            ])
+            .env("VELK_PROTOTYPE_LOOKUP_CHILD", "1")
+            .output()
+            .unwrap();
+        assert!(
+            output.status.success() && String::from_utf8_lossy(&output.stdout).contains("1 passed"),
+            "{output:?}"
+        );
+        return;
+    }
+    assert!(WINDOWS.get().is_none());
+    for isa in [Isa::I386, Isa::X86_64] {
+        let mut image = Image::from_code(isa, 0x1000, vec![0xc3]);
+        image.format = Format::Pe;
+        image.functions.insert(
+            0x1000,
+            Function {
+                addr: 0x1000,
+                size: Some(1),
+                size_estimated: false,
+                name: Some("reg_div".to_owned()),
+                aliases: Vec::new(),
+                sources: vec![NameSource::Symtab],
+                library: None,
+            },
+        );
+        let symbols = crate::render::callee_names(&image);
+        assert_eq!(symbols.functions[&0x1000], "reg_div");
+        assert!(WINDOWS.get().is_none());
+    }
+}
+
+#[test]
 fn guid_matches_require_complete_read_only_windows_data() {
     let datasets = targets(include_str!("../windows.json"));
     assert!(datasets["i686-w64-mingw32"].guids.len() >= 600);

@@ -45,31 +45,42 @@ pub(super) fn direct_calls(image: &mut super::Image) {
     let mut seen = std::collections::HashSet::new();
     let mut called = std::collections::BTreeSet::new();
     loop {
-        while let Some(mut address) = pending.pop() {
+        while let Some(address) = pending.pop() {
+            let Some(section) = image
+                .section_at(address)
+                .filter(|section| section.executable)
+            else {
+                continue;
+            };
+            if super::plt::is_stub_section(&section.name) {
+                continue;
+            }
+            // The selected mapping can change at its end or another section's start.
+            let mut mapping_end = section.vaddr.saturating_add(section.size);
+            for next in &image.sections {
+                if next.loaded && next.vaddr > address {
+                    mapping_end = mapping_end.min(next.vaddr);
+                }
+            }
+            let available = section.file_size.saturating_sub(address - section.vaddr);
+            let contiguous = image.read_vaddr(address, available);
+            let Some(bytes) = contiguous.or_else(|| image.read_vaddr(address, available.min(15)))
+            else {
+                continue;
+            };
+            let mut decoder = Decoder::with_ip(bitness, bytes, address, DecoderOptions::NONE);
             loop {
+                let address = decoder.ip();
+                if !(section.vaddr..mapping_end).contains(&address) {
+                    pending.push(address);
+                    break;
+                }
+                if !decoder.can_decode() {
+                    break;
+                }
                 if !seen.insert(address) {
                     break;
                 }
-                let Some(section) = image
-                    .section_at(address)
-                    .filter(|section| section.executable)
-                else {
-                    break;
-                };
-                if super::plt::is_stub_section(&section.name) {
-                    break;
-                }
-                let available = section
-                    .file_size
-                    .saturating_sub(address - section.vaddr)
-                    .min(15);
-                if available == 0 {
-                    break;
-                }
-                let Some(bytes) = image.read_vaddr(address, available) else {
-                    break;
-                };
-                let mut decoder = Decoder::with_ip(bitness, bytes, address, DecoderOptions::NONE);
                 let instruction = decoder.decode();
                 if instruction.is_invalid() {
                     break;
@@ -99,7 +110,10 @@ pub(super) fn direct_calls(image: &mut super::Image) {
                     }
                     _ => {}
                 }
-                address = instruction.next_ip();
+                if contiguous.is_none() {
+                    pending.push(instruction.next_ip());
+                    break;
+                }
             }
         }
         let mut added = false;
@@ -412,6 +426,73 @@ pub(crate) fn estimate_sizes(sections: &[Section], functions: &mut BTreeMap<u64,
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn call_discovery_follows_section_mappings() {
+        use crate::loader::{Image, Isa, NameSource};
+
+        for isa in [Isa::I386, Isa::X86_64] {
+            for overlapping in [false, true] {
+                let mut code = vec![0xcc; 37];
+                code[..5].copy_from_slice(&[0xb8, 1, 0, 0, 0]);
+                code[5..10].copy_from_slice(&[0xe8, if overlapping { 0x12 } else { 6 }, 0, 0, 0]);
+                code[10..15].copy_from_slice(&[0xe8, 9, 0, 0, 0]);
+                for offset in [15, 16, 24, 28] {
+                    code[offset] = 0xc3;
+                }
+                code[32..37].copy_from_slice(&[0xe8, 6, 0, 0, 0]);
+                let mut image = Image::from_code(isa, 0x1000, code);
+                let first = &mut image.sections[0];
+                first.size = if overlapping { 32 } else { 5 };
+                first.file_size = first.size;
+                let mut second = first.clone();
+                second.vaddr = 0x1005;
+                second.size = if overlapping { 5 } else { 27 };
+                second.file_size = second.size;
+                second.file_offset = Some(if overlapping { 32 } else { 5 });
+                image.sections.push(second);
+                super::super::upsert(
+                    &mut image.functions,
+                    0x1000,
+                    Some("caller".to_owned()),
+                    Some(32),
+                    NameSource::Symtab,
+                );
+                super::direct_calls(&mut image);
+                let addresses: Vec<u64> = image.functions.keys().copied().collect();
+                assert_eq!(
+                    addresses,
+                    vec![0x1000, 0x1010, 0x1018],
+                    "{isa:?}, overlapping={overlapping}"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn call_discovery_reads_available_instructions_in_truncated_sections() {
+        use crate::loader::{Image, Isa, NameSource};
+
+        for isa in [Isa::I386, Isa::X86_64] {
+            let mut code = vec![0xcc; 32];
+            code[..5].copy_from_slice(&[0xb8, 1, 0, 0, 0]);
+            code[5..10].copy_from_slice(&[0xe8, 6, 0, 0, 0]);
+            code[10] = 0xc3;
+            code[16] = 0xc3;
+            let mut image = Image::from_code(isa, 0x1000, code);
+            image.sections[0].file_size = 64;
+            super::super::upsert(
+                &mut image.functions,
+                0x1000,
+                Some("caller".to_owned()),
+                Some(32),
+                NameSource::Symtab,
+            );
+            super::direct_calls(&mut image);
+            let addresses: Vec<u64> = image.functions.keys().copied().collect();
+            assert_eq!(addresses, vec![0x1000, 0x1010], "{isa:?}");
+        }
+    }
+
     #[test]
     fn size_estimation_preserves_shared_entries_after_scanned_starts_are_removed() {
         use crate::loader::{Image, Isa, NameSource};

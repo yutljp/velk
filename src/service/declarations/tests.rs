@@ -412,6 +412,107 @@ fn address_operands_request_the_function_and_its_callers() {
 }
 
 #[test]
+fn parameterized_function_addresses_do_not_request_body_analysis() {
+    for isa in [Isa::I386, Isa::X86_64, Isa::AArch64, Isa::Arm32] {
+        let mut image = Image::from_code(isa, 0x1000, Vec::new());
+        image.functions.insert(
+            0x1000,
+            crate::loader::Function {
+                addr: 0x1000,
+                size: Some(1),
+                size_estimated: false,
+                name: Some("callback".into()),
+                aliases: Vec::new(),
+                library: None,
+                sources: Vec::new(),
+            },
+        );
+        image.summaries.write().unwrap().insert(
+            0x1000,
+            crate::loader::Summary {
+                arity: Some(1),
+                ..Default::default()
+            },
+        );
+        let mut root = analysis(
+            isa,
+            0x2000,
+            "address",
+            vec![Stmt::Ret {
+                value: Expr::Const(0x1000),
+            }],
+        );
+        assert!(!callers(&image, &root).contains(&0x1000));
+        root.ir.blocks[0]
+            .stmts
+            .insert(0, call(isa, 0x1000, vec![Expr::Const(7)]));
+        assert!(callers(&image, &root).contains(&0x1000));
+    }
+}
+
+#[test]
+fn borrowed_call_parameters_print_like_owned_symbols() {
+    for isa in [Isa::I386, Isa::X86_64, Isa::AArch64, Isa::Arm32] {
+        let mut root = analysis(
+            isa,
+            0x2000,
+            "invoke",
+            vec![
+                call(isa, 0x1000, vec![Expr::Const(7)]),
+                call(isa, 0x3000, vec![Expr::Const(9)]),
+                call(isa, 0x4000, vec![Expr::Const(11)]),
+                Stmt::Ret {
+                    value: Expr::Const(37),
+                },
+            ],
+        );
+        root.callee_parameters
+            .insert(0x1000, vec![CType::pointer_to(CType::U32)]);
+        root.callee_structures.insert(0x1000, Default::default());
+        root.import_parameters.insert(0x3000, vec![CType::I32]);
+        root.unused_parameters.insert(
+            0x4000,
+            crate::analysis::prototypes::Prototype {
+                params: vec![CType::I32],
+                ret: CType::U64,
+                variadic: false,
+                format: None,
+                scans: false,
+            },
+        );
+        let mut symbols = Symbols::default();
+        for (address, name) in [
+            (0x1000, "callee"),
+            (0x3000, "imported"),
+            (0x4000, "ignored"),
+        ] {
+            symbols.functions.insert(address, name.to_owned());
+            symbols.function_returns.insert(address, CType::U64);
+        }
+        symbols.function_parameters.insert(0x1000, vec![CType::I64]);
+        let mut owned = symbols.clone();
+        owned
+            .import_parameters
+            .extend(root.import_parameters.clone());
+        owned
+            .unused_parameters
+            .extend(root.unused_parameters.clone());
+        owned
+            .function_parameters
+            .extend(root.callee_parameters.clone());
+        owned
+            .function_structures
+            .extend(root.callee_structures.clone());
+        let expected = render::render(&root.ir, &[], &owned, &[]);
+        let borrowed = render::FunctionSymbols::new_with_analysis(&symbols, &root);
+        let actual = render::render_with_symbols(&root.ir, &[], &borrowed, &[]).code;
+        assert_eq!(actual, expected);
+        assert!(std::ptr::eq(&borrowed.functions, &symbols.functions));
+        assert_eq!(symbols.function_parameters[&0x1000], vec![CType::I64]);
+    }
+}
+
+#[test]
 fn unknown_import_prototypes_preserve_promoted_values() {
     for isa in [Isa::I386, Isa::X86_64, Isa::AArch64, Isa::Arm32] {
         let mut image = Image::from_code(isa, 0, Vec::new());

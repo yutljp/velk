@@ -9,7 +9,7 @@ use object::{Object, ObjectSection, ObjectSymbol};
 use super::{Database, Entry};
 use crate::deadline::passed;
 use crate::error::{Error, Result};
-use crate::loader::{Image, Isa};
+use crate::loader::{Function, Image, Isa, NameSource};
 
 mod constants;
 mod discover;
@@ -69,13 +69,49 @@ fn make_entry(
 pub(crate) fn has_unnamed_candidates(image: &Image) -> bool {
     // Normalization cannot lengthen a body, so shorter functions cannot produce naming evidence.
     // ARM discovery can find functions outside the current function extents.
-    image.functions.values().any(|function| {
-        function.name.is_none()
-            && (image.isa == Isa::Arm32
-                || function
-                    .size
-                    .is_some_and(|size| (MIN_NAMED_BYTES as u64..=MAX_BYTES).contains(&size)))
-    })
+    for function in image.functions.values() {
+        if function.name.is_some() || call_inside_named_function(image, function) {
+            continue;
+        }
+        if image.isa == Isa::Arm32 {
+            return true;
+        }
+        let Some(size) = function
+            .size
+            .filter(|size| (MIN_NAMED_BYTES as u64..=MAX_BYTES).contains(size))
+        else {
+            continue;
+        };
+        if function.sources == [NameSource::Call] {
+            let Some(bytes) = image.read_vaddr(function.addr, size) else {
+                continue;
+            };
+            if !normalize::normalize(image.isa, bytes, function.addr, &HashSet::new())
+                .is_some_and(|body| body.name_eligible)
+            {
+                continue;
+            }
+        }
+        return true;
+    }
+    false
+}
+
+fn call_inside_named_function(image: &Image, function: &Function) -> bool {
+    function.sources == [NameSource::Call]
+        && image
+            .functions
+            .range(..function.addr)
+            .rev()
+            .any(|(_, enclosing)| {
+                enclosing.name.is_some()
+                    && enclosing.size.is_some_and(|size| {
+                        enclosing
+                            .addr
+                            .checked_add(size)
+                            .is_some_and(|end| function.addr < end)
+                    })
+            })
 }
 
 pub(crate) fn image_entries(image: &Image, deadline: Option<Instant>) -> Result<Vec<Entry>> {

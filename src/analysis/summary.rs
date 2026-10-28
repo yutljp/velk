@@ -371,7 +371,12 @@ fn settle_parts(
             settled[&addr].set(summary).expect("settled once");
         }
     };
-    match crate::parallel::pool() {
+    let pool = if parts.len() <= 1 {
+        None
+    } else {
+        crate::parallel::pool()
+    };
+    match pool {
         Some(pool) if pool.current_num_threads() > 1 => {
             let ready: Vec<usize> = (0..parts.len())
                 .filter(|&index| waiting[index] == 0)

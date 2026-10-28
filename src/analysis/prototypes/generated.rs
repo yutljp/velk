@@ -296,6 +296,14 @@ fn target_library(image: &Image) -> Option<&'static TargetLibrary> {
 }
 
 pub(super) fn for_image(name: &str, image: &Image) -> Option<&'static Prototype> {
+    let qualified = if matches!(image.format, Format::Pe | Format::Coff) {
+        let Some(qualified) = qualified_name(name, image) else {
+            return None;
+        };
+        Some(qualified)
+    } else {
+        None
+    };
     let Some(target) = target_library(image) else {
         return None;
     };
@@ -305,17 +313,16 @@ pub(super) fn for_image(name: &str, image: &Image) -> Option<&'static Prototype>
             .functions
             .get(super::undecorated(name, false));
     }
-    resolved_windows_import(target, image, name).map(|(_, prototype)| prototype)
+    let Some(qualified) = qualified else {
+        return None;
+    };
+    resolved_windows_import(target, qualified).map(|(_, prototype)| prototype)
 }
 
 fn resolved_windows_import<'a>(
     target: &'a TargetLibrary,
-    image: &Image,
-    name: &str,
+    qualified: &str,
 ) -> Option<(&'static str, &'a Prototype)> {
-    let Some(qualified) = qualified_name(name, image) else {
-        return None;
-    };
     let Some(name) = windows_import_name(target, qualified) else {
         return None;
     };
@@ -351,10 +358,13 @@ pub(crate) fn i386_import(image: &Image, name: &str) -> Option<(crate::ir::Conve
     if image.isa != Isa::I386 {
         return None;
     }
+    let Some(qualified) = qualified_name(name, image) else {
+        return None;
+    };
     let Some(target) = target_library(image) else {
         return None;
     };
-    let Some((name, prototype)) = resolved_windows_import(target, image, name) else {
+    let Some((name, prototype)) = resolved_windows_import(target, qualified) else {
         return None;
     };
     let convention = match target.conventions.get(name).copied() {

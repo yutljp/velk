@@ -99,7 +99,7 @@ pub(crate) struct Ctx<'a> {
     pub(super) signed_locals: std::collections::HashSet<String>,
     /// Parameters wider than 32 bits: masking one is a real truncation.
     pub(super) wide_parameters: std::collections::HashSet<u16>,
-    pub(super) symbols: &'a super::Symbols,
+    pub(super) symbols: &'a super::FunctionSymbols<'a>,
     pub(super) globals: crate::render::globals::Globals,
     /// Non-executable `(start, size)` ranges: a constant address inside one is a global.
     pub(super) data_ranges: &'a [(u64, u64)],

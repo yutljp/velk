@@ -159,6 +159,8 @@ pub(super) fn stack_locals_with_roles(
     objects: &[(i64, i64)],
 ) -> Locals {
     let sp = stack_pointer(ir.isa);
+    let empty_symbols = super::Symbols::default();
+    let empty_symbols = super::FunctionSymbols::new(&empty_symbols);
     let base = Ctx {
         inline_functions: Default::default(),
         ir,
@@ -193,7 +195,7 @@ pub(super) fn stack_locals_with_roles(
         local_floats: HashMap::new(),
         signed_locals: std::collections::HashSet::new(),
         wide_parameters: std::collections::HashSet::new(),
-        symbols: &super::Symbols::default(),
+        symbols: &empty_symbols,
         globals: Default::default(),
         scaled_offsets: Default::default(),
         data_ranges: &[],

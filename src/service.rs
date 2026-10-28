@@ -1045,30 +1045,6 @@ impl Binary {
         let addr = analysis.ir.addr;
         let mut ir = std::borrow::Cow::Borrowed(&analysis.ir);
         let mut symbols = std::borrow::Cow::Borrowed(&self.symbols);
-        if !analysis.import_parameters.is_empty() {
-            symbols
-                .to_mut()
-                .import_parameters
-                .extend(analysis.import_parameters.clone());
-        }
-        if !analysis.unused_parameters.is_empty() {
-            symbols
-                .to_mut()
-                .unused_parameters
-                .extend(analysis.unused_parameters.clone());
-        }
-        if !analysis.callee_parameters.is_empty() {
-            symbols
-                .to_mut()
-                .function_parameters
-                .extend(analysis.callee_parameters.clone());
-        }
-        if !analysis.callee_structures.is_empty() {
-            symbols
-                .to_mut()
-                .function_structures
-                .extend(analysis.callee_structures.clone());
-        }
         if let Some(project) = &self.project {
             if let Err(error) = project.apply(ir.to_mut(), symbols.to_mut()) {
                 return Err(error);
@@ -1102,10 +1078,11 @@ impl Binary {
         if api_hashes.iter().any(|hash| !hash.candidates.is_empty()) {
             crate::api_hashes::add_comments(&api_hashes, &ir, symbols.to_mut());
         }
-        let mut rendered = render::render_with_dependencies(
+        let function_symbols = render::FunctionSymbols::new_with_analysis(&symbols, analysis);
+        let mut rendered = render::render_with_symbols(
             &ir,
             &analysis.references,
-            &symbols,
+            &function_symbols,
             &self.data_ranges,
         );
         crate::string_decoding::annotate(&mut rendered.code, decoded_strings, &ir, &symbols);
@@ -1752,6 +1729,7 @@ mod tests {
                 .all(|function| function.name.is_some()
                     || function.sources == [loader::NameSource::Call])
         );
+        assert!(binary.signature_database.entries.is_empty());
         assert!(
             binary
                 .image

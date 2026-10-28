@@ -2,10 +2,10 @@ mod declarations;
 
 use super::unions::MemberIndex;
 use super::{
-    CType, Ctx, Expr, FunctionIr, HashMap, Locals, Node, Reference, Rendered, SegmentBase,
-    SegmentBaseRead, Stmt, Symbols, abi, block_entry_frame_offsets, calls, expr, globals, indent,
-    int, naming, narrow_registers, params, render_expr, render_nodes, sanitize, stack_bytes,
-    stack_pointer, type_of, variables,
+    CType, Ctx, Expr, FunctionIr, FunctionSymbols, HashMap, Locals, Node, Reference, Rendered,
+    SegmentBase, SegmentBaseRead, Stmt, Symbols, abi, block_entry_frame_offsets, calls, expr,
+    globals, indent, int, naming, narrow_registers, params, render_expr, render_nodes, sanitize,
+    stack_bytes, stack_pointer, type_of, variables,
 };
 
 #[must_use]
@@ -24,6 +24,15 @@ pub fn render_with_dependencies(
     ir: &FunctionIr,
     references: &[Reference],
     symbols: &Symbols,
+    data_ranges: &[(u64, u64)],
+) -> Rendered {
+    render_with_symbols(ir, references, &FunctionSymbols::new(symbols), data_ranges)
+}
+
+pub(crate) fn render_with_symbols(
+    ir: &FunctionIr,
+    references: &[Reference],
+    symbols: &FunctionSymbols<'_>,
     data_ranges: &[(u64, u64)],
 ) -> Rendered {
     crate::timing::scope!("render/function::render_with_dependencies");
@@ -90,7 +99,7 @@ enum Variables {
 fn render_function(
     ir: &FunctionIr,
     references: &[Reference],
-    symbols: &Symbols,
+    symbols: &FunctionSymbols<'_>,
     data_ranges: &[(u64, u64)],
     variables: Variables,
 ) -> Rendered {
@@ -148,7 +157,7 @@ fn render_prepared(
     original: &FunctionIr,
     mut folded: FunctionIr,
     references: &[Reference],
-    symbols: &Symbols,
+    symbols: &FunctionSymbols<'_>,
     data_ranges: &[(u64, u64)],
     variadic: Option<&super::variadic::Plan>,
     variables: Variables,
@@ -432,7 +441,7 @@ fn render_with(
     ir: &FunctionIr,
     references: &[Reference],
     locals: Locals,
-    symbols: &Symbols,
+    symbols: &FunctionSymbols<'_>,
     data_ranges: &[(u64, u64)],
     entry: EntryStorage<'_>,
     body: PreparedBody,

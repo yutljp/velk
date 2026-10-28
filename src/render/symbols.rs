@@ -1,4 +1,62 @@
+use std::borrow::Cow;
 use std::collections::{HashMap, HashSet};
+
+pub(crate) struct FunctionSymbols<'symbols> {
+    symbols: &'symbols Symbols,
+    pub(super) import_parameters: Cow<'symbols, HashMap<u64, Vec<crate::ir::CType>>>,
+    pub(super) unused_parameters:
+        Cow<'symbols, HashMap<u64, crate::analysis::prototypes::Prototype>>,
+    pub(super) function_parameters: Cow<'symbols, HashMap<u64, Vec<crate::ir::CType>>>,
+    pub(super) function_structures: Cow<'symbols, HashMap<u64, HashSet<String>>>,
+}
+
+impl<'symbols> FunctionSymbols<'symbols> {
+    pub(crate) fn new(symbols: &'symbols Symbols) -> Self {
+        Self {
+            symbols,
+            import_parameters: Cow::Borrowed(&symbols.import_parameters),
+            unused_parameters: Cow::Borrowed(&symbols.unused_parameters),
+            function_parameters: Cow::Borrowed(&symbols.function_parameters),
+            function_structures: Cow::Borrowed(&symbols.function_structures),
+        }
+    }
+
+    pub(crate) fn new_with_analysis(
+        symbols: &'symbols Symbols,
+        analysis: &crate::analysis::Analysis,
+    ) -> Self {
+        let mut view = Self::new(symbols);
+        if !analysis.import_parameters.is_empty() {
+            view.import_parameters
+                .to_mut()
+                .extend(analysis.import_parameters.clone());
+        }
+        if !analysis.unused_parameters.is_empty() {
+            view.unused_parameters
+                .to_mut()
+                .extend(analysis.unused_parameters.clone());
+        }
+        if !analysis.callee_parameters.is_empty() {
+            view.function_parameters
+                .to_mut()
+                .extend(analysis.callee_parameters.clone());
+        }
+        if !analysis.callee_structures.is_empty() {
+            view.function_structures
+                .to_mut()
+                .extend(analysis.callee_structures.clone());
+        }
+        view
+    }
+}
+
+impl std::ops::Deref for FunctionSymbols<'_> {
+    type Target = Symbols;
+
+    fn deref(&self) -> &Self::Target {
+        self.symbols
+    }
+}
 
 #[derive(Default, Clone)]
 pub struct Symbols {

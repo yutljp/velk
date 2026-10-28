@@ -44,6 +44,7 @@ use calls::system_call_name;
 #[cfg(test)]
 use function::code_mentions;
 pub(crate) use function::declaration;
+pub(crate) use function::render_with_symbols;
 pub(crate) use function::structure_definition;
 pub(crate) use function::variable_types;
 pub use function::{render, render_with_dependencies};
@@ -53,6 +54,7 @@ pub(crate) use prelude::project_section;
 pub use prelude::{Prelude, combine};
 pub(crate) use stmt::render_stmt;
 use stmt::{argument, conformed, narrow_write, returned};
+pub(crate) use symbols::FunctionSymbols;
 pub use symbols::Symbols;
 
 /// An x86 segment base supplied by the target execution context.
@@ -142,39 +144,42 @@ pub fn callee_names(image: &crate::loader::Image) -> Symbols {
             base
         }
     };
-    let mut bases: HashMap<String, usize> = HashMap::new();
-    for function in image.functions.values() {
-        if let Some(name) = &function.name {
-            if !import_wrappers && function.sources.contains(&crate::loader::NameSource::Plt) {
-                continue;
-            }
-            *bases.entry(base_name(function, name)).or_default() += 1;
-        }
-    }
-    let mut used = std::collections::HashSet::new();
-    let functions = image
+    let named: Vec<(u64, &crate::loader::Function, String)> = image
         .functions
         .iter()
-        .filter_map(|(address, function)| {
-            let Some(name) = function.name.as_ref() else {
+        .filter_map(|(&address, function)| {
+            let Some(name) = function.name.as_deref() else {
                 return None;
             };
-            let base = base_name(function, name);
+            Some((address, function, base_name(function, name)))
+        })
+        .collect();
+    let mut bases: HashMap<&str, usize> = HashMap::new();
+    for (_, function, base) in &named {
+        if !import_wrappers && function.sources.contains(&crate::loader::NameSource::Plt) {
+            continue;
+        }
+        *bases.entry(base.as_str()).or_default() += 1;
+    }
+    let mut used = std::collections::HashSet::new();
+    let functions: HashMap<u64, String> = named
+        .iter()
+        .map(|(address, function, base)| {
             if !import_wrappers && function.sources.contains(&crate::loader::NameSource::Plt) {
-                return Some((*address, base));
+                return (*address, base.clone());
             }
             let mut name = base.clone();
-            if bases.get(&base) != Some(&1) {
+            if bases.get(base.as_str()) != Some(&1) {
                 let candidate = format!("{base}_{address:x}");
                 name = candidate.clone();
-                let mut suffix = 2;
-                while bases.contains_key(&name) || used.contains(&name) {
+                let mut suffix = 2usize;
+                while bases.contains_key(name.as_str()) || used.contains(&name) {
                     name = format!("{candidate}_{suffix}");
                     suffix += 1;
                 }
             }
             used.insert(name.clone());
-            Some((*address, name))
+            (*address, name)
         })
         .collect();
     let mut symbols = Symbols {

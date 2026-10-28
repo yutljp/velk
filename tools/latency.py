@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Measure alternating single-function CLI runs on a machine with load below four."""
+"""Measure alternating single-function CLI runs without caching at load below four."""
 
 import argparse
 import hashlib
@@ -48,7 +48,7 @@ def main():
         samples = [[] for _ in binaries]
         loads = [[] for _ in binaries]
         hashes = [None for _ in binaries]
-        command = ["-D", str(Path("tests/fixtures") / fixture), function]
+        command = ["-D", "--cache", "off", str(Path("tests/fixtures") / fixture), function]
         for binary in binaries:
             wait_for_load()
             subprocess.run([binary, *command], check=True, stdout=subprocess.DEVNULL)

@@ -47,6 +47,9 @@ pub(crate) fn identify(
         if matches!(scope, MatchScope::Unnamed) && function.name.is_some() {
             return Ok(None);
         }
+        if super::call_inside_named_function(image, function) {
+            return Ok(None);
+        }
         let Some(size) = function.size.filter(|size| *size <= MAX_BYTES) else {
             return Ok(None);
         };

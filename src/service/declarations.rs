@@ -26,6 +26,7 @@ pub(super) fn callers(image: &Image, root: &Analysis) -> BTreeSet<u64> {
             targets.insert(*address);
         }
     }
+    let mut callees = BTreeSet::new();
     for stmt in root.ir.blocks.iter().flat_map(|block| &block.stmts) {
         if let Stmt::Call {
             target: Some(target),
@@ -34,6 +35,7 @@ pub(super) fn callers(image: &Image, root: &Analysis) -> BTreeSet<u64> {
         } = stmt
         {
             targets.insert(*target);
+            callees.insert(*target);
         }
     }
     let mut addresses = BTreeSet::new();
@@ -43,6 +45,7 @@ pub(super) fn callers(image: &Image, root: &Analysis) -> BTreeSet<u64> {
             continue;
         }
         if target != root.ir.addr
+            && callees.contains(&target)
             && image
                 .functions
                 .get(&target)
