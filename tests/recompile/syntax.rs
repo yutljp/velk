@@ -1,6 +1,28 @@
 use super::*;
 
 #[test]
+fn reference_text_cannot_end_a_comment() {
+    let ir = synthetic_ir(
+        "reference_comment",
+        vec![],
+        CType::U64,
+        vec![Stmt::Ret {
+            value: Expr::Const(7),
+        }],
+    );
+    let reference = velk::analysis::refs::Reference {
+        addr: 0x2000,
+        section: ".rodata".into(),
+        text: Some("/* = %s */".into()),
+        pointer: None,
+        guid: None,
+    };
+    let code = velk::render::render(&ir, &[reference], &Default::default(), &[]);
+    assert!(code.contains("/* ref: 0x2000 \"/* = %s * /\" */"), "{code}");
+    run_printed(&code, "", "return reference_comment() != 7;");
+}
+
+#[test]
 fn mixed_global_array_views_keep_byte_offsets() {
     let ir = synthetic_ir(
         "mixed_offset",

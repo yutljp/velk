@@ -1052,7 +1052,10 @@ fn render_with(
     // The function goes by the name its callers use.
     let name = symbols.functions.get(&ir.addr).cloned().unwrap_or(name);
     for reference in references {
-        out.push_str(&format!("/* ref: {} */\n", reference.describe()));
+        out.push_str(&format!(
+            "/* ref: {} */\n",
+            reference.describe().replace("*/", "* /")
+        ));
     }
     // A pointer read as one scalar is no structure, and one to a structure
     // the debug info names needs no note of its fields.
