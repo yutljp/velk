@@ -1074,10 +1074,10 @@ fn ??_EVirtual@@$4PPPPPPPM@A@EAAPEAXI@Z @ 0x180001560 (size 16)
 /* velk pseudo-C: ??_GOther@@UEAAPEAXI@Z @ 0x180001570 */
 void *___GOther__UEAAPEAXI_Z(struct Other *this, int should_call_delete) {
     if ((should_call_delete & 0x1) == 0) {
-        return (void *)this;
+        return this;
     }
     __3_YAXPEAX_K_Z();
-    return (void *)this;
+    return this;
 }
 -- signature
 void * (struct Other * this, int should_call_delete)
@@ -1100,10 +1100,10 @@ fn ??_GOther@@UEAAPEAXI@Z @ 0x180001570 (size 35)
 /* velk pseudo-C: ??_GRoot@@UEAAPEAXI@Z @ 0x1800015a0 */
 void *___GRoot__UEAAPEAXI_Z(struct Root *this, int should_call_delete) {
     if ((should_call_delete & 0x1) == 0) {
-        return (void *)this;
+        return this;
     }
     __3_YAXPEAX_K_Z();
-    return (void *)this;
+    return this;
 }
 -- signature
 void * (struct Root * this, int should_call_delete)
@@ -1127,10 +1127,10 @@ fn ??_GRoot@@UEAAPEAXI@Z @ 0x1800015a0 (size 35)
 void *___GSingle__UEAAPEAXI_Z(struct Single *this, int should_call_delete) {
     __1Single__UEAA_XZ(this);
     if ((should_call_delete & 0x1) == 0) {
-        return (void *)this;
+        return this;
     }
     __3_YAXPEAX_K_Z();
-    return (void *)this;
+    return this;
 }
 -- signature
 void * (struct Single * this, int should_call_delete)
@@ -1154,10 +1154,10 @@ fn ??_GSingle@@UEAAPEAXI@Z @ 0x1800015d0 (size 45)
 /* velk pseudo-C: ??_GMultiple@@UEAAPEAXI@Z @ 0x180001600 */
 void *___GMultiple__UEAAPEAXI_Z(struct Multiple *this, int should_call_delete) {
     if ((should_call_delete & 0x1) == 0) {
-        return (void *)this;
+        return this;
     }
     __3_YAXPEAX_K_Z();
-    return (void *)this;
+    return this;
 }
 -- signature
 void * (struct Multiple * this, int should_call_delete)

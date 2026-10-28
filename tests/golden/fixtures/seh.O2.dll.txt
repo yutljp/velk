@@ -12,10 +12,10 @@
 /* velk prelude */
 #include <stdint.h>
 
+int32_t sub_180001110(void);
 uint64_t choose_filter();
 uint64_t imported_value();
 uint64_t sub_1800010b0();
-uint64_t sub_180001110();
 /* end velk prelude */
 
 == 0x180001000 choose_filter

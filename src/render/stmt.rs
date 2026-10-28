@@ -97,6 +97,34 @@ pub(super) fn conformed(
     ctx: &Ctx<'_>,
 ) -> String {
     if let Some(ty) = pointer
+        && let Expr::Reg {
+            index,
+            width: width @ (8 | 16 | 32),
+        } = value
+        && u32::from(crate::arch::pointer_bytes(ctx.isa)) * 8 > u32::from(*width)
+        && ctx.pointer_types.contains_key(index)
+    {
+        let address =
+            expr::print_value_at(&Expr::reg(*index, 64), ctx, 64, false).address_integer();
+        let mask = crate::ir::semantics::mask(u32::from(*width));
+        return format!("({ty})({} & 0x{mask:x})", address.within(6, false).text);
+    }
+    let pointer_value = if pointer.is_some()
+        && crate::arch::pointer_bytes(ctx.isa) == 4
+        && let Expr::Reg { index, width: 32 } = value
+        && ctx.pointer_types.contains_key(index)
+    {
+        Some(Expr::reg(*index, 64))
+    } else {
+        None
+    };
+    let value = pointer_value.as_ref().unwrap_or(value);
+    let printed = if pointer_value.is_some() {
+        expr::print_value_at(value, ctx, 64, false)
+    } else {
+        printed
+    };
+    if let Some(ty) = pointer
         && let Some(address) = expr::local_offset_integer(value, ctx)
     {
         return format!("({ty})({address})");
@@ -119,11 +147,24 @@ pub(super) fn conformed(
     {
         return printed.text;
     }
+    let target = naming::pointer_target(value, ctx);
     if printed.is_pointer()
-        && let Some(target) = naming::pointer_target(value, ctx)
-        && (pointer == Some("const void *")
-            || (pointer == Some("void *") && !matches!(target, CType::Named(_) | CType::Array(_)))
-            || (target == CType::Void && pointer.is_some_and(|ty| ty.ends_with('*'))))
+        && !function_address(value, ctx)
+        && target
+            .as_ref()
+            .is_none_or(|ty| !matches!(ty, CType::Function { .. }))
+        && ((pointer == Some("const void *")
+            && !target
+                .as_ref()
+                .is_some_and(|ty| qualified_target(ty, &["volatile"])))
+            || (pointer == Some("void *")
+                && !target
+                    .as_ref()
+                    .is_some_and(|ty| qualified_target(ty, &["const", "volatile"])))
+            || target.as_ref().is_some_and(|target| {
+                pointer.is_some_and(|parameter| implicit_pointer_qualification(target, parameter))
+            })
+            || (target == Some(CType::Void) && pointer.is_some_and(|ty| ty.ends_with('*'))))
     {
         return printed.text;
     }
@@ -157,6 +198,46 @@ pub(super) fn conformed(
         None => printed.address_integer().text,
         _ => printed.text,
     }
+}
+
+fn function_address(value: &Expr, ctx: &Ctx<'_>) -> bool {
+    match value {
+        Expr::Const(address) => ctx.symbols.functions.contains_key(address),
+        Expr::Select { then, els, .. } => function_address(then, ctx) || function_address(els, ctx),
+        _ => false,
+    }
+}
+
+fn qualified_target(ty: &CType, qualifiers: &[&str]) -> bool {
+    match ty {
+        CType::Array(element) => qualified_target(element, qualifiers),
+        CType::Named(name) => name
+            .split_whitespace()
+            .any(|word| qualifiers.contains(&word)),
+        _ => false,
+    }
+}
+
+fn implicit_pointer_qualification(target: &CType, parameter: &str) -> bool {
+    let Some(parameter) = parameter.trim_end().strip_suffix('*') else {
+        return false;
+    };
+    let source = target.to_string();
+    if source.contains(['*', '[', '(', ')']) || parameter.contains(['*', '[', '(', ')']) {
+        return false;
+    }
+    for qualifier in ["const", "volatile"] {
+        if source.split_whitespace().any(|word| word == qualifier)
+            && !parameter.split_whitespace().any(|word| word == qualifier)
+        {
+            return false;
+        }
+    }
+    let unqualified = |word: &&str| !matches!(*word, "const" | "volatile");
+    source
+        .split_whitespace()
+        .filter(unqualified)
+        .eq(parameter.split_whitespace().filter(unqualified))
 }
 
 fn value_precision(value: &Expr, ctx: &Ctx<'_>) -> Option<crate::ir::Precision> {

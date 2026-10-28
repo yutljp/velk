@@ -18,7 +18,7 @@ extern uint32_t banner; /* address: 0x301c0 */
 -- decompile
 /* velk pseudo-C: point_dot @ 0x20128 */
 int point_dot(struct point *a, struct point *b) {
-    struct S1 *v1 = (struct S1 *)(uint32_t)(uintptr_t)a;
+    struct S1 *v1 = (struct S1 *)a;
     return *(uint32_t *)((uint32_t)(uintptr_t)b) * v1->f_0 + *(uint32_t *)((uint64_t)(uint32_t)(uintptr_t)b + 0x4) * v1->f_4;
 }
 -- signature

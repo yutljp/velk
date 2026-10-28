@@ -140,7 +140,8 @@ only_third:
     let address = binary.find("saved_address").unwrap().addr;
     let code = binary.decompile(address, None, None).unwrap();
     assert!(!code.contains("undefined"), "{code}");
-    let code = format!("static uint64_t local_bits(void) {{ return 0; }}\n{code}");
+    assert!(code.contains("void local_bits(void);"), "{code}");
+    let code = format!("static void local_bits(void) {{}}\n{code}");
     syntax::run_printed(
         &code,
         "",
@@ -150,7 +151,7 @@ only_third:
     let code = binary.decompile(address, None, None).unwrap();
     assert!(!code.contains("also returned by the call"), "{code}");
     let code = format!(
-        "static uint64_t changes_first_two(void) {{ return 9; }}\nstatic uint64_t only_third(uint64_t a, uint64_t b, uint64_t c) {{ (void)a; (void)b; return c; }}\n{code}"
+        "static int32_t changes_first_two(void) {{ return 9; }}\nstatic uint64_t only_third(uint64_t a, uint64_t b, uint64_t c) {{ (void)a; (void)b; return c; }}\n{code}"
     );
     syntax::run_printed(&code, "", "if(calls_third()!=42) return 1;");
     std::fs::remove_dir_all(scratch).ok();

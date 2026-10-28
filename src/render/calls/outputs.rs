@@ -40,7 +40,14 @@ impl ValueType {
                 bits,
                 signed,
                 zero_extended: ctx.virtual_tables.signature(call, ctx).is_some()
-                    || matches!(call, Stmt::Call { target: Some(target), through: None, .. } if ctx.callee_signatures.contains_key(target) || *target == ctx.ir.addr),
+                    || matches!(
+                        call,
+                        Stmt::Call { target: Some(target), through: None, .. }
+                            if ctx.callee_signatures.contains_key(target)
+                                || ctx.symbols.unused_parameters.get(target)
+                                    .is_some_and(|prototype| prototype.params.is_empty())
+                                || *target == ctx.ir.addr
+                    ),
             }
         }
     }

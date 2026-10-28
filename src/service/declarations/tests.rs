@@ -881,3 +881,98 @@ fn unknown_import_bool_arguments_keep_their_promoted_values() {
         );
     }
 }
+
+#[test]
+fn agreed_empty_arguments_keep_a_void_parameter_list() {
+    for isa in [Isa::I386, Isa::X86_64, Isa::AArch64, Isa::Arm32] {
+        let image = Image::from_code(isa, 0, Vec::new());
+        let mut functions = vec![
+            analysis(
+                isa,
+                0x1000,
+                "empty",
+                vec![Stmt::Ret {
+                    value: Expr::Const(7),
+                }],
+            ),
+            analysis(
+                isa,
+                0x2000,
+                "caller",
+                vec![
+                    call(isa, 0x1000, Vec::new()),
+                    Stmt::Ret {
+                        value: Expr::Const(0),
+                    },
+                ],
+            ),
+        ];
+        recover(&image, &mut functions);
+        let mut symbols = Symbols::default();
+        symbols.functions.insert(0x1000, "empty".into());
+        symbols
+            .unused_parameters
+            .extend(functions[1].unused_parameters.clone());
+        let code = render::render(&functions[1].ir, &[], &symbols, &[]);
+        assert!(code.contains("uint64_t empty(void);"), "{isa}: {code}");
+        compile_and_run(
+            &format!(
+                "#include <stdint.h>\n{code}\nuint64_t empty(void) {{ return 7; }}\nint main(void) {{ return caller(); }}"
+            ),
+            &format!("empty-parameters-{isa}"),
+        );
+    }
+}
+
+#[test]
+fn an_empty_parameter_list_does_not_hide_an_observed_machine_result() {
+    for isa in [Isa::I386, Isa::X86_64, Isa::AArch64, Isa::Arm32] {
+        for ret in [CType::Void, CType::I32] {
+            let image = Image::from_code(isa, 0, Vec::new());
+            let mut functions = vec![
+                analysis(
+                    isa,
+                    0x1000,
+                    "empty",
+                    vec![Stmt::Ret {
+                        value: Expr::Const(0),
+                    }],
+                ),
+                analysis(
+                    isa,
+                    0x2000,
+                    "caller",
+                    vec![
+                        call(isa, 0x1000, Vec::new()),
+                        Stmt::Ret {
+                            value: Expr::reg(0, 64),
+                        },
+                    ],
+                ),
+            ];
+            let return_type = if ret == CType::Void {
+                "uint64_t"
+            } else {
+                "int32_t"
+            };
+            functions[0].ir.ret_type = ret;
+            recover(&image, &mut functions);
+            let mut symbols = Symbols::default();
+            symbols.functions.insert(0x1000, "empty".into());
+            symbols
+                .unused_parameters
+                .extend(functions[1].unused_parameters.clone());
+            let code = render::render(&functions[1].ir, &[], &symbols, &[]);
+            assert!(
+                code.contains(&format!("{return_type} empty(void);")),
+                "{isa}: {code}"
+            );
+            compile_and_run(
+                &format!(
+                    "#include <stdint.h>\n{code}\n{return_type} empty(void) {{ return 0x80000000; }}\nint main(void) {{ return caller() != UINT64_C(0x80000000); }}"
+                ),
+                &format!("empty-result-{isa}"),
+            );
+        }
+    }
+}

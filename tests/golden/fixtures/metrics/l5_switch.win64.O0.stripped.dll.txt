@@ -22,22 +22,22 @@
 
 extern uint32_t g_180003000; /* address: 0x180003000 */
 
-uint64_t sub_1800010c0();
-uint64_t sub_1800010d0();
-uint64_t sub_1800010e0();
-uint64_t sub_1800010f0();
-uint64_t sub_180001100();
-uint64_t sub_180001110();
-uint64_t sub_180001120();
-uint64_t sub_180001130();
-uint64_t sub_180001140();
-uint64_t sub_180001150();
-uint64_t sub_180001160();
-uint64_t sub_180001170();
-uint64_t sub_180001180();
-uint64_t sub_180001190();
-uint64_t sub_1800011a0();
-uint64_t sub_1800011b0();
+void sub_1800010c0(void);
+void sub_1800010d0(void);
+void sub_1800010e0(void);
+void sub_1800010f0(void);
+void sub_180001100(void);
+void sub_180001110(void);
+void sub_180001120(void);
+void sub_180001130(void);
+void sub_180001140(void);
+void sub_180001150(void);
+void sub_180001160(void);
+void sub_180001170(void);
+void sub_180001180(void);
+void sub_180001190(void);
+void sub_1800011a0(void);
+void sub_1800011b0(void);
 /* end velk prelude */
 
 == 0x180001000 -

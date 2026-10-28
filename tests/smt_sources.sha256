@@ -104,6 +104,8 @@ c542ea3ae09be21429b1ebec4e5855275cda0d16c7f5ac78b8c5a1da1f716c80  src/passes/sim
 10f3be5a63e7697ce61b730470a933404d67ffec9391709aa6a5c2f173d397d4  src/passes/simplify.rs	fn widen_compared_constant(
 0845cc92ba8e3e797238947edf12e5c0a0b6c3b1412700f8b281ac67c7b53d13  src/passes/widths.rs	pub fn specialize_widths(
 cf000670e99aed0861b79b3b5ca9a8baec01ef2a7f1fced76d08f1af1ee2b06a  src/render/abi_objects.rs	fn rewrite_value(
+ee15b6a0d86466865436bf2ef93beb2060d0db199d469793c3ffeff03f9bc10b  src/render/calls.rs	fn return_type<'a>(
+20297bb00dadfbff5efadf981cd9305e5d2ed93961c16b4a4408fc6a5db82b1d  src/render/calls/outputs.rs	fn returned(call: &Stmt, ctx: &Ctx<'_>) -> Self
 16fce2828e25b27180dd5f20db3f5a494806541affa5ccabb1bdd9728ca0af24  src/render/com_calls.rs	pub(super) fn prepare(
 05d0feb7a50dc3bee4c032dcec12a89472d6afaaf1925511cda5a19d473666c3  src/render/expr.rs	fn arithmetic(
 1a7cd9cb6ff797e5d675c881fd0395bd98ec79d4bd70a9bbd4563e74e906ebb8  src/render/expr.rs	fn binary(
@@ -136,8 +138,9 @@ dac402149d5e5232a83d33659175898e752f2c11d9ee76dd4264d5950b713235  src/render/par
 cf0f81f16c4c42c1206cabe8f8a9617e61ad29e561eb3a2287ee0fe6d003c8f7  src/render/params.rs	fn fold_parameter_copies(
 ccdb48908c504c913982c58b95184f13cc89a5f75486f71ad1ab25c1d48217b9  src/render/params.rs	fn replace_loads(
 f6d2b0045015ba544bb52366dfc3e54acfc9c37a44a54824e871799ca1145187  src/render/stack_bytes.rs	fn rewrite_address(
+75d50d9d755c1e79af7666814fb0d744acef9c069461d8abccb345a2c99170de  src/render/stmt.rs	fn function_address(value: &Expr, ctx: &Ctx<'_>) -> bool
 97b1142514dba360bf78897e31128c196f46b6da02ff3f956be93f31114a193b  src/render/stmt.rs	fn without_update_mask(
-d826496aa0bae181e2e4691f1e3b259c785ae943bbeb1407c9ecb83640092670  src/render/stmt.rs	pub(super) fn conformed(
+5e81869707f1396b7fd11f674391998c8ccb3201b13a480674a37be8bb64e19e  src/render/stmt.rs	pub(super) fn conformed(
 6d66b8eacb9df33770d419a62c31c056c11e3de39f10e4c817fc99d2e56a593c  src/render/stmt.rs	pub(super) fn narrow_write(
 869f0bacb069c78391d845f0c6dda4bda302af52853fe629e8b6735e8441b8db  src/render/string_functions.rs	fn comparison(
 b3c7a9e8c5bb8282352b8e49439760d9d45326154bfbdea59a45c31b471d364d  src/render/string_functions.rs	fn evaluate(
@@ -154,6 +157,7 @@ a58e17fe151c2c24805ff39201100f72575cb73b566c1631a46ae812f2dd078c  src/render/str
 77e3da73f79cb91b44f56539e6cbe46b7c6d4ec891e097fa57e3dc9e5f59c862  src/render/transfers.rs	fn fill(nodes:
 d6ed2930da3050a1e796935096262bd31b5c04a40d9547f751d04af0fe1c2c7f  src/render/transfers.rs	fn filled_range<'a>(
 c6a2555762303231a86118191e713279616e150d252086d24de10427275987aa  src/render/transfers.rs	fn string_copy(
+17ecc8bbb97427a15090908ed78d7b036eba77abb85932abb187d48a2011c01b  src/render/variables.rs	pub(super) fn call_pointer_types(
 9d8b67c41b4ec6446e770a9f25b123b38eada5dc6bdc637503859d0470e6fc9e  src/render/virtual_calls.rs	pub(super) fn prepare(
 bfdcdef48102d3e0d46218a589765c63baaff91dc48d6173ab2f781ceec3508d  src/render/widths.rs	pub(crate) fn narrow_variables(
 26f830b012a0705cb34935621e00778faed704abfe59a539505868ae5cd93da0  src/sigs/bytes/registers.rs	pub(super) fn alternative(

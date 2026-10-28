@@ -232,7 +232,21 @@ fn return_type<'a>(call: &Stmt, ctx: &'a Ctx<'_>) -> Option<&'a crate::ir::CType
             match ctx.callee_signatures.get(target) {
                 _ if *target == ctx.ir.addr => Some(&ctx.ir.ret_type),
                 Some(signature) => Some(&signature.ret),
-                None => ctx.symbols.function_returns.get(target),
+                None => ctx.symbols.function_returns.get(target).or_else(|| {
+                    let Some(prototype) = ctx.symbols.unused_parameters.get(target) else {
+                        return None;
+                    };
+                    if !prototype.params.is_empty()
+                        || (prototype.ret == crate::ir::CType::Void
+                            && call
+                                .call_outputs()
+                                .iter()
+                                .any(|output| ctx.call_outputs.used(call, output)))
+                    {
+                        return None;
+                    }
+                    Some(&prototype.ret)
+                }),
             }
         }
     }

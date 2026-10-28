@@ -82,7 +82,7 @@ fn copy_bytes @ 0x2013c (size 112)
 /* velk pseudo-C: fill_bytes @ 0x201ac */
 void fill_bytes(unsigned char *dst, unsigned char value, uint32_t n) {
     if (n != 0) {
-        string_length((char *)(uint32_t)(uintptr_t)dst);
+        string_length((char *)dst);
         return;
     }
 }

@@ -313,3 +313,260 @@ fn i386_array_arguments_to_integer_stubs_compile() {
         ),
     );
 }
+
+#[test]
+fn matching_pointer_arguments_type_the_local_and_convert_void_pointers_implicitly() {
+    use velk::ir::{RegRef, VARIABLE_BASE};
+    for isa in [Isa::X86_64, Isa::I386, Isa::AArch64, Isa::Arm32] {
+        let convention = Convention::of(isa, velk::loader::Format::Elf, false);
+        let pointer = CType::pointer_to(CType::Named("char".into()));
+        let call = |target, index| Stmt::Call {
+            kind: velk::ir::CallKind::Invoke,
+            target: Some(target),
+            through: None,
+            convention,
+            args: Some(vec![Expr::reg(index, 64)]),
+            floats_named: false,
+            abi: None,
+            outputs: Vec::new(),
+            clobbers: None,
+            via: None,
+        };
+        let mut ir = synthetic_ir(
+            "forward_pointer",
+            Vec::new(),
+            CType::U64,
+            vec![
+                Stmt::Assign {
+                    dest: RegRef {
+                        index: VARIABLE_BASE,
+                        width: 64,
+                    },
+                    value: Expr::Load {
+                        addr: Box::new(Expr::reg(0, 64)),
+                        width: 8,
+                        signed: false,
+                    },
+                },
+                Stmt::Assign {
+                    dest: RegRef {
+                        index: VARIABLE_BASE + 1,
+                        width: 64,
+                    },
+                    value: Expr::reg(VARIABLE_BASE, 64),
+                },
+                call(0x1000, VARIABLE_BASE),
+                call(0x1000, VARIABLE_BASE + 1),
+                call(0x2000, VARIABLE_BASE + 1),
+                Stmt::Ret {
+                    value: Expr::Const(0),
+                },
+            ],
+        );
+        ir.isa = isa;
+        ir.name = Some("forward_pointer".into());
+        ir.params.push(velk::ir::Param {
+            index: 0,
+            name: "input".into(),
+            ty: CType::pointer_to(pointer.clone()),
+        });
+        let mut symbols = velk::render::Symbols::default();
+        symbols.functions.insert(0x1000, "observe_pointer".into());
+        symbols.function_parameters.insert(0x1000, vec![pointer]);
+        symbols.function_returns.insert(0x1000, CType::Void);
+        symbols.functions.insert(0x2000, "observe_void".into());
+        symbols
+            .function_parameters
+            .insert(0x2000, vec![CType::pointer_to(CType::Void)]);
+        symbols.function_returns.insert(0x2000, CType::Void);
+        let code = velk::render::render(&ir, &[], &symbols, &[]);
+        assert!(code.contains("char *"), "{isa}: {code}");
+        assert!(!code.contains("observe_pointer((char *)"), "{isa}: {code}");
+        assert!(!code.contains("(void *)"), "{isa}: {code}");
+        syntax::run_printed(
+            &code,
+            "static char *expected; static int calls; void observe_pointer(char *value) { if(value != expected) __builtin_trap(); ++calls; } void observe_void(void *value) { observe_pointer(value); }",
+            "char bytes[256]; for(int i=0;i<256;++i) { expected=bytes+i; calls=0; forward_pointer(&expected); if(calls!=3) return 1; } return 0;",
+        );
+        symbols.functions.insert(0x2000, "observe_integer".into());
+        symbols.function_parameters.insert(0x2000, vec![CType::U64]);
+        let code = velk::render::render(&ir, &[], &symbols, &[]);
+        assert!(code.contains("(char *)"), "{isa}: {code}");
+        syntax::run_printed(
+            &code,
+            "static char *expected; static int calls; void observe_pointer(char *value) { if(value != expected) __builtin_trap(); ++calls; } void observe_integer(uint64_t value) { if(value != (uintptr_t)expected) __builtin_trap(); ++calls; }",
+            "char bytes[256]; for(int i=0;i<256;++i) { expected=bytes+i; calls=0; forward_pointer(&expected); if(calls!=3) return 1; } return 0;",
+        );
+    }
+}
+
+#[test]
+fn void_pointer_conversions_preserve_required_qualifier_casts() {
+    for (target, cast) in [
+        (CType::Named("struct item".into()), false),
+        (CType::Named("const uint8_t".into()), true),
+        (
+            CType::Array(Box::new(CType::Named("const uint8_t".into()))),
+            true,
+        ),
+    ] {
+        let ir = synthetic_ir(
+            "object_address",
+            vec![Param {
+                index: 7,
+                name: "input".into(),
+                ty: CType::pointer_to(target),
+            }],
+            CType::pointer_to(CType::Void),
+            vec![Stmt::Ret {
+                value: Expr::reg(7, 64),
+            }],
+        );
+        let code = velk::render::render(&ir, &[], &Default::default(), &[]);
+        assert_eq!(code.contains("return (void *)"), cast, "{code}");
+        syntax::run_printed(
+            &format!("struct item {{ uint8_t value; }};\n{code}"),
+            "",
+            "uint8_t bytes[64]; for(int i=0;i<64;++i) if(object_address((void *)(bytes+i)) != bytes+i) return 1; return 0;",
+        );
+    }
+}
+
+#[test]
+fn pointer_qualification_is_implicit_only_at_the_first_level() {
+    let character = CType::Named("char".into());
+    let constant_character = CType::Named("const char".into());
+    for (source, target, cast) in [
+        (character.clone(), constant_character.clone(), false),
+        (
+            CType::pointer_to(character),
+            CType::pointer_to(constant_character),
+            true,
+        ),
+    ] {
+        let ir = synthetic_ir(
+            "object_address",
+            vec![Param {
+                index: 7,
+                name: "input".into(),
+                ty: CType::pointer_to(source),
+            }],
+            CType::pointer_to(target),
+            vec![Stmt::Ret {
+                value: Expr::reg(7, 64),
+            }],
+        );
+        let code = velk::render::render(&ir, &[], &Default::default(), &[]);
+        assert_eq!(code.contains("return (const char *"), cast, "{code}");
+        syntax::run_printed(
+            &code,
+            "",
+            "uintptr_t slots[64]; for(int i=0;i<64;++i) if((const void *)object_address((void *)(slots+i)) != slots+i) return 1; return 0;",
+        );
+    }
+}
+
+#[test]
+fn pointer_register_arguments_preserve_whole_addresses_and_partial_bits() {
+    for isa in [Isa::I386, Isa::Arm32, Isa::X86_64, Isa::AArch64] {
+        for width in [8, 16, 32] {
+            let convention = Convention::of(isa, velk::loader::Format::Elf, false);
+            let pointer = CType::pointer_to(CType::Named("char".into()));
+            let mut ir = synthetic_ir(
+                "forward_word",
+                vec![Param {
+                    index: 7,
+                    name: "input".into(),
+                    ty: pointer.clone(),
+                }],
+                CType::U64,
+                vec![
+                    Stmt::Call {
+                        kind: velk::ir::CallKind::Invoke,
+                        target: Some(0x1000),
+                        through: None,
+                        convention,
+                        args: Some(vec![Expr::reg(7, width)]),
+                        floats_named: false,
+                        abi: None,
+                        outputs: Vec::new(),
+                        clobbers: None,
+                        via: None,
+                    },
+                    Stmt::Ret {
+                        value: Expr::Const(0),
+                    },
+                ],
+            );
+            ir.isa = isa;
+            ir.convention = convention;
+            let mut symbols = velk::render::Symbols::default();
+            symbols.functions.insert(0x1000, "observe_pointer".into());
+            symbols.function_parameters.insert(0x1000, vec![pointer]);
+            symbols.function_returns.insert(0x1000, CType::Void);
+            let code = velk::render::render(&ir, &[], &symbols, &[]);
+            let narrow = width
+                < if matches!(isa, Isa::X86_64 | Isa::AArch64) {
+                    64
+                } else {
+                    32
+                };
+            let bits = (1u64 << width) - 1;
+            assert_eq!(
+                code.contains(&format!("& 0x{bits:x}")),
+                narrow,
+                "{isa}: {code}"
+            );
+            assert!(!code.contains("(uint32_t)(uintptr_t)"), "{code}");
+            let mask = if narrow {
+                format!("0x{bits:x}")
+            } else {
+                "UINTPTR_MAX".into()
+            };
+            syntax::run_printed(
+                &code,
+                &format!(
+                    "static char *expected; void observe_pointer(char *value) {{ if((uintptr_t)value != ((uintptr_t)expected & {mask})) __builtin_trap(); }}"
+                ),
+                "char bytes[256]; for(int i=0;i<256;++i) { expected=bytes+i; forward_word(expected); } return 0;",
+            );
+        }
+    }
+}
+
+#[test]
+fn selected_function_addresses_keep_the_explicit_void_pointer_conversion() {
+    for isa in [Isa::I386, Isa::Arm32, Isa::X86_64, Isa::AArch64] {
+        let mut ir = synthetic_ir(
+            "select_function",
+            vec![Param {
+                index: 7,
+                name: "choose".into(),
+                ty: CType::U64,
+            }],
+            CType::pointer_to(CType::Void),
+            vec![Stmt::Ret {
+                value: Expr::Select {
+                    cond: Cond::Ne,
+                    lhs: Box::new(Expr::reg(7, 64)),
+                    rhs: Box::new(Expr::Const(0)),
+                    then: Box::new(Expr::Const(0x1000)),
+                    els: Box::new(Expr::Const(0x2000)),
+                },
+            }],
+        );
+        ir.isa = isa;
+        let mut symbols = velk::render::Symbols::default();
+        for (address, name) in [(0x1000, "function_one"), (0x2000, "function_two")] {
+            symbols.functions.insert(address, name.into());
+            symbols.function_returns.insert(address, CType::U64);
+        }
+        let code = velk::render::render(&ir, &[], &symbols, &[]);
+        assert!(code.contains("return (void *)"), "{isa}: {code}");
+        syntax::run_printed(
+            &code,
+            "uint64_t function_one(void) { return 1; } uint64_t function_two(void) { return 2; }",
+            "for(int choose=-64;choose<=64;++choose) { uint64_t (*function)(void)=(uint64_t (*)(void))select_function(choose); if(function() != (choose ? 1 : 2)) return 1; } return 0;",
+        );
+    }
+}

@@ -29,8 +29,8 @@ extern uint64_t _ZL4used; /* address: 0x204610 */
 uint64_t Rect__Rect();
 uint64_t Rect__scaled();
 uint64_t Square__Square();
-uint64_t Square___Square();
 uint64_t Square__area();
+void Square___Square(void);
 /* end velk prelude */
 
 == 0x2013a0 __cxa_pure_virtual

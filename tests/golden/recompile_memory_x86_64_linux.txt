@@ -1,7 +1,7 @@
 # functions left out:
 #   calls: 8194
 #   computes on floats or vectors: 108
-#   computes on registers alone: 1802
+#   computes on registers alone: 1810
 #   has an unsupported instruction: 17
 #   reads a register that is not a parameter: 129
 #   refers to data: 897
@@ -91,10 +91,10 @@
 # cpp_virtual_x64_stripped.elf: 18 functions, 3 qualify, 3 compile, 0 do not, 3 compared (36 runs), 0 differ
 # frame_bounds_a64.o: 1 functions, 1 qualify, 1 compile, 0 do not, 1 compared (12 runs), 0 differ
 # frame_bounds_x64.o: 1 functions, 1 qualify, 1 compile, 0 do not, 1 compared (12 runs), 0 differ
-# go_probe: 1287 functions, 51 qualify, 51 compile, 0 do not, 43 compared (500 runs), 0 differ
-# go_probe_arm64: 1271 functions, 43 qualify, 43 compile, 0 do not, 36 compared (423 runs), 0 differ
-# go_stripped: 1285 functions, 50 qualify, 50 compile, 0 do not, 42 compared (492 runs), 0 differ
-# go_stripped_arm64: 1269 functions, 42 qualify, 42 compile, 0 do not, 35 compared (415 runs), 0 differ
+# go_probe: 1287 functions, 49 qualify, 49 compile, 0 do not, 41 compared (476 runs), 0 differ
+# go_probe_arm64: 1271 functions, 41 qualify, 41 compile, 0 do not, 34 compared (399 runs), 0 differ
+# go_stripped: 1285 functions, 48 qualify, 48 compile, 0 do not, 40 compared (468 runs), 0 differ
+# go_stripped_arm64: 1269 functions, 40 qualify, 40 compile, 0 do not, 33 compared (391 runs), 0 differ
 # l2_loop_a64.o: 4 functions, 4 qualify, 4 compile, 0 do not, 3 compared (26 runs), 0 differ
 # l2_loop_x64.o: 4 functions, 4 qualify, 4 compile, 0 do not, 3 compared (26 runs), 0 differ
 # l4_memory_a64.o: 4 functions, 4 qualify, 4 compile, 0 do not, 2 compared (22 runs), 0 differ

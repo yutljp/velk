@@ -11,6 +11,153 @@ pub(crate) enum MixedAccess {
     Bytes,
 }
 
+/// Types values used exclusively as matching pointer arguments.
+pub(super) fn call_pointer_types(ir: &mut FunctionIr, symbols: &super::Symbols) {
+    let mut types = HashMap::<u16, CType>::new();
+    let mut rejected = HashSet::new();
+    let mut copies = Vec::new();
+    for stmt in ir.blocks.iter().flat_map(|block| &block.stmts) {
+        let mut accepted = HashSet::new();
+        if let Stmt::Assign {
+            dest,
+            value: Expr::Reg { index, width: 64 },
+        } = stmt
+            && dest.width == 64
+            && crate::ir::is_temp(dest.index)
+            && crate::ir::is_temp(*index)
+        {
+            copies.push((dest.index, *index));
+            accepted.insert(*index);
+        }
+        if let Stmt::Call {
+            target: Some(target),
+            through: None,
+            args: Some(args),
+            ..
+        } = stmt
+        {
+            let parameters: Option<Vec<&CType>> = match ir.callee_signatures.get(target) {
+                Some(signature) => Some(signature.params.iter().map(|(_, ty)| ty).collect()),
+                None => symbols
+                    .function_parameters
+                    .get(target)
+                    .map(|types| types.iter().collect())
+                    .or_else(|| {
+                        let Some(name) = symbols.original_or_printed_function_name(*target) else {
+                            return None;
+                        };
+                        let name = super::sanitize(name);
+                        symbols
+                            .library_prototypes
+                            .get(&name)
+                            .or_else(|| {
+                                crate::analysis::prototypes::of(
+                                    &name,
+                                    symbols.target_format == Some(crate::loader::Format::MachO),
+                                )
+                            })
+                            .map(|prototype| prototype.params.iter().collect())
+                    }),
+            };
+            if let Some(parameters) = parameters
+                && parameters.len() == args.len()
+            {
+                for (arg, ty) in args.iter().zip(parameters) {
+                    if let Expr::Reg { index, width: 64 } = arg
+                        && crate::ir::is_temp(*index)
+                        && ty.is_pointer()
+                    {
+                        accepted.insert(*index);
+                        pointer_constraint(&mut types, &mut rejected, *index, ty);
+                    } else {
+                        crate::ir::visit::expr_reads(arg, &mut rejected);
+                    }
+                }
+            }
+        }
+        for value in stmt.operands() {
+            if let Expr::Reg { index, width: 64 } = value
+                && accepted.contains(index)
+            {
+                continue;
+            }
+            crate::ir::visit::expr_reads(value, &mut rejected);
+        }
+        if let Stmt::Assign { dest, .. } = stmt
+            && dest.width != 64
+        {
+            rejected.insert(dest.index);
+        }
+        if let Stmt::Assign { dest, value } = stmt
+            && base(value) == Some(crate::arch::stack_pointer(ir.isa))
+        {
+            rejected.insert(dest.index);
+        }
+        if let Stmt::Machine { outputs, .. } = stmt {
+            rejected.extend(outputs.iter().map(|output| output.index));
+        }
+        for output in stmt.call_outputs() {
+            if output.dest.width != 64 {
+                rejected.insert(output.dest.index);
+            }
+        }
+    }
+    loop {
+        let mut changed = false;
+        for &(dest, source) in &copies {
+            for (from, to) in [(dest, source), (source, dest)] {
+                if rejected.contains(&from) {
+                    changed |= rejected.insert(to);
+                }
+                if let Some(ty) = types.get(&from).cloned() {
+                    changed |= pointer_constraint(&mut types, &mut rejected, to, &ty);
+                }
+            }
+        }
+        if !changed {
+            break;
+        }
+    }
+    for (index, ty) in types {
+        if rejected.contains(&index)
+            || ir
+                .value_types
+                .get(&index)
+                .is_some_and(|given| !matches!(given, CType::Int { bytes: 8, .. }))
+        {
+            continue;
+        }
+        if !ir.pointer_values.contains(&index) {
+            ir.pointer_values.push(index);
+        }
+        ir.value_types.insert(index, ty);
+    }
+}
+
+fn pointer_constraint(
+    types: &mut HashMap<u16, CType>,
+    rejected: &mut HashSet<u16>,
+    index: u16,
+    ty: &CType,
+) -> bool {
+    match types.get(&index) {
+        Some(previous) if previous == ty => false,
+        Some(previous)
+            if crate::analysis::prototypes::void_pointer(ty)
+                && !matches!(previous, CType::Pointer(target) if matches!(target.as_ref(), CType::Function { .. })) =>
+        {
+            false
+        }
+        Some(previous) if !crate::analysis::prototypes::void_pointer(previous) => {
+            rejected.insert(index)
+        }
+        _ => {
+            types.insert(index, ty.clone());
+            true
+        }
+    }
+}
+
 /// The C type of each variable, from how the body uses it: a float when
 /// float operations compute or read it, a pointer when it addresses memory
 /// and takes no part in arithmetic beyond adding offsets, and otherwise an
@@ -180,7 +327,15 @@ pub(crate) fn variable_types(
         {
             // A callee takes it as a pointer.
             match ir.value_types.get(&index) {
-                Some(given) if given.pointee_struct().is_some() => given.clone(),
+                Some(given)
+                    if given.is_pointer()
+                        && (given.pointee_struct().is_some()
+                            || !uses.derived.get(&index).is_some_and(|sources| {
+                                sources.contains(&crate::arch::stack_pointer(ir.isa))
+                            })) =>
+                {
+                    given.clone()
+                }
                 _ => CType::pointer_to(CType::Void),
             }
         } else {

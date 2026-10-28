@@ -44,10 +44,10 @@ int (kill)(int, int);
 int (mprotect)(void *, size_t, int);
 int (pthread_kill)(unsigned long, int);
 int (shutdown)(int, int);
+int32_t deregister_tm_clones(void);
+int32_t register_tm_clones(void);
 struct group; int (getgrgid_r)(unsigned int, struct group *, char *, size_t, struct group **);
 uint64_t __gmon_start__();
-uint64_t deregister_tm_clones();
-uint64_t register_tm_clones();
 void (__cxa_finalize)(void *);
 void main();
 /* end velk prelude */

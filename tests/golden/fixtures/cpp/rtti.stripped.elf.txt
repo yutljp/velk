@@ -62,16 +62,13 @@ extern uint8_t Virtual_vtable_16; /* address: 0x202f18 */
 
 uint64_t imported_value();
 uint64_t sub_201a30();
-uint64_t sub_201a5a();
 uint64_t sub_201a60();
 uint64_t sub_201a78();
 uint64_t sub_201a80();
 uint64_t sub_201ad0();
 uint64_t sub_201b08();
-uint64_t sub_201b20();
 uint64_t sub_201b60();
 uint64_t sub_201b90();
-uint64_t sub_201bc0();
 uint64_t sub_201be0();
 uint64_t sub_201dc0();
 uint64_t velk_entry_stack_pointer(void); /* target entry stack pointer */
@@ -80,6 +77,9 @@ uint64_t velk_exception_value(void);
 void (_Unwind_Resume)(void *);
 void (__cxa_end_catch)(void);
 void *(__cxa_begin_catch)(void *);
+void sub_201a5a(void);
+void sub_201b20(void);
+void sub_201bc0(void);
 /* end velk prelude */
 
 == 0x201a30 -

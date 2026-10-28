@@ -664,7 +664,7 @@ struct Root_base { unsigned char bytes[8]; };
 struct Other_base { unsigned char bytes[8]; };
 struct Multiple_2 { union { struct Multiple_vtable *vtable; struct Root_base base_Root; }; unsigned char padding_1[8]; struct Other_base base_Other; };
 int dispatch_multiple(struct Multiple *object) {
-    return ((struct Multiple_2 *)(object))->vtable->other((void *)object); /* vtable slot 3: Multiple__other */
+    return ((struct Multiple_2 *)(object))->vtable->other(object); /* vtable slot 3: Multiple__other */
 }
 -- signature
 int (struct Multiple * object)

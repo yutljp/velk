@@ -88,7 +88,7 @@ ret
 .size offset_caller, .-offset_caller
 ",
             "offset_caller",
-            "static uint64_t offset_callee(void) { return 0; }",
+            "static void offset_callee(void) {}",
         ),
     ] {
         let scratch = scratch_dir(name);

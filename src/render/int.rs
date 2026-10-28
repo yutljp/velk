@@ -548,6 +548,29 @@ mod tests {
     }
 
     #[test]
+    fn pointer_argument_masks_preserve_narrow_register_bits_smt() {
+        use crate::ir::smt::Proofs;
+
+        if !Proofs::available() {
+            return;
+        }
+        let mut proofs = Proofs::default();
+        for width in [8, 16, 32] {
+            proofs.expression(
+                format!("pointer argument mask/{width}"),
+                &Expr::reg(7, width),
+                &Expr::bin(
+                    crate::ir::BinOp::And,
+                    Expr::reg(7, 64),
+                    Expr::Const(crate::ir::semantics::mask(u32::from(width))),
+                ),
+                64,
+            );
+        }
+        proofs.check();
+    }
+
+    #[test]
     fn integer_cast_removal_smt() {
         use crate::ir::smt::{self, Proofs};
 

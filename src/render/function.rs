@@ -165,6 +165,7 @@ fn render_prepared(
     stack_bytes::protect_parameter_names(&mut folded);
     let float_entries = physical_float_parameters(&mut folded);
     let mut logical = abi::prepare(&mut folded, symbols);
+    variables::call_pointer_types(&mut folded, symbols);
     let mut incoming = if logical.is_none() {
         stack_bytes::prepare(&mut folded)
     } else {
@@ -1300,8 +1301,16 @@ fn render_with(
                     (name == *taken).then_some(types)
                 })
             {
+                let ret = if types.params.is_empty()
+                    && types.ret == CType::Void
+                    && ctx.call_returns_used.borrow().get(taken) == Some(&true)
+                {
+                    call_returns.get(taken).copied().unwrap_or(&CType::U64)
+                } else {
+                    &types.ret
+                };
                 let prototype = declaration(
-                    &types.ret,
+                    ret,
                     &format!(
                         "{taken}({})",
                         unused_signature(&types.params, &mut Default::default())

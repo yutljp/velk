@@ -22,22 +22,22 @@
 
 extern uint32_t g_20250c; /* address: 0x20250c */
 
-uint64_t sub_2013e0();
-uint64_t sub_2013f0();
-uint64_t sub_201400();
-uint64_t sub_201410();
-uint64_t sub_201420();
-uint64_t sub_201430();
-uint64_t sub_201440();
-uint64_t sub_201450();
-uint64_t sub_201460();
-uint64_t sub_201470();
-uint64_t sub_201480();
-uint64_t sub_201490();
-uint64_t sub_2014a0();
-uint64_t sub_2014b0();
-uint64_t sub_2014c0();
-uint64_t sub_2014d0();
+void sub_2013e0(void);
+void sub_2013f0(void);
+void sub_201400(void);
+void sub_201410(void);
+void sub_201420(void);
+void sub_201430(void);
+void sub_201440(void);
+void sub_201450(void);
+void sub_201460(void);
+void sub_201470(void);
+void sub_201480(void);
+void sub_201490(void);
+void sub_2014a0(void);
+void sub_2014b0(void);
+void sub_2014c0(void);
+void sub_2014d0(void);
 /* end velk prelude */
 
 == 0x201330 -

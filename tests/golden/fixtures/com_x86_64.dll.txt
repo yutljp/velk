@@ -114,7 +114,7 @@ fn com_release @ 0x36ed9100f (size 15)
 -- decompile
 /* velk pseudo-C: com_query @ 0x36ed9101e */
 int32_t com_query(struct IUnknown *object, struct _GUID *iid, void **result) {
-    return object->lpVtbl->QueryInterface(object, (const struct _GUID *)iid, result);
+    return object->lpVtbl->QueryInterface(object, iid, result);
 }
 -- signature
 int32_t (struct IUnknown * object, struct _GUID * iid, void ** result)

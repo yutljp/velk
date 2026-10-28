@@ -123,9 +123,6 @@ pub(super) fn recover(image: &Image, functions: &mut [Analysis]) {
     for analysis in functions {
         analysis.import_parameters.extend(imports.clone());
         for (&target, types) in &parameters {
-            if types.is_empty() {
-                continue;
-            }
             let Some(callee) = returns.get(&target) else {
                 continue;
             };
