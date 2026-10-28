@@ -494,23 +494,29 @@ pub(crate) fn member_access(addr: &Expr, width: u8, ctx: &Ctx<'_>) -> Option<Pla
     {
         return place.scalar(u64::from(width));
     }
-    let Some((base, offset)) = member_address(addr) else {
-        return None;
-    };
-    let Some(pointee) = pointee_of(&Expr::reg(base, 64), ctx) else {
-        return None;
-    };
-    if ctx.arrays.contains_key(&pointee) {
-        return None;
+    if let Some((base, offset)) = member_address(addr)
+        && let Some(pointee) = pointee_of(&Expr::reg(base, 64), ctx)
+        && !ctx.arrays.contains_key(&pointee)
+        && let Some(member) = field_of(&pointee, offset, u64::from(width), ctx)
+    {
+        return Place {
+            text: format!("{}->{}", ctx.register(base, 64), member.name),
+            ty: member.ty.clone(),
+        }
+        .scalar(u64::from(width));
     }
-    let Some(member) = field_of(&pointee, offset, u64::from(width), ctx) else {
-        return None;
-    };
-    Place {
-        text: format!("{}->{}", ctx.register(base, 64), member.name),
-        ty: member.ty.clone(),
+    if let Some(ty) = pointer_target(addr, ctx)
+        && matches!(ty, CType::Int { bytes, .. } if bytes == width)
+    {
+        let address = super::expr::print(addr, ctx, 64);
+        if address.is_pointer() {
+            return Some(Place {
+                text: format!("*{}", address.within(12, false).text),
+                ty,
+            });
+        }
     }
-    .scalar(u64::from(width))
+    None
 }
 
 /// The field of `structure` at `offset` read `width` bytes wide: the field
@@ -968,10 +974,7 @@ mod tests {
         let text = rendered(&ir);
         assert!(text.contains("struct record { uint32_t value;"), "{text}");
         assert!(text.contains("return p->value;"), "{text}");
-        assert!(
-            text.contains("*(uint8_t *)((uint8_t *)p + 0x4) = 5;"),
-            "{text}"
-        );
+        assert!(text.contains("*((uint8_t *)p + 0x4) = 5;"), "{text}");
         assert!(!text.contains("f_"), "{text}");
     }
 
@@ -999,10 +1002,7 @@ mod tests {
         let text = rendered(&ir);
         assert!(text.contains("p->f_8 = 5;"), "{text}");
         assert!(text.contains("return p->f_0;"), "{text}");
-        assert!(
-            text.contains("*(uint8_t *)((uint8_t *)p + 0x4) = 6;"),
-            "{text}"
-        );
+        assert!(text.contains("*((uint8_t *)p + 0x4) = 6;"), "{text}");
         assert!(!text.contains("f_4"), "{text}");
     }
 

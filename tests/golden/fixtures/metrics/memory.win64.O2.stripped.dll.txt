@@ -73,7 +73,7 @@ L_1800010a6:;
     if (v16 != 0) {
         v15 = v7;
         do {
-            *(uint8_t *)((uint8_t *)a0 + v15) = *(uint8_t *)((uint8_t *)a1 + v15);
+            *((uint8_t *)a0 + v15) = *((uint8_t *)a1 + v15);
             v15 = (uint64_t)v15 + 1;
             v16 = (uint64_t)v16 - 1;
         } while (v16 != 0);
@@ -82,10 +82,10 @@ L_1800010a6:;
         return;
     }
     do {
-        *(uint8_t *)((uint8_t *)a0 + v15) = *(uint8_t *)((uint8_t *)a1 + v15);
-        *(uint8_t *)((uint8_t *)a0 + v15 + 0x1) = *(uint8_t *)((uint8_t *)a1 + v15 + 0x1);
-        *(uint8_t *)((uint8_t *)a0 + v15 + 0x2) = *(uint8_t *)((uint8_t *)a1 + v15 + 0x2);
-        *(uint8_t *)((uint8_t *)a0 + v15 + 0x3) = *(uint8_t *)((uint8_t *)a1 + v15 + 0x3);
+        *((uint8_t *)a0 + v15) = *((uint8_t *)a1 + v15);
+        *((uint8_t *)a0 + v15 + 0x1) = *((uint8_t *)a1 + v15 + 0x1);
+        *((uint8_t *)a0 + v15 + 0x2) = *((uint8_t *)a1 + v15 + 0x2);
+        *((uint8_t *)a0 + v15 + 0x3) = *((uint8_t *)a1 + v15 + 0x3);
         v15 = (uint64_t)v15 + 4;
     } while (a2 != v15);
 }

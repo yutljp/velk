@@ -42,6 +42,9 @@ pub(crate) fn variable_types(
                 }
             }
             Stmt::Ret { .. } if ir.ret_type.is_pointer() => {}
+            Stmt::Ret {
+                value: Expr::Reg { width: 64, .. },
+            } if ir.ret_type.integer().is_some_and(|(bits, _)| bits == 64) => {}
             other => {
                 for value in other.operands() {
                     integer_reads(value, &mut integer_copies);

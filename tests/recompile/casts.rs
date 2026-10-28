@@ -1,6 +1,269 @@
 use super::*;
 
 #[test]
+fn returned_address_copies_keep_pointer_types() {
+    use velk::ir::{RegRef, VARIABLE_BASE};
+
+    let mut candidates = Vec::new();
+    for isa in [Isa::X86_64, Isa::AArch64] {
+        for width in [1, 2, 4, 8] {
+            let pointer = Expr::reg(VARIABLE_BASE, 64);
+            let copy = Expr::reg(VARIABLE_BASE + 1, 64);
+            let mut ir = synthetic_ir(
+                &format!("returned_copy_{isa:?}_{width}"),
+                vec![
+                    Param {
+                        index: 7,
+                        name: "p".into(),
+                        ty: CType::pointer_to(CType::int(width, false)),
+                    },
+                    Param {
+                        index: 6,
+                        name: "q".into(),
+                        ty: CType::pointer_to(CType::int(width, false)),
+                    },
+                    Param {
+                        index: 5,
+                        name: "choose".into(),
+                        ty: CType::U64,
+                    },
+                ],
+                CType::U64,
+                vec![
+                    Stmt::Assign {
+                        dest: RegRef {
+                            index: VARIABLE_BASE,
+                            width: 64,
+                        },
+                        value: Expr::Select {
+                            cond: Cond::Ne,
+                            lhs: Box::new(Expr::reg(5, 64)),
+                            rhs: Box::new(Expr::Const(0)),
+                            then: Box::new(Expr::reg(7, 64)),
+                            els: Box::new(Expr::reg(6, 64)),
+                        },
+                    },
+                    Stmt::Assign {
+                        dest: RegRef {
+                            index: VARIABLE_BASE + 1,
+                            width: 64,
+                        },
+                        value: pointer.clone(),
+                    },
+                    Stmt::Store {
+                        addr: copy,
+                        value: Expr::Const(0x807f_ff01_8000_ffff),
+                        width,
+                    },
+                    Stmt::Ret { value: pointer },
+                ],
+            );
+            ir.isa = isa;
+            let inputs = [0, 1, u64::MAX]
+                .into_iter()
+                .flat_map(|choose| {
+                    [32, 64, 256, REGION_SIZE - 64]
+                        .map(|offset| vec![REGION + offset, REGION + 16, choose])
+                })
+                .collect();
+            let candidate = printed_candidate(ir, inputs);
+            assert!(
+                candidate.code.contains(&format!("uint{}_t *v1", width * 8)),
+                "{}",
+                candidate.code
+            );
+            assert!(!candidate.code.contains("v2 = ("), "{}", candidate.code);
+            candidates.push(candidate);
+        }
+    }
+    check_candidates("address-copies", candidates, Mode::Memory, &[]);
+}
+
+#[test]
+fn byte_accesses_through_wide_pointer_offsets_keep_one_conversion() {
+    let mut candidates = Vec::new();
+    for isa in [Isa::X86_64, Isa::I386, Isa::AArch64, Isa::Arm32] {
+        for signed in [false, true] {
+            for offset in [1, 3, 7, 9, 15] {
+                let address = Expr::bin(BinOp::Add, Expr::reg(7, 64), Expr::Const(offset));
+                let mut ir = synthetic_ir(
+                    &format!("byte_offset_{isa:?}_{signed}_{offset}"),
+                    vec![Param {
+                        index: 7,
+                        name: "p".into(),
+                        ty: CType::pointer_to(CType::U64),
+                    }],
+                    CType::U64,
+                    vec![
+                        Stmt::Store {
+                            addr: address.clone(),
+                            value: Expr::Const(0x80),
+                            width: 1,
+                        },
+                        Stmt::Ret {
+                            value: Expr::Load {
+                                addr: Box::new(address),
+                                width: 1,
+                                signed,
+                            },
+                        },
+                    ],
+                );
+                ir.isa = isa;
+                let inputs = (0..16)
+                    .map(|index| vec![region_start(isa) + 32 + index * 128])
+                    .collect();
+                let candidate = printed_candidate(ir, inputs);
+                assert!(
+                    candidate.code.contains("*((uint8_t *)p +"),
+                    "{}",
+                    candidate.code
+                );
+                assert!(
+                    !candidate.code.contains("*(uint8_t *)"),
+                    "{}",
+                    candidate.code
+                );
+                if velk::arch::pointer_bytes(isa) == 4 {
+                    let name = candidate.ir.name.as_ref().expect("a named test function");
+                    let expected = if signed { u64::MAX - 127 } else { 128 };
+                    syntax::run_printed(
+                        &candidate.code,
+                        "",
+                        &format!(
+                            "uint64_t words[4] = {{0}}; return {name}(words) != UINT64_C({expected}) || ((uint8_t *)words)[{offset}] != 128;"
+                        ),
+                    );
+                } else {
+                    candidates.push(candidate);
+                }
+            }
+        }
+    }
+    check_candidates("byte-pointer-offsets", candidates, Mode::Memory, &[]);
+}
+
+#[test]
+fn selected_scalar_pointers_keep_access_width_and_sign() {
+    let mut candidates = Vec::new();
+    for width in [1, 2, 4, 8] {
+        for signed in [false, true] {
+            let address = Expr::Select {
+                cond: Cond::Ne,
+                lhs: Box::new(Expr::reg(5, 64)),
+                rhs: Box::new(Expr::Const(0)),
+                then: Box::new(Expr::reg(7, 64)),
+                els: Box::new(Expr::reg(6, 64)),
+            };
+            let ir = synthetic_ir(
+                &format!("selected_pointer_{width}_{signed}"),
+                vec![
+                    Param {
+                        index: 7,
+                        name: "p".into(),
+                        ty: CType::pointer_to(CType::int(width, signed)),
+                    },
+                    Param {
+                        index: 6,
+                        name: "q".into(),
+                        ty: CType::pointer_to(CType::int(width, signed)),
+                    },
+                    Param {
+                        index: 5,
+                        name: "choose".into(),
+                        ty: CType::U64,
+                    },
+                ],
+                CType::U64,
+                vec![
+                    Stmt::Store {
+                        addr: address.clone(),
+                        value: Expr::Const(0x807f_ff01_8000_ffff),
+                        width,
+                    },
+                    Stmt::Ret {
+                        value: Expr::Load {
+                            addr: Box::new(address),
+                            width,
+                            signed,
+                        },
+                    },
+                ],
+            );
+            let candidate = printed_candidate(
+                ir,
+                vec![
+                    vec![REGION + 32, REGION + 64, 0],
+                    vec![REGION + 32, REGION + 64, 1],
+                ],
+            );
+            assert!(
+                candidate.code.contains("*(choose != 0 ? p : q)"),
+                "{}",
+                candidate.code
+            );
+            candidates.push(candidate);
+        }
+    }
+    check_candidates("selected-scalar-pointers", candidates, Mode::Memory, &[]);
+}
+
+#[test]
+fn selected_global_addresses_keep_the_requested_access_width() {
+    let mut ir = synthetic_ir(
+        "selected_global",
+        vec![Param {
+            index: 7,
+            name: "choose".into(),
+            ty: CType::U64,
+        }],
+        CType::U64,
+        vec![Stmt::Ret {
+            value: Expr::Load {
+                addr: Box::new(Expr::Select {
+                    cond: Cond::Ne,
+                    lhs: Box::new(Expr::reg(7, 64)),
+                    rhs: Box::new(Expr::Const(0)),
+                    then: Box::new(Expr::Const(0x2000)),
+                    els: Box::new(Expr::Const(0x3000)),
+                }),
+                width: 8,
+                signed: false,
+            },
+        }],
+    );
+    ir.debug_globals = vec![(0x2000, CType::U64, 8), (0x3000, CType::U64, 8)];
+    let symbols = velk::render::Symbols {
+        data: [(0x2000, "first".into()), (0x3000, "second".into())].into(),
+        library_variables: [(0x2000, "first"), (0x3000, "second")]
+            .map(|(address, name)| {
+                (
+                    address,
+                    velk::analysis::prototypes::LibraryVariable {
+                        name: name.into(),
+                        ty: CType::U64,
+                        size: 8,
+                        header: "stdint.h".into(),
+                    },
+                )
+            })
+            .into(),
+        ..Default::default()
+    };
+    let code = velk::render::render(&ir, &[], &symbols, &[(0x2000, 8), (0x3000, 8)]);
+    assert!(code.contains("*(uint64_t *)"), "{code}");
+    let code = code
+        .replace("0x2000", "((uintptr_t)&first)")
+        .replace("0x3000", "((uintptr_t)&second)");
+    let code = format!("#include <stdint.h>\nextern uint64_t first, second;\n{code}");
+    syntax::run_printed(
+        &code,
+        "uint64_t first = UINT64_C(0x123456789abcdef0); uint64_t second = UINT64_C(0xfedcba9876543210);",
+        "return selected_global(0) != second || selected_global(1) != first;",
+    );
+}
+
+#[test]
 fn narrow_address_assignments_keep_truncation_on_32_bit_targets() {
     let path = common::fixtures_dir().join("arm32/control.arm.O2.elf");
     let mut binary = Binary::open(&path).expect("open ARM32 control flow fixture");
