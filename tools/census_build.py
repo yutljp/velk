@@ -42,7 +42,7 @@ def main():
             builds.append({'name': arch + '-shared', 'status': code, 'error': error})
             continue
         assembly = CORPUS / (arch + '-assembly.o')
-        command = ['clang', '--target=' + target, '-c', str(ROOT / 'tools/census_assembly.S'), '-o', str(assembly)]
+        command = ['clang', '--target=' + target, '-c', str(DATA / 'census.S'), '-o', str(assembly)]
         code, error = run(command)
         commands = [{'command': command, 'status': code, 'error': error}]
         name = arch + '-assembly'
