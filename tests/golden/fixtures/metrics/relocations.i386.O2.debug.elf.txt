@@ -6,9 +6,8 @@
 0x1380 16 abs plt
 /* velk prelude */
 #include <stdint.h>
+#include <stdlib.h>
 
-int (abs)(int);
-int abs_plt();
 uint64_t add_bias();
 /* end velk prelude */
 
@@ -33,7 +32,7 @@ fn add_bias @ 0x12f0 (size 8)
 -- decompile
 /* velk pseudo-C: imported @ 0x1300 */
 int imported(uint32_t a0) {
-    return (uint32_t)abs_plt(a0) + 3;
+    return (uint32_t)abs(a0) + 3;
 }
 -- signature
 int ()
@@ -67,10 +66,6 @@ fn via_plt @ 0x1330 (size 33)
 
 == 0x1370 add_bias
 -- decompile
-/* velk pseudo-C: add_bias @ 0x1370 */
-int32_t add_bias_plt(uint32_t a0) {
-    return add_bias(a0);
-}
 -- signature
 int32_t ()
 -- references
@@ -85,10 +80,6 @@ fn add_bias @ 0x1370 (size 16)
 
 == 0x1380 abs
 -- decompile
-/* velk pseudo-C: abs @ 0x1380 */
-int32_t abs_plt(uint32_t a0) {
-    return ((int32_t)(abs(a0)));
-}
 -- signature
 int32_t ()
 -- references

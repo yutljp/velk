@@ -67,7 +67,6 @@ extern uint8_t Single_vtable_0; /* address: 0x4038 */
 extern uint8_t Virtual_vtable_0; /* address: 0x40c0 */
 extern uint8_t Virtual_vtable_16; /* address: 0x40f8 */
 
-uint64_t _Z14imported_valuei();
 uint64_t dispatch();
 uint64_t imported_value();
 uint64_t operator_delete_6d0();
@@ -1244,10 +1243,6 @@ fn operator delete(void*) @ 0xb00 (size 4)
 
 == 0xb04 __Unwind_Resume
 -- decompile
-/* velk pseudo-C: __Unwind_Resume @ 0xb04 */
-void _Unwind_Resume(void *a0) {
-    _Unwind_Resume(a0);
-}
 -- signature
 void (void * a0)
 -- references
@@ -1262,10 +1257,6 @@ fn __Unwind_Resume @ 0xb04 (size 12)
 
 == 0xb10 imported_value(int)
 -- decompile
-/* velk pseudo-C: imported_value(int) @ 0xb10 */
-int32_t imported_value(void) {
-    return _Z14imported_valuei();
-}
 -- signature
 int32_t ()
 -- references
@@ -1280,10 +1271,6 @@ fn imported_value(int) @ 0xb10 (size 12)
 
 == 0xb1c ___cxa_begin_catch
 -- decompile
-/* velk pseudo-C: ___cxa_begin_catch @ 0xb1c */
-void *__cxa_begin_catch(void *a0) {
-    return __cxa_begin_catch(a0);
-}
 -- signature
 void * (void * a0)
 -- references
@@ -1298,10 +1285,6 @@ fn ___cxa_begin_catch @ 0xb1c (size 12)
 
 == 0xb28 ___cxa_end_catch
 -- decompile
-/* velk pseudo-C: ___cxa_end_catch @ 0xb28 */
-void __cxa_end_catch(void) {
-    __cxa_end_catch();
-}
 -- signature
 void ()
 -- references

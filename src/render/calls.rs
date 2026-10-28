@@ -397,6 +397,15 @@ pub(super) fn expression(call: &Stmt, ctx: &Ctx<'_>) -> String {
         None
     };
     let own = through.is_none() && *target == Some(ctx.ir.addr);
+    if through.is_none()
+        && !target.is_some_and(|address| ctx.callee_signatures.contains_key(&address))
+        && let Some(types) = target.and_then(|address| ctx.symbols.unused_parameters.get(&address))
+    {
+        while args.len() < types.params.len() {
+            args.push("0".into());
+        }
+        return format!("{callee}({})", args.join(", "));
+    }
     let virtual_signature = ctx.virtual_tables.signature(call, ctx);
     let recovered_parameters = virtual_signature.is_none()
         && !own
@@ -1226,8 +1235,8 @@ mod tests {
             "{text}"
         );
         assert!(text.contains("also returned by the call"), "{text}");
-        assert!(text.contains("uint64_t strtod();"), "{text}");
-        assert!(!text.contains("double (strtod)("), "{text}");
+        assert!(text.contains("#include <stdlib.h>"), "{text}");
+        assert!(!text.contains("uint64_t strtod();"), "{text}");
     }
 
     #[test]

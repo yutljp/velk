@@ -1259,9 +1259,23 @@ pub(crate) fn apply_prototypes(ir: &mut FunctionIr, image: &crate::loader::Image
             offer(&mut values, output.dest.index, &prototype.ret);
         }
     }
+    let mut written_through = std::collections::HashSet::new();
+    for stmt in ir.blocks.iter().flat_map(|block| &block.stmts) {
+        if let Stmt::Store { addr, .. } = stmt {
+            crate::ir::visit::collect_reads(addr, &mut written_through);
+        }
+    }
     for param in &mut ir.params {
         if let Some(ty) = variadic.get(&param.index) {
-            settle_param(param, ty);
+            let mut ty = ty.clone();
+            if written_through.contains(&param.index)
+                && let CType::Pointer(target) = &mut ty
+                && let CType::Named(name) = target.as_mut()
+                && let Some(mutable) = name.strip_prefix("const ")
+            {
+                *name = mutable.to_owned();
+            }
+            settle_param(param, &ty);
         }
     }
     // A structure the body's accesses gave a variable says more than a

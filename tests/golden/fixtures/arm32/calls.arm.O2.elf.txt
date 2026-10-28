@@ -22,8 +22,8 @@ uint64_t sub_203ac();
 uint64_t sub_203d8();
 uint64_t sum9();
 uint64_t twice();
-void square(void);
-void twice(void);
+void square();
+void twice();
 /* end velk prelude */
 
 == 0x20140 twice

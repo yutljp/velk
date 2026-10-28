@@ -133,9 +133,6 @@ fn stack_arguments @ 0x1800010f0 (size 87)
 
 == 0x180001150 __chkstk
 -- decompile
-/* velk pseudo-C: __chkstk @ 0x180001150 */
-void __chkstk(void) {
-}
 -- signature
 void ()
 -- references
@@ -149,11 +146,6 @@ fn __chkstk @ 0x180001150 (size 16)
 
 == 0x180001160 imported_value
 -- decompile
-/* velk pseudo-C: imported_value @ 0x180001160 */
-/* ref: 0x1800020a0 .rdata */
-int32_t imported_value(void) {
-    return imported_value();
-}
 -- signature
 int32_t ()
 -- references

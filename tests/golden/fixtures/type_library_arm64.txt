@@ -99,11 +99,6 @@ fn _main @ 0x1000005e4 (size 8)
 
 == 0x1000005ec _getgrgid_r
 -- decompile
-/* velk pseudo-C: _getgrgid_r @ 0x1000005ec */
-/* ref: 0x100008000 __la_symbol_ptr */
-int getgrgid_r(unsigned int a0, struct group *a1, char *a2, size_t a3, struct group **a4) {
-    return getgrgid_r(a0, a1, a2, a3, a4);
-}
 -- signature
 int (unsigned int a0, struct group * a1, char * a2, size_t a3, struct group ** a4)
 -- references
@@ -118,11 +113,6 @@ fn _getgrgid_r @ 0x1000005ec (size 12)
 
 == 0x1000005f8 _wcslen
 -- decompile
-/* velk pseudo-C: _wcslen @ 0x1000005f8 */
-/* ref: 0x100008008 __la_symbol_ptr */
-size_t wcslen(const int *a0) {
-    return wcslen(a0);
-}
 -- signature
 size_t (const int * a0)
 -- references

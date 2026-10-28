@@ -952,7 +952,9 @@ fn printed_context_saving_calls_keep_frame_storage() {
     let code = binary
         .decompile(address, None, None)
         .expect("decompile context function");
-    assert!(code.contains("setjmp("), "{code}");
+    let callee = binary.find("setjmp").expect("context helper").addr;
+    let name = &velk::render::callee_names(binary.image()).functions[&callee];
+    assert!(code.contains(&format!("{name}(")), "{code}");
     assert!(code.contains("saved; /* [sp"), "{code}");
     std::fs::remove_dir_all(scratch).ok();
 }

@@ -243,11 +243,6 @@ fn <unnamed> @ 0x180001110 (size 16)
 
 == 0x180001120 __C_specific_handler
 -- decompile
-/* velk pseudo-C: __C_specific_handler @ 0x180001120 */
-/* ref: 0x1800020e8 .rdata */
-int32_t __C_specific_handler(void) {
-    return __C_specific_handler();
-}
 -- signature
 int32_t ()
 -- references

@@ -2,6 +2,12 @@ use std::collections::{HashMap, HashSet};
 
 #[derive(Default, Clone)]
 pub struct Symbols {
+    /// Value-preserving parameter types recovered for direct calls to imports.
+    pub import_parameters: HashMap<u64, Vec<crate::ir::CType>>,
+    /// Linkage stubs call imports rather than defining another C function.
+    pub import_thunks: HashSet<u64>,
+    /// Parameters unused by the body, including positions omitted by some callers.
+    pub unused_parameters: HashMap<u64, crate::analysis::prototypes::Prototype>,
     /// Scalar parameter types recovered independently of callee return types.
     pub function_parameters: HashMap<u64, Vec<crate::ir::CType>>,
     /// Recovered structure names used by analyzed callees.

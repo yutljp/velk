@@ -37,11 +37,20 @@ pub(super) fn standard_main(ir: &mut FunctionIr, symbols: &super::Symbols) {
         .max()
         .unwrap_or(0);
     let count = register_count.max(stack_count);
-    if count > 3 {
+    let max_count = if symbols.target_format == Some(crate::loader::Format::MachO) {
+        4
+    } else {
+        3
+    };
+    if count > max_count {
         return;
     }
     let count = if count == 1 { 2 } else { count };
-    for (position, name) in ["argc", "argv", "envp"].into_iter().enumerate().take(count) {
+    for (position, name) in ["argc", "argv", "envp", "apple"]
+        .into_iter()
+        .enumerate()
+        .take(count)
+    {
         let ty = if position == 0 {
             crate::ir::CType::Named("int".into())
         } else {

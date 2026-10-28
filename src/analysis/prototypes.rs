@@ -383,6 +383,7 @@ const LIBRARY: &[&str] = &[
     "int getchar(void)",
     "int ungetc(int, FILE *)",
     "char *fgets(char *, int, FILE *)",
+    "char *gets(char *)",
     "char *__fgets_chk(char *, size_t, int, FILE *)",
     "int fputc(int, FILE *)",
     "int putc(int, FILE *)",

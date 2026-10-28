@@ -16,8 +16,8 @@
 uint64_t is_even();
 uint64_t is_odd();
 uint64_t sum9();
-void square(void);
-void twice(void);
+void square();
+void twice();
 /* end velk prelude */
 
 == 0x20174 twice

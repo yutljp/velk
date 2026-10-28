@@ -586,7 +586,7 @@ static inline uint64_t sign_bits8(uint64_t a) {
 }
 #endif
 uint64_t stdio___print();
-void memchr_raw__find_sse2(void);
+void memchr_raw__find_sse2();
 /* end velk prelude */
 
 == 0x14f90 rust_probe::main

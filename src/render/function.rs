@@ -27,6 +27,34 @@ pub fn render_with_dependencies(
     data_ranges: &[(u64, u64)],
 ) -> Rendered {
     crate::timing::scope!("render/function::render_with_dependencies");
+    if symbols.import_thunks.contains(&ir.addr) {
+        let name = symbols
+            .functions
+            .get(&ir.addr)
+            .map(String::as_str)
+            .unwrap_or("function");
+        let code = match symbols.library_prototypes.get(name).or_else(|| {
+            crate::analysis::prototypes::of(
+                name,
+                symbols.target_format == Some(crate::loader::Format::MachO),
+            )
+        }) {
+            Some(prototype) => {
+                let declaration = super::support::prototype(name, prototype, symbols.target_format);
+                super::prelude::combine(&format!(
+                    "{}{}",
+                    super::support::definitions(&declaration),
+                    super::prelude::section(&declaration)
+                ))
+            }
+            None => String::new(),
+        };
+        return Rendered {
+            code,
+            segment_bases: Vec::new(),
+            inline_functions: Vec::new(),
+        };
+    }
     if let Some(code) = super::forwarding::render(ir, symbols) {
         return Rendered {
             code: super::prelude::combine(&format!("{}{code}", super::support::definitions(&code))),
@@ -819,7 +847,10 @@ fn render_with(
         None
     };
     let mut reads = std::collections::HashSet::new();
-    if ir.isa == crate::loader::Isa::X86_64 {
+    if matches!(
+        ir.isa,
+        crate::loader::Isa::X86_64 | crate::loader::Isa::I386
+    ) {
         for stmt in ir.blocks.iter().flat_map(|block| &block.stmts) {
             for value in stmt.operands() {
                 crate::ir::visit::expr_reads(value, &mut reads);
@@ -1108,7 +1139,16 @@ fn render_with(
             &format!(
                 "{}({})",
                 sanitize(&name),
-                logical.map_or_else(|| signature(ir), abi::Plan::signature)
+                if let Some(types) = symbols.unused_parameters.get(&ir.addr).filter(|_| ir
+                    .params
+                    .is_empty()
+                    && ir.stack_params.is_empty()
+                    && ir.declared_signature.is_none())
+                {
+                    unused_signature(&types.params, &mut call_reserved)
+                } else {
+                    logical.map_or_else(|| signature(ir), abi::Plan::signature)
+                }
             )
         )
     ));
@@ -1165,6 +1205,10 @@ fn render_with(
             if callee == own || !mentions.contains(&callee) {
                 return None;
             }
+            if let Some(header) = super::support::declaration_header(&callee, symbols.target_format)
+            {
+                return Some((callee, format!("#include <{header}>\n")));
+            }
             let params = if signature.params.is_empty() {
                 "void".to_owned()
             } else {
@@ -1179,17 +1223,14 @@ fn render_with(
             Some((callee, format!("{prototype};\n")))
         })
         .collect();
-    if matches!(
-        symbols.target_format,
-        Some(crate::loader::Format::Elf | crate::loader::Format::Pe | crate::loader::Format::Coff)
-    ) {
-        for (callee, prototype) in &symbols.library_prototypes {
-            if callee == &own || declared_callees.contains_key(callee) || !mentions.contains(callee)
-            {
-                continue;
-            }
-            declared_callees.insert(callee.clone(), super::support::prototype(callee, prototype));
+    for (callee, prototype) in &symbols.library_prototypes {
+        if callee == &own || declared_callees.contains_key(callee) || !mentions.contains(callee) {
+            continue;
         }
+        declared_callees.insert(
+            callee.clone(),
+            super::support::prototype(callee, prototype, symbols.target_format),
+        );
     }
     for callee in ctx.taken.borrow().iter() {
         if callee == &own
@@ -1198,18 +1239,20 @@ fn render_with(
         {
             continue;
         }
+        if let Some(header) = super::support::declaration_header(callee, symbols.target_format) {
+            declared_callees.insert(callee.clone(), format!("#include <{header}>\n"));
+            continue;
+        }
         let Some(prototype) = crate::analysis::prototypes::of(
             callee,
             symbols.target_format == Some(crate::loader::Format::MachO),
         ) else {
             continue;
         };
-        let known = call_returns.get(callee).copied();
-        let unused = ctx.call_returns_used.borrow().get(callee) == Some(&false);
-        if known != Some(&prototype.ret) && !(known.is_none() && unused) {
-            continue;
-        }
-        declared_callees.insert(callee.clone(), super::support::prototype(callee, prototype));
+        declared_callees.insert(
+            callee.clone(),
+            super::support::prototype(callee, prototype, symbols.target_format),
+        );
     }
     let mut prototypes: String = ctx
         .taken
@@ -1221,11 +1264,56 @@ fn render_with(
                 && code_names.contains(taken.as_str())
         })
         .map(|taken| {
+            if let Some(types) = symbols
+                .import_parameters
+                .iter()
+                .find_map(|(address, types)| {
+                    let Some(name) = symbols.functions.get(address) else {
+                        return None;
+                    };
+                    (sanitize(name) == *taken).then_some(types)
+                })
+            {
+                let ty = call_returns.get(taken).copied().unwrap_or(&CType::U64);
+                let params = if types.is_empty() {
+                    "void".to_owned()
+                } else {
+                    types
+                        .iter()
+                        .map(ToString::to_string)
+                        .collect::<Vec<_>>()
+                        .join(", ")
+                };
+                let specified = declaration(ty, &format!("{taken}({params})"));
+                let unspecified = declaration(ty, &format!("{taken}()"));
+                return format!("#if defined(__x86_64__) && !defined(_WIN32)\n{unspecified};\n#else\n{specified};\n#endif\n");
+            }
+            if let Some(types) = symbols
+                .unused_parameters
+                .iter()
+                .find_map(|(address, types)| {
+                    let name = symbols
+                        .functions
+                        .get(address)
+                        .map_or_else(|| format!("sub_{address:x}"), |name| sanitize(name));
+                    (name == *taken).then_some(types)
+                })
+            {
+                let prototype = declaration(
+                    &types.ret,
+                    &format!(
+                        "{taken}({})",
+                        unused_signature(&types.params, &mut Default::default())
+                    ),
+                );
+                return format!("{prototype};\n");
+            }
             if body.contains(&format!("{taken}(")) {
                 let ty = call_returns.get(taken).copied().unwrap_or(&CType::U64);
                 format!("{ty} {taken}();\n")
             } else {
-                format!("void {taken}(void);\n")
+                let ty = call_returns.get(taken).copied().unwrap_or(&CType::Void);
+                format!("{ty} {taken}();\n")
             }
         })
         .collect();
@@ -1259,10 +1347,7 @@ fn render_with(
             "uint64_t *{provider}(void); /* target frame's return-address slot */\n"
         ));
     }
-    out.insert_str(
-        prototypes_at,
-        &super::prelude::section(&prototypes.replace("\n", "\n\n")),
-    );
+    out.insert_str(prototypes_at, &super::prelude::section(&prototypes));
     let tables = ctx.virtual_tables.declarations(&body);
     out.insert_str(prototypes_at, &tables);
     let declarations::Declarations {
@@ -1930,6 +2015,21 @@ fn signature(ir: &FunctionIr) -> String {
         return "void".to_owned();
     }
     parts.join(", ")
+}
+
+fn unused_signature(types: &[CType], reserved: &mut std::collections::HashSet<String>) -> String {
+    if types.is_empty() {
+        return "void".into();
+    }
+    types
+        .iter()
+        .enumerate()
+        .map(|(position, ty)| {
+            let name = vacant_name(&format!("unused_arg_{position}"), reserved);
+            declaration(ty, &name)
+        })
+        .collect::<Vec<_>>()
+        .join(", ")
 }
 
 /// The longest structure definition written on one line.

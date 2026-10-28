@@ -7109,12 +7109,18 @@ fn program(
     }
     // The functions whose address the printed ones take, defined so the
     // program links.
-    let declared: std::collections::BTreeSet<&str> = alive
+    let declared: BTreeMap<&str, FunctionAddressDeclaration<'_>> = alive
         .iter()
-        .flat_map(|&index| declared_functions(&candidates[index].code))
+        .flat_map(|&index| function_address_declarations(&candidates[index].code))
+        .map(|declaration| (declaration.name, declaration))
         .collect();
-    for name in declared {
-        writeln!(text, "void {name}(void) {{}}").expect("writing to a String");
+    for declaration in declared.values() {
+        let body = if declaration.returns_void {
+            ""
+        } else {
+            " __builtin_trap(); "
+        };
+        writeln!(text, "{} {{{body}}}", declaration.signature).expect("writing to a String");
     }
     text.push_str("static uint64_t velk_call(int k, const uint64_t *a) {\n    switch (k) {\n");
     for &index in alive {
@@ -7206,9 +7212,79 @@ fn machine_register(name: &str) -> bool {
 /// The functions the printed code declares ahead of itself, whose address
 /// it takes.
 fn declared_functions(code: &str) -> Vec<&str> {
-    code.lines()
-        .filter_map(|line| line.strip_prefix("void ")?.strip_suffix("(void);"))
+    function_address_declarations(code)
+        .into_iter()
+        .map(|declaration| declaration.name)
         .collect()
+}
+
+struct FunctionAddressDeclaration<'a> {
+    name: &'a str,
+    signature: &'a str,
+    returns_void: bool,
+}
+
+fn function_address_declarations(code: &str) -> Vec<FunctionAddressDeclaration<'_>> {
+    let mut reserved: BTreeSet<String> = code
+        .split(|ch: char| !ch.is_ascii_alphanumeric() && ch != '_')
+        .map(str::to_owned)
+        .collect();
+    let marker = format!(" {} ", fresh_name(&mut reserved, "velk_function_address"));
+    let mut declarations = Vec::new();
+    for line in code.lines() {
+        if line.starts_with(char::is_whitespace) {
+            continue;
+        }
+        let Some(declaration) = line
+            .strip_suffix("();")
+            .or_else(|| line.strip_suffix("(void);"))
+        else {
+            continue;
+        };
+        let Some((ty, name)) = declaration.rsplit_once(' ') else {
+            continue;
+        };
+        if ty.trim().is_empty()
+            || !ty.chars().all(|ch| {
+                ch.is_ascii_alphanumeric() || ch.is_ascii_whitespace() || matches!(ch, '_' | '*')
+            })
+        {
+            continue;
+        }
+        let returns_void = ty.trim() == "void" && !name.starts_with('*');
+        let name = name.trim_start_matches('*');
+        let body = code
+            .lines()
+            .filter(|other| *other != line)
+            .collect::<Vec<_>>()
+            .join("\n");
+        let body = replace_c_identifier(&body, name, &marker);
+        let mut taken = false;
+        for (at, _) in body.match_indices(&marker) {
+            if !body[at + marker.len()..].trim_start().starts_with('(') {
+                taken = true;
+                break;
+            }
+        }
+        if taken {
+            declarations.push(FunctionAddressDeclaration {
+                name,
+                signature: line.strip_suffix(';').expect("a function declaration"),
+                returns_void,
+            });
+        }
+    }
+    declarations
+}
+
+#[test]
+fn function_address_declarations_include_unspecified_parameters() {
+    assert_eq!(
+        declared_functions(
+            "void callback();\nuint64_t other();\nvoid old_callback(void);\nuint64_t stack_provider(void);\nuint64_t callee();\n    callback();\n    return callee();\n    value = (uintptr_t)callback ^ (uintptr_t)other ^ (uintptr_t)old_callback;\n"
+        ),
+        vec!["callback", "other", "old_callback"]
+    );
 }
 
 /// Structure and union definitions whose tags need a distinct name per function.

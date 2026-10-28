@@ -27,6 +27,7 @@
 /* velk prelude */
 #include <stddef.h>
 #include <stdint.h>
+#include <stdlib.h>
 
 struct group {
     __attribute__((aligned(8))) char *gr_name;
@@ -55,7 +56,6 @@ uint64_t deregister_tm_clones();
 uint64_t register_tm_clones();
 uint64_t velk_entry_stack_pointer(void); /* target entry stack pointer */
 void (__cxa_finalize)(void *);
-void (abort)(void);
 /* end velk prelude */
 
 == 0x6e0 _init
@@ -78,11 +78,6 @@ fn _init @ 0x6e0 (size 24)
 
 == 0x720 __libc_start_main
 -- decompile
-/* velk pseudo-C: __libc_start_main @ 0x720 */
-/* ref: 0x20000 .got.plt */
-int __libc_start_main(int (*a0)(int, char **, char **), int a1, char **a2, void (*a3)(void), void (*a4)(void), void (*a5)(void), void *a6) {
-    return __libc_start_main(a0, a1, a2, a3, a4, a5, a6);
-}
 -- signature
 int (int (*)(int, char **, char **) a0, int a1, char ** a2, void (*)(void) a3, void (*)(void) a4, void (*)(void) a5, void * a6)
 -- references
@@ -97,11 +92,6 @@ fn __libc_start_main @ 0x720 (size 16)
 
 == 0x730 __cxa_finalize
 -- decompile
-/* velk pseudo-C: __cxa_finalize @ 0x730 */
-/* ref: 0x20008 .got.plt */
-void __cxa_finalize(void *a0) {
-    __cxa_finalize(a0);
-}
 -- signature
 void (void * a0)
 -- references
@@ -116,11 +106,6 @@ fn __cxa_finalize @ 0x730 (size 16)
 
 == 0x740 kill
 -- decompile
-/* velk pseudo-C: kill @ 0x740 */
-/* ref: 0x20010 .got.plt */
-int kill(int a0, int a1) {
-    return kill(a0, a1);
-}
 -- signature
 int (int a0, int a1)
 -- references
@@ -135,11 +120,6 @@ fn kill @ 0x740 (size 16)
 
 == 0x750 fsync
 -- decompile
-/* velk pseudo-C: fsync @ 0x750 */
-/* ref: 0x20018 .got.plt */
-int fsync(int a0) {
-    return fsync(a0);
-}
 -- signature
 int (int a0)
 -- references
@@ -154,11 +134,6 @@ fn fsync @ 0x750 (size 16)
 
 == 0x760 pthread_kill
 -- decompile
-/* velk pseudo-C: pthread_kill @ 0x760 */
-/* ref: 0x20020 .got.plt */
-int pthread_kill(unsigned long a0, int a1) {
-    return pthread_kill(a0, a1);
-}
 -- signature
 int (unsigned long a0, int a1)
 -- references
@@ -173,11 +148,6 @@ fn pthread_kill @ 0x760 (size 16)
 
 == 0x770 shutdown
 -- decompile
-/* velk pseudo-C: shutdown @ 0x770 */
-/* ref: 0x20028 .got.plt */
-int shutdown(int a0, int a1) {
-    return shutdown(a0, a1);
-}
 -- signature
 int (int a0, int a1)
 -- references
@@ -192,11 +162,6 @@ fn shutdown @ 0x770 (size 16)
 
 == 0x780 __gmon_start__
 -- decompile
-/* velk pseudo-C: __gmon_start__ @ 0x780 */
-/* ref: 0x20030 .got.plt */
-int32_t __gmon_start__(void) {
-    return __gmon_start__();
-}
 -- signature
 int32_t ()
 -- references
@@ -211,11 +176,6 @@ fn __gmon_start__ @ 0x780 (size 16)
 
 == 0x790 abort
 -- decompile
-/* velk pseudo-C: abort @ 0x790 */
-/* ref: 0x20038 .got.plt */
-void abort(void) {
-    abort();
-}
 -- signature
 void ()
 -- references
@@ -230,11 +190,6 @@ fn abort @ 0x790 (size 16)
 
 == 0x7a0 getgrgid_r
 -- decompile
-/* velk pseudo-C: getgrgid_r @ 0x7a0 */
-/* ref: 0x20040 .got.plt */
-int getgrgid_r(unsigned int a0, struct group *a1, char *a2, size_t a3, struct group **a4) {
-    return getgrgid_r(a0, a1, a2, a3, a4);
-}
 -- signature
 int (unsigned int a0, struct group * a1, char * a2, size_t a3, struct group ** a4)
 -- references
@@ -249,11 +204,6 @@ fn getgrgid_r @ 0x7a0 (size 16)
 
 == 0x7b0 mprotect
 -- decompile
-/* velk pseudo-C: mprotect @ 0x7b0 */
-/* ref: 0x20048 .got.plt */
-int mprotect(void *a0, size_t a1, int a2) {
-    return mprotect(a0, a1, a2);
-}
 -- signature
 int (void * a0, size_t a1, int a2)
 -- references

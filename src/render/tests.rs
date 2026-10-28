@@ -1534,6 +1534,23 @@ fn segment_reads_have_ordered_providers_and_entry_snapshots() {
 }
 
 #[test]
+fn i386_segment_reads_have_a_provider() {
+    let ir = FunctionIr::single_block(
+        Isa::I386,
+        vec![Stmt::Ret {
+            value: load(Expr::reg(crate::arch::x86::GS_BASE, 32), 4),
+        }],
+    );
+    let rendered = render_with_dependencies(&ir, &[], &Symbols::default(), &[]);
+    assert_eq!(rendered.segment_bases.len(), 1, "{}", rendered.code);
+    assert!(
+        rendered.code.contains("velk_x86_gs_base()"),
+        "{}",
+        rendered.code
+    );
+}
+
+#[test]
 fn segment_dependencies_only_supply_unbound_x86_inputs() {
     let fs = crate::arch::x86::FS_BASE;
     let gs = crate::arch::x86::GS_BASE;
@@ -1861,8 +1878,25 @@ fn a_function_whose_address_is_taken_is_declared_and_read_as_a_number() {
         ..Symbols::default()
     };
     let text = render(&ir, &[], &symbols, &[]);
-    assert!(text.contains("void square(void);\n"), "{text}");
+    assert!(text.contains("void square();\n"), "{text}");
     assert!(text.contains("    return (uintptr_t)square;\n"), "{text}");
+
+    let mut symbols = symbols;
+    symbols.unused_parameters.insert(
+        0x40,
+        crate::analysis::prototypes::Prototype {
+            params: vec![CType::U64],
+            ret: CType::I64,
+            variadic: false,
+            format: None,
+            scans: false,
+        },
+    );
+    let text = render(&ir, &[], &symbols, &[]);
+    assert!(
+        text.contains("int64_t square(uint64_t unused_arg_0);"),
+        "{text}"
+    );
 }
 
 #[test]

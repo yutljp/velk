@@ -242,10 +242,11 @@ fn windows_crt_format_arguments_reach_the_printed_call() {
     let mut binary = Binary::open(&common::fixtures_dir().join("crt_windows.i686.exe")).unwrap();
     let address = binary.find("crt_format").unwrap().addr;
     let code = binary.decompile(address, None, None).unwrap();
-    assert!(code.contains("printf_plt(0x402000, a0)"), "{code}");
+    assert!(code.contains("printf_plt(\"%d\\n\", a0)"), "{code}");
+    let code = code.replace("printf_plt(", "format_probe(");
     syntax::run_printed(
-        &format!("int printf_plt(uint32_t, int);\n{code}"),
-        "int printf_plt(uint32_t format, int value) { return format == 0x402000 ? value : 999; }",
+        &format!("int format_probe(const char *, int);\n{code}"),
+        "int format_probe(const char *format, int value) { return format[0] == '%' && format[1] == 'd' ? value : 999; }",
         "return crt_format(-17) != -17 || crt_format(73) != 73;",
     );
     let address = binary.find("printf").unwrap().addr;

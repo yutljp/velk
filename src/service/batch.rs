@@ -275,6 +275,20 @@ impl Binary {
                 .collect();
             analysis::shared_structures::share(&mut irs, &self.data_ranges);
             share_parameters(&mut functions, self.image.go);
+            for address in super::declarations::callers(&self.image, root) {
+                if functions.iter().any(|analysis| analysis.ir.addr == address) {
+                    continue;
+                }
+                match original(&self.image, &originals, address, deadline) {
+                    Ok(analysis) => {
+                        if let Ok(analysis) = analysis.as_ref() {
+                            functions.push(analysis.clone());
+                        }
+                    }
+                    Err(error) => return Err(error),
+                }
+            }
+            super::declarations::recover(&self.image, &mut functions);
             let analysis = functions
                 .into_iter()
                 .find(|analysis| analysis.ir.addr == addr)

@@ -60,7 +60,6 @@ extern uint8_t Single_vtable_0; /* address: 0x202e58 */
 extern uint8_t Virtual_vtable_0; /* address: 0x202ee0 */
 extern uint8_t Virtual_vtable_16; /* address: 0x202f18 */
 
-uint64_t _Z14imported_valuei();
 uint64_t imported_value();
 uint64_t sub_201a30();
 uint64_t sub_201a5a();
@@ -1080,11 +1079,6 @@ fn <unnamed> @ 0x201dc0 (size 11)
 
 == 0x201de0 _Unwind_Resume
 -- decompile
-/* velk pseudo-C: _Unwind_Resume @ 0x201de0 */
-/* ref: 0x204140 .got.plt */
-int32_t _Unwind_Resume(void *a0) {
-    _Unwind_Resume(a0);
-}
 -- signature
 int32_t (void * a0)
 -- references
@@ -1099,11 +1093,6 @@ fn _Unwind_Resume @ 0x201de0 (size 16)
 
 == 0x201df0 imported_value(int)
 -- decompile
-/* velk pseudo-C: imported_value(int) @ 0x201df0 */
-/* ref: 0x204148 .got.plt */
-int32_t imported_value(void) {
-    return _Z14imported_valuei();
-}
 -- signature
 int32_t ()
 -- references
@@ -1118,11 +1107,6 @@ fn imported_value(int) @ 0x201df0 (size 16)
 
 == 0x201e00 __cxa_begin_catch
 -- decompile
-/* velk pseudo-C: __cxa_begin_catch @ 0x201e00 */
-/* ref: 0x204150 .got.plt */
-void *__cxa_begin_catch(void *a0) {
-    return __cxa_begin_catch(a0);
-}
 -- signature
 void * (void * a0)
 -- references
@@ -1137,11 +1121,6 @@ fn __cxa_begin_catch @ 0x201e00 (size 16)
 
 == 0x201e10 __cxa_end_catch
 -- decompile
-/* velk pseudo-C: __cxa_end_catch @ 0x201e10 */
-/* ref: 0x204158 .got.plt */
-void __cxa_end_catch(void) {
-    __cxa_end_catch();
-}
 -- signature
 void ()
 -- references

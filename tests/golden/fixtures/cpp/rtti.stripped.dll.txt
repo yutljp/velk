@@ -74,11 +74,11 @@ uint64_t sub_1800010b0();
 uint64_t sub_180001100();
 uint64_t sub_180001120();
 uint64_t sub_180001170();
-uint64_t sub_180001510();
 uint64_t sub_180001520();
-uint64_t sub_180001540();
 uint64_t sub_180001600();
 uint64_t sub_180001630();
+void sub_180001510(uint64_t unused_arg_0);
+void sub_180001540(uint64_t unused_arg_0);
 /* end velk prelude */
 
 == 0x180001000 -
@@ -862,7 +862,7 @@ fn catch_cleanup__catch_0 @ 0x1800014d0 (size 36)
 == 0x180001510 -
 -- decompile
 /* velk pseudo-C: sub_180001510 @ 0x180001510 */
-void sub_180001510(void) {
+void sub_180001510(uint64_t unused_arg_0) {
 }
 -- signature
 void ()
@@ -950,7 +950,7 @@ fn <unnamed> @ 0x180001530 (size 15)
 == 0x180001540 -
 -- decompile
 /* velk pseudo-C: sub_180001540 @ 0x180001540 */
-void sub_180001540(void) {
+void sub_180001540(uint64_t unused_arg_0) {
 }
 -- signature
 void ()
@@ -1174,11 +1174,6 @@ fn <unnamed> @ 0x180001630 (size 52)
 
 == 0x180001670 ??_7type_info@@6B@
 -- decompile
-/* velk pseudo-C: ??_7type_info@@6B@ @ 0x180001670 */
-/* ref: 0x180002480 .rdata */
-int32_t ___7type_info__6B_(void) {
-    return ___7type_info__6B_();
-}
 -- signature
 int32_t ()
 -- references
@@ -1193,11 +1188,6 @@ fn ??_7type_info@@6B@ @ 0x180001670 (size 16)
 
 == 0x180001680 __CxxFrameHandler3
 -- decompile
-/* velk pseudo-C: __CxxFrameHandler3 @ 0x180001680 */
-/* ref: 0x180002490 .rdata */
-int32_t __CxxFrameHandler3(void) {
-    return __CxxFrameHandler3();
-}
 -- signature
 int32_t ()
 -- references
@@ -1212,11 +1202,6 @@ fn __CxxFrameHandler3 @ 0x180001680 (size 16)
 
 == 0x180001690 ?imported_value@@YAHH@Z
 -- decompile
-/* velk pseudo-C: ?imported_value@@YAHH@Z @ 0x180001690 */
-/* ref: 0x180002488 .rdata */
-int32_t _imported_value__YAHH_Z(void) {
-    return _imported_value__YAHH_Z();
-}
 -- signature
 int32_t ()
 -- references

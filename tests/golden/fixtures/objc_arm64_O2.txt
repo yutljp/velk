@@ -158,11 +158,6 @@ fn _main @ 0x1000009a4 (size 8)
 
 == 0x1000009ac _objc_msgSend
 -- decompile
-/* velk pseudo-C: _objc_msgSend @ 0x1000009ac */
-/* ref: 0x100008000 __la_symbol_ptr */
-int32_t objc_msgSend(void) {
-    return objc_msgSend();
-}
 -- signature
 int32_t ()
 -- references

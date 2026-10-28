@@ -18,6 +18,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 struct S1 { uint32_t f_0; uint32_t f_4; uint8_t gap_0x8[0x10]; };
 
@@ -31,15 +32,14 @@ extern uint8_t completed_0; /* address: 0x4028 */
 int (__fprintf_chk)(FILE *, int, const char *, ...);
 int (__libc_start_main)(int (*)(int, char **, char **), int, char **, void (*)(void), void (*)(void), void (*)(void), void *);
 int (__snprintf_chk)(char *, size_t, int, size_t, const char *, ...);
-int (fputs)(const char *, FILE *);
 uint64_t __gmon_start__();
 uint64_t deregister_tm_clones();
 uint64_t lookup();
 uint64_t register_tm_clones();
 uint64_t velk_entry_stack_pointer(void); /* target entry stack pointer */
 void (__cxa_finalize)(void *);
-void (abort)(void);
-void main(void);
+void (__stack_chk_fail)(void);
+void main();
 /* end velk prelude */
 
 == 0x1000 _init
@@ -70,10 +70,6 @@ fn _init @ 0x1000 (size 27)
 
 == 0x1080 __cxa_finalize
 -- decompile
-/* velk pseudo-C: __cxa_finalize @ 0x1080 */
-void __cxa_finalize(void *a0) {
-    __cxa_finalize(a0);
-}
 -- signature
 void (void * a0)
 -- references
@@ -88,7 +84,6 @@ fn __cxa_finalize @ 0x1080 (size 16)
 
 == 0x1090 __snprintf_chk
 -- decompile
-int __snprintf_chk(char *a0, size_t a1, int a2, size_t a3, const char *format, ...); /* Forwards all arguments to __snprintf_chk. */
 -- signature
 int ()
 -- references
@@ -103,10 +98,6 @@ fn __snprintf_chk @ 0x1090 (size 16)
 
 == 0x10a0 abort
 -- decompile
-/* velk pseudo-C: abort @ 0x10a0 */
-int32_t abort(void) {
-    abort();
-}
 -- signature
 int32_t ()
 -- references
@@ -121,10 +112,6 @@ fn abort @ 0x10a0 (size 16)
 
 == 0x10b0 __stack_chk_fail
 -- decompile
-/* velk pseudo-C: __stack_chk_fail @ 0x10b0 */
-int32_t __stack_chk_fail(void) {
-    __stack_chk_fail();
-}
 -- signature
 int32_t ()
 -- references
@@ -139,10 +126,6 @@ fn __stack_chk_fail @ 0x10b0 (size 16)
 
 == 0x10c0 fputs
 -- decompile
-/* velk pseudo-C: fputs @ 0x10c0 */
-int fputs(const char *a0, FILE *a1) {
-    return fputs(a0, a1);
-}
 -- signature
 int (const char * a0, FILE * a1)
 -- references
@@ -157,7 +140,6 @@ fn fputs @ 0x10c0 (size 16)
 
 == 0x10d0 __fprintf_chk
 -- decompile
-int __fprintf_chk(FILE *a0, int a1, const char *format, ...); /* Forwards all arguments to __fprintf_chk. */
 -- signature
 int ()
 -- references
@@ -330,6 +312,7 @@ fn frame_dummy @ 0x1280 (size 16)
 -- decompile
 /* velk pseudo-C: lookup @ 0x1290 */
 /* ref: 0x2004 "missing key %d among %d" */
+/* ref: 0x201c "  %s=%d\n" */
 int32_t lookup(struct S1 *a0, int a1, int a2) {
     int64_t local_0; /* [sp-78] */
     _Alignas(16) uint8_t local_1[0x50]; /* [sp-68] */
@@ -360,7 +343,7 @@ int32_t lookup(struct S1 *a0, int a1, int a2) {
         uint32_t v11 = v8[-1];
         int64_t v18 = (uintptr_t)v8;
         v8 += 0x6;
-        __fprintf_chk(stderr, 2, (const char *)0x201c, v18, v11);
+        __fprintf_chk(stderr, 2, "  %s=%d\n", v18, v11);
     } while ((uintptr_t)v8 != v17);
     abort();
 }
@@ -368,6 +351,7 @@ int32_t lookup(struct S1 *a0, int a1, int a2) {
 int32_t (struct S1 * a0, int a1, int a2)
 -- references
 0x2004 "missing key %d among %d"
+0x201c "  %s=%d\n"
 -- ir
 fn lookup @ 0x1290 (size 240)
   blk0 @ 0x1290:
@@ -412,7 +396,7 @@ fn lookup @ 0x1290 (size 240)
     rax, rdx, xmm0, xmm1 = call 0x10a0()
     trap
 -- card
-{"addr":"0x1290","approxTokens":198,"blocks":11,"hardReasons":[],"name":"lookup","nameHints":["missing_key__d_among__d"],"nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":240,"strings":["missing key %d among %d"],"structureLayouts":[{"elementSize":24,"fields":[{"offset":"0x0","size":4,"type":"uint32_t"},{"offset":"0x4","size":4,"type":"uint32_t"}],"minimumSize":8,"name":"S1","sourceFields":null,"sourceSize":null}],"structures":["struct S1 { uint32_t f_0; uint32_t f_4; uint8_t gap_0x8[0x10]; };"],"unsupported":0}
+{"addr":"0x1290","approxTokens":198,"blocks":11,"hardReasons":[],"name":"lookup","nameHints":["missing_key__d_among__d","s__d"],"nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":240,"strings":["missing key %d among %d","  %s=%d\n"],"structureLayouts":[{"elementSize":24,"fields":[{"offset":"0x0","size":4,"type":"uint32_t"},{"offset":"0x4","size":4,"type":"uint32_t"}],"minimumSize":8,"name":"S1","sourceFields":null,"sourceSize":null}],"structures":["struct S1 { uint32_t f_0; uint32_t f_4; uint8_t gap_0x8[0x10]; };"],"unsupported":0}
 
 == 0x1380 _fini
 -- decompile

@@ -1251,3 +1251,45 @@ fn declared_calls_do_not_offer_positional_library_argument_types() {
         assert_eq!(format!("{:?}", ir.blocks), before);
     }
 }
+
+#[test]
+fn format_argument_written_by_body_is_mutable() {
+    let mut image = crate::loader::Image::from_code(Isa::X86_64, 0x2000, b"%s\0".to_vec());
+    image.imports.insert(0x1000, "printf".into());
+    for writes in [false, true] {
+        let mut call = crate::lift::call_through(
+            crate::ir::CallKind::Invoke,
+            &image,
+            Expr::Load {
+                addr: Box::new(Expr::Const(0x1000)),
+                width: 8,
+                signed: false,
+            },
+        );
+        if let Stmt::Call { args, .. } = &mut call {
+            *args = Some(vec![Expr::Const(0x2000), Expr::reg(7, 64)]);
+        }
+        let mut statements = vec![call];
+        if writes {
+            statements.push(Stmt::Store {
+                addr: Expr::reg(7, 64),
+                value: Expr::Const(65),
+                width: 1,
+            });
+        }
+        let mut ir = FunctionIr::single_block(Isa::X86_64, statements);
+        ir.params.push(crate::ir::Param {
+            index: 7,
+            name: "a0".into(),
+            ty: CType::U64,
+        });
+        super::apply_prototypes(&mut ir, &image);
+        let expected = if writes { "char" } else { "const char" };
+        assert_eq!(
+            ir.params[0].ty,
+            CType::pointer_to(CType::Named(expected.into()))
+        );
+        let text = crate::render::render(&ir, &[], &Default::default(), &[]);
+        assert!(text.contains(&format!("{expected} *a0")), "{text}");
+    }
+}

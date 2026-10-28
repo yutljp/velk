@@ -39,6 +39,10 @@ pub const UNKNOWN_SIZE: u64 = 256;
 
 #[derive(Debug, Clone)]
 pub struct Analysis {
+    /// Value-preserving parameter types recovered for direct calls to imports.
+    pub import_parameters: std::collections::BTreeMap<u64, Vec<CType>>,
+    /// Parameters unused by a callee's body, merged from its direct callers.
+    pub unused_parameters: std::collections::BTreeMap<u64, prototypes::Prototype>,
     /// Scalar parameter types of analyzed callees, independent of return-register widths.
     pub callee_parameters: std::collections::BTreeMap<u64, Vec<CType>>,
     /// Recovered structure names used by analyzed callees.

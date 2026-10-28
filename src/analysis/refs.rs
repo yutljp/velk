@@ -43,7 +43,7 @@ fn escape(text: &str) -> String {
     text.chars().flat_map(|c| c.escape_default()).collect()
 }
 
-fn string_at(image: &Image, addr: u64) -> Option<String> {
+fn string_at(image: &Image, addr: u64, line_endings: bool) -> Option<String> {
     let Some(section) = image.section_at(addr) else {
         return None;
     };
@@ -60,7 +60,9 @@ fn string_at(image: &Image, addr: u64) -> Option<String> {
         return None;
     }
     let text = &bytes[..end];
-    if !text.iter().all(|b| (0x20..0x7f).contains(b) || *b == b'\t') {
+    if !text.iter().all(|b| {
+        (0x20..0x7f).contains(b) || *b == b'\t' || (line_endings && matches!(*b, b'\n' | b'\r'))
+    }) {
         return None;
     }
     Some(String::from_utf8_lossy(text).into_owned())
@@ -128,7 +130,7 @@ pub fn collect(ir: &FunctionIr, image: &Image) -> Vec<Reference> {
         };
         let guid = super::prototypes::guid_at(image, addr);
         let mut text = if guid.is_none() {
-            string_at(image, addr)
+            string_at(image, addr, /* line_endings */ false)
         } else {
             None
         };
@@ -143,7 +145,7 @@ pub fn collect(ir: &FunctionIr, image: &Image) -> Vec<Reference> {
             ]);
             if target != 0
                 && image.section_at(target).is_some()
-                && let Some(resolved) = string_at(image, target)
+                && let Some(resolved) = string_at(image, target, /* line_endings */ false)
             {
                 text = Some(resolved);
                 pointer = Some(target);
@@ -178,7 +180,10 @@ pub fn collect(ir: &FunctionIr, image: &Image) -> Vec<Reference> {
         let prototype = target
             .and_then(|target| image.functions.get(&target))
             .and_then(|function| function.name.as_deref())
-            .or_else(|| crate::lift::import_name(image, through.as_ref()?))
+            .or_else(|| match through {
+                Some(through) => crate::lift::import_name(image, through),
+                None => None,
+            })
             .and_then(|name| crate::analysis::prototypes::for_image(name, image));
         // A parameter the prototype declares a C string ends at its zero byte,
         // whatever argument follows it.
@@ -221,7 +226,7 @@ pub fn collect(ir: &FunctionIr, image: &Image) -> Vec<Reference> {
             if super::prototypes::guid_at(image, *addr).is_some() {
                 continue;
             }
-            if let Some(text) = string_at(image, *addr) {
+            if let Some(text) = string_at(image, *addr, /* line_endings */ c_string(position)) {
                 references.retain(|known| known.addr != *addr);
                 references.push(Reference {
                     addr: *addr,

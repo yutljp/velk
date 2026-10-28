@@ -49,7 +49,7 @@ uint64_t deregister_tm_clones();
 uint64_t register_tm_clones();
 uint64_t velk_entry_stack_pointer(void); /* target entry stack pointer */
 void (__cxa_finalize)(void *);
-void main(void);
+void main();
 /* end velk prelude */
 
 == 0x1000 _init
@@ -80,10 +80,6 @@ fn _init @ 0x1000 (size 27)
 
 == 0x1030 shutdown
 -- decompile
-/* velk pseudo-C: shutdown @ 0x1030 */
-int shutdown(int a0, int a1) {
-    return shutdown(a0, a1);
-}
 -- signature
 int (int a0, int a1)
 -- references
@@ -98,10 +94,6 @@ fn shutdown @ 0x1030 (size 16)
 
 == 0x1040 pthread_kill
 -- decompile
-/* velk pseudo-C: pthread_kill @ 0x1040 */
-int pthread_kill(unsigned long a0, int a1) {
-    return pthread_kill(a0, a1);
-}
 -- signature
 int (unsigned long a0, int a1)
 -- references
@@ -116,10 +108,6 @@ fn pthread_kill @ 0x1040 (size 16)
 
 == 0x1050 kill
 -- decompile
-/* velk pseudo-C: kill @ 0x1050 */
-int kill(int a0, int a1) {
-    return kill(a0, a1);
-}
 -- signature
 int (int a0, int a1)
 -- references
@@ -134,10 +122,6 @@ fn kill @ 0x1050 (size 16)
 
 == 0x1060 getgrgid_r
 -- decompile
-/* velk pseudo-C: getgrgid_r @ 0x1060 */
-int getgrgid_r(unsigned int a0, struct group *a1, char *a2, size_t a3, struct group **a4) {
-    return getgrgid_r(a0, a1, a2, a3, a4);
-}
 -- signature
 int (unsigned int a0, struct group * a1, char * a2, size_t a3, struct group ** a4)
 -- references
@@ -152,10 +136,6 @@ fn getgrgid_r @ 0x1060 (size 16)
 
 == 0x1070 fsync
 -- decompile
-/* velk pseudo-C: fsync @ 0x1070 */
-int fsync(int a0) {
-    return fsync(a0);
-}
 -- signature
 int (int a0)
 -- references
@@ -170,10 +150,6 @@ fn fsync @ 0x1070 (size 16)
 
 == 0x1080 mprotect
 -- decompile
-/* velk pseudo-C: mprotect @ 0x1080 */
-int mprotect(void *a0, size_t a1, int a2) {
-    return mprotect(a0, a1, a2);
-}
 -- signature
 int (void * a0, size_t a1, int a2)
 -- references
@@ -188,10 +164,6 @@ fn mprotect @ 0x1080 (size 16)
 
 == 0x1090 __cxa_finalize
 -- decompile
-/* velk pseudo-C: __cxa_finalize @ 0x1090 */
-void __cxa_finalize(void *a0) {
-    __cxa_finalize(a0);
-}
 -- signature
 void (void * a0)
 -- references

@@ -66,11 +66,6 @@ fn cpp_catch__catch_0 @ 0x180001030 (size 34)
 
 == 0x180001060 __CxxFrameHandler3
 -- decompile
-/* velk pseudo-C: __CxxFrameHandler3 @ 0x180001060 */
-/* ref: 0x1800020b0 .rdata */
-int32_t __CxxFrameHandler3(void) {
-    return __CxxFrameHandler3();
-}
 -- signature
 int32_t ()
 -- references

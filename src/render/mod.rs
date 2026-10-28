@@ -122,12 +122,22 @@ pub fn data_ranges(image: &crate::loader::Image) -> Vec<(u64, u64)> {
 /// the parameter list a demangled name ends in, when no other function has
 /// that name too.
 pub fn callee_names(image: &crate::loader::Image) -> Symbols {
+    let import_wrappers = image.isa == crate::loader::Isa::I386
+        && matches!(
+            image.format,
+            crate::loader::Format::Pe | crate::loader::Format::Coff
+        );
     let base_name = |function: &crate::loader::Function, name: &str| {
         let base = sanitize(&short_name(name));
-        if image.isa == crate::loader::Isa::I386
-            && function.sources.contains(&crate::loader::NameSource::Plt)
-        {
+        if import_wrappers && function.sources.contains(&crate::loader::NameSource::Plt) {
             format!("{base}_plt")
+        } else if !function.sources.contains(&crate::loader::NameSource::Plt)
+            && crate::analysis::prototypes::runtime(name).is_none()
+            && crate::analysis::prototypes::for_image(name, image).is_some()
+        {
+            // A defined body may implement a stub with a different signature.
+            // Keep its recovered types without redeclaring a header's identifier.
+            format!("{base}_{:x}", function.addr)
         } else {
             base
         }
@@ -135,6 +145,9 @@ pub fn callee_names(image: &crate::loader::Image) -> Symbols {
     let mut bases: HashMap<String, usize> = HashMap::new();
     for function in image.functions.values() {
         if let Some(name) = &function.name {
+            if !import_wrappers && function.sources.contains(&crate::loader::NameSource::Plt) {
+                continue;
+            }
             *bases.entry(base_name(function, name)).or_default() += 1;
         }
     }
@@ -147,6 +160,9 @@ pub fn callee_names(image: &crate::loader::Image) -> Symbols {
                 return None;
             };
             let base = base_name(function, name);
+            if !import_wrappers && function.sources.contains(&crate::loader::NameSource::Plt) {
+                return Some((*address, base));
+            }
             let mut name = base.clone();
             if bases.get(&base) != Some(&1) {
                 let candidate = format!("{base}_{address:x}");
@@ -162,6 +178,14 @@ pub fn callee_names(image: &crate::loader::Image) -> Symbols {
         })
         .collect();
     let mut symbols = Symbols {
+        import_thunks: image
+            .functions
+            .iter()
+            .filter_map(|(address, function)| {
+                (!import_wrappers && function.sources.contains(&crate::loader::NameSource::Plt))
+                    .then_some(*address)
+            })
+            .collect(),
         objc_selectors: image
             .objc_selectors
             .iter()

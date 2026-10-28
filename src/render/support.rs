@@ -59,7 +59,14 @@ pub(super) fn definitions(code: &str) -> String {
     super::prelude::section(&definitions)
 }
 
-pub(super) fn prototype(name: &str, prototype: &crate::analysis::prototypes::Prototype) -> String {
+pub(super) fn prototype(
+    name: &str,
+    prototype: &crate::analysis::prototypes::Prototype,
+    format: Option<crate::loader::Format>,
+) -> String {
+    if let Some(header) = declaration_header(name, format) {
+        return format!("#include <{header}>\n");
+    }
     let mut records = Vec::new();
     for ty in prototype.params.iter().chain([&prototype.ret]) {
         if let Some(record) = crate::analysis::prototypes::record_name(ty) {
@@ -82,4 +89,38 @@ pub(super) fn prototype(name: &str, prototype: &crate::analysis::prototypes::Pro
     // Parentheses keep function-like macros in host headers from expanding declarations.
     let text = super::declaration(&prototype.ret, &format!("({name})({params})"));
     format!("{}{text};\n", records.concat())
+}
+
+pub(super) fn declaration_header(
+    name: &str,
+    format: Option<crate::loader::Format>,
+) -> Option<&'static str> {
+    if name == "malloc_type_malloc" && format == Some(crate::loader::Format::MachO) {
+        return Some("malloc/malloc.h");
+    }
+    if matches!(
+        format,
+        Some(crate::loader::Format::Pe | crate::loader::Format::Coff)
+    ) {
+        return None;
+    }
+    match name {
+        "printf" | "fprintf" | "sprintf" | "snprintf" | "scanf" | "fscanf" | "sscanf"
+        | "vprintf" | "vfprintf" | "vsprintf" | "vsnprintf" | "vscanf" | "vfscanf" | "vsscanf"
+        | "puts" | "putchar" | "fputs" | "fputc" | "getchar" | "fgetc" | "fgets" | "fopen"
+        | "fclose" | "fread" | "fwrite" | "fflush" | "perror" | "getline" | "getdelim" => {
+            Some("stdio.h")
+        }
+        "memset" | "memcpy" | "memmove" | "memcmp" | "strlen" | "strnlen" | "strcmp"
+        | "strncmp" | "strcpy" | "strncpy" | "strchr" | "strrchr" | "strstr" | "strdup" => {
+            Some("string.h")
+        }
+        "read" | "write" | "close" | "execv" | "execvp" | "execve" | "getopt" | "fork"
+        | "getpid" | "sleep" | "usleep" | "_exit" => Some("unistd.h"),
+        "open" | "openat" | "fcntl" | "creat" => Some("fcntl.h"),
+        "err" | "errx" | "warn" | "warnx" | "verr" | "verrx" | "vwarn" | "vwarnx" => Some("err.h"),
+        "malloc" | "calloc" | "realloc" | "free" | "abort" | "exit" | "atoi" | "strtol"
+        | "strtoul" | "strtoll" | "strtoull" | "strtod" | "strtof" | "abs" => Some("stdlib.h"),
+        _ => None,
+    }
 }

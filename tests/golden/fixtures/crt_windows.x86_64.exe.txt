@@ -30,7 +30,6 @@
 0x140001150 8 wcscpy_s plt
 0x140001158 8 wcslen plt
 /* velk prelude */
-#include <stdarg.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -316,21 +315,21 @@ fn crt_ctype @ 0x1400010c3 (size 15)
 == 0x1400010d2 crt_format
 -- decompile
 /* velk pseudo-C: crt_format @ 0x1400010d2 */
-/* ref: 0x140002000 .rdata */
+/* ref: 0x140002000 "%d\n" */
 int crt_format(int a0) {
-    return printf((const char *)0x140002000, a0 & 0xffffffff);
+    return printf("%d\n", a0 & 0xffffffff);
 }
 -- signature
 int (int a0)
 -- references
-0x140002000 .rdata
+0x140002000 "%d\n"
 -- ir
 fn crt_format @ 0x1400010d2 (size 23)
   blk0 @ 0x1400010d2:
     v1:rax, xmm0 = call 0x140001128(#0x140002000, (rcx & #0xffffffff))
     ret v1
 -- card
-{"addr":"0x1400010d2","approxTokens":132,"blocks":1,"hardReasons":[],"name":"crt_format","nameSources":["dynamic","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":23,"unsupported":0}
+{"addr":"0x1400010d2","approxTokens":132,"blocks":1,"hardReasons":[],"name":"crt_format","nameSources":["dynamic","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":23,"strings":["%d\n"],"unsupported":0}
 
 == 0x1400010e9 -
 -- decompile
@@ -350,11 +349,6 @@ fn <unnamed> @ 0x1400010e9 (size 1)
 
 == 0x1400010f0 _close
 -- decompile
-/* velk pseudo-C: _close @ 0x1400010f0 */
-/* ref: 0x14000226c .rdata */
-int _close(int a0) {
-    return _close(a0);
-}
 -- signature
 int (int a0)
 -- references
@@ -369,11 +363,6 @@ fn _close @ 0x1400010f0 (size 8)
 
 == 0x1400010f8 _errno
 -- decompile
-/* velk pseudo-C: _errno @ 0x1400010f8 */
-/* ref: 0x140002274 .rdata */
-int *_errno(void) {
-    return _errno();
-}
 -- signature
 int * ()
 -- references
@@ -388,11 +377,6 @@ fn _errno @ 0x1400010f8 (size 8)
 
 == 0x140001100 _getpid
 -- decompile
-/* velk pseudo-C: _getpid @ 0x140001100 */
-/* ref: 0x14000227c .rdata */
-int _getpid(void) {
-    return _getpid();
-}
 -- signature
 int ()
 -- references
@@ -407,11 +391,6 @@ fn _getpid @ 0x140001100 (size 8)
 
 == 0x140001108 _time64
 -- decompile
-/* velk pseudo-C: _time64 @ 0x140001108 */
-/* ref: 0x140002284 .rdata */
-long long _time64(long long *a0) {
-    return _time64(a0);
-}
 -- signature
 long long (long long * a0)
 -- references
@@ -426,11 +405,6 @@ fn _time64 @ 0x140001108 (size 8)
 
 == 0x140001110 calloc
 -- decompile
-/* velk pseudo-C: calloc @ 0x140001110 */
-/* ref: 0x14000228c .rdata */
-void *calloc(size_t n, size_t size) {
-    return calloc(n, size);
-}
 -- signature
 void * (size_t a0, size_t a1)
 -- references
@@ -445,11 +419,6 @@ fn calloc @ 0x140001110 (size 8)
 
 == 0x140001118 fputs
 -- decompile
-/* velk pseudo-C: fputs @ 0x140001118 */
-/* ref: 0x140002294 .rdata */
-int fputs(const char *a0, FILE *a1) {
-    return fputs(a0, a1);
-}
 -- signature
 int (const char * a0, FILE * a1)
 -- references
@@ -464,11 +433,6 @@ fn fputs @ 0x140001118 (size 8)
 
 == 0x140001120 isalpha
 -- decompile
-/* velk pseudo-C: isalpha @ 0x140001120 */
-/* ref: 0x14000229c .rdata */
-int isalpha(int a0) {
-    return isalpha(a0);
-}
 -- signature
 int (int a0)
 -- references
@@ -483,13 +447,6 @@ fn isalpha @ 0x140001120 (size 8)
 
 == 0x140001128 printf
 -- decompile
-int printf(const char *format, ...) {
-    va_list args;
-    va_start(args, format);
-    int result = vprintf(format, args);
-    va_end(args);
-    return result;
-}
 -- signature
 int ()
 -- references
@@ -504,11 +461,6 @@ fn printf @ 0x140001128 (size 8)
 
 == 0x140001130 setlocale
 -- decompile
-/* velk pseudo-C: setlocale @ 0x140001130 */
-/* ref: 0x1400022ac .rdata */
-char *setlocale(int a0, const char *a1) {
-    return setlocale(a0, a1);
-}
 -- signature
 char * (int a0, const char * a1)
 -- references
@@ -523,11 +475,6 @@ fn setlocale @ 0x140001130 (size 8)
 
 == 0x140001138 strchr
 -- decompile
-/* velk pseudo-C: strchr @ 0x140001138 */
-/* ref: 0x1400022bc .rdata */
-char *strchr(const char *a0, int a1) {
-    return strchr(a0, a1);
-}
 -- signature
 char * (const char * a0, int a1)
 -- references
@@ -542,11 +489,6 @@ fn strchr @ 0x140001138 (size 8)
 
 == 0x140001140 strcpy_s
 -- decompile
-/* velk pseudo-C: strcpy_s @ 0x140001140 */
-/* ref: 0x1400022c4 .rdata */
-int strcpy_s(char *a0, unsigned long long a1, const char *a2) {
-    return strcpy_s(a0, a1, a2);
-}
 -- signature
 int (char * a0, unsigned long long a1, const char * a2)
 -- references
@@ -561,11 +503,6 @@ fn strcpy_s @ 0x140001140 (size 8)
 
 == 0x140001148 strtol
 -- decompile
-/* velk pseudo-C: strtol @ 0x140001148 */
-/* ref: 0x1400022cc .rdata */
-int32_t strtol(const char *a0, char **a1, int a2) {
-    return strtol(a0, a1, a2);
-}
 -- signature
 int32_t (const char * a0, char ** a1, int a2)
 -- references
@@ -580,11 +517,6 @@ fn strtol @ 0x140001148 (size 8)
 
 == 0x140001150 wcscpy_s
 -- decompile
-/* velk pseudo-C: wcscpy_s @ 0x140001150 */
-/* ref: 0x1400022d4 .rdata */
-int wcscpy_s(unsigned short *a0, unsigned long long a1, const unsigned short *a2) {
-    return wcscpy_s(a0, a1, a2);
-}
 -- signature
 int (unsigned short * a0, unsigned long long a1, const unsigned short * a2)
 -- references
@@ -599,11 +531,6 @@ fn wcscpy_s @ 0x140001150 (size 8)
 
 == 0x140001158 wcslen
 -- decompile
-/* velk pseudo-C: wcslen @ 0x140001158 */
-/* ref: 0x1400022dc .rdata */
-size_t wcslen(const unsigned short *a0) {
-    return wcslen(a0);
-}
 -- signature
 size_t (const unsigned short * a0)
 -- references

@@ -277,6 +277,8 @@ pub(super) fn optimize(
     simplification.add(changes);
     ir.callee_signatures = crate::analysis::calls::printable_signatures(image, &ir);
     Ok(Analysis {
+        unused_parameters: Default::default(),
+        import_parameters: Default::default(),
         callee_parameters: Default::default(),
         callee_structures: Default::default(),
         ir,

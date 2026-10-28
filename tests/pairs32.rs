@@ -523,7 +523,7 @@ fn arm_import_stubs_use_the_declared_argument_count() {
     assert!(printed.contains("memcpy("), "{printed}");
     assert!(!printed.contains("unsupported"), "{printed}");
     let source = scratch.join("check.c");
-    std::fs::write(&source, format!("#include <stdint.h>\n#include <stdbool.h>\n#include <stddef.h>\nstatic void *copy_stub(void *dst, const void *src, size_t count) {{ return (uintptr_t)dst == 0x1000 && (uintptr_t)src == 0x2000 && count == 7 ? dst : 0; }}\n#define memcpy copy_stub\n{printed}\nint main(void) {{ return copy_known((void *)0x1000, (void *)0x2000) != (void *)0x1000; }}\n")).unwrap();
+    std::fs::write(&source, format!("#include <stdint.h>\n#include <stdbool.h>\n#include <stddef.h>\n#include <string.h>\n#undef memcpy\nstatic void *copy_stub(void *dst, const void *src, size_t count) {{ return (uintptr_t)dst == 0x1000 && (uintptr_t)src == 0x2000 && count == 7 ? dst : 0; }}\n#define memcpy copy_stub\n{printed}\nint main(void) {{ return copy_known((void *)0x1000, (void *)0x2000) != (void *)0x1000; }}\n")).unwrap();
     let executable = scratch.join("check");
     let output = common::compiler::run(
         Command::new("clang")

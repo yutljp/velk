@@ -1227,11 +1227,6 @@ fn ??_GVirtual@@UEAAPEAXI@Z @ 0x180001630 (size 52)
 
 == 0x180001670 ??_7type_info@@6B@
 -- decompile
-/* velk pseudo-C: ??_7type_info@@6B@ @ 0x180001670 */
-/* ref: 0x180002480 .rdata */
-int32_t ___7type_info__6B_(void) {
-    return ___7type_info__6B_();
-}
 -- signature
 int32_t ()
 -- references
@@ -1246,11 +1241,6 @@ fn ??_7type_info@@6B@ @ 0x180001670 (size 16)
 
 == 0x180001680 __CxxFrameHandler3
 -- decompile
-/* velk pseudo-C: __CxxFrameHandler3 @ 0x180001680 */
-/* ref: 0x180002490 .rdata */
-int32_t __CxxFrameHandler3(void) {
-    return __CxxFrameHandler3();
-}
 -- signature
 int32_t ()
 -- references
@@ -1265,11 +1255,6 @@ fn __CxxFrameHandler3 @ 0x180001680 (size 16)
 
 == 0x180001690 ?imported_value@@YAHH@Z
 -- decompile
-/* velk pseudo-C: ?imported_value@@YAHH@Z @ 0x180001690 */
-/* ref: 0x180002488 .rdata */
-int32_t _imported_value__YAHH_Z(void) {
-    return _imported_value__YAHH_Z();
-}
 -- signature
 int32_t ()
 -- references

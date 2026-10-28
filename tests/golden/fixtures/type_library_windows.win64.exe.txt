@@ -179,11 +179,6 @@ fn fixture_entry @ 0x1400010a2 (size 1)
 
 == 0x1400010b0 VirtualAlloc
 -- decompile
-/* velk pseudo-C: VirtualAlloc @ 0x1400010b0 */
-/* ref: 0x1400050d0 .idata */
-void *VirtualAlloc(void *a0, unsigned long long a1, uint32_t a2, uint32_t a3) {
-    return VirtualAlloc(a0, a1, a2, a3);
-}
 -- signature
 void * (void * a0, unsigned long long a1, uint32_t a2, uint32_t a3)
 -- references
@@ -198,11 +193,6 @@ fn VirtualAlloc @ 0x1400010b0 (size 8)
 
 == 0x1400010b8 OpenProcess
 -- decompile
-/* velk pseudo-C: OpenProcess @ 0x1400010b8 */
-/* ref: 0x1400050c8 .idata */
-void *OpenProcess(uint32_t a0, int a1, uint32_t a2) {
-    return OpenProcess(a0, a1, a2);
-}
 -- signature
 void * (uint32_t a0, int a1, uint32_t a2)
 -- references
@@ -217,11 +207,6 @@ fn OpenProcess @ 0x1400010b8 (size 8)
 
 == 0x1400010c0 GetSystemTimeAsFileTime
 -- decompile
-/* velk pseudo-C: GetSystemTimeAsFileTime @ 0x1400010c0 */
-/* ref: 0x1400050c0 .idata */
-void GetSystemTimeAsFileTime(struct _FILETIME *a0) {
-    GetSystemTimeAsFileTime(a0);
-}
 -- signature
 void (struct _FILETIME * a0)
 -- references
@@ -236,11 +221,6 @@ fn GetSystemTimeAsFileTime @ 0x1400010c0 (size 8)
 
 == 0x1400010c8 GetFileType
 -- decompile
-/* velk pseudo-C: GetFileType @ 0x1400010c8 */
-/* ref: 0x1400050b8 .idata */
-uint32_t GetFileType(void *a0) {
-    return GetFileType(a0);
-}
 -- signature
 uint32_t (void * a0)
 -- references
@@ -255,11 +235,6 @@ fn GetFileType @ 0x1400010c8 (size 8)
 
 == 0x1400010d0 GetCurrentThreadId
 -- decompile
-/* velk pseudo-C: GetCurrentThreadId @ 0x1400010d0 */
-/* ref: 0x1400050b0 .idata */
-uint32_t GetCurrentThreadId(void) {
-    return GetCurrentThreadId();
-}
 -- signature
 uint32_t ()
 -- references

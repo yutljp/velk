@@ -673,7 +673,7 @@
 #include <stdint.h>
 
 uint64_t stdio___print();
-void i32__fmt_10002ff74(void);
+void i32__fmt_10002ff74();
 /* end velk prelude */
 
 == 0x10000090c rust_probe::main

@@ -1,5 +1,6 @@
 mod batch;
 pub(crate) mod cache;
+mod declarations;
 
 pub use cache::Location as CacheLocation;
 
@@ -1044,6 +1045,18 @@ impl Binary {
         let addr = analysis.ir.addr;
         let mut ir = std::borrow::Cow::Borrowed(&analysis.ir);
         let mut symbols = std::borrow::Cow::Borrowed(&self.symbols);
+        if !analysis.import_parameters.is_empty() {
+            symbols
+                .to_mut()
+                .import_parameters
+                .extend(analysis.import_parameters.clone());
+        }
+        if !analysis.unused_parameters.is_empty() {
+            symbols
+                .to_mut()
+                .unused_parameters
+                .extend(analysis.unused_parameters.clone());
+        }
         if !analysis.callee_parameters.is_empty() {
             symbols
                 .to_mut()
@@ -1213,6 +1226,7 @@ impl Binary {
             return Ok(());
         };
         let neighbors = batch::neighbors(&self.image, root_analysis);
+        let declaration_callers = declarations::callers(&self.image, root_analysis);
         let mut functions = vec![root_analysis.clone()];
         for neighbor in neighbors {
             let Some(function) = self.image.functions.get(&neighbor) else {
@@ -1231,6 +1245,20 @@ impl Binary {
             .collect();
         analysis::shared_structures::share(&mut irs, &self.data_ranges);
         batch::share_parameters(&mut functions, self.image.go);
+        for address in declaration_callers {
+            if functions.iter().any(|analysis| analysis.ir.addr == address) {
+                continue;
+            }
+            let Some(function) = self.image.functions.get(&address) else {
+                continue;
+            };
+            match cached(&mut self.analyses, &self.image, function, deadline) {
+                Ok(Ok(analysis)) => functions.push(analysis.clone()),
+                Ok(Err(_)) => continue,
+                Err(error) => return Err(error),
+            }
+        }
+        declarations::recover(&self.image, &mut functions);
         if let Err(error) = passed(deadline) {
             return Err(error);
         }
@@ -1790,6 +1818,8 @@ mod tests {
         binary.analyses.insert(
             addr,
             Ok(Analysis {
+                unused_parameters: Default::default(),
+                import_parameters: Default::default(),
                 callee_parameters: Default::default(),
                 callee_structures: Default::default(),
                 ir,

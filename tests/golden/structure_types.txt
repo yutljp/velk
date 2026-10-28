@@ -511,10 +511,10 @@ predicates_aarch64_O2.o: 0
 predicates_x86_64_O0.o: 0
 predicates_x86_64_O2.o: 0
 rust_demo: 392
-rust_demo_arm64: 410
+rust_demo_arm64: 408
 rust_probe: 392
-rust_probe_arm64: 410
-rust_probe_arm64_stripped: 422
+rust_probe_arm64: 408
+rust_probe_arm64_stripped: 420
 rust_probe_stripped: 395
 seh.O0.dll: 0
 seh.O2.dll: 0
