@@ -32,7 +32,8 @@ compiled C tests check structure size, field offsets and byte stores separately;
 the SMT check does not model C pointer validity or infer source object types.
 Interior array-pointer tests invoke the normalization pass and check that
 restoring each pointer phase preserves assignments and access addresses, including
-64-bit wraparound. Partial reads and writes are rejected by separate tests.
+64-bit wraparound and negative constant adjustments. Fixed adjusted pointers use
+the same normalization. Partial reads and writes are rejected by separate tests.
 
 Automatic string recovery checks known-bit extraction into stored bytes against
 symbolic inputs for each byte position. Memory mapping and decoder control flow

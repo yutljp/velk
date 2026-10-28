@@ -43,6 +43,11 @@
 
 struct S1 { uint64_t f_0; uint32_t f_8; };
 struct S2 { uint64_t f_0; uint8_t gap_0x8[0x8]; uint64_t f_10; };
+struct S3 { uint8_t gap_0x0[0x2c]; uint32_t f_2c; uint8_t gap_0x30[0x8]; uint64_t f_38; };
+struct S4 { uint8_t gap_0x0[0x24]; uint32_t f_24; uint8_t gap_0x28[0x10]; uint64_t f_38; };
+struct S5 { uint8_t gap_0x0[0x24]; uint32_t f_24; uint8_t gap_0x28[0xc]; uint32_t f_34; };
+struct S6 { uint8_t gap_0x0[0x24]; uint32_t f_24; uint8_t gap_0x28[0x8]; uint64_t f_30; };
+struct S7 { uint8_t gap_0x0[0x24]; uint32_t f_24; uint8_t gap_0x28[0x14]; uint32_t f_3c; };
 
 extern uint32_t g_1800030e0; /* address: 0x1800030e0 */
 extern uint8_t Multiple_vtable_0; /* address: 0x180002048 */
@@ -497,23 +502,22 @@ fn catch_one @ 0x1800012b0 (size 36)
 /* Exception metadata only; exception dispatch is not represented by standard C. */
 /* C++ try states [0, 0]: catch handler at 0x1800012e0. */
 /* velk pseudo-C: catch_one__catch_0 @ 0x1800012e0 */
-int32_t catch_one__catch_0(int64_t a0, uint64_t *a1) {
-    uint8_t *v1 = (uint8_t *)(a1 + 0x8);
-    *(uint32_t *)(v1 - 0x14) = *(uint32_t *)(*(uint64_t *)(v1 - 0x8));
+int32_t catch_one__catch_0(int64_t a0, struct S3 *a1) {
+    a1->f_2c = *(uint32_t *)(a1->f_38);
     return -2147478837;
 }
 -- signature
-int32_t (int64_t a0, uint64_t * a1)
+int32_t (int64_t a0, struct S1 * a1)
 -- references
 
 -- ir
 fn catch_one__catch_0 @ 0x1800012e0 (size 36)
   blk0 @ 0x1800012e0:
-    v1 = (rdx + #0x40)
-    store32(load32(load64((v1 + #0xfffffffffffffff8))), (v1 + #0xffffffffffffffec))
+    v1 = rdx
+    store32(load32(load64((v1 + #0x38))), (v1 + #0x2c))
     ret #0x1800012cb
 -- card
-{"addr":"0x1800012e0","approxTokens":162,"blocks":1,"hardReasons":[],"name":"catch_one__catch_0","nameSources":["unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":36,"unsupported":0}
+{"addr":"0x1800012e0","approxTokens":162,"blocks":1,"hardReasons":[],"name":"catch_one__catch_0","nameSources":["unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":36,"structureLayouts":[{"elementSize":null,"fields":[{"offset":"0x2c","size":4,"type":"uint32_t"},{"offset":"0x38","size":8,"type":"uint64_t"}],"minimumSize":64,"name":"S1","sourceFields":null,"sourceSize":null}],"structures":["struct S1 { uint8_t gap_0x0[0x2c]; uint32_t f_2c; uint8_t gap_0x30[0x8]; uint64_t f_38; };"],"unsupported":0}
 
 == 0x180001310 catch_many
 -- decompile
@@ -558,23 +562,22 @@ fn catch_many @ 0x180001310 (size 36)
 /* C++ try states [0, 0]: catch handler at 0x180001370. */
 /* C++ try states [0, 0]: catch handler at 0x1800013a0. */
 /* velk pseudo-C: catch_many__catch_0 @ 0x180001340 */
-int32_t catch_many__catch_0(int64_t a0, uint64_t *a1) {
-    uint8_t *v1 = (uint8_t *)(a1 + 0x8);
-    *(uint32_t *)(v1 - 0x1c) = *(uint32_t *)(*(uint64_t *)(v1 - 0x8)) + 1;
+int32_t catch_many__catch_0(int64_t a0, struct S4 *a1) {
+    a1->f_24 = *(uint32_t *)(a1->f_38) + 1;
     return -2147478741;
 }
 -- signature
-int32_t (int64_t a0, uint64_t * a1)
+int32_t (int64_t a0, struct S1 * a1)
 -- references
 
 -- ir
 fn catch_many__catch_0 @ 0x180001340 (size 38)
   blk0 @ 0x180001340:
-    v1 = (rdx + #0x40)
-    store32((load32(load64((v1 + #0xfffffffffffffff8))) + #0x1), (v1 + #0xffffffffffffffe4))
+    v1 = rdx
+    store32((load32(load64((v1 + #0x38))) + #0x1), (v1 + #0x24))
     ret #0x18000132b
 -- card
-{"addr":"0x180001340","aliases":["catch_many__catch_1__catch_0","catch_many__catch_2__catch_0"],"approxTokens":168,"blocks":1,"hardReasons":[],"name":"catch_many__catch_0","nameSources":["unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":38,"unsupported":0}
+{"addr":"0x180001340","aliases":["catch_many__catch_1__catch_0","catch_many__catch_2__catch_0"],"approxTokens":168,"blocks":1,"hardReasons":[],"name":"catch_many__catch_0","nameSources":["unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":38,"structureLayouts":[{"elementSize":null,"fields":[{"offset":"0x24","size":4,"type":"uint32_t"},{"offset":"0x38","size":8,"type":"uint64_t"}],"minimumSize":64,"name":"S1","sourceFields":null,"sourceSize":null}],"structures":["struct S1 { uint8_t gap_0x0[0x24]; uint32_t f_24; uint8_t gap_0x28[0x10]; uint64_t f_38; };"],"unsupported":0}
 
 == 0x180001370 catch_many__catch_1
 -- decompile
@@ -584,23 +587,22 @@ fn catch_many__catch_0 @ 0x180001340 (size 38)
 /* C++ try states [0, 0]: catch handler at 0x180001370. */
 /* C++ try states [0, 0]: catch handler at 0x1800013a0. */
 /* velk pseudo-C: catch_many__catch_1 @ 0x180001370 */
-int32_t catch_many__catch_1(int64_t a0, uint32_t *a1) {
-    uint32_t *v1 = a1 + 0x10;
-    v1[-7] = v1[-3] + 2;
+int32_t catch_many__catch_1(int64_t a0, struct S5 *a1) {
+    a1->f_24 = a1->f_34 + 2;
     return -2147478741;
 }
 -- signature
-int32_t (int64_t a0, uint32_t * a1)
+int32_t (int64_t a0, struct S1 * a1)
 -- references
 
 -- ir
 fn catch_many__catch_1 @ 0x180001370 (size 36)
   blk0 @ 0x180001370:
-    v1 = (rdx + #0x40)
-    store32((load32((v1 + #0xfffffffffffffff4)) + #0x2), (v1 + #0xffffffffffffffe4))
+    v1 = rdx
+    store32((load32((v1 + #0x34)) + #0x2), (v1 + #0x24))
     ret #0x18000132b
 -- card
-{"addr":"0x180001370","aliases":["catch_many__catch_0__catch_1","catch_many__catch_2__catch_1"],"approxTokens":162,"blocks":1,"hardReasons":[],"name":"catch_many__catch_1","nameSources":["unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":36,"unsupported":0}
+{"addr":"0x180001370","aliases":["catch_many__catch_0__catch_1","catch_many__catch_2__catch_1"],"approxTokens":162,"blocks":1,"hardReasons":[],"name":"catch_many__catch_1","nameSources":["unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":36,"structureLayouts":[{"elementSize":null,"fields":[{"offset":"0x24","size":4,"type":"uint32_t"},{"offset":"0x34","size":4,"type":"uint32_t"}],"minimumSize":56,"name":"S1","sourceFields":null,"sourceSize":null}],"structures":["struct S1 { uint8_t gap_0x0[0x24]; uint32_t f_24; uint8_t gap_0x28[0xc]; uint32_t f_34; };"],"unsupported":0}
 
 == 0x1800013a0 catch_many__catch_2
 -- decompile
@@ -669,23 +671,22 @@ fn catch_nested @ 0x1800013d0 (size 36)
 /* C++ try states [1, 1]: catch handler at 0x180001430. */
 /* C++ try states [0, 2]: catch handler at 0x180001400. */
 /* velk pseudo-C: catch_nested__catch_1 @ 0x180001400 */
-int32_t catch_nested__catch_1(int64_t a0, uint64_t *a1) {
-    uint8_t *v1 = (uint8_t *)(a1 + 0x8);
-    *(uint32_t *)(v1 - 0x1c) = *(uint32_t *)(*(uint64_t *)(v1 - 0x10)) + 3;
+int32_t catch_nested__catch_1(int64_t a0, struct S6 *a1) {
+    a1->f_24 = *(uint32_t *)(a1->f_30) + 3;
     return -2147478549;
 }
 -- signature
-int32_t (int64_t a0, uint64_t * a1)
+int32_t (int64_t a0, struct S1 * a1)
 -- references
 
 -- ir
 fn catch_nested__catch_1 @ 0x180001400 (size 39)
   blk0 @ 0x180001400:
-    v1 = (rdx + #0x40)
-    store32((load32(load64((v1 + #0xfffffffffffffff0))) + #0x3), (v1 + #0xffffffffffffffe4))
+    v1 = rdx
+    store32((load32(load64((v1 + #0x30))) + #0x3), (v1 + #0x24))
     ret #0x1800013eb
 -- card
-{"addr":"0x180001400","aliases":["catch_nested__catch_0__catch_1"],"approxTokens":168,"blocks":1,"hardReasons":[],"name":"catch_nested__catch_1","nameSources":["unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":39,"unsupported":0}
+{"addr":"0x180001400","aliases":["catch_nested__catch_0__catch_1"],"approxTokens":168,"blocks":1,"hardReasons":[],"name":"catch_nested__catch_1","nameSources":["unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":39,"structureLayouts":[{"elementSize":null,"fields":[{"offset":"0x24","size":4,"type":"uint32_t"},{"offset":"0x30","size":8,"type":"uint64_t"}],"minimumSize":56,"name":"S1","sourceFields":null,"sourceSize":null}],"structures":["struct S1 { uint8_t gap_0x0[0x24]; uint32_t f_24; uint8_t gap_0x28[0x8]; uint64_t f_30; };"],"unsupported":0}
 
 == 0x180001430 catch_nested__catch_0
 -- decompile
@@ -695,24 +696,23 @@ fn catch_nested__catch_1 @ 0x180001400 (size 39)
 /* C++ try states [0, 2]: catch handler at 0x180001400. */
 /* velk pseudo-C: catch_nested__catch_0 @ 0x180001430 */
 /* ref: 0x180002488 .rdata */
-int32_t catch_nested__catch_0(int64_t a0, uint32_t *a1) {
-    uint32_t *v1 = a1 + 0x10;
-    v1[-7] = ((int32_t)(_imported_value__YAHH_Z(v1[-1])));
+int32_t catch_nested__catch_0(int64_t a0, struct S7 *a1) {
+    a1->f_24 = ((int32_t)(_imported_value__YAHH_Z(a1->f_3c)));
     return -2147478549;
 }
 -- signature
-int32_t (int64_t a0, uint32_t * a1)
+int32_t (int64_t a0, struct S1 * a1)
 -- references
 0x180002488 .rdata
 -- ir
 fn catch_nested__catch_0 @ 0x180001430 (size 39)
   blk0 @ 0x180001430:
-    v1 = (rdx + #0x40)
-    v3:rax, xmm0 = call *load64(#0x180002488)(load32((v1 + #0xfffffffffffffffc)))
-    store32(v3, (v1 + #0xffffffffffffffe4))
+    v1 = rdx
+    v3:rax, xmm0 = call *load64(#0x180002488)(load32((v1 + #0x3c)))
+    store32(v3, (v1 + #0x24))
     ret #0x1800013eb
 -- card
-{"addr":"0x180001430","aliases":["catch_nested__catch_1__catch_0"],"approxTokens":162,"blocks":1,"hardReasons":[],"name":"catch_nested__catch_0","nameSources":["unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":39,"unsupported":0}
+{"addr":"0x180001430","aliases":["catch_nested__catch_1__catch_0"],"approxTokens":162,"blocks":1,"hardReasons":[],"name":"catch_nested__catch_0","nameSources":["unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":39,"structureLayouts":[{"elementSize":null,"fields":[{"offset":"0x24","size":4,"type":"uint32_t"},{"offset":"0x3c","size":4,"type":"uint32_t"}],"minimumSize":64,"name":"S1","sourceFields":null,"sourceSize":null}],"structures":["struct S1 { uint8_t gap_0x0[0x24]; uint32_t f_24; uint8_t gap_0x28[0x14]; uint32_t f_3c; };"],"unsupported":0}
 
 == 0x180001460 catch_cleanup
 -- decompile

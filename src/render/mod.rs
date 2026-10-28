@@ -430,7 +430,8 @@ pub(crate) fn project_locals(
         crate::arch::stack_pointer(ir.isa),
     );
     let roles = naming::roles::infer(ir, &Symbols::default());
-    let locals = locals::stack_locals_with_roles(ir, &frames, &types, &Symbols::default(), &roles);
+    let locals =
+        locals::stack_locals_with_roles(ir, &frames, &types, &Symbols::default(), &roles, &[]);
     let mut seen = std::collections::HashSet::new();
     locals
         .declarations

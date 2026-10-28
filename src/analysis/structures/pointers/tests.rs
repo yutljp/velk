@@ -13,7 +13,7 @@ fn smt_normalized_pointers_preserve_assignments_and_addresses() {
     let mut proofs = Proofs::default();
     for isa in [Isa::X86_64, Isa::AArch64] {
         for size in [8, 12, 16, 24, 32, 65536] {
-            for phase in [1, size / 2, size - 1] {
+            for phase in [1, size / 2, size - 1, u64::MAX, 1 << 63] {
                 for delta in [0, size, size * 2, u64::MAX, 1 << 63] {
                     let register = VARIABLE_BASE;
                     let before = raw_bin(BinOp::Add, Expr::reg(register, 64), Expr::Const(delta));

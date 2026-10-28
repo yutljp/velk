@@ -6,6 +6,8 @@
 //! Unoptimized code with a large frame also keeps such an address in a
 //! frame slot of its own and loads it back before each use.
 
+mod objects;
+
 use std::collections::HashSet;
 
 use super::stack_bytes::{Origins, origin, origins, transfer};
@@ -17,7 +19,7 @@ use crate::ir::{BinOp, Convention, Expr, FunctionIr, Stmt};
 /// the argument list points at, names the area and not the slot above it.
 /// Only the C conventions are taken: a callee under another may write its
 /// results into the caller's frame.
-pub(super) fn rebase(ir: &mut FunctionIr) {
+pub(super) fn rebase(ir: &mut FunctionIr) -> Vec<(i64, i64)> {
     if ir.blocks.is_empty()
         || ir.variadic
         || !matches!(
@@ -25,13 +27,14 @@ pub(super) fn rebase(ir: &mut FunctionIr) {
             Convention::SysV | Convention::Win64 | Convention::Aapcs64
         )
     {
-        return;
+        return Vec::new();
     }
     let sp = crate::arch::stack_pointer(ir.isa);
     unspill(ir, sp);
     let Some(entries) = origins(ir, &Origins::from([(sp, Some(0))])) else {
-        return;
+        return Vec::new();
     };
+    let objects = objects::ranges(ir, &entries, sp);
     for (block, entry) in ir.blocks.iter_mut().zip(entries) {
         let Some(mut state) = entry else {
             continue;
@@ -48,6 +51,7 @@ pub(super) fn rebase(ir: &mut FunctionIr) {
         }
     }
     drop_unread_frame_addresses(ir, sp);
+    objects
 }
 
 pub(super) fn drop_unused_adjustments(body: &mut String, name: &str) {

@@ -121,7 +121,7 @@ d1f44b5f551f47752db50cff2a0942fc53721352bc5a78e27f5679e6933472b1  src/render/exp
 7ec18f2b0e972056a5ca88e102e8a63ebe759949b7adc5129fded7112a76beaa  src/render/int.rs	pub(crate) fn assigned(
 194a209a48bef39faef97ae460e8181453c76302b4ebb07da31c57b748b80190  src/render/int.rs	pub(crate) fn cast(
 90722a245ac596a508f88cfe3c156f6fd9c4948cfa404fbb029b832af2037cec  src/render/int.rs	pub(crate) fn fit(
-6e649d6d6ef3f2c96c46c6dddad20aff5350673dc77f3021d105ac6665f38b58  src/render/locals.rs	pub(super) fn stack_locals_with_roles(
+0483e8f1b29bd3baaed73aed1b5f52b05061ab14829e1eeda6189e6dc41e2631  src/render/locals.rs	pub(super) fn stack_locals_with_roles(
 757327de648c2f687f7533ed35432c1f479452d63c222fd03091e0af9b411fea  src/render/locals/copies.rs	pub(super) fn fold(
 226cb7f228570597b7fa95535758341fbf527ad3ddf9b34a733e58e84bfa9c26  src/render/locals/indexed.rs	pub(super) fn offsets_frame_pointer(
 95872dc65f90f0207f519bfa202cc1154177288c79607c6638dfa603bfb73c5d  src/render/locals/returns.rs	fn replace_returns(

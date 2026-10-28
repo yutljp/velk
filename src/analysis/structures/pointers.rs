@@ -1,4 +1,4 @@
-//! Express an interior array pointer as a pointer to its element's start.
+//! Express an adjusted pointer as a pointer to its original base.
 
 use crate::ir::{BinOp, Expr, FunctionIr, Stmt, VARIABLE_BASE};
 

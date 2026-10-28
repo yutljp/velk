@@ -141,7 +141,7 @@ fn render_prepared(
     } else {
         None
     };
-    super::frame_registers::rebase(&mut folded);
+    let objects = super::frame_registers::rebase(&mut folded);
     if !folded.debug_locals.is_empty() && crate::passes::copies::fold_stack_locals(&mut folded) {
         crate::passes::read_once::fold_values_read_once(&mut folded);
     }
@@ -175,8 +175,14 @@ fn render_prepared(
         variables::MixedAccess::Untyped,
     );
     let roles = naming::roles::infer_with_nodes(ir, symbols, &nodes);
-    let mut locals =
-        super::locals::stack_locals_with_roles(ir, &frames, &variable_types, symbols, &roles);
+    let mut locals = super::locals::stack_locals_with_roles(
+        ir,
+        &frames,
+        &variable_types,
+        symbols,
+        &roles,
+        &objects,
+    );
     locals.bind_register_tops(original);
     #[cfg(test)]
     let classification = (structured_ir.clone().into_owned(), nodes.clone());

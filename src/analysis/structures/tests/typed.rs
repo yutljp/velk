@@ -582,3 +582,191 @@ fn conflicting_outer_widths_with_an_indirect_access_stay_as_casts() {
     assert!(code.contains("*(uint64_t *)(a0 + 0x4)"), "{code}");
     assert!(code.contains("a0[4]"), "{code}");
 }
+
+#[test]
+fn adjusted_copies_use_the_original_structure_offsets() {
+    for isa in [crate::loader::Isa::X86_64, crate::loader::Isa::AArch64] {
+        let copy = VARIABLE_BASE;
+        let mut ir = pointer_function(vec![
+            assign(copy, at(7, 16)),
+            Stmt::Ret {
+                value: Expr::bin(
+                    BinOp::Add,
+                    Expr::bin(
+                        BinOp::Add,
+                        load(at(7, 0), 8, false),
+                        load(at(copy, 4), 4, true),
+                    ),
+                    Expr::bin(BinOp::Sub, Expr::reg(copy, 64), Expr::reg(7, 64)),
+                ),
+            },
+        ]);
+        ir.isa = isa;
+        ir.name = Some("adjusted_fields".into());
+        ir.ret_type = CType::U64;
+        recover(&mut ir);
+        let text = crate::render::render(&ir, &[], &Default::default(), &[]);
+        assert!(text.contains("->f_14"), "{text}");
+        assert!(!text.contains("*(int32_t *)"), "{text}");
+        compile_and_run(
+            "adjusted_fields",
+            &text,
+            r#"
+int main(void) {
+    struct adjusted_fields_a0 value = {0};
+    for (int i = -1000; i <= 1000; ++i) {
+        value.f_0 = (uint64_t)i * 17;
+        value.f_14 = i;
+        if (adjusted_fields(&value) != value.f_0 + (uint64_t)(int64_t)i + 16) return 1;
+    }
+    return 0;
+}
+"#,
+        );
+    }
+}
+
+#[test]
+fn adjusted_copies_with_conflicting_widths_keep_casts() {
+    let copy = VARIABLE_BASE;
+    let mut ir = pointer_function(vec![
+        assign(copy, at(7, 4)),
+        Stmt::Ret {
+            value: Expr::bin(
+                BinOp::Add,
+                load(at(7, 0), 8, false),
+                load(at(copy, 0), 4, false),
+            ),
+        },
+    ]);
+    let before = ir.blocks.clone();
+    recover(&mut ir);
+    assert!(ir.structures.is_empty());
+    assert_eq!(format!("{:?}", ir.blocks), format!("{before:?}"));
+    let text = crate::render::render(&ir, &[], &Default::default(), &[]);
+    assert!(text.contains("*(uint64_t *)"), "{text}");
+}
+
+#[test]
+fn addresses_of_stack_objects_keep_their_fixed_fields() {
+    for isa in [Isa::X86_64, Isa::AArch64] {
+        let pointer = VARIABLE_BASE;
+        let sp = crate::arch::stack_pointer(isa);
+        let mut ir = pointer_function(vec![
+            assign(pointer, at(sp, (-32i64) as u64)),
+            Stmt::Store {
+                addr: at(pointer, 0),
+                value: Expr::reg(7, 64),
+                width: 4,
+            },
+            assign(pointer + 1, at(pointer, 8)),
+            Stmt::Store {
+                addr: at(pointer + 1, 0),
+                value: Expr::Const(0x12345678),
+                width: 8,
+            },
+            Stmt::Ret {
+                value: Expr::bin(
+                    BinOp::Add,
+                    load(at(pointer, 0), 4, true),
+                    load(at(pointer, 8), 8, false),
+                ),
+            },
+        ]);
+        ir.isa = isa;
+        ir.convention = if isa == Isa::AArch64 {
+            crate::ir::Convention::Aapcs64
+        } else {
+            crate::ir::Convention::SysV
+        };
+        ir.params[0].ty = CType::U64;
+        ir.ret_type = CType::U64;
+        ir.frame_bottom = -32;
+        ir.name = Some("stack_fields".into());
+        let text = crate::render::render(&ir, &[], &Default::default(), &[]);
+        assert!(text.contains(".f_0"), "{text}");
+        assert!(text.contains(".f_8"), "{text}");
+        compile_and_run(
+            "stack_fields",
+            &text,
+            r#"
+int main(void) {
+    for (int64_t i = -1000; i <= 1000; ++i) {
+        if (stack_fields((uint64_t)i) != (uint64_t)i + 0x12345678) return 1;
+    }
+    return 0;
+}
+"#,
+        );
+    }
+}
+
+#[test]
+fn adjusted_loaded_pointers_and_negative_offsets_keep_their_fields() {
+    let base = VARIABLE_BASE;
+    let copy = VARIABLE_BASE + 1;
+    let mut ir = pointer_function(vec![
+        assign(base, load(at(7, 0), 8, false)),
+        assign(
+            copy,
+            Expr::bin(BinOp::Sub, Expr::reg(base, 64), Expr::Const(16)),
+        ),
+        Stmt::Ret {
+            value: Expr::bin(
+                BinOp::Add,
+                load(at(base, 0), 1, false),
+                load(at(copy, 20), 4, true),
+            ),
+        },
+    ]);
+    ir.name = Some("loaded_fields".into());
+    ir.ret_type = CType::U64;
+    recover(&mut ir);
+    let text = crate::render::render(&ir, &[], &Default::default(), &[]);
+    assert!(text.contains("->f_4"), "{text}");
+    assert!(!text.contains("*(int32_t *)"), "{text}");
+    compile_and_run(
+        "loaded_fields",
+        &text,
+        r#"
+int main(void) {
+    struct loaded_fields_s1 value = {0};
+    uintptr_t pointer = (uintptr_t)&value;
+    for (int64_t i = -1000; i <= 1000; ++i) {
+        value.f_0 = (uint8_t)i;
+        value.f_4 = i;
+        if (loaded_fields((void *)&pointer) != value.f_0 + (uint64_t)i) return 1;
+    }
+    return 0;
+}
+"#,
+    );
+}
+
+#[test]
+fn adjusted_pointers_with_other_machine_memory_accesses_keep_casts() {
+    let copy = VARIABLE_BASE;
+    let mut ir = pointer_function(vec![
+        assign(copy, at(7, 16)),
+        Stmt::Machine {
+            instruction: crate::ir::MachineInstruction::ArmLoadAcquire { width: 8 },
+            inputs: vec![at(copy, 4)],
+            outputs: vec![RegRef {
+                index: copy + 1,
+                width: 64,
+            }],
+        },
+        Stmt::Ret {
+            value: Expr::bin(
+                BinOp::Add,
+                load(at(7, 0), 8, false),
+                load(at(copy, 4), 4, true),
+            ),
+        },
+    ]);
+    ir.isa = Isa::AArch64;
+    let before = ir.blocks.clone();
+    recover(&mut ir);
+    assert!(ir.structures.is_empty());
+    assert_eq!(format!("{:?}", ir.blocks), format!("{before:?}"));
+}

@@ -144,7 +144,7 @@ pub(crate) fn stack_locals(
     symbols: &super::Symbols,
 ) -> Locals {
     let roles = super::naming::roles::infer(ir, symbols);
-    stack_locals_with_roles(ir, frames, variables, symbols, &roles)
+    stack_locals_with_roles(ir, frames, variables, symbols, &roles, &[])
 }
 
 pub(super) fn stack_locals_with_roles(
@@ -153,6 +153,7 @@ pub(super) fn stack_locals_with_roles(
     variables: &std::collections::BTreeMap<u16, CType>,
     symbols: &super::Symbols,
     roles: &super::naming::roles::Roles,
+    objects: &[(i64, i64)],
 ) -> Locals {
     let sp = stack_pointer(ir.isa);
     let base = Ctx {
@@ -284,7 +285,7 @@ pub(super) fn stack_locals_with_roles(
         .iter()
         .filter_map(|(slot, ..)| *slot)
         .fold(lowest_frame(ir, frames, sp).min(ir.frame_bottom), i64::min);
-    let mut merged_ranges: Vec<(i64, i64)> = Vec::new();
+    let mut merged_ranges: Vec<(i64, i64)> = objects.to_vec();
     let argument_accesses = stack_arguments(ir, sp, frames);
     let in_parameter = |slot: i64| {
         ir.stack_params.iter().any(|param| {

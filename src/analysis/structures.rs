@@ -75,15 +75,15 @@ pub(crate) fn recover(ir: &mut FunctionIr) {
             }
             None if !direct || integer => continue,
             None => {
-                let aliases = copies(ir, index);
-                match layout(&aliases, &touches) {
-                    Some(fields) => Structure {
-                        name,
-                        fields,
-                        size: None,
-                        elements: aliases.into_iter().filter(|copy| *copy != index).collect(),
-                    },
-                    None => continue,
+                let Some(FixedLayout { fields, aliases }) = fixed_layout(ir, index, &touches)
+                else {
+                    continue;
+                };
+                Structure {
+                    name,
+                    fields,
+                    size: None,
+                    elements: aliases.into_iter().filter(|copy| *copy != index).collect(),
                 }
             }
         };
@@ -187,10 +187,11 @@ pub(crate) fn recover(ir: &mut FunctionIr) {
                 (array.fields, Some(array.size), aliases)
             }
             None => {
-                let aliases = copies(ir, variable);
-                let Some(fields) = layout(&aliases, &touches) else {
+                let Some(FixedLayout { fields, aliases }) = fixed_layout(ir, variable, &touches)
+                else {
                     continue;
                 };
+                touches = memory_accesses(ir);
                 (fields, None, aliases)
             }
         };
@@ -226,6 +227,118 @@ pub(crate) fn recover(ir: &mut FunctionIr) {
         }
     }
     ir.structures.extend(structures);
+}
+
+struct FixedLayout {
+    fields: Vec<(u64, CType)>,
+    aliases: Vec<u16>,
+}
+
+fn fixed_layout(ir: &mut FunctionIr, base: u16, touches: &[MemoryAccess]) -> Option<FixedLayout> {
+    if let Some(layout) = adjusted_layout(ir, base, touches) {
+        return Some(layout);
+    }
+    let aliases = copies(ir, base);
+    layout(&aliases, touches).map(|fields| FixedLayout { fields, aliases })
+}
+
+/// Fixed offsets from a pointer, represented by locals holding its original base.
+fn adjusted_layout(
+    ir: &mut FunctionIr,
+    base: u16,
+    touches: &[MemoryAccess],
+) -> Option<FixedLayout> {
+    let sources = holders(ir, base, true);
+    let mut offsets = HashMap::from([(Base::Register(base), 0i64), (Base::Slot, 0)]);
+    loop {
+        let mut changed = false;
+        for (register, definitions) in &sources.definitions {
+            let own = Base::Register(*register);
+            if offsets.contains_key(&own) {
+                continue;
+            }
+            let offset = definitions.iter().find_map(|definition| {
+                if !definition.scales.is_empty() {
+                    return None;
+                }
+                offsets
+                    .get(&definition.base)
+                    .and_then(|offset| offset.checked_add(definition.constant))
+            });
+            if let Some(offset) = offset {
+                offsets.insert(own, offset);
+                changed = true;
+            }
+        }
+        if !changed {
+            break;
+        }
+    }
+    let mut phases = Vec::new();
+    for (register, definitions) in &sources.definitions {
+        let Some(offset) = offsets.get(&Base::Register(*register)) else {
+            continue;
+        };
+        if definitions.iter().any(|definition| {
+            !definition.scales.is_empty()
+                || offsets
+                    .get(&definition.base)
+                    .and_then(|from| from.checked_add(definition.constant))
+                    != Some(*offset)
+        }) {
+            continue;
+        }
+        if *offset != 0 {
+            phases.push((*register, *offset as u64));
+        }
+    }
+    if phases.is_empty() {
+        let aliases = copies(ir, base);
+        return layout(&aliases, touches).map(|fields| FixedLayout { fields, aliases });
+    }
+    if ir.blocks.iter().flat_map(|block| &block.stmts).any(|stmt| {
+        matches!(
+            stmt,
+            Stmt::Machine {
+                instruction: crate::ir::MachineInstruction::ArmLoadAcquire { .. }
+                    | crate::ir::MachineInstruction::ArmExclusive { .. }
+                    | crate::ir::MachineInstruction::ArmCacheZero,
+                ..
+            }
+        )
+    }) {
+        return None;
+    }
+    let mut candidate = ir.clone();
+    if pointers::normalize(&mut candidate, &phases).len() != phases.len() {
+        return None;
+    }
+    let aliases = copies(&candidate, base);
+    let Some(fields) = layout(&aliases, &memory_accesses(&candidate)) else {
+        return None;
+    };
+    let mut end = 0;
+    for (offset, ty) in &fields {
+        if *offset < end {
+            return None;
+        }
+        let Some(width) = CType::pointer_to(ty.clone()).pointee_size() else {
+            return None;
+        };
+        let Some(next) = offset.checked_add(u64::from(width)) else {
+            return None;
+        };
+        end = next;
+    }
+    // Adjusted aliases must not hide conflicting or unsupported accesses.
+    if phases
+        .iter()
+        .any(|(register, _)| !aliases.contains(register))
+    {
+        return None;
+    }
+    *ir = candidate;
+    Some(FixedLayout { fields, aliases })
 }
 
 /// Whole-register copies whose every definition keeps the same address.
