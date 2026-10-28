@@ -53,7 +53,7 @@ trait Machine {
     fn enter_block(&mut self, flags: Option<flags::Flags>);
     /// Blocks an instruction that loops by itself adds after the one it ends
     /// (an x86 `rep` string instruction's body).
-    fn take_extra_blocks(&mut self) -> Vec<Block> {
+    fn take_extra_blocks(&mut self) -> Vec<(Block, Option<flags::Flags>)> {
         Vec::new()
     }
 }
@@ -920,6 +920,27 @@ pub(crate) fn call(
             }
         }
     }
+    if target
+        .and_then(|target| image.functions.get(&target))
+        .is_some_and(|function| function.sources.contains(&crate::loader::NameSource::Call))
+        && let (Some(args), Some(inputs)) = (&mut args, summary.and_then(|summary| summary.inputs))
+    {
+        for register in inputs.iter() {
+            if register < 16
+                && register != crate::arch::stack_pointer(image.isa)
+                && !convention.arguments().contains(&register)
+            {
+                args.push(Expr::reg(
+                    register,
+                    if image.isa == crate::loader::Isa::I386 {
+                        32
+                    } else {
+                        64
+                    },
+                ));
+            }
+        }
+    }
     let clobbers = summary.and_then(|summary| summary.clobbers);
     Stmt::Call {
         kind,
@@ -1325,17 +1346,17 @@ fn carry_zero(
 
 /// Ends a block: a block whose flags carry on passes their operands, before
 /// the branch that leaves it.
-fn finish_block<M: Machine>(
-    machine: &M,
+fn finish_block(
+    exit: Option<flags::Flags>,
+    touched: bool,
     isa: Isa,
     start: u64,
     mut stmts: Vec<Stmt>,
     carried: &CarriedFlags,
     exits: &mut HashMap<u64, Exit>,
 ) -> Block {
-    let exit = machine.exit_flags();
     if carried.exporters.contains(&start)
-        && machine.flags_touched()
+        && touched
         && let Some(flags) = &exit
     {
         let (_, values) = flags.carried();
@@ -1395,8 +1416,7 @@ fn finish_block<M: Machine>(
         start,
         Exit {
             flags: exit,
-            touched: machine.flags_touched()
-                || stmts.iter().any(|stmt| matches!(stmt, Stmt::Call { .. })),
+            touched: touched || stmts.iter().any(|stmt| matches!(stmt, Stmt::Call { .. })),
         },
     );
     Block { start, stmts }
@@ -1451,7 +1471,8 @@ fn build<M: Machine>(
                 });
                 let stmts = std::mem::take(&mut pending);
                 blocks.push(finish_block(
-                    &machine,
+                    machine.exit_flags(),
+                    machine.flags_touched(),
                     image.isa,
                     block_start,
                     stmts,
@@ -1478,7 +1499,8 @@ fn build<M: Machine>(
             } else {
                 let stmts = std::mem::take(&mut pending);
                 blocks.push(finish_block(
-                    &machine,
+                    machine.exit_flags(),
+                    machine.flags_touched(),
                     image.isa,
                     block_start,
                     stmts,
@@ -1495,23 +1517,25 @@ fn build<M: Machine>(
             ends.insert(block_start, d.pc);
             let stmts = std::mem::take(&mut pending);
             blocks.push(finish_block(
-                &machine,
+                machine.exit_flags(),
+                machine.flags_touched(),
                 image.isa,
                 block_start,
                 stmts,
                 carried,
                 &mut exits,
             ));
-            // A loop's body leaves the flags as they came in.
-            for extra in machine.take_extra_blocks() {
-                exits.insert(
+            for (extra, flags) in machine.take_extra_blocks() {
+                let touched = flags.is_some();
+                blocks.push(finish_block(
+                    flags,
+                    touched,
+                    image.isa,
                     extra.start,
-                    Exit {
-                        flags: None,
-                        touched: false,
-                    },
-                );
-                blocks.push(extra);
+                    extra.stmts,
+                    carried,
+                    &mut exits,
+                ));
             }
             block_start = d.next;
             machine.block_ended();
@@ -1563,11 +1587,60 @@ fn drop_unread_compare_operands(blocks: &mut [Block]) {
                 .filter(|register| FLAG_OPERANDS.contains(register)),
         );
     }
-    for block in blocks {
+    for block in blocks.iter_mut() {
         block.stmts.retain(|stmt| {
             !matches!(stmt, Stmt::Assign { dest, .. }
                 if FLAG_OPERANDS.contains(&dest.index) && !read.contains(&dest.index))
         });
+    }
+    let saved = [
+        x86_64::string::STRING_FLAGS,
+        x86_64::string::STRING_OVERFLOW,
+    ];
+    if !blocks
+        .iter()
+        .flat_map(|block| &block.stmts)
+        .any(|stmt| matches!(stmt, Stmt::Assign { dest, .. } if saved.contains(&dest.index)))
+    {
+        return;
+    }
+    let bits = |registers: &rustc_hash::FxHashSet<u16>| {
+        u8::from(registers.contains(&saved[0])) | (u8::from(registers.contains(&saved[1])) << 1)
+    };
+    let mut incoming = vec![0u8; blocks.len()];
+    let mut outgoing = incoming.clone();
+    loop {
+        let mut changed = false;
+        for index in (0..blocks.len()).rev() {
+            let mut live = 0;
+            for next in crate::ir::cfg::block_successors(blocks, index) {
+                live |= incoming[next];
+            }
+            outgoing[index] = live;
+            for stmt in blocks[index].stmts.iter().rev() {
+                let (writes, reads) = crate::ir::visit::statement_registers(stmt);
+                live = (live & !bits(&writes)) | bits(&reads);
+            }
+            changed |= incoming[index] != live;
+            incoming[index] = live;
+        }
+        if !changed {
+            break;
+        }
+    }
+    for (block, mut live) in blocks.iter_mut().zip(outgoing) {
+        let mut kept = Vec::new();
+        for stmt in block.stmts.drain(..).rev() {
+            if matches!(&stmt, Stmt::Assign { dest, .. } if saved.contains(&dest.index) && live & (1 << (dest.index - saved[0])) == 0)
+            {
+                continue;
+            }
+            let (writes, reads) = crate::ir::visit::statement_registers(&stmt);
+            live = (live & !bits(&writes)) | bits(&reads);
+            kept.push(stmt);
+        }
+        kept.reverse();
+        block.stmts = kept;
     }
 }
 
@@ -1972,6 +2045,144 @@ mod tests {
             16
         );
         assert_eq!(stored.get(&0x3008), Some(&0x88));
+    }
+
+    #[test]
+    fn string_instructions_cover_widths_directions_counts_and_comparisons() {
+        for (size, prefix) in [(1u8, vec![]), (2, vec![0x66]), (4, vec![]), (8, vec![0x48])] {
+            for backward in [false, true] {
+                for count in [0, 1, 3] {
+                    let first = if backward { 0x1010 } else { 0x1000 };
+                    let target = if backward { 0x2010 } else { 0x2000 };
+                    let memory = [
+                        (0x1000, u64::MAX),
+                        (0x1008, u64::MAX),
+                        (0x1010, u64::MAX),
+                        (0x2000, u64::MAX),
+                        (0x2008, u64::MAX),
+                        (0x2010, u64::MAX),
+                    ];
+                    for opcode in [0xa4, 0xaa, 0xac, 0xa6, 0xae] {
+                        for repeat in [None, Some(0xf3), Some(0xf2)] {
+                            let mut code = vec![if backward { 0xfd } else { 0xfc }];
+                            // Establish flags before a possible zero-count comparison.
+                            code.extend([0x39, 0xc0]);
+                            code.extend(repeat);
+                            code.extend(&prefix);
+                            code.push(opcode + u8::from(size != 1));
+                            // Return the remaining count.
+                            code.extend([0x48, 0x89, 0xc8, 0xc3]);
+                            let image = Image::from_code(Isa::X86_64, 0, code.clone());
+                            let mut ir = FunctionIr::single_block(Isa::X86_64, Vec::new());
+                            ir.blocks = lift(&image, 0, code.len() as u64, &HashSet::new())
+                                .expect("string lifts");
+                            let registers = [(0, u64::MAX), (1, count), (6, first), (7, target)];
+                            let setup = eval::Setup {
+                                seed: 0,
+                                convention: eval::Convention {
+                                    arguments: &[],
+                                    clobbered: &[],
+                                },
+                                registers: &registers,
+                                memory: &memory,
+                                step_limit: 2000,
+                            };
+                            let expected = if repeat.is_none() {
+                                count
+                            } else if matches!(opcode, 0xa6 | 0xae) && repeat == Some(0xf2) {
+                                count.saturating_sub(1)
+                            } else {
+                                0
+                            };
+                            match eval::run(&ir, &setup) {
+                                eval::Outcome::Return { value, .. } => assert_eq!(
+                                    value,
+                                    expected,
+                                    "size={size} backward={backward} count={count} opcode={opcode:x} repeat={repeat:?}\n{}",
+                                    ir.render()
+                                ),
+                                other => panic!("{other:?}\n{}", ir.render()),
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn string_sources_add_segment_bases_without_changing_pointer_offsets() {
+        for segment in [0x64, 0x65] {
+            let base = if segment == 0x64 {
+                crate::arch::x86::FS_BASE
+            } else {
+                crate::arch::x86::GS_BASE
+            };
+            let moved = memory_after(
+                vec![segment, 0xf3, 0xa4, 0x48, 0x89, 0x37, 0xc3],
+                &[(base, 0x1000), (6, 0x10), (7, 0x2000), (1, 1)],
+                &[(0x1010, 0x55)],
+            );
+            assert_eq!(moved.get(&0x2000), Some(&0x55));
+            assert_eq!(moved.get(&0x2001), Some(&0x11));
+            assert_eq!(moved.get(&0x2002), Some(&0));
+        }
+    }
+
+    #[test]
+    fn address_override_uses_ecx_and_preserves_registers_for_zero_count() {
+        for count in [0u64, 1, 3] {
+            let code = vec![0xfc, 0x67, 0xf3, 0xaa, 0x48, 0x89, 0xc8, 0xc3];
+            let initial = 0xffff_ffff_0000_0000 | count;
+            assert_eq!(
+                returns(Isa::X86_64, code, &[(0, 0), (1, initial), (7, 0x2000)]),
+                if count == 0 { initial } else { 0 }
+            );
+        }
+    }
+
+    #[test]
+    fn repeated_comparisons_leave_the_last_flags_and_keep_flags_for_zero_count() {
+        for repeat in [0xf3, 0xf2] {
+            for opcode in [0xa6, 0xae] {
+                for count in [0, 1, 3] {
+                    for unequal in [false, true] {
+                        let code = vec![
+                            0xfc, 0x39, 0xc0, repeat, opcode, 0x0f, 0x94, 0xc0, 0x0f, 0xb6, 0xc0,
+                            0xc3,
+                        ];
+                        let image = Image::from_code(Isa::X86_64, 0, code.clone());
+                        let mut ir = FunctionIr::single_block(Isa::X86_64, Vec::new());
+                        ir.blocks = lift(&image, 0, code.len() as u64, &HashSet::new())
+                            .expect("comparison lifts");
+                        let registers = [(0, 1), (1, count), (6, 0x1000), (7, 0x2000)];
+                        let memory = [
+                            (0x1000, 0x010101),
+                            (0x2000, if unequal { 0x020202 } else { 0x010101 }),
+                        ];
+                        let setup = eval::Setup {
+                            seed: 0,
+                            convention: eval::Convention {
+                                arguments: &[],
+                                clobbered: &[],
+                            },
+                            registers: &registers,
+                            memory: &memory,
+                            step_limit: 2000,
+                        };
+                        match eval::run(&ir, &setup) {
+                            eval::Outcome::Return { value, .. } => assert_eq!(
+                                value,
+                                u64::from(count == 0 || !unequal),
+                                "repeat={repeat:x} opcode={opcode:x} count={count} unequal={unequal}\n{}",
+                                ir.render()
+                            ),
+                            other => panic!("{other:?}\n{}", ir.render()),
+                        }
+                    }
+                }
+            }
+        }
     }
 
     #[test]

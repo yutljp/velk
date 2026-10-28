@@ -797,7 +797,7 @@ pub(crate) fn resolve(blocks: &mut [Block], pads: &[(u64, Vec<(u64, u64)>)], ima
     let indirect = |stmt: &Stmt| {
         matches!(stmt, Stmt::Call { target: None, through: Some(through), convention, .. }
             if !stmt.has_declared_call()
-                && !matches!(convention, Convention::SyscallX86 | Convention::SyscallArm)
+                && !matches!(convention, Convention::SyscallI386 | Convention::SyscallX86 | Convention::SyscallArm)
                 && crate::lift::import_name(image, through).is_none())
     };
     if !blocks.iter().flat_map(|block| &block.stmts).any(indirect) {

@@ -83,10 +83,10 @@ impl<M: Machine> Machine for Located<M> {
         self.inner.enter_block(flags);
     }
 
-    fn take_extra_blocks(&mut self) -> Vec<Block> {
+    fn take_extra_blocks(&mut self) -> Vec<(Block, Option<flags::Flags>)> {
         let mut blocks = self.inner.take_extra_blocks();
         if self.mode == Mode::Execution {
-            for block in &mut blocks {
+            for (block, _) in &mut blocks {
                 block.stmts.insert(0, marker(self.address));
             }
         }

@@ -1,14 +1,14 @@
 # functions left out:
 #   accesses memory: 284
-#   calls: 8099
+#   calls: 8100
 #   computes on floats or vectors: 1
 #   has an unsupported instruction: 10
 #   reads a register that is not a parameter: 58
 #   refers to data: 362
 #   requires an external machine-state source: 2
 #   returns no integer: 305
-#   returns nothing: 687
-#   takes an argument that is no integer: 993
+#   returns nothing: 692
+#   takes an argument that is no integer: 994
 #   takes arguments on the stack: 81
 # runs left out:
 #   step limit: 50
@@ -327,7 +327,7 @@
 # rust_probe_arm64_stripped: 670 functions, 23 qualify, 23 compile, 0 do not, 23 compared (276 runs), 0 differ
 # rust_probe_stripped: 545 functions, 15 qualify, 15 compile, 0 do not, 15 compared (180 runs), 0 differ
 # seh.O0.dll: 10 functions, 1 qualify, 1 compile, 0 do not, 1 compared (12 runs), 0 differ
-# seh.O2.dll: 8 functions, 1 qualify, 1 compile, 0 do not, 1 compared (12 runs), 0 differ
+# seh.O2.dll: 10 functions, 1 qualify, 1 compile, 0 do not, 1 compared (12 runs), 0 differ
 # shared_pointers_x64.so: 4 functions, 3 qualify, 3 compile, 0 do not, 3 compared (36 runs), 0 differ
 # tail_calls.o: 3 functions, 2 qualify, 2 compile, 0 do not, 2 compared (24 runs), 0 differ
 # tail_calls_stripped.o: 3 functions, 2 qualify, 2 compile, 0 do not, 2 compared (24 runs), 0 differ

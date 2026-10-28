@@ -89,12 +89,12 @@ fn total_area(Shape const* const*, int) @ 0x0 (size 92)
 == 0x5c clamp_int(int)
 -- decompile
 /* velk pseudo-C: clamp_int(int) @ 0x5c */
-int32_t clamp_int(int32_t a0) {
+int64_t clamp_int(int32_t a0) {
     int32_t v1 = (a0 < 255 ? a0 : 255);
-    return v1 & ~(v1 >> 31);
+    return v1 & 0xffffffff & ~(uint64_t)(uint32_t)(v1 >> 31);
 }
 -- signature
-int32_t (int32_t a0)
+int64_t (int32_t a0)
 -- references
 
 -- ir

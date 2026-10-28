@@ -793,14 +793,24 @@ fn compute(
             } else {
                 &blocks
             };
-            Arc::new(signature::recover_with(
+            let mut recovered = signature::recover_with(
                 signature_body,
                 &landing_pads,
                 image.isa,
                 convention,
                 image.go,
                 &|stmt| super::prototypes::called(image, stmt),
-            ))
+            );
+            if function.sources.contains(&NameSource::Call) {
+                signature::add_register_parameters(
+                    &mut recovered,
+                    signature_body,
+                    &landing_pads,
+                    image.isa,
+                    convention,
+                );
+            }
+            Arc::new(recovered)
         }
     };
     // A Go closure's context is no argument a call passes in order.

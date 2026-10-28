@@ -47,6 +47,7 @@ struct Runner<'a> {
 #[derive(Debug)]
 enum Stop {
     Return,
+    Exit,
     End,
     Trap,
     StackCheckFail,
@@ -381,6 +382,7 @@ impl Runner<'_> {
     ) -> (Report, Option<strings::Recovery>) {
         let (mut reason, mut error) = match stopped {
             Stop::Return => ("return", None),
+            Stop::Exit => ("exit", None),
             Stop::End => ("end address", None),
             Stop::StackCheckFail => ("stack check failed", None),
             Stop::Trap => ("trap", None),
@@ -881,9 +883,49 @@ impl Runner<'_> {
         depth: usize,
     ) -> std::result::Result<(), Stop> {
         if kind == CallKind::Syscall {
-            return Err(Stop::Error(
-                "system calls require external machine state".to_owned(),
-            ));
+            if self.image.format != crate::loader::Format::Elf || self.recovery.is_some() {
+                return Err(Stop::Error(
+                    "Linux syscalls require explicit ELF emulation".into(),
+                ));
+            }
+            let number = match self.eval(&Expr::reg(convention.arguments()[0], 64)) {
+                Ok(number) => number,
+                Err(stop) => return Err(stop),
+            };
+            let Some(operation) = super::syscalls::operation(convention, number) else {
+                return Err(Stop::Error(format!("unsupported Linux syscall {number}")));
+            };
+            let operation = match operation {
+                super::syscalls::Operation::Read => io::Operation::Read,
+                super::syscalls::Operation::Write => io::Operation::Write,
+                super::syscalls::Operation::Exit => return Err(Stop::Exit),
+            };
+            let value = match self.io_hook(operation, convention, kind) {
+                Ok(value) => value,
+                Err(stop) => return Err(stop),
+            };
+            for &register in convention.clobbered() {
+                self.assign_fact(
+                    RegRef {
+                        index: register,
+                        width: 64,
+                    },
+                    Fact::TOP,
+                );
+            }
+            self.assign_fact(
+                RegRef {
+                    index: 0,
+                    width: 64,
+                },
+                Fact::constant(value),
+            );
+            for output in outputs {
+                if output.register == 0 {
+                    self.assign_fact(output.dest, Fact::constant(value));
+                }
+            }
+            return Ok(());
         }
         let target = match target {
             Some(target) => target,

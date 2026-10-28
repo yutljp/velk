@@ -321,7 +321,15 @@ pub(super) fn expression(call: &Stmt, ctx: &Ctx<'_>) -> String {
         .flatten()
         .map(|arg| super::argument(arg, ctx))
         .collect();
-    if let (Some(name), Some(first)) = (number, args.first_mut()) {
+    let named_syscall = number.and_then(|name| match name {
+        "read" | "write" => Some((name, 3)),
+        "exit" | "exit_group" => Some((name, 1)),
+        _ => None,
+    });
+    if let Some((_, count)) = named_syscall {
+        args.remove(0);
+        args.truncate(count);
+    } else if let (Some(name), Some(first)) = (number, args.first_mut()) {
         *first = format!("{first} /* SYS_{name} */");
     }
     let word_type = if crate::arch::pointer_bytes(ctx.isa) == 4 {
@@ -335,10 +343,13 @@ pub(super) fn expression(call: &Stmt, ctx: &Ctx<'_>) -> String {
         match (through, target) {
             _ if matches!(
                 convention,
-                crate::ir::Convention::SyscallX86 | crate::ir::Convention::SyscallArm
+                crate::ir::Convention::SyscallI386
+                    | crate::ir::Convention::SyscallX86
+                    | crate::ir::Convention::SyscallArm
             ) =>
             {
-                "syscall".to_owned()
+                named_syscall
+                    .map_or_else(|| "syscall".to_owned(), |(name, _)| format!("linux_{name}"))
             }
             (Some(Expr::Load { addr, width, .. }), _)
                 if *width == crate::arch::pointer_bytes(ctx.isa)
@@ -856,6 +867,9 @@ pub(super) fn system_call_name(
         (278, "getrandom"),
     ];
     let table = match convention {
+        crate::ir::Convention::SyscallI386 => {
+            &[(1, "exit"), (3, "read"), (4, "write"), (252, "exit_group")]
+        }
         crate::ir::Convention::SyscallX86 => X86,
         crate::ir::Convention::SyscallArm => ARM,
         _ => return None,

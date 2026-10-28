@@ -45,12 +45,12 @@ fn cpp_catch @ 0x180001000 (size 36)
 /* Exception metadata only; exception dispatch is not represented by standard C. */
 /* C++ try states [0, 0]: catch handler at 0x180001030. */
 /* velk pseudo-C: cpp_catch__catch_0 @ 0x180001030 */
-int32_t cpp_catch__catch_0(int64_t a0, uint32_t *a1) {
+int64_t cpp_catch__catch_0(int64_t a0, uint32_t *a1) {
     a1[9] = 0xfffffff5;
-    return -2147479525;
+    return 0x18000101b;
 }
 -- signature
-int32_t (int64_t a0, uint32_t * a1)
+int64_t (int64_t a0, uint32_t * a1)
 -- references
 
 -- ir

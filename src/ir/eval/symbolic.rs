@@ -134,12 +134,15 @@ impl State {
             return Err(invalid("symbolic byte inputs exceed 65536"));
         }
         let image = binary.image();
-        if !matches!(image.isa, Isa::X86_64 | Isa::AArch64)
+        if !matches!(image.isa, Isa::I386 | Isa::X86_64 | Isa::AArch64)
             || image.byte_order() == Some(object::Endianness::Big)
         {
             return Err(invalid(
-                "symbolic execution supports little-endian x86-64 and AArch64",
+                "symbolic execution supports little-endian i386, x86-64 and AArch64",
             ));
+        }
+        if image.isa == Isa::I386 && !options.argv.is_empty() {
+            return Err(invalid("symbolic i386 argv is unsupported"));
         }
         let address = binary.find_address(start)?;
         let blocks = lift(image, address)?;
@@ -194,7 +197,12 @@ impl State {
                 .registers
                 .insert(register, Term::constant(memory.tls_base));
         }
-        let stack = super::stack_top(image.isa) - if image.isa == Isa::X86_64 { 8 } else { 0 };
+        let stack = super::stack_top(image.isa)
+            - match image.isa {
+                Isa::X86_64 => 8,
+                Isa::I386 => 4,
+                _ => 0,
+            };
         state
             .registers
             .insert(crate::arch::stack_pointer(image.isa), Term::constant(stack));
@@ -318,7 +326,9 @@ impl State {
                 .registers
                 .insert(convention.arguments()[1], Term::constant(base));
         }
-        state.initialize_streams(binary)?;
+        if image.isa != Isa::I386 {
+            state.initialize_streams(binary)?;
+        }
         Ok(state)
     }
 
@@ -1032,6 +1042,13 @@ impl State {
                 outputs,
                 ..
             } => {
+                if *kind == CallKind::Syscall {
+                    return match self.syscall(binary, *convention, outputs) {
+                        Ok(true) => Ok(Some(Step::Stopped("exit".into()))),
+                        Ok(false) => Ok(None),
+                        Err(error) => Err(error),
+                    };
+                }
                 let target = match target {
                     Some(target) => *target,
                     None => match through {
@@ -1070,7 +1087,7 @@ impl State {
                         binary,
                         &Expr::Load {
                             addr: Box::new(Expr::Const(stack)),
-                            width: 8,
+                            width: frame.pushed as u8,
                             signed: false,
                         },
                     )?;
@@ -1455,7 +1472,12 @@ impl State {
         }
         if !matches!(
             self.convention,
-            crate::ir::Convention::SysV | crate::ir::Convention::Aapcs64
+            crate::ir::Convention::SysV
+                | crate::ir::Convention::Aapcs64
+                | crate::ir::Convention::Cdecl
+                | crate::ir::Convention::Stdcall
+                | crate::ir::Convention::Fastcall
+                | crate::ir::Convention::Thiscall
         ) {
             return Err(invalid("unsupported stack argument convention"));
         }
@@ -1467,12 +1489,17 @@ impl State {
         let address = super::emulation::stack_argument_address(
             base,
             (index - self.convention.arguments().len()) as u64,
-            8,
+            crate::arch::pointer_bytes(self.isa),
         );
         let Some(address) = address else {
             return Err(invalid("stack argument address overflows"));
         };
-        self.store(binary.image(), address, &term, 8)
+        self.store(
+            binary.image(),
+            address,
+            &term,
+            crate::arch::pointer_bytes(self.isa),
+        )
     }
     /// Explores reachable branch contexts before classifying an infeasible side.
     pub fn branch_feasibility(

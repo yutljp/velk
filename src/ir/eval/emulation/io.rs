@@ -253,6 +253,9 @@ impl Runner<'_> {
             operation => (operation, false),
         };
         let mut args = Arguments::new(convention, kind);
+        if kind == CallKind::Syscall {
+            args.index = 1;
+        }
         if !uses_va_list
             && self.image.isa == Isa::AArch64
             && self.image.format == crate::loader::Format::MachO

@@ -17,6 +17,8 @@ pub enum Convention {
     /// A Linux system call on x86-64: the number in rax, then the
     /// arguments; it overwrites rax, rcx and r11.
     SyscallX86,
+    /// A Linux i386 interrupt: eax, ebx, ecx, edx, esi, edi, ebp.
+    SyscallI386,
     /// A Linux system call on `AArch64`: the number in x8, then the
     /// arguments; it overwrites x0.
     SyscallArm,
@@ -56,6 +58,7 @@ impl Convention {
             // rax, rbx, rcx, rdi, rsi, r8, r9, r10, r11.
             Self::GoAmd64 => &[0, 3, 1, 7, 6, 8, 9, 10, 11],
             Self::SyscallX86 => &[0, 7, 6, 2, 10, 8, 9],
+            Self::SyscallI386 => &[0, 3, 1, 2, 6, 7, 5],
             Self::SyscallArm => &[8, 0, 1, 2, 3, 4, 5],
             Self::GoWriteBarrier | Self::GoAbi0 => &[],
         }
@@ -72,7 +75,7 @@ impl Convention {
             Self::Win64 => Some(40),
             Self::Aapcs64 | Self::Aapcs32 => Some(0),
             Self::GoAbi0 | Self::GoAmd64 => Some(8),
-            Self::SyscallX86 | Self::SyscallArm | Self::GoWriteBarrier => None,
+            Self::SyscallI386 | Self::SyscallX86 | Self::SyscallArm | Self::GoWriteBarrier => None,
         }
     }
 
@@ -81,7 +84,11 @@ impl Convention {
     pub fn pushed_by_call(self) -> i64 {
         match self {
             Self::Cdecl | Self::Stdcall | Self::Fastcall | Self::Thiscall => 4,
-            Self::Aapcs32 | Self::Aapcs64 | Self::SyscallX86 | Self::SyscallArm => 0,
+            Self::Aapcs32
+            | Self::Aapcs64
+            | Self::SyscallI386
+            | Self::SyscallX86
+            | Self::SyscallArm => 0,
             Self::SysV | Self::Win64 | Self::GoAmd64 | Self::GoWriteBarrier | Self::GoAbi0 => 8,
         }
     }
@@ -100,6 +107,7 @@ impl Convention {
             | Self::Fastcall
             | Self::Thiscall
             | Self::Aapcs32
+            | Self::SyscallI386
             | Self::SyscallX86
             | Self::SyscallArm
             | Self::GoWriteBarrier
@@ -178,6 +186,7 @@ impl Convention {
             | Self::Aapcs32
             | Self::Win64
             | Self::GoAmd64
+            | Self::SyscallI386
             | Self::SyscallX86
             | Self::SyscallArm
             | Self::GoWriteBarrier
@@ -199,7 +208,7 @@ impl Convention {
             Self::Aapcs64 => &[0, 1, 32, 34],
             Self::Aapcs32 => &[0, 1],
             Self::GoAmd64 => &[0, 3, 1, 7, 6, 8, 9, 10, 11, 18, 20, 22, 24],
-            Self::SyscallX86 | Self::SyscallArm => &[0],
+            Self::SyscallI386 | Self::SyscallX86 | Self::SyscallArm => &[0],
             Self::GoWriteBarrier => &[11],
             Self::GoAbi0 => &[0, 3, 1, 7, 6, 8, 9, 10, 11],
         }
@@ -225,9 +234,12 @@ impl Convention {
             Self::GoAmd64 => &[4, 14, 48, 49],
             Self::Aapcs32 => &[13],
             Self::Aapcs64 | Self::SyscallArm => &[31],
-            Self::SysV | Self::Win64 | Self::SyscallX86 | Self::GoWriteBarrier | Self::GoAbi0 => {
-                &[4]
-            }
+            Self::SysV
+            | Self::Win64
+            | Self::SyscallI386
+            | Self::SyscallX86
+            | Self::GoWriteBarrier
+            | Self::GoAbi0 => &[4],
         }
     }
 
@@ -272,7 +284,7 @@ impl Convention {
                 0, 1, 2, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33,
             ],
             Self::SyscallX86 => &[0, 1, 11],
-            Self::SyscallArm => &[0],
+            Self::SyscallArm | Self::SyscallI386 => &[0],
             Self::GoWriteBarrier => &[11],
         }
     }
@@ -314,7 +326,9 @@ impl CallKind {
                 | Convention::GoWriteBarrier
                 | Convention::GoAbi0,
             ) => false,
-            (Isa::AArch64, Convention::SyscallArm) | (Isa::X86_64, Convention::SyscallX86) => true,
+            (Isa::AArch64, Convention::SyscallArm)
+            | (Isa::I386, Convention::SyscallI386)
+            | (Isa::X86_64, Convention::SyscallX86) => true,
             _ => return None,
         };
         match (self, syscall) {

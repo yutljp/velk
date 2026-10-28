@@ -4,6 +4,98 @@ use crate::loader::Function;
 use crate::loader::NameSource;
 use crate::loader::Section;
 
+/// Follow reachable x86 instructions, including call-only code inside symbol ranges.
+pub(super) fn direct_calls(image: &mut super::Image) {
+    use iced_x86::{Decoder, DecoderOptions, FlowControl};
+    if !matches!(image.isa, super::Isa::X86_64 | super::Isa::I386) {
+        return;
+    }
+    let bitness = if image.isa == super::Isa::I386 {
+        32
+    } else {
+        64
+    };
+    let mut pending: Vec<u64> = image.functions.keys().copied().collect();
+    let mut seen = std::collections::HashSet::new();
+    let mut called = std::collections::BTreeSet::new();
+    loop {
+        while let Some(mut address) = pending.pop() {
+            loop {
+                if !seen.insert(address) {
+                    break;
+                }
+                let Some(section) = image
+                    .section_at(address)
+                    .filter(|section| section.executable)
+                else {
+                    break;
+                };
+                if super::plt::is_stub_section(&section.name) {
+                    break;
+                }
+                let available = section
+                    .file_size
+                    .saturating_sub(address - section.vaddr)
+                    .min(15);
+                if available == 0 {
+                    break;
+                }
+                let Some(bytes) = image.read_vaddr(address, available) else {
+                    break;
+                };
+                let mut decoder = Decoder::with_ip(bitness, bytes, address, DecoderOptions::NONE);
+                let instruction = decoder.decode();
+                if instruction.is_invalid() {
+                    break;
+                }
+                let target = image
+                    .relocations
+                    .get(&address)
+                    .copied()
+                    .unwrap_or_else(|| instruction.near_branch_target());
+                match instruction.flow_control() {
+                    FlowControl::Call => {
+                        if target != instruction.next_ip()
+                            && image
+                                .section_at(target)
+                                .is_some_and(|section| section.executable)
+                        {
+                            called.insert(target);
+                        }
+                    }
+                    FlowControl::ConditionalBranch => pending.push(target),
+                    FlowControl::UnconditionalBranch => {
+                        pending.push(target);
+                        break;
+                    }
+                    FlowControl::Return | FlowControl::IndirectBranch | FlowControl::Exception => {
+                        break;
+                    }
+                    _ => {}
+                }
+                address = instruction.next_ip();
+            }
+        }
+        let mut added = false;
+        while let Some(address) = called.pop_first() {
+            if image.functions.contains_key(&address)
+                || seen.contains(&address)
+                || image.fragment_at(address).is_some()
+            {
+                continue;
+            }
+            // Code already reachable from an existing entry remains part of it.
+            super::upsert(&mut image.functions, address, None, None, NameSource::Call);
+            pending.push(address);
+            added = true;
+            break;
+        }
+        if !added {
+            break;
+        }
+    }
+}
+
 /// Function starts in a stripped `AArch64` image: the first non-padding
 /// instruction after a return, trap or tail call, unless a branch targets it.
 pub(crate) fn aarch64_prologues(

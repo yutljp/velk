@@ -962,7 +962,7 @@ memory.win64.O0 0x180001000 copy_bytes: parameter 2 signedness differs; returns 
 memory.win64.O0 0x180001050 fill_bytes: parameter 1 is 4 bytes, expected 1; parameter 2 signedness differs; returns int32_t, expected void
 memory.win64.O0 0x1800010a0 string_length: ok
 memory.win64.O0 0x1800010e0 grid_get: ok
-memory.win64.O0 0x180001110 grid_set: returns int32_t, expected void
+memory.win64.O0 0x180001110 grid_set: returns int64_t, expected void
 memory.win64.O0 0x180001150 pointer_distance: parameter 0 is a signed 8-byte integer, expected a pointer; parameter 1 is a signed 8-byte integer, expected a pointer; returns 8 bytes, expected 4
 memory.win64.O0 0x180001180 read_volatile: ok
 memory.win64.O0 0x1800011b0 swap_ints: returns int64_t, expected void
@@ -970,7 +970,7 @@ memory.win64.O2 0x180001000 copy_bytes: ok
 memory.win64.O2 0x180001120 fill_bytes: parameter 1 is 4 bytes, expected 1
 memory.win64.O2 0x1800011e0 string_length: ok
 memory.win64.O2 0x180001200 grid_get: ok
-memory.win64.O2 0x180001220 grid_set: returns int32_t, expected void
+memory.win64.O2 0x180001220 grid_set: returns int64_t, expected void
 memory.win64.O2 0x180001240 pointer_distance: parameter 0 is an unsigned 8-byte integer, expected a pointer; parameter 1 is an unsigned 8-byte integer, expected a pointer; returns 8 bytes, expected 4
 memory.win64.O2 0x180001250 read_volatile: ok
 memory.win64.O2 0x180001260 swap_ints: returns int32_t, expected void

@@ -958,6 +958,25 @@ fn fixture_simd_flags_and_reverse_strings_match_the_processor() {
         vec![0xfd, 0xeb, 0, 0xf3, 0xaa, 0xfc],
         vec![0xfd, 0xeb, 0, 0xf3, 0xac, 0xfc],
     ]);
+    for backward in [false, true] {
+        for (wide, prefix) in [
+            (false, vec![]),
+            (true, vec![0x66]),
+            (true, vec![]),
+            (true, vec![0x48]),
+        ] {
+            for opcode in [0xa4, 0xaa, 0xac, 0xa6, 0xae] {
+                for repeat in [None, Some(0xf3), Some(0xf2)] {
+                    let mut code = vec![0x48, 0x39, 0xd0, if backward { 0xfd } else { 0xfc }];
+                    code.extend(repeat);
+                    code.extend(&prefix);
+                    code.push(opcode + u8::from(wide));
+                    code.extend([0xfc, 0x9f, 0x0f, 0x90, 0xc2]);
+                    codes.push(code);
+                }
+            }
+        }
+    }
     let mut cases = Vec::new();
     let mut kinds = Vec::new();
     for (kind, code) in codes.iter().enumerate() {
@@ -1017,7 +1036,7 @@ fn fixture_simd_flags_and_reverse_strings_match_the_processor() {
             },
             registers: &registers,
             memory: &words,
-            step_limit: 1000,
+            step_limit: 3000,
         };
         let (after, memory) = eval::state_after(&ir, &setup).expect("interpreted");
         for (index, initial) in &registers {

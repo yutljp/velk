@@ -10,6 +10,7 @@ use std::collections::{BTreeMap, HashMap};
 
 pub(crate) mod emulation;
 pub(crate) mod symbolic;
+mod syscalls;
 
 use super::semantics::{holds, mask, operand_width, sign_extend};
 use super::{Block, Expr, FunctionIr, RegRef, Stmt};

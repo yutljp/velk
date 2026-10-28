@@ -324,7 +324,7 @@ fn emulate(engine: &Engine, arguments: &Value) -> (String, bool) {
                     value
                         .get("reason")
                         .and_then(Value::as_str)
-                        .map(|reason| !matches!(reason, "return" | "end address"))
+                        .map(|reason| !matches!(reason, "return" | "end address" | "exit"))
                 })
                 .unwrap_or(true);
             (outcome.output, failed)

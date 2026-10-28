@@ -4,7 +4,7 @@ mod integer;
 mod machine;
 mod operands;
 mod packed;
-mod string;
+pub(super) mod string;
 mod vector;
 
 use float::lift_float;
@@ -61,7 +61,7 @@ pub(super) struct Lifter<'a> {
     /// Whether an instruction of the current block may have changed the flags.
     flags_touched: bool,
     /// The body of a `rep` string instruction's loop, after its test.
-    extra: Vec<Block>,
+    extra: Vec<(Block, Option<Flags>)>,
     extended_dividend: Option<u8>,
     /// The width of the high half of an unsigned dividend the previous
     /// instruction cleared (`xor edx, edx`).
@@ -748,6 +748,14 @@ fn lift_instruction(
         | Mnemonic::Lodsw
         | Mnemonic::Lodsd
         | Mnemonic::Lodsq
+        | Mnemonic::Cmpsb
+        | Mnemonic::Cmpsw
+        | Mnemonic::Cmpsd
+        | Mnemonic::Cmpsq
+        | Mnemonic::Scasb
+        | Mnemonic::Scasw
+        | Mnemonic::Scasd
+        | Mnemonic::Scasq
             if string_size(ins).is_some() =>
         {
             return lift_string(lifter, ins);
@@ -818,19 +826,45 @@ fn lift_instruction(
             }
         }
         // The kernel's call: its number and arguments in registers.
-        Mnemonic::Syscall => lifter.stmts.push(Stmt::Call {
-            kind: CallKind::Syscall,
-            target: None,
-            through: None,
-            convention: crate::ir::Convention::SyscallX86,
-            args: None,
-            // The kernel reads no floating-point register.
-            floats_named: true,
-            abi: None,
-            clobbers: None,
-            outputs: crate::ir::fallback_call_outputs(crate::ir::Convention::SyscallX86, None),
-            via: None,
-        }),
+        Mnemonic::Syscall | Mnemonic::Int
+            if ins.mnemonic() == Mnemonic::Syscall
+                || (ins.immediate8() == 0x80 && lifter.image.isa == crate::loader::Isa::I386) =>
+        {
+            lifter.stmts.push(Stmt::Call {
+                kind: CallKind::Syscall,
+                target: None,
+                through: None,
+                convention: if ins.mnemonic() == Mnemonic::Int {
+                    crate::ir::Convention::SyscallI386
+                } else {
+                    crate::ir::Convention::SyscallX86
+                },
+                args: if ins.mnemonic() == Mnemonic::Int {
+                    Some(
+                        crate::ir::Convention::SyscallI386
+                            .arguments()
+                            .iter()
+                            .map(|register| Lifter::read_reg(*register, 32))
+                            .collect(),
+                    )
+                } else {
+                    None
+                },
+                // The kernel reads no floating-point register.
+                floats_named: true,
+                abi: None,
+                clobbers: None,
+                outputs: crate::ir::fallback_call_outputs(
+                    if ins.mnemonic() == Mnemonic::Int {
+                        crate::ir::Convention::SyscallI386
+                    } else {
+                        crate::ir::Convention::SyscallX86
+                    },
+                    None,
+                ),
+                via: None,
+            })
+        }
         Mnemonic::Int if ins.immediate8() == 3 => {
             lifter.stmts.push(Stmt::Trap);
             return true;
@@ -868,10 +902,6 @@ fn lift_instruction(
 }
 
 fn branch_target(instruction: &Instruction, relocation_target: Option<u64>) -> Option<u64> {
-    // A repeated string instruction loops back to its own test.
-    if string_size(instruction).is_some() && instruction.has_rep_prefix() {
-        return Some(instruction.ip());
-    }
     match instruction.flow_control() {
         FlowControl::UnconditionalBranch | FlowControl::ConditionalBranch => {
             Some(resolved_target(instruction, relocation_target))
@@ -978,7 +1008,7 @@ impl Machine for Lifter<'_> {
         self.flags_touched
     }
 
-    fn take_extra_blocks(&mut self) -> Vec<Block> {
+    fn take_extra_blocks(&mut self) -> Vec<(Block, Option<Flags>)> {
         std::mem::take(&mut self.extra)
     }
 }

@@ -158,6 +158,13 @@ fn first_test(
     if dest.width != 64 || !test_operand(initial) {
         return false;
     }
+    if cond == crate::ir::Cond::Ne
+        && *lhs == Expr::reg(dest.index, 64)
+        && *rhs == Expr::Const(0)
+        && matches!(initial, Expr::Const(value) if *value != 0)
+    {
+        return true;
+    }
     let original_lhs = lhs;
     let original_rhs = rhs;
     let mut lhs = lhs.clone();

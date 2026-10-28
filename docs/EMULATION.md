@@ -96,8 +96,9 @@ conversions stop with the unsupported specifier in the error. Standard FILE
 pointers are supplied for imported or defined `stdin`, `stdout`, and `stderr`.
 Other streams stop with an error. Stream objects and argv reserve heap space
 before malloc runs. `puts`, `putchar`, `fputs`, `fwrite`, and `write`
-on fd 1 or 2 append to the captured streams. File operations and system calls
-are not modeled.
+on fd 1 or 2 append to the captured streams.
+
+Linux ELF `read`, `write`, `exit` and `exit_group` system calls use the same stream models on x86-64 (`syscall`), i386 (`int 0x80`) and AArch64 (`svc 0`). Unknown syscall numbers stop with a diagnostic. Other file operations and system calls are not modeled.
 
 `reads` requests memory after execution, including after an execution error or
 limit. Each entry selects exactly one of `address`, a defined data `symbol`, or
@@ -160,11 +161,11 @@ result. A later variadic function can stop when its prologue spills unused
 registers left unknown by an earlier hook. Partial writes preserve known bits; using unknown bits stops the run.
 A void result, such as `free`, leaves the integer result unknown. Hooks still run
 when `skipCalls` is set.
-System calls always stop.
+Unsupported system calls stop.
 
 The report includes final `registers`, the integer `returnValue`, changed memory,
 `steps`, the stopping `address`, `reason`, `error`, and an optional `trace`. Stop
-reasons are `return`, `end address`, `trap`, `stack check failed`, `step limit`, `time limit`, and `error`.
+reasons are `return`, `exit`, `end address`, `trap`, `stack check failed`, `step limit`, `time limit`, and `error`.
 The CLI succeeds only for return or end address. MCP marks other stops as errors,
 while preserving the report. Invalid setup produces an input error.
 

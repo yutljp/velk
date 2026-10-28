@@ -251,7 +251,7 @@ pub(crate) fn run(
                 }
             }
             return Ok(
-                if matches!(report.reason.as_str(), "return" | "end address") {
+                if matches!(report.reason.as_str(), "return" | "end address" | "exit") {
                     ExitCode::SUCCESS
                 } else {
                     ExitCode::FAILURE

@@ -138,6 +138,8 @@ pub enum NameSource {
     Objc,
     Plt,
     Prologue,
+    /// A reachable direct call targets this address.
+    Call,
     Signature,
     /// A method or adjustment target found through C++ runtime type information.
     Rtti,
@@ -157,6 +159,7 @@ impl fmt::Display for NameSource {
             NameSource::Objc => "objc",
             NameSource::Plt => "plt",
             NameSource::Prologue => "prologue",
+            NameSource::Call => "call",
             NameSource::Signature => "signature",
             NameSource::Rtti => "rtti",
         })
@@ -1330,6 +1333,7 @@ pub(crate) fn load_input_with_saved(
     }) {
         image.scan_prologues();
     }
+    discover::direct_calls(&mut image);
     image.retain_code_functions();
     classes::discover(&mut image);
     // An estimated size may cover starts found later; cut it at the next start.

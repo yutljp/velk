@@ -744,10 +744,10 @@ fn syscall_numbers_do_not_depend_on_host_macros() {
         ],
     );
     let code = velk::render::render(&ir, &[], &Default::default(), &[]);
-    assert!(code.contains("60 /* SYS_exit */"), "{code}");
+    assert!(code.contains("linux_exit(42)"), "{code}");
     run_printed(
-        &format!("uint64_t syscall();\n{code}"),
-        "uint64_t syscall(uint64_t number, uint64_t status) { return number == 60 && status == 42 ? 73 : 0; }",
+        &code,
+        "uint64_t linux_exit(uint64_t status) { return status == 42 ? 73 : 0; }",
         "return target_syscall() != 73;",
     );
 }

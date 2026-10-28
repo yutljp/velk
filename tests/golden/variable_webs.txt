@@ -1,8 +1,8 @@
 # group: variables with unrelated webs before -> after splitting; live phi joins; fixed register bindings; variables with unknown successors
 C/C++ debug: 145 -> 0; 822; 1; 0
-C/C++ stripped: 97 -> 0; 761; 1; 0
+C/C++ stripped: 97 -> 0; 761; 0; 0
 Go: 6724 -> 0; 30512; 438; 2
-Rust: 8094 -> 0; 51043; 711; 189
+Rust: 8094 -> 0; 51040; 711; 189
 # alt.o | C/C++ stripped: 1 -> 0; 0; 0; 0
 # arm32/aggregate_abi.arm.O0.elf | C/C++ debug: 0 -> 0; 0; 0; 0
 # arm32/aggregate_abi.arm.O2.elf | C/C++ debug: 0 -> 0; 0; 0; 0
@@ -140,7 +140,7 @@ Rust: 8094 -> 0; 51043; 711; 189
 # cpp/rtti.debug.dll | C/C++ debug: 1 -> 0; 0; 0; 0
 # cpp/rtti.debug.dylib | C/C++ stripped: 1 -> 0; 9; 0; 0
 # cpp/rtti.debug.elf | C/C++ debug: 2 -> 0; 4; 0; 0
-# cpp/rtti.stripped.dll | C/C++ stripped: 1 -> 0; 0; 1; 0
+# cpp/rtti.stripped.dll | C/C++ stripped: 1 -> 0; 0; 0; 0
 # cpp/rtti.stripped.dylib | C/C++ stripped: 1 -> 0; 9; 0; 0
 # cpp/rtti.stripped.elf | C/C++ stripped: 2 -> 0; 4; 0; 0
 # cpp_classes_a64.o | C/C++ stripped: 0 -> 0; 12; 0; 0
@@ -514,12 +514,12 @@ Rust: 8094 -> 0; 51043; 711; 189
 # predicates_aarch64_O2.o | C/C++ stripped: 0 -> 0; 0; 0; 0
 # predicates_x86_64_O0.o | C/C++ stripped: 0 -> 0; 1; 0; 0
 # predicates_x86_64_O2.o | C/C++ stripped: 0 -> 0; 0; 0; 0
-# rust_demo | Rust: 1362 -> 0; 9556; 101; 0
+# rust_demo | Rust: 1362 -> 0; 9555; 101; 0
 # rust_demo_arm64 | Rust: 1311 -> 0; 7427; 136; 63
-# rust_probe | Rust: 1362 -> 0; 9556; 101; 0
+# rust_probe | Rust: 1362 -> 0; 9555; 101; 0
 # rust_probe_arm64 | Rust: 1311 -> 0; 7427; 136; 63
 # rust_probe_arm64_stripped | Rust: 1311 -> 0; 7427; 136; 63
-# rust_probe_stripped | Rust: 1437 -> 0; 9650; 101; 0
+# rust_probe_stripped | Rust: 1437 -> 0; 9649; 101; 0
 # seh.O0.dll | C/C++ stripped: 0 -> 0; 0; 0; 0
 # seh.O2.dll | C/C++ stripped: 0 -> 0; 0; 0; 0
 # seh_cpp.O0.dll | C/C++ stripped: 0 -> 0; 0; 0; 0

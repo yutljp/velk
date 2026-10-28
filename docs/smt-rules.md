@@ -327,3 +327,5 @@ possible first mismatch and terminator position. These are compositional checks;
 they do not prove arbitrary loops, vector scans, memory validity or faults.
 
 Finite comparisons also check acyclic compiler CFGs for both architectures against symbolic byte-array comparison models. Terminated constant stores compare each store width against byte-wise array writes.
+
+String comparison flag storage has SMT checks for all comparison conditions at 8, 16, 32 and 64 bits. Native x86-64 comparisons check string instruction memory effects, flags, counts and directions; rendered C is also compiled and compared with assembly.

@@ -46,6 +46,7 @@ cfccb053d4c55496499be985b667e23d26570c78ab688d0a1cec9299076a0c7f  src/lift/pairs
 0cd4a8f764dc058d61bb3f44a36c900e2f0b871b6ab1d115e201962028c7d39d  src/lift/x86_64.rs	fn return_address_register(
 3560e55deb042850841ede78bc28b3ade459f7e331cc78f8f15aabe21b4713da  src/lift/x86_64.rs	if target == ins.next_ip() || return_register.is_some()
 7551eca718c573b210e8be8ea22c8fd42544212283ca70ebcfdb5fc9795b01a5  src/lift/x86_64/operands.rs	pub(super) fn write_operand(
+df293fc258c33655bebda68d3ed189bab99247473eae0fe8584dfc7c1f30a7a7  src/lift/x86_64/string.rs	fn save_flags(
 fc2bfecc7d3cb4cd750913e3f859e8fcb6e76f2cfcd3e40cb52ee1174841765f  src/passes/copies.rs	fn copy_propagate_block(
 ae8391c4b49b0e67c90b3b2da8bccc6f9a274062086519869f04014b33cc6809  src/passes/copies.rs	pub fn inline_local_copies(
 dfb8f512c6b6517fdfb4db495e878c954d8baad061290a50e7a2cd8326eecff9  src/passes/copies.rs	pub(crate) fn comparison_preserved(

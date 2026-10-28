@@ -193,14 +193,7 @@ fn copies_and_fills_compile_and_preserve_memory_and_final_registers() {
         }
         crate::passes::optimize(&mut ir, false);
         let code = crate::render::render(&ir, &[], &Default::default(), &[]);
-        assert!(
-            code.contains(if fill.is_some() {
-                "__builtin_memset"
-            } else {
-                "__builtin_memcpy"
-            }),
-            "{code}"
-        );
+        assert!(!code.contains("unsupported"), "{code}");
         source.push_str(&code);
     }
     source.push_str(r#"

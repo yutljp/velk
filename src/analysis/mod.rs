@@ -1256,6 +1256,15 @@ fn lift_function(image: &Image, function: &Function) -> Result<Lifted, LiftError
         image.go,
         &|stmt| prototypes::called(image, stmt),
     );
+    if function.sources.contains(&crate::loader::NameSource::Call) {
+        signature::add_register_parameters(
+            &mut signature,
+            &blocks,
+            &landing_pads,
+            image.isa,
+            image.convention_of(function.addr),
+        );
+    }
     // Read only now, the results are no arguments to the signature.
     if let Some(first) = stack_results.first() {
         let returned = match stack_results.as_slice() {

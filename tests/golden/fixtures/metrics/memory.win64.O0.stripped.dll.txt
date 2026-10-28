@@ -144,13 +144,13 @@ fn <unnamed> @ 0x1800010e0 (size 46)
 -- decompile
 /* velk pseudo-C: sub_180001110 @ 0x180001110 */
 /* ref: 0x180003000 .data */
-int32_t sub_180001110(int32_t a0, int32_t a1, int32_t a2) {
+int64_t sub_180001110(int32_t a0, int32_t a1, int32_t a2) {
     uint32_t *v2 = (uint32_t *)(0x180003000 + ((a0 & 0x3) << 5));
     v2[a1 & 0x7] = a2;
     return (uintptr_t)v2;
 }
 -- signature
-int32_t (int32_t a0, int32_t a1, int32_t a2)
+int64_t (int32_t a0, int32_t a1, int32_t a2)
 -- references
 0x180003000 .data
 -- ir

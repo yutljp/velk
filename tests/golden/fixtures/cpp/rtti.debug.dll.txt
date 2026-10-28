@@ -587,12 +587,12 @@ fn catch_one @ 0x1800012b0 (size 36)
 /* Exception metadata only; exception dispatch is not represented by standard C. */
 /* C++ try states [0, 0]: catch handler at 0x1800012e0. */
 /* velk pseudo-C: ?catch$2@?0?catch_one@4HA @ 0x1800012e0 */
-int32_t _catch_2__0_catch_one_4HA(int64_t a0, struct S1 *a1) {
+int64_t _catch_2__0_catch_one_4HA(int64_t a0, struct S1 *a1) {
     a1->f_2c = *(uint32_t *)(a1->f_38);
-    return -2147478837;
+    return 0x1800012cb;
 }
 -- signature
-int32_t (int64_t a0, struct S1 * a1)
+int64_t (int64_t a0, struct S1 * a1)
 -- references
 
 -- ir
@@ -641,12 +641,12 @@ fn catch_many @ 0x180001310 (size 36)
 /* C++ try states [0, 0]: catch handler at 0x180001370. */
 /* C++ try states [0, 0]: catch handler at 0x1800013a0. */
 /* velk pseudo-C: ?catch$2@?0?catch_many@4HA @ 0x180001340 */
-int32_t _catch_2__0_catch_many_4HA(int64_t a0, struct S2 *a1) {
+int64_t _catch_2__0_catch_many_4HA(int64_t a0, struct S2 *a1) {
     a1->f_24 = *(uint32_t *)(a1->f_38) + 1;
-    return -2147478741;
+    return 0x18000132b;
 }
 -- signature
-int32_t (int64_t a0, struct S1 * a1)
+int64_t (int64_t a0, struct S1 * a1)
 -- references
 
 -- ir
@@ -666,12 +666,12 @@ fn ?catch$2@?0?catch_many@4HA @ 0x180001340 (size 38)
 /* C++ try states [0, 0]: catch handler at 0x180001370. */
 /* C++ try states [0, 0]: catch handler at 0x1800013a0. */
 /* velk pseudo-C: ?catch$3@?0?catch_many@4HA @ 0x180001370 */
-int32_t _catch_3__0_catch_many_4HA(int64_t a0, struct S3 *a1) {
+int64_t _catch_3__0_catch_many_4HA(int64_t a0, struct S3 *a1) {
     a1->f_24 = a1->f_34 + 2;
-    return -2147478741;
+    return 0x18000132b;
 }
 -- signature
-int32_t (int64_t a0, struct S1 * a1)
+int64_t (int64_t a0, struct S1 * a1)
 -- references
 
 -- ir
@@ -691,12 +691,12 @@ fn ?catch$3@?0?catch_many@4HA @ 0x180001370 (size 36)
 /* C++ try states [0, 0]: catch handler at 0x180001370. */
 /* C++ try states [0, 0]: catch handler at 0x1800013a0. */
 /* velk pseudo-C: ?catch$4@?0?catch_many@4HA @ 0x1800013a0 */
-int32_t _catch_4__0_catch_many_4HA(int64_t a0, uint32_t *a1) {
+int64_t _catch_4__0_catch_many_4HA(int64_t a0, uint32_t *a1) {
     a1[9] = 0xffffffff;
-    return -2147478741;
+    return 0x18000132b;
 }
 -- signature
-int32_t (int64_t a0, uint32_t * a1)
+int64_t (int64_t a0, uint32_t * a1)
 -- references
 
 -- ir
@@ -744,12 +744,12 @@ fn catch_nested @ 0x1800013d0 (size 36)
 /* C++ try states [1, 1]: catch handler at 0x180001430. */
 /* C++ try states [0, 2]: catch handler at 0x180001400. */
 /* velk pseudo-C: ?catch$2@?0?catch_nested@4HA @ 0x180001400 */
-int32_t _catch_2__0_catch_nested_4HA(int64_t a0, struct S4 *a1) {
+int64_t _catch_2__0_catch_nested_4HA(int64_t a0, struct S4 *a1) {
     a1->f_24 = *(uint32_t *)(a1->f_30) + 3;
-    return -2147478549;
+    return 0x1800013eb;
 }
 -- signature
-int32_t (int64_t a0, struct S1 * a1)
+int64_t (int64_t a0, struct S1 * a1)
 -- references
 
 -- ir
@@ -769,12 +769,12 @@ fn ?catch$2@?0?catch_nested@4HA @ 0x180001400 (size 39)
 /* C++ try states [0, 2]: catch handler at 0x180001400. */
 /* velk pseudo-C: ?catch$3@?0?catch_nested@4HA @ 0x180001430 */
 /* ref: 0x180002488 .rdata */
-int32_t _catch_3__0_catch_nested_4HA(int64_t a0, struct S5 *a1) {
+int64_t _catch_3__0_catch_nested_4HA(int64_t a0, struct S5 *a1) {
     a1->f_24 = ((int32_t)(_imported_value__YAHH_Z(a1->f_3c)));
-    return -2147478549;
+    return 0x1800013eb;
 }
 -- signature
-int32_t (int64_t a0, struct S1 * a1)
+int64_t (int64_t a0, struct S1 * a1)
 -- references
 0x180002488 .rdata
 -- ir
@@ -849,12 +849,12 @@ fn ?dtor$3@?0?catch_cleanup@4HA @ 0x1800014b0 (size 32)
 /* Exception metadata only; exception dispatch is not represented by standard C. */
 /* C++ try states [0, 1]: catch handler at 0x1800014d0. */
 /* velk pseudo-C: ?catch$4@?0?catch_cleanup@4HA @ 0x1800014d0 */
-int32_t _catch_4__0_catch_cleanup_4HA(int64_t a0, uint32_t *a1) {
+int64_t _catch_4__0_catch_cleanup_4HA(int64_t a0, uint32_t *a1) {
     a1[15] = 0xfffffffe;
-    return -2147478370;
+    return 0x18000149e;
 }
 -- signature
-int32_t (int64_t a0, uint32_t * a1)
+int64_t (int64_t a0, uint32_t * a1)
 -- references
 
 -- ir

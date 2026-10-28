@@ -977,7 +977,7 @@ pub struct FunctionIr {
 }
 
 impl FunctionIr {
-    #[cfg(test)]
+    /// Creates a function with one block and no recovered types.
     pub(crate) fn single_block(isa: Isa, stmts: Vec<Stmt>) -> Self {
         Self {
             isa,

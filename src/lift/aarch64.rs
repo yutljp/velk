@@ -730,19 +730,26 @@ fn lift_instruction(lifter: &mut Lifter, instruction: &Instruction, pc: u64) -> 
             }
         }
         // The kernel's call: its number and arguments in registers.
-        O::SVC => lifter.stmts.push(Stmt::Call {
-            kind: CallKind::Syscall,
-            target: None,
-            through: None,
-            convention: crate::ir::Convention::SyscallArm,
-            args: None,
-            // The kernel reads no floating-point register.
-            floats_named: true,
-            abi: None,
-            clobbers: None,
-            outputs: crate::ir::fallback_call_outputs(crate::ir::Convention::SyscallArm, None),
-            via: None,
-        }),
+        O::SVC
+            if matches!(
+                operands[0],
+                Operand::Immediate(0) | Operand::Imm16(0) | Operand::Imm64(0)
+            ) =>
+        {
+            lifter.stmts.push(Stmt::Call {
+                kind: CallKind::Syscall,
+                target: None,
+                through: None,
+                convention: crate::ir::Convention::SyscallArm,
+                args: None,
+                // The kernel reads no floating-point register.
+                floats_named: true,
+                abi: None,
+                clobbers: None,
+                outputs: crate::ir::fallback_call_outputs(crate::ir::Convention::SyscallArm, None),
+                via: None,
+            })
+        }
         other => {
             lifter
                 .stmts

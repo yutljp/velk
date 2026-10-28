@@ -256,7 +256,11 @@ fn collect_wide_registers(expr: &crate::ir::Expr, narrow: bool, wide: &mut Vec<u
                 wide.push(*index);
             }
         }
-        Expr::Const(_) => {}
+        Expr::Const(value) => {
+            if !narrow && *value > u64::from(u32::MAX) {
+                wide.push(WIDE_VALUE);
+            }
+        }
         Expr::Bin { op, lhs, rhs } => {
             if matches!(op, crate::ir::BinOp::And)
                 && matches!(rhs.as_ref(), Expr::Const(mask) if *mask <= 0xffff_ffff)
@@ -1087,7 +1091,10 @@ fn place_parameters(types: &crate::loader::dwarf::FunctionTypes, ir: &mut Functi
         Convention::SysV => 8,
         Convention::Win64 => 40,
         Convention::Aapcs32 | Convention::Aapcs64 | Convention::GoAmd64 => 0,
-        Convention::SyscallX86 | Convention::SyscallArm | Convention::GoWriteBarrier => return,
+        Convention::SyscallI386
+        | Convention::SyscallX86
+        | Convention::SyscallArm
+        | Convention::GoWriteBarrier => return,
         Convention::GoAbi0 => 8,
     };
     let slot_bytes = u64::from(crate::arch::pointer_bytes(ir.isa));

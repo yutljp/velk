@@ -251,6 +251,55 @@ fn recover(blocks: &[Block], isa: Isa, convention: Convention, go: bool) -> Sign
     recover_with(blocks, &[], isa, convention, go, &|_| None)
 }
 
+/// Add non-ABI register inputs for functions discovered through direct calls.
+pub(super) fn add_register_parameters(
+    signature: &mut Signature,
+    blocks: &[Block],
+    landing_pads: &[(u64, Vec<(u64, u64)>)],
+    isa: Isa,
+    convention: Convention,
+) {
+    let registers: Vec<u16> = match isa {
+        Isa::X86_64 => (0..16).filter(|register| *register != 4).collect(),
+        Isa::I386 => (0..8).filter(|register| *register != 4).collect(),
+        _ => return,
+    };
+    let mut ir = crate::ir::FunctionIr::single_block(isa, Vec::new());
+    ir.convention = convention;
+    ir.blocks = blocks.to_vec();
+    ir.landing_pads = landing_pads.to_vec();
+    crate::passes::frame::elide_frame_pointer(&mut ir);
+    crate::passes::frame::elide_callee_saves(&mut ir);
+    crate::passes::frame_slots::settle(&mut ir);
+    let recovered = register_inputs(
+        &ir.blocks,
+        landing_pads,
+        isa,
+        convention,
+        false,
+        &registers,
+        &[],
+    );
+    if !recovered.known_inputs {
+        return;
+    }
+    for register in registers {
+        if !recovered.inputs.contains(&register)
+            || signature.params.iter().any(|param| param.index == register)
+        {
+            continue;
+        }
+        signature.params.push(Param {
+            index: register,
+            name: format!("a{}", signature.params.len()),
+            ty: CType::U64,
+        });
+        signature.arguments.insert(register);
+    }
+    signature.inputs = Some(recovered.incoming);
+    signature.accesses = parameter_accesses(blocks, &signature.params);
+}
+
 /// The signature, with each argument passed unchanged to a library function
 /// of the type that function's prototype gives it.
 pub fn recover_with(
