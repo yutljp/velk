@@ -150,6 +150,42 @@ fn anti_analysis_defaults_and_overrides() {
                     .unwrap()
                     .contains(&json!("clock_gettime"))
             );
+            for name in ["sleep_clock", "usleep_clock", "nanosleep_clock"] {
+                let report = interfaces.check(&path, &binary, name, json!({}));
+                assert_eq!(matrix::value(&report), 1, "{architecture} {name}");
+            }
+            let invalid = interfaces.check(&path, &binary, "invalid_sleep_arguments", json!({}));
+            assert_eq!(
+                matrix::value(&invalid),
+                1,
+                "{architecture} invalid sleep arguments"
+            );
+            let limits = interfaces.check(&path, &binary, "resource_limit_state", json!({}));
+            assert_eq!(matrix::value(&limits), 1, "{architecture} resource limits");
+            let invalid = interfaces.check(&path, &binary, "invalid_resource_limit", json!({}));
+            assert_eq!(
+                matrix::value(&invalid),
+                1,
+                "{architecture} invalid resource limit"
+            );
+            let locale = interfaces.check(&path, &binary, "locale_c", json!({}));
+            assert_eq!(matrix::value(&locale), 1, "{architecture} C locale");
+            for name in ["network_client", "network_server"] {
+                let network =
+                    interfaces.check(&path, &binary, name, json!({"socketPeer":{"text":"PONG"}}));
+                assert_eq!(matrix::value(&network), 1, "{architecture} {name}");
+            }
+            let network = interfaces.check(
+                &path,
+                &binary,
+                "network_after_open",
+                json!({"files":{"/input":[]},"socketPeer":{"text":"PONG"}}),
+            );
+            assert_eq!(
+                matrix::value(&network),
+                1,
+                "{architecture} socket and file descriptors"
+            );
         }
     }
     let path = matrix::fixtures().join("x86_64.O2.runtime.elf");
@@ -278,44 +314,55 @@ fn check_search_interfaces(path: &std::path::Path, name: &str, options: &Value, 
 }
 
 #[test]
-fn unavailable_process_and_network_state_has_a_clear_diagnostic() {
+fn modeled_network_and_unsupported_process_state_have_clear_results() {
     let mut interfaces = Interfaces::new();
     for architecture in matrix::ARCHITECTURES {
         for optimization in ["O0", "O2"] {
             let path =
                 matrix::fixtures().join(format!("{architecture}.{optimization}.runtime.elf"));
             let binary = Binary::open(&path).expect("runtime fixture");
-            for (name, message) in [
-                ("network_socket", "network connections are not modeled"),
-                ("process_control", "unsupported prctl operation 38"),
-            ] {
-                let report = interfaces.check(&path, &binary, name, json!({}));
-                assert_eq!(report["reason"], "error", "{report}");
-                assert!(
-                    report["error"]
-                        .as_str()
-                        .expect("diagnostic")
-                        .contains(message),
-                    "{report}"
-                );
-                let skipped = interfaces.check(&path, &binary, name, json!({"skipCalls":true}));
-                assert_eq!(skipped["reason"], "return", "{skipped}");
-                assert_eq!(matrix::value(&skipped), 0);
-                let imported = if name == "network_socket" {
-                    "socket"
-                } else {
-                    "prctl"
-                };
-                let overridden =
-                    interfaces.check(&path, &binary, name, json!({"callReturns":{(imported):7}}));
-                assert_eq!(matrix::value(&overridden), 7, "{overridden}");
-                if matches!(architecture, "i386" | "x86_64" | "aarch64") {
-                    let options = serde_json::from_value(json!({"returns":{"eq":0}}))
-                        .expect("search options");
-                    let report =
-                        symbolic::solve(&binary, name, &options).expect("unsupported state search");
-                    assert!(format!("{report:?}").contains(message), "{report:?}");
-                }
+            let socket = interfaces.check(&path, &binary, "network_socket", json!({}));
+            assert_eq!(socket["reason"], "return", "{socket}");
+            assert_eq!(
+                matrix::value(&socket),
+                3,
+                "{architecture} socket descriptor"
+            );
+            let overridden = interfaces.check(
+                &path,
+                &binary,
+                "network_socket",
+                json!({"callReturns":{"socket":7}}),
+            );
+            assert_eq!(matrix::value(&overridden), 7, "{overridden}");
+
+            let message = "unsupported prctl operation 38";
+            let report = interfaces.check(&path, &binary, "process_control", json!({}));
+            assert_eq!(report["reason"], "error", "{report}");
+            assert!(
+                report["error"]
+                    .as_str()
+                    .expect("diagnostic")
+                    .contains(message),
+                "{report}"
+            );
+            let skipped =
+                interfaces.check(&path, &binary, "process_control", json!({"skipCalls":true}));
+            assert_eq!(skipped["reason"], "return", "{skipped}");
+            assert_eq!(matrix::value(&skipped), 0);
+            let overridden = interfaces.check(
+                &path,
+                &binary,
+                "process_control",
+                json!({"callReturns":{"prctl":7}}),
+            );
+            assert_eq!(matrix::value(&overridden), 7, "{overridden}");
+            if matches!(architecture, "i386" | "x86_64" | "aarch64") {
+                let options =
+                    serde_json::from_value(json!({"returns":{"eq":0}})).expect("search options");
+                let report = symbolic::solve(&binary, "process_control", &options)
+                    .expect("unsupported process state search");
+                assert!(format!("{report:?}").contains(message), "{report:?}");
             }
         }
     }

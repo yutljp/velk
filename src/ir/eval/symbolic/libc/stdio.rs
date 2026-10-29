@@ -346,6 +346,7 @@ impl State {
                     } else {
                         IntegerModel::Exact
                     },
+                    u32::from(crate::arch::pointer_bytes(self.isa)) * 8,
                 )?;
                 if parsed.synthesized {
                     self.scanned_integers.push(super::super::ScannedInteger {

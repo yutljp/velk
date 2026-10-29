@@ -127,11 +127,7 @@ impl<T: Clone> Files<T> {
             self.committed.insert(path.clone(), Vec::new());
         }
         let position = if append { bytes.len() } else { 0 };
-        let descriptor = self.next_descriptor;
-        let Some(next) = descriptor.checked_add(1) else {
-            return Err("file descriptors exhausted".into());
-        };
-        self.next_descriptor = next;
+        let descriptor = self.reserve_descriptor()?;
         self.streams.insert(
             token,
             Stream {
@@ -158,6 +154,15 @@ impl<T: Clone> Files<T> {
 
     pub fn descriptor(&self, descriptor: u32) -> Option<u64> {
         self.descriptors.get(&descriptor).copied()
+    }
+
+    pub(super) fn reserve_descriptor(&mut self) -> Result<u32, String> {
+        let descriptor = self.next_descriptor;
+        let Some(next) = descriptor.checked_add(1) else {
+            return Err("file descriptors exhausted".into());
+        };
+        self.next_descriptor = next;
+        Ok(descriptor)
     }
 
     pub fn open_descriptor(&mut self, token: u64, path: String) -> Result<u64, String> {

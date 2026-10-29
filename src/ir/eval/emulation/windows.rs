@@ -227,6 +227,7 @@ impl Runner<'_> {
         original: Option<u64>,
         through: Option<&Expr>,
         kind: CallKind,
+        depth: usize,
     ) -> Option<Result<(), Stop>> {
         let Some(export) = self
             .windows
@@ -287,8 +288,7 @@ impl Runner<'_> {
             self.windows_api(&export.name, &arguments)
         } else if crt(&export.dll) {
             match super::hooks::find(&export.name) {
-                Some(super::hooks::Hook::Unsupported(_)) if self.options.skip_calls => Ok(0),
-                Some(hook) => self.hook(hook, convention, kind),
+                Some(hook) => self.hook(hook, convention, kind, depth),
                 None if self.options.skip_calls => Ok(0),
                 None => Err(Stop::Error(format!("unhandled Windows API {qualified}"))),
             }

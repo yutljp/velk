@@ -24,8 +24,18 @@ char *strcpy(char *a, const char *b) { (void)b; return a; }
 char *strncpy(char *a, const char *b, unsigned long n) { (void)n; return strcpy(a,b); }
 char *strchr(const char *s, int c) { (void)s; (void)c; return 0; }
 unsigned long strcspn(const char *s, const char *reject) { (void)s; (void)reject; return 0; }
+char *strrchr(const char *s, int c) { (void)s; (void)c; return 0; }
+char *strstr(const char *s, const char *n) { (void)s; (void)n; return 0; }
+void *memchr(const void *s, int c, unsigned long n) { (void)s; (void)c; (void)n; return 0; }
+void *memrchr(const void *s, int c, unsigned long n) { (void)s; (void)c; (void)n; return 0; }
+int strcasecmp(const char *a, const char *b) { (void)a; (void)b; return 0; }
+char *strdup(const char *s) { return (char *)s; }
+void *realloc(void *p, unsigned long n) { (void)n; return p; }
+void free(void *p) { (void)p; }
 int atoi(const char *s) { (void)s; return 0; }
 long strtol(const char *s, char **e, int b) { (void)e; (void)b; return atoi(s); }
+static int error_value;
+int *__errno_location(void) { return &error_value; }
 int toupper(int c) { return c; }
 int tolower(int c) { return c; }
 int puts(const char *s) { (void)s; return 0; }

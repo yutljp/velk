@@ -37,6 +37,7 @@ struct Runner<'a> {
     deadline: Option<Instant>,
     steps: usize,
     instructions: u64,
+    clock_offset: u64,
     address: u64,
     ends: HashSet<u64>,
     trace: Vec<String>,
@@ -49,7 +50,13 @@ struct Runner<'a> {
     random: super::random::Random,
     cxx_locale: Option<super::cxx::Locale>,
     return_cleanup: u64,
-    allocations: HashSet<u64>,
+    allocations: HashMap<u64, u64>,
+    errno_address: u64,
+    resource_limits: HashMap<u32, (u64, u64)>,
+    locale: Option<u64>,
+    socket_peer: Vec<u8>,
+    socket_position: usize,
+    sockets: HashMap<u64, SocketState>,
     code: HashMap<u64, Vec<Block>>,
     recovery: Option<strings::Recovery>,
     windows: Option<windows::Process>,
@@ -71,6 +78,13 @@ enum Stop {
     UnpackAddress,
     WrittenCode,
     Error(String),
+}
+
+#[derive(Clone, Copy)]
+struct SocketState {
+    listening: bool,
+    connected: bool,
+    bound: bool,
 }
 
 pub(crate) fn physical_registers(isa: Isa) -> Vec<u16> {
@@ -149,6 +163,9 @@ fn run_with_recovery(
         Err(error) => return Err(invalid(error)),
     };
     let heap_base = strict.heap_base;
+    let Some(errno_address) = strict.tls_base.checked_add(0x100) else {
+        return Err(invalid("errno address overflows"));
+    };
     let convention = super::Convention {
         arguments: &[],
         clobbered: &[],
@@ -185,6 +202,13 @@ fn run_with_recovery(
     }
     let input = match &options.stdin {
         Some(input) => match input.bytes() {
+            Ok(bytes) => bytes,
+            Err(error) => return Err(error),
+        },
+        None => Vec::new(),
+    };
+    let socket_peer = match &options.socket_peer {
+        Some(peer) => match peer.bytes() {
             Ok(bytes) => bytes,
             Err(error) => return Err(error),
         },
@@ -246,6 +270,7 @@ fn run_with_recovery(
         deadline,
         steps: 0,
         instructions: 0,
+        clock_offset: 0,
         address: image.code_address(start),
         ends,
         trace: Vec::new(),
@@ -258,7 +283,13 @@ fn run_with_recovery(
         random: super::random::Random::default(),
         cxx_locale: None,
         return_cleanup: 0,
-        allocations: HashSet::new(),
+        allocations: HashMap::new(),
+        errno_address,
+        resource_limits: HashMap::new(),
+        locale: None,
+        socket_peer,
+        socket_position: 0,
+        sockets: HashMap::new(),
         code: HashMap::new(),
         recovery,
         windows: None,
@@ -817,7 +848,8 @@ impl Runner<'_> {
                             self.address = target;
                             return Stop::End;
                         }
-                        if let Some(result) = self.windows_call(target, None, None, CallKind::Tail)
+                        if let Some(result) =
+                            self.windows_call(target, None, None, CallKind::Tail, depth)
                         {
                             if let Err(stop) = result {
                                 return stop;
@@ -1165,9 +1197,7 @@ impl Runner<'_> {
                 outputs,
                 ..
             } if self.image.isa == Isa::AArch64 => {
-                let value = self
-                    .instructions
-                    .saturating_mul(self.options.anti_analysis.clock_ticks_per_instruction);
+                let value = self.clock_ticks();
                 self.assign_fact(outputs[0], Fact::constant(value));
                 self.anti_analysis.push("cntvct_el0".to_owned());
             }
@@ -1181,9 +1211,7 @@ impl Runner<'_> {
                 outputs,
                 ..
             } if self.image.isa == Isa::X86_64 || self.image.isa == Isa::I386 => {
-                let value = self
-                    .instructions
-                    .saturating_mul(self.options.anti_analysis.clock_ticks_per_instruction);
+                let value = self.clock_ticks();
                 self.assign_fact(outputs[0], Fact::constant(value));
                 if outputs.len() > 1 {
                     self.assign_fact(outputs[1], Fact::constant(0));
@@ -1311,7 +1339,7 @@ impl Runner<'_> {
         if depth == 0 {
             self.recover_inline(target, convention, kind);
         }
-        let result = match self.windows_call(target, original, through, kind) {
+        let result = match self.windows_call(target, original, through, kind, depth) {
             Some(result) => result,
             None => self.call(target, convention, kind, depth),
         };
@@ -1489,6 +1517,121 @@ impl Runner<'_> {
         }
     }
 
+    pub(super) fn clock_ticks(&self) -> u64 {
+        self.instructions
+            .saturating_mul(self.options.anti_analysis.clock_ticks_per_instruction)
+            .saturating_add(self.clock_offset)
+    }
+
+    pub(super) fn advance_clock(&mut self, ticks: u64) -> bool {
+        let Some(offset) = self.clock_offset.checked_add(ticks) else {
+            return false;
+        };
+        self.clock_offset = offset;
+        true
+    }
+
+    pub(super) fn errno_location(&self) -> u64 {
+        self.errno_address
+    }
+
+    pub(super) fn set_errno(&mut self, value: u32) -> std::result::Result<(), Stop> {
+        if let Err(stop) = self.check_memory_range(self.errno_address, 4, true) {
+            return Err(stop);
+        }
+        for (offset, byte) in value.to_le_bytes().into_iter().enumerate() {
+            let Some(address) = self.errno_address.checked_add(offset as u64) else {
+                return Err(Stop::Error("errno address overflows".to_owned()));
+            };
+            if let Err(stop) = self.write_byte(address, byte) {
+                return Err(stop);
+            }
+        }
+        Ok(())
+    }
+
+    pub(super) fn call_callback(
+        &mut self,
+        target: u64,
+        arguments: &[u64],
+        depth: usize,
+    ) -> std::result::Result<u64, Stop> {
+        if self.recovery.is_some() {
+            return Err(Stop::Error(
+                "callbacks are unavailable during string recovery".to_owned(),
+            ));
+        }
+        let convention = self.image.convention_of(target);
+        let registers = convention.arguments();
+        let stack_count = arguments.len().saturating_sub(registers.len());
+        let width = crate::arch::pointer_bytes(self.image.isa);
+        let stack_size = (stack_count as u64)
+            .checked_mul(u64::from(width))
+            .and_then(|size| size.checked_add(256))
+            .ok_or_else(|| Stop::Error("callback stack size overflows".to_owned()))?;
+        let stack_register = crate::arch::stack_pointer(self.image.isa);
+        let old_stack = self.eval(&Expr::reg(stack_register, width * 8))?;
+        let Some(mut call_stack) = old_stack.checked_sub(stack_size) else {
+            return Err(Stop::Error("callback stack underflows".to_owned()));
+        };
+        call_stack &= !15;
+        let pushed = convention.pushed_by_call() as u64;
+        let Some(entry_stack) = call_stack.checked_sub(pushed) else {
+            return Err(Stop::Error("callback stack underflows".to_owned()));
+        };
+        if stack_count != 0 {
+            let Some(base) = convention.stack_arguments() else {
+                return Err(Stop::Error(
+                    "callback convention has no stack arguments".to_owned(),
+                ));
+            };
+            let Some(address) = entry_stack.checked_add_signed(base) else {
+                return Err(Stop::Error(
+                    "callback argument address overflows".to_owned(),
+                ));
+            };
+            let size = (stack_count as u64)
+                .checked_mul(u64::from(width))
+                .ok_or_else(|| Stop::Error("callback argument size overflows".to_owned()))?;
+            self.check_memory_range(address, size, true)?;
+            for (index, value) in arguments.iter().skip(registers.len()).enumerate() {
+                let Some(at) = address.checked_add((index as u64) * u64::from(width)) else {
+                    return Err(Stop::Error(
+                        "callback argument address overflows".to_owned(),
+                    ));
+                };
+                self.machine.store(at, *value, width);
+            }
+            self.memory_error()?;
+        }
+        for (register, value) in registers.iter().zip(arguments) {
+            self.assign_fact(
+                RegRef {
+                    index: *register,
+                    width: width * 8,
+                },
+                Fact::constant(*value),
+            );
+        }
+        self.assign_fact(
+            RegRef {
+                index: stack_register,
+                width: width * 8,
+            },
+            Fact::constant(call_stack),
+        );
+        let result = self.call(target, convention, CallKind::Invoke, depth);
+        self.assign_fact(
+            RegRef {
+                index: stack_register,
+                width: width * 8,
+            },
+            Fact::constant(old_stack),
+        );
+        result?;
+        self.eval(&Expr::reg(crate::arch::RETURN, 32))
+    }
+
     fn call(
         &mut self,
         target: u64,
@@ -1530,10 +1673,8 @@ impl Runner<'_> {
                     Err(stop) => Err(stop),
                 };
             }
-            if let Some(hook) = hooks::find(name)
-                && (!matches!(hook, hooks::Hook::Unsupported(_)) || !self.options.skip_calls)
-            {
-                return match self.hook(hook, convention, kind) {
+            if let Some(hook) = hooks::find(name) {
+                return match self.hook(hook, convention, kind, depth) {
                     Ok(value) => {
                         self.external_result(
                             convention,
@@ -1543,6 +1684,29 @@ impl Runner<'_> {
                                 Some(value)
                             },
                         );
+                        if matches!(
+                            hook,
+                            hooks::Hook::LongLongIntegerEnd
+                                | hooks::Hook::UnsignedLongLongIntegerEnd
+                        ) {
+                            match self.image.isa {
+                                Isa::I386 => self.assign_fact(
+                                    RegRef {
+                                        index: crate::arch::x86::RDX,
+                                        width: 32,
+                                    },
+                                    Fact::constant(value >> 32),
+                                ),
+                                Isa::Arm32 => self.assign_fact(
+                                    RegRef {
+                                        index: 1,
+                                        width: 32,
+                                    },
+                                    Fact::constant(value >> 32),
+                                ),
+                                _ => {}
+                            }
+                        }
                         Ok(())
                     }
                     Err(stop) => Err(stop),

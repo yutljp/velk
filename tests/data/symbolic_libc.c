@@ -25,8 +25,33 @@ extern char *strcpy(char *, const char *);
 extern char *strncpy(char *, const char *, size_t);
 extern char *strchr(const char *, int);
 extern size_t strcspn(const char *, const char *);
+extern char *strrchr(const char *, int);
+extern char *strstr(const char *, const char *);
+extern void *memchr(const void *, int, size_t);
+extern void *memrchr(const void *, int, size_t);
+extern int strcasecmp(const char *, const char *);
+extern char *strdup(const char *);
+extern void *realloc(void *, size_t);
+extern void free(void *);
+#ifndef __linux__
+static void *memory_reverse_find(const void *memory, int character, size_t size) {
+    const unsigned char *bytes = (const unsigned char *)memory;
+    while (size > 0) {
+        --size;
+        if (bytes[size] == (unsigned char)character) return (void *)(bytes + size);
+    }
+    return 0;
+}
+#endif
 extern int atoi(const char *);
 extern long strtol(const char *, char **, int);
+#ifdef __APPLE__
+extern int *__error(void);
+#define errno_location __error
+#else
+extern int *__errno_location(void);
+#define errno_location __errno_location
+#endif
 extern int toupper(int);
 extern int tolower(int);
 extern int puts(const char *);
@@ -104,6 +129,33 @@ __attribute__((noinline)) int branch_helper(unsigned x) { if (x == 42) return 1;
 int repeated_branch(unsigned x) { int a = branch_helper(42); int b = branch_helper(43); return a+b+(x == 1); }
 long integer_value(const char *s, unsigned base) { return strtol(s, 0, base); }
 unsigned long integer_end(const char *s, unsigned base) { char *end; strtol(s, &end, base); return (unsigned long)(end-s); }
+int integer_overflow_errno(const char *s) {
+    *errno_location() = 0;
+    strtol(s, 0, 10);
+    return *errno_location() == 34;
+}
+int symbolic_string_search(const char *s) {
+#ifdef __linux__
+    void *last = memrchr(s, 'a', 4);
+#else
+    void *last = memory_reverse_find(s, 'a', 4);
+#endif
+    return strchr(s, 'a') == s + 1 && strrchr(s, 'a') == s + 3 &&
+           memchr(s, 'a', 4) == s + 1 && last == s + 3 &&
+           strstr(s, "ba") == s + 2 && strcasecmp(s, "XABA") == 0;
+}
+int symbolic_duplicate(const char *s) {
+    char *copy = strdup(s);
+    if (!copy) return 0;
+    char *larger = realloc(copy, 8);
+    if (!larger) {
+        free(copy);
+        return 0;
+    }
+    int result = larger[0] == 'x' && larger[3] == 'a' && larger[4] == 0;
+    free(larger);
+    return result;
+}
 unsigned case_value(unsigned c) { return ((unsigned)toupper((int)c) << 8) ^ (unsigned)tolower((int)c); }
 
 long signed_identity(long value) { return value; }

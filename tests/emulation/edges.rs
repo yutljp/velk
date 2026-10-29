@@ -8,7 +8,7 @@ use velk::service::Binary;
 use super::matrix::{self, ARCHITECTURES, HEAP, Interfaces};
 use crate::common;
 
-const HOOKS: [&str; 12] = [
+const HOOKS: [&str; 29] = [
     "hook_copy",
     "hook_move",
     "hook_set",
@@ -20,6 +20,23 @@ const HOOKS: [&str; 12] = [
     "hook_calloc",
     "hook_overflow",
     "hook_free",
+    "hook_reallocate",
+    "hook_find_byte",
+    "hook_find_byte_reverse",
+    "hook_reverse_character",
+    "hook_find_substring",
+    "hook_duplicate",
+    "hook_duplicate_n",
+    "hook_compare_case",
+    "hook_compare_case_n",
+    "hook_strtol",
+    "hook_strtoll",
+    "hook_strtoul",
+    "hook_strtoull",
+    "hook_atoi",
+    "hook_atol",
+    "hook_strtol_overflow",
+    "hook_sort",
     "hook_complement_span",
 ];
 const HEAP_END: u64 = HEAP + (1 << 24);
@@ -161,6 +178,9 @@ fn hooks_match_libc_and_check_mapped_boundaries() {
             assert_eq!(matrix::bytes_after(&report, HEAP, &[0; 4]), source);
             let mut cases = Vec::new();
             for routine in 0..HOOKS.len() {
+                if matches!(routine, 16 | 17 | 20..=27) {
+                    continue;
+                }
                 for size in [0, 1, 17] {
                     cases.push((routine, 0, 64, size));
                 }
@@ -180,10 +200,10 @@ fn hooks_match_libc_and_check_mapped_boundaries() {
                 (5, 62, 126, 128),
                 (6, 120, 64, 0),
                 (6, 0, 127, 0),
-                (11, 0, 0, 0),
-                (11, 0, 127, 0),
-                (11, 127, 0, 0),
-                (11, 0, 64, 0),
+                (28, 0, 0, 0),
+                (28, 0, 127, 0),
+                (28, 127, 0, 0),
+                (28, 0, 64, 0),
             ]);
             for (routine, destination, source, size) in cases {
                 let mut initial: Vec<u8> = (0..128).map(|i| ((i % 64) + 128) as u8).collect();
@@ -209,7 +229,7 @@ fn hooks_match_libc_and_check_mapped_boundaries() {
                 };
                 let options = json!({"arguments":[pointer,base+source as u64,size],"memory":[{"address":base,"bytes":initial}]});
                 // Allocate away from the boundary; initial heap bytes reserve space before malloc.
-                let options = if matches!(routine, 7..=9) {
+                let options = if matches!(routine, 7..=9 | 11) {
                     json!({"arguments":[HEAP,HEAP+64,size]})
                 } else {
                     options
@@ -230,6 +250,86 @@ fn hooks_match_libc_and_check_mapped_boundaries() {
                         HOOKS[routine]
                     );
                 }
+            }
+            let mut string_bytes = vec![0; 128];
+            string_bytes[..12].copy_from_slice(b"abABab\0tail\0");
+            string_bytes[32..36].copy_from_slice(b"AB\0\0");
+            string_bytes[64] = b'a';
+            let string_base = HEAP;
+            for (routine, second, count) in [
+                (28, 0, 8),
+                (28, 0, 2),
+                (28, 0, 6),
+                (12, 64, 8),
+                (13, 64, 8),
+                (14, 64, 12),
+                (14, 65, 12),
+                (15, 32, 0),
+                (15, 34, 0),
+                (16, 0, 12),
+                (17, 0, 4),
+                (18, 32, 0),
+                (19, 32, 2),
+                (19, 32, 8),
+            ] {
+                let arguments = [string_base, string_base + second, count];
+                let native_arguments = [routine, 0, second as usize, count as usize];
+                let native =
+                    native_hook(architecture, optimization, native_arguments, &string_bytes);
+                let expected = u32::from_le_bytes(native[..4].try_into().expect("libc result"));
+                let options = json!({"arguments":arguments,"memory":[{"address":string_base,"bytes":string_bytes}]});
+                let report = interfaces.check(&path, &binary, HOOKS[routine], options);
+                assert_eq!(
+                    matrix::value(&report),
+                    expected,
+                    "{architecture} {optimization} {}",
+                    HOOKS[routine]
+                );
+            }
+            for (routine, base, text) in [
+                (20, 0, "  -0x2a!"),
+                (20, 16, " +0Xfftail"),
+                (20, 8, "0779"),
+                (20, 36, "zZ!"),
+                (20, 10, "  +"),
+                (21, 10, "-9223372036854775809"),
+                (22, 10, "4294967295"),
+                (22, 10, "-1"),
+                (22, 0, "4294967295"),
+                (23, 10, "18446744073709551615"),
+                (23, 0, "0xffffffffffffffff"),
+                (24, 10, " -2147483648"),
+                (24, 10, "  +42!"),
+                (25, 10, "  +42!"),
+            ] {
+                let mut bytes = vec![0; 128];
+                bytes[..text.len()].copy_from_slice(text.as_bytes());
+                let arguments = [HEAP, HEAP + 64, base];
+                let native = native_hook(
+                    architecture,
+                    optimization,
+                    [routine, 0, 64, base as usize],
+                    &bytes,
+                );
+                let expected = u32::from_le_bytes(native[..4].try_into().expect("libc result"));
+                let report = interfaces.check(
+                    &path,
+                    &binary,
+                    HOOKS[routine],
+                    json!({"arguments":arguments,"memory":[{"address":HEAP,"bytes":bytes}]}),
+                );
+                assert_eq!(
+                    matrix::value(&report),
+                    expected,
+                    "{architecture} {optimization} {} {text:?}",
+                    HOOKS[routine]
+                );
+                assert_eq!(
+                    matrix::bytes_after(&report, HEAP, &bytes),
+                    &native[4..],
+                    "{architecture} {optimization} {} {text:?}",
+                    HOOKS[routine]
+                );
             }
             for hook in ["hook_allocate", "hook_calloc"] {
                 let report =
@@ -352,6 +452,76 @@ fn hooks_match_libc_and_check_mapped_boundaries() {
             );
             eprintln!(
                 "hooks {architecture} {optimization}: libc results, buffer bytes, mapping errors and heap limits agree across interfaces"
+            );
+        }
+    }
+}
+
+#[test]
+fn conversion_overflow_sets_errno_and_sort_calls_emulated_comparators() {
+    let mut interfaces = Interfaces::new();
+    for architecture in ARCHITECTURES {
+        for optimization in ["O0", "O2"] {
+            let path = matrix::fixtures().join(format!("{architecture}.{optimization}.hooks.elf"));
+            let binary = Binary::open(&path).expect("hook fixture");
+            if matches!(architecture, "x86_64" | "aarch64") {
+                for (mode, text) in [
+                    (0, b"9223372036854775808\0".as_slice()),
+                    (1, b"-9223372036854775809\0".as_slice()),
+                    (2, b"-18446744073709551616\0".as_slice()),
+                    (3, b"18446744073709551616\0".as_slice()),
+                ] {
+                    let mut initial = vec![0; 128];
+                    initial[..text.len()].copy_from_slice(text);
+                    let native =
+                        native_hook(architecture, optimization, [26, 0, 64, mode], &initial);
+                    let base = HEAP_END - 128;
+                    let report = interfaces.check(
+                        &path,
+                        &binary,
+                        "hook_strtol_overflow",
+                        json!({
+                            "arguments":[base,base+64,mode],
+                            "memory":[{"address":base,"bytes":initial}]
+                        }),
+                    );
+                    assert_eq!(
+                        matrix::value(&report),
+                        u32::from_le_bytes(native[..4].try_into().expect("result"))
+                    );
+                    assert_eq!(
+                        matrix::bytes_after(&report, base, &initial),
+                        native[4..],
+                        "{architecture} {optimization} overflow mode {mode}"
+                    );
+                }
+            }
+            let mut initial = vec![0; 128];
+            for (index, value) in [9i32, 1, 4, -2, 7].into_iter().enumerate() {
+                let start = index * 4;
+                initial[start..start + 4].copy_from_slice(&value.to_le_bytes());
+            }
+            initial[64..68].copy_from_slice(&4i32.to_le_bytes());
+            let native = native_hook(architecture, optimization, [27, 0, 64, 5], &initial);
+            let base = HEAP_END - 128;
+            let report = interfaces.check(
+                &path,
+                &binary,
+                "hook_sort",
+                json!({
+                    "arguments":[base,base+64,5],
+                    "memory":[{"address":base,"bytes":initial}]
+                }),
+            );
+            assert_eq!(matrix::value(&report), 3);
+            assert_eq!(
+                matrix::value(&report),
+                u32::from_le_bytes(native[..4].try_into().expect("result"))
+            );
+            assert_eq!(
+                matrix::bytes_after(&report, base, &initial),
+                native[4..],
+                "{architecture} {optimization} qsort and bsearch"
             );
         }
     }

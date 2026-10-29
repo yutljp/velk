@@ -2097,6 +2097,209 @@ fn i386_strtol_limits_and_end_pointers_replay() {
 }
 
 #[test]
+fn symbolic_integer_bases_and_errno_overflow_replay() {
+    if !solver_available() {
+        return;
+    }
+    for architecture in ["x86_64", "aarch64"] {
+        let binary = binary(architecture, 2);
+        let address = 0x1000_0000u64;
+        let base36: Options = serde_json::from_value(json!({
+            "argumentValues":[format!("0x{address:x}"),36],
+            "memory":[{"address":format!("0x{address:x}"),"size":4}],
+            "returns":{"eq":42}
+        }))
+        .expect("base-36 options");
+        let state = State::new(&binary, "integer_value", &base36).expect("base-36 state");
+        let report = state.explore(&binary, &base36).expect("base-36 search");
+        assert!(report.found, "{architecture} base 36: {report:?}");
+        let inputs = report.inputs.expect("base-36 input");
+        let mut bytes = Vec::new();
+        for offset in 0..4u64 {
+            let at = velk::addr::format(address + offset);
+            bytes.push(inputs.memory[&at]);
+        }
+        bytes.push(0);
+        let text = String::from_utf8_lossy(
+            &bytes[..bytes
+                .iter()
+                .position(|byte| *byte == 0)
+                .unwrap_or(bytes.len())],
+        );
+        let native = Command::new(fixtures().join("native-libc"))
+            .args(["integer_value", text.as_ref(), "36"])
+            .output()
+            .expect("native base-36 conversion");
+        assert!(native.status.success(), "{native:?}");
+        assert_eq!(String::from_utf8_lossy(&native.stdout), "0x2a");
+        let concrete: emulation::Options = serde_json::from_value(json!({
+            "arguments":[format!("0x{address:x}"),36],
+            "memory":[{"address":format!("0x{address:x}"),"bytes":bytes}]
+        }))
+        .expect("base-36 replay options");
+        let replay =
+            emulation::run(&binary, "integer_value", &concrete, None).expect("base-36 replay");
+        assert_eq!(replay.return_value, "0x2a");
+
+        let overflow: Options = serde_json::from_value(json!({
+            "argumentValues":[format!("0x{address:x}")],
+            "memory":[{"address":format!("0x{address:x}"),"size":24}],
+            "returns":{"eq":1}
+        }))
+        .expect("overflow options");
+        let state =
+            State::new(&binary, "integer_overflow_errno", &overflow).expect("overflow state");
+        let report = state.explore(&binary, &overflow).expect("overflow search");
+        assert!(report.found, "{architecture} symbolic overflow: {report:?}");
+        let inputs = report.inputs.expect("overflow input");
+        let mut bytes = Vec::new();
+        for offset in 0..24u64 {
+            bytes.push(inputs.memory[&velk::addr::format(address + offset)]);
+        }
+        let terminator = bytes
+            .iter()
+            .position(|byte| *byte == 0)
+            .unwrap_or(bytes.len());
+        let text = String::from_utf8_lossy(&bytes[..terminator]);
+        let native = Command::new(fixtures().join("native-libc"))
+            .args(["integer_overflow_errno", text.as_ref()])
+            .output()
+            .expect("native overflow conversion");
+        assert!(native.status.success(), "{native:?}");
+        assert_eq!(String::from_utf8_lossy(&native.stdout), "0x1");
+        bytes.push(0);
+        let replay_options: emulation::Options = serde_json::from_value(json!({
+            "arguments":[format!("0x{address:x}")],
+            "memory":[{"address":format!("0x{address:x}"),"bytes":bytes}]
+        }))
+        .expect("overflow replay options");
+        let replay = emulation::run(&binary, "integer_overflow_errno", &replay_options, None)
+            .expect("overflow replay");
+        assert_eq!(replay.return_value, "0x1");
+    }
+}
+
+#[test]
+fn symbolic_string_searches_and_duplicate_reallocation_replay() {
+    if !solver_available() {
+        return;
+    }
+    use serde_json::Value;
+    use std::process::Stdio;
+    for architecture in ["x86_64", "aarch64"] {
+        let binary = binary(architecture, 2);
+        let address = 0x1000_0000u64;
+        for name in ["symbolic_string_search", "symbolic_duplicate"] {
+            let options: Options = serde_json::from_value(json!({
+                "argumentValues":[format!("0x{address:x}")],
+                "memory":[{"address":format!("0x{address:x}"),"size":5}],
+                "returns":{"eq":1}
+            }))
+            .expect("symbolic string options");
+            let state = State::new(&binary, name, &options).expect("symbolic string state");
+            let report = state
+                .explore(&binary, &options)
+                .expect("symbolic string search");
+            assert!(report.found, "{architecture} {name}: {report:?}");
+            let inputs = report.inputs.expect("symbolic string input");
+            let mut bytes = Vec::new();
+            for offset in 0..5u64 {
+                bytes.push(inputs.memory[&velk::addr::format(address + offset)]);
+            }
+            let terminator = bytes
+                .iter()
+                .position(|byte| *byte == 0)
+                .expect("symbolic string has a terminator");
+            let text =
+                String::from_utf8(bytes[..terminator].to_vec()).expect("symbolic string is UTF-8");
+            let native = Command::new(fixtures().join("native-libc"))
+                .args([name, &text])
+                .output()
+                .expect("native string replay");
+            assert!(native.status.success(), "{native:?}");
+            assert_eq!(
+                String::from_utf8_lossy(&native.stdout),
+                "0x1",
+                "{name}: {text:?}"
+            );
+            let replay: emulation::Options = serde_json::from_value(json!({
+                "arguments":[format!("0x{address:x}")],
+                "memory":[{"address":format!("0x{address:x}"),"bytes":bytes}]
+            }))
+            .expect("concrete string replay options");
+            let concrete =
+                emulation::run(&binary, name, &replay, None).expect("concrete string replay");
+            assert!(
+                concrete.error.is_none(),
+                "{architecture} {name}: {concrete:?}"
+            );
+            assert_eq!(
+                concrete.return_value, "0x1",
+                "{architecture} {name}: {text:?}"
+            );
+            if architecture == "x86_64" && name == "symbolic_string_search" {
+                let raw_options = json!({
+                    "argumentValues":[format!("0x{address:x}")],
+                    "memory":[{"address":format!("0x{address:x}"),"size":5}],
+                    "returns":{"eq":1}
+                });
+                let path = fixtures().join("x86_64-O2.elf");
+                let output = Command::new(env!("CARGO_BIN_EXE_velk"))
+                    .args([
+                        "--solve",
+                        name,
+                        "--returns",
+                        "eq:1",
+                        "--json",
+                        "--symbolic-options",
+                    ])
+                    .arg(raw_options.to_string())
+                    .arg(&path)
+                    .output()
+                    .expect("CLI symbolic string solve");
+                assert!(
+                    output.status.success(),
+                    "{}",
+                    String::from_utf8_lossy(&output.stderr)
+                );
+                let cli: Value = serde_json::from_slice(&output.stdout).expect("CLI report");
+                assert_eq!(cli["found"], true, "{cli}");
+                let engine = velk::script::Engine::new().expect("JavaScript engine");
+                let script = format!(
+                    "velk.open({}).solve({}, {})",
+                    json!(path),
+                    json!(name),
+                    raw_options
+                );
+                let outcome = engine.run(&script, None);
+                assert!(outcome.error.is_none(), "{:?}", outcome.error);
+                assert_eq!(
+                    serde_json::from_str::<Value>(&outcome.output).expect("JavaScript report"),
+                    cli
+                );
+                let child = Command::new(env!("CARGO_BIN_EXE_velk"))
+                    .arg("--mcp")
+                    .stdin(Stdio::piped())
+                    .stdout(Stdio::piped())
+                    .spawn()
+                    .expect("MCP process");
+                let request = json!({"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"velk_solve","arguments":{"path":path,"start":name,"options":raw_options}}});
+                let output = common::mcp_request(child, &request);
+                let response: Value = serde_json::from_slice(&output.stdout).expect("MCP response");
+                assert_eq!(response["result"]["isError"], false, "{response}");
+                let mcp: Value = serde_json::from_str(
+                    response["result"]["content"][0]["text"]
+                        .as_str()
+                        .expect("MCP text"),
+                )
+                .expect("MCP report");
+                assert_eq!(mcp, cli);
+            }
+        }
+    }
+}
+
+#[test]
 fn i386_tail_library_returns_use_eax() {
     if !solver_available() {
         return;

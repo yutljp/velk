@@ -123,6 +123,9 @@ whitespace), or `file` (a host file read before execution). Input is limited to
 16 MiB. Missing input means EOF. `argv` includes the program name at index zero;
 it prepares argc and a pointer array terminated by a null pointer. It cannot be
 combined with `arguments` or used for Go functions.
+`socketPeer` accepts the same input forms and supplies bytes to `recv` on the
+deterministic in-memory peer. Each socket call uses that same
+byte stream; sends succeed and `close` releases the emulated descriptor.
 
 `stdout` and `stderr` contain captured text, decoded as UTF-8 with replacement
 for invalid sequences. Each stream is limited to 16 MiB. `printf`, `fprintf`,
@@ -204,11 +207,24 @@ an error report. The read budget is independent of the execution step limit.
 
 ## Calls and stopping
 
-The hook table implements `memcpy`, `memmove`, `memset`, `strlen`, `strcmp`,
-`strncmp`, `strcpy`, `malloc`, `calloc` and `free`. Memory hooks check mapping and
-permissions; overlapping `memcpy` is rejected. String comparison returns the
-unsigned-byte difference as a C `int`. Allocation uses aligned heap space;
-exhaustion returns zero. `free` validates the pointer but does not reuse space.
+The hook table implements `memcpy`, `memmove`, `memset`, `memchr`, `memrchr`,
+`strlen`, `strnlen`, `strcmp`, `strncmp`, `strcasecmp`, `strncasecmp`, `strchr`,
+`strrchr`, `strstr`, `memcmp`, `strcpy`, `strncpy`, `strdup`, `strndup`, `atoi`,
+`atol`, `strtol`, `strtoll`, `strtoul`, `strtoull`, `malloc`, `calloc`, `realloc`
+and `free`. Conversion functions support bases 0 through 36, write the end
+pointer when requested and set `errno` to `ERANGE` on overflow. Other conversion
+results leave `errno` unchanged. `qsort` and `bsearch` invoke their comparator in
+emulated code. Memory hooks check mapping and permissions; overlapping `memcpy`
+is rejected. String comparisons return a byte difference whose sign matches
+libc. Allocation uses aligned heap space; exhaustion returns zero. `realloc`
+copies the smaller of the old and requested sizes. `free` validates the pointer
+but does not reuse space.
+
+`sleep`, `usleep` and `nanosleep` advance the deterministic clock by the requested
+duration. `getrlimit` starts each resource at `RLIM_INFINITY`, and `setrlimit`
+updates that per-run state. `setlocale` accepts the `C` and `POSIX` locales.
+`socket`, `connect`, `bind`, `listen`, `accept`, `send`, `recv` and `close` use
+the in-memory peer configured by `socketPeer`; they do not open host sockets.
 
 Internal calls execute lifted code. Writes to an import slot redirect its calls
 to the supplied address. Other imported calls stop with an error.

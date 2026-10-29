@@ -163,6 +163,8 @@ pub struct Options {
     pub canary: Option<Word>,
     /// Stdin bytes consumed in order by input hooks; absent means EOF.
     pub stdin: Option<Input>,
+    /// Bytes returned by the connected in-memory socket peer; absent means EOF.
+    pub socket_peer: Option<Input>,
     /// Additional descriptors bound to stdin.
     pub stdin_descriptors: Vec<u32>,
     /// Explicit virtual paths and file bytes; no host files are opened.
@@ -258,6 +260,7 @@ impl Default for Options {
             canary: None,
             time: None,
             stdin: None,
+            socket_peer: None,
             stdin_descriptors: Vec::new(),
             files: BTreeMap::new(),
             windows: WindowsOptions::default(),

@@ -4,12 +4,14 @@ use super::{CallKind, Convention, HEAP_SIZE, Runner, Stop};
 
 #[derive(Clone, Copy)]
 pub(crate) enum Hook {
-    Unsupported(&'static str),
     Random,
     Seed,
     Time,
     ClockGettime,
     Gettimeofday,
+    Sleep,
+    MicroSleep,
+    NanoSleep,
     ParentProcess,
     Debugger,
     RemoteDebugger,
@@ -36,26 +38,63 @@ pub(crate) enum Hook {
     StringCopyN,
     Character,
     ComplementSpan,
+    ReverseCharacter,
+    FindByteReverse,
+    FindSubstring,
+    Duplicate,
+    DuplicateN,
     Integer,
+    LongInteger,
     IntegerEnd,
+    LongLongIntegerEnd,
+    UnsignedIntegerEnd,
+    UnsignedLongLongIntegerEnd,
     Upper,
     Lower,
     Compare,
     CompareN,
+    CompareCase,
+    CompareCaseN,
     StringCopy,
     Allocate,
     AllocateZero,
+    Reallocate,
     Free,
+    ErrnoLocation,
+    SetLocale,
+    GetResourceLimit,
+    SetResourceLimit,
+    Socket,
+    Connect,
+    Bind,
+    Listen,
+    Accept,
+    Send,
+    Receive,
+    Sort,
+    BinarySearch,
     Io(super::io::Operation),
 }
 
 const HOOKS: &[(&str, Hook)] = &[
-    (
-        "socket",
-        Hook::Unsupported(
-            "socket: network connections are not modeled; provide callReturns and stdinDescriptors for an explicit input descriptor",
-        ),
-    ),
+    ("socket", Hook::Socket),
+    ("connect", Hook::Connect),
+    ("bind", Hook::Bind),
+    ("listen", Hook::Listen),
+    ("accept", Hook::Accept),
+    ("send", Hook::Send),
+    ("recv", Hook::Receive),
+    ("qsort", Hook::Sort),
+    ("bsearch", Hook::BinarySearch),
+    ("sleep", Hook::Sleep),
+    ("usleep", Hook::MicroSleep),
+    ("nanosleep", Hook::NanoSleep),
+    ("getrlimit", Hook::GetResourceLimit),
+    ("setrlimit", Hook::SetResourceLimit),
+    ("setlocale", Hook::SetLocale),
+    ("__errno_location", Hook::ErrnoLocation),
+    ("___error", Hook::ErrnoLocation),
+    ("errno", Hook::ErrnoLocation),
     ("prctl", Hook::Dumpable),
     ("open", Hook::Io(super::io::Operation::Open)),
     ("close", Hook::Io(super::io::Operation::Close)),
@@ -130,15 +169,27 @@ const HOOKS: &[(&str, Hook)] = &[
     ("strncpy", Hook::StringCopyN),
     ("strchr", Hook::Character),
     ("strcspn", Hook::ComplementSpan),
+    ("strrchr", Hook::ReverseCharacter),
+    ("memrchr", Hook::FindByteReverse),
+    ("strstr", Hook::FindSubstring),
+    ("strdup", Hook::Duplicate),
+    ("strndup", Hook::DuplicateN),
     ("atoi", Hook::Integer),
+    ("atol", Hook::LongInteger),
     ("strtol", Hook::IntegerEnd),
+    ("strtoll", Hook::LongLongIntegerEnd),
+    ("strtoul", Hook::UnsignedIntegerEnd),
+    ("strtoull", Hook::UnsignedLongLongIntegerEnd),
     ("toupper", Hook::Upper),
     ("tolower", Hook::Lower),
     ("strcmp", Hook::Compare),
     ("strncmp", Hook::CompareN),
+    ("strcasecmp", Hook::CompareCase),
+    ("strncasecmp", Hook::CompareCaseN),
     ("strcpy", Hook::StringCopy),
     ("malloc", Hook::Allocate),
     ("calloc", Hook::AllocateZero),
+    ("realloc", Hook::Reallocate),
     ("free", Hook::Free),
 ];
 
@@ -149,6 +200,8 @@ pub(crate) fn find(name: &str) -> Option<Hook> {
     let name = if name.starts_with("__isoc99_")
         || name.starts_with("__stack_chk_")
         || name.starts_with("__sysv_")
+        || name.starts_with("__errno_location")
+        || name.starts_with("___error")
     {
         name
     } else {
@@ -178,6 +231,469 @@ pub(crate) fn has_exit_handlers(image: &crate::loader::Image) -> bool {
             function.name.as_deref().is_some_and(registration)
                 || function.aliases.iter().any(|name| registration(name))
         })
+}
+
+impl Runner<'_> {
+    fn extended_hook(
+        &mut self,
+        hook: Hook,
+        first: u64,
+        convention: Convention,
+        kind: CallKind,
+        depth: usize,
+    ) -> Result<u64, Stop> {
+        match hook {
+            Hook::Sleep => {
+                let ticks = (first as u32 as u64)
+                    .checked_mul(1_000_000_000)
+                    .ok_or_else(|| Stop::Error("sleep duration overflows".to_owned()))?;
+                if !self.advance_clock(ticks) {
+                    return Err(Stop::Error("emulated clock overflows".to_owned()));
+                }
+                Ok(0)
+            }
+            Hook::MicroSleep => {
+                let microseconds = first as u32 as u64;
+                if microseconds >= 1_000_000 {
+                    return self.error_result(22);
+                }
+                let ticks = microseconds
+                    .checked_mul(1_000)
+                    .ok_or_else(|| Stop::Error("usleep duration overflows".to_owned()))?;
+                if !self.advance_clock(ticks) {
+                    return Err(Stop::Error("emulated clock overflows".to_owned()));
+                }
+                Ok(0)
+            }
+            Hook::NanoSleep => {
+                let width = crate::arch::pointer_bytes(self.image.isa);
+                let Some(nanoseconds_address) = first.checked_add(u64::from(width)) else {
+                    return Err(Stop::Error(
+                        "nanosleep request address overflows".to_owned(),
+                    ));
+                };
+                let seconds = self.read_integer(first, width)?;
+                let nanoseconds = self.read_integer(nanoseconds_address, width)?;
+                let seconds = if width == 4 {
+                    seconds as u32 as i32 as i64
+                } else {
+                    seconds as i64
+                };
+                if seconds < 0 || nanoseconds >= 1_000_000_000 {
+                    return self.error_result(22);
+                }
+                let Some(ticks) = (seconds as u64)
+                    .checked_mul(1_000_000_000)
+                    .and_then(|ticks| ticks.checked_add(nanoseconds))
+                else {
+                    return self.error_result(22);
+                };
+                if !self.advance_clock(ticks) {
+                    return Err(Stop::Error("emulated clock overflows".to_owned()));
+                }
+                Ok(0)
+            }
+            Hook::SetLocale => self.set_locale(first, convention, kind),
+            Hook::GetResourceLimit => self.resource_limit(first, convention, kind, false),
+            Hook::SetResourceLimit => self.resource_limit(first, convention, kind, true),
+            Hook::Socket => {
+                let descriptor = self.next_socket_descriptor()?;
+                self.sockets.insert(
+                    descriptor,
+                    super::SocketState {
+                        listening: false,
+                        connected: false,
+                        bound: false,
+                    },
+                );
+                Ok(descriptor)
+            }
+            Hook::Connect | Hook::Bind => {
+                let descriptor = first;
+                if !self.sockets.contains_key(&descriptor) {
+                    return self.error_result(9);
+                }
+                let address = self.argument(1, convention, kind)?;
+                let length = self.argument(2, convention, kind)?;
+                if address != 0 && length != 0 {
+                    if length > 128 {
+                        return self.error_result(22);
+                    }
+                    self.check_memory_range(address, length, false)?;
+                }
+                let Some(socket) = self.sockets.get_mut(&descriptor) else {
+                    return self.error_result(9);
+                };
+                if matches!(hook, Hook::Connect) {
+                    if socket.connected || socket.listening {
+                        return self.error_result(106);
+                    }
+                    socket.connected = true;
+                } else {
+                    if socket.bound || socket.connected {
+                        return self.error_result(22);
+                    }
+                    socket.bound = true;
+                }
+                Ok(0)
+            }
+            Hook::Listen => {
+                let Some(socket) = self.sockets.get_mut(&first) else {
+                    return self.error_result(9);
+                };
+                if socket.connected {
+                    return self.error_result(22);
+                }
+                socket.bound = true;
+                socket.listening = true;
+                Ok(0)
+            }
+            Hook::Accept => {
+                let Some(socket) = self.sockets.get(&first).copied() else {
+                    return self.error_result(9);
+                };
+                if !socket.listening {
+                    return self.error_result(22);
+                }
+                let address = self.argument(1, convention, kind)?;
+                let length_pointer = self.argument(2, convention, kind)?;
+                if address != 0 {
+                    if length_pointer == 0 {
+                        return self.error_result(14);
+                    }
+                    let length = self.read_integer(length_pointer, 4)?;
+                    let written = length.min(16);
+                    self.check_memory_range(address, written, true)?;
+                    for offset in 0..written {
+                        let Some(at) = address.checked_add(offset) else {
+                            return Err(Stop::Error(
+                                "accepted socket address overflows".to_owned(),
+                            ));
+                        };
+                        self.write_byte(at, 0)?;
+                    }
+                    if written >= 2 {
+                        self.write_byte(address, 2)?;
+                    }
+                    self.write_integer(length_pointer, 4, 16)?;
+                }
+                let descriptor = self.next_socket_descriptor()?;
+                self.sockets.insert(
+                    descriptor,
+                    super::SocketState {
+                        listening: false,
+                        connected: true,
+                        bound: false,
+                    },
+                );
+                Ok(descriptor)
+            }
+            Hook::Send | Hook::Receive => self.socket_data(hook, first, convention, kind),
+            Hook::Sort => self.sort(first, convention, kind, depth),
+            Hook::BinarySearch => self.binary_search(first, convention, kind, depth),
+            Hook::ErrnoLocation => Ok(self.errno_location()),
+            _ => Err(Stop::Error("invalid extended library hook".to_owned())),
+        }
+    }
+
+    fn error_result(&mut self, error: u32) -> Result<u64, Stop> {
+        self.set_errno(error)?;
+        Ok(u64::from(u32::MAX))
+    }
+
+    fn read_integer(&mut self, address: u64, width: u8) -> Result<u64, Stop> {
+        self.check_memory_range(address, u64::from(width), false)?;
+        let value = self.machine.load(address, width);
+        self.memory_error()?;
+        Ok(value)
+    }
+
+    fn write_integer(&mut self, address: u64, width: u8, value: u64) -> Result<(), Stop> {
+        self.check_memory_range(address, u64::from(width), true)?;
+        self.machine.store(address, value, width);
+        self.memory_error()
+    }
+
+    fn set_locale(
+        &mut self,
+        category: u64,
+        convention: Convention,
+        kind: CallKind,
+    ) -> Result<u64, Stop> {
+        let locale = self.argument(1, convention, kind)?;
+        let max_category = if self.image.format == crate::loader::Format::MachO {
+            5
+        } else {
+            6
+        };
+        if category > max_category {
+            return Ok(0);
+        }
+        if locale != 0 {
+            let name = self.bytes_at(locale, None)?;
+            if name != b"C" && name != b"POSIX" {
+                return Ok(0);
+            }
+        }
+        if let Some(address) = self.locale {
+            return Ok(address);
+        }
+        let address = self.allocate(2);
+        if address == 0 {
+            return Err(Stop::Error("locale string allocation failed".to_owned()));
+        }
+        self.write_byte(address, b'C')?;
+        self.write_byte(address + 1, 0)?;
+        self.locale = Some(address);
+        Ok(address)
+    }
+
+    fn resource_limit(
+        &mut self,
+        resource: u64,
+        convention: Convention,
+        kind: CallKind,
+        update: bool,
+    ) -> Result<u64, Stop> {
+        let pointer = self.argument(1, convention, kind)?;
+        let resource = resource as u32;
+        let valid = if self.image.format == crate::loader::Format::MachO {
+            matches!(resource, 0..=5 | 7..=8)
+        } else {
+            resource <= 15
+        };
+        if !valid {
+            return self.error_result(22);
+        }
+        let width = crate::arch::pointer_bytes(self.image.isa);
+        let Some(hard_address) = pointer.checked_add(u64::from(width)) else {
+            return Err(Stop::Error("resource limit address overflows".to_owned()));
+        };
+        if update {
+            let current = self.read_integer(pointer, width)?;
+            let maximum = self.read_integer(hard_address, width)?;
+            if current > maximum {
+                return self.error_result(22);
+            }
+            let previous = self
+                .resource_limits
+                .get(&resource)
+                .copied()
+                .unwrap_or((u64::MAX, u64::MAX));
+            if maximum > previous.1 {
+                return self.error_result(1);
+            }
+            self.resource_limits.insert(resource, (current, maximum));
+        } else {
+            let limit = self
+                .resource_limits
+                .get(&resource)
+                .copied()
+                .unwrap_or((u64::MAX, u64::MAX));
+            self.write_integer(pointer, width, limit.0)?;
+            self.write_integer(hard_address, width, limit.1)?;
+        }
+        Ok(0)
+    }
+
+    fn next_socket_descriptor(&mut self) -> Result<u64, Stop> {
+        loop {
+            let descriptor = self.files.reserve_descriptor().map_err(Stop::Error)?;
+            if !self.options.stdin_descriptors.contains(&descriptor) {
+                return Ok(u64::from(descriptor));
+            }
+        }
+    }
+
+    fn socket_data(
+        &mut self,
+        hook: Hook,
+        descriptor: u64,
+        convention: Convention,
+        kind: CallKind,
+    ) -> Result<u64, Stop> {
+        let Some(socket) = self.sockets.get(&descriptor).copied() else {
+            return self.error_result(9);
+        };
+        if !socket.connected {
+            return self.error_result(107);
+        }
+        let buffer = self.argument(1, convention, kind)?;
+        let count = self.argument(2, convention, kind)?;
+        let flags = self.argument(3, convention, kind)? as u32;
+        if count > HEAP_SIZE {
+            return self.error_result(90);
+        }
+        if matches!(hook, Hook::Send) {
+            self.check_memory_range(buffer, count, false)?;
+            for offset in 0..count {
+                let Some(address) = buffer.checked_add(offset) else {
+                    return Err(Stop::Error("socket send address overflows".to_owned()));
+                };
+                let _ = self.read_byte(address)?;
+            }
+            return Ok(count);
+        }
+        let remaining = self.socket_peer.len().saturating_sub(self.socket_position);
+        let length = (count as usize).min(remaining);
+        self.check_memory_range(buffer, length as u64, true)?;
+        for offset in 0..length {
+            let Some(address) = buffer.checked_add(offset as u64) else {
+                return Err(Stop::Error("socket receive address overflows".to_owned()));
+            };
+            let byte = self.socket_peer[self.socket_position + offset];
+            self.write_byte(address, byte)?;
+        }
+        if flags & 2 == 0 {
+            self.socket_position = self.socket_position.saturating_add(length);
+        }
+        Ok(length as u64)
+    }
+
+    fn element_address(&self, base: u64, index: u64, size: u64) -> Result<u64, Stop> {
+        let Some(offset) = index.checked_mul(size) else {
+            return Err(Stop::Error("array element offset overflows".to_owned()));
+        };
+        base.checked_add(offset)
+            .ok_or_else(|| Stop::Error("array element address overflows".to_owned()))
+    }
+
+    fn compare_elements(
+        &mut self,
+        comparator: u64,
+        left: u64,
+        right: u64,
+        depth: usize,
+    ) -> Result<i32, Stop> {
+        let result = self.call_callback(comparator, &[left, right], depth)?;
+        Ok(result as u32 as i32)
+    }
+
+    fn swap_elements(&mut self, left: u64, right: u64, size: u64) -> Result<(), Stop> {
+        if left == right {
+            return Ok(());
+        }
+        for offset in 0..size {
+            let Some(left_address) = left.checked_add(offset) else {
+                return Err(Stop::Error("array element address overflows".to_owned()));
+            };
+            let Some(right_address) = right.checked_add(offset) else {
+                return Err(Stop::Error("array element address overflows".to_owned()));
+            };
+            let left_byte = self.read_byte(left_address)?;
+            let right_byte = self.read_byte(right_address)?;
+            self.write_byte(left_address, right_byte)?;
+            self.write_byte(right_address, left_byte)?;
+        }
+        Ok(())
+    }
+
+    fn sort(
+        &mut self,
+        base: u64,
+        convention: Convention,
+        kind: CallKind,
+        depth: usize,
+    ) -> Result<u64, Stop> {
+        let count = self.argument(1, convention, kind)?;
+        let size = self.argument(2, convention, kind)?;
+        let comparator = self.argument(3, convention, kind)?;
+        let Some(total) = count.checked_mul(size) else {
+            return Err(Stop::Error("qsort array size overflows".to_owned()));
+        };
+        if total > HEAP_SIZE {
+            return Err(Stop::Error("qsort array exceeds 16 MiB".to_owned()));
+        }
+        if count < 2 || size == 0 {
+            return Ok(0);
+        }
+        self.check_memory_range(base, total, true)?;
+        let mut root = count / 2;
+        while root != 0 {
+            root -= 1;
+            self.sift_down(base, root, count, size, comparator, depth)?;
+        }
+        let mut end = count;
+        while end > 1 {
+            self.swap_elements(base, self.element_address(base, end - 1, size)?, size)?;
+            end -= 1;
+            self.sift_down(base, 0, end, size, comparator, depth)?;
+        }
+        Ok(0)
+    }
+
+    fn sift_down(
+        &mut self,
+        base: u64,
+        mut root: u64,
+        end: u64,
+        size: u64,
+        comparator: u64,
+        depth: usize,
+    ) -> Result<(), Stop> {
+        loop {
+            let Some(child) = root.checked_mul(2).and_then(|value| value.checked_add(1)) else {
+                return Err(Stop::Error("qsort index overflows".to_owned()));
+            };
+            if child >= end {
+                return Ok(());
+            }
+            let right = child + 1;
+            let child = if right < end {
+                let left_address = self.element_address(base, child, size)?;
+                let right_address = self.element_address(base, right, size)?;
+                if self.compare_elements(comparator, left_address, right_address, depth)? < 0 {
+                    right
+                } else {
+                    child
+                }
+            } else {
+                child
+            };
+            let root_address = self.element_address(base, root, size)?;
+            let child_address = self.element_address(base, child, size)?;
+            if self.compare_elements(comparator, root_address, child_address, depth)? >= 0 {
+                return Ok(());
+            }
+            self.swap_elements(root_address, child_address, size)?;
+            root = child;
+        }
+    }
+
+    fn binary_search(
+        &mut self,
+        key: u64,
+        convention: Convention,
+        kind: CallKind,
+        depth: usize,
+    ) -> Result<u64, Stop> {
+        let base = self.argument(1, convention, kind)?;
+        let count = self.argument(2, convention, kind)?;
+        let size = self.argument(3, convention, kind)?;
+        let comparator = self.argument(4, convention, kind)?;
+        let Some(total) = count.checked_mul(size) else {
+            return Err(Stop::Error("bsearch array size overflows".to_owned()));
+        };
+        if total > HEAP_SIZE {
+            return Err(Stop::Error("bsearch array exceeds 16 MiB".to_owned()));
+        }
+        if size == 0 {
+            return Ok(0);
+        }
+        self.check_memory_range(base, total, false)?;
+        let mut lower = 0;
+        let mut upper = count;
+        while lower < upper {
+            let middle = lower + (upper - lower) / 2;
+            let element = self.element_address(base, middle, size)?;
+            match self.compare_elements(comparator, key, element, depth)? {
+                0 => return Ok(element),
+                value if value < 0 => upper = middle,
+                _ => lower = middle + 1,
+            }
+        }
+        Ok(0)
+    }
 }
 
 impl Runner<'_> {
@@ -297,7 +813,7 @@ impl Runner<'_> {
             return 0;
         }
         self.heap_next = end;
-        self.allocations.insert(start);
+        self.allocations.insert(start, size.max(1));
         start
     }
 
@@ -343,10 +859,8 @@ impl Runner<'_> {
         hook: Hook,
         convention: Convention,
         kind: CallKind,
+        depth: usize,
     ) -> std::result::Result<u64, Stop> {
-        if let Hook::Unsupported(message) = hook {
-            return Err(Stop::Error(message.to_owned()));
-        }
         if self.recovery.is_some()
             && matches!(
                 hook,
@@ -360,8 +874,18 @@ impl Runner<'_> {
         if let Hook::StackCheckFail = hook {
             return Err(Stop::StackCheckFail);
         }
+        if let Hook::Io(super::io::Operation::Close) = hook {
+            let descriptor = self.argument(0, convention, kind)?;
+            if self.sockets.remove(&descriptor).is_some() {
+                return Ok(0);
+            }
+            return self.io_hook(super::io::Operation::Close, convention, kind);
+        }
         if let Hook::Io(operation) = hook {
             return self.io_hook(operation, convention, kind);
+        }
+        if matches!(hook, Hook::ErrnoLocation) {
+            return Ok(self.errno_location());
         }
         if matches!(hook, Hook::Exit) {
             if has_exit_handlers(self.image) {
@@ -381,12 +905,26 @@ impl Runner<'_> {
             Err(stop) => return Err(stop),
         };
         let value = match hook {
-            Hook::Unsupported(_)
-            | Hook::StackCheckFail
-            | Hook::Io(_)
-            | Hook::Random
-            | Hook::Exit => {
+            Hook::StackCheckFail | Hook::Io(_) | Hook::Random | Hook::Exit => {
                 unreachable!("these hooks return before the library call match")
+            }
+            Hook::Sleep
+            | Hook::MicroSleep
+            | Hook::NanoSleep
+            | Hook::SetLocale
+            | Hook::GetResourceLimit
+            | Hook::SetResourceLimit
+            | Hook::Socket
+            | Hook::Connect
+            | Hook::Bind
+            | Hook::Listen
+            | Hook::Accept
+            | Hook::Send
+            | Hook::Receive
+            | Hook::Sort
+            | Hook::BinarySearch
+            | Hook::ErrnoLocation => {
+                return self.extended_hook(hook, first, convention, kind, depth);
             }
             Hook::Signal => {
                 if self.image.format != crate::loader::Format::Elf {
@@ -457,9 +995,7 @@ impl Runner<'_> {
                     },
                     None => 0,
                 };
-                let elapsed = self
-                    .instructions
-                    .saturating_mul(self.options.anti_analysis.clock_ticks_per_instruction);
+                let elapsed = self.clock_ticks();
                 let nanos = elapsed % 1_000_000_000;
                 let seconds = seconds.saturating_add(elapsed / 1_000_000_000);
                 let width = crate::arch::pointer_bytes(self.image.isa);
@@ -519,22 +1055,15 @@ impl Runner<'_> {
             }
             Hook::GetTickCount => {
                 self.anti_analysis.push("GetTickCount".to_owned());
-                (self
-                    .instructions
-                    .saturating_mul(self.options.anti_analysis.clock_ticks_per_instruction)
-                    / 1_000_000) as u32 as u64
+                (self.clock_ticks() / 1_000_000) as u32 as u64
             }
             Hook::GetTickCount64 => {
                 self.anti_analysis.push("GetTickCount64".to_owned());
-                self.instructions
-                    .saturating_mul(self.options.anti_analysis.clock_ticks_per_instruction)
-                    / 1_000_000
+                self.clock_ticks() / 1_000_000
             }
             Hook::QueryPerformanceCounter => {
                 let pointer = first;
-                let value = self
-                    .instructions
-                    .saturating_mul(self.options.anti_analysis.clock_ticks_per_instruction);
+                let value = self.clock_ticks();
                 if let Err(stop) = self.check_memory_range(pointer, 8, true) {
                     return Err(stop);
                 }
@@ -711,8 +1240,41 @@ impl Runner<'_> {
                 }
                 address
             }
+            Hook::Reallocate => {
+                let size = match self.argument(1, convention, kind) {
+                    Ok(value) => value,
+                    Err(stop) => return Err(stop),
+                };
+                if first == 0 {
+                    self.allocate(size)
+                } else if size == 0 {
+                    if self.allocations.remove(&first).is_none() {
+                        return Err(Stop::Error(format!(
+                            "realloc of unallocated pointer 0x{first:x}"
+                        )));
+                    }
+                    0
+                } else {
+                    let Some(old_size) = self.allocations.get(&first).copied() else {
+                        return Err(Stop::Error(format!(
+                            "realloc of unallocated pointer 0x{first:x}"
+                        )));
+                    };
+                    let address = self.allocate(size);
+                    if address == 0 {
+                        0
+                    } else {
+                        let count = old_size.min(size);
+                        if let Err(stop) = self.copy_memory(Hook::Move, address, first, count) {
+                            return Err(stop);
+                        }
+                        self.allocations.remove(&first);
+                        address
+                    }
+                }
+            }
             Hook::Free => {
-                if first != 0 && !self.allocations.remove(&first) {
+                if first != 0 && self.allocations.remove(&first).is_none() {
                     return Err(Stop::Error(format!(
                         "free of unallocated pointer 0x{first:x}"
                     )));
@@ -839,8 +1401,17 @@ impl Runner<'_> {
             Hook::LengthN
             | Hook::StringCopyN
             | Hook::Character
+            | Hook::ReverseCharacter
+            | Hook::FindByteReverse
+            | Hook::FindSubstring
+            | Hook::Duplicate
+            | Hook::DuplicateN
             | Hook::Integer
-            | Hook::IntegerEnd => {
+            | Hook::LongInteger
+            | Hook::IntegerEnd
+            | Hook::LongLongIntegerEnd
+            | Hook::UnsignedIntegerEnd
+            | Hook::UnsignedLongLongIntegerEnd => {
                 return self.scalar_string_hook(hook, first, convention, kind);
             }
             Hook::Length | Hook::StringCopy => {
@@ -881,12 +1452,16 @@ impl Runner<'_> {
                     size
                 }
             }
-            Hook::Compare | Hook::CompareN | Hook::MemoryCompare => {
+            Hook::Compare
+            | Hook::CompareN
+            | Hook::MemoryCompare
+            | Hook::CompareCase
+            | Hook::CompareCaseN => {
                 let second = match self.argument(1, convention, kind) {
                     Ok(value) => value,
                     Err(stop) => return Err(stop),
                 };
-                let limit = if !matches!(hook, Hook::Compare) {
+                let limit = if !matches!(hook, Hook::Compare | Hook::CompareCase) {
                     match self.argument(2, convention, kind) {
                         Ok(value) => value,
                         Err(stop) => return Err(stop),
@@ -909,6 +1484,16 @@ impl Runner<'_> {
                         Ok(value) => value,
                         Err(stop) => return Err(stop),
                     };
+                    let left = if matches!(hook, Hook::CompareCase | Hook::CompareCaseN) {
+                        left.to_ascii_lowercase()
+                    } else {
+                        left
+                    };
+                    let right = if matches!(hook, Hook::CompareCase | Hook::CompareCaseN) {
+                        right.to_ascii_lowercase()
+                    } else {
+                        right
+                    };
                     if left != right {
                         result = u64::from((i32::from(left) - i32::from(right)) as u32);
                         break;
@@ -920,7 +1505,11 @@ impl Runner<'_> {
                 result
             }
         };
-        let value = if crate::arch::pointer_bytes(self.image.isa) == 4 {
+        let returns_64_bits = matches!(
+            hook,
+            Hook::LongLongIntegerEnd | Hook::UnsignedLongLongIntegerEnd
+        );
+        let value = if crate::arch::pointer_bytes(self.image.isa) == 4 && !returns_64_bits {
             value & 0xffff_ffff
         } else {
             value
@@ -939,91 +1528,28 @@ impl Runner<'_> {
         convention: Convention,
         kind: CallKind,
     ) -> Result<u64, Stop> {
-        if matches!(hook, Hook::IntegerEnd)
-            && matches!(
-                self.image.format,
-                crate::loader::Format::Pe | crate::loader::Format::Coff
-            )
-        {
-            return Err(Stop::Error("unsupported strtol data model".into()));
+        if matches!(
+            hook,
+            Hook::FindByteReverse | Hook::FindSubstring | Hook::Duplicate | Hook::DuplicateN
+        ) {
+            return self.extended_string_hook(hook, first, convention, kind);
+        }
+        if matches!(
+            hook,
+            Hook::Integer
+                | Hook::LongInteger
+                | Hook::IntegerEnd
+                | Hook::LongLongIntegerEnd
+                | Hook::UnsignedIntegerEnd
+                | Hook::UnsignedLongLongIntegerEnd
+        ) {
+            return self.integer_string_hook(hook, first, convention, kind);
         }
         let second = if matches!(hook, Hook::Integer) {
             0
         } else {
             self.argument(1, convention, kind)?
         };
-        if matches!(hook, Hook::Integer | Hook::IntegerEnd) {
-            let base = if matches!(hook, Hook::IntegerEnd) {
-                self.argument(2, convention, kind)?
-            } else {
-                10
-            };
-            if !matches!(base, 10 | 16) {
-                return Err(Stop::Error("unsupported strtol base".into()));
-            }
-            let mut offset = 0u64;
-            let mut bytes = Vec::new();
-            loop {
-                let Some(address) = first.checked_add(offset) else {
-                    return Err(Stop::Error("integer string address overflows".into()));
-                };
-                let byte = self.read_byte(address)?;
-                if byte == 0 {
-                    break;
-                }
-                bytes.push(byte);
-                offset = offset.saturating_add(1);
-            }
-            let mut position = 0;
-            while bytes.get(position).is_some_and(u8::is_ascii_whitespace) {
-                position += 1;
-            }
-            let negative = bytes.get(position) == Some(&b'-');
-            if negative || bytes.get(position) == Some(&b'+') {
-                position += 1;
-            }
-            if base == 16
-                && bytes.get(position) == Some(&b'0')
-                && matches!(bytes.get(position + 1), Some(b'x' | b'X'))
-                && bytes.get(position + 2).is_some_and(u8::is_ascii_hexdigit)
-            {
-                position += 2;
-            }
-            let start = position;
-            let mut value = 0u64;
-            let sign = 1u64 << (u32::from(crate::arch::pointer_bytes(self.image.isa)) * 8 - 1);
-            let limit = if negative { sign } else { sign - 1 };
-            while let Some(&byte) = bytes.get(position) {
-                let digit = match byte {
-                    b'0'..=b'9' => u64::from(byte - b'0'),
-                    b'a'..=b'f' if base == 16 => u64::from(byte - b'a' + 10),
-                    b'A'..=b'F' if base == 16 => u64::from(byte - b'A' + 10),
-                    _ => break,
-                };
-                value = value.saturating_mul(base).saturating_add(digit).min(limit);
-                position += 1;
-            }
-            if matches!(hook, Hook::IntegerEnd) && second != 0 {
-                let Some(address) =
-                    first.checked_add(if position > start { position as u64 } else { 0 })
-                else {
-                    return Err(Stop::Error("strtol end address overflows".into()));
-                };
-                self.machine
-                    .store(second, address, crate::arch::pointer_bytes(self.image.isa));
-                self.memory_error()?;
-            }
-            let result = if negative {
-                value.wrapping_neg()
-            } else {
-                value
-            };
-            return Ok(if matches!(hook, Hook::Integer) {
-                u64::from(result as u32)
-            } else {
-                result
-            });
-        }
         let source = if matches!(hook, Hook::StringCopyN) {
             second
         } else {
@@ -1040,13 +1566,17 @@ impl Runner<'_> {
             return Err(Stop::Error("string operation exceeds 16 MiB".into()));
         }
         let mut ended = false;
+        let mut found_character = None;
         for offset in 0..maximum {
             let Some(address) = source.checked_add(offset) else {
                 return Err(Stop::Error("string address overflows".into()));
             };
             let byte = if ended { 0 } else { self.read_byte(address)? };
-            if matches!(hook, Hook::Character) && byte == second as u8 {
-                return Ok(address);
+            if matches!(hook, Hook::Character | Hook::ReverseCharacter) && byte == second as u8 {
+                if matches!(hook, Hook::Character) {
+                    return Ok(address);
+                }
+                found_character = Some(address);
             }
             if matches!(hook, Hook::StringCopyN) {
                 let Some(destination) = first.checked_add(offset) else {
@@ -1058,19 +1588,300 @@ impl Runner<'_> {
                 if matches!(hook, Hook::LengthN) {
                     return Ok(offset);
                 }
-                if matches!(hook, Hook::Character) {
-                    return Ok(0);
+                if matches!(hook, Hook::Character | Hook::ReverseCharacter) {
+                    return Ok(found_character.unwrap_or(0));
                 }
                 ended = true;
             }
         }
+        if matches!(hook, Hook::Character | Hook::ReverseCharacter) && !ended {
+            return Err(Stop::Error("string exceeds 16 MiB".into()));
+        }
         Ok(if matches!(hook, Hook::StringCopyN) {
             first
-        } else if matches!(hook, Hook::Character) {
-            0
+        } else if matches!(hook, Hook::Character | Hook::ReverseCharacter) {
+            found_character.unwrap_or(0)
         } else {
             maximum
         })
+    }
+
+    fn extended_string_hook(
+        &mut self,
+        hook: Hook,
+        first: u64,
+        convention: Convention,
+        kind: CallKind,
+    ) -> Result<u64, Stop> {
+        if matches!(hook, Hook::FindByteReverse) {
+            let character = self.argument(1, convention, kind)? as u8;
+            let count = self.argument(2, convention, kind)?;
+            if count > HEAP_SIZE {
+                return Err(Stop::Error("memory search exceeds 16 MiB".into()));
+            }
+            let mut found = None;
+            for offset in 0..count {
+                let Some(address) = first.checked_add(offset) else {
+                    return Err(Stop::Error("memory search address overflows".into()));
+                };
+                if self.read_byte(address)? == character {
+                    found = Some(address);
+                }
+            }
+            return Ok(found.unwrap_or(0));
+        }
+        if matches!(hook, Hook::FindSubstring) {
+            let needle = self.argument(1, convention, kind)?;
+            let mut needle_bytes = Vec::new();
+            let mut needle_ended = false;
+            for offset in 0..HEAP_SIZE {
+                let Some(address) = needle.checked_add(offset) else {
+                    return Err(Stop::Error("substring address overflows".into()));
+                };
+                let byte = self.read_byte(address)?;
+                if byte == 0 {
+                    needle_ended = true;
+                    break;
+                }
+                needle_bytes.push(byte);
+            }
+            if !needle_ended {
+                return Err(Stop::Error("substring needle exceeds 16 MiB".into()));
+            }
+            if needle_bytes.is_empty() {
+                return Ok(first);
+            }
+            for offset in 0..HEAP_SIZE {
+                let Some(address) = first.checked_add(offset) else {
+                    return Err(Stop::Error("substring address overflows".into()));
+                };
+                let byte = self.read_byte(address)?;
+                if byte == 0 {
+                    return Ok(0);
+                }
+                if byte == needle_bytes[0] {
+                    let mut matched = true;
+                    for (index, expected) in needle_bytes.iter().enumerate().skip(1) {
+                        let Some(candidate) = address.checked_add(index as u64) else {
+                            return Err(Stop::Error("substring address overflows".into()));
+                        };
+                        let candidate_byte = self.read_byte(candidate)?;
+                        if candidate_byte == 0 || candidate_byte != *expected {
+                            matched = false;
+                            break;
+                        }
+                    }
+                    if matched {
+                        return Ok(address);
+                    }
+                }
+            }
+            return Err(Stop::Error("string exceeds 16 MiB".into()));
+        }
+        let requested_limit = if matches!(hook, Hook::DuplicateN) {
+            self.argument(1, convention, kind)?
+        } else {
+            HEAP_SIZE
+        };
+        let limit = requested_limit.min(HEAP_SIZE);
+        let mut bytes = Vec::new();
+        let mut string_ended = false;
+        for offset in 0..limit {
+            let Some(address) = first.checked_add(offset) else {
+                return Err(Stop::Error("string address overflows".into()));
+            };
+            let byte = self.read_byte(address)?;
+            if byte == 0 {
+                string_ended = true;
+                break;
+            }
+            bytes.push(byte);
+        }
+        if !string_ended && (matches!(hook, Hook::Duplicate) || requested_limit > HEAP_SIZE) {
+            return Err(Stop::Error("string exceeds 16 MiB".into()));
+        }
+        let address = self.allocate(bytes.len() as u64 + 1);
+        if address == 0 {
+            return Ok(0);
+        }
+        for (offset, byte) in bytes.iter().copied().chain([0]).enumerate() {
+            let Some(destination) = address.checked_add(offset as u64) else {
+                return Err(Stop::Error("string destination overflows".into()));
+            };
+            self.write_byte(destination, byte)?;
+        }
+        Ok(address)
+    }
+
+    fn integer_string_hook(
+        &mut self,
+        hook: Hook,
+        first: u64,
+        convention: Convention,
+        kind: CallKind,
+    ) -> Result<u64, Stop> {
+        let end_pointer = matches!(
+            hook,
+            Hook::IntegerEnd
+                | Hook::LongLongIntegerEnd
+                | Hook::UnsignedIntegerEnd
+                | Hook::UnsignedLongLongIntegerEnd
+        );
+        let end_address = if end_pointer {
+            self.argument(1, convention, kind)?
+        } else {
+            0
+        };
+        let requested_base = if end_pointer {
+            self.argument(2, convention, kind)?
+        } else {
+            10
+        };
+        if requested_base != 0 && !(2..=36).contains(&requested_base) {
+            return Err(Stop::Error(format!(
+                "integer conversion base {requested_base} is outside 0..=36 or 2..=36"
+            )));
+        }
+        let mut bytes = Vec::new();
+        let mut ended = false;
+        for offset in 0..HEAP_SIZE {
+            let Some(address) = first.checked_add(offset) else {
+                return Err(Stop::Error("integer string address overflows".into()));
+            };
+            let byte = self.read_byte(address)?;
+            if byte == 0 {
+                ended = true;
+                break;
+            }
+            bytes.push(byte);
+        }
+        if !ended {
+            return Err(Stop::Error("integer string exceeds 16 MiB".into()));
+        }
+        let mut position = 0;
+        while bytes.get(position).is_some_and(u8::is_ascii_whitespace) {
+            position += 1;
+        }
+        let negative = bytes.get(position) == Some(&b'-');
+        if negative || bytes.get(position) == Some(&b'+') {
+            position += 1;
+        }
+        let mut base = requested_base;
+        let has_hex_prefix = bytes.get(position) == Some(&b'0')
+            && matches!(bytes.get(position + 1), Some(b'x' | b'X'))
+            && bytes
+                .get(position + 2)
+                .and_then(|byte| digit_value(*byte))
+                .is_some_and(|digit| digit < 16);
+        if base == 0 {
+            if has_hex_prefix {
+                base = 16;
+            } else if bytes.get(position) == Some(&b'0') {
+                base = 8;
+            } else {
+                base = 10;
+            }
+        }
+        if base == 16 && has_hex_prefix {
+            position += 2;
+        }
+        let digit_start = position;
+        let unsigned = matches!(
+            hook,
+            Hook::UnsignedIntegerEnd | Hook::UnsignedLongLongIntegerEnd
+        );
+        let bits = match hook {
+            Hook::Integer => 32,
+            Hook::LongInteger | Hook::IntegerEnd | Hook::UnsignedIntegerEnd
+                if matches!(
+                    self.image.format,
+                    crate::loader::Format::Pe | crate::loader::Format::Coff
+                ) =>
+            {
+                32
+            }
+            Hook::LongInteger | Hook::IntegerEnd | Hook::UnsignedIntegerEnd => {
+                u32::from(crate::arch::pointer_bytes(self.image.isa)) * 8
+            }
+            Hook::LongLongIntegerEnd | Hook::UnsignedLongLongIntegerEnd => 64,
+            _ => 64,
+        };
+        let sign_bit = 1u64 << (bits - 1);
+        let limit = if unsigned {
+            if bits == 64 {
+                u64::MAX
+            } else {
+                (1u64 << bits) - 1
+            }
+        } else if negative {
+            sign_bit
+        } else {
+            sign_bit - 1
+        };
+        let mut value = 0u64;
+        let mut overflow = false;
+        while let Some(&byte) = bytes.get(position) {
+            let Some(digit) = digit_value(byte) else {
+                break;
+            };
+            if digit >= base {
+                break;
+            }
+            let next = u128::from(value) * u128::from(base) + u128::from(digit);
+            if next > u128::from(limit) {
+                overflow = true;
+                value = limit;
+            } else {
+                value = next as u64;
+            }
+            position += 1;
+        }
+        if end_pointer && end_address != 0 {
+            let consumed = if position > digit_start { position } else { 0 };
+            let Some(address) = first.checked_add(consumed as u64) else {
+                return Err(Stop::Error("integer end address overflows".into()));
+            };
+            self.machine.store(
+                end_address,
+                address,
+                crate::arch::pointer_bytes(self.image.isa),
+            );
+            self.memory_error()?;
+        }
+        if position == digit_start {
+            return Ok(0);
+        }
+        if overflow && end_pointer {
+            self.set_errno(34)?;
+        }
+        if overflow {
+            return Ok(limit);
+        }
+        let result = if unsigned {
+            if negative {
+                value.wrapping_neg() & limit
+            } else {
+                value
+            }
+        } else if negative {
+            value.wrapping_neg()
+        } else {
+            value
+        };
+        Ok(if bits < 64 {
+            result & ((1u64 << bits) - 1)
+        } else {
+            result
+        })
+    }
+}
+
+fn digit_value(byte: u8) -> Option<u64> {
+    match byte {
+        b'0'..=b'9' => Some(u64::from(byte - b'0')),
+        b'a'..=b'z' => Some(u64::from(byte - b'a' + 10)),
+        b'A'..=b'Z' => Some(u64::from(byte - b'A' + 10)),
+        _ => None,
     }
 }
 

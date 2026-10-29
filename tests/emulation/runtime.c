@@ -76,6 +76,20 @@ extern int CheckRemoteDebuggerPresent(void *, int *);
 extern long syscall(long, ...);
 struct timespec { __INTPTR_TYPE__ tv_sec; __INTPTR_TYPE__ tv_nsec; };
 extern int clock_gettime(int, struct timespec *);
+struct rlimit { unsigned long rlim_cur; unsigned long rlim_max; };
+extern int getrlimit(int, struct rlimit *);
+extern int setrlimit(int, const struct rlimit *);
+extern char *setlocale(int, const char *);
+extern int strcmp(const char *, const char *);
+extern unsigned sleep(unsigned);
+extern int usleep(unsigned);
+extern int nanosleep(const struct timespec *, struct timespec *);
+extern int connect(int, const void *, unsigned);
+extern int bind(int, const void *, unsigned);
+extern int listen(int, int);
+extern int accept(int, void *, unsigned *);
+extern int send(int, const void *, unsigned long, int);
+extern int recv(int, void *, unsigned long, int);
 unsigned network_socket(void) { return (unsigned)socket(2, 1, 0); }
 unsigned process_control(void) { return (unsigned)prctl(38, 1, 0, 0, 0); }
 unsigned ptrace_once(void) { return (unsigned)(ptrace(0, 0, 0, 0) == 0); }
@@ -133,5 +147,88 @@ unsigned sigtrap_handler(void) {
 #else
     return 0;
 #endif
+}
+unsigned sleep_clock(void) {
+    struct timespec first, second;
+    if (clock_gettime(1, &first) != 0 || sleep(2) != 0 || clock_gettime(1, &second) != 0) return 0;
+    return second.tv_sec >= first.tv_sec + 2;
+}
+unsigned usleep_clock(void) {
+    struct timespec first, second;
+    if (clock_gettime(1, &first) != 0 || usleep(10) != 0 || clock_gettime(1, &second) != 0) return 0;
+    return second.tv_sec > first.tv_sec || second.tv_nsec >= first.tv_nsec + 10000;
+}
+unsigned nanosleep_clock(void) {
+    struct timespec first, second, request = { 0, 1234567 };
+    if (clock_gettime(1, &first) != 0 || nanosleep(&request, 0) != 0 || clock_gettime(1, &second) != 0) return 0;
+    return second.tv_sec > first.tv_sec || second.tv_nsec >= first.tv_nsec + request.tv_nsec;
+}
+extern int *__errno_location(void);
+unsigned invalid_sleep_arguments(void) {
+    struct timespec request = { 0, 1000000000 };
+    *__errno_location() = 0;
+    if (usleep(1000000) != -1 || *__errno_location() != 22) return 0;
+    *__errno_location() = 0;
+    return nanosleep(&request, 0) == -1 && *__errno_location() == 22;
+}
+unsigned resource_limit_state(void) {
+    struct rlimit limit;
+    if (getrlimit(0, &limit) != 0) return 0;
+    if (limit.rlim_cur != ~0ul || limit.rlim_max != ~0ul) return 0;
+    limit.rlim_cur = 1;
+    if (setrlimit(0, &limit) != 0 || getrlimit(0, &limit) != 0) return 0;
+    return limit.rlim_cur == 1;
+}
+unsigned invalid_resource_limit(void) {
+    struct rlimit limit;
+    *__errno_location() = 0;
+    if (getrlimit(16, &limit) != -1 || *__errno_location() != 22) return 0;
+    if (getrlimit(0, &limit) != 0) return 0;
+    limit.rlim_cur = 1;
+    limit.rlim_max = 2;
+    if (setrlimit(0, &limit) != 0) return 0;
+    limit.rlim_max = 3;
+    *__errno_location() = 0;
+    return setrlimit(0, &limit) == -1 && *__errno_location() == 1;
+}
+unsigned locale_c(void) {
+    char *name = setlocale(6, "C");
+    return name != 0 && strcmp(name, "C") == 0;
+}
+struct sockaddr_test { unsigned short family; unsigned char bytes[14]; };
+unsigned network_client(void) {
+    int descriptor = socket(2, 1, 0);
+    unsigned short address = 2;
+    char request[] = "PING", response[4];
+    if (descriptor < 0 || connect(descriptor, &address, sizeof(address)) != 0) return 0;
+    if (send(descriptor, request, 4, 0) != 4 || recv(descriptor, response, 4, 0) != 4) return 0;
+    close(descriptor);
+    return response[0] == 'P' && response[1] == 'O' && response[2] == 'N' && response[3] == 'G';
+}
+unsigned network_server(void) {
+    int descriptor = socket(2, 1, 0);
+    unsigned short address = 2;
+    char response[4];
+    if (descriptor < 0 || bind(descriptor, &address, sizeof(address)) != 0 || listen(descriptor, 1) != 0) return 0;
+    struct sockaddr_test peer;
+    unsigned peer_length = sizeof(peer);
+    int client = accept(descriptor, &peer, &peer_length);
+    if (client < 0 || recv(client, response, 4, 0) != 4) return 0;
+    close(client);
+    close(descriptor);
+    return response[0] == 'P' && response[1] == 'O' && response[2] == 'N' && response[3] == 'G' &&
+           peer.family == 2 && peer_length == sizeof(peer);
+}
+unsigned network_after_open(void) {
+    int file = open("/input", 0);
+    int descriptor = socket(2, 1, 0);
+    unsigned short address = 2;
+    char response[4];
+    if (file < 0 || descriptor < 0 || file == descriptor ||
+        connect(descriptor, &address, sizeof(address)) != 0 || recv(descriptor, response, 4, 0) != 4)
+        return 0;
+    close(file);
+    close(descriptor);
+    return response[0] == 'P' && response[1] == 'O' && response[2] == 'N' && response[3] == 'G';
 }
 #endif

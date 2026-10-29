@@ -136,11 +136,23 @@ AArch64 sysreg ビルドの TP + `0x28` です。AArch64 glibc はグローバ�
 
 ## 呼び出しと停止
 
-フック表は `memcpy`、`memmove`、`memset`、`strlen`、`strcmp`、`strncmp`、
-`strcpy`、`malloc`、`calloc`、`free` を実装しています。メモリーのマップと
-保護を確認し、重複する `memcpy` は拒否します。文字列比較は符号なしバイトの差を
-C の `int` として返します。割り当てはヒープ内で整列し、容量不足ならゼロを返します。
+フック表は `memcpy`、`memmove`、`memset`、`memchr`、`memrchr`、`strlen`、
+`strnlen`、`strcmp`、`strncmp`、`strcasecmp`、`strncasecmp`、`strchr`、
+`strrchr`、`strstr`、`memcmp`、`strcpy`、`strncpy`、`strdup`、`strndup`、
+`atoi`、`atol`、`strtol`、`strtoll`、`strtoul`、`strtoull`、`malloc`、
+`calloc`、`realloc`、`free` を実装しています。整数変換は基数0〜36を扱い、
+指定時には終端ポインターを書き込み、オーバーフロー時には `errno` を `ERANGE` にします。
+それ以外の変換結果では `errno` を変更しません。`qsort` と `bsearch` はエミュレートした
+比較関数を呼び出します。メモリー関数はマップと保護を確認し、重複する `memcpy` は拒否します。
+文字列比較は libc と符号が一致するバイト差を返します。割り当てはヒープ内で整列し、
+容量不足ならゼロを返します。`realloc` は旧サイズと要求サイズの小さい方をコピーします。
 `free` はポインターを検証しますが、領域を再利用しません。
+
+`sleep`、`usleep`、`nanosleep` は指定時間だけ決定的なクロックを進めます。各リソースの
+`getrlimit` は `RLIM_INFINITY` から始まり、`setrlimit` はその実行内の値を更新します。
+`setlocale` は `C` と `POSIX` を受け付けます。`socket`、`connect`、`bind`、`listen`、
+`accept`、`send`、`recv`、`close` は `socketPeer` のメモリー内ピアを使い、ホストの
+ソケットは開きません。
 
 内部関数の呼び出しは持ち上げたコードを実行します。インポートスロットへの
 書き込みは呼び出し先を指定したアドレスに変更します。未対応のインポート呼び出しは
@@ -188,6 +200,9 @@ velk --emulate app.elf decode_buffer --emulation-options '{"reads":[{"symbol":"d
 （実行前にホストで読むファイル）のいずれか一つです。上限は16 MiBで、未指定なら EOF
 になります。入力フックは一つの入力列を順に消費します。`argv` はプログラム名を含み、
 argc と末尾がヌルポインタの argv を設定します。`arguments` や Go 関数とは併用できません。
+`socketPeer` も同じ入力形式を受け付け、決定的なメモリー内ピアから `recv` に
+渡すバイト列を指定します。全ソケットが同じ入力列を使い、送信は成功し、
+`close` はエミュレートしたディスクリプターを解放します。
 
 `stdout` と `stderr` は各16 MiBまでです。不正な UTF-8 は置換文字になります。
 `printf`、`fprintf`、`sprintf`、`snprintf` は `%d %i %u %x %X %o %c %s %p %%`、

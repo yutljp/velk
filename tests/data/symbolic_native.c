@@ -4,6 +4,9 @@
 #include <stdlib.h>
 extern long integer_value(const char *, unsigned);
 extern unsigned long integer_end(const char *, unsigned);
+extern int integer_overflow_errno(const char *);
+extern int symbolic_string_search(const char *);
+extern int symbolic_duplicate(const char *);
 extern unsigned case_value(unsigned);
 extern int scan_stream(void), scan_stack(void);
 extern int scan_decimal(void), scan_unsigned(void), scan_hex(void), scan_text(void);
@@ -15,6 +18,14 @@ extern int integer_check(void), integer_hex(void), copy_check(void), output_chec
 extern int bound_descriptor(void);
 extern int argv_one(int, char **), argv_two(int, char **), argv_three(int, char **);
 int main(int argc, char **argv) {
+    if (argc == 3 && strcmp(argv[1], "symbolic_string_search") == 0) {
+        printf("0x%x", symbolic_string_search(argv[2]));
+        return 0;
+    }
+    if (argc == 3 && strcmp(argv[1], "symbolic_duplicate") == 0) {
+        printf("0x%x", symbolic_duplicate(argv[2]));
+        return 0;
+    }
     if (argc == 3 && strcmp(argv[1], "scan_relations") == 0)
         return scan_relations(argv[2]) == 1 ? 0 : 1;
     if (argc >= 3) {
@@ -30,6 +41,10 @@ int main(int argc, char **argv) {
         else if (strcmp(argv[1], "case_value") == 0) value = case_value((unsigned)strtoul(argv[2], 0, 10));
         else return 2;
         printf("0x%lx", value);
+        return 0;
+    }
+    if (argc == 3 && strcmp(argv[1], "integer_overflow_errno") == 0) {
+        printf("0x%x", integer_overflow_errno(argv[2]));
         return 0;
     }
     if (argc != 2) return 2;

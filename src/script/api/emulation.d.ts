@@ -9,6 +9,8 @@ interface EmulationOptions {
   canary?: number | string;
   /** Stdin consumed in order; absent means EOF. At most 16 MiB. */
   stdin?: {text: string} | {hex: string} | {file: string};
+  /** Bytes returned in order by the deterministic socket peer; absent means EOF. */
+  socketPeer?: {text: string} | {hex: string} | {file: string};
   /** Additional descriptors bound to the same stdin stream. */
   stdinDescriptors?: number[];
   /** Virtual path-to-byte map; every opened path needs an entry. No host file access.
