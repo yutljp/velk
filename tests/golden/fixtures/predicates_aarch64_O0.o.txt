@@ -14,11 +14,11 @@
 == 0x0 original
 -- decompile
 /* velk pseudo-C: original @ 0x0 */
-int32_t original(int32_t a0) {
-    return (uint32_t)a0 + 7;
+int32_t original(uint32_t a0) {
+    return a0 + 7;
 }
 -- signature
-int32_t (int32_t a0)
+int32_t (uint32_t a0)
 -- references
 
 -- ir
@@ -31,11 +31,11 @@ fn original @ 0x0 (size 24)
 == 0x18 original64
 -- decompile
 /* velk pseudo-C: original64 @ 0x18 */
-int64_t original64(int64_t a0) {
-    return (uint64_t)a0 + 7;
+int64_t original64(uint64_t a0) {
+    return a0 + 7;
 }
 -- signature
-int64_t (int64_t a0)
+int64_t (uint64_t a0)
 -- references
 
 -- ir
@@ -48,16 +48,16 @@ fn original64 @ 0x18 (size 24)
 == 0x30 original_fixed
 -- decompile
 /* velk pseudo-C: original_fixed @ 0x30 */
-int32_t original_fixed(int32_t a0) {
+int32_t original_fixed(uint32_t a0) {
     uint32_t v2 = a0;
     if ((a0 & 0x1) == 0) {
         return v2 + 7;
     }
-    uint32_t v3 = (uint32_t)a0 + 2;
+    uint32_t v3 = a0 + 2;
     return v3 + 7;
 }
 -- signature
-int32_t (int32_t a0)
+int32_t (uint32_t a0)
 -- references
 
 -- ir
@@ -78,11 +78,11 @@ fn original_fixed @ 0x30 (size 52)
 == 0x64 opaque_parity
 -- decompile
 /* velk pseudo-C: opaque_parity @ 0x64 */
-int32_t opaque_parity(int32_t a0) {
-    return (uint32_t)a0 + 7;
+int32_t opaque_parity(uint32_t a0) {
+    return a0 + 7;
 }
 -- signature
-int32_t (int32_t a0)
+int32_t (uint32_t a0)
 -- references
 
 -- ir
@@ -100,11 +100,11 @@ fn opaque_parity @ 0x64 (size 76)
 == 0xb0 opaque_parity64
 -- decompile
 /* velk pseudo-C: opaque_parity64 @ 0xb0 */
-int64_t opaque_parity64(int64_t a0) {
-    return (uint64_t)a0 + 7;
+int64_t opaque_parity64(uint64_t a0) {
+    return a0 + 7;
 }
 -- signature
-int64_t (int64_t a0)
+int64_t (uint64_t a0)
 -- references
 
 -- ir
@@ -122,11 +122,11 @@ fn opaque_parity64 @ 0xb0 (size 92)
 == 0x10c opaque_bits
 -- decompile
 /* velk pseudo-C: opaque_bits @ 0x10c */
-int32_t opaque_bits(int32_t a0) {
-    return (uint32_t)a0 + 7;
+int32_t opaque_bits(uint32_t a0) {
+    return a0 + 7;
 }
 -- signature
-int32_t (int32_t a0)
+int32_t (uint32_t a0)
 -- references
 
 -- ir
@@ -144,15 +144,15 @@ fn opaque_bits @ 0x10c (size 88)
 == 0x164 opaque_fixed
 -- decompile
 /* velk pseudo-C: opaque_fixed @ 0x164 */
-int32_t opaque_fixed(int32_t a0) {
+int32_t opaque_fixed(uint32_t a0) {
     uint32_t v2 = a0;
     if ((a0 & 0x1) != 0) {
-        v2 = (uint32_t)a0 + 2;
+        v2 = a0 + 2;
     }
     return v2 + 7;
 }
 -- signature
-int32_t (int32_t a0)
+int32_t (uint32_t a0)
 -- references
 
 -- ir
@@ -178,16 +178,16 @@ fn opaque_fixed @ 0x164 (size 104)
 == 0x1cc variable_predicate
 -- decompile
 /* velk pseudo-C: variable_predicate @ 0x1cc */
-int32_t variable_predicate(int32_t a0) {
-    if ((a0 * ((uint32_t)a0 + 2) & 0x1) != 0) {
-        int32_t v1 = (uint32_t)a0 - 19;
+int32_t variable_predicate(uint32_t a0) {
+    if ((a0 * (a0 + 2) & 0x1) != 0) {
+        int32_t v1 = a0 - 19;
         return v1;
     }
-    int32_t v2 = (uint32_t)a0 + 7;
+    int32_t v2 = a0 + 7;
     return v2;
 }
 -- signature
-int32_t (int32_t a0)
+int32_t (uint32_t a0)
 -- references
 
 -- ir

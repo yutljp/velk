@@ -144,11 +144,11 @@ fn seh_finally @ 0x1800010a0 (size 64)
 == 0x1800010e0 seh_finally__finally_0
 -- decompile
 /* velk pseudo-C: seh_finally__finally_0 @ 0x1800010e0 */
-int32_t seh_finally__finally_0(int64_t a0, int64_t a1) {
-    return sub_180001100(a0 & 0xffffffffffffff00 | 0x1, (int64_t)((uint64_t)a1 + 48));
+int32_t seh_finally__finally_0(int64_t a0, uint64_t a1) {
+    return sub_180001100(a0 & 0xffffffffffffff00 | 0x1, a1 + 48);
 }
 -- signature
-int32_t (int64_t a0, int64_t a1)
+int32_t (int64_t a0, uint64_t a1)
 -- references
 
 -- ir
@@ -242,11 +242,11 @@ fn seh_nested @ 0x180001130 (size 94)
 == 0x180001190 seh_nested__finally_0
 -- decompile
 /* velk pseudo-C: seh_nested__finally_0 @ 0x180001190 */
-int64_t seh_nested__finally_0(int64_t a0, int64_t a1) {
-    return sub_1800011c0(a0 & 0xffffffffffffff00 | 0x1, (int64_t)((uint64_t)a1 + 64));
+int64_t seh_nested__finally_0(int64_t a0, uint64_t a1) {
+    return sub_1800011c0(a0 & 0xffffffffffffff00 | 0x1, a1 + 64);
 }
 -- signature
-int64_t (int64_t a0, int64_t a1)
+int64_t (int64_t a0, uint64_t a1)
 -- references
 
 -- ir

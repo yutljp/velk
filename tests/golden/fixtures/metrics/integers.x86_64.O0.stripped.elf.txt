@@ -50,11 +50,11 @@ fn <unnamed> @ 0x2012a0 (size 32)
 == 0x2012c0 -
 -- decompile
 /* velk pseudo-C: sub_2012c0 @ 0x2012c0 */
-int64_t sub_2012c0(int32_t a0, int32_t a1) {
-    return (int64_t)a0 - (uint32_t)a1;
+int64_t sub_2012c0(int32_t a0, uint32_t a1) {
+    return (int64_t)a0 - a1;
 }
 -- signature
-int64_t (int32_t a0, int32_t a1)
+int64_t (int32_t a0, uint32_t a1)
 -- references
 
 -- ir
@@ -96,11 +96,11 @@ fn <unnamed> @ 0x2012e0 (size 52)
 == 0x201320 -
 -- decompile
 /* velk pseudo-C: sub_201320 @ 0x201320 */
-uint32_t sub_201320(uint32_t a0, int32_t a1) {
-    return a0 << (a1 & 0x1f) | a0 >> (32 - (uint32_t)a1 & 0x1f);
+uint32_t sub_201320(uint32_t a0, uint32_t a1) {
+    return a0 << (a1 & 0x1f) | a0 >> (32 - a1 & 0x1f);
 }
 -- signature
-uint32_t (uint32_t a0, int32_t a1)
+uint32_t (uint32_t a0, uint32_t a1)
 -- references
 
 -- ir

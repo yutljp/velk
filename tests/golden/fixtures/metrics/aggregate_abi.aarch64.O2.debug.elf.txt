@@ -30,7 +30,7 @@ struct abi_pair abi_pair_adjust(struct abi_pair value, unsigned long long tail) 
     }
 }
 -- signature
-int64_t (int64_t a0, int64_t a1, int64_t a2)
+int64_t (uint64_t a0, int64_t a1, uint64_t a2)
 -- references
 
 -- ir
@@ -203,7 +203,7 @@ unsigned long long abi_exhaust_five(unsigned long long a, unsigned long long b, 
     return tail * 19 + (value.low * 13 + (e * 11 + (b * 3 + a + c * 5 - d + (d << 3))) + value.high * 17);
 }
 -- signature
-int64_t (int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5, int64_t a6, int64_t a7)
+int64_t (uint64_t a0, uint64_t a1, uint64_t a2, uint64_t a3, uint64_t a4, uint64_t a5, uint64_t a6, uint64_t a7)
 -- references
 
 -- ir
@@ -221,7 +221,7 @@ unsigned long long abi_exhaust_seven(unsigned long long a, unsigned long long b,
     return tail * 29 + (value.high * 23 + (value.low * 19 + (f * 13 + (e * 11 + (b * 3 + a + c * 5 - d + (d << 3))) + g * 17)));
 }
 -- signature
-int64_t (int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5, int64_t a6)
+int64_t (uint64_t a0, uint64_t a1, uint64_t a2, uint64_t a3, uint64_t a4, uint64_t a5, uint64_t a6)
 -- references
 
 -- ir
@@ -249,7 +249,7 @@ struct abi_triple abi_indirect_make(struct abi_pair value, unsigned long long de
     return result;
 }
 -- signature
-void (int64_t a0, int64_t a1, int64_t a2, int64_t a3)
+void (uint64_t a0, uint64_t a1, uint64_t a2, uint64_t a3)
 -- references
 
 -- ir
@@ -273,7 +273,7 @@ unsigned long long abi_exhaust_five_aligned(unsigned long long a, unsigned long 
     return tail * 19 + (value.low * 13 + (e * 11 + (b * 3 + a + c * 5 - d + (d << 3))) + value.high * 17);
 }
 -- signature
-int64_t (int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5, int64_t a6, int64_t a7)
+int64_t (uint64_t a0, uint64_t a1, uint64_t a2, uint64_t a3, uint64_t a4, uint64_t a5, uint64_t a6, uint64_t a7)
 -- references
 
 -- ir
@@ -294,7 +294,7 @@ unsigned long long abi_exhaust_seven_aligned(unsigned long long a, unsigned long
     return tail * 29 + (value.high * 23 + (value.low * 19 + (f * 13 + (e * 11 + (b * 3 + a + c * 5 - d + (d << 3))) + g * 17)));
 }
 -- signature
-int64_t (int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5, int64_t a6)
+int64_t (uint64_t a0, uint64_t a1, uint64_t a2, uint64_t a3, uint64_t a4, uint64_t a5, uint64_t a6)
 -- references
 
 -- ir

@@ -11,11 +11,11 @@ uint64_t sub_210194();
 == 0x210194 -
 -- decompile
 /* velk pseudo-C: sub_210194 @ 0x210194 */
-int32_t sub_210194(int32_t a0) {
-    return (uint32_t)a0 * 3 + 1;
+int32_t sub_210194(uint32_t a0) {
+    return a0 * 3 + 1;
 }
 -- signature
-int32_t (int32_t a0)
+int32_t (uint32_t a0)
 -- references
 
 -- ir
@@ -28,11 +28,11 @@ fn <unnamed> @ 0x210194 (size 40)
 == 0x2101bc -
 -- decompile
 /* velk pseudo-C: sub_2101bc @ 0x2101bc */
-int32_t sub_2101bc(int32_t a0) {
-    return sub_210194((uint32_t)a0 + 2);
+int32_t sub_2101bc(uint32_t a0) {
+    return sub_210194(a0 + 2);
 }
 -- signature
-int32_t (int32_t a0)
+int32_t (uint32_t a0)
 -- references
 
 -- ir
@@ -46,11 +46,11 @@ fn <unnamed> @ 0x2101bc (size 40)
 == 0x2101e4 -
 -- decompile
 /* velk pseudo-C: sub_2101e4 @ 0x2101e4 */
-int32_t sub_2101e4(int32_t a0) {
-    return (uint32_t)a0 - 7;
+int32_t sub_2101e4(uint32_t a0) {
+    return a0 - 7;
 }
 -- signature
-int32_t (int32_t a0)
+int32_t (uint32_t a0)
 -- references
 
 -- ir

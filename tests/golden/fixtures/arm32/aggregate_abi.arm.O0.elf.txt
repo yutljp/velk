@@ -577,7 +577,7 @@ fn abi_exhaust_five @ 0x20380 (size 392)
 == 0x20508 abi_exhaust_seven
 -- decompile
 /* velk pseudo-C: abi_exhaust_seven @ 0x20508 */
-int32_t abi_exhaust_seven(int32_t a0, int32_t a1, int32_t a2, int32_t a3) {
+int32_t abi_exhaust_seven(int32_t a0, uint32_t a1, int32_t a2, uint32_t a3) {
     uint64_t sp = velk_entry_stack_pointer();
     uint32_t v1;
     uint32_t v11;
@@ -639,7 +639,7 @@ int32_t abi_exhaust_seven(int32_t a0, int32_t a1, int32_t a2, int32_t a3) {
     uint8_t v18 = v16 >> 32;
     uint32_t v19 = a0 + v17;
     uint8_t v20 = v19 - v17 > (v17 ^ 0xffffffff);
-    uint8_t v21 = a1 + (v18 + (uint32_t)a3 * 3) + v20;
+    uint8_t v21 = a1 + (v18 + a3 * 3) + v20;
     uint64_t v23 = (uint64_t)v10 * 5;
     uint32_t v24 = v23;
     uint8_t v25 = v23 >> 32;
@@ -700,7 +700,7 @@ int32_t abi_exhaust_seven(int32_t a0, int32_t a1, int32_t a2, int32_t a3) {
     return v76 | (uint64_t)v78 << 32;
 }
 -- signature
-int32_t (int32_t a0, int32_t a1, int32_t a2, int32_t a3)
+int32_t (int32_t a0, uint32_t a1, int32_t a2, uint32_t a3)
 -- references
 
 -- ir
@@ -1144,7 +1144,7 @@ fn abi_exhaust_five_aligned @ 0x207ac (size 392)
 == 0x20934 abi_exhaust_seven_aligned
 -- decompile
 /* velk pseudo-C: abi_exhaust_seven_aligned @ 0x20934 */
-int32_t abi_exhaust_seven_aligned(int32_t a0, int32_t a1, int32_t a2, int32_t a3) {
+int32_t abi_exhaust_seven_aligned(int32_t a0, uint32_t a1, int32_t a2, uint32_t a3) {
     uint64_t sp = velk_entry_stack_pointer();
     uint32_t v1;
     uint32_t v11;
@@ -1206,7 +1206,7 @@ int32_t abi_exhaust_seven_aligned(int32_t a0, int32_t a1, int32_t a2, int32_t a3
     uint8_t v18 = v16 >> 32;
     uint32_t v19 = a0 + v17;
     uint8_t v20 = v19 - v17 > (v17 ^ 0xffffffff);
-    uint8_t v21 = a1 + (v18 + (uint32_t)a3 * 3) + v20;
+    uint8_t v21 = a1 + (v18 + a3 * 3) + v20;
     uint64_t v23 = (uint64_t)v10 * 5;
     uint32_t v24 = v23;
     uint8_t v25 = v23 >> 32;
@@ -1267,7 +1267,7 @@ int32_t abi_exhaust_seven_aligned(int32_t a0, int32_t a1, int32_t a2, int32_t a3
     return v76 | (uint64_t)v78 << 32;
 }
 -- signature
-int32_t (int32_t a0, int32_t a1, int32_t a2, int32_t a3)
+int32_t (int32_t a0, uint32_t a1, int32_t a2, uint32_t a3)
 -- references
 
 -- ir

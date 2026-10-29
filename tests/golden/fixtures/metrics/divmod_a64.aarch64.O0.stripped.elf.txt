@@ -320,11 +320,11 @@ fn <unnamed> @ 0x21058c (size 36)
 == 0x2105b0 -
 -- decompile
 /* velk pseudo-C: sub_2105b0 @ 0x2105b0 */
-int32_t sub_2105b0(int32_t a0) {
-    return -(uint32_t)a0;
+int32_t sub_2105b0(uint32_t a0) {
+    return -a0;
 }
 -- signature
-int32_t (int32_t a0)
+int32_t (uint32_t a0)
 -- references
 
 -- ir
@@ -388,11 +388,11 @@ fn <unnamed> @ 0x210604 (size 28)
 == 0x210620 -
 -- decompile
 /* velk pseudo-C: sub_210620 @ 0x210620 */
-int64_t sub_210620(int64_t a0) {
-    return -(uint64_t)a0;
+int64_t sub_210620(uint64_t a0) {
+    return -a0;
 }
 -- signature
-int64_t (int64_t a0)
+int64_t (uint64_t a0)
 -- references
 
 -- ir

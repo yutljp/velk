@@ -320,11 +320,11 @@ fn <unnamed> @ 0x201650 (size 22)
 == 0x201670 -
 -- decompile
 /* velk pseudo-C: sub_201670 @ 0x201670 */
-int32_t sub_201670(int32_t a0) {
-    return -(uint32_t)a0;
+int32_t sub_201670(uint32_t a0) {
+    return -a0;
 }
 -- signature
-int32_t (int32_t a0)
+int32_t (uint32_t a0)
 -- references
 
 -- ir
@@ -388,11 +388,11 @@ fn <unnamed> @ 0x2016c0 (size 21)
 == 0x2016e0 -
 -- decompile
 /* velk pseudo-C: sub_2016e0 @ 0x2016e0 */
-int64_t sub_2016e0(int64_t a0) {
-    return -(uint64_t)a0;
+int64_t sub_2016e0(uint64_t a0) {
+    return -a0;
 }
 -- signature
-int64_t (int64_t a0)
+int64_t (uint64_t a0)
 -- references
 
 -- ir

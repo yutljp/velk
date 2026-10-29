@@ -136,11 +136,11 @@ fn record_total @ 0x180001010 (size 176)
 == 0x1800010c0 point_add
 -- decompile
 /* velk pseudo-C: point_add @ 0x1800010c0 */
-int64_t point_add(int64_t a0, int64_t a1) {
-    return (int64_t)((uint64_t)a0 + a1) & 0xffffffff | (a1 & 0xffffffff00000000) + a0 & 0xffffffff00000000;
+int64_t point_add(uint64_t a0, uint64_t a1) {
+    return (a0 + a1) & 0xffffffff | (a1 & 0xffffffff00000000) + a0 & 0xffffffff00000000;
 }
 -- signature
-int64_t (int64_t a0, int64_t a1)
+int64_t (uint64_t a0, uint64_t a1)
 -- references
 
 -- ir
@@ -153,15 +153,15 @@ fn point_add @ 0x1800010c0 (size 32)
 == 0x1800010e0 big_make
 -- decompile
 /* velk pseudo-C: big_make @ 0x1800010e0 */
-struct S1 *big_make(struct S1 *a0, int32_t a1) {
+struct S1 *big_make(struct S1 *a0, uint32_t a1) {
     a0->f_0 = a1;
-    a0->f_4 = (uint32_t)a1 + 1;
-    a0->f_8 = (uint32_t)a1 * 2;
-    a0->f_c = (uint32_t)a1 * 3;
+    a0->f_4 = a1 + 1;
+    a0->f_8 = a1 * 2;
+    a0->f_c = a1 * 3;
     return a0;
 }
 -- signature
-struct S1 * (struct S1 * a0, int32_t a1)
+struct S1 * (struct S1 * a0, uint32_t a1)
 -- references
 
 -- ir
@@ -232,13 +232,13 @@ fn flags_level @ 0x180001130 (size 32)
 == 0x180001150 flags_set_mode
 -- decompile
 /* velk pseudo-C: flags_set_mode @ 0x180001150 */
-int32_t flags_set_mode(uint32_t *a0, int32_t a1) {
+int32_t flags_set_mode(uint32_t *a0, uint32_t a1) {
     int32_t v1 = (*a0 & 0xfffffff1) + (a1 & 0x7) * 2;
     *a0 = v1;
     return v1;
 }
 -- signature
-int32_t (uint32_t * a0, int32_t a1)
+int32_t (uint32_t * a0, uint32_t a1)
 -- references
 
 -- ir

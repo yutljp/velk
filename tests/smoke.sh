@@ -104,8 +104,8 @@ ok "ir sum_arr"
 
 # 5) pseudo-C output
 sum3_c=$("$BIN" --decompile $FIX/arm64.o sum3 2>/dev/null)
-echo "$sum3_c" | grep "int32_t sum3(int32_t a0, int32_t a1, int32_t a2)" >/dev/null || fail "decompile sum3 signature"
-echo "$sum3_c" | grep "return (uint32_t)a1 + a0 + a2;"   >/dev/null || fail "decompile sum3 fold"
+echo "$sum3_c" | grep "int32_t sum3(uint32_t a0, uint32_t a1, uint32_t a2)" >/dev/null || fail "decompile sum3 signature"
+echo "$sum3_c" | grep "return a1 + a0 + a2;"   >/dev/null || fail "decompile sum3 fold"
 [ "$(echo "$sum3_c" | grep -c '0xffffffff')" -eq 0 ] || fail "decompile sum3 masks"
 echo "$sum3_c" | grep "return "               >/dev/null || fail "decompile sum3 return"
 echo "$sum3_ir" | grep -F "ret (((w1 + w0) + w2) & #0xffffffff)" >/dev/null || fail "ir sum3 width"
@@ -167,7 +167,7 @@ decompile|sm10|arm64_div.o|smod10
 match|sm10|int32_t smod10|msub mod10 signed width
 decompile|sm3x|x64_div.o|smod3x
 decompile|ng|arm64_div.o|negate
-match|ng|return -(uint32_t)a0;|negate render
+match|ng|return -a0;|negate render
 reject|ng|0 -|negate render kept 0 - x
 match|sm3x|int32_t smod3x(|x86 lea mod3 signed width
 match|sm4|% 4|cset-pow2 mod s32
@@ -272,7 +272,7 @@ ok "if/else structuring"
 sig_zero=$("$BIN" --decompile $FIX/arm64_div.o is_zero 2>/dev/null)
 echo "$sig_zero" | grep "int32_t is_zero(int32_t a0)" >/dev/null || fail "boolean signature by usage"
 sig_mul=$("$BIN" --decompile $FIX/pe64.exe reg_mul 2>/dev/null)
-echo "$sig_mul" | grep "int32_t reg_mul(int32_t a0, int32_t a1)" >/dev/null || fail "mul signature by usage"
+echo "$sig_mul" | grep "int32_t reg_mul(uint32_t a0, uint32_t a1)" >/dev/null || fail "mul signature by usage"
 sig_h=$("$BIN" --decompile $FIX/x64_div.o h10 2>/dev/null)
 echo "$sig_h" | grep -E "uint64_t _?h10\(uint64_t a0\)" >/dev/null || fail "wide signature kept"
 sig_helper=$("$BIN" --decompile $FIX/arm64.o helper 2>/dev/null)
@@ -567,8 +567,8 @@ closed_pipe=$( { "$BIN" --functions $FIX/go_probe --limit 100000 | head -1 >/dev
 ok "closed pipe"
 
 x86_c=$("$BIN" --decompile $FIX/pe64.exe reg_add 2>/dev/null)
-echo "$x86_c" | grep "int32_t reg_add(int32_t a0, int32_t a1)" >/dev/null || fail "x86 decompile signature"
-echo "$x86_c" | grep "return (uint32_t)a0 + a1;"         >/dev/null || fail "x86 decompile return"
+echo "$x86_c" | grep "int32_t reg_add(uint32_t a0, uint32_t a1)" >/dev/null || fail "x86 decompile signature"
+echo "$x86_c" | grep "return a0 + a1;"         >/dev/null || fail "x86 decompile return"
 ok "x86 decompile"
 
 # 7) short bodies confirm callees without supplying names
@@ -693,7 +693,7 @@ echo "$macho_json" | grep '"format": "macho"'   >/dev/null || fail "Mach-O forma
 macho_c=$("$BIN" --decompile $FIX/x64_div_macho.o _umod3x 2>/dev/null)
 echo "$macho_c" | grep "return a0 % 3;"     >/dev/null || fail "Mach-O x86-64 decompile"
 macho_a64=$("$BIN" --decompile $FIX/arm64_macho.o _sum3 2>/dev/null)
-echo "$macho_a64" | grep "sum3(int32_t a0, int32_t a1, int32_t a2)" >/dev/null || fail "Mach-O AArch64 decompile"
+echo "$macho_a64" | grep "sum3(uint32_t a0, uint32_t a1, uint32_t a2)" >/dev/null || fail "Mach-O AArch64 decompile"
 macho_c_name=$("$BIN" --decompile $FIX/arm64_macho.o sum3 2>/dev/null)
 [ "$macho_a64" = "$macho_c_name" ] || fail "Mach-O C name lookup"
 echo "$macho_json" | grep '"name": "_umod3x"' >/dev/null || fail "Mach-O listing link name"

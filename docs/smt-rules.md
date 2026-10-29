@@ -23,6 +23,12 @@ from assignment cast removal because the latter can denote `_Bool`. Destinations
 of at most 32 bits on i386 and ARM32 also retain their casts: address locals may
 be declared as `uintptr_t`, which is wider when compiled on a 64-bit host.
 
+Parameters at 32 or 64 bits used in wrapping addition, subtraction, multiplication or as the
+left operand of a left shift are declared unsigned when no signed operation or explicit signed
+constraint reads them. Signed uses keep the signed declaration. SMT checks compare the unsigned
+operations' low bits with the machine result; recompile tests exercise boundary values on all
+four instruction-set models. This does not infer return signedness from callers.
+
 The normal Rust unit suite includes test-only Z3 checks. Run them with
 `cargo test --release --lib smt -- --test-threads 3 --nocapture`.
 Integer predicate and dominating-guard checks also run with

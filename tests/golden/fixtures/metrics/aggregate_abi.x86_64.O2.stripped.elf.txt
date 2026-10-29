@@ -22,11 +22,11 @@ struct velk_vector { union { uint64_t u64; int64_t s64; uint32_t u32; int32_t s3
 == 0x201220 -
 -- decompile
 /* velk pseudo-C: sub_201220 @ 0x201220 */
-int64_t sub_201220(int64_t a0, int64_t a1, int64_t a2) {
-    return (uint64_t)a0 + a2;
+int64_t sub_201220(uint64_t a0, int64_t a1, uint64_t a2) {
+    return a0 + a2;
 }
 -- signature
-int64_t (int64_t a0, int64_t a1, int64_t a2)
+int64_t (uint64_t a0, int64_t a1, uint64_t a2)
 -- references
 
 -- ir
@@ -149,11 +149,11 @@ fn <unnamed> @ 0x201290 (size 33)
 == 0x2012c0 -
 -- decompile
 /* velk pseudo-C: sub_2012c0 @ 0x2012c0 */
-int64_t sub_2012c0(int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5, int64_t a6, int64_t a7) {
-    return (int64_t)((uint64_t)a5 * 19 + (int64_t)((uint64_t)a4 * 11 + (int64_t)((uint64_t)a3 * 7) + (int64_t)((uint64_t)a2 * 5 + (int64_t)((uint64_t)a1 * 3 + a0)))) + a6 * 13 + a7 * 17;
+int64_t sub_2012c0(uint64_t a0, uint64_t a1, uint64_t a2, uint64_t a3, uint64_t a4, uint64_t a5, int64_t a6, int64_t a7) {
+    return a5 * 19 + (a4 * 11 + a3 * 7 + (a2 * 5 + (a1 * 3 + a0))) + a6 * 13 + a7 * 17;
 }
 -- signature
-int64_t (int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5)
+int64_t (uint64_t a0, uint64_t a1, uint64_t a2, uint64_t a3, uint64_t a4, uint64_t a5)
 -- references
 
 -- ir
@@ -166,11 +166,11 @@ fn <unnamed> @ 0x2012c0 (size 85)
 == 0x201320 -
 -- decompile
 /* velk pseudo-C: sub_201320 @ 0x201320 */
-int64_t sub_201320(int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5, int64_t a6, int64_t a7, int64_t a8, int64_t a9) {
-    return a9 * 29 + (a6 * 17 + (int64_t)((uint64_t)a5 * 13 + (int64_t)((uint64_t)a4 * 11 + (int64_t)((uint64_t)a3 * 7) + (int64_t)((uint64_t)a2 * 5 + (int64_t)((uint64_t)a1 * 3 + a0))))) + (a8 * 23 + a7 * 19);
+int64_t sub_201320(uint64_t a0, uint64_t a1, uint64_t a2, uint64_t a3, uint64_t a4, uint64_t a5, int64_t a6, int64_t a7, int64_t a8, int64_t a9) {
+    return a9 * 29 + (a6 * 17 + (a5 * 13 + (a4 * 11 + a3 * 7 + (a2 * 5 + (a1 * 3 + a0))))) + (a8 * 23 + a7 * 19);
 }
 -- signature
-int64_t (int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5)
+int64_t (uint64_t a0, uint64_t a1, uint64_t a2, uint64_t a3, uint64_t a4, uint64_t a5)
 -- references
 
 -- ir
@@ -183,14 +183,14 @@ fn <unnamed> @ 0x201320 (size 126)
 == 0x2013a0 -
 -- decompile
 /* velk pseudo-C: sub_2013a0 @ 0x2013a0 */
-struct S1 *sub_2013a0(struct S1 *a0, int64_t a1, int64_t a2, int64_t a3) {
-    a0->f_0 = (int64_t)((uint64_t)a3 + a1);
+struct S1 *sub_2013a0(struct S1 *a0, uint64_t a1, uint64_t a2, uint64_t a3) {
+    a0->f_0 = a3 + a1;
     a0->f_8 = a3 ^ a2;
-    a0->f_10 = (int64_t)((uint64_t)a1 - a2);
+    a0->f_10 = a1 - a2;
     return a0;
 }
 -- signature
-struct S1 * (struct S1 * a0, int64_t a1, int64_t a2, int64_t a3)
+struct S1 * (struct S1 * a0, uint64_t a1, uint64_t a2, uint64_t a3)
 -- references
 
 -- ir
@@ -207,11 +207,11 @@ fn <unnamed> @ 0x2013a0 (size 25)
 == 0x2013c0 -
 -- decompile
 /* velk pseudo-C: sub_2013c0 @ 0x2013c0 */
-int64_t sub_2013c0(int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5, int64_t a6, int64_t a7) {
-    return (int64_t)((uint64_t)a5 * 19 + (int64_t)((uint64_t)a4 * 11 + (int64_t)((uint64_t)a3 * 7) + (int64_t)((uint64_t)a2 * 5 + (int64_t)((uint64_t)a1 * 3 + a0)))) + a6 * 13 + a7 * 17;
+int64_t sub_2013c0(uint64_t a0, uint64_t a1, uint64_t a2, uint64_t a3, uint64_t a4, uint64_t a5, int64_t a6, int64_t a7) {
+    return a5 * 19 + (a4 * 11 + a3 * 7 + (a2 * 5 + (a1 * 3 + a0))) + a6 * 13 + a7 * 17;
 }
 -- signature
-int64_t (int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5)
+int64_t (uint64_t a0, uint64_t a1, uint64_t a2, uint64_t a3, uint64_t a4, uint64_t a5)
 -- references
 
 -- ir
@@ -224,11 +224,11 @@ fn <unnamed> @ 0x2013c0 (size 85)
 == 0x201420 -
 -- decompile
 /* velk pseudo-C: sub_201420 @ 0x201420 */
-int64_t sub_201420(int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5, int64_t a6, int64_t a7, int64_t a8, int64_t a9) {
-    return a9 * 29 + (a6 * 17 + (int64_t)((uint64_t)a5 * 13 + (int64_t)((uint64_t)a4 * 11 + (int64_t)((uint64_t)a3 * 7) + (int64_t)((uint64_t)a2 * 5 + (int64_t)((uint64_t)a1 * 3 + a0))))) + (a8 * 23 + a7 * 19);
+int64_t sub_201420(uint64_t a0, uint64_t a1, uint64_t a2, uint64_t a3, uint64_t a4, uint64_t a5, int64_t a6, int64_t a7, int64_t a8, int64_t a9) {
+    return a9 * 29 + (a6 * 17 + (a5 * 13 + (a4 * 11 + a3 * 7 + (a2 * 5 + (a1 * 3 + a0))))) + (a8 * 23 + a7 * 19);
 }
 -- signature
-int64_t (int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5)
+int64_t (uint64_t a0, uint64_t a1, uint64_t a2, uint64_t a3, uint64_t a4, uint64_t a5)
 -- references
 
 -- ir

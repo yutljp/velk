@@ -212,7 +212,7 @@ JSON.stringify([link.name, c.name, link.decompile(), c.decompile(), c.card().nam
     assert_eq!(values[1], "_sum3");
     assert_eq!(values[2], values[3]);
     assert_eq!(values[4], "_sum3");
-    assert!(values[2].contains("sum3(int32_t"), "{}", values[2]);
+    assert!(values[2].contains("sum3(uint32_t"), "{}", values[2]);
 }
 
 /// Field names per interface, split into required and optional (`name?:`).

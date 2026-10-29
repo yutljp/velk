@@ -305,11 +305,11 @@ fn <unnamed> @ 0x1800011e0 (size 32)
 -- decompile
 /* velk pseudo-C: sub_180001200 @ 0x180001200 */
 /* ref: 0x180003000 .data */
-int32_t sub_180001200(int32_t a0, int32_t a1) {
+int32_t sub_180001200(uint32_t a0, uint32_t a1) {
     return g_180003000[(a0 & 0x3) * 8 + (a1 & 0x7)];
 }
 -- signature
-int32_t (int32_t a0, int32_t a1)
+int32_t (uint32_t a0, uint32_t a1)
 -- references
 0x180003000 .data
 -- ir
@@ -323,13 +323,13 @@ fn <unnamed> @ 0x180001200 (size 32)
 -- decompile
 /* velk pseudo-C: sub_180001220 @ 0x180001220 */
 /* ref: 0x180003000 .data */
-int64_t sub_180001220(int32_t a0, int32_t a1, int32_t a2) {
+int64_t sub_180001220(uint32_t a0, uint32_t a1, int32_t a2) {
     uint32_t *v2 = (uint32_t *)(0x180003000 + ((a0 & 0x3) << 5));
     v2[a1 & 0x7] = a2;
     return (uintptr_t)v2;
 }
 -- signature
-int64_t (int32_t a0, int32_t a1, int32_t a2)
+int64_t (uint32_t a0, uint32_t a1, int32_t a2)
 -- references
 0x180003000 .data
 -- ir

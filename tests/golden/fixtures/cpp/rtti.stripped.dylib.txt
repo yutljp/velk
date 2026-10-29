@@ -510,11 +510,11 @@ fn <unnamed> @ 0x7b8 (size 12)
 == 0x7c4 -
 -- decompile
 /* velk pseudo-C: sub_7c4 @ 0x7c4 */
-int32_t sub_7c4(int64_t a0) {
-    return sub_7b8((int64_t)((uint64_t)a0 - 16));
+int32_t sub_7c4(uint64_t a0) {
+    return sub_7b8(a0 - 16);
 }
 -- signature
-int32_t (int64_t a0)
+int32_t (uint64_t a0)
 -- references
 
 -- ir
@@ -598,13 +598,13 @@ fn <unnamed> @ 0x7d8 (size 8)
 == 0x7e0 -
 -- decompile
 /* velk pseudo-C: sub_7e0 @ 0x7e0 */
-int32_t sub_7e0(int64_t a0) {
-    int64_t v1 = (uint64_t)a0 - 16;
+int32_t sub_7e0(uint64_t a0) {
+    int64_t v1 = a0 - 16;
     sub_7d8(v1);
     return v1;
 }
 -- signature
-int32_t (int64_t a0)
+int32_t (uint64_t a0)
 -- references
 
 -- ir

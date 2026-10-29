@@ -736,7 +736,7 @@ fn abi_exhaust_five @ 0x20318 (size 262)
 == 0x20420 abi_exhaust_seven
 -- decompile
 /* velk pseudo-C: abi_exhaust_seven @ 0x20420 */
-int32_t abi_exhaust_seven(int32_t a0, int32_t a1, int32_t a2, int32_t a3) {
+int32_t abi_exhaust_seven(int32_t a0, uint32_t a1, int32_t a2, int32_t a3) {
     uint64_t sp = velk_entry_stack_pointer();
     uint32_t v1;
     uint32_t v12;
@@ -831,7 +831,7 @@ int32_t abi_exhaust_seven(int32_t a0, int32_t a1, int32_t a2, int32_t a3) {
     return v77 | (uint64_t)v79 << 32;
 }
 -- signature
-int32_t (int32_t a0, int32_t a1, int32_t a2, int32_t a3)
+int32_t (int32_t a0, uint32_t a1, int32_t a2, int32_t a3)
 -- references
 
 -- ir
@@ -1182,7 +1182,7 @@ fn abi_exhaust_five_aligned @ 0x205d4 (size 262)
 == 0x206dc abi_exhaust_seven_aligned
 -- decompile
 /* velk pseudo-C: abi_exhaust_seven_aligned @ 0x206dc */
-int32_t abi_exhaust_seven_aligned(int32_t a0, int32_t a1, int32_t a2, int32_t a3) {
+int32_t abi_exhaust_seven_aligned(int32_t a0, uint32_t a1, int32_t a2, int32_t a3) {
     uint64_t sp = velk_entry_stack_pointer();
     uint32_t v1;
     uint32_t v12;
@@ -1277,7 +1277,7 @@ int32_t abi_exhaust_seven_aligned(int32_t a0, int32_t a1, int32_t a2, int32_t a3
     return v77 | (uint64_t)v79 << 32;
 }
 -- signature
-int32_t (int32_t a0, int32_t a1, int32_t a2, int32_t a3)
+int32_t (int32_t a0, uint32_t a1, int32_t a2, int32_t a3)
 -- references
 
 -- ir

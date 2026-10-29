@@ -206,12 +206,12 @@ fn <unnamed> @ 0x210384 (size 76)
 == 0x2103d0 -
 -- decompile
 /* velk pseudo-C: sub_2103d0 @ 0x2103d0 */
-uint8_t *sub_2103d0(uint8_t *a0, int32_t a1) {
+uint8_t *sub_2103d0(uint8_t *a0, uint32_t a1) {
     *a0 = *a0 & 0xfffffff1 | (a1 & 0x7) << 1;
     return a0;
 }
 -- signature
-uint8_t * (uint8_t * a0, int32_t a1)
+uint8_t * (uint8_t * a0, uint32_t a1)
 -- references
 
 -- ir

@@ -57,11 +57,11 @@ uint64_t sub_210400();
 == 0x2102c4 -
 -- decompile
 /* velk pseudo-C: sub_2102c4 @ 0x2102c4 */
-int32_t sub_2102c4(int32_t a0) {
-    return (uint64_t)a0 << 1;
+int32_t sub_2102c4(uint32_t a0) {
+    return a0 << 1;
 }
 -- signature
-int32_t (int32_t a0)
+int32_t (uint32_t a0)
 -- references
 
 -- ir
@@ -74,11 +74,11 @@ fn <unnamed> @ 0x2102c4 (size 8)
 == 0x2102cc -
 -- decompile
 /* velk pseudo-C: sub_2102cc @ 0x2102cc */
-int32_t sub_2102cc(int32_t a0) {
-    return (uint32_t)a0 * a0;
+int32_t sub_2102cc(uint32_t a0) {
+    return a0 * a0;
 }
 -- signature
-int32_t (int32_t a0)
+int32_t (uint32_t a0)
 -- references
 
 -- ir
@@ -246,14 +246,14 @@ fn <unnamed> @ 0x21033c (size 160)
 == 0x2103dc -
 -- decompile
 /* velk pseudo-C: sub_2103dc @ 0x2103dc */
-int32_t sub_2103dc(int32_t a0) {
+int32_t sub_2103dc(uint32_t a0) {
     if (a0 == 0) {
         return 0;
     }
-    return sub_2103ec((uint32_t)a0 - 1);
+    return sub_2103ec(a0 - 1);
 }
 -- signature
-int32_t (int32_t a0)
+int32_t (uint32_t a0)
 -- references
 
 -- ir
@@ -271,14 +271,14 @@ fn <unnamed> @ 0x2103dc (size 16)
 == 0x2103ec -
 -- decompile
 /* velk pseudo-C: sub_2103ec @ 0x2103ec */
-int32_t sub_2103ec(int32_t a0) {
+int32_t sub_2103ec(uint32_t a0) {
     if (a0 == 0) {
         return 1;
     }
-    return sub_2103dc((uint32_t)a0 - 1);
+    return sub_2103dc(a0 - 1);
 }
 -- signature
-int32_t (int32_t a0)
+int32_t (uint32_t a0)
 -- references
 
 -- ir
@@ -296,11 +296,11 @@ fn <unnamed> @ 0x2103ec (size 20)
 == 0x210400 -
 -- decompile
 /* velk pseudo-C: sub_210400 @ 0x210400 */
-int64_t sub_210400(int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5, int64_t a6, int64_t a7, int64_t a8) {
-    return (int64_t)((uint64_t)a1 + a0 + (int64_t)((uint64_t)a2 + a3) + (int64_t)((uint64_t)a4 + a5 + a6)) + (a7 + a8);
+int64_t sub_210400(uint64_t a0, uint64_t a1, uint64_t a2, uint64_t a3, uint64_t a4, uint64_t a5, uint64_t a6, uint64_t a7, int64_t a8) {
+    return a1 + a0 + (a2 + a3) + (a4 + a5 + a6) + (a7 + a8);
 }
 -- signature
-int64_t (int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5, int64_t a6, int64_t a7)
+int64_t (uint64_t a0, uint64_t a1, uint64_t a2, uint64_t a3, uint64_t a4, uint64_t a5, uint64_t a6, uint64_t a7)
 -- references
 
 -- ir

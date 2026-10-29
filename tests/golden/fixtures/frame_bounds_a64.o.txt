@@ -7,13 +7,13 @@
 == 0x0 frame_bounds
 -- decompile
 /* velk pseudo-C: frame_bounds @ 0x0 */
-int64_t frame_bounds(int64_t a0) {
+int64_t frame_bounds(uint64_t a0) {
     _Alignas(16) uint8_t local_0[0x210]; /* [sp-210] */
 
     uint64_t *v1 = (uint64_t *)(local_0);
     do {
         *v1 = a0;
-        a0 = (uint64_t)a0 * 0x19660d + 0x3c6ef35f;
+        a0 = a0 * 0x19660d + 0x3c6ef35f;
         ++v1;
     } while (v1 != (void *)(local_0 + 0x200));
     int64_t result = 0;
@@ -26,7 +26,7 @@ int64_t frame_bounds(int64_t a0) {
     return result;
 }
 -- signature
-int64_t (int64_t a0)
+int64_t (uint64_t a0)
 -- references
 
 -- ir

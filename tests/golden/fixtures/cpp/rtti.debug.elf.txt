@@ -374,11 +374,11 @@ fn Multiple::other() const @ 0x201b08 (size 7)
 == 0x201b10 {virtual override thunk({offset(-16)}, Multiple::other() const)}
 -- decompile
 /* velk pseudo-C: {virtual override thunk({offset(-16)}, Multiple::other() const)} @ 0x201b10 */
-void _virtual_override_thunk__offset__16____Multiple__other___const__(int64_t a0) {
-    Multiple__other((int64_t)((uint64_t)a0 - 16));
+void _virtual_override_thunk__offset__16____Multiple__other___const__(uint64_t a0) {
+    Multiple__other(a0 - 16);
 }
 -- signature
-void (int64_t a0)
+void (uint64_t a0)
 -- references
 
 -- ir

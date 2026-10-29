@@ -37,14 +37,14 @@ fn <unnamed> @ 0x180001000 (size 18)
 == 0x180001020 -
 -- decompile
 /* velk pseudo-C: sub_180001020 @ 0x180001020 */
-int32_t sub_180001020(int32_t a0) {
+int32_t sub_180001020(uint32_t a0) {
     _Alignas(16) uint8_t local_0[0x2000]; /* [sp-2000] */
 
     *(uint8_t *)((uintptr_t)(local_0) + (a0 & 0x1fff)) = a0;
     return (int8_t)a0;
 }
 -- signature
-int32_t (int32_t a0)
+int32_t (uint32_t a0)
 -- references
 
 -- ir
@@ -83,14 +83,14 @@ fn <unnamed> @ 0x180001050 (size 49)
 == 0x180001090 -
 -- decompile
 /* velk pseudo-C: sub_180001090 @ 0x180001090 */
-struct S1 *sub_180001090(struct S1 *a0, int64_t a1) {
+struct S1 *sub_180001090(struct S1 *a0, uint64_t a1) {
     a0->f_0 = a1;
-    a0->f_8 = (int64_t)((uint64_t)a1 + 1);
+    a0->f_8 = a1 + 1;
     a0->f_10 = a1 ^ 0x9;
     return a0;
 }
 -- signature
-struct S1 * (struct S1 * a0, int64_t a1)
+struct S1 * (struct S1 * a0, uint64_t a1)
 -- references
 
 -- ir
@@ -107,11 +107,11 @@ fn <unnamed> @ 0x180001090 (size 32)
 == 0x1800010b0 -
 -- decompile
 /* velk pseudo-C: sub_1800010b0 @ 0x1800010b0 */
-int64_t sub_1800010b0(int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5) {
-    return a5 * 13 + (a4 * 11 + (int64_t)((uint64_t)a2 * 5 + (int64_t)((uint64_t)a1 * 3 + a0) + (int64_t)((uint64_t)a3 * 8) - a3));
+int64_t sub_1800010b0(uint64_t a0, uint64_t a1, uint64_t a2, uint64_t a3, int64_t a4, int64_t a5) {
+    return a5 * 13 + (a4 * 11 + (a2 * 5 + (a1 * 3 + a0) + a3 * 8 - a3));
 }
 -- signature
-int64_t (int64_t a0, int64_t a1, int64_t a2, int64_t a3)
+int64_t (uint64_t a0, uint64_t a1, uint64_t a2, uint64_t a3)
 -- references
 
 -- ir

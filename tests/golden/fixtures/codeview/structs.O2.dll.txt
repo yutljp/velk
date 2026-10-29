@@ -156,7 +156,7 @@ struct point point_add(struct point a, struct point b) {
     }
 }
 -- signature
-int64_t (int64_t a0, int64_t a1)
+int64_t (uint64_t a0, uint64_t a1)
 -- references
 
 -- ir
@@ -182,7 +182,7 @@ struct big big_make(int32_t seed) {
     return result;
 }
 -- signature
-int64_t (struct S1 * a0, int32_t a1)
+int64_t (struct S1 * a0, uint32_t a1)
 -- references
 
 -- ir

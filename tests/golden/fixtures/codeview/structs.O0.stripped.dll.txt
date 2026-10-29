@@ -17,11 +17,11 @@ struct S2 { uint32_t f_0; uint32_t f_4; uint32_t f_8; uint32_t f_c; };
 == 0x180001000 rect_area
 -- decompile
 /* velk pseudo-C: rect_area @ 0x180001000 */
-int32_t rect_area(int64_t a0) {
-    return (*(uint32_t *)((int64_t)((uint64_t)a0 + 0x8)) - *(uint32_t *)(a0)) * (*(uint32_t *)((int64_t)((uint64_t)a0 + 0xc)) - *(uint32_t *)((int64_t)((uint64_t)a0 + 0x4)));
+int32_t rect_area(uint64_t a0) {
+    return (*(uint32_t *)(a0 + 0x8) - *(uint32_t *)(a0)) * (*(uint32_t *)(a0 + 0xc) - *(uint32_t *)(a0 + 0x4));
 }
 -- signature
-int32_t (int64_t a0)
+int32_t (uint64_t a0)
 -- references
 
 -- ir
@@ -197,12 +197,12 @@ fn flags_level @ 0x180001140 (size 64)
 == 0x180001180 flags_set_mode
 -- decompile
 /* velk pseudo-C: flags_set_mode @ 0x180001180 */
-uint32_t *flags_set_mode(uint32_t *a0, int32_t a1) {
+uint32_t *flags_set_mode(uint32_t *a0, uint32_t a1) {
     *a0 = *a0 & 0xfffffff1 | (a1 & 0x7) << 1;
     return a0;
 }
 -- signature
-uint32_t * (uint32_t * a0, int32_t a1)
+uint32_t * (uint32_t * a0, uint32_t a1)
 -- references
 
 -- ir

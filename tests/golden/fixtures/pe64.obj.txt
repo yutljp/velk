@@ -18,11 +18,11 @@ extern uint64_t kMsg; /* address: 0xb0 */
 == 0x0 reg_add
 -- decompile
 /* velk pseudo-C: reg_add @ 0x0 */
-int32_t reg_add(int32_t a0, int32_t a1) {
-    return (uint32_t)a0 + a1;
+int32_t reg_add(uint32_t a0, uint32_t a1) {
+    return a0 + a1;
 }
 -- signature
-int32_t (int32_t a0, int32_t a1)
+int32_t (uint32_t a0, uint32_t a1)
 -- references
 
 -- ir
@@ -35,11 +35,11 @@ fn reg_add @ 0x0 (size 16)
 == 0x10 reg_mul
 -- decompile
 /* velk pseudo-C: reg_mul @ 0x10 */
-int32_t reg_mul(int32_t a0, int32_t a1) {
-    return (uint32_t)a0 * a1;
+int32_t reg_mul(uint32_t a0, uint32_t a1) {
+    return a0 * a1;
 }
 -- signature
-int32_t (int32_t a0, int32_t a1)
+int32_t (uint32_t a0, uint32_t a1)
 -- references
 
 -- ir

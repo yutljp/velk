@@ -50,11 +50,11 @@ fn _stdcall_add@8 @ 0x10001010 (size 16)
 == 0x10001020 @fastcall_add@12
 -- decompile
 /* velk pseudo-C: @fastcall_add@12 @ 0x10001020 */
-int32_t _fastcall_add_12(int32_t a0, int32_t a1, uint32_t a2) {
-    return (uint32_t)a0 + a1 + a2;
+int32_t _fastcall_add_12(uint32_t a0, uint32_t a1, uint32_t a2) {
+    return a0 + a1 + a2;
 }
 -- signature
-int32_t (int32_t a0, int32_t a1)
+int32_t (uint32_t a0, uint32_t a1)
 -- references
 
 -- ir
@@ -67,11 +67,11 @@ fn @fastcall_add@12 @ 0x10001020 (size 16)
 == 0x10001030 thiscall_add
 -- decompile
 /* velk pseudo-C: thiscall_add @ 0x10001030 */
-int32_t thiscall_add(int32_t a0, uint32_t a1) {
+int32_t thiscall_add(uint32_t a0, uint32_t a1) {
     return a0 + a1;
 }
 -- signature
-int32_t (int32_t a0)
+int32_t (uint32_t a0)
 -- references
 
 -- ir

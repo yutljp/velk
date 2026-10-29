@@ -95,7 +95,7 @@ struct triple make_triple(unsigned long long value) {
     return result;
 }
 -- signature
-int64_t (struct S1 * a0, int64_t a1)
+int64_t (struct S1 * a0, uint64_t a1)
 -- references
 
 -- ir

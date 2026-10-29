@@ -10,11 +10,11 @@
 == 0x180001000 -
 -- decompile
 /* velk pseudo-C: sub_180001000 @ 0x180001000 */
-int32_t sub_180001000(int32_t a0, int32_t a1, int32_t a2) {
-    return (uint32_t)a0 + a1 + a2;
+int32_t sub_180001000(uint32_t a0, uint32_t a1, uint32_t a2) {
+    return a0 + a1 + a2;
 }
 -- signature
-int32_t (int32_t a0, int32_t a1, int32_t a2)
+int32_t (uint32_t a0, uint32_t a1, uint32_t a2)
 -- references
 
 -- ir
@@ -57,11 +57,11 @@ fn <unnamed> @ 0x180001030 (size 73)
 == 0x180001080 -
 -- decompile
 /* velk pseudo-C: sub_180001080 @ 0x180001080 */
-int32_t sub_180001080(int64_t a0) {
-    return *(uint32_t *)(a0) + *(uint32_t *)((int64_t)((uint64_t)a0 + 0x4));
+int32_t sub_180001080(uint64_t a0) {
+    return *(uint32_t *)(a0) + *(uint32_t *)(a0 + 0x4);
 }
 -- signature
-int32_t (int64_t a0)
+int32_t (uint64_t a0)
 -- references
 
 -- ir

@@ -377,11 +377,11 @@ fn <unnamed> @ 0x201b08 (size 7)
 == 0x201b10 -
 -- decompile
 /* velk pseudo-C: sub_201b10 @ 0x201b10 */
-int32_t sub_201b10(int64_t a0) {
-    return sub_201b08((int64_t)((uint64_t)a0 - 16));
+int32_t sub_201b10(uint64_t a0) {
+    return sub_201b08(a0 - 16);
 }
 -- signature
-int32_t (int64_t a0)
+int32_t (uint64_t a0)
 -- references
 
 -- ir

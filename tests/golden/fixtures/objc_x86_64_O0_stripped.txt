@@ -20,11 +20,11 @@ uint64_t sub_1000009c0();
 == 0x1000008b0 -[Counter add:with:]
 -- decompile
 /* velk pseudo-C: -[Counter add:with:] @ 0x1000008b0 */
-int64_t _Counter_add_with__(int64_t a0, int64_t a1, int64_t a2, int64_t a3) {
-    return (uint64_t)a2 + a3;
+int64_t _Counter_add_with__(int64_t a0, int64_t a1, uint64_t a2, uint64_t a3) {
+    return a2 + a3;
 }
 -- signature
-int64_t (int64_t a0, int64_t a1, int64_t a2, int64_t a3)
+int64_t (int64_t a0, int64_t a1, uint64_t a2, uint64_t a3)
 -- references
 
 -- ir
@@ -91,11 +91,11 @@ fn -[Counter setValue:] @ 0x100000910 (size 32)
 == 0x100000930 -[Counter twice:]
 -- decompile
 /* velk pseudo-C: -[Counter twice:] @ 0x100000930 */
-int64_t _Counter_twice__(int64_t a0, int64_t a1, int64_t a2) {
-    return (uint64_t)a2 << 1;
+int64_t _Counter_twice__(int64_t a0, int64_t a1, uint64_t a2) {
+    return a2 << 1;
 }
 -- signature
-int64_t (int64_t a0, int64_t a1, int64_t a2)
+int64_t (int64_t a0, int64_t a1, uint64_t a2)
 -- references
 
 -- ir
@@ -148,11 +148,11 @@ fn <unnamed> @ 0x100000990 (size 48)
 == 0x1000009c0 -
 -- decompile
 /* velk pseudo-C: sub_1000009c0 @ 0x1000009c0 */
-int64_t sub_1000009c0(int64_t a0, int64_t a1) {
-    return (uint64_t)a1 + 3;
+int64_t sub_1000009c0(int64_t a0, uint64_t a1) {
+    return a1 + 3;
 }
 -- signature
-int64_t (int64_t a0, int64_t a1)
+int64_t (int64_t a0, uint64_t a1)
 -- references
 
 -- ir

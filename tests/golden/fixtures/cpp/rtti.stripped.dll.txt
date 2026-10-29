@@ -420,11 +420,11 @@ fn single @ 0x1800011b0 (size 63)
 == 0x1800011f0 -
 -- decompile
 /* velk pseudo-C: sub_1800011f0 @ 0x1800011f0 */
-int64_t sub_1800011f0(int64_t a0, int64_t a1) {
-    return sub_180001070((int64_t)((uint64_t)a1 + 32));
+int64_t sub_1800011f0(int64_t a0, uint64_t a1) {
+    return sub_180001070(a1 + 32);
 }
 -- signature
-int64_t (int64_t a0, int64_t a1)
+int64_t (int64_t a0, uint64_t a1)
 -- references
 
 -- ir
@@ -800,11 +800,11 @@ fn catch_cleanup @ 0x180001460 (size 72)
 == 0x1800014b0 -
 -- decompile
 /* velk pseudo-C: sub_1800014b0 @ 0x1800014b0 */
-int64_t sub_1800014b0(int64_t a0, int64_t a1) {
-    return sub_180001070((int64_t)((uint64_t)a1 + 40));
+int64_t sub_1800014b0(int64_t a0, uint64_t a1) {
+    return sub_180001070(a1 + 40);
 }
 -- signature
-int64_t (int64_t a0, int64_t a1)
+int64_t (int64_t a0, uint64_t a1)
 -- references
 
 -- ir
@@ -974,11 +974,11 @@ fn <unnamed> @ 0x180001540 (size 16)
 == 0x180001550 -
 -- decompile
 /* velk pseudo-C: sub_180001550 @ 0x180001550 */
-int64_t sub_180001550(int64_t a0, int64_t a1) {
-    return sub_180001600((int64_t)((uint64_t)a0 - 16), a1);
+int64_t sub_180001550(uint64_t a0, int64_t a1) {
+    return sub_180001600(a0 - 16, a1);
 }
 -- signature
-int64_t (int64_t a0, int64_t a1)
+int64_t (uint64_t a0, int64_t a1)
 -- references
 
 -- ir
@@ -1122,10 +1122,10 @@ fn <unnamed> @ 0x180001600 (size 35)
 == 0x180001630 -
 -- decompile
 /* velk pseudo-C: sub_180001630 @ 0x180001630 */
-int64_t sub_180001630(int64_t a0, int32_t a1) {
+int64_t sub_180001630(uint64_t a0, int32_t a1) {
     uint64_t v2;
 
-    int64_t v1 = (uint64_t)a0 - 24;
+    int64_t v1 = a0 - 24;
     sub_180001540(v2);
     if ((a1 & 0x1) == 0) {
         return v1;
@@ -1134,7 +1134,7 @@ int64_t sub_180001630(int64_t a0, int32_t a1) {
     return v1;
 }
 -- signature
-int64_t (int64_t a0, int32_t a1)
+int64_t (uint64_t a0, int32_t a1)
 -- references
 
 -- ir

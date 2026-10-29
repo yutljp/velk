@@ -29,7 +29,9 @@ pub(crate) fn apply_width_types(ir: &mut FunctionIr, uniform_32: &std::collectio
             !param.ty.is_pointer()
                 && (ir.signed_params.contains(&param.index)
                     || evidence.signed.contains(&param.index)
-                    || !evidence.unsigned.contains(&param.index))
+                    || (!evidence.unsigned.contains(&param.index)
+                        && !(evidence.wrapping.contains(&param.index)
+                            && param.ty.integer().is_some_and(|(bits, _)| bits >= 32))))
         })
         .collect();
     for ((param, narrow), signed) in ir
@@ -49,8 +51,10 @@ pub(crate) fn apply_width_types(ir: &mut FunctionIr, uniform_32: &std::collectio
             } else if param.ty == CType::U64 {
                 param.ty = CType::I64;
             }
-        } else if narrow {
+        } else if narrow || param.ty == CType::I32 {
             param.ty = CType::U32;
+        } else if param.ty == CType::I64 {
+            param.ty = CType::U64;
         }
     }
     // Heuristic: if any parameter is compared as signed, a narrowed return is signed too.
@@ -93,6 +97,8 @@ pub(crate) fn apply_width_types(ir: &mut FunctionIr, uniform_32: &std::collectio
 pub(crate) struct SignEvidence {
     pub(crate) signed: std::collections::HashSet<u16>,
     pub(crate) unsigned: std::collections::HashSet<u16>,
+    /// Registers read by operations whose exact bits require unsigned C arithmetic.
+    pub(crate) wrapping: std::collections::HashSet<u16>,
     /// How many signed and unsigned operations read each register.
     pub(crate) counts: std::collections::HashMap<u16, (usize, usize)>,
     /// Some unsigned operation was seen, whatever it read.
@@ -181,18 +187,32 @@ impl SignEvidence {
     fn walk(&mut self, expr: &crate::ir::Expr) {
         use crate::ir::{BinOp, Expr};
         match expr {
-            Expr::Bin { op, lhs, rhs } => match op {
-                BinOp::DivS | BinOp::ModS => self.note(true, &[lhs, rhs]),
-                BinOp::DivU | BinOp::ModU => self.note(false, &[lhs, rhs]),
-                BinOp::Sar => self.note(true, &[lhs]),
-                // Shifting the top bit down tests the sign.
-                BinOp::Shr if !self.variables && matches!(rhs.as_ref(), Expr::Const(31 | 63)) => {
-                    self.note(true, &[lhs])
+            Expr::Bin { op, lhs, rhs } => {
+                if crate::ir::semantics::operand_width(lhs, rhs) >= 32 {
+                    match op {
+                        BinOp::Add | BinOp::Sub | BinOp::Mul => {
+                            self.wrap(lhs);
+                            self.wrap(rhs);
+                        }
+                        BinOp::Shl => self.wrap(lhs),
+                        _ => {}
+                    }
                 }
-                BinOp::Shr => self.note(false, &[lhs]),
-                BinOp::Shl if self.variables => self.note(false, &[lhs]),
-                _ => {}
-            },
+                match op {
+                    BinOp::DivS | BinOp::ModS => self.note(true, &[lhs, rhs]),
+                    BinOp::DivU | BinOp::ModU => self.note(false, &[lhs, rhs]),
+                    BinOp::Sar => self.note(true, &[lhs]),
+                    // Shifting the top bit down tests the sign.
+                    BinOp::Shr
+                        if !self.variables && matches!(rhs.as_ref(), Expr::Const(31 | 63)) =>
+                    {
+                        self.note(true, &[lhs])
+                    }
+                    BinOp::Shr => self.note(false, &[lhs]),
+                    BinOp::Shl if self.variables => self.note(false, &[lhs]),
+                    _ => {}
+                }
+            }
             Expr::SignExtend { value, .. } => self.note(true, &[value]),
             Expr::Select { cond, lhs, rhs, .. } => self.compare(*cond, lhs, rhs),
             _ => {}
@@ -200,6 +220,10 @@ impl SignEvidence {
         for child in crate::ir::visit::children(expr) {
             self.walk(child);
         }
+    }
+
+    fn wrap(&mut self, expr: &crate::ir::Expr) {
+        crate::ir::visit::expr_reads(expr, &mut self.wrapping);
     }
 }
 

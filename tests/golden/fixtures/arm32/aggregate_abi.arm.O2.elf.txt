@@ -19,7 +19,7 @@ uint64_t velk_entry_stack_pointer(void); /* target entry stack pointer */
 == 0x20134 abi_pair_adjust
 -- decompile
 /* velk pseudo-C: abi_pair_adjust @ 0x20134 */
-int32_t abi_pair_adjust(uint32_t *a0, int64_t a1, uint32_t a2, int32_t a3) {
+int32_t abi_pair_adjust(uint32_t *a0, int64_t a1, uint32_t a2, uint32_t a3) {
     uint64_t sp = velk_entry_stack_pointer();
     uint32_t v11;
     uint32_t v12;
@@ -47,7 +47,7 @@ int32_t abi_pair_adjust(uint32_t *a0, int64_t a1, uint32_t a2, int32_t a3) {
     return (uint32_t)(uintptr_t)a0;
 }
 -- signature
-int32_t (uint32_t * a0, int64_t a1, uint32_t a2, int32_t a3)
+int32_t (uint32_t * a0, int64_t a1, uint32_t a2, uint32_t a3)
 -- references
 
 -- ir
@@ -193,7 +193,7 @@ fn abi_hfa4_adjust @ 0x201a4 (size 8)
 == 0x201ac abi_exhaust_five
 -- decompile
 /* velk pseudo-C: abi_exhaust_five @ 0x201ac */
-int32_t abi_exhaust_five(int32_t a0, int32_t a1, int32_t a2, int32_t a3) {
+int32_t abi_exhaust_five(uint32_t a0, uint32_t a1, uint32_t a2, uint32_t a3) {
     uint64_t sp = velk_entry_stack_pointer();
     uint32_t v1;
     uint32_t v5;
@@ -202,7 +202,7 @@ int32_t abi_exhaust_five(int32_t a0, int32_t a1, int32_t a2, int32_t a3) {
     uint32_t v17;
 
     /* unsupported: AAPCS32 multiword, floating-point or aggregate declaration */
-    uint64_t v2 = (uint64_t)(uint32_t)a2 * 3;
+    uint64_t v2 = (uint64_t)a2 * 3;
     uint32_t v3 = v2;
     uint8_t v4 = v2 >> 32;
     uint64_t v7 = (uint64_t)*(uint32_t *)(sp + 0x20) * 17;
@@ -213,7 +213,7 @@ int32_t abi_exhaust_five(int32_t a0, int32_t a1, int32_t a2, int32_t a3) {
     uint32_t v13 = v12;
     uint8_t v14 = v12 >> 32;
     uint8_t v15 = v3 > (a0 ^ 0xffffffff);
-    uint8_t v16 = v4 + (uint32_t)a3 * 3 + a1 + v15;
+    uint8_t v16 = v4 + a3 * 3 + a1 + v15;
     uint64_t v18 = (uint64_t)*(uint32_t *)(sp) * 5;
     uint32_t v19 = v18;
     uint8_t v20 = v18 >> 32;
@@ -262,7 +262,7 @@ int32_t abi_exhaust_five(int32_t a0, int32_t a1, int32_t a2, int32_t a3) {
     return v58 | (uint64_t)v60 << 32;
 }
 -- signature
-int32_t (int32_t a0, int32_t a1, int32_t a2, int32_t a3)
+int32_t (uint32_t a0, uint32_t a1, uint32_t a2, uint32_t a3)
 -- references
 
 -- ir
@@ -341,7 +341,7 @@ fn abi_exhaust_five @ 0x201ac (size 212)
 == 0x20280 abi_exhaust_seven
 -- decompile
 /* velk pseudo-C: abi_exhaust_seven @ 0x20280 */
-int32_t abi_exhaust_seven(int32_t a0, int32_t a1, int32_t a2, int32_t a3) {
+int32_t abi_exhaust_seven(uint32_t a0, uint32_t a1, uint32_t a2, uint32_t a3) {
     uint64_t sp = velk_entry_stack_pointer();
     uint32_t v1;
     uint32_t v5;
@@ -352,7 +352,7 @@ int32_t abi_exhaust_seven(int32_t a0, int32_t a1, int32_t a2, int32_t a3) {
     uint32_t v36;
 
     /* unsupported: AAPCS32 multiword, floating-point or aggregate declaration */
-    uint64_t v2 = (uint64_t)(uint32_t)a2 * 3;
+    uint64_t v2 = (uint64_t)a2 * 3;
     uint32_t v3 = v2;
     uint8_t v4 = v2 >> 32;
     uint64_t v7 = (uint64_t)*(uint32_t *)(sp + 0x30) * 23;
@@ -363,7 +363,7 @@ int32_t abi_exhaust_seven(int32_t a0, int32_t a1, int32_t a2, int32_t a3) {
     uint8_t v12 = v10 >> 32;
     uint32_t v14 = v3 + a0;
     uint8_t v15 = v3 > (a0 ^ 0xffffffff);
-    uint8_t v16 = v4 + (uint32_t)a3 * 3 + a1 + v15;
+    uint8_t v16 = v4 + a3 * 3 + a1 + v15;
     uint8_t v18 = v12 + *(uint32_t *)(sp + 0x3c) * 29;
     uint64_t v19 = (uint64_t)*(uint32_t *)(sp) * 5;
     uint32_t v20 = v19;
@@ -427,7 +427,7 @@ int32_t abi_exhaust_seven(int32_t a0, int32_t a1, int32_t a2, int32_t a3) {
     return v73 | (uint64_t)v75 << 32;
 }
 -- signature
-int32_t (int32_t a0, int32_t a1, int32_t a2, int32_t a3)
+int32_t (uint32_t a0, uint32_t a1, uint32_t a2, uint32_t a3)
 -- references
 
 -- ir
@@ -523,7 +523,7 @@ fn abi_exhaust_seven @ 0x20280 (size 268)
 == 0x2038c abi_indirect_make
 -- decompile
 /* velk pseudo-C: abi_indirect_make @ 0x2038c */
-int32_t abi_indirect_make(uint32_t *a0, int64_t a1, uint32_t a2, int32_t a3) {
+int32_t abi_indirect_make(uint32_t *a0, int64_t a1, uint32_t a2, uint32_t a3) {
     uint64_t sp = velk_entry_stack_pointer();
     uint32_t v19;
     uint32_t v20;
@@ -562,7 +562,7 @@ int32_t abi_indirect_make(uint32_t *a0, int64_t a1, uint32_t a2, int32_t a3) {
     return (uint32_t)(uintptr_t)a0;
 }
 -- signature
-int32_t (uint32_t * a0, int64_t a1, uint32_t a2, int32_t a3)
+int32_t (uint32_t * a0, int64_t a1, uint32_t a2, uint32_t a3)
 -- references
 
 -- ir
@@ -604,7 +604,7 @@ fn abi_indirect_make @ 0x2038c (size 64)
 == 0x203cc abi_exhaust_five_aligned
 -- decompile
 /* velk pseudo-C: abi_exhaust_five_aligned @ 0x203cc */
-int32_t abi_exhaust_five_aligned(int32_t a0, int32_t a1, int32_t a2, int32_t a3) {
+int32_t abi_exhaust_five_aligned(uint32_t a0, uint32_t a1, uint32_t a2, uint32_t a3) {
     uint64_t sp = velk_entry_stack_pointer();
     uint32_t v1;
     uint32_t v5;
@@ -613,7 +613,7 @@ int32_t abi_exhaust_five_aligned(int32_t a0, int32_t a1, int32_t a2, int32_t a3)
     uint32_t v17;
 
     /* unsupported: AAPCS32 multiword, floating-point or aggregate declaration */
-    uint64_t v2 = (uint64_t)(uint32_t)a2 * 3;
+    uint64_t v2 = (uint64_t)a2 * 3;
     uint32_t v3 = v2;
     uint8_t v4 = v2 >> 32;
     uint64_t v7 = (uint64_t)*(uint32_t *)(sp + 0x20) * 17;
@@ -624,7 +624,7 @@ int32_t abi_exhaust_five_aligned(int32_t a0, int32_t a1, int32_t a2, int32_t a3)
     uint32_t v13 = v12;
     uint8_t v14 = v12 >> 32;
     uint8_t v15 = v3 > (a0 ^ 0xffffffff);
-    uint8_t v16 = v4 + (uint32_t)a3 * 3 + a1 + v15;
+    uint8_t v16 = v4 + a3 * 3 + a1 + v15;
     uint64_t v18 = (uint64_t)*(uint32_t *)(sp) * 5;
     uint32_t v19 = v18;
     uint8_t v20 = v18 >> 32;
@@ -673,7 +673,7 @@ int32_t abi_exhaust_five_aligned(int32_t a0, int32_t a1, int32_t a2, int32_t a3)
     return v58 | (uint64_t)v60 << 32;
 }
 -- signature
-int32_t (int32_t a0, int32_t a1, int32_t a2, int32_t a3)
+int32_t (uint32_t a0, uint32_t a1, uint32_t a2, uint32_t a3)
 -- references
 
 -- ir
@@ -752,7 +752,7 @@ fn abi_exhaust_five_aligned @ 0x203cc (size 212)
 == 0x204a0 abi_exhaust_seven_aligned
 -- decompile
 /* velk pseudo-C: abi_exhaust_seven_aligned @ 0x204a0 */
-int32_t abi_exhaust_seven_aligned(int32_t a0, int32_t a1, int32_t a2, int32_t a3) {
+int32_t abi_exhaust_seven_aligned(uint32_t a0, uint32_t a1, uint32_t a2, uint32_t a3) {
     uint64_t sp = velk_entry_stack_pointer();
     uint32_t v1;
     uint32_t v5;
@@ -763,7 +763,7 @@ int32_t abi_exhaust_seven_aligned(int32_t a0, int32_t a1, int32_t a2, int32_t a3
     uint32_t v36;
 
     /* unsupported: AAPCS32 multiword, floating-point or aggregate declaration */
-    uint64_t v2 = (uint64_t)(uint32_t)a2 * 3;
+    uint64_t v2 = (uint64_t)a2 * 3;
     uint32_t v3 = v2;
     uint8_t v4 = v2 >> 32;
     uint64_t v7 = (uint64_t)*(uint32_t *)(sp + 0x30) * 23;
@@ -774,7 +774,7 @@ int32_t abi_exhaust_seven_aligned(int32_t a0, int32_t a1, int32_t a2, int32_t a3
     uint8_t v12 = v10 >> 32;
     uint32_t v14 = v3 + a0;
     uint8_t v15 = v3 > (a0 ^ 0xffffffff);
-    uint8_t v16 = v4 + (uint32_t)a3 * 3 + a1 + v15;
+    uint8_t v16 = v4 + a3 * 3 + a1 + v15;
     uint8_t v18 = v12 + *(uint32_t *)(sp + 0x3c) * 29;
     uint64_t v19 = (uint64_t)*(uint32_t *)(sp) * 5;
     uint32_t v20 = v19;
@@ -838,7 +838,7 @@ int32_t abi_exhaust_seven_aligned(int32_t a0, int32_t a1, int32_t a2, int32_t a3
     return v73 | (uint64_t)v75 << 32;
 }
 -- signature
-int32_t (int32_t a0, int32_t a1, int32_t a2, int32_t a3)
+int32_t (uint32_t a0, uint32_t a1, uint32_t a2, uint32_t a3)
 -- references
 
 -- ir

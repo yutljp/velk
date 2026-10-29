@@ -509,7 +509,7 @@ fn annotations_refresh_navigation_and_later_scripts() {
     for response in &responses {
         assert_eq!(response["result"]["isError"], false, "{response}");
     }
-    assert!(text(&responses[2]).contains("analyzed_tail(int32_t"));
+    assert!(text(&responses[2]).contains("analyzed_tail(uint32_t"));
     let navigation: Value = serde_json::from_str(text(&responses[3])).unwrap();
     assert_eq!(navigation["name"], "analyzed_tail");
     assert_eq!(navigation["callees"][0]["name"], "analyzed_tail");

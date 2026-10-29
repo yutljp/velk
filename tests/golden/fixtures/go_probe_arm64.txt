@@ -1313,11 +1313,11 @@ fn runtime.printstring @ 0x40bd0 (size 128)
 == 0x77420 main.add
 -- decompile
 /* velk pseudo-C: main.add @ 0x77420 */
-int64_t main_add(int64_t a0, int64_t a1) {
-    return (uint64_t)a0 + a1;
+int64_t main_add(uint64_t a0, uint64_t a1) {
+    return a0 + a1;
 }
 -- signature
-int64_t (int64_t a0, int64_t a1)
+int64_t (uint64_t a0, uint64_t a1)
 -- references
 
 -- ir

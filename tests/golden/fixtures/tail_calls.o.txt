@@ -11,11 +11,11 @@ uint64_t tail_one();
 == 0x0 tail_one
 -- decompile
 /* velk pseudo-C: tail_one @ 0x0 */
-int32_t tail_one(int32_t a0) {
-    return (uint32_t)a0 * 3 + 1;
+int32_t tail_one(uint32_t a0) {
+    return a0 * 3 + 1;
 }
 -- signature
-int32_t (int32_t a0)
+int32_t (uint32_t a0)
 -- references
 
 -- ir
@@ -28,11 +28,11 @@ fn tail_one @ 0x0 (size 28)
 == 0x1c tail_two
 -- decompile
 /* velk pseudo-C: tail_two @ 0x1c */
-int32_t tail_two(int32_t a0) {
-    return tail_one((uint32_t)a0 + 2);
+int32_t tail_two(uint32_t a0) {
+    return tail_one(a0 + 2);
 }
 -- signature
-int32_t (int32_t a0)
+int32_t (uint32_t a0)
 -- references
 
 -- ir
@@ -46,11 +46,11 @@ fn tail_two @ 0x1c (size 8)
 == 0x24 tail_three
 -- decompile
 /* velk pseudo-C: tail_three @ 0x24 */
-int32_t tail_three(int32_t a0) {
-    return (uint32_t)a0 - 7;
+int32_t tail_three(uint32_t a0) {
+    return a0 - 7;
 }
 -- signature
-int32_t (int32_t a0)
+int32_t (uint32_t a0)
 -- references
 
 -- ir

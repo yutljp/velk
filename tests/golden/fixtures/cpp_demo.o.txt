@@ -12,11 +12,11 @@ uint64_t ns__mul();
 == 0x0 ns::add(int, int)
 -- decompile
 /* velk pseudo-C: ns::add(int, int) @ 0x0 */
-int32_t ns__add(int32_t a0, int32_t a1) {
-    return (uint32_t)a1 + a0;
+int32_t ns__add(uint32_t a0, uint32_t a1) {
+    return a1 + a0;
 }
 -- signature
-int32_t (int32_t a0, int32_t a1)
+int32_t (uint32_t a0, uint32_t a1)
 -- references
 
 -- ir
@@ -29,11 +29,11 @@ fn ns::add(int, int) @ 0x0 (size 8)
 == 0x8 ns::mul(int, int)
 -- decompile
 /* velk pseudo-C: ns::mul(int, int) @ 0x8 */
-int32_t ns__mul(int32_t a0, int32_t a1) {
-    return (uint32_t)a1 * a0;
+int32_t ns__mul(uint32_t a0, uint32_t a1) {
+    return a1 * a0;
 }
 -- signature
-int32_t (int32_t a0, int32_t a1)
+int32_t (uint32_t a0, uint32_t a1)
 -- references
 
 -- ir

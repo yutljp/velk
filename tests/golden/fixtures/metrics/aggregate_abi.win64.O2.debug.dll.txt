@@ -30,7 +30,7 @@ struct abi_pair abi_pair_adjust(struct abi_pair value, unsigned long long tail) 
     return result;
 }
 -- signature
-int64_t (struct S1 * a0, struct S1 * a1, int64_t a2)
+int64_t (struct S1 * a0, struct S1 * a1, uint64_t a2)
 -- references
 
 -- ir
@@ -117,7 +117,7 @@ struct abi_hfa2 abi_hfa2_adjust(struct abi_hfa2 value, double bias) {
     return result;
 }
 -- signature
-int64_t (int64_t a0, double * a1, double a2)
+int64_t (uint64_t a0, double * a1, double a2)
 -- references
 
 -- ir
@@ -186,7 +186,7 @@ struct abi_hfa4 abi_hfa4_adjust(struct abi_hfa4 value, double bias) {
     return result;
 }
 -- signature
-int64_t (int64_t a0, double * a1, double a2)
+int64_t (uint64_t a0, double * a1, double a2)
 -- references
 
 -- ir
@@ -206,12 +206,12 @@ fn abi_hfa4_adjust @ 0x180001090 (size 28)
 == 0x1800010b0 abi_exhaust_five
 -- decompile
 /* velk pseudo-C: abi_exhaust_five @ 0x1800010b0 */
-int64_t abi_exhaust_five(int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5, int64_t a6) {
+int64_t abi_exhaust_five(uint64_t a0, uint64_t a1, uint64_t a2, uint64_t a3, int64_t a4, int64_t a5, int64_t a6) {
     struct S1 *v2 = (struct S1 *)a5;
-    return a6 * 19 + (a4 * 11 + (int64_t)((uint64_t)a2 * 5 + (int64_t)((uint64_t)a1 * 3 + a0) + (int64_t)((uint64_t)a3 * 8) - a3)) + v2->f_0 * 13 + v2->f_8 * 17; /* also returns  */
+    return a6 * 19 + (a4 * 11 + (a2 * 5 + (a1 * 3 + a0) + a3 * 8 - a3)) + v2->f_0 * 13 + v2->f_8 * 17; /* also returns  */
 }
 -- signature
-int64_t (int64_t a0, int64_t a1, int64_t a2, int64_t a3)
+int64_t (uint64_t a0, uint64_t a1, uint64_t a2, uint64_t a3)
 -- references
 
 -- ir
@@ -225,13 +225,13 @@ fn abi_exhaust_five @ 0x1800010b0 (size 90)
 == 0x180001110 abi_exhaust_seven
 -- decompile
 /* velk pseudo-C: abi_exhaust_seven @ 0x180001110 */
-int64_t abi_exhaust_seven(int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5, int64_t a6, int64_t a7, int64_t a8) {
+int64_t abi_exhaust_seven(uint64_t a0, uint64_t a1, uint64_t a2, uint64_t a3, int64_t a4, int64_t a5, int64_t a6, int64_t a7, int64_t a8) {
     struct S1 *v2 = (struct S1 *)a7;
     uint64_t v7 = v2->f_8;
-    return a8 * 29 + (a6 * 17 + a5 * 13 + (a4 * 11 + (int64_t)((uint64_t)a2 * 5 + (int64_t)((uint64_t)a1 * 3 + a0) + (int64_t)((uint64_t)a3 * 8) - a3))) + v2->f_0 * 19 + v7 * 24 - v7; /* also returns  */
+    return a8 * 29 + (a6 * 17 + a5 * 13 + (a4 * 11 + (a2 * 5 + (a1 * 3 + a0) + a3 * 8 - a3))) + v2->f_0 * 19 + v7 * 24 - v7; /* also returns  */
 }
 -- signature
-int64_t (int64_t a0, int64_t a1, int64_t a2, int64_t a3)
+int64_t (uint64_t a0, uint64_t a1, uint64_t a2, uint64_t a3)
 -- references
 
 -- ir
@@ -264,7 +264,7 @@ struct abi_triple abi_indirect_make(struct abi_pair value, unsigned long long de
     return result;
 }
 -- signature
-int64_t (struct S1 * a0, struct S2 * a1, int64_t a2)
+int64_t (struct S1 * a0, struct S2 * a1, uint64_t a2)
 -- references
 
 -- ir
@@ -283,12 +283,12 @@ fn abi_indirect_make @ 0x1800011a0 (size 32)
 == 0x1800011c0 abi_exhaust_five_aligned
 -- decompile
 /* velk pseudo-C: abi_exhaust_five_aligned @ 0x1800011c0 */
-int64_t abi_exhaust_five_aligned(int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5, int64_t a6) {
+int64_t abi_exhaust_five_aligned(uint64_t a0, uint64_t a1, uint64_t a2, uint64_t a3, int64_t a4, int64_t a5, int64_t a6) {
     struct S1 *v2 = (struct S1 *)a5;
-    return a6 * 19 + (a4 * 11 + (int64_t)((uint64_t)a2 * 5 + (int64_t)((uint64_t)a1 * 3 + a0) + (int64_t)((uint64_t)a3 * 8) - a3)) + v2->f_0 * 13 + v2->f_8 * 17; /* also returns  */
+    return a6 * 19 + (a4 * 11 + (a2 * 5 + (a1 * 3 + a0) + a3 * 8 - a3)) + v2->f_0 * 13 + v2->f_8 * 17; /* also returns  */
 }
 -- signature
-int64_t (int64_t a0, int64_t a1, int64_t a2, int64_t a3)
+int64_t (uint64_t a0, uint64_t a1, uint64_t a2, uint64_t a3)
 -- references
 
 -- ir
@@ -302,13 +302,13 @@ fn abi_exhaust_five_aligned @ 0x1800011c0 (size 90)
 == 0x180001220 abi_exhaust_seven_aligned
 -- decompile
 /* velk pseudo-C: abi_exhaust_seven_aligned @ 0x180001220 */
-int64_t abi_exhaust_seven_aligned(int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5, int64_t a6, int64_t a7, int64_t a8) {
+int64_t abi_exhaust_seven_aligned(uint64_t a0, uint64_t a1, uint64_t a2, uint64_t a3, int64_t a4, int64_t a5, int64_t a6, int64_t a7, int64_t a8) {
     struct S1 *v2 = (struct S1 *)a7;
     uint64_t v7 = v2->f_8;
-    return a8 * 29 + (a6 * 17 + a5 * 13 + (a4 * 11 + (int64_t)((uint64_t)a2 * 5 + (int64_t)((uint64_t)a1 * 3 + a0) + (int64_t)((uint64_t)a3 * 8) - a3))) + v2->f_0 * 19 + v7 * 24 - v7; /* also returns  */
+    return a8 * 29 + (a6 * 17 + a5 * 13 + (a4 * 11 + (a2 * 5 + (a1 * 3 + a0) + a3 * 8 - a3))) + v2->f_0 * 19 + v7 * 24 - v7; /* also returns  */
 }
 -- signature
-int64_t (int64_t a0, int64_t a1, int64_t a2, int64_t a3)
+int64_t (uint64_t a0, uint64_t a1, uint64_t a2, uint64_t a3)
 -- references
 
 -- ir

@@ -13,11 +13,11 @@
 == 0x0 original_line
 -- decompile
 /* velk pseudo-C: original_line @ 0x0 */
-int32_t original_line(int32_t a0) {
-    return (uint32_t)a0 + 3 ^ 0x55;
+int32_t original_line(uint32_t a0) {
+    return a0 + 3 ^ 0x55;
 }
 -- signature
-int32_t (int32_t a0)
+int32_t (uint32_t a0)
 -- references
 
 -- ir

@@ -14,11 +14,11 @@
 == 0x0 original
 -- decompile
 /* velk pseudo-C: original @ 0x0 */
-int32_t original(int32_t a0) {
-    return (uint32_t)a0 + 7;
+int32_t original(uint32_t a0) {
+    return a0 + 7;
 }
 -- signature
-int32_t (int32_t a0)
+int32_t (uint32_t a0)
 -- references
 
 -- ir
@@ -31,11 +31,11 @@ fn original @ 0x0 (size 15)
 == 0x10 original64
 -- decompile
 /* velk pseudo-C: original64 @ 0x10 */
-int64_t original64(int64_t a0) {
-    return (uint64_t)a0 + 7;
+int64_t original64(uint64_t a0) {
+    return a0 + 7;
 }
 -- signature
-int64_t (int64_t a0)
+int64_t (uint64_t a0)
 -- references
 
 -- ir
@@ -172,14 +172,14 @@ fn opaque_fixed @ 0x130 (size 65)
 == 0x180 variable_predicate
 -- decompile
 /* velk pseudo-C: variable_predicate @ 0x180 */
-int32_t variable_predicate(int32_t a0) {
-    if ((a0 * ((uint32_t)a0 + 2) & 0x1) != 0) {
-        return (uint32_t)a0 - 19;
+int32_t variable_predicate(uint32_t a0) {
+    if ((a0 * (a0 + 2) & 0x1) != 0) {
+        return a0 - 19;
     }
-    return (uint32_t)a0 + 7;
+    return a0 + 7;
 }
 -- signature
-int32_t (int32_t a0)
+int32_t (uint32_t a0)
 -- references
 
 -- ir

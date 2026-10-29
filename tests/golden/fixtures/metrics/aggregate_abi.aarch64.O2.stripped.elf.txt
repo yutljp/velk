@@ -17,11 +17,11 @@
 == 0x210214 -
 -- decompile
 /* velk pseudo-C: sub_210214 @ 0x210214 */
-int64_t sub_210214(int64_t a0, int64_t a1, int64_t a2) {
-    return (uint64_t)a0 + a2;
+int64_t sub_210214(uint64_t a0, int64_t a1, uint64_t a2) {
+    return a0 + a2;
 }
 -- signature
-int64_t (int64_t a0, int64_t a1, int64_t a2)
+int64_t (uint64_t a0, int64_t a1, uint64_t a2)
 -- references
 
 -- ir
@@ -119,11 +119,11 @@ fn <unnamed> @ 0x21024c (size 8)
 == 0x210254 -
 -- decompile
 /* velk pseudo-C: sub_210254 @ 0x210254 */
-int64_t sub_210254(int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5, int64_t a6, int64_t a7) {
-    return (int64_t)((uint64_t)a7 * 19) + ((int64_t)((uint64_t)a5 * 13) + ((int64_t)((uint64_t)a4 * 11) + ((int64_t)((uint64_t)a1 * 3 + a0 + (int64_t)((uint64_t)a2 * 5) - a3) + ((uint64_t)a3 << 3))) + (int64_t)((uint64_t)a6 * 17));
+int64_t sub_210254(uint64_t a0, uint64_t a1, uint64_t a2, uint64_t a3, uint64_t a4, uint64_t a5, uint64_t a6, uint64_t a7) {
+    return a7 * 19 + (a5 * 13 + (a4 * 11 + (a1 * 3 + a0 + a2 * 5 - a3 + (a3 << 3))) + a6 * 17);
 }
 -- signature
-int64_t (int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5, int64_t a6, int64_t a7)
+int64_t (uint64_t a0, uint64_t a1, uint64_t a2, uint64_t a3, uint64_t a4, uint64_t a5, uint64_t a6, uint64_t a7)
 -- references
 
 -- ir
@@ -136,11 +136,11 @@ fn <unnamed> @ 0x210254 (size 60)
 == 0x210290 -
 -- decompile
 /* velk pseudo-C: sub_210290 @ 0x210290 */
-int64_t sub_210290(int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5, int64_t a6, int64_t a7, int64_t a8, int64_t a9) {
-    return a9 * 29 + (a8 * 23 + (a7 * 19 + ((int64_t)((uint64_t)a5 * 13) + ((int64_t)((uint64_t)a4 * 11) + ((int64_t)((uint64_t)a1 * 3 + a0 + (int64_t)((uint64_t)a2 * 5) - a3) + ((uint64_t)a3 << 3))) + (int64_t)((uint64_t)a6 * 17))));
+int64_t sub_210290(uint64_t a0, uint64_t a1, uint64_t a2, uint64_t a3, uint64_t a4, uint64_t a5, uint64_t a6, int64_t a7, int64_t a8, int64_t a9) {
+    return a9 * 29 + (a8 * 23 + (a7 * 19 + (a5 * 13 + (a4 * 11 + (a1 * 3 + a0 + a2 * 5 - a3 + (a3 << 3))) + a6 * 17)));
 }
 -- signature
-int64_t (int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5, int64_t a6)
+int64_t (uint64_t a0, uint64_t a1, uint64_t a2, uint64_t a3, uint64_t a4, uint64_t a5, uint64_t a6)
 -- references
 
 -- ir
@@ -153,16 +153,16 @@ fn <unnamed> @ 0x210290 (size 84)
 == 0x2102e4 -
 -- decompile
 /* velk pseudo-C: sub_2102e4 @ 0x2102e4 */
-int64_t sub_2102e4(int64_t a0, int64_t a1, int64_t a2) {
+int64_t sub_2102e4(uint64_t a0, uint64_t a1, uint64_t a2) {
     uint64_t v1;
 
-    *(uint64_t *)(v1) = (int64_t)((uint64_t)a0 + a2);
+    *(uint64_t *)(v1) = a0 + a2;
     *(uint64_t *)(v1 + 0x8) = a1 ^ a2;
-    *(uint64_t *)(v1 + 0x10) = (int64_t)((uint64_t)a0 - a1);
+    *(uint64_t *)(v1 + 0x10) = a0 - a1;
     return a0;
 }
 -- signature
-int64_t (int64_t a0, int64_t a1, int64_t a2)
+int64_t (uint64_t a0, uint64_t a1, uint64_t a2)
 -- references
 
 -- ir
@@ -178,11 +178,11 @@ fn <unnamed> @ 0x2102e4 (size 24)
 == 0x2102fc -
 -- decompile
 /* velk pseudo-C: sub_2102fc @ 0x2102fc */
-int64_t sub_2102fc(int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5, int64_t a6, int64_t a7) {
-    return (int64_t)((uint64_t)a7 * 19) + ((int64_t)((uint64_t)a5 * 13) + ((int64_t)((uint64_t)a4 * 11) + ((int64_t)((uint64_t)a1 * 3 + a0 + (int64_t)((uint64_t)a2 * 5) - a3) + ((uint64_t)a3 << 3))) + (int64_t)((uint64_t)a6 * 17));
+int64_t sub_2102fc(uint64_t a0, uint64_t a1, uint64_t a2, uint64_t a3, uint64_t a4, uint64_t a5, uint64_t a6, uint64_t a7) {
+    return a7 * 19 + (a5 * 13 + (a4 * 11 + (a1 * 3 + a0 + a2 * 5 - a3 + (a3 << 3))) + a6 * 17);
 }
 -- signature
-int64_t (int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5, int64_t a6, int64_t a7)
+int64_t (uint64_t a0, uint64_t a1, uint64_t a2, uint64_t a3, uint64_t a4, uint64_t a5, uint64_t a6, uint64_t a7)
 -- references
 
 -- ir
@@ -195,11 +195,11 @@ fn <unnamed> @ 0x2102fc (size 60)
 == 0x210338 -
 -- decompile
 /* velk pseudo-C: sub_210338 @ 0x210338 */
-int64_t sub_210338(int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5, int64_t a6, int64_t a7, int64_t a8, int64_t a9) {
-    return a9 * 29 + (a8 * 23 + (a7 * 19 + ((int64_t)((uint64_t)a5 * 13) + ((int64_t)((uint64_t)a4 * 11) + ((int64_t)((uint64_t)a1 * 3 + a0 + (int64_t)((uint64_t)a2 * 5) - a3) + ((uint64_t)a3 << 3))) + (int64_t)((uint64_t)a6 * 17))));
+int64_t sub_210338(uint64_t a0, uint64_t a1, uint64_t a2, uint64_t a3, uint64_t a4, uint64_t a5, uint64_t a6, int64_t a7, int64_t a8, int64_t a9) {
+    return a9 * 29 + (a8 * 23 + (a7 * 19 + (a5 * 13 + (a4 * 11 + (a1 * 3 + a0 + a2 * 5 - a3 + (a3 << 3))) + a6 * 17)));
 }
 -- signature
-int64_t (int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5, int64_t a6)
+int64_t (uint64_t a0, uint64_t a1, uint64_t a2, uint64_t a3, uint64_t a4, uint64_t a5, uint64_t a6)
 -- references
 
 -- ir

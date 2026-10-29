@@ -138,6 +138,71 @@ fn wrapping_locals_keep_unsigned_bits_for_every_architecture() {
 }
 
 #[test]
+fn unsigned_parameter_arithmetic_matches_machine_bits_for_every_architecture() {
+    let mut candidates = Vec::new();
+    for isa in [Isa::X86_64, Isa::I386, Isa::AArch64, Isa::Arm32] {
+        let bits = if velk::arch::pointer_bytes(isa) == 4 {
+            32
+        } else {
+            64
+        };
+        let width = bits as u8;
+        let integer = CType::int(width / 8, false);
+        let values = if bits == 32 {
+            [
+                0,
+                1,
+                0x7fff_ffff,
+                0x8000_0000,
+                u32::MAX as u64 - 1,
+                u32::MAX as u64,
+            ]
+        } else {
+            [0, 1, 0x7fff_ffff, 0x8000_0000, u64::MAX - 1, u64::MAX]
+        };
+        for (name, operator, right) in [
+            ("add", BinOp::Add, 1),
+            ("subtract", BinOp::Sub, 1),
+            ("multiply", BinOp::Mul, 3),
+            ("shift", BinOp::Shl, 7),
+        ] {
+            let mut ir = synthetic_ir(
+                &format!("unsigned_parameter_{name}_{isa:?}"),
+                vec![Param {
+                    index: 7,
+                    name: "input".into(),
+                    ty: integer.clone(),
+                }],
+                integer.clone(),
+                vec![Stmt::Ret {
+                    value: Expr::bin(operator, Expr::reg(7, width), Expr::Const(right)),
+                }],
+            );
+            ir.isa = isa;
+            let candidate =
+                printed_candidate(ir, values.iter().map(|value| vec![*value]).collect());
+            assert!(
+                candidate.code.contains(&format!("uint{bits}_t input")),
+                "{}",
+                candidate.code
+            );
+            assert!(
+                !candidate.code.contains(&format!("(uint{bits}_t)")),
+                "{}",
+                candidate.code
+            );
+            candidates.push(candidate);
+        }
+    }
+    check_candidates(
+        "unsigned-parameter-arithmetic",
+        candidates,
+        Mode::Registers,
+        &[],
+    );
+}
+
+#[test]
 fn returned_address_copies_keep_pointer_types() {
     use velk::ir::{RegRef, VARIABLE_BASE};
 

@@ -12,10 +12,10 @@ extern uint32_t g_sink; /* address: 0x2202e8 */
 /* velk pseudo-C: dense @ 0x2101ac */
 /* ref: 0x200158 .rodata */
 /* ref: 0x2202e8 .bss */
-int32_t dense(int32_t a0) {
+int32_t dense(uint32_t a0) {
     int32_t v4;
 
-    if ((uint32_t)a0 - 10 > 15) {
+    if (a0 - 10 > 15) {
         v4 = 0;
     } else {
         switch (a0) {
@@ -79,7 +79,7 @@ int32_t dense(int32_t a0) {
     return g_sink;
 }
 -- signature
-int32_t (int32_t a0)
+int32_t (uint32_t a0)
 -- references
 0x200158 .rodata
 0x2202e8 .bss

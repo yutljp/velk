@@ -24,11 +24,11 @@ uint64_t sub_180001160();
 == 0x180001000 -
 -- decompile
 /* velk pseudo-C: sub_180001000 @ 0x180001000 */
-int32_t sub_180001000(int32_t a0) {
-    return (uint64_t)a0 << 1;
+int32_t sub_180001000(uint32_t a0) {
+    return a0 << 1;
 }
 -- signature
-int32_t (int32_t a0)
+int32_t (uint32_t a0)
 -- references
 
 -- ir
@@ -41,11 +41,11 @@ fn <unnamed> @ 0x180001000 (size 13)
 == 0x180001010 -
 -- decompile
 /* velk pseudo-C: sub_180001010 @ 0x180001010 */
-int32_t sub_180001010(int32_t a0) {
-    return (uint32_t)a0 * a0;
+int32_t sub_180001010(uint32_t a0) {
+    return a0 * a0;
 }
 -- signature
-int32_t (int32_t a0)
+int32_t (uint32_t a0)
 -- references
 
 -- ir
@@ -146,15 +146,15 @@ fn <unnamed> @ 0x1800010a0 (size 68)
 == 0x1800010f0 -
 -- decompile
 /* velk pseudo-C: sub_1800010f0 @ 0x1800010f0 */
-int32_t sub_1800010f0(int32_t a0) {
+int32_t sub_1800010f0(uint32_t a0) {
     if (a0 != 0) {
-        uint32_t v3 = ((int32_t)(sub_180001120((uint64_t)(uint32_t)a0 - 1)));
+        uint32_t v3 = ((int32_t)(sub_180001120((uint64_t)a0 - 1)));
         return v3;
     }
     return 0;
 }
 -- signature
-int32_t (int32_t a0)
+int32_t (uint32_t a0)
 -- references
 
 -- ir
@@ -175,15 +175,15 @@ fn <unnamed> @ 0x1800010f0 (size 48)
 == 0x180001120 -
 -- decompile
 /* velk pseudo-C: sub_180001120 @ 0x180001120 */
-int32_t sub_180001120(int32_t a0) {
+int32_t sub_180001120(uint32_t a0) {
     if (a0 != 0) {
-        uint32_t v3 = ((int32_t)(sub_1800010f0((uint64_t)(uint32_t)a0 - 1)));
+        uint32_t v3 = ((int32_t)(sub_1800010f0((uint64_t)a0 - 1)));
         return v3;
     }
     return 1;
 }
 -- signature
-int32_t (int32_t a0)
+int32_t (uint32_t a0)
 -- references
 
 -- ir
@@ -204,11 +204,11 @@ fn <unnamed> @ 0x180001120 (size 51)
 == 0x180001160 -
 -- decompile
 /* velk pseudo-C: sub_180001160 @ 0x180001160 */
-int32_t sub_180001160(int32_t a0, int32_t a1, int32_t a2, int32_t a3, int64_t a4, int64_t a5, int64_t a6, int64_t a7, int64_t a8) {
-    return (uint32_t)a0 + a1 + a2 + a3 + (uint32_t)a4 + (uint32_t)a5 + (uint32_t)a6 + (uint32_t)a7 + (uint32_t)a8;
+int32_t sub_180001160(uint32_t a0, uint32_t a1, uint32_t a2, uint32_t a3, int64_t a4, int64_t a5, int64_t a6, int64_t a7, int64_t a8) {
+    return a0 + a1 + a2 + a3 + (uint32_t)a4 + (uint32_t)a5 + (uint32_t)a6 + (uint32_t)a7 + (uint32_t)a8;
 }
 -- signature
-int32_t (int32_t a0, int32_t a1, int32_t a2, int32_t a3)
+int32_t (uint32_t a0, uint32_t a1, uint32_t a2, uint32_t a3)
 -- references
 
 -- ir

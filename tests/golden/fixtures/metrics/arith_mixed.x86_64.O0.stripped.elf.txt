@@ -12,11 +12,11 @@ struct S1 { uint32_t f_0; uint32_t f_4; };
 == 0x2011c0 -
 -- decompile
 /* velk pseudo-C: sub_2011c0 @ 0x2011c0 */
-int32_t sub_2011c0(int32_t a0, int32_t a1, int32_t a2) {
-    return (uint32_t)a0 + a1 + a2;
+int32_t sub_2011c0(uint32_t a0, uint32_t a1, uint32_t a2) {
+    return a0 + a1 + a2;
 }
 -- signature
-int32_t (int32_t a0, int32_t a1, int32_t a2)
+int32_t (uint32_t a0, uint32_t a1, uint32_t a2)
 -- references
 
 -- ir

@@ -468,11 +468,11 @@ fn single @ 0x1800011b0 (size 63)
 == 0x1800011f0 ?dtor$2@?0?single@4HA
 -- decompile
 /* velk pseudo-C: ?dtor$2@?0?single@4HA @ 0x1800011f0 */
-void _dtor_2__0_single_4HA(int64_t a0, int64_t a1) {
-    __1Single__UEAA_XZ((int64_t)((uint64_t)a1 + 32));
+void _dtor_2__0_single_4HA(int64_t a0, uint64_t a1) {
+    __1Single__UEAA_XZ(a1 + 32);
 }
 -- signature
-void (int64_t a0, int64_t a1)
+void (int64_t a0, uint64_t a1)
 -- references
 
 -- ir
@@ -828,11 +828,11 @@ fn catch_cleanup @ 0x180001460 (size 72)
 == 0x1800014b0 ?dtor$3@?0?catch_cleanup@4HA
 -- decompile
 /* velk pseudo-C: ?dtor$3@?0?catch_cleanup@4HA @ 0x1800014b0 */
-void _dtor_3__0_catch_cleanup_4HA(int64_t a0, int64_t a1) {
-    __1Single__UEAA_XZ((int64_t)((uint64_t)a1 + 40));
+void _dtor_3__0_catch_cleanup_4HA(int64_t a0, uint64_t a1) {
+    __1Single__UEAA_XZ(a1 + 40);
 }
 -- signature
-void (int64_t a0, int64_t a1)
+void (int64_t a0, uint64_t a1)
 -- references
 
 -- ir
@@ -1020,11 +1020,11 @@ fn ??_DVirtual@@QEAAXXZ @ 0x180001540 (size 16)
 == 0x180001550 ??_EMultiple@@WBA@EAAPEAXI@Z
 -- decompile
 /* velk pseudo-C: ??_EMultiple@@WBA@EAAPEAXI@Z @ 0x180001550 */
-void ___EMultiple__WBA_EAAPEAXI_Z(int64_t a0, int64_t a1) {
-    ___GMultiple__UEAAPEAXI_Z((int64_t)((uint64_t)a0 - 16), a1);
+void ___EMultiple__WBA_EAAPEAXI_Z(uint64_t a0, int64_t a1) {
+    ___GMultiple__UEAAPEAXI_Z(a0 - 16, a1);
 }
 -- signature
-void (int64_t a0, int64_t a1)
+void (uint64_t a0, int64_t a1)
 -- references
 
 -- ir

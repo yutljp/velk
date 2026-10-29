@@ -194,11 +194,11 @@ fn <unnamed> @ 0x201320 (size 28)
 -- decompile
 /* velk pseudo-C: sub_201340 @ 0x201340 */
 /* ref: 0x2023b0 .bss */
-int32_t sub_201340(int32_t a0, int32_t a1) {
+int32_t sub_201340(uint32_t a0, uint32_t a1) {
     return g_2023b0[(a0 & 0x3) * 8 + (a1 & 0x7)];
 }
 -- signature
-int32_t (int32_t a0, int32_t a1)
+int32_t (uint32_t a0, uint32_t a1)
 -- references
 0x2023b0 .bss
 -- ir
@@ -212,13 +212,13 @@ fn <unnamed> @ 0x201340 (size 23)
 -- decompile
 /* velk pseudo-C: sub_201360 @ 0x201360 */
 /* ref: 0x2023b0 .bss */
-int32_t sub_201360(int32_t a0, int32_t a1, int32_t a2) {
+int32_t sub_201360(uint32_t a0, uint32_t a1, int32_t a2) {
     uint32_t *v2 = (uint32_t *)(0x2023b0 + ((a0 & 0x3) << 5));
     v2[a1 & 0x7] = a2;
     return (uintptr_t)v2;
 }
 -- signature
-int32_t (int32_t a0, int32_t a1, int32_t a2)
+int32_t (uint32_t a0, uint32_t a1, int32_t a2)
 -- references
 0x2023b0 .bss
 -- ir

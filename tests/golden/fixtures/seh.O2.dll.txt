@@ -122,11 +122,11 @@ fn seh_finally @ 0x180001060 (size 40)
 == 0x180001090 seh_finally__finally_0
 -- decompile
 /* velk pseudo-C: seh_finally__finally_0 @ 0x180001090 */
-void seh_finally__finally_0(int64_t a0, int64_t a1) {
-    sub_1800010b0((int64_t)((uint64_t)a1 + 48));
+void seh_finally__finally_0(int64_t a0, uint64_t a1) {
+    sub_1800010b0(a1 + 48);
 }
 -- signature
-void (int64_t a0, int64_t a1)
+void (int64_t a0, uint64_t a1)
 -- references
 
 -- ir

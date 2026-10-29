@@ -185,7 +185,7 @@ fn cli_round_trip_persistence_and_json_errors() {
         "{}",
         String::from_utf8_lossy(&output.stderr)
     );
-    assert!(String::from_utf8_lossy(&output.stdout).contains("sum_values(int32_t"));
+    assert!(String::from_utf8_lossy(&output.stdout).contains("sum_values(uint32_t"));
     let failure = fixture.cli(&["set", "{}"]);
     assert!(!failure.status.success());
     assert_eq!(

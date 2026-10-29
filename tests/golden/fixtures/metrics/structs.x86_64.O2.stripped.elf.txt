@@ -103,11 +103,11 @@ fn <unnamed> @ 0x2011f0 (size 111)
 == 0x201260 -
 -- decompile
 /* velk pseudo-C: sub_201260 @ 0x201260 */
-int64_t sub_201260(int64_t a0, int64_t a1) {
-    return (int64_t)((uint64_t)a0 + a1) & 0xffffffff | (a0 & 0xffffffff00000000) + a1 & 0xffffffff00000000;
+int64_t sub_201260(uint64_t a0, uint64_t a1) {
+    return (a0 + a1) & 0xffffffff | (a0 & 0xffffffff00000000) + a1 & 0xffffffff00000000;
 }
 -- signature
-int64_t (int64_t a0, int64_t a1)
+int64_t (uint64_t a0, uint64_t a1)
 -- references
 
 -- ir
@@ -120,15 +120,15 @@ fn <unnamed> @ 0x201260 (size 26)
 == 0x201280 -
 -- decompile
 /* velk pseudo-C: sub_201280 @ 0x201280 */
-struct S3 *sub_201280(struct S3 *result, int64_t a1) {
+struct S3 *sub_201280(struct S3 *result, uint64_t a1) {
     result->f_0 = a1;
-    result->f_8 = (int64_t)((uint64_t)a1 + 1);
-    result->f_10 = (int64_t)((uint64_t)a1 * 2);
-    result->f_18 = (int64_t)((uint64_t)a1 * 3);
+    result->f_8 = a1 + 1;
+    result->f_10 = a1 * 2;
+    result->f_18 = a1 * 3;
     return result;
 }
 -- signature
-struct S1 * (struct S1 * result, int64_t a1)
+struct S1 * (struct S1 * result, uint64_t a1)
 -- references
 
 -- ir

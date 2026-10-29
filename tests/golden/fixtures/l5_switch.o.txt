@@ -10,10 +10,10 @@ extern uint32_t g_sink; /* address: 0x14c */
 == 0x0 dense
 -- decompile
 /* velk pseudo-C: dense @ 0x0 */
-int32_t dense(int32_t a0) {
+int32_t dense(uint32_t a0) {
     int32_t v5;
 
-    if ((uint32_t)a0 - 10 > 15) {
+    if (a0 - 10 > 15) {
         v5 = 0;
     } else {
         switch (a0) {
@@ -77,7 +77,7 @@ int32_t dense(int32_t a0) {
     return g_sink;
 }
 -- signature
-int32_t (int32_t a0)
+int32_t (uint32_t a0)
 -- references
 
 -- ir

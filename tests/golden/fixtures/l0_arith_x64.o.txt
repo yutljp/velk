@@ -10,11 +10,11 @@
 == 0x0 add3
 -- decompile
 /* velk pseudo-C: add3 @ 0x0 */
-int32_t add3(int32_t a0, int32_t a1, int32_t a2) {
-    return (uint32_t)a0 + a1 + a2;
+int32_t add3(uint32_t a0, uint32_t a1, uint32_t a2) {
+    return a0 + a1 + a2;
 }
 -- signature
-int32_t (int32_t a0, int32_t a1, int32_t a2)
+int32_t (uint32_t a0, uint32_t a1, uint32_t a2)
 -- references
 
 -- ir
@@ -27,11 +27,11 @@ fn add3 @ 0x0 (size 6)
 == 0x10 scale
 -- decompile
 /* velk pseudo-C: scale @ 0x10 */
-int32_t scale(int32_t a0) {
-    return (uint32_t)a0 * 8 - a0 + 3;
+int32_t scale(uint32_t a0) {
+    return a0 * 8 - a0 + 3;
 }
 -- signature
-int32_t (int32_t a0)
+int32_t (uint32_t a0)
 -- references
 
 -- ir
@@ -61,11 +61,11 @@ fn pick @ 0x20 (size 8)
 == 0x30 negate
 -- decompile
 /* velk pseudo-C: negate @ 0x30 */
-int32_t negate(int32_t a0) {
-    return -(uint32_t)a0;
+int32_t negate(uint32_t a0) {
+    return -a0;
 }
 -- signature
-int32_t (int32_t a0)
+int32_t (uint32_t a0)
 -- references
 
 -- ir

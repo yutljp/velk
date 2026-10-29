@@ -1012,8 +1012,8 @@ fn parameter_through(op: BinOp) -> CType {
 }
 
 #[test]
-fn an_integer_is_signed_unless_an_unsigned_operation_reads_it() {
-    assert_eq!(parameter_through(BinOp::Add), CType::I32);
+fn wrapping_parameters_are_unsigned_unless_signed_operations_read_them() {
+    assert_eq!(parameter_through(BinOp::Add), CType::U32);
     assert_eq!(parameter_through(BinOp::DivU), CType::U32);
     assert_eq!(parameter_through(BinOp::Shr), CType::U32);
     assert_eq!(parameter_through(BinOp::DivS), CType::I32);
@@ -1219,6 +1219,129 @@ fn a_register_reads_as_signed_unless_more_unsigned_operations_read_it() {
     assert!(evidence(&[Cond::Lt, Cond::Cc]));
     assert!(!evidence(&[Cond::Lt, Cond::Cc, Cond::Hi]));
 }
+
+#[test]
+fn wrapping_parameters_use_unsigned_types_without_signed_evidence() {
+    use crate::ir::{RegRef, VARIABLE_BASE};
+
+    for (isa, width) in [(Isa::I386, 32), (Isa::X86_64, 64)] {
+        let ty = CType::int((width / 8) as u8, true);
+        let mut ir = FunctionIr::single_block(
+            isa,
+            vec![
+                Stmt::Assign {
+                    dest: RegRef {
+                        index: VARIABLE_BASE,
+                        width: width as u8,
+                    },
+                    value: Expr::bin(BinOp::Add, Expr::reg(7, width as u8), Expr::Const(1)),
+                },
+                Stmt::Ret {
+                    value: Expr::reg(VARIABLE_BASE, width as u8),
+                },
+            ],
+        );
+        ir.params.push(crate::ir::Param {
+            index: 7,
+            name: "input".to_owned(),
+            ty: ty.clone(),
+        });
+        ir.ret_type = ty;
+
+        super::apply_width_types(&mut ir, &Default::default());
+
+        assert_eq!(ir.params[0].ty, CType::int((width / 8) as u8, false));
+    }
+}
+
+#[test]
+fn wrapping_parameters_keep_signed_types_when_signed_operations_read_them() {
+    use crate::ir::{RegRef, VARIABLE_BASE};
+
+    let mut ir = FunctionIr::single_block(
+        Isa::X86_64,
+        vec![
+            Stmt::Assign {
+                dest: RegRef {
+                    index: VARIABLE_BASE,
+                    width: 64,
+                },
+                value: Expr::bin(BinOp::Add, Expr::reg(7, 64), Expr::Const(1)),
+            },
+            Stmt::Ret {
+                value: Expr::bin(BinOp::DivS, Expr::reg(7, 64), Expr::Const(2)),
+            },
+        ],
+    );
+    ir.params.push(crate::ir::Param {
+        index: 7,
+        name: "input".to_owned(),
+        ty: CType::I64,
+    });
+    ir.ret_type = CType::I64;
+
+    super::apply_width_types(&mut ir, &Default::default());
+
+    assert_eq!(ir.params[0].ty, CType::I64);
+
+    ir.params[0].ty = CType::I64;
+    ir.signed_params.insert(7);
+    ir.blocks[0].stmts = vec![
+        Stmt::Assign {
+            dest: RegRef {
+                index: VARIABLE_BASE,
+                width: 64,
+            },
+            value: Expr::bin(BinOp::Add, Expr::reg(7, 64), Expr::Const(1)),
+        },
+        Stmt::Ret {
+            value: Expr::reg(VARIABLE_BASE, 64),
+        },
+    ];
+
+    super::apply_width_types(&mut ir, &Default::default());
+
+    assert_eq!(ir.params[0].ty, CType::I64);
+}
+
+#[test]
+fn unsigned_parameter_arithmetic_matches_machine_bits_smt() {
+    use crate::ir::smt::{self, Proofs};
+
+    if !Proofs::available() {
+        return;
+    }
+    let mut proofs = Proofs::default();
+    for bits in [32, 64] {
+        for operator in ["bvadd", "bvsub", "bvmul"] {
+            let left = format!("((_ extract {} 0) r0)", bits - 1);
+            let right = format!("((_ extract {} 0) r1)", bits - 1);
+            let mut c_result = format!("({operator} {left} {right})");
+            if bits == 32 {
+                c_result = format!("((_ zero_extend 32) {c_result})");
+            }
+            let machine_result = smt::low(&format!("({operator} r0 r1)"), bits);
+            proofs.predicate(
+                format!("unsigned parameter arithmetic/{bits}/{operator}"),
+                &machine_result,
+                &c_result,
+            );
+        }
+        let left = format!("((_ extract {} 0) r0)", bits - 1);
+        let mut c_result = format!("(bvshl {left} (_ bv7 {bits}))");
+        if bits == 32 {
+            c_result = format!("((_ zero_extend 32) {c_result})");
+        }
+        let machine_result = smt::low("(bvshl r0 (_ bv7 64))", bits);
+        proofs.predicate(
+            format!("unsigned parameter arithmetic/{bits}/bvshl"),
+            &machine_result,
+            &c_result,
+        );
+    }
+    proofs.check();
+}
+
 #[test]
 fn declared_calls_do_not_offer_positional_library_argument_types() {
     use crate::ir::{Convention, VARIABLE_BASE};

@@ -56,11 +56,11 @@ void twice();
 == 0x2102b4 twice
 -- decompile
 /* velk pseudo-C: twice @ 0x2102b4 */
-int32_t twice(int32_t a0) {
-    return (uint64_t)a0 << 1;
+int32_t twice(uint32_t a0) {
+    return a0 << 1;
 }
 -- signature
-int32_t (int32_t a0)
+int32_t (uint32_t a0)
 -- references
 
 -- ir
@@ -73,11 +73,11 @@ fn twice @ 0x2102b4 (size 8)
 == 0x2102bc square
 -- decompile
 /* velk pseudo-C: square @ 0x2102bc */
-int32_t square(int32_t a0) {
-    return (uint32_t)a0 * a0;
+int32_t square(uint32_t a0) {
+    return a0 * a0;
 }
 -- signature
-int32_t (int32_t a0)
+int32_t (uint32_t a0)
 -- references
 
 -- ir
@@ -245,8 +245,8 @@ fn factorial @ 0x21032c (size 160)
 == 0x2103cc is_odd
 -- decompile
 /* velk pseudo-C: is_odd @ 0x2103cc */
-int32_t is_odd(int32_t a0) {
-    uint32_t v1 = (uint32_t)a0 - (a0 != 0) + 1;
+int32_t is_odd(uint32_t a0) {
+    uint32_t v1 = a0 - (a0 != 0) + 1;
     if (v1 >= 2) {
         uint32_t v7 = (v1 >> 1) + 1;
         uint32_t v4 = v7 & 0xfffffffe;
@@ -256,17 +256,17 @@ int32_t is_odd(int32_t a0) {
             i -= 2;
         } while (i != 0);
         if (v7 == v4) {
-            return (uint32_t)a0 + 2;
+            return a0 + 2;
         }
     }
-    uint32_t i_2 = (uint32_t)a0 + 2;
+    uint32_t i_2 = a0 + 2;
     do {
         i_2 -= 2;
     } while (i_2 > 1);
     return i_2;
 }
 -- signature
-int32_t (int32_t a0)
+int32_t (uint32_t a0)
 -- references
 
 -- ir
@@ -299,14 +299,14 @@ fn is_odd @ 0x2103cc (size 88)
 == 0x210424 is_even
 -- decompile
 /* velk pseudo-C: is_even @ 0x210424 */
-int32_t is_even(int32_t a0) {
+int32_t is_even(uint32_t a0) {
     if (a0 == 0) {
         return 1;
     }
-    return (uint32_t)a0 - 1 - ((uint32_t)a0 - (a0 != 1) & 0xfffffffe);
+    return a0 - 1 - (a0 - (a0 != 1) & 0xfffffffe);
 }
 -- signature
-int32_t (int32_t a0)
+int32_t (uint32_t a0)
 -- references
 
 -- ir
@@ -323,11 +323,11 @@ fn is_even @ 0x210424 (size 36)
 == 0x210448 sum9
 -- decompile
 /* velk pseudo-C: sum9 @ 0x210448 */
-int64_t sum9(int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5, int64_t a6, int64_t a7, int64_t a8) {
-    return (int64_t)((uint64_t)a1 + a0 + (int64_t)((uint64_t)a2 + a3) + (int64_t)((uint64_t)a4 + a5 + a6)) + (a7 + a8);
+int64_t sum9(uint64_t a0, uint64_t a1, uint64_t a2, uint64_t a3, uint64_t a4, uint64_t a5, uint64_t a6, uint64_t a7, int64_t a8) {
+    return a1 + a0 + (a2 + a3) + (a4 + a5 + a6) + (a7 + a8);
 }
 -- signature
-int64_t (int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5, int64_t a6, int64_t a7)
+int64_t (uint64_t a0, uint64_t a1, uint64_t a2, uint64_t a3, uint64_t a4, uint64_t a5, uint64_t a6, uint64_t a7)
 -- references
 
 -- ir
@@ -340,11 +340,11 @@ fn sum9 @ 0x210448 (size 40)
 == 0x210470 call_sum9
 -- decompile
 /* velk pseudo-C: call_sum9 @ 0x210470 */
-int64_t call_sum9(int64_t a0) {
-    return (uint64_t)a0 + 36;
+int64_t call_sum9(uint64_t a0) {
+    return a0 + 36;
 }
 -- signature
-int64_t (int64_t a0)
+int64_t (uint64_t a0)
 -- references
 
 -- ir

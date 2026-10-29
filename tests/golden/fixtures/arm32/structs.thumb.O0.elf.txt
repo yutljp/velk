@@ -158,13 +158,13 @@ fn big_make @ 0x201a0 (size 38)
 == 0x201c8 big_sum
 -- decompile
 /* velk pseudo-C: big_sum @ 0x201c8 */
-int32_t big_sum(int32_t a0, int32_t a1, int32_t a2, int32_t a3) {
+int32_t big_sum(uint32_t a0, int32_t a1, int32_t a2, int32_t a3) {
     /* unsupported: AAPCS32 multiword, floating-point or aggregate declaration */
-    int32_t v4 = (uint32_t)a0 + a1 + a2 + a3;
+    int32_t v4 = a0 + a1 + a2 + a3;
     return v4;
 }
 -- signature
-int32_t (int32_t a0, int32_t a1, int32_t a2, int32_t a3)
+int32_t (uint32_t a0, int32_t a1, int32_t a2, int32_t a3)
 -- references
 
 -- ir

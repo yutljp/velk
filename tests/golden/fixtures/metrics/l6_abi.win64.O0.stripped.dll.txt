@@ -13,11 +13,11 @@ uint64_t sub_180001000();
 == 0x180001000 -
 -- decompile
 /* velk pseudo-C: sub_180001000 @ 0x180001000 */
-int32_t sub_180001000(int32_t a0) {
-    return (uint32_t)a0 * 3 + 1;
+int32_t sub_180001000(uint32_t a0) {
+    return a0 * 3 + 1;
 }
 -- signature
-int32_t (int32_t a0)
+int32_t (uint32_t a0)
 -- references
 
 -- ir
@@ -30,11 +30,11 @@ fn <unnamed> @ 0x180001000 (size 25)
 == 0x180001020 -
 -- decompile
 /* velk pseudo-C: sub_180001020 @ 0x180001020 */
-int32_t sub_180001020(int32_t a0) {
-    return sub_180001000((uint32_t)a0 + 2);
+int32_t sub_180001020(uint32_t a0) {
+    return sub_180001000(a0 + 2);
 }
 -- signature
-int32_t (int32_t a0)
+int32_t (uint32_t a0)
 -- references
 
 -- ir
@@ -48,11 +48,11 @@ fn <unnamed> @ 0x180001020 (size 26)
 == 0x180001040 -
 -- decompile
 /* velk pseudo-C: sub_180001040 @ 0x180001040 */
-int32_t sub_180001040(void *a0, int32_t a1) {
-    return ((uint64_t (*)())a0)((uint32_t)a1 + 1);
+int32_t sub_180001040(void *a0, uint32_t a1) {
+    return ((uint64_t (*)())a0)(a1 + 1);
 }
 -- signature
-int32_t (void * a0, int32_t a1)
+int32_t (void * a0, uint32_t a1)
 -- references
 
 -- ir
@@ -66,11 +66,11 @@ fn <unnamed> @ 0x180001040 (size 33)
 == 0x180001070 -
 -- decompile
 /* velk pseudo-C: sub_180001070 @ 0x180001070 */
-int32_t sub_180001070(int32_t a0, int32_t a1, int32_t a2, int32_t a3, int64_t a4, int64_t a5) {
-    return (uint32_t)a0 + a1 + a2 + a3 + (uint32_t)a4 + (uint32_t)a5;
+int32_t sub_180001070(uint32_t a0, uint32_t a1, uint32_t a2, uint32_t a3, int64_t a4, int64_t a5) {
+    return a0 + a1 + a2 + a3 + (uint32_t)a4 + (uint32_t)a5;
 }
 -- signature
-int32_t (int32_t a0, int32_t a1, int32_t a2, int32_t a3)
+int32_t (uint32_t a0, uint32_t a1, uint32_t a2, uint32_t a3)
 -- references
 
 -- ir
@@ -83,11 +83,11 @@ fn <unnamed> @ 0x180001070 (size 57)
 == 0x1800010b0 -
 -- decompile
 /* velk pseudo-C: sub_1800010b0 @ 0x1800010b0 */
-int64_t sub_1800010b0(int64_t a0, int64_t a1) {
-    return (uint64_t)a0 + a1;
+int64_t sub_1800010b0(uint64_t a0, uint64_t a1) {
+    return a0 + a1;
 }
 -- signature
-int64_t (int64_t a0, int64_t a1)
+int64_t (uint64_t a0, uint64_t a1)
 -- references
 
 -- ir

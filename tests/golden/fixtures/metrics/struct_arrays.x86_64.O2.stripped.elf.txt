@@ -29,13 +29,13 @@ fn <unnamed> @ 0x201180 (size 18)
 == 0x2011a0 -
 -- decompile
 /* velk pseudo-C: sub_2011a0 @ 0x2011a0 */
-int64_t sub_2011a0(struct S2 *a0, int64_t a1, int32_t a2) {
+int64_t sub_2011a0(struct S2 *a0, uint64_t a1, uint32_t a2) {
     a0[a1].f_0 = a2;
-    a0[a1].f_8 = (uint32_t)a2 + 1;
-    return (uint64_t)a1 * 3;
+    a0[a1].f_8 = a2 + 1;
+    return a1 * 3;
 }
 -- signature
-int64_t (struct S1 * a0, int64_t a1, int32_t a2)
+int64_t (struct S1 * a0, uint64_t a1, uint32_t a2)
 -- references
 
 -- ir

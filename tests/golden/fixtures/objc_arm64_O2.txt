@@ -19,11 +19,11 @@ uint64_t objc_msgSend();
 == 0x100000960 -[Counter add:with:]
 -- decompile
 /* velk pseudo-C: -[Counter add:with:] @ 0x100000960 */
-int64_t _Counter_add_with__(int64_t a0, int64_t a1, int64_t a2, int64_t a3) {
-    return (uint64_t)a3 + a2;
+int64_t _Counter_add_with__(int64_t a0, int64_t a1, uint64_t a2, uint64_t a3) {
+    return a3 + a2;
 }
 -- signature
-int64_t (int64_t a0, int64_t a1, int64_t a2, int64_t a3)
+int64_t (int64_t a0, int64_t a1, uint64_t a2, uint64_t a3)
 -- references
 
 -- ir
@@ -89,11 +89,11 @@ fn -[Counter setValue:] @ 0x100000978 (size 8)
 == 0x100000980 -[Counter(Extra) twice:]
 -- decompile
 /* velk pseudo-C: -[Counter(Extra) twice:] @ 0x100000980 */
-int64_t _Counter_Extra__twice__(int64_t a0, int64_t a1, int64_t a2) {
-    return (uint64_t)a2 << 1;
+int64_t _Counter_Extra__twice__(int64_t a0, int64_t a1, uint64_t a2) {
+    return a2 << 1;
 }
 -- signature
-int64_t (int64_t a0, int64_t a1, int64_t a2)
+int64_t (int64_t a0, int64_t a1, uint64_t a2)
 -- references
 
 -- ir
@@ -125,11 +125,11 @@ fn _send_value @ 0x100000988 (size 20)
 == 0x10000099c _use_block
 -- decompile
 /* velk pseudo-C: _use_block @ 0x10000099c */
-int64_t use_block(int64_t a0) {
-    return (uint64_t)a0 + 3;
+int64_t use_block(uint64_t a0) {
+    return a0 + 3;
 }
 -- signature
-int64_t (int64_t a0)
+int64_t (uint64_t a0)
 -- references
 
 -- ir

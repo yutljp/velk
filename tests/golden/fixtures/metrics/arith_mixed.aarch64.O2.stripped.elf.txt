@@ -38,11 +38,11 @@ static inline uint64_t sum_lanes32(uint64_t a, uint64_t b) {
 == 0x21018c -
 -- decompile
 /* velk pseudo-C: sub_21018c @ 0x21018c */
-int32_t sub_21018c(int32_t a0, int32_t a1, int32_t a2) {
-    return (uint32_t)a1 + a0 + a2;
+int32_t sub_21018c(uint32_t a0, uint32_t a1, uint32_t a2) {
+    return a1 + a0 + a2;
 }
 -- signature
-int32_t (int32_t a0, int32_t a1, int32_t a2)
+int32_t (uint32_t a0, uint32_t a1, uint32_t a2)
 -- references
 
 -- ir

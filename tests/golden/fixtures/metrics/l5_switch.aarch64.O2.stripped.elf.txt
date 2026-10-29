@@ -45,8 +45,8 @@ void sub_21050c();
 /* velk pseudo-C: sub_210304 @ 0x210304 */
 /* ref: 0x200158 .rodata */
 /* ref: 0x220554 .bss */
-int32_t sub_210304(int32_t a0) {
-    if ((uint32_t)a0 - 10 > 15) {
+int32_t sub_210304(uint32_t a0) {
+    if (a0 - 10 > 15) {
         g_220554 = 0;
         return g_220554;
     }
@@ -105,7 +105,7 @@ int32_t sub_210304(int32_t a0) {
     return g_220554;
 }
 -- signature
-int32_t (int32_t a0)
+int32_t (uint32_t a0)
 -- references
 0x200158 .rodata
 0x220554 .bss
