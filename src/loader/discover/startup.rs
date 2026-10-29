@@ -27,7 +27,6 @@ pub(super) fn discover(image: &mut Image) {
     };
     let mut info = InstructionInfoFactory::new();
     let mut argument = None;
-    let mut target = None;
     let mut startup_arguments = 0u8;
     while decoder.can_decode() {
         let instruction = decoder.decode();
@@ -58,7 +57,7 @@ pub(super) fn discover(image: &mut Image) {
                 None
             };
             if name == Some("__libc_start_main") || startup_arguments == 0b1_1111 {
-                target = argument;
+                name_main(image, argument);
             }
             break;
         }
@@ -121,7 +120,6 @@ pub(super) fn discover(image: &mut Image) {
             }
         }
     }
-    name_main(image, target);
 }
 
 fn discover_i386(image: &mut Image) {

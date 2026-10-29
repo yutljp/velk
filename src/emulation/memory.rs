@@ -203,10 +203,7 @@ impl<'a> Memory<'a> {
                 address = next & !0xffff;
             }
         }
-        match self.map(address, size, read_only) {
-            Ok(()) => Ok(address),
-            Err(error) => Err(error),
-        }
+        self.map(address, size, read_only).map(|()| address)
     }
 
     pub(crate) fn protect_pages(
