@@ -26,6 +26,9 @@ for architecture in x86_64 i386 aarch64 arm32 thumb32; do
         clang --target="$target" $mode "-$optimization" -fno-builtin -fno-stack-protector \
             -fno-vectorize -fno-slp-vectorize -fPIC -shared -nostdlib -fuse-ld=lld \
             tests/emulation/streams.c -o "$out/$architecture.$optimization.streams.elf"
+        clang --target="$target" $mode "-$optimization" -fno-builtin -fno-stack-protector \
+            -fno-vectorize -fno-slp-vectorize -fPIC -shared -nostdlib -fuse-ld=lld \
+            tests/emulation/runtime.c -o "$out/$architecture.$optimization.runtime.elf"
     done
 done
 clang -O2 -DNATIVE -fno-builtin tests/emulation/streams.c -o "$out/host.streams.native"
@@ -63,3 +66,5 @@ IMPORTS
 clang --target=aarch64-windows-msvc -O1 -fno-builtin -c tests/emulation/windows_io.c -o "$out/arm64.obj"
 lld-link /lib /def:"$out/imports.def" /machine:arm64 /out:"$out/arm64.lib"
 lld-link /dll /noentry /nodefaultlib /out:"$out/arm64.dll" "$out/arm64.obj" "$out/arm64.lib"
+
+clang -O2 -DNATIVE -fno-builtin tests/emulation/runtime.c -o "$out/host.runtime.native"

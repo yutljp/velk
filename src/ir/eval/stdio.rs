@@ -7,7 +7,7 @@ use super::emulation::io::Operation;
 pub(super) fn stream_index(operation: Operation) -> Option<usize> {
     use Operation::*;
     match operation {
-        Fopen | Fclose | Fflush | Setvbuf | Fileno | Feof | Ferror => Some(0),
+        Fopen | Fclose | Fflush | Setvbuf | Setbuf | Fileno | Feof | Ferror => Some(0),
         Fgets => Some(2),
         Fread | Fwrite => Some(3),
         Fputs => Some(1),

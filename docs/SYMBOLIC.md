@@ -94,3 +94,15 @@ contains concrete initial bytes keyed by path; pass that map as emulation's
 `files` to replay. `inputs.fileOutputs` contains committed file contents evaluated
 under that assignment. `fgets` branches on symbolic newline bytes, so line
 boundaries remain part of the solved path.
+
+`rand` and `srand` use the default glibc sequence, initially seeded with 1.
+Each execution has its own generator state. `time` returns a fixed Unix time
+(default 0); the `time` option overrides it and a non-null argument receives
+the same value at the target pointer width. `signal` records Linux signal
+handlers and returns the previous handler. `alarm` replaces a pending timer
+and returns its previous duration; the model clock does not advance or deliver
+signals. `setbuf` accepts a null buffer for a standard or virtual file stream; caller-owned buffers are unsupported.
+A concrete or uniquely constrained random seed uses concrete generator state; other symbolic seeds use bit-vector state copied on path forks. Assertions are reset between solver queries while term definitions remain available, so constraints from other paths do not restrict the query.
+Unsigned bounds queries use known widths for zero-extended values, Boolean predicates, and bounded digit accumulations; arithmetic without a proven bound retains 64-bit searches.
+
+`exit` flushes virtual file streams and stops execution. If the image names or imports an exit-handler registration function, the call stops with a diagnostic. `_exit` is not modeled as a libc call.

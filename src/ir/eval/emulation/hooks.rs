@@ -4,6 +4,12 @@ use super::{CallKind, Convention, HEAP_SIZE, Runner, Stop};
 
 #[derive(Clone, Copy)]
 pub(crate) enum Hook {
+    Random,
+    Seed,
+    Time,
+    Signal,
+    Alarm,
+    Exit,
     StackCheckFail,
     Copy,
     Move,
@@ -28,6 +34,14 @@ pub(crate) enum Hook {
 }
 
 const HOOKS: &[(&str, Hook)] = &[
+    ("rand", Hook::Random),
+    ("srand", Hook::Seed),
+    ("time", Hook::Time),
+    ("signal", Hook::Signal),
+    ("__sysv_signal", Hook::Signal),
+    ("alarm", Hook::Alarm),
+    ("exit", Hook::Exit),
+    ("setbuf", Hook::Io(super::io::Operation::Setbuf)),
     ("fopen", Hook::Io(super::io::Operation::Fopen)),
     ("fclose", Hook::Io(super::io::Operation::Fclose)),
     ("fflush", Hook::Io(super::io::Operation::Fflush)),
@@ -89,7 +103,13 @@ const HOOKS: &[(&str, Hook)] = &[
 ];
 
 pub(crate) fn find(name: &str) -> Option<Hook> {
-    let name = if name.starts_with("__isoc99_") || name.starts_with("__stack_chk_") {
+    if name.split('@').next() == Some("_exit") {
+        return None;
+    }
+    let name = if name.starts_with("__isoc99_")
+        || name.starts_with("__stack_chk_")
+        || name.starts_with("__sysv_")
+    {
         name
     } else {
         name.strip_prefix('_').unwrap_or(name)
@@ -99,6 +119,25 @@ pub(crate) fn find(name: &str) -> Option<Hook> {
         .iter()
         .find(|(candidate, _)| *candidate == name)
         .map(|(_, hook)| *hook)
+}
+
+pub(crate) fn has_exit_handlers(image: &crate::loader::Image) -> bool {
+    let registration = |name: &str| {
+        let name = name
+            .split('@')
+            .next()
+            .unwrap_or(name)
+            .trim_start_matches('_');
+        matches!(
+            name,
+            "atexit" | "cxa_atexit" | "cxa_thread_atexit_impl" | "on_exit"
+        )
+    };
+    image.imports.values().any(|name| registration(name))
+        || image.functions.values().any(|function| {
+            function.name.as_deref().is_some_and(registration)
+                || function.aliases.iter().any(|name| registration(name))
+        })
 }
 
 impl Runner<'_> {
@@ -265,11 +304,33 @@ impl Runner<'_> {
         convention: Convention,
         kind: CallKind,
     ) -> std::result::Result<u64, Stop> {
+        if self.recovery.is_some()
+            && matches!(
+                hook,
+                Hook::Random | Hook::Seed | Hook::Time | Hook::Signal | Hook::Alarm | Hook::Exit
+            )
+        {
+            return Err(Stop::Error(
+                "runtime state requires explicit emulation".to_owned(),
+            ));
+        }
         if let Hook::StackCheckFail = hook {
             return Err(Stop::StackCheckFail);
         }
         if let Hook::Io(operation) = hook {
             return self.io_hook(operation, convention, kind);
+        }
+        if matches!(hook, Hook::Exit) {
+            if has_exit_handlers(self.image) {
+                return Err(Stop::Error("exit handlers are unsupported".to_owned()));
+            }
+            if let Err(error) = self.files.flush(0) {
+                return Err(Stop::Error(error));
+            }
+            return Err(Stop::Exit);
+        }
+        if matches!(hook, Hook::Random) {
+            return Ok(u64::from(self.random.next()));
         }
         // An invalid argument or memory access aborts the hook and the run.
         let first = match self.argument(0, convention, kind) {
@@ -279,6 +340,59 @@ impl Runner<'_> {
         let value = match hook {
             Hook::StackCheckFail | Hook::Io(_) => {
                 unreachable!("terminal and I/O hooks return above")
+            }
+            Hook::Signal => {
+                if self.image.format != crate::loader::Format::Elf {
+                    return Err(Stop::Error("signal model requires Linux ELF".to_owned()));
+                }
+                let signal = first as u32;
+                if !(1..=64).contains(&signal) || matches!(signal, 9 | 19 | 32 | 33) {
+                    return Err(Stop::Error(format!("unsupported signal number {signal}")));
+                }
+                let handler = match self.argument(1, convention, kind) {
+                    Ok(handler) => handler,
+                    Err(stop) => return Err(stop),
+                };
+                let mask = crate::ir::semantics::mask(
+                    u32::from(crate::arch::pointer_bytes(self.image.isa)) * 8,
+                );
+                if handler & mask == mask {
+                    return Err(Stop::Error("unsupported SIG_ERR handler".to_owned()));
+                }
+                self.signal_handlers.insert(signal, handler).unwrap_or(0)
+            }
+            Hook::Alarm => {
+                let previous = self.alarm;
+                self.alarm = u64::from(first as u32);
+                previous
+            }
+            Hook::Random | Hook::Exit => unreachable!("terminal and random hooks return above"),
+            Hook::Seed => {
+                self.random = super::super::random::Random::seeded(first as u32);
+                0
+            }
+            Hook::Time => {
+                let value = match &self.options.time {
+                    Some(word) => match word.value() {
+                        Ok(value) => value,
+                        Err(error) => return Err(Stop::Error(error.to_string())),
+                    },
+                    None => 0,
+                };
+                let width = crate::arch::pointer_bytes(self.image.isa);
+                if first != 0 {
+                    if let Err(stop) = self.check_memory_range(first, u64::from(width), true) {
+                        return Err(stop);
+                    }
+                    for (offset, byte) in
+                        value.to_le_bytes().iter().take(width as usize).enumerate()
+                    {
+                        if let Err(stop) = self.write_byte(first + offset as u64, *byte) {
+                            return Err(stop);
+                        }
+                    }
+                }
+                value & crate::ir::semantics::mask(u32::from(width) * 8)
             }
             Hook::Allocate => self.allocate(first),
             Hook::AllocateZero => {
@@ -641,5 +755,28 @@ impl Runner<'_> {
             self.write_byte(address, byte)?;
         }
         Ok(length as u64)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::loader::{Image, Isa};
+
+    #[test]
+    fn exit_does_not_ignore_registered_handlers_or_immediate_exit() {
+        let mut image = Image::from_code(Isa::X86_64, 0, vec![0xc3]);
+        assert!(!has_exit_handlers(&image));
+        assert!(matches!(find("exit"), Some(Hook::Exit)));
+        assert!(find("_exit").is_none());
+        for name in [
+            "atexit",
+            "__cxa_atexit@GLIBC_2.2.5",
+            "__cxa_thread_atexit_impl",
+            "on_exit",
+        ] {
+            image.imports.insert(0, name.to_owned());
+            assert!(has_exit_handlers(&image), "{name}");
+        }
     }
 }

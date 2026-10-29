@@ -1265,6 +1265,11 @@ fn render_with(
             super::support::prototype(callee, prototype, symbols.target_format),
         );
     }
+    if !body.contains("main(")
+        && let Some(prototype) = declared_callees.get_mut("main")
+    {
+        *prototype = "int main(int, char **, char **);\n".to_owned();
+    }
     let mut prototypes: String = ctx
         .taken
         .borrow()
@@ -1275,6 +1280,9 @@ fn render_with(
                 && code_names.contains(taken.as_str())
         })
         .map(|taken| {
+            if taken == "main" && !body.contains("main(") {
+                return "int main(int, char **, char **);\n".to_owned();
+            }
             if let Some(types) = symbols
                 .import_parameters
                 .iter()

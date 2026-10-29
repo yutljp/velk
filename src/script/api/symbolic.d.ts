@@ -7,6 +7,8 @@ interface SymbolicOptions {
   /** Dedicated 4 KiB thread-local mapping; chosen automatically by default. */
   tlsBase?: number | string;
   /** Stack guard, truncated to pointer width; default "0x6a09e667bb67ae00". */
+  /** Fixed Unix time in seconds; default zero. */
+  time?: number | string;
   canary?: number | string;
   returns?: {eq: number | string} | {ne: number | string} | {lt: number | string} | {gt: number | string};
   stdinDescriptors?: number[];

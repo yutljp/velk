@@ -282,6 +282,43 @@ fn runtime_startup_proves_an_interior_entry() {
             assert_eq!(binary.find("main").unwrap().addr, target);
             let code = binary.decompile(target, None, None).unwrap();
             assert!(code.contains("7"), "{code}");
+            let source = format!(
+                "#include <stdint.h>\n#define main recovered_main\n{code}\n#undef main\nint main(void) {{ uint32_t edges[] = {{0, 1, 0x7fffffff, 0xffffffff}}; for (unsigned i = 0; i < 4; i++) if ((uint32_t)recovered_main((int)edges[i], 0) != edges[i] + 7u) return 1; return 0; }}\n"
+            );
+            let executable = directory.join("printed-startup");
+            common::compiler::compile_file(
+                Command::new("clang")
+                    .args([
+                        "-x",
+                        "c",
+                        "-Werror=implicit-function-declaration",
+                        "-fwrapv",
+                    ])
+                    .arg(directory.join("printed-startup.c"))
+                    .arg("-o")
+                    .arg(&executable),
+                &directory.join("printed-startup.c"),
+                &source,
+            );
+            assert!(Command::new(&executable).status().unwrap().success());
+            if !direct {
+                let startup = binary.find("startup").unwrap().addr;
+                let printed = binary.decompile(startup, None, None).unwrap();
+                assert!(
+                    printed.contains("int main(int, char **, char **);"),
+                    "{printed}"
+                );
+                let printed_object = directory.join("printed-startup-call.o");
+                common::compiler::compile_file(
+                    Command::new("clang")
+                        .args(["-x", "c", "-Werror=implicit-function-declaration", "-c"])
+                        .arg(directory.join("printed-startup-call.c"))
+                        .arg("-o")
+                        .arg(&printed_object),
+                    &directory.join("printed-startup-call.c"),
+                    &printed,
+                );
+            }
             let output = Command::new("ld.lld")
                 .arg(&object)
                 .arg(runtime_input)

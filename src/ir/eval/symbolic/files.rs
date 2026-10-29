@@ -66,6 +66,24 @@ impl State {
                 }
                 0
             }
+            Setbuf => {
+                let buffer = self.number(binary, convention, 1)?;
+                if buffer != 0 {
+                    return Err(invalid("setbuf with a caller-owned buffer is unsupported").into());
+                }
+                let mode = if matches!(
+                    binary.image().format,
+                    crate::loader::Format::Pe | crate::loader::Format::Coff
+                ) {
+                    4
+                } else {
+                    2
+                };
+                self.files
+                    .set_buffering(token, standard, mode, binary.image().format)
+                    .map_err(|error| super::Failure::Error(invalid(error)))?;
+                0
+            }
             Setvbuf => {
                 let _buffer = self.number(binary, convention, 1)?;
                 let mode = self.number(binary, convention, 2)? as u32;

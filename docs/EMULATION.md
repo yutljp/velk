@@ -235,3 +235,13 @@ Descriptors start at three and are not reused. Descriptor-based `read`/`write`,
 formatted I/O, seeking, clearing indicators, and `getline` on virtual files are
 unsupported. Unknown paths, unsupported open modes, and invalid or closed
 `FILE *` values stop with diagnostics naming the path or value.
+
+`rand` and `srand` use the default glibc sequence, initially seeded with 1.
+Each execution has its own generator state. `time` returns a fixed Unix time
+(default 0); the `time` option overrides it and a non-null argument receives
+the same value at the target pointer width. `signal` records Linux signal
+handlers and returns the previous handler. `alarm` replaces a pending timer
+and returns its previous duration; the model clock does not advance or deliver
+signals. `setbuf` accepts a null buffer for a standard or virtual file stream; caller-owned buffers are unsupported.
+
+`exit` flushes virtual file streams and stops execution. If the image names or imports an exit-handler registration function, the call stops with a diagnostic. `_exit` is not modeled as a libc call.

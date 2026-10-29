@@ -4,6 +4,7 @@ mod cxx;
 mod files;
 mod libc;
 mod memory;
+mod runtime;
 mod syscalls;
 
 use std::cell::RefCell;
@@ -25,6 +26,7 @@ pub struct Term {
     text: String,
     concrete: Option<u64>,
     defined: u64,
+    bits: u32,
     session: Option<Rc<RefCell<Solver>>>,
 }
 
@@ -47,6 +49,7 @@ impl Term {
         Self {
             text: smt::constant(value),
             concrete: Some(value),
+            bits: 64 - value.leading_zeros(),
             defined: u64::MAX,
             session: None,
         }
@@ -110,6 +113,9 @@ pub struct State {
     stdin_stream: u64,
     standard_streams: [u64; 3],
     heap_next: u64,
+    signal_handlers: BTreeMap<u32, Term>,
+    alarm: Term,
+    random: runtime::Random,
     cxx_locale: Option<super::cxx::Locale>,
     argv: Vec<Vec<Term>>,
     arguments: BTreeMap<usize, Term>,
@@ -208,6 +214,9 @@ impl State {
             stdin_stream: 0,
             standard_streams: [0; 3],
             heap_next: 0,
+            signal_handlers: BTreeMap::new(),
+            alarm: Term::constant(0),
+            random: runtime::Random::default(),
             cxx_locale: None,
             argv: Vec::new(),
             arguments: BTreeMap::new(),
@@ -398,6 +407,7 @@ impl State {
         Ok(Term {
             text,
             concrete: None,
+            bits: 64,
             defined: u64::MAX,
             session: Some(Rc::clone(&self.solver)),
         })
@@ -405,7 +415,7 @@ impl State {
 
     fn symbolic_byte(&self) -> Result<Term> {
         let term = self.symbolic()?;
-        self.bind(smt::low(&term.text, 8))
+        self.low(&term, 8)
     }
 
     fn bind(&self, expression: String) -> Result<Term> {
@@ -413,9 +423,23 @@ impl State {
         Ok(Term {
             text,
             concrete: None,
+            bits: 64,
             defined: u64::MAX,
             session: Some(Rc::clone(&self.solver)),
         })
+    }
+
+    fn predicate(&self, condition: &str) -> Result<Term> {
+        let mut term = match self.bind(format!(
+            "(ite {condition} {} {})",
+            smt::constant(1),
+            smt::constant(0)
+        )) {
+            Ok(term) => term,
+            Err(error) => return Err(error),
+        };
+        term.bits = 1;
+        Ok(term)
     }
 
     /// Reads a physical or lifted register. Uninitialized registers are errors.
@@ -595,7 +619,11 @@ impl State {
             return Ok(Some(value));
         }
         let mut low = if maximum { model } else { 0 };
-        let mut high = if maximum { u64::MAX } else { model };
+        let mut high = if maximum {
+            semantics::mask(term.bits)
+        } else {
+            model
+        };
         while low < high {
             let middle = low + (high - low) / 2;
             let mut trial = constraints.to_vec();
@@ -626,6 +654,7 @@ impl State {
             None => {
                 let mut result = self.bind(smt::low(&value.text, bits))?;
                 result.defined = value.defined | !mask;
+                result.bits = value.bits.min(bits);
                 Ok(result)
             }
         }
@@ -771,11 +800,7 @@ impl State {
                     );
                 }
                 let test = smt::condition(*cond, &a.text, &b.text, bits);
-                let test = self.bind(format!(
-                    "(ite {test} {} {})",
-                    smt::constant(1),
-                    smt::constant(0)
-                ))?;
+                let test = self.predicate(&test)?;
                 let choice = self.resolve(test)?;
                 return self.eval(binary, if choice == 1 { then } else { els });
             }
@@ -1568,6 +1593,9 @@ impl State {
             } else {
                 self.libc(binary, name, convention)?
             };
+            if self.stop.is_some() {
+                return Ok(());
+            }
             let result = if self.isa == Isa::I386 {
                 self.low(&result, 32)?
             } else {
@@ -1906,6 +1934,73 @@ fn record_branches(observations: &Rc<RefCell<BranchObservations>>, blocks: &[Blo
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn known_widths_preserve_unsigned_bounds() {
+        if !smt::Proofs::available() {
+            return;
+        }
+        let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/alt.o");
+        let binary = Binary::open(&path).expect("bounds fixture");
+        let address = *binary
+            .image()
+            .functions
+            .keys()
+            .next()
+            .expect("fixture function");
+        let state = State::new(&binary, &crate::addr::format(address), &Options::default())
+            .expect("bounds state");
+        let value = state.symbolic().expect("symbolic integer");
+        let mut proofs = smt::Proofs::default();
+        for bits in [0, 1, 8, 16, 32, 64] {
+            let narrowed = state.low(&value, bits).expect("narrow value");
+            let maximum = semantics::mask(bits);
+            assert_eq!(
+                state.bounds(&narrowed).expect("unsigned bounds"),
+                Some((0, maximum))
+            );
+            let mut fork = state.clone();
+            fork.constrain(Cond::Eq, &narrowed, &Term::constant(maximum), 64)
+                .expect("maximum constraint");
+            assert_eq!(
+                fork.evaluate(&narrowed, 2).expect("maximum value"),
+                [maximum]
+            );
+            proofs.predicate(
+                format!("zero upper bits bound {bits}"),
+                &format!(
+                    "(bvule {} {})",
+                    smt::low("r0", bits),
+                    smt::constant(maximum)
+                ),
+                "true",
+            );
+        }
+        let predicate = state
+            .predicate(&format!("(= {} {})", value.text, smt::constant(42)))
+            .expect("predicate");
+        assert_eq!(
+            state.evaluate(&predicate, 3).expect("boolean values"),
+            [0, 1]
+        );
+        proofs.predicate(
+            "predicate bound",
+            &format!(
+                "(bvule (ite (= r0 {}) {} {}) {})",
+                smt::constant(42),
+                smt::constant(1),
+                smt::constant(0),
+                smt::constant(1)
+            ),
+            "true",
+        );
+        proofs.counterexample(
+            "byte bound cannot omit bit 7",
+            &format!("(bvule {} {})", smt::low("r0", 8), smt::constant(127)),
+            "true",
+        );
+        proofs.check();
+    }
 
     #[test]
     fn an_invalid_switch_target_does_not_discard_other_cases() {

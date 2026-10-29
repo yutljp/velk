@@ -50,6 +50,24 @@ impl Runner<'_> {
                 }
                 Ok(Some(0))
             }
+            Setbuf => {
+                let buffer = args.next(self, width)?;
+                if buffer != 0 {
+                    return Err(error("setbuf with a caller-owned buffer is unsupported"));
+                }
+                let mode = if matches!(
+                    self.image.format,
+                    crate::loader::Format::Pe | crate::loader::Format::Coff
+                ) {
+                    4
+                } else {
+                    2
+                };
+                self.files
+                    .set_buffering(token, standard, mode, self.image.format)
+                    .map_err(error)?;
+                Ok(Some(0))
+            }
             Setvbuf => {
                 let _buffer = args.next(self, width)?;
                 let mode = args.next(self, 4)? as u32;

@@ -18,6 +18,7 @@ pub(crate) enum Operation {
     Fclose,
     Fflush,
     Setvbuf,
+    Setbuf,
     Fileno,
     Feof,
     Ferror,
@@ -469,7 +470,7 @@ impl Runner<'_> {
                 }
                 Ok(result)
             }
-            Fopen | Fclose | Fflush | Setvbuf | Fileno | Feof | Ferror => unreachable!(),
+            Fopen | Fclose | Fflush | Setvbuf | Setbuf | Fileno | Feof | Ferror => unreachable!(),
             Getchar | Vprintf | Vfprintf | Vsprintf | Vsnprintf | Vscanf | Vfscanf | Vsscanf => {
                 unreachable!()
             }

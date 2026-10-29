@@ -77,6 +77,17 @@ fn file_streams_match_native_through_all_interfaces() {
                     }
                 }
             }
+            let report =
+                interfaces.check(&path, &binary, "exit_file", json!({"files":{"output":[]}}));
+            assert_eq!(report["reason"], "exit", "{architecture} {report}");
+            assert_eq!(report["files"]["output"], json!([81]));
+            let report = interfaces.check(
+                &path,
+                &binary,
+                "caller_buffer",
+                json!({"files":{"output":[]}}),
+            );
+            assert_eq!(report["reason"], "error", "{architecture} {report}");
             let report = interfaces.check(
                 &path,
                 &binary,
@@ -134,6 +145,27 @@ fn symbolic_file_solution_replays_across_interfaces() {
             let path =
                 matrix::fixtures().join(format!("{architecture}.{optimization}.streams.elf"));
             let binary = Binary::open(&path).expect("stream fixture");
+            let options =
+                serde_json::from_value(json!({"files":{"output":[]},"returns":{"eq":99}}))
+                    .expect("exit options");
+            let report = symbolic::solve(&binary, "exit_file", &options).expect("exit search");
+            assert!(!report.found, "{report:?}");
+            assert!(
+                report.diagnostics.iter().any(|message| message == "exit"),
+                "{report:?}"
+            );
+            let options = serde_json::from_value(json!({"files":{"output":[]},"returns":{"eq":1}}))
+                .expect("symbolic options");
+            let report =
+                symbolic::solve(&binary, "caller_buffer", &options).expect("buffer search");
+            assert!(!report.found, "{report:?}");
+            assert!(
+                report
+                    .diagnostics
+                    .iter()
+                    .any(|message| message.contains("caller-owned buffer")),
+                "{report:?}"
+            );
             for (name, bytes, result) in [
                 ("solve_file", vec![0; 5], 1u32),
                 ("combined_inputs", vec![0; 1], 1),

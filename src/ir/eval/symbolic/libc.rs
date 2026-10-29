@@ -276,6 +276,68 @@ impl State {
         if matches!(hook, Hook::Getline) {
             return self.getline(binary, convention);
         }
+        if matches!(hook, Hook::Exit) {
+            if hooks::has_exit_handlers(binary.image()) {
+                return Err(invalid("exit handlers are unsupported").into());
+            }
+            if let Err(error) = self.files.flush(0) {
+                return Err(invalid(error).into());
+            }
+            self.stop = Some("exit".to_owned());
+            return Ok(Term::constant(0));
+        }
+        if matches!(hook, Hook::Signal) {
+            if binary.image().format != crate::loader::Format::Elf {
+                return Err(invalid("signal model requires Linux ELF").into());
+            }
+            let signal = match self.number(binary, convention, 0) {
+                Ok(signal) => signal as u32,
+                Err(error) => return Err(error),
+            };
+            if !(1..=64).contains(&signal) || matches!(signal, 9 | 19 | 32 | 33) {
+                return Err(invalid(format!("unsupported signal number {signal}")).into());
+            }
+            let handler = match self.argument(binary, convention, 1) {
+                Ok(handler) => handler,
+                Err(error) => return Err(error),
+            };
+            let bits = u32::from(crate::arch::pointer_bytes(self.isa)) * 8;
+            if let Err(error) = self.require_defined(&handler, bits) {
+                return Err(error.into());
+            }
+            let mask = crate::ir::semantics::mask(bits);
+            let invalid_handler = format!(
+                "(= (bvand {} {}) {})",
+                handler.text,
+                smt::constant(mask),
+                smt::constant(mask)
+            );
+            let mut invalid_constraints = self.constraints.clone();
+            invalid_constraints.push(invalid_handler);
+            match self.solver.borrow_mut().query(&invalid_constraints, None) {
+                Ok(None) => {}
+                Ok(Some(_)) => return Err(invalid("unsupported SIG_ERR handler").into()),
+                Err(error) => return Err(error.into()),
+            }
+            return Ok(self
+                .signal_handlers
+                .insert(signal, handler)
+                .unwrap_or_else(|| Term::constant(0)));
+        }
+        if matches!(hook, Hook::Alarm) {
+            let seconds = match self.argument(binary, convention, 0) {
+                Ok(seconds) => seconds,
+                Err(error) => return Err(error),
+            };
+            let seconds = match self.low(&seconds, 32) {
+                Ok(seconds) => seconds,
+                Err(error) => return Err(error.into()),
+            };
+            return Ok(std::mem::replace(&mut self.alarm, seconds));
+        }
+        if matches!(hook, Hook::Random | Hook::Seed | Hook::Time) {
+            return self.runtime_hook(binary, convention, hook);
+        }
         let first = self.number(binary, convention, 0)?;
         match hook {
             Hook::Length
@@ -681,6 +743,7 @@ impl State {
         }
         let mut value = Term::constant(0);
         let mut overflow = "false".to_owned();
+        let mut maximum = Some(0u64);
         for byte in digit_bytes {
             let decimal = format!(
                 "(and (bvuge {0} {1}) (bvule {0} {2}))",
@@ -701,10 +764,13 @@ impl State {
             } else {
                 positive_limit
             };
-            overflow = format!(
-                "(or {overflow} {})",
-                integer_overflow(&value.text, &digit.text, base, limit)
-            );
+            maximum = maximum.and_then(|value| integer_bound(value, base));
+            if maximum.is_none_or(|maximum| maximum > limit) {
+                overflow = format!(
+                    "(or {overflow} {})",
+                    integer_overflow(&value.text, &digit.text, base, limit)
+                );
+            }
             value = match self.bind(format!(
                 "(bvadd (bvmul {} {}) {})",
                 value.text,
@@ -714,6 +780,9 @@ impl State {
                 Ok(value) => value,
                 Err(error) => return Err(error.into()),
             };
+            if let Some(maximum) = maximum {
+                value.bits = 64 - maximum.leading_zeros();
+            }
         }
         let limit = if negative {
             negative_limit
@@ -1313,6 +1382,12 @@ impl State {
     }
 }
 
+fn integer_bound(maximum: u64, base: u64) -> Option<u64> {
+    maximum
+        .checked_mul(base)
+        .and_then(|value| value.checked_add(base - 1))
+}
+
 fn digit_value(byte: &str, decimal: &str, lower: &str, base: u64) -> String {
     if base == 10 {
         format!("(bvsub {byte} {})", smt::constant(48))
@@ -1461,6 +1536,56 @@ mod tests {
         assert!(
             matches!(unknown, Err(super::super::Failure::Error(error)) if error.to_string().contains("unsupported symbolic import: unmodeled_input"))
         );
+    }
+
+    #[test]
+    fn smt_integer_digit_bounds() {
+        use crate::ir::smt::Proofs;
+        if !Proofs::available() {
+            return;
+        }
+        let mut proofs = Proofs::default();
+        for base in [10, 16] {
+            let mut maximum = 0u64;
+            while let Some(next) = integer_bound(maximum, base) {
+                let assumption = format!(
+                    "(and (bvule r0 {}) (bvult r1 {}))",
+                    smt::constant(maximum),
+                    smt::constant(base)
+                );
+                let sum = format!(
+                    "(bvadd (bvmul ((_ zero_extend 64) r0) (_ bv{base} 128)) ((_ zero_extend 64) r1))"
+                );
+                proofs.predicate(
+                    format!("integer digit bound {base} {maximum}"),
+                    &format!("(=> {assumption} (bvule {sum} (_ bv{next} 128)))"),
+                    "true",
+                );
+                maximum = next;
+            }
+        }
+        let decimal = format!(
+            "(and (bvuge r0 {}) (bvule r0 {}))",
+            smt::constant(48),
+            smt::constant(57)
+        );
+        let digit = format!("(bvsub r0 {})", smt::constant(48));
+        let original = format!(
+            "(ite {decimal} {digit} (bvsub (bvor r0 {}) {}))",
+            smt::constant(32),
+            smt::constant(87)
+        );
+        proofs.predicate(
+            "decimal digit conversion",
+            &format!("(=> {decimal} (= {digit} {original}))"),
+            "true",
+        );
+        proofs.counterexample(
+            "decimal digit bound requires all nine values",
+            &format!("(=> {decimal} (bvule {digit} {}))", smt::constant(8)),
+            "true",
+        );
+        proofs.check();
     }
 
     #[test]

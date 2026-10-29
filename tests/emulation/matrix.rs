@@ -97,7 +97,10 @@ impl Interfaces {
                 );
             }
         };
-        let success = matches!(expected["reason"].as_str(), Some("return" | "end address"));
+        let success = matches!(
+            expected["reason"].as_str(),
+            Some("return" | "end address" | "exit")
+        );
         let cli = Command::new(env!("CARGO_BIN_EXE_velk"))
             .args(["--emulate", "--json"])
             .arg(path)

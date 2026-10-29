@@ -157,6 +157,8 @@ pub struct ReadResult {
 pub struct Options {
     /// Base of a dedicated 4 KiB thread-local mapping; chosen automatically when absent.
     pub tls_base: Option<Word>,
+    /// Fixed Unix time in seconds for `time()`; default zero.
+    pub time: Option<crate::emulation::Word>,
     /// Stack guard, truncated to pointer width; default 0x6a09e667bb67ae00.
     pub canary: Option<Word>,
     /// Stdin bytes consumed in order by input hooks; absent means EOF.
@@ -194,6 +196,7 @@ impl Default for Options {
         Self {
             tls_base: None,
             canary: None,
+            time: None,
             stdin: None,
             stdin_descriptors: Vec::new(),
             files: BTreeMap::new(),

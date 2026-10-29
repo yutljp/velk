@@ -1881,6 +1881,17 @@ fn a_function_whose_address_is_taken_is_declared_and_read_as_a_number() {
     assert!(text.contains("void square();\n"), "{text}");
     assert!(text.contains("    return (uintptr_t)square;\n"), "{text}");
 
+    let main_symbols = Symbols {
+        functions: HashMap::from([(0x40, "main".to_owned())]),
+        ..Symbols::default()
+    };
+    let main_text = render(&ir, &[], &main_symbols, &[]);
+    assert!(
+        main_text.contains("int main(int, char **, char **);\n"),
+        "{main_text}"
+    );
+    assert!(!main_text.contains("void main();\n"), "{main_text}");
+
     let mut symbols = symbols;
     symbols.unused_parameters.insert(
         0x40,

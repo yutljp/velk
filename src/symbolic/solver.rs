@@ -1,4 +1,4 @@
-//! Persistent SMT-LIB transport; each query has an isolated assertion scope.
+//! Persistent SMT-LIB transport with isolated assertions for each query.
 
 use std::collections::HashMap;
 use std::io::{BufRead, BufReader, Write};
@@ -161,7 +161,7 @@ impl Solver {
         self.next = next;
         let result = match expression {
             Some(expression) => self.send(&format!(
-                "(declare-const {name} (_ BitVec 64))\n(assert (= {name} {expression}))"
+                "(define-fun {name} () (_ BitVec 64) {expression})"
             )),
             None => self.send(&format!("(declare-const {name} (_ BitVec 64))")),
         };
@@ -199,18 +199,13 @@ impl Solver {
         {
             return Ok(satisfiable.then_some(0));
         }
-        if let Err(error) = self.send("(push 1)") {
-            self.failed = true;
-            return Err(error);
-        }
         let result = self.query_inner(constraints, term);
-        let cleanup = self.send("(pop 1)");
-        if result.is_err() || cleanup.is_err() {
+        if result.is_err() {
             self.failed = true;
         }
-        match (result, cleanup) {
-            (Err(error), _) | (_, Err(error)) => Err(error),
-            (Ok(value), Ok(())) => {
+        match result {
+            Err(error) => Err(error),
+            Ok(value) => {
                 if term.is_none() {
                     let size = constraints.iter().fold(0usize, |size, constraint| {
                         size.saturating_add(constraint.len())
@@ -235,16 +230,32 @@ impl Solver {
     }
 
     fn query_inner(&mut self, constraints: &[String], term: Option<&str>) -> Result<Option<u64>> {
-        for constraint in constraints {
-            self.send(&format!("(assert {constraint})"))?;
+        if let Err(error) = self.send("(reset-assertions)") {
+            return Err(error);
         }
-        self.send("(check-sat)")?;
-        match self.response()?.as_str() {
+        for constraint in constraints {
+            if let Err(error) = self.send(&format!("(assert {constraint})")) {
+                return Err(error);
+            }
+        }
+        if let Err(error) = self.send("(check-sat)") {
+            return Err(error);
+        }
+        let answer = match self.response() {
+            Ok(answer) => answer,
+            Err(error) => return Err(error),
+        };
+        match answer.as_str() {
             "unsat" => return Ok(None),
             "sat" => {}
             "unknown" => {
-                self.send("(get-info :reason-unknown)")?;
-                let reason = self.response()?;
+                if let Err(error) = self.send("(get-info :reason-unknown)") {
+                    return Err(error);
+                }
+                let reason = match self.response() {
+                    Ok(reason) => reason,
+                    Err(error) => return Err(error),
+                };
                 return Err(invalid(format!("solver returned unknown: {reason}")));
             }
             answer => {
@@ -256,8 +267,13 @@ impl Solver {
         let Some(term) = term else {
             return Ok(Some(0));
         };
-        self.send(&format!("(get-value ({term}))"))?;
-        let response = self.response()?;
+        if let Err(error) = self.send(&format!("(get-value ({term}))")) {
+            return Err(error);
+        }
+        let response = match self.response() {
+            Ok(response) => response,
+            Err(error) => return Err(error),
+        };
         let tokens: Vec<&str> = response
             .split(['(', ')', ' ', '\n', '\r', '\t'])
             .filter(|s| !s.is_empty())
@@ -326,6 +342,17 @@ mod tests {
         assert_eq!(solver.query(&constraints, Some(&sum)).unwrap(), Some(0));
         assert_eq!(solver.query(&["false".to_owned()], None).unwrap(), None);
         assert_eq!(solver.query(&[], None).unwrap(), Some(0));
+        let y = solver
+            .define(Some(&format!("(bvadd {x} (_ bv1 64))")))
+            .unwrap();
+        for value in [0, 42, u64::MAX, 42, 0] {
+            let constraints = [format!("(= {x} (_ bv{value} 64))")];
+            assert_eq!(
+                solver.query(&constraints, Some(&y)).unwrap(),
+                Some(value.wrapping_add(1))
+            );
+            assert_eq!(solver.query(&["false".to_owned()], None).unwrap(), None);
+        }
     }
 
     #[test]

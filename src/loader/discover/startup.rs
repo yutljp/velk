@@ -218,9 +218,10 @@ fn name_main(image: &mut Image, target: Option<u64>) {
         && image
             .section_at(target)
             .is_some_and(|section| section.executable)
-        && image.fragment_at(target).is_none()
     {
-        super::add_entry(image, target);
+        if image.fragment_at(target).is_none() {
+            super::add_entry(image, target);
+        }
         if let Some(function) = image.functions.get_mut(&target) {
             function.merge(Some("main".to_owned()), None, NameSource::Call);
         }
@@ -315,6 +316,25 @@ fn discover_aarch64(image: &mut Image) {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn freestanding_entry_does_not_prove_main() {
+        let mut code = vec![
+            0xe8, 59, 0, 0, 0, 0xb8, 60, 0, 0, 0, 0xbf, 0, 0, 0, 0, 0x0f, 0x05,
+        ];
+        code.resize(65, 0xc3);
+        let mut image = Image::from_code(Isa::X86_64, 0, code);
+        image.format = Format::Elf;
+        image.entry = Some(0);
+        discover(&mut image);
+        assert_ne!(
+            image
+                .functions
+                .get(&64)
+                .and_then(|function| function.name.as_deref()),
+            Some("main")
+        );
+    }
 
     #[test]
     fn startup_arguments_require_a_known_value_and_runtime_call() {

@@ -25,6 +25,8 @@ pub struct MemoryInput {
 pub struct Options {
     /// Base of a dedicated 4 KiB thread-local mapping; chosen automatically when absent.
     pub tls_base: Option<crate::emulation::Word>,
+    /// Fixed Unix time in seconds for `time()`; default zero.
+    pub time: Option<crate::emulation::Word>,
     /// Stack guard, truncated to pointer width; default 0x6a09e667bb67ae00.
     pub canary: Option<crate::emulation::Word>,
     /// Addresses to reach before executing the instruction there.
@@ -64,6 +66,7 @@ impl Default for Options {
         Self {
             tls_base: None,
             canary: None,
+            time: None,
             find: Vec::new(),
             returns: None,
             avoid: Vec::new(),

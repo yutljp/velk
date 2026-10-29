@@ -33,13 +33,13 @@ extern uint8_t completed_0; /* address: 0x4028 */
 int (__fprintf_chk)(FILE *, int, const char *, ...);
 int (__libc_start_main)(int (*)(int, char **, char **), int, char **, void (*)(void), void (*)(void), void (*)(void), void *);
 int (__snprintf_chk)(char *, size_t, int, size_t, const char *, ...);
+int main(int, char **, char **);
 int32_t deregister_tm_clones();
 int32_t register_tm_clones();
 uint64_t __gmon_start__();
 uint64_t lookup();
 void (__cxa_finalize)(void *);
 void (__stack_chk_fail)(void);
-void main();
 /* end velk prelude */
 
 == 0x1000 _init

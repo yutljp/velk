@@ -5,6 +5,7 @@
 #else
 typedef __SIZE_TYPE__ size_t;
 typedef struct FILE FILE;
+extern void exit(int);
 extern FILE *fopen(const char *, const char *);
 extern int fclose(FILE *);
 extern size_t fread(void *, size_t, size_t, FILE *);
@@ -12,6 +13,7 @@ extern size_t fwrite(const void *, size_t, size_t, FILE *);
 extern char *fgets(char *, int, FILE *);
 extern int fputs(const char *, FILE *);
 extern int fflush(FILE *);
+extern void setbuf(FILE *, char *);
 extern int setvbuf(FILE *, char *, int, size_t);
 extern int fileno(FILE *);
 extern int feof(FILE *);
@@ -40,6 +42,7 @@ unsigned read_file(void) {
 
 unsigned write_file(void) {
     FILE *file = fopen("output", "wb");
+    setbuf(file, 0);
     unsigned result = setvbuf(file, 0, 0, 32) == 0;
     result += fwrite("ab\0c", 2, 2, file) == 2;
     result += fputs("\r\n", file) >= 0;
@@ -174,4 +177,18 @@ unsigned output_assignment(void) {
     unsigned result = fwrite(&byte, 1, 1, file) == 1;
     fclose(file);
     return result;
+}
+
+unsigned caller_buffer(void) {
+    char buffer[8192];
+    FILE *file = fopen("output", "w");
+    setbuf(file, buffer);
+    return 1;
+}
+
+unsigned exit_file(void) {
+    FILE *file = fopen("output", "w");
+    fwrite("Q", 1, 1, file);
+    exit(3);
+    return 99;
 }

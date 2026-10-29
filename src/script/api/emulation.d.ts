@@ -4,6 +4,8 @@ interface EmulationOptions {
   /** Dedicated 4 KiB thread-local mapping; chosen automatically by default. */
   tlsBase?: number | string;
   /** Stack guard, truncated to pointer width; default "0x6a09e667bb67ae00". */
+  /** Fixed Unix time in seconds; default zero. */
+  time?: number | string;
   canary?: number | string;
   /** Stdin consumed in order; absent means EOF. At most 16 MiB. */
   stdin?: {text: string} | {hex: string} | {file: string};
@@ -46,7 +48,7 @@ interface EmulationReport {
   returnValue: string;
   memory: { address: string; bytes: number[]; hex: string }[];
   steps: number;
-  reason: "return" | "end address" | "trap" | "stack check failed" | "step limit" | "time limit" | "error";
+  reason: "return" | "exit" | "end address" | "trap" | "stack check failed" | "step limit" | "time limit" | "error";
   address: string;
   error: string | null;
   trace: string[];

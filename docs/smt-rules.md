@@ -367,3 +367,6 @@ Saturating pack checks compare arbitrary 64-bit halves with scalar signed-lane e
 File-transfer checks prove complete-element counts for element sizes 1, 2, 4 and 8,
 with 20-bit element counts and a partial final element. A negative control rejects
 rounding up partial elements. Stream state and memory effects use execution tests.
+
+The symbolic random generator checks 32-bit state addition against native-width bit-vector addition, with a negative control that removes bit 31.
+Unsigned symbolic enumeration checks complete minimum and maximum bounds at 0, 1, 8, 16, 32 and 64 bits, plus Boolean enumeration. SMT checks prove the upper bounds for zero extension and predicates.
