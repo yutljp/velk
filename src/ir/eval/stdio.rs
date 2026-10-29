@@ -30,6 +30,32 @@ pub(super) fn complete_elements(bytes: u64, size: u64) -> u64 {
     bytes.checked_div(size).unwrap_or(0)
 }
 
+pub(super) fn default_buffering_mode(format: crate::loader::Format) -> u32 {
+    if matches!(
+        format,
+        crate::loader::Format::Pe | crate::loader::Format::Coff
+    ) {
+        4
+    } else {
+        2
+    }
+}
+
+pub(super) fn line_buffer_size(size: u64) -> Option<u64> {
+    let size = size as u32 as i32;
+    (size > 0).then_some((size - 1) as u64)
+}
+
+pub(super) fn file_write_result(operation: Operation, written: bool, count: u64) -> u64 {
+    if written {
+        count
+    } else if matches!(operation, Operation::Fputs) {
+        u64::from(u32::MAX)
+    } else {
+        0
+    }
+}
+
 const LIMIT: usize = crate::emulation::HEAP_SIZE as usize;
 
 pub(super) fn read_only_open_flags(isa: crate::loader::Isa, flags: u32) -> bool {
@@ -343,17 +369,35 @@ mod tests {
     fn buffering_modes_follow_target_constants() {
         use crate::loader::Format;
         for format in [Format::Elf, Format::MachO] {
+            assert_eq!(default_buffering_mode(format), 2);
             for mode in 0..=2 {
                 assert!(valid_buffering_mode(mode, format));
             }
             assert!(!valid_buffering_mode(64, format));
         }
         for format in [Format::Pe, Format::Coff] {
+            assert_eq!(default_buffering_mode(format), 4);
             for mode in [0, 4, 64] {
                 assert!(valid_buffering_mode(mode, format));
             }
             assert!(!valid_buffering_mode(2, format));
         }
+    }
+
+    #[test]
+    fn file_call_sizes_and_write_results() {
+        assert_eq!(line_buffer_size(0), None);
+        assert_eq!(line_buffer_size(1), Some(0));
+        assert_eq!(line_buffer_size(4), Some(3));
+        assert_eq!(line_buffer_size(0x1_0000_0004), Some(3));
+        assert_eq!(line_buffer_size(0x8000_0000), None);
+        assert_eq!(file_write_result(Operation::Fputs, true, 0), 0);
+        assert_eq!(
+            file_write_result(Operation::Fputs, false, 0),
+            u64::from(u32::MAX)
+        );
+        assert_eq!(file_write_result(Operation::Fwrite, true, 3), 3);
+        assert_eq!(file_write_result(Operation::Fwrite, false, 3), 0);
     }
 
     #[test]

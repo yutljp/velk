@@ -1,13 +1,32 @@
 //! Persistent SMT-LIB transport with isolated assertions for each query.
 
 use std::collections::HashMap;
+use std::hash::Hash;
 use std::io::{BufRead, BufReader, Write};
 use std::process::{Child, ChildStdin, ChildStdout, Command, Stdio};
 
 use crate::error::{Error, Result};
 
+const CACHE_LIMIT_BYTES: usize = 8 * 1024 * 1024;
+
 pub(crate) fn invalid(message: impl Into<String>) -> Error {
     Error::Symbolic(message.into())
+}
+
+fn insert_bounded<K: Eq + Hash, V>(
+    cache: &mut HashMap<K, V>,
+    cache_bytes: &mut usize,
+    key: K,
+    value: V,
+    size: usize,
+    entry_limit: usize,
+) {
+    if cache.len() >= entry_limit || (*cache_bytes).saturating_add(size) > CACHE_LIMIT_BYTES {
+        cache.clear();
+        *cache_bytes = 0;
+    }
+    cache.insert(key, value);
+    *cache_bytes = (*cache_bytes).saturating_add(size);
 }
 
 pub(crate) struct Solver {
@@ -170,15 +189,15 @@ impl Solver {
         }
         if let Some(expression) = expression {
             let size = expression.len().saturating_add(name.len());
-            if size <= 8 * 1024 * 1024 {
-                if self.definitions.len() >= 65536
-                    || self.definition_bytes.saturating_add(size) > 8 * 1024 * 1024
-                {
-                    self.definitions.clear();
-                    self.definition_bytes = 0;
-                }
-                self.definitions.insert(expression.to_owned(), name.clone());
-                self.definition_bytes += size;
+            if size <= CACHE_LIMIT_BYTES {
+                insert_bounded(
+                    &mut self.definitions,
+                    &mut self.definition_bytes,
+                    expression.to_owned(),
+                    name.clone(),
+                    size,
+                    65536,
+                );
             }
         }
         Ok(name)
@@ -211,18 +230,17 @@ impl Solver {
                         size.saturating_add(constraint.len())
                             .saturating_add(std::mem::size_of::<String>())
                     });
-                    if size > 8 * 1024 * 1024 {
+                    if size > CACHE_LIMIT_BYTES {
                         return Ok(value);
                     }
-                    if self.satisfiability.len() >= 4096
-                        || self.satisfiability_bytes.saturating_add(size) > 8 * 1024 * 1024
-                    {
-                        self.satisfiability.clear();
-                        self.satisfiability_bytes = 0;
-                    }
-                    self.satisfiability
-                        .insert(constraints.to_vec(), value.is_some());
-                    self.satisfiability_bytes += size;
+                    insert_bounded(
+                        &mut self.satisfiability,
+                        &mut self.satisfiability_bytes,
+                        constraints.to_vec(),
+                        value.is_some(),
+                        size,
+                        4096,
+                    );
                 }
                 Ok(value)
             }

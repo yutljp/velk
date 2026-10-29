@@ -137,14 +137,7 @@ impl Runner<'_> {
                 if buffer != 0 {
                     return Err(error("setbuf with a caller-owned buffer is unsupported"));
                 }
-                let mode = if matches!(
-                    self.image.format,
-                    crate::loader::Format::Pe | crate::loader::Format::Coff
-                ) {
-                    4
-                } else {
-                    2
-                };
+                let mode = crate::ir::eval::stdio::default_buffering_mode(self.image.format);
                 self.files
                     .set_buffering(token, standard, mode, self.image.format)
                     .map_err(error)?;
@@ -195,23 +188,18 @@ impl Runner<'_> {
                     (self.bytes_at(values[0], Some(total as usize))?, values[2])
                 };
                 let written = self.files.write(token, &bytes, 0).map_err(error)?;
-                Ok(Some(if written {
-                    count
-                } else if matches!(operation, Fputs) {
-                    u64::from(u32::MAX)
-                } else {
-                    0
-                }))
+                Ok(Some(crate::ir::eval::stdio::file_write_result(
+                    operation, written, count,
+                )))
             }
             Fgets | Fread => {
                 self.files.stream(token).map_err(error)?;
                 let line = matches!(operation, Fgets);
                 let (limit, size) = if line {
-                    let count = values[1] as u32 as i32;
-                    if count <= 0 {
+                    let Some(limit) = crate::ir::eval::stdio::line_buffer_size(values[1]) else {
                         return Ok(Some(0));
-                    }
-                    ((count - 1) as u64, 1)
+                    };
+                    (limit, 1)
                 } else {
                     let Some(total) = values[1].checked_mul(values[2]) else {
                         return Err(error("fread size overflows"));

@@ -172,14 +172,7 @@ impl State {
                 if buffer != 0 {
                     return Err(invalid("setbuf with a caller-owned buffer is unsupported").into());
                 }
-                let mode = if matches!(
-                    binary.image().format,
-                    crate::loader::Format::Pe | crate::loader::Format::Coff
-                ) {
-                    4
-                } else {
-                    2
-                };
+                let mode = crate::ir::eval::stdio::default_buffering_mode(binary.image().format);
                 self.files
                     .set_buffering(token, standard, mode, binary.image().format)
                     .map_err(|error| super::Failure::Error(invalid(error)))?;
@@ -240,13 +233,7 @@ impl State {
                     .files
                     .write(token, &bytes, Term::constant(0))
                     .map_err(|error| super::Failure::Error(invalid(error)))?;
-                if written {
-                    count
-                } else if matches!(operation, Fputs) {
-                    u64::from(u32::MAX)
-                } else {
-                    0
-                }
+                crate::ir::eval::stdio::file_write_result(operation, written, count)
             }
             Fgets | Fread => {
                 if !standard {
@@ -256,11 +243,10 @@ impl State {
                 }
                 let line = matches!(operation, Fgets);
                 let (limit, size) = if line {
-                    let count = values[1] as u32 as i32;
-                    if count <= 0 {
+                    let Some(limit) = crate::ir::eval::stdio::line_buffer_size(values[1]) else {
                         return Ok(Some(Term::constant(0)));
-                    }
-                    ((count - 1) as u64, 1)
+                    };
+                    (limit, 1)
                 } else {
                     let Some(total) = values[1].checked_mul(values[2]) else {
                         return Err(invalid("fread size overflows").into());

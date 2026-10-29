@@ -22,17 +22,9 @@ pub(super) fn discover(image: &mut Image) {
     if image.isa != Isa::X86_64 {
         return;
     }
-    let Some(entry) = image.entry else {
+    let Some(mut decoder) = entry_decoder(image, 64) else {
         return;
     };
-    let Some(section) = image.section_at(entry).filter(|section| section.executable) else {
-        return;
-    };
-    let size = section.file_size.saturating_sub(entry - section.vaddr);
-    let Some(bytes) = image.read_vaddr(entry, size) else {
-        return;
-    };
-    let mut decoder = Decoder::with_ip(64, bytes, entry, DecoderOptions::NONE);
     let mut info = InstructionInfoFactory::new();
     let mut argument = None;
     let mut target = None;
@@ -133,15 +125,9 @@ pub(super) fn discover(image: &mut Image) {
 }
 
 fn discover_i386(image: &mut Image) {
-    let Some(entry) = image.entry else { return };
-    let Some(section) = image.section_at(entry).filter(|section| section.executable) else {
+    let Some(mut decoder) = entry_decoder(image, 32) else {
         return;
     };
-    let size = section.file_size.saturating_sub(entry - section.vaddr);
-    let Some(bytes) = image.read_vaddr(entry, size) else {
-        return;
-    };
-    let mut decoder = Decoder::with_ip(32, bytes, entry, DecoderOptions::NONE);
     let mut info = InstructionInfoFactory::new();
     let mut argument = None;
     let mut startup_arguments = 0u8;
@@ -211,6 +197,21 @@ fn discover_i386(image: &mut Image) {
             startup_arguments |= 2;
         }
     }
+}
+
+fn entry_decoder(image: &Image, bitness: u32) -> Option<Decoder<'_>> {
+    let entry = image.entry?;
+    let section = image
+        .section_at(entry)
+        .filter(|section| section.executable)?;
+    let size = section.file_size.saturating_sub(entry - section.vaddr);
+    let bytes = image.read_vaddr(entry, size)?;
+    Some(Decoder::with_ip(
+        bitness,
+        bytes,
+        entry,
+        DecoderOptions::NONE,
+    ))
 }
 
 fn name_main(image: &mut Image, target: Option<u64>) {

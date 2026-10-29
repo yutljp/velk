@@ -354,8 +354,12 @@ impl Runner<'_> {
             Err(stop) => return Err(stop),
         };
         let value = match hook {
-            Hook::Unsupported(_) | Hook::StackCheckFail | Hook::Io(_) => {
-                unreachable!("terminal and I/O hooks return above")
+            Hook::Unsupported(_)
+            | Hook::StackCheckFail
+            | Hook::Io(_)
+            | Hook::Random
+            | Hook::Exit => {
+                unreachable!("these hooks return before the library call match")
             }
             Hook::Signal => {
                 if self.image.format != crate::loader::Format::Elf {
@@ -382,7 +386,6 @@ impl Runner<'_> {
                 self.alarm = u64::from(first as u32);
                 previous
             }
-            Hook::Random | Hook::Exit => unreachable!("terminal and random hooks return above"),
             Hook::Seed => {
                 self.random = super::super::random::Random::seeded(first as u32);
                 0
