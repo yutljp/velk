@@ -33,7 +33,9 @@ fn hash_comparisons_reach_indirect_calls() {
             let mut binary =
                 Binary::open(&fixtures().join(format!("{architecture}.{optimization}.elf")))
                     .unwrap();
-            for routine in ["ror13", "djb2", "fnv1a", "crc32", "custom", "pe", "elf"] {
+            for routine in [
+                "ror13", "djb2", "fnv1a", "seeded", "wide", "crc32", "custom", "pe", "elf",
+            ] {
                 let name = format!("case_{routine}");
                 let address = binary.find(&name).unwrap().addr;
                 let summary = binary.summary(address, None).unwrap();
@@ -203,6 +205,8 @@ fn printed_calls_execute_with_matching_and_missing_exports() {
                 ("ror13", "0xe3a01db3"),
                 ("djb2", "0x7c9c7b11"),
                 ("fnv1a", "0x9c67d227"),
+                ("seeded", "0x89112f9d"),
+                ("wide", "0x9c67d227"),
                 ("crc32", "0x9a1e494f"),
                 ("custom", "0x7661fdcd"),
             ] {

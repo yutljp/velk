@@ -21,6 +21,15 @@ NOINLINE u32 fnv1a(const char *name) {
     while (*name) hash = (hash ^ (unsigned char)*name++) * 16777619u;
     return hash;
 }
+NOINLINE u32 seeded(const char *name, u32 hash) {
+    while (*name) hash = (hash ^ (unsigned char)*name++) * 16777619u;
+    return hash;
+}
+NOINLINE u32 wide(const unsigned short *name) {
+    u32 hash = 2166136261u;
+    while (*name) hash = (hash ^ *name++) * 16777619u;
+    return hash;
+}
 NOINLINE u32 crc32(const char *name) {
     u32 hash = ~0u;
     while (*name) {
@@ -53,6 +62,20 @@ NOINLINE Function resolve_##algorithm(u32 wanted) { \
 RESOLVER(ror13)
 RESOLVER(djb2)
 RESOLVER(fnv1a)
+NOINLINE Function resolve_seeded(u32 wanted) {
+    for (struct Module *module = modules; module; module = module->next)
+        for (usize index = 0; index < module->count; ++index)
+            if (seeded(module->exports[index].name, 7) == wanted)
+                return module->exports[index].address;
+    return (Function)0;
+}
+NOINLINE Function resolve_wide(u32 wanted) {
+    for (struct Module *module = modules; module; module = module->next)
+        for (usize index = 0; index < module->count; ++index)
+            if (wide((const unsigned short *)module->exports[index].name) == wanted)
+                return module->exports[index].address;
+    return (Function)0;
+}
 RESOLVER(crc32)
 RESOLVER(custom)
 RESOLVER(collision)
@@ -72,6 +95,8 @@ NOINLINE int case_##algorithm(int value) { \
 CASE(ror13, 0xe3a01db3u)
 CASE(djb2, 0x7c9c7b11u)
 CASE(fnv1a, 0x9c67d227u)
+CASE(seeded, 0x89112f9du)
+CASE(wide, 0x9c67d227u)
 CASE(crc32, 0x9a1e494fu)
 CASE(custom, 0x7661fdcdu)
 CASE(collision, 42)

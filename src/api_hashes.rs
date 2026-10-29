@@ -370,9 +370,45 @@ fn resolve(
             let Some((routine, hash_args)) = resolver_flow.call(hashed) else {
                 continue;
             };
-            if hash_args.len() != 1 || !resolver_flow.loaded(&hash_args[0], 32) {
+            let mut call_arguments = Vec::with_capacity(hash_args.len());
+            let mut string_argument = None;
+            let mut wide_string = false;
+            let mut supported = true;
+            for (argument_index, hash_argument) in hash_args.iter().enumerate() {
+                if resolver_flow.loaded(hash_argument, 32) {
+                    if string_argument.replace(argument_index).is_some() {
+                        supported = false;
+                        break;
+                    }
+                    call_arguments.push(None);
+                    continue;
+                }
+                if let Some(value) = resolver_flow.constant(hash_argument, &mut 128) {
+                    call_arguments.push(Some(value));
+                    continue;
+                }
+                let parameter = match resolver_flow.root(hash_argument) {
+                    Expr::Reg { index, .. } => analysis.ir.params.iter().position(|param| {
+                        param.index == *index || resolver_ssa.entry.get(&param.index) == Some(index)
+                    }),
+                    _ => None,
+                };
+                let Some(value) = parameter
+                    .and_then(|position| arguments.get(position))
+                    .and_then(|value| flow.constant(value, &mut 128))
+                else {
+                    supported = false;
+                    break;
+                };
+                call_arguments.push(Some(value));
+            }
+            let Some(string_argument) = string_argument else {
+                continue;
+            };
+            if !supported {
                 continue;
             }
+            wide_string |= wide_routine(image, routine, deadline);
             let parameter = match resolver_flow.root(wanted) {
                 Expr::Reg { index, .. } => analysis.ir.params.iter().position(|param| {
                     param.index == *index || resolver_ssa.entry.get(&param.index) == Some(index)
@@ -396,8 +432,19 @@ fn resolve(
                 continue;
             };
             let mask = hash_mask;
-            let (candidates, complete) =
-                evaluate(image, routine, hash & mask, mask, deadline, budget);
+            let (candidates, complete) = evaluate(
+                image,
+                Evaluation {
+                    routine,
+                    hash: hash & mask,
+                    mask,
+                    arguments: &call_arguments,
+                    string_argument,
+                    wide_string,
+                },
+                deadline,
+                budget,
+            );
             results.push(ApiHash {
                 block: block_start,
                 statement,
@@ -411,6 +458,44 @@ fn resolve(
         }
     }
     true
+}
+
+fn wide_routine(image: &Image, routine: u64, deadline: Option<Instant>) -> bool {
+    let Some(function) = image.functions.get(&routine) else {
+        return false;
+    };
+    let Ok(analysis) = crate::analysis::analyze(image, function, deadline) else {
+        return false;
+    };
+    analysis
+        .ir
+        .blocks
+        .iter()
+        .flat_map(|block| &block.stmts)
+        .any(|stmt| {
+            let expressions: Vec<&Expr> = match stmt {
+                Stmt::Machine { inputs, .. } => inputs.iter().collect(),
+                Stmt::Assign { value, .. } | Stmt::Ret { value } => vec![value],
+                Stmt::Store { addr, value, .. } => vec![addr, value],
+                Stmt::Brif { lhs, rhs, .. } => vec![lhs, rhs],
+                Stmt::BrIndirect { target } => vec![target],
+                Stmt::Switch { index, .. } => vec![index],
+                Stmt::Call { through, args, .. } => {
+                    through.iter().chain(args.iter().flatten()).collect()
+                }
+                _ => Vec::new(),
+            };
+            expressions.into_iter().any(|expression| {
+                let mut pending = vec![expression];
+                while let Some(expression) = pending.pop() {
+                    if matches!(expression, Expr::Load { width: 2, .. }) {
+                        return true;
+                    }
+                    pending.extend(crate::ir::visit::children(expression));
+                }
+                false
+            })
+        })
 }
 
 fn prepare_ssa(ir: &FunctionIr) -> Option<Ssa> {
@@ -451,14 +536,29 @@ fn prepare_ssa(ir: &FunctionIr) -> Option<Ssa> {
     Some(ssa)
 }
 
-fn evaluate(
-    image: &Image,
+struct Evaluation<'a> {
     routine: u64,
     hash: u64,
     mask: u64,
+    arguments: &'a [Option<u64>],
+    string_argument: usize,
+    wide_string: bool,
+}
+
+fn evaluate(
+    image: &Image,
+    evaluation: Evaluation<'_>,
     deadline: Option<Instant>,
     budget: &mut usize,
 ) -> (Vec<String>, bool) {
+    let Evaluation {
+        routine,
+        hash,
+        mask,
+        arguments,
+        string_argument,
+        wide_string,
+    } = evaluation;
     let Ok(memory) = Memory::new(image) else {
         return (Vec::new(), false);
     };
@@ -469,10 +569,35 @@ fn evaluate(
         if *budget == 0 || crate::deadline::passed(deadline).is_err() {
             return (candidates, false);
         }
-        let mut bytes = name.as_bytes().to_vec();
-        bytes.push(0);
+        let bytes = if wide_string {
+            let mut bytes = Vec::with_capacity(name.len().saturating_mul(2).saturating_add(2));
+            for unit in name.encode_utf16() {
+                bytes.extend_from_slice(&unit.to_le_bytes());
+            }
+            bytes.extend_from_slice(&[0, 0]);
+            bytes
+        } else {
+            let mut bytes = name.as_bytes().to_vec();
+            bytes.push(0);
+            bytes
+        };
+        let mut call_arguments = Vec::with_capacity(arguments.len());
+        for (index, argument) in arguments.iter().enumerate() {
+            let value = if index == string_argument {
+                address
+            } else if let Some(value) = argument {
+                *value
+            } else {
+                complete = false;
+                break;
+            };
+            call_arguments.push(Word::Text(crate::addr::format(value)));
+        }
+        if call_arguments.len() != arguments.len() {
+            continue;
+        }
         let options = Options {
-            arguments: vec![Word::Text(crate::addr::format(address))],
+            arguments: call_arguments,
             memory: vec![MemoryWrite {
                 address: Word::Text(crate::addr::format(address)),
                 bytes: Some(bytes),

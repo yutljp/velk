@@ -24,11 +24,11 @@ call with a direct API call or infer a prototype from the hash.
 The current analysis requires a direct resolver call with a constant argument,
 a loop with an equality comparison between that argument and a direct hash call,
 and an indirect call through the resolver's result, or a returned lookup result
-on i386. The hash routine must take
-one pointer to a zero-terminated byte string. Stack slots and register copies are
-handled through the existing memory and SSA analyses. Inlined hashes, combined
-module/name hashes, wide strings, hash seeds passed as additional arguments,
-and results merged through different definitions can remain unrecognized.
+on i386. The hash routine must take one pointer to a zero-terminated string and
+may take additional integer arguments that are constant at the resolver call
+site. UTF-16 strings are evaluated when the routine reads 16-bit characters.
+Stack slots and register copies are handled through the existing memory and SSA
+analyses. Inlined hashes and combined module/name hashes can remain unrecognized.
 The analysis does not verify a PEB or link-map structure from offsets.
 The supported architectures are x86-64, i386 and AArch64. Go images are skipped.
 i386 indirect calls with unknown argument counts still
@@ -52,6 +52,7 @@ b.getFunction("case_ror13").summary().apiHashes;
 ```
 
 For MCP, pass that JavaScript as `code` to `velk_run_script`. Its text result contains
-the same JSON array. The fixtures include ROR13, djb2, FNV-1a, CRC32, a custom
-hash, collisions, unknown hashes, PE export directories and ELF dynamic symbols.
+the same JSON array. The fixtures include ROR13, djb2, FNV-1a, seeded and UTF-16
+FNV-1a, CRC32, a custom hash, collisions, unknown hashes, PE export directories
+and ELF dynamic symbols.
 They are compiled as position-independent code for x86-64, i386 and AArch64.
