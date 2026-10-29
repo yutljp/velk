@@ -179,6 +179,7 @@ fn decompile_functions(
     addresses: &[u64],
     title: &str,
     signatures: Option<&Database>,
+    json: bool,
 ) -> ExitCode {
     use std::time::Duration;
 
@@ -214,7 +215,17 @@ fn decompile_functions(
     }
     let code = velk::render::combine(&code);
     let addr = addresses.first().copied().unwrap_or(0);
-    cli_output::print_code(binary, addr, title, &code, Language::C);
+    if json {
+        println!(
+            "{}",
+            serde_json::json!({
+                "addresses": velk::render::instruction_addresses(&code),
+                "code": code,
+            })
+        );
+    } else {
+        cli_output::print_code(binary, addr, title, &code, Language::C);
+    }
     status
 }
 
@@ -401,6 +412,8 @@ mod tests {
                 Command::Decompile {
                     path: PathBuf::from("binary"),
                     functions: vec!["0x1e0".into()],
+                    addresses: false,
+                    json: false,
                 },
             ),
             (
@@ -518,7 +531,6 @@ mod tests {
         for args in [
             vec!["-s", "binary", "--limit", "1"],
             vec!["-d", "binary", "sum3", "--budget", "20"],
-            vec!["-D", "binary", "sum3", "--json"],
             vec!["-f", "binary", "--output", "db.json"],
             vec!["-f", "binary", "sum3"],
             vec!["-s", "binary", "sum3"],
@@ -536,7 +548,10 @@ mod tests {
     fn single_operation_options_conflict_with_every_other_operation() {
         for (allowed, option) in [
             (&["--card"][..], vec!["--budget", "20"]),
-            (&["--functions", "--disasm"][..], vec!["--json"]),
+            (
+                &["--functions", "--disasm", "--decompile", "--emulate"][..],
+                vec!["--json"],
+            ),
             (&["--build-signatures"][..], vec!["--output", "db.json"]),
         ] {
             for (_, operation) in OPERATIONS {

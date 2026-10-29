@@ -158,6 +158,7 @@ impl<'a> Lifter<'a> {
         self.stmts.push(Stmt::Assign {
             dest: RegRef { index, width: 64 },
             value,
+            at: None,
         });
     }
 }
@@ -269,7 +270,7 @@ fn return_address_register(image: &Image, target: u64) -> Option<u16> {
 
 fn complete_call(lifter: &mut Lifter, target: u64) -> bool {
     if (lifter.summaries)(target).noreturn {
-        lifter.stmts.push(Stmt::Trap);
+        lifter.stmts.push(Stmt::Trap { at: None });
         return true;
     }
     if let Some(bytes) = lifter.image.callee_cleanup(target)
@@ -561,6 +562,7 @@ fn lift_instruction(
                         addr: Lifter::read_reg(RSP, 32),
                         value: Expr::constant(ins.next_ip()),
                         width: 4,
+                        at: None,
                     });
                     if let Some(register) = return_register {
                         lifter.assign(register, 32, Expr::constant(ins.next_ip()));
@@ -614,7 +616,7 @@ fn lift_instruction(
                         stack_adjust(lifter, i64::from(cleanup));
                     }
                     if noreturn {
-                        lifter.stmts.push(Stmt::Trap);
+                        lifter.stmts.push(Stmt::Trap { at: None });
                         return true;
                     }
                 }
@@ -635,6 +637,7 @@ fn lift_instruction(
                 // decided once its blocks are known.
                 lifter.stmts.push(Stmt::Br {
                     target: Some(resolved_target(ins, relocation_target)),
+                    at: None,
                 });
             } else if let Some(target) = operand(lifter, ins, 0) {
                 match super::pointer_target(lifter.image, &target) {
@@ -649,14 +652,15 @@ fn lift_instruction(
                             .stmts
                             .push(call_through(CallKind::Tail, lifter.image, target));
                         lifter.stmts.push(if summary.noreturn {
-                            Stmt::Trap
+                            Stmt::Trap { at: None }
                         } else {
                             Stmt::Ret {
                                 value: Lifter::read_reg(RAX, lifter.word_bits()),
+                                at: None,
                             }
                         });
                     }
-                    None => lifter.stmts.push(Stmt::BrIndirect { target }),
+                    None => lifter.stmts.push(Stmt::BrIndirect { target, at: None }),
                 }
             }
             return true;
@@ -664,6 +668,7 @@ fn lift_instruction(
         Mnemonic::Ret => {
             lifter.stmts.push(Stmt::Ret {
                 value: Lifter::read_reg(RAX, lifter.word_bits()),
+                at: None,
             });
             return true;
         }
@@ -696,6 +701,7 @@ fn lift_instruction(
                 addr: address,
                 value,
                 width: bytes,
+                at: None,
             });
         }
         Mnemonic::Pop => {
@@ -863,14 +869,15 @@ fn lift_instruction(
                     None,
                 ),
                 via: None,
+                at: None,
             })
         }
         Mnemonic::Int if ins.immediate8() == 3 => {
-            lifter.stmts.push(Stmt::Trap);
+            lifter.stmts.push(Stmt::Trap { at: None });
             return true;
         }
         Mnemonic::Int3 | Mnemonic::Ud2 | Mnemonic::Hlt => {
-            lifter.stmts.push(Stmt::Trap);
+            lifter.stmts.push(Stmt::Trap { at: None });
             return true;
         }
         other => {
@@ -893,6 +900,7 @@ fn lift_instruction(
                 _ => None,
             };
             lifter.stmts.push(Stmt::Unsupported {
+                at: None,
                 text: format!("{other:?} at 0x{:x}", ins.ip()),
                 writes,
             });
@@ -980,6 +988,11 @@ impl Machine for Lifter<'_> {
             || self.stmts[first..]
                 .iter()
                 .any(|stmt| matches!(stmt, Stmt::Unsupported { .. }));
+        for stmt in &mut self.stmts[first..] {
+            if !matches!(stmt, Stmt::Assign { dest, .. } if crate::ir::is_temp(dest.index)) {
+                stmt.set_origin(Some(pc));
+            }
+        }
         ended
     }
 

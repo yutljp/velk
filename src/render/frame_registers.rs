@@ -107,7 +107,7 @@ fn drop_unread_frame_addresses(ir: &mut FunctionIr, sp: u16) {
     };
     let dropped: HashSet<u16> = statements()
         .filter_map(|stmt| match stmt {
-            Stmt::Assign { dest, value }
+            Stmt::Assign { dest, value, .. }
                 if dest.width == 64 && base_register(value) == Some(sp) && unread(dest.index) =>
             {
                 Some(dest.index)
@@ -117,7 +117,7 @@ fn drop_unread_frame_addresses(ir: &mut FunctionIr, sp: u16) {
         .collect();
     for block in &mut ir.blocks {
         block.stmts.retain(|stmt| {
-            !matches!(stmt, Stmt::Assign { dest, value }
+            !matches!(stmt, Stmt::Assign { dest, value, .. }
                 if dropped.contains(&dest.index) && base_register(value) == Some(sp))
         });
     }
@@ -194,7 +194,9 @@ fn unspill(ir: &mut FunctionIr, sp: u16) {
         };
         for stmt in &block.stmts {
             match stmt {
-                Stmt::Store { addr, value, width } => match origin(addr, &state) {
+                Stmt::Store {
+                    addr, value, width, ..
+                } => match origin(addr, &state) {
                     Some(Some(offset)) => {
                         accesses.push((offset, *width, Some(origin(value, &state).flatten())));
                     }

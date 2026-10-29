@@ -21,6 +21,7 @@ pub(crate) fn redundant_copy_renames(ir: &FunctionIr) -> Option<HashMap<u16, u16
             Stmt::Assign {
                 dest,
                 value: Expr::Reg { index, width: 64 },
+                ..
             } if dest.width == 64 && dest.index >= VARIABLE_BASE && dest.index != *index => {
                 let source = types.get(index);
                 let same_type = source == types.get(&dest.index)
@@ -128,6 +129,7 @@ fn transfer(stmt: &Stmt, copies: &HashMap<u16, u16>, available: &mut HashSet<u16
     if let Stmt::Assign {
         dest,
         value: Expr::Reg { index, width: 64 },
+        ..
     } = stmt
         && dest.width == 64
         && copies.get(&dest.index) == Some(index)
@@ -165,6 +167,7 @@ mod tests {
                 width: 64,
             },
             value: Expr::reg(source, 64),
+            at: None,
         }
     }
 
@@ -179,12 +182,14 @@ mod tests {
                         width: 64,
                     },
                     value: Expr::bin(BinOp::Xor, Expr::reg(7, 64), Expr::Const(123)),
+                    at: None,
                 },
                 Stmt::Brif {
                     cond: crate::ir::Cond::Eq,
                     lhs: Expr::reg(6, 64),
                     rhs: Expr::Const(0),
                     target: 2,
+                    at: None,
                 },
             ],
         );
@@ -205,13 +210,20 @@ mod tests {
         for start in [1, 2] {
             ir.blocks.push(Block {
                 start,
-                stmts: vec![copy(dest, source), Stmt::Br { target: Some(3) }],
+                stmts: vec![
+                    copy(dest, source),
+                    Stmt::Br {
+                        target: Some(3),
+                        at: None,
+                    },
+                ],
             });
         }
         ir.blocks.push(Block {
             start: 3,
             stmts: vec![Stmt::Ret {
                 value: Expr::bin(BinOp::Add, Expr::reg(dest, 64), Expr::reg(source, 64)),
+                at: None,
             }],
         });
         ir
@@ -230,10 +242,11 @@ mod tests {
                     Expr::reg(VARIABLE_BASE, 64),
                 ),
             ),
+            at: None,
         };
         let folded = redundant_copy_candidate(&ir).expect("both paths copy the same stable value");
         assert!(
-            matches!(&folded.blocks[3].stmts[0], Stmt::Ret { value: Expr::Bin { lhs, .. } }
+            matches!(&folded.blocks[3].stmts[0], Stmt::Ret { value: Expr::Bin { lhs, .. }, .. }
             if **lhs == Expr::reg(VARIABLE_BASE, 8))
         );
         assert!(
@@ -270,12 +283,14 @@ mod tests {
                     width: 64,
                 },
                 value: Expr::bin(BinOp::Add, Expr::reg(VARIABLE_BASE, 64), Expr::Const(1)),
+                at: None,
             },
             Stmt::Brif {
                 cond: Cond::Ne,
                 lhs: Expr::reg(VARIABLE_BASE + 1, 64),
                 rhs: Expr::Const(0),
                 target: 3,
+                at: None,
             },
         ];
         assert!(redundant_copy_candidate(&ir).is_none());
@@ -296,9 +311,11 @@ mod tests {
                     width: 64,
                 },
                 value: Expr::bin(BinOp::Add, Expr::reg(source, 64), Expr::Const(1)),
+                at: None,
             },
             Stmt::Ret {
                 value: Expr::bin(BinOp::Add, Expr::reg(second, 64), Expr::reg(source, 64)),
+                at: None,
             },
         ]);
         ir.value_types.insert(second, CType::U64);

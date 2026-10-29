@@ -123,6 +123,7 @@ pub(in crate::lift) fn recover_atomic_loops(
             width: width * 8,
         };
         lifter.stmts.push(Stmt::Machine {
+            at: None,
             instruction: MachineInstruction::Atomic {
                 op,
                 width,
@@ -134,7 +135,10 @@ pub(in crate::lift) fn recover_atomic_loops(
         lifter.assign(old, Expr::reg(output.index, output.width));
         lift_alu(&mut lifter, update.operands, binary, false);
         lifter.assign(status, Expr::constant(0));
-        lifter.stmts.push(Stmt::Br { target: Some(next) });
+        lifter.stmts.push(Stmt::Br {
+            target: Some(next),
+            at: None,
+        });
         block.stmts = lifter.stmts;
     }
 }
@@ -227,6 +231,7 @@ pub(super) fn lift(lifter: &mut Lifter, ins: &Instruction) -> bool {
         &mut lifter.stmts,
     );
     lifter.stmts.push(Stmt::Machine {
+        at: None,
         instruction: MachineInstruction::Atomic {
             op,
             width,

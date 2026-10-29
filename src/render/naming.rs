@@ -33,8 +33,10 @@ pub(crate) fn narrow_registers(ir: &FunctionIr) -> std::collections::HashSet<u16
                     collect_register_read_widths(lhs, &mut seen, &mut wide);
                     collect_register_read_widths(rhs, &mut seen, &mut wide);
                 }
-                Stmt::Ret { value } => collect_register_read_widths(value, &mut seen, &mut wide),
-                Stmt::BrIndirect { target } => {
+                Stmt::Ret { value, .. } => {
+                    collect_register_read_widths(value, &mut seen, &mut wide)
+                }
+                Stmt::BrIndirect { target, .. } => {
                     collect_register_read_widths(target, &mut seen, &mut wide)
                 }
                 Stmt::Switch { index, .. } => {
@@ -924,8 +926,12 @@ mod tests {
                 addr: address(0),
                 value: Expr::Const(5),
                 width: 1,
+                at: None,
             },
-            Stmt::Ret { value: load(0, 1) },
+            Stmt::Ret {
+                value: load(0, 1),
+                at: None,
+            },
         ]);
         ir.definitions = vec![Definition {
             name: "struct record".to_owned(),
@@ -949,8 +955,12 @@ mod tests {
                 addr: address(4),
                 value: Expr::Const(5),
                 width: 1,
+                at: None,
             },
-            Stmt::Ret { value: load(0, 4) },
+            Stmt::Ret {
+                value: load(0, 4),
+                at: None,
+            },
         ]);
         ir.definitions = vec![Definition {
             name: "struct record".to_owned(),
@@ -985,13 +995,18 @@ mod tests {
                 addr: address(8),
                 value: Expr::Const(5),
                 width: 8,
+                at: None,
             },
             Stmt::Store {
                 addr: address(4),
                 value: Expr::Const(6),
                 width: 1,
+                at: None,
             },
-            Stmt::Ret { value: load(0, 4) },
+            Stmt::Ret {
+                value: load(0, 4),
+                at: None,
+            },
         ]);
         ir.structures = vec![Structure {
             name: "record".to_owned(),
@@ -1030,7 +1045,10 @@ mod tests {
     #[test]
     fn a_read_spanning_two_declared_fields_keeps_the_full_memory_width() {
         let ir = declared_member(
-            vec![Stmt::Ret { value: load(0, 8) }],
+            vec![Stmt::Ret {
+                value: load(0, 8),
+                at: None,
+            }],
             CType::U32,
             4,
             "uint32_t value; uint32_t next;",
@@ -1048,8 +1066,12 @@ mod tests {
                     addr: address(0),
                     width: 1,
                     value: Expr::Const(5),
+                    at: None,
                 },
-                Stmt::Ret { value: load(0, 8) },
+                Stmt::Ret {
+                    value: load(0, 8),
+                    at: None,
+                },
             ],
             CType::U64,
             8,
@@ -1095,6 +1117,7 @@ mod tests {
                         width,
                         signed,
                     },
+                    at: None,
                 }],
                 ty,
                 u64::from(width),
@@ -1115,7 +1138,7 @@ mod tests {
             ),
         ] {
             let ir = declared_member(
-                vec![Stmt::Ret { value }],
+                vec![Stmt::Ret { value, at: None }],
                 CType::pointer_to(CType::U32),
                 8,
                 "uint32_t *value;",
@@ -1133,6 +1156,7 @@ mod tests {
                 width: 4,
                 signed: false,
             },
+            at: None,
         }]);
         ir.params[0].ty = CType::pointer_to(CType::pointer_to(CType::U32));
         let text = rendered(&ir);
@@ -1144,6 +1168,7 @@ mod tests {
         let ir = declared_member(
             vec![Stmt::Ret {
                 value: Expr::bin(BinOp::Add, load(0, 8), Expr::Const(1)),
+                at: None,
             }],
             CType::pointer_to(CType::Named("struct unknown".to_owned())),
             8,
@@ -1159,7 +1184,10 @@ mod tests {
     #[test]
     fn float_fields_are_named_only_when_read_as_their_declared_precision() {
         let mut ir = declared_member(
-            vec![Stmt::Ret { value: load(0, 4) }],
+            vec![Stmt::Ret {
+                value: load(0, 4),
+                at: None,
+            }],
             CType::Named("float".to_owned()),
             4,
             "float value;",
@@ -1192,9 +1220,11 @@ mod tests {
                         addr: address(0),
                         width,
                         value: Expr::Const(2),
+                        at: None,
                     },
                     Stmt::Ret {
                         value: load(0, width),
+                        at: None,
                     },
                 ],
                 ty,
@@ -1227,11 +1257,13 @@ mod tests {
                     addr: slot.clone(),
                     width: 4,
                     value: float_sum(Precision::Single, u64::from(1.0f32.to_bits())),
+                    at: None,
                 },
                 Stmt::Store {
                     addr: slot.clone(),
                     width,
                     value,
+                    at: None,
                 },
                 Stmt::Ret {
                     value: Expr::Apply {
@@ -1245,6 +1277,7 @@ mod tests {
                             Expr::Const(0),
                         ],
                     },
+                    at: None,
                 },
             ]);
             ir.params.clear();
@@ -1264,6 +1297,7 @@ mod tests {
                     addr: stack(13),
                     width: 1,
                     value: Expr::Const(5),
+                    at: None,
                 },
                 Stmt::Ret {
                     value: Expr::Load {
@@ -1271,6 +1305,7 @@ mod tests {
                         width: 8,
                         signed: false,
                     },
+                    at: None,
                 },
             ],
             CType::U32,
@@ -1313,6 +1348,7 @@ mod tests {
                         Expr::Const(0),
                     ],
                 },
+                at: None,
             }],
             CType::U32,
             4,
@@ -1346,6 +1382,7 @@ mod tests {
                     op: crate::ir::Operation::FloatAdd(Precision::Single),
                     args: vec![Expr::Const(u64::from(1.0f32.to_bits())), Expr::Const(0)],
                 },
+                at: None,
             },
             Stmt::Ret {
                 value: Expr::Load {
@@ -1353,6 +1390,7 @@ mod tests {
                     width: 4,
                     signed: false,
                 },
+                at: None,
             },
         ]);
         ir.params.clear();
@@ -1376,6 +1414,7 @@ mod tests {
                         width: 4,
                         signed: false,
                     },
+                    at: None,
                 }],
                 CType::U32,
                 4,

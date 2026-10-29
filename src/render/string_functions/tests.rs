@@ -6,6 +6,7 @@ fn assign(index: u16, value: Expr) -> Stmt {
     Stmt::Assign {
         dest: RegRef { index, width: 64 },
         value,
+        at: None,
     }
 }
 
@@ -162,7 +163,7 @@ fn finite_compiler_comparisons_have_symbolic_memory_proofs() {
                         };
                     }
                     for stmt in before.blocks.iter_mut().flat_map(|block| &mut block.stmts) {
-                        if let Stmt::Ret { value } = stmt {
+                        if let Stmt::Ret { value, .. } = stmt {
                             *value = Expr::bin(BinOp::And, value.clone(), Expr::Const(0xffff_ffff));
                         }
                     }
@@ -170,6 +171,7 @@ fn finite_compiler_comparisons_have_symbolic_memory_proofs() {
                         before.isa,
                         vec![Stmt::Ret {
                             value: Expr::bin(BinOp::And, value, Expr::Const(0xffff_ffff)),
+                            at: None,
                         }],
                     );
                     proofs.function(
@@ -225,7 +227,10 @@ fn scan(isa: Isa, pointer: bool) -> FunctionIr {
                         Expr::Const(0)
                     },
                 ),
-                Stmt::Br { target: Some(10) },
+                Stmt::Br {
+                    target: Some(10),
+                    at: None,
+                },
             ],
         },
         Block {
@@ -238,6 +243,7 @@ fn scan(isa: Isa, pointer: bool) -> FunctionIr {
                     lhs: Expr::reg(4, 64),
                     rhs: Expr::Const(0),
                     target: 10,
+                    at: None,
                 },
             ],
         },
@@ -245,6 +251,7 @@ fn scan(isa: Isa, pointer: bool) -> FunctionIr {
             start: 20,
             stmts: vec![Stmt::Ret {
                 value: Expr::bin(BinOp::Sub, result, Expr::Const(1)),
+                at: None,
             }],
         },
     ];
@@ -311,6 +318,7 @@ fn different_steps_results_reads_and_writes_keep_the_loop() {
             0 => {
                 ir.blocks[2].stmts = vec![Stmt::Ret {
                     value: Expr::reg(3, 64),
+                    at: None,
                 }]
             }
             1 => {
@@ -327,6 +335,7 @@ fn different_steps_results_reads_and_writes_keep_the_loop() {
                     addr: Expr::reg(2, 64),
                     value: Expr::Const(0),
                     width: 1,
+                    at: None,
                 },
             ),
             4 => ir.blocks[1]

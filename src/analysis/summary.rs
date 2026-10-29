@@ -811,7 +811,7 @@ fn compute(
                     .iter_mut()
                     .flat_map(|block| &mut block.stmts)
                 {
-                    if let Stmt::Ret { value } = stmt {
+                    if let Stmt::Ret { value, .. } = stmt {
                         *value = crate::ir::Expr::Const(0);
                     }
                 }
@@ -966,10 +966,10 @@ fn can_return(blocks: &[Block]) -> bool {
         }
         let block = &blocks[index];
         match block.stmts.last() {
-            Some(Stmt::Ret { .. } | Stmt::BrIndirect { .. } | Stmt::Br { target: None }) => {
+            Some(Stmt::Ret { .. } | Stmt::BrIndirect { .. } | Stmt::Br { target: None, .. }) => {
                 return true;
             }
-            Some(Stmt::Trap) => {}
+            Some(Stmt::Trap { .. }) => {}
             last => {
                 let next = crate::ir::cfg::block_successors(blocks, index);
                 // Code that runs off the end of what was lifted may go anywhere.

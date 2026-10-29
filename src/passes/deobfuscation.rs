@@ -82,6 +82,7 @@ pub(super) fn predicates(ir: &mut FunctionIr) -> Simplification {
             lhs,
             rhs,
             target,
+            ..
         }) = ir.blocks[at].stmts.last()
         else {
             continue;
@@ -98,10 +99,11 @@ pub(super) fn predicates(ir: &mut FunctionIr) -> Simplification {
             crate::ir::semantics::holds(*cond, a, b, crate::ir::semantics::operand_width(lhs, rhs));
         let target = if taken { Some(*target) } else { next };
         if let Some(target) = target {
-            ir.blocks[at].stmts.pop();
+            let origin = ir.blocks[at].stmts.pop().and_then(|stmt| stmt.origin());
             if Some(target) != next {
                 ir.blocks[at].stmts.push(Stmt::Br {
                     target: Some(target),
+                    at: origin,
                 });
             }
         }

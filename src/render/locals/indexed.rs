@@ -50,7 +50,7 @@ pub(super) fn offsets_frame_pointer(ir: &FunctionIr, sp: u16, frames: &[Option<i
                 pending.extend(crate::ir::visit::children(value));
             }
             let assigned = match stmt {
-                Stmt::Assign { dest, value } if dest.index != sp => {
+                Stmt::Assign { dest, value, .. } if dest.index != sp => {
                     based(value, &pointers)
                         || frame.is_some_and(|frame| {
                             frame_slot(value, frame, sp).is_some_and(|at| at < 0)
@@ -117,7 +117,7 @@ pub(super) fn extend(
         for stmt in &block.stmts {
             let before = frame;
             frame = super::frame_after(stmt, frame, sp);
-            let Stmt::Assign { dest, value } = stmt else {
+            let Stmt::Assign { dest, value, .. } = stmt else {
                 invalid.extend(crate::ir::visit::statement_registers(stmt).0);
                 continue;
             };

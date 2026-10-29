@@ -17,8 +17,8 @@ pub(super) fn promote(ir: &mut FunctionIr) {
         .iter()
         .flat_map(|block| &block.stmts)
         .any(|stmt| {
-            matches!(stmt, Stmt::Trap)
-                || matches!(stmt, Stmt::Assign { dest, value } if dest.index == sp
+            matches!(stmt, Stmt::Trap { .. })
+                || matches!(stmt, Stmt::Assign { dest, value, .. } if dest.index == sp
                     && (dest.width != 64 || !full_frame_register(value, sp) || super::stack_pointer_delta(value, sp).is_none()))
         })
     {
@@ -36,7 +36,7 @@ pub(super) fn promote(ir: &mut FunctionIr) {
                 if matches!(stmt, Stmt::Call { .. }) {
                     calls.push(frame);
                 }
-                if let Stmt::Assign { dest, value } = stmt
+                if let Stmt::Assign { dest, value, .. } = stmt
                     && dest.index == sp
                 {
                     frame = match (frame, super::stack_pointer_delta(value, sp)) {
@@ -87,6 +87,7 @@ fn validated_accesses(ir: &FunctionIr) -> Option<FrameAccesses> {
             Some(
                 Stmt::Br {
                     target: Some(target),
+                    ..
                 }
                 | Stmt::Brif { target, .. }
                 | Stmt::BrifFlags { target, .. },
@@ -143,7 +144,7 @@ fn validated_accesses(ir: &FunctionIr) -> Option<FrameAccesses> {
                 }
             }
             if crate::ir::visit::statement_registers(stmt).0.contains(&sp) {
-                let Stmt::Assign { dest, value } = stmt else {
+                let Stmt::Assign { dest, value, .. } = stmt else {
                     return None;
                 };
                 if dest.width != 64 || !full_frame_register(value, sp) {
@@ -443,7 +444,12 @@ fn promote_slots(
             for operand in stmt.operands_mut() {
                 super::forward_expr(operand, &pending);
             }
-            if let Stmt::Store { addr, value, width } = stmt
+            if let Stmt::Store {
+                addr,
+                value,
+                width,
+                at,
+            } = stmt
                 && let Some((_, _, register)) = selected.iter().find(|(offset, bytes, _)| {
                     bytes == width && frame_slot(addr, *frame, sp) == Some(*offset)
                 })
@@ -454,6 +460,7 @@ fn promote_slots(
                         width: width.saturating_mul(8),
                     },
                     value: crate::passes::copies::truncated(value, width.saturating_mul(8)),
+                    at: *at,
                 };
             }
         }
@@ -595,7 +602,10 @@ pub(super) fn full_frame_register(expr: &Expr, sp: u16) -> bool {
 
 fn transfer(stmt: &Stmt, frame: i64, sp: u16, slots: &HashSet<(i64, u8)>, values: &mut Values) {
     invalidate(stmt, frame, sp, values);
-    let Stmt::Store { addr, value, width } = stmt else {
+    let Stmt::Store {
+        addr, value, width, ..
+    } = stmt
+    else {
         return;
     };
     let Some(offset) = frame_slot(addr, frame, sp) else {

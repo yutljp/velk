@@ -5,6 +5,7 @@ fn assign(index: u16, value: Expr) -> Stmt {
     Stmt::Assign {
         dest: RegRef { index, width: 64 },
         value,
+        at: None,
     }
 }
 
@@ -43,6 +44,7 @@ fn copies_across_branches_preserve_snapshots_and_remove_redundant_names() {
                     lhs: Expr::reg(6, 64),
                     rhs: Expr::Const(0),
                     target: 2,
+                    at: None,
                 },
             ],
         );
@@ -51,7 +53,10 @@ fn copies_across_branches_preserve_snapshots_and_remove_redundant_names() {
                 start,
                 stmts: vec![
                     assign(saved, Expr::reg(source, 64)),
-                    Stmt::Br { target: Some(3) },
+                    Stmt::Br {
+                        target: Some(3),
+                        at: None,
+                    },
                 ],
             });
         }
@@ -64,6 +69,7 @@ fn copies_across_branches_preserve_snapshots_and_remove_redundant_names() {
         }
         tail.push(Stmt::Ret {
             value: Expr::bin(BinOp::Add, Expr::reg(saved, 64), Expr::reg(source, 64)),
+            at: None,
         });
         ir.blocks.push(Block {
             start: 3,
@@ -111,6 +117,7 @@ fn incoming_go_parameter_spills_reuse_parameters() {
                 addr: slot.clone(),
                 value: Expr::reg(3, 64),
                 width: 8,
+                at: None,
             },
             Stmt::Call {
                 kind: CallKind::Invoke,
@@ -138,6 +145,7 @@ fn incoming_go_parameter_spills_reuse_parameters() {
                 ],
                 clobbers: None,
                 via: None,
+                at: None,
             },
             Stmt::Ret {
                 value: Expr::bin(
@@ -149,6 +157,7 @@ fn incoming_go_parameter_spills_reuse_parameters() {
                         signed: false,
                     },
                 ),
+                at: None,
             },
         ],
     );
@@ -206,6 +215,7 @@ fn copy_chains_keep_values_from_before_source_overwrites() {
             ),
             Stmt::Ret {
                 value: Expr::bin(BinOp::Add, Expr::reg(second, 64), Expr::reg(source, 64)),
+                at: None,
             },
         ],
     );

@@ -18,7 +18,12 @@ fn go_return_slot_and_frame_address_compile_and_run() {
             Expr::bin(BinOp::Add, Expr::reg(sp, 64), Expr::Const(8)),
         ),
     ] {
-        let mut ir = synthetic_ir(name, vec![], CType::U64, vec![Stmt::Ret { value }]);
+        let mut ir = synthetic_ir(
+            name,
+            vec![],
+            CType::U64,
+            vec![Stmt::Ret { value, at: None }],
+        );
         ir.convention = Convention::GoAmd64;
         let code = velk::render::render(&ir, &[], &Default::default(), &[]);
         assert!(code.contains("velk_return_address_slot"), "{code}");

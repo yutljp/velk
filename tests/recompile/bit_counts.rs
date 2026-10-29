@@ -26,6 +26,7 @@ fn printed_bit_counts_define_zero_and_truncate_the_input() {
                         op: operation,
                         args: vec![Expr::reg(7, 64)],
                     },
+                    at: None,
                 }],
             );
             let candidate = printed_candidate(ir, inputs.clone());

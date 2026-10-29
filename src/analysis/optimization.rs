@@ -105,7 +105,7 @@ pub(super) fn optimize(
         .iter()
         .flat_map(|block| &block.stmts)
         .any(|stmt| match stmt {
-            Stmt::Assign { dest, value } if dest.index == fp => {
+            Stmt::Assign { dest, value, .. } if dest.index == fp => {
                 let mut read = HashSet::new();
                 crate::ir::visit::collect_reads(value, &mut read);
                 read.contains(&sp)
@@ -207,7 +207,10 @@ pub(super) fn optimize(
     passes::read_once::fold_values_read_once(&mut ir);
     // Folding the last frame loads can leave their stores unused.
     let plain_frame_stores = ir.blocks.iter().flat_map(|block| &block.stmts).all(|stmt| {
-        let Stmt::Store { addr, value, width } = stmt else {
+        let Stmt::Store {
+            addr, value, width, ..
+        } = stmt
+        else {
             return true;
         };
         matches!(

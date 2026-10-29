@@ -626,7 +626,7 @@ fn infer(image: &Image, address: u64, size: u64, depth: u8) -> Option<Declaratio
                 Stmt::Unsupported { .. }
                     | Stmt::Machine { .. }
                     | Stmt::BrIndirect { .. }
-                    | Stmt::Br { target: None }
+                    | Stmt::Br { target: None, .. }
                     | Stmt::BrifFlags { .. }
             )
         })
@@ -678,7 +678,7 @@ fn infer(image: &Image, address: u64, size: u64, depth: u8) -> Option<Declaratio
         let block = &blocks[index];
         for stmt in &block.stmts {
             match stmt {
-                Stmt::Assign { dest, value } => {
+                Stmt::Assign { dest, value, .. } => {
                     let expression =
                         crate::ir::visit::substitute_values(value.clone(), &state.expressions);
                     state.expressions.retain(|(register, expression)| {
@@ -712,6 +712,7 @@ fn infer(image: &Image, address: u64, size: u64, depth: u8) -> Option<Declaratio
                     addr,
                     value,
                     width: 8,
+                    ..
                 } => {
                     conditions.clear();
                     state.expressions.clear();
@@ -736,6 +737,7 @@ fn infer(image: &Image, address: u64, size: u64, depth: u8) -> Option<Declaratio
                     addr,
                     value,
                     width: 4,
+                    ..
                 } => {
                     conditions.clear();
                     state.expressions.clear();
@@ -747,7 +749,9 @@ fn infer(image: &Image, address: u64, size: u64, depth: u8) -> Option<Declaratio
                         evidence.used |= address.inputs | value.inputs;
                     }
                 }
-                Stmt::Store { addr, value, width } => {
+                Stmt::Store {
+                    addr, value, width, ..
+                } => {
                     if !matches!(width, 1 | 2) {
                         return None;
                     }
@@ -820,6 +824,7 @@ fn infer(image: &Image, address: u64, size: u64, depth: u8) -> Option<Declaratio
                 lhs,
                 rhs,
                 target,
+                ..
             }) = block.stmts.last()
                 && blocks
                     .get(index + 1)

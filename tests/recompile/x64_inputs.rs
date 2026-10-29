@@ -129,6 +129,7 @@ fn printed_nonzero_absolute_offsets_remain_integer_counters() {
             Stmt::Assign {
                 dest: velk::ir::RegRef { index, width: 64 },
                 value: Expr::Const(16),
+                at: None,
             },
             Stmt::Assign {
                 dest: velk::ir::RegRef {
@@ -136,8 +137,12 @@ fn printed_nonzero_absolute_offsets_remain_integer_counters() {
                     width: 32,
                 },
                 value: Expr::Const(0),
+                at: None,
             },
-            Stmt::Br { target: Some(16) },
+            Stmt::Br {
+                target: Some(16),
+                at: None,
+            },
         ],
     );
     ir.blocks.push(Block {
@@ -161,16 +166,19 @@ fn printed_nonzero_absolute_offsets_remain_integer_counters() {
                         signed: false,
                     },
                 ),
+                at: None,
             },
             Stmt::Assign {
                 dest: velk::ir::RegRef { index, width: 64 },
                 value: Expr::bin(BinOp::Sub, Expr::reg(index, 64), Expr::Const(4)),
+                at: None,
             },
             Stmt::Brif {
                 cond: Cond::Ne,
                 lhs: Expr::reg(index, 64),
                 rhs: Expr::Const((-8i64) as u64),
                 target: 16,
+                at: None,
             },
         ],
     });
@@ -178,6 +186,7 @@ fn printed_nonzero_absolute_offsets_remain_integer_counters() {
         start: 32,
         stmts: vec![Stmt::Ret {
             value: Expr::reg(result, 32),
+            at: None,
         }],
     });
     let candidate = printed_candidate(ir, vec![vec![]]);

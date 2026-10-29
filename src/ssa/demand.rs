@@ -103,7 +103,9 @@ pub(super) fn demanded_bits(
                 .map(move |(at, stmt)| ((block, at), stmt))
         }) {
             match stmt {
-                Stmt::Store { addr, value, width } => {
+                Stmt::Store {
+                    addr, value, width, ..
+                } => {
                     walk(addr, u64::MAX, &mut next, precise);
                     let needed = stores
                         .get(&position)
@@ -111,7 +113,7 @@ pub(super) fn demanded_bits(
                         .unwrap_or_else(|| mask(u32::from(*width) * 8));
                     walk(value, needed, &mut next, precise);
                 }
-                Stmt::Assign { dest, value } => {
+                Stmt::Assign { dest, value, .. } => {
                     let needed = demand.get(&dest.index).copied().unwrap_or(0);
                     walk(
                         value,
@@ -120,7 +122,7 @@ pub(super) fn demanded_bits(
                         precise,
                     );
                 }
-                Stmt::Ret { value } if returns.is_some_and(|masks| !masks.is_empty()) => {
+                Stmt::Ret { value, .. } if returns.is_some_and(|masks| !masks.is_empty()) => {
                     let values = match value {
                         Expr::Apply {
                             op: crate::ir::Operation::Results,
@@ -221,7 +223,7 @@ fn private_store_demands(ir: &FunctionIr) -> Option<HashMap<(usize, usize), u64>
             return None;
         };
         for (at, stmt) in body.stmts.iter().enumerate() {
-            if let Stmt::Assign { dest, value } = stmt
+            if let Stmt::Assign { dest, value, .. } = stmt
                 && dest.index == sp
             {
                 if dest.width != 64 {
@@ -281,9 +283,10 @@ pub(crate) fn entry_demands(ir: &FunctionIr, returns: &[u64]) -> Option<HashMap<
             Stmt::Unsupported { .. }
             | Stmt::BrIndirect { .. }
             | Stmt::BrifFlags { .. }
-            | Stmt::Br { target: None } => return None,
+            | Stmt::Br { target: None, .. } => return None,
             Stmt::Br {
                 target: Some(target),
+                ..
             }
             | Stmt::Brif { target, .. }
                 if !starts.contains(target) =>
@@ -297,7 +300,7 @@ pub(crate) fn entry_demands(ir: &FunctionIr, returns: &[u64]) -> Option<HashMap<
             {
                 return None;
             }
-            Stmt::Ret { value } if !returns.is_empty() => {
+            Stmt::Ret { value, .. } if !returns.is_empty() => {
                 let count = match value {
                     Expr::Apply {
                         op: crate::ir::Operation::Results,
@@ -347,7 +350,7 @@ pub fn narrow_partial_writes(ir: &mut FunctionIr) {
     if ir.blocks.iter().flat_map(|block| &block.stmts).any(|stmt| {
         matches!(
             stmt,
-            Stmt::Unsupported { .. } | Stmt::BrIndirect { .. } | Stmt::Br { target: None }
+            Stmt::Unsupported { .. } | Stmt::BrIndirect { .. } | Stmt::Br { target: None, .. }
         )
     }) {
         return;
@@ -358,7 +361,7 @@ pub fn narrow_partial_writes(ir: &mut FunctionIr) {
     let demand = demanded_bits(&ssa, None, &HashMap::new());
     let mut changed = false;
     for stmt in ssa.ir.blocks.iter_mut().flat_map(|block| &mut block.stmts) {
-        let Stmt::Assign { dest, value } = stmt else {
+        let Stmt::Assign { dest, value, .. } = stmt else {
             continue;
         };
         let Expr::Bin {

@@ -326,6 +326,7 @@ fn matching_pointer_arguments_type_the_local_and_convert_void_pointers_implicitl
             outputs: Vec::new(),
             clobbers: None,
             via: None,
+            at: None,
         };
         let mut ir = synthetic_ir(
             "forward_pointer",
@@ -342,6 +343,7 @@ fn matching_pointer_arguments_type_the_local_and_convert_void_pointers_implicitl
                         width: 8,
                         signed: false,
                     },
+                    at: None,
                 },
                 Stmt::Assign {
                     dest: RegRef {
@@ -349,12 +351,14 @@ fn matching_pointer_arguments_type_the_local_and_convert_void_pointers_implicitl
                         width: 64,
                     },
                     value: Expr::reg(VARIABLE_BASE, 64),
+                    at: None,
                 },
                 call(0x1000, VARIABLE_BASE),
                 call(0x1000, VARIABLE_BASE + 1),
                 call(0x2000, VARIABLE_BASE + 1),
                 Stmt::Ret {
                     value: Expr::Const(0),
+                    at: None,
                 },
             ],
         );
@@ -429,6 +433,7 @@ fn void_pointer_conversions_preserve_required_qualifier_casts() {
             CType::pointer_to(CType::Void),
             vec![Stmt::Ret {
                 value: Expr::reg(7, 64),
+                at: None,
             }],
         );
         let code = velk::render::render(&ir, &[], &Default::default(), &[]);
@@ -463,6 +468,7 @@ fn pointer_qualification_is_implicit_only_at_the_first_level() {
             CType::pointer_to(target),
             vec![Stmt::Ret {
                 value: Expr::reg(7, 64),
+                at: None,
             }],
         );
         let code = velk::render::render(&ir, &[], &Default::default(), &[]);
@@ -501,9 +507,11 @@ fn pointer_register_arguments_preserve_whole_addresses_and_partial_bits() {
                         outputs: Vec::new(),
                         clobbers: None,
                         via: None,
+                        at: None,
                     },
                     Stmt::Ret {
                         value: Expr::Const(0),
+                        at: None,
                     },
                 ],
             );
@@ -570,6 +578,7 @@ fn selected_function_addresses_keep_the_explicit_void_pointer_conversion() {
                     then: Box::new(Expr::Const(0x1000)),
                     els: Box::new(Expr::Const(0x2000)),
                 },
+                at: None,
             }],
         );
         ir.isa = isa;

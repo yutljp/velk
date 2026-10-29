@@ -115,6 +115,7 @@ fn printed_implicit_call_output_keeps_its_high_bits() {
                     width: 64,
                 },
                 value: Expr::reg(7, 64),
+                at: None,
             },
             Stmt::Call {
                 abi: None,
@@ -133,9 +134,11 @@ fn printed_implicit_call_output_keeps_its_high_bits() {
                 }],
                 clobbers: Some(Registers(0)),
                 via: None,
+                at: None,
             },
             Stmt::Ret {
                 value: Expr::reg(VARIABLE_BASE, 64),
+                at: None,
             },
         ],
     );

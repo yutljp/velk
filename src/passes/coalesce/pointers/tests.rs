@@ -9,6 +9,7 @@ fn assign(index: u16, value: Expr) -> Stmt {
     Stmt::Assign {
         dest: RegRef { index, width: 64 },
         value,
+        at: None,
     }
 }
 
@@ -17,6 +18,7 @@ fn store(index: u16, width: u8) -> Stmt {
         addr: Expr::reg(index, 64),
         value: Expr::Const(7),
         width,
+        at: None,
     }
 }
 
@@ -40,6 +42,7 @@ fn pointers() -> FunctionIr {
             store(SECOND, 8),
             Stmt::Ret {
                 value: Expr::Const(0),
+                at: None,
             },
         ],
     );
@@ -68,6 +71,7 @@ fn call(args: Option<Vec<Expr>>) -> Stmt {
         clobbers: None,
         outputs: Vec::new(),
         via: None,
+        at: None,
     }
 }
 
@@ -135,6 +139,7 @@ fn different_element_widths_and_integer_values_stay_separate() {
     let mut ir = pointers();
     ir.blocks[0].stmts[5] = Stmt::Ret {
         value: Expr::bin(BinOp::Mul, Expr::reg(SECOND, 64), Expr::Const(2)),
+        at: None,
     };
     assert_separate(ir);
 }
@@ -176,6 +181,7 @@ fn partial_writes_and_reads_stay_separate() {
         let mut ir = pointers();
         ir.blocks[0].stmts[5] = Stmt::Ret {
             value: Expr::reg(SECOND, width),
+            at: None,
         };
         assert_separate(ir);
     }
@@ -248,6 +254,7 @@ fn exception_edges_and_unknown_control_flow_prevent_reuse() {
                 store(FIRST, 8),
                 Stmt::Ret {
                     value: Expr::Const(0),
+                    at: None,
                 },
             ],
         });
@@ -255,7 +262,10 @@ fn exception_edges_and_unknown_control_flow_prevent_reuse() {
         assert_separate(ir);
     }
     let mut ir = pointers();
-    ir.blocks[0].stmts.push(Stmt::Br { target: None });
+    ir.blocks[0].stmts.push(Stmt::Br {
+        target: None,
+        at: None,
+    });
     assert_separate(ir);
 }
 

@@ -209,6 +209,7 @@ pub(super) fn mutable_copy_candidate(ir: &FunctionIr) -> Option<FunctionIr> {
                 index: source,
                 width,
             },
+            ..
         } = stmt
         else {
             continue;
@@ -397,7 +398,7 @@ fn fold_parameter_copies(ir: &mut FunctionIr, param: u16, integer_types: Integer
         for (position, stmt) in block.stmts.iter().enumerate() {
             let earlier = &block.stmts[..position];
             match stmt {
-                Stmt::Assign { dest, value } => {
+                Stmt::Assign { dest, value, .. } => {
                     let zero_extended = dest.width == 32
                         || matches!(
                             value,
@@ -421,7 +422,9 @@ fn fold_parameter_copies(ir: &mut FunctionIr, param: u16, integer_types: Integer
                                 .filter(|_| dest.width == 64 || (narrow && dest.width == 32)),
                         ))
                 }
-                Stmt::Store { addr, value, width } => {
+                Stmt::Store {
+                    addr, value, width, ..
+                } => {
                     if let Some(slot) = slot_of(addr) {
                         defined
                             .entry(Source::Slot(slot))
@@ -675,7 +678,7 @@ fn stack_only_as_slots(ir: &FunctionIr, sp: u16) -> bool {
                 stack_pointer_use_is_safe(addr, sp, true)
                     && stack_pointer_use_is_safe(value, sp, false)
             }
-            Stmt::Assign { dest, value } => {
+            Stmt::Assign { dest, value, .. } => {
                 dest.index != sp && stack_pointer_use_is_safe(value, sp, false)
             }
             other => other
@@ -717,9 +720,11 @@ mod tests {
                                 addr: Expr::bin(BinOp::Add, Expr::reg(sp, 64), Expr::Const(offset)),
                                 value: Expr::reg(0, 64),
                                 width,
+                                at: None,
                             },
                             Stmt::Ret {
                                 value: Expr::Const(0),
+                                at: None,
                             },
                         ],
                     );
@@ -762,6 +767,7 @@ mod tests {
                 }],
                 clobbers: None,
                 via: None,
+                at: None,
             }],
         );
         ir.params.push(Param {
@@ -773,12 +779,14 @@ mod tests {
             start: 1,
             stmts: vec![Stmt::Ret {
                 value: Expr::reg(3, 64),
+                at: None,
             }],
         });
         drop_unused_parameter_outputs(&mut ir);
         assert_eq!(ir.blocks[0].stmts[0].call_outputs().len(), 1);
         ir.blocks[1].stmts[0] = Stmt::Ret {
             value: Expr::Const(0),
+            at: None,
         };
         drop_unused_parameter_outputs(&mut ir);
         assert!(ir.blocks[0].stmts[0].call_outputs().is_empty());
@@ -845,19 +853,23 @@ mod tests {
                             width: 64,
                         },
                         value: load(slot),
+                        at: None,
                     },
                     Stmt::Store {
                         addr: address(slot),
                         value: Expr::reg(0, 64),
                         width: 8,
+                        at: None,
                     },
                     Stmt::Store {
                         addr: Expr::Const(0x1000),
                         value: load(slot),
                         width: 8,
+                        at: None,
                     },
                     Stmt::Ret {
                         value: Expr::reg(VARIABLE_BASE, 64),
+                        at: None,
                     },
                 ],
             );
@@ -887,8 +899,12 @@ mod tests {
                         addr: address(slot),
                         value: Expr::reg(0, 64),
                         width: 8,
+                        at: None,
                     },
-                    Stmt::Ret { value: load(slot) },
+                    Stmt::Ret {
+                        value: load(slot),
+                        at: None,
+                    },
                 ],
             );
             let expected = eval::Outcome::Return {
@@ -912,7 +928,8 @@ mod tests {
                     value: Expr::Reg {
                         index: 0,
                         width: 64
-                    }
+                    },
+                    ..
                 }]
             ));
         }
@@ -927,13 +944,18 @@ mod tests {
                     addr: address(0),
                     value: Expr::reg(0, 64),
                     width: 8,
+                    at: None,
                 },
                 Stmt::Store {
                     addr: address(4),
                     value: Expr::reg(1, 64),
                     width: 8,
+                    at: None,
                 },
-                Stmt::Ret { value: load(0) },
+                Stmt::Ret {
+                    value: load(0),
+                    at: None,
+                },
             ],
         );
         let expected = eval::Outcome::Return {
@@ -961,8 +983,12 @@ mod tests {
                         addr: address(slot),
                         value: Expr::reg(0, 64),
                         width: 8,
+                        at: None,
                     },
-                    Stmt::Ret { value: load(slot) },
+                    Stmt::Ret {
+                        value: load(slot),
+                        at: None,
+                    },
                 ],
             );
             ir.stack_params[0].size = size;

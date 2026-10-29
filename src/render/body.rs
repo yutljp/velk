@@ -40,6 +40,29 @@ pub(super) fn indent(depth: usize, out: &mut String) {
     }
 }
 
+fn merged_effect_origin(nodes: &[Node]) -> Option<u64> {
+    let stores = nodes
+        .iter()
+        .any(|node| matches!(node, Node::Stmt(Stmt::Store { .. })));
+    let mut at = None;
+    for node in nodes {
+        let Node::Stmt(stmt) = node else {
+            return None;
+        };
+        if stores && !matches!(stmt, Stmt::Store { .. }) {
+            continue;
+        }
+        let Some(origin) = stmt.origin() else {
+            return None;
+        };
+        if at.is_some_and(|at| at != origin) {
+            return None;
+        }
+        at = Some(origin);
+    }
+    at
+}
+
 /// Whether the statements up to the next call leave `rax` alone, and the
 /// call, whose arguments are known, reads no more of it than `al`.
 fn only_vector_count(rest: &[Node]) -> bool {
@@ -83,6 +106,13 @@ pub(super) fn render_nodes(nodes: &[Node], depth: usize, out: &mut String, ctx: 
                 indent(depth, out);
                 out.push_str(line);
                 out.push('\n');
+                if ctx.symbols.addresses && text.lines().count() == 1 {
+                    super::addresses::append(
+                        out,
+                        merged_effect_origin(&nodes[index..index + count]),
+                        ctx.symbols.addresses,
+                    );
+                }
             }
             index += count;
             continue;
@@ -98,6 +128,7 @@ pub(super) fn render_nodes(nodes: &[Node], depth: usize, out: &mut String, ctx: 
                         width,
                         signed: false,
                     },
+                ..
             }),
             Some(Node::Stmt(Stmt::Store {
                 addr: stored,
@@ -110,6 +141,7 @@ pub(super) fn render_nodes(nodes: &[Node], depth: usize, out: &mut String, ctx: 
                         then: replacement,
                         els,
                     },
+                ..
             })),
         ) = (&nodes[index], nodes.get(index + 1))
             && stored == addr.as_ref()
@@ -150,14 +182,22 @@ pub(super) fn render_nodes(nodes: &[Node], depth: usize, out: &mut String, ctx: 
                     ctx
                 )
             ));
+            super::addresses::append(
+                out,
+                merged_effect_origin(&nodes[index..index + 2]),
+                ctx.symbols.addresses,
+            );
             index += 2;
             continue;
         }
         // A value assigned only to be returned right away reads as returned;
         // a constant also through the mask a narrow return puts on it.
         if let (
-            Node::Stmt(Stmt::Assign { dest, value }),
-            Some(Node::Stmt(Stmt::Ret { value: returned })),
+            Node::Stmt(Stmt::Assign { dest, value, .. }),
+            Some(Node::Stmt(Stmt::Ret {
+                value: returned,
+                at,
+            })),
         ) = (&nodes[index], nodes.get(index + 1))
             && dest.index >= crate::ir::VARIABLE_BASE
             && !ctx.void_return
@@ -181,14 +221,15 @@ pub(super) fn render_nodes(nodes: &[Node], depth: usize, out: &mut String, ctx: 
             }
         {
             indent(depth, out);
-            out.push_str(&render_stmt(&Stmt::Ret { value }, ctx));
+            out.push_str(&render_stmt(&Stmt::Ret { value, at: *at }, ctx));
             out.push('\n');
+            super::addresses::append(out, *at, ctx.symbols.addresses);
             index += 2;
             continue;
         }
         // A trap right after a call is the one a compiler puts after a call
         // that never returns; the call already ends the path.
-        if matches!(nodes[index], Node::Stmt(Stmt::Trap))
+        if matches!(nodes[index], Node::Stmt(Stmt::Trap { .. }))
             && index > 0
             && matches!(nodes[index - 1], Node::Stmt(Stmt::Call { .. }))
         {
@@ -223,6 +264,7 @@ pub(super) fn render_nodes(nodes: &[Node], depth: usize, out: &mut String, ctx: 
             && let Some(Node::Stmt(Stmt::Assign {
                 dest,
                 value: Expr::Const(0..=8),
+                ..
             })) = nodes.get(index)
             && dest.index == crate::arch::RETURN
             && only_vector_count(&nodes[index + 1..])
@@ -238,6 +280,7 @@ pub(super) fn render_nodes(nodes: &[Node], depth: usize, out: &mut String, ctx: 
                 let Stmt::Assign {
                     dest,
                     value: Expr::Const(_),
+                    ..
                 } = init
                 else {
                     break;
@@ -267,8 +310,11 @@ pub(super) fn render_nodes(nodes: &[Node], depth: usize, out: &mut String, ctx: 
                     ..
                 },
             )),
-            Some(Node::Stmt(Stmt::Assign { dest, value })),
-            Some(Node::Stmt(Stmt::Ret { value: returned })),
+            Some(Node::Stmt(Stmt::Assign { dest, value, .. })),
+            Some(Node::Stmt(Stmt::Ret {
+                value: returned,
+                at,
+            })),
         ) = (nodes.get(index), nodes.get(index + 1), nodes.get(index + 2))
             && ctx.callee_signatures.contains_key(target)
             && dest.index >= crate::ir::VARIABLE_BASE
@@ -282,6 +328,7 @@ pub(super) fn render_nodes(nodes: &[Node], depth: usize, out: &mut String, ctx: 
                 call,
                 &Node::Stmt(Stmt::Ret {
                     value: value.clone(),
+                    at: *at,
                 }),
                 depth,
                 ctx,
@@ -298,6 +345,22 @@ pub(super) fn render_nodes(nodes: &[Node], depth: usize, out: &mut String, ctx: 
             indent(depth, out);
             out.push_str(&text);
             out.push('\n');
+            let at = match next {
+                Stmt::Ret { at: None, .. }
+                    if matches!(
+                        call,
+                        Stmt::Call {
+                            kind: crate::ir::CallKind::Tail,
+                            ..
+                        }
+                    ) =>
+                {
+                    call.origin()
+                }
+                Stmt::Assign { at, .. } | Stmt::Store { at, .. } | Stmt::Ret { at, .. } => *at,
+                _ => None,
+            };
+            super::addresses::append(out, at, ctx.symbols.addresses);
             index += 2;
             continue;
         }
@@ -317,7 +380,7 @@ pub(super) fn render_nodes(nodes: &[Node], depth: usize, out: &mut String, ctx: 
 /// `call` and the statement after it as one, when that statement only takes
 /// the call's result.
 fn fused_call(call: &Stmt, next: &Stmt, ctx: &Ctx<'_>) -> Option<String> {
-    if let Stmt::Ret { value } = next {
+    if let Stmt::Ret { value, .. } = next {
         return calls::returned(call, value, ctx)
             .map(|text| format!("{text}{}", via_comment(call, ctx)));
     }
@@ -351,7 +414,7 @@ fn fused_call(call: &Stmt, next: &Stmt, ctx: &Ctx<'_>) -> Option<String> {
             };
             Some(format!("{target} = {call_text};{comment}"))
         }
-        Stmt::Assign { value, dest }
+        Stmt::Assign { value, dest, .. }
             if result.index < crate::ir::VARIABLE_BASE
                 && ctx.read_once.contains(&result.index)
                 && dest.width == 64
@@ -411,6 +474,7 @@ pub(super) fn render_node(node: &Node, depth: usize, out: &mut String, ctx: &Ctx
         rhs,
         then,
         els,
+        at,
     } = node
         && els.is_empty()
         && let [Node::Stmt(init), looped @ Node::DoWhile { .. }] = then.as_slice()
@@ -421,10 +485,12 @@ pub(super) fn render_node(node: &Node, depth: usize, out: &mut String, ctx: &Ctx
             rhs: rhs.clone(),
             then: vec![looped.clone()],
             els: Vec::new(),
+            at: None,
         };
         if let Some(text) = loops::for_loop(init, &guarded, &[], depth + 1, ctx) {
             indent(depth, out);
             out.push_str(&format!("if ({}) {{\n", condition(*cond, lhs, rhs, ctx)));
+            super::addresses::append(out, *at, ctx.symbols.addresses);
             out.push_str(&text);
             indent(depth, out);
             out.push_str("}\n");
@@ -439,6 +505,13 @@ pub(super) fn render_node(node: &Node, depth: usize, out: &mut String, ctx: &Ctx
                     indent(depth, out);
                     out.push_str(line);
                     out.push('\n');
+                    if ctx.symbols.addresses
+                        && (text.lines().count() == 1
+                            || matches!(stmt, Stmt::Ret { .. })
+                                && line.trim_start().starts_with("return "))
+                    {
+                        super::addresses::append(out, stmt.origin(), ctx.symbols.addresses);
+                    }
                 }
             }
         }
@@ -463,9 +536,11 @@ pub(super) fn render_node(node: &Node, depth: usize, out: &mut String, ctx: &Ctx
             rhs,
             then,
             els,
+            at,
         } => {
             indent(depth, out);
             out.push_str(&format!("if ({}) {{\n", condition(*cond, lhs, rhs, ctx)));
+            super::addresses::append(out, *at, ctx.symbols.addresses);
             render_nodes(then, depth + 1, out, ctx);
             // An `else` holding only another `if` continues the chain.
             let mut els = els;
@@ -476,6 +551,7 @@ pub(super) fn render_node(node: &Node, depth: usize, out: &mut String, ctx: &Ctx
                     rhs,
                     then,
                     els: rest,
+                    at,
                 },
             ] = els.as_slice()
             {
@@ -484,6 +560,7 @@ pub(super) fn render_node(node: &Node, depth: usize, out: &mut String, ctx: &Ctx
                     "}} else if ({}) {{\n",
                     condition(*cond, lhs, rhs, ctx)
                 ));
+                super::addresses::append(out, *at, ctx.symbols.addresses);
                 render_nodes(then, depth + 1, out, ctx);
                 els = rest;
             }
@@ -501,13 +578,14 @@ pub(super) fn render_node(node: &Node, depth: usize, out: &mut String, ctx: &Ctx
             index,
             arms,
             default: Some(default),
+            at,
         } if !arms.is_empty()
             && arms.iter().map(|(values, _)| values.len()).sum::<usize>() <= 4
             && arms
                 .iter()
-                .all(|(_, body)| matches!(body.as_slice(), [Node::Break]))
+                .all(|(_, body)| matches!(body.as_slice(), [Node::Break { .. }]))
             && let rest = match default.split_last() {
-                Some((Node::Break, rest)) => rest,
+                Some((Node::Break { .. }, rest)) => rest,
                 _ => default.as_slice(),
             }
             && !super::structure::breaks_out(rest) =>
@@ -521,6 +599,7 @@ pub(super) fn render_node(node: &Node, depth: usize, out: &mut String, ctx: &Ctx
                 .collect();
             indent(depth, out);
             out.push_str(&format!("if ({}) {{\n", tests.join(" && ")));
+            super::addresses::append(out, *at, ctx.symbols.addresses);
             render_nodes(rest, depth + 1, out, ctx);
             indent(depth, out);
             out.push_str("}\n");
@@ -529,10 +608,12 @@ pub(super) fn render_node(node: &Node, depth: usize, out: &mut String, ctx: &Ctx
             index,
             arms,
             default,
+            at,
         } => {
             indent(depth, out);
             let printed = expr::switch_index(index, ctx);
             out.push_str(&format!("switch ({}) {{\n", printed.text));
+            super::addresses::append(out, *at, ctx.symbols.addresses);
             for (values, body) in arms {
                 for label in case_labels(values, printed.ty.signed) {
                     indent(depth, out);
@@ -574,13 +655,15 @@ pub(super) fn render_node(node: &Node, depth: usize, out: &mut String, ctx: &Ctx
             indent(depth, out);
             out.push_str("}\n");
         }
-        Node::Break => {
+        Node::Break { at } => {
             indent(depth, out);
             out.push_str("break;\n");
+            super::addresses::append(out, *at, ctx.symbols.addresses);
         }
-        Node::Continue => {
+        Node::Continue { at } => {
             indent(depth, out);
             out.push_str("continue;\n");
+            super::addresses::append(out, *at, ctx.symbols.addresses);
         }
         Node::Forever { body } => {
             indent(depth, out);
@@ -595,10 +678,12 @@ pub(super) fn render_node(node: &Node, depth: usize, out: &mut String, ctx: &Ctx
             lhs,
             rhs,
             body,
+            at,
         } => {
             indent(depth, out);
             if prefix.is_empty() {
                 out.push_str(&format!("while ({}) {{\n", condition(*cond, lhs, rhs, ctx)));
+                super::addresses::append(out, *at, ctx.symbols.addresses);
                 render_nodes(body, depth + 1, out, ctx);
             } else {
                 out.push_str("while (true) {\n");
@@ -608,6 +693,7 @@ pub(super) fn render_node(node: &Node, depth: usize, out: &mut String, ctx: &Ctx
                     "if ({}) break;\n",
                     condition(cond.invert(), lhs, rhs, ctx)
                 ));
+                super::addresses::append(out, *at, ctx.symbols.addresses);
                 render_nodes(body, depth + 1, out, ctx);
             }
             indent(depth, out);
@@ -618,6 +704,7 @@ pub(super) fn render_node(node: &Node, depth: usize, out: &mut String, ctx: &Ctx
             lhs,
             rhs,
             body,
+            at,
         } => {
             indent(depth, out);
             out.push_str("do {\n");
@@ -627,6 +714,7 @@ pub(super) fn render_node(node: &Node, depth: usize, out: &mut String, ctx: &Ctx
                 "}} while ({});\n",
                 condition(*cond, lhs, rhs, ctx)
             ));
+            super::addresses::append(out, *at, ctx.symbols.addresses);
         }
     }
 }

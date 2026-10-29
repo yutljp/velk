@@ -45,7 +45,7 @@ fn printed_fixture_simd_and_flag_joins_preserve_results() {
             let mut ir = synthetic_ir(&format!("{name}_{output}"), params, CType::U64, vec![]);
             ir.blocks = blocks.clone();
             for stmt in ir.blocks.iter_mut().flat_map(|block| &mut block.stmts) {
-                if let Stmt::Ret { value } = stmt {
+                if let Stmt::Ret { value, .. } = stmt {
                     *value = Expr::reg(output, 64);
                 }
             }
@@ -99,7 +99,7 @@ fn printed_reverse_string_copies_preserve_memory() {
         let mut ir = synthetic_ir(name, params, CType::U64, vec![]);
         ir.blocks = velk::lift::lift(&image, 0, size, &Default::default()).unwrap();
         for stmt in ir.blocks.iter_mut().flat_map(|block| &mut block.stmts) {
-            if let Stmt::Ret { value } = stmt {
+            if let Stmt::Ret { value, .. } = stmt {
                 *value = Expr::constant(0);
             }
         }
@@ -204,7 +204,7 @@ fn printed_arm64_table_shift_and_aes_preserve_results() {
             ir.isa = velk::loader::Isa::AArch64;
             ir.blocks = blocks.clone();
             for stmt in ir.blocks.iter_mut().flat_map(|block| &mut block.stmts) {
-                if let Stmt::Ret { value } = stmt {
+                if let Stmt::Ret { value, .. } = stmt {
                     *value = Expr::reg(output, 64);
                 }
             }
@@ -368,7 +368,7 @@ fn printed_arm64_exclusive_and_system_operations_preserve_memory() {
         ir.isa = velk::loader::Isa::AArch64;
         ir.blocks = velk::lift::lift(&image, 0, size, &Default::default()).unwrap();
         for stmt in ir.blocks.iter_mut().flat_map(|block| &mut block.stmts) {
-            if let Stmt::Ret { value } = stmt {
+            if let Stmt::Ret { value, .. } = stmt {
                 *value = Expr::reg(result, 64);
             }
         }
@@ -467,6 +467,7 @@ fn printed_arm64_structure_accesses_preserve_lanes_and_writeback() {
             for stmt in ir.blocks.iter_mut().flat_map(|block| &mut block.stmts) {
                 if let Stmt::Ret {
                     value: return_value,
+                    ..
                 } = stmt
                 {
                     *return_value = value.clone();
@@ -508,6 +509,7 @@ fn printed_arm64_entry_stack_pointer_uses_the_interpreter_frame() {
         CType::U64,
         vec![Stmt::Ret {
             value: Expr::reg(31, 64),
+            at: None,
         }],
     );
     ir.isa = Isa::AArch64;
@@ -551,6 +553,7 @@ fn printed_aes_round_helpers_preserve_results() {
                         Operation::Aes { round, high },
                         (0..4).map(|index| Expr::reg(index, 64)).collect(),
                     ),
+                    at: None,
                 }],
             );
             let inputs = (0..64)
@@ -609,13 +612,16 @@ fn printed_arm64_machine_loads_share_recovered_stack_storage() {
                     addr: address.clone(),
                     value: Expr::Const(42),
                     width: 8,
+                    at: None,
                 },
                 Stmt::Store {
                     addr: Expr::bin(BinOp::Add, address.clone(), Expr::Const(8)),
                     value: Expr::Const(43),
                     width: 8,
+                    at: None,
                 },
                 Stmt::Machine {
+                    at: None,
                     instruction,
                     inputs: vec![address],
                     outputs: (0..if pair { 2 } else { 1 })
@@ -635,6 +641,7 @@ fn printed_arm64_machine_loads_share_recovered_stack_storage() {
                     } else {
                         Expr::reg(TEMP_BASE, 64)
                     },
+                    at: None,
                 },
             ],
         );
@@ -662,6 +669,7 @@ fn printed_arm64_machine_memory_keeps_fixed_string_addresses() {
         CType::U64,
         vec![
             Stmt::Machine {
+                at: None,
                 instruction: MachineInstruction::ArmLoadAcquire { width: 8 },
                 inputs: vec![Expr::Const(REGION)],
                 outputs: vec![RegRef {
@@ -671,6 +679,7 @@ fn printed_arm64_machine_memory_keeps_fixed_string_addresses() {
             },
             Stmt::Ret {
                 value: Expr::reg(TEMP_BASE, 64),
+                at: None,
             },
         ],
     );

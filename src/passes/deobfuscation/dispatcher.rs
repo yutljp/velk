@@ -23,6 +23,7 @@ pub(super) fn remove(ir: &mut FunctionIr) -> usize {
             Some(
                 Stmt::Br {
                     target: Some(target),
+                    ..
                 }
                 | Stmt::Brif { target, .. },
             ) => starts.contains(target),
@@ -86,7 +87,13 @@ fn state_register(block: &Block) -> Option<u16> {
 
 fn dispatcher_block(block: &Block, state: u16) -> bool {
     block.stmts.is_empty()
-        || matches!(block.stmts.as_slice(), [Stmt::Br { target: Some(_) }])
+        || matches!(
+            block.stmts.as_slice(),
+            [Stmt::Br {
+                target: Some(_),
+                ..
+            }]
+        )
         || state_register(block) == Some(state)
 }
 
@@ -109,6 +116,7 @@ fn resolve(
                 lhs,
                 rhs,
                 target,
+                ..
             }) => {
                 let register = |index| (index == state).then_some(value);
                 let (Some(a), Some(b)) = (
@@ -135,6 +143,7 @@ fn resolve(
                 index,
                 cases,
                 default,
+                ..
             }) => {
                 let Some(value) = crate::ir::semantics::evaluate(index, &|index| {
                     (index == state).then_some(value)
@@ -151,6 +160,7 @@ fn resolve(
             }
             Some(Stmt::Br {
                 target: Some(target),
+                ..
             }) => *target,
             None => match ir.blocks.get(at + 1) {
                 Some(block) => block.start,
@@ -208,7 +218,10 @@ fn region(ir: &FunctionIr, header: usize, state: u16) -> HashSet<usize> {
             if region.contains(&at)
                 || !matches!(
                     ir.blocks[at].stmts.as_slice(),
-                    [Stmt::Br { target: Some(_) }]
+                    [Stmt::Br {
+                        target: Some(_),
+                        ..
+                    }]
                 )
             {
                 continue;
@@ -234,7 +247,7 @@ fn prove_transitions(ir: &FunctionIr, region: &HashSet<usize>, state: u16) -> Op
             continue;
         }
         match stmt {
-            Stmt::Assign { dest, value } if dest.width == 32 || dest.width == 64 => {
+            Stmt::Assign { dest, value, .. } if dest.width == 32 || dest.width == 64 => {
                 if constants(value).is_none() {
                     return None;
                 }
@@ -277,7 +290,7 @@ fn prove_transitions(ir: &FunctionIr, region: &HashSet<usize>, state: u16) -> Op
                 .enumerate()
                 .rev()
                 .find_map(|(position, stmt)| match stmt {
-                    Stmt::Assign { dest, value } if dest.index == state => {
+                    Stmt::Assign { dest, value, .. } if dest.index == state => {
                         Some((position, dest, value))
                     }
                     _ => None,
@@ -303,7 +316,12 @@ fn prove_transitions(ir: &FunctionIr, region: &HashSet<usize>, state: u16) -> Op
                             || from != at
                             || !matches!(
                                 ir.blocks[from].stmts.get(position + 1..),
-                                Some([] | [Stmt::Br { target: Some(_) }])
+                                Some(
+                                    [] | [Stmt::Br {
+                                        target: Some(_),
+                                        ..
+                                    }]
+                                )
                             )
                         {
                             return None;
@@ -379,6 +397,7 @@ fn edit_blocks(ir: &FunctionIr, edits: &HashMap<usize, Transition>) -> Option<Fu
                     lhs: lhs.as_ref().clone(),
                     rhs: rhs.as_ref().clone(),
                     target: resolved[0],
+                    at: None,
                 });
                 blocks.push(block);
                 address = match address.checked_add(1) {
@@ -389,6 +408,7 @@ fn edit_blocks(ir: &FunctionIr, edits: &HashMap<usize, Transition>) -> Option<Fu
                     start: address,
                     stmts: vec![Stmt::Br {
                         target: Some(resolved[1]),
+                        at: None,
                     }],
                 });
                 continue;
@@ -396,6 +416,7 @@ fn edit_blocks(ir: &FunctionIr, edits: &HashMap<usize, Transition>) -> Option<Fu
             match block.stmts.last_mut() {
                 Some(Stmt::Br {
                     target: Some(target),
+                    ..
                 })
                 | Some(Stmt::Brif { target, .. }) => {
                     if let Some(resolved) = targets.get(target) {
@@ -420,6 +441,7 @@ fn edit_blocks(ir: &FunctionIr, edits: &HashMap<usize, Transition>) -> Option<Fu
                         start: address,
                         stmts: vec![Stmt::Br {
                             target: Some(resolved[0]),
+                            at: None,
                         }],
                     });
                     continue;
@@ -427,6 +449,7 @@ fn edit_blocks(ir: &FunctionIr, edits: &HashMap<usize, Transition>) -> Option<Fu
                 if !matches!(block.stmts.last(), Some(Stmt::Br { .. })) {
                     block.stmts.push(Stmt::Br {
                         target: Some(resolved[0]),
+                        at: None,
                     });
                 }
             }

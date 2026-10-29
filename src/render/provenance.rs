@@ -53,7 +53,7 @@ impl Facts {
         for (position, node) in nodes.iter().enumerate() {
             let time = position + 1;
             match node {
-                Node::Stmt(Stmt::Assign { dest, value }) => {
+                Node::Stmt(Stmt::Assign { dest, value, .. }) => {
                     let pointer = if dest.width == 64 {
                         facts.pointer(value)
                     } else {

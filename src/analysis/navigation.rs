@@ -76,7 +76,7 @@ pub(crate) fn resolve(expr: &Expr, values: &std::collections::HashMap<u16, Expr>
 
 pub(crate) fn advance(stmt: &crate::ir::Stmt, values: &mut HashMap<u16, Expr>) {
     let assigned = match stmt {
-        crate::ir::Stmt::Assign { dest, value } if dest.width >= 32 => {
+        crate::ir::Stmt::Assign { dest, value, .. } if dest.width >= 32 => {
             let mut value = resolve(value, values);
             if dest.width == 32 {
                 value = Expr::bin(crate::ir::BinOp::And, value, Expr::Const(u32::MAX as u64));

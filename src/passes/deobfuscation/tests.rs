@@ -105,6 +105,7 @@ fn assign(value: Expr) -> Stmt {
             width: 32,
         },
         value,
+        at: None,
     }
 }
 
@@ -122,6 +123,7 @@ fn dispatcher(value: Expr) -> FunctionIr {
                 lhs: Expr::reg(VARIABLE_BASE, 32),
                 rhs: Expr::Const(11),
                 target: 40,
+                at: None,
             }],
         },
         Block {
@@ -131,22 +133,31 @@ fn dispatcher(value: Expr) -> FunctionIr {
                 lhs: Expr::reg(VARIABLE_BASE, 32),
                 rhs: Expr::Const(29),
                 target: 50,
+                at: None,
             }],
         },
         Block {
             start: 30,
             stmts: vec![Stmt::Ret {
                 value: Expr::Const(0),
+                at: None,
             }],
         },
         Block {
             start: 40,
-            stmts: vec![assign(value), Stmt::Br { target: Some(10) }],
+            stmts: vec![
+                assign(value),
+                Stmt::Br {
+                    target: Some(10),
+                    at: None,
+                },
+            ],
         },
         Block {
             start: 50,
             stmts: vec![Stmt::Ret {
                 value: Expr::Const(7),
+                at: None,
             }],
         },
     ];
@@ -194,6 +205,7 @@ fn truncated_state_and_changed_select_operands_are_handled_safely() {
                 width: 32,
             },
             value: Expr::Const(1),
+            at: None,
         },
     );
     let before = format!("{ir:?}");
@@ -204,7 +216,10 @@ fn truncated_state_and_changed_select_operands_are_handled_safely() {
 #[test]
 fn unresolved_edges_and_exception_handlers_keep_the_dispatcher() {
     let mut ir = dispatcher(Expr::Const(29));
-    ir.blocks[4].stmts.push(Stmt::Br { target: Some(999) });
+    ir.blocks[4].stmts.push(Stmt::Br {
+        target: Some(999),
+        at: None,
+    });
     assert_eq!(dispatcher::remove(&mut ir), 0);
     let mut ir = dispatcher(Expr::Const(29));
     ir.landing_pads.push((40, vec![(0, 10)]));
@@ -236,6 +251,7 @@ fn switch_dispatchers_and_fallthrough_choices_are_recovered() {
         index: Expr::reg(VARIABLE_BASE, 32),
         cases: vec![(11, 40), (29, 50)],
         default: Some(30),
+        at: None,
     }];
     // Keep the case's conditional state assignment as a fallthrough edge.
     ir.blocks[4].stmts.pop();
@@ -243,7 +259,10 @@ fn switch_dispatchers_and_fallthrough_choices_are_recovered() {
         5,
         Block {
             start: 45,
-            stmts: vec![Stmt::Br { target: Some(10) }],
+            stmts: vec![Stmt::Br {
+                target: Some(10),
+                at: None,
+            }],
         },
     );
     assert_eq!(dispatcher::remove(&mut ir), 3);

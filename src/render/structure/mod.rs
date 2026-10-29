@@ -25,6 +25,7 @@ pub enum Node {
     Stmt(Stmt),
     Label(u64),
     If {
+        at: Option<u64>,
         cond: Cond,
         lhs: Expr,
         rhs: Expr,
@@ -32,6 +33,7 @@ pub enum Node {
         els: Vec<Node>,
     },
     DoWhile {
+        at: Option<u64>,
         cond: Cond,
         lhs: Expr,
         rhs: Expr,
@@ -41,15 +43,21 @@ pub enum Node {
     Forever {
         body: Vec<Node>,
     },
-    Break,
-    Continue,
+    Break {
+        at: Option<u64>,
+    },
+    Continue {
+        at: Option<u64>,
+    },
     /// A dispatch with the case bodies inlined.
     Switch {
+        at: Option<u64>,
         index: Expr,
         arms: Vec<(Vec<i64>, Vec<Node>)>,
         default: Option<Vec<Node>>,
     },
     While {
+        at: Option<u64>,
         prefix: Vec<Node>,
         cond: Cond,
         lhs: Expr,
@@ -58,10 +66,51 @@ pub enum Node {
     },
 }
 
+impl Node {
+    pub(crate) fn origin(&self) -> Option<u64> {
+        match self {
+            Self::Stmt(stmt) => stmt.origin(),
+            Self::If { at, .. }
+            | Self::While { at, .. }
+            | Self::DoWhile { at, .. }
+            | Self::Switch { at, .. }
+            | Self::Break { at }
+            | Self::Continue { at } => *at,
+            Self::Label(_) | Self::Forever { .. } => None,
+        }
+    }
+
+    fn set_origin(&mut self, address: Option<u64>) {
+        match self {
+            Self::Stmt(stmt) => stmt.set_origin(address),
+            Self::If { at, .. }
+            | Self::While { at, .. }
+            | Self::DoWhile { at, .. }
+            | Self::Switch { at, .. }
+            | Self::Break { at }
+            | Self::Continue { at } => *at = address,
+            Self::Label(_) | Self::Forever { .. } => {}
+        }
+    }
+}
+
+fn merge_origins(nodes: &mut [Node], other: &[Node]) {
+    for (node, other) in nodes.iter_mut().zip(other) {
+        if node.origin() != other.origin() {
+            node.set_origin(None);
+        }
+        let bodies = cleanup::children_mut(node);
+        let others = cleanup::children(other);
+        for (body, other) in bodies.into_iter().zip(others) {
+            merge_origins(body, other);
+        }
+    }
+}
+
 /// Whether a break leaves the enclosing loop or switch, rather than a nested one.
 pub(super) fn breaks_out(nodes: &[Node]) -> bool {
     nodes.iter().any(|node| match node {
-        Node::Break => true,
+        Node::Break { .. } => true,
         Node::If { then, els, .. } => breaks_out(then) || breaks_out(els),
         _ => false,
     })
@@ -320,7 +369,7 @@ fn labels_resolve(ir: &FunctionIr, nodes: &[Node]) -> bool {
                         labels(body, found);
                     }
                 }
-                Node::Stmt(_) | Node::Break | Node::Continue => {}
+                Node::Stmt(_) | Node::Break { .. } | Node::Continue { .. } => {}
             }
         }
     }
@@ -340,7 +389,9 @@ fn cost(nodes: &[Node]) -> (usize, usize) {
         nodes
             .iter()
             .map(|node| match node {
-                Node::Stmt(Stmt::Br { target: Some(_) }) => 1,
+                Node::Stmt(Stmt::Br {
+                    target: Some(_), ..
+                }) => 1,
                 Node::If { then, els, .. } => gotos(then) + gotos(els),
                 Node::DoWhile { body, .. } | Node::Forever { body } => gotos(body),
                 Node::While { prefix, body, .. } => gotos(prefix) + gotos(body),
@@ -403,7 +454,13 @@ fn indirect_entries(ir: &FunctionIr) -> std::collections::HashSet<u64> {
     ir.blocks
         .iter()
         .zip(seen)
-        .filter(|(block, seen)| !seen && !block.stmts.iter().all(|stmt| matches!(stmt, Stmt::Trap)))
+        .filter(|(block, seen)| {
+            !seen
+                && !block
+                    .stmts
+                    .iter()
+                    .all(|stmt| matches!(stmt, Stmt::Trap { .. }))
+        })
         .map(|(block, _)| block.start)
         .collect()
 }
@@ -437,6 +494,31 @@ mod tests {
     use super::*;
 
     #[test]
+    fn shared_nested_effects_keep_only_matching_origins() {
+        let body = |at| {
+            vec![Node::If {
+                at: Some(0x10),
+                cond: Cond::Eq,
+                lhs: Expr::reg(0, 64),
+                rhs: Expr::Const(0),
+                then: vec![Node::Stmt(Stmt::Ret {
+                    value: Expr::Const(7),
+                    at,
+                })],
+                els: vec![Node::Break { at: Some(0x30) }],
+            }]
+        };
+        let mut shared = body(Some(0x20));
+        merge_origins(&mut shared, &body(Some(0x21)));
+        assert_eq!(shared[0].origin(), Some(0x10));
+        let Node::If { then, els, .. } = &shared[0] else {
+            unreachable!()
+        };
+        assert_eq!(then[0].origin(), None);
+        assert_eq!(els[0].origin(), Some(0x30));
+    }
+
+    #[test]
     fn breaks_bind_only_through_conditionals() {
         use std::slice;
 
@@ -446,36 +528,40 @@ mod tests {
             rhs: Expr::Const(0),
             then,
             els,
+            at: None,
         };
         assert!(!breaks_out(&[]));
-        assert!(breaks_out(&[Node::Break]));
+        assert!(breaks_out(&[Node::Break { at: None }]));
         assert!(breaks_out(&[conditional(
             Vec::new(),
-            vec![conditional(vec![Node::Break], Vec::new())]
+            vec![conditional(vec![Node::Break { at: None }], Vec::new())]
         )]));
         let nested = [
             Node::Forever {
-                body: vec![Node::Break],
+                body: vec![Node::Break { at: None }],
             },
             Node::DoWhile {
                 cond: Cond::Eq,
                 lhs: Expr::reg(0, 64),
                 rhs: Expr::Const(0),
-                body: vec![Node::Break],
+                body: vec![Node::Break { at: None }],
+                at: None,
             },
             Node::While {
-                prefix: vec![Node::Break],
+                prefix: vec![Node::Break { at: None }],
                 cond: Cond::Eq,
                 lhs: Expr::reg(0, 64),
                 rhs: Expr::Const(0),
-                body: vec![Node::Break],
+                body: vec![Node::Break { at: None }],
+                at: None,
             },
             Node::Switch {
                 index: Expr::reg(0, 64),
-                arms: vec![(vec![0], vec![Node::Break])],
-                default: Some(vec![Node::Break]),
+                arms: vec![(vec![0], vec![Node::Break { at: None }])],
+                default: Some(vec![Node::Break { at: None }]),
+                at: None,
             },
-            Node::Continue,
+            Node::Continue { at: None },
         ];
         for node in nested {
             assert!(!breaks_out(slice::from_ref(&node)), "{node:?}");

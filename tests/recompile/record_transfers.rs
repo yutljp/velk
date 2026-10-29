@@ -35,19 +35,23 @@ fn printed_partial_record_transfers_keep_members_without_extra_casts() {
                     width: 64,
                 },
                 value: load(16),
+                at: None,
             },
             Stmt::Store {
                 addr: at(0, 8),
                 value: load(8),
                 width: 8,
+                at: None,
             },
             Stmt::Store {
                 addr: at(0, 16),
                 value: Expr::reg(VARIABLE_BASE, 64),
                 width: 8,
+                at: None,
             },
             Stmt::Ret {
                 value: Expr::Const(0),
+                at: None,
             },
         ],
     );
@@ -113,6 +117,7 @@ fn printed_reordered_transfers_preserve_snapshots_and_word_offsets() {
                                 width: 64,
                             },
                             value: load(part),
+                            at: None,
                         });
                     }
                 }
@@ -130,6 +135,7 @@ fn printed_reordered_transfers_preserve_snapshots_and_word_offsets() {
                             Expr::reg(VARIABLE_BASE + part as u16, 64)
                         },
                         width: 8,
+                        at: None,
                     });
                 }
                 statements.push(Stmt::Ret {
@@ -138,6 +144,7 @@ fn printed_reordered_transfers_preserve_snapshots_and_word_offsets() {
                     } else {
                         Expr::Const(0)
                     },
+                    at: None,
                 });
                 let ir = synthetic_ir(
                     "reordered_transfer",
@@ -197,11 +204,13 @@ fn printed_record_transfers_keep_recovered_frame_storage() {
             addr: at(-16),
             value: Expr::Const(123),
             width: 8,
+            at: None,
         },
         Stmt::Store {
             addr: at(-8),
             value: Expr::Const(456),
             width: 8,
+            at: None,
         },
     ];
     for part in 0..2 {
@@ -211,6 +220,7 @@ fn printed_record_transfers_keep_recovered_frame_storage() {
                 width: 64,
             },
             value: load(-16 + part * 8),
+            at: None,
         });
     }
     for part in 0..2 {
@@ -218,10 +228,12 @@ fn printed_record_transfers_keep_recovered_frame_storage() {
             addr: at(-32 + part * 8),
             value: Expr::reg(VARIABLE_BASE + part as u16, 64),
             width: 8,
+            at: None,
         });
     }
     stmts.push(Stmt::Ret {
         value: Expr::bin(BinOp::Xor, load(-32), load(-24)),
+        at: None,
     });
     let candidate = printed_candidate(
         synthetic_ir("record_frame_copy", vec![], CType::U64, stmts),
@@ -258,11 +270,13 @@ fn printed_record_transfers_snapshot_overlapping_ranges() {
                         width: 64,
                     },
                     value: Expr::Const(123),
+                    at: None,
                 },
                 Stmt::Store {
                     addr: at(arguments[0], 96),
                     value: Expr::reg(VARIABLE_BASE, 64),
                     width: 8,
+                    at: None,
                 },
             ];
             for part in 0..size / 8 {
@@ -276,6 +290,7 @@ fn printed_record_transfers_snapshot_overlapping_ranges() {
                         width: 8,
                         signed: false,
                     },
+                    at: None,
                 });
             }
             for part in 0..size / 8 {
@@ -283,6 +298,7 @@ fn printed_record_transfers_snapshot_overlapping_ranges() {
                     addr: at(arguments[0], part * 8),
                     value: Expr::reg(VARIABLE_BASE + part as u16, 64),
                     width: 8,
+                    at: None,
                 });
             }
             if interleaved {
@@ -309,6 +325,7 @@ fn printed_record_transfers_snapshot_overlapping_ranges() {
                             width: 8,
                             signed: false,
                         },
+                        at: None,
                     },
                 );
             }
@@ -320,6 +337,7 @@ fn printed_record_transfers_snapshot_overlapping_ranges() {
                 } else {
                     Expr::Const(0)
                 },
+                at: None,
             });
             let mut ir = synthetic_ir(
                 &format!(
@@ -430,6 +448,7 @@ fn printed_indexed_and_vector_record_moves_preserve_bytes() {
                         width: 8,
                         signed: false,
                     },
+                    at: None,
                 });
             }
             for part in 0..2 {
@@ -437,10 +456,12 @@ fn printed_indexed_and_vector_record_moves_preserve_bytes() {
                     addr: at(0, u64::from(part) * 8),
                     value: Expr::reg(first + part, 64),
                     width: 8,
+                    at: None,
                 });
             }
             statements.push(Stmt::Ret {
                 value: Expr::Const(0),
+                at: None,
             });
             let mut ir = synthetic_ir(
                 &format!("indexed_record_{vector}_{global}_{padded}"),
@@ -483,6 +504,7 @@ fn printed_indexed_and_vector_record_moves_preserve_bytes() {
                             width: 64,
                         },
                         value: Expr::bin(BinOp::Add, Expr::reg(*index, 64), Expr::Const(1)),
+                        at: None,
                     });
                 }
                 let counter = VARIABLE_BASE + 8;
@@ -492,12 +514,14 @@ fn printed_indexed_and_vector_record_moves_preserve_bytes() {
                         width: 64,
                     },
                     value: Expr::bin(BinOp::Add, Expr::reg(counter, 64), Expr::Const(1)),
+                    at: None,
                 });
                 body.push(Stmt::Brif {
                     cond: Cond::Ne,
                     lhs: Expr::reg(counter, 64),
                     rhs: Expr::Const(2),
                     target: 16,
+                    at: None,
                 });
                 ir.blocks = vec![
                     Block {
@@ -508,6 +532,7 @@ fn printed_indexed_and_vector_record_moves_preserve_bytes() {
                                 width: 64,
                             },
                             value: Expr::Const(0),
+                            at: None,
                         }],
                     },
                     Block {
@@ -577,6 +602,7 @@ fn printed_frame_buffer_transfers_use_one_object_extent() {
             addr: at(-64 + part * 8),
             value: Expr::Const(0x1234 + part as u64),
             width: 8,
+            at: None,
         });
     }
     for part in 0..2 {
@@ -590,6 +616,7 @@ fn printed_frame_buffer_transfers_use_one_object_extent() {
                 width: 8,
                 signed: false,
             },
+            at: None,
         });
     }
     for part in 0..2 {
@@ -597,6 +624,7 @@ fn printed_frame_buffer_transfers_use_one_object_extent() {
             addr: at(-56 + i64::from(part) * 8),
             value: Expr::reg(VARIABLE_BASE + part, 64),
             width: 8,
+            at: None,
         });
     }
     statements.push(Stmt::Ret {
@@ -605,6 +633,7 @@ fn printed_frame_buffer_transfers_use_one_object_extent() {
             width: 8,
             signed: false,
         },
+        at: None,
     });
     let mut ir = synthetic_ir("frame_buffer_record", vec![], CType::U64, statements);
     ir.debug_locals.push(velk::ir::DebugLocal {
@@ -646,9 +675,11 @@ fn raw_memory_calls_preserve_bytes_past_a_string_terminator() {
                 outputs: vec![],
                 clobbers: Some(Default::default()),
                 via: None,
+                at: None,
             },
             Stmt::Ret {
                 value: Expr::Const(7),
+                at: None,
             },
         ],
     );
@@ -694,11 +725,13 @@ fn printed_repeated_byte_stores_fill_only_the_written_range() {
                     addr: Expr::bin(BinOp::Add, Expr::reg(7, 64), Expr::Const(offset)),
                     value: Expr::Const(value * (u64::MAX / 255)),
                     width,
+                    at: None,
                 });
                 offset += u64::from(width) + u64::from(changed == 2);
             }
             statements.push(Stmt::Ret {
                 value: Expr::Const(0),
+                at: None,
             });
             let ir = synthetic_ir(
                 "repeated_byte_stores",
@@ -746,14 +779,17 @@ fn printed_byte_fills_keep_named_global_objects_separate() {
                     addr: Expr::Const(0x2000),
                     value: Expr::Const(0),
                     width: 1,
+                    at: None,
                 },
                 Stmt::Store {
                     addr: Expr::Const(0x2001),
                     value: Expr::Const(0),
                     width: 1,
+                    at: None,
                 },
                 Stmt::Ret {
                     value: Expr::Const(0),
+                    at: None,
                 },
             ],
         );
@@ -795,11 +831,13 @@ fn printed_global_fills_reuse_the_stored_words_address() {
                 addr: Expr::Const(REGION),
                 value: Expr::Const(0),
                 width: 8,
+                at: None,
             },
             Stmt::Store {
                 addr: Expr::Const(REGION + 8),
                 value: Expr::Const(0),
                 width: 8,
+                at: None,
             },
             Stmt::Ret {
                 value: Expr::Load {
@@ -807,6 +845,7 @@ fn printed_global_fills_reuse_the_stored_words_address() {
                     width: 8,
                     signed: false,
                 },
+                at: None,
             },
         ],
     );
@@ -854,6 +893,7 @@ fn printed_global_copies_read_the_named_objects() {
                     width: 8,
                     signed: false,
                 },
+                at: None,
             },
             Stmt::Assign {
                 dest: RegRef {
@@ -865,19 +905,23 @@ fn printed_global_copies_read_the_named_objects() {
                     width: 8,
                     signed: false,
                 },
+                at: None,
             },
             Stmt::Store {
                 addr: Expr::reg(7, 64),
                 value: Expr::reg(VARIABLE_BASE, 64),
                 width: 8,
+                at: None,
             },
             Stmt::Store {
                 addr: Expr::bin(BinOp::Add, Expr::reg(7, 64), Expr::Const(8)),
                 value: Expr::reg(VARIABLE_BASE + 1, 64),
                 width: 8,
+                at: None,
             },
             Stmt::Ret {
                 value: Expr::Const(0),
+                at: None,
             },
         ],
     );

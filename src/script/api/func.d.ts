@@ -17,8 +17,9 @@ interface Func {
   /** Summary sized to roughly `budget` tokens (default 240); a larger budget adds disassembly lines. */
   card(opts?: { budget?: number }): Card;
   /** Standalone pseudo-C with support definitions. Throws when the function cannot be lifted.
+   * addresses adds known instruction origins as comments and defaults to false.
    * For long MCP replies, page lines with .split("\n").slice(start, end).join("\n"). */
-  decompile(opts?: { decodeStrings?: boolean }): string;
+  decompile(opts?: { decodeStrings?: boolean; addresses?: boolean }): string;
   origins(): { target: ProjectTarget; name?: string; c_type?: string }[];
   /** One record per instruction, with a comment when a static reference is known. */
   disasm(opts?: { limit?: number }): DisassemblyLine[];

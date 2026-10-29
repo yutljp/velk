@@ -46,6 +46,7 @@ fn main_parameters_use_standard_types_and_preserve_byte_addresses() {
                         load(load(Expr::reg(registers[2], 64), 8), 1),
                     ),
                 ),
+                at: None,
             }],
         );
         ir.isa = isa;
@@ -81,6 +82,7 @@ fn main_with_only_argc_adds_argv_and_no_inputs_use_void() {
             CType::U64,
             vec![Stmt::Ret {
                 value: Expr::Const(42),
+                at: None,
             }],
         );
         let code = velk::render::render(&ir, &[], &Default::default(), &[]);

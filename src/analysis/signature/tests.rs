@@ -28,14 +28,17 @@ fn argument_reads_after_internal_calls_follow_the_callee_clobbers() {
                         clobbers,
                         outputs: crate::ir::fallback_call_outputs(convention, clobbers),
                         via: None,
+                        at: None,
                     },
                     Stmt::Store {
                         addr: Expr::Const(0x2000),
                         value: Expr::reg(register, 32),
                         width: 4,
+                        at: None,
                     },
                     Stmt::Ret {
                         value: Expr::Const(0),
+                        at: None,
                     },
                 ],
             }];
@@ -58,6 +61,7 @@ fn boolean_guard_smt_checks_only_inputs_read_on_feasible_paths() {
         let assign = |index, value| Stmt::Assign {
             dest: RegRef { index, width: 64 },
             value: Expr::Const(value),
+            at: None,
         };
         let blocks = [
             Block {
@@ -69,6 +73,7 @@ fn boolean_guard_smt_checks_only_inputs_read_on_feasible_paths() {
                         lhs: Expr::reg(7, 32),
                         rhs: Expr::Const(0),
                         target: 20,
+                        at: None,
                     },
                 ],
             },
@@ -83,6 +88,7 @@ fn boolean_guard_smt_checks_only_inputs_read_on_feasible_paths() {
                     lhs: Expr::reg(if guarded { 2 } else { 6 }, 32),
                     rhs: Expr::Const(0),
                     target: 40,
+                    at: None,
                 }],
             },
             Block {
@@ -91,12 +97,14 @@ fn boolean_guard_smt_checks_only_inputs_read_on_feasible_paths() {
                     addr: Expr::Const(0x2000),
                     value: Expr::reg(1, 64),
                     width: 8,
+                    at: None,
                 }],
             },
             Block {
                 start: 40,
                 stmts: vec![Stmt::Ret {
                     value: Expr::Const(0),
+                    at: None,
                 }],
             },
         ];
@@ -125,12 +133,14 @@ fn a_register_written_in_an_earlier_block_is_not_an_argument() {
                     width: 64,
                 },
                 value: Expr::Const(7),
+                at: None,
             }],
         },
         Block {
             start: 4,
             stmts: vec![Stmt::Ret {
                 value: Expr::bin(crate::ir::BinOp::Add, Expr::reg(0, 64), Expr::reg(1, 64)),
+                at: None,
             }],
         },
     ];
@@ -154,6 +164,7 @@ fn an_argument_kept_in_a_stack_slot_is_typed_by_its_loads() {
     let assign = |index, value| Stmt::Assign {
         dest: RegRef { index, width: 64 },
         value,
+        at: None,
     };
     let load = |addr: Expr, width| Expr::Load {
         addr: Box::new(addr),
@@ -167,6 +178,7 @@ fn an_argument_kept_in_a_stack_slot_is_typed_by_its_loads() {
                 addr: slot.clone(),
                 value: Expr::reg(0, 64),
                 width: 8,
+                at: None,
             },
             assign(8, Expr::reg(1, 64)),
             assign(
@@ -177,6 +189,7 @@ fn an_argument_kept_in_a_stack_slot_is_typed_by_its_loads() {
             assign(10, load(Expr::reg(8, 64), 4)),
             Stmt::Ret {
                 value: Expr::bin(crate::ir::BinOp::Add, Expr::reg(9, 64), Expr::reg(10, 64)),
+                at: None,
             },
         ],
     }];
@@ -206,6 +219,7 @@ fn arguments_past_the_registers_are_read_from_the_callers_frame() {
     let assign = |index, value| Stmt::Assign {
         dest: RegRef { index, width: 64 },
         value,
+        at: None,
     };
     let blocks = vec![Block {
         start: 0,
@@ -229,6 +243,7 @@ fn arguments_past_the_registers_are_read_from_the_callers_frame() {
             ),
             Stmt::Ret {
                 value: Expr::bin(crate::ir::BinOp::Add, sum, Expr::reg(0, 64)),
+                at: None,
             },
         ],
     }];
@@ -259,6 +274,7 @@ fn go_assembly_results_follow_the_arguments_read() {
     let assign = |index, value| Stmt::Assign {
         dest: RegRef { index, width: 64 },
         value,
+        at: None,
     };
     let blocks = vec![Block {
         start: 0,
@@ -272,6 +288,7 @@ fn go_assembly_results_follow_the_arguments_read() {
                 addr: Expr::bin(crate::ir::BinOp::Add, Expr::reg(4, 64), Expr::Const(0x18)),
                 value: Expr::reg(0, 64),
                 width: 4,
+                at: None,
             },
             assign(
                 8,
@@ -288,9 +305,11 @@ fn go_assembly_results_follow_the_arguments_read() {
                 clobbers: None,
                 outputs: crate::ir::fallback_call_outputs(Convention::GoAmd64, None),
                 via: None,
+                at: None,
             },
             Stmt::Ret {
                 value: Expr::reg(0, 64),
+                at: None,
             },
         ],
     }];
@@ -318,9 +337,11 @@ fn registers_before_the_last_argument_read_are_parameters() {
             lhs: Expr::reg(2, 64),
             rhs: Expr::Const(0),
             target: 0x10,
+            at: None,
         },
         Stmt::Ret {
             value: Expr::Const(0),
+            at: None,
         },
     ];
     assert_eq!(params_of(stmts, Isa::AArch64), vec![0, 1, 2]);
@@ -334,13 +355,17 @@ fn incoming_reads_follow_live_values_across_blocks() {
             stmts: vec![
                 stack_assign(10, Expr::reg(7, 64)),
                 stack_assign(11, Expr::reg(1, 64)),
-                Stmt::Br { target: Some(16) },
+                Stmt::Br {
+                    target: Some(16),
+                    at: None,
+                },
             ],
         },
         Block {
             start: 16,
             stmts: vec![Stmt::Ret {
                 value: Expr::reg(10, 64),
+                at: None,
             }],
         },
     ];
@@ -359,13 +384,17 @@ fn incoming_reads_follow_live_values_across_blocks() {
     let mut unknown = blocks;
     unknown[1].stmts = vec![Stmt::BrIndirect {
         target: Expr::reg(10, 64),
+        at: None,
     }];
     assert!(
         recover(&unknown, Isa::X86_64, Convention::SysV, false)
             .inputs
             .is_none()
     );
-    unknown[1].stmts = vec![Stmt::Br { target: Some(32) }];
+    unknown[1].stmts = vec![Stmt::Br {
+        target: Some(32),
+        at: None,
+    }];
     assert!(
         recover(&unknown, Isa::X86_64, Convention::SysV, false)
             .inputs
@@ -388,6 +417,7 @@ fn floating_results_and_unchanged_secondary_results_keep_their_inputs() {
                     stack_assign(dest, Expr::reg(source, 64)),
                     Stmt::Ret {
                         value: Expr::reg(0, 64),
+                        at: None,
                     },
                 ],
             }],
@@ -411,6 +441,7 @@ fn go_runtime_result_registers_keep_input_reads() {
                 stack_assign(2, Expr::reg(3, 64)),
                 Stmt::Ret {
                     value: Expr::reg(0, 64),
+                    at: None,
                 },
             ],
         }],
@@ -447,9 +478,11 @@ fn preserved_tail_call_outputs_are_inputs_only_when_read() {
                     })
                     .collect(),
                 via: None,
+                at: None,
             },
             Stmt::Ret {
                 value: Expr::Const(0),
+                at: None,
             },
         ];
         if let Some(index) = read {
@@ -459,6 +492,7 @@ fn preserved_tail_call_outputs_are_inputs_only_when_read() {
                     addr: Expr::Const(0x2000),
                     value: Expr::reg(index, 64),
                     width: 8,
+                    at: None,
                 },
             );
         }
@@ -487,9 +521,11 @@ fn the_kept_bits_of_a_partial_write_are_no_argument() {
                 Expr::bin(crate::ir::BinOp::And, Expr::reg(1, 64), Expr::Const(!0xff)),
                 Expr::bin(crate::ir::BinOp::And, Expr::reg(7, 64), Expr::Const(0xff)),
             ),
+            at: None,
         },
         Stmt::Ret {
             value: Expr::bin(crate::ir::BinOp::And, Expr::reg(1, 64), Expr::Const(0xff)),
+            at: None,
         },
     ];
     assert_eq!(params_of(stmts, Isa::X86_64), vec![7]);
@@ -511,6 +547,7 @@ fn stack_assign(index: u16, value: Expr) -> Stmt {
     Stmt::Assign {
         dest: RegRef { index, width: 64 },
         value,
+        at: None,
     }
 }
 
@@ -519,6 +556,7 @@ fn stack_store(base: u16, offset: i64, width: u8) -> Stmt {
         addr: stack_address(base, offset),
         value: Expr::Const(7),
         width,
+        at: None,
     }
 }
 
@@ -548,6 +586,7 @@ fn go_stack_arguments_exclude_register_spills() {
                 ),
                 Stmt::Ret {
                     value: Expr::reg(12, 64),
+                    at: None,
                 },
             ],
         }],
@@ -590,6 +629,7 @@ fn incoming_stack_arguments_do_not_require_every_integer_register() {
         stmts.push(stack_assign(12, value));
         stmts.push(Stmt::Ret {
             value: Expr::reg(12, 64),
+            at: None,
         });
         let signature = recover_aapcs_stack(stmts);
         assert_eq!(
@@ -617,16 +657,19 @@ fn private_spills_saved_registers_and_return_addresses_are_not_arguments() {
             addr: stack_address(31, 0),
             value: Expr::reg(29, 64),
             width: 8,
+            at: None,
         },
         Stmt::Store {
             addr: stack_address(31, 8),
             value: Expr::reg(30, 64),
             width: 8,
+            at: None,
         },
         Stmt::Store {
             addr: stack_address(31, 16),
             value: Expr::reg(0, 64),
             width: 8,
+            at: None,
         },
         Stmt::Ret {
             value: Expr::bin(
@@ -634,6 +677,7 @@ fn private_spills_saved_registers_and_return_addresses_are_not_arguments() {
                 Expr::bin(BinOp::Add, stack_load(31, 0, 8), stack_load(31, 8, 8)),
                 stack_load(31, 16, 8),
             ),
+            at: None,
         },
     ]);
     assert!(signature.stack.is_empty());
@@ -650,6 +694,7 @@ fn private_spills_saved_registers_and_return_addresses_are_not_arguments() {
             start: 0,
             stmts: vec![Stmt::Ret {
                 value: stack_load(4, 0, 8),
+                at: None,
             }],
         }],
         Isa::X86_64,
@@ -666,6 +711,7 @@ fn incoming_stack_bytes_written_before_their_first_read_are_not_inputs() {
             stack_store(31, 0, width),
             Stmt::Ret {
                 value: stack_load(31, 0, 8),
+                at: None,
             },
         ]);
         if width == 8 {
@@ -677,6 +723,7 @@ fn incoming_stack_bytes_written_before_their_first_read_are_not_inputs() {
             stack_store(31, 0, width),
             Stmt::Ret {
                 value: stack_load(31, 0, width),
+                at: None,
             },
         ]);
         assert!(signature.stack.is_empty());
@@ -686,6 +733,7 @@ fn incoming_stack_bytes_written_before_their_first_read_are_not_inputs() {
         stack_store(31, 0, 8),
         Stmt::Ret {
             value: Expr::reg(9, 64),
+            at: None,
         },
     ]);
     assert_eq!(signature.stack, vec![0]);
@@ -694,9 +742,11 @@ fn incoming_stack_bytes_written_before_their_first_read_are_not_inputs() {
             addr: stack_address(31, 0),
             value: stack_load(31, 0, 8),
             width: 8,
+            at: None,
         },
         Stmt::Ret {
             value: Expr::Const(0),
+            at: None,
         },
     ]);
     assert_eq!(signature.stack, vec![0]);
@@ -709,7 +759,10 @@ fn a_stack_write_must_cover_every_predecessor_to_remove_an_input() {
         if both {
             left.push(stack_store(31, 0, 8));
         }
-        left.push(Stmt::Br { target: Some(24) });
+        left.push(Stmt::Br {
+            target: Some(24),
+            at: None,
+        });
         let blocks = vec![
             Block {
                 start: 0,
@@ -718,6 +771,7 @@ fn a_stack_write_must_cover_every_predecessor_to_remove_an_input() {
                     lhs: Expr::reg(0, 64),
                     rhs: Expr::Const(0),
                     target: 16,
+                    at: None,
                 }],
             },
             Block {
@@ -726,12 +780,19 @@ fn a_stack_write_must_cover_every_predecessor_to_remove_an_input() {
             },
             Block {
                 start: 16,
-                stmts: vec![stack_store(31, 0, 8), Stmt::Br { target: Some(24) }],
+                stmts: vec![
+                    stack_store(31, 0, 8),
+                    Stmt::Br {
+                        target: Some(24),
+                        at: None,
+                    },
+                ],
             },
             Block {
                 start: 24,
                 stmts: vec![Stmt::Ret {
                     value: stack_load(31, 0, 8),
+                    at: None,
                 }],
             },
         ];
@@ -753,6 +814,7 @@ fn unknown_stack_adjustments_preserve_only_a_stable_frame_pointer() {
         dynamic(),
         Stmt::Ret {
             value: stack_load(31, 16, 8),
+            at: None,
         },
     ]);
     assert!(signature.stack.is_empty());
@@ -765,6 +827,7 @@ fn unknown_stack_adjustments_preserve_only_a_stable_frame_pointer() {
         dynamic(),
         Stmt::Ret {
             value: stack_load(29, 32, 8),
+            at: None,
         },
     ]);
     assert_eq!(signature.stack, vec![0]);
@@ -774,6 +837,7 @@ fn unknown_stack_adjustments_preserve_only_a_stable_frame_pointer() {
             width: 8,
             signed: false,
         },
+        at: None,
     }]);
     assert!(signature.stack.is_empty());
 }
@@ -794,9 +858,11 @@ fn only_surviving_stack_address_aliases_are_followed_across_calls() {
                 clobbers: None,
                 outputs: crate::ir::fallback_call_outputs(Convention::Aapcs64, None),
                 via: None,
+                at: None,
             },
             Stmt::Ret {
                 value: stack_load(index, 0, 8),
+                at: None,
             },
         ]);
         assert_eq!(signature.stack, if index == 19 { vec![0] } else { vec![] });
@@ -808,11 +874,13 @@ fn incoming_stack_recovery_keeps_its_frame_bound() {
     for offset in [-8, 512] {
         let signature = recover_aapcs_stack(vec![Stmt::Ret {
             value: stack_load(31, offset, 8),
+            at: None,
         }]);
         assert!(signature.stack.is_empty());
     }
     let signature = recover_aapcs_stack(vec![Stmt::Ret {
         value: stack_load(31, 504, 8),
+        at: None,
     }]);
     assert_eq!(signature.stack.len(), 64);
     assert_eq!(signature.stack.last(), Some(&504));
@@ -825,10 +893,12 @@ fn incoming_stack_write_proofs_include_switch_and_flag_edges() {
             index: Expr::reg(0, 64),
             cases: vec![(0, 8)],
             default: Some(16),
+            at: None,
         },
         Stmt::BrifFlags {
             cond: crate::ir::Cond::Eq,
             target: 16,
+            at: None,
         },
     ] {
         let blocks = vec![
@@ -838,16 +908,26 @@ fn incoming_stack_write_proofs_include_switch_and_flag_edges() {
             },
             Block {
                 start: 8,
-                stmts: vec![stack_store(31, 0, 8), Stmt::Br { target: Some(24) }],
+                stmts: vec![
+                    stack_store(31, 0, 8),
+                    Stmt::Br {
+                        target: Some(24),
+                        at: None,
+                    },
+                ],
             },
             Block {
                 start: 16,
-                stmts: vec![Stmt::Br { target: Some(24) }],
+                stmts: vec![Stmt::Br {
+                    target: Some(24),
+                    at: None,
+                }],
             },
             Block {
                 start: 24,
                 stmts: vec![Stmt::Ret {
                     value: stack_load(31, 0, 8),
+                    at: None,
                 }],
             },
         ];
@@ -857,12 +937,16 @@ fn incoming_stack_write_proofs_include_switch_and_flag_edges() {
     let blocks = vec![
         Block {
             start: 0,
-            stmts: vec![Stmt::Br { target: None }],
+            stmts: vec![Stmt::Br {
+                target: None,
+                at: None,
+            }],
         },
         Block {
             start: 8,
             stmts: vec![Stmt::Ret {
                 value: stack_load(31, 0, 8),
+                at: None,
             }],
         },
     ];
@@ -881,15 +965,18 @@ fn truncated_frame_addresses_and_overrunning_loads_remain_unknown() {
                 width: 32,
             },
             value: Expr::reg(31, 64),
+            at: None,
         },
         Stmt::Ret {
             value: stack_load(29, 0, 8),
+            at: None,
         },
     ]);
     assert!(signature.stack.is_empty());
     for (offset, width) in [(511, 2), (504, 16), (0, 0)] {
         let signature = recover_aapcs_stack(vec![Stmt::Ret {
             value: stack_load(31, offset, width),
+            at: None,
         }]);
         assert!(signature.stack.is_empty());
     }
@@ -899,12 +986,14 @@ fn truncated_frame_addresses_and_overrunning_loads_remain_unknown() {
 fn unsupported_stack_widths_do_not_establish_input_or_overwrite_proofs() {
     let signature = recover_aapcs_stack(vec![Stmt::Ret {
         value: stack_load(31, 0, 3),
+        at: None,
     }]);
     assert!(signature.stack.is_empty());
     let signature = recover_aapcs_stack(vec![
         stack_store(31, 0, 3),
         Stmt::Ret {
             value: stack_load(31, 0, 2),
+            at: None,
         },
     ]);
     assert_eq!(signature.stack, vec![0]);
@@ -922,6 +1011,7 @@ fn test_call() -> Stmt {
         outputs: crate::ir::fallback_call_outputs(Convention::Aapcs64, None),
         clobbers: None,
         via: None,
+        at: None,
     }
 }
 
@@ -957,6 +1047,7 @@ fn preserved_output_addresses_keep_their_pre_call_origin() {
             call,
             Stmt::Ret {
                 value: stack_load(destination, 0, 8),
+                at: None,
             },
         ]);
         assert_eq!(signature.stack, if preserved { vec![0] } else { vec![] });
@@ -978,7 +1069,10 @@ fn first_entry_reads_survive_unknown_backedges_without_adding_results() {
                         stack_assign(12, stack_load(sp, start + 16, width)),
                         stack_store(sp, start + 16, 8),
                         stack_store(sp, start + 24, 8),
-                        Stmt::Br { target: Some(8) },
+                        Stmt::Br {
+                            target: Some(8),
+                            at: None,
+                        },
                     ],
                 },
                 Block {
@@ -987,6 +1081,7 @@ fn first_entry_reads_survive_unknown_backedges_without_adding_results() {
                         stack_assign(sp, Expr::reg(0, 64)),
                         Stmt::BrIndirect {
                             target: Expr::reg(1, 64),
+                            at: None,
                         },
                     ],
                 },
@@ -1015,7 +1110,10 @@ fn first_entry_overwrites_keep_their_byte_coverage() {
                 stmts: vec![
                     stack_store(31, 0, stored),
                     stack_assign(12, stack_load(31, 0, loaded)),
-                    Stmt::Br { target: Some(8) },
+                    Stmt::Br {
+                        target: Some(8),
+                        at: None,
+                    },
                 ],
             },
             Block {
@@ -1024,6 +1122,7 @@ fn first_entry_overwrites_keep_their_byte_coverage() {
                     stack_assign(31, Expr::reg(0, 64)),
                     Stmt::BrIndirect {
                         target: Expr::reg(1, 64),
+                        at: None,
                     },
                 ],
             },
@@ -1044,11 +1143,15 @@ fn first_entry_scan_keeps_reads_before_an_opaque_frame_change_only() {
         }
         first.extend([
             Stmt::Unsupported {
+                at: None,
                 text: "opaque frame change".to_owned(),
                 writes: Some(vec![31]),
             },
             stack_assign(13, stack_load(31, 16, 8)),
-            Stmt::Br { target: Some(8) },
+            Stmt::Br {
+                target: Some(8),
+                at: None,
+            },
         ]);
         let blocks = vec![
             Block {
@@ -1059,6 +1162,7 @@ fn first_entry_scan_keeps_reads_before_an_opaque_frame_change_only() {
                 start: 8,
                 stmts: vec![Stmt::BrIndirect {
                     target: Expr::reg(1, 64),
+                    at: None,
                 }],
             },
         ];
@@ -1080,9 +1184,13 @@ fn unknown_predecessors_meet_frame_and_written_facts() {
             unknown.push(if indirect {
                 Stmt::BrIndirect {
                     target: Expr::reg(1, 64),
+                    at: None,
                 }
             } else {
-                Stmt::Br { target: None }
+                Stmt::Br {
+                    target: None,
+                    at: None,
+                }
             });
             let blocks = vec![
                 Block {
@@ -1092,11 +1200,18 @@ fn unknown_predecessors_meet_frame_and_written_facts() {
                         lhs: Expr::reg(0, 64),
                         rhs: Expr::Const(0),
                         target: 16,
+                        at: None,
                     }],
                 },
                 Block {
                     start: 8,
-                    stmts: vec![stack_store(31, 0, 8), Stmt::Br { target: Some(24) }],
+                    stmts: vec![
+                        stack_store(31, 0, 8),
+                        Stmt::Br {
+                            target: Some(24),
+                            at: None,
+                        },
+                    ],
                 },
                 Block {
                     start: 16,
@@ -1106,6 +1221,7 @@ fn unknown_predecessors_meet_frame_and_written_facts() {
                     start: 24,
                     stmts: vec![Stmt::Ret {
                         value: stack_load(31, 0, 8),
+                        at: None,
                     }],
                 },
             ];
@@ -1122,6 +1238,7 @@ fn unknown_predecessors_meet_frame_and_written_facts() {
         }
         first.push(Stmt::BrIndirect {
             target: Expr::reg(1, 64),
+            at: None,
         });
         let blocks = vec![
             Block {
@@ -1132,6 +1249,7 @@ fn unknown_predecessors_meet_frame_and_written_facts() {
                 start: 8,
                 stmts: vec![Stmt::Ret {
                     value: stack_load(31, 0, 8),
+                    at: None,
                 }],
             },
         ];
@@ -1149,7 +1267,10 @@ fn normal_and_exception_predecessors_must_both_overwrite() {
         if both {
             pad.push(stack_store(31, 0, 8));
         }
-        pad.push(Stmt::Br { target: Some(12) });
+        pad.push(Stmt::Br {
+            target: Some(12),
+            at: None,
+        });
         let blocks = vec![
             Block {
                 start: 0,
@@ -1157,7 +1278,13 @@ fn normal_and_exception_predecessors_must_both_overwrite() {
             },
             Block {
                 start: 4,
-                stmts: vec![stack_store(31, 0, 8), Stmt::Br { target: Some(12) }],
+                stmts: vec![
+                    stack_store(31, 0, 8),
+                    Stmt::Br {
+                        target: Some(12),
+                        at: None,
+                    },
+                ],
             },
             Block {
                 start: 8,
@@ -1167,6 +1294,7 @@ fn normal_and_exception_predecessors_must_both_overwrite() {
                 start: 12,
                 stmts: vec![Stmt::Ret {
                     value: stack_load(31, 0, 8),
+                    at: None,
                 }],
             },
         ];
@@ -1189,7 +1317,10 @@ fn exception_states_meet_call_prefixes_instead_of_the_block_exit() {
             if second_call {
                 first.push(test_call());
             }
-            first.push(Stmt::Br { target: Some(16) });
+            first.push(Stmt::Br {
+                target: Some(16),
+                at: None,
+            });
             let blocks = vec![
                 Block {
                     start: 0,
@@ -1197,12 +1328,16 @@ fn exception_states_meet_call_prefixes_instead_of_the_block_exit() {
                 },
                 Block {
                     start: 8,
-                    stmts: vec![Stmt::Br { target: Some(16) }],
+                    stmts: vec![Stmt::Br {
+                        target: Some(16),
+                        at: None,
+                    }],
                 },
                 Block {
                     start: 16,
                     stmts: vec![Stmt::Ret {
                         value: stack_load(31, 0, 8),
+                        at: None,
                     }],
                 },
             ];
@@ -1230,17 +1365,24 @@ fn exception_frame_origins_use_the_call_point() {
                 start: 8,
                 stmts: vec![
                     stack_assign(31, stack_address(31, -16)),
-                    Stmt::Br { target: Some(24) },
+                    Stmt::Br {
+                        target: Some(24),
+                        at: None,
+                    },
                 ],
             },
             Block {
                 start: 16,
-                stmts: vec![Stmt::Br { target: Some(24) }],
+                stmts: vec![Stmt::Br {
+                    target: Some(24),
+                    at: None,
+                }],
             },
             Block {
                 start: 24,
                 stmts: vec![Stmt::Ret {
                     value: stack_load(31, 0, 8),
+                    at: None,
                 }],
             },
         ];
@@ -1262,6 +1404,7 @@ fn missing_exception_targets_cannot_certify_the_normal_store() {
             start: 8,
             stmts: vec![Stmt::Ret {
                 value: stack_load(31, 0, 8),
+                at: None,
             }],
         },
     ];
@@ -1278,7 +1421,10 @@ fn loop_backedges_do_not_replace_the_initial_unwritten_state() {
         if before {
             first.push(stack_store(31, 0, 8));
         }
-        first.push(Stmt::Br { target: Some(8) });
+        first.push(Stmt::Br {
+            target: Some(8),
+            at: None,
+        });
         let blocks = vec![
             Block {
                 start: 0,
@@ -1294,6 +1440,7 @@ fn loop_backedges_do_not_replace_the_initial_unwritten_state() {
                         lhs: Expr::reg(0, 64),
                         rhs: Expr::Const(0),
                         target: 8,
+                        at: None,
                     },
                 ],
             },
@@ -1301,6 +1448,7 @@ fn loop_backedges_do_not_replace_the_initial_unwritten_state() {
                 start: 16,
                 stmts: vec![Stmt::Ret {
                     value: Expr::reg(9, 64),
+                    at: None,
                 }],
             },
         ];
@@ -1330,16 +1478,26 @@ fn an_exception_range_spanning_call_blocks_keeps_the_earlier_call() {
             },
             Block {
                 start: 16,
-                stmts: vec![test_call(), Stmt::Br { target: Some(32) }],
+                stmts: vec![
+                    test_call(),
+                    Stmt::Br {
+                        target: Some(32),
+                        at: None,
+                    },
+                ],
             },
             Block {
                 start: 24,
-                stmts: vec![Stmt::Br { target: Some(32) }],
+                stmts: vec![Stmt::Br {
+                    target: Some(32),
+                    at: None,
+                }],
             },
             Block {
                 start: 32,
                 stmts: vec![Stmt::Ret {
                     value: stack_load(31, 0, 8),
+                    at: None,
                 }],
             },
         ];
@@ -1363,6 +1521,7 @@ fn an_entry_backedge_keeps_the_external_unwritten_root() {
                     lhs: Expr::reg(0, 64),
                     rhs: Expr::Const(0),
                     target: 0,
+                    at: None,
                 },
             ],
         },
@@ -1370,6 +1529,7 @@ fn an_entry_backedge_keeps_the_external_unwritten_root() {
             start: 8,
             stmts: vec![Stmt::Ret {
                 value: Expr::reg(9, 64),
+                at: None,
             }],
         },
     ];
@@ -1382,11 +1542,18 @@ fn opaque_exception_effects_remove_the_call_prefix_origin() {
         let mut first = vec![test_call()];
         if opaque {
             first.push(Stmt::Unsupported {
+                at: None,
                 text: "opaque".to_owned(),
                 writes: Some(Vec::new()),
             });
         }
-        first.extend([stack_store(31, 0, 8), Stmt::Br { target: Some(16) }]);
+        first.extend([
+            stack_store(31, 0, 8),
+            Stmt::Br {
+                target: Some(16),
+                at: None,
+            },
+        ]);
         let blocks = vec![
             Block {
                 start: 0,
@@ -1396,12 +1563,14 @@ fn opaque_exception_effects_remove_the_call_prefix_origin() {
                 start: 8,
                 stmts: vec![Stmt::Ret {
                     value: stack_load(31, 0, 8),
+                    at: None,
                 }],
             },
             Block {
                 start: 16,
                 stmts: vec![Stmt::Ret {
                     value: stack_load(31, 0, 8),
+                    at: None,
                 }],
             },
         ];

@@ -73,7 +73,7 @@ pub(crate) fn apply_width_types(ir: &mut FunctionIr, uniform_32: &std::collectio
     // computes is most likely signed.
     let mut returned = SignEvidence::default();
     for stmt in ir.blocks.iter().flat_map(|block| &block.stmts) {
-        if let crate::ir::Stmt::Ret { value } = stmt {
+        if let crate::ir::Stmt::Ret { value, .. } = stmt {
             returned.walk(value);
             // Widening a zero-extended constant must not turn it negative.
             if matches!(value, crate::ir::Expr::Const(value) if *value > i32::MAX as u64 && *value <= u32::MAX as u64)
@@ -124,7 +124,7 @@ impl SignEvidence {
         use crate::ir::Stmt;
         for stmt in ir.blocks.iter().flat_map(|block| &block.stmts) {
             match stmt {
-                Stmt::Assign { value, .. } | Stmt::Ret { value } => self.walk(value),
+                Stmt::Assign { value, .. } | Stmt::Ret { value, .. } => self.walk(value),
                 Stmt::Store { addr, value, .. } => {
                     self.walk(addr);
                     self.walk(value);
@@ -232,7 +232,7 @@ fn last_definition(ir: &FunctionIr, index: u16) -> Option<&crate::ir::Expr> {
     let mut found = None;
     for block in &ir.blocks {
         for stmt in &block.stmts {
-            if let crate::ir::Stmt::Assign { dest, value } = stmt
+            if let crate::ir::Stmt::Assign { dest, value, .. } = stmt
                 && dest.index == index
             {
                 found = Some(value);
@@ -396,6 +396,7 @@ fn live_call_outputs(ir: &FunctionIr) -> LiveCallOutputs {
                 Stmt::BrifFlags { .. } => return None,
                 Stmt::Br {
                     target: Some(target),
+                    ..
                 }
                 | Stmt::Brif { target, .. }
                     if !starts.contains(target) =>
@@ -417,8 +418,11 @@ fn live_call_outputs(ir: &FunctionIr) -> LiveCallOutputs {
                 block.stmts.last(),
                 Some(
                     Stmt::Ret { .. }
-                        | Stmt::Trap
-                        | Stmt::Br { target: Some(_) }
+                        | Stmt::Trap { .. }
+                        | Stmt::Br {
+                            target: Some(_),
+                            ..
+                        }
                         | Stmt::Switch { .. }
                 )
             )
@@ -520,7 +524,7 @@ struct WidthUses {
 fn collect_uses(stmt: &crate::ir::Stmt, register: u16, output_live: bool, uses: &mut WidthUses) {
     use crate::ir::Stmt;
     match stmt {
-        Stmt::Assign { dest, value } => {
+        Stmt::Assign { dest, value, .. } => {
             if dest.index == register {
                 uses.writes = true;
                 uses.seen = true;
@@ -537,7 +541,9 @@ fn collect_uses(stmt: &crate::ir::Stmt, register: u16, output_live: bool, uses: 
                 &mut uses.seen,
             );
         }
-        Stmt::Store { addr, value, width } => {
+        Stmt::Store {
+            addr, value, width, ..
+        } => {
             scan_reads(
                 addr,
                 register,
@@ -557,14 +563,14 @@ fn collect_uses(stmt: &crate::ir::Stmt, register: u16, output_live: bool, uses: 
             scan_reads(lhs, register, false, &mut uses.reads_narrow, &mut uses.seen);
             scan_reads(rhs, register, false, &mut uses.reads_narrow, &mut uses.seen);
         }
-        Stmt::Ret { value } => scan_reads(
+        Stmt::Ret { value, .. } => scan_reads(
             value,
             register,
             false,
             &mut uses.reads_narrow,
             &mut uses.seen,
         ),
-        Stmt::BrIndirect { target } => scan_reads(
+        Stmt::BrIndirect { target, .. } => scan_reads(
             target,
             register,
             false,
@@ -707,7 +713,7 @@ fn reads_register(expr: &crate::ir::Expr, register: u16) -> bool {
 
 pub(crate) fn apply_pointer_return(ir: &mut FunctionIr) {
     if ir.blocks.iter().flat_map(|block| &block.stmts).any(|stmt| {
-        matches!(stmt, crate::ir::Stmt::Ret { value } if !matches!(value,
+        matches!(stmt, crate::ir::Stmt::Ret { value, .. } if !matches!(value,
             crate::ir::Expr::Reg { index, width: 64 }
             if ir.params.iter().any(|param| param.index == *index && param.ty.is_pointer())))
     }) {
@@ -752,9 +758,10 @@ pub(crate) fn apply_pointer_return_with(
                 Stmt::Unsupported { .. }
                 | Stmt::BrIndirect { .. }
                 | Stmt::BrifFlags { .. }
-                | Stmt::Br { target: None } => return,
+                | Stmt::Br { target: None, .. } => return,
                 Stmt::Br {
                     target: Some(target),
+                    ..
                 }
                 | Stmt::Brif { target, .. }
                     if !starts.contains(target) =>
@@ -776,8 +783,11 @@ pub(crate) fn apply_pointer_return_with(
                 block.stmts.last(),
                 Some(
                     Stmt::Ret { .. }
-                        | Stmt::Trap
-                        | Stmt::Br { target: Some(_) }
+                        | Stmt::Trap { .. }
+                        | Stmt::Br {
+                            target: Some(_),
+                            ..
+                        }
                         | Stmt::Switch { .. }
                 )
             )
@@ -821,6 +831,7 @@ pub(crate) fn apply_pointer_return_with(
             if let Stmt::Assign {
                 dest: crate::ir::RegRef { index, width: 64 },
                 value,
+                ..
             } = stmt
                 && let Some(ty) = known(value, &types)
             {
@@ -840,7 +851,7 @@ pub(crate) fn apply_pointer_return_with(
     }
     let mut returned: Option<CType> = None;
     for stmt in ssa.ir.blocks.iter().flat_map(|block| &block.stmts) {
-        let Stmt::Ret { value } = stmt else {
+        let Stmt::Ret { value, .. } = stmt else {
             continue;
         };
         let Some(ty) = known(value, &types) else {
@@ -865,7 +876,7 @@ pub(crate) fn apply_void_return(ir: &mut FunctionIr) {
     for block in &ir.blocks {
         for stmt in &block.stmts {
             match stmt {
-                Stmt::Assign { dest, value } => {
+                Stmt::Assign { dest, value, .. } => {
                     if dest.index == arch::RETURN {
                         written = true;
                     }
@@ -882,7 +893,7 @@ pub(crate) fn apply_void_return(ir: &mut FunctionIr) {
                     written |= definitions.contains(&arch::RETURN);
                     used_elsewhere |= reads.contains(&arch::RETURN);
                 }
-                Stmt::Ret { value } => {
+                Stmt::Ret { value, .. } => {
                     saw_ret = true;
                     // Only a bare return of the register is allowed; returning
                     // anything else, a value folded into the return included,
@@ -894,8 +905,8 @@ pub(crate) fn apply_void_return(ir: &mut FunctionIr) {
                     used_elsewhere |= reads_register(lhs, arch::RETURN);
                     used_elsewhere |= reads_register(rhs, arch::RETURN);
                 }
-                Stmt::BrifFlags { .. } | Stmt::Br { .. } | Stmt::Trap => {}
-                Stmt::BrIndirect { target } => {
+                Stmt::BrifFlags { .. } | Stmt::Br { .. } | Stmt::Trap { .. } => {}
+                Stmt::BrIndirect { target, .. } => {
                     used_elsewhere |= reads_register(target, arch::RETURN)
                 }
                 Stmt::Switch { index, .. } => used_elsewhere |= reads_register(index, arch::RETURN),
@@ -929,7 +940,8 @@ pub(crate) fn apply_partial_return(ir: &mut FunctionIr) {
                 value: Expr::Bin { op: BinOp::Or, .. },
                 ..
             } | Stmt::Ret {
-                value: Expr::Bin { op: BinOp::Or, .. }
+                value: Expr::Bin { op: BinOp::Or, .. },
+                ..
             }
         )
     }) {
@@ -990,7 +1002,7 @@ pub(crate) fn apply_partial_return(ir: &mut FunctionIr) {
         .iter()
         .flat_map(|block| &block.stmts)
         .filter_map(|stmt| match stmt {
-            Stmt::Assign { dest, value } => Some((dest.index, value)),
+            Stmt::Assign { dest, value, .. } => Some((dest.index, value)),
             _ => None,
         })
         .collect();
@@ -1005,7 +1017,7 @@ pub(crate) fn apply_partial_return(ir: &mut FunctionIr) {
         if tail_call(&block.stmts) {
             continue;
         }
-        let Some(Stmt::Ret { value }) = block.stmts.last() else {
+        let Some(Stmt::Ret { value, .. }) = block.stmts.last() else {
             continue;
         };
         // A register returns what each definition reaching the return puts
@@ -1062,7 +1074,7 @@ pub(crate) fn apply_partial_return(ir: &mut FunctionIr) {
         if tail_call(&block.stmts) {
             continue;
         }
-        if let Some(Stmt::Ret { value }) = block.stmts.last_mut() {
+        if let Some(Stmt::Ret { value, .. }) = block.stmts.last_mut() {
             if let Some((low, _)) = partial(value) {
                 *value = Expr::bin(BinOp::And, low, Expr::Const(mask));
             } else if let Some((register, _)) = returned(value) {

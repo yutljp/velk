@@ -179,6 +179,14 @@ fn discover(
         let indent = &line[..line.len() - line.trim_start().len()];
         let initialized = match for_initializer {
             Some((_, rest)) => format!("{indent}for ({declaration} = {value};{rest}"),
+            None if value.trim_end().ends_with(" */") => {
+                let (plain, at) = super::addresses::line_origin(value);
+                if at.is_some() {
+                    format!("{indent}{declaration} = {plain}\n")
+                } else {
+                    format!("{indent}{declaration} = {value}")
+                }
+            }
             None => format!("{indent}{declaration} = {value}"),
         };
         replacements.insert(position, initialized);

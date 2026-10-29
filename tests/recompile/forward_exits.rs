@@ -7,6 +7,7 @@ fn printed_forward_exits_preserve_loop_tests_and_shared_stores() {
     let value = Expr::reg(counter, 64);
     let branch = |target| Stmt::Br {
         target: Some(target),
+        at: None,
     };
     let assign = |value| Stmt::Assign {
         dest: RegRef {
@@ -14,12 +15,14 @@ fn printed_forward_exits_preserve_loop_tests_and_shared_stores() {
             width: 64,
         },
         value,
+        at: None,
     };
     let test = |cond, lhs, rhs, target| Stmt::Brif {
         cond,
         lhs,
         rhs,
         target,
+        at: None,
     };
     let mut candidates = Vec::new();
     for bottom_test in [false, true] {
@@ -79,6 +82,7 @@ fn printed_forward_exits_preserve_loop_tests_and_shared_stores() {
             }
             tail.push(Stmt::Ret {
                 value: sc_load(SC_COUNTER),
+                at: None,
             });
             blocks.push(Block { start, stmts: tail });
         }
@@ -123,14 +127,19 @@ fn printed_forward_exit_preserves_values_from_another_entry() {
             width: 64,
         },
         value,
+        at: None,
     };
     let test = |constant, target| Stmt::Brif {
         cond: Cond::Eq,
         lhs: Expr::reg(arguments[0], 64),
         rhs: Expr::Const(constant),
         target,
+        at: None,
     };
-    let branch = || Stmt::Br { target: Some(50) };
+    let branch = || Stmt::Br {
+        target: Some(50),
+        at: None,
+    };
     let mut ir = synthetic_ir(
         "forward_exit_external_entry",
         vec![
@@ -169,6 +178,7 @@ fn printed_forward_exit_preserves_values_from_another_entry() {
             start: 50,
             stmts: vec![Stmt::Ret {
                 value: Expr::reg(variable, 64),
+                at: None,
             }],
         },
     ];
@@ -198,11 +208,13 @@ fn printed_shared_return_tail_preserves_stores() {
         lhs: input.clone(),
         rhs: Expr::Const(constant),
         target,
+        at: None,
     };
     let store = |increment| Stmt::Store {
         addr: pointer.clone(),
         width: 8,
         value: Expr::bin(BinOp::Add, load.clone(), Expr::Const(increment)),
+        at: None,
     };
     let mut ir = synthetic_ir(
         "shared_return_stores",
@@ -232,7 +244,13 @@ fn printed_shared_return_tail_preserves_stores() {
         },
         Block {
             start: 20,
-            stmts: vec![store(10), Stmt::Br { target: Some(100) }],
+            stmts: vec![
+                store(10),
+                Stmt::Br {
+                    target: Some(100),
+                    at: None,
+                },
+            ],
         },
         Block {
             start: 100,
@@ -240,12 +258,19 @@ fn printed_shared_return_tail_preserves_stores() {
         },
         Block {
             start: 110,
-            stmts: vec![store(1), Stmt::Ret { value: load }],
+            stmts: vec![
+                store(1),
+                Stmt::Ret {
+                    value: load,
+                    at: None,
+                },
+            ],
         },
         Block {
             start: 130,
             stmts: vec![Stmt::Ret {
                 value: Expr::Const(99),
+                at: None,
             }],
         },
     ];
@@ -260,12 +285,14 @@ fn printed_forward_exits_and_shared_conditional_returns() {
     let value = Expr::reg(argument, 64);
     let branch = |target| Stmt::Br {
         target: Some(target),
+        at: None,
     };
     let test = |constant, target| Stmt::Brif {
         cond: Cond::Eq,
         lhs: value.clone(),
         rhs: Expr::Const(constant),
         target,
+        at: None,
     };
     let mut candidates = Vec::new();
     for nested in [false, true] {
@@ -289,6 +316,7 @@ fn printed_forward_exits_and_shared_conditional_returns() {
                 width: 64,
             },
             value: Expr::Const(constant),
+            at: None,
         };
         ir.blocks = vec![
             Block {
@@ -318,6 +346,7 @@ fn printed_forward_exits_and_shared_conditional_returns() {
                 } else {
                     vec![Stmt::Ret {
                         value: Expr::bin(BinOp::Add, Expr::reg(0, 64), value.clone()),
+                        at: None,
                     }]
                 },
             },
@@ -328,12 +357,14 @@ fn printed_forward_exits_and_shared_conditional_returns() {
                     start: 60,
                     stmts: vec![Stmt::Ret {
                         value: Expr::reg(0, 64),
+                        at: None,
                     }],
                 },
                 Block {
                     start: 70,
                     stmts: vec![Stmt::Ret {
                         value: Expr::Const(19),
+                        at: None,
                     }],
                 },
             ]);

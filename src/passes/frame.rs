@@ -29,7 +29,9 @@ pub fn drop_dead_frame_stores(ir: &mut FunctionIr) {
                 return;
             }
             match stmt {
-                Stmt::Store { addr, value, width } => {
+                Stmt::Store {
+                    addr, value, width, ..
+                } => {
                     if let Some(slot) = frame_slot_of(addr, sp) {
                         if crate::passes::frame_slots::checked_frame_slot(addr, 0, sp).is_some_and(
                             |offset| crate::passes::memory::private_slot(offset, *width, spills),
@@ -48,7 +50,7 @@ pub fn drop_dead_frame_stores(ir: &mut FunctionIr) {
                         escaped = true;
                     }
                 }
-                Stmt::Assign { dest, value } => {
+                Stmt::Assign { dest, value, .. } => {
                     // Adjusting the stack pointer does not make a frame address escape.
                     if dest.index == sp {
                         continue;
@@ -62,11 +64,15 @@ pub fn drop_dead_frame_stores(ir: &mut FunctionIr) {
                         escaped = true;
                     }
                 }
-                Stmt::Ret { value: read_value }
+                Stmt::Ret {
+                    value: read_value, ..
+                }
                 | Stmt::Switch {
                     index: read_value, ..
                 }
-                | Stmt::BrIndirect { target: read_value } => {
+                | Stmt::BrIndirect {
+                    target: read_value, ..
+                } => {
                     collect_frame_reads(read_value, sp, &mut read);
                     if address_uses_frame(read_value, sp) {
                         escaped = true;
@@ -148,7 +154,9 @@ fn overwritten(stmts: &[Stmt], index: usize, slot: u64, width: u8, sp: u16) -> b
     for stmt in &stmts[index + 1..] {
         let mut read = Vec::new();
         match stmt {
-            Stmt::Store { addr, value, width } => {
+            Stmt::Store {
+                addr, value, width, ..
+            } => {
                 collect_frame_reads(addr, sp, &mut read);
                 collect_frame_reads(value, sp, &mut read);
                 if read.iter().any(|(other, other_width)| {
@@ -167,7 +175,7 @@ fn overwritten(stmts: &[Stmt], index: usize, slot: u64, width: u8, sp: u16) -> b
                     }
                 }
             }
-            Stmt::Assign { dest, value } => {
+            Stmt::Assign { dest, value, .. } => {
                 if dest.index == sp {
                     return false;
                 }
@@ -311,7 +319,7 @@ pub fn elide_callee_saves(ir: &mut FunctionIr) {
                         });
                     }
                 }
-                Stmt::Assign { dest, value } => {
+                Stmt::Assign { dest, value, .. } => {
                     if let Expr::Load { addr, .. } = value
                         && let Some(slot) = stack_slot(addr, frame, sp)
                     {
@@ -436,14 +444,14 @@ pub fn elide_callee_saves(ir: &mut FunctionIr) {
             }
             !matches!(
                 stmt,
-                Stmt::Assign { dest, value } if dest.index == sp && stack_delta(value, sp).is_some()
+                Stmt::Assign { dest, value, .. } if dest.index == sp && stack_delta(value, sp).is_some()
             )
         })
     });
     if !stack_still_used {
         for (block_index, block) in ir.blocks.iter().enumerate() {
             for (position, stmt) in block.stmts.iter().enumerate() {
-                if let Stmt::Assign { dest, value } = stmt
+                if let Stmt::Assign { dest, value, .. } = stmt
                     && dest.index == sp
                     && stack_delta(value, sp).is_some()
                 {
@@ -508,6 +516,7 @@ pub fn drop_alignment_pushes(ir: &mut FunctionIr) {
                 addr,
                 value: Expr::Reg { index, width: 64 },
                 width: 8,
+                ..
             } if frame_slot_of(addr, sp).is_some()
                 && *index != sp
                 && !arguments.contains(index)
@@ -657,7 +666,10 @@ fn stack_delta(value: &Expr, sp: u16) -> Option<i64> {
 /// Matches `rsp -= 8; *(u64 *)rsp = rbp; rbp = rsp` at the block's head and
 /// returns its range and the frame pointer register.
 fn frame_prologue(stmts: &[Stmt]) -> Option<(std::ops::Range<usize>, u16)> {
-    let Stmt::Assign { dest: sp, value } = stmts.first()? else {
+    let Stmt::Assign {
+        dest: sp, value, ..
+    } = stmts.first()?
+    else {
         return None;
     };
     if sp.index != x86::RSP {
@@ -681,6 +693,7 @@ fn frame_prologue(stmts: &[Stmt]) -> Option<(std::ops::Range<usize>, u16)> {
     let Stmt::Assign {
         dest: next,
         value: source,
+        ..
     } = stmts.get(2)?
     else {
         return None;
@@ -702,7 +715,10 @@ fn frame_epilogue(stmts: &[Stmt], frame: u16) -> Option<std::ops::Range<usize>> 
     if len < 2 {
         return None;
     }
-    let Stmt::Assign { dest: sp, value } = &stmts[len - 1] else {
+    let Stmt::Assign {
+        dest: sp, value, ..
+    } = &stmts[len - 1]
+    else {
         return None;
     };
     if sp.index != x86::RSP {
@@ -714,6 +730,7 @@ fn frame_epilogue(stmts: &[Stmt], frame: u16) -> Option<std::ops::Range<usize>> 
     let Stmt::Assign {
         dest: restored,
         value,
+        ..
     } = &stmts[len - 2]
     else {
         return None;
@@ -771,7 +788,7 @@ fn reads_through_stack_pointer_copy(ir: &FunctionIr, sp: u16) -> bool {
         .iter()
         .flat_map(|block| &block.stmts)
         .filter_map(|stmt| match stmt {
-            Stmt::Assign { dest, value } if dest.index != sp && *value == Expr::reg(sp, 64) => {
+            Stmt::Assign { dest, value, .. } if dest.index != sp && *value == Expr::reg(sp, 64) => {
                 Some(dest.index)
             }
             _ => None,
@@ -791,7 +808,7 @@ fn reads_through_stack_pointer_copy(ir: &FunctionIr, sp: u16) -> bool {
         .iter()
         .flat_map(|block| &block.stmts)
         .any(|stmt| match stmt {
-            Stmt::Assign { value, .. } | Stmt::Ret { value } => loads_at(value, &pointers),
+            Stmt::Assign { value, .. } | Stmt::Ret { value, .. } => loads_at(value, &pointers),
             Stmt::Store { addr, value, .. } => {
                 loads_at(addr, &pointers) || loads_at(value, &pointers)
             }
@@ -831,9 +848,11 @@ mod tests {
                             ),
                             value: Expr::Const(42),
                             width: 2,
+                            at: None,
                         },
                         Stmt::Ret {
                             value: Expr::Const(0),
+                            at: None,
                         },
                     ],
                 );
@@ -893,11 +912,13 @@ mod tests {
                                 addr: address(spill),
                                 value: Expr::Const(42),
                                 width,
+                                at: None,
                             },
                             Stmt::Store {
                                 addr: address(output),
                                 value: Expr::Const(17),
                                 width,
+                                at: None,
                             },
                             Stmt::Ret {
                                 value: if read {
@@ -909,6 +930,7 @@ mod tests {
                                 } else {
                                     Expr::Const(0)
                                 },
+                                at: None,
                             },
                         ],
                     );
@@ -943,9 +965,11 @@ mod tests {
                                 addr,
                                 value: Expr::Const(42),
                                 width,
+                                at: None,
                             },
                             Stmt::Ret {
                                 value: Expr::Const(0),
+                                at: None,
                             },
                         ],
                     );
@@ -968,6 +992,7 @@ mod tests {
         Stmt::Assign {
             dest: RegRef { index, width: 64 },
             value,
+            at: None,
         }
     }
 
@@ -991,6 +1016,7 @@ mod tests {
             adjust(8),
             Stmt::Ret {
                 value: Expr::reg(0, 64),
+                at: None,
             },
         ]
     }
@@ -1006,6 +1032,7 @@ mod tests {
                     addr: Expr::reg(RSP, 64),
                     value: Expr::reg(RBP, 64),
                     width: 8,
+                    at: None,
                 },
                 assign(RBP, Expr::reg(RSP, 64)),
                 Stmt::Brif {
@@ -1013,6 +1040,7 @@ mod tests {
                     lhs: Expr::reg(7, 64),
                     rhs: Expr::Const(0),
                     target: 0x20,
+                    at: None,
                 },
             ],
         );
@@ -1044,6 +1072,7 @@ mod tests {
                 addr: Expr::Const(0x1000),
                 value: Expr::reg(RBP, 64),
                 width: 8,
+                at: None,
             },
         ]);
         ir.blocks[2].stmts.extend(restore());
@@ -1077,6 +1106,7 @@ mod tests {
                     addr: Expr::reg(RSP, 64),
                     value: Expr::reg(RBX, 64),
                     width: 8,
+                    at: None,
                 },
                 assign(RBX, Expr::reg(7, 64)),
                 Stmt::Call {
@@ -1090,6 +1120,7 @@ mod tests {
                     clobbers: None,
                     outputs: crate::ir::fallback_call_outputs(Convention::SysV, None),
                     via: None,
+                    at: None,
                 },
                 assign(0, Expr::reg(RBX, 64)),
                 assign(
@@ -1103,6 +1134,7 @@ mod tests {
                 adjust(8),
                 Stmt::Ret {
                     value: Expr::reg(0, 64),
+                    at: None,
                 },
             ],
         );
@@ -1132,8 +1164,12 @@ mod tests {
                     addr: Expr::reg(RSP, 64),
                     value: Expr::reg(0, 64),
                     width: 8,
+                    at: None,
                 },
-                Stmt::Br { target: Some(0x10) },
+                Stmt::Br {
+                    target: Some(0x10),
+                    at: None,
+                },
             ],
         );
         ir.blocks.push(Block {
@@ -1152,6 +1188,7 @@ mod tests {
                     lhs: Expr::reg(7, 64),
                     rhs: Expr::Const(0),
                     target: 0x30,
+                    at: None,
                 },
             ],
         });
@@ -1169,14 +1206,19 @@ mod tests {
                     clobbers: None,
                     outputs: crate::ir::fallback_call_outputs(Convention::SysV, None),
                     via: None,
+                    at: None,
                 },
-                Stmt::Br { target: Some(0x10) },
+                Stmt::Br {
+                    target: Some(0x10),
+                    at: None,
+                },
             ],
         });
         ir.blocks.push(Block {
             start: 0x30,
             stmts: vec![Stmt::Ret {
                 value: Expr::reg(0, 64),
+                at: None,
             }],
         });
 
@@ -1205,8 +1247,9 @@ mod tests {
                 clobbers: None,
                 outputs: crate::ir::fallback_call_outputs(Convention::SysV, None),
                 via: None,
+                at: None,
             },
-            Stmt::Trap,
+            Stmt::Trap { at: None },
         ]);
         elide_callee_saves(&mut ir);
         assert!(
@@ -1228,6 +1271,7 @@ mod tests {
             addr: slot(offset),
             value,
             width,
+            at: None,
         }
     }
 
@@ -1245,7 +1289,10 @@ mod tests {
             Isa::AArch64,
             vec![
                 store(-4, Expr::Const(5), 4),
-                Stmt::Ret { value: load(-8, 8) },
+                Stmt::Ret {
+                    value: load(-8, 8),
+                    at: None,
+                },
             ],
         );
         drop_dead_frame_stores(&mut ir);
@@ -1261,7 +1308,10 @@ mod tests {
                 store(-8, Expr::reg(0, 64), 8),
                 store(-8, Expr::Const(1), 4),
                 store(-4, Expr::Const(2), 4),
-                Stmt::Ret { value: load(-8, 8) },
+                Stmt::Ret {
+                    value: load(-8, 8),
+                    at: None,
+                },
             ],
         );
         drop_dead_frame_stores(&mut ir);
@@ -1279,9 +1329,11 @@ mod tests {
                     addr: load(-8, 8),
                     value: Expr::Const(1),
                     width: 1,
+                    at: None,
                 },
                 Stmt::Ret {
                     value: Expr::reg(0, 64),
+                    at: None,
                 },
             ],
         );
@@ -1306,9 +1358,11 @@ mod tests {
                     clobbers: None,
                     outputs: crate::ir::fallback_call_outputs(Convention::Aapcs64, None),
                     via: None,
+                    at: None,
                 },
                 Stmt::Ret {
                     value: Expr::reg(0, 64),
+                    at: None,
                 },
             ],
         );
@@ -1326,6 +1380,7 @@ mod tests {
                         addr: Expr::reg(RSP, 64),
                         value: Expr::reg(3, 64),
                         width: 8,
+                        at: None,
                     },
                     Stmt::Call {
                         kind: crate::ir::CallKind::Invoke,
@@ -1338,6 +1393,7 @@ mod tests {
                         outputs: Vec::new(),
                         abi: declared.then(|| crate::ir::calls::test_call_abi(vec![RSP], false)),
                         via: None,
+                        at: None,
                     },
                     assign(
                         3,
@@ -1350,6 +1406,7 @@ mod tests {
                     adjust(16),
                     Stmt::Ret {
                         value: Expr::Const(0),
+                        at: None,
                     },
                 ],
             );
@@ -1391,9 +1448,11 @@ mod tests {
                     outputs: Vec::new(),
                     abi: Some(crate::ir::calls::test_call_abi(vec![31], true)),
                     via: None,
+                    at: None,
                 },
                 Stmt::Ret {
                     value: Expr::Const(0),
+                    at: None,
                 },
             ],
         );

@@ -185,6 +185,7 @@ impl Outputs {
             if let Stmt::Assign {
                 dest,
                 value: Expr::Load { addr, width: 8, .. },
+                ..
             } = stmt
                 && dest.width == 64
                 && let Expr::Const(slot) = addr.as_ref()
@@ -697,6 +698,7 @@ fn count_nodes(nodes: &[Node], counts: &mut HashMap<u16, usize>) {
                 index,
                 arms,
                 default,
+                ..
             } => {
                 count_expr(index, counts);
                 for (_, body) in arms {
@@ -706,7 +708,7 @@ fn count_nodes(nodes: &[Node], counts: &mut HashMap<u16, usize>) {
                     count_nodes(body, counts);
                 }
             }
-            Node::Label(_) | Node::Break | Node::Continue => {}
+            Node::Label(_) | Node::Break { .. } | Node::Continue { .. } => {}
         }
     }
 }
@@ -806,7 +808,7 @@ pub(super) fn call_in_reader(
         {
             false
         }
-        Node::Stmt(Stmt::Assign { value, .. } | Stmt::Ret { value })
+        Node::Stmt(Stmt::Assign { value, .. } | Stmt::Ret { value, .. })
             if is_result_or_masked_result(value) || reads_result(value) =>
         {
             false
@@ -1005,6 +1007,7 @@ mod tests {
                             call,
                             Stmt::Ret {
                                 value: Expr::reg(dest, width),
+                                at: None,
                             },
                         ],
                     );
@@ -1065,6 +1068,7 @@ mod tests {
             outputs: crate::ir::fallback_call_outputs(Convention::SysV, None),
             clobbers: None,
             via: None,
+            at: None,
         }
     }
 
@@ -1080,10 +1084,12 @@ mod tests {
                         width: 64,
                     },
                     value: Expr::reg(0, 64),
+                    at: None,
                 },
                 call(0x2000, vec![Expr::reg(VARIABLE_BASE, 64), second]),
                 Stmt::Ret {
                     value: Expr::Const(0),
+                    at: None,
                 },
             ],
         );
@@ -1149,6 +1155,7 @@ mod tests {
                         Expr::reg(first, 64),
                         Expr::reg(second, 64),
                     ),
+                    at: None,
                 },
             ],
         );
@@ -1200,6 +1207,7 @@ mod tests {
                 call,
                 Stmt::Ret {
                     value: Expr::bin(crate::ir::BinOp::Sub, Expr::reg(7, 64), Expr::reg(6, 64)),
+                    at: None,
                 },
             ],
         );
@@ -1269,6 +1277,7 @@ mod tests {
                 call,
                 Stmt::Ret {
                     value: Expr::reg(float, 64),
+                    at: None,
                 },
             ],
         );
@@ -1317,6 +1326,7 @@ mod tests {
                 call,
                 Stmt::Ret {
                     value: Expr::reg(VARIABLE_BASE, 64),
+                    at: None,
                 },
             ],
         );
@@ -1344,6 +1354,7 @@ mod tests {
                     call,
                     Stmt::Ret {
                         value: Expr::reg(VARIABLE_BASE, width),
+                        at: None,
                     },
                 ],
             );
@@ -1397,6 +1408,7 @@ mod tests {
                         width: 64,
                     },
                     value: Expr::reg(7, 64),
+                    at: None,
                 },
                 Stmt::Assign {
                     dest: RegRef {
@@ -1404,6 +1416,7 @@ mod tests {
                         width: 64,
                     },
                     value: Expr::reg(VARIABLE_BASE, 64),
+                    at: None,
                 },
                 Stmt::Assign {
                     dest: RegRef {
@@ -1411,9 +1424,11 @@ mod tests {
                         width: 32,
                     },
                     value: Expr::reg(VARIABLE_BASE, 32),
+                    at: None,
                 },
                 Stmt::Ret {
                     value: Expr::reg(VARIABLE_BASE, 64),
+                    at: None,
                 },
             ],
         );
@@ -1476,10 +1491,12 @@ mod tests {
                         addr: Expr::Const(0x10000),
                         value: Expr::reg(2, 64),
                         width: 8,
+                        at: None,
                     },
                     second,
                     Stmt::Ret {
                         value: Expr::Const(0),
+                        at: None,
                     },
                 ],
             );
@@ -1506,6 +1523,7 @@ mod tests {
                     call,
                     Stmt::Ret {
                         value: Expr::reg(2, 64),
+                        at: None,
                     },
                 ],
             );
@@ -1532,6 +1550,7 @@ mod tests {
                 call,
                 Stmt::Ret {
                     value: Expr::reg(crate::arch::x86::XMM0, 64),
+                    at: None,
                 },
             ],
         );
@@ -1556,6 +1575,7 @@ mod tests {
                 call(0x1000, vec![Expr::reg(7, 64)]),
                 Stmt::Ret {
                     value: Expr::reg(2, 64),
+                    at: None,
                 },
             ],
         );
@@ -1591,6 +1611,7 @@ mod tests {
                     call,
                     Stmt::Ret {
                         value: Expr::reg(VARIABLE_BASE, 32),
+                        at: None,
                     },
                 ],
             );
@@ -1609,6 +1630,7 @@ mod tests {
             wide.blocks[0].stmts[0].call_outputs_mut()[0].dest.width = 64;
             wide.blocks[0].stmts[1] = Stmt::Ret {
                 value: Expr::reg(VARIABLE_BASE, 64),
+                at: None,
             };
             let mut signs = [false; 2];
             for seed in 0..64 {
@@ -1638,6 +1660,7 @@ mod tests {
             assert_eq!(signs, [true, true]);
             ir.blocks[0].stmts[1] = Stmt::Ret {
                 value: Expr::reg(VARIABLE_BASE, 64),
+                at: None,
             };
             ir.ret_type = CType::U64;
             let text = crate::render::render(&ir, &[], &Default::default(), &[]);

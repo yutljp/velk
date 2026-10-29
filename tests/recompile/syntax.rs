@@ -8,6 +8,7 @@ fn reference_text_cannot_end_a_comment() {
         CType::U64,
         vec![Stmt::Ret {
             value: Expr::Const(7),
+            at: None,
         }],
     );
     let reference = velk::analysis::refs::Reference {
@@ -37,6 +38,7 @@ fn mixed_global_array_views_keep_byte_offsets() {
                 addr: Expr::Const(0x2000),
                 width: 8,
                 value: Expr::Const(0x8877665544332211),
+                at: None,
             },
             Stmt::Ret {
                 value: Expr::Load {
@@ -44,6 +46,7 @@ fn mixed_global_array_views_keep_byte_offsets() {
                     width: 4,
                     signed: false,
                 },
+                at: None,
             },
         ],
     );
@@ -67,6 +70,7 @@ fn global_accesses_wider_than_debug_objects_keep_neighboring_bytes() {
                 addr: Expr::Const(0x2000),
                 width: 4,
                 value: Expr::Const(0x1234),
+                at: None,
             },
             Stmt::Ret {
                 value: Expr::Load {
@@ -74,6 +78,7 @@ fn global_accesses_wider_than_debug_objects_keep_neighboring_bytes() {
                     width: 8,
                     signed: false,
                 },
+                at: None,
             },
         ],
     );
@@ -121,10 +126,12 @@ fn named_globals_are_shared_by_standalone_and_combined_functions() {
                 addr: Expr::Const(0x2000),
                 width: 4,
                 value: Expr::bin(BinOp::Add, load.clone(), Expr::Const(1)),
+                at: None,
             });
         }
         stmts.push(Stmt::Ret {
             value: load.clone(),
+            at: None,
         });
         let ir = synthetic_ir(name, vec![], CType::U64, stmts);
         let code = velk::render::render(&ir, &[], &symbols, &[(0x2000, 4)]);
@@ -171,6 +178,7 @@ fn inferred_global_arrays_have_no_invented_bound() {
                 width: 4,
                 signed: false,
             },
+            at: None,
         }],
     );
     let code = velk::render::render(&ir, &[], &Default::default(), &[(0x2000, 16)]);
@@ -255,6 +263,7 @@ fn recompile_binds_the_target_entry_stack_pointer() {
                     Expr::reg(velk::arch::stack_pointer(isa), 64),
                     Expr::Const(24),
                 ),
+                at: None,
             }],
         );
         ir.isa = isa;
@@ -279,6 +288,7 @@ fn nested_negation_preserves_tokens_and_values() {
         CType::U64,
         vec![Stmt::Ret {
             value: negate(negate(value)),
+            at: None,
         }],
     );
     let candidate = printed_candidate(
@@ -348,6 +358,7 @@ fn typed_global_objects_preserve_signed_bits_and_stores() {
                     width: 4,
                     signed,
                 },
+                at: None,
             }],
         );
         ir.debug_globals = vec![(0x2000, CType::I32, 4)];
@@ -405,6 +416,7 @@ fn typed_global_struct_arrays_preserve_field_offsets() {
                 width: 8,
                 signed: false,
             },
+            at: None,
         }],
     );
     ir.definitions = vec![velk::ir::Definition {
@@ -463,6 +475,7 @@ fn typed_global_struct_arrays_preserve_field_offsets() {
                 },
                 Expr::Const(24),
             ),
+            at: None,
         },
         Stmt::Ret {
             value: Expr::Load {
@@ -474,6 +487,7 @@ fn typed_global_struct_arrays_preserve_field_offsets() {
                 width: 8,
                 signed: false,
             },
+            at: None,
         },
     ];
     let code = velk::render::render(&ir, &[], &symbols, &[(0x2000, 72)]);
@@ -508,6 +522,7 @@ fn float_register_integer_reads_preserve_bits() {
         CType::U64,
         vec![Stmt::Ret {
             value: Expr::bin(BinOp::Shr, Expr::reg(7, 64), Expr::Const(47)),
+            at: None,
         }],
     );
     let code = velk::render::render(&ir, &[], &Default::default(), &[]);
@@ -531,6 +546,7 @@ fn nonfinite_float_literals_preserve_bits() {
             CType::Named("double".into()),
             vec![Stmt::Ret {
                 value: Expr::Const(bits),
+                at: None,
             }],
         );
         let code = velk::render::render(&ir, &[], &Default::default(), &[]);
@@ -561,6 +577,7 @@ fn stack_pointer_reads_use_explicit_target_state() {
                 Expr::reg(velk::arch::stack_pointer(isa), 64),
                 Expr::Const(255),
             ),
+            at: None,
         });
         let code = velk::render::render(&ir, &[], &Default::default(), &[]);
         assert!(code.contains("= velk_entry_stack_pointer();"), "{code}");
@@ -592,6 +609,7 @@ fn byte_offsets_convert_to_the_destination_pointer_type() {
         pointer,
         vec![Stmt::Ret {
             value: Expr::bin(BinOp::Sub, Expr::reg(7, 64), Expr::reg(6, 64)),
+            at: None,
         }],
     );
     let code = velk::render::render(&ir, &[], &Default::default(), &[]);
@@ -611,6 +629,7 @@ fn pointer_values_used_as_stack_indices_are_integer_offsets() {
             addr: Expr::bin(BinOp::Add, stack.clone(), Expr::Const(offset)),
             value: Expr::Const(if offset == 3 { 73 } else { 0 }),
             width: 1,
+            at: None,
         })
         .collect();
     statements.push(Stmt::Call {
@@ -624,9 +643,11 @@ fn pointer_values_used_as_stack_indices_are_integer_offsets() {
         outputs: velk::ir::fallback_call_outputs(Convention::SysV, None),
         clobbers: None,
         via: None,
+        at: None,
     });
     statements.push(Stmt::Ret {
         value: Expr::reg(0, 64),
+        at: None,
     });
     let ir = synthetic_ir(
         "stack_index",
@@ -674,9 +695,11 @@ fn stack_pointer_assignments_keep_pointer_bits() {
                     width: 64,
                 },
                 value: Expr::reg(7, 64),
+                at: None,
             },
             Stmt::Ret {
                 value: Expr::bin(BinOp::And, Expr::reg(4, 64), Expr::Const(255)),
+                at: None,
             },
         ],
     );
@@ -701,6 +724,7 @@ fn indirect_exit_calls_a_function_address() {
         CType::U64,
         vec![Stmt::BrIndirect {
             target: Expr::reg(7, 64),
+            at: None,
         }],
     );
     let code = velk::render::render(&ir, &[], &Default::default(), &[]);
@@ -726,12 +750,14 @@ fn branches_outside_the_function_use_a_target_adapter() {
             index: Expr::reg(7, 64),
             cases: vec![(1, 0x1234)],
             default: Some(4),
+            at: None,
         }],
     );
     ir.blocks.push(Block {
         start: 4,
         stmts: vec![Stmt::Ret {
             value: Expr::Const(42),
+            at: None,
         }],
     });
     let code = velk::render::render(&ir, &[], &Default::default(), &[]);
@@ -762,9 +788,11 @@ fn syscall_numbers_do_not_depend_on_host_macros() {
                 outputs: velk::ir::fallback_call_outputs(Convention::SyscallX86, None),
                 clobbers: None,
                 via: None,
+                at: None,
             },
             Stmt::Ret {
                 value: Expr::reg(0, 64),
+                at: None,
             },
         ],
     );
@@ -789,6 +817,7 @@ fn exception_values_have_explicit_bindings() {
                 Expr::reg(velk::ir::EXCEPTION, 64),
                 Expr::reg(velk::ir::SELECTOR, 64),
             ),
+            at: None,
         }],
     );
     let code = velk::render::render(&ir, &[], &Default::default(), &[]);
@@ -808,6 +837,7 @@ fn exception_values_have_explicit_bindings() {
         }),
         vec![Stmt::Ret {
             value: Expr::reg(velk::ir::EXCEPTION, 64),
+            at: None,
         }],
     );
     let code = velk::render::render(&ir, &[], &Default::default(), &[]);
@@ -835,6 +865,7 @@ fn taken_callees_accept_arguments_and_return_values() {
                     width: 64,
                 },
                 value: Expr::Const(0x1234_5678_9abc_def0),
+                at: None,
             },
             Stmt::Call {
                 abi: None,
@@ -847,6 +878,7 @@ fn taken_callees_accept_arguments_and_return_values() {
                 outputs: velk::ir::fallback_call_outputs(Convention::SysV, None),
                 clobbers: None,
                 via: None,
+                at: None,
             },
             Stmt::Ret {
                 value: Expr::bin(
@@ -854,6 +886,7 @@ fn taken_callees_accept_arguments_and_return_values() {
                     Expr::reg(0, 64),
                     Expr::reg(velk::ir::VARIABLE_BASE, 64),
                 ),
+                at: None,
             },
         ],
     );
@@ -888,9 +921,11 @@ fn unknown_call_targets_have_explicit_bindings() {
                 outputs: velk::ir::fallback_call_outputs(Convention::SysV, None),
                 clobbers: None,
                 via: None,
+                at: None,
             },
             Stmt::Ret {
                 value: Expr::reg(0, 64),
+                at: None,
             },
         ],
     );
@@ -1017,9 +1052,11 @@ fn library_pointer_arguments_preserve_address_bits() {
                 outputs: velk::ir::fallback_call_outputs(Convention::SysV, None),
                 clobbers: None,
                 via: None,
+                at: None,
             },
             Stmt::Ret {
                 value: Expr::reg(0, 64),
+                at: None,
             },
         ],
     );
@@ -1401,9 +1438,11 @@ fn declared_calls_convert_arguments_and_zero_extend_integer_results() {
                     }],
                     clobbers: None,
                     via: None,
+                    at: None,
                 },
                 Stmt::Ret {
                     value: Expr::reg(result, 64),
+                    at: None,
                 },
             ],
         );
@@ -1481,6 +1520,7 @@ fn printed_stack_aggregate_initializers_preserve_every_byte() {
                         width: 64,
                     },
                     value: at(-32),
+                    at: None,
                 });
             }
             if case == "copy" {
@@ -1488,6 +1528,7 @@ fn printed_stack_aggregate_initializers_preserve_every_byte() {
                     addr: at(-64),
                     width: 8,
                     value: Expr::reg(argument, 64),
+                    at: None,
                 });
             }
             for (part, &(offset, width)) in fields.iter().enumerate() {
@@ -1506,6 +1547,7 @@ fn printed_stack_aggregate_initializers_preserve_every_byte() {
                     } else {
                         Expr::reg(argument, 64)
                     },
+                    at: None,
                 });
             }
             if case == "overlap" {
@@ -1513,6 +1555,7 @@ fn printed_stack_aggregate_initializers_preserve_every_byte() {
                     addr: at(-8),
                     width: 1,
                     value: Expr::Const(7),
+                    at: None,
                 });
             }
             if case == "reordered" {
@@ -1523,6 +1566,7 @@ fn printed_stack_aggregate_initializers_preserve_every_byte() {
                         addr: at(-15),
                         width: 1,
                         value: Expr::Const(9),
+                        at: None,
                     },
                 );
             }
@@ -1547,9 +1591,11 @@ fn printed_stack_aggregate_initializers_preserve_every_byte() {
                 outputs: velk::ir::fallback_call_outputs(convention, None),
                 clobbers: None,
                 via: None,
+                at: None,
             });
             stmts.push(Stmt::Ret {
                 value: union_read.map_or(Expr::Const(0), |(offset, width)| load(offset, width)),
+                at: None,
             });
             let mut ir = synthetic_ir(
                 &format!(
@@ -1639,9 +1685,13 @@ fn standalone_loops_declare_imports_and_boolean_types() {
             outputs: vec![],
             clobbers: Some(Default::default()),
             via: None,
+            at: None,
         });
     }
-    ir.blocks[0].stmts.push(Stmt::Br { target: Some(0) });
+    ir.blocks[0].stmts.push(Stmt::Br {
+        target: Some(0),
+        at: None,
+    });
     let symbols = velk::render::Symbols {
         functions: [
             (0x1000, "unknown_import".into()),
@@ -1687,6 +1737,7 @@ fn standalone_recursive_calls_convert_pointer_arguments_to_integer_parameters() 
             lhs: Expr::reg(7, 64),
             rhs: Expr::Const(0),
             target: 32,
+            at: None,
         }],
     );
     ir.value_types
@@ -1700,6 +1751,7 @@ fn standalone_recursive_calls_convert_pointer_arguments_to_integer_parameters() 
                     width: 64,
                 },
                 value: Expr::bin(BinOp::Sub, Expr::reg(7, 64), Expr::Const(1)),
+                at: None,
             },
             Stmt::Call {
                 abi: None,
@@ -1712,6 +1764,7 @@ fn standalone_recursive_calls_convert_pointer_arguments_to_integer_parameters() 
                 outputs: velk::ir::fallback_call_outputs(Convention::SysV, None),
                 clobbers: None,
                 via: None,
+                at: None,
             },
             Stmt::Ret {
                 value: Expr::bin(
@@ -1719,6 +1772,7 @@ fn standalone_recursive_calls_convert_pointer_arguments_to_integer_parameters() 
                     Expr::reg(0, 64),
                     Expr::bin(BinOp::Add, Expr::reg(pointer, 64), Expr::Const(1)),
                 ),
+                at: None,
             },
         ],
     });
@@ -1726,6 +1780,7 @@ fn standalone_recursive_calls_convert_pointer_arguments_to_integer_parameters() 
         start: 32,
         stmts: vec![Stmt::Ret {
             value: Expr::Const(0),
+            at: None,
         }],
     });
     let symbols = velk::render::Symbols {
@@ -1780,6 +1835,7 @@ fn standalone_recursive_narrow_returns_zero_extend_before_wide_uses() {
             lhs: Expr::reg(7, 64),
             rhs: Expr::Const(0),
             target: 32,
+            at: None,
         }],
     );
     ir.blocks.push(Block {
@@ -1800,9 +1856,11 @@ fn standalone_recursive_narrow_returns_zero_extend_before_wide_uses() {
                 outputs: velk::ir::fallback_call_outputs(Convention::SysV, None),
                 clobbers: None,
                 via: None,
+                at: None,
             },
             Stmt::Ret {
                 value: Expr::bin(BinOp::Shr, Expr::reg(0, 64), Expr::Const(32)),
+                at: None,
             },
         ],
     });
@@ -1810,6 +1868,7 @@ fn standalone_recursive_narrow_returns_zero_extend_before_wide_uses() {
         start: 32,
         stmts: vec![Stmt::Ret {
             value: Expr::Const(0xffffffff),
+            at: None,
         }],
     });
     let symbols = velk::render::Symbols {
@@ -1863,9 +1922,11 @@ fn unnamed_callees_keep_recorded_floating_returns() {
                 outputs: velk::ir::fallback_call_outputs(Convention::SysV, None),
                 clobbers: None,
                 via: None,
+                at: None,
             },
             Stmt::Ret {
                 value: Expr::reg(velk::arch::x86::XMM0, 64),
+                at: None,
             },
         ],
     );

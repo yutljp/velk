@@ -10,6 +10,7 @@ fn put(register: u16, offset: u64, width: u8) -> Stmt {
         addr: Expr::bin(BinOp::Add, Expr::reg(register, 64), Expr::Const(offset)),
         value: Expr::Const(offset + 1),
         width,
+        at: None,
     }
 }
 
@@ -45,6 +46,7 @@ fn call(target: u64, arg: Expr) -> Stmt {
         outputs: Vec::new(),
         clobbers: None,
         via: None,
+        at: None,
     }
 }
 
@@ -149,6 +151,7 @@ fn returned_pointers_and_same_global_connect_types() {
                 addr: Expr::Const(0x1000),
                 value: Expr::reg(7, 64),
                 width: 8,
+                at: None,
             });
             second.blocks[0].stmts.insert(
                 0,
@@ -162,12 +165,14 @@ fn returned_pointers_and_same_global_connect_types() {
                         width: 8,
                         signed: false,
                     },
+                    at: None,
                 },
             );
         } else {
             first.ret_type = first.params[0].ty.clone();
             first.blocks[0].stmts.push(Stmt::Ret {
                 value: Expr::reg(7, 64),
+                at: None,
             });
             let mut stmt = call(1, Expr::reg(7, 64));
             if let Stmt::Call { outputs, .. } = &mut stmt {
@@ -243,6 +248,7 @@ fn pointer_tail_returns_reach_the_callers_layout() {
     first.ret_type = first.params[0].ty.clone();
     first.blocks[0].stmts.push(Stmt::Ret {
         value: Expr::reg(7, 64),
+        at: None,
     });
     let mut wrapper = function(2, &[]);
     wrapper.ret_type = CType::pointer_to(CType::Void);
@@ -284,6 +290,7 @@ fn redefined_parameters_do_not_connect_other_functions() {
                 width: 64,
             },
             value: Expr::Const(0),
+            at: None,
         },
         call(2, Expr::reg(7, 64)),
     ]);
@@ -376,6 +383,7 @@ fn an_unshared_scalar_pointer_keeps_its_type() {
         put(7, 8, 4),
         Stmt::Ret {
             value: Expr::reg(7, 64),
+            at: None,
         },
     ]);
     ir.ret_type = ir.params[0].ty.clone();
@@ -703,6 +711,7 @@ fn repeated_field_loads_merge_only_observed_compatible_fields() {
                         width: 8,
                         signed: false,
                     },
+                    at: None,
                 });
                 ir.blocks[0].stmts.push(put(register, offset, width));
                 ir.pointer_values.push(register);
@@ -741,6 +750,7 @@ fn changing_field_bases_and_narrow_loads_do_not_connect_layouts() {
                     width: if narrow { 4 } else { 8 },
                     signed: false,
                 },
+                at: None,
             });
             ir.blocks[0].stmts.push(put(register, offset, 4));
             ir.pointer_values.push(register);
@@ -752,6 +762,7 @@ fn changing_field_bases_and_narrow_loads_do_not_connect_layouts() {
                     width: 32,
                 },
                 value: Expr::Const(0),
+                at: None,
             });
         }
         let before = render(&ir);
@@ -776,6 +787,7 @@ fn shared_loaded_pointer_fields_compile_and_preserve_memory() {
                     width: 8,
                     signed: false,
                 },
+                at: None,
             });
             ir.blocks[0].stmts.push(put(register, offset, width));
             ir.pointer_values.push(register);
@@ -805,6 +817,7 @@ fn a_stored_pointer_carries_its_layout_to_a_field_load() {
             addr: Expr::reg(6, 64),
             value: Expr::reg(7, 64),
             width: 8,
+            at: None,
         },
         Stmt::Assign {
             dest: RegRef {
@@ -816,6 +829,7 @@ fn a_stored_pointer_carries_its_layout_to_a_field_load() {
                 width: 8,
                 signed: false,
             },
+            at: None,
         },
         put(VARIABLE_BASE, 16, 8),
     ]);
@@ -845,6 +859,7 @@ fn field_loads_through_a_whole_pointer_copy_share_their_layout() {
             width: 64,
         },
         value: Expr::reg(7, 64),
+        at: None,
     });
     for (register, base, offset) in [(copy + 1, 7, 0), (copy + 2, copy, 16)] {
         ir.blocks[0].stmts.push(Stmt::Assign {
@@ -857,6 +872,7 @@ fn field_loads_through_a_whole_pointer_copy_share_their_layout() {
                 width: 8,
                 signed: false,
             },
+            at: None,
         });
         ir.blocks[0].stmts.push(put(register, offset, 4));
         ir.pointer_values.push(register);

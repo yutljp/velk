@@ -20,11 +20,13 @@ pub(crate) fn flatten_early_returns(nodes: &mut Vec<Node>) {
     for node in nodes.drain(..) {
         match node {
             Node::If {
+                at,
                 cond,
                 lhs,
                 rhs,
                 then,
                 els,
+                ..
             } if !els.is_empty() && terminates(&then) => {
                 flattened.push(Node::If {
                     cond,
@@ -32,6 +34,7 @@ pub(crate) fn flatten_early_returns(nodes: &mut Vec<Node>) {
                     rhs,
                     then,
                     els: Vec::new(),
+                    at,
                 });
                 flattened.extend(els);
             }
@@ -52,6 +55,7 @@ pub(crate) fn inline_return_tails(nodes: &mut Vec<Node>) {
             if let Node::Stmt(
                 Stmt::Br {
                     target: Some(target),
+                    ..
                 }
                 | Stmt::Brif { target, .. },
             ) = node
@@ -74,6 +78,7 @@ pub(crate) fn inline_return_tails(nodes: &mut Vec<Node>) {
         for node in nodes {
             if let Node::Stmt(Stmt::Br {
                 target: Some(target),
+                ..
             }) = node
             {
                 let Some(tail) = known.get(target) else {
@@ -95,7 +100,7 @@ pub(crate) fn inline_return_tails(nodes: &mut Vec<Node>) {
                     | Stmt::Call { .. }
                     | Stmt::Unsupported { .. }
                     | Stmt::Ret { .. }
-                    | Stmt::Trap,
+                    | Stmt::Trap { .. },
                 ) => {}
                 Node::Stmt(Stmt::Brif { target, .. }) => {
                     let Some(tail) = known.get(target) else {
@@ -171,6 +176,7 @@ pub(crate) fn inline_return_tails(nodes: &mut Vec<Node>) {
                 lhs,
                 rhs,
                 target,
+                at,
             }) = &nodes[index]
                 && let Some(tail) = tails.get(target)
             {
@@ -180,12 +186,14 @@ pub(crate) fn inline_return_tails(nodes: &mut Vec<Node>) {
                     rhs: rhs.clone(),
                     then: tail.clone(),
                     els: Vec::new(),
+                    at: *at,
                 };
                 index += 1;
                 continue;
             }
             if let Node::Stmt(Stmt::Br {
                 target: Some(target),
+                ..
             }) = &nodes[index]
                 && let Some(tail) = tails.get(target)
             {
@@ -266,7 +274,7 @@ pub(crate) fn return_known_constants(nodes: &mut Vec<Node>) {
                 known.clear();
             }
             match node {
-                Node::Stmt(Stmt::Ret { value }) => {
+                Node::Stmt(Stmt::Ret { value, .. }) => {
                     let replaced = match value {
                         Expr::Reg { index, .. } => known.get(index).map(|c| Expr::Const(*c)),
                         Expr::Bin {
@@ -292,6 +300,7 @@ pub(crate) fn return_known_constants(nodes: &mut Vec<Node>) {
                     if let Stmt::Assign {
                         dest,
                         value: Expr::Const(c),
+                        ..
                     } = stmt
                         && dest.index >= crate::ir::VARIABLE_BASE
                         && dest.width == 64
@@ -369,6 +378,7 @@ fn reads_in(nodes: &[Node], out: &mut std::collections::HashSet<u16>) {
                 index,
                 arms,
                 default,
+                ..
             } => {
                 crate::ir::visit::collect_reads(index, out);
                 for (_, body) in arms {
@@ -378,7 +388,7 @@ fn reads_in(nodes: &[Node], out: &mut std::collections::HashSet<u16>) {
                     reads_in(body, out);
                 }
             }
-            Node::Label(_) | Node::Break | Node::Continue => {}
+            Node::Label(_) | Node::Break { .. } | Node::Continue { .. } => {}
         }
     }
 }
@@ -387,7 +397,7 @@ fn reads_in(nodes: &[Node], out: &mut std::collections::HashSet<u16>) {
 /// and those right before a return that does not read them.
 fn drop_unread(nodes: &mut Vec<Node>, read: &std::collections::HashSet<u16>) {
     nodes.retain(|node| {
-        !matches!(node, Node::Stmt(Stmt::Assign { dest, value: crate::ir::Expr::Const(_) })
+        !matches!(node, Node::Stmt(Stmt::Assign { dest, value: crate::ir::Expr::Const(_), .. })
             if dest.index >= crate::ir::VARIABLE_BASE && !read.contains(&dest.index))
     });
     let mut index = 0;
@@ -396,6 +406,7 @@ fn drop_unread(nodes: &mut Vec<Node>, read: &std::collections::HashSet<u16>) {
             Node::Stmt(Stmt::Assign {
                 dest,
                 value: crate::ir::Expr::Const(_),
+                ..
             }),
             Node::Stmt(ret @ Stmt::Ret { .. }),
         ) = (&nodes[index], &nodes[index + 1])
@@ -430,6 +441,7 @@ mod tests {
             rhs: Expr::Const(0),
             then,
             els,
+            at: None,
         }
     }
 
@@ -446,6 +458,7 @@ mod tests {
                 Expr::Const(1),
             ),
             width: 8,
+            at: None,
         })
     }
 
@@ -467,7 +480,10 @@ mod tests {
                         };
                     }
                     let mut before = vec![guard(
-                        vec![Node::Stmt(Stmt::Br { target: Some(10) })],
+                        vec![Node::Stmt(Stmt::Br {
+                            target: Some(10),
+                            at: None,
+                        })],
                         Vec::new(),
                     )];
                     before.extend(body);
@@ -478,6 +494,7 @@ mod tests {
                             width: 8,
                             signed: false,
                         },
+                        at: None,
                     }));
                     let mut after = before.clone();
                     inline_return_tails(&mut after);
@@ -510,6 +527,7 @@ mod tests {
                 lhs: Expr::reg(0, 64),
                 rhs: Expr::Const(0),
                 body: body.clone(),
+                at: None,
             },
             Node::While {
                 prefix: Vec::new(),
@@ -517,18 +535,24 @@ mod tests {
                 lhs: Expr::reg(0, 64),
                 rhs: Expr::Const(0),
                 body: body.clone(),
+                at: None,
             },
             Node::Switch {
                 index: Expr::reg(0, 64),
                 arms: vec![(vec![0], body)],
                 default: Some(vec![increment()]),
+                at: None,
             },
         ] {
             let mut nodes = vec![
-                Node::Stmt(Stmt::Br { target: Some(10) }),
+                Node::Stmt(Stmt::Br {
+                    target: Some(10),
+                    at: None,
+                }),
                 construct,
                 Node::Stmt(Stmt::Ret {
                     value: Expr::Const(0),
+                    at: None,
                 }),
             ];
             inline_return_tails(&mut nodes);
@@ -540,12 +564,16 @@ mod tests {
     fn return_continuations_keep_the_total_copy_bound() {
         let tail = vec![Node::Label(10), increment()];
         let mut nodes = vec![
-            Node::Stmt(Stmt::Br { target: Some(10) }),
+            Node::Stmt(Stmt::Br {
+                target: Some(10),
+                at: None,
+            }),
             guard(tail, Vec::new()),
         ];
         nodes.extend(std::iter::repeat_with(increment).take(TAIL_STATEMENTS));
         nodes.push(Node::Stmt(Stmt::Ret {
             value: Expr::Const(0),
+            at: None,
         }));
         inline_return_tails(&mut nodes);
         assert!(matches!(nodes[0], Node::Stmt(Stmt::Br { .. })));
@@ -559,9 +587,18 @@ mod tests {
         let mut proofs = Proofs::default();
         for isa in [Isa::I386, Isa::X86_64, Isa::AArch64, Isa::Arm32] {
             for conditional in [false, true] {
-                let jump = Node::Stmt(Stmt::Br { target: Some(20) });
+                let jump = Node::Stmt(Stmt::Br {
+                    target: Some(20),
+                    at: None,
+                });
                 let mut before = vec![
-                    guard(vec![Node::Stmt(Stmt::Br { target: Some(10) })], Vec::new()),
+                    guard(
+                        vec![Node::Stmt(Stmt::Br {
+                            target: Some(10),
+                            at: None,
+                        })],
+                        Vec::new(),
+                    ),
                     Node::Label(20),
                     increment(),
                     Node::Stmt(Stmt::Ret {
@@ -570,6 +607,7 @@ mod tests {
                             width: 8,
                             signed: false,
                         },
+                        at: None,
                     }),
                     Node::Label(10),
                     increment(),
@@ -605,6 +643,7 @@ mod tests {
         let branch = |target| {
             Node::Stmt(Stmt::Br {
                 target: Some(target),
+                at: None,
             })
         };
         let mut cycle = vec![branch(10), Node::Label(10), increment(), branch(10)];
@@ -617,6 +656,7 @@ mod tests {
         nodes.extend([
             Node::Stmt(Stmt::Ret {
                 value: Expr::Const(0),
+                at: None,
             }),
             Node::Label(10),
             increment(),
@@ -625,7 +665,10 @@ mod tests {
         inline_return_tails(&mut nodes);
         assert!(matches!(
             nodes[0],
-            Node::Stmt(Stmt::Br { target: Some(10) })
+            Node::Stmt(Stmt::Br {
+                target: Some(10),
+                ..
+            })
         ));
 
         let mut scalar = vec![
@@ -633,6 +676,7 @@ mod tests {
             Node::Label(20),
             Node::Stmt(Stmt::Ret {
                 value: Expr::Const(0),
+                at: None,
             }),
             Node::Label(10),
             Node::Stmt(Stmt::Assign {
@@ -641,13 +685,17 @@ mod tests {
                     width: 64,
                 },
                 value: Expr::Const(0),
+                at: None,
             }),
             branch(20),
         ];
         inline_return_tails(&mut scalar);
         assert!(matches!(
             scalar[0],
-            Node::Stmt(Stmt::Br { target: Some(10) })
+            Node::Stmt(Stmt::Br {
+                target: Some(10),
+                ..
+            })
         ));
     }
 
@@ -660,7 +708,13 @@ mod tests {
         for isa in [Isa::I386, Isa::X86_64, Isa::AArch64, Isa::Arm32] {
             for depth in 1..=3 {
                 for in_else in [false, true] {
-                    let mut branch = vec![increment(), Node::Stmt(Stmt::Br { target: Some(40) })];
+                    let mut branch = vec![
+                        increment(),
+                        Node::Stmt(Stmt::Br {
+                            target: Some(40),
+                            at: None,
+                        }),
+                    ];
                     for bit in 0..depth {
                         let (then, els) = if in_else {
                             (Vec::new(), branch)
@@ -673,6 +727,7 @@ mod tests {
                             rhs: Expr::Const(0),
                             then,
                             els,
+                            at: None,
                         }];
                     }
                     let mut before = branch;
@@ -686,6 +741,7 @@ mod tests {
                                 width: 8,
                                 signed: false,
                             },
+                            at: None,
                         }),
                     ]);
                     let mut after = before.clone();
@@ -712,7 +768,10 @@ mod tests {
         let branch = || {
             guard(
                 vec![guard(
-                    vec![Node::Stmt(Stmt::Br { target: Some(40) })],
+                    vec![Node::Stmt(Stmt::Br {
+                        target: Some(40),
+                        at: None,
+                    })],
                     Vec::new(),
                 )],
                 Vec::new(),
@@ -779,7 +838,13 @@ mod tests {
                 },
             ];
             let mut nodes = vec![
-                guard(vec![Node::Stmt(Stmt::Br { target: Some(10) })], Vec::new()),
+                guard(
+                    vec![Node::Stmt(Stmt::Br {
+                        target: Some(10),
+                        at: None,
+                    })],
+                    Vec::new(),
+                ),
                 guard(vec![Node::Label(10), increment()], vec![increment()]),
                 increment(),
                 Node::Stmt(Stmt::Ret {
@@ -788,6 +853,7 @@ mod tests {
                         width: 8,
                         signed: false,
                     },
+                    at: None,
                 }),
             ];
             inline_return_tails(&mut nodes);
@@ -808,17 +874,27 @@ mod tests {
                     outputs: Vec::new(),
                     clobbers: Some(Default::default()),
                     via: None,
+                    at: None,
                 })
             };
             let mut unwind = vec![
-                guard(vec![Node::Stmt(Stmt::Br { target: Some(10) })], Vec::new()),
+                guard(
+                    vec![Node::Stmt(Stmt::Br {
+                        target: Some(10),
+                        at: None,
+                    })],
+                    Vec::new(),
+                ),
                 Node::Label(20),
                 call(0x1000, vec![Expr::reg(1, 64), Expr::Const(2)]),
                 call(0x2000, vec![Expr::reg(1, 64)]),
-                Node::Stmt(Stmt::Trap),
+                Node::Stmt(Stmt::Trap { at: None }),
                 Node::Label(10),
                 call(0x1000, vec![Expr::reg(1, 64), Expr::Const(1)]),
-                Node::Stmt(Stmt::Br { target: Some(20) }),
+                Node::Stmt(Stmt::Br {
+                    target: Some(20),
+                    at: None,
+                }),
             ];
             inline_return_tails(&mut unwind);
             let symbols = crate::render::Symbols {
@@ -841,7 +917,13 @@ mod tests {
             source.push_str(&code);
             ir.name = Some(format!("cleanup_chain_{index}"));
             let mut chain = vec![
-                guard(vec![Node::Stmt(Stmt::Br { target: Some(10) })], Vec::new()),
+                guard(
+                    vec![Node::Stmt(Stmt::Br {
+                        target: Some(10),
+                        at: None,
+                    })],
+                    Vec::new(),
+                ),
                 Node::Label(20),
                 increment(),
                 Node::Stmt(Stmt::Ret {
@@ -850,10 +932,14 @@ mod tests {
                         width: 8,
                         signed: false,
                     },
+                    at: None,
                 }),
                 Node::Label(10),
                 increment(),
-                Node::Stmt(Stmt::Br { target: Some(20) }),
+                Node::Stmt(Stmt::Br {
+                    target: Some(20),
+                    at: None,
+                }),
             ];
             inline_return_tails(&mut chain);
             let code =
@@ -862,18 +948,36 @@ mod tests {
             source.push_str(&code);
             ir.name = Some(format!("cleanup_layout_{index}"));
             let mut layout = vec![
-                guard(vec![Node::Stmt(Stmt::Br { target: Some(40) })], Vec::new()),
+                guard(
+                    vec![Node::Stmt(Stmt::Br {
+                        target: Some(40),
+                        at: None,
+                    })],
+                    Vec::new(),
+                ),
                 increment(),
-                Node::Stmt(Stmt::Br { target: Some(60) }),
+                Node::Stmt(Stmt::Br {
+                    target: Some(60),
+                    at: None,
+                }),
                 Node::Label(20),
-                Node::Stmt(Stmt::Br { target: Some(40) }),
+                Node::Stmt(Stmt::Br {
+                    target: Some(40),
+                    at: None,
+                }),
                 Node::Label(30),
-                Node::Stmt(Stmt::Br { target: Some(60) }),
+                Node::Stmt(Stmt::Br {
+                    target: Some(60),
+                    at: None,
+                }),
                 Node::Label(40),
             ];
             layout.extend(std::iter::repeat_with(increment).take(8));
             layout.extend([
-                Node::Stmt(Stmt::Br { target: Some(60) }),
+                Node::Stmt(Stmt::Br {
+                    target: Some(60),
+                    at: None,
+                }),
                 Node::Label(60),
                 Node::Stmt(Stmt::Ret {
                     value: Expr::Load {
@@ -881,6 +985,7 @@ mod tests {
                         width: 8,
                         signed: false,
                     },
+                    at: None,
                 }),
             ]);
             let code =
@@ -893,12 +998,19 @@ mod tests {
                 rhs: Expr::Const(0),
                 then,
                 els: Vec::new(),
+                at: None,
             };
             let mut forward = vec![
                 test(
                     1,
                     vec![
-                        test(2, vec![Node::Stmt(Stmt::Br { target: Some(10) })]),
+                        test(
+                            2,
+                            vec![Node::Stmt(Stmt::Br {
+                                target: Some(10),
+                                at: None,
+                            })],
+                        ),
                         increment(),
                     ],
                 ),
@@ -910,6 +1022,7 @@ mod tests {
                         width: 8,
                         signed: false,
                     },
+                    at: None,
                 }),
             ];
             super::super::fold_forward_exits(&mut forward);
@@ -925,7 +1038,10 @@ mod tests {
                         2,
                         vec![
                             call(0x1000, vec![Expr::reg(1, 64), Expr::Const(1)]),
-                            Node::Stmt(Stmt::Br { target: Some(40) }),
+                            Node::Stmt(Stmt::Br {
+                                target: Some(40),
+                                at: None,
+                            }),
                         ],
                     )],
                 ),
@@ -938,6 +1054,7 @@ mod tests {
                         width: 8,
                         signed: false,
                     },
+                    at: None,
                 }),
             ];
             super::super::fold_forward_exits(&mut partial);
@@ -1023,6 +1140,7 @@ mod tests {
                     width: 64,
                 },
                 value: Expr::Const(7),
+                at: None,
             }),
             Node::If {
                 cond: Cond::Eq,
@@ -1030,14 +1148,17 @@ mod tests {
                 rhs: Expr::Const(0),
                 then: vec![Node::Label(10)],
                 els: Vec::new(),
+                at: None,
             },
             Node::Stmt(Stmt::Ret {
                 value: Expr::reg(variable, 64),
+                at: None,
             }),
         ];
         return_known_constants(&mut nodes);
         assert!(matches!(nodes.last(), Some(Node::Stmt(Stmt::Ret {
-            value: Expr::Reg { index, .. }
+            value: Expr::Reg { index, .. },
+            ..
         })) if *index == variable));
     }
 
@@ -1046,6 +1167,7 @@ mod tests {
         let return_node = || {
             Node::Stmt(Stmt::Ret {
                 value: Expr::Const(1),
+                at: None,
             })
         };
         let mut nodes = vec![
@@ -1054,6 +1176,7 @@ mod tests {
                 lhs: Expr::reg(0, 64),
                 rhs: Expr::Const(0),
                 target: 10,
+                at: None,
             }),
             return_node(),
             Node::Label(10),
@@ -1063,6 +1186,7 @@ mod tests {
                 rhs: Expr::Const(0),
                 then: vec![return_node()],
                 els: vec![return_node()],
+                at: None,
             },
         ];
         inline_return_tails(&mut nodes);
@@ -1073,7 +1197,10 @@ mod tests {
     #[test]
     fn return_tree_with_an_internal_label_is_not_copied() {
         let mut nodes = vec![
-            Node::Stmt(Stmt::Br { target: Some(10) }),
+            Node::Stmt(Stmt::Br {
+                target: Some(10),
+                at: None,
+            }),
             Node::Label(10),
             Node::If {
                 cond: Cond::Eq,
@@ -1081,9 +1208,11 @@ mod tests {
                 rhs: Expr::Const(0),
                 then: vec![Node::Label(20)],
                 els: Vec::new(),
+                at: None,
             },
             Node::Stmt(Stmt::Ret {
                 value: Expr::Const(1),
+                at: None,
             }),
         ];
         inline_return_tails(&mut nodes);

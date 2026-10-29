@@ -3,6 +3,7 @@ use velk::ir::{AtomicOp, MachineInstruction, Ordering, RegRef, VARIABLE_BASE};
 
 fn atomic_add(ordering: Ordering) -> Stmt {
     Stmt::Machine {
+        at: None,
         instruction: MachineInstruction::Atomic {
             op: AtomicOp::Add,
             width: 8,
@@ -66,10 +67,12 @@ fn printed_private_values_cross_atomics_without_moving_shared_loads() {
                         addr: slot.clone(),
                         value: Expr::reg(6, 64),
                         width: 8,
+                        at: None,
                     },
                     atomic_add(ordering),
                     Stmt::Ret {
                         value: load(slot.clone()),
+                        at: None,
                     },
                 ],
             );
@@ -101,10 +104,12 @@ fn printed_private_values_cross_atomics_without_moving_shared_loads() {
                         width: 64,
                     },
                     value: load(Expr::reg(7, 64)),
+                    at: None,
                 },
                 atomic_add(ordering),
                 Stmt::Ret {
                     value: Expr::reg(VARIABLE_BASE, 64),
+                    at: None,
                 },
             ],
         );
@@ -130,10 +135,12 @@ fn printed_private_values_cross_atomics_without_moving_shared_loads() {
                         width: 64,
                     },
                     value: load(Expr::Const(0x3000_0000_0000)),
+                    at: None,
                 },
                 atomic_add(ordering),
                 Stmt::Ret {
                     value: Expr::reg(VARIABLE_BASE, 64),
+                    at: None,
                 },
             ],
         );
@@ -169,6 +176,7 @@ fn printed_private_values_cross_atomics_without_moving_shared_loads() {
                 addr: slot.clone(),
                 value: Expr::reg(6, 64),
                 width: 8,
+                at: None,
             },
             barrier,
             Stmt::Ret {
@@ -177,6 +185,7 @@ fn printed_private_values_cross_atomics_without_moving_shared_loads() {
                     width: 8,
                     signed: false,
                 },
+                at: None,
             },
         ],
     );
@@ -195,6 +204,7 @@ fn printed_private_values_cross_atomics_without_moving_shared_loads() {
         CType::U64,
         vec![
             Stmt::Machine {
+                at: None,
                 instruction: MachineInstruction::Atomic {
                     op: AtomicOp::Exchange,
                     width: 8,
@@ -208,6 +218,7 @@ fn printed_private_values_cross_atomics_without_moving_shared_loads() {
             },
             Stmt::Ret {
                 value: Expr::reg(VARIABLE_BASE, 64),
+                at: None,
             },
         ],
     );
@@ -254,6 +265,7 @@ fn incoming_and_atomic_frame_slots_are_not_forwarded() {
                     addr: slot.clone(),
                     value: Expr::reg(6, 64),
                     width: 8,
+                    at: None,
                 },
                 barrier,
                 Stmt::Ret {
@@ -262,6 +274,7 @@ fn incoming_and_atomic_frame_slots_are_not_forwarded() {
                         width: 8,
                         signed: false,
                     },
+                    at: None,
                 },
             ],
         );
@@ -314,6 +327,7 @@ fn printed_compare_exchange_uses_implicit_integer_conversions() {
                 CType::U64,
                 vec![
                     Stmt::Machine {
+                        at: None,
                         instruction: MachineInstruction::Atomic {
                             op: AtomicOp::CompareExchange,
                             width,
@@ -327,6 +341,7 @@ fn printed_compare_exchange_uses_implicit_integer_conversions() {
                     },
                     Stmt::Ret {
                         value: Expr::reg(VARIABLE_BASE, 64),
+                        at: None,
                     },
                 ],
             );

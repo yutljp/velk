@@ -306,11 +306,13 @@ fn abi_spills_and_stack_outputs_compile_and_match_memory() {
                             addr: at(spill),
                             value: Expr::reg(register, 64),
                             width,
+                            at: None,
                         },
                         Stmt::Store {
                             addr: at(output),
                             value: Expr::reg(register, 64),
                             width,
+                            at: None,
                         },
                         Stmt::Ret {
                             value: if read {
@@ -322,6 +324,7 @@ fn abi_spills_and_stack_outputs_compile_and_match_memory() {
                             } else {
                                 Expr::Const(0)
                             },
+                            at: None,
                         },
                     ],
                 }];
@@ -510,9 +513,11 @@ fn stores_crossing_the_frame_boundary_keep_caller_bytes() {
                         addr: Expr::bin(BinOp::Add, Expr::reg(sp, 64), Expr::Const(offset)),
                         value: Expr::reg(0, 64),
                         width,
+                        at: None,
                     },
                     Stmt::Ret {
                         value: Expr::Const(0),
+                        at: None,
                     },
                 ],
             }];

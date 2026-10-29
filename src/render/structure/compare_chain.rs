@@ -80,6 +80,7 @@ fn incoming_comparison(
                 lhs,
                 rhs: Expr::Const(k),
                 target,
+                ..
             } if (*target == destination_start || source + 1 == destination)
                 && same_value(lhs, value) =>
             {
@@ -237,6 +238,7 @@ impl ChainWalk<'_> {
             lhs,
             rhs,
             target,
+            ..
         } = self.ir.blocks[index].stmts.last()?
         else {
             return None;
@@ -493,6 +495,7 @@ fn equality_chain(
             lhs,
             rhs: Expr::Const(k),
             target,
+            ..
         }) = block.stmts.last()
         else {
             break block.start;
@@ -700,6 +703,7 @@ pub fn apply_chains(ir: &mut FunctionIr, chains: &[ChainSwitch]) {
             index: chain.index.clone(),
             cases: chain.cases.clone(),
             default: chain.default,
+            at: None,
         });
         ir.blocks.retain(|block| {
             block.start == chain.block_start || !chain.blocks.contains(&block.start)
@@ -728,6 +732,7 @@ mod tests {
                     lhs: Expr::reg(0, 32),
                     rhs: Expr::Const(*k),
                     target: *target,
+                    at: None,
                 }],
             });
         }
@@ -736,6 +741,7 @@ mod tests {
                 start,
                 stmts: vec![Stmt::Ret {
                     value: Expr::Const(start),
+                    at: None,
                 }],
             });
         }
@@ -769,9 +775,11 @@ mod tests {
                     addr: Expr::Const(0x1000),
                     value: Expr::Const(position as u64 + 11),
                     width: 8,
+                    at: None,
                 },
                 Stmt::Ret {
                     value: Expr::Const(position as u64 + 11),
+                    at: None,
                 },
             ],
         };
@@ -790,6 +798,7 @@ mod tests {
                     lhs: Expr::reg(0, width),
                     rhs: Expr::Const(*value),
                     target: if inverse { next } else { body(position).start },
+                    at: None,
                 }],
             });
             if inverse {
@@ -805,9 +814,11 @@ mod tests {
                     addr: Expr::Const(0x1000),
                     value: Expr::Const(99),
                     width: 8,
+                    at: None,
                 },
                 Stmt::Ret {
                     value: Expr::Const(99),
+                    at: None,
                 },
             ],
         });
@@ -963,6 +974,7 @@ mod tests {
                 addr: Expr::Const(0x1010),
                 value: Expr::Const(123),
                 width: 8,
+                at: None,
             },
         );
         ir.blocks[0].stmts.insert(
@@ -981,6 +993,7 @@ mod tests {
                 ),
                 clobbers: Some(crate::ir::Registers(0)),
                 via: None,
+                at: None,
             },
         );
         compare_dispatch(&ir, &values, 64, &[0, 1, 1000, 10000, u64::MAX]);
@@ -1077,6 +1090,7 @@ mod tests {
                 addr: Expr::Const(0x1000),
                 value: Expr::Const(12),
                 width: 8,
+                at: None,
             },
             Stmt::Assign {
                 dest: crate::ir::RegRef {
@@ -1084,6 +1098,7 @@ mod tests {
                     width: 64,
                 },
                 value: Expr::Const(1000),
+                at: None,
             },
             Stmt::Call {
                 kind: crate::ir::CallKind::Invoke,
@@ -1096,6 +1111,7 @@ mod tests {
                 outputs: crate::ir::fallback_call_outputs(crate::ir::Convention::Aapcs64, None),
                 clobbers: None,
                 via: None,
+                at: None,
             },
         ] {
             let mut ir = original.clone();
@@ -1105,7 +1121,10 @@ mod tests {
         let mut ir = original;
         ir.blocks.push(Block {
             start: 0x20000,
-            stmts: vec![Stmt::Br { target: Some(0x20) }],
+            stmts: vec![Stmt::Br {
+                target: Some(0x20),
+                at: None,
+            }],
         });
         assert!(equality_only(&ir).is_none());
     }
@@ -1180,6 +1199,7 @@ mod tests {
                 lhs: Expr::reg(0, 64),
                 rhs: Expr::Const(value),
                 target,
+                at: None,
             };
             let finish = |start, value| Block {
                 start,
@@ -1188,9 +1208,11 @@ mod tests {
                         addr: Expr::Const(0x1010),
                         value: Expr::Const(value),
                         width: 8,
+                        at: None,
                     },
                     Stmt::Ret {
                         value: Expr::Const(value),
+                        at: None,
                     },
                 ],
             };
@@ -1206,6 +1228,7 @@ mod tests {
                     },
                     Expr::Const(1),
                 ),
+                at: None,
             }];
             if terminate_default {
                 effect.push(Stmt::Assign {
@@ -1214,9 +1237,13 @@ mod tests {
                         width: 64,
                     },
                     value: Expr::Const(10000),
+                    at: None,
                 });
             }
-            effect.push(Stmt::Br { target: Some(0x30) });
+            effect.push(Stmt::Br {
+                target: Some(0x30),
+                at: None,
+            });
             let mut ir = FunctionIr::single_block(Isa::AArch64, Vec::new());
             ir.blocks = vec![
                 Block {

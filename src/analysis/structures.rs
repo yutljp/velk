@@ -106,7 +106,7 @@ pub(crate) fn recover(ir: &mut FunctionIr) {
         .iter()
         .flat_map(|block| &block.stmts)
         .filter_map(|stmt| {
-            let Stmt::Assign { dest, value } = stmt else {
+            let Stmt::Assign { dest, value, .. } = stmt else {
                 return None;
             };
             let mut reads = HashSet::new();
@@ -132,6 +132,7 @@ pub(crate) fn recover(ir: &mut FunctionIr) {
             if let Stmt::Assign {
                 dest,
                 value: Expr::Reg { index, width: 64 },
+                ..
             } = stmt
                 && dest.width == 64
                 && *index >= crate::ir::VARIABLE_BASE
@@ -349,6 +350,7 @@ fn copies(ir: &FunctionIr, base: u16) -> Vec<u16> {
             Stmt::Assign {
                 dest,
                 value: Expr::Reg { index, width: 64 },
+                ..
             } if dest.width == 64 => Some(*index),
             _ => None,
         };
@@ -848,12 +850,14 @@ fn holders(ir: &FunctionIr, param: u16, direct: bool) -> PointerSources {
     let mut values: BTreeMap<u16, Vec<Option<&Expr>>> = BTreeMap::new();
     for stmt in stmts() {
         match stmt {
-            Stmt::Store { addr, value, width } => {
+            Stmt::Store {
+                addr, value, width, ..
+            } => {
                 let from_param =
                     *width == 8 && matches!(value, Expr::Reg { index, .. } if *index == param);
                 *stored.entry(format!("{addr:?}")).or_insert(true) &= from_param;
             }
-            Stmt::Assign { dest, value } => values
+            Stmt::Assign { dest, value, .. } => values
                 .entry(dest.index)
                 .or_default()
                 .push((dest.width == 64).then_some(value)),
@@ -1048,7 +1052,7 @@ fn inline_indexes(ir: &FunctionIr, param: u16, direct: bool) -> Option<Vec<crate
     let mut indexes: HashMap<u16, (Expr, u64, (usize, usize))> = HashMap::new();
     for (at, block) in ir.blocks.iter().enumerate() {
         for (position, stmt) in block.stmts.iter().enumerate() {
-            if let Stmt::Assign { dest, value } = stmt
+            if let Stmt::Assign { dest, value, .. } = stmt
                 && dest.index >= crate::ir::VARIABLE_BASE
                 && writes.get(&dest.index) == Some(&1)
                 && let Some((index, scale)) = index_scale(value)
@@ -1319,6 +1323,7 @@ mod tests {
             addr: Expr::bin(BinOp::Add, Expr::reg(7, 64), Expr::Const(offset)),
             value: Expr::Const(0),
             width,
+            at: None,
         }
     }
 
@@ -1334,6 +1339,7 @@ mod tests {
         Stmt::Assign {
             dest: RegRef { index, width: 64 },
             value,
+            at: None,
         }
     }
 
@@ -1368,6 +1374,7 @@ mod tests {
             addr: Expr::bin(BinOp::Add, Expr::reg(base, 64), Expr::Const(offset)),
             value: Expr::Const(0),
             width: 8,
+            at: None,
         };
         let mut ir = pointer_function(vec![
             assign(v1, load(Expr::reg(7, 64), 8, false)),
@@ -1414,6 +1421,7 @@ mod tests {
                 ),
             ));
             stmts.push(Stmt::Machine {
+                at: None,
                 instruction: MachineInstruction::Atomic {
                     op: AtomicOp::Add,
                     width: 8,
@@ -1427,6 +1435,7 @@ mod tests {
             });
             stmts.push(Stmt::Ret {
                 value: Expr::reg(VARIABLE_BASE + 2, 64),
+                at: None,
             });
             let mut ir = pointer_function(stmts);
             let original = ir.blocks.clone();
@@ -1451,6 +1460,7 @@ mod tests {
         let mut ir = pointer_function(vec![
             store(4, 8),
             Stmt::Machine {
+                at: None,
                 instruction: MachineInstruction::Atomic {
                     op: AtomicOp::Add,
                     width: 8,
@@ -1491,6 +1501,7 @@ mod tests {
                 addr: element(Expr::reg(7, 64), Expr::reg(6, 64), 0x10, 0),
                 value: Expr::Const(0),
                 width: 8,
+                at: None,
             },
             Stmt::Ret {
                 value: load(
@@ -1498,6 +1509,7 @@ mod tests {
                     2,
                     true,
                 ),
+                at: None,
             },
         ]);
         recover(&mut ir);
@@ -1550,9 +1562,11 @@ mod tests {
                 addr: Expr::bin(BinOp::Add, Expr::reg(v2, 64), Expr::Const(8)),
                 value: Expr::Const(0),
                 width: 8,
+                at: None,
             },
             Stmt::Ret {
                 value: Expr::reg(0, 64),
+                at: None,
             },
         ]);
         recover(&mut ir);
@@ -1587,16 +1601,19 @@ mod tests {
                 addr: slot.clone(),
                 value: Expr::reg(7, 64),
                 width: 8,
+                at: None,
             },
             Stmt::Store {
                 addr: element(kept(), Expr::reg(6, 64), 0xc, 0),
                 value: Expr::Const(0),
                 width: 4,
+                at: None,
             },
             Stmt::Store {
                 addr: element(kept(), Expr::reg(6, 64), 0xc, 8),
                 value: Expr::Const(0),
                 width: 4,
+                at: None,
             },
         ]);
         recover(&mut ir);
@@ -1675,9 +1692,11 @@ mod tests {
                 addr: at(0),
                 value: Expr::Const(0),
                 width: 8,
+                at: None,
             },
             Stmt::Ret {
                 value: load(at(8), 4, false),
+                at: None,
             },
         ]);
         recover(&mut ir);
@@ -1707,14 +1726,17 @@ mod tests {
                 addr: Expr::reg(element, 64),
                 value: Expr::Const(0),
                 width: 4,
+                at: None,
             },
             Stmt::Store {
                 addr: Expr::bin(BinOp::Add, Expr::reg(element, 64), Expr::Const(8)),
                 value: Expr::Const(0),
                 width: 4,
+                at: None,
             },
             Stmt::Ret {
                 value: Expr::reg(7, 64),
+                at: None,
             },
         ]);
         ir.params[0].ty = CType::I64;
@@ -1731,14 +1753,17 @@ mod tests {
                 addr: element(Expr::reg(7, 64), Expr::reg(6, 64), 0x10, 0),
                 value: Expr::Const(0),
                 width: 8,
+                at: None,
             },
             Stmt::Store {
                 addr: element(Expr::reg(7, 64), Expr::reg(6, 64), 0x10, 8),
                 value: Expr::Const(0),
                 width: 8,
+                at: None,
             },
             Stmt::Ret {
                 value: Expr::bin(BinOp::Mul, Expr::reg(7, 64), Expr::Const(3)),
+                at: None,
             },
         ]);
         ir.params[0].ty = CType::I64;
@@ -1755,11 +1780,13 @@ mod tests {
                 addr: element(Expr::reg(7, 64), Expr::reg(6, 64), 8, 0),
                 value: Expr::Const(0),
                 width: 2,
+                at: None,
             },
             Stmt::Store {
                 addr: element(Expr::reg(7, 64), Expr::reg(6, 64), 8, 2),
                 value: Expr::Const(0),
                 width: 4,
+                at: None,
             },
         ]);
         recover(&mut ir);
@@ -1774,11 +1801,13 @@ mod tests {
                 addr: element(Expr::reg(7, 64), Expr::reg(6, 64), 4, 0),
                 value: Expr::Const(0),
                 width: 4,
+                at: None,
             },
             Stmt::Store {
                 addr: element(Expr::reg(7, 64), Expr::reg(6, 64), 4, 4),
                 value: Expr::Const(0),
                 width: 4,
+                at: None,
             },
         ]);
         recover(&mut ir);

@@ -32,6 +32,7 @@ fn call(isa: Isa, target: u64, args: Vec<Expr>) -> Stmt {
         outputs: crate::ir::fallback_call_outputs(convention, None),
         clobbers: None,
         via: None,
+        at: None,
     }
 }
 
@@ -92,6 +93,7 @@ fn unused_parameters_merge_every_caller_and_compile() {
             "ignored",
             vec![Stmt::Ret {
                 value: Expr::Const(37),
+                at: None,
             }],
         )];
         for count in 0..=8 {
@@ -101,6 +103,7 @@ fn unused_parameters_merge_every_caller_and_compile() {
                 &format!("ignored_{count}"),
                 vec![Stmt::Ret {
                     value: Expr::Const(37),
+                    at: None,
                 }],
             ));
             functions.push(analysis(
@@ -111,6 +114,7 @@ fn unused_parameters_merge_every_caller_and_compile() {
                     call(isa, 0x3000 + count, (0..count).map(Expr::Const).collect()),
                     Stmt::Ret {
                         value: Expr::reg(crate::arch::RETURN, 64),
+                        at: None,
                     },
                 ],
             ));
@@ -122,6 +126,7 @@ fn unused_parameters_merge_every_caller_and_compile() {
                     call(isa, 0x1000, (0..count).map(Expr::Const).collect()),
                     Stmt::Ret {
                         value: Expr::reg(crate::arch::RETURN, 64),
+                        at: None,
                     },
                 ],
             ));
@@ -193,6 +198,7 @@ fn unused_scalar_types_merge_without_changing_body_types() {
         "typed",
         vec![Stmt::Ret {
             value: Expr::reg(7, 64),
+            at: None,
         }],
     );
     typed.ir.params.push(Param {
@@ -224,6 +230,7 @@ fn conflicting_unused_pointer_and_integer_arguments_compile_without_casts() {
             "ignored",
             vec![Stmt::Ret {
                 value: Expr::Const(37),
+                at: None,
             }],
         )];
         for (position, ty) in [
@@ -241,6 +248,7 @@ fn conflicting_unused_pointer_and_integer_arguments_compile_without_casts() {
                     call(isa, 0x1000, vec![Expr::reg(7, 64)]),
                     Stmt::Ret {
                         value: Expr::Const(37),
+                        at: None,
                     },
                 ],
             );
@@ -292,6 +300,7 @@ fn library_prelude_uses_the_prototype_despite_inferred_return_width() {
                 call(isa, 0x1000, vec![Expr::Const((-19i64) as u64)]),
                 Stmt::Ret {
                     value: Expr::reg(0, 64),
+                    at: None,
                 },
             ],
         );
@@ -334,6 +343,7 @@ fn unused_function_addresses_compile_without_integer_casts() {
                 "ignored",
                 vec![Stmt::Ret {
                     value: Expr::Const(37),
+                    at: None,
                 }],
             ),
             analysis(
@@ -344,6 +354,7 @@ fn unused_function_addresses_compile_without_integer_casts() {
                     call(isa, 0x1000, vec![Expr::Const(0x5000)]),
                     Stmt::Ret {
                         value: Expr::Const(37),
+                        at: None,
                     },
                 ],
             ),
@@ -353,6 +364,7 @@ fn unused_function_addresses_compile_without_integer_casts() {
                 "callback",
                 vec![Stmt::Ret {
                     value: Expr::Const(9),
+                    at: None,
                 }],
             ),
         ];
@@ -413,6 +425,7 @@ fn address_operands_request_the_function_and_its_callers() {
         "address",
         vec![Stmt::Ret {
             value: Expr::Const(0x1000),
+            at: None,
         }],
     );
     assert!(root.references.is_empty());
@@ -448,6 +461,7 @@ fn parameterized_function_addresses_do_not_request_body_analysis() {
             "address",
             vec![Stmt::Ret {
                 value: Expr::Const(0x1000),
+                at: None,
             }],
         );
         assert!(!dependencies(&image, &root).contains(&0x1000));
@@ -471,6 +485,7 @@ fn borrowed_call_parameters_print_like_owned_symbols() {
                 call(isa, 0x4000, vec![Expr::Const(11)]),
                 Stmt::Ret {
                     value: Expr::Const(37),
+                    at: None,
                 },
             ],
         );
@@ -534,6 +549,7 @@ fn unknown_import_prototypes_preserve_promoted_values() {
                 call(isa, 0x5000, vec![Expr::Const(7), Expr::Const(0x100000000)]),
                 Stmt::Ret {
                     value: Expr::reg(crate::arch::RETURN, 64),
+                    at: None,
                 },
             ],
         )];
@@ -609,6 +625,7 @@ fn unknown_imports_reject_arguments_whose_conversion_is_uncertain() {
             width: 64,
         },
         value: Expr::Const(1),
+        at: None,
     });
     assert_eq!(
         import_argument_type(&image, &function, &Expr::reg(7, 64), None),
@@ -719,6 +736,7 @@ fn sysv_unknown_imports_supply_the_variadic_vector_count() {
             call(Isa::X86_64, 0x5000, vec![Expr::Const(7)]),
             Stmt::Ret {
                 value: Expr::reg(crate::arch::RETURN, 64),
+                at: None,
             },
         ],
     )];
@@ -776,6 +794,7 @@ fn win64_unknown_imports_keep_the_promoted_argument() {
             call,
             Stmt::Ret {
                 value: Expr::reg(crate::arch::RETURN, 64),
+                at: None,
             },
         ],
     );
@@ -856,6 +875,7 @@ fn unknown_import_string_literals_keep_their_pointer_value() {
                 call(isa, 0x5000, vec![Expr::Const(0x9000)]),
                 Stmt::Ret {
                     value: Expr::reg(crate::arch::RETURN, 64),
+                    at: None,
                 },
             ],
         );
@@ -909,6 +929,7 @@ fn unknown_import_with_only_zero_argument_calls_has_a_void_parameter_list() {
                 call(isa, 0x5000, Vec::new()),
                 Stmt::Ret {
                     value: Expr::reg(crate::arch::RETURN, 64),
+                    at: None,
                 },
             ],
         )];
@@ -959,6 +980,7 @@ fn unknown_import_bool_arguments_keep_their_promoted_values() {
                 call(isa, 0x5000, vec![Expr::reg(index, 64)]),
                 Stmt::Ret {
                     value: Expr::reg(crate::arch::RETURN, 64),
+                    at: None,
                 },
             ],
         );
@@ -996,6 +1018,7 @@ fn agreed_empty_arguments_keep_an_unspecified_declaration() {
                 "empty",
                 vec![Stmt::Ret {
                     value: Expr::Const(7),
+                    at: None,
                 }],
             ),
             analysis(
@@ -1006,6 +1029,7 @@ fn agreed_empty_arguments_keep_an_unspecified_declaration() {
                     call(isa, 0x1000, Vec::new()),
                     Stmt::Ret {
                         value: Expr::Const(0),
+                        at: None,
                     },
                 ],
             ),
@@ -1039,6 +1063,7 @@ fn an_empty_parameter_list_does_not_hide_an_observed_machine_result() {
                     "empty",
                     vec![Stmt::Ret {
                         value: Expr::Const(0),
+                        at: None,
                     }],
                 ),
                 analysis(
@@ -1049,6 +1074,7 @@ fn an_empty_parameter_list_does_not_hide_an_observed_machine_result() {
                         call(isa, 0x1000, Vec::new()),
                         Stmt::Ret {
                             value: Expr::reg(0, 64),
+                            at: None,
                         },
                     ],
                 ),
@@ -1094,6 +1120,7 @@ fn recovered_parameters_changed_by_promotions_keep_prototypes() {
             "narrow",
             vec![Stmt::Ret {
                 value: Expr::Const(37),
+                at: None,
             }],
         );
         callee.ir.params.push(Param {
@@ -1109,6 +1136,7 @@ fn recovered_parameters_changed_by_promotions_keep_prototypes() {
                 call(Isa::X86_64, 0x1000, vec![Expr::Const(1)]),
                 Stmt::Ret {
                     value: Expr::Const(37),
+                    at: None,
                 },
             ],
         );

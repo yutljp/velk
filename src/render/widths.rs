@@ -121,7 +121,7 @@ fn saved_casts(ir: &FunctionIr, held: &HashMap<u16, u32>) -> HashMap<(u16, u32),
     }
     let mut counts = HashMap::new();
     for stmt in ir.blocks.iter().flat_map(|block| &block.stmts) {
-        if let Stmt::Assign { dest, value } = stmt {
+        if let Stmt::Assign { dest, value, .. } = stmt {
             let bits = match value {
                 Expr::Bin {
                     op: BinOp::And,
@@ -190,7 +190,7 @@ pub(crate) fn read_bits(
     };
     for stmt in ir.blocks.iter().flat_map(|block| &block.stmts) {
         match stmt {
-            Stmt::Assign { dest, value } => {
+            Stmt::Assign { dest, value, .. } => {
                 let bits = if let Some(narrow) = narrow.get(&dest.index) {
                     narrow.bits()
                 } else {
@@ -212,13 +212,15 @@ pub(crate) fn read_bits(
                 reads.read_expression(addr, 64);
                 reads.read_expression(value, 64);
             }
-            Stmt::Store { addr, value, width } => {
+            Stmt::Store {
+                addr, value, width, ..
+            } => {
                 reads.read_expression(addr, 64);
                 reads.read_expression(value, u32::from(*width) * 8);
             }
             Stmt::Brif { lhs, rhs, .. } => reads.compared(lhs, rhs),
             Stmt::Switch { index, .. } => reads.compared(index, &Expr::Const(0)),
-            Stmt::Ret { value } => match value {
+            Stmt::Ret { value, .. } => match value {
                 Expr::Apply {
                     op: Operation::Results,
                     args,
@@ -443,6 +445,7 @@ mod tests {
         Stmt::Assign {
             dest: RegRef { index, width: 64 },
             value,
+            at: None,
         }
     }
 
@@ -468,9 +471,11 @@ mod tests {
                 addr: Expr::reg(7, 64),
                 value: Expr::reg(V1, 64),
                 width: 4,
+                at: None,
             },
             Stmt::Ret {
                 value: Expr::reg(V1, 64),
+                at: None,
             },
         ]);
         assert_eq!(
@@ -499,6 +504,7 @@ mod tests {
                 lhs: Expr::reg(V1, 64),
                 rhs: Expr::reg(6, 64),
                 target: 0x1000,
+                at: None,
             },
         ]);
         assert_eq!(narrow(&ir).get(&V1), Some(&Narrow::Held { bits: 32 }));
@@ -513,6 +519,7 @@ mod tests {
                 lhs: Expr::reg(V1, 64),
                 rhs: Expr::Const(0),
                 target: 0x1000,
+                at: None,
             },
         ]);
         assert_eq!(narrow(&ir).get(&V1), None);
@@ -529,12 +536,14 @@ mod tests {
                 addr: Expr::reg(7, 64),
                 value: Expr::reg(V1, 64),
                 width: 4,
+                at: None,
             },
             Stmt::Brif {
                 cond: crate::ir::Cond::Eq,
                 lhs: Expr::reg(V2, 64),
                 rhs: Expr::Const(0),
                 target: 0x1000,
+                at: None,
             },
         ]);
         let narrow = narrow(&ir);
@@ -550,7 +559,10 @@ mod tests {
             Expr::bin(BinOp::Add, Expr::reg(7, 64), Expr::reg(V1, 64)),
             Expr::Const(0xffff_ffff),
         );
-        let ir = function(vec![Stmt::Ret { value: sum }]);
+        let ir = function(vec![Stmt::Ret {
+            value: sum,
+            at: None,
+        }]);
         let readers = read_bits(
             &ir,
             &HashMap::new(),
@@ -569,6 +581,7 @@ mod tests {
                 addr: Expr::reg(7, 64),
                 value: Expr::reg(V1, 64),
                 width: 1,
+                at: None,
             },
         ]);
         assert_eq!(
@@ -593,6 +606,7 @@ mod tests {
                         Expr::reg(2, 64),
                     ),
                     width: 8,
+                    at: None,
                 },
             ]);
             assert_eq!(
@@ -622,6 +636,7 @@ mod tests {
                 addr: Expr::reg(7, 64),
                 value: Expr::bin(BinOp::Shl, Expr::reg(V1, 64), Expr::Const(32)),
                 width: 8,
+                at: None,
             },
         ]);
         assert_eq!(narrow(&ir).get(&V1), None);
@@ -643,6 +658,7 @@ mod tests {
                 addr: Expr::reg(7, 64),
                 value: Expr::bin(BinOp::Shl, Expr::reg(V1, 32), Expr::Const(2)),
                 width: 8,
+                at: None,
             },
         ]);
         assert_eq!(

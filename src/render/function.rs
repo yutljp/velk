@@ -35,6 +35,25 @@ pub(crate) fn render_with_symbols(
     symbols: &FunctionSymbols<'_>,
     data_ranges: &[(u64, u64)],
 ) -> Rendered {
+    let mut rendered = render_unaligned(ir, references, symbols, data_ranges);
+    if symbols.addresses {
+        let mut plain_symbols = symbols.clone();
+        plain_symbols.addresses = false;
+        let plain = render_unaligned(ir, references, &plain_symbols, data_ranges);
+        rendered.code = super::addresses::reconcile(&plain.code, &rendered.code);
+        rendered.code = super::addresses::align(&rendered.code);
+        rendered.segment_bases = plain.segment_bases;
+        rendered.inline_functions = plain.inline_functions;
+    }
+    rendered
+}
+
+fn render_unaligned(
+    ir: &FunctionIr,
+    references: &[Reference],
+    symbols: &FunctionSymbols<'_>,
+    data_ranges: &[(u64, u64)],
+) -> Rendered {
     crate::timing::scope!("render/function::render_with_dependencies");
     if symbols.import_thunks.contains(&ir.addr) {
         let name = symbols
@@ -108,7 +127,7 @@ fn render_function(
     for block in &mut folded.blocks {
         block.stmts.retain(|stmt| {
             !matches!(stmt,
-                Stmt::Assign { dest, value: Expr::Reg { index, width: 64 } }
+                Stmt::Assign { dest, value: Expr::Reg { index, width: 64 }, .. }
                     if dest.width == 64 && dest.index == *index
             )
         });
@@ -1554,6 +1573,9 @@ fn render_body(
     vector_groups: &[super::vector_values::Group],
 ) -> String {
     if let Some(body) = super::string_functions::render(nodes, ctx) {
+        if ctx.symbols.addresses {
+            return super::addresses::summary_returns(&body, ir);
+        }
         return body;
     }
     let mut body = String::new();

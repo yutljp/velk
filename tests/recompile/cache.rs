@@ -294,6 +294,7 @@ fn a_printed_function_change_only_recompiles_its_fixture() {
                 CType::U64,
                 vec![Stmt::Ret {
                     value: Expr::Const(7),
+                    at: None,
                 }],
             ),
             vec![Vec::new()],
@@ -337,6 +338,7 @@ fn a_printed_function_change_only_recompiles_its_fixture() {
         assert_eq!(compilation_count(), changed);
         fixtures[0].candidates[0].ir.blocks[0].stmts = vec![Stmt::Ret {
             value: Expr::Const(9),
+            at: None,
         }];
         let results = check(&fixtures, &scratch, Mode::Registers, &[]);
         assert_eq!(results[0].differing, 1);
@@ -400,6 +402,7 @@ fn batches_reuse_unchanged_code_and_detect_wrong_results_with_a_warm_cache() {
                     CType::U64,
                     vec![Stmt::Ret {
                         value: Expr::Const(7),
+                        at: None,
                     }],
                 ),
                 vec![Vec::new()],

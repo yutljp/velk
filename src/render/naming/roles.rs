@@ -54,7 +54,7 @@ pub(in crate::render) fn counted(
         _ => return None,
     };
     let steps = match (&counter, step) {
-        (NamedPlace::Register(index), Stmt::Assign { dest, value }) => {
+        (NamedPlace::Register(index), Stmt::Assign { dest, value, .. }) => {
             dest.index == *index && reads(value, &counter)
         }
         (
@@ -274,7 +274,7 @@ pub(in crate::render) fn infer_with_nodes(
         if let Stmt::Assign { dest, .. } = stmt {
             *writes.entry(dest.index).or_default() += 1;
         }
-        if let Stmt::Ret { value: expr } = stmt {
+        if let Stmt::Ret { value: expr, .. } = stmt {
             returned.push(named_place(expr));
         }
         let Stmt::Call {
@@ -513,6 +513,7 @@ mod tests {
         Stmt::Assign {
             dest: RegRef { index, width: 64 },
             value,
+            at: None,
         }
     }
 
@@ -534,6 +535,7 @@ mod tests {
             }],
             clobbers: None,
             via: None,
+            at: None,
         }
     }
 
@@ -563,6 +565,7 @@ mod tests {
             ),
             Stmt::Ret {
                 value: Expr::reg(index + 1, 64),
+                at: None,
             },
         ];
         let mut symbols = Symbols::default();
@@ -590,6 +593,7 @@ mod tests {
             call(&ir, 43, vec![Expr::reg(7, 64)], VARIABLE_BASE + 1),
             Stmt::Ret {
                 value: Expr::Const(0),
+                at: None,
             },
         ];
         let mut symbols = Symbols::default();
@@ -609,6 +613,7 @@ mod tests {
             call(&ir, 43, vec![Expr::reg(8, 64)], VARIABLE_BASE + 1),
             Stmt::Ret {
                 value: Expr::Const(0),
+                at: None,
             },
         ];
         ir.callee_signatures.insert(42, signature("hFile"));
@@ -652,6 +657,7 @@ mod tests {
             ),
             Stmt::Ret {
                 value: Expr::Const(0),
+                at: None,
             },
         ];
         let mut symbols = Symbols::default();
@@ -707,6 +713,7 @@ mod tests {
             ),
             Stmt::Ret {
                 value: Expr::Const(0),
+                at: None,
             },
         ];
         ir.callee_signatures.insert(42, signature("dwProcessId"));
@@ -733,6 +740,7 @@ mod tests {
             call(&ir, 43, vec![Expr::reg(first, 64)], first + 3),
             Stmt::Ret {
                 value: Expr::Const(0),
+                at: None,
             },
         ];
         ir.callee_signatures.insert(
@@ -769,6 +777,7 @@ mod tests {
                 ),
                 Stmt::Ret {
                     value: Expr::reg(index, 64),
+                    at: None,
                 },
             ],
         );
@@ -799,6 +808,7 @@ mod tests {
                         addr: addr.clone(),
                         width: 8,
                         value,
+                        at: None,
                     }
                 } else {
                     assign(index, value)
@@ -808,7 +818,13 @@ mod tests {
             ir.blocks = vec![
                 Block {
                     start: 0,
-                    stmts: vec![set(Expr::Const(0)), Stmt::Br { target: Some(10) }],
+                    stmts: vec![
+                        set(Expr::Const(0)),
+                        Stmt::Br {
+                            target: Some(10),
+                            at: None,
+                        },
+                    ],
                 },
                 Block {
                     start: 10,
@@ -817,19 +833,24 @@ mod tests {
                         lhs: read(),
                         rhs: Expr::Const(10),
                         target: 30,
+                        at: None,
                     }],
                 },
                 Block {
                     start: 20,
                     stmts: vec![
                         set(Expr::bin(BinOp::Add, read(), Expr::Const(1))),
-                        Stmt::Br { target: Some(10) },
+                        Stmt::Br {
+                            target: Some(10),
+                            at: None,
+                        },
                     ],
                 },
                 Block {
                     start: 30,
                     stmts: vec![Stmt::Ret {
                         value: Expr::Const(0),
+                        at: None,
                     }],
                 },
             ];
@@ -859,6 +880,7 @@ mod tests {
             lhs: Expr::reg(index, 64),
             rhs: Expr::Const(10),
             body: vec![Node::Stmt(step.clone())],
+            at: None,
         };
         let nodes = vec![Node::Stmt(init.clone()), looped];
         let mut ir = FunctionIr::single_block(Isa::X86_64, vec![init, step]);
@@ -888,11 +910,13 @@ mod tests {
             addr: addr.clone(),
             width: 8,
             value: Expr::reg(index, 64),
+            at: None,
         };
         let step = Stmt::Store {
             addr: addr.clone(),
             width: 8,
             value: Expr::bin(BinOp::Add, load(), Expr::Const(1)),
+            at: None,
         };
         let looped = Node::While {
             prefix: Vec::new(),
@@ -900,6 +924,7 @@ mod tests {
             lhs: load(),
             rhs: Expr::Const(10),
             body: vec![Node::Stmt(step.clone())],
+            at: None,
         };
         let nodes = vec![Node::Stmt(init.clone()), looped];
         let mut ir = FunctionIr::single_block(Isa::X86_64, vec![init, step]);
@@ -930,6 +955,7 @@ mod tests {
             lhs: Expr::reg(index, 64),
             rhs: Expr::Const(10),
             body: vec![Node::Stmt(step.clone())],
+            at: None,
         };
         let nodes = vec![Node::Stmt(init.clone()), looped];
         let ir = FunctionIr::single_block(Isa::X86_64, vec![init, step]);
@@ -960,6 +986,7 @@ mod tests {
                 lhs: Expr::reg(index, 64),
                 rhs: Expr::Const(10),
                 body: vec![Node::Stmt(step.clone())],
+                at: None,
             };
             let nodes = vec![Node::Stmt(init.clone()), looped];
             let ir = FunctionIr::single_block(Isa::X86_64, vec![init, step]);
@@ -1002,6 +1029,7 @@ mod tests {
             lhs: Expr::reg(index, 64),
             rhs: Expr::Const(10),
             body: vec![Node::Stmt(step.clone())],
+            at: None,
         };
         let nodes = vec![Node::Stmt(init.clone()), looped];
         let ir = FunctionIr::single_block(Isa::X86_64, vec![init, step]);

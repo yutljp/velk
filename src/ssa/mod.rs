@@ -582,6 +582,7 @@ pub fn take_results_directly(ir: &mut FunctionIr) {
             while let Some(Stmt::Assign {
                 dest,
                 value: Expr::Reg { index, width: 64 },
+                ..
             }) = block.stmts.get(next)
             {
                 let (dest, taken) = (*dest, *index);

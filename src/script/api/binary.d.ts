@@ -25,8 +25,9 @@ interface Binary {
   saveUnpacked(path: string): { saved: string };
 
   /** Renders functions concurrently in the supplied order, or every function in address order.
+   * addresses adds known instruction origins as comments and defaults to false.
    * Each result has either C or an error; one failure does not discard other results. */
-  decompile(functions?: Func[]): { addr: Addr; code: string | null; error: string | null }[];
+  decompile(functions?: Func[], opts?: { addresses?: boolean }): { addr: Addr; code: string | null; error: string | null }[];
 
   /** C++ classes described by RTTI; empty when unsupported or absent. */
   classes(): CppClass[];

@@ -58,6 +58,7 @@ fn go_register_and_stack_shapes_compile_and_preserve_all_words() {
                             ),
                             value: Expr::Const(66),
                             width: 1,
+                            at: None,
                         }
                     } else {
                         Stmt::Assign {
@@ -70,9 +71,10 @@ fn go_register_and_stack_shapes_compile_and_preserve_all_words() {
                                 Expr::bin(BinOp::And, Expr::reg(0, 64), Expr::Const(!255u64)),
                                 Expr::Const(66),
                             ),
+                            at: None,
                         }
                     },
-                    Stmt::Ret { value },
+                    Stmt::Ret { value, at: None },
                 ],
             );
             ir.convention = if stack {
@@ -154,8 +156,9 @@ fn go_register_and_stack_shapes_compile_and_preserve_all_words() {
                     outputs: Vec::new(),
                     clobbers: Some(Default::default()),
                     via: None,
+                    at: None,
                 },
-                Stmt::Ret { value },
+                Stmt::Ret { value, at: None },
             ],
         );
         ir.convention = Convention::GoAmd64;

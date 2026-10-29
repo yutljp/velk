@@ -732,13 +732,14 @@ mod tests {
                             },
                         ],
                     ),
+                    at: None,
                 }],
             );
             crate::passes::simplify::simplify(&mut ir);
             assert!(
                 matches!(
                     &ir.blocks[0].stmts[0],
-                    Stmt::Ret { value: Expr::Apply { op: Operation::Results, args } }
+                    Stmt::Ret { value: Expr::Apply { op: Operation::Results, args }, .. }
                         if *args == vec![Expr::Const(7), Expr::Const(last + 4)]
                 ),
                 "{}",

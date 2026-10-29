@@ -26,6 +26,7 @@ fn printed_vector_members_preserve_order_and_partial_writes() {
                     width: 64,
                 },
                 value: load(0),
+                at: None,
             },
             Stmt::Assign {
                 dest: RegRef {
@@ -33,11 +34,13 @@ fn printed_vector_members_preserve_order_and_partial_writes() {
                     width: 64,
                 },
                 value: load(8),
+                at: None,
             },
             Stmt::Store {
                 addr: address(8),
                 value: Expr::reg(low, 64),
                 width: 8,
+                at: None,
             },
             Stmt::Assign {
                 dest: RegRef {
@@ -49,16 +52,19 @@ fn printed_vector_members_preserve_order_and_partial_writes() {
                     Expr::bin(BinOp::And, Expr::reg(low, 64), Expr::Const(!0xff)),
                     Expr::Const(0x5a),
                 ),
+                at: None,
             },
             Stmt::Store {
                 addr: address(0),
                 value: Expr::reg(high, 64),
                 width: 8,
+                at: None,
             },
             Stmt::Store {
                 addr: address(16),
                 value: Expr::reg(low, 64),
                 width: 8,
+                at: None,
             },
             Stmt::Ret {
                 value: Expr::bin(
@@ -66,6 +72,7 @@ fn printed_vector_members_preserve_order_and_partial_writes() {
                     Expr::bin(BinOp::And, Expr::reg(low, 64), Expr::Const(0xffff)),
                     Expr::bin(BinOp::And, Expr::reg(high, 64), Expr::Const(0xffff)),
                 ),
+                at: None,
             },
         ],
     );

@@ -9,6 +9,7 @@ fn assign(index: u16, width: u8, value: Expr) -> Stmt {
     Stmt::Assign {
         dest: RegRef { index, width },
         value,
+        at: None,
     }
 }
 
@@ -86,6 +87,7 @@ fn signed_power_of_two_chain_matchers_are_equivalent() {
                     assert!(matcher.is_some(), "chain matcher must accept the template");
                     statements.push(Stmt::Ret {
                         value: Expr::reg(5, bits),
+                        at: None,
                     });
                     let before = FunctionIr::single_block(Isa::AArch64, statements);
                     let mut after = before.clone();
@@ -127,6 +129,7 @@ fn signed_power_of_two_chain_matchers_are_equivalent() {
                 ),
                 Stmt::Ret {
                     value: Expr::reg(5, bits),
+                    at: None,
                 },
             ];
             assert!(
@@ -233,6 +236,7 @@ fn reciprocal_matchers_keep_their_certified_expression_shapes() {
             }
             statements.push(Stmt::Ret {
                 value: Expr::reg(5, bits),
+                at: None,
             });
             let before = FunctionIr::single_block(Isa::AArch64, statements);
             let mut after = before.clone();
@@ -243,6 +247,7 @@ fn reciprocal_matchers_keep_their_certified_expression_shapes() {
                     assign(5, bits, replacement),
                     Stmt::Ret {
                         value: Expr::reg(5, bits),
+                        at: None,
                     },
                 ],
             );
@@ -324,12 +329,14 @@ fn multiply_back_remainder_matchers_preserve_symbolic_dividends() {
                 assert!(proof::checked(&statements, 0, at, expected.clone()).is_some());
                 statements.push(Stmt::Ret {
                     value: Expr::reg(6, bits),
+                    at: None,
                 });
                 proofs.program(
                     format!("remainder scan/{bits}/{signed}/{divisor}"),
                     &statements,
                     &[Stmt::Ret {
                         value: expected.clone(),
+                        at: None,
                     }],
                 );
 
@@ -370,12 +377,14 @@ fn multiply_back_remainder_matchers_preserve_symbolic_dividends() {
                     assert_eq!(*actual, expected);
                     statements.push(Stmt::Ret {
                         value: Expr::reg(6, bits),
+                        at: None,
                     });
                     proofs.program(
                         format!("following remainder/{bits}/{signed}/{divisor}/{named_divisor}"),
                         &statements,
                         &[Stmt::Ret {
                             value: actual.clone(),
+                            at: None,
                         }],
                     );
                     let wrong = remainder(x.clone(), divisor * 2, !signed);

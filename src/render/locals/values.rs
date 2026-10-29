@@ -54,7 +54,7 @@ fn walk(nodes: &mut Vec<Node>, ctx: &Ctx<'_>, once: &HashSet<u16>) -> bool {
     }
     let mut index = 0;
     while index + 1 < nodes.len() {
-        let Node::Stmt(Stmt::Assign { dest, value }) = &nodes[index] else {
+        let Node::Stmt(Stmt::Assign { dest, value, .. }) = &nodes[index] else {
             index += 1;
             continue;
         };
@@ -108,7 +108,10 @@ fn walk(nodes: &mut Vec<Node>, ctx: &Ctx<'_>, once: &HashSet<u16>) -> bool {
 }
 
 fn load_into_store(stmt: &mut Stmt, dest: RegRef, load: &Expr, ctx: &Ctx<'_>) -> bool {
-    let Stmt::Store { addr, value, width } = stmt else {
+    let Stmt::Store {
+        addr, value, width, ..
+    } = stmt
+    else {
         return false;
     };
     let Expr::Reg { index, width: read } = value else {

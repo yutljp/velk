@@ -244,9 +244,11 @@ mod tests {
                         outputs: Vec::new(),
                         clobbers: Some(Default::default()),
                         via: None,
+                        at: None,
                     },
                     Stmt::Ret {
                         value: Expr::Const(0),
+                        at: None,
                     },
                 ],
             );

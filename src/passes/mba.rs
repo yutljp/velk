@@ -301,7 +301,7 @@ pub(super) fn simplify(ir: &mut FunctionIr) -> usize {
     for block in &mut ir.blocks {
         for stmt in &mut block.stmts {
             match stmt {
-                Stmt::Assign { value, .. } | Stmt::Ret { value } => {
+                Stmt::Assign { value, .. } | Stmt::Ret { value, .. } => {
                     changed += rewrite(value, /* preserve_width */ false)
                 }
                 Stmt::Store { addr, value, .. } => {
@@ -312,7 +312,7 @@ pub(super) fn simplify(ir: &mut FunctionIr) -> usize {
                     changed += rewrite(lhs, /* preserve_width */ true);
                     changed += rewrite(rhs, /* preserve_width */ true);
                 }
-                Stmt::BrIndirect { target } => {
+                Stmt::BrIndirect { target, .. } => {
                     changed += rewrite(target, /* preserve_width */ false)
                 }
                 Stmt::Switch { index, .. } => {

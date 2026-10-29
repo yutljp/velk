@@ -79,6 +79,7 @@ pub(super) fn lift(lifter: &mut Lifter, ins: &Instruction) -> bool {
         );
     }
     lifter.stmts.push(Stmt::Machine {
+        at: None,
         instruction: MachineInstruction::ArmExclusive {
             load,
             width,

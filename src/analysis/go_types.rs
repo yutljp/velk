@@ -135,6 +135,7 @@ pub(super) fn apply(ir: &mut FunctionIr, image: &Image) {
                 addr,
                 value,
                 width: 8,
+                ..
             } = stmt
             else {
                 return false;
@@ -254,14 +255,16 @@ fn shape_access(stmt: &Stmt, register: u16, size: u64) -> bool {
             .any(|child| loads(child, register, size))
     }
     match stmt {
-        Stmt::Store { addr, value, width } => {
+        Stmt::Store {
+            addr, value, width, ..
+        } => {
             (*width == 8 && address(addr, register, size))
                 || loads(addr, register, size)
                 || loads(value, register, size)
         }
-        Stmt::Assign { value, .. } | Stmt::Ret { value } => loads(value, register, size),
+        Stmt::Assign { value, .. } | Stmt::Ret { value, .. } => loads(value, register, size),
         Stmt::Brif { lhs, rhs, .. } => loads(lhs, register, size) || loads(rhs, register, size),
-        Stmt::BrIndirect { target } => loads(target, register, size),
+        Stmt::BrIndirect { target, .. } => loads(target, register, size),
         Stmt::Switch { index, .. } => loads(index, register, size),
         Stmt::Machine { inputs, .. } => inputs.iter().any(|expr| loads(expr, register, size)),
         Stmt::Call { through, args, .. } => through
@@ -313,6 +316,7 @@ mod tests {
                     width,
                     signed: false,
                 },
+                at: None,
             };
             assert_eq!(shape_access(&stmt, 7, 16), expected);
             assert!(!shape_access(&stmt, 8, 16));
@@ -366,6 +370,7 @@ mod tests {
                     }],
                     clobbers: Some([0].into_iter().collect()),
                     via: None,
+                    at: None,
                 },
                 Stmt::Ret {
                     value: Expr::Load {
@@ -377,6 +382,7 @@ mod tests {
                         width: 8,
                         signed: false,
                     },
+                    at: None,
                 },
             ],
         );

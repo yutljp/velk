@@ -20,7 +20,7 @@ fn result(
     };
     *budget = remaining;
     match first {
-        Node::Stmt(Stmt::Ret { value }) if rest.is_empty() => evaluate(value, &values, reads),
+        Node::Stmt(Stmt::Ret { value, .. }) if rest.is_empty() => evaluate(value, &values, reads),
         Node::Stmt(Stmt::Assign { .. }) => {
             if !assignments(std::slice::from_ref(first), &mut values, reads) {
                 return None;
@@ -33,6 +33,7 @@ fn result(
             rhs,
             then,
             els,
+            ..
         } => {
             let bits = crate::ir::semantics::operand_width(lhs, rhs);
             if matches!(cond, Cond::Lt | Cond::Le | Cond::Gt | Cond::Ge) && bits < 32 {

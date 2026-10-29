@@ -122,6 +122,7 @@ impl<'a> Lifter<'a> {
                 width: 64,
             },
             value,
+            at: None,
         });
         Expr::reg(crate::ir::EXCHANGE, 64)
     }
@@ -186,17 +187,20 @@ impl<'a> Lifter<'a> {
                 addr: address.clone(),
                 value: Expr::reg(slot, 64),
                 width: 8,
+                at: None,
             });
             self.stmts.push(Stmt::Store {
                 addr: high,
                 value: Expr::reg(slot + 1, 64),
                 width: 8,
+                at: None,
             });
         } else {
             self.stmts.push(Stmt::Store {
                 addr: address.clone(),
                 value: self.read_simd(slot, bits),
                 width: (bits / 8) as u8,
+                at: None,
             });
         }
     }
@@ -248,6 +252,7 @@ impl<'a> Lifter<'a> {
                 width: 64,
             },
             value,
+            at: None,
         });
     }
 
@@ -411,6 +416,7 @@ fn lift_compare_branch(
         lhs: value,
         rhs: Expr::constant(0),
         target,
+        at: None,
     });
     true
 }
@@ -431,6 +437,7 @@ fn lift_test_branch(lifter: &mut Lifter, operands: [Operand; 4], pc: u64, non_ze
         lhs: masked,
         rhs: Expr::constant(0),
         target,
+        at: None,
     });
     true
 }
@@ -603,7 +610,7 @@ fn lift_instruction(lifter: &mut Lifter, instruction: &Instruction, pc: u64) -> 
             }
             // Whether a branch out of the function is a tail call is
             // decided once its blocks are known.
-            lifter.stmts.push(Stmt::Br { target });
+            lifter.stmts.push(Stmt::Br { target, at: None });
             return true;
         }
         O::Bcc(code) => return lift_conditional_branch(lifter, operands, code, pc),
@@ -613,7 +620,7 @@ fn lift_instruction(lifter: &mut Lifter, instruction: &Instruction, pc: u64) -> 
         O::TBNZ => return lift_test_branch(lifter, operands, pc, true),
         O::BR | O::BRAA | O::BRAAZ | O::BRAB | O::BRABZ => {
             if let Some(target) = lifter.operand(operands[0], 64) {
-                lifter.stmts.push(Stmt::BrIndirect { target });
+                lifter.stmts.push(Stmt::BrIndirect { target, at: None });
             }
             return true;
         }
@@ -640,17 +647,17 @@ fn lift_instruction(lifter: &mut Lifter, instruction: &Instruction, pc: u64) -> 
             let made = call(CallKind::Invoke, lifter.image, lifter.summaries, target);
             lifter.stmts.push(made);
             if target.is_some_and(|target| (lifter.summaries)(target).noreturn) {
-                lifter.stmts.push(Stmt::Trap);
+                lifter.stmts.push(Stmt::Trap { at: None });
                 return true;
             }
         }
         O::BRK | O::UDF => {
-            lifter.stmts.push(Stmt::Trap);
+            lifter.stmts.push(Stmt::Trap { at: None });
             return true;
         }
         O::RET | O::RETAA | O::RETAB => {
             let value = Lifter::read_reg(0, 64);
-            lifter.stmts.push(Stmt::Ret { value });
+            lifter.stmts.push(Stmt::Ret { value, at: None });
             return true;
         }
         O::ADRP => {
@@ -748,6 +755,7 @@ fn lift_instruction(lifter: &mut Lifter, instruction: &Instruction, pc: u64) -> 
                 clobbers: None,
                 outputs: crate::ir::fallback_call_outputs(crate::ir::Convention::SyscallArm, None),
                 via: None,
+                at: None,
             })
         }
         other => {
@@ -832,6 +840,11 @@ impl Machine for Lifter<'_> {
             a64::Opcode::CSEL | a64::Opcode::CSINC | a64::Opcode::CSINV | a64::Opcode::CSNEG
         );
         self.flags_touched |= (unsupported && !selects) || sets_flags(instruction.opcode);
+        for stmt in &mut self.stmts[first..] {
+            if !matches!(stmt, Stmt::Assign { dest, .. } if crate::ir::is_temp(dest.index)) {
+                stmt.set_origin(Some(pc));
+            }
+        }
         ended
     }
 
@@ -1087,7 +1100,7 @@ mod tests {
                 let statements: Vec<_> = ir.blocks.iter().flat_map(|block| &block.stmts).collect();
                 assert!(
                     statements.iter().any(|stmt| matches!(stmt,
-                    Stmt::Unsupported { text, writes: Some(writes) }
+                    Stmt::Unsupported { text, writes: Some(writes) , .. }
                     if text.starts_with("MRS") && writes.contains(&0))),
                     "{}",
                     ir.render()
@@ -1340,7 +1353,8 @@ mod tests {
                     index: 30,
                     width: 64
                 },
-                value: crate::ir::Expr::Const(4)
+                value: crate::ir::Expr::Const(4),
+                ..
             }
         ));
         assert!(matches!(
@@ -1379,7 +1393,8 @@ mod tests {
                 value: crate::ir::Expr::Reg {
                     index: 30,
                     width: 64
-                }
+                },
+                ..
             }
         ));
         assert!(matches!(
@@ -1389,7 +1404,8 @@ mod tests {
                     index: 30,
                     width: 64
                 },
-                value: crate::ir::Expr::Const(4)
+                value: crate::ir::Expr::Const(4),
+                ..
             }
         ));
         assert!(matches!(

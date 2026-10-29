@@ -689,6 +689,7 @@ fn scalar_terms_match_the_ir_evaluator_on_edge_inputs() {
                         start: 0,
                         stmts: vec![Stmt::Ret {
                             value: expression.clone(),
+                            at: None,
                         }],
                     }];
                     let registers = [(0, a), (1, b)];

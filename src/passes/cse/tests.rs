@@ -12,6 +12,7 @@ fn assign(index: u16, value: Expr) -> Stmt {
     Stmt::Assign {
         dest: RegRef { index, width: 64 },
         value,
+        at: None,
     }
 }
 
@@ -35,7 +36,7 @@ fn choose(then: Expr, els: Expr) -> Expr {
 }
 
 fn function(value: Expr) -> FunctionIr {
-    FunctionIr::single_block(Isa::X86_64, vec![Stmt::Ret { value }])
+    FunctionIr::single_block(Isa::X86_64, vec![Stmt::Ret { value, at: None }])
 }
 
 fn run(ir: &FunctionIr, registers: &[(u16, u64)]) -> Outcome {
@@ -92,13 +93,17 @@ fn cse_preserves_an_existing_temporary_used_in_a_later_block() {
         vec![
             assign(TEMP_BASE, Expr::Const(0xfedc_ba98_7654_3210)),
             assign(2, repeated(7, 1)),
-            Stmt::Br { target: Some(1) },
+            Stmt::Br {
+                target: Some(1),
+                at: None,
+            },
         ],
     );
     ir.blocks.push(Block {
         start: 1,
         stmts: vec![Stmt::Ret {
             value: Expr::bin(BinOp::Add, Expr::reg(TEMP_BASE, 64), Expr::reg(2, 64)),
+            at: None,
         }],
     });
     let original = ir.clone();
@@ -134,6 +139,7 @@ fn cse_processes_each_original_statement_once() {
             assign(2, value),
             Stmt::Ret {
                 value: Expr::reg(2, 64),
+                at: None,
             },
         ],
     );
@@ -174,9 +180,11 @@ fn cse_binds_a_repeated_subtree_once_rather_than_its_parts() {
                 addr: address.clone(),
                 value: Expr::bin(BinOp::Or, load, Expr::Const(1)),
                 width: 8,
+                at: None,
             },
             Stmt::Ret {
                 value: Expr::Const(0),
+                at: None,
             },
         ],
     );
@@ -192,6 +200,7 @@ fn cse_repeated_on_the_same_ir_keeps_a_live_generated_temporary() {
             assign(2, repeated(7, 1)),
             Stmt::Ret {
                 value: Expr::reg(2, 64),
+                at: None,
             },
         ],
     );
@@ -204,6 +213,7 @@ fn cse_repeated_on_the_same_ir_keeps_a_live_generated_temporary() {
     ir.blocks[0].stmts.insert(1, assign(3, repeated(6, 2)));
     *ir.blocks[0].stmts.last_mut().unwrap() = Stmt::Ret {
         value: Expr::bin(BinOp::Add, Expr::reg(2, 64), Expr::reg(3, 64)),
+        at: None,
     };
     let before = ir.clone();
     cse(&mut ir);
@@ -245,6 +255,7 @@ fn cse_retains_defined_expressions_when_temporary_slots_run_out() {
                 assign(2, Expr::bin(BinOp::Add, left.clone(), right.clone())),
                 Stmt::Ret {
                     value: Expr::reg(2, 64),
+                    at: None,
                 },
             ],
         );
@@ -290,11 +301,13 @@ fn temporary_slots_exclude_all_fixed_roles_and_actual_register_uses() {
         vec![
             assign(TEMP_BASE, Expr::reg(TEMP_BASE + 1, 64)),
             Stmt::Unsupported {
+                at: None,
                 text: String::new(),
                 writes: Some(vec![TEMP_BASE + 2]),
             },
             Stmt::Ret {
                 value: Expr::reg(TEMP_BASE + 3, 64),
+                at: None,
             },
         ],
     );
@@ -335,6 +348,7 @@ fn cse_skips_fixed_slots_when_one_statement_needs_many_bindings() {
             assign(2, value),
             Stmt::Ret {
                 value: Expr::reg(2, 64),
+                at: None,
             },
         ],
     );
@@ -384,6 +398,7 @@ fn cse_does_not_evaluate_a_division_in_an_unselected_arm() {
                 then: Box::new(Expr::Const(0xfedc_ba98_7654_3210)),
                 els: Box::new(Expr::bin(BinOp::Add, quotient.clone(), quotient)),
             },
+            at: None,
         }],
     );
     let setup = Setup {
@@ -547,6 +562,7 @@ fn cse_preserves_comparison_sharing_and_an_earlier_required_binding() {
     assert_eq!(definitions(&changed), vec![&quotient]);
     let Some(Stmt::Ret {
         value: Expr::Bin { rhs, .. },
+        ..
     }) = changed.blocks[0].stmts.last()
     else {
         panic!("missing selected reuse: {}", changed.render());
@@ -627,6 +643,7 @@ fn cse_preserves_a_wide_selected_constant_next_to_narrow_division() {
         Isa::X86_64,
         vec![Stmt::Ret {
             value: Expr::bin(BinOp::Add, selected.clone(), selected),
+            at: None,
         }],
     );
     let setup = Setup {
@@ -774,6 +791,7 @@ fn temporary_slots_exclude_function_annotations_and_call_registers() {
         }],
         clobbers: Some(Default::default()),
         via: None,
+        at: None,
     });
     let pool = crate::ir::visit::unused_temporaries(&ir);
     for register in TEMP_BASE..temporary_register(12) {

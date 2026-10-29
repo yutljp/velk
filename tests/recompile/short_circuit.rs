@@ -21,6 +21,7 @@ pub(super) fn sc_store(address: u64, value: Expr) -> Stmt {
         addr: Expr::Const(address),
         value,
         width: 8,
+        at: None,
     }
 }
 
@@ -37,6 +38,7 @@ fn conditional_branch(test: &(Cond, Expr, Expr), invert: bool, target: u64) -> S
         lhs: test.1.clone(),
         rhs: test.2.clone(),
         target,
+        at: None,
     }
 }
 
@@ -81,6 +83,7 @@ fn short_circuit_pair_candidate(
             stmts: if or {
                 vec![Stmt::Ret {
                     value: Expr::Const(0),
+                    at: None,
                 }]
             } else {
                 vec![increment_counter()]
@@ -94,6 +97,7 @@ fn short_circuit_pair_candidate(
                 } else {
                     sc_load(SC_COUNTER)
                 },
+                at: None,
             }],
         },
     ];
@@ -222,6 +226,7 @@ pub(super) fn printed_short_circuit_conditions_keep_order_and_effects() {
                         start: 0x40,
                         stmts: vec![Stmt::Ret {
                             value: sc_load(SC_COUNTER),
+                            at: None,
                         }],
                     },
                 ],
@@ -345,6 +350,7 @@ pub(super) fn printed_short_circuit_conditions_keep_order_and_effects() {
                     start: 0x30,
                     stmts: vec![Stmt::Ret {
                         value: sc_load(SC_COUNTER),
+                        at: None,
                     }],
                 },
             ],
@@ -382,6 +388,7 @@ pub(super) fn printed_short_circuit_conditions_keep_order_and_effects() {
                     start: 0x40,
                     stmts: vec![Stmt::Ret {
                         value: sc_load(SC_COUNTER),
+                        at: None,
                     }],
                 },
             ],

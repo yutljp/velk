@@ -19,6 +19,7 @@ pub(super) fn definite_writes(
         if let Stmt::Assign {
             dest,
             value: Expr::Const(0 | 1),
+            ..
         } = stmt
         {
             guards.insert(dest.index);
@@ -54,7 +55,7 @@ pub(super) fn definite_writes(
                 before @ None => *before = Some(written.clone()),
             }
             let assigned = match stmt {
-                Stmt::Assign { dest, value } => {
+                Stmt::Assign { dest, value, .. } => {
                     crate::ir::semantics::evaluate(value, &|register| {
                         constants.get(&register).copied()
                     })

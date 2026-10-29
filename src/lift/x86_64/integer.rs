@@ -53,6 +53,7 @@ pub(super) fn hold(lifter: &mut Lifter, value: Expr) -> Expr {
             width: 64,
         },
         value,
+        at: None,
     });
     Expr::reg(EXCHANGE, 64)
 }

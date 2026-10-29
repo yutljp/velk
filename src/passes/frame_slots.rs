@@ -63,7 +63,7 @@ fn address_escapes(ir: &FunctionIr, frames: &[Option<i64>]) -> bool {
             continue;
         };
         for stmt in &block.stmts {
-            if let Stmt::Assign { dest, value } = stmt
+            if let Stmt::Assign { dest, value, .. } = stmt
                 && dest.index == sp
             {
                 frame = adjusted_frame_offset(frame, value, sp);
@@ -96,14 +96,14 @@ fn substitute_frame_pointer(ir: &mut FunctionIr, frames: &[Option<i64>]) -> bool
     let sp = stack_pointer(ir.isa);
     let fp = if ir.isa == crate::loader::Isa::Arm32
         && ir.blocks.iter().flat_map(|block| &block.stmts).any(|stmt| {
-            matches!(stmt, Stmt::Assign { dest, value } if dest.index == 7 && frame_slot(value, 0, sp).is_some())
+            matches!(stmt, Stmt::Assign { dest, value, .. } if dest.index == 7 && frame_slot(value, 0, sp).is_some())
         }) {
         7
     } else {
         crate::arch::frame_pointer(ir.isa)
     };
     fn adjustment(stmt: &Stmt, fp: u16) -> Option<i64> {
-        let Stmt::Assign { dest, value } = stmt else {
+        let Stmt::Assign { dest, value, .. } = stmt else {
             return None;
         };
         if dest.index != fp {
@@ -142,13 +142,13 @@ fn substitute_frame_pointer(ir: &mut FunctionIr, frames: &[Option<i64>]) -> bool
         };
         for (position, stmt) in block.stmts.iter().enumerate() {
             match stmt {
-                Stmt::Assign { dest, value } if dest.index == fp => {
+                Stmt::Assign { dest, value, .. } if dest.index == fp => {
                     if let Some(base) = frame_slot(value, frame, sp) {
                         setup = Some((index, position, base));
                         break 'find;
                     }
                 }
-                Stmt::Assign { dest, value } if dest.index == sp => {
+                Stmt::Assign { dest, value, .. } if dest.index == sp => {
                     frame = adjusted_frame_offset(frame, value, sp);
                 }
                 _ => {}
@@ -269,7 +269,7 @@ fn substitute_frame_pointer(ir: &mut FunctionIr, frames: &[Option<i64>]) -> bool
                 };
                 base = next;
             }
-            if let Stmt::Assign { dest, value } = stmt
+            if let Stmt::Assign { dest, value, .. } = stmt
                 && dest.index == sp
             {
                 frame = adjusted_frame_offset(frame, value, sp);
@@ -321,7 +321,7 @@ pub(crate) fn canonical_frame(ir: &FunctionIr, frames: &[Option<i64>]) -> bool {
                         return false;
                     }
                 }
-                Stmt::Assign { dest, value } => {
+                Stmt::Assign { dest, value, .. } => {
                     if dest.index == sp {
                         if !is_adjustment(value, sp) {
                             return false;
@@ -344,12 +344,12 @@ pub(crate) fn canonical_frame(ir: &FunctionIr, frames: &[Option<i64>]) -> bool {
                         return false;
                     }
                 }
-                Stmt::BrIndirect { target } => {
+                Stmt::BrIndirect { target, .. } => {
                     if !uses_stack_pointer_only_in_frame_addresses(target, frame, sp) {
                         return false;
                     }
                 }
-                Stmt::Ret { value }
+                Stmt::Ret { value, .. }
                     if !uses_stack_pointer_only_in_frame_addresses(value, frame, sp) =>
                 {
                     return false;
@@ -436,7 +436,7 @@ pub(crate) fn rewrite_frame(ir: &mut FunctionIr, frames: &[Option<i64>]) {
                     rewrite_expr_frame(addr, frame, sp);
                     rewrite_expr_frame(value, frame, sp);
                 }
-                Stmt::Assign { dest, value } => {
+                Stmt::Assign { dest, value, .. } => {
                     if dest.index == sp {
                         if let Expr::Bin { op, rhs, .. } = value
                             && let Expr::Const(delta) = rhs.as_ref()
@@ -457,8 +457,8 @@ pub(crate) fn rewrite_frame(ir: &mut FunctionIr, frames: &[Option<i64>]) {
                     rewrite_expr_frame(rhs, frame, sp);
                 }
                 Stmt::Switch { index: value, .. }
-                | Stmt::BrIndirect { target: value }
-                | Stmt::Ret { value } => rewrite_expr_frame(value, frame, sp),
+                | Stmt::BrIndirect { target: value, .. }
+                | Stmt::Ret { value, .. } => rewrite_expr_frame(value, frame, sp),
                 Stmt::Machine { inputs, .. } => {
                     for value in inputs {
                         rewrite_expr_frame(value, frame, sp);
@@ -475,7 +475,7 @@ pub(crate) fn rewrite_frame(ir: &mut FunctionIr, frames: &[Option<i64>]) {
         // Drop the adjustments now that every access names its slot.
         block
             .stmts
-            .retain(|stmt| !matches!(stmt, Stmt::Assign { dest, value } if dest.index == sp && is_adjustment(value, sp)));
+            .retain(|stmt| !matches!(stmt, Stmt::Assign { dest, value, .. } if dest.index == sp && is_adjustment(value, sp)));
     }
     ir.frame_bottom = bottom;
 }
@@ -624,7 +624,7 @@ pub(crate) fn block_entry_frame_offsets(ir: &FunctionIr, sp: u16) -> Vec<Option<
             let block = &ir.blocks[position];
             let mut exit = entry;
             for stmt in &block.stmts {
-                if let Stmt::Assign { dest, value } = stmt
+                if let Stmt::Assign { dest, value, .. } = stmt
                     && dest.index == sp
                     && let Expr::Bin { op, rhs, .. } = value
                     && let Expr::Const(delta) = rhs.as_ref()
@@ -660,12 +660,15 @@ pub(crate) fn block_entry_frame_offsets(ir: &FunctionIr, sp: u16) -> Vec<Option<
                 }
                 Some(Stmt::Br {
                     target: Some(target),
+                    ..
                 }) => {
                     if let Some(target) = index.get(target) {
                         successors.push(*target);
                     }
                 }
-                Some(Stmt::Ret { .. }) | Some(Stmt::BrIndirect { .. }) | Some(Stmt::Trap) => {}
+                Some(Stmt::Ret { .. })
+                | Some(Stmt::BrIndirect { .. })
+                | Some(Stmt::Trap { .. }) => {}
                 _ => {
                     if position + 1 < ir.blocks.len() {
                         successors.push(position + 1);
@@ -722,16 +725,19 @@ mod tests {
                         width: 64,
                     },
                     value: at(-0x10),
+                    at: None,
                 },
                 Stmt::Store {
                     addr: at(0),
                     value: Expr::reg(7, 64),
                     width: 8,
+                    at: None,
                 },
                 Stmt::Store {
                     addr: load(0),
                     value: Expr::Const(1),
                     width: 1,
+                    at: None,
                 },
                 Stmt::Assign {
                     dest: RegRef {
@@ -739,9 +745,11 @@ mod tests {
                         width: 64,
                     },
                     value: at(0x10),
+                    at: None,
                 },
                 Stmt::Ret {
                     value: Expr::reg(0, 64),
+                    at: None,
                 },
             ],
         );
@@ -775,6 +783,7 @@ mod tests {
         let assign = |index, value| Stmt::Assign {
             dest: RegRef { index, width: 64 },
             value,
+            at: None,
         };
         let slot = |offset| Expr::Load {
             addr: Box::new(at(RBP, offset)),
@@ -790,12 +799,14 @@ mod tests {
                     addr: Expr::reg(RSP, 64),
                     value: Expr::reg(RBP, 64),
                     width: 8,
+                    at: None,
                 },
                 assign(RBP, Expr::reg(RSP, 64)),
                 Stmt::Store {
                     addr: at(RBP, -4),
                     value: Expr::reg(7, 32),
                     width: 4,
+                    at: None,
                 },
                 assign(0, slot(-4)),
                 assign(
@@ -809,6 +820,7 @@ mod tests {
                 assign(RSP, at(RSP, 8)),
                 Stmt::Ret {
                     value: Expr::reg(0, 64),
+                    at: None,
                 },
             ],
         );
@@ -832,6 +844,7 @@ mod tests {
         let assign = |index, value| Stmt::Assign {
             dest: RegRef { index, width: 64 },
             value,
+            at: None,
         };
         let call = Stmt::Call {
             kind: crate::ir::CallKind::Invoke,
@@ -844,6 +857,7 @@ mod tests {
             outputs: crate::ir::fallback_call_outputs(crate::ir::Convention::SysV, None),
             clobbers: None,
             via: None,
+            at: None,
         };
         // push rbp; mov rbp, rsp; [rbp-8] = edi; call f; ... ret, and a pad
         // at 0x40 for the call that reads [rbp-8].
@@ -855,6 +869,7 @@ mod tests {
                     addr: Expr::reg(RSP, 64),
                     value: Expr::reg(RBP, 64),
                     width: 8,
+                    at: None,
                 },
                 assign(RBP, Expr::reg(RSP, 64)),
                 assign(RSP, at(RSP, -0x10)),
@@ -862,6 +877,7 @@ mod tests {
                     addr: at(RBP, -8),
                     value: Expr::reg(7, 64),
                     width: 8,
+                    at: None,
                 },
                 call,
                 assign(RSP, at(RSP, 0x10)),
@@ -876,6 +892,7 @@ mod tests {
                 assign(RSP, at(RSP, 8)),
                 Stmt::Ret {
                     value: Expr::Const(0),
+                    at: None,
                 },
             ],
         );
@@ -887,6 +904,7 @@ mod tests {
                     width: 8,
                     signed: false,
                 },
+                at: None,
             }],
         });
         ir.landing_pads = vec![(0x40, vec![(0x0, 0x10)])];
@@ -907,6 +925,7 @@ mod tests {
                 width: 64,
             },
             value: Expr::bin(BinOp::Add, Expr::reg(4, 64), Expr::Const(delta as u64)),
+            at: None,
         };
         let mut ir = FunctionIr::single_block(
             Isa::X86_64,
@@ -923,10 +942,12 @@ mod tests {
                     outputs: Vec::new(),
                     abi: Some(crate::ir::calls::test_call_abi(vec![4], true)),
                     via: None,
+                    at: None,
                 },
                 adjustment(16),
                 Stmt::Ret {
                     value: Expr::Const(0),
+                    at: None,
                 },
             ],
         );
@@ -944,6 +965,7 @@ mod tests {
                     width: 64,
                 },
                 value: Expr::bin(BinOp::Add, Expr::reg(31, 64), Expr::Const(delta as u64)),
+                at: None,
             };
             let mut ir = FunctionIr::single_block(
                 Isa::AArch64,
@@ -953,6 +975,7 @@ mod tests {
                         addr: Expr::reg(31, 64),
                         value: Expr::Const(42),
                         width: 8,
+                        at: None,
                     },
                     Stmt::Call {
                         kind: crate::ir::CallKind::Invoke,
@@ -965,10 +988,12 @@ mod tests {
                         outputs: Vec::new(),
                         abi: declared.then(|| crate::ir::calls::test_call_abi(Vec::new(), false)),
                         via: None,
+                        at: None,
                     },
                     adjustment(16),
                     Stmt::Ret {
                         value: Expr::Const(0),
+                        at: None,
                     },
                 ],
             );
@@ -993,6 +1018,7 @@ mod tests {
         let assign = |index, value| Stmt::Assign {
             dest: RegRef { index, width: 64 },
             value,
+            at: None,
         };
         let call = Stmt::Call {
             kind: crate::ir::CallKind::Invoke,
@@ -1005,6 +1031,7 @@ mod tests {
             clobbers: None,
             abi: None,
             via: None,
+            at: None,
         };
         let mut ir = FunctionIr::single_block(
             Isa::X86_64,
@@ -1014,6 +1041,7 @@ mod tests {
                     addr: Expr::reg(RSP, 64),
                     value: Expr::reg(RBP, 64),
                     width: 8,
+                    at: None,
                 },
                 assign(RBP, Expr::reg(RSP, 64)),
                 assign(RSP, at(RSP, -0x10)),
@@ -1021,6 +1049,7 @@ mod tests {
                     addr: at(RBP, -8),
                     value: Expr::reg(7, 64),
                     width: 8,
+                    at: None,
                 },
                 call,
                 assign(RSP, at(RSP, 0x10)),
@@ -1035,13 +1064,17 @@ mod tests {
                 assign(RSP, at(RSP, 8)),
                 Stmt::Ret {
                     value: Expr::Const(0),
+                    at: None,
                 },
             ],
         );
         // The pad at 0x40 goes on to 0x50, which only the pad reaches.
         ir.blocks.push(crate::ir::Block {
             start: 0x40,
-            stmts: vec![Stmt::Br { target: Some(0x50) }],
+            stmts: vec![Stmt::Br {
+                target: Some(0x50),
+                at: None,
+            }],
         });
         ir.blocks.push(crate::ir::Block {
             start: 0x50,
@@ -1051,6 +1084,7 @@ mod tests {
                     width: 8,
                     signed: false,
                 },
+                at: None,
             }],
         });
         ir.landing_pads = vec![(0x40, vec![(0x0, 0x10)])];

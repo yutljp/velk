@@ -3,9 +3,14 @@ use crate::ir::{Expr, FunctionIr, Stmt};
 
 fn same_assignment(left: &Stmt, right: &Stmt) -> bool {
     match (left, right) {
-        (Stmt::Assign { dest: a, value: x }, Stmt::Assign { dest: b, value: y }) => {
-            a == b && x == y
-        }
+        (
+            Stmt::Assign {
+                dest: a, value: x, ..
+            },
+            Stmt::Assign {
+                dest: b, value: y, ..
+            },
+        ) => a == b && x == y,
         _ => false,
     }
 }
@@ -48,7 +53,13 @@ fn independent(left: &Stmt, right: &Stmt) -> bool {
 }
 
 fn body_end(stmts: &[Stmt]) -> usize {
-    if matches!(stmts.last(), Some(Stmt::Br { target: Some(_) })) {
+    if matches!(
+        stmts.last(),
+        Some(Stmt::Br {
+            target: Some(_),
+            ..
+        })
+    ) {
         stmts.len() - 1
     } else {
         stmts.len()
@@ -59,11 +70,12 @@ fn body_end(stmts: &[Stmt]) -> usize {
 /// Only independent register assignments may be crossed; memory order is unchanged.
 pub(super) fn share_assignments(ir: &FunctionIr) -> Option<FunctionIr> {
     if !ir.landing_pads.is_empty()
-        || ir
-            .blocks
-            .iter()
-            .flat_map(|block| &block.stmts)
-            .any(|stmt| matches!(stmt, Stmt::BrIndirect { .. } | Stmt::Br { target: None }))
+        || ir.blocks.iter().flat_map(|block| &block.stmts).any(|stmt| {
+            matches!(
+                stmt,
+                Stmt::BrIndirect { .. } | Stmt::Br { target: None, .. }
+            )
+        })
     {
         return None;
     }
@@ -119,11 +131,14 @@ pub(super) fn share_assignments(ir: &FunctionIr) -> Option<FunctionIr> {
                 }
                 Some((stmt.clone(), positions))
             });
-            let Some((stmt, positions)) = candidate else {
+            let Some((mut stmt, positions)) = candidate else {
                 break;
             };
             for (from, position) in predecessors.iter().zip(positions) {
-                out.blocks[*from].stmts.remove(position);
+                let other = out.blocks[*from].stmts.remove(position);
+                if stmt.origin() != other.origin() {
+                    stmt.set_origin(None);
+                }
             }
             moved.push(stmt);
             changed = true;
@@ -140,7 +155,7 @@ pub(super) fn share_assignments(ir: &FunctionIr) -> Option<FunctionIr> {
         {
             continue;
         }
-        while let Some(stmt) = out.blocks[successors[0]].stmts.first().cloned() {
+        while let Some(mut stmt) = out.blocks[successors[0]].stmts.first().cloned() {
             if !movable(&stmt)
                 || !successors.iter().all(|to| {
                     out.blocks[*to]
@@ -168,6 +183,7 @@ pub(super) fn share_assignments(ir: &FunctionIr) -> Option<FunctionIr> {
                     index,
                     cases,
                     default: Some(default),
+                    ..
                 } => {
                     safe_to_move_expression(index)
                         && resolved(default)
@@ -184,7 +200,10 @@ pub(super) fn share_assignments(ir: &FunctionIr) -> Option<FunctionIr> {
                 break;
             }
             for to in successors {
-                out.blocks[*to].stmts.remove(0);
+                let other = out.blocks[*to].stmts.remove(0);
+                if stmt.origin() != other.origin() {
+                    stmt.set_origin(None);
+                }
             }
             let end = out.blocks[from].stmts.len() - 1;
             out.blocks[from].stmts.insert(end, stmt);
@@ -204,6 +223,7 @@ mod tests {
         Stmt::Assign {
             dest: RegRef { index, width: 64 },
             value,
+            at: None,
         }
     }
 
@@ -217,6 +237,7 @@ mod tests {
                     lhs: Expr::reg(0, 64),
                     rhs: Expr::Const(0),
                     target: 20,
+                    at: None,
                 }],
             },
             Block {
@@ -224,7 +245,10 @@ mod tests {
                 stmts: vec![
                     assign(1, Expr::Const(19)),
                     assign(2, Expr::Const(1)),
-                    Stmt::Br { target: Some(30) },
+                    Stmt::Br {
+                        target: Some(30),
+                        at: None,
+                    },
                 ],
             },
             Block {
@@ -232,13 +256,17 @@ mod tests {
                 stmts: vec![
                     assign(1, Expr::Const(19)),
                     assign(2, Expr::Const(8)),
-                    Stmt::Br { target: Some(30) },
+                    Stmt::Br {
+                        target: Some(30),
+                        at: None,
+                    },
                 ],
             },
             Block {
                 start: 30,
                 stmts: vec![Stmt::Ret {
                     value: Expr::reg(1, 64),
+                    at: None,
                 }],
             },
         ];
@@ -259,8 +287,9 @@ mod tests {
                 addr: Expr::reg(3, 64),
                 value: Expr::reg(1, 64),
                 width: 8,
+                at: None,
             },
-            Stmt::Trap,
+            Stmt::Trap { at: None },
             Stmt::unsupported("unknown instruction"),
             assign(
                 2,
@@ -288,6 +317,7 @@ mod tests {
                 lhs: Expr::reg(1, 64),
                 rhs: Expr::Const(0),
                 target: 20,
+                at: None,
             };
             assert!(super::share_assignments(&ir).is_none());
         }
@@ -299,6 +329,7 @@ mod tests {
         ir.blocks[2].stmts.pop();
         ir.blocks[2].stmts.push(Stmt::Ret {
             value: Expr::reg(1, 64),
+            at: None,
         });
         let result = share_assignments(&ir).unwrap();
         assert!(same_assignment(
@@ -310,6 +341,7 @@ mod tests {
             lhs: Expr::reg(1, 64),
             rhs: Expr::Const(0),
             target: 20,
+            at: None,
         };
         assert!(share_assignments(&ir).is_none());
         ir.blocks[0].stmts[0] = Stmt::Brif {
@@ -317,8 +349,12 @@ mod tests {
             lhs: Expr::reg(0, 64),
             rhs: Expr::Const(0),
             target: 20,
+            at: None,
         };
-        ir.blocks[3].stmts = vec![Stmt::Br { target: Some(20) }];
+        ir.blocks[3].stmts = vec![Stmt::Br {
+            target: Some(20),
+            at: None,
+        }];
         assert!(share_assignments(&ir).is_none());
     }
 
@@ -330,6 +366,7 @@ mod tests {
         ir.landing_pads.clear();
         ir.blocks[3].stmts = vec![Stmt::BrIndirect {
             target: Expr::reg(0, 64),
+            at: None,
         }];
         assert!(share_assignments(&ir).is_none());
     }
@@ -360,11 +397,13 @@ mod tests {
         ir.blocks[2].stmts.pop();
         ir.blocks[2].stmts.push(Stmt::Ret {
             value: Expr::reg(1, 64),
+            at: None,
         });
         ir.blocks[0].stmts = vec![Stmt::Switch {
             index: Expr::reg(0, 64),
             cases: vec![(0, 10), (1, 10), (2, 20)],
             default: Some(20),
+            at: None,
         }];
         let result = share_assignments(&ir).unwrap();
         assert!(same_assignment(
@@ -386,10 +425,12 @@ mod tests {
                 lhs: Expr::reg(1, 64),
                 rhs: Expr::Const(0),
                 target: 20,
+                at: None,
             }];
             ir.blocks[1].stmts[1] = Stmt::Assign {
                 dest: RegRef { index: 1, width },
                 value: Expr::Const(20),
+                at: None,
             };
             assert!(share_assignments(&ir).is_none());
         }
@@ -402,6 +443,7 @@ mod tests {
             lhs: Expr::reg(1, 64),
             rhs: Expr::Const(0),
             target: 20,
+            at: None,
         }];
         assert!(share_assignments(&ir).is_none());
     }

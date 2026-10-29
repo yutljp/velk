@@ -103,7 +103,7 @@ pub fn forward_stored_values(ir: &mut FunctionIr) {
                     });
                 }
                 Stmt::Unsupported { .. } => pending.clear(),
-                Stmt::Assign { dest, value } => {
+                Stmt::Assign { dest, value, .. } => {
                     // Moving the stack pointer by a constant moves every
                     // remembered `sp`-relative address the other way; any
                     // other move leaves them unknown.
@@ -156,6 +156,7 @@ pub fn forward_stored_values(ir: &mut FunctionIr) {
                     instruction,
                     inputs,
                     outputs,
+                    ..
                 } => {
                     if matches!(
                         instruction,
@@ -183,7 +184,7 @@ pub fn forward_stored_values(ir: &mut FunctionIr) {
                         !outputs.iter().any(|output| reads.contains(&output.index))
                     });
                 }
-                Stmt::Ret { value } => forward_expr(value, &pending),
+                Stmt::Ret { value, .. } => forward_expr(value, &pending),
                 _ => {}
             }
         }
@@ -546,6 +547,7 @@ fn fuse_block(
         let Stmt::Assign {
             dest: written,
             value,
+            ..
         } = &block.stmts[op_at]
         else {
             index += 1;
@@ -627,7 +629,7 @@ fn fuse_block(
 
 /// `t = *p` (optionally masked to the load's width).
 fn temporary_load(stmt: &Stmt) -> Option<(u16, Expr, Expr)> {
-    let Stmt::Assign { dest, value } = stmt else {
+    let Stmt::Assign { dest, value, .. } = stmt else {
         return None;
     };
     let inner = strip_mask(value);
@@ -646,6 +648,7 @@ fn update_of(stmt: &Stmt, dest: u16) -> Option<(crate::ir::BinOp, Expr)> {
     let Stmt::Assign {
         dest: written,
         value,
+        ..
     } = stmt
     else {
         return None;
@@ -668,7 +671,7 @@ fn update_of(stmt: &Stmt, dest: u16) -> Option<(crate::ir::BinOp, Expr)> {
 /// `t = op(*p, x)` as the temporary, the address it updated and the new
 /// value of the location.
 fn inline_update(stmt: &Stmt) -> Option<(u16, Expr, Expr)> {
-    let Stmt::Assign { dest, value } = stmt else {
+    let Stmt::Assign { dest, value, .. } = stmt else {
         return None;
     };
     let Expr::Bin { lhs, .. } = strip_mask(value) else {
@@ -861,7 +864,7 @@ pub fn forward_spilled_variables(ir: &mut FunctionIr) {
                         overlapping.push((offset, *width));
                     }
                 }
-                Stmt::Assign { dest, value } => {
+                Stmt::Assign { dest, value, .. } => {
                     if dest.index == sp {
                         match stack_pointer_delta(value, sp) {
                             Some(delta) => frame = frame.wrapping_add(delta),
@@ -1031,7 +1034,7 @@ pub fn forward_spilled_variables(ir: &mut FunctionIr) {
             for operand in stmt.operands_mut() {
                 replace(operand, sp, frame, &forwarded);
             }
-            if let Stmt::Assign { dest, value } = stmt
+            if let Stmt::Assign { dest, value, .. } = stmt
                 && dest.index == sp
             {
                 frame = frame.wrapping_add(stack_pointer_delta(value, sp).unwrap_or(0));
@@ -1080,6 +1083,7 @@ mod tests {
             addr: slot(offset),
             value,
             width,
+            at: None,
         }
     }
 
@@ -1099,6 +1103,7 @@ mod tests {
                 width: 64,
             },
             value,
+            at: None,
         };
         // t = *p; t = t + 1; *p = t; t = t & 0xff; return t;
         let mut ir = FunctionIr::single_block(
@@ -1110,6 +1115,7 @@ mod tests {
                 assign(Expr::bin(BinOp::And, Expr::reg(0, 64), Expr::Const(0xff))),
                 Stmt::Ret {
                     value: Expr::reg(0, 64),
+                    at: None,
                 },
             ],
         );
@@ -1125,13 +1131,19 @@ mod tests {
         let increment = Expr::bin(BinOp::Add, load(-8, 8), Expr::Const(1));
         let mut ir = FunctionIr::single_block(
             Isa::AArch64,
-            vec![store(-8, increment, 8), Stmt::Ret { value: load(-8, 8) }],
+            vec![
+                store(-8, increment, 8),
+                Stmt::Ret {
+                    value: load(-8, 8),
+                    at: None,
+                },
+            ],
         );
 
         forward_stored_values(&mut ir);
 
         assert!(
-            matches!(&ir.blocks[0].stmts[1], Stmt::Ret { value } if *value == load(-8, 8)),
+            matches!(&ir.blocks[0].stmts[1], Stmt::Ret { value, .. } if *value == load(-8, 8)),
             "{}",
             ir.render()
         );
@@ -1150,6 +1162,7 @@ mod tests {
                 store(-1, Expr::reg(0, 64), 1),
                 Stmt::Ret {
                     value: Expr::bin(BinOp::Add, byte(true), byte(false)),
+                    at: None,
                 },
             ],
         );
@@ -1165,7 +1178,7 @@ mod tests {
             Expr::bin(BinOp::And, Expr::reg(0, 64), Expr::Const(0xff)),
         );
         assert!(
-            matches!(&ir.blocks[0].stmts[1], Stmt::Ret { value } if *value == expected),
+            matches!(&ir.blocks[0].stmts[1], Stmt::Ret { value, .. } if *value == expected),
             "{}",
             ir.render()
         );
@@ -1183,15 +1196,19 @@ mod tests {
                         width: 64,
                     },
                     value: Expr::Const(1),
+                    at: None,
                 },
-                Stmt::Ret { value: load(-8, 8) },
+                Stmt::Ret {
+                    value: load(-8, 8),
+                    at: None,
+                },
             ],
         );
 
         forward_stored_values(&mut ir);
 
         assert!(
-            matches!(&ir.blocks[0].stmts[2], Stmt::Ret { value } if *value == load(-8, 8)),
+            matches!(&ir.blocks[0].stmts[2], Stmt::Ret { value, .. } if *value == load(-8, 8)),
             "{}",
             ir.render()
         );
@@ -1204,14 +1221,17 @@ mod tests {
             vec![
                 store(-8, Expr::reg(0, 64), 8),
                 store(-4, Expr::Const(5), 4),
-                Stmt::Ret { value: load(-8, 8) },
+                Stmt::Ret {
+                    value: load(-8, 8),
+                    at: None,
+                },
             ],
         );
 
         forward_stored_values(&mut ir);
 
         assert!(
-            matches!(&ir.blocks[0].stmts[2], Stmt::Ret { value } if *value == load(-8, 8)),
+            matches!(&ir.blocks[0].stmts[2], Stmt::Ret { value, .. } if *value == load(-8, 8)),
             "{}",
             ir.render()
         );
@@ -1232,6 +1252,7 @@ mod tests {
             outputs: crate::ir::fallback_call_outputs(crate::ir::Convention::Aapcs64, None),
             clobbers: None,
             via: None,
+            at: None,
         };
         let build = |second_store: bool| {
             let mut first = vec![
@@ -1245,6 +1266,7 @@ mod tests {
                         width: 8,
                         signed: false,
                     },
+                    at: None,
                 },
                 store(-8, Expr::reg(v1, 64), 8),
                 call.clone(),
@@ -1257,6 +1279,7 @@ mod tests {
                 lhs: Expr::reg(2, 64),
                 rhs: Expr::Const(0),
                 target: 0x20,
+                at: None,
             });
             let mut ir = FunctionIr::single_block(Isa::AArch64, first);
             ir.blocks.push(crate::ir::Block {
@@ -1267,12 +1290,14 @@ mod tests {
                         width: 8,
                         signed: false,
                     },
+                    at: None,
                 }],
             });
             ir.blocks.push(crate::ir::Block {
                 start: 0x20,
                 stmts: vec![Stmt::Ret {
                     value: Expr::Const(0),
+                    at: None,
                 }],
             });
             ir
@@ -1280,7 +1305,7 @@ mod tests {
         let mut ir = build(false);
         super::forward_spilled_variables(&mut ir);
         assert!(
-            matches!(&ir.blocks[1].stmts[0], Stmt::Ret { value: Expr::Reg { index, .. } } if *index == v1),
+            matches!(&ir.blocks[1].stmts[0], Stmt::Ret { value: Expr::Reg { index, .. }, .. } if *index == v1),
             "{}",
             ir.render()
         );
@@ -1299,7 +1324,8 @@ mod tests {
             matches!(
                 &ir.blocks[1].stmts[0],
                 Stmt::Ret {
-                    value: Expr::Load { .. }
+                    value: Expr::Load { .. },
+                    ..
                 }
             ),
             "{}",
@@ -1330,15 +1356,17 @@ mod tests {
                     clobbers: Some([1].into_iter().collect()),
                     outputs,
                     via: None,
+                    at: None,
                 },
                 Stmt::Ret {
                     value: Expr::bin(crate::ir::BinOp::Xor, load(16, 8), load(24, 8)),
+                    at: None,
                 },
             ],
         );
         forward_stored_values(&mut ir);
         assert!(
-            matches!(ir.blocks[0].stmts.last(), Some(Stmt::Ret { value }) if *value == Expr::bin(crate::ir::BinOp::Xor, load(16, 8), Expr::reg(1, 64))),
+            matches!(ir.blocks[0].stmts.last(), Some(Stmt::Ret { value, .. }) if *value == Expr::bin(crate::ir::BinOp::Xor, load(16, 8), Expr::reg(1, 64))),
             "{}",
             ir.render()
         );
@@ -1355,6 +1383,7 @@ mod tests {
             outputs: Vec::new(),
             abi: Some(crate::ir::calls::test_call_abi(vec![31], true)),
             via: None,
+            at: None,
         }
     }
 
@@ -1365,7 +1394,10 @@ mod tests {
             vec![
                 store(16, Expr::Const(9), 8),
                 deferred_call(vec![load(16, 8)]),
-                Stmt::Ret { value: load(16, 8) },
+                Stmt::Ret {
+                    value: load(16, 8),
+                    at: None,
+                },
             ],
         );
         let original = ir.blocks[0].stmts.clone();
@@ -1382,7 +1414,8 @@ mod tests {
         assert!(matches!(
             ir.blocks[0].stmts[2],
             Stmt::Ret {
-                value: Expr::Const(9)
+                value: Expr::Const(9),
+                ..
             }
         ));
     }
@@ -1399,10 +1432,14 @@ mod tests {
                         width: 64,
                     },
                     value: Expr::Const(9),
+                    at: None,
                 },
                 store(16, Expr::reg(variable, 64), 8),
                 deferred_call(Vec::new()),
-                Stmt::Ret { value: load(16, 8) },
+                Stmt::Ret {
+                    value: load(16, 8),
+                    at: None,
+                },
             ],
         );
         let original = ir.blocks[0].stmts.clone();
@@ -1419,6 +1456,7 @@ mod tests {
                 width: 64,
             },
             value,
+            at: None,
         };
         let update = || {
             assign(Expr::bin(
@@ -1440,6 +1478,7 @@ mod tests {
         ] {
             stmts.push(Stmt::Ret {
                 value: Expr::Const(0),
+                at: None,
             });
             let original = format!("{stmts:?}");
             let mut ir = FunctionIr::single_block(Isa::AArch64, stmts);

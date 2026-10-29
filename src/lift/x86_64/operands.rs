@@ -283,7 +283,12 @@ pub(super) fn write_operand(
                 (memory_address(instruction), memory_width(instruction))
             {
                 preserve_compare(&mut lifter.last_compare, Write::Memory, &mut lifter.stmts);
-                lifter.stmts.push(Stmt::Store { addr, value, width });
+                lifter.stmts.push(Stmt::Store {
+                    addr,
+                    value,
+                    width,
+                    at: None,
+                });
             } else {
                 lifter.incomplete = true;
             }

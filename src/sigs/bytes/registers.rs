@@ -166,6 +166,7 @@ mod tests {
             statements.retain(|statement| !matches!(statement, Stmt::Ret { .. }));
             statements.push(Stmt::Ret {
                 value: crate::ir::Expr::reg(0, 64),
+                at: None,
             });
             statements
         };

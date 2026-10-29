@@ -299,6 +299,7 @@ mod tests {
             crate::loader::Isa::X86_64,
             vec![crate::ir::Stmt::Ret {
                 value: crate::ir::Expr::Const(0x1234),
+                at: None,
             }],
         );
         let mut symbols = crate::render::Symbols::default();

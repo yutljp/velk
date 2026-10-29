@@ -6,6 +6,7 @@ fn assign(index: u16, value: Expr) -> Stmt {
     Stmt::Assign {
         dest: RegRef { index, width: 64 },
         value,
+        at: None,
     }
 }
 
@@ -30,6 +31,7 @@ fn output_call(output_registers: &[u16], changed: &[u16]) -> Stmt {
             .collect(),
         clobbers: Some(changed.iter().copied().collect()),
         via: None,
+        at: None,
     }
 }
 
@@ -56,7 +58,10 @@ fn all_call_outputs_keep_provenance_through_ssa_and_splitting() {
             Isa::AArch64,
             vec![
                 output_call(output_registers, output_registers),
-                Stmt::Ret { value: sum },
+                Stmt::Ret {
+                    value: sum,
+                    at: None,
+                },
             ],
         );
         ir.convention = crate::ir::Convention::Aapcs64;
@@ -182,11 +187,13 @@ fn canonical_call_aliases_preserve_both_readers_and_unnamed_inputs() {
                             addr: Expr::Const(observe),
                             value: Expr::reg(0, 64),
                             width: 8,
+                            at: None,
                         },
                         Stmt::Store {
                             addr: Expr::Const(observe + 8),
                             value: Expr::reg(named, 64),
                             width: 8,
+                            at: None,
                         },
                         Stmt::Ret {
                             value: Expr::bin(
@@ -194,6 +201,7 @@ fn canonical_call_aliases_preserve_both_readers_and_unnamed_inputs() {
                                 Expr::bin(BinOp::Mul, Expr::reg(0, 64), Expr::Const(3)),
                                 Expr::bin(BinOp::Mul, Expr::reg(named, 64), Expr::Const(5)),
                             ),
+                            at: None,
                         },
                     ]);
                     let setup = Setup {
@@ -241,7 +249,10 @@ fn canonical_call_aliases_preserve_both_readers_and_unnamed_inputs() {
                     } else {
                         input.index
                     };
-                    let Stmt::Assign { dest: alias, value } = &ssa.ir.blocks[0].stmts[2] else {
+                    let Stmt::Assign {
+                        dest: alias, value, ..
+                    } = &ssa.ir.blocks[0].stmts[2]
+                    else {
                         unreachable!()
                     };
                     assert_eq!(*value, Expr::reg(source, 64));
@@ -308,6 +319,7 @@ fn preserved_call_outputs_transfer_only_demanded_bits_to_the_prevalue() {
                 call,
                 Stmt::Ret {
                     value: Expr::reg(crate::ir::VARIABLE_BASE + 38, width),
+                    at: None,
                 },
             ],
         );
@@ -339,6 +351,7 @@ fn preserved_call_outputs_transfer_only_demanded_bits_to_the_prevalue() {
             call,
             Stmt::Ret {
                 value: Expr::reg(crate::ir::VARIABLE_BASE, 64),
+                at: None,
             },
         ],
     );
@@ -360,6 +373,7 @@ fn preserved_call_output_keeps_its_producer_and_snapshots_crossed_destinations()
             call,
             Stmt::Ret {
                 value: Expr::bin(BinOp::Sub, Expr::reg(0, 64), Expr::reg(1, 64)),
+                at: None,
             },
         ],
     );
@@ -397,6 +411,7 @@ fn forwarding_one_output_cannot_overwrite_an_intervening_old_value_read() {
             assign(named, Expr::reg(0, 64)),
             Stmt::Ret {
                 value: Expr::bin(BinOp::Add, Expr::reg(named, 64), Expr::reg(saved, 64)),
+                at: None,
             },
         ],
     );
@@ -423,6 +438,7 @@ fn forwarding_a_call_output_cannot_widen_its_definition() {
             assign(second, Expr::reg(first, 64)),
             Stmt::Ret {
                 value: Expr::reg(second, 64),
+                at: None,
             },
         ],
     );
@@ -457,6 +473,7 @@ fn entry_demands_distinguish_each_result_piece_and_read_width() {
         Isa::X86_64,
         vec![Stmt::Ret {
             value: Expr::apply(Operation::Results, vec![Expr::reg(0, 64), Expr::reg(1, 16)]),
+            at: None,
         }],
     );
     let demand = entry_demands(&ir, &[0xffff_ffff, 0xff]).unwrap();
@@ -470,6 +487,7 @@ fn entry_demands_distinguish_each_result_piece_and_read_width() {
         Isa::X86_64,
         vec![Stmt::Ret {
             value: Expr::reg(0, 64),
+            at: None,
         }],
     );
     assert!(entry_demands(&scalar, &[1, 1]).is_none());
@@ -485,6 +503,7 @@ fn entry_demands_use_floating_operand_precision_without_changing_partial_writes(
             Isa::X86_64,
             vec![Stmt::Ret {
                 value: Expr::apply(Operation::FloatNegate(precision), vec![Expr::reg(0, 64)]),
+                at: None,
             }],
         );
         assert_eq!(entry_demands(&ir, &[u64::MAX]).unwrap()[&0], expected);
@@ -505,12 +524,14 @@ fn entry_demands_keep_raw_float_bits_and_sign_extension_distinct() {
                 addr: Expr::Const(0x1000),
                 value: Expr::reg(0, 64),
                 width: 8,
+                at: None,
             },
             Stmt::Ret {
                 value: Expr::SignExtend {
                     value: Box::new(Expr::reg(1, 64)),
                     width: 2,
                 },
+                at: None,
             },
         ],
     );
@@ -528,6 +549,7 @@ fn entry_demands_follow_values_across_a_narrow_overwrite() {
                 addr: Expr::Const(0x1000),
                 value: Expr::reg(0, 64),
                 width: 1,
+                at: None,
             },
             Stmt::Assign {
                 dest: RegRef {
@@ -535,9 +557,11 @@ fn entry_demands_follow_values_across_a_narrow_overwrite() {
                     width: 32,
                 },
                 value: Expr::Const(0x1_0000_0005),
+                at: None,
             },
             Stmt::Ret {
                 value: Expr::reg(0, 64),
+                at: None,
             },
         ],
     );
@@ -576,24 +600,32 @@ fn entry_demands_follow_values_across_a_narrow_overwrite() {
 fn entry_demands_reject_unknown_effects_and_missing_jump_targets() {
     for stmt in [
         Stmt::Unsupported {
+            at: None,
             text: "unknown".to_owned(),
             writes: Some(Vec::new()),
         },
-        Stmt::Br { target: None },
+        Stmt::Br {
+            target: None,
+            at: None,
+        },
         Stmt::Br {
             target: Some(0x1234),
+            at: None,
         },
         Stmt::BrIndirect {
             target: Expr::reg(0, 64),
+            at: None,
         },
         Stmt::BrifFlags {
             cond: Cond::Eq,
             target: 0,
+            at: None,
         },
         Stmt::Switch {
             index: Expr::reg(0, 64),
             cases: Vec::new(),
             default: None,
+            at: None,
         },
     ] {
         assert!(entry_demands(&FunctionIr::single_block(Isa::X86_64, vec![stmt]), &[]).is_none());
@@ -602,7 +634,13 @@ fn entry_demands_reject_unknown_effects_and_missing_jump_targets() {
 
 #[test]
 fn entry_demands_follow_loop_phis_without_requiring_unused_upper_bits() {
-    let mut ir = FunctionIr::single_block(Isa::X86_64, vec![Stmt::Br { target: Some(0x10) }]);
+    let mut ir = FunctionIr::single_block(
+        Isa::X86_64,
+        vec![Stmt::Br {
+            target: Some(0x10),
+            at: None,
+        }],
+    );
     ir.blocks.push(Block {
         start: 0x10,
         stmts: vec![
@@ -612,6 +650,7 @@ fn entry_demands_follow_loop_phis_without_requiring_unused_upper_bits() {
                 lhs: Expr::reg(0, 8),
                 rhs: Expr::reg(1, 8),
                 target: 0x10,
+                at: None,
             },
         ],
     });
@@ -619,6 +658,7 @@ fn entry_demands_follow_loop_phis_without_requiring_unused_upper_bits() {
         start: 0x20,
         stmts: vec![Stmt::Ret {
             value: Expr::reg(0, 64),
+            at: None,
         }],
     });
     let demand = entry_demands(&ir, &[0xff]).unwrap();
@@ -639,6 +679,7 @@ fn entry_demands_map_constant_right_shifts_and_select_arms() {
                     then: Box::new(Expr::bin(BinOp::Shr, Expr::reg(0, 64), Expr::Const(count))),
                     els: Box::new(Expr::reg(2, 64)),
                 },
+                at: None,
             }],
         );
         let demand = entry_demands(&ir, &[0xf]).unwrap();
@@ -673,8 +714,9 @@ fn spill_then(value: Expr) -> FunctionIr {
                 addr: stack_at(-8),
                 value: Expr::reg(7, 64),
                 width: 4,
+                at: None,
             },
-            Stmt::Ret { value },
+            Stmt::Ret { value, at: None },
         ],
     )
 }
@@ -718,13 +760,18 @@ fn entry_demands_match_spill_positions_across_frames_and_blocks() {
                 addr: stack_at(8),
                 value: Expr::reg(7, 64),
                 width: 4,
+                at: None,
             },
             Stmt::Store {
                 addr: stack_at(12),
                 value: Expr::reg(6, 64),
                 width: 4,
+                at: None,
             },
-            Stmt::Br { target: Some(0x10) },
+            Stmt::Br {
+                target: Some(0x10),
+                at: None,
+            },
         ],
     );
     ir.blocks.push(Block {
@@ -733,6 +780,7 @@ fn entry_demands_match_spill_positions_across_frames_and_blocks() {
             assign(4, stack_at(16)),
             Stmt::Ret {
                 value: Expr::bin(BinOp::Or, stack_load(-7, 1), stack_load(-2, 1)),
+                at: None,
             },
         ],
     });
@@ -796,6 +844,7 @@ fn entry_demands_keep_external_stores_and_unknown_frames_whole() {
             addr: Expr::reg(8, 64),
             value: Expr::reg(6, 64),
             width: 8,
+            at: None,
         },
     );
     let demand = entry_demands(&external, &[u64::MAX]).unwrap();
@@ -807,15 +856,23 @@ fn entry_demands_keep_external_stores_and_unknown_frames_whole() {
         lhs: Expr::reg(8, 64),
         rhs: Expr::Const(0),
         target: 0x20,
+        at: None,
     };
     ir.blocks.push(Block {
         start: 0x10,
-        stmts: vec![assign(4, stack_at(-16)), Stmt::Br { target: Some(0x20) }],
+        stmts: vec![
+            assign(4, stack_at(-16)),
+            Stmt::Br {
+                target: Some(0x20),
+                at: None,
+            },
+        ],
     });
     ir.blocks.push(Block {
         start: 0x20,
         stmts: vec![Stmt::Ret {
             value: stack_load(-8, 1),
+            at: None,
         }],
     });
     assert_eq!(entry_demands(&ir, &[u64::MAX]).unwrap()[&7], 0xffff_ffff);
@@ -846,9 +903,11 @@ fn entry_demands_keep_stores_outside_private_stack_memory_observable() {
                     addr: stack_at(offset),
                     value: Expr::reg(7, 64),
                     width,
+                    at: None,
                 },
                 Stmt::Ret {
                     value: stack_load(offset, 1),
+                    at: None,
                 },
             ],
         );
@@ -861,9 +920,11 @@ fn entry_demands_keep_stores_outside_private_stack_memory_observable() {
                 addr: stack_at(-2 * span),
                 value: Expr::reg(7, 64),
                 width: 8,
+                at: None,
             },
             Stmt::Ret {
                 value: Expr::reg(7, 8),
+                at: None,
             },
         ],
     );
@@ -920,6 +981,7 @@ fn entry_demands_keep_private_spills_whole_across_calls() {
             outputs: crate::ir::fallback_call_outputs(crate::ir::Convention::SysV, None),
             clobbers: None,
             via: None,
+            at: None,
         },
     );
     assert_eq!(entry_demands(&ir, &[u64::MAX]).unwrap()[&7], 0xffff_ffff);
@@ -943,6 +1005,7 @@ fn byte_after_call(clobbers: Option<crate::ir::Registers>) -> FunctionIr {
                 outputs: crate::ir::fallback_call_outputs(crate::ir::Convention::SysV, clobbers),
                 clobbers,
                 via: None,
+                at: None,
             },
             assign(
                 RCX,
@@ -954,6 +1017,7 @@ fn byte_after_call(clobbers: Option<crate::ir::Registers>) -> FunctionIr {
             ),
             Stmt::Ret {
                 value: Expr::reg(RCX, 64),
+                at: None,
             },
         ],
     );
@@ -998,12 +1062,13 @@ fn counting_loop() -> FunctionIr {
                 lhs: x.clone(),
                 rhs: Expr::reg(7, 64),
                 target: 0x10,
+                at: None,
             },
         ],
     });
     ir.blocks.push(Block {
         start: 0x20,
-        stmts: vec![Stmt::Ret { value: x }],
+        stmts: vec![Stmt::Ret { value: x, at: None }],
     });
     ir
 }
@@ -1025,11 +1090,13 @@ fn a_result_only_moved_on_goes_to_its_variable() {
                 clobbers: None,
                 outputs: crate::ir::fallback_call_outputs(crate::ir::Convention::GoAbi0, None),
                 via: None,
+                at: None,
             },
             assign(first, Expr::reg(0, 64)),
             assign(second, Expr::reg(first, 64)),
             Stmt::Ret {
                 value: Expr::reg(second, 64),
+                at: None,
             },
         ],
     );
@@ -1064,6 +1131,7 @@ fn further_results_moved_on_go_to_their_variables() {
                 clobbers: None,
                 outputs: crate::ir::fallback_call_outputs(crate::ir::Convention::GoAmd64, None),
                 via: None,
+                at: None,
             },
             assign(first, Expr::reg(0, 64)),
             assign(third, Expr::reg(3, 64)),
@@ -1071,6 +1139,7 @@ fn further_results_moved_on_go_to_their_variables() {
             assign(fourth, Expr::reg(third, 64)),
             Stmt::Ret {
                 value: Expr::bin(BinOp::Add, Expr::reg(second, 64), Expr::reg(fourth, 64)),
+                at: None,
             },
         ],
     );
@@ -1119,18 +1188,25 @@ fn a_loop_back_to_the_entry_joins_the_entry_value() {
             lhs: Expr::reg(7, 64),
             rhs: Expr::Const(0),
             target: 0x20,
+            at: None,
         }],
     );
     ir.blocks.push(Block {
         start: 0x10,
         stmts: vec![
             assign(0, Expr::bin(BinOp::Add, rax.clone(), Expr::Const(1))),
-            Stmt::Br { target: Some(0) },
+            Stmt::Br {
+                target: Some(0),
+                at: None,
+            },
         ],
     });
     ir.blocks.push(Block {
         start: 0x20,
-        stmts: vec![Stmt::Ret { value: rax }],
+        stmts: vec![Stmt::Ret {
+            value: rax,
+            at: None,
+        }],
     });
     let ssa = build(&ir).expect("builds");
     verify(&ssa).expect("well formed");
@@ -1153,9 +1229,11 @@ fn partial_write_drops_unread_upper_bits() {
                 addr: Expr::reg(7, 64),
                 value: Expr::reg(11, 64),
                 width: 1,
+                at: None,
             },
             Stmt::Ret {
                 value: Expr::reg(0, 64),
+                at: None,
             },
         ],
     );
@@ -1185,6 +1263,7 @@ fn partial_write_drops_unread_upper_bits() {
             ),
             Stmt::Ret {
                 value: Expr::reg(0, 64),
+                at: None,
             },
         ],
     );
@@ -1248,9 +1327,11 @@ fn variadic_stack_arguments_follow_the_call_kind() {
                     clobbers: None,
                     outputs: crate::ir::fallback_call_outputs(crate::ir::Convention::SysV, None),
                     via: None,
+                    at: None,
                 },
                 Stmt::Ret {
                     value: Expr::Const(0),
+                    at: None,
                 },
             ],
         );
@@ -1303,6 +1384,7 @@ fn declared_inputs_are_strong_roots_without_new_operands() {
             call,
             Stmt::Ret {
                 value: Expr::Const(7),
+                at: None,
             },
         ],
     );
@@ -1335,6 +1417,7 @@ fn declared_inputs_capture_each_calls_current_value() {
             call,
             Stmt::Ret {
                 value: Expr::Const(0),
+                at: None,
             },
         ],
     );
@@ -1384,6 +1467,7 @@ fn declared_vector_and_extra_inputs_keep_their_physical_storage() {
             call,
             Stmt::Ret {
                 value: Expr::bin(BinOp::Add, Expr::reg(8, 64), Expr::reg(36, 64)),
+                at: None,
             },
         ],
     );
@@ -1430,20 +1514,27 @@ fn declared_inputs_keep_all_phi_predecessors_in_the_required_register() {
                 lhs: Expr::reg(0, 64),
                 rhs: Expr::Const(0),
                 target: 20,
+                at: None,
             }],
         },
         Block {
             start: 10,
             stmts: vec![
                 assign(38, Expr::Const(0x1111)),
-                Stmt::Br { target: Some(30) },
+                Stmt::Br {
+                    target: Some(30),
+                    at: None,
+                },
             ],
         },
         Block {
             start: 20,
             stmts: vec![
                 assign(38, Expr::Const(0x2222)),
-                Stmt::Br { target: Some(30) },
+                Stmt::Br {
+                    target: Some(30),
+                    at: None,
+                },
             ],
         },
         Block {
@@ -1452,6 +1543,7 @@ fn declared_inputs_keep_all_phi_predecessors_in_the_required_register() {
                 declared_call(&[38], false),
                 Stmt::Ret {
                     value: Expr::Const(7),
+                    at: None,
                 },
             ],
         },
@@ -1513,6 +1605,7 @@ fn declared_input_load_producers_survive_dce_without_fallback_evaluation() {
             call,
             Stmt::Ret {
                 value: Expr::Const(7),
+                at: None,
             },
         ],
     );
@@ -1522,6 +1615,7 @@ fn declared_input_load_producers_survive_dce_without_fallback_evaluation() {
             fallback,
             Stmt::Ret {
                 value: Expr::Const(7),
+                at: None,
             },
         ],
     );
@@ -1549,7 +1643,7 @@ fn declared_input_load_producers_survive_dce_without_fallback_evaluation() {
     assert_eq!(crate::ir::eval::run(&ir, &setup), expected);
     crate::passes::dce::dce_flow(&mut ir);
     assert!(
-        matches!(&ir.blocks[0].stmts[0], Stmt::Assign { dest, value: Expr::Load { width: 8, .. } } if dest.index == 38)
+        matches!(&ir.blocks[0].stmts[0], Stmt::Assign { dest, value: Expr::Load { width: 8, .. }, .. } if dest.index == 38)
     );
     assert!(ir.blocks[0].stmts[1].operands().is_empty());
     assert_eq!(crate::ir::eval::run(&ir, &setup), expected);
@@ -1587,6 +1681,7 @@ fn declared_calls_do_not_reconstruct_variadic_fallback_arguments() {
             fallback,
             Stmt::Ret {
                 value: Expr::Const(0),
+                at: None,
             },
         ],
     );

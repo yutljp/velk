@@ -653,7 +653,13 @@ mod tests {
     }
 
     fn function(size: u64, returned: Expr) -> FunctionIr {
-        let mut ir = FunctionIr::single_block(Isa::X86_64, vec![Stmt::Ret { value: returned }]);
+        let mut ir = FunctionIr::single_block(
+            Isa::X86_64,
+            vec![Stmt::Ret {
+                value: returned,
+                at: None,
+            }],
+        );
         ir.params = vec![Param {
             index: 7,
             name: "a0".to_owned(),
@@ -803,6 +809,7 @@ mod tests {
                         op: Operation::FloatAdd(Precision::Double),
                         args: vec![Expr::Const(pattern), Expr::Const(0)],
                     },
+                    at: None,
                 },
             );
             if floating_consumer {
@@ -817,10 +824,12 @@ mod tests {
                             op: Operation::FloatAdd(Precision::Double),
                             args: vec![read, Expr::Const(0)],
                         },
+                        at: None,
                     },
                 );
                 *ir.blocks[0].stmts.last_mut().unwrap() = Stmt::Ret {
                     value: Expr::reg(second, 64),
+                    at: None,
                 };
             }
             let observed = crate::ir::eval::run(

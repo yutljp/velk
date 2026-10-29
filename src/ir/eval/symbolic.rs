@@ -961,6 +961,7 @@ impl State {
                     outputs: Vec::new(),
                     clobbers: None,
                     via: None,
+                    at: None,
                 }],
             }]
         } else {
@@ -1010,6 +1011,7 @@ impl State {
             if let Stmt::Assign {
                 dest,
                 value: Expr::Const(address),
+                ..
             } = &statement
                 && dest.index == crate::lift::execution::ADDRESS
             {
@@ -1071,7 +1073,7 @@ impl State {
         until: &[u64],
     ) -> Evaluation<Option<Step>> {
         match statement {
-            Stmt::Assign { dest, value } => {
+            Stmt::Assign { dest, value, .. } => {
                 if dest.index == crate::lift::execution::ADDRESS {
                     self.path.push(crate::addr::format(self.address));
                 } else {
@@ -1080,7 +1082,9 @@ impl State {
                     self.registers.insert(dest.index, value);
                 }
             }
-            Stmt::Store { addr, value, width } => {
+            Stmt::Store {
+                addr, value, width, ..
+            } => {
                 let address = self.resolve(self.eval(binary, addr)?)?;
                 let value = self.eval(binary, value)?;
                 self.store(binary.image(), address, &value, *width)?;
@@ -1090,6 +1094,7 @@ impl State {
                 lhs,
                 rhs,
                 target,
+                ..
             } => {
                 let a = self.eval(binary, lhs)?;
                 let b = self.eval(binary, rhs)?;
@@ -1131,6 +1136,7 @@ impl State {
                 index,
                 cases,
                 default,
+                ..
             } => {
                 let index = self.eval(binary, index)?;
                 let mut states = Vec::new();
@@ -1162,8 +1168,9 @@ impl State {
             }
             Stmt::Br {
                 target: Some(target),
+                ..
             } => self.jump(binary, *target)?,
-            Stmt::BrIndirect { target } => {
+            Stmt::BrIndirect { target, .. } => {
                 let target = self.resolve(self.eval(binary, target)?)?;
                 self.jump(binary, target)?;
             }
@@ -1207,7 +1214,7 @@ impl State {
                 };
                 self.call(binary, target, *convention, *kind, outputs, until)?;
             }
-            Stmt::Ret { value } => {
+            Stmt::Ret { value, .. } => {
                 let value = self.eval(binary, value)?;
                 self.registers.insert(crate::arch::RETURN, value);
                 return self.return_from_call(binary, /* machine_return */ true);
@@ -1216,6 +1223,7 @@ impl State {
                 instruction: crate::ir::MachineInstruction::Atomic { op, width, .. },
                 inputs,
                 outputs,
+                ..
             } => {
                 use crate::ir::AtomicOp;
 
@@ -1388,6 +1396,7 @@ impl State {
                     },
                 inputs,
                 outputs,
+                ..
             } if self.isa == Isa::AArch64 => {
                 let register = crate::arch::aarch64::TPIDR_EL0;
                 if *write {
@@ -1398,7 +1407,7 @@ impl State {
                     self.registers.insert(outputs[0].index, value);
                 }
             }
-            Stmt::Trap => return Ok(Some(Step::Stopped("trap".to_owned()))),
+            Stmt::Trap { .. } => return Ok(Some(Step::Stopped("trap".to_owned()))),
             Stmt::Unsupported { text, .. } => {
                 return Err(invalid(format!("unsupported instruction: {text}")).into());
             }
@@ -2091,6 +2100,7 @@ fn record_branches(observations: &Rc<RefCell<BranchObservations>>, blocks: &[Blo
                 Stmt::Assign {
                     dest,
                     value: Expr::Const(value),
+                    ..
                 } if dest.index == crate::lift::execution::ADDRESS => address = *value,
                 Stmt::Brif { .. } | Stmt::BrifFlags { .. } => {
                     observations.borrow_mut().sides.entry(address).or_default();
@@ -2200,18 +2210,21 @@ mod tests {
                         index: Expr::reg(register, 64),
                         cases: vec![(0, u64::MAX), (1, 1)],
                         default: Some(2),
+                        at: None,
                     }],
                 },
                 Block {
                     start: 1,
                     stmts: vec![Stmt::Ret {
                         value: Expr::Const(1),
+                        at: None,
                     }],
                 },
                 Block {
                     start: 2,
                     stmts: vec![Stmt::Ret {
                         value: Expr::Const(0),
+                        at: None,
                     }],
                 },
             ]),

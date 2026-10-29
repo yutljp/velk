@@ -264,7 +264,7 @@ impl Features {
                     Stmt::Switch { .. } => "switch",
                     Stmt::Call { .. } => "call",
                     Stmt::Ret { .. } => "return",
-                    Stmt::Trap => "trap",
+                    Stmt::Trap { .. } => "trap",
                     Stmt::Machine { .. } => "machine",
                     Stmt::Unsupported { .. } => "unsupported",
                 };
@@ -364,11 +364,17 @@ mod tests {
         ir.blocks = vec![
             Block {
                 start: 100,
-                stmts: vec![Stmt::Br { target: Some(200) }],
+                stmts: vec![Stmt::Br {
+                    target: Some(200),
+                    at: None,
+                }],
             },
             Block {
                 start: 200,
-                stmts: vec![Stmt::Br { target: Some(100) }],
+                stmts: vec![Stmt::Br {
+                    target: Some(100),
+                    at: None,
+                }],
             },
         ];
         let original = Features::from_ir(&ir);
@@ -376,11 +382,17 @@ mod tests {
         ir.blocks = vec![
             Block {
                 start: 300,
-                stmts: vec![Stmt::Br { target: Some(400) }],
+                stmts: vec![Stmt::Br {
+                    target: Some(400),
+                    at: None,
+                }],
             },
             Block {
                 start: 400,
-                stmts: vec![Stmt::Br { target: Some(300) }],
+                stmts: vec![Stmt::Br {
+                    target: Some(300),
+                    at: None,
+                }],
             },
         ];
         assert_eq!(original.bags, Features::from_ir(&ir).bags);
@@ -432,6 +444,7 @@ mod tests {
                     lhs: Box::new(Expr::reg(1, 64)),
                     rhs: Box::new(Expr::Const(37)),
                 },
+                at: None,
             }],
         );
         let query = Features::from_ir(&add);
@@ -440,8 +453,9 @@ mod tests {
                 addr: Expr::reg(1, 64),
                 value: Expr::Const(93),
                 width: 8,
+                at: None,
             },
-            Stmt::Trap,
+            Stmt::Trap { at: None },
         ];
         let unrelated = Features::from_ir(&add);
         let mut score = 0.0;

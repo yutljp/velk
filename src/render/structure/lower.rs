@@ -41,6 +41,7 @@ impl Lowering {
     fn begin(&mut self, start: u64) {
         self.push(Stmt::Br {
             target: Some(start),
+            at: None,
         });
         self.blocks.push(Block {
             start,
@@ -48,13 +49,14 @@ impl Lowering {
         });
     }
 
-    fn branch(&mut self, cond: Cond, lhs: &Expr, rhs: &Expr, target: u64) {
+    fn branch(&mut self, cond: Cond, lhs: &Expr, rhs: &Expr, target: u64, at: Option<u64>) {
         self.record_location();
         self.push(Stmt::Brif {
             cond,
             lhs: lhs.clone(),
             rhs: rhs.clone(),
             target,
+            at,
         });
         let next = self.fresh_address();
         self.blocks.push(Block {
@@ -87,7 +89,7 @@ impl Lowering {
                     Stmt::Call { .. }
                     | Stmt::Br { .. }
                     | Stmt::Ret { .. }
-                    | Stmt::Trap
+                    | Stmt::Trap { .. }
                     | Stmt::BrIndirect { .. }
                     | Stmt::Switch { .. } => self.leave(stmt.clone()),
                     Stmt::Brif { .. } | Stmt::BrifFlags { .. } => {
@@ -102,19 +104,29 @@ impl Lowering {
                 }
             }
             Node::Label(address) => self.begin(*address),
-            Node::Break => self.leave(Stmt::Br { target: exit }),
-            Node::Continue => self.leave(Stmt::Br { target: repeat }),
+            Node::Break { at } => self.leave(Stmt::Br {
+                target: exit,
+                at: *at,
+            }),
+            Node::Continue { at } => self.leave(Stmt::Br {
+                target: repeat,
+                at: *at,
+            }),
             Node::If {
                 cond,
                 lhs,
                 rhs,
                 then,
                 els,
+                ..
             } => {
                 let (taken, join) = (self.fresh_address(), self.fresh_address());
-                self.branch(*cond, lhs, rhs, taken);
+                self.branch(*cond, lhs, rhs, taken, node.origin());
                 self.nodes(els, exit, repeat);
-                self.leave(Stmt::Br { target: Some(join) });
+                self.leave(Stmt::Br {
+                    target: Some(join),
+                    at: None,
+                });
                 self.begin(taken);
                 self.nodes(then, exit, repeat);
                 self.begin(join);
@@ -125,6 +137,7 @@ impl Lowering {
                 self.nodes(body, Some(after), Some(header));
                 self.leave(Stmt::Br {
                     target: Some(header),
+                    at: None,
                 });
                 self.begin(after);
             }
@@ -134,14 +147,16 @@ impl Lowering {
                 lhs,
                 rhs,
                 body,
+                ..
             } => {
                 let (header, after) = (self.fresh_address(), self.fresh_address());
                 self.begin(header);
                 self.nodes(prefix, Some(after), Some(header));
-                self.branch(cond.invert(), lhs, rhs, after);
+                self.branch(cond.invert(), lhs, rhs, after, node.origin());
                 self.nodes(body, Some(after), Some(header));
                 self.leave(Stmt::Br {
                     target: Some(header),
+                    at: None,
                 });
                 self.begin(after);
             }
@@ -150,6 +165,7 @@ impl Lowering {
                 lhs,
                 rhs,
                 body,
+                ..
             } => {
                 let (header, test, after) = (
                     self.fresh_address(),
@@ -159,13 +175,14 @@ impl Lowering {
                 self.begin(header);
                 self.nodes(body, Some(after), Some(test));
                 self.begin(test);
-                self.branch(*cond, lhs, rhs, header);
+                self.branch(*cond, lhs, rhs, header, node.origin());
                 self.begin(after);
             }
             Node::Switch {
                 index,
                 arms,
                 default,
+                ..
             } => {
                 let after = self.fresh_address();
                 let labels: Vec<u64> = arms.iter().map(|_| self.fresh_address()).collect();
@@ -182,6 +199,7 @@ impl Lowering {
                     index: index.clone(),
                     cases,
                     default: Some(fallback.unwrap_or(after)),
+                    at: node.origin(),
                 });
                 // An arm that does not leave falls into the next one, as in C.
                 for ((_, body), label) in arms.iter().zip(&labels) {
@@ -218,7 +236,7 @@ fn lowered(ir: &FunctionIr, nodes: &[Node]) -> (FunctionIr, Vec<(usize, usize)>)
         stmts: Vec::new(),
     });
     lowering.nodes(nodes, None, None);
-    lowering.push(Stmt::Trap);
+    lowering.push(Stmt::Trap { at: None });
     let mut lowered = ir.clone();
     lowered.blocks = lowering.blocks;
     (lowered, lowering.locations)
@@ -226,12 +244,12 @@ fn lowered(ir: &FunctionIr, nodes: &[Node]) -> (FunctionIr, Vec<(usize, usize)>)
 
 /// Splits independent values after all control-flow transformations have finished.
 pub(crate) fn split_variables(ir: &FunctionIr, nodes: &mut [Node]) -> FunctionIr {
-    if ir
-        .blocks
-        .iter()
-        .flat_map(|block| &block.stmts)
-        .any(|stmt| matches!(stmt, Stmt::BrIndirect { .. } | Stmt::Br { target: None }))
-    {
+    if ir.blocks.iter().flat_map(|block| &block.stmts).any(|stmt| {
+        matches!(
+            stmt,
+            Stmt::BrIndirect { .. } | Stmt::Br { target: None, .. }
+        )
+    }) {
         return ir.clone();
     }
     let (mut lowered, mut locations) = lowered(ir, nodes);
@@ -354,6 +372,7 @@ fn rewrite(nodes: &mut [Node], statements: &mut impl Iterator<Item = Stmt>) {
                 index,
                 arms,
                 default,
+                ..
             } => {
                 let Some(Stmt::Switch { index: renamed, .. }) = statements.next() else {
                     unreachable!("recorded switch");
@@ -366,7 +385,7 @@ fn rewrite(nodes: &mut [Node], statements: &mut impl Iterator<Item = Stmt>) {
                     rewrite(body, statements);
                 }
             }
-            Node::Label(_) | Node::Break | Node::Continue => {}
+            Node::Label(_) | Node::Break { .. } | Node::Continue { .. } => {}
         }
     }
 }
@@ -374,8 +393,14 @@ fn rewrite(nodes: &mut [Node], statements: &mut impl Iterator<Item = Stmt>) {
 fn matches_exception_site(lowered: &[Stmt], original: &[String]) -> bool {
     lowered.iter().any(|stmt| {
         matches!(stmt, Stmt::Call { .. } | Stmt::Unsupported { .. })
-            && original.contains(&format!("{stmt:?}"))
+            && original.contains(&exception_statement(stmt))
     })
+}
+
+fn exception_statement(stmt: &Stmt) -> String {
+    let mut stmt = stmt.clone();
+    stmt.set_origin(None);
+    format!("{stmt:?}")
 }
 
 fn exception_edges(original: &FunctionIr, lowered: &mut FunctionIr) {
@@ -398,7 +423,12 @@ fn exception_edges(original: &FunctionIr, lowered: &mut FunctionIr) {
             index,
             &original.landing_pads,
         );
-        let statements: Vec<String> = block.stmts.iter().map(|stmt| format!("{stmt:?}")).collect();
+        let statements: Vec<String> = block
+            .stmts
+            .iter()
+            .filter(|stmt| matches!(stmt, Stmt::Call { .. } | Stmt::Unsupported { .. }))
+            .map(exception_statement)
+            .collect();
         for handler in edges.exceptional {
             let Some(pad) = addresses.get(&original.blocks[handler].start) else {
                 continue;
@@ -419,6 +449,7 @@ fn exception_edges(original: &FunctionIr, lowered: &mut FunctionIr) {
             match stmt {
                 Stmt::Br {
                     target: Some(target),
+                    ..
                 }
                 | Stmt::Brif { target, .. }
                 | Stmt::BrifFlags { target, .. } => {

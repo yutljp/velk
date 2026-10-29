@@ -1462,7 +1462,7 @@ mod tests {
     }
 
     fn global_returned(value: Expr, ty: CType, params: &[CType]) -> String {
-        let mut ir = function(vec![Stmt::Ret { value }], params);
+        let mut ir = function(vec![Stmt::Ret { value, at: None }], params);
         ir.ret_type = ty;
         let symbols = crate::render::Symbols {
             data: HashMap::from([(0x1000, "counter".to_owned())]),
@@ -1472,7 +1472,7 @@ mod tests {
     }
 
     fn returned(value: Expr, params: &[CType]) -> String {
-        rendered(vec![Stmt::Ret { value }], params)
+        rendered(vec![Stmt::Ret { value, at: None }], params)
     }
 
     fn pointer() -> CType {
@@ -1574,13 +1574,18 @@ mod tests {
                     addr: slot.clone(),
                     value: Expr::reg(7, 64),
                     width: 8,
+                    at: None,
                 },
                 Stmt::Store {
                     addr: slot,
                     value: Expr::bin(BinOp::Sar, load.clone(), Expr::Const(3)),
                     width: 8,
+                    at: None,
                 },
-                Stmt::Ret { value: load },
+                Stmt::Ret {
+                    value: load,
+                    at: None,
+                },
             ],
             &[CType::U64],
         );
@@ -2054,28 +2059,35 @@ mod tests {
                     addr: slot.clone(),
                     value: Expr::reg(7, 64),
                     width: 8,
+                    at: None,
                 },
                 Stmt::Store {
                     addr: slot.clone(),
                     value: Expr::bin(BinOp::Add, loaded(8), Expr::Const(4)),
                     width: 8,
+                    at: None,
                 },
                 Stmt::Store {
                     addr: loaded(8),
                     value: Expr::Const(1),
                     width: 1,
+                    at: None,
                 },
             ]
         };
         let mut stmts = setup();
         stmts.push(Stmt::Ret {
             value: Expr::bin(BinOp::And, loaded(8), Expr::Const(7)),
+            at: None,
         });
         let text = rendered(stmts, &[CType::pointer_to(CType::int(1, false))]);
         assert!(text.contains("uint8_t *result;"), "{text}");
         assert!(text.contains("return (uintptr_t)result & 0x7;"), "{text}");
         let mut stmts = setup();
-        stmts.push(Stmt::Ret { value: loaded(4) });
+        stmts.push(Stmt::Ret {
+            value: loaded(4),
+            at: None,
+        });
         let text = rendered(stmts, &[CType::pointer_to(CType::int(1, false))]);
         assert!(text.contains("return *(uint32_t *)&result;"), "{text}");
     }
@@ -2134,6 +2146,7 @@ mod tests {
         let mut ir = function(
             vec![Stmt::Ret {
                 value: Expr::bin(BinOp::Shl, Expr::reg(7, 8), Expr::Const(24)),
+                at: None,
             }],
             &[CType::int(1, false)],
         );
@@ -2148,7 +2161,7 @@ mod tests {
     #[test]
     fn left_shifts_only_keep_source_truncation_that_the_reader_observes() {
         let value = Expr::bin(BinOp::Shl, Expr::reg(7, 32), Expr::Const(1));
-        let mut ir = function(vec![Stmt::Ret { value }], &[CType::U64]);
+        let mut ir = function(vec![Stmt::Ret { value, at: None }], &[CType::U64]);
         ir.ret_type = CType::U32;
         let narrow = crate::render::render(&ir, &[], &crate::render::Symbols::default(), &[]);
         assert!(narrow.contains("return a0 << 1;"), "{narrow}");

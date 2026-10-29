@@ -10,6 +10,38 @@ use std::fmt::Write as _;
 use velk::ir::{Expr, FunctionIr, Stmt, VALUE_BASE, VARIABLE_BASE};
 use velk::service::Binary;
 
+#[test]
+fn instruction_origins_do_not_change_exception_site_matching() {
+    let call = Stmt::Call {
+        at: Some(0x10),
+        kind: velk::ir::CallKind::Invoke,
+        target: Some(0x30),
+        through: None,
+        convention: velk::ir::Convention::SysV,
+        args: Some(Vec::new()),
+        floats_named: true,
+        abi: None,
+        outputs: Vec::new(),
+        clobbers: None,
+        via: None,
+    };
+    let original = vec![super::exception_statement(&call)];
+    let mut moved = call;
+    moved.set_origin(Some(0x20));
+    assert!(super::matches_exception_site(
+        std::slice::from_ref(&moved),
+        &original
+    ));
+    let Stmt::Call { target, .. } = &mut moved else {
+        panic!("call remains a call");
+    };
+    *target = Some(0x40);
+    assert!(!super::matches_exception_site(
+        std::slice::from_ref(&moved),
+        &original
+    ));
+}
+
 fn root(parent: &mut [usize], mut value: usize) -> usize {
     while parent[value] != value {
         parent[value] = parent[parent[value]];
@@ -102,6 +134,7 @@ fn webs(ir: &FunctionIr) -> Webs {
         if let Stmt::Assign {
             dest,
             value: Expr::Bin { .. },
+            ..
         } = stmt
             && dest.width >= crate::arch::pointer_bytes(ir.isa) * 8
         {
@@ -126,6 +159,7 @@ fn webs(ir: &FunctionIr) -> Webs {
         if let Stmt::Assign {
             dest,
             value: Expr::Reg { index, width },
+            ..
         } = stmt
             && *width >= crate::arch::pointer_bytes(ir.isa) * 8
             && dest.width >= crate::arch::pointer_bytes(ir.isa) * 8
@@ -139,6 +173,7 @@ fn webs(ir: &FunctionIr) -> Webs {
                     op: velk::ir::BinOp::And | velk::ir::BinOp::Or | velk::ir::BinOp::Xor,
                     ..
                 },
+            ..
         } = stmt
             && dest.width >= crate::arch::pointer_bytes(ir.isa) * 8
         {
@@ -174,6 +209,7 @@ fn webs(ir: &FunctionIr) -> Webs {
                     lhs,
                     rhs,
                 },
+            ..
         } = stmt
             && dest.width >= crate::arch::pointer_bytes(ir.isa) * 8
             && let (
@@ -246,11 +282,12 @@ fn webs(ir: &FunctionIr) -> Webs {
             .or_default()
             .insert(root(&mut parent, usize::from(value - VALUE_BASE)));
     }
-    let unknown_successors = ir
-        .blocks
-        .iter()
-        .flat_map(|block| &block.stmts)
-        .any(|stmt| matches!(stmt, Stmt::BrIndirect { .. } | Stmt::Br { target: None }));
+    let unknown_successors = ir.blocks.iter().flat_map(|block| &block.stmts).any(|stmt| {
+        matches!(
+            stmt,
+            Stmt::BrIndirect { .. } | Stmt::Br { target: None, .. }
+        )
+    });
     let mut unrelated = BTreeMap::new();
     let fixed: HashSet<u16> = ir
         .blocks
@@ -403,6 +440,7 @@ fn a_formal_register_does_not_hide_storage_reuse() {
             width: 64,
         },
         value: Expr::Const(value),
+        at: None,
     };
     ir.blocks = vec![velk::ir::Block {
         start: 0,
@@ -412,10 +450,12 @@ fn a_formal_register_does_not_hide_storage_reuse() {
                 addr: Expr::reg(7, 64),
                 value: Expr::reg(6, 64),
                 width: 8,
+                at: None,
             },
             assign(9),
             Stmt::Ret {
                 value: Expr::reg(6, 64),
+                at: None,
             },
         ],
     }];
@@ -436,6 +476,7 @@ fn distinguishes_storage_reuse_from_phi_and_loop_values() {
             width: 64,
         },
         value,
+        at: None,
     };
     let mut binary = Binary::open(&common::fixtures_dir().join("alt.o")).unwrap();
     let mut ir = binary.analysis(0, None).unwrap().ir.clone();
@@ -447,10 +488,12 @@ fn distinguishes_storage_reuse_from_phi_and_loop_values() {
                 addr: Expr::reg(7, 64),
                 value: Expr::reg(variable, 64),
                 width: 8,
+                at: None,
             },
             assign(Expr::Const(9)),
             Stmt::Ret {
                 value: Expr::reg(variable, 64),
+                at: None,
             },
         ],
     }];
@@ -462,15 +505,18 @@ fn distinguishes_storage_reuse_from_phi_and_loop_values() {
                 width: 32,
             },
             value: Expr::reg(0, 32),
+            at: None,
         },
         Stmt::Store {
             addr: Expr::reg(7, 64),
             value: Expr::reg(variable, 64),
             width: 8,
+            at: None,
         },
         assign(Expr::reg(0, 64)),
         Stmt::Ret {
             value: Expr::reg(variable, 64),
+            at: None,
         },
     ];
     assert_eq!(webs(&ir).unrelated.get(&variable), Some(&2));
@@ -482,11 +528,18 @@ fn distinguishes_storage_reuse_from_phi_and_loop_values() {
                 lhs: Expr::reg(6, 64),
                 rhs: Expr::Const(0),
                 target: 0x20,
+                at: None,
             }],
         },
         Block {
             start: 0x10,
-            stmts: vec![assign(Expr::Const(7)), Stmt::Br { target: Some(0x30) }],
+            stmts: vec![
+                assign(Expr::Const(7)),
+                Stmt::Br {
+                    target: Some(0x30),
+                    at: None,
+                },
+            ],
         },
         Block {
             start: 0x20,
@@ -496,6 +549,7 @@ fn distinguishes_storage_reuse_from_phi_and_loop_values() {
             start: 0x30,
             stmts: vec![Stmt::Ret {
                 value: Expr::reg(variable, 64),
+                at: None,
             }],
         },
     ];
@@ -519,6 +573,7 @@ fn distinguishes_storage_reuse_from_phi_and_loop_values() {
                     lhs: Expr::reg(variable, 64),
                     rhs: Expr::reg(6, 64),
                     target: 0x10,
+                    at: None,
                 },
             ],
         },
@@ -526,6 +581,7 @@ fn distinguishes_storage_reuse_from_phi_and_loop_values() {
             start: 0x20,
             stmts: vec![Stmt::Ret {
                 value: Expr::reg(variable, 64),
+                at: None,
             }],
         },
     ];
@@ -545,6 +601,7 @@ fn implicit_call_operands_keep_their_register_binding() {
             width: 64,
         },
         value: Expr::Const(value),
+        at: None,
     };
     let call = Stmt::Call {
         kind: CallKind::Invoke,
@@ -557,6 +614,7 @@ fn implicit_call_operands_keep_their_register_binding() {
         clobbers: None,
         outputs: velk::ir::fallback_call_outputs(Convention::Aapcs64, None),
         via: None,
+        at: None,
     };
     ir.blocks[0].stmts = vec![
         assign(0x2000),
@@ -565,6 +623,7 @@ fn implicit_call_operands_keep_their_register_binding() {
         call,
         Stmt::Ret {
             value: Expr::Const(0),
+            at: None,
         },
     ];
     let found = webs(&ir);
@@ -577,11 +636,13 @@ fn implicit_call_operands_keep_their_register_binding() {
                 width: 64,
             },
             value: Expr::reg(0, 64),
+            at: None,
         },
         Stmt::Store {
             addr: Expr::reg(1, 64),
             value: Expr::reg(8, 64),
             width: 8,
+            at: None,
         },
         Stmt::Assign {
             dest: RegRef {
@@ -589,9 +650,11 @@ fn implicit_call_operands_keep_their_register_binding() {
                 width: 64,
             },
             value: Expr::reg(2, 64),
+            at: None,
         },
         Stmt::Ret {
             value: Expr::reg(8, 64),
+            at: None,
         },
     ];
     let found = webs(&ir);
@@ -599,6 +662,7 @@ fn implicit_call_operands_keep_their_register_binding() {
     assert_eq!(found.bindings, 0);
     ir.blocks[0].stmts[3] = Stmt::BrIndirect {
         target: Expr::reg(8, 64),
+        at: None,
     };
     let found = webs(&ir);
     assert!(found.unrelated.is_empty());

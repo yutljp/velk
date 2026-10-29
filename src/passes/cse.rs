@@ -14,7 +14,7 @@ pub fn cse(ir: &mut FunctionIr) {
     // a temporary that is live elsewhere or has a fixed role.
     let temporaries = unused_temporaries(ir);
     for block in &mut ir.blocks {
-        for stmt in std::mem::take(&mut block.stmts) {
+        for mut stmt in std::mem::take(&mut block.stmts) {
             let mut counts: HashMap<Expr, usize> = HashMap::new();
             count_stmt(&stmt, &mut counts);
             if counts.values().all(|count| *count <= 1) {
@@ -25,8 +25,9 @@ pub fn cse(ir: &mut FunctionIr) {
             let mut bound: HashMap<Expr, u16> = HashMap::new();
             let mut available = temporaries.iter().copied();
             let mut pending: Vec<Stmt> = Vec::new();
-            let mut share = |expr| {
-                bind(
+            let mut share = |value: &mut Expr| {
+                let expr = std::mem::replace(value, Expr::Const(0));
+                *value = bind(
                     expr,
                     &counts,
                     &mut bound,
@@ -34,48 +35,25 @@ pub fn cse(ir: &mut FunctionIr) {
                     &mut available,
                     false,
                     0,
-                )
+                );
             };
-            let rewritten = match stmt {
-                Stmt::Assign { dest, value } => Stmt::Assign {
-                    dest,
-                    value: share(value),
-                },
-                Stmt::Store { addr, value, width } => {
-                    let addr = share(addr);
-                    let value = share(value);
-                    Stmt::Store { addr, value, width }
+            match &mut stmt {
+                Stmt::Assign { value, .. } | Stmt::Ret { value, .. } => share(value),
+                Stmt::Store { addr, value, .. } => {
+                    share(addr);
+                    share(value);
                 }
-                Stmt::Brif {
-                    cond,
-                    lhs,
-                    rhs,
-                    target,
-                } => Stmt::Brif {
-                    cond,
-                    lhs: share(lhs),
-                    rhs: share(rhs),
-                    target,
-                },
-                Stmt::Ret { value } => Stmt::Ret {
-                    value: share(value),
-                },
-                Stmt::BrIndirect { target } => Stmt::BrIndirect {
-                    target: share(target),
-                },
-                Stmt::Switch {
-                    index,
-                    cases,
-                    default,
-                } => Stmt::Switch {
-                    index: share(index),
-                    cases,
-                    default,
-                },
-                other => other,
-            };
+                Stmt::Brif { lhs, rhs, .. } => {
+                    share(lhs);
+                    share(rhs);
+                }
+                Stmt::BrIndirect { target, .. } | Stmt::Switch { index: target, .. } => {
+                    share(target);
+                }
+                _ => {}
+            }
             block.stmts.extend(pending);
-            block.stmts.push(rewritten);
+            block.stmts.push(stmt);
         }
     }
 }
@@ -172,6 +150,7 @@ fn bind(
     pending.push(Stmt::Assign {
         dest: crate::ir::RegRef { index, width },
         value: rewritten,
+        at: None,
     });
     Expr::Reg { index, width }
 }
@@ -254,8 +233,8 @@ fn count_stmt(stmt: &Stmt, counts: &mut std::collections::HashMap<Expr, usize>) 
             count_nodes(lhs, counts);
             count_nodes(rhs, counts);
         }
-        Stmt::Ret { value } => count_nodes(value, counts),
-        Stmt::BrIndirect { target } => count_nodes(target, counts),
+        Stmt::Ret { value, .. } => count_nodes(value, counts),
+        Stmt::BrIndirect { target, .. } => count_nodes(target, counts),
         Stmt::Switch { index, .. } => count_nodes(index, counts),
         _ => {}
     }

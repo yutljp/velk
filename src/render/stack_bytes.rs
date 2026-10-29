@@ -142,7 +142,7 @@ fn prepare_inner(ir: &mut FunctionIr) -> Option<Option<Plan>> {
             }
             let original = stmt.clone();
             let mut accesses = Vec::new();
-            let remove = if let Stmt::Assign { dest, value } = &stmt {
+            let remove = if let Stmt::Assign { dest, value, .. } = &stmt {
                 match origin(value, &state) {
                     Some(Some(_)) if dest.width == 64 => true,
                     Some(_) => return None,
@@ -154,7 +154,9 @@ fn prepare_inner(ir: &mut FunctionIr) -> Option<Option<Plan>> {
             };
             if !remove {
                 match &mut stmt {
-                    Stmt::Store { addr, value, width } => {
+                    Stmt::Store {
+                        addr, value, width, ..
+                    } => {
                         let Some(_) = rewrite_value(value, &state, frame, &mut plan, &mut accesses)
                         else {
                             return None;
@@ -176,7 +178,7 @@ fn prepare_inner(ir: &mut FunctionIr) -> Option<Option<Plan>> {
                     Stmt::Call { args: None, .. } => return None,
                     Stmt::Unsupported { .. }
                     | Stmt::BrIndirect { .. }
-                    | Stmt::Br { target: None } => return None,
+                    | Stmt::Br { target: None, .. } => return None,
                     _ => {
                         for value in stmt.operands_mut() {
                             let Some(_) =
@@ -315,7 +317,7 @@ fn contains_origin(expr: &Expr, state: &Origins) -> bool {
 
 pub(super) fn transfer(stmt: &Stmt, state: &mut Origins) {
     let assigned = match stmt {
-        Stmt::Assign { dest, value } if dest.width == 64 => origin(value, state),
+        Stmt::Assign { dest, value, .. } if dest.width == 64 => origin(value, state),
         Stmt::Assign { value, .. } if contains_origin(value, state) => Some(None),
         _ => None,
     };
@@ -530,6 +532,7 @@ mod tests {
         Stmt::Assign {
             dest: RegRef { index, width: 64 },
             value,
+            at: None,
         }
     }
 
@@ -581,7 +584,10 @@ mod tests {
             "alignof",
             "constexpr",
         ] {
-            let mut ir = function(vec![Stmt::Ret { value: load(4, 8) }]);
+            let mut ir = function(vec![Stmt::Ret {
+                value: load(4, 8),
+                at: None,
+            }]);
             ir.name = Some("stack_keyword".to_owned());
             ir.stack_params[0].name = name.to_owned();
             ir.stack_params[1].name = format!("{name}_2");
@@ -607,14 +613,17 @@ mod tests {
                 addr: Expr::reg(held, 64),
                 value: Expr::Const(written),
                 width: 8,
+                at: None,
             },
             Stmt::Store {
                 addr: Expr::Const(0x1000),
                 value: indirect(),
                 width: 8,
+                at: None,
             },
             Stmt::Ret {
                 value: Expr::reg(saved, 64),
+                at: None,
             },
         ]);
         let expected = eval::Outcome::Return {
@@ -655,6 +664,7 @@ mod tests {
                         width: 4,
                         signed,
                     },
+                    at: None,
                 },
             ]);
             let expected = eval::Outcome::Return {
@@ -693,6 +703,7 @@ mod tests {
                     },
                     load(8, 8),
                 ),
+                at: None,
             },
         ]);
         let expected = eval::Outcome::Return {
@@ -716,26 +727,38 @@ mod tests {
             signed: false,
         };
         for stmts in [
-            vec![assign(held, at(31, 24)), Stmt::Ret { value: indirect(8) }],
+            vec![
+                assign(held, at(31, 24)),
+                Stmt::Ret {
+                    value: indirect(8),
+                    at: None,
+                },
+            ],
             vec![
                 assign(held, at(31, 24)),
                 Stmt::Store {
                     addr: Expr::reg(held, 64),
                     value: Expr::Const(17),
                     width: 8,
+                    at: None,
                 },
-                Stmt::Ret { value: indirect(8) },
+                Stmt::Ret {
+                    value: indirect(8),
+                    at: None,
+                },
             ],
             vec![
                 assign(held, at(31, 0)),
                 Stmt::Ret {
                     value: indirect(16),
+                    at: None,
                 },
             ],
             vec![
                 assign(held, at(31, 0)),
                 Stmt::Ret {
                     value: Expr::reg(held, 64),
+                    at: None,
                 },
             ],
         ] {
@@ -754,23 +777,30 @@ mod tests {
                     addr: at(31, 7),
                     value: load(4, width),
                     width,
+                    at: None,
                 },
                 Stmt::Store {
                     addr: Expr::Const(0x1000),
                     value: load(0, 8),
                     width: 8,
+                    at: None,
                 },
                 Stmt::Store {
                     addr: Expr::Const(0x1008),
                     value: load(8, 8),
                     width: 8,
+                    at: None,
                 },
                 Stmt::Store {
                     addr: Expr::Const(0x1010),
                     value: load(16, 8),
                     width: 8,
+                    at: None,
                 },
-                Stmt::Ret { value: load(4, 8) },
+                Stmt::Ret {
+                    value: load(4, 8),
+                    at: None,
+                },
             ]);
             let mut rewritten = original.clone();
             let plan = prepare(&mut rewritten).expect("complete raw words");
@@ -800,6 +830,7 @@ mod tests {
                     width: 8,
                     signed: false,
                 },
+                at: None,
             },
         ]);
         let mut rewritten = original.clone();
@@ -822,6 +853,7 @@ mod tests {
                     Expr::reg(crate::ir::VARIABLE_BASE, 64),
                     load(4, 8),
                 ),
+                at: None,
             },
         ]);
         let mut rewritten = original.clone();
@@ -839,6 +871,7 @@ mod tests {
             addr: at(31, 8),
             value: Expr::Const(17),
             width: 8,
+            at: None,
         };
         let mut ir = function(Vec::new());
         ir.stack_params.truncate(1);
@@ -850,23 +883,42 @@ mod tests {
                     lhs: Expr::reg(0, 64),
                     rhs: Expr::Const(0),
                     target: 20,
+                    at: None,
                 }],
             },
             Block {
                 start: 10,
-                stmts: vec![store(), Stmt::Br { target: Some(30) }],
+                stmts: vec![
+                    store(),
+                    Stmt::Br {
+                        target: Some(30),
+                        at: None,
+                    },
+                ],
             },
             Block {
                 start: 20,
                 stmts: if write_right {
-                    vec![store(), Stmt::Br { target: Some(30) }]
+                    vec![
+                        store(),
+                        Stmt::Br {
+                            target: Some(30),
+                            at: None,
+                        },
+                    ]
                 } else {
-                    vec![Stmt::Br { target: Some(30) }]
+                    vec![Stmt::Br {
+                        target: Some(30),
+                        at: None,
+                    }]
                 },
             },
             Block {
                 start: 30,
-                stmts: vec![Stmt::Ret { value: load(4, 8) }],
+                stmts: vec![Stmt::Ret {
+                    value: load(4, 8),
+                    at: None,
+                }],
             },
         ];
         ir
@@ -884,8 +936,12 @@ mod tests {
                 addr: at(31, 4),
                 value: Expr::Const(0x8877_6655_4433_2211),
                 width: 8,
+                at: None,
             },
-            Stmt::Ret { value: load(4, 8) },
+            Stmt::Ret {
+                value: load(4, 8),
+                at: None,
+            },
         ]);
         stored.stack_params.clear();
         let original = stored.clone();
@@ -910,15 +966,28 @@ mod tests {
                         lhs: Expr::reg(0, 64),
                         rhs: Expr::Const(0),
                         target: 20,
+                        at: None,
                     }],
                 },
                 Block {
                     start: 10,
-                    stmts: vec![assign(held, at(31, 4)), Stmt::Br { target: Some(30) }],
+                    stmts: vec![
+                        assign(held, at(31, 4)),
+                        Stmt::Br {
+                            target: Some(30),
+                            at: None,
+                        },
+                    ],
                 },
                 Block {
                     start: 20,
-                    stmts: vec![assign(held, at(31, right)), Stmt::Br { target: Some(30) }],
+                    stmts: vec![
+                        assign(held, at(31, right)),
+                        Stmt::Br {
+                            target: Some(30),
+                            at: None,
+                        },
+                    ],
                 },
                 Block {
                     start: 30,
@@ -928,6 +997,7 @@ mod tests {
                             width: 8,
                             signed: false,
                         },
+                        at: None,
                     }],
                 },
             ];
@@ -938,29 +1008,46 @@ mod tests {
     #[test]
     fn invalid_storage_bounds_and_address_uses_leave_the_ir_unchanged() {
         let cases = [
-            vec![Stmt::Ret { value: load(-1, 8) }],
+            vec![Stmt::Ret {
+                value: load(-1, 8),
+                at: None,
+            }],
             vec![Stmt::Ret {
                 value: load(508, 8),
+                at: None,
             }],
-            vec![Stmt::Ret { value: load(4, 3) }],
+            vec![Stmt::Ret {
+                value: load(4, 3),
+                at: None,
+            }],
             vec![
                 Stmt::Store {
                     addr: Expr::Const(0x1000),
                     value: at(31, 4),
                     width: 8,
+                    at: None,
                 },
-                Stmt::Ret { value: load(4, 8) },
+                Stmt::Ret {
+                    value: load(4, 8),
+                    at: None,
+                },
             ],
             vec![
                 assign(
                     31,
                     Expr::bin(BinOp::Sub, Expr::reg(31, 64), Expr::reg(0, 64)),
                 ),
-                Stmt::Ret { value: load(4, 8) },
+                Stmt::Ret {
+                    value: load(4, 8),
+                    at: None,
+                },
             ],
             vec![
                 assign(crate::ir::VARIABLE_BASE, Expr::reg(31, 32)),
-                Stmt::Ret { value: load(4, 8) },
+                Stmt::Ret {
+                    value: load(4, 8),
+                    at: None,
+                },
             ],
         ];
         for stmts in cases {
@@ -970,7 +1057,10 @@ mod tests {
             assert_eq!(format!("{ir:?}"), before);
         }
         for ty in [CType::U32, CType::Named("unknown".to_owned())] {
-            let mut ir = function(vec![Stmt::Ret { value: load(4, 8) }]);
+            let mut ir = function(vec![Stmt::Ret {
+                value: load(4, 8),
+                at: None,
+            }]);
             ir.stack_params[1].ty = ty;
             assert!(prepare(&mut ir).is_none());
         }
@@ -989,8 +1079,15 @@ mod tests {
             floats_named: false,
             abi: None,
             via: None,
+            at: None,
         };
-        let original = function(vec![call(load(4, 8)), Stmt::Ret { value: load(8, 8) }]);
+        let original = function(vec![
+            call(load(4, 8)),
+            Stmt::Ret {
+                value: load(8, 8),
+                at: None,
+            },
+        ]);
         let mut rewritten = original.clone();
         let plan = prepare(&mut rewritten).unwrap();
         assert_eq!(
@@ -998,7 +1095,13 @@ mod tests {
             outcome(&rewritten, plan.register)
         );
         assert!(matches!(rewritten.blocks[0].stmts[0], Stmt::Call { .. }));
-        let mut escaping = function(vec![call(at(31, 4)), Stmt::Ret { value: load(4, 8) }]);
+        let mut escaping = function(vec![
+            call(at(31, 4)),
+            Stmt::Ret {
+                value: load(4, 8),
+                at: None,
+            },
+        ]);
         assert!(prepare(&mut escaping).is_none());
         for overwrite in [false, true] {
             let mut stmts = vec![assign(10, at(31, 4)), call(Expr::Const(7))];
@@ -1012,6 +1115,7 @@ mod tests {
                     width: 8,
                     signed: false,
                 },
+                at: None,
             });
             assert_eq!(prepare(&mut function(stmts)).is_some(), overwrite);
         }
@@ -1030,6 +1134,7 @@ mod tests {
             floats_named,
             abi: None,
             via: None,
+            at: None,
         };
         for (register, floats_named) in [(8, true), (32, false)] {
             for overwritten in [false, true] {
@@ -1037,7 +1142,13 @@ mod tests {
                 if overwritten {
                     stmts.push(assign(register, Expr::Const(0x1000)));
                 }
-                stmts.extend([call(floats_named), Stmt::Ret { value: load(4, 8) }]);
+                stmts.extend([
+                    call(floats_named),
+                    Stmt::Ret {
+                        value: load(4, 8),
+                        at: None,
+                    },
+                ]);
                 let mut ir = function(stmts);
                 let before = format!("{ir:?}");
                 assert_eq!(prepare(&mut ir).is_some(), overwritten);
@@ -1055,19 +1166,38 @@ mod tests {
                     lhs: Expr::reg(0, 64),
                     rhs: Expr::Const(0),
                     target: 20,
+                    at: None,
                 }],
             },
             Block {
                 start: 10,
-                stmts: vec![assign(8, at(31, 4)), Stmt::Br { target: Some(30) }],
+                stmts: vec![
+                    assign(8, at(31, 4)),
+                    Stmt::Br {
+                        target: Some(30),
+                        at: None,
+                    },
+                ],
             },
             Block {
                 start: 20,
-                stmts: vec![assign(8, at(31, 12)), Stmt::Br { target: Some(30) }],
+                stmts: vec![
+                    assign(8, at(31, 12)),
+                    Stmt::Br {
+                        target: Some(30),
+                        at: None,
+                    },
+                ],
             },
             Block {
                 start: 30,
-                stmts: vec![call(true), Stmt::Ret { value: load(4, 8) }],
+                stmts: vec![
+                    call(true),
+                    Stmt::Ret {
+                        value: load(4, 8),
+                        at: None,
+                    },
+                ],
             },
         ];
         let before = format!("{ir:?}");
@@ -1089,6 +1219,7 @@ mod tests {
             floats_named,
             abi: None,
             via: None,
+            at: None,
         };
         for (physical, floats_named) in [(8, true), (32, false)] {
             for overwritten in [false, true] {
@@ -1096,7 +1227,13 @@ mod tests {
                 if overwritten {
                     stmts.push(assign(variable, Expr::Const(0x1000)));
                 }
-                stmts.extend([call(floats_named), Stmt::Ret { value: load(4, 8) }]);
+                stmts.extend([
+                    call(floats_named),
+                    Stmt::Ret {
+                        value: load(4, 8),
+                        at: None,
+                    },
+                ]);
                 let mut ir = function(stmts);
                 ir.variable_registers.insert(variable, physical);
                 let before = format!("{ir:?}");
@@ -1116,19 +1253,38 @@ mod tests {
                     lhs: Expr::reg(0, 64),
                     rhs: Expr::Const(0),
                     target: 20,
+                    at: None,
                 }],
             },
             Block {
                 start: 10,
-                stmts: vec![assign(variable, at(31, 4)), Stmt::Br { target: Some(30) }],
+                stmts: vec![
+                    assign(variable, at(31, 4)),
+                    Stmt::Br {
+                        target: Some(30),
+                        at: None,
+                    },
+                ],
             },
             Block {
                 start: 20,
-                stmts: vec![assign(variable, at(31, 12)), Stmt::Br { target: Some(30) }],
+                stmts: vec![
+                    assign(variable, at(31, 12)),
+                    Stmt::Br {
+                        target: Some(30),
+                        at: None,
+                    },
+                ],
             },
             Block {
                 start: 30,
-                stmts: vec![call(true), Stmt::Ret { value: load(4, 8) }],
+                stmts: vec![
+                    call(true),
+                    Stmt::Ret {
+                        value: load(4, 8),
+                        at: None,
+                    },
+                ],
             },
         ];
         let before = format!("{ir:?}");
@@ -1138,7 +1294,10 @@ mod tests {
             assign(variable, at(31, 4)),
             assign(8, Expr::Const(0x1000)),
             call(true),
-            Stmt::Ret { value: load(4, 8) },
+            Stmt::Ret {
+                value: load(4, 8),
+                at: None,
+            },
         ]);
         old_alias.variable_registers.insert(variable, 8);
         assert!(prepare(&mut old_alias).is_none());

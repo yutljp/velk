@@ -77,6 +77,9 @@ velk --strings   path/to/binary          # 参照付きの文字列
 `velk --disasm --json` は `addr`、`instruction`、`comment` を持つ命令レコードを返し、スクリプトの
 `f.disasm()` も同じレコードを返します。
 
+`-D --addresses` で命令アドレスのコメントを付け、`-D --json` で疑似Cと行番号から
+アドレスへの対応を返します。[命令アドレス](docs/instruction-addresses.ja.md)を参照してください。
+
 バイナリ全体の処理には利用可能な CPU コアを使います。`VELK_THREADS=1` でワーカーを 1 個に、
 ほかの正の整数でワーカー数の上限を指定できます。結果は関数の順序を保ちます。
 Linux ではバイナリのローダーが入力のスナップショットを読み取り専用でメモリにマップし、マップできない場合はファイルを読み込みます。

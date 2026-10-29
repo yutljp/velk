@@ -86,8 +86,8 @@ fn reaches_return(ir: &FunctionIr, reg: u16) -> bool {
             .iter()
             .flat_map(|block| &block.stmts)
             .any(|stmt| match stmt {
-                Stmt::Assign { dest, value } => dest.index == arch::RETURN && is_reg(value),
-                Stmt::Ret { value } => is_reg(value),
+                Stmt::Assign { dest, value, .. } => dest.index == arch::RETURN && is_reg(value),
+                Stmt::Ret { value, .. } => is_reg(value),
                 _ => false,
             })
 }
@@ -114,7 +114,7 @@ fn magic_block(
     //   r = (x & 0xffffffff) + (s & 0xffffffff)
     // is `a / d` (ARM64 `smull` plus two shifts).
     if let Some((probe, leaf, divisor)) = widened_signed_site(&block.stmts)
-        && let Stmt::Assign { dest, value } = &mut block.stmts[probe]
+        && let Stmt::Assign { dest, value, .. } = &mut block.stmts[probe]
     {
         let in_return = dest.index == 0;
         *value = division(leaf.clone(), divisor);

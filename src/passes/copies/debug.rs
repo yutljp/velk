@@ -35,7 +35,7 @@ pub(crate) fn fold_stack_locals(ir: &mut FunctionIr) -> bool {
     for block in 0..ir.blocks.len() {
         let mut index = 0;
         while index + 1 < ir.blocks[block].stmts.len() {
-            let Stmt::Assign { dest, value } = &ir.blocks[block].stmts[index] else {
+            let Stmt::Assign { dest, value, .. } = &ir.blocks[block].stmts[index] else {
                 index += 1;
                 continue;
             };
@@ -45,6 +45,7 @@ pub(crate) fn fold_stack_locals(ir: &mut FunctionIr) -> bool {
                 addr,
                 value: stored,
                 width,
+                ..
             } = &ir.blocks[block].stmts[index + 1]
             else {
                 index += 1;
@@ -159,6 +160,7 @@ pub(crate) fn fold_stack_locals(ir: &mut FunctionIr) -> bool {
                 addr,
                 value: super::truncated(&value, dest.width),
                 width,
+                at: ir.blocks[block].stmts[index + 1].origin(),
             };
             ir.blocks[block].stmts.remove(index + 1);
             changed = true;

@@ -5,6 +5,7 @@ fn assign(index: u16, value: Expr) -> Stmt {
     Stmt::Assign {
         dest: RegRef { index, width: 64 },
         value,
+        at: None,
     }
 }
 
@@ -14,6 +15,7 @@ fn branch(cond: Cond, lhs: Expr, rhs: Expr, target: u64) -> Stmt {
         lhs,
         rhs,
         target,
+        at: None,
     }
 }
 
@@ -79,12 +81,16 @@ fn printed_counted_loops_match_bounds_and_exits() {
             },
             Block {
                 start: 40,
-                stmts: vec![Stmt::Ret { value: total() }],
+                stmts: vec![Stmt::Ret {
+                    value: total(),
+                    at: None,
+                }],
             },
             Block {
                 start: 50,
                 stmts: vec![Stmt::Ret {
                     value: Expr::Const(0),
+                    at: None,
                 }],
             },
         ];
@@ -128,12 +134,18 @@ fn printed_counted_loops_match_bounds_and_exits() {
             stmts: vec![
                 assign(sum, Expr::bin(BinOp::Add, total(), counter())),
                 assign(i, Expr::bin(BinOp::Sub, counter(), Expr::Const(1))),
-                Stmt::Br { target: Some(10) },
+                Stmt::Br {
+                    target: Some(10),
+                    at: None,
+                },
             ],
         },
         Block {
             start: 30,
-            stmts: vec![Stmt::Ret { value: total() }],
+            stmts: vec![Stmt::Ret {
+                value: total(),
+                at: None,
+            }],
         },
     ];
     let candidate = printed_candidate(ir, vec![vec![0], vec![1], vec![2], vec![7]]);
@@ -179,6 +191,7 @@ fn printed_compound_updates_preserve_arithmetic_and_shift_counts() {
                 assign(7, Expr::bin(op, Expr::reg(7, 64), Expr::reg(6, 64))),
                 Stmt::Ret {
                     value: Expr::reg(7, 64),
+                    at: None,
                 },
             ],
         );
@@ -224,6 +237,7 @@ fn printed_compound_updates_preserve_arithmetic_and_shift_counts() {
                 ),
                 Stmt::Ret {
                     value: Expr::reg(7, 64),
+                    at: None,
                 },
             ],
         );
@@ -274,12 +288,14 @@ fn printed_do_loop_keeps_a_distinct_entry_guard() {
             start: 30,
             stmts: vec![Stmt::Ret {
                 value: Expr::reg(i, 64),
+                at: None,
             }],
         },
         Block {
             start: 40,
             stmts: vec![Stmt::Ret {
                 value: Expr::Const(0),
+                at: None,
             }],
         },
     ];
@@ -324,17 +340,27 @@ fn printed_continue_paths_update_the_counter_once() {
                     Expr::bin(BinOp::Add, Expr::reg(sum, 64), Expr::reg(i, 64)),
                 ),
                 step(),
-                Stmt::Br { target: Some(10) },
+                Stmt::Br {
+                    target: Some(10),
+                    at: None,
+                },
             ],
         },
         Block {
             start: 40,
-            stmts: vec![step(), Stmt::Br { target: Some(10) }],
+            stmts: vec![
+                step(),
+                Stmt::Br {
+                    target: Some(10),
+                    at: None,
+                },
+            ],
         },
         Block {
             start: 50,
             stmts: vec![Stmt::Ret {
                 value: Expr::reg(sum, 64),
+                at: None,
             }],
         },
     ];
@@ -379,6 +405,7 @@ fn printed_guarded_initialization_stays_conditional() {
             start: 30,
             stmts: vec![Stmt::Ret {
                 value: Expr::reg(i, 64),
+                at: None,
             }],
         },
     ];
@@ -431,12 +458,14 @@ fn printed_guarded_unsigned_do_countdown_preserves_zero() {
             start: 30,
             stmts: vec![Stmt::Ret {
                 value: Expr::reg(sum, 64),
+                at: None,
             }],
         },
         Block {
             start: 40,
             stmts: vec![Stmt::Ret {
                 value: Expr::Const(0),
+                at: None,
             }],
         },
     ];
@@ -477,13 +506,18 @@ fn printed_stack_shifts_keep_the_stored_width() {
                         addr: address.clone(),
                         width,
                         value: Expr::reg(7, 64),
+                        at: None,
                     },
                     Stmt::Store {
                         addr: address,
                         width,
                         value: Expr::bin(op, loaded.clone(), Expr::Const(1)),
+                        at: None,
                     },
-                    Stmt::Ret { value: loaded },
+                    Stmt::Ret {
+                        value: loaded,
+                        at: None,
+                    },
                 ],
             );
             let candidate = printed_candidate(

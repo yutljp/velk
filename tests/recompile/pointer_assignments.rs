@@ -21,6 +21,7 @@ fn word_pointer_assignments_to_byte_pointers_preserve_offsets() {
                         width: 64,
                     },
                     value: Expr::reg(argument, 64),
+                    at: None,
                 },
                 Stmt::Ret {
                     value: Expr::Load {
@@ -32,6 +33,7 @@ fn word_pointer_assignments_to_byte_pointers_preserve_offsets() {
                         width: 1,
                         signed: false,
                     },
+                    at: None,
                 },
             ],
         );
@@ -80,9 +82,11 @@ fn word_buffer_arguments_compile_with_separately_printed_byte_parameters() {
                         outputs: velk::ir::fallback_call_outputs(convention, None),
                         clobbers: None,
                         via: None,
+                        at: None,
                     },
                     Stmt::Ret {
                         value: Expr::reg(0, 64),
+                        at: None,
                     },
                 ],
             );
@@ -190,9 +194,11 @@ fn compatible_pointer_arguments_keep_their_types() {
                         outputs: velk::ir::fallback_call_outputs(convention, None),
                         clobbers: None,
                         via: None,
+                        at: None,
                     },
                     Stmt::Ret {
                         value: Expr::reg(0, 64),
+                        at: None,
                     },
                 ],
             );
@@ -259,9 +265,11 @@ fn integer_addresses_passed_to_recovered_structures_keep_their_values() {
                     outputs: velk::ir::fallback_call_outputs(convention, None),
                     clobbers: None,
                     via: None,
+                    at: None,
                 },
                 Stmt::Ret {
                     value: Expr::reg(0, 64),
+                    at: None,
                 },
             ],
         );
@@ -310,9 +318,11 @@ fn pointer_arguments_to_recovered_integer_parameters_keep_their_values() {
                     outputs: velk::ir::fallback_call_outputs(convention, None),
                     clobbers: None,
                     via: None,
+                    at: None,
                 },
                 Stmt::Ret {
                     value: Expr::reg(0, 64),
+                    at: None,
                 },
             ],
         );
@@ -359,11 +369,13 @@ fn printed_indexed_stack_pointer_assignments_preserve_byte_offsets() {
                 addr: slot(-8),
                 value: Expr::Const(0x12345678),
                 width: 4,
+                at: None,
             },
             Stmt::Store {
                 addr: address.clone(),
                 value: Expr::Const(7),
                 width: 4,
+                at: None,
             },
             Stmt::Assign {
                 dest: RegRef {
@@ -371,11 +383,13 @@ fn printed_indexed_stack_pointer_assignments_preserve_byte_offsets() {
                     width: 64,
                 },
                 value: address.clone(),
+                at: None,
             },
             Stmt::Store {
                 addr: pointer.clone(),
                 value: Expr::Const(0x3456789a),
                 width: 4,
+                at: None,
             },
             Stmt::Ret {
                 value: Expr::bin(
@@ -399,6 +413,7 @@ fn printed_indexed_stack_pointer_assignments_preserve_byte_offsets() {
                         signed: false,
                     },
                 ),
+                at: None,
             },
         ],
     );
@@ -430,6 +445,7 @@ fn printed_variables_at_and_above_ssa_boundary_are_declared() {
         statements.push(Stmt::Assign {
             dest: RegRef { index, width: 64 },
             value: Expr::bin(BinOp::Add, value, Expr::Const(1)),
+            at: None,
         });
         value = Expr::reg(index, 64);
     }
@@ -438,7 +454,7 @@ fn printed_variables_at_and_above_ssa_boundary_are_declared() {
         .into_iter()
         .reduce(|lhs, rhs| Expr::bin(BinOp::Add, lhs, rhs))
         .unwrap();
-    statements.push(Stmt::Ret { value });
+    statements.push(Stmt::Ret { value, at: None });
     let ir = synthetic_ir(
         "many_variables",
         vec![Param {
@@ -496,8 +512,12 @@ fn pointer_self_updates_preserve_element_and_byte_offsets() {
                         width: 64,
                     },
                     value: Expr::bin(op, pointer.clone(), offset),
+                    at: None,
                 },
-                Stmt::Ret { value: pointer },
+                Stmt::Ret {
+                    value: pointer,
+                    at: None,
+                },
             ],
         );
         let candidate = printed_candidate(ir, vec![]);
@@ -557,11 +577,13 @@ fn printed_global_offsets_keep_the_data_address_separate() {
                         width: 64,
                     },
                     value: Expr::bin(BinOp::Shl, Expr::reg(7, 64), Expr::Const(3)),
+                    at: None,
                 },
                 Stmt::Store {
                     addr: address.clone(),
                     value: Expr::Const(u64::MAX),
                     width,
+                    at: None,
                 },
                 Stmt::Ret {
                     value: Expr::Load {
@@ -569,6 +591,7 @@ fn printed_global_offsets_keep_the_data_address_separate() {
                         width,
                         signed: true,
                     },
+                    at: None,
                 },
             ],
         );
@@ -607,6 +630,7 @@ fn negative_literal_offsets_wrap_as_integers() {
     let assign = |index, value| Stmt::Assign {
         dest: RegRef { index, width: 64 },
         value,
+        at: None,
     };
     let mut ir = synthetic_ir("negative_offset", Vec::new(), CType::U64, Vec::new());
     ir.blocks = vec![
@@ -645,12 +669,16 @@ fn negative_literal_offsets_wrap_as_integers() {
                     lhs: offset(),
                     rhs: Expr::Const(0),
                     target: 10,
+                    at: None,
                 },
             ],
         },
         Block {
             start: 20,
-            stmts: vec![Stmt::Ret { value: sum() }],
+            stmts: vec![Stmt::Ret {
+                value: sum(),
+                at: None,
+            }],
         },
     ];
     let candidate = printed_candidate(ir, vec![Vec::new()]);

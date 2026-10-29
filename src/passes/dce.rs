@@ -19,7 +19,7 @@ pub fn dce_flow(ir: &mut FunctionIr) {
                 Stmt::Assign { value, .. } => !reads_outside_frame(value),
                 _ => true,
             };
-            if let Stmt::Assign { dest, value } = stmt {
+            if let Stmt::Assign { dest, value, .. } = stmt {
                 let mut own = std::collections::HashSet::new();
                 crate::ir::visit::collect_reads(value, &mut own);
                 if pure && !live.contains(&dest.index) && !own.contains(&dest.index) {
@@ -52,6 +52,7 @@ pub fn dce(ir: &mut FunctionIr) {
             !matches!(stmt, Stmt::Assign {
                 dest,
                 value: crate::ir::Expr::Reg { index, width: 64 },
+                ..
             } if dest.width == 64 && *index == dest.index)
         });
     }
@@ -108,7 +109,7 @@ fn drop_dead_assignments(
 ) {
     let mut keep: Vec<bool> = vec![true; block.stmts.len()];
     for (index, stmt) in block.stmts.iter().enumerate() {
-        let Stmt::Assign { dest, value } = stmt else {
+        let Stmt::Assign { dest, value, .. } = stmt else {
             continue;
         };
         // A read of memory outside the frame may be volatile, so it stays;
@@ -156,6 +157,7 @@ mod tests {
                     width: 64,
                 },
                 value: Expr::Const(5),
+                at: None,
             },
             Stmt::Call {
                 kind: crate::ir::CallKind::Invoke,
@@ -168,9 +170,11 @@ mod tests {
                 clobbers: None,
                 outputs: crate::ir::fallback_call_outputs(Convention::Aapcs64, None),
                 via: None,
+                at: None,
             },
             Stmt::Ret {
                 value: Expr::reg(0, 64),
+                at: None,
             },
         ];
         for pass in [dce, dce_flow] {
@@ -189,11 +193,13 @@ mod tests {
                     width: 64,
                 },
                 value: Expr::Const(1),
+                at: None,
             },
             Stmt::Switch {
                 index: Expr::reg(8, 64),
                 cases: vec![(0, 0x100), (1, 0x200)],
                 default: None,
+                at: None,
             },
         ];
         for pass in [dce, dce_flow] {

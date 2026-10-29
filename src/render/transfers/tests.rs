@@ -97,14 +97,17 @@ fn fill_ir(isa: Isa, name: &str, first: u8, second: u8, offset: u64) -> Function
                 addr: address(0),
                 value: Expr::Const(0xabababababababab),
                 width: first,
+                at: None,
             },
             Stmt::Store {
                 addr: address(offset),
                 value: Expr::Const(0xabababababababab),
                 width: second,
+                at: None,
             },
             Stmt::Ret {
                 value: Expr::Const(0),
+                at: None,
             },
         ],
     );
@@ -145,10 +148,12 @@ fn literal_store_widths_have_symbolic_memory_proofs() {
                         addr: address(u64::from(offset)),
                         value: Expr::Const(if offset == width { 0 } else { 0xab }),
                         width: 1,
+                        at: None,
                     });
                 }
                 after.blocks[0].stmts.push(Stmt::Ret {
                     value: Expr::Const(0),
+                    at: None,
                 });
                 proofs.function(
                     format!("literal bytes/{isa:?}/{width}/{reverse}"),
@@ -271,11 +276,13 @@ fn gaps_embedded_zeros_and_missing_terminators_keep_literal_stores() {
                 addr: address(0),
                 value: Expr::Const(0x01010101),
                 width: 4,
+                at: None,
             };
             ir.blocks[0].stmts[1] = Stmt::Store {
                 addr: address(4),
                 value: Expr::Const(1),
                 width: 2,
+                at: None,
             };
         }
         let rendered = render_with_dependencies(&ir, &[], &Symbols::default(), &[]);
@@ -353,6 +360,7 @@ fn overlapping_fills_print_compile_and_execute_for_both_architectures() {
                     width: 8,
                     signed: false,
                 },
+                at: None,
             });
         }
         for offset in [0, 8] {
@@ -360,10 +368,12 @@ fn overlapping_fills_print_compile_and_execute_for_both_architectures() {
                 addr: address(offset),
                 value: Expr::reg(crate::ir::VARIABLE_BASE + offset as u16, 64),
                 width: 8,
+                at: None,
             });
         }
         statements.push(Stmt::Ret {
             value: Expr::Const(0),
+            at: None,
         });
         ir.blocks[0].stmts = statements;
         let rendered = render_with_dependencies(&ir, &[], &Symbols::default(), &[]);
@@ -418,6 +428,7 @@ fn gaps_and_different_bytes_keep_separate_stores() {
                     addr: address(4),
                     value: Expr::Const(0xcdcdcdcdcdcdcdcd),
                     width: 8,
+                    at: None,
                 };
             }
             let rendered = render_with_dependencies(&ir, &[], &Symbols::default(), &[]);

@@ -322,6 +322,7 @@ fn write(lifter: &mut Lifter<'_>, number: u8, precision: Precision, value: Expr)
     lifter.stmts.push(Stmt::Assign {
         dest: RegRef { index, width: 64 },
         value,
+        at: None,
     });
 }
 
@@ -374,6 +375,7 @@ impl Instruction {
                         addr,
                         value: read(register, precision),
                         width,
+                        at: None,
                     });
                 }
             }
@@ -445,6 +447,7 @@ impl Instruction {
                             addr,
                             value: read(first + slot, precision),
                             width,
+                            at: None,
                         });
                     }
                 }
@@ -659,6 +662,7 @@ fn execute_float(lifter: &mut Lifter<'_>, word: u32, operation: FloatOperation) 
                 lifter.stmts.push(Stmt::Assign {
                     dest: RegRef { index, width: 64 },
                     value,
+                    at: None,
                 });
             }
             return;

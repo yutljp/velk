@@ -491,12 +491,14 @@ fn returned(statements: &[super::Stmt]) -> Value {
     let mut defined = Vec::new();
     for statement in statements {
         match statement {
-            super::Stmt::Assign { dest, value: expr } => {
+            super::Stmt::Assign {
+                dest, value: expr, ..
+            } => {
                 let assigned = value(expr, &registers);
                 defined.push(assigned.defined);
                 registers.insert(dest.index, low(&assigned.term, u32::from(dest.width)));
             }
-            super::Stmt::Ret { value: expr } => {
+            super::Stmt::Ret { value: expr, .. } => {
                 let result = value(expr, &registers);
                 defined.push(result.defined);
                 return Value {
@@ -579,10 +581,15 @@ impl Proofs {
     pub(crate) fn program(&mut self, name: String, before: &[Stmt], after: &[Stmt]) {
         if before.len() == after.len()
             && before.iter().zip(after).all(|(a, b)| match (a, b) {
-                (Stmt::Assign { dest: a, value: x }, Stmt::Assign { dest: b, value: y }) => {
-                    a == b && x == y
-                }
-                (Stmt::Ret { value: a }, Stmt::Ret { value: b }) => a == b,
+                (
+                    Stmt::Assign {
+                        dest: a, value: x, ..
+                    },
+                    Stmt::Assign {
+                        dest: b, value: y, ..
+                    },
+                ) => a == b && x == y,
+                (Stmt::Ret { value: a, .. }, Stmt::Ret { value: b, .. }) => a == b,
                 _ => false,
             })
         {

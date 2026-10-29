@@ -84,6 +84,7 @@ pub(super) fn lift(lifter: &mut Lifter, ins: &Instruction) -> bool {
         &mut lifter.stmts,
     );
     lifter.stmts.push(Stmt::Machine {
+        at: None,
         instruction,
         inputs,
         outputs: if matches!(

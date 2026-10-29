@@ -51,7 +51,7 @@ impl<'a> Flow<'a> {
         };
         for stmt in ssa.ir.blocks.iter().flat_map(|block| &block.stmts) {
             match stmt {
-                Stmt::Assign { dest, value } => {
+                Stmt::Assign { dest, value, .. } => {
                     flow.assignments.insert(dest.index, (value, dest.width));
                 }
                 Stmt::Call {
@@ -267,7 +267,7 @@ pub(crate) fn recover(image: &Image, ir: &FunctionIr, deadline: Option<Instant>)
                             .iter()
                             .flat_map(|block| &block.stmts)
                             .any(|stmt| {
-                                let Stmt::Ret { value } = stmt else {
+                                let Stmt::Ret { value, .. } = stmt else {
                                     return false;
                                 };
                                 let (value, mask) = flow.comparison_source_and_mask(value);
@@ -475,10 +475,10 @@ fn wide_routine(image: &Image, routine: u64, deadline: Option<Instant>) -> bool 
         .any(|stmt| {
             let expressions: Vec<&Expr> = match stmt {
                 Stmt::Machine { inputs, .. } => inputs.iter().collect(),
-                Stmt::Assign { value, .. } | Stmt::Ret { value } => vec![value],
+                Stmt::Assign { value, .. } | Stmt::Ret { value, .. } => vec![value],
                 Stmt::Store { addr, value, .. } => vec![addr, value],
                 Stmt::Brif { lhs, rhs, .. } => vec![lhs, rhs],
-                Stmt::BrIndirect { target } => vec![target],
+                Stmt::BrIndirect { target, .. } => vec![target],
                 Stmt::Switch { index, .. } => vec![index],
                 Stmt::Call { through, args, .. } => {
                     through.iter().chain(args.iter().flatten()).collect()
@@ -524,6 +524,7 @@ fn prepare_ssa(ir: &FunctionIr) -> Option<Ssa> {
                     width: 64,
                 },
                 value: Expr::reg(param.index, 64),
+                at: None,
             });
         }
     }

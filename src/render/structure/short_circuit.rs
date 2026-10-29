@@ -60,6 +60,7 @@ fn selected_guard(node: &Node) -> Option<(Expr, &[Node])> {
         rhs,
         then,
         els,
+        ..
     } = node
     else {
         return None;
@@ -99,6 +100,7 @@ fn combined_guard(first: Expr, second: Expr, body: &[Node], either: bool) -> Opt
         rhs: Expr::Const(0),
         then: body.to_vec(),
         els: Vec::new(),
+        at: None,
     })
 }
 
@@ -125,12 +127,18 @@ fn terminal_guards(first: &Node, second: &Node) -> Option<Node> {
         return None;
     };
     let same = match (last, other_last) {
-        (Node::Stmt(one @ (Stmt::Ret { .. } | Stmt::Br { target: Some(_) })), Node::Stmt(two)) => {
-            comparable_statement(one) == comparable_statement(two)
-        }
-        (Node::Stmt(Stmt::Trap), Node::Stmt(Stmt::Trap))
-        | (Node::Break, Node::Break)
-        | (Node::Continue, Node::Continue) => true,
+        (
+            Node::Stmt(
+                one @ (Stmt::Ret { .. }
+                | Stmt::Br {
+                    target: Some(_), ..
+                }),
+            ),
+            Node::Stmt(two),
+        ) => comparable_statement(one) == comparable_statement(two),
+        (Node::Stmt(Stmt::Trap { .. }), Node::Stmt(Stmt::Trap { .. }))
+        | (Node::Break { .. }, Node::Break { .. })
+        | (Node::Continue { .. }, Node::Continue { .. }) => true,
         _ => false,
     };
     if !same || prefix.len() != other_prefix.len() {
@@ -146,7 +154,9 @@ fn terminal_guards(first: &Node, second: &Node) -> Option<Node> {
             return None;
         }
     }
-    combined_guard(first, second, body, true)
+    let mut shared = body.to_vec();
+    super::merge_origins(&mut shared, other);
+    combined_guard(first, second, &shared, true)
 }
 
 /// The function with each block that only tests, entered from one test
@@ -202,6 +212,7 @@ fn test(stmt: Option<&Stmt>) -> Option<(Cond, &Expr, &Expr, u64)> {
             lhs,
             rhs,
             target,
+            ..
         }) if value_comparison(*cond) => Some((*cond, lhs, rhs, *target)),
         _ => None,
     }
@@ -286,6 +297,7 @@ fn join(
             lhs: joined,
             rhs: Expr::Const(0),
             target,
+            at: None,
         };
         return Some((stmt, second));
     }
@@ -308,8 +320,8 @@ fn same_place(ir: &FunctionIr, index: &HashMap<u64, usize>, one: u64, other: u64
             .map(|position| ir.blocks[*position].stmts.as_slice())
     };
     match (stmts(one), stmts(other)) {
-        (Some([Stmt::Ret { value: a }]), Some([Stmt::Ret { value: b }])) => a == b,
-        (Some([Stmt::Trap]), Some([Stmt::Trap])) => true,
+        (Some([Stmt::Ret { value: a, .. }]), Some([Stmt::Ret { value: b, .. }])) => a == b,
+        (Some([Stmt::Trap { .. }]), Some([Stmt::Trap { .. }])) => true,
         _ => false,
     }
 }
@@ -325,7 +337,13 @@ pub(super) fn follow_branches(
             .get(&target)
             .map(|position| ir.blocks[*position].stmts.as_slice())
         {
-            Some([Stmt::Br { target: Some(next) }]) if *next != target => target = *next,
+            Some(
+                [
+                    Stmt::Br {
+                        target: Some(next), ..
+                    },
+                ],
+            ) if *next != target => target = *next,
             _ => break,
         }
     }
@@ -415,6 +433,7 @@ mod tests {
             rhs,
             then,
             els,
+            at: None,
         }
     }
 
@@ -427,7 +446,7 @@ mod tests {
     }
 
     fn ret(value: Expr) -> Node {
-        Node::Stmt(Stmt::Ret { value })
+        Node::Stmt(Stmt::Ret { value, at: None })
     }
 
     fn increment(amount: u64) -> Node {
@@ -435,6 +454,7 @@ mod tests {
             addr: Expr::Const(COUNTER),
             value: Expr::bin(BinOp::Add, load(COUNTER), Expr::Const(amount)),
             width: 8,
+            at: None,
         })
     }
 
@@ -453,6 +473,7 @@ mod tests {
             ),
             clobbers: Some(Registers(0)),
             via: None,
+            at: None,
         })
     }
 
@@ -574,6 +595,7 @@ mod tests {
             lhs: reg(position),
             rhs: Expr::Const(0),
             target: 0x30,
+            at: None,
         };
         let Node::Stmt(call) = call(0x5000) else {
             unreachable!()
@@ -592,12 +614,14 @@ mod tests {
                 start: 0x20,
                 stmts: vec![Stmt::Ret {
                     value: Expr::Const(1),
+                    at: None,
                 }],
             },
             Block {
                 start: 0x30,
                 stmts: vec![Stmt::Ret {
                     value: Expr::Const(0),
+                    at: None,
                 }],
             },
         ];
@@ -617,6 +641,7 @@ mod tests {
                     lhs: reg(0),
                     rhs: Expr::Const(0),
                     target: 0x1000,
+                    at: None,
                 }],
             },
             Block {
@@ -626,12 +651,14 @@ mod tests {
                     lhs: reg(1),
                     rhs: Expr::Const(0),
                     target: 0x1000,
+                    at: None,
                 }],
             },
             Block {
                 start: 0x20,
                 stmts: vec![Stmt::Ret {
                     value: Expr::Const(1),
+                    at: None,
                 }],
             },
         ];
@@ -688,6 +715,7 @@ mod tests {
             lhs: reg(position),
             rhs: Expr::Const(0),
             target: 0x30,
+            at: None,
         };
         let stmts = body
             .into_iter()
@@ -712,6 +740,7 @@ mod tests {
                 start: 0x30,
                 stmts: vec![Stmt::Ret {
                     value: load(COUNTER),
+                    at: None,
                 }],
             },
         ];
@@ -728,7 +757,11 @@ mod tests {
         let rows = rows();
         for first in [false, true] {
             for second in [false, true] {
-                for terminal in [ret(Expr::Const(7)), ret(load(DATA)), Node::Stmt(Stmt::Trap)] {
+                for terminal in [
+                    ret(Expr::Const(7)),
+                    ret(load(DATA)),
+                    Node::Stmt(Stmt::Trap { at: None }),
+                ] {
                     let nodes = vec![
                         guard(0, first, vec![terminal.clone()]),
                         guard(1, second, vec![terminal]),
@@ -805,7 +838,7 @@ mod tests {
         let Node::If { then, els, .. } = &after[0] else {
             panic!("missing joined condition")
         };
-        let [Node::Stmt(Stmt::Ret { value: actual })] = then.as_slice() else {
+        let [Node::Stmt(Stmt::Ret { value: actual, .. })] = then.as_slice() else {
             panic!("the selected body must contain one return")
         };
         assert!(els.is_empty());
@@ -873,25 +906,38 @@ mod tests {
                 start,
                 stmts: vec![Stmt::Br {
                     target: Some(start + 1),
+                    at: None,
                 }],
             })
             .collect();
         ir.blocks.extend([
             Block {
                 start: 20,
-                stmts: vec![Stmt::Br { target: Some(20) }],
+                stmts: vec![Stmt::Br {
+                    target: Some(20),
+                    at: None,
+                }],
             },
             Block {
                 start: 30,
-                stmts: vec![Stmt::Br { target: Some(31) }],
+                stmts: vec![Stmt::Br {
+                    target: Some(31),
+                    at: None,
+                }],
             },
             Block {
                 start: 31,
-                stmts: vec![Stmt::Br { target: Some(32) }],
+                stmts: vec![Stmt::Br {
+                    target: Some(32),
+                    at: None,
+                }],
             },
             Block {
                 start: 32,
-                stmts: vec![Stmt::Br { target: Some(30) }],
+                stmts: vec![Stmt::Br {
+                    target: Some(30),
+                    at: None,
+                }],
             },
             Block {
                 start: 40,
@@ -899,7 +945,10 @@ mod tests {
             },
             Block {
                 start: 50,
-                stmts: vec![Stmt::Br { target: None }],
+                stmts: vec![Stmt::Br {
+                    target: None,
+                    at: None,
+                }],
             },
         ]);
         let index = ir
@@ -948,11 +997,13 @@ mod tests {
                     width: 64,
                 },
                 value: Expr::Const(9),
+                at: None,
             }),
             Node::Stmt(Stmt::Store {
                 addr: Expr::Const(DATA),
                 value: reg(0),
                 width: 8,
+                at: None,
             }),
             call(0x6000),
             Node::Label(0x7000),
@@ -971,6 +1022,7 @@ mod tests {
                 true,
                 vec![Node::Stmt(Stmt::Br {
                     target: Some(0x7000),
+                    at: None,
                 })],
             ),
             guard(
@@ -1077,6 +1129,7 @@ mod tests {
                     width: 64,
                 },
                 value: Expr::Const(0),
+                at: None,
             }),
             Node::While {
                 prefix: Vec::new(),
@@ -1090,12 +1143,14 @@ mod tests {
                             width: 64,
                         },
                         value: Expr::bin(BinOp::Add, reg(3), Expr::Const(1)),
+                        at: None,
                     }),
-                    guard(0, true, vec![Node::Continue]),
-                    guard(1, true, vec![Node::Continue]),
+                    guard(0, true, vec![Node::Continue { at: None }]),
+                    guard(1, true, vec![Node::Continue { at: None }]),
                     increment(1),
-                    Node::Break,
+                    Node::Break { at: None },
                 ],
+                at: None,
             },
             ret(load(COUNTER)),
         ];
@@ -1108,13 +1163,14 @@ mod tests {
                     arms: vec![(
                         vec![0],
                         vec![
-                            guard(0, true, vec![Node::Break]),
-                            guard(1, true, vec![Node::Break]),
+                            guard(0, true, vec![Node::Break { at: None }]),
+                            guard(1, true, vec![Node::Break { at: None }]),
                             increment(1),
-                            Node::Break,
+                            Node::Break { at: None },
                         ],
                     )],
-                    default: Some(vec![increment(2), Node::Break]),
+                    default: Some(vec![increment(2), Node::Break { at: None }]),
+                    at: None,
                 },
                 ret(load(COUNTER)),
             ];

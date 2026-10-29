@@ -164,6 +164,7 @@ pub(super) fn prepare(ir: &mut FunctionIr, symbols: &super::Symbols) {
                         width: loaded,
                         ..
                     },
+                ..
             } = &stmts[position - 1]
             else {
                 continue;
@@ -341,6 +342,7 @@ mod tests {
                         } => {
                             statements.push(Stmt::Ret {
                                 value: through.clone(),
+                                at: None,
                             });
                             break;
                         }

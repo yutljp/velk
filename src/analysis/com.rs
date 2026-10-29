@@ -161,7 +161,7 @@ pub(super) fn recover_i386(
     let mut count = None;
     for stmt in &candidate.blocks[0].stmts {
         match stmt {
-            Stmt::Assign { dest, value } => {
+            Stmt::Assign { dest, value, .. } => {
                 let ty = value_type(value, &registers, &parameters, image, 8);
                 registers.remove(&dest.index);
                 if let Some(ty) = ty.filter(|_| dest.width >= 32) {
@@ -260,6 +260,7 @@ pub(super) fn recover_i386(
                     Expr::bin(BinOp::Add, Expr::reg(sp, 64), Expr::Const(cleanup as u64)),
                     Expr::Const(0xffff_ffff),
                 ),
+                at: None,
             },
         );
     }
@@ -318,6 +319,7 @@ mod tests {
                     width: 64,
                 },
                 value: Expr::reg(0, 64),
+                at: None,
             },
         );
         let before = dynamic.render();

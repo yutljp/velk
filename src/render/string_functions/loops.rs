@@ -58,7 +58,7 @@ fn execute(
     };
     *budget = remaining;
     match node {
-        Node::Stmt(Stmt::Assign { dest, value }) => {
+        Node::Stmt(Stmt::Assign { dest, value, .. }) => {
             used(value, &mut state);
             if !assignments(
                 std::slice::from_ref(node),
@@ -70,7 +70,7 @@ fn execute(
             state.written.insert(dest.index);
             execute(rest, state, tail, paths, budget)
         }
-        Node::Stmt(Stmt::Ret { value }) => {
+        Node::Stmt(Stmt::Ret { value, .. }) => {
             used(value, &mut state);
             let Some(value) = evaluate(value, &state.values, &mut state.reads) else {
                 return false;
@@ -81,20 +81,21 @@ fn execute(
             });
             true
         }
-        Node::Continue => {
+        Node::Continue { .. } => {
             paths.push(Path {
                 state,
                 outcome: Outcome::Continue,
             });
             true
         }
-        Node::Break => execute(tail, state, &[], paths, budget),
+        Node::Break { .. } => execute(tail, state, &[], paths, budget),
         Node::If {
             cond,
             lhs,
             rhs,
             then,
             els,
+            ..
         } => {
             let bits = crate::ir::semantics::operand_width(lhs, rhs);
             used(lhs, &mut state);
@@ -136,7 +137,7 @@ fn execute(
 fn step(node: &Node, values: Values, tail: &[Node]) -> Option<Vec<Path>> {
     fn continues(nodes: &[Node]) -> bool {
         nodes.iter().any(|node| match node {
-            Node::Continue => true,
+            Node::Continue { .. } => true,
             Node::If { then, els, .. } => continues(then) || continues(els),
             _ => false,
         })
@@ -155,6 +156,7 @@ fn step(node: &Node, values: Values, tail: &[Node]) -> Option<Vec<Path>> {
         rhs: rhs.clone(),
         then,
         els,
+        at: None,
     };
     let nodes = match node {
         Node::DoWhile {
@@ -162,9 +164,16 @@ fn step(node: &Node, values: Values, tail: &[Node]) -> Option<Vec<Path>> {
             lhs,
             rhs,
             body,
+            ..
         } => {
             let mut nodes = body.clone();
-            nodes.push(test(*cond, lhs, rhs, vec![Node::Continue], tail.to_vec()));
+            nodes.push(test(
+                *cond,
+                lhs,
+                rhs,
+                vec![Node::Continue { at: None }],
+                tail.to_vec(),
+            ));
             nodes
         }
         Node::While {
@@ -173,16 +182,17 @@ fn step(node: &Node, values: Values, tail: &[Node]) -> Option<Vec<Path>> {
             lhs,
             rhs,
             body,
+            ..
         } => {
             let mut nodes = prefix.clone();
             let mut body = body.clone();
-            body.push(Node::Continue);
+            body.push(Node::Continue { at: None });
             nodes.push(test(*cond, lhs, rhs, body, tail.to_vec()));
             nodes
         }
         Node::Forever { body } => {
             let mut nodes = body.clone();
-            nodes.push(Node::Continue);
+            nodes.push(Node::Continue { at: None });
             nodes
         }
         _ => return None,
@@ -658,7 +668,7 @@ pub(super) fn render(
         return None;
     };
     let mut prefix = nodes[..loop_index].to_vec();
-    prefix.push(Node::Continue);
+    prefix.push(Node::Continue { at: None });
     let state = State {
         values: initial.clone(),
         tests: Vec::new(),
@@ -810,14 +820,16 @@ mod tests {
             cond: Cond::Ne,
             lhs: Expr::Const(0),
             rhs: Expr::Const(0),
-            body: vec![Node::Continue],
+            body: vec![Node::Continue { at: None }],
+            at: None,
         };
         assert!(
             step(
                 &node,
                 Values::new(),
                 &[Node::Stmt(Stmt::Ret {
-                    value: Expr::Const(0)
+                    value: Expr::Const(0),
+                    at: None
                 })]
             )
             .is_none()

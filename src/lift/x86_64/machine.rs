@@ -64,6 +64,7 @@ pub(super) fn lift(lifter: &mut Lifter<'_>, mnemonic: Mnemonic) {
         );
     }
     lifter.stmts.push(Stmt::Machine {
+        at: None,
         instruction,
         inputs,
         outputs: (0..count)
@@ -108,6 +109,7 @@ pub(super) fn lift(lifter: &mut Lifter<'_>, mnemonic: Mnemonic) {
                 addr: Lifter::read_reg(RSP, 64),
                 value: output(0),
                 width: bytes,
+                at: None,
             });
         }
         MachineInstruction::WriteFlags => {

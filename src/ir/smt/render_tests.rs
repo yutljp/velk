@@ -15,7 +15,7 @@ fn wrapping_arithmetic_avoids_c_overflow() {
         raw_bin(BinOp::Add, Expr::reg(7, 32), Expr::reg(6, 32)),
         Expr::Const(0xff),
     );
-    let mut ir = FunctionIr::single_block(Isa::X86_64, vec![Stmt::Ret { value }]);
+    let mut ir = FunctionIr::single_block(Isa::X86_64, vec![Stmt::Ret { value, at: None }]);
     ir.name = Some("masked_sum".to_owned());
     ir.params = [7, 6]
         .into_iter()
@@ -41,6 +41,7 @@ fn wrapping_arithmetic_avoids_c_overflow() {
                 width: 8,
                 signed: false,
             },
+            at: None,
         }],
     );
     indexed.name = Some("indexed_value".to_owned());
@@ -62,6 +63,7 @@ fn wrapping_arithmetic_avoids_c_overflow() {
         Isa::X86_64,
         vec![Stmt::Ret {
             value: raw_bin(BinOp::Sub, Expr::Const(0), Expr::reg(7, 64)),
+            at: None,
         }],
     );
     negated.name = Some("negated_value".to_owned());
@@ -79,6 +81,7 @@ fn wrapping_arithmetic_avoids_c_overflow() {
                 Isa::X86_64,
                 vec![Stmt::Ret {
                     value: raw_bin(op, Expr::reg(7, bits), Expr::reg(6, bits)),
+                    at: None,
                 }],
             );
             divided.name = Some(format!("{name}_{bits}"));
@@ -108,6 +111,7 @@ fn wrapping_arithmetic_avoids_c_overflow() {
                 Isa::X86_64,
                 vec![Stmt::Ret {
                     value: Expr::apply(op, vec![Expr::reg(7, 64)]),
+                    at: None,
                 }],
             );
             counted.name = Some(format!("{name}_{bits}"));
@@ -296,6 +300,7 @@ fn compiled_scalar_c_is_equivalent_to_ir() {
                         Isa::X86_64,
                         vec![Stmt::Ret {
                             value: value.clone(),
+                            at: None,
                         }],
                     );
                     ir.name = Some(name.clone());
@@ -413,6 +418,7 @@ fn compiled_assignments_and_return_conversions_are_equivalent() {
                                     width: bits,
                                 },
                                 value: y.clone(),
+                                at: None,
                             },
                             Stmt::Assign {
                                 dest: crate::ir::RegRef {
@@ -420,6 +426,7 @@ fn compiled_assignments_and_return_conversions_are_equivalent() {
                                     width: bits,
                                 },
                                 value: expression.clone(),
+                                at: None,
                             },
                             Stmt::Ret {
                                 value: raw_bin(
@@ -427,6 +434,7 @@ fn compiled_assignments_and_return_conversions_are_equivalent() {
                                     Expr::reg(3, bits),
                                     raw_bin(BinOp::Shr, Expr::reg(3, bits), Expr::Const(1)),
                                 ),
+                                at: None,
                             },
                         ]
                     } else {
@@ -438,9 +446,11 @@ fn compiled_assignments_and_return_conversions_are_equivalent() {
                                     width: bits,
                                 },
                                 value: y.clone(),
+                                at: None,
                             },
                             Stmt::Ret {
                                 value: expression.clone(),
+                                at: None,
                             },
                         ]
                     };

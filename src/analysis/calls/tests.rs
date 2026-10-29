@@ -150,6 +150,7 @@ fn call(dependencies: Vec<u16>, memory: bool) -> Stmt {
         clobbers: Some(Default::default()),
         via: None,
         abi: Some(crate::ir::calls::test_call_abi(dependencies, memory)),
+        at: None,
     }
 }
 
@@ -256,10 +257,12 @@ fn declared_reads_survive_copy_folding_and_ssa_demand() {
                     width: 64,
                 },
                 value: Expr::Const(7),
+                at: None,
             },
             stmt,
             Stmt::Ret {
                 value: Expr::Const(0),
+                at: None,
             },
         ],
     );
@@ -271,6 +274,7 @@ fn declared_reads_survive_copy_folding_and_ssa_demand() {
             call(vec![register], false),
             Stmt::Ret {
                 value: Expr::Const(0),
+                at: None,
             },
         ],
     );
@@ -285,6 +289,7 @@ fn deferred_call_memory_keeps_frame_store() {
         addr: Expr::bin(crate::ir::BinOp::Sub, Expr::reg(sp, 64), Expr::Const(8)),
         value: Expr::Const(123),
         width: 8,
+        at: None,
     };
     let mut ir = FunctionIr::single_block(
         Isa::AArch64,
@@ -293,6 +298,7 @@ fn deferred_call_memory_keeps_frame_store() {
             call(vec![sp], true),
             Stmt::Ret {
                 value: Expr::Const(0),
+                at: None,
             },
         ],
     );
@@ -1161,6 +1167,7 @@ mod declarations {
                                 clobbers: None,
                                 via: None,
                                 abi: None,
+                                at: None,
                             }],
                         }];
                         let before = format!("{blocks:?}");
@@ -1201,6 +1208,7 @@ mod declarations {
                             clobbers: Some(crate::ir::Registers(0)),
                             via: None,
                             abi: None,
+                            at: None,
                         }],
                     }];
                     attach_outputs(&image, &mut blocks);
@@ -1431,6 +1439,7 @@ mod input_tests {
             clobbers: None,
             via: None,
             abi: None,
+            at: None,
         }
     }
 
@@ -1848,6 +1857,7 @@ mod input_tests {
                     before,
                     Stmt::Ret {
                         value: Expr::Const(0),
+                        at: None,
                     },
                 ],
             }];
@@ -1902,6 +1912,7 @@ mod input_tests {
                     Expr::reg(sp, 64),
                     Expr::Const(delta as u64),
                 ),
+                at: None,
             };
             let mut ir = FunctionIr::single_block(
                 isa,
@@ -1911,6 +1922,7 @@ mod input_tests {
                         addr: Expr::bin(crate::ir::BinOp::Add, Expr::reg(sp, 64), Expr::Const(8)),
                         value: Expr::reg(argument, 64),
                         width: 8,
+                        at: None,
                     },
                     Stmt::Call {
                         kind: crate::ir::CallKind::Invoke,
@@ -1923,10 +1935,12 @@ mod input_tests {
                         clobbers: Some(Default::default()),
                         abi: Some(abi.clone()),
                         via: None,
+                        at: None,
                     },
                     adjustment(32),
                     Stmt::Ret {
                         value: Expr::Const(0),
+                        at: None,
                     },
                 ],
             );
@@ -1961,6 +1975,7 @@ mod input_tests {
             let assignment = |index, value| Stmt::Assign {
                 dest: crate::ir::RegRef { index, width: 64 },
                 value,
+                at: None,
             };
             let mut ir = FunctionIr::single_block(
                 Isa::X86_64,
@@ -1973,6 +1988,7 @@ mod input_tests {
                         addr: Expr::reg(sp, 64),
                         value: Expr::reg(fp, 64),
                         width: 8,
+                        at: None,
                     },
                     assignment(fp, Expr::reg(sp, 64)),
                     Stmt::Call {
@@ -1986,6 +2002,7 @@ mod input_tests {
                         clobbers: Some(Default::default()),
                         abi: Some(abi.clone()),
                         via: None,
+                        at: None,
                     },
                     assignment(
                         fp,
@@ -2001,6 +2018,7 @@ mod input_tests {
                     ),
                     Stmt::Ret {
                         value: Expr::Const(0),
+                        at: None,
                     },
                 ],
             );
@@ -2030,10 +2048,12 @@ mod input_tests {
                         width: 64,
                     },
                     value: Expr::reg(12, 64),
+                    at: None,
                 },
                 after,
                 Stmt::Ret {
                     value: Expr::Const(0),
+                    at: None,
                 },
             ],
         }];
@@ -2260,6 +2280,7 @@ mod output_tests {
             via: None,
 
             abi: None,
+            at: None,
         }
     }
 
@@ -2572,6 +2593,7 @@ mod output_tests {
                 call(Convention::Aapcs64, Some(registers.into_iter().collect())),
                 Stmt::Ret {
                     value: sum(&registers),
+                    at: None,
                 },
             ],
         );
@@ -2636,10 +2658,12 @@ mod output_tests {
                         width: 64,
                     },
                     value: Expr::bin(BinOp::Add, Expr::reg(38, 64), Expr::Const(3)),
+                    at: None,
                 },
                 call(Convention::Aapcs64, Some(Registers::default())),
                 Stmt::Ret {
                     value: Expr::reg(38, 64),
+                    at: None,
                 },
             ],
         );

@@ -15,6 +15,7 @@ fn assign(index: u16, value: Expr) -> Stmt {
     Stmt::Assign {
         dest: RegRef { index, width: 64 },
         value,
+        at: None,
     }
 }
 
@@ -89,6 +90,7 @@ fn object_loads_copy_the_exact_width_and_preserve_signedness() {
                     width,
                     signed,
                 },
+                at: None,
             }]);
             let code = rendered(&ir);
             let ty = super::type_of(width, false);
@@ -116,9 +118,11 @@ fn overlapping_object_store_copies_its_source_before_writing() {
             addr: address.clone(),
             value: load(Expr::reg(0, 64), 8),
             width: 8,
+            at: None,
         },
         Stmt::Ret {
             value: load(address, 8),
+            at: None,
         },
     ]);
     let code = rendered(&ir);
@@ -135,6 +139,7 @@ fn overlapping_object_store_copies_its_source_before_writing() {
 fn object_pointer_load_converts_copied_integer_bits() {
     let mut ir = object_access_ir(vec![Stmt::Ret {
         value: load(Expr::reg(0, 64), 8),
+        at: None,
     }]);
     ir.declared_signature.as_mut().unwrap().ret = CType::pointer_to(CType::int(1, false));
     let code = rendered(&ir);
@@ -160,6 +165,7 @@ fn floating_object_loads_reinterpret_copied_bits() {
                     Expr::Const(0),
                 ],
             ),
+            at: None,
         }]);
         let code = rendered(&ir);
         let ty = super::type_of(width, false);
@@ -192,9 +198,11 @@ fn object_compare_exchange_patterns_keep_copy_accesses() {
                 then: Box::new(Expr::Const(7)),
                 els: Box::new(Expr::reg(old, 64)),
             },
+            at: None,
         },
         Stmt::Ret {
             value: Expr::reg(old, 64),
+            at: None,
         },
     ]);
     let code = rendered(&ir);
@@ -234,9 +242,11 @@ fn crossing_stack_bytes_share_backing_and_reserve_identifiers() {
             addr: at(15),
             value: load(at(12), 8),
             width: 8,
+            at: None,
         },
         Stmt::Ret {
             value: Expr::bin(BinOp::Xor, load(at(8), 8), load(at(16), 8)),
+            at: None,
         },
     ]);
     ir.stack_params[0].name = "incoming_bytes".to_owned();
@@ -276,6 +286,7 @@ fn scalar_stack_parameter_parts_use_numeric_reads_or_bounded_byte_copies() {
             load(at(31), 1),
             Expr::bin(BinOp::Add, load(at(24), 4), load(at(24), 8)),
         ),
+        at: None,
     }]);
     let code = rendered(&ir);
     assert!(code.contains("(uint8_t)(a8 >> 56)"), "{code}");
@@ -295,6 +306,7 @@ fn scalar_stack_parameter_parts_use_numeric_reads_or_bounded_byte_copies() {
     assert!(!code.contains("rsp"), "{code}");
     let full = rendered(&scalar_stack_ir(vec![Stmt::Ret {
         value: load(at(24), 8),
+        at: None,
     }]));
     assert!(full.contains("return a8;"), "{full}");
     assert!(!full.contains("__builtin_memcpy"), "{full}");
@@ -314,6 +326,7 @@ fn scalar_stack_parameter_parts_reject_unknown_or_incompatible_storage() {
                 Expr::bin(BinOp::Add, Expr::reg(sp, 64), Expr::Const(offset)),
                 width,
             ),
+            at: None,
         }]);
         ir.stack_params[2].ty = ty;
         let code = rendered(&ir);
@@ -322,6 +335,7 @@ fn scalar_stack_parameter_parts_reject_unknown_or_incompatible_storage() {
     }
     let mut ir = scalar_stack_ir(vec![Stmt::Ret {
         value: load(Expr::bin(BinOp::Add, Expr::reg(sp, 64), Expr::Const(25)), 1),
+        at: None,
     }]);
     for ty in [CType::int(2, false), CType::U32] {
         ir.stack_params[2].ty = ty;
@@ -340,6 +354,7 @@ fn scalar_stack_parameter_parts_reject_ambiguous_frame_addresses() {
         assign(sp, Expr::bin(BinOp::Sub, Expr::reg(sp, 64), Expr::Const(8))),
         Stmt::Ret {
             value: load(address, 1),
+            at: None,
         },
     ]);
     let frames = super::block_entry_frame_offsets(&ir, sp);
@@ -370,6 +385,7 @@ fn compared(
             then: Box::new(Expr::Const(1)),
             els: Box::new(Expr::Const(0)),
         },
+        at: None,
     });
     let mut ir = FunctionIr::single_block(isa, stmts);
     ir.params = params
@@ -576,6 +592,7 @@ fn a_variable_read_narrower_than_declared_is_compared_by_that_part() {
                     addr: Expr::reg(6, 64),
                     value: Expr::reg(value, 64),
                     width: 8,
+                    at: None,
                 },
                 Stmt::Ret {
                     value: Expr::Select {
@@ -585,6 +602,7 @@ fn a_variable_read_narrower_than_declared_is_compared_by_that_part() {
                         then: Box::new(Expr::Const(1)),
                         els: Box::new(Expr::Const(0)),
                     },
+                    at: None,
                 },
             ],
         );
@@ -630,6 +648,7 @@ fn variables_are_declared_with_the_types_their_uses_give() {
             ),
             Stmt::Ret {
                 value: Expr::reg(sum, 64),
+                at: None,
             },
         ],
     );
@@ -655,6 +674,7 @@ fn unsigned_wrapping_locals_use_unsigned_declarations() {
                 addr: Expr::reg(5, 64),
                 value: Expr::reg(6, 64),
                 width: 8,
+                at: None,
             },
             assign(
                 value,
@@ -672,9 +692,11 @@ fn unsigned_wrapping_locals_use_unsigned_declarations() {
                 addr: Expr::reg(7, 64),
                 value: Expr::reg(value, 64),
                 width: 4,
+                at: None,
             },
             Stmt::Ret {
                 value: Expr::reg(value, 64),
+                at: None,
             },
         ],
     );
@@ -720,6 +742,7 @@ fn signed_wrapping_locals_keep_signed_declarations() {
             ),
             Stmt::Ret {
                 value: Expr::reg(value, 64),
+                at: None,
             },
         ],
     );
@@ -787,9 +810,11 @@ fn a_counter_kept_to_32_bits_is_a_32_bit_variable() {
                     width: 4,
                 },
                 width: 8,
+                at: None,
             },
             Stmt::Ret {
                 value: Expr::reg(counter, 64),
+                at: None,
             },
         ],
     );
@@ -827,6 +852,7 @@ fn a_32_bit_value_read_whole_is_a_32_bit_variable_without_a_sign() {
                     then: Box::new(Expr::Const(1)),
                     els: Box::new(Expr::Const(0)),
                 },
+                at: None,
             },
         ],
     );
@@ -866,6 +892,7 @@ fn a_narrow_local_takes_its_sign_from_how_it_is_loaded() {
                     addr: slot(),
                     value: Expr::bin(BinOp::Add, Expr::reg(7, 64), Expr::Const(1)),
                     width: 4,
+                    at: None,
                 },
                 Stmt::Ret {
                     value: Expr::Load {
@@ -873,6 +900,7 @@ fn a_narrow_local_takes_its_sign_from_how_it_is_loaded() {
                         width: 4,
                         signed,
                     },
+                    at: None,
                 },
             ],
         );
@@ -914,9 +942,11 @@ fn a_local_index_is_not_mistaken_for_a_pointer() {
                     addr: slot.clone(),
                     value: Expr::bin(BinOp::Add, Expr::reg(6, 64), Expr::Const(1)),
                     width: 8,
+                    at: None,
                 },
                 Stmt::Ret {
                     value: load(address, 1),
+                    at: None,
                 },
             ],
         );
@@ -959,9 +989,11 @@ fn a_local_pointer_with_only_offsets_keeps_its_pointer_type() {
                     addr: slot.clone(),
                     value: Expr::bin(BinOp::Add, Expr::reg(7, 64), Expr::Const(1)),
                     width: 8,
+                    at: None,
                 },
                 Stmt::Ret {
                     value: load(address, 1),
+                    at: None,
                 },
             ],
         );
@@ -994,9 +1026,11 @@ fn a_spilled_address_integer_used_for_an_offset_keeps_its_pointer_type() {
                 addr: slot,
                 value: Expr::reg(7, 64),
                 width: 8,
+                at: None,
             },
             Stmt::Ret {
                 value: load(address, 8),
+                at: None,
             },
         ],
     );
@@ -1022,9 +1056,11 @@ fn an_integer_local_takes_a_pointer_as_its_address() {
                 addr: slot.clone(),
                 value: Expr::bin(BinOp::Add, Expr::reg(7, 64), Expr::Const(1)),
                 width: 8,
+                at: None,
             },
             Stmt::Ret {
                 value: Expr::bin(BinOp::Shr, load(slot, 8), Expr::Const(1)),
+                at: None,
             },
         ],
     );
@@ -1051,9 +1087,11 @@ fn a_pointer_local_takes_an_integer_with_a_cast() {
                 addr: slot.clone(),
                 value: Expr::Const(0x1000),
                 width: 8,
+                at: None,
             },
             Stmt::Ret {
                 value: load(load(slot, 8), 1),
+                at: None,
             },
         ],
     );
@@ -1080,9 +1118,11 @@ fn an_integer_compare_exchange_takes_a_pointer_as_its_address() {
                     then: Box::new(Expr::Const(1)),
                     els: Box::new(Expr::reg(old, 64)),
                 },
+                at: None,
             },
             Stmt::Ret {
                 value: Expr::reg(old, 64),
+                at: None,
             },
         ],
     );
@@ -1128,14 +1168,17 @@ fn a_pointer_local_update_keeps_the_machine_byte_offset() {
                 addr: slot.clone(),
                 value: Expr::reg(7, 64),
                 width: 8,
+                at: None,
             },
             Stmt::Store {
                 addr: slot.clone(),
                 value: Expr::bin(BinOp::Add, load(slot.clone(), 8), Expr::Const(1)),
                 width: 8,
+                at: None,
             },
             Stmt::Ret {
                 value: load(load(slot, 8), 4),
+                at: None,
             },
         ],
     );
@@ -1163,14 +1206,17 @@ fn an_integer_local_update_keeps_the_pointer_conversion() {
                 addr: slot.clone(),
                 value: Expr::Const(0),
                 width: 8,
+                at: None,
             },
             Stmt::Store {
                 addr: slot.clone(),
                 value: Expr::bin(BinOp::Add, load(slot.clone(), 8), Expr::reg(7, 64)),
                 width: 8,
+                at: None,
             },
             Stmt::Ret {
                 value: Expr::bin(BinOp::Shr, load(slot, 8), Expr::Const(1)),
+                at: None,
             },
         ],
     );
@@ -1212,9 +1258,11 @@ fn compare_exchange_does_not_truncate_a_wider_comparison() {
                         then: Box::new(Expr::Const(2)),
                         els: Box::new(Expr::reg(old, 64)),
                     },
+                    at: None,
                 },
                 Stmt::Ret {
                     value: Expr::reg(old, 64),
+                    at: None,
                 },
             ],
         );
@@ -1241,13 +1289,14 @@ fn a_trap_after_a_call_is_left_out_and_one_alone_is_kept() {
         outputs: crate::ir::fallback_call_outputs(crate::ir::Convention::SysV, None),
         clobbers: None,
         via: None,
+        at: None,
     };
-    let mut ir = FunctionIr::single_block(Isa::X86_64, vec![call, Stmt::Trap]);
+    let mut ir = FunctionIr::single_block(Isa::X86_64, vec![call, Stmt::Trap { at: None }]);
     ir.ret_type = CType::Void;
     let text = rendered(&ir);
     assert!(text.contains("sub_1000();"), "{text}");
     assert!(!text.contains("__builtin_trap"), "{text}");
-    let ir = FunctionIr::single_block(Isa::X86_64, vec![Stmt::Trap]);
+    let ir = FunctionIr::single_block(Isa::X86_64, vec![Stmt::Trap { at: None }]);
     assert!(rendered(&ir).contains("__builtin_trap();"));
 }
 
@@ -1270,6 +1319,7 @@ fn a_spilled_32_bit_parameter_reads_as_itself() {
                     addr: slot(),
                     value: Expr::reg(7, 32),
                     width: 4,
+                    at: None,
                 },
                 Stmt::Ret {
                     value: Expr::Load {
@@ -1277,6 +1327,7 @@ fn a_spilled_32_bit_parameter_reads_as_itself() {
                         width,
                         signed: false,
                     },
+                    at: None,
                 },
             ],
         );
@@ -1316,6 +1367,7 @@ fn a_pointer_to_scalars_is_indexed_by_elements() {
                 ),
                 8,
             ),
+            at: None,
         }],
     );
     ir.params = vec![
@@ -1356,6 +1408,7 @@ fn a_further_result_in_a_parameter_register_is_no_parameter() {
                 clobbers: None,
                 outputs: crate::ir::fallback_call_outputs(convention, None),
                 via: None,
+                at: None,
             },
             assign(first, Expr::reg(0, 64)),
             assign(second, Expr::reg(3, 64)),
@@ -1364,6 +1417,7 @@ fn a_further_result_in_a_parameter_register_is_no_parameter() {
                     op: Operation::Results,
                     args: vec![Expr::reg(first, 64), Expr::reg(second, 64)],
                 },
+                at: None,
             },
         ],
     );
@@ -1405,6 +1459,7 @@ fn a_pointer_taken_as_an_integer_is_cast() {
                     then: Box::new(Expr::reg(7, 64)),
                     els: Box::new(Expr::Const(0)),
                 },
+                at: None,
             },
         ],
     );
@@ -1441,6 +1496,7 @@ fn an_array_of_structures_is_indexed_by_elements() {
         addr,
         value: Expr::Const(0),
         width,
+        at: None,
     };
     let mut ir = FunctionIr::single_block(
         Isa::X86_64,
@@ -1461,6 +1517,7 @@ fn an_array_of_structures_is_indexed_by_elements() {
             // Four bytes into a field is no field.
             Stmt::Ret {
                 value: load(scaled(0xc), 4),
+                at: None,
             },
         ],
     );
@@ -1502,7 +1559,7 @@ fn an_array_of_structures_is_indexed_by_elements() {
 /// The function returning `value` from parameters `params` (register,
 /// type), printed whole.
 fn returning(params: &[(u16, CType)], ret_type: CType, value: Expr) -> String {
-    let mut ir = FunctionIr::single_block(Isa::AArch64, vec![Stmt::Ret { value }]);
+    let mut ir = FunctionIr::single_block(Isa::AArch64, vec![Stmt::Ret { value, at: None }]);
     ir.ret_type = ret_type;
     ir.params = params
         .iter()
@@ -1641,7 +1698,7 @@ fn segment_reads_have_ordered_providers_and_entry_snapshots() {
             .map(|index| load(Expr::reg(*index, 64), 8))
             .reduce(|lhs, rhs| Expr::bin(BinOp::Add, lhs, rhs))
             .unwrap();
-        let ir = FunctionIr::single_block(Isa::X86_64, vec![Stmt::Ret { value }]);
+        let ir = FunctionIr::single_block(Isa::X86_64, vec![Stmt::Ret { value, at: None }]);
         let symbols = Symbols::default();
         let rendered = render_with_dependencies(&ir, &[], &symbols, &[]);
         assert_eq!(render(&ir, &[], &symbols, &[]), rendered.code);
@@ -1688,6 +1745,7 @@ fn i386_segment_reads_have_a_provider() {
         Isa::I386,
         vec![Stmt::Ret {
             value: load(Expr::reg(crate::arch::x86::GS_BASE, 32), 4),
+            at: None,
         }],
     );
     let rendered = render_with_dependencies(&ir, &[], &Symbols::default(), &[]);
@@ -1708,6 +1766,7 @@ fn segment_dependencies_only_supply_unbound_x86_inputs() {
             isa,
             vec![Stmt::Ret {
                 value: Expr::reg(index, 64),
+                at: None,
             }],
         );
         let rendered = render_with_dependencies(&ir, &[], &Symbols::default(), &[]);
@@ -1718,6 +1777,7 @@ fn segment_dependencies_only_supply_unbound_x86_inputs() {
         Isa::X86_64,
         vec![Stmt::Ret {
             value: Expr::bin(BinOp::Add, Expr::reg(fs, 64), Expr::reg(gs, 64)),
+            at: None,
         }],
     );
     ir.params = vec![Param {
@@ -1757,6 +1817,7 @@ fn narrow_segment_reads_truncate_the_full_width_snapshot() {
             Isa::X86_64,
             vec![Stmt::Ret {
                 value: Expr::reg(crate::arch::x86::FS_BASE, width),
+                at: None,
             }],
         );
         let rendered = render_with_dependencies(&ir, &[], &Symbols::default(), &[]);
@@ -1784,6 +1845,7 @@ fn segment_dependencies_removed_from_the_body_need_no_provider() {
             Stmt::unsupported("fs_base"),
             Stmt::Ret {
                 value: Expr::reg(crate::arch::x86::FS_BASE, 64),
+                at: None,
             },
         ],
     );
@@ -1838,9 +1900,11 @@ fn a_member_name_does_not_retain_an_unused_segment_snapshot() {
                 addr: Expr::reg(0, 64),
                 value: Expr::Const(0),
                 width: 8,
+                at: None,
             },
             Stmt::Ret {
                 value: Expr::reg(crate::arch::x86::FS_BASE, 64),
+                at: None,
             },
         ],
     );
@@ -1884,6 +1948,7 @@ fn segment_bindings_keep_real_calls_parameters_and_data_distinct() {
         outputs: crate::ir::fallback_call_outputs(crate::ir::Convention::SysV, None),
         clobbers: None,
         via: None,
+        at: None,
     };
     let mut ir = FunctionIr::single_block(
         Isa::X86_64,
@@ -1904,6 +1969,7 @@ fn segment_bindings_keep_real_calls_parameters_and_data_distinct() {
                         load(Expr::Const(0x1000), 8),
                     ),
                 ),
+                at: None,
             },
         ],
     );
@@ -1988,6 +2054,7 @@ fn segment_providers_do_not_replace_the_functions_own_name() {
         Isa::X86_64,
         vec![Stmt::Ret {
             value: Expr::reg(crate::arch::x86::FS_BASE, 64),
+            at: None,
         }],
     );
     ir.name = Some("velk_x86_fs_base".to_owned());
@@ -2019,6 +2086,7 @@ fn a_function_whose_address_is_taken_is_declared_and_read_as_a_number() {
         Isa::AArch64,
         vec![Stmt::Ret {
             value: Expr::Const(0x40),
+            at: None,
         }],
     );
     ir.ret_type = CType::I64;
@@ -2112,6 +2180,7 @@ fn symbol_kinds_keep_names_at_the_same_address() {
         Isa::X86_64,
         vec![Stmt::Ret {
             value: Expr::reg(crate::arch::x86::FS_BASE, 64),
+            at: None,
         }],
     );
     let rendered = render_with_dependencies(&ir, &[], &symbols, &[]);
@@ -2137,6 +2206,7 @@ fn calls_distinguish_functions_from_import_slots() {
         outputs: crate::ir::fallback_call_outputs(crate::ir::Convention::SysV, None),
         clobbers: None,
         via: None,
+        at: None,
     };
     let mut ir = FunctionIr::single_block(
         Isa::X86_64,
@@ -2145,6 +2215,7 @@ fn calls_distinguish_functions_from_import_slots() {
             call(Some(load(Expr::Const(0x40), 8))),
             Stmt::Ret {
                 value: Expr::Const(0),
+                at: None,
             },
         ],
     );
@@ -2167,6 +2238,7 @@ fn a_data_address_has_no_function_prototype() {
         Isa::AArch64,
         vec![Stmt::Ret {
             value: Expr::Const(0x40),
+            at: None,
         }],
     );
     let symbols = Symbols {
@@ -2195,9 +2267,11 @@ fn a_round_data_address_argument_stays_hexadecimal() {
                 outputs: Vec::new(),
                 clobbers: Some(Default::default()),
                 via: None,
+                at: None,
             },
             Stmt::Ret {
                 value: Expr::Const(0),
+                at: None,
             },
         ],
     );
@@ -2222,6 +2296,7 @@ fn global_views_do_not_shadow_unnamed_functions() {
                 outputs: crate::ir::fallback_call_outputs(crate::ir::Convention::SysV, None),
                 clobbers: None,
                 via: None,
+                at: None,
             },
             Stmt::Ret {
                 value: Expr::bin(
@@ -2229,6 +2304,7 @@ fn global_views_do_not_shadow_unnamed_functions() {
                     load(Expr::Const(0x1000), 4),
                     load(Expr::Const(0x1004), 4),
                 ),
+                at: None,
             },
         ],
     );
@@ -2297,9 +2373,11 @@ fn physical_call_arguments_keep_zero_extension_without_callee_width_evidence() {
                     outputs: crate::ir::fallback_call_outputs(crate::ir::Convention::SysV, None),
                     clobbers: None,
                     via: None,
+                    at: None,
                 },
                 Stmt::Ret {
                     value: Expr::Const(0),
+                    at: None,
                 },
             ],
         );
@@ -2366,6 +2444,7 @@ fn physical_vector_widths_share_one_integer_storage_name() {
                     assign(low, Expr::Const(0xfedc_ba98_7654_3210)),
                     Stmt::Ret {
                         value: Expr::reg(low, width),
+                        at: None,
                     },
                 ],
             );
@@ -2391,6 +2470,7 @@ fn physical_vector_storage_preserves_upper_zero_and_name_collisions() {
             assign(low + 1, Expr::Const(0)),
             Stmt::Ret {
                 value: Expr::bin(BinOp::Xor, Expr::reg(low, 64), Expr::reg(low + 1, 64)),
+                at: None,
             },
         ],
     );
@@ -2424,6 +2504,7 @@ fn physical_vector_float_operations_use_representation_conversions() {
             ),
             Stmt::Ret {
                 value: Expr::reg(low + 4, 64),
+                at: None,
             },
         ],
     );
@@ -2447,6 +2528,7 @@ fn physical_float_formals_require_their_actual_entry_bits() {
             Isa::AArch64,
             vec![Stmt::Ret {
                 value: Expr::reg(low, width),
+                at: None,
             }],
         );
         ir.params.push(Param {
@@ -2464,6 +2546,7 @@ fn physical_float_formals_require_their_actual_entry_bits() {
             Stmt::unsupported("opaque"),
             Stmt::Ret {
                 value: Expr::reg(low, 32),
+                at: None,
             },
         ],
     );
@@ -2485,6 +2568,7 @@ fn physical_vector_constants_remain_numeric_when_symbols_share_the_bits() {
             assign(low, Expr::Const(0x1000)),
             Stmt::Ret {
                 value: Expr::reg(low, 64),
+                at: None,
             },
         ],
     );
@@ -2510,6 +2594,7 @@ fn overwritten_float_formals_use_raw_storage_without_an_entry_capture() {
             assign(low, Expr::Const(0x1234_5678_3fc0_0000)),
             Stmt::Ret {
                 value: Expr::reg(low, 64),
+                at: None,
             },
         ],
     );
@@ -2541,10 +2626,12 @@ fn floating_entry_is_captured_once_before_a_full_width_overwrite() {
                     width: 64,
                 },
                 value: Expr::reg(low, 32),
+                at: None,
             },
             assign(low, Expr::Const(0x1234_5678_3fc0_0000)),
             Stmt::Ret {
                 value: Expr::bin(BinOp::Xor, Expr::reg(low, 64), Expr::reg(saved, 32)),
+                at: None,
             },
         ],
     );
@@ -2577,6 +2664,7 @@ fn readonly_floating_formals_use_their_original_operand_names() {
                         Operation::FloatAdd(precision),
                         vec![Expr::reg(low, 64), Expr::reg(low + 2, 64)],
                     ),
+                    at: None,
                 }],
             );
             ir.params = [(low, "a"), (low + 2, "b")]
@@ -2612,6 +2700,7 @@ fn readonly_floating_views_keep_a_capture_for_raw_integer_reads() {
                 ),
                 Expr::reg(low, 32),
             ),
+            at: None,
         }],
     );
     ir.params = [(low, "a"), (low + 2, "b")]
@@ -2643,6 +2732,7 @@ fn readonly_floating_views_reject_written_and_call_clobbered_formals() {
                 Operation::FloatAdd(Precision::Double),
                 vec![Expr::reg(low, 64), Expr::reg(low + 2, 64)],
             ),
+            at: None,
         }];
         if clobber {
             stmts.push(Stmt::Call {
@@ -2656,12 +2746,14 @@ fn readonly_floating_views_reject_written_and_call_clobbered_formals() {
                 outputs: Vec::new(),
                 clobbers: Some([low].into_iter().collect()),
                 via: None,
+                at: None,
             });
         } else {
             stmts.push(assign(low, Expr::Const(0x401e_0000_0000_0000)));
         }
         stmts.push(Stmt::Ret {
             value: Expr::reg(VARIABLE_BASE, 64),
+            at: None,
         });
         let mut ir = FunctionIr::single_block(Isa::AArch64, stmts);
         ir.params = [(low, "a"), (low + 2, "b")]
@@ -2693,6 +2785,7 @@ fn readonly_floating_views_reject_mismatched_or_volatile_formals() {
                     Operation::FloatAdd(Precision::Single),
                     vec![Expr::reg(low, 32), Expr::Const(0x4000_0000)],
                 ),
+                at: None,
             }],
         );
         ir.params.push(Param {
@@ -2715,6 +2808,7 @@ fn go_return_address_and_argument_frame_have_explicit_meanings() {
         Isa::X86_64,
         vec![Stmt::Ret {
             value: load(Expr::reg(sp, 64), 8),
+            at: None,
         }],
     );
     ir.convention = crate::ir::Convention::GoAmd64;
@@ -2726,6 +2820,7 @@ fn go_return_address_and_argument_frame_have_explicit_meanings() {
     assert!(!code.contains("rsp"), "{code}");
     ir.blocks[0].stmts = vec![Stmt::Ret {
         value: Expr::bin(BinOp::Add, Expr::reg(sp, 64), Expr::Const(8)),
+        at: None,
     }];
     let code = rendered(&ir);
     assert!(code.contains("velk_return_address_slot() + 1"), "{code}");
@@ -2738,6 +2833,7 @@ fn go_return_address_and_argument_frame_have_explicit_meanings() {
                 width: 64,
             },
             value: Expr::reg(0, 64),
+            at: None,
         },
     );
     let code = rendered(&ir);
@@ -2776,6 +2872,7 @@ fn an_indexed_sum_from_a_local_address_stays_an_integer() {
                     width: 64,
                 },
                 value: sp(-0x68),
+                at: None,
             },
             Stmt::Store {
                 addr: Expr::bin(
@@ -2789,9 +2886,11 @@ fn an_indexed_sum_from_a_local_address_stays_an_integer() {
                 ),
                 value: Expr::Const(1),
                 width: 4,
+                at: None,
             },
             Stmt::Ret {
                 value: load(sp(-0x68), 4),
+                at: None,
             },
         ],
     );
@@ -2816,20 +2915,24 @@ fn a_structure_field_that_only_holds_pointers_is_a_pointer() {
                 addr: Expr::reg(7, 64),
                 value: Expr::Const(0),
                 width: 8,
+                at: None,
             },
             Stmt::Store {
                 addr: field.clone(),
                 value: Expr::reg(6, 64),
                 width: 8,
+                at: None,
             },
             assign(held, load(field, 8)),
             Stmt::Store {
                 addr: Expr::reg(held, 64),
                 value: Expr::Const(0),
                 width: 1,
+                at: None,
             },
             Stmt::Ret {
                 value: Expr::Const(0),
+                at: None,
             },
         ],
     );
@@ -2876,11 +2979,13 @@ fn annotated_local_name_stays_on_its_first_value_after_splitting() {
                         width,
                     },
                     value: Expr::Const(7),
+                    at: None,
                 },
                 Stmt::Store {
                     addr: Expr::reg(1, width),
                     value: Expr::reg(variable, width),
                     width: 4,
+                    at: None,
                 },
                 Stmt::Assign {
                     dest: RegRef {
@@ -2888,9 +2993,11 @@ fn annotated_local_name_stays_on_its_first_value_after_splitting() {
                         width,
                     },
                     value: Expr::Const(9),
+                    at: None,
                 },
                 Stmt::Ret {
                     value: Expr::reg(variable, width),
+                    at: None,
                 },
             ],
         );
@@ -2916,6 +3023,7 @@ fn constant_table_names_only_rename_global_memory_accesses() {
         Isa::AArch64,
         vec![Stmt::Ret {
             value: Expr::Const(0x1000),
+            at: None,
         }],
     );
     assert_eq!(
@@ -2926,6 +3034,7 @@ fn constant_table_names_only_rename_global_memory_accesses() {
         Isa::AArch64,
         vec![Stmt::Ret {
             value: load(Expr::Const(0x1000), 1),
+            at: None,
         }],
     );
     let original = render(&access, &[], &Symbols::default(), &[(0x1000, 256)]);
@@ -2950,9 +3059,11 @@ fn imported_pointer_addends_do_not_become_calls_to_the_unadjusted_symbol() {
                 outputs: Vec::new(),
                 clobbers: None,
                 via: None,
+                at: None,
             },
             Stmt::Ret {
                 value: Expr::Const(0),
+                at: None,
             },
         ],
     );
@@ -2985,6 +3096,7 @@ fn walked_frame_object_offsets_preserve_symbolic_addresses() {
                     addr: address(-80),
                     value: Expr::Const(7),
                     width: 8,
+                    at: None,
                 },
                 assign(pointer, address(-32)),
                 assign(
@@ -2994,6 +3106,7 @@ fn walked_frame_object_offsets_preserve_symbolic_addresses() {
                 assign(pointer + 2, address(16)),
                 Stmt::Ret {
                     value: load(address(-80), 8),
+                    at: None,
                 },
             ],
         );

@@ -126,6 +126,7 @@ pub(super) fn physical_scalar_stack_calls_require_complete_bounded_slots() {
         "physical_stack_contract",
         vec![Stmt::Ret {
             value: Expr::reg(0, 64),
+            at: None,
         }],
     );
     let locations = |signature: DeclaredSignature| {
@@ -155,6 +156,7 @@ pub(super) fn physical_scalar_stack_calls_require_complete_bounded_slots() {
         3,
         vec![Stmt::Ret {
             value: Expr::reg(7, 64),
+            at: None,
         }],
     );
     sysv.declared_signature = None;
@@ -360,6 +362,7 @@ pub(super) fn printed_stack_bytes_preserve_read_write_order_and_slot_boundaries(
                         if kind == "cross_read" { 4 } else { offset },
                         if kind == "read_then_write" { 8 } else { width },
                     ),
+                    at: None,
                 });
             }
             if matches!(kind, "read_then_write" | "write_then_read" | "cross_write") {
@@ -367,6 +370,7 @@ pub(super) fn printed_stack_bytes_preserve_read_write_order_and_slot_boundaries(
                     addr: address(offset),
                     value: Expr::reg(0, 64),
                     width,
+                    at: None,
                 });
             }
             if matches!(kind, "write_then_read" | "cross_write") {
@@ -376,6 +380,7 @@ pub(super) fn printed_stack_bytes_preserve_read_write_order_and_slot_boundaries(
                         width: 64,
                     },
                     value: load(0, 8),
+                    at: None,
                 });
             }
             for part in 0..3 {
@@ -383,10 +388,12 @@ pub(super) fn printed_stack_bytes_preserve_read_write_order_and_slot_boundaries(
                     addr: Expr::Const(REGION + 0x1a00 + part * 8),
                     value: load(part * 8, 8),
                     width: 8,
+                    at: None,
                 });
             }
             stmts.push(Stmt::Ret {
                 value: Expr::reg(result, 64),
+                at: None,
             });
             let mut ir = recovered_stack_test_ir(&format!("stack_bytes_{kind}_{width}"), stmts);
             if kind == "cross_read" {
@@ -509,11 +516,13 @@ pub(super) fn printed_stack_cross_slot_scalar_views_preserve_bits_and_frame_loca
                         width: 64,
                     },
                     value: load(7, 4, true),
+                    at: None,
                 });
                 stmts.push(Stmt::Store {
                     addr: Expr::Const(REGION + 0x1b00),
                     value: Expr::reg(result, 64),
                     width: 8,
+                    at: None,
                 });
             }
             "float32" | "float64" => {
@@ -531,6 +540,7 @@ pub(super) fn printed_stack_cross_slot_scalar_views_preserve_bits_and_frame_loca
                         op: Operation::FloatLess(precision),
                         args: vec![load(offset, width, false), Expr::Const(half)],
                     },
+                    at: None,
                 });
                 stmts.push(Stmt::Store {
                     addr: Expr::Const(REGION + 0x1b00),
@@ -539,6 +549,7 @@ pub(super) fn printed_stack_cross_slot_scalar_views_preserve_bits_and_frame_loca
                         args: vec![load(offset, width, false)],
                     },
                     width,
+                    at: None,
                 });
             }
             "changed_frame" => {
@@ -548,6 +559,7 @@ pub(super) fn printed_stack_cross_slot_scalar_views_preserve_bits_and_frame_loca
                         width: 64,
                     },
                     value: load(4, 8, false),
+                    at: None,
                 });
                 stmts.push(Stmt::Assign {
                     dest: velk::ir::RegRef {
@@ -555,6 +567,7 @@ pub(super) fn printed_stack_cross_slot_scalar_views_preserve_bits_and_frame_loca
                         width: 64,
                     },
                     value: address(8),
+                    at: None,
                 });
                 stmts.push(Stmt::Assign {
                     dest: velk::ir::RegRef {
@@ -562,6 +575,7 @@ pub(super) fn printed_stack_cross_slot_scalar_views_preserve_bits_and_frame_loca
                         width: 64,
                     },
                     value: load(4, 8, false),
+                    at: None,
                 });
                 stmts.push(Stmt::Assign {
                     dest: velk::ir::RegRef {
@@ -569,12 +583,14 @@ pub(super) fn printed_stack_cross_slot_scalar_views_preserve_bits_and_frame_loca
                         width: 64,
                     },
                     value: Expr::bin(BinOp::Sub, Expr::reg(31, 64), Expr::Const(8)),
+                    at: None,
                 });
                 for (part, register) in [result, second].into_iter().enumerate() {
                     stmts.push(Stmt::Store {
                         addr: Expr::Const(REGION + 0x1b00 + part as u64 * 8),
                         value: Expr::reg(register, 64),
                         width: 8,
+                        at: None,
                     });
                 }
                 stmts.push(Stmt::Assign {
@@ -583,6 +599,7 @@ pub(super) fn printed_stack_cross_slot_scalar_views_preserve_bits_and_frame_loca
                         width: 64,
                     },
                     value: Expr::bin(BinOp::Xor, Expr::reg(result, 64), Expr::reg(second, 64)),
+                    at: None,
                 });
             }
             _ => unreachable!(),
@@ -592,10 +609,12 @@ pub(super) fn printed_stack_cross_slot_scalar_views_preserve_bits_and_frame_loca
                 addr: Expr::Const(REGION + 0x1a00 + part * 8),
                 value: load(part * 8, 8, false),
                 width: 8,
+                at: None,
             });
         }
         stmts.push(Stmt::Ret {
             value: Expr::reg(result, 64),
+            at: None,
         });
         let ir = recovered_stack_test_ir(&format!("stack_cross_view_{kind}"), stmts);
         let mut inputs = Vec::new();

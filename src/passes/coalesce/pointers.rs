@@ -18,7 +18,7 @@ pub(crate) fn reuse_pointers(ir: &mut FunctionIr) {
     let mut defined = HashSet::new();
     for stmt in ir.blocks.iter().flat_map(|block| &block.stmts) {
         match stmt {
-            Stmt::Assign { dest, value } => {
+            Stmt::Assign { dest, value, .. } => {
                 defined.insert(dest.index);
                 // Partial register writes also appear as full-width masks
                 // and merges, even when a declared type remains a pointer.

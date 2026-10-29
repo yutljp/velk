@@ -169,9 +169,10 @@ fn inputs_known(blocks: &[Block], landing_pads: &[(u64, Vec<(u64, u64)>)]) -> bo
                 Stmt::Unsupported { .. }
                 | Stmt::BrIndirect { .. }
                 | Stmt::BrifFlags { .. }
-                | Stmt::Br { target: None } => false,
+                | Stmt::Br { target: None, .. } => false,
                 Stmt::Br {
                     target: Some(target),
+                    ..
                 }
                 | Stmt::Brif { target, .. } => starts.contains(target),
                 Stmt::Switch { cases, default, .. } => {
@@ -220,7 +221,7 @@ fn needed_assignments(
                 if matches!(stmt, Stmt::Ret { .. }) {
                     live.extend(convention.results());
                 }
-                if let Stmt::Assign { dest, value } = stmt
+                if let Stmt::Assign { dest, value, .. } = stmt
                     && !live.contains(&dest.index)
                     && !crate::passes::frame::reads_outside_frame(value)
                     && !writes
@@ -575,7 +576,7 @@ fn parameter_types(
         };
     let mut code_pointers: HashSet<u16> = HashSet::new();
     origins.walk(blocks, &mut |stmt, origin| match stmt {
-        Stmt::Assign { dest, value } => {
+        Stmt::Assign { dest, value, .. } => {
             if let Some((addr, width)) = load_of(value) {
                 note(
                     addr,
@@ -620,7 +621,9 @@ fn parameter_types(
                 note(addr, *width, None, None, origin, &mut pointer_elements);
             }
         }
-        Stmt::Store { addr, width, value } => {
+        Stmt::Store {
+            addr, width, value, ..
+        } => {
             let register = match value {
                 Expr::Reg { index, .. } => Some(*index),
                 Expr::Bin { lhs, .. } => match lhs.as_ref() {
@@ -637,7 +640,7 @@ fn parameter_types(
                 note_integer_loads(value, origin, &mut pointer_elements);
             }
         }
-        Stmt::Ret { value } => {
+        Stmt::Ret { value, .. } => {
             note_integer_loads(value, origin, &mut pointer_elements);
         }
         // An argument the code calls or jumps through points at code.
@@ -647,6 +650,7 @@ fn parameter_types(
         }
         | Stmt::BrIndirect {
             target: Expr::Reg { index, .. },
+            ..
         } => {
             if let Some(param) = origin.get(index) {
                 code_pointers.insert(*param);
@@ -684,7 +688,7 @@ fn signed_parameters(blocks: &[Block], origins: &Origins) -> HashSet<u16> {
                 signed_in_expr(addr, &mut signed);
                 signed_in_expr(value, &mut signed);
             }
-            Stmt::Ret { value } => signed_in_expr(value, &mut signed),
+            Stmt::Ret { value, .. } => signed_in_expr(value, &mut signed),
             Stmt::Switch { index, .. } => signed_in_expr(index, &mut signed),
             Stmt::Call { .. } => {
                 for value in stmt.operands() {
@@ -719,6 +723,7 @@ fn parameter_accesses(blocks: &[Block], params: &[Param]) -> Vec<Access> {
             if let Stmt::Assign {
                 dest,
                 value: Expr::Reg { index, .. },
+                ..
             } = stmt
                 && !copies.contains_key(&dest.index)
                 && let Some(param) = copies.get(index).copied()
@@ -736,7 +741,7 @@ fn parameter_accesses(blocks: &[Block], params: &[Param]) -> Vec<Access> {
         .iter()
         .flat_map(|block| &block.stmts)
         .filter_map(|stmt| match stmt {
-            Stmt::Assign { dest, value } if !matches!(value, Expr::Reg { .. }) => {
+            Stmt::Assign { dest, value, .. } if !matches!(value, Expr::Reg { .. }) => {
                 let Some(param) = copies.get(&dest.index) else {
                     return None;
                 };
@@ -985,7 +990,7 @@ fn register_inputs(
                         reads(input, &mut used);
                     }
                 }
-                Stmt::Assign { dest, value } => {
+                Stmt::Assign { dest, value, .. } => {
                     if needed[index][position] {
                         reads(partial_write_source(value, dest.index), &mut used);
                     }
@@ -1001,13 +1006,13 @@ fn register_inputs(
                 // AAPCS64 can return an unchanged first argument even when
                 // the function has effects. Other conventions keep the
                 // void-return heuristic for such functions.
-                Stmt::Ret { value }
+                Stmt::Ret { value, .. }
                     if convention == Convention::Aapcs64 || !(returns_argument && effects) =>
                 {
                     reads(value, &mut used)
                 }
                 Stmt::Ret { .. } => {}
-                Stmt::BrIndirect { target } => reads(target, &mut used),
+                Stmt::BrIndirect { target, .. } => reads(target, &mut used),
                 Stmt::Switch { index, .. } => reads(index, &mut used),
                 // What a call passes on is read here too.
                 Stmt::Call { through, args, .. } => {
@@ -1038,7 +1043,7 @@ fn register_inputs(
                     inputs.insert(register);
                     // A write of the low bits keeps the rest without reading it.
                     let operands = match stmt {
-                        Stmt::Assign { dest, value } => {
+                        Stmt::Assign { dest, value, .. } => {
                             vec![partial_write_source(value, dest.index)]
                         }
                         _ => stmt.operands(),
@@ -1096,6 +1101,7 @@ fn register_predecessors(blocks: &[Block]) -> Vec<Vec<usize>> {
             }
             Stmt::Br {
                 target: Some(target),
+                ..
             } => {
                 targets.push(*target);
                 false
@@ -1329,6 +1335,7 @@ impl Origins {
                 addr,
                 value,
                 width: 8,
+                ..
             } => {
                 if let Some((_, slots)) = found {
                     let from = match value {
@@ -1341,7 +1348,7 @@ impl Origins {
                     }
                 }
             }
-            Stmt::Assign { dest, value } => {
+            Stmt::Assign { dest, value, .. } => {
                 let source = match value {
                     Expr::Load { addr, width: 8, .. } => {
                         self.slots.get(&format!("{addr:?}")).copied().flatten()

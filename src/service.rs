@@ -200,6 +200,7 @@ pub struct Binary {
     cache: Option<cache::Cache>,
     source_digest: Option<String>,
     string_decoding: bool,
+    instruction_addresses: bool,
     decoded_strings: HashMap<u64, Vec<crate::string_decoding::DecodedString>>,
     navigation: Option<crate::xrefs::Index>,
     similarity: Option<crate::similar::Index>,
@@ -438,6 +439,7 @@ impl Binary {
             project_path,
             project_digest,
             string_decoding: true,
+            instruction_addresses: false,
             decoded_strings: HashMap::new(),
             symbols: render::callee_names(&image),
             data_ranges: render::data_ranges(&image),
@@ -537,6 +539,11 @@ impl Binary {
     /// Enables or disables automatic string comments during decompilation.
     pub fn set_string_decoding(&mut self, enabled: bool) {
         self.string_decoding = enabled;
+    }
+
+    /// Includes known instruction origins in subsequent pseudo-C output.
+    pub fn set_instruction_addresses(&mut self, enabled: bool) {
+        self.instruction_addresses = enabled;
     }
 
     /// Recovers strings in one function using only known execution inputs.
@@ -1205,7 +1212,8 @@ impl Binary {
         if api_hashes.iter().any(|hash| !hash.candidates.is_empty()) {
             crate::api_hashes::add_comments(&api_hashes, &ir, symbols.to_mut());
         }
-        let function_symbols = render::FunctionSymbols::new_with_analysis(&symbols, analysis);
+        let mut function_symbols = render::FunctionSymbols::new_with_analysis(&symbols, analysis);
+        function_symbols.addresses = self.instruction_addresses;
         let mut rendered = render::render_with_symbols(
             &ir,
             &analysis.references,
@@ -1954,6 +1962,7 @@ mod tests {
                     index: crate::arch::x86::FS_BASE,
                     width: 64,
                 },
+                at: None,
             }],
         );
         ir.addr = addr;

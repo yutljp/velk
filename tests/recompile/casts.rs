@@ -63,6 +63,7 @@ fn wrapping_locals_keep_unsigned_bits_for_every_architecture() {
                             width,
                         },
                         value: Expr::reg(7, width),
+                        at: None,
                     },
                     Stmt::Assign {
                         dest: RegRef {
@@ -70,8 +71,12 @@ fn wrapping_locals_keep_unsigned_bits_for_every_architecture() {
                             width,
                         },
                         value: Expr::Const(0),
+                        at: None,
                     },
-                    Stmt::Br { target: Some(1) },
+                    Stmt::Br {
+                        target: Some(1),
+                        at: None,
+                    },
                 ],
             },
             Block {
@@ -81,6 +86,7 @@ fn wrapping_locals_keep_unsigned_bits_for_every_architecture() {
                     lhs: Expr::reg(counter, width),
                     rhs: Expr::reg(6, width),
                     target: 3,
+                    at: None,
                 }],
             },
             Block {
@@ -92,6 +98,7 @@ fn wrapping_locals_keep_unsigned_bits_for_every_architecture() {
                             width,
                         },
                         value: Expr::bin(BinOp::Add, Expr::reg(value, width), Expr::Const(1)),
+                        at: None,
                     },
                     Stmt::Assign {
                         dest: RegRef {
@@ -99,12 +106,14 @@ fn wrapping_locals_keep_unsigned_bits_for_every_architecture() {
                             width,
                         },
                         value: Expr::bin(BinOp::Add, Expr::reg(counter, width), Expr::Const(1)),
+                        at: None,
                     },
                     Stmt::Brif {
                         cond: Cond::Ne,
                         lhs: Expr::reg(counter, width),
                         rhs: Expr::reg(6, width),
                         target: 2,
+                        at: None,
                     },
                 ],
             },
@@ -112,6 +121,7 @@ fn wrapping_locals_keep_unsigned_bits_for_every_architecture() {
                 start: 3,
                 stmts: vec![Stmt::Ret {
                     value: Expr::reg(value, width),
+                    at: None,
                 }],
             },
         ];
@@ -179,6 +189,7 @@ fn unsigned_parameter_arithmetic_matches_machine_bits_for_every_architecture() {
                 integer.clone(),
                 vec![Stmt::Ret {
                     value: Expr::bin(operator, Expr::reg(7, width), Expr::Const(right)),
+                    at: None,
                 }],
             );
             ir.isa = isa;
@@ -247,6 +258,7 @@ fn returned_address_copies_keep_pointer_types() {
                             then: Box::new(Expr::reg(7, 64)),
                             els: Box::new(Expr::reg(6, 64)),
                         },
+                        at: None,
                     },
                     Stmt::Assign {
                         dest: RegRef {
@@ -254,13 +266,18 @@ fn returned_address_copies_keep_pointer_types() {
                             width: 64,
                         },
                         value: pointer.clone(),
+                        at: None,
                     },
                     Stmt::Store {
                         addr: copy,
                         value: Expr::Const(0x807f_ff01_8000_ffff),
                         width,
+                        at: None,
                     },
-                    Stmt::Ret { value: pointer },
+                    Stmt::Ret {
+                        value: pointer,
+                        at: None,
+                    },
                 ],
             );
             ir.isa = isa;
@@ -304,6 +321,7 @@ fn byte_accesses_through_wide_pointer_offsets_keep_one_conversion() {
                             addr: address.clone(),
                             value: Expr::Const(0x80),
                             width: 1,
+                            at: None,
                         },
                         Stmt::Ret {
                             value: Expr::Load {
@@ -311,6 +329,7 @@ fn byte_accesses_through_wide_pointer_offsets_keep_one_conversion() {
                                 width: 1,
                                 signed,
                             },
+                            at: None,
                         },
                     ],
                 );
@@ -385,6 +404,7 @@ fn selected_scalar_pointers_keep_access_width_and_sign() {
                         addr: address.clone(),
                         value: Expr::Const(0x807f_ff01_8000_ffff),
                         width,
+                        at: None,
                     },
                     Stmt::Ret {
                         value: Expr::Load {
@@ -392,6 +412,7 @@ fn selected_scalar_pointers_keep_access_width_and_sign() {
                             width,
                             signed,
                         },
+                        at: None,
                     },
                 ],
             );
@@ -435,6 +456,7 @@ fn selected_global_addresses_keep_the_requested_access_width() {
                 width: 8,
                 signed: false,
             },
+            at: None,
         }],
     );
     ir.debug_globals = vec![(0x2000, CType::U64, 8), (0x3000, CType::U64, 8)];
@@ -509,6 +531,7 @@ fn integer_destinations_supply_outer_conversions() {
                             value: Box::new(Expr::reg(7, input_bits)),
                             width: bits / 8,
                         },
+                        at: None,
                     }],
                 );
                 ir.isa = isa;
@@ -566,16 +589,19 @@ fn mixed_width_pointer_variables_use_bytes_without_changing_accesses() {
                             width: 64,
                         },
                         value: Expr::bin(BinOp::Add, Expr::reg(7, 64), Expr::Const(8)),
+                        at: None,
                     },
                     Stmt::Store {
                         addr: pointer.clone(),
                         value: Expr::Const(0x807f_ff01_8000_ffff),
                         width,
+                        at: None,
                     },
                     Stmt::Store {
                         addr: Expr::bin(BinOp::Add, pointer.clone(), Expr::Const(1)),
                         value: Expr::Const(0x80),
                         width: 1,
+                        at: None,
                     },
                     Stmt::Ret {
                         value: Expr::Load {
@@ -583,6 +609,7 @@ fn mixed_width_pointer_variables_use_bytes_without_changing_accesses() {
                             width,
                             signed,
                         },
+                        at: None,
                     },
                 ],
             );
@@ -628,6 +655,7 @@ fn address_integer_spills_keep_pointer_offsets_and_integer_reads() {
                         addr: slot.clone(),
                         value: Expr::reg(7, 64),
                         width: 8,
+                        at: None,
                     },
                     Stmt::Ret {
                         value: Expr::Load {
@@ -635,6 +663,7 @@ fn address_integer_spills_keep_pointer_offsets_and_integer_reads() {
                             width: 8,
                             signed: false,
                         },
+                        at: None,
                     },
                 ],
             );
@@ -678,11 +707,13 @@ fn address_integer_spills_keep_pointer_offsets_and_integer_reads() {
                     addr: slot,
                     value: Expr::reg(7, 64),
                     width: 8,
+                    at: None,
                 },
                 Stmt::Store {
                     addr: address.clone(),
                     value: Expr::Const(0x1122_3344_5566_7788),
                     width: 8,
+                    at: None,
                 },
                 Stmt::Ret {
                     value: Expr::Load {
@@ -690,6 +721,7 @@ fn address_integer_spills_keep_pointer_offsets_and_integer_reads() {
                         width: 8,
                         signed: false,
                     },
+                    at: None,
                 },
             ],
         );
@@ -730,8 +762,10 @@ fn address_integer_spills_keep_pointer_offsets_and_integer_reads() {
                     addr: slot,
                     value: Expr::reg(7, 64),
                     width: 8,
+                    at: None,
                 },
                 Stmt::Machine {
+                    at: None,
                     instruction: MachineInstruction::Atomic {
                         op: AtomicOp::Add,
                         width: 8,
@@ -745,6 +779,7 @@ fn address_integer_spills_keep_pointer_offsets_and_integer_reads() {
                 },
                 Stmt::Ret {
                     value: Expr::reg(VARIABLE_BASE, 64),
+                    at: None,
                 },
             ],
         );
@@ -785,8 +820,10 @@ fn address_integer_spills_keep_pointer_offsets_and_integer_reads() {
                     addr: slot.clone(),
                     value: Expr::reg(7, 64),
                     width: 8,
+                    at: None,
                 },
                 Stmt::Assign {
+                    at: None,
                     dest: RegRef {
                         index: VARIABLE_BASE,
                         width: 64,
@@ -807,6 +844,7 @@ fn address_integer_spills_keep_pointer_offsets_and_integer_reads() {
                         },
                         Expr::bin(BinOp::Shr, Expr::reg(VARIABLE_BASE, 64), Expr::Const(1)),
                     ),
+                    at: None,
                 },
             ],
         );
@@ -842,6 +880,7 @@ fn object_pointers_convert_to_void_without_identity_casts() {
             CType::pointer_to(target),
             vec![Stmt::Ret {
                 value: Expr::reg(7, 64),
+                at: None,
             }],
         );
         let code = velk::render::render(&ir, &[], &Default::default(), &[]);
@@ -885,6 +924,7 @@ fn anonymous_data_offsets_keep_integer_address_arithmetic() {
                         width,
                         signed,
                     },
+                    at: None,
                 }],
             );
             let mut candidate = printed_candidate(
@@ -933,6 +973,7 @@ fn printed_signed_loads_preserve_extension_widths() {
                         addr: Expr::reg(7, 64),
                         value: Expr::reg(6, 64),
                         width: loaded,
+                        at: None,
                     },
                     Stmt::Ret {
                         value: Expr::SignExtend {
@@ -943,6 +984,7 @@ fn printed_signed_loads_preserve_extension_widths() {
                             }),
                             width: extended,
                         },
+                        at: None,
                     },
                 ],
             );
@@ -1053,9 +1095,11 @@ fn printed_local_types_preserve_byte_values_and_integer_uses() {
                         width: 64,
                     },
                     value: definition,
+                    at: None,
                 },
                 Stmt::Ret {
                     value: Expr::bin(BinOp::Add, result, local.clone()),
+                    at: None,
                 },
             ],
         );
@@ -1113,6 +1157,7 @@ fn printed_byte_load_locals_extend_every_value_exactly() {
                     addr: Expr::Const(REGION),
                     value: Expr::reg(7, 64),
                     width: 1,
+                    at: None,
                 },
                 Stmt::Assign {
                     dest: RegRef {
@@ -1124,9 +1169,11 @@ fn printed_byte_load_locals_extend_every_value_exactly() {
                         width: 1,
                         signed,
                     },
+                    at: None,
                 },
                 Stmt::Ret {
                     value: Expr::bin(BinOp::Add, local.clone(), local),
+                    at: None,
                 },
             ],
         );
@@ -1181,6 +1228,7 @@ fn printed_integer_shifts_and_pointer_choices_avoid_identity_casts() {
                 shifted,
                 Expr::bin(BinOp::Or, Expr::reg(6, 64), Expr::Const(1)),
             ),
+            at: None,
         }],
     );
     let candidate = printed_candidate(ir, inputs.clone());
@@ -1219,6 +1267,7 @@ fn printed_integer_shifts_and_pointer_choices_avoid_identity_casts() {
                         Expr::reg(6, 64)
                     }),
                 },
+                at: None,
             }],
         );
         let candidate = printed_candidate(ir, inputs.clone());
@@ -1249,7 +1298,10 @@ fn printed_byte_buffer_accesses_keep_signedness_and_wider_accesses() {
             width,
             signed,
         };
-        let return_statement = Stmt::Ret { value: read };
+        let return_statement = Stmt::Ret {
+            value: read,
+            at: None,
+        };
         let mut ir = synthetic_ir(
             if signed {
                 "signed_buffer_byte"
@@ -1276,16 +1328,19 @@ fn printed_byte_buffer_accesses_keep_signedness_and_wider_accesses() {
                     outputs: Vec::new(),
                     clobbers: Some(Default::default()),
                     via: None,
+                    at: None,
                 },
                 Stmt::Store {
                     addr: slot(0),
                     value: Expr::Const(0),
                     width: 2,
+                    at: None,
                 },
                 Stmt::Store {
                     addr: slot(0),
                     value: Expr::reg(7, 64),
                     width: 1,
+                    at: None,
                 },
                 return_statement.clone(),
             ],
@@ -1302,12 +1357,14 @@ fn printed_byte_buffer_accesses_keep_signedness_and_wider_accesses() {
                 addr: slot(offset),
                 value: Expr::Const(0),
                 width: 1,
+                at: None,
             })
             .collect();
         ir.blocks[0].stmts.push(Stmt::Store {
             addr: slot(0),
             value: Expr::reg(7, 64),
             width: 1,
+            at: None,
         });
         ir.blocks[0].stmts.push(return_statement);
         let mut candidate = printed_candidate(ir, (0..256).map(|value| vec![value]).collect());
@@ -1334,6 +1391,7 @@ fn declared_narrow_signed_values_extend_without_casts() {
                     value: Box::new(Expr::reg(7, width * 8)),
                     width,
                 },
+                at: None,
             }],
         );
         let candidate = printed_candidate(
@@ -1388,6 +1446,7 @@ fn plain_char_zero_tests_preserve_both_char_signs() {
                 addr: Expr::reg(7, 64),
                 value: Expr::reg(6, 64),
                 width: 1,
+                at: None,
             },
             Stmt::Ret {
                 value: Expr::Select {
@@ -1401,6 +1460,7 @@ fn plain_char_zero_tests_preserve_both_char_signs() {
                     then: Box::new(Expr::Const(1)),
                     els: Box::new(Expr::Const(0)),
                 },
+                at: None,
             },
         ],
     );
@@ -1411,6 +1471,7 @@ fn plain_char_zero_tests_preserve_both_char_signs() {
                 let mut ir = ir.clone();
                 if let Stmt::Ret {
                     value: Expr::Select { cond, lhs, .. },
+                    ..
                 } = &mut ir.blocks[0].stmts[1]
                 {
                     *cond = comparison;
@@ -1480,11 +1541,13 @@ fn printed_bitstream_ranges_preserve_bytes_shifts_and_wrapping() {
                         width: 64,
                     },
                     value: Expr::bin(BinOp::And, Expr::reg(7, 64), Expr::Const(mask)),
+                    at: None,
                 },
                 Stmt::Store {
                     addr: Expr::Const(REGION),
                     width,
                     value: Expr::bin(BinOp::Add, local.clone(), Expr::Const(1)),
+                    at: None,
                 },
                 Stmt::Ret {
                     value: Expr::bin(
@@ -1498,6 +1561,7 @@ fn printed_bitstream_ranges_preserve_bytes_shifts_and_wrapping() {
                             els: Box::new(Expr::Const(0)),
                         },
                     ),
+                    at: None,
                 },
             ],
         );
@@ -1545,6 +1609,7 @@ fn printed_integer_argument_parts_preserve_every_byte_and_sign() {
                             width,
                             signed,
                         },
+                        at: None,
                     }],
                 );
                 if argument_signed {
@@ -1635,6 +1700,7 @@ fn simplified_selections_keep_the_comparison_width() {
                     then: Box::new(Expr::Const(1)),
                     els: Box::new(Expr::Const(0)),
                 },
+                at: None,
             }],
         );
         let mut simplified = ir.clone();
@@ -1671,6 +1737,7 @@ fn simplified_branches_keep_zero_extended_bytes_positive() {
                     addr: slot.clone(),
                     value: Expr::reg(7, 64),
                     width,
+                    at: None,
                 },
                 Stmt::Brif {
                     cond: Cond::Lt,
@@ -1689,6 +1756,7 @@ fn simplified_branches_keep_zero_extended_bytes_positive() {
                     ),
                     rhs: Expr::Const(35),
                     target: 0x20,
+                    at: None,
                 },
             ],
         );
@@ -1697,6 +1765,7 @@ fn simplified_branches_keep_zero_extended_bytes_positive() {
                 start,
                 stmts: vec![Stmt::Ret {
                     value: Expr::Const(value),
+                    at: None,
                 }],
             });
         }
@@ -1767,6 +1836,7 @@ fn signed_comparisons_keep_their_sign_with_unsigned_positive_operands() {
                                 then: Box::new(Expr::Const(1)),
                                 els: Box::new(Expr::Const(0)),
                             },
+                            at: None,
                         }],
                     );
                     candidates.push(printed_candidate(ir, inputs.clone()));
@@ -1806,6 +1876,7 @@ fn declared_destinations_supply_truncated_sign_extensions() {
                                 },
                                 Expr::Const(mask),
                             ),
+                            at: None,
                         }],
                     );
                     let candidate = printed_candidate(
@@ -1878,6 +1949,7 @@ fn unsigned_entry_copies_use_parameters_only_when_unchanged() {
                             width: 64,
                         },
                         value: Expr::bin(BinOp::Add, Expr::reg(register, 64), Expr::Const(1)),
+                        at: None,
                     },
                 );
             }
@@ -1916,6 +1988,7 @@ fn boolean_returns_keep_truncation_before_testing_for_zero() {
                 value: Box::new(Expr::reg(7, 64)),
                 width: 1,
             },
+            at: None,
         }],
     );
     let code = velk::render::render(&ir, &[], &Default::default(), &[]);
@@ -1959,6 +2032,7 @@ fn high_products_keep_sign_conversion_and_the_sixty_four_bit_result() {
                             ),
                             Expr::Const(shift),
                         ),
+                        at: None,
                     }],
                 );
                 let candidate = printed_candidate(
@@ -2025,7 +2099,7 @@ fn high_products_use_the_destination_conversion_only_at_the_assignment_boundary(
                             },
                         ],
                         CType::int(bits / 8, signed),
-                        vec![Stmt::Ret { value }],
+                        vec![Stmt::Ret { value, at: None }],
                     ),
                     [0, 1, 1 << 31, 1 << 63, u64::MAX]
                         .into_iter()
@@ -2090,7 +2164,7 @@ fn double_arithmetic_keeps_one_double_operand_and_integer_signedness() {
                     ty: CType::int(4, signed),
                 }],
                 CType::int(8, true),
-                vec![Stmt::Ret { value }],
+                vec![Stmt::Ret { value, at: None }],
             ),
             [0, 1, 0x7fff_ffff, 0x8000_0000, 0xffff_ffff]
                 .map(|x| vec![x])
@@ -2125,7 +2199,7 @@ fn double_arithmetic_keeps_one_double_operand_and_integer_signedness() {
             "double_from_two_floats",
             vec![],
             CType::int(8, true),
-            vec![Stmt::Ret { value }],
+            vec![Stmt::Ret { value, at: None }],
         ),
         vec![vec![]],
     );
@@ -2175,12 +2249,14 @@ fn floating_assignments_supply_conversions_and_keep_arithmetic_precision() {
                         op: Operation::FloatConvert { from, to },
                         args: vec![Expr::reg(7, from.bits())],
                     },
+                    at: None,
                 },
                 Stmt::Ret {
                     value: Expr::Apply {
                         op: Operation::FloatAdd(to),
                         args: vec![Expr::reg(VARIABLE_BASE, to.bits()); 2],
                     },
+                    at: None,
                 },
             ],
         );
@@ -2234,6 +2310,7 @@ fn derived_structure_pointers_keep_validated_field_types() {
                                 Expr::Const(offset),
                             ),
                         ),
+                        at: None,
                     },
                     Stmt::Ret {
                         value: Expr::bin(
@@ -2253,6 +2330,7 @@ fn derived_structure_pointers_keep_validated_field_types() {
                                 signed: true,
                             },
                         ),
+                        at: None,
                     },
                 ],
             );
@@ -2341,6 +2419,7 @@ fn aligned_byte_offsets_use_typed_pointers_only_for_proven_multiples() {
                             width: 64,
                         },
                         value: initial.map_or(Expr::reg(6, 64), Expr::Const),
+                        at: None,
                     },
                     Stmt::Assign {
                         dest: RegRef {
@@ -2348,6 +2427,7 @@ fn aligned_byte_offsets_use_typed_pointers_only_for_proven_multiples() {
                             width: 64,
                         },
                         value: Expr::Const(2),
+                        at: None,
                     },
                     Stmt::Assign {
                         dest: RegRef {
@@ -2355,8 +2435,12 @@ fn aligned_byte_offsets_use_typed_pointers_only_for_proven_multiples() {
                             width: 64,
                         },
                         value: Expr::Const(0),
+                        at: None,
                     },
-                    Stmt::Br { target: Some(1) },
+                    Stmt::Br {
+                        target: Some(1),
+                        at: None,
+                    },
                 ],
             );
             ir.blocks.extend([
@@ -2367,6 +2451,7 @@ fn aligned_byte_offsets_use_typed_pointers_only_for_proven_multiples() {
                         lhs: Expr::reg(count, 64),
                         rhs: Expr::Const(0),
                         target: 3,
+                        at: None,
                     }],
                 },
                 Block {
@@ -2390,6 +2475,7 @@ fn aligned_byte_offsets_use_typed_pointers_only_for_proven_multiples() {
                                     signed: false,
                                 },
                             ),
+                            at: None,
                         },
                         Stmt::Assign {
                             dest: RegRef {
@@ -2401,6 +2487,7 @@ fn aligned_byte_offsets_use_typed_pointers_only_for_proven_multiples() {
                                 Expr::reg(offset, 64),
                                 Expr::Const(stride),
                             ),
+                            at: None,
                         },
                         Stmt::Assign {
                             dest: RegRef {
@@ -2408,14 +2495,19 @@ fn aligned_byte_offsets_use_typed_pointers_only_for_proven_multiples() {
                                 width: 64,
                             },
                             value: Expr::bin(BinOp::Sub, Expr::reg(count, 64), Expr::Const(1)),
+                            at: None,
                         },
-                        Stmt::Br { target: Some(1) },
+                        Stmt::Br {
+                            target: Some(1),
+                            at: None,
+                        },
                     ],
                 },
                 Block {
                     start: 3,
                     stmts: vec![Stmt::Ret {
                         value: Expr::reg(sum, 64),
+                        at: None,
                     }],
                 },
             ]);

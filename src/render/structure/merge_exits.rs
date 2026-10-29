@@ -12,13 +12,14 @@ pub(super) enum Statement {
 
 pub(super) fn comparable_statement(stmt: &Stmt) -> Option<Statement> {
     match stmt {
-        Stmt::Assign { dest, value } => Some(Statement::Assign(*dest, value.clone())),
-        Stmt::Store { addr, value, width } => {
-            Some(Statement::Store(addr.clone(), value.clone(), *width))
-        }
-        Stmt::Ret { value } => Some(Statement::Return(value.clone())),
+        Stmt::Assign { dest, value, .. } => Some(Statement::Assign(*dest, value.clone())),
+        Stmt::Store {
+            addr, value, width, ..
+        } => Some(Statement::Store(addr.clone(), value.clone(), *width)),
+        Stmt::Ret { value, .. } => Some(Statement::Return(value.clone())),
         Stmt::Br {
             target: Some(target),
+            ..
         } => Some(Statement::Branch(*target)),
         _ => None,
     }
@@ -28,14 +29,15 @@ pub(super) fn comparable_statement(stmt: &Stmt) -> Option<Statement> {
 /// exception regions stay at their original addresses.
 pub(in crate::render) fn merged(ir: &FunctionIr) -> Option<FunctionIr> {
     if !ir.landing_pads.is_empty()
-        || ir
-            .blocks
-            .iter()
-            .flat_map(|block| &block.stmts)
-            .any(|stmt| matches!(stmt, Stmt::BrIndirect { .. } | Stmt::Br { target: None }))
+        || ir.blocks.iter().flat_map(|block| &block.stmts).any(|stmt| {
+            matches!(
+                stmt,
+                Stmt::BrIndirect { .. } | Stmt::Br { target: None, .. }
+            )
+        })
         || !matches!(
             ir.blocks.last().and_then(|block| block.stmts.last()),
-            Some(Stmt::Ret { .. } | Stmt::Br { .. } | Stmt::Trap | Stmt::Switch { .. })
+            Some(Stmt::Ret { .. } | Stmt::Br { .. } | Stmt::Trap { .. } | Stmt::Switch { .. })
         )
     {
         return None;
@@ -48,7 +50,13 @@ pub(in crate::render) fn merged(ir: &FunctionIr) -> Option<FunctionIr> {
     for (block_index, block) in ir.blocks.iter().enumerate() {
         if !matches!(
             block.stmts.last(),
-            Some(Stmt::Ret { .. } | Stmt::Br { target: Some(_) })
+            Some(
+                Stmt::Ret { .. }
+                    | Stmt::Br {
+                        target: Some(_),
+                        ..
+                    }
+            )
         ) {
             continue;
         }
@@ -91,6 +99,7 @@ pub(in crate::render) fn merged(ir: &FunctionIr) -> Option<FunctionIr> {
         match stmt {
             Stmt::Br {
                 target: Some(target),
+                ..
             }
             | Stmt::Brif { target, .. }
             | Stmt::BrifFlags { target, .. } => next = next.max(*target),
@@ -119,12 +128,20 @@ pub(in crate::render) fn merged(ir: &FunctionIr) -> Option<FunctionIr> {
         };
         next = address;
         let (first, position) = members[0];
-        let stmts = ir.blocks[first].stmts[position..].to_vec();
+        let mut stmts = ir.blocks[first].stmts[position..].to_vec();
+        for (offset, stmt) in stmts.iter_mut().enumerate() {
+            if members.iter().any(|(block, position)| {
+                ir.blocks[*block].stmts[*position + offset].origin() != stmt.origin()
+            }) {
+                stmt.set_origin(None);
+            }
+        }
         for (block, position) in members {
             used[block] = true;
             merged.blocks[block].stmts.truncate(position);
             merged.blocks[block].stmts.push(Stmt::Br {
                 target: Some(address),
+                at: None,
             });
         }
         merged.blocks.push(Block {
@@ -157,9 +174,11 @@ mod tests {
                             width: 64,
                         },
                         value: Expr::Const(19),
+                        at: None,
                     },
                     Stmt::Ret {
                         value: Expr::reg(0, 64),
+                        at: None,
                     },
                 ],
             })
@@ -177,11 +196,18 @@ mod tests {
                 width: 64,
             },
             value: Expr::Const(20),
+            at: None,
         };
         assert!(merged(&ir).is_none());
         ir.blocks[1].stmts[0] = ir.blocks[0].stmts[0].clone();
-        ir.blocks[0].stmts[1] = Stmt::Br { target: Some(100) };
-        ir.blocks[1].stmts[1] = Stmt::Br { target: Some(200) };
+        ir.blocks[0].stmts[1] = Stmt::Br {
+            target: Some(100),
+            at: None,
+        };
+        ir.blocks[1].stmts[1] = Stmt::Br {
+            target: Some(200),
+            at: None,
+        };
         assert!(merged(&ir).is_none());
     }
 
@@ -199,13 +225,19 @@ mod tests {
     fn new_blocks_do_not_capture_external_branches() {
         let mut ir = exits();
         for block in &mut ir.blocks {
-            block.stmts[1] = Stmt::Br { target: Some(21) };
+            block.stmts[1] = Stmt::Br {
+                target: Some(21),
+                at: None,
+            };
         }
         let merged = merged(&ir).unwrap();
         assert!(merged.blocks.iter().all(|block| block.start != 21));
         assert!(matches!(
             merged.blocks.last().unwrap().stmts.last(),
-            Some(Stmt::Br { target: Some(21) })
+            Some(Stmt::Br {
+                target: Some(21),
+                ..
+            })
         ));
     }
 }

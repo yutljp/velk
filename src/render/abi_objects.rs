@@ -162,7 +162,7 @@ fn block_entries(ir: &FunctionIr, entry: &State) -> Option<Vec<Option<State>>> {
                 Stmt::Call { .. }
                     | Stmt::Unsupported { .. }
                     | Stmt::BrIndirect { .. }
-                    | Stmt::Br { target: None }
+                    | Stmt::Br { target: None, .. }
             ) {
                 return None;
             }
@@ -198,7 +198,7 @@ fn block_entries(ir: &FunctionIr, entry: &State) -> Option<Vec<Option<State>>> {
 }
 
 fn transfer(stmt: &Stmt, state: &mut State) {
-    if let Stmt::Assign { dest, value } = stmt {
+    if let Stmt::Assign { dest, value, .. } = stmt {
         let value = if dest.width == 64 {
             origin(value, state)
         } else if contains_origin(value, state) {
@@ -269,7 +269,7 @@ fn rewrite_statement(
     bindings: &[Binding],
 ) -> Option<bool> {
     match stmt {
-        Stmt::Assign { dest, value } => {
+        Stmt::Assign { dest, value, .. } => {
             if let Some(address) = origin(value, state) {
                 if dest.width != 64 || address == Origin::Unknown {
                     return None;
@@ -283,7 +283,9 @@ fn rewrite_statement(
                 return None;
             };
         }
-        Stmt::Store { addr, value, width } => {
+        Stmt::Store {
+            addr, value, width, ..
+        } => {
             let Some(_) = rewrite_address(addr, *width, state, sp, objects, bindings) else {
                 return None;
             };
@@ -291,7 +293,7 @@ fn rewrite_statement(
                 return None;
             };
         }
-        Stmt::Ret { value } => {
+        Stmt::Ret { value, .. } => {
             if let Some(Origin::Object(index, 0)) = origin(value, state)
                 && objects[index].output
             {
@@ -305,7 +307,7 @@ fn rewrite_statement(
         Stmt::Call { .. }
         | Stmt::Unsupported { .. }
         | Stmt::BrIndirect { .. }
-        | Stmt::Br { target: None } => return None,
+        | Stmt::Br { target: None, .. } => return None,
         _ => {
             for value in stmt.operands_mut() {
                 let Some(_) = rewrite_value(value, state, sp, objects, bindings) else {
@@ -644,6 +646,7 @@ mod tests {
         Stmt::Assign {
             dest: RegRef { index, width: 64 },
             value,
+            at: None,
         }
     }
 
@@ -669,6 +672,7 @@ mod tests {
                 assign(0, Expr::Const(7)),
                 Stmt::Ret {
                     value: Expr::bin(BinOp::Add, load(alias, 8), Expr::reg(0, 64)),
+                    at: None,
                 },
             ],
         );
@@ -677,6 +681,7 @@ mod tests {
         assert_eq!(ir.blocks[0].stmts.len(), 2);
         let Stmt::Ret {
             value: Expr::Bin { lhs, rhs, .. },
+            ..
         } = &ir.blocks[0].stmts[1]
         else {
             panic!("{}", ir.render());
@@ -698,9 +703,11 @@ mod tests {
                     addr: at(sp, 0),
                     value: Expr::Const(9),
                     width: 8,
+                    at: None,
                 },
                 Stmt::Ret {
                     value: load(alias, 24),
+                    at: None,
                 },
             ],
         );
@@ -710,7 +717,7 @@ mod tests {
             panic!("{}", ir.render());
         };
         assert_eq!(addr, &Expr::reg(sp, 64));
-        let Stmt::Ret { value } = &ir.blocks[0].stmts[2] else {
+        let Stmt::Ret { value, .. } = &ir.blocks[0].stmts[2] else {
             panic!("{}", ir.render());
         };
         assert_eq!(value, &load(bindings[0].register, 24));
@@ -724,7 +731,8 @@ mod tests {
             load(0, 25),
             load(0, -1),
         ] {
-            let mut ir = FunctionIr::single_block(Isa::AArch64, vec![Stmt::Ret { value }]);
+            let mut ir =
+                FunctionIr::single_block(Isa::AArch64, vec![Stmt::Ret { value, at: None }]);
             let before = ir.render();
             assert!(prepare(&mut ir, &[object(Source::Register(0))]).is_none());
             assert_eq!(ir.render(), before);
@@ -739,6 +747,7 @@ mod tests {
                 addr: Expr::Const(0x1000),
                 value: Expr::reg(0, 64),
                 width: 8,
+                at: None,
             }],
             vec![Stmt::Assign {
                 dest: RegRef {
@@ -746,6 +755,7 @@ mod tests {
                     width: 32,
                 },
                 value: Expr::reg(0, 32),
+                at: None,
             }],
         ];
         for stmts in cases {
@@ -764,21 +774,35 @@ mod tests {
                 lhs: Expr::reg(1, 64),
                 rhs: Expr::Const(0),
                 target: 0x20,
+                at: None,
             }],
         );
         ir.blocks.extend([
             Block {
                 start: 0x10,
-                stmts: vec![assign(alias, at(0, 8)), Stmt::Br { target: Some(0x30) }],
+                stmts: vec![
+                    assign(alias, at(0, 8)),
+                    Stmt::Br {
+                        target: Some(0x30),
+                        at: None,
+                    },
+                ],
             },
             Block {
                 start: 0x20,
-                stmts: vec![assign(alias, at(0, 16)), Stmt::Br { target: Some(0x30) }],
+                stmts: vec![
+                    assign(alias, at(0, 16)),
+                    Stmt::Br {
+                        target: Some(0x30),
+                        at: None,
+                    },
+                ],
             },
             Block {
                 start: 0x30,
                 stmts: vec![Stmt::Ret {
                     value: load(alias, 0),
+                    at: None,
                 }],
             },
         ]);
@@ -796,24 +820,29 @@ mod tests {
                     addr: at(0, 0),
                     value: Expr::Const(1),
                     width: 8,
+                    at: None,
                 },
                 Stmt::Store {
                     addr: at(0, 8),
                     value: Expr::Const(2),
                     width: 8,
+                    at: None,
                 },
                 Stmt::Store {
                     addr: at(0, 16),
                     value: Expr::Const(3),
                     width: 8,
+                    at: None,
                 },
                 Stmt::Store {
                     addr: at(0, 24),
                     value: Expr::Const(9),
                     width: 8,
+                    at: None,
                 },
                 Stmt::Ret {
                     value: Expr::reg(0, 64),
+                    at: None,
                 },
             ],
         );
@@ -821,7 +850,8 @@ mod tests {
         assert!(matches!(
             ir.blocks[0].stmts.last(),
             Some(Stmt::Ret {
-                value: Expr::Const(0)
+                value: Expr::Const(0),
+                ..
             })
         ));
     }
@@ -829,7 +859,13 @@ mod tests {
     #[test]
     fn overlapping_stack_objects_and_cross_boundary_accesses_are_rejected() {
         let sp = crate::arch::stack_pointer(Isa::X86_64);
-        let mut ir = FunctionIr::single_block(Isa::X86_64, vec![Stmt::Ret { value: load(sp, 4) }]);
+        let mut ir = FunctionIr::single_block(
+            Isa::X86_64,
+            vec![Stmt::Ret {
+                value: load(sp, 4),
+                at: None,
+            }],
+        );
         assert!(prepare(&mut ir, &[object(Source::Stack(8))]).is_none());
         assert!(
             prepare(
@@ -851,9 +887,11 @@ mod tests {
                     addr: at(0, 0),
                     value: Expr::Const(1),
                     width: 8,
+                    at: None,
                 },
                 Stmt::Ret {
                     value: Expr::reg(0, 64),
+                    at: None,
                 },
             ],
         );
@@ -872,31 +910,42 @@ mod tests {
                     addr: at(0, 0),
                     value: Expr::Const(1),
                     width: 8,
+                    at: None,
                 },
                 Stmt::Store {
                     addr: at(0, 8),
                     value: Expr::Const(2),
                     width: 8,
+                    at: None,
                 },
                 Stmt::Store {
                     addr: at(0, 16),
                     value: Expr::Const(3),
                     width: 8,
+                    at: None,
                 },
                 Stmt::Store {
                     addr: at(0, 24),
                     value: Expr::Const(4),
                     width: 8,
+                    at: None,
                 },
                 Stmt::Ret {
                     value: Expr::reg(0, 64),
+                    at: None,
                 },
             ],
         );
         assert!(prepare(&mut ir, &[output]).is_none());
         let mut input = object(Source::Register(0));
         input.defined_bits = vec![(0, 32), (64, 64)];
-        let mut ir = FunctionIr::single_block(Isa::AArch64, vec![Stmt::Ret { value: load(0, 0) }]);
+        let mut ir = FunctionIr::single_block(
+            Isa::AArch64,
+            vec![Stmt::Ret {
+                value: load(0, 0),
+                at: None,
+            }],
+        );
         assert!(prepare(&mut ir, &[input]).is_none());
     }
 
@@ -916,15 +965,18 @@ mod tests {
                             width,
                             signed: false,
                         },
+                        at: None,
                     }],
                     vec![
                         Stmt::Store {
                             addr: address.clone(),
                             value: Expr::Const(7),
                             width,
+                            at: None,
                         },
                         Stmt::Ret {
                             value: Expr::Const(0),
+                            at: None,
                         },
                     ],
                 ];
@@ -952,6 +1004,7 @@ mod tests {
                 addr: Expr::reg(0, 64),
                 value: Expr::Const(7),
                 width: 8,
+                at: None,
             };
             let mut ir = FunctionIr::single_block(
                 Isa::AArch64,
@@ -960,17 +1013,27 @@ mod tests {
                     lhs: Expr::reg(1, 64),
                     rhs: Expr::Const(0),
                     target: 0x20,
+                    at: None,
                 }],
             );
             let mut second = Vec::new();
             if second_written {
                 second.push(store.clone());
             }
-            second.push(Stmt::Br { target: Some(0x30) });
+            second.push(Stmt::Br {
+                target: Some(0x30),
+                at: None,
+            });
             ir.blocks.extend([
                 Block {
                     start: 0x10,
-                    stmts: vec![store, Stmt::Br { target: Some(0x30) }],
+                    stmts: vec![
+                        store,
+                        Stmt::Br {
+                            target: Some(0x30),
+                            at: None,
+                        },
+                    ],
                 },
                 Block {
                     start: 0x20,
@@ -980,6 +1043,7 @@ mod tests {
                     start: 0x30,
                     stmts: vec![Stmt::Ret {
                         value: Expr::reg(0, 64),
+                        at: None,
                     }],
                 },
             ]);

@@ -29,7 +29,9 @@ pub fn inline_local_copies(ir: &mut FunctionIr) {
         let mut index = 0;
         while index < block.stmts.len() {
             let Some((dest, value)) = (match &block.stmts[index] {
-                Stmt::Assign { dest, value } => Some((dest.index, truncated(value, dest.width))),
+                Stmt::Assign { dest, value, .. } => {
+                    Some((dest.index, truncated(value, dest.width)))
+                }
                 _ => None,
             }) else {
                 index += 1;
@@ -192,10 +194,10 @@ fn substitute_ordinary(stmt: &mut Stmt, dest: u16, width: u8, value: &Expr, ok: 
             substitute_register_in_expression(rhs, dest, width, value, ok);
             *ok &= comparison_preserved(*cond, comparison, lhs, rhs);
         }
-        Stmt::Ret { value: returned } => {
-            substitute_register_in_expression(returned, dest, width, value, ok)
-        }
-        Stmt::BrIndirect { target } => {
+        Stmt::Ret {
+            value: returned, ..
+        } => substitute_register_in_expression(returned, dest, width, value, ok),
+        Stmt::BrIndirect { target, .. } => {
             substitute_register_in_expression(target, dest, width, value, ok)
         }
         _ => *ok = false,
@@ -365,6 +367,7 @@ fn further_result_moves(
     let Stmt::Assign {
         dest,
         value: Expr::Reg { index: src, .. },
+        ..
     } = &stmts[index]
     else {
         return true;
@@ -377,6 +380,7 @@ fn further_result_moves(
             Stmt::Assign {
                 dest: next,
                 value: Expr::Reg { index: read, width: 64 },
+                ..
             } if next.index >= VARIABLE_BASE && next.width == 64 && *read == dest.index
         )
 }
@@ -404,7 +408,7 @@ fn copy_propagate_block(
     let mut index = 0;
     while index < block.stmts.len() {
         let copy = match &block.stmts[index] {
-            Stmt::Assign { dest, value } if eligible(dest.index, value) => {
+            Stmt::Assign { dest, value, .. } if eligible(dest.index, value) => {
                 // A value of unknown width, such as a sign extension, takes
                 // the destination's width.
                 let fold_width = expr_width(value).unwrap_or(dest.width);
@@ -565,8 +569,8 @@ fn count_register_reads(stmt: &Stmt, reg: u16) -> usize {
             total += count_register(addr, reg) + count_register(value, reg);
         }
         Stmt::Brif { lhs, rhs, .. } => total += count_register(lhs, reg) + count_register(rhs, reg),
-        Stmt::Ret { value } => total += count_register(value, reg),
-        Stmt::BrIndirect { target } => total += count_register(target, reg),
+        Stmt::Ret { value, .. } => total += count_register(value, reg),
+        Stmt::BrIndirect { target, .. } => total += count_register(target, reg),
         Stmt::Call {
             convention,
             through,
@@ -775,6 +779,7 @@ mod tests {
                         width,
                     },
                     value,
+                    at: None,
                 },
                 consumer,
             ],
@@ -801,7 +806,14 @@ mod tests {
             ),
         ];
         for (value, returned, word) in cases {
-            let before = with_copy(value, 64, Stmt::Ret { value: returned });
+            let before = with_copy(
+                value,
+                64,
+                Stmt::Ret {
+                    value: returned,
+                    at: None,
+                },
+            );
             let expected = run(&before, eval::STACK_TOP + 8, word);
             for pass in copy_passes() {
                 let mut after = before.clone();
@@ -846,6 +858,7 @@ mod tests {
                     32,
                     Stmt::Ret {
                         value: Expr::bin(op, Expr::reg(VARIABLE_BASE, 64), rhs),
+                        at: None,
                     },
                 );
                 check(&before);
@@ -866,6 +879,7 @@ mod tests {
                         then: Box::new(Expr::Const(1)),
                         els: Box::new(Expr::Const(2)),
                     },
+                    at: None,
                 },
             );
             check(&before);
@@ -877,6 +891,7 @@ mod tests {
                     lhs: Expr::reg(VARIABLE_BASE, 64),
                     rhs,
                     target: 0x20,
+                    at: None,
                 },
             );
             branch.blocks.extend([
@@ -884,12 +899,14 @@ mod tests {
                     start: 0x10,
                     stmts: vec![Stmt::Ret {
                         value: Expr::Const(2),
+                        at: None,
                     }],
                 },
                 Block {
                     start: 0x20,
                     stmts: vec![Stmt::Ret {
                         value: Expr::Const(1),
+                        at: None,
                     }],
                 },
             ]);
@@ -915,6 +932,7 @@ mod tests {
                         then: Box::new(Expr::Const(1)),
                         els: Box::new(Expr::Const(2)),
                     },
+                    at: None,
                 },
             );
             for word in [0x80, 0x84] {
@@ -949,6 +967,7 @@ mod tests {
                     Expr::reg(VARIABLE_BASE, 64),
                     Expr::reg(VARIABLE_BASE, 16),
                 ),
+                at: None,
             },
         );
         for pass in copy_passes() {
@@ -999,9 +1018,11 @@ mod tests {
                                     width: bytes,
                                     signed: true,
                                 },
+                                at: None,
                             },
                             Stmt::Ret {
                                 value: Expr::reg(VARIABLE_BASE, 64),
+                                at: None,
                             },
                         ],
                     );
@@ -1055,6 +1076,7 @@ mod tests {
                 32,
                 Stmt::Ret {
                     value: Expr::reg(VARIABLE_BASE, 32),
+                    at: None,
                 },
             );
             before.ret_type = CType::Named("float".to_owned());
@@ -1063,7 +1085,7 @@ mod tests {
                 let mut after = before.clone();
                 pass(&mut after);
                 assert!(
-                    matches!(after.blocks[0].stmts.as_slice(), [Stmt::Ret { value: returned }] if *returned == value),
+                    matches!(after.blocks[0].stmts.as_slice(), [Stmt::Ret { value: returned, .. }] if *returned == value),
                     "{}",
                     after.render()
                 );
@@ -1102,9 +1124,11 @@ mod tests {
                                         width,
                                     },
                                     value: value.clone(),
+                                    at: None,
                                 },
                                 Stmt::Ret {
                                     value: Expr::reg(VARIABLE_BASE, 64),
+                                    at: None,
                                 },
                             ],
                         );
@@ -1112,6 +1136,7 @@ mod tests {
                             Isa::X86_64,
                             vec![Stmt::Ret {
                                 value: retained.clone(),
+                                at: None,
                             }],
                         );
                         assert_eq!(run(&before, address, word), run(&after, address, word));
@@ -1144,9 +1169,11 @@ mod tests {
                                 width: 32,
                             },
                             value: value.clone(),
+                            at: None,
                         },
                         Stmt::Ret {
                             value: Expr::reg(VARIABLE_BASE, 64),
+                            at: None,
                         },
                     ],
                 );
@@ -1154,6 +1181,7 @@ mod tests {
                     Isa::X86_64,
                     vec![Stmt::Ret {
                         value: truncated(&value, 32),
+                        at: None,
                     }],
                 );
                 let word = 1u64 << (bytes * 8 - 1);
@@ -1174,9 +1202,11 @@ mod tests {
                         width: 32,
                     },
                     value: Expr::bin(BinOp::Add, Expr::reg(1, 32), Expr::reg(2, 32)),
+                    at: None,
                 },
                 Stmt::Ret {
                     value: Expr::reg(0, 32),
+                    at: None,
                 },
             ],
         );
@@ -1186,7 +1216,7 @@ mod tests {
         let sum = Expr::bin(BinOp::Add, Expr::reg(1, 32), Expr::reg(2, 32));
         let truncated = Expr::bin(BinOp::And, sum, Expr::Const(0xffff_ffff));
         assert!(
-            matches!(ir.blocks[0].stmts.as_slice(), [Stmt::Ret { value }] if *value == truncated),
+            matches!(ir.blocks[0].stmts.as_slice(), [Stmt::Ret { value, .. }] if *value == truncated),
             "{}",
             ir.render()
         );
@@ -1210,6 +1240,7 @@ mod tests {
                     clobbers: None,
                     outputs: crate::ir::fallback_call_outputs(Convention::GoAmd64, None),
                     via: None,
+                    at: None,
                 },
                 Stmt::Assign {
                     dest: RegRef {
@@ -1217,6 +1248,7 @@ mod tests {
                         width: 64,
                     },
                     value: Expr::reg(0, 64),
+                    at: None,
                 },
                 Stmt::Assign {
                     dest: RegRef {
@@ -1224,9 +1256,11 @@ mod tests {
                         width: 64,
                     },
                     value: Expr::reg(3, 64),
+                    at: None,
                 },
                 Stmt::Ret {
                     value: Expr::reg(second, 64),
+                    at: None,
                 },
             ],
         );
@@ -1239,7 +1273,7 @@ mod tests {
         copy_propagate(&mut ir);
 
         assert!(
-            matches!(ir.blocks[0].stmts.as_slice(), [Stmt::Call { .. }, Stmt::Assign { dest, value: copied }, Stmt::Assign { .. }, Stmt::Ret { value }] if dest.index == first && *copied == Expr::reg(0, 64) && *value == Expr::reg(second, 64)),
+            matches!(ir.blocks[0].stmts.as_slice(), [Stmt::Call { .. }, Stmt::Assign { dest, value: copied, .. }, Stmt::Assign { .. }, Stmt::Ret { value, .. }] if dest.index == first && *copied == Expr::reg(0, 64) && *value == Expr::reg(second, 64)),
             "{}",
             ir.render()
         );
@@ -1255,11 +1289,13 @@ mod tests {
         let assign = |index, value| Stmt::Assign {
             dest: RegRef { index, width: 64 },
             value,
+            at: None,
         };
         let store = |value, addr| Stmt::Store {
             addr: Expr::reg(addr, 64),
             value: Expr::reg(value, 64),
             width: 4,
+            at: None,
         };
         // t = *a; *a = *b; *b = t;
         let mut ir = FunctionIr::single_block(
@@ -1271,6 +1307,7 @@ mod tests {
                 store(9, 1),
                 Stmt::Ret {
                     value: Expr::Const(0),
+                    at: None,
                 },
             ],
         );
@@ -1307,12 +1344,14 @@ mod tests {
                         width: 64,
                     },
                     value: load,
+                    at: None,
                 },
                 Stmt::Brif {
                     cond: Cond::Eq,
                     lhs: Expr::reg(8, 64),
                     rhs: Expr::Const(0),
                     target: 0x10,
+                    at: None,
                 },
             ],
         );
@@ -1320,12 +1359,14 @@ mod tests {
             start: 0x8,
             stmts: vec![Stmt::Ret {
                 value: Expr::reg(8, 64),
+                at: None,
             }],
         });
         ir.blocks.push(Block {
             start: 0x10,
             stmts: vec![Stmt::Ret {
                 value: Expr::Const(0),
+                at: None,
             }],
         });
 
@@ -1350,6 +1391,7 @@ mod tests {
                         width: 64,
                     },
                     value: masked(1),
+                    at: None,
                 },
                 Stmt::Assign {
                     dest: RegRef {
@@ -1357,8 +1399,12 @@ mod tests {
                         width: 64,
                     },
                     value: Expr::bin(BinOp::ModS, masked(0), masked(2)),
+                    at: None,
                 },
-                Stmt::Ret { value: masked(2) },
+                Stmt::Ret {
+                    value: masked(2),
+                    at: None,
+                },
             ],
         );
 
@@ -1381,6 +1427,7 @@ mod tests {
                         width: 64,
                     },
                     value: Expr::Const(17),
+                    at: None,
                 },
                 Stmt::Call {
                     kind: crate::ir::CallKind::Invoke,
@@ -1399,9 +1446,11 @@ mod tests {
                         },
                     }],
                     via: None,
+                    at: None,
                 },
                 Stmt::Ret {
                     value: Expr::reg(VARIABLE_BASE, 64),
+                    at: None,
                 },
             ],
         );
@@ -1410,7 +1459,7 @@ mod tests {
             ir = before.clone();
             pass(&mut ir);
             assert!(
-                matches!(ir.blocks[0].stmts.first(), Some(Stmt::Assign { dest, value: Expr::Const(17) }) if dest.index == 1),
+                matches!(ir.blocks[0].stmts.first(), Some(Stmt::Assign { dest, value: Expr::Const(17), .. }) if dest.index == 1),
                 "{}",
                 ir.render()
             );
@@ -1443,6 +1492,7 @@ mod tests {
                 outputs: Vec::new(),
                 abi: Some(crate::ir::calls::test_call_abi(vec![7], false)),
                 via: None,
+                at: None,
             };
             let load = Expr::Load {
                 addr: Box::new(Expr::reg(2, 64)),
@@ -1455,6 +1505,7 @@ mod tests {
                     width: 64,
                 },
                 value: load.clone(),
+                at: None,
             };
             let before = FunctionIr::single_block(
                 Isa::X86_64,
@@ -1463,6 +1514,7 @@ mod tests {
                     call.clone(),
                     Stmt::Ret {
                         value: Expr::Const(0),
+                        at: None,
                     },
                 ],
             );
@@ -1470,7 +1522,7 @@ mod tests {
                 let mut ir = before.clone();
                 pass(&mut ir);
                 assert!(
-                    matches!(&ir.blocks[0].stmts[0], Stmt::Assign { dest, value }
+                    matches!(&ir.blocks[0].stmts[0], Stmt::Assign { dest, value, .. }
                     if dest.index == 7 && *value == load)
                 );
                 assert_eq!(format!("{:?}", ir.blocks[0].stmts[1]), format!("{call:?}"));
@@ -1491,6 +1543,7 @@ mod tests {
             outputs: Vec::new(),
             abi: Some(crate::ir::calls::test_call_abi(vec![7], false)),
             via: None,
+            at: None,
         };
         assert_eq!(super::count_register_reads(&call, 7), 2);
         let original = call.clone();

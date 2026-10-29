@@ -348,7 +348,7 @@ impl Tracker<'_> {
                     state.regs.insert(output.index, Value::Unknown);
                 }
             }
-            Stmt::Assign { dest, value } => {
+            Stmt::Assign { dest, value, .. } => {
                 let value = self.narrow(self.eval(state, value, site, &mut loads), dest.width);
                 let value = if dest.index < 16 {
                     self.pointer_value(value)
@@ -357,7 +357,9 @@ impl Tracker<'_> {
                 };
                 state.regs.insert(dest.index, value);
             }
-            Stmt::Store { addr, value, width } => {
+            Stmt::Store {
+                addr, value, width, ..
+            } => {
                 let addr = self.pointer_value(self.eval(state, addr, site, &mut loads));
                 let value = self.eval(state, value, site, &mut loads);
                 let value = if *width == 4 {
@@ -526,7 +528,7 @@ pub(crate) fn constant_branch_targets(blocks: &[Block], image: &Image) -> HashMa
         };
         for (position, stmt) in block.stmts.iter().enumerate() {
             let site = (index as u32, position as u32);
-            if let Stmt::BrIndirect { target } = stmt
+            if let Stmt::BrIndirect { target, .. } = stmt
                 && let Value::Const(target, _) = tracker.eval(&state, target, site, &mut 0)
             {
                 targets.insert(block.start, target);
@@ -817,7 +819,7 @@ fn closed_normal_flow(blocks: &[Block], edges: Edges) -> bool {
                         | Stmt::BrIndirect { .. }
                         | Stmt::Switch { .. }
                         | Stmt::Ret { .. }
-                        | Stmt::Trap
+                        | Stmt::Trap { .. }
                 )
             }) {
                 return false;
@@ -828,9 +830,10 @@ fn closed_normal_flow(blocks: &[Block], edges: Edges) -> bool {
                 })
             };
             match last {
-                Stmt::Ret { .. } | Stmt::Trap => true,
+                Stmt::Ret { .. } | Stmt::Trap { .. } => true,
                 Stmt::Br {
                     target: Some(target),
+                    ..
                 } => known(*target),
                 Stmt::Brif { target, .. } | Stmt::BrifFlags { target, .. } => {
                     known(*target) && index + 1 < blocks.len()
@@ -984,7 +987,7 @@ fn remove_call_target_assignments(stmts: &mut Vec<Stmt>, mut position: usize, th
             .find(|(writes, reads)| writes.contains(&register) || reads.contains(&register))
         {
             Some((_, reads)) => !reads.contains(&register),
-            None => matches!(stmts.last(), Some(Stmt::Ret { .. } | Stmt::Trap)),
+            None => matches!(stmts.last(), Some(Stmt::Ret { .. } | Stmt::Trap { .. })),
         };
         if !crate::ir::visit::statement_registers(&stmts[position])
             .0

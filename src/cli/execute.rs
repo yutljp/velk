@@ -398,13 +398,19 @@ pub(crate) fn run(
             };
             println!("{:#}", json!(card));
         }
-        Command::Decompile { path, functions } => {
+        Command::Decompile {
+            path,
+            functions,
+            addresses,
+            json,
+        } => {
             let mut binary =
                 match crate::open_binary(&path, project, input_options, signature_options) {
                     Ok(binary) => binary,
                     Err(error) => return Err(error),
                 };
             binary.set_string_decoding(decode_strings);
+            binary.set_instruction_addresses(addresses || json);
             let addresses = if functions.is_empty()
                 || functions.iter().any(|function| function == "*")
             {
@@ -417,9 +423,15 @@ pub(crate) fn run(
                         Err(Error::StrippedFunctionName {
                             entry: Some(entry), ..
                         }) if target == "main" => {
-                            println!(
-                                "/* main was not identified; showing the entry function at 0x{entry:x}. */"
-                            );
+                            if json {
+                                eprintln!(
+                                    "main was not identified; showing the entry function at 0x{entry:x}."
+                                );
+                            } else {
+                                println!(
+                                    "/* main was not identified; showing the entry function at 0x{entry:x}. */"
+                                );
+                            }
                             addresses.push(entry);
                         }
                         Err(error) => return Err(error),
@@ -432,6 +444,7 @@ pub(crate) fn run(
                 &addresses,
                 &functions.join(", "),
                 None,
+                json,
             ));
         }
         Command::Disasm {

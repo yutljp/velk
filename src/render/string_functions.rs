@@ -304,7 +304,7 @@ fn evaluate(value: &Expr, values: &Values, reads: &mut Vec<Expr>) -> Option<Expr
 
 fn assignments(nodes: &[Node], values: &mut Values, reads: &mut Vec<Expr>) -> bool {
     for node in nodes {
-        let Node::Stmt(Stmt::Assign { dest, value }) = node else {
+        let Node::Stmt(Stmt::Assign { dest, value, .. }) = node else {
             return false;
         };
         let Some(value) = evaluate(value, values, reads) else {
@@ -344,7 +344,7 @@ fn zero_test(
 }
 
 fn returned(nodes: &[Node], values: &Values) -> Option<Expr> {
-    let Some((Node::Stmt(Stmt::Ret { value }), prefix)) = nodes.split_last() else {
+    let Some((Node::Stmt(Stmt::Ret { value, .. }), prefix)) = nodes.split_last() else {
         return None;
     };
     let mut values = values.clone();
@@ -363,7 +363,8 @@ fn empty_return(nodes: &[Node]) -> bool {
     matches!(
         nodes,
         [Node::Stmt(Stmt::Ret {
-            value: Expr::Const(0)
+            value: Expr::Const(0),
+            ..
         })]
     )
 }
@@ -376,6 +377,7 @@ fn length(nodes: &[Node], initial: &Values, iteration: u16) -> Option<Expr> {
             rhs,
             then,
             els,
+            ..
         } = node
             && els.is_empty()
             && empty_return(&nodes[index + 1..])
@@ -387,6 +389,7 @@ fn length(nodes: &[Node], initial: &Values, iteration: u16) -> Option<Expr> {
                 rhs: rhs.clone(),
                 then: nodes[index + 1..].to_vec(),
                 els: Vec::new(),
+                at: None,
             });
             flattened.extend_from_slice(then);
             return length(&flattened, initial, iteration);
@@ -408,6 +411,7 @@ fn length(nodes: &[Node], initial: &Values, iteration: u16) -> Option<Expr> {
             rhs,
             then,
             els,
+            ..
         } = node
             && els.is_empty()
             && empty_return(then)
@@ -429,6 +433,7 @@ fn length(nodes: &[Node], initial: &Values, iteration: u16) -> Option<Expr> {
         lhs,
         rhs,
         body,
+        ..
     } = &nodes[loop_index]
     else {
         return None;

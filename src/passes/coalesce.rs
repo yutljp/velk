@@ -21,7 +21,7 @@ pub fn coalesce_copies(ir: &mut FunctionIr) {
     // them all.
     let mut bits: HashMap<u16, u32> = HashMap::new();
     for stmt in ir.blocks.iter().flat_map(|block| &block.stmts) {
-        if let Stmt::Assign { dest, value } = stmt {
+        if let Stmt::Assign { dest, value, .. } = stmt {
             let hi = crate::ssa::ranges::of(value).hi;
             let held = (64 - hi.leading_zeros()).min(u32::from(dest.width));
             let most = bits.entry(dest.index).or_default();
@@ -35,7 +35,7 @@ pub fn coalesce_copies(ir: &mut FunctionIr) {
     // A copy of another variable's value, as itself or masked to bits that
     // cover it.
     let same_value = |stmt: &Stmt| {
-        let Stmt::Assign { dest, value } = stmt else {
+        let Stmt::Assign { dest, value, .. } = stmt else {
             return None;
         };
         let (index, read) = match value {
@@ -309,6 +309,7 @@ mod tests {
         Stmt::Assign {
             dest: RegRef { index, width: 64 },
             value,
+            at: None,
         }
     }
 
@@ -344,6 +345,7 @@ mod tests {
                     lhs: Expr::reg(v4, 64),
                     rhs: Expr::Const(0),
                     target: 0x10,
+                    at: None,
                 },
             ],
         });
@@ -351,6 +353,7 @@ mod tests {
             start: 0x20,
             stmts: vec![Stmt::Ret {
                 value: Expr::reg(v5, 64),
+                at: None,
             }],
         });
         ir
@@ -403,13 +406,14 @@ mod tests {
                 assign(v1, Expr::bin(BinOp::Add, Expr::reg(v1, 64), Expr::Const(1))),
                 Stmt::Ret {
                     value: Expr::bin(BinOp::Add, Expr::reg(v1, 64), Expr::reg(v2, 64)),
+                    at: None,
                 },
             ],
         );
         coalesce_copies(&mut ir);
         assert!(
             ir.blocks[0].stmts.iter().any(
-                |stmt| matches!(stmt, Stmt::Assign { dest, value: Expr::Reg { index, .. } }
+                |stmt| matches!(stmt, Stmt::Assign { dest, value: Expr::Reg { index, .. }, .. }
                     if dest.index == v2 && *index == v1)
             ),
             "{}",
@@ -431,6 +435,7 @@ mod tests {
                 ),
                 Stmt::Ret {
                     value: Expr::reg(v2, 64),
+                    at: None,
                 },
             ],
         );
@@ -451,6 +456,7 @@ mod tests {
                 assign(v3, Expr::bin(BinOp::Add, Expr::reg(6, 64), Expr::Const(3))),
                 Stmt::Ret {
                     value: Expr::bin(BinOp::Add, Expr::reg(v2, 64), Expr::reg(v3, 64)),
+                    at: None,
                 },
             ],
         );
@@ -473,6 +479,7 @@ mod tests {
                 width: 8,
                 signed: false,
             },
+            at: None,
         };
         coalesce_copies(&mut addressed);
         assert!(
@@ -510,6 +517,7 @@ mod tests {
                         },
                         Expr::reg(v2, 64),
                     ),
+                    at: None,
                 },
             ],
         );
@@ -551,6 +559,7 @@ mod tests {
             clobbers: None,
             outputs,
             via: None,
+            at: None,
         }];
         for index in 0..4u16 {
             stmts.push(Stmt::Assign {
@@ -559,6 +568,7 @@ mod tests {
                     width: 64,
                 },
                 value: Expr::reg(VARIABLE_BASE + 4 + index, 64),
+                at: None,
             });
         }
         for index in 0..4u16 {
@@ -566,10 +576,12 @@ mod tests {
                 addr: Expr::Const(0x1000 + u64::from(index) * 8),
                 value: Expr::reg(VARIABLE_BASE + index, 64),
                 width: 8,
+                at: None,
             });
         }
         stmts.push(Stmt::Ret {
             value: Expr::Const(0),
+            at: None,
         });
         let mut ir = FunctionIr::single_block(Isa::AArch64, stmts);
         let before = ir.clone();

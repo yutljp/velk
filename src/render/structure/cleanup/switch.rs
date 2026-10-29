@@ -70,7 +70,7 @@ fn switch_breaks(nodes: &[Node]) -> usize {
     nodes
         .iter()
         .map(|node| match node {
-            Node::Break => 1,
+            Node::Break { .. } => 1,
             Node::If { then, els, .. } => switch_breaks(then) + switch_breaks(els),
             _ => 0,
         })
@@ -81,11 +81,12 @@ fn extend_switch_exits(nodes: &mut Vec<Node>, tail: &[Node], target: u64) {
     let mut out = Vec::new();
     for mut node in nodes.drain(..) {
         match &mut node {
-            Node::Break => out.extend_from_slice(tail),
+            Node::Break { .. } => out.extend_from_slice(tail),
             Node::Stmt(Stmt::Br {
                 target: Some(address),
+                ..
             }) if *address == target => {
-                node = Node::Break;
+                node = Node::Break { at: None };
             }
             Node::If { then, els, .. } => {
                 extend_switch_exits(then, tail, target);
@@ -117,6 +118,7 @@ pub(crate) fn order_switch_cases(nodes: &mut [Node]) {
             let [
                 Node::Stmt(Stmt::Br {
                     target: Some(target),
+                    ..
                 }),
             ] = arms[position].1.as_slice()
             else {
@@ -137,6 +139,7 @@ pub(crate) fn order_switch_cases(nodes: &mut [Node]) {
             .map(|(_, body)| match body.last() {
                 Some(Node::Stmt(Stmt::Br {
                     target: Some(target),
+                    ..
                 })) => arms.iter().position(|(_, body)| starts_at(body, *target)),
                 _ => {
                     let mut targets = std::collections::HashSet::new();
@@ -209,6 +212,7 @@ fn same_call(left: &Stmt, right: &Stmt) -> bool {
                 outputs,
                 clobbers,
                 via,
+                ..
             },
             Stmt::Call {
                 kind: other_kind,
@@ -221,6 +225,7 @@ fn same_call(left: &Stmt, right: &Stmt) -> bool {
                 outputs: other_outputs,
                 clobbers: other_clobbers,
                 via: other_via,
+                ..
             },
         ) => {
             (
@@ -267,7 +272,7 @@ fn same_body(left: &[Node], right: &[Node], merge_calls: bool) -> bool {
                     };
                     Some(left) == comparable_statement(right)
                 }
-                (Node::Break, Node::Break) => true,
+                (Node::Break { .. }, Node::Break { .. }) => true,
                 (
                     Node::If {
                         cond,
@@ -275,6 +280,7 @@ fn same_body(left: &[Node], right: &[Node], merge_calls: bool) -> bool {
                         rhs,
                         then,
                         els,
+                        ..
                     },
                     Node::If {
                         cond: other_cond,
@@ -282,6 +288,7 @@ fn same_body(left: &[Node], right: &[Node], merge_calls: bool) -> bool {
                         rhs: other_rhs,
                         then: other_then,
                         els: other_els,
+                        ..
                     },
                 ) => {
                     cond == other_cond
@@ -295,11 +302,13 @@ fn same_body(left: &[Node], right: &[Node], merge_calls: bool) -> bool {
                         index,
                         arms,
                         default,
+                        ..
                     },
                     Node::Switch {
                         index: other_index,
                         arms: other_arms,
                         default: other_default,
+                        ..
                     },
                 ) => {
                     index == other_index
@@ -330,7 +339,7 @@ pub(crate) fn share_switch_tails(nodes: &mut [Node], merge_calls: bool) {
         let mut out = Vec::new();
         for (position, node) in body.iter().enumerate() {
             match node {
-                Node::Break if position + 1 == body.len() => out.push(None),
+                Node::Break { .. } if position + 1 == body.len() => out.push(None),
                 Node::Stmt(stmt) => {
                     let Some(stmt) = comparable_statement(stmt) else {
                         return None;
@@ -366,7 +375,8 @@ pub(crate) fn share_switch_tails(nodes: &mut [Node], merge_calls: bool) {
             let duplicate = (0..position)
                 .find(|other| same_body(&arms[*other].1, &arms[position].1, merge_calls));
             if let Some(other) = duplicate {
-                let (values, _) = arms.remove(position);
+                let (values, body) = arms.remove(position);
+                super::super::merge_origins(&mut arms[other].1, &body);
                 arms[other].0.extend(values);
             } else {
                 position += 1;
@@ -423,6 +433,14 @@ pub(crate) fn share_switch_tails(nodes: &mut [Node], merge_calls: bool) {
                 };
                 if let Some(destination) = next[position] {
                     let tail_len = keys[destination].as_ref().map_or(0, Vec::len);
+                    let shared = &body[body.len() - tail_len..];
+                    if destination < pending.len() {
+                        if let Some((_, other)) = &mut pending[destination] {
+                            super::super::merge_origins(other, shared);
+                        }
+                    } else if let Some(other) = default {
+                        super::super::merge_origins(other, shared);
+                    }
                     body.truncate(body.len() - tail_len);
                 }
                 arms.push((values, body));
@@ -446,11 +464,12 @@ fn share_case_prefixes(node: &Node) -> Option<Node> {
         },
         arms,
         default: Some(default),
+        ..
     } = node
     else {
         return None;
     };
-    if !matches!(default.as_slice(), [Node::Break])
+    if !matches!(default.as_slice(), [Node::Break { .. }])
         || arms.len() < 3
         || !matches!(width, 8 | 16 | 32 | 64)
     {
@@ -460,12 +479,12 @@ fn share_case_prefixes(node: &Node) -> Option<Node> {
     ordered.sort_by_key(|(values, _)| values.iter().min().copied());
     let mut expected = 0i64;
     let mut previous = Vec::new();
-    let mut bodies = Vec::new();
+    let mut bodies: Vec<(i64, Vec<Node>)> = Vec::new();
     let mut saved = 0usize;
     for (values, body) in ordered {
         let mut values = values.clone();
         values.sort_unstable();
-        if values.is_empty() || !matches!(body.last(), Some(Node::Break)) {
+        if values.is_empty() || !matches!(body.last(), Some(Node::Break { .. })) {
             return None;
         }
         for value in values {
@@ -493,6 +512,12 @@ fn share_case_prefixes(node: &Node) -> Option<Node> {
         if !keys.starts_with(&previous) {
             return None;
         }
+        let mut offset = 0;
+        for (_, shared) in &mut bodies {
+            let end = offset + shared.len();
+            super::super::merge_origins(shared, &body[offset..end]);
+            offset = end;
+        }
         saved = saved.saturating_add(previous.len());
         bodies.push((expected - 1, body[previous.len()..body.len() - 1].to_vec()));
         previous = keys;
@@ -512,6 +537,7 @@ fn share_case_prefixes(node: &Node) -> Option<Node> {
                     rhs: Expr::Const(lower as u64),
                     then: body,
                     els: Vec::new(),
+                    at: None,
                 });
             }
         } else {
@@ -525,6 +551,7 @@ fn share_case_prefixes(node: &Node) -> Option<Node> {
         rhs: Expr::Const((expected - 1) as u64),
         then: tail,
         els: Vec::new(),
+        at: None,
     })
 }
 
@@ -562,7 +589,7 @@ fn absorb_switch_tests_in_nodes(nodes: &mut Vec<Node>, reads: &HashMap<u16, usiz
 /// `nodes[index]` sets `v = x - k` and `nodes[index + 1]` checks `v`'s
 /// bound around a switch on `x`.
 fn absorb_bounds_check(nodes: &mut Vec<Node>, index: usize, reads: &HashMap<u16, usize>) -> bool {
-    let Node::Stmt(Stmt::Assign { dest, value }) = &nodes[index] else {
+    let Node::Stmt(Stmt::Assign { dest, value, .. }) = &nodes[index] else {
         return false;
     };
     let (base, offset) = match unmasked(value) {
@@ -590,6 +617,7 @@ fn absorb_bounds_check(nodes: &mut Vec<Node>, index: usize, reads: &HashMap<u16,
         rhs: Expr::Const(bound),
         then,
         els,
+        ..
     } = &nodes[index + 1]
     else {
         return false;
@@ -610,6 +638,7 @@ fn absorb_bounds_check(nodes: &mut Vec<Node>, index: usize, reads: &HashMap<u16,
             index: switched,
             arms,
             default: None,
+            ..
         },
     ] = inside.as_slice()
     else {
@@ -630,6 +659,7 @@ fn absorb_bounds_check(nodes: &mut Vec<Node>, index: usize, reads: &HashMap<u16,
         index: switched.clone(),
         arms: arms.clone(),
         default: Some(outside.clone()),
+        at: None,
     };
     let variable = dest.index;
     nodes[index + 1] = switch;
@@ -699,7 +729,7 @@ fn count_reads(nodes: &[Node], counts: &mut HashMap<u16, usize>) {
                 count_expr_reads(rhs, counts);
             }
             Node::Switch { index, .. } => count_expr_reads(index, counts),
-            Node::Label(_) | Node::Break | Node::Continue | Node::Forever { .. } => {}
+            Node::Label(_) | Node::Break { .. } | Node::Continue { .. } | Node::Forever { .. } => {}
         }
         for body in children(node) {
             count_reads(body, counts);
@@ -717,6 +747,7 @@ fn absorb_equality(nodes: &mut Vec<Node>, index: usize) -> bool {
         rhs: Expr::Const(value),
         then,
         els,
+        ..
     } = &nodes[index]
     else {
         return false;
@@ -744,6 +775,7 @@ fn absorb_equality(nodes: &mut Vec<Node>, index: usize) -> bool {
         index: switched,
         arms,
         default,
+        ..
     } = switch
     else {
         return false;
@@ -767,6 +799,7 @@ fn absorb_equality(nodes: &mut Vec<Node>, index: usize) -> bool {
         index: switched.clone(),
         arms,
         default: default.clone(),
+        at: None,
     };
     if inside {
         nodes[index] = joined;

@@ -67,6 +67,7 @@ fn rewrite(nodes: &mut Vec<Node>, renamed: &HashMap<u16, u16>) {
                 index,
                 arms,
                 default,
+                ..
             } => {
                 crate::ir::visit::rename_registers(index, renamed);
                 for (_, body) in arms {

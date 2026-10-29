@@ -390,7 +390,7 @@ fn aggregate_return(value: &Expr, ctx: &Ctx<'_>) -> Option<String> {
 }
 
 pub(crate) fn render_stmt(stmt: &Stmt, ctx: &Ctx<'_>) -> String {
-    if let (Stmt::Ret { value }, Some(plan)) = (stmt, ctx.variadic) {
+    if let (Stmt::Ret { value, .. }, Some(plan)) = (stmt, ctx.variadic) {
         let (ty, value) = match ctx.float_return {
             Some(precision) => (
                 if precision == crate::ir::Precision::Double {
@@ -408,7 +408,7 @@ pub(crate) fn render_stmt(stmt: &Stmt, ctx: &Ctx<'_>) -> String {
         );
     }
     match stmt {
-        Stmt::Assign { dest, value } => {
+        Stmt::Assign { dest, value, .. } => {
             // A destination whose readers only use the low 32 bits takes its
             // 32-bit register name.
             let target = if ctx.narrow_registers.contains(&dest.index)
@@ -493,33 +493,37 @@ pub(crate) fn render_stmt(stmt: &Stmt, ctx: &Ctx<'_>) -> String {
             }
             format!("{target} = {text};")
         }
-        Stmt::Store { addr, value, width } => stores::render(addr, value, width, ctx),
+        Stmt::Store {
+            addr, value, width, ..
+        } => stores::render(addr, value, width, ctx),
         Stmt::Brif {
             cond,
             lhs,
             rhs,
             target,
+            ..
         } => format!(
             "if ({}) {{ {} }}",
             condition(*cond, lhs, rhs, ctx),
             super::jumps::branch(*target, ctx)
         ),
-        Stmt::BrifFlags { cond, target } => {
+        Stmt::BrifFlags { cond, target, .. } => {
             format!(
                 "if (/* {} */ true) {{ {} }}",
                 cond.text(),
                 super::jumps::branch(*target, ctx)
             )
         }
-        Stmt::Br { target } => match target {
+        Stmt::Br { target, .. } => match target {
             Some(target) => super::jumps::branch(*target, ctx),
             None => "goto <dynamic>;".to_owned(),
         },
-        Stmt::BrIndirect { target } => super::jumps::indirect(target, ctx),
+        Stmt::BrIndirect { target, .. } => super::jumps::indirect(target, ctx),
         Stmt::Switch {
             index,
             cases,
             default,
+            ..
         } => {
             let printed = expr::switch_index(index, ctx);
             let mut text = format!("switch ({}) {{\n", printed.text);
@@ -549,7 +553,7 @@ pub(crate) fn render_stmt(stmt: &Stmt, ctx: &Ctx<'_>) -> String {
             text
         }
         Stmt::Call { .. } => calls::render(stmt, ctx),
-        Stmt::Ret { value } if ctx.abi.is_some_and(|abi| abi.result.is_some()) => {
+        Stmt::Ret { value, .. } if ctx.abi.is_some_and(|abi| abi.result.is_some()) => {
             aggregate_return(value, ctx).expect("validated aggregate result pieces")
         }
         Stmt::Ret {
@@ -558,6 +562,7 @@ pub(crate) fn render_stmt(stmt: &Stmt, ctx: &Ctx<'_>) -> String {
                     op: crate::ir::Operation::Results,
                     args,
                 },
+            ..
         } if ctx.abi.is_some() && args.len() == 1 => {
             if let Some(precision) = ctx.float_return {
                 format!(
@@ -575,6 +580,7 @@ pub(crate) fn render_stmt(stmt: &Stmt, ctx: &Ctx<'_>) -> String {
                     op: crate::ir::Operation::Results,
                     args,
                 },
+            ..
         } if !ctx.void_return && !args.is_empty() => {
             let further: Vec<String> = args[1..].iter().map(|arg| render_value(arg, ctx)).collect();
             format!(
@@ -583,7 +589,7 @@ pub(crate) fn render_stmt(stmt: &Stmt, ctx: &Ctx<'_>) -> String {
                 further.join(", ")
             )
         }
-        Stmt::Ret { value } => {
+        Stmt::Ret { value, .. } => {
             // A function that returns nothing carries no meaningful value.
             if ctx.void_return {
                 "return;".to_owned()
@@ -597,8 +603,9 @@ pub(crate) fn render_stmt(stmt: &Stmt, ctx: &Ctx<'_>) -> String {
             instruction,
             inputs,
             outputs,
+            ..
         } => super::machine::render(*instruction, inputs, outputs, ctx),
         Stmt::Unsupported { text, .. } => format!("/* unsupported: {text} */"),
-        Stmt::Trap => "__builtin_trap();".to_owned(),
+        Stmt::Trap { .. } => "__builtin_trap();".to_owned(),
     }
 }

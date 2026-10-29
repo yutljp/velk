@@ -319,7 +319,7 @@ pub(crate) fn value_bits(ir: &FunctionIr) -> HashMap<u16, u32> {
     let mut assigned = Vec::new();
     for stmt in ir.blocks.iter().flat_map(|block| &block.stmts) {
         match stmt {
-            Stmt::Assign { dest, value } if variable(dest.index) => {
+            Stmt::Assign { dest, value, .. } if variable(dest.index) => {
                 known.entry(dest.index).or_insert(0);
                 assigned.push((dest.index, value));
             }
@@ -672,6 +672,7 @@ mod tests {
                     },
                     Expr::Const(0x100),
                 ),
+                at: None,
             }],
         );
         assert_eq!(value_bits(&ir).get(&VARIABLE_BASE), Some(&8));

@@ -699,6 +699,7 @@ impl Test {
         match self {
             Test::Always => Some(Stmt::Br {
                 target: Some(target),
+                at: None,
             }),
             Test::Never => None,
             Test::Compare(cond, lhs, rhs) => Some(Stmt::Brif {
@@ -706,8 +707,13 @@ impl Test {
                 lhs,
                 rhs,
                 target,
+                at: None,
             }),
-            Test::Unknown => Some(Stmt::BrifFlags { cond, target }),
+            Test::Unknown => Some(Stmt::BrifFlags {
+                cond,
+                target,
+                at: None,
+            }),
         }
     }
 }

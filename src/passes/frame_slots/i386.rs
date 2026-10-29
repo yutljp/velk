@@ -112,7 +112,7 @@ pub(crate) fn settle(ir: &mut FunctionIr) {
                 fold_addresses(operand, frame, sp);
             }
             let alias = match stmt {
-                Stmt::Assign { dest, value } if dest.index != sp => {
+                Stmt::Assign { dest, value, .. } if dest.index != sp => {
                     frame_slot(value, frame, sp).map(|offset| (dest.index, offset))
                 }
                 _ => None,
@@ -123,7 +123,7 @@ pub(crate) fn settle(ir: &mut FunctionIr) {
             if let Some((register, offset)) = alias {
                 aliases.insert(register, offset);
             }
-            if let Stmt::Assign { dest, value } = stmt
+            if let Stmt::Assign { dest, value, .. } = stmt
                 && dest.index == sp
             {
                 let Some(next) = frame_slot(value, frame, sp) else {
@@ -144,7 +144,7 @@ pub(crate) fn settle(ir: &mut FunctionIr) {
             return false;
         };
         for stmt in &block.stmts {
-            if let Stmt::Assign { dest, value } = stmt
+            if let Stmt::Assign { dest, value, .. } = stmt
                 && dest.index == sp
             {
                 let Some(next) = frame_slot(value, frame, sp) else {

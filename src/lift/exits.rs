@@ -52,6 +52,7 @@ pub(super) fn resolve_exits(
             Some(Stmt::Brif { target, .. } | Stmt::BrifFlags { target, .. }) => (*target, false),
             Some(Stmt::Br {
                 target: Some(target),
+                ..
             }) => (*target, true),
             _ => continue,
         };
@@ -82,10 +83,12 @@ pub(super) fn resolve_exits(
     }
     for index in jumps {
         let stmts = &mut blocks[index].stmts;
-        let Some(Stmt::Br { target }) = stmts.pop() else {
+        let Some(Stmt::Br { target, at }) = stmts.pop() else {
             unreachable!("a jump ends the block")
         };
-        stmts.extend(tail_call(image, summaries, target));
+        let [call, result] = tail_call(image, summaries, target);
+        stmts.push(call.with_origin(at));
+        stmts.push(result);
     }
     if exits.is_empty() {
         return continued_code;
@@ -102,11 +105,11 @@ pub(super) fn resolve_exits(
                     | Stmt::Br { .. }
                     | Stmt::BrIndirect { .. }
                     | Stmt::Switch { .. }
-                    | Stmt::Trap
+                    | Stmt::Trap { .. }
             )
         )
     {
-        last.stmts.push(Stmt::Trap);
+        last.stmts.push(Stmt::Trap { at: None });
     }
     for target in exits {
         blocks.push(Block {
@@ -195,7 +198,7 @@ pub(crate) fn stack_heights(blocks: &[Block], isa: crate::loader::Isa) -> Vec<Op
 
 /// The offsets from the entry stack pointer the registers hold after `stmt`.
 fn step(stmt: &Stmt, state: &mut HashMap<u16, i64>) {
-    if let Stmt::Assign { dest, value } = stmt
+    if let Stmt::Assign { dest, value, .. } = stmt
         && dest.width == 64
     {
         match offset_of(value, state) {

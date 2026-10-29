@@ -163,6 +163,9 @@ pub(super) struct Cli {
     /// Print pseudo-C for selected functions, or all functions when none are specified.
     #[arg(short = 'D', long, help_heading = "Operations (choose one)")]
     decompile: bool,
+    /// Append known instruction addresses to pseudo-C statements.
+    #[arg(long, requires = "decompile")]
+    addresses: bool,
     /// Print the disassembly of one function.
     #[arg(short = 'd', long, help_heading = "Operations (choose one)")]
     disasm: bool,
@@ -301,10 +304,10 @@ pub(super) struct Cli {
         help = format!("Approximate card size in tokens (default: {}); only with --card", card::DEFAULT_BUDGET)
     )]
     budget: Option<usize>,
-    /// Print function lists, disassembly, or emulation results as JSON.
+    /// Print function lists, disassembly, pseudo-C with its address map, or emulation results as JSON.
     #[arg(
         long,
-        conflicts_with_all = ["classes", "compare", "search", "read_memory", "detect_constants", "annotate", "annotation", "annotations", "unannotate", "export_project", "import_project", "origins", "xrefs", "callers", "callees", "path", "strings", "constants", "summary", "sections", "card", "decompile", "ir", "build_signatures", "identify", "run", "mcp", "serve"]
+        conflicts_with_all = ["classes", "compare", "search", "read_memory", "detect_constants", "annotate", "annotation", "annotations", "unannotate", "export_project", "import_project", "origins", "xrefs", "callers", "callees", "path", "strings", "constants", "summary", "sections", "card", "ir", "build_signatures", "identify", "run", "mcp", "serve"]
     )]
     json: bool,
     /// Disable the embedded library signature sets.
@@ -386,6 +389,8 @@ pub(super) enum Command {
     Decompile {
         path: PathBuf,
         functions: Vec<String>,
+        addresses: bool,
+        json: bool,
     },
     Disasm {
         path: PathBuf,
@@ -575,9 +580,13 @@ impl Cli {
                 function,
                 destination,
                 additional_functions,
+                addresses,
+                json,
                 ..
             } => Command::Decompile {
                 path,
+                addresses,
+                json,
                 functions: function
                     .into_iter()
                     .chain(destination)

@@ -41,6 +41,7 @@ fn com_method_printing_refuses_unsupported_uses_and_preserves_saved_tables() {
                 ir.ret_type = CType::U64;
                 *ir.blocks[0].stmts.last_mut().unwrap() = Stmt::Ret {
                     value: Expr::reg(output, 64),
+                    at: None,
                 };
             }
             _ => {
@@ -50,6 +51,7 @@ fn com_method_printing_refuses_unsupported_uses_and_preserves_saved_tables() {
                         addr: Expr::reg(ir.params[0].index, 64),
                         value: Expr::Const(0),
                         width: 8,
+                        at: None,
                     },
                 );
             }

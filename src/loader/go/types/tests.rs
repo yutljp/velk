@@ -160,6 +160,7 @@ fn standalone_shapes_require_valid_runtime_types() {
                         width: 8,
                         signed: false,
                     },
+                    at: None,
                 }],
             );
             ir.name = Some("read_value".into());
@@ -230,6 +231,7 @@ fn printed_shapes_and_record_layout_compile_with_exact_offsets() {
                 width: 8,
                 signed: false,
             },
+            at: None,
         }],
     );
     ir.name = Some("record_count".into());

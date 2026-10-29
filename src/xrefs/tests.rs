@@ -240,6 +240,7 @@ fn address_constants_must_agree_on_all_predecessors() {
             width: 64,
         },
         value: Expr::Const(value),
+        at: None,
     };
     let mut blocks = vec![
         Block {
@@ -251,17 +252,22 @@ fn address_constants_must_agree_on_all_predecessors() {
                     lhs: Expr::reg(1, 64),
                     rhs: Expr::Const(0),
                     target: 0x30,
+                    at: None,
                 },
             ],
         },
         Block {
             start: 0x20,
-            stmts: vec![Stmt::Br { target: Some(0x30) }],
+            stmts: vec![Stmt::Br {
+                target: Some(0x30),
+                at: None,
+            }],
         },
         Block {
             start: 0x30,
             stmts: vec![Stmt::Ret {
                 value: Expr::reg(0, 64),
+                at: None,
             }],
         },
     ];
@@ -286,6 +292,7 @@ fn tail_calls_do_not_propagate_addresses_to_the_next_block() {
                         width: 64,
                     },
                     value: Expr::Const(0x1100),
+                    at: None,
                 },
                 Stmt::Call {
                     kind: CallKind::Tail,
@@ -298,6 +305,7 @@ fn tail_calls_do_not_propagate_addresses_to_the_next_block() {
                     outputs: Vec::new(),
                     clobbers: None,
                     via: None,
+                    at: None,
                 },
             ],
         },
@@ -305,6 +313,7 @@ fn tail_calls_do_not_propagate_addresses_to_the_next_block() {
             start: 0x1010,
             stmts: vec![Stmt::Ret {
                 value: Expr::reg(3, 64),
+                at: None,
             }],
         },
     ];

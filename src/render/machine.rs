@@ -211,6 +211,7 @@ pub(super) fn in_condition(
         instruction: instruction @ MachineInstruction::Atomic { op, width, .. },
         inputs,
         outputs,
+        ..
     } = stmt
     else {
         return None;
@@ -269,10 +270,10 @@ pub(super) fn in_condition(
         let Some((_, rest)) = rendered.split_once('\n') else {
             return None;
         };
-        return Some(format!(
-            "{}if ({negate}{expression}) {{\n{rest}",
-            "    ".repeat(depth)
-        ));
+        let mut output = format!("{}if ({negate}{expression}) {{\n", "    ".repeat(depth));
+        super::addresses::append(&mut output, next.origin(), ctx.symbols.addresses);
+        output.push_str(rest);
+        return Some(output);
     }
     if *op == AtomicOp::Store || result.width != width.saturating_mul(8) {
         return None;
@@ -304,11 +305,14 @@ pub(super) fn in_condition(
     let Some((_, rest)) = rendered.split_once('\n') else {
         return None;
     };
-    Some(format!(
-        "{}{expression}{}\n{rest}",
+    let mut output = format!(
+        "{}{expression}{}\n",
         &first[..at],
         &first[at + name.len()..]
-    ))
+    );
+    super::addresses::append(&mut output, next.origin(), ctx.symbols.addresses);
+    output.push_str(rest);
+    Some(output)
 }
 
 fn render_atomic(

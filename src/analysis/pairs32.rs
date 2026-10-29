@@ -95,6 +95,7 @@ fn place_named_parameters(
             setup.push(crate::ir::Stmt::Assign {
                 dest: crate::ir::RegRef { index, width: 64 },
                 value,
+                at: None,
             });
         }
         setup.append(&mut entry.stmts);
@@ -186,7 +187,7 @@ mod tests {
                         lhs: Box::new(value),
                         rhs: Box::new(Expr::Const(shift)),
                     };
-                    let mut ir = FunctionIr::single_block(isa, vec![Stmt::Ret { value }]);
+                    let mut ir = FunctionIr::single_block(isa, vec![Stmt::Ret { value, at: None }]);
                     ir.stack_params.push(StackParam {
                         offset: 0,
                         size: 4,

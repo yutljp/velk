@@ -362,7 +362,7 @@ fn lift_in_mode(
                 return Ok(blocks);
             }
             let direction = blocks.iter().flat_map(|block| &block.stmts).any(|stmt| {
-                matches!(stmt, Stmt::Assign { dest, value } if dest.index == x86_64::DIRECTION && *value != Expr::constant(0))
+                matches!(stmt, Stmt::Assign { dest, value, .. } if dest.index == x86_64::DIRECTION && *value != Expr::constant(0))
             });
             if !direction {
                 for stmt in blocks.iter_mut().flat_map(|block| &mut block.stmts) {
@@ -386,6 +386,7 @@ fn lift_in_mode(
                             width: 64,
                         },
                         value: Expr::constant(0),
+                        at: None,
                     },
                 );
             }
@@ -462,7 +463,7 @@ fn drop_stack_probes(blocks: &mut [Block], image: &Image) {
             }
             let mut slot = None;
             let mut address = None;
-            if let Stmt::Assign { dest, value } = stmt
+            if let Stmt::Assign { dest, value, .. } = stmt
                 && dest.width == 64
             {
                 match value {
@@ -510,6 +511,7 @@ fn drop_stack_probes(blocks: &mut [Block], image: &Image) {
                     [10, 11].map(|index| Stmt::Assign {
                         dest: crate::ir::RegRef { index, width: 64 },
                         value: Expr::apply(crate::ir::Operation::Undefined, Vec::new()),
+                        at: None,
                     }),
                 );
             } else {
@@ -529,6 +531,7 @@ fn link_restore(stmts: &[Stmt], call: usize, sp: u16) -> Option<usize> {
         Stmt::Assign {
             dest,
             value: Expr::Load { addr, width: 8, .. },
+            ..
         } if dest.index == LINK_REGISTER
             && matches!(addr.as_ref(), Expr::Reg { index, width: 64 } if *index == sp) =>
         {
@@ -762,6 +765,7 @@ fn preserve_compare(compare: &mut Option<flags::Flags>, write: Write<'_>, stmts:
                 width: 64,
             },
             value: operand.clone(),
+            at: None,
         });
         *operand = Expr::reg(slot, width);
     }
@@ -871,6 +875,7 @@ pub(crate) fn call(
             clobbers: None,
             outputs: crate::ir::fallback_call_outputs(Convention::GoWriteBarrier, None),
             via: None,
+            at: None,
         };
     }
     let convention = match target {
@@ -959,6 +964,7 @@ pub(crate) fn call(
         outputs: crate::ir::fallback_call_outputs(convention, clobbers),
         clobbers,
         via: None,
+        at: None,
     }
 }
 
@@ -1080,6 +1086,7 @@ pub(crate) fn call_through(kind: CallKind, image: &Image, through: Expr) -> Stmt
         clobbers: None,
         outputs: crate::ir::fallback_call_outputs(convention, None),
         via: None,
+        at: None,
     }
 }
 
@@ -1087,12 +1094,16 @@ pub(crate) fn call_through(kind: CallKind, image: &Image, through: Expr) -> Stmt
 /// unless the callee never returns.
 fn tail_call(image: &Image, summaries: Summaries<'_>, target: Option<u64>) -> [Stmt; 2] {
     if target.is_some_and(|target| summaries(target).noreturn) {
-        return [call(CallKind::Tail, image, summaries, target), Stmt::Trap];
+        return [
+            call(CallKind::Tail, image, summaries, target),
+            Stmt::Trap { at: None },
+        ];
     }
     [
         call(CallKind::Tail, image, summaries, target),
         Stmt::Ret {
             value: Expr::reg(crate::arch::RETURN, 64),
+            at: None,
         },
     ]
 }
@@ -1502,6 +1513,7 @@ fn finish_block(
                 .map(|(index, value)| Stmt::Assign {
                     dest: RegRef { index, width: 64 },
                     value,
+                    at: None,
                 }),
         );
     }
@@ -1529,6 +1541,7 @@ fn finish_block(
                     width: 64,
                 },
                 value,
+                at: None,
             });
         stmts.splice(at..at, passes);
     }
@@ -1559,6 +1572,7 @@ fn finish_block(
                     width: 64,
                 },
                 value,
+                at: None,
             },
         );
     }
@@ -1618,6 +1632,7 @@ fn build<M: Machine>(
             if block_start != expected || !pending.is_empty() {
                 pending.push(Stmt::Br {
                     target: Some(expected),
+                    at: None,
                 });
                 let stmts = std::mem::take(&mut pending);
                 blocks.push(finish_block(
@@ -1706,11 +1721,12 @@ fn build<M: Machine>(
     if let Some(last) = blocks.last_mut()
         && matches!(last.stmts.last(), Some(Stmt::Call { .. }))
     {
-        last.stmts.push(Stmt::Trap);
+        last.stmts.push(Stmt::Trap { at: None });
     }
     for stmt in blocks.iter_mut().flat_map(|block| &mut block.stmts) {
         if let Stmt::Br {
             target: Some(target),
+            ..
         }
         | Stmt::Brif { target, .. }
         | Stmt::BrifFlags { target, .. } = stmt
@@ -1820,6 +1836,7 @@ mod tests {
                     index: Expr::reg(0, 64),
                     cases: vec![(0, 8), (1, 8), (2, 99)],
                     default: Some(16),
+                    at: None,
                 }],
             },
             Block {
@@ -1827,6 +1844,7 @@ mod tests {
                 stmts: vec![Stmt::BrifFlags {
                     cond: crate::ir::Cond::Eq,
                     target: 0,
+                    at: None,
                 }],
             },
             Block {
@@ -1834,6 +1852,7 @@ mod tests {
                 stmts: vec![Stmt::BrifFlags {
                     cond: crate::ir::Cond::Eq,
                     target: 0,
+                    at: None,
                 }],
             },
         ];
@@ -2762,7 +2781,7 @@ mod tests {
             changed
                 .iter()
                 .flat_map(|block| &block.stmts)
-                .any(|stmt| matches!(stmt, Stmt::Trap))
+                .any(|stmt| matches!(stmt, Stmt::Trap { .. }))
         );
         let again = super::lift_shared_with_targets(&image, 0, 6, &targets, &summaries)
             .expect("retained previous version");

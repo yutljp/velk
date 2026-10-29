@@ -238,6 +238,9 @@ pub enum Request {
         /// Include automatically recovered strings as comments.
         #[serde(default = "decode_strings_default", rename = "decodeStrings")]
         decode_strings: bool,
+        /// Include the instruction address of each effect when known.
+        #[serde(default)]
+        addresses: bool,
     },
     /// Renders selected functions concurrently, in address-list order.
     DecompileMany {
@@ -245,6 +248,9 @@ pub enum Request {
         bin: BinaryRef,
         /// Function addresses; absence selects every function.
         addresses: Option<Vec<String>>,
+        /// Include known instruction addresses in each function's C.
+        #[serde(default, rename = "showAddresses")]
+        show_addresses: bool,
     },
     /// Lists decoded instructions.
     Disasm {
@@ -495,12 +501,14 @@ pub fn handle(
             bin,
             addr,
             decode_strings,
+            addresses,
         } => {
             let binary = match bin.open(session) {
                 Ok(binary) => binary,
                 Err(error) => return Err(error),
             };
             binary.set_string_decoding(decode_strings);
+            binary.set_instruction_addresses(addresses);
             let address = match parse(&addr) {
                 Ok(address) => address,
                 Err(error) => return Err(error),
@@ -510,9 +518,11 @@ pub fn handle(
                 Err(error) => Err(error),
             }
         }
-        Request::DecompileMany { bin, addresses } => {
-            decompile_many(session, bin, addresses, deadline)
-        }
+        Request::DecompileMany {
+            bin,
+            addresses,
+            show_addresses,
+        } => decompile_many(session, bin, addresses, show_addresses, deadline),
         Request::Disasm { bin, addr, limit } => Ok(json!(
             bin.open(session)?
                 .disasm(parse(&addr)?, limit.unwrap_or(usize::MAX))?
@@ -624,6 +634,7 @@ fn decompile_many(
     session: &mut Session,
     bin: BinaryRef,
     addresses: Option<Vec<String>>,
+    show_addresses: bool,
     deadline: Option<std::time::Instant>,
 ) -> Result<Value> {
     let binary = match bin.open(session) {
@@ -631,6 +642,7 @@ fn decompile_many(
         Err(error) => return Err(error),
     };
     binary.set_string_decoding(true);
+    binary.set_instruction_addresses(show_addresses);
     let addresses = match addresses {
         Some(addresses) => {
             let mut parsed = Vec::with_capacity(addresses.len());

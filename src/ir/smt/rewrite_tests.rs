@@ -8,6 +8,7 @@ fn assign(index: u16, width: u8, value: Expr) -> Stmt {
     Stmt::Assign {
         dest: RegRef { index, width },
         value,
+        at: None,
     }
 }
 
@@ -77,6 +78,7 @@ fn branch(cond: Cond, lhs: Expr, rhs: Expr) -> FunctionIr {
             lhs,
             rhs,
             target: 2,
+            at: None,
         }],
     );
     ir.blocks.extend([
@@ -84,12 +86,14 @@ fn branch(cond: Cond, lhs: Expr, rhs: Expr) -> FunctionIr {
             start: 1,
             stmts: vec![Stmt::Ret {
                 value: Expr::Const(0),
+                at: None,
             }],
         },
         Block {
             start: 2,
             stmts: vec![Stmt::Ret {
                 value: Expr::Const(1),
+                at: None,
             }],
         },
     ]);
@@ -227,10 +231,11 @@ fn sums_substitutions_and_field_partitions_are_equivalent() {
                 Isa::X86_64,
                 vec![Stmt::Ret {
                     value: before.clone(),
+                    at: None,
                 }],
             );
             crate::passes::simplify::simplify(&mut ir);
-            let Stmt::Ret { value: after } = &ir.blocks[0].stmts[0] else {
+            let Stmt::Ret { value: after, .. } = &ir.blocks[0].stmts[0] else {
                 panic!("return remains");
             };
             if split < u64::from(bits) && split != 32 {
@@ -273,9 +278,11 @@ fn stores_forwarding_and_fusion_are_equivalent() {
                         addr: addr.clone(),
                         value: stored,
                         width,
+                        at: None,
                     },
                     Stmt::Ret {
                         value: load(addr.clone(), width, false),
+                        at: None,
                     },
                 ],
             );
@@ -296,14 +303,17 @@ fn stores_forwarding_and_fusion_are_equivalent() {
                             addr: addr.clone(),
                             value: x.clone(),
                             width,
+                            at: None,
                         },
                         Stmt::Store {
                             addr: raw_bin(BinOp::Add, addr.clone(), Expr::Const(overlap)),
                             value: Expr::reg(1, 64),
                             width: 1,
+                            at: None,
                         },
                         Stmt::Ret {
                             value: load(addr.clone(), width, signed),
+                            at: None,
                         },
                     ],
                 );
@@ -322,9 +332,11 @@ fn stores_forwarding_and_fusion_are_equivalent() {
                         addr: addr.clone(),
                         value: x.clone(),
                         width,
+                        at: None,
                     },
                     Stmt::Ret {
                         value: load(addr.clone(), width, signed),
+                        at: None,
                     },
                 ],
             );
@@ -347,9 +359,11 @@ fn stores_forwarding_and_fusion_are_equivalent() {
                         addr: addr.clone(),
                         value: Expr::reg(3, bits),
                         width,
+                        at: None,
                     },
                     Stmt::Ret {
                         value: load(addr.clone(), width, false),
+                        at: None,
                     },
                 ],
             );
@@ -402,13 +416,23 @@ fn cfg_propagation_and_demand_are_equivalent() {
                 before.blocks[0].stmts.insert(0, assign(3, 64, merged));
                 before.blocks[1].stmts = vec![
                     assign(4, bits, Expr::Const(u64::MAX)),
-                    Stmt::Br { target: Some(3) },
+                    Stmt::Br {
+                        target: Some(3),
+                        at: None,
+                    },
                 ];
-                before.blocks[2].stmts = vec![assign(4, bits, used), Stmt::Br { target: Some(3) }];
+                before.blocks[2].stmts = vec![
+                    assign(4, bits, used),
+                    Stmt::Br {
+                        target: Some(3),
+                        at: None,
+                    },
+                ];
                 before.blocks.push(Block {
                     start: 3,
                     stmts: vec![Stmt::Ret {
                         value: raw_bin(BinOp::Add, Expr::reg(4, 64), Expr::reg(0, 64)),
+                        at: None,
                     }],
                 });
                 for (name, pass) in passes {
@@ -437,6 +461,7 @@ fn cfg_propagation_and_demand_are_equivalent() {
             ),
             Stmt::Ret {
                 value: Expr::reg(3, 64),
+                at: None,
             },
         ],
     );
@@ -802,6 +827,7 @@ fn private_frame_and_spill_rewrites_are_equivalent() {
                             addr: slot.clone(),
                             value: Expr::reg(0, 64),
                             width: bits / 8,
+                            at: None,
                         },
                         assign(1, 64, load(slot, bits / 8, false)),
                         assign(
@@ -811,6 +837,7 @@ fn private_frame_and_spill_rewrites_are_equivalent() {
                         ),
                         Stmt::Ret {
                             value: Expr::reg(1, 64),
+                            at: None,
                         },
                     ],
                 );
@@ -839,6 +866,7 @@ fn private_frame_and_spill_rewrites_are_equivalent() {
                             ),
                             value: Expr::reg(variable, 64),
                             width: bits / 8,
+                            at: None,
                         },
                         Stmt::Ret {
                             value: load(
@@ -850,6 +878,7 @@ fn private_frame_and_spill_rewrites_are_equivalent() {
                                 bits / 8,
                                 false,
                             ),
+                            at: None,
                         },
                     ],
                 );
@@ -905,6 +934,7 @@ fn range_branches_and_switch_pruning_preserve_results() {
                         index: Expr::reg(3, 64),
                         cases: vec![(0, 1), (1, 2), (2, 3)],
                         default: Some(4),
+                        at: None,
                     },
                 ],
             );
@@ -913,6 +943,7 @@ fn range_branches_and_switch_pruning_preserve_results() {
                     start: index,
                     stmts: vec![Stmt::Ret {
                         value: Expr::Const(index),
+                        at: None,
                     }],
                 });
             }
@@ -1034,9 +1065,11 @@ fn caller_frame_stores_preserve_memory() {
                             addr: raw_bin(BinOp::Add, Expr::reg(sp, 64), Expr::Const(offset)),
                             value: Expr::reg(crate::ir::VARIABLE_BASE, 64),
                             width,
+                            at: None,
                         },
                         Stmt::Ret {
                             value: Expr::Const(0),
+                            at: None,
                         },
                     ],
                 );
@@ -1083,11 +1116,13 @@ fn abi_spill_removal_preserves_results_and_caller_memory() {
                             addr: address(slot),
                             value: Expr::reg(crate::ir::VARIABLE_BASE, 64),
                             width,
+                            at: None,
                         },
                         Stmt::Store {
                             addr: address(output),
                             value: Expr::reg(1, 64),
                             width,
+                            at: None,
                         },
                         Stmt::Ret {
                             value: if read {
@@ -1095,6 +1130,7 @@ fn abi_spill_removal_preserves_results_and_caller_memory() {
                             } else {
                                 Expr::Const(0)
                             },
+                            at: None,
                         },
                     ],
                 );
@@ -1112,13 +1148,14 @@ fn abi_spill_removal_preserves_results_and_caller_memory() {
                             addr: address(slot),
                             value: Expr::Const(0),
                             width,
+                            at: None,
                         },
                     );
                 }
                 // Capture the result before clearing its backing slot.
                 for ir in [&mut before, &mut after] {
                     let position = ir.blocks[0].stmts.len() - 1;
-                    let Stmt::Ret { value } = &mut ir.blocks[0].stmts[position] else {
+                    let Stmt::Ret { value, .. } = &mut ir.blocks[0].stmts[position] else {
                         unreachable!()
                     };
                     let value =

@@ -85,6 +85,7 @@ pub(super) fn lift(lifter: &mut Lifter, ins: &Instruction) -> bool {
                     ),
                     value: lane_value((slot, shift, u64::from(bits))),
                     width: bytes,
+                    at: None,
                 });
             } else {
                 let value = Expr::bin(
@@ -131,6 +132,7 @@ pub(super) fn lift(lifter: &mut Lifter, ins: &Instruction) -> bool {
                             u64::from(bits),
                         )),
                         width: bytes,
+                        at: None,
                     });
                 } else {
                     let half = &mut halves[(shift / 64) as usize];

@@ -291,7 +291,7 @@ pub(super) fn lift_in_mode(
         let split = !found.is_subset(&targets);
         targets.extend(found);
         for block in &mut blocks {
-            if !matches!(block.stmts.last(), Some(Stmt::BrIndirect { target })
+            if !matches!(block.stmts.last(), Some(Stmt::BrIndirect { target, .. })
                 if *target == Expr::reg(crate::ir::EXCHANGE, 64))
             {
                 continue;
@@ -304,7 +304,7 @@ pub(super) fn lift_in_mode(
                 *block.stmts.last_mut().expect("indirect branch") = Stmt::unsupported(
                     "ARM PC load with writeback requires a proven internal target",
                 );
-                block.stmts.push(Stmt::Trap);
+                block.stmts.push(Stmt::Trap { at: None });
             }
         }
         if !split {
@@ -335,14 +335,14 @@ pub(super) fn resolve_internal_pc_loads(
 ) -> HashSet<u64> {
     if !blocks.iter().any(|block| {
         matches!(block.stmts.last(),
-        Some(Stmt::BrIndirect { target }) if *target == Expr::reg(crate::ir::EXCHANGE, 64))
+        Some(Stmt::BrIndirect { target, .. }) if *target == Expr::reg(crate::ir::EXCHANGE, 64))
     }) {
         return HashSet::new();
     }
     let proven = crate::analysis::constant_branch_targets(blocks, image);
     let mut targets = HashSet::new();
     for block in blocks {
-        if !matches!(block.stmts.last(), Some(Stmt::BrIndirect { target })
+        if !matches!(block.stmts.last(), Some(Stmt::BrIndirect { target, .. })
             if *target == Expr::reg(crate::ir::EXCHANGE, 64))
         {
             continue;
@@ -363,6 +363,7 @@ pub(super) fn resolve_internal_pc_loads(
             targets.insert(destination);
             *block.stmts.last_mut().expect("indirect branch") = Stmt::Br {
                 target: Some(destination),
+                at: block.stmts.last().and_then(Stmt::origin),
             };
         }
     }
@@ -698,7 +699,7 @@ pub(crate) fn fold_literals(ir: &mut crate::ir::FunctionIr, image: &Image) {
     for block in &mut ir.blocks {
         for stmt in &mut block.stmts {
             match stmt {
-                Stmt::Assign { value, .. } | Stmt::Ret { value } => fold(value, image),
+                Stmt::Assign { value, .. } | Stmt::Ret { value, .. } => fold(value, image),
                 Stmt::Store { addr, value, .. } => {
                     fold(addr, image);
                     fold(value, image);
@@ -833,6 +834,7 @@ impl Lifter<'_> {
         self.stmts.push(Stmt::Assign {
             dest: RegRef { index, width: 64 },
             value,
+            at: None,
         });
     }
 
@@ -919,7 +921,7 @@ impl Lifter<'_> {
         match instruction.opcode {
             Opcode::NOP | Opcode::IT => {}
             Opcode::B => {
-                self.stmts.push(Stmt::Br { target });
+                self.stmts.push(Stmt::Br { target, at: None });
                 return Some(true);
             }
             Opcode::CBZ | Opcode::CBNZ => {
@@ -935,12 +937,14 @@ impl Lifter<'_> {
                     lhs,
                     rhs: Expr::constant(0),
                     target,
+                    at: None,
                 });
                 return Some(true);
             }
             Opcode::BX if matches!(a, Operand::Reg(reg) if reg.number() == 14) => {
                 self.stmts.push(Stmt::Ret {
                     value: Expr::reg(0, 32),
+                    at: None,
                 });
                 return Some(true);
             }
@@ -948,7 +952,10 @@ impl Lifter<'_> {
                 let Some(value) = operand(a) else {
                     return None;
                 };
-                self.stmts.push(Stmt::BrIndirect { target: low(value) });
+                self.stmts.push(Stmt::BrIndirect {
+                    target: low(value),
+                    at: None,
+                });
                 return Some(true);
             }
             Opcode::BL | Opcode::BLX => {
@@ -996,6 +1003,7 @@ impl Lifter<'_> {
                     {
                         self.stmts.push(Stmt::Ret {
                             value: Expr::reg(0, 32),
+                            at: None,
                         });
                         return Some(true);
                     }
@@ -1273,6 +1281,7 @@ impl Lifter<'_> {
                             addr: address,
                             value: Self::read(register.number(), pc, instruction.thumb),
                             width: 4,
+                            at: None,
                         });
                     }
                 }
@@ -1313,6 +1322,7 @@ impl Lifter<'_> {
                             self.assign(13, value.clone());
                             self.stmts.push(Stmt::Ret {
                                 value: Expr::reg(0, 32),
+                                at: None,
                             });
                             return Some(true);
                         }
@@ -1338,6 +1348,7 @@ impl Lifter<'_> {
                             self.assign(base, value);
                             self.stmts.push(Stmt::BrIndirect {
                                 target: Expr::reg(crate::ir::EXCHANGE, 64),
+                                at: None,
                             });
                             return Some(true);
                         }
@@ -1366,7 +1377,12 @@ impl Lifter<'_> {
                         return None;
                     };
                     super::preserve_compare(&mut self.flags, Write::Memory, &mut self.stmts);
-                    self.stmts.push(Stmt::Store { addr, value, width });
+                    self.stmts.push(Stmt::Store {
+                        addr,
+                        value,
+                        width,
+                        at: None,
+                    });
                     if let Some((base, value)) = back {
                         self.assign(base, value);
                     }
@@ -1418,7 +1434,7 @@ impl Lifter<'_> {
                 );
             }
             Opcode::UDF | Opcode::BKPT => {
-                self.stmts.push(Stmt::Trap);
+                self.stmts.push(Stmt::Trap { at: None });
                 return Some(true);
             }
             _ => return None,
@@ -1731,6 +1747,7 @@ impl Lifter<'_> {
                     addr,
                     value: Self::read(index, pc, instruction.thumb),
                     width: 4,
+                    at: None,
                 });
             }
             offset += 4;
@@ -1752,6 +1769,7 @@ impl Lifter<'_> {
             }
             self.stmts.push(Stmt::Ret {
                 value: Expr::reg(0, 32),
+                at: None,
             });
             return Some(true);
         }
@@ -1770,6 +1788,7 @@ impl Lifter<'_> {
                 width: 64,
             },
             value,
+            at: None,
         });
     }
 
@@ -1879,7 +1898,46 @@ impl Machine for Lifter<'_> {
             _ => None,
         }
     }
-    fn step(&mut self, instruction: &Step, _: u64) -> bool {
+    fn step(&mut self, instruction: &Step, pc: u64) -> bool {
+        let pc = match instruction {
+            Step::Execute { pc, .. } => *pc,
+            Step::Guard { .. } => pc,
+        };
+        let first = self.stmts.len();
+        let ended = self.step_instruction(instruction);
+        for stmt in &mut self.stmts[first..] {
+            if !matches!(stmt, Stmt::Assign { dest, .. } if crate::ir::is_temp(dest.index)) {
+                stmt.set_origin(Some(pc));
+            }
+        }
+        ended
+    }
+    fn take_statements(&mut self) -> Vec<Stmt> {
+        std::mem::take(&mut self.stmts)
+    }
+    fn block_ended(&mut self) {
+        self.flags = None;
+        self.float_comparison = false;
+    }
+    fn block_split(&mut self) {
+        self.flags = None;
+        self.float_comparison = false;
+    }
+    fn exit_flags(&self) -> Option<Flags> {
+        self.flags.clone()
+    }
+    fn flags_touched(&self) -> bool {
+        self.touched
+    }
+    fn enter_block(&mut self, flags: Option<Flags>) {
+        self.float_comparison = false;
+        self.flags = flags;
+        self.touched = false;
+    }
+}
+
+impl Lifter<'_> {
+    fn step_instruction(&mut self, instruction: &Step) -> bool {
         match instruction {
             Step::Guard { condition, target } => {
                 let test = self
@@ -1919,28 +1977,6 @@ impl Machine for Lifter<'_> {
                 }
             }
         }
-    }
-    fn take_statements(&mut self) -> Vec<Stmt> {
-        std::mem::take(&mut self.stmts)
-    }
-    fn block_ended(&mut self) {
-        self.flags = None;
-        self.float_comparison = false;
-    }
-    fn block_split(&mut self) {
-        self.flags = None;
-        self.float_comparison = false;
-    }
-    fn exit_flags(&self) -> Option<Flags> {
-        self.flags.clone()
-    }
-    fn flags_touched(&self) -> bool {
-        self.touched
-    }
-    fn enter_block(&mut self, flags: Option<Flags>) {
-        self.float_comparison = false;
-        self.flags = flags;
-        self.touched = false;
     }
 }
 
@@ -2366,7 +2402,7 @@ mod tests {
             let bytes = image.read_vaddr(0, if thumb { 6 } else { 8 }).unwrap();
             let blocks = super::lift(&image, 0, bytes, &HashSet::new(), &summary).unwrap();
             let statements: Vec<_> = blocks.iter().flat_map(|block| &block.stmts).collect();
-            assert!(statements.iter().any(|stmt| matches!(stmt, Stmt::Assign { dest, value: Expr::Const(value) } if dest.index == 14 && *value == if thumb { 5 } else { 4 })));
+            assert!(statements.iter().any(|stmt| matches!(stmt, Stmt::Assign { dest, value: Expr::Const(value), .. } if dest.index == 14 && *value == if thumb { 5 } else { 4 })));
             let args = statements
                 .iter()
                 .find_map(|stmt| match stmt {

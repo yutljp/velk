@@ -113,6 +113,7 @@ pub(super) fn lift(lifter: &mut Lifter, instruction: &Instruction) -> bool {
         inputs.push(expected.clone());
     }
     lifter.stmts.push(Stmt::Machine {
+        at: None,
         instruction: MachineInstruction::Atomic {
             op,
             width,
@@ -177,6 +178,7 @@ fn wide_compare_exchange(lifter: &mut Lifter, addr: Expr, width: u8) {
     let low_expected = Lifter::read_reg(RAX, half);
     let high_expected = Lifter::read_reg(RDX, half);
     lifter.stmts.push(Stmt::Machine {
+        at: None,
         instruction: MachineInstruction::Atomic {
             op: AtomicOp::CompareExchange,
             width,
@@ -224,6 +226,7 @@ fn wide_compare_exchange(lifter: &mut Lifter, addr: Expr, width: u8) {
                 width: 64,
             },
             value,
+            at: None,
         });
     }
     lifter.assign(RAX, 64, Expr::reg(OUTPUT + 2 + RAX, 64));

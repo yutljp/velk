@@ -211,6 +211,7 @@ fn uncertain_integer_layouts_keep_the_original_accesses() {
                 for stmt in ir.blocks.iter_mut().flat_map(|block| &mut block.stmts) {
                     if let Stmt::Br {
                         target: Some(target),
+                        ..
                     } = stmt
                     {
                         *target = u64::MAX;
@@ -240,7 +241,7 @@ fn uncertain_integer_layouts_keep_the_original_accesses() {
                 symbols.reserved_names.insert("va_arg".to_owned());
             }
             _ => {
-                let Some(Stmt::Ret { value }) = ir
+                let Some(Stmt::Ret { value, .. }) = ir
                     .blocks
                     .last_mut()
                     .and_then(|block| block.stmts.last_mut())
@@ -609,7 +610,7 @@ fn optimized_integer_loops_require_exact_offset_and_stack_updates() {
                 **rhs = Expr::Const(16);
             }
             7 => {
-                let Stmt::Br { target } = &mut ir.blocks[7].stmts[2] else {
+                let Stmt::Br { target, .. } = &mut ir.blocks[7].stmts[2] else {
                     panic!("stack edge")
                 };
                 *target = Some(exit_target);

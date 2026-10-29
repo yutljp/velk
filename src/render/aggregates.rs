@@ -148,7 +148,12 @@ pub(super) fn render(nodes: &[Node], ctx: &Ctx<'_>) -> Option<(usize, String)> {
     };
     let mut values = vec![None; layout.fields.len()];
     for node in nodes.iter().take(layout.fields.len()) {
-        let Node::Stmt(stmt @ Stmt::Store { addr, value, width }) = node else {
+        let Node::Stmt(
+            stmt @ Stmt::Store {
+                addr, value, width, ..
+            },
+        ) = node
+        else {
             return None;
         };
         let key = super::render_expr(addr, ctx);

@@ -167,14 +167,16 @@ fn operator(op: BinOp) -> &'static str {
 
 fn render_stmt(stmt: &Stmt, isa: Isa) -> String {
     match stmt {
-        Stmt::Assign { dest, value } => {
+        Stmt::Assign { dest, value, .. } => {
             format!(
                 "{} = {}",
                 reg_name(isa, dest.index, dest.width),
                 value.render(isa)
             )
         }
-        Stmt::Store { addr, value, width } => format!(
+        Stmt::Store {
+            addr, value, width, ..
+        } => format!(
             "store{}({}, {})",
             width * 8,
             value.render(isa),
@@ -185,24 +187,26 @@ fn render_stmt(stmt: &Stmt, isa: Isa) -> String {
             lhs,
             rhs,
             target,
+            ..
         } => format!(
             "brif {} {}, {} -> 0x{target:x}",
             cond.text(),
             lhs.render(isa),
             rhs.render(isa)
         ),
-        Stmt::BrifFlags { cond, target } => {
+        Stmt::BrifFlags { cond, target, .. } => {
             format!("brif {} -> 0x{target:x}", cond.text())
         }
-        Stmt::Br { target } => match target {
+        Stmt::Br { target, .. } => match target {
             Some(target) => format!("br 0x{target:x}"),
             None => "br <dynamic>".to_owned(),
         },
-        Stmt::BrIndirect { target } => format!("br {}", target.render(isa)),
+        Stmt::BrIndirect { target, .. } => format!("br {}", target.render(isa)),
         Stmt::Switch {
             index,
             cases,
             default,
+            ..
         } => {
             let entries: Vec<String> = cases
                 .iter()
@@ -239,11 +243,12 @@ fn render_stmt(stmt: &Stmt, isa: Isa) -> String {
             };
             format!("{assigned}{call}{suffix}")
         }
-        Stmt::Ret { value } => format!("ret {}", value.render(isa)),
+        Stmt::Ret { value, .. } => format!("ret {}", value.render(isa)),
         Stmt::Machine {
             instruction,
             inputs,
             outputs,
+            ..
         } => format!(
             "{:?} {:?} ({})",
             instruction,
@@ -255,7 +260,7 @@ fn render_stmt(stmt: &Stmt, isa: Isa) -> String {
                 .join(", ")
         ),
         Stmt::Unsupported { text, .. } => format!("unsupported: {text}"),
-        Stmt::Trap => "trap".to_owned(),
+        Stmt::Trap { .. } => "trap".to_owned(),
     }
 }
 

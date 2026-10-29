@@ -23,6 +23,7 @@ fn call_width_case() -> FunctionIr {
                 outputs,
                 clobbers: None,
                 via: None,
+                at: None,
             },
             Stmt::Ret {
                 value: Expr::bin(
@@ -30,6 +31,7 @@ fn call_width_case() -> FunctionIr {
                     Expr::reg(crate::ir::VARIABLE_BASE, 64),
                     Expr::Const(0xffff_ffff),
                 ),
+                at: None,
             },
         ],
     );
@@ -88,6 +90,7 @@ fn call_output_width_keeps_a_live_wide_store_and_unnamed_argument() {
             addr: Expr::Const(0x4000_0000),
             value: Expr::reg(1, 64),
             width: 8,
+            at: None,
         },
     );
     let stored = check_call_width(stored, CType::I64);
@@ -105,6 +108,7 @@ fn call_output_width_keeps_a_live_wide_store_and_unnamed_argument() {
             outputs: Vec::new(),
             clobbers: Some(Default::default()),
             via: None,
+            at: None,
         },
     );
     let unnamed = check_call_width(unnamed, CType::I64);
@@ -147,15 +151,22 @@ fn call_output_width_handles_successor_joins_and_loop_uses() {
         lhs: Expr::reg(2, 64),
         rhs: Expr::Const(0),
         target: 20,
+        at: None,
     });
     joined.blocks.extend([
         Block {
             start: 10,
-            stmts: vec![Stmt::Br { target: Some(30) }],
+            stmts: vec![Stmt::Br {
+                target: Some(30),
+                at: None,
+            }],
         },
         Block {
             start: 20,
-            stmts: vec![Stmt::Br { target: Some(30) }],
+            stmts: vec![Stmt::Br {
+                target: Some(30),
+                at: None,
+            }],
         },
         Block {
             start: 30,
@@ -164,6 +175,7 @@ fn call_output_width_handles_successor_joins_and_loop_uses() {
                     addr: Expr::Const(0x4000_0000),
                     value: Expr::reg(1, 64),
                     width: 8,
+                    at: None,
                 },
                 returned.clone(),
             ],
@@ -177,7 +189,10 @@ fn call_output_width_handles_successor_joins_and_loop_uses() {
     check_call_width(joined, CType::I64);
     let mut looping = call_width_case();
     looping.blocks[0].stmts.pop();
-    looping.blocks[0].stmts.push(Stmt::Br { target: Some(10) });
+    looping.blocks[0].stmts.push(Stmt::Br {
+        target: Some(10),
+        at: None,
+    });
     looping.blocks.extend([
         Block {
             start: 10,
@@ -186,6 +201,7 @@ fn call_output_width_handles_successor_joins_and_loop_uses() {
                     addr: Expr::Const(0x4000_0000),
                     value: Expr::reg(1, 64),
                     width: 8,
+                    at: None,
                 },
                 Stmt::Assign {
                     dest: crate::ir::RegRef {
@@ -193,12 +209,14 @@ fn call_output_width_handles_successor_joins_and_loop_uses() {
                         width: 64,
                     },
                     value: Expr::bin(BinOp::Sub, Expr::reg(2, 64), Expr::Const(1)),
+                    at: None,
                 },
                 Stmt::Brif {
                     cond: crate::ir::Cond::Eq,
                     lhs: Expr::reg(2, 64),
                     rhs: Expr::Const(0),
                     target: 10,
+                    at: None,
                 },
             ],
         },
@@ -226,6 +244,7 @@ fn call_output_width_distinguishes_overwrites_and_pre_call_sources() {
                 width: 32,
             },
             value: Expr::Const(7),
+            at: None,
         },
     );
     overwritten.blocks[0].stmts.insert(
@@ -234,6 +253,7 @@ fn call_output_width_distinguishes_overwrites_and_pre_call_sources() {
             addr: Expr::Const(0x4000_0000),
             value: Expr::reg(1, 64),
             width: 8,
+            at: None,
         },
     );
     assert!(
@@ -264,6 +284,7 @@ fn call_output_width_distinguishes_overwrites_and_pre_call_sources() {
             addr: Expr::Const(0x4000_0000),
             value: Expr::reg(1, 64),
             width: 8,
+            at: None,
         },
     );
     check_call_width(preserved, CType::I64);
@@ -278,6 +299,7 @@ fn call_output_width_retains_entry_high_bits_before_a_later_narrow_write() {
             addr: Expr::Const(0x4000_0000),
             value: Expr::reg(1, 64),
             width: 8,
+            at: None,
         },
     );
     ir.blocks[0].stmts.insert(
@@ -288,6 +310,7 @@ fn call_output_width_retains_entry_high_bits_before_a_later_narrow_write() {
                 width: 32,
             },
             value: Expr::Const(7),
+            at: None,
         },
     );
     ir.blocks[0].stmts.insert(
@@ -296,6 +319,7 @@ fn call_output_width_retains_entry_high_bits_before_a_later_narrow_write() {
             addr: Expr::Const(0x4000_0008),
             value: Expr::reg(1, 64),
             width: 8,
+            at: None,
         },
     );
     let live = super::live_call_outputs(&ir);
@@ -324,6 +348,7 @@ fn call_output_width_entry_proof_includes_unnamed_bare_and_preserved_call_reads(
                 outputs: Vec::new(),
                 clobbers: Some(Default::default()),
                 via: None,
+                at: None,
             },
         );
         ir.blocks[0].stmts.insert(
@@ -334,6 +359,7 @@ fn call_output_width_entry_proof_includes_unnamed_bare_and_preserved_call_reads(
                     width: 32,
                 },
                 value: Expr::Const(7),
+                at: None,
             },
         );
         let live = super::live_call_outputs(&ir);
@@ -364,6 +390,7 @@ fn call_output_width_entry_proof_includes_unnamed_bare_and_preserved_call_reads(
             }],
             clobbers: Some(Default::default()),
             via: None,
+            at: None,
         },
     );
     ir.blocks[0].stmts.insert(
@@ -374,6 +401,7 @@ fn call_output_width_entry_proof_includes_unnamed_bare_and_preserved_call_reads(
                 width: 32,
             },
             value: Expr::Const(7),
+            at: None,
         },
     );
     ir.blocks[0].stmts.insert(
@@ -382,6 +410,7 @@ fn call_output_width_entry_proof_includes_unnamed_bare_and_preserved_call_reads(
             addr: Expr::Const(0x4000_0000),
             value: Expr::reg(saved, 64),
             width: 8,
+            at: None,
         },
     );
     let live = super::live_call_outputs(&ir);
@@ -403,14 +432,17 @@ fn call_output_width_avoids_entry_solves_without_dead_wide_outputs() {
                     width: 32,
                 },
                 value: Expr::Const(7),
+                at: None,
             },
             Stmt::Store {
                 addr: Expr::Const(0x4000_0000),
                 value: Expr::reg(1, 64),
                 width: 8,
+                at: None,
             },
             Stmt::Ret {
                 value: Expr::Const(0),
+                at: None,
             },
         ],
     );
@@ -429,6 +461,7 @@ fn call_output_width_avoids_entry_solves_without_dead_wide_outputs() {
     outputs.retain(|output| output.register == 1);
     used.blocks[0].stmts[1] = Stmt::Ret {
         value: Expr::reg(1, 64),
+        at: None,
     };
     let live = super::live_call_outputs(&used);
     assert!(super::call_output_entry_demands(&used, &live).is_none());
@@ -443,6 +476,7 @@ fn call_output_width_uses_all_live_fallback_for_unresolved_control() {
     opaque.blocks[0].stmts.insert(
         1,
         Stmt::Unsupported {
+            at: None,
             text: "unknown".to_owned(),
             writes: Some(vec![1]),
         },
@@ -451,11 +485,13 @@ fn call_output_width_uses_all_live_fallback_for_unresolved_control() {
     let mut external = call_width_case();
     external.blocks[0].stmts[1] = Stmt::Br {
         target: Some(0xffff),
+        at: None,
     };
     controls.push(external);
     let mut indirect = call_width_case();
     indirect.blocks[0].stmts[1] = Stmt::BrIndirect {
         target: Expr::reg(2, 64),
+        at: None,
     };
     controls.push(indirect);
     let mut switched = call_width_case();
@@ -463,6 +499,7 @@ fn call_output_width_uses_all_live_fallback_for_unresolved_control() {
         index: Expr::reg(2, 64),
         cases: Vec::new(),
         default: None,
+        at: None,
     };
     controls.push(switched);
     let mut exceptional = call_width_case();
@@ -471,6 +508,7 @@ fn call_output_width_uses_all_live_fallback_for_unresolved_control() {
         start: 10,
         stmts: vec![Stmt::Ret {
             value: Expr::Const(0),
+            at: None,
         }],
     });
     controls.push(exceptional);
@@ -486,6 +524,7 @@ fn call_output_width_shares_live_output_facts_with_return_widths() {
     wide.ret_type = CType::U32;
     wide.blocks[0].stmts[1] = Stmt::Ret {
         value: Expr::reg(1, 64),
+        at: None,
     };
     wide.blocks[0].stmts.insert(
         1,
@@ -493,6 +532,7 @@ fn call_output_width_shares_live_output_facts_with_return_widths() {
             addr: Expr::Const(0x4000_0000),
             value: Expr::Const(0),
             width: 8,
+            at: None,
         },
     );
     let live = super::live_call_outputs(&wide);
@@ -507,6 +547,7 @@ fn call_output_width_shares_live_output_facts_with_return_widths() {
     let mut narrow = call_width_case();
     narrow.blocks[0].stmts[1] = Stmt::Ret {
         value: Expr::reg(1, 64),
+        at: None,
     };
     narrow.blocks[0].stmts.insert(
         1,
@@ -516,6 +557,7 @@ fn call_output_width_shares_live_output_facts_with_return_widths() {
                 width: 32,
             },
             value: Expr::Const(7),
+            at: None,
         },
     );
     let live = super::live_call_outputs(&narrow);
@@ -597,6 +639,7 @@ fn pointer_copy(dest: u16, index: u16) -> Stmt {
             width: 64,
         },
         value: Expr::reg(index, 64),
+        at: None,
     }
 }
 
@@ -622,6 +665,7 @@ fn pointer_import(dest: u16) -> Stmt {
         }],
         clobbers: Some([0].into_iter().collect()),
         via: None,
+        at: None,
     }
 }
 
@@ -667,9 +711,11 @@ fn pointer_returns_follow_parameter_copies_and_same_type_selects() {
             addr: Expr::reg(3, 64),
             value: Expr::reg(2, 64),
             width: 8,
+            at: None,
         },
         Stmt::Ret {
             value: Expr::reg(variable, 64),
+            at: None,
         },
     ]);
     let inferred = check_pointer_return(ir, CType::pointer_to(CType::Void));
@@ -682,7 +728,10 @@ fn pointer_returns_follow_parameter_copies_and_same_type_selects() {
         els: Box::new(Expr::reg(1, 64)),
     };
     check_pointer_return(
-        pointer_case(vec![Stmt::Ret { value: selected }]),
+        pointer_case(vec![Stmt::Ret {
+            value: selected,
+            at: None,
+        }]),
         CType::pointer_to(CType::Void),
     );
 }
@@ -694,12 +743,14 @@ fn renderer_pointer_inference_keeps_its_existing_bare_parameter_scope() {
         pointer_copy(variable, 0),
         Stmt::Ret {
             value: Expr::reg(variable, 64),
+            at: None,
         },
     ]);
     super::apply_pointer_return(&mut copied);
     assert_eq!(copied.ret_type, CType::I64);
     let mut bare = pointer_case(vec![Stmt::Ret {
         value: Expr::reg(0, 64),
+        at: None,
     }]);
     super::apply_pointer_return(&mut bare);
     assert_eq!(bare.ret_type, CType::pointer_to(CType::Void));
@@ -719,20 +770,34 @@ fn pointer_join(second: CType) -> FunctionIr {
                 lhs: Expr::reg(2, 64),
                 rhs: Expr::Const(0),
                 target: 20,
+                at: None,
             }],
         },
         Block {
             start: 10,
-            stmts: vec![pointer_copy(variable, 0), Stmt::Br { target: Some(30) }],
+            stmts: vec![
+                pointer_copy(variable, 0),
+                Stmt::Br {
+                    target: Some(30),
+                    at: None,
+                },
+            ],
         },
         Block {
             start: 20,
-            stmts: vec![pointer_copy(variable, 1), Stmt::Br { target: Some(30) }],
+            stmts: vec![
+                pointer_copy(variable, 1),
+                Stmt::Br {
+                    target: Some(30),
+                    at: None,
+                },
+            ],
         },
         Block {
             start: 30,
             stmts: vec![Stmt::Ret {
                 value: Expr::reg(variable, 64),
+                at: None,
             }],
         },
     ];
@@ -777,9 +842,11 @@ fn pointer_returns_follow_an_import_result_across_a_store_and_another_call() {
             addr: Expr::reg(3, 64),
             value: Expr::reg(2, 64),
             width: 8,
+            at: None,
         },
         Stmt::Ret {
             value: Expr::reg(saved, 64),
+            at: None,
         },
     ]);
     let inferred = check_pointer_return(ir, CType::pointer_to(CType::Void));
@@ -792,12 +859,14 @@ fn pointer_return_inference_does_not_reuse_an_overwritten_type() {
     let constant = |index| Stmt::Assign {
         dest: crate::ir::RegRef { index, width: 64 },
         value: Expr::Const(7),
+        at: None,
     };
     check_pointer_return(
         pointer_case(vec![
             constant(0),
             Stmt::Ret {
                 value: Expr::reg(0, 64),
+                at: None,
             },
         ]),
         CType::I64,
@@ -807,6 +876,7 @@ fn pointer_return_inference_does_not_reuse_an_overwritten_type() {
         constant(variable),
         Stmt::Ret {
             value: Expr::reg(variable, 64),
+            at: None,
         },
     ]);
     ir.value_types
@@ -826,6 +896,7 @@ fn pointer_return_inference_does_not_reuse_an_overwritten_type() {
             unknown,
             Stmt::Ret {
                 value: Expr::reg(variable, 64),
+                at: None,
             },
         ]),
         CType::I64,
@@ -844,9 +915,11 @@ fn pointer_return_inference_rejects_truncation_arithmetic_and_missing_outputs() 
                         width: dest_width,
                     },
                     value: Expr::reg(0, read_width),
+                    at: None,
                 },
                 Stmt::Ret {
                     value: Expr::reg(variable, 64),
+                    at: None,
                 },
             ]),
             CType::I64,
@@ -855,6 +928,7 @@ fn pointer_return_inference_rejects_truncation_arithmetic_and_missing_outputs() 
     check_pointer_return(
         pointer_case(vec![Stmt::Ret {
             value: Expr::bin(BinOp::Add, Expr::reg(0, 64), Expr::Const(1)),
+            at: None,
         }]),
         CType::I64,
     );
@@ -870,6 +944,7 @@ fn pointer_return_inference_rejects_truncation_arithmetic_and_missing_outputs() 
                 call,
                 Stmt::Ret {
                     value: Expr::reg(variable, 64),
+                    at: None,
                 },
             ]),
             CType::I64,
@@ -881,6 +956,7 @@ fn pointer_return_inference_rejects_truncation_arithmetic_and_missing_outputs() 
 fn pointer_return_inference_respects_declarations_and_pointee_identity() {
     let returned = Stmt::Ret {
         value: Expr::reg(0, 64),
+        at: None,
     };
     let mut declared = pointer_case(vec![returned.clone()]);
     declared.declared_signature = Some(crate::ir::DeclaredSignature {
@@ -911,6 +987,7 @@ fn pointer_return_inference_refuses_unknown_exceptional_and_cyclic_edges() {
     use crate::ir::Block;
     let returned = Stmt::Ret {
         value: Expr::reg(0, 64),
+        at: None,
     };
     check_pointer_return(
         pointer_case(vec![Stmt::unsupported("unknown"), returned.clone()]),
@@ -923,6 +1000,7 @@ fn pointer_return_inference_refuses_unknown_exceptional_and_cyclic_edges() {
                 lhs: Expr::reg(2, 64),
                 rhs: Expr::Const(0),
                 target: 0xffff,
+                at: None,
             },
             returned.clone(),
         ]),
@@ -947,11 +1025,15 @@ fn pointer_return_inference_refuses_unknown_exceptional_and_cyclic_edges() {
                 lhs: Expr::reg(2, 64),
                 rhs: Expr::Const(0),
                 target: 20,
+                at: None,
             }],
         },
         Block {
             start: 10,
-            stmts: vec![Stmt::Br { target: Some(0) }],
+            stmts: vec![Stmt::Br {
+                target: Some(0),
+                at: None,
+            }],
         },
         Block {
             start: 20,
@@ -972,9 +1054,11 @@ fn inferred_pointer_returns_keep_local_pointer_types_in_generated_c() {
             addr: Expr::reg(3, 64),
             value: Expr::reg(2, 64),
             width: 8,
+            at: None,
         },
         Stmt::Ret {
             value: Expr::reg(saved, 64),
+            at: None,
         },
     ]);
     ir.name = Some("copy_and_note".to_owned());
@@ -1000,6 +1084,7 @@ fn parameter_through(op: BinOp) -> CType {
         Isa::X86_64,
         vec![Stmt::Ret {
             value: Expr::bin(op, Expr::reg(7, 32), Expr::Const(3)),
+            at: None,
         }],
     );
     ir.params = vec![crate::ir::Param {
@@ -1024,6 +1109,7 @@ fn returns_register(isa: Isa) -> CType {
         isa,
         vec![Stmt::Ret {
             value: Expr::reg(0, 64),
+            at: None,
         }],
     );
     apply_void_return(&mut ir);
@@ -1048,13 +1134,14 @@ fn a_return_of_only_the_low_byte_is_a_byte() {
                 Expr::bin(BinOp::And, Expr::reg(0, 64), Expr::Const(!0xff)),
                 flag.clone(),
             ),
+            at: None,
         }],
     );
     apply_partial_return(&mut ir);
     assert_eq!(ir.ret_type, CType::int(1, false));
     assert!(matches!(
         &ir.blocks[0].stmts[0],
-        Stmt::Ret { value } if *value == Expr::bin(BinOp::And, flag, Expr::Const(0xff))
+        Stmt::Ret { value, .. } if *value == Expr::bin(BinOp::And, flag, Expr::Const(0xff))
     ));
 }
 
@@ -1080,6 +1167,7 @@ fn returns_r15(whole: bool) -> FunctionIr {
                     width: 64,
                 },
                 value: one,
+                at: None,
             },
             Stmt::Assign {
                 dest: crate::ir::RegRef {
@@ -1087,9 +1175,11 @@ fn returns_r15(whole: bool) -> FunctionIr {
                     width: 64,
                 },
                 value: Expr::bin(BinOp::And, Expr::reg(R15, 64), Expr::Const(0xffff_ffff)),
+                at: None,
             },
             Stmt::Ret {
                 value: Expr::reg(0, 64),
+                at: None,
             },
         ],
     );
@@ -1104,7 +1194,7 @@ fn a_return_copied_from_a_byte_of_another_register_is_a_byte() {
     assert_eq!(ir.ret_type, CType::int(1, false));
     assert!(matches!(
         &ir.blocks[0].stmts[2],
-        Stmt::Ret { value } if *value == Expr::bin(BinOp::And, Expr::reg(0, 64), Expr::Const(0xff))
+        Stmt::Ret { value, .. } if *value == Expr::bin(BinOp::And, Expr::reg(0, 64), Expr::Const(0xff))
     ));
     assert_eq!(returns_r15(true).ret_type, CType::U32);
 }
@@ -1155,6 +1245,7 @@ fn scalar_float_prototypes_type_only_the_matching_fp_output() {
                         outputs,
                         clobbers: None,
                         via: None,
+                        at: None,
                     }],
                 );
                 super::apply_prototypes(&mut ir, &image);
@@ -1188,9 +1279,11 @@ fn a_defined_call_output_keeps_an_integer_return_nonvoid() {
                 ),
                 clobbers: Some([0].into_iter().collect()),
                 via: None,
+                at: None,
             },
             Stmt::Ret {
                 value: Expr::reg(0, 64),
+                at: None,
             },
         ],
     );
@@ -1207,6 +1300,7 @@ fn a_register_reads_as_signed_unless_more_unsigned_operations_read_it() {
         lhs: Expr::reg(7, 64),
         rhs: Expr::Const(0),
         target: 0,
+        at: None,
     };
     let evidence = |conds: &[Cond]| {
         let ir = FunctionIr::single_block(
@@ -1235,9 +1329,11 @@ fn wrapping_parameters_use_unsigned_types_without_signed_evidence() {
                         width: width as u8,
                     },
                     value: Expr::bin(BinOp::Add, Expr::reg(7, width as u8), Expr::Const(1)),
+                    at: None,
                 },
                 Stmt::Ret {
                     value: Expr::reg(VARIABLE_BASE, width as u8),
+                    at: None,
                 },
             ],
         );
@@ -1267,9 +1363,11 @@ fn wrapping_parameters_keep_signed_types_when_signed_operations_read_them() {
                     width: 64,
                 },
                 value: Expr::bin(BinOp::Add, Expr::reg(7, 64), Expr::Const(1)),
+                at: None,
             },
             Stmt::Ret {
                 value: Expr::bin(BinOp::DivS, Expr::reg(7, 64), Expr::Const(2)),
+                at: None,
             },
         ],
     );
@@ -1293,9 +1391,11 @@ fn wrapping_parameters_keep_signed_types_when_signed_operations_read_them() {
                 width: 64,
             },
             value: Expr::bin(BinOp::Add, Expr::reg(7, 64), Expr::Const(1)),
+            at: None,
         },
         Stmt::Ret {
             value: Expr::reg(VARIABLE_BASE, 64),
+            at: None,
         },
     ];
 
@@ -1397,6 +1497,7 @@ fn format_argument_written_by_body_is_mutable() {
                 addr: Expr::reg(7, 64),
                 value: Expr::Const(65),
                 width: 1,
+                at: None,
             });
         }
         let mut ir = FunctionIr::single_block(Isa::X86_64, statements);

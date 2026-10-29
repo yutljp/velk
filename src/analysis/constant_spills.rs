@@ -45,7 +45,7 @@ pub(super) fn forward(ir: &mut FunctionIr, image: &Image) {
             if matches!(stmt, Stmt::Call { .. }) {
                 calls.push(frame);
             }
-            if let Stmt::Assign { dest, value } = stmt
+            if let Stmt::Assign { dest, value, .. } = stmt
                 && dest.index == sp
             {
                 frame = frame.and_then(|frame| frame_slot(value, frame, sp));
@@ -100,7 +100,9 @@ pub(super) fn forward(ir: &mut FunctionIr, image: &Image) {
                 pending.retain(|stored| frame.is_some_and(|frame| stored.offset >= frame));
             }
             match stmt {
-                Stmt::Store { addr, value, width } => {
+                Stmt::Store {
+                    addr, value, width, ..
+                } => {
                     let Some(offset) = frame_slot(addr, 0, sp) else {
                         pending.clear();
                         continue;
@@ -244,7 +246,11 @@ fn writes_only_frame(image: &Image, address: u64) -> bool {
                 }
             }
             Stmt::Assign { dest, .. } if dest.index != sp => {}
-            Stmt::Brif { .. } | Stmt::Br { target: Some(_) } | Stmt::Ret { .. } => {}
+            Stmt::Brif { .. }
+            | Stmt::Br {
+                target: Some(_), ..
+            }
+            | Stmt::Ret { .. } => {}
             _ => return false,
         }
     }
@@ -260,13 +266,14 @@ fn closed_control_flow(blocks: &[Block]) -> bool {
         let closed_control_flow = match block.stmts.last() {
             Some(Stmt::Ret { .. }) => true,
             Some(
-                Stmt::Br { target: None }
+                Stmt::Br { target: None, .. }
                 | Stmt::BrIndirect { .. }
                 | Stmt::Switch { .. }
                 | Stmt::BrifFlags { .. },
             ) => false,
             Some(Stmt::Br {
                 target: Some(target),
+                ..
             }) => target_exists(*target),
             Some(Stmt::Brif { target, .. }) => target_exists(*target) && index + 1 < blocks.len(),
             _ => index + 1 < blocks.len(),
@@ -325,12 +332,16 @@ mod tests {
             stmts: Vec::new(),
         }];
         assert!(!closed_control_flow(&blocks));
-        blocks[0].stmts.push(Stmt::Br { target: Some(32) });
+        blocks[0].stmts.push(Stmt::Br {
+            target: Some(32),
+            at: None,
+        });
         assert!(!closed_control_flow(&blocks));
         blocks.push(Block {
             start: 32,
             stmts: vec![Stmt::Ret {
                 value: Expr::Const(0),
+                at: None,
             }],
         });
         assert!(closed_control_flow(&blocks));
@@ -339,6 +350,7 @@ mod tests {
             lhs: Expr::Const(0),
             rhs: Expr::Const(0),
             target: 16,
+            at: None,
         }];
         assert!(!closed_control_flow(&blocks));
     }

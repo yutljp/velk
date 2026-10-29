@@ -103,12 +103,14 @@ fn stored_code_addresses_use_the_target_pointer_width() {
                     addr: slot.clone(),
                     value: Expr::Const(0x80),
                     width,
+                    at: None,
                 }];
                 if overlap {
                     stmts.push(Stmt::Store {
                         addr: slot.clone(),
                         value: Expr::reg(3, 64),
                         width: 1,
+                        at: None,
                     });
                 }
                 stmts.push(crate::lift::call_through(
@@ -122,6 +124,7 @@ fn stored_code_addresses_use_the_target_pointer_width() {
                 ));
                 stmts.push(Stmt::Ret {
                     value: Expr::reg(0, 64),
+                    at: None,
                 });
                 let mut blocks = [Block { start: 0, stmts }];
                 resolve(&mut blocks, &[], &image);
@@ -503,15 +506,18 @@ fn constant_return_cfg_checks_every_exit_and_return() {
             width: 64,
         },
         value: Expr::Const(0x80),
+        at: None,
     };
     let ret = Stmt::Ret {
         value: Expr::reg(0, 64),
+        at: None,
     };
     let branch = Stmt::Brif {
         cond: Cond::Ne,
         lhs: Expr::reg(7, 64),
         rhs: Expr::Const(0),
         target: 0x48,
+        at: None,
     };
     let valid = vec![
         Block {
@@ -529,37 +535,55 @@ fn constant_return_cfg_checks_every_exit_and_return() {
     ];
     assert_eq!(returned_from(&image, 0x40, 0x50, 0, &valid), Some(0x80));
     for last in [
-        Stmt::Br { target: None },
-        Stmt::Br { target: Some(0x40) },
-        Stmt::Br { target: Some(0x46) },
-        Stmt::Br { target: Some(0x80) },
+        Stmt::Br {
+            target: None,
+            at: None,
+        },
+        Stmt::Br {
+            target: Some(0x40),
+            at: None,
+        },
+        Stmt::Br {
+            target: Some(0x46),
+            at: None,
+        },
+        Stmt::Br {
+            target: Some(0x80),
+            at: None,
+        },
         Stmt::BrIndirect {
             target: Expr::reg(7, 64),
+            at: None,
         },
         Stmt::Brif {
             cond: Cond::Ne,
             lhs: Expr::reg(7, 64),
             rhs: Expr::Const(0),
             target: 0x46,
+            at: None,
         },
         Stmt::BrifFlags {
             cond: Cond::Ne,
             target: 0x46,
+            at: None,
         },
         Stmt::Switch {
             index: Expr::reg(7, 64),
             cases: vec![(0, 0x44)],
             default: None,
+            at: None,
         },
         Stmt::Switch {
             index: Expr::reg(7, 64),
             cases: vec![(0, 0x46)],
             default: Some(0x48),
+            at: None,
         },
         Stmt::Switch {
             index: Expr::reg(7, 64),
             cases: vec![(0, 0x44)],
             default: Some(0x46),
+            at: None,
         },
     ] {
         let mut blocks = valid.clone();
@@ -571,7 +595,7 @@ fn constant_return_cfg_checks_every_exit_and_return() {
         );
     }
     let mut trap = valid.clone();
-    trap[2].stmts = vec![Stmt::Trap];
+    trap[2].stmts = vec![Stmt::Trap { at: None }];
     assert_eq!(returned_from(&image, 0x40, 0x50, 0, &trap), Some(0x80));
     let mut conflict = valid.clone();
     conflict[2].stmts.insert(
@@ -582,6 +606,7 @@ fn constant_return_cfg_checks_every_exit_and_return() {
                 width: 64,
             },
             value: Expr::Const(0x1000),
+            at: None,
         },
     );
     assert_eq!(returned_from(&image, 0x40, 0x50, 0, &conflict), None);
@@ -593,7 +618,7 @@ fn constant_return_cfg_checks_every_exit_and_return() {
     assert_eq!(returned_from(&image, 0x40, 0x50, 0, &unreached), None);
     for stmts in [
         vec![assign],
-        vec![Stmt::Trap],
+        vec![Stmt::Trap { at: None }],
         vec![],
         vec![ret.clone(), ret],
     ] {
@@ -648,6 +673,7 @@ fn constant_return_outputs_use_provenance_and_simultaneous_sources() {
         ],
         clobbers: changed,
         via: None,
+        at: None,
     };
     for _ in 0..2 {
         let mut state = State::entry();
@@ -743,6 +769,7 @@ fn returned_pointer_facts_do_not_cross_register_clobbers() {
                 width: 64,
             },
             value: Expr::reg(7, 64),
+            at: None,
         },
         (0, 1),
     );
@@ -755,6 +782,7 @@ fn returned_pointer_facts_do_not_cross_register_clobbers() {
                 width: 64,
             },
             value: Expr::reg(0, 64),
+            at: None,
         },
         (0, 1),
     );
@@ -785,6 +813,7 @@ fn returned_pointer_facts_require_a_closed_caller_cfg() {
     let indirect = crate::lift::call_through(crate::ir::CallKind::Invoke, &image, Expr::reg(0, 64));
     let ret = Stmt::Ret {
         value: Expr::reg(0, 64),
+        at: None,
     };
     let blocks = vec![
         Block {
@@ -794,11 +823,18 @@ fn returned_pointer_facts_require_a_closed_caller_cfg() {
                 lhs: Expr::reg(7, 64),
                 rhs: Expr::Const(0),
                 target: 16,
+                at: None,
             }],
         },
         Block {
             start: 8,
-            stmts: vec![factory.clone(), Stmt::Br { target: Some(24) }],
+            stmts: vec![
+                factory.clone(),
+                Stmt::Br {
+                    target: Some(24),
+                    at: None,
+                },
+            ],
         },
         Block {
             start: 16,
@@ -809,9 +845,11 @@ fn returned_pointer_facts_require_a_closed_caller_cfg() {
                         width: 64,
                     },
                     value: Expr::Const(0x1234),
+                    at: None,
                 },
                 Stmt::BrIndirect {
                     target: Expr::reg(6, 64),
+                    at: None,
                 },
             ],
         },
@@ -823,19 +861,28 @@ fn returned_pointer_facts_require_a_closed_caller_cfg() {
     for exit in [
         Stmt::BrIndirect {
             target: Expr::reg(6, 64),
+            at: None,
         },
-        Stmt::Br { target: None },
-        Stmt::Br { target: Some(0x80) },
+        Stmt::Br {
+            target: None,
+            at: None,
+        },
+        Stmt::Br {
+            target: Some(0x80),
+            at: None,
+        },
         Stmt::Brif {
             cond: Cond::Ne,
             lhs: Expr::reg(7, 64),
             rhs: Expr::Const(0),
             target: 0x80,
+            at: None,
         },
         Stmt::Switch {
             index: Expr::reg(7, 64),
             cases: vec![(0, 24)],
             default: None,
+            at: None,
         },
     ] {
         let mut caller = blocks.clone();
@@ -852,7 +899,10 @@ fn returned_pointer_facts_require_a_closed_caller_cfg() {
         ));
     }
     let mut known_join = blocks;
-    known_join[2].stmts[1] = Stmt::Br { target: Some(24) };
+    known_join[2].stmts[1] = Stmt::Br {
+        target: Some(24),
+        at: None,
+    };
     assert!(closed_normal_flow(&known_join, Edges::Any));
     resolve(&mut known_join, &[], &image);
     assert!(matches!(
@@ -867,7 +917,13 @@ fn returned_pointer_facts_require_a_closed_caller_cfg() {
     let mut looped = vec![
         Block {
             start: 0,
-            stmts: vec![factory, Stmt::Br { target: Some(8) }],
+            stmts: vec![
+                factory,
+                Stmt::Br {
+                    target: Some(8),
+                    at: None,
+                },
+            ],
         },
         Block {
             start: 8,
@@ -876,6 +932,7 @@ fn returned_pointer_facts_require_a_closed_caller_cfg() {
                 lhs: Expr::reg(7, 64),
                 rhs: Expr::Const(0),
                 target: 8,
+                at: None,
             }],
         },
         Block {
@@ -902,6 +959,7 @@ fn returned_pointer_facts_require_a_closed_caller_cfg() {
             width: 64,
         },
         value: Expr::Const(0x80),
+        at: None,
     });
     assert!(!closed_normal_flow(&early_terminator, Edges::Any));
 }
@@ -911,6 +969,7 @@ fn returned_pointer_facts_do_not_flow_through_exception_edges() {
     let (image, _) = pointer_factory(Isa::X86_64, false, constant_factory(Isa::X86_64, 0x80));
     let ret = Stmt::Ret {
         value: Expr::reg(0, 64),
+        at: None,
     };
     let mut blocks = vec![
         Block {
@@ -922,7 +981,10 @@ fn returned_pointer_facts_do_not_flow_through_exception_edges() {
                     &|_| Default::default(),
                     Some(0x40),
                 ),
-                Stmt::Br { target: Some(16) },
+                Stmt::Br {
+                    target: Some(16),
+                    at: None,
+                },
             ],
         },
         Block {
@@ -982,6 +1044,7 @@ fn indirect_tracking_uses_output_provenance_and_preserved_snapshots() {
         outputs: crate::ir::fallback_call_outputs(Convention::SysV, changed),
         clobbers: changed,
         via: None,
+        at: None,
     };
     call.call_outputs_mut()[0].dest.index = VARIABLE_BASE;
     let mut state = State::entry();

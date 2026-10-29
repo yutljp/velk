@@ -25,6 +25,7 @@ fn integer_runtime_results_used_as_pointers_are_typed_once() {
             .unwrap_or_default(),
         clobbers: Some(velk::ir::Registers(1)),
         via: None,
+        at: None,
     };
     let ir = synthetic_ir(
         "split_runtime_results",
@@ -35,6 +36,7 @@ fn integer_runtime_results_used_as_pointers_are_typed_once() {
             call(0x2000, vec![Expr::reg(result, 64)], None),
             Stmt::Ret {
                 value: Expr::Const(0),
+                at: None,
             },
         ],
     );
@@ -89,6 +91,7 @@ fn runtime_pointer_return_variables_keep_their_pointer_type() {
                 }],
                 clobbers: None,
                 via: None,
+                at: None,
             }],
         );
         ir.isa = isa;
@@ -98,14 +101,17 @@ fn runtime_pointer_return_variables_keep_their_pointer_type() {
             lhs: Expr::reg(result, 64),
             rhs: Expr::Const(0),
             target: 1,
+            at: None,
         });
         ir.blocks[0].stmts.push(Stmt::Ret {
             value: Expr::reg(result, 64),
+            at: None,
         });
         ir.blocks.push(Block {
             start: 1,
             stmts: vec![Stmt::Ret {
                 value: Expr::Const(0),
+                at: None,
             }],
         });
         let symbols = velk::render::Symbols {
@@ -142,12 +148,14 @@ fn go_spilled_pointer_arguments_preserve_full_and_partial_writes() {
                 addr: slot.clone(),
                 value: Expr::reg(0, 64),
                 width: 8,
+                at: None,
             }];
             if partial {
                 stmts.push(Stmt::Store {
                     addr: slot,
                     value: Expr::Const(0x5a),
                     width: 1,
+                    at: None,
                 });
             }
             for count in [1, 2] {
@@ -166,9 +174,13 @@ fn go_spilled_pointer_arguments_preserve_full_and_partial_writes() {
                     outputs: Vec::new(),
                     clobbers: Some(Default::default()),
                     via: None,
+                    at: None,
                 });
             }
-            stmts.push(Stmt::Ret { value: load });
+            stmts.push(Stmt::Ret {
+                value: load,
+                at: None,
+            });
             let mut ir = synthetic_ir(
                 "spilled_pointer",
                 vec![Param {

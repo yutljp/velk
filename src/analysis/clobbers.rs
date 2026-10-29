@@ -435,6 +435,7 @@ pub(crate) fn clobbers_knowing(
                     instruction,
                     inputs,
                     outputs,
+                    ..
                 } => {
                     if *instruction == crate::ir::MachineInstruction::ArmCacheZero {
                         state.slots.clear();
@@ -490,7 +491,7 @@ pub(crate) fn clobbers_knowing(
                         state.set(output.index, Value::Other);
                     }
                 }
-                Stmt::Assign { dest, value } => {
+                Stmt::Assign { dest, value, .. } => {
                     // A choice between frame addresses is followed as each of them.
                     let value = if dest.width == 64 && !matches!(value, Expr::Select { .. }) {
                         state.value(value)
@@ -500,7 +501,9 @@ pub(crate) fn clobbers_knowing(
                     };
                     state.set(dest.index, value);
                 }
-                Stmt::Store { addr, value, width } => {
+                Stmt::Store {
+                    addr, value, width, ..
+                } => {
                     state.expose(value);
                     match state.value(addr) {
                         Value::Frame(at) => {
@@ -571,6 +574,7 @@ pub(crate) fn clobbers_knowing(
                 }
                 Stmt::Br {
                     target: Some(target),
+                    ..
                 } => {
                     successors.push((*target, state.clone()));
                     block_terminated = true;
@@ -597,11 +601,11 @@ pub(crate) fn clobbers_knowing(
                     block_terminated = true;
                     break;
                 }
-                Stmt::Trap => {
+                Stmt::Trap { .. } => {
                     block_terminated = true;
                     break;
                 }
-                Stmt::Br { target: None } | Stmt::BrIndirect { .. } => return None,
+                Stmt::Br { target: None, .. } | Stmt::BrIndirect { .. } => return None,
             }
         }
         if !block_terminated {
@@ -650,6 +654,7 @@ mod tests {
         Stmt::Assign {
             dest: RegRef { index, width: 64 },
             value,
+            at: None,
         }
     }
 
@@ -660,6 +665,7 @@ mod tests {
                 addr: reg(RSP),
                 value: reg(index),
                 width: 8,
+                at: None,
             },
         ]
     }
@@ -690,11 +696,15 @@ mod tests {
             outputs: crate::ir::fallback_call_outputs(Convention::SysV, None),
             clobbers: None,
             via: None,
+            at: None,
         }
     }
 
     fn ret() -> Stmt {
-        Stmt::Ret { value: reg(0) }
+        Stmt::Ret {
+            value: reg(0),
+            at: None,
+        }
     }
 
     fn block(start: u64, stmts: Vec<Stmt>) -> Block {
@@ -711,11 +721,13 @@ mod tests {
             entry.push(assign(temporary, reg(RSP)));
             entry.push(Stmt::Br {
                 target: Some(0x1010),
+                at: None,
             });
             let mut exit = vec![Stmt::Store {
                 addr: reg(7),
                 value: Expr::Const(19),
                 width: 4,
+                at: None,
             }];
             exit.extend(pop(RBP));
             exit.push(ret());
@@ -730,6 +742,7 @@ mod tests {
                             lhs: reg(0),
                             rhs: Expr::Const(0),
                             target: 0x1010,
+                            at: None,
                         },
                     ],
                 ),
@@ -759,6 +772,7 @@ mod tests {
                         addr: reg(7),
                         value: reg(RSP),
                         width: 8,
+                        at: None,
                     });
                 }
                 if case == 3 {
@@ -784,6 +798,7 @@ mod tests {
                     _ => reg(7),
                 };
                 stmts.push(Stmt::Machine {
+                    at: None,
                     instruction: MachineInstruction::Atomic {
                         op: AtomicOp::Add,
                         width: 8,
@@ -808,6 +823,7 @@ mod tests {
     fn cache_zeroing_invalidates_saved_registers_in_the_same_block() {
         let mut stmts = Vec::from(push(RBX));
         stmts.push(Stmt::Machine {
+            at: None,
             instruction: crate::ir::MachineInstruction::ArmCacheZero,
             inputs: vec![Expr::bin(BinOp::Add, reg(RSP), Expr::Const(8))],
             outputs: vec![],
@@ -821,6 +837,7 @@ mod tests {
     fn atomic_add(addr: Expr) -> Stmt {
         use crate::ir::{AtomicOp, MachineInstruction, Ordering};
         Stmt::Machine {
+            at: None,
             instruction: MachineInstruction::Atomic {
                 op: AtomicOp::Add,
                 width: 8,
@@ -869,6 +886,7 @@ mod tests {
             addr: reg(0),
             value: Expr::Const(0),
             width: 1,
+            at: None,
         });
         stmts.push(assign(RBX, Expr::Const(7)));
         stmts.push(atomic_add(reg(7)));
@@ -891,6 +909,7 @@ mod tests {
                 addr: reg(7),
                 value: reg(RSP),
                 width: 8,
+                at: None,
             });
             stmts.push(assign(
                 6,
@@ -907,6 +926,7 @@ mod tests {
                     addr: reg(6),
                     value: Expr::Const(0),
                     width: 8,
+                    at: None,
                 }
             });
             stmts.extend(pop(RBX));
@@ -924,11 +944,13 @@ mod tests {
             lhs: reg(0),
             rhs: Expr::Const(0),
             target: 0x1020,
+            at: None,
         });
         let mut exit = vec![Stmt::Store {
             addr: reg(6),
             value: Expr::Const(0),
             width: 8,
+            at: None,
         }];
         exit.extend(pop(RBX));
         exit.push(ret());
@@ -940,6 +962,7 @@ mod tests {
                     assign(6, reg(RSP)),
                     Stmt::Br {
                         target: Some(0x1030),
+                        at: None,
                     },
                 ],
             ),
@@ -949,6 +972,7 @@ mod tests {
                     assign(6, reg(7)),
                     Stmt::Br {
                         target: Some(0x1030),
+                        at: None,
                     },
                 ],
             ),
@@ -976,11 +1000,13 @@ mod tests {
                 addr: at(8),
                 value: reg(0),
                 width: 8,
+                at: None,
             },
             Stmt::Store {
                 addr: at(16),
                 value: reg(RBX),
                 width: 8,
+                at: None,
             },
             called,
             assign(
@@ -1007,14 +1033,17 @@ mod tests {
             lhs: reg(0),
             rhs: Expr::Const(0),
             target: 0x1020,
+            at: None,
         });
         let mut exit = vec![
             Stmt::Store {
                 addr: reg(7),
                 value: reg(6),
                 width: 8,
+                at: None,
             },
             Stmt::Machine {
+                at: None,
                 instruction: MachineInstruction::Atomic {
                     op: AtomicOp::Add,
                     width: 8,
@@ -1034,6 +1063,7 @@ mod tests {
                     assign(6, reg(RSP)),
                     Stmt::Br {
                         target: Some(0x1030),
+                        at: None,
                     },
                 ],
             ),
@@ -1043,6 +1073,7 @@ mod tests {
                     assign(6, Expr::Const(0)),
                     Stmt::Br {
                         target: Some(0x1030),
+                        at: None,
                     },
                 ],
             ),
@@ -1075,6 +1106,7 @@ mod tests {
             lhs: reg(7),
             rhs: Expr::Const(0),
             target: 0x1020,
+            at: None,
         });
         let mut restoring: Vec<Stmt> = pop(RBX).into();
         restoring.push(ret());
@@ -1115,6 +1147,7 @@ mod tests {
             ),
             clobbers: Some([RBX].into_iter().collect()),
             via: None,
+            at: None,
         };
         let changed = clobbers(&[block(0x1000, stmts)], Convention::SysV, RSP).unwrap();
         assert_eq!(changed.iter().collect::<Vec<_>>(), vec![RBX]);
@@ -1185,7 +1218,13 @@ mod tests {
 
     #[test]
     fn an_unknown_way_out_leaves_the_registers_unknown() {
-        let blocks = [block(0x1000, vec![Stmt::BrIndirect { target: reg(0) }])];
+        let blocks = [block(
+            0x1000,
+            vec![Stmt::BrIndirect {
+                target: reg(0),
+                at: None,
+            }],
+        )];
         assert_eq!(clobbers(&blocks, Convention::SysV, RSP), None);
         // So does a return with the stack pointer elsewhere.
         let blocks = [block(

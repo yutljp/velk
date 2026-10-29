@@ -69,7 +69,7 @@ fn congruence_classes(ssa: &Ssa, needed: &HashSet<u16>, scope: UpdateScope) -> V
     for stmt in ssa.ir.blocks.iter().flat_map(|block| &block.stmts) {
         match stmt {
             Stmt::Store { addr, .. } => note_address(addr, &mut addresses),
-            Stmt::Ret { value } if ssa.ir.ret_type.is_pointer() => {
+            Stmt::Ret { value, .. } if ssa.ir.ret_type.is_pointer() => {
                 note_address(value, &mut addresses)
             }
             _ => {}
@@ -85,7 +85,7 @@ fn congruence_classes(ssa: &Ssa, needed: &HashSet<u16>, scope: UpdateScope) -> V
     }
     let mut updates = Vec::new();
     for stmt in ssa.ir.blocks.iter().flat_map(|block| &block.stmts) {
-        if let Stmt::Assign { dest, value } = stmt {
+        if let Stmt::Assign { dest, value, .. } = stmt {
             let defined = usize::from(dest.index - VALUE_BASE);
             let origin = ssa.origin[defined];
             let parameter = ssa.ir.params.iter().find(|param| param.index == origin);
@@ -188,7 +188,7 @@ fn vector_values(ssa: &Ssa) -> HashSet<u16> {
     let mut derived: Vec<(u16, HashSet<u16>)> = Vec::new();
     for block in &ssa.ir.blocks {
         for (position, stmt) in block.stmts.iter().enumerate() {
-            if let Stmt::Assign { dest, value } = stmt
+            if let Stmt::Assign { dest, value, .. } = stmt
                 && half(dest.index)
             {
                 let mut lanes = false;
@@ -230,6 +230,7 @@ fn vector_values(ssa: &Ssa) -> HashSet<u16> {
                                         width: 8,
                                         ..
                                     },
+                                ..
                             }) if half(other.index)
                                 && ssa.register_of(other.index) ^ 1
                                     == ssa.register_of(dest.index)
@@ -359,12 +360,12 @@ pub(crate) fn split_render_variables(ir: &mut FunctionIr, registers: &[u16]) {
 
 fn split(ir: &mut FunctionIr, registers: &[u16], scope: UpdateScope) {
     // An unknown successor could read any register.
-    if ir
-        .blocks
-        .iter()
-        .flat_map(|block| &block.stmts)
-        .any(|stmt| matches!(stmt, Stmt::BrIndirect { .. } | Stmt::Br { target: None }))
-    {
+    if ir.blocks.iter().flat_map(|block| &block.stmts).any(|stmt| {
+        matches!(
+            stmt,
+            Stmt::BrIndirect { .. } | Stmt::Br { target: None, .. }
+        )
+    }) {
         return;
     }
     let Some(ssa) = build(ir) else {
@@ -691,6 +692,7 @@ mod split_tests {
         Stmt::Assign {
             dest: RegRef { index, width: 64 },
             value,
+            at: None,
         }
     }
 
@@ -705,9 +707,13 @@ mod split_tests {
                     lhs: rsi.clone(),
                     rhs: Expr::reg(0, 64),
                     target: 0x10,
+                    at: None,
                 },
             ],
-            vec![Stmt::Ret { value: rsi }],
+            vec![Stmt::Ret {
+                value: rsi,
+                at: None,
+            }],
         ])
     }
 
@@ -723,7 +729,7 @@ mod split_tests {
             matches!(&ir.blocks[0].stmts[1], Stmt::Assign { dest, .. } if dest.index == VARIABLE_BASE)
         );
         assert!(
-            matches!(&ir.blocks[2].stmts[0], Stmt::Ret { value } if *value == variable),
+            matches!(&ir.blocks[2].stmts[0], Stmt::Ret { value, .. } if *value == variable),
             "{}",
             ir.render()
         );
@@ -738,6 +744,7 @@ mod split_tests {
                 addr: Expr::reg(RSI, 64),
                 value: Expr::reg(variable, 64),
                 width: 8,
+                at: None,
             },
             assign(
                 variable,
@@ -749,6 +756,7 @@ mod split_tests {
                     width: 1,
                     signed: false,
                 },
+                at: None,
             },
         ]]);
         ir.variable_registers.insert(variable, 0);
@@ -776,10 +784,12 @@ mod split_tests {
                 assign(variable, Expr::Const(7)),
                 Stmt::Ret {
                     value: Expr::reg(variable, 64),
+                    at: None,
                 },
             ],
             vec![Stmt::Ret {
                 value: Expr::reg(variable, 64),
+                at: None,
             }],
         ]);
         ir.variable_registers.insert(variable, 0);
@@ -813,6 +823,7 @@ mod split_tests {
             addr,
             value,
             width: 8,
+            at: None,
         };
         let mut stmts = vec![assign(XMM0, load(Expr::reg(7, 64)))];
         if both_halves {
@@ -833,9 +844,11 @@ mod split_tests {
             clobbers: None,
             outputs: crate::ir::fallback_call_outputs(crate::ir::Convention::SysV, None),
             via: None,
+            at: None,
         });
         stmts.push(Stmt::Ret {
             value: Expr::Const(0),
+            at: None,
         });
         let mut ir = function(vec![stmts]);
         split_variables(&mut ir, &[XMM0, XMM0 + 1]);

@@ -40,6 +40,7 @@ pub(crate) fn register_saves(ir: &FunctionIr) -> Option<RegisterSaves> {
                 },
             rhs: Expr::Const(0),
             target,
+            ..
         }) if ir.convention == Convention::SysV
             && matches!(
                 lhs.as_ref(),
@@ -76,6 +77,7 @@ pub(crate) fn register_saves(ir: &FunctionIr) -> Option<RegisterSaves> {
                 addr,
                 value: Expr::Reg { index, width: 64 },
                 width: 8,
+                ..
             } = stmt
                 && let Some(offset) = slot(addr, sp)
                 && !written.contains(index)
@@ -232,6 +234,7 @@ mod tests {
             addr: Expr::bin(BinOp::Add, Expr::reg(sp, 64), Expr::Const(offset as u64)),
             value: Expr::reg(register, 64),
             width: 8,
+            at: None,
         };
         let mut stmts: Vec<Stmt> = (from..8)
             .map(|register| store(register, -0x40 + 8 * i64::from(register)))
@@ -242,6 +245,7 @@ mod tests {
         }
         stmts.push(Stmt::Ret {
             value: Expr::reg(0, 64),
+            at: None,
         });
         let mut ir = FunctionIr::single_block(Isa::AArch64, stmts);
         ir.params = (0..8)

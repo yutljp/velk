@@ -32,6 +32,7 @@ pub(crate) fn stack_results(image: &Image, summaries: Summaries<'_>, target: u64
             },
             value: Expr::reg(*register, 64),
             width: *width,
+            at: None,
         })
         .collect()
 }
@@ -83,6 +84,7 @@ pub(super) fn take_stack_results(blocks: &mut [Block], image: &Image, summaries:
                         addr,
                         value: Expr::Reg { index, .. },
                         width,
+                        ..
                     } => Some((stack_offset(addr, sp)?, *width, *index)),
                     _ => None,
                 })
@@ -211,7 +213,7 @@ fn stored_over(stmt: &Stmt, sp: u16, delta: u64, field: (u64, u8, u16)) -> Optio
 /// How far the stack pointer has moved after the statement, from `delta`
 /// before it; `None` once that is unknown.
 fn stack_moved(stmt: &Stmt, sp: u16, delta: u64) -> Option<u64> {
-    if let Stmt::Assign { dest, value } = stmt
+    if let Stmt::Assign { dest, value, .. } = stmt
         && dest.index == sp
     {
         return match value {
@@ -232,14 +234,15 @@ fn stack_moved(stmt: &Stmt, sp: u16, delta: u64) -> Option<u64> {
 fn ends_unknown(blocks: &[Block], index: usize) -> bool {
     let known = |target: &u64| blocks.iter().any(|block| block.start == *target);
     match blocks[index].stmts.last() {
-        Some(Stmt::Br { target: None } | Stmt::BrIndirect { .. }) => true,
+        Some(Stmt::Br { target: None, .. } | Stmt::BrIndirect { .. }) => true,
         Some(Stmt::Br {
             target: Some(target),
+            ..
         }) => !known(target),
         Some(Stmt::Brif { target, .. } | Stmt::BrifFlags { target, .. }) => {
             !known(target) || index + 1 == blocks.len()
         }
-        Some(Stmt::Ret { .. } | Stmt::Trap | Stmt::Switch { .. }) => false,
+        Some(Stmt::Ret { .. } | Stmt::Trap { .. } | Stmt::Switch { .. }) => false,
         _ => index + 1 == blocks.len(),
     }
 }

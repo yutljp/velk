@@ -15,11 +15,13 @@ pub fn simplify(ir: &mut FunctionIr) {
             simplify_stmt(stmt, &mut constants);
             if let Stmt::BrIndirect {
                 target: Expr::Const(target),
+                at,
             } = stmt
                 && starts.contains(&crate::arch::code_address(ir.isa, *target))
             {
                 *stmt = Stmt::Br {
                     target: Some(crate::arch::code_address(ir.isa, *target)),
+                    at: *at,
                 };
             }
         }
@@ -28,7 +30,7 @@ pub fn simplify(ir: &mut FunctionIr) {
 
 fn simplify_stmt(stmt: &mut Stmt, constants: &mut HashMap<u16, u64>) {
     match stmt {
-        Stmt::Assign { dest, value } => {
+        Stmt::Assign { dest, value, .. } => {
             let simplified = simplify_expr(value.clone(), constants);
             if let Expr::Const(value) = simplified {
                 constants.insert(
@@ -40,7 +42,9 @@ fn simplify_stmt(stmt: &mut Stmt, constants: &mut HashMap<u16, u64>) {
             }
             *value = simplified;
         }
-        Stmt::Store { addr, value, width } => {
+        Stmt::Store {
+            addr, value, width, ..
+        } => {
             *addr = simplify_expr(addr.clone(), constants);
             *value = simplify_expr(value.clone(), constants);
             let kept = crate::ir::semantics::mask(u32::from(*width) * 8);
@@ -113,13 +117,13 @@ fn simplify_stmt(stmt: &mut Stmt, constants: &mut HashMap<u16, u64>) {
                 move_offset_across(lhs, rhs);
             }
         }
-        Stmt::BrIndirect { target } => {
+        Stmt::BrIndirect { target, .. } => {
             *target = simplify_expr(target.clone(), constants);
         }
         Stmt::Switch { index, .. } => {
             *index = simplify_expr(index.clone(), constants);
         }
-        Stmt::Ret { value } => {
+        Stmt::Ret { value, .. } => {
             *value = simplify_expr(value.clone(), constants);
         }
         Stmt::Call { through, args, .. } => {
@@ -146,7 +150,7 @@ fn simplify_stmt(stmt: &mut Stmt, constants: &mut HashMap<u16, u64>) {
             // Unknown effects may clobber registers.
             constants.clear();
         }
-        Stmt::Br { .. } | Stmt::BrifFlags { .. } | Stmt::Trap => {}
+        Stmt::Br { .. } | Stmt::BrifFlags { .. } | Stmt::Trap { .. } => {}
     }
 }
 
@@ -945,6 +949,7 @@ mod tests {
                                 addr: Expr::Const(0x1000),
                                 value,
                                 width,
+                                at: None,
                             },
                             Stmt::Ret {
                                 value: Expr::Load {
@@ -952,6 +957,7 @@ mod tests {
                                     width,
                                     signed: false,
                                 },
+                                at: None,
                             },
                         ],
                     );
@@ -1010,6 +1016,7 @@ mod tests {
                     ),
                     Expr::reg(7, 64),
                 ),
+                at: None,
             }],
         );
         simplify(&mut ir);
@@ -1049,12 +1056,16 @@ mod tests {
                     ),
                     Expr::Const(0xff),
                 ),
+                at: None,
             }],
         );
 
         simplify(&mut ir);
 
-        let Stmt::Ret { value: simplified } = &ir.blocks[0].stmts[0] else {
+        let Stmt::Ret {
+            value: simplified, ..
+        } = &ir.blocks[0].stmts[0]
+        else {
             panic!("the return stays");
         };
         let mut reads = std::collections::HashSet::new();
@@ -1072,12 +1083,13 @@ mod tests {
                     Expr::bin(BinOp::Sub, Expr::reg(31, 64), Expr::Const(0x20)),
                     Expr::Const(8),
                 ),
+                at: None,
             }],
         );
 
         simplify(&mut ir);
 
-        let Stmt::Ret { value } = &ir.blocks[0].stmts[0] else {
+        let Stmt::Ret { value, .. } = &ir.blocks[0].stmts[0] else {
             panic!("the return stays");
         };
         let expected = Expr::bin(
@@ -1099,9 +1111,11 @@ mod tests {
                         width: 64,
                     },
                     value: Expr::Const(0x1_0000_0001),
+                    at: None,
                 },
                 Stmt::Ret {
                     value: Expr::reg(8, 32),
+                    at: None,
                 },
             ],
         );
@@ -1112,7 +1126,8 @@ mod tests {
             matches!(
                 ir.blocks[0].stmts[1],
                 Stmt::Ret {
-                    value: Expr::Const(1)
+                    value: Expr::Const(1),
+                    ..
                 }
             ),
             "{}",
@@ -1132,6 +1147,7 @@ mod tests {
                 Stmt::Assign {
                     dest: x10,
                     value: Expr::Const(0x5556),
+                    at: None,
                 },
                 Stmt::Assign {
                     dest: x10,
@@ -1140,9 +1156,11 @@ mod tests {
                         Expr::bin(BinOp::And, Expr::reg(10, 64), Expr::Const(0xffff_ffff)),
                         Expr::Const(0x5555_0000),
                     ),
+                    at: None,
                 },
                 Stmt::Ret {
                     value: Expr::reg(10, 64),
+                    at: None,
                 },
             ],
         );

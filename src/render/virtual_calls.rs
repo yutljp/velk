@@ -127,7 +127,7 @@ pub(super) fn prepare(ir: &mut FunctionIr, symbols: &Symbols) {
             if !named.contains(&(block_index, position)) {
                 continue;
             }
-            let Stmt::Assign { dest, value } = &block.stmts[position - 1] else {
+            let Stmt::Assign { dest, value, .. } = &block.stmts[position - 1] else {
                 continue;
             };
             let overwritten = block.stmts[position]
@@ -430,6 +430,7 @@ mod tests {
                         } => {
                             statements.push(Stmt::Ret {
                                 value: through.clone(),
+                                at: None,
                             });
                             break;
                         }

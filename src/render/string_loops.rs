@@ -5,7 +5,7 @@ use crate::ir::{BinOp, Cond, Expr, RegRef, Stmt};
 mod tests;
 
 fn advanced_register(stmt: &Stmt, size: u64) -> Option<RegRef> {
-    let Stmt::Assign { dest, value } = stmt else {
+    let Stmt::Assign { dest, value, .. } = stmt else {
         return None;
     };
     if dest.width == 64
@@ -28,6 +28,7 @@ pub(super) fn render(
     let Stmt::Assign {
         dest: count,
         value: initial,
+        ..
     } = init
     else {
         return None;
@@ -35,7 +36,7 @@ pub(super) fn render(
     if count.width != 64 || test != (Cond::Ne, &Expr::reg(count.index, 64), &Expr::Const(0)) {
         return None;
     }
-    let Some((Node::Stmt(Stmt::Assign { dest, value }), rest)) = body.split_last() else {
+    let Some((Node::Stmt(Stmt::Assign { dest, value, .. }), rest)) = body.split_last() else {
         return None;
     };
     let decrement = Expr::bin(BinOp::Sub, Expr::reg(count.index, 64), Expr::Const(1));
@@ -44,7 +45,16 @@ pub(super) fn render(
     {
         return None;
     }
-    let Some((Node::Stmt(Stmt::Store { addr, value, width }), steps)) = rest.split_first() else {
+    let Some((
+        Node::Stmt(Stmt::Store {
+            addr,
+            value,
+            width,
+            at,
+        }),
+        steps,
+    )) = rest.split_first()
+    else {
         return None;
     };
     if ![1, 2, 4, 8].contains(width) {
@@ -191,10 +201,12 @@ pub(super) fn render(
         indent(inner, &mut out);
         out.push_str(&call);
         out.push('\n');
+        super::addresses::append(&mut out, *at, ctx.symbols.addresses);
         for pointer in pointers {
             let stmt = Stmt::Assign {
                 dest: pointer,
                 value: Expr::bin(BinOp::Add, Expr::reg(pointer.index, 64), bytes.clone()),
+                at: None,
             };
             indent(inner, &mut out);
             out.push_str(&render_stmt(&stmt, ctx));
@@ -210,6 +222,7 @@ pub(super) fn render(
         &Stmt::Assign {
             dest: *count,
             value: Expr::Const(0),
+            at: None,
         },
         ctx,
     ));

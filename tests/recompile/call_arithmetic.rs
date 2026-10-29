@@ -49,8 +49,9 @@ fn call_results_stay_before_memory_and_conditional_reads() {
                     }],
                     clobbers: Some(Registers(1)),
                     via: None,
+                    at: None,
                 },
-                Stmt::Ret { value },
+                Stmt::Ret { value, at: None },
             ],
         );
         let symbols = velk::render::Symbols {
@@ -88,6 +89,7 @@ fn printed_small_parameter_spills_reuse_the_parameter() {
                         addr: slot.clone(),
                         value: Expr::reg(7, 64),
                         width: bytes,
+                        at: None,
                     },
                     Stmt::Ret {
                         value: Expr::Load {
@@ -95,6 +97,7 @@ fn printed_small_parameter_spills_reuse_the_parameter() {
                             width: bytes,
                             signed,
                         },
+                        at: None,
                     },
                 ],
             );
@@ -133,6 +136,7 @@ fn printed_small_spill_with_overlapping_store_keeps_its_bytes() {
                     addr: slot.clone(),
                     value: Expr::reg(7, 64),
                     width: 2,
+                    at: None,
                 },
                 Stmt::Store {
                     addr: Expr::bin(
@@ -142,6 +146,7 @@ fn printed_small_spill_with_overlapping_store_keeps_its_bytes() {
                     ),
                     value: Expr::Const(0x56),
                     width: 1,
+                    at: None,
                 },
                 Stmt::Ret {
                     value: Expr::Load {
@@ -149,6 +154,7 @@ fn printed_small_spill_with_overlapping_store_keeps_its_bytes() {
                         width: 2,
                         signed: false,
                     },
+                    at: None,
                 },
             ],
         );
@@ -216,8 +222,9 @@ fn printed_single_use_call_arithmetic_keeps_width_and_effects() {
                         }],
                         clobbers: Some(Registers(1)),
                         via: None,
+                        at: None,
                     },
-                    Stmt::Ret { value },
+                    Stmt::Ret { value, at: None },
                 ],
             );
             let symbols = velk::render::Symbols {
@@ -284,6 +291,7 @@ fn printed_frame_reads_stay_before_stores_that_change_their_bytes() {
                 addr: frame.clone(),
                 value: Expr::reg(7, 32),
                 width: 4,
+                at: None,
             },
             Stmt::Assign {
                 dest: RegRef {
@@ -299,14 +307,17 @@ fn printed_frame_reads_stay_before_stores_that_change_their_bytes() {
                     },
                     Expr::Const(0x4c40ecca),
                 ),
+                at: None,
             },
             Stmt::Store {
                 addr: frame,
                 value: Expr::Const(1),
                 width: 4,
+                at: None,
             },
             Stmt::Ret {
                 value: Expr::reg(VARIABLE_BASE, 32),
+                at: None,
             },
         ],
     );

@@ -52,7 +52,7 @@ fn recover_once(
     let held = held_constants(blocks, known);
     let mut recovered = Vec::new();
     for (index, block) in blocks.iter().enumerate() {
-        let Some(Stmt::BrIndirect { target }) = block.stmts.last() else {
+        let Some(Stmt::BrIndirect { target, .. }) = block.stmts.last() else {
             continue;
         };
         let checked = index
@@ -78,6 +78,7 @@ pub(crate) fn bound(block: &Block) -> Option<(i64, Option<u64>, i64, Expr)> {
         lhs,
         rhs,
         target,
+        ..
     } = block.stmts.last()?
     else {
         return Option::None;
@@ -131,13 +132,14 @@ pub fn apply(blocks: &mut [Block], recovered: &[Recovered]) {
         if !matches!(block.stmts.last(), Some(Stmt::BrIndirect { .. })) {
             continue;
         }
-        block.stmts.pop();
+        let at = block.stmts.pop().and_then(|stmt| stmt.origin());
         // A register the block leaves holding the index names it best.
         if let Some(register) = register_holding_index(block, &entry.index) {
             block.stmts.push(Stmt::Switch {
                 index: Expr::reg(register, 64),
                 cases: entry.cases.clone(),
                 default: entry.default,
+                at,
             });
             continue;
         }
@@ -160,6 +162,7 @@ pub fn apply(blocks: &mut [Block], recovered: &[Recovered]) {
                         width: 64,
                     },
                     value: entry.index.clone(),
+                    at: None,
                 },
             );
             Expr::reg(crate::ir::SWITCH_INDEX, 64)
@@ -170,6 +173,7 @@ pub fn apply(blocks: &mut [Block], recovered: &[Recovered]) {
             index,
             cases: entry.cases.clone(),
             default: entry.default,
+            at,
         });
     }
 }
@@ -214,7 +218,7 @@ fn register_holding_index(block: &Block, index: &Expr) -> Option<u16> {
     let mut environment = std::collections::HashMap::new();
     let mut found = None;
     for stmt in &block.stmts {
-        let Stmt::Assign { dest, value } = stmt else {
+        let Stmt::Assign { dest, value, .. } = stmt else {
             if !crate::ir::visit::statement_registers(stmt).0.is_empty() {
                 found = None;
             }
@@ -266,7 +270,7 @@ fn held_constants(
     let direct = |at: usize| -> Vec<usize> {
         let falls = at + 1 < blocks.len();
         match blocks[at].stmts.last() {
-            Some(Stmt::Br { target }) => target
+            Some(Stmt::Br { target, .. }) => target
                 .and_then(|target| index.get(&target).copied())
                 .into_iter()
                 .collect(),
@@ -276,7 +280,7 @@ fn held_constants(
                 .into_iter()
                 .chain(falls.then_some(at + 1))
                 .collect(),
-            Some(Stmt::Ret { .. } | Stmt::Trap | Stmt::BrIndirect { .. }) => Vec::new(),
+            Some(Stmt::Ret { .. } | Stmt::Trap { .. } | Stmt::BrIndirect { .. }) => Vec::new(),
             _ => falls.then_some(at + 1).into_iter().collect(),
         }
     };
@@ -299,7 +303,7 @@ fn held_constants(
         };
         for stmt in &blocks[at].stmts {
             match stmt {
-                Stmt::Assign { dest, value } => {
+                Stmt::Assign { dest, value, .. } => {
                     let resolved = resolve(value, &held);
                     match constant(&resolved) {
                         Some(value) if dest.width == 64 => {
@@ -401,7 +405,7 @@ fn environment_from(
     mut environment: std::collections::HashMap<u16, Expr>,
 ) -> std::collections::HashMap<u16, Expr> {
     for stmt in &block.stmts {
-        if let Stmt::Assign { dest, value } = stmt {
+        if let Stmt::Assign { dest, value, .. } = stmt {
             let resolved = resolve(value, &environment);
             environment.insert(dest.index, resolved);
         }
@@ -780,18 +784,21 @@ mod tests {
                         lhs: Expr::reg(0, 32),
                         rhs: Expr::Const(0),
                         target: 8,
+                        at: None,
                     }],
                 },
                 Block {
                     start: 4,
                     stmts: vec![Stmt::Ret {
                         value: Expr::Const(1),
+                        at: None,
                     }],
                 },
                 Block {
                     start: 8,
                     stmts: vec![Stmt::Ret {
                         value: Expr::Const(2),
+                        at: None,
                     }],
                 },
             ];
@@ -811,6 +818,7 @@ mod tests {
         };
         let ret = || Stmt::Ret {
             value: Expr::Const(0),
+            at: None,
         };
         let blocks = |entry| {
             vec![
@@ -828,16 +836,23 @@ mod tests {
                 },
             ]
         };
-        let mut dead = blocks(Stmt::Br { target: Some(20) });
+        let mut dead = blocks(Stmt::Br {
+            target: Some(20),
+            at: None,
+        });
         drop_data(&mut dead, std::slice::from_ref(&table), &[]);
         assert_eq!(
             dead.iter().map(|block| block.start).collect::<Vec<_>>(),
             [0, 20]
         );
         for entry in [
-            Stmt::Br { target: Some(10) },
+            Stmt::Br {
+                target: Some(10),
+                at: None,
+            },
             Stmt::BrIndirect {
                 target: Expr::reg(0, 64),
+                at: None,
             },
         ] {
             let mut live = blocks(entry);
@@ -848,6 +863,7 @@ mod tests {
         exceptional[0].stmts.insert(
             0,
             Stmt::Unsupported {
+                at: None,
                 text: "unknown call".into(),
                 writes: Some(Vec::new()),
             },

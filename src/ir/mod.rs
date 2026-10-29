@@ -678,41 +678,58 @@ impl Ordering {
 pub enum Stmt {
     /// An indivisible machine operation. Outputs are simultaneous writes.
     Machine {
+        at: Option<u64>,
         instruction: MachineInstruction,
         inputs: Vec<Expr>,
         outputs: Vec<RegRef>,
     },
     Assign {
+        /// The instruction that performs this effect, when known.
+        at: Option<u64>,
         dest: RegRef,
         value: Expr,
     },
     Store {
+        /// The instruction that performs this effect, when known.
+        at: Option<u64>,
         addr: Expr,
         value: Expr,
         width: u8,
     },
     Brif {
+        /// The instruction that performs this effect, when known.
+        at: Option<u64>,
         cond: Cond,
         lhs: Expr,
         rhs: Expr,
         target: u64,
     },
     BrifFlags {
+        /// The instruction that performs this effect, when known.
+        at: Option<u64>,
         cond: Cond,
         target: u64,
     },
     Br {
+        /// The instruction that performs this effect, when known.
+        at: Option<u64>,
         target: Option<u64>,
     },
     BrIndirect {
+        /// The instruction that performs this effect, when known.
+        at: Option<u64>,
         target: Expr,
     },
     Switch {
+        /// The instruction that performs this effect, when known.
+        at: Option<u64>,
         index: Expr,
         cases: Vec<(i64, u64)>,
         default: Option<u64>,
     },
     Call {
+        /// The instruction that performs this effect, when known.
+        at: Option<u64>,
         kind: CallKind,
         target: Option<u64>,
         /// The address an indirect call computes, when `target` is unknown.
@@ -738,19 +755,65 @@ pub enum Stmt {
         via: Option<Box<Via>>,
     },
     Ret {
+        /// The instruction that performs this effect, when known.
+        at: Option<u64>,
         value: Expr,
     },
     /// An instruction the lifter does not model, and the registers it may
     /// write, when known; otherwise it may write any machine register.
     Unsupported {
+        at: Option<u64>,
         text: String,
         writes: Option<Vec<u16>>,
     },
     /// A trap the CPU cannot return from (`int3`, `ud2`, `brk`).
-    Trap,
+    Trap { at: Option<u64> },
 }
 
 impl Stmt {
+    pub(crate) fn with_origin(mut self, address: Option<u64>) -> Self {
+        self.set_origin(address);
+        self
+    }
+
+    /// The instruction that performs this effect, or no known origin.
+    #[must_use]
+    #[inline]
+    pub fn origin(&self) -> Option<u64> {
+        match self {
+            Self::Assign { at, .. }
+            | Self::Store { at, .. }
+            | Self::Call { at, .. }
+            | Self::Brif { at, .. }
+            | Self::BrifFlags { at, .. }
+            | Self::Br { at, .. }
+            | Self::BrIndirect { at, .. }
+            | Self::Switch { at, .. }
+            | Self::Ret { at, .. }
+            | Self::Machine { at, .. }
+            | Self::Unsupported { at, .. }
+            | Self::Trap { at } => *at,
+        }
+    }
+
+    #[inline]
+    pub(crate) fn set_origin(&mut self, address: Option<u64>) {
+        match self {
+            Self::Assign { at, .. }
+            | Self::Store { at, .. }
+            | Self::Call { at, .. }
+            | Self::Brif { at, .. }
+            | Self::BrifFlags { at, .. }
+            | Self::Br { at, .. }
+            | Self::BrIndirect { at, .. }
+            | Self::Switch { at, .. }
+            | Self::Ret { at, .. }
+            | Self::Machine { at, .. }
+            | Self::Unsupported { at, .. }
+            | Self::Trap { at } => *at = address,
+        }
+    }
+
     /// The registers a call's declaration reads besides its arguments: its
     /// parameters' registers and the stack pointer.
     #[must_use]
@@ -864,6 +927,7 @@ impl Stmt {
 
     pub fn unsupported(text: impl Into<String>) -> Self {
         Stmt::Unsupported {
+            at: None,
             text: text.into(),
             writes: None,
         }
@@ -874,17 +938,18 @@ impl Stmt {
     pub fn operands(&self) -> Vec<&Expr> {
         match self {
             Stmt::Machine { inputs, .. } => inputs.iter().collect(),
-            Stmt::Assign { value, .. } | Stmt::Ret { value } => vec![value],
+            Stmt::Assign { value, .. } | Stmt::Ret { value, .. } => vec![value],
             Stmt::Store { addr, value, .. } => vec![addr, value],
             Stmt::Brif { lhs, rhs, .. } => vec![lhs, rhs],
-            Stmt::BrIndirect { target } => vec![target],
+            Stmt::BrIndirect { target, .. } => vec![target],
             Stmt::Switch { index, .. } => vec![index],
             Stmt::Call { through, args, .. } => {
                 through.iter().chain(args.iter().flatten()).collect()
             }
-            Stmt::BrifFlags { .. } | Stmt::Br { .. } | Stmt::Unsupported { .. } | Stmt::Trap => {
-                Vec::new()
-            }
+            Stmt::BrifFlags { .. }
+            | Stmt::Br { .. }
+            | Stmt::Unsupported { .. }
+            | Stmt::Trap { .. } => Vec::new(),
         }
     }
 
@@ -892,18 +957,19 @@ impl Stmt {
     pub fn operands_mut(&mut self) -> Vec<&mut Expr> {
         match self {
             Stmt::Machine { inputs, .. } => inputs.iter_mut().collect(),
-            Stmt::Assign { value, .. } | Stmt::Ret { value } => vec![value],
+            Stmt::Assign { value, .. } | Stmt::Ret { value, .. } => vec![value],
             Stmt::Store { addr, value, .. } => vec![addr, value],
             Stmt::Brif { lhs, rhs, .. } => vec![lhs, rhs],
-            Stmt::BrIndirect { target } => vec![target],
+            Stmt::BrIndirect { target, .. } => vec![target],
             Stmt::Switch { index, .. } => vec![index],
             Stmt::Call { through, args, .. } => through
                 .iter_mut()
                 .chain(args.iter_mut().flatten())
                 .collect(),
-            Stmt::BrifFlags { .. } | Stmt::Br { .. } | Stmt::Unsupported { .. } | Stmt::Trap => {
-                Vec::new()
-            }
+            Stmt::BrifFlags { .. }
+            | Stmt::Br { .. }
+            | Stmt::Unsupported { .. }
+            | Stmt::Trap { .. } => Vec::new(),
         }
     }
 }
@@ -1031,6 +1097,7 @@ mod tests {
             outputs: fallback_call_outputs(Convention::SysV, Some([2].into_iter().collect())),
             clobbers: Some([2].into_iter().collect()),
             via: None,
+            at: None,
         };
         assert_eq!(
             call.call_outputs()

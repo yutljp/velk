@@ -114,7 +114,7 @@ impl Solver<'_> {
             }
             let stmts = &ssa.ir.blocks[block].stmts;
             for (position, stmt) in stmts.iter().enumerate() {
-                if let Stmt::Assign { dest, value } = stmt {
+                if let Stmt::Assign { dest, value, .. } = stmt {
                     let lattice = match self.expression(value) {
                         Lattice::Constant(value) => {
                             Lattice::Constant(value & mask(u32::from(dest.width)))
@@ -149,6 +149,7 @@ impl Solver<'_> {
                     lhs,
                     rhs,
                     target,
+                    ..
                 }) => match (self.expression(lhs), self.expression(rhs)) {
                     (Lattice::Constant(a), Lattice::Constant(b)) => {
                         let taken = holds(*cond, a, b, operand_width(lhs, rhs));
@@ -169,6 +170,7 @@ impl Solver<'_> {
                     index,
                     cases,
                     default,
+                    ..
                 }) => match self.expression(index) {
                     Lattice::Constant(value) => {
                         let target = cases
@@ -344,7 +346,7 @@ pub fn propagate(ssa: &mut Ssa) -> bool {
         for stmt in stmts.iter_mut() {
             let before = format!("{stmt:?}");
             match stmt {
-                Stmt::Assign { dest, value } => match constants.get(&dest.index) {
+                Stmt::Assign { dest, value, .. } => match constants.get(&dest.index) {
                     Some(constant) if !matches!(value, Expr::Const(_)) => {
                         *value = Expr::Const(*constant);
                     }
@@ -354,7 +356,7 @@ pub fn propagate(ssa: &mut Ssa) -> bool {
                     replace(addr, &constants);
                     replace(value, &constants);
                 }
-                Stmt::Ret { value } => replace(value, &constants),
+                Stmt::Ret { value, .. } => replace(value, &constants),
                 Stmt::Call { through, args, .. } => {
                     for value in through.iter_mut().chain(args.iter_mut().flatten()) {
                         replace(value, &constants);
@@ -372,10 +374,11 @@ pub fn propagate(ssa: &mut Ssa) -> bool {
         if let Some(Some(target)) = decided.get(&block) {
             match stmts.last() {
                 Some(Stmt::Brif { .. }) | Some(Stmt::Switch { .. }) => {
-                    stmts.pop();
+                    let at = stmts.pop().and_then(|stmt| stmt.origin());
                     if Some(*target) != next {
                         stmts.push(Stmt::Br {
                             target: Some(*target),
+                            at,
                         });
                     }
                     changed = true;
@@ -397,6 +400,7 @@ mod tests {
         Stmt::Assign {
             dest: RegRef { index, width: 64 },
             value,
+            at: None,
         }
     }
 
@@ -424,13 +428,14 @@ mod tests {
                         Operation::Results,
                         vec![Expr::reg(0, 64), Expr::reg(1, 64)],
                     ),
+                    at: None,
                 },
             ]]);
             propagate_constants(&mut ir);
             assert!(
                 matches!(
                     ir.blocks[0].stmts.last(),
-                    Some(Stmt::Ret { value: Expr::Apply { op: Operation::Results, args } })
+                    Some(Stmt::Ret { value: Expr::Apply { op: Operation::Results, args }, .. })
                         if *args == vec![Expr::Const(7), Expr::Const(last)]
                 ),
                 "{}",
@@ -452,6 +457,7 @@ mod tests {
                         Expr::bin(BinOp::DivU, Expr::Const(1), Expr::reg(1, 64)),
                     ],
                 ),
+                at: None,
             },
         ]]);
         let run = |ir: &FunctionIr| {
@@ -478,7 +484,7 @@ mod tests {
         assert!(
             matches!(
                 ir.blocks[0].stmts.last(),
-                Some(Stmt::Ret { value: Expr::Apply { op: Operation::Results, args } }) if args.len() == 2
+                Some(Stmt::Ret { value: Expr::Apply { op: Operation::Results, args }, .. }) if args.len() == 2
             ),
             "{}",
             ir.render()
@@ -498,16 +504,19 @@ mod tests {
                     addr: Expr::bin(BinOp::Add, Expr::reg(9, 64), Expr::Const(4)),
                     value: Expr::reg(8, 64),
                     width: 4,
+                    at: None,
                 },
                 Stmt::Brif {
                     cond: Cond::Ne,
                     lhs: Expr::reg(8, 64),
                     rhs: Expr::Const(0),
                     target: 0x10,
+                    at: None,
                 },
             ],
             vec![Stmt::Ret {
                 value: Expr::reg(0, 64),
+                at: None,
             }],
         ]);
         propagate_constants(&mut ir);
@@ -535,11 +544,13 @@ mod tests {
                     lhs: Expr::reg(0, 64),
                     rhs: Expr::Const(1),
                     target: 0x20,
+                    at: None,
                 },
             ],
             vec![assign(0, Expr::reg(7, 64))],
             vec![Stmt::Ret {
                 value: Expr::reg(0, 64),
+                at: None,
             }],
         ]);
         propagate_constants(&mut ir);
@@ -547,7 +558,8 @@ mod tests {
             matches!(
                 &ir.blocks[2].stmts[0],
                 Stmt::Ret {
-                    value: Expr::Const(1)
+                    value: Expr::Const(1),
+                    ..
                 }
             ),
             "{}",
@@ -568,11 +580,15 @@ mod tests {
         };
         let mut ir = function(vec![vec![
             assign(0, Expr::Const(0x8000_0000)),
-            Stmt::Ret { value: select },
+            Stmt::Ret {
+                value: select,
+                at: None,
+            },
         ]]);
         propagate_constants(&mut ir);
         let Stmt::Ret {
             value: Expr::Select { lhs, .. },
+            ..
         } = &ir.blocks[0].stmts[1]
         else {
             panic!("{}", ir.render());
@@ -594,11 +610,13 @@ mod tests {
                         Stmt::Assign {
                             dest: RegRef { index: 0, width },
                             value: Expr::Const(raw),
+                            at: None,
                         },
                         Stmt::Store {
                             addr: Expr::Const(0x4000),
                             value: Expr::reg(0, 64),
                             width: 8,
+                            at: None,
                         },
                         assign(
                             1,
@@ -608,18 +626,33 @@ mod tests {
                             addr: Expr::Const(0x4008),
                             value: Expr::reg(1, 64),
                             width: 8,
+                            at: None,
                         },
                         Stmt::Brif {
                             cond: Cond::Eq,
                             lhs: Expr::reg(1, 64),
                             rhs: Expr::Const(1),
                             target: 0x20,
+                            at: None,
                         },
                     ],
-                    vec![assign(2, Expr::Const(3)), Stmt::Br { target: Some(0x30) }],
-                    vec![assign(2, Expr::Const(0)), Stmt::Br { target: Some(0x30) }],
+                    vec![
+                        assign(2, Expr::Const(3)),
+                        Stmt::Br {
+                            target: Some(0x30),
+                            at: None,
+                        },
+                    ],
+                    vec![
+                        assign(2, Expr::Const(0)),
+                        Stmt::Br {
+                            target: Some(0x30),
+                            at: None,
+                        },
+                    ],
                     vec![Stmt::Ret {
                         value: Expr::reg(2, 64),
+                        at: None,
                     }],
                 ]);
                 let truncated = (u128::from(raw) % (1u128 << width)) as u64;

@@ -65,7 +65,7 @@ pub(crate) fn further_results(image: &Image, addr: u64) -> usize {
                     crate::ir::visit::collect_reads(operand, &mut read);
                 }
                 // Writing part of a register keeps bits nobody reads.
-                if let Stmt::Assign { dest, value } = stmt
+                if let Stmt::Assign { dest, value, .. } = stmt
                     && partial_write_of(value, dest.index)
                 {
                     read.remove(&dest.index);
@@ -149,6 +149,7 @@ pub(crate) fn returns_unset(blocks: &[Block], convention: crate::ir::Convention)
         let next: Vec<usize> = match blocks[at].stmts.last() {
             Some(Stmt::Br {
                 target: Some(target),
+                ..
             }) => index.get(target).copied().into_iter().collect(),
             Some(Stmt::Brif { target, .. } | Stmt::BrifFlags { target, .. }) => index
                 .get(target)
@@ -162,7 +163,9 @@ pub(crate) fn returns_unset(blocks: &[Block], convention: crate::ir::Convention)
                 .chain(default)
                 .filter_map(|target| index.get(target).copied())
                 .collect(),
-            Some(Stmt::Trap | Stmt::BrIndirect { .. } | Stmt::Br { target: None }) => Vec::new(),
+            Some(Stmt::Trap { .. } | Stmt::BrIndirect { .. } | Stmt::Br { target: None, .. }) => {
+                Vec::new()
+            }
             _ => vec![falls],
         };
         for successor in next {
@@ -416,7 +419,7 @@ fn fate(blocks: &[Block], index: usize, position: usize, memo: &mut HashMap<usiz
     if crate::ir::cfg::block_successors(blocks, index).is_empty()
         && !matches!(
             blocks[index].stmts.last(),
-            Some(Stmt::Trap | Stmt::Ret { .. })
+            Some(Stmt::Trap { .. } | Stmt::Ret { .. })
         )
     {
         return Fate::Read;
@@ -442,7 +445,7 @@ fn event(stmt: &Stmt) -> Option<Fate> {
         read.contains(&RETURN)
     };
     match stmt {
-        Stmt::Assign { dest, value } if dest.index == RETURN => {
+        Stmt::Assign { dest, value, .. } if dest.index == RETURN => {
             // A write of the low bits keeps the rest without reading it.
             if let Expr::Bin { lhs, rhs, .. } = value
                 && let Expr::Bin { lhs: kept, .. } = lhs.as_ref()
@@ -457,7 +460,7 @@ fn event(stmt: &Stmt) -> Option<Fate> {
             })
         }
         Stmt::Ret { .. } => Some(Fate::Returned),
-        Stmt::Trap => Some(Fate::Unused),
+        Stmt::Trap { .. } => Some(Fate::Unused),
         Stmt::Unsupported { .. } => Some(Fate::Read),
         // A call whose arguments are unknown may take the result as one,
         // where the return register is also the first argument.
@@ -497,6 +500,7 @@ mod tests {
         Stmt::Assign {
             dest: RegRef { index, width: 64 },
             value,
+            at: None,
         }
     }
 
@@ -504,12 +508,14 @@ mod tests {
     fn explicit_return_assignment_is_not_an_incidental_result() {
         let ret = Stmt::Ret {
             value: Expr::reg(crate::arch::RETURN, 64),
+            at: None,
         };
         let result = assign(crate::arch::RETURN, Expr::reg(8, 64));
         let store = Stmt::Store {
             addr: Expr::Const(0x2000),
             value: Expr::reg(crate::arch::RETURN, 64),
             width: 8,
+            at: None,
         };
         let block = |stmts| [Block { start: 0, stmts }];
         assert!(super::returns_value(&block(vec![
@@ -538,6 +544,7 @@ mod tests {
             outputs: crate::ir::fallback_call_outputs(crate::ir::Convention::Aapcs64, None),
             clobbers: None,
             via: None,
+            at: None,
         };
         assert!(!super::returns_value(&block(vec![
             result.clone(),
@@ -551,6 +558,7 @@ mod tests {
     fn a_result_is_read_only_before_the_register_is_written() {
         let ret = Stmt::Ret {
             value: Expr::reg(0, 64),
+            at: None,
         };
         assert_eq!(
             after_call(vec![assign(3, Expr::reg(0, 64)), ret.clone()]),
@@ -579,6 +587,7 @@ mod tests {
             ),
             clobbers: Some(Default::default()),
             via: None,
+            at: None,
         };
         assert_eq!(super::event(&call), None);
         let Stmt::Call {

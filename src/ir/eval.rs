@@ -458,14 +458,16 @@ impl Machine<'_> {
                     return Err("step limit");
                 }
                 match stmt {
-                    Stmt::Assign { dest, value } => {
+                    Stmt::Assign { dest, value, .. } => {
                         let value = match self.eval(value) {
                             Ok(value) => value,
                             Err(reason) => return Err(reason),
                         };
                         self.assign(*dest, value);
                     }
-                    Stmt::Store { addr, value, width } => {
+                    Stmt::Store {
+                        addr, value, width, ..
+                    } => {
                         let (addr, value) = (
                             match self.eval(addr) {
                                 Ok(value) => value,
@@ -483,6 +485,7 @@ impl Machine<'_> {
                         lhs,
                         rhs,
                         target,
+                        ..
                     } => {
                         let bits = operand_width(lhs, rhs);
                         if holds(
@@ -517,6 +520,7 @@ impl Machine<'_> {
                     }
                     Stmt::Br {
                         target: Some(target),
+                        ..
                     } => {
                         next = match self.jump(*target) {
                             Flow::Block(index) => index,
@@ -524,8 +528,8 @@ impl Machine<'_> {
                         };
                         break;
                     }
-                    Stmt::Br { target: None } => return Err("dynamic branch"),
-                    Stmt::BrIndirect { target } => {
+                    Stmt::Br { target: None, .. } => return Err("dynamic branch"),
+                    Stmt::BrIndirect { target, .. } => {
                         let target = match self.eval(target) {
                             Ok(value) => value,
                             Err(reason) => return Err(reason),
@@ -543,6 +547,7 @@ impl Machine<'_> {
                         index,
                         cases,
                         default,
+                        ..
                     } => {
                         let index = match self.eval(index) {
                             Ok(value) => value,
@@ -638,17 +643,18 @@ impl Machine<'_> {
                             self.assign(dest, value);
                         }
                     }
-                    Stmt::Ret { value } => {
+                    Stmt::Ret { value, .. } => {
                         return Ok(Some(match self.eval(value) {
                             Ok(value) => value,
                             Err(reason) => return Err(reason),
                         }));
                     }
-                    Stmt::Trap => return Ok(None),
+                    Stmt::Trap { .. } => return Ok(None),
                     Stmt::Machine {
                         instruction,
                         inputs,
                         outputs,
+                        ..
                     } => {
                         if *instruction == super::MachineInstruction::ArmCacheZero {
                             return Err("cache maintenance requires external memory state");

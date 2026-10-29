@@ -27,6 +27,7 @@ fn smt_normalized_pointers_preserve_assignments_and_addresses() {
                                     width: 64,
                                 },
                                 value: Expr::reg(7, 64),
+                                at: None,
                             },
                             Stmt::Assign {
                                 dest: RegRef {
@@ -34,11 +35,13 @@ fn smt_normalized_pointers_preserve_assignments_and_addresses() {
                                     width: 64,
                                 },
                                 value: before.clone(),
+                                at: None,
                             },
                             Stmt::Store {
                                 addr: before.clone(),
                                 value: Expr::Const(0),
                                 width: 1,
+                                at: None,
                             },
                         ],
                     }];
@@ -100,6 +103,7 @@ fn partial_reads_and_writes_keep_the_original_pointer() {
                             width: 64,
                         },
                         value: Expr::Const(0),
+                        at: None,
                     },
                     Stmt::Assign {
                         dest: RegRef {
@@ -107,6 +111,7 @@ fn partial_reads_and_writes_keep_the_original_pointer() {
                             width: if partial_write { width } else { 64 },
                         },
                         value: Expr::reg(register, if partial_write { 64 } else { width }),
+                        at: None,
                     },
                 ],
             }];
@@ -129,11 +134,13 @@ fn an_incoming_local_value_is_not_represented_as_an_element_pointer() {
                     width: 64,
                 },
                 value: Expr::bin(BinOp::Add, Expr::reg(register, 64), Expr::Const(16)),
+                at: None,
             },
             Stmt::Store {
                 addr: Expr::reg(register, 64),
                 value: Expr::Const(0),
                 width: 1,
+                at: None,
             },
         ],
     );

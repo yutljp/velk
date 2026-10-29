@@ -117,7 +117,7 @@ fn fold(ir: &mut FunctionIr, frame_loads: FrameLoads) {
         let mut index = ir.blocks[block].stmts.len();
         while index > 0 {
             index -= 1;
-            let Stmt::Assign { dest, value } = &ir.blocks[block].stmts[index] else {
+            let Stmt::Assign { dest, value, .. } = &ir.blocks[block].stmts[index] else {
                 continue;
             };
             if kept(dest.index, value, ir) {
@@ -374,6 +374,7 @@ fn count_operands(stmt: &Stmt, dest: u16) -> usize {
                     op: Operation::Results,
                     ..
                 },
+            ..
         } => 0,
         _ => stmt
             .operands()
@@ -415,6 +416,7 @@ pub(crate) fn substitute(stmt: &mut Stmt, dest: RegRef, value: &Expr) -> bool {
             lhs,
             rhs,
         },
+        ..
     } = stmt
         && matches!(value, Expr::Load { .. })
         && let (Expr::Reg { index, width: read }, Expr::Const(mask)) = (lhs.as_ref(), rhs.as_ref())
@@ -573,6 +575,7 @@ mod tests {
         Stmt::Assign {
             dest: RegRef { index, width: 64 },
             value,
+            at: None,
         }
     }
 
@@ -596,6 +599,7 @@ mod tests {
             outputs: crate::ir::fallback_call_outputs(Convention::SysV, None),
             clobbers: None,
             via: None,
+            at: None,
         }
     }
 
@@ -631,9 +635,11 @@ mod tests {
                         addr: slot(offset),
                         value: Expr::Const(7),
                         width: 8,
+                        at: None,
                     },
                     Stmt::Ret {
                         value: Expr::reg(V1, 64),
+                        at: None,
                     },
                 ],
             );
@@ -658,6 +664,7 @@ mod tests {
         for barrier in [
             call(Vec::new()),
             Stmt::Machine {
+                at: None,
                 instruction: crate::ir::MachineInstruction::ArmBarrier { kind: 0, option: 0 },
                 inputs: Vec::new(),
                 outputs: Vec::new(),
@@ -670,6 +677,7 @@ mod tests {
                     barrier,
                     Stmt::Ret {
                         value: Expr::reg(V1, 64),
+                        at: None,
                     },
                 ],
             );
@@ -705,6 +713,7 @@ mod tests {
             call(vec![Expr::reg(V1, 64), Expr::reg(V2, 64)]),
             Stmt::Ret {
                 value: Expr::Const(0),
+                at: None,
             },
         ]);
         assert!(
@@ -722,9 +731,11 @@ mod tests {
                 addr: Expr::reg(6, 64),
                 value: Expr::Const(0),
                 width: 8,
+                at: None,
             },
             Stmt::Ret {
                 value: Expr::reg(V1, 64),
+                at: None,
             },
         ]);
         assert_eq!(stmts.len(), 3, "{stmts:?}");
@@ -737,6 +748,7 @@ mod tests {
             call(vec![]),
             Stmt::Ret {
                 value: Expr::reg(V1, 64),
+                at: None,
             },
         ]);
         assert_eq!(stmts.len(), 3, "{stmts:?}");
@@ -750,10 +762,11 @@ mod tests {
             call(vec![]),
             Stmt::Ret {
                 value: Expr::reg(V1, 64),
+                at: None,
             },
         ]);
         assert!(
-            matches!(stmts.as_slice(), [_, Stmt::Ret { value }] if *value == sum),
+            matches!(stmts.as_slice(), [_, Stmt::Ret { value, .. }] if *value == sum),
             "{stmts:?}"
         );
         let stmts = folded(vec![
@@ -761,6 +774,7 @@ mod tests {
             assign(V2, Expr::Const(5)),
             Stmt::Ret {
                 value: Expr::reg(V1, 64),
+                at: None,
             },
         ]);
         assert_eq!(stmts.len(), 3, "{stmts:?}");
@@ -773,6 +787,7 @@ mod tests {
             call(vec![Expr::reg(V1, 64), Expr::reg(V1, 64)]),
             Stmt::Ret {
                 value: Expr::Const(0),
+                at: None,
             },
         ]);
         assert_eq!(stmts.len(), 3, "{stmts:?}");
@@ -796,9 +811,11 @@ mod tests {
                             width: 32,
                         },
                         value: loaded.clone(),
+                        at: None,
                     },
                     Stmt::Ret {
                         value: Expr::reg(V1, 64),
+                        at: None,
                     },
                 ],
             );
@@ -821,7 +838,7 @@ mod tests {
                 loaded
             };
             assert!(
-                matches!(ir.blocks[0].stmts.as_slice(), [Stmt::Ret { value }] if *value == expected),
+                matches!(ir.blocks[0].stmts.as_slice(), [Stmt::Ret { value, .. }] if *value == expected),
                 "{}",
                 ir.render()
             );
@@ -879,6 +896,7 @@ mod tests {
                     assign(V1, value.clone()),
                     Stmt::Ret {
                         value: Expr::reg(V1, 32),
+                        at: None,
                     },
                 ],
             );
@@ -890,7 +908,7 @@ mod tests {
 
             let masked = Expr::bin(BinOp::And, value, Expr::Const(0xffff_ffff));
             assert!(
-                matches!(ir.blocks[0].stmts.as_slice(), [Stmt::Ret { value }] if *value == masked),
+                matches!(ir.blocks[0].stmts.as_slice(), [Stmt::Ret { value, .. }] if *value == masked),
                 "{}",
                 ir.render()
             );
@@ -914,9 +932,11 @@ mod tests {
                         width: 1,
                         signed: true,
                     },
+                    at: None,
                 },
                 Stmt::Ret {
                     value: Expr::bin(BinOp::Sar, Expr::reg(V1, 64), Expr::Const(1)),
+                    at: None,
                 },
             ],
         );
@@ -957,12 +977,14 @@ mod tests {
                             width: 1,
                             signed: true,
                         },
+                        at: None,
                     },
                     Stmt::Brif {
                         cond,
                         lhs: Expr::reg(V1, 64),
                         rhs: Expr::Const(rhs),
                         target: 0x20,
+                        at: None,
                     },
                 ],
             );
@@ -971,12 +993,14 @@ mod tests {
                     start: 0x10,
                     stmts: vec![Stmt::Ret {
                         value: Expr::Const(0),
+                        at: None,
                     }],
                 },
                 Block {
                     start: 0x20,
                     stmts: vec![Stmt::Ret {
                         value: Expr::Const(1),
+                        at: None,
                     }],
                 },
             ]);
@@ -1006,6 +1030,7 @@ mod tests {
                         lhs: Expr::bin(BinOp::And, Expr::reg(V1, 8), Expr::Const(4)),
                         rhs: Expr::Const(rhs),
                         target: 0x20,
+                        at: None,
                     },
                 ],
             );
@@ -1014,12 +1039,14 @@ mod tests {
                     start: 0x10,
                     stmts: vec![Stmt::Ret {
                         value: Expr::Const(0),
+                        at: None,
                     }],
                 },
                 Block {
                     start: 0x20,
                     stmts: vec![Stmt::Ret {
                         value: Expr::Const(1),
+                        at: None,
                     }],
                 },
             ]);
@@ -1068,6 +1095,7 @@ mod tests {
                 lhs: Expr::bin(BinOp::And, Expr::reg(V1, 64), Expr::Const(4)),
                 rhs: Expr::Const(0),
                 target: 0x20,
+                at: None,
             }],
         });
         for start in [0x18, 0x20] {
@@ -1075,6 +1103,7 @@ mod tests {
                 start,
                 stmts: vec![Stmt::Ret {
                     value: Expr::Const(start),
+                    at: None,
                 }],
             });
         }

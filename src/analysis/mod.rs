@@ -135,7 +135,7 @@ fn float_result(blocks: &[crate::ir::Block], image: &Image) -> Option<crate::ir:
                     state.int = true;
                     state.float_last = false;
                 }
-                Stmt::Assign { dest, value } if dest.index == slot => {
+                Stmt::Assign { dest, value, .. } if dest.index == slot => {
                     state.float = true;
                     state.float_last = true;
                     state.precision = written_precision(value, slot);
@@ -252,7 +252,7 @@ fn tail_calls_through_pointers(
         if switched.contains(&block.start) || height.is_some_and(|height| height != 0) {
             continue;
         }
-        let Some(Stmt::BrIndirect { target }) = block.stmts.last() else {
+        let Some(Stmt::BrIndirect { target, .. }) = block.stmts.last() else {
             continue;
         };
         // A copy of such a register is one too, as an argument moved aside
@@ -276,7 +276,7 @@ fn tail_calls_through_pointers(
                 break;
             };
             match earlier.find_map(|stmt| match stmt {
-                Stmt::Assign { dest, value } if dest.index == *index => Some(value),
+                Stmt::Assign { dest, value, .. } if dest.index == *index => Some(value),
                 _ => None,
             }) {
                 None | Some(Expr::Load { .. }) => {
@@ -290,7 +290,7 @@ fn tail_calls_through_pointers(
             continue;
         }
         let through = target.clone();
-        block.stmts.pop();
+        let at = block.stmts.pop().and_then(|stmt| stmt.origin());
         block.stmts.push(Stmt::Call {
             kind: crate::ir::CallKind::Tail,
             target: None,
@@ -305,9 +305,11 @@ fn tail_calls_through_pointers(
                 None,
             ),
             via: None,
+            at,
         });
         block.stmts.push(Stmt::Ret {
             value: Expr::reg(crate::arch::RETURN, 64),
+            at: None,
         });
     }
 }
@@ -351,7 +353,7 @@ fn drop_unreached(blocks: &mut Vec<crate::ir::Block>) {
     if blocks.iter().any(|block| {
         matches!(
             block.stmts.last(),
-            Some(Stmt::BrIndirect { .. } | Stmt::Br { target: None })
+            Some(Stmt::BrIndirect { .. } | Stmt::Br { target: None, .. })
         )
     }) {
         return;
@@ -410,6 +412,7 @@ fn initialize_go_registers(blocks: &mut [crate::ir::Block], isa: crate::loader::
             !matches!(stmt, crate::ir::Stmt::Assign {
                 dest: crate::ir::RegRef { index: 14, width: 64 },
                 value: crate::ir::Expr::Load { addr, width: 8, .. },
+                ..
             } if matches!(addr.as_ref(), crate::ir::Expr::Bin {
                     op: crate::ir::BinOp::Add,
                     lhs,
@@ -430,6 +433,7 @@ fn initialize_go_registers(blocks: &mut [crate::ir::Block], isa: crate::loader::
                     width: 64,
                 },
                 value: crate::ir::Expr::constant(0),
+                at: None,
             },
         );
     }
@@ -471,11 +475,14 @@ fn drop_stack_growth_check(blocks: &mut Vec<crate::ir::Block>, image: &Image) {
             continue;
         }
         // The check falls through into the body.
-        *blocks[index].stmts.last_mut().expect("a branch") = Stmt::Br { target: Some(next) };
+        *blocks[index].stmts.last_mut().expect("a branch") = Stmt::Br {
+            target: Some(next),
+            at: None,
+        };
         dropped.insert(growth);
         // The restart: arguments reloaded, then back to the entry.
         if let Some(next) = blocks.get(growth + 1)
-            && matches!(next.stmts.last(), Some(Stmt::Br { target: Some(start) }) if *start == entry)
+            && matches!(next.stmts.last(), Some(Stmt::Br { target: Some(start), .. }) if *start == entry)
         {
             dropped.insert(growth + 1);
         }
@@ -498,7 +505,11 @@ fn apply_call_return(ir: &mut FunctionIr, image: &Image) {
     }
     let mut width = None;
     for block in &ir.blocks {
-        let [.., call @ Stmt::Call { target, .. }, Stmt::Ret { value }] = block.stmts.as_slice()
+        let [
+            ..,
+            call @ Stmt::Call { target, .. },
+            Stmt::Ret { value, .. },
+        ] = block.stmts.as_slice()
         else {
             if matches!(block.stmts.last(), Some(Stmt::Ret { .. })) {
                 return;
@@ -548,7 +559,8 @@ fn apply_call_return(ir: &mut FunctionIr, image: &Image) {
         (Some(CType::Void), _) => {
             ir.ret_type = CType::Void;
             for block in &mut ir.blocks {
-                if let [.., Stmt::Call { .. }, Stmt::Ret { value }] = block.stmts.as_mut_slice() {
+                if let [.., Stmt::Call { .. }, Stmt::Ret { value, .. }] = block.stmts.as_mut_slice()
+                {
                     *value = Expr::constant(0);
                 }
             }
@@ -735,6 +747,7 @@ fn drop_stack_protector(ir: &mut FunctionIr, image: &Image) {
             lhs,
             rhs,
             target,
+            ..
         }) = ir.blocks[index].stmts.last()
         else {
             continue;
@@ -756,6 +769,7 @@ fn drop_stack_protector(ir: &mut FunctionIr, image: &Image) {
         };
         *ir.blocks[index].stmts.last_mut().expect("a branch") = Stmt::Br {
             target: Some(continues),
+            at: None,
         };
         guarded.push((copy, guard));
     }
@@ -844,7 +858,7 @@ fn drop_dead_constant_reads(ir: &mut FunctionIr, image: &Image) {
         let mut keep = vec![true; ir.blocks[index].stmts.len()];
         for (position, stmt) in ir.blocks[index].stmts.iter().enumerate().rev() {
             let (writes, reads) = crate::ir::visit::statement_registers(stmt);
-            if let Stmt::Assign { dest, value } = stmt
+            if let Stmt::Assign { dest, value, .. } = stmt
                 && !live.contains(&dest.index)
                 && constant_loads(value, &constant, sp)
             {
@@ -890,7 +904,7 @@ fn name_indirect_result(ir: &mut FunctionIr) {
     let stmts = || ir.blocks.iter().flat_map(|block| &block.stmts);
     let returns_it = stmts()
         .filter_map(|stmt| match stmt {
-            Stmt::Ret { value } => Some(value),
+            Stmt::Ret { value, .. } => Some(value),
             _ => None,
         })
         .all(|value| matches!(value, Expr::Reg { index, width: 64 } if *index == first));
@@ -1144,7 +1158,7 @@ fn lift_function(image: &Image, function: &Function) -> Result<Lifted, LiftError
             1
         };
         for stmt in blocks.iter_mut().flat_map(|block| &mut block.stmts) {
-            if let Stmt::Ret { value } = stmt {
+            if let Stmt::Ret { value, .. } = stmt {
                 *value = crate::lift::pairs32::join(
                     crate::ir::Expr::reg(0, 32),
                     crate::ir::Expr::reg(high, 32),
@@ -1178,14 +1192,14 @@ fn lift_function(image: &Image, function: &Function) -> Result<Lifted, LiftError
     // A function the debug info says returns nothing returns no register.
     if declared == Some(&crate::ir::CType::Void) || ignored {
         for stmt in blocks.iter_mut().flat_map(|block| &mut block.stmts) {
-            if let crate::ir::Stmt::Ret { value } = stmt {
+            if let crate::ir::Stmt::Ret { value, .. } = stmt {
                 *value = crate::ir::Expr::constant(0);
             }
         }
     }
     if let (Some(precision), Some(slot)) = (float_return, float_return_slot(image.isa)) {
         for stmt in blocks.iter_mut().flat_map(|block| &mut block.stmts) {
-            if let crate::ir::Stmt::Ret { value } = stmt {
+            if let crate::ir::Stmt::Ret { value, .. } = stmt {
                 *value = crate::ir::Expr::reg(slot, precision.bits());
             }
         }
@@ -1203,7 +1217,7 @@ fn lift_function(image: &Image, function: &Function) -> Result<Lifted, LiftError
             .map(|register| crate::ir::Expr::reg(*register, 64))
             .collect();
         for stmt in blocks.iter_mut().flat_map(|block| &mut block.stmts) {
-            if let crate::ir::Stmt::Ret { value } = stmt
+            if let crate::ir::Stmt::Ret { value, .. } = stmt
                 && matches!(value, crate::ir::Expr::Reg { .. })
             {
                 *value = crate::ir::Expr::Apply {
@@ -1240,7 +1254,7 @@ fn lift_function(image: &Image, function: &Function) -> Result<Lifted, LiftError
         };
         if let Some(returned) = returned {
             for stmt in blocks.iter_mut().flat_map(|block| &mut block.stmts) {
-                if let crate::ir::Stmt::Ret { value } = stmt {
+                if let crate::ir::Stmt::Ret { value, .. } = stmt {
                     *value = returned.clone();
                 }
             }
@@ -1289,7 +1303,7 @@ fn lift_function(image: &Image, function: &Function) -> Result<Lifted, LiftError
             },
         };
         for stmt in blocks.iter_mut().flat_map(|block| &mut block.stmts) {
-            if let crate::ir::Stmt::Ret { value } = stmt {
+            if let crate::ir::Stmt::Ret { value, .. } = stmt {
                 *value = returned.clone();
             }
         }
@@ -1475,14 +1489,17 @@ mod tests {
                         }],
                         clobbers: Some([0].into_iter().collect()),
                         via: None,
+                        at: None,
                     },
                     Stmt::Store {
                         addr: Expr::reg(3, 64),
                         value: Expr::reg(2, 64),
                         width: 8,
+                        at: None,
                     },
                     Stmt::Ret {
                         value: Expr::reg(VARIABLE_BASE, 64),
+                        at: None,
                     },
                 ],
             );
@@ -1616,9 +1633,11 @@ mod tests {
                     outputs,
                     clobbers: None,
                     via: None,
+                    at: None,
                 },
                 Stmt::Ret {
                     value: Expr::reg(0, 64),
+                    at: None,
                 },
             ],
         );
@@ -1629,7 +1648,8 @@ mod tests {
         assert!(matches!(
             ir.blocks[0].stmts[1],
             Stmt::Ret {
-                value: Expr::Const(0)
+                value: Expr::Const(0),
+                ..
             }
         ));
     }
@@ -1660,6 +1680,7 @@ mod tests {
                                 width: 4,
                                 signed: false,
                             },
+                            at: None,
                         },
                         Stmt::Call {
                             kind: crate::ir::CallKind::Invoke,
@@ -1672,9 +1693,11 @@ mod tests {
                             outputs: crate::ir::fallback_call_outputs(convention, clobbers),
                             clobbers,
                             via: None,
+                            at: None,
                         },
                         Stmt::Ret {
                             value: Expr::reg(slot, 32),
+                            at: None,
                         },
                     ],
                 }];
@@ -1717,9 +1740,11 @@ mod tests {
                         outputs,
                         clobbers: None,
                         via: None,
+                        at: None,
                     },
                     Stmt::Ret {
                         value: Expr::reg(returned, 64),
+                        at: None,
                     },
                 ],
             );

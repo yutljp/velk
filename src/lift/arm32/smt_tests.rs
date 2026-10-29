@@ -55,7 +55,7 @@ fn decoded_extend_add_matches_symbolic_rotation_and_addition() {
                         &format!("(bvadd {} {extended})", smt::term(&Expr::reg(1, 32))),
                         32,
                     );
-                    let [Stmt::Assign { dest, value }] = lifter.stmts.as_slice() else {
+                    let [Stmt::Assign { dest, value, .. }] = lifter.stmts.as_slice() else {
                         panic!("expected one assignment");
                     };
                     assert_eq!(dest.index, 0);
@@ -144,11 +144,13 @@ fn carry_arithmetic_is_symbolic() {
         let mut statements = lifter.stmts.clone();
         statements.push(Stmt::Ret {
             value: Expr::reg(2, 64),
+            at: None,
         });
         proofs.program(
             format!("carry arithmetic value/{opcode:?}"),
             &[Stmt::Ret {
                 value: expected.clone(),
+                at: None,
             }],
             &statements,
         );
@@ -216,13 +218,16 @@ fn carry_arithmetic_is_symbolic() {
                 .unwrap();
             // Capture statements freeze the incoming carry before setting the output flags.
             let mut statements = lifter.stmts.clone();
-            statements.push(Stmt::Ret { value: actual });
+            statements.push(Stmt::Ret {
+                value: actual,
+                at: None,
+            });
             // Substitute the captured carry so the predicate remains a pure expression.
             crate::ir::visit::replace_reads(
                 statements.last_mut().unwrap(),
                 &[(crate::ir::EXCHANGE, incoming.clone())],
             );
-            let Stmt::Ret { value } = statements.last().unwrap() else {
+            let Stmt::Ret { value, .. } = statements.last().unwrap() else {
                 unreachable!()
             };
             proofs.predicate(
@@ -280,7 +285,7 @@ fn rotate_through_carry_preserves_value_and_flags() {
             "(concat ((_ extract 0 0) {}) ((_ extract 31 1) r0))",
             smt::term(&carry)
         );
-        let [Stmt::Assign { dest, value }] = lifter.stmts.as_slice() else {
+        let [Stmt::Assign { dest, value, .. }] = lifter.stmts.as_slice() else {
             panic!("RRX assigns its destination once");
         };
         assert_eq!(dest.index, 2);
@@ -412,6 +417,7 @@ fn long_multiply_matches_a_wide_product() {
         assert_eq!(lifter.execute(&instruction, 0, 4, None), Some(false));
         lifter.stmts.push(Stmt::Ret {
             value: super::super::pairs32::join(Expr::reg(0, 32), Expr::reg(1, 32)),
+            at: None,
         });
         let signed = matches!(opcode, Opcode::SMULL | Opcode::SMLAL);
         let extend = |index| {
@@ -442,7 +448,10 @@ fn long_multiply_matches_a_wide_product() {
         // Multiplication is compared through its actual 64-bit modular IR semantics.
         proofs.program(
             format!("long multiply/{opcode:?}"),
-            &[Stmt::Ret { value: expected }],
+            &[Stmt::Ret {
+                value: expected,
+                at: None,
+            }],
             &lifter.stmts,
         );
     }

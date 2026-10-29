@@ -21,6 +21,7 @@ pub(super) fn call_pointer_types(ir: &mut FunctionIr, symbols: &super::Symbols) 
         if let Stmt::Assign {
             dest,
             value: Expr::Reg { index, width: 64 },
+            ..
         } = stmt
             && dest.width == 64
             && crate::ir::is_temp(dest.index)
@@ -95,6 +96,7 @@ pub(super) fn call_pointer_types(ir: &mut FunctionIr, symbols: &super::Symbols) 
         }
         if let Stmt::Ret {
             value: Expr::Reg { index, width: 64 },
+            ..
         } = stmt
             && ir.ret_type.is_pointer()
         {
@@ -130,7 +132,7 @@ pub(super) fn call_pointer_types(ir: &mut FunctionIr, symbols: &super::Symbols) 
         {
             rejected.insert(dest.index);
         }
-        if let Stmt::Assign { dest, value } = stmt
+        if let Stmt::Assign { dest, value, .. } = stmt
             && base(value) == Some(crate::arch::stack_pointer(ir.isa))
         {
             rejected.insert(dest.index);
@@ -223,10 +225,11 @@ pub(crate) fn variable_types(
                         op: BinOp::Add | BinOp::Sub | BinOp::Mul,
                         ..
                     },
+                ..
             } if dest.width >= 32 => {
                 uses.wrapping.insert(dest.index);
             }
-            Stmt::Ret { value } if ir.ret_type.integer().is_some_and(|(_, signed)| signed) => {
+            Stmt::Ret { value, .. } if ir.ret_type.integer().is_some_and(|(_, signed)| signed) => {
                 if let Some(index) = copied(value) {
                     uses.signed_context.insert(index);
                 }
@@ -246,6 +249,7 @@ pub(crate) fn variable_types(
             Stmt::Assign {
                 dest,
                 value: Expr::Reg { width: 64, .. },
+                ..
             } if dest.width == 64 => {}
             Stmt::Store { value, .. } => integer_reads(value, &mut integer_copies),
             Stmt::Machine {
@@ -260,6 +264,7 @@ pub(crate) fn variable_types(
             Stmt::Ret { .. } if ir.ret_type.is_pointer() => {}
             Stmt::Ret {
                 value: Expr::Reg { width: 64, .. },
+                ..
             } if ir.ret_type.integer().is_some_and(|(bits, _)| bits == 64) => {}
             other => {
                 for value in other.operands() {
@@ -268,7 +273,7 @@ pub(crate) fn variable_types(
             }
         }
         match stmt {
-            Stmt::Assign { dest, value } => {
+            Stmt::Assign { dest, value, .. } => {
                 uses.seen.insert(dest.index);
                 let mut dependencies = HashSet::new();
                 crate::ir::visit::expr_reads(value, &mut dependencies);
@@ -314,7 +319,7 @@ pub(crate) fn variable_types(
                 }
             }
             Stmt::Store { addr, width, .. } => uses.address(addr, *width),
-            Stmt::Ret { value } => {
+            Stmt::Ret { value, .. } => {
                 if let (Some(precision), Some(source)) = (float_return, copied(value)) {
                     uses.float(source, precision);
                 }
@@ -323,6 +328,7 @@ pub(crate) fn variable_types(
                 instruction,
                 inputs,
                 outputs,
+                ..
             } => {
                 if let crate::ir::MachineInstruction::Atomic { width, .. } = instruction
                     && let Some(addr) = inputs.first()
@@ -522,7 +528,7 @@ fn derived_structure(ir: &FunctionIr, index: u16) -> Option<CType> {
                 .0
                 .contains(&index)
         });
-    let Some(Stmt::Assign { dest, value }) = assignments.next() else {
+    let Some(Stmt::Assign { dest, value, .. }) = assignments.next() else {
         return None;
     };
     if dest.width != 64 || assignments.next().is_some() {
@@ -609,6 +615,7 @@ pub(super) fn literal_offsets(ir: &FunctionIr) -> HashSet<u16> {
             Stmt::Assign {
                 dest,
                 value: Expr::Const(value),
+                ..
             } if (-0xfff..0x1000).contains(&(*value as i64)) => Some(dest.index),
             _ => None,
         })
@@ -630,18 +637,21 @@ pub(super) fn literal_offsets(ir: &FunctionIr) -> HashSet<u16> {
                     addr,
                     value: Expr::Reg { index, width: 64 },
                     width: 8,
+                    ..
                 } if frame(addr) && known.contains(index) => {
                     slots.insert(addr.clone());
                 }
                 Stmt::Assign {
                     dest,
                     value: Expr::Load { addr, width: 8, .. },
+                    ..
                 } if slots.contains(addr.as_ref()) => {
                     known.insert(dest.index);
                 }
                 Stmt::Assign {
                     dest,
                     value: Expr::Reg { index, .. },
+                    ..
                 } if known.contains(index) => {
                     known.insert(dest.index);
                 }
@@ -718,7 +728,9 @@ pub(crate) fn pointer_fields(ir: &mut FunctionIr, types: &BTreeMap<u16, CType>) 
             count_loads(value, &field, &mut loads);
         }
         match stmt {
-            Stmt::Store { addr, value, width } => {
+            Stmt::Store {
+                addr, value, width, ..
+            } => {
                 if let Some(key) = field(addr) {
                     match (width, value) {
                         (8, Expr::Reg { index, width: 64 }) => note(key, type_of(*index)),
@@ -728,7 +740,7 @@ pub(crate) fn pointer_fields(ir: &mut FunctionIr, types: &BTreeMap<u16, CType>) 
                     }
                 }
             }
-            Stmt::Assign { dest, value } => {
+            Stmt::Assign { dest, value, .. } => {
                 if let Expr::Load { addr, width: 8, .. } = value
                     && dest.width == 64
                     && let Some(key) = field(addr)

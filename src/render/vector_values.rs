@@ -31,7 +31,7 @@ pub(super) fn groups(
     let mut separate = HashSet::new();
     for stmt in ir.blocks.iter().flat_map(|block| &block.stmts) {
         match stmt {
-            Stmt::Assign { value, .. } | Stmt::Ret { value } => {
+            Stmt::Assign { value, .. } | Stmt::Ret { value, .. } => {
                 separate_uses(value, Use::Value, &mut separate);
             }
             Stmt::Store { addr, value, .. } => {
@@ -157,6 +157,10 @@ fn separate_uses(expr: &Expr, usage: Use, separate: &mut HashSet<u16>) {
 }
 
 pub(super) fn whole_writes(body: &str, groups: &[Group]) -> String {
+    if groups.is_empty() {
+        return body.to_owned();
+    }
+    let annotated = body.contains(" /* 0x");
     let lines: Vec<_> = body.split_inclusive('\n').collect();
     let mut out = String::with_capacity(body.len());
     let mut position = 0;
@@ -164,20 +168,30 @@ pub(super) fn whole_writes(body: &str, groups: &[Group]) -> String {
         let line = lines[position];
         let mut combined = false;
         if let Some(next) = lines.get(position + 1) {
+            let (line, low_at) = if annotated {
+                super::addresses::line_origin(line)
+            } else {
+                (line.trim_end_matches('\n'), None)
+            };
+            let (next, high_at) = if annotated {
+                super::addresses::line_origin(next)
+            } else {
+                (next.trim_end_matches('\n'), None)
+            };
             let indentation = &line[..line.len() - line.trim_start().len()];
             for group in groups {
                 let [(.., low), (.., high)] = &group.fields;
                 let Some(low_value) = line
                     .trim_start()
                     .strip_prefix(&format!("{low} = "))
-                    .and_then(|value| value.strip_suffix(";\n"))
+                    .and_then(|value| value.strip_suffix(';'))
                 else {
                     continue;
                 };
                 let Some(high_value) = next
                     .strip_prefix(indentation)
                     .and_then(|line| line.strip_prefix(&format!("{high} = ")))
-                    .and_then(|value| value.strip_suffix(";\n"))
+                    .and_then(|value| value.strip_suffix(';'))
                 else {
                     continue;
                 };
@@ -189,6 +203,8 @@ pub(super) fn whole_writes(body: &str, groups: &[Group]) -> String {
                 let low = &low[group.name.len()..];
                 let high = &high[group.name.len()..];
                 out.push_str(&format!("{indentation}{} = (struct velk_vector){{ {low} = {low_value}, {high} = {high_value} }};\n", group.name));
+                let at = low_at.filter(|_| low_at == high_at);
+                super::addresses::append(&mut out, at, true);
                 combined = true;
                 break;
             }
@@ -210,6 +226,30 @@ mod tests {
     use crate::loader::Isa;
 
     #[test]
+    fn combined_writes_keep_only_a_shared_instruction_origin() {
+        let groups = [Group {
+            name: "vector".into(),
+            fields: [
+                (18, "vector.low.u64".into()),
+                (19, "vector.high.u64".into()),
+            ],
+        }];
+        let plain = "    vector.low.u64 = 1;\n    vector.high.u64 = 2;\n";
+        let expected = whole_writes(plain, &groups);
+        for (high, at) in [("0x10", Some(0x10)), ("0x20", None)] {
+            let input = format!(
+                "    vector.low.u64 = 1; /* 0x10 */\n    vector.high.u64 = 2; /* {high} */\n"
+            );
+            let result = whole_writes(&input, &groups);
+            assert_eq!(
+                super::super::addresses::line_origin(&result).0,
+                expected.trim_end()
+            );
+            assert_eq!(super::super::addresses::line_origin(&result).1, at);
+        }
+    }
+
+    #[test]
     fn independent_half_arithmetic_keeps_scalar_storage() {
         let ir = FunctionIr::single_block(
             Isa::X86_64,
@@ -220,6 +260,7 @@ mod tests {
                         width: 64,
                     },
                     value: Expr::Const(1),
+                    at: None,
                 },
                 Stmt::Assign {
                     dest: RegRef {
@@ -227,9 +268,11 @@ mod tests {
                         width: 64,
                     },
                     value: Expr::Const(2),
+                    at: None,
                 },
                 Stmt::Ret {
                     value: Expr::bin(BinOp::Add, Expr::reg(18, 64), Expr::reg(19, 64)),
+                    at: None,
                 },
             ],
         );

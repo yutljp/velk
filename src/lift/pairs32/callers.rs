@@ -295,7 +295,7 @@ fn collect(image: &Image) -> HashMap<u64, CallEvidence> {
                     Stmt::Unsupported { .. }
                         | Stmt::Machine { .. }
                         | Stmt::BrIndirect { .. }
-                        | Stmt::Br { target: None }
+                        | Stmt::Br { target: None, .. }
                 )
             })
         {
@@ -360,12 +360,14 @@ fn collect(image: &Image) -> HashMap<u64, CallEvidence> {
             for stmt in &block.stmts {
                 state.serial += 1;
                 match stmt {
-                    Stmt::Assign { dest, value } => {
+                    Stmt::Assign { dest, value, .. } => {
                         let value = state.eval(value, &mut results);
                         use_result(value, &mut results);
                         state.registers.insert(dest.index, value);
                     }
-                    Stmt::Store { addr, value, width } => {
+                    Stmt::Store {
+                        addr, value, width, ..
+                    } => {
                         let address = state.eval(addr, &mut results);
                         let value = state.eval(value, &mut results);
                         use_result(value, &mut results);

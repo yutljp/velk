@@ -113,7 +113,7 @@ fn ir_runs_off_the_end(ir: &FunctionIr, reachable: &HashSet<usize>) -> bool {
             ir.blocks[last].stmts.last(),
             Some(
                 Stmt::Ret { .. }
-                    | Stmt::Trap
+                    | Stmt::Trap { .. }
                     | Stmt::Br { .. }
                     | Stmt::BrIndirect { .. }
                     | Stmt::Switch { .. }
@@ -126,21 +126,21 @@ fn falls_through(nodes: &[Node]) -> bool {
     // A `break` in a `switch` leaves the switch, not the loop around it.
     fn breaks(nodes: &[Node]) -> bool {
         nodes.iter().any(|node| match node {
-            Node::Break => true,
+            Node::Break { .. } => true,
             Node::If { then, els, .. } => breaks(then) || breaks(els),
             _ => false,
         })
     }
     match nodes.last() {
-        None | Some(Node::Break) => true,
+        None | Some(Node::Break { .. }) => true,
         Some(Node::Label(_)) => true,
-        Some(Node::Continue) => false,
+        Some(Node::Continue { .. }) => false,
         // A body that ends in a call ends in one that does not return.
         Some(Node::Stmt(stmt)) => !matches!(
             stmt,
             Stmt::Ret { .. }
                 | Stmt::Call { .. }
-                | Stmt::Trap
+                | Stmt::Trap { .. }
                 | Stmt::Br { .. }
                 | Stmt::BrIndirect { .. }
                 | Stmt::Switch { .. }
@@ -173,7 +173,7 @@ fn reachable(ir: &FunctionIr) -> HashSet<usize> {
         }
         let next = index + 1;
         match ir.blocks[index].stmts.last() {
-            Some(Stmt::Br { target }) => pending.extend(target.as_ref().and_then(position)),
+            Some(Stmt::Br { target, .. }) => pending.extend(target.as_ref().and_then(position)),
             Some(Stmt::Brif { target, .. } | Stmt::BrifFlags { target, .. }) => {
                 pending.extend(position(target));
                 pending.push(next);
@@ -182,7 +182,7 @@ fn reachable(ir: &FunctionIr) -> HashSet<usize> {
                 pending.extend(cases.iter().filter_map(|(_, target)| position(target)));
                 pending.extend(default.as_ref().and_then(position));
             }
-            Some(Stmt::Ret { .. } | Stmt::BrIndirect { .. } | Stmt::Trap) => {}
+            Some(Stmt::Ret { .. } | Stmt::BrIndirect { .. } | Stmt::Trap { .. }) => {}
             _ => pending.push(next),
         }
     }
@@ -198,8 +198,48 @@ fn reachable(ir: &FunctionIr) -> HashSet<usize> {
 fn effect(stmt: &Stmt) -> String {
     match stmt {
         Stmt::Ret { .. } => "return".to_owned(),
-        other => format!("{other:?}"),
+        other => {
+            let mut other = other.clone();
+            match &mut other {
+                Stmt::Store { at, .. } | Stmt::Call { at, .. } => *at = None,
+                _ => {}
+            }
+            format!("{other:?}")
+        }
     }
+}
+
+#[test]
+fn effect_comparison_ignores_origins_and_retains_memory_operands() {
+    let original = Stmt::Store {
+        at: Some(0x10),
+        addr: velk::ir::Expr::Const(0x1000),
+        value: velk::ir::Expr::Const(7),
+        width: 4,
+    };
+    let mut other = original.clone();
+    let Stmt::Store { at, .. } = &mut other else {
+        panic!("a store");
+    };
+    *at = Some(0x20);
+    assert_eq!(effect(&other), effect(&original));
+    let Stmt::Store { value, .. } = &mut other else {
+        panic!("a store");
+    };
+    *value = velk::ir::Expr::Const(8);
+    assert_ne!(effect(&other), effect(&original));
+    let Stmt::Store { addr, value, .. } = &mut other else {
+        panic!("a store");
+    };
+    *value = velk::ir::Expr::Const(7);
+    *addr = velk::ir::Expr::Const(0x2000);
+    assert_ne!(effect(&other), effect(&original));
+    let Stmt::Store { addr, width, .. } = &mut other else {
+        panic!("a store");
+    };
+    *addr = velk::ir::Expr::Const(0x1000);
+    *width = 8;
+    assert_ne!(effect(&other), effect(&original));
 }
 
 fn dropped_effects(ir: &FunctionIr, nodes: &[Node], reachable: &HashSet<usize>) -> Vec<String> {
@@ -224,7 +264,7 @@ fn dropped_effects(ir: &FunctionIr, nodes: &[Node], reachable: &HashSet<usize>) 
                     }
                     collect(default.as_deref().unwrap_or_default(), kept);
                 }
-                Node::Label(_) | Node::Break | Node::Continue => {}
+                Node::Label(_) | Node::Break { .. } | Node::Continue { .. } => {}
             }
         }
     }
@@ -243,7 +283,7 @@ fn dropped_effects(ir: &FunctionIr, nodes: &[Node], reachable: &HashSet<usize>) 
                     | Stmt::Call { .. }
                     | Stmt::Machine { .. }
                     | Stmt::Unsupported { .. }
-                    | Stmt::Trap
+                    | Stmt::Trap { .. }
                     | Stmt::Ret { .. }
             )
         })
@@ -330,7 +370,7 @@ fn unassigned_reads(ir: &FunctionIr, isa: Isa) -> HashSet<u16> {
                     visit::collect_reads(input, &mut read);
                 }
             }
-            Stmt::Assign { dest, value } => {
+            Stmt::Assign { dest, value, .. } => {
                 written.insert(dest.index);
                 visit::collect_reads(value, &mut read);
             }
@@ -342,9 +382,9 @@ fn unassigned_reads(ir: &FunctionIr, isa: Isa) -> HashSet<u16> {
                 visit::collect_reads(lhs, &mut read);
                 visit::collect_reads(rhs, &mut read);
             }
-            Stmt::BrIndirect { target } => visit::collect_reads(target, &mut read),
+            Stmt::BrIndirect { target, .. } => visit::collect_reads(target, &mut read),
             Stmt::Switch { index, .. } => visit::collect_reads(index, &mut read),
-            Stmt::Ret { value } if ir.ret_type != CType::Void => {
+            Stmt::Ret { value, .. } if ir.ret_type != CType::Void => {
                 visit::collect_reads(value, &mut read)
             }
             Stmt::Call {
@@ -372,7 +412,7 @@ fn unassigned_reads(ir: &FunctionIr, isa: Isa) -> HashSet<u16> {
             | Stmt::BrifFlags { .. }
             | Stmt::Br { .. }
             | Stmt::Unsupported { .. }
-            | Stmt::Trap => {}
+            | Stmt::Trap { .. } => {}
         }
     }
     let exempt: &[u16] = match isa {

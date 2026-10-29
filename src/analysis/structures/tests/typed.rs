@@ -59,6 +59,7 @@ fn copies_combine_fields_and_preserve_mixed_signed_loads() {
                 load(at(7, 4), 1, true),
                 load(at(copy, 8), 2, false),
             ),
+            at: None,
         },
     ]);
     ir.name = Some("copied_fields".into());
@@ -96,6 +97,7 @@ fn a_local_structure_array_uses_the_exact_stride() {
             addr: element(Expr::reg(pointer, 64), Expr::reg(6, 64), 16, 0),
             value: Expr::Const(91),
             width: 8,
+            at: None,
         },
         Stmt::Ret {
             value: load(
@@ -103,6 +105,7 @@ fn a_local_structure_array_uses_the_exact_stride() {
                 4,
                 true,
             ),
+            at: None,
         },
     ]);
     ir.params.push(Param {
@@ -139,6 +142,7 @@ fn partial_or_conflicting_copies_do_not_combine_fields() {
         let mut stmts = vec![Stmt::Assign {
             dest: RegRef { index: copy, width },
             value: Expr::reg(7, width),
+            at: None,
         }];
         if width == 64 {
             stmts.push(assign(copy, Expr::Const(0)));
@@ -149,6 +153,7 @@ fn partial_or_conflicting_copies_do_not_combine_fields() {
                 load(at(7, 0), 4, false),
                 load(at(copy, 0), 8, false),
             ),
+            at: None,
         });
         let mut ir = pointer_function(stmts);
         recover(&mut ir);
@@ -168,6 +173,7 @@ fn inconsistent_copy_accesses_and_unaligned_fields_keep_casts() {
                     load(at(7, 0), 4, false),
                     load(at(copy, offset), width, false),
                 ),
+                at: None,
             },
         ]);
         recover(&mut ir);
@@ -201,6 +207,7 @@ fn call_result_and_copy_use_fixed_fields() {
                 }],
                 clobbers: Some([0].into_iter().collect()),
                 via: None,
+                at: None,
             },
             assign(copy, Expr::reg(result, 64)),
             Stmt::Ret {
@@ -209,6 +216,7 @@ fn call_result_and_copy_use_fixed_fields() {
                     load(at(copy, 4), 4, true),
                     load(at(copy, 8), 8, false),
                 ),
+                at: None,
             },
         ],
     );
@@ -245,6 +253,7 @@ fn scalar_array_types_extend_through_whole_copies() {
                 8,
                 false,
             ),
+            at: None,
         },
     ]);
     ir.params.push(Param {
@@ -290,6 +299,7 @@ fn a_pointer_followed_through_its_own_field_points_at_a_structure() {
                 Expr::reg(total, 64),
                 load(at(pointer, 8), 8, false),
             ),
+            at: None,
         },
     ]);
     ir.name = Some("list_walk".into());
@@ -338,9 +348,11 @@ fn a_local_array_indexed_through_a_scaled_register_uses_its_elements() {
             addr: field(0),
             value: Expr::Const(91),
             width: 8,
+            at: None,
         },
         Stmt::Ret {
             value: load(field(8), 4, true),
+            at: None,
         },
     ]);
     ir.params.push(Param {
@@ -379,6 +391,7 @@ fn a_field_read_at_two_widths_is_a_union_member() {
             addr: at(7, 0),
             value: Expr::Const(0x1234_5678_9abc_def0),
             width: 8,
+            at: None,
         },
         Stmt::Ret {
             value: Expr::bin(
@@ -386,6 +399,7 @@ fn a_field_read_at_two_widths_is_a_union_member() {
                 load(at(7, 4), 4, true),
                 load(at(7, 8), 8, false),
             ),
+            at: None,
         },
     ]);
     ir.name = Some("cell_fields".into());
@@ -421,7 +435,10 @@ fn interior_loop_pointers_print_fields_and_preserve_signed_values() {
             assign(pointer, at(7, 8)),
             assign(count, Expr::Const(257)),
             assign(total, Expr::Const(0)),
-            Stmt::Br { target: Some(1) },
+            Stmt::Br {
+                target: Some(1),
+                at: None,
+            },
         ]);
         ir.isa = isa;
         ir.name = Some("sum_fields".into());
@@ -461,6 +478,7 @@ fn interior_loop_pointers_print_fields_and_preserve_signed_values() {
                     lhs: Expr::reg(count, 64),
                     rhs: Expr::Const(0),
                     target: 1,
+                    at: None,
                 },
             ],
         });
@@ -468,6 +486,7 @@ fn interior_loop_pointers_print_fields_and_preserve_signed_values() {
             start: 2,
             stmts: vec![Stmt::Ret {
                 value: Expr::reg(total, 64),
+                at: None,
             }],
         });
         recover(&mut ir);
@@ -517,6 +536,7 @@ fn indirect_accesses_do_not_conflict_with_the_outer_pointer_layout() {
                     addr: address(16),
                     value: Expr::Const(1),
                     width: 4,
+                    at: None,
                 },
                 Stmt::Ret {
                     value: Expr::bin(
@@ -527,6 +547,7 @@ fn indirect_accesses_do_not_conflict_with_the_outer_pointer_layout() {
                             4,
                         ),
                     ),
+                    at: None,
                 },
             ],
         );
@@ -574,6 +595,7 @@ fn conflicting_outer_widths_with_an_indirect_access_stay_as_casts() {
         assign(VARIABLE_BASE + 1, load(at(7, 16), 4, false)),
         Stmt::Ret {
             value: load(Expr::bin(BinOp::Add, nested, Expr::Const(8)), 4, false),
+            at: None,
         },
     ]);
     recover(&mut ir);
@@ -599,6 +621,7 @@ fn adjusted_copies_use_the_original_structure_offsets() {
                     ),
                     Expr::bin(BinOp::Sub, Expr::reg(copy, 64), Expr::reg(7, 64)),
                 ),
+                at: None,
             },
         ]);
         ir.isa = isa;
@@ -637,6 +660,7 @@ fn adjusted_copies_with_conflicting_widths_keep_casts() {
                 load(at(7, 0), 8, false),
                 load(at(copy, 0), 4, false),
             ),
+            at: None,
         },
     ]);
     let before = ir.blocks.clone();
@@ -658,12 +682,14 @@ fn addresses_of_stack_objects_keep_their_fixed_fields() {
                 addr: at(pointer, 0),
                 value: Expr::reg(7, 64),
                 width: 4,
+                at: None,
             },
             assign(pointer + 1, at(pointer, 8)),
             Stmt::Store {
                 addr: at(pointer + 1, 0),
                 value: Expr::Const(0x12345678),
                 width: 8,
+                at: None,
             },
             Stmt::Ret {
                 value: Expr::bin(
@@ -671,6 +697,7 @@ fn addresses_of_stack_objects_keep_their_fixed_fields() {
                     load(at(pointer, 0), 4, true),
                     load(at(pointer, 8), 8, false),
                 ),
+                at: None,
             },
         ]);
         ir.isa = isa;
@@ -717,6 +744,7 @@ fn adjusted_loaded_pointers_and_negative_offsets_keep_their_fields() {
                 load(at(base, 0), 1, false),
                 load(at(copy, 20), 4, true),
             ),
+            at: None,
         },
     ]);
     ir.name = Some("loaded_fields".into());
@@ -749,6 +777,7 @@ fn adjusted_pointers_with_other_machine_memory_accesses_keep_casts() {
     let mut ir = pointer_function(vec![
         assign(copy, at(7, 16)),
         Stmt::Machine {
+            at: None,
             instruction: crate::ir::MachineInstruction::ArmLoadAcquire { width: 8 },
             inputs: vec![at(copy, 4)],
             outputs: vec![RegRef {
@@ -762,6 +791,7 @@ fn adjusted_pointers_with_other_machine_memory_accesses_keep_casts() {
                 load(at(7, 0), 8, false),
                 load(at(copy, 4), 4, true),
             ),
+            at: None,
         },
     ]);
     ir.isa = Isa::AArch64;

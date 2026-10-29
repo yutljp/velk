@@ -8,6 +8,7 @@ fn assign(index: u16, width: u8, value: Expr) -> Stmt {
     Stmt::Assign {
         dest: velk::ir::RegRef { index, width },
         value,
+        at: None,
     }
 }
 
@@ -409,6 +410,7 @@ fn live_result_cases(cases: &mut Vec<Case>) {
     let mut live_product = signed_32_bit_division(BinOp::Shr, 63, 42);
     live_product.push(Stmt::Ret {
         value: op(BinOp::Xor, reg(40, 64), reg(43, 32)),
+        at: None,
     });
     cases.push(Case {
         name: "division_preserves_another_live_result".into(),
@@ -472,6 +474,7 @@ fn successive_predicate_cases(cases: &mut Vec<Case>) {
         }
         stmts.push(Stmt::Ret {
             value: op(BinOp::Xor, reg(43, 64), reg(53, 64)),
+            at: None,
         });
         cases.push(Case {
             name: format!("valid_after_wrong_predicate_{remainder}"),
@@ -629,6 +632,7 @@ fn printed_division_requires_the_complete_arithmetic_identity() {
         if !matches!(stmts.last(), Some(Stmt::Ret { .. })) {
             stmts.push(Stmt::Ret {
                 value: reg(43, width),
+                at: None,
             });
         }
         let original = synthetic_ir(

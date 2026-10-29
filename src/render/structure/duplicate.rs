@@ -24,17 +24,18 @@ pub(super) fn tail_duplicated(ir: &FunctionIr) -> Option<FunctionIr> {
             && !(block.stmts.iter().filter(|stmt| matches!(stmt, Stmt::Assign { .. })).count() >= 2
                 && block.stmts.iter().all(|stmt| {
                     matches!(stmt, Stmt::Assign { value: crate::ir::Expr::Const(_), .. }
-                        | Stmt::Br { target: Some(_) })
+                        | Stmt::Br { target: Some(_), .. })
                 }))
             && block.stmts.iter().enumerate().all(|(position, stmt)| {
                 is_straight_line_statement(stmt)
                     || (position + 1 == block.stmts.len()
-                        && matches!(stmt, Stmt::Br { target: Some(_) }))
+                        && matches!(stmt, Stmt::Br { target: Some(_), .. }))
             });
         // Where the block goes on to.
         let follow = match block.stmts.last() {
             Some(Stmt::Br {
                 target: Some(target),
+                ..
             }) => Some(*target),
             _ => ir.blocks.get(candidate + 1).map(|next| next.start),
         };
@@ -67,6 +68,11 @@ pub(super) fn tail_duplicated(ir: &FunctionIr) -> Option<FunctionIr> {
             .cloned()
             .chain(std::iter::once(Stmt::Br {
                 target: Some(follow),
+                at: ir.blocks[candidate]
+                    .stmts
+                    .last()
+                    .filter(|stmt| matches!(stmt, Stmt::Br { .. }))
+                    .and_then(Stmt::origin),
             }))
             .collect();
         // Each branch to the block goes to a copy of its own; one falling
@@ -141,6 +147,7 @@ pub(super) fn merged_checks(ir: &FunctionIr) -> Option<FunctionIr> {
             lhs,
             rhs,
             target,
+            ..
         }) = block.stmts.last()
         else {
             continue;
@@ -179,6 +186,7 @@ pub(super) fn merged_checks(ir: &FunctionIr) -> Option<FunctionIr> {
             block.stmts.pop();
             block.stmts.push(Stmt::Br {
                 target: Some(check),
+                at: None,
             });
         }
         // The test falls into a jump to the other place.
@@ -189,12 +197,14 @@ pub(super) fn merged_checks(ir: &FunctionIr) -> Option<FunctionIr> {
                 lhs,
                 rhs,
                 target: taken,
+                at: None,
             }],
         });
         ir.blocks.push(crate::ir::Block {
             start: check + 1,
             stmts: vec![Stmt::Br {
                 target: Some(otherwise),
+                at: None,
             }],
         });
         changed = true;
@@ -236,6 +246,7 @@ fn retarget(stmt: &mut Stmt, from: u64, to: u64) {
     match stmt {
         Stmt::Br {
             target: Some(target),
+            ..
         }
         | Stmt::Brif { target, .. } => replace(target),
         Stmt::Switch { cases, default, .. } => {
@@ -257,6 +268,7 @@ pub(super) fn threaded(ir: &FunctionIr) -> Option<FunctionIr> {
         [
             Stmt::Br {
                 target: Some(target),
+                ..
             },
         ] => Some(*target),
         _ => None,
@@ -295,6 +307,7 @@ pub(super) fn threaded(ir: &FunctionIr) -> Option<FunctionIr> {
         match last {
             Stmt::Br {
                 target: Some(target),
+                ..
             }
             | Stmt::Brif { target, .. } => redirect(target),
             Stmt::Switch { cases, default, .. } => {
@@ -344,6 +357,7 @@ pub(super) fn unthreaded(ir: &FunctionIr) -> Option<FunctionIr> {
                     lhs,
                     rhs,
                     target,
+                    ..
                 },
             ] => {
                 let Some(next) = ir.blocks.get(position + 1) else {
@@ -381,6 +395,7 @@ pub(super) fn unthreaded(ir: &FunctionIr) -> Option<FunctionIr> {
             lhs,
             rhs,
             target,
+            ..
         }) = ir.blocks[position].stmts.last()
         else {
             continue;
@@ -426,6 +441,7 @@ pub(super) fn unthreaded(ir: &FunctionIr) -> Option<FunctionIr> {
                 start: next_copy,
                 stmts: vec![Stmt::Br {
                     target: Some(start),
+                    at: None,
                 }],
             },
         );
@@ -497,25 +513,30 @@ mod tests {
     fn tail_copies_keep_source_order_and_refresh_edges_after_removal() {
         let branch = |target| Stmt::Br {
             target: Some(target),
+            at: None,
         };
         let store = |value| Stmt::Store {
             addr: Expr::reg(7, 64),
             value: Expr::Const(value),
             width: 8,
+            at: None,
         };
         let switch = |first, second| Stmt::Switch {
             index: Expr::reg(0, 64),
             cases: vec![(0, first), (1, first), (2, second)],
             default: Some(8),
+            at: None,
         };
         let conditional = |target| Stmt::Brif {
             cond: Cond::Eq,
             lhs: Expr::reg(0, 64),
             rhs: Expr::Const(0),
             target,
+            at: None,
         };
         let ret = Stmt::Ret {
             value: Expr::Const(0),
+            at: None,
         };
         let mut ir = FunctionIr::single_block(Isa::X86_64, Vec::new());
         ir.blocks = vec![

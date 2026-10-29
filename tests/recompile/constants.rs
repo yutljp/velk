@@ -45,6 +45,7 @@ fn printed_constants_preserve_promotions_and_signed_values() {
                     CType::U64,
                     vec![Stmt::Ret {
                         value: Expr::bin(op, Expr::reg(7, bits), Expr::Const(constant)),
+                        at: None,
                     }],
                 );
                 let candidate = printed_candidate(ir, inputs.clone());
@@ -84,6 +85,7 @@ fn printed_constants_preserve_promotions_and_signed_values() {
                             then: Box::new(Expr::Const(1)),
                             els: Box::new(Expr::Const(0)),
                         },
+                        at: None,
                     }],
                 );
                 candidates.push(printed_candidate(ir, inputs.clone()));
@@ -101,6 +103,7 @@ fn printed_constants_preserve_promotions_and_signed_values() {
             ty,
             vec![Stmt::Ret {
                 value: Expr::Const(constant),
+                at: None,
             }],
         );
         let candidate = printed_candidate(ir, vec![vec![]]);
@@ -186,6 +189,7 @@ fn printed_high_products_use_widened_integer_multiplication() {
             CType::U64,
             vec![Stmt::Ret {
                 value: Expr::bin(op, Expr::reg(7, 64), Expr::reg(6, 64)),
+                at: None,
             }],
         );
         let mut inputs = Vec::new();
@@ -220,6 +224,7 @@ fn printed_narrow_stores_discard_constant_upper_bits() {
                     addr: Expr::reg(7, 64),
                     value: Expr::Const(0x10000fffe),
                     width,
+                    at: None,
                 },
                 Stmt::Ret {
                     value: Expr::Load {
@@ -227,6 +232,7 @@ fn printed_narrow_stores_discard_constant_upper_bits() {
                         width,
                         signed: false,
                     },
+                    at: None,
                 },
             ],
         );
@@ -293,12 +299,14 @@ fn printed_partial_writes_drop_unobserved_constant_upper_bits() {
                     Expr::Const(0x100010000),
                     Expr::bin(BinOp::And, Expr::reg(7, 64), Expr::Const(0xffff)),
                 ),
+                at: None,
             },
             Stmt::Ret {
                 value: Expr::SignExtend {
                     value: Box::new(Expr::reg(40, 64)),
                     width: 1,
                 },
+                at: None,
             },
         ],
     );

@@ -108,6 +108,7 @@ fn components(functions: &[&mut FunctionIr], data_ranges: &[(u64, u64)]) -> Comp
             if let Stmt::Assign {
                 dest,
                 value: Expr::Reg { index, width: 64 },
+                ..
             } = stmt
                 && dest.width == 64
                 && stable(i, dest.index)
@@ -192,16 +193,16 @@ fn components(functions: &[&mut FunctionIr], data_ranges: &[(u64, u64)]) -> Comp
         }
         for stmt in ir.blocks.iter().flat_map(|block| &block.stmts) {
             match stmt {
-                Stmt::Assign { dest, value } if dest.width == 64 && stable(i, dest.index) => {
+                Stmt::Assign { dest, value, .. } if dest.width == 64 && stable(i, dest.index) => {
                     if let Some(from) = node(i, value) {
                         edges.push((Node::Register(i, dest.index), from));
                     }
                 }
-                Stmt::Ret { value }
+                Stmt::Ret { value, .. }
                     if ir.ret_type.is_pointer()
                         && ir.blocks.iter().flat_map(|block| &block.stmts).all(
                             |stmt| match stmt {
-                                Stmt::Ret { value } => node(i, value).is_some(),
+                                Stmt::Ret { value, .. } => node(i, value).is_some(),
                                 _ => true,
                             },
                         ) =>
@@ -214,6 +215,7 @@ fn components(functions: &[&mut FunctionIr], data_ranges: &[(u64, u64)]) -> Comp
                     addr: Expr::Const(address),
                     value,
                     width: 8,
+                    ..
                 } if data_address(*address) => {
                     if let Some(from) = node(i, value) {
                         edges.push((Node::Global(*address), from));
@@ -223,6 +225,7 @@ fn components(functions: &[&mut FunctionIr], data_ranges: &[(u64, u64)]) -> Comp
                     addr,
                     value,
                     width: 8,
+                    ..
                 } => {
                     if let Some(field) = field(i, addr)
                         && let Some(from) = node(i, value)

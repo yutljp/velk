@@ -35,9 +35,15 @@ fn a_zero_arithmetic_shift_still_truncates_its_operand() {
             super::super::semantics::evaluate(&after, &register),
             Some(0)
         );
-        let mut ir = FunctionIr::single_block(Isa::X86_64, vec![Stmt::Ret { value: before }]);
+        let mut ir = FunctionIr::single_block(
+            Isa::X86_64,
+            vec![Stmt::Ret {
+                value: before,
+                at: None,
+            }],
+        );
         crate::passes::simplify::simplify(&mut ir);
-        let Stmt::Ret { value } = &ir.blocks[0].stmts[0] else {
+        let Stmt::Ret { value, .. } = &ir.blocks[0].stmts[0] else {
             panic!("return remains");
         };
         assert_eq!(super::super::semantics::evaluate(value, &register), Some(0));
@@ -57,9 +63,9 @@ fn merging_masks_keeps_the_width_of_an_enclosing_signed_operation() {
         super::super::semantics::evaluate(&value, &register),
         Some(0x40)
     );
-    let mut ir = FunctionIr::single_block(Isa::X86_64, vec![Stmt::Ret { value }]);
+    let mut ir = FunctionIr::single_block(Isa::X86_64, vec![Stmt::Ret { value, at: None }]);
     crate::passes::simplify::simplify(&mut ir);
-    let Stmt::Ret { value } = &ir.blocks[0].stmts[0] else {
+    let Stmt::Ret { value, .. } = &ir.blocks[0].stmts[0] else {
         panic!("return remains");
     };
     assert_eq!(
@@ -91,9 +97,11 @@ fn propagated_constants_keep_the_assignment_truncation() {
                         width: bits,
                     },
                     value: Expr::Const(u64::MAX),
+                    at: None,
                 },
                 Stmt::Ret {
                     value: Expr::reg(3, 64),
+                    at: None,
                 },
             ],
         );
@@ -135,9 +143,9 @@ fn an_eight_byte_extension_keeps_the_high_half_of_a_merge() {
         _ => None,
     };
     let expected = super::super::semantics::evaluate(&value, &registers);
-    let mut ir = FunctionIr::single_block(Isa::X86_64, vec![Stmt::Ret { value }]);
+    let mut ir = FunctionIr::single_block(Isa::X86_64, vec![Stmt::Ret { value, at: None }]);
     crate::passes::simplify::simplify(&mut ir);
-    let Stmt::Ret { value } = &ir.blocks[0].stmts[0] else {
+    let Stmt::Ret { value, .. } = &ir.blocks[0].stmts[0] else {
         panic!("return remains");
     };
     assert_eq!(
@@ -166,10 +174,11 @@ pub(super) fn check_rewrite(proofs: &mut Proofs, name: &str, before: &Expr, afte
             Isa::X86_64,
             vec![Stmt::Ret {
                 value: original.clone(),
+                at: None,
             }],
         );
         crate::passes::simplify::simplify(&mut ir);
-        let Stmt::Ret { value: actual } = &ir.blocks[0].stmts[0] else {
+        let Stmt::Ret { value: actual, .. } = &ir.blocks[0].stmts[0] else {
             panic!("return remains");
         };
         proofs.expression(format!("{name}/context/{cond:?}"), &original, actual, 64);
@@ -180,10 +189,11 @@ pub(super) fn check_rewrite(proofs: &mut Proofs, name: &str, before: &Expr, afte
             Isa::X86_64,
             vec![Stmt::Ret {
                 value: original.clone(),
+                at: None,
             }],
         );
         crate::passes::simplify::simplify(&mut ir);
-        let Stmt::Ret { value: actual } = &ir.blocks[0].stmts[0] else {
+        let Stmt::Ret { value: actual, .. } = &ir.blocks[0].stmts[0] else {
             panic!("return remains");
         };
         proofs.expression(format!("{name}/sar/{amount}"), &original, actual, 64);
@@ -408,10 +418,11 @@ fn constructors_and_simplification_are_equivalent() {
                 Isa::X86_64,
                 vec![Stmt::Ret {
                     value: before.clone(),
+                    at: None,
                 }],
             );
             crate::passes::simplify::simplify(&mut ir);
-            let Stmt::Ret { value: after } = &ir.blocks[0].stmts[0] else {
+            let Stmt::Ret { value: after, .. } = &ir.blocks[0].stmts[0] else {
                 panic!("return remains");
             };
             check_rewrite(
@@ -448,10 +459,11 @@ fn lane_identities_and_bit_counts_are_equivalent() {
                 Isa::AArch64,
                 vec![Stmt::Ret {
                     value: before.clone(),
+                    at: None,
                 }],
             );
             crate::passes::simplify::simplify(&mut ir);
-            let Stmt::Ret { value: after } = &ir.blocks[0].stmts[0] else {
+            let Stmt::Ret { value: after, .. } = &ir.blocks[0].stmts[0] else {
                 panic!("return remains");
             };
             proofs.expression(format!("lanes/{bits}/{lane:?}"), &before, after, 64);
@@ -464,10 +476,11 @@ fn lane_identities_and_bit_counts_are_equivalent() {
             Isa::X86_64,
             vec![Stmt::Ret {
                 value: before.clone(),
+                at: None,
             }],
         );
         crate::passes::simplify::simplify(&mut ir);
-        let Stmt::Ret { value: after } = &ir.blocks[0].stmts[0] else {
+        let Stmt::Ret { value: after, .. } = &ir.blocks[0].stmts[0] else {
             panic!("return remains");
         };
         proofs.expression(
@@ -500,10 +513,11 @@ fn lane_identities_and_bit_counts_are_equivalent() {
             Isa::AArch64,
             vec![Stmt::Ret {
                 value: before.clone(),
+                at: None,
             }],
         );
         crate::passes::simplify::simplify(&mut ir);
-        let Stmt::Ret { value: after } = &ir.blocks[0].stmts[0] else {
+        let Stmt::Ret { value: after, .. } = &ir.blocks[0].stmts[0] else {
             panic!("return remains");
         };
         if !two_halves {
@@ -592,8 +606,9 @@ fn assignment_rewrites_preserve_truncation() {
                                     width: bits,
                                 },
                                 value: assigned.clone(),
+                                at: None,
                             },
-                            Stmt::Ret { value },
+                            Stmt::Ret { value, at: None },
                         ],
                     );
                     for (name, pass) in passes {
@@ -644,6 +659,7 @@ fn nested_frame_offsets_and_alias_differences_are_equivalent() {
                                 width: 64,
                             },
                             value: nested,
+                            at: None,
                         },
                         Stmt::Assign {
                             dest: RegRef {
@@ -651,9 +667,11 @@ fn nested_frame_offsets_and_alias_differences_are_equivalent() {
                                 width: 64,
                             },
                             value: raw_bin(BinOp::Add, Expr::reg(sp, 64), Expr::Const(7)),
+                            at: None,
                         },
                         Stmt::Ret {
                             value: raw_bin(BinOp::Sub, Expr::reg(0, 64), Expr::reg(1, 64)),
+                            at: None,
                         },
                     ],
                 );

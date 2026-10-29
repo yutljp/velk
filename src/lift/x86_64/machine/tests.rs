@@ -11,7 +11,7 @@ fn lift(code: &[u8], result: Expr) -> FunctionIr {
     ir.blocks = crate::lift::lift(&image, 0, code.len() as u64, &HashSet::new()).unwrap();
     for stmt in ir.blocks.iter_mut().flat_map(|block| &mut block.stmts) {
         assert!(!matches!(stmt, Stmt::Unsupported { .. }), "{stmt:?}");
-        if let Stmt::Ret { value } = stmt {
+        if let Stmt::Ret { value, .. } = stmt {
             *value = result.clone();
         }
     }

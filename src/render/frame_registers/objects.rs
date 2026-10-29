@@ -33,7 +33,7 @@ pub(super) fn ranges(ir: &FunctionIr, entries: &[Option<Origins>], sp: u16) -> V
             continue;
         };
         for stmt in &block.stmts {
-            if let Stmt::Assign { dest, value } = stmt
+            if let Stmt::Assign { dest, value, .. } = stmt
                 && dest.index >= crate::ir::VARIABLE_BASE
                 && definitions
                     .get(&dest.index)
@@ -159,17 +159,20 @@ mod tests {
                     width: 64,
                 },
                 value: at(sp, (-32i64) as u64),
+                at: None,
             };
             let stores = [
                 Stmt::Store {
                     addr: at(VARIABLE_BASE, 0),
                     value: Expr::Const(1),
                     width: 8,
+                    at: None,
                 },
                 Stmt::Store {
                     addr: at(VARIABLE_BASE, 16),
                     value: Expr::Const(2),
                     width: 8,
+                    at: None,
                 },
             ];
             for case in 0..3 {
@@ -180,11 +183,13 @@ mod tests {
                         addr: at(sp, (-28i64) as u64),
                         value: Expr::Const(3),
                         width: 4,
+                        at: None,
                     });
                 } else if case == 1 {
                     stmts.push(assignment.clone());
                 } else {
                     stmts.push(Stmt::Machine {
+                        at: None,
                         instruction: crate::ir::MachineInstruction::ArmLoadAcquire { width: 8 },
                         inputs: vec![at(VARIABLE_BASE, 4)],
                         outputs: vec![RegRef {

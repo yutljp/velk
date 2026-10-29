@@ -17,7 +17,7 @@ fn register_writes(blocks: &[Block], narrow_return: NarrowReturn<'_>) -> HashMap
     for block in blocks {
         for stmt in &block.stmts {
             match stmt {
-                Stmt::Assign { dest, value } => {
+                Stmt::Assign { dest, value, .. } => {
                     let width = match value {
                         Expr::Bin {
                             op: BinOp::And,
@@ -66,7 +66,7 @@ pub fn returns_32(blocks: &[Block], narrow_return: NarrowReturn<'_>) -> bool {
     let mut returns = blocks
         .iter()
         .filter_map(|block| match block.stmts.last() {
-            Some(Stmt::Ret { value }) => Some(value),
+            Some(Stmt::Ret { value, .. }) => Some(value),
             _ => None,
         })
         .peekable();
@@ -96,7 +96,7 @@ pub fn specialize_widths(
     // 32-bit view.
     for block in &mut ir.blocks {
         for stmt in &mut block.stmts {
-            let Stmt::Ret { value } = stmt else {
+            let Stmt::Ret { value, .. } = stmt else {
                 continue;
             };
             let Expr::Reg { index, width: 64 } = value else {
@@ -192,7 +192,7 @@ pub fn specialize_widths(
                     dest.width = 32;
                 }
             }
-            if let Stmt::Assign { dest, value } = stmt
+            if let Stmt::Assign { dest, value, .. } = stmt
                 && registers_used_only_at_32_bits.contains(&dest.index)
                 && let Expr::Bin {
                     op: BinOp::And,
@@ -283,8 +283,8 @@ fn map_stmt(stmt: &mut Stmt, map: &mut dyn FnMut(&Expr) -> Expr) {
             *lhs = map(&*lhs);
             *rhs = map(&*rhs);
         }
-        Stmt::Ret { value } => *value = map(&*value),
-        Stmt::BrIndirect { target } => *target = map(&*target),
+        Stmt::Ret { value, .. } => *value = map(&*value),
+        Stmt::BrIndirect { target, .. } => *target = map(&*target),
         Stmt::Switch { index, .. } => *index = map(&*index),
         Stmt::Call { through, args, .. } => {
             for value in through.iter_mut().chain(args.iter_mut().flatten()) {
@@ -321,6 +321,7 @@ mod tests {
             clobbers: Some([0, 1].into_iter().collect()),
             outputs,
             via: None,
+            at: None,
         }
     }
 
@@ -349,6 +350,7 @@ mod tests {
                 call,
                 Stmt::Ret {
                     value: Expr::reg(VARIABLE_BASE + 1, 64),
+                    at: None,
                 },
             ],
         }];
@@ -373,6 +375,7 @@ mod tests {
                             Expr::reg(VARIABLE_BASE + 1, 64),
                         ],
                     },
+                    at: None,
                 },
             ],
         );
@@ -401,6 +404,7 @@ mod tests {
                 call,
                 Stmt::Ret {
                     value: Expr::reg(register, 64),
+                    at: None,
                 },
             ],
         );
@@ -416,7 +420,8 @@ mod tests {
         assert!(matches!(
             ir.blocks[0].stmts[1],
             Stmt::Ret {
-                value: Expr::Reg { width: 64, .. }
+                value: Expr::Reg { width: 64, .. },
+                ..
             }
         ));
     }

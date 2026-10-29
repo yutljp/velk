@@ -229,7 +229,7 @@ fn tokens(ir: &FunctionIr) -> Vec<String> {
                 Stmt::Brif { cond, .. } => out.push(format!("brif:{}", cond.text())),
                 Stmt::BrifFlags { cond, .. } => out.push(format!("brifflags:{}", cond.text())),
                 Stmt::Br { .. } => out.push("br".to_owned()),
-                Stmt::BrIndirect { target } => {
+                Stmt::BrIndirect { target, .. } => {
                     expr_tokens(target, &mut out);
                     out.push("brind".to_owned());
                 }
@@ -245,11 +245,11 @@ fn tokens(ir: &FunctionIr) -> Vec<String> {
                 }
                 // The returned value separates two functions that both end
                 // in a single return.
-                Stmt::Ret { value } => {
+                Stmt::Ret { value, .. } => {
                     expr_tokens(value, &mut out);
                     out.push("ret".to_owned());
                 }
-                Stmt::Trap => out.push("trap".to_owned()),
+                Stmt::Trap { .. } => out.push("trap".to_owned()),
                 Stmt::Machine { instruction, .. } => out.push(format!("machine:{instruction:?}")),
                 Stmt::Unsupported { .. } => out.push("unsupported".to_owned()),
             }

@@ -192,6 +192,7 @@ fn assign(index: u16, value: Expr) -> Stmt {
     Stmt::Assign {
         dest: RegRef { index, width: 64 },
         value,
+        at: None,
     }
 }
 
@@ -214,11 +215,12 @@ fn brif(cond: Cond, lhs: Expr, rhs: Expr, target: u64) -> Stmt {
         lhs,
         rhs,
         target,
+        at: None,
     }
 }
 
 fn ret(value: Expr) -> Stmt {
-    Stmt::Ret { value }
+    Stmt::Ret { value, at: None }
 }
 
 const RDI: u16 = 7;
@@ -241,7 +243,8 @@ fn the_true_edge_of_a_bounds_check_bounds_the_value() {
         matches!(
             &ir.blocks[2].stmts[0],
             Stmt::Ret {
-                value: Expr::Reg { index: RDI, .. }
+                value: Expr::Reg { index: RDI, .. },
+                ..
             }
         ),
         "{}",
@@ -251,7 +254,8 @@ fn the_true_edge_of_a_bounds_check_bounds_the_value() {
     assert!(matches!(
         &ir.blocks[1].stmts[0],
         Stmt::Ret {
-            value: Expr::Const(0)
+            value: Expr::Const(0),
+            ..
         }
     ));
 }
@@ -298,6 +302,7 @@ fn a_bounds_check_through_an_offset_bounds_the_switch() {
             index,
             cases: vec![(10, 0x20), (11, 0x30), (12, 0x40), (13, 0x40)],
             default: Some(0x50),
+            at: None,
         }],
         vec![ret(Expr::Const(1))],
         vec![ret(Expr::Const(2))],
@@ -333,7 +338,8 @@ fn a_counted_loop_leaves_its_bound() {
         matches!(
             &ir.blocks[2].stmts[0],
             Stmt::Ret {
-                value: Expr::Const(10)
+                value: Expr::Const(10),
+                ..
             }
         ),
         "{}",
@@ -355,7 +361,8 @@ fn a_tested_bit_is_known_past_the_test() {
         matches!(
             &ir.blocks[2].stmts[0],
             Stmt::Ret {
-                value: Expr::Const(0)
+                value: Expr::Const(0),
+                ..
             }
         ),
         "{}",

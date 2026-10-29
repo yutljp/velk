@@ -5,6 +5,7 @@ fn assign(index: u16, value: Expr) -> Stmt {
     Stmt::Assign {
         dest: RegRef { index, width: 64 },
         value,
+        at: None,
     }
 }
 
@@ -30,6 +31,7 @@ fn example_ir(name: &str, offset: u64, width: u8, fill: Option<u64>, n: u64) -> 
             },
         },
         width,
+        at: None,
     }];
     for index in if fill.is_some() { vec![7] } else { vec![6, 7] } {
         step.push(assign(
@@ -45,7 +47,10 @@ fn example_ir(name: &str, offset: u64, width: u8, fill: Option<u64>, n: u64) -> 
         1,
         Expr::bin(BinOp::Sub, Expr::reg(1, 64), Expr::Const(1)),
     ));
-    step.push(Stmt::Br { target: Some(10) });
+    step.push(Stmt::Br {
+        target: Some(10),
+        at: None,
+    });
     ir.blocks = vec![
         Block {
             start: 0,
@@ -56,7 +61,10 @@ fn example_ir(name: &str, offset: u64, width: u8, fill: Option<u64>, n: u64) -> 
                     Expr::bin(BinOp::Add, Expr::reg(2, 64), Expr::Const(offset)),
                 ),
                 assign(1, Expr::Const(n)),
-                Stmt::Br { target: Some(10) },
+                Stmt::Br {
+                    target: Some(10),
+                    at: None,
+                },
             ],
         },
         Block {
@@ -66,6 +74,7 @@ fn example_ir(name: &str, offset: u64, width: u8, fill: Option<u64>, n: u64) -> 
                 lhs: Expr::reg(1, 64),
                 rhs: Expr::Const(0),
                 target: 30,
+                at: None,
             }],
         },
         Block {
@@ -84,6 +93,7 @@ fn example_ir(name: &str, offset: u64, width: u8, fill: Option<u64>, n: u64) -> 
                         Expr::reg(1, 64),
                     ),
                 ),
+                at: None,
             }],
         },
     ];
@@ -316,6 +326,7 @@ fn object_provenance_preserves_printed_copy_behavior() {
                     addr: frame(i.wrapping_sub(64)),
                     value: Expr::Const(i + 1),
                     width: 1,
+                    at: None,
                 });
             }
             prefix.push(assign(6, frame(0u64.wrapping_sub(64))));
@@ -345,6 +356,7 @@ fn object_provenance_preserves_printed_copy_behavior() {
                     }],
                     clobbers: Some(crate::ir::Registers(1)),
                     via: None,
+                    at: None,
                 });
                 prefix.push(assign(7, Expr::reg(crate::ir::VARIABLE_BASE, 64)));
             } else {
@@ -378,6 +390,7 @@ fn object_provenance_preserves_printed_copy_behavior() {
                 width: 1,
                 signed: false,
             },
+            at: None,
         }];
         let mut symbols = super::super::Symbols::default();
         symbols.functions.insert(0x1000, "malloc".to_owned());
@@ -486,6 +499,7 @@ fn allocation_ranges_and_pointer_age_limit_copy_folding() {
             }],
             clobbers: Some(crate::ir::Registers(1)),
             via: None,
+            at: None,
         };
         let mut prefix = if load_after {
             vec![call, load]
@@ -507,6 +521,7 @@ fn allocation_ranges_and_pointer_age_limit_copy_folding() {
                     outputs: vec![],
                     clobbers: Some(crate::ir::Registers(0)),
                     via: None,
+                    at: None,
                 },
             );
         }
@@ -524,6 +539,7 @@ fn allocation_ranges_and_pointer_age_limit_copy_folding() {
             lhs: Expr::reg(output, 64),
             rhs: Expr::Const(0),
             target: 40,
+            at: None,
         });
         ir.blocks.insert(
             1,
@@ -534,7 +550,7 @@ fn allocation_ranges_and_pointer_age_limit_copy_folding() {
         );
         ir.blocks.push(Block {
             start: 40,
-            stmts: vec![Stmt::Trap],
+            stmts: vec![Stmt::Trap { at: None }],
         });
         let mut image = crate::loader::Image::from_code(Isa::X86_64, 0, vec![0xc3]);
         image.functions.insert(

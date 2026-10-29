@@ -196,6 +196,7 @@ fn projection(
             addr,
             value: Expr::Reg { index, width: 64 },
             width: 8,
+            ..
         } = stmt
         else {
             return None;
@@ -223,6 +224,7 @@ fn projection(
             op: Operation::Results,
             args,
         },
+        ..
     } = &stmts[count + 2]
     else {
         return None;
@@ -251,6 +253,7 @@ fn projection(
             addr,
             value,
             width: 4,
+            ..
         } = &stmts[count + field]
         else {
             return None;
@@ -385,5 +388,6 @@ pub(super) fn project(
             op: Operation::Results,
             args: values,
         },
+        at: ir.blocks[0].stmts.last().and_then(Stmt::origin),
     }];
 }

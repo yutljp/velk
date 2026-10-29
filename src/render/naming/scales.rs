@@ -9,7 +9,7 @@ pub(in crate::render) fn register_scales(ir: &FunctionIr) -> HashMap<u16, u64> {
         for register in crate::ir::visit::statement_registers(stmt).0 {
             *writes.entry(register).or_default() += 1;
         }
-        let Stmt::Assign { dest, value } = stmt else {
+        let Stmt::Assign { dest, value, .. } = stmt else {
             continue;
         };
         if dest.index < VARIABLE_BASE || dest.width != 64 {
@@ -100,7 +100,7 @@ fn aligned_registers(ir: &FunctionIr, demanded: &HashMap<u16, u64>) -> HashMap<u
                 crate::ssa::ranges::Fact::bits(crate::ir::semantics::mask(bits), 0)
             };
             let bits = match stmt {
-                Stmt::Assign { dest, value } if dest.width == 64 => {
+                Stmt::Assign { dest, value, .. } if dest.width == 64 => {
                     crate::ssa::ranges::expression(value, &read)
                         .map_or(0, |fact| fact.zeros.trailing_ones())
                 }

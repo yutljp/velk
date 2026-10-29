@@ -30,21 +30,26 @@ fn match_loop(ir: &FunctionIr, list: &List, argument: u16) -> Option<MatchedLoop
         Stmt::Assign {
             dest: stack,
             value: stack_load,
+            ..
         },
         Stmt::Assign {
             dest: top,
             value: top_load,
+            ..
         },
         Stmt::Assign {
             dest: total,
             value: Expr::Const(0),
+            ..
         },
         Stmt::Assign {
             dest: offset,
             value: offset_load,
+            ..
         },
         Stmt::Br {
             target: Some(header),
+            ..
         },
     ] = blocks[1].stmts.as_slice()
     else {
@@ -74,6 +79,7 @@ fn match_loop(ir: &FunctionIr, list: &List, argument: u16) -> Option<MatchedLoop
     let Stmt::Assign {
         dest: count,
         value: decrement_value,
+        ..
     } = decrement
     else {
         return None;
@@ -96,9 +102,14 @@ fn match_loop(ir: &FunctionIr, list: &List, argument: u16) -> Option<MatchedLoop
         return None;
     }
     let register_expression = |reg: &RegRef| Expr::reg(reg.index, reg.width);
-    let assign = |dest: &RegRef, value| Stmt::Assign { dest: *dest, value };
+    let assign = |dest: &RegRef, value| Stmt::Assign {
+        dest: *dest,
+        value,
+        at: None,
+    };
     let branch = |block: usize| Stmt::Br {
         target: Some(blocks[block].start),
+        at: None,
     };
     let load = |field, width| Expr::Load {
         addr: Box::new(address(list.sp, field)),
@@ -130,6 +141,7 @@ fn match_loop(ir: &FunctionIr, list: &List, argument: u16) -> Option<MatchedLoop
                 lhs: register_expression(count),
                 rhs: Expr::Const(0),
                 target: blocks[9].start,
+                at: None,
             },
         )
         || !same_block(
@@ -160,6 +172,7 @@ fn match_loop(ir: &FunctionIr, list: &List, argument: u16) -> Option<MatchedLoop
                 ),
                 rhs: Expr::Const(0),
                 target: blocks[6].start,
+                at: None,
             }],
         )
         || !same_block(
@@ -177,12 +190,14 @@ fn match_loop(ir: &FunctionIr, list: &List, argument: u16) -> Option<MatchedLoop
                     addr: address(list.sp, list.gp_offset()),
                     value: register_expression(next_offset),
                     width: 4,
+                    at: None,
                 },
                 Stmt::Brif {
                     cond: Cond::Ls,
                     lhs: masked_offset,
                     rhs: Expr::Const(0xffff_fff8),
                     target: blocks[2].start,
+                    at: None,
                 },
             ],
         )
@@ -194,6 +209,7 @@ fn match_loop(ir: &FunctionIr, list: &List, argument: u16) -> Option<MatchedLoop
                     addr: address(list.sp, list.stack()),
                     value: register_expression(next_stack),
                     width: 8,
+                    at: None,
                 },
                 branch(3),
             ],
@@ -225,7 +241,7 @@ fn match_loop(ir: &FunctionIr, list: &List, argument: u16) -> Option<MatchedLoop
     {
         return None;
     }
-    let Stmt::Assign { dest, value } = consume else {
+    let Stmt::Assign { dest, value, .. } = consume else {
         return None;
     };
     if dest != total {
@@ -255,7 +271,12 @@ fn match_loop(ir: &FunctionIr, list: &List, argument: u16) -> Option<MatchedLoop
         return None;
     }
     let replacement = sum(argument);
-    let [Stmt::Ret { value: returned }] = blocks[9].stmts.as_slice() else {
+    let [
+        Stmt::Ret {
+            value: returned, ..
+        },
+    ] = blocks[9].stmts.as_slice()
+    else {
         return None;
     };
     if !same_block(&blocks[8].stmts, &[assign(total, Expr::Const(0))])
@@ -320,11 +341,13 @@ impl MatchedLoop {
             initialization,
             Stmt::Br {
                 target: Some(target),
+                at: None,
             },
         ];
         ir.blocks[3].stmts = body;
         ir.blocks[4].stmts = vec![Stmt::Br {
             target: Some(target),
+            at: None,
         }];
         let mut index = 0;
         ir.blocks.retain(|_| {
@@ -341,34 +364,43 @@ fn same_block(actual: &[Stmt], expected: &[Stmt]) -> bool {
 
 fn same(a: &Stmt, b: &Stmt) -> bool {
     match (a, b) {
-        (Stmt::Assign { dest: a, value: av }, Stmt::Assign { dest: b, value: bv }) => {
-            a == b && av == bv
-        }
+        (
+            Stmt::Assign {
+                dest: a, value: av, ..
+            },
+            Stmt::Assign {
+                dest: b, value: bv, ..
+            },
+        ) => a == b && av == bv,
         (
             Stmt::Store {
                 addr: a,
                 value: av,
                 width: aw,
+                ..
             },
             Stmt::Store {
                 addr: b,
                 value: bv,
                 width: bw,
+                ..
             },
         ) => a == b && av == bv && aw == bw,
-        (Stmt::Br { target: a }, Stmt::Br { target: b }) => a == b,
+        (Stmt::Br { target: a, .. }, Stmt::Br { target: b, .. }) => a == b,
         (
             Stmt::Brif {
                 cond: a,
                 lhs: al,
                 rhs: ar,
                 target: at,
+                ..
             },
             Stmt::Brif {
                 cond: b,
                 lhs: bl,
                 rhs: br,
                 target: bt,
+                ..
             },
         ) => a == b && al == bl && ar == br && at == bt,
         _ => false,

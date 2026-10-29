@@ -18,6 +18,7 @@ fn store(offset: i64, value: u64, width: u8) -> Stmt {
         addr: slot(offset),
         value: Expr::Const(value),
         width,
+        at: None,
     }
 }
 
@@ -44,6 +45,7 @@ fn indexed_frame_accesses_convert_the_integer_address_directly() {
                         addr: address.clone(),
                         value: Expr::Const(0x80),
                         width: 1,
+                        at: None,
                     },
                     Stmt::Ret {
                         value: Expr::Load {
@@ -51,6 +53,7 @@ fn indexed_frame_accesses_convert_the_integer_address_directly() {
                             width,
                             signed,
                         },
+                        at: None,
                     },
                 ],
             );
@@ -95,6 +98,7 @@ fn single_use_frame_loads_keep_overlapping_writes_in_order() {
                     addr: slot(-32),
                     value: Expr::reg(7, 64),
                     width: 8,
+                    at: None,
                 },
                 Stmt::Assign {
                     dest: RegRef {
@@ -106,10 +110,12 @@ fn single_use_frame_loads_keep_overlapping_writes_in_order() {
                         width: 8,
                         signed: false,
                     },
+                    at: None,
                 },
                 store(offset, 7, 8),
                 Stmt::Ret {
                     value: Expr::reg(VARIABLE_BASE, 64),
+                    at: None,
                 },
             ],
         );
@@ -148,16 +154,19 @@ fn unused_frame_address_temporaries_disappear_after_rebasing() {
                     width: 64,
                 },
                 value: slot(-16),
+                at: None,
             },
             Stmt::Store {
                 addr: address.clone(),
                 value: Expr::reg(7, 64),
                 width: 8,
+                at: None,
             },
             Stmt::Store {
                 addr: Expr::bin(BinOp::Add, address.clone(), Expr::Const(7)),
                 value: Expr::Const(0x81),
                 width: 1,
+                at: None,
             },
             Stmt::Ret {
                 value: Expr::Load {
@@ -165,6 +174,7 @@ fn unused_frame_address_temporaries_disappear_after_rebasing() {
                     width: 8,
                     signed: false,
                 },
+                at: None,
             },
         ],
     );
@@ -210,6 +220,7 @@ fn printed_stack_arrays_preserve_call_and_indexed_writes() {
                     width: 64,
                 },
                 value: slot(-192),
+                at: None,
             });
         }
         statements.push(Stmt::Call {
@@ -237,15 +248,20 @@ fn printed_stack_arrays_preserve_call_and_indexed_writes() {
             outputs: Vec::new(),
             clobbers: Some(Default::default()),
             via: None,
+            at: None,
         });
         statements.push(Stmt::Ret {
             value: Expr::bin(BinOp::Xor, load(destination + size - 4), load(-8)),
+            at: None,
         });
         let mut ir = synthetic_ir(name, vec![], CType::U32, statements);
         if copy {
             let call_index = ir.blocks[0].stmts.len() - 2;
             let rest = ir.blocks[0].stmts.split_off(call_index);
-            ir.blocks[0].stmts.push(Stmt::Br { target: Some(16) });
+            ir.blocks[0].stmts.push(Stmt::Br {
+                target: Some(16),
+                at: None,
+            });
             ir.blocks.push(Block {
                 start: 16,
                 stmts: rest,
@@ -318,6 +334,7 @@ fn printed_stack_arrays_preserve_call_and_indexed_writes() {
                 addr: address.clone(),
                 value: Expr::Const(0x3456789a),
                 width: 4,
+                at: None,
             },
             Stmt::Ret {
                 value: Expr::bin(
@@ -329,6 +346,7 @@ fn printed_stack_arrays_preserve_call_and_indexed_writes() {
                     },
                     load(-8),
                 ),
+                at: None,
             },
         ],
     );
@@ -346,6 +364,7 @@ fn printed_stack_arrays_preserve_call_and_indexed_writes() {
             store(-28, 0xaabbccddeeff0011, 8),
             Stmt::Ret {
                 value: Expr::bin(BinOp::Xor, load(-28), load(-8)),
+                at: None,
             },
         ],
     );
@@ -383,12 +402,14 @@ fn printed_stack_struct_shares_overlapping_accesses_in_a_union() {
                 outputs: Vec::new(),
                 clobbers: Some(Default::default()),
                 via: None,
+                at: None,
             },
             store(-64, 0x123456789abcdef0, 8),
             store(-63, 0xaa, 1),
             store(-48, 0x13579bdf, 4),
             Stmt::Ret {
                 value: Expr::bin(BinOp::Xor, load(-64), load(-48)),
+                at: None,
             },
         ],
     );
@@ -418,6 +439,7 @@ fn printed_register_save_top_keeps_the_adjacent_scalar_separate() {
             addr: address(-128 + position as i64 * 8),
             value: Expr::reg(*register, 64),
             width: 8,
+            at: None,
         });
     }
     for (position, register) in Convention::Aapcs64.float_arguments().iter().enumerate() {
@@ -426,6 +448,7 @@ fn printed_register_save_top_keeps_the_adjacent_scalar_separate() {
                 addr: address(-256 + position as i64 * 16 + i64::from(half) * 8),
                 value: Expr::reg(register + half, 64),
                 width: 8,
+                at: None,
             });
         }
     }
@@ -442,16 +465,19 @@ fn printed_register_save_top_keeps_the_adjacent_scalar_separate() {
             outputs: Vec::new(),
             clobbers: Some(Default::default()),
             via: None,
+            at: None,
         },
         Stmt::Store {
             addr: address(-64),
             value: Expr::Const(0x12345678),
             width: 4,
+            at: None,
         },
         Stmt::Store {
             addr: address(-60),
             value: Expr::Const(0),
             width: 4,
+            at: None,
         },
         Stmt::Assign {
             dest: RegRef {
@@ -459,6 +485,7 @@ fn printed_register_save_top_keeps_the_adjacent_scalar_separate() {
                 width: 64,
             },
             value: address(-64),
+            at: None,
         },
         Stmt::Ret {
             value: Expr::bin(
@@ -478,6 +505,7 @@ fn printed_register_save_top_keeps_the_adjacent_scalar_separate() {
                     signed: false,
                 },
             ),
+            at: None,
         },
     ]);
     let mut ir = synthetic_ir(
@@ -508,6 +536,7 @@ fn printed_register_save_top_keeps_the_adjacent_scalar_separate() {
                 addr: address(-128 + offset),
                 value: Expr::Const(0x5a),
                 width: 1,
+                at: None,
             },
         );
     }
@@ -555,11 +584,13 @@ fn printed_stack_unions_read_each_width_as_the_machine_does() {
                 outputs: Vec::new(),
                 clobbers: Some(Default::default()),
                 via: None,
+                at: None,
             },
             Stmt::Store {
                 addr: slot(-64),
                 value: Expr::reg(7, 64),
                 width: 8,
+                at: None,
             },
             store(-60, 0x8001, 2),
             store(-57, 0x80, 1),
@@ -569,8 +600,9 @@ fn printed_stack_unions_read_each_width_as_the_machine_does() {
                 addr: slot(-45),
                 value: Expr::reg(7, 64),
                 width: 8,
+                at: None,
             },
-            Stmt::Ret { value },
+            Stmt::Ret { value, at: None },
         ],
     );
     let mut symbols = velk::render::Symbols::default();
@@ -622,6 +654,7 @@ fn printed_stack_index_held_in_a_pointer_variable_adds_as_an_integer() {
                 outputs: Vec::new(),
                 clobbers: Some(Default::default()),
                 via: None,
+                at: None,
             },
             Stmt::Ret {
                 value: Expr::Load {
@@ -629,6 +662,7 @@ fn printed_stack_index_held_in_a_pointer_variable_adds_as_an_integer() {
                     width: 1,
                     signed: false,
                 },
+                at: None,
             },
         ],
     );
@@ -660,11 +694,13 @@ fn printed_stack_records_indexed_through_each_field_are_one_array() {
                 addr: at(-64, scaled.clone()),
                 value: Expr::Const(0x1111),
                 width: 8,
+                at: None,
             },
             Stmt::Store {
                 addr: at(-56, scaled.clone()),
                 value: Expr::Const(0x2222),
                 width: 8,
+                at: None,
             },
             Stmt::Assign {
                 dest: RegRef {
@@ -672,6 +708,7 @@ fn printed_stack_records_indexed_through_each_field_are_one_array() {
                     width: 64,
                 },
                 value: Expr::bin(BinOp::Sub, scaled, Expr::Const(8)),
+                at: None,
             },
             Stmt::Ret {
                 value: Expr::Load {
@@ -679,6 +716,7 @@ fn printed_stack_records_indexed_through_each_field_are_one_array() {
                     width: 8,
                     signed: false,
                 },
+                at: None,
             },
         ],
     );
@@ -688,6 +726,7 @@ fn printed_stack_records_indexed_through_each_field_are_one_array() {
         lhs: Expr::reg(7, 64),
         rhs: Expr::Const(3),
         target: 2,
+        at: None,
     });
     ir.blocks.push(Block {
         start: 1,
@@ -697,6 +736,7 @@ fn printed_stack_records_indexed_through_each_field_are_one_array() {
         start: 2,
         stmts: vec![Stmt::Ret {
             value: Expr::Const(0),
+            at: None,
         }],
     });
     let candidate = printed_candidate(
@@ -753,6 +793,7 @@ fn printed_stack_fields_of_a_region_read_at_an_index_see_its_writes() {
                 outputs: Vec::new(),
                 clobbers: Some(Default::default()),
                 via: None,
+                at: None,
             },
             store(-64, 0x1111_2222_3333_4444, 8),
             store(-56, 0x5555_6666, 4),
@@ -765,8 +806,9 @@ fn printed_stack_fields_of_a_region_read_at_an_index_see_its_writes() {
                 ),
                 value: Expr::reg(7, 64),
                 width: 8,
+                at: None,
             },
-            Stmt::Ret { value },
+            Stmt::Ret { value, at: None },
         ],
     );
     let mut symbols = velk::render::Symbols::default();
@@ -815,6 +857,7 @@ fn printed_stack_buffer_read_below_its_index_base_reaches_the_bytes_there() {
                     width: 1,
                     signed: false,
                 },
+                at: None,
             },
         ],
     );
@@ -837,8 +880,12 @@ fn printed_frame_indices_keep_local_storage_when_also_used_in_global_addresses()
             Stmt::Assign {
                 dest: RegRef { index, width: 64 },
                 value: Expr::Const(2),
+                at: None,
             },
-            Stmt::Br { target: Some(16) },
+            Stmt::Br {
+                target: Some(16),
+                at: None,
+            },
         ],
     );
     ir.blocks.push(Block {
@@ -852,16 +899,19 @@ fn printed_frame_indices_keep_local_storage_when_also_used_in_global_addresses()
                     signed: false,
                 },
                 width: 1,
+                at: None,
             },
             Stmt::Assign {
                 dest: RegRef { index, width: 64 },
                 value: Expr::bin(BinOp::Sub, Expr::reg(index, 64), Expr::Const(1)),
+                at: None,
             },
             Stmt::Brif {
                 cond: Cond::Ne,
                 lhs: Expr::reg(index, 64),
                 rhs: Expr::Const(u64::MAX),
                 target: 16,
+                at: None,
             },
         ],
     });
@@ -869,6 +919,7 @@ fn printed_frame_indices_keep_local_storage_when_also_used_in_global_addresses()
         start: 32,
         stmts: vec![Stmt::Ret {
             value: Expr::Const(7),
+            at: None,
         }],
     });
     let candidate = printed_candidate(ir, vec![vec![]]);
@@ -902,6 +953,7 @@ fn printed_indexed_frame_bases_share_storage_across_adjacent_buffers() {
         statements.push(Stmt::Assign {
             dest: RegRef { index, width: 64 },
             value: slot(offset),
+            at: None,
         });
     }
     statements.push(Stmt::Ret {
@@ -910,6 +962,7 @@ fn printed_indexed_frame_bases_share_storage_across_adjacent_buffers() {
             load(VARIABLE_BASE, 48),
             load(VARIABLE_BASE + 1, 0),
         ),
+        at: None,
     });
     let ir = synthetic_ir(
         "adjacent_indexed_buffers",
@@ -954,13 +1007,18 @@ fn printed_wrapping_frame_indices_add_as_integer_addresses() {
                     width: 64,
                 },
                 value: slot(-60),
+                at: None,
             },
             Stmt::Store {
                 addr: address,
                 value: Expr::Const(1),
                 width: 4,
+                at: None,
             },
-            Stmt::Ret { value: load(-64) },
+            Stmt::Ret {
+                value: load(-64),
+                at: None,
+            },
         ],
     );
     let candidate = printed_candidate(ir, vec![vec![u64::MAX], vec![0], vec![1]]);
@@ -990,6 +1048,7 @@ fn printed_stack_indexes_include_subtracted_terms() {
             width: 1,
             signed: false,
         },
+        at: None,
     });
     let ir = synthetic_ir(
         "stack_stride_seven",
@@ -1022,6 +1081,7 @@ fn printed_stack_pointer_loops_share_backward_indexed_storage() {
                 width: 64,
             },
             value: slot(-24),
+            at: None,
         },
         Stmt::Assign {
             dest: RegRef {
@@ -1029,8 +1089,12 @@ fn printed_stack_pointer_loops_share_backward_indexed_storage() {
                 width: 64,
             },
             value: Expr::Const(0),
+            at: None,
         },
-        Stmt::Br { target: Some(16) },
+        Stmt::Br {
+            target: Some(16),
+            at: None,
+        },
     ]);
     let mut ir = synthetic_ir("stack_backward_rows", vec![], CType::U32, statements);
     let mut body = Vec::new();
@@ -1043,6 +1107,7 @@ fn printed_stack_pointer_loops_share_backward_indexed_storage() {
             ),
             value: Expr::Const(0x1234),
             width: 2,
+            at: None,
         });
     }
     body.extend([
@@ -1052,6 +1117,7 @@ fn printed_stack_pointer_loops_share_backward_indexed_storage() {
                 width: 64,
             },
             value: Expr::bin(BinOp::Add, Expr::reg(pointer, 64), Expr::Const(2)),
+            at: None,
         },
         Stmt::Assign {
             dest: RegRef {
@@ -1059,12 +1125,14 @@ fn printed_stack_pointer_loops_share_backward_indexed_storage() {
                 width: 64,
             },
             value: Expr::bin(BinOp::Add, Expr::reg(count, 64), Expr::Const(1)),
+            at: None,
         },
         Stmt::Brif {
             cond: Cond::Ne,
             lhs: Expr::reg(count, 64),
             rhs: Expr::Const(3),
             target: 16,
+            at: None,
         },
     ]);
     ir.blocks.push(Block {
@@ -1083,6 +1151,7 @@ fn printed_stack_pointer_loops_share_backward_indexed_storage() {
                 .into_iter()
                 .reduce(|a, b| Expr::bin(BinOp::Add, a, b))
                 .unwrap(),
+            at: None,
         }],
     });
     let code = velk::render::render(&ir, &[], &Default::default(), &[]);
@@ -1208,6 +1277,7 @@ fn frame_address_comparisons_include_the_end_but_exclude_caller_storage() {
                         width: 64,
                     },
                     value: slot(-32),
+                    at: None,
                 },
                 Stmt::Ret {
                     value: Expr::Select {
@@ -1217,6 +1287,7 @@ fn frame_address_comparisons_include_the_end_but_exclude_caller_storage() {
                         then: Box::new(Expr::Const(1)),
                         els: Box::new(Expr::Const(0)),
                     },
+                    at: None,
                 },
             ],
         );

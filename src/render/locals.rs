@@ -1467,7 +1467,9 @@ fn slot_types(
         walk.frame = frame;
         for stmt in &block.stmts {
             match stmt {
-                Stmt::Store { addr, value, width } => {
+                Stmt::Store {
+                    addr, value, width, ..
+                } => {
                     if let Some(slot) = walk.local(addr) {
                         if *width == 8
                             && (matches!(value, Expr::Const(_))
@@ -1492,7 +1494,7 @@ fn slot_types(
                     }
                     walk.address(addr, CType::int(*width, false));
                 }
-                Stmt::Assign { dest, value } => {
+                Stmt::Assign { dest, value, .. } => {
                     if let Expr::Load { addr, width, .. } = value
                         && let Some(slot) = walk.local(addr)
                     {
@@ -1566,7 +1568,7 @@ fn slot_types(
                         walk.integer_use(arg);
                     }
                 }
-                Stmt::Ret { value } if !ir.ret_type.is_pointer() => walk.integer_use(value),
+                Stmt::Ret { value, .. } if !ir.ret_type.is_pointer() => walk.integer_use(value),
                 _ => {}
             }
             match stmt {
@@ -1593,7 +1595,7 @@ fn slot_types(
                     }
                 }
             }
-            if let Stmt::Assign { dest, value } = stmt
+            if let Stmt::Assign { dest, value, .. } = stmt
                 && dest.index == sp
                 && let Expr::Bin { op, rhs, .. } = value
                 && let Expr::Const(delta) = rhs.as_ref()
@@ -1829,7 +1831,7 @@ impl Walk {
 }
 
 fn frame_after(stmt: &Stmt, frame: Option<i64>, sp: u16) -> Option<i64> {
-    if let Stmt::Assign { dest, value } = stmt
+    if let Stmt::Assign { dest, value, .. } = stmt
         && dest.index == sp
     {
         frame
@@ -2076,7 +2078,7 @@ fn frame_accesses(
         };
         let mut frame = frame;
         for stmt in &block.stmts {
-            if let Stmt::Assign { dest, value } = stmt
+            if let Stmt::Assign { dest, value, .. } = stmt
                 && dest.index == sp
             {
                 if let Expr::Bin { op, rhs, .. } = value
@@ -2414,6 +2416,7 @@ mod tests {
                     outputs: Vec::new(),
                     clobbers: Some(Default::default()),
                     via: None,
+                    at: None,
                 }],
             );
             let symbols = crate::render::Symbols {
@@ -2440,6 +2443,7 @@ mod tests {
                     addr: slot.clone(),
                     value: Expr::reg(7, 64),
                     width: 8,
+                    at: None,
                 },
                 Stmt::Call {
                     kind: crate::ir::CallKind::Invoke,
@@ -2459,6 +2463,7 @@ mod tests {
                     outputs: Vec::new(),
                     clobbers: Some(Default::default()),
                     via: None,
+                    at: None,
                 },
             ];
             if integer_use {
@@ -2472,6 +2477,7 @@ mod tests {
                         width: 8,
                         signed: false,
                     },
+                    at: None,
                 });
             }
             let mut ir = FunctionIr::single_block(isa, stmts);
@@ -2513,6 +2519,7 @@ mod tests {
                     width: 64,
                 },
                 value,
+                at: None,
             });
         }
         let mut ir = FunctionIr::single_block(Isa::X86_64, stmts);
@@ -2549,6 +2556,7 @@ mod tests {
                 width: 64,
             },
             value: loaded(),
+            at: None,
         }];
         if let Some(value) = adjustment {
             stmts.push(Stmt::Assign {
@@ -2557,10 +2565,12 @@ mod tests {
                     width: 64,
                 },
                 value,
+                at: None,
             });
         }
         stmts.push(Stmt::Ret {
             value: Expr::bin(BinOp::Xor, Expr::reg(VARIABLE_BASE, 64), loaded()),
+            at: None,
         });
         let mut ir = FunctionIr::single_block(Isa::AArch64, stmts);
         ir.convention = Convention::Aapcs64;
@@ -2632,6 +2642,7 @@ mod tests {
         *width = first;
         let Stmt::Ret {
             value: Expr::Bin { rhs, .. },
+            ..
         } = ir.blocks[0].stmts.last_mut().unwrap()
         else {
             panic!("expected return expression");
@@ -2707,7 +2718,10 @@ mod tests {
         } else {
             Expr::bin(BinOp::Add, Expr::reg(31, 64), Expr::Const(16))
         };
-        *ir.blocks[0].stmts.last_mut().unwrap() = Stmt::Ret { value: address };
+        *ir.blocks[0].stmts.last_mut().unwrap() = Stmt::Ret {
+            value: address,
+            at: None,
+        };
         let frames = crate::passes::frame_slots::block_entry_frame_offsets(&ir, 31);
         stack_locals(&ir, &frames, &Default::default(), &Default::default())
     }
@@ -2743,6 +2757,7 @@ mod tests {
         let mut ir = scalar_stack_binding(None, 1);
         *ir.blocks[0].stmts.last_mut().unwrap() = Stmt::BrIndirect {
             target: Expr::reg(0, 64),
+            at: None,
         };
         let locals = stack_locals(&ir, &[Some(0)], &Default::default(), &Default::default());
         assert!(locals.slots.values().any(|name| name == "incoming_0"));
@@ -2751,6 +2766,7 @@ mod tests {
         let mut ir = scalar_stack_binding(None, 1);
         *ir.blocks[0].stmts.last_mut().unwrap() = Stmt::BrIndirect {
             target: Expr::reg(0, 64),
+            at: None,
         };
         ir.blocks.push(crate::ir::Block {
             start: 8,
@@ -2760,6 +2776,7 @@ mod tests {
                     width: 8,
                     signed: false,
                 },
+                at: None,
             }],
         });
         ir
@@ -2777,6 +2794,7 @@ mod tests {
             outputs: crate::ir::fallback_call_outputs(Convention::Aapcs64, clobbers),
             clobbers,
             via: None,
+            at: None,
         }
     }
 
@@ -2798,6 +2816,7 @@ mod tests {
         ir.blocks[0].stmts.insert(1, binding_call(None));
         *ir.blocks[0].stmts.last_mut().unwrap() = Stmt::Ret {
             value: Expr::reg(VARIABLE_BASE, 64),
+            at: None,
         };
         ir.landing_pads = vec![(8, vec![(0, 4)])];
         let locals = stack_locals(
@@ -2828,6 +2847,7 @@ mod tests {
         ir.blocks[1].stmts.insert(
             0,
             Stmt::Unsupported {
+                at: None,
                 text: "opaque".to_owned(),
                 writes: Some(Vec::new()),
             },
@@ -2854,6 +2874,7 @@ mod tests {
                         width: 64,
                     },
                     value: Expr::bin(op, Expr::reg(31, 64), Expr::Const(16)),
+                    at: None,
                 },
             );
         }

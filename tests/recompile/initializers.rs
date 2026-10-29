@@ -24,6 +24,7 @@ fn branch_local_initializers_preserve_loads_and_stores() {
             lhs: Expr::reg(6, 64),
             rhs: Expr::Const(0),
             target: 20,
+            at: None,
         }],
     );
     for (start, register, increment) in [(10, VARIABLE_BASE, 1), (20, VARIABLE_BASE + 1, 2)] {
@@ -40,14 +41,17 @@ fn branch_local_initializers_preserve_loads_and_stores() {
                         width: 4,
                         signed: false,
                     },
+                    at: None,
                 },
                 Stmt::Store {
                     addr: pointer.clone(),
                     value: Expr::bin(BinOp::Add, Expr::reg(register, 64), Expr::Const(increment)),
                     width: 4,
+                    at: None,
                 },
                 Stmt::Ret {
                     value: Expr::reg(register, 64),
+                    at: None,
                 },
             ],
         });
@@ -82,6 +86,7 @@ fn initializers_after_guards_preserve_control_and_memory_order() {
                 lhs: Expr::reg(7, 64),
                 rhs: Expr::Const(0),
                 target: 20,
+                at: None,
             }],
         },
         Block {
@@ -97,14 +102,17 @@ fn initializers_after_guards_preserve_control_and_memory_order() {
                         width: 4,
                         signed: false,
                     },
+                    at: None,
                 },
                 Stmt::Store {
                     addr: Expr::reg(7, 64),
                     width: 4,
                     value: Expr::Const(7),
+                    at: None,
                 },
                 Stmt::Ret {
                     value: Expr::reg(VARIABLE_BASE, 64),
+                    at: None,
                 },
             ],
         },
@@ -112,6 +120,7 @@ fn initializers_after_guards_preserve_control_and_memory_order() {
             start: 20,
             stmts: vec![Stmt::Ret {
                 value: Expr::Const(99),
+                at: None,
             }],
         },
     ];
@@ -144,6 +153,7 @@ fn initial_assignments_declare_locals_in_execution_order() {
                     width: 64,
                 },
                 value: Expr::bin(BinOp::Add, Expr::reg(7, 64), Expr::Const(1)),
+                at: None,
             },
             Stmt::Assign {
                 dest: RegRef {
@@ -151,6 +161,7 @@ fn initial_assignments_declare_locals_in_execution_order() {
                     width: 64,
                 },
                 value: Expr::bin(BinOp::Mul, first.clone(), Expr::Const(2)),
+                at: None,
             },
             Stmt::Ret {
                 value: Expr::bin(
@@ -158,6 +169,7 @@ fn initial_assignments_declare_locals_in_execution_order() {
                     first,
                     Expr::bin(BinOp::Add, second.clone(), second),
                 ),
+                at: None,
             },
         ],
     );
@@ -204,11 +216,13 @@ fn local_initializers_keep_loads_on_each_side_of_a_store() {
                     width: 64,
                 },
                 value: load.clone(),
+                at: None,
             },
             Stmt::Store {
                 addr: Expr::reg(7, 64),
                 value: Expr::bin(BinOp::Add, first.clone(), Expr::Const(1)),
                 width: 4,
+                at: None,
             },
             Stmt::Assign {
                 dest: RegRef {
@@ -216,9 +230,11 @@ fn local_initializers_keep_loads_on_each_side_of_a_store() {
                     width: 64,
                 },
                 value: load,
+                at: None,
             },
             Stmt::Ret {
                 value: Expr::bin(BinOp::Add, first, second),
+                at: None,
             },
         ],
     );
@@ -254,6 +270,7 @@ fn a_reused_parameter_keeps_its_debug_name_on_the_incoming_value() {
                 addr: Expr::reg(7, 64),
                 value: Expr::reg(6, 64),
                 width: 8,
+                at: None,
             },
             Stmt::Assign {
                 dest: RegRef {
@@ -261,9 +278,11 @@ fn a_reused_parameter_keeps_its_debug_name_on_the_incoming_value() {
                     width: 64,
                 },
                 value: Expr::Const(7),
+                at: None,
             },
             Stmt::Ret {
                 value: Expr::reg(6, 64),
+                at: None,
             },
         ],
     );

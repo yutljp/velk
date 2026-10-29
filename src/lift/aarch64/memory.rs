@@ -197,6 +197,7 @@ pub(super) fn lift_store(lifter: &mut Lifter, ops: [Operand; 4], opcode: a64::Op
         addr: mem.address,
         value,
         width,
+        at: None,
     });
     write_back(lifter, mem.writeback);
 }
@@ -258,11 +259,13 @@ pub(super) fn lift_pair(lifter: &mut Lifter, ops: [Operand; 4], store: MemoryAcc
             addr: mem.address,
             value: a,
             width,
+            at: None,
         });
         lifter.stmts.push(Stmt::Store {
             addr: second_address,
             value: b,
             width,
+            at: None,
         });
     } else {
         let load = |addr: Expr| Expr::Load {

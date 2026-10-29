@@ -1,8 +1,10 @@
 use std::borrow::Cow;
 use std::collections::{HashMap, HashSet};
 
+#[derive(Clone)]
 pub(crate) struct FunctionSymbols<'symbols> {
     symbols: &'symbols Symbols,
+    pub(crate) addresses: bool,
     pub(super) function_parameters: Cow<'symbols, HashMap<u64, Vec<crate::ir::CType>>>,
     pub(super) import_parameters: Cow<'symbols, HashMap<u64, Vec<crate::ir::CType>>>,
     pub(super) unused_parameters:
@@ -13,6 +15,7 @@ impl<'symbols> FunctionSymbols<'symbols> {
     pub(crate) fn new(symbols: &'symbols Symbols) -> Self {
         Self {
             symbols,
+            addresses: false,
             function_parameters: Cow::Borrowed(&symbols.function_parameters),
             import_parameters: Cow::Borrowed(&symbols.import_parameters),
             unused_parameters: Cow::Borrowed(&symbols.unused_parameters),
@@ -209,6 +212,7 @@ mod tests {
                 crate::loader::Isa::AArch64,
                 vec![crate::ir::Stmt::Ret {
                     value: crate::ir::Expr::Const(1),
+                    at: None,
                 }],
             );
             ir.addr = address;
@@ -231,6 +235,7 @@ mod tests {
                     width: 32,
                     signed: true,
                 },
+                at: None,
             }],
         );
         ir.ret_type = crate::ir::CType::I32;

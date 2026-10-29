@@ -664,6 +664,7 @@ impl Runner<'_> {
                 if let Stmt::Assign {
                     dest,
                     value: Expr::Const(address),
+                    ..
                 } = statement
                     && dest.index == crate::lift::execution::ADDRESS
                 {
@@ -742,7 +743,7 @@ impl Runner<'_> {
     ) -> std::result::Result<Option<u64>, Stop> {
         // Every error here stops this instruction and the entire run.
         match statement {
-            Stmt::Assign { dest, value } => {
+            Stmt::Assign { dest, value, .. } => {
                 let origin = self.origin(value);
                 if self.facts.is_empty() && self.recovery.is_none() {
                     let value = match self.evaluate_concrete(value) {
@@ -766,7 +767,9 @@ impl Runner<'_> {
                     recovery.registers.insert(dest.index, origin);
                 }
             }
-            Stmt::Store { addr, value, width } => {
+            Stmt::Store {
+                addr, value, width, ..
+            } => {
                 let address = match self.eval(addr) {
                     Ok(value) => value,
                     Err(stop) => return Err(stop),
@@ -792,6 +795,7 @@ impl Runner<'_> {
                 lhs,
                 rhs,
                 target,
+                ..
             } => {
                 let bits = super::operand_width(lhs, rhs);
                 if super::holds(
@@ -811,8 +815,9 @@ impl Runner<'_> {
             }
             Stmt::Br {
                 target: Some(target),
+                ..
             } => return Ok(Some(*target)),
-            Stmt::BrIndirect { target } => {
+            Stmt::BrIndirect { target, .. } => {
                 return Ok(Some(match self.eval(target) {
                     Ok(value) => value,
                     Err(stop) => return Err(stop),
@@ -822,6 +827,7 @@ impl Runner<'_> {
                 index,
                 cases,
                 default,
+                ..
             } => {
                 let value = match self.eval(index) {
                     Ok(value) => value,
@@ -837,7 +843,7 @@ impl Runner<'_> {
                     None => return Err(Stop::Error("switch has no matching case".to_owned())),
                 }
             }
-            Stmt::Ret { value } => return self.return_statement(value, depth),
+            Stmt::Ret { value, .. } => return self.return_statement(value, depth),
             Stmt::Call {
                 kind,
                 target,
@@ -857,7 +863,7 @@ impl Runner<'_> {
                     return Err(stop);
                 }
             }
-            Stmt::Trap => {
+            Stmt::Trap { .. } => {
                 let handler = self.signal_handlers.get(&5).copied();
                 let breakpoint = self.image.format == crate::loader::Format::Elf
                     && self.image.isa == Isa::X86_64
@@ -903,13 +909,14 @@ impl Runner<'_> {
                     "branch depends on unavailable flags".to_owned(),
                 ));
             }
-            Stmt::Br { target: None } => {
+            Stmt::Br { target: None, .. } => {
                 return Err(Stop::Error("branch target is unknown".to_owned()));
             }
             Stmt::Machine {
                 instruction: crate::ir::MachineInstruction::ArmLoadAcquire { width },
                 inputs,
                 outputs,
+                ..
             } => {
                 let Some(input) = inputs.first() else {
                     return Err(Stop::Error("missing acquire-load address".to_owned()));
@@ -930,6 +937,7 @@ impl Runner<'_> {
                 instruction: crate::ir::MachineInstruction::Atomic { op, width, .. },
                 inputs,
                 outputs,
+                ..
             } => {
                 use crate::ir::AtomicOp;
 
@@ -991,6 +999,7 @@ impl Runner<'_> {
                     },
                 inputs,
                 outputs,
+                ..
             } if self.image.isa == Isa::AArch64 => {
                 let register = crate::arch::aarch64::TPIDR_EL0;
                 if *write {

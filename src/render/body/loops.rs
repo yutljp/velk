@@ -22,6 +22,7 @@ pub(super) fn for_loop(
             lhs,
             rhs,
             body,
+            ..
         } if prefix.is_empty() => (cond, lhs, rhs, body),
         Node::If {
             cond: guard,
@@ -29,6 +30,7 @@ pub(super) fn for_loop(
             rhs: b,
             then,
             els,
+            ..
         } if els.is_empty() => {
             let [
                 Node::DoWhile {
@@ -36,6 +38,7 @@ pub(super) fn for_loop(
                     lhs,
                     rhs,
                     body,
+                    ..
                 },
             ] = then.as_slice()
             else {
@@ -44,6 +47,7 @@ pub(super) fn for_loop(
             let Stmt::Assign {
                 dest,
                 value: initial,
+                ..
             } = init
             else {
                 return None;
@@ -73,6 +77,7 @@ pub(super) fn for_loop(
             lhs,
             rhs,
             body,
+            ..
         } if first_test(init, *cond, lhs, rhs, preceding, ctx) => (cond, lhs, rhs, body),
         _ => return None,
     };
@@ -151,6 +156,7 @@ fn first_test(
     let Stmt::Assign {
         dest,
         value: initial,
+        ..
     } = init
     else {
         return false;
@@ -179,9 +185,10 @@ fn first_test(
                 rhs: b,
                 then,
                 els,
+                ..
             } if els.is_empty() && matches!(then.last(), Some(Node::Stmt(Stmt::Ret { .. }))) => {
                 for stmt in &assignments {
-                    let Stmt::Assign { dest, value } = stmt else {
+                    let Stmt::Assign { dest, value, .. } = stmt else {
                         return false;
                     };
                     if dest.width != 64 || !test_operand(value) {
@@ -293,7 +300,7 @@ fn test_operand(expr: &Expr) -> bool {
 // A continue may share the for-step only when it has the identical
 // register update immediately before it. Nested loops keep their own steps.
 fn move_continue_steps(nodes: &mut Vec<Node>, step: &Stmt) -> bool {
-    let Stmt::Assign { dest, value } = step else {
+    let Stmt::Assign { dest, value, .. } = step else {
         return false;
     };
     let mut index = 0;
@@ -303,10 +310,10 @@ fn move_continue_steps(nodes: &mut Vec<Node>, step: &Stmt) -> bool {
             Node::Stmt(Stmt::Br { .. } | Stmt::Brif { .. } | Stmt::BrIndirect { .. }) => {
                 return false;
             }
-            Node::Continue => {
+            Node::Continue { .. } => {
                 if index == 0
                     || !matches!(&nodes[index - 1],
-                    Node::Stmt(Stmt::Assign { dest: other, value: updated })
+                    Node::Stmt(Stmt::Assign { dest: other, value: updated, .. })
                     if other.index == dest.index && other.width == dest.width && updated == value)
                 {
                     return false;
@@ -342,7 +349,7 @@ fn move_continue_steps(nodes: &mut Vec<Node>, step: &Stmt) -> bool {
 /// rather than to one nested in it.
 fn continues(nodes: &[Node]) -> bool {
     nodes.iter().any(|node| match node {
-        Node::Continue => true,
+        Node::Continue { .. } => true,
         Node::If { then, els, .. } => continues(then) || continues(els),
         Node::Switch { arms, default, .. } => {
             arms.iter().any(|(_, body)| continues(body))

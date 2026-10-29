@@ -105,7 +105,10 @@ fn scaled_register_sums_preserve_wrapping_and_comparison_widths() {
                         ty: CType::U64,
                     }],
                     CType::U64,
-                    vec![Stmt::Ret { value: result }],
+                    vec![Stmt::Ret {
+                        value: result,
+                        at: None,
+                    }],
                 );
                 let mut optimized = original.clone();
                 velk::passes::simplify::simplify(&mut optimized);
@@ -153,10 +156,11 @@ fn scaled_register_sums_keep_distinct_values_and_memory_reads() {
             CType::U64,
             vec![Stmt::Ret {
                 value: original.clone(),
+                at: None,
             }],
         );
         velk::passes::simplify::simplify(&mut ir);
-        let [Stmt::Ret { value }] = ir.blocks[0].stmts.as_slice() else {
+        let [Stmt::Ret { value, .. }] = ir.blocks[0].stmts.as_slice() else {
             panic!("expected the return");
         };
         assert_eq!(*value, original);
@@ -183,12 +187,14 @@ fn spilled_absolute_offsets_use_integer_arithmetic_through_zero() {
             addr: Expr::bin(BinOp::Add, Expr::Const(REGION), offset.clone()),
             value: Expr::Const(19),
             width: 1,
+            at: None,
         }];
         if spilled_register {
             body.push(Stmt::Store {
                 addr: slot.clone(),
                 value: offset.clone(),
                 width: 8,
+                at: None,
             });
             body.push(Stmt::Assign {
                 dest: RegRef {
@@ -196,12 +202,14 @@ fn spilled_absolute_offsets_use_integer_arithmetic_through_zero() {
                     width: 64,
                 },
                 value: Expr::bin(BinOp::Add, load.clone(), Expr::Const(1)),
+                at: None,
             });
         } else {
             body.push(Stmt::Store {
                 addr: slot.clone(),
                 value: Expr::bin(BinOp::Sub, load.clone(), Expr::Const(1)),
                 width: 8,
+                at: None,
             });
         }
         body.push(Stmt::Brif {
@@ -209,6 +217,7 @@ fn spilled_absolute_offsets_use_integer_arithmetic_through_zero() {
             lhs: offset,
             rhs: Expr::Const(if spilled_register { 4 } else { 0 }),
             target: 0x10,
+            at: None,
         });
         let initial = if spilled_register {
             Stmt::Assign {
@@ -217,12 +226,14 @@ fn spilled_absolute_offsets_use_integer_arithmetic_through_zero() {
                     width: 64,
                 },
                 value: Expr::Const(0),
+                at: None,
             }
         } else {
             Stmt::Store {
                 addr: slot.clone(),
                 value: Expr::Const(7),
                 width: 8,
+                at: None,
             }
         };
         let mut ir = synthetic_ir(
@@ -239,6 +250,7 @@ fn spilled_absolute_offsets_use_integer_arithmetic_through_zero() {
             start: 0x20,
             stmts: vec![Stmt::Ret {
                 value: Expr::Const(7),
+                at: None,
             }],
         });
         candidates.push(printed_candidate(ir, vec![vec![]]));
@@ -267,8 +279,12 @@ fn nonzero_offsets_stay_integer_through_distinct_spill_registers() {
                     width: 64,
                 },
                 value: Expr::Const(3),
+                at: None,
             },
-            Stmt::Br { target: Some(16) },
+            Stmt::Br {
+                target: Some(16),
+                at: None,
+            },
         ],
     );
     ir.blocks.push(Block {
@@ -278,6 +294,7 @@ fn nonzero_offsets_stay_integer_through_distinct_spill_registers() {
                 addr: slot.clone(),
                 value: Expr::reg(VARIABLE_BASE, 64),
                 width: 8,
+                at: None,
             },
             Stmt::Assign {
                 dest: RegRef {
@@ -289,11 +306,13 @@ fn nonzero_offsets_stay_integer_through_distinct_spill_registers() {
                     width: 8,
                     signed: false,
                 },
+                at: None,
             },
             Stmt::Store {
                 addr: Expr::bin(BinOp::Add, Expr::Const(REGION), Expr::reg(loaded, 64)),
                 value: Expr::Const(19),
                 width: 1,
+                at: None,
             },
             Stmt::Assign {
                 dest: RegRef {
@@ -301,12 +320,14 @@ fn nonzero_offsets_stay_integer_through_distinct_spill_registers() {
                     width: 64,
                 },
                 value: Expr::bin(BinOp::Sub, Expr::reg(loaded, 64), Expr::Const(1)),
+                at: None,
             },
             Stmt::Brif {
                 cond: Cond::Ne,
                 lhs: Expr::reg(loaded, 64),
                 rhs: Expr::Const(0),
                 target: 16,
+                at: None,
             },
         ],
     });
@@ -314,6 +335,7 @@ fn nonzero_offsets_stay_integer_through_distinct_spill_registers() {
         start: 32,
         stmts: vec![Stmt::Ret {
             value: Expr::Const(7),
+            at: None,
         }],
     });
     check_candidates(

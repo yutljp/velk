@@ -11,7 +11,7 @@ fn lifted(isa: Isa, bytes: &[u8], result: Expr) -> FunctionIr {
     ir.blocks = super::lift(&image, 0, bytes.len() as u64, &HashSet::new()).unwrap();
     for stmt in ir.blocks.iter_mut().flat_map(|block| &mut block.stmts) {
         assert!(!matches!(stmt, Stmt::Unsupported { .. }), "{stmt:?}");
-        if let Stmt::Ret { value } = stmt {
+        if let Stmt::Ret { value, .. } = stmt {
             *value = result.clone();
         }
     }

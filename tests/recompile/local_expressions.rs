@@ -26,6 +26,7 @@ fn adjacent_call_arguments_keep_output_dependencies() {
             lhs: Expr::reg(6, 64),
             rhs: Expr::Const(0),
             target: 2,
+            at: None,
         }],
     );
     for start in [1, 2] {
@@ -38,6 +39,7 @@ fn adjacent_call_arguments_keep_output_dependencies() {
                         width: 64,
                     },
                     value: Expr::bin(BinOp::Xor, Expr::reg(7, 64), Expr::Const(start)),
+                    at: None,
                 },
                 Stmt::Call {
                     kind: CallKind::Invoke,
@@ -65,9 +67,11 @@ fn adjacent_call_arguments_keep_output_dependencies() {
                         },
                     ],
                     via: None,
+                    at: None,
                 },
                 Stmt::Ret {
                     value: Expr::reg(result, 64),
+                    at: None,
                 },
             ],
         });
@@ -128,12 +132,14 @@ fn adjacent_loads_fold_into_stores_without_crossing_memory_effects() {
                         width: loaded,
                         signed,
                     },
+                    at: None,
                 }];
                 if intervening {
                     stmts.push(Stmt::Store {
                         addr: Expr::reg(6, 64),
                         value: Expr::Const(7),
                         width: stored,
+                        at: None,
                     });
                 }
                 stmts.extend([
@@ -141,9 +147,11 @@ fn adjacent_loads_fold_into_stores_without_crossing_memory_effects() {
                         addr: Expr::reg(6, 64),
                         value: Expr::reg(VARIABLE_BASE, read),
                         width: stored,
+                        at: None,
                     },
                     Stmt::Ret {
                         value: Expr::Const(0),
+                        at: None,
                     },
                 ]);
                 let mut ir = synthetic_ir(
@@ -223,6 +231,7 @@ fn adjacent_unsigned_values_fold_after_branch_variables_split() {
                 lhs: Expr::reg(2, 64),
                 rhs: Expr::Const(0),
                 target: 2,
+                at: None,
             }],
         );
         for start in [1, 2] {
@@ -239,6 +248,7 @@ fn adjacent_unsigned_values_fold_after_branch_variables_split() {
                             Expr::reg(7, 64),
                             Expr::Const(start),
                         ),
+                        at: None,
                     },
                     Stmt::Assign {
                         dest: RegRef {
@@ -254,6 +264,7 @@ fn adjacent_unsigned_values_fold_after_branch_variables_split() {
                                 Expr::reg(if repeated { first } else { 6 }, 64),
                             )
                         },
+                        at: None,
                     },
                     Stmt::Ret {
                         value: if copy {
@@ -261,6 +272,7 @@ fn adjacent_unsigned_values_fold_after_branch_variables_split() {
                         } else {
                             Expr::reg(second, 64)
                         },
+                        at: None,
                     },
                 ],
             });
@@ -315,14 +327,17 @@ fn printed_volatile_integer_reads_keep_their_order() {
                         width: 64,
                     },
                     value: Expr::bin(BinOp::Add, Expr::reg(6, 64), Expr::Const(1)),
+                    at: None,
                 },
                 Stmt::Store {
                     addr: Expr::reg(7, 64),
                     value: Expr::Const(7),
                     width: 8,
+                    at: None,
                 },
                 Stmt::Ret {
                     value: Expr::reg(VARIABLE_BASE, 64),
+                    at: None,
                 },
             ],
         ),
@@ -396,14 +411,17 @@ fn printed_masked_float_expressions_keep_their_assignment_conversion() {
                         },
                         Expr::Const(0xffff_ffff),
                     ),
+                    at: None,
                 },
                 Stmt::Store {
                     addr: Expr::reg(7, 64),
                     value: Expr::Const(7),
                     width: 8,
+                    at: None,
                 },
                 Stmt::Ret {
                     value: Expr::reg(VARIABLE_BASE, 64),
+                    at: None,
                 },
             ],
         ),
@@ -448,14 +466,17 @@ fn printed_division_stays_before_memory_effects() {
                         width: 64,
                     },
                     value: Expr::bin(BinOp::DivU, Expr::Const(100), Expr::reg(6, 64)),
+                    at: None,
                 },
                 Stmt::Store {
                     addr: Expr::reg(7, 64),
                     value: Expr::Const(7),
                     width: 8,
+                    at: None,
                 },
                 Stmt::Ret {
                     value: Expr::reg(VARIABLE_BASE, 64),
+                    at: None,
                 },
             ],
         ),
@@ -525,9 +546,11 @@ fn printed_single_use_sign_extensions_keep_width_and_sign() {
                             width,
                         },
                         value,
+                        at: None,
                     },
                     Stmt::Ret {
                         value: Expr::bin(op, Expr::reg(VARIABLE_BASE, width), Expr::Const(3)),
+                        at: None,
                     },
                 ],
             );
@@ -584,6 +607,7 @@ fn printed_immutable_integer_arguments_use_their_original_objects() {
                     ),
                     Expr::bin(BinOp::And, Expr::reg(6, 64), mask),
                 ),
+                at: None,
             }];
             let inputs: Vec<_> = [0, 1, 0x7f, 0x80, 0x7fff, 0x8000, 0x8000_0000, u64::MAX]
                 .into_iter()
@@ -627,9 +651,11 @@ fn printed_widening_keeps_a_local_when_folding_adds_a_cast() {
                         width: 64,
                     },
                     value: Expr::bin(BinOp::And, Expr::reg(7, 64), Expr::Const(0xff)),
+                    at: None,
                 },
                 Stmt::Ret {
                     value: Expr::bin(BinOp::Shl, Expr::reg(VARIABLE_BASE, 64), Expr::Const(40)),
+                    at: None,
                 },
             ],
         ),
@@ -677,6 +703,7 @@ fn printed_masked_load_returns_do_not_need_integer_temporaries() {
                                 width: bytes,
                                 signed,
                             },
+                            at: None,
                         },
                         Stmt::Ret {
                             value: Expr::bin(
@@ -684,6 +711,7 @@ fn printed_masked_load_returns_do_not_need_integer_temporaries() {
                                 Expr::reg(VARIABLE_BASE, 64),
                                 Expr::Const(mask),
                             ),
+                            at: None,
                         },
                     ],
                 );
@@ -731,6 +759,7 @@ fn parameter_copies_of_another_sign_fold_only_without_extra_conversions() {
                     width: 32,
                 },
                 value: Expr::reg(7, 32),
+                at: None,
             }];
             if overwritten {
                 stmts.push(Stmt::Assign {
@@ -739,6 +768,7 @@ fn parameter_copies_of_another_sign_fold_only_without_extra_conversions() {
                         width: 32,
                     },
                     value: Expr::Const(5),
+                    at: None,
                 });
             }
             stmts.push(Stmt::Brif {
@@ -746,6 +776,7 @@ fn parameter_copies_of_another_sign_fold_only_without_extra_conversions() {
                 lhs: Expr::reg(6, 64),
                 rhs: Expr::Const(0),
                 target: 2,
+                at: None,
             });
             let mut ir = synthetic_ir(
                 &format!("parameter_sign_{wide}_{overwritten}"),
@@ -769,12 +800,14 @@ fn parameter_copies_of_another_sign_fold_only_without_extra_conversions() {
                 start: 1,
                 stmts: vec![Stmt::Ret {
                     value: Expr::bin(BinOp::Add, Expr::reg(temp, 32), Expr::reg(temp, 32)),
+                    at: None,
                 }],
             });
             ir.blocks.push(Block {
                 start: 2,
                 stmts: vec![Stmt::Ret {
                     value: Expr::Const(3),
+                    at: None,
                 }],
             });
             let candidate = printed_candidate(

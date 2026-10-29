@@ -63,6 +63,7 @@ fn save_flags(flags: Option<&Flags>, isa: crate::loader::Isa) -> Vec<Stmt> {
                 width: 64,
             },
             value: byte,
+            at: None,
         },
         Stmt::Assign {
             dest: RegRef {
@@ -70,6 +71,7 @@ fn save_flags(flags: Option<&Flags>, isa: crate::loader::Isa) -> Vec<Stmt> {
                 width: 64,
             },
             value: overflow,
+            at: None,
         },
     ]
 }
@@ -135,6 +137,7 @@ pub(super) fn lift_string(lifter: &mut Lifter, ins: &Instruction) -> bool {
     let advance = |index: u16| Stmt::Assign {
         dest: RegRef { index, width: 64 },
         value: narrow(Expr::bin(BinOp::Add, read(index), increment.clone())),
+        at: None,
     };
     let mut step = Vec::new();
     match ins.mnemonic() {
@@ -143,6 +146,7 @@ pub(super) fn lift_string(lifter: &mut Lifter, ins: &Instruction) -> bool {
                 addr: read(rdi),
                 value: load_at(source, size),
                 width: size,
+                at: None,
             });
             step.extend([advance(rsi), advance(rdi)]);
         }
@@ -151,6 +155,7 @@ pub(super) fn lift_string(lifter: &mut Lifter, ins: &Instruction) -> bool {
                 addr: read(rdi),
                 value: Lifter::read_reg(RAX, size * 8),
                 width: size,
+                at: None,
             });
             step.push(advance(rdi));
         }
@@ -186,7 +191,7 @@ pub(super) fn lift_string(lifter: &mut Lifter, ins: &Instruction) -> bool {
         // sets them before any following instruction can read them.
         let initial = save_flags(lifter.last_compare.as_ref(), lifter.image.isa);
         for stmt in initial {
-            if let Stmt::Assign { dest, value } = stmt {
+            if let Stmt::Assign { dest, value, .. } = stmt {
                 lifter.stmts.push(Stmt::Assign {
                     dest,
                     value: Expr::Select {
@@ -196,6 +201,7 @@ pub(super) fn lift_string(lifter: &mut Lifter, ins: &Instruction) -> bool {
                         then: Box::new(value),
                         els: Box::new(Expr::constant(0)),
                     },
+                    at: None,
                 });
             }
         }
@@ -206,6 +212,7 @@ pub(super) fn lift_string(lifter: &mut Lifter, ins: &Instruction) -> bool {
         lhs: read(rcx),
         rhs: Expr::constant(0),
         target: ins.next_ip(),
+        at: None,
     });
     step.push(Stmt::Assign {
         dest: RegRef {
@@ -213,6 +220,7 @@ pub(super) fn lift_string(lifter: &mut Lifter, ins: &Instruction) -> bool {
             width: 64,
         },
         value: narrow(Expr::bin(BinOp::Sub, read(rcx), Expr::constant(1))),
+        at: None,
     });
     if comparing {
         let keep = Expr::Select {
@@ -235,6 +243,7 @@ pub(super) fn lift_string(lifter: &mut Lifter, ins: &Instruction) -> bool {
             lhs: keep,
             rhs: Expr::constant(0),
             target: ins.ip() + 1,
+            at: None,
         });
     } else {
         step.push(Stmt::Brif {
@@ -242,6 +251,7 @@ pub(super) fn lift_string(lifter: &mut Lifter, ins: &Instruction) -> bool {
             lhs: read(rcx),
             rhs: Expr::constant(0),
             target: ins.ip() + 1,
+            at: None,
         });
     }
     lifter.extra.push((

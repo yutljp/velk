@@ -33,12 +33,14 @@ fn printed_terminal_guards_keep_error_payloads_and_short_circuit_reads() {
                         addr: pointer.clone(),
                         value: Expr::bin(BinOp::And, input.clone(), Expr::Const(1)),
                         width: 8,
+                        at: None,
                     },
                     Stmt::Brif {
                         cond: Cond::Eq,
                         lhs: input.clone(),
                         rhs: Expr::Const(0),
                         target: 30,
+                        at: None,
                     },
                 ],
             },
@@ -53,12 +55,14 @@ fn printed_terminal_guards_keep_error_payloads_and_short_circuit_reads() {
                     },
                     rhs: Expr::Const(0),
                     target: 40,
+                    at: None,
                 }],
             },
             Block {
                 start: 20,
                 stmts: vec![Stmt::Ret {
                     value: Expr::Const(0),
+                    at: None,
                 }],
             },
         ];
@@ -70,14 +74,17 @@ fn printed_terminal_guards_keep_error_payloads_and_short_circuit_reads() {
                         addr: pointer.clone(),
                         value: input.clone(),
                         width: 8,
+                        at: None,
                     },
                     Stmt::Store {
                         addr: Expr::bin(BinOp::Add, pointer.clone(), Expr::Const(8)),
                         value: Expr::Const(error),
                         width: 8,
+                        at: None,
                     },
                     Stmt::Ret {
                         value: Expr::Const(error),
+                        at: None,
                     },
                 ],
             });
@@ -126,6 +133,7 @@ fn printed_identical_exits_preserve_constants_and_store_order() {
             width: 64,
         },
         value: Expr::Const(value),
+        at: None,
     };
     for memory in [false, true] {
         let mut ir = synthetic_ir(
@@ -159,6 +167,7 @@ fn printed_identical_exits_preserve_constants_and_store_order() {
                 index: input.clone(),
                 cases: vec![(0, 10), (1, 20), (2, 30)],
                 default: Some(40),
+                at: None,
             }],
         });
         for (start, code) in [(10, 19), (20, 19), (30, 19), (40, 20)] {
@@ -168,6 +177,7 @@ fn printed_identical_exits_preserve_constants_and_store_order() {
                     addr: pointer.clone(),
                     width: 8,
                     value: Expr::bin(BinOp::Add, load.clone(), Expr::Const(start)),
+                    at: None,
                 });
             }
             stmts.push(assign(code));
@@ -178,10 +188,14 @@ fn printed_identical_exits_preserve_constants_and_store_order() {
                         addr: pointer.clone(),
                         width: 8,
                         value: Expr::bin(op, load.clone(), Expr::Const(constant)),
+                        at: None,
                     });
                 }
             }
-            stmts.push(Stmt::Br { target: Some(100) });
+            stmts.push(Stmt::Br {
+                target: Some(100),
+                at: None,
+            });
             ir.blocks.push(Block { start, stmts });
         }
         ir.blocks.push(Block {
@@ -192,6 +206,7 @@ fn printed_identical_exits_preserve_constants_and_store_order() {
                     Expr::reg(variable, 64),
                     if memory { load.clone() } else { Expr::Const(0) },
                 ),
+                at: None,
             }],
         });
         let candidate = printed_candidate(
@@ -246,6 +261,7 @@ fn shared_width_errors_preserve_cursor_and_truncation() {
     let assign = |index, value| Stmt::Assign {
         dest: RegRef { index, width: 64 },
         value,
+        at: None,
     };
     let mut ir = synthetic_ir(
         "width_errors",
@@ -276,6 +292,7 @@ fn shared_width_errors_preserve_cursor_and_truncation() {
             index: width,
             cases: vec![(1, 10), (2, 20), (4, 30), (8, 40)],
             default: Some(50),
+            at: None,
         }],
     });
     for (start, bytes) in [(10, 1), (20, 2), (30, 4), (40, 8), (50, 255)] {
@@ -284,7 +301,10 @@ fn shared_width_errors_preserve_cursor_and_truncation() {
             stmts: vec![
                 assign(variable, Expr::Const(19)),
                 assign(variable + 1, Expr::Const(bytes)),
-                Stmt::Br { target: Some(100) },
+                Stmt::Br {
+                    target: Some(100),
+                    at: None,
+                },
             ],
         });
     }
@@ -295,6 +315,7 @@ fn shared_width_errors_preserve_cursor_and_truncation() {
             lhs: length,
             rhs: Expr::reg(variable + 1, 64),
             target: 200,
+            at: None,
         }],
     });
     ir.blocks.push(Block {
@@ -304,9 +325,11 @@ fn shared_width_errors_preserve_cursor_and_truncation() {
                 addr: pointer.clone(),
                 value: Expr::reg(variable + 1, 64),
                 width: 8,
+                at: None,
             },
             Stmt::Ret {
                 value: Expr::Const(0),
+                at: None,
             },
         ],
     });
@@ -317,9 +340,11 @@ fn shared_width_errors_preserve_cursor_and_truncation() {
                 addr: pointer,
                 value: Expr::reg(variable + 1, 64),
                 width: 8,
+                at: None,
             },
             Stmt::Ret {
                 value: Expr::reg(variable, 64),
+                at: None,
             },
         ],
     });
@@ -364,6 +389,7 @@ fn shared_prefix_preserves_branch_input() {
                 lhs: Expr::reg(argument, 64),
                 rhs: Expr::Const(0),
                 target: 20,
+                at: None,
             }],
         });
         for (start, add) in [(10, 1), (20, 2)] {
@@ -376,9 +402,11 @@ fn shared_prefix_preserves_branch_input() {
                             width: 64,
                         },
                         value: Expr::Const(19),
+                        at: None,
                     },
                     Stmt::Ret {
                         value: Expr::bin(BinOp::Add, Expr::reg(destination, 64), Expr::Const(add)),
+                        at: None,
                     },
                 ],
             });
@@ -431,6 +459,7 @@ fn shared_decoder_errors_preserve_all_switch_exits_and_cursor() {
     let assign = |index, value| Stmt::Assign {
         dest: RegRef { index, width: 64 },
         value: Expr::Const(value),
+        at: None,
     };
     ir.blocks = vec![Block {
         start: 0,
@@ -438,6 +467,7 @@ fn shared_decoder_errors_preserve_all_switch_exits_and_cursor() {
             index: Expr::reg(arguments[1], 64),
             cases: vec![(1, 10), (2, 20), (4, 30), (8, 40)],
             default: Some(50),
+            at: None,
         }],
     }];
     for (start, bytes) in [(10, 1), (20, 2), (30, 4), (40, 8)] {
@@ -448,6 +478,7 @@ fn shared_decoder_errors_preserve_all_switch_exits_and_cursor() {
                 lhs: Expr::reg(arguments[2], 64),
                 rhs: Expr::Const(bytes),
                 target: 100,
+                at: None,
             }],
         });
         ir.blocks.push(Block {
@@ -457,9 +488,11 @@ fn shared_decoder_errors_preserve_all_switch_exits_and_cursor() {
                     addr: pointer.clone(),
                     value: Expr::Const(bytes),
                     width: 8,
+                    at: None,
                 },
                 Stmt::Ret {
                     value: Expr::Const(0),
+                    at: None,
                 },
             ],
         });
@@ -469,7 +502,10 @@ fn shared_decoder_errors_preserve_all_switch_exits_and_cursor() {
         stmts: vec![
             assign(error, 20),
             assign(detail, 255),
-            Stmt::Br { target: Some(200) },
+            Stmt::Br {
+                target: Some(200),
+                at: None,
+            },
         ],
     });
     ir.blocks.push(Block {
@@ -477,7 +513,10 @@ fn shared_decoder_errors_preserve_all_switch_exits_and_cursor() {
         stmts: vec![
             assign(error, 19),
             assign(detail, 0),
-            Stmt::Br { target: Some(200) },
+            Stmt::Br {
+                target: Some(200),
+                at: None,
+            },
         ],
     });
     ir.blocks.push(Block {
@@ -487,9 +526,11 @@ fn shared_decoder_errors_preserve_all_switch_exits_and_cursor() {
                 addr: pointer,
                 value: Expr::reg(detail, 64),
                 width: 8,
+                at: None,
             },
             Stmt::Ret {
                 value: Expr::reg(error, 64),
+                at: None,
             },
         ],
     });

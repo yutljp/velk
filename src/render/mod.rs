@@ -1,5 +1,6 @@
 mod abi;
 mod abi_objects;
+mod addresses;
 mod aggregates;
 mod body;
 mod calls;
@@ -39,6 +40,7 @@ mod vector_values;
 mod virtual_calls;
 mod widths;
 
+pub use addresses::instruction_addresses;
 use body::{indent, render_node, render_nodes, via_comment};
 use calls::system_call_name;
 #[cfg(test)]

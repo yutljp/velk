@@ -14,6 +14,7 @@ fn store(offset: i64, value: Expr, width: u8) -> Stmt {
         addr: slot(offset),
         value,
         width,
+        at: None,
     }
 }
 
@@ -29,6 +30,7 @@ fn assign(index: u16, width: u8, value: Expr) -> Stmt {
     Stmt::Assign {
         dest: RegRef { index, width },
         value,
+        at: None,
     }
 }
 
@@ -70,6 +72,7 @@ fn diamond(name: &str, width: u8, signed: bool) -> FunctionIr {
             lhs: Expr::reg(b, 64),
             rhs: Expr::Const(0),
             target: 0x20,
+            at: None,
         }],
     );
     for start in [0x10, 0x20] {
@@ -77,7 +80,10 @@ fn diamond(name: &str, width: u8, signed: bool) -> FunctionIr {
             start,
             stmts: vec![
                 store(-8, value.clone(), width),
-                Stmt::Br { target: Some(0x30) },
+                Stmt::Br {
+                    target: Some(0x30),
+                    at: None,
+                },
             ],
         });
     }
@@ -85,6 +91,7 @@ fn diamond(name: &str, width: u8, signed: bool) -> FunctionIr {
         start: 0x30,
         stmts: vec![Stmt::Ret {
             value: load(-8, width, signed),
+            at: None,
         }],
     });
     ir
@@ -150,6 +157,7 @@ fn call() -> Stmt {
         outputs: velk::ir::fallback_call_outputs(Convention::SysV, None),
         clobbers: None,
         via: None,
+        at: None,
     }
 }
 
@@ -166,6 +174,7 @@ fn printed_frame_join_values_keep_uncertain_reads() {
     }
     constant.blocks[3].stmts[0] = Stmt::Ret {
         value: Expr::bin(BinOp::And, load(-8, 1, false), Expr::Const(1)),
+        at: None,
     };
     let text = printed(&forward(&constant));
     assert!(text.contains("return 1;"), "{text}");
@@ -174,7 +183,10 @@ fn printed_frame_join_values_keep_uncertain_reads() {
         start: 0x40,
         stmts: vec![
             store(-8, Expr::Const(7), 8),
-            Stmt::Br { target: Some(0x30) },
+            Stmt::Br {
+                target: Some(0x30),
+                at: None,
+            },
         ],
     });
     assert_forwarded(&unreachable, true);
@@ -208,7 +220,10 @@ fn printed_frame_join_values_keep_uncertain_reads() {
                 ir.blocks[1].stmts.remove(0);
             }
             "uninitialized_loop" => {
-                ir.blocks[1].stmts[1] = Stmt::Br { target: Some(0) };
+                ir.blocks[1].stmts[1] = Stmt::Br {
+                    target: Some(0),
+                    at: None,
+                };
                 ir.blocks[2].stmts.remove(0);
             }
             "partial" => ir.blocks[1].stmts[0] = store(-8, Expr::reg(a, 64), 4),
@@ -233,11 +248,13 @@ fn printed_frame_join_values_keep_uncertain_reads() {
                     addr: Expr::reg(a, 64),
                     value: Expr::Const(3),
                     width: 8,
+                    at: None,
                 },
             ),
             "unsupported" => ir.blocks[1].stmts.insert(
                 before_jump,
                 Stmt::Unsupported {
+                    at: None,
                     text: "opaque".into(),
                     writes: Some(Vec::new()),
                 },
@@ -249,8 +266,18 @@ fn printed_frame_join_values_keep_uncertain_reads() {
                     vec![(0x10, 0x20)],
                 ));
             }
-            "unknown_edge" => ir.blocks[1].stmts[before_jump] = Stmt::Br { target: None },
-            "missing_target" => ir.blocks[1].stmts[before_jump] = Stmt::Br { target: Some(0x80) },
+            "unknown_edge" => {
+                ir.blocks[1].stmts[before_jump] = Stmt::Br {
+                    target: None,
+                    at: None,
+                }
+            }
+            "missing_target" => {
+                ir.blocks[1].stmts[before_jump] = Stmt::Br {
+                    target: Some(0x80),
+                    at: None,
+                }
+            }
             "moving_frame" => ir.blocks[1].stmts.insert(
                 before_jump,
                 assign(
@@ -287,6 +314,7 @@ fn printed_frame_join_values_keep_uncertain_reads() {
                         width: 8,
                         signed: false,
                     },
+                    at: None,
                 };
             }
             "memory_value" => {
@@ -311,7 +339,8 @@ fn printed_frame_join_values_keep_uncertain_reads() {
             matches!(
                 optimized.blocks[3].stmts.as_slice(),
                 [Stmt::Ret {
-                    value: Expr::Load { .. }
+                    value: Expr::Load { .. },
+                    ..
                 }]
             ),
             "{case}"
@@ -368,7 +397,13 @@ fn printed_frame_join_values_recompile_with_exact_widths_and_loops() {
         let mut ir = diamond(&format!("frame_loop_{changes_value}"), 8, false);
         let initial = ir.blocks[1].stmts[0].clone();
         ir.blocks[0].stmts.insert(0, initial);
-        ir.blocks[1].stmts = vec![assign(b, 64, Expr::Const(0)), Stmt::Br { target: Some(0) }];
+        ir.blocks[1].stmts = vec![
+            assign(b, 64, Expr::Const(0)),
+            Stmt::Br {
+                target: Some(0),
+                at: None,
+            },
+        ];
         // Reenter the condition without rerunning the initializing store.
         let condition = ir.blocks[0].stmts.pop().unwrap();
         ir.blocks.insert(
@@ -378,8 +413,14 @@ fn printed_frame_join_values_recompile_with_exact_widths_and_loops() {
                 stmts: vec![condition],
             },
         );
-        ir.blocks[2].stmts[1] = Stmt::Br { target: Some(8) };
-        ir.blocks[3].stmts = vec![Stmt::Br { target: Some(0x30) }];
+        ir.blocks[2].stmts[1] = Stmt::Br {
+            target: Some(8),
+            at: None,
+        };
+        ir.blocks[3].stmts = vec![Stmt::Br {
+            target: Some(0x30),
+            at: None,
+        }];
         if changes_value {
             ir.blocks[2].stmts.insert(0, store(-8, Expr::Const(7), 8));
         }
@@ -411,12 +452,14 @@ fn printed_frame_join_values_recompile_with_exact_widths_and_loops() {
                     lhs: load(-8, width, false),
                     rhs: Expr::Const(0),
                     target: 0x50,
+                    at: None,
                 }];
                 for (start, value) in [(0x40, 0), (0x50, 1)] {
                     ir.blocks.push(Block {
                         start,
                         stmts: vec![Stmt::Ret {
                             value: Expr::Const(value),
+                            at: None,
                         }],
                     });
                 }
@@ -427,6 +470,7 @@ fn printed_frame_join_values_recompile_with_exact_widths_and_loops() {
                         Expr::bin(BinOp::Sar, load(-8, width, false), Expr::Const(1)),
                         Expr::Const(u64::MAX >> (64 - bits)),
                     ),
+                    at: None,
                 }];
             }
             let text = printed(&forward(&ir));
@@ -448,6 +492,7 @@ fn printed_frame_join_values_recompile_with_exact_widths_and_loops() {
             then: Box::new(Expr::Const(1)),
             els: Box::new(Expr::Const(0)),
         },
+        at: None,
     };
     assert!(printed(&forward(&narrow)).contains("/* [sp"));
     cases.push(narrow);
@@ -560,6 +605,7 @@ fn printed_local_offsets_preserve_operator_precedence() {
                     addr: address.clone(),
                     value: Expr::Const(0xa5),
                     width: 1,
+                    at: None,
                 },
                 Stmt::Ret {
                     value: Expr::bin(
@@ -571,6 +617,7 @@ fn printed_local_offsets_preserve_operator_precedence() {
                             signed: false,
                         },
                     ),
+                    at: None,
                 },
             ],
         );
@@ -599,7 +646,7 @@ fn printed_promoted_slots_execute_joins_loops_and_alias_fallbacks() {
                 ir.blocks[1].stmts.remove(0);
             }
             "call" => ir.blocks[3].stmts.insert(0, call()),
-            _ => ir.blocks[3].stmts = vec![Stmt::Trap],
+            _ => ir.blocks[3].stmts = vec![Stmt::Trap { at: None }],
         }
         velk::passes::memory::promote_frame_slots(&mut ir);
         assert!(printed(&ir).contains("/* [sp"), "{case}: {}", printed(&ir));
@@ -631,9 +678,15 @@ fn printed_promoted_slots_execute_joins_loops_and_alias_fallbacks() {
             8,
         ),
         assign(b, 64, Expr::Const(0)),
-        Stmt::Br { target: Some(8) },
+        Stmt::Br {
+            target: Some(8),
+            at: None,
+        },
     ];
-    looping.blocks[3].stmts = vec![Stmt::Br { target: Some(0x30) }];
+    looping.blocks[3].stmts = vec![Stmt::Br {
+        target: Some(0x30),
+        at: None,
+    }];
     cases.push((looping, true));
     let mut snapshot = diamond("promoted_frame_snapshot", 8, false);
     let saved = velk::ir::TEMP_BASE + 51;
@@ -647,11 +700,13 @@ fn printed_promoted_slots_execute_joins_loops_and_alias_fallbacks() {
     );
     snapshot.blocks[3].stmts[0] = Stmt::Ret {
         value: Expr::bin(BinOp::Add, Expr::reg(saved, 64), load(-8, 8, false)),
+        at: None,
     };
     cases.push((snapshot, false));
     let mut narrow = diamond("promoted_narrow_fallback", 8, false);
     narrow.blocks[3].stmts[0] = Stmt::Ret {
         value: load(-8, 1, true),
+        at: None,
     };
     cases.push((narrow, false));
     let mut escaped = diamond("promoted_escape_fallback", 8, false);
@@ -664,6 +719,7 @@ fn printed_promoted_slots_execute_joins_loops_and_alias_fallbacks() {
             addr: Expr::reg(velk::ir::TEMP_BASE + 50, 64),
             value: Expr::reg(b, 64),
             width: 8,
+            at: None,
         },
     );
     cases.push((escaped, false));
@@ -727,6 +783,7 @@ fn printed_promoted_slots_survive_recursive_calls() {
             invocation,
             Stmt::Ret {
                 value: Expr::bin(BinOp::Add, load(16, 8, false), Expr::reg(0, 64)),
+                at: None,
             },
         ],
     );
@@ -816,12 +873,14 @@ fn printed_call_slot_promotion_excludes_argument_and_escaping_slots() {
                 addr: Expr::Const(0x8000),
                 value: slot(offset),
                 width: 8,
+                at: None,
             });
         }
         stmts.extend([
             invocation,
             Stmt::Ret {
                 value: load(offset, width, false),
+                at: None,
             },
         ]);
         let mut ir = synthetic_ir("frame_call_slot", Vec::new(), CType::U64, stmts);
@@ -875,6 +934,7 @@ fn printed_call_slots_execute_stack_arguments_and_address_writes() {
                 invocation,
                 Stmt::Ret {
                     value: Expr::bin(BinOp::Add, load(16, 8, false), Expr::reg(0, 64)),
+                    at: None,
                 },
             ],
         );

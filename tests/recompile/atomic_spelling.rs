@@ -50,6 +50,7 @@ fn printed_atomic_tests_preserve_width_order_and_old_values() {
                         }],
                         CType::U64,
                         vec![Stmt::Machine {
+                            at: None,
                             instruction: MachineInstruction::Atomic {
                                 op,
                                 width,
@@ -69,6 +70,7 @@ fn printed_atomic_tests_preserve_width_order_and_old_values() {
                     if op == AtomicOp::Store {
                         ir.blocks[0].stmts.push(Stmt::Ret {
                             value: Expr::Const(0),
+                            at: None,
                         });
                     } else {
                         ir.blocks[0].stmts.push(Stmt::Brif {
@@ -76,6 +78,7 @@ fn printed_atomic_tests_preserve_width_order_and_old_values() {
                             lhs: result.clone(),
                             rhs: Expr::Const(1),
                             target: 0x20,
+                            at: None,
                         });
                         ir.blocks.extend([
                             Block {
@@ -86,6 +89,7 @@ fn printed_atomic_tests_preserve_width_order_and_old_values() {
                                     } else {
                                         Expr::Const(0)
                                     },
+                                    at: None,
                                 }],
                             },
                             Block {
@@ -96,6 +100,7 @@ fn printed_atomic_tests_preserve_width_order_and_old_values() {
                                     } else {
                                         Expr::Const(1000)
                                     },
+                                    at: None,
                                 }],
                             },
                         ]);
@@ -182,6 +187,7 @@ fn printed_compare_exchange_keeps_a_wider_expected_test() {
             CType::U64,
             vec![
                 Stmt::Machine {
+                    at: None,
                     instruction: MachineInstruction::Atomic {
                         op: AtomicOp::CompareExchange,
                         width: 1,
@@ -198,6 +204,7 @@ fn printed_compare_exchange_keeps_a_wider_expected_test() {
                     lhs: Expr::reg(TEMP_BASE, 64),
                     rhs: Expr::Const(expected),
                     target: 0x20,
+                    at: None,
                 },
             ],
         );
@@ -206,12 +213,14 @@ fn printed_compare_exchange_keeps_a_wider_expected_test() {
                 start: 0x10,
                 stmts: vec![Stmt::Ret {
                     value: Expr::Const(0),
+                    at: None,
                 }],
             },
             Block {
                 start: 0x20,
                 stmts: vec![Stmt::Ret {
                     value: Expr::Const(1),
+                    at: None,
                 }],
             },
         ]);
@@ -247,8 +256,10 @@ fn printed_compare_exchange_keeps_a_wider_expected_test() {
                         width: 64,
                     },
                     value: Expr::Const(5),
+                    at: None,
                 },
                 Stmt::Machine {
+                    at: None,
                     instruction: MachineInstruction::Atomic {
                         op: if shared_comparison {
                             AtomicOp::Add
@@ -277,6 +288,7 @@ fn printed_compare_exchange_keeps_a_wider_expected_test() {
                         Expr::Const(1)
                     },
                     target: 0x20,
+                    at: None,
                 },
             ],
         );
@@ -285,12 +297,14 @@ fn printed_compare_exchange_keeps_a_wider_expected_test() {
                 start: 0x10,
                 stmts: vec![Stmt::Ret {
                     value: Expr::Const(0),
+                    at: None,
                 }],
             },
             Block {
                 start: 0x20,
                 stmts: vec![Stmt::Ret {
                     value: Expr::Const(1),
+                    at: None,
                 }],
             },
         ]);

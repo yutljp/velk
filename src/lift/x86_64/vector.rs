@@ -112,6 +112,7 @@ fn lift_ymm(lifter: &mut Lifter, ins: &Instruction) -> Option<()> {
                         ),
                         value,
                         width: 8,
+                        at: None,
                     });
                 }
             }
@@ -265,7 +266,12 @@ fn lift_xmm(lifter: &mut Lifter, ins: &Instruction) -> Option<()> {
     }
     let store = |lifter: &mut Lifter, addr: Expr, value: Expr, width: u8| {
         preserve_compare(&mut lifter.last_compare, Write::Memory, &mut lifter.stmts);
-        lifter.stmts.push(Stmt::Store { addr, value, width });
+        lifter.stmts.push(Stmt::Store {
+            addr,
+            value,
+            width,
+            at: None,
+        });
     };
     // Normalize VEX and non-temporal moves to their plain equivalents.
     let mnemonic = match ins.mnemonic() {

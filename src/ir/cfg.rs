@@ -31,7 +31,7 @@ pub(crate) fn block_successors_with_exceptions(
     let block = &blocks[index];
     let unknown_normal = matches!(
         block.stmts.last(),
-        Some(Stmt::BrIndirect { .. } | Stmt::Br { target: None })
+        Some(Stmt::BrIndirect { .. } | Stmt::Br { target: None, .. })
     );
     let mut edges = BlockSuccessors {
         normal: if unknown_normal {
@@ -111,6 +111,7 @@ pub(crate) fn normal_successors(
     match terminator {
         Some(Stmt::Br {
             target: Some(target),
+            ..
         }) => out.extend(find(*target)),
         Some(Stmt::Brif { target, .. }) | Some(Stmt::BrifFlags { target, .. }) => {
             out.extend(find(*target));
@@ -124,8 +125,8 @@ pub(crate) fn normal_successors(
                 out.extend(find(*target));
             }
         }
-        Some(Stmt::Ret { .. }) | Some(Stmt::BrIndirect { .. }) | Some(Stmt::Trap) => {}
-        Some(Stmt::Br { target: None }) if unknown_branch == UnknownBranch::Stop => {}
+        Some(Stmt::Ret { .. }) | Some(Stmt::BrIndirect { .. }) | Some(Stmt::Trap { .. }) => {}
+        Some(Stmt::Br { target: None, .. }) if unknown_branch == UnknownBranch::Stop => {}
         _ => out.extend(fallthrough),
     }
     out
@@ -177,7 +178,7 @@ pub(crate) fn opaque(block: &Block) -> bool {
     block.stmts.iter().any(|stmt| {
         matches!(
             stmt,
-            Stmt::Unsupported { .. } | Stmt::BrIndirect { .. } | Stmt::Br { target: None }
+            Stmt::Unsupported { .. } | Stmt::BrIndirect { .. } | Stmt::Br { target: None, .. }
         )
     })
 }
@@ -292,7 +293,7 @@ pub(crate) fn own_return(blocks: &[Block]) -> Option<&Expr> {
         .rev()
         .find_map(|block| match block.stmts.as_slice() {
             [.., Stmt::Call { .. }, Stmt::Ret { .. }] => None,
-            [.., Stmt::Ret { value }] => Some(value),
+            [.., Stmt::Ret { value, .. }] => Some(value),
             _ => None,
         })
 }
@@ -309,30 +310,44 @@ mod tests {
         use std::collections::{HashMap, HashSet};
         let branches = vec![
             Vec::new(),
-            vec![Stmt::Br { target: None }],
-            vec![Stmt::Br { target: Some(8) }],
-            vec![Stmt::Br { target: Some(99) }],
+            vec![Stmt::Br {
+                target: None,
+                at: None,
+            }],
+            vec![Stmt::Br {
+                target: Some(8),
+                at: None,
+            }],
+            vec![Stmt::Br {
+                target: Some(99),
+                at: None,
+            }],
             vec![Stmt::Brif {
                 cond: Cond::Eq,
                 lhs: Expr::reg(0, 64),
                 rhs: Expr::Const(0),
                 target: 8,
+                at: None,
             }],
             vec![Stmt::BrifFlags {
                 cond: Cond::Eq,
                 target: 99,
+                at: None,
             }],
             vec![Stmt::Switch {
                 index: Expr::reg(0, 64),
                 cases: vec![(0, 8), (1, 8), (2, 99)],
                 default: Some(0),
+                at: None,
             }],
             vec![Stmt::Ret {
                 value: Expr::Const(0),
+                at: None,
             }],
-            vec![Stmt::Trap],
+            vec![Stmt::Trap { at: None }],
             vec![Stmt::BrIndirect {
                 target: Expr::reg(0, 64),
+                at: None,
             }],
         ];
         for starts in [[0, 8, 16], [0, 0, 8], [8, 0, 8]] {
@@ -376,6 +391,7 @@ mod tests {
                                 }
                                 Some(Stmt::Br {
                                     target: Some(target),
+                                    ..
                                 }) => {
                                     if let Some(target) = index.get(target) {
                                         next.push(*target);
@@ -395,7 +411,7 @@ mod tests {
                                 }
                                 Some(Stmt::Ret { .. })
                                 | Some(Stmt::BrIndirect { .. })
-                                | Some(Stmt::Trap) => {}
+                                | Some(Stmt::Trap { .. }) => {}
                                 _ => {
                                     if let Some(position) = index.get(&block.start) {
                                         next.push(position + 1);
@@ -445,6 +461,7 @@ mod tests {
                     index: Expr::reg(0, 64),
                     cases: vec![(0, 16), (1, 8), (2, 16), (3, 99)],
                     default: Some(8),
+                    at: None,
                 }],
             },
             Block {
@@ -458,9 +475,13 @@ mod tests {
         ];
         assert_eq!(super::block_successors(&blocks, 0), vec![2, 1, 2, 1]);
         for branch in [
-            Stmt::Br { target: None },
+            Stmt::Br {
+                target: None,
+                at: None,
+            },
             Stmt::BrIndirect {
                 target: Expr::reg(0, 64),
+                at: None,
             },
         ] {
             let direct = matches!(branch, Stmt::Br { .. });
@@ -493,6 +514,7 @@ mod tests {
             outputs: crate::ir::fallback_call_outputs(Convention::Aapcs64, None),
             clobbers: None,
             via: None,
+            at: None,
         }
     }
 
@@ -520,9 +542,13 @@ mod tests {
     #[test]
     fn unknown_normal_and_exception_targets_are_independent() {
         for branch in [
-            Stmt::Br { target: None },
+            Stmt::Br {
+                target: None,
+                at: None,
+            },
             Stmt::BrIndirect {
                 target: Expr::reg(1, 64),
+                at: None,
             },
         ] {
             let blocks = [
@@ -556,6 +582,7 @@ mod tests {
             Block {
                 start: 0,
                 stmts: vec![Stmt::Unsupported {
+                    at: None,
                     text: "opaque".to_owned(),
                     writes: Some(Vec::new()),
                 }],
@@ -564,6 +591,7 @@ mod tests {
                 start: 8,
                 stmts: vec![Stmt::Ret {
                     value: Expr::Const(0),
+                    at: None,
                 }],
             },
         ];
@@ -577,6 +605,7 @@ mod tests {
                 addr: Expr::Const(0),
                 value: Expr::Const(0),
                 width: 8,
+                at: None,
             }],
         }];
         let edges = block_successors_with_exceptions(&known, 0, &[(8, vec![(0, 8)])]);

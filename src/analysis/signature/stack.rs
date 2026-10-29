@@ -141,7 +141,7 @@ pub(super) fn stack_arguments(
     let step =
         |stmt: &Stmt, frame: &mut Frame, held: &mut HashMap<u16, i64>, written: &mut Written| {
             let assigned = match stmt {
-                Stmt::Assign { dest, value } if dest.width == 64 => offset_of(value, frame),
+                Stmt::Assign { dest, value, .. } if dest.width == 64 => offset_of(value, frame),
                 _ => None,
             };
             let preserved: Vec<_> = stmt

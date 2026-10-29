@@ -24,7 +24,8 @@ pub(super) fn single_use_loads(ir: &crate::ir::FunctionIr) -> HashSet<(u16, Expr
         block.stmts.windows(2).any(|pair| {
             pair.iter().all(|stmt| {
                 matches!(stmt, Stmt::Assign {
-            dest, value: Expr::Load { width: 8, signed: false, .. }
+            dest, value: Expr::Load { width: 8, signed: false, .. },
+            ..
         } if dest.width == 64 && (dest.index >= VARIABLE_BASE || crate::arch::vector_half(ir.isa, dest.index).is_some()))
             })
         })
@@ -42,6 +43,7 @@ pub(super) fn single_use_loads(ir: &crate::ir::FunctionIr) -> HashSet<(u16, Expr
             if let Stmt::Assign {
                 dest,
                 value: value @ Expr::Load { width: 8, .. },
+                ..
             } = stmt
                 && dest.width == 64
                 && (dest.index >= VARIABLE_BASE
@@ -294,6 +296,7 @@ fn string_copy(nodes: &[Node], ctx: &Ctx<'_>) -> Option<Transfer> {
             addr,
             value: Expr::Const(value),
             width,
+            ..
         }) = node
         else {
             break;
@@ -416,6 +419,7 @@ fn fill(nodes: &[Node], ctx: &Ctx<'_>) -> Option<Transfer> {
             addr,
             value: Expr::Const(value),
             width,
+            ..
         }) = node
         else {
             break;
@@ -488,6 +492,7 @@ fn ordered_copy(nodes: &[Node], ctx: &Ctx<'_>) -> Option<Transfer> {
                     width: 8,
                     signed: false,
                 },
+            ..
         }) = node
         else {
             break;
@@ -511,7 +516,7 @@ fn ordered_copy(nodes: &[Node], ctx: &Ctx<'_>) -> Option<Transfer> {
     }
     let mut intervening_statements = Vec::new();
     for node in nodes.iter().skip(loads.len()).take(4) {
-        let Node::Stmt(stmt @ Stmt::Assign { dest, value }) = node else {
+        let Node::Stmt(stmt @ Stmt::Assign { dest, value, .. }) = node else {
             break;
         };
         let mut reads = HashSet::new();
@@ -530,6 +535,7 @@ fn ordered_copy(nodes: &[Node], ctx: &Ctx<'_>) -> Option<Transfer> {
             addr,
             value,
             width: 8,
+            ..
         })) = nodes.get(loads.len() + intervening_statements.len() + part)
         else {
             return None;
@@ -634,6 +640,7 @@ fn reordered_copy(nodes: &[Node], ctx: &Ctx<'_>) -> Option<Transfer> {
                     width: 8,
                     signed: false,
                 },
+            ..
         }) = node
         else {
             break;
@@ -686,6 +693,7 @@ fn reordered_copy(nodes: &[Node], ctx: &Ctx<'_>) -> Option<Transfer> {
             addr,
             value,
             width: 8,
+            ..
         })) = nodes.get(loads.len() + part)
         else {
             return None;

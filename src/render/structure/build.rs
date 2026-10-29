@@ -35,6 +35,7 @@ impl Structurer<'_> {
                     lhs,
                     rhs,
                     target,
+                    ..
                 }) if self.block_index(*target) == Some(index) => {
                     latch = Some((position, *cond, lhs.clone(), rhs.clone()));
                     break;
@@ -75,6 +76,7 @@ impl Structurer<'_> {
             };
             if let Some(Stmt::Br {
                 target: Some(target),
+                ..
             }) = block.stmts.last()
                 && self.block_index(*target) == Some(index)
             {
@@ -82,7 +84,7 @@ impl Structurer<'_> {
             }
             if matches!(
                 block.stmts.last(),
-                Some(Stmt::Ret { .. }) | Some(Stmt::Trap)
+                Some(Stmt::Ret { .. }) | Some(Stmt::Trap { .. })
             ) {
                 return None;
             }
@@ -106,6 +108,7 @@ impl Structurer<'_> {
             match block.stmts.last() {
                 Some(Stmt::Br {
                     target: Some(target),
+                    ..
                 }) if *target == header => {
                     if latch.is_some() {
                         return None;
@@ -114,6 +117,7 @@ impl Structurer<'_> {
                 }
                 Some(Stmt::Br {
                     target: Some(target),
+                    ..
                 }) => {
                     let Some(target) = self.block_index(*target) else {
                         return None;
@@ -149,6 +153,7 @@ impl Structurer<'_> {
             let mut stmts: Vec<Stmt> = block.stmts.clone();
             let Some(Stmt::Br {
                 target: Some(target),
+                ..
             }) = stmts.pop()
             else {
                 return None;
@@ -199,6 +204,7 @@ impl Structurer<'_> {
         match block.stmts.last() {
             Some(Stmt::Br {
                 target: Some(target),
+                ..
             }) => {
                 let target = self.block_index(*target)?;
                 (target > from && target <= limit).then_some(target)
@@ -217,6 +223,7 @@ impl Structurer<'_> {
             match self.blocks[index].stmts.last() {
                 Some(Stmt::Br {
                     target: Some(target),
+                    ..
                 }) => {
                     if Some(*target) != next {
                         return false;
@@ -228,7 +235,7 @@ impl Structurer<'_> {
                     | Stmt::BrIndirect { .. }
                     | Stmt::Switch { .. }
                     | Stmt::Ret { .. }
-                    | Stmt::Trap,
+                    | Stmt::Trap { .. },
                 ) => return false,
                 _ => {}
             }
@@ -290,6 +297,7 @@ impl Structurer<'_> {
                     lhs,
                     rhs,
                     body,
+                    at: self.blocks[latch].stmts.last().and_then(Stmt::origin),
                 });
                 index = latch + 1;
                 continue;
@@ -306,6 +314,7 @@ impl Structurer<'_> {
                     lhs,
                     rhs,
                     target,
+                    ..
                 } => {
                     let destination = self.block_index(*target);
                     let fallthrough = index + 1;
@@ -322,6 +331,7 @@ impl Structurer<'_> {
                                 lhs: lhs.clone(),
                                 rhs: rhs.clone(),
                                 body,
+                                at: last.origin(),
                             });
                             index += 1;
                             continue;
@@ -361,6 +371,7 @@ impl Structurer<'_> {
                                     lhs,
                                     rhs,
                                     body,
+                                    at: last.origin(),
                                 });
                                 index = destination;
                                 continue;
@@ -381,6 +392,7 @@ impl Structurer<'_> {
                                     rhs: rhs.clone(),
                                     then,
                                     els: Vec::new(),
+                                    at: last.origin(),
                                 });
                                 index = destination;
                                 continue;
@@ -408,6 +420,7 @@ impl Structurer<'_> {
                                     rhs: rhs.clone(),
                                     then,
                                     els,
+                                    at: last.origin(),
                                 });
                                 index = join;
                                 continue;
@@ -433,6 +446,7 @@ impl Structurer<'_> {
                                     rhs: rhs.clone(),
                                     then,
                                     els,
+                                    at: last.origin(),
                                 });
                                 index = fallthrough_join;
                                 continue;
@@ -466,6 +480,7 @@ impl Structurer<'_> {
                                     rhs: rhs.clone(),
                                     then,
                                     els,
+                                    at: last.origin(),
                                 });
                                 index = to;
                                 continue;
@@ -483,6 +498,7 @@ impl Structurer<'_> {
                                 rhs: rhs.clone(),
                                 then: self.statement_nodes(&stmts),
                                 els: Vec::new(),
+                                at: last.origin(),
                             });
                             index += 1;
                             continue;
@@ -494,6 +510,7 @@ impl Structurer<'_> {
                 }
                 Stmt::Br {
                     target: Some(target),
+                    ..
                 } => {
                     let destination = self.block_index(*target);
                     // A branch straight back to this block never exits.
@@ -520,6 +537,7 @@ impl Structurer<'_> {
                     index: value,
                     cases,
                     default,
+                    ..
                 } => {
                     index = self.emit_switch(index..to, value, cases, *default, &mut out);
                 }
@@ -565,6 +583,7 @@ impl Structurer<'_> {
                         Some(stmts) => self.statement_nodes(&stmts),
                         None => self.statement_nodes(&[Stmt::Br {
                             target: Some(*address),
+                            at: None,
                         }]),
                     };
                     jumps.push((*case_value, body));
@@ -612,6 +631,7 @@ impl Structurer<'_> {
                     Some(stmts) => body.extend(structurer.statement_nodes(&stmts)),
                     None => body.push(Node::Stmt(Stmt::Br {
                         target: Some(structurer.blocks[next].start),
+                        at: None,
                     })),
                 }
             }
@@ -635,6 +655,7 @@ impl Structurer<'_> {
                         Some(stmts) => self.statement_nodes(&stmts),
                         None => self.statement_nodes(&[Stmt::Br {
                             target: Some(address),
+                            at: None,
                         }]),
                     },
                 ),
@@ -646,6 +667,7 @@ impl Structurer<'_> {
             index: value.clone(),
             arms: rendered,
             default: default_body,
+            at: block.stmts.last().and_then(Stmt::origin),
         });
         end_of(last).max(last)
     }
@@ -656,7 +678,7 @@ impl Structurer<'_> {
             self.blocks[index].stmts.last(),
             Some(
                 Stmt::Ret { .. }
-                    | Stmt::Trap
+                    | Stmt::Trap { .. }
                     | Stmt::Br { .. }
                     | Stmt::BrIndirect { .. }
                     | Stmt::Switch { .. }
@@ -716,6 +738,7 @@ pub(super) fn branch_targets(block: &crate::ir::Block) -> impl Iterator<Item = u
     block.stmts.iter().flat_map(|stmt| match stmt {
         Stmt::Br {
             target: Some(target),
+            ..
         }
         | Stmt::Brif { target, .. }
         | Stmt::BrifFlags { target, .. } => vec![*target],

@@ -444,13 +444,19 @@ fn printed_global_views_preserve_addresses_and_memory() {
         width,
         signed,
     };
-    let store = |addr, width, value| Stmt::Store { addr, width, value };
+    let store = |addr, width, value| Stmt::Store {
+        addr,
+        width,
+        value,
+        at: None,
+    };
     let mut cases = vec![
         (
             "unsigned_read".to_owned(),
             Vec::new(),
             vec![Stmt::Ret {
                 value: load(Expr::Const(address), 8, false),
+                at: None,
             }],
             CType::U64,
         ),
@@ -461,6 +467,7 @@ fn printed_global_views_preserve_addresses_and_memory() {
                 store(Expr::Const(address), 8, Expr::Const(0x1234)),
                 Stmt::Ret {
                     value: load(Expr::Const(address), 8, false),
+                    at: None,
                 },
             ],
             CType::U64,
@@ -478,6 +485,7 @@ fn printed_global_views_preserve_addresses_and_memory() {
                 ),
                 Stmt::Ret {
                     value: load(Expr::Const(address), width, true),
+                    at: None,
                 },
             ],
             CType::U64,
@@ -506,6 +514,7 @@ fn printed_global_views_preserve_addresses_and_memory() {
                 ),
                 Stmt::Ret {
                     value: load(Expr::Const(address), 8, false),
+                    at: None,
                 },
             ],
             CType::U64,
@@ -563,6 +572,7 @@ fn printed_global_views_preserve_addresses_and_memory() {
                 ),
                 Stmt::Ret {
                     value: load(Expr::Const(address), 8, false),
+                    at: None,
                 },
             ],
             CType::U64,
@@ -584,6 +594,7 @@ fn printed_global_views_preserve_addresses_and_memory() {
             vec![parameter("index")],
             vec![Stmt::Ret {
                 value: load(indexed.clone(), 4, false),
+                at: None,
             }],
             CType::U64,
         ),
@@ -594,6 +605,7 @@ fn printed_global_views_preserve_addresses_and_memory() {
                 store(indexed.clone(), 4, Expr::Const(0x8123_4567)),
                 Stmt::Ret {
                     value: load(indexed, 4, false),
+                    at: None,
                 },
             ],
             CType::U64,
@@ -607,6 +619,7 @@ fn printed_global_views_preserve_addresses_and_memory() {
                 store(Expr::Const(address + 2), 2, Expr::Const(0xdead)),
                 Stmt::Ret {
                     value: load(Expr::Const(address), 8, false),
+                    at: None,
                 },
             ],
             CType::U64,
@@ -620,6 +633,7 @@ fn printed_global_views_preserve_addresses_and_memory() {
                     load(Expr::Const(address), 8, false),
                     Expr::reg(7, 64),
                 ),
+                at: None,
             }],
             CType::U64,
         ),
@@ -628,6 +642,7 @@ fn printed_global_views_preserve_addresses_and_memory() {
             Vec::new(),
             vec![Stmt::Ret {
                 value: Expr::Const(address),
+                at: None,
             }],
             CType::U64,
         ),
@@ -636,6 +651,7 @@ fn printed_global_views_preserve_addresses_and_memory() {
             Vec::new(),
             vec![Stmt::Ret {
                 value: Expr::Const(address),
+                at: None,
             }],
             CType::Pointer(Box::new(CType::Int {
                 bytes: 1,
@@ -647,6 +663,7 @@ fn printed_global_views_preserve_addresses_and_memory() {
             Vec::new(),
             vec![Stmt::Ret {
                 value: Expr::Const(address),
+                at: None,
             }],
             CType::Pointer(Box::new(CType::Int {
                 bytes: 4,
@@ -661,6 +678,7 @@ fn printed_global_views_preserve_addresses_and_memory() {
                 store(Expr::Const(address + 0x100), 1, Expr::Const(0xa5)),
                 Stmt::Ret {
                     value: load(load(Expr::Const(address), 8, false), 1, false),
+                    at: None,
                 },
             ],
             CType::U64,
@@ -704,10 +722,11 @@ fn printed_members_preserve_declared_types_and_access_widths() {
         addr: address(offset),
         width,
         value,
+        at: None,
     };
     let mut cases = Vec::new();
     let mut case = |name: &str, mut stmts: Vec<Stmt>, value: Expr| {
-        stmts.push(Stmt::Ret { value });
+        stmts.push(Stmt::Ret { value, at: None });
         cases.push((name.to_owned(), stmts));
     };
     case("adjacent_fields", Vec::new(), load(0, 8, false));
@@ -1033,6 +1052,7 @@ fn printed_shifts_preserve_counts_widths_and_updates() {
                                 lhs: Box::new(source.clone()),
                                 rhs: Box::new(count.map_or_else(|| Expr::reg(6, 8), Expr::Const)),
                             },
+                            at: None,
                         }],
                     );
                     let inputs = counts
@@ -1069,6 +1089,7 @@ fn printed_shifts_preserve_counts_widths_and_updates() {
                                 lhs: Box::new(source.clone()),
                                 rhs: Box::new(Expr::reg(6, 64)),
                             },
+                            at: None,
                         }],
                     );
                     scalar.push(printed_candidate(
@@ -1097,11 +1118,13 @@ fn printed_shifts_preserve_counts_widths_and_updates() {
                             addr: address.clone(),
                             width: 8,
                             value: Expr::Const(0x0123_4567_89ab_cdef),
+                            at: None,
                         },
                         Stmt::Store {
                             addr: address.clone(),
                             width: bytes,
                             value: Expr::Const(raw),
+                            at: None,
                         },
                         Stmt::Store {
                             addr: address.clone(),
@@ -1115,6 +1138,7 @@ fn printed_shifts_preserve_counts_widths_and_updates() {
                                 }),
                                 rhs: Box::new(Expr::reg(6, 8)),
                             },
+                            at: None,
                         },
                         Stmt::Ret {
                             value: Expr::Load {
@@ -1122,6 +1146,7 @@ fn printed_shifts_preserve_counts_widths_and_updates() {
                                 width: 8,
                                 signed: false,
                             },
+                            at: None,
                         },
                     ],
                 );
@@ -1154,6 +1179,7 @@ fn printed_shifts_preserve_counts_widths_and_updates() {
                         Expr::bin(BinOp::Shr, Expr::reg(7, 64), Expr::Const(count)),
                         Expr::Const(mask),
                     ),
+                    at: None,
                 }],
             );
             scalar.push(printed_candidate(
@@ -1178,6 +1204,7 @@ fn printed_shifts_preserve_counts_widths_and_updates() {
             ret_type,
             vec![Stmt::Ret {
                 value: Expr::bin(BinOp::Shl, Expr::reg(7, 32), Expr::Const(1)),
+                at: None,
             }],
         );
         scalar.push(printed_candidate(
@@ -1243,6 +1270,7 @@ fn printed_shifts_preserve_counts_widths_and_updates() {
                     addr: address,
                     width: 1,
                     value: Expr::Const(0x5a),
+                    at: None,
                 },
                 Stmt::Ret {
                     value: Expr::Load {
@@ -1250,6 +1278,7 @@ fn printed_shifts_preserve_counts_widths_and_updates() {
                         width: 8,
                         signed: false,
                     },
+                    at: None,
                 },
             ],
         );
@@ -1392,6 +1421,7 @@ fn printed_masked_float_operands_preserve_result_bits() {
                 addr: Expr::Const(REGION + 0x8000 + index as u64 * 8),
                 width,
                 value: Expr::reg(register, 64),
+                at: None,
             })
             .collect::<Vec<_>>();
         let result = REGION + 0x8040;
@@ -1399,6 +1429,7 @@ fn printed_masked_float_operands_preserve_result_bits() {
             addr: Expr::Const(result),
             width,
             value,
+            at: None,
         });
         stmts.push(Stmt::Ret {
             value: Expr::Load {
@@ -1406,6 +1437,7 @@ fn printed_masked_float_operands_preserve_result_bits() {
                 width,
                 signed: false,
             },
+            at: None,
         });
         let ir = synthetic_ir(name, params, CType::U64, stmts);
         if fused {
@@ -1509,6 +1541,7 @@ fn printed_segment_bases_preserve_controlled_state() {
                     addr: offset(16, -8),
                     width: 8,
                     value: Expr::reg(6, 64),
+                    at: None,
                 });
                 load(Expr::reg(7, 64))
             }
@@ -1522,6 +1555,7 @@ fn printed_segment_bases_preserve_controlled_state() {
                     addr: offset(17, -6),
                     width: 2,
                     value: Expr::reg(7, 64),
+                    at: None,
                 });
                 load(offset(17, -8))
             }
@@ -1555,7 +1589,7 @@ fn printed_segment_bases_preserve_controlled_state() {
             }
             _ => unreachable!(),
         };
-        stmts.push(Stmt::Ret { value });
+        stmts.push(Stmt::Ret { value, at: None });
         let ir = synthetic_ir(name, params, CType::U64, stmts);
         let inputs = (0..trials::TRIALS)
             .map(|trial| match case {
@@ -1707,6 +1741,7 @@ fn segment_dependencies_reject_missing_state() {
             CType::U64,
             vec![Stmt::Ret {
                 value: Expr::reg(16, 64),
+                at: None,
             }],
         ),
         (0..trials::TRIALS).map(|_| Vec::new()).collect(),
@@ -1745,7 +1780,7 @@ fn segment_fixture_overlays_preserve_region_boundaries() {
             "fixture_boundary",
             Vec::new(),
             CType::U64,
-            vec![Stmt::Ret { value }],
+            vec![Stmt::Ret { value, at: None }],
         ),
         (0..trials::TRIALS).map(|_| Vec::new()).collect(),
     );
@@ -1813,8 +1848,12 @@ fn segment_state_checks_ignore_void_returns_but_preserve_effects() {
                         addr: Expr::Const(address),
                         width: 8,
                         value,
+                        at: None,
                     },
-                    Stmt::Ret { value: returned },
+                    Stmt::Ret {
+                        value: returned,
+                        at: None,
+                    },
                 ],
             ),
             (0..trials::TRIALS).map(|_| Vec::new()).collect(),
@@ -1930,9 +1969,11 @@ fn generic_comparisons_keep_declared_objects_on_the_focused_path() {
                 addr: Expr::reg(7, 64),
                 value: Expr::Const(1),
                 width: 8,
+                at: None,
             },
             Stmt::Ret {
                 value: Expr::Const(0),
+                at: None,
             },
         ],
     );
@@ -1954,6 +1995,7 @@ fn aggregate_object_view_rejects_observed_non_object_bits() {
     let mut ir = integer_object_ir(4, false);
     ir.blocks[0].stmts = vec![Stmt::Ret {
         value: Expr::reg(7, 64),
+        at: None,
     }];
     let mut observed = BTreeSet::new();
     for upper in [0, u64::MAX, 0xa55a_3cc3_9669_f00f] {
@@ -2034,6 +2076,7 @@ fn printed_aggregate_capture_tracks_narrow_register_writes() {
                     width: 64,
                 },
                 value: Expr::reg(7, 64),
+                at: None,
             },
             Stmt::Assign {
                 dest: velk::ir::RegRef {
@@ -2041,6 +2084,7 @@ fn printed_aggregate_capture_tracks_narrow_register_writes() {
                     width: 32,
                 },
                 value: Expr::Const(written),
+                at: None,
             },
             Stmt::Ret {
                 value: Expr::bin(
@@ -2048,6 +2092,7 @@ fn printed_aggregate_capture_tracks_narrow_register_writes() {
                     Expr::reg(velk::ir::VARIABLE_BASE, 64),
                     Expr::reg(7, 64),
                 ),
+                at: None,
             },
         ];
         let (inputs, upper) = aggregate_inputs(&[8, 8], 12);
@@ -2065,6 +2110,7 @@ fn printed_aggregate_capture_tracks_narrow_register_writes() {
                 width: 64,
             },
             value: Expr::reg(7, 32),
+            at: None,
         },
         Stmt::Assign {
             dest: velk::ir::RegRef {
@@ -2072,6 +2118,7 @@ fn printed_aggregate_capture_tracks_narrow_register_writes() {
                 width: 64,
             },
             value: Expr::Const(written),
+            at: None,
         },
         Stmt::Ret {
             value: Expr::bin(
@@ -2079,6 +2126,7 @@ fn printed_aggregate_capture_tracks_narrow_register_writes() {
                 Expr::reg(velk::ir::VARIABLE_BASE, 64),
                 Expr::reg(7, 64),
             ),
+            at: None,
         },
     ];
     let (inputs, upper) = aggregate_inputs(&[4, 8], 12);
@@ -2123,7 +2171,7 @@ fn printed_scalar_stack_parameter_views_preserve_loaded_values() {
         let ir = scalar_stack_ir(
             &format!("scalar_stack_read_{kind}"),
             3,
-            vec![Stmt::Ret { value }],
+            vec![Stmt::Ret { value, at: None }],
         );
         assert_scalar_stack_render_control(&ir);
         let (mut inputs, upper) = aggregate_inputs(&[8; 9], 12);
@@ -2175,15 +2223,20 @@ fn printed_scalar_stack_parameter_stores_preserve_surrounding_bytes() {
             addr: address(25),
             value: load(24, width),
             width,
+            at: None,
         }];
         for (part, offset) in [16, 24, 32].into_iter().enumerate() {
             stmts.push(Stmt::Store {
                 addr: Expr::Const(REGION + 0x1800 + part as u64 * 8),
                 value: load(offset, 8),
                 width: 8,
+                at: None,
             });
         }
-        stmts.push(Stmt::Ret { value: load(24, 8) });
+        stmts.push(Stmt::Ret {
+            value: load(24, 8),
+            at: None,
+        });
         let ir = scalar_stack_ir(&format!("scalar_stack_store_{width}"), 4, stmts);
         assert_scalar_stack_render_control(&ir);
         let (mut inputs, upper) = aggregate_inputs(&[8; 10], 12);
@@ -2372,9 +2425,11 @@ fn printed_aggregate_unaligned_object_accesses_preserve_bits() {
                         addr: address(target),
                         width: stored,
                         value,
+                        at: None,
                     },
                     Stmt::Ret {
                         value: load(target, stored, false),
+                        at: None,
                     },
                 ],
             );
@@ -2522,6 +2577,7 @@ fn printed_aggregate_arguments_preserve_scalar_128_bit_results() {
                     Expr::bin(BinOp::Xor, Expr::reg(6, 64), Expr::reg(2, 64)),
                 ],
             },
+            at: None,
         }];
         let (mut inputs, upper) = aggregate_inputs(&[16, 8], 12);
         let boundaries = [
@@ -2601,6 +2657,7 @@ fn printed_aggregate_parameter_names_preserve_execution() {
                         addr: address.clone(),
                         width: 8,
                         value: Expr::bin(BinOp::Add, Expr::reg(7, 64), Expr::Const(1)),
+                        at: None,
                     },
                     Stmt::Ret {
                         value: Expr::bin(
@@ -2612,6 +2669,7 @@ fn printed_aggregate_parameter_names_preserve_execution() {
                             },
                             Expr::reg(6, 64),
                         ),
+                        at: None,
                     },
                 ];
             }
@@ -2623,9 +2681,11 @@ fn printed_aggregate_parameter_names_preserve_execution() {
                             width: 32,
                         },
                         value: Expr::bin(BinOp::Add, Expr::reg(7, 64), Expr::Const(1)),
+                        at: None,
                     },
                     Stmt::Ret {
                         value: Expr::bin(BinOp::Xor, Expr::reg(7, 64), Expr::reg(6, 64)),
+                        at: None,
                     },
                 ];
             }
@@ -2700,13 +2760,18 @@ fn printed_indirect_aggregate_copy_keeps_external_stores_observable() {
                 addr: address(0, 8),
                 value: Expr::Const(written),
                 width: 8,
+                at: None,
             },
             Stmt::Store {
                 addr: Expr::reg(1, 64),
                 value: Expr::bin(BinOp::Xor, load(0), load(16)),
                 width: 8,
+                at: None,
             },
-            Stmt::Ret { value: load(8) },
+            Stmt::Ret {
+                value: load(8),
+                at: None,
+            },
         ],
     );
     ir.isa = Isa::AArch64;
@@ -3399,7 +3464,10 @@ fn integer_object_ir(size: u64, aggregate_return: bool) -> FunctionIr {
         ),
         params,
         return_type.clone(),
-        vec![Stmt::Ret { value: expression }],
+        vec![Stmt::Ret {
+            value: expression,
+            at: None,
+        }],
     );
     ir.definitions.push(Definition {
         name: ty.to_string(),
@@ -3474,12 +3542,14 @@ fn aggregate_result_projection_observes_each_piece() {
                 addr: Expr::Const(REGION + 0x100),
                 value: Expr::Const(0x5a),
                 width: 1,
+                at: None,
             },
             Stmt::Ret {
                 value: Expr::Apply {
                     op: Operation::Results,
                     args: values.clone(),
                 },
+                at: None,
             },
         ],
     );
@@ -3489,7 +3559,7 @@ fn aggregate_result_projection_observes_each_piece() {
         assert_eq!(projected.blocks[0].stmts.len(), 4);
         let mut temporaries = BTreeSet::new();
         for (index, expected) in values.iter().enumerate() {
-            let Stmt::Assign { dest, value } = &projected.blocks[0].stmts[index + 1] else {
+            let Stmt::Assign { dest, value, .. } = &projected.blocks[0].stmts[index + 1] else {
                 panic!("each result must be evaluated in order")
             };
             assert_eq!(value, expected);
@@ -3500,7 +3570,7 @@ fn aggregate_result_projection_observes_each_piece() {
         let Stmt::Assign { dest, .. } = &projected.blocks[0].stmts[selected + 1] else {
             unreachable!()
         };
-        let Stmt::Ret { value } = &projected.blocks[0].stmts[3] else {
+        let Stmt::Ret { value, .. } = &projected.blocks[0].stmts[3] else {
             panic!("the projection must return its saved result")
         };
         assert_eq!(value, &Expr::reg(dest.index, 64));
@@ -3567,6 +3637,7 @@ fn aggregate_result_projection_keeps_unknown_loads_and_faults() {
                     op: Operation::Results,
                     args: vec![Expr::Const(7), second],
                 },
+                at: None,
             }],
         )
     };
@@ -3629,6 +3700,7 @@ fn aggregate_result_projection_validates_returns_and_tail_width() {
         CType::U64,
         vec![Stmt::Ret {
             value: Expr::Const(0xfedc_ba98_7654_3210),
+            at: None,
         }],
     );
     for bytes in [1, 2, 3, 4, 5, 6, 7, 8] {
@@ -3663,6 +3735,7 @@ fn aggregate_result_projection_validates_returns_and_tail_width() {
                 op: Operation::Results,
                 args: vec![Expr::Const(1), Expr::Const(2)],
             },
+            at: None,
         }],
     });
     assert!(project_result(&ir, 1, 0, 8).is_err());
@@ -3687,6 +3760,7 @@ fn segment_providers_need_an_adapter_and_do_not_replace_function_addresses() {
             CType::U64,
             vec![Stmt::Ret {
                 value: Expr::reg(16, 64),
+                at: None,
             }],
         ),
         (0..trials::TRIALS).map(|_| Vec::new()).collect(),
@@ -3739,6 +3813,7 @@ fn segment_providers_need_an_adapter_and_do_not_replace_function_addresses() {
             CType::U64,
             vec![Stmt::Ret {
                 value: Expr::Const(0),
+                at: None,
             }],
         ),
         (0..trials::TRIALS).map(|_| Vec::new()).collect(),
@@ -3813,6 +3888,7 @@ fn printed_debug_structure_arrays_preserve_indices_and_widths() {
                     width: if case == 4 { 1 } else { 2 },
                     signed: true,
                 },
+                at: None,
             }],
         );
         ir.definitions = vec![Definition {
@@ -3874,6 +3950,7 @@ fn printed_debug_structure_arrays_preserve_indices_and_widths() {
         });
         let Stmt::Ret {
             value: Expr::Load { addr, .. },
+            ..
         } = &ir.blocks[0].stmts[0]
         else {
             unreachable!()
@@ -3885,6 +3962,7 @@ fn printed_debug_structure_arrays_preserve_indices_and_widths() {
                 addr,
                 value: Expr::reg(2, 64),
                 width: 2,
+                at: None,
             },
         );
         if case == 15 {
@@ -3904,9 +3982,10 @@ fn printed_debug_structure_arrays_preserve_indices_and_widths() {
                     addr: count_addr.clone(),
                     value: Expr::reg(1, 32),
                     width: 4,
+                    at: None,
                 },
             );
-            let Some(Stmt::Ret { value }) = ir.blocks[0].stmts.last_mut() else {
+            let Some(Stmt::Ret { value, .. }) = ir.blocks[0].stmts.last_mut() else {
                 unreachable!()
             };
             *value = Expr::bin(
@@ -3961,6 +4040,7 @@ fn printed_debug_structure_arrays_preserve_indices_and_widths() {
                     Expr::reg(7, 64),
                     Expr::bin(BinOp::Mul, Expr::reg(6, 64), Expr::Const(8)),
                 ),
+                at: None,
             }];
             let candidate = printed_candidate(address_ir, inputs.clone());
             assert!(
@@ -4046,6 +4126,7 @@ fn check_signed_select_search(remainder: bool) {
     let assign = |index, value| Stmt::Assign {
         dest: velk::ir::RegRef { index, width: 64 },
         value,
+        at: None,
     };
     let select = |adjusted| Expr::Select {
         cond: Cond::Ge,
@@ -4108,6 +4189,7 @@ fn check_signed_select_search(remainder: bool) {
             } else {
                 Expr::reg(46, 64)
             },
+            at: None,
         });
         let original = synthetic_ir(
             &format!("{name}_{blocked}"),
@@ -4205,9 +4287,11 @@ fn printed_void_calls_keep_existing_values_in_both_output_paths() {
                     ],
                     clobbers: Some(Registers((1 << 7) | 1)),
                     via: None,
+                    at: None,
                 },
                 Stmt::Ret {
                     value: Expr::bin(BinOp::Add, Expr::reg(7, 64), Expr::reg(dest, 64)),
+                    at: None,
                 },
             ],
         );
@@ -4307,6 +4391,7 @@ static uint64_t output_callee(uint64_t value) {
                         width: 64,
                     },
                     value: Expr::reg(7, 64),
+                    at: None,
                 },
                 Stmt::Assign {
                     dest: RegRef {
@@ -4314,6 +4399,7 @@ static uint64_t output_callee(uint64_t value) {
                         width: 64,
                     },
                     value: Expr::reg(6, 64),
+                    at: None,
                 },
                 Stmt::Assign {
                     dest: RegRef {
@@ -4321,6 +4407,7 @@ static uint64_t output_callee(uint64_t value) {
                         width: 64,
                     },
                     value: Expr::reg(6, 64),
+                    at: None,
                 },
                 Stmt::Call {
                     kind: velk::ir::CallKind::Invoke,
@@ -4333,6 +4420,7 @@ static uint64_t output_callee(uint64_t value) {
                     outputs,
                     clobbers: Some(Registers(if direct { 5 } else { 1 })),
                     via: None,
+                    at: None,
                 },
                 Stmt::Ret {
                     value: Expr::bin(
@@ -4344,6 +4432,7 @@ static uint64_t output_callee(uint64_t value) {
                         Expr::reg(returned_first, 64),
                         Expr::reg(returned_second, 64),
                     ),
+                    at: None,
                 },
             ],
         );
@@ -4427,9 +4516,11 @@ fn printed_calls_share_snapshots_across_control_flow_and_recursion() {
         },
         clobbers: Some(Registers(1)),
         via: None,
+        at: None,
     };
     let returned = Stmt::Ret {
         value: Expr::bin(BinOp::Xor, Expr::reg(7, 64), Expr::reg(6, 64)),
+        at: None,
     };
     let mut text = String::from(HEADER);
     text.push_str("static uint64_t recurse(uint64_t, uint64_t, uint64_t);\n");
@@ -4454,6 +4545,7 @@ fn printed_calls_share_snapshots_across_control_flow_and_recursion() {
                 lhs: Expr::reg(2, 64),
                 rhs: Expr::Const(0),
                 target: 0x20,
+                at: None,
             }];
             ir.blocks.extend([
                 Block {
@@ -4475,6 +4567,7 @@ fn printed_calls_share_snapshots_across_control_flow_and_recursion() {
                         width: 64,
                     },
                     value: Expr::Const(2),
+                    at: None,
                 },
             ];
             ir.blocks.extend([
@@ -4488,12 +4581,14 @@ fn printed_calls_share_snapshots_across_control_flow_and_recursion() {
                                 width: 64,
                             },
                             value: Expr::bin(BinOp::Sub, Expr::reg(counter, 64), Expr::Const(1)),
+                            at: None,
                         },
                         Stmt::Brif {
                             cond: Cond::Ne,
                             lhs: Expr::reg(counter, 64),
                             rhs: Expr::Const(0),
                             target: 0x10,
+                            at: None,
                         },
                     ],
                 },
@@ -4513,6 +4608,7 @@ fn printed_calls_share_snapshots_across_control_flow_and_recursion() {
                         Expr::bin(BinOp::Xor, Expr::reg(7, 64), Expr::reg(6, 64)),
                         Expr::reg(2, 64),
                     ),
+                    at: None,
                 });
             }
         }
@@ -4590,6 +4686,7 @@ fn printed_address_literals_preserve_all_bits() {
                     width: 8,
                     signed: false,
                 },
+                at: None,
             }],
         );
         let printed = velk::render::render(&ir, &[], &Default::default(), &[(address, 1)]);
@@ -4735,16 +4832,19 @@ static int32_t address_signed(uint64_t value) { ++address_calls; return (int32_t
                 outputs,
                 clobbers: Some(Registers(1)),
                 via: None,
+                at: None,
             }];
             if mode != "scalar" {
                 stmts.push(Stmt::Store {
                     addr: Expr::reg(6, 64),
                     value: Expr::reg(second, 64),
                     width: 8,
+                    at: None,
                 });
             }
             stmts.push(Stmt::Ret {
                 value: Expr::reg(dest, width),
+                at: None,
             });
             let mut ir = synthetic_ir(
                 &format!("{name}_{mode}"),
@@ -4887,6 +4987,7 @@ static __attribute__((noinline)) uint64_t width_callee(uint64_t value) {
                     outputs: velk::ir::fallback_call_outputs(Convention::SysV, None),
                     clobbers: None,
                     via: None,
+                    at: None,
                 },
                 Stmt::Assign {
                     dest: velk::ir::RegRef {
@@ -4894,9 +4995,11 @@ static __attribute__((noinline)) uint64_t width_callee(uint64_t value) {
                         width: 64,
                     },
                     value: Expr::reg(0, 64),
+                    at: None,
                 },
                 Stmt::Ret {
                     value: Expr::reg(velk::ir::VARIABLE_BASE, 64),
+                    at: None,
                 },
             ],
         );
@@ -5009,6 +5112,7 @@ fn single_use_structure_addresses_preserve_printed_memory_reads() {
                 width: 64,
             },
             value,
+            at: None,
         }];
         if case == 4 {
             stmts.push(Stmt::Assign {
@@ -5017,6 +5121,7 @@ fn single_use_structure_addresses_preserve_printed_memory_reads() {
                     width: 64,
                 },
                 value: Expr::Const(2),
+                at: None,
             });
         }
         stmts.push(Stmt::Ret {
@@ -5025,6 +5130,7 @@ fn single_use_structure_addresses_preserve_printed_memory_reads() {
             } else {
                 read
             },
+            at: None,
         });
         let mut ir = synthetic_ir(
             &format!("record_value_{case}"),
@@ -5060,6 +5166,7 @@ fn single_use_structure_addresses_preserve_printed_memory_reads() {
                 lhs: Expr::reg(6, 64),
                 rhs: Expr::Const(0),
                 target: 0x20,
+                at: None,
             });
             ir.blocks.extend([
                 Block {
@@ -5070,6 +5177,7 @@ fn single_use_structure_addresses_preserve_printed_memory_reads() {
                     start: 0x20,
                     stmts: vec![Stmt::Ret {
                         value: Expr::Const(0),
+                        at: None,
                     }],
                 },
             ]);
@@ -5553,7 +5661,7 @@ fn qualifies(ir: &FunctionIr, no_references: bool, mode: Mode) -> Result<(), &'s
             | Stmt::Br { .. }
             | Stmt::Switch { .. }
             | Stmt::Ret { .. }
-            | Stmt::Trap => {}
+            | Stmt::Trap { .. } => {}
         }
         for operand in stmt.operands() {
             if let Err(reason) = pure(operand, memory) {
@@ -6015,7 +6123,7 @@ fn project_result(
     for block in &mut projected.blocks {
         let mut statements = Vec::new();
         for stmt in std::mem::take(&mut block.stmts) {
-            let Stmt::Ret { value } = stmt else {
+            let Stmt::Ret { value, .. } = stmt else {
                 statements.push(stmt);
                 continue;
             };
@@ -6038,6 +6146,7 @@ fn project_result(
                         width: 64,
                     },
                     value,
+                    at: None,
                 });
             }
             let value = Expr::reg(temporaries[selected], 64);
@@ -6047,6 +6156,7 @@ fn project_result(
                 } else {
                     Expr::bin(BinOp::And, value, Expr::Const((1u64 << (8 * bytes)) - 1))
                 },
+                at: None,
             });
             returns += 1;
         }
@@ -6144,7 +6254,7 @@ fn aggregate_candidates(
             .iter()
             .flat_map(|block| &block.stmts)
             .find_map(|stmt| {
-                let Stmt::Ret { value } = stmt else {
+                let Stmt::Ret { value, .. } = stmt else {
                     return None;
                 };
                 Some(match value {
@@ -6174,7 +6284,7 @@ fn aggregate_candidates(
             .iter_mut()
             .flat_map(|block| &mut block.stmts)
         {
-            if let Stmt::Ret { value } = stmt {
+            if let Stmt::Ret { value, .. } = stmt {
                 if direct.is_none() {
                     *value = Expr::Load {
                         addr: Box::new(Expr::Const(AGGREGATE_RESULT + slice.offset)),
@@ -7486,6 +7596,7 @@ fn printed_switch_ranges_preserve_cases_across_negative_one_and_zero() {
                             lhs: Expr::reg(7, 64),
                             rhs: Expr::Const(value),
                             target: if value == 17 { 0x120 } else { 0x100 },
+                            at: None,
                         }],
                     });
                 }
@@ -7496,6 +7607,7 @@ fn printed_switch_ranges_preserve_cases_across_negative_one_and_zero() {
                         index: Expr::reg(7, 64),
                         cases: vec![(-1, 0x100), (0, 0x100), (1, 0x100), (17, 0x120)],
                         default: Some(0x40),
+                        at: None,
                     }],
                 });
             }
@@ -7504,18 +7616,21 @@ fn printed_switch_ranges_preserve_cases_across_negative_one_and_zero() {
                     start: 0x40,
                     stmts: vec![Stmt::Ret {
                         value: Expr::Const(99),
+                        at: None,
                     }],
                 },
                 Block {
                     start: 0x100,
                     stmts: vec![Stmt::Ret {
                         value: Expr::Const(11),
+                        at: None,
                     }],
                 },
                 Block {
                     start: 0x120,
                     stmts: vec![Stmt::Ret {
                         value: Expr::Const(12),
+                        at: None,
                     }],
                 },
             ]);
@@ -7616,6 +7731,7 @@ fn printed_sparse_equality_dispatch_preserves_cases_and_effects() {
                 sc_store(SC_COUNTER, Expr::Const(position as u64 + 11)),
                 Stmt::Ret {
                     value: Expr::Const(position as u64 + 11),
+                    at: None,
                 },
             ],
         };
@@ -7640,6 +7756,7 @@ fn printed_sparse_equality_dispatch_preserves_cases_and_effects() {
                 lhs: Expr::reg(7, width),
                 rhs: Expr::Const(*value),
                 target: if inverse { next } else { body(position).start },
+                at: None,
             });
             blocks.push(Block {
                 start: position as u64 * 0x20,
@@ -7657,6 +7774,7 @@ fn printed_sparse_equality_dispatch_preserves_cases_and_effects() {
                 sc_store(SC_COUNTER, Expr::Const(99)),
                 Stmt::Ret {
                     value: Expr::Const(99),
+                    at: None,
                 },
             ],
         });
@@ -7918,6 +8036,7 @@ fn printed_physical_vector_slots_preserve_integer_bits_and_float_views() {
         let set = |index, width, value| Stmt::Assign {
             dest: velk::ir::RegRef { index, width },
             value,
+            at: None,
         };
         let full = 0xfedc_ba98_7654_3210;
         let mut cases = Vec::new();
@@ -7928,6 +8047,7 @@ fn printed_physical_vector_slots_preserve_integer_bits_and_float_views() {
                     set(low, 64, Expr::Const(full)),
                     Stmt::Ret {
                         value: Expr::reg(low, width),
+                        at: None,
                     },
                 ],
                 expected,
@@ -7941,6 +8061,7 @@ fn printed_physical_vector_slots_preserve_integer_bits_and_float_views() {
                     set(low, width, Expr::Const(full)),
                     Stmt::Ret {
                         value: Expr::reg(low, 64),
+                        at: None,
                     },
                 ],
                 expected,
@@ -7954,6 +8075,7 @@ fn printed_physical_vector_slots_preserve_integer_bits_and_float_views() {
                 set(low + 1, 64, Expr::Const(0)),
                 Stmt::Ret {
                     value: Expr::bin(BinOp::Xor, Expr::reg(low, 64), Expr::reg(low + 1, 64)),
+                    at: None,
                 },
             ],
             0xbc00,
@@ -7984,6 +8106,7 @@ fn printed_physical_vector_slots_preserve_integer_bits_and_float_views() {
                     set(low + 4, 64, sum),
                     Stmt::Ret {
                         value: Expr::reg(low + 4, 64),
+                        at: None,
                     },
                 ],
                 expected,
@@ -8005,6 +8128,7 @@ fn printed_physical_vector_slots_preserve_integer_bits_and_float_views() {
                 set(low + 4, 64, Expr::reg(velk::ir::VARIABLE_BASE, 64)),
                 Stmt::Ret {
                     value: Expr::reg(low + 4, 64),
+                    at: None,
                 },
             ],
             0x4070_0000,
@@ -8024,6 +8148,7 @@ fn printed_physical_vector_slots_preserve_integer_bits_and_float_views() {
                 ),
                 Stmt::Ret {
                     value: Expr::bin(BinOp::Xor, Expr::reg(low + 2, 64), Expr::reg(low + 1, 64)),
+                    at: None,
                 },
             ],
             0x8123_4567_89ab_cdee,
@@ -8110,6 +8235,7 @@ fn printed_typed_float_parameters_interoperate_with_raw_vector_storage() {
                             width: 64,
                         },
                         value: Expr::Const(second),
+                        at: None,
                     },
                     Stmt::Assign {
                         dest: velk::ir::RegRef {
@@ -8120,9 +8246,11 @@ fn printed_typed_float_parameters_interoperate_with_raw_vector_storage() {
                             op: Operation::FloatAdd(precision),
                             args: vec![Expr::reg(low, 64), Expr::reg(low + 2, 64)],
                         },
+                        at: None,
                     },
                     Stmt::Ret {
                         value: Expr::reg(low + 4, 64),
+                        at: None,
                     },
                 ],
             );
@@ -8202,6 +8330,7 @@ fn printed_vector_entry_bits_and_numeric_patterns_do_not_acquire_new_meanings() 
                     width: 64,
                 },
                 value: Expr::Const(0),
+                at: None,
             }];
             let returned = if copied {
                 stmts.push(Stmt::Assign {
@@ -8210,6 +8339,7 @@ fn printed_vector_entry_bits_and_numeric_patterns_do_not_acquire_new_meanings() 
                         width: 64,
                     },
                     value: Expr::reg(low, 64),
+                    at: None,
                 });
                 velk::ir::VARIABLE_BASE
             } else {
@@ -8222,6 +8352,7 @@ fn printed_vector_entry_bits_and_numeric_patterns_do_not_acquire_new_meanings() 
                         width: 64,
                     },
                     value: Expr::reg(low, 32),
+                    at: None,
                 });
             }
             if matches!(case, "overwritten" | "read_then_overwritten") {
@@ -8231,6 +8362,7 @@ fn printed_vector_entry_bits_and_numeric_patterns_do_not_acquire_new_meanings() 
                         width: 64,
                     },
                     value: Expr::Const(0x1234_5678_3fc0_0000),
+                    at: None,
                 });
             }
             let value = if case == "read_then_overwritten" {
@@ -8242,7 +8374,7 @@ fn printed_vector_entry_bits_and_numeric_patterns_do_not_acquire_new_meanings() 
             } else {
                 Expr::reg(returned, width)
             };
-            stmts.push(Stmt::Ret { value });
+            stmts.push(Stmt::Ret { value, at: None });
             let mut ir = synthetic_ir(
                 &name,
                 vec![Param {
@@ -8307,9 +8439,11 @@ fn printed_vector_entry_bits_and_numeric_patterns_do_not_acquire_new_meanings() 
                         width: 64,
                     },
                     value: Expr::Const(0x1000),
+                    at: None,
                 },
                 Stmt::Ret {
                     value: Expr::reg(low, 64),
+                    at: None,
                 },
             ],
         );
@@ -8398,9 +8532,11 @@ fn printed_floating_returns_read_the_mutable_raw_vector_slot() {
                             width: 64,
                         },
                         value: Expr::Const(bits),
+                        at: None,
                     },
                     Stmt::Ret {
                         value: Expr::reg(low, width),
+                        at: None,
                     },
                 ],
             );
@@ -8578,7 +8714,7 @@ fn printed_nested_physical_floating_operations_preserve_grouping() {
                     &name,
                     params,
                     CType::Named(ty.to_owned()),
-                    vec![Stmt::Ret { value }],
+                    vec![Stmt::Ret { value, at: None }],
                 );
                 ir.isa = isa;
                 ir.convention = if isa == Isa::AArch64 {
@@ -8761,7 +8897,7 @@ fn check_printed_unary_floating_negation(constants: bool) {
                         ty: CType::Named(ty.to_owned()),
                     }],
                     CType::Named(ty.to_owned()),
-                    vec![Stmt::Ret { value }],
+                    vec![Stmt::Ret { value, at: None }],
                 );
                 ir.isa = isa;
                 ir.convention = if isa == Isa::AArch64 {
@@ -8896,6 +9032,7 @@ fn printed_readonly_floating_views_preserve_raw_reads_and_overwrites() {
                                 width: 64,
                             },
                             value: sum,
+                            at: None,
                         });
                         stmts.push(Stmt::Assign {
                             dest: velk::ir::RegRef {
@@ -8903,6 +9040,7 @@ fn printed_readonly_floating_views_preserve_raw_reads_and_overwrites() {
                                 width: 64,
                             },
                             value: Expr::Const(written),
+                            at: None,
                         });
                         Expr::apply(
                             Operation::FloatAdd(precision),
@@ -8911,7 +9049,7 @@ fn printed_readonly_floating_views_preserve_raw_reads_and_overwrites() {
                     }
                     _ => sum,
                 };
-                stmts.push(Stmt::Ret { value });
+                stmts.push(Stmt::Ret { value, at: None });
                 let params = [(low, "a"), (low + 2, "b")]
                     .into_iter()
                     .map(|(index, name)| Param {
@@ -8988,6 +9126,7 @@ fn printed_readonly_floating_views_preserve_raw_reads_and_overwrites() {
                     Operation::FloatAdd(Precision::Single),
                     vec![Expr::reg(low, 32), Expr::Const(0x4000_0000)],
                 ),
+                at: None,
             }],
         );
         ir.isa = isa;
@@ -9074,6 +9213,7 @@ fn printed_readonly_floating_views_keep_narrow_same_precision_reads_raw() {
                 CType::Named(ty.to_owned()),
                 vec![Stmt::Ret {
                     value: Expr::reg(low, width),
+                    at: None,
                 }],
             );
             ir.isa = isa;

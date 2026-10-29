@@ -17,6 +17,7 @@ fn combined_vector_prelude_compiles_and_runs() {
                     op: velk::ir::Operation::Lanes(velk::ir::LaneOp::Add, 32),
                     args: vec![Expr::reg(7, 64), Expr::Const(0x0000_0001_0000_0001)],
                 },
+                at: None,
             }],
         );
         let standalone = velk::render::render(&ir, &[], &Default::default(), &[]);

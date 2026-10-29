@@ -36,6 +36,7 @@ pub fn normalize_layout(ir: &mut FunctionIr) {
         match ir.blocks[index].stmts.last() {
             Some(Stmt::Br {
                 target: Some(target),
+                ..
             }) => next.extend(position.get(target).copied()),
             Some(Stmt::Brif { target, .. }) | Some(Stmt::BrifFlags { target, .. }) => {
                 next.extend(following);
@@ -48,7 +49,7 @@ pub fn normalize_layout(ir: &mut FunctionIr) {
                 }
                 next.extend(default.and_then(|target| position.get(&target).copied()));
             }
-            Some(Stmt::Ret { .. }) | Some(Stmt::BrIndirect { .. }) | Some(Stmt::Trap) => {}
+            Some(Stmt::Ret { .. }) | Some(Stmt::BrIndirect { .. }) | Some(Stmt::Trap { .. }) => {}
             _ => next.extend(following),
         }
         next.dedup();
@@ -77,11 +78,12 @@ pub fn normalize_layout(ir: &mut FunctionIr) {
         match last {
             Some(Stmt::Br {
                 target: Some(target),
+                ..
             }) if Some(target) == next => {
                 ir.blocks[index].stmts.remove(statement_count - 1);
             }
             Some(Stmt::Br { .. }) => {}
-            Some(Stmt::Ret { .. }) | Some(Stmt::BrIndirect { .. }) | Some(Stmt::Trap) => {}
+            Some(Stmt::Ret { .. }) | Some(Stmt::BrIndirect { .. }) | Some(Stmt::Trap { .. }) => {}
             // A block that fell through keeps going where it went before.
             _ => {
                 let original = fallthrough.get(&ir.blocks[index].start).copied().flatten();
@@ -90,6 +92,7 @@ pub fn normalize_layout(ir: &mut FunctionIr) {
                 {
                     ir.blocks[index].stmts.push(Stmt::Br {
                         target: Some(original),
+                        at: None,
                     });
                 }
             }
@@ -112,6 +115,7 @@ mod tests {
             lhs: Expr::reg(register, 64),
             rhs: Expr::Const(0),
             target,
+            at: None,
         };
         let mut ir = FunctionIr::single_block(Isa::AArch64, vec![brif(0, 0x30)]);
         for (start, stmts) in [
@@ -119,10 +123,17 @@ mod tests {
                 0x10,
                 vec![Stmt::Ret {
                     value: Expr::Const(0),
+                    at: None,
                 }],
             ),
             (0x20, vec![brif(1, 0x10)]),
-            (0x30, vec![Stmt::Br { target: Some(0x20) }]),
+            (
+                0x30,
+                vec![Stmt::Br {
+                    target: Some(0x20),
+                    at: None,
+                }],
+            ),
         ] {
             ir.blocks.push(Block { start, stmts });
         }

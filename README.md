@@ -76,6 +76,9 @@ decoded strings. Use
 `velk --disasm --json` for instruction records with `addr`, `instruction` and `comment` fields;
 `f.disasm()` in scripts returns the same records.
 
+Use `-D --addresses` for instruction comments, or `-D --json` for pseudo-C with a
+line-to-address map. See [instruction addresses](docs/instruction-addresses.md).
+
 Whole-binary work uses the available CPU cores. Set `VELK_THREADS=1` to run with one worker,
 or another positive integer to limit workers. Results remain in function order.
 On Linux, the binary loader uses a read-only mapped snapshot; if mapping fails, it reads the file.

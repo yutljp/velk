@@ -240,9 +240,11 @@ fn windows_pointer_arguments_preserve_bytes_after_a_string_terminator() {
                     outputs: vec![],
                     clobbers: Some(Default::default()),
                     via: None,
+                    at: None,
                 },
                 Stmt::Ret {
                     value: Expr::Const(7),
+                    at: None,
                 },
             ],
         );
@@ -437,6 +439,7 @@ fn header_variables_keep_declared_names_and_types() {
                         width,
                         signed: width == 4,
                     },
+                    at: None,
                 }],
             );
             ir.isa = image.isa;
@@ -458,6 +461,7 @@ fn header_variables_keep_declared_names_and_types() {
                         width: 1,
                         signed: false,
                     },
+                    at: None,
                 }];
                 let partial = velk::render::render(&ir, &[], &symbols, &[(0x9000, 8)]);
                 assert!(!partial.contains("extern "), "{partial}");
@@ -473,6 +477,7 @@ fn header_variables_keep_declared_names_and_types() {
                         addr: Expr::Const(0x9000),
                         width: 1,
                         value: Expr::Const(0xcd),
+                        at: None,
                     },
                 );
                 ir.blocks[0].stmts[1] = Stmt::Ret {
@@ -481,6 +486,7 @@ fn header_variables_keep_declared_names_and_types() {
                         width: 4,
                         signed: true,
                     },
+                    at: None,
                 };
                 let stored = velk::render::render(&ir, &[], &symbols, &[(0x9000, 8)]);
                 syntax::run_printed(
@@ -534,6 +540,7 @@ fn header_variable_import_slots_keep_address_storage() {
                 width: 8,
                 signed: false,
             },
+            at: None,
         }],
     );
     let code = velk::render::render(&ir, &[], &symbols, &[(0x9000, 8)]);

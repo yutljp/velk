@@ -677,6 +677,7 @@ impl<'a> Ranges<'a> {
                 lhs,
                 rhs,
                 target,
+                ..
             }) => {
                 let taken = self.starts.get(target) == Some(&to);
                 if taken == (to == from + 1) {
@@ -713,6 +714,7 @@ impl<'a> Ranges<'a> {
                 index,
                 cases,
                 default,
+                ..
             }) => {
                 if default.and_then(|default| self.starts.get(&default).copied()) == Some(to) {
                     return Some(out);
@@ -907,6 +909,7 @@ impl<'a> Ranges<'a> {
                 lhs,
                 rhs,
                 target,
+                ..
             }) => {
                 let (Some(a), Some(b)) = (
                     self.eval(lhs, block, MAX_GUARD_DEPTH),
@@ -930,6 +933,7 @@ impl<'a> Ranges<'a> {
                 index,
                 cases,
                 default,
+                ..
             }) => {
                 let Some(fact) = self.eval(index, block, MAX_GUARD_DEPTH) else {
                     return Vec::new();
@@ -978,7 +982,7 @@ impl<'a> Ranges<'a> {
                 }
             }
             for stmt in &ssa.ir.blocks[block].stmts {
-                if let Stmt::Assign { dest, value } = stmt
+                if let Stmt::Assign { dest, value, .. } = stmt
                     && let Some(fact) = self.eval(value, block, MAX_GUARD_DEPTH)
                 {
                     let fact = fact.truncate(u32::from(dest.width));
@@ -1019,7 +1023,7 @@ impl<'a> Ranges<'a> {
         let mut facts = vec![Some(Fact::TOP); ssa.origin.len()];
         let mut definitions = HashMap::new();
         for stmt in ssa.ir.blocks.iter().flat_map(|block| &block.stmts) {
-            if let Stmt::Assign { dest, value } = stmt {
+            if let Stmt::Assign { dest, value, .. } = stmt {
                 definitions.insert(dest.index, (value, u32::from(dest.width)));
             }
         }
@@ -1208,7 +1212,7 @@ fn drop_unreachable(ir: &mut FunctionIr) {
     if ir.blocks.iter().any(|block| {
         matches!(
             block.stmts.last(),
-            Some(Stmt::BrIndirect { .. } | Stmt::Br { target: None })
+            Some(Stmt::BrIndirect { .. } | Stmt::Br { target: None, .. })
         )
     }) {
         return;
@@ -1242,7 +1246,7 @@ fn rewrite_stmt(stmt: &mut Stmt, ranges: &Ranges, block: usize, changes: &mut Ch
             rewrite(lhs, ranges, block, true, changes);
             rewrite(rhs, ranges, block, true, changes);
         }
-        Stmt::Assign { value, .. } | Stmt::Ret { value } => {
+        Stmt::Assign { value, .. } | Stmt::Ret { value, .. } => {
             rewrite_value(value, ranges, block, changes);
         }
         other => {
@@ -1300,6 +1304,7 @@ fn terminate(
             lhs,
             rhs,
             target,
+            ..
         }) => {
             let (Some(a), Some(b)) = (
                 ranges.eval(lhs, block, MAX_GUARD_DEPTH),
@@ -1314,10 +1319,11 @@ fn terminate(
             if next.is_none() || !ranges.starts.contains_key(&target) {
                 return;
             }
-            stmts.pop();
+            let at = stmts.pop().and_then(|stmt| stmt.origin());
             if taken && Some(target) != next {
                 stmts.push(Stmt::Br {
                     target: Some(target),
+                    at,
                 });
             }
             changes.branches += 1;
@@ -1326,6 +1332,7 @@ fn terminate(
             index,
             cases,
             default,
+            ..
         }) => {
             let Some(fact) = ranges.eval(index, block, MAX_GUARD_DEPTH) else {
                 return;
@@ -1357,10 +1364,11 @@ fn terminate(
                 changes.defaults += 1;
             }
             if let [target] = targets[..] {
-                stmts.pop();
+                let at = stmts.pop().and_then(|stmt| stmt.origin());
                 if Some(target) != next {
                     stmts.push(Stmt::Br {
                         target: Some(target),
+                        at,
                     });
                 }
             } else {

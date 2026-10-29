@@ -84,6 +84,7 @@ fn printed_vector_operations_define_their_helpers() {
                             .map(|index| Expr::reg(*index, 64))
                             .collect(),
                     },
+                    at: None,
                 }],
             );
             let inputs = [
@@ -131,6 +132,7 @@ fn printed_stack_address_with_low_bits_set_reaches_the_local() {
                 addr: address(-24),
                 value: Expr::reg(0, 64),
                 width: 8,
+                at: None,
             },
             Stmt::Ret {
                 value: Expr::Load {
@@ -138,6 +140,7 @@ fn printed_stack_address_with_low_bits_set_reaches_the_local() {
                     width: 8,
                     signed: false,
                 },
+                at: None,
             },
         ],
     );

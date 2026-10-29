@@ -275,6 +275,7 @@ pub(super) fn split_word_result() -> [Stmt; 2] {
                 width: 64,
             },
             value: super::arm32::low(Expr::reg(TEMPORARIES[3], 64)),
+            at: None,
         },
         Stmt::Assign {
             dest: crate::ir::RegRef {
@@ -282,6 +283,7 @@ pub(super) fn split_word_result() -> [Stmt; 2] {
                 width: 64,
             },
             value: super::arm32::low(Expr::reg(TEMPORARIES[2], 64)),
+            at: None,
         },
     ]
 }
@@ -299,6 +301,7 @@ pub(super) fn split_result(isa: Isa) -> [Stmt; 2] {
                 Expr::reg(TEMPORARIES[3], 64),
                 Expr::constant(32),
             ),
+            at: None,
         },
         Stmt::Assign {
             dest: crate::ir::RegRef {
@@ -306,6 +309,7 @@ pub(super) fn split_result(isa: Isa) -> [Stmt; 2] {
                 width: 64,
             },
             value: super::arm32::low(Expr::reg(TEMPORARIES[3], 64)),
+            at: None,
         },
     ]
 }
@@ -345,6 +349,7 @@ pub(super) fn remainder_arguments(
                 width: 64,
             },
             value: std::mem::replace(left, Expr::reg(TEMPORARIES[0], 64)),
+            at: None,
         },
         Stmt::Assign {
             dest: crate::ir::RegRef {
@@ -352,6 +357,7 @@ pub(super) fn remainder_arguments(
                 width: 64,
             },
             value: std::mem::replace(right, Expr::reg(TEMPORARIES[1], 64)),
+            at: None,
         },
     ];
     Some(captures)
@@ -372,6 +378,7 @@ pub(super) fn remainder_value() -> Stmt {
                 Expr::reg(TEMPORARIES[1], 64),
             ),
         ),
+        at: None,
     }
 }
 
@@ -383,6 +390,7 @@ pub(super) fn split_remainder() -> [Stmt; 2] {
                 width: 64,
             },
             value: super::arm32::low(Expr::reg(TEMPORARIES[2], 64)),
+            at: None,
         },
         Stmt::Assign {
             dest: crate::ir::RegRef {
@@ -394,6 +402,7 @@ pub(super) fn split_remainder() -> [Stmt; 2] {
                 Expr::reg(TEMPORARIES[2], 64),
                 Expr::constant(32),
             ),
+            at: None,
         },
     ]
 }

@@ -187,7 +187,7 @@ fn indirect_jumps(
         let Some(original) = raw.iter().find(|other| other.start == block.start) else {
             return None;
         };
-        let Some(Stmt::BrIndirect { target }) = original.stmts.last() else {
+        let Some(Stmt::BrIndirect { target, .. }) = original.stmts.last() else {
             return None;
         };
         let mut stmts = original.stmts.clone();
@@ -198,6 +198,7 @@ fn indirect_jumps(
                 .map(|start| (*start as i64, *start))
                 .collect(),
             default: None,
+            at: None,
         };
         block.stmts = stmts;
     }

@@ -11,9 +11,11 @@ fn printed_switch_shared_targets_fallthrough_and_exit() {
             width: 64,
         },
         value,
+        at: None,
     };
     let jump = |target| Stmt::Br {
         target: Some(target),
+        at: None,
     };
     let mut candidates = Vec::new();
     for sparse in [false, true] {
@@ -50,6 +52,7 @@ fn printed_switch_shared_targets_fallthrough_and_exit() {
                             (values[3], 30),
                         ],
                         default: Some(40),
+                        at: None,
                     },
                 ],
             },
@@ -62,6 +65,7 @@ fn printed_switch_shared_targets_fallthrough_and_exit() {
                         lhs: Expr::bin(BinOp::And, Expr::reg(argument, 64), Expr::Const(1)),
                         rhs: Expr::Const(0),
                         target: 20,
+                        at: None,
                     },
                 ],
             },
@@ -92,6 +96,7 @@ fn printed_switch_shared_targets_fallthrough_and_exit() {
                 start: 50,
                 stmts: vec![Stmt::Ret {
                     value: Expr::bin(BinOp::Add, Expr::reg(result, 64), Expr::reg(argument, 64)),
+                    at: None,
                 }],
             },
         ];
@@ -149,18 +154,21 @@ fn printed_switch_default_traps() {
                 index: Expr::reg(argument, 64),
                 cases: vec![(0, 10), (1, 20), (3, 10)],
                 default: Some(30),
+                at: None,
             }],
         },
         Block {
             start: 10,
             stmts: vec![Stmt::Ret {
                 value: Expr::Const(7),
+                at: None,
             }],
         },
         Block {
             start: 20,
             stmts: vec![Stmt::Ret {
                 value: Expr::Const(11),
+                at: None,
             }],
         },
         Block {
@@ -177,8 +185,9 @@ fn printed_switch_default_traps() {
                     outputs: Vec::new(),
                     clobbers: Some(Default::default()),
                     via: None,
+                    at: None,
                 },
-                Stmt::Trap,
+                Stmt::Trap { at: None },
             ],
         },
     ];
@@ -205,8 +214,12 @@ fn printed_nested_switch_in_loop_continues_the_loop() {
     let assign = |index, value| Stmt::Assign {
         dest: RegRef { index, width: 64 },
         value,
+        at: None,
     };
-    let jump = || Stmt::Br { target: Some(10) };
+    let jump = || Stmt::Br {
+        target: Some(10),
+        at: None,
+    };
     let add = |value| {
         assign(
             result,
@@ -238,6 +251,7 @@ fn printed_nested_switch_in_loop_continues_the_loop() {
                 lhs: Expr::reg(counter, 64),
                 rhs: Expr::reg(argument, 64),
                 target: 100,
+                at: None,
             }],
         },
         Block {
@@ -251,6 +265,7 @@ fn printed_nested_switch_in_loop_continues_the_loop() {
                     index: Expr::bin(BinOp::And, Expr::reg(counter, 64), Expr::Const(3)),
                     cases: vec![(0, 10), (1, 40), (2, 60)],
                     default: Some(70),
+                    at: None,
                 },
             ],
         },
@@ -260,6 +275,7 @@ fn printed_nested_switch_in_loop_continues_the_loop() {
                 index: Expr::bin(BinOp::And, Expr::reg(counter, 64), Expr::Const(4)),
                 cases: vec![(0, 50)],
                 default: Some(60),
+                at: None,
             }],
         },
         Block {
@@ -278,6 +294,7 @@ fn printed_nested_switch_in_loop_continues_the_loop() {
             start: 100,
             stmts: vec![Stmt::Ret {
                 value: Expr::reg(result, 64),
+                at: None,
             }],
         },
     ];
@@ -301,9 +318,11 @@ fn printed_switch_cases_skip_a_tiny_continuation_to_the_shared_exit() {
             width: 64,
         },
         value,
+        at: None,
     };
     let jump = |target| Stmt::Br {
         target: Some(target),
+        at: None,
     };
     let mut ir = synthetic_ir(
         "switch_shared_exit",
@@ -324,6 +343,7 @@ fn printed_switch_cases_skip_a_tiny_continuation_to_the_shared_exit() {
                     index: Expr::reg(argument, 64),
                     cases: vec![(0, 10), (1, 20)],
                     default: Some(90),
+                    at: None,
                 },
             ],
         },
@@ -354,6 +374,7 @@ fn printed_switch_cases_skip_a_tiny_continuation_to_the_shared_exit() {
                 })
                 .chain([Stmt::Ret {
                     value: Expr::reg(result, 64),
+                    at: None,
                 }])
                 .collect(),
         },
@@ -403,6 +424,7 @@ fn printed_switch_identical_bodies_at_distinct_targets() {
                                 lhs: index.clone(),
                                 rhs: Expr::Const(*value as u64),
                                 target: *target,
+                                at: None,
                             }],
                         })
                         .collect()
@@ -413,6 +435,7 @@ fn printed_switch_identical_bodies_at_distinct_targets() {
                             index,
                             cases: cases.to_vec(),
                             default: Some(40),
+                            at: None,
                         }],
                     }]
                 };
@@ -421,6 +444,7 @@ fn printed_switch_identical_bodies_at_distinct_targets() {
                         start,
                         stmts: vec![Stmt::Ret {
                             value: Expr::Const(value),
+                            at: None,
                         }],
                     });
                 }
@@ -463,6 +487,7 @@ fn printed_switch_shared_tails_preserve_store_order_and_default() {
                 addr: pointer.clone(),
                 width: 8,
                 value: Expr::bin(op, load.clone(), Expr::Const(value)),
+                at: None,
             };
             let mut ir = synthetic_ir(
                 &format!("shared_tail_{isa:?}_{shared_default}"),
@@ -489,6 +514,7 @@ fn printed_switch_shared_tails_preserve_store_order_and_default() {
                     index: Expr::reg(arguments[1], 64),
                     cases: vec![(0, 100), (1, 110), (2, 120)],
                     default: Some(130),
+                    at: None,
                 }],
             }];
             for (start, prefix) in [(100, 2), (110, 1), (120, 0), (130, 0)] {
@@ -506,6 +532,7 @@ fn printed_switch_shared_tails_preserve_store_order_and_default() {
                 }
                 stmts.push(Stmt::Ret {
                     value: load.clone(),
+                    at: None,
                 });
                 ir.blocks.push(Block { start, stmts });
             }
@@ -584,6 +611,7 @@ fn printed_switch_prefixes_preserve_bounds_width_and_store_order() {
                             })
                             .collect(),
                         default: Some(if variant == 3 { 250 } else { 300 }),
+                        at: None,
                     }],
                 }];
                 for value in 0..10 {
@@ -600,6 +628,7 @@ fn printed_switch_prefixes_preserve_bounds_width_and_store_order() {
                                 load.clone(),
                                 Expr::Const(step + 3),
                             ),
+                            at: None,
                         })
                         .collect();
                     if write_index {
@@ -615,10 +644,14 @@ fn printed_switch_prefixes_preserve_bounds_width_and_store_order() {
                                     Expr::reg(arguments[1], 64),
                                     Expr::Const(3),
                                 ),
+                                at: None,
                             },
                         );
                     }
-                    stmts.push(Stmt::Br { target: Some(300) });
+                    stmts.push(Stmt::Br {
+                        target: Some(300),
+                        at: None,
+                    });
                     ir.blocks.push(Block {
                         start: 100 + value * 10,
                         stmts,
@@ -632,8 +665,12 @@ fn printed_switch_prefixes_preserve_bounds_width_and_store_order() {
                                 addr: pointer.clone(),
                                 width: 8,
                                 value: Expr::bin(BinOp::Xor, load.clone(), Expr::Const(47)),
+                                at: None,
                             },
-                            Stmt::Br { target: Some(300) },
+                            Stmt::Br {
+                                target: Some(300),
+                                at: None,
+                            },
                         ],
                     });
                 }
@@ -644,9 +681,11 @@ fn printed_switch_prefixes_preserve_bounds_width_and_store_order() {
                             addr: pointer.clone(),
                             width: 8,
                             value: Expr::bin(BinOp::Xor, load.clone(), Expr::Const(value)),
+                            at: None,
                         })
                         .chain([Stmt::Ret {
                             value: Expr::bin(BinOp::Add, load.clone(), Expr::reg(arguments[1], 64)),
+                            at: None,
                         }])
                         .collect(),
                 });
@@ -731,6 +770,7 @@ fn printed_identical_nested_switch_cases_share_their_bodies() {
                 index: Expr::reg(7, 64),
                 cases: vec![(1, 10), (2, 50)],
                 default: Some(90),
+                at: None,
             }],
         });
         for start in [10, 50] {
@@ -740,6 +780,7 @@ fn printed_identical_nested_switch_cases_share_their_bodies() {
                     index: Expr::reg(6, 64),
                     cases: vec![(3, start + 10), (4, start + 20)],
                     default: Some(start + 30),
+                    at: None,
                 }],
             });
             for (offset, value) in [(10, 17), (20, 23), (30, 31)] {
@@ -747,6 +788,7 @@ fn printed_identical_nested_switch_cases_share_their_bodies() {
                     start: start + offset,
                     stmts: vec![Stmt::Ret {
                         value: Expr::Const(value + u64::from(different && start == 50)),
+                        at: None,
                     }],
                 });
             }
@@ -755,6 +797,7 @@ fn printed_identical_nested_switch_cases_share_their_bodies() {
             start: 90,
             stmts: vec![Stmt::Ret {
                 value: Expr::Const(41),
+                at: None,
             }],
         });
         ir.blocks.retain(|block| !block.stmts.is_empty());
@@ -809,6 +852,7 @@ fn printed_nested_cases_preserve_call_arguments_and_effects() {
                 index: Expr::reg(7, 64),
                 cases: vec![(1, 10), (2, 40)],
                 default: Some(70),
+                at: None,
             }],
         }];
         for start in [10, 40] {
@@ -819,12 +863,14 @@ fn printed_nested_cases_preserve_call_arguments_and_effects() {
                     lhs: Expr::bin(BinOp::And, Expr::reg(7, 64), Expr::Const(4)),
                     rhs: Expr::Const(0),
                     target: start + 20,
+                    at: None,
                 }],
             });
             ir.blocks.push(Block {
                 start: start + 10,
                 stmts: vec![Stmt::Ret {
                     value: Expr::Const(31),
+                    at: None,
                 }],
             });
             ir.blocks.push(Block {
@@ -841,9 +887,11 @@ fn printed_nested_cases_preserve_call_arguments_and_effects() {
                         outputs: Vec::new(),
                         clobbers: Some(Default::default()),
                         via: None,
+                        at: None,
                     },
                     Stmt::Ret {
                         value: Expr::Const(23),
+                        at: None,
                     },
                 ],
             });
@@ -852,6 +900,7 @@ fn printed_nested_cases_preserve_call_arguments_and_effects() {
             start: 70,
             stmts: vec![Stmt::Ret {
                 value: Expr::Const(41),
+                at: None,
             }],
         });
         if exceptions {

@@ -28,14 +28,16 @@ fn execute(ir: &FunctionIr, block: usize, mut state: State, mut path: Vec<usize>
     for statement in &ir.blocks[block].stmts {
         let read = |expr| memory_value(expr, &state.registers, &state.memory);
         match statement {
-            Stmt::Assign { dest, value } => {
+            Stmt::Assign { dest, value, .. } => {
                 let value = read(value);
                 state.defined = format!("(and {} {})", state.defined, value.defined);
                 state
                     .registers
                     .insert(dest.index, low(&value.term, u32::from(dest.width)));
             }
-            Stmt::Store { addr, value, width } => {
+            Stmt::Store {
+                addr, value, width, ..
+            } => {
                 let addr = read(addr);
                 let value = read(value);
                 state.defined =
@@ -52,7 +54,7 @@ fn execute(ir: &FunctionIr, block: usize, mut state: State, mut path: Vec<usize>
                     );
                 }
             }
-            Stmt::Ret { value } => {
+            Stmt::Ret { value, .. } => {
                 let mut value = read(value);
                 value.defined = format!("(and {} {})", state.defined, value.defined);
                 return Returned {
@@ -62,12 +64,14 @@ fn execute(ir: &FunctionIr, block: usize, mut state: State, mut path: Vec<usize>
             }
             Stmt::Br {
                 target: Some(address),
+                ..
             } => return execute(ir, target(*address), state, path),
             Stmt::Brif {
                 cond,
                 lhs,
                 rhs,
                 target: address,
+                ..
             } => {
                 let a = read(lhs);
                 let b = read(rhs);
@@ -95,6 +99,7 @@ fn execute(ir: &FunctionIr, block: usize, mut state: State, mut path: Vec<usize>
                 index,
                 cases,
                 default,
+                ..
             } => {
                 let index = read(index);
                 state.defined = format!("(and {} {})", state.defined, index.defined);
@@ -121,7 +126,7 @@ fn execute(ir: &FunctionIr, block: usize, mut state: State, mut path: Vec<usize>
                 }
                 return result;
             }
-            Stmt::Trap => {
+            Stmt::Trap { .. } => {
                 return Returned {
                     value: Value {
                         term: constant(0),

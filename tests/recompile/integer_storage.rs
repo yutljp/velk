@@ -77,6 +77,7 @@ fn folded_calls_keep_the_temporary_integer_conversion() {
                         }],
                         clobbers: None,
                         via: None,
+                        at: None,
                     },
                     Stmt::Ret {
                         value: Expr::bin(
@@ -96,6 +97,7 @@ fn folded_calls_keep_the_temporary_integer_conversion() {
                                 _ => 166,
                             }),
                         ),
+                        at: None,
                     },
                 ],
             );
@@ -148,6 +150,7 @@ fn fused_memory_updates_keep_the_original_operand() {
                     width: 64,
                 },
                 value: load.clone(),
+                at: None,
             });
         }
         statements.extend([
@@ -161,6 +164,7 @@ fn fused_memory_updates_keep_the_original_operand() {
                     if inline { load } else { Expr::reg(0, 64) },
                     Expr::reg(6, 32),
                 ),
+                at: None,
             },
             Stmt::Assign {
                 dest: RegRef {
@@ -168,14 +172,17 @@ fn fused_memory_updates_keep_the_original_operand() {
                     width: 64,
                 },
                 value: Expr::reg(2, 32),
+                at: None,
             },
             Stmt::Store {
                 addr: Expr::reg(7, 64),
                 value: Expr::reg(0, 64),
                 width: 8,
+                at: None,
             },
             Stmt::Ret {
                 value: Expr::reg(6, 32),
+                at: None,
             },
         ]);
         let mut ir = synthetic_ir(
@@ -234,6 +241,7 @@ fn fused_memory_updates_keep_truncation_and_memory_order() {
                         width: 64,
                     },
                     value: load.clone(),
+                    at: None,
                 });
             }
             statements.push(Stmt::Assign {
@@ -254,12 +262,14 @@ fn fused_memory_updates_keep_truncation_and_memory_order() {
                     ),
                     Expr::Const(0xffff_ffff),
                 ),
+                at: None,
             });
             if intervening_store {
                 statements.push(Stmt::Store {
                     addr: Expr::reg(7, 64),
                     value: Expr::Const(0),
                     width: 8,
+                    at: None,
                 });
             }
             statements.extend([
@@ -267,8 +277,12 @@ fn fused_memory_updates_keep_truncation_and_memory_order() {
                     addr: Expr::reg(7, 64),
                     value: Expr::reg(0, 64),
                     width: 8,
+                    at: None,
                 },
-                Stmt::Ret { value: load },
+                Stmt::Ret {
+                    value: load,
+                    at: None,
+                },
             ]);
             let mut ir = synthetic_ir(
                 &format!(
@@ -303,6 +317,7 @@ fn indexed_stack_elements_share_storage_with_partial_reads() {
             addr: slot(-128 + index * 8),
             value: Expr::Const(100 + index as u64),
             width: 8,
+            at: None,
         });
     }
     let mut value = Expr::Load {
@@ -325,7 +340,7 @@ fn indexed_stack_elements_share_storage_with_partial_reads() {
             },
         );
     }
-    statements.push(Stmt::Ret { value });
+    statements.push(Stmt::Ret { value, at: None });
     let ir = synthetic_ir(
         "partial_elements",
         vec![Param {
@@ -353,6 +368,7 @@ fn data_page_bases_use_the_data_address() {
         CType::U64,
         vec![Stmt::Ret {
             value: Expr::Const(0x100001000),
+            at: None,
         }],
     );
     ir.isa = Isa::AArch64;

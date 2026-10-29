@@ -25,12 +25,14 @@ fn branch_folding_preserves_unsigned_arithmetic_from_signed_parameters() {
                     width: 32,
                 },
                 value: Expr::reg(7, 32),
+                at: None,
             },
             Stmt::Brif {
                 cond: Cond::Eq,
                 lhs: Expr::reg(6, 64),
                 rhs: Expr::Const(0),
                 target: 2,
+                at: None,
             },
         ],
     );
@@ -42,12 +44,14 @@ fn branch_folding_preserves_unsigned_arithmetic_from_signed_parameters() {
                 Expr::bin(BinOp::Sub, Expr::reg(temp, 32), Expr::Const(1)),
                 Expr::Const(0xffff_ffff),
             ),
+            at: None,
         }],
     });
     ir.blocks.push(Block {
         start: 2,
         stmts: vec![Stmt::Ret {
             value: Expr::Const(0),
+            at: None,
         }],
     });
     ir.value_types.insert(temp, CType::U32);
@@ -97,12 +101,14 @@ fn pure_parameter_values_fold_into_one_branch_without_losing_snapshots() {
                         Stmt::Assign {
                             dest: velk::ir::RegRef { index: temp, width },
                             value: Expr::bin(BinOp::Add, Expr::reg(7, width), Expr::Const(1)),
+                            at: None,
                         },
                         Stmt::Brif {
                             cond: Cond::Eq,
                             lhs: Expr::reg(6, 64),
                             rhs: Expr::Const(0),
                             target: 2,
+                            at: None,
                         },
                     ],
                 );
@@ -111,6 +117,7 @@ fn pure_parameter_values_fold_into_one_branch_without_losing_snapshots() {
                     body.push(Stmt::Assign {
                         dest: velk::ir::RegRef { index: 7, width },
                         value: Expr::Const(9),
+                        at: None,
                     });
                 }
                 body.push(Stmt::Ret {
@@ -119,6 +126,7 @@ fn pure_parameter_values_fold_into_one_branch_without_losing_snapshots() {
                         Expr::bin(BinOp::Mul, Expr::reg(temp, width), Expr::Const(3)),
                         Expr::Const(if width == 32 { 0xffff_ffff } else { u64::MAX }),
                     ),
+                    at: None,
                 });
                 ir.blocks.push(Block {
                     start: 1,
@@ -132,6 +140,7 @@ fn pure_parameter_values_fold_into_one_branch_without_losing_snapshots() {
                         } else {
                             Expr::Const(0)
                         },
+                        at: None,
                     }],
                 });
                 ir.value_types.insert(temp, CType::int(width / 8, false));
@@ -181,9 +190,11 @@ fn named_integer_temporary_folds_into_its_only_use() {
                     width: 64,
                 },
                 value: Expr::bin(BinOp::Add, Expr::reg(arg, 64), Expr::Const(1)),
+                at: None,
             },
             Stmt::Ret {
                 value: Expr::bin(BinOp::Mul, Expr::reg(temp, 64), Expr::Const(3)),
+                at: None,
             },
         ],
     );
@@ -239,17 +250,20 @@ fn stack_local_copies_use_the_slot_only_while_values_agree() {
                             Stmt::Assign {
                                 dest: velk::ir::RegRef { index: temp, width },
                                 value: Expr::bin(BinOp::Xor, Expr::reg(arg, 32), Expr::Const(17)),
+                                at: None,
                             },
                             Stmt::Store {
                                 addr: slot(-16),
                                 value: Expr::reg(temp, width),
                                 width: width / 8,
+                                at: None,
                             },
                             Stmt::Brif {
                                 cond: if width == 32 { Cond::Lt } else { Cond::Eq },
                                 lhs: Expr::reg(temp, width),
                                 rhs: Expr::Const(0),
                                 target: 2,
+                                at: None,
                             },
                         ],
                     );
@@ -267,6 +281,7 @@ fn stack_local_copies_use_the_slot_only_while_values_agree() {
                             addr: slot(if partial { -15 } else { -16 }),
                             value: Expr::Const(0),
                             width: if partial { 1 } else { width / 8 },
+                            at: None,
                         });
                     }
                     body.push(Stmt::Ret {
@@ -279,6 +294,7 @@ fn stack_local_copies_use_the_slot_only_while_values_agree() {
                                 signed: false,
                             },
                         ),
+                        at: None,
                     });
                     ir.blocks.push(Block {
                         start: 1,
@@ -288,6 +304,7 @@ fn stack_local_copies_use_the_slot_only_while_values_agree() {
                         start: 2,
                         stmts: vec![Stmt::Ret {
                             value: Expr::reg(temp, width),
+                            at: None,
                         }],
                     });
                     let code = velk::render::render(&ir, &[], &Default::default(), &[]);
@@ -331,6 +348,7 @@ fn debug_local_types_preserve_signed_and_partial_loads() {
                             addr: slot(-16),
                             value: Expr::reg(arg, 64),
                             width,
+                            at: None,
                         },
                         Stmt::Ret {
                             value: Expr::Load {
@@ -338,6 +356,7 @@ fn debug_local_types_preserve_signed_and_partial_loads() {
                                 width,
                                 signed: signed_load,
                             },
+                            at: None,
                         },
                     ],
                 );
@@ -428,6 +447,7 @@ fn debug_local_types_preserve_signed_and_partial_loads() {
                             then: Box::new(Expr::Const(1)),
                             els: Box::new(Expr::Const(0)),
                         },
+                        at: None,
                     };
                     candidates.push(printed_candidate(overflow, inputs.clone()));
                     candidates.push(printed_candidate(named, inputs.clone()));
@@ -443,6 +463,7 @@ fn debug_local_types_preserve_signed_and_partial_loads() {
                             width: 1,
                             signed: signed_load,
                         },
+                        at: None,
                     };
                     candidates.push(printed_candidate(partial, inputs.clone()));
                 }
@@ -469,11 +490,13 @@ fn debug_array_slots_share_typed_storage() {
                 addr: slot(-16),
                 value: Expr::reg(arg, 64),
                 width: 4,
+                at: None,
             },
             Stmt::Store {
                 addr: slot(-12),
                 value: Expr::Const(7),
                 width: 4,
+                at: None,
             },
             Stmt::Ret {
                 value: Expr::bin(
@@ -489,6 +512,7 @@ fn debug_array_slots_share_typed_storage() {
                         signed: false,
                     },
                 ),
+                at: None,
             },
         ],
     );
@@ -529,11 +553,13 @@ fn debug_structure_fields_preserve_signed_values() {
                 addr: slot(-16),
                 value: Expr::reg(arg, 64),
                 width: 4,
+                at: None,
             },
             Stmt::Store {
                 addr: slot(-12),
                 value: Expr::Const(7),
                 width: 4,
+                at: None,
             },
             Stmt::Ret {
                 value: Expr::bin(
@@ -549,6 +575,7 @@ fn debug_structure_fields_preserve_signed_values() {
                         signed: true,
                     },
                 ),
+                at: None,
             },
         ],
     );
@@ -619,9 +646,11 @@ fn bounded_narrow_copies_fold_without_changing_extended_values() {
                     Stmt::Assign {
                         dest: velk::ir::RegRef { index: temp, width },
                         value,
+                        at: None,
                     },
                     Stmt::Ret {
                         value: Expr::reg(temp, 64),
+                        at: None,
                     },
                 ],
             );
@@ -667,6 +696,7 @@ fn private_return_slots_fold_only_at_the_return_width() {
                         addr: slot(-16),
                         value: Expr::reg(7, 64),
                         width,
+                        at: None,
                     },
                     Stmt::Ret {
                         value: Expr::Load {
@@ -674,6 +704,7 @@ fn private_return_slots_fold_only_at_the_return_width() {
                             width,
                             signed: false,
                         },
+                        at: None,
                     },
                 ],
             );
@@ -707,11 +738,13 @@ fn private_return_slots_fold_only_at_the_return_width() {
                 addr: Expr::reg(7, 64),
                 value: slot(-16),
                 width: 8,
+                at: None,
             },
             Stmt::Store {
                 addr: slot(-16),
                 value: Expr::Const(19),
                 width: 4,
+                at: None,
             },
             Stmt::Ret {
                 value: Expr::Load {
@@ -719,6 +752,7 @@ fn private_return_slots_fold_only_at_the_return_width() {
                     width: 4,
                     signed: false,
                 },
+                at: None,
             },
         ],
     );
@@ -809,9 +843,11 @@ fn narrow_loads_keep_their_existing_single_use_substitutions() {
                             width: width / 8,
                             signed: false,
                         },
+                        at: None,
                     },
                     Stmt::Ret {
                         value: Expr::reg(temp, width),
+                        at: None,
                     },
                 ],
             );
@@ -849,11 +885,13 @@ fn narrow_values_with_multiple_definitions_keep_their_snapshots() {
                     width: 32,
                 },
                 value: load(0),
+                at: None,
             },
             Stmt::Store {
                 addr: Expr::bin(BinOp::Add, Expr::reg(7, 64), Expr::Const(8)),
                 value: Expr::reg(temp, 64),
                 width: 1,
+                at: None,
             },
             Stmt::Assign {
                 dest: velk::ir::RegRef {
@@ -861,9 +899,11 @@ fn narrow_values_with_multiple_definitions_keep_their_snapshots() {
                     width: 32,
                 },
                 value: load(1),
+                at: None,
             },
             Stmt::Ret {
                 value: Expr::reg(temp, 64),
+                at: None,
             },
         ],
     );
@@ -908,12 +948,14 @@ fn structured_return_copies_preserve_truncation_and_parameter_changes() {
                     Stmt::Assign {
                         dest: velk::ir::RegRef { index: temp, width },
                         value: Expr::reg(7, width),
+                        at: None,
                     },
                     Stmt::Brif {
                         cond: Cond::Eq,
                         lhs: Expr::reg(6, 64),
                         rhs: Expr::Const(0),
                         target: 2,
+                        at: None,
                     },
                 ],
             );
@@ -922,6 +964,7 @@ fn structured_return_copies_preserve_truncation_and_parameter_changes() {
                 body.push(Stmt::Assign {
                     dest: velk::ir::RegRef { index: 7, width },
                     value: Expr::Const(9),
+                    at: None,
                 });
             }
             body.push(Stmt::Ret {
@@ -930,6 +973,7 @@ fn structured_return_copies_preserve_truncation_and_parameter_changes() {
                     Expr::reg(temp, width),
                     Expr::Const(if width == 32 { 0xffff_ffff } else { u64::MAX }),
                 ),
+                at: None,
             });
             ir.blocks.push(Block {
                 start: 1,
@@ -941,9 +985,11 @@ fn structured_return_copies_preserve_truncation_and_parameter_changes() {
                     Stmt::Assign {
                         dest: velk::ir::RegRef { index: temp, width },
                         value: Expr::Const(0),
+                        at: None,
                     },
                     Stmt::Ret {
                         value: Expr::reg(temp, width),
+                        at: None,
                     },
                 ],
             });
@@ -983,6 +1029,7 @@ fn mutable_parameter_copies_preserve_original_uses_and_full_width_writes() {
                     Stmt::Assign {
                         dest: velk::ir::RegRef { index: temp, width },
                         value: Expr::reg(7, width),
+                        at: None,
                     },
                     Stmt::Assign {
                         dest: velk::ir::RegRef {
@@ -990,8 +1037,12 @@ fn mutable_parameter_copies_preserve_original_uses_and_full_width_writes() {
                             width: 64,
                         },
                         value: Expr::Const(0),
+                        at: None,
                     },
-                    Stmt::Br { target: Some(1) },
+                    Stmt::Br {
+                        target: Some(1),
+                        at: None,
+                    },
                 ],
             );
             ir.blocks.extend([
@@ -1002,6 +1053,7 @@ fn mutable_parameter_copies_preserve_original_uses_and_full_width_writes() {
                         lhs: Expr::reg(temp, width),
                         rhs: Expr::Const(0),
                         target: 3,
+                        at: None,
                     }],
                 },
                 Block {
@@ -1010,6 +1062,7 @@ fn mutable_parameter_copies_preserve_original_uses_and_full_width_writes() {
                         Stmt::Assign {
                             dest: velk::ir::RegRef { index: temp, width },
                             value: Expr::bin(BinOp::Shr, Expr::reg(temp, width), Expr::Const(1)),
+                            at: None,
                         },
                         Stmt::Assign {
                             dest: velk::ir::RegRef {
@@ -1017,8 +1070,12 @@ fn mutable_parameter_copies_preserve_original_uses_and_full_width_writes() {
                                 width: 64,
                             },
                             value: Expr::bin(BinOp::Add, Expr::reg(count, 64), Expr::Const(1)),
+                            at: None,
                         },
-                        Stmt::Br { target: Some(1) },
+                        Stmt::Br {
+                            target: Some(1),
+                            at: None,
+                        },
                     ],
                 },
                 Block {
@@ -1029,6 +1086,7 @@ fn mutable_parameter_copies_preserve_original_uses_and_full_width_writes() {
                         } else {
                             Expr::reg(count, 64)
                         },
+                        at: None,
                     }],
                 },
             ]);
@@ -1068,6 +1126,7 @@ fn mutable_parameter_copies_keep_partial_writes_and_entry_reinitialization() {
                     width: 32,
                 },
                 value: Expr::reg(7, 32),
+                at: None,
             },
             Stmt::Assign {
                 dest: velk::ir::RegRef {
@@ -1075,9 +1134,11 @@ fn mutable_parameter_copies_keep_partial_writes_and_entry_reinitialization() {
                     width: 16,
                 },
                 value: Expr::Const(42),
+                at: None,
             },
             Stmt::Ret {
                 value: Expr::reg(temp, 64),
+                at: None,
             },
         ],
     );
@@ -1112,6 +1173,7 @@ fn mutable_parameter_copies_keep_partial_writes_and_entry_reinitialization() {
                     width: 64,
                 },
                 value: Expr::reg(7, 64),
+                at: None,
             },
             Stmt::Assign {
                 dest: velk::ir::RegRef {
@@ -1119,12 +1181,14 @@ fn mutable_parameter_copies_keep_partial_writes_and_entry_reinitialization() {
                     width: 64,
                 },
                 value: Expr::bin(BinOp::Shr, Expr::reg(temp, 64), Expr::Const(1)),
+                at: None,
             },
             Stmt::Brif {
                 cond: Cond::Eq,
                 lhs: Expr::reg(6, 64),
                 rhs: Expr::Const(0),
                 target: 2,
+                at: None,
             },
         ],
     );
@@ -1138,14 +1202,19 @@ fn mutable_parameter_copies_keep_partial_writes_and_entry_reinitialization() {
                         width: 64,
                     },
                     value: Expr::bin(BinOp::Sub, Expr::reg(6, 64), Expr::Const(1)),
+                    at: None,
                 },
-                Stmt::Br { target: Some(0) },
+                Stmt::Br {
+                    target: Some(0),
+                    at: None,
+                },
             ],
         },
         Block {
             start: 2,
             stmts: vec![Stmt::Ret {
                 value: Expr::reg(temp, 64),
+                at: None,
             }],
         },
     ]);

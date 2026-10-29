@@ -57,7 +57,7 @@ pub(super) fn normalize(ir: &mut FunctionIr, phases: &[(u16, u64)]) -> Vec<u16> 
         for value in stmt.operands_mut() {
             replace(value, &phases);
         }
-        if let Stmt::Assign { dest, value } = stmt
+        if let Stmt::Assign { dest, value, .. } = stmt
             && let Some((_, phase)) = phases.iter().find(|(register, _)| *register == dest.index)
         {
             *value = Expr::bin(BinOp::Sub, value.clone(), Expr::Const(*phase));

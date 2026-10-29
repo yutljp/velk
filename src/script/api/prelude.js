@@ -24,7 +24,7 @@
     }
     emulate(options = {}) { return call("emulate", { bin: this.#bin, start: this.addr, options }); }
     card({ budget } = {}) { return this.#call("card", { budget }); }
-    decompile({ decodeStrings = true } = {}) { return this.#call("decompile", { decodeStrings }); }
+    decompile({ decodeStrings = true, addresses = false } = {}) { return this.#call("decompile", { decodeStrings, addresses }); }
     disasm({ limit } = {}) { return this.#call("disasm", { limit }); }
     ir() { return this.#call("ir"); }
     origins() { return call("project", { bin: this.#bin, action: "origins", value: this.addr }); }
@@ -75,7 +75,7 @@
       binaryIds.set(this, id);
       Object.assign(this, info);
     }
-    decompile(functions) { return call("decompileMany", { bin: this.#id, addresses: functions?.map(f => f.addr) }); }
+    decompile(functions, { addresses = false } = {}) { return call("decompileMany", { bin: this.#id, addresses: functions?.map(f => f.addr), showAddresses: addresses }); }
     classes() { return call("classes", { bin: this.#id }); }
     libraryType(name) { return call("libraryType", { bin: this.#id, name }); }
     emulate(start, options = {}) {

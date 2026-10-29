@@ -155,7 +155,7 @@ pub(crate) fn replace_reads(stmt: &mut Stmt, values: &[(u16, Expr)]) {
                 replace(input);
             }
         }
-        Stmt::Assign { value, .. } | Stmt::Ret { value } => replace(value),
+        Stmt::Assign { value, .. } | Stmt::Ret { value, .. } => replace(value),
         Stmt::Store { addr, value, .. } => {
             replace(addr);
             replace(value);
@@ -164,7 +164,7 @@ pub(crate) fn replace_reads(stmt: &mut Stmt, values: &[(u16, Expr)]) {
             replace(lhs);
             replace(rhs);
         }
-        Stmt::BrIndirect { target } => replace(target),
+        Stmt::BrIndirect { target, .. } => replace(target),
         Stmt::Switch { index, .. } => replace(index),
         Stmt::Call { through, args, .. } => {
             if let Some(through) = through {
@@ -285,8 +285,8 @@ pub(crate) fn statement_registers(stmt: &Stmt) -> (FxHashSet<u16>, FxHashSet<u16
             expr_reads(lhs, &mut reads);
             expr_reads(rhs, &mut reads);
         }
-        Stmt::Ret { value } => expr_reads(value, &mut reads),
-        Stmt::BrIndirect { target } => expr_reads(target, &mut reads),
+        Stmt::Ret { value, .. } => expr_reads(value, &mut reads),
+        Stmt::BrIndirect { target, .. } => expr_reads(target, &mut reads),
         Stmt::Switch { index, .. } => expr_reads(index, &mut reads),
         Stmt::Call { through, args, .. } => {
             if let Some(through) = through {
@@ -359,7 +359,7 @@ pub(crate) fn assignment_at(
 
 pub(crate) fn assignment(stmt: &Stmt) -> Option<(crate::ir::RegRef, &Expr)> {
     match stmt {
-        Stmt::Assign { dest, value } => Some((*dest, value)),
+        Stmt::Assign { dest, value, .. } => Some((*dest, value)),
         _ => None,
     }
 }
@@ -384,6 +384,7 @@ mod tests {
             let stmt = Stmt::Assign {
                 dest: crate::ir::RegRef { index, width: 64 },
                 value: Expr::reg(index, 64),
+                at: None,
             };
             let (writes, reads) = statement_registers(&stmt);
             assert_eq!(writes.len(), 1);

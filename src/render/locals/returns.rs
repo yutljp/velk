@@ -48,7 +48,7 @@ fn fold_copies(ir: &FunctionIr, nodes: &mut Vec<Node>, bits: u32, types: &BTreeM
     let mut index = nodes.len();
     while index > 0 {
         index -= 1;
-        let Node::Stmt(Stmt::Assign { dest, value }) = &nodes[index] else {
+        let Node::Stmt(Stmt::Assign { dest, value, .. }) = &nodes[index] else {
             continue;
         };
         if dest.index < crate::ir::VARIABLE_BASE
@@ -99,7 +99,9 @@ fn replace_returns(nodes: &mut [Node], register: u16, bits: u32, value: &Expr) -
     let mut replaced = false;
     for node in nodes {
         match node {
-            Node::Stmt(Stmt::Ret { value: returned }) => {
+            Node::Stmt(Stmt::Ret {
+                value: returned, ..
+            }) => {
                 let mut inner = &*returned;
                 loop {
                     inner = match inner {
@@ -183,7 +185,9 @@ fn walk(nodes: &mut Vec<Node>, sp: u16, bits: u32) {
     let mut index = 0;
     while index + 1 < nodes.len() {
         if let (
-            Node::Stmt(Stmt::Store { addr, value, width }),
+            Node::Stmt(Stmt::Store {
+                addr, value, width, ..
+            }),
             Node::Stmt(Stmt::Ret {
                 value:
                     Expr::Load {
@@ -191,6 +195,7 @@ fn walk(nodes: &mut Vec<Node>, sp: u16, bits: u32) {
                         width: loaded,
                         ..
                     },
+                ..
             }),
         ) = (&nodes[index], &nodes[index + 1])
             && read.as_ref() == addr
@@ -202,6 +207,10 @@ fn walk(nodes: &mut Vec<Node>, sp: u16, bits: u32) {
             // The return type performs the same truncation as the private store.
             nodes[index + 1] = Node::Stmt(Stmt::Ret {
                 value: value.clone(),
+                at: match &nodes[index + 1] {
+                    Node::Stmt(stmt) => stmt.origin(),
+                    _ => None,
+                },
             });
             nodes.remove(index);
             continue;

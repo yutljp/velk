@@ -25,6 +25,7 @@ fn return_address_calls_preserve_registers_memory_and_flags() {
             after.pop();
             after.push(Stmt::Ret {
                 value: Expr::reg(observed, 64),
+                at: None,
             });
             let address = Expr::bin(
                 BinOp::And,
@@ -36,6 +37,7 @@ fn return_address_calls_preserve_registers_memory_and_flags() {
                     addr: address.clone(),
                     value: Expr::Const(0x1005),
                     width: 4,
+                    at: None,
                 },
                 Stmt::Assign {
                     dest: crate::ir::RegRef {
@@ -47,6 +49,7 @@ fn return_address_calls_preserve_registers_memory_and_flags() {
                         width: 4,
                         signed: false,
                     },
+                    at: None,
                 },
                 Stmt::Assign {
                     dest: crate::ir::RegRef {
@@ -54,9 +57,11 @@ fn return_address_calls_preserve_registers_memory_and_flags() {
                         width: 64,
                     },
                     value: Expr::bin(BinOp::And, Expr::reg(4, 64), Expr::Const(0xffff_ffff)),
+                    at: None,
                 },
                 Stmt::Ret {
                     value: Expr::reg(observed, 64),
+                    at: None,
                 },
             ];
             let before = FunctionIr::single_block(Isa::I386, before);
@@ -87,6 +92,7 @@ fn return_address_calls_preserve_registers_memory_and_flags() {
                 addr: address,
                 value: Expr::Const(0x1008),
                 width: 4,
+                at: None,
             },
             Stmt::Ret {
                 value: Expr::Select {
@@ -96,6 +102,7 @@ fn return_address_calls_preserve_registers_memory_and_flags() {
                     then: Box::new(Expr::Const(1)),
                     els: Box::new(Expr::Const(0)),
                 },
+                at: None,
             },
         ];
         let before = FunctionIr::single_block(Isa::I386, before);
@@ -114,6 +121,7 @@ fn word_result_splitting_and_joining_preserve_all_bits() {
     for isa in [Isa::I386, Isa::Arm32] {
         let before = [Stmt::Ret {
             value: Expr::reg(0, 64),
+            at: None,
         }];
         let mut after = vec![Stmt::Assign {
             dest: crate::ir::RegRef {
@@ -121,6 +129,7 @@ fn word_result_splitting_and_joining_preserve_all_bits() {
                 width: 64,
             },
             value: Expr::reg(0, 64),
+            at: None,
         }];
         after.extend(pairs32::split_result(isa));
         after.push(Stmt::Ret {
@@ -128,6 +137,7 @@ fn word_result_splitting_and_joining_preserve_all_bits() {
                 Expr::reg(0, 32),
                 Expr::reg(if isa == Isa::I386 { 2 } else { 1 }, 32),
             ),
+            at: None,
         });
         proofs.program(format!("word result/{isa:?}"), &before, &after);
     }
@@ -233,8 +243,13 @@ fn recovered_operands_and_partial_register_writes_are_equivalent() {
         for op in [BinOp::Add, BinOp::Sub] {
             let written = Expr::bin(op, x.clone(), Expr::reg(1, bits));
             let recovered = recover_operand(&x, &written, 0, bits).expect("invertible operand");
-            let before =
-                FunctionIr::single_block(Isa::X86_64, vec![Stmt::Ret { value: x.clone() }]);
+            let before = FunctionIr::single_block(
+                Isa::X86_64,
+                vec![Stmt::Ret {
+                    value: x.clone(),
+                    at: None,
+                }],
+            );
             let after = FunctionIr::single_block(
                 Isa::X86_64,
                 vec![
@@ -244,6 +259,7 @@ fn recovered_operands_and_partial_register_writes_are_equivalent() {
                             width: bits,
                         },
                         value: written,
+                        at: None,
                     },
                     Stmt::Ret {
                         value: Expr::bin(
@@ -251,6 +267,7 @@ fn recovered_operands_and_partial_register_writes_are_equivalent() {
                             recovered,
                             Expr::Const(crate::ir::semantics::mask(u32::from(bits))),
                         ),
+                        at: None,
                     },
                 ],
             );
@@ -294,7 +311,7 @@ fn recovered_operands_and_partial_register_writes_are_equivalent() {
                 placed,
             )
         };
-        let expected = FunctionIr::single_block(Isa::X86_64, vec![Stmt::Ret { value }]);
+        let expected = FunctionIr::single_block(Isa::X86_64, vec![Stmt::Ret { value, at: None }]);
         proofs.function(format!("partial write/{code:?}"), &expected, &actual);
     }
     proofs.check();

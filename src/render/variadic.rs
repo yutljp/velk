@@ -337,7 +337,10 @@ pub(super) fn prepare(ir: &mut FunctionIr, symbols: &Symbols) -> Option<Plan> {
                 stmt,
                 Stmt::Assign { .. }
                     | Stmt::Store { .. }
-                    | Stmt::Br { target: Some(_) }
+                    | Stmt::Br {
+                        target: Some(_),
+                        ..
+                    }
                     | Stmt::Brif { .. }
                     | Stmt::Ret { .. }
             )
@@ -372,6 +375,7 @@ pub(super) fn prepare(ir: &mut FunctionIr, symbols: &Symbols) -> Option<Plan> {
             match stmt {
                 Stmt::Br {
                     target: Some(target),
+                    ..
                 }
                 | Stmt::Brif { target, .. }
                     if !ir.blocks.iter().any(|block| block.start == *target) =>
@@ -384,6 +388,7 @@ pub(super) fn prepare(ir: &mut FunctionIr, symbols: &Symbols) -> Option<Plan> {
                             op: crate::ir::Operation::Results,
                             ..
                         },
+                    ..
                 } => return None,
                 _ => {}
             }
@@ -391,7 +396,13 @@ pub(super) fn prepare(ir: &mut FunctionIr, symbols: &Symbols) -> Option<Plan> {
         if index + 1 == ir.blocks.len()
             && !matches!(
                 block.stmts.last(),
-                Some(Stmt::Ret { .. } | Stmt::Br { target: Some(_) })
+                Some(
+                    Stmt::Ret { .. }
+                        | Stmt::Br {
+                            target: Some(_),
+                            ..
+                        }
+                )
             )
         {
             return None;
@@ -436,7 +447,7 @@ pub(super) fn prepare(ir: &mut FunctionIr, symbols: &Symbols) -> Option<Plan> {
             continue;
         }
         for (position, stmt) in contents.stmts.iter().enumerate() {
-            if let Stmt::Assign { dest, value } = stmt
+            if let Stmt::Assign { dest, value, .. } = stmt
                 && dest.width == 64
                 && slot(value, sp).is_some()
                 && ir
@@ -519,7 +530,7 @@ pub(super) fn prepare(ir: &mut FunctionIr, symbols: &Symbols) -> Option<Plan> {
     for block in candidate.blocks.iter().take(init_blocks) {
         for stmt in &block.stmts {
             match stmt {
-                Stmt::Assign { dest, value } => {
+                Stmt::Assign { dest, value, .. } => {
                     let Some(value) = initial.eval(value, &dummy, None, register) else {
                         return None;
                     };
@@ -530,7 +541,9 @@ pub(super) fn prepare(ir: &mut FunctionIr, symbols: &Symbols) -> Option<Plan> {
                     };
                     initial.regs.insert(dest.index, value);
                 }
-                Stmt::Store { addr, value, width } => {
+                Stmt::Store {
+                    addr, value, width, ..
+                } => {
                     let Some(addr) = initial.eval(addr, &dummy, None, register) else {
                         return None;
                     };
@@ -718,7 +731,10 @@ fn valid_initial(ir: &FunctionIr, initial: &State, list: &List) -> bool {
         return false;
     };
     if saves.stores.iter().any(|(block, position)| {
-        let Stmt::Store { addr, value, width } = &ir.blocks[*block].stmts[*position] else {
+        let Stmt::Store {
+            addr, value, width, ..
+        } = &ir.blocks[*block].stmts[*position]
+        else {
             return true;
         };
         let Some(offset) = slot(addr, list.sp) else {
@@ -831,7 +847,7 @@ fn trace(ir: &FunctionIr, list: &List, start: usize, offset: i64, register: u16)
                 return None;
             }
             match replacement {
-                Stmt::Assign { dest, value } if matches!(dest.width, 32 | 64) => {
+                Stmt::Assign { dest, value, .. } if matches!(dest.width, 32 | 64) => {
                     let value = if dest.width == 32 {
                         Expr::bin(BinOp::And, value, Expr::Const(0xffff_ffff))
                     } else {
@@ -840,7 +856,9 @@ fn trace(ir: &FunctionIr, list: &List, start: usize, offset: i64, register: u16)
                     state.regs.insert(dest.index, value);
                     state.registers.insert(dest.index);
                 }
-                Stmt::Store { addr, value, width } => {
+                Stmt::Store {
+                    addr, value, width, ..
+                } => {
                     let Some(offset) = slot(&addr, list.sp) else {
                         return None;
                     };
@@ -859,6 +877,7 @@ fn trace(ir: &FunctionIr, list: &List, start: usize, offset: i64, register: u16)
                 }
                 Stmt::Br {
                     target: Some(target),
+                    ..
                 } => {
                     next = ir.blocks.iter().position(|block| block.start == target);
                     break;
@@ -868,6 +887,7 @@ fn trace(ir: &FunctionIr, list: &List, start: usize, offset: i64, register: u16)
                     lhs: Expr::Const(lhs),
                     rhs: Expr::Const(rhs),
                     target,
+                    ..
                 } => {
                     let bits = match stmt {
                         Stmt::Brif { lhs, rhs, .. } => {
@@ -944,6 +964,7 @@ fn recover_access(ir: &mut FunctionIr, list: &List, start: usize, register: u16)
             if let [
                 Stmt::Br {
                     target: Some(target),
+                    ..
                 },
             ] = contents.stmts.as_slice()
                 && targets.contains(target)
@@ -1037,6 +1058,7 @@ fn recover_access(ir: &mut FunctionIr, list: &List, start: usize, register: u16)
     }
     ir.blocks[start].stmts.push(Stmt::Br {
         target: Some(target),
+        at: None,
     });
     let mut block_index = 0;
     ir.blocks.retain(|_| {
@@ -1072,6 +1094,7 @@ fn recover_apple(ir: &mut FunctionIr, list: &List, block: usize, register: u16) 
             Stmt::Assign {
                 dest: cursor,
                 value: Expr::Load { addr, width: 8, .. },
+                ..
             },
             Stmt::Assign {
                 dest,
@@ -1081,11 +1104,13 @@ fn recover_apple(ir: &mut FunctionIr, list: &List, block: usize, register: u16) 
                         width,
                         signed,
                     },
+                ..
             },
             Stmt::Store {
                 addr: updated,
                 value,
                 width: 8,
+                ..
             },
         ] = stmts
         else {
@@ -1119,6 +1144,7 @@ fn recover_apple(ir: &mut FunctionIr, list: &List, block: usize, register: u16) 
                 width: *width,
                 signed: *signed,
             },
+            at: ir.blocks[block].stmts[position + 1].origin(),
         };
         ir.blocks[block]
             .stmts
@@ -1158,7 +1184,10 @@ fn drop_unused_addresses(ir: &mut FunctionIr, sp: u16, saved: &[(i64, u8)]) {
     let mut slots = HashSet::new();
     for block in &mut omitted.blocks {
         block.stmts.retain(|stmt| {
-            let Stmt::Store { addr, value, width } = stmt else {
+            let Stmt::Store {
+                addr, value, width, ..
+            } = stmt
+            else {
                 return true;
             };
             let Some(offset) = slot(addr, sp) else {

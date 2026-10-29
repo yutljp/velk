@@ -250,6 +250,7 @@ impl<'a> Flow<'a> {
                 [
                     Stmt::Br {
                         target: Some(target),
+                        ..
                     },
                 ] => match self.index.get(target) {
                     Some(next) => block = *next,
@@ -268,15 +269,16 @@ impl<'a> Flow<'a> {
         while seen.insert(block) {
             let stmts = &self.ir.blocks[block].stmts;
             match stmts.last() {
-                Some(Stmt::Ret { .. } | Stmt::Trap) => return true,
+                Some(Stmt::Ret { .. } | Stmt::Trap { .. }) => return true,
                 Some(Stmt::Br {
                     target: Some(target),
+                    ..
                 }) => match self.index.get(target) {
                     Some(next) => block = *next,
                     None => return false,
                 },
                 Some(Stmt::Brif { .. } | Stmt::BrifFlags { .. } | Stmt::Switch { .. })
-                | Some(Stmt::BrIndirect { .. } | Stmt::Br { target: None }) => {
+                | Some(Stmt::BrIndirect { .. } | Stmt::Br { target: None, .. }) => {
                     return false;
                 }
                 _ if block + 1 < self.ir.blocks.len() => block += 1,
@@ -335,6 +337,7 @@ impl<'a> Flow<'a> {
         let target = match &site.stmt {
             Stmt::Br {
                 target: Some(target),
+                ..
             }
             | Stmt::Brif { target, .. } => *target,
             _ => return Cause::Unresolved,
@@ -510,6 +513,7 @@ pub(crate) fn causes(ir: &FunctionIr, nodes: &[Node]) -> Vec<(Cause, u64)> {
             let target = match &site.stmt {
                 Stmt::Br {
                     target: Some(target),
+                    ..
                 }
                 | Stmt::Brif { target, .. }
                 | Stmt::BrifFlags { target, .. } => *target,
@@ -788,10 +792,11 @@ fn sketch(nodes: &[Node], depth: usize, out: &mut String) {
             Node::Label(label) => writeln!(out, "{pad}L_{label:x}:"),
             Node::Stmt(Stmt::Br {
                 target: Some(target),
+                ..
             }) => writeln!(out, "{pad}goto L_{target:x}"),
             Node::Stmt(stmt) => writeln!(out, "{pad}{}", stmt_kind(stmt)),
-            Node::Break => writeln!(out, "{pad}break"),
-            Node::Continue => writeln!(out, "{pad}continue"),
+            Node::Break { .. } => writeln!(out, "{pad}break"),
+            Node::Continue { .. } => writeln!(out, "{pad}continue"),
             Node::If {
                 cond, then, els, ..
             } => {
@@ -841,7 +846,7 @@ fn stmt_kind(stmt: &Stmt) -> &'static str {
         Stmt::Store { .. } => "store",
         Stmt::Call { .. } => "call",
         Stmt::Ret { .. } => "return",
-        Stmt::Trap => "trap",
+        Stmt::Trap { .. } => "trap",
         Stmt::Brif { .. } => "if goto",
         Stmt::BrifFlags { .. } => "if flags goto",
         Stmt::Switch { .. } => "switch goto",

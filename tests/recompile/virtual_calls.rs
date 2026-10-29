@@ -125,6 +125,7 @@ fn saved_virtual_target_is_not_reloaded_after_a_store() {
             addr: arg,
             value: Expr::Const(0),
             width: 8,
+            at: None,
         },
     );
     let code = velk::render::render(&ir, &[], &symbols, &[]);
