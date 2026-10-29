@@ -29,6 +29,7 @@ fn fixtures() -> &'static Path {
 
 const CASES: &[(&str, &[&str])] = &[
     ("case_xor", &["xor sample text"]),
+    ("case_config", &["host=example.test;port=443"]),
     ("case_rolling", &["rolling sample text"]),
     ("case_rc4", &["rc4 sample text"]),
     ("case_base64", &["base64 sample text"]),
@@ -48,7 +49,7 @@ fn source_text_matches_native_execution() {
         .expect("running source reference");
     assert!(output.status.success(), "{output:?}");
     let mut expected = String::from(
-        "xor sample text\nrolling sample text\nrc4 sample text\nbase64 sample text\nfirst sample text\nsecond sample text\n12 11\n",
+        "xor sample text\nhost=example.test;port=443\nrolling sample text\nrc4 sample text\nbase64 sample text\nfirst sample text\nsecond sample text\n12 11\n",
     );
     for index in 0..32 {
         expected.push_str(&format!("message number {index:02}\n"));
@@ -304,13 +305,14 @@ fn recovered_call_comments_compile_and_execute() {
         .output()
         .unwrap();
     assert!(output.status.success(), "{output:?}");
-    let mut cases = CASES[..5].to_vec();
+    let mut cases = CASES[..6].to_vec();
     cases.push(("case_comment", &["comment */ text\\\nend"]));
     for (name, expected) in cases {
         let address = binary.find(name).unwrap().addr;
         let mut code = binary.decompile(address, None, None).unwrap();
         let globals: &[&str] = match name {
             "case_xor" => &["xor_data"],
+            "case_config" => &["config_data"],
             "case_rolling" => &["rolling_data"],
             "case_rc4" => &["rc4_data"],
             "case_base64" => &["base64_data"],
@@ -373,6 +375,27 @@ fn cli_javascript_mcp_and_disable_option() {
         "{cli}"
     );
     assert_eq!(strings_cli(&path, true)["decodedStrings"], json!([]));
+    let mut config_command = Command::new(env!("CARGO_BIN_EXE_velk"));
+    config_command
+        .arg("--strings")
+        .arg(&path)
+        .args(["--contains", "host="]);
+    let config_output = config_command.output().unwrap();
+    assert!(config_output.status.success(), "{config_output:?}");
+    let config_result: Value = serde_json::from_slice(&config_output.stdout).unwrap();
+    assert_eq!(
+        config_result["decodedConfigurations"][0]["text"],
+        "host=example.test;port=443"
+    );
+    assert_eq!(config_result["decodedConfigurations"][0]["key"], 93);
+    assert_eq!(
+        config_result["decodedConfigurations"][0]["fields"][0]["name"],
+        "host"
+    );
+    assert_eq!(
+        config_result["decodedConfigurations"][0]["fields"][1]["value"],
+        443
+    );
     let code = format!(
         "const b = velk.open({}); b.strings({{contains:'sample'}})",
         json!(path)

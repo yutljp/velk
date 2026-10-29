@@ -20,8 +20,15 @@ velk -D app.elf case_xor --no-string-decoding
 `strings` 配列にはファイル内の文字列を残します。`decodedStrings` 配列には復元した
 文字列、`addr`（出力バッファー）、`function`（呼び出し元）、`site`（復号の呼び出し、
 またはその後のバッファー使用位置）、`decoder`、`decoderName`、`stack`、`encoding`
-を含めます。スタックとヒープのアドレスは実行中のプロセスではなくエミュレーター内の値です。
-`--contains` は両方の配列に適用します。
+および既知の長さの次にある定数引数（`key`、存在する場合）を含めます。
+`decodedConfigurations` には 2 個以上の文字列または整数フィールドを持つ
+JSON または区切り付きのキーと値のバッファーを含め、復号関数と呼び出し位置の情報も付けます。
+JSON のオブジェクトパスはドットで連結し、配列には添字を付けます。スタックとヒープの
+アドレスは実行中のプロセスではなくエミュレーター内の値です。`--contains` は各配列の
+復元テキストで絞り込みます。
+
+共通関数 `velk::string_decoding::configurations` は復元した文字列から同じフィールドを
+抽出し、インジケーター抽出など他の解析でも使えます。
 
 ```js
 const b = velk.open("app.elf");

@@ -24,6 +24,8 @@ pub struct DecodedString {
     pub decoder: u64,
     /// Loaded name of the decoding function, when available.
     pub decoder_name: Option<String>,
+    /// Constant argument immediately after the buffer length, when available.
+    pub key: Option<u64>,
     /// Whether the buffer belongs to the emulated stack.
     pub stack: bool,
     /// Strictly validated encoding: UTF-8 or little-endian UTF-16.
@@ -32,6 +34,52 @@ pub struct DecodedString {
     pub text: String,
     #[serde(skip)]
     pub(crate) target: Option<u64>,
+}
+
+/// A scalar string or integer found in a decoded configuration buffer.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+#[serde(untagged)]
+pub enum ConfigurationValue {
+    /// A string value.
+    String(String),
+    /// An integer value.
+    Integer(i64),
+}
+
+/// A field extracted from a decoded configuration buffer.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ConfigurationField {
+    /// Field name or flattened JSON path.
+    pub name: String,
+    /// String or integer value.
+    pub value: ConfigurationValue,
+}
+
+/// A decoded buffer recognized as a configuration document.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DecodedConfiguration {
+    /// Address of the decoded buffer in the emulated address space.
+    #[serde(serialize_with = "crate::addr::serialize")]
+    pub addr: u64,
+    /// Function containing the decoder call.
+    #[serde(serialize_with = "crate::addr::serialize")]
+    pub function: u64,
+    /// Instruction at the decoder call or subsequent string use.
+    #[serde(serialize_with = "crate::addr::serialize")]
+    pub site: u64,
+    /// Function that produced the bytes.
+    #[serde(serialize_with = "crate::addr::serialize")]
+    pub decoder: u64,
+    /// Loaded decoder name, when available.
+    pub decoder_name: Option<String>,
+    /// Constant key argument, when available.
+    pub key: Option<u64>,
+    /// Original decoded text.
+    pub text: String,
+    /// Configuration fields in source order.
+    pub fields: Vec<ConfigurationField>,
 }
 
 pub(crate) fn recover(
@@ -67,6 +115,104 @@ pub(crate) fn decode_text(bytes: &[u8]) -> Option<(&'static str, String)> {
         units.push(unit);
     }
     None
+}
+
+/// Extracts flat string and integer fields from JSON or delimited key/value text.
+#[must_use]
+pub fn configurations(strings: &[DecodedString]) -> Vec<DecodedConfiguration> {
+    let mut configurations = Vec::new();
+    for string in strings {
+        let Some(fields) = configuration_fields(&string.text) else {
+            continue;
+        };
+        configurations.push(DecodedConfiguration {
+            addr: string.addr,
+            function: string.function,
+            site: string.site,
+            decoder: string.decoder,
+            decoder_name: string.decoder_name.clone(),
+            key: string.key,
+            text: string.text.clone(),
+            fields,
+        });
+    }
+    configurations
+}
+
+fn configuration_fields(text: &str) -> Option<Vec<ConfigurationField>> {
+    let mut fields = Vec::new();
+    if let Ok(value) = serde_json::from_str::<serde_json::Value>(text) {
+        collect_json_fields(&value, "", &mut fields);
+    }
+    if fields.len() < 2 {
+        fields.clear();
+        for part in text.split(['&', ';', '\n', ',']) {
+            let part = part.trim().trim_matches(['{', '}', '[', ']']);
+            let Some((name, value)) = part.split_once(['=', ':']) else {
+                continue;
+            };
+            let name = name.trim().trim_matches(['"', '\'']);
+            let value = value.trim().trim_matches(['"', '\'']);
+            if name.is_empty() || value.is_empty() {
+                continue;
+            }
+            let value = parse_configuration_value(value);
+            fields.push(ConfigurationField {
+                name: name.to_owned(),
+                value,
+            });
+        }
+    }
+    (fields.len() >= 2).then_some(fields)
+}
+
+fn collect_json_fields(
+    value: &serde_json::Value,
+    prefix: &str,
+    fields: &mut Vec<ConfigurationField>,
+) {
+    match value {
+        serde_json::Value::Object(object) => {
+            for (name, value) in object {
+                let path = if prefix.is_empty() {
+                    name.clone()
+                } else {
+                    format!("{prefix}.{name}")
+                };
+                collect_json_fields(value, &path, fields);
+            }
+        }
+        serde_json::Value::Array(values) => {
+            for (index, value) in values.iter().enumerate() {
+                let path = format!("{prefix}[{index}]");
+                collect_json_fields(value, &path, fields);
+            }
+        }
+        serde_json::Value::String(value) => fields.push(ConfigurationField {
+            name: prefix.to_owned(),
+            value: ConfigurationValue::String(value.clone()),
+        }),
+        serde_json::Value::Number(value) => {
+            if let Some(value) = value.as_i64() {
+                fields.push(ConfigurationField {
+                    name: prefix.to_owned(),
+                    value: ConfigurationValue::Integer(value),
+                });
+            }
+        }
+        _ => {}
+    }
+}
+
+fn parse_configuration_value(value: &str) -> ConfigurationValue {
+    let parsed = value
+        .strip_prefix("0x")
+        .and_then(|digits| i64::from_str_radix(digits, 16).ok())
+        .or_else(|| value.parse::<i64>().ok());
+    match parsed {
+        Some(value) => ConfigurationValue::Integer(value),
+        None => ConfigurationValue::String(value.to_owned()),
+    }
 }
 
 pub(crate) fn comment(string: &DecodedString) -> String {
@@ -248,5 +394,36 @@ mod tests {
         let repeated = "/* velk pseudo-C: f */ int f(void) { decode(p); decode(q); }";
         assert!(call_end(repeated, "decode", None).is_none());
         assert!(call_end(repeated, "decode", Some("p")).is_some());
+    }
+
+    #[test]
+    fn configurations_extract_json_and_delimited_scalar_fields() {
+        let decoded = |text: &str| DecodedString {
+            addr: 1,
+            function: 2,
+            site: 3,
+            decoder: 4,
+            decoder_name: Some("decode".to_owned()),
+            key: Some(93),
+            stack: false,
+            encoding: "utf8",
+            text: text.to_owned(),
+            target: None,
+        };
+        let results = configurations(&[
+            decoded(r#"{"host":"example.test","port":443}"#),
+            decoded("host=example.test;port=443;mode=fast"),
+            decoded("ordinary decoded string"),
+        ]);
+        assert_eq!(results.len(), 2);
+        assert_eq!(results[0].key, Some(93));
+        assert_eq!(results[0].fields.len(), 2);
+        assert_eq!(results[0].fields[0].name, "host");
+        assert_eq!(results[0].fields[1].value, ConfigurationValue::Integer(443));
+        assert_eq!(
+            results[1].fields[0].value,
+            ConfigurationValue::String("example.test".to_owned())
+        );
+        assert_eq!(results[1].fields[1].value, ConfigurationValue::Integer(443));
     }
 }

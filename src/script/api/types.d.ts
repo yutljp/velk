@@ -162,6 +162,7 @@ interface StringLiteral {
 interface StringsResult {
   strings: StringLiteral[];
   decodedStrings: DecodedString[];
+  decodedConfigurations: DecodedConfiguration[];
   failures: NavigationFailure[];
 }
 
@@ -181,9 +182,26 @@ interface DecodedString {
   site: Addr;
   decoder: Addr;
   decoderName: string | null;
+  key: number | null;
   stack: boolean;
   encoding: "utf8" | "utf16le";
   text: string;
+}
+
+interface DecodedConfiguration {
+  addr: Addr;
+  function: Addr;
+  site: Addr;
+  decoder: Addr;
+  decoderName: string | null;
+  key: number | null;
+  text: string;
+  fields: ConfigurationField[];
+}
+
+interface ConfigurationField {
+  name: string;
+  value: string | number;
 }
 
 interface ConstantMatch {

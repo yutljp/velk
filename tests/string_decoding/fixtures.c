@@ -27,6 +27,8 @@ __attribute__((noinline)) u32 base64_text(u8 *p, u32 n) {
 }
 
 u32 case_xor(void) { xor_key(xor_data, sizeof(xor_data), 93); return xor_data[0]; }
+u8 config_data[] = { 53, 50, 46, 41, 96, 56, 37, 60, 48, 45, 49, 56, 115, 41, 56, 46, 41, 102, 45, 50, 47, 41, 96, 105, 105, 110, 93 };
+u32 case_config(void) { xor_key(config_data, sizeof(config_data), 93); return config_data[0]; }
 u8 terminated_data[] = { 37, 50, 47, 125, 46, 60, 48, 45, 49, 56, 125, 41, 56, 37, 41, 0 };
 u32 case_known_terminator(void) {
     xor_key(terminated_data, sizeof(terminated_data) - 1, 93);
@@ -111,6 +113,7 @@ u32 changed_return(void) { corrupt_return(xor_data, sizeof(xor_data), 93); retur
 #include <stdio.h>
 int main(void) {
     case_xor(); puts((const char *)xor_data);
+    case_config(); puts((const char *)config_data);
     case_rolling(); puts((const char *)rolling_data);
     case_rc4(); puts((const char *)rc4_data);
     case_base64(); puts((const char *)base64_data);

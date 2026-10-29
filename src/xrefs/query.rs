@@ -116,12 +116,13 @@ pub fn run(binary: &mut Binary, query: Query, deadline: Option<Instant>) -> Resu
             } else {
                 Vec::new()
             };
+            let configurations = crate::string_decoding::configurations(&decoded);
             let index = match binary.navigation(deadline) {
                 Ok(index) => index,
                 Err(error) => return Err(error),
             };
             Ok(
-                json!({ "strings": index.strings().iter().filter(|s| contains.as_ref().is_none_or(|text| s.text.contains(text))).collect::<Vec<_>>(), "decodedStrings": decoded.iter().filter(|s| contains.as_ref().is_none_or(|text| s.text.contains(text))).collect::<Vec<_>>(), "failures": index.failures }),
+                json!({ "strings": index.strings().iter().filter(|s| contains.as_ref().is_none_or(|text| s.text.contains(text))).collect::<Vec<_>>(), "decodedStrings": decoded.iter().filter(|s| contains.as_ref().is_none_or(|text| s.text.contains(text))).collect::<Vec<_>>(), "decodedConfigurations": configurations.iter().filter(|config| contains.as_ref().is_none_or(|text| config.text.contains(text))).collect::<Vec<_>>(), "failures": index.failures }),
             )
         }
         Query::Iocs => binary

@@ -21,8 +21,15 @@ velk -D app.elf case_xor --no-string-decoding
 The strings result keeps file-backed literals in `strings`. `decodedStrings`
 contains recovered text, `addr` (output buffer), `function` (containing function),
 `site` (decoder call or subsequent buffer use), `decoder`, `decoderName`, `stack`
-and `encoding`. Stack and heap addresses refer to the emulator, not a runtime process.
-`--contains` filters both arrays.
+`key` (the constant argument immediately after a known length, when present),
+and `encoding`. `decodedConfigurations` contains decoded JSON or delimited
+key/value buffers with at least two string or integer fields, along with the same
+decoder and call-site provenance. JSON object paths are flattened with dots;
+arrays use indexed paths. Stack and heap addresses refer to the emulator, not a
+runtime process. `--contains` filters each result by its decoded text.
+
+The shared `velk::string_decoding::configurations` function extracts these fields
+from recovered strings for other analyses, including indicator extraction.
 
 ```js
 const b = velk.open("app.elf");

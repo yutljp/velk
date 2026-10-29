@@ -704,6 +704,7 @@ mod tests {
             site: 0x1000,
             decoder: 0x1000,
             decoder_name: None,
+            key: None,
             stack: false,
             encoding: "utf8",
             text: "decoded-name".to_owned(),

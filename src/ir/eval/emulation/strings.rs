@@ -44,6 +44,7 @@ pub(super) struct Candidate {
 struct Buffer {
     address: u64,
     size: u64,
+    key: Option<u64>,
     initial_text: Option<String>,
 }
 
@@ -286,7 +287,7 @@ impl Runner<'_> {
             let Some(address) = argument.filter(|value| self.is_buffer_pointer(*value)) else {
                 continue;
             };
-            for value in &arguments[index + 1..] {
+            for (length_index, value) in arguments[index + 1..].iter().enumerate() {
                 if let Some(size) = value.filter(|value| (1..=MAX_BUFFER_BYTES).contains(value)) {
                     let mut bytes = Vec::new();
                     for offset in 0..size.saturating_add(2).min(MAX_BUFFER_BYTES) {
@@ -309,6 +310,7 @@ impl Runner<'_> {
                     buffers.push(Buffer {
                         address,
                         size,
+                        key: arguments.get(index + length_index + 2).copied().flatten(),
                         initial_text,
                     });
                     break;
@@ -425,6 +427,7 @@ impl Runner<'_> {
                 .functions
                 .get(&decoder)
                 .and_then(|f| f.name.clone()),
+            key: buffer.key,
             stack: on_stack,
             encoding,
             text,
@@ -509,6 +512,7 @@ impl Runner<'_> {
                     &Buffer {
                         address: pointer,
                         size: MAX_BUFFER_BYTES,
+                        key: None,
                         initial_text: None,
                     },
                     function,
