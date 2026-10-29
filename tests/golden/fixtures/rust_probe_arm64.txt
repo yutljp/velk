@@ -689,7 +689,7 @@ int64_t rust_probe__main(void) {
     local_0 = v3;
     local_1 = 3;
     local_2 = (__typeof__(local_2)){ &local_1, (uintptr_t)i32__fmt_10002ff74 };
-    return stdio___print(0x100035d74, (uintptr_t)(&local_2.f_0));
+    return stdio___print(0x100035d74, &local_2.f_0);
 }
 -- signature
 int64_t ()

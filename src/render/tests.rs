@@ -1893,10 +1893,7 @@ fn a_function_whose_address_is_taken_is_declared_and_read_as_a_number() {
         },
     );
     let text = render(&ir, &[], &symbols, &[]);
-    assert!(
-        text.contains("int64_t square(uint64_t unused_arg_0);"),
-        "{text}"
-    );
+    assert!(text.contains("int64_t square();"), "{text}");
 }
 
 #[test]

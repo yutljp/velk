@@ -2,6 +2,7 @@
 
 use std::collections::BTreeSet;
 
+mod calls;
 mod structures;
 
 const START: &str = "/* velk prelude */\n";
@@ -70,7 +71,7 @@ impl Prelude {
             if line.starts_with(char::is_whitespace) {
                 continue;
             }
-            let Some(signature) = line.strip_suffix(" {") else {
+            let Some((signature, _)) = line.split_once(" {") else {
                 continue;
             };
             if !signature.ends_with(')') {
@@ -87,10 +88,22 @@ impl Prelude {
             if name.is_empty() || name == "__attribute__" {
                 continue;
             }
-            let ending = format!(" {name}();");
             let old = self.definitions.len();
-            self.definitions
-                .retain(|definition| !definition.ends_with(&ending));
+            self.definitions.retain(|definition| {
+                if !definition.ends_with(';')
+                    || definition.starts_with('#')
+                    || definition.contains('{')
+                {
+                    return true;
+                }
+                let Some((before, _)) = definition.split_once('(') else {
+                    return true;
+                };
+                let declared = before
+                    .rsplit(|c: char| !c.is_ascii_alphanumeric() && c != '_')
+                    .next();
+                declared != Some(name)
+            });
             if self.definitions.len() == old {
                 continue;
             }
@@ -104,10 +117,8 @@ impl Prelude {
                     records.insert(format!("{} {}; ", pair[0], pair[1]));
                 }
             }
-            self.definitions.insert(format!(
-                "{}{signature};",
-                records.into_iter().collect::<String>()
-            ));
+            let declaration = format!("{}{signature}", records.into_iter().collect::<String>());
+            self.definitions.insert(format!("{declaration};"));
         }
     }
 
@@ -217,6 +228,14 @@ impl Prelude {
     }
 }
 
+pub(crate) fn promoted_parameter(ty: &crate::ir::CType) -> bool {
+    if ty.is_pointer() {
+        return false;
+    }
+    ty.integer().is_some_and(|(bits, _)| bits < 32)
+        || matches!(ty, crate::ir::CType::Named(name) if ty.is_sse_float() && name.split_whitespace().any(|word| word == "float"))
+}
+
 fn definition_order(definition: &str) -> u8 {
     if definition.starts_with(PROJECT) || definition.starts_with("#include ") {
         0
@@ -266,12 +285,40 @@ pub fn combine(code: &str) -> String {
     let mut prelude = Prelude::default();
     let body = prelude.extract(&code);
     prelude.bind_definitions(&body);
+    let body = calls::conform(&body);
     format!("{}{body}", prelude.render())
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn recovered_declarations_use_the_definition_prototype() {
+        let code = format!(
+            "{}uint32_t invoke(void) {{\n    return read_value(7);\n}}\nstruct item *read_value(uint64_t address) {{\n    return (void *)address;\n}}\n",
+            section("uint64_t read_value();\n")
+        );
+        let combined = combine(&code);
+        assert!(
+            combined.contains("struct item *read_value(uint64_t address);"),
+            "{combined}"
+        );
+        assert!(combined.contains("struct item *read_value(uint64_t address) {"));
+        assert_eq!(combine(&combined), combined);
+    }
+
+    #[test]
+    fn fixed_declarations_keep_parameter_types() {
+        for signature in ["int known(int value)", "int main(int argc, char **argv)"] {
+            let code = format!(
+                "{}{signature} {{\n    return 0;\n}}\n",
+                section(&format!("{signature};\n"))
+            );
+            let combined = combine(&code);
+            assert!(combined.contains(&format!("{signature};")), "{combined}");
+        }
+    }
 
     #[test]
     fn record_tags_precede_function_pointer_parameters() {

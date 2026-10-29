@@ -49,13 +49,13 @@ int (kill)(int, int);
 int (mprotect)(void *, size_t, int);
 int (pthread_kill)(unsigned long, int);
 int (shutdown)(int, int);
-int32_t call_weak_fn(void);
-int32_t register_tm_clones(void);
+int32_t call_weak_fn();
+int32_t register_tm_clones();
 struct group; int (getgrgid_r)(unsigned int, struct group *, char *, size_t, struct group **);
 uint64_t __gmon_start__();
 uint64_t velk_entry_stack_pointer(void); /* target entry stack pointer */
 void (__cxa_finalize)(void *);
-void deregister_tm_clones(void);
+void deregister_tm_clones();
 /* end velk prelude */
 
 == 0x6e0 _init

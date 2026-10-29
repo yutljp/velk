@@ -77,9 +77,9 @@ uint64_t velk_exception_value(void);
 void (_Unwind_Resume)(void *);
 void (__cxa_end_catch)(void);
 void *(__cxa_begin_catch)(void *);
-void sub_201a5a(void);
-void sub_201b20(void);
-void sub_201bc0(void);
+void sub_201a5a();
+void sub_201b20();
+void sub_201bc0();
 /* end velk prelude */
 
 == 0x201a30 -
@@ -241,7 +241,7 @@ fn <unnamed> @ 0x201a80 (size 17)
 -- decompile
 /* velk pseudo-C: sub_201aa0 @ 0x201aa0 */
 int32_t sub_201aa0(int64_t a0) {
-    int32_t v1 = sub_201a80((uint64_t *)a0);
+    int32_t v1 = sub_201a80(a0);
     sub_201a5a();
     return v1;
 }
@@ -318,7 +318,7 @@ fn <unnamed> @ 0x201ac0 (size 10)
 /* ref: 0x202eb0 .data.rel.ro */
 int32_t sub_201ad0(struct S1 *a0, int64_t a1) {
     sub_201a30(a0, a1);
-    sub_201dc0((uint64_t *)((uint8_t *)a0 + 0x10));
+    sub_201dc0((uint8_t *)a0 + 0x10);
     a0->f_0 = (uintptr_t)(&Multiple_vtable_0);
     a0->f_10 = (uintptr_t)(&Multiple_vtable_16);
     return (uintptr_t)(&Multiple_vtable_16);
@@ -378,7 +378,7 @@ fn <unnamed> @ 0x201b08 (size 7)
 -- decompile
 /* velk pseudo-C: sub_201b10 @ 0x201b10 */
 int32_t sub_201b10(int64_t a0) {
-    return sub_201b08((uint32_t *)(int64_t)((uint64_t)a0 - 16));
+    return sub_201b08((int64_t)((uint64_t)a0 - 16));
 }
 -- signature
 int32_t (int64_t a0)
@@ -495,7 +495,7 @@ fn <unnamed> @ 0x201b40 (size 26)
 /* ref: 0x202ee0 .data.rel.ro */
 /* ref: 0x202f18 .data.rel.ro */
 int32_t sub_201b60(struct S4 *a0, int64_t a1) {
-    sub_201a30((struct S1 *)((uint8_t *)a0 + 0x10), a1);
+    sub_201a30((uint8_t *)a0 + 0x10, a1);
     a0->f_0 = (uintptr_t)(&Virtual_vtable_0);
     a0->f_10 = (uintptr_t)(&Virtual_vtable_16);
     a0->f_8 = 4;
@@ -539,7 +539,7 @@ fn <unnamed> @ 0x201b90 (size 15)
 -- decompile
 /* velk pseudo-C: sub_201ba0 @ 0x201ba0 */
 int32_t sub_201ba0(uint64_t *a0) {
-    return sub_201b90((uint64_t *)((uint8_t *)a0 + *(uint64_t *)(*a0 - 0x18)));
+    return sub_201b90((uint8_t *)a0 + *(uint64_t *)(*a0 - 0x18));
 }
 -- signature
 int32_t (uint64_t * a0)
@@ -692,13 +692,13 @@ int32_t sub_201bf0(int32_t a0) {
     uint64_t rsp = velk_entry_stack_pointer();
     _Alignas(16) uint8_t local_0[0x10]; /* [sp-18] */
 
-    sub_201a60((uint64_t *)(local_0), a0 & 0xffffffff);
-    int32_t v3 = sub_201be0((uint64_t *)(local_0));
-    sub_201a80((uint64_t *)(local_0));
+    sub_201a60(local_0, a0 & 0xffffffff);
+    int32_t v3 = sub_201be0(local_0);
+    sub_201a80(local_0);
     return v3;
 /* landing pad: an exception thrown by a call at 0x201c02-0x201c0a arrives here */
 L_201c1c:
-    sub_201a80((uint64_t *)rsp);
+    sub_201a80(rsp);
     _Unwind_Resume((void *)velk_exception_value());
 }
 -- signature
@@ -727,9 +727,9 @@ fn <unnamed> @ 0x201bf0 (size 63)
 int32_t sub_201c30(int32_t a0) {
     _Alignas(16) uint8_t local_0[0x18]; /* [sp-28] */
 
-    sub_201ad0((struct S1 *)(local_0), a0 & 0xffffffff);
-    int32_t v3 = sub_201be0((struct S1 *)(local_0));
-    return (uint32_t)((int32_t)(sub_201b08((struct S1 *)(local_0)))) + v3;
+    sub_201ad0(local_0, a0 & 0xffffffff);
+    int32_t v3 = sub_201be0(local_0);
+    return (uint32_t)((int32_t)(sub_201b08(local_0))) + v3;
 }
 -- signature
 int32_t (int32_t a0)
@@ -753,9 +753,9 @@ int32_t sub_201c60(int32_t a0) {
     _Alignas(16) uint8_t local_0[0x20]; /* [sp-28] */
 
     void *v2 = local_0;
-    sub_201b60((struct S1 *)(local_0), a0 & 0xffffffff);
+    sub_201b60(local_0, a0 & 0xffffffff);
     int64_t v5 = (uintptr_t)(local_0) + *(uint64_t *)(*(uint64_t *)(local_0) - 0x18);
-    return sub_201be0((uint64_t *)v5);
+    return sub_201be0(v5);
 }
 -- signature
 int32_t (int32_t a0)
@@ -998,16 +998,16 @@ int32_t sub_201d60(int32_t a0) {
     *(uint64_t *)(rsp) = v5;
     rsp = rsp - 0x10;
     struct S2 *v2 = (struct S2 *)rsp;
-    sub_201a60((void *)rsp, a0 & 0xffffffff);
-    int32_t v8 = imported_value(((uint32_t)(sub_201a78((void *)rsp))));
+    sub_201a60(rsp, a0 & 0xffffffff);
+    int32_t v8 = imported_value(((uint32_t)(sub_201a78(rsp))));
     int32_t v6 = v8;
-    sub_201a80((uint64_t *)rsp);
+    sub_201a80(rsp);
     return v6;
 L_201d8b:
     return v6;
 /* landing pad: an exception thrown by a call at 0x201d7a-0x201d81 arrives here */
 L_201d93:
-    sub_201a80((uint64_t *)rsp);
+    sub_201a80(rsp);
     __cxa_begin_catch((void *)velk_exception_value());
     __cxa_end_catch();
     return -2;

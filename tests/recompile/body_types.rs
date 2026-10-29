@@ -69,61 +69,53 @@ fn library_format_and_distant_integer_parameters_compile() {
     let format = binary.decompile(address, None, None).unwrap();
     assert!(format.contains("const char *"), "{format}");
     assert!(format.contains("vprintf("), "{format}");
-    let cli = Command::new(env!("CARGO_BIN_EXE_velk"))
-        .args(["-D", "--cache", "off"])
-        .arg(&executable)
-        .arg("forward_format")
-        .output()
-        .unwrap();
-    assert!(cli.status.success());
-    assert_eq!(String::from_utf8_lossy(&cli.stdout).trim(), format.trim());
-    let script = format!(
-        "JSON.stringify({{code:velk.open({executable:?}).getFunction('forward_format').decompile()}})"
-    );
-    let outcome = velk::script::Engine::new().unwrap().run(&script, None);
-    assert!(outcome.error.is_none(), "{:?}", outcome.error);
-    let result: serde_json::Value = serde_json::from_str(&outcome.output).unwrap();
-    assert_eq!(result["code"].as_str().unwrap().trim(), format.trim());
-    let child = Command::new(env!("CARGO_BIN_EXE_velk"))
-        .arg("--mcp")
-        .stdin(Stdio::piped())
-        .stdout(Stdio::piped())
-        .spawn()
-        .unwrap();
-    let response = common::mcp_request(
-        child,
-        &serde_json::json!({
-            "jsonrpc":"2.0", "id":1, "method":"tools/call",
-            "params":{"name":"velk_run_script", "arguments":{"code":script}}
-        }),
-    );
-    let response: serde_json::Value = serde_json::from_slice(&response.stdout).unwrap();
-    assert_eq!(response["result"]["isError"], false, "{response}");
-    let result: serde_json::Value =
-        serde_json::from_str(response["result"]["content"][0]["text"].as_str().unwrap()).unwrap();
-    assert_eq!(result["code"].as_str().unwrap().trim(), format.trim());
-    let original = binary.analysis(address, None).unwrap().ir.clone();
-    for recovered_parameters in [false, true] {
-        let mut ir = original.clone();
-        ir.params[1].ty = CType::pointer_to(CType::U64);
-        let mut symbols = velk::render::callee_names(binary.image());
-        if recovered_parameters {
-            for stmt in ir.blocks.iter().flat_map(|block| &block.stmts) {
-                if let Stmt::Call {
-                    target: Some(target),
-                    ..
-                } = stmt
-                {
-                    symbols.function_parameters.insert(
-                        *target,
-                        vec![
-                            CType::pointer_to(CType::Named("const char".into())),
-                            CType::pointer_to(CType::Void),
-                        ],
-                    );
-                }
-            }
+    for function in ["forward_format", "main"] {
+        let address = binary.find(function).unwrap().addr;
+        let expected = binary.decompile(address, None, None).unwrap();
+        if function == "main" {
+            assert!(expected.contains("pointer_bits(envp)"), "{expected}");
+            assert!(expected.contains("pointer_bits();"), "{expected}");
         }
+        let cli = Command::new(env!("CARGO_BIN_EXE_velk"))
+            .args(["-D", "--cache", "off"])
+            .arg(&executable)
+            .arg(function)
+            .output()
+            .unwrap();
+        assert!(cli.status.success());
+        assert_eq!(String::from_utf8_lossy(&cli.stdout).trim(), expected.trim());
+        let script = format!(
+            "JSON.stringify({{code:velk.open({executable:?}).getFunction({function:?}).decompile()}})"
+        );
+        let outcome = velk::script::Engine::new().unwrap().run(&script, None);
+        assert!(outcome.error.is_none(), "{:?}", outcome.error);
+        let result: serde_json::Value = serde_json::from_str(&outcome.output).unwrap();
+        assert_eq!(result["code"].as_str().unwrap().trim(), expected.trim());
+        let child = Command::new(env!("CARGO_BIN_EXE_velk"))
+            .arg("--mcp")
+            .stdin(Stdio::piped())
+            .stdout(Stdio::piped())
+            .spawn()
+            .unwrap();
+        let response = common::mcp_request(
+            child,
+            &serde_json::json!({
+                "jsonrpc":"2.0", "id":1, "method":"tools/call",
+                "params":{"name":"velk_run_script", "arguments":{"code":script}}
+            }),
+        );
+        let response: serde_json::Value = serde_json::from_slice(&response.stdout).unwrap();
+        assert_eq!(response["result"]["isError"], false, "{response}");
+        let result: serde_json::Value =
+            serde_json::from_str(response["result"]["content"][0]["text"].as_str().unwrap())
+                .unwrap();
+        assert_eq!(result["code"].as_str().unwrap().trim(), expected.trim());
+    }
+    let original = binary.analysis(address, None).unwrap().ir.clone();
+    {
+        let mut ir = original;
+        ir.params[1].ty = CType::pointer_to(CType::U64);
+        let symbols = velk::render::callee_names(binary.image());
         let format = velk::render::render(&ir, &[], &symbols, &[]);
         assert!(format.contains("(void *)"), "{format}");
         let source = scratch.join("format.c");
@@ -187,7 +179,10 @@ fn library_format_and_distant_integer_parameters_compile() {
         }
         let code = velk::render::combine(&definitions.join("\n")).replace("main(", "entry_body(");
         if matches!(arch, "x86_64" | "aarch64") {
-            assert!(code.contains("(uintptr_t)envp"), "{arch}: {code}");
+            assert!(
+                code.contains("pointer_bits((uintptr_t)(envp))"),
+                "{arch}: {code}"
+            );
         }
         syntax::run_printed(
             &code,
@@ -372,24 +367,38 @@ fn matching_pointer_arguments_type_the_local_and_convert_void_pointers_implicitl
         });
         let mut symbols = velk::render::Symbols::default();
         symbols.functions.insert(0x1000, "observe_pointer".into());
-        symbols.function_parameters.insert(0x1000, vec![pointer]);
+        ir.callee_signatures.insert(
+            0x1000,
+            DeclaredSignature {
+                params: vec![("value".into(), pointer)],
+                ret: CType::Void,
+                variadic: false,
+                abi: Err(velk::ir::AbiIssue::UnknownLayout),
+            },
+        );
         symbols.function_returns.insert(0x1000, CType::Void);
         symbols.functions.insert(0x2000, "observe_void".into());
-        symbols
-            .function_parameters
-            .insert(0x2000, vec![CType::pointer_to(CType::Void)]);
+        ir.callee_signatures.insert(
+            0x2000,
+            DeclaredSignature {
+                params: vec![("value".into(), CType::pointer_to(CType::Void))],
+                ret: CType::Void,
+                variadic: false,
+                abi: Err(velk::ir::AbiIssue::UnknownLayout),
+            },
+        );
         symbols.function_returns.insert(0x2000, CType::Void);
         let code = velk::render::render(&ir, &[], &symbols, &[]);
         assert!(code.contains("char *"), "{isa}: {code}");
         assert!(!code.contains("observe_pointer((char *)"), "{isa}: {code}");
-        assert!(!code.contains("(void *)"), "{isa}: {code}");
+        assert!(!code.contains("observe_void((void *)"), "{isa}: {code}");
         syntax::run_printed(
             &code,
             "static char *expected; static int calls; void observe_pointer(char *value) { if(value != expected) __builtin_trap(); ++calls; } void observe_void(void *value) { observe_pointer(value); }",
             "char bytes[256]; for(int i=0;i<256;++i) { expected=bytes+i; calls=0; forward_pointer(&expected); if(calls!=3) return 1; } return 0;",
         );
         symbols.functions.insert(0x2000, "observe_integer".into());
-        symbols.function_parameters.insert(0x2000, vec![CType::U64]);
+        ir.callee_signatures.get_mut(&0x2000).unwrap().params[0].1 = CType::U64;
         let code = velk::render::render(&ir, &[], &symbols, &[]);
         assert!(code.contains("(char *)"), "{isa}: {code}");
         syntax::run_printed(
@@ -502,7 +511,15 @@ fn pointer_register_arguments_preserve_whole_addresses_and_partial_bits() {
             ir.convention = convention;
             let mut symbols = velk::render::Symbols::default();
             symbols.functions.insert(0x1000, "observe_pointer".into());
-            symbols.function_parameters.insert(0x1000, vec![pointer]);
+            ir.callee_signatures.insert(
+                0x1000,
+                DeclaredSignature {
+                    params: vec![("value".into(), pointer)],
+                    ret: CType::Void,
+                    variadic: false,
+                    abi: Err(velk::ir::AbiIssue::UnknownLayout),
+                },
+            );
             symbols.function_returns.insert(0x1000, CType::Void);
             let code = velk::render::render(&ir, &[], &symbols, &[]);
             let narrow = width

@@ -43,10 +43,8 @@ pub struct Analysis {
     pub import_parameters: std::collections::BTreeMap<u64, Vec<CType>>,
     /// Parameters unused by a callee's body, merged from its direct callers.
     pub unused_parameters: std::collections::BTreeMap<u64, prototypes::Prototype>,
-    /// Scalar parameter types of analyzed callees, independent of return-register widths.
+    /// Recovered callee parameters that require a prototype under default promotions.
     pub callee_parameters: std::collections::BTreeMap<u64, Vec<CType>>,
-    /// Recovered structure names used by analyzed callees.
-    pub callee_structures: std::collections::BTreeMap<u64, std::collections::HashSet<String>>,
     /// Predicate and dispatcher removals proved during analysis.
     pub simplification: crate::passes::deobfuscation::Simplification,
     pub ir: FunctionIr,

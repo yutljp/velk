@@ -3,21 +3,19 @@ use std::collections::{HashMap, HashSet};
 
 pub(crate) struct FunctionSymbols<'symbols> {
     symbols: &'symbols Symbols,
+    pub(super) function_parameters: Cow<'symbols, HashMap<u64, Vec<crate::ir::CType>>>,
     pub(super) import_parameters: Cow<'symbols, HashMap<u64, Vec<crate::ir::CType>>>,
     pub(super) unused_parameters:
         Cow<'symbols, HashMap<u64, crate::analysis::prototypes::Prototype>>,
-    pub(super) function_parameters: Cow<'symbols, HashMap<u64, Vec<crate::ir::CType>>>,
-    pub(super) function_structures: Cow<'symbols, HashMap<u64, HashSet<String>>>,
 }
 
 impl<'symbols> FunctionSymbols<'symbols> {
     pub(crate) fn new(symbols: &'symbols Symbols) -> Self {
         Self {
             symbols,
+            function_parameters: Cow::Borrowed(&symbols.function_parameters),
             import_parameters: Cow::Borrowed(&symbols.import_parameters),
             unused_parameters: Cow::Borrowed(&symbols.unused_parameters),
-            function_parameters: Cow::Borrowed(&symbols.function_parameters),
-            function_structures: Cow::Borrowed(&symbols.function_structures),
         }
     }
 
@@ -41,11 +39,6 @@ impl<'symbols> FunctionSymbols<'symbols> {
                 .to_mut()
                 .extend(analysis.callee_parameters.clone());
         }
-        if !analysis.callee_structures.is_empty() {
-            view.function_structures
-                .to_mut()
-                .extend(analysis.callee_structures.clone());
-        }
         view
     }
 }
@@ -66,10 +59,8 @@ pub struct Symbols {
     pub import_thunks: HashSet<u64>,
     /// Parameters unused by the body, including positions omitted by some callers.
     pub unused_parameters: HashMap<u64, crate::analysis::prototypes::Prototype>,
-    /// Scalar parameter types recovered independently of callee return types.
+    /// Recovered parameters that require a prototype under default promotions.
     pub function_parameters: HashMap<u64, Vec<crate::ir::CType>>,
-    /// Recovered structure names used by analyzed callees.
-    pub function_structures: HashMap<u64, HashSet<String>>,
     /// Candidate export names attached to an indirect call expression.
     pub api_hash_comments: HashMap<(u64, crate::ir::Expr), String>,
     pub user_definitions: HashSet<String>,

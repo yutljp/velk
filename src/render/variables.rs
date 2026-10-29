@@ -39,13 +39,8 @@ pub(super) fn call_pointer_types(ir: &mut FunctionIr, symbols: &super::Symbols) 
             let parameters: Option<Vec<&CType>> = match ir.callee_signatures.get(target) {
                 Some(signature) => Some(signature.params.iter().map(|(_, ty)| ty).collect()),
                 None => symbols
-                    .function_parameters
-                    .get(target)
-                    .map(|types| types.iter().collect())
-                    .or_else(|| {
-                        let Some(name) = symbols.original_or_printed_function_name(*target) else {
-                            return None;
-                        };
+                    .original_or_printed_function_name(*target)
+                    .and_then(|name| {
                         let name = super::sanitize(name);
                         symbols
                             .library_prototypes

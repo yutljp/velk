@@ -73,10 +73,9 @@ pub(super) fn share_parameters(functions: &mut [Analysis], go: bool) {
                 ir.convention,
                 crate::ir::Convention::GoAmd64 | crate::ir::Convention::GoAbi0
             )
-            || ir
-                .params
-                .iter()
-                .any(|param| !param.ty.is_pointer() && param.ty.integer().is_none())
+            || ir.params.iter().any(|param| {
+                !param.ty.is_pointer() && param.ty.integer().is_none() && !param.ty.is_sse_float()
+            })
         {
             continue;
         }
@@ -103,23 +102,10 @@ pub(super) fn share_parameters(functions: &mut [Analysis], go: bool) {
                 types.push(param.ty.clone());
             }
         }
-        if types
-            .iter()
-            .any(|ty| !ty.is_pointer() && ty.integer().is_none())
-        {
+        if !types.iter().any(crate::render::promoted_parameter) {
             continue;
         }
-        parameters.insert(
-            ir.addr,
-            (
-                ir.convention,
-                types,
-                ir.structures
-                    .iter()
-                    .map(|structure| structure.name.clone())
-                    .collect::<std::collections::HashSet<_>>(),
-            ),
-        );
+        parameters.insert(ir.addr, (ir.convention, types));
     }
     for analysis in functions {
         for stmt in analysis.ir.blocks.iter().flat_map(|block| &block.stmts) {
@@ -130,14 +116,11 @@ pub(super) fn share_parameters(functions: &mut [Analysis], go: bool) {
                 convention,
                 ..
             } = stmt
-                && let Some((callee_convention, types, structures)) = parameters.get(target)
+                && let Some((callee_convention, types)) = parameters.get(target)
                 && convention == callee_convention
                 && args.len() == types.len()
             {
                 analysis.callee_parameters.insert(*target, types.clone());
-                analysis
-                    .callee_structures
-                    .insert(*target, structures.clone());
             }
         }
     }

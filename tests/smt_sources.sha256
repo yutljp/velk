@@ -137,6 +137,7 @@ b3edc629dd38eecbf0efeb78b0c444e93b264dab40a97bfe06e942fd9d5ecfe1  src/render/loc
 dac402149d5e5232a83d33659175898e752f2c11d9ee76dd4264d5950b713235  src/render/params.rs	fn drop_unused_parameter_outputs(
 cf0f81f16c4c42c1206cabe8f8a9617e61ad29e561eb3a2287ee0fe6d003c8f7  src/render/params.rs	fn fold_parameter_copies(
 ccdb48908c504c913982c58b95184f13cc89a5f75486f71ad1ab25c1d48217b9  src/render/params.rs	fn replace_loads(
+f57e9c6e176defa471449b98b0d4625c018dc602f5bf9b9a54055eb1a668cebd  src/render/prelude/calls.rs	pub(super) fn conform(code: &str) -> String
 f6d2b0045015ba544bb52366dfc3e54acfc9c37a44a54824e871799ca1145187  src/render/stack_bytes.rs	fn rewrite_address(
 75d50d9d755c1e79af7666814fb0d744acef9c069461d8abccb345a2c99170de  src/render/stmt.rs	fn function_address(value: &Expr, ctx: &Ctx<'_>) -> bool
 97b1142514dba360bf78897e31128c196f46b6da02ff3f956be93f31114a193b  src/render/stmt.rs	fn without_update_mask(
@@ -157,7 +158,7 @@ a58e17fe151c2c24805ff39201100f72575cb73b566c1631a46ae812f2dd078c  src/render/str
 77e3da73f79cb91b44f56539e6cbe46b7c6d4ec891e097fa57e3dc9e5f59c862  src/render/transfers.rs	fn fill(nodes:
 d6ed2930da3050a1e796935096262bd31b5c04a40d9547f751d04af0fe1c2c7f  src/render/transfers.rs	fn filled_range<'a>(
 c6a2555762303231a86118191e713279616e150d252086d24de10427275987aa  src/render/transfers.rs	fn string_copy(
-17ecc8bbb97427a15090908ed78d7b036eba77abb85932abb187d48a2011c01b  src/render/variables.rs	pub(super) fn call_pointer_types(
+cc59f941995ef902a11f5e86b3ac54fdc25212ecceef60912e706bd21e8fbc2f  src/render/variables.rs	pub(super) fn call_pointer_types(
 9d8b67c41b4ec6446e770a9f25b123b38eada5dc6bdc637503859d0470e6fc9e  src/render/virtual_calls.rs	pub(super) fn prepare(
 bfdcdef48102d3e0d46218a589765c63baaff91dc48d6173ab2f781ceec3508d  src/render/widths.rs	pub(crate) fn narrow_variables(
 26f830b012a0705cb34935621e00778faed704abfe59a539505868ae5cd93da0  src/sigs/bytes/registers.rs	pub(super) fn alternative(

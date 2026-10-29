@@ -56,7 +56,7 @@ fn word_buffer_arguments_compile_with_separately_printed_byte_parameters() {
         let convention = Convention::of(isa, velk::loader::Format::Elf, false);
         let argument = convention.arguments()[0];
         for known in 0..2 {
-            let mut symbols = velk::render::Symbols {
+            let symbols = velk::render::Symbols {
                 functions: [(0x1000, "read_byte".into())].into(),
                 ..Default::default()
             };
@@ -98,16 +98,21 @@ fn word_buffer_arguments_compile_with_separately_printed_byte_parameters() {
                         abi: Err(velk::ir::AbiIssue::UnknownLayout),
                     },
                 );
-            } else {
-                symbols
-                    .function_parameters
-                    .insert(0x1000, vec![CType::pointer_to(CType::int(1, false))]);
             }
             let caller = velk::render::render(&ir, &[], &symbols, &[]);
             let code = velk::render::combine(&format!(
                 "{caller}\nuint64_t read_byte(uint8_t *bytes) {{\n    return bytes[3];\n}}\n"
             ));
-            assert!(code.contains("read_byte((uint8_t *)words)"), "{code}");
+            let call = if known == 1 {
+                "read_byte((uint8_t *)words)"
+            } else {
+                assert!(
+                    code.contains("uint64_t read_byte(uint8_t *bytes);"),
+                    "{code}"
+                );
+                "read_byte((void *)(words))"
+            };
+            assert!(code.contains(call), "{code}");
             let source = scratch.join("argument.c");
             std::fs::write(&source, &code).expect("write pointer argument test");
             let compile = || {
@@ -127,15 +132,18 @@ fn word_buffer_arguments_compile_with_separately_printed_byte_parameters() {
                 "{}",
                 String::from_utf8_lossy(&accepted.stderr)
             );
-            std::fs::write(&source, code.replace("(uint8_t *)words", "words"))
-                .expect("write unconverted pointer argument");
-            let rejected = compile();
-            assert!(!rejected.status.success(), "{code}");
-            assert!(
-                String::from_utf8_lossy(&rejected.stderr).contains("incompatible pointer types"),
-                "{}",
-                String::from_utf8_lossy(&rejected.stderr)
-            );
+            if known == 1 {
+                std::fs::write(&source, code.replace("(uint8_t *)words", "words"))
+                    .expect("write unconverted pointer argument");
+                let rejected = compile();
+                assert!(!rejected.status.success(), "{code}");
+                assert!(
+                    String::from_utf8_lossy(&rejected.stderr)
+                        .contains("incompatible pointer types"),
+                    "{}",
+                    String::from_utf8_lossy(&rejected.stderr)
+                );
+            }
             syntax::run_printed(
                 &code,
                 "",
@@ -160,7 +168,6 @@ fn compatible_pointer_arguments_keep_their_types() {
             let pointer = CType::pointer_to(target);
             let symbols = velk::render::Symbols {
                 functions: [(0x1000, "read_value".into())].into(),
-                function_parameters: [(0x1000, vec![pointer.clone()])].into(),
                 ..Default::default()
             };
             let mut ir = synthetic_ir(
@@ -224,16 +231,12 @@ fn compatible_pointer_arguments_keep_their_types() {
 }
 
 #[test]
-fn integer_addresses_passed_to_recovered_structures_need_a_pointer_conversion() {
-    let scratch = scratch_dir("structure-argument");
-    for isa in [Isa::X86_64, Isa::AArch64] {
+fn integer_addresses_passed_to_recovered_structures_keep_their_values() {
+    for isa in [Isa::I386, Isa::X86_64, Isa::AArch64, Isa::Arm32] {
         let convention = Convention::of(isa, velk::loader::Format::Elf, false);
-        let argument = convention.arguments()[0];
-        let pointer = CType::pointer_to(CType::Named("struct record".into()));
+        let argument = convention.arguments().first().copied().unwrap_or(7);
         let symbols = velk::render::Symbols {
             functions: [(0x1000, "read_value".into())].into(),
-            function_parameters: [(0x1000, vec![pointer])].into(),
-            function_structures: [(0x1000, ["record".to_owned()].into())].into(),
             ..Default::default()
         };
         let mut ir = synthetic_ir(
@@ -265,43 +268,26 @@ fn integer_addresses_passed_to_recovered_structures_need_a_pointer_conversion() 
         ir.isa = isa;
         ir.convention = convention;
         let caller = velk::render::render(&ir, &[], &symbols, &[]);
-        assert!(caller.contains("read_value((void *)address)"), "{caller}");
+        assert!(caller.contains("uint64_t read_value();"), "{caller}");
+        assert!(caller.contains("read_value(address)"), "{caller}");
         let code = velk::render::combine(&format!(
             "struct record {{ uint8_t f_0; }};\n{caller}\nuint64_t read_value(struct record *value) {{\n    return value->f_0;\n}}\n"
         ));
-        let source = scratch.join("argument.c");
-        std::fs::write(&source, code.replace("(void *)address", "address"))
-            .expect("write unconverted structure argument");
-        let rejected = Command::new(compiler())
-            .args(["-std=gnu11", "-fsyntax-only", "-Werror=int-conversion"])
-            .arg(&source)
-            .output()
-            .expect("start C compiler");
-        assert!(!rejected.status.success(), "{code}");
-        assert!(
-            String::from_utf8_lossy(&rejected.stderr)
-                .contains("incompatible integer to pointer conversion"),
-            "{}",
-            String::from_utf8_lossy(&rejected.stderr)
-        );
         syntax::run_printed(
             &code,
             "",
             "struct record value = {42}; return read_address((uintptr_t)&value) != 42;",
         );
     }
-    std::fs::remove_dir_all(scratch).expect("remove structure argument test");
 }
 
 #[test]
-fn pointer_arguments_to_integer_parameters_need_an_address_conversion() {
-    let scratch = scratch_dir("integer-argument");
-    for isa in [Isa::X86_64, Isa::AArch64] {
+fn pointer_arguments_to_recovered_integer_parameters_keep_their_values() {
+    for isa in [Isa::I386, Isa::X86_64, Isa::AArch64, Isa::Arm32] {
         let convention = Convention::of(isa, velk::loader::Format::Elf, false);
-        let argument = convention.arguments()[0];
+        let argument = convention.arguments().first().copied().unwrap_or(7);
         let symbols = velk::render::Symbols {
             functions: [(0x1000, "read_address_value".into())].into(),
-            function_parameters: [(0x1000, vec![CType::U64])].into(),
             ..Default::default()
         };
         let mut ir = synthetic_ir(
@@ -333,35 +319,21 @@ fn pointer_arguments_to_integer_parameters_need_an_address_conversion() {
         ir.isa = isa;
         ir.convention = convention;
         let caller = velk::render::render(&ir, &[], &symbols, &[]);
-        assert!(
-            caller.contains("read_address_value((uintptr_t)buffer)"),
-            "{caller}"
-        );
+        assert!(caller.contains("read_address_value(buffer)"), "{caller}");
         let code = velk::render::combine(&format!(
             "{caller}\nuint64_t read_address_value(uint64_t value) {{\n    return value;\n}}\n"
         ));
-        let source = scratch.join("argument.c");
-        std::fs::write(&source, code.replace("(uintptr_t)buffer", "buffer"))
-            .expect("write unconverted integer argument");
-        let rejected = Command::new(compiler())
-            .args(["-std=gnu11", "-fsyntax-only", "-Werror=int-conversion"])
-            .arg(&source)
-            .output()
-            .expect("start C compiler");
-        assert!(!rejected.status.success(), "{code}");
         assert!(
-            String::from_utf8_lossy(&rejected.stderr)
-                .contains("incompatible pointer to integer conversion"),
-            "{}",
-            String::from_utf8_lossy(&rejected.stderr)
+            caller.contains("uint64_t read_address_value();"),
+            "{caller}"
         );
-        syntax::run_printed(
-            &code,
-            "",
-            "uint8_t value = 42; return pass_pointer(&value) != (uintptr_t)&value;",
-        );
+        let result = if matches!(isa, Isa::I386 | Isa::Arm32) {
+            "uint8_t value = 42; return (uint32_t)pass_pointer(&value) != (uint32_t)(uintptr_t)&value;"
+        } else {
+            "uint8_t value = 42; return pass_pointer(&value) != (uintptr_t)&value;"
+        };
+        syntax::run_printed(&code, "", result);
     }
-    std::fs::remove_dir_all(scratch).expect("remove integer argument test");
 }
 
 #[test]

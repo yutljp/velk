@@ -9,10 +9,9 @@ fn analysis(isa: Isa, address: u64, name: &str, statements: Vec<Stmt>) -> Analys
     ir.name = Some(name.into());
     Analysis {
         ir,
+        callee_parameters: Default::default(),
         unused_parameters: Default::default(),
         import_parameters: Default::default(),
-        callee_parameters: Default::default(),
-        callee_structures: Default::default(),
         references: Vec::new(),
         simplification: Default::default(),
     }
@@ -466,9 +465,6 @@ fn borrowed_call_parameters_print_like_owned_symbols() {
                 },
             ],
         );
-        root.callee_parameters
-            .insert(0x1000, vec![CType::pointer_to(CType::U32)]);
-        root.callee_structures.insert(0x1000, Default::default());
         root.import_parameters.insert(0x3000, vec![CType::I32]);
         root.unused_parameters.insert(
             0x4000,
@@ -489,7 +485,6 @@ fn borrowed_call_parameters_print_like_owned_symbols() {
             symbols.functions.insert(address, name.to_owned());
             symbols.function_returns.insert(address, CType::U64);
         }
-        symbols.function_parameters.insert(0x1000, vec![CType::I64]);
         let mut owned = symbols.clone();
         owned
             .import_parameters
@@ -497,18 +492,11 @@ fn borrowed_call_parameters_print_like_owned_symbols() {
         owned
             .unused_parameters
             .extend(root.unused_parameters.clone());
-        owned
-            .function_parameters
-            .extend(root.callee_parameters.clone());
-        owned
-            .function_structures
-            .extend(root.callee_structures.clone());
         let expected = render::render(&root.ir, &[], &owned, &[]);
         let borrowed = render::FunctionSymbols::new_with_analysis(&symbols, &root);
         let actual = render::render_with_symbols(&root.ir, &[], &borrowed, &[]).code;
         assert_eq!(actual, expected);
         assert!(std::ptr::eq(&borrowed.functions, &symbols.functions));
-        assert_eq!(symbols.function_parameters[&0x1000], vec![CType::I64]);
     }
 }
 
@@ -984,7 +972,7 @@ fn unknown_import_bool_arguments_keep_their_promoted_values() {
 }
 
 #[test]
-fn agreed_empty_arguments_keep_a_void_parameter_list() {
+fn agreed_empty_arguments_keep_an_unspecified_declaration() {
     for isa in [Isa::I386, Isa::X86_64, Isa::AArch64, Isa::Arm32] {
         let image = Image::from_code(isa, 0, Vec::new());
         let mut functions = vec![
@@ -1015,7 +1003,7 @@ fn agreed_empty_arguments_keep_a_void_parameter_list() {
             .unused_parameters
             .extend(functions[1].unused_parameters.clone());
         let code = render::render(&functions[1].ir, &[], &symbols, &[]);
-        assert!(code.contains("uint64_t empty(void);"), "{isa}: {code}");
+        assert!(code.contains("uint64_t empty();"), "{isa}: {code}");
         compile_and_run(
             &format!(
                 "#include <stdint.h>\n{code}\nuint64_t empty(void) {{ return 7; }}\nint main(void) {{ return caller(); }}"
@@ -1065,7 +1053,7 @@ fn an_empty_parameter_list_does_not_hide_an_observed_machine_result() {
                 .extend(functions[1].unused_parameters.clone());
             let code = render::render(&functions[1].ir, &[], &symbols, &[]);
             assert!(
-                code.contains(&format!("{return_type} empty(void);")),
+                code.contains(&format!("{return_type} empty();")),
                 "{isa}: {code}"
             );
             compile_and_run(
@@ -1075,5 +1063,57 @@ fn an_empty_parameter_list_does_not_hide_an_observed_machine_result() {
                 &format!("empty-result-{isa}"),
             );
         }
+    }
+}
+
+#[test]
+fn recovered_parameters_changed_by_promotions_keep_prototypes() {
+    for ty in [
+        CType::int(1, false),
+        CType::int(2, true),
+        CType::Named("_Bool".into()),
+        CType::Named("float".into()),
+    ] {
+        let mut callee = analysis(
+            Isa::X86_64,
+            0x1000,
+            "narrow",
+            vec![Stmt::Ret {
+                value: Expr::Const(37),
+            }],
+        );
+        callee.ir.params.push(Param {
+            index: 7,
+            name: "value".into(),
+            ty: ty.clone(),
+        });
+        let caller = analysis(
+            Isa::X86_64,
+            0x2000,
+            "caller",
+            vec![
+                call(Isa::X86_64, 0x1000, vec![Expr::Const(1)]),
+                Stmt::Ret {
+                    value: Expr::Const(37),
+                },
+            ],
+        );
+        let mut functions = vec![callee, caller];
+        crate::service::batch::share_parameters(&mut functions, false);
+        assert_eq!(
+            functions[1].callee_parameters.get(&0x1000),
+            Some(&vec![ty.clone()])
+        );
+        let symbols = Symbols {
+            functions: [(0x1000, "narrow".into())].into_iter().collect(),
+            function_parameters: functions[1].callee_parameters.clone().into_iter().collect(),
+            ..Default::default()
+        };
+        let code = render::render(&functions[1].ir, &[], &symbols, &[]);
+        assert!(
+            code.contains(&format!("narrow({ty} unused_arg_0);")),
+            "{code}"
+        );
+        assert!(!code.contains("narrow();"), "{code}");
     }
 }

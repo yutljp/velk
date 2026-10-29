@@ -600,7 +600,7 @@ void rust_demo__main(void) {
     local_0 = 42;
     local_1.f_0 = &local_0;
     local_1.f_8 = g_55aa8;
-    stdio___print(0x5091, (uintptr_t)(&local_1.f_0));
+    stdio___print(0x5091, &local_1.f_0);
 }
 -- signature
 void ()

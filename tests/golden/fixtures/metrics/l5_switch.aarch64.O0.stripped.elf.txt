@@ -22,22 +22,22 @@
 
 extern uint32_t g_2205e8; /* address: 0x2205e8 */
 
-void sub_210418(void);
-void sub_21042c(void);
-void sub_210444(void);
-void sub_210458(void);
-void sub_21046c(void);
-void sub_210480(void);
-void sub_210498(void);
-void sub_2104ac(void);
-void sub_2104c0(void);
-void sub_2104d4(void);
-void sub_2104ec(void);
-void sub_210500(void);
-void sub_210518(void);
-void sub_21052c(void);
-void sub_210544(void);
-void sub_210558(void);
+void sub_210418();
+void sub_21042c();
+void sub_210444();
+void sub_210458();
+void sub_21046c();
+void sub_210480();
+void sub_210498();
+void sub_2104ac();
+void sub_2104c0();
+void sub_2104d4();
+void sub_2104ec();
+void sub_210500();
+void sub_210518();
+void sub_21052c();
+void sub_210544();
+void sub_210558();
 /* end velk prelude */
 
 == 0x210334 -

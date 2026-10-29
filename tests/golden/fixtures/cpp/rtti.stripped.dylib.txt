@@ -118,7 +118,7 @@ fn <unnamed> @ 0x6a0 (size 20)
 -- decompile
 /* velk pseudo-C: sub_6b4 @ 0x6b4 */
 int32_t sub_6b4(int64_t a0, int64_t a1) {
-    sub_6a0((void *)a0, a1);
+    sub_6a0(a0, a1);
     return a0;
 }
 -- signature
@@ -245,7 +245,7 @@ fn <unnamed> @ 0x6d4 (size 32)
 -- decompile
 /* velk pseudo-C: sub_6f4 @ 0x6f4 */
 void sub_6f4(int64_t a0, int64_t a1) {
-    sub_6d4((uint64_t *)a0, a1);
+    sub_6d4(a0, a1);
 }
 -- signature
 void (int64_t a0, int64_t a1)
@@ -302,7 +302,7 @@ fn <unnamed> @ 0x704 (size 32)
 -- decompile
 /* velk pseudo-C: sub_724 @ 0x724 */
 int32_t sub_724(int64_t a0) {
-    sub_704((uint64_t *)a0);
+    sub_704(a0);
     return a0;
 }
 -- signature
@@ -415,7 +415,7 @@ fn <unnamed> @ 0x750 (size 8)
 /* velk pseudo-C: sub_758 @ 0x758 */
 struct S1 *sub_758(struct S1 *a0, int64_t a1) {
     sub_6a0(a0, a1);
-    sub_798((uint64_t *)((uint8_t *)a0 + 0x10));
+    sub_798((uint8_t *)a0 + 0x10);
     a0->f_0 = (uintptr_t)(&Multiple_vtable_0);
     a0->f_10 = (uintptr_t)(&Multiple_vtable_16);
     return a0;
@@ -459,7 +459,7 @@ fn <unnamed> @ 0x798 (size 16)
 -- decompile
 /* velk pseudo-C: sub_7a8 @ 0x7a8 */
 void sub_7a8(int64_t a0, int64_t a1) {
-    sub_758((void *)a0, a1);
+    sub_758(a0, a1);
 }
 -- signature
 void (int64_t a0, int64_t a1)
@@ -511,7 +511,7 @@ fn <unnamed> @ 0x7b8 (size 12)
 -- decompile
 /* velk pseudo-C: sub_7c4 @ 0x7c4 */
 int32_t sub_7c4(int64_t a0) {
-    return sub_7b8((uint32_t *)(int64_t)((uint64_t)a0 - 16));
+    return sub_7b8((int64_t)((uint64_t)a0 - 16));
 }
 -- signature
 int32_t (int64_t a0)
@@ -647,7 +647,7 @@ fn <unnamed> @ 0x7e8 (size 32)
 /* C++ object initialization or destruction: Virtual vtable at 0x40f8. */
 /* velk pseudo-C: sub_808 @ 0x808 */
 struct S4 *sub_808(struct S4 *a0, int64_t a1) {
-    sub_6a0((struct S1 *)((uint8_t *)a0 + 0x10), a1);
+    sub_6a0((uint8_t *)a0 + 0x10, a1);
     a0->f_0 = (uintptr_t)(&Virtual_vtable_0);
     a0->f_10 = (uintptr_t)(&Virtual_vtable_16);
     a0->f_8 = 4;
@@ -690,7 +690,7 @@ fn <unnamed> @ 0x84c (size 28)
 -- decompile
 /* velk pseudo-C: sub_868 @ 0x868 */
 int32_t sub_868(uint64_t *a0) {
-    return sub_84c((uint64_t *)((uint8_t *)a0 + *(uint64_t *)(*a0 - 0x18)));
+    return sub_84c((uint8_t *)a0 + *(uint64_t *)(*a0 - 0x18));
 }
 -- signature
 int32_t (uint64_t * a0)
@@ -849,13 +849,13 @@ int64_t single(int64_t a0) {
     _Alignas(16) uint8_t local_1[0x10]; /* [sp-30] */
 
     local_0 = v3;
-    sub_6f4((uintptr_t)(local_1), a0);
-    int64_t v2 = dispatch((uint64_t *)(local_1));
-    sub_724((uintptr_t)(local_1));
+    sub_6f4(local_1, a0);
+    int64_t v2 = dispatch(local_1);
+    sub_724(local_1);
     return v2;
 /* landing pad: an exception thrown by a call at 0x8d0-0x8d8 arrives here */
 L_8f8:
-    sub_724((uintptr_t)((uint8_t *)&local_0 + 0x8));
+    sub_724((uint8_t *)&local_0 + 0x8);
     _Unwind_Resume((void *)velk_exception_value());
 }
 -- signature
@@ -887,9 +887,9 @@ int32_t multiple(int64_t a0) {
     _Alignas(16) uint8_t local_1[0x18]; /* [sp-38] */
 
     local_0 = v2;
-    sub_7a8((uintptr_t)(local_1), a0);
-    int32_t v3 = dispatch((uint64_t *)(local_1));
-    return (uint32_t)((int32_t)(sub_7b8((uint32_t *)(local_1)))) + v3;
+    sub_7a8(local_1, a0);
+    int32_t v3 = dispatch(local_1);
+    return (uint32_t)((int32_t)(sub_7b8(local_1))) + v3;
 }
 -- signature
 int32_t (int64_t a0)
@@ -915,8 +915,8 @@ int32_t virtual_base(int64_t a0) {
     _Alignas(16) uint8_t local_1[0x20]; /* [sp-40] */
 
     local_0 = v2;
-    sub_808((struct S1 *)(local_1), a0);
-    return dispatch((uint64_t *)((uintptr_t)(local_1) + *(uint64_t *)(*(uint64_t *)(local_1) - 0x18)));
+    sub_808(local_1, a0);
+    return dispatch((uint8_t *)((uintptr_t)(local_1) + *(uint64_t *)(*(uint64_t *)(local_1) - 0x18)));
 }
 -- signature
 int32_t (int64_t a0)
@@ -1182,7 +1182,7 @@ int32_t catch_cleanup(int64_t a0) {
     *(uint64_t *)(sp + 0x28) = v6;
     v2 = a0;
     sub_6f4(sp, v2);
-    a0 = sub_6f8((uint32_t *)sp);
+    a0 = sub_6f8(sp);
     int32_t v1 = imported_value();
     sub_724(sp);
     return v1;

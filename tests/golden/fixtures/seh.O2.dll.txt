@@ -12,7 +12,7 @@
 /* velk prelude */
 #include <stdint.h>
 
-int32_t sub_180001110(void);
+int32_t sub_180001110();
 uint64_t choose_filter();
 uint64_t imported_value();
 uint64_t sub_1800010b0();
@@ -101,7 +101,7 @@ int32_t seh_finally(int32_t a0) {
     result = a0;
     int32_t v1 = imported_value();
     result = v1;
-    sub_1800010b0((uint32_t *)(local_1));
+    sub_1800010b0(local_1);
     return result;
 }
 -- signature
@@ -123,7 +123,7 @@ fn seh_finally @ 0x180001060 (size 40)
 -- decompile
 /* velk pseudo-C: seh_finally__finally_0 @ 0x180001090 */
 void seh_finally__finally_0(int64_t a0, int64_t a1) {
-    sub_1800010b0((uint32_t *)(int64_t)((uint64_t)a1 + 48));
+    sub_1800010b0((int64_t)((uint64_t)a1 + 48));
 }
 -- signature
 void (int64_t a0, int64_t a1)

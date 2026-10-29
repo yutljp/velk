@@ -418,15 +418,16 @@ pub(super) fn expression(call: &Stmt, ctx: &Ctx<'_>) -> String {
         while args.len() < types.params.len() {
             args.push("0".into());
         }
-        return format!("{callee}({})", args.join(", "));
+        if !types.params.iter().any(super::prelude::promoted_parameter) {
+            return format!("{callee}({})", args.join(", "));
+        }
     }
+    let recovered_parameters = target
+        .and_then(|address| ctx.symbols.unused_parameters.get(&address))
+        .filter(|types| types.params.iter().any(super::prelude::promoted_parameter));
+    let promoted_parameters =
+        target.and_then(|address| ctx.symbols.function_parameters.get(&address));
     let virtual_signature = ctx.virtual_tables.signature(call, ctx);
-    let recovered_parameters = virtual_signature.is_none()
-        && !own
-        && target.is_some_and(|address| {
-            !ctx.callee_signatures.contains_key(&address)
-                && ctx.symbols.function_parameters.contains_key(&address)
-        });
     let parameters: Option<Vec<&crate::ir::CType>> = if let Some(signature) = virtual_signature {
         Some(signature.params.iter().map(|(_, ty)| ty).collect())
     } else if own {
@@ -458,12 +459,13 @@ pub(super) fn expression(call: &Stmt, ctx: &Ctx<'_>) -> String {
         target
             .and_then(|target| ctx.callee_signatures.get(&target))
             .map(|signature| signature.params.iter().map(|(_, ty)| ty).collect())
-            .or_else(|| {
-                target
-                    .and_then(|target| ctx.symbols.function_parameters.get(&target))
-                    .map(|types| types.iter().collect())
-            })
+            .or_else(|| recovered_parameters.map(|types| types.params.iter().collect()))
+            .or_else(|| promoted_parameters.map(|types| types.iter().collect()))
     };
+    let recovered = virtual_signature.is_none()
+        && !own
+        && !target.is_some_and(|address| ctx.callee_signatures.contains_key(&address))
+        && (recovered_parameters.is_some() || promoted_parameters.is_some());
     // A callee whose declaration is known takes each argument as the type
     // it declares: an integer converts to its parameter's width as C
     // converts it, and a pointer is passed as one.
@@ -472,9 +474,14 @@ pub(super) fn expression(call: &Stmt, ctx: &Ctx<'_>) -> String {
         && parameters.len() == args.len()
     {
         for ((text, value), ty) in args.iter_mut().zip(values.iter().flatten()).zip(parameters) {
-            if recovered_parameters
+            if recovered && let Some(precision) = precision(Some(ty)) {
+                *text = super::expr::float_operand(value, precision, ctx, 0, false);
+                continue;
+            }
+            if recovered
                 && ty.integer().is_some()
-                && !super::expr::print_value_at(value, ctx, 64, false).is_pointer()
+                && (matches!(ty, crate::ir::CType::Named(name) if matches!(name.as_str(), "_Bool" | "bool"))
+                    || !super::expr::print_value_at(value, ctx, 64, false).is_pointer())
             {
                 continue;
             }
@@ -498,9 +505,6 @@ pub(super) fn expression(call: &Stmt, ctx: &Ctx<'_>) -> String {
                             .structures
                             .iter()
                             .any(|structure| structure.name == name)
-                            || target
-                                .and_then(|address| ctx.symbols.function_structures.get(&address))
-                                .is_some_and(|names| names.contains(name))
                     });
                     let printed = super::expr::print_value_at(value, ctx, 64, false);
                     let pointer = if recovered_structure && !printed.is_pointer() {

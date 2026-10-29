@@ -177,7 +177,7 @@ fn operator delete(void*, unsigned long) @ 0x201a5a (size 1)
 /* velk pseudo-C: Single::Single(int) @ 0x201a60 */
 /* ref: 0x202e58 .data.rel.ro */
 void Single__Single(struct Single *this, int value) {
-    Root__Root((struct Root *)this, value);
+    Root__Root(this, value);
     *(uint64_t *)(this) = (uintptr_t)(&Single_vtable_0);
 }
 -- signature
@@ -313,8 +313,8 @@ fn Other::~Other() @ 0x201ac0 (size 10)
 /* ref: 0x202e80 .data.rel.ro */
 /* ref: 0x202eb0 .data.rel.ro */
 void Multiple__Multiple(struct Multiple *this, int value) {
-    Root__Root((struct Root *)this, value);
-    Other__Other((struct Other *)((uint8_t *)this + 0x10));
+    Root__Root(this, value);
+    Other__Other((uint8_t *)this + 0x10);
     *(uint64_t *)(this) = (uintptr_t)(&Multiple_vtable_0);
     *(uint64_t *)((uint8_t *)this + 0x10) = (uintptr_t)(&Multiple_vtable_16);
 }
@@ -375,7 +375,7 @@ fn Multiple::other() const @ 0x201b08 (size 7)
 -- decompile
 /* velk pseudo-C: {virtual override thunk({offset(-16)}, Multiple::other() const)} @ 0x201b10 */
 void _virtual_override_thunk__offset__16____Multiple__other___const__(int64_t a0) {
-    Multiple__other((struct Multiple *)(int64_t)((uint64_t)a0 - 16));
+    Multiple__other((int64_t)((uint64_t)a0 - 16));
 }
 -- signature
 void (int64_t a0)
@@ -490,7 +490,7 @@ fn Virtual::Virtual(int) @ 0x201b40 (size 26)
 /* ref: 0x202ee0 .data.rel.ro */
 /* ref: 0x202f18 .data.rel.ro */
 void Virtual__Virtual_201b60(struct Virtual *this, int value) {
-    Root__Root((struct Root *)((uint8_t *)this + 0x10), value);
+    Root__Root((uint8_t *)this + 0x10, value);
     *(uint64_t *)(this) = (uintptr_t)(&Virtual_vtable_0);
     *(uint64_t *)((uint8_t *)this + 0x10) = (uintptr_t)(&Virtual_vtable_16);
     this->extra = 4;
@@ -535,7 +535,7 @@ fn Virtual::value() const @ 0x201b90 (size 15)
 -- decompile
 /* velk pseudo-C: {virtual override thunk({virtual offset(0, -24)}, Virtual::value() const)} @ 0x201ba0 */
 void _virtual_override_thunk__virtual_offset_0___24____Virtual__value___const__(uint64_t *a0) {
-    Virtual__value((struct Virtual *)((uint8_t *)a0 + *(uint64_t *)(*a0 - 0x18)));
+    Virtual__value((uint8_t *)a0 + *(uint64_t *)(*a0 - 0x18));
 }
 -- signature
 void (uint64_t * a0)
@@ -686,13 +686,13 @@ int single(int value) {
     uint64_t rsp = velk_entry_stack_pointer();
     _Alignas(16) uint8_t local_0[0x10]; /* [sp-18] */
 
-    Single__Single((struct Single *)(local_0), value & 0xffffffff);
-    int32_t v3 = dispatch((struct Root *)(local_0));
-    Single___Single_201a80((struct Single *)(local_0));
+    Single__Single(local_0, value & 0xffffffff);
+    int32_t v3 = dispatch(local_0);
+    Single___Single_201a80(local_0);
     return v3;
 /* landing pad: an exception thrown by a call at 0x201c02-0x201c0a arrives here */
 L_201c1c:
-    Single___Single_201a80((struct Single *)rsp);
+    Single___Single_201a80(rsp);
     _Unwind_Resume((void *)velk_exception_value());
 }
 -- signature
@@ -721,9 +721,9 @@ fn single @ 0x201bf0 (size 63)
 int multiple(int value) {
     _Alignas(16) uint8_t local_0[0x18]; /* [sp-28] */
 
-    Multiple__Multiple((struct Multiple *)(local_0), value & 0xffffffff);
-    int32_t v3 = dispatch((struct Root *)(local_0));
-    return (uint32_t)((int32_t)(Multiple__other((struct Multiple *)(local_0)))) + v3;
+    Multiple__Multiple(local_0, value & 0xffffffff);
+    int32_t v3 = dispatch(local_0);
+    return (uint32_t)((int32_t)(Multiple__other(local_0))) + v3;
 }
 -- signature
 int (int value)
@@ -747,9 +747,9 @@ int virtual_base(int value) {
     _Alignas(16) uint8_t local_0[0x20]; /* [sp-28] */
 
     void *v2 = local_0;
-    Virtual__Virtual_201b60((struct Virtual *)(local_0), value & 0xffffffff);
+    Virtual__Virtual_201b60(local_0, value & 0xffffffff);
     int64_t v5 = (uintptr_t)(local_0) + *(uint64_t *)(*(uint64_t *)(local_0) - 0x18);
-    return dispatch((struct Root *)v5);
+    return dispatch(v5);
 }
 -- signature
 int (int value)
@@ -992,16 +992,16 @@ int catch_cleanup(int value) {
     *(uint64_t *)(rsp) = v5;
     rsp = rsp - 0x10;
     uint64_t *v2 = (uint64_t *)rsp;
-    Single__Single((struct Single *)rsp, value & 0xffffffff);
-    int32_t v8 = imported_value(((uint32_t)(Single__value((struct Single *)rsp))));
+    Single__Single(rsp, value & 0xffffffff);
+    int32_t v8 = imported_value(((uint32_t)(Single__value(rsp))));
     int32_t v6 = v8;
-    Single___Single_201a80((struct Single *)rsp);
+    Single___Single_201a80(rsp);
     return v6;
 L_201d8b:
     return v6;
 /* landing pad: an exception thrown by a call at 0x201d7a-0x201d81 arrives here */
 L_201d93:
-    Single___Single_201a80((struct Single *)rsp);
+    Single___Single_201a80(rsp);
     __cxa_begin_catch((void *)velk_exception_value());
     __cxa_end_catch();
     return -2;

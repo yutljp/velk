@@ -1318,14 +1318,22 @@ fn render_with(
                 } else {
                     &types.ret
                 };
-                let prototype = declaration(
-                    ret,
-                    &format!(
-                        "{taken}({})",
-                        unused_signature(&types.params, &mut Default::default())
-                    ),
-                );
+                let parameters = if types.params.iter().any(super::prelude::promoted_parameter) {
+                    unused_signature(&types.params, &mut Default::default())
+                } else {
+                    String::new()
+                };
+                let prototype = declaration(ret, &format!("{taken}({parameters})"));
                 return format!("{prototype};\n");
+            }
+            if let Some(types) = symbols.function_parameters.iter().find_map(|(address, types)| {
+                let name = symbols.functions.get(address).map_or_else(
+                    || format!("sub_{address:x}"), |name| sanitize(name));
+                (name == *taken).then_some(types)
+            }) {
+                let ret = call_returns.get(taken).copied().unwrap_or(&CType::U64);
+                let params = unused_signature(types, &mut Default::default());
+                return format!("{};\n", declaration(ret, &format!("{taken}({params})")));
             }
             if body.contains(&format!("{taken}(")) {
                 let ty = call_returns.get(taken).copied().unwrap_or(&CType::U64);

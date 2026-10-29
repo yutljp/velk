@@ -30,7 +30,7 @@ uint64_t Rect__Rect();
 uint64_t Rect__scaled();
 uint64_t Square__Square();
 uint64_t Square__area();
-void Square___Square(void);
+void Square___Square();
 /* end velk prelude */
 
 == 0x2013a0 __cxa_pure_virtual

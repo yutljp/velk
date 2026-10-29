@@ -22,22 +22,22 @@
 
 extern uint32_t g_20250c; /* address: 0x20250c */
 
-void sub_2013e0(void);
-void sub_2013f0(void);
-void sub_201400(void);
-void sub_201410(void);
-void sub_201420(void);
-void sub_201430(void);
-void sub_201440(void);
-void sub_201450(void);
-void sub_201460(void);
-void sub_201470(void);
-void sub_201480(void);
-void sub_201490(void);
-void sub_2014a0(void);
-void sub_2014b0(void);
-void sub_2014c0(void);
-void sub_2014d0(void);
+void sub_2013e0();
+void sub_2013f0();
+void sub_201400();
+void sub_201410();
+void sub_201420();
+void sub_201430();
+void sub_201440();
+void sub_201450();
+void sub_201460();
+void sub_201470();
+void sub_201480();
+void sub_201490();
+void sub_2014a0();
+void sub_2014b0();
+void sub_2014c0();
+void sub_2014d0();
 /* end velk prelude */
 
 == 0x201330 -

@@ -304,7 +304,10 @@ pub(super) fn run_printed(code: &str, support: &str, assertions: &str) {
     let source = scratch.join("values.c");
     std::fs::write(
         &source,
-        format!("{HEADER}{code}\n{support}\nint main(void) {{ {assertions} }}"),
+        format!(
+            "{HEADER}{}\n{support}\nint main(void) {{ {assertions} }}",
+            velk::render::combine(code)
+        ),
     )
     .expect("the generated test files must be writable");
     for level in LEVELS {
@@ -1883,4 +1886,30 @@ fn unnamed_callees_keep_recorded_floating_returns() {
         "double sub_1000(void) { return 1.25; }",
         "return floating_result() != 1.25;",
     );
+}
+
+#[test]
+fn combined_definitions_convert_pointer_integer_arguments_and_keep_promoted_parameters() {
+    let declarations = "/* velk prelude */\n#include <stdint.h>\nuint64_t bits();\nuint64_t memory();\nuint64_t narrow();\n/* end velk prelude */\n";
+    let caller = "uint64_t caller(void *p, uintptr_t x) {\n uint64_t c = 257, s = 65537;\n return bits(p) + memory(x) + narrow(c, s, 1.5f, p);\n}\n";
+    let definitions = "uint64_t bits(uint64_t x) {\n return x != 0;\n}\nuint64_t memory(void *p) {\n return p != 0;\n}\nuint64_t narrow(unsigned char c, unsigned short s, float f, _Bool b) {\n return c + s + (uint64_t)f + b;\n}\n";
+    for body in [
+        format!("{caller}{definitions}"),
+        format!("{definitions}{caller}"),
+    ] {
+        let code = velk::render::combine(&format!("{declarations}{body}"));
+        assert!(
+            code.contains("uint64_t narrow(unsigned char c, unsigned short s, float f, _Bool b);"),
+            "{code}"
+        );
+        assert!(
+            code.contains("bits((uintptr_t)(p)) + memory((void *)(x)) + narrow(c, s, 1.5f, p)"),
+            "{code}"
+        );
+        run_printed(
+            &code,
+            "",
+            "int x = 0; if (caller(&x, (uintptr_t)&x) != 6) return 1;",
+        );
+    }
 }

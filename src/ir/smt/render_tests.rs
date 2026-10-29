@@ -476,3 +476,42 @@ fn compiled_assignments_and_return_conversions_are_equivalent() {
     }
     prove_rendered(source, originals);
 }
+
+#[test]
+fn recovered_argument_conversions_preserve_native_pointer_bits() {
+    if !Proofs::available() {
+        return;
+    }
+    let mut proofs = Proofs::default();
+    for pointer_bits in [32, 64] {
+        let pointer = low("r0", pointer_bits);
+        for integer_bits in [8, 16, 32, 64] {
+            let through_integer = low(&pointer, integer_bits);
+            let machine_argument = low("r0", pointer_bits.min(integer_bits));
+            proofs.predicate(
+                format!("pointer argument/{pointer_bits}/{integer_bits}"),
+                &through_integer,
+                &machine_argument,
+            );
+            proofs.predicate(
+                format!("signed pointer argument/{pointer_bits}/{integer_bits}"),
+                &super::signed(&through_integer, integer_bits),
+                &super::signed(&machine_argument, integer_bits),
+            );
+        }
+        let round_trip = low(&pointer, pointer_bits);
+        proofs.predicate(
+            format!("pointer round trip/{pointer_bits}"),
+            &round_trip,
+            &pointer,
+        );
+        let boolean = format!("(not (= {pointer} {}))", constant(0));
+        let narrowed_boolean = format!("(not (= {} {}))", low(&pointer, 8), constant(0));
+        proofs.counterexample(
+            format!("boolean is not a byte/{pointer_bits}"),
+            &boolean,
+            &narrowed_boolean,
+        );
+    }
+    proofs.check();
+}

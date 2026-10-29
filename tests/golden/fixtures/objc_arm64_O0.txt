@@ -142,7 +142,7 @@ fn _send_value @ 0x100000960 (size 68)
 /* ref: 0x100004020 __const */
 /* struct: a0 +0x10:uint64_t */
 int64_t use_block(int64_t a0) {
-    return __use_block_block_invoke((uintptr_t)(&__block_literal_global), a0); /* via pointer at 0x100004030 */
+    return __use_block_block_invoke((&__block_literal_global), a0); /* via pointer at 0x100004030 */
 }
 -- signature
 int64_t (int64_t a0)

@@ -252,8 +252,8 @@ fn <unnamed> @ 0x210438 (size 20)
 int32_t sub_21044c(int32_t a0) {
     int64_t v1 = g_2315c8;
     g_2315c8 = (int64_t)((uint64_t)v1 + 16);
-    sub_2103f8((void *)(int64_t)(0x2305c8 + (uint64_t)v1), a0 & 0xffffffff);
-    int32_t v4 = sub_21040c((void *)(int64_t)(0x2305c8 + (uint64_t)v1)); /* via vtable slot 2 */
+    sub_2103f8((int64_t)(0x2305c8 + (uint64_t)v1), a0 & 0xffffffff);
+    int32_t v4 = sub_21040c((int64_t)(0x2305c8 + (uint64_t)v1)); /* via vtable slot 2 */
     sub_210530((int64_t)(0x2305c8 + (uint64_t)v1)); /* via vtable slot 1 */
     return v4;
 }
@@ -282,8 +282,8 @@ fn <unnamed> @ 0x21044c (size 108)
 int32_t sub_2104b8(int32_t a0, int32_t a1, int32_t a2) {
     int64_t v1 = g_2315c8;
     g_2315c8 = (int64_t)((uint64_t)v1 + 16);
-    sub_210418((void *)(int64_t)(0x2305c8 + (uint64_t)v1), a0 & 0xffffffff, a1 & 0xffffffff);
-    return sub_210438((void *)(int64_t)(0x2305c8 + (uint64_t)v1), a2 & 0xffffffff); /* via vtable slot 3 */
+    sub_210418((int64_t)(0x2305c8 + (uint64_t)v1), a0 & 0xffffffff, a1 & 0xffffffff);
+    return sub_210438((int64_t)(0x2305c8 + (uint64_t)v1), a2 & 0xffffffff); /* via vtable slot 3 */
 }
 -- signature
 int32_t (int32_t a0, int32_t a1, int32_t a2)

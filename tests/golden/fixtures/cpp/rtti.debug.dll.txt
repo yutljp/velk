@@ -149,7 +149,7 @@ fn ??1Root@@UEAA@XZ @ 0x180001030 (size 16)
 /* velk pseudo-C: ??0Single@@QEAA@H@Z @ 0x180001040 */
 /* ref: 0x180002028 .rdata */
 void __0Single__QEAA_H_Z(struct Single *this, int value) {
-    __0Root__QEAA_H_Z((struct Root *)this, value);
+    __0Root__QEAA_H_Z(this, value);
     *(uint64_t *)(this) = (uintptr_t)(&___7Single__6B_);
 }
 -- signature
@@ -248,8 +248,8 @@ fn ??1Other@@UEAA@XZ @ 0x1800010a0 (size 16)
 /* ref: 0x180002048 .rdata */
 /* ref: 0x180002068 .rdata */
 void __0Multiple__QEAA_H_Z(struct Multiple *this, int value) {
-    __0Root__QEAA_H_Z((struct Root *)this, value);
-    __0Other__QEAA_XZ((struct Other *)((uint8_t *)this + 0x10));
+    __0Root__QEAA_H_Z(this, value);
+    __0Other__QEAA_XZ((uint8_t *)this + 0x10);
     *(uint64_t *)(this) = (uintptr_t)(&___7Multiple__6BRoot___);
     *(uint64_t *)((uint8_t *)this + 0x10) = (uintptr_t)(&___7Multiple__6BOther___);
 }
@@ -331,7 +331,7 @@ fn ??1Multiple@@UEAA@XZ @ 0x180001110 (size 16)
 void __0Virtual__QEAA_H_Z(struct Virtual *this, int value, int is_most_derived) {
     if (is_most_derived != 0) {
         *(uint64_t *)(this) = (uintptr_t)(&___8Virtual__7B_);
-        __0Root__QEAA_H_Z((struct Root *)((uint8_t *)this + 0x18), value);
+        __0Root__QEAA_H_Z((uint8_t *)this + 0x18, value);
     }
     *(uint64_t *)((uint8_t *)this + *(int32_t *)(*(uint64_t *)(this) + 0x4)) = (uintptr_t)(&___7Virtual__6B_);
     int64_t v2 = *(int32_t *)(*(uint64_t *)(this) + 0x4);
@@ -444,9 +444,9 @@ int single(int value) {
     _Alignas(16) struct __attribute__((packed)) { uint8_t gap_0[0x10]; int64_t f_10; } local_0; /* [sp-28] */
 
     local_0.f_10 = -2;
-    __0Single__QEAA_H_Z((struct Single *)(local_0.gap_0), value & 0xffffffff);
-    int32_t v3 = dispatch((struct Root *)(local_0.gap_0));
-    __1Single__UEAA_XZ((struct Single *)(local_0.gap_0));
+    __0Single__QEAA_H_Z(local_0.gap_0, value & 0xffffffff);
+    int32_t v3 = dispatch(local_0.gap_0);
+    __1Single__UEAA_XZ(local_0.gap_0);
     return v3;
 }
 -- signature
@@ -469,7 +469,7 @@ fn single @ 0x1800011b0 (size 63)
 -- decompile
 /* velk pseudo-C: ?dtor$2@?0?single@4HA @ 0x1800011f0 */
 void _dtor_2__0_single_4HA(int64_t a0, int64_t a1) {
-    __1Single__UEAA_XZ((struct Single *)(int64_t)((uint64_t)a1 + 32));
+    __1Single__UEAA_XZ((int64_t)((uint64_t)a1 + 32));
 }
 -- signature
 void (int64_t a0, int64_t a1)
@@ -490,9 +490,9 @@ int multiple(int value) {
     _Alignas(16) uint8_t local_0[0x10]; /* [sp-20] */
     _Alignas(16) uint8_t local_1[0x8]; /* [sp-10] */
 
-    __0Multiple__QEAA_H_Z((struct Multiple *)(local_0), value & 0xffffffff);
-    int32_t v3 = dispatch((struct Root *)(local_0));
-    return (uint32_t)((int32_t)(_other_Multiple__UEBAHXZ((struct Multiple *)(local_1)))) + v3;
+    __0Multiple__QEAA_H_Z(local_0, value & 0xffffffff);
+    int32_t v3 = dispatch(local_0);
+    return (uint32_t)((int32_t)(_other_Multiple__UEBAHXZ(local_1))) + v3;
 }
 -- signature
 int (int value)
@@ -518,8 +518,8 @@ int virtual_base(int value) {
     _Alignas(16) struct __attribute__((packed)) { uint32_t *f_0; uint8_t gap_8[0x20]; int64_t f_28; } local_0; /* [sp-40] */
 
     local_0.f_28 = -2;
-    __0Virtual__QEAA_H_Z((struct Virtual *)((uint8_t *)&local_0), value & 0xffffffff, 1);
-    int32_t v3 = dispatch((struct Root *)((uintptr_t)((uint8_t *)&local_0) + (int32_t)local_0.f_0[1]));
+    __0Virtual__QEAA_H_Z((uint8_t *)&local_0, value & 0xffffffff, 1);
+    int32_t v3 = dispatch((uint8_t *)((uintptr_t)((uint8_t *)&local_0) + (int32_t)local_0.f_0[1]));
     ___DVirtual__QEAAXXZ();
     return v3;
 }
@@ -801,10 +801,10 @@ int catch_cleanup(int value) {
     _Alignas(16) struct __attribute__((packed)) { uint8_t gap_0[0x14]; uint32_t f_14; int64_t f_18; } local_0; /* [sp-30] */
 
     local_0.f_18 = -2;
-    __0Single__QEAA_H_Z((struct Single *)(local_0.gap_0), value & 0xffffffff);
-    uint32_t v3 = _value_Single__UEBAHXZ((struct Single *)(local_0.gap_0));
+    __0Single__QEAA_H_Z(local_0.gap_0, value & 0xffffffff);
+    uint32_t v3 = _value_Single__UEBAHXZ(local_0.gap_0);
     local_0.f_14 = ((int32_t)(_imported_value__YAHH_Z(v3)));
-    __1Single__UEAA_XZ((struct Single *)(local_0.gap_0));
+    __1Single__UEAA_XZ(local_0.gap_0);
     return local_0.f_14;
 }
 -- signature
@@ -829,7 +829,7 @@ fn catch_cleanup @ 0x180001460 (size 72)
 -- decompile
 /* velk pseudo-C: ?dtor$3@?0?catch_cleanup@4HA @ 0x1800014b0 */
 void _dtor_3__0_catch_cleanup_4HA(int64_t a0, int64_t a1) {
-    __1Single__UEAA_XZ((struct Single *)(int64_t)((uint64_t)a1 + 40));
+    __1Single__UEAA_XZ((int64_t)((uint64_t)a1 + 40));
 }
 -- signature
 void (int64_t a0, int64_t a1)
@@ -955,7 +955,7 @@ fn ??0Other@@QEAA@XZ @ 0x180001520 (size 16)
 -- decompile
 /* velk pseudo-C: ?value@Virtual@@$4PPPPPPPM@A@EBAHXZ @ 0x180001530 */
 void _value_Virtual___4PPPPPPPM_A_EBAHXZ(uint32_t *a0) {
-    _value_Virtual__UEBAHXZ((struct Virtual *)((uint8_t *)a0 + (int32_t)-a0[-1]));
+    _value_Virtual__UEBAHXZ((uint8_t *)a0 + (int32_t)-a0[-1]);
 }
 -- signature
 void (uint32_t * a0)
@@ -1021,7 +1021,7 @@ fn ??_DVirtual@@QEAAXXZ @ 0x180001540 (size 16)
 -- decompile
 /* velk pseudo-C: ??_EMultiple@@WBA@EAAPEAXI@Z @ 0x180001550 */
 void ___EMultiple__WBA_EAAPEAXI_Z(int64_t a0, int64_t a1) {
-    ___GMultiple__UEAAPEAXI_Z((struct Multiple *)(int64_t)((uint64_t)a0 - 16), a1);
+    ___GMultiple__UEAAPEAXI_Z((int64_t)((uint64_t)a0 - 16), a1);
 }
 -- signature
 void (int64_t a0, int64_t a1)
@@ -1053,7 +1053,7 @@ fn ??_EMultiple@@WBA@EAAPEAXI@Z @ 0x180001550 (size 16)
 -- decompile
 /* velk pseudo-C: ??_EVirtual@@$4PPPPPPPM@A@EAAPEAXI@Z @ 0x180001560 */
 void ___EVirtual___4PPPPPPPM_A_EAAPEAXI_Z(uint32_t *a0, int64_t a1) {
-    ___GVirtual__UEAAPEAXI_Z((struct Virtual *)((uint8_t *)a0 + (int32_t)-a0[-1]), a1);
+    ___GVirtual__UEAAPEAXI_Z((uint8_t *)a0 + (int32_t)-a0[-1], a1);
 }
 -- signature
 void (uint32_t * a0, int64_t a1)

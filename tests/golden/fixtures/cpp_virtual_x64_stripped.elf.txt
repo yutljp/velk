@@ -30,7 +30,7 @@ uint64_t sub_201420();
 uint64_t sub_201430();
 uint64_t sub_201440();
 uint64_t sub_201470();
-void sub_201560(void);
+void sub_201560();
 /* end velk prelude */
 
 == 0x2013a0 -

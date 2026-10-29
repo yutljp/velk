@@ -22,22 +22,22 @@
 
 extern uint32_t g_202760; /* address: 0x202760 */
 
-void sub_2014f0(void);
-void sub_201510(void);
-void sub_201530(void);
-void sub_201550(void);
-void sub_201570(void);
-void sub_201590(void);
-void sub_2015b0(void);
-void sub_2015d0(void);
-void sub_2015f0(void);
-void sub_201610(void);
-void sub_201630(void);
-void sub_201650(void);
-void sub_201670(void);
-void sub_201690(void);
-void sub_2016b0(void);
-void sub_2016d0(void);
+void sub_2014f0();
+void sub_201510();
+void sub_201530();
+void sub_201550();
+void sub_201570();
+void sub_201590();
+void sub_2015b0();
+void sub_2015d0();
+void sub_2015f0();
+void sub_201610();
+void sub_201630();
+void sub_201650();
+void sub_201670();
+void sub_201690();
+void sub_2016b0();
+void sub_2016d0();
 /* end velk prelude */
 
 == 0x201400 -
