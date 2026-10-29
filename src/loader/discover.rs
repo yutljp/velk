@@ -58,10 +58,10 @@ fn ends_path(instruction: &iced_x86::Instruction) -> bool {
 /// Follow reachable x86 instructions, including call-only code inside symbol ranges.
 pub(super) fn direct_calls(image: &mut super::Image) {
     use iced_x86::{Decoder, DecoderOptions, FlowControl};
+    startup::discover(image);
     if !matches!(image.isa, super::Isa::X86_64 | super::Isa::I386) {
         return;
     }
-    startup::discover(image);
     let bitness = if image.isa == super::Isa::I386 {
         32
     } else {

@@ -46,7 +46,7 @@ use crate::loader::discover::is_aarch64_padding;
 use crate::loader::discover::read_word;
 use crate::loader::discover::x86_prologues;
 use crate::loader::symbols::demangle;
-use object::read::{File as ObjFile, Object, ObjectSection, ObjectSymbol};
+use object::read::{File as ObjFile, Object, ObjectSection, ObjectSegment, ObjectSymbol};
 
 pub(crate) fn demangle_name(name: &str) -> String {
     symbols::demangle(name).unwrap_or_else(|| name.to_owned())
@@ -272,6 +272,7 @@ pub struct Image {
     pub(crate) input_digest: [u8; 32],
     pub(crate) debug_path: Option<std::path::PathBuf>,
     pub sections: Vec<Section>,
+    pub(crate) load_segments: Vec<Section>,
     pub functions: BTreeMap<u64, Function>,
     /// The names of the data objects the symbol tables define.
     pub data_symbols: BTreeMap<u64, String>,
@@ -487,6 +488,7 @@ impl Image {
             },
             entry: None,
             stripped: false,
+            load_segments: Vec::new(),
             sections: vec![Section {
                 name: ".text".to_owned(),
                 vaddr: addr,
@@ -997,6 +999,58 @@ pub(crate) fn load_input_with_saved(
     };
 
     let mut sections = Vec::new();
+    let mut load_segments = Vec::new();
+    if file.format() == object::BinaryFormat::Elf {
+        for segment in file.segments() {
+            let object::SegmentFlags::Elf { p_flags, .. } = segment.flags() else {
+                continue;
+            };
+            let start = segment.address();
+            if segment.size() == 0 {
+                continue;
+            }
+            let Some(end) = start.checked_add(segment.size()) else {
+                continue;
+            };
+            let Some(page_end) = end.checked_add(4095).map(|end| end & !4095) else {
+                continue;
+            };
+            let (offset, size) = segment.file_range();
+            if size > segment.size() {
+                continue;
+            }
+            let prefix = start & 4095;
+            let Some(offset) = offset.checked_sub(prefix) else {
+                continue;
+            };
+            let Some(file_size) = size.checked_add(prefix) else {
+                continue;
+            };
+            let Some(file_offset) = offset.checked_add(slice_offset) else {
+                continue;
+            };
+            let page_start = start - prefix;
+            // BSS clears the file tail; without BSS the remaining file-page bytes
+            // are still visible, up to the end of the file.
+            let file_size = if size == segment.size() {
+                (bytes.len() as u64)
+                    .saturating_sub(offset)
+                    .min(page_end - page_start)
+            } else {
+                file_size
+            };
+            load_segments.push(Section {
+                name: "PT_LOAD".to_owned(),
+                vaddr: page_start,
+                size: page_end - page_start,
+                file_offset: Some(file_offset),
+                file_size,
+                executable: p_flags & object::elf::PF_X == object::elf::PF_X,
+                loaded: true,
+                read_only: p_flags & object::elf::PF_W != object::elf::PF_W,
+            });
+        }
+    }
     for section in file.sections() {
         let vaddr = bases
             .get(&section.index())
@@ -1260,6 +1314,7 @@ pub(crate) fn load_input_with_saved(
             },
         },
         sections,
+        load_segments,
         functions,
         data_symbols,
         objc_selectors: BTreeMap::new(),

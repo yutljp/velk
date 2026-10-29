@@ -9,8 +9,10 @@ c99b592843571a9975aeaddbb3b4de9e4c14eb1cddfe75cc0b40428ebc63beb3  src/analysis/i
 bfaf324bc4cb783da31fbb7e9734f1d0505228fe26463bd656e8b02a8fbe8b42  src/ir/eval/emulation/strings.rs	fn stored_byte(
 5837f8cec59d7dbaf1ea4dca77f137470a684ab24a13b4bab66b146ba3030406  src/ir/eval/stdio.rs	pub(super) fn complete_elements(
 578a542e6ba9d1dead163884fc6f975edeee5517fc87482d5e8022c3b3d77f74  src/ir/eval/symbolic.rs	fn defined_binary(
+87b906e8a9d1a765810ffbe6383119374710ab9e798c97fc327e6a27b3e13d0c  src/ir/eval/symbolic/libc.rs	fn boolean_value(
 c20fb33f9b497d99de05fcaa000e9512b312bc1c6406ca14e8de9f590224ad53  src/ir/eval/symbolic/libc.rs	fn case_conversion(
-5684d38e488cafb9183f5017478df4dae51918b5b6a0ba2f7bc456c826258ed9  src/ir/eval/symbolic/libc.rs	fn integer_overflow(
+311ae0beca191e4e7825ce934413b2e5f06ea9aa1e81d82304008ba7020df924  src/ir/eval/symbolic/libc.rs	fn digit_value(
+13832bb78c79f124ccf50839e050b00c6789f23063a5702ed3d9a63f4d91b0b3  src/ir/eval/symbolic/libc.rs	fn integer_overflow(
 e9159f253635c2a240d81f23f05ab61aa9d0862e46c32879f4c1b667d36c661f  src/ir/eval/symbolic/memory.rs	fn table_value(
 8491fafd370971c78168e15e5a18f21d6cf80f987f44ace07d7dabd8e428d57c  src/ir/mod.rs	pub fn bin(
 7ba4d833db4dddb29563e89101973ea76ef0baf15b41170b964b025ca482cbea  src/ir/semantics.rs	pub(crate) fn fold(

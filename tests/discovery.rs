@@ -223,12 +223,14 @@ fn runtime_startup_proves_an_interior_entry() {
         .output()
         .unwrap();
     assert!(output.status.success(), "{output:?}");
-    for (absolute, clobber, direct) in [
-        (false, false, false),
-        (true, false, false),
-        (false, true, false),
-        (true, true, false),
-        (false, false, true),
+    for (absolute, clobber, direct, static_runtime) in [
+        (false, false, false, false),
+        (true, false, false, false),
+        (false, true, false, false),
+        (true, true, false, false),
+        (false, false, true, false),
+        (false, false, true, true),
+        (true, false, true, true),
     ] {
         let object = directory.join("code.o");
         let mut compiler = Command::new("clang");
@@ -246,16 +248,22 @@ fn runtime_startup_proves_an_interior_entry() {
         if direct {
             compiler.arg("-DDIRECT_STARTUP");
         }
+        if static_runtime {
+            compiler.arg("-DSTATIC_STARTUP");
+        }
         let output = compiler
             .args(["-c", "tests/data/discovery.S", "-o"])
             .arg(&object)
             .output()
             .unwrap();
         assert!(output.status.success(), "{output:?}");
-        let path = directory.join(format!("startup-{absolute}-{clobber}-{direct}.elf"));
+        let path = directory.join(format!(
+            "startup-{absolute}-{clobber}-{direct}-{static_runtime}.elf"
+        ));
+        let runtime_input = if static_runtime { &runtime } else { &library };
         let output = Command::new("ld.lld")
             .arg(&object)
-            .arg(&library)
+            .arg(runtime_input)
             .args(["-e", "startup", "-o"])
             .arg(&path)
             .output()
@@ -271,8 +279,270 @@ fn runtime_startup_proves_an_interior_entry() {
         let mut binary = Binary::open(&path).unwrap();
         assert_eq!(binary.image().functions.contains_key(&target), !clobber);
         if !clobber {
+            assert_eq!(binary.find("main").unwrap().addr, target);
             let code = binary.decompile(target, None, None).unwrap();
             assert!(code.contains("7"), "{code}");
+            let output = Command::new("ld.lld")
+                .arg(&object)
+                .arg(runtime_input)
+                .args(["-s", "-e", "startup", "-o"])
+                .arg(&path)
+                .output()
+                .unwrap();
+            assert!(output.status.success(), "{output:?}");
+            let mut binary = Binary::open(&path).unwrap();
+            assert!(binary.image().stripped);
+            assert_eq!(binary.find("main").unwrap().addr, target);
+            if !absolute && !direct {
+                let printed = binary.decompile(target, None, None).unwrap();
+                assert!(printed.contains("main("), "{printed}");
+                let source = format!(
+                    "#include <stdint.h>\n#define main recovered_main\n{printed}\n#undef main\nint main(void) {{ int values[] = {{0, 1, -1, 2147483647}}; for (unsigned i = 0; i < 4; i++) if ((uint32_t)recovered_main(values[i], 0) != (uint32_t)values[i] + 7u) return 1; return 0; }}\n"
+                );
+                let executable = directory.join("printed-main");
+                common::compiler::compile_file(
+                    Command::new("clang")
+                        .args(["-std=c11", "-Werror=implicit-function-declaration"])
+                        .arg(directory.join("printed-main.c"))
+                        .arg("-o")
+                        .arg(&executable),
+                    &directory.join("printed-main.c"),
+                    &source,
+                );
+                assert!(Command::new(&executable).status().unwrap().success());
+            }
+            let code = format!(
+                "velk.open({}).getFunction('main').emulate().returnValue",
+                json!(path)
+            );
+            let result = velk::script::Engine::new().unwrap().run(&code, None);
+            assert!(result.error.is_none(), "{:?}", result.error);
+            assert_eq!(result.output, "0x7");
+            let output = Command::new(env!("CARGO_BIN_EXE_velk"))
+                .args(["--cache", "off", "--emulate"])
+                .arg(&path)
+                .args(["main", "--json"])
+                .output()
+                .unwrap();
+            assert!(output.status.success(), "{output:?}");
+            let report: Value = serde_json::from_slice(&output.stdout).unwrap();
+            assert_eq!(report["returnValue"], "0x7");
+            let child = Command::new(env!("CARGO_BIN_EXE_velk"))
+                .arg("--mcp")
+                .stdin(Stdio::piped())
+                .stdout(Stdio::piped())
+                .spawn()
+                .unwrap();
+            let request = json!({"jsonrpc":"2.0", "id":1, "method":"tools/call", "params":{"name":"velk_run_script", "arguments":{"code":code}}});
+            let output = common::mcp_request(child, &request);
+            let response: Value = serde_json::from_slice(&output.stdout).unwrap();
+            assert_ne!(response["result"]["isError"], true, "{response}");
+            assert!(response["result"].to_string().contains("0x7"), "{response}");
+        }
+    }
+}
+
+#[test]
+fn aarch64_runtime_startup_names_main() {
+    let directory = common::root().join("target/discovery-aarch64-startup");
+    fs::create_dir_all(&directory).unwrap();
+    let runtime_source = directory.join("runtime.S");
+    let runtime = directory.join("runtime.o");
+    common::compiler::compile_file(
+        Command::new("clang")
+            .args(["--target=aarch64-unknown-linux-gnu", "-c"])
+            .arg(&runtime_source)
+            .arg("-o")
+            .arg(&runtime),
+        &runtime_source,
+        ".text\n.globl __libc_start_main\n.type __libc_start_main,%function\n__libc_start_main: ret\n",
+    );
+    let library = directory.join("runtime.so");
+    let output = Command::new("ld.lld")
+        .args(["-shared", "-o"])
+        .arg(&library)
+        .arg(&runtime)
+        .output()
+        .unwrap();
+    assert!(output.status.success(), "{output:?}");
+    let source = directory.join("startup.S");
+    let object = directory.join("startup.o");
+    common::compiler::compile_file(
+        Command::new("clang")
+            .args(["--target=aarch64-unknown-linux-gnu", "-c"])
+            .arg(&source)
+            .arg("-o")
+            .arg(&object),
+        &source,
+        ".text\n.globl _start\n_start:\n mov x29, #0\n mov x30, #0\n mov x5, x0\n ldr x1, [sp]\n add x2, sp, #8\n mov x6, sp\n adrp x0, called\n add x0, x0, :lo12:called\n mov x3, #0\n mov x4, #0\n bl __libc_start_main\n brk #0\n.globl called\n.type called,%function\ncalled:\n mov w0, #7\n ret\n",
+    );
+    let path = directory.join("startup.elf");
+    let link = |strip: bool| {
+        let mut command = Command::new("ld.lld");
+        command.args(["--no-relax", "-e", "_start"]);
+        if strip {
+            command.arg("-s");
+        }
+        let output = command
+            .arg(&object)
+            .arg(&library)
+            .arg("-o")
+            .arg(&path)
+            .output()
+            .unwrap();
+        assert!(output.status.success(), "{output:?}");
+    };
+    link(false);
+    let bytes = fs::read(&path).unwrap();
+    let file = object::File::parse(bytes.as_slice()).unwrap();
+    let address = file
+        .symbols()
+        .find(|symbol| symbol.name().ok() == Some("called"))
+        .unwrap()
+        .address();
+    link(true);
+    let binary = Binary::open(&path).unwrap();
+    assert_eq!(binary.find("main").unwrap().addr, address);
+    let output = Command::new(env!("CARGO_BIN_EXE_velk"))
+        .args(["--cache", "off", "--emulate"])
+        .arg(&path)
+        .args(["main", "--json"])
+        .output()
+        .unwrap();
+    assert!(output.status.success(), "{output:?}");
+    let report: Value = serde_json::from_slice(&output.stdout).unwrap();
+    assert_eq!(report["returnValue"], "0x7");
+    let static_path = directory.join("static-startup.elf");
+    let static_symbols = directory.join("static-startup-symbols.elf");
+    let output = Command::new("ld.lld")
+        .args(["--no-relax", "-e", "_start"])
+        .arg(&object)
+        .arg(&runtime)
+        .arg("-o")
+        .arg(&static_symbols)
+        .output()
+        .unwrap();
+    assert!(output.status.success(), "{output:?}");
+    let bytes = fs::read(&static_symbols).unwrap();
+    let file = object::File::parse(bytes.as_slice()).unwrap();
+    let static_address = file
+        .symbols()
+        .find(|symbol| symbol.name().ok() == Some("called"))
+        .unwrap()
+        .address();
+    let output = Command::new("ld.lld")
+        .args(["--no-relax", "-s", "-e", "_start"])
+        .arg(&object)
+        .arg(&runtime)
+        .arg("-o")
+        .arg(&static_path)
+        .output()
+        .unwrap();
+    assert!(output.status.success(), "{output:?}");
+    let static_binary = Binary::open(&static_path).unwrap();
+    assert!(static_binary.image().stripped);
+    assert_eq!(static_binary.find("main").unwrap().addr, static_address);
+    let report = emulation::run(&static_binary, "main", &Options::default(), None).unwrap();
+    assert_eq!(report.return_value, "0x7");
+    let got_source = directory.join("got.S");
+    let got_object = directory.join("got.o");
+    let got_assembly = fs::read_to_string(&source)
+        .unwrap()
+        .replace("adrp x0, called", "adrp x0, :got:called")
+        .replace("add x0, x0, :lo12:called", "ldr x0, [x0, :got_lo12:called]");
+    common::compiler::compile_file(
+        Command::new("clang")
+            .args(["--target=aarch64-unknown-linux-gnu", "-c"])
+            .arg(&got_source)
+            .arg("-o")
+            .arg(&got_object),
+        &got_source,
+        &got_assembly,
+    );
+    let got_path = directory.join("got.elf");
+    let output = Command::new("ld.lld")
+        .args(["--no-relax", "-s", "-e", "_start"])
+        .arg(&got_object)
+        .arg(&library)
+        .arg("-o")
+        .arg(&got_path)
+        .output()
+        .unwrap();
+    assert!(output.status.success(), "{output:?}");
+    let got_binary = Binary::open(&got_path).unwrap();
+    assert_eq!(
+        got_binary.find("main").unwrap().name.as_deref(),
+        Some("main")
+    );
+    let report = emulation::run(&got_binary, "main", &Options::default(), None).unwrap();
+    assert_eq!(report.return_value, "0x7");
+}
+
+#[test]
+fn i386_runtime_startup_names_main() {
+    let directory = common::root().join("target/discovery-i386-startup");
+    fs::create_dir_all(&directory).unwrap();
+    let runtime_source = directory.join("runtime.S");
+    let runtime = directory.join("runtime.o");
+    common::compiler::compile_file(
+        Command::new("clang")
+            .args(["--target=i386-unknown-linux-gnu", "-c"])
+            .arg(&runtime_source)
+            .arg("-o")
+            .arg(&runtime),
+        &runtime_source,
+        ".text\n.globl __libc_start_main\n.type __libc_start_main,@function\n__libc_start_main: ret\n",
+    );
+    let library = directory.join("runtime.so");
+    let output = Command::new("ld.lld")
+        .args(["-shared", "-o"])
+        .arg(&library)
+        .arg(&runtime)
+        .output()
+        .unwrap();
+    assert!(output.status.success(), "{output:?}");
+    for (clobber, static_runtime) in [(false, false), (true, false), (false, true), (true, true)] {
+        let source = directory.join("startup.S");
+        let object = directory.join("startup.o");
+        let assembly = if static_runtime {
+            let extra = if clobber { "pop %eax\n" } else { "" };
+            format!(
+                ".text\n.globl _start\n_start:\n xor %ebp, %ebp\n pop %esi\n mov %esp, %ecx\n and $-16, %esp\n push %eax\n push %esp\n push %edx\n push $0\n push $0\n push %ecx\n push %esi\n push $called\n {extra} call __libc_start_main\n hlt\n.globl called\n.type called,@function\ncalled:\n mov $7, %eax\n ret\n"
+            )
+        } else {
+            let extra = if clobber { "pop %eax\n" } else { "" };
+            format!(
+                ".text\n.globl _start\n_start:\n push $called\n {extra} call __libc_start_main@PLT\n hlt\n.globl called\n.type called,@function\ncalled:\n mov $7, %eax\n ret\n"
+            )
+        };
+        common::compiler::compile_file(
+            Command::new("clang")
+                .args(["--target=i386-unknown-linux-gnu", "-c"])
+                .arg(&source)
+                .arg("-o")
+                .arg(&object),
+            &source,
+            &assembly,
+        );
+        let path = directory.join("startup.elf");
+        let mut linker = Command::new("ld.lld");
+        linker.args(["-s", "-e", "_start"]).arg(&object);
+        if static_runtime {
+            linker.arg(&runtime);
+        } else {
+            linker.arg(&library);
+        }
+        let output = linker.arg("-o").arg(&path).output().unwrap();
+        assert!(output.status.success(), "{output:?}");
+        let binary = Binary::open(&path).unwrap();
+        let found = binary.image().functions.values().any(|function| {
+            function.name.as_deref() == Some("main")
+                || function.aliases.iter().any(|name| name == "main")
+        });
+        assert_eq!(found, !clobber);
+        if !clobber {
+            let report = emulation::run(&binary, "main", &Options::default(), None).unwrap();
+            assert_eq!(report.return_value, "0x7");
         }
     }
 }

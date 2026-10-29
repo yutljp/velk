@@ -8,7 +8,18 @@ use iced_x86::{
 use crate::loader::{Format, Image, Isa, NameSource};
 
 pub(super) fn discover(image: &mut Image) {
-    if image.format != Format::Elf || image.isa != Isa::X86_64 {
+    if image.format != Format::Elf {
+        return;
+    }
+    if image.isa == Isa::AArch64 {
+        discover_aarch64(image);
+        return;
+    }
+    if image.isa == Isa::I386 {
+        discover_i386(image);
+        return;
+    }
+    if image.isa != Isa::X86_64 {
         return;
     }
     let Some(entry) = image.entry else {
@@ -25,6 +36,7 @@ pub(super) fn discover(image: &mut Image) {
     let mut info = InstructionInfoFactory::new();
     let mut argument = None;
     let mut target = None;
+    let mut startup_arguments = 0u8;
     while decoder.can_decode() {
         let instruction = decoder.decode();
         if instruction.is_invalid() {
@@ -38,7 +50,6 @@ pub(super) fn discover(image: &mut Image) {
                 image
                     .functions
                     .get(&instruction.near_branch_target())
-                    .filter(|function| function.sources.contains(&NameSource::Plt))
                     .and_then(|function| function.name.as_deref())
             } else if instruction.is_ip_rel_memory_operand()
                 && !matches!(instruction.segment_prefix(), Register::FS | Register::GS)
@@ -54,7 +65,7 @@ pub(super) fn discover(image: &mut Image) {
             } else {
                 None
             };
-            if name == Some("__libc_start_main") {
+            if name == Some("__libc_start_main") || startup_arguments == 0b1_1111 {
                 target = argument;
             }
             break;
@@ -92,7 +103,117 @@ pub(super) fn discover(image: &mut Image) {
         {
             argument = Some(instruction.immediate(1));
         }
+        if instruction.mnemonic() == Mnemonic::Mov
+            && instruction.op0_kind() == OpKind::Register
+            && instruction.op1_kind() == OpKind::Register
+        {
+            match (instruction.op0_register(), instruction.op1_register()) {
+                (Register::R9, Register::RDX) => startup_arguments |= 1,
+                (Register::RDX, Register::RSP) => startup_arguments |= 4,
+                _ => {}
+            }
+        } else if instruction.mnemonic() == Mnemonic::Pop
+            && instruction.op0_kind() == OpKind::Register
+            && instruction.op0_register() == Register::RSI
+        {
+            startup_arguments |= 2;
+        } else if instruction.mnemonic() == Mnemonic::Xor
+            && instruction.op0_kind() == OpKind::Register
+            && instruction.op1_kind() == OpKind::Register
+            && instruction.op0_register() == instruction.op1_register()
+        {
+            match instruction.op0_register() {
+                Register::ECX | Register::RCX => startup_arguments |= 8,
+                Register::R8D | Register::R8 => startup_arguments |= 16,
+                _ => {}
+            }
+        }
     }
+    name_main(image, target);
+}
+
+fn discover_i386(image: &mut Image) {
+    let Some(entry) = image.entry else { return };
+    let Some(section) = image.section_at(entry).filter(|section| section.executable) else {
+        return;
+    };
+    let size = section.file_size.saturating_sub(entry - section.vaddr);
+    let Some(bytes) = image.read_vaddr(entry, size) else {
+        return;
+    };
+    let mut decoder = Decoder::with_ip(32, bytes, entry, DecoderOptions::NONE);
+    let mut info = InstructionInfoFactory::new();
+    let mut argument = None;
+    let mut startup_arguments = 0u8;
+    let mut startup_pushes = 0u8;
+    while decoder.can_decode() {
+        let instruction = decoder.decode();
+        if instruction.is_invalid() {
+            return;
+        }
+        if instruction.flow_control() == FlowControl::Call {
+            let name = image
+                .functions
+                .get(&instruction.near_branch_target())
+                .and_then(|function| function.name.as_deref());
+            if name == Some("__libc_start_main") || (startup_arguments == 3 && startup_pushes >= 6)
+            {
+                name_main(image, argument);
+            }
+            return;
+        }
+        if instruction.flow_control() != FlowControl::Next {
+            return;
+        }
+        let used = info.info(&instruction);
+        if instruction.mnemonic() == Mnemonic::Push {
+            startup_pushes = startup_pushes.saturating_add(1);
+            argument = match instruction.op0_kind() {
+                OpKind::Immediate32 | OpKind::Immediate8to32 => {
+                    Some(instruction.immediate(0) as u32 as u64)
+                }
+                _ => None,
+            };
+        } else if used.used_registers().iter().any(|register| {
+            register.register().full_register() == Register::RSP
+                && matches!(
+                    register.access(),
+                    OpAccess::Write
+                        | OpAccess::CondWrite
+                        | OpAccess::ReadWrite
+                        | OpAccess::ReadCondWrite
+                )
+        }) || used.used_memory().iter().any(|memory| {
+            matches!(
+                memory.access(),
+                OpAccess::Write
+                    | OpAccess::CondWrite
+                    | OpAccess::ReadWrite
+                    | OpAccess::ReadCondWrite
+            )
+        }) {
+            argument = None;
+        }
+        if instruction.mnemonic() != Mnemonic::Push {
+            startup_pushes = 0;
+        }
+        if instruction.mnemonic() == Mnemonic::Pop
+            && instruction.op0_kind() == OpKind::Register
+            && instruction.op0_register() == Register::ESI
+        {
+            startup_arguments |= 1;
+        } else if instruction.mnemonic() == Mnemonic::Mov
+            && instruction.op0_kind() == OpKind::Register
+            && instruction.op0_register() == Register::ECX
+            && instruction.op1_kind() == OpKind::Register
+            && instruction.op1_register() == Register::ESP
+        {
+            startup_arguments |= 2;
+        }
+    }
+}
+
+fn name_main(image: &mut Image, target: Option<u64>) {
     if let Some(target) = target
         && image
             .section_at(target)
@@ -100,7 +221,95 @@ pub(super) fn discover(image: &mut Image) {
         && image.fragment_at(target).is_none()
     {
         super::add_entry(image, target);
+        if let Some(function) = image.functions.get_mut(&target) {
+            function.merge(Some("main".to_owned()), None, NameSource::Call);
+        }
     }
+}
+
+fn discover_aarch64(image: &mut Image) {
+    if image.byte_order() != Some(object::Endianness::Little) {
+        return;
+    }
+    let Some(mut pc) = image.entry else {
+        return;
+    };
+    let read = |image: &Image, address: u64| {
+        image
+            .section_at(address)
+            .filter(|section| section.executable)?;
+        let bytes = image.read_vaddr(address, 4)?;
+        Some(u32::from_le_bytes(bytes.try_into().ok()?))
+    };
+    if read(image, pc) == Some(0xd503201f) {
+        let Some(next) = pc.checked_add(4) else {
+            return;
+        };
+        pc = next;
+    }
+    for expected in [
+        0xd280001d, 0xd280001e, 0xaa0003e5, 0xf94003e1, 0x910023e2, 0x910003e6,
+    ] {
+        if read(image, pc) != Some(expected) {
+            return;
+        }
+        let Some(next) = pc.checked_add(4) else {
+            return;
+        };
+        pc = next;
+    }
+    let Some(adrp) = read(image, pc) else { return };
+    if adrp & 0x9f00_001f != 0x9000_0000 {
+        return;
+    }
+    let immediate = (((adrp >> 5) & 0x7ffff) << 2 | (adrp >> 29) & 3) as i64;
+    let pages = (immediate << 43) >> 43;
+    let Some(page) = (pc & !0xfff).checked_add_signed(pages << 12) else {
+        return;
+    };
+    let Some(next) = pc.checked_add(4) else {
+        return;
+    };
+    pc = next;
+    let Some(load) = read(image, pc) else { return };
+    let argument = if load & 0xffc0_03ff == 0xf940_0000 {
+        let Some(slot) = page.checked_add(u64::from((load >> 10) & 0xfff) * 8) else {
+            return;
+        };
+        if image.imports.contains_key(&slot) {
+            return;
+        }
+        let Some(bytes) = image.read_vaddr(slot, 8) else {
+            return;
+        };
+        let Ok(bytes) = bytes.try_into() else { return };
+        u64::from_le_bytes(bytes)
+    } else if load & 0xffc0_03ff == 0x9100_0000 {
+        let Some(address) = page.checked_add(u64::from((load >> 10) & 0xfff)) else {
+            return;
+        };
+        address
+    } else {
+        return;
+    };
+    for expected in [0xd2800003, 0xd2800004] {
+        let Some(next) = pc.checked_add(4) else {
+            return;
+        };
+        pc = next;
+        if read(image, pc) != Some(expected) {
+            return;
+        }
+    }
+    let Some(next) = pc.checked_add(4) else {
+        return;
+    };
+    pc = next;
+    let Some(call) = read(image, pc) else { return };
+    if call & 0xfc00_0000 != 0x9400_0000 {
+        return;
+    }
+    name_main(image, Some(argument));
 }
 
 #[cfg(test)]

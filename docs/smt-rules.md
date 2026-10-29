@@ -2,6 +2,15 @@
 
 C++ decimal stream extraction uses the same overflow predicate, checked at signed and unsigned 16-, 32-, and 64-bit limits.
 
+Symbolic libc decisions check both values of a Boolean predicate directly. SMT
+checks prove that its encoded value is zero or one and that one is equivalent
+to the predicate. Execution tests solve thirteen decimal arithmetic relations
+on i386, x86-64 and AArch64, then replay the inputs concretely and through native
+libc on Linux. These tests constrain the input bytes to decimal digits; they do
+not cover every combination of integer lengths, signs and separators.
+The decimal digit expression is also checked against hexadecimal-aware
+conversion under the digit range check, with a counterexample outside it.
+
 Symbolic libc checks prove ASCII case conversion against an enumerated mapping and integer overflow detection against 128-bit digit accumulation for bases 10 and 16. Defined-bit propagation has symbolic checks for bitwise operations and constant shifts; native and concrete replay cover conversion edge cases. Constant-table selection is compared with SMT array reads for 1, 8, 16, and 32 entries, with an additional single-entry update identity and a negative control. Byte-sum checks compare the x86-64 and AArch64 vector expressions with scalar addition for every four-byte input. Compiled table tests cover signed and unsigned loads of one through eight bytes and conservative fallback for writable memory, large address spans, and section boundaries.
 
 Integer cast removal checks signed and unsigned intermediate conversions at

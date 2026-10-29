@@ -9,6 +9,8 @@ mod edges;
 mod io;
 #[path = "emulation/matrix.rs"]
 mod matrix;
+#[path = "emulation/segments.rs"]
+mod segments;
 #[path = "emulation/streams.rs"]
 mod streams;
 

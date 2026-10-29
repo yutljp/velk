@@ -55,6 +55,17 @@ caller:
 .globl startup
 .type startup,@function
 startup:
+#ifdef STATIC_STARTUP
+    xor %ebp, %ebp
+    mov %rdx, %r9
+    pop %rsi
+    mov %rsp, %rdx
+    and $-16, %rsp
+    push %rax
+    push %rsp
+    xor %r8d, %r8d
+    xor %ecx, %ecx
+#endif
 #ifdef ABSOLUTE_STARTUP
     mov $called, %rdi
 #else

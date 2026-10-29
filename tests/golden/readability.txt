@@ -130,7 +130,7 @@ codeview/structs.O2.dll: 101 lines, 18 prelude lines, 19 variables, 34 casts, 0 
 codeview/structs.O2.obj: 101 lines, 18 prelude lines, 19 variables, 34 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
 codeview/structs.O2.stripped.dll: 74 lines, 21 prelude lines, 13 variables, 27 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
 cold_gcc: 96 lines, 27 prelude lines, 17 variables, 19 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
-cold_gcc_stripped: 96 lines, 26 prelude lines, 17 variables, 19 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
+cold_gcc_stripped: 96 lines, 27 prelude lines, 17 variables, 19 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
 com_i686.dll: 72 lines, 61 prelude lines, 11 variables, 53 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
 com_x86_64.dll: 49 lines, 61 prelude lines, 0 variables, 3 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
 cpp/rtti.debug.dll: 334 lines, 36 prelude lines, 12 variables, 76 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 1 indirect calls
@@ -515,7 +515,7 @@ rust_demo_arm64: 50720 lines, 2837 prelude lines, 10544 variables, 10503 casts, 
 rust_probe: 52306 lines, 2528 prelude lines, 10342 variables, 11686 casts, 9 registers, 0 unsigned, 30 traps, 1311 gotos, 129 indirect calls
 rust_probe_arm64: 50720 lines, 2837 prelude lines, 10544 variables, 10503 casts, 24 registers, 0 unsigned, 32 traps, 1278 gotos, 154 indirect calls
 rust_probe_arm64_stripped: 50715 lines, 2828 prelude lines, 10539 variables, 10458 casts, 24 registers, 0 unsigned, 32 traps, 1278 gotos, 154 indirect calls
-rust_probe_stripped: 52661 lines, 2433 prelude lines, 10502 variables, 11840 casts, 9 registers, 0 unsigned, 31 traps, 1319 gotos, 125 indirect calls
+rust_probe_stripped: 52661 lines, 2434 prelude lines, 10502 variables, 11840 casts, 9 registers, 0 unsigned, 31 traps, 1319 gotos, 125 indirect calls
 seh.O0.dll: 95 lines, 8 prelude lines, 14 variables, 15 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
 seh.O2.dll: 73 lines, 8 prelude lines, 6 variables, 2 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls
 seh_cpp.O0.dll: 27 lines, 5 prelude lines, 2 variables, 1 casts, 0 registers, 0 unsigned, 0 traps, 0 gotos, 0 indirect calls

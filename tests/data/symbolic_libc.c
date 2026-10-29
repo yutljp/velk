@@ -34,6 +34,29 @@ extern int printf(const char *, ...);
 int scan_stream(void) { char s[4]; return fscanf(stdin, "%3s", s) == 1 && strcmp(s, "yes") == 0; }
 int scan_stack(void) { char s[9]; return scanf("%c%c%c%c%c%c%c%c%c", &s[0], &s[1], &s[2], &s[3], &s[4], &s[5], &s[6], &s[7], &s[8]) == 9 && memcmp(s, "abcdefghi", 9) == 0; }
 int scan_decimal(void) { int n = 0; return scanf("%2d", &n) == 1 && n == 42; }
+int scan_signed(void) { int n = 7; return scanf("%d", &n) == 1 && n == -42 && getchar() == '!'; }
+int scan_digit_after_no_eof(void) { int n = 0; char c = 0; return scanf("%d%c", &n, &c) == 2 && n == -42 && c == '1'; }
+int scan_signed_min(void) { int n = 0; return scanf("%d", &n) == 1 && n == (-2147483647 - 1); }
+int scan_invalid(void) { int n = 7; return scanf("%d", &n) == 0 && n == 7 && getchar() == 'x'; }
+int scan_eof(void) { int n = 7; return scanf("%d", &n) == -1 && n == 7; }
+int scan_unsigned_sign(void) { unsigned n = 7; return scanf("%u", &n) == 1 && n == ~0u && getchar() == '!'; }
+int scan_many(void) {
+    int n[13];
+    for (unsigned i = 0; i < 13; ++i)
+        if (scanf("%d", &n[i]) != 1) return 0;
+    for (unsigned i = 0; i < 13; ++i)
+        if (n[i] + n[(i + 1) % 13] != (int)(i % 9 + (i + 1) % 13 % 9)) return 0;
+    return 1;
+}
+int scan_relations(const char *input) {
+    int n[13];
+    if (sscanf(input, "%1d%1d%1d%1d%1d%1d%1d%1d%1d%1d%1d%1d%1d",
+               &n[0], &n[1], &n[2], &n[3], &n[4], &n[5], &n[6],
+               &n[7], &n[8], &n[9], &n[10], &n[11], &n[12]) != 13) return 0;
+    for (unsigned i = 0; i < 13; ++i)
+        if (n[i] + n[(i + 1) % 13] != (int)(i % 9 + (i + 1) % 13 % 9)) return 0;
+    return 1;
+}
 int scan_unsigned(void) { unsigned n = 0; return scanf("%2u", &n) == 1 && n == 42; }
 int scan_hex(void) { unsigned n = 0; return scanf("%2x", &n) == 1 && n == 42; }
 int scan_text(void) { char s[4]; return scanf("%3s", s) == 1 && strcmp(s, "yes") == 0; }

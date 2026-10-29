@@ -1,5 +1,6 @@
 //! Persistent SMT-LIB transport; each query has an isolated assertion scope.
 
+use std::collections::HashMap;
 use std::io::{BufRead, BufReader, Write};
 use std::process::{Child, ChildStdin, ChildStdout, Command, Stdio};
 
@@ -15,6 +16,10 @@ pub(crate) struct Solver {
     output: BufReader<ChildStdout>,
     next: u64,
     failed: bool,
+    definitions: HashMap<String, String>,
+    definition_bytes: usize,
+    satisfiability: HashMap<Vec<String>, bool>,
+    satisfiability_bytes: usize,
 }
 
 impl Solver {
@@ -86,6 +91,10 @@ impl Solver {
             output,
             next: 0,
             failed: false,
+            definitions: HashMap::new(),
+            definition_bytes: 0,
+            satisfiability: HashMap::new(),
+            satisfiability_bytes: 0,
         };
         solver.send("(set-option :print-success false)\n(set-option :produce-models true)\n(set-logic QF_BV)")?;
         solver.query(&[], None)?;
@@ -140,17 +149,38 @@ impl Solver {
     }
 
     pub(crate) fn define(&mut self, expression: Option<&str>) -> Result<String> {
+        if let Some(expression) = expression
+            && let Some(name) = self.definitions.get(expression)
+        {
+            return Ok(name.clone());
+        }
         let name = format!("s{}", self.next);
         let Some(next) = self.next.checked_add(1) else {
             return Err(invalid("solver term count overflow"));
         };
         self.next = next;
-        match expression {
+        let result = match expression {
             Some(expression) => self.send(&format!(
-                "(define-fun {name} () (_ BitVec 64) {expression})"
+                "(declare-const {name} (_ BitVec 64))\n(assert (= {name} {expression}))"
             )),
             None => self.send(&format!("(declare-const {name} (_ BitVec 64))")),
-        }?;
+        };
+        if let Err(error) = result {
+            return Err(error);
+        }
+        if let Some(expression) = expression {
+            let size = expression.len().saturating_add(name.len());
+            if size <= 8 * 1024 * 1024 {
+                if self.definitions.len() >= 65536
+                    || self.definition_bytes.saturating_add(size) > 8 * 1024 * 1024
+                {
+                    self.definitions.clear();
+                    self.definition_bytes = 0;
+                }
+                self.definitions.insert(expression.to_owned(), name.clone());
+                self.definition_bytes += size;
+            }
+        }
         Ok(name)
     }
 
@@ -164,7 +194,15 @@ impl Solver {
                 "solver session failed after an earlier protocol error",
             ));
         }
-        self.send("(push 1)")?;
+        if term.is_none()
+            && let Some(&satisfiable) = self.satisfiability.get(constraints)
+        {
+            return Ok(satisfiable.then_some(0));
+        }
+        if let Err(error) = self.send("(push 1)") {
+            self.failed = true;
+            return Err(error);
+        }
         let result = self.query_inner(constraints, term);
         let cleanup = self.send("(pop 1)");
         if result.is_err() || cleanup.is_err() {
@@ -172,7 +210,27 @@ impl Solver {
         }
         match (result, cleanup) {
             (Err(error), _) | (_, Err(error)) => Err(error),
-            (Ok(value), Ok(())) => Ok(value),
+            (Ok(value), Ok(())) => {
+                if term.is_none() {
+                    let size = constraints.iter().fold(0usize, |size, constraint| {
+                        size.saturating_add(constraint.len())
+                            .saturating_add(std::mem::size_of::<String>())
+                    });
+                    if size > 8 * 1024 * 1024 {
+                        return Ok(value);
+                    }
+                    if self.satisfiability.len() >= 4096
+                        || self.satisfiability_bytes.saturating_add(size) > 8 * 1024 * 1024
+                    {
+                        self.satisfiability.clear();
+                        self.satisfiability_bytes = 0;
+                    }
+                    self.satisfiability
+                        .insert(constraints.to_vec(), value.is_some());
+                    self.satisfiability_bytes += size;
+                }
+                Ok(value)
+            }
         }
     }
 
@@ -249,12 +307,23 @@ mod tests {
         }
         let mut solver = Solver::command("z3 -in").unwrap();
         let x = solver.define(None).unwrap();
+        let expression = format!("(bvadd {x} #x0000000000000001)");
+        let sum = solver.define(Some(&expression)).unwrap();
+        assert_eq!(solver.define(Some(&expression)).unwrap(), sum);
+        let y = solver.define(None).unwrap();
+        assert_ne!(x, y);
         assert_eq!(
             solver
                 .query(&[format!("(= {x} #xffffffffffffffff)")], Some(&x))
                 .unwrap(),
             Some(u64::MAX)
         );
+        assert_eq!(solver.query(&["false".to_owned()], None).unwrap(), None);
+        assert_eq!(solver.query(&[], None).unwrap(), Some(0));
+        let constraints = vec![format!("(= {x} #xffffffffffffffff)")];
+        assert_eq!(solver.query(&constraints, None).unwrap(), Some(0));
+        assert_eq!(solver.query(&constraints, None).unwrap(), Some(0));
+        assert_eq!(solver.query(&constraints, Some(&sum)).unwrap(), Some(0));
         assert_eq!(solver.query(&["false".to_owned()], None).unwrap(), None);
         assert_eq!(solver.query(&[], None).unwrap(), Some(0));
     }

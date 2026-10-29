@@ -1,6 +1,6 @@
 //! Bounded C library effects on symbolic byte and integer terms.
 
-use super::{Evaluation, State, Term};
+use super::{Evaluation, Failure, State, Term};
 use crate::ir::eval::emulation::hooks::{self, Hook};
 use crate::ir::eval::emulation::io::{self, Operation};
 use crate::ir::smt;
@@ -14,9 +14,44 @@ enum IntegerKind {
     Strtol,
 }
 
+#[derive(Clone, Copy)]
+enum PredicatePreference {
+    FalseFirst,
+    TrueFirst,
+}
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum ScanSource {
+    Stdin,
+    String,
+}
+
+#[derive(Clone, Copy)]
+enum ScanIntegerType {
+    Signed,
+    Unsigned,
+}
+
+#[derive(Clone, Copy)]
+enum IntegerSign {
+    Negative,
+    Nonnegative,
+}
+
+#[derive(Clone, Copy)]
+enum IntegerModel {
+    Exact,
+    StdinToken(ScanIntegerType),
+}
+
 struct ParsedInteger {
     value: Term,
     consumed: usize,
+    leading_whitespace: usize,
+    sign: Option<u8>,
+    digits: usize,
+    synthesized: bool,
+    canonical: bool,
     matched: bool,
 }
 
@@ -99,12 +134,40 @@ impl State {
     }
 
     pub(super) fn test(&self, condition: String) -> Evaluation<bool> {
-        let term = self.bind(format!(
-            "(ite {condition} {} {})",
-            smt::constant(1),
-            smt::constant(0)
-        ))?;
-        Ok(self.resolve(term)? != 0)
+        self.test_with_preference(condition, PredicatePreference::FalseFirst)
+    }
+
+    fn test_with_preference(
+        &self,
+        condition: String,
+        preference: PredicatePreference,
+    ) -> Evaluation<bool> {
+        let term = match self.bind(boolean_value(&condition)) {
+            Ok(term) => term,
+            Err(error) => return Err(error.into()),
+        };
+        let mut possible = Vec::new();
+        let candidates = match preference {
+            PredicatePreference::FalseFirst => [0, 1],
+            PredicatePreference::TrueFirst => [1, 0],
+        };
+        for candidate in candidates {
+            let mut constraints = self.constraints.clone();
+            constraints.push(format!("(= {} {})", term.text, smt::constant(candidate)));
+            let result = {
+                let mut solver = self.solver.borrow_mut();
+                solver.query(&constraints, None)
+            };
+            match result {
+                Ok(Some(_)) => possible.push(candidate),
+                Ok(None) => {}
+                Err(error) => return Err(error.into()),
+            }
+        }
+        if possible.len() == 1 {
+            return Ok(possible[0] != 0);
+        }
+        Err(Failure::Address(term, possible, false))
     }
 
     fn zero(&self, byte: &Term) -> Evaluation<bool> {
@@ -115,16 +178,27 @@ impl State {
     }
 
     pub(super) fn whitespace(&self, byte: &Term) -> Evaluation<bool> {
+        self.whitespace_with_preference(byte, PredicatePreference::FalseFirst)
+    }
+
+    fn whitespace_with_preference(
+        &self,
+        byte: &Term,
+        preference: PredicatePreference,
+    ) -> Evaluation<bool> {
         if let Some(value) = byte.concrete {
             return Ok((value as u8).is_ascii_whitespace());
         }
-        self.test(format!(
-            "(or (= {0} {1}) (and (bvuge {0} {2}) (bvule {0} {3})))",
-            byte.text,
-            smt::constant(32),
-            smt::constant(9),
-            smt::constant(13)
-        ))
+        self.test_with_preference(
+            format!(
+                "(or (= {0} {1}) (and (bvuge {0} {2}) (bvule {0} {3})))",
+                byte.text,
+                smt::constant(32),
+                smt::constant(9),
+                smt::constant(13)
+            ),
+            preference,
+        )
     }
 
     pub(super) fn string(
@@ -337,7 +411,12 @@ impl State {
                 if !matches!(base, 10 | 16) {
                     return Err(invalid("unsupported symbolic strtol base").into());
                 }
-                let parsed = self.parse_integer(&text, base, IntegerKind::Strtol)?;
+                let parsed =
+                    match self.parse_integer(&text, base, IntegerKind::Strtol, IntegerModel::Exact)
+                    {
+                        Ok(parsed) => parsed,
+                        Err(error) => return Err(error),
+                    };
                 if matches!(hook, Hook::IntegerEnd) {
                     let end = self.number(binary, convention, 1)?;
                     if end != 0 {
@@ -376,43 +455,159 @@ impl State {
         input: &[Term],
         base: u64,
         kind: IntegerKind,
+        model: IntegerModel,
     ) -> Evaluation<ParsedInteger> {
+        if matches!(kind, IntegerKind::Scan)
+            && base == 10
+            && input.len() >= 11
+            && matches!(model, IntegerModel::StdinToken(_))
+        {
+            let Some(first) = input.first() else {
+                return Err(invalid("scanf integer input is unavailable").into());
+            };
+            let canonical = match self.test_with_preference(
+                format!(
+                    "(or (= {} {}) (= {} {}))",
+                    first.text,
+                    smt::constant(u64::from(b'+')),
+                    first.text,
+                    smt::constant(u64::from(b'-'))
+                ),
+                PredicatePreference::TrueFirst,
+            ) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            let token_ends = if canonical {
+                if let Some(next) = input.get(11) {
+                    let digit = match self.test_with_preference(
+                        format!(
+                            "(and (bvuge {} {}) (bvule {} {}))",
+                            next.text,
+                            smt::constant(48),
+                            next.text,
+                            smt::constant(57)
+                        ),
+                        PredicatePreference::FalseFirst,
+                    ) {
+                        Ok(value) => value,
+                        Err(error) => return Err(error),
+                    };
+                    !digit
+                } else {
+                    true
+                }
+            } else {
+                false
+            };
+            if token_ends {
+                let source = match self.symbolic() {
+                    Ok(value) => value,
+                    Err(error) => return Err(error.into()),
+                };
+                let raw = format!("((_ extract 31 0) {})", source.text);
+                let IntegerModel::StdinToken(integer_type) = model else {
+                    return Err(invalid("invalid scanf integer model").into());
+                };
+                let value = match self.bind(if matches!(integer_type, ScanIntegerType::Signed) {
+                    smt::signed(&raw, 32)
+                } else {
+                    format!("((_ zero_extend 32) {raw})")
+                }) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error.into()),
+                };
+                return Ok(ParsedInteger {
+                    value,
+                    consumed: 11,
+                    leading_whitespace: 0,
+                    sign: None,
+                    digits: 10,
+                    synthesized: true,
+                    canonical: true,
+                    matched: true,
+                });
+            }
+        }
         let bits = u32::from(crate::arch::pointer_bytes(self.isa)) * 8;
         let negative_limit = 1u64 << (bits - 1);
         let positive_limit = negative_limit - 1;
         let mut position = 0;
-        while position < input.len() && self.whitespace(&input[position])? {
-            self.tick()?;
+        while position < input.len() {
+            let whitespace = match self.whitespace(&input[position]) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            if !whitespace {
+                break;
+            }
+            if let Err(error) = self.tick() {
+                return Err(error);
+            }
             position += 1;
         }
-        let mut negative = false;
+        let leading_whitespace = position;
+        let mut sign = None;
         if let Some(byte) = input.get(position) {
-            negative = self.test(format!("(= {} {})", byte.text, smt::constant(45)))?;
-            if negative || self.test(format!("(= {} {})", byte.text, smt::constant(43)))? {
+            let negative = match self.test(format!("(= {} {})", byte.text, smt::constant(45))) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            if negative {
+                sign = Some(b'-');
                 position += 1;
+            } else {
+                let positive = match self.test(format!("(= {} {})", byte.text, smt::constant(43))) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
+                if positive {
+                    sign = Some(b'+');
+                    position += 1;
+                }
             }
         }
+        let negative = sign == Some(b'-');
         if base == 16
-            && position + 1 < input.len()
-            && (matches!(kind, IntegerKind::Scan)
-                || (position + 2 < input.len() && self.hex_digit(&input[position + 2])?))
-            && self.test(format!(
-                "(and (= {} {}) (or (= {} {}) (= {} {})))",
-                input[position].text,
-                smt::constant(48),
-                input[position + 1].text,
-                smt::constant(120),
-                input[position + 1].text,
-                smt::constant(88)
-            ))?
+            && position
+                .checked_add(1)
+                .is_some_and(|next| next < input.len())
         {
-            position += 2;
+            let next = position + 1;
+            let prefix_digit = if matches!(kind, IntegerKind::Scan) {
+                true
+            } else if let Some(byte) = position.checked_add(2).and_then(|at| input.get(at)) {
+                match self.hex_digit(byte) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                }
+            } else {
+                false
+            };
+            if prefix_digit {
+                let prefix = match self.test(format!(
+                    "(and (= {} {}) (or (= {} {}) (= {} {})))",
+                    input[position].text,
+                    smt::constant(48),
+                    input[next].text,
+                    smt::constant(120),
+                    input[next].text,
+                    smt::constant(88)
+                )) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
+                if prefix {
+                    position += 2;
+                }
+            }
         }
         let start = position;
-        let mut value = Term::constant(0);
-        let mut overflow = "false".to_owned();
+        let mut digit_bytes = Vec::new();
         while let Some(byte) = input.get(position) {
-            self.tick()?;
+            if let Err(error) = self.tick() {
+                return Err(error);
+            }
             let decimal = format!(
                 "(and (bvuge {0} {1}) (bvule {0} {2}))",
                 byte.text,
@@ -425,19 +620,80 @@ impl State {
                 smt::constant(97),
                 smt::constant(102)
             );
-            if !self.test(if base == 16 {
+            let digit = if base == 16 {
                 format!("(or {decimal} {hex})")
             } else {
                 decimal.clone()
-            })? {
+            };
+            let preference = if position == start {
+                PredicatePreference::TrueFirst
+            } else {
+                PredicatePreference::FalseFirst
+            };
+            let is_digit = match self.test_with_preference(digit, preference) {
+                Ok(value) => value,
+                Err(error) => return Err(error),
+            };
+            if !is_digit {
                 break;
             }
-            let digit = self.bind(format!(
-                "(ite {decimal} (bvsub {} {}) (bvsub {lower} {}))",
+            digit_bytes.push(byte.clone());
+            position += 1;
+        }
+        let digits = position.saturating_sub(start);
+        let synthesized = matches!(model, IntegerModel::StdinToken(_))
+            && matches!(kind, IntegerKind::Scan)
+            && base == 10
+            && digits > 0;
+        if synthesized {
+            let source = match self.symbolic() {
+                Ok(value) => value,
+                Err(error) => return Err(error.into()),
+            };
+            let raw = format!("((_ extract 31 0) {})", source.text);
+            let IntegerModel::StdinToken(integer_type) = model else {
+                return Err(invalid("invalid scanf integer model").into());
+            };
+            let integer_sign = if negative {
+                IntegerSign::Negative
+            } else {
+                IntegerSign::Nonnegative
+            };
+            self.constrain_scanned_integer(&raw, integer_sign, digits, integer_type);
+            let value = match self.bind(if matches!(integer_type, ScanIntegerType::Signed) {
+                smt::signed(&raw, 32)
+            } else {
+                format!("((_ zero_extend 32) {raw})")
+            }) {
+                Ok(value) => value,
+                Err(error) => return Err(error.into()),
+            };
+            return Ok(ParsedInteger {
+                value,
+                consumed: position,
+                leading_whitespace,
+                sign,
+                digits,
+                synthesized: true,
+                canonical: false,
+                matched: true,
+            });
+        }
+        let mut value = Term::constant(0);
+        let mut overflow = "false".to_owned();
+        for byte in digit_bytes {
+            let decimal = format!(
+                "(and (bvuge {0} {1}) (bvule {0} {2}))",
                 byte.text,
                 smt::constant(48),
-                smt::constant(87)
-            ))?;
+                smt::constant(57)
+            );
+            let lower = format!("(bvor {} {})", byte.text, smt::constant(32));
+            let digit_expression = digit_value(&byte.text, &decimal, &lower, base);
+            let digit = match self.bind(digit_expression) {
+                Ok(value) => value,
+                Err(error) => return Err(error.into()),
+            };
             let limit = if matches!(kind, IntegerKind::Scan) {
                 u64::MAX
             } else if negative {
@@ -449,13 +705,15 @@ impl State {
                 "(or {overflow} {})",
                 integer_overflow(&value.text, &digit.text, base, limit)
             );
-            value = self.bind(format!(
+            value = match self.bind(format!(
                 "(bvadd (bvmul {} {}) {})",
                 value.text,
                 smt::constant(base),
                 digit.text
-            ))?;
-            position += 1;
+            )) {
+                Ok(value) => value,
+                Err(error) => return Err(error.into()),
+            };
         }
         let limit = if negative {
             negative_limit
@@ -467,19 +725,96 @@ impl State {
         } else {
             value.text
         };
-        if matches!(kind, IntegerKind::Scan) && self.test(overflow.clone())? {
-            return Err(invalid("scanf integer exceeds 64 bits").into());
+        if matches!(kind, IntegerKind::Scan) {
+            match self.test(overflow.clone()) {
+                Ok(true) => return Err(invalid("scanf integer exceeds 64 bits").into()),
+                Ok(false) => {}
+                Err(error) => return Err(error),
+            }
         }
-        let result = self.bind(if matches!(kind, IntegerKind::Scan) {
+        let result = match self.bind(if matches!(kind, IntegerKind::Scan) {
             signed
         } else {
             format!("(ite {overflow} {} {signed})", smt::constant(limit))
-        })?;
+        }) {
+            Ok(value) => value,
+            Err(error) => return Err(error.into()),
+        };
+        if matches!(kind, IntegerKind::Scan) && base == 10 {
+            self.constrain_decimal_value(&result, negative, digits);
+        }
         Ok(ParsedInteger {
             value: result,
             consumed: position,
-            matched: position > start,
+            leading_whitespace,
+            sign,
+            digits,
+            synthesized: false,
+            canonical: false,
+            matched: digits > 0,
         })
+    }
+
+    fn constrain_decimal_value(&mut self, value: &Term, negative: bool, digits: usize) {
+        if !(1..=18).contains(&digits) {
+            return;
+        }
+        let mut maximum = 0u64;
+        for _ in 0..digits {
+            maximum = maximum * 10 + 9;
+        }
+        if negative {
+            self.constraints.push(format!(
+                "(and (bvsge {} {}) (bvsle {} {}))",
+                value.text,
+                smt::constant(0u64.wrapping_sub(maximum)),
+                value.text,
+                smt::constant(0)
+            ));
+        } else {
+            self.constraints
+                .push(format!("(bvule {} {})", value.text, smt::constant(maximum)));
+        }
+    }
+
+    fn constrain_scanned_integer(
+        &mut self,
+        value: &str,
+        sign: IntegerSign,
+        digits: usize,
+        integer_type: ScanIntegerType,
+    ) {
+        let mut decimal_limit = 0u64;
+        for _ in 0..digits {
+            decimal_limit = decimal_limit.saturating_mul(10).saturating_add(9);
+        }
+        if matches!(integer_type, ScanIntegerType::Signed) {
+            let limit = decimal_limit.min(if matches!(sign, IntegerSign::Negative) {
+                1u64 << 31
+            } else {
+                (1u64 << 31) - 1
+            }) as u32;
+            if matches!(sign, IntegerSign::Negative) {
+                self.constraints.push(format!(
+                    "(and (bvsge {value} (_ bv{} 32)) (bvsle {value} (_ bv0 32)))",
+                    0u32.wrapping_sub(limit)
+                ));
+            } else {
+                self.constraints
+                    .push(format!("(bvule {value} (_ bv{limit} 32))"));
+            }
+        } else {
+            let limit = decimal_limit.min(u64::from(u32::MAX)) as u32;
+            if matches!(sign, IntegerSign::Negative) {
+                self.constraints.push(format!(
+                    "(bvuge {value} (_ bv{} 32))",
+                    0u32.wrapping_sub(limit)
+                ));
+            } else {
+                self.constraints
+                    .push(format!("(bvule {value} (_ bv{limit} 32))"));
+            }
+        }
     }
 
     pub(super) fn input_output(
@@ -559,10 +894,14 @@ impl State {
                 Ok(Term::constant(destination))
             }
             Operation::Scanf | Operation::Fscanf | Operation::Sscanf => {
-                let (input, format_index) = match operation {
+                let (input, format_index, source) = match operation {
                     Operation::Sscanf => {
                         let address = self.number(binary, convention, 0)?;
-                        (self.string(binary, address, self.model_bound())?, 1)
+                        (
+                            self.string(binary, address, self.model_bound())?,
+                            1,
+                            ScanSource::String,
+                        )
                     }
                     Operation::Fscanf => {
                         if self.stdin_stream == 0
@@ -570,14 +909,28 @@ impl State {
                         {
                             return Err(invalid("unsupported fscanf stream").into());
                         }
-                        (self.stdin[self.input_position..].to_vec(), 1)
+                        (
+                            self.stdin[self.input_position..].to_vec(),
+                            1,
+                            ScanSource::Stdin,
+                        )
                     }
-                    _ => (self.stdin[self.input_position..].to_vec(), 0),
+                    _ => (
+                        self.stdin[self.input_position..].to_vec(),
+                        0,
+                        ScanSource::Stdin,
+                    ),
                 };
                 let address = self.number(binary, convention, format_index)?;
                 let format = self.concrete_format(binary, address)?;
-                let (result, consumed) =
-                    self.scan(binary, convention, &format, &input, format_index + 1)?;
+                let (result, consumed) = self.scan(
+                    binary,
+                    convention,
+                    &format,
+                    &input,
+                    format_index + 1,
+                    source,
+                )?;
                 if !matches!(operation, Operation::Sscanf) {
                     self.input_position += consumed;
                 }
@@ -680,6 +1033,7 @@ impl State {
         format: &[u8],
         input: &[Term],
         mut argument: usize,
+        source: ScanSource,
     ) -> Evaluation<(u64, usize)> {
         let mut position = 0;
         let mut consumed = 0;
@@ -739,7 +1093,13 @@ impl State {
                 return Err(invalid("unsupported symbolic scanf conversion").into());
             }
             if conversion != b'c' {
-                while consumed < input.len() && self.whitespace(&input[consumed])? {
+                while consumed < input.len() {
+                    if !self.whitespace_with_preference(
+                        &input[consumed],
+                        PredicatePreference::FalseFirst,
+                    )? {
+                        break;
+                    }
                     consumed += 1;
                     self.tick()?;
                 }
@@ -775,7 +1135,32 @@ impl State {
                     &input[consumed..end],
                     if conversion == b'x' { 16 } else { 10 },
                     IntegerKind::Scan,
+                    if source == ScanSource::Stdin
+                        && !suppress
+                        && width == 0
+                        && matches!(conversion, b'd' | b'u')
+                    {
+                        IntegerModel::StdinToken(if conversion == b'd' {
+                            ScanIntegerType::Signed
+                        } else {
+                            ScanIntegerType::Unsigned
+                        })
+                    } else {
+                        IntegerModel::Exact
+                    },
                 )?;
+                if parsed.synthesized {
+                    self.scanned_integers.push(super::ScannedInteger {
+                        start: self.input_position + consumed,
+                        length: parsed.consumed,
+                        whitespace: parsed.leading_whitespace,
+                        sign: parsed.sign,
+                        digits: parsed.digits,
+                        unsigned: conversion == b'u',
+                        canonical: parsed.canonical,
+                        value: parsed.value.clone(),
+                    });
+                }
                 consumed += parsed.consumed;
                 if !parsed.matched {
                     break;
@@ -928,11 +1313,31 @@ impl State {
     }
 }
 
+fn digit_value(byte: &str, decimal: &str, lower: &str, base: u64) -> String {
+    if base == 10 {
+        format!("(bvsub {byte} {})", smt::constant(48))
+    } else {
+        format!(
+            "(ite {decimal} (bvsub {byte} {}) (bvsub {lower} {}))",
+            smt::constant(48),
+            smt::constant(87)
+        )
+    }
+}
+
+fn boolean_value(condition: &str) -> String {
+    format!(
+        "(ite {condition} {} {})",
+        smt::constant(1),
+        smt::constant(0)
+    )
+}
+
 pub(super) fn integer_overflow(value: &str, digit: &str, base: u64, limit: u64) -> String {
     format!(
-        "(bvugt {value} (bvudiv (bvsub {} {digit}) {}))",
-        smt::constant(limit),
-        smt::constant(base)
+        "(or (bvugt {value} {0}) (and (= {value} {0}) (bvugt {digit} {1})))",
+        smt::constant(limit / base),
+        smt::constant(limit % base)
     )
 }
 
@@ -953,6 +1358,64 @@ fn case_conversion(value: &str, hook: Hook) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn smt_decimal_digit_after_range_check() {
+        if !smt::Proofs::available() {
+            return;
+        }
+        let mut proofs = smt::Proofs::default();
+        let decimal = format!(
+            "(and (bvuge r0 {}) (bvule r0 {}))",
+            smt::constant(48),
+            smt::constant(57)
+        );
+        let lower = format!("(bvor r0 {})", smt::constant(32));
+        let original = digit_value("r0", &decimal, &lower, 16);
+        let simplified = digit_value("r0", &decimal, &lower, 10);
+        proofs.predicate(
+            "decimal digit after range check",
+            &format!("(ite {decimal} {simplified} {original})"),
+            &original,
+        );
+        proofs.counterexample(
+            "hexadecimal letters need a different conversion",
+            &simplified,
+            &original,
+        );
+        proofs.check();
+    }
+
+    #[test]
+    fn smt_boolean_values_have_exactly_two_possible_values() {
+        if !smt::Proofs::available() {
+            return;
+        }
+        let mut proofs = smt::Proofs::default();
+        for condition in ["true", "false", "(= r0 r1)", "(bvult r0 r1)"] {
+            let value = boolean_value(condition);
+            proofs.predicate(
+                format!("Boolean domain {condition}"),
+                &format!(
+                    "(or (= {value} {}) (= {value} {}))",
+                    smt::constant(0),
+                    smt::constant(1)
+                ),
+                "true",
+            );
+            proofs.predicate(
+                format!("Boolean truth {condition}"),
+                &format!("(= {value} {})", smt::constant(1)),
+                condition,
+            );
+        }
+        proofs.counterexample(
+            "Boolean false remains feasible",
+            &boolean_value("false"),
+            &smt::constant(1),
+        );
+        proofs.check();
+    }
+
     #[test]
     fn i386_models_read_only_the_requested_stack_slots() {
         use crate::ir::CallKind;

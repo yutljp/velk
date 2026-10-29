@@ -6,7 +6,7 @@
 0x10b0 16 __stack_chk_fail plt
 0x10c0 16 fputs plt
 0x10d0 16 __fprintf_chk plt
-0x1120 124 main symtab,unwind
+0x1120 124 main symtab,unwind,call
 0x11a0 38 _start symtab,entry,unwind
 0x11d0 48 deregister_tm_clones symtab
 0x1200 64 register_tm_clones symtab
@@ -188,7 +188,7 @@ fn main @ 0x1120 (size 124)
   blk1 @ 0x1192:
     ret v1
 -- card
-{"addr":"0x1120","approxTokens":228,"blocks":2,"hardReasons":[],"name":"main","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":124,"unsupported":0}
+{"addr":"0x1120","approxTokens":228,"blocks":2,"hardReasons":[],"name":"main","nameSources":["symtab","unwind","call"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":124,"unsupported":0}
 
 == 0x11a0 _start
 -- decompile

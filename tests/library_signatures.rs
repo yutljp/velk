@@ -315,8 +315,8 @@ fn existing_stripped_rust_fixture_names_agree_with_symbols() {
         }
         assert!(wrong.is_empty(), "{wrong:?}");
         assert_eq!(
-            correct, 3,
-            "the Rust fixture must retain its recovered names"
+            correct, 4,
+            "the Rust fixture must retain its recovered names and discover main"
         );
         assert_eq!(functions.len(), 545);
         let measurement = json!({"correct":correct,"wrong":wrong.len(),

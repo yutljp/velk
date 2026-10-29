@@ -18,7 +18,7 @@
 0x11d0 10 linux_memory symtab,unwind
 0x11e0 7 linux_socket symtab,unwind
 0x11f0 7 linux_thread symtab,unwind
-0x1200 3 main symtab,unwind
+0x1200 3 main symtab,unwind,call
 0x1204 13 _fini symtab
 /* velk prelude */
 #include <stddef.h>
@@ -419,7 +419,7 @@ fn main @ 0x1200 (size 3)
   blk0 @ 0x1200:
     ret #0x0
 -- card
-{"addr":"0x1200","approxTokens":108,"blocks":1,"hardReasons":[],"name":"main","nameSources":["symtab","unwind"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":3,"unsupported":0}
+{"addr":"0x1200","approxTokens":108,"blocks":1,"hardReasons":[],"name":"main","nameSources":["symtab","unwind","call"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":3,"unsupported":0}
 
 == 0x1204 _fini
 -- decompile

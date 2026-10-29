@@ -69,6 +69,18 @@ struct ReturnFrame {
     return_address: u64,
 }
 
+#[derive(Clone)]
+pub(super) struct ScannedInteger {
+    pub(super) start: usize,
+    pub(super) length: usize,
+    pub(super) whitespace: usize,
+    pub(super) sign: Option<u8>,
+    pub(super) digits: usize,
+    pub(super) unsigned: bool,
+    pub(super) canonical: bool,
+    pub(super) value: Term,
+}
+
 #[derive(Default)]
 struct BranchObservations {
     sides: BTreeMap<u64, [bool; 2]>,
@@ -92,6 +104,7 @@ pub struct State {
     files: super::stdio::Files<Term>,
     input_files: BTreeMap<String, Vec<Term>>,
     stdin: Vec<Term>,
+    scanned_integers: Vec<ScannedInteger>,
     input_position: usize,
     stdout: Vec<Term>,
     stdin_stream: u64,
@@ -189,6 +202,7 @@ impl State {
             files: super::stdio::Files::new(BTreeMap::new()).map_err(invalid)?,
             input_files: BTreeMap::new(),
             stdin: Vec::new(),
+            scanned_integers: Vec::new(),
             input_position: 0,
             stdout: Vec::new(),
             stdin_stream: 0,
@@ -565,15 +579,23 @@ impl State {
     }
 
     fn extreme(&self, term: &Term, constraints: &[String], maximum: bool) -> Result<Option<u64>> {
-        self.require_defined(term, 64)?;
-        if self.solver.borrow_mut().query(constraints, None)?.is_none() {
-            return Ok(None);
+        if let Err(error) = self.require_defined(term, 64) {
+            return Err(error);
         }
+        let model = match self
+            .solver
+            .borrow_mut()
+            .query(constraints, Some(&term.text))
+        {
+            Ok(Some(value)) => value,
+            Ok(None) => return Ok(None),
+            Err(error) => return Err(error),
+        };
         if let Some(value) = term.concrete {
             return Ok(Some(value));
         }
-        let mut low = 0u64;
-        let mut high = u64::MAX;
+        let mut low = if maximum { model } else { 0 };
+        let mut high = if maximum { u64::MAX } else { model };
         while low < high {
             let middle = low + (high - low) / 2;
             let mut trial = constraints.to_vec();
@@ -583,7 +605,10 @@ impl State {
                 term.text,
                 smt::constant(middle)
             ));
-            let sat = self.solver.borrow_mut().query(&trial, None)?.is_some();
+            let sat = match self.solver.borrow_mut().query(&trial, None) {
+                Ok(value) => value.is_some(),
+                Err(error) => return Err(error),
+            };
             if sat == maximum {
                 low = middle + 1;
             } else {
@@ -1194,6 +1219,24 @@ impl State {
     fn inputs(&self) -> Result<Inputs> {
         let mut state = self.clone();
         let mut result = Inputs::default();
+        let mut scanned_values = Vec::new();
+        for scanned in &self.scanned_integers {
+            let value = match state
+                .solver
+                .borrow_mut()
+                .query(&state.constraints, Some(&scanned.value.text))
+            {
+                Ok(Some(value)) => value,
+                Ok(None) => return Err(invalid("reached state is unsatisfiable")),
+                Err(error) => return Err(error),
+            };
+            state.constraints.push(format!(
+                "(= {} {})",
+                scanned.value.text,
+                smt::constant(value)
+            ));
+            scanned_values.push(value);
+        }
         let mut choose = |term: &Term| -> Result<u64> {
             let Some(value) = state.extreme(term, &state.constraints, /* maximum */ false)? else {
                 return Err(invalid("reached state is unsatisfiable"));
@@ -1210,8 +1253,65 @@ impl State {
             }
             result.files.insert(path.clone(), bytes);
         }
-        for byte in &self.stdin {
-            result.stdin.push(choose(byte)? as u8);
+        let mut scanned_bytes = vec![false; self.stdin.len()];
+        for scanned in &self.scanned_integers {
+            let Some(end) = scanned.start.checked_add(scanned.length) else {
+                return Err(invalid("scanf input range overflows"));
+            };
+            let Some(bytes) = scanned_bytes.get_mut(scanned.start..end) else {
+                return Err(invalid("scanf input range is unavailable"));
+            };
+            bytes.fill(true);
+        }
+        for (index, byte) in self.stdin.iter().enumerate() {
+            result.stdin.push(if scanned_bytes[index] {
+                0
+            } else {
+                choose(byte)? as u8
+            });
+        }
+        for (scanned, value) in self.scanned_integers.iter().zip(scanned_values) {
+            let (sign, magnitude) = if scanned.canonical {
+                if scanned.unsigned {
+                    (Some(b'+'), u64::from(value as u32))
+                } else {
+                    let signed = value as i64;
+                    (
+                        Some(if signed < 0 { b'-' } else { b'+' }),
+                        signed.unsigned_abs(),
+                    )
+                }
+            } else if scanned.unsigned {
+                if scanned.sign == Some(b'-') {
+                    (scanned.sign, u64::from(0u32.wrapping_sub(value as u32)))
+                } else {
+                    (scanned.sign, u64::from(value as u32))
+                }
+            } else {
+                let signed = value as i64;
+                if (scanned.sign == Some(b'-') && signed > 0)
+                    || (scanned.sign != Some(b'-') && signed < 0)
+                {
+                    return Err(invalid("scanf model does not match its sign"));
+                }
+                (scanned.sign, signed.unsigned_abs())
+            };
+            let digits = format!("{:0>width$}", magnitude, width = scanned.digits);
+            let mut replacement = vec![b' '; scanned.whitespace];
+            if let Some(sign) = sign {
+                replacement.push(sign);
+            }
+            replacement.extend_from_slice(digits.as_bytes());
+            if replacement.len() != scanned.length {
+                return Err(invalid("scanf model changes the input token length"));
+            }
+            let Some(end) = scanned.start.checked_add(scanned.length) else {
+                return Err(invalid("scanf input range overflows"));
+            };
+            let Some(bytes) = result.stdin.get_mut(scanned.start..end) else {
+                return Err(invalid("scanf input range is unavailable"));
+            };
+            bytes.copy_from_slice(&replacement);
         }
         for argument in &self.argv {
             let mut bytes = Vec::new();

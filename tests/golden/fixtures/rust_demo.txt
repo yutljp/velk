@@ -8,7 +8,7 @@
 0x14f70 13 std::rt::lang_start::<()>::{closure#0} symtab,unwind
 0x14f80 13 <std::rt::lang_start<()>::{closure#0} as core::ops::function::FnOnce<()>>::call_once::{shim:vtable#0} symtab,unwind
 0x14f90 57 rust_demo::main symtab,unwind
-0x14fd0 39 main symtab,unwind
+0x14fd0 39 main symtab,unwind,call
 0x15000 5 __rustc::__rust_alloc symtab,unwind
 0x15010 5 __rustc::__rust_dealloc symtab,unwind
 0x15020 5 __rustc::__rust_realloc symtab,unwind

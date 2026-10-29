@@ -808,6 +808,10 @@ fn libc_return_solutions_replay() {
                 ("scan_stream", 3),
                 ("scan_stack", 9),
                 ("scan_decimal", 2),
+                ("scan_signed", 4),
+                ("scan_invalid", 1),
+                ("scan_eof", 0),
+                ("scan_unsigned_sign", 3),
                 ("scan_unsigned", 2),
                 ("scan_hex", 2),
                 ("scan_text", 3),
@@ -864,6 +868,191 @@ fn libc_return_solutions_replay() {
             }
         }
     }
+}
+
+#[test]
+fn thirteen_decimal_relations_preserve_symbolic_values() {
+    if !solver_available() {
+        return;
+    }
+    for arch in ["i386", "x86_64", "aarch64"] {
+        for opt in [0, 2] {
+            let binary = binary(arch, opt);
+            let short: Options = serde_json::from_value(json!({
+                "stdin": 1, "returns": {"eq":1}, "pathLimit":128
+            }))
+            .unwrap();
+            let report = symbolic::solve(&binary, "scan_many", &short).unwrap();
+            assert!(!report.found, "{arch} O{opt}: {report:?}");
+            assert_eq!(
+                report.reason, "paths exhausted",
+                "{arch} O{opt}: {report:?}"
+            );
+            let options: Options = serde_json::from_value(json!({
+                "stdin": 143, "returns": {"eq":1}, "pathLimit":4096
+            }))
+            .unwrap();
+            let report = symbolic::solve(&binary, "scan_many", &options).unwrap();
+            assert!(report.found, "{arch} O{opt}: {report:?}");
+            let inputs = report.inputs.unwrap();
+            let replay = serde_json::from_value(json!({
+                "stdin":{"hex":inputs.stdin.iter().map(|byte| format!("{byte:02x}")).collect::<String>()}
+            }))
+            .unwrap();
+            let report = emulation::run(&binary, "scan_many", &replay, None).unwrap();
+            assert_eq!(report.return_value, "0x1", "{arch} O{opt}: {report:?}");
+            #[cfg(target_os = "linux")]
+            {
+                use std::io::Write as _;
+                use std::process::Stdio;
+                let mut child = Command::new(fixtures().join("native-libc"))
+                    .arg("scan_many")
+                    .stdin(Stdio::piped())
+                    .spawn()
+                    .unwrap();
+                child
+                    .stdin
+                    .take()
+                    .unwrap()
+                    .write_all(&inputs.stdin)
+                    .unwrap();
+                assert!(child.wait().unwrap().success(), "{arch} O{opt}: {inputs:?}");
+            }
+            let options: Options = serde_json::from_value(json!({
+                "argumentValues": ["0x10000000"],
+                "memory": [{"address":"0x10000000", "size":14}],
+                "returns":{"eq":1}, "pathLimit":128
+            }))
+            .unwrap();
+            let mut state = State::new(&binary, "scan_relations", &options).unwrap();
+            let input = state.read_memory(&binary, 0x10000000, 14).unwrap();
+            for byte in &input[..13] {
+                state
+                    .constrain(Cond::Cs, byte, &Term::constant(48), 64)
+                    .unwrap();
+                state
+                    .constrain(Cond::Ls, byte, &Term::constant(57), 64)
+                    .unwrap();
+            }
+            state
+                .constrain(Cond::Eq, &input[13], &Term::constant(0), 64)
+                .unwrap();
+            let report = state.explore(&binary, &options).unwrap();
+            assert!(report.found, "{arch} O{opt}: {report:?}");
+            let inputs = report.inputs.unwrap();
+            let mut text = String::new();
+            for index in 0..13 {
+                let byte = inputs.memory[&format!("0x{:x}", 0x10000000 + index)];
+                text.push(char::from(byte));
+            }
+            assert_eq!(text, "0123456780123");
+            #[cfg(target_os = "linux")]
+            assert!(
+                Command::new(fixtures().join("native-libc"))
+                    .args(["scan_relations", &text])
+                    .status()
+                    .unwrap()
+                    .success()
+            );
+            let replay = serde_json::from_value(json!({
+                "arguments":["0x10000000"],
+                "memory":[{"address":"0x10000000", "bytes":text.bytes().chain([0]).collect::<Vec<_>>()}]
+            })).unwrap();
+            let report = emulation::run(&binary, "scan_relations", &replay, None).unwrap();
+            assert_eq!(report.return_value, "0x1", "{report:?}");
+            let stream: velk::emulation::Options = serde_json::from_value(json!({
+                "stdin":{"text":"0 1 2 3 4 5 6 7 8 0 1 2 3"}
+            }))
+            .unwrap();
+            let report = emulation::run(&binary, "scan_many", &stream, None).unwrap();
+            assert_eq!(report.return_value, "0x1", "{arch} O{opt}: {report:?}");
+        }
+    }
+    #[cfg(target_os = "linux")]
+    {
+        use std::io::Write as _;
+        use std::process::Stdio;
+        let mut child = Command::new(fixtures().join("native-libc"))
+            .arg("scan_many")
+            .stdin(Stdio::piped())
+            .spawn()
+            .unwrap();
+        child
+            .stdin
+            .take()
+            .unwrap()
+            .write_all(b"0 1 2 3 4 5 6 7 8 0 1 2 3")
+            .unwrap();
+        assert!(child.wait().unwrap().success());
+    }
+}
+
+#[test]
+fn ten_digit_scan_preserves_signed_int_limits() {
+    if !solver_available() {
+        return;
+    }
+    for arch in ["i386", "x86_64", "aarch64"] {
+        for opt in [0, 2] {
+            let binary = binary(arch, opt);
+            let options: Options = serde_json::from_value(json!({
+                "stdin": 11, "returns": {"eq": 1}, "pathLimit": 256
+            }))
+            .expect("symbolic fixture operation succeeds");
+            let report = symbolic::solve(&binary, "scan_signed_min", &options)
+                .expect("signed int scan succeeds");
+            assert!(report.found, "{arch} O{opt}: {report:?}");
+            let inputs = report.inputs.expect("successful scan returns input");
+            assert_eq!(&inputs.stdin, b"-2147483648");
+            if arch == "i386" && opt == 0 {
+                let repeated = symbolic::solve(&binary, "scan_signed_min", &options)
+                    .expect("repeated signed int scan succeeds");
+                assert_eq!(
+                    repeated.inputs.expect("repeated scan returns input").stdin,
+                    inputs.stdin
+                );
+            }
+            let replay = serde_json::from_value(json!({
+                "stdin":{"hex":inputs.stdin.iter().map(|byte| format!("{byte:02x}")).collect::<String>()}
+            }))
+            .expect("scan replay options");
+            let report = emulation::run(&binary, "scan_signed_min", &replay, None)
+                .expect("concrete scan replay");
+            assert_eq!(report.return_value, "0x1", "{arch} O{opt}: {report:?}");
+            #[cfg(target_os = "linux")]
+            {
+                use std::io::Write as _;
+                use std::process::Stdio;
+                let mut child = Command::new(fixtures().join("native-libc"))
+                    .arg("scan_signed_min")
+                    .stdin(Stdio::piped())
+                    .spawn()
+                    .expect("native checker");
+                child
+                    .stdin
+                    .take()
+                    .expect("native input pipe")
+                    .write_all(&inputs.stdin)
+                    .expect("native input");
+                assert!(child.wait().expect("native result").success());
+            }
+        }
+    }
+}
+
+#[test]
+fn scanf_integer_does_not_stop_before_a_digit() {
+    if !solver_available() {
+        return;
+    }
+    let binary = binary("x86_64", 0);
+    let options: Options = serde_json::from_value(json!({
+        "stdin": 12, "returns": {"eq": 1}, "pathLimit": 128
+    }))
+    .expect("symbolic scanf options");
+    let report = symbolic::solve(&binary, "scan_digit_after_no_eof", &options)
+        .expect("scanf search succeeds");
+    assert!(!report.found, "{report:?}");
 }
 
 #[test]

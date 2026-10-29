@@ -32,7 +32,7 @@ impl<'a> Memory<'a> {
         let stack_end = crate::ir::eval::stack_top(image.isa) + 0x1000;
         let stack_start = stack_end - STACK_SIZE;
         let mut ranges = vec![(stack_start, stack_end)];
-        for section in &image.sections {
+        for section in Self::mappings(image) {
             if !section.loaded || section.size == 0 {
                 continue;
             }
@@ -106,6 +106,20 @@ impl<'a> Memory<'a> {
             || (self.stack_start..self.stack_end).contains(&address)
     }
 
+    fn mappings(image: &Image) -> &[crate::loader::Section] {
+        if image.load_segments.is_empty() {
+            &image.sections
+        } else {
+            &image.load_segments
+        }
+    }
+
+    fn mapping_at(&self, address: u64) -> Option<&crate::loader::Section> {
+        Self::mappings(self.image).iter().rev().find(|section| {
+            section.loaded && address >= section.vaddr && address - section.vaddr < section.size
+        })
+    }
+
     pub(crate) fn check(&self, address: u64, size: u64, write: bool) -> bool {
         let Some(end) = address.checked_add(size) else {
             self.fail(format!("memory range overflows at 0x{address:x}"));
@@ -124,21 +138,30 @@ impl<'a> Memory<'a> {
                 at = end.min(limit);
                 continue;
             }
-            let Some(section) = self.image.section_at(at) else {
+            let Some(section) = self.mapping_at(at) else {
                 self.fail(format!(
                     "unmapped memory {} at 0x{at:x}",
                     if write { "write" } else { "read" }
                 ));
                 return false;
             };
-            if write && (section.read_only || section.executable) {
+            if write
+                && (section.read_only
+                    || (self.image.load_segments.is_empty() && section.executable))
+            {
                 self.fail(format!(
                     "write to protected section {} at 0x{at:x}",
                     section.name
                 ));
                 return false;
             }
-            at = end.min(section.vaddr.saturating_add(section.size));
+            let mut limit = section.vaddr.saturating_add(section.size);
+            for next in Self::mappings(self.image) {
+                if next.loaded && next.vaddr > at {
+                    limit = limit.min(next.vaddr);
+                }
+            }
+            at = end.min(limit);
         }
         true
     }
@@ -157,7 +180,7 @@ impl<'a> Memory<'a> {
         if self.zero_area(address) {
             return 0;
         }
-        let Some(section) = self.image.section_at(address) else {
+        let Some(section) = self.mapping_at(address) else {
             return 0;
         };
         let Some(offset) = section.file_offset else {

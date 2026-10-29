@@ -192,7 +192,7 @@ fn io_errors_and_reads() {
         ("invalid_stream", json!({}), "stream pointer"),
         (
             "decode_buffer",
-            json!({"reads":[{"address":1,"length":1}]}),
+            json!({"reads":[{"address":"0x700000000000","length":1}]}),
             "unmapped memory",
         ),
         (
