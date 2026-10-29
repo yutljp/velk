@@ -417,6 +417,50 @@ impl State {
         }
         let first = self.number(binary, convention, 0)?;
         match hook {
+            Hook::ComplementSpan => {
+                let reject = match self.number(binary, convention, 1) {
+                    Ok(value) => value,
+                    Err(error) => return Err(error),
+                };
+                let mut rejected = Vec::new();
+                let mut terminated = false;
+                for offset in 0..self.model_bound() {
+                    let byte = match self.byte(binary, reject, offset) {
+                        Ok(byte) => byte,
+                        Err(error) => return Err(error),
+                    };
+                    match self.zero(&byte) {
+                        Ok(true) => {
+                            terminated = true;
+                            break;
+                        }
+                        Ok(false) => rejected.push(byte),
+                        Err(error) => return Err(error),
+                    }
+                }
+                if !terminated {
+                    return Err(invalid("string exceeds symbolic model bound").into());
+                }
+                for offset in 0..self.model_bound() {
+                    let byte = match self.byte(binary, first, offset) {
+                        Ok(byte) => byte,
+                        Err(error) => return Err(error),
+                    };
+                    match self.zero(&byte) {
+                        Ok(true) => return Ok(Term::constant(offset as u64)),
+                        Ok(false) => {}
+                        Err(error) => return Err(error),
+                    }
+                    for candidate in &rejected {
+                        match self.test(format!("(= {} {})", byte.text, candidate.text)) {
+                            Ok(true) => return Ok(Term::constant(offset as u64)),
+                            Ok(false) => {}
+                            Err(error) => return Err(error),
+                        }
+                    }
+                }
+                Err(invalid("string exceeds symbolic model bound").into())
+            }
             Hook::MemorySearch => {
                 let target = match self.argument(binary, convention, 1) {
                     Ok(target) => target,

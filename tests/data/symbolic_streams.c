@@ -23,6 +23,7 @@ void *memset(void *a, int c, unsigned long n) { (void)c; (void)n; return a; }
 char *strcpy(char *a, const char *b) { (void)b; return a; }
 char *strncpy(char *a, const char *b, unsigned long n) { (void)n; return strcpy(a,b); }
 char *strchr(const char *s, int c) { (void)s; (void)c; return 0; }
+unsigned long strcspn(const char *s, const char *reject) { (void)s; (void)reject; return 0; }
 int atoi(const char *s) { (void)s; return 0; }
 long strtol(const char *s, char **e, int b) { (void)e; (void)b; return atoi(s); }
 int toupper(int c) { return c; }

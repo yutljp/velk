@@ -5,6 +5,7 @@ extern void *memcpy(void *, const void *, usize);
 extern void *memmove(void *, const void *, usize);
 extern void *memset(void *, int, usize);
 extern usize strlen(const char *);
+extern usize strcspn(const char *, const char *);
 extern int strcmp(const char *, const char *);
 extern int strncmp(const char *, const char *, usize);
 extern char *strcpy(char *, const char *);
@@ -44,6 +45,7 @@ u32 hook_overflow(u8 *p, u8 *q, usize n) {
     u32 result = a == (void *)0; free(a); return result;
 }
 u32 hook_free(u8 *p, u8 *q, usize n) { (void)q; (void)n; free(p); return 7; }
+u32 hook_complement_span(u8 *p, u8 *q, usize n) { (void)n; return strcspn((char *)p, (char *)q); }
 
 #ifdef NATIVE
 #include <stdio.h>
@@ -51,7 +53,7 @@ u32 hook_free(u8 *p, u8 *q, usize n) { (void)q; (void)n; free(p); return 7; }
 int main(int argc, char **argv) {
     u32 (*routines[])(u8 *, u8 *, usize) = { hook_copy, hook_move, hook_set, hook_length,
         hook_compare, hook_compare_n, hook_string_copy, hook_allocate, hook_calloc,
-        hook_overflow, hook_free };
+        hook_overflow, hook_free, hook_complement_span };
     u8 bytes[128];
     if (argc != 5 || fread(bytes, 1, sizeof(bytes), stdin) != sizeof(bytes)) return 2;
     unsigned routine = (unsigned)strtoul(argv[1], 0, 10);

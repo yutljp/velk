@@ -24,6 +24,7 @@ extern void *memset(void *, int, size_t);
 extern char *strcpy(char *, const char *);
 extern char *strncpy(char *, const char *, size_t);
 extern char *strchr(const char *, int);
+extern size_t strcspn(const char *, const char *);
 extern int atoi(const char *);
 extern long strtol(const char *, char **, int);
 extern int toupper(int);
@@ -76,7 +77,7 @@ int copy_check(void) {
     if (b[1] != a[0] || b[2] != a[1]) return 0;
     memmove(b, a, 3);
     strcpy(a, b); strncpy(b, a, 4);
-    return strchr(b, 'e') == b + 1 && strcmp(a, "yes") == 0;
+    return strchr(b, 'e') == b + 1 && strcspn(b, "ex") == 1 && strcmp(a, "yes") == 0;
 }
 int output_check(void) { int c = getchar(); puts("ok"); printf("%s %%", "ok"); printf("%c %u %x %d", c, (unsigned)c, (unsigned)c, -c); printf(" %u %u %u %u %u %u %u %u %u", (unsigned)c, (unsigned)c, (unsigned)c, (unsigned)c, (unsigned)c, (unsigned)c, (unsigned)c, (unsigned)c, (unsigned)c); return toupper(c) == 'Y' && tolower(c) == 'y'; }
 int bound_descriptor(void) { char c; return read(7, &c, 1) == 1 && c == 'y'; }

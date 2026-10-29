@@ -8,7 +8,7 @@ use velk::service::Binary;
 use super::matrix::{self, ARCHITECTURES, HEAP, Interfaces};
 use crate::common;
 
-const HOOKS: [&str; 11] = [
+const HOOKS: [&str; 12] = [
     "hook_copy",
     "hook_move",
     "hook_set",
@@ -20,6 +20,7 @@ const HOOKS: [&str; 11] = [
     "hook_calloc",
     "hook_overflow",
     "hook_free",
+    "hook_complement_span",
 ];
 const HEAP_END: u64 = HEAP + (1 << 24);
 
@@ -179,6 +180,10 @@ fn hooks_match_libc_and_check_mapped_boundaries() {
                 (5, 62, 126, 128),
                 (6, 120, 64, 0),
                 (6, 0, 127, 0),
+                (11, 0, 0, 0),
+                (11, 0, 127, 0),
+                (11, 127, 0, 0),
+                (11, 0, 64, 0),
             ]);
             for (routine, destination, source, size) in cases {
                 let mut initial: Vec<u8> = (0..128).map(|i| ((i % 64) + 128) as u8).collect();

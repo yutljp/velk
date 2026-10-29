@@ -34,6 +34,7 @@ pub(crate) enum Hook {
     MemoryCompare,
     StringCopyN,
     Character,
+    ComplementSpan,
     Integer,
     IntegerEnd,
     Upper,
@@ -126,6 +127,7 @@ const HOOKS: &[(&str, Hook)] = &[
     ("bcmp", Hook::MemoryCompare),
     ("strncpy", Hook::StringCopyN),
     ("strchr", Hook::Character),
+    ("strcspn", Hook::ComplementSpan),
     ("atoi", Hook::Integer),
     ("strtol", Hook::IntegerEnd),
     ("toupper", Hook::Upper),
@@ -743,6 +745,49 @@ impl Runner<'_> {
                 found
             }
             Hook::Getline => return self.getline_hook(first, convention, kind),
+            Hook::ComplementSpan => {
+                let reject = match self.argument(1, convention, kind) {
+                    Ok(value) => value,
+                    Err(stop) => return Err(stop),
+                };
+                let mut rejected = [false; 256];
+                let mut terminated = false;
+                for offset in 0..HEAP_SIZE {
+                    let Some(address) = reject.checked_add(offset) else {
+                        return Err(Stop::Error("string address overflows".into()));
+                    };
+                    let byte = match self.read_byte(address) {
+                        Ok(value) => value,
+                        Err(stop) => return Err(stop),
+                    };
+                    if byte == 0 {
+                        terminated = true;
+                        break;
+                    }
+                    rejected[usize::from(byte)] = true;
+                }
+                if !terminated {
+                    return Err(Stop::Error("string operation exceeds 16 MiB".into()));
+                }
+                let mut length = None;
+                for offset in 0..HEAP_SIZE {
+                    let Some(address) = first.checked_add(offset) else {
+                        return Err(Stop::Error("string address overflows".into()));
+                    };
+                    let byte = match self.read_byte(address) {
+                        Ok(value) => value,
+                        Err(stop) => return Err(stop),
+                    };
+                    if byte == 0 || rejected[usize::from(byte)] {
+                        length = Some(offset);
+                        break;
+                    }
+                }
+                match length {
+                    Some(length) => length,
+                    None => return Err(Stop::Error("string operation exceeds 16 MiB".into())),
+                }
+            }
             Hook::Upper | Hook::Lower => {
                 let value = first as u32;
                 if matches!(hook, Hook::Upper) && (97..=122).contains(&value) {
