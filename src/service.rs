@@ -1747,6 +1747,18 @@ mod tests {
     }
 
     #[test]
+    fn rust_single_function_skips_unprinted_callee_optimization() {
+        for name in ["rust_probe", "rust_probe_arm64"] {
+            let mut binary = fixture(name);
+            let addr = binary.find("rust_probe::main").unwrap().addr;
+            let code = binary.decompile(addr, None, None).unwrap();
+            assert!(code.contains("stdio___print("), "{code}");
+            assert_eq!(binary.analyses.len(), 1, "{name}");
+            assert_eq!(binary.decompile(addr, None, None).unwrap(), code);
+        }
+    }
+
+    #[test]
     fn timed_out_analysis_is_not_cached() {
         let mut binary = fixture("arm64.o");
         let addr = binary.find("pair_sum").expect("fixture function").addr;

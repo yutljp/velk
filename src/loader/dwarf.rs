@@ -188,6 +188,25 @@ fn aggregate_size(
 }
 
 pub fn function_types(image: &Image, addr: u64) -> Option<FunctionTypes> {
+    read_function_types(image, addr, TypeDetails::Complete)
+}
+
+pub(crate) fn has_promoted_parameters(image: &Image, addr: u64) -> bool {
+    read_function_types(image, addr, TypeDetails::Parameters).is_some_and(|types| {
+        types
+            .params
+            .iter()
+            .any(|(_, ty)| ty.as_ref().is_some_and(crate::render::promoted_parameter))
+    })
+}
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum TypeDetails {
+    Parameters,
+    Complete,
+}
+
+fn read_function_types(image: &Image, addr: u64, details: TypeDetails) -> Option<FunctionTypes> {
     if let Some(types) = image.codeview.function_types(image, addr) {
         return Some(types);
     }
@@ -233,7 +252,11 @@ pub fn function_types(image: &Image, addr: u64) -> Option<FunctionTypes> {
                 .filter(plausible_type),
             };
             let mut registers = Vec::new();
-            let locals = locals::read(image, &dwarf, &unit, entry, &mut registers);
+            let locals = if details == TypeDetails::Complete {
+                locals::read(image, &dwarf, &unit, entry, &mut registers)
+            } else {
+                Vec::new()
+            };
             let Some(function) = source_id(&unit, entry.offset()) else {
                 continue;
             };
@@ -283,9 +306,17 @@ pub fn function_types(image: &Image, addr: u64) -> Option<FunctionTypes> {
             if params.is_empty() && ret.is_none() {
                 continue;
             }
-            let definitions = definitions(&dwarf, &unit, abi_profile.ok());
+            let definitions = if details == TypeDetails::Complete {
+                definitions(&dwarf, &unit, abi_profile.ok())
+            } else {
+                Vec::new()
+            };
             return Some(FunctionTypes {
-                globals: globals::read(&dwarf, &unit, image),
+                globals: if details == TypeDetails::Complete {
+                    globals::read(&dwarf, &unit, image)
+                } else {
+                    Vec::new()
+                },
                 locals,
                 registers,
                 params,
@@ -293,7 +324,11 @@ pub fn function_types(image: &Image, addr: u64) -> Option<FunctionTypes> {
                 ret_aggregate_size,
                 param_aggregate_sizes,
                 variadic,
-                members: structure_members(&dwarf, &unit, &definitions),
+                members: if details == TypeDetails::Complete {
+                    structure_members(&dwarf, &unit, &definitions)
+                } else {
+                    Vec::new()
+                },
                 definitions,
                 param_layouts,
                 ret_layout,

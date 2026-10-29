@@ -211,6 +211,9 @@ impl Function {
 /// What a call needs to know of its callee.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Summary {
+    /// Whether recovered parameter types may change under C's default argument promotions.
+    #[serde(default)]
+    pub promoted_parameters: Option<bool>,
     /// How many integer argument registers it reads, when known.
     pub arity: Option<usize>,
     /// How many floating-point argument registers it reads, when known.

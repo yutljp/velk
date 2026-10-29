@@ -212,6 +212,7 @@ pub(crate) fn lift_shared_with_targets(
 /// so lifts that differ only in the rest are the same lift.
 pub(crate) fn call_summary(summary: Summary) -> Summary {
     Summary {
+        promoted_parameters: None,
         pointers: 0,
         indirect_result: false,
         narrow_return: false,

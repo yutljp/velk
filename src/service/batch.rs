@@ -28,37 +28,58 @@ pub(super) fn neighbors(image: &Image, analysis: &Analysis) -> Vec<u64> {
                 .any(|param| param.index == register && param.ty.is_pointer())
     };
     let mut neighbors = std::collections::BTreeSet::new();
+    let mut required = std::collections::BTreeSet::new();
     let statements = ir.blocks.iter().flat_map(|block| &block.stmts);
     for stmt in statements {
-        if let crate::ir::Stmt::Call {
+        let crate::ir::Stmt::Call {
             target: Some(target),
             through: None,
             args: Some(args),
             outputs,
             ..
         } = stmt
-            && ((!image.go
-                && image.functions.get(target).is_some_and(|function| {
-                    !function.sources.contains(&crate::loader::NameSource::Plt)
-                }))
-                || args.iter().any(|arg| {
-                    let mut reads = std::collections::HashSet::new();
-                    crate::ir::visit::collect_reads(arg, &mut reads);
-                    (!image.go && reads.contains(&crate::arch::stack_pointer(ir.isa)))
-                        || reads.into_iter().any(pointer)
-                })
-                || (!image.go && analysis::summary::summary(image, *target).pointers != 0)
-                || outputs.iter().any(|output| pointer(output.dest.index)))
-            && image.functions.contains_key(target)
+        else {
+            continue;
+        };
+        let Some(function) = image.functions.get(target) else {
+            continue;
+        };
+        let mut pointer_arguments = false;
+        let mut stack_arguments = false;
+        for arg in args {
+            let mut reads = std::collections::HashSet::new();
+            crate::ir::visit::collect_reads(arg, &mut reads);
+            stack_arguments |= !image.go && reads.contains(&crate::arch::stack_pointer(ir.isa));
+            pointer_arguments |= reads.into_iter().any(pointer);
+        }
+        let pointer_dependency = pointer_arguments
+            || outputs.iter().any(|output| pointer(output.dest.index))
+            || (!image.go && analysis::summary::summary(image, *target).pointers != 0);
+        if pointer_dependency
+            || stack_arguments
+            || (!image.go && !function.sources.contains(&crate::loader::NameSource::Plt))
         {
             neighbors.insert(*target);
+            if pointer_dependency
+                || (!image.go && !ir.structures.is_empty())
+                || (!image.go && analysis::summary::needs_parameter_analysis(image, *target))
+            {
+                required.insert(*target);
+            }
         }
     }
     if ir.params.iter().any(|param| param.ty.is_pointer()) {
-        neighbors.extend(analysis::results::callers(image, addr));
+        let callers = analysis::results::callers(image, addr);
+        neighbors.extend(&callers);
+        required.extend(callers);
     }
     neighbors.remove(&addr);
-    neighbors.into_iter().take(8).collect()
+    // Prune after the limit so skipped callees do not change the sharing neighborhood.
+    neighbors
+        .into_iter()
+        .take(8)
+        .filter(|addr| required.contains(addr))
+        .collect()
 }
 
 pub(super) fn share_parameters(functions: &mut [Analysis], go: bool) {

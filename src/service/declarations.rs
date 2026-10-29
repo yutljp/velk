@@ -46,10 +46,7 @@ pub(super) fn callers(image: &Image, root: &Analysis) -> BTreeSet<u64> {
         }
         if target != root.ir.addr
             && callees.contains(&target)
-            && image
-                .functions
-                .get(&target)
-                .is_some_and(|function| !function.sources.contains(&crate::loader::NameSource::Plt))
+            && crate::analysis::summary::needs_parameter_analysis(image, target)
         {
             addresses.insert(target);
         }

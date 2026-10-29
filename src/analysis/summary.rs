@@ -128,6 +128,22 @@ pub fn summary(image: &Image, addr: u64) -> Summary {
     cache.get(&addr).copied().unwrap_or_default()
 }
 
+/// Whether a callee can require parameter types that change under C promotions.
+pub(crate) fn needs_parameter_analysis(image: &Image, addr: u64) -> bool {
+    let Some(function) = image.functions.get(&addr) else {
+        return false;
+    };
+    if function.sources.contains(&NameSource::Plt) {
+        return false;
+    }
+    if summary(image, addr).promoted_parameters != Some(false) {
+        return true;
+    }
+    crate::loader::dwarf::has_promoted_parameters(image, addr)
+        || matches!(super::calls::declaration(image, addr), Ok(Some(declaration))
+            if declaration.signature.params.iter().any(|(_, ty)| crate::render::promoted_parameter(ty)))
+}
+
 /// Settles summaries before independent callers share the worker pool. Workers
 /// must not wait for this cache's write lock while its owner joins nested work.
 pub(crate) fn prepare(
@@ -663,6 +679,10 @@ fn clobbers_of(image: &Image, addr: u64, blocks: &[Block]) -> Option<Registers> 
 /// grows keeps the most either says.
 fn merge(current: Summary, next: Summary) -> Summary {
     Summary {
+        promoted_parameters: match (current.promoted_parameters, next.promoted_parameters) {
+            (Some(a), Some(b)) => Some(a || b),
+            (a, b) => a.or(b),
+        },
         arity: match (current.arity, next.arity) {
             (Some(a), Some(b)) => Some(a.max(b)),
             (a, b) => a.or(b),
@@ -716,6 +736,7 @@ fn named(image: &Image, name: &str, imported: bool) -> Summary {
         .flatten();
     Summary {
         arity: prototype.map(super::prototypes::Prototype::fixed),
+        promoted_parameters: None,
         // A variadic function may read floating-point arguments its format
         // string asks for.
         floats: prototype
@@ -843,6 +864,16 @@ fn compute(
     ) && crate::lift::pairs32::types(image, addr)
         .is_some_and(|(_, ret)| crate::lift::pairs32::wide(&ret));
     let summary = Summary {
+        promoted_parameters: (!image.go).then(|| {
+            signature.params.iter().any(|param| crate::render::promoted_parameter(&param.ty))
+                || signature.stack_widths.iter().any(|width| *width < 4)
+                // Optimization can expose a parameter passed unchanged to a prototype.
+                || blocks.iter().flat_map(|block| &block.stmts).any(|stmt| {
+                    super::prototypes::called(image, stmt).is_some_and(|prototype| {
+                        prototype.params.iter().any(crate::render::promoted_parameter)
+                    })
+                })
+        }),
         arity: Some(if declared_no_arguments {
             0
         } else {
