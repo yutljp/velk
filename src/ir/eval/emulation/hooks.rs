@@ -30,6 +30,7 @@ pub(crate) enum Hook {
     Length,
     LengthN,
     Getline,
+    MemorySearch,
     MemoryCompare,
     StringCopyN,
     Character,
@@ -120,7 +121,9 @@ const HOOKS: &[(&str, Hook)] = &[
     ("strlen", Hook::Length),
     ("strnlen", Hook::LengthN),
     ("getline", Hook::Getline),
+    ("memchr", Hook::MemorySearch),
     ("memcmp", Hook::MemoryCompare),
+    ("bcmp", Hook::MemoryCompare),
     ("strncpy", Hook::StringCopyN),
     ("strchr", Hook::Character),
     ("atoi", Hook::Integer),
@@ -710,6 +713,34 @@ impl Runner<'_> {
                     Ok(value) => value,
                     Err(stop) => return Err(stop),
                 }
+            }
+            Hook::MemorySearch => {
+                let target = match self.argument(1, convention, kind) {
+                    Ok(value) => value as u8,
+                    Err(stop) => return Err(stop),
+                };
+                let count = match self.argument(2, convention, kind) {
+                    Ok(value) => value,
+                    Err(stop) => return Err(stop),
+                };
+                if count > HEAP_SIZE {
+                    return Err(Stop::Error("memory search exceeds model bound".to_owned()));
+                }
+                let mut found = 0;
+                for offset in 0..count {
+                    let Some(location) = first.checked_add(offset) else {
+                        return Err(Stop::Error("memory search address overflows".to_owned()));
+                    };
+                    let byte = match self.read_byte(location) {
+                        Ok(value) => value,
+                        Err(stop) => return Err(stop),
+                    };
+                    if byte == target {
+                        found = location;
+                        break;
+                    }
+                }
+                found
             }
             Hook::Getline => return self.getline_hook(first, convention, kind),
             Hook::Upper | Hook::Lower => {

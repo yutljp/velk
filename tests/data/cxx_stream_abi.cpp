@@ -33,9 +33,18 @@ int abi_bad_llvm_facet() {
 }
 void gnu_construct(String *) asm("_ZNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEC1Ev");
 void gnu_destroy(String *) asm("_ZNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEED1Ev");
+void gnu_allocator_construct(void *) asm("_ZNSaIcEC1Ev");
+void gnu_allocator_destroy(void *) asm("_ZNSaIcED1Ev");
 void *gnu_read(void *, String *) asm("_ZStrsIcSt11char_traitsIcESaIcEERSt13basic_istreamIT_T0_ES7_RNSt7__cxx1112basic_stringIS4_S5_T1_EE");
 void *gnu_print(void *, const String *) asm("_ZStlsIcSt11char_traitsIcESaIcEERSt13basic_ostreamIT_T0_ES7_RKNSt7__cxx1112basic_stringIS4_S5_T1_EE");
 int gnu_compare(const String *, const char *) asm("_ZNKSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEE7compareEPKc");
+unsigned long gnu_size(const String *) asm("_ZNKSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEE4sizeEv");
+unsigned long gnu_length(const String *) asm("_ZNKSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEE6lengthEv");
+char *gnu_begin(String *) asm("_ZNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEE5beginEv");
+char *gnu_end(String *) asm("_ZNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEE3endEv");
+const char *gnu_data(const String *) asm("_ZNKSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEE4dataEv");
+const char *gnu_c_str(const String *) asm("_ZNKSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEE5c_strEv");
+char *gnu_index(String *, unsigned long) asm("_ZNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEixEm");
 void llvm_construct(String *) asm("_ZNSt3__112basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEEC1Ev");
 void llvm_destroy(String *) asm("_ZNSt3__112basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEED1Ev");
 void *llvm_read(void *, String *) asm("_ZNSt3__1rsIcNS_11char_traitsIcEENS_9allocatorIcEEEERNS_13basic_istreamIT_T0_EES9_RNS_12basic_stringIS6_S7_T1_EE");
@@ -52,6 +61,23 @@ int abi_gnu_word() {
     const bool success = gnu_compare(&text, "key") == 0;
     gnu_destroy(&text);
     return success ? abi_accepted() : 1;
+}
+int abi_gnu_access() {
+    unsigned char allocator;
+    gnu_allocator_construct(&allocator);
+    String text;
+    gnu_construct(&text);
+    gnu_read(gnu_input, &text);
+    unsigned long size = gnu_size(&text);
+    bool valid = size == gnu_length(&text) && gnu_begin(&text) == gnu_data(&text)
+        && gnu_data(&text) == gnu_c_str(&text) && gnu_end(&text) == gnu_begin(&text) + size
+        && gnu_index(&text, size) == gnu_end(&text) && *gnu_end(&text) == 0;
+    if (size != 0) *gnu_index(&text, 0) = 'X';
+    gnu_print(gnu_output, &text);
+    bool success = gnu_compare(&text, "Xey") == 0;
+    gnu_destroy(&text);
+    gnu_allocator_destroy(&allocator);
+    return valid && success ? abi_accepted() : 1;
 }
 int abi_llvm_word() {
     String text;

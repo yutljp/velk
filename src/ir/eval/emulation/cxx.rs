@@ -81,6 +81,13 @@ impl Machine for Adapter<'_, '_> {
             self.argument(0)
         }
     }
+    fn indirect_result_argument_offset(&self) -> usize {
+        if self.runner.image.isa == crate::loader::Isa::AArch64 {
+            0
+        } else {
+            1
+        }
+    }
     fn locale(&self) -> Option<cxx::Locale> {
         self.runner.cxx_locale
     }
@@ -153,6 +160,9 @@ impl Machine for Adapter<'_, '_> {
     fn equal(&mut self, byte: &u8, value: u8) -> Result<bool, Stop> {
         Ok(*byte == value)
     }
+    fn same_byte(&mut self, left: &u8, right: &u8) -> Result<bool, Stop> {
+        Ok(left == right)
+    }
     fn whitespace(&mut self, byte: &u8) -> Result<bool, Stop> {
         Ok(byte.is_ascii_whitespace())
     }
@@ -178,6 +188,7 @@ impl Machine for Adapter<'_, '_> {
             };
             return self.output(text.into_bytes());
         }
+        let stream = self.argument(0)?;
         let destination = self.argument(1)?;
         while self
             .input(false)?
@@ -185,8 +196,12 @@ impl Machine for Adapter<'_, '_> {
         {
             self.input(true)?;
         }
-        let negative = self.input(false)? == Some(b'-');
-        if negative || self.input(false)? == Some(b'+') {
+        let Some(first) = self.input(false)? else {
+            self.set_stream_state(stream, true, 4)?;
+            return Ok(());
+        };
+        let negative = first == b'-';
+        if negative || first == b'+' {
             self.input(true)?;
         }
         let limit = if signed {
@@ -196,20 +211,35 @@ impl Machine for Adapter<'_, '_> {
         };
         let mut value = 0u64;
         let mut count = 0;
-        while let Some(byte @ b'0'..=b'9') = self.input(false)? {
-            let digit = u64::from(byte - b'0');
-            if value > (limit - digit.min(limit)) / 10 || digit > limit {
-                return Err(self.error("unsupported C++ integer input overflow"));
+        let mut overflow = false;
+        while let Some(byte) = self.input(false)? {
+            if !byte.is_ascii_digit() {
+                break;
             }
-            value = value * 10 + digit;
+            let digit = u64::from(byte - b'0');
+            if !overflow && (digit > limit || value > (limit - digit.min(limit)) / 10) {
+                value = limit;
+                overflow = true;
+            } else if !overflow {
+                value = value * 10 + digit;
+            }
             count += 1;
             self.input(true)?;
         }
         if count == 0 {
-            return Err(self.error("unsupported C++ integer input failure"));
+            self.set_stream_state(stream, true, 4)?;
+            self.write(destination, &0u64.to_le_bytes()[..usize::from(bits / 8)])?;
+            return Ok(());
+        }
+        if overflow {
+            self.set_stream_state(stream, true, 4)?;
         }
         if negative {
-            value = value.wrapping_neg();
+            value = if overflow && !signed {
+                limit
+            } else {
+                value.wrapping_neg()
+            };
         }
         self.write(destination, &value.to_le_bytes()[..usize::from(bits / 8)])
     }
@@ -220,11 +250,16 @@ impl Machine for Adapter<'_, '_> {
             }
         }
         let difference = left.len() as i32 - right.len() as i32;
-        Ok(u64::from(if matches!(layout, Layout::Gnu) {
-            difference as u32
-        } else {
-            difference.signum() as u32
-        }))
+        Ok(u64::from(
+            if matches!(layout, Layout::Gnu | Layout::GnuCow) {
+                difference as u32
+            } else {
+                difference.signum() as u32
+            },
+        ))
+    }
+    fn string_equal(&mut self, left: &[u8], right: &[u8]) -> Result<u64, Stop> {
+        Ok(u64::from(left == right))
     }
     fn stream(&mut self, address: u64, input: bool) -> Result<(), Stop> {
         if let Some(layout) = cxx::stream_object(self.runner.image, address, input) {
@@ -242,6 +277,25 @@ impl Machine for Adapter<'_, '_> {
             }
         }
         Err(self.error("unsupported C++ stream: expected std::cin or std::cout"))
+    }
+    fn stream_failed(&mut self, address: u64, input: bool) -> Result<bool, Stop> {
+        let offset = if input { 48 } else { 40 };
+        let Some(location) = address.checked_add(offset) else {
+            return Err(self.error("C++ stream state address overflows"));
+        };
+        let flags = self.word(location)?;
+        if flags & 2 != 0 {
+            self.set_stream_state(address, input, 4)?;
+        }
+        Ok(flags != 0)
+    }
+    fn set_stream_state(&mut self, address: u64, input: bool, flags: u64) -> Result<(), Stop> {
+        let offset = if input { 48 } else { 40 };
+        let Some(location) = address.checked_add(offset) else {
+            return Err(self.error("C++ stream state address overflows"));
+        };
+        let current = self.word(location)?;
+        self.store_word(location, current | flags)
     }
     fn end_input(&mut self, address: u64) -> Result<(), Stop> {
         cxx::eof(self, address)

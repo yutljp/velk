@@ -907,6 +907,63 @@ impl Runner<'_> {
                 return Err(Stop::Error("branch target is unknown".to_owned()));
             }
             Stmt::Machine {
+                instruction: crate::ir::MachineInstruction::Atomic { op, width, .. },
+                inputs,
+                outputs,
+            } => {
+                use crate::ir::AtomicOp;
+
+                let mut args = Vec::with_capacity(inputs.len());
+                for input in inputs {
+                    args.push(self.eval(input)?);
+                }
+                if outputs.len() == 2 {
+                    let half = *width / 2;
+                    let upper = args[0].wrapping_add(u64::from(half));
+                    let low = self.machine.load(args[0], half);
+                    let high = self.machine.load(upper, half);
+                    self.memory_error()?;
+                    let bits = u32::from(half) * 8;
+                    if low == args[2] & super::mask(bits) && high == args[4] & super::mask(bits) {
+                        self.machine.store(args[0], args[1], half);
+                        self.machine.store(upper, args[3], half);
+                        self.memory_error()?;
+                    }
+                    self.assign_fact(outputs[0], Fact::constant(low));
+                    self.assign_fact(outputs[1], Fact::constant(high));
+                } else {
+                    let Some(&address) = args.first() else {
+                        return Err(Stop::Error("missing atomic memory address".to_owned()));
+                    };
+                    let old = self.machine.load(address, *width);
+                    self.memory_error()?;
+                    let operand = args.get(1).copied().unwrap_or(0);
+                    let value = match op {
+                        AtomicOp::Add => old.wrapping_add(operand),
+                        AtomicOp::Sub => old.wrapping_sub(operand),
+                        AtomicOp::And => old & operand,
+                        AtomicOp::Or => old | operand,
+                        AtomicOp::Xor => old ^ operand,
+                        AtomicOp::Exchange | AtomicOp::Store => operand,
+                        AtomicOp::CompareExchange
+                            if args.get(2).is_some_and(|expected| {
+                                old == expected & super::mask(u32::from(*width) * 8)
+                            }) =>
+                        {
+                            operand
+                        }
+                        AtomicOp::CompareExchange | AtomicOp::Load => old,
+                    } & super::mask(u32::from(*width) * 8);
+                    if *op != AtomicOp::Load && (*op != AtomicOp::CompareExchange || value != old) {
+                        self.machine.store(address, value, *width);
+                        self.memory_error()?;
+                    }
+                    if let Some(&dest) = outputs.first() {
+                        self.assign_fact(dest, Fact::constant(old));
+                    }
+                }
+            }
+            Stmt::Machine {
                 instruction:
                     crate::ir::MachineInstruction::ArmSystem {
                         register: 0x5e82,

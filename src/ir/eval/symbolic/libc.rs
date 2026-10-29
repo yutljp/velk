@@ -417,6 +417,43 @@ impl State {
         }
         let first = self.number(binary, convention, 0)?;
         match hook {
+            Hook::MemorySearch => {
+                let target = match self.argument(binary, convention, 1) {
+                    Ok(target) => target,
+                    Err(error) => return Err(error),
+                };
+                if let Err(error) = self.require_defined(&target, 8) {
+                    return Err(error.into());
+                }
+                let target = match self.low(&target, 8) {
+                    Ok(target) => target,
+                    Err(error) => return Err(error.into()),
+                };
+                let count = match self.number(binary, convention, 2) {
+                    Ok(count) => count,
+                    Err(error) => return Err(error),
+                };
+                if count > 65536 {
+                    return Err(invalid("memory search exceeds model bound").into());
+                }
+                for offset in 0..count as usize {
+                    let Some(location) = first.checked_add(offset as u64) else {
+                        return Err(invalid("memory search address overflows").into());
+                    };
+                    let byte = match self.byte(binary, first, offset) {
+                        Ok(byte) => byte,
+                        Err(error) => return Err(error),
+                    };
+                    let found = match self.test(format!("(= {} {})", byte.text, target.text)) {
+                        Ok(found) => found,
+                        Err(error) => return Err(error),
+                    };
+                    if found {
+                        return Ok(Term::constant(location));
+                    }
+                }
+                Ok(Term::constant(0))
+            }
             Hook::Length
             | Hook::LengthN
             | Hook::StringCopy

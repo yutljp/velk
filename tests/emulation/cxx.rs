@@ -17,6 +17,9 @@ fn fixtures() -> &'static [PathBuf] {
     static FIXTURES: OnceLock<Vec<PathBuf>> = OnceLock::new();
     FIXTURES.get_or_init(|| {
         let directory = common::root().join(format!("target/cxx-streams-{}", std::process::id()));
+        if directory.exists() {
+            fs::remove_dir_all(&directory).expect("remove stale C++ fixtures");
+        }
         let output = Command::new("bash")
             .arg(common::root().join("tools/make_cxx_stream_fixtures.sh"))
             .arg(&directory)
@@ -56,6 +59,14 @@ fn native(path: &Path, function: &str, input: &[u8]) -> std::process::Output {
     let mut child = command
         .arg(if function == "integer_echo" {
             "echo"
+        } else if function == "integer_status" {
+            "j"
+        } else if function == "character_input" {
+            "h"
+        } else if function == "cstring_input" {
+            "p"
+        } else if function == "raw_character_input" {
+            "q"
         } else if function == "locale_characters" {
             "types"
         } else if function == "locale_input" {
@@ -89,6 +100,8 @@ fn standard_streams_match_native() {
             "numbers",
             "unsigned_numbers",
             "constants",
+            "string_operations",
+            "guarded_string",
         ] {
             let inputs: &[&[u8]] = match function {
                 "word" => &[
@@ -110,7 +123,8 @@ fn standard_streams_match_native() {
                     b"abcdefghijklmnopqrstuvw\n",
                     b"unterminated",
                 ],
-                "constants" => &[b""],
+                "constants" | "guarded_string" => &[b""],
+                "string_operations" => &[b"key", b"alpha", b"a", b"abcdefghijklmno"],
                 "numbers" => &[
                     b"-123",
                     b"0",
@@ -122,6 +136,7 @@ fn standard_streams_match_native() {
                     b"18446744073709551615",
                     b"-1",
                     b"-18446744073709551615",
+                    b"-18446744073709551616",
                 ],
                 _ => &[
                     b"-123\n",
@@ -197,7 +212,12 @@ fn explored_inputs_replay_natively() {
     let engine = velk::script::Engine::new().expect("JavaScript engine");
     for path in fixtures() {
         let binary = Binary::open(path).expect("C++ binary");
-        let mut cases = vec![("word", 3), ("line", 5), ("integer", 4)];
+        let mut cases = vec![
+            ("word", 3),
+            ("line", 5),
+            ("integer", 4),
+            ("string_operations", 3),
+        ];
         if cfg!(target_os = "macos") {
             cases.push(("locale_input", 1));
         }
@@ -336,6 +356,38 @@ fn stream_abi_layouts_on_both_instruction_sets() {
                     );
                 }
             }
+            for input in [
+                "key",
+                "a",
+                "abcdefghijklmno",
+                "abcdefghijklmnop",
+                "abcdefghijklmnopqrstuvwxyz",
+            ] {
+                let reference = native(
+                    fixtures().first().expect("native C++ fixture"),
+                    "access",
+                    input.as_bytes(),
+                );
+                let report = interfaces.check(
+                    &path,
+                    &binary,
+                    "abi_gnu_access",
+                    json!({"stdin":{"text":input}}),
+                );
+                assert_eq!(
+                    report["reason"], "return",
+                    "{arch} O{opt} {format}: {report}"
+                );
+                assert_eq!(
+                    super::matrix::value(&report),
+                    reference.status.code().expect("native exit") as u32,
+                    "{report}"
+                );
+                assert_eq!(
+                    report["stdout"],
+                    String::from_utf8_lossy(&reference.stdout).as_ref()
+                );
+            }
             for function in ["abi_gnu_integer", "abi_llvm_integer"] {
                 for input in ["-123", "0", "9223372036854775807", "-9223372036854775808"] {
                     let report =
@@ -389,14 +441,7 @@ fn unsupported_stream_operations_stop() {
     let mut interfaces = Interfaces::new();
     for path in fixtures() {
         let binary = Binary::open(path).expect("C++ binary");
-        for (function, input) in [
-            ("word", ""),
-            ("line", ""),
-            ("integer", "x"),
-            ("integer", "2147483648"),
-            ("formatted", ""),
-            ("unsupported", ""),
-        ] {
+        for (function, input) in [("formatted", ""), ("unsupported", "")] {
             let report = interfaces.check(path, &binary, function, json!({"stdin":{"text":input}}));
             assert_eq!(
                 report["reason"],
@@ -411,6 +456,65 @@ fn unsupported_stream_operations_stop() {
                     .contains("unsupported C++"),
                 "{report}"
             );
+        }
+    }
+}
+
+#[test]
+fn stream_extraction_failures_match_native() {
+    let mut interfaces = Interfaces::new();
+    for path in fixtures() {
+        let binary = Binary::open(path).expect("C++ binary");
+        for (function, inputs) in [
+            (
+                "integer_status",
+                &[
+                    b"42".as_slice(),
+                    b"x",
+                    b"",
+                    b"   ",
+                    b"+x",
+                    b"2147483648",
+                    b"-2147483649",
+                    b"2147483647",
+                    b"-2147483648",
+                    b"4x",
+                ][..],
+            ),
+            (
+                "character_input",
+                &[b"a".as_slice(), b" a", b" \t", b"", b"\xff"][..],
+            ),
+            (
+                "raw_character_input",
+                &[b"a".as_slice(), b" a", b"\n", b"", b"\xff"][..],
+            ),
+            (
+                "cstring_input",
+                &[b"word rest".as_slice(), b" word", b"\t\n", b"", b"word"][..],
+            ),
+        ] {
+            for input in inputs {
+                let reference = native(path, function, input);
+                let report =
+                    interfaces.check(path, &binary, function, json!({"stdin":{"hex":hex(input)}}));
+                assert_eq!(
+                    report["reason"],
+                    "return",
+                    "{} {function} {input:?}: {report}",
+                    path.display()
+                );
+                assert_eq!(
+                    report["stdout"],
+                    String::from_utf8_lossy(&reference.stdout).as_ref(),
+                    "{} {function} {input:?}",
+                    path.display()
+                );
+                assert_eq!(
+                    super::matrix::value(&report),
+                    reference.status.code().expect("native exit") as u32
+                );
+            }
         }
     }
 }
@@ -445,15 +549,30 @@ fn symbolic_stream_abi_inputs_replay() {
         for opt in [0, 2] {
             let path = directory.join(format!("{arch}-abi-O{opt}.so"));
             let binary = Binary::open(&path).expect("C++ ABI fixture");
-            for function in ["abi_gnu_word", "abi_llvm_word", "abi_llvm_line"] {
+            for function in [
+                "abi_gnu_word",
+                "abi_gnu_access",
+                "abi_llvm_word",
+                "abi_llvm_line",
+            ] {
                 let line = function.ends_with("line");
                 let options = serde_json::from_value(json!({"stdin":if line {5} else {3},"find":[format!("0x{:x}",binary.find("abi_accepted").expect("target").addr)],"pathLimit":512})).expect("ABI exploration options");
                 let report =
                     symbolic::explore(&binary, function, &options).expect("ABI exploration");
                 assert!(report.found, "{arch} O{opt} {function}: {report:?}");
                 let input = report.inputs.expect("found ABI input");
-                let replay = native(reference, if line { "line" } else { "word" }, &input.stdin);
+                let native_function = if line {
+                    "line"
+                } else if function == "abi_gnu_access" {
+                    "access"
+                } else {
+                    "word"
+                };
+                let replay = native(reference, native_function, &input.stdin);
                 assert!(replay.status.success(), "{replay:?}");
+                if function == "abi_gnu_access" {
+                    assert_eq!(replay.stdout, input.stdout);
+                }
             }
         }
     }

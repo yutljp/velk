@@ -1,5 +1,6 @@
 #include <iostream>
 #include <string>
+#include <utility>
 
 extern "C" __attribute__((noinline)) int accepted() { volatile int result = 0; return result; }
 
@@ -9,6 +10,44 @@ extern "C" __attribute__((noinline)) int word() {
     const bool success = text == "key";
     std::cout << (success ? "success" : "failure") << ':' << text << '\n';
     return success ? accepted() : 1;
+}
+extern "C" __attribute__((noinline)) int access() {
+    std::string text;
+    std::cin >> text;
+    bool valid = text.size() == text.length() && text.begin() + text.size() == text.end()
+        && text.c_str() == text.data()
+        && &text[text.size()] == text.data() + text.size();
+    if (!text.empty()) text[0] = 'X';
+    std::cout << text;
+    return valid && text == "Xey" ? accepted() : 1;
+}
+extern "C" __attribute__((noinline)) int string_operations() {
+    std::string input;
+    std::cin >> input;
+    std::string moved(std::move(input));
+    std::string text(moved);
+    std::string copy;
+    copy = text;
+    copy += "-";
+    copy.append(text, 1, 2);
+    copy.append("xyz", 2);
+    copy += '!';
+    copy.push_back('?');
+    const std::string part = copy.substr(1, 3);
+    const auto position = copy.find(text);
+    const auto character = copy.find('!');
+    const bool equal = text == moved;
+    const bool valid = equal && copy.compare(0, text.size(), text) == 0
+        && copy.compare("invalid") != 0 && copy.at(0) == text[0]
+        && copy[copy.size()] == '\0' && position == 0 && character == copy.size() - 2;
+    std::cout << copy << ':' << part << ':' << position << ':' << character << ':'
+              << copy.size() << '\n';
+    return valid ? accepted() : 1;
+}
+extern "C" __attribute__((noinline)) int guarded_string() {
+    static const std::string text("initialized");
+    std::cout << text << '\n';
+    return text == "initialized" ? accepted() : 1;
 }
 extern "C" __attribute__((noinline)) int line() {
     std::string text;
@@ -32,6 +71,32 @@ extern "C" __attribute__((noinline)) int integer_echo() {
               << static_cast<long long>(value) << std::flush << '\n';
     return 0;
 }
+extern "C" __attribute__((noinline)) int integer_status() {
+    int value = 42;
+    std::cin >> value;
+    std::cout << value << ':' << std::cin.fail() << ':' << std::cin.eof() << '\n';
+    return 0;
+}
+extern "C" __attribute__((noinline)) int character_input() {
+    char value = '?';
+    std::cin >> value;
+    std::cout << static_cast<unsigned int>(static_cast<unsigned char>(value)) << ':'
+              << std::cin.fail() << ':' << std::cin.eof() << '\n';
+    return 0;
+}
+extern "C" __attribute__((noinline)) int raw_character_input() {
+    char value = '?';
+    std::cin.get(value);
+    std::cout << static_cast<unsigned int>(static_cast<unsigned char>(value)) << ':'
+              << std::cin.fail() << ':' << std::cin.eof() << '\n';
+    return 0;
+}
+extern "C" __attribute__((noinline)) int cstring_input() {
+    char value[32] = {};
+    std::cin >> value;
+    std::cout << value << ':' << std::cin.fail() << ':' << std::cin.eof() << '\n';
+    return 0;
+}
 extern "C" int constants();
 extern "C" int numbers();
 extern "C" int unsigned_numbers();
@@ -39,8 +104,15 @@ extern "C" int locale_characters();
 extern "C" int locale_input();
 int main(int argc, char **argv) {
     if (argc < 2) return 2;
+    if (argv[1][0] == 's') return string_operations();
+    if (argv[1][0] == 'g') return guarded_string();
+    if (argv[1][0] == 'h') return character_input();
+    if (argv[1][0] == 'q') return raw_character_input();
+    if (argv[1][0] == 'p') return cstring_input();
+    if (argv[1][0] == 'j') return integer_status();
     switch (argv[1][0]) {
     case 'w': return word();
+    case 'a': return access();
     case 'l': return line();
     case 'i': return integer();
     case 'c': return constants();

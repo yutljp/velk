@@ -88,6 +88,13 @@ impl Machine for Adapter<'_, '_> {
             self.argument(0)
         }
     }
+    fn indirect_result_argument_offset(&self) -> usize {
+        if self.state.isa == crate::loader::Isa::AArch64 {
+            0
+        } else {
+            1
+        }
+    }
     fn locale(&self) -> Option<cxx::Locale> {
         self.state.cxx_locale
     }
@@ -188,6 +195,9 @@ impl Machine for Adapter<'_, '_> {
             smt::constant(u64::from(value))
         ))
     }
+    fn same_byte(&mut self, left: &Term, right: &Term) -> Evaluation<bool> {
+        self.state.test(format!("(= {} {})", left.text, right.text))
+    }
     fn whitespace(&mut self, byte: &Term) -> Evaluation<bool> {
         self.state.whitespace(byte)
     }
@@ -210,6 +220,7 @@ impl Machine for Adapter<'_, '_> {
     }
     fn integer(&mut self, signed: bool, bits: u8, direction: Direction) -> Evaluation<()> {
         if matches!(direction, Direction::Input) {
+            let stream = self.argument(0)?;
             let destination = self.argument(1)?;
             while let Some(byte) = self.input(false)? {
                 if !self.whitespace(&byte)? {
@@ -217,12 +228,13 @@ impl Machine for Adapter<'_, '_> {
                 }
                 self.input(true)?;
             }
-            let mut negative = false;
-            if let Some(byte) = self.input(false)? {
-                negative = self.equal(&byte, b'-')?;
-                if negative || self.equal(&byte, b'+')? {
-                    self.input(true)?;
-                }
+            let Some(first) = self.input(false)? else {
+                self.set_stream_state(stream, true, 4)?;
+                return Ok(());
+            };
+            let negative = self.equal(&first, b'-')?;
+            if negative || self.equal(&first, b'+')? {
+                self.input(true)?;
             }
             let limit = if signed {
                 (1u64 << (bits - 1)) - u64::from(!negative)
@@ -231,6 +243,7 @@ impl Machine for Adapter<'_, '_> {
             };
             let mut value = Term::constant(0);
             let mut count = 0;
+            let mut overflow = false;
             while let Some(byte) = self.input(false)? {
                 if !self.state.test(format!(
                     "(and (bvuge {0} {1}) (bvule {0} {2}))",
@@ -241,27 +254,41 @@ impl Machine for Adapter<'_, '_> {
                     break;
                 }
                 let digit = format!("(bvsub {} {})", byte.text, smt::constant(48));
-                if self.state.test(super::libc::integer_overflow(
-                    &value.text,
-                    &digit,
-                    10,
-                    limit,
-                ))? {
-                    return Err(self.error("unsupported C++ integer input overflow"));
+                if !overflow
+                    && self.state.test(super::libc::integer_overflow(
+                        &value.text,
+                        &digit,
+                        10,
+                        limit,
+                    ))?
+                {
+                    value = Term::constant(limit);
+                    overflow = true;
+                } else if !overflow {
+                    value = self.state.bind(format!(
+                        "(bvadd (bvmul {} {}) {digit})",
+                        value.text,
+                        smt::constant(10)
+                    ))?;
                 }
-                value = self.state.bind(format!(
-                    "(bvadd (bvmul {} {}) {digit})",
-                    value.text,
-                    smt::constant(10)
-                ))?;
                 self.input(true)?;
                 count += 1;
             }
             if count == 0 {
-                return Err(self.error("unsupported C++ integer input failure"));
+                self.set_stream_state(stream, true, 4)?;
+                self.state
+                    .store(self.binary.image(), destination, &value, bits / 8)?;
+                return Ok(());
+            }
+            if overflow {
+                self.set_stream_state(stream, true, 4)?;
             }
             if negative {
-                value = self.state.bind(format!("(bvneg {})", value.text))?;
+                if overflow && !signed {
+                    value = Term::constant(limit);
+                } else {
+                    value = self.state.bind(format!("(bvneg {})", value.text))?;
+                }
             }
             self.state
                 .store(self.binary.image(), destination, &value, bits / 8)?;
@@ -316,12 +343,35 @@ impl Machine for Adapter<'_, '_> {
         }
         let difference = left.len() as i32 - right.len() as i32;
         Ok(Term::constant(u64::from(
-            if matches!(layout, Layout::Gnu) {
+            if matches!(layout, Layout::Gnu | Layout::GnuCow) {
                 difference as u32
             } else {
                 difference.signum() as u32
             },
         )))
+    }
+    fn string_equal(&mut self, left: &[Term], right: &[Term]) -> Evaluation<Term> {
+        if left.len() != right.len() {
+            return Ok(Term::constant(0));
+        }
+        let condition = if left.is_empty() {
+            "true".to_owned()
+        } else {
+            let terms = left
+                .iter()
+                .zip(right)
+                .map(|(left, right)| format!("(= {} {})", left.text, right.text))
+                .collect::<Vec<String>>();
+            format!("(and {})", terms.join(" "))
+        };
+        match self.state.bind(format!(
+            "(ite {condition} {} {})",
+            smt::constant(1),
+            smt::constant(0)
+        )) {
+            Ok(value) => Ok(value),
+            Err(error) => Err(error.into()),
+        }
     }
     fn stream(&mut self, address: u64, input: bool) -> Evaluation<()> {
         if let Some(layout) = cxx::stream_object(self.binary.image(), address, input) {
@@ -338,6 +388,25 @@ impl Machine for Adapter<'_, '_> {
             }
         }
         Err(self.error("unsupported C++ stream: expected std::cin or std::cout"))
+    }
+    fn stream_failed(&mut self, address: u64, input: bool) -> Evaluation<bool> {
+        let offset = if input { 48 } else { 40 };
+        let Some(location) = address.checked_add(offset) else {
+            return Err(self.error("C++ stream state address overflows"));
+        };
+        let flags = self.word(location)?;
+        if flags & 2 != 0 {
+            self.set_stream_state(address, input, 4)?;
+        }
+        Ok(flags != 0)
+    }
+    fn set_stream_state(&mut self, address: u64, input: bool, flags: u64) -> Evaluation<()> {
+        let offset = if input { 48 } else { 40 };
+        let Some(location) = address.checked_add(offset) else {
+            return Err(self.error("C++ stream state address overflows"));
+        };
+        let current = self.word(location)?;
+        self.store_word(location, current | flags)
     }
     fn end_input(&mut self, address: u64) -> Evaluation<()> {
         cxx::eof(self, address)

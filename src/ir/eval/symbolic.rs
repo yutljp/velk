@@ -1213,6 +1213,174 @@ impl State {
                 return self.return_from_call(binary, /* machine_return */ true);
             }
             Stmt::Machine {
+                instruction: crate::ir::MachineInstruction::Atomic { op, width, .. },
+                inputs,
+                outputs,
+            } => {
+                use crate::ir::AtomicOp;
+
+                if !(1..=8).contains(width) {
+                    return Err(invalid("invalid atomic memory width").into());
+                }
+                let mut args = Vec::with_capacity(inputs.len());
+                for input in inputs {
+                    args.push(self.eval(binary, input)?);
+                }
+                let address = match args.first() {
+                    Some(address) => self.resolve(address.clone())?,
+                    None => return Err(invalid("missing atomic memory address").into()),
+                };
+                if outputs.len() == 2 {
+                    let half = *width / 2;
+                    if half == 0 || args.len() < 5 {
+                        return Err(invalid("invalid paired atomic operands").into());
+                    }
+                    let Some(upper) = address.checked_add(u64::from(half)) else {
+                        return Err(invalid("atomic memory address overflows").into());
+                    };
+                    let low = self.eval(
+                        binary,
+                        &Expr::Load {
+                            addr: Box::new(Expr::Const(address)),
+                            width: half,
+                            signed: false,
+                        },
+                    )?;
+                    let high = self.eval(
+                        binary,
+                        &Expr::Load {
+                            addr: Box::new(Expr::Const(upper)),
+                            width: half,
+                            signed: false,
+                        },
+                    )?;
+                    let bits = u32::from(half) * 8;
+                    let low_expected = self.low(&args[2], bits)?;
+                    let high_expected = self.low(&args[4], bits)?;
+                    self.require_defined(&low, bits)?;
+                    self.require_defined(&high, bits)?;
+                    self.require_defined(&low_expected, bits)?;
+                    self.require_defined(&high_expected, bits)?;
+                    let matches = match (
+                        low.concrete,
+                        high.concrete,
+                        low_expected.concrete,
+                        high_expected.concrete,
+                    ) {
+                        (Some(low), Some(high), Some(low_expected), Some(high_expected)) => {
+                            Some(low == low_expected && high == high_expected)
+                        }
+                        _ => None,
+                    };
+                    if matches != Some(false) {
+                        if matches == Some(true) {
+                            self.store(binary.image(), address, &args[1], half)?;
+                            self.store(binary.image(), upper, &args[3], half)?;
+                        } else {
+                            let low_replacement = self.low(&args[1], bits)?;
+                            let high_replacement = self.low(&args[3], bits)?;
+                            let condition = format!(
+                                "(and (= {} {}) (= {} {}))",
+                                low.text, low_expected.text, high.text, high_expected.text
+                            );
+                            let low_value = self.bind(format!(
+                                "(ite {condition} {} {})",
+                                low_replacement.text, low.text
+                            ))?;
+                            let high_value = self.bind(format!(
+                                "(ite {condition} {} {})",
+                                high_replacement.text, high.text
+                            ))?;
+                            self.store(binary.image(), address, &low_value, half)?;
+                            self.store(binary.image(), upper, &high_value, half)?;
+                        }
+                    }
+                    let low_result = self.low(&low, u32::from(outputs[0].width))?;
+                    let high_result = self.low(&high, u32::from(outputs[1].width))?;
+                    self.registers.insert(outputs[0].index, low_result);
+                    self.registers.insert(outputs[1].index, high_result);
+                } else {
+                    let bits = u32::from(*width) * 8;
+                    let old = self.low(
+                        &self.eval(
+                            binary,
+                            &Expr::Load {
+                                addr: Box::new(Expr::Const(address)),
+                                width: *width,
+                                signed: false,
+                            },
+                        )?,
+                        bits,
+                    )?;
+                    let operand = match args.get(1) {
+                        Some(operand) => self.low(operand, bits)?,
+                        None => Term::constant(0),
+                    };
+                    self.require_defined(&old, bits)?;
+                    self.require_defined(&operand, bits)?;
+                    let expected = match args.get(2) {
+                        Some(expected) => self.low(expected, bits)?,
+                        None => Term::constant(0),
+                    };
+                    self.require_defined(&expected, bits)?;
+                    if let Some(output) = outputs.first() {
+                        let result = self.low(&old, u32::from(output.width))?;
+                        self.registers.insert(output.index, result);
+                    }
+                    let value = match (op, old.concrete, operand.concrete) {
+                        (AtomicOp::Add, Some(old), Some(operand)) => {
+                            Some(old.wrapping_add(operand))
+                        }
+                        (AtomicOp::Sub, Some(old), Some(operand)) => {
+                            Some(old.wrapping_sub(operand))
+                        }
+                        (AtomicOp::And, Some(old), Some(operand)) => Some(old & operand),
+                        (AtomicOp::Or, Some(old), Some(operand)) => Some(old | operand),
+                        (AtomicOp::Xor, Some(old), Some(operand)) => Some(old ^ operand),
+                        (AtomicOp::Exchange | AtomicOp::Store, _, Some(operand)) => Some(operand),
+                        (AtomicOp::Load, Some(old), _) => Some(old),
+                        _ => None,
+                    };
+                    let value = if matches!(op, AtomicOp::CompareExchange) {
+                        match (old.concrete, expected.concrete) {
+                            (Some(old_value), Some(expected_value))
+                                if old_value == expected_value =>
+                            {
+                                operand
+                            }
+                            (Some(_), Some(_)) => old,
+                            _ => self.bind(smt::low(
+                                &format!(
+                                    "(ite (= {} {}) {} {})",
+                                    old.text, expected.text, operand.text, old.text
+                                ),
+                                bits,
+                            ))?,
+                        }
+                    } else if let Some(value) = value {
+                        Term::constant(value & semantics::mask(bits))
+                    } else {
+                        let expression = match op {
+                            AtomicOp::Add => format!("(bvadd {} {})", old.text, operand.text),
+                            AtomicOp::Sub => format!("(bvsub {} {})", old.text, operand.text),
+                            AtomicOp::And => format!("(bvand {} {})", old.text, operand.text),
+                            AtomicOp::Or => format!("(bvor {} {})", old.text, operand.text),
+                            AtomicOp::Xor => format!("(bvxor {} {})", old.text, operand.text),
+                            AtomicOp::Exchange | AtomicOp::Store => operand.text,
+                            AtomicOp::CompareExchange => format!(
+                                "(ite (= {} {}) {} {})",
+                                old.text, expected.text, operand.text, old.text
+                            ),
+                            AtomicOp::Load => old.text,
+                        };
+                        self.bind(smt::low(&expression, bits))?
+                    };
+                    if *op != AtomicOp::Load {
+                        self.store(binary.image(), address, &value, *width)?;
+                    }
+                }
+            }
+            Stmt::Machine {
                 instruction:
                     crate::ir::MachineInstruction::ArmSystem {
                         register: 0x5e82,
