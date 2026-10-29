@@ -1,4 +1,6 @@
 use super::*;
+use crate::analysis::declarations::{import_argument_type, merge, recover};
+use crate::ir::CType;
 use crate::ir::{CallKind, FunctionIr, Param};
 use crate::loader::Isa;
 use crate::render::{self, Symbols};
@@ -34,10 +36,17 @@ fn call(isa: Isa, target: u64, args: Vec<Expr>) -> Stmt {
 }
 
 fn compile_and_run(source: &str, name: &str) {
+    let typed = source.replace("#if defined(__x86_64__) && !defined(_WIN32)", "#if 0");
+    compile_source_and_run(source, name);
+    if typed != source {
+        compile_source_and_run(&typed, name);
+    }
+}
+
+fn compile_source_and_run(source: &str, name: &str) {
     use std::io::Write;
     use std::process::{Command, Stdio};
 
-    // System V x86-64 keeps an unprototyped import declaration for its ABI.
     let executable = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
         .join("target")
         .join(format!("velk-{name}-{}", std::process::id()));
@@ -407,7 +416,7 @@ fn address_operands_request_the_function_and_its_callers() {
         }],
     );
     assert!(root.references.is_empty());
-    assert!(callers(&image, &root).contains(&0x1000));
+    assert!(dependencies(&image, &root).contains(&0x1000));
 }
 
 #[test]
@@ -441,11 +450,11 @@ fn parameterized_function_addresses_do_not_request_body_analysis() {
                 value: Expr::Const(0x1000),
             }],
         );
-        assert!(!callers(&image, &root).contains(&0x1000));
+        assert!(!dependencies(&image, &root).contains(&0x1000));
         root.ir.blocks[0]
             .stmts
             .insert(0, call(isa, 0x1000, vec![Expr::Const(7)]));
-        assert!(callers(&image, &root).contains(&0x1000));
+        assert!(dependencies(&image, &root).contains(&0x1000));
     }
 }
 
@@ -538,6 +547,10 @@ fn unknown_import_prototypes_preserve_promoted_values() {
             ..Default::default()
         };
         let source = render::render(&functions[0].ir, &[], &symbols, &[]);
+        assert!(
+            source.contains("#if defined(__x86_64__) && !defined(_WIN32)"),
+            "{source}"
+        );
         assert!(
             source.contains("external_value(int32_t, int64_t)"),
             "{source}"
@@ -633,7 +646,7 @@ fn unknown_imports_require_every_discovered_caller() {
         "first",
         vec![call(Isa::I386, 0x1100, vec![Expr::Const(7)])],
     );
-    assert!(callers(&image, &root).contains(&0x1010));
+    assert!(dependencies(&image, &root).contains(&0x1010));
     let mut functions = vec![root];
     recover(&image, &mut functions);
     assert!(!functions[0].import_parameters.contains_key(&0x1100));
@@ -720,7 +733,7 @@ fn sysv_unknown_imports_supply_the_variadic_vector_count() {
     } else {
         "external_count"
     };
-    compile_and_run(
+    compile_source_and_run(
         &format!(
             "__asm__(\".globl {symbol}\\n{symbol}:\\n movzbl %al, %eax\\n ret\\n\");\n{source}\nint main(void) {{ __asm__ volatile(\"movb $7, %%al\" ::: \"rax\"); return call_count() != 0; }}"
         ),

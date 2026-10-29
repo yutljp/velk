@@ -292,7 +292,7 @@ impl Binary {
                 .map(|analysis| &mut analysis.ir)
                 .collect();
             analysis::shared_structures::share(&mut irs, &self.data_ranges);
-            for address in super::declarations::callers(&self.image, root) {
+            for address in super::declarations::dependencies(&self.image, root) {
                 if functions.iter().any(|analysis| analysis.ir.addr == address) {
                     continue;
                 }
@@ -306,7 +306,7 @@ impl Binary {
                 }
             }
             share_parameters(&mut functions, self.image.go);
-            super::declarations::recover(&self.image, &mut functions);
+            crate::analysis::declarations::recover(&self.image, &mut functions);
             let analysis = functions
                 .into_iter()
                 .find(|analysis| analysis.ir.addr == addr)

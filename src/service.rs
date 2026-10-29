@@ -1203,7 +1203,7 @@ impl Binary {
             return Ok(());
         };
         let neighbors = batch::neighbors(&self.image, root_analysis);
-        let declaration_callers = declarations::callers(&self.image, root_analysis);
+        let declaration_callers = declarations::dependencies(&self.image, root_analysis);
         let mut functions = vec![root_analysis.clone()];
         for neighbor in neighbors {
             let Some(function) = self.image.functions.get(&neighbor) else {
@@ -1235,7 +1235,7 @@ impl Binary {
             }
         }
         batch::share_parameters(&mut functions, self.image.go);
-        declarations::recover(&self.image, &mut functions);
+        crate::analysis::declarations::recover(&self.image, &mut functions);
         if let Err(error) = passed(deadline) {
             return Err(error);
         }

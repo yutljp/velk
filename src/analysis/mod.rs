@@ -3,6 +3,7 @@ pub(crate) mod calls;
 mod clobbers;
 mod com;
 mod constant_spills;
+pub(crate) mod declarations;
 mod go_types;
 mod indirect;
 pub(crate) use indirect::constant_branch_targets;
