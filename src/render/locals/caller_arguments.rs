@@ -17,7 +17,6 @@ impl Locals {
         symbols: &super::super::Symbols,
         ctx: &Ctx<'_>,
     ) -> Option<CallerArgument> {
-        let mut reserved = super::super::naming::roles::reserved(ir, symbols);
         let mut stored = std::collections::HashSet::new();
         for block in &ir.blocks {
             for stmt in &block.stmts {
@@ -46,6 +45,7 @@ impl Locals {
             first = Some(first.map_or((*slot).max(0), |first: i64| first.min((*slot).max(0))));
         }
         let Some(first) = first else { return None };
+        let mut reserved = super::super::naming::roles::reserved(ir, symbols);
         let mut origins = std::collections::HashMap::new();
         for (address, slot, _) in accesses {
             let key = render_expr(address, ctx);
