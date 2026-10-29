@@ -51,6 +51,8 @@ Set `max_output_chars` on `velk_run_script` to request 256–20,000 characters.
 A truncation notice means the text is incomplete: filter, map selected fields, or slice a smaller range in the script before returning it.
 This display limit does not change the arrays the script works with or limit its analysis work.
 For a function summary use `card({budget})`; for selected instructions use `disasm({limit})`.
+Each disassembly record has `addr`, `instruction` and a nullable `comment`. Comments name
+recognized string literals, branch targets, data symbols or decoded strings.
 The script time budget is `timeout_ms` (default 10,000, maximum 120,000), checked
 at JavaScript interrupts and analysis boundaries rather than a hard wall-clock
 cutoff. The first navigation query builds a whole-binary index; on large files,

@@ -376,8 +376,14 @@ fn unsupported_declaration(image: &Image, address: u64) -> bool {
     !crate::analysis::abi::aapcs32_words(&types)
 }
 
-pub(crate) fn listing(image: &Image, bytes: &[u8], addr: u64, max: usize) -> Vec<String> {
+pub(crate) fn disassembly(
+    image: &Image,
+    bytes: &[u8],
+    addr: u64,
+    max: usize,
+) -> Vec<crate::disasm::RawInstruction> {
     let (decoded, stop) = decode(image, bytes, addr);
+    let mut literal_values = [None; 16];
     let mut lines: Vec<_> = decoded
         .iter()
         .filter_map(|d| match &d.instruction {
@@ -385,25 +391,190 @@ pub(crate) fn listing(image: &Image, bytes: &[u8], addr: u64, max: usize) -> Vec
                 instruction,
                 additional,
                 pc,
-                ..
-            } => Some(match additional {
-                Some(extra) => {
-                    let text = extra.to_string();
-                    let (mnemonic, operands) = text.split_once(' ').unwrap_or((&text, ""));
-                    format!("0x{pc:<12x} {mnemonic}{} {operands}", instruction.condition)
+                next,
+                target,
+            } => {
+                let text = match additional {
+                    Some(extra) => {
+                        let text = extra.to_string();
+                        let (mnemonic, operands) = text.split_once(' ').unwrap_or((&text, ""));
+                        format!("{mnemonic}{} {operands}", instruction.condition)
+                    }
+                    None => instruction.to_string(),
+                };
+                let reference = target
+                    .map(|address| crate::disasm::Reference {
+                        address,
+                        kind: crate::disasm::ReferenceKind::Branch,
+                    })
+                    .or_else(|| {
+                        pc_relative_reference(instruction, *pc, bytes, addr, &literal_values)
+                    });
+                if instruction.opcode == Opcode::LDR
+                    && let (Some(reference), Operand::Reg(destination)) =
+                        (reference, instruction.operands[0])
+                    && matches!(reference.kind, crate::disasm::ReferenceKind::LiteralPool)
+                {
+                    let register = usize::from(destination.number());
+                    literal_values.fill(None);
+                    if let Some(value) = image
+                        .read_vaddr(reference.address, 4)
+                        .and_then(|value| value.try_into().ok())
+                        .map(u32::from_le_bytes)
+                        && let Some(slot) = literal_values.get_mut(register)
+                    {
+                        *slot = Some(value);
+                    }
+                } else {
+                    literal_values.fill(None);
                 }
-                None => format!("0x{pc:<12x} {instruction}"),
-            }),
+                Some(crate::disasm::RawInstruction {
+                    addr: *pc,
+                    end: *next,
+                    text,
+                    reference,
+                })
+            }
             _ => None,
         })
         .take(max)
         .collect();
-    if lines.len() < max
-        && let Some(stop) = stop
-    {
-        lines.push(stop);
+    if lines.len() < max && stop.is_some() {
+        let at = lines.last().map_or(addr, |line| line.end);
+        lines.push(crate::disasm::RawInstruction {
+            addr: at,
+            end: at,
+            text: stop.unwrap_or_else(|| "undecodable ARM instruction".to_owned()),
+            reference: None,
+        });
     }
     lines
+}
+
+fn pc_relative_reference(
+    instruction: &Instruction,
+    pc: u64,
+    bytes: &[u8],
+    base: u64,
+    literal_values: &[Option<u32>; 16],
+) -> Option<crate::disasm::Reference> {
+    use crate::disasm::{Reference, ReferenceKind};
+
+    let Some(relative) = pc.checked_sub(base) else {
+        return None;
+    };
+    let Ok(offset) = usize::try_from(relative) else {
+        return None;
+    };
+    let thumb = instruction.thumb;
+    let word = if thumb && !instruction.wide {
+        let Some(end) = offset.checked_add(2) else {
+            return None;
+        };
+        let Some(encoded) = bytes.get(offset..end) else {
+            return None;
+        };
+        let Ok(encoded) = <[u8; 2]>::try_from(encoded) else {
+            return None;
+        };
+        u32::from(u16::from_le_bytes(encoded))
+    } else {
+        let Some(end) = offset.checked_add(4) else {
+            return None;
+        };
+        let Some(encoded) = bytes.get(offset..end) else {
+            return None;
+        };
+        let Ok(encoded) = <[u8; 4]>::try_from(encoded) else {
+            return None;
+        };
+        u32::from_le_bytes(encoded)
+    };
+    let pc_base = if thumb {
+        (pc as u32).wrapping_add(4) & !3
+    } else {
+        (pc as u32).wrapping_add(8)
+    };
+    if matches!(instruction.opcode, Opcode::ADR | Opcode::ADD | Opcode::SUB)
+        && let [
+            Operand::Reg(_),
+            Operand::Reg(base),
+            Operand::Imm32(immediate),
+            ..,
+        ] = instruction.operands
+        && base.number() == 15
+    {
+        let address = if thumb || word & (1 << 23) != 0 {
+            pc_base.wrapping_add(immediate)
+        } else {
+            pc_base.wrapping_sub(immediate)
+        };
+        return Some(Reference {
+            address: u64::from(address),
+            kind: ReferenceKind::Address,
+        });
+    }
+    for operand in instruction.operands {
+        let address = match operand {
+            Operand::RegDeref(base) if base.number() == 15 => Some(pc_base),
+            Operand::RegDerefPreindexOffset(base, immediate, add, _) if base.number() == 15 => {
+                Some(if add {
+                    pc_base.wrapping_add(u32::from(immediate))
+                } else {
+                    pc_base.wrapping_sub(u32::from(immediate))
+                })
+            }
+            Operand::RegDerefPostindexOffset(base, _, _, _) if base.number() == 15 => Some(pc_base),
+            Operand::RegDerefPreindexReg(base, index, add, _) if base.number() == 15 => {
+                let Some(value) = literal_values
+                    .get(usize::from(index.number()))
+                    .copied()
+                    .flatten()
+                else {
+                    continue;
+                };
+                Some(if add {
+                    pc_base.wrapping_add(value)
+                } else {
+                    pc_base.wrapping_sub(value)
+                })
+            }
+            Operand::RegDerefPreindexRegShift(base, shift, add, _) if base.number() == 15 => {
+                let RegShiftStyle::RegImm(shift) = shift.into_shift() else {
+                    continue;
+                };
+                if shift.stype() != ShiftStyle::LSL {
+                    continue;
+                }
+                let Some(value) = literal_values
+                    .get(usize::from(shift.shiftee().number()))
+                    .copied()
+                    .flatten()
+                else {
+                    continue;
+                };
+                let amount = u32::from(shift.imm());
+                let value = if amount >= 32 { 0 } else { value << amount };
+                Some(if add {
+                    pc_base.wrapping_add(value)
+                } else {
+                    pc_base.wrapping_sub(value)
+                })
+            }
+            Operand::RegDerefPostindexReg(base, _, _, _) if base.number() == 15 => Some(pc_base),
+            Operand::RegDerefPostindexRegShift(base, _, _, _) if base.number() == 15 => {
+                Some(pc_base)
+            }
+            _ => None,
+        };
+        if let Some(address) = address {
+            return Some(Reference {
+                address: u64::from(address),
+                kind: ReferenceKind::LiteralPool,
+            });
+        }
+    }
+    None
 }
 
 struct Lifter<'a> {
@@ -1990,8 +2161,8 @@ mod tests {
             );
         }
         let image = Image::from_code(Isa::Arm32, 0, words(&[0xb1a00001]));
-        let lines = super::listing(&image, image.read_vaddr(0, 4).unwrap(), 0, 1);
-        assert!(lines[0].contains("movlt"), "{lines:?}");
+        let lines = super::disassembly(&image, image.read_vaddr(0, 4).unwrap(), 0, 1);
+        assert!(lines[0].text.contains("movlt"), "{lines:?}");
     }
 
     #[test]

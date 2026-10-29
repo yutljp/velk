@@ -231,7 +231,8 @@ fn stack_words_and_call_results_match_original_c() {
                         );
                     }
                     if function == "narrow_live_high" {
-                        let instructions = binary.disasm(address, 100).unwrap().join("\n");
+                        let listing = binary.disasm(address, 100).unwrap();
+                        let instructions = velk::disasm::format_lines(&listing).join("\n");
                         assert!(
                             instructions.contains(if target.starts_with("i386") {
                                 "edx"

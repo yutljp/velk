@@ -396,13 +396,7 @@ fn faults_limits_initial_state_and_end_addresses_are_reported() {
     let listing = binary
         .disasm(address, 3)
         .expect("valid compiled fixture state");
-    let end = velk::addr::parse(
-        listing[1]
-            .split_whitespace()
-            .next()
-            .expect("valid compiled fixture state"),
-    )
-    .expect("valid compiled fixture state");
+    let end = listing[1].addr;
     let report = execute(
         &binary,
         &velk::addr::format(address),

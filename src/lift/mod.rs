@@ -1,7 +1,7 @@
 mod aarch64;
 mod arm32;
+pub(crate) use arm32::disassembly as arm32_disassembly;
 pub(crate) use arm32::fold_literals;
-pub(crate) use arm32::listing as arm32_listing;
 pub(crate) use arm32::literal as arm32_literal;
 pub(crate) use arm32::position_independent_instruction as arm32_position_independent_instruction;
 #[cfg(test)]

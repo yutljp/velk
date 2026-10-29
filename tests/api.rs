@@ -526,6 +526,16 @@ fn script_results_match_the_declarations() {
                 problems.push(at(&format!("{field}() should return an array")));
             }
         }
+        if let Some(lines) = result["disasm"].as_array() {
+            for (index, line) in lines.iter().enumerate() {
+                problems.extend(check_interface_fields(
+                    &interfaces,
+                    "DisassemblyLine",
+                    line,
+                    &at(&format!("disasm()[{index}]")),
+                ));
+            }
+        }
         if result["disasm"]
             .as_array()
             .is_some_and(|lines| lines.len() > 3)

@@ -409,6 +409,7 @@ mod tests {
                     path: PathBuf::from("binary"),
                     function: "sum3".into(),
                     limit: Some(12),
+                    json: false,
                 },
             ),
             (
@@ -474,6 +475,7 @@ mod tests {
                 path: PathBuf::from("binary"),
                 function: "sum3".into(),
                 limit: None,
+                json: false,
             }
         );
         assert_eq!(
@@ -533,12 +535,12 @@ mod tests {
     #[test]
     fn single_operation_options_conflict_with_every_other_operation() {
         for (allowed, option) in [
-            ("--card", vec!["--budget", "20"]),
-            ("--functions", vec!["--json"]),
-            ("--build-signatures", vec!["--output", "db.json"]),
+            (&["--card"][..], vec!["--budget", "20"]),
+            (&["--functions", "--disasm"][..], vec!["--json"]),
+            (&["--build-signatures"][..], vec!["--output", "db.json"]),
         ] {
             for (_, operation) in OPERATIONS {
-                if operation == allowed {
+                if allowed.contains(&operation) {
                     continue;
                 }
                 let mut args = vec![operation];
@@ -698,6 +700,7 @@ mod tests {
                 path: PathBuf::from("-binary"),
                 function: "-sum3".into(),
                 limit: None,
+                json: false,
             }
         );
     }

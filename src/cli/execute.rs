@@ -402,6 +402,7 @@ pub(crate) fn run(
             path,
             function,
             limit,
+            json: as_json,
         } => {
             let binary = match crate::open_binary(&path, project, input_options, signature_options)
             {
@@ -416,11 +417,16 @@ pub(crate) fn run(
                 Ok(listing) => listing,
                 Err(error) => return Err(error),
             };
+            if as_json {
+                println!("{}", json!(listing));
+                return Ok(ExitCode::SUCCESS);
+            }
+            let lines = velk::disasm::format_lines(&listing);
             if Terminal::stdout().interactive() {
-                let code: String = listing.iter().map(|line| format!("{line}\n")).collect();
+                let code: String = lines.iter().map(|line| format!("{line}\n")).collect();
                 cli_output::print_code(&binary, addr, &function, &code, Language::Disassembly);
             } else {
-                for line in listing {
+                for line in lines {
                     println!("{line}");
                 }
             }

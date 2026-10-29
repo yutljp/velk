@@ -20,8 +20,8 @@ interface Func {
    * For long MCP replies, page lines with .split("\n").slice(start, end).join("\n"). */
   decompile(opts?: { decodeStrings?: boolean }): string;
   origins(): { target: ProjectTarget; name?: string; c_type?: string }[];
-  /** One line per instruction across the whole function, up to `limit` lines; unlimited if omitted. */
-  disasm(opts?: { limit?: number }): string[];
+  /** One record per instruction, with a comment when a static reference is known. */
+  disasm(opts?: { limit?: number }): DisassemblyLine[];
   /** The optimized intermediate representation, as text. */
   ir(): string;
   signature(): Signature;

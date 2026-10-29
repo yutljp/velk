@@ -46,6 +46,12 @@ interface Card {
   approxTokens: number;
 }
 
+interface DisassemblyLine {
+  addr: Addr;
+  instruction: string;
+  comment: string | null;
+}
+
 interface StructureField {
   /** Hexadecimal byte offset from the structure pointer. */
   offset: Addr;

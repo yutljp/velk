@@ -298,10 +298,10 @@ pub(super) struct Cli {
         help = format!("Approximate card size in tokens (default: {}); only with --card", card::DEFAULT_BUDGET)
     )]
     budget: Option<usize>,
-    /// Print function lists or emulation results as JSON.
+    /// Print function lists, disassembly, or emulation results as JSON.
     #[arg(
         long,
-        conflicts_with_all = ["classes", "compare", "search", "read_memory", "detect_constants", "annotate", "annotation", "annotations", "unannotate", "export_project", "import_project", "origins", "xrefs", "callers", "callees", "path", "strings", "constants", "summary", "sections", "card", "decompile", "disasm", "ir", "build_signatures", "identify", "run", "mcp", "serve"]
+        conflicts_with_all = ["classes", "compare", "search", "read_memory", "detect_constants", "annotate", "annotation", "annotations", "unannotate", "export_project", "import_project", "origins", "xrefs", "callers", "callees", "path", "strings", "constants", "summary", "sections", "card", "decompile", "ir", "build_signatures", "identify", "run", "mcp", "serve"]
     )]
     json: bool,
     /// Disable the embedded library signature sets.
@@ -384,6 +384,7 @@ pub(super) enum Command {
         path: PathBuf,
         function: String,
         limit: Option<usize>,
+        json: bool,
     },
     Ir {
         path: PathBuf,
@@ -575,11 +576,13 @@ impl Cli {
                 input: Some(path),
                 function: Some(function),
                 limit,
+                json,
                 ..
             } => Command::Disasm {
                 path,
                 function,
                 limit,
+                json,
             },
             Self {
                 ir: true,

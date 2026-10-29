@@ -59,8 +59,8 @@ fn scripts_keep_simultaneous_architecture_handles_independent() {
         r#"
         const a = velk.open({path:?}, {{arch: "arm64"}});
         const x = velk.open({path:?}, {{arch: "x86_64"}});
-        const ac = a.getFunction("_sum3").disasm().join("\n");
-        const xc = x.getFunction("_sum3").disasm().join("\n");
+        const ac = a.getFunction("_sum3").disasm().map(line => line.instruction).join("\n");
+        const xc = x.getFunction("_sum3").disasm().map(line => line.instruction).join("\n");
         if (a.slices.length !== 2 || a.arch !== "aarch64" || x.arch !== "x86_64") throw Error("metadata");
         if (ac === xc || !ac.includes("ret") || !xc.includes("ret")) throw Error("slice cache");
         const sig = x.buildSignatures().database.entries;

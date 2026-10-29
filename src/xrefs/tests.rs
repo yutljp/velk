@@ -43,6 +43,23 @@ fn strings_decode_all_encodings_and_odd_alignment() {
 }
 
 #[test]
+fn targeted_string_reads_require_the_exact_start_and_handle_utf16() {
+    assert_eq!(
+        strings::at_bytes(b"\0hello\0world\0", 0x100, 0x101, ".data").as_deref(),
+        Some("hello")
+    );
+    assert_eq!(strings::at_bytes(b"\0hello\0", 0x100, 0x102, ".data"), None);
+
+    let mut utf16 = vec![0, 0];
+    utf16.extend("wide😀".encode_utf16().flat_map(u16::to_le_bytes));
+    utf16.extend([0, 0]);
+    assert_eq!(
+        strings::at_bytes(&utf16, 0x200, 0x202, ".data").as_deref(),
+        Some("wide😀")
+    );
+}
+
+#[test]
 fn loads_are_not_repeated_when_their_results_are_used() {
     // mov rax,[0x1000]; add rax,1; ret
     let image = image(vec![

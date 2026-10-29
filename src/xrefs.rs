@@ -86,6 +86,11 @@ pub struct StringLiteral {
     pub xrefs: Vec<Xref>,
 }
 
+/// Reads a string that begins at an address in a loaded data section.
+pub(crate) fn string_at(image: &Image, address: u64) -> Option<String> {
+    strings::at(image, address)
+}
+
 #[derive(Debug, Default, Serialize)]
 pub struct Index {
     pub xrefs: Vec<Xref>,

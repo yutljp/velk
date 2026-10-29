@@ -304,6 +304,8 @@ pub struct Image {
     /// Resolved targets from branch relocations and local linkage stubs,
     /// keyed by instruction address.
     pub relocations: BTreeMap<u64, u64>,
+    /// Names from relocations in executable sections, keyed by the relocated field.
+    pub(crate) relocation_symbols: BTreeMap<u64, String>,
     /// The file is a relocatable object, whose branches to other modules
     /// stay unresolved.
     pub relocatable: bool,
@@ -522,6 +524,7 @@ impl Image {
             lifts: Default::default(),
             word_pairs: Default::default(),
             relocations: BTreeMap::new(),
+            relocation_symbols: BTreeMap::new(),
             relocatable: false,
             go: false,
             vtables: Default::default(),
@@ -1078,6 +1081,7 @@ pub(crate) fn load_input_with_saved(
     // Relocatable objects leave branch displacements unresolved; the targets
     // are only in the relocations.
     let mut relocations = BTreeMap::new();
+    let mut relocation_symbols = BTreeMap::new();
     for section in file.sections() {
         // Data sections such as `.eh_frame` also hold PC-relative relocations;
         // since every section of an object starts at zero, their offsets would
@@ -1090,6 +1094,13 @@ pub(crate) fn load_input_with_saved(
             .copied()
             .unwrap_or(section.address());
         for (offset, relocation) in section.relocations() {
+            if let object::RelocationTarget::Symbol(index) = relocation.target()
+                && let Ok(symbol) = file.symbol_by_index(index)
+                && let Some(name) = symbol_name(&symbol)
+                && let Some(address) = base.checked_add(offset)
+            {
+                relocation_symbols.entry(address).or_insert(name);
+            }
             let arm_branch = isa_of(file.architecture()) == Isa::Arm32
                 && matches!(
                     relocation.flags(),
@@ -1331,6 +1342,7 @@ pub(crate) fn load_input_with_saved(
         lifts: Default::default(),
         word_pairs: Default::default(),
         relocations,
+        relocation_symbols,
         relocatable: file.kind() == object::ObjectKind::Relocatable,
         imports: plt::imports(&file).into_iter().collect(),
         import_addends: BTreeMap::new(),

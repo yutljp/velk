@@ -18,6 +18,52 @@ pub(super) fn strings(image: &Image) -> Vec<StringLiteral> {
     result
 }
 
+pub(super) fn at(image: &Image, address: u64) -> Option<String> {
+    let Some(section) = image.sections.iter().find(|section| {
+        section.loaded
+            && (!section.executable || image.format == crate::loader::Format::Raw)
+            && address >= section.vaddr
+            && address < section.vaddr.saturating_add(section.size)
+    }) else {
+        return None;
+    };
+    let Some(bytes) = image.read_vaddr(section.vaddr, section.size) else {
+        return None;
+    };
+    at_bytes(bytes, section.vaddr, address, &section.name)
+}
+
+pub(super) fn at_bytes(bytes: &[u8], base: u64, address: u64, section: &str) -> Option<String> {
+    const WINDOW: usize = 200;
+
+    let Some(relative) = address.checked_sub(base) else {
+        return None;
+    };
+    let Ok(offset) = usize::try_from(relative) else {
+        return None;
+    };
+    if offset >= bytes.len() {
+        return None;
+    }
+    if offset != 0
+        && bytes.get(offset - 1).is_some_and(|byte| {
+            *byte != 0 && (*byte >= 0x20 || matches!(*byte, b'\n' | b'\r' | b'\t'))
+        })
+    {
+        return None;
+    }
+    let end = offset.saturating_add(WINDOW).min(bytes.len());
+    let Some(bytes) = bytes.get(offset..end) else {
+        return None;
+    };
+    let mut literals = Vec::new();
+    extract(bytes, address, section, &mut literals);
+    literals
+        .into_iter()
+        .find(|literal| literal.addr == address)
+        .map(|literal| literal.text)
+}
+
 pub(super) fn extract(bytes: &[u8], base: u64, section: &str, result: &mut Vec<StringLiteral>) {
     let mut add = |start: usize, end: usize, encoding: &str, text: String| {
         if text.chars().count() < 4

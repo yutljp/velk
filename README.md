@@ -71,6 +71,11 @@ velk --strings   path/to/binary          # strings with references
 
 Run `velk --help` for all options.
 
+Disassembly comments name recognized string literals, function and import targets, data symbols and
+decoded strings. Use
+`velk --disasm --json` for instruction records with `addr`, `instruction` and `comment` fields;
+`f.disasm()` in scripts returns the same records.
+
 Whole-binary work uses the available CPU cores. Set `VELK_THREADS=1` to run with one worker,
 or another positive integer to limit workers. Results remain in function order.
 On Linux, the binary loader uses a read-only mapped snapshot; if mapping fails, it reads the file.

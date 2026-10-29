@@ -1248,14 +1248,22 @@ impl Binary {
         Ok(())
     }
 
-    pub fn disasm(&self, addr: u64, max_lines: usize) -> Result<Vec<String>> {
+    pub fn disasm(
+        &self,
+        addr: u64,
+        max_lines: usize,
+    ) -> Result<Vec<crate::disasm::DisassemblyLine>> {
         let addr = self.image.code_address(addr);
         let function = match self.function(addr) {
             Ok(function) => function,
             Err(error) => return Err(error),
         };
         let len = function.size.unwrap_or(analysis::UNKNOWN_SIZE);
-        disasm::listing(&self.image, addr, len, max_lines)
+        let decoded_strings = self
+            .decoded_strings
+            .get(&addr)
+            .map_or(&[][..], Vec::as_slice);
+        disasm::listing(&self.image, addr, len, max_lines, decoded_strings)
             .map_err(|source| Error::Lift { addr, source })
     }
 
