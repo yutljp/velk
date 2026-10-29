@@ -1,5 +1,3 @@
-#![cfg(target_os = "macos")]
-
 mod common;
 
 use std::fs;
@@ -8,7 +6,7 @@ use std::process::Command;
 use velk::service::Binary;
 
 #[test]
-fn stripped_name_errors_include_entry_and_listing_hint() {
+fn stripped_main_lookup_is_consistent_across_interfaces() {
     use std::io::Write as _;
     use std::process::Stdio;
 
@@ -46,12 +44,8 @@ fn stripped_name_errors_include_entry_and_listing_hint() {
     );
     let binary = Binary::open(&executable).unwrap();
     assert!(binary.image().stripped);
-    let entry = binary.image().entry.unwrap();
-    let message = binary.find("main").unwrap_err().to_string();
-    assert!(message.contains("binary is stripped"), "{message}");
-    assert!(message.contains(&format!("entry 0x{entry:x}")), "{message}");
-    assert!(message.contains("--functions"), "{message}");
-    assert_eq!(message.lines().count(), 1);
+    let address = binary.find("main").unwrap().addr;
+    let address = format!("0x{address:x}");
 
     let output = Command::new(env!("CARGO_BIN_EXE_velk"))
         .arg("-D")
@@ -59,19 +53,38 @@ fn stripped_name_errors_include_entry_and_listing_hint() {
         .arg("main")
         .output()
         .unwrap();
-    assert!(!output.status.success());
-    assert_eq!(
-        String::from_utf8(output.stderr).unwrap().trim(),
-        format!("error: {message}")
+    assert!(
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
     );
+    let code = String::from_utf8(output.stdout).unwrap();
+    assert!(code.contains("int main(void)"), "{code}");
+    let decompiled_source = directory.join("decompiled.c");
+    fs::write(&decompiled_source, code).unwrap();
+    let decompiled_executable = directory.join("decompiled");
+    let output = Command::new("clang")
+        .arg(&decompiled_source)
+        .arg("-o")
+        .arg(&decompiled_executable)
+        .output()
+        .unwrap();
+    assert!(
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let original_status = Command::new(&executable).status().unwrap();
+    let decompiled_status = Command::new(&decompiled_executable).status().unwrap();
+    assert_eq!(decompiled_status.code(), original_status.code());
 
     let script = format!(
-        "(() => {{ try {{ velk.open({path:?}).getFunction('main'); }} catch (error) {{ return error.message; }} }})()",
+        "velk.open({path:?}).getFunction('main').addr",
         path = executable.display().to_string()
     );
     let outcome = velk::script::Engine::new().unwrap().run(&script, None);
     assert!(outcome.error.is_none(), "{:?}", outcome.error);
-    assert_eq!(outcome.output.trim(), message);
+    assert_eq!(outcome.output.trim(), address);
 
     let request = serde_json::json!({
         "jsonrpc": "2.0", "id": 1, "method": "tools/call",
@@ -88,9 +101,30 @@ fn stripped_name_errors_include_entry_and_listing_hint() {
     assert!(output.status.success());
     let response: serde_json::Value = serde_json::from_slice(&output.stdout).unwrap();
     let text = response["result"]["content"][0]["text"].as_str().unwrap();
-    assert!(text.contains(&message), "{text}");
+    assert!(text.contains(&address), "{text}");
+
+    let mut child = Command::new(env!("CARGO_BIN_EXE_velk"))
+        .arg("--serve")
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .spawn()
+        .unwrap();
+    writeln!(
+        child.stdin.take().unwrap(),
+        "{}",
+        serde_json::json!({
+            "id": 1,
+            "code": format!("velk.open({path:?}).getFunction('main').addr", path = executable.display().to_string())
+        })
+    )
+    .unwrap();
+    let output = child.wait_with_output().unwrap();
+    assert!(output.status.success());
+    let response: serde_json::Value = serde_json::from_slice(&output.stdout).unwrap();
+    assert_eq!(response["result"], address);
 }
 
+#[cfg(target_os = "macos")]
 #[test]
 fn string_arguments_recompile_with_apple_stack_varargs() {
     let directory = common::root().join("target/output-polish");

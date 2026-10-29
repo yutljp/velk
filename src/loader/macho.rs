@@ -50,6 +50,9 @@ pub(super) fn add_functions(file: &object::File<'_>, image: &mut Image) {
     {
         image.entry = Some(address);
         upsert(&mut image.functions, address, None, None, NameSource::Entry);
+        if let Some(function) = image.functions.get_mut(&address) {
+            function.merge(Some("main".to_owned()), None, NameSource::Entry);
+        }
     }
     let Some(function_starts_command) = function_starts_command else {
         return;

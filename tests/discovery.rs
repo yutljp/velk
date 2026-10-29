@@ -585,7 +585,7 @@ fn i386_runtime_startup_names_main() {
 }
 
 #[test]
-fn decompile_main_without_runtime_shows_the_entry_explicitly() {
+fn stripped_freestanding_entry_uses_cli_fallback_and_keeps_name_lookup_strict() {
     let directory = common::root().join("target/discovery-entry-output");
     fs::create_dir_all(&directory).expect("entry fixture directory");
     let source = directory.join("entry.S");
@@ -622,8 +622,72 @@ fn decompile_main_without_runtime_shows_the_entry_explicitly() {
     );
     assert!(code.contains("return 7;"), "{code}");
     let binary = Binary::open(&path).expect("entry binary");
+    let message = binary.find("main").unwrap_err().to_string();
+    assert!(message.contains("binary is stripped"), "{message}");
+    assert!(
+        message.contains("use --functions to list addresses"),
+        "{message}"
+    );
     assert!(
         binary.find("main").is_err(),
         "the entry must not be renamed main"
+    );
+
+    let script = format!(
+        "(() => {{ try {{ velk.open({path:?}).getFunction('main'); }} catch (error) {{ return error.message; }} }})()",
+        path = path.display().to_string()
+    );
+    let outcome = velk::script::Engine::new().unwrap().run(&script, None);
+    assert!(outcome.error.is_none(), "{:?}", outcome.error);
+    assert!(
+        outcome.output.contains("binary is stripped"),
+        "{}",
+        outcome.output
+    );
+    assert!(
+        outcome.output.contains("use --functions to list addresses"),
+        "{}",
+        outcome.output
+    );
+
+    use std::io::Write as _;
+    let request = json!({
+        "jsonrpc": "2.0", "id": 1, "method": "tools/call",
+        "params": {"name": "velk_run_script", "arguments": {"code": script}}
+    });
+    let mut child = Command::new(env!("CARGO_BIN_EXE_velk"))
+        .arg("--mcp")
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .spawn()
+        .expect("MCP process");
+    writeln!(child.stdin.take().unwrap(), "{request}").unwrap();
+    let output = child.wait_with_output().unwrap();
+    assert!(output.status.success());
+    let response: Value = serde_json::from_slice(&output.stdout).unwrap();
+    let text = response["result"]["content"][0]["text"].as_str().unwrap();
+    assert!(text.contains("binary is stripped"), "{text}");
+    assert!(text.contains("use --functions to list addresses"), "{text}");
+
+    let mut child = Command::new(env!("CARGO_BIN_EXE_velk"))
+        .arg("--serve")
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .spawn()
+        .expect("serve process");
+    writeln!(
+        child.stdin.take().unwrap(),
+        "{}",
+        json!({"id": 1, "code": script})
+    )
+    .unwrap();
+    let output = child.wait_with_output().unwrap();
+    assert!(output.status.success());
+    let response: Value = serde_json::from_slice(&output.stdout).unwrap();
+    let result = response["result"].as_str().unwrap();
+    assert!(result.contains("binary is stripped"), "{result}");
+    assert!(
+        result.contains("use --functions to list addresses"),
+        "{result}"
     );
 }

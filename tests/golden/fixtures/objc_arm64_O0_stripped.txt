@@ -7,7 +7,7 @@
 0x100000960 68 - function-starts
 0x1000009a4 56 - function-starts
 0x1000009dc 36 - function-starts
-0x100000a00 20 - entry,function-starts
+0x100000a00 20 main entry,function-starts
 /* velk prelude */
 #include <stdint.h>
 
@@ -172,10 +172,10 @@ fn <unnamed> @ 0x1000009dc (size 36)
 -- card
 {"addr":"0x1000009dc","approxTokens":150,"blocks":1,"hardReasons":[],"name":null,"nameSources":["function-starts"],"section":"__text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":36,"unsupported":0}
 
-== 0x100000a00 -
+== 0x100000a00 main
 -- decompile
-/* velk pseudo-C: sub_100000a00 @ 0x100000a00 */
-int32_t sub_100000a00(void) {
+/* velk pseudo-C: main @ 0x100000a00 */
+int main(void) {
     return 0;
 }
 -- signature
@@ -183,8 +183,8 @@ int32_t ()
 -- references
 
 -- ir
-fn <unnamed> @ 0x100000a00 (size 20)
+fn main @ 0x100000a00 (size 20)
   blk0 @ 0x100000a00:
     ret #0x0
 -- card
-{"addr":"0x100000a00","approxTokens":126,"blocks":1,"hardReasons":["name-unknown"],"name":null,"nameSources":["entry","function-starts"],"section":"__text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":20,"unsupported":0}
+{"addr":"0x100000a00","approxTokens":126,"blocks":1,"hardReasons":[],"name":"main","nameSources":["entry","function-starts"],"section":"__text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":20,"unsupported":0}
