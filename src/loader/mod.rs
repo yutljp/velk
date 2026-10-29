@@ -963,8 +963,8 @@ pub(crate) fn load_input_with_saved(
         Err(error) => return Err(error),
     };
     let input_digest = input.digest();
-    let (input, packing, recovered) = if let Some(report) = packed::detect(&input) {
-        let recovered = match packed::unpack(&input) {
+    let (input, packing, recovered) = if let Some(mut report) = packed::detect(&input) {
+        let recovered = match packed::unpack(&input, &mut report) {
             Ok(bytes) => bytes,
             Err(error) => return Err(error),
         };

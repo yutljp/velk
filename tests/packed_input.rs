@@ -77,7 +77,7 @@ void start(void) { result = add3(data[0],data[1],data[2]); for (;;) {} }
 }
 
 #[test]
-fn upx_elf_and_pe_both_x86_widths_recover_identical_function_output() {
+fn upx_methods_and_filters_preserve_printed_functions_through_all_interfaces() {
     if Command::new("upx").arg("--version").output().is_err() {
         eprintln!("UPX fixture tests skipped: upx is not installed");
         return;
@@ -85,74 +85,85 @@ fn upx_elf_and_pe_both_x86_widths_recover_identical_function_output() {
     for (name, target, pe) in [
         ("elf64", "x86_64-linux-gnu", false),
         ("elf32", "i686-linux-gnu", false),
+        ("aarch64", "aarch64-linux-gnu", false),
+        ("arm", "armv7-linux-gnueabi", false),
         ("pe64", "x86_64-pc-windows-msvc", true),
         ("pe32", "i686-pc-windows-msvc", true),
     ] {
-        let directory = directory(name);
-        let original_path = fixture(&directory, target, pe);
-        let packed_path = directory.join("packed");
-        run(Command::new("upx")
-            .args(["-q", "-f", "-o"])
-            .arg(&packed_path)
-            .arg(&original_path));
-        let packed_bytes = fs::read(&packed_path).unwrap();
-        let detection = velk::loader::packed::detect(&packed_bytes).unwrap();
-        assert_eq!(detection.packer, "UPX");
-        assert!(
-            detection
-                .version
-                .as_deref()
-                .is_some_and(|version| version.starts_with(|c: char| c.is_ascii_digit())),
-            "{detection:?}"
-        );
-        let mut original = Binary::open(&original_path).unwrap();
-        let mut recovered = Binary::open(&packed_path).unwrap();
-        let original_address = original.find("add3").unwrap().addr;
-        let recovered_address = recovered.find("add3").unwrap().addr;
-        assert_eq!(original_address, recovered_address, "{name}");
-        assert_eq!(
-            original.decompile(original_address, None, None).unwrap(),
-            recovered.decompile(recovered_address, None, None).unwrap(),
-            "{name}"
-        );
-        assert!(
-            recovered
-                .image()
-                .packing
-                .as_ref()
-                .unwrap()
-                .method
-                .contains("direct decoder")
-        );
-        let starts: Vec<u64> = original.image().functions.keys().copied().collect();
-        assert_eq!(
-            starts,
-            recovered
-                .image()
-                .functions
-                .keys()
-                .copied()
-                .collect::<Vec<_>>(),
-            "{name}"
-        );
-        for address in starts {
-            assert_eq!(
-                original
-                    .decompile(address, None, None)
-                    .map_err(|error| error.to_string()),
-                recovered
-                    .decompile(address, None, None)
-                    .map_err(|error| error.to_string()),
-                "{name}: 0x{address:x}"
-            );
-        }
-        let original_code = original
-            .decompile(original_address, None, None)
-            .unwrap()
-            .replace("add3(", "original_add3(");
-        let recovered_code = recovered.decompile(recovered_address, None, None).unwrap();
-        let source = format!(
-            r#"
+        for method in ["nrv2b", "nrv2d", "nrv2e", "lzma"] {
+            for filtered in [false, true] {
+                let directory = directory(&format!("{name}-{method}-{filtered}"));
+                let original_path = fixture(&directory, target, pe);
+                let packed_path = directory.join("packed");
+                run(Command::new("upx")
+                    .env_remove("UPX")
+                    .arg(format!("--{method}"))
+                    .arg(if filtered {
+                        "--filter=0x49"
+                    } else {
+                        "--no-filter"
+                    })
+                    .args(["-q", "-f", "--force-overwrite", "-o"])
+                    .arg(&packed_path)
+                    .arg(&original_path));
+                let packed_bytes = fs::read(&packed_path).unwrap();
+                let detection = velk::loader::packed::detect(&packed_bytes).unwrap();
+                assert_eq!(detection.packer, "UPX");
+                assert!(
+                    detection
+                        .version
+                        .as_deref()
+                        .is_some_and(|version| version.starts_with(|c: char| c.is_ascii_digit())),
+                    "{detection:?}"
+                );
+                let mut original = Binary::open(&original_path).unwrap();
+                let mut recovered = Binary::open(&packed_path).unwrap();
+                let original_address = original.find("add3").unwrap().addr;
+                let recovered_address = recovered.find("add3").unwrap().addr;
+                assert_eq!(original_address, recovered_address, "{name}");
+                assert_eq!(
+                    original.decompile(original_address, None, None).unwrap(),
+                    recovered.decompile(recovered_address, None, None).unwrap(),
+                    "{name}"
+                );
+                assert!(
+                    recovered
+                        .image()
+                        .packing
+                        .as_ref()
+                        .unwrap()
+                        .method
+                        .starts_with("built-in")
+                );
+                let starts: Vec<u64> = original.image().functions.keys().copied().collect();
+                assert_eq!(
+                    starts,
+                    recovered
+                        .image()
+                        .functions
+                        .keys()
+                        .copied()
+                        .collect::<Vec<_>>(),
+                    "{name}"
+                );
+                for address in starts {
+                    assert_eq!(
+                        original
+                            .decompile(address, None, None)
+                            .map_err(|error| error.to_string()),
+                        recovered
+                            .decompile(address, None, None)
+                            .map_err(|error| error.to_string()),
+                        "{name}: 0x{address:x}"
+                    );
+                }
+                let original_code = original
+                    .decompile(original_address, None, None)
+                    .unwrap()
+                    .replace("add3(", "original_add3(");
+                let recovered_code = recovered.decompile(recovered_address, None, None).unwrap();
+                let source = format!(
+                    r#"
 #include <stdint.h>
 {original_code}
 {recovered_code}
@@ -166,69 +177,71 @@ int main(void) {{
     return 0;
 }}
 "#
-        );
-        let native = directory.join("native");
-        common::compiler::compile_file(
-            Command::new("clang")
-                .args(["-O2", "-Werror=implicit-function-declaration"])
-                .arg(directory.join("check.c"))
-                .arg("-o")
-                .arg(&native),
-            &directory.join("check.c"),
-            &source,
-        );
-        run(&mut Command::new(native));
-        let saved = directory.join("saved");
-        recovered.image().save_unpacked(&saved).unwrap();
-        assert!(recovered.image().save_unpacked(&saved).is_err());
-        assert!(Binary::open(&saved).unwrap().image().packing.is_none());
-        // An infinite-loop entry is never run by the direct decoder.
-        assert_eq!(
-            Binary::open(&saved).unwrap().image().entry,
-            original.image().entry
-        );
-        let script = directory.join("recover.js");
-        let script_saved = directory.join("script-saved");
-        fs::write(&script, format!("const b=velk.open({}); if(b.packing.packer !== 'UPX') throw Error('packer'); b.saveUnpacked({}); b.getFunction('add3').decompile()", json!(packed_path), json!(script_saved))).unwrap();
-        let output = Command::new(env!("CARGO_BIN_EXE_velk"))
-            .arg("--run")
-            .arg(&script)
-            .output()
-            .unwrap();
-        assert!(output.status.success(), "{name}: {output:?}");
-        let cli_saved = directory.join("cli-saved");
-        let output = Command::new(env!("CARGO_BIN_EXE_velk"))
-            .args(["-D", "--save-unpacked"])
-            .arg(&cli_saved)
-            .arg(&packed_path)
-            .arg("add3")
-            .output()
-            .unwrap();
-        assert!(output.status.success(), "{name}: {output:?}");
-        assert!(String::from_utf8_lossy(&output.stderr).contains("direct decoder"));
-        let mcp_saved = directory.join("mcp-saved");
-        let code = format!(
-            "const b=velk.open({}); b.saveUnpacked({}); b.getFunction('add3').decompile()",
-            json!(packed_path),
-            json!(mcp_saved)
-        );
-        let mut child = Command::new(env!("CARGO_BIN_EXE_velk"))
-            .arg("--mcp")
-            .stdin(Stdio::piped())
-            .stdout(Stdio::piped())
-            .stderr(Stdio::piped())
-            .spawn()
-            .unwrap();
-        let request = json!({"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"velk_run_script","arguments":{"code":code}}});
-        writeln!(child.stdin.take().unwrap(), "{request}").unwrap();
-        let response = child.wait_with_output().unwrap();
-        assert!(response.status.success(), "{response:?}");
-        let response: serde_json::Value = serde_json::from_slice(&response.stdout).unwrap();
-        assert_eq!(response["result"]["isError"], false, "{response:?}");
-        assert!(mcp_saved.is_file());
-        let truncated = directory.join("damaged");
-        fs::write(&truncated, &packed_bytes[..packed_bytes.len() / 2]).unwrap();
-        assert!(Binary::open(&truncated).is_err(), "{name}");
+                );
+                let native = directory.join("native");
+                common::compiler::compile_file(
+                    Command::new("clang")
+                        .args(["-O2", "-Werror=implicit-function-declaration"])
+                        .arg(directory.join("check.c"))
+                        .arg("-o")
+                        .arg(&native),
+                    &directory.join("check.c"),
+                    &source,
+                );
+                run(&mut Command::new(native));
+                let saved = directory.join("saved");
+                recovered.image().save_unpacked(&saved).unwrap();
+                assert!(recovered.image().save_unpacked(&saved).is_err());
+                assert!(Binary::open(&saved).unwrap().image().packing.is_none());
+                // An infinite-loop entry is never run by the direct decoder.
+                assert_eq!(
+                    Binary::open(&saved).unwrap().image().entry,
+                    original.image().entry
+                );
+                let script = directory.join("recover.js");
+                let script_saved = directory.join("script-saved");
+                fs::write(&script, format!("const b=velk.open({}); if(b.packing.packer !== 'UPX') throw Error('packer'); b.saveUnpacked({}); b.getFunction('add3').decompile()", json!(packed_path), json!(script_saved))).unwrap();
+                let output = Command::new(env!("CARGO_BIN_EXE_velk"))
+                    .arg("--run")
+                    .arg(&script)
+                    .output()
+                    .unwrap();
+                assert!(output.status.success(), "{name}: {output:?}");
+                let cli_saved = directory.join("cli-saved");
+                let output = Command::new(env!("CARGO_BIN_EXE_velk"))
+                    .args(["-D", "--save-unpacked"])
+                    .arg(&cli_saved)
+                    .arg(&packed_path)
+                    .arg("add3")
+                    .output()
+                    .unwrap();
+                assert!(output.status.success(), "{name}: {output:?}");
+                assert!(String::from_utf8_lossy(&output.stderr).contains("direct decoder"));
+                let mcp_saved = directory.join("mcp-saved");
+                let code = format!(
+                    "const b=velk.open({}); b.saveUnpacked({}); b.getFunction('add3').decompile()",
+                    json!(packed_path),
+                    json!(mcp_saved)
+                );
+                let mut child = Command::new(env!("CARGO_BIN_EXE_velk"))
+                    .arg("--mcp")
+                    .stdin(Stdio::piped())
+                    .stdout(Stdio::piped())
+                    .stderr(Stdio::piped())
+                    .spawn()
+                    .unwrap();
+                let request = json!({"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"velk_run_script","arguments":{"code":code}}});
+                writeln!(child.stdin.take().unwrap(), "{request}").unwrap();
+                let response = child.wait_with_output().unwrap();
+                assert!(response.status.success(), "{response:?}");
+                let response: serde_json::Value = serde_json::from_slice(&response.stdout).unwrap();
+                assert_eq!(response["result"]["isError"], false, "{response:?}");
+                assert!(mcp_saved.is_file());
+                let truncated = directory.join("damaged");
+                fs::write(&truncated, &packed_bytes[..packed_bytes.len() / 2]).unwrap();
+                assert!(Binary::open(&truncated).is_err(), "{name}");
+            }
+        }
     }
 }
 
@@ -251,4 +264,38 @@ fn damaged_upx_and_unpacked_save_requests_fail_clearly() {
     );
     assert!(!directory.join("unused").exists());
     assert!(velk::loader::packed::detect(b"UPX! is an ordinary raw byte string").is_none());
+}
+
+#[test]
+fn an_unsupported_pe_overlay_uses_the_bounded_external_fallback() {
+    if Command::new("upx").arg("--version").output().is_err() {
+        eprintln!("UPX fallback test skipped: upx is not installed");
+        return;
+    }
+    let directory = directory("overlay");
+    let path = directory.join("packed.exe");
+    let mut bytes =
+        fs::read(common::root().join("tests/data/upx/x86_64.nrv2b.filter49.exe")).unwrap();
+    bytes.extend_from_slice(b"file overlay");
+    fs::write(&path, bytes).unwrap();
+    let reference = directory.join("reference.exe");
+    run(Command::new("upx")
+        .env_remove("UPX")
+        .args(["-qq", "-d", "--force-overwrite", "-o"])
+        .arg(&reference)
+        .arg(&path));
+    let recovered = Binary::open(&path).unwrap();
+    assert!(
+        recovered
+            .image()
+            .packing
+            .as_ref()
+            .unwrap()
+            .method
+            .contains("fallback")
+    );
+    let saved = directory.join("saved.exe");
+    let _ = fs::remove_file(&saved);
+    recovered.image().save_unpacked(&saved).unwrap();
+    assert_eq!(fs::read(saved).unwrap(), fs::read(reference).unwrap());
 }

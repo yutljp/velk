@@ -1,5 +1,7 @@
 # Expression equivalence tests
 
+UPX branch-filter checks prove modular address round trips at 24, 26 and 32 bits, with negative controls for the wrong subtraction direction. Reference-file comparisons check byte selection, opcode preservation and filter boundaries; bit-stream parsing and image reconstruction are not proved by these templates.
+
 C++ decimal stream extraction uses the same overflow predicate, checked at signed and unsigned 16-, 32-, and 64-bit limits.
 
 Symbolic libc decisions check both values of a Boolean predicate directly. SMT

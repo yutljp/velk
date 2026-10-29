@@ -30,7 +30,7 @@ analyze the selected function and a bounded neighborhood when needed.
 
 Headerless code uses `velk.open("code.bin", {raw: {arch: "x86_64", base: "0x7000"}})`.
 RawOptions in the binary topic lists all instruction sets and entry options.
-UPX ELF/PE recovery requires UPX on PATH. `b.packing` reports successful direct
+UPX ELF/PE recovery uses the built-in decoder, with UPX on PATH as a fallback for unsupported variants. `b.packing` reports successful direct
 decoding and `b.saveUnpacked("recovered.exe")` saves its complete output.
 See [input formats and limits](../../../docs/INPUT.md).
 

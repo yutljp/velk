@@ -49,27 +49,43 @@ MCP clients can run the JavaScript example with `velk_run_script`.
 
 ## UPX recovery
 
-Opening a recognized UPX ELF or PE invokes `upx -d` from PATH. The
-[UPX documentation](https://github.com/upx/upx/blob/devel/doc/upx.pod) describes
-this direct decompression interface. The input executable is never run.
-The IR emulator currently lifts immutable image bytes and does not implement
-loader system calls, so it cannot execute UPX's remapping and code rewriting.
-There is no general emulation-based unpacker.
+Opening a recognized UPX ELF or PE first uses velk's built-in decoder. The input
+executable is never run. Supported methods are NRV2B, NRV2D, NRV2E (32-bit and
+byte-oriented bit streams), and LZMA with UPX properties `1a 03`, decoded by
+`lzma-rs`. The decoder supports x86-64, i386, AArch64 and ARM32 little-endian ELF,
+and x86-64 and i386 PE. Branch filters `0x26`, `0x46`, `0x49`, `0x50` (ARM), and
+`0x52` (AArch64), and unfiltered blocks are supported. x86 branch-filter ranges
+are limited to 16 MiB. Other header parameter values use the external fallback.
 
-The decoder runs with a five-second CPU limit, a ten-second elapsed limit,
-a 128 MiB input/output limit, and core dumps disabled. Linux also sets a hard
-512 MiB address-space limit. macOS cannot set that limit in the tested environment;
-resident memory is sampled every millisecond and the child is killed above
-512 MiB. This sampled check can overshoot and is not a hard allocation limit.
-Decoding is supported on Linux and macOS; the tests here run on macOS.
+ELF recovery reads the stored program headers, load segments, gaps and remaining
+file bytes. It requires the standard program-header layout and ordered,
+non-overlapping load segments, with the headers in the first segment. PE recovery
+reads the stored original headers and sections, restores the original entry point,
+rebuilds named and ordinal imports, and restores HIGHLOW or DIR64 base relocations.
+Like the reference decoder on these fixtures, PE recovery clears the debug and
+IAT directory entries and rebuilds import names with zero hints and no separate
+lookup table. Those original details are not restored.
 
-Decoder failure, missing UPX, a timeout, an invalid output header, or output that
-still looks packed returns an error. No partial image is returned. Successful
-output goes through the normal loader. The CLI reports the packer, the release
-version when present in the file's identification, and the direct decoding method on
+Other UPX header layouts, methods, filters or LZMA properties use `upx -d` from
+PATH as a fallback. PE resources, TLS, load configuration, bound or delayed imports,
+CLR metadata, file overlays and other relocation encodings also require that
+fallback. Malformed sizes, truncated blocks and checksum mismatches return errors.
+No partial recovered file is returned. Successful output must parse as the same
+executable format and have an entry point before normal loading begins.
+
+Input and recovered files are limited to 128 MiB. Block output and LZMA dictionary
+sizes are bounded; several buffers can coexist. The external fallback is available
+on Linux and macOS, with a five-second CPU limit, a ten-second elapsed limit, and
+core dumps disabled. Linux sets a hard 512 MiB address-space limit for that child.
+On macOS, resident memory is sampled every millisecond and the child is killed
+above 512 MiB; this sampled check can overshoot.
+
+Detection uses identification markers and known ELF/PE header structures. Tests
+also replace `UPX!` markers and rename PE sections. Removing or changing the format
+fields themselves can prevent structural recognition. Other packers are not decoded.
+The CLI reports the packer, the release version when present, and the decoder on
 standard error. Scripts expose the same information in `b.packing`; it is null
-for ordinary inputs. Detection uses UPX header markers in sectionless ELF files and UPX PE section names or its short identification;
-renamed or removed markers may prevent detection. Other packers are not decoded.
+for ordinary inputs.
 
 Save the recovered executable while analyzing it:
 
@@ -85,6 +101,10 @@ b.getFunction("add3").decompile();
 
 Saving requires a successful recovery and a destination that does not exist.
 The saved bytes are the complete decoder output before analysis relocations.
-Tests build UPX fixtures for x86-64 and i386 ELF and PE, compare printed functions,
-and exercise saving and damaged input. If UPX is absent, those fixture tests
-print a skip message.
+Self-built fixtures in `tests/data/upx` cover all four methods on every listed
+format and architecture, PE imports and relocations, and branch filters. Their
+recovered bytes are compared with `upx -d` output; ELF references also match the
+original files. Rebuild them with `bash tools/make_upx_fixtures.sh OUTPUT_DIRECTORY`.
+The additional packing tests require UPX on PATH and exercise CLI, JavaScript,
+MCP, saved files and compiled printed C. The stored-fixture and decoder property
+tests run without UPX. These checks were run on Linux; macOS was not checked here.

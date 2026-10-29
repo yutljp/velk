@@ -1,5 +1,14 @@
 //! Recognition and bounded decoding of UPX executables.
 
+mod elf;
+mod filter;
+mod format;
+mod lzma;
+mod nrv;
+mod pe;
+#[cfg(test)]
+mod tests;
+
 use std::fs;
 use std::path::PathBuf;
 use std::process::{Child, Command, Stdio};
@@ -15,6 +24,25 @@ const MAX_FILE_SIZE: u64 = 128 << 20;
 const TIME_LIMIT: Duration = Duration::from_secs(10);
 static NEXT_SEQUENCE: AtomicU64 = AtomicU64::new(0);
 
+#[derive(Debug)]
+enum DecodeError {
+    Invalid(String),
+    Unsupported(String),
+}
+
+impl DecodeError {
+    fn invalid(offset: usize, cause: &str) -> Self {
+        Self::Invalid(format!("at offset 0x{offset:x}: {cause}"))
+    }
+}
+
+fn decompress(input: &[u8], size: usize, method: u8) -> std::result::Result<Vec<u8>, DecodeError> {
+    match method {
+        14 => lzma::decode(input, size),
+        _ => nrv::decode(input, size, method),
+    }
+}
+
 /// Packer identification and the decoder selected for recovery.
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -27,7 +55,7 @@ pub struct Report {
     pub method: String,
 }
 
-/// Recognizes UPX headers in ELF and UPX section names in PE images.
+/// Recognizes UPX identification and known header structures in ELF and PE images.
 /// A match is only a detection candidate until decoding succeeds.
 #[must_use]
 pub fn detect(bytes: &[u8]) -> Option<Report> {
@@ -69,7 +97,12 @@ pub fn detect(bytes: &[u8]) -> Option<Report> {
             Ok(file) => file.sections().next().is_none(),
             Err(_) => true,
         };
-    if !(sectionless_elf || sections || version.is_some()) {
+    if !(sectionless_elf
+        || sections
+        || version.is_some()
+        || (elf && self::elf::recognizes(bytes))
+        || (pe && self::pe::recognizes(bytes)))
+    {
         return None;
     }
     // The banner contains the release string; the numeric pack header version
@@ -89,7 +122,7 @@ pub fn detect(bytes: &[u8]) -> Option<Report> {
     Some(Report {
         packer: "UPX".to_owned(),
         version,
-        method: "upx -d (direct decoder)".to_owned(),
+        method: "UPX decoder (pending)".to_owned(),
     })
 }
 
@@ -239,7 +272,36 @@ fn wait_decoder(child: &mut Decoder, time_limit: Duration) -> Result<()> {
     }
 }
 
-pub(super) fn unpack(bytes: &[u8]) -> Result<Vec<u8>> {
+pub(super) fn unpack(bytes: &[u8], report: &mut Report) -> Result<Vec<u8>> {
+    if bytes.len() as u64 > MAX_FILE_SIZE {
+        return Err(Error::Packed("UPX input exceeds 128 MiB".to_owned()));
+    }
+    let decoded = if bytes.starts_with(b"\x7fELF") {
+        elf::unpack(bytes)
+    } else {
+        pe::unpack(bytes)
+    };
+    let cause = match decoded {
+        Ok(output) => {
+            if let Err(error) = validate(bytes, &output) {
+                return Err(error);
+            }
+            report.method = "built-in UPX (direct decoder)".to_owned();
+            return Ok(output);
+        }
+        Err(DecodeError::Invalid(cause)) => return Err(Error::Packed(cause)),
+        Err(DecodeError::Unsupported(cause)) => cause,
+    };
+    report.method = "upx -d (direct decoder fallback)".to_owned();
+    match unpack_external(bytes) {
+        Ok(output) => Ok(output),
+        Err(error) => Err(Error::Packed(format!(
+            "unsupported built-in UPX variant ({cause}); external fallback failed: {error}"
+        ))),
+    }
+}
+
+fn unpack_external(bytes: &[u8]) -> Result<Vec<u8>> {
     if bytes.len() as u64 > MAX_FILE_SIZE {
         return Err(Error::Packed("UPX input exceeds 128 MiB".to_owned()));
     }
@@ -304,37 +366,44 @@ pub(super) fn unpack(bytes: &[u8]) -> Result<Vec<u8>> {
             Ok(bytes) => bytes,
             Err(error) => return Err(Error::Packed(format!("cannot read UPX output: {error}"))),
         };
-        let original = match object::FileKind::parse(bytes) {
-            Ok(kind) => kind,
-            Err(error) => {
-                return Err(Error::Packed(format!(
-                    "invalid packed file header: {error}"
-                )));
-            }
-        };
-        let file = match object::File::parse(recovered.as_slice()) {
-            Ok(file) => file,
-            Err(error) => {
-                return Err(Error::Packed(format!(
-                    "UPX output is not a complete executable: {error}"
-                )));
-            }
-        };
-        if object::FileKind::parse(recovered.as_slice()).ok() != Some(original)
-            || file.entry() == 0
-            || detect(&recovered).is_some()
-        {
-            return Err(Error::Packed(
-                "UPX output has no entry, changed format, or remains packed; no recovered image"
-                    .to_owned(),
-            ));
+        if let Err(error) = validate(bytes, &recovered) {
+            return Err(error);
         }
         Ok(recovered)
     }
 }
 
+fn validate(bytes: &[u8], recovered: &[u8]) -> Result<()> {
+    let original = match object::FileKind::parse(bytes) {
+        Ok(kind) => kind,
+        Err(error) => {
+            return Err(Error::Packed(format!(
+                "invalid packed file header: {error}"
+            )));
+        }
+    };
+    let file = match object::File::parse(recovered) {
+        Ok(file) => file,
+        Err(error) => {
+            return Err(Error::Packed(format!(
+                "UPX output is not a complete executable: {error}"
+            )));
+        }
+    };
+    if object::FileKind::parse(recovered).ok() != Some(original)
+        || file.entry() == 0
+        || detect(recovered).is_some()
+    {
+        return Err(Error::Packed(
+            "UPX output has no entry, changed format, or remains packed; no recovered image"
+                .to_owned(),
+        ));
+    }
+    Ok(())
+}
+
 #[cfg(all(test, unix))]
-mod tests {
+mod external_tests {
     use super::*;
 
     #[test]
