@@ -35,6 +35,8 @@ extern "C" __attribute__((noinline)) int integer_echo() {
 extern "C" int constants();
 extern "C" int numbers();
 extern "C" int unsigned_numbers();
+extern "C" int locale_characters();
+extern "C" int locale_input();
 int main(int argc, char **argv) {
     if (argc < 2) return 2;
     switch (argv[1][0]) {
@@ -45,6 +47,8 @@ int main(int argc, char **argv) {
     case 'e': return integer_echo();
     case 'n': return numbers();
     case 'u': return unsigned_numbers();
+    case 't': return locale_characters();
+    case 'f': return locale_input();
     default: return 2;
     }
 }
@@ -74,4 +78,37 @@ extern "C" __attribute__((noinline)) int unsigned_numbers() {
     std::cin >> value;
     std::cout << value << '\n';
     return 0;
+}
+
+extern "C" __attribute__((noinline)) int locale_characters() {
+    const std::locale locale = std::cout.getloc();
+    const auto &facet = std::use_facet<std::ctype<char>>(locale);
+    const std::ctype_base::mask classes[] = {
+        std::ctype_base::space, std::ctype_base::print, std::ctype_base::cntrl,
+        std::ctype_base::upper, std::ctype_base::lower, std::ctype_base::alpha,
+        std::ctype_base::digit, std::ctype_base::punct, std::ctype_base::xdigit,
+        std::ctype_base::blank
+    };
+    for (unsigned int value = 0; value != 256; ++value) {
+        const char character = static_cast<char>(value);
+        unsigned int mask = 0;
+        for (unsigned int index = 0; index != 10; ++index) {
+            if (facet.is(classes[index], character)) mask |= 1U << index;
+        }
+        std::cout << static_cast<unsigned int>(static_cast<unsigned char>(facet.widen(character)))
+                  << ':' << static_cast<unsigned int>(static_cast<unsigned char>(facet.narrow(character, '?')))
+                  << ':' << mask << '\n';
+    }
+    return 0;
+}
+
+extern "C" __attribute__((noinline)) int locale_input() {
+    std::string text;
+    std::cin >> text;
+    if (text.size() != 1) return 1;
+    const std::locale locale = std::cin.getloc();
+    const auto &facet = std::use_facet<std::ctype<char>>(locale);
+    const char expected = static_cast<char>(0x80);
+    return facet.widen(text[0]) == expected && facet.narrow(text[0], '?') == '?'
+           && facet.narrow(text[0], text[0]) == expected ? accepted() : 1;
 }

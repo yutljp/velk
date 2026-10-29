@@ -42,6 +42,11 @@ pub(super) enum Call {
     Manipulator,
     Write,
     Compare(Layout),
+    CompareRange(Layout),
+    GetLocale,
+    UseFacet,
+    Widen,
+    Narrow,
     Unsupported,
 }
 
@@ -51,6 +56,12 @@ pub(super) fn name(symbol: &str) -> &str {
 }
 
 const CALLS: &[(&str, Call)] = &[
+    ("_ZNKSt3__18ios_base6getlocEv", Call::GetLocale),
+    ("_ZNKSt3__16locale9use_facetERNS0_2idE", Call::UseFacet),
+    ("_ZNSt3__16localeD1Ev", Call::Ignore),
+    ("_ZNSt3__16localeD2Ev", Call::Ignore),
+    ("_ZNKSt3__15ctypeIcE8do_widenEc", Call::Widen),
+    ("_ZNKSt3__15ctypeIcE9do_narrowEcc", Call::Narrow),
     (
         "_ZNSt3__112basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE6__initEPKcm",
         Call::ConstructRange(Layout::Llvm),
@@ -134,6 +145,10 @@ const CALLS: &[(&str, Call)] = &[
     (
         "_ZNKSt3__112basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE7compareEPKc",
         Call::Compare(Layout::Llvm),
+    ),
+    (
+        "_ZNKSt3__112basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEE7compareEmmPKcm",
+        Call::CompareRange(Layout::Llvm),
     ),
     ("_Znwm", Call::Allocate),
     (
@@ -310,11 +325,15 @@ pub(super) trait Machine {
     fn error(&self, message: &str) -> Self::Error;
     fn constant(&self, value: u8) -> Self::Byte;
     fn argument(&mut self, index: usize) -> Result<u64, Self::Error>;
+    fn indirect_result(&mut self) -> Result<u64, Self::Error>;
+    fn locale(&self) -> Option<Locale>;
+    fn character_result(&self, byte: Self::Byte) -> Result<Self::Value, Self::Error>;
     fn read(&mut self, address: u64, length: usize) -> Result<Vec<Self::Byte>, Self::Error>;
     fn write(&mut self, address: u64, bytes: &[Self::Byte]) -> Result<(), Self::Error>;
     fn end_input(&mut self, address: u64) -> Result<(), Self::Error>;
     fn alternate_string_layout(&self) -> bool;
-    fn character(&mut self) -> Result<Self::Byte, Self::Error>;
+    fn character(&mut self, index: usize) -> Result<Self::Byte, Self::Error>;
+    fn ascii(&mut self, byte: &Self::Byte) -> Result<bool, Self::Error>;
     fn byte_value(&mut self, byte: Self::Byte) -> Result<u8, Self::Error>;
     fn word(&mut self, address: u64) -> Result<u64, Self::Error>;
     fn relocate(&mut self, address: u64, value: u64) -> Result<(), Self::Error>;
@@ -518,6 +537,31 @@ pub(super) fn execute<M: Machine>(machine: &mut M, call: Call) -> Result<M::Valu
         return Ok(machine.result(first));
     }
     match call {
+        Call::GetLocale => {
+            let Some(locale) = machine.locale() else {
+                return Err(machine.error("unsupported C++ locale ABI"));
+            };
+            let destination = machine.indirect_result()?;
+            machine.store_word(destination, locale.facet)?;
+            return Ok(machine.result(destination));
+        }
+        Call::UseFacet => {
+            let Some(locale) = machine.locale() else {
+                return Err(machine.error("unsupported C++ locale ABI"));
+            };
+            let id = machine.argument(1)?;
+            if machine.word(first)? != locale.facet || id != locale.id {
+                return Err(machine.error("unsupported C++ locale facet"));
+            }
+            return Ok(machine.result(locale.facet));
+        }
+        Call::Widen | Call::Narrow => {
+            let mut byte = machine.character(1)?;
+            if matches!(call, Call::Narrow) && !machine.ascii(&byte)? {
+                byte = machine.character(2)?;
+            }
+            return machine.character_result(byte);
+        }
         Call::Construct(layout) => {
             assign(machine, first, layout, Vec::new())?;
             return Ok(machine.result(first));
@@ -527,6 +571,23 @@ pub(super) fn execute<M: Machine>(machine: &mut M, call: Call) -> Result<M::Valu
             let pointer = machine.argument(1)?;
             let right = text(machine, pointer)?;
             return machine.compare(&left, &right, layout);
+        }
+        Call::CompareRange(layout) => {
+            let left = string(machine, first, layout)?;
+            let offset = machine.argument(1)?;
+            let count = machine.argument(2)?;
+            if offset > left.len() as u64 {
+                return Err(machine.error("C++ string comparison offset out of range"));
+            }
+            let offset = offset as usize;
+            let length = count.min((left.len() - offset) as u64) as usize;
+            let pointer = machine.argument(3)?;
+            let right_length = machine.argument(4)?;
+            if right_length > machine.bound() as u64 {
+                return Err(machine.error("C++ string comparison exceeds model bound"));
+            }
+            let right = machine.read(pointer, right_length as usize)?;
+            return machine.compare(&left[offset..offset + length], &right, layout);
         }
         _ => {}
     }
@@ -557,7 +618,7 @@ pub(super) fn execute<M: Machine>(machine: &mut M, call: Call) -> Result<M::Valu
             machine.read(pointer, length as usize)?
         }
         Call::Character => {
-            vec![machine.character()?]
+            vec![machine.character(1)?]
         }
         Call::Endl => vec![machine.constant(10)],
         Call::Flush => Vec::new(),
@@ -648,7 +709,10 @@ pub(super) fn imported_name<'image>(
 
 // libstdc++'s 64-bit basic_ios virtual base and classic ctype cache are read
 // inline by getline and endl, even when the actual I/O call is imported.
-pub(super) fn initialize<M: Machine>(machine: &mut M, image: &Image) -> Result<(), M::Error> {
+pub(super) fn initialize<M: Machine>(
+    machine: &mut M,
+    image: &Image,
+) -> Result<Option<Locale>, M::Error> {
     if crate::arch::pointer_bytes(image.isa) != 8
         && (image
             .imports
@@ -713,7 +777,80 @@ pub(super) fn initialize<M: Machine>(machine: &mut M, image: &Image) -> Result<(
             machine.write(address(machine, facet, 56)?, &cache)?;
         }
     }
-    Ok(())
+    if image.format != crate::loader::Format::MachO
+        || !image
+            .imports
+            .values()
+            .any(|symbol| matches!(find(symbol), Some(Call::GetLocale | Call::UseFacet)))
+    {
+        return Ok(None);
+    }
+    let id = machine.allocate(8)?;
+    for (&slot, symbol) in &image.imports {
+        if name(symbol) == "_ZNSt3__15ctypeIcE2idE" {
+            machine.relocate(slot, id)?;
+        }
+    }
+    let facet = machine.allocate(32)?;
+    let vtable = machine.allocate(80)?;
+    machine.store_word(facet, vtable)?;
+    // Darwin's ctype<char> stores a uint32_t classification table after locale::facet.
+    let table = machine.allocate(256 * 4)?;
+    machine.store_word(address(machine, facet, 16)?, table)?;
+    let mut bytes = Vec::new();
+    for byte in 0u8..=255 {
+        let classes = [
+            byte.is_ascii_alphabetic(),
+            byte.is_ascii_control(),
+            byte.is_ascii_digit(),
+            byte.is_ascii_graphic(),
+            byte.is_ascii_lowercase(),
+            byte.is_ascii_punctuation(),
+            matches!(byte, b' ' | b'\t'..=b'\r'),
+            byte.is_ascii_uppercase(),
+            byte.is_ascii_hexdigit(),
+            matches!(byte, b' ' | b'\t'),
+            byte.is_ascii_graphic() || byte == b' ',
+        ];
+        let mut mask = 0u32;
+        for (index, class) in classes.into_iter().enumerate() {
+            if class {
+                mask |= 1 << (index + 8);
+            }
+        }
+        bytes.extend(mask.to_le_bytes().map(|byte| machine.constant(byte)));
+    }
+    machine.write(table, &bytes)?;
+    let widen = machine.allocate(1)?;
+    let narrow = machine.allocate(1)?;
+    machine.store_word(address(machine, vtable, 56)?, widen)?;
+    machine.store_word(address(machine, vtable, 72)?, narrow)?;
+    Ok(Some(Locale {
+        id,
+        facet,
+        widen,
+        narrow,
+    }))
+}
+
+#[derive(Clone, Copy)]
+pub(super) struct Locale {
+    id: u64,
+    facet: u64,
+    widen: u64,
+    narrow: u64,
+}
+
+impl Locale {
+    pub(super) fn method(self, target: u64) -> Option<&'static str> {
+        if target == self.widen {
+            Some("_ZNKSt3__15ctypeIcE8do_widenEc")
+        } else if target == self.narrow {
+            Some("_ZNKSt3__15ctypeIcE9do_narrowEcc")
+        } else {
+            None
+        }
+    }
 }
 
 fn without_tags(symbol: &str) -> String {

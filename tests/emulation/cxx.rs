@@ -56,6 +56,10 @@ fn native(path: &Path, function: &str, input: &[u8]) -> std::process::Output {
     let mut child = command
         .arg(if function == "integer_echo" {
             "echo"
+        } else if function == "locale_characters" {
+            "types"
+        } else if function == "locale_input" {
+            "facet"
         } else {
             function
         })
@@ -158,6 +162,29 @@ fn hex(bytes: &[u8]) -> String {
 }
 
 #[test]
+#[cfg(target_os = "macos")]
+fn locale_characters_match_native() {
+    let mut interfaces = Interfaces::new();
+    for path in fixtures() {
+        let binary = Binary::open(path).expect("C++ binary");
+        let reference = native(path, "locale_characters", b"");
+        assert!(reference.status.success(), "{reference:?}");
+        let report = interfaces.check(
+            path,
+            &binary,
+            "locale_characters",
+            json!({"stepLimit":1000000,"timeLimitMs":30000}),
+        );
+        assert_eq!(report["reason"], "return", "{}: {report}", path.display());
+        assert_eq!(
+            report["stdout"],
+            String::from_utf8_lossy(&reference.stdout).as_ref()
+        );
+        assert_eq!(super::matrix::value(&report), 0);
+    }
+}
+
+#[test]
 fn explored_inputs_replay_natively() {
     if !Command::new("z3")
         .arg("--version")
@@ -170,7 +197,11 @@ fn explored_inputs_replay_natively() {
     let engine = velk::script::Engine::new().expect("JavaScript engine");
     for path in fixtures() {
         let binary = Binary::open(path).expect("C++ binary");
-        for (function, count) in [("word", 3), ("line", 5), ("integer", 4)] {
+        let mut cases = vec![("word", 3), ("line", 5), ("integer", 4)];
+        if cfg!(target_os = "macos") {
+            cases.push(("locale_input", 1));
+        }
+        for (function, count) in cases {
             let options = json!({"stdin":count,"find":[format!("0x{:x}", binary.find("accepted").expect("accepted function").addr)],"pathLimit":4096,"stepLimit":100000});
             eprintln!("explore {} {function}", path.display());
             let report = symbolic::explore(
@@ -260,6 +291,25 @@ fn stream_abi_layouts_on_both_instruction_sets() {
                 continue;
             }
             let binary = Binary::open(&path).expect("C++ ABI fixture");
+            if format == "dylib" {
+                let report = interfaces.check(
+                    &path,
+                    &binary,
+                    "abi_llvm_locale",
+                    json!({"stepLimit":100000}),
+                );
+                assert_eq!(report["reason"], "return", "{arch} O{opt}: {report}");
+                assert_eq!(super::matrix::value(&report), 0, "{report}");
+                let report = interfaces.check(&path, &binary, "abi_bad_llvm_facet", json!({}));
+                assert_eq!(report["reason"], "error", "{report}");
+                assert!(
+                    report["error"]
+                        .as_str()
+                        .expect("error")
+                        .contains("unsupported C++ locale facet"),
+                    "{report}"
+                );
+            }
             for function in ["abi_gnu_word", "abi_llvm_word", "abi_llvm_line"] {
                 for input in [
                     "key",
@@ -296,6 +346,16 @@ fn stream_abi_layouts_on_both_instruction_sets() {
                     );
                     assert_eq!(report["stdout"], input);
                 }
+            }
+            for (input, expected) in [("xke", 0), ("xk", -1), ("xkf", 1)] {
+                let report = interfaces.check(
+                    &path,
+                    &binary,
+                    "abi_llvm_compare_range",
+                    json!({"stdin":{"text":input}}),
+                );
+                assert_eq!(report["reason"], "return", "{report}");
+                assert_eq!(super::matrix::value(&report), expected as u32, "{report}");
             }
             let startup = interfaces.check(&path, &binary, "abi_startup", json!({}));
             assert_eq!(super::matrix::value(&startup), 0);

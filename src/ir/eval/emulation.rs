@@ -40,6 +40,7 @@ struct Runner<'a> {
     trace: Vec<String>,
     heap_base: u64,
     heap_next: u64,
+    cxx_locale: Option<super::cxx::Locale>,
     return_cleanup: u64,
     allocations: HashSet<u64>,
     code: HashMap<u64, Vec<Block>>,
@@ -189,6 +190,7 @@ fn run_with_recovery(
         trace: Vec::new(),
         heap_base,
         heap_next,
+        cxx_locale: None,
         return_cleanup: 0,
         allocations: HashSet::new(),
         code: HashMap::new(),
@@ -1147,6 +1149,7 @@ impl Runner<'_> {
             .imports
             .get(&target)
             .map(String::as_str)
+            .or_else(|| self.cxx_locale.and_then(|locale| locale.method(target)))
             .or_else(|| super::cxx::local_name(self.image, target));
         let key = crate::addr::format(target);
         if let Some(value) = name

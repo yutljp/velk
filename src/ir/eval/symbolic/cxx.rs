@@ -15,14 +15,18 @@ struct Adapter<'state, 'binary> {
 
 impl State {
     pub(super) fn initialize_cxx(&mut self, binary: &Binary) -> Evaluation<()> {
-        cxx::initialize(
+        self.cxx_locale = match cxx::initialize(
             &mut Adapter {
                 state: self,
                 binary,
                 convention: Convention::SysV,
             },
             binary.image(),
-        )
+        ) {
+            Ok(locale) => locale,
+            Err(failure) => return Err(failure),
+        };
+        Ok(())
     }
 
     pub(super) fn cxx(
@@ -73,6 +77,34 @@ impl Machine for Adapter<'_, '_> {
     fn argument(&mut self, index: usize) -> Evaluation<u64> {
         self.state.number(self.binary, self.convention, index)
     }
+    fn indirect_result(&mut self) -> Evaluation<u64> {
+        if self.state.isa == crate::loader::Isa::AArch64 {
+            let value = match self.state.read_register(8) {
+                Ok(value) => value,
+                Err(error) => return Err(error.into()),
+            };
+            self.state.resolve(value)
+        } else {
+            self.argument(0)
+        }
+    }
+    fn locale(&self) -> Option<cxx::Locale> {
+        self.state.cxx_locale
+    }
+    fn character_result(&self, byte: Term) -> Evaluation<Term> {
+        if self.state.isa == crate::loader::Isa::AArch64
+            && self.binary.image().format == crate::loader::Format::MachO
+        {
+            if let Some(value) = byte.concrete {
+                return Ok(Term::constant(u64::from(i32::from(value as i8) as u32)));
+            }
+            return match self.state.bind(smt::low(&smt::signed(&byte.text, 8), 32)) {
+                Ok(value) => Ok(value),
+                Err(error) => Err(error.into()),
+            };
+        }
+        Ok(byte)
+    }
     fn read(&mut self, address: u64, length: usize) -> Evaluation<Vec<Term>> {
         let mut bytes = Vec::new();
         for offset in 0..length {
@@ -87,10 +119,14 @@ impl Machine for Adapter<'_, '_> {
     fn alternate_string_layout(&self) -> bool {
         self.binary.image().format == crate::loader::Format::MachO
     }
-    fn character(&mut self) -> Evaluation<Term> {
-        let value = self.state.argument(self.binary, self.convention, 1)?;
+    fn character(&mut self, index: usize) -> Evaluation<Term> {
+        let value = self.state.argument(self.binary, self.convention, index)?;
         self.state.require_defined(&value, 8)?;
         Ok(self.state.low(&value, 8)?)
+    }
+    fn ascii(&mut self, byte: &Term) -> Evaluation<bool> {
+        self.state
+            .test(format!("(bvult {} {})", byte.text, smt::constant(128)))
     }
     fn byte_value(&mut self, byte: Term) -> Evaluation<u8> {
         Ok(self.state.resolve(byte)? as u8)

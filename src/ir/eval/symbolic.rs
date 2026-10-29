@@ -97,6 +97,7 @@ pub struct State {
     stdin_stream: u64,
     standard_streams: [u64; 3],
     heap_next: u64,
+    cxx_locale: Option<super::cxx::Locale>,
     argv: Vec<Vec<Term>>,
     arguments: BTreeMap<usize, Term>,
     input_memory: BTreeMap<u64, Term>,
@@ -193,6 +194,7 @@ impl State {
             stdin_stream: 0,
             standard_streams: [0; 3],
             heap_next: 0,
+            cxx_locale: None,
             argv: Vec::new(),
             arguments: BTreeMap::new(),
             input_memory: BTreeMap::new(),
@@ -1410,6 +1412,7 @@ impl State {
             .imports
             .get(&target)
             .map(String::as_str)
+            .or_else(|| self.cxx_locale.and_then(|locale| locale.method(target)))
             .or_else(|| super::cxx::local_name(image, target))
             .or_else(|| {
                 image

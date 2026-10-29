@@ -13,14 +13,18 @@ struct Adapter<'runner, 'image> {
 impl Runner<'_> {
     pub(super) fn initialize_cxx(&mut self) -> Result<(), Stop> {
         let image = self.image;
-        cxx::initialize(
+        self.cxx_locale = match cxx::initialize(
             &mut Adapter {
                 runner: self,
                 convention: Convention::SysV,
                 kind: CallKind::Invoke,
             },
             image,
-        )
+        ) {
+            Ok(locale) => locale,
+            Err(stop) => return Err(stop),
+        };
+        Ok(())
     }
 
     pub(super) fn cxx(
@@ -70,6 +74,26 @@ impl Machine for Adapter<'_, '_> {
     fn argument(&mut self, index: usize) -> Result<u64, Stop> {
         self.runner.argument(index, self.convention, self.kind)
     }
+    fn indirect_result(&mut self) -> Result<u64, Stop> {
+        if self.runner.image.isa == crate::loader::Isa::AArch64 {
+            self.runner.eval(&crate::ir::Expr::reg(8, 64))
+        } else {
+            self.argument(0)
+        }
+    }
+    fn locale(&self) -> Option<cxx::Locale> {
+        self.runner.cxx_locale
+    }
+    fn character_result(&self, byte: u8) -> Result<u64, Stop> {
+        // Darwin's arm64 ABI extends signed char results to 32 bits.
+        if self.runner.image.isa == crate::loader::Isa::AArch64
+            && self.runner.image.format == crate::loader::Format::MachO
+        {
+            Ok(u64::from(i32::from(byte as i8) as u32))
+        } else {
+            Ok(u64::from(byte))
+        }
+    }
     fn read(&mut self, address: u64, length: usize) -> Result<Vec<u8>, Stop> {
         self.runner
             .check_memory_range(address, length as u64, /* write */ false)?;
@@ -90,8 +114,11 @@ impl Machine for Adapter<'_, '_> {
     fn alternate_string_layout(&self) -> bool {
         self.runner.image.format == crate::loader::Format::MachO
     }
-    fn character(&mut self) -> Result<u8, Stop> {
-        Ok(self.argument(1)? as u8)
+    fn character(&mut self, index: usize) -> Result<u8, Stop> {
+        Ok(self.argument(index)? as u8)
+    }
+    fn ascii(&mut self, byte: &u8) -> Result<bool, Stop> {
+        Ok(byte.is_ascii())
     }
     fn byte_value(&mut self, byte: u8) -> Result<u8, Stop> {
         Ok(byte)
