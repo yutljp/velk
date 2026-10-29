@@ -106,16 +106,18 @@ mod tests {
                 sources: Vec::new(),
             };
             image.functions.insert(function.addr, function.clone());
-            let result = crate::analysis::analyze(&image, &function, None);
+            let analysis = crate::analysis::analyze(&image, &function, None)
+                .expect("unknown arguments must remain printable");
+            assert!(analysis.ir.blocks.iter().any(|block| {
+                block
+                    .stmts
+                    .iter()
+                    .any(|stmt| matches!(stmt, crate::ir::Stmt::Call { args: None, .. }))
+            }));
+            let text = crate::render::render(&analysis.ir, &[], &Default::default(), &[]);
             assert!(
-                matches!(
-                    result,
-                    Err(crate::error::Error::Lift {
-                        source: crate::error::LiftError::UnknownArguments { .. },
-                        ..
-                    })
-                ),
-                "unsupported format {format} must refuse an incomplete argument list: {result:?}"
+                text.contains("/* unknown call arguments */"),
+                "{format}: {text}"
             );
         }
     }

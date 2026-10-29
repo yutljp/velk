@@ -197,3 +197,50 @@ fn check_search_interfaces(path: &std::path::Path, name: &str, options: &Value, 
     .expect("MCP report");
     assert_eq!(actual, *expected);
 }
+
+#[test]
+fn unavailable_process_and_network_state_has_a_clear_diagnostic() {
+    let mut interfaces = Interfaces::new();
+    for architecture in matrix::ARCHITECTURES {
+        for optimization in ["O0", "O2"] {
+            let path =
+                matrix::fixtures().join(format!("{architecture}.{optimization}.runtime.elf"));
+            let binary = Binary::open(&path).expect("runtime fixture");
+            for (name, message) in [
+                ("network_socket", "network connections are not modeled"),
+                (
+                    "process_control",
+                    "kernel process controls and seccomp filters are not modeled",
+                ),
+            ] {
+                let report = interfaces.check(&path, &binary, name, json!({}));
+                assert_eq!(report["reason"], "error", "{report}");
+                assert!(
+                    report["error"]
+                        .as_str()
+                        .expect("diagnostic")
+                        .contains(message),
+                    "{report}"
+                );
+                let skipped = interfaces.check(&path, &binary, name, json!({"skipCalls":true}));
+                assert_eq!(skipped["reason"], "return", "{skipped}");
+                assert_eq!(matrix::value(&skipped), 0);
+                let imported = if name == "network_socket" {
+                    "socket"
+                } else {
+                    "prctl"
+                };
+                let overridden =
+                    interfaces.check(&path, &binary, name, json!({"callReturns":{(imported):7}}));
+                assert_eq!(matrix::value(&overridden), 7, "{overridden}");
+                if matches!(architecture, "i386" | "x86_64" | "aarch64") {
+                    let options = serde_json::from_value(json!({"returns":{"eq":0}}))
+                        .expect("search options");
+                    let report =
+                        symbolic::solve(&binary, name, &options).expect("unsupported state search");
+                    assert!(format!("{report:?}").contains(message), "{report:?}");
+                }
+            }
+        }
+    }
+}

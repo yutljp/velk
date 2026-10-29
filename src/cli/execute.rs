@@ -369,19 +369,28 @@ pub(crate) fn run(
                     Err(error) => return Err(error),
                 };
             binary.set_string_decoding(decode_strings);
-            let addresses =
-                if functions.is_empty() || functions.iter().any(|function| function == "*") {
-                    binary.image().functions.keys().copied().collect::<Vec<_>>()
-                } else {
-                    let mut addresses = Vec::new();
-                    for target in &functions {
-                        match binary.find(target) {
-                            Ok(found) => addresses.push(found.addr),
-                            Err(error) => return Err(error),
+            let addresses = if functions.is_empty()
+                || functions.iter().any(|function| function == "*")
+            {
+                binary.image().functions.keys().copied().collect::<Vec<_>>()
+            } else {
+                let mut addresses = Vec::new();
+                for target in &functions {
+                    match binary.find(target) {
+                        Ok(found) => addresses.push(found.addr),
+                        Err(Error::StrippedFunctionName {
+                            entry: Some(entry), ..
+                        }) if target == "main" => {
+                            println!(
+                                "/* main was not identified; showing the entry function at 0x{entry:x}. */"
+                            );
+                            addresses.push(entry);
                         }
+                        Err(error) => return Err(error),
                     }
-                    addresses
-                };
+                }
+                addresses
+            };
             return Ok(decompile_functions(
                 &mut binary,
                 &addresses,

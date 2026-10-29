@@ -1183,7 +1183,9 @@ impl Runner<'_> {
                     Err(stop) => Err(stop),
                 };
             }
-            if let Some(hook) = hooks::find(name) {
+            if let Some(hook) = hooks::find(name)
+                && (!matches!(hook, hooks::Hook::Unsupported(_)) || !self.options.skip_calls)
+            {
                 return match self.hook(hook, convention, kind) {
                     Ok(value) => {
                         self.external_result(

@@ -325,6 +325,7 @@ pub(super) fn expression(call: &Stmt, ctx: &Ctx<'_>) -> String {
     else {
         unreachable!("a call expression requires a call");
     };
+    let unknown_arguments = args.is_none() && ctx.isa == crate::loader::Isa::I386;
     let number = match args.as_ref().and_then(|values| values.first()) {
         Some(Expr::Const(number)) => super::system_call_name(*convention, *number),
         _ => None,
@@ -411,7 +412,8 @@ pub(super) fn expression(call: &Stmt, ctx: &Ctx<'_>) -> String {
         None
     };
     let own = through.is_none() && *target == Some(ctx.ir.addr);
-    if through.is_none()
+    if !unknown_arguments
+        && through.is_none()
         && !target.is_some_and(|address| ctx.callee_signatures.contains_key(&address))
         && let Some(types) = target.and_then(|address| ctx.symbols.unused_parameters.get(&address))
     {
@@ -610,7 +612,9 @@ pub(super) fn expression(call: &Stmt, ctx: &Ctx<'_>) -> String {
                 || (return_type(call, ctx).is_none() && !returns_used)
         })
     });
-    let unmatched = if own
+    let unmatched = if unknown_arguments {
+        Some(return_type(call, ctx).unwrap_or(&crate::ir::CType::U64))
+    } else if own
         && parameters
             .as_ref()
             .is_some_and(|params| params.len() != args.len())
@@ -630,7 +634,11 @@ pub(super) fn expression(call: &Stmt, ctx: &Ctx<'_>) -> String {
     } else {
         callee
     };
-    format!("{callee}({})", args.join(", "))
+    if unknown_arguments {
+        format!("/* unknown call arguments */ {callee}()")
+    } else {
+        format!("{callee}({})", args.join(", "))
+    }
 }
 
 /// The variables the structured function reads exactly once.

@@ -231,9 +231,10 @@ Successful `fputs` returns zero, a permitted nonnegative result.
 report's `files` map. An outer function return does not implicitly close files.
 Pending writes are visible to other virtual streams but absent from that map
 until committed. No host writes occur. File contents total at most 16 MiB.
-Descriptors start at three and are not reused. Descriptor-based `read`/`write`,
-formatted I/O, seeking, clearing indicators, and `getline` on virtual files are
-unsupported. Unknown paths, unsupported open modes, and invalid or closed
+Descriptors start at three and are not reused. Linux ELF `open` supports read-only
+files, optionally with `O_CLOEXEC` and `O_LARGEFILE`; `read` and `close` accept
+these descriptors. Other flags, descriptor-based `write`, formatted I/O, seeking,
+clearing indicators, and `getline` on virtual files are unsupported. Unknown paths, unsupported open modes, and invalid or closed
 `FILE *` values stop with diagnostics naming the path or value.
 
 `rand` and `srand` use the default glibc sequence, initially seeded with 1.

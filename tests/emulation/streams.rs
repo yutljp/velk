@@ -36,6 +36,8 @@ fn file_streams_match_native_through_all_interfaces() {
                 b"\0\xff\x80\n",
             ] {
                 for name in [
+                    "descriptor_after_append",
+                    "read_descriptor",
                     "read_file",
                     "write_file",
                     "update_file",
@@ -265,6 +267,155 @@ fn symbolic_file_solution_replays_across_interfaces() {
                     Some(u64::from(result))
                 );
                 assert_eq!(replay.files, inputs.file_outputs);
+            }
+        }
+    }
+}
+
+#[test]
+fn versioned_standard_streams_work_through_all_interfaces() {
+    use std::io::Write as _;
+
+    let mut native = Command::new(matrix::fixtures().join("host.versioned_streams.native"))
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .spawn()
+        .expect("native stream reference");
+    native
+        .stdin
+        .take()
+        .expect("native stdin")
+        .write_all(b"Q")
+        .expect("reference input");
+    let native = native.wait_with_output().expect("reference output");
+    assert!(native.status.success(), "{native:?}");
+    let mut interfaces = matrix::Interfaces::new();
+    for architecture in matrix::ARCHITECTURES {
+        let path = matrix::fixtures().join(format!("{architecture}.versioned_streams.elf"));
+        let mut bytes = fs::read(&path).expect("stream fixture bytes");
+        for name in ["stdin", "stdout", "stderr"] {
+            let original = format!("{name}_symbol_version");
+            let versioned = format!("{name}@@STREAM_1");
+            for offset in 0..bytes.len().saturating_sub(original.len()) {
+                if bytes[offset..].starts_with(original.as_bytes()) {
+                    bytes[offset..offset + original.len()].fill(0);
+                    bytes[offset..offset + versioned.len()].copy_from_slice(versioned.as_bytes());
+                }
+            }
+        }
+        fs::write(&path, bytes).expect("versioned stream symbols");
+        let binary = Binary::open(&path).expect("versioned stream fixture");
+        assert!(
+            binary
+                .image()
+                .data_symbols
+                .values()
+                .any(|name| name == "stdin@@STREAM_1")
+        );
+        let report = interfaces.check(
+            &path,
+            &binary,
+            "versioned_streams",
+            json!({"stdin":{"text":"Q"}}),
+        );
+        assert_eq!(report["reason"], "return", "{architecture}: {report}");
+        assert_eq!(matrix::value(&report), u32::from(b'Q'));
+        assert_eq!(
+            report["stdout"],
+            String::from_utf8(native.stdout.clone()).expect("native text")
+        );
+        if matches!(architecture, "x86_64" | "aarch64" | "i386") {
+            let options = serde_json::from_value(json!({"stdin":1,"returns":{"eq":81}}))
+                .expect("search options");
+            let report =
+                symbolic::solve(&binary, "versioned_streams", &options).expect("stream search");
+            assert!(report.found, "{architecture}: {report:?}");
+        }
+    }
+}
+
+#[test]
+fn descriptor_limits_and_symbolic_inputs() {
+    let mut interfaces = matrix::Interfaces::new();
+    for architecture in matrix::ARCHITECTURES {
+        for optimization in ["O0", "O2"] {
+            let path =
+                matrix::fixtures().join(format!("{architecture}.{optimization}.streams.elf"));
+            let binary = Binary::open(&path).expect("descriptor fixture");
+            let pending = interfaces.check(
+                &path,
+                &binary,
+                "descriptor_close_preserves_pending_output",
+                json!({"files":{"input":[65]}}),
+            );
+            assert_eq!(pending["reason"], "return", "{pending}");
+            assert_eq!(pending["files"]["input"], json!([65]), "{pending}");
+            let large_file = if matches!(architecture, "arm32" | "thumb32") {
+                0x20000
+            } else {
+                0x8000
+            };
+            for flags in [0, large_file, 0x80000, large_file | 0x80000] {
+                let report = interfaces.check(
+                    &path,
+                    &binary,
+                    "open_flags",
+                    json!({"arguments":[flags],"files":{"input":[]}}),
+                );
+                assert_eq!(matrix::value(&report), 3, "{architecture}: {report}");
+            }
+            for flags in [1, 2, 64, 512, 1024, u32::MAX] {
+                let report = interfaces.check(
+                    &path,
+                    &binary,
+                    "open_flags",
+                    json!({"arguments":[flags],"files":{"input":[]}}),
+                );
+                assert!(
+                    report["error"]
+                        .as_str()
+                        .expect("flags error")
+                        .contains("unsupported flags"),
+                    "{report}"
+                );
+            }
+            let report = interfaces.check(
+                &path,
+                &binary,
+                "descriptor_from_stream",
+                json!({"files":{"input":[81]}}),
+            );
+            assert_eq!(report["reason"], "error", "{report}");
+            let report = interfaces.check(
+                &path,
+                &binary,
+                "closed_descriptor",
+                json!({"files":{"input":[81]}}),
+            );
+            assert_eq!(report["reason"], "error", "{report}");
+            if matches!(architecture, "x86_64" | "aarch64" | "i386") {
+                let pending_options =
+                    serde_json::from_value(json!({"files":{"input":[0]},"returns":{"eq":1}}))
+                        .expect("pending file search options");
+                let pending = symbolic::solve(
+                    &binary,
+                    "descriptor_close_preserves_pending_output",
+                    &pending_options,
+                )
+                .expect("pending file search");
+                assert!(pending.found, "{pending:?}");
+                let inputs = pending.inputs.expect("pending file inputs");
+                assert_eq!(inputs.file_outputs["input"], inputs.files["input"]);
+                let options = serde_json::from_value(json!({"files":{"input":[0]},"returns":{"eq":(1u32 + 7)*33u32.pow(4)+81*33u32.pow(3)+1}})).expect("descriptor search options");
+                let report = symbolic::solve(&binary, "read_descriptor", &options)
+                    .expect("descriptor search");
+                assert!(report.found, "{architecture}: {report:?}");
+                let inputs = report.inputs.expect("descriptor inputs");
+                let replay =
+                    serde_json::from_value(json!({"files":inputs.files})).expect("replay options");
+                let report = emulation::run(&binary, "read_descriptor", &replay, None)
+                    .expect("descriptor replay");
+                assert_eq!(report.reason, "return", "{report:?}");
             }
         }
     }

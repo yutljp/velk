@@ -4,6 +4,7 @@ use super::{CallKind, Convention, HEAP_SIZE, Runner, Stop};
 
 #[derive(Clone, Copy)]
 pub(crate) enum Hook {
+    Unsupported(&'static str),
     Random,
     Seed,
     Time,
@@ -34,6 +35,18 @@ pub(crate) enum Hook {
 }
 
 const HOOKS: &[(&str, Hook)] = &[
+    (
+        "socket",
+        Hook::Unsupported(
+            "socket: network connections are not modeled; provide callReturns and stdinDescriptors for an explicit input descriptor",
+        ),
+    ),
+    (
+        "prctl",
+        Hook::Unsupported("prctl: kernel process controls and seccomp filters are not modeled"),
+    ),
+    ("open", Hook::Io(super::io::Operation::Open)),
+    ("close", Hook::Io(super::io::Operation::Close)),
     ("rand", Hook::Random),
     ("srand", Hook::Seed),
     ("time", Hook::Time),
@@ -304,6 +317,9 @@ impl Runner<'_> {
         convention: Convention,
         kind: CallKind,
     ) -> std::result::Result<u64, Stop> {
+        if let Hook::Unsupported(message) = hook {
+            return Err(Stop::Error(message.to_owned()));
+        }
         if self.recovery.is_some()
             && matches!(
                 hook,
@@ -338,7 +354,7 @@ impl Runner<'_> {
             Err(stop) => return Err(stop),
         };
         let value = match hook {
-            Hook::StackCheckFail | Hook::Io(_) => {
+            Hook::Unsupported(_) | Hook::StackCheckFail | Hook::Io(_) => {
                 unreachable!("terminal and I/O hooks return above")
             }
             Hook::Signal => {

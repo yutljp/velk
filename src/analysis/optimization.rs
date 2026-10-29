@@ -4,8 +4,8 @@ use std::collections::HashSet;
 use std::time::Instant;
 
 use crate::deadline::passed;
-use crate::error::{Error, LiftError};
-use crate::ir::{Block, FunctionIr, Stmt};
+use crate::error::Error;
+use crate::ir::{FunctionIr, Stmt};
 use crate::loader::Image;
 use crate::passes;
 
@@ -44,20 +44,6 @@ pub(super) fn optimize(
     passed(deadline)?;
     if ir.isa != crate::loader::Isa::I386 {
         crate::ssa::count_variadic_arguments(&mut ir, image);
-    }
-    if ir.isa == crate::loader::Isa::I386 {
-        for block in &ir.blocks {
-            for stmt in &block.stmts {
-                if matches!(stmt, Stmt::Call { args: None, .. })
-                    && !is_variadic_forwarding_call(&ir, block, stmt, image)
-                {
-                    return Err(Error::Lift {
-                        addr: ir.addr,
-                        source: LiftError::UnknownArguments { block: block.start },
-                    });
-                }
-            }
-        }
     }
     passed(deadline)?;
     crate::ssa::undefine_clobbered_reads(&mut ir);
@@ -286,20 +272,6 @@ pub(super) fn optimize(
         references,
         simplification,
     })
-}
-
-fn is_variadic_forwarding_call(ir: &FunctionIr, block: &Block, stmt: &Stmt, image: &Image) -> bool {
-    ir.blocks.len() == 1
-        && block.stmts.len() == 2
-        && matches!(
-            stmt,
-            Stmt::Call {
-                kind: crate::ir::CallKind::Tail,
-                through: Some(_),
-                ..
-            }
-        )
-        && prototypes::called(image, stmt).is_some_and(|prototype| prototype.variadic)
 }
 
 fn cleanup_before_split(

@@ -32,6 +32,15 @@ pub(super) fn complete_elements(bytes: u64, size: u64) -> u64 {
 
 const LIMIT: usize = crate::emulation::HEAP_SIZE as usize;
 
+pub(super) fn read_only_open_flags(isa: crate::loader::Isa, flags: u32) -> bool {
+    let large_file = if isa == crate::loader::Isa::Arm32 {
+        1 << 17
+    } else {
+        1 << 15
+    };
+    flags & !(large_file | (1 << 19)) == 0
+}
+
 #[derive(Clone, Debug)]
 pub(super) struct Stream {
     pub path: String,
@@ -50,6 +59,7 @@ pub(super) struct Files<T> {
     pub contents: BTreeMap<String, Vec<T>>,
     pub committed: BTreeMap<String, Vec<T>>,
     pub streams: BTreeMap<u64, Stream>,
+    descriptors: BTreeMap<u32, u64>,
     next_descriptor: u32,
 }
 
@@ -65,6 +75,7 @@ impl<T: Clone> Files<T> {
             committed: contents.clone(),
             contents,
             streams: BTreeMap::new(),
+            descriptors: BTreeMap::new(),
             next_descriptor: 3,
         })
     }
@@ -119,6 +130,38 @@ impl<T: Clone> Files<T> {
         }
     }
 
+    pub fn descriptor(&self, descriptor: u32) -> Option<u64> {
+        self.descriptors.get(&descriptor).copied()
+    }
+
+    pub fn open_descriptor(&mut self, token: u64, path: String) -> Result<u64, String> {
+        if let Err(error) = self.open(token, path, b"rb") {
+            return Err(error);
+        }
+        let descriptor = self.streams[&token].descriptor;
+        self.descriptors.insert(descriptor, token);
+        Ok(u64::from(descriptor))
+    }
+
+    pub fn read_descriptor(&mut self, token: u64) -> Result<Option<T>, String> {
+        let Some(stream) = self.streams.get_mut(&token) else {
+            return Err("invalid file descriptor".to_owned());
+        };
+        let byte = self.contents[&stream.path].get(stream.position).cloned();
+        if byte.is_some() {
+            stream.position += 1;
+        }
+        Ok(byte)
+    }
+
+    pub fn close_descriptor(&mut self, token: u64) -> Result<u64, String> {
+        let Some(stream) = self.streams.remove(&token) else {
+            return Err("invalid file descriptor".to_owned());
+        };
+        self.descriptors.remove(&stream.descriptor);
+        Ok(0)
+    }
+
     pub fn set_buffering(
         &mut self,
         token: u64,
@@ -150,10 +193,12 @@ impl<T: Clone> Files<T> {
             _ => 0,
         };
         if matches!(operation, Operation::Fclose) {
+            let descriptor = stream.descriptor;
             if let Err(error) = self.flush(token) {
                 return Err(error);
             }
             self.streams.remove(&token);
+            self.descriptors.remove(&descriptor);
         }
         Ok(result)
     }

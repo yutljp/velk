@@ -61,3 +61,10 @@ int main(int argc, char **argv) {
     return 0;
 }
 #endif
+
+#ifndef NATIVE
+extern int socket(int, int, int);
+extern int prctl(int, ...);
+unsigned network_socket(void) { return (unsigned)socket(2, 1, 0); }
+unsigned process_control(void) { return (unsigned)prctl(38, 1, 0, 0, 0); }
+#endif

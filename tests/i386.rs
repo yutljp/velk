@@ -180,7 +180,7 @@ fn elf32_jump_slot_replaces_the_implicit_plt_address() {
 }
 
 #[test]
-fn unknown_i386_call_arguments_are_refused() {
+fn unknown_i386_call_arguments_are_marked() {
     let mut object = object::write::Object::new(
         object::BinaryFormat::Elf,
         object::Architecture::I386,
@@ -204,14 +204,10 @@ fn unknown_i386_call_arguments_are_refused() {
     std::fs::write(&path, object.write().unwrap()).unwrap();
     let mut binary = velk::service::Binary::open(&path).unwrap();
     let address = binary.find("unknown_call").unwrap().addr;
-    let error = binary
+    let code = binary
         .decompile(address, None, None)
-        .unwrap_err()
-        .to_string();
-    assert!(
-        error.contains("call argument count in the block at 0x"),
-        "{error}"
-    );
+        .expect("partial decompilation");
+    assert!(code.contains("/* unknown call arguments */"), "{code}");
     std::fs::remove_file(path).unwrap();
 }
 
@@ -240,4 +236,87 @@ fn pe32_import_uses_windows_header_types() {
     let address = binary.find("windows_file").unwrap().addr;
     let code = binary.decompile(address, None, None).unwrap();
     assert!(code.contains("uint32_t (GetFileType)(void *);"), "{code}");
+}
+
+#[test]
+fn unknown_call_arguments_remain_visible_and_compile() {
+    use std::fs;
+    use std::process::Command;
+
+    let directory = common::root().join("target/i386-unknown-arguments");
+    fs::create_dir_all(&directory).expect("fixture directory");
+    let source = directory.join("call.c");
+    let object = directory.join("call.elf");
+    common::compiler::compile_file(
+        Command::new("clang")
+            .args([
+                "--target=i386-linux-gnu",
+                "-O0",
+                "-fno-stack-protector",
+                "-fno-builtin",
+                "-fPIC",
+                "-shared",
+                "-nostdlib",
+                "-fuse-ld=lld",
+            ])
+            .arg(&source)
+            .arg("-o")
+            .arg(&object),
+        &source,
+        "extern int scanf(const char *, ...);\nint uncertain(const char *format) { int value; return scanf(format, &value); }\n",
+    );
+    let mut binary = velk::service::Binary::open(&object).expect("call fixture");
+    let address = binary.find("uncertain").expect("call function").addr;
+    let code = binary
+        .decompile(address, None, None)
+        .expect("partial decompilation");
+    assert!(code.contains("/* unknown call arguments */"), "{code}");
+    let printed = directory.join("printed.c");
+    fs::write(&printed, &code).expect("printed C");
+    let output = Command::new("clang")
+        .args(["-ffreestanding", "-fsyntax-only"])
+        .arg(&printed)
+        .output()
+        .expect("C compiler");
+    assert!(output.status.success(), "{code}\n{output:?}");
+    let cli = Command::new(env!("CARGO_BIN_EXE_velk"))
+        .args(["--cache", "off", "-D"])
+        .arg(&object)
+        .arg("uncertain")
+        .output()
+        .expect("decompile CLI");
+    assert!(cli.status.success(), "{cli:?}");
+    assert_eq!(String::from_utf8(cli.stdout).expect("CLI text"), code);
+    let script = format!(
+        "velk.open({}).getFunction('uncertain').decompile()",
+        serde_json::json!(object)
+    );
+    let result = velk::script::Engine::new()
+        .expect("script engine")
+        .run(&script, None);
+    assert!(result.error.is_none(), "{:?}", result.error);
+    assert!(
+        result.output.contains("unknown call arguments"),
+        "{}",
+        result.output
+    );
+    let child = Command::new(env!("CARGO_BIN_EXE_velk"))
+        .arg("--mcp")
+        .stdin(std::process::Stdio::piped())
+        .stdout(std::process::Stdio::piped())
+        .spawn()
+        .expect("MCP server");
+    let output = common::mcp_request(
+        child,
+        &serde_json::json!({"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"velk_run_script","arguments":{"code":script}}}),
+    );
+    let response: serde_json::Value = serde_json::from_slice(&output.stdout).expect("MCP JSON");
+    assert_eq!(response["result"]["isError"], false, "{response}");
+    assert!(
+        response["result"]["content"][0]["text"]
+            .as_str()
+            .expect("MCP text")
+            .contains("unknown call arguments"),
+        "{response}"
+    );
 }

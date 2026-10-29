@@ -5,6 +5,85 @@ use crate::ir::eval::emulation::{HEAP_SIZE, Runner, Stop};
 use crate::ir::{CallKind, Convention};
 
 impl Runner<'_> {
+    fn descriptor_hook(
+        &mut self,
+        operation: Operation,
+        convention: Convention,
+        kind: CallKind,
+    ) -> Option<Result<u64, Stop>> {
+        use Operation::*;
+        if kind == CallKind::Syscall || !matches!(operation, Open | Close | Read) {
+            return None;
+        }
+        let first = match self.argument(0, convention, kind) {
+            Ok(first) => first,
+            Err(stop) => return Some(Err(stop)),
+        };
+        let token = self.files.descriptor(first as u32);
+        if matches!(operation, Read) && token.is_none() {
+            return None;
+        }
+        if self.recovery.is_some() {
+            return Some(Err(error("file descriptors require explicit emulation")));
+        }
+        if matches!(operation, Open) {
+            let flags = match self.argument(1, convention, kind) {
+                Ok(flags) => flags as u32,
+                Err(stop) => return Some(Err(stop)),
+            };
+            if self.image.format != crate::loader::Format::Elf
+                || !crate::ir::eval::stdio::read_only_open_flags(self.image.isa, flags)
+            {
+                return Some(Err(error(format!(
+                    "open: unsupported flags 0x{flags:x}; only Linux read-only files are modeled"
+                ))));
+            }
+            let path = match self.bytes_at(first, None) {
+                Ok(bytes) => match String::from_utf8(bytes) {
+                    Ok(path) => path,
+                    Err(_) => return Some(Err(error("open path is not UTF-8"))),
+                },
+                Err(stop) => return Some(Err(stop)),
+            };
+            let token = self.allocate(1);
+            if token == 0 {
+                return Some(Err(error("file descriptor allocation failed")));
+            }
+            return Some(self.files.open_descriptor(token, path).map_err(error));
+        }
+        let Some(token) = token else {
+            return Some(Err(error(format!(
+                "close: unsupported descriptor {}",
+                first as u32
+            ))));
+        };
+        if matches!(operation, Close) {
+            return Some(self.files.close_descriptor(token).map_err(error));
+        }
+        let base = match self.argument(1, convention, kind) {
+            Ok(base) => base,
+            Err(stop) => return Some(Err(stop)),
+        };
+        let count = match self.argument(2, convention, kind) {
+            Ok(count) if count <= HEAP_SIZE => count,
+            Ok(_) => return Some(Err(error("file read exceeds 16 MiB"))),
+            Err(stop) => return Some(Err(stop)),
+        };
+        let mut bytes = Vec::new();
+        for _ in 0..count {
+            if let Err(stop) = self.tick() {
+                return Some(Err(stop));
+            }
+            match self.files.read_descriptor(token) {
+                Ok(Some(byte)) => bytes.push(byte),
+                Ok(None) => break,
+                Err(cause) => return Some(Err(error(cause))),
+            }
+        }
+        let count = bytes.len() as u64;
+        Some(self.store_bytes(base, &bytes).map(|()| count))
+    }
+
     // Argument and memory failures abort the entire libc call.
     pub(super) fn file_hook(
         &mut self,
@@ -13,6 +92,9 @@ impl Runner<'_> {
         kind: CallKind,
     ) -> Result<Option<u64>, Stop> {
         use Operation::*;
+        if let Some(value) = self.descriptor_hook(operation, convention, kind) {
+            return value.map(Some);
+        }
         let Some(stream_index) = crate::ir::eval::stdio::stream_index(operation) else {
             return Ok(None);
         };

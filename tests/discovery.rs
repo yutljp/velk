@@ -583,3 +583,47 @@ fn i386_runtime_startup_names_main() {
         }
     }
 }
+
+#[test]
+fn decompile_main_without_runtime_shows_the_entry_explicitly() {
+    let directory = common::root().join("target/discovery-entry-output");
+    fs::create_dir_all(&directory).expect("entry fixture directory");
+    let source = directory.join("entry.S");
+    let object = directory.join("entry.o");
+    common::compiler::compile_file(
+        Command::new("clang")
+            .args(["--target=x86_64-linux-gnu", "-c"])
+            .arg(&source)
+            .arg("-o")
+            .arg(&object),
+        &source,
+        ".text\n.globl _start\n_start: mov $7, %eax\nret\n",
+    );
+    let path = directory.join("entry.elf");
+    let output = Command::new("ld.lld")
+        .args(["-s", "-e", "_start"])
+        .arg(&object)
+        .arg("-o")
+        .arg(&path)
+        .output()
+        .expect("entry linker");
+    assert!(output.status.success(), "{output:?}");
+    let output = Command::new(env!("CARGO_BIN_EXE_velk"))
+        .args(["--cache", "off", "-D"])
+        .arg(&path)
+        .arg("main")
+        .output()
+        .expect("entry decompilation");
+    assert!(output.status.success(), "{output:?}");
+    let code = String::from_utf8(output.stdout).expect("entry text");
+    assert!(
+        code.contains("main was not identified; showing the entry function"),
+        "{code}"
+    );
+    assert!(code.contains("return 7;"), "{code}");
+    let binary = Binary::open(&path).expect("entry binary");
+    assert!(
+        binary.find("main").is_err(),
+        "the entry must not be renamed main"
+    );
+}

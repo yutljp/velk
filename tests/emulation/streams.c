@@ -2,10 +2,15 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <fcntl.h>
+#include <unistd.h>
 #else
 typedef __SIZE_TYPE__ size_t;
 typedef struct FILE FILE;
 extern void exit(int);
+extern int open(const char *, int, ...);
+extern int close(int);
+extern __INTPTR_TYPE__ read(int, void *, size_t);
 extern FILE *fopen(const char *, const char *);
 extern int fclose(FILE *);
 extern size_t fread(void *, size_t, size_t, FILE *);
@@ -19,6 +24,26 @@ extern int fileno(FILE *);
 extern int feof(FILE *);
 extern int ferror(FILE *);
 #endif
+
+unsigned read_descriptor(void) {
+    unsigned result = 0;
+    unsigned char bytes[4] = {0};
+    int descriptor = open("input", 0);
+    result += descriptor >= 3;
+    result += read(descriptor, 0, 0) == 0;
+    result += (unsigned)read(descriptor, bytes, 4) * 7;
+    for (unsigned i = 0; i < 4; ++i) result = result * 33 + bytes[i];
+    result += (unsigned)read(descriptor, bytes, 4) * 11;
+    result += close(descriptor) == 0;
+    return result;
+}
+unsigned open_flags(unsigned flags) { return (unsigned)open("input", (int)flags); }
+unsigned closed_descriptor(void) {
+    int descriptor = open("input", 0);
+    close(descriptor);
+    unsigned char byte;
+    return (unsigned)read(descriptor, &byte, 1);
+}
 
 unsigned read_file(void) {
     unsigned result = 0;
@@ -97,6 +122,7 @@ unsigned unknown_file(void) { return fopen("missing", "r") != 0; }
 unsigned unsupported_mode(void) { return fopen("input", "w+") != 0; }
 unsigned unflushed_file(void) { FILE *file = fopen("output", "w"); return (unsigned)fwrite("pending", 1, 7, file); }
 
+unsigned descriptor_after_append(void);
 unsigned stream_boundaries(void);
 unsigned append_existing(void);
 
@@ -111,7 +137,9 @@ int main(int argc, char **argv) {
     fclose(file);
     file = fopen("output", "wb"); fclose(file);
     unsigned result;
-    if (!strcmp(argv[1], "read_file")) result = read_file();
+    if (!strcmp(argv[1], "descriptor_after_append")) result = descriptor_after_append();
+    else if (!strcmp(argv[1], "read_descriptor")) result = read_descriptor();
+    else if (!strcmp(argv[1], "read_file")) result = read_file();
     else if (!strcmp(argv[1], "write_file")) result = write_file();
     else if (!strcmp(argv[1], "update_file")) result = update_file();
     else if (!strcmp(argv[1], "solve_file")) result = solve_file();
@@ -191,4 +219,29 @@ unsigned exit_file(void) {
     fwrite("Q", 1, 1, file);
     exit(3);
     return 99;
+}
+
+unsigned descriptor_from_stream(void) {
+    FILE *file = fopen("input", "r");
+    unsigned char byte;
+    return (unsigned)read(fileno(file), &byte, 1);
+}
+
+unsigned descriptor_after_append(void) {
+    int descriptor = open("input", 0);
+    unsigned char byte;
+    while (read(descriptor, &byte, 1) == 1) {}
+    FILE *file = fopen("input", "ab");
+    fputs("Q", file);
+    fclose(file);
+    unsigned result = read(descriptor, &byte, 1) == 1 && byte == 'Q';
+    close(descriptor);
+    return result;
+}
+
+unsigned descriptor_close_preserves_pending_output(void) {
+    int descriptor = open("input", 0);
+    FILE *file = fopen("input", "ab");
+    fputs("Q", file);
+    return close(descriptor) == 0;
 }

@@ -8,6 +8,99 @@ use crate::service::Binary;
 use crate::symbolic::invalid;
 
 impl State {
+    fn descriptor_hook(
+        &mut self,
+        binary: &Binary,
+        convention: Convention,
+        operation: Operation,
+    ) -> Evaluation<Option<Term>> {
+        use Operation::*;
+        if self.model_call_kind == crate::ir::CallKind::Syscall {
+            return Ok(None);
+        }
+        let first = match self.number(binary, convention, 0) {
+            Ok(first) => first,
+            Err(error) => return Err(error),
+        };
+        let token = self.files.descriptor(first as u32);
+        if matches!(operation, Read) && token.is_none() {
+            return Ok(None);
+        }
+        if matches!(operation, Open) {
+            let flags = match self.number(binary, convention, 1) {
+                Ok(flags) => flags as u32,
+                Err(error) => return Err(error),
+            };
+            if binary.image().format != crate::loader::Format::Elf
+                || !crate::ir::eval::stdio::read_only_open_flags(self.isa, flags)
+            {
+                return Err(invalid(format!(
+                    "open: unsupported flags 0x{flags:x}; only Linux read-only files are modeled"
+                ))
+                .into());
+            }
+            let bytes = match self.concrete_format(binary, first) {
+                Ok(bytes) => bytes,
+                Err(error) => return Err(error),
+            };
+            let Ok(path) = String::from_utf8(bytes) else {
+                return Err(invalid("open path is not UTF-8").into());
+            };
+            let memory = match self.mapped_memory(binary.image()) {
+                Ok(memory) => memory,
+                Err(error) => return Err(error.into()),
+            };
+            let token = self.heap_next;
+            let Some(next) = token
+                .checked_add(1)
+                .filter(|end| *end <= memory.heap_base.saturating_add(crate::emulation::HEAP_SIZE))
+            else {
+                return Err(invalid("file descriptor allocation exceeds heap").into());
+            };
+            return match self.files.open_descriptor(token, path) {
+                Ok(value) => {
+                    self.heap_next = next;
+                    Ok(Some(Term::constant(value)))
+                }
+                Err(cause) => Err(invalid(cause).into()),
+            };
+        }
+        let Some(token) = token else {
+            return Err(invalid(format!("close: unsupported descriptor {}", first as u32)).into());
+        };
+        if matches!(operation, Close) {
+            return match self.files.close_descriptor(token) {
+                Ok(value) => Ok(Some(Term::constant(value))),
+                Err(cause) => Err(invalid(cause).into()),
+            };
+        }
+        let base = match self.number(binary, convention, 1) {
+            Ok(base) => base,
+            Err(error) => return Err(error),
+        };
+        let count = match self.number(binary, convention, 2) {
+            Ok(count) if count <= self.model_bound() as u64 => count,
+            Ok(_) => return Err(invalid("file read exceeds symbolic model bound").into()),
+            Err(error) => return Err(error),
+        };
+        let mut count_read = 0;
+        for offset in 0..count {
+            let byte = match self.files.read_descriptor(token) {
+                Ok(Some(byte)) => byte,
+                Ok(None) => break,
+                Err(cause) => return Err(invalid(cause).into()),
+            };
+            let Some(address) = base.checked_add(offset) else {
+                return Err(invalid("file read address overflows").into());
+            };
+            if let Err(error) = self.store(binary.image(), address, &byte, 1) {
+                return Err(error.into());
+            }
+            count_read += 1;
+        }
+        Ok(Some(Term::constant(count_read)))
+    }
+
     // Every failed argument or memory operation stops the current call.
     pub(super) fn file_hook(
         &mut self,
@@ -16,6 +109,14 @@ impl State {
         operation: Operation,
     ) -> Evaluation<Option<Term>> {
         use Operation::*;
+        if matches!(operation, Open | Close | Read) {
+            let result = self.descriptor_hook(binary, convention, operation);
+            match result {
+                Ok(Some(value)) => return Ok(Some(value)),
+                Ok(None) => {}
+                Err(error) => return Err(error),
+            }
+        }
         let Some(stream_index) = crate::ir::eval::stdio::stream_index(operation) else {
             return Ok(None);
         };

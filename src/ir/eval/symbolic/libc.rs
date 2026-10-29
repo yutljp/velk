@@ -250,6 +250,9 @@ impl State {
         let Some(hook) = hooks::find(name) else {
             return Err(invalid(format!("unsupported symbolic import: {name}")).into());
         };
+        if let Hook::Unsupported(message) = hook {
+            return Err(invalid(message).into());
+        }
         if matches!(hook, Hook::StackCheckFail) {
             return Err(invalid("stack check failed").into());
         }
@@ -1287,7 +1290,9 @@ impl State {
                 .image()
                 .data_symbols
                 .iter()
-                .filter(|(_, symbol)| symbol.trim_start_matches('_') == name)
+                .filter(|(_, symbol)| {
+                    symbol.trim_start_matches('_').split('@').next() == Some(name)
+                })
                 .map(|(&slot, _)| slot)
                 .collect();
             if imports.is_empty() && objects.is_empty() {

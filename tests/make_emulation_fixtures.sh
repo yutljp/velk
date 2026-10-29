@@ -11,6 +11,9 @@ for architecture in x86_64 i386 aarch64 arm32 thumb32; do
         arm32) target=armv7-linux-gnueabihf; mode='-marm -march=armv7ve' ;;
         thumb32) target=armv7-linux-gnueabihf; mode='-mthumb -march=armv7ve' ;;
     esac
+    clang --target="$target" $mode -O0 -fno-builtin -fno-stack-protector \
+        -fPIC -shared -nostdlib -fuse-ld=lld tests/emulation/versioned_streams.c \
+        -o "$out/$architecture.versioned_streams.elf"
     for optimization in O0 O2; do
         clang --target="$target" $mode "-$optimization" -fno-vectorize -fno-slp-vectorize \
             -fno-builtin -fno-stack-protector -fno-pie -fno-optimize-sibling-calls \
@@ -68,3 +71,5 @@ lld-link /lib /def:"$out/imports.def" /machine:arm64 /out:"$out/arm64.lib"
 lld-link /dll /noentry /nodefaultlib /out:"$out/arm64.dll" "$out/arm64.obj" "$out/arm64.lib"
 
 clang -O2 -DNATIVE -fno-builtin tests/emulation/runtime.c -o "$out/host.runtime.native"
+
+clang -O0 -DNATIVE -fno-builtin tests/emulation/versioned_streams.c -o "$out/host.versioned_streams.native"

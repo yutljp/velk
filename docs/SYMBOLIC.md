@@ -78,7 +78,8 @@ values. The initial bytes are shared across reopenings; stream reads consume the
 in position order, and writes replace the corresponding terms. File inputs count
 toward the 65536-byte total input limit. Stream operations have the same bounds
 and mode semantics described in [Running loaded code](EMULATION.md), except that
-individual symbolic transfers are limited to 65536 bytes.
+individual symbolic transfers are limited to 65536 bytes. Read-only Linux ELF
+`open`, descriptor-based `read`, and `close` also use the supplied virtual files.
 
 For a function that checks five bytes read from `input`:
 

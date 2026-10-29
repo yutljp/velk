@@ -14,6 +14,8 @@ use super::{HEAP_SIZE, Runner, Stop};
 
 #[derive(Clone, Copy)]
 pub(crate) enum Operation {
+    Open,
+    Close,
     Fopen,
     Fclose,
     Fflush,
@@ -144,7 +146,9 @@ impl Runner<'_> {
                 .image
                 .data_symbols
                 .iter()
-                .filter(|(_, symbol)| symbol.trim_start_matches('_') == *name)
+                .filter(|(_, symbol)| {
+                    symbol.trim_start_matches('_').split('@').next() == Some(name)
+                })
                 .map(|(&slot, _)| slot)
                 .collect();
             if imports.is_empty() && objects.is_empty() {
@@ -470,7 +474,9 @@ impl Runner<'_> {
                 }
                 Ok(result)
             }
-            Fopen | Fclose | Fflush | Setvbuf | Setbuf | Fileno | Feof | Ferror => unreachable!(),
+            Open | Close | Fopen | Fclose | Fflush | Setvbuf | Setbuf | Fileno | Feof | Ferror => {
+                unreachable!()
+            }
             Getchar | Vprintf | Vfprintf | Vsprintf | Vsnprintf | Vscanf | Vfscanf | Vsscanf => {
                 unreachable!()
             }
