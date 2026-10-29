@@ -265,7 +265,10 @@ fn names_comments_and_parameters_preserve_computation() {
     let mut binary = Binary::open(&fixture.binary).unwrap();
     let address = binary.find("triple").unwrap().addr;
     let ir = &binary.analysis(address, None).unwrap().ir;
-    assert_eq!(ir.params[0].ty.integer(), Some((32, true)));
+    assert_eq!(
+        ir.params[0].ty.integer(),
+        Some((32, cfg!(target_os = "linux")))
+    );
     let origins = project::origins(ir);
     let parameter = origins
         .into_iter()
@@ -553,16 +556,25 @@ fn stack_parameter_types_and_signatures_propagate_to_callers() {
         .map(|param| &param.ty)
         .chain(ir.stack_params.iter().map(|param| &param.ty));
     for (position, ty) in types.enumerate() {
-        // ELF debug types refine stack arguments to int32_t; Mach-O recovery
-        // retains the 64-bit stack slot when no debug type is available.
+        // ELF debug types preserve source signedness and refine stack arguments
+        // to int32_t; Mach-O infers arithmetic-only register parameters as unsigned
+        // and retains the 64-bit stack slot when no debug type is available.
         let width = if position < ir.params.len() || cfg!(target_os = "linux") {
             32
         } else {
             64
         };
-        assert_eq!(ty.integer(), Some((width, true)));
+        assert_eq!(
+            ty.integer(),
+            Some((
+                width,
+                position >= ir.params.len() || cfg!(target_os = "linux")
+            ))
+        );
     }
     let integer_type = ir.ret_type.to_string();
+    let mut parameter_types: Vec<String> =
+        ir.params.iter().map(|param| param.ty.to_string()).collect();
     let origins = project::origins(ir);
     let target = origins
         .iter()
@@ -575,7 +587,6 @@ fn stack_parameter_types_and_signatures_propagate_to_callers() {
     let code = binary.decompile(address, None, None).unwrap();
     assert!(code.contains("uint32_t last_value"), "{code}");
     let code = binary.decompile(caller, None, None).unwrap();
-    let mut parameter_types = vec![integer_type.clone(); 8];
     parameter_types.push("uint32_t".to_owned());
     let prototype = format!("{integer_type} ninth({});", parameter_types.join(", "));
     assert!(code.contains(&prototype), "{code}");

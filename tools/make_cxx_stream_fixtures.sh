@@ -19,10 +19,7 @@ for compiler in g++ clang++; do
         abis=(1)
         if [ "$library" = libstdc++ ]; then abis=(0 1); fi
         for abi in "${abis[@]}"; do
-            abi_flags=()
-            if [ "$library" = libstdc++ ]; then
-                abi_flags+=(-D_GLIBCXX_USE_CXX11_ABI="$abi")
-            fi
+            abi_flags=(-D_GLIBCXX_USE_CXX11_ABI="$abi")
             for opt in 0 2; do
                 "$compiler" "${flags[@]}" "${abi_flags[@]}" -O"$opt" -g -fno-stack-protector \
                     "$source_dir/cxx_streams.cpp" -o "$out/$compiler-$library-abi$abi-O$opt"

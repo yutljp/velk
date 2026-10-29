@@ -101,6 +101,9 @@ impl Machine for Adapter<'_, '_> {
             Ok(u64::from(byte))
         }
     }
+    fn character_int_result(&self, byte: u8) -> Result<u64, Stop> {
+        Ok(u64::from(byte))
+    }
     fn read(&mut self, address: u64, length: usize) -> Result<Vec<u8>, Stop> {
         self.runner
             .check_memory_range(address, length as u64, /* write */ false)?;

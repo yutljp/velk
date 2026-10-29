@@ -907,6 +907,26 @@ impl Runner<'_> {
                 return Err(Stop::Error("branch target is unknown".to_owned()));
             }
             Stmt::Machine {
+                instruction: crate::ir::MachineInstruction::ArmLoadAcquire { width },
+                inputs,
+                outputs,
+            } => {
+                let Some(input) = inputs.first() else {
+                    return Err(Stop::Error("missing acquire-load address".to_owned()));
+                };
+                let address = match self.eval(input) {
+                    Ok(address) => address,
+                    Err(stop) => return Err(stop),
+                };
+                let value = self.machine.load(address, *width);
+                if let Err(stop) = self.memory_error() {
+                    return Err(stop);
+                }
+                if let Some(&output) = outputs.first() {
+                    self.assign_fact(output, Fact::constant(value));
+                }
+            }
+            Stmt::Machine {
                 instruction: crate::ir::MachineInstruction::Atomic { op, width, .. },
                 inputs,
                 outputs,

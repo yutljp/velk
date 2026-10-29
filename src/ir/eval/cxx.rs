@@ -43,6 +43,7 @@ pub(super) enum Call {
     Integer { signed: bool, bits: u8 },
     InputInteger { signed: bool, bits: u8 },
     Input(Layout, Input),
+    InputCharacterValue,
     Endl,
     Flush,
     Manipulator,
@@ -188,6 +189,18 @@ const CALLS: &[(&str, Call)] = &[
         Call::Input(Layout::Llvm, Input::Delimited),
     ),
     (
+        "_ZNSt3__1rsIcNS_11char_traitsIcEEEERNS_13basic_istreamIT_T0_EES7_RS4_",
+        Call::InputCharacter,
+    ),
+    (
+        "_ZNSt3__1rsIcNS_11char_traitsIcEEEERNS_13basic_istreamIT_T0_EES7_PS4_",
+        Call::InputCString,
+    ),
+    (
+        "_ZNSt3__116__input_c_stringIcNS_11char_traitsIcEEEERNS_13basic_istreamIT_T0_EES7_PS4_m",
+        Call::InputCStringWidth,
+    ),
+    (
         "_ZNSt3__112basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEEC1Ev",
         Call::Construct(Layout::Llvm),
     ),
@@ -228,6 +241,9 @@ const CALLS: &[(&str, Call)] = &[
     ("__cxa_guard_acquire", Call::GuardAcquire),
     ("__cxa_guard_release", Call::GuardRelease),
     ("__cxa_guard_abort", Call::GuardAbort),
+    ("___cxa_guard_acquire", Call::GuardAcquire),
+    ("___cxa_guard_release", Call::GuardRelease),
+    ("___cxa_guard_abort", Call::GuardAbort),
     (
         "_ZNKSt9basic_iosIcSt11char_traitsIcEE4goodEv",
         Call::StreamStatus(StreamStatus::Good),
@@ -372,6 +388,10 @@ const CALLS: &[(&str, Call)] = &[
     (
         "_ZNSt3__113basic_istreamIcNS_11char_traitsIcEEE3getERc",
         Call::InputRawCharacter,
+    ),
+    (
+        "_ZNSt3__113basic_istreamIcNS_11char_traitsIcEEE3getEv",
+        Call::InputCharacterValue,
     ),
     (
         "_ZStrsISt11char_traitsIcEERSt13basic_istreamIcT_ES5_Rh",
@@ -565,13 +585,15 @@ fn string_mut_call(suffix: &str, layout: Layout) -> Option<Call> {
     if matches!(suffix, "C1Ev" | "C2Ev") {
         return Some(Call::Construct(layout));
     }
-    if suffix.starts_with("C1EPKcm") || suffix.starts_with("C2EPKcm") {
+    if (suffix.starts_with("C1") || suffix.starts_with("C2")) && suffix.contains("EPKcm") {
         return Some(Call::ConstructRange(layout));
     }
-    if suffix.starts_with("C1EPKc") || suffix.starts_with("C2EPKc") {
+    if (suffix.starts_with("C1") || suffix.starts_with("C2")) && suffix.contains("EPKc") {
         return Some(Call::ConstructText(layout));
     }
-    if (suffix.starts_with("C1ERKS") || suffix.starts_with("C2ERKS")) && suffix.ends_with("mm") {
+    if (suffix.starts_with("C1ERKS") || suffix.starts_with("C2ERKS"))
+        && (suffix.ends_with("mm") || suffix.contains("mmRKS"))
+    {
         return Some(Call::ConstructSubstring(layout));
     }
     if suffix.starts_with("C1ERKS") || suffix.starts_with("C2ERKS") {
@@ -661,6 +683,7 @@ pub(super) trait Machine {
     fn indirect_result_argument_offset(&self) -> usize;
     fn locale(&self) -> Option<Locale>;
     fn character_result(&self, byte: Self::Byte) -> Result<Self::Value, Self::Error>;
+    fn character_int_result(&self, byte: Self::Byte) -> Result<Self::Value, Self::Error>;
     fn read(&mut self, address: u64, length: usize) -> Result<Vec<Self::Byte>, Self::Error>;
     fn write(&mut self, address: u64, bytes: &[Self::Byte]) -> Result<(), Self::Error>;
     fn end_input(&mut self, address: u64) -> Result<(), Self::Error>;
@@ -1411,6 +1434,27 @@ pub(super) fn execute<M: Machine>(machine: &mut M, call: Call) -> Result<M::Valu
         }
         _ => {}
     }
+    if matches!(call, Call::InputCharacterValue) {
+        if let Err(error) = machine.stream(first, true) {
+            return Err(error);
+        }
+        match machine.stream_failed(first, true) {
+            Ok(true) => return Ok(machine.result(u32::MAX as u64)),
+            Ok(false) => {}
+            Err(error) => return Err(error),
+        }
+        let byte = match machine.input(true) {
+            Ok(Some(byte)) => byte,
+            Ok(None) => {
+                if let Err(error) = machine.set_stream_state(first, true, 6) {
+                    return Err(error);
+                }
+                return Ok(machine.result(u32::MAX as u64));
+            }
+            Err(error) => return Err(error),
+        };
+        return machine.character_int_result(byte);
+    }
     let input = matches!(
         call,
         Call::Input(..)
@@ -1902,6 +1946,38 @@ mod tests {
         assert!(matches!(
             find("__ZNSt3__1lsB8ne190107INS_11char_traitsIcEEEERNS_13basic_ostreamIcT_EES6_PKc"),
             Some(Call::Text)
+        ));
+        assert!(matches!(
+            find("_ZNSt3__112basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEEC1ERKS5_mmRKS4_"),
+            Some(Call::ConstructSubstring(Layout::Llvm))
+        ));
+        assert!(matches!(
+            find(
+                "__ZNSt3__112basic_stringIcNS_11char_traitsIcEENS_9allocatorIcEEEC1B9nqe230104ILi0EEEPKcRKS4_"
+            ),
+            Some(Call::ConstructText(Layout::Llvm))
+        ));
+        assert!(matches!(
+            find("_ZNSt3__1rsIcNS_11char_traitsIcEEEERNS_13basic_istreamIT_T0_EES7_RS4_"),
+            Some(Call::InputCharacter)
+        ));
+        assert!(matches!(
+            find("_ZNSt3__1rsIcNS_11char_traitsIcEEEERNS_13basic_istreamIT_T0_EES7_PS4_"),
+            Some(Call::InputCString)
+        ));
+        assert!(matches!(
+            find(
+                "_ZNSt3__116__input_c_stringIcNS_11char_traitsIcEEEERNS_13basic_istreamIT_T0_EES7_PS4_m"
+            ),
+            Some(Call::InputCStringWidth)
+        ));
+        assert!(matches!(
+            find("_ZNSt3__113basic_istreamIcNS_11char_traitsIcEEE3getEv"),
+            Some(Call::InputCharacterValue)
+        ));
+        assert!(matches!(
+            find("___cxa_guard_acquire"),
+            Some(Call::GuardAcquire)
         ));
         assert!(find("printf").is_none());
         assert_eq!(

@@ -112,6 +112,12 @@ impl Machine for Adapter<'_, '_> {
         }
         Ok(byte)
     }
+    fn character_int_result(&self, byte: Term) -> Evaluation<Term> {
+        match self.state.low(&byte, 32) {
+            Ok(value) => Ok(value),
+            Err(error) => Err(error.into()),
+        }
+    }
     fn read(&mut self, address: u64, length: usize) -> Evaluation<Vec<Term>> {
         let mut bytes = Vec::new();
         for offset in 0..length {
