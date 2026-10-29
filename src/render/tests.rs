@@ -983,6 +983,36 @@ fn a_local_pointer_with_only_offsets_keeps_its_pointer_type() {
 }
 
 #[test]
+fn a_spilled_address_integer_used_for_an_offset_keeps_its_pointer_type() {
+    let sp = crate::arch::stack_pointer(Isa::X86_64);
+    let slot = Expr::bin(BinOp::Sub, Expr::reg(sp, 64), Expr::Const(8));
+    let address = Expr::bin(BinOp::Add, load(slot.clone(), 8), Expr::Const(8));
+    let mut ir = FunctionIr::single_block(
+        Isa::X86_64,
+        vec![
+            Stmt::Store {
+                addr: slot,
+                value: Expr::reg(7, 64),
+                width: 8,
+            },
+            Stmt::Ret {
+                value: load(address, 8),
+            },
+        ],
+    );
+    ir.params = vec![Param {
+        index: 7,
+        name: "address".to_owned(),
+        ty: CType::U64,
+    }];
+    ir.ret_type = CType::U64;
+
+    let text = rendered(&ir);
+    assert!(text.contains("uint64_t *local_0;"), "{text}");
+    assert!(text.contains("return local_0[1];"), "{text}");
+}
+
+#[test]
 fn an_integer_local_takes_a_pointer_as_its_address() {
     let slot = Expr::bin(BinOp::Add, Expr::reg(4, 64), Expr::Const((-16i64) as u64));
     let mut ir = FunctionIr::single_block(

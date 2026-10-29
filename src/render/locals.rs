@@ -1569,8 +1569,29 @@ fn slot_types(
                 Stmt::Ret { value } if !ir.ret_type.is_pointer() => walk.integer_use(value),
                 _ => {}
             }
-            for value in stmt.operands() {
-                walk.visit(value);
+            match stmt {
+                Stmt::Store { addr, value, .. } => {
+                    walk.visit_address(addr);
+                    walk.visit(value);
+                }
+                Stmt::Machine {
+                    instruction: crate::ir::MachineInstruction::Atomic { width, .. },
+                    inputs,
+                    ..
+                } => {
+                    if let Some(addr) = inputs.first() {
+                        walk.address(addr, CType::int(*width, false));
+                        walk.visit_address(addr);
+                        for value in inputs.iter().skip(1) {
+                            walk.visit(value);
+                        }
+                    }
+                }
+                other => {
+                    for value in other.operands() {
+                        walk.visit(value);
+                    }
+                }
             }
             if let Stmt::Assign { dest, value } = stmt
                 && dest.index == sp
@@ -1647,6 +1668,7 @@ struct Walk {
     /// The slots signed (`true`) and unsigned operations read.
     signs: Vec<(i64, bool)>,
     integer_uses: std::collections::HashSet<i64>,
+    /// Offset arithmetic outside a memory address reads a spilled pointer as an integer.
     offsets: std::collections::HashSet<i64>,
 }
 
@@ -1687,8 +1709,10 @@ impl Walk {
             self.integer_uses.insert(slot);
             return;
         }
-        for child in crate::ir::visit::children(expr) {
-            self.integer_use(child);
+        if !matches!(expr, Expr::Load { .. }) {
+            for child in crate::ir::visit::children(expr) {
+                self.integer_use(child);
+            }
         }
     }
 
@@ -1711,7 +1735,20 @@ impl Walk {
     }
 
     fn visit(&mut self, expr: &Expr) {
+        self.visit_in_address(expr, false);
+    }
+
+    fn visit_address(&mut self, expr: &Expr) {
+        self.visit_in_address(expr, true);
+    }
+
+    fn visit_in_address(&mut self, expr: &Expr, address: bool) {
         match expr {
+            Expr::Load { addr, width, .. } => {
+                self.address(addr, CType::int(*width, false));
+                self.visit_in_address(addr, true);
+                return;
+            }
             Expr::Apply { op, args } => {
                 for arg in args {
                     // A float read from memory: the slot holds one, or the
@@ -1724,18 +1761,17 @@ impl Walk {
                             Some(slot) => self.weak.push((slot, float_type(precision))),
                             None => self.address(addr, float_type(precision)),
                         }
-                        self.visit(addr);
+                        self.visit_in_address(addr, true);
                     } else {
-                        self.visit(arg);
+                        self.visit_in_address(arg, address);
                     }
                 }
                 return;
             }
-            Expr::Load { addr, width, .. } => self.address(addr, CType::int(*width, false)),
             Expr::Bin { op, lhs, rhs } => match op {
                 BinOp::Add | BinOp::Sub => {
                     for operand in [lhs, rhs] {
-                        if let Some(slot) = self.loaded(operand) {
+                        if !address && let Some(slot) = self.loaded(operand) {
                             self.offsets.insert(slot);
                         }
                     }
@@ -1754,7 +1790,7 @@ impl Walk {
             _ => {}
         }
         for child in crate::ir::visit::children(expr) {
-            self.visit(child);
+            self.visit_in_address(child, address);
         }
     }
 

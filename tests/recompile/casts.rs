@@ -1,4 +1,7 @@
 use super::*;
+use velk::ir::AtomicOp;
+use velk::ir::MachineInstruction;
+use velk::ir::Ordering;
 use velk::ir::RegRef;
 use velk::ir::VARIABLE_BASE;
 
@@ -594,6 +597,232 @@ fn mixed_width_pointer_variables_use_bytes_without_changing_accesses() {
         }
     }
     check_candidates("mixed-pointer-widths", candidates, Mode::Memory, &[]);
+}
+
+#[test]
+fn address_integer_spills_keep_pointer_offsets_and_integer_reads() {
+    let mut candidates = Vec::new();
+    for isa in [Isa::X86_64, Isa::AArch64] {
+        let sp = velk::arch::stack_pointer(isa);
+        for offset in [0, 8, 16] {
+            let slot = Expr::bin(BinOp::Sub, Expr::reg(sp, 64), Expr::Const(8));
+            let address = Expr::bin(
+                BinOp::Add,
+                Expr::Load {
+                    addr: Box::new(slot.clone()),
+                    width: 8,
+                    signed: false,
+                },
+                Expr::Const(offset),
+            );
+            let mut ir = synthetic_ir(
+                &format!("address_spill_{isa:?}_{offset}"),
+                vec![Param {
+                    index: 7,
+                    name: "address".into(),
+                    ty: CType::U64,
+                }],
+                CType::U64,
+                vec![
+                    Stmt::Store {
+                        addr: slot.clone(),
+                        value: Expr::reg(7, 64),
+                        width: 8,
+                    },
+                    Stmt::Ret {
+                        value: Expr::Load {
+                            addr: Box::new(address),
+                            width: 8,
+                            signed: false,
+                        },
+                    },
+                ],
+            );
+            ir.isa = isa;
+            let input = region_start(isa) + 32;
+            let candidate = printed_candidate(ir, vec![vec![input]]);
+            assert!(
+                candidate.code.contains("uint64_t *local_0"),
+                "{}",
+                candidate.code
+            );
+            let access = if offset == 0 {
+                "*local_0".to_owned()
+            } else {
+                format!("local_0[{}]", offset / 8)
+            };
+            assert!(candidate.code.contains(&access), "{}", candidate.code);
+            candidates.push(candidate);
+        }
+
+        let slot = Expr::bin(BinOp::Sub, Expr::reg(sp, 64), Expr::Const(8));
+        let address = Expr::bin(
+            BinOp::Add,
+            Expr::Load {
+                addr: Box::new(slot.clone()),
+                width: 8,
+                signed: false,
+            },
+            Expr::Const(8),
+        );
+        let mut ir = synthetic_ir(
+            &format!("address_spill_store_{isa:?}"),
+            vec![Param {
+                index: 7,
+                name: "address".into(),
+                ty: CType::U64,
+            }],
+            CType::U64,
+            vec![
+                Stmt::Store {
+                    addr: slot,
+                    value: Expr::reg(7, 64),
+                    width: 8,
+                },
+                Stmt::Store {
+                    addr: address.clone(),
+                    value: Expr::Const(0x1122_3344_5566_7788),
+                    width: 8,
+                },
+                Stmt::Ret {
+                    value: Expr::Load {
+                        addr: Box::new(address),
+                        width: 8,
+                        signed: false,
+                    },
+                },
+            ],
+        );
+        ir.isa = isa;
+        let candidate = printed_candidate(ir, vec![vec![region_start(isa) + 32]]);
+        assert!(
+            candidate.code.contains("uint64_t *local_0"),
+            "{}",
+            candidate.code
+        );
+        assert!(
+            candidate.code.contains("local_0[1] = "),
+            "{}",
+            candidate.code
+        );
+        candidates.push(candidate);
+
+        let slot = Expr::bin(BinOp::Sub, Expr::reg(sp, 64), Expr::Const(8));
+        let address = Expr::bin(
+            BinOp::Add,
+            Expr::Load {
+                addr: Box::new(slot.clone()),
+                width: 8,
+                signed: false,
+            },
+            Expr::Const(8),
+        );
+        let mut ir = synthetic_ir(
+            &format!("address_spill_atomic_{isa:?}"),
+            vec![Param {
+                index: 7,
+                name: "address".into(),
+                ty: CType::U64,
+            }],
+            CType::U64,
+            vec![
+                Stmt::Store {
+                    addr: slot,
+                    value: Expr::reg(7, 64),
+                    width: 8,
+                },
+                Stmt::Machine {
+                    instruction: MachineInstruction::Atomic {
+                        op: AtomicOp::Add,
+                        width: 8,
+                        ordering: Ordering::SeqCst,
+                    },
+                    inputs: vec![address, Expr::Const(1)],
+                    outputs: vec![RegRef {
+                        index: VARIABLE_BASE,
+                        width: 64,
+                    }],
+                },
+                Stmt::Ret {
+                    value: Expr::reg(VARIABLE_BASE, 64),
+                },
+            ],
+        );
+        ir.isa = isa;
+        let candidate = printed_candidate(ir, vec![vec![region_start(isa) + 32]]);
+        assert!(
+            candidate.code.contains("uint64_t *local_0"),
+            "{}",
+            candidate.code
+        );
+        assert!(
+            candidate.code.contains("local_0 + 0x1"),
+            "{}",
+            candidate.code
+        );
+        candidates.push(candidate);
+
+        let slot = Expr::bin(BinOp::Sub, Expr::reg(sp, 64), Expr::Const(8));
+        let address = Expr::bin(
+            BinOp::Add,
+            Expr::Load {
+                addr: Box::new(slot.clone()),
+                width: 8,
+                signed: false,
+            },
+            Expr::Const(8),
+        );
+        let mut ir = synthetic_ir(
+            &format!("address_spill_integer_read_{isa:?}"),
+            vec![Param {
+                index: 7,
+                name: "address".into(),
+                ty: CType::U64,
+            }],
+            CType::U64,
+            vec![
+                Stmt::Store {
+                    addr: slot.clone(),
+                    value: Expr::reg(7, 64),
+                    width: 8,
+                },
+                Stmt::Assign {
+                    dest: RegRef {
+                        index: VARIABLE_BASE,
+                        width: 64,
+                    },
+                    value: Expr::Load {
+                        addr: Box::new(slot.clone()),
+                        width: 8,
+                        signed: false,
+                    },
+                },
+                Stmt::Ret {
+                    value: Expr::bin(
+                        BinOp::Add,
+                        Expr::Load {
+                            addr: Box::new(address),
+                            width: 8,
+                            signed: false,
+                        },
+                        Expr::bin(BinOp::Shr, Expr::reg(VARIABLE_BASE, 64), Expr::Const(1)),
+                    ),
+                },
+            ],
+        );
+        ir.isa = isa;
+        let candidate = printed_candidate(ir, vec![vec![region_start(isa) + 32]]);
+        assert!(
+            candidate
+                .code
+                .lines()
+                .any(|line| line.contains("local_0;") && !line.contains('*')),
+            "{}",
+            candidate.code
+        );
+        candidates.push(candidate);
+    }
+    check_candidates("address-integer-spills", candidates, Mode::Memory, &[]);
 }
 
 #[test]
