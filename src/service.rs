@@ -103,6 +103,7 @@ impl Session {
             &loader::OpenOptions {
                 arch,
                 raw: None,
+                unpack: None,
                 cache: None,
             },
             signatures,
@@ -275,6 +276,7 @@ impl Binary {
             &loader::OpenOptions {
                 arch,
                 raw: None,
+                unpack: None,
                 cache: None,
             },
         )
@@ -313,6 +315,7 @@ impl Binary {
             &loader::OpenOptions {
                 arch,
                 raw: None,
+                unpack: None,
                 cache: None,
             },
             signatures,
@@ -369,6 +372,9 @@ impl Binary {
         let mut cache = None;
         let mut reused = false;
         let mut image = match loader::load_input_with_saved(&path, &options, |image| {
+            if options.unpack.is_some() {
+                return None;
+            }
             source_digest = cache::image_source_digest(image, signatures);
             cache = cache::Cache::new(
                 &path,

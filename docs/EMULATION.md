@@ -7,6 +7,42 @@ AArch64, x86-32 and little-endian ARM32 (A32/T32). The binary's code never execu
 on the host. Every run starts from a fresh image; it does not edit the file or the
 cached analysis.
 
+## Unpacking Linux ELF files
+
+Add `--unpack` to an analysis operation to emulate a Linux ELF from its entry point
+and analyze the recovered image directly:
+
+```sh
+velk --unpack -D packed.elf main
+velk --unpack --iocs packed.elf
+velk --unpack --strings packed.elf
+velk --unpack --save-unpacked recovered.elf --sections packed.elf
+velk --unpack --unpack-at 0x401200 -D packed.elf main
+```
+
+Without `--unpack-at`, emulation stops before executing an address written during
+the run. A requested stop address must be inside a mapped region and also stops
+before its instruction executes. The report gives the entry, stop address, step
+count, stop reason, mapped regions, written regions, and mapped regions reached by
+execution. `newEntry` is set when execution reaches written code or a requested
+address. The CLI prints this report to standard error; `--save-unpacked` writes the
+rebuilt ELF to a path that does not already exist.
+
+The JSON report is available as `b.unpacking` from JavaScript, MCP, and `--serve`.
+
+`stopAddress` is an optional virtual address. Defaults are 1,000,000 IR statements,
+64 MiB for the distinct-write and saved-image limits, and 5,000 milliseconds.
+The memory limit applies to distinct written bytes and mapped bytes in the saved image.
+Limits may be lowered;
+the maximums are 10,000,000 statements, 256 MiB, and 60,000 milliseconds. A run that
+reaches a bound without written code or the requested address reports
+`no unpacking observed`. ELF rebuilding preserves the input's mapped load regions
+and applies the writes made by emulation. Written heap pages are added as executable
+load regions; stack and TLS data are not included in the saved ELF. During unpacking,
+writes to mapped image memory are allowed and `mprotect` is modeled without changing
+host memory protection. The image is interpreted; its instructions are never run on the host.
+This path currently supports Linux ELF files for x86-64, i386, and AArch64.
+
 For a routine `decode(unsigned char *buffer, unsigned count, unsigned key)` that
 XORs each byte with the key, place an encoded buffer in the heap and pass its
 virtual address as the first argument.
@@ -36,6 +72,16 @@ const r = b.emulate("decode", {
 });
 if (r.reason !== "return") throw new Error(r.error ?? r.reason);
 r.reads[0].value;
+```
+
+Pass bounds through the `unpack` option to `velk.open`:
+
+```js
+const b = velk.open("packed.elf", {
+  cache: false,
+  unpack: {stepLimit: 1000000, memoryLimit: 67108864, timeLimitMs: 5000}
+});
+JSON.stringify(b.unpacking, null, 2);
 ```
 
 `b.getFunction("decode").emulate(options)` runs a selected function. An arbitrary

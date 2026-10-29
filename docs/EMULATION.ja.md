@@ -7,6 +7,38 @@ AArch64、x86-32、リトルエンディアンの ARM32（A32/T32）に対応し
 バイナリー内のコードをホスト上で直接実行しません。毎回、新しいイメージから
 開始し、ファイルやキャッシュ済みの解析結果は変更しません。
 
+## Linux ELF ファイルの展開
+
+解析操作に `--unpack` を付けると、Linux ELF の入口からエミュレーションを実行し、
+復元したイメージをそのまま解析します。
+
+```sh
+velk --unpack -D packed.elf main
+velk --unpack --iocs packed.elf
+velk --unpack --strings packed.elf
+velk --unpack --save-unpacked recovered.elf --sections packed.elf
+velk --unpack --unpack-at 0x401200 -D packed.elf main
+```
+
+`--unpack-at` を指定しない場合、実行中に書き込んだアドレスを実行する直前に停止します。
+停止アドレスはマップ済み領域内である必要があり、その命令の実行前に停止します。
+レポートには入口、停止アドレス、ステップ数、停止理由、マップ済み領域、書き込み領域、
+実行されたマップ済み領域が含まれます。書き込み済みコードまたは指定アドレスに到達すると
+`newEntry` が設定されます。CLI はレポートを標準エラーに表示します。`--save-unpacked` は
+まだ存在しないパスに再構成した ELF を保存します。
+
+JSON レポートは JavaScript、MCP、`--serve` から `b.unpacking` として取得できます。
+
+`stopAddress` は任意の仮想アドレスです。既定値は IR 文 1,000,000 個、個別の書き込み済み
+バイト数と保存イメージのマップ領域に対する上限 64 MiB、実行時間 5,000 ミリ秒です。
+上限は小さくできます。最大値はそれぞれ
+10,000,000 個、256 MiB、60,000 ミリ秒です。上限に達するまでに書き込み済みコードまたは指定アドレスに
+到達しない場合、`no unpacking observed` と報告します。ELF の再構成では入力のロード領域を
+保持し、エミュレーション中の書き込みを反映します。書き込みがあったヒープのページは実行可能な
+ロード領域として追加します。スタックと TLS のデータは保存 ELF に含めません。展開時はマップ済み
+イメージへの書き込みを許可し、`mprotect` はホストのメモリー保護を変更せずにモデル化します。
+命令は解釈され、ホスト上で実行されません。現在は x86-64、i386、AArch64 の Linux ELF に対応します。
+
 各バイトとキーの XOR を取る `decode(unsigned char *buffer, unsigned count,
 unsigned key)` を実行する例です。符号化されたバッファーをヒープに配置し、
 その仮想アドレスを第1引数に渡します。
@@ -36,6 +68,16 @@ const r = b.emulate("decode", {
 });
 if (r.reason !== "return") throw new Error(r.error ?? r.reason);
 r.reads[0].value;
+```
+
+`velk.open` の `unpack` オプションで上限を渡します。
+
+```js
+const b = velk.open("packed.elf", {
+  cache: false,
+  unpack: {stepLimit: 1000000, memoryLimit: 67108864, timeLimitMs: 5000}
+});
+JSON.stringify(b.unpacking, null, 2);
 ```
 
 `b.getFunction("decode").emulate(options)` でも実行できます。`b.emulate()` の

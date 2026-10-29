@@ -69,6 +69,7 @@ fn extract_function(
     let options = OpenOptions {
         cache: None,
         arch: None,
+        unpack: None,
         raw: Some(RawOptions {
             arch,
             base: 0x7000,
@@ -260,6 +261,7 @@ fn raw_strings_search_annotations_and_cached_mappings_work() {
     let options = OpenOptions {
         cache: None,
         arch: None,
+        unpack: None,
         raw: Some(RawOptions {
             arch: RawArchitecture::X86_64,
             base: 0x7000,
@@ -395,6 +397,7 @@ fn malformed_mappings_fail_without_guessing_an_architecture() {
             &OpenOptions {
                 cache: None,
                 arch: None,
+                unpack: None,
                 raw: Some(raw),
             },
         )
@@ -410,6 +413,7 @@ fn malformed_mappings_fail_without_guessing_an_architecture() {
             &OpenOptions {
                 cache: None,
                 arch: None,
+                unpack: None,
                 raw: Some(valid)
             }
         )

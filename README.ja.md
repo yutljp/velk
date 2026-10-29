@@ -93,6 +93,13 @@ Linux ではバイナリのローダーが入力のスナップショットを�
 スクリプトと MCP でも同じマッピングを使えます。UPX の ELF・PE 入力は
 インストール済みの UPX デコーダーで展開し、`--save-unpacked FILE` で成功した
 結果を保存できます。[入力形式と制限](docs/INPUT.ja.md)を参照してください。
+ほかの Linux ELF ファイルでは、解析操作に `--unpack` を付けると、入口から
+上限付きエミュレーションを実行します。`--unpack-at ADDRESS` で停止アドレスを指定できます。
+指定がなければ、実行中に書き込んだバイトに到達した時点で停止します。たとえば
+`velk --unpack -D packed.elf main` は復元したイメージを解析し、
+`velk --unpack --save-unpacked recovered.elf --sections packed.elf` は保存します。
+`velk.open(path, {unpack: {stepLimit: 1000000}}).unpacking` で JSON レポートを取得できます。
+上限とレポート項目は[エミュレーションと展開](docs/EMULATION.ja.md)を参照してください。
 
 ## 読み込んだコードの実行
 

@@ -337,6 +337,10 @@ pub struct Report {
     pub anti_analysis: Vec<String>,
     /// Windows API calls in execution order.
     pub api_calls: Vec<ApiCall>,
+    #[serde(skip)]
+    pub(crate) written_regions: Vec<(u64, u64)>,
+    #[serde(skip)]
+    pub(crate) executed_addresses: Vec<u64>,
 }
 
 pub(crate) fn invalid(message: impl Into<String>) -> Error {

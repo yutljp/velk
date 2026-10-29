@@ -20,6 +20,7 @@ pub(crate) enum Hook {
     Dumpable,
     GetEnv,
     SystemCall,
+    MemoryProtect,
     Signal,
     Alarm,
     Exit,
@@ -72,6 +73,7 @@ const HOOKS: &[(&str, Hook)] = &[
     ("QueryPerformanceCounter", Hook::QueryPerformanceCounter),
     ("getenv", Hook::GetEnv),
     ("syscall", Hook::SystemCall),
+    ("mprotect", Hook::MemoryProtect),
     ("signal", Hook::Signal),
     ("__sysv_signal", Hook::Signal),
     ("alarm", Hook::Alarm),
@@ -608,13 +610,32 @@ impl Runner<'_> {
             }
             Hook::SystemCall => {
                 let number = first;
-                let (ptrace_number, parent_number, prctl_number) = match self.image.isa {
-                    crate::loader::Isa::X86_64 => (101, 110, 157),
-                    crate::loader::Isa::I386 => (26, 64, 172),
-                    crate::loader::Isa::AArch64 => (117, 173, 167),
+                let (ptrace_number, parent_number, prctl_number, protect_number) = match self
+                    .image
+                    .isa
+                {
+                    crate::loader::Isa::X86_64 => (101, 110, 157, 10),
+                    crate::loader::Isa::I386 => (26, 64, 172, 125),
+                    crate::loader::Isa::AArch64 => (117, 173, 167, 226),
                     _ => return Err(Stop::Error("unsupported syscall architecture".to_owned())),
                 };
-                if number == ptrace_number {
+                if number == protect_number {
+                    if !self.stop_on_write && self.stop_address.is_none() {
+                        return Err(Stop::Error(format!("unsupported Linux syscall {number}")));
+                    }
+                    let length = match self.argument(1, convention, kind) {
+                        Ok(length) => length,
+                        Err(stop) => return Err(stop),
+                    };
+                    if let Err(stop) = self.check_memory_range(first, length, false) {
+                        return Err(stop);
+                    }
+                    let _protection = match self.argument(2, convention, kind) {
+                        Ok(protection) => protection,
+                        Err(stop) => return Err(stop),
+                    };
+                    0
+                } else if number == ptrace_number {
                     let request = match self.argument(1, convention, kind) {
                         Ok(request) => request,
                         Err(stop) => return Err(stop),
@@ -655,6 +676,23 @@ impl Runner<'_> {
                 }
             }
             Hook::Allocate => self.allocate(first),
+            Hook::MemoryProtect => {
+                if !self.stop_on_write && self.stop_address.is_none() {
+                    return Err(Stop::Error("mprotect requires unpacking".to_owned()));
+                }
+                let length = match self.argument(1, convention, kind) {
+                    Ok(length) => length,
+                    Err(stop) => return Err(stop),
+                };
+                if let Err(stop) = self.check_memory_range(first, length, false) {
+                    return Err(stop);
+                }
+                let _protection = match self.argument(2, convention, kind) {
+                    Ok(protection) => protection,
+                    Err(stop) => return Err(stop),
+                };
+                0
+            }
             Hook::AllocateZero => {
                 let count = match self.argument(1, convention, kind) {
                     Ok(value) => value,

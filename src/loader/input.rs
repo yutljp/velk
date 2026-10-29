@@ -15,6 +15,9 @@ pub struct OpenOptions {
     pub arch: Option<super::Architecture>,
     /// Explicit description of headerless bytes.
     pub raw: Option<RawOptions>,
+    /// Emulation bounds and stop address for ELF unpacking.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub unpack: Option<crate::unpack::Options>,
     /// Persistent cache path or false to disable it; omission uses `VELK_CACHE`.
     #[serde(default)]
     pub cache: Option<crate::service::CacheLocation>,

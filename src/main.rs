@@ -56,6 +56,24 @@ fn open_binary(
             report.method
         );
     }
+    if let Some(report) = &binary.image().unpacking {
+        eprintln!(
+            "unpacking {} after {} steps at {}; stop reason: {}",
+            report.status,
+            report.steps,
+            report.new_entry.as_deref().unwrap_or(&report.entry),
+            report.stop_reason
+        );
+        for region in &report.written_regions {
+            eprintln!("  wrote {} bytes at {}", region.size, region.address);
+        }
+        for region in &report.executed_regions {
+            eprintln!("  executed {} bytes at {}", region.size, region.address);
+        }
+        if let Some(error) = &report.error {
+            eprintln!("  {error}");
+        }
+    }
     Ok(binary)
 }
 
@@ -81,6 +99,10 @@ fn main() -> ExitCode {
             base: cli.load_address.expect("clap requires a load address"),
             entries: cli.entry.clone(),
             byte_order: cli.raw_byte_order,
+        }),
+        unpack: cli.unpack.then(|| velk::unpack::Options {
+            stop_address: cli.unpack_at.map(velk::addr::format),
+            ..velk::unpack::Options::default()
         }),
     };
     let signature_options = velk::service::SignatureOptions {

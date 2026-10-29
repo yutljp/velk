@@ -70,7 +70,7 @@ pub(crate) fn recover_strings(
         inline_writes: HashSet::new(),
         returns: HashMap::new(),
     };
-    match super::run_with_recovery(image, function, &options, deadline, Some(recovery)) {
+    match super::run_with_recovery(image, function, &options, deadline, Some(recovery), None) {
         Ok((report, _)) if report.reason == "time limit" => None,
         Ok((_, Some(recovery))) => Some(recovery.results),
         _ => Some(Vec::new()),

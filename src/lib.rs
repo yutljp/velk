@@ -33,4 +33,5 @@ pub mod string_decoding;
 pub mod symbolic;
 mod tables;
 mod timing;
+pub mod unpack;
 pub mod xrefs;

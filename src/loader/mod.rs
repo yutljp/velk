@@ -39,6 +39,7 @@ use crate::error::{Error, Result};
 use std::fmt;
 use std::ops::Bound;
 use std::path::Path;
+use std::sync::atomic::{AtomicU64, Ordering};
 
 use crate::loader::discover::aarch64_prologues;
 use crate::loader::discover::estimate_sizes;
@@ -47,6 +48,8 @@ use crate::loader::discover::read_word;
 use crate::loader::discover::x86_prologues;
 use crate::loader::symbols::demangle;
 use object::read::{File as ObjFile, Object, ObjectSection, ObjectSegment, ObjectSymbol};
+
+static NEXT_UNPACKED_IMAGE: AtomicU64 = AtomicU64::new(0);
 
 pub(crate) fn demangle_name(name: &str) -> String {
     symbols::demangle(name).unwrap_or_else(|| name.to_owned())
@@ -255,6 +258,8 @@ pub struct Image {
     pub format: Format,
     /// Successful recovery of a packed input, when applicable.
     pub packing: Option<packed::Report>,
+    /// Result of an explicit emulation based unpacking run, when requested.
+    pub unpacking: Option<crate::unpack::Report>,
     recovered: Option<Vec<u8>>,
     pub isa: Isa,
     /// ARM mapping symbols and function entry modes, keyed by physical address.
@@ -477,6 +482,7 @@ impl Image {
             codeview: Default::default(),
             format: Format::Elf,
             packing: None,
+            unpacking: None,
             recovered: None,
             isa,
             arm_modes: BTreeMap::new(),
@@ -568,7 +574,19 @@ impl Image {
     }
 
     pub fn section_at(&self, vaddr: u64) -> Option<&Section> {
-        self.sections
+        let section = self
+            .sections
+            .iter()
+            .filter(|s| s.loaded && vaddr >= s.vaddr && vaddr < s.vaddr.saturating_add(s.size))
+            .min_by_key(|s| (!s.executable, s.size));
+        if section.is_some()
+            || self.format != Format::Elf
+            || self.sections.iter().any(|section| section.loaded)
+        {
+            return section;
+        }
+        // Program headers remain available when an ELF has no section table.
+        self.load_segments
             .iter()
             .filter(|s| s.loaded && vaddr >= s.vaddr && vaddr < s.vaddr.saturating_add(s.size))
             .min_by_key(|s| (!s.executable, s.size))
@@ -935,6 +953,7 @@ pub fn load_with_arch(path: &Path, arch: Option<Architecture>) -> Result<Image> 
         &OpenOptions {
             arch,
             raw: None,
+            unpack: None,
             cache: None,
         },
     )
@@ -951,6 +970,11 @@ pub(crate) fn load_input_with_saved(
     saved: impl FnOnce(&Image) -> Option<crate::service::cache::Saved>,
 ) -> Result<Image> {
     if let Some(raw) = &options.raw {
+        if options.unpack.is_some() {
+            return Err(Error::Emulation(
+                "emulation based unpacking requires an ELF image".to_owned(),
+            ));
+        }
         if options.arch.is_some() {
             return Err(Error::Raw(
                 "raw and Mach-O architecture options conflict".to_owned(),
@@ -1301,6 +1325,7 @@ pub(crate) fn load_input_with_saved(
         codeview,
         format: format_of(kind),
         packing,
+        unpacking: None,
         recovered,
         isa: isa_of(file.architecture()),
         arm_modes,
@@ -1359,7 +1384,9 @@ pub(crate) fn load_input_with_saved(
         image.imports.insert(address, binding.name);
         image.import_addends.insert(address, binding.addend);
     }
-    if let Some(saved) = saved(&image) {
+    if options.unpack.is_none()
+        && let Some(saved) = saved(&image)
+    {
         saved.restore(&mut image);
         return Ok(image);
     }
@@ -1432,7 +1459,66 @@ pub(crate) fn load_input_with_saved(
     }
     estimate_sizes(&image.sections, &mut image.functions);
     discover::refine_sizes(&mut image);
+    if let Some(unpack_options) = &options.unpack {
+        let output = match crate::unpack::run_image(&image, unpack_options) {
+            Ok(output) => output,
+            Err(error) => return Err(error),
+        };
+        image.unpacking = Some(output.report.clone());
+        if let Some(elf) = output.elf {
+            let mut unpacked = match load_dumped_elf(&elf) {
+                Ok(unpacked) => unpacked,
+                Err(error) => return Err(error),
+            };
+            unpacked.input_digest = image.input_digest;
+            unpacked.debug_path = image.debug_path.clone();
+            unpacked.packing = image.packing.clone();
+            unpacked.unpacking = Some(output.report);
+            unpacked.recovered = Some(elf);
+            return Ok(unpacked);
+        }
+    }
     Ok(image)
+}
+
+fn load_dumped_elf(bytes: &[u8]) -> Result<Image> {
+    use std::io::Write;
+
+    for _ in 0..8 {
+        let sequence = NEXT_UNPACKED_IMAGE.fetch_add(1, Ordering::Relaxed);
+        let path =
+            std::env::temp_dir().join(format!("velk-image-{}-{sequence}.elf", std::process::id()));
+        let mut file = match std::fs::OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .open(&path)
+        {
+            Ok(file) => file,
+            Err(error) if error.kind() == std::io::ErrorKind::AlreadyExists => continue,
+            Err(error) => {
+                return Err(Error::Emulation(format!(
+                    "cannot create an image snapshot: {error}"
+                )));
+            }
+        };
+        if let Err(error) = file.write_all(bytes) {
+            let _ = std::fs::remove_file(&path);
+            return Err(Error::Emulation(format!(
+                "cannot write the unpacked image snapshot: {error}"
+            )));
+        }
+        drop(file);
+        let result = load_input(&path, &OpenOptions::default());
+        if let Err(error) = std::fs::remove_file(&path) {
+            return Err(Error::Emulation(format!(
+                "cannot remove the image snapshot: {error}"
+            )));
+        }
+        return result;
+    }
+    Err(Error::Emulation(
+        "cannot create a unique image snapshot".to_owned(),
+    ))
 }
 
 #[cfg(test)]

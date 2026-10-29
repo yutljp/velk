@@ -1,6 +1,6 @@
 //! Sparse memory backed by loaded sections and bounded zero-filled areas.
 
-use std::cell::RefCell;
+use std::cell::{Cell, RefCell};
 use std::collections::{BTreeMap, BTreeSet, HashMap};
 
 use crate::loader::Image;
@@ -8,6 +8,8 @@ use crate::loader::Image;
 use super::MemoryChange;
 
 const DEFAULT_HEAP_BASE: u64 = 0x1000_0000;
+const PAGE_SIZE: u64 = 4096;
+const PAGE_WORDS: usize = PAGE_SIZE as usize / u64::BITS as usize;
 pub(crate) const HEAP_SIZE: u64 = 1 << 24;
 const TLS_SIZE: u64 = 0x1000;
 const STACK_SIZE: u64 = 1 << 20;
@@ -34,6 +36,10 @@ pub(crate) struct Memory<'a> {
     tls_end: u64,
     stack_start: u64,
     stack_end: u64,
+    allow_protected_writes: bool,
+    write_limit: Option<usize>,
+    writes: RefCell<BTreeMap<u64, Box<[u64; PAGE_WORDS]>>>,
+    written_count: Cell<usize>,
     pub(crate) fault: RefCell<Option<String>>,
     regions: Vec<Region>,
     watched_reads: Vec<(u64, u64, String)>,
@@ -41,11 +47,33 @@ pub(crate) struct Memory<'a> {
 }
 
 impl<'a> Memory<'a> {
+    pub(crate) fn heap_range_for_unpack(image: &'a Image) -> Result<(u64, u64), String> {
+        let memory = Self::for_unpack(image, None, 0)?;
+        Ok((memory.heap_base, memory.heap_end))
+    }
+
     pub(crate) fn new(image: &'a Image) -> Result<Self, String> {
         Self::with_tls(image, None)
     }
 
     pub(crate) fn with_tls(image: &'a Image, base: Option<u64>) -> Result<Self, String> {
+        Self::with_options(image, base, false, None)
+    }
+
+    pub(crate) fn for_unpack(
+        image: &'a Image,
+        base: Option<u64>,
+        write_limit: usize,
+    ) -> Result<Self, String> {
+        Self::with_options(image, base, true, Some(write_limit))
+    }
+
+    fn with_options(
+        image: &'a Image,
+        base: Option<u64>,
+        allow_protected_writes: bool,
+        write_limit: Option<usize>,
+    ) -> Result<Self, String> {
         let tls_size = if image.format == crate::loader::Format::Pe
             && matches!(
                 image.isa,
@@ -122,6 +150,10 @@ impl<'a> Memory<'a> {
             heap_end,
             stack_start,
             stack_end,
+            allow_protected_writes,
+            write_limit,
+            writes: RefCell::new(BTreeMap::new()),
+            written_count: Cell::new(0),
             fault: RefCell::new(None),
             regions: Vec::new(),
             watched_reads: Vec::new(),
@@ -318,6 +350,7 @@ impl<'a> Memory<'a> {
                 return false;
             };
             if write
+                && !self.allow_protected_writes
                 && (section.read_only
                     || (self.image.load_segments.is_empty() && section.executable))
             {
@@ -343,6 +376,88 @@ impl<'a> Memory<'a> {
         if fault.is_none() {
             *fault = Some(error);
         }
+    }
+
+    pub(crate) fn record_write(&self, address: u64, size: u64) -> bool {
+        let Some(limit) = self.write_limit else {
+            return true;
+        };
+        let Some(end) = address.checked_add(size) else {
+            self.fail(format!("memory range overflows at 0x{address:x}"));
+            return false;
+        };
+        let writes = self.writes.borrow();
+        let mut new_bytes = 0usize;
+        for at in address..end {
+            let page = at & !(PAGE_SIZE - 1);
+            let bit = (at - page) as usize;
+            if !writes
+                .get(&page)
+                .is_some_and(|words| words[bit / u64::BITS as usize] & (1 << (bit % 64)) != 0)
+            {
+                new_bytes += 1;
+            }
+        }
+        let written_count = self.written_count.get();
+        if new_bytes > limit.saturating_sub(written_count) {
+            self.fail(format!("unpacking memory limit of {limit} bytes exceeded"));
+            return false;
+        }
+        drop(writes);
+        let mut writes = self.writes.borrow_mut();
+        for at in address..end {
+            let page = at & !(PAGE_SIZE - 1);
+            let bit = (at - page) as usize;
+            let words = writes
+                .entry(page)
+                .or_insert_with(|| Box::new([0; PAGE_WORDS]));
+            words[bit / u64::BITS as usize] |= 1 << (bit % 64);
+        }
+        self.written_count.set(written_count + new_bytes);
+        true
+    }
+
+    pub(crate) fn clear_writes(&self) {
+        self.writes.borrow_mut().clear();
+        self.written_count.set(0);
+    }
+
+    pub(crate) fn was_written(&self, address: u64) -> bool {
+        let page = address & !(PAGE_SIZE - 1);
+        let bit = (address - page) as usize;
+        self.writes
+            .borrow()
+            .get(&page)
+            .is_some_and(|words| words[bit / u64::BITS as usize] & (1 << (bit % 64)) != 0)
+    }
+
+    pub(crate) fn written_regions(&self) -> Vec<(u64, u64)> {
+        let writes = self.writes.borrow();
+        let mut regions: Vec<(u64, u64)> = Vec::with_capacity(writes.len());
+        for (&page, words) in writes.iter() {
+            let mut first = PAGE_SIZE as usize;
+            let mut last = 0usize;
+            for (word_index, word) in words.iter().enumerate() {
+                if *word != 0 {
+                    let start = word_index * u64::BITS as usize;
+                    first = first.min(start + word.trailing_zeros() as usize);
+                    last = last.max(start + (u64::BITS - 1 - word.leading_zeros()) as usize);
+                }
+            }
+            if first == PAGE_SIZE as usize {
+                continue;
+            }
+            let start = page + first as u64;
+            let end = page + last as u64 + 1;
+            if let Some((previous_start, previous_size)) = regions.last_mut()
+                && previous_start.saturating_add(*previous_size) >= start
+            {
+                *previous_size = (*previous_start + *previous_size).max(end) - *previous_start;
+            } else {
+                regions.push((start, end - start));
+            }
+        }
+        regions
     }
 
     pub(crate) fn byte(&self, address: u64) -> u8 {
@@ -432,6 +547,23 @@ mod tests {
         assert!(!memory.check(0x1007, 2, /* write */ false));
         assert!(memory.fault.borrow().as_ref().unwrap().contains("0x1008"));
     }
+
+    #[test]
+    fn rejected_store_does_not_add_addresses_to_the_written_set() {
+        let image = Image::from_code(crate::loader::Isa::X86_64, 0x1000, vec![0xc3; 8]);
+        let memory = Memory::for_unpack(&image, None, 2).expect("mapped image");
+        assert!(memory.record_write(0x1000, 2));
+        assert!(!memory.record_write(0x1001, 2));
+        assert_eq!(memory.written_regions(), vec![(0x1000, 2)]);
+        assert!(
+            memory
+                .fault
+                .borrow()
+                .as_ref()
+                .is_some_and(|error| error.contains("memory limit"))
+        );
+    }
+
     #[test]
     fn heap_avoids_images_at_the_default_heap_address() {
         let address = DEFAULT_HEAP_BASE + 0x1000;

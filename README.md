@@ -91,6 +91,13 @@ Headerless code accepts an explicit instruction set, load address, and entries:
 `velk -D --raw-arch x86_64 --load-address 0x7000 code.bin 0x7000`.
 The same mapping is available in scripts and MCP. UPX ELF and PE inputs use the
 installed UPX decoder; `--save-unpacked FILE` saves a successful recovery.
+For other Linux ELF files, add `--unpack` to an analysis operation to run the
+entry point in bounded emulation. `--unpack-at ADDRESS` selects a stop address;
+otherwise execution stops when it reaches bytes written during the run. For example,
+`velk --unpack -D packed.elf main` analyzes the recovered image, and
+`velk --unpack --save-unpacked recovered.elf --sections packed.elf` saves it.
+`velk.open(path, {unpack: {stepLimit: 1000000}}).unpacking` returns the JSON report.
+See [emulation and unpacking](docs/EMULATION.md) for limits and report fields.
 See [input formats and limits](docs/INPUT.md).
 
 ## Running loaded code

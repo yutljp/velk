@@ -154,7 +154,7 @@
   const log = (...values) => { output.push(values.map(show).join(" ")); };
 
   globalThis.console = Object.freeze({ log, info: log, warn: log, error: log });
-  globalThis.velk = Object.freeze({ open: (path, opts = {}) => new Binary(call("open", { path, project: opts.project, arch: opts.arch, raw: opts.raw, cache: opts.cache, signatureOptions: { defaults: opts.defaultSignatures !== false, files: opts.signatures ?? [] } })), buildSignatures: (path) => call("buildSignatures", { bin: path }) });
+  globalThis.velk = Object.freeze({ open: (path, opts = {}) => new Binary(call("open", { path, project: opts.project, arch: opts.arch, raw: opts.raw, cache: opts.cache, unpack: opts.unpack, signatureOptions: { defaults: opts.defaultSignatures !== false, files: opts.signatures ?? [] } })), buildSignatures: (path) => call("buildSignatures", { bin: path }) });
   globalThis.__velkStructured = (value) => {
     try { return JSON.stringify({ log: output, result: value === undefined ? null : value }); }
     catch (error) { return JSON.stringify({ log: output, error: `cannot serialize the result: ${error?.message ?? error}` }); }

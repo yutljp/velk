@@ -6,7 +6,7 @@ declare const velk: {
    * cache selects a persistent cache file; false disables it, true uses the default sidecar.
    * Omission uses VELK_CACHE (a path or "off"), then <binary>.velk-cache.
    * Universal Mach-O files open the slice for this machine unless opts.arch picks another. */
-  open(path: string, opts?: { cache?: string | boolean; project?: string; arch?: "arm64" | "arm64e" | "x86_64"; raw?: RawOptions; defaultSignatures?: boolean; signatures?: string[] }): Binary;
+  open(path: string, opts?: { cache?: string | boolean; project?: string; arch?: "arm64" | "arm64e" | "x86_64"; raw?: RawOptions; unpack?: UnpackOptions; defaultSignatures?: boolean; signatures?: string[] }): Binary;
   /** Builds instruction signatures from a binary, static archive, or Rust rlib. */
   buildSignatures(path: string): { database: SignatureDb; failures: Failure[] };
 };
@@ -21,6 +21,8 @@ interface Binary {
   sliceOffset: number;
   /** Successful direct recovery; null when the input was not packed. */
   packing: { packer: string; version: string | null; method: string } | null;
+  /** Report from bounded ELF unpacking, or null when unpacking was not requested. */
+  unpacking: UnpackReport | null;
   /** Save the complete recovered executable; destination must not already exist. */
   saveUnpacked(path: string): { saved: string };
 
@@ -138,4 +140,28 @@ interface RawOptions {
   /** Defaults to base. Odd ARM addresses select Thumb mode. */
   entries?: (string | number)[];
   byteOrder?: "little" | "big";
+}
+
+interface UnpackOptions {
+  /** Stop before this mapped virtual address. */
+  stopAddress?: string;
+  /** Maximum number of executed IR statements. Defaults to 1,000,000. */
+  stepLimit?: number;
+  /** Limit for distinct bytes written and mapped bytes saved. Defaults to 64 MiB. */
+  memoryLimit?: number;
+  /** Maximum elapsed time in milliseconds. Defaults to 5,000. */
+  timeLimitMs?: number;
+}
+
+interface UnpackReport {
+  entry: string;
+  newEntry: string | null;
+  steps: number;
+  stopReason: string;
+  error: string | null;
+  status: "unpacked" | "no unpacking observed";
+  mappedRegions: { address: string; size: number }[];
+  writtenRegions: { address: string; size: number }[];
+  executedRegions: { address: string; size: number }[];
+  unpacked: boolean;
 }

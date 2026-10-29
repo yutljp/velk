@@ -7,6 +7,7 @@ pub(super) enum Operation {
     Read,
     Write,
     Exit,
+    Protect,
 }
 
 pub(super) fn operation(convention: Convention, number: u64) -> Option<Operation> {
@@ -21,6 +22,9 @@ pub(super) fn operation(convention: Convention, number: u64) -> Option<Operation
         (Convention::SyscallX86, 60 | 231)
         | (Convention::SyscallI386, 1 | 252)
         | (Convention::SyscallArm, 93 | 94) => Some(Exit),
+        (Convention::SyscallX86, 10)
+        | (Convention::SyscallI386, 125)
+        | (Convention::SyscallArm, 226) => Some(Protect),
         _ => None,
     }
 }

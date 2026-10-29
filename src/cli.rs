@@ -118,6 +118,12 @@ pub(super) struct Cli {
     /// Save a successfully unpacked executable to a new file before analysis.
     #[arg(long, conflicts_with_all = ["run", "mcp", "serve", "compare"])]
     pub(super) save_unpacked: Option<PathBuf>,
+    /// Run bounded Linux ELF unpacking before the selected analysis operation.
+    #[arg(long, conflicts_with_all = ["run", "mcp", "serve", "compare"])]
+    pub(super) unpack: bool,
+    /// Stop unpacking before this virtual address; requires --unpack.
+    #[arg(long, requires = "unpack", value_parser = crate::parse_address)]
+    pub(super) unpack_at: Option<u64>,
     /// Select a Mach-O architecture (default: host architecture).
     #[arg(long, value_enum, conflicts_with_all = ["run", "mcp", "serve"])]
     pub(super) arch: Option<velk::loader::Architecture>,

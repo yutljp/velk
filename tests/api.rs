@@ -265,7 +265,7 @@ try {{
 }}
 const signatures = b.buildSignatures();
 JSON.stringify({{
-  binary: {{ path: b.path, format: b.format, arch: b.arch, entry: b.entry, slices: b.slices, sliceOffset: b.sliceOffset, packing: b.packing }},
+  binary: {{ path: b.path, format: b.format, arch: b.arch, entry: b.entry, slices: b.slices, sliceOffset: b.sliceOffset, packing: b.packing, unpacking: b.unpacking }},
   section: b.sections()[0],
   func: Object.fromEntries(Object.entries(f)),
   card: f.card(),

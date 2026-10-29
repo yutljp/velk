@@ -26,6 +26,7 @@ const TRUNCATION_NOTICE: &str = "\n[truncated; filter or slice inside the script
 
 const RUN_DESCRIPTION: &str = "Run synchronous JavaScript against the cached binary-analysis API. \
 Start with velk_read_api, then e.g. const b = velk.open('/path/to/binary'); \
+For bounded ELF unpacking pass {unpack:{stepLimit:1000000}} to velk.open and read b.unpacking. \
 b.functions().slice(0, 5).map(f => ({addr:f.addr,name:f.name})). \
 Each call has fresh JS variables; binaries and analysis remain cached. \
 Return console output, then the final value, limited to 4000 characters by default. \

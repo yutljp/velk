@@ -282,6 +282,11 @@ impl Machine<'_> {
         {
             return;
         }
+        if let Some(memory) = &self.strict_memory
+            && !memory.record_write(addr, u64::from(bytes))
+        {
+            return;
+        }
         for offset in 0..u64::from(bytes) {
             self.memory
                 .insert(addr.wrapping_add(offset), (value >> (8 * offset)) as u8);

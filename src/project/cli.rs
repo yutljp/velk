@@ -56,6 +56,7 @@ pub(crate) fn execute_cached(mut cli: Cli, digest: &mut Option<String>) -> Resul
                 cache: cli.cache.clone(),
                 arch: cli.arch,
                 raw: cli.raw.clone(),
+                unpack: None,
             },
         )
     {
@@ -70,6 +71,7 @@ pub(crate) fn execute_cached(mut cli: Cli, digest: &mut Option<String>) -> Resul
                     cache: cli.cache.clone(),
                     arch: cli.arch,
                     raw: cli.raw.clone(),
+                    unpack: None,
                 },
             ) {
                 Ok(binary) => binary,

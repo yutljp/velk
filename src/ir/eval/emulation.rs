@@ -10,7 +10,7 @@ pub(crate) use strings::recover_strings;
 mod values;
 mod windows;
 
-use std::collections::{BTreeMap, HashMap, HashSet};
+use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 use std::time::{Duration, Instant};
 
 use crate::emulation::{HEAP_SIZE, Memory, Options, Report, invalid};
@@ -54,6 +54,9 @@ struct Runner<'a> {
     recovery: Option<strings::Recovery>,
     windows: Option<windows::Process>,
     api_calls: Vec<crate::emulation::ApiCall>,
+    stop_address: Option<u64>,
+    stop_on_write: bool,
+    executed_addresses: BTreeSet<u64>,
 }
 
 #[derive(Debug)]
@@ -65,6 +68,8 @@ enum Stop {
     StackCheckFail,
     Steps,
     Time,
+    UnpackAddress,
+    WrittenCode,
     Error(String),
 }
 
@@ -89,7 +94,7 @@ pub(crate) fn run(
         return Err(invalid("timeLimitMs overflows the clock"));
     };
     let deadline = Some(deadline.map_or(limit, |end| end.min(limit)));
-    run_with_recovery(image, start, options, deadline, None).map(|(report, _)| report)
+    run_with_recovery(image, start, options, deadline, None, None).map(|(report, _)| report)
 }
 
 pub(crate) fn run_bounded(
@@ -98,7 +103,21 @@ pub(crate) fn run_bounded(
     options: &Options,
     deadline: Option<Instant>,
 ) -> Result<Report> {
-    run_with_recovery(image, start, options, deadline, None).map(|(report, _)| report)
+    run_with_recovery(image, start, options, deadline, None, None).map(|(report, _)| report)
+}
+
+pub(crate) fn run_for_unpack(
+    image: &Image,
+    start: u64,
+    options: &Options,
+    unpack: &crate::unpack::Options,
+) -> Result<Report> {
+    let Some(limit) = Instant::now().checked_add(Duration::from_millis(unpack.time_limit_ms))
+    else {
+        return Err(invalid("unpacking timeLimitMs overflows the clock"));
+    };
+    run_with_recovery(image, start, options, Some(limit), None, Some(unpack))
+        .map(|(report, _)| report)
 }
 
 fn run_with_recovery(
@@ -107,22 +126,25 @@ fn run_with_recovery(
     options: &Options,
     deadline: Option<Instant>,
     recovery: Option<strings::Recovery>,
+    unpack: Option<&crate::unpack::Options>,
 ) -> Result<(Report, Option<strings::Recovery>)> {
     if image.isa == Isa::Unsupported || image.byte_order() == Some(object::Endianness::Big) {
         return Err(invalid(
             "execution requires a supported little-endian architecture",
         ));
     }
-    let strict = match Memory::with_tls(
-        image,
-        match &options.tls_base {
-            Some(word) => match word.value() {
-                Ok(value) => Some(value),
-                Err(error) => return Err(error),
-            },
-            None => None,
+    let tls_base = match &options.tls_base {
+        Some(word) => match word.value() {
+            Ok(value) => Some(value),
+            Err(error) => return Err(error),
         },
-    ) {
+        None => None,
+    };
+    let strict_memory = match unpack {
+        Some(unpack) => Memory::for_unpack(image, tls_base, unpack.memory_limit),
+        None => Memory::with_tls(image, tls_base),
+    };
+    let strict = match strict_memory {
         Ok(memory) => memory,
         Err(error) => return Err(invalid(error)),
     };
@@ -241,6 +263,10 @@ fn run_with_recovery(
         recovery,
         windows: None,
         api_calls: Vec::new(),
+        stop_address: unpack
+            .and_then(|unpack| unpack.stop_address.as_deref().and_then(crate::addr::parse)),
+        stop_on_write: unpack.is_some_and(|unpack| unpack.stop_address.is_none()),
+        executed_addresses: BTreeSet::new(),
     };
     if let Err(error) = runner.initialize_windows() {
         return Err(invalid(error));
@@ -252,6 +278,14 @@ fn run_with_recovery(
         return Err(invalid(error));
     }
     let before = runner.machine.memory.clone();
+    if unpack.is_some() {
+        runner
+            .machine
+            .strict_memory
+            .as_ref()
+            .expect("execution uses mapped memory")
+            .clear_writes();
+    }
     if runner.recovery.is_some() {
         let sp = crate::arch::stack_pointer(image.isa);
         for &register in &physical {
@@ -436,6 +470,27 @@ fn initialize_memory(machine: &mut Machine<'_>, options: &Options) -> Result<()>
 }
 
 impl Runner<'_> {
+    fn unpack_stop(&mut self, address: u64) -> Option<Stop> {
+        let address = self.image.code_address(address);
+        self.address = address;
+        if self.stop_address == Some(address) {
+            return Some(Stop::UnpackAddress);
+        }
+        if self.stop_on_write
+            && self
+                .machine
+                .strict_memory
+                .as_ref()
+                .is_some_and(|memory| memory.was_written(address))
+        {
+            return Some(Stop::WrittenCode);
+        }
+        if self.stop_on_write || self.stop_address.is_some() {
+            self.executed_addresses.insert(address);
+        }
+        None
+    }
+
     fn report(
         mut self,
         stopped: Stop,
@@ -460,6 +515,8 @@ impl Runner<'_> {
             Stop::Trap => ("trap", None),
             Stop::Steps => ("step limit", None),
             Stop::Time => ("time limit", None),
+            Stop::UnpackAddress => ("requested address", None),
+            Stop::WrittenCode => ("written code reached", None),
             Stop::Error(error) => (
                 "error",
                 Some(format!("instruction 0x{:x}: {error}", self.address)),
@@ -508,6 +565,13 @@ impl Runner<'_> {
             .as_ref()
             .expect("strict memory")
             .changes(before, &self.machine.memory);
+        let written_regions = self
+            .machine
+            .strict_memory
+            .as_ref()
+            .expect("strict memory")
+            .written_regions();
+        let executed_addresses = self.executed_addresses.iter().copied().collect();
         let reads = match self.read_results() {
             Ok(reads) => reads,
             Err(message) => {
@@ -547,6 +611,8 @@ impl Runner<'_> {
             stack_pointer: crate::addr::format(stack),
             anti_analysis: self.anti_analysis,
             api_calls: self.api_calls,
+            written_regions,
+            executed_addresses,
         };
         (report, self.recovery)
     }
@@ -614,7 +680,15 @@ impl Runner<'_> {
         if !section.executable {
             return Err(Stop::Error(format!("non-executable code at 0x{address:x}")));
         }
-        let available = section.size.saturating_sub(address - section.vaddr);
+        let displacement = address - section.vaddr;
+        let mut available = section.size.saturating_sub(displacement);
+        if section.name == "PT_LOAD" {
+            available = available.min(
+                self.image
+                    .section_file_size(section)
+                    .saturating_sub(displacement),
+            );
+        }
         let function = self
             .image
             .functions
@@ -667,6 +741,9 @@ impl Runner<'_> {
         if depth > 128 {
             return Stop::Error("call depth exceeds 128".to_owned());
         }
+        if let Some(stop) = self.unpack_stop(address) {
+            return stop;
+        }
         if self.ends.contains(&self.image.code_address(address)) {
             return Stop::End;
         }
@@ -692,6 +769,9 @@ impl Runner<'_> {
         }
         let mut index = 0;
         while let Some(block) = blocks.get(index) {
+            if let Some(stop) = self.unpack_stop(block.start) {
+                return stop;
+            }
             if self.ends.contains(&block.start) {
                 self.address = block.start;
                 return Stop::End;
@@ -707,6 +787,9 @@ impl Runner<'_> {
                 {
                     self.instructions = self.instructions.saturating_add(1);
                     self.address = *address;
+                    if let Some(stop) = self.unpack_stop(*address) {
+                        return stop;
+                    }
                     if self.ends.contains(address) {
                         return Stop::End;
                     }
@@ -1142,14 +1225,41 @@ impl Runner<'_> {
             let Some(operation) = super::syscalls::operation(convention, number) else {
                 return Err(Stop::Error(format!("unsupported Linux syscall {number}")));
             };
-            let operation = match operation {
-                super::syscalls::Operation::Read => io::Operation::Read,
-                super::syscalls::Operation::Write => io::Operation::Write,
+            let value = match operation {
+                super::syscalls::Operation::Read => {
+                    match self.io_hook(io::Operation::Read, convention, kind) {
+                        Ok(value) => value,
+                        Err(stop) => return Err(stop),
+                    }
+                }
+                super::syscalls::Operation::Write => {
+                    match self.io_hook(io::Operation::Write, convention, kind) {
+                        Ok(value) => value,
+                        Err(stop) => return Err(stop),
+                    }
+                }
                 super::syscalls::Operation::Exit => return Err(Stop::Exit),
-            };
-            let value = match self.io_hook(operation, convention, kind) {
-                Ok(value) => value,
-                Err(stop) => return Err(stop),
+                super::syscalls::Operation::Protect => {
+                    if !self.stop_on_write && self.stop_address.is_none() {
+                        return Err(Stop::Error(format!("unsupported Linux syscall {number}")));
+                    }
+                    let address = match self.argument(1, convention, kind) {
+                        Ok(value) => value,
+                        Err(stop) => return Err(stop),
+                    };
+                    let length = match self.argument(2, convention, kind) {
+                        Ok(value) => value,
+                        Err(stop) => return Err(stop),
+                    };
+                    if let Err(stop) = self.check_memory_range(address, length, false) {
+                        return Err(stop);
+                    }
+                    match self.argument(3, convention, kind) {
+                        Ok(_protection) => {}
+                        Err(stop) => return Err(stop),
+                    }
+                    0
+                }
             };
             for &register in convention.clobbered() {
                 self.assign_fact(

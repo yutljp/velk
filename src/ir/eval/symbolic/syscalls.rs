@@ -62,6 +62,9 @@ impl State {
                 self.write_output(descriptor, bytes);
                 Term::constant(count)
             }
+            Some(super::super::syscalls::Operation::Protect) => {
+                return Err(invalid("mprotect is not modeled for symbolic execution").into());
+            }
             None => return Err(invalid(format!("unsupported Linux syscall {number}")).into()),
         };
         for &register in convention.clobbered() {
