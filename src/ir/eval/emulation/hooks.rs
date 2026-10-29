@@ -8,6 +8,18 @@ pub(crate) enum Hook {
     Random,
     Seed,
     Time,
+    ClockGettime,
+    Gettimeofday,
+    ParentProcess,
+    Debugger,
+    RemoteDebugger,
+    Ptrace,
+    GetTickCount,
+    GetTickCount64,
+    QueryPerformanceCounter,
+    Dumpable,
+    GetEnv,
+    SystemCall,
     Signal,
     Alarm,
     Exit,
@@ -41,15 +53,23 @@ const HOOKS: &[(&str, Hook)] = &[
             "socket: network connections are not modeled; provide callReturns and stdinDescriptors for an explicit input descriptor",
         ),
     ),
-    (
-        "prctl",
-        Hook::Unsupported("prctl: kernel process controls and seccomp filters are not modeled"),
-    ),
+    ("prctl", Hook::Dumpable),
     ("open", Hook::Io(super::io::Operation::Open)),
     ("close", Hook::Io(super::io::Operation::Close)),
     ("rand", Hook::Random),
     ("srand", Hook::Seed),
     ("time", Hook::Time),
+    ("clock_gettime", Hook::ClockGettime),
+    ("gettimeofday", Hook::Gettimeofday),
+    ("getppid", Hook::ParentProcess),
+    ("IsDebuggerPresent", Hook::Debugger),
+    ("CheckRemoteDebuggerPresent", Hook::RemoteDebugger),
+    ("ptrace", Hook::Ptrace),
+    ("GetTickCount", Hook::GetTickCount),
+    ("GetTickCount64", Hook::GetTickCount64),
+    ("QueryPerformanceCounter", Hook::QueryPerformanceCounter),
+    ("getenv", Hook::GetEnv),
+    ("syscall", Hook::SystemCall),
     ("signal", Hook::Signal),
     ("__sysv_signal", Hook::Signal),
     ("alarm", Hook::Alarm),
@@ -412,6 +432,222 @@ impl Runner<'_> {
                     }
                 }
                 value & crate::ir::semantics::mask(u32::from(width) * 8)
+            }
+            Hook::ClockGettime | Hook::Gettimeofday => {
+                let pointer_index = if matches!(hook, Hook::ClockGettime) {
+                    1
+                } else {
+                    0
+                };
+                let pointer = match self.argument(pointer_index, convention, kind) {
+                    Ok(pointer) => pointer,
+                    Err(stop) => return Err(stop),
+                };
+                let seconds = match &self.options.time {
+                    Some(word) => match word.value() {
+                        Ok(value) => value,
+                        Err(error) => return Err(Stop::Error(error.to_string())),
+                    },
+                    None => 0,
+                };
+                let elapsed = self
+                    .instructions
+                    .saturating_mul(self.options.anti_analysis.clock_ticks_per_instruction);
+                let nanos = elapsed % 1_000_000_000;
+                let seconds = seconds.saturating_add(elapsed / 1_000_000_000);
+                let width = crate::arch::pointer_bytes(self.image.isa);
+                let subsecond = if matches!(hook, Hook::Gettimeofday) {
+                    nanos / 1_000
+                } else {
+                    nanos
+                };
+                let Some(second_address) = pointer.checked_add(u64::from(width)) else {
+                    return Err(Stop::Error("clock output address overflows".to_owned()));
+                };
+                for (address, value) in [(pointer, seconds), (second_address, subsecond)] {
+                    if let Err(stop) = self.check_memory_range(address, u64::from(width), true) {
+                        return Err(stop);
+                    }
+                    for (offset, byte) in
+                        value.to_le_bytes().iter().take(width as usize).enumerate()
+                    {
+                        if let Err(stop) = self.write_byte(address + offset as u64, *byte) {
+                            return Err(stop);
+                        }
+                    }
+                }
+                self.anti_analysis
+                    .push(if matches!(hook, Hook::ClockGettime) {
+                        "clock_gettime".to_owned()
+                    } else {
+                        "gettimeofday".to_owned()
+                    });
+                0
+            }
+            Hook::ParentProcess => {
+                self.anti_analysis.push("getppid".to_owned());
+                u64::from(self.options.anti_analysis.parent_process_id)
+            }
+            Hook::Debugger => {
+                self.anti_analysis.push("debugger presence".to_owned());
+                u64::from(self.options.anti_analysis.debugger_present)
+            }
+            Hook::RemoteDebugger => {
+                let pointer = match self.argument(1, convention, kind) {
+                    Ok(pointer) => pointer,
+                    Err(stop) => return Err(stop),
+                };
+                let value = u32::from(self.options.anti_analysis.debugger_present);
+                for (offset, byte) in value.to_le_bytes().iter().enumerate() {
+                    let Some(address) = pointer.checked_add(offset as u64) else {
+                        return Err(Stop::Error("debugger result address overflows".to_owned()));
+                    };
+                    if let Err(stop) = self.write_byte(address, *byte) {
+                        return Err(stop);
+                    }
+                }
+                self.anti_analysis
+                    .push("CheckRemoteDebuggerPresent".to_owned());
+                1
+            }
+            Hook::GetTickCount => {
+                self.anti_analysis.push("GetTickCount".to_owned());
+                (self
+                    .instructions
+                    .saturating_mul(self.options.anti_analysis.clock_ticks_per_instruction)
+                    / 1_000_000) as u32 as u64
+            }
+            Hook::GetTickCount64 => {
+                self.anti_analysis.push("GetTickCount64".to_owned());
+                self.instructions
+                    .saturating_mul(self.options.anti_analysis.clock_ticks_per_instruction)
+                    / 1_000_000
+            }
+            Hook::QueryPerformanceCounter => {
+                let pointer = first;
+                let value = self
+                    .instructions
+                    .saturating_mul(self.options.anti_analysis.clock_ticks_per_instruction);
+                if let Err(stop) = self.check_memory_range(pointer, 8, true) {
+                    return Err(stop);
+                }
+                for (offset, byte) in value.to_le_bytes().iter().enumerate() {
+                    let Some(address) = pointer.checked_add(offset as u64) else {
+                        return Err(Stop::Error(
+                            "performance counter address overflows".to_owned(),
+                        ));
+                    };
+                    if let Err(stop) = self.write_byte(address, *byte) {
+                        return Err(stop);
+                    }
+                }
+                self.anti_analysis
+                    .push("QueryPerformanceCounter".to_owned());
+                1
+            }
+            Hook::Ptrace => {
+                if first != 0 {
+                    return Err(Stop::Error(format!("unsupported ptrace request {first}")));
+                }
+                self.anti_analysis.push("ptrace(PTRACE_TRACEME)".to_owned());
+                if self.ptrace_traceme_count == 0
+                    && self.options.anti_analysis.ptrace_traceme_succeeds
+                {
+                    self.ptrace_traceme_count = 1;
+                    0
+                } else {
+                    u64::MAX
+                }
+            }
+            Hook::Dumpable => {
+                let operation = first as u32;
+                if operation == 4 {
+                    self.anti_analysis.push("prctl(PR_SET_DUMPABLE)".to_owned());
+                    if self.options.anti_analysis.dumpable {
+                        0
+                    } else {
+                        u64::MAX
+                    }
+                } else if self.options.skip_calls {
+                    0
+                } else {
+                    return Err(Stop::Error(format!(
+                        "unsupported prctl operation {operation}"
+                    )));
+                }
+            }
+            Hook::GetEnv => {
+                let name = match self.bytes_at(first, None) {
+                    Ok(bytes) => bytes,
+                    Err(stop) => return Err(stop),
+                };
+                if name != b"LD_PRELOAD" {
+                    return Ok(0);
+                }
+                self.anti_analysis.push("getenv(LD_PRELOAD)".to_owned());
+                let Some(value) = self.options.anti_analysis.preload.as_deref() else {
+                    return Ok(0);
+                };
+                let pointer = self.allocate(value.len() as u64 + 1);
+                if pointer == 0 {
+                    return Err(Stop::Error(
+                        "environment value allocation failed".to_owned(),
+                    ));
+                }
+                let mut bytes = value.as_bytes().to_vec();
+                bytes.push(0);
+                match self.store_bytes(pointer, &bytes) {
+                    Ok(()) => pointer,
+                    Err(stop) => return Err(stop),
+                }
+            }
+            Hook::SystemCall => {
+                let number = first;
+                let (ptrace_number, parent_number, prctl_number) = match self.image.isa {
+                    crate::loader::Isa::X86_64 => (101, 110, 157),
+                    crate::loader::Isa::I386 => (26, 64, 172),
+                    crate::loader::Isa::AArch64 => (117, 173, 167),
+                    _ => return Err(Stop::Error("unsupported syscall architecture".to_owned())),
+                };
+                if number == ptrace_number {
+                    let request = match self.argument(1, convention, kind) {
+                        Ok(request) => request,
+                        Err(stop) => return Err(stop),
+                    };
+                    if request != 0 {
+                        return Err(Stop::Error(format!("unsupported ptrace request {request}")));
+                    }
+                    self.anti_analysis.push("ptrace(PTRACE_TRACEME)".to_owned());
+                    if self.ptrace_traceme_count == 0
+                        && self.options.anti_analysis.ptrace_traceme_succeeds
+                    {
+                        self.ptrace_traceme_count = 1;
+                        0
+                    } else {
+                        u64::MAX
+                    }
+                } else if number == parent_number {
+                    self.anti_analysis.push("getppid".to_owned());
+                    u64::from(self.options.anti_analysis.parent_process_id)
+                } else if number == prctl_number {
+                    let operation = match self.argument(1, convention, kind) {
+                        Ok(operation) => operation as u32,
+                        Err(stop) => return Err(stop),
+                    };
+                    if operation != 4 {
+                        return Err(Stop::Error(format!(
+                            "unsupported prctl operation {operation}"
+                        )));
+                    }
+                    self.anti_analysis.push("prctl(PR_SET_DUMPABLE)".to_owned());
+                    if self.options.anti_analysis.dumpable {
+                        0
+                    } else {
+                        u64::MAX
+                    }
+                } else {
+                    return Err(Stop::Error(format!("unsupported Linux syscall {number}")));
+                }
             }
             Hook::Allocate => self.allocate(first),
             Hook::AllocateZero => {

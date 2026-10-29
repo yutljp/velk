@@ -45,6 +45,11 @@ impl Runner<'_> {
                 },
                 Err(stop) => return Some(Err(stop)),
             };
+            if path == "/proc/self/status" {
+                self.anti_analysis.push("/proc/self/status".to_owned());
+            } else if path == "/proc/self/maps" {
+                self.anti_analysis.push("/proc/self/maps".to_owned());
+            }
             let token = self.allocate(1);
             if token == 0 {
                 return Some(Err(error("file descriptor allocation failed")));

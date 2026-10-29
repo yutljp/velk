@@ -337,6 +337,84 @@ impl State {
         if matches!(hook, Hook::Random | Hook::Seed | Hook::Time) {
             return self.runtime_hook(binary, convention, hook);
         }
+        match hook {
+            Hook::ParentProcess => {
+                return Ok(Term::constant(u64::from(
+                    self.options.anti_analysis.parent_process_id,
+                )));
+            }
+            Hook::Debugger => {
+                return Ok(Term::constant(u64::from(
+                    self.options.anti_analysis.debugger_present,
+                )));
+            }
+            Hook::Ptrace => {
+                let request = self.number(binary, convention, 0)?;
+                if request != 0 {
+                    return Err(invalid(format!("unsupported ptrace request {request}")).into());
+                }
+                let succeeds = self.ptrace_traceme_count == 0
+                    && self.options.anti_analysis.ptrace_traceme_succeeds;
+                if succeeds {
+                    self.ptrace_traceme_count = 1;
+                    return Ok(Term::constant(0));
+                }
+                return Ok(Term::constant(u64::MAX));
+            }
+            Hook::Dumpable => {
+                let operation = self.number(binary, convention, 0)? as u32;
+                if operation != 4 {
+                    return Err(invalid(format!("unsupported prctl operation {operation}")).into());
+                }
+                return Ok(Term::constant(if self.options.anti_analysis.dumpable {
+                    0
+                } else {
+                    u64::MAX
+                }));
+            }
+            Hook::SystemCall => {
+                let number = self.number(binary, convention, 0)?;
+                let (ptrace_number, parent_number, prctl_number) = match self.isa {
+                    crate::loader::Isa::X86_64 => (101, 110, 157),
+                    crate::loader::Isa::I386 => (26, 64, 172),
+                    crate::loader::Isa::AArch64 => (117, 173, 167),
+                    _ => return Err(invalid("unsupported syscall architecture").into()),
+                };
+                if number == ptrace_number {
+                    let request = self.number(binary, convention, 1)?;
+                    if request != 0 {
+                        return Err(invalid(format!("unsupported ptrace request {request}")).into());
+                    }
+                    if self.ptrace_traceme_count == 0
+                        && self.options.anti_analysis.ptrace_traceme_succeeds
+                    {
+                        self.ptrace_traceme_count = 1;
+                        return Ok(Term::constant(0));
+                    }
+                    return Ok(Term::constant(u64::MAX));
+                }
+                if number == parent_number {
+                    return Ok(Term::constant(u64::from(
+                        self.options.anti_analysis.parent_process_id,
+                    )));
+                }
+                if number == prctl_number {
+                    let operation = self.number(binary, convention, 1)? as u32;
+                    if operation != 4 {
+                        return Err(
+                            invalid(format!("unsupported prctl operation {operation}")).into()
+                        );
+                    }
+                    return Ok(Term::constant(if self.options.anti_analysis.dumpable {
+                        0
+                    } else {
+                        u64::MAX
+                    }));
+                }
+                return Err(invalid(format!("unsupported Linux syscall {number}")).into());
+            }
+            _ => {}
+        }
         let first = self.number(binary, convention, 0)?;
         match hook {
             Hook::Length

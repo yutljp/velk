@@ -218,7 +218,7 @@ impl Runner<'_> {
         Ok(())
     }
 
-    fn bytes_at(&mut self, base: u64, length: Option<usize>) -> Result<Vec<u8>, Stop> {
+    pub(super) fn bytes_at(&mut self, base: u64, length: Option<usize>) -> Result<Vec<u8>, Stop> {
         if length.is_some_and(|length| length > HEAP_SIZE as usize) {
             return Err(error("memory read exceeds 16 MiB"));
         }
@@ -238,7 +238,7 @@ impl Runner<'_> {
         Ok(bytes)
     }
 
-    fn store_bytes(&mut self, base: u64, bytes: &[u8]) -> Result<(), Stop> {
+    pub(super) fn store_bytes(&mut self, base: u64, bytes: &[u8]) -> Result<(), Stop> {
         // A failed range check or write aborts the whole hook.
         self.check_memory_range(base, bytes.len() as u64, /* write */ true)?;
         for (offset, &byte) in bytes.iter().enumerate() {

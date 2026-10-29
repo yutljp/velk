@@ -87,6 +87,78 @@ fn clock_and_process_state() {
 }
 
 #[test]
+fn anti_analysis_defaults_and_overrides() {
+    let mut interfaces = Interfaces::new();
+    for architecture in matrix::ARCHITECTURES {
+        for optimization in ["O0", "O2"] {
+            let path =
+                matrix::fixtures().join(format!("{architecture}.{optimization}.runtime.elf"));
+            let binary = Binary::open(&path).expect("runtime fixture");
+            let once = interfaces.check(&path, &binary, "ptrace_once", json!({}));
+            assert_eq!(matrix::value(&once), 1);
+            let twice = interfaces.check(&path, &binary, "ptrace_twice", json!({}));
+            assert_eq!(matrix::value(&twice), 3);
+            assert!(
+                twice["antiAnalysis"]
+                    .as_array()
+                    .unwrap()
+                    .contains(&json!("ptrace(PTRACE_TRACEME)"))
+            );
+            if matches!(architecture, "x86_64" | "i386" | "aarch64") {
+                let raw = interfaces.check(&path, &binary, "raw_ptrace_twice", json!({}));
+                assert_eq!(matrix::value(&raw), 3);
+            }
+            let parent = interfaces.check(&path, &binary, "parent_process", json!({}));
+            assert_eq!(matrix::value(&parent), 1);
+            let traced = interfaces.check(
+                &path,
+                &binary,
+                "ptrace_once",
+                json!({"antiAnalysis":{"ptraceTracemeSucceeds":false}}),
+            );
+            assert_eq!(matrix::value(&traced), 0);
+            let preload = interfaces.check(
+                &path,
+                &binary,
+                "preload_unset",
+                json!({"antiAnalysis":{"preload":"/lib/example.so"}}),
+            );
+            assert_eq!(matrix::value(&preload), 0);
+            let debugger = interfaces.check(&path, &binary, "debugger_apis_clear", json!({}));
+            assert_eq!(matrix::value(&debugger), 1);
+            let debugger = interfaces.check(
+                &path,
+                &binary,
+                "debugger_apis_clear",
+                json!({"antiAnalysis":{"debuggerPresent":true}}),
+            );
+            assert_eq!(matrix::value(&debugger), 0);
+            let status = interfaces.check(&path, &binary, "status_tracer_clear", json!({}));
+            assert_eq!(matrix::value(&status), 1);
+            let status = interfaces.check(
+                &path,
+                &binary,
+                "status_tracer_clear",
+                json!({"antiAnalysis":{"debuggerPresent":true}}),
+            );
+            assert_eq!(matrix::value(&status), 0);
+            let clock = interfaces.check(&path, &binary, "clock_advances", json!({}));
+            assert_eq!(matrix::value(&clock), 1);
+            assert!(
+                clock["antiAnalysis"]
+                    .as_array()
+                    .unwrap()
+                    .contains(&json!("clock_gettime"))
+            );
+        }
+    }
+    let path = matrix::fixtures().join("x86_64.O2.runtime.elf");
+    let binary = Binary::open(&path).expect("runtime fixture");
+    let trap = interfaces.check(&path, &binary, "sigtrap_handler", json!({}));
+    assert_eq!(matrix::value(&trap), 1);
+}
+
+#[test]
 fn symbolic_runtime_state() {
     if !Command::new("z3")
         .arg("-version")
@@ -110,6 +182,12 @@ fn symbolic_runtime_state() {
                 ("clock_value", json!({"time":42,"returns":{"eq":42}})),
                 ("signal_values", json!({"returns":{"eq":7}})),
                 ("alarm_values", json!({"returns":{"eq":7}})),
+                ("ptrace_twice", json!({"returns":{"eq":3}})),
+                ("parent_process", json!({"returns":{"eq":1}})),
+                (
+                    "ptrace_once",
+                    json!({"antiAnalysis":{"ptraceTracemeSucceeds":false},"returns":{"eq":0}}),
+                ),
             ] {
                 let parsed: symbolic::Options =
                     serde_json::from_value(options.clone()).expect("search options");
@@ -132,6 +210,7 @@ fn symbolic_runtime_state() {
                 let replay = velk::emulation::Options {
                     arguments,
                     time: parsed.time,
+                    anti_analysis: parsed.anti_analysis.clone(),
                     ..Default::default()
                 };
                 let actual =
@@ -208,10 +287,7 @@ fn unavailable_process_and_network_state_has_a_clear_diagnostic() {
             let binary = Binary::open(&path).expect("runtime fixture");
             for (name, message) in [
                 ("network_socket", "network connections are not modeled"),
-                (
-                    "process_control",
-                    "kernel process controls and seccomp filters are not modeled",
-                ),
+                ("process_control", "unsupported prctl operation 38"),
             ] {
                 let report = interfaces.check(&path, &binary, name, json!({}));
                 assert_eq!(report["reason"], "error", "{report}");

@@ -34,6 +34,15 @@ interface EmulationOptions {
   callReturns?: Record<string, EmulationWord>;
   /** Skip unhandled calls with a zero result; hooks still run. Default false. */
   skipCalls?: boolean;
+  antiAnalysis?: {
+    debuggerPresent?: boolean;
+    ptraceTracemeSucceeds?: boolean;
+    parentProcessId?: number;
+    dumpable?: boolean;
+    preload?: string | null;
+    clockTicksPerInstruction?: number;
+    tracerProcessId?: number;
+  };
 }
 interface EmulationReport {
   /** File contents committed by fflush/fclose; no host writes. */
@@ -55,6 +64,7 @@ interface EmulationReport {
   heapBase: string;
   heapSize: number;
   stackPointer: string;
+  antiAnalysis: string[];
 }
 
 /** Read mapped memory after execution; omit length to stop before NUL. */

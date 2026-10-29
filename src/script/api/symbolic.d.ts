@@ -4,6 +4,12 @@
  * Only little-endian i386, x86-64 and AArch64 are supported.
  */
 interface SymbolicOptions {
+  antiAnalysis?: {
+    debuggerPresent?: boolean;
+    ptraceTracemeSucceeds?: boolean;
+    parentProcessId?: number;
+    dumpable?: boolean;
+  };
   /** Dedicated 4 KiB thread-local mapping; chosen automatically by default. */
   tlsBase?: number | string;
   /** Stack guard, truncated to pointer width; default "0x6a09e667bb67ae00". */

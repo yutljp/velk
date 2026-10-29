@@ -103,6 +103,12 @@ the same value at the target pointer width. `signal` records Linux signal
 handlers and returns the previous handler. `alarm` replaces a pending timer
 and returns its previous duration; the model clock does not advance or deliver
 signals. `setbuf` accepts a null buffer for a standard or virtual file stream; caller-owned buffers are unsupported.
+
+`antiAnalysis` supplies concrete answers for `getppid`, `IsDebuggerPresent`,
+`ptrace(PTRACE_TRACEME)`, and `prctl(PR_SET_DUMPABLE)` imports, including calls
+through the `syscall()` wrapper. `ptraceTracemeSucceeds`, `debuggerPresent`,
+`parentProcessId`, and `dumpable` can be set in the options. The first traced
+request succeeds by default; subsequent requests fail.
 A concrete or uniquely constrained random seed uses concrete generator state; other symbolic seeds use bit-vector state copied on path forks. Assertions are reset between solver queries while term definitions remain available, so constraints from other paths do not restrict the query.
 Unsigned bounds queries use known widths for zero-extended values, Boolean predicates, and bounded digit accumulations; arithmetic without a proven bound retains 64-bit searches.
 

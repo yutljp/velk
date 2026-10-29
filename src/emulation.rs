@@ -189,6 +189,42 @@ pub struct Options {
     pub call_returns: BTreeMap<String, Word>,
     /// Treat unhandled calls as returning zero.
     pub skip_calls: bool,
+    /// Answers used for common debugger and environment checks.
+    pub anti_analysis: AntiAnalysisOptions,
+}
+
+/// Answers used by anti-analysis checks during emulation.
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[serde(default, rename_all = "camelCase", deny_unknown_fields)]
+pub struct AntiAnalysisOptions {
+    /// Whether the process is being debugged.
+    pub debugger_present: bool,
+    /// Whether the first `ptrace(PTRACE_TRACEME)` call succeeds.
+    pub ptrace_traceme_succeeds: bool,
+    /// Parent process identifier returned by `getppid`.
+    pub parent_process_id: u32,
+    /// Whether `PR_SET_DUMPABLE` succeeds.
+    pub dumpable: bool,
+    /// Value returned by `getenv("LD_PRELOAD")`; absent means unset.
+    pub preload: Option<String>,
+    /// Amount added to emulated clocks for each executed instruction.
+    pub clock_ticks_per_instruction: u64,
+    /// Whether a process is reported as dumpable when `/proc/self/status` is read.
+    pub tracer_process_id: u32,
+}
+
+impl Default for AntiAnalysisOptions {
+    fn default() -> Self {
+        Self {
+            debugger_present: false,
+            ptrace_traceme_succeeds: true,
+            parent_process_id: 1,
+            dumpable: true,
+            preload: None,
+            clock_ticks_per_instruction: 1,
+            tracer_process_id: 1,
+        }
+    }
 }
 
 impl Default for Options {
@@ -211,6 +247,7 @@ impl Default for Options {
             trace: false,
             call_returns: BTreeMap::new(),
             skip_calls: false,
+            anti_analysis: AntiAnalysisOptions::default(),
         }
     }
 }
@@ -261,6 +298,8 @@ pub struct Report {
     pub heap_size: u64,
     /// Initial stack pointer, in hexadecimal.
     pub stack_pointer: String,
+    /// Anti-analysis checks answered during execution.
+    pub anti_analysis: Vec<String>,
 }
 
 pub(crate) fn invalid(message: impl Into<String>) -> Error {

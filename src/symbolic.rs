@@ -23,6 +23,8 @@ pub struct MemoryInput {
 #[derive(Clone, Debug, Deserialize, PartialEq, Eq)]
 #[serde(default, rename_all = "camelCase", deny_unknown_fields)]
 pub struct Options {
+    /// Answers used for common debugger and environment checks.
+    pub anti_analysis: crate::emulation::AntiAnalysisOptions,
     /// Base of a dedicated 4 KiB thread-local mapping; chosen automatically when absent.
     pub tls_base: Option<crate::emulation::Word>,
     /// Fixed Unix time in seconds for `time()`; default zero.
@@ -64,6 +66,7 @@ pub struct Options {
 impl Default for Options {
     fn default() -> Self {
         Self {
+            anti_analysis: crate::emulation::AntiAnalysisOptions::default(),
             tls_base: None,
             canary: None,
             time: None,

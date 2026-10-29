@@ -242,7 +242,23 @@ Each execution has its own generator state. `time` returns a fixed Unix time
 (default 0); the `time` option overrides it and a non-null argument receives
 the same value at the target pointer width. `signal` records Linux signal
 handlers and returns the previous handler. `alarm` replaces a pending timer
-and returns its previous duration; the model clock does not advance or deliver
-signals. `setbuf` accepts a null buffer for a standard or virtual file stream; caller-owned buffers are unsupported.
+and returns its previous duration. `setbuf` accepts a null buffer for a standard or virtual file stream; caller-owned buffers are unsupported.
+
+Anti-analysis answers can be set under `antiAnalysis` in the emulation options.
+By default, `ptrace(PTRACE_TRACEME)` succeeds once, then fails; `getppid` returns
+1; `prctl(PR_SET_DUMPABLE)` succeeds; `getenv("LD_PRELOAD")` reports the variable
+unset; and `/proc/self/status` and `/proc/self/maps` return virtual contents.
+The debugger APIs return false by default. `rdtsc`, `rdtscp`, `cntvct_el0`,
+`clock_gettime`, `gettimeofday`, `GetTickCount`, and `QueryPerformanceCounter`
+advance from the number of executed instructions using
+`clockTicksPerInstruction` (default 1). The report's `antiAnalysis` array lists
+checks handled during the run. For example,
+`{"antiAnalysis":{"debuggerPresent":true,"parentProcessId":42,"preload":"/lib/example.so"}}`
+changes those answers. Supported fields are `debuggerPresent`,
+`ptraceTracemeSucceeds`, `parentProcessId`, `tracerProcessId`, `dumpable`,
+`preload`, and `clockTicksPerInstruction`.
+On x86-64 ELF, `int3` invokes a handler registered for `SIGTRAP` and resumes
+after the breakpoint. Symbolic execution also uses the configured parent ID,
+debugger answer, dumpability result, and first `PTRACE_TRACEME` result.
 
 `exit` flushes virtual file streams and stops execution. If the image names or imports an exit-handler registration function, the call stops with a diagnostic. `_exit` is not modeled as a libc call.

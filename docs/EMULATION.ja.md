@@ -224,7 +224,20 @@ NUL、CR、LF、UTF-8 でないバイトも保持します。パスは UTF-8 が
 実行ごとに独立した乱数状態を持ちます。`time` は固定の Unix 時刻（既定値 0）を返し、
 `time` オプションで変更できます。引数が null でなければ、対象のポインター幅で同じ値を格納します。
 `signal` は Linux のシグナルハンドラーを記録し、直前のハンドラーを返します。
-`alarm` は保留中のタイマーを置き換えて直前の秒数を返します。モデル内の時計は進まず、
-シグナルは配送しません。`setbuf` は標準ストリームまたは仮想ファイルで null バッファーを受け付けます。呼び出し側が所有するバッファーには対応しません。
+`alarm` は保留中のタイマーを置き換えて直前の秒数を返します。
+`setbuf` は標準ストリームまたは仮想ファイルで null バッファーを受け付けます。呼び出し側が所有するバッファーには対応しません。
+
+エミュレーションオプションの `antiAnalysis` で、解析対策チェックへの回答を設定できます。
+既定では `ptrace(PTRACE_TRACEME)` は1回成功し、2回目以降は失敗します。`getppid` は1を返し、
+`prctl(PR_SET_DUMPABLE)` は成功し、`getenv("LD_PRELOAD")` は未設定を返します。
+`/proc/self/status` と `/proc/self/maps` は仮想内容を返します。デバッガー検出APIは既定で false を返します。
+`rdtsc`、`rdtscp`、`cntvct_el0`、`clock_gettime`、`gettimeofday`、`GetTickCount`、
+`QueryPerformanceCounter` は実行済み命令数に応じて進み、`clockTicksPerInstruction` の既定値は1です。
+レポートの `antiAnalysis` 配列には処理したチェックを記録します。たとえば
+`{"antiAnalysis":{"debuggerPresent":true,"parentProcessId":42,"preload":"/lib/example.so"}}`
+で回答を変更できます。設定項目は `debuggerPresent`、`ptraceTracemeSucceeds`、`parentProcessId`、
+`tracerProcessId`、`dumpable`、`preload`、`clockTicksPerInstruction` です。
+x86-64 ELF では `SIGTRAP` ハンドラー登録後の `int3` がハンドラーを呼び出し、ブレークポイントの次から再開します。
+シンボリック実行でも親プロセスID、デバッガー回答、ダンプ可能設定、最初の `PTRACE_TRACEME` の結果を使います。
 
 `exit` は仮想ファイルのストリームをフラッシュして実行を終了します。終了時ハンドラーの登録関数に名前があるか、インポートする場合は診断を出して停止します。libc の `_exit` 呼び出しには対応しません。

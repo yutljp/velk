@@ -35,12 +35,15 @@ struct Runner<'a> {
     options: &'a Options,
     deadline: Option<Instant>,
     steps: usize,
+    instructions: u64,
     address: u64,
     ends: HashSet<u64>,
     trace: Vec<String>,
     heap_base: u64,
     heap_next: u64,
     signal_handlers: BTreeMap<u32, u64>,
+    ptrace_traceme_count: u8,
+    anti_analysis: Vec<String>,
     alarm: u64,
     random: super::random::Random,
     cxx_locale: Option<super::cxx::Locale>,
@@ -172,8 +175,24 @@ fn run_with_recovery(
             heap_next = heap_next.max(address + 1);
         }
     }
+    let mut files = options.files.clone();
+    let tracer_process_id = if options.anti_analysis.debugger_present {
+        options.anti_analysis.tracer_process_id
+    } else {
+        0
+    };
+    let status = format!(
+        "Name:\tprogram\nState:\tR (running)\nPid:\t1000\nPPid:\t{}\nTracerPid:\t{}\nUid:\t1000\t1000\t1000\t1000\nGid:\t1000\t1000\t1000\t1000\n",
+        options.anti_analysis.parent_process_id, tracer_process_id
+    );
+    files
+        .entry("/proc/self/status".to_owned())
+        .or_insert_with(|| status.into_bytes());
+    files.entry("/proc/self/maps".to_owned()).or_insert_with(|| {
+        b"00400000-00401000 r-xp 00000000 00:00 0 [program]\n7fff0000-80000000 rw-p 00000000 00:00 0 [stack]\n".to_vec()
+    });
     let mut runner = Runner {
-        files: match super::stdio::Files::new(options.files.clone()) {
+        files: match super::stdio::Files::new(files) {
             Ok(files) => files,
             Err(error) => return Err(invalid(error)),
         },
@@ -188,12 +207,15 @@ fn run_with_recovery(
         options,
         deadline,
         steps: 0,
+        instructions: 0,
         address: image.code_address(start),
         ends,
         trace: Vec::new(),
         heap_base,
         heap_next,
         signal_handlers: BTreeMap::new(),
+        ptrace_traceme_count: 0,
+        anti_analysis: Vec::new(),
         alarm: 0,
         random: super::random::Random::default(),
         cxx_locale: None,
@@ -461,8 +483,14 @@ impl Runner<'_> {
                 Vec::new()
             }
         };
+        let mut files = self.files.committed.clone();
+        for path in ["/proc/self/status", "/proc/self/maps"] {
+            if !self.options.files.contains_key(path) {
+                files.remove(path);
+            }
+        }
         let report = Report {
-            files: self.files.committed.clone(),
+            files,
             stdout: String::from_utf8_lossy(&self.stdout).into_owned(),
             stderr: String::from_utf8_lossy(&self.stderr).into_owned(),
             reads,
@@ -481,6 +509,7 @@ impl Runner<'_> {
             heap_base: crate::addr::format(self.heap_base),
             heap_size: HEAP_SIZE,
             stack_pointer: crate::addr::format(stack),
+            anti_analysis: self.anti_analysis,
         };
         (report, self.recovery)
     }
@@ -638,6 +667,7 @@ impl Runner<'_> {
                 } = statement
                     && dest.index == crate::lift::execution::ADDRESS
                 {
+                    self.instructions = self.instructions.saturating_add(1);
                     self.address = *address;
                     if self.ends.contains(address) {
                         return Stop::End;
@@ -827,7 +857,34 @@ impl Runner<'_> {
                     return Err(stop);
                 }
             }
-            Stmt::Trap => return Err(Stop::Trap),
+            Stmt::Trap => {
+                let handler = self.signal_handlers.get(&5).copied();
+                let breakpoint = self.image.format == crate::loader::Format::Elf
+                    && self.image.isa == Isa::X86_64
+                    && self.x86_instruction().is_ok_and(|instruction| {
+                        instruction.mnemonic() == iced_x86::Mnemonic::Int3
+                    });
+                if let Some(handler) = handler.filter(|_| breakpoint) {
+                    let convention = self.image.convention_of(handler);
+                    let Some(&argument) = convention.arguments().first() else {
+                        return Err(Stop::Error(
+                            "SIGTRAP handler has no argument register".to_owned(),
+                        ));
+                    };
+                    self.assign_fact(
+                        RegRef {
+                            index: argument,
+                            width: 64,
+                        },
+                        Fact::constant(5),
+                    );
+                    if let Err(stop) = self.call(handler, convention, CallKind::Invoke, depth) {
+                        return Err(stop);
+                    }
+                } else {
+                    return Err(Stop::Trap);
+                }
+            }
             Stmt::Unsupported { text, .. } => {
                 if text.starts_with("undecodable") {
                     for word in text.split_whitespace() {
@@ -878,6 +935,44 @@ impl Runner<'_> {
                     };
                     self.assign_fact(outputs[0], value);
                 }
+            }
+            Stmt::Machine {
+                instruction:
+                    crate::ir::MachineInstruction::ArmSystem {
+                        register: 0xdf02,
+                        write: false,
+                    },
+                outputs,
+                ..
+            } if self.image.isa == Isa::AArch64 => {
+                let value = self
+                    .instructions
+                    .saturating_mul(self.options.anti_analysis.clock_ticks_per_instruction);
+                self.assign_fact(outputs[0], Fact::constant(value));
+                self.anti_analysis.push("cntvct_el0".to_owned());
+            }
+            Stmt::Machine {
+                instruction: crate::ir::MachineInstruction::Rdtsc,
+                outputs,
+                ..
+            }
+            | Stmt::Machine {
+                instruction: crate::ir::MachineInstruction::Rdtscp,
+                outputs,
+                ..
+            } if self.image.isa == Isa::X86_64 || self.image.isa == Isa::I386 => {
+                let value = self
+                    .instructions
+                    .saturating_mul(self.options.anti_analysis.clock_ticks_per_instruction);
+                self.assign_fact(outputs[0], Fact::constant(value));
+                if outputs.len() > 1 {
+                    self.assign_fact(outputs[1], Fact::constant(0));
+                }
+                self.anti_analysis.push(if outputs.len() > 1 {
+                    "rdtscp".to_owned()
+                } else {
+                    "rdtsc".to_owned()
+                });
             }
             Stmt::Machine { .. } => {
                 return Err(Stop::Error(
