@@ -21,7 +21,12 @@ struct ParsedInteger {
 }
 
 impl State {
-    fn argument(&self, binary: &Binary, convention: Convention, index: usize) -> Evaluation<Term> {
+    pub(super) fn argument(
+        &self,
+        binary: &Binary,
+        convention: Convention,
+        index: usize,
+    ) -> Evaluation<Term> {
         let index = index
             + usize::from(matches!(
                 convention,
@@ -109,7 +114,7 @@ impl State {
         self.test(format!("(= {} {})", byte.text, smt::constant(0)))
     }
 
-    fn whitespace(&self, byte: &Term) -> Evaluation<bool> {
+    pub(super) fn whitespace(&self, byte: &Term) -> Evaluation<bool> {
         if let Some(value) = byte.concrete {
             return Ok((value as u8).is_ascii_whitespace());
         }
@@ -923,7 +928,7 @@ impl State {
     }
 }
 
-fn integer_overflow(value: &str, digit: &str, base: u64, limit: u64) -> String {
+pub(super) fn integer_overflow(value: &str, digit: &str, base: u64, limit: u64) -> String {
     format!(
         "(bvugt {value} (bvudiv (bvsub {} {digit}) {}))",
         smt::constant(limit),
@@ -1004,6 +1009,10 @@ mod tests {
         let mut proofs = Proofs::default();
         for base in [10, 16] {
             for limit in [
+                i16::MAX as u64,
+                1u64 << 15,
+                u16::MAX as u64,
+                u32::MAX as u64,
                 i32::MAX as u64,
                 1u64 << 31,
                 i64::MAX as u64,

@@ -8,6 +8,7 @@
 
 use std::collections::{BTreeMap, HashMap};
 
+mod cxx;
 pub(crate) mod emulation;
 mod stdio;
 pub(crate) mod symbolic;

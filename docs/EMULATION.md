@@ -98,6 +98,19 @@ Other streams require explicit file inputs. Stream objects and argv reserve heap
 before malloc runs. `puts`, `putchar`, `fputs`, `fwrite`, and `write`
 on fd 1 or 2 append to the captured streams.
 
+C++ stream models recognize mangled libstdc++ and libc++ imports in 64-bit
+ELF and Mach-O files. They capture C strings, `std::string`, characters, decimal integers,
+`endl`, and `flush` on `std::cout`, and read words, lines, and decimal integers
+from `std::cin`. String storage covers libstdc++ small/heap strings and libc++
+short/long strings, with the alternate layout selected for Mach-O. String
+operations use the existing 16 MiB memory and output bounds, and allocations use
+the existing heap. Symbolic strings use the existing 4,096–65,536-byte model bound.
+String construction/destruction, `std::ios_base::Init`, and `__cxa_atexit`
+registration are modeled. Stream formatting changes, input failure, integer
+overflow, and unrecognized C++ calls stop with a diagnostic. These models cover
+default stream formatting; custom locales and general string operations are not
+modeled. String allocation capacities are model choices.
+
 Linux ELF `read`, `write`, `exit` and `exit_group` system calls use the same stream models on x86-64 (`syscall`), i386 (`int 0x80`) and AArch64 (`svc 0`). Unknown syscall numbers stop with a diagnostic. Other file operations and system calls are not modeled.
 
 `reads` requests memory after execution, including after an execution error or

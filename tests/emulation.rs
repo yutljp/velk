@@ -1,6 +1,8 @@
 //! Checks the execution interfaces against compiled C and explicit fault cases.
 
 mod common;
+#[path = "emulation/cxx.rs"]
+mod cxx;
 #[path = "emulation/edges.rs"]
 mod edges;
 #[path = "emulation/io.rs"]

@@ -1,5 +1,6 @@
 //! Strict execution using the interpreter's expression and register semantics.
 
+mod cxx;
 pub(crate) mod hooks;
 mod imports;
 pub(crate) mod io;
@@ -1061,6 +1062,7 @@ impl Runner<'_> {
             && function.sources.contains(&crate::loader::NameSource::Plt)
             && let Some(name) = &function.name
         {
+            let name = super::cxx::imported_name(self.image, name).unwrap_or(name);
             for (&address, imported) in &self.image.imports {
                 if imported != name {
                     continue;
@@ -1140,7 +1142,12 @@ impl Runner<'_> {
         depth: usize,
     ) -> std::result::Result<(), Stop> {
         self.return_cleanup = 0;
-        let name = self.image.imports.get(&target).map(String::as_str);
+        let name = self
+            .image
+            .imports
+            .get(&target)
+            .map(String::as_str)
+            .or_else(|| super::cxx::local_name(self.image, target));
         let key = crate::addr::format(target);
         if let Some(value) = name
             .and_then(|name| self.options.call_returns.get(name))
@@ -1155,6 +1162,18 @@ impl Runner<'_> {
             };
         }
         if let Some(name) = name {
+            if let Some(call) = super::cxx::find(name)
+                && (!matches!(call, super::cxx::Call::Unsupported) || !self.options.skip_calls)
+            {
+                return match self.cxx(call, convention, kind) {
+                    Ok(value) => {
+                        self.external_result(convention, Some(value));
+                        Ok(())
+                    }
+                    Err(Stop::Error(message)) => Err(Stop::Error(format!("{message}: {name}"))),
+                    Err(stop) => Err(stop),
+                };
+            }
             if let Some(hook) = hooks::find(name) {
                 return match self.hook(hook, convention, kind) {
                     Ok(value) => {

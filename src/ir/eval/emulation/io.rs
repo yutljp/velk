@@ -124,6 +124,9 @@ impl Runner<'_> {
                 return Err(cause.to_string());
             }
         }
+        if let Err(stop) = self.initialize_cxx() {
+            return Err(format!("C++ stream setup: {stop:?}"));
+        }
         // Stream objects are opaque tokens; only the standard streams are modeled.
         let pointer = crate::arch::pointer_bytes(self.image.isa);
         for (index, name) in ["stdin", "stdout", "stderr"].iter().enumerate() {
@@ -197,7 +200,7 @@ impl Runner<'_> {
         )))
     }
 
-    fn emit(&mut self, stream: usize, bytes: &[u8]) -> Result<(), Stop> {
+    pub(super) fn emit(&mut self, stream: usize, bytes: &[u8]) -> Result<(), Stop> {
         let output = if stream == 1 {
             &mut self.stdout
         } else {

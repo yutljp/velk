@@ -1,5 +1,6 @@
 //! Symbolic evaluation of lifted expressions using the shared SMT translation.
 
+mod cxx;
 mod files;
 mod libc;
 mod memory;
@@ -366,6 +367,12 @@ impl State {
             state.initialize_argument(binary, 1, Term::constant(base), stack)?;
         }
         state.initialize_streams(binary)?;
+        if let Err(failure) = state.initialize_cxx(binary) {
+            return match failure {
+                Failure::Error(error) => Err(error),
+                _ => Err(invalid("C++ stream setup requires concrete addresses")),
+            };
+        }
         Ok(state)
     }
 
@@ -1399,13 +1406,18 @@ impl State {
             return Err(invalid("unsupported symbolic system call").into());
         }
         let image = binary.image();
-        let name = image.imports.get(&target).map(String::as_str).or_else(|| {
-            image
-                .functions
-                .get(&target)
-                .filter(|function| function.sources.contains(&crate::loader::NameSource::Plt))
-                .and_then(|function| function.name.as_deref())
-        });
+        let name = image
+            .imports
+            .get(&target)
+            .map(String::as_str)
+            .or_else(|| super::cxx::local_name(image, target))
+            .or_else(|| {
+                image
+                    .functions
+                    .get(&target)
+                    .filter(|function| function.sources.contains(&crate::loader::NameSource::Plt))
+                    .and_then(|function| function.name.as_deref())
+            });
         let identification = if name.is_none() && !until.contains(&target) {
             binary.symbolic_identifications()?.get(&target)
         } else {
@@ -1423,6 +1435,7 @@ impl State {
                 && super::emulation::hooks::find(&first.name).is_some())
             .then_some(first)
         });
+        let name = name.map(|display| super::cxx::imported_name(image, display).unwrap_or(display));
         let name = name.or_else(|| candidate.map(|candidate| candidate.name.as_str()));
         if let Some(name) = name {
             if let Some(candidate) = candidate {
@@ -1441,7 +1454,17 @@ impl State {
                 }
             }
             self.model_call_kind = kind;
-            let result = self.libc(binary, name, convention)?;
+            let result = if let Some(call) = super::cxx::find(name) {
+                match self.cxx(binary, call, convention) {
+                    Ok(value) => value,
+                    Err(Failure::Error(error)) => {
+                        return Err(invalid(format!("{error}: {name}")).into());
+                    }
+                    Err(failure) => return Err(failure),
+                }
+            } else {
+                self.libc(binary, name, convention)?
+            };
             let result = if self.isa == Isa::I386 {
                 self.low(&result, 32)?
             } else {
