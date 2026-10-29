@@ -2,7 +2,7 @@
 
 mod memory;
 pub(crate) mod tls;
-pub(crate) use memory::{HEAP_SIZE, Memory};
+pub(crate) use memory::{Access, HEAP_SIZE, Memory};
 
 use std::collections::BTreeMap;
 use std::time::Instant;
@@ -155,7 +155,7 @@ pub struct ReadResult {
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 #[serde(default, rename_all = "camelCase", deny_unknown_fields)]
 pub struct Options {
-    /// Base of a dedicated 4 KiB thread-local mapping; chosen automatically when absent.
+    /// Base of thread-local memory: 8 KiB for Windows x86, otherwise 4 KiB.
     pub tls_base: Option<Word>,
     /// Fixed Unix time in seconds for `time()`; default zero.
     pub time: Option<crate::emulation::Word>,
@@ -167,6 +167,8 @@ pub struct Options {
     pub stdin_descriptors: Vec<u32>,
     /// Explicit virtual paths and file bytes; no host files are opened.
     pub files: BTreeMap<String, Vec<u8>>,
+    /// Windows process state; used only for x86-64 and i386 PE images.
+    pub windows: WindowsOptions,
     /// Main arguments, including argv[0]; supplies argc and a NUL-terminated argv.
     pub argv: Option<Vec<String>>,
     /// Memory ranges to inspect after execution.
@@ -213,6 +215,28 @@ pub struct AntiAnalysisOptions {
     pub tracer_process_id: u32,
 }
 
+/// Deterministic Windows process parameters, without host environment access.
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[serde(default, rename_all = "camelCase", deny_unknown_fields)]
+pub struct WindowsOptions {
+    /// Full command line, including the executable name.
+    pub command_line: String,
+    /// Image path recorded in the process parameters and loader list.
+    pub image_path: String,
+    /// Environment variables, encoded as a sorted UTF-16 environment block.
+    pub environment: BTreeMap<String, String>,
+}
+
+impl Default for WindowsOptions {
+    fn default() -> Self {
+        Self {
+            command_line: "program.exe".to_owned(),
+            image_path: "C:\\program.exe".to_owned(),
+            environment: BTreeMap::new(),
+        }
+    }
+}
+
 impl Default for AntiAnalysisOptions {
     fn default() -> Self {
         Self {
@@ -236,6 +260,7 @@ impl Default for Options {
             stdin: None,
             stdin_descriptors: Vec::new(),
             files: BTreeMap::new(),
+            windows: WindowsOptions::default(),
             argv: None,
             reads: Vec::new(),
             end: Vec::new(),
@@ -262,6 +287,16 @@ pub struct MemoryChange {
     pub bytes: Vec<u8>,
     /// Hexadecimal dump of the final bytes.
     pub hex: String,
+}
+
+/// A Windows API invocation, including calls made through an export address.
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ApiCall {
+    /// DLL-qualified API name.
+    pub name: String,
+    /// Scalar arguments in hexadecimal; empty for APIs with unknown signatures.
+    pub arguments: Vec<String>,
 }
 
 /// Final state, also returned when execution stops on an error or a limit.
@@ -300,6 +335,8 @@ pub struct Report {
     pub stack_pointer: String,
     /// Anti-analysis checks answered during execution.
     pub anti_analysis: Vec<String>,
+    /// Windows API calls in execution order.
+    pub api_calls: Vec<ApiCall>,
 }
 
 pub(crate) fn invalid(message: impl Into<String>) -> Error {

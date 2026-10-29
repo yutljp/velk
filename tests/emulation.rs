@@ -15,6 +15,8 @@ mod runtime;
 mod segments;
 #[path = "emulation/streams.rs"]
 mod streams;
+#[path = "emulation/windows.rs"]
+mod windows;
 
 use std::fs;
 use std::path::PathBuf;

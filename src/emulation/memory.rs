@@ -1,7 +1,7 @@
 //! Sparse memory backed by loaded sections and bounded zero-filled areas.
 
 use std::cell::RefCell;
-use std::collections::{BTreeMap, HashMap};
+use std::collections::{BTreeMap, BTreeSet, HashMap};
 
 use crate::loader::Image;
 
@@ -12,6 +12,20 @@ pub(crate) const HEAP_SIZE: u64 = 1 << 24;
 const TLS_SIZE: u64 = 0x1000;
 const STACK_SIZE: u64 = 1 << 20;
 
+struct Region {
+    start: u64,
+    end: u64,
+    read_only: bool,
+    pages: Vec<Access>,
+}
+
+#[derive(Clone, Copy)]
+pub(crate) enum Access {
+    None,
+    Read,
+    ReadWrite,
+}
+
 pub(crate) struct Memory<'a> {
     image: &'a Image,
     pub(crate) heap_base: u64,
@@ -21,6 +35,9 @@ pub(crate) struct Memory<'a> {
     stack_start: u64,
     stack_end: u64,
     pub(crate) fault: RefCell<Option<String>>,
+    regions: Vec<Region>,
+    watched_reads: Vec<(u64, u64, String)>,
+    pub(crate) observed_reads: RefCell<BTreeSet<String>>,
 }
 
 impl<'a> Memory<'a> {
@@ -29,6 +46,15 @@ impl<'a> Memory<'a> {
     }
 
     pub(crate) fn with_tls(image: &'a Image, base: Option<u64>) -> Result<Self, String> {
+        let tls_size = if image.format == crate::loader::Format::Pe
+            && matches!(
+                image.isa,
+                crate::loader::Isa::X86_64 | crate::loader::Isa::I386
+            ) {
+            0x2000
+        } else {
+            TLS_SIZE
+        };
         let stack_end = crate::ir::eval::stack_top(image.isa) + 0x1000;
         let stack_start = stack_end - STACK_SIZE;
         let mut ranges = vec![(stack_start, stack_end)];
@@ -72,7 +98,7 @@ impl<'a> Memory<'a> {
         ranges.sort_unstable();
         let mut tls_base = base.unwrap_or(0x2000_0000);
         for &(start, end) in &ranges {
-            let Some(tls_end) = tls_base.checked_add(TLS_SIZE) else {
+            let Some(tls_end) = tls_base.checked_add(tls_size) else {
                 return Err("thread-local range overflows".to_owned());
             };
             if start < tls_end && end > tls_base {
@@ -85,7 +111,7 @@ impl<'a> Memory<'a> {
                 tls_base = next & !(TLS_SIZE - 1);
             }
         }
-        let Some(tls_end) = tls_base.checked_add(TLS_SIZE).filter(|end| *end <= limit) else {
+        let Some(tls_end) = tls_base.checked_add(tls_size).filter(|end| *end <= limit) else {
             return Err("thread-local range exceeds the address space".to_owned());
         };
         Ok(Self {
@@ -97,7 +123,119 @@ impl<'a> Memory<'a> {
             stack_start,
             stack_end,
             fault: RefCell::new(None),
+            regions: Vec::new(),
+            watched_reads: Vec::new(),
+            observed_reads: RefCell::new(BTreeSet::new()),
         })
+    }
+
+    pub(crate) fn map(&mut self, address: u64, size: u64, read_only: bool) -> Result<(), String> {
+        let limit = if crate::arch::pointer_bytes(self.image.isa) == 4 {
+            1u64 << 32
+        } else {
+            self.stack_start
+        };
+        let Some(end) = address.checked_add(size).filter(|end| *end <= limit) else {
+            return Err(format!(
+                "mapping at 0x{address:x} exceeds the address space"
+            ));
+        };
+        if size == 0 || size > HEAP_SIZE {
+            return Err(format!("invalid mapping size at 0x{address:x}: {size}"));
+        }
+        if self
+            .ranges()
+            .iter()
+            .any(|&(start, limit)| address < limit && end > start)
+        {
+            return Err(format!("mapping at 0x{address:x} overlaps mapped memory"));
+        }
+        self.regions.push(Region {
+            start: address,
+            end,
+            read_only,
+            pages: Vec::new(),
+        });
+        Ok(())
+    }
+
+    pub(crate) fn map_zeroed(&mut self, size: u64, read_only: bool) -> Result<u64, String> {
+        let mut ranges = self.ranges();
+        ranges.sort_unstable();
+        let mut address = 0x3000_0000u64;
+        for (start, end) in ranges {
+            if address < end && address.saturating_add(size) > start {
+                let Some(next) = end.checked_add(0xffff) else {
+                    return Err("no address range is available for a mapping".to_owned());
+                };
+                address = next & !0xffff;
+            }
+        }
+        match self.map(address, size, read_only) {
+            Ok(()) => Ok(address),
+            Err(error) => Err(error),
+        }
+    }
+
+    pub(crate) fn protect_pages(
+        &mut self,
+        address: u64,
+        size: u64,
+        access: Access,
+    ) -> Result<(), String> {
+        let Some(end) = address.checked_add(size) else {
+            return Err(format!("protection range overflows at 0x{address:x}"));
+        };
+        let Some(region) = self.regions.iter_mut().find(|region| {
+            region.start <= address && end <= region.end && region.start & 0xfff == 0
+        }) else {
+            return Err(format!("protection range at 0x{address:x} is not mapped"));
+        };
+        if size == 0 || address & 0xfff != 0 || end & 0xfff != 0 {
+            return Err(format!(
+                "protection range at 0x{address:x} is not page aligned"
+            ));
+        }
+        if region.pages.is_empty() {
+            region.pages.resize(
+                ((region.end - region.start).div_ceil(0x1000)) as usize,
+                if region.read_only {
+                    Access::Read
+                } else {
+                    Access::ReadWrite
+                },
+            );
+        }
+        let first = ((address - region.start) / 0x1000) as usize;
+        let last = ((end - region.start) / 0x1000) as usize;
+        region.pages[first..last].fill(access);
+        Ok(())
+    }
+
+    pub(crate) fn unmap(&mut self, address: u64) {
+        self.regions.retain(|region| region.start != address);
+    }
+
+    fn ranges(&self) -> Vec<(u64, u64)> {
+        let mut ranges = vec![
+            (self.heap_base, self.heap_end),
+            (self.tls_base, self.tls_end),
+            (self.stack_start, self.stack_end),
+        ];
+        for section in Self::mappings(self.image) {
+            if section.loaded {
+                ranges.push((section.vaddr, section.vaddr.saturating_add(section.size)));
+            }
+        }
+        for region in &self.regions {
+            ranges.push((region.start, region.end));
+        }
+        ranges
+    }
+
+    pub(crate) fn watch_read(&mut self, address: u64, size: u64, name: &str) {
+        self.watched_reads
+            .push((address, address.saturating_add(size), name.to_owned()));
     }
 
     fn zero_area(&self, address: u64) -> bool {
@@ -125,8 +263,42 @@ impl<'a> Memory<'a> {
             self.fail(format!("memory range overflows at 0x{address:x}"));
             return false;
         };
+        if !write && size != 0 {
+            for (start, limit, name) in &self.watched_reads {
+                if address < *limit && end > *start {
+                    self.observed_reads.borrow_mut().insert(name.clone());
+                }
+            }
+        }
         let mut at = address;
         while at < end {
+            if let Some(region) = self
+                .regions
+                .iter()
+                .find(|region| region.start <= at && at < region.end)
+            {
+                let access = region.pages.get(((at - region.start) / 0x1000) as usize);
+                let permitted = match access {
+                    Some(Access::None) => false,
+                    Some(Access::Read) => !write,
+                    Some(Access::ReadWrite) => true,
+                    None => !write || !region.read_only,
+                };
+                if !permitted {
+                    self.fail(format!(
+                        "{} protected mapping at 0x{at:x}",
+                        if write { "write to" } else { "read from" }
+                    ));
+                    return false;
+                }
+                at = if region.pages.is_empty() {
+                    end.min(region.end)
+                } else {
+                    end.min(region.end)
+                        .min((at & !0xfff).saturating_add(0x1000))
+                };
+                continue;
+            }
             if self.zero_area(at) {
                 let limit = if (self.heap_base..self.heap_end).contains(&at) {
                     self.heap_end
@@ -177,7 +349,12 @@ impl<'a> Memory<'a> {
         if !self.check(address, 1, /* write */ false) {
             return 0;
         }
-        if self.zero_area(address) {
+        if self.zero_area(address)
+            || self
+                .regions
+                .iter()
+                .any(|region| region.start <= address && address < region.end)
+        {
             return 0;
         }
         let Some(section) = self.mapping_at(address) else {
@@ -265,6 +442,37 @@ mod tests {
         assert_eq!(memory.byte(memory.heap_base), 0);
         assert!(memory.check(memory.heap_base, HEAP_SIZE, /* write */ true));
         assert!(!memory.check(address, 1, /* write */ true));
+    }
+
+    #[test]
+    fn page_protections_check_every_page_and_unmap_the_reservation() {
+        let image = Image::from_code(crate::loader::Isa::I386, 0x1000, vec![0xc3]);
+        let mut memory = Memory::new(&image).expect("image outside stack and heap");
+        let base = memory
+            .map_zeroed(0x3000, false)
+            .expect("free virtual memory");
+        memory
+            .protect_pages(base + 0x1000, 0x1000, Access::Read)
+            .unwrap();
+        assert!(memory.check(base, 0x3000, /* write */ false));
+        assert!(!memory.check(base + 0xfff, 2, /* write */ true));
+        memory.fault.borrow_mut().take();
+        assert!(memory.check(base, 0x1000, /* write */ true));
+        assert!(memory.check(base + 0x2000, 0x1000, /* write */ true));
+        memory
+            .protect_pages(base + 0x2000, 0x1000, Access::None)
+            .unwrap();
+        assert!(!memory.check(base, 0x3000, /* write */ false));
+        memory.fault.borrow_mut().take();
+        assert!(memory.protect_pages(base, u64::MAX, Access::Read).is_err());
+        assert!(
+            memory
+                .protect_pages(base + 1, 0x1000, Access::Read)
+                .is_err()
+        );
+        memory.unmap(base);
+        assert!(!memory.check(base, 1, /* write */ false));
+        assert!(memory.map(base, 0x3000, false).is_ok());
     }
 }
 

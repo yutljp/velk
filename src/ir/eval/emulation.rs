@@ -8,6 +8,7 @@ mod reads;
 mod strings;
 pub(crate) use strings::recover_strings;
 mod values;
+mod windows;
 
 use std::collections::{BTreeMap, HashMap, HashSet};
 use std::time::{Duration, Instant};
@@ -51,6 +52,8 @@ struct Runner<'a> {
     allocations: HashSet<u64>,
     code: HashMap<u64, Vec<Block>>,
     recovery: Option<strings::Recovery>,
+    windows: Option<windows::Process>,
+    api_calls: Vec<crate::emulation::ApiCall>,
 }
 
 #[derive(Debug)]
@@ -149,9 +152,6 @@ fn run_with_recovery(
     if let Err(error) = initialize_arguments(&mut machine, image, start, options, stack, width) {
         return Err(error);
     }
-    if let Err(error) = initialize_memory(&mut machine, options) {
-        return Err(error);
-    }
     let mut ends = HashSet::new();
     for end in &options.end {
         match end.value() {
@@ -173,6 +173,22 @@ fn run_with_recovery(
     for &address in machine.memory.keys() {
         if (heap_base..heap_base + HEAP_SIZE).contains(&address) {
             heap_next = heap_next.max(address + 1);
+        }
+    }
+    for write in &options.memory {
+        let address = match write.address.value() {
+            Ok(address) => address,
+            Err(error) => return Err(error),
+        };
+        let size = write
+            .bytes
+            .as_ref()
+            .map_or(u64::from(write.width.unwrap_or(0)), |bytes| {
+                bytes.len() as u64
+            });
+        let end = address.saturating_add(size);
+        if size != 0 && address < heap_base + HEAP_SIZE && end > heap_base {
+            heap_next = heap_next.max(end.min(heap_base + HEAP_SIZE));
         }
     }
     let mut files = options.files.clone();
@@ -223,7 +239,15 @@ fn run_with_recovery(
         allocations: HashSet::new(),
         code: HashMap::new(),
         recovery,
+        windows: None,
+        api_calls: Vec::new(),
     };
+    if let Err(error) = runner.initialize_windows() {
+        return Err(invalid(error));
+    }
+    if let Err(error) = initialize_memory(&mut runner.machine, options) {
+        return Err(error);
+    }
     if let Err(error) = runner.initialize_io(start, stack) {
         return Err(invalid(error));
     }
@@ -247,7 +271,10 @@ fn run_with_recovery(
             runner.machine.store(stack, 0, width);
         }
     }
-    let stopped = runner.execute(start, 0);
+    let stopped = match runner.windows_callbacks() {
+        Ok(()) => runner.execute(start, 0),
+        Err(stop) => stop,
+    };
     Ok(runner.report(stopped, &before, stack, &physical))
 }
 
@@ -283,7 +310,7 @@ fn initialize_registers(
         Ok(initial) => initial,
         Err(error) => return Err(invalid(error)),
     };
-    if let Some(register) = crate::emulation::tls::register(image.isa) {
+    if let Some(register) = crate::emulation::tls::register(image) {
         machine.registers.insert(register, memory.tls_base);
     }
     machine.memory.extend(initial);
@@ -416,6 +443,15 @@ impl Runner<'_> {
         stack: u64,
         physical: &[u16],
     ) -> (Report, Option<strings::Recovery>) {
+        let observed = self
+            .machine
+            .strict_memory
+            .as_ref()
+            .expect("strict memory")
+            .observed_reads
+            .borrow()
+            .clone();
+        self.anti_analysis.extend(observed);
         let (mut reason, mut error) = match stopped {
             Stop::Return => ("return", None),
             Stop::Exit => ("exit", None),
@@ -510,6 +546,7 @@ impl Runner<'_> {
             heap_size: HEAP_SIZE,
             stack_pointer: crate::addr::format(stack),
             anti_analysis: self.anti_analysis,
+            api_calls: self.api_calls,
         };
         (report, self.recovery)
     }
@@ -696,6 +733,20 @@ impl Runner<'_> {
                         if self.ends.contains(&target) {
                             self.address = target;
                             return Stop::End;
+                        }
+                        if let Some(result) = self.windows_call(target, None, None, CallKind::Tail)
+                        {
+                            if let Err(stop) = result {
+                                return stop;
+                            }
+                            let value = Expr::reg(
+                                crate::arch::RETURN,
+                                crate::arch::pointer_bytes(self.image.isa) * 8,
+                            );
+                            return match self.return_statement(&value, depth) {
+                                Err(stop) => stop,
+                                Ok(_) => unreachable!("a return statement stops execution"),
+                            };
                         }
                         if self.image.isa == Isa::Arm32 {
                             let imported = match self.imported_target(target) {
@@ -1123,6 +1174,7 @@ impl Runner<'_> {
             }
             return Ok(());
         }
+        let original = target;
         let target = match target {
             Some(target) => target,
             None => {
@@ -1149,7 +1201,11 @@ impl Runner<'_> {
         if depth == 0 {
             self.recover_inline(target, convention, kind);
         }
-        if let Err(stop) = self.call(target, convention, kind, depth) {
+        let result = match self.windows_call(target, original, through, kind) {
+            Some(result) => result,
+            None => self.call(target, convention, kind, depth),
+        };
+        if let Err(stop) = result {
             return Err(stop);
         }
         let mut values = Vec::new();

@@ -50,7 +50,7 @@ the complete JSON report as text. Use `velk_run_script` to select fields or slic
 large dumps. `velk_read_api` with `topic: "emulation"` describes every option and
 result field.
 
-Each execution starts with a separate 4 KiB thread-local mapping. `tlsBase`
+ELF and Mach-O execution starts with a separate 4 KiB thread-local mapping. `tlsBase`
 overrides its automatically selected base; overlapping or overflowing ranges are
 rejected. The x86-64 FS base, i386 GS base, and AArch64 `tpidr_el0` point there.
 The fixed stack guard is `0x6a09e667bb67ae00` (low 32 bits on i386); `canary`
@@ -136,8 +136,9 @@ an error report. The read budget is independent of the execution step limit.
   arguments and Go arguments require explicit register/memory setup.
   Initial memory writes run last, so they can replace stack argument bytes.
 - Loaded sections retain their virtual addresses and write protection. Sections
-  without file data read as zero. Executable sections cannot be modified. No
-  dynamic linker, TLS setup or operating-system state is supplied.
+  without file data read as zero. Executable sections cannot be modified.
+  Windows process setup is described below. Other images receive stack guards
+  and the library models documented here, without a runtime loader.
 - The writable stack is 1 MiB around the initial stack pointer. The writable heap
   occupies 16 MiB, starting at `0x10000000` when that range is free. If the image
   overlaps it, a free range is selected. Both areas start at zero. The report gives
@@ -200,7 +201,87 @@ the README files.
 
 Automatic string recovery does not supply stdin or execute I/O hooks. Input-dependent decoders require explicit emulation.
 
-The Windows ARM64 width fixture checks printing and scanning a 32-bit `long` with 64-bit pointers. It invokes hooks with explicit import targets; unresolved PE import thunks remain unsupported.
+The Windows ARM64 width fixture checks printing and scanning a 32-bit `long` with 64-bit pointers. It invokes hooks with explicit import targets; automatic Windows process setup is limited to x86-64 and i386.
+
+## Windows process setup
+
+x86-64 and i386 PE runs initialize an 8 KiB TEB at `tlsBase`, using GS and FS
+respectively. The PEB contains the main image base, process parameters, and loader
+lists with the main module, ntdll, kernel32, kernelbase, and imported DLLs. Modeled
+DLLs have read-only PE headers and export directories. Named IAT entries, export
+walks, `GetProcAddress` (name or modeled ordinal), `GetModuleHandleA/W`, and
+`LoadLibraryA/W` use the same addresses. Library loading resolves modeled modules
+only; it never opens a DLL on the host. Unknown APIs stop with a DLL-qualified name
+unless `callReturns` or `skipCalls` explicitly overrides the call.
+Main-module export forwarders and ordinal-only imports are unsupported.
+
+The main image's static TLS template and zero-fill are initialized before its TLS
+callbacks run with `DLL_PROCESS_ATTACH`. The callbacks run once per emulation,
+before the selected function, and their memory writes appear in the report.
+`TlsAlloc`, `TlsFree`, `TlsGetValue`, and `TlsSetValue` model 64 TEB slots.
+Additional threads and DLL initialization routines are unsupported.
+Thread and process-detach TLS callbacks are not invoked.
+
+`GetCurrentProcessId` and `GetCurrentThreadId` return 1000 and 1001. Process and
+thread pseudo-handles, `ExitProcess`, and the TEB's last-error value are modeled.
+`Sleep` adds milliseconds to the clock without waiting; `Sleep(INFINITE)` stops.
+`GetTickCount`, `GetTickCount64`, `QueryPerformanceCounter/Frequency`, and
+`GetSystemTimeAsFileTime` share the instruction clock. The performance frequency
+is 1 GHz; the `time` option sets the Unix-time origin for FILETIME.
+PEB `BeingDebugged` and `CheckRemoteDebuggerPresent` use
+`antiAnalysis.debuggerPresent`, default false. `IsDebuggerPresent` reads the current
+PEB byte, including guest writes. `NtGlobalFlag` starts at zero.
+PEB debugger-field reads and debugger/time API calls appear in `antiAnalysis`.
+
+Supply process parameters in `windows: {commandLine, imagePath, environment}`.
+Defaults are `program.exe`, `C:\\program.exe`, and an empty environment. Strings
+use UTF-16; ANSI module names and `GetCommandLineA` require ASCII. Environment
+names are case-insensitive; duplicate names and embedded NULs are rejected.
+Process metadata reserves heap space before guest allocations. Reserve explicit
+heap buffers with initial `memory` writes before passing their addresses.
+`GetCommandLineA/W`, `GetEnvironmentStringsW`, and `FreeEnvironmentStringsW`
+provide access to these parameters. The options are shared by the CLI,
+JavaScript, MCP, and `--serve`. For the fixtures built by
+`sh tools/make_windows_emulation_fixtures.sh`:
+
+```sh
+velk --emulate target/windows-emulation-fixtures/x86_64.O0.exe process_parameters --emulation-options '{"windows":{"commandLine":"program.exe sample","environment":{"NAME":"value"}}}' --json
+```
+
+`apiCalls` lists DLL-qualified names and hexadecimal scalar arguments in execution
+order. For variadic CRT functions, only fixed arguments are listed; unknown
+signatures have an empty argument list. Imported msvcrt/ucrt functions use the
+existing C library hooks and their documented limits.
+
+`GetProcessHeap` returns the process-heap handle recorded in the PEB. `HeapAlloc`,
+`HeapReAlloc`, and `HeapFree` track block sizes; zero-size allocations are supported.
+Reallocation preserves the retained bytes, `HEAP_ZERO_MEMORY` zeros the added
+bytes, and `HEAP_REALLOC_IN_PLACE_ONLY` refuses moves. Allocation failure preserves
+the old block and last error. Heap space is bounded to the existing 16 MiB area
+and is not recycled after freeing. Invalid heap handles, invalid block pointers
+and unsupported heap flags stop with an error. Heap exceptions are unsupported.
+
+`VirtualAlloc` supports `MEM_RESERVE`, `MEM_COMMIT`, and their combination, using
+4 KiB pages and 64 KiB reservation alignment. Virtual reservations have a separate
+16 MiB total limit. `VirtualFree` supports decommit and whole-reservation release
+at the original allocation address; other release addresses stop as unsupported.
+Recommitted pages are zero-filled. `VirtualProtect` changes committed pages in a
+single virtual reservation and returns the first page's previous protection.
+Read and write permissions are enforced for `PAGE_NOACCESS`, `PAGE_READONLY`,
+`PAGE_READWRITE` and their execute variants. Executing virtual-memory code,
+changing image/heap protections, output pointers within the changed region, guard
+pages and other allocation/protection flags are unsupported. Unsupported modes
+stop; they do not report a successful operation. See the contracts for
+[HeapReAlloc](https://learn.microsoft.com/en-us/windows/win32/api/heapapi/nf-heapapi-heaprealloc)
+and [VirtualAlloc](https://learn.microsoft.com/en-us/windows/win32/api/memoryapi/nf-memoryapi-virtualalloc).
+String conversion, console/file, registry, and SEH APIs are not modeled.
+The Windows tests compile both architectures at `-O0` and `-O2`, check process
+state and export calls, heap contents, virtual-memory transitions and rejected
+accesses, and compare reports across the execution interfaces. Page alignment has
+SMT checks and concrete overflow cases. The ignored `windows_matches_wine` test
+compares process and memory fixtures' stdout (including memory checksums) and exit
+codes with Wine. It initializes a prefix and runtime directory under `target/`;
+Wine must also be able to create its server sockets.
 
 ## File streams
 

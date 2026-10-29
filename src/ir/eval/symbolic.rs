@@ -245,7 +245,7 @@ impl State {
         for &register in &physical {
             state.registers.insert(register, Term::constant(0));
         }
-        if let Some(register) = crate::emulation::tls::register(image.isa) {
+        if let Some(register) = crate::emulation::tls::register(image) {
             state
                 .registers
                 .insert(register, Term::constant(memory.tls_base));

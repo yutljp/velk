@@ -8,6 +8,7 @@ c99b592843571a9975aeaddbb3b4de9e4c14eb1cddfe75cc0b40428ebc63beb3  src/analysis/i
 c2ad1e69020a818c202168d6574bd3aa662bf7b10da60e7705cd33c8c35362d9  src/analysis/typing.rs	pub(crate) fn apply_width_types(
 7e6a214c97a5cda4a23524bb41e5ac94a66d0d40aee000aa3d41c931e2668b58  src/ir/eval/emulation/io/formatting.rs	fn signed_magnitude(
 bfaf324bc4cb783da31fbb7e9734f1d0505228fe26463bd656e8b02a8fbe8b42  src/ir/eval/emulation/strings.rs	fn stored_byte(
+af135f3ca4f9a3bb3831804430165589ad4ce7949388945f9f05ad51d1dee7f6  src/ir/eval/emulation/windows/memory.rs	fn page_range(
 5837f8cec59d7dbaf1ea4dca77f137470a684ab24a13b4bab66b146ba3030406  src/ir/eval/stdio.rs	pub(super) fn complete_elements(
 578a542e6ba9d1dead163884fc6f975edeee5517fc87482d5e8022c3b3d77f74  src/ir/eval/symbolic.rs	fn defined_binary(
 d2aa4998c07daf11277ae25e51a2bbfe897e7b9897be0d6a29c46cc7a28264ab  src/ir/eval/symbolic.rs	let mut high = if maximum {

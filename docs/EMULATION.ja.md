@@ -50,7 +50,7 @@ MCP では `velk_emulate` に `{path, start, options, arch?}` を渡します。
 `velk_run_script` を使います。`velk_read_api` の `topic: "emulation"` で
 すべてのオプションと結果の型を確認できます。
 
-実行ごとに独立した 4 KiB のスレッドローカル領域をマップします。`tlsBase` で
+ELF と Mach-O では、実行ごとに独立した 4 KiB のスレッドローカル領域をマップします。`tlsBase` で
 自動選択されるベースを上書きでき、重複やアドレスのオーバーフローは拒否します。
 x86-64 の FS ベース、i386 の GS ベース、AArch64 の `tpidr_el0` をこの領域に設定します。
 固定のスタックガードは `0x6a09e667bb67ae00`（i386 は下位 32 ビット）で、`canary`
@@ -73,8 +73,9 @@ AArch64 sysreg ビルドの TP + `0x28` です。AArch64 glibc はグローバ�
   浮動小数点、集成型、複数ワードの引数、Go の引数には明示的な設定が必要です。
   初期メモリーの書き込みは最後に行うため、スタック引数のバイトを置き換えられます。
 - 読み込んだセクションの仮想アドレスと書き込み保護を維持します。ファイルデータが
-  ない領域はゼロです。実行可能セクションは変更できません。動的リンカー、TLS、
-  OS 状態は用意しません。
+  ない領域はゼロです。実行可能セクションは変更できません。Windows のプロセス設定は
+  後述します。それ以外の形式では、スタックガードとここで説明するライブラリーモデルを
+  用意しますが、実行時ローダーは用意しません。
 - 書き込み可能なスタックは初期ポインター周辺の1 MiB、ヒープは `0x10000000`
   から16 MiBを確保します。イメージと重複する場合は空いている範囲を選びます。
   どちらもゼロで開始し、結果に `heapBase`、`heapSize`、初期 `stackPointer` を含めます。
@@ -173,7 +174,83 @@ argc と末尾がヌルポインタの argv を設定します。`arguments` や
 
 自動的な文字列復元では stdin の設定も I/O フックの実行もしません。入力に依存する復号は明示的にエミュレーションします。
 
-Windows ARM64 の幅のフィクスチャは、64ビットのポインタと32ビットの `long` の出力と走査を検査します。インポート先を明示してフックを呼びます。未解決の PE インポートサンクには対応していません。
+Windows ARM64 の幅のフィクスチャは、64ビットのポインタと32ビットの `long` の出力と走査を検査します。インポート先を明示してフックを呼びます。Windows プロセス状態の自動設定は x86-64 と i386 が対象です。
+
+## Windows プロセスの設定
+
+x86-64 と i386 の PE では `tlsBase` に 8 KiB の TEB を用意し、それぞれ GS と FS
+から参照します。PEB にはメインイメージのベース、プロセスパラメーター、メインモジュール、
+ntdll、kernel32、kernelbase、およびインポートした DLL のローダーリストを設定します。
+モデル化した DLL は読み取り専用の PE ヘッダーとエクスポートディレクトリーを持ちます。
+名前付き IAT、エクスポート表の走査、`GetProcAddress`（名前またはモデルの序数）、
+`GetModuleHandleA/W`、`LoadLibraryA/W` は同じアドレスを使います。ライブラリーのロードは
+モデル内のモジュールだけを解決し、ホストの DLL を開きません。未知の API は
+`callReturns` または `skipCalls` で明示的に上書きしなければ、DLL 名を含む診断で停止します。
+メインモジュールの転送エクスポートと序数だけのインポートには未対応です。
+
+メインイメージの静的 TLS テンプレートとゼロ領域を用意してから、TLS コールバックを
+`DLL_PROCESS_ATTACH` で呼び出します。各エミュレーションで選択した関数の前に1回実行し、
+そのメモリー変更を結果に含めます。`TlsAlloc`、`TlsFree`、`TlsGetValue`、`TlsSetValue`
+は TEB の64スロットを扱います。追加のスレッドと DLL 初期化ルーチンには未対応です。
+スレッドとプロセス終了時の TLS コールバックは呼び出しません。
+
+`GetCurrentProcessId` と `GetCurrentThreadId` は1000と1001を返します。プロセスとスレッドの
+疑似ハンドル、`ExitProcess`、TEB の最終エラー値をモデル化しています。`Sleep` は実際には
+待機せず、時計を指定したミリ秒だけ進めます。`Sleep(INFINITE)` は停止します。
+`GetTickCount`、`GetTickCount64`、`QueryPerformanceCounter/Frequency`、
+`GetSystemTimeAsFileTime` は命令数に基づく同じ時計を使います。周波数は1 GHzで、
+`time` オプションが FILETIME の Unix 時刻の基準を設定します。
+`CheckRemoteDebuggerPresent` と PEB の `BeingDebugged` は `antiAnalysis.debuggerPresent`
+を使い、既定値は false です。`IsDebuggerPresent` はプログラムによる書き換えも含め、
+現在の PEB の値を読みます。`NtGlobalFlag` はゼロで開始します。PEB のデバッグ情報の
+読み取りとデバッガー・時刻 API の呼び出しは `antiAnalysis` に記録します。
+
+`windows: {commandLine, imagePath, environment}` でプロセスパラメーターを設定します。
+既定値は `program.exe`、`C:\\program.exe`、空の環境変数です。文字列は UTF-16 を使い、
+ANSI のモジュール名と `GetCommandLineA` は ASCII に限定します。環境変数名は大文字と
+小文字を区別せず、重複する名前と埋め込まれた NUL は拒否します。`GetCommandLineA/W`、
+`GetEnvironmentStringsW`、`FreeEnvironmentStringsW` から参照できます。CLI、JavaScript、
+MCP、`--serve` で同じオプションを使います。
+プロセスの管理情報はプログラムの割り当てより前にヒープ領域を使います。ヒープ上の
+バッファーのアドレスを引数で渡す場合は、初期 `memory` 書き込みでその領域を確保してください。
+`sh tools/make_windows_emulation_fixtures.sh` で構築したフィクスチャの例です。
+
+```sh
+velk --emulate target/windows-emulation-fixtures/x86_64.O0.exe process_parameters --emulation-options '{"windows":{"commandLine":"program.exe sample","environment":{"NAME":"value"}}}' --json
+```
+
+`apiCalls` は DLL 名付きの API 名と16進数のスカラー引数を実行順に記録します。
+CRT の可変引数関数は固定引数だけを記録し、シグネチャが不明な関数の引数配列は空です。
+インポートした msvcrt/ucrt の関数は、既存の C ライブラリーフックとその制限に従います。
+
+`GetProcessHeap` は PEB に記録したプロセスヒープのハンドルを返します。`HeapAlloc`、
+`HeapReAlloc`、`HeapFree` はブロックのサイズを管理し、サイズ 0 の割り当ても扱います。
+再割り当てでは保持するバイトを保存し、`HEAP_ZERO_MEMORY` は追加部分をゼロにします。
+`HEAP_REALLOC_IN_PLACE_ONLY` は移動を拒否します。割り当て失敗時は元のブロックと
+最終エラー値を保持します。既存の 16 MiB のヒープ領域を使い、解放した領域は再利用しません。
+不正なヒープハンドル、ブロックポインター、未対応のフラグではエラーで停止します。
+ヒープの例外は未対応です。
+
+`VirtualAlloc` は `MEM_RESERVE`、`MEM_COMMIT` とその組み合わせに対応し、ページは
+4 KiB、予約開始アドレスのアラインメントは 64 KiB です。仮想領域の予約にはヒープと別に
+合計 16 MiB の上限があります。`VirtualFree` はデコミットと元の割り当てアドレスを指定した
+予約全体の解放に対応し、別の解放アドレスでは未対応として停止します。
+再コミットしたページはゼロにします。`VirtualProtect` は一つの仮想予約内のコミット済み
+ページの保護を変更し、最初のページの以前の保護値を返します。`PAGE_NOACCESS`、
+`PAGE_READONLY`、`PAGE_READWRITE` と各実行属性付きの値について読み書きの権限を
+検査します。仮想領域のコード実行、イメージやヒープの保護変更、変更領域内の出力ポインター、
+ガードページ、その他の割り当て・保護フラグは未対応で、成功を返さず停止します。
+仕様は [HeapReAlloc](https://learn.microsoft.com/en-us/windows/win32/api/heapapi/nf-heapapi-heaprealloc)
+と [VirtualAlloc](https://learn.microsoft.com/en-us/windows/win32/api/memoryapi/nf-memoryapi-virtualalloc) を参照してください。
+文字列変換、コンソール・ファイル、レジストリー、SEH API は未実装です。
+
+テストは両アーキテクチャを `-O0` と `-O2` でコンパイルし、プロセス状態、エクスポート
+経由の呼び出し、ヒープの内容、仮想メモリーの状態遷移、不正アクセスの拒否、および
+各実行インターフェースのレポートを検査します。ページの丸めには SMT 検査と具体的な
+オーバーフローのテストがあります。無視指定の `windows_matches_wine` テストは、
+プロセスとメモリーのフィクスチャの標準出力（メモリーのチェックサムを含む）と終了コードを
+Wine と比較します。`target/` 以下にプレフィックスと実行時ディレクトリーを初期化します。
+Wine のサーバーソケットも作成できる環境が必要です。
 
 C++ ストリームのモデルは、64 ビットの ELF と Mach-O を対象に、libstdc++ と libc++ の
 マングル名を認識します。`std::cout` への C 文字列、`std::string`、文字、十進整数、

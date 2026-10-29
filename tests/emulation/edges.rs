@@ -483,10 +483,10 @@ fn published_emulation_examples_execute() {
         let text =
             std::fs::read_to_string(common::root().join(document)).expect("published document");
         let mut count = 0;
-        for line in text
-            .lines()
-            .filter(|line| line.starts_with("velk --emulate "))
-        {
+        for line in text.lines().filter(|line| {
+            line.starts_with("velk --emulate app.elf ")
+                || line.starts_with("velk --emulate path/to/binary ")
+        }) {
             let (command, tail) = line
                 .split_once("--emulation-options '")
                 .expect("documented CLI options");

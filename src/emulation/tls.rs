@@ -3,8 +3,15 @@
 use crate::emulation::{Memory, Word};
 use crate::loader::{Format, Image, Isa};
 
-pub(crate) fn register(isa: Isa) -> Option<u16> {
-    match isa {
+pub(crate) fn register(image: &Image) -> Option<u16> {
+    if image.format == Format::Pe {
+        match image.isa {
+            Isa::X86_64 => return Some(crate::arch::x86::GS_BASE),
+            Isa::I386 => return Some(crate::arch::x86::FS_BASE),
+            _ => {}
+        }
+    }
+    match image.isa {
         Isa::X86_64 => Some(crate::arch::x86::FS_BASE),
         Isa::I386 => Some(crate::arch::x86::GS_BASE),
         Isa::AArch64 => Some(crate::arch::aarch64::TPIDR_EL0),
@@ -26,6 +33,17 @@ pub(crate) fn initial(
     };
     let width = crate::arch::pointer_bytes(image.isa);
     let mut words = Vec::new();
+    if image.format == Format::Pe && matches!(image.isa, Isa::X86_64 | Isa::I386) {
+        let offset = if width == 8 { 0x30 } else { 0x18 };
+        let mut bytes = Vec::new();
+        for index in 0..width {
+            bytes.push((
+                memory.tls_base + offset + u64::from(index),
+                (memory.tls_base >> (index * 8)) as u8,
+            ));
+        }
+        return Ok(bytes);
+    }
     match image.isa {
         Isa::X86_64 => {
             words.push((memory.tls_base, memory.tls_base));

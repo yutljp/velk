@@ -1,7 +1,7 @@
 /** Use strings for values above 2^53 - 1. Addresses are virtual addresses. */
 type EmulationWord = number | string;
 interface EmulationOptions {
-  /** Dedicated 4 KiB thread-local mapping; chosen automatically by default. */
+  /** Thread-local mapping: 8 KiB for x86 Windows PE, otherwise 4 KiB. Chosen automatically. */
   tlsBase?: number | string;
   /** Stack guard, truncated to pointer width; default "0x6a09e667bb67ae00". */
   /** Fixed Unix time in seconds; default zero. */
@@ -14,6 +14,15 @@ interface EmulationOptions {
   /** Virtual path-to-byte map; every opened path needs an entry. No host file access.
    * Modes r/w/a/r+ and b variants preserve bytes without text translation. */
   files?: Record<string, number[]>;
+  /** Process parameters for x86-64/i386 PE emulation; no host environment access. */
+  windows?: {
+    /** Full command line including the executable name; default "program.exe". */
+    commandLine?: string;
+    /** Default "C:\\program.exe". */
+    imagePath?: string;
+    /** Case-insensitive names; defaults to an empty environment. */
+    environment?: Record<string, string>;
+  };
   /** Main arguments including argv[0]; mutually exclusive with arguments. */
   argv?: string[];
   reads?: EmulationRead[];
@@ -65,6 +74,9 @@ interface EmulationReport {
   heapSize: number;
   stackPointer: string;
   antiAnalysis: string[];
+  /** DLL-qualified Windows calls in order, with hexadecimal scalar arguments.
+   * Variadic CRT calls list their fixed arguments. Unknown signatures have no arguments. */
+  apiCalls: {name: string; arguments: string[]}[];
 }
 
 /** Read mapped memory after execution; omit length to stop before NUL. */

@@ -58,6 +58,11 @@ Automatic string recovery checks known-bit extraction into stored bytes against
 symbolic inputs for each byte position. Memory mapping and decoder control flow
 are covered by execution tests, not by that bit-vector check.
 
+Windows virtual-memory page alignment has bit-vector checks for rounding starts
+down and ends up, with a negative control for missing the end adjustment. Concrete
+cases compare the checked helper with 128-bit arithmetic, including overflow.
+These checks do not prove the heap allocator or Windows API state transitions.
+
 The [inventory](../tests/smt_inventory.tsv) records grouped rewrite
 families, source locations, side conditions, applicable widths and current
 coverage. Rows distinguish symbolic template or instance checks, open or
