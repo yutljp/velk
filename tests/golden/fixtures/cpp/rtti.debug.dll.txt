@@ -1179,13 +1179,13 @@ fn ??_GMultiple@@UEAAPEAXI@Z @ 0x180001600 (size 35)
 -- decompile
 /* velk pseudo-C: ??_GVirtual@@UEAAPEAXI@Z @ 0x180001630 */
 void *___GVirtual__UEAAPEAXI_Z(struct Virtual *this, int should_call_delete) {
-    int64_t v1 = (uintptr_t)((uint8_t *)this - 0x18);
+    void *v1 = (uint8_t *)this - 0x18;
     ___DVirtual__QEAAXXZ();
     if ((should_call_delete & 0x1) == 0) {
-        return (void *)v1;
+        return v1;
     }
     __3_YAXPEAX_K_Z();
-    return (void *)v1;
+    return v1;
 }
 -- signature
 void * (struct Virtual * this, int should_call_delete)

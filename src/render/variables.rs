@@ -39,23 +39,30 @@ pub(super) fn call_pointer_types(ir: &mut FunctionIr, symbols: &super::Symbols) 
             let parameters: Option<Vec<&CType>> = match ir.callee_signatures.get(target) {
                 Some(signature) => Some(signature.params.iter().map(|(_, ty)| ty).collect()),
                 None => symbols
-                    .original_or_printed_function_name(*target)
-                    .and_then(|name| {
-                        let name = super::sanitize(name);
+                    .function_parameters
+                    .get(target)
+                    .map(|types| types.iter().collect())
+                    .or_else(|| {
                         symbols
-                            .library_prototypes
-                            .get(&name)
-                            .or_else(|| {
-                                crate::analysis::prototypes::of(
-                                    &name,
-                                    symbols.target_format == Some(crate::loader::Format::MachO),
-                                )
+                            .original_or_printed_function_name(*target)
+                            .and_then(|name| {
+                                let name = super::sanitize(name);
+                                symbols
+                                    .library_prototypes
+                                    .get(&name)
+                                    .or_else(|| {
+                                        crate::analysis::prototypes::of(
+                                            &name,
+                                            symbols.target_format
+                                                == Some(crate::loader::Format::MachO),
+                                        )
+                                    })
+                                    .map(|prototype| prototype.params.iter().collect())
                             })
-                            .map(|prototype| prototype.params.iter().collect())
                     }),
             };
             if let Some(parameters) = parameters
-                && parameters.len() == args.len()
+                && parameters.len() <= args.len()
             {
                 for (arg, ty) in args.iter().zip(parameters) {
                     if let Expr::Reg { index, width: 64 } = arg
@@ -67,6 +74,46 @@ pub(super) fn call_pointer_types(ir: &mut FunctionIr, symbols: &super::Symbols) 
                     } else {
                         crate::ir::visit::expr_reads(arg, &mut rejected);
                     }
+                }
+            }
+        }
+        if let Stmt::Call {
+            target: Some(target),
+            through: None,
+            ..
+        } = stmt
+            && let Some(output) = stmt.primary_call_output()
+            && output.dest.width == 64
+            && let Some(ty) = ir
+                .callee_signatures
+                .get(target)
+                .map(|signature| &signature.ret)
+                .or_else(|| symbols.function_returns.get(target))
+            && ty.is_pointer()
+        {
+            pointer_constraint(&mut types, &mut rejected, output.dest.index, ty);
+        }
+        if let Stmt::Ret {
+            value: Expr::Reg { index, width: 64 },
+        } = stmt
+            && ir.ret_type.is_pointer()
+        {
+            accepted.insert(*index);
+            pointer_constraint(&mut types, &mut rejected, *index, &ir.ret_type);
+        }
+        if let Stmt::Brif {
+            cond: crate::ir::Cond::Eq | crate::ir::Cond::Ne,
+            lhs,
+            rhs,
+            ..
+        } = stmt
+        {
+            for (value, other) in [(lhs, rhs), (rhs, lhs)] {
+                if other == &Expr::Const(0)
+                    && let Expr::Reg { index, width: 64 } = value
+                    && types.get(index).is_some_and(CType::is_pointer)
+                {
+                    accepted.insert(*index);
                 }
             }
         }

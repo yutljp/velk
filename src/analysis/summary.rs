@@ -863,6 +863,7 @@ fn compute(
         crate::loader::Isa::I386 | crate::loader::Isa::Arm32
     ) && crate::lift::pairs32::types(image, addr)
         .is_some_and(|(_, ret)| crate::lift::pairs32::wide(&ret));
+    let runtime = super::go_types::runtime(image, addr);
     let summary = Summary {
         promoted_parameters: (!image.go).then(|| {
             signature.params.iter().any(|param| crate::render::promoted_parameter(&param.ty))
@@ -874,26 +875,37 @@ fn compute(
                     })
                 })
         }),
-        arity: Some(if declared_no_arguments {
+        arity: Some(if let Some(prototype) = runtime {
+            prototype.fixed()
+        } else if declared_no_arguments {
             0
         } else {
             count(convention.arguments())
         }),
         floats: Some(count(convention.float_arguments())),
-        inputs: signature
-            .inputs
-            .map(|inputs| Registers(inputs.0 & signature.arguments.0)),
-        pointers: convention
-            .arguments()
-            .iter()
-            .enumerate()
-            .filter(|(_, register)| {
-                signature
-                    .params
+        inputs: if runtime.is_some() {
+            None
+        } else {
+            signature
+                .inputs
+                .map(|inputs| Registers(inputs.0 & signature.arguments.0))
+        },
+        pointers: runtime.map_or_else(
+            || {
+                convention
+                    .arguments()
                     .iter()
-                    .any(|param| param.index == **register && param.ty.is_pointer())
-            })
-            .fold(0, |bits, (position, _)| bits | 1 << position),
+                    .enumerate()
+                    .filter(|(_, register)| {
+                        signature
+                            .params
+                            .iter()
+                            .any(|param| param.index == **register && param.ty.is_pointer())
+                    })
+                    .fold(0, |bits, (position, _)| bits | 1 << position)
+            },
+            |_| 0,
+        ),
         noreturn: named.noreturn
             || (!can_return(&blocks)
                 && !function
@@ -916,11 +928,16 @@ fn compute(
         }),
         indirect_result: signature.indirect_result,
         // One returning on the stack leaves nothing in the return register.
-        narrow_return: !wide_return
-            && signature.stack_results.is_empty()
-            && crate::passes::widths::returns_32(&blocks, &|target| {
-                summaries(target).narrow_return
-            }),
+        narrow_return: runtime.map_or_else(
+            || {
+                !wide_return
+                    && signature.stack_results.is_empty()
+                    && crate::passes::widths::returns_32(&blocks, &|target| {
+                        summaries(target).narrow_return
+                    })
+            },
+            super::prototypes::Prototype::narrow_return,
+        ),
         clobbers: with_clobbers
             .then(|| clobbers_of(image, addr, &blocks))
             .flatten(),

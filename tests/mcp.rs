@@ -55,6 +55,45 @@ fn script_calls_have_separate_globals() {
 }
 
 #[test]
+fn go_runtime_pointer_returns_match_cli_javascript_and_mcp() {
+    for fixture in [
+        "go_probe",
+        "go_stripped",
+        "go_probe_arm64",
+        "go_stripped_arm64",
+    ] {
+        let path = common::fixtures_dir().join(fixture);
+        let code = format!("velk.open({path:?}).getFunction('runtime.convT').decompile()");
+        let outcome = velk::script::Engine::new().unwrap().run(&code, None);
+        assert!(outcome.error.is_none(), "{:?}", outcome.error);
+        assert!(
+            outcome.output.contains("void *runtime_convT("),
+            "{}",
+            outcome.output
+        );
+        assert!(
+            !outcome.output.contains("return (uintptr_t)"),
+            "{}",
+            outcome.output
+        );
+        let cli = Command::new(env!("CARGO_BIN_EXE_velk"))
+            .args(["--cache", "off", "-D"])
+            .arg(&path)
+            .arg("runtime.convT")
+            .output()
+            .unwrap();
+        assert!(cli.status.success(), "{cli:?}");
+        assert_eq!(
+            String::from_utf8(cli.stdout).unwrap().trim(),
+            outcome.output.trim()
+        );
+        let responses = exchange(&[script(1, &code)]);
+        assert_eq!(responses[0]["result"]["isError"], false);
+        assert_eq!(text(&responses[0]), outcome.output);
+    }
+}
+
+#[test]
 fn cli_api_matches_mcp() {
     let responses = exchange(&[json!({"jsonrpc":"2.0", "id":1, "method":"tools/list"})]);
     let tools = responses[0]["result"]["tools"].as_array().unwrap();

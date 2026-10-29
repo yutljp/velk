@@ -34,7 +34,8 @@ pub(super) fn optimize(
     } else if ir.isa == crate::loader::Isa::Arm32 {
         passes::frame_slots::settle(&mut ir);
     }
-    let declared_return = types.as_ref().is_some_and(|types| types.ret.is_some());
+    let declared_return = types.as_ref().is_some_and(|types| types.ret.is_some())
+        || go_types::runtime(image, ir.addr).is_some();
     let uniform_32 = passes::widths::specialize_widths(&mut ir, &|target| {
         summary::summary(image, target).narrow_return
     });
@@ -182,6 +183,7 @@ pub(super) fn optimize(
         None
     };
     typing::apply_dwarf_types(types, &mut ir);
+    go_types::apply_runtime_signature(&mut ir, image);
     if let Some((params, ret)) = inferred {
         super::pairs32::place_inferred(params, ret, &mut ir);
     } else if let Some(params) = inferred_parameters {

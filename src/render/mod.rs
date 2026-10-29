@@ -207,6 +207,14 @@ pub fn callee_names(image: &crate::loader::Image) -> Symbols {
             })
             .collect(),
         variadic_functions: crate::loader::dwarf::variadic::functions(image),
+        runtime_parameters: image
+            .functions
+            .keys()
+            .filter_map(|address| {
+                crate::analysis::go_types::runtime(image, *address)
+                    .map(|prototype| (*address, prototype.params.clone()))
+            })
+            .collect(),
         functions,
         cpp_classes: image.classes().to_vec(),
         cpp_signatures: image

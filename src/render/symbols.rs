@@ -61,6 +61,8 @@ pub struct Symbols {
     pub unused_parameters: HashMap<u64, crate::analysis::prototypes::Prototype>,
     /// Recovered parameters that require a prototype under default promotions.
     pub function_parameters: HashMap<u64, Vec<crate::ir::CType>>,
+    /// Go runtime parameter types used to infer pointer values stored on the stack.
+    pub runtime_parameters: HashMap<u64, Vec<crate::ir::CType>>,
     /// Candidate export names attached to an indirect call expression.
     pub api_hash_comments: HashMap<(u64, crate::ir::Expr), String>,
     pub user_definitions: HashSet<String>,

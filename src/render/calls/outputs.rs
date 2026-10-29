@@ -119,11 +119,18 @@ fn assigned_value(output: &CallOutput, value: String, ty: &ValueType, ctx: &Ctx<
         && let ValueType::Pointer(source) = ty
         && let Some(target) = ctx.pointer_types.get(&output.dest.index)
     {
-        return if source == target {
+        return if source == target || implicit_void_pointer_conversion(source, target) {
             value
         } else {
             format!("({target})({value})")
         };
+    }
+    if output.dest.width == 64
+        && matches!(ty, ValueType::Integer { .. })
+        && let Some(target) = ctx.pointer_types.get(&output.dest.index)
+    {
+        let value = projected(value, output.dest.width, ty);
+        return format!("({target})({value})");
     }
     let value = projected(value, output.dest.width, ty);
     if let Some(precision) = ctx.floats.get(&output.dest.index) {
@@ -151,6 +158,40 @@ fn render_assignment(output: &CallOutput, value: String, ty: &ValueType, ctx: &C
         "{} = {value};",
         ctx.register(output.dest.index, output.dest.width)
     )
+}
+
+fn implicit_void_pointer_conversion(source: &str, target: &str) -> bool {
+    let Some(source) = source.trim().strip_suffix('*').map(str::trim) else {
+        return false;
+    };
+    let Some(target) = target.trim().strip_suffix('*').map(str::trim) else {
+        return false;
+    };
+    if source.contains('*') || target.contains('*') {
+        return false;
+    }
+    let source_base: Vec<_> = source
+        .split_whitespace()
+        .filter(|word| !matches!(*word, "const" | "volatile"))
+        .collect();
+    let target_base: Vec<_> = target
+        .split_whitespace()
+        .filter(|word| !matches!(*word, "const" | "volatile"))
+        .collect();
+    if source_base != ["void"] && target_base != ["void"] {
+        return false;
+    }
+    let source_qualifiers: Vec<_> = source
+        .split_whitespace()
+        .filter(|word| matches!(*word, "const" | "volatile"))
+        .collect();
+    let target_qualifiers: Vec<_> = target
+        .split_whitespace()
+        .filter(|word| matches!(*word, "const" | "volatile"))
+        .collect();
+    source_qualifiers
+        .iter()
+        .all(|qualifier| target_qualifiers.contains(qualifier))
 }
 
 pub(in crate::render) fn captured(call: &Stmt, ctx: &Ctx<'_>) -> Option<String> {
@@ -428,4 +469,29 @@ pub(in crate::render) fn render(call: &Stmt, ctx: &Ctx<'_>) -> String {
     }
     lines.push("}".to_owned());
     lines.join("\n")
+}
+
+#[cfg(test)]
+mod tests {
+    use super::implicit_void_pointer_conversion;
+
+    #[test]
+    fn implicit_void_pointer_conversion_keeps_qualifiers_and_levels() {
+        for (source, target, expected) in [
+            ("uint8_t *", "void *", true),
+            ("const void *", "const uint8_t *", true),
+            ("void *", "const uint8_t *", true),
+            ("const void *", "uint8_t *", false),
+            ("uint8_t *", "const void *", true),
+            ("uint8_t **", "void **", false),
+            ("void *", "const uint8_t **", false),
+            ("volatile void *", "const uint8_t *", false),
+        ] {
+            assert_eq!(
+                implicit_void_pointer_conversion(source, target),
+                expected,
+                "{source} to {target}"
+            );
+        }
+    }
 }

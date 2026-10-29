@@ -776,7 +776,7 @@ int catch_one(int value) {
     return imported_value();
 /* landing pad: an exception thrown by a call at 0x201c91-0x201c96 arrives here */
 L_201c98:;
-    uint32_t *v2 = (uint32_t *)(__cxa_begin_catch((void *)velk_exception_value()));
+    uint32_t *v2 = __cxa_begin_catch((void *)velk_exception_value());
     int32_t v3 = *v2;
     __cxa_end_catch();
     return v3;
@@ -830,14 +830,14 @@ L_201cbf:;
     int32_t v2 = velk_exception_selector();
     void *v3 = (void *)velk_exception_value();
     if (v2 != 3) {
-        v4 = (uint32_t *)(__cxa_begin_catch(v3));
+        v4 = __cxa_begin_catch(v3);
         if (v2 != 2) {
             __cxa_end_catch();
             return -1;
         }
         v7 = 2;
     } else {
-        v4 = (uint32_t *)(__cxa_begin_catch(v3));
+        v4 = __cxa_begin_catch(v3);
         v7 = 1;
     }
     v7 += *v4;
@@ -914,7 +914,7 @@ L_201d11:;
     int32_t v2 = velk_exception_selector();
     void *v3 = (void *)velk_exception_value();
     if (v2 == 2) {
-        uint32_t *v4 = (uint32_t *)(__cxa_begin_catch(v3));
+        uint32_t *v4 = __cxa_begin_catch(v3);
         int32_t v10 = imported_value(*v4);
         v10 = v10;
         __cxa_end_catch();
@@ -929,7 +929,7 @@ L_201d3b:
     if (v2 != 1) {
         _Unwind_Resume(v3);
     }
-    uint32_t *v9 = (uint32_t *)(__cxa_begin_catch(v3));
+    uint32_t *v9 = __cxa_begin_catch(v3);
     int32_t v11 = *v9 + 3;
     __cxa_end_catch();
     return v11;

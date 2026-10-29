@@ -473,13 +473,15 @@ pub(super) fn expression(call: &Stmt, ctx: &Ctx<'_>) -> String {
         && let Some(parameters) = &parameters
         && parameters.len() == args.len()
     {
-        for ((text, value), ty) in args.iter_mut().zip(values.iter().flatten()).zip(parameters) {
+        let arguments = args.iter_mut().zip(values.iter().flatten()).zip(parameters);
+        for (position, ((text, value), ty)) in arguments.enumerate() {
             if recovered && let Some(precision) = precision(Some(ty)) {
                 *text = super::expr::float_operand(value, precision, ctx, 0, false);
                 continue;
             }
             if recovered
                 && ty.integer().is_some()
+                && !matches!(value, Expr::Reg { index, .. } if ctx.go_word_types.contains_key(index))
                 && (matches!(ty, crate::ir::CType::Named(name) if matches!(name.as_str(), "_Bool" | "bool"))
                     || !super::expr::print_value_at(value, ctx, 64, false).is_pointer())
             {
@@ -507,6 +509,21 @@ pub(super) fn expression(call: &Stmt, ctx: &Ctx<'_>) -> String {
                             .any(|structure| structure.name == name)
                     });
                     let printed = super::expr::print_value_at(value, ctx, 64, false);
+                    // These buffers carry a separate byte count.
+                    if ty.to_string() == "const void *"
+                        && printed.is_pointer()
+                        && printed.text.starts_with('"')
+                        && matches!(
+                            (semantic_name.as_deref().unwrap_or(&callee), position),
+                            (
+                                "runtime_printstring" | "runtime_throw" | "runtime_convTstring",
+                                0
+                            ) | ("runtime_mapaccess1_faststr", 2)
+                        )
+                    {
+                        *text = printed.text;
+                        continue;
+                    }
                     let pointer = if recovered_structure && !printed.is_pointer() {
                         "void *".to_owned()
                     } else {

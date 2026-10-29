@@ -60,6 +60,8 @@ mod frame_arrays;
 mod frame_values;
 #[path = "recompile/go_locals.rs"]
 mod go_locals;
+#[path = "recompile/go_runtime.rs"]
+mod go_runtime;
 #[path = "recompile/go_stack.rs"]
 mod go_stack;
 #[path = "recompile/go_values.rs"]

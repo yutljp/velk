@@ -198,6 +198,7 @@ fn named_place(expr: &Expr) -> Option<NamedPlace> {
 
 fn integer_or_unknown(
     ir: &FunctionIr,
+    symbols: &Symbols,
     types: &std::collections::BTreeMap<u16, CType>,
     slot_types: &mut Option<Vec<(Expr, CType)>>,
     place: &NamedPlace,
@@ -213,8 +214,8 @@ fn integer_or_unknown(
             }
         }
         NamedPlace::Slot(addr) => {
-            let slot_types =
-                slot_types.get_or_insert_with(|| crate::render::locals::stack_slot_types(ir));
+            let slot_types = slot_types
+                .get_or_insert_with(|| crate::render::locals::stack_slot_types(ir, symbols));
             slot_types
                 .iter()
                 .find(|(address, _)| address == addr)
@@ -225,6 +226,7 @@ fn integer_or_unknown(
 
 fn suggest_loop_names(
     ir: &FunctionIr,
+    symbols: &Symbols,
     nodes: &[Node],
     depth: usize,
     types: &mut Option<std::collections::BTreeMap<u16, CType>>,
@@ -237,24 +239,32 @@ fn suggest_loop_names(
             && let Some(counter) = loop_counter(init, looped)
         {
             let types = types.get_or_insert_with(|| crate::render::function::variable_types(ir));
-            if integer_or_unknown(ir, types, slot_types, &counter) {
+            if integer_or_unknown(ir, symbols, types, slot_types, &counter) {
                 roles.suggest_first(counter, ["i", "j", "k"][depth.min(2)]);
             }
         }
         match node {
             Node::While { body, .. } | Node::DoWhile { body, .. } | Node::Forever { body } => {
-                suggest_loop_names(ir, body, depth.saturating_add(1), types, slot_types, roles);
+                suggest_loop_names(
+                    ir,
+                    symbols,
+                    body,
+                    depth.saturating_add(1),
+                    types,
+                    slot_types,
+                    roles,
+                );
             }
             Node::If { then, els, .. } => {
-                suggest_loop_names(ir, then, depth, types, slot_types, roles);
-                suggest_loop_names(ir, els, depth, types, slot_types, roles);
+                suggest_loop_names(ir, symbols, then, depth, types, slot_types, roles);
+                suggest_loop_names(ir, symbols, els, depth, types, slot_types, roles);
             }
             Node::Switch { arms, default, .. } => {
                 for (_, body) in arms {
-                    suggest_loop_names(ir, body, depth, types, slot_types, roles);
+                    suggest_loop_names(ir, symbols, body, depth, types, slot_types, roles);
                 }
                 if let Some(body) = default {
-                    suggest_loop_names(ir, body, depth, types, slot_types, roles);
+                    suggest_loop_names(ir, symbols, body, depth, types, slot_types, roles);
                 }
             }
             _ => {}
@@ -384,7 +394,15 @@ pub(in crate::render) fn infer_with_nodes(
     let mut counters = Roles::default();
     let mut types = None;
     let mut slot_types = None;
-    suggest_loop_names(ir, nodes, 0, &mut types, &mut slot_types, &mut counters);
+    suggest_loop_names(
+        ir,
+        symbols,
+        nodes,
+        0,
+        &mut types,
+        &mut slot_types,
+        &mut counters,
+    );
     roles.prefer(counters);
     roles
 }

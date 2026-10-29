@@ -154,10 +154,16 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("output", type=pathlib.Path)
     parser.add_argument("--bin", default="target/release/velk")
+    parser.add_argument("--fixture", action="append", help="Measure only this fixture (repeatable)")
     args = parser.parse_args()
     args.output.mkdir(parents=True, exist_ok=True)
     fixtures = [line.split(": ", 1)[0] for line in pathlib.Path("tests/golden/casts.txt").read_text().splitlines()
                 if not line.startswith("#")]
+    if args.fixture:
+        unknown = set(args.fixture) - set(fixtures)
+        if unknown:
+            parser.error("unknown fixtures: " + ", ".join(sorted(unknown)))
+        fixtures = [fixture for fixture in fixtures if fixture in args.fixture]
     counts = collections.Counter()
     patterns = collections.Counter()
     lines = failures = total = unresolved = 0

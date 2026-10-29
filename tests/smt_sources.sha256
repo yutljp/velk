@@ -134,7 +134,8 @@ d1f44b5f551f47752db50cff2a0942fc53721352bc5a78e27f5679e6933472b1  src/render/exp
 7ec18f2b0e972056a5ca88e102e8a63ebe759949b7adc5129fded7112a76beaa  src/render/int.rs	pub(crate) fn assigned(
 194a209a48bef39faef97ae460e8181453c76302b4ebb07da31c57b748b80190  src/render/int.rs	pub(crate) fn cast(
 90722a245ac596a508f88cfe3c156f6fd9c4948cfa404fbb029b832af2037cec  src/render/int.rs	pub(crate) fn fit(
-e2574cef7109ce45addb1fc59725fe27da5dbb82e1ee1a2581fe55e11cf35979  src/render/locals.rs	pub(super) fn stack_locals_with_roles(
+6f3a8931682598e484dd63573d56e54ce7fac15b9e214718827fa398ccd3f358  src/render/locals.rs	fn slot_types(
+5f01b93a5965e1d86f534f66d7e05d78cdc2506c2632fa254613b9e01b452e64  src/render/locals.rs	pub(super) fn stack_locals_with_roles(
 757327de648c2f687f7533ed35432c1f479452d63c222fd03091e0af9b411fea  src/render/locals/copies.rs	pub(super) fn fold(
 226cb7f228570597b7fa95535758341fbf527ad3ddf9b34a733e58e84bfa9c26  src/render/locals/indexed.rs	pub(super) fn offsets_frame_pointer(
 95872dc65f90f0207f519bfa202cc1154177288c79607c6638dfa603bfb73c5d  src/render/locals/returns.rs	fn replace_returns(
@@ -164,7 +165,7 @@ ba687369e7062c9a0af2cfb0875f6bd869d8a9981ea1348b83cb509ddab6d948  src/render/str
 77e3da73f79cb91b44f56539e6cbe46b7c6d4ec891e097fa57e3dc9e5f59c862  src/render/transfers.rs	fn fill(nodes:
 d6ed2930da3050a1e796935096262bd31b5c04a40d9547f751d04af0fe1c2c7f  src/render/transfers.rs	fn filled_range<'a>(
 c6a2555762303231a86118191e713279616e150d252086d24de10427275987aa  src/render/transfers.rs	fn string_copy(
-cc59f941995ef902a11f5e86b3ac54fdc25212ecceef60912e706bd21e8fbc2f  src/render/variables.rs	pub(super) fn call_pointer_types(
+b2a04f2a497dc47a6ba1ca33730431055a77b606e1fd6067725f2ce52f5592d2  src/render/variables.rs	pub(super) fn call_pointer_types(
 9d8b67c41b4ec6446e770a9f25b123b38eada5dc6bdc637503859d0470e6fc9e  src/render/virtual_calls.rs	pub(super) fn prepare(
 bfdcdef48102d3e0d46218a589765c63baaff91dc48d6173ab2f781ceec3508d  src/render/widths.rs	pub(crate) fn narrow_variables(
 26f830b012a0705cb34935621e00778faed704abfe59a539505868ae5cd93da0  src/sigs/bytes/registers.rs	pub(super) fn alternative(

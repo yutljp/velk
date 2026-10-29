@@ -225,10 +225,11 @@ fn render_prepared(
     locals.bind_register_tops(original);
     #[cfg(test)]
     let classification = (structured_ir.clone().into_owned(), nodes.clone());
-    let split = match variables {
+    let mut split = match variables {
         Variables::Merged => folded.clone(),
         Variables::Split => super::structure::lower::split_variables(&structured_ir, &mut nodes),
     };
+    variables::call_pointer_types(&mut split, symbols);
     let placement = match variables {
         Variables::Merged => super::initializers::Placement::Assignments,
         Variables::Split => super::initializers::Placement::Scoped,

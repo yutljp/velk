@@ -4,7 +4,7 @@ mod clobbers;
 mod com;
 mod constant_spills;
 pub(crate) mod declarations;
-mod go_types;
+pub(crate) mod go_types;
 mod indirect;
 pub(crate) use indirect::constant_branch_targets;
 mod jump_table;
@@ -1127,10 +1127,12 @@ fn lift_function(image: &Image, function: &Function) -> Result<Lifted, LiftError
     } else {
         None
     };
+    let runtime = go_types::runtime(image, function.addr);
     let declared = types
         .as_ref()
         .and_then(|types| types.ret.as_ref())
-        .or_else(|| inferred.as_ref().map(|(_, ret)| ret));
+        .or_else(|| inferred.as_ref().map(|(_, ret)| ret))
+        .or_else(|| runtime.map(|prototype| &prototype.ret));
     if matches!(
         image.isa,
         crate::loader::Isa::I386 | crate::loader::Isa::Arm32
@@ -1425,6 +1427,7 @@ fn lift_function(image: &Image, function: &Function) -> Result<Lifted, LiftError
             ir.ret_type = crate::ir::CType::Void;
         }
     }
+    go_types::apply_runtime_signature(&mut ir, image);
     Ok(Lifted {
         ir,
         has_jump_tables: !tables.is_empty(),

@@ -763,9 +763,22 @@ const RUNTIME: &[&str] = &[
     "void *runtime.mallocgc(uintptr_t, void *, _Bool)",
     "void *runtime.newobject(void *)",
     "void *runtime.makeslice(void *, int64_t, int64_t)",
+    "void *runtime.makeslicecopy(void *, int64_t, int64_t, const void *)",
+    "void *runtime.convT(void *, const void *)",
+    "void *runtime.convTnoptr(void *, const void *)",
+    "void *runtime.convT16(uint16_t)",
+    "void *runtime.convT32(uint32_t)",
+    "void *runtime.convT64(uint64_t)",
+    "void *runtime.convTstring(const void *, int64_t)",
+    "void *runtime.convTslice(void *, int64_t, int64_t)",
+    "_Bool runtime.ifaceeq(void *, void *, void *)",
+    "_Bool runtime.efaceeq(void *, void *, void *)",
+    "void *runtime.mapaccess1_fast32(void *, void *, uint32_t)",
+    "void *runtime.mapaccess1_fast64(void *, void *, uint64_t)",
+    "void *runtime.mapaccess1_faststr(void *, void *, const void *, int64_t)",
     "void runtime.typedmemmove(void *, void *, const void *)",
-    "void runtime.throw(const uint8_t *, int64_t)",
-    "void runtime.printstring(const uint8_t *, int64_t)",
+    "void runtime.throw(const void *, int64_t)",
+    "void runtime.printstring(const void *, int64_t)",
     "void runtime.printint(int64_t)",
     "int64_t runtime.nanotime1(void)",
     "void runtime.usleep(uint32_t)",
@@ -841,6 +854,21 @@ fn library(name: &str) -> Option<&'static Prototype> {
 fn runtime_table() -> &'static Table {
     static TABLE: OnceLock<Table> = OnceLock::new();
     TABLE.get_or_init(|| table(RUNTIME))
+}
+
+fn unprototyped_runtime_table() -> &'static Table {
+    static TABLE: OnceLock<Table> = OnceLock::new();
+    TABLE.get_or_init(|| {
+        runtime_table()
+            .iter()
+            .map(|(name, prototype)| {
+                let mut prototype = prototype.clone();
+                prototype.params.clear();
+                prototype.format = None;
+                (*name, prototype)
+            })
+            .collect()
+    })
 }
 
 /// A declaration from the tables as its name and prototype.
@@ -1050,6 +1078,8 @@ pub fn called(image: &Image, stmt: &Stmt) -> Option<&'static Prototype> {
     };
     if function.sources.contains(&NameSource::Plt) {
         for_image(name, image)
+    } else if image.go && name.starts_with("runtime.") {
+        unprototyped_runtime_table().get(name)
     } else {
         runtime(name)
     }

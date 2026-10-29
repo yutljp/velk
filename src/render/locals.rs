@@ -150,11 +150,11 @@ pub(crate) fn stack_locals(
     stack_locals_with_roles(ir, frames, variables, symbols, &roles, &[])
 }
 
-pub(super) fn stack_slot_types(ir: &FunctionIr) -> Vec<(Expr, CType)> {
+pub(super) fn stack_slot_types(ir: &FunctionIr, symbols: &super::Symbols) -> Vec<(Expr, CType)> {
     let sp = stack_pointer(ir.isa);
     let frames = crate::passes::frame_slots::block_entry_frame_offsets(ir, sp);
     let variables = super::function::variable_types(ir);
-    let (types, _, _) = slot_types(ir, sp, &frames, &variables);
+    let (types, _, _) = slot_types(ir, sp, &frames, &variables, symbols);
     let mut result = Vec::new();
     for (position, block) in ir.blocks.iter().enumerate() {
         let Some(frame) = frames.get(position).copied().flatten() else {
@@ -447,7 +447,7 @@ pub(super) fn stack_locals_with_roles(
         local.size = local.size.max(end.saturating_sub(start));
     }
     let enclosing_slots = merge_overlapping_slots(&mut slot_names, &sign_loads, &zero_loads);
-    type_storage(ir, sp, frames, variables, &mut slot_names);
+    type_storage(ir, sp, frames, variables, symbols, &mut slot_names);
     build_regions(&mut slot_names, &enclosing_slots, &accesses);
     slot_names.retain(|slot, _| !enclosing_slots.contains_key(slot));
     let order = declaration_order(&accesses, &enclosing_slots, &slot_names);
@@ -843,9 +843,10 @@ fn type_storage(
     sp: u16,
     frames: &[Option<i64>],
     variables: &std::collections::BTreeMap<u16, CType>,
+    symbols: &super::Symbols,
     slot_names: &mut HashMap<i64, Local>,
 ) {
-    let (mut types, signs, points_to) = slot_types(ir, sp, frames, variables);
+    let (mut types, signs, points_to) = slot_types(ir, sp, frames, variables, symbols);
     // A local holding another's address points at what that one holds.
     for (slot, target) in points_to {
         let Some(target) = slot_names.get(&target) else {
@@ -1434,6 +1435,7 @@ fn slot_types(
     sp: u16,
     frames: &[Option<i64>],
     variables: &std::collections::BTreeMap<u16, CType>,
+    symbols: &super::Symbols,
 ) -> (HashMap<i64, CType>, HashMap<i64, bool>, HashMap<i64, i64>) {
     let typed = |index: u16| -> Option<CType> {
         let Some(ty) = variables.get(&index).cloned().or_else(|| {
@@ -1452,6 +1454,7 @@ fn slot_types(
         strong: Vec::new(),
         weak: Vec::new(),
         signs: Vec::new(),
+        integer_uses: std::collections::HashSet::new(),
         offsets: std::collections::HashSet::new(),
     };
     let mut points_to: HashMap<i64, Option<i64>> = HashMap::new();
@@ -1502,9 +1505,68 @@ fn slot_types(
                             }
                             None => {}
                         }
+                        if !typed(dest.index).is_some_and(|ty| ty.is_pointer()) {
+                            walk.integer_uses.insert(slot);
+                        }
                     }
                 }
                 Stmt::Brif { cond, lhs, rhs, .. } => walk.compare(*cond, &[lhs, rhs]),
+                Stmt::Call {
+                    target: Some(target),
+                    through: None,
+                    args: Some(args),
+                    ..
+                } => {
+                    let parameters: Option<Vec<&CType>> = ir
+                        .callee_signatures
+                        .get(target)
+                        .map(|signature| signature.params.iter().map(|(_, ty)| ty).collect())
+                        .or_else(|| {
+                            symbols
+                                .function_parameters
+                                .get(target)
+                                .map(|parameters| parameters.iter().collect())
+                        })
+                        .or_else(|| {
+                            symbols
+                                .runtime_parameters
+                                .get(target)
+                                .map(|parameters| parameters.iter().collect())
+                        });
+                    if let Some(parameters) = parameters
+                        && parameters.len() <= args.len()
+                    {
+                        let fixed = parameters.len();
+                        for (arg, ty) in args.iter().zip(parameters) {
+                            if crate::arch::pointer_bytes(ir.isa) == 8
+                                && ty.is_pointer()
+                                && let Expr::Load { addr, width: 8, .. } = arg
+                                && let Some(slot) = walk.local(addr)
+                            {
+                                walk.weak.push((slot, ty.clone()));
+                            } else if !ty.is_pointer() {
+                                walk.integer_use(arg);
+                            }
+                        }
+                        for arg in args.iter().skip(fixed) {
+                            walk.integer_use(arg);
+                        }
+                    } else {
+                        for arg in args {
+                            walk.integer_use(arg);
+                        }
+                    }
+                }
+                Stmt::Call {
+                    through: Some(_),
+                    args: Some(args),
+                    ..
+                } => {
+                    for arg in args {
+                        walk.integer_use(arg);
+                    }
+                }
+                Stmt::Ret { value } if !ir.ret_type.is_pointer() => walk.integer_use(value),
                 _ => {}
             }
             for value in stmt.operands() {
@@ -1543,10 +1605,16 @@ fn slot_types(
     let weak = settle(std::mem::take(&mut walk.weak));
     let mut types: HashMap<i64, CType> = weak
         .into_iter()
-        .filter_map(|(slot, ty)| Some((slot, ty?)))
+        .filter_map(|(slot, ty)| ty.map(|ty| (slot, ty)))
         .collect();
     for (slot, ty) in strong {
         match ty {
+            Some(ty)
+                if ty.integer().is_some_and(|(bits, _)| bits == 64)
+                    && types.get(&slot).is_some_and(CType::is_pointer)
+                    && !walk.integer_uses.contains(&slot)
+                    && !walk.offsets.contains(&slot)
+                    && !constant_slots.contains(&slot) => {}
             Some(ty) => {
                 types.insert(slot, ty);
             }
@@ -1563,7 +1631,7 @@ fn slot_types(
     }
     let points_to = points_to
         .into_iter()
-        .filter_map(|(slot, target)| Some((slot, target?)))
+        .filter_map(|(slot, target)| target.map(|target| (slot, target)))
         .filter(|(slot, _)| !types.contains_key(slot) && !constant_slots.contains(slot))
         .collect();
     (types, signs, points_to)
@@ -1578,6 +1646,7 @@ struct Walk {
     weak: Vec<(i64, CType)>,
     /// The slots signed (`true`) and unsigned operations read.
     signs: Vec<(i64, bool)>,
+    integer_uses: std::collections::HashSet<i64>,
     offsets: std::collections::HashSet<i64>,
 }
 
@@ -1606,9 +1675,20 @@ impl Walk {
         for operand in operands {
             if let Some(slot) = self.loaded(operand) {
                 self.signs.push((slot, signed));
+                self.integer_uses.insert(slot);
             } else if !matches!(operand, Expr::Load { .. }) {
                 self.sign(signed, &crate::ir::visit::children(operand));
             }
+        }
+    }
+
+    fn integer_use(&mut self, expr: &Expr) {
+        if let Some(slot) = self.loaded(expr) {
+            self.integer_uses.insert(slot);
+            return;
+        }
+        for child in crate::ir::visit::children(expr) {
+            self.integer_use(child);
         }
     }
 
@@ -1617,6 +1697,15 @@ impl Walk {
         match cond {
             Cond::Lt | Cond::Le | Cond::Gt | Cond::Ge => self.sign(true, operands),
             Cond::Cc | Cond::Cs | Cond::Hi | Cond::Ls => self.sign(false, operands),
+            Cond::Eq | Cond::Ne
+                if !operands
+                    .iter()
+                    .any(|operand| matches!(operand, Expr::Const(0))) =>
+            {
+                for operand in operands {
+                    self.integer_use(operand);
+                }
+            }
             _ => {}
         }
     }
@@ -1655,7 +1744,10 @@ impl Walk {
                 BinOp::DivU | BinOp::ModU => self.sign(false, &[lhs, rhs]),
                 BinOp::Sar => self.sign(true, &[lhs]),
                 BinOp::Shr => self.sign(false, &[lhs]),
-                _ => {}
+                _ => {
+                    self.integer_use(lhs);
+                    self.integer_use(rhs);
+                }
             },
             Expr::SignExtend { value, .. } => self.sign(true, &[value]),
             Expr::Select { cond, lhs, rhs, .. } => self.compare(*cond, &[lhs, rhs]),
@@ -2264,6 +2356,108 @@ mod tests {
         BinOp, CType, Convention, Expr, FunctionIr, Param, RegRef, StackParam, Stmt, VARIABLE_BASE,
     };
     use crate::loader::Isa;
+
+    #[test]
+    fn spilled_pointer_evidence_requires_the_native_width() {
+        for isa in [Isa::X86_64, Isa::AArch64, Isa::I386, Isa::Arm32] {
+            let sp = crate::arch::stack_pointer(isa);
+            let ir = FunctionIr::single_block(
+                isa,
+                vec![Stmt::Call {
+                    kind: crate::ir::CallKind::Invoke,
+                    target: Some(0x1000),
+                    through: None,
+                    convention: Convention::of(isa, crate::loader::Format::Elf, false),
+                    args: Some(vec![Expr::Load {
+                        addr: Box::new(Expr::bin(BinOp::Sub, Expr::reg(sp, 64), Expr::Const(8))),
+                        width: 8,
+                        signed: false,
+                    }]),
+                    floats_named: false,
+                    abi: None,
+                    outputs: Vec::new(),
+                    clobbers: Some(Default::default()),
+                    via: None,
+                }],
+            );
+            let symbols = crate::render::Symbols {
+                function_parameters: [(0x1000, vec![CType::pointer_to(CType::Void)])].into(),
+                ..Default::default()
+            };
+            let (types, _, _) =
+                super::slot_types(&ir, sp, &[Some(0)], &Default::default(), &symbols);
+            assert_eq!(
+                types.contains_key(&-8),
+                crate::arch::pointer_bytes(isa) == 8
+            );
+        }
+    }
+
+    #[test]
+    fn pointer_parameters_retype_spilled_words_without_integer_uses() {
+        for integer_use in [false, true] {
+            let isa = Isa::X86_64;
+            let sp = crate::arch::stack_pointer(isa);
+            let slot = Expr::bin(BinOp::Sub, Expr::reg(sp, 64), Expr::Const(8));
+            let mut stmts = vec![
+                Stmt::Store {
+                    addr: slot.clone(),
+                    value: Expr::reg(7, 64),
+                    width: 8,
+                },
+                Stmt::Call {
+                    kind: crate::ir::CallKind::Invoke,
+                    target: Some(0x1000),
+                    through: None,
+                    convention: Convention::GoAmd64,
+                    args: Some(vec![
+                        Expr::Load {
+                            addr: Box::new(slot.clone()),
+                            width: 8,
+                            signed: false,
+                        },
+                        Expr::Const(7),
+                    ]),
+                    floats_named: false,
+                    abi: None,
+                    outputs: Vec::new(),
+                    clobbers: Some(Default::default()),
+                    via: None,
+                },
+            ];
+            if integer_use {
+                stmts.push(Stmt::Assign {
+                    dest: RegRef {
+                        index: VARIABLE_BASE,
+                        width: 64,
+                    },
+                    value: Expr::Load {
+                        addr: Box::new(slot),
+                        width: 8,
+                        signed: false,
+                    },
+                });
+            }
+            let mut ir = FunctionIr::single_block(isa, stmts);
+            ir.params.push(Param {
+                index: 7,
+                name: "word".to_owned(),
+                ty: CType::U64,
+            });
+            let symbols = crate::render::Symbols {
+                function_parameters: [(0x1000, vec![CType::pointer_to(CType::Void)])].into(),
+                ..Default::default()
+            };
+            let (types, _, _) =
+                super::slot_types(&ir, sp, &[Some(0)], &Default::default(), &symbols);
+            assert_eq!(
+                types.get(&-8).is_some_and(CType::is_pointer),
+                !integer_use,
+                "integer use: {integer_use}, inferred type: {:?}",
+                types.get(&-8)
+            );
+        }
+    }
 
     #[test]
     fn extended_frame_bounds_exclude_incoming_parameter_addresses() {

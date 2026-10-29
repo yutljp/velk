@@ -962,7 +962,7 @@ fn pointer_return_inference_refuses_unknown_exceptional_and_cyclic_edges() {
 }
 
 #[test]
-fn inferred_pointer_returns_cast_integer_locals_in_generated_c() {
+fn inferred_pointer_returns_keep_local_pointer_types_in_generated_c() {
     let variable = crate::ir::VARIABLE_BASE;
     let saved = variable + 1;
     let mut ir = pointer_case(vec![
@@ -987,11 +987,10 @@ fn inferred_pointer_returns_cast_integer_locals_in_generated_c() {
     let rendered = crate::render::render(&ir, &[], &symbols, &[]);
     assert!(rendered.contains("void *copy_and_note("), "{rendered}");
     assert!(
-        rendered
-            .lines()
-            .any(|line| line.trim_start().starts_with("return (void *)")),
+        rendered.lines().any(|line| line.trim() == "return v1;"),
         "{rendered}"
     );
+    assert!(!rendered.contains("return (void *)"), "{rendered}");
     assert!(ir.value_types.is_empty());
 }
 

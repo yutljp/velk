@@ -956,7 +956,7 @@ L_9a0:
     return v1;
 /* landing pad: an exception thrown by a call at 0x99c-0x9a0 arrives here */
 L_9ac:;
-    uint32_t *v2 = (uint32_t *)(__cxa_begin_catch((void *)velk_exception_value()));
+    uint32_t *v2 = __cxa_begin_catch((void *)velk_exception_value());
     int32_t v4 = *v2;
     __cxa_end_catch();
     return v4;
@@ -1014,14 +1014,14 @@ L_9d0:
 L_9dc:;
     int32_t v2 = velk_exception_selector();
     if (v2 != 3) {
-        v3 = (uint32_t *)(__cxa_begin_catch(v1));
+        v3 = __cxa_begin_catch(v1);
         if (v2 != 2) {
             __cxa_end_catch();
             return -1;
         }
         v5 = 2;
     } else {
-        v3 = (uint32_t *)(__cxa_begin_catch(v1));
+        v3 = __cxa_begin_catch(v1);
         v5 = 1;
     }
     int32_t v7 = *v3 + v5;
@@ -1096,23 +1096,23 @@ L_a30:
 /* landing pad: an exception thrown by a call at 0xa2c-0xa30 arrives here */
 L_a3c:;
     int32_t v2 = velk_exception_selector();
-    int64_t v10 = velk_exception_value();
+    void *v10 = (void *)velk_exception_value();
     if (v2 == 2) {
-        uint32_t *v4 = (uint32_t *)(__cxa_begin_catch((void *)v10));
+        uint32_t *v4 = __cxa_begin_catch(v10);
         int64_t v11 = imported_value(*v4);
         __cxa_end_catch();
         return v11;
     /* landing pad: an exception thrown by a call at 0xa58-0xa5c arrives here */
     L_a64:
         v2 = velk_exception_selector();
-        v10 = velk_exception_value();
+        v10 = (void *)velk_exception_value();
         __cxa_end_catch();
     }
 L_a70:
     if (v2 != 1) {
-        _Unwind_Resume((void *)v10);
+        _Unwind_Resume(v10);
     }
-    uint32_t *v9 = (uint32_t *)(__cxa_begin_catch((void *)v10));
+    uint32_t *v9 = __cxa_begin_catch(v10);
     int32_t v12 = *v9;
     uint32_t v13 = (uint32_t)v12 + 3;
     __cxa_end_catch();

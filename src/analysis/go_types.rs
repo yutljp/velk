@@ -1,9 +1,76 @@
-//! Types proven by Go runtime allocation descriptors.
+//! Go runtime signatures and types proven by allocation descriptors.
 
 use std::collections::{BTreeMap, HashMap};
 
 use crate::ir::{CType, Expr, FunctionIr, Stmt};
 use crate::loader::Image;
+
+pub(crate) fn runtime(
+    image: &Image,
+    address: u64,
+) -> Option<&'static super::prototypes::Prototype> {
+    if !image.go
+        || !matches!(
+            (image.isa, image.convention_of(address)),
+            (crate::loader::Isa::X86_64, crate::ir::Convention::GoAmd64)
+                | (crate::loader::Isa::AArch64, crate::ir::Convention::Aapcs64)
+        )
+    {
+        return None;
+    }
+    let Some(name) = image
+        .functions
+        .get(&address)
+        .and_then(|function| function.name.as_deref())
+    else {
+        return None;
+    };
+    // Assembly helpers may use ABI0 even when the image uses register arguments.
+    if matches!(
+        name,
+        "runtime.memmove"
+            | "runtime.memclrNoHeapPointers"
+            | "runtime.memequal"
+            | "runtime.memhash"
+            | "runtime.nanotime1"
+            | "runtime.usleep"
+            | "runtime.exit"
+    ) {
+        return None;
+    }
+    super::prototypes::runtime(name)
+}
+
+pub(super) fn apply_runtime_signature(ir: &mut FunctionIr, image: &Image) {
+    let Some(prototype) = runtime(image, ir.addr) else {
+        return;
+    };
+    let mut params = Vec::new();
+    for (position, (register, ty)) in ir
+        .convention
+        .arguments()
+        .iter()
+        .zip(&prototype.params)
+        .enumerate()
+    {
+        let mut param = ir
+            .params
+            .iter()
+            .find(|param| param.index == *register)
+            .cloned()
+            .unwrap_or_else(|| crate::ir::Param {
+                index: *register,
+                name: format!("a{position}"),
+                ty: ty.clone(),
+            });
+        if !param.ty.is_pointer() || !super::prototypes::void_pointer(ty) {
+            param.ty = ty.clone();
+        }
+        params.push(param);
+    }
+    ir.params = params;
+    ir.ret_type = prototype.ret.clone();
+}
 
 pub(super) fn apply(ir: &mut FunctionIr, image: &Image) {
     if !image.go {
@@ -210,6 +277,27 @@ mod tests {
     use super::*;
     use crate::ir::{CallKind, CallOutput, Convention, RegRef, VARIABLE_BASE};
     use crate::loader::Isa;
+
+    #[test]
+    fn runtime_pointer_summaries_preserve_all_return_bits() {
+        for fixture in ["go_probe", "go_probe_arm64"] {
+            let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+                .join("tests/fixtures")
+                .join(fixture);
+            let image = crate::loader::load(&path).unwrap();
+            for function in image.functions.values() {
+                let Some(prototype) = runtime(&image, function.addr) else {
+                    continue;
+                };
+                let summary = crate::analysis::summary::summary(&image, function.addr);
+                assert_eq!(summary.arity, Some(prototype.fixed()));
+                assert_eq!(summary.pointers, 0, "{fixture}: {:?}", function.name);
+                if prototype.ret.is_pointer() {
+                    assert!(!summary.narrow_return, "{fixture}: {:?}", function.name);
+                }
+            }
+        }
+    }
 
     #[test]
     fn standalone_shape_requires_a_full_field_access() {
