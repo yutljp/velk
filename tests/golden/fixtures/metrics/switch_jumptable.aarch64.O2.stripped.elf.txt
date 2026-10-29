@@ -11,48 +11,48 @@ extern uint32_t g_220464; /* address: 0x220464 */
 /* velk pseudo-C: sub_210184 @ 0x210184 */
 /* ref: 0x220464 .bss */
 int32_t sub_210184(int32_t a0) {
-    int32_t v1 = -1;
+    int32_t result = -1;
     if ((uint32_t)a0 <= 9) {
-        v1 = g_220464;
+        result = g_220464;
         if ((uint32_t)a0 > 0) {
-            g_220464 = v1;
-            v1 = (uint32_t)v1 + 1;
+            g_220464 = result;
+            result = (uint32_t)result + 1;
         }
         if ((uint32_t)a0 > 1) {
-            g_220464 = v1;
-            v1 = (uint32_t)v1 + 2;
+            g_220464 = result;
+            result = (uint32_t)result + 2;
         }
         if ((uint32_t)a0 > 2) {
-            g_220464 = v1;
-            v1 = (uint32_t)v1 + 3;
+            g_220464 = result;
+            result = (uint32_t)result + 3;
         }
         if ((uint32_t)a0 > 3) {
-            g_220464 = v1;
-            v1 = (uint32_t)v1 + 4;
+            g_220464 = result;
+            result = (uint32_t)result + 4;
         }
         if ((uint32_t)a0 > 4) {
-            g_220464 = v1;
-            v1 = (uint32_t)v1 + 5;
+            g_220464 = result;
+            result = (uint32_t)result + 5;
         }
         if ((uint32_t)a0 > 5) {
-            g_220464 = v1;
-            v1 = (uint32_t)v1 + 6;
+            g_220464 = result;
+            result = (uint32_t)result + 6;
         }
         if ((uint32_t)a0 > 6) {
-            g_220464 = v1;
-            v1 = (uint32_t)v1 + 7;
+            g_220464 = result;
+            result = (uint32_t)result + 7;
         }
         if ((uint32_t)a0 > 7) {
-            g_220464 = v1;
-            v1 = (uint32_t)v1 + 8;
+            g_220464 = result;
+            result = (uint32_t)result + 8;
         }
         if ((uint32_t)a0 > 8) {
-            g_220464 = v1;
-            v1 = (uint32_t)v1 + 9;
+            g_220464 = result;
+            result = (uint32_t)result + 9;
         }
     }
-    g_220464 = v1;
-    return v1;
+    g_220464 = result;
+    return result;
 }
 -- signature
 int32_t (int32_t a0)

@@ -268,6 +268,7 @@ def extract(clang, sdk, target, source):
                              "fields": members}
 
     functions = {}
+    parameter_names = {}
     conventions = {}
     rejected = 0
     for n in nodes:
@@ -303,6 +304,10 @@ def extract(clang, sdk, target, source):
             continue
         conventions[name] = "stdcall" if "stdcall" in n["type"]["qualType"] else "c"
         functions[name] = return_type + " " + name + "(" + (", ".join(parameter_types) or "void") + ")"
+        names = [parameter.get("name", "") for parameter in n.get("inner", [])
+                 if parameter.get("kind") == "ParmVarDecl"]
+        if any(names):
+            parameter_names[name] = names
     # Typedef and enum spelling is retained for provenance, even where the
     # runtime deliberately uses a scalar type or declines the signature.
     aliases = {name: typedefs[name] for name in sorted(used_typedefs)
@@ -327,7 +332,9 @@ def extract(clang, sdk, target, source):
             current = current + 1 if value is None else value
             values[c["name"]] = current
         constants[enum_names[n["id"]]] = {"type": enum_types[n["id"]], "values": values}
-    return {"functions": functions, "records": records, "typedefs": aliases, "enums": constants, "conventions": conventions, "guids": guid_constants(nodes)}, rejected
+    return {"functions": functions, "parameter_names": parameter_names, "records": records,
+            "typedefs": aliases, "enums": constants, "conventions": conventions,
+            "guids": guid_constants(nodes)}, rejected
 
 
 def header_variables(clang, sdk, target, headers):
@@ -561,7 +568,7 @@ def generate_platform(args):
                     symbol = symbol.removeprefix("_")
                 symbol = symbol.split("@")[0]
                 exports.setdefault(symbol, []).append(dll + ".dll")
-        data = {kind: {} for kind in ["functions", "records", "typedefs", "enums", "conventions", "guids"]}
+        data = {kind: {} for kind in ["functions", "parameter_names", "records", "typedefs", "enums", "conventions", "guids"]}
         conflicts = {kind: set() for kind in data}
         hashes = {}
         rejected = 0
@@ -573,6 +580,9 @@ def generate_platform(args):
                 rejected += count
                 if windows:
                     extracted["functions"] = {k: v for k, v in extracted["functions"].items() if k in exports}
+                    extracted["parameter_names"] = {
+                        k: v for k, v in extracted["parameter_names"].items() if k in exports
+                    }
                 verify_target(args.clang, target, group, extracted)
                 dependencies = run(compiler_args(args.clang, None, target) + ["-M", "-MT", "headers", str(source)])
                 if windows:
@@ -593,6 +603,9 @@ def generate_platform(args):
                             data[kind][name] = value
         header_hashes[target] = hashes
         data["functions"] = {k: v for k, v in data["functions"].items() if k in data["conventions"]}
+        data["parameter_names"] = {
+            k: v for k, v in data["parameter_names"].items() if k in data["functions"]
+        }
         if windows:
             # Import archives associate declarations with their exporting DLL.
             data["imports"] = {dll + "!" + name: name for name in data["functions"]

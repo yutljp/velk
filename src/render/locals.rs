@@ -150,6 +150,34 @@ pub(crate) fn stack_locals(
     stack_locals_with_roles(ir, frames, variables, symbols, &roles, &[])
 }
 
+pub(super) fn stack_slot_types(ir: &FunctionIr) -> Vec<(Expr, CType)> {
+    let sp = stack_pointer(ir.isa);
+    let frames = crate::passes::frame_slots::block_entry_frame_offsets(ir, sp);
+    let variables = super::function::variable_types(ir);
+    let (types, _, _) = slot_types(ir, sp, &frames, &variables);
+    let mut result = Vec::new();
+    for (position, block) in ir.blocks.iter().enumerate() {
+        let Some(frame) = frames.get(position).copied().flatten() else {
+            continue;
+        };
+        for stmt in &block.stmts {
+            let Stmt::Store { addr, .. } = stmt else {
+                continue;
+            };
+            let Some(slot) = frame_slot(addr, frame, sp) else {
+                continue;
+            };
+            let Some(ty) = types.get(&slot) else {
+                continue;
+            };
+            if !result.iter().any(|(address, _)| address == addr) {
+                result.push((addr.clone(), ty.clone()));
+            }
+        }
+    }
+    result
+}
+
 pub(super) fn stack_locals_with_roles(
     ir: &FunctionIr,
     frames: &[Option<i64>],

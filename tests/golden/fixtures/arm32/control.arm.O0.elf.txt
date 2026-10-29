@@ -262,12 +262,12 @@ fn sparse @ 0x202c4 (size 156)
 -- decompile
 /* velk pseudo-C: short_circuit @ 0x20360 */
 int short_circuit(int *p, int n) {
-    uint32_t local_0; /* [sp-14] */
+    uint32_t result; /* [sp-14] */
     uint32_t local_1; /* [sp-18] */
 
-    local_0 = 0;
+    result = 0;
     if ((uint32_t)(uintptr_t)p != 0) {
-        local_0 = 0;
+        result = 0;
         if (n > 0) {
             int32_t v2 = *(uint32_t *)((uint32_t)(uintptr_t)p);
             local_1 = 1;
@@ -278,12 +278,12 @@ int short_circuit(int *p, int n) {
                 }
                 local_1 = v3;
             }
-            local_0 = local_1;
-            return local_0 & 0x1;
+            result = local_1;
+            return result & 0x1;
         }
-        return local_0 & 0x1;
+        return result & 0x1;
     }
-    return local_0 & 0x1;
+    return result & 0x1;
 }
 -- signature
 int (int * p, int n)

@@ -243,24 +243,24 @@ fn <unnamed> @ 0x2103a0 (size 148)
 -- decompile
 /* velk pseudo-C: sub_210434 @ 0x210434 */
 int32_t sub_210434(uint32_t *a0, int32_t a1) {
-    uint32_t local_0; /* [sp-10] */
+    uint32_t result; /* [sp-10] */
     uint32_t local_1; /* [sp-14] */
 
-    local_0 = 0;
+    result = 0;
     if (a0 == 0) {
-        return local_0 & 0x1;
+        return result & 0x1;
     }
-    local_0 = 0;
+    result = 0;
     if (a1 <= 0) {
-        return local_0 & 0x1;
+        return result & 0x1;
     }
     int32_t v1 = *a0 - 1;
     local_1 = 1;
     if (v1 != 0) {
         local_1 = a0[(int32_t)((uint32_t)a1 - 1)] - 1 + 1 == 1;
     }
-    local_0 = local_1;
-    return local_0 & 0x1;
+    result = local_1;
+    return result & 0x1;
 }
 -- signature
 int32_t (uint32_t * a0, int32_t a1)

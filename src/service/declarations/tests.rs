@@ -479,6 +479,7 @@ fn borrowed_call_parameters_print_like_owned_symbols() {
             0x4000,
             crate::analysis::prototypes::Prototype {
                 params: vec![CType::I32],
+                parameter_names: Vec::new(),
                 ret: CType::U64,
                 variadic: false,
                 format: None,

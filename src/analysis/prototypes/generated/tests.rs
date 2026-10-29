@@ -1,6 +1,70 @@
 use super::*;
 
 #[test]
+fn unknown_generic_prototypes_leave_linux_library_unloaded() {
+    if std::env::var_os("VELK_GENERIC_LOOKUP_CHILD").is_none() {
+        let output = std::process::Command::new(std::env::current_exe().unwrap())
+            .args([
+                "--exact",
+                "analysis::prototypes::generated::tests::unknown_generic_prototypes_leave_linux_library_unloaded",
+            ])
+            .env("VELK_GENERIC_LOOKUP_CHILD", "1")
+            .output()
+            .unwrap();
+        assert!(output.status.success(), "{output:?}");
+        return;
+    }
+    assert!(LINUX.get().is_none());
+    assert!(crate::analysis::prototypes::of("unknown_function", false).is_none());
+    assert!(LINUX.get().is_none());
+    let prototype = crate::analysis::prototypes::of("memcpy", false).unwrap();
+    assert_eq!(prototype.parameter_names, ["__dest", "__src", "__n"]);
+    assert!(LINUX.get().is_some());
+}
+
+#[test]
+fn target_library_entries_parse_only_when_looked_up() {
+    let libraries = targets(include_str!("../linux.json"));
+    let library = &libraries["x86_64-linux-gnu"].library;
+    assert!(
+        library
+            .functions
+            .values()
+            .all(|function| function.prototype.get().is_none())
+    );
+    assert!(
+        library
+            .records
+            .values()
+            .all(|record| record.record.get().is_none())
+    );
+
+    let prototype = library.prototype("memcpy").unwrap();
+    assert_eq!(prototype.parameter_names, ["__dest", "__src", "__n"]);
+    for (name, function) in &library.functions {
+        if *name != "memcpy" {
+            assert!(function.prototype.get().is_none());
+        }
+    }
+    assert!(
+        library
+            .records
+            .values()
+            .all(|record| record.record.get().is_none())
+    );
+
+    let (name, record) = library.records.iter().next().unwrap();
+    let name = *name;
+    assert!(library.record(name).is_some());
+    assert!(record.record.get().is_some());
+    for (record_name, record) in &library.records {
+        if *record_name != name {
+            assert!(record.record.get().is_none());
+        }
+    }
+}
+
+#[test]
 fn unqualified_windows_names_leave_type_library_unloaded() {
     use crate::loader::{Function, NameSource};
 
@@ -307,6 +371,12 @@ fn target_libraries_do_not_cross_formats_or_architectures() {
         wide.params[0],
         CType::pointer_to(CType::Named("const unsigned short".into()))
     );
+    assert_eq!(
+        for_image("kernel32.dll!GetModuleHandleW", &image)
+            .unwrap()
+            .parameter_names,
+        ["lpModuleName"]
+    );
     image.isa = Isa::AArch64;
     assert!(for_image("kernel32.dll!OpenProcess", &image).is_none());
     image.format = Format::Elf;
@@ -380,6 +450,8 @@ fn shared_library_records_require_matching_definitions_without_dependencies() {
 fn generated_signatures_have_supported_scalar_abi_types() {
     assert!(library().functions.len() > 800);
     for (name, prototype) in &library().functions {
+        let text: &'static str = serde_json::from_str(prototype.text.get()).unwrap();
+        assert_eq!(super::super::parse(text).0, *name);
         assert!(prototype.fixed() <= 6 && prototype.floats() <= 8, "{name}");
         assert!(
             prototype.params.iter().all(CType::is_sse_float)
@@ -398,6 +470,12 @@ fn generated_signatures_have_supported_scalar_abi_types() {
     }
     let mask = of("umask").unwrap();
     assert_eq!(mask.ret.integer(), Some((16, false)));
+    assert_eq!(
+        crate::analysis::prototypes::of("memcpy", false)
+            .unwrap()
+            .parameter_names,
+        ["__dest", "__src", "__n"]
+    );
     assert!(
         of("div").is_none(),
         "aggregate return needs ABI classification"
@@ -415,6 +493,8 @@ fn all_target_declarations_use_supported_scalar_types_and_fitted_fields() {
         for (target, data) in targets {
             assert!(!data.library.functions.is_empty(), "{target}");
             for (name, prototype) in &data.library.functions {
+                let text: &'static str = serde_json::from_str(prototype.text.get()).unwrap();
+                assert_eq!(super::super::parse(text).0, *name, "{target}: {name}");
                 for ty in prototype.params.iter().chain([&prototype.ret]) {
                     assert!(
                         matches!(ty, CType::Void | CType::Pointer(_))

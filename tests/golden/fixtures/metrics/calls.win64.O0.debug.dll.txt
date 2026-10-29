@@ -222,18 +222,18 @@ fn sum9 @ 0x180001160 (size 81)
 -- decompile
 /* velk pseudo-C: call_sum9 @ 0x1800011c0 */
 int32_t call_sum9(int32_t x) {
-    int64_t local_0; /* [sp-38] */
-    int64_t local_1; /* [sp-30] */
-    int64_t local_2; /* [sp-28] */
-    int64_t local_3; /* [sp-20] */
-    int64_t local_4; /* [sp-18] */
+    int64_t e; /* [sp-38] */
+    int64_t f; /* [sp-30] */
+    int64_t g; /* [sp-28] */
+    int64_t h; /* [sp-20] */
+    int64_t i; /* [sp-18] */
 
-    *(uint32_t *)&local_0 = 4;
-    *(uint32_t *)&local_1 = 5;
-    *(uint32_t *)&local_2 = 6;
-    *(uint32_t *)&local_3 = 7;
-    *(uint32_t *)&local_4 = 8;
-    return sum9(x, 1, 2, 3, local_0, local_1, local_2, local_3, local_4);
+    *(uint32_t *)&e = 4;
+    *(uint32_t *)&f = 5;
+    *(uint32_t *)&g = 6;
+    *(uint32_t *)&h = 7;
+    *(uint32_t *)&i = 8;
+    return sum9(x, 1, 2, 3, e, f, g, h, i);
 }
 -- signature
 int32_t (int32_t x)

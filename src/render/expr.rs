@@ -2072,8 +2072,8 @@ mod tests {
             value: Expr::bin(BinOp::And, loaded(8), Expr::Const(7)),
         });
         let text = rendered(stmts, &[CType::pointer_to(CType::int(1, false))]);
-        assert!(text.contains("uint8_t *local_0;"), "{text}");
-        assert!(text.contains("return (uintptr_t)local_0 & 0x7;"), "{text}");
+        assert!(text.contains("uint8_t *result;"), "{text}");
+        assert!(text.contains("return (uintptr_t)result & 0x7;"), "{text}");
         let mut stmts = setup();
         stmts.push(Stmt::Ret { value: loaded(4) });
         let text = rendered(stmts, &[CType::pointer_to(CType::int(1, false))]);

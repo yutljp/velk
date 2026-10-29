@@ -370,9 +370,9 @@ fn frame_dummy @ 0x8d0 (size 8)
 == 0x8d8 linux_group
 -- decompile
 /* velk pseudo-C: linux_group @ 0x8d8 */
-int32_t linux_group(struct group *a0) {
-    getgrgid_r(7, a0, 0x0, 0, 0x0);
-    return a0->gr_gid;
+int32_t linux_group(struct group *__resultbuf) {
+    getgrgid_r(7, __resultbuf, 0x0, 0, 0x0);
+    return __resultbuf->gr_gid;
 }
 -- signature
 int32_t (struct group * a0)
@@ -390,8 +390,8 @@ fn linux_group @ 0x8d8 (size 56)
 == 0x910 linux_file
 -- decompile
 /* velk pseudo-C: linux_file @ 0x910 */
-int linux_file(int a0) {
-    return fsync(a0);
+int linux_file(int __fd) {
+    return fsync(__fd);
 }
 -- signature
 int (int a0)
@@ -408,8 +408,8 @@ fn linux_file @ 0x910 (size 4)
 == 0x914 linux_process
 -- decompile
 /* velk pseudo-C: linux_process @ 0x914 */
-int linux_process(int a0) {
-    return kill(a0, 0);
+int linux_process(int __pid) {
+    return kill(__pid, 0);
 }
 -- signature
 int (int a0)
@@ -426,8 +426,8 @@ fn linux_process @ 0x914 (size 8)
 == 0x91c linux_memory
 -- decompile
 /* velk pseudo-C: linux_memory @ 0x91c */
-int linux_memory(void *a0, size_t a1) {
-    return mprotect(a0, a1, 1);
+int linux_memory(void *__addr, size_t __len) {
+    return mprotect(__addr, __len, 1);
 }
 -- signature
 int (void * a0, size_t a1)
@@ -444,8 +444,8 @@ fn linux_memory @ 0x91c (size 8)
 == 0x924 linux_socket
 -- decompile
 /* velk pseudo-C: linux_socket @ 0x924 */
-int linux_socket(int a0) {
-    return shutdown(a0, 0);
+int linux_socket(int __fd) {
+    return shutdown(__fd, 0);
 }
 -- signature
 int (int a0)
@@ -462,8 +462,8 @@ fn linux_socket @ 0x924 (size 8)
 == 0x92c linux_thread
 -- decompile
 /* velk pseudo-C: linux_thread @ 0x92c */
-int linux_thread(unsigned long a0) {
-    return pthread_kill(a0, 0);
+int linux_thread(unsigned long __threadid) {
+    return pthread_kill(__threadid, 0);
 }
 -- signature
 int (unsigned long a0)

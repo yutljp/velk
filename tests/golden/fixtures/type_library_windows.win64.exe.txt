@@ -30,8 +30,8 @@ void *(VirtualAlloc)(void *, unsigned long long, uint32_t, uint32_t);
 -- decompile
 /* velk pseudo-C: windows_file @ 0x140001000 */
 /* ref: 0x1400050b8 .idata */
-uint32_t windows_file(void *a0) {
-    return GetFileType(a0);
+uint32_t windows_file(void *hFile) {
+    return GetFileType(hFile);
 }
 -- signature
 uint32_t (void * a0)
@@ -49,8 +49,8 @@ fn windows_file @ 0x140001000 (size 15)
 -- decompile
 /* velk pseudo-C: windows_process @ 0x14000100f */
 /* ref: 0x1400050c8 .idata */
-void *windows_process(uint32_t a0) {
-    return OpenProcess(0x400, 0, a0);
+void *windows_process(uint32_t dwProcessId) {
+    return OpenProcess(0x400, 0, dwProcessId);
 }
 -- signature
 void * (uint32_t a0)
@@ -68,8 +68,8 @@ fn windows_process @ 0x14000100f (size 28)
 -- decompile
 /* velk pseudo-C: windows_memory @ 0x14000102b */
 /* ref: 0x1400050d0 .idata */
-void *windows_memory(unsigned long long a0) {
-    return VirtualAlloc(0x0, a0, 0x3000, 4);
+void *windows_memory(unsigned long long dwSize) {
+    return VirtualAlloc(0x0, dwSize, 0x3000, 4);
 }
 -- signature
 void * (unsigned long long a0)
@@ -87,8 +87,8 @@ fn windows_memory @ 0x14000102b (size 35)
 -- decompile
 /* velk pseudo-C: windows_registry @ 0x14000104e */
 /* ref: 0x1400050a0 .idata */
-int32_t windows_registry(struct HKEY__ *a0) {
-    return RegCloseKey(a0);
+int32_t windows_registry(struct HKEY__ *hKey) {
+    return RegCloseKey(hKey);
 }
 -- signature
 int32_t (struct HKEY__ * a0)
@@ -144,9 +144,9 @@ fn windows_thread @ 0x14000107c (size 15)
 -- decompile
 /* velk pseudo-C: windows_time @ 0x14000108b */
 /* ref: 0x1400050c0 .idata */
-int32_t windows_time(struct _FILETIME *a0) {
-    GetSystemTimeAsFileTime(a0);
-    return a0->dwHighDateTime;
+int32_t windows_time(struct _FILETIME *lpSystemTimeAsFileTime) {
+    GetSystemTimeAsFileTime(lpSystemTimeAsFileTime);
+    return lpSystemTimeAsFileTime->dwHighDateTime;
 }
 -- signature
 int32_t (struct _FILETIME * a0)

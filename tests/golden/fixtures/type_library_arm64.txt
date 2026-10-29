@@ -24,9 +24,9 @@ struct group; int (getgrgid_r)(unsigned int, struct group *, char *, size_t, str
 == 0x100000568 _library_group
 -- decompile
 /* velk pseudo-C: _library_group @ 0x100000568 */
-int32_t library_group(struct group *a0) {
-    getgrgid_r(7, a0, 0x0, 0, 0x0);
-    return a0->gr_gid;
+int32_t library_group(struct group *__resultbuf) {
+    getgrgid_r(7, __resultbuf, 0x0, 0, 0x0);
+    return __resultbuf->gr_gid;
 }
 -- signature
 int32_t (struct group * a0)
@@ -44,8 +44,8 @@ fn _library_group @ 0x100000568 (size 56)
 == 0x1000005a0 _library_wide_length
 -- decompile
 /* velk pseudo-C: _library_wide_length @ 0x1000005a0 */
-size_t library_wide_length(const int *a0) {
-    return wcslen(a0);
+size_t library_wide_length(const int *__s) {
+    return wcslen(__s);
 }
 -- signature
 size_t (const int * a0)
@@ -62,9 +62,9 @@ fn _library_wide_length @ 0x1000005a0 (size 4)
 == 0x1000005a4 _library_group_at
 -- decompile
 /* velk pseudo-C: _library_group_at @ 0x1000005a4 */
-int32_t library_group_at(struct group *a0, int64_t a1) {
-    getgrgid_r(7, a0, 0x0, 0, 0x0);
-    return a0[a1].gr_gid;
+int32_t library_group_at(struct group *__resultbuf, int64_t a1) {
+    getgrgid_r(7, __resultbuf, 0x0, 0, 0x0);
+    return __resultbuf[a1].gr_gid;
 }
 -- signature
 int32_t (struct group * a0, int64_t a1)

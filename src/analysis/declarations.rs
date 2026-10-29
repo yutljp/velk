@@ -69,6 +69,7 @@ pub(crate) fn recover(image: &Image, functions: &mut [Analysis]) {
                 target,
                 crate::analysis::prototypes::Prototype {
                     params: types.clone(),
+                    parameter_names: Vec::new(),
                     ret: callee.clone(),
                     variadic: false,
                     format: None,

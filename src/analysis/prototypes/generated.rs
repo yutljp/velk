@@ -13,6 +13,7 @@ use std::collections::{HashMap, HashSet};
 use std::sync::OnceLock;
 
 use serde::Deserialize;
+use serde_json::value::RawValue;
 
 use super::Prototype;
 use crate::ir::{AbiProfile, CType, Definition, FunctionIr, Member};
@@ -22,11 +23,13 @@ use crate::loader::{Format, Image, Isa};
 struct Source<'a> {
     version: u32,
     #[serde(borrow)]
-    functions: HashMap<&'a str, &'a str>,
-    #[serde(borrow)]
-    records: HashMap<&'a str, Record<'a>>,
+    functions: HashMap<&'a str, &'a RawValue>,
     #[serde(default, borrow)]
-    variables: HashMap<&'a str, Variable<'a>>,
+    parameter_names: HashMap<&'a str, &'a RawValue>,
+    #[serde(borrow)]
+    records: HashMap<&'a str, &'a RawValue>,
+    #[serde(default, borrow)]
+    variables: HashMap<&'a str, &'a RawValue>,
 }
 
 #[derive(Deserialize)]
@@ -48,7 +51,7 @@ pub(crate) fn variable(name: &str, image: &Image) -> Option<super::LibraryVariab
     } else {
         name
     };
-    let Some(variable) = library.variables.get(name) else {
+    let Some(variable) = library.variable(name) else {
         return None;
     };
     Some(super::LibraryVariable {
@@ -79,16 +82,97 @@ struct Field<'a> {
 }
 
 struct Library {
-    functions: HashMap<&'static str, Prototype>,
-    records: HashMap<&'static str, Record<'static>>,
-    variables: HashMap<&'static str, Variable<'static>>,
+    functions: HashMap<&'static str, Function>,
+    records: HashMap<&'static str, RecordData>,
+    variables: HashMap<&'static str, VariableData>,
+}
+
+struct Function {
+    text: &'static RawValue,
+    parameter_names: Option<&'static RawValue>,
+    inherit_parameter_names: bool,
+    prototype: OnceLock<Prototype>,
+}
+
+impl Function {
+    fn prototype(&self) -> &Prototype {
+        self.prototype.get_or_init(|| {
+            let text: &'static str =
+                serde_json::from_str(self.text.get()).expect("valid generated prototype text");
+            let (name, mut prototype) = super::parse(text);
+            if let Some(names) = self.parameter_names {
+                let names: Vec<&str> =
+                    serde_json::from_str(names.get()).expect("valid generated parameter names");
+                prototype.parameter_names = names.into_iter().map(str::to_owned).collect();
+            }
+            if self.inherit_parameter_names {
+                inherit_parameter_name(name, &mut prototype);
+            }
+            prototype
+        })
+    }
+}
+
+impl std::ops::Deref for Function {
+    type Target = Prototype;
+
+    fn deref(&self) -> &Self::Target {
+        self.prototype()
+    }
+}
+
+struct RecordData {
+    text: &'static RawValue,
+    record: OnceLock<Record<'static>>,
+}
+
+impl RecordData {
+    fn record(&self) -> &Record<'static> {
+        self.record
+            .get_or_init(|| serde_json::from_str(self.text.get()).expect("valid generated record"))
+    }
+}
+
+impl std::ops::Deref for RecordData {
+    type Target = Record<'static>;
+
+    fn deref(&self) -> &Self::Target {
+        self.record()
+    }
+}
+
+struct VariableData {
+    text: &'static RawValue,
+    variable: OnceLock<Variable<'static>>,
+}
+
+impl VariableData {
+    fn variable(&self) -> &Variable<'static> {
+        self.variable.get_or_init(|| {
+            serde_json::from_str(self.text.get()).expect("valid generated variable")
+        })
+    }
+}
+
+impl Library {
+    fn prototype(&self, name: &str) -> Option<&Prototype> {
+        self.functions.get(name).map(Function::prototype)
+    }
+
+    fn record(&self, name: &str) -> Option<&Record<'static>> {
+        self.records.get(name).map(RecordData::record)
+    }
+
+    fn variable(&self, name: &str) -> Option<&Variable<'static>> {
+        self.variables.get(name).map(VariableData::variable)
+    }
 }
 
 pub(super) fn record(name: &str, image: &Image) -> Option<super::LibraryRecord> {
     let Some(library) = image_library(image) else {
         return None;
     };
-    let Some(record) = library.records.get(name) else {
+    let Some(record) = library.record(name) else {
         return None;
     };
     let mut fields = Vec::new();
@@ -147,13 +231,15 @@ struct Targets<'a> {
 #[derive(Deserialize)]
 struct Target<'a> {
     #[serde(borrow)]
-    functions: HashMap<&'a str, &'a str>,
+    functions: HashMap<&'a str, &'a RawValue>,
     #[serde(borrow)]
-    records: HashMap<&'a str, Record<'a>>,
+    records: HashMap<&'a str, &'a RawValue>,
     #[serde(default, borrow)]
-    variables: HashMap<&'a str, Variable<'a>>,
+    variables: HashMap<&'a str, &'a RawValue>,
     #[serde(default, borrow)]
     imports: HashMap<&'a str, &'a str>,
+    #[serde(default, borrow)]
+    parameter_names: HashMap<&'a str, &'a RawValue>,
     #[serde(default, borrow)]
     conventions: HashMap<&'a str, &'a str>,
     #[serde(default, borrow)]
@@ -180,8 +266,7 @@ pub(crate) fn is_i386_com_interface(name: &str) -> bool {
     let libraries = WINDOWS.get_or_init(|| targets(include_str!("windows.json")));
     libraries["i686-w64-mingw32"]
         .library
-        .records
-        .get(name)
+        .record(name)
         .is_some_and(|record| {
             record
                 .fields
@@ -198,8 +283,18 @@ fn targets(text: &'static str) -> HashMap<&'static str, TargetLibrary> {
         .targets
         .into_iter()
         .map(|(name, target)| {
+            let Target {
+                functions,
+                records,
+                variables,
+                imports,
+                parameter_names,
+                conventions,
+                typedefs,
+                guids: target_guids,
+            } = target;
             let mut guids = HashMap::<[u8; 16], Vec<&str>>::new();
-            for (name, bytes) in target.guids {
+            for (name, bytes) in target_guids {
                 guids.entry(bytes).or_default().push(name);
             }
             for names in guids.values_mut() {
@@ -209,17 +304,48 @@ fn targets(text: &'static str) -> HashMap<&'static str, TargetLibrary> {
                 name,
                 TargetLibrary {
                     library: Library {
-                        functions: target
-                            .functions
-                            .values()
-                            .map(|text| super::parse(text))
+                        functions: functions
+                            .into_iter()
+                            .map(|(name, text)| {
+                                (
+                                    name,
+                                    Function {
+                                        text,
+                                        parameter_names: parameter_names.get(name).copied(),
+                                        inherit_parameter_names: false,
+                                        prototype: OnceLock::new(),
+                                    },
+                                )
+                            })
                             .collect(),
-                        records: target.records,
-                        variables: target.variables,
+                        records: records
+                            .into_iter()
+                            .map(|(name, text)| {
+                                (
+                                    name,
+                                    RecordData {
+                                        text,
+                                        record: OnceLock::new(),
+                                    },
+                                )
+                            })
+                            .collect(),
+                        variables: variables
+                            .into_iter()
+                            .map(|(name, text)| {
+                                (
+                                    name,
+                                    VariableData {
+                                        text,
+                                        variable: OnceLock::new(),
+                                    },
+                                )
+                            })
+                            .collect(),
                     },
-                    imports: target.imports,
-                    conventions: target.conventions,
-                    typedefs: target.typedefs,
+                    imports,
+                    conventions,
+                    typedefs,
                     guids,
                 },
             )
@@ -308,15 +434,31 @@ pub(super) fn for_image(name: &str, image: &Image) -> Option<&'static Prototype>
         return None;
     };
     if image.format == Format::Elf {
-        return target
-            .library
-            .functions
-            .get(super::undecorated(name, false));
+        return target.library.prototype(super::undecorated(name, false));
     }
     let Some(qualified) = qualified else {
         return None;
     };
     resolved_windows_import(target, qualified).map(|(_, prototype)| prototype)
+}
+
+pub(super) fn inherit_parameter_name(name: &str, prototype: &mut Prototype) {
+    if !prototype.parameter_names.is_empty() {
+        return;
+    }
+    let libraries = LINUX.get_or_init(|| targets(include_str!("linux.json")));
+    let Some(source) = libraries.get("x86_64-linux-gnu") else {
+        return;
+    };
+    let Some(source) = source.library.prototype(name) else {
+        return;
+    };
+    if prototype.params == source.params
+        && source.parameter_names.len() == prototype.params.len()
+        && source.parameter_names.iter().any(|name| !name.is_empty())
+    {
+        prototype.parameter_names = source.parameter_names.clone();
+    }
 }
 
 fn resolved_windows_import<'a>(
@@ -328,8 +470,7 @@ fn resolved_windows_import<'a>(
     };
     target
         .library
-        .functions
-        .get(name)
+        .prototype(name)
         .map(|prototype| (name, prototype))
 }
 
@@ -454,27 +595,64 @@ fn library() -> &'static Library {
         let source: Source<'static> =
             serde_json::from_str(include_str!("macos.json")).expect("valid generated type library");
         assert_eq!(source.version, 1, "supported type library version");
+        let functions = source
+            .functions
+            .into_iter()
+            .map(|(name, text)| {
+                (
+                    name,
+                    Function {
+                        text,
+                        parameter_names: source.parameter_names.get(name).copied(),
+                        inherit_parameter_names: true,
+                        prototype: OnceLock::new(),
+                    },
+                )
+            })
+            .collect();
+        let records = source
+            .records
+            .into_iter()
+            .map(|(name, text)| {
+                (
+                    name,
+                    RecordData {
+                        text,
+                        record: OnceLock::new(),
+                    },
+                )
+            })
+            .collect();
+        let variables = source
+            .variables
+            .into_iter()
+            .map(|(name, text)| {
+                (
+                    name,
+                    VariableData {
+                        text,
+                        variable: OnceLock::new(),
+                    },
+                )
+            })
+            .collect();
         Library {
-            functions: source
-                .functions
-                .values()
-                .map(|text| super::parse(text))
-                .collect(),
-            records: source.records,
-            variables: source.variables,
+            functions,
+            records,
+            variables,
         }
     })
 }
 
 pub(super) fn of(name: &str) -> Option<&'static Prototype> {
-    library().functions.get(name)
+    library().prototype(name)
 }
 
 pub(crate) fn is_library_record(definition: &Definition) -> bool {
     let libraries = WINDOWS.get().into_iter().chain(LINUX.get());
     let records = libraries.flat_map(|targets| targets.values().map(|target| &target.library));
     records.chain(MACOS.get()).any(|library| {
-        let Some(record) = library.records.get(definition.name.as_str()) else {
+        let Some(record) = library.record(definition.name.as_str()) else {
             return false;
         };
         !record.opaque
@@ -568,7 +746,7 @@ pub(crate) fn apply_records(ir: &mut FunctionIr, image: &Image) {
             }
             continue;
         }
-        let Some(record) = library.records.get(name.as_str()) else {
+        let Some(record) = library.record(name.as_str()) else {
             continue;
         };
         if record.opaque {

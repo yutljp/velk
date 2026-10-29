@@ -223,15 +223,15 @@ fn <unnamed> @ 0x180001150 (size 117)
 -- decompile
 /* velk pseudo-C: sub_1800011d0 @ 0x1800011d0 */
 int32_t sub_1800011d0(uint32_t *a0, int32_t a1) {
-    uint8_t local_0; /* [sp-11] */
+    uint8_t result; /* [sp-11] */
 
-    local_0 = 0;
+    result = 0;
     if (a0 == 0) {
-        return local_0 & 0x1;
+        return result & 0x1;
     }
-    local_0 = 0;
+    result = 0;
     if (a1 <= 0) {
-        return local_0 & 0x1;
+        return result & 0x1;
     }
     uint8_t v3 = 1;
     if (*a0 != 1) {
@@ -239,8 +239,8 @@ int32_t sub_1800011d0(uint32_t *a0, int32_t a1) {
         int32_t v4 = a0[v6];
         v3 = a0[v6] == 1;
     }
-    local_0 = v3;
-    return local_0 & 0x1;
+    result = v3;
+    return result & 0x1;
 }
 -- signature
 int32_t (uint32_t * a0, int32_t a1)

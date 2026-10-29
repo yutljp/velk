@@ -11,48 +11,48 @@ extern uint32_t g; /* address: 0x220464 */
 /* velk pseudo-C: d7 @ 0x210184 */
 /* ref: 0x220464 .bss */
 int d7(int x) {
-    int32_t v1 = -1;
+    int32_t result = -1;
     if ((uint32_t)x <= 9) {
-        v1 = g;
+        result = g;
         if ((uint32_t)x > 0) {
-            g = v1;
-            v1 = (uint32_t)v1 + 1;
+            g = result;
+            result = (uint32_t)result + 1;
         }
         if ((uint32_t)x > 1) {
-            g = v1;
-            v1 = (uint32_t)v1 + 2;
+            g = result;
+            result = (uint32_t)result + 2;
         }
         if ((uint32_t)x > 2) {
-            g = v1;
-            v1 = (uint32_t)v1 + 3;
+            g = result;
+            result = (uint32_t)result + 3;
         }
         if ((uint32_t)x > 3) {
-            g = v1;
-            v1 = (uint32_t)v1 + 4;
+            g = result;
+            result = (uint32_t)result + 4;
         }
         if ((uint32_t)x > 4) {
-            g = v1;
-            v1 = (uint32_t)v1 + 5;
+            g = result;
+            result = (uint32_t)result + 5;
         }
         if ((uint32_t)x > 5) {
-            g = v1;
-            v1 = (uint32_t)v1 + 6;
+            g = result;
+            result = (uint32_t)result + 6;
         }
         if ((uint32_t)x > 6) {
-            g = v1;
-            v1 = (uint32_t)v1 + 7;
+            g = result;
+            result = (uint32_t)result + 7;
         }
         if ((uint32_t)x > 7) {
-            g = v1;
-            v1 = (uint32_t)v1 + 8;
+            g = result;
+            result = (uint32_t)result + 8;
         }
         if ((uint32_t)x > 8) {
-            g = v1;
-            v1 = (uint32_t)v1 + 9;
+            g = result;
+            result = (uint32_t)result + 9;
         }
     }
-    g = v1;
-    return v1;
+    g = result;
+    return result;
 }
 -- signature
 int (int x)

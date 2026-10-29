@@ -1897,6 +1897,7 @@ fn a_function_whose_address_is_taken_is_declared_and_read_as_a_number() {
         0x40,
         crate::analysis::prototypes::Prototype {
             params: vec![CType::U64],
+            parameter_names: Vec::new(),
             ret: CType::I64,
             variadic: false,
             format: None,

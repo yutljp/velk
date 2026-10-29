@@ -112,6 +112,8 @@ pub(crate) use generated::{
 pub struct Prototype {
     /// The parameters before any variadic ones, in order.
     pub params: Vec<CType>,
+    /// Names supplied by a target library declaration, in parameter order.
+    pub parameter_names: Vec<String>,
     pub ret: CType,
     pub variadic: bool,
     /// The position among the integer arguments of the format string whose
@@ -817,9 +819,23 @@ fn table(declarations: &'static [&'static str]) -> Table {
         .collect()
 }
 
-fn library() -> &'static Table {
-    static TABLE: OnceLock<Table> = OnceLock::new();
-    TABLE.get_or_init(|| table(LIBRARY))
+fn library(name: &str) -> Option<&'static Prototype> {
+    static TABLE: OnceLock<HashMap<&'static str, (Prototype, OnceLock<Prototype>)>> =
+        OnceLock::new();
+    let functions = TABLE.get_or_init(|| {
+        table(LIBRARY)
+            .into_iter()
+            .map(|(name, prototype)| (name, (prototype, OnceLock::new())))
+            .collect()
+    });
+    let Some((prototype, named)) = functions.get(name) else {
+        return None;
+    };
+    Some(named.get_or_init(|| {
+        let mut prototype = prototype.clone();
+        generated::inherit_parameter_name(name, &mut prototype);
+        prototype
+    }))
 }
 
 fn runtime_table() -> &'static Table {
@@ -864,6 +880,7 @@ fn parse(declaration: &'static str) -> (&'static str, Prototype) {
         name,
         Prototype {
             params,
+            parameter_names: Vec::new(),
             ret: parse_type(ret),
             variadic,
             format,
@@ -970,7 +987,7 @@ pub fn of(name: &str, macho: bool) -> Option<&'static Prototype> {
         if macho && let Some(prototype) = generated::of(candidate) {
             return Some(prototype);
         }
-        if let Some(prototype) = library().get(candidate) {
+        if let Some(prototype) = library(candidate) {
             return Some(prototype);
         }
     }

@@ -28,6 +28,7 @@ struct Vtable {
 };
 struct Object { struct Vtable *lpVtbl; };
 struct __attribute__((packed)) Packed { char tag; Query method; };
+int named_parameters(int count, const void *buffer);
 """
         for target, width in [("i686-w64-mingw32", 4), ("x86_64-w64-mingw32", 8)]:
             with self.subTest(target=target), tempfile.TemporaryDirectory() as temp:
@@ -37,6 +38,10 @@ struct __attribute__((packed)) Packed { char tag; Query method; };
                     generator.SCALARS[name] = width
                 generator.SCALARS["long"] = generator.SCALARS["unsigned long"] = 4
                 type_library, _ = generator.extract("clang", None, target, source)
+                self.assertEqual(
+                    type_library["parameter_names"]["named_parameters"],
+                    ["count", "buffer"],
+                )
                 self.assertEqual(type_library["guids"]["IID_TypeTest"], list(bytes.fromhex("67452381cdab01ef23456789abcdefff")))
                 fields = type_library["records"]["struct Vtable"]["fields"]
                 self.assertEqual([field[1] for field in fields],

@@ -54,8 +54,8 @@ void *(calloc)(size_t, size_t);
 == 0x140001000 crt_stdio
 -- decompile
 /* velk pseudo-C: crt_stdio @ 0x140001000 */
-int crt_stdio(const char *a0, FILE *a1) {
-    return fputs(a0, a1);
+int crt_stdio(const char *_Str, FILE *_File) {
+    return fputs(_Str, _File);
 }
 -- signature
 int (const char * a0, FILE * a1)
@@ -90,8 +90,8 @@ fn crt_alloc @ 0x14000100e (size 14)
 == 0x14000101c crt_number
 -- decompile
 /* velk pseudo-C: crt_number @ 0x14000101c */
-int32_t crt_number(const char *a0, char **a1) {
-    return strtol(a0, a1, 10);
+int32_t crt_number(const char *_Str, char **_EndPtr) {
+    return strtol(_Str, _EndPtr, 10);
 }
 -- signature
 int32_t (const char * a0, char ** a1)
@@ -108,8 +108,8 @@ fn crt_number @ 0x14000101c (size 20)
 == 0x140001030 crt_string
 -- decompile
 /* velk pseudo-C: crt_string @ 0x140001030 */
-char *crt_string(const char *a0, int a1) {
-    return strchr(a0, a1);
+char *crt_string(const char *_Str, int _Val) {
+    return strchr(_Str, _Val);
 }
 -- signature
 char * (const char * a0, int a1)
@@ -126,8 +126,8 @@ fn crt_string @ 0x140001030 (size 14)
 == 0x14000103e crt_wide
 -- decompile
 /* velk pseudo-C: crt_wide @ 0x14000103e */
-size_t crt_wide(const unsigned short *a0) {
-    return wcslen(a0);
+size_t crt_wide(const unsigned short *_Str) {
+    return wcslen(_Str);
 }
 -- signature
 size_t (const unsigned short * a0)
@@ -164,8 +164,8 @@ fn crt_time @ 0x14000104c (size 15)
 -- decompile
 /* velk pseudo-C: crt_math @ 0x14000105b */
 /* ref: 0x1400022b4 .rdata */
-double crt_math(double a0) {
-    double v1 = sin(a0);
+double crt_math(double _X) {
+    double v1 = sin(_X);
     return v1;
 }
 -- signature
@@ -184,8 +184,8 @@ fn crt_math @ 0x14000105b (size 15)
 -- decompile
 /* velk pseudo-C: crt_secure @ 0x14000106a */
 /* ref: 0x1400022c4 .rdata */
-int crt_secure(char *a0, unsigned long long a1, const char *a2) {
-    return strcpy_s(a0, a1, a2);
+int crt_secure(char *_Dst, unsigned long long _SizeInBytes, const char *_Src) {
+    return strcpy_s(_Dst, _SizeInBytes, _Src);
 }
 -- signature
 int (char * a0, unsigned long long a1, const char * a2)
@@ -203,8 +203,8 @@ fn crt_secure @ 0x14000106a (size 15)
 -- decompile
 /* velk pseudo-C: crt_wide_secure @ 0x140001079 */
 /* ref: 0x1400022d4 .rdata */
-int crt_wide_secure(unsigned short *a0, unsigned long long a1, const unsigned short *a2) {
-    return wcscpy_s(a0, a1, a2);
+int crt_wide_secure(unsigned short *_Dst, unsigned long long _SizeInWords, const unsigned short *_Src) {
+    return wcscpy_s(_Dst, _SizeInWords, _Src);
 }
 -- signature
 int (unsigned short * a0, unsigned long long a1, const unsigned short * a2)
@@ -241,8 +241,8 @@ fn crt_process @ 0x140001088 (size 15)
 -- decompile
 /* velk pseudo-C: crt_io @ 0x140001097 */
 /* ref: 0x14000226c .rdata */
-int crt_io(int a0) {
-    return _close(a0);
+int crt_io(int __fd) {
+    return _close(__fd);
 }
 -- signature
 int (int a0)
@@ -278,8 +278,8 @@ fn crt_errno @ 0x1400010a6 (size 15)
 == 0x1400010b5 crt_locale
 -- decompile
 /* velk pseudo-C: crt_locale @ 0x1400010b5 */
-char *crt_locale(int a0, const char *a1) {
-    return setlocale(a0, a1);
+char *crt_locale(int _Category, const char *_Locale) {
+    return setlocale(_Category, _Locale);
 }
 -- signature
 char * (int a0, const char * a1)
@@ -297,8 +297,8 @@ fn crt_locale @ 0x1400010b5 (size 14)
 -- decompile
 /* velk pseudo-C: crt_ctype @ 0x1400010c3 */
 /* ref: 0x14000229c .rdata */
-int crt_ctype(int a0) {
-    return isalpha(a0);
+int crt_ctype(int _C) {
+    return isalpha(_C);
 }
 -- signature
 int (int a0)

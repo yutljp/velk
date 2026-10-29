@@ -10,12 +10,12 @@
 int64_t frame_bounds(int64_t a0) {
     _Alignas(16) uint8_t local_0[0x208]; /* [sp-208] */
 
-    uint64_t *i = (uint64_t *)(local_0);
+    uint64_t *v1 = (uint64_t *)(local_0);
     do {
-        *i = a0;
+        *v1 = a0;
         a0 = (uint64_t)a0 * 0x19660d + 0x3c6ef35f;
-        ++i;
-    } while (i != (void *)(local_0 + 0x200));
+        ++v1;
+    } while (v1 != (void *)(local_0 + 0x200));
     uint64_t *v4 = (uint64_t *)(local_0);
     int64_t result = 0;
     do {

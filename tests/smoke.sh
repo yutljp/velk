@@ -647,7 +647,7 @@ ok "table-driven switch"
 # 15) switch recovery from an indirect-branch jump table
 jump_table_c=$("$BIN" --decompile $FIX/arm64_jumptable.elf d7 2>/dev/null)
 echo "$jump_table_c" | grep -F 'if ((uint32_t)a0 <= 9)' >/dev/null || fail "jump-table bounds"
-[ "$(echo "$jump_table_c" | grep -Fc 'v1 = g;')" -eq 1 ] || fail "jump-table shared load"
+[ "$(echo "$jump_table_c" | grep -Fc 'result = g;')" -eq 1 ] || fail "jump-table shared load"
 for limit in {0..8}; do
   echo "$jump_table_c" | grep -F "if ((uint32_t)a0 > $limit)" >/dev/null || fail "jump-table case $limit"
 done
