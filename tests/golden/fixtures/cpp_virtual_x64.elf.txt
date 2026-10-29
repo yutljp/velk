@@ -56,9 +56,9 @@ fn __cxa_pure_virtual @ 0x2013a0 (size 2)
 /* ref: 0x203610 .bss */
 /* ref: 0x204610 .bss */
 int64_t operator_new_2013b0(int64_t a0) {
-    int64_t v1 = _ZL4used;
+    uint64_t v1 = _ZL4used;
     _ZL4used = ((int64_t)((uint64_t)a0 + 15) & 0xfffffffffffffff0) + v1;
-    return 0x203610 + (uint64_t)v1;
+    return 0x203610 + v1;
 }
 -- signature
 int64_t (int64_t a0)
@@ -129,8 +129,8 @@ fn Shape::~Shape() @ 0x201400 (size 2)
 struct velk_area_slot_2_vtable { uint64_t slots[2]; uint64_t (*area)(); };
 struct velk_area_slot_2_object { struct velk_area_slot_2_vtable *vtable; };
 int32_t Shape__scaled(uint64_t *a0, int32_t a1) {
-    int32_t v3 = ((struct velk_area_slot_2_object *)(a0))->vtable->area(a0); /* vtable slot 2: Square__area, Rect__area */
-    return (uint32_t)v3 * a1;
+    uint32_t v3 = ((struct velk_area_slot_2_object *)(a0))->vtable->area(a0); /* vtable slot 2: Square__area, Rect__area */
+    return v3 * a1;
 }
 -- signature
 int32_t (uint64_t * a0, int32_t a1)
@@ -172,8 +172,8 @@ fn Square::Square(int) @ 0x201420 (size 14)
 -- decompile
 /* velk pseudo-C: Square::area() const @ 0x201430 */
 int32_t Square__area(uint32_t *a0) {
-    int32_t v1 = a0[2];
-    return (uint32_t)v1 * v1;
+    uint32_t v1 = a0[2];
+    return v1 * v1;
 }
 -- signature
 int32_t (uint32_t * a0)
@@ -251,9 +251,9 @@ fn Rect::scaled(int) const @ 0x201470 (size 12)
 /* ref: 0x203610 .bss */
 /* ref: 0x204610 .bss */
 int32_t square_area(int32_t a0) {
-    int64_t v1 = _ZL4used;
-    struct S1 *v2 = (struct S1 *)(int64_t)(0x203610 + (uint64_t)v1);
-    _ZL4used = (int64_t)((uint64_t)v1 + 16);
+    uint64_t v1 = _ZL4used;
+    struct S1 *v2 = (struct S1 *)(0x203610 + v1);
+    _ZL4used = v1 + 16;
     Square__Square(v2, a0 & 0xffffffff);
     int32_t v3 = Square__area(v2); /* via vtable slot 2 */
     Square___Square(); /* via vtable slot 1 */
@@ -283,9 +283,9 @@ fn square_area(int) @ 0x201480 (size 81)
 /* ref: 0x203610 .bss */
 /* ref: 0x204610 .bss */
 int32_t rect_scaled(int32_t a0, int32_t a1, int32_t a2) {
-    int64_t v3 = _ZL4used;
-    struct S2 *v4 = (struct S2 *)(int64_t)(0x203610 + (uint64_t)v3);
-    _ZL4used = (int64_t)((uint64_t)v3 + 16);
+    uint64_t v3 = _ZL4used;
+    struct S2 *v4 = (struct S2 *)(0x203610 + v3);
+    _ZL4used = v3 + 16;
     Rect__Rect(v4, a0 & 0xffffffff, a1 & 0xffffffff);
     return Rect__scaled(v4, a2 & 0xffffffff); /* via vtable slot 3 */
 }

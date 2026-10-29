@@ -75,21 +75,21 @@ int64_t sub_2101f0(struct S2 *a0, int32_t a1) {
     }
     if (a1 != 1) {
         v3 = 0;
-        int64_t v5 = 0;
+        uint64_t v5 = 0;
         struct S2 *v6 = a0 + 0x1;
         v2 = (uint32_t)a1 & 0x7ffffffe;
-        int64_t v7 = v2;
+        uint64_t v7 = v2;
         do {
-            int64_t v8 = v6[-1].f_8;
-            int64_t v9 = v6[-1].f_10;
-            v7 = (uint64_t)v7 - 2;
-            int64_t v10 = v6->f_8;
-            int64_t v11 = v6->f_10;
+            uint64_t v8 = v6[-1].f_8;
+            uint64_t v9 = v6[-1].f_10;
+            v7 -= 2;
+            uint64_t v10 = v6->f_8;
+            uint64_t v11 = v6->f_10;
             v6 += 0x2;
-            v3 = (uint64_t)v8 * v9 + v3;
-            v5 = (uint64_t)v10 * v11 + v5;
+            v3 = v8 * v9 + v3;
+            v5 = v10 * v11 + v5;
         } while (v7 != 0);
-        v3 = (uint64_t)v5 + v3;
+        v3 = v5 + v3;
         if (v2 == (uint32_t)a1) {
             return v3;
         }
@@ -97,14 +97,14 @@ int64_t sub_2101f0(struct S2 *a0, int32_t a1) {
         v2 = 0;
         v3 = 0;
     }
-    int64_t v12 = (uint32_t)a1 - v2;
+    uint64_t v12 = (uint32_t)a1 - v2;
     struct S2 *v13 = a0 + v2;
     do {
-        int64_t v14 = v13->f_8;
-        int64_t v15 = v13->f_10;
-        v12 = (uint64_t)v12 - 1;
+        uint64_t v14 = v13->f_8;
+        uint64_t v15 = v13->f_10;
+        --v12;
         ++v13;
-        v3 = (uint64_t)v14 * v15 + v3;
+        v3 = v14 * v15 + v3;
     } while (v12 != 0);
     return v3;
 }
@@ -182,11 +182,11 @@ fn <unnamed> @ 0x210290 (size 24)
 int64_t sub_2102a8(int64_t a0) {
     uint64_t v2;
 
-    int64_t v1 = (uint64_t)a0 << 1;
+    uint64_t v1 = (uint64_t)a0 << 1;
     *(uint64_t *)(v2) = a0;
     *(uint64_t *)(v2 + 0x8) = (int64_t)((uint64_t)a0 + 1);
     *(uint64_t *)(v2 + 0x10) = v1;
-    *(uint64_t *)(v2 + 0x18) = (int64_t)((uint64_t)v1 + a0);
+    *(uint64_t *)(v2 + 0x18) = v1 + a0;
     return a0;
 }
 -- signature

@@ -149,9 +149,9 @@ int sum_till_neg(int *p, int n) {
     }
     if (n >= v2) {
         int32_t v4 = (uint32_t)(uintptr_t)p;
-        int32_t v5 = -(uint32_t)n;
+        uint32_t v5 = -(uint32_t)n;
         v6 = (uint32_t)(uintptr_t)p + 12;
-        int32_t v7 = (uint32_t)n - 1;
+        uint32_t v7 = (uint32_t)n - 1;
         int32_t v8 = 0;
         uint32_t v9 = 0;
         while (true) {
@@ -281,9 +281,9 @@ int sum_until_zero(int *p, int n) {
     }
     if (n >= v2) {
         int32_t v3 = (uint32_t)(uintptr_t)p;
-        int32_t v4 = -(uint32_t)n;
+        uint32_t v4 = -(uint32_t)n;
         v5 = (uint32_t)(uintptr_t)p + 12;
-        int32_t v6 = (uint32_t)n - 1;
+        uint32_t v6 = (uint32_t)n - 1;
         int32_t v7 = 0;
         uint32_t v8 = 0;
         while (true) {
@@ -298,9 +298,9 @@ int sum_until_zero(int *p, int n) {
             if (v12 == 0) {
                 break;
             }
-            int32_t v13 = v12 & (v12 >> 31 ^ 0xffffffff);
+            uint32_t v13 = v12 & (v12 >> 31 ^ 0xffffffff);
             int32_t v16 = v4 + v8;
-            v7 = (uint32_t)v7 + v13;
+            v7 += v13;
             if (v16 == 0xfffffffe) {
                 return v7;
             }

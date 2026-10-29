@@ -56,9 +56,9 @@ fn __cxa_pure_virtual @ 0x210394 (size 4)
 /* ref: 0x2305c8 .bss */
 /* ref: 0x2315c8 .bss */
 int64_t operator_new_210398(int64_t a0) {
-    int64_t v1 = _ZL4used;
+    uint64_t v1 = _ZL4used;
     _ZL4used = v1 + ((int64_t)((uint64_t)a0 + 15) & 0xfffffffffffffff0);
-    return 0x2305c8 + (uint64_t)v1;
+    return 0x2305c8 + v1;
 }
 -- signature
 int64_t (int64_t a0)
@@ -131,8 +131,8 @@ fn Shape::~Shape() @ 0x2103c8 (size 4)
 struct velk_area_slot_2_vtable { uint64_t slots[2]; uint64_t (*area)(); };
 struct velk_area_slot_2_object { struct velk_area_slot_2_vtable *vtable; };
 int32_t Shape__scaled(uint64_t *a0, int32_t a1) {
-    int32_t v3 = ((struct velk_area_slot_2_object *)(a0))->vtable->area(a0); /* vtable slot 2: Square__area, Rect__area */
-    return (uint32_t)v3 * a1;
+    uint32_t v3 = ((struct velk_area_slot_2_object *)(a0))->vtable->area(a0); /* vtable slot 2: Square__area, Rect__area */
+    return v3 * a1;
 }
 -- signature
 int32_t (uint64_t * a0, int32_t a1)
@@ -173,8 +173,8 @@ fn Square::Square(int) @ 0x2103f8 (size 20)
 -- decompile
 /* velk pseudo-C: Square::area() const @ 0x21040c */
 int32_t Square__area(uint32_t *a0) {
-    int32_t v1 = a0[2];
-    return (uint32_t)v1 * v1;
+    uint32_t v1 = a0[2];
+    return v1 * v1;
 }
 -- signature
 int32_t (uint32_t * a0)
@@ -251,11 +251,11 @@ fn Rect::scaled(int) const @ 0x210438 (size 20)
 /* ref: 0x2305c8 .bss */
 /* ref: 0x2315c8 .bss */
 int32_t square_area(int32_t a0) {
-    int64_t v1 = _ZL4used;
-    _ZL4used = (int64_t)((uint64_t)v1 + 16);
-    Square__Square((int64_t)(0x2305c8 + (uint64_t)v1), a0 & 0xffffffff);
-    int32_t v4 = Square__area((int64_t)(0x2305c8 + (uint64_t)v1)); /* via vtable slot 2 */
-    Square___Square((int64_t)(0x2305c8 + (uint64_t)v1)); /* via vtable slot 1 */
+    uint64_t v1 = _ZL4used;
+    _ZL4used = v1 + 16;
+    Square__Square(0x2305c8 + v1, a0 & 0xffffffff);
+    int32_t v4 = Square__area(0x2305c8 + v1); /* via vtable slot 2 */
+    Square___Square(0x2305c8 + v1); /* via vtable slot 1 */
     return v4;
 }
 -- signature
@@ -281,10 +281,10 @@ fn square_area(int) @ 0x21044c (size 108)
 /* ref: 0x2305c8 .bss */
 /* ref: 0x2315c8 .bss */
 int32_t rect_scaled(int32_t a0, int32_t a1, int32_t a2) {
-    int64_t v1 = _ZL4used;
-    _ZL4used = (int64_t)((uint64_t)v1 + 16);
-    Rect__Rect((int64_t)(0x2305c8 + (uint64_t)v1), a0 & 0xffffffff, a1 & 0xffffffff);
-    return Rect__scaled((int64_t)(0x2305c8 + (uint64_t)v1), a2 & 0xffffffff); /* via vtable slot 3 */
+    uint64_t v1 = _ZL4used;
+    _ZL4used = v1 + 16;
+    Rect__Rect(0x2305c8 + v1, a0 & 0xffffffff, a1 & 0xffffffff);
+    return Rect__scaled(0x2305c8 + v1, a2 & 0xffffffff); /* via vtable slot 3 */
 }
 -- signature
 int32_t (int32_t a0, int32_t a1, int32_t a2)

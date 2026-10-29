@@ -91,8 +91,8 @@ int32_t point_add(int32_t a0, int32_t a1, int32_t a2, int32_t a3) {
     int32_t v4 = *(uint32_t *)(sp);
     *(uint32_t *)(sp - 0xc) = v4;
     *(uint32_t *)((uint32_t)a0) = (uint32_t)a1 + a3;
-    int32_t v5 = *(uint32_t *)(sp - 0xc);
-    int32_t v6 = (uint32_t)a2 + v5;
+    uint32_t v5 = *(uint32_t *)(sp - 0xc);
+    int32_t v6 = a2 + v5;
     *(uint32_t *)((uint32_t)a0 + 4) = v6;
     return v6;
 }

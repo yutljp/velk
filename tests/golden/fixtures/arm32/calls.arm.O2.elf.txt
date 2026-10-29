@@ -89,9 +89,9 @@ fn pick_op @ 0x20150 (size 40)
 -- decompile
 /* velk pseudo-C: apply_table @ 0x20178 */
 int apply_table(unsigned int index, int x) {
-    int32_t v3 = ((uint64_t)index * 0xaaaaaaab >> 32 >> 1) * 3;
-    int32_t v4 = index - v3;
-    if ((uint32_t)v4 + v3 != v3 && v4 == 1) {
+    uint32_t v3 = ((uint64_t)index * 0xaaaaaaab >> 32 >> 1) * 3;
+    uint32_t v4 = index - v3;
+    if (v4 + v3 != v3 && v4 == 1) {
         return ((int32_t)(square((uint32_t)x)));
     }
     return ((int32_t)(twice((uint32_t)x)));
@@ -125,7 +125,7 @@ fn apply_table @ 0x20178 (size 52)
 -- decompile
 /* velk pseudo-C: apply_pointer @ 0x201ac */
 int apply_pointer(void *f, int x) {
-    return (uint32_t)((int32_t)(((uint32_t (*)())(uint32_t)(uintptr_t)f)((uint32_t)x))) + 1;
+    return ((uint32_t)(((uint32_t (*)())(uint32_t)(uintptr_t)f)((uint32_t)x))) + 1;
 }
 -- signature
 int (void * f, int x)
@@ -316,11 +316,11 @@ int sum_varargs(int count, ...) {
         return v3;
     }
     v2 = (v10 + ((uint64_t)count << 2)) & 0xffffffff;
-    int32_t v4 = (uintptr_t)(&local_0.f_0);
+    uint32_t v4 = (uintptr_t)(&local_0.f_0);
     uint32_t v5 = (uintptr_t)(&local_0.f_0);
     uint32_t v6 = v2;
     if ((uintptr_t)(&local_0.f_0) < v2) {
-        v2 = (uint32_t)v4 + 4;
+        v2 = v4 + 4;
     }
     if (v5 < v6) {
         v5 = v10;

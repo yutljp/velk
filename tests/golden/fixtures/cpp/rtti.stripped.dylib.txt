@@ -888,8 +888,8 @@ int32_t multiple(int64_t a0) {
 
     local_0 = v2;
     sub_7a8(local_1, a0);
-    int32_t v3 = dispatch(local_1);
-    return (uint32_t)((int32_t)(sub_7b8(local_1))) + v3;
+    uint32_t v3 = dispatch(local_1);
+    return ((uint32_t)(sub_7b8(local_1))) + v3;
 }
 -- signature
 int32_t (int64_t a0)
@@ -1000,7 +1000,7 @@ int32_t catch_many(void) {
     uint64_t v12;
     void *v1;
     uint32_t *v3;
-    int32_t v5;
+    uint32_t v5;
 
     *(uint64_t *)(sp - 0x20) = v10;
     *(uint64_t *)(sp - 0x18) = v9;
@@ -1113,8 +1113,8 @@ L_a70:
         _Unwind_Resume(v10);
     }
     uint32_t *v9 = __cxa_begin_catch(v10);
-    int32_t v12 = *v9;
-    uint32_t v13 = (uint32_t)v12 + 3;
+    uint32_t v12 = *v9;
+    uint32_t v13 = v12 + 3;
     __cxa_end_catch();
     return v13;
 }

@@ -129,10 +129,10 @@ int popcount(unsigned int x) {
         x = 0;
     }
     if (v1 != v2) {
-        int32_t v3 = x;
+        uint32_t v3 = x;
         int32_t v4 = 0;
         while (true) {
-            int32_t v5 = (uint32_t)v3 - 1;
+            uint32_t v5 = v3 - 1;
             v4 = (uint32_t)v4 + 1;
             int32_t v6 = v5 & v3;
             v3 = v5 & v3;

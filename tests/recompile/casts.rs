@@ -1,4 +1,141 @@
 use super::*;
+use velk::ir::RegRef;
+use velk::ir::VARIABLE_BASE;
+
+#[test]
+fn wrapping_locals_keep_unsigned_bits_for_every_architecture() {
+    let mut candidates = Vec::new();
+    let counts = [0, 1, 2, 3, 7];
+    for isa in [Isa::X86_64, Isa::I386, Isa::AArch64, Isa::Arm32] {
+        let bits = if velk::arch::pointer_bytes(isa) == 4 {
+            32
+        } else {
+            64
+        };
+        let width = bits as u8;
+        let integer = CType::int(width / 8, false);
+        let values = if bits == 32 {
+            [
+                0,
+                1,
+                0x7fff_ffff,
+                0x8000_0000,
+                u32::MAX as u64 - 1,
+                u32::MAX as u64,
+            ]
+        } else {
+            [0, 1, 0x7fff_ffff, 0x8000_0000, u64::MAX - 1, u64::MAX]
+        };
+        let inputs: Vec<Vec<u64>> = values
+            .iter()
+            .flat_map(|value| counts.map(|count| vec![*value, count]))
+            .collect();
+        let mut ir = synthetic_ir(
+            &format!("unsigned_wrapping_{isa:?}"),
+            vec![
+                Param {
+                    index: 7,
+                    name: "input".into(),
+                    ty: integer.clone(),
+                },
+                Param {
+                    index: 6,
+                    name: "count".into(),
+                    ty: integer.clone(),
+                },
+            ],
+            integer,
+            Vec::new(),
+        );
+        ir.isa = isa;
+        let value = VARIABLE_BASE;
+        let counter = VARIABLE_BASE + 1;
+        ir.blocks = vec![
+            Block {
+                start: 0,
+                stmts: vec![
+                    Stmt::Assign {
+                        dest: RegRef {
+                            index: value,
+                            width,
+                        },
+                        value: Expr::reg(7, width),
+                    },
+                    Stmt::Assign {
+                        dest: RegRef {
+                            index: counter,
+                            width,
+                        },
+                        value: Expr::Const(0),
+                    },
+                    Stmt::Br { target: Some(1) },
+                ],
+            },
+            Block {
+                start: 1,
+                stmts: vec![Stmt::Brif {
+                    cond: Cond::Eq,
+                    lhs: Expr::reg(counter, width),
+                    rhs: Expr::reg(6, width),
+                    target: 3,
+                }],
+            },
+            Block {
+                start: 2,
+                stmts: vec![
+                    Stmt::Assign {
+                        dest: RegRef {
+                            index: value,
+                            width,
+                        },
+                        value: Expr::bin(BinOp::Add, Expr::reg(value, width), Expr::Const(1)),
+                    },
+                    Stmt::Assign {
+                        dest: RegRef {
+                            index: counter,
+                            width,
+                        },
+                        value: Expr::bin(BinOp::Add, Expr::reg(counter, width), Expr::Const(1)),
+                    },
+                    Stmt::Brif {
+                        cond: Cond::Ne,
+                        lhs: Expr::reg(counter, width),
+                        rhs: Expr::reg(6, width),
+                        target: 2,
+                    },
+                ],
+            },
+            Block {
+                start: 3,
+                stmts: vec![Stmt::Ret {
+                    value: Expr::reg(value, width),
+                }],
+            },
+        ];
+        let candidate = printed_candidate(ir, inputs.clone());
+        assert!(
+            candidate.code.lines().any(|line| {
+                let line = line.trim_start();
+                line.starts_with(&format!("uint{bits}_t result"))
+                    || line.starts_with(&format!("uint{bits}_t v"))
+            }),
+            "{}",
+            candidate.code
+        );
+        assert!(
+            !candidate.code.contains(&format!("(uint{bits}_t)")),
+            "{}",
+            candidate.code
+        );
+        assert!(
+            !candidate.code.contains(&format!("(int{bits}_t)")),
+            "{}",
+            candidate.code
+        );
+        candidates.push(candidate);
+    }
+    check_candidates("unsigned-wrapping-locals", candidates, Mode::Registers, &[]);
+}
 
 #[test]
 fn returned_address_copies_keep_pointer_types() {

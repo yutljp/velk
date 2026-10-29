@@ -291,7 +291,7 @@ echo "$narrow_dest" | grep "+ (v8 << 1)) - 1;" >/dev/null || fail "mask implied 
 echo "$narrow_dest" | grep "a0 = .*0xffffffff" >/dev/null && fail "return mask kept"
 ok "masks implied by the destination"
 masked_ir=$("$BIN" --decompile $FIX/arm64.o sum_arr 2>/dev/null)
-echo "$masked_ir" | grep -E "v3 = \(uint32_t\)v[0-9]+ \+ v3;" >/dev/null || fail "mask bounded by its constant"
+echo "$masked_ir" | grep -E "v3 = v[0-9]+ \+ v3;" >/dev/null || fail "unsigned accumulator cast not removed"
 echo "$masked_ir" | grep "w10 + w8) & 0xffffffff" >/dev/null && fail "bounded mask kept"
 ok "mask bounded by the constant"
 dwarf_ir=$("$BIN" --decompile $FIX/arm64_debug.elf helper 2>/dev/null)

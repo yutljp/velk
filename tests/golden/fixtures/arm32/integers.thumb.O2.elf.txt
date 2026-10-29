@@ -131,19 +131,19 @@ int popcount(unsigned int x) {
         x = 0;
     }
     if (v1 != v2) {
-        int32_t v3 = x;
+        uint32_t v3 = x;
         int32_t v4 = 1;
         while (true) {
-            int32_t v5 = (uint32_t)v3 - 1;
-            int32_t v7 = v3 & v5;
+            uint32_t v5 = v3 - 1;
+            uint32_t v7 = v3 & v5;
             if ((v3 & v5) == 0) break;
-            int32_t v18 = (uint32_t)v7 - 2;
-            int32_t v19 = v7 & v18;
+            uint32_t v18 = v7 - 2;
+            uint32_t v19 = v7 & v18;
             if ((v7 & v18) == 0) {
                 return (uint32_t)v4 + 1;
             }
-            int32_t v20 = (uint32_t)v19 - 2;
-            int32_t v21 = v19 & v20;
+            uint32_t v20 = v19 - 2;
+            uint32_t v21 = v19 & v20;
             int32_t v22 = v19 & v20;
             if (v22 == 0) {
                 v4 = (uint32_t)v4 + 2;
@@ -151,7 +151,7 @@ int popcount(unsigned int x) {
             if (v22 == 0) {
                 return v4;
             }
-            int32_t v23 = (uint32_t)v21 - 2;
+            uint32_t v23 = v21 - 2;
             v3 = v21 & v23;
             v4 = (uint32_t)v4 + 4;
             int32_t v24 = v21 & v23;

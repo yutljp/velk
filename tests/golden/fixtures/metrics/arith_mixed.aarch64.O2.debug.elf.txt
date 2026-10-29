@@ -118,11 +118,11 @@ int sum_arr(int *p, int n) {
         uint64_t v7 = 0;
         uint64_t *v8 = (uint64_t *)(p + 0x4);
         v2 = (uint32_t)n & 0x7ffffff8;
-        int64_t v9 = v2;
+        uint64_t v9 = v2;
         do {
             struct velk_vector vector = { .low.u64 = v8[-2], .high.u64 = v8[-1] };
             struct velk_vector vector_2 = { .low.u64 = *v8, .high.u64 = v8[1] };
-            v9 = (uint64_t)v9 - 8;
+            v9 -= 8;
             v8 += 0x4;
             v4 = add_lanes32(vector.low.u64, v4);
             v5 = add_lanes32(vector.high.u64, v5);
@@ -138,12 +138,12 @@ int sum_arr(int *p, int n) {
         v3 = 0;
     }
     int *v15 = p + v2;
-    int64_t v16 = (uint32_t)n - v2;
+    uint64_t v16 = (uint32_t)n - v2;
     do {
-        int32_t v18 = *v15;
+        uint32_t v18 = *v15;
         ++v15;
-        v16 = (uint64_t)v16 - 1;
-        v3 = (uint32_t)v18 + v3;
+        --v16;
+        v3 = v18 + v3;
     } while (v16 != 0);
     return v3;
 }

@@ -624,7 +624,7 @@ fn <unnamed> @ 0x201bc0 (size 10)
 /* velk pseudo-C: sub_201bd0 @ 0x201bd0 */
 int32_t sub_201bd0(uint64_t *a0) {
     uint64_t *v1 = (uint64_t *)*a0;
-    int32_t v2 = (uintptr_t)((uint8_t *)a0 + v1[-4]);
+    uint32_t v2 = (uintptr_t)((uint8_t *)a0 + v1[-4]);
     sub_201bc0();
     return (uintptr_t)v1;
 }
@@ -728,8 +728,8 @@ int32_t sub_201c30(int32_t a0) {
     _Alignas(16) uint8_t local_0[0x18]; /* [sp-28] */
 
     sub_201ad0(local_0, a0 & 0xffffffff);
-    int32_t v3 = sub_201be0(local_0);
-    return (uint32_t)((int32_t)(sub_201b08(local_0))) + v3;
+    uint32_t v3 = sub_201be0(local_0);
+    return ((uint32_t)(sub_201b08(local_0))) + v3;
 }
 -- signature
 int32_t (int32_t a0)

@@ -99,7 +99,7 @@ fn <unnamed> @ 0x180001040 (size 52)
 -- decompile
 /* velk pseudo-C: sub_180001080 @ 0x180001080 */
 int32_t sub_180001080(void *a0, int32_t a1) {
-    return (uint32_t)((int32_t)(((uint64_t (*)())a0)(a1 & 0xffffffff))) + 1;
+    return ((uint32_t)(((uint64_t (*)())a0)(a1 & 0xffffffff))) + 1;
 }
 -- signature
 int32_t (void * a0, int32_t a1)
@@ -118,8 +118,7 @@ fn <unnamed> @ 0x180001080 (size 32)
 /* velk pseudo-C: sub_1800010a0 @ 0x1800010a0 */
 int32_t sub_1800010a0(int32_t a0) {
     if (a0 > 1) {
-        uint32_t v5 = a0;
-        uint32_t v4 = v5 * sub_1800010a0((uint32_t)a0 - 1);
+        uint32_t v4 = a0 * ((uint32_t)(sub_1800010a0((uint32_t)a0 - 1)));
         return v4;
     }
     return 1;

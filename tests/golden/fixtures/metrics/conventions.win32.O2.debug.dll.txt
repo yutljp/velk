@@ -86,10 +86,10 @@ fn _thiscall_add @ 0x10001030 (size 9)
 /* velk pseudo-C: _call_conventions @ 0x10001040 */
 int _call_conventions(uint32_t a0) {
     uint32_t v1 = a0;
-    int32_t v2 = _cdecl_add(v1, 1);
-    int32_t v5 = (uint32_t)((int32_t)(_stdcall_add_8(v1, 2))) + v2;
-    int32_t v8 = (uint32_t)((int32_t)(_fastcall_add_12(v1, 3, 4))) + v5;
-    return (uint32_t)((int32_t)(_thiscall_add(v1, 5))) + v8;
+    uint32_t v2 = _cdecl_add(v1, 1);
+    uint32_t v5 = ((uint32_t)(_stdcall_add_8(v1, 2))) + v2;
+    uint32_t v8 = ((uint32_t)(_fastcall_add_12(v1, 3, 4))) + v5;
+    return ((uint32_t)(_thiscall_add(v1, 5))) + v8;
 }
 -- signature
 int ()

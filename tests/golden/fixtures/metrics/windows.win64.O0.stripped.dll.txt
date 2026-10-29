@@ -19,7 +19,7 @@ uint64_t imported_value();
 /* velk pseudo-C: sub_180001000 @ 0x180001000 */
 /* ref: 0x1800020a0 .rdata */
 int32_t sub_180001000(int32_t a0) {
-    return (uint32_t)((int32_t)(imported_value(a0 & 0xffffffff))) + 3;
+    return ((uint32_t)(imported_value(a0 & 0xffffffff))) + 3;
 }
 -- signature
 int32_t (int32_t a0)

@@ -58,13 +58,13 @@ long item_last_key(struct item *items, int n) {
         return 0;
     }
     int64_t v2 = 0;
-    int64_t v3 = (uint32_t)n;
+    uint64_t v3 = (uint32_t)n;
     uint8_t *v4 = (uint8_t *)&items->count;
     do {
         if (*(int32_t *)(v4) >= 1) {
             v2 = *(uint64_t *)(v4 - 0x8);
         }
-        v3 = (uint64_t)v3 - 1;
+        --v3;
         v4 += 0x10;
     } while (v3 != 0);
     return v2;

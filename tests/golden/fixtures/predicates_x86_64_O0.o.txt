@@ -49,12 +49,12 @@ fn original64 @ 0x10 (size 18)
 -- decompile
 /* velk pseudo-C: original_fixed @ 0x30 */
 int32_t original_fixed(int32_t a0) {
-    int32_t v1 = a0;
+    uint32_t v1 = a0;
     if ((a0 & 0x1) == 0) {
-        return (uint32_t)v1 + 7;
+        return v1 + 7;
     }
-    int32_t v2 = (uint32_t)v1 + 2;
-    return (uint32_t)v2 + 7;
+    uint32_t v2 = v1 + 2;
+    return v2 + 7;
 }
 -- signature
 int32_t (int32_t a0)
@@ -144,11 +144,11 @@ fn opaque_bits @ 0xf0 (size 56)
 -- decompile
 /* velk pseudo-C: opaque_fixed @ 0x130 */
 int32_t opaque_fixed(int32_t a0) {
-    int32_t v1 = a0;
+    uint32_t v1 = a0;
     if ((a0 & 0x1) != 0) {
-        v1 = (uint32_t)v1 + 2;
+        v1 += 2;
     }
-    return (uint32_t)v1 + 7;
+    return v1 + 7;
 }
 -- signature
 int32_t (int32_t a0)

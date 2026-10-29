@@ -31,11 +31,11 @@ int matrix_trace(int *m, int n) {
         uint32_t v5 = 0;
         for (;;) {
             v6 = v3 + (v5 * n << 2);
-            int32_t v7 = 0;
+            uint32_t v7 = 0;
             for (;;) {
-                v7 = (uint32_t)v7 + 1;
-                int32_t v9 = (uint32_t)v7 - 1;
-                if (v5 == (uint32_t)v7 - 1) {
+                ++v7;
+                uint32_t v9 = v7 - 1;
+                if (v5 == v7 - 1) {
                     v1 = *(uint32_t *)(v6 + (v5 << 2));
                 }
                 if (v5 == v9) {
@@ -388,35 +388,35 @@ int find_pair(int *p, int n, int target) {
     int32_t v2 = -1;
     if (n >= 1) {
         int32_t v3 = (uint32_t)v1 + 4;
-        int32_t v4 = (uint32_t)n - 1;
-        int32_t v5 = (uint32_t)n + 1;
+        uint32_t v4 = (uint32_t)n - 1;
+        uint32_t v5 = (uint32_t)n + 1;
         int32_t v6 = 0;
         int32_t v7 = 1;
         do {
             uint32_t v8 = v6;
             v6 = (uint32_t)v6 + 1;
             if (v6 < n) {
-                int32_t v9 = *(uint32_t *)(v1 + (v8 << 2));
+                uint32_t v9 = *(uint32_t *)(v1 + (v8 << 2));
                 v10 = v3;
-                int32_t v11 = v4;
+                uint32_t v11 = v4;
                 int32_t v12 = v7;
                 for (;;) {
-                    int32_t v13 = *(uint32_t *)((uint32_t)v10);
+                    uint32_t v13 = *(uint32_t *)((uint32_t)v10);
                     v10 = (uint32_t)v10 + 4;
-                    if ((uint32_t)v13 + v9 == target) {
+                    if (v13 + v9 == target) {
                         int32_t v15 = v12;
                         return v15;
                     }
                     v12 = (uint32_t)v12 + 1;
-                    v11 = (uint32_t)v11 - 1;
+                    --v11;
                     if (v11 == 0) {
                         break;
                     }
                 }
             }
-            v7 = (uint32_t)v7 + v5;
+            v7 += v5;
             v3 = (uint32_t)v3 + 4;
-            v4 = (uint32_t)v4 - 1;
+            --v4;
         } while (v6 != n);
         return v2;
     }

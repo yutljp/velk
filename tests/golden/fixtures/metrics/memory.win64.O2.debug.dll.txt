@@ -69,13 +69,13 @@ void copy_bytes(unsigned char *dst, unsigned char *src, uint32_t n) {
     }
 L_1800010a6:;
     int64_t v15 = v7;
-    int64_t v16 = n & 0x3;
+    uint64_t v16 = n & 0x3;
     if (v16 != 0) {
         v15 = v7;
         do {
             dst[v15] = src[v15];
             v15 = (uint64_t)v15 + 1;
-            v16 = (uint64_t)v16 - 1;
+            --v16;
         } while (v16 != 0);
     }
     if (v7 - n > -4) {

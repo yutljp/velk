@@ -22,7 +22,7 @@ int32_t total_area(uint64_t *a0, int32_t a1) {
     do {
         uint64_t *v5 = (uint64_t *)a0[v3];
         uint64_t *v6 = (uint64_t *)*v5;
-        v4 = (uint32_t)v4 + ((int32_t)(((uint64_t (*)())v6[2])(v5)));
+        v4 += ((uint32_t)(((uint64_t (*)())v6[2])(v5)));
         v3 = (uint64_t)v3 + 1;
     } while ((uint32_t)a1 != v3);
     return v4;

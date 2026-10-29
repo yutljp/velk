@@ -646,6 +646,125 @@ fn variables_are_declared_with_the_types_their_uses_give() {
 }
 
 #[test]
+fn unsigned_wrapping_locals_use_unsigned_declarations() {
+    let value = VARIABLE_BASE;
+    let mut ir = FunctionIr::single_block(
+        Isa::X86_64,
+        vec![
+            Stmt::Store {
+                addr: Expr::reg(5, 64),
+                value: Expr::reg(6, 64),
+                width: 8,
+            },
+            assign(
+                value,
+                Expr::Load {
+                    addr: Box::new(Expr::reg(5, 64)),
+                    width: 8,
+                    signed: false,
+                },
+            ),
+            assign(
+                value,
+                Expr::bin(BinOp::Add, Expr::reg(value, 64), Expr::Const(1)),
+            ),
+            Stmt::Store {
+                addr: Expr::reg(7, 64),
+                value: Expr::reg(value, 64),
+                width: 4,
+            },
+            Stmt::Ret {
+                value: Expr::reg(value, 64),
+            },
+        ],
+    );
+    ir.params = vec![
+        Param {
+            index: 7,
+            name: "out".to_owned(),
+            ty: CType::pointer_to(CType::U32),
+        },
+        Param {
+            index: 5,
+            name: "source".to_owned(),
+            ty: CType::pointer_to(CType::U64),
+        },
+        Param {
+            index: 6,
+            name: "input".to_owned(),
+            ty: CType::U64,
+        },
+    ];
+    ir.ret_type = CType::U64;
+
+    let text = rendered(&ir);
+    assert!(
+        text.contains("uint64_t result") || text.contains("uint64_t v1"),
+        "{text}"
+    );
+    assert!(!text.contains("(uint64_t)result"), "{text}");
+    assert!(!text.contains("(uint64_t)v1"), "{text}");
+    assert!(!text.contains("(int64_t)((uint64_t)"), "{text}");
+}
+
+#[test]
+fn signed_wrapping_locals_keep_signed_declarations() {
+    let value = VARIABLE_BASE;
+    let mut ir = FunctionIr::single_block(
+        Isa::X86_64,
+        vec![
+            assign(value, Expr::reg(6, 64)),
+            assign(
+                value,
+                Expr::bin(BinOp::Add, Expr::reg(value, 64), Expr::Const(1)),
+            ),
+            Stmt::Ret {
+                value: Expr::reg(value, 64),
+            },
+        ],
+    );
+    ir.params = vec![Param {
+        index: 6,
+        name: "input".to_owned(),
+        ty: CType::I64,
+    }];
+    ir.ret_type = CType::I64;
+
+    let text = rendered(&ir);
+    assert!(text.contains("int64_t input"), "{text}");
+    assert!(text.contains("(uint64_t)"), "{text}");
+}
+
+#[test]
+fn unsigned_wrapping_arithmetic_matches_machine_bits_smt() {
+    use crate::ir::smt::{self, Proofs};
+
+    if !Proofs::available() {
+        return;
+    }
+    let mut proofs = Proofs::default();
+    for bits in [32, 64] {
+        for operator in ["bvadd", "bvsub", "bvmul"] {
+            let left = format!("((_ extract {} 0) r0)", bits - 1);
+            let right = format!("((_ extract {} 0) r1)", bits - 1);
+            let c_result = format!("({operator} {left} {right})");
+            let c_result = if bits == 64 {
+                c_result
+            } else {
+                format!("((_ zero_extend {}) {c_result})", 64 - bits)
+            };
+            let ir_result = smt::low(&format!("({operator} r0 r1)"), bits);
+            proofs.predicate(
+                format!("unsigned wrapping arithmetic/{bits}/{operator}"),
+                &ir_result,
+                &c_result,
+            );
+        }
+    }
+    proofs.check();
+}
+
+#[test]
 fn a_counter_kept_to_32_bits_is_a_32_bit_variable() {
     // v1 = 0; v1 = (v1 + 1) & 0xffffffff; *a0 = (int32_t)v1; return v1;
     let counter = VARIABLE_BASE;
@@ -1343,7 +1462,7 @@ fn an_array_of_structures_is_indexed_by_elements() {
         "    struct sub_0_a0 *v1 = a0 + a1;\n",
         "    v1->f_0 = 0;\n",
         "    v1 += 0x2;\n",
-        "    int32_t v2 = (uintptr_t)&a0[a1].f_8;\n",
+        "    uint32_t v2 = (uintptr_t)&a0[a1].f_8;\n",
         "    return *(uint32_t *)((uint8_t *)a0 + ((uint64_t)a1 << 4) + 0xc);\n",
     ] {
         assert!(text.contains(line), "{line:?} in {text}");

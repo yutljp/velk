@@ -107,10 +107,10 @@ int sum_arr(int *p, int n) {
             int32_t v8 = -(v5 << 2);
             v21 = 0;
             while (true) {
-                int32_t v10 = *(uint32_t *)((uint32_t)v7 + 16);
+                uint32_t v10 = *(uint32_t *)((uint32_t)v7 + 16);
                 v7 = (uint32_t)v7 + 16;
                 v6 -= 4;
-                v21 = (uint32_t)v21 + v10;
+                v21 += v10;
                 struct S1 *v12 = (struct S1 *)((uint32_t)v7 + 4);
                 v21 += v12->f_0;
                 v21 += v12->f_4;

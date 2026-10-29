@@ -443,8 +443,8 @@ int32_t multiple(int32_t a0) {
     _Alignas(16) uint8_t local_1[0x8]; /* [sp-10] */
 
     sub_1800010b0(local_0, a0 & 0xffffffff);
-    int32_t v3 = dispatch(local_0);
-    return (uint32_t)((int32_t)(sub_180001100(local_1))) + v3;
+    uint32_t v3 = dispatch(local_0);
+    return ((uint32_t)(sub_180001100(local_1))) + v3;
 }
 -- signature
 int32_t (int32_t a0)

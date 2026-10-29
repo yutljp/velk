@@ -48,7 +48,7 @@ int32_t sub_180001020(int32_t a0) {
     }
     int32_t v1 = (uint32_t)a0 + 1;
     uint64_t v2 = (v1 >= 3 ? v1 : 2) & 0xffffffff;
-    int32_t v4 = ((v2 - 3) & 0xffffffff) * (0x1fffffffe + v2) >> 1;
+    uint32_t v4 = ((v2 - 3) & 0xffffffff) * (0x1fffffffe + v2) >> 1;
     return v4 + v2 * 2 - 3;
 }
 -- signature

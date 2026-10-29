@@ -30,8 +30,9 @@ fn original_line @ 0x0 (size 18)
 == 0x20 flattened_line
 -- decompile
 /* velk pseudo-C: flattened_line @ 0x20 */
-int32_t flattened_line(int32_t result) {
-    int32_t v6 = (uint32_t)result + 3;
+int32_t flattened_line(int32_t a0) {
+    uint32_t v2 = a0;
+    int32_t v6 = v2 + 3;
     return v6 ^ 0x55;
 }
 -- signature
@@ -58,13 +59,13 @@ fn flattened_line @ 0x20 (size 107)
 -- decompile
 /* velk pseudo-C: original_branch @ 0x90 */
 int32_t original_branch(int32_t a0) {
-    int32_t v1 = a0;
+    uint32_t v1 = a0;
     if ((a0 & 0x1) == 0) {
-        int32_t v3 = v1 ^ 0x55;
-        return (uint32_t)v3 + 7;
+        uint32_t v3 = v1 ^ 0x55;
+        return v3 + 7;
     }
-    int32_t v4 = (uint32_t)v1 + 3;
-    return (uint32_t)v4 + 7;
+    uint32_t v4 = v1 + 3;
+    return v4 + 7;
 }
 -- signature
 int32_t (int32_t a0)
@@ -89,12 +90,13 @@ fn original_branch @ 0x90 (size 46)
 -- decompile
 /* velk pseudo-C: flattened_branch @ 0xc0 */
 int32_t flattened_branch(int32_t a0) {
-    if ((a0 & 0x1) != 0) {
-        a0 = (uint32_t)a0 + 3;
+    uint32_t v2 = a0;
+    if ((v2 & 0x1) != 0) {
+        v2 += 3;
     } else {
-        a0 ^= 0x55;
+        v2 ^= 0x55;
     }
-    return (uint32_t)a0 + 7;
+    return v2 + 7;
 }
 -- signature
 int32_t (int32_t a0)
@@ -192,11 +194,11 @@ fn flattened_loop @ 0x1a0 (size 141)
 -- decompile
 /* velk pseudo-C: variable_transition @ 0x230 */
 int32_t variable_transition(int32_t a0) {
-    int32_t v1 = 11;
-    while ((uint32_t)v1 - 11 == 0) {
+    uint32_t v1 = 11;
+    while (v1 - 11 == 0) {
         v1 = a0;
     }
-    if ((uint32_t)v1 - 29 == 0) {
+    if (v1 - 29 == 0) {
         return (uint32_t)a0 + 3;
     }
     return a0;

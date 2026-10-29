@@ -26,12 +26,12 @@ void copy_bytes(unsigned char *dst, unsigned char *src, unsigned long n) {
             uint64_t *v2 = (uint64_t *)(src + 0x10);
             uint64_t *v3 = (uint64_t *)(dst + 0x10);
             v1 = n & 0xffffffffffffffe0;
-            int64_t v4 = v1;
+            uint64_t v4 = v1;
             do {
                 {
                     unsigned char transfer[32];
                     __builtin_memcpy(transfer, v2 - 0x2, 32);
-                    v4 = (uint64_t)v4 - 32;
+                    v4 -= 32;
                     v2 += 0x4;
                     __builtin_memcpy(v3 - 0x2, transfer, 32);
                 }
@@ -63,13 +63,13 @@ void copy_bytes(unsigned char *dst, unsigned char *src, unsigned long n) {
         }
     }
 L_2102a4:;
-    int64_t v14 = n - v1;
+    uint64_t v14 = n - v1;
     uint8_t *v15 = (uint8_t *)(dst + v1);
     uint8_t *v16 = (uint8_t *)(src + v1);
     do {
         uint8_t v17 = *v16;
         ++v16;
-        v14 = (uint64_t)v14 - 1;
+        --v14;
         *v15 = v17;
         ++v15;
     } while (v14 != 0);

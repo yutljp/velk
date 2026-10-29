@@ -218,6 +218,33 @@ pub(crate) fn variable_types(
         match stmt {
             Stmt::Assign {
                 dest,
+                value:
+                    Expr::Bin {
+                        op: BinOp::Add | BinOp::Sub | BinOp::Mul,
+                        ..
+                    },
+            } if dest.width >= 32 => {
+                uses.wrapping.insert(dest.index);
+            }
+            Stmt::Ret { value } if ir.ret_type.integer().is_some_and(|(_, signed)| signed) => {
+                if let Some(index) = copied(value) {
+                    uses.signed_context.insert(index);
+                }
+            }
+            Stmt::Call {
+                args: Some(args), ..
+            } => {
+                for argument in args {
+                    if let Some(index) = copied(argument) {
+                        uses.signed_context.insert(index);
+                    }
+                }
+            }
+            _ => {}
+        }
+        match stmt {
+            Stmt::Assign {
+                dest,
                 value: Expr::Reg { width: 64, .. },
             } if dest.width == 64 => {}
             Stmt::Store { value, .. } => integer_reads(value, &mut integer_copies),
@@ -243,6 +270,12 @@ pub(crate) fn variable_types(
         match stmt {
             Stmt::Assign { dest, value } => {
                 uses.seen.insert(dest.index);
+                let mut dependencies = HashSet::new();
+                crate::ir::visit::expr_reads(value, &mut dependencies);
+                uses.dependencies
+                    .entry(dest.index)
+                    .or_default()
+                    .extend(dependencies);
                 if dest.width == 64
                     && let Expr::Reg { index, width: 64 } = value
                 {
@@ -313,6 +346,21 @@ pub(crate) fn variable_types(
             uses.walk(value);
         }
     }
+    loop {
+        let mut sources = Vec::new();
+        for (index, dependencies) in &uses.dependencies {
+            if uses.address_values.contains(index) {
+                sources.extend(dependencies.iter().copied());
+            }
+        }
+        let mut changed = false;
+        for source in sources {
+            changed |= uses.address_values.insert(source);
+        }
+        if !changed {
+            break;
+        }
+    }
     uses.spread_floats();
     uses.preserve_upper_bits();
     // Small literal offsets remain integers: pointer arithmetic requires
@@ -331,6 +379,24 @@ pub(crate) fn variable_types(
         }
     }
     let signs = SignEvidence::of_variables(ir);
+    let mut signed_values = uses.signed_context.clone();
+    signed_values.extend(signs.signed.iter().copied());
+    for (&index, ty) in &ir.value_types {
+        if ty.integer().is_some_and(|(_, signed)| signed) {
+            signed_values.insert(index);
+        }
+    }
+    loop {
+        let mut changed = false;
+        for &(destination, source) in &uses.copies {
+            if signed_values.contains(&destination) {
+                changed |= signed_values.insert(source);
+            }
+        }
+        if !changed {
+            break;
+        }
+    }
     let mut types = BTreeMap::new();
     let mut ints = HashSet::new();
     for &index in &uses.seen {
@@ -405,7 +471,11 @@ pub(crate) fn variable_types(
         .collect();
     let narrowed = crate::render::widths::narrow_variables(ir, &ints, narrow, &pointers);
     for index in ints {
-        let signed = !uses.bits.contains(&index) && signs.mostly_signed(index);
+        let wrapping_unsigned = uses.wrapping.contains(&index)
+            && !signed_values.contains(&index)
+            && !uses.address_values.contains(&index);
+        let signed =
+            !uses.bits.contains(&index) && signs.mostly_signed(index) && !wrapping_unsigned;
         let ty = match narrowed.get(&index) {
             // A byte or a half word no signed operation reads is taken for
             // one without a sign, as is one a reader extends with zeros.
@@ -804,6 +874,14 @@ struct Uses {
     arithmetic: HashSet<u16>,
     /// Registers holding lanes or bit counts, which have no sign.
     bits: HashSet<u16>,
+    /// Registers assigned by or read in wrapping integer arithmetic.
+    wrapping: HashSet<u16>,
+    /// Registers read while computing addresses.
+    address_values: HashSet<u16>,
+    /// The registers read in each assignment.
+    dependencies: HashMap<u16, HashSet<u16>>,
+    /// Registers whose signed values must reach an output unchanged.
+    signed_context: HashSet<u16>,
     /// Registers whose upper 32 bits are read.
     upper_reads: HashSet<u16>,
     /// `(destination, source)` of each copy.
@@ -896,6 +974,7 @@ impl Uses {
     }
 
     fn address(&mut self, addr: &Expr, width: u8) {
+        crate::ir::visit::expr_reads(addr, &mut self.address_values);
         if let Some(base) = base(addr) {
             self.addresses.entry(base).or_default().push(width);
         }
@@ -917,6 +996,10 @@ impl Uses {
                 }
             }
             Expr::Bin { op, lhs, rhs } => {
+                if matches!(op, BinOp::Add | BinOp::Sub | BinOp::Mul) {
+                    crate::ir::visit::expr_reads(lhs, &mut self.wrapping);
+                    crate::ir::visit::expr_reads(rhs, &mut self.wrapping);
+                }
                 if matches!(op, BinOp::Shr | BinOp::Sar)
                     && matches!(rhs.as_ref(), Expr::Const(shift) if *shift >= 32 && *shift < 64)
                     && let Some(index) = copied(lhs)

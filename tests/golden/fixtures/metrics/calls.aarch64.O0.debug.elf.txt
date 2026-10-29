@@ -100,7 +100,7 @@ fn apply_table @ 0x21037c (size 72)
 -- decompile
 /* velk pseudo-C: apply_pointer @ 0x2103c4 */
 int apply_pointer(void *f, int x) {
-    return (uint32_t)((int32_t)(((uint64_t (*)())f)(x & 0xffffffff))) + 1;
+    return ((uint32_t)(((uint64_t (*)())f)(x & 0xffffffff))) + 1;
 }
 -- signature
 int (void * f, int x)
@@ -120,7 +120,7 @@ fn apply_pointer @ 0x2103c4 (size 48)
 int factorial(int n) {
     uint32_t v5 = n;
     if (n > 1) {
-        return v5 * factorial(v5 - 1);
+        return v5 * ((uint32_t)(factorial(v5 - 1)));
     }
     return 1;
 }

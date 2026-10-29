@@ -165,6 +165,7 @@ ba687369e7062c9a0af2cfb0875f6bd869d8a9981ea1348b83cb509ddab6d948  src/render/str
 77e3da73f79cb91b44f56539e6cbe46b7c6d4ec891e097fa57e3dc9e5f59c862  src/render/transfers.rs	fn fill(nodes:
 d6ed2930da3050a1e796935096262bd31b5c04a40d9547f751d04af0fe1c2c7f  src/render/transfers.rs	fn filled_range<'a>(
 c6a2555762303231a86118191e713279616e150d252086d24de10427275987aa  src/render/transfers.rs	fn string_copy(
+c908528619bfe45a3df4cf71c50f444d9fd1880e56f0948d56696461f991ef5c  src/render/variables.rs	pub(crate) fn variable_types(
 b2a04f2a497dc47a6ba1ca33730431055a77b606e1fd6067725f2ce52f5592d2  src/render/variables.rs	pub(super) fn call_pointer_types(
 9d8b67c41b4ec6446e770a9f25b123b38eada5dc6bdc637503859d0470e6fc9e  src/render/virtual_calls.rs	pub(super) fn prepare(
 bfdcdef48102d3e0d46218a589765c63baaff91dc48d6173ab2f781ceec3508d  src/render/widths.rs	pub(crate) fn narrow_variables(

@@ -75,7 +75,7 @@ fn original_branch @ 0x50 (size 19)
 int32_t flattened_branch(int32_t a0) {
     int32_t v4;
 
-    int32_t v1 = a0;
+    uint32_t v1 = a0;
     int32_t v2 = 11;
     for (;;) {
         int32_t v3 = ((v1 & 0x1) == 0 ? 47 : 29);
@@ -85,13 +85,13 @@ int32_t flattened_branch(int32_t a0) {
         } while (v4 == 11);
         switch (v4) {
         case 29:
-            v1 = (uint32_t)v1 + 3;
+            v1 += 3;
             break;
         case 47:
             v1 ^= 0x55;
             break;
         case 61:
-            return (uint32_t)v1 + 7;
+            return v1 + 7;
         default:
             return 0;
         }

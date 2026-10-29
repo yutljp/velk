@@ -41,7 +41,7 @@ int64_t sub_210238(struct S2 *a0, int32_t a1) {
 
     result = 0;
     for (i = 0; i < a1; i++) {
-        int64_t v2 = a0[i].f_10;
+        uint64_t v2 = a0[i].f_10;
         result += a0[i].f_8 * v2;
     }
     return result;

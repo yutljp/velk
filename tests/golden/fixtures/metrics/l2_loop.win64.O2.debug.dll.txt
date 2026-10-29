@@ -14,47 +14,47 @@ extern uint32_t sink; /* address: 0x180003000 */
 /* velk pseudo-C: sum_while @ 0x180001000 */
 /* ref: 0x180003000 .data */
 int sum_while(int n) {
-    int32_t v8;
+    uint32_t v8;
 
     if (n <= 0) {
         return 0;
     }
-    int32_t v1 = n & 0x7;
-    int32_t v2 = 0;
+    uint32_t v1 = n & 0x7;
+    uint32_t v2 = 0;
     int32_t v3 = 0;
     if ((uint32_t)n >= 8) {
-        int32_t v5 = -(n & 0x7ffffff8);
+        uint32_t v5 = -(n & 0x7ffffff8);
         v3 = 0;
         v2 = 7;
         do {
-            int32_t v7 = (uint32_t)v2 + v3;
+            uint32_t v7 = v2 + v3;
             v8 = v2;
-            sink = (uint32_t)v3 + v8 - 7;
-            int32_t v17 = (uint32_t)v8 + v7 - 7;
-            sink = (uint32_t)v8 + v7 - 13;
-            int32_t v18 = (uint32_t)v8 + v17 - 6;
-            sink = (uint32_t)v8 + v17 - 11;
-            int32_t v19 = (uint32_t)v8 + v18 - 5;
-            sink = (uint32_t)v8 + v18 - 9;
-            int32_t v20 = (uint32_t)v8 + v19 - 4;
-            sink = (uint32_t)v8 + v19 - 7;
-            v3 = (uint32_t)v8 + v20 - 3;
-            sink = (uint32_t)v8 + v20 - 5;
-            sink = (uint32_t)v8 + v3 - 3;
-            v3 = v8 + ((uint32_t)v8 + v3 - 2) - 1;
+            sink = v3 + v8 - 7;
+            uint32_t v17 = v8 + v7 - 7;
+            sink = v8 + v7 - 13;
+            uint32_t v18 = v8 + v17 - 6;
+            sink = v8 + v17 - 11;
+            uint32_t v19 = v8 + v18 - 5;
+            sink = v8 + v18 - 9;
+            uint32_t v20 = v8 + v19 - 4;
+            sink = v8 + v19 - 7;
+            v3 = v8 + v20 - 3;
+            sink = v8 + v20 - 5;
+            sink = v8 + v3 - 3;
+            v3 = v8 + (v8 + v3 - 2) - 1;
             sink = v3;
-            v2 = (uint32_t)v2 + 8;
-        } while ((uint32_t)v8 + v5 + 8 != 7);
+            v2 += 8;
+        } while (v8 + v5 + 8 != 7);
         if (v1 == 0) {
             return v3;
         }
-        v2 = (uint32_t)v2 - 7;
+        v2 = v2 - 7;
     }
     do {
-        v3 = (uint32_t)v3 + v2;
+        v3 += v2;
         sink = v3;
-        v2 = (uint32_t)v2 + 1;
-        v1 = (uint32_t)v1 - 1;
+        ++v2;
+        --v1;
     } while (v1 != 0);
     return v3;
 }
@@ -154,13 +154,13 @@ int sum_skip_odd(int n) {
         return 0;
     }
     int32_t v3 = n & 0x7ffffffe;
-    int32_t v4 = 0;
+    uint32_t v4 = 0;
     int32_t v6 = 0;
     do {
-        v6 = (uint32_t)v6 + v4;
+        v6 += v4;
         v6 = (uint32_t)v6 + 1;
         sink = v6;
-        v4 = (uint32_t)v4 + 2;
+        v4 += 2;
     } while (v3 != v4);
     if ((n & 0x1) == 0) {
         return v6;

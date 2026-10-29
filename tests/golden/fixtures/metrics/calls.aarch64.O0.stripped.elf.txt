@@ -98,7 +98,7 @@ fn <unnamed> @ 0x21037c (size 72)
 -- decompile
 /* velk pseudo-C: sub_2103c4 @ 0x2103c4 */
 int32_t sub_2103c4(void *a0, int32_t a1) {
-    return (uint32_t)((int32_t)(((uint64_t (*)())a0)(a1 & 0xffffffff))) + 1;
+    return ((uint32_t)(((uint64_t (*)())a0)(a1 & 0xffffffff))) + 1;
 }
 -- signature
 int32_t (void * a0, int32_t a1)
@@ -118,7 +118,7 @@ fn <unnamed> @ 0x2103c4 (size 48)
 int32_t sub_2103f4(int32_t a0) {
     uint32_t v5 = a0;
     if (a0 > 1) {
-        uint32_t v6 = v5 * sub_2103f4(v5 - 1);
+        uint32_t v6 = v5 * ((uint32_t)(sub_2103f4(v5 - 1)));
         return v6;
     }
     return 1;

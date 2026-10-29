@@ -130,7 +130,7 @@ fn <unnamed> @ 0x2102f0 (size 44)
 -- decompile
 /* velk pseudo-C: sub_21031c @ 0x21031c */
 int32_t sub_21031c(void *a0, int32_t a1) {
-    return (uint32_t)((int32_t)(((uint64_t (*)())a0)(a1 & 0xffffffff))) + 1;
+    return ((uint32_t)(((uint64_t (*)())a0)(a1 & 0xffffffff))) + 1;
 }
 -- signature
 int32_t (void * a0, int32_t a1)
@@ -156,24 +156,24 @@ int32_t sub_21033c(int32_t a0) {
     if (a0 >= 2) {
         if ((uint32_t)a0 >= 9) {
             struct velk_vector vector = { .low.u64 = 0x100000001, .high.u64 = 0x100000001 };
-            int32_t v5 = (uint32_t)a0 - 1;
-            int32_t v6 = v5 & 0xfffffff8;
+            uint32_t v5 = (uint32_t)a0 - 1;
+            uint32_t v6 = v5 & 0xfffffff8;
             struct velk_vector vector_2 = { .low.u64 = add_lanes32((int64_t)((uint64_t)(a0 & 0xffffffff) * 0x100000001), g_200190), .high.u64 = add_lanes32((int64_t)((uint64_t)(a0 & 0xffffffff) * 0x100000001), g_200198) };
             struct velk_vector vector_3 = { .low.u64 = 0x100000001, .high.u64 = 0x100000001 };
-            v1 = (uint32_t)a0 - v6;
-            int32_t v11 = v6;
+            v1 = a0 - v6;
+            uint32_t v11 = v6;
             do {
                 struct velk_vector vector_4 = { .low.u64 = add_lanes32(vector_2.low.u64, 0xfffffffcfffffffc), .high.u64 = add_lanes32(vector_2.high.u64, 0xfffffffcfffffffc) };
                 vector_3.low.u64 = mul_lanes32(vector_2.low.u64, vector_3.low.u64);
                 vector_3.high.u64 = mul_lanes32(vector_2.high.u64, vector_3.high.u64);
-                v11 = (uint32_t)v11 - 8;
+                v11 -= 8;
                 vector_2.low.u64 = add_lanes32(vector_2.low.u64, 0xfffffff8fffffff8);
                 vector_2.high.u64 = add_lanes32(vector_2.high.u64, 0xfffffff8fffffff8);
                 vector.low.u64 = mul_lanes32(vector_4.low.u64, vector.low.u64);
                 vector.high.u64 = mul_lanes32(vector_4.high.u64, vector.high.u64);
             } while (v11 != 0);
             uint64_t v17 = mul_lanes32(mul_lanes32(vector.low.u64, vector_3.low.u64), mul_lanes32(vector.high.u64, vector_3.high.u64));
-            int32_t v18 = v17 >> 32;
+            uint32_t v18 = v17 >> 32;
             v2 = v17 * v18;
             if (v5 == v6) {
                 return v2;

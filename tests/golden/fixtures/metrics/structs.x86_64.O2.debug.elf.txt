@@ -53,7 +53,7 @@ long record_total(struct record *items, int n) {
         v2 = 0;
         v3 = 0;
         do {
-            int64_t v6 = *(int16_t *)(v5 - 0x18) * *(uint64_t *)(v5 - 0x20) + v3;
+            uint64_t v6 = *(int16_t *)(v5 - 0x18) * *(uint64_t *)(v5 - 0x20) + v3;
             v3 = *(int16_t *)(v5) * *(uint64_t *)(v5 - 0x8) + v6;
             v2 = (uint64_t)v2 + 2;
             v5 += 0x30;

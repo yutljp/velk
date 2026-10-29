@@ -491,8 +491,8 @@ int multiple(int value) {
     _Alignas(16) uint8_t local_1[0x8]; /* [sp-10] */
 
     __0Multiple__QEAA_H_Z(local_0, value & 0xffffffff);
-    int32_t v3 = dispatch(local_0);
-    return (uint32_t)((int32_t)(_other_Multiple__UEBAHXZ(local_1))) + v3;
+    uint32_t v3 = dispatch(local_0);
+    return ((uint32_t)(_other_Multiple__UEBAHXZ(local_1))) + v3;
 }
 -- signature
 int (int value)

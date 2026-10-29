@@ -165,8 +165,8 @@ fn umod3x @ 0x1800010b0 (size 23)
 -- decompile
 /* velk pseudo-C: smod3x @ 0x1800010d0 */
 int smod3x(int x) {
-    int64_t v1 = x;
-    uint64_t v2 = (uint64_t)v1 * 0x55555556;
+    uint64_t v1 = x;
+    uint64_t v2 = v1 * 0x55555556;
     return v1 - ((v2 >> 32) + (v2 >> 63)) * 3;
 }
 -- signature

@@ -16,11 +16,11 @@ int32_t sum_while(int32_t a0) {
     if (a0 < 1) {
         return 0;
     }
-    int32_t v1 = 0;
+    uint32_t v1 = 0;
     int32_t v2 = 0;
     do {
-        v2 = (uint32_t)v1 + v2;
-        v1 = (uint32_t)v1 + 1;
+        v2 = v1 + v2;
+        ++v1;
         sink = v2;
     } while (a0 != v1);
     return v2;
@@ -52,10 +52,10 @@ fn sum_while @ 0x0 (size 60)
 -- decompile
 /* velk pseudo-C: count_down @ 0x3c */
 int32_t count_down(int32_t a0) {
-    int32_t v1 = 0;
+    uint32_t v1 = 0;
     int32_t v2 = (a0 > 1 ? a0 : 1);
     do {
-        v1 = (uint32_t)v1 + 1;
+        ++v1;
         sink = v1;
     } while (v2 != v1);
     return v2;

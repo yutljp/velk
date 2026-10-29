@@ -227,8 +227,8 @@ fn abi_exhaust_five @ 0x1800010b0 (size 90)
 /* velk pseudo-C: abi_exhaust_seven @ 0x180001110 */
 int64_t abi_exhaust_seven(int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5, int64_t a6, int64_t a7, int64_t a8) {
     struct S1 *v2 = (struct S1 *)a7;
-    int64_t v7 = v2->f_8;
-    return a8 * 29 + (a6 * 17 + a5 * 13 + (a4 * 11 + (int64_t)((uint64_t)a2 * 5 + (int64_t)((uint64_t)a1 * 3 + a0) + (int64_t)((uint64_t)a3 * 8) - a3))) + v2->f_0 * 19 + (int64_t)((uint64_t)v7 * 24) - v7; /* also returns  */
+    uint64_t v7 = v2->f_8;
+    return a8 * 29 + (a6 * 17 + a5 * 13 + (a4 * 11 + (int64_t)((uint64_t)a2 * 5 + (int64_t)((uint64_t)a1 * 3 + a0) + (int64_t)((uint64_t)a3 * 8) - a3))) + v2->f_0 * 19 + v7 * 24 - v7; /* also returns  */
 }
 -- signature
 int64_t (int64_t a0, int64_t a1, int64_t a2, int64_t a3)
@@ -256,11 +256,11 @@ struct abi_triple {
 struct abi_triple abi_indirect_make(struct abi_pair value, unsigned long long delta) {
     struct abi_triple result = {0};
 
-    int64_t v2 = value.low;
+    uint64_t v2 = value.low;
     result.first = v2 + delta;
-    int64_t v3 = value.high;
+    uint64_t v3 = value.high;
     result.second = delta ^ v3;
-    result.third = (int64_t)((uint64_t)v2 - v3);
+    result.third = v2 - v3;
     return result;
 }
 -- signature
@@ -304,8 +304,8 @@ fn abi_exhaust_five_aligned @ 0x1800011c0 (size 90)
 /* velk pseudo-C: abi_exhaust_seven_aligned @ 0x180001220 */
 int64_t abi_exhaust_seven_aligned(int64_t a0, int64_t a1, int64_t a2, int64_t a3, int64_t a4, int64_t a5, int64_t a6, int64_t a7, int64_t a8) {
     struct S1 *v2 = (struct S1 *)a7;
-    int64_t v7 = v2->f_8;
-    return a8 * 29 + (a6 * 17 + a5 * 13 + (a4 * 11 + (int64_t)((uint64_t)a2 * 5 + (int64_t)((uint64_t)a1 * 3 + a0) + (int64_t)((uint64_t)a3 * 8) - a3))) + v2->f_0 * 19 + (int64_t)((uint64_t)v7 * 24) - v7; /* also returns  */
+    uint64_t v7 = v2->f_8;
+    return a8 * 29 + (a6 * 17 + a5 * 13 + (a4 * 11 + (int64_t)((uint64_t)a2 * 5 + (int64_t)((uint64_t)a1 * 3 + a0) + (int64_t)((uint64_t)a3 * 8) - a3))) + v2->f_0 * 19 + v7 * 24 - v7; /* also returns  */
 }
 -- signature
 int64_t (int64_t a0, int64_t a1, int64_t a2, int64_t a3)

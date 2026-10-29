@@ -326,7 +326,7 @@ int32_t sub_1290(struct S1 *a0, int a1, int a2) {
     }
     int64_t v16 = (uintptr_t)a0;
     struct S1 *v3 = a0;
-    int64_t v4 = (uint64_t)((int64_t)a1 * 0x3) << 3;
+    uint64_t v4 = (uint64_t)((int64_t)a1 * 0x3) << 3;
     const char *v5 = (const char *)((uint8_t *)a0 + v4);
     do {
         if (v3->f_0 == a2) {
@@ -336,7 +336,7 @@ int32_t sub_1290(struct S1 *a0, int a1, int a2) {
     } while (v3 != v5);
     local_0 = a1;
     uint32_t *v8 = (uint32_t *)(int64_t)((uint64_t)v16 + 8);
-    int64_t v17 = (uintptr_t)(v8 + v4 / 4);
+    uint64_t v17 = (uintptr_t)(v8 + (int64_t)v4 / 4);
     __snprintf_chk((char *)(local_1), 64, 2, 64, "missing key %d among %d", a2 & 0xffffffff, a1);
     fputs((const char *)(local_1), stderr);
     do {

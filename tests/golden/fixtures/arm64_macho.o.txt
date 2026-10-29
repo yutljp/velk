@@ -116,7 +116,7 @@ int32_t sum_arr(uint32_t *a0, int32_t a1) {
         uint64_t v5 = 0;
         uint64_t v6 = 0;
         v2 = (uint32_t)a1 & 0x7ffffff0;
-        int64_t v7 = v2;
+        uint64_t v7 = v2;
         uint64_t v8 = 0;
         uint64_t v9 = 0;
         uint64_t v10 = 0;
@@ -137,7 +137,7 @@ int32_t sum_arr(uint32_t *a0, int32_t a1) {
             v11 = add_lanes32(vector_3.high.u64, v11);
             v12 = add_lanes32(vector_4.low.u64, v12);
             v13 = add_lanes32(vector_4.high.u64, v13);
-            v7 = (uint64_t)v7 - 16;
+            v7 -= 16;
         } while (v7 != 0);
         v3 = sum_lanes32(add_lanes32(v12, add_lanes32(v10, add_lanes32(v8, v5))), add_lanes32(v13, add_lanes32(v11, add_lanes32(v9, v6))));
         if (v2 == (uint32_t)a1) {
@@ -148,12 +148,12 @@ int32_t sum_arr(uint32_t *a0, int32_t a1) {
         v3 = 0;
     }
     uint32_t *v27 = a0 + v2;
-    int64_t i = (uint32_t)a1 - v2;
+    uint64_t i = (uint32_t)a1 - v2;
     do {
-        int32_t v30 = *v27;
+        uint32_t v30 = *v27;
         ++v27;
-        v3 = (uint32_t)v30 + v3;
-        i = (uint64_t)i - 1;
+        v3 = v30 + v3;
+        --i;
     } while (i != 0);
     return v3;
 }

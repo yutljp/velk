@@ -28,8 +28,8 @@ fn _add3 @ 0x10001000 (size 13)
 -- decompile
 /* velk pseudo-C: _scale @ 0x10001010 */
 int _scale(uint32_t a0) {
-    int32_t v1 = a0;
-    return (uint32_t)v1 * 8 - v1 + 3;
+    uint32_t v1 = a0;
+    return v1 * 8 - v1 + 3;
 }
 -- signature
 int ()

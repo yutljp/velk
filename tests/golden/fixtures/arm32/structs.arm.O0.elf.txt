@@ -79,8 +79,8 @@ int32_t point_add(int32_t a0, int32_t a1, int32_t a2, int32_t a3) {
     int32_t v3 = *(uint32_t *)(sp);
     *(uint32_t *)(sp - 0x14) = v3;
     *(uint32_t *)((uint32_t)a0) = (uint32_t)a1 + a3;
-    int32_t v4 = *(uint32_t *)(sp - 0x14);
-    int32_t v5 = (uint32_t)a2 + v4;
+    uint32_t v4 = *(uint32_t *)(sp - 0x14);
+    int32_t v5 = a2 + v4;
     *(uint32_t *)((uint32_t)a0 + 4) = v5;
     v1 = *(uint32_t *)(sp - 0x8);
     return v5;
@@ -166,9 +166,9 @@ int32_t big_sum(int32_t a0, int32_t a1, int32_t a2, int32_t a3) {
     /* unsupported: AAPCS32 multiword, floating-point or aggregate declaration */
     *(uint32_t *)(sp - 0x8) = v1;
     *(uint32_t *)(sp - 0x4) = v4;
-    int32_t v2 = (uint32_t)a0 + a1;
-    int32_t v3 = (uint32_t)v2 + a2;
-    int32_t v5 = (uint32_t)v3 + a3;
+    uint32_t v2 = (uint32_t)a0 + a1;
+    uint32_t v3 = v2 + a2;
+    int32_t v5 = v3 + a3;
     v1 = *(uint32_t *)(sp - 0x8);
     return v5;
 }

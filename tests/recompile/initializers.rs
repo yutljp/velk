@@ -163,17 +163,17 @@ fn initial_assignments_declare_locals_in_execution_order() {
     );
     let candidate = printed_candidate(ir, [0, 1, u64::MAX].into_iter().map(|x| vec![x]).collect());
     assert!(
-        candidate.code.contains("int64_t v1 = x + 1;"),
+        candidate.code.contains("uint64_t v1 = x + 1;"),
         "{}",
         candidate.code
     );
     assert!(
-        candidate.code.contains("int64_t v2 = (uint64_t)v1 * 2;"),
+        candidate.code.contains("uint64_t v2 = v1 * 2;"),
         "{}",
         candidate.code
     );
     assert!(
-        !candidate.code.contains("int64_t v1;"),
+        !candidate.code.contains("uint64_t v1;"),
         "{}",
         candidate.code
     );

@@ -125,9 +125,9 @@ fn pick_op @ 0x180001020 (size 21)
 -- decompile
 /* velk pseudo-C: apply_table @ 0x180001040 */
 int apply_table(unsigned int index, int x) {
-    int32_t v2 = (0xaaaaaaab * (uint64_t)index >> 33) * 3;
-    int32_t v3 = index - v2;
-    if ((uint32_t)v3 + v2 != v2 && v3 == 1) {
+    uint32_t v2 = (0xaaaaaaab * (uint64_t)index >> 33) * 3;
+    uint32_t v3 = index - v2;
+    if (v3 + v2 != v2 && v3 == 1) {
         return square(x);
     }
     return twice(x);
@@ -157,7 +157,7 @@ fn apply_table @ 0x180001040 (size 43)
 -- decompile
 /* velk pseudo-C: apply_pointer @ 0x180001070 */
 int apply_pointer(void *f, int x) {
-    return (uint32_t)((int32_t)(((uint64_t (*)())f)(x & 0xffffffff))) + 1;
+    return ((uint32_t)(((uint64_t (*)())f)(x & 0xffffffff))) + 1;
 }
 -- signature
 int (void * f, int x)
@@ -193,14 +193,14 @@ int factorial(int n) {
         return 1;
     }
     if ((uint32_t)n >= 9) {
-        int32_t v2 = (uint32_t)n - 1;
-        int32_t v3 = v2 & 0xfffffffffffffff8;
+        uint32_t v2 = (uint32_t)n - 1;
+        uint32_t v3 = v2 & 0xfffffffffffffff8;
         uint64_t v4 = n & 0xffffffff;
-        n = (uint32_t)n - v3;
+        n -= v3;
         struct velk_vector vector = { .low.u64 = add_lanes32(v4 | v4 << 32, __xmm_fffffffdfffffffeffffffff00000000), .high.u64 = add_lanes32(v4 | v4 << 32, g_180002008) };
         struct velk_vector vector_2 = { .low.u64 = __xmm_fffffffcfffffffcfffffffcfffffffc, .high.u64 = g_180002028 };
         struct velk_vector vector_3 = { .low.u64 = __xmm_fffffff8fffffff8fffffff8fffffff8, .high.u64 = g_180002038 };
-        int32_t v53 = v3;
+        uint32_t v53 = v3;
         vector_5.low.u64 = __xmm_00000001000000010000000100000001;
         vector_7.low.u64 = vector_5.low.u64;
         vector_5.high.u64 = g_180002018;
@@ -224,7 +224,7 @@ int factorial(int n) {
             vector_7 = (struct velk_vector){ .low.u64 = interleave_low32(v36, v55), .high.u64 = interleave_high32(v36, v55) };
             vector.low.u64 = add_lanes32(vector.low.u64, vector_3.low.u64);
             vector.high.u64 = add_lanes32(vector.high.u64, vector_3.high.u64);
-            v53 = (uint32_t)v53 - 8;
+            v53 = v53 - 8;
         } while (v53 != 0);
         t1 = vector_7.low.u64 >> 32;
         uint64_t v58 = (vector_5.low.u64 >> 32) * t1;
@@ -427,7 +427,7 @@ int sum_varargs(int count, ...) {
     uint64_t v8;
     int64_t v3;
     int32_t v5;
-    int32_t v32;
+    uint32_t v32;
     void *local_0; /* [sp-8] */
 
     local_0 = (void *)v4;
@@ -447,7 +447,7 @@ int sum_varargs(int count, ...) {
             v2 = (uint64_t)(uint32_t)count - (v30 != 0 ? v30 : 4);
             v3 = (uintptr_t)(v1 + v2);
             struct velk_vector vector = { .low.u64 = 0, .high.u64 = 0 };
-            int64_t v11 = v2;
+            uint64_t v11 = v2;
             struct velk_vector vector_2 = { .low.u64 = 0, .high.u64 = 0 };
             do {
                 uint64_t v14 = v1[1];
@@ -457,7 +457,7 @@ int sum_varargs(int count, ...) {
                 vector.low.u64 = add_lanes32(vector.low.u64, vector_3.low.u32 | vector_3.high.u64 << 32);
                 vector.high.u64 = add_lanes32(vector.high.u64, vector_3.high.u64);
                 v1 += 0x4;
-                v11 = (uint64_t)v11 - 4;
+                v11 = v11 - 4;
             } while (v11 != 0);
             local_0 = v1;
             uint64_t v31 = add_lanes32(vector.low.u64, vector_2.low.u64);
@@ -470,25 +470,25 @@ int sum_varargs(int count, ...) {
         v5 = 0;
         v3 = (uintptr_t)v1;
     }
-    int32_t v18 = count - v2 & 0x3;
+    uint32_t v18 = count - v2 & 0x3;
     if (v18 == 0) {
         v32 = v2;
     } else {
-        v18 = -(uint32_t)v18;
-        int32_t i = 0;
+        v18 = -v18;
+        uint32_t i = 0;
         do {
             uint32_t *v21 = (uint32_t *)v3;
             v3 = (uint64_t)v3 + 8;
             local_0 = (void *)v3;
             v5 += *v21;
-            i = (uint32_t)i - 1;
+            --i;
         } while (v18 != i);
         v32 = v2 - i;
     }
     if ((uint32_t)(v2 - count) > 0xfffffffc) {
         return v5;
     }
-    int32_t v23 = (uint32_t)count - v32;
+    uint32_t v23 = count - v32;
     uint32_t *v24 = (uint32_t *)(int64_t)((uint64_t)v3 + 16);
     do {
         local_0 = v24 - 0x2;
@@ -500,7 +500,7 @@ int sum_varargs(int count, ...) {
         local_0 = v24 + 0x4;
         v5 += v24[2];
         v24 += 0x8;
-        v23 = (uint32_t)v23 - 4;
+        v23 = v23 - 4;
     } while (v23 != 0);
     return v5;
 }

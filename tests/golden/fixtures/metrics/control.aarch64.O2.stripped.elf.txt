@@ -268,11 +268,11 @@ int32_t sub_210308(uint32_t *a0, int32_t a1) {
         uint64_t v7 = 0;
         uint64_t *v8 = (uint64_t *)(a0 + 0x4);
         v2 = (uint32_t)a1 & 0x7ffffff8;
-        int64_t v9 = v2;
+        uint64_t v9 = v2;
         do {
             struct velk_vector vector = { .low.u64 = v8[-2], .high.u64 = v8[-1] };
             struct velk_vector vector_2 = { .low.u64 = *v8, .high.u64 = v8[1] };
-            v9 = (uint64_t)v9 - 8;
+            v9 -= 8;
             v8 += 0x4;
             v4 = add_lanes32(max_lanes32(vector.low.u64, 0), v4);
             v5 = add_lanes32(max_lanes32(vector.high.u64, 0), v5);
@@ -288,11 +288,11 @@ int32_t sub_210308(uint32_t *a0, int32_t a1) {
         v3 = 0;
     }
     uint32_t *v14 = a0 + v2;
-    int64_t v15 = (uint32_t)a1 - v2;
+    uint64_t v15 = (uint32_t)a1 - v2;
     do {
         int32_t v17 = *v14;
         ++v14;
-        v15 = (uint64_t)v15 - 1;
+        --v15;
         v3 = (uint32_t)(v17 & ~(v17 >> 31)) + v3;
     } while (v15 != 0);
     return v3;
@@ -359,29 +359,29 @@ int32_t sub_2103a4(uint32_t *a0, int32_t a1, int32_t a2) {
 
     if (a1 >= 1) {
         uint64_t v1 = 0;
-        int32_t v3 = (uint32_t)a1 + 1;
+        uint32_t v3 = (uint32_t)a1 + 1;
         int64_t v4 = (uintptr_t)(a0 + 0x1);
         int32_t v5 = 1;
-        int64_t v6 = 1;
+        uint64_t v6 = 1;
         do {
             v7 = v1 + 1;
             if (v7 < (uint32_t)a1) {
-                int32_t v8 = a0[v1];
-                int64_t v9 = (uint32_t)a1;
+                uint32_t v8 = a0[v1];
+                uint64_t v9 = (uint32_t)a1;
                 uint32_t *v10 = (uint32_t *)v4;
                 int32_t v11 = v5;
                 do {
-                    int32_t v12 = *v10;
+                    uint32_t v12 = *v10;
                     ++v10;
-                    if ((uint32_t)v12 + v8 == a2) {
+                    if (v12 + v8 == a2) {
                         return v11;
                     }
-                    v9 = (uint64_t)v9 - 1;
+                    --v9;
                     v11 = (uint32_t)v11 + 1;
                 } while (v6 != v9);
             }
-            v6 = (uint64_t)v6 + 1;
-            v5 = (uint32_t)v5 + v3;
+            ++v6;
+            v5 += v3;
             v4 = (uint64_t)v4 + 4;
             v1 = v7;
         } while (v7 != (uint32_t)a1);

@@ -135,7 +135,7 @@ unsigned long long hdiv10(unsigned long long x) {
     int32_t v13 = x >> 32;
     uint32_t v1 = v13;
     uint32_t v2 = (x & 0xffffffff) >> 1 | v1 << 31;
-    int32_t v3 = v2 > (v1 >> 1 ^ 0xffffffff);
+    uint32_t v3 = v2 > (v1 >> 1 ^ 0xffffffff);
     uint32_t v4 = v2 + (v1 >> 1) + v3;
     uint32_t v6 = (uint64_t)v4 * 0xcccccccd >> 32;
     uint32_t v14 = v4 - ((v6 & 0xfffffffc) + (v6 >> 2));
@@ -227,8 +227,8 @@ long long ldiv16(long long x) {
     int32_t v1 = v7;
     uint32_t v2 = v1 >> 31;
     uint32_t v3 = (int64_t)((uint64_t)x + (v2 >> 28));
-    int32_t v4 = v3 - (v2 >> 28) > (v2 >> 28 ^ 0xffffffff);
-    v1 = (uint32_t)v1 + v4;
+    uint32_t v4 = v3 - (v2 >> 28) > (v2 >> 28 ^ 0xffffffff);
+    v1 += v4;
     return (v3 >> 4 | (uint64_t)v1 << 28) & 0xffffffff | (uint64_t)(v1 >> 4) << 32;
 }
 -- signature
@@ -376,7 +376,7 @@ unsigned long long umod10b(unsigned long long x) {
     uint32_t v1 = x;
     uint32_t v2 = v6;
     uint32_t v3 = (v1 >> 1 | v2 << 31) + (v2 >> 1);
-    int32_t v4 = v3 - (v2 >> 1) > (v2 >> 1 ^ 0xffffffff);
+    uint32_t v4 = v3 - (v2 >> 1) > (v2 >> 1 ^ 0xffffffff);
     uint32_t v7 = v3 + v4;
     return (v1 & 0x1 | (v7 - (((uint64_t)v7 * 0xcccccccd >> 32 & 0xfffffffc) + ((uint64_t)v7 * 0xcccccccd >> 32 >> 2))) << 1) & 0xffffffff;
 }

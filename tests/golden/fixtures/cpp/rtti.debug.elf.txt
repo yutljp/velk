@@ -619,7 +619,7 @@ fn Virtual::~Virtual() @ 0x201bc0 (size 10)
 -- decompile
 /* velk pseudo-C: {virtual override thunk({virtual offset(0, -32)}, Virtual::~Virtual())} @ 0x201bd0 */
 void _virtual_override_thunk__virtual_offset_0___32____Virtual___Virtual_____201bd0(uint64_t *a0) {
-    int32_t v2 = (uintptr_t)((uint8_t *)a0 + *(uint64_t *)(*a0 - 0x20));
+    uint32_t v2 = (uintptr_t)((uint8_t *)a0 + *(uint64_t *)(*a0 - 0x20));
     Virtual___Virtual_201bc0();
 }
 -- signature
@@ -722,8 +722,8 @@ int multiple(int value) {
     _Alignas(16) uint8_t local_0[0x18]; /* [sp-28] */
 
     Multiple__Multiple(local_0, value & 0xffffffff);
-    int32_t v3 = dispatch(local_0);
-    return (uint32_t)((int32_t)(Multiple__other(local_0))) + v3;
+    uint32_t v3 = dispatch(local_0);
+    return ((uint32_t)(Multiple__other(local_0))) + v3;
 }
 -- signature
 int (int value)

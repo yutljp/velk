@@ -21,11 +21,11 @@ int count_bits(unsigned int x) {
         uint32_t v3 = x;
         int32_t v4 = 0;
         while (true) {
-            int32_t v5 = v3 & 0x1;
+            uint32_t v5 = v3 & 0x1;
             int32_t t1 = v3 >> 1;
             uint32_t v6 = (t1 == 0 ? 64 : 0) | v3 & 0x1 ^ 0x1;
             v3 >>= 1;
-            v4 = (uint32_t)v4 + v5;
+            v4 += v5;
             if (v6 >> 6 != 0) break;
         }
         return v4;
@@ -112,14 +112,14 @@ int sum_till_neg(int *p, int n) {
 
     if (n >= 1) {
         v1 = (uint32_t)(uintptr_t)p;
-        int32_t v2 = n;
+        uint32_t v2 = n;
         int32_t v3 = 0;
         while (true) {
             int32_t v4 = *(uint32_t *)((uint32_t)v1);
             v1 = (uint32_t)v1 + 4;
             if (v4 == -1 || (int32_t)((uint32_t)v4 + 1 ^ (v4 ^ (uint32_t)v4 + 1) & (0x1 ^ (uint32_t)v4 + 1)) < 0) break;
             v3 = (uint32_t)v4 + v3;
-            v2 = (uint32_t)v2 - 1;
+            --v2;
             if (v2 == 0) {
                 return v3;
             }

@@ -165,8 +165,8 @@ fn <unnamed> @ 0x1800010b0 (size 32)
 -- decompile
 /* velk pseudo-C: sub_1800010d0 @ 0x1800010d0 */
 int32_t sub_1800010d0(int32_t a0) {
-    int64_t v1 = a0;
-    uint64_t v2 = (uint64_t)v1 * 0x55555556;
+    uint64_t v1 = a0;
+    uint64_t v2 = v1 * 0x55555556;
     return v1 - ((v2 >> 32) + (v2 >> 63)) * 3;
 }
 -- signature

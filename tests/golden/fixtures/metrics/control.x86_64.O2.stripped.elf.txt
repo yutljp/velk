@@ -47,57 +47,57 @@ static inline uint64_t greater_lanes32(uint64_t a, uint64_t b) {
 -- decompile
 /* velk pseudo-C: sub_201220 @ 0x201220 */
 int32_t sub_201220(uint32_t *a0, int32_t a1) {
-    int64_t v10;
+    uint64_t v10;
 
     if (a1 <= 0) {
         return 0;
     }
-    int64_t v2 = a1 & 0x3;
+    uint64_t v2 = a1 & 0x3;
     uint32_t v3 = a1 & 0x7ffffffc;
-    int64_t v4 = -v2;
-    int64_t v5 = 0;
+    uint64_t v4 = -v2;
+    uint64_t v5 = 0;
     int64_t v6 = 0;
     int32_t v7 = 0;
     do {
         int64_t v8 = (int64_t)((uint64_t)v6 * a1) & 0xffffffff;
         uint32_t *v9 = a0 + v6;
         if ((uint32_t)a1 >= 4) {
-            int64_t j = 0;
+            uint64_t j = 0;
             do {
                 v10 = j;
                 if (v6 == j) {
                     v7 += v9[v8];
                 }
-                j = (uint64_t)v10 + 1;
+                j = v10 + 1;
                 if (v6 == j) {
                     v7 += v9[v8];
                 }
-                j = (uint64_t)j + 1;
+                ++j;
                 if (v6 == j) {
                     v7 += v9[v8];
                 }
-                j = (uint64_t)j + 1;
+                ++j;
                 if (v6 == j) {
                     v7 += v9[v8];
                 }
-                j = (uint64_t)j + 1;
+                ++j;
             } while (j != v3);
-            v10 = (uint64_t)v10 + 4;
+            v10 += 4;
         } else {
             v10 = 0;
         }
         if (v2 != 0) {
-            int64_t v18 = (uint64_t)v10 + v5;
-            int64_t j_2 = 0;
+            uint64_t v18 = v10 + v5;
+            uint64_t j_2 = 0;
             do {
                 if (v18 == j_2) {
                     v7 += v9[v8];
                 }
-                j_2 = (uint64_t)j_2 - 1;
+                --j_2;
             } while (v4 != j_2);
         }
         v6 = (uint64_t)v6 + 1;
-        v5 = (uint64_t)v5 - 1;
+        --v5;
     } while (v6 != (uint32_t)a1);
     return v7;
 }
@@ -420,16 +420,16 @@ int32_t sub_201490(uint32_t *a0, int32_t a1, int32_t a2) {
     if (a1 <= 0) {
         return -1;
     }
-    int32_t v3 = a1 ^ 0xffffffff;
+    uint32_t v3 = a1 ^ 0xffffffff;
     uint32_t *v4 = a0 + 0x1;
-    int64_t v5 = (uint64_t)(uint32_t)a1 - 1;
-    int32_t v6 = -1;
+    uint64_t v5 = (uint64_t)(uint32_t)a1 - 1;
+    uint32_t v6 = -1;
     uint64_t v7 = 0;
     do {
         int64_t v8 = v7;
         ++v7;
         if (v7 < (uint32_t)a1) {
-            int32_t v9 = a0[v8];
+            uint32_t v9 = a0[v8];
             int64_t j = 0;
             do {
                 if (v4[j] + v9 == a2) {
@@ -438,9 +438,9 @@ int32_t sub_201490(uint32_t *a0, int32_t a1, int32_t a2) {
                 j = (uint64_t)j + 1;
             } while (v5 != j);
         }
-        v6 = (uint32_t)v6 + v3;
+        v6 += v3;
         ++v4;
-        v5 = (uint64_t)v5 - 1;
+        --v5;
     } while (v7 != (uint32_t)a1);
     return v1;
 }

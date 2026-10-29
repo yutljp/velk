@@ -129,7 +129,7 @@ fn apply_table @ 0x2102e0 (size 44)
 -- decompile
 /* velk pseudo-C: apply_pointer @ 0x21030c */
 int32_t apply_pointer(void *a0, int32_t a1) {
-    return (uint32_t)((int32_t)(((uint64_t (*)())a0)(a1 & 0xffffffff))) + 1;
+    return ((uint32_t)(((uint64_t (*)())a0)(a1 & 0xffffffff))) + 1;
 }
 -- signature
 int32_t (void * a0, int32_t a1)
@@ -155,24 +155,24 @@ int32_t factorial(int32_t a0) {
     if (a0 >= 2) {
         if ((uint32_t)a0 >= 9) {
             struct velk_vector vector = { .low.u64 = 0x100000001, .high.u64 = 0x100000001 };
-            int32_t v5 = (uint32_t)a0 - 1;
-            int32_t v6 = v5 & 0xfffffff8;
+            uint32_t v5 = (uint32_t)a0 - 1;
+            uint32_t v6 = v5 & 0xfffffff8;
             struct velk_vector vector_2 = { .low.u64 = add_lanes32((int64_t)((uint64_t)(a0 & 0xffffffff) * 0x100000001), g_200190), .high.u64 = add_lanes32((int64_t)((uint64_t)(a0 & 0xffffffff) * 0x100000001), g_200198) };
             struct velk_vector vector_3 = { .low.u64 = 0x100000001, .high.u64 = 0x100000001 };
-            v1 = (uint32_t)a0 - v6;
-            int32_t v11 = v6;
+            v1 = a0 - v6;
+            uint32_t v11 = v6;
             do {
                 struct velk_vector vector_4 = { .low.u64 = add_lanes32(vector_2.low.u64, 0xfffffffcfffffffc), .high.u64 = add_lanes32(vector_2.high.u64, 0xfffffffcfffffffc) };
                 vector_3.low.u64 = mul_lanes32(vector_2.low.u64, vector_3.low.u64);
                 vector_3.high.u64 = mul_lanes32(vector_2.high.u64, vector_3.high.u64);
-                v11 = (uint32_t)v11 - 8;
+                v11 -= 8;
                 vector_2.low.u64 = add_lanes32(vector_2.low.u64, 0xfffffff8fffffff8);
                 vector_2.high.u64 = add_lanes32(vector_2.high.u64, 0xfffffff8fffffff8);
                 vector.low.u64 = mul_lanes32(vector_4.low.u64, vector.low.u64);
                 vector.high.u64 = mul_lanes32(vector_4.high.u64, vector.high.u64);
             } while (v11 != 0);
             uint64_t v17 = mul_lanes32(mul_lanes32(vector.low.u64, vector_3.low.u64), mul_lanes32(vector.high.u64, vector_3.high.u64));
-            int32_t v18 = v17 >> 32;
+            uint32_t v18 = v17 >> 32;
             v2 = v17 * v18;
             if (v5 == v6) {
                 return v2;
@@ -248,12 +248,12 @@ fn factorial @ 0x21032c (size 160)
 int32_t is_odd(int32_t a0) {
     uint32_t v1 = (uint32_t)a0 - (a0 != 0) + 1;
     if (v1 >= 2) {
-        int32_t v7 = (v1 >> 1) + 1;
+        uint32_t v7 = (v1 >> 1) + 1;
         uint32_t v4 = v7 & 0xfffffffe;
         a0 -= (v4 << 1);
-        int32_t i = v4;
+        uint32_t i = v4;
         do {
-            i = (uint32_t)i - 2;
+            i -= 2;
         } while (i != 0);
         if (v7 == v4) {
             return (uint32_t)a0 + 2;
