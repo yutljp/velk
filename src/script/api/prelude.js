@@ -141,6 +141,7 @@
     readMemory(target, type, { count = 1 } = {}) { return call("navigate", { bin: this.#id, query: { kind: "readMemory", target: String(address(target)), type, count } }); }
     detectConstants() { return call("navigate", { bin: this.#id, query: { kind: "detectConstants" } }); }
     strings({ contains, decode = true } = {}) { return call("navigate", { bin: this.#id, query: { kind: "strings", contains, decode } }); }
+    iocs() { return call("navigate", { bin: this.#id, query: { kind: "iocs" } }); }
     constants(value) {
       if (typeof value === "number" && (!Number.isSafeInteger(value) || value < 0)) throw new RangeError("use a decimal or hex string for a 64-bit constant");
       return call("navigate", { bin: this.#id, query: { kind: "constants", value: String(address(value)) } });

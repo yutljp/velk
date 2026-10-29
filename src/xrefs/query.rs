@@ -56,6 +56,8 @@ pub enum Query {
         #[serde(default = "enabled", rename = "decode")]
         decode: bool,
     },
+    /// Classifies indicators in static and recovered strings.
+    Iocs,
     Constants {
         value: String,
     },
@@ -122,6 +124,9 @@ pub fn run(binary: &mut Binary, query: Query, deadline: Option<Instant>) -> Resu
                 json!({ "strings": index.strings().iter().filter(|s| contains.as_ref().is_none_or(|text| s.text.contains(text))).collect::<Vec<_>>(), "decodedStrings": decoded.iter().filter(|s| contains.as_ref().is_none_or(|text| s.text.contains(text))).collect::<Vec<_>>(), "failures": index.failures }),
             )
         }
+        Query::Iocs => binary
+            .iocs(deadline)
+            .map(|indicators| json!({ "indicators": indicators })),
         Query::Xrefs { target, from } => {
             let addr = match binary.find_address(&target) {
                 Ok(addr) => addr,

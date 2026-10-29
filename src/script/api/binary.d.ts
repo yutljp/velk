@@ -52,6 +52,8 @@ interface Binary {
   callPath(from: string | number, to: string | number, opts?: { depth?: number }): PathResult;
   /** File literals and recovered text; decode defaults to true. contains filters both arrays. */
   strings(opts?: { contains?: string; decode?: boolean }): StringsResult;
+  /** Classifies URLs, domains, addresses, paths, registry keys, email addresses and user agents. */
+  iocs(): IocResult;
   /** Decoded immediate matches, excluding branch displacements; slice result.matches.
    * Pass a hex string for integers larger than JavaScript's safe integer range. */
   constants(value: string | number): ConstantsResult;

@@ -12,6 +12,7 @@ mod deadline;
 pub mod disasm;
 pub mod emulation;
 pub mod error;
+pub mod iocs;
 pub mod ir;
 pub mod lift;
 pub mod loader;

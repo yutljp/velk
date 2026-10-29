@@ -243,6 +243,15 @@ pub struct Match {
     pub evidence: sigs::Evidence,
 }
 
+fn ioc_api_kind(name: &str) -> Option<&'static str> {
+    match name {
+        "CreateMutexA" | "CreateMutexW" | "OpenMutexA" | "OpenMutexW" | "CreateEventA"
+        | "CreateEventW" => Some("mutexEventName"),
+        "InternetOpenA" | "InternetOpenW" | "WinHttpOpen" => Some("userAgent"),
+        _ => None,
+    }
+}
+
 impl Binary {
     pub fn open(path: &Path) -> Result<Self> {
         Self::open_with_project(path, None)
@@ -582,6 +591,124 @@ impl Binary {
         });
         result.dedup();
         result
+    }
+
+    /// Classifies indicators in static strings and text recovered by bounded emulation.
+    pub fn iocs(&mut self, deadline: Option<Instant>) -> Result<Vec<crate::iocs::Indicator>> {
+        let mut indicators =
+            std::collections::BTreeMap::<(String, String), crate::iocs::Indicator>::new();
+        {
+            let index = match self.navigation(deadline) {
+                Ok(index) => index,
+                Err(error) => return Err(error),
+            };
+            for literal in index.strings() {
+                for (kind, value) in crate::iocs::classify(&literal.text) {
+                    let entry = indicators
+                        .entry((kind.clone(), value.clone()))
+                        .or_insert_with(|| crate::iocs::Indicator {
+                            kind,
+                            value,
+                            sources: Vec::new(),
+                            references: Vec::new(),
+                        });
+                    entry.sources.push("staticString".to_owned());
+                    for xref in &literal.xrefs {
+                        entry.references.push(crate::iocs::Reference {
+                            function: xref.function,
+                            address: xref.block,
+                        });
+                    }
+                }
+            }
+        }
+        let decoded = self.decoded_strings(deadline);
+        for string in decoded {
+            let target_name = string
+                .target
+                .and_then(|target| self.image.imports.get(&target))
+                .map(String::as_str);
+            let call_kind = target_name.and_then(ioc_api_kind);
+            let mut classified = crate::iocs::classify(&string.text);
+            if let Some(kind) = call_kind {
+                classified.push((kind.to_owned(), string.text.clone()));
+            }
+            for (kind, value) in classified {
+                let entry = indicators
+                    .entry((kind.clone(), value.clone()))
+                    .or_insert_with(|| crate::iocs::Indicator {
+                        kind,
+                        value,
+                        sources: Vec::new(),
+                        references: Vec::new(),
+                    });
+                entry.sources.push("decodedString".to_owned());
+                entry.references.push(crate::iocs::Reference {
+                    function: string.function,
+                    address: string.site,
+                });
+            }
+        }
+        let detected = match crate::tables::detect(self, deadline) {
+            Ok(value) => value,
+            Err(error) => return Err(error),
+        };
+        if let Some(matches) = detected
+            .get("matches")
+            .and_then(serde_json::Value::as_array)
+        {
+            for matched in matches {
+                let Some(name) = matched.get("name").and_then(serde_json::Value::as_str) else {
+                    continue;
+                };
+                let lower = name.to_ascii_lowercase();
+                if !["aes", "md5", "sha1", "sha256", "sha512", "chacha", "salsa"]
+                    .iter()
+                    .any(|part| lower.contains(part))
+                {
+                    continue;
+                }
+                let Some(address) = matched
+                    .get("addr")
+                    .and_then(serde_json::Value::as_str)
+                    .and_then(crate::addr::parse)
+                else {
+                    continue;
+                };
+                let entry = indicators
+                    .entry(("cryptoConstant".to_owned(), name.to_owned()))
+                    .or_insert_with(|| crate::iocs::Indicator {
+                        kind: "cryptoConstant".to_owned(),
+                        value: name.to_owned(),
+                        sources: Vec::new(),
+                        references: Vec::new(),
+                    });
+                entry.sources.push("staticConstant".to_owned());
+                if let Some(functions) = matched
+                    .get("functions")
+                    .and_then(serde_json::Value::as_array)
+                {
+                    for function in functions
+                        .iter()
+                        .filter_map(serde_json::Value::as_str)
+                        .filter_map(crate::addr::parse)
+                    {
+                        entry
+                            .references
+                            .push(crate::iocs::Reference { function, address });
+                    }
+                }
+            }
+        }
+        let mut result: Vec<_> = indicators.into_values().collect();
+        for indicator in &mut result {
+            indicator.sources.sort();
+            indicator.sources.dedup();
+            indicator.references.sort();
+            indicator.references.dedup();
+        }
+        result.sort();
+        Ok(result)
     }
 
     fn function_name(&self, address: u64) -> Option<&str> {
@@ -1558,6 +1685,24 @@ mod tests {
             },
         )
         .expect("fixture loads")
+    }
+
+    #[test]
+    fn ioc_api_kinds_match_supported_imports() {
+        for name in [
+            "CreateMutexA",
+            "CreateMutexW",
+            "OpenMutexA",
+            "OpenMutexW",
+            "CreateEventA",
+            "CreateEventW",
+        ] {
+            assert_eq!(ioc_api_kind(name), Some("mutexEventName"), "{name}");
+        }
+        for name in ["InternetOpenA", "InternetOpenW", "WinHttpOpen"] {
+            assert_eq!(ioc_api_kind(name), Some("userAgent"), "{name}");
+        }
+        assert_eq!(ioc_api_kind("CreateFileA"), None);
     }
 
     #[test]

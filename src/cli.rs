@@ -28,7 +28,7 @@ const HELP_STYLES: Styles = Styles::styled()
     group(ArgGroup::new("operation").required(true).multiple(false).args([
         "similar", "compare", "annotate", "annotation", "annotations", "unannotate", "export_project", "import_project", "origins",
         "api_docs", "functions", "classes", "sections", "card", "decompile", "disasm", "ir",
-        "build_signatures", "identify", "run", "mcp", "serve", "emulate", "explore", "solve", "opaque", "xrefs", "callers", "callees", "path", "strings", "constants", "summary", "search", "read_memory", "detect_constants"
+        "build_signatures", "identify", "run", "mcp", "serve", "emulate", "explore", "solve", "opaque", "xrefs", "callers", "callees", "path", "strings", "iocs", "constants", "summary", "search", "read_memory", "detect_constants"
     ])),
     group(ArgGroup::new("multi_target").args(["decompile", "path"])),
     group(ArgGroup::new("graph").args(["callers", "callees", "path"])),
@@ -199,6 +199,9 @@ pub(super) struct Cli {
     /// Detected strings with references, as JSON.
     #[arg(long, help_heading = "Operations (choose one)")]
     strings: bool,
+    /// Extract indicators from static and recovered strings.
+    #[arg(long, help_heading = "Operations (choose one)")]
+    iocs: bool,
     /// Disable automatic string recovery in strings output and printed C.
     #[arg(long)]
     pub(super) no_string_decoding: bool,
@@ -359,6 +362,10 @@ pub(super) enum Command {
     Navigation {
         path: PathBuf,
         query: velk::xrefs::query::Query,
+    },
+    Iocs {
+        path: PathBuf,
+        json: bool,
     },
     Functions {
         path: PathBuf,
@@ -521,6 +528,12 @@ impl Cli {
             return Command::Navigation {
                 path: self.input.expect("clap requires input"),
                 query,
+            };
+        }
+        if self.iocs {
+            return Command::Iocs {
+                path: self.input.expect("clap requires input"),
+                json: self.json,
             };
         }
         match self {

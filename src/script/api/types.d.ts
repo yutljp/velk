@@ -165,6 +165,15 @@ interface StringsResult {
   failures: NavigationFailure[];
 }
 
+interface IocResult {
+  indicators: {
+    kind: string;
+    value: string;
+    sources: ("staticString" | "decodedString" | "staticConstant")[];
+    references: { function: Addr; address: Addr }[];
+  }[];
+}
+
 /** Observed text from known inputs; addresses belong to the emulated address space. */
 interface DecodedString {
   addr: Addr;

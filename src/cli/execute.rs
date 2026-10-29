@@ -313,6 +313,42 @@ pub(crate) fn run(
                 Err(error) => return Err(error),
             }
         }
+        Command::Iocs {
+            path,
+            json: as_json,
+        } => {
+            let mut binary =
+                match crate::open_binary(&path, project, input_options, signature_options) {
+                    Ok(binary) => binary,
+                    Err(error) => return Err(error),
+                };
+            let indicators = match binary.iocs(None) {
+                Ok(indicators) => indicators,
+                Err(error) => return Err(error),
+            };
+            if as_json {
+                println!(
+                    "{}",
+                    serde_json::to_string_pretty(&indicators).expect("indicators serialize")
+                );
+            } else {
+                let mut current = String::new();
+                for indicator in indicators {
+                    if current != indicator.kind {
+                        current.clone_from(&indicator.kind);
+                        println!("{}", current);
+                    }
+                    println!("  {} [{}]", indicator.value, indicator.sources.join(", "));
+                    for reference in indicator.references {
+                        println!(
+                            "    function {} at {}",
+                            velk::addr::format(reference.function),
+                            velk::addr::format(reference.address)
+                        );
+                    }
+                }
+            }
+        }
 
         Command::Functions { path, limit, json } => {
             let binary = match crate::open_binary(&path, project, input_options, signature_options)

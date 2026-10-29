@@ -315,6 +315,41 @@ JSON.stringify({{
         .unwrap_or_else(|error| panic!("{fixture}: {error}: {}", outcome.output))
 }
 
+#[test]
+fn binary_iocs_returns_stable_fields() {
+    let path = common::fixtures_dir().join("strings.o");
+    let script = format!(
+        "const b = velk.open({:?}); JSON.stringify(b.iocs())",
+        path.display().to_string()
+    );
+    let outcome = Engine::new()
+        .unwrap_or_else(|error| panic!("{error}"))
+        .run(&script, None);
+    assert!(
+        outcome.error.is_none(),
+        "{}",
+        outcome.error.unwrap_or_default()
+    );
+    let result: Value = serde_json::from_str(&outcome.output)
+        .unwrap_or_else(|error| panic!("{error}: {}", outcome.output));
+    let indicators = result["indicators"].as_array().expect("indicators array");
+    for indicator in indicators {
+        assert!(indicator["kind"].is_string(), "indicator kind is a string");
+        assert!(
+            indicator["value"].is_string(),
+            "indicator value is a string"
+        );
+        assert!(
+            indicator["sources"].is_array(),
+            "indicator sources are an array"
+        );
+        assert!(
+            indicator["references"].is_array(),
+            "indicator references are an array"
+        );
+    }
+}
+
 fn check_interface_fields(
     interfaces: &BTreeMap<String, (BTreeSet<String>, BTreeSet<String>)>,
     interface: &str,
