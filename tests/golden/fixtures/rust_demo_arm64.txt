@@ -1,4 +1,4 @@
-# rust_demo_arm64: macho aarch64 0x10000094c, 670 functions, 0 lift failures, 34 unsupported, 1295 gotos
+# rust_demo_arm64: macho aarch64 0x10000094c, 670 functions, 0 lift failures, 34 unsupported, 1278 gotos
 0x1000008c0 20 std::sys::backtrace::__rust_begin_short_backtrace::<fn(), ()> symtab,unwind,function-starts
 0x1000008d4 28 std::rt::lang_start::<()>::{closure#0} symtab,unwind,function-starts
 0x1000008f0 28 <std::rt::lang_start<()>::{closure#0} as core::ops::function::FnOnce<()>>::call_once::{shim:vtable#0} symtab,unwind,function-starts

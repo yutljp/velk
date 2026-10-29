@@ -213,9 +213,11 @@ pub(super) fn case_falls_through(nodes: &[Node]) -> bool {
 
 fn by_dominance(ir: &FunctionIr) -> Option<Vec<Node>> {
     let mut graph = dominance::Graph::new(ir);
-    let Some(mut nodes) =
-        graph.structure(dominance::Absorb::Nothing, /* switch_cases */ false)
-    else {
+    let Some(mut nodes) = graph.structure(
+        dominance::Absorb::Nothing,
+        /* switch_cases */ false,
+        dominance::RootOrder::Address,
+    ) else {
         return None;
     };
     // Code the entry does not reach keeps its label, which names where it starts.
@@ -231,30 +233,37 @@ fn by_dominance(ir: &FunctionIr) -> Option<Vec<Node>> {
         .blocks
         .iter()
         .any(|block| matches!(block.stmts.last(), Some(Stmt::Switch { .. })));
-    for absorb in [
-        dominance::Absorb::Nothing,
-        dominance::Absorb::Private,
-        dominance::Absorb::Every,
-    ] {
-        if absorb != dominance::Absorb::Nothing
-            && let Some(mut absorbing) = graph.structure(absorb, /* switch_cases */ false)
-        {
-            cleanup_structure(&mut absorbing, entries.clone(), ir);
-            if cost(&absorbing) < cost(&best) && labels_resolve(ir, &absorbing) {
-                best = absorbing;
-            }
+    for order in [dominance::RootOrder::Address, dominance::RootOrder::Flow] {
+        if order == dominance::RootOrder::Flow && entries.is_empty() {
+            continue;
         }
-        if switches
-            && label_count(&best) != 0
-            && let Some(mut candidate) = graph.structure(absorb, /* switch_cases */ true)
-        {
-            cleanup_structure(&mut candidate, entries.clone(), ir);
-            if cost(&candidate) < cost(&best) && labels_resolve(ir, &candidate) {
-                best = candidate;
+        for absorb in [
+            dominance::Absorb::Nothing,
+            dominance::Absorb::Private,
+            dominance::Absorb::Every,
+        ] {
+            if (order != dominance::RootOrder::Address || absorb != dominance::Absorb::Nothing)
+                && let Some(mut absorbing) =
+                    graph.structure(absorb, /* switch_cases */ false, order)
+            {
+                cleanup_structure(&mut absorbing, entries.clone(), ir);
+                if cost(&absorbing) < cost(&best) && labels_resolve(ir, &absorbing) {
+                    best = absorbing;
+                }
             }
-        }
-        if label_count(&best) == 0 {
-            break;
+            if switches
+                && label_count(&best) != 0
+                && let Some(mut candidate) =
+                    graph.structure(absorb, /* switch_cases */ true, order)
+            {
+                cleanup_structure(&mut candidate, entries.clone(), ir);
+                if cost(&candidate) < cost(&best) && labels_resolve(ir, &candidate) {
+                    best = candidate;
+                }
+            }
+            if label_count(&best) == 0 {
+                return Some(best);
+            }
         }
     }
     Some(best)

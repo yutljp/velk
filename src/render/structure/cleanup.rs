@@ -93,6 +93,39 @@ pub(super) fn fold_forward_exits(nodes: &mut Vec<Node>) {
 }
 
 fn fold_forward_exits_to(nodes: &mut Vec<Node>, follow: Option<u64>) {
+    fn fallthroughs(nodes: &[Node]) -> usize {
+        match nodes.last() {
+            Some(Node::If { then, els, .. }) => {
+                fallthroughs(then).saturating_add(fallthroughs(els))
+            }
+            _ => usize::from(!ends(nodes, /* break_leaves */ true)),
+        }
+    }
+    fn can_distribute(then: &[Node], els: &[Node], skipped: &[Node]) -> bool {
+        let copies = fallthroughs(then).saturating_add(fallthroughs(els));
+        skipped.len() <= 3
+            && skipped.iter().all(|node| {
+                matches!(
+                    node,
+                    Node::Stmt(Stmt::Assign { .. } | Stmt::Store { .. } | Stmt::Call { .. })
+                )
+            })
+            && copies.saturating_sub(1).saturating_mul(skipped.len()) <= returns::TAIL_LINES
+    }
+    fn distribute(nodes: &mut Vec<Node>, target: u64, skipped: &[Node]) {
+        let falls = !ends(nodes, /* break_leaves */ true);
+        match nodes.last_mut() {
+            Some(Node::Stmt(Stmt::Br { target: Some(jump) })) if *jump == target => {
+                nodes.pop();
+            }
+            Some(Node::If { then, els, .. }) => {
+                distribute(then, target, skipped);
+                distribute(els, target, skipped);
+            }
+            _ if falls => nodes.extend_from_slice(skipped),
+            _ => {}
+        }
+    }
     fn tail_targets(nodes: &[Node], targets: &mut Vec<u64>) {
         match nodes.last() {
             Some(Node::Stmt(Stmt::Br {
@@ -127,24 +160,29 @@ fn fold_forward_exits_to(nodes: &mut Vec<Node>, follow: Option<u64>) {
             continue;
         };
         let destination = [then, els].into_iter().enumerate().find_map(|(arm, body)| {
-            if !ends(body, /* break_leaves */ true) {
-                return None;
-            }
+            let closed = ends(body, /* break_leaves */ true);
             let mut targets = Vec::new();
             tail_targets(body, &mut targets);
             for (offset, node) in nodes[position + 1..].iter().enumerate() {
                 if let Node::Label(label) = node
                     && targets.contains(label)
+                    && (closed
+                        || can_distribute(then, els, &nodes[position + 1..position + 1 + offset]))
                 {
-                    return Some((arm, position + 1 + offset, *label));
+                    return Some((arm, position + 1 + offset, *label, closed));
                 }
             }
             match follow {
-                Some(target) if targets.contains(&target) => Some((arm, nodes.len(), target)),
+                Some(target)
+                    if targets.contains(&target)
+                        && (closed || can_distribute(then, els, &nodes[position + 1..])) =>
+                {
+                    Some((arm, nodes.len(), target, closed))
+                }
                 _ => None,
             }
         });
-        let Some((arm, destination, target)) = destination else {
+        let Some((arm, destination, target, closed)) = destination else {
             continue;
         };
         let skipped: Vec<Node> = nodes.drain(position + 1..destination).collect();
@@ -154,7 +192,10 @@ fn fold_forward_exits_to(nodes: &mut Vec<Node>, follow: Option<u64>) {
         else {
             unreachable!("the branch remains in place");
         };
-        if arm == 0 {
+        if !closed {
+            distribute(then, target, &skipped);
+            distribute(els, target, &skipped);
+        } else if arm == 0 {
             drop_jumps_to_next(then, Some(target));
             els.extend(skipped);
         } else {

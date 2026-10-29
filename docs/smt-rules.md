@@ -49,6 +49,17 @@ These counts describe inventory rows, not individual match arms or universal
 proofs of every rule. The inventory is not a completeness certificate for every
 expression transformation in the repository.
 
+Cleanup-chain templates compare returned values and memory after bounded tail
+expansion; expanded targets must contain a call or store. Layout templates check
+normal and separate handler entries when joins are placed in reverse postorder,
+with normal joins before handlers. Both cover
+i386, x86-64, AArch64 and ARM32; compiled C checks also cover shared stores and
+unsigned wraparound. Nested forward exits can copy a skipped sequence of at most
+three statements to the paths that execute it, adding at most eight statements.
+Symbolic templates check independent nested conditions and memory; compiled C
+checks cleanup call order and a resume call bound to `longjmp`. General exception
+dispatch and calls remain outside these symbolic checks.
+
 ARM32 checks cover carry arithmetic's zero, sign, carry and overflow flags,
 rotate-through-carry values and flags, immediate shifted carry extraction,
 and long multiplication with accumulation.

@@ -7,7 +7,7 @@ use std::collections::HashMap;
 const TAIL_STATEMENTS: usize = 6;
 
 /// The most lines the copies of one return tail may add in all.
-const TAIL_LINES: usize = 8;
+pub(super) const TAIL_LINES: usize = 8;
 
 pub(crate) fn flatten_early_returns(nodes: &mut Vec<Node>) {
     for node in nodes.iter_mut() {
@@ -63,8 +63,27 @@ pub(crate) fn inline_return_tails(nodes: &mut Vec<Node>) {
             }
         }
     }
-    fn bounded(nodes: &[Node], remaining: &mut usize) -> bool {
+    fn bounded(nodes: &[Node], remaining: &mut usize, known: &HashMap<u64, Vec<Node>>) -> bool {
+        fn cleanup(nodes: &[Node]) -> bool {
+            nodes.iter().any(|node| match node {
+                Node::Stmt(Stmt::Store { .. } | Stmt::Call { .. }) => true,
+                Node::If { then, els, .. } => cleanup(then) || cleanup(els),
+                _ => false,
+            })
+        }
         for node in nodes {
+            if let Node::Stmt(Stmt::Br {
+                target: Some(target),
+            }) = node
+            {
+                let Some(tail) = known.get(target) else {
+                    return false;
+                };
+                if !cleanup(tail) || !bounded(tail, remaining, known) {
+                    return false;
+                }
+                continue;
+            }
             let Some(left) = remaining.checked_sub(1) else {
                 return false;
             };
@@ -78,8 +97,16 @@ pub(crate) fn inline_return_tails(nodes: &mut Vec<Node>) {
                     | Stmt::Ret { .. }
                     | Stmt::Trap,
                 ) => {}
+                Node::Stmt(Stmt::Brif { target, .. }) => {
+                    let Some(tail) = known.get(target) else {
+                        return false;
+                    };
+                    if !cleanup(tail) || !bounded(tail, remaining, known) {
+                        return false;
+                    }
+                }
                 Node::If { then, els, .. } => {
-                    if !bounded(then, remaining) || !bounded(els, remaining) {
+                    if !bounded(then, remaining, known) || !bounded(els, remaining, known) {
                         return false;
                     }
                 }
@@ -88,19 +115,28 @@ pub(crate) fn inline_return_tails(nodes: &mut Vec<Node>) {
         }
         true
     }
-    fn collect(nodes: &[Node], following: &[&Node], tails: &mut HashMap<u64, Vec<Node>>) {
+    fn collect(
+        nodes: &[Node],
+        following: &[&Node],
+        known: &HashMap<u64, Vec<Node>>,
+        tails: &mut HashMap<u64, Vec<Node>>,
+    ) {
         for index in 0..nodes.len() {
-            if let Node::Label(label) = nodes[index] {
+            if let Node::Label(label) = nodes[index]
+                && !known.contains_key(&label)
+            {
                 let mut tail = Vec::new();
                 let mut remaining = TAIL_STATEMENTS + 1;
                 for next in nodes[index + 1..].iter().chain(following.iter().copied()) {
                     if matches!(next, Node::Label(_)) {
                         continue;
                     }
-                    if !bounded(std::slice::from_ref(next), &mut remaining) {
+                    if !bounded(std::slice::from_ref(next), &mut remaining, known) {
                         break;
                     }
-                    tail.push(next.clone());
+                    let mut expanded = vec![next.clone()];
+                    replace(&mut expanded, known);
+                    tail.extend(expanded);
                     if super::ends(&tail, false) {
                         tails.insert(label, tail);
                         break;
@@ -116,13 +152,13 @@ pub(crate) fn inline_return_tails(nodes: &mut Vec<Node>) {
                     .filter(|node| !matches!(node, Node::Label(_)))
                     .take(TAIL_STATEMENTS + 1)
                     .collect();
-                collect(then, &continuation, tails);
-                collect(els, &continuation, tails);
+                collect(then, &continuation, known, tails);
+                collect(els, &continuation, known, tails);
             } else {
                 // Loop bodies repeat and switch cases may fall into another
                 // case, so neither inherits the enclosing continuation.
                 for child in children(&nodes[index]) {
-                    collect(child, &[], tails);
+                    collect(child, &[], known, tails);
                 }
             }
         }
@@ -166,7 +202,17 @@ pub(crate) fn inline_return_tails(nodes: &mut Vec<Node>) {
         }
     }
     let mut tails = HashMap::new();
-    collect(nodes, &[], &mut tails);
+    // A cleanup may jump to another short cleanup before returning or
+    // resuming unwinding. Only expand tails already known to terminate;
+    // cycles stay as branches, and the expanded body keeps the same bound.
+    for _ in 0..=TAIL_STATEMENTS {
+        let mut found = HashMap::new();
+        collect(nodes, &[], &tails, &mut found);
+        if found.is_empty() {
+            break;
+        }
+        tails.extend(found);
+    }
     let mut counts = HashMap::new();
     jumps(nodes, &mut counts);
     tails.retain(|label, tail| {
@@ -506,6 +552,198 @@ mod tests {
     }
 
     #[test]
+    fn cleanup_chains_preserve_values_and_memory_smt() {
+        use crate::ir::smt::Proofs;
+
+        let available = Proofs::available();
+        let mut proofs = Proofs::default();
+        for isa in [Isa::I386, Isa::X86_64, Isa::AArch64, Isa::Arm32] {
+            for conditional in [false, true] {
+                let jump = Node::Stmt(Stmt::Br { target: Some(20) });
+                let mut before = vec![
+                    guard(vec![Node::Stmt(Stmt::Br { target: Some(10) })], Vec::new()),
+                    Node::Label(20),
+                    increment(),
+                    Node::Stmt(Stmt::Ret {
+                        value: Expr::Load {
+                            addr: Box::new(Expr::reg(1, 64)),
+                            width: 8,
+                            signed: false,
+                        },
+                    }),
+                    Node::Label(10),
+                    increment(),
+                ];
+                if conditional {
+                    before.push(guard(vec![jump.clone()], vec![increment()]));
+                }
+                before.push(jump);
+                let mut after = before.clone();
+                inline_return_tails(&mut after);
+                let Node::If { then, .. } = &after[0] else {
+                    panic!("the entry remains conditional");
+                };
+                assert!(super::super::ends(then, false), "{after:#?}");
+                assert!(!format!("{then:?}").contains("Br {"), "{after:#?}");
+                if available {
+                    let ir = FunctionIr::single_block(isa, Vec::new());
+                    proofs.function(
+                        format!("cleanup chain {isa:?} conditional {conditional}"),
+                        &lower::lower(&ir, &before),
+                        &lower::lower(&ir, &after),
+                    );
+                }
+            }
+        }
+        if available {
+            proofs.check();
+        }
+    }
+
+    #[test]
+    fn cleanup_chains_keep_cycles_and_oversized_expansions() {
+        let branch = |target| {
+            Node::Stmt(Stmt::Br {
+                target: Some(target),
+            })
+        };
+        let mut cycle = vec![branch(10), Node::Label(10), increment(), branch(10)];
+        let original = format!("{cycle:?}");
+        inline_return_tails(&mut cycle);
+        assert_eq!(format!("{cycle:?}"), original);
+
+        let mut nodes = vec![branch(10), Node::Label(20)];
+        nodes.extend(std::iter::repeat_with(increment).take(TAIL_STATEMENTS));
+        nodes.extend([
+            Node::Stmt(Stmt::Ret {
+                value: Expr::Const(0),
+            }),
+            Node::Label(10),
+            increment(),
+            branch(20),
+        ]);
+        inline_return_tails(&mut nodes);
+        assert!(matches!(
+            nodes[0],
+            Node::Stmt(Stmt::Br { target: Some(10) })
+        ));
+
+        let mut scalar = vec![
+            branch(10),
+            Node::Label(20),
+            Node::Stmt(Stmt::Ret {
+                value: Expr::Const(0),
+            }),
+            Node::Label(10),
+            Node::Stmt(Stmt::Assign {
+                dest: crate::ir::RegRef {
+                    index: 0,
+                    width: 64,
+                },
+                value: Expr::Const(0),
+            }),
+            branch(20),
+        ];
+        inline_return_tails(&mut scalar);
+        assert!(matches!(
+            scalar[0],
+            Node::Stmt(Stmt::Br { target: Some(10) })
+        ));
+    }
+
+    #[test]
+    fn partial_forward_exits_preserve_values_and_memory_smt() {
+        use crate::ir::smt::Proofs;
+
+        let available = Proofs::available();
+        let mut proofs = Proofs::default();
+        for isa in [Isa::I386, Isa::X86_64, Isa::AArch64, Isa::Arm32] {
+            for depth in 1..=3 {
+                for in_else in [false, true] {
+                    let mut branch = vec![increment(), Node::Stmt(Stmt::Br { target: Some(40) })];
+                    for bit in 0..depth {
+                        let (then, els) = if in_else {
+                            (Vec::new(), branch)
+                        } else {
+                            (branch, Vec::new())
+                        };
+                        branch = vec![Node::If {
+                            cond: Cond::Eq,
+                            lhs: Expr::bin(BinOp::And, Expr::reg(0, 64), Expr::Const(1 << bit)),
+                            rhs: Expr::Const(0),
+                            then,
+                            els,
+                        }];
+                    }
+                    let mut before = branch;
+                    before.extend([
+                        increment(),
+                        Node::Label(40),
+                        increment(),
+                        Node::Stmt(Stmt::Ret {
+                            value: Expr::Load {
+                                addr: Box::new(Expr::reg(1, 64)),
+                                width: 8,
+                                signed: false,
+                            },
+                        }),
+                    ]);
+                    let mut after = before.clone();
+                    super::super::fold_forward_exits(&mut after);
+                    assert!(!format!("{after:?}").contains("Br {"), "{after:#?}");
+                    if available {
+                        let ir = FunctionIr::single_block(isa, Vec::new());
+                        proofs.function(
+                            format!("partial forward exit {isa:?} depth {depth} else {in_else}"),
+                            &lower::lower(&ir, &before),
+                            &lower::lower(&ir, &after),
+                        );
+                    }
+                }
+            }
+        }
+        if available {
+            proofs.check();
+        }
+    }
+
+    #[test]
+    fn partial_forward_exits_keep_labels_and_the_copy_bound() {
+        let branch = || {
+            guard(
+                vec![guard(
+                    vec![Node::Stmt(Stmt::Br { target: Some(40) })],
+                    Vec::new(),
+                )],
+                Vec::new(),
+            )
+        };
+        for skipped in [
+            vec![Node::Label(20), increment()],
+            std::iter::repeat_with(increment).take(4).collect(),
+        ] {
+            let mut nodes = vec![branch()];
+            nodes.extend(skipped);
+            nodes.push(Node::Label(40));
+            let original = format!("{nodes:?}");
+            super::super::fold_forward_exits(&mut nodes);
+            assert_eq!(format!("{nodes:?}"), original);
+        }
+        let mut fallthrough = vec![increment()];
+        for _ in 0..4 {
+            fallthrough = vec![guard(fallthrough.clone(), fallthrough)];
+        }
+        let mut nodes = vec![
+            guard(vec![branch()], fallthrough),
+            increment(),
+            Node::Label(40),
+        ];
+        let original = format!("{nodes:?}");
+        super::super::fold_forward_exits(&mut nodes);
+        assert_eq!(format!("{nodes:?}"), original);
+    }
+
+    #[test]
     fn printed_return_continuations_execute_the_shared_stores_once() {
         use crate::ir::{CType, Param};
         use std::fs;
@@ -515,7 +753,13 @@ mod tests {
             .join("target")
             .join(format!("return-continuations-{}", std::process::id()));
         fs::create_dir_all(&directory).unwrap();
-        let mut source = String::from("#include <stdint.h>\n");
+        let mut source = String::from(
+            "#include <stdint.h>\n#include <setjmp.h>\n\
+             static jmp_buf resume_target;\n\
+             static uint64_t trace_cell;\n\
+             void record_cleanup(uint64_t *cell, uint64_t value) { *cell = *cell * 17 + value; }\n\
+             void _Unwind_Resume(void *value) { (void)value; longjmp(resume_target, 1); }\n",
+        );
         for (index, isa) in [Isa::I386, Isa::X86_64, Isa::AArch64, Isa::Arm32]
             .into_iter()
             .enumerate()
@@ -551,6 +795,97 @@ mod tests {
                 crate::render::render(&lower::lower(&ir, &nodes), &[], &Default::default(), &[]);
             assert!(!code.contains("goto "), "{isa}: {code}");
             source.push_str(&code);
+            ir.name = Some(format!("unwind_cleanup_{index}"));
+            let call = |target, args| {
+                Node::Stmt(Stmt::Call {
+                    kind: crate::ir::CallKind::Invoke,
+                    target: Some(target),
+                    through: None,
+                    convention: ir.convention,
+                    args: Some(args),
+                    floats_named: true,
+                    abi: None,
+                    outputs: Vec::new(),
+                    clobbers: Some(Default::default()),
+                    via: None,
+                })
+            };
+            let mut unwind = vec![
+                guard(vec![Node::Stmt(Stmt::Br { target: Some(10) })], Vec::new()),
+                Node::Label(20),
+                call(0x1000, vec![Expr::reg(1, 64), Expr::Const(2)]),
+                call(0x2000, vec![Expr::reg(1, 64)]),
+                Node::Stmt(Stmt::Trap),
+                Node::Label(10),
+                call(0x1000, vec![Expr::reg(1, 64), Expr::Const(1)]),
+                Node::Stmt(Stmt::Br { target: Some(20) }),
+            ];
+            inline_return_tails(&mut unwind);
+            let symbols = crate::render::Symbols {
+                functions: [
+                    (0x1000, "record_cleanup".into()),
+                    (0x2000, "_Unwind_Resume".into()),
+                ]
+                .into(),
+                function_returns: [(0x1000, CType::Void), (0x2000, CType::Void)].into(),
+                function_parameters: [
+                    (0x1000, vec![CType::pointer_to(CType::U64), CType::U64]),
+                    (0x2000, vec![CType::pointer_to(CType::Void)]),
+                ]
+                .into(),
+                ..Default::default()
+            };
+            let code = crate::render::render(&lower::lower(&ir, &unwind), &[], &symbols, &[]);
+            assert!(!code.contains("goto "), "{isa}: {code}");
+            assert!(code.contains("_Unwind_Resume("), "{isa}: {code}");
+            source.push_str(&code);
+            ir.name = Some(format!("cleanup_chain_{index}"));
+            let mut chain = vec![
+                guard(vec![Node::Stmt(Stmt::Br { target: Some(10) })], Vec::new()),
+                Node::Label(20),
+                increment(),
+                Node::Stmt(Stmt::Ret {
+                    value: Expr::Load {
+                        addr: Box::new(Expr::reg(1, 64)),
+                        width: 8,
+                        signed: false,
+                    },
+                }),
+                Node::Label(10),
+                increment(),
+                Node::Stmt(Stmt::Br { target: Some(20) }),
+            ];
+            inline_return_tails(&mut chain);
+            let code =
+                crate::render::render(&lower::lower(&ir, &chain), &[], &Default::default(), &[]);
+            assert!(!code.contains("goto "), "{isa}: {code}");
+            source.push_str(&code);
+            ir.name = Some(format!("cleanup_layout_{index}"));
+            let mut layout = vec![
+                guard(vec![Node::Stmt(Stmt::Br { target: Some(40) })], Vec::new()),
+                increment(),
+                Node::Stmt(Stmt::Br { target: Some(60) }),
+                Node::Label(20),
+                Node::Stmt(Stmt::Br { target: Some(40) }),
+                Node::Label(30),
+                Node::Stmt(Stmt::Br { target: Some(60) }),
+                Node::Label(40),
+            ];
+            layout.extend(std::iter::repeat_with(increment).take(8));
+            layout.extend([
+                Node::Stmt(Stmt::Br { target: Some(60) }),
+                Node::Label(60),
+                Node::Stmt(Stmt::Ret {
+                    value: Expr::Load {
+                        addr: Box::new(Expr::reg(1, 64)),
+                        width: 8,
+                        signed: false,
+                    },
+                }),
+            ]);
+            let code =
+                crate::render::render(&lower::lower(&ir, &layout), &[], &Default::default(), &[]);
+            source.push_str(&code);
             ir.name = Some(format!("forward_{index}"));
             let test = |mask, then| Node::If {
                 cond: Cond::Eq,
@@ -582,6 +917,33 @@ mod tests {
                 crate::render::render(&lower::lower(&ir, &forward), &[], &Default::default(), &[]);
             assert!(!code.contains("goto "), "{isa}: {code}");
             source.push_str(&code);
+            ir.name = Some(format!("partial_cleanup_{index}"));
+            let mut partial = vec![
+                test(
+                    1,
+                    vec![test(
+                        2,
+                        vec![
+                            call(0x1000, vec![Expr::reg(1, 64), Expr::Const(1)]),
+                            Node::Stmt(Stmt::Br { target: Some(40) }),
+                        ],
+                    )],
+                ),
+                call(0x1000, vec![Expr::reg(1, 64), Expr::Const(2)]),
+                Node::Label(40),
+                call(0x1000, vec![Expr::reg(1, 64), Expr::Const(3)]),
+                Node::Stmt(Stmt::Ret {
+                    value: Expr::Load {
+                        addr: Box::new(Expr::reg(1, 64)),
+                        width: 8,
+                        signed: false,
+                    },
+                }),
+            ];
+            super::super::fold_forward_exits(&mut partial);
+            let code = crate::render::render(&lower::lower(&ir, &partial), &[], &symbols, &[]);
+            assert!(!code.contains("goto "), "{isa}: {code}");
+            source.push_str(&code);
         }
         source.push_str(
             "int main(void) {\n\
@@ -593,6 +955,19 @@ mod tests {
         );
         for index in 0..4 {
             source.push_str(&format!(
+                "trace_cell = UINT64_MAX - seed;\n\
+                 expected = flags[i] == 0 ? (trace_cell * 17 + 1) * 17 + 2 : trace_cell * 17 + 2;\n\
+                 if (setjmp(resume_target) == 0) {{ unwind_cleanup_{index}(flags[i], &trace_cell); return 6; }}\n\
+                 if (trace_cell != expected) return 7;\n\
+                 expected = UINT64_MAX - seed + 2;\n"
+            ));
+            source.push_str(&format!(
+                "cell = UINT64_MAX - seed;\n\
+                 expected = (cell * 17 + ((flags[i] & 3) == 0 ? 1 : 2)) * 17 + 3;\n\
+                 if (partial_cleanup_{index}(flags[i], &cell) != expected || cell != expected) return 5;\n\
+                 expected = UINT64_MAX - seed + 2;\n"
+            ));
+            source.push_str(&format!(
                 "cell = UINT64_MAX - seed;\n\
                  if (continuation_{index}(flags[i], &cell) != expected || cell != expected) return 1;\n"
             ));
@@ -600,6 +975,18 @@ mod tests {
                 "cell = UINT64_MAX - seed;\n\
                  expected = cell + 1 + ((flags[i] & 1) == 0 && (flags[i] & 2) != 0);\n\
                  if (forward_{index}(flags[i], &cell) != expected || cell != expected) return 2;\n\
+                 expected = UINT64_MAX - seed + 2;\n"
+            ));
+            source.push_str(&format!(
+                "cell = UINT64_MAX - seed;\n\
+                 expected = cell + (flags[i] == 0 ? 8 : 1);\n\
+                 if (cleanup_layout_{index}(flags[i], &cell) != expected || cell != expected) return 4;\n\
+                 expected = UINT64_MAX - seed + 2;\n"
+            ));
+            source.push_str(&format!(
+                "cell = UINT64_MAX - seed;\n\
+                 expected = cell + 1 + (flags[i] == 0);\n\
+                 if (cleanup_chain_{index}(flags[i], &cell) != expected || cell != expected) return 3;\n\
                  expected = UINT64_MAX - seed + 2;\n"
             ));
         }

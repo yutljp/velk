@@ -133,6 +133,9 @@ fn typed_and_nested_catches_are_printed_in_debug_and_stripped_files() {
             let address = named.find(name).unwrap().addr;
             for (variant, binary) in [("debug", &mut named), ("stripped", &mut stripped)] {
                 let code = binary.decompile(address, None, None).unwrap();
+                if name == "catch_nested" {
+                    assert!(!code.contains("goto "), "{format} {variant}: {code}");
+                }
                 for name in types {
                     assert!(
                         code.contains(&format!("catch ({name}")),

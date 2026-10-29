@@ -4,16 +4,16 @@
 # These are structural classifications, not recovered source constructs.
 shape | Rust | Go | C/C++ | total
 unresolved branch (flags, indirect) | 45 | 0 | 0 | 45
-join with unwind/handler code | 1407 | 0 | 0 | 1407
+join with unwind/handler code | 1356 | 0 | 0 | 1356
 irreducible loop | 165 | 0 | 0 | 165
 multi-level break/continue | 321 | 8 | 0 | 329
-short-circuit condition | 676 | 14 | 4 | 694
-jump threading | 921 | 14 | 6 | 941
+short-circuit condition | 670 | 14 | 4 | 688
+jump threading | 909 | 14 | 6 | 929
 loop rotation (bottom test) | 366 | 0 | 2 | 368
-early return / noreturn merging | 1154 | 6 | 0 | 1160
-loop with several exits | 639 | 30 | 0 | 669
+early return / noreturn merging | 1145 | 6 | 0 | 1151
+loop with several exits | 633 | 30 | 0 | 663
 switch lowering | 635 | 62 | 0 | 697
-common tail merging | 1521 | 130 | 1 | 1652
+common tail merging | 1530 | 130 | 1 | 1661
 
 # One example per shape: fixture, function, destination.
 unresolved branch (flags, indirect): rust_probe_arm64_stripped 0x100011598 -> L_100011c5c

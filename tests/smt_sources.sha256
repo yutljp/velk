@@ -153,8 +153,9 @@ b3c7a9e8c5bb8282352b8e49439760d9d45326154bfbdea59a45c31b471d364d  src/render/str
 ab8b1e138b056bf4cfdd2960342015ced772750e01c0342576432723a8cdb451  src/render/string_functions/loops.rs	fn equivalent(
 a58e17fe151c2c24805ff39201100f72575cb73b566c1631a46ae812f2dd078c  src/render/string_functions/loops.rs	fn induction(
 351732b6122f92609d89addaf7a3d53486c7f56eb1e7307c3f691626d9f0079e  src/render/string_functions/loops.rs	pub(super) fn render(
-6626c215412bdbb99cab9a4965695144cbd85b4a38c7c117f0642a1ad02dbaa4  src/render/structure/cleanup.rs	fn fold_forward_exits_to(
-47a970c388333465861e2e23ef689fc0c7546a026d9a3bec6662227f01263e71  src/render/structure/cleanup/returns.rs	pub(crate) fn inline_return_tails(
+ba687369e7062c9a0af2cfb0875f6bd869d8a9981ea1348b83cb509ddab6d948  src/render/structure/cleanup.rs	fn fold_forward_exits_to(
+2b23ee3c0a075be55267f59455c595db9034aca8d4c6eb343c015cca43f76ecc  src/render/structure/cleanup/returns.rs	pub(crate) fn inline_return_tails(
+4d1dcd1c7365b725f12661f7788ecd999341a6d8ba7862318181926616de3356  src/render/structure/dominance.rs	root_order: RootOrder,
 77e3da73f79cb91b44f56539e6cbe46b7c6d4ec891e097fa57e3dc9e5f59c862  src/render/transfers.rs	fn fill(nodes:
 d6ed2930da3050a1e796935096262bd31b5c04a40d9547f751d04af0fe1c2c7f  src/render/transfers.rs	fn filled_range<'a>(
 c6a2555762303231a86118191e713279616e150d252086d24de10427275987aa  src/render/transfers.rs	fn string_copy(

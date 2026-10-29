@@ -20,6 +20,8 @@ pub(super) struct Graph<'a> {
     successors: Vec<Vec<usize>>,
     /// Reverse-postorder number of each block; `usize::MAX` if unreachable.
     order: Vec<usize>,
+    /// Blocks reached without entering through a separate handler root.
+    entry_reached: Vec<bool>,
     immediate_dominators: Vec<Option<usize>>,
     /// Dominator-tree children, in reverse postorder.
     children: Vec<Vec<usize>>,
@@ -95,6 +97,13 @@ impl<'a> Graph<'a> {
             .map(|block| successors(blocks, &index, block))
             .collect();
         let (order, roots) = forest_order(&successors);
+        let mut entry_reached = vec![false; count];
+        let mut pending = vec![0];
+        while let Some(block) = pending.pop() {
+            if block < count && !std::mem::replace(&mut entry_reached[block], true) {
+                pending.extend(successors[block].iter().copied());
+            }
+        }
         let immediate_dominators = forest_dominators(&successors, &roots);
         let mut children = vec![Vec::new(); count];
         for (block, parent) in immediate_dominators.iter().enumerate() {
@@ -188,6 +197,7 @@ impl<'a> Graph<'a> {
             blocks,
             successors,
             order,
+            entry_reached,
             immediate_dominators,
             children,
             merge,
@@ -588,6 +598,12 @@ pub(super) enum Absorb {
     Nothing,
     Private,
     Every,
+}
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub(super) enum RootOrder {
+    Address,
+    Flow,
 }
 
 /// What falling off the end of a sequence reaches: the labels that stand
@@ -1142,11 +1158,20 @@ fn while_loop(body: &[Node]) -> Option<Node> {
 /// too deep to walk.
 #[cfg(test)]
 pub(super) fn structure(ir: &FunctionIr) -> Option<Vec<Node>> {
-    Graph::new(ir).structure(Absorb::Nothing, /* switch_cases */ false)
+    Graph::new(ir).structure(
+        Absorb::Nothing,
+        /* switch_cases */ false,
+        RootOrder::Flow,
+    )
 }
 
 impl Graph<'_> {
-    pub(super) fn structure(&mut self, absorb: Absorb, switch_cases: bool) -> Option<Vec<Node>> {
+    pub(super) fn structure(
+        &mut self,
+        absorb: Absorb,
+        switch_cases: bool,
+        root_order: RootOrder,
+    ) -> Option<Vec<Node>> {
         if self.blocks.is_empty() {
             return Some(Vec::new());
         }
@@ -1160,15 +1185,19 @@ impl Graph<'_> {
         let Some(mut nodes) = self.tree(0, 0) else {
             return None;
         };
-        // Code the entry does not reach, and joins of it with code the entry
-        // does reach, follow the function's own code.
-        for block in 1..self.blocks.len() {
-            if self.immediate_dominators[block].is_none() && !self.padding(block) {
-                let Some(body) = self.tree(block, 0) else {
-                    return None;
-                };
-                nodes.extend(body);
-            }
+        // Normal joins precede handlers so the normal path can fall through
+        // to its cleanup. Use reverse postorder within each group.
+        let mut roots: Vec<usize> = (1..self.blocks.len())
+            .filter(|block| self.immediate_dominators[*block].is_none() && !self.padding(*block))
+            .collect();
+        if root_order == RootOrder::Flow {
+            roots.sort_by_key(|block| (!self.entry_reached[*block], self.order[*block]));
+        }
+        for block in roots {
+            let Some(body) = self.tree(block, 0) else {
+                return None;
+            };
+            nodes.extend(body);
         }
         resolve(&mut nodes, &Next::default(), &mut Vec::new());
         shape(&mut nodes);
@@ -1182,6 +1211,81 @@ mod tests {
     use crate::ir::{BinOp, Block, Cond, Expr, FunctionIr, RegRef, Stmt};
     use crate::loader::Isa;
     use crate::render::structure::Node;
+
+    fn cleanup_joins() -> FunctionIr {
+        let branch = |target| Stmt::Br {
+            target: Some(target),
+        };
+        let cleanup = |value| {
+            let mut statements: Vec<Stmt> = (0..8)
+                .map(|offset| Stmt::Store {
+                    addr: Expr::bin(BinOp::Add, Expr::reg(1, 64), Expr::Const(offset * 8)),
+                    value: Expr::Const(value + offset),
+                    width: 8,
+                })
+                .collect();
+            statements.push(branch(60));
+            statements
+        };
+        function(vec![
+            (0, vec![brif(40)]),
+            (10, vec![branch(60)]),
+            (20, vec![branch(40)]),
+            (30, vec![branch(60)]),
+            (40, cleanup(100)),
+            (60, vec![ret()]),
+        ])
+    }
+
+    #[test]
+    fn normal_cleanup_precedes_handlers_and_shared_tails_follow_predecessors() {
+        let ir = cleanup_joins();
+        let nodes = structure(&ir).unwrap();
+        let labels: Vec<u64> = nodes
+            .iter()
+            .filter_map(|node| match node {
+                Node::Label(address) => Some(*address),
+                _ => None,
+            })
+            .collect();
+        assert_eq!(labels, [0, 40, 60, 30, 20]);
+        assert_eq!(gotos(&nodes), 1, "{nodes:#?}");
+    }
+
+    #[test]
+    fn cleanup_layout_preserves_each_entry_and_memory_smt() {
+        use crate::ir::smt::Proofs;
+        use crate::render::structure::lower;
+
+        if !Proofs::available() {
+            return;
+        }
+        let mut proofs = Proofs::default();
+        for isa in [Isa::I386, Isa::X86_64, Isa::AArch64, Isa::Arm32] {
+            let mut ir = cleanup_joins();
+            ir.isa = isa;
+            let nodes = structure(&ir).unwrap();
+            let lowered = lower::lower(&ir, &nodes);
+            for entry in [0, 20, 30, 40, 60] {
+                let start = Block {
+                    start: 1000,
+                    stmts: vec![Stmt::Br {
+                        target: Some(entry),
+                    }],
+                };
+                let mut before = ir.clone();
+                before.blocks.insert(0, start.clone());
+                let mut after = lowered.clone();
+                after.blocks.insert(0, start);
+                proofs.function(
+                    format!("cleanup layout {isa:?} entry {entry}"),
+                    &before,
+                    &after,
+                );
+            }
+        }
+        proofs.check();
+    }
 
     #[test]
     fn structure_variants_reset_options_when_reusing_the_graph() {
@@ -1221,10 +1325,13 @@ mod tests {
                 super::Absorb::Private,
             ] {
                 for switch_cases in [true, false] {
-                    let expected = super::Graph::new(&ir).structure(absorb, switch_cases);
-                    let actual = reused.structure(absorb, switch_cases);
-                    assert_eq!(format!("{actual:?}"), format!("{expected:?}"));
-                    assert_eq!(reused.entries(), vec![64]);
+                    for order in [super::RootOrder::Address, super::RootOrder::Flow] {
+                        let expected =
+                            super::Graph::new(&ir).structure(absorb, switch_cases, order);
+                        let actual = reused.structure(absorb, switch_cases, order);
+                        assert_eq!(format!("{actual:?}"), format!("{expected:?}"));
+                        assert_eq!(reused.entries(), vec![64]);
+                    }
                 }
             }
         }

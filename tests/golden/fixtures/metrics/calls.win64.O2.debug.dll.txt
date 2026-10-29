@@ -425,8 +425,8 @@ int sum_varargs(int count, ...) {
     uint64_t v6;
     uint64_t v7;
     uint64_t v8;
+    int64_t v3;
     int32_t v5;
-    int64_t v29;
     int32_t v32;
     void *local_0; /* [sp-8] */
 
@@ -440,15 +440,12 @@ int sum_varargs(int count, ...) {
     }
     uint64_t *v1 = local_0;
     uint64_t v2 = 0;
-    if ((uint32_t)count < 13) {
-        v5 = 0;
-        v29 = (uintptr_t)v1;
-    } else {
-        uint64_t v3 = (uintptr_t)(v1 + ((uint32_t)count - 1));
-        if ((((uintptr_t)&local_0 < v3 + 4) & ((uintptr_t)v1 < (uintptr_t)velk_return_address_slot())) == 0) {
+    if ((uint32_t)count >= 13) {
+        uint64_t v29 = (uintptr_t)(v1 + ((uint32_t)count - 1));
+        if ((((uintptr_t)&local_0 < v29 + 4) & ((uintptr_t)v1 < (uintptr_t)velk_return_address_slot())) == 0) {
             uint8_t v30 = count & 0x3;
             v2 = (uint64_t)(uint32_t)count - (v30 != 0 ? v30 : 4);
-            v29 = (uintptr_t)(v1 + v2);
+            v3 = (uintptr_t)(v1 + v2);
             struct velk_vector vector = { .low.u64 = 0, .high.u64 = 0 };
             int64_t v11 = v2;
             struct velk_vector vector_2 = { .low.u64 = 0, .high.u64 = 0 };
@@ -467,8 +464,11 @@ int sum_varargs(int count, ...) {
             v5 = add_lanes32(v31 >> 32 | v31 >> 32 << 32, v31);
         } else {
             v5 = 0;
-            v29 = (uintptr_t)v1;
+            v3 = (uintptr_t)v1;
         }
+    } else {
+        v5 = 0;
+        v3 = (uintptr_t)v1;
     }
     int32_t v18 = count - v2 & 0x3;
     if (v18 == 0) {
@@ -477,9 +477,9 @@ int sum_varargs(int count, ...) {
         v18 = -(uint32_t)v18;
         int32_t i = 0;
         do {
-            uint32_t *v21 = (uint32_t *)v29;
-            v29 = (uint64_t)v29 + 8;
-            local_0 = (void *)v29;
+            uint32_t *v21 = (uint32_t *)v3;
+            v3 = (uint64_t)v3 + 8;
+            local_0 = (void *)v3;
             v5 += *v21;
             i = (uint32_t)i - 1;
         } while (v18 != i);
@@ -489,7 +489,7 @@ int sum_varargs(int count, ...) {
         return v5;
     }
     int32_t v23 = (uint32_t)count - v32;
-    uint32_t *v24 = (uint32_t *)(int64_t)((uint64_t)v29 + 16);
+    uint32_t *v24 = (uint32_t *)(int64_t)((uint64_t)v3 + 16);
     do {
         local_0 = v24 - 0x2;
         v5 += v24[-4];
