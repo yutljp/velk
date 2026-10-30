@@ -1292,10 +1292,10 @@ struct go_string { uint8_t * ptr; int64_t len; };
 uint64_t main_add();
 uint64_t main_twice();
 uint64_t runtime_gwrite();
-uint64_t runtime_printlock();
-uint64_t runtime_printnl();
-uint64_t runtime_printunlock();
 void runtime_printint();
+void runtime_printlock();
+void runtime_printnl();
+void runtime_printunlock();
 /* end velk prelude */
 
 == 0x430e20 runtime.printstring
@@ -1360,15 +1360,15 @@ fn main.twice @ 0x466cc0 (size 64)
 == 0x466d00 main.main
 -- decompile
 /* velk pseudo-C: main.main @ 0x466d00 */
-int64_t main_main(void) {
+void main_main(void) {
     int64_t v1 = main_twice(21);
     runtime_printlock();
     runtime_printint(v1);
     runtime_printnl();
-    return runtime_printunlock();
+    runtime_printunlock();
 }
 -- signature
-int64_t ()
+void ()
 -- references
 
 -- ir
@@ -1381,6 +1381,6 @@ fn main.main @ 0x466d00 (size 96)
     rax, rbx, rcx, rdi, rsi, r8, r9, r10, r11, xmm0, xmm1, xmm2, xmm3 = call 0x430c40(v1)
     rax, rbx, rcx, rdi, rsi, r8, r9, r10, r11, xmm0, xmm1, xmm2, xmm3 = call 0x4307e0()
     v1:rax, rbx, rcx, rdi, rsi, r8, r9, r10, r11, xmm0, xmm1, xmm2, xmm3 = call 0x430600()
-    ret v1
+    ret #0x0
 -- card
 {"addr":"0x466d00","approxTokens":198,"blocks":2,"hardReasons":[],"name":"main.main","nameSources":["pclntab"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":96,"unsupported":0}

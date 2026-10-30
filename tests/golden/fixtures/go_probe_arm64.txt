@@ -1,4 +1,4 @@
-# go_probe_arm64: elf aarch64 0x75830, 1271 functions, 0 lift failures, 8 unsupported, 76 gotos
+# go_probe_arm64: elf aarch64 0x75830, 1271 functions, 0 lift failures, 8 unsupported, 74 gotos
 0x11000 144 internal/abi.Kind.String pclntab
 0x11090 192 internal/abi.Name.IsBlank pclntab
 0x11150 208 internal/abi.Name.Name pclntab
@@ -1279,11 +1279,11 @@ uint64_t main_kindName();
 uint64_t main_sumSlice();
 uint64_t runtime_gwrite();
 uint64_t runtime_panicdivide();
-uint64_t runtime_printlock();
-uint64_t runtime_printnl();
-uint64_t runtime_printsp();
-uint64_t runtime_printunlock();
 void runtime_printint();
+void runtime_printlock();
+void runtime_printnl();
+void runtime_printsp();
+void runtime_printunlock();
 /* end velk prelude */
 
 == 0x40bd0 runtime.printstring
@@ -1445,10 +1445,10 @@ fn main.kindName @ 0x774c0 (size 112)
 /* velk pseudo-C: main.main @ 0x77530 */
 /* ref: 0x85420 .rodata */
 /* ref: 0xaf010 .rodata */
-int64_t main_main(int64_t a0, int64_t a1, int64_t a2) {
+void main_main(int64_t a0, int64_t a1, int64_t a2) {
     uint64_t v4;
     uint64_t v5;
-    uint64_t v9;
+    uint64_t v12;
     int64_t local_0; /* [sp-60] */
     int64_t local_1; /* [sp-38] */
     int64_t local_2; /* [sp-40] */
@@ -1458,47 +1458,32 @@ int64_t main_main(int64_t a0, int64_t a1, int64_t a2) {
     int32_t v1 = *(uint64_t *)(v4 + 0x10);
     local_0 = v5;
     int64_t v2 = main_divmod(7, 3, a2);
-    int64_t v3 = v9; /* also returned by the call */
+    int64_t v3 = v12; /* also returned by the call */
     local_1 = v2;
     local_2 = v3;
     local_3.f_0 = 1;
     local_3.f_8 = 2;
     local_3.f_10 = 3;
     local_4 = ((int64_t)(main_sumSlice(&local_3.f_0, 3)));
-    int64_t v25 = main_add(1, 2);
-    local_3.f_18 = v25;
-    runtime_printlock(v25, 2, 0 /* undefined */);
+    local_3.f_18 = ((int64_t)(main_add(1, 2)));
+    runtime_printlock();
     runtime_printint(local_4);
-    int64_t v26 = 0 /* undefined */;
-    int64_t v27 = 0 /* undefined */;
-    runtime_printsp(v26, v27, 0 /* undefined */);
+    runtime_printsp();
     runtime_printint(local_3.f_18);
-    int64_t v28 = 0 /* undefined */;
-    int64_t v29 = 0 /* undefined */;
-    runtime_printsp(v28, v29, 0 /* undefined */);
+    runtime_printsp();
     runtime_printint(local_1);
-    int64_t v30 = 0 /* undefined */;
-    int64_t v31 = 0 /* undefined */;
-    runtime_printsp(v30, v31, 0 /* undefined */);
+    runtime_printsp();
     runtime_printint(local_2);
-    int64_t v32 = 0 /* undefined */;
-    int64_t v33 = 0 /* undefined */;
-    int64_t v34 = runtime_printnl(v32, v33, 0 /* undefined */);
-    int64_t v35 = v9; /* also returned by the call */
-    runtime_printunlock(v34, v35, 0 /* undefined */);
-    int64_t v36 = main_kindName(0x85420, 0xaf010);
-    int64_t v37 = v9; /* also returned by the call */
-    local_4 = v36;
-    runtime_printlock(v36, v37, 0 /* undefined */);
+    runtime_printnl();
+    runtime_printunlock();
+    local_4 = ((int64_t)(main_kindName(0x85420, 0xaf010)));
+    runtime_printlock();
     runtime_printint(local_4);
-    int64_t v38 = 0 /* undefined */;
-    int64_t v39 = 0 /* undefined */;
-    int64_t v40 = runtime_printnl(v38, v39, 0 /* undefined */);
-    int64_t v41 = v9; /* also returned by the call */
-    return runtime_printunlock(v40, v41, 0 /* undefined */);
+    runtime_printnl();
+    runtime_printunlock();
 }
 -- signature
-int64_t (int64_t a0, int64_t a1, int64_t a2)
+void (int64_t a0, int64_t a1, int64_t a2)
 -- references
 0x85420 .rodata
 0xaf010 .rodata
@@ -1519,22 +1504,22 @@ fn main.main @ 0x77530 (size 240)
     store64(v2, (sp + #0xffffffffffffffd0))
     v2:x0 = call 0x77420(#0x1, #0x2)
     store64(v2, (sp + #0xfffffffffffffff0))
-    x0, x1, d0, d1 = call 0x40340(v2, #0x2, undefined())
-    v2:x0, v3:x1, d0, d1 = call 0x409d0(load64((sp + #0xffffffffffffffd0)))
-    x0, x1, d0, d1 = call 0x40530(v2, v3, undefined())
-    v2:x0, v3:x1, d0, d1 = call 0x409d0(load64((sp + #0xfffffffffffffff0)))
-    x0, x1, d0, d1 = call 0x40530(v2, v3, undefined())
-    v2:x0, v3:x1, d0, d1 = call 0x409d0(load64((sp + #0xffffffffffffffc8)))
-    x0, x1, d0, d1 = call 0x40530(v2, v3, undefined())
-    v2:x0, v3:x1, d0, d1 = call 0x409d0(load64((sp + #0xffffffffffffffc0)))
-    v2:x0, v3:x1, d0, d1 = call 0x40570(v2, v3, undefined())
-    x0, x1, d0, d1 = call 0x403c0(v2, v3, undefined())
-    v2:x0, v3:x1 = call 0x774c0(#0x85420, #0xaf010)
+    x0, x1, d0, d1 = call 0x40340()
+    x0, x1, d0, d1 = call 0x409d0(load64((sp + #0xffffffffffffffd0)))
+    x0, x1, d0, d1 = call 0x40530()
+    x0, x1, d0, d1 = call 0x409d0(load64((sp + #0xfffffffffffffff0)))
+    x0, x1, d0, d1 = call 0x40530()
+    x0, x1, d0, d1 = call 0x409d0(load64((sp + #0xffffffffffffffc8)))
+    x0, x1, d0, d1 = call 0x40530()
+    x0, x1, d0, d1 = call 0x409d0(load64((sp + #0xffffffffffffffc0)))
+    x0, x1, d0, d1 = call 0x40570()
+    x0, x1, d0, d1 = call 0x403c0()
+    v2:x0, x1 = call 0x774c0(#0x85420, #0xaf010)
     store64(v2, (sp + #0xffffffffffffffd0))
-    x0, x1, d0, d1 = call 0x40340(v2, v3, undefined())
-    v2:x0, v3:x1, d0, d1 = call 0x409d0(load64((sp + #0xffffffffffffffd0)))
-    v2:x0, v3:x1, d0, d1 = call 0x40570(v2, v3, undefined())
-    v2:x0, x1, d0, d1 = call 0x403c0(v2, v3, undefined())
-    ret v2
+    x0, x1, d0, d1 = call 0x40340()
+    x0, x1, d0, d1 = call 0x409d0(load64((sp + #0xffffffffffffffd0)))
+    x0, x1, d0, d1 = call 0x40570()
+    v2:x0, x1, d0, d1 = call 0x403c0()
+    ret #0x0
 -- card
 {"addr":"0x77530","approxTokens":240,"blocks":2,"hardReasons":[],"name":"main.main","nameSources":["pclntab"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":240,"unsupported":0}

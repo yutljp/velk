@@ -758,6 +758,7 @@ const RUNTIME: &[&str] = &[
     "uint64_t __aeabi_uldivmod(uint64_t, uint64_t)",
     "void runtime.memmove(void *, const void *, uintptr_t)",
     "void runtime.memclrNoHeapPointers(void *, uintptr_t)",
+    "void runtime.memclrNoHeapPointersChunked(uintptr_t, void *)",
     "_Bool runtime.memequal(const void *, const void *, uintptr_t)",
     "uintptr_t runtime.memhash(const void *, uintptr_t, uintptr_t)",
     "void *runtime.mallocgc(uintptr_t, void *, _Bool)",
@@ -778,8 +779,31 @@ const RUNTIME: &[&str] = &[
     "void *runtime.mapaccess1_faststr(void *, void *, const void *, int64_t)",
     "void runtime.typedmemmove(void *, void *, const void *)",
     "void runtime.throw(const void *, int64_t)",
+    "void runtime.mcall(void *)",
+    "void runtime.Gosched(void)",
+    "void runtime.gopark(void *, void *, uint8_t, uint8_t, int64_t)",
+    "void runtime.semacquire1(uint32_t *, _Bool, uint8_t, int64_t, uint8_t)",
+    "void runtime.semrelease1(uint32_t *, _Bool, int64_t)",
+    "void runtime.debugCallWrap1(void)",
+    "void runtime.lock(void *)",
+    "void runtime.lock2(void *)",
+    "void runtime.unlock(void *)",
+    "void runtime.unlock2(void *)",
     "void runtime.printstring(const void *, int64_t)",
     "void runtime.printint(int64_t)",
+    "void runtime.printlock(void)",
+    "void runtime.printunlock(void)",
+    "void runtime.printnl(void)",
+    "void runtime.printsp(void)",
+    "void runtime.printbool(_Bool)",
+    "void runtime.printuint(uint64_t)",
+    "void runtime.printhex(uint64_t)",
+    "void runtime.printfloat(double)",
+    "void runtime.printpointer(void *)",
+    "void runtime.printuintptr(uintptr_t)",
+    "void runtime.printslice(void *, int64_t, int64_t)",
+    "void runtime.printeface(void *, void *)",
+    "void runtime.printiface(void *, void *)",
     "int64_t runtime.nanotime1(void)",
     "void runtime.usleep(uint32_t)",
     "void runtime.exit(int32_t)",
@@ -1362,6 +1386,9 @@ mod tests {
         assert_eq!(of("operator new(unsigned long)", false), of("_Znwm", false));
         assert_eq!(runtime("__rustc::__rust_alloc").map(|p| p.fixed()), Some(2));
         assert_eq!(runtime("runtime.memmove").map(|p| p.fixed()), Some(3));
+        assert_eq!(runtime("runtime.mcall").map(|p| p.fixed()), Some(1));
+        assert_eq!(runtime("runtime.gopark").map(|p| p.fixed()), Some(5));
+        assert_eq!(runtime("runtime.semacquire1").map(|p| p.fixed()), Some(5));
         assert!(runtime("strlen").is_none());
     }
 

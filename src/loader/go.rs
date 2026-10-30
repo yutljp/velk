@@ -135,6 +135,13 @@ fn moduledata(image: &Image, pclntab: u64) -> Option<u64> {
 }
 
 pub fn functions(image: &Image) -> Vec<GoFunction> {
+    functions_with_args(image)
+        .into_iter()
+        .map(|(function, _)| function)
+        .collect()
+}
+
+pub(crate) fn functions_with_args(image: &Image) -> Vec<(GoFunction, Option<u32>)> {
     let Some(tab) = pclntab(image) else {
         return Vec::new();
     };
@@ -170,15 +177,18 @@ pub fn functions(image: &Image) -> Vec<GoFunction> {
         return Vec::new();
     };
     let mut functions = Vec::new();
-    walk_table(entries, data, names, text, |addr, name| {
+    walk_table(entries, data, names, text, |addr, name, args| {
         if image
             .section_at(addr)
             .is_some_and(|section| section.executable)
         {
-            functions.push(GoFunction {
-                addr,
-                name: String::from_utf8_lossy(name).into_owned(),
-            });
+            functions.push((
+                GoFunction {
+                    addr,
+                    name: String::from_utf8_lossy(name).into_owned(),
+                },
+                args,
+            ));
         }
     });
     functions
@@ -189,7 +199,7 @@ fn walk_table(
     data: &[u8],
     names: &[u8],
     text: u64,
-    mut emit: impl FnMut(u64, &[u8]),
+    mut emit: impl FnMut(u64, &[u8], Option<u32>),
 ) {
     let count = (entries.len() / 8).saturating_sub(1).min(200_000);
     for entry in entries.as_chunks::<8>().0.iter().take(count) {
@@ -213,10 +223,15 @@ fn walk_table(
         let Some(name) = c_string(name_bytes) else {
             continue;
         };
+        let args = function
+            .checked_add(8)
+            .and_then(|offset| super::discover::read_word(data, offset))
+            .and_then(|args| i32::try_from(args).ok())
+            .and_then(|args| u32::try_from(args).ok());
         let Some(addr) = text.checked_add(u64::from(entry_off)) else {
             continue;
         };
-        emit(addr, name);
+        emit(addr, name, args);
     }
 }
 
@@ -418,7 +433,7 @@ mod tests {
         text: u64,
     ) -> Vec<super::GoFunction> {
         let mut functions = Vec::new();
-        super::walk_table(entries, data, names, text, |addr, name| {
+        super::walk_table(entries, data, names, text, |addr, name, _args| {
             functions.push(super::GoFunction {
                 addr,
                 name: String::from_utf8_lossy(name).into_owned(),
@@ -443,6 +458,25 @@ mod tests {
         }
         assert!(table_functions(&entries, &[0; 8], b"main.work", 0x1000).is_empty());
     }
+
+    #[test]
+    fn function_argument_size_is_bounded_and_rejects_negative_values() {
+        let mut entries = [0; 16];
+        entries[..4].copy_from_slice(&0x20u32.to_le_bytes());
+        let mut data = [0; 12];
+        data[8..].copy_from_slice(&24u32.to_le_bytes());
+        let mut sizes = Vec::new();
+        super::walk_table(&entries, &data, b"main.work\0", 0x1000, |_, _, args| {
+            sizes.push(args);
+        });
+        assert_eq!(sizes, [Some(24)]);
+
+        data[8..].copy_from_slice(&(-1i32).to_le_bytes());
+        super::walk_table(&entries, &data, b"main.work\0", 0x1000, |_, _, args| {
+            sizes.push(args);
+        });
+        assert_eq!(sizes, [Some(24), None]);
+    }
 }
 
 #[cfg(kani)]
@@ -466,7 +500,7 @@ mod proofs {
             &table_bytes[..data_len],
             &names[..names_len],
             text,
-            |addr, name| {
+            |addr, name, _args| {
                 count += 1;
                 assert!(addr >= text);
                 assert!(addr - text <= u64::from(u32::MAX));
@@ -505,7 +539,7 @@ mod proofs {
             &table_bytes,
             b"main.work\0",
             text,
-            |addr, name| {
+            |addr, name, _args| {
                 count += 1;
                 assert!(valid);
                 assert_eq!(addr, text + u64::from(entry));

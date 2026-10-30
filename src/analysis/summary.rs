@@ -108,24 +108,133 @@ pub fn summary(image: &Image, addr: u64) -> Summary {
     if let Some(known) = image.summaries.read().expect("summaries lock").get(&addr) {
         return *known;
     }
-    if !image.functions.contains_key(&addr) {
-        let entered = summary_for_interior_entry(image, addr);
-        image
-            .summaries
-            .write()
-            .expect("summaries lock")
-            .insert(addr, entered);
-        return entered;
-    }
     let mut cache = image.summaries.write().expect("summaries lock");
     if let Some(known) = cache.get(&addr) {
         return *known;
     }
-    let (edges, recursive) = call_graph(image, addr, &cache);
+    if let Some(known) = known_runtime_summary(image, addr) {
+        cache.insert(addr, known);
+        return known;
+    }
+    if !image.functions.contains_key(&addr) {
+        let entered = summary_for_interior_entry(image, addr);
+        cache.insert(addr, entered);
+        return entered;
+    }
+    summarize(
+        image,
+        addr,
+        &mut cache,
+        image.go && image.isa == crate::loader::Isa::X86_64,
+    )
+}
+
+fn summarize(
+    image: &Image,
+    addr: u64,
+    cache: &mut HashMap<u64, Summary>,
+    known_runtime: bool,
+) -> Summary {
+    let mut runtime = HashMap::new();
+    let (edges, recursive) = call_graph(image, addr, cache, &mut runtime, known_runtime);
     let parts = strongly_connected_components(addr, &edges);
-    let settled = settle_parts(image, &parts, &recursive, &edges, &cache);
+    let settled = settle_parts(image, &parts, &recursive, &edges, cache, &runtime);
+    cache.extend(runtime);
     cache.extend(settled);
     cache.get(&addr).copied().unwrap_or_default()
+}
+
+/// Known Go runtime functions need no body analysis when their effects are known.
+fn known_runtime_summary(image: &Image, addr: u64) -> Option<Summary> {
+    if !image.go || image.isa != crate::loader::Isa::X86_64 {
+        return None;
+    }
+    let Some(function) = image.functions.get(&addr) else {
+        return None;
+    };
+    let Some(name) = function.name.as_deref() else {
+        return None;
+    };
+    let convention = image.convention_of(addr);
+    let (arity, floats, noreturn, narrow_return, stack) = if name == "runtime.morestack_noctxt" {
+        let stack = if convention == crate::ir::Convention::GoAbi0 {
+            let Some(arg_size) = image
+                .go_argument_sizes
+                .get()
+                .and_then(|sizes| sizes.get(&addr))
+                .copied()
+            else {
+                return None;
+            };
+            let Some(bytes) = arg_size.checked_add(7) else {
+                return None;
+            };
+            let Ok(stack) = usize::try_from(bytes / 8) else {
+                return None;
+            };
+            if stack != 1 {
+                return None;
+            }
+            stack
+        } else {
+            1
+        };
+        (Some(0), Some(0), true, false, stack)
+    } else if convention == crate::ir::Convention::GoAmd64 {
+        match name {
+            "runtime.panicdivide" => (Some(0), Some(0), true, false, 0),
+            _ if runtime_noreturn(name) => {
+                let Some(prototype) = super::prototypes::runtime(name) else {
+                    return None;
+                };
+                (
+                    Some(prototype.fixed()),
+                    Some(prototype.floats()),
+                    true,
+                    prototype.narrow_return(),
+                    0,
+                )
+            }
+            _ if name.starts_with("runtime.") => {
+                let Some(prototype) = super::prototypes::runtime(name) else {
+                    return None;
+                };
+                (
+                    Some(prototype.fixed()),
+                    Some(prototype.floats()),
+                    false,
+                    prototype.narrow_return(),
+                    0,
+                )
+            }
+            _ => return None,
+        }
+    } else {
+        return None;
+    };
+    if arity.is_some_and(|arity| arity > convention.arguments().len())
+        || floats.is_some_and(|floats| floats > convention.float_arguments().len())
+    {
+        return None;
+    }
+    let clobbers = if name == "runtime.morestack_noctxt" {
+        let mut clobbers = Registers::default();
+        clobbers.insert(crate::arch::x86::RDX);
+        clobbers
+    } else if noreturn {
+        Registers::default()
+    } else {
+        convention.clobbered().iter().copied().collect()
+    };
+    Some(Summary {
+        arity,
+        floats,
+        stack,
+        narrow_return,
+        clobbers: Some(clobbers),
+        noreturn,
+        ..Summary::default()
+    })
 }
 
 /// Whether a callee can require parameter types that change under C promotions.
@@ -239,6 +348,8 @@ fn call_graph(
     image: &Image,
     root: u64,
     known: &HashMap<u64, Summary>,
+    runtime: &mut HashMap<u64, Summary>,
+    use_runtime: bool,
 ) -> (HashMap<u64, Vec<u64>>, HashSet<u64>) {
     crate::timing::scope!("summary::call_graph");
     let mut edges = HashMap::new();
@@ -251,9 +362,19 @@ fn call_graph(
             if calls_itself {
                 recursive.insert(addr);
             }
+            if use_runtime {
+                for callee in &callees {
+                    if !known.contains_key(callee)
+                        && !runtime.contains_key(callee)
+                        && let Some(summary) = known_runtime_summary(image, *callee)
+                    {
+                        runtime.insert(*callee, summary);
+                    }
+                }
+            }
             let callees: Vec<u64> = callees
                 .into_iter()
-                .filter(|callee| !known.contains_key(callee))
+                .filter(|callee| !known.contains_key(callee) && !runtime.contains_key(callee))
                 .collect();
             next.extend(&callees);
             edges.insert(addr, callees);
@@ -346,6 +467,7 @@ fn settle_parts(
     recursive: &HashSet<u64>,
     edges: &HashMap<u64, Vec<u64>>,
     known: &HashMap<u64, Summary>,
+    runtime: &HashMap<u64, Summary>,
 ) -> HashMap<u64, Summary> {
     crate::timing::scope!("summary::settle_parts");
     let part_of: HashMap<u64, usize> = parts
@@ -378,6 +500,7 @@ fn settle_parts(
             .get(&target)
             .and_then(OnceLock::get)
             .or_else(|| known.get(&target))
+            .or_else(|| runtime.get(&target))
             .copied()
     };
     let work = |index: usize| {
@@ -1218,5 +1341,152 @@ mod tests {
                 Expr::Const((-24_i64) as u64),
             )]
         );
+    }
+
+    #[test]
+    fn known_no_return_runtime_summary_stops_call_graph_walk() {
+        let fixture =
+            std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/go_probe");
+        let image = crate::loader::load(&fixture).expect("fixture");
+        let divmod = image
+            .functions
+            .iter()
+            .find_map(|(&addr, function)| {
+                (function.name.as_deref() == Some("main.divmod")).then_some(addr)
+            })
+            .expect("main.divmod");
+        let summary = super::summary(&image, divmod);
+        assert_eq!(summary.arity, Some(2));
+        assert_eq!(summary.floats, Some(0));
+        assert_eq!(summary.stack, 0);
+        assert_eq!(summary.clobbers.map(|registers| registers.0), Some(13));
+        assert!(!summary.noreturn);
+        assert_eq!(image.summaries.read().expect("summaries lock").len(), 2);
+    }
+
+    #[test]
+    fn known_print_helper_summary_uses_the_go_register_clobbers() {
+        let fixture =
+            std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/go_probe");
+        let image = crate::loader::load(&fixture).expect("fixture");
+        let printlock = image
+            .functions
+            .iter()
+            .find_map(|(&addr, function)| {
+                (function.name.as_deref() == Some("runtime.printlock")).then_some(addr)
+            })
+            .expect("runtime.printlock");
+        let summary = super::summary(&image, printlock);
+        let clobbers: crate::ir::Registers = image
+            .convention_of(printlock)
+            .clobbered()
+            .iter()
+            .copied()
+            .collect();
+        assert_eq!(summary.arity, Some(0));
+        assert_eq!(summary.floats, Some(0));
+        assert_eq!(summary.clobbers, Some(clobbers));
+        assert_eq!(image.summaries.read().expect("summaries lock").len(), 1);
+    }
+
+    #[test]
+    fn morestack_summary_uses_its_known_stack_argument() {
+        let fixture =
+            std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/go_probe");
+        let image = crate::loader::load(&fixture).expect("fixture");
+        let morestack = image
+            .functions
+            .iter()
+            .find_map(|(&addr, function)| {
+                (function.name.as_deref() == Some("runtime.morestack_noctxt")).then_some(addr)
+            })
+            .expect("runtime.morestack_noctxt");
+        assert!(image.go_argument_sizes.get().is_some());
+        let summary = super::summary(&image, morestack);
+        assert_eq!(summary.arity, Some(0));
+        assert_eq!(summary.floats, Some(0));
+        assert_eq!(summary.stack, 1);
+        assert_eq!(
+            summary.clobbers.map(|registers| registers.0),
+            Some(1u128 << crate::arch::x86::RDX)
+        );
+        assert!(summary.noreturn);
+        assert_eq!(image.summaries.read().expect("summaries lock").len(), 1);
+    }
+
+    #[test]
+    fn known_unlock_summary_keeps_signature_and_clobbers_separate() {
+        let fixture =
+            std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/go_probe");
+        let image = crate::loader::load(&fixture).expect("fixture");
+        let unlock = image
+            .functions
+            .iter()
+            .find_map(|(&addr, function)| {
+                (function.name.as_deref() == Some("runtime.unlock2")).then_some(addr)
+            })
+            .expect("runtime.unlock2");
+        let summary = super::summary(&image, unlock);
+        let prototype = crate::analysis::prototypes::runtime("runtime.unlock2").expect("prototype");
+        let clobbers: crate::ir::Registers = image
+            .convention_of(unlock)
+            .clobbered()
+            .iter()
+            .copied()
+            .collect();
+        assert_eq!(summary.arity, Some(1));
+        assert_eq!(summary.pointers, 0);
+        assert_eq!(prototype.pointers(), 1);
+        assert_eq!(summary.clobbers, Some(clobbers));
+        assert_eq!(image.summaries.read().expect("summaries lock").len(), 1);
+    }
+
+    #[test]
+    fn mcall_summary_uses_the_runtime_function_argument() {
+        let fixture =
+            std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/go_probe");
+        let image = crate::loader::load(&fixture).expect("fixture");
+        let mcall = image
+            .functions
+            .iter()
+            .find_map(|(&addr, function)| {
+                (function.name.as_deref() == Some("runtime.mcall")).then_some(addr)
+            })
+            .expect("runtime.mcall");
+        let summary = super::summary(&image, mcall);
+        let prototype = crate::analysis::prototypes::runtime("runtime.mcall").expect("prototype");
+        let clobbers: crate::ir::Registers = image
+            .convention_of(mcall)
+            .clobbered()
+            .iter()
+            .copied()
+            .collect();
+        assert_eq!(summary.arity, Some(1));
+        assert_eq!(summary.pointers, 0);
+        assert_eq!(prototype.pointers(), 1);
+        assert_eq!(summary.clobbers, Some(clobbers));
+        assert!(!summary.noreturn);
+        assert!(!summary.narrow_return);
+    }
+
+    #[test]
+    fn runtime_summaries_are_shared_between_requests() {
+        let fixture =
+            std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/go_probe");
+        let image = crate::loader::load(&fixture).expect("fixture");
+        let main = image
+            .functions
+            .iter()
+            .find_map(|(&addr, function)| {
+                (function.name.as_deref() == Some("main.main")).then_some(addr)
+            })
+            .expect("main.main");
+        let first = super::summary(&image, main);
+        let cached = image.summaries.read().expect("summaries lock").clone();
+        assert!(cached.contains_key(&main));
+        assert!(!cached.is_empty());
+        assert_eq!(super::summary(&image, main), first);
+        let summaries = image.summaries.read().expect("summaries lock");
+        assert_eq!(*summaries, cached);
     }
 }

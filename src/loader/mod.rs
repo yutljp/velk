@@ -330,6 +330,8 @@ pub struct Image {
     pub go: bool,
     pub(crate) go_types: std::sync::OnceLock<go::types::Types>,
     pub(crate) go_stack_spills: std::sync::OnceLock<HashMap<u64, (i64, i64)>>,
+    /// The stack argument byte sizes stored in Go's pclntab, by function entry.
+    pub(crate) go_argument_sizes: std::sync::OnceLock<HashMap<u64, u32>>,
     /// The C++ virtual tables, by address point. Built on first use.
     pub vtables: std::sync::OnceLock<std::collections::BTreeSet<u64>>,
     pub(crate) classes: std::sync::OnceLock<Vec<classes::Class>>,
@@ -518,6 +520,7 @@ impl Image {
             addressed: Default::default(),
             go_types: Default::default(),
             go_stack_spills: Default::default(),
+            go_argument_sizes: Default::default(),
             go_abi0: Default::default(),
             stack_rows: Default::default(),
             imports: BTreeMap::new(),
@@ -770,12 +773,22 @@ impl Image {
     }
 
     fn add_go_functions(&mut self) {
-        let mut discovered = crate::loader::go::functions(self);
+        let mut discovered = crate::loader::go::functions_with_args(self);
         self.go = !discovered.is_empty();
-        discovered.sort_by_key(|function| function.addr);
-        discovered.dedup_by_key(|function| function.addr);
-        let addresses: Vec<u64> = discovered.iter().map(|function| function.addr).collect();
-        for (index, function) in discovered.into_iter().enumerate() {
+        discovered.sort_by_key(|(function, _)| function.addr);
+        discovered.dedup_by_key(|(function, _)| function.addr);
+        let argument_sizes: HashMap<u64, u32> = discovered
+            .iter()
+            .filter_map(|(function, size)| size.map(|size| (function.addr, size)))
+            .collect();
+        self.go_argument_sizes
+            .set(argument_sizes)
+            .expect("Go argument sizes are stored once during loading");
+        let addresses: Vec<u64> = discovered
+            .iter()
+            .map(|(function, _)| function.addr)
+            .collect();
+        for (index, (function, _)) in discovered.into_iter().enumerate() {
             let size = addresses
                 .get(index + 1)
                 .map(|next| next.saturating_sub(function.addr))
@@ -1361,6 +1374,7 @@ pub(crate) fn load_input_with_saved(
         addressed: Default::default(),
         go_types: Default::default(),
         go_stack_spills: Default::default(),
+        go_argument_sizes: Default::default(),
         go_abi0: Default::default(),
         stack_rows: Default::default(),
         result_reads: Default::default(),

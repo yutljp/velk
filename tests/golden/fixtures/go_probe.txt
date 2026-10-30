@@ -1297,11 +1297,11 @@ uint64_t main_kindName();
 uint64_t main_sumSlice();
 uint64_t runtime_gwrite();
 uint64_t runtime_panicdivide();
-uint64_t runtime_printlock();
-uint64_t runtime_printnl();
-uint64_t runtime_printsp();
-uint64_t runtime_printunlock();
 void runtime_printint();
+void runtime_printlock();
+void runtime_printnl();
+void runtime_printsp();
+void runtime_printunlock();
 /* end velk prelude */
 
 == 0x430e20 runtime.printstring
@@ -1472,7 +1472,7 @@ fn main.kindName @ 0x466d20 (size 96)
 /* velk pseudo-C: main.main @ 0x466d80 */
 /* ref: 0x46d400 .rodata */
 /* ref: 0x4967e8 .rodata */
-int64_t main_main(void) {
+void main_main(void) {
     uint64_t v5;
     int64_t local_0; /* [sp-38] */
     int64_t local_1; /* [sp-40] */
@@ -1502,10 +1502,10 @@ int64_t main_main(void) {
     runtime_printlock();
     runtime_printint(local_3);
     runtime_printnl();
-    return runtime_printunlock();
+    runtime_printunlock();
 }
 -- signature
-int64_t ()
+void ()
 -- references
 0x46d400 .rodata
 0x4967e8 .rodata
@@ -1540,6 +1540,6 @@ fn main.main @ 0x466d80 (size 256)
     rax, rbx, rcx, rdi, rsi, r8, r9, r10, r11, xmm0, xmm1, xmm2, xmm3 = call 0x430c40(load64((rsp + #0xffffffffffffffd0)))
     rax, rbx, rcx, rdi, rsi, r8, r9, r10, r11, xmm0, xmm1, xmm2, xmm3 = call 0x4307e0()
     v1:rax, rbx, rcx, rdi, rsi, r8, r9, r10, r11, xmm0, xmm1, xmm2, xmm3 = call 0x430600()
-    ret v1
+    ret #0x0
 -- card
 {"addr":"0x466d80","approxTokens":240,"blocks":2,"hardReasons":[],"name":"main.main","nameSources":["pclntab"],"section":".text","simplification":{"dispatcherStatesRemoved":0,"mbaExpressionsSimplified":0,"predicatesRemoved":0,"simplified":false},"size":256,"unsupported":0}
