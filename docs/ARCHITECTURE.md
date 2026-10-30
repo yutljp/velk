@@ -111,14 +111,38 @@ Rendering turns the optimized IR into C:
 - **Output**: helper definitions and declarations the code needs are printed once, at the top of the file, so the
   output compiles on its own.
 
+## Executing lifted code (`src/ir/eval/`)
+
+The IR can also be run on the code of a loaded binary:
+
+- `src/ir/eval/emulation.rs` executes lifted code. Memory comes from the loaded sections plus zero-filled areas
+  (`src/emulation/memory.rs`). Calls to imported C library functions are selected by symbol name
+  (`src/ir/eval/emulation/hooks.rs`). Standard streams and Linux system calls are in `src/ir/eval/stdio.rs` and
+  `src/ir/eval/syscalls.rs`, C++ streams and strings in `src/ir/eval/cxx.rs`, and Windows process state and API
+  calls in `src/ir/eval/emulation/windows/`.
+- `src/ir/eval/symbolic.rs` evaluates the IR symbolically. It uses the bit-vector translation in `src/ir/smt.rs`,
+  which the equivalence checks also use, and an external Z3 or Bitwuzla process.
+- `src/emulation.rs` and `src/symbolic.rs` are the public interfaces to these two engines. Both stop at a step
+  limit; the other limits are listed in [EMULATION.md](EMULATION.md) and [SYMBOLIC.md](SYMBOLIC.md).
+
+These features use emulation:
+
+- `src/unpack.rs` runs a packed program from its entry point until it reaches bytes written during the run, then
+  analyzes the resulting image.
+- `src/string_decoding.rs` runs decoder calls with known buffers, lengths and keys and records the resulting strings.
+- `src/api_hashes.rs` runs the hash routines used in export-name lookups and compares the results with export names.
+- `src/iocs.rs` extracts URLs, addresses, paths and similar values from static and recovered strings.
+
 ## Outer layers
 
 - `src/service.rs` opens binaries and caches the analysis of each function. The CLI, the scripting API and the MCP
   server all go through it.
 - `src/main.rs` is the command line; `src/script/` runs JavaScript against the scripting API; `src/mcp.rs` is the MCP server that
-  exposes that API to agents.
+  exposes that API to agents; `src/serve.rs` serves the same API as newline-delimited JSON.
 - `src/xrefs.rs` indexes cross references and the call graph, and provides string and constant queries and function summaries.
+- `src/memory.rs` searches bytes and reads typed values from sections; `src/tables.rs` recognizes standard constant tables.
 - `src/sigs/bytes.rs` matches byte signatures to identify stripped library functions.
+- `src/compare.rs` matches functions between program versions; `src/similar.rs` ranks similar functions.
 - `src/project/` persists binary-bound names, types and comments as JSON and applies them to analysis and output.
 
 ## How correctness is checked

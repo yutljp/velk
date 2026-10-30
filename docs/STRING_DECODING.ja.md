@@ -79,7 +79,7 @@ MCP では `velk_run_script` から同じ JavaScript の操作を使えます。
 
 ## 使用例の再現
 
-`sh tests/make_string_decoding_fixtures.sh` で例の関数を
+`sh tests/scripts/make_string_decoding_fixtures.sh` で例の関数を
 `target/string-decoding-fixtures/` にビルドします。上の `app.elf` を
 `target/string-decoding-fixtures/x86_64.O0.elf` に置き換えてください。
 `cargo test --release --test string_decoding -- --test-threads 3 --nocapture` は

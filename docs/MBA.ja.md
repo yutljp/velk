@@ -35,10 +35,10 @@ const f = velk.open("app").getFunction("mba_add");
 ```
 
 フィクスチャのソースは `tests/cases/mba/expressions.c` です。
-`sh tests/make_mba_fixtures.sh` は Clang を使い、x86-64 と AArch64 の
+`sh tests/scripts/make_mba_fixtures.sh` は Clang を使い、x86-64 と AArch64 の
 オブジェクトを `-O0` と `-O2` で生成します。
 `cargo test --release --test mba -- --test-threads 3` は出力した C を
 両方の最適化水準でコンパイルし、境界値を含む入力について、ネイティブで
 実行するソースと独立した符号なし整数の式との一致を検査します。
 CLI、JavaScript、MCP のデータも同じテストで検査します。
-[SMT の一覧](smt-rules.ja.md) に、記号的検査の範囲と制限を記載しています。
+[SMT の一覧](SMT_RULES.ja.md) に、記号的検査の範囲と制限を記載しています。

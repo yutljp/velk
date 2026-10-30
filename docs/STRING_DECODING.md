@@ -86,7 +86,7 @@ buffers and strings shorter than four characters are left unchanged.
 
 ## Reproducible examples
 
-`sh tests/make_string_decoding_fixtures.sh` builds the example functions in
+`sh tests/scripts/make_string_decoding_fixtures.sh` builds the example functions in
 `target/string-decoding-fixtures/`. Substitute
 `target/string-decoding-fixtures/x86_64.O0.elf` for `app.elf` above.
 `cargo test --release --test string_decoding -- --test-threads 3 --nocapture`

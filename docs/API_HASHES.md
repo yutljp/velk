@@ -52,7 +52,7 @@ functions is in `src/api_hashes/exports.txt`.
 Build the source fixtures before running these examples:
 
 ```sh
-sh tests/make_api_hash_fixtures.sh
+sh tests/scripts/make_api_hash_fixtures.sh
 velk --summary target/api-hash-fixtures/x86_64.O2.elf case_ror13
 velk -D target/api-hash-fixtures/x86_64.O2.elf case_ror13
 ```

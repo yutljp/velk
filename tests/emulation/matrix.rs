@@ -33,7 +33,7 @@ pub(super) fn fixtures() -> &'static Path {
         let directory =
             common::root().join(format!("target/emulation-matrix-{}", std::process::id()));
         let output = Command::new("sh")
-            .arg(common::root().join("tests/make_emulation_fixtures.sh"))
+            .arg(common::root().join("tests/scripts/make_emulation_fixtures.sh"))
             .arg(&directory)
             .output()
             .expect("building emulation fixtures");

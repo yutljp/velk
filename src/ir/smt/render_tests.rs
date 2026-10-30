@@ -347,7 +347,7 @@ fn prove_rendered(source: String, originals: BTreeMap<String, Value>) {
     std::fs::write(format!("target/{first}.c"), &source).expect("save rendered C corpus");
     let request = serde_json::json!({ "source": source, "names": names });
     let mut child = Command::new("uv")
-        .args(["run", "--no-project", "tests/smt_c.py"])
+        .args(["run", "--no-project", "tests/scripts/smt_c.py"])
         .env("UV_CACHE_DIR", "target/uv-cache")
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())

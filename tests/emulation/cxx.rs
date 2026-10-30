@@ -21,7 +21,7 @@ fn fixtures() -> &'static [PathBuf] {
             fs::remove_dir_all(&directory).expect("remove stale C++ fixtures");
         }
         let output = Command::new("bash")
-            .arg(common::root().join("tools/make_cxx_stream_fixtures.sh"))
+            .arg(common::root().join("tests/scripts/make_cxx_stream_fixtures.sh"))
             .arg(&directory)
             .output()
             .expect("C++ fixture builder");

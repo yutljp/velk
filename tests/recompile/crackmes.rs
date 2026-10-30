@@ -13,7 +13,7 @@ fn crackme_fixture_functions_compile() {
     ] {
         let directory = scratch.join(name);
         let output = Command::new("bash")
-            .arg(common::root().join("tests/make_crackme_fixtures.sh"))
+            .arg(common::root().join("tests/scripts/make_crackme_fixtures.sh"))
             .arg(&directory)
             .args(flags)
             .output()

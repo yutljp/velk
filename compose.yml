@@ -42,7 +42,7 @@ services:
     <<: *reference
     volumes:
       - .:/work
-    command: ["./tests/make_fixtures.sh"]
+    command: ["./tests/scripts/make_fixtures.sh"]
 
   check:
     <<: *reference
@@ -57,7 +57,7 @@ services:
       CARGO_TERM_COLOR: never
       # Timings are meaningless under emulation; benchmark locally instead.
       VELK_BENCH: "0"
-    command: ["sh", "-c", "cargo test && ./tests/smoke.sh && ./tests/ladder.sh"]
+    command: ["sh", "-c", "cargo test && ./tests/scripts/smoke.sh && ./tests/scripts/ladder.sh"]
 
 volumes:
   cargo-registry:

@@ -33,7 +33,7 @@ fn fixtures() -> &'static Path {
             .join("target/symbolic-fixtures")
             .join(std::process::id().to_string());
         let result = Command::new("bash")
-            .arg(common::root().join("tools/make_symbolic_fixtures.sh"))
+            .arg(common::root().join("tests/scripts/make_symbolic_fixtures.sh"))
             .arg(&out)
             .output()
             .expect("symbolic fixture operation succeeds");

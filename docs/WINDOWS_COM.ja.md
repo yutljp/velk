@@ -48,7 +48,7 @@ const b = velk.open("tests/fixtures/com_x86_64.dll");
 フィクスチャは次のコマンドで再生成します。
 
 ```sh
-docker compose run --rm fixtures sh tests/make_com_fixtures.sh
+docker compose run --rm fixtures sh tests/scripts/make_com_fixtures.sh
 ```
 
 フィクスチャは x86-32 と x86-64 の PE で `CreateStreamOnHGlobal`、`IUnknown`、

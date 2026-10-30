@@ -18,7 +18,7 @@ fn fixtures() -> &'static Path {
             .join("target/crackme-fixtures")
             .join(std::process::id().to_string());
         let output = Command::new("bash")
-            .arg(common::root().join("tests/make_crackme_fixtures.sh"))
+            .arg(common::root().join("tests/scripts/make_crackme_fixtures.sh"))
             .arg(&directory)
             .output()
             .expect("run crackme fixture builder");

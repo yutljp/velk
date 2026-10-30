@@ -104,7 +104,7 @@ The saved bytes are the complete decoder output before analysis relocations.
 Self-built fixtures in `tests/data/upx` cover all four methods on every listed
 format and architecture, PE imports and relocations, and branch filters. Their
 recovered bytes are compared with `upx -d` output; ELF references also match the
-original files. Rebuild them with `bash tools/make_upx_fixtures.sh OUTPUT_DIRECTORY`.
+original files. Rebuild them with `bash tests/scripts/make_upx_fixtures.sh OUTPUT_DIRECTORY`.
 The additional packing tests require UPX on PATH and exercise CLI, JavaScript,
 MCP, saved files and compiled printed C. The stored-fixture and decoder property
 tests run without UPX. These checks were run on Linux; macOS was not checked here.

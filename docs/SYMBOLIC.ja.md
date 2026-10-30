@@ -62,8 +62,8 @@ AArch64 の可変長引数 I/O は ELF のみ対応し、モデルは命令数�
 `tests/data/crackmes/` の22個の C プログラムは、入力、比較、変換、テーブル参照、VM、状態遷移、チェックサム、内部呼び出しを扱います。リポジトリのルートからビルドして評価します。
 
 ```sh
-bash tests/make_crackme_fixtures.sh target/crackmes
-uv run --no-project tests/crackmes.py --cases table sum --variants elf > target/crackmes.jsonl
+bash tests/scripts/make_crackme_fixtures.sh target/crackmes
+uv run --no-project tests/scripts/crackmes.py --cases table sum --variants elf > target/crackmes.jsonl
 ```
 
 `--cases` と `--variants` を省略すると全プログラムと作成済みの全形式を評価します。ビルドスクリプトは両アーキテクチャの ELF を `-O0` と `-O2` で作成します。既存のシンボリック実行用フィクスチャと同じく、スタック保護と末尾呼び出し最適化を無効にし、外部呼び出し用のスタブを使います。Linux では対応するコンパイラがある場合、動的・静的リンクの libc 実行ファイルも作成します。評価では CLI の到達探索と戻り値探索を別々に記録し、所要秒数、診断、具体的な入力、ネイティブ実行の結果を出力します。評価側のタイムアウトの既定値は探索ごとに60秒で、シンボリック実行の決定的な上限とは別です。異なるアーキテクチャの実行には利用可能なら QEMU を使い、なければ同じ C プログラムをホスト上で実行したことを記録します。実行ファイルがない場合は `unverified`、入力が拒否された場合は `wrong` とします。終了コード0かつ出力が `success` と改行だけの場合に検証成功とします。入力スタブの実行をネイティブ検証には使いません。

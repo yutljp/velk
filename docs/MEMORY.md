@@ -102,7 +102,7 @@ The constants follow [AES](https://doi.org/10.6028/NIST.FIPS.197-upd1),
 [MD5](https://www.rfc-editor.org/rfc/rfc1321.html),
 [ChaCha](https://www.rfc-editor.org/rfc/rfc8439.html), and
 [deflate](https://www.rfc-editor.org/rfc/rfc1951.html).
-Fixture source is in `tests/cases/memory/`; `sh tests/make_memory_fixtures.sh`
+Fixture source is in `tests/cases/memory/`; `sh tests/scripts/make_memory_fixtures.sh`
 builds x86-64, i386, AArch64, ARM, Thumb and big-endian AArch64 images in
 `tests/data/byte_search/`. `cargo test --release --test memory -- --test-threads 3`
 checks the CLI, JavaScript and MCP interfaces against those images.
@@ -183,6 +183,6 @@ are treated as ordinary memory accesses to valid storage.
 Compiler fixtures cover `-O2` and `-O3` for x86-64 and AArch64, with and
 without debug information. The memory fixtures record Clang 18 and GCC 13;
 the string fixtures record Clang 21 and GCC 15. Rebuild them with
-`sh tests/make_inline_function_fixtures.sh` and
-`sh tools/make_string_function_fixtures.sh`. These require Clang, LLD,
+`sh tests/scripts/make_inline_function_fixtures.sh` and
+`sh tests/scripts/make_string_function_fixtures.sh`. These require Clang, LLD,
 `x86_64-linux-gnu-gcc` and `aarch64-linux-gnu-gcc`.

@@ -58,7 +58,7 @@ fn fixtures() -> &'static Path {
             .join("target/section-store-tests")
             .join(std::process::id().to_string());
         let output = Command::new("bash")
-            .arg(common::root().join("tools/make_section_store_fixtures.sh"))
+            .arg(common::root().join("tests/scripts/make_section_store_fixtures.sh"))
             .arg(&out)
             .output()
             .expect("fixture builder starts");

@@ -77,7 +77,7 @@ These comments preserve C syntax and the existing machine-level handler code; st
 does not provide C++ exception dispatch.
 
 `tests/cases/cpp/rtti.cpp` covers single, multiple and virtual inheritance and typed,
-catch-all, nested and cleanup handlers. `bash tests/make_cpp_fixtures.sh` builds ELF with
+catch-all, nested and cleanup handlers. `bash tests/scripts/make_cpp_fixtures.sh` builds ELF with
 clang and `ld.lld`, PE with clang's MSVC target and `lld-link` when available, and Mach-O
 on macOS. Debug and stripped copies are checked by `tests/cpp_classes.rs` for names,
 offsets, exception comments and compilation of every discovered function.

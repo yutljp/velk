@@ -51,7 +51,7 @@ Each reference has a nullable `guid` object with `names`, `value`, and `bytes`.
 Regenerate the fixtures with:
 
 ```sh
-docker compose run --rm fixtures sh tests/make_com_fixtures.sh
+docker compose run --rm fixtures sh tests/scripts/make_com_fixtures.sh
 ```
 
 The fixtures use `CreateStreamOnHGlobal`, `IUnknown`, `IDispatch`, and `IStream`

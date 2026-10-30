@@ -28,7 +28,7 @@
 `tests/cases/control_flow/` には、直線的な処理、分岐、ループについて、
 平坦化した関数と元の関数を用意しています。整数の条件式と、ディスパッチャを
 残す必要がある変数による遷移も含みます。
-`tests/make_control_flow_fixtures.sh` は Clang を使い、x86-64 と AArch64 の
+`tests/scripts/make_control_flow_fixtures.sh` は Clang を使い、x86-64 と AArch64 の
 自立したオブジェクトを `-O0` と `-O2` で生成します。
 制御フローの統合テストは出力した C をコンパイルし、独立した符号なし整数の式と
 戻り値を比較します。単体テストでは整数の恒等式の検証だけに Z3 を使用します。

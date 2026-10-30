@@ -177,7 +177,7 @@ AArch64 sysreg ビルドの TP + `0x28` です。AArch64 glibc はグローバ�
 ## テスト
 
 `cargo test --release --test emulation -- --test-threads 3` は
-`tests/make_emulation_fixtures.sh` で C のテスト用バイナリーをビルドします。
+`tests/scripts/make_emulation_fixtures.sh` で C のテスト用バイナリーをビルドします。
 ルーチンのテストでは自動ベクトル化を無効にして `-O0` と `-O2` を使い、
 x86-64、AArch64、x86-32、ARM32、Thumb を対象にします。戻り値とバッファーを
 コンパイルした C の実行結果と比較し、ライブラリ、CLI、JavaScript の両方の
@@ -288,7 +288,7 @@ ANSI のモジュール名と `GetCommandLineA` は ASCII に限定します。�
 MCP、`--serve` で同じオプションを使います。
 プロセスの管理情報はプログラムの割り当てより前にヒープ領域を使います。ヒープ上の
 バッファーのアドレスを引数で渡す場合は、初期 `memory` 書き込みでその領域を確保してください。
-`sh tools/make_windows_emulation_fixtures.sh` で構築したフィクスチャの例です。
+`sh tests/scripts/make_windows_emulation_fixtures.sh` で構築したフィクスチャの例です。
 
 ```sh
 velk --emulate target/windows-emulation-fixtures/x86_64.O0.exe process_parameters --emulation-options '{"windows":{"commandLine":"program.exe sample","environment":{"NAME":"value"}}}' --json

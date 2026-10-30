@@ -106,7 +106,7 @@ b.getFunction("add3").decompile();
 `tests/data/upx` の自作フィクスチャは、上記の全形式・アーキテクチャと四つの圧縮方式、
 PE のインポートと再配置、分岐フィルターを含みます。復元したバイト列を `upx -d` の出力と
 比較し、ELF では元のファイルとの一致も確認します。
-`bash tools/make_upx_fixtures.sh OUTPUT_DIRECTORY` で再生成できます。
+`bash tests/scripts/make_upx_fixtures.sh OUTPUT_DIRECTORY` で再生成できます。
 追加のパック処理のテストには PATH 上の UPX が必要で、CLI、JavaScript、MCP、保存と
 出力 C のコンパイル・実行を確認します。保存済みフィクスチャとデコーダーの性質のテストには
 UPX は不要です。これらの確認は Linux で実行しました。ここでは macOS は未確認です。

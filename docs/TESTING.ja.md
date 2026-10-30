@@ -22,12 +22,12 @@ cargo build --release
 cargo test --release -- --test-threads 3
 cargo fmt -- --check
 cargo clippy --release --all-targets -- -D warnings
-BIN=target/release/velk bash tests/smoke.sh
-BIN=target/release/velk bash tests/ladder.sh
+BIN=target/release/velk bash tests/scripts/smoke.sh
+BIN=target/release/velk bash tests/scripts/ladder.sh
 ```
 
-- `tests/smoke.sh` はコマンドラインと MCP サーバーを端から端まで動かして確認します。
-- `tests/ladder.sh` は難しさの異なる関数で期待する結果を確認します。`known_*` の行はまだ達成できていない目標です。
+- `tests/scripts/smoke.sh` はコマンドラインと MCP サーバーを端から端まで動かして確認します。
+- `tests/scripts/ladder.sh` は難しさの異なる関数で期待する結果を確認します。`known_*` の行はまだ達成できていない目標です。
 
 ## テストが確認すること
 
@@ -77,17 +77,17 @@ docker compose run --rm fixtures
 
 バージョンを固定した同じ Linux 環境でテストを実行するには `docker compose run --rm check` を使います。
 
-C API 型ライブラリは `UV_CACHE_DIR=target/uv-cache uv run tests/generate_type_library.py` で、
-その Mach-O フィクスチャは `sh tests/make_type_library_fixtures.sh` で再生成します。
+C API 型ライブラリは `UV_CACHE_DIR=target/uv-cache uv run tests/scripts/generate_type_library.py` で、
+その Mach-O フィクスチャは `sh tests/scripts/make_type_library_fixtures.sh` で再生成します。
 
 Windows と Linux のデータとフィクスチャは参照環境で生成します。
 
 ```sh
 docker compose build fixtures
-docker compose run --rm fixtures uv run tests/generate_type_library.py --platform windows
-docker compose run --rm fixtures uv run tests/test_generate_type_library.py
-docker compose run --rm fixtures uv run tests/generate_type_library.py --platform linux
-docker compose run --rm fixtures sh tests/make_type_library_fixtures.sh linux
+docker compose run --rm fixtures uv run tests/scripts/generate_type_library.py --platform windows
+docker compose run --rm fixtures uv run tests/scripts/test_generate_type_library.py
+docker compose run --rm fixtures uv run tests/scripts/generate_type_library.py --platform linux
+docker compose run --rm fixtures sh tests/scripts/make_type_library_fixtures.sh linux
 ```
 
 Windows データとリフターは x86-64 と x86-32 に対応します。
@@ -107,20 +107,20 @@ const b = velk.open("tests/fixtures/type_library_windows.win64.exe");
 b.libraryType("struct IUnknownVtbl");
 ```
 
-一部のグループには専用のスクリプトがあります。`tests/make_pe_fixtures.sh` (Windows PE)、`tests/make_codeview.sh`
-(CodeView / PDB)、`tests/make_seh_fixtures.sh` (Windows SEH)、`tests/make_objc_fixtures.sh` (Objective-C)、
-`tests/make_arm64_lang_fixtures.sh` (AArch64 の Rust と Go) です。再生成は意図して行い、変わったバイトと記録された
+一部のグループには専用のスクリプトがあります。`tests/scripts/make_pe_fixtures.sh` (Windows PE)、`tests/scripts/make_codeview.sh`
+(CodeView / PDB)、`tests/scripts/make_seh_fixtures.sh` (Windows SEH)、`tests/scripts/make_objc_fixtures.sh` (Objective-C)、
+`tests/scripts/make_arm64_lang_fixtures.sh` (AArch64 の Rust と Go) です。再生成は意図して行い、変わったバイトと記録された
 ツールチェーンのバージョンを確認してください。
 
-ARM32 A32/T32 は `sh tests/make_arm32_fixtures.sh`（ARM 対応 clang と `ld.lld` が必要）、x86-32 ELF・PE は
-`bash tests/make_i386_fixtures.sh` で、それぞれ `-O0` / `-O2` のフィクスチャを再生成します。
+ARM32 A32/T32 は `sh tests/scripts/make_arm32_fixtures.sh`（ARM 対応 clang と `ld.lld` が必要）、x86-32 ELF・PE は
+`bash tests/scripts/make_i386_fixtures.sh` で、それぞれ `-O0` / `-O2` のフィクスチャを再生成します。
 
 ## 性能
 
 1 関数のデコンパイルは高速であるべきです。バイナリ全体の処理速度を比べるには次を実行します。
 
 ```bash
-uv run tests/throughput.py target/release/velk tests/fixtures/go_probe
+uv run tests/scripts/throughput.py target/release/velk tests/fixtures/go_probe
 ```
 
 ## 任意実行の有界検証、ファジング、Miri
@@ -130,11 +130,11 @@ uv run tests/throughput.py target/release/velk tests/fixtures/go_probe
 以下のコマンドは現在のチェックアウトの `target/` を使います。他のチェックアウトと共有しないでください。
 
 ```sh
-sh tests/verify.sh kani
-sh tests/verify.sh fuzz
-sh tests/verify.sh miri
+sh tests/scripts/verify.sh kani
+sh tests/scripts/verify.sh fuzz
+sh tests/scripts/verify.sh miri
 # 各検査の失敗を保持して、3 種類すべてを実行:
-sh tests/verify.sh all
+sh tests/scripts/verify.sh all
 ```
 
 Linux では、スクリプトは 1 分間の負荷がプロセッサ数の 2 倍を超えている間は待機します。
@@ -247,10 +247,10 @@ MCP は与えられた JavaScript を空のスクリプトに置換し、パス�
 JavaScript の構文や、与えられた操作の実行は検査しません。
 
 ```sh
-UV_CACHE_DIR=target/uv-cache uv run --no-project tests/fuzz.py --seed-only
-UV_CACHE_DIR=target/uv-cache uv run --no-project tests/fuzz_runner_test.py
+UV_CACHE_DIR=target/uv-cache uv run --no-project tests/scripts/fuzz.py --seed-only
+UV_CACHE_DIR=target/uv-cache uv run --no-project tests/scripts/fuzz_runner_test.py
 # 1 対象を指定する。省略すると 7 対象すべて:
-sh tests/verify.sh fuzz elf --seconds 60 --quiet 120 --rounds 20
+sh tests/scripts/verify.sh fuzz elf --seconds 60 --quiet 120 --rounds 20
 cargo +nightly fuzz build --target-dir target/fuzz
 ```
 

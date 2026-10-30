@@ -15,7 +15,7 @@ fn fixtures() -> &'static Path {
         let directory =
             common::root().join(format!("target/api-hash-tests-{}", std::process::id()));
         let output = Command::new("sh")
-            .arg(common::root().join("tests/make_api_hash_fixtures.sh"))
+            .arg(common::root().join("tests/scripts/make_api_hash_fixtures.sh"))
             .arg(&directory)
             .output()
             .expect("building API hash fixtures");

@@ -60,8 +60,8 @@ Constant-table loads retain one path when the complete unsigned address range sp
 The 22 C programs in `tests/data/crackmes/` exercise input handling, comparisons, transforms, table lookups, a VM, state transitions, checksums, and internal calls. Build and evaluate them from the repository root:
 
 ```sh
-bash tests/make_crackme_fixtures.sh target/crackmes
-uv run --no-project tests/crackmes.py --cases table sum --variants elf > target/crackmes.jsonl
+bash tests/scripts/make_crackme_fixtures.sh target/crackmes
+uv run --no-project tests/scripts/crackmes.py --cases table sum --variants elf > target/crackmes.jsonl
 ```
 
 Omit `--cases` and `--variants` to evaluate all programs and built variants. The builder uses freestanding ELF imports for both architectures at `-O0` and `-O2`, with stack protection and sibling-call optimization disabled, matching the symbolic fixture build. On Linux it also builds dynamic and static libc executables when the corresponding compiler is available. Evaluation records CLI exploration and return searches separately, including elapsed seconds, diagnostics, concrete inputs, and native replay results. The default external evaluation timeout is 60 seconds per search; it is separate from symbolic execution's deterministic limits. Cross-architecture replay uses QEMU when available; otherwise the report identifies execution of the same C program on the host architecture. A missing replay binary produces `unverified`, and a rejected input produces `wrong`. Successful replay requires exit status zero and exactly `success` followed by a newline. Freestanding input stubs are never used for native validation.

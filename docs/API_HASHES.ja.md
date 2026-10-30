@@ -47,7 +47,7 @@ x86-64 と i386 に対応します。Go のバイナリーは対象外です。i
 次の例を実行する前に、ソースからテスト用バイナリーを作成します。
 
 ```sh
-sh tests/make_api_hash_fixtures.sh
+sh tests/scripts/make_api_hash_fixtures.sh
 velk --summary target/api-hash-fixtures/x86_64.O2.elf case_ror13
 velk -D target/api-hash-fixtures/x86_64.O2.elf case_ror13
 ```

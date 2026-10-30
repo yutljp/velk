@@ -18,7 +18,7 @@ fn fixtures() -> &'static Path {
             std::process::id()
         ));
         let output = Command::new("sh")
-            .arg(common::root().join("tests/make_string_decoding_fixtures.sh"))
+            .arg(common::root().join("tests/scripts/make_string_decoding_fixtures.sh"))
             .arg(&directory)
             .output()
             .expect("compiling string fixtures");

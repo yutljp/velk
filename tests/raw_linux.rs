@@ -18,7 +18,7 @@ fn fixtures() -> &'static Path {
             .join("target/raw-linux-tests")
             .join(std::process::id().to_string());
         let result = Command::new("bash")
-            .arg(common::root().join("tools/make_raw_linux_fixtures.sh"))
+            .arg(common::root().join("tests/scripts/make_raw_linux_fixtures.sh"))
             .arg(&out)
             .output()
             .expect("fixture build starts");

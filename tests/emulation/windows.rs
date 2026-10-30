@@ -13,7 +13,7 @@ fn fixtures() -> &'static Path {
         let directory =
             common::root().join(format!("target/windows-emulation-{}", std::process::id()));
         let output = Command::new("sh")
-            .arg(common::root().join("tools/make_windows_emulation_fixtures.sh"))
+            .arg(common::root().join("tests/scripts/make_windows_emulation_fixtures.sh"))
             .arg(&directory)
             .output()
             .expect("build Windows fixtures");
@@ -1235,7 +1235,7 @@ fn windows_unknown_apis_stop_by_name() {
 #[test]
 fn windows_documented_command() {
     let output = Command::new("sh")
-        .arg("tools/make_windows_emulation_fixtures.sh")
+        .arg("tests/scripts/make_windows_emulation_fixtures.sh")
         .output()
         .unwrap();
     assert!(output.status.success(), "{output:?}");

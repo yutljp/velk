@@ -77,7 +77,7 @@ decoded strings. Use
 `f.disasm()` in scripts returns the same records.
 
 Use `-D --addresses` for instruction comments, or `-D --json` for pseudo-C with a
-line-to-address map. See [instruction addresses](docs/instruction-addresses.md).
+line-to-address map. See [instruction addresses](docs/INSTRUCTION_ADDRESSES.md).
 
 Whole-binary work uses the available CPU cores. Set `VELK_THREADS=1` to run with one worker,
 or another positive integer to limit workers. Results remain in function order.
@@ -89,8 +89,9 @@ Universal Mach-O files open the slice for this machine; pick another with `--arc
 
 Headerless code accepts an explicit instruction set, load address, and entries:
 `velk -D --raw-arch x86_64 --load-address 0x7000 code.bin 0x7000`.
-The same mapping is available in scripts and MCP. UPX ELF and PE inputs use the
-installed UPX decoder; `--save-unpacked FILE` saves a successful recovery.
+The same mapping is available in scripts and MCP. UPX ELF and PE inputs are decoded
+by velk's built-in decoder, with `upx -d` used only for variants it does not support;
+`--save-unpacked FILE` saves a successful recovery.
 For other Linux ELF files, add `--unpack` to an analysis operation to run the
 entry point in bounded emulation. `--unpack-at ADDRESS` selects a stop address;
 otherwise execution stops when it reaches bytes written during the run. For example,
@@ -142,6 +143,19 @@ hash routines used in name-table walks. The C includes comments with matching na
 These are candidates, since a hash does not identify the loaded library.
 See [API hashes](docs/API_HASHES.md) for the supported data flow and limits.
 
+`velk --iocs app` lists URLs, domains, IP addresses, paths, registry keys and other
+indicators found in static strings and strings recovered by emulation. See
+[indicator extraction](docs/IOCS.md) for the recognized kinds.
+
+Symbolic execution searches for inputs that reach a virtual address:
+`velk --explore check --find 0x401100 --stdin 8 app.elf` (`--json` returns JSON).
+It requires an external Z3 or Bitwuzla process. Rust, JavaScript (`b.explore` and
+`b.symbolic`) and MCP (`velk_explore`) expose the same search. See
+[Symbolic execution](docs/SYMBOLIC.md) and `velk --api-docs symbolic` for inputs,
+state operations and deterministic limits.
+
+Return conditions (`b.solve`, `--solve check --returns eq:1`) and branch feasibility (`b.branchFeasibility`, `--opaque check`) use the same bounded executor and libc models.
+
 ## Using velk from an agent
 
 velk does not register itself anywhere. Build it with `cargo build --release`, then register the executable
@@ -175,6 +189,8 @@ b.functions({ named: true }).slice(0, 5).map(f => ({ addr: f.addr, name: f.name 
 
 Replies are limited in size (see the overview for paging and timeouts). The same API is available from the
 command line with `velk --run script.js`.
+
+## Analysis details
 
 The script method `b.classes()` and MCP tool `velk_classes` list the same RTTI metadata as
 `--classes`. See [C++ classes and exception tables](docs/CPP_CLASSES.md) for fields and limits.
@@ -245,17 +261,27 @@ for the weights, evidence, cache behavior and limitations.
 - [Scripting API](src/script/api/index.md)
 - [Architecture](docs/ARCHITECTURE.md)
 - [Testing](docs/TESTING.md)
+- [SMT inventory](docs/SMT_RULES.md)
+- [Input formats and limits](docs/INPUT.md)
+- [Instruction addresses](docs/INSTRUCTION_ADDRESSES.md)
 - [Running loaded code](docs/EMULATION.md): CLI, JavaScript and MCP execution with explicit state and limits.
+- [Symbolic execution](docs/SYMBOLIC.md)
+- [Automatic string recovery](docs/STRING_DECODING.md)
+- [API hashes](docs/API_HASHES.md)
+- [Indicator extraction](docs/IOCS.md)
+- [Memory queries](docs/MEMORY.md)
+- [Function signatures](docs/CALLS.md)
+- [Library signatures](docs/LIBRARY_SIGNATURES.md)
+- [Recovered structures](docs/STRUCTURES.md)
+- [Go locals](docs/GO_LOCALS.md)
+- [C++ classes and exception tables](docs/CPP_CLASSES.md)
+- [Windows COM](docs/WINDOWS_COM.md)
+- [Control-flow simplification](docs/CONTROL_FLOW.md)
+- [Expression simplification](docs/MBA.md)
+- [Function similarity](docs/SIMILARITY.md)
+- [Program comparison](docs/COMPARISON.md)
+- [Saved analysis](docs/ANALYSIS_CACHE.md)
 
 ## License
 
 MIT. See [LICENSE](LICENSE).
-
-Symbolic execution searches for inputs that reach a virtual address:
-`velk --explore check --find 0x401100 --stdin 8 app.elf` (`--json` returns JSON).
-It requires an external Z3 or Bitwuzla process. Rust, JavaScript (`b.explore` and
-`b.symbolic`) and MCP (`velk_explore`) expose the same search. See
-[Symbolic execution](docs/SYMBOLIC.md) and `velk --api-docs symbolic` for inputs,
-state operations and deterministic limits.
-
-Return conditions (`b.solve`, `--solve check --returns eq:1`) and branch feasibility (`b.branchFeasibility`, `--opaque check`) use the same bounded executor and libc models.

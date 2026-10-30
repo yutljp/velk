@@ -16,7 +16,7 @@ tests/cases/
 
 ## 難易度の段
 
-`tests/ladder.sh` は `tests/expect/ladder.tsv` の期待値を L0 から順に評価します。
+`tests/scripts/ladder.sh` は `tests/expect/ladder.tsv` の期待値を L0 から順に評価します。
 易しい段が壊れたら、難しい段より先に直します。
 
 | 段 | 確認すること | 主なケース | ビルド |

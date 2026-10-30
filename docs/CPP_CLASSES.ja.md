@@ -72,7 +72,7 @@ Windows x64 の `__CxxFrameHandler3` FuncInfo は IP と状態の対応表を使
 標準 C は C++ の例外振り分け機能を持ちません。
 
 `tests/cases/cpp/rtti.cpp` は単一・多重・仮想継承と、型付き・全例外・入れ子・クリーンアップのハンドラーを含みます。
-`bash tests/make_cpp_fixtures.sh` は clang と `ld.lld` で ELF を、利用可能なら clang の MSVC ターゲットと
+`bash tests/scripts/make_cpp_fixtures.sh` は clang と `ld.lld` で ELF を、利用可能なら clang の MSVC ターゲットと
 `lld-link` で PE を、macOS では Mach-O を作成します。デバッグ版とシンボル削除版について、
 `tests/cpp_classes.rs` が名前、オフセット、例外コメント、検出した全関数のコンパイルを検証します。
 

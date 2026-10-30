@@ -101,14 +101,38 @@ Mach-O には macOS SDK、PE/COFF には mingw-w64 と C ランタイム（DLL �
   `va_arg` を使います。
 - **出力**: コードに必要な補助定義と宣言はファイルの先頭に 1 度だけ出力するので、出力はそのままコンパイルできます。
 
+## リフトしたコードの実行（`src/ir/eval/`）
+
+IR は、読み込んだバイナリのコードを実行するのにも使います。
+
+- `src/ir/eval/emulation.rs` はリフトしたコードを実行します。メモリは読み込んだセクションと、ゼロで埋めた領域から
+  なります（`src/emulation/memory.rs`）。インポートした C ライブラリ関数の呼び出しは、シンボル名で処理を選びます
+  （`src/ir/eval/emulation/hooks.rs`）。標準ストリームと Linux のシステムコールは `src/ir/eval/stdio.rs` と
+  `src/ir/eval/syscalls.rs`、C++ のストリームと文字列は `src/ir/eval/cxx.rs`、Windows のプロセスの状態と API 呼び出しは
+  `src/ir/eval/emulation/windows/` にあります。
+- `src/ir/eval/symbolic.rs` は IR を記号的に評価します。等価性の検査と同じ `src/ir/smt.rs` のビットベクターへの変換を使い、
+  外部プロセスの Z3 または Bitwuzla に問い合わせます。
+- `src/emulation.rs` と `src/symbolic.rs` が、この 2 つの実行器の公開インターフェイスです。どちらもステップ数の上限で
+  停止します。そのほかの上限は [EMULATION.ja.md](EMULATION.ja.md) と [SYMBOLIC.ja.md](SYMBOLIC.ja.md) にあります。
+
+次の機能はエミュレーションを使います。
+
+- `src/unpack.rs` はパックされたプログラムを入口から実行し、実行中に書き込んだバイトに到達したら停止して、
+  その時点のイメージを解析します。
+- `src/string_decoding.rs` は、バッファー、長さ、鍵が既知の復号関数の呼び出しを実行し、得られた文字列を記録します。
+- `src/api_hashes.rs` は、エクスポート名の検索に使われるハッシュ関数を実行し、結果をエクスポート名と照合します。
+- `src/iocs.rs` は、静的な文字列と復元した文字列から URL、アドレス、パスなどを取り出します。
+
 ## 外側の層
 
 - `src/service.rs` はバイナリを開き、関数ごとの解析結果をキャッシュします。CLI、スクリプト API、MCP サーバーはすべて
   これを通ります。
 - `src/main.rs` がコマンドライン、`src/script/` がスクリプト API に対して JavaScript を実行する部分、`src/mcp.rs` がその API を
-  エージェントに公開する MCP サーバーです。
+  エージェントに公開する MCP サーバーです。`src/serve.rs` は同じ API を改行区切りの JSON で提供します。
 - `src/xrefs.rs` はクロスリファレンスとコールグラフを索引化し、文字列・定数の検索と関数の要約を提供します。
+- `src/memory.rs` はバイト列を検索し、セクションから型を指定して値を読みます。`src/tables.rs` は標準的な定数表を認識します。
 - `src/sigs/bytes.rs` はバイトシグネチャを照合して、シンボルを削除したライブラリ関数を識別します。
+- `src/compare.rs` はプログラムのバージョン間で関数を対応付け、`src/similar.rs` は似た関数を順位付けします。
 - `src/project/` はバイナリに結び付いた名前・型・コメントを JSON に保存し、解析と出力に適用します。
 
 ## 正しさの確認方法

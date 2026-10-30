@@ -29,7 +29,7 @@ MCP, return a `simplification` object:
 
 The fixtures in `tests/cases/control_flow/` contain flattened and original
 straight-line, branching and looping functions, integer predicates, and a variable
-transition that must keep its dispatcher. `tests/make_control_flow_fixtures.sh`
+transition that must keep its dispatcher. `tests/scripts/make_control_flow_fixtures.sh`
 builds freestanding x86-64 and AArch64 objects at `-O0` and `-O2` with Clang.
 The control-flow integration test compiles the printed C and compares its return
 values with independent unsigned formulas. Unit tests use Z3 only to verify the

@@ -78,7 +78,7 @@ velk --strings   path/to/binary          # 参照付きの文字列
 `f.disasm()` も同じレコードを返します。
 
 `-D --addresses` で命令アドレスのコメントを付け、`-D --json` で疑似Cと行番号から
-アドレスへの対応を返します。[命令アドレス](docs/instruction-addresses.ja.md)を参照してください。
+アドレスへの対応を返します。[命令アドレス](docs/INSTRUCTION_ADDRESSES.ja.md)を参照してください。
 
 バイナリ全体の処理には利用可能な CPU コアを使います。`VELK_THREADS=1` でワーカーを 1 個に、
 ほかの正の整数でワーカー数の上限を指定できます。結果は関数の順序を保ちます。
@@ -91,8 +91,8 @@ Linux ではバイナリのローダーが入力のスナップショットを�
 ヘッダーのないコードには命令セット、ロードアドレス、入口を明示できます。
 `velk -D --raw-arch x86_64 --load-address 0x7000 code.bin 0x7000`。
 スクリプトと MCP でも同じマッピングを使えます。UPX の ELF・PE 入力は
-インストール済みの UPX デコーダーで展開し、`--save-unpacked FILE` で成功した
-結果を保存できます。[入力形式と制限](docs/INPUT.ja.md)を参照してください。
+velk に組み込んだデコーダーで展開し、対応していない形式だけ `upx -d` を使います。
+`--save-unpacked FILE` で成功した結果を保存できます。[入力形式と制限](docs/INPUT.ja.md)を参照してください。
 ほかの Linux ELF ファイルでは、解析操作に `--unpack` を付けると、入口から
 上限付きエミュレーションを実行します。`--unpack-at ADDRESS` で停止アドレスを指定できます。
 指定がなければ、実行中に書き込んだバイトに到達した時点で停止します。たとえば
@@ -145,6 +145,19 @@ velk は、バッファー、長さ、鍵が既知の復号関数の呼び出し
 名前は候補として扱います。対応するデータの流れと制限は
 [API ハッシュ](docs/API_HASHES.ja.md)を参照してください。
 
+`velk --iocs app` は、静的な文字列とエミュレーションで復元した文字列から、URL、
+ドメイン、IP アドレス、パス、レジストリキーなどのインジケーターを一覧表示します。
+認識する種類は[インジケーター抽出](docs/IOCS.ja.md)を参照してください。
+
+シンボリック実行で、指定した仮想アドレスに到達する入力を探索できます。
+`velk --explore check --find 0x401100 --stdin 8 app.elf`（JSON 出力は `--json`）。
+外部プロセスの Z3 または Bitwuzla が必要です。Rust、JavaScript（`b.explore` と
+`b.symbolic`）、MCP（`velk_explore`）からも同じ探索を使えます。入力、状態 API、
+決定的な上限については [シンボリック実行](docs/SYMBOLIC.ja.md) と
+`velk --api-docs symbolic` を参照してください。
+
+戻り値条件（`b.solve`、`--solve check --returns eq:1`）と分岐の実行可能性（`b.branchFeasibility`、`--opaque check`）も同じ上限付き実行器と libc モデルを使います。
+
 ## エージェントから使う
 
 velk が自分でどこかに登録することはありません。`cargo build --release` でビルドしてから、実行ファイルのフルパスを指定して、使うエージェントに自分で登録してください。
@@ -175,6 +188,8 @@ b.functions({ named: true }).slice(0, 5).map(f => ({ addr: f.addr, name: f.name 
 ```
 
 返信の大きさには上限があります（分割取得とタイムアウトは概要を参照してください）。同じ API はコマンドラインから `velk --run script.js` でも使えます。
+
+## 解析の詳細
 
 バイト列の検索、型を指定したメモリの読み取り、標準的な定数の検出も JSON で利用できます。
 
@@ -243,17 +258,27 @@ JavaScript と MCP では `f.similar({in: other, limit: 5})` を使います。
 - [API の概要](src/script/api/index.md)
 - [アーキテクチャ](docs/ARCHITECTURE.ja.md)
 - [テスト](docs/TESTING.ja.md)
+- [式の等価性テスト](docs/SMT_RULES.ja.md)
+- [入力形式と制限](docs/INPUT.ja.md)
+- [疑似Cの命令アドレス](docs/INSTRUCTION_ADDRESSES.ja.md)
 - [読み込んだコードの実行](docs/EMULATION.ja.md): CLI、JavaScript、MCP で初期状態と上限を指定して実行します。
+- [シンボリック実行](docs/SYMBOLIC.ja.md)
+- [文字列の自動復元](docs/STRING_DECODING.ja.md)
+- [API ハッシュ](docs/API_HASHES.ja.md)
+- [インジケーター抽出](docs/IOCS.ja.md)
+- [メモリの問い合わせ](docs/MEMORY.ja.md)
+- [関数のシグネチャ](docs/CALLS.ja.md)
+- [ライブラリシグネチャ](docs/LIBRARY_SIGNATURES.ja.md)
+- [構造体の復元](docs/STRUCTURES.ja.md)
+- [Go のローカル領域](docs/GO_LOCALS.ja.md)
+- [C++ のクラスと例外テーブル](docs/CPP_CLASSES.ja.md)
+- [Windows COM](docs/WINDOWS_COM.ja.md)
+- [制御フローの簡略化](docs/CONTROL_FLOW.ja.md)
+- [式の簡略化](docs/MBA.ja.md)
+- [関数の類似度](docs/SIMILARITY.ja.md)
+- [プログラムのバージョン比較](docs/COMPARISON.ja.md)
+- [解析結果の保存](docs/ANALYSIS_CACHE.ja.md)
 
 ## ライセンス
 
 MIT ライセンスです。[LICENSE](LICENSE) を参照してください。
-
-シンボリック実行で、指定した仮想アドレスに到達する入力を探索できます。
-`velk --explore check --find 0x401100 --stdin 8 app.elf`（JSON 出力は `--json`）。
-外部プロセスの Z3 または Bitwuzla が必要です。Rust、JavaScript（`b.explore` と
-`b.symbolic`）、MCP（`velk_explore`）からも同じ探索を使えます。入力、状態 API、
-決定的な上限については [シンボリック実行](docs/SYMBOLIC.ja.md) と
-`velk --api-docs symbolic` を参照してください。
-
-戻り値条件（`b.solve`、`--solve check --returns eq:1`）と分岐の実行可能性（`b.branchFeasibility`、`--opaque check`）も同じ上限付き実行器と libc モデルを使います。

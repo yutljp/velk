@@ -10,7 +10,7 @@ use serde_json::{Value, json};
 fn fixtures() -> std::path::PathBuf {
     let directory = common::root().join("target/iocs-tests");
     let output = Command::new("sh")
-        .arg(common::root().join("tests/make_iocs_fixtures.sh"))
+        .arg(common::root().join("tests/scripts/make_iocs_fixtures.sh"))
         .arg(&directory)
         .output()
         .expect("build IOC fixtures");

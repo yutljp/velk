@@ -36,9 +36,9 @@ const f = velk.open("app").getFunction("mba_add");
 ```
 
 The fixture source is `tests/cases/mba/expressions.c`.
-`sh tests/make_mba_fixtures.sh` builds x86-64 and AArch64 objects with Clang
+`sh tests/scripts/make_mba_fixtures.sh` builds x86-64 and AArch64 objects with Clang
 at `-O0` and `-O2`. `cargo test --release --test mba -- --test-threads 3`
 compiles printed C at both optimization levels and compares it with native source
 and independent unsigned formulas, including boundary inputs. The same test checks
-the CLI, JavaScript and MCP data. The [SMT inventory](smt-rules.md) records the
+the CLI, JavaScript and MCP data. The [SMT inventory](SMT_RULES.md) records the
 normalizer's symbolic checks and their limits.

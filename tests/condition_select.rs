@@ -16,7 +16,7 @@ fn fixtures() -> &'static std::path::Path {
         let out = root.join(format!("target/condition-test-{}", std::process::id()));
         assert!(
             Command::new("sh")
-                .arg(root.join("tools/make_condition_fixtures.sh"))
+                .arg(root.join("tests/scripts/make_condition_fixtures.sh"))
                 .arg(&out)
                 .status()
                 .expect("fixture build starts")

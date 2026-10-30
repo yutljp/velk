@@ -22,12 +22,12 @@ cargo build --release
 cargo test --release -- --test-threads 3
 cargo fmt -- --check
 cargo clippy --release --all-targets -- -D warnings
-BIN=target/release/velk bash tests/smoke.sh
-BIN=target/release/velk bash tests/ladder.sh
+BIN=target/release/velk bash tests/scripts/smoke.sh
+BIN=target/release/velk bash tests/scripts/ladder.sh
 ```
 
-- `tests/smoke.sh` runs the command line and the MCP server end to end.
-- `tests/ladder.sh` checks expected results on functions of increasing difficulty. Entries marked `known_*` are
+- `tests/scripts/smoke.sh` runs the command line and the MCP server end to end.
+- `tests/scripts/ladder.sh` checks expected results on functions of increasing difficulty. Entries marked `known_*` are
   known gaps.
 
 ## What the tests check
@@ -82,17 +82,17 @@ docker compose run --rm fixtures
 
 To run the test suite in the same pinned Linux environment, use `docker compose run --rm check`.
 
-Regenerate the C API type library with `UV_CACHE_DIR=target/uv-cache uv run tests/generate_type_library.py`
-and its Mach-O fixtures with `sh tests/make_type_library_fixtures.sh`.
+Regenerate the C API type library with `UV_CACHE_DIR=target/uv-cache uv run tests/scripts/generate_type_library.py`
+and its Mach-O fixtures with `sh tests/scripts/make_type_library_fixtures.sh`.
 
 Generate the Windows and Linux datasets and fixtures in the reference environment:
 
 ```sh
 docker compose build fixtures
-docker compose run --rm fixtures uv run tests/generate_type_library.py --platform windows
-docker compose run --rm fixtures uv run tests/test_generate_type_library.py
-docker compose run --rm fixtures uv run tests/generate_type_library.py --platform linux
-docker compose run --rm fixtures sh tests/make_type_library_fixtures.sh linux
+docker compose run --rm fixtures uv run tests/scripts/generate_type_library.py --platform windows
+docker compose run --rm fixtures uv run tests/scripts/test_generate_type_library.py
+docker compose run --rm fixtures uv run tests/scripts/generate_type_library.py --platform linux
+docker compose run --rm fixtures sh tests/scripts/make_type_library_fixtures.sh linux
 ```
 
 The Windows dataset and lifters support x86-64 and x86-32.
@@ -112,20 +112,20 @@ const b = velk.open("tests/fixtures/type_library_windows.win64.exe");
 b.libraryType("struct IUnknownVtbl");
 ```
 
-Some groups have their own scripts: `tests/make_pe_fixtures.sh` (Windows PE), `tests/make_codeview.sh`
-(CodeView / PDB), `tests/make_seh_fixtures.sh` (Windows SEH), `tests/make_objc_fixtures.sh` (Objective-C) and
-`tests/make_arm64_lang_fixtures.sh` (AArch64 Rust and Go). Rebuild deliberately and review the changed bytes and
+Some groups have their own scripts: `tests/scripts/make_pe_fixtures.sh` (Windows PE), `tests/scripts/make_codeview.sh`
+(CodeView / PDB), `tests/scripts/make_seh_fixtures.sh` (Windows SEH), `tests/scripts/make_objc_fixtures.sh` (Objective-C) and
+`tests/scripts/make_arm64_lang_fixtures.sh` (AArch64 Rust and Go). Rebuild deliberately and review the changed bytes and
 the recorded toolchain versions.
 
-Regenerate ARM32 A32/T32 fixtures with `sh tests/make_arm32_fixtures.sh` (requires clang with ARM targets
-and `ld.lld`) and x86-32 ELF/PE fixtures with `bash tests/make_i386_fixtures.sh`, both at `-O0` and `-O2`.
+Regenerate ARM32 A32/T32 fixtures with `sh tests/scripts/make_arm32_fixtures.sh` (requires clang with ARM targets
+and `ld.lld`) and x86-32 ELF/PE fixtures with `bash tests/scripts/make_i386_fixtures.sh`, both at `-O0` and `-O2`.
 
 ## Performance
 
 Single-function decompilation should stay fast. To compare whole-binary throughput:
 
 ```bash
-uv run tests/throughput.py target/release/velk tests/fixtures/go_probe
+uv run tests/scripts/throughput.py target/release/velk tests/fixtures/go_probe
 ```
 
 ## Optional bounded verification, fuzzing and Miri
@@ -135,11 +135,11 @@ These checks are separate from the default suite. Use Kani, nightly Rust with Mi
 All commands below use this checkout's `target/`; do not share it between checkouts.
 
 ```sh
-sh tests/verify.sh kani
-sh tests/verify.sh fuzz
-sh tests/verify.sh miri
+sh tests/scripts/verify.sh kani
+sh tests/scripts/verify.sh fuzz
+sh tests/scripts/verify.sh miri
 # Run all three, retaining failures from each:
-sh tests/verify.sh all
+sh tests/scripts/verify.sh all
 ```
 
 On Linux, the script waits while the one-minute load exceeds twice the number of processors.
@@ -264,10 +264,10 @@ an empty script and removes paths before dispatch; it does not fuzz JavaScript
 syntax or execute supplied operations.
 
 ```sh
-UV_CACHE_DIR=target/uv-cache uv run --no-project tests/fuzz.py --seed-only
-UV_CACHE_DIR=target/uv-cache uv run --no-project tests/fuzz_runner_test.py
+UV_CACHE_DIR=target/uv-cache uv run --no-project tests/scripts/fuzz.py --seed-only
+UV_CACHE_DIR=target/uv-cache uv run --no-project tests/scripts/fuzz_runner_test.py
 # Select one target, or omit its name for all seven:
-sh tests/verify.sh fuzz elf --seconds 60 --quiet 120 --rounds 20
+sh tests/scripts/verify.sh fuzz elf --seconds 60 --quiet 120 --rounds 20
 cargo +nightly fuzz build --target-dir target/fuzz
 ```
 

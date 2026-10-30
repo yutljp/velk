@@ -100,7 +100,7 @@ TEA delta など単独の値の完全一致は、その関数のアルゴリズ�
 [ChaCha](https://www.rfc-editor.org/rfc/rfc8439.html)、
 [deflate](https://www.rfc-editor.org/rfc/rfc1951.html) です。
 フィクスチャのソースは `tests/cases/memory/` にあり、
-`sh tests/make_memory_fixtures.sh` で x86-64、i386、AArch64、ARM、Thumb、
+`sh tests/scripts/make_memory_fixtures.sh` で x86-64、i386、AArch64、ARM、Thumb、
 ビッグエンディアン AArch64 のイメージを `tests/data/byte_search/` に作ります。
 `cargo test --release --test memory -- --test-threads 3` はこれらを使い、CLI、
 JavaScript、MCP の各インターフェースを検証します。
@@ -175,6 +175,6 @@ C オブジェクトの由来はモデル化していません。認識するア
 コンパイラーのフィクスチャは x86-64 と AArch64 の `-O2`、`-O3` を、
 デバッグ情報あり・なしで扱います。メモリ関数には Clang 18 と GCC 13、
 文字列関数には Clang 21 と GCC 15 の記録があります。
-`sh tests/make_inline_function_fixtures.sh` と
-`sh tools/make_string_function_fixtures.sh` で再生成できます。Clang、LLD、
+`sh tests/scripts/make_inline_function_fixtures.sh` と
+`sh tests/scripts/make_string_function_fixtures.sh` で再生成できます。Clang、LLD、
 `x86_64-linux-gnu-gcc`、`aarch64-linux-gnu-gcc` が必要です。

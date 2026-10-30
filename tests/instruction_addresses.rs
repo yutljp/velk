@@ -22,8 +22,8 @@ const FUNCTIONS: &[&str] = &[
 #[test]
 fn documented_commands_and_scripts_run() {
     for document in [
-        include_str!("../docs/instruction-addresses.md"),
-        include_str!("../docs/instruction-addresses.ja.md"),
+        include_str!("../docs/INSTRUCTION_ADDRESSES.md"),
+        include_str!("../docs/INSTRUCTION_ADDRESSES.ja.md"),
     ] {
         for section in document.split("```sh\n").skip(1) {
             let commands = section.split("```").next().unwrap();

@@ -253,7 +253,7 @@ No missing memory value or call result is guessed.
 ## Tests
 
 `cargo test --release --test emulation -- --test-threads 3` builds C fixtures
-with `tests/make_emulation_fixtures.sh`. The routine matrix uses `-O0` and `-O2`
+with `tests/scripts/make_emulation_fixtures.sh`. The routine matrix uses `-O0` and `-O2`
 with automatic vectorization disabled, on x86-64, AArch64, x86-32, ARM32 and Thumb.
 It compares return values and buffers with compiled C, and compares complete
 reports across the library, CLI, both JavaScript entry points and MCP. On macOS,
@@ -325,7 +325,7 @@ heap buffers with initial `memory` writes before passing their addresses.
 `GetCommandLineA/W`, `GetEnvironmentStringsW`, and `FreeEnvironmentStringsW`
 provide access to these parameters. The options are shared by the CLI,
 JavaScript, MCP, and `--serve`. For the fixtures built by
-`sh tools/make_windows_emulation_fixtures.sh`:
+`sh tests/scripts/make_windows_emulation_fixtures.sh`:
 
 ```sh
 velk --emulate target/windows-emulation-fixtures/x86_64.O0.exe process_parameters --emulation-options '{"windows":{"commandLine":"program.exe sample","environment":{"NAME":"value"}}}' --json

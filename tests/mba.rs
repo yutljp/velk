@@ -14,7 +14,7 @@ fn fixtures() -> &'static Path {
     DIRECTORY.get_or_init(|| {
         let directory = common::root().join(format!("target/mba-tests-{}", std::process::id()));
         let output = Command::new("sh")
-            .arg(common::root().join("tests/make_mba_fixtures.sh"))
+            .arg(common::root().join("tests/scripts/make_mba_fixtures.sh"))
             .arg(&directory)
             .output()
             .expect("building the MBA fixtures");
