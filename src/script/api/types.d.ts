@@ -186,6 +186,7 @@ interface DecodedString {
   stack: boolean;
   encoding: "utf8" | "utf16le";
   text: string;
+  evidence: string[];
 }
 
 interface DecodedConfiguration {
@@ -196,6 +197,8 @@ interface DecodedConfiguration {
   decoderName: string | null;
   key: number | null;
   text: string;
+  /** Calls that consumed bytes from the decoded buffer. */
+  evidence: string[];
   fields: ConfigurationField[];
 }
 

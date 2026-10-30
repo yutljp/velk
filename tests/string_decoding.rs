@@ -29,7 +29,11 @@ fn fixtures() -> &'static Path {
 
 const CASES: &[(&str, &[&str])] = &[
     ("case_xor", &["xor sample text"]),
+    ("case_url", &["https://decoded.example.com/x"]),
     ("case_config", &["host=example.test;port=443"]),
+    ("case_add", &["add sample text"]),
+    ("case_subtract", &["sub sample text"]),
+    ("case_rotate", &["rot sample text"]),
     ("case_rolling", &["rolling sample text"]),
     ("case_rc4", &["rc4 sample text"]),
     ("case_base64", &["base64 sample text"]),
@@ -49,7 +53,7 @@ fn source_text_matches_native_execution() {
         .expect("running source reference");
     assert!(output.status.success(), "{output:?}");
     let mut expected = String::from(
-        "xor sample text\nhost=example.test;port=443\nrolling sample text\nrc4 sample text\nbase64 sample text\nfirst sample text\nsecond sample text\n12 11\n",
+        "xor sample text\nhttps://decoded.example.com/x\nhost=example.test;port=443\nadd sample text\nsub sample text\nrot sample text\nrolling sample text\nrc4 sample text\nbase64 sample text\ncustom alphabet\nfirst sample text\nsecond sample text\n12 11\n",
     );
     for index in 0..32 {
         expected.push_str(&format!("message number {index:02}\n"));
@@ -97,7 +101,8 @@ fn architecture_and_optimization_matrix() {
                 let code = binary.decompile(address, None, None).unwrap();
                 if missed == 0 {
                     for text in expected {
-                        assert!(code.contains(text), "{code}");
+                        let printed = text.replace('/', "\\057");
+                        assert!(code.contains(&printed), "{code}");
                     }
                 }
                 binary.set_string_decoding(false);
@@ -297,6 +302,7 @@ fn recovered_call_comments_compile_and_execute() {
     for &(name, _) in CASES {
         compiler.arg(format!("-D{name}=source_{name}"));
     }
+    compiler.arg("-Dcase_custom_base64=source_case_custom_base64");
     compiler.arg("-Dcase_comment=source_case_comment");
     let output = compiler
         .arg(common::root().join("tests/string_decoding/fixtures.c"))
@@ -305,14 +311,25 @@ fn recovered_call_comments_compile_and_execute() {
         .output()
         .unwrap();
     assert!(output.status.success(), "{output:?}");
-    let mut cases = CASES[..6].to_vec();
+    let mut cases: Vec<_> = CASES
+        .iter()
+        .filter(|(name, _)| *name != "case_config")
+        .take(6)
+        .copied()
+        .collect();
+    cases.push(("case_custom_base64", &["custom alphabet"]));
     cases.push(("case_comment", &["comment */ text\\\nend"]));
     for (name, expected) in cases {
         let address = binary.find(name).unwrap().addr;
         let mut code = binary.decompile(address, None, None).unwrap();
         let globals: &[&str] = match name {
             "case_xor" => &["xor_data"],
+            "case_url" => &["url_data"],
             "case_config" => &["config_data"],
+            "case_add" => &["add_data"],
+            "case_subtract" => &["subtract_data"],
+            "case_rotate" => &["rotate_data"],
+            "case_custom_base64" => &["custom_data"],
             "case_rolling" => &["rolling_data"],
             "case_rc4" => &["rc4_data"],
             "case_base64" => &["base64_data"],
@@ -349,6 +366,27 @@ fn recovered_call_comments_compile_and_execute() {
             format!("{}\n", expected.join("\n"))
         );
     }
+}
+
+#[test]
+fn custom_base64_alphabet_is_decoded() {
+    let path = fixtures().join("x86_64.O0.elf");
+    let mut binary = Binary::open(&path).expect("open ELF fixture");
+    let address = binary
+        .find("case_custom_base64")
+        .expect("custom alphabet decoder")
+        .addr;
+    let decoded = binary.decoded_strings_at(address, None);
+    assert!(
+        decoded
+            .iter()
+            .any(|string| string.text == "custom alphabet"),
+        "{decoded:?}"
+    );
+    let code = binary
+        .decompile(address, None, None)
+        .expect("decompile decoder");
+    assert!(code.contains("custom alphabet"), "{code}");
 }
 
 fn strings_cli(path: &Path, disabled: bool) -> Value {
@@ -395,6 +433,10 @@ fn cli_javascript_mcp_and_disable_option() {
     assert_eq!(
         config_result["decodedConfigurations"][0]["fields"][1]["value"],
         443
+    );
+    assert_eq!(
+        config_result["decodedConfigurations"][0]["evidence"],
+        json!(["strtok"])
     );
     let code = format!(
         "const b = velk.open({}); b.strings({{contains:'sample'}})",
@@ -475,6 +517,49 @@ fn cli_javascript_mcp_and_disable_option() {
         assert!(output.error.is_none(), "{:?}", output.error);
         assert_eq!(output.output.contains("/* decoded at"), !disabled);
     }
+}
+
+#[test]
+fn pe_string_recovery_and_decoded_iocs() {
+    let path = fixtures().join("windows.O0.exe");
+    let mut binary = Binary::open(&path).expect("open PE fixture");
+    let function = binary.find("case_url").expect("URL decoder").addr;
+    let decoded = binary.decoded_strings_at(function, None);
+    assert!(
+        decoded
+            .iter()
+            .any(|string| string.text == "https://decoded.example.com/x"),
+        "{decoded:?}"
+    );
+    let output = Command::new(env!("CARGO_BIN_EXE_velk"))
+        .args(["--iocs", "--json"])
+        .arg(&path)
+        .output()
+        .expect("run IOC CLI on PE fixture");
+    assert!(output.status.success(), "{output:?}");
+    let indicators: Value = serde_json::from_slice(&output.stdout).expect("IOC JSON");
+    assert!(
+        indicators.as_array().unwrap().iter().any(|indicator| {
+            indicator["kind"] == "url"
+                && indicator["value"] == "https://decoded.example.com/x"
+                && indicator["sources"]
+                    .as_array()
+                    .unwrap()
+                    .contains(&json!("decodedString"))
+        }),
+        "{indicators}"
+    );
+    assert!(
+        indicators.as_array().unwrap().iter().any(|indicator| {
+            indicator["kind"] == "domain"
+                && indicator["value"] == "decoded.example.com"
+                && indicator["sources"]
+                    .as_array()
+                    .unwrap()
+                    .contains(&json!("decodedString"))
+        }),
+        "{indicators}"
+    );
 }
 
 #[test]

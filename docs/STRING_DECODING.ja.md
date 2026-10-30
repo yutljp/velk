@@ -21,14 +21,17 @@ velk -D app.elf case_xor --no-string-decoding
 文字列、`addr`（出力バッファー）、`function`（呼び出し元）、`site`（復号の呼び出し、
 またはその後のバッファー使用位置）、`decoder`、`decoderName`、`stack`、`encoding`
 および既知の長さの次にある定数引数（`key`、存在する場合）を含めます。
-`decodedConfigurations` には 2 個以上の文字列または整数フィールドを持つ
-JSON または区切り付きのキーと値のバッファーを含め、復号関数と呼び出し位置の情報も付けます。
+`decodedConfigurations` には 2 個以上の文字列または整数フィールドを持ち、トークン化、
+整数変換、または書式付きスキャン関数にバッファー内のポインターが渡された
+JSON または区切り付きのキーと値のバッファーを含めます。`evidence` には確認した関数名を
+記録し、復号関数と呼び出し位置の情報も付けます。
 JSON のオブジェクトパスはドットで連結し、配列には添字を付けます。スタックとヒープの
 アドレスは実行中のプロセスではなくエミュレーター内の値です。`--contains` は各配列の
 復元テキストで絞り込みます。
 
 共通関数 `velk::string_decoding::configurations` は復元した文字列から同じフィールドを
 抽出し、インジケーター抽出など他の解析でも使えます。
+`decodedStrings` の `evidence` にも、バッファー内のポインターを受け取った解析関数名を記録します。
 
 ```js
 const b = velk.open("app.elf");

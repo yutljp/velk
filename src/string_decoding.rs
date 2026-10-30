@@ -32,6 +32,8 @@ pub struct DecodedString {
     pub encoding: &'static str,
     /// Recovered text, excluding its terminator.
     pub text: String,
+    /// Parsing operations that consumed this buffer.
+    pub evidence: Vec<String>,
     #[serde(skip)]
     pub(crate) target: Option<u64>,
 }
@@ -78,6 +80,8 @@ pub struct DecodedConfiguration {
     pub key: Option<u64>,
     /// Original decoded text.
     pub text: String,
+    /// Parsing operations that consumed bytes from the buffer.
+    pub evidence: Vec<String>,
     /// Configuration fields in source order.
     pub fields: Vec<ConfigurationField>,
 }
@@ -117,11 +121,14 @@ pub(crate) fn decode_text(bytes: &[u8]) -> Option<(&'static str, String)> {
     None
 }
 
-/// Extracts flat string and integer fields from JSON or delimited key/value text.
+/// Extracts flat fields from decoded buffers that are also used as configuration data.
 #[must_use]
 pub fn configurations(strings: &[DecodedString]) -> Vec<DecodedConfiguration> {
     let mut configurations = Vec::new();
     for string in strings {
+        if string.evidence.is_empty() {
+            continue;
+        }
         let Some(fields) = configuration_fields(&string.text) else {
             continue;
         };
@@ -133,6 +140,7 @@ pub fn configurations(strings: &[DecodedString]) -> Vec<DecodedConfiguration> {
             decoder_name: string.decoder_name.clone(),
             key: string.key,
             text: string.text.clone(),
+            evidence: string.evidence.clone(),
             fields,
         });
     }
@@ -408,14 +416,19 @@ mod tests {
             stack: false,
             encoding: "utf8",
             text: text.to_owned(),
+            evidence: vec!["test".to_owned()],
             target: None,
         };
+        let mut unconsumed = decoded("host=example.test;port=443");
+        unconsumed.evidence.clear();
         let results = configurations(&[
             decoded(r#"{"host":"example.test","port":443}"#),
             decoded("host=example.test;port=443;mode=fast"),
+            unconsumed,
             decoded("ordinary decoded string"),
         ]);
         assert_eq!(results.len(), 2);
+        assert_eq!(results[0].evidence, ["test"]);
         assert_eq!(results[0].key, Some(93));
         assert_eq!(results[0].fields.len(), 2);
         assert_eq!(results[0].fields[0].name, "host");

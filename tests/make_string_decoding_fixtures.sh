@@ -22,4 +22,10 @@ for architecture in x86_64 aarch64 i386 arm32 thumb32; do
             -o "$out/$architecture.$optimization.shared.elf"
     done
 done
+for optimization in O0 O2; do
+    clang --target=x86_64-windows-msvc "-$optimization" -fno-builtin -fno-stack-protector \
+        -fno-optimize-sibling-calls -c tests/string_decoding/fixtures.c -o "$out/windows.$optimization.obj"
+    lld-link /entry:case_xor /subsystem:console /nodefaultlib /fixed /Brepro \
+        /export:case_url /out:"$out/windows.$optimization.exe" "$out/windows.$optimization.obj"
+done
 clang -O0 -fno-builtin -DNATIVE tests/string_decoding/fixtures.c -o "$out/reference"

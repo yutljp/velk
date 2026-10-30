@@ -214,7 +214,15 @@ impl Runner<'_> {
                 op: BinOp::Or,
                 lhs,
                 rhs,
-            } => self.origin(lhs) | self.origin(rhs),
+            } => {
+                let left_origin = self.origin(lhs);
+                let right_origin = self.origin(rhs);
+                let mut origin = left_origin | right_origin;
+                if left_origin & READ != 0 && right_origin & READ != 0 {
+                    origin |= TRANSFORMED;
+                }
+                origin
+            }
             Expr::Bin {
                 op: BinOp::Shl,
                 lhs,
@@ -431,6 +439,7 @@ impl Runner<'_> {
             stack: on_stack,
             encoding,
             text,
+            evidence: Vec::new(),
             target,
         };
         let recovery = self.recovery.as_mut().expect("automatic execution state");
@@ -500,6 +509,35 @@ impl Runner<'_> {
                     .and_then(|f| f.name.as_ref())
             })
             .map(|s| s.trim_start_matches('_').split('@').next().unwrap_or(s));
+        let parser = match name {
+            Some(name @ ("strtok" | "strtok_r" | "strsep")) => Some(name),
+            Some(name @ ("strtol" | "strtoul" | "strtoll" | "strtoull")) => Some(name),
+            Some(name @ ("sscanf" | "vsscanf" | "scanf")) => Some(name),
+            _ => None,
+        };
+        if let Some(evidence) = parser {
+            let mut buffers = Vec::new();
+            for index in 0..4 {
+                if let Ok(pointer) = self.argument(index, convention, kind) {
+                    buffers.push(pointer);
+                }
+            }
+            if let Some(recovery) = self.recovery.as_mut() {
+                for string in &mut recovery.results {
+                    let length = if string.encoding == "utf16le" {
+                        string.text.encode_utf16().count() as u64 * 2
+                    } else {
+                        string.text.len() as u64
+                    };
+                    if buffers.iter().any(|pointer| {
+                        *pointer >= string.addr && pointer.saturating_sub(string.addr) < length
+                    }) && !string.evidence.iter().any(|v| v == evidence)
+                    {
+                        string.evidence.push(evidence.to_owned());
+                    }
+                }
+            }
+        }
         let literal = matches!(
             name,
             Some("puts" | "strlen" | "strcmp" | "strncmp" | "strcpy")

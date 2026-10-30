@@ -708,6 +708,7 @@ mod tests {
             stack: false,
             encoding: "utf8",
             text: "decoded-name".to_owned(),
+            evidence: Vec::new(),
             target: None,
         };
         let lines =

@@ -1,10 +1,31 @@
 typedef unsigned char u8;
 typedef unsigned int u32;
 
+__attribute__((noinline)) char *strtok(char *p, const char *delimiters) {
+    (void)delimiters;
+    return p;
+}
+
 __attribute__((noinline)) u32 xor_key(u8 *p, u32 n, u32 key) {
     u32 sum = 0;
     for (u32 i = 0; i < n; ++i) { p[i] ^= key; sum = sum * 33 + p[i]; }
     return sum;
+}
+
+__attribute__((noinline)) u32 add_key(u8 *p, u32 n, u32 key) {
+    for (u32 i = 0; i < n; ++i) p[i] += key;
+    return n;
+}
+
+__attribute__((noinline)) u32 subtract_key(u8 *p, u32 n, u32 key) {
+    for (u32 i = 0; i < n; ++i) p[i] -= key;
+    return n;
+}
+
+__attribute__((noinline)) u32 rotate_right(u8 *p, u32 n, u32 key) {
+    key &= 7;
+    for (u32 i = 0; i < n; ++i) p[i] = (p[i] >> key) | (p[i] << (8 - key));
+    return n;
 }
 
 __attribute__((noinline)) u32 rolling_xor(u8 *p, u32 n, u32 key) {
@@ -45,6 +66,28 @@ __attribute__((noinline)) u32 base64_decode(u8 *p, u32 n, u32 key) {
         if (count >= 8) { count -= 8; p[out++] = bits >> count; }
     }
     return out;
+}
+
+__attribute__((noinline)) u32 base64_custom_decode(u8 *p, u32 n, const u8 *alphabet) {
+    u32 bits = 0, count = 0, out = 0;
+    for (u32 i = 0; i < n; ++i) {
+        u32 value = 0;
+        while (value < 64 && alphabet[value] != p[i]) ++value;
+        if (value == 64) continue;
+        bits = (bits << 6) | value;
+        count += 6;
+        if (count >= 8) {
+            count -= 8;
+            p[out++] = bits >> count;
+        }
+    }
+    return out;
+}
+
+__attribute__((noinline)) u32 base64_custom_text(u8 *p, u32 n, const u8 *alphabet) {
+    u32 count = base64_custom_decode(p, n, alphabet);
+    p[count] = 0;
+    return count;
 }
 
 __attribute__((noinline)) u32 crc32(u8 *p, u32 n, u32 key) {

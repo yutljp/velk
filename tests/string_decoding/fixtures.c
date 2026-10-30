@@ -25,10 +25,39 @@ __attribute__((noinline)) u32 base64_text(u8 *p, u32 n) {
     p[count] = 0;
     return count;
 }
+u8 custom_alphabet[] = "/+9876543210zyxwvutsrqponmlkjihgfedcbaZYXWVUTSRQPONMLKJIHGFEDCBA";
+u8 custom_data[] = "nIqMi5CS356Tj5eenZqL";
+u32 case_custom_base64(void) {
+    base64_custom_text(custom_data, sizeof(custom_data) - 1, custom_alphabet);
+    return custom_data[0];
+}
 
 u32 case_xor(void) { xor_key(xor_data, sizeof(xor_data), 93); return xor_data[0]; }
+u8 url_data[] = {
+    'h'^93, 't'^93, 't'^93, 'p'^93, 's'^93, ':'^93, '/'^93, '/'^93,
+    'd'^93, 'e'^93, 'c'^93, 'o'^93, 'd'^93, 'e'^93, 'd'^93, '.'^93,
+    'e'^93, 'x'^93, 'a'^93, 'm'^93, 'p'^93, 'l'^93, 'e'^93, '.'^93,
+    'c'^93, 'o'^93, 'm'^93, '/'^93, 'x'^93, 0^93
+};
+u32 case_url(void) { xor_key(url_data, sizeof(url_data), 93); return url_data[0]; }
 u8 config_data[] = { 53, 50, 46, 41, 96, 56, 37, 60, 48, 45, 49, 56, 115, 41, 56, 46, 41, 102, 45, 50, 47, 41, 96, 105, 105, 110, 93 };
-u32 case_config(void) { xor_key(config_data, sizeof(config_data), 93); return config_data[0]; }
+u32 case_config(void) {
+    xor_key(config_data, sizeof(config_data), 93);
+    strtok((char *)config_data, ";");
+    return config_data[0];
+}
+u8 add_data[] = { ('a' - 7), ('d' - 7), ('d' - 7), (' ' - 7), ('s' - 7), ('a' - 7), ('m' - 7), ('p' - 7), ('l' - 7), ('e' - 7), (' ' - 7), ('t' - 7), ('e' - 7), ('x' - 7), ('t' - 7), (0 - 7) };
+u32 case_add(void) { add_key(add_data, sizeof(add_data), 7); return add_data[0]; }
+u8 subtract_data[] = { ('s' + 9), ('u' + 9), ('b' + 9), (' ' + 9), ('s' + 9), ('a' + 9), ('m' + 9), ('p' + 9), ('l' + 9), ('e' + 9), (' ' + 9), ('t' + 9), ('e' + 9), ('x' + 9), ('t' + 9), (0 + 9) };
+u32 case_subtract(void) { subtract_key(subtract_data, sizeof(subtract_data), 9); return subtract_data[0]; }
+u8 rotate_data[] = {
+#define ROL3(value) ((u8)(((u32)(value) << 3) | ((u32)(value) >> 5)))
+    ROL3('r'), ROL3('o'), ROL3('t'), ROL3(' '), ROL3('s'), ROL3('a'),
+    ROL3('m'), ROL3('p'), ROL3('l'), ROL3('e'), ROL3(' '), ROL3('t'),
+    ROL3('e'), ROL3('x'), ROL3('t'), 0
+};
+#undef ROL3
+u32 case_rotate(void) { rotate_right(rotate_data, sizeof(rotate_data) - 1, 3); return rotate_data[0]; }
 u8 terminated_data[] = { 37, 50, 47, 125, 46, 60, 48, 45, 49, 56, 125, 41, 56, 37, 41, 0 };
 u32 case_known_terminator(void) {
     xor_key(terminated_data, sizeof(terminated_data) - 1, 93);
@@ -113,10 +142,15 @@ u32 changed_return(void) { corrupt_return(xor_data, sizeof(xor_data), 93); retur
 #include <stdio.h>
 int main(void) {
     case_xor(); puts((const char *)xor_data);
+    case_url(); puts((const char *)url_data);
     case_config(); puts((const char *)config_data);
+    case_add(); puts((const char *)add_data);
+    case_subtract(); puts((const char *)subtract_data);
+    case_rotate(); puts((const char *)rotate_data);
     case_rolling(); puts((const char *)rolling_data);
     case_rc4(); puts((const char *)rc4_data);
     case_base64(); puts((const char *)base64_data);
+    case_custom_base64(); puts((const char *)custom_data);
     case_many(); puts((const char *)many_a_data); puts((const char *)many_b_data);
     printf("%u %u\n", case_inline(), case_stack());
     case_bulk();

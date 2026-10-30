@@ -23,10 +23,14 @@ contains recovered text, `addr` (output buffer), `function` (containing function
 `site` (decoder call or subsequent buffer use), `decoder`, `decoderName`, `stack`
 `key` (the constant argument immediately after a known length, when present),
 and `encoding`. `decodedConfigurations` contains decoded JSON or delimited
-key/value buffers with at least two string or integer fields, along with the same
-decoder and call-site provenance. JSON object paths are flattened with dots;
+key/value buffers with at least two string or integer fields when a tokenize,
+integer-conversion or formatted-scan function also receives a pointer into the buffer.
+Each result lists the observed function name in `evidence`, along with the same decoder and call-site
+provenance. JSON object paths are flattened with dots;
 arrays use indexed paths. Stack and heap addresses refer to the emulator, not a
 runtime process. `--contains` filters each result by its decoded text.
+`decodedStrings` also lists parsing functions that received pointers into the
+buffer in its `evidence` field.
 
 The shared `velk::string_decoding::configurations` function extracts these fields
 from recovered strings for other analyses, including indicator extraction.
